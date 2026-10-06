@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Unsafe policy (only skia-rust-simd may allow unsafe_code)
+        run: |
+          if grep -rnE 'allow\((.*\b)?unsafe_code' --include=*.rs --include=*.toml crates xtask \
+               | grep -v '^crates/skia-rust-simd/'; then
+            echo "::error::unsafe_code may only be allowed in crates/skia-rust-simd (docs/UNSAFE.md)"
+            exit 1
+          fi
+      - uses: EmbarkStudios/cargo-deny-action@v2
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  wasm:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings -C target-feature=+simd128
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --target wasm32-unknown-unknown --workspace --exclude xtask
+
+  miri:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo miri test -p skia-rust-simd
+
+  inventory:
+    name: Manifest is in sync with the Skia pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: third_party/skia
+          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+      - run: cargo xtask skia fetch
+      - run: cargo xtask inventory sync
+      - run: git diff --exit-code inventory/manifest.toml

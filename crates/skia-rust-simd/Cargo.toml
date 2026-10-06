@@ -1,0 +1,13 @@
+[package]
+name = "skia-rust-simd"
+description = "SIMD primitives and per-CPU-tier kernels for skia-rust (the only crate permitted to use unsafe)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[lints]
+workspace = true

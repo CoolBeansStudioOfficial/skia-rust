@@ -1,0 +1,40 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/skia-rust",
+    "crates/skia-rust-simd",
+    "crates/skia-rust-core",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.156.0"
+edition = "2024"
+rust-version = "1.99"
+license = "BSD-3-Clause"
+repository = "https://github.com/CoolBeansStudioOfficial/skia-rust"
+authors = ["The skia-rust Authors"]
+
+[workspace.dependencies]
+skia-rust-simd = { path = "crates/skia-rust-simd", version = "0.156.0" }
+skia-rust-core = { path = "crates/skia-rust-core", version = "0.156.0" }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+missing_debug_implementations = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+undocumented_unsafe_blocks = "deny"
+multiple_unsafe_ops_per_block = "deny"
+missing_safety_doc = "deny"
+# Ported Skia arithmetic intentionally mirrors C++ casts and float comparisons.
+# Allowed per-item with a comment, never workspace-wide.
+
+[profile.release]
+debug = 1
+
+[profile.bench]
+debug = 1
