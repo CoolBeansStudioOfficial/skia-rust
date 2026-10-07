@@ -550,6 +550,77 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
 | Neon | `"neon"` |
 | Scalar, models | none |
 
+**As implemented in A2a** (`crates/skia-rust-simd/src/rp/lanes/`; the module docs of
+`rp::lanes` list every exported name with its per-tier semantics):
+
+- **Modules.** `rp::lanes::{scalar, sse2, sse41}` (the last two on `x86_64` only), the models
+  `model_sse2::host` and `model_sse41::host` (feature `models`, always on in this crate's tests),
+  `x86_model` (per-lane models of the x86 instructions: SSE NaN propagation, the QNaN indefinite
+  `0xFFC00000`, the integer indefinite `0x80000000`, `minps`/`maxps`, `cvt(t)ps2dq`, `cvttpd2dq`,
+  `packssdw`/`packusdw`/`packuswb`, `movmskps`, `pmulhrsw`, `roundps`, `rcpps`/`rsqrtps` from an
+  `Estimates`), `portable` (functions identical on every SIMD tier: integer `min`/`max`/`abs`,
+  `cond_to_mask`, lowp `div255*` for x86, lowp compare-select `min`/`max`, bitwise lowp
+  `if_then_else`, `scaled_mult`) and `S<T>`. `rp` is `pub` (A3's stage stamping lives in the same
+  crate, and a public module keeps unused-yet primitives free of dead-code noise); calling a
+  native primitive outside its tier's feature context still needs `unsafe` plus a token.
+- **`si!`** in each native tier adds `#[target_feature(enable = Token::FEATURES)]`, `#[inline]`,
+  `#[must_use]` and a generated `# Safety` doc section (clippy's `missing_safety_doc` treats safe
+  `#[target_feature]` functions as unsafe to call). Scalar's and the models' `si!` add only
+  `#[inline]`/`#[must_use]`. `Sse41` re-exports the `Sse2` functions it shares (calling a subset
+  feature function is safe) and redefines `floor_`/`ceil_` (`roundps`), `pack_u32` (`packusdw`),
+  `rcp_fast`/`rsqrt` (raw estimates), `div_u32` (`pminud` clamp), `to_half`, and lowp `floor_`,
+  `min_intr_i`/`max_intr_i`, `min_intr_u16`/`max_intr_u16`, `scaled_mult` (`pmulhrsw`).
+- **Names added to the §2.4 list:** `sqrt_` (per tier: the x86 models need `sqrtps`'s NaN rules),
+  `cast_f` (Skia's `cast(U32) -> F`: a *signed* `cvtdq2ps` on SIMD tiers but an unsigned C cast
+  on Scalar, a tier difference missing from §1.3), `min_i max_i min_u max_u abs_i` (portable),
+  lowp `min_f max_f min_i max_i min_u16 max_u16` (compare-select), `min_intr_*`/`max_intr_*`,
+  `if_then_else_{f,i,u16,u32}`, `trunc_`, `to_i32`, `sqrt_`.
+- **`from_half`/`to_half`** are common code in Skia (`opts#L1651-L1695`), so they are stamped
+  into each tier by `soft_half!` with that tier's `if_then_else`/`pack`. Consequence missing from
+  §1.3/§1.5: `to_half` ends in `pack(U32)`, so for `|f| >= 2^32`, `±inf` and NaN (where
+  `(s>>16) + (em>>13) - (112<<10)` exceeds 16 bits) **Sse41 saturates to `0xFFFF`** while Scalar
+  and Sse2 truncate (`f32::MAX → 0x3BFF`, `+inf → 0x3C00`).
+- **Scalar semantics:** comparisons on `S<T>` give 0/1; C float → int casts are Rust's `as`
+  (saturating, NaN → 0), i.e. wasm's `trunc_sat` (the `x64-scalar` proxy's `cvttss2si` differs
+  for out-of-range inputs, R5); `fminf`/`fmaxf` are musl's (NaN ignored, `-0 < +0`), the libc of
+  the real wasm target (the MSVC CRT of the proxy may order ±0 differently). `div_i32`/`div_u32`
+  port the generic `div_fn` (`x/0 → x/-1`, `INT_MIN/-1 → INT_MIN/-2`, `u/0 → u/0xFFFFFFFF`).
+- **Models per estimate source.** A model module is instantiated once per `Estimates` value by
+  mounting the same body (`model_*/imp.rs`, via `#[path]`) under a submodule that defines
+  `const EST` (or, for `model_sse41`, its `model_sse2` base): `model_sse2::{host, amd_zen4}`,
+  `model_sse41::{host, amd_zen4}`. `x86_model::rcpps`/`rsqrtps` take the `Estimates`: `Host` runs
+  the host's instruction, `AmdZen4` calls A2d's `estimates::amd_zen4::{rcp, rsqrt}` (pure, any
+  host, Miri). The twin tests compare `Native` with both `Model(Host)` and `Model(AmdZen4)`; the
+  latter only on estimate-free primitives when the host's fingerprint is not the oracle host's.
+- **NaN payloads.** The models never let a NaN come out of Rust arithmetic (unspecified in Rust,
+  randomized by Miri, different on Arm). One thing is unspecified on x86 itself: when two NaNs
+  meet in one *commutative* operation, LLVM may commute `fmul`/`fadd` operands, for us and for
+  Skia's clang (the release codegen of `mad(dr, 1 - a, r)` emits `mulps (1-a), dr` and
+  `addps p, r`). The `mad`/`nmad` twin tests therefore compare only NaN-ness when two NaN
+  operands meet (`test_support::mad_nan_ambiguous`); everything else is compared bit for bit.
+  The same caveat applies to portable `Vec` arithmetic in stages (A3+): stage-twin tests must
+  either avoid inputs where two NaNs meet or compare NaN-ness there, and models run on Arm hosts
+  inherit Arm's NaN choice in portable arithmetic.
+- **Codegen** (release, checked): a `sse2` stage computing `mad(d, 1 - a, r) * rcp_fast(a)`,
+  `min_f`, `bit_cast`, `if_then_else_f`, `floor_` compiles to straight `rcpps`/`mulps`/`subps`/
+  `minps`/`cmpltps`/`cvttps2dq`/`andps`/`andnps`/`orps` with one load per input and one store; the
+  array round trips and the byte-wise `bit_cast` vanish. `pack_u32` is `pslld`/`psrad`/
+  `packssdw`/`movq`.
+- **`unsafe`:** four blocks in `rp/lanes/x86.rs` (`_mm_loadu_ps`, `_mm_storeu_ps`,
+  `_mm_loadu_si128`, `_mm_storeu_si128`); every other register shape goes through `bit_cast`.
+  Tests add one block per (native tier, harness) call after taking the token.
+- **Tests** (`rp/lanes/tests.rs`): each primitive is stamped into a test harness in every lane
+  module (`lane_harness!`/`lowp_harness!`), so native and model run identical driver code. Native
+  vs `Model(Host)` under `force_tier`, bit for bit: unary float ops on specials + a strided sweep
+  of all 2³² patterns (every 16411th in debug, 257th in release), every 16-bit value for
+  `from_half`/`pack_u16`/`div255*`, special-value cross products + random lanes for binary/ternary
+  ops, random and non-canonical masks for selects/`any`/`all`. `SKIA_RUST_EXHAUSTIVE=1` runs every
+  unary float primitive (highp and lowp) on all 2³² inputs, native vs both models (0
+  mismatches on the Zen 4 oracle host for Sse2 and Sse41). Known-answer tests per tier cite the
+  C++ line they come from and run on Scalar, the models (also under Miri) and the native tiers.
+  `vx::Vec::bit_cast` (size checked at compile time) is built from the sealed `Lane` trait's new
+  `ne_byte`/`from_ne_byte_fn`.
+
 ### 2.5 Stage code: written once, stamped per tier
 
 Skia compiles one header N times in N namespaces. We do the same with `include!`:

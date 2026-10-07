@@ -10,11 +10,13 @@
 //! - [`estimates`]: the host's `rcp`/`rsqrt` estimate instructions, fingerprints, tables and
 //!   bit-exact software models (`estimates::amd_zen4`).
 //! - `testing` (feature `testing`): `force_tier`.
+//! - [`rp`]: the raster pipeline's CPU code: lane types and per-tier primitives ([`rp::lanes`]).
 //! - [`vx`](mod@vx): `skvx`.
 #![allow(unsafe_code)]
 
 pub mod cpu;
 pub mod estimates;
+pub mod rp;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod tier;

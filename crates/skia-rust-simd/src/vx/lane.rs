@@ -54,6 +54,11 @@ pub trait Lane: sealed::Sealed + Copy + Debug + PartialEq + PartialOrd + 'static
 
     /// One lane of `isfinite`: always true for integers, exponent bits not all ones for floats.
     fn is_finite_lane(self) -> bool;
+
+    /// Byte `i` of the lane's native-endian representation (`i < size_of::<Self>()`).
+    fn ne_byte(self, i: usize) -> u8;
+    /// The lane whose native-endian byte `i` is `f(i)`.
+    fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self;
 }
 
 /// Integer lanes (and the mask types of float lanes): adds the bitwise operations.
@@ -139,23 +144,43 @@ macro_rules! impl_int_lane {
         impl Lane for $t {
             type Mask = $t;
             const ZERO: Self = 0;
+            #[inline(always)]
             fn lane_add(self, rhs: Self) -> Self { self.wrapping_add(rhs) }
+            #[inline(always)]
             fn lane_sub(self, rhs: Self) -> Self { self.wrapping_sub(rhs) }
+            #[inline(always)]
             fn lane_mul(self, rhs: Self) -> Self { self.wrapping_mul(rhs) }
+            #[inline(always)]
             fn lane_div(self, rhs: Self) -> Self { self.wrapping_div(rhs) }
+            #[inline(always)]
             fn lane_neg(self) -> Self { self.wrapping_neg() }
+            #[inline(always)]
             fn to_mask_bits(self) -> $t { self }
+            #[inline(always)]
             fn from_mask_bits(bits: $t) -> Self { bits }
+            #[inline(always)]
             fn is_finite_lane(self) -> bool { true }
+            #[inline(always)]
+            fn ne_byte(self, i: usize) -> u8 { self.to_ne_bytes()[i] }
+            #[inline(always)]
+            fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self {
+                Self::from_ne_bytes(core::array::from_fn(f))
+            }
         }
         impl IntLane for $t {
             const ALL_ONES: Self = !0;
             const MAX: Self = <$t>::MAX;
+            #[inline(always)]
             fn lane_and(self, rhs: Self) -> Self { self & rhs }
+            #[inline(always)]
             fn lane_or(self, rhs: Self) -> Self { self | rhs }
+            #[inline(always)]
             fn lane_xor(self, rhs: Self) -> Self { self ^ rhs }
+            #[inline(always)]
             fn lane_not(self) -> Self { !self }
+            #[inline(always)]
             fn lane_shl(self, k: i32) -> Self { self.wrapping_shl(k.cast_unsigned()) }
+            #[inline(always)]
             fn lane_shr(self, k: i32) -> Self { self.wrapping_shr(k.cast_unsigned()) }
         }
     )*};
@@ -173,51 +198,74 @@ macro_rules! impl_float_lane {
         impl Lane for $t {
             type Mask = $mask;
             const ZERO: Self = 0.0;
+            #[inline(always)]
             fn lane_add(self, rhs: Self) -> Self {
                 self + rhs
             }
+            #[inline(always)]
             fn lane_sub(self, rhs: Self) -> Self {
                 self - rhs
             }
+            #[inline(always)]
             fn lane_mul(self, rhs: Self) -> Self {
                 self * rhs
             }
+            #[inline(always)]
             fn lane_div(self, rhs: Self) -> Self {
                 self / rhs
             }
+            #[inline(always)]
             fn lane_neg(self) -> Self {
                 -self
             }
+            #[inline(always)]
             fn to_mask_bits(self) -> $mask {
                 self.to_bits().cast_signed()
             }
+            #[inline(always)]
             fn from_mask_bits(bits: $mask) -> Self {
                 Self::from_bits(bits.cast_unsigned())
             }
+            #[inline(always)]
             fn is_finite_lane(self) -> bool {
                 let bits = self.to_bits().cast_signed();
                 (bits & $exp) != $exp
             }
+            #[inline(always)]
+            fn ne_byte(self, i: usize) -> u8 {
+                self.to_ne_bytes()[i]
+            }
+            #[inline(always)]
+            fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self {
+                Self::from_ne_bytes(core::array::from_fn(f))
+            }
         }
         impl FloatLane for $t {
+            #[inline(always)]
             fn lane_floor(self) -> Self {
                 self.floor()
             }
+            #[inline(always)]
             fn lane_ceil(self) -> Self {
                 self.ceil()
             }
+            #[inline(always)]
             fn lane_trunc(self) -> Self {
                 self.trunc()
             }
+            #[inline(always)]
             fn lane_round(self) -> Self {
                 self.round()
             }
+            #[inline(always)]
             fn lane_sqrt(self) -> Self {
                 self.sqrt()
             }
+            #[inline(always)]
             fn lane_abs(self) -> Self {
                 self.abs()
             }
+            #[inline(always)]
             fn lane_fma(self, y: Self, z: Self) -> Self {
                 self.mul_add(y, z)
             }
@@ -240,6 +288,7 @@ macro_rules! impl_cast_from {
                 clippy::cast_lossless,
                 clippy::unnecessary_cast
             )]
+            #[inline(always)]
             fn cast_from(s: $s) -> Self { s as $d }
         }
     )*};
