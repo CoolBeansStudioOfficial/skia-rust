@@ -2126,6 +2126,68 @@ color_filters, tile_mode}`, `shaders::ctm_shader`, `skia_rust_raster::{surface, 
   There is no oracle for the canvas layer itself (the draws below it are oracle-checked by D5's
   `draw_tests`): layer restores are covered by Wave E's GMs.
 
+**As implemented in D7** (`skia_rust_core::{picture, picture_priv, picture_recorder, bbh_factory, r_tree,
+record, records, record_canvas, record_draw, record_opts, record_pattern, canvas_priv}`, hooks in `canvas`):
+
+- **What a picture is here.** m156 has no `SkBigPicture`/`SkMiniPicture` (they were folded into
+  `SkPicture`): a `Picture` is `Arc<{unique ID, cull rect, Option<Arc<Record>>, Option<Arc<dyn
+  BBoxHierarchy>>, approx sub-picture bytes}>`; no record means a placeholder. `PictureRecorder` is
+  `SkPictureRecorder` over a `RecordCanvas`, a `Record` and an optional BBH, with
+  `finishRecordingAsPicture` ported line by line (restore to count 1, empty picture, `record_optimize`,
+  `record_fill_bounds` + `insert_with_metadata` + the cull rect trimmed to the union of the bounds).
+  `beginRecording` twice without finishing keeps appending to the same record, as Skia does.
+- **Records.** `SkRecords::*` are structs and `records::Command` is their sum (Skia's `[type, pointer]`
+  array and arena become a `Vec<Command>`; `SkRecord::alloc` and its alignment test have no equivalent).
+  `visit`/`mutate` take closures. Only the calls of ported features have a record: `Save`, `SaveLayer`,
+  `Restore`, `SetMatrix`, `SetM44`, `Concat`, `Concat44`, `Translate`, `Scale`, the six clips,
+  `DrawArc/DRRect/Oval/Paint/Path/Picture/Points/RRect/Rect/Region`, `NoOp`. Images, text, vertices,
+  patches, atlases, drawables, shadows, meshes, annotations, edge-AA and `SaveBehind`/`DrawBehind` are
+  added with their types (Phase 3/5). `SaveLayer` keeps `backdrop_scale` (always 1) and `filters`
+  (always empty): `SaveLayerRec` has no multi-filter span yet.
+- **The recording canvas: `CanvasHooks`.** `SkRecordCanvas` is an `SkNoDrawCanvas` subclass that
+  overrides virtuals, and Rust has no inheritance. `Canvas` gained one optional `Box<dyn CanvasHooks>`
+  (`set_hooks`): a trait of the `SkCanvas` virtuals that the ported draws have (`will_save`,
+  `get_save_layer_strategy`, `will_restore`, `did_restore(total_matrix)`, `did_concat44`, `did_set_m44`,
+  `did_scale`, `did_translate`, `on_clip_*`, `on_reset_clip`, `on_draw_*`, `on_draw_picture`). The
+  canvas calls them exactly where `SkCanvas` calls its virtual (the clip hooks after the base-class work,
+  as `INHERITED(onClipRect)` does; a draw hook returns `true` when it replaced the base class, which
+  is what the recorder does). `RecordCanvas` is a no-pixels `Canvas` (`Canvas::new_no_pixels_irect`,
+  `safe_picture_bounds` for the origin and overflow) with `RecordHooks` appending to a shared
+  `Rc<RefCell<Record>>`, and derefs to the `Canvas`. `reset` is `SkCanvas::resetForNextPicture`
+  (new `Canvas::reset_for_next_picture`, `Device::reset_for_next_picture`, which `NoPixelsDevice`
+  implements). Tests that subclass `SkCanvas` to count calls (`SaveCountingCanvas`) are the same hooks
+  object. The hooks are also how D6's "subclass hooks not ported" is closed; `getSaveLayerStrategy`
+  now decides between a layer device and the no-pixels fallback (`NoLayer` for the recorder).
+- **Playback.** `record_draw` is `SkRecordDraw` (with the BBH query through `getLocalClipBounds`, the
+  `AbortCallback`, and the balancing `SkAutoCanvasRestore`); `SetMatrix`/`SetM44` are applied on top of
+  the canvas matrix at the start (`fInitialCTM`). `Canvas::draw_picture` is `SkCanvas::drawPicture`:
+  pictures with at most `kMaxPictureOpsToUnrollInsteadOfRef` (1) ops are unrolled through
+  `AutoCanvasMatrixPaint`, others go to `onDrawPicture` (the recorder's hook, or quick-reject then
+  playback). `Picture::playback` skips the BBH when the canvas clip contains the cull rect.
+- **Bounds.** `record_fill_bounds` is `SkRecords::FillBounds` (save-block stack, control ops, paint and
+  saveLayer-paint adjustment, `PaintMayAffectTransparentBlack` with the image and color filters'
+  `affects_transparent_black`), producing `Metadata::is_draw` too. `RTree` is `SkRTree`
+  (STR bulk load; the node `union` is one `child` index; the nodes live in a `Vec` so `reserve_exact`
+  stands for the pre-count, and the state sits behind a `Mutex` because the handle is shared).
+- **Optimizations and patterns.** `record_opts` ports `SkRecordOptimize` and the three peepholes
+  (`NoopSaveRestores` stays unused by `record_optimize`, as in Skia). `record_pattern` ports the
+  matchers (`Is`, `IsDraw`, `IsSingleDraw`, `Not`, `Or`, `Greedy`, `Pattern`) as types over tuples; a
+  matcher stores the *index* of the matched command (Rust cannot keep pointers into a `Vec` being
+  mutated), `first::<T>(&Record)` reads it back and the peepholes read the layer paint by clone before
+  mutating the draw's paint.
+- **Not ported.** Serialization (`SkPictureData`, `serialize`, `MakeFromStream/Data`; `PictureTest`
+  `Picture_preserveCullRect`, `Picture_empty_serial` stay `todo`), `SkDrawable` and
+  `SkRecordedDrawable` (`DrawDrawable`, `finishRecordingAsDrawable`; `Picture_nested_draw_drawable`,
+  `Picture_recursion_limit`), the picture shader (`PictureShaderTest`), `SkPictureImageFilter`, and every
+  test that needs images or image filters (`RecordDraw_Metadata`, `RecordOpts_NoopSaveLayerDrawRestore`,
+  `Picture`, ...): each `todo` has its reason in the manifest. `Record_Alignment`
+  (`SkRecord::alloc`) and the two `#if 0` tests of `RecordDrawTest` are `excluded`.
+- **Tests.** `RecordTest` 2/3 (+1 excluded), `RecordDrawTest` 4/10 (+2 `#if 0` excluded),
+  `RecordOptsTest` 6/8, `RecordPatternTest` 6/6, `RecorderTest` 3/4, `PictureBBHTest` 2/2, `RTreeTest`
+  1/1, `PictureTest` 10/19 (the rest need images, serialization or drawables). The record tests keep
+  `RecordTestUtils.h`'s helpers in `unit::record_test_utils` (`assert_type`, `count_instances_of_type`).
+  There is no oracle for the recording layer; playback correctness is the D5/D6 draws under it.
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

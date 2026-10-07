@@ -418,6 +418,13 @@ impl Paint {
         self.shader.clone()
     }
 
+    /// The optional shader, without taking a reference to it (`getShader`).
+    #[doc(alias = "getShader")]
+    #[must_use]
+    pub fn shader_ref(&self) -> Option<&Shader> {
+        self.shader.as_ref()
+    }
+
     /// Sets the optional shader; `None` uses the color instead (`setShader`).
     #[doc(alias = "setShader")]
     pub fn set_shader(&mut self, shader: impl Into<Option<Shader>>) -> &mut Self {

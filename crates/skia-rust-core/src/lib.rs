@@ -4,6 +4,7 @@ pub mod align;
 pub mod alpha_type;
 pub mod arc;
 pub mod arena_alloc;
+pub mod bbh_factory;
 pub mod bezier_curves;
 pub mod bitmap;
 pub mod blend_mode;
@@ -13,6 +14,8 @@ pub mod blend_mode_priv;
 pub mod blender;
 pub mod buffer;
 pub mod canvas;
+#[doc(hidden)]
+pub mod canvas_priv;
 pub mod checksum;
 pub mod clip_op;
 pub mod clip_stack;
@@ -95,6 +98,10 @@ pub mod path_ref;
 mod path_serial;
 pub mod path_types;
 pub mod path_utils;
+pub mod picture;
+#[doc(hidden)]
+pub mod picture_priv;
+pub mod picture_recorder;
 pub mod pixel_ref;
 #[doc(hidden)]
 pub mod pixel_ref_priv;
@@ -102,11 +109,18 @@ pub mod pixmap;
 pub mod point;
 pub mod point3;
 pub mod quads;
+pub mod r_tree;
 pub mod random;
 pub mod raster_pipeline;
 pub mod raster_pipeline_context_utils;
 #[doc(hidden)]
 pub mod read_pixels_rec;
+pub mod record;
+pub mod record_canvas;
+pub mod record_draw;
+pub mod record_opts;
+pub mod record_pattern;
+pub mod records;
 pub mod rect;
 pub mod region;
 pub mod region_path;

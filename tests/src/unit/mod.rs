@@ -107,6 +107,10 @@ pub mod path_raw_test;
 #[cfg(test)]
 pub mod path_test;
 #[cfg(test)]
+pub mod picture_bbh_test;
+#[cfg(test)]
+pub mod picture_test;
+#[cfg(test)]
 pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
@@ -121,9 +125,23 @@ pub mod quad_roots_test;
 #[cfg(test)]
 pub mod r_rect_in_path_test;
 #[cfg(test)]
+pub mod r_tree_test;
+#[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
 pub mod read_pixels_test;
+#[cfg(test)]
+pub mod record_draw_test;
+#[cfg(test)]
+pub mod record_opts_test;
+#[cfg(test)]
+pub mod record_pattern_test;
+#[cfg(test)]
+pub mod record_test;
+#[cfg(test)]
+pub mod record_test_utils;
+#[cfg(test)]
+pub mod recorder_test;
 #[cfg(test)]
 pub mod rect_test;
 #[cfg(test)]

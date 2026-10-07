@@ -67,6 +67,13 @@ impl Shader {
     pub fn ptr_eq(&self, other: &Shader) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
+
+    /// True if this is the only handle to the shader (`SkRefCntBase::unique`).
+    #[doc(alias = "unique")]
+    #[must_use]
+    pub fn is_unique(&self) -> bool {
+        Arc::strong_count(&self.0) == 1
+    }
 }
 
 impl PartialEq for Shader {

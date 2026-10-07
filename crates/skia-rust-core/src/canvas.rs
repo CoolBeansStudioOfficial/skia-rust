@@ -18,14 +18,15 @@
 //!   ([`OwnedCanvas`] hands them back on drop), as `docs/design/pixels.md` decided.
 //! * `peek_pixels` and `access_top_layer_pixels` return guards ([`PeekedPixels`],
 //!   [`TopLayerPixels`]) because a `Pixmap` cannot outlive the `RefCell` borrow.
-//! * Not ported (TODO D7/Phase 3, each a no-op or a documented simplification here): images,
-//!   text, vertices, patches, atlases, drawables, pictures, shadows, meshes, annotations,
+//! * Not ported (TODO Phase 3, each a no-op or a documented simplification here): images,
+//!   text, vertices, patches, atlases, drawables, shadows, meshes, annotations,
 //!   edge-AA quads (`SkImage`, `SkFont`, `SkVertices`, ... are not ported); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
 //!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
-//!   blurred-rrect fast path; `SkRasterHandleAllocator`; the virtual `willSave`/`didConcat`/...
-//!   notifications (there are no subclasses) and the `SkNoDrawCanvas`/`SkNWayCanvas` family.
+//!   blurred-rrect fast path; `SkRasterHandleAllocator`; `SkNWayCanvas`. The virtual
+//!   `willSave`/`didConcat`/`onDrawRect`/... of a subclass are [`CanvasHooks`] (D7), which pictures
+//!   record through.
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ops::Deref;
@@ -36,6 +37,7 @@ use crate::alpha_type::AlphaType;
 use crate::arc::Arc;
 use crate::bitmap::Bitmap;
 use crate::blend_mode::BlendMode;
+use crate::canvas_priv::{AutoCanvasMatrixPaint, MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF};
 use crate::clip_op::ClipOp;
 use crate::color::Color4f;
 use crate::color_space::ColorSpace;
@@ -49,6 +51,7 @@ use crate::matrix::Matrix;
 use crate::matrix_priv::map_rect;
 use crate::paint::{Paint, Style};
 use crate::path::Path;
+use crate::picture::Picture;
 use crate::pixmap::Pixmap;
 use crate::point::{IPoint, Point, Vector};
 use crate::rect::{Contains, IRect, Rect, RoundOut};
@@ -110,12 +113,12 @@ bitflags::bitflags! {
 #[doc(alias = "SkCanvas::SaveLayerRec")]
 #[derive(Debug, Clone)]
 pub struct SaveLayerRec<'a> {
-    bounds: Option<&'a Rect>,
-    paint: Option<&'a Paint>,
-    backdrop: Option<&'a ImageFilter>,
-    backdrop_tile_mode: TileMode,
-    color_space: Option<&'a ColorSpace>,
-    flags: SaveLayerFlags,
+    pub(crate) bounds: Option<&'a Rect>,
+    pub(crate) paint: Option<&'a Paint>,
+    pub(crate) backdrop: Option<&'a ImageFilter>,
+    pub(crate) backdrop_tile_mode: TileMode,
+    pub(crate) color_space: Option<&'a ColorSpace>,
+    pub(crate) flags: SaveLayerFlags,
 }
 
 impl Default for SaveLayerRec<'_> {
@@ -175,6 +178,114 @@ impl<'a> SaveLayerRec<'a> {
     pub fn flags(mut self, flags: SaveLayerFlags) -> Self {
         self.flags = flags;
         self
+    }
+}
+
+/// What a canvas should do for a `saveLayer` (`SkCanvas::SaveLayerStrategy`).
+// Port of: include/core/SkCanvas.h#L2213-L2217 (chrome/m156)
+#[doc(alias = "SkCanvas::SaveLayerStrategy")]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, Default)]
+pub enum SaveLayerStrategy {
+    /// `kFullLayer_SaveLayerStrategy`: allocate a layer device.
+    #[default]
+    FullLayer,
+    /// `kNoLayer_SaveLayerStrategy`: the layer has no pixels (a no-pixels device stands in).
+    NoLayer,
+}
+
+/// The virtual notification and draw hooks of `SkCanvas` (`willSave`, `getSaveLayerStrategy`,
+/// `didConcat44`, `onClipRect`, `onDrawRect`, ...), for the things Skia does with a subclass:
+/// recording (`SkRecordCanvas`) and observing (test canvases that count saves).
+///
+/// skia-rust: Rust has no inheritance, so a canvas can carry one `CanvasHooks` object
+/// ([`Canvas::set_hooks`]). The notifications (`will_*`, `did_*`, `on_clip_*`) are called where the
+/// virtual is called in `SkCanvas`, after the base class work for the `on_clip_*` ones (the
+/// `INHERITED` call). A draw hook returns `true` if it handled the draw, which stands for an
+/// override that does not call the base class; `false` (the default) lets the canvas draw as the
+/// base `SkCanvas` does.
+#[doc(alias = "SkCanvas")]
+pub trait CanvasHooks {
+    /// `willSave`.
+    fn will_save(&mut self) {}
+    /// `getSaveLayerStrategy`.
+    fn get_save_layer_strategy(&mut self, _rec: &SaveLayerRec<'_>) -> SaveLayerStrategy {
+        SaveLayerStrategy::FullLayer
+    }
+    /// `willRestore`.
+    fn will_restore(&mut self) {}
+    /// `didRestore`, with the total matrix after the restore.
+    fn did_restore(&mut self, _total_matrix: &Matrix) {}
+    /// `didConcat44`.
+    fn did_concat44(&mut self, _m: &M44) {}
+    /// `didSetM44`.
+    fn did_set_m44(&mut self, _m: &M44) {}
+    /// `didScale`.
+    fn did_scale(&mut self, _sx: scalar, _sy: scalar) {}
+    /// `didTranslate`.
+    fn did_translate(&mut self, _dx: scalar, _dy: scalar) {}
+    /// `onClipRect` (`is_aa` is `kSoft_ClipEdgeStyle`).
+    fn on_clip_rect(&mut self, _rect: &Rect, _op: ClipOp, _is_aa: bool) {}
+    /// `onClipRRect`.
+    fn on_clip_rrect(&mut self, _rrect: &RRect, _op: ClipOp, _is_aa: bool) {}
+    /// `onClipPath`.
+    fn on_clip_path(&mut self, _path: &Path, _op: ClipOp, _is_aa: bool) {}
+    /// `onClipShader`.
+    fn on_clip_shader(&mut self, _shader: &Shader, _op: ClipOp) {}
+    /// `onClipRegion`.
+    fn on_clip_region(&mut self, _device_rgn: &Region, _op: ClipOp) {}
+    /// `onResetClip`.
+    fn on_reset_clip(&mut self) {}
+    /// `onDrawPaint`.
+    fn on_draw_paint(&mut self, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawPoints`.
+    fn on_draw_points(&mut self, _mode: PointMode, _pts: &[Point], _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawRect`.
+    fn on_draw_rect(&mut self, _rect: &Rect, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawRegion`.
+    fn on_draw_region(&mut self, _region: &Region, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawOval`.
+    fn on_draw_oval(&mut self, _oval: &Rect, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawArc`.
+    fn on_draw_arc(
+        &mut self,
+        _oval: &Rect,
+        _start_angle: scalar,
+        _sweep_angle: scalar,
+        _use_center: bool,
+        _paint: &Paint,
+    ) -> bool {
+        false
+    }
+    /// `onDrawRRect`.
+    fn on_draw_rrect(&mut self, _rrect: &RRect, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawDRRect`.
+    fn on_draw_drrect(&mut self, _outer: &RRect, _inner: &RRect, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawPath`.
+    fn on_draw_path(&mut self, _path: &Path, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawPicture`.
+    fn on_draw_picture(
+        &mut self,
+        _picture: &Picture,
+        _matrix: Option<&Matrix>,
+        _paint: Option<&Paint>,
+    ) -> bool {
+        false
     }
 }
 
@@ -309,6 +420,8 @@ struct CanvasState {
     clip_restriction_rect: IRect,
     clip_restriction_save_count: i32,
     surface: Option<Rc<SurfaceBase>>,
+    /// The subclass hooks (see [`CanvasHooks`]).
+    hooks: Option<Box<dyn CanvasHooks>>,
 }
 
 impl std::fmt::Debug for CanvasState {
@@ -383,6 +496,7 @@ impl CanvasState {
             clip_restriction_rect: IRect::new_empty(),
             clip_restriction_save_count: -1,
             surface: None,
+            hooks: None,
         };
         state.quick_reject_bounds = state.compute_device_clip_bounds(true);
         state
@@ -498,6 +612,9 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L453-L459 (chrome/m156)
     fn do_save(&mut self) {
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.will_save();
+        }
         debug_assert!(self.mc_rec().deferred_save_count > 0);
         self.mc_rec_mut().deferred_save_count -= 1;
         self.internal_save();
@@ -512,9 +629,16 @@ impl CanvasState {
         } else {
             // check for underflow
             if self.mc_stack.len() > 1 {
+                if let Some(hooks) = self.hooks.as_mut() {
+                    hooks.will_restore();
+                }
                 debug_assert!(self.save_count > 1);
                 self.save_count -= 1;
                 self.internal_restore();
+                let total_matrix = self.total_matrix();
+                if let Some(hooks) = self.hooks.as_mut() {
+                    hooks.did_restore(&total_matrix);
+                }
             }
         }
     }
@@ -545,15 +669,26 @@ impl CanvasState {
             self.save();
             self.clip_rect(&Rect::new_empty(), ClipOp::Intersect, false);
         } else {
+            let strategy = self
+                .hooks
+                .as_mut()
+                .map_or(SaveLayerStrategy::FullLayer, |h| {
+                    h.get_save_layer_strategy(rec)
+                });
             self.save_count += 1;
-            self.internal_save_layer(rec, false);
+            self.internal_save_layer(rec, false, strategy);
         }
         self.save_count - 1
     }
 
     // Port of: src/core/SkCanvas.cpp#L878-L1090 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors internalSaveLayer
-    fn internal_save_layer(&mut self, rec: &SaveLayerRec<'_>, coverage_only: bool) {
+    fn internal_save_layer(
+        &mut self,
+        rec: &SaveLayerRec<'_>,
+        coverage_only: bool,
+        strategy: SaveLayerStrategy,
+    ) {
         // Do this before we create the layer. We don't call the public save() since that would
         // invoke a possibly overridden virtual.
         self.internal_save();
@@ -643,8 +778,7 @@ impl CanvasState {
         }
         // TODO(b/329700315): padding is only added with filters.
 
-        // (The `getSaveLayerStrategy` hook of `SkNoDrawCanvas` is not ported: always a full layer.)
-        let new_device: Option<Box<dyn Device>> = {
+        let new_device: Option<Box<dyn Device>> = if strategy == SaveLayerStrategy::FullLayer {
             debug_assert!(!layer_bounds.is_empty());
 
             let prior_info = self.devices[prior_idx].state().image_info().clone();
@@ -672,6 +806,8 @@ impl CanvasState {
             let create_info = CreateInfo::new(info, geo);
             // Use the original paint as a hint so that it includes the image filter
             self.devices[prior_idx].create_device(&create_info, rec.paint)
+        } else {
+            None
         };
 
         let mut init_backdrop =
@@ -818,6 +954,10 @@ impl CanvasState {
             self.mc_rec_mut().matrix.pre_translate(dx, dy, None);
             let m = self.mc_rec().matrix;
             self.top_device_mut().state_mut().set_global_ctm(&m);
+
+            if let Some(hooks) = self.hooks.as_mut() {
+                hooks.did_translate(dx, dy);
+            }
         }
     }
 
@@ -829,6 +969,10 @@ impl CanvasState {
             self.mc_rec_mut().matrix.pre_scale(sx, sy);
             let m = self.mc_rec().matrix;
             self.top_device_mut().state_mut().set_global_ctm(&m);
+
+            if let Some(hooks) = self.hooks.as_mut() {
+                hooks.did_scale(sx, sy);
+            }
         }
     }
 
@@ -845,16 +989,26 @@ impl CanvasState {
 
         self.mc_rec_mut().matrix.pre_concat(m);
 
+        let m44 = *m;
         let m = self.mc_rec().matrix;
         self.top_device_mut().state_mut().set_global_ctm(&m);
+
+        // notify subclasses
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.did_concat44(&m44);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1367-L1371 (chrome/m156)
     fn set_matrix(&mut self, m: &M44) {
         self.check_for_deferred_save();
         self.mc_rec_mut().matrix = *m;
+        let m44 = *m;
         let m = self.mc_rec().matrix;
         self.top_device_mut().state_mut().set_global_ctm(&m);
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.did_set_m44(&m44);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1379-L1394 (chrome/m156)
@@ -869,6 +1023,9 @@ impl CanvasState {
     fn on_clip_rect(&mut self, rect: &Rect, op: ClipOp, is_aa: bool) {
         debug_assert!(rect.is_sorted());
         self.with_qr_update(|s| s.top_device_mut().clip_rect(rect, op, is_aa));
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.on_clip_rect(rect, op, is_aa);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1396-L1435 (chrome/m156)
@@ -914,6 +1071,9 @@ impl CanvasState {
         }
 
         self.with_qr_update(|s| s.top_device_mut().replace_clip(&device_restriction));
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.on_reset_clip();
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1457-L1472 (chrome/m156)
@@ -928,6 +1088,9 @@ impl CanvasState {
 
     fn on_clip_rrect(&mut self, rrect: &RRect, op: ClipOp, is_aa: bool) {
         self.with_qr_update(|s| s.top_device_mut().clip_rrect(rrect, op, is_aa));
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.on_clip_rrect(rrect, op, is_aa);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1474-L1504 (chrome/m156)
@@ -956,6 +1119,9 @@ impl CanvasState {
 
     fn on_clip_path(&mut self, path: &Path, op: ClipOp, is_aa: bool) {
         self.with_qr_update(|s| s.top_device_mut().clip_path(path, op, is_aa));
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.on_clip_path(path, op, is_aa);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1506-L1526 (chrome/m156)
@@ -971,6 +1137,9 @@ impl CanvasState {
         } else {
             self.check_for_deferred_save();
             self.with_qr_update(|s| clip_shader(s.top_device_mut(), sh, op));
+            if let Some(hooks) = self.hooks.as_mut() {
+                hooks.on_clip_shader(sh, op);
+            }
         }
     }
 
@@ -978,6 +1147,9 @@ impl CanvasState {
     fn clip_region(&mut self, rgn: &Region, op: ClipOp) {
         self.check_for_deferred_save();
         self.with_qr_update(|s| s.top_device_mut().clip_region(rgn, op));
+        if let Some(hooks) = self.hooks.as_mut() {
+            hooks.on_clip_region(rgn, op);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L1567-L1573 (chrome/m156)
@@ -1133,6 +1305,16 @@ impl CanvasState {
         }
     }
 
+    // Port of: src/core/SkCanvas.cpp#L1922-L1924 (chrome/m156)
+    fn on_draw_paint(&mut self, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_paint(paint)
+        {
+            return;
+        }
+        self.internal_draw_paint(paint);
+    }
+
     // Port of: src/core/SkCanvas.cpp#L1922-L1937 (chrome/m156)
     fn internal_draw_paint(&mut self, paint: &Paint) {
         // drawPaint does not call internalQuickReject() because computing its geometry is not
@@ -1148,6 +1330,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L1939-L1977 (chrome/m156)
     fn on_draw_points(&mut self, mode: PointMode, pts: &[Point], paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_points(mode, pts, paint)
+        {
+            return;
+        }
         if pts.is_empty() || self.nothing_to_draw(paint) {
             return;
         }
@@ -1181,6 +1368,11 @@ impl CanvasState {
     // Port of: src/core/SkCanvas.cpp#L2036-L2056 (chrome/m156)
     fn on_draw_rect(&mut self, r: &Rect, paint: &Paint) {
         debug_assert!(r.is_sorted());
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_rect(r, paint)
+        {
+            return;
+        }
         if self.internal_quick_reject(r, paint, None) {
             return;
         }
@@ -1193,6 +1385,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2058-L2068 (chrome/m156)
     fn on_draw_region(&mut self, region: &Region, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_region(region, paint)
+        {
+            return;
+        }
         let bounds = Rect::from_irect(region.bounds());
         if self.internal_quick_reject(&bounds, paint, None) {
             return;
@@ -1206,6 +1403,11 @@ impl CanvasState {
     // Port of: src/core/SkCanvas.cpp#L2114-L2133 (chrome/m156)
     fn on_draw_oval(&mut self, oval: &Rect, paint: &Paint) {
         debug_assert!(oval.is_sorted());
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_oval(oval, paint)
+        {
+            return;
+        }
         if self.internal_quick_reject(oval, paint, None) {
             return;
         }
@@ -1225,6 +1427,11 @@ impl CanvasState {
         paint: &Paint,
     ) {
         debug_assert!(oval.is_sorted());
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_arc(oval, start_angle, sweep_angle, use_center, paint)
+        {
+            return;
+        }
         if self.internal_quick_reject(oval, paint, None) {
             return;
         }
@@ -1239,6 +1446,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2161-L2191 (chrome/m156)
     fn draw_rrect(&mut self, rrect: &RRect, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_rrect(rrect, paint)
+        {
+            return;
+        }
         let bounds = rrect.bounds();
 
         // Delegating to simpler draw operations
@@ -1263,6 +1475,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2193-L2203 (chrome/m156)
     fn on_draw_drrect(&mut self, outer: &RRect, inner: &RRect, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_drrect(outer, inner, paint)
+        {
+            return;
+        }
         let bounds = outer.bounds();
         if self.internal_quick_reject(bounds, paint, None) {
             return;
@@ -1275,6 +1492,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2205-L2223 (chrome/m156)
     fn draw_path(&mut self, path: &Path, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_path(path, paint)
+        {
+            return;
+        }
         if !path.is_finite() {
             return;
         }
@@ -1491,6 +1713,62 @@ impl Canvas {
         Canvas {
             state: RefCell::new(CanvasState::init(Box::new(device), props)),
         }
+    }
+
+    /// A canvas covering `bounds` (in global coordinates, so the origin can be anything) that
+    /// draws nothing (`SkCanvas(const SkIRect&)`, as `SkNoDrawCanvas` uses it). An empty `bounds`
+    /// is the empty rectangle at the origin.
+    // Port of: src/core/SkCanvas.cpp#L335-L339 (chrome/m156)
+    #[must_use]
+    pub fn new_no_pixels_irect(bounds: &IRect, props: Option<&SurfaceProps>) -> Canvas {
+        let props = props.copied().unwrap_or_default();
+        let r = if bounds.is_empty() {
+            IRect::new_empty()
+        } else {
+            *bounds
+        };
+        let device = NoPixelsDevice::new(&r, props);
+        Canvas {
+            state: RefCell::new(CanvasState::init(Box::new(device), props)),
+        }
+    }
+
+    /// Resets a canvas made for recording a picture (one with a no-pixels root device) to a
+    /// fresh state covering `bounds` (`resetForNextPicture`, which `SkNoDrawCanvas::resetCanvas`
+    /// exposes).
+    // Port of: src/core/SkCanvas.cpp#L287-L302 (chrome/m156)
+    #[doc(alias = "resetForNextPicture")]
+    pub fn reset_for_next_picture(&self, bounds: &IRect) {
+        self.restore_to_count(1);
+
+        let mut s = self.state.borrow_mut();
+        // We're peering through a lot of structure here.  Only at this scope do we know that the
+        // device is a no-pixels device.
+        debug_assert!(s.devices[0].is_no_pixels_device());
+        if !s.devices[0].reset_for_next_picture(bounds) {
+            let props = *s.devices[0].state().surface_props();
+            let color_space = s.devices[0].state().image_info().color_space();
+            s.devices[0] = Box::new(NoPixelsDevice::new_with_color_space(
+                bounds,
+                props,
+                color_space,
+            ));
+        }
+
+        // fMCRec->reset(fRootDevice.get())
+        s.mc_stack.truncate(1);
+        let rec = s.mc_rec_mut();
+        rec.device = 0;
+        rec.matrix = M44::new_identity();
+        rec.deferred_save_count = 0;
+        rec.layer = None;
+        s.quick_reject_bounds = s.compute_device_clip_bounds(true);
+    }
+
+    /// Installs (or removes) the hooks standing for a subclass of `SkCanvas`
+    /// (see [`CanvasHooks`]).
+    pub fn set_hooks(&self, hooks: Option<Box<dyn CanvasHooks>>) {
+        self.state.borrow_mut().hooks = hooks;
     }
 
     /// Ties the canvas to the surface that owns it (`setSurfaceBase`).
@@ -1952,7 +2230,7 @@ impl Canvas {
     /// Fills the clip with `paint` (`drawPaint`).
     #[doc(alias = "drawPaint")]
     pub fn draw_paint(&self, paint: &Paint) -> &Self {
-        self.state.borrow_mut().internal_draw_paint(paint);
+        self.state.borrow_mut().on_draw_paint(paint);
         self
     }
 
@@ -2092,6 +2370,51 @@ impl Canvas {
     pub fn draw_path(&self, path: &Path, paint: &Paint) -> &Self {
         self.state.borrow_mut().draw_path(path, paint);
         self
+    }
+
+    /// Draws `picture`, optionally transformed by `matrix` and with `paint` applied to the
+    /// result (`drawPicture`).
+    // Port of: src/core/SkCanvas.cpp#L2887-L2898 (chrome/m156)
+    #[doc(alias = "drawPicture")]
+    pub fn draw_picture(
+        &self,
+        picture: impl AsRef<Picture>,
+        matrix: Option<&Matrix>,
+        paint: Option<&Paint>,
+    ) -> &Self {
+        let picture = picture.as_ref();
+
+        let matrix = matrix.filter(|m| !m.is_identity());
+        if picture.approximate_op_count() <= MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF {
+            let _acmp = AutoCanvasMatrixPaint::new(self, matrix, paint, &picture.cull_rect());
+            picture.playback(self);
+        } else {
+            self.on_draw_picture(picture, matrix, paint);
+        }
+        self
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2900-L2908 (chrome/m156)
+    fn on_draw_picture(&self, picture: &Picture, matrix: Option<&Matrix>, paint: Option<&Paint>) {
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(hooks) = s.hooks.as_mut()
+                && hooks.on_draw_picture(picture, matrix, paint)
+            {
+                return;
+            }
+            let default_paint = Paint::default();
+            if s.internal_quick_reject(
+                &picture.cull_rect(),
+                paint.unwrap_or(&default_paint),
+                matrix,
+            ) {
+                return;
+            }
+        }
+
+        let _acmp = AutoCanvasMatrixPaint::new(self, matrix, paint, &picture.cull_rect());
+        picture.playback(self);
     }
 
     /// The device-level hook used by pictures and tests: runs `f` with the top device.
