@@ -32,11 +32,19 @@ Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is
 cargo xtask oracle deps                   # git-sync-deps (Dawn, codecs, …), gn, ninja
 cargo xtask oracle build x64-sse2         # gn gen + ninja dm, into third_party/skia/out/oracle/<build>
 cargo xtask oracle tiers                  # list derived tiers
-cargo xtask oracle run cpu-x64-sse2-rt-ml3 --config 8888 --src gm [--match aarect]
+cargo xtask oracle run cpu-x64-sse2-rt-ml3 --config 8888 f16 --src gm [--match aarect] [--fresh]
 cargo xtask oracle compare cpu-x64-sse2-rt-ml3 path/to/our/outputs
+cargo xtask oracle extract cpu-x64-sse2-rt-ml3 8888/gm/aarectmodes out.raw
 ```
 
-Goldens land in `goldens/<skia-commit>/<tier>/<config>/<src>/[<options>/]<name>.{raw,bin,json}`, with `hashes.json` (SHA-256 per output) and `toolchain.txt` alongside. `goldens/` is git-ignored; hash files are published as described in PLAN §5.3.
+Result ids are `<config>/<src>/[<options>/]<name>`, e.g. `8888/gm/aarectmodes`. Goldens live in `goldens/<skia-commit>/` (git-ignored):
+
+- `objects/<sha[..2]>/<sha>.zst`: each distinct output stored once, zstd-compressed. Most outputs are identical across tiers, so the full matrix stays small.
+- `<tier>/hashes.json`: result id → SHA-256 of the raw bytes. This is all `compare` needs.
+- `<tier>/meta.json`: result id → size, color type, alpha type, serialized color space.
+- `<tier>/toolchain.txt`: compiler version and GN args.
+
+`run` merges into a tier's existing results, so a tier can be filled in several `--match` runs; `--fresh` starts over. If some sources fail, everything that rendered is still stored and the run then reports DM's failure. Hash files and objects are published as described in PLAN §5.3.
 
 Prerequisites on Windows: Visual Studio 2022 Build Tools (MSVC + Windows SDK), Python 3, and LLVM (`clang-cl`) at `C:\Program Files\LLVM` or wherever `SKIA_ORACLE_CLANG_WIN` points.
 
@@ -54,3 +62,5 @@ Prerequisites on Windows: Visual Studio 2022 Build Tools (MSVC + Windows SDK), P
 - **2026-10-06, Dawn on Windows:** Skia builds Dawn with CMake. Dawn enables a C++20-modules target when `clang-scan-deps` exists, but CMake can't scan modules for clang-cl, so the oracle patch passes `-DDAWN_SUPPORTS_CXX_MODULES=OFF` in `third_party/dawn/build_dawn.py`. xtask also puts VS's bundled CMake and Skia's ninja on `PATH`, which Dawn's build script needs.
 - **2026-10-06, all 19 x64 tiers** (88 outputs: gradients, AA rects, strokes; `8888` + `f16`) fall into 5 distinct behaviours: {sse2…avx baselines, ssse3 runtime}, {any baseline + ml3 runtime}, {any baseline + ml4 runtime}, {v3 compile-time baseline}, {v3 + ml4 runtime, v4}. A compile-time AVX2 build differs from runtime ml3 dispatch.
 - **2026-10-06, GPU:** WARP (Microsoft Basic Render Driver, D3D12 10.0.26100.9278) is deterministic across 3 runs on this host, with 1 and 4 DM threads. WARP, RTX D3D12, RTX Vulkan and the CPU tiers share 0 of 44 hashes, so GPU goldens are per environment.
+- **2026-10-06, FMA contraction:** Skia builds with `-ffp-contract=off` for clang on every platform except Windows, where its `/fp:precise` makes clang-cl use `-ffp-contract=on` and fuse `a*b+c` into FMA wherever the target has FMA (ml3/ml4 kernels, v3/v4 builds). Checked on a one-line test: 1 `vfmadd` with `/fp:precise`, 0 with `/clang:-ffp-contract=off`. All oracle builds now pass `-ffp-contract=off` (`[gn] extra_cflags`), so goldens match Skia as built on Linux/macOS and by Chrome. skia-rust must likewise use `mul_add` only where Skia calls an explicit FMA.
+- **2026-10-06, first full tier:** `cpu-x64-sse2` rendered 2,727 results (all GMs × `8888`/`f16`/`565`) in 208 s with no DM failures; `cpu-x64-sse2-rt-ssse3` added 0 new objects, i.e. it is byte-identical to `sse2` on the whole suite. (Pre-fp-contract fix; rerun pending.)

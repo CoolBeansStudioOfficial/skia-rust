@@ -27,6 +27,10 @@ args = [
     "skia_enable_tools=true",
     "skia_use_gl=false",
 ]
+# Skia passes -ffp-contract=off for clang on every platform except Windows, where its
+# /fp:precise makes clang-cl contract a*b+c into FMA in AVX2/AVX-512 code. Turn it off
+# here too, so goldens match Skia as built everywhere else (and as Chrome builds it).
+extra_cflags = ["/clang:-ffp-contract=off"]
 
 # `level` is the runtime level the build's compile-time baseline already implies:
 # baseline < ssse3 < ml3 < ml4.
@@ -34,37 +38,36 @@ args = [
 [[build]]
 name = "x64-sse2"
 level = "baseline"
-args = []
 
 [[build]]
 name = "x64-ssse3"
 level = "ssse3"
-args = ['extra_cflags=["/clang:-mssse3"]']
+extra_cflags = ["/clang:-mssse3"]
 
 [[build]]
 name = "x64-sse41"
 level = "ssse3"
-args = ['extra_cflags=["/clang:-msse4.1"]']
+extra_cflags = ["/clang:-msse4.1"]
 
 [[build]]
 name = "x64-sse42"
 level = "ssse3"
-args = ['extra_cflags=["/clang:-msse4.2"]']
+extra_cflags = ["/clang:-msse4.2"]
 
 [[build]]
 name = "x64-avx"
 level = "ssse3"
-args = ['extra_cflags=["/clang:-mavx"]']
+extra_cflags = ["/clang:-mavx"]
 
 [[build]]
 name = "x64-v3"
 level = "ml3"
-args = ['extra_cflags=["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma"]']
+extra_cflags = ["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma"]
 
 [[build]]
 name = "x64-v4"
 level = "ml4"
-args = ['extra_cflags=["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma", "/clang:-mavx512f", "/clang:-mavx512dq", "/clang:-mavx512cd", "/clang:-mavx512bw", "/clang:-mavx512vl"]']
+extra_cflags = ["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma", "/clang:-mavx512f", "/clang:-mavx512dq", "/clang:-mavx512cd", "/clang:-mavx512bw", "/clang:-mavx512vl"]
 
 # GPU (Graphite + Dawn). Built on the sse2 baseline; each GPU tier pins a runtime CPU
 # level because Graphite still does some work (software masks, uploads) on the CPU.
