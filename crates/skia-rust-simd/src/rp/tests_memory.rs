@@ -196,6 +196,10 @@ fn widths(sel: Selection) -> Vec<usize> {
     let mut v = vec![1, 2, 3, n, n + 1, m, m + 1, 2 * m + 3, 41];
     v.sort_unstable();
     v.dedup();
+    if cfg!(miri) {
+        // Miri is slow: the first, a stride-crossing and the longest width.
+        v = vec![1, n + 1, 41];
+    }
     v
 }
 
@@ -220,7 +224,7 @@ fn formats_round_trip() {
                 }
                 let stages = round_trip_stages(f);
                 for w in widths(sel) {
-                    for x in [0, 3, 17] {
+                    for x in if cfg!(miri) { vec![3] } else { vec![0, 3, 17] } {
                         let src = random_bytes(&mut rng, f.bpp * (x + w) + 64);
                         let dst = vec![0xab; f.bpp * (x + w) + 64];
                         let out = run_px(&stages, sel, force_highp, (x, w), &src, &dst);
@@ -418,7 +422,7 @@ fn channel_shuffles_and_dst_loads() {
     };
     for sel in selections() {
         for h in precisions(sel) {
-            for w in [1, 9, 37] {
+            for w in if cfg!(miri) { vec![9] } else { vec![1, 9, 37] } {
                 let m =
                     |f: fn([u8; 4]) -> [u8; 4]| src[..w].iter().map(|p| f(*p)).collect::<Vec<_>>();
                 let tag = format!("{sel} highp={h} w={w}");
@@ -485,7 +489,11 @@ fn dst_loads_equal_src_loads() {
                     f.store,
                 ]
                 .concat();
-                for w in [1, 13, 50] {
+                for w in if cfg!(miri) {
+                    vec![13]
+                } else {
+                    vec![1, 13, 50]
+                } {
                     let a = run_px(&via_src, sel, h, (0, w), &src, &vec![0; src.len()]);
                     let b = run_px(&via_dst, sel, h, (0, w), &src, &vec![0; src.len()]);
                     assert_eq!(a, b, "{sel} highp={h} {} w={w}", f.name);
@@ -754,7 +762,10 @@ fn gather_equals_load_at_the_clamped_pixel() {
     for sel in selections() {
         for h in precisions(sel) {
             for f in FORMATS.iter().filter(|f| f.name != "r8") {
-                for (width, height, stride) in [(70usize, 1usize, 70usize), (9, 3, 12), (1, 2, 5)] {
+                for (width, height, stride) in [(70usize, 1usize, 70usize), (9, 3, 12), (1, 2, 5)]
+                    .into_iter()
+                    .take(if cfg!(miri) { 2 } else { 3 })
+                {
                     let tex = texture(&mut rng, *f, width, height, stride);
                     let ctx = GatherCtx {
                         pixels: &tex,
@@ -923,7 +934,7 @@ fn memory_stage_twins() {
             // register bytes: 4 registers of n lanes (floats on highp, u16 on lowp)
             let reg_bytes = 4 * n * if force_highp { 4 } else { 2 };
             let pixel_bytes = 16 * 4 * 3;
-            for round in 0..60 {
+            for round in 0..if cfg!(miri) { 1 } else { 60 } {
                 let regs = if force_highp {
                     random_floats(&mut rng, &specials, 4 * n, false)
                 } else {
