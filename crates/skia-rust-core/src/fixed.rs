@@ -53,7 +53,7 @@ pub const FIXED_ROOT_2_OVER_2: Fixed = 0xB505;
 #[doc(alias = "SkFixedToFloat")]
 #[allow(clippy::cast_precision_loss, clippy::excessive_precision)] // implicit int -> float conversion; Skia's literal kept verbatim
 #[must_use]
-pub fn fixed_to_float(x: Fixed) -> f32 {
+pub const fn fixed_to_float(x: Fixed) -> f32 {
     x as f32 * 1.525_878_906_25e-5_f32
 }
 

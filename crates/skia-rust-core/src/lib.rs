@@ -1,12 +1,17 @@
 //! Core types of skia-rust, ported from Skia's `include/core` and `src/core`.
 
 pub mod align;
+pub mod alpha_type;
 pub mod bezier_curves;
 pub mod checksum;
 pub mod color;
 pub mod color_data;
 #[doc(hidden)]
 pub mod color_priv;
+pub mod color_space;
+#[doc(hidden)]
+pub mod color_space_priv;
+pub mod color_space_xform_steps;
 pub mod cubic_clipper;
 pub mod cubic_map;
 pub mod cubics;
