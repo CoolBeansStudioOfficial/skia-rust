@@ -52,6 +52,23 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkPathPriv::kW0PlaneDistance` | not exposed | `matrix_priv::W0_PLANE_DISTANCE` | needed by `matrix_priv::map_rect`; move to `path_priv` when SkPath is ported |
 | `SkDecomposeUpper2x2` (`SkMatrixUtils.h`) | not exposed | `#[doc(hidden)] matrix_utils::decompose_upper_2x2(&Matrix, Option<&mut Point>, Option<&mut Point>, Option<&mut Point>) -> bool` | null out-params become `Option` |
 | `SkTreatAsSprite` (`SkMatrixUtils.h`) | not exposed | not ported | needs `SkSamplingOptions` |
+| **geometry** | | | |
+| `SkGeometry.h` free functions (`SkChopCubicAt`, `SkEvalQuadAt`, ...) | not exposed | `geometry::{chop_cubic_at, eval_quad_at, ...}` | mechanical names; `src`/`dst` pointers become slices, a nullable `dst` becomes `Option<&mut [Point]>`, out-arrays stay `&mut [scalar; N]` parameters and counts are `usize` |
+| `SkChopCubicAt` (3 overloads) | not exposed | `chop_cubic_at`, `chop_cubic_at_t0_t1`, `chop_cubic_at_ts` | overloads get distinct names; `tCount` is `t_values.len()` |
+| `SkEvalQuadAt(src, t, SkPoint*, SkVector*)` | not exposed | `eval_quad_at_pos_tangent` (with `eval_quad_at`, `eval_quad_tangent_at`) | overloads get distinct names; the pointers are `Option<&mut _>` |
+| `SkClassifyCubic(p, t, s, d)` | not exposed | `classify_cubic(p)`, `classify_cubic_with(p, Option<&mut [f64; 2]>, ..)` | default arguments split into two functions |
+| `SkCubicType`, `SkCubicIsDegenerate`, `SkCubicTypeName` | not exposed | `CubicType` (+ `is_degenerate`, `name`) | enum with methods |
+| `SkConic` | not exposed | `geometry::Conic { pts, w }` | public fields as in C++; `set` overloads are `set` / `set_points`; the constructors are `new` / `from_points` |
+| `SkConic::evalAt(t, SkPoint*, SkVector*)`, `chopAt(t1, t2, SkConic*)` | not exposed | `eval_at_pos_tangent`, `chop_at_interval` | overloads get distinct names |
+| `SkConic::findXExtrema/findYExtrema(SkScalar*)`, `computeAsQuadError(SkVector*)`, `computeTightBounds(SkRect*)`, `computeFastBounds(SkRect*)` | not exposed | return `Option<scalar>` / `Vector` / `Rect` | out-parameters become return values |
+| `SkConic::TransformW`, `SkConic::BuildUnitArc` | not exposed | not ported yet | need `SkMatrix` and `SkPathDirection` |
+| `SkAutoConicToQuads::computeQuads` (3 overloads) | not exposed | `AutoConicToQuads::{compute_quads, compute_quads_with_weight}` | the pointer and `SkSpan` overloads merge; the storage is a `Vec<Point>` instead of `AutoSTMalloc` |
+| `SkQuadCoeff`, `SkConicCoeff`, `SkCubicCoeff` | not exposed | `geometry::{QuadCoeff, ConicCoeff, CubicCoeff}` with public `a, b, c, d` / `numer, denom` fields | public so `CubicMapTest` can use them |
+| `skgpu::tess::FindCubicConvex180Chops(pts, T, bool*)` | not exposed | `tessellation::find_cubic_convex_180_chops(pts, &mut t, &mut are_cusps)` | lives in `skia-rust-core` until a GPU crate exists |
+| `SkQuads`, `SkCubics` (classes of statics) | not exposed | modules `quads`, `cubics` (`roots_real`, `roots_valid_t`, `eval_at`, ...) | class with only statics becomes a module; `solution` out-arrays stay `&mut [f64; N]` |
+| `SkBezierCubic`, `SkBezierQuad` | not exposed | `bezier_curves::{BezierCubic, BezierQuad}` (unit structs with associated functions) | `SkSpan<const float>` results are slices of the caller's storage array |
+| `SkCubicClipper::ChopMonoAtY(pts, y, SkScalar*)` | not exposed | `CubicClipper::chop_mono_at_y(pts, y) -> Option<scalar>` | bool + out-param becomes `Option` |
+| `SkCubicMap` | `CubicMap` | `cubic_map::CubicMap` | same API as skia-safe (`new`, `is_linear`, `compute_y_from_x`, `compute_from_t`) |
 | **point** | | | |
 | `SkIVector` | `pub use IPoint as IVector` | `pub type IVector = IPoint` | a type alias is equivalent |
 | `SkIPoint` `+ - += -=` | plain `+`/`-` (panics on overflow) | saturating (`Sk32_sat_add` / `Sk32_sat_sub`) | Skia's semantics (PORTING §3) |
