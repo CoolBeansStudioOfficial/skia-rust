@@ -59,6 +59,12 @@ pub trait Lane: sealed::Sealed + Copy + Debug + PartialEq + PartialOrd + 'static
     fn ne_byte(self, i: usize) -> u8;
     /// The lane whose native-endian byte `i` is `f(i)`.
     fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self;
+    /// The lane stored native-endian in the first `size_of::<Self>()` bytes of `src` (panics if
+    /// `src` is shorter).
+    fn load_ne(src: &[u8]) -> Self;
+    /// Stores the lane native-endian into the first `size_of::<Self>()` bytes of `dst` (panics
+    /// if `dst` is shorter).
+    fn store_ne(self, dst: &mut [u8]);
 }
 
 /// Integer lanes (and the mask types of float lanes): adds the bitwise operations.
@@ -166,6 +172,16 @@ macro_rules! impl_int_lane {
             fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self {
                 Self::from_ne_bytes(core::array::from_fn(f))
             }
+            #[inline(always)]
+            fn load_ne(src: &[u8]) -> Self {
+                let mut b = [0u8; size_of::<$t>()];
+                b.copy_from_slice(&src[..size_of::<$t>()]);
+                Self::from_ne_bytes(b)
+            }
+            #[inline(always)]
+            fn store_ne(self, dst: &mut [u8]) {
+                dst[..size_of::<$t>()].copy_from_slice(&self.to_ne_bytes());
+            }
         }
         impl IntLane for $t {
             const ALL_ONES: Self = !0;
@@ -238,6 +254,16 @@ macro_rules! impl_float_lane {
             #[inline(always)]
             fn from_ne_byte_fn(f: impl FnMut(usize) -> u8) -> Self {
                 Self::from_ne_bytes(core::array::from_fn(f))
+            }
+            #[inline(always)]
+            fn load_ne(src: &[u8]) -> Self {
+                let mut b = [0u8; size_of::<$t>()];
+                b.copy_from_slice(&src[..size_of::<$t>()]);
+                Self::from_ne_bytes(b)
+            }
+            #[inline(always)]
+            fn store_ne(self, dst: &mut [u8]) {
+                dst[..size_of::<$t>()].copy_from_slice(&self.to_ne_bytes());
             }
         }
         impl FloatLane for $t {

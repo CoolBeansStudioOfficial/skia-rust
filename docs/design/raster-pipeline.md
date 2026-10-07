@@ -874,6 +874,118 @@ si! {
   that calls the same stage functions in a fixed order. Same stage code, so results are identical by
   construction; a test runs every fused program against the interpreter.
 
+**As implemented in A3** (`crates/skia-rust-simd/src/rp/`; module docs have the details):
+
+- **One op table.** `rp::ops` holds `rp_ops!`, a `macro_rules!` table transcribed from
+  `SkRasterPipelineOpList.h` in Skia's order: per op its name, `Op`/`Stage` variant, context
+  type, highp kind (`n`/`br`), lowp kind (`pp`/`gg`/`gp`/`hi`) and owning task (`A3`, `B1`…`B6d`,
+  `P3`). Callbacks generate `Op` (`#[repr(u16)]`, Skia's discriminants; `NUM_LOWP_OPS` = 109,
+  `NUM_HIGHP_OPS` = 527, `Op::name()` = `GetOpName`, `Op::task()`), `Stage<'a>` (one variant per
+  op, the context held by value) and each tier's dispatch `match`. A test checks the counts,
+  order, names and lowp set against the header.
+- **Contexts** (`rp::contexts`): every context type is `Copy`, so `Stage` is 16 bytes. Constant
+  data is borrowed (`&'a T`) or held by value (≤ 8 bytes: `dither`'s rate, `gamma_`,
+  `matrix_translate`). Pixel memory is a `MemoryCtx { slot: MemSlot }`; the pixels, row stride
+  and origin (Skia's possibly "fake" base pointer) are a `MemView` bound per run in
+  `MemoryBindings`, so compiled programs never borrow writable memory. Other writable memory
+  (`load_src`/`store_src` buffers, `SkSL` slots, clip coverage buffers) is a
+  `MemPtr { slot, offset }`; `SkRPOffset`s stay `u32` offsets from the `set_base_pointer` base.
+  Scratch state that stages write inside a context (decal/conical masks, sampler and mipmap
+  arrays) is `Cell`, and contexts a caller changes between runs (`scale_1_float`'s coverage) are
+  `&'a Cell<T>`. `InitLaneMasksCtx`/`BranchIfAllLanesActiveCtx`'s tail pointer and `RewindCtx`
+  have no counterpart: the tail byte is interpreter state and the stack ops are no-ops. Wave B
+  tasks may change their own ops' context types (only the `Stage` variant and the stage
+  functions see them).
+- **Stamping without `include!`.** `rp/tiers/<tier>.rs` (`scalar`, `sse2`, `sse41`, `ml3`, `ml4`,
+  `neon`, `model_{sse2,sse41,ml3,ml4}_{host,amd_zen4}`, `model_neon_{host,arm}`; A2b/A2c's lane
+  modules landed while A3 was in review and were instantiated here) each `use`s its lane module `as lanes`, defines `tier_fn!`
+  (`#[target_feature]`) and `si!` (`tier_fn!` + `#[inline]`), and mounts the shared sources with
+  `#[path = "highp/mod.rs"] mod highp;` (and `lowp/mod.rs` on SIMD tiers): no `..` paths, and
+  rustfmt formats the stage files. `Scalar` has no lowp module. Adding a tier is one ~20-line
+  file plus one `native!`/`model!` line in `tiers::run`'s dispatch.
+- **Stage files** (`rp/tiers/highp/*.rs`, `rp/tiers/lowp/*.rs`): one per task (`basic`, `branch`:
+  A3; `memory`: B1; `memory_wide`: B2; `blend`: B3; `color`: B4; `geometry`: B5;
+  `sksl_masks`/`sksl_arith`/`sksl_math`/`sksl_trace`: B6a–d; `sampling`: Phase 3). Every op has a
+  function with the signature its table row fixes — highp `fn name([ctx,] p: &mut Regs,
+  e: &mut Params) [-> i32 for branches]`, lowp `pp` the same with `U16` registers, `gg`
+  `fn name([ctx,] x: &mut F, y: &mut F, e)`, `gp` `fn name([ctx,] x: F, y: F, p, e)`.
+  Unported ones are generated stubs that panic with `not_ported!("name", "B3")`. `Params`
+  carries `dx`, `dy`, the tail byte, `base` and the run's memory (`ptr_at_xy(ctx, bpp)`,
+  `ptr(mem_ptr)`).
+- **Interpreter.** Per tier and precision, one `#[inline(never)]` `row` function runs a whole
+  row (all chunks, then the tail chunk with patching) with a `loop { match prog[pc] }` generated
+  from the table; registers are zeroed per chunk (Skia's `F0`s / `U16_0`s, wide ABI) and `base`
+  starts as `None` per chunk. Each arm runs the stage on *copies* of the registers and `Params`
+  so the loop-carried registers never have their address taken: the release build keeps all
+  eight in vector registers and the `match` is one jump table. Programs end in an internal
+  `Instr::Return` (`just_return`); branches add their returned offset to `pc`.
+  `stack_checkpoint`/`stack_rewind` are no-ops (a program with `stack_rewind` is highp and gets
+  a leading `stack_checkpoint`, as in `buildHighpPipeline`). lowp `gg`/`gp` arms join `x` from
+  `r,g` and `y` from `b,a` and split them back, as `LOWP_STAGE_GG`/`_GP`. (The Windows oracle's
+  narrow ABI keeps `dr..da` in `Params` across a row's chunks; Linux/macOS Skia zeroes them per
+  chunk like us. Only pipelines that read `dr..da` before writing them could tell.)
+- **Tail patching** is Skia's: `Program` owns one zeroed `[u8; 256]` scratch per registered
+  `MemoryCtx` (`memory_ctx_infos` ports `uncheckedAppend`'s color-type switch and
+  `addMemoryContext`, including emboss's two contexts); before the tail chunk the loaded
+  contexts' `tail*bpp` bytes are copied in, `ptr_at_xy` returns the scratch while the tail byte
+  is not `0xFF`, and the stored contexts' `tail*bpp` bytes are copied back. Scratch persists
+  across `Program::run` calls (compile semantics), so lanes past a shorter tail hold the previous
+  tail's bytes; `RasterPipeline::run` builds a fresh `Program` (zeroed scratch). A
+  store-registered context writes its scratch back over the tail even if no store ran, as in
+  Skia. Every access is bounds-checked (panics, never UB).
+- **Dispatch.** `Program::new(stages, selection, force_highp)` = `buildLowpPipeline` /
+  `buildHighpPipeline` + `compile`; `Program::run` dispatches on `(tier, backend)`: natives take
+  their token and call the `#[target_feature]` entry in one `unsafe` block each (2 blocks in the
+  `native!` macro, highp/lowp, instantiated for the 5 SIMD tiers), models and Scalar are plain
+  calls. Every `Tier` × `Backend` that `Selection::check` accepts runs.
+- **Builder.** `skia_rust_core::raster_pipeline::RasterPipeline` has the part of
+  `SkRasterPipeline` A3 needs: `append` (with Skia's debug assertions), `unchecked_append`,
+  `empty`, `stages_needed`, `run(x, y, w, h, &mut MemoryBindings)`, `compile() ->
+  CompiledPipeline`, and `set_force_high_precision` for `gForceHighPrecisionRasterPipeline`. A4
+  adds the appenders, `extend` and `dump`.
+- **Implemented stages:** `seed_shader`, `load_src`, `store_src`, `store_src_a`, `load_dst`,
+  `store_dst`, `move_src_dst`, `move_dst_src`, `swap_src_dst`, `srcover` (B3's file; the
+  `SkRasterPipeline_nonsense` test needs it), all highp and lowp; highp `jump`,
+  `branch_if_{all,any,no}_lanes_active`, `branch_if_no_active_lanes_eq`, `stack_checkpoint`,
+  `stack_rewind`, `set_base_pointer`. Tests (`rp/tests.rs`): op list, program layout, memory
+  registration, tail patching and stale scratch lanes (R8), known answers on every selection
+  (Scalar and the `AmdZen4`/`Arm` models also under Miri), and stage twins native vs
+  `Model(Host)` vs `Model(AmdZen4)` (`Model(Arm)` for Neon) on random/special lanes (srcover compares only NaN-ness where two NaNs meet in
+  its `mad`).
+- **`vx` changes.** `Vec::load_bytes`/`store_bytes` (and on `S`) = `sk_unaligned_load/store`
+  from/to bytes, via new `Lane::load_ne`/`store_ne`; `Vec::bit_cast` now goes through a byte
+  buffer (LLVM turns it into a register bitcast; the byte-wise form scalarized lowp `join`).
+- **Benchmark** (R3; `cargo run --release -p skia-rust-simd --example rp_bench`, Skia:
+  `oracle/rp-bench/rp_bench.cpp` built by `build.ps1` against the oracle's static libraries, run
+  with `SKIA_ORACLE_CPU_CAP=baseline`). SkRPBench's harness (`run(0, 0, 128, 1)` in a loop, best of
+  7) over pipelines of A3 stages, Zen 4 (7800X3D), ns per 128 pixels, compiled program
+  (`compile()` once) and in parentheses per-call build (`run()`):
+
+  | Pipeline | Tier | Skia lowp | ours lowp | Skia highp | ours highp |
+  |---|---|---|---|---|---|
+  | `srcover` | Sse2 | 50 (64) | 80 (154) | 59 (64) | 78 (149) |
+  | | Sse41 | 50 (51) | 92 (165) | 58 (62) | 81 (155) |
+  | `seed_shader, store_src` | Sse2 | 37 (45) | 88 (164) | 66 (73) | 113 (188) |
+  | | Sse41 | 37 (40) | 100 (175) | 66 (67) | 123 (190) |
+  | `load_src, load_dst, srcover, store_dst` | Sse2 | 75 (91) | 152 (235) | 131 (147) | 221 (290) |
+  | | Sse41 | 75 (84) | 172 (247) | 130 (150) | 227 (310) |
+
+  Scalar (ours; Skia's scalar build is not in the oracle set): 224, 323, 591 ns. Ml3/Ml4 (ours,
+  compiled, lowp / highp; the lowp numbers vary by up to 1.6x between runs): Ml3 `srcover`
+  125–163 / 42, `seed_shader, store_src` 45–105 / 63–86, four stages 146–181 / 107–113; Ml4
+  145–238 / 26, 61–66 / 61, 158–242 / 64. The 16-lane lowp interpreters are the slowest
+  relative to their highp (register pressure in the giant `match`). (The oracle harness could not force Skia's ml3/ml4 path:
+  `SKIA_ORACLE_CPU_CAP=ml3` still reported the SSE strides, so no Skia numbers for them yet.) So the
+  interpreter is **1.3–2.7× slower than Skia** on these short pipelines (compiled), and building
+  a `Program` per `run()` costs ~75 ns more than Skia's stack-allocated build (three heap
+  allocations). Found while measuring: LLVM hoists loop-invariant parts of stage arms (anything
+  depending only on `dx`/`dy`/the tail) into every chunk's entry, for every program; keep such
+  computations cheap or out of line (`branch_if_all_lanes_active`'s tail mask is
+  `#[inline(never)]`). Next steps (before Wave B's memory stages make this matter): fused
+  programs for the hot blitter sequences (above), allocation-free `Program` building for
+  `run()`, and a codegen check of the lowp register shuffles (LLVM splits some `U16` registers
+  across GPR/XMM halves in the giant function).
+
 ### 2.7 The builder (`SkRasterPipeline.cpp`)
 
 Ported 1:1 in core: `append`, `appendMatrix` (op choice by matrix type), `appendConstantColor`

@@ -108,6 +108,39 @@ impl<const N: usize, T: Lane> Vec<N, T> {
         dst[..N].copy_from_slice(&self.0);
     }
 
+    /// `sk_unaligned_load<Vec<N,T>>(ptr)` from bytes: the `N` lanes stored native-endian in the
+    /// first `N * size_of::<T>()` bytes of `src` (any alignment).
+    ///
+    /// # Panics
+    /// If `src` is shorter than `N * size_of::<T>()` bytes.
+    #[must_use]
+    #[doc(alias = "sk_unaligned_load")]
+    #[inline(always)]
+    pub fn load_bytes(src: &[u8]) -> Self {
+        let size = size_of::<T>();
+        let src = &src[..N * size];
+        let mut out = [T::ZERO; N];
+        for (i, lane) in out.iter_mut().enumerate() {
+            *lane = T::load_ne(&src[i * size..]);
+        }
+        Self(out)
+    }
+
+    /// `sk_unaligned_store(ptr, v)` to bytes: writes the `N` lanes native-endian to the first
+    /// `N * size_of::<T>()` bytes of `dst` (any alignment).
+    ///
+    /// # Panics
+    /// If `dst` is shorter than `N * size_of::<T>()` bytes.
+    #[doc(alias = "sk_unaligned_store")]
+    #[inline(always)]
+    pub fn store_bytes(&self, dst: &mut [u8]) {
+        let size = size_of::<T>();
+        let dst = &mut dst[..N * size];
+        for (i, lane) in self.0.iter().enumerate() {
+            lane.store_ne(&mut dst[i * size..]);
+        }
+    }
+
     /// Applies `f` to each lane: `map(fn, x)`.
     #[must_use]
     #[inline(always)]
@@ -132,16 +165,30 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     #[doc(alias = "sk_bit_cast")]
     // Port of: src/core/SkUtils.h#L66-L73 (chrome/m156) (`sk_bit_cast`), as used on vectors.
     pub fn bit_cast<const M: usize, U: Lane>(self) -> Vec<M, U> {
+        const MAX_BYTES: usize = 256;
         const {
             assert!(
                 N * size_of::<T>() == M * size_of::<U>(),
                 "bit_cast between vectors of different sizes"
             );
         }
-        let byte = |i: usize| self.0[i / size_of::<T>()].ne_byte(i % size_of::<T>());
-        Vec(array::from_fn(|j| {
-            U::from_ne_byte_fn(|k| byte(j * size_of::<U>() + k))
-        }))
+        // Through a byte buffer, like `memcpy`: LLVM turns this into a register bitcast (the
+        // byte-wise form it does not always see through).
+        const {
+            assert!(
+                N * size_of::<T>() <= MAX_BYTES,
+                "bit_cast of a vector larger than 256 bytes"
+            );
+        }
+        let mut bytes = [0u8; MAX_BYTES];
+        for (i, lane) in self.0.iter().enumerate() {
+            lane.store_ne(&mut bytes[i * size_of::<T>()..]);
+        }
+        let mut out = [U::ZERO; M];
+        for (j, lane) in out.iter_mut().enumerate() {
+            *lane = U::load_ne(&bytes[j * size_of::<U>()..]);
+        }
+        Vec(out)
     }
 
     // Comparisons. Port of: src/core/SkVx.h#L313-L330 and L432-L451 (chrome/m156)

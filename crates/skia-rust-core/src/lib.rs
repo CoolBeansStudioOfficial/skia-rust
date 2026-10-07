@@ -77,6 +77,7 @@ pub mod point;
 pub mod point3;
 pub mod quads;
 pub mod random;
+pub mod raster_pipeline;
 #[doc(hidden)]
 pub mod read_pixels_rec;
 pub mod rect;

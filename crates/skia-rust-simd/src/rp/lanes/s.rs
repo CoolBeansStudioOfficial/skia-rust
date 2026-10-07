@@ -79,6 +79,26 @@ impl<T: Lane> S<T> {
         dst[0] = self.0;
     }
 
+    /// Reads the lane from the first `size_of::<T>()` bytes of `src`, native-endian (the
+    /// counterpart of [`Vec::load_bytes`](crate::vx::Vec::load_bytes)).
+    ///
+    /// # Panics
+    /// If `src` is shorter than `size_of::<T>()` bytes.
+    #[inline(always)]
+    #[must_use]
+    pub fn load_bytes(src: &[u8]) -> Self {
+        Self(T::load_ne(src))
+    }
+
+    /// Writes the lane to the first `size_of::<T>()` bytes of `dst`, native-endian.
+    ///
+    /// # Panics
+    /// If `dst` is shorter than `size_of::<T>()` bytes.
+    #[inline(always)]
+    pub fn store_bytes(&self, dst: &mut [u8]) {
+        self.0.store_ne(dst);
+    }
+
     /// Applies `f` to the lane.
     #[inline(always)]
     #[must_use]
