@@ -11,7 +11,7 @@ use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
-use skia_rust_core::scalar::{scalar_cos, scalar_sin, SCALAR_PI};
+use skia_rust_core::scalar::{SCALAR_PI, scalar_cos, scalar_sin};
 
 const K_PAD_SIZE: i32 = 20;
 const K_BOX_SIZE: i32 = 100;
@@ -110,6 +110,7 @@ impl GM for SharedCornersGM {
         "sharedcorners".to_owned()
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)] // a 3-element array length
     fn size(&mut self) -> ISize {
         const NUM_ROWS: i32 = 3 * 2;
         const NUM_COLS: i32 = (1 + K_JITTERS.len() as i32) * 2;
@@ -205,7 +206,13 @@ impl GM for SharedCornersGM {
         // Right angles.
         self.draw_triangle_boxes(
             canvas,
-            &[p(0.0, 0.0), p(-1.0, 0.0), p(0.0, -1.0), p(1.0, 0.0), p(0.0, 1.0)],
+            &[
+                p(0.0, 0.0),
+                p(-1.0, 0.0),
+                p(0.0, -1.0),
+                p(1.0, 0.0),
+                p(0.0, 1.0),
+            ],
             &[[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1]],
         );
 

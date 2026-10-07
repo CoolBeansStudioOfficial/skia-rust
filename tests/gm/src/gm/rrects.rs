@@ -67,21 +67,15 @@ impl RRectGM {
 
         // The first complex case needs special handling since it is a square
         let g_radii = g_radii();
-        rr[K_NUM_SIMPLE_CASES].set_rect_radii(
-            Rect::from_wh(tile_y - 2.0, tile_y - 2.0),
-            &g_radii[0],
-        );
+        rr[K_NUM_SIMPLE_CASES]
+            .set_rect_radii(Rect::from_wh(tile_y - 2.0, tile_y - 2.0), &g_radii[0]);
         for (i, radii) in g_radii.iter().enumerate().skip(1) {
             rr[K_NUM_SIMPLE_CASES + i]
                 .set_rect_radii(Rect::from_wh(tile_x - 2.0, tile_y - 2.0), radii);
         }
         // The last case is larger than kTileX-2 x kTileY-2 but will be drawn at an offset
         // into a clip rect that respects the tile size and highlights the rrect's corner curve.
-        rr[K_NUM_RRECTS - 1].set_rect_xy(
-            Rect::new(9.0, 9.0, 1699.0, 1699.0),
-            843.749,
-            843.75,
-        );
+        rr[K_NUM_RRECTS - 1].set_rect_xy(Rect::new(9.0, 9.0, 1699.0, 1699.0), 843.749, 843.75);
     }
 }
 
@@ -182,7 +176,12 @@ fn g_radii() -> [[Vector; 4]; K_NUM_COMPLEX_CASES] {
         // over-sized radii
         [z, v(100.0, 400.0), z, z],
         [z, v(400.0, 400.0), z, z],
-        [v(400.0, 400.0), v(400.0, 400.0), v(400.0, 400.0), v(400.0, 400.0)],
+        [
+            v(400.0, 400.0),
+            v(400.0, 400.0),
+            v(400.0, 400.0),
+            v(400.0, 400.0),
+        ],
         // circular corner tabs
         [z, v(20.0, 20.0), v(20.0, 20.0), z],
         [v(20.0, 20.0), v(20.0, 20.0), z, z],
@@ -221,7 +220,8 @@ crate::def_gm!(
 // different stroke width and join type scenarios. The geometry parameters are chosen so that
 // Graphite should be able to use its AnalyticRoundRectRenderStep and batch into a single draw.
 // Port of: gm/rrects.cpp#L298-L474 (chrome/m156)
-crate::def_simple_gm!(stroke_rect_rrects, canvas, 1350, 700, {
+#[allow(clippy::too_many_lines, clippy::explicit_counter_loop)] // mirrors the C++ function
+fn draw_stroke_rect_rrects(canvas: &Canvas) {
     canvas.scale((0.5, 0.5));
     canvas.translate((50.0, 50.0));
 
@@ -336,10 +336,26 @@ crate::def_simple_gm!(stroke_rect_rrects, canvas, 1350, 700, {
         let k_rect_corner = Vector::new(0.0, 0.0);
 
         let stroke_radii: [Vector; 4] = [
-            if cy % 2 != 0 { k_rect_corner } else { k_big_corner },
-            if cy % 2 != 0 { k_big_corner } else { k_rect_corner },
-            if cy % 2 != 0 { k_rect_corner } else { k_big_corner },
-            if cy % 2 != 0 { k_big_corner } else { k_rect_corner },
+            if cy % 2 != 0 {
+                k_rect_corner
+            } else {
+                k_big_corner
+            },
+            if cy % 2 != 0 {
+                k_big_corner
+            } else {
+                k_rect_corner
+            },
+            if cy % 2 != 0 {
+                k_rect_corner
+            } else {
+                k_big_corner
+            },
+            if cy % 2 != 0 {
+                k_big_corner
+            } else {
+                k_rect_corner
+            },
         ];
 
         let mut r = RRect::default();
@@ -384,9 +400,17 @@ crate::def_simple_gm!(stroke_rect_rrects, canvas, 1350, 700, {
 
         let xor = (cx % 2 != 0) ^ (cy % 2 != 0);
         let stroke_radii: [Vector; 4] = [
-            if cx % 2 != 0 { k_rect_corner } else { k_big_corner },
+            if cx % 2 != 0 {
+                k_rect_corner
+            } else {
+                k_big_corner
+            },
             if xor { k_big_corner } else { k_rect_corner },
-            if cx % 2 != 0 { k_big_corner } else { k_rect_corner },
+            if cx % 2 != 0 {
+                k_big_corner
+            } else {
+                k_rect_corner
+            },
             if xor { k_rect_corner } else { k_big_corner },
         ];
 
@@ -410,4 +434,8 @@ crate::def_simple_gm!(stroke_rect_rrects, canvas, 1350, 700, {
         }
         i += 1;
     }
+}
+
+crate::def_simple_gm!(stroke_rect_rrects, canvas, 1350, 700, {
+    draw_stroke_rect_rrects(canvas);
 });

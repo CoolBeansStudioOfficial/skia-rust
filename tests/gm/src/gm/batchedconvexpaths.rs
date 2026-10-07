@@ -21,6 +21,7 @@ impl GM for BatchedConvexPathsGM {
     }
 
     #[allow(clippy::cast_precision_loss)] // int -> float arithmetic as in C++
+    #[allow(clippy::float_cmp)] // `j+2 == numPoints` in C++
     fn on_draw_with_error(&mut self, canvas: &Canvas, _error_msg: &mut String) -> DrawResult {
         canvas.clear(Color::BLACK);
         for i in 0u32..10 {
@@ -38,8 +39,16 @@ impl GM for BatchedConvexPathsGM {
                     ((j / np * K2PI).cos(), (j / np * K2PI).sin()),
                     (((j + 1.0) / np * K2PI).cos(), ((j + 1.0) / np * K2PI).sin()),
                     (
-                        if last { 1.0 } else { ((j + 2.0) / np * K2PI).cos() },
-                        if last { 0.0 } else { ((j + 2.0) / np * K2PI).sin() },
+                        if last {
+                            1.0
+                        } else {
+                            ((j + 2.0) / np * K2PI).cos()
+                        },
+                        if last {
+                            0.0
+                        } else {
+                            ((j + 2.0) / np * K2PI).sin()
+                        },
                     ),
                 );
                 j += 3.0;
@@ -66,4 +75,7 @@ impl GM for BatchedConvexPathsGM {
 }
 
 // Port of: gm/batchedconvexpaths.cpp#L67 (chrome/m156)
-crate::def_gm!(BatchedConvexPathsGM_ = "BatchedConvexPathsGM", BatchedConvexPathsGM);
+crate::def_gm!(
+    BatchedConvexPathsGM_ = "BatchedConvexPathsGM",
+    BatchedConvexPathsGM
+);

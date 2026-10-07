@@ -137,5 +137,11 @@ impl GM for ComplexClip4GM {
 }
 
 // Port of: gm/complexclip4.cpp#L131-L132 (chrome/m156)
-crate::def_gm!(ComplexClip4GM_false = "ComplexClip4GM(false)", ComplexClip4GM::new(false));
-crate::def_gm!(ComplexClip4GM_true = "ComplexClip4GM(true)", ComplexClip4GM::new(true));
+crate::def_gm!(
+    ComplexClip4GM_false = "ComplexClip4GM(false)",
+    ComplexClip4GM::new(false)
+);
+crate::def_gm!(
+    ComplexClip4GM_true = "ComplexClip4GM(true)",
+    ComplexClip4GM::new(true)
+);

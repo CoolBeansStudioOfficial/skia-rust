@@ -11,7 +11,7 @@ use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::scalar::{scalar_cos, scalar_sin};
 
-#[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
 fn skbug_40038820_points() -> [(f32, f32); 4] {
     [
         (1.98009784, 9.0162744),
@@ -38,7 +38,10 @@ crate::def_simple_gm!(analytic_antialias_convex, canvas, W, H, {
 
     canvas.translate((0.0, y));
     canvas.rotate(1.0, None);
-    canvas.draw_rect(skia_rust_core::rect::Rect::new(20.0, 20.0, 200.0, 200.0), &p);
+    canvas.draw_rect(
+        skia_rust_core::rect::Rect::new(20.0, 20.0, 200.0, 200.0),
+        &p,
+    );
     canvas.restore();
 
     y += 200.0;
@@ -47,14 +50,17 @@ crate::def_simple_gm!(analytic_antialias_convex, canvas, W, H, {
     canvas.translate((0.0, y));
     canvas.rotate(1.0, None);
     canvas.draw_rect(skia_rust_core::rect::Rect::new(20.0, 20.0, 20.2, 200.0), &p);
-    canvas.draw_rect(skia_rust_core::rect::Rect::new(20.0, 200.0, 200.0, 200.1), &p);
+    canvas.draw_rect(
+        skia_rust_core::rect::Rect::new(20.0, 200.0, 200.0, 200.1),
+        &p,
+    );
     canvas.draw_circle((100.0, 100.0), 30.0, &p);
     canvas.restore();
 
     // The following path is empty but it'll reveal bug chrome:662914
     let mut pb = PathBuilder::new();
     pb.move_to((bits_to_float(0x429b_9d5c), bits_to_float(0x4367_a041))); // 77.8073f, 231.626f
-                                                                          // 77.8075f, 231.626f, 77.8074f, 231.625f, 77.8073f, 231.625f
+    // 77.8075f, 231.626f, 77.8074f, 231.625f, 77.8073f, 231.625f
     pb.cubic_to(
         (bits_to_float(0x429b_9d71), bits_to_float(0x4367_a022)),
         (bits_to_float(0x429b_9d64), bits_to_float(0x4367_a009)),
@@ -87,7 +93,8 @@ crate::def_simple_gm!(analytic_antialias_convex, canvas, W, H, {
 });
 
 // Port of: gm/aaa.cpp#L78-L123 (chrome/m156)
-crate::def_simple_gm!(analytic_antialias_general, canvas, W, H, {
+#[allow(clippy::unreadable_literal)] // the C++ literal, digit for digit
+fn draw_analytic_antialias_general(canvas: &Canvas) {
     let mut p = Paint::default();
     p.set_color(Color::RED);
     p.set_anti_alias(true);
@@ -153,6 +160,10 @@ crate::def_simple_gm!(analytic_antialias_general, canvas, W, H, {
             .detach(),
         &p,
     );
+}
+
+crate::def_simple_gm!(analytic_antialias_general, canvas, W, H, {
+    draw_analytic_antialias_general(canvas);
 });
 
 // Port of: gm/aaa.cpp#L125-L136 (chrome/m156)

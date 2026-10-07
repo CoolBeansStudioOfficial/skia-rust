@@ -5,14 +5,14 @@
 
 //! The parts of `ToolUtils` that GMs use.
 
-use skia_rust_core::color::{pre_multiply_color, Color};
+use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_data::{pixel16_to_color, pixel32_to_pixel16};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::{scalar_cos, scalar_sin, SCALAR_PI};
+use skia_rust_core::scalar::{SCALAR_PI, scalar_cos, scalar_sin};
 
 /// `ToolUtils::color_to_565`: rounds `color` to what a 565 surface would store.
 // Port of: tools/ToolUtils.cpp#L142-L151 (chrome/m156)
@@ -34,7 +34,7 @@ pub fn color_to_565(color: impl Into<Color>) -> Color {
 #[must_use]
 #[allow(clippy::cast_precision_loss)] // int * SkScalar arithmetic as in C++
 pub fn make_star(bounds: &Rect, num_pts: i32, step: i32) -> Path {
-    debug_assert!(num_pts != step);
+    debug_assert_ne!(num_pts, step);
     let mut builder = PathBuilder::new();
     builder.set_fill_type(PathFillType::EvenOdd);
     builder.move_to((0.0, -1.0));
@@ -46,5 +46,9 @@ pub fn make_star(bounds: &Rect, num_pts: i32, step: i32) -> Path {
         builder.line_to((x, y));
     }
     let path = builder.detach();
-    path.make_transform(&Matrix::rect_to_rect_or_identity(path.bounds(), bounds, None))
+    path.make_transform(&Matrix::rect_to_rect_or_identity(
+        path.bounds(),
+        bounds,
+        None,
+    ))
 }

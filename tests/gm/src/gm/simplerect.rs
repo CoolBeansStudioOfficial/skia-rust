@@ -30,7 +30,9 @@ impl GM for SimpleRectGM {
         let mut rand = Random::default();
         let mut paint = Paint::default();
         for _ in 0..10000 {
-            paint.set_color(crate::tool_utils::color_to_565(rand.next_u() | (0xFF << 24)));
+            paint.set_color(crate::tool_utils::color_to_565(
+                rand.next_u() | (0xFF << 24),
+            ));
             let x = rand.next_range_scalar(min, max);
             let y = rand.next_range_scalar(min, max);
             let w = rand.next_range_scalar(0.0, size);

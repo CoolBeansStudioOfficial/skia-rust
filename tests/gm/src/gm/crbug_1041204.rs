@@ -9,7 +9,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 
 // Port of: gm/crbug_1041204.cpp#L21-L24 (chrome/m156)
-#[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
 fn matrix() -> Matrix {
     Matrix::new_all(
         -0.0005550860255665798,
@@ -25,7 +25,7 @@ fn matrix() -> Matrix {
 }
 
 // Port of: gm/crbug_1041204.cpp#L16-L34 (chrome/m156)
-#[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
 fn draw(canvas: &Canvas) {
     // While the coordinates are giant and the transform is not axis-aligned, this should
     // fill the screen left side with solid blue. This has an extra zoom factor compared to the

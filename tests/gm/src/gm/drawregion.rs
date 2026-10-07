@@ -8,9 +8,7 @@ use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::region::{Op, Region};
 
-/**
- *  This is very similar to the RectGrid macrobench in Android.
- */
+//  This is very similar to the RectGrid macrobench in Android.
 // Port of: gm/drawregion.cpp#L16-L50 (chrome/m156)
 struct DrawRegionGM {
     region: Region,
@@ -30,7 +28,8 @@ impl GM for DrawRegionGM {
         while x < 250 {
             let mut y = 50;
             while y < 250 {
-                self.region.op_rect(IRect::new(x, y, x + 1, y + 1), Op::Union);
+                self.region
+                    .op_rect(IRect::new(x, y, x + 1, y + 1), Op::Union);
                 y += 2;
             }
             x += 2;

@@ -11,6 +11,8 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::SCALAR_PI;
 
 const K_SIZE: i32 = 1000;
+const K_GRID_COUNT: i32 = 50;
+const K_NUM_PETALS: i32 = 9;
 
 // Makes sure PathInnerTriangulateOp uses correct stencil settings when there is a clip in the
 // stencil buffer.
@@ -20,7 +22,6 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
     canvas.clear(Color::CYAN);
     let mut clip = PathBuilder::new();
     clip.set_fill_type(PathFillType::Winding);
-    const K_GRID_COUNT: i32 = 50;
     let k_cell_size: f32 = K_SIZE as f32 / K_GRID_COUNT as f32;
     let size = K_SIZE as f32;
     for y in 0..K_GRID_COUNT {
@@ -30,7 +31,12 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
             PathDirection::CCW
         };
         clip.add_rect(
-            Rect::new(0.0, y as f32 * k_cell_size, size, (y + 1) as f32 * k_cell_size),
+            Rect::new(
+                0.0,
+                y as f32 * k_cell_size,
+                size,
+                (y + 1) as f32 * k_cell_size,
+            ),
             dir,
             None,
         );
@@ -42,7 +48,12 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
             PathDirection::CCW
         };
         clip.add_rect(
-            Rect::new(x as f32 * k_cell_size, 0.0, (x + 1) as f32 * k_cell_size, size),
+            Rect::new(
+                x as f32 * k_cell_size,
+                0.0,
+                (x + 1) as f32 * k_cell_size,
+                size,
+            ),
             dir,
             None,
         );
@@ -50,7 +61,6 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
     canvas.clip_path(&clip.detach(), None, None);
     let mut flower = PathBuilder::new_with_fill_type(fill_type);
     flower.move_to((1.0, 0.0));
-    const K_NUM_PETALS: i32 = 9;
     for i in 1..=K_NUM_PETALS {
         let c: f32 = 2.0 * SCALAR_PI * (i as f32 - 0.5) / K_NUM_PETALS as f32;
         let theta: f32 = 2.0 * SCALAR_PI * i as f32 / K_NUM_PETALS as f32;

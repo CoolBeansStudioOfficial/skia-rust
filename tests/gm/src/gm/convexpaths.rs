@@ -14,6 +14,9 @@ use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 
+const K_LENGTH: i32 = 100;
+const K_PTS_PER_SIDE: i32 = 1 << 12;
+
 // Port of: gm/convexpaths.cpp#L33-L371 (chrome/m156)
 struct ConvexPathsGM {
     paths: Vec<Path>,
@@ -30,6 +33,7 @@ impl ConvexPathsGM {
 
     // Port of: gm/convexpaths.cpp#L43-L331 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
+    #[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
     fn make_paths(&mut self) {
         if self.done_once {
             return;
@@ -79,8 +83,6 @@ impl ConvexPathsGM {
         ));
 
         // large number of points
-        const K_LENGTH: i32 = 100;
-        const K_PTS_PER_SIDE: i32 = 1 << 12;
         #[allow(clippy::cast_precision_loss)] // SkIntToScalar
         let length = K_LENGTH as f32;
         #[allow(clippy::cast_precision_loss)] // SkIntToScalar
@@ -121,10 +123,7 @@ impl ConvexPathsGM {
         );
 
         // cubics
-        fp.push(
-            b.cubic_to((1.0, 1.0), (10.0, 90.0), (0.0, 100.0))
-                .detach(),
-        );
+        fp.push(b.cubic_to((1.0, 1.0), (10.0, 90.0), (0.0, 100.0)).detach());
         fp.push(
             b.cubic_to((100.0, 50.0), (20.0, 100.0), (0.0, 0.0))
                 .detach(),
@@ -265,10 +264,7 @@ impl ConvexPathsGM {
         fp.push(b.quad_to((100.0, 100.0), (0.0, 0.0)).detach());
         fp.push(b.quad_to((100.0, 100.0), (50.0, 50.0)).detach());
         fp.push(b.quad_to((50.0, 50.0), (100.0, 100.0)).detach());
-        fp.push(
-            b.cubic_to((0.0, 0.0), (0.0, 0.0), (100.0, 100.0))
-                .detach(),
-        );
+        fp.push(b.cubic_to((0.0, 0.0), (0.0, 0.0), (100.0, 100.0)).detach());
 
         // skbug.com/40040207
         let mut m = Matrix::new_identity();

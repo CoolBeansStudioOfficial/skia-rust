@@ -14,6 +14,7 @@ use skia_rust_core::scalar::{degrees_to_radians, scalar_cos, scalar_sin};
 
 // Port of: gm/convex_all_line_paths.cpp#L19-L31 (chrome/m156)
 #[allow(clippy::cast_precision_loss)] // int -> float arithmetic as in C++
+#[allow(clippy::cast_sign_loss)] // n is positive
 fn create_ngon(n: i32, pts: &mut [Point], width: f32, height: f32) {
     let angle_step: f32 = 360.0 / n as f32;
     let mut angle: f32 = 0.0;
@@ -38,9 +39,19 @@ fn g_points() -> Vec<Vec<Point>> {
         // narrow rect
         vec![p(-1.5, -50.0), p(1.5, -50.0), p(1.5, 50.0), p(-1.5, 50.0)],
         // narrow rect on an angle
-        vec![p(-50.0, -49.0), p(-49.0, -50.0), p(50.0, 49.0), p(49.0, 50.0)],
+        vec![
+            p(-50.0, -49.0),
+            p(-49.0, -50.0),
+            p(50.0, 49.0),
+            p(49.0, 50.0),
+        ],
         // trap - narrow on top - wide on bottom
-        vec![p(-10.0, -50.0), p(10.0, -50.0), p(50.0, 50.0), p(-50.0, 50.0)],
+        vec![
+            p(-10.0, -50.0),
+            p(10.0, -50.0),
+            p(50.0, 50.0),
+            p(-50.0, 50.0),
+        ],
         // wide skewed rect
         vec![p(-50.0, -50.0), p(0.0, -50.0), p(50.0, 50.0), p(0.0, 50.0)],
         // thin rect with colinear-ish lines
@@ -54,9 +65,19 @@ fn g_points() -> Vec<Vec<Point>> {
             p(-4.0, 50.0),
         ],
         // degenerate
-        vec![p(-0.025, -0.025), p(0.025, -0.025), p(0.025, 0.025), p(-0.025, 0.025)],
+        vec![
+            p(-0.025, -0.025),
+            p(0.025, -0.025),
+            p(0.025, 0.025),
+            p(-0.025, 0.025),
+        ],
         // Triangle in which the first point should fuse with last
-        vec![p(-20.0, -13.0), p(-20.0, -13.05), p(20.0, -13.0), p(20.0, 27.0)],
+        vec![
+            p(-20.0, -13.0),
+            p(-20.0, -13.05),
+            p(20.0, -13.0),
+            p(20.0, 27.0),
+        ],
         // thin rect with colinear lines
         vec![
             p(-10.0, -50.0),
@@ -138,6 +159,11 @@ impl ConvexLineOnlyPathsGM {
 
     // Port of: gm/convex_all_line_paths.cpp#L173-L249 (chrome/m156)
     #[allow(clippy::cast_precision_loss)] // SkIntToScalar and int / 2 in C++
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap
+    )] // small non-negative indices and counts
     fn get_path(&self, index: i32, dir: PathDirection) -> Path {
         let data: Vec<Point>;
         let points: &[Point];
@@ -151,7 +177,6 @@ impl ConvexLineOnlyPathsGM {
             let mut width: f32 = (K_MAX_PATH_HEIGHT / 2) as f32;
             let height: f32 = (K_MAX_PATH_HEIGHT / 2) as f32;
             match index as usize - self.points.len() {
-                0 => num_pts = 3,
                 1 => num_pts = 4,
                 2 => num_pts = 5,
                 3 => {
@@ -182,13 +207,13 @@ impl ConvexLineOnlyPathsGM {
 
         if PathDirection::CW == dir {
             builder.move_to(points[0]);
-            for i in 1..num_pts as usize {
-                builder.line_to(points[i]);
+            for pt in &points[1..num_pts as usize] {
+                builder.line_to(*pt);
             }
         } else {
             builder.move_to(points[num_pts as usize - 1]);
-            for i in (0..=(num_pts as usize - 2)).rev() {
-                builder.line_to(points[i]);
+            for pt in points[..num_pts as usize - 1].iter().rev() {
+                builder.line_to(*pt);
             }
         }
 
@@ -263,7 +288,7 @@ impl GM for ConvexLineOnlyPathsGM {
 
     // Port of: gm/convex_all_line_paths.cpp#L305-L407 (chrome/m156)
     #[allow(clippy::cast_precision_loss)] // SkIntToScalar
-    #[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+    #[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     fn on_draw(&mut self, canvas: &Canvas) {
         // the right edge of the last drawn path
@@ -353,7 +378,17 @@ impl GM for ConvexLineOnlyPathsGM {
             );
             canvas.save();
             let mut m = Matrix::new_identity();
-            m.set_all(0.0893210843, 0.0, 79.1197586, 0.0, 0.0893210843, 300.0, 0.0, 0.0, 1.0);
+            m.set_all(
+                0.0893210843,
+                0.0,
+                79.1197586,
+                0.0,
+                0.0893210843,
+                300.0,
+                0.0,
+                0.0,
+                1.0,
+            );
             canvas.concat(&m);
             canvas.draw_path(&p3, &paint);
             canvas.restore();

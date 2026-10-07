@@ -23,13 +23,13 @@ impl ThinRectsGM {
     // Port of: gm/thinrects.cpp#L67-L94 (chrome/m156)
     fn draw_vert_rects(&self, canvas: &Canvas, p: &Paint) {
         let vert_rects = [
-            Rect::new(1.0, 1.0, 5.0, 21.0),      // 4 pix wide
-            Rect::new(8.0, 1.0, 10.0, 21.0),     // 2 pix wide
-            Rect::new(13.0, 1.0, 14.0, 21.0),    // 1 pix wide
-            Rect::new(17.0, 1.0, 17.5, 21.0),    // 1/2 pix wide
-            Rect::new(21.0, 1.0, 21.25, 21.0),   // 1/4 pix wide
-            Rect::new(25.0, 1.0, 25.125, 21.0),  // 1/8 pix wide
-            Rect::new(29.0, 1.0, 29.0, 21.0),    // 0 pix wide
+            Rect::new(1.0, 1.0, 5.0, 21.0),     // 4 pix wide
+            Rect::new(8.0, 1.0, 10.0, 21.0),    // 2 pix wide
+            Rect::new(13.0, 1.0, 14.0, 21.0),   // 1 pix wide
+            Rect::new(17.0, 1.0, 17.5, 21.0),   // 1/2 pix wide
+            Rect::new(21.0, 1.0, 21.25, 21.0),  // 1/4 pix wide
+            Rect::new(25.0, 1.0, 25.125, 21.0), // 1/8 pix wide
+            Rect::new(29.0, 1.0, 29.0, 21.0),   // 0 pix wide
         ];
 
         let radii: [Vector; 4] = [
@@ -52,13 +52,13 @@ impl ThinRectsGM {
     // Port of: gm/thinrects.cpp#L96-L117 (chrome/m156)
     fn draw_horiz_rects(&self, canvas: &Canvas, p: &Paint) {
         let horiz_rects = [
-            Rect::new(1.0, 1.0, 21.0, 5.0),      // 4 pix high
-            Rect::new(1.0, 8.0, 21.0, 10.0),     // 2 pix high
-            Rect::new(1.0, 13.0, 21.0, 14.0),    // 1 pix high
-            Rect::new(1.0, 17.0, 21.0, 17.5),    // 1/2 pix high
-            Rect::new(1.0, 21.0, 21.0, 21.25),   // 1/4 pix high
-            Rect::new(1.0, 25.0, 21.0, 25.125),  // 1/8 pix high
-            Rect::new(1.0, 29.0, 21.0, 29.0),    // 0 pix high
+            Rect::new(1.0, 1.0, 21.0, 5.0),     // 4 pix high
+            Rect::new(1.0, 8.0, 21.0, 10.0),    // 2 pix high
+            Rect::new(1.0, 13.0, 21.0, 14.0),   // 1 pix high
+            Rect::new(1.0, 17.0, 21.0, 17.5),   // 1/2 pix high
+            Rect::new(1.0, 21.0, 21.0, 21.25),  // 1/4 pix high
+            Rect::new(1.0, 25.0, 21.0, 25.125), // 1/8 pix high
+            Rect::new(1.0, 29.0, 21.0, 29.0),   // 0 pix high
         ];
 
         let mut rrect = RRect::default();
@@ -75,13 +75,13 @@ impl ThinRectsGM {
     // Port of: gm/thinrects.cpp#L119-L139 (chrome/m156)
     fn draw_squares(&self, canvas: &Canvas, p: &Paint) {
         let squares = [
-            Rect::new(1.0, 1.0, 5.0, 5.0),          // 4 pix
-            Rect::new(8.0, 8.0, 10.0, 10.0),        // 2 pix
-            Rect::new(13.0, 13.0, 14.0, 14.0),      // 1 pix
-            Rect::new(17.0, 17.0, 17.5, 17.5),      // 1/2 pix
-            Rect::new(21.0, 21.0, 21.25, 21.25),    // 1/4 pix
-            Rect::new(25.0, 25.0, 25.125, 25.125),  // 1/8 pix
-            Rect::new(29.0, 29.0, 29.0, 29.0),      // 0 pix
+            Rect::new(1.0, 1.0, 5.0, 5.0),         // 4 pix
+            Rect::new(8.0, 8.0, 10.0, 10.0),       // 2 pix
+            Rect::new(13.0, 13.0, 14.0, 14.0),     // 1 pix
+            Rect::new(17.0, 17.0, 17.5, 17.5),     // 1/2 pix
+            Rect::new(21.0, 21.0, 21.25, 21.25),   // 1/4 pix
+            Rect::new(25.0, 25.0, 25.125, 25.125), // 1/8 pix
+            Rect::new(29.0, 29.0, 29.0, 29.0),     // 0 pix
         ];
 
         let mut rrect = RRect::default();
@@ -98,7 +98,12 @@ impl ThinRectsGM {
 
 impl GM for ThinRectsGM {
     fn name(&self) -> String {
-        if self.round { "thinroundrects" } else { "thinrects" }.to_owned()
+        if self.round {
+            "thinroundrects"
+        } else {
+            "thinrects"
+        }
+        .to_owned()
     }
 
     fn size(&mut self) -> ISize {
@@ -150,5 +155,11 @@ impl GM for ThinRectsGM {
 }
 
 // Port of: gm/thinrects.cpp#L143-L144 (chrome/m156)
-crate::def_gm!(ThinRectsGM_false = "ThinRectsGM(false)", ThinRectsGM::new(false));
-crate::def_gm!(ThinRectsGM_true = "ThinRectsGM(true)", ThinRectsGM::new(true));
+crate::def_gm!(
+    ThinRectsGM_false = "ThinRectsGM(false)",
+    ThinRectsGM::new(false)
+);
+crate::def_gm!(
+    ThinRectsGM_true = "ThinRectsGM(true)",
+    ThinRectsGM::new(true)
+);

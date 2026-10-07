@@ -157,17 +157,35 @@ impl GM for ShapesGM {
         self.simple_shape_count = self.shapes.len();
 
         let mut shape = RRect::default();
-        shape.set_nine_patch(Rect::from_xywh(140.0, -50.0, 90.0, 110.0), 10.0, 5.0, 25.0, 35.0);
+        shape.set_nine_patch(
+            Rect::from_xywh(140.0, -50.0, 90.0, 110.0),
+            10.0,
+            5.0,
+            25.0,
+            35.0,
+        );
         self.shapes.push(shape);
         self.rotations.push(0.0);
 
         let mut shape = RRect::default();
-        shape.set_nine_patch(Rect::from_xywh(160.0, -60.0, 60.0, 90.0), 10.0, 60.0, 50.0, 30.0);
+        shape.set_nine_patch(
+            Rect::from_xywh(160.0, -60.0, 60.0, 90.0),
+            10.0,
+            60.0,
+            50.0,
+            30.0,
+        );
         self.shapes.push(shape);
         self.rotations.push(-35.0);
 
         let mut shape = RRect::default();
-        shape.set_nine_patch(Rect::from_xywh(220.0, -120.0, 60.0, 90.0), 1.0, 89.0, 59.0, 1.0);
+        shape.set_nine_patch(
+            Rect::from_xywh(220.0, -120.0, 60.0, 90.0),
+            1.0,
+            89.0,
+            59.0,
+            1.0,
+        );
         self.shapes.push(shape);
         self.rotations.push(65.0);
 

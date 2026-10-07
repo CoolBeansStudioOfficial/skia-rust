@@ -12,6 +12,7 @@ use skia_rust_core::region::{Op, Region};
 
 const K_SIZE: i32 = 3 * 3 * 3 * 3 * 3;
 const K_TRANS: i32 = 10;
+const K_STEPS: i32 = 4;
 
 // Port of: gm/clip_sierpinski_region.cpp#L25-L51 (chrome/m156)
 crate::def_simple_gm!(
@@ -21,7 +22,6 @@ crate::def_simple_gm!(
     2 * K_TRANS + K_SIZE,
     {
         let mut region = Region::new();
-        const K_STEPS: i32 = 4;
         let mut n: i32 = 1;
         #[allow(clippy::cast_precision_loss)] // SkScalar s = kSize/3.f
         let mut s: f32 = K_SIZE as f32 / 3.0;

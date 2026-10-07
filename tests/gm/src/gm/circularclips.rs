@@ -54,6 +54,7 @@ impl GM for CircularClipsGM {
     }
 
     // Port of: gm/circularclips.cpp#L43-L82 (chrome/m156)
+    #[allow(clippy::manual_midpoint)] // mirrors the C++ arithmetic
     fn on_draw(&mut self, canvas: &Canvas) {
         let ops = [ClipOp::Difference, ClipOp::Intersect];
 

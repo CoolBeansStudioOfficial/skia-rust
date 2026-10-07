@@ -11,7 +11,7 @@ use skia_rust_core::path_utils::fill_path_with_paint_to_path;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
-use skia_rust_core::scalar::{scalar_cos, scalar_sin, SCALAR_PI};
+use skia_rust_core::scalar::{SCALAR_PI, scalar_cos, scalar_sin};
 
 fn p(x: f32, y: f32) -> Point {
     Point::new(x, y)
@@ -207,14 +207,30 @@ fn make_line() -> PathDY {
 }
 
 // Port of: gm/pathfill.cpp#L177-L208 (chrome/m156)
-#[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
 fn make_info() -> Path {
     let mut path = PathBuilder::new();
     path.move_to((24.0, 4.0));
-    path.cubic_to((12.94999980926514, 4.0), (4.0, 12.94999980926514), (4.0, 24.0));
-    path.cubic_to((4.0, 35.04999923706055), (12.94999980926514, 44.0), (24.0, 44.0));
-    path.cubic_to((35.04999923706055, 44.0), (44.0, 35.04999923706055), (44.0, 24.0));
-    path.cubic_to((44.0, 12.95000076293945), (35.04999923706055, 4.0), (24.0, 4.0));
+    path.cubic_to(
+        (12.94999980926514, 4.0),
+        (4.0, 12.94999980926514),
+        (4.0, 24.0),
+    );
+    path.cubic_to(
+        (4.0, 35.04999923706055),
+        (12.94999980926514, 44.0),
+        (24.0, 44.0),
+    );
+    path.cubic_to(
+        (35.04999923706055, 44.0),
+        (44.0, 35.04999923706055),
+        (44.0, 24.0),
+    );
+    path.cubic_to(
+        (44.0, 12.95000076293945),
+        (35.04999923706055, 4.0),
+        (24.0, 4.0),
+    );
     path.close();
     path.move_to((26.0, 34.0));
     path.line_to((22.0, 34.0));
@@ -232,14 +248,30 @@ fn make_info() -> Path {
 }
 
 // Port of: gm/pathfill.cpp#L210-L248 (chrome/m156)
-#[allow(clippy::excessive_precision)] // the C++ literals, digit for digit
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literals, digit for digit
 fn make_accessibility() -> Path {
     let mut path = PathBuilder::new();
     path.move_to((12.0, 2.0));
-    path.cubic_to((13.10000038146973, 2.0), (14.0, 2.900000095367432), (14.0, 4.0));
-    path.cubic_to((14.0, 5.099999904632568), (13.10000038146973, 6.0), (12.0, 6.0));
-    path.cubic_to((10.89999961853027, 6.0), (10.0, 5.099999904632568), (10.0, 4.0));
-    path.cubic_to((10.0, 2.900000095367432), (10.89999961853027, 2.0), (12.0, 2.0));
+    path.cubic_to(
+        (13.10000038146973, 2.0),
+        (14.0, 2.900000095367432),
+        (14.0, 4.0),
+    );
+    path.cubic_to(
+        (14.0, 5.099999904632568),
+        (13.10000038146973, 6.0),
+        (12.0, 6.0),
+    );
+    path.cubic_to(
+        (10.89999961853027, 6.0),
+        (10.0, 5.099999904632568),
+        (10.0, 4.0),
+    );
+    path.cubic_to(
+        (10.0, 2.900000095367432),
+        (10.89999961853027, 2.0),
+        (12.0, 2.0),
+    );
     path.close();
     path.move_to((21.0, 9.0));
     path.line_to((15.0, 9.0));
@@ -366,6 +398,7 @@ impl GM for PathFillGM {
         self.visualizer_path = make_visualizer();
     }
 
+    #[allow(clippy::excessive_precision, clippy::unreadable_literal)] // the C++ literal, digit for digit
     fn on_draw(&mut self, canvas: &Canvas) {
         let mut paint = Paint::default();
         paint.set_anti_alias(true);
@@ -403,7 +436,14 @@ impl PathInverseFillGM {
     }
 
     // Port of: gm/pathfill.cpp#L379-L388 (chrome/m156)
-    fn show(canvas: &Canvas, path: &Path, paint: &Paint, clip: Option<&Rect>, top: f32, bottom: f32) {
+    fn show(
+        canvas: &Canvas,
+        path: &Path,
+        paint: &Paint,
+        clip: Option<&Rect>,
+        top: f32,
+        bottom: f32,
+    ) {
         canvas.save();
         if let Some(clip) = clip {
             let mut r = *clip;
@@ -452,7 +492,14 @@ impl GM for PathInverseFillGM {
 
                 let clip_ptr = if doclip != 0 { Some(&clip_r) } else { None };
 
-                Self::show(canvas, &path, &paint, clip_ptr, clip_r.top, clip_r.center_y());
+                Self::show(
+                    canvas,
+                    &path,
+                    &paint,
+                    clip_ptr,
+                    clip_r.top,
+                    clip_r.center_y(),
+                );
                 Self::show(
                     canvas,
                     &path,
@@ -495,10 +542,14 @@ crate::def_simple_gm!(rotatedcubicpath, canvas, 200, 200, {
 
 // Port of: gm/pathfill.cpp#L448-L449 (chrome/m156)
 crate::def_gm!(PathFillGM_ = "PathFillGM", PathFillGM::new());
-crate::def_gm!(PathInverseFillGM_ = "PathInverseFillGM", PathInverseFillGM::new());
+crate::def_gm!(
+    PathInverseFillGM_ = "PathInverseFillGM",
+    PathInverseFillGM::new()
+);
 
 // Port of: gm/pathfill.cpp#L451-L596 (chrome/m156)
-crate::def_simple_gm!(bug7792, canvas, 800, 800, {
+#[allow(clippy::too_many_lines)] // mirrors the C++ function
+fn draw_bug7792(canvas: &Canvas) {
     // from skbug.com/40039046 bug description
     let p = Paint::default();
     let mut path = PathBuilder::new()
@@ -691,6 +742,10 @@ crate::def_simple_gm!(bug7792, canvas, 800, 800, {
         .close()
         .detach();
     canvas.draw_path(&path, &p);
+}
+
+crate::def_simple_gm!(bug7792, canvas, 800, 800, {
+    draw_bug7792(canvas);
 });
 
 // Port of: gm/pathfill.cpp#L637-L653 (chrome/m156)
