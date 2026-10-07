@@ -386,6 +386,7 @@ pub fn all() -> Vec<Case> {
     a3_seed_shader(&mut c);
     a3_branches(&mut c);
     a3_stack_and_base_pointer(&mut c);
+    crate::cases_memory::memory(&mut c);
     // Wave B: call your generators here.
     c.finish()
 }

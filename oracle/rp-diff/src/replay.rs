@@ -158,6 +158,28 @@ impl<'a> FromCtx<'a> for &'a UniformColorCtx {
     }
 }
 
+impl<'a> FromCtx<'a> for &'a GatherCtx<'a> {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match ctx {
+            Ctx::Gather {
+                pixels,
+                stride,
+                width,
+                height,
+                round_down_at_integer,
+            } => Ok(leak(GatherCtx {
+                pixels: Vec::leak(pixels.clone()),
+                stride: *stride,
+                width: *width,
+                height: *height,
+                weights: [0.0; 16],
+                round_down_at_integer: *round_down_at_integer,
+            })),
+            other => Err(wrong("GatherCtx", other)),
+        }
+    }
+}
+
 /// Context types rp-diff cannot build yet: `from_ctx` always fails, naming the type.
 macro_rules! unsupported {
     ($($ty:ty),* $(,)?) => { $(
@@ -182,7 +204,6 @@ unsupported!(
     MatrixMultiplyCtx,
     EmbossCtx,
     CaseOpCtx,
-    &'a GatherCtx<'a>,
     &'a SamplerCtx,
     &'a Conical2PtCtx,
     &'a UniformCtx<'a>,
