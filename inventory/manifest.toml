@@ -15225,7 +15225,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaa.cpp#L20-L76"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4aaf20ed953bccf560856b5d7d448d76160ef4d6c5aaeb03adf99a337175d28a"
 
 [[test]]
@@ -15234,7 +15234,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaa.cpp#L78-L119"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b11f768a5605744d4f60bde3bbcf4c865ee05be9d53d228a4873e5c9ff2bbba1"
 
 [[test]]
@@ -15243,7 +15243,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaa.cpp#L121-L132"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b5e37a715e8fb9b1e29fe181a045912e3800a2955758c8b753155e76c52e7879"
 
 [[test]]
@@ -15891,7 +15891,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bigrect.cpp#L76-L111"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4a565a6d028b48f82ea23596a6ec189df00ed585ea2febafda8b5beb62329dfc"
 
 [[test]]
@@ -16659,7 +16659,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/clip_rrects.cpp#L18-L102"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "bacc4f1c10e71bfabc0c265f46186d023fd586417eb6d681285230cdda387a17"
 
 [[test]]
@@ -16668,7 +16668,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/clip_sierpinski_region.cpp#L17-L39"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "6379cf8979bfad419638ac2558bed4396b07b43d5d5ba3d6197f709d8262b334"
 
 [[test]]
@@ -16677,7 +16677,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clip_strokerect.cpp#L70-L70"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "96e9068c2f6663849c4723222bcbb021140967492fe291ea4466dd485022e326"
 
 [[test]]
@@ -16686,7 +16686,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/clipdrawdraw.cpp#L57-L70"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1b9667fc72a45c6ca62c79ce7438025fa95e6a8af0961019473b17da7d200d8b"
 
 [[test]]
@@ -16695,7 +16695,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/clipdrawdraw.cpp#L43-L53"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e4970ba6118431af95960414fd4eb607cd6233113596361d581aff8b3ddbcc5e"
 
 [[test]]
@@ -17685,7 +17685,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L219-L219"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "cbbc9400a98331fff605baec3740c85a1b4e33700d8534538a0b03904d5d8c0a"
 
 [[test]]
@@ -17694,7 +17694,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L224-L224"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "59c61f3f0ca6c0349c2e564323951968421f4a07f141ea2392893ff86799374e"
 
 [[test]]
@@ -17703,7 +17703,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L218-L218"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "acb77b99b81464f3668f4b9be4489e6a524ce1dd8452277b0a01b30fadcb9175"
 
 [[test]]
@@ -17712,7 +17712,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L223-L223"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e2100f6ec08ad2a8cd42f0c247651d45aa5a0bfcbfd3eba45808633935c9fdec"
 
 [[test]]
@@ -17721,7 +17721,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L217-L217"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b61eb52153bf14c928e8bd3fb6f16e314a6bc4011e13c04d5cb2f345690c7de6"
 
 [[test]]
@@ -17730,7 +17730,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip2.cpp#L222-L222"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "0435a2d766644f5e0a2653462f94cafa38d1a8da0ed0657707fceb24af97b69c"
 
 [[test]]
@@ -17928,7 +17928,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/concavepaths.cpp#L368-L403"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d24bbe6f3aabf7c352d57f06f4624ae8bf961ed1db9be3c88aa9be8e57d80c40"
 
 [[test]]
@@ -18018,7 +18018,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/convexpaths.cpp#L265-L265"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "bf6a0b3199c6b58b9462444c4bd189b9432900948dfe02c06dd984d168e87f82"
 
 [[test]]
@@ -19036,7 +19036,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drrect.cpp#L73-L73"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f30aaa5ac79e44a310730bfae7b7c95ecd2e33d63de1b0b9b2c8c86610417350"
 
 [[test]]
@@ -19108,7 +19108,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emptypath.cpp#L191-L191"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "61053bc7610bef2835de60c829e36edcef42526f0bc2bb3fdeb4806ebb400177"
 
 [[test]]
@@ -19252,7 +19252,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filltypes.cpp#L96-L96"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1460f47ba35513bf4947f6979e56e315941bbbccc9225bfa4e4ee584fc83ce2a"
 
 [[test]]
@@ -21323,7 +21323,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/inverseclip.cpp#L13-L27"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d81cd2d392d80fdf851ff0cfa28fb612f7aca1010d7af4277a515cf36ad949e2"
 
 [[test]]
@@ -21980,7 +21980,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/nested.cpp#L143-L143"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "62cfa2f8247b429a9ea16930a0b31a281e1f284017cc9b7c516a63deaade509c"
 
 [[test]]
@@ -21989,7 +21989,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/nested.cpp#L145-L145"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "cd18ed38d33bbb34ea7dbeb9eebe8cd36f065cbf4c3ac7ccddafc9fec85cdc20"
 
 [[test]]
@@ -21998,7 +21998,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/nested.cpp#L142-L142"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "24b69848274180850df2384b7d7e1a68a5b7c558cccafdd5a278e655882b110c"
 
 [[test]]
@@ -22007,7 +22007,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/nested.cpp#L144-L144"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "ecf2392ca412693f13c75415bdf5513f9cfb984964deebd2487194734ea2eefb"
 
 [[test]]
@@ -22016,7 +22016,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/nested.cpp#L147-L182"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f008dbda115fa399ce66601d439722ef616f62599a72b8a6ae120c369728e77a"
 
 [[test]]
@@ -22367,7 +22367,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathfill.cpp#L439-L439"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "cf61fcb48d0d6482452054ed3bff5e959a1c192c4a7bf1b92ab5e40c0357e67d"
 
 [[test]]
@@ -22376,7 +22376,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathfill.cpp#L440-L440"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f6bcdc1eed88a148fdd6edb882298eefcbc7c53880a7ada54eb8e8f8dfb147f7"
 
 [[test]]
@@ -22385,7 +22385,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathfill.cpp#L442-L635"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b62d63eed9e0d8c3d2792d4548f00d9e3a693e13718983fae87623886aab12d0"
 
 [[test]]
@@ -22394,7 +22394,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathfill.cpp#L680-L696"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2875f22a5f7444fc6325f217421ecead43778b0c7f0d36fb21dbd41210ace55b"
 
 [[test]]
@@ -22403,7 +22403,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathfill.cpp#L698-L718"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a4b4ac8713d2db99c66e7ae03cd45014d1157841f28abb1e34c59095307ac06c"
 
 [[test]]
@@ -22412,7 +22412,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathfill.cpp#L720-L731"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "47ff029e9adb967a2bb8a4985cb1ee19d25cc4268ddca421c52c0f8079712ba1"
 
 [[test]]
@@ -22430,7 +22430,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathfill.cpp#L414-L435"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f1eec2c1dad8dfb190c1f9f499ac74855ee7afdbccf723bff2d8b0b16041887a"
 
 [[test]]
@@ -22439,7 +22439,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathinterior.cpp#L113-L113"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "38febc21c55d7e8f7c63af7025862398584395b2152b36f3ea94f393a98d72fd"
 
 [[test]]
@@ -22727,7 +22727,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/points.cpp#L72-L72"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "63c3605c22b1e80b30adbdeaaf7a8914f4ba0dcb5b8dc9d2310ac78aed1164fa"
 
 [[test]]
@@ -22970,7 +22970,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrect.cpp#L181-L181"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2e39b12aa431568ebf595a47b57e2ac23bc4d72505df3dbd14fef085deebfbb3"
 
 [[test]]
@@ -22997,7 +22997,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrects.cpp#L292-L292"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "afac481f24bc0d6ef2db0dde0eb90ef81ab9f2e291dce7cb4def0dcc42b9b149"
 
 [[test]]
@@ -23015,7 +23015,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrects.cpp#L293-L293"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2ff3d4bf4baec08e355cba3567f809256aef44a0797e7bed793d31b73c71a320"
 
 [[test]]
@@ -23033,7 +23033,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/rrects.cpp#L301-L474"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "79e9ff9f5009e526654abf5d67719931700e26ed73a2b7407c63fa7eb59573b7"
 
 [[test]]
