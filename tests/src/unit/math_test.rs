@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/MathTest.cpp (chrome/m156)
 //
-// Not ported yet (manifest stays `todo`): `Math`, `PopCount`, `divmod_*` (need SkRandom;
-// `Math` also needs SkPoint and SkHalf) and `NeonU16Div255` (ARM NEON intrinsics only).
+// Not ported yet (manifest stays `todo`): `Math` (needs SkPoint) and `NeonU16Div255` (ARM NEON
+// intrinsics only).
 
 #![cfg(test)]
 
@@ -17,7 +17,8 @@ use skia_rust_core::floating_point::{
     float_saturate2int, float_saturate2int64,
 };
 use skia_rust_core::math::{MAX_S32, MAX_S64, MIN_S32, MIN_S64};
-use skia_rust_core::math_priv::{next_pow2, next_size_pow2};
+use skia_rust_core::math_priv::{next_pow2, next_size_pow2, pop_count, t_div_mod};
+use skia_rust_core::random::Random;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::t_pin::t_pin;
 
@@ -374,4 +375,161 @@ def_test!(DoubleSaturate32, |reporter| {
         let i = double_saturate2int(r.f_double);
         reporter_assert!(reporter, r.f_expected_int == i);
     }
+});
+
+// Port of: tests/MathTest.cpp#L369-L407 (chrome/m156)
+def_test!(PopCount, |reporter| {
+    {
+        let test_val: u32 = 0;
+        reporter_assert!(reporter, pop_count(test_val) == 0);
+    }
+
+    for i in 0..32 {
+        let mut test_val: u32 = 0x1 << i;
+        reporter_assert!(reporter, pop_count(test_val) == 1);
+
+        test_val ^= 0xFFFF_FFFF;
+        reporter_assert!(reporter, pop_count(test_val) == 31);
+    }
+
+    {
+        let test_val: u32 = 0xFFFF_FFFF;
+        reporter_assert!(reporter, pop_count(test_val) == 32);
+    }
+
+    let mut rand = Random::default();
+    for _ in 0..100 {
+        let mut expected_num_set_bits: i32 = 0;
+        let mut test_val: u32 = 0;
+
+        let num_tries = rand.next_u_less_than(33);
+        for _ in 0..num_tries {
+            let bit = rand.next_range_u(0, 31);
+
+            if test_val & (0x1 << bit) != 0 {
+                continue;
+            }
+
+            expected_num_set_bits += 1;
+            test_val |= 0x1 << bit;
+        }
+
+        reporter_assert!(reporter, pop_count(test_val) == expected_num_set_bits);
+    }
+});
+
+// Port of: tests/MathTest.cpp#L556-L596 (chrome/m156)
+// The C++ template `test_divmod<T>` is instantiated per integer type with a macro.
+macro_rules! test_divmod {
+    ($name:ident, $t:ty) => {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        // mirrors the (T) casts of the C++
+        fn $name(r: &mut crate::Reporter) {
+            struct EdgeCases {
+                numer: $t,
+                denom: $t,
+            }
+            let k_edge_cases = [
+                EdgeCases {
+                    numer: 17_i32 as $t,
+                    denom: 17_i32 as $t,
+                },
+                EdgeCases {
+                    numer: 17_i32 as $t,
+                    denom: 4_i32 as $t,
+                },
+                EdgeCases {
+                    numer: 0_i32 as $t,
+                    denom: 17_i32 as $t,
+                },
+                // For unsigned T these negatives are just some large numbers.
+                // Doesn't hurt to test them.
+                EdgeCases {
+                    numer: -17_i32 as $t,
+                    denom: -17_i32 as $t,
+                },
+                EdgeCases {
+                    numer: -17_i32 as $t,
+                    denom: 4_i32 as $t,
+                },
+                EdgeCases {
+                    numer: 17_i32 as $t,
+                    denom: -4_i32 as $t,
+                },
+                EdgeCases {
+                    numer: -17_i32 as $t,
+                    denom: -4_i32 as $t,
+                },
+            ];
+
+            for edge in &k_edge_cases {
+                let numer: $t = edge.numer;
+                let denom: $t = edge.denom;
+                let (div, mod_) = t_div_mod(numer, denom);
+                reporter_assert!(r, numer / denom == div);
+                reporter_assert!(r, numer % denom == mod_);
+            }
+
+            let mut rand = Random::default();
+            for _ in 0..10000_usize {
+                let numer: $t = rand.next_s() as $t;
+                let mut denom: $t = 0;
+                while 0 == denom {
+                    denom = rand.next_s() as $t;
+                }
+                let (div, mod_) = t_div_mod(numer, denom);
+                reporter_assert!(r, numer / denom == div);
+                reporter_assert!(r, numer % denom == mod_);
+            }
+        }
+    };
+}
+
+test_divmod!(test_divmod_u8, u8);
+test_divmod!(test_divmod_u16, u16);
+test_divmod!(test_divmod_u32, u32);
+test_divmod!(test_divmod_u64, u64);
+test_divmod!(test_divmod_s8, i8);
+test_divmod!(test_divmod_s16, i16);
+test_divmod!(test_divmod_s32, i32);
+test_divmod!(test_divmod_s64, i64);
+
+// Port of: tests/MathTest.cpp#L598-L600 (chrome/m156)
+def_test!(divmod_u8, |r| {
+    test_divmod_u8(r);
+});
+
+// Port of: tests/MathTest.cpp#L602-L604 (chrome/m156)
+def_test!(divmod_u16, |r| {
+    test_divmod_u16(r);
+});
+
+// Port of: tests/MathTest.cpp#L606-L608 (chrome/m156)
+def_test!(divmod_u32, |r| {
+    test_divmod_u32(r);
+});
+
+// Port of: tests/MathTest.cpp#L610-L612 (chrome/m156)
+def_test!(divmod_u64, |r| {
+    test_divmod_u64(r);
+});
+
+// Port of: tests/MathTest.cpp#L614-L616 (chrome/m156)
+def_test!(divmod_s8, |r| {
+    test_divmod_s8(r);
+});
+
+// Port of: tests/MathTest.cpp#L618-L620 (chrome/m156)
+def_test!(divmod_s16, |r| {
+    test_divmod_s16(r);
+});
+
+// Port of: tests/MathTest.cpp#L622-L624 (chrome/m156)
+def_test!(divmod_s32, |r| {
+    test_divmod_s32(r);
+});
+
+// Port of: tests/MathTest.cpp#L626-L628 (chrome/m156)
+def_test!(divmod_s64, |r| {
+    test_divmod_s64(r);
 });

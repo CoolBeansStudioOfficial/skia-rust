@@ -29052,7 +29052,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ChecksumTest.cpp#L98-L105"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4314baa70be9c2e01b304e4c62429afa9a0a67073959205e413874b224a8caa6"
 
 [[test]]
@@ -31465,7 +31465,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Float16Test.cpp#L29-L29"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8402b46e12e83bdd35e58d19017d7e3886f49efe98ae8d5698ae38b9e8112489"
 
 [[test]]
@@ -31474,7 +31474,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Float16Test.cpp#L119-L127"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e5929c5eb22a0a807999dab94d4d00e7f3a53553c07a9f02f8c39b0dcefeb6bb"
 
 [[test]]
@@ -31483,7 +31483,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Float16Test.cpp#L129-L172"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0a93e4b1eb151a558cc5720d6a82b9d7ef5bcce9ed8f6f95ec9a2d04d567d639"
 
 [[test]]
@@ -35479,7 +35479,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L369-L407"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bb260ee359933de0676ced390bb026b73349d68ba8551295c4e2184601cf7005"
 
 [[test]]
@@ -35515,7 +35515,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L618-L620"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c4ec84523aa45d32aba5a93c7bacbaff67da690944e52faf95f789b5c1a87d3f"
 
 [[test]]
@@ -35524,7 +35524,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L622-L624"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ad7c2abf9610a80c58de8100e9e41253fe6430eba0c2d86329a3fc7991ea862"
 
 [[test]]
@@ -35533,7 +35533,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L626-L628"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "40cfc2bb23fe231869abe20c88050fa7fd5dce9baeba7b4de2de1e60a0afe6c6"
 
 [[test]]
@@ -35542,7 +35542,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L614-L616"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ee06091a4d50fa02ecf438b451e87c1aa6b51d0a653b5d37b1629204de1f92a"
 
 [[test]]
@@ -35551,7 +35551,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L602-L604"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "160c20c3334faa4e9a0523201f4f4b43b4fb5a15d8063a84f88fe77666606cce"
 
 [[test]]
@@ -35560,7 +35560,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L606-L608"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cc57467f45f8c36957f611aaaa9e3a05610589dd0cfc76323362716841c78e3c"
 
 [[test]]
@@ -35569,7 +35569,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L610-L612"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0ac9b8425639dd09e27d837f328f1f1909df86d8406f9dd5466fcd644b71d0d9"
 
 [[test]]
@@ -35578,7 +35578,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L598-L600"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c982539e1ac6420abbdfb63e9fed8614bd27381dc912652afcba6c195d915d8c"
 
 [[test]]

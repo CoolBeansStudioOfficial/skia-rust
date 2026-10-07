@@ -9,8 +9,8 @@
 // - `a == b`, `a < b`, ... on vectors are `a.eq_mask(b)`, `a.lt_mask(b)`, ... (they return masks).
 // - `shuffle<2,1,0,3>(v)` is `shuffle(v, [2, 1, 0, 3])`.
 // - `Vec{a, b}` is `Vec::from_list(&[a, b])` (missing lanes are zero); `Vec(s)` is `Vec::splat(s)`.
-// - `SkPoint`, `SkRandom` and `SkScalarNearlyEqual` are not ported to `skia_rust_core` yet, so
-//   minimal exact ports of just what this file uses live at the bottom of this file.
+// - `SkPoint` is not ported to `skia_rust_core` yet, so minimal exact ports of just what this
+//   file uses live at the bottom of this file.
 
 use skia_rust_simd::vx::{
     self, Byte2, Byte4, Byte8, Byte16, CastFrom, Double2, Double4, Float2, Float4, Float8, Int2,
@@ -18,6 +18,9 @@ use skia_rust_simd::vx::{
     from_half, if_then_else, isfinite, join, length, mull, naive_if_then_else, normalize,
     reduce_max, reduce_min, saturated_add, shuffle, sqrt, strided_load2, strided_load4, to_half,
 };
+
+use skia_rust_core::random::Random;
+use skia_rust_core::scalar::{Scalar, scalar};
 
 use crate::{Reporter, def_test, reporter_assert};
 
@@ -440,7 +443,7 @@ def_test!(
         reporter_assert!(r, dot(Int2::new(1, 1), Int2::new(1, 1)) == 2);
         reporter_assert!(r, dot(Int2::new(1, 1), Int2::new(-1, -1)) == -2);
 
-        let mut rand = SkRandom::new();
+        let mut rand = Random::default();
         for _ in 0..100 {
             let a = rand.next_range_f(-1.0, 1.0);
             let b = rand.next_range_f(-1.0, 1.0);
@@ -448,7 +451,7 @@ def_test!(
             let d = rand.next_range_f(-1.0, 1.0);
             reporter_assert!(
                 r,
-                sk_scalar_nearly_equal(
+                scalar::nearly_equal(
                     cross(Float2::new(a, b), Float2::new(c, d)),
                     sk_point_cross_product((a, b), (c, d)),
                     K_TOLERANCE
@@ -456,7 +459,7 @@ def_test!(
             );
             reporter_assert!(
                 r,
-                sk_scalar_nearly_equal(
+                scalar::nearly_equal(
                     dot(Float2::new(a, b), Float2::new(c, d)),
                     sk_point_dot_product((a, b), (c, d)),
                     K_TOLERANCE
@@ -590,7 +593,7 @@ def_test!(SkVx_saturated_add, |r| {
 fn assert_floats_equal(r: &mut Reporter, left: f32, right: f32) {
     reporter_assert!(
         r,
-        sk_scalar_nearly_equal(left, right, SK_SCALAR_NEARLY_ZERO),
+        scalar::nearly_equal(left, right, None),
         "{left:.6} != {right:.6}"
     );
 }
@@ -601,7 +604,7 @@ fn assert_floats_equal(r: &mut Reporter, left: f32, right: f32) {
 fn assert_doubles_equal(r: &mut Reporter, left: f64, right: f64) {
     reporter_assert!(
         r,
-        sk_scalar_nearly_equal(left as f32, right as f32, SK_SCALAR_NEARLY_ZERO),
+        scalar::nearly_equal(left as f32, right as f32, None),
         "{left:.6} != {right:.6}"
     );
 }
@@ -703,15 +706,6 @@ def_test!(SkVx_isfinite, |r| {
 
 // ---- Minimal ports of what this file needs from not-yet-ported Skia code. ----
 
-// Port of: include/core/SkScalar.h#L98-L110 (chrome/m156)
-const SK_SCALAR_NEARLY_ZERO: f32 = 1.0 / 4096.0; // SK_Scalar1 / (1 << 12)
-
-// Port of: include/core/SkScalar.h#L106-L110 (chrome/m156)
-fn sk_scalar_nearly_equal(x: f32, y: f32, tolerance: f32) -> bool {
-    debug_assert!(tolerance >= 0.0);
-    (x - y).abs() <= tolerance
-}
-
 // Port of: include/core/SkPoint.h#L532-L534 (chrome/m156)
 fn sk_point_cross_product(a: (f32, f32), b: (f32, f32)) -> f32 {
     a.0 * b.1 - a.1 * b.0
@@ -720,56 +714,4 @@ fn sk_point_cross_product(a: (f32, f32), b: (f32, f32)) -> f32 {
 // Port of: include/core/SkPoint.h#L518-L520 (chrome/m156)
 fn sk_point_dot_product(a: (f32, f32), b: (f32, f32)) -> f32 {
     a.0 * b.0 + a.1 * b.1
-}
-
-// Port of: src/core/SkRandom.h#L26-L171 (chrome/m156), the parts used here.
-struct SkRandom {
-    k: u32,
-    j: u32,
-}
-
-impl SkRandom {
-    const K_MUL: u32 = 1_664_525;
-    const K_ADD: u32 = 1_013_904_223;
-    const K_K_MUL: u32 = 30345;
-    const K_J_MUL: u32 = 18000;
-
-    fn next_lcg(seed: u32) -> u32 {
-        Self::K_MUL.wrapping_mul(seed).wrapping_add(Self::K_ADD)
-    }
-
-    /// `SkRandom()`: seed 0.
-    fn new() -> Self {
-        let mut k = Self::next_lcg(0);
-        if k == 0 {
-            k = Self::next_lcg(k);
-        }
-        let mut j = Self::next_lcg(k);
-        if j == 0 {
-            j = Self::next_lcg(j);
-        }
-        debug_assert!(k != 0 && j != 0);
-        Self { k, j }
-    }
-
-    fn next_u(&mut self) -> u32 {
-        self.k = Self::K_K_MUL
-            .wrapping_mul(self.k & 0xffff)
-            .wrapping_add(self.k >> 16);
-        self.j = Self::K_J_MUL
-            .wrapping_mul(self.j & 0xffff)
-            .wrapping_add(self.j >> 16);
-        self.k.rotate_left(16).wrapping_add(self.j) // (fK << 16) | (fK >> 16)
-    }
-
-    /// Returns value [0...1) as an IEEE float.
-    fn next_f(&mut self) -> f32 {
-        let floatint = 0x3f80_0000 | (self.next_u() >> 9);
-        f32::from_bits(floatint) - 1.0
-    }
-
-    /// Returns value [min...max) as a float.
-    fn next_range_f(&mut self, min: f32, max: f32) -> f32 {
-        min + self.next_f() * (max - min)
-    }
 }

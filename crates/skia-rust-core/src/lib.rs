@@ -5,6 +5,7 @@ pub mod checksum;
 pub mod endian;
 pub mod fixed;
 pub mod floating_point;
+pub mod half;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
