@@ -1,0 +1,148 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 07a3e96..ea0ff29 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -3113,6 +3113,8 @@ if (skia_enable_tools) {
+           "dm/DMJsonWriter.h",
+           "dm/DMSrcSink.cpp",
+           "dm/DMSrcSink.h",
++          "dm/OracleDump.cpp",
++          "dm/OracleDump.h",
+         ]
+         deps = [
+           ":common_flags_config",
+diff --git a/dm/DM.cpp b/dm/DM.cpp
+index ee1df4a..5706b36 100644
+--- a/dm/DM.cpp
++++ b/dm/DM.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include "dm/DMJsonWriter.h"
+ #include "dm/DMSrcSink.h"
++#include "dm/OracleDump.h"
+ #include "include/codec/SkCodec.h"
+ #include "include/codec/SkEncodedImageFormat.h"
+ #include "include/core/SkBBHFactory.h"
+@@ -1235,6 +1236,13 @@ struct Task {
+                                     result.c_str()));
+             }
+ 
++            if (OracleDump::Enabled()) {
++                sk_sp<SkData> bytes = stream.detachAsData();
++                OracleDump::Write(task.sink.tag, task.src.tag, task.src.options, name, bitmap,
++                                  bytes->data(), bytes->size());
++                stream.write(bytes->data(), bytes->size());
++            }
++
+             // We're likely switching threads here, so we must capture by value, [=] or [foo,bar].
+             SkStreamAsset* data = stream.detachAsStream().release();
+             gDefinitelyThreadSafeWork->add([task,name,bitmap,data]{
+diff --git a/src/core/SkCpu.cpp b/src/core/SkCpu.cpp
+index 07afa2d..801af92 100644
+--- a/src/core/SkCpu.cpp
++++ b/src/core/SkCpu.cpp
+@@ -24,6 +24,10 @@
+ #include "include/private/SkFeatures.h"
+ #include "include/private/SkOnce.h"
+ 
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++
+ #if defined(SK_CPU_X86)
+     #if defined(_MSC_VER)
+         #include <intrin.h>
+@@ -230,7 +234,30 @@ namespace {
+ 
+ uint32_t SkCpu::gCachedFeatures = 0;
+ 
++// skia-rust oracle: SKIA_ORACLE_CPU_CAP=baseline|ssse3|ml3|ml4 hides runtime CPU features above
++// that level, so one binary can produce the output of every runtime SkOpts tier. "baseline"
++// leaves only what the build's compile-time level guarantees (SkCpu::Supports ORs those back in).
++// Test tooling only.
++static uint32_t skia_oracle_cap_features(uint32_t features) {
++    const char* cap = getenv("SKIA_ORACLE_CPU_CAP");
++    if (!cap || !*cap) {
++        return features;
++    }
++    if (0 == strcmp(cap, "baseline")) { return 0; }
++#if defined(SK_CPU_X86)
++    constexpr uint32_t kAboveML3 = SkX64::AVX512F | SkX64::AVX512DQ | SkX64::AVX512IFMA |
++                                   SkX64::AVX512PF | SkX64::AVX512ER | SkX64::AVX512CD |
++                                   SkX64::AVX512BW | SkX64::AVX512VL;
++    constexpr uint32_t kUpToSSSE3 = SkX64::SSE1 | SkX64::SSE2 | SkX64::SSE3 | SkX64::SSSE3;
++    if (0 == strcmp(cap, "ssse3")) { return features & kUpToSSSE3; }
++    if (0 == strcmp(cap, "ml3"))   { return features & ~kAboveML3; }
++    if (0 == strcmp(cap, "ml4"))   { return features; }
++#endif
++    fprintf(stderr, "SKIA_ORACLE_CPU_CAP: unknown value '%s'\n", cap);
++    abort();
++}
++
+ void SkCpu::CacheRuntimeFeatures() {
+     static SkOnce once;
+-    once([] { gCachedFeatures = read_cpu_features(); });
++    once([] { gCachedFeatures = skia_oracle_cap_features(read_cpu_features()); });
+ }
+diff --git a/third_party/dawn/build_dawn.py b/third_party/dawn/build_dawn.py
+index fbe770a..54dca5d 100644
+--- a/third_party/dawn/build_dawn.py
++++ b/third_party/dawn/build_dawn.py
+@@ -107,6 +107,9 @@ def main():
+       "-DCMAKE_CXX_STANDARD_REQUIRED=ON",
+       "-DCMAKE_CXX_EXTENSIONS=OFF",
+       "-DDAWN_FORCE_SYSTEM_COMPONENT_LOAD=ON", # https://g-issues.chromium.org/issues/399358291
++      # skia-rust oracle: Dawn's C++20 module target needs CMake module scanning, which
++      # CMake doesn't support for clang-cl. Skia only uses Dawn's headers. Test tooling only.
++      "-DDAWN_SUPPORTS_CXX_MODULES=OFF",
+       "-DDAWN_ENABLE_INSTALL=OFF",
+       "-DTINT_ENABLE_INSTALL=OFF",
+       f"-DDAWN_ENABLE_D3D11={gn_bool_to_cmake(args.dawn_enable_d3d11)}",
+diff --git a/tools/graphite/dawn/GraphiteDawnTestContext.cpp b/tools/graphite/dawn/GraphiteDawnTestContext.cpp
+index 4712be1..9e2798c 100644
+--- a/tools/graphite/dawn/GraphiteDawnTestContext.cpp
++++ b/tools/graphite/dawn/GraphiteDawnTestContext.cpp
+@@ -19,6 +19,9 @@
+ 
+ #include "dawn/dawn_proc.h"
+ 
++#include <cstdlib>
++#include <string>
++
+ #define LOG_ADAPTER 0
+ 
+ namespace skiatest::graphite {
+@@ -63,14 +66,30 @@ std::unique_ptr<GraphiteTestContext> DawnTestContext::Make(wgpu::BackendType bac
+     std::vector<dawn::native::Adapter> adapters = sInstance->EnumerateAdapters(&options);
+     SkASSERT(!adapters.empty());
+ 
++    // skia-rust oracle: SKIA_ORACLE_DAWN_ADAPTER picks the adapter whose device name or
++    // description contains it (e.g. "Microsoft Basic Render Driver" for WARP, "llvmpipe"
++    // for lavapipe). Without a match there is no context, never a silent fallback.
++    // Test tooling only.
++    const char* adapterFilter = getenv("SKIA_ORACLE_DAWN_ADAPTER");
+     for (const auto& adapter : adapters) {
+         wgpu::Adapter wgpuAdapter = adapter.Get();
+         wgpu::AdapterInfo props;
+         wgpuAdapter.GetInfo(&props);
+-        if (backend == props.backendType) {
+-            matchedAdaptor = adapter;
+-            break;
++        if (backend != props.backendType) {
++            continue;
++        }
++        if (adapterFilter && *adapterFilter) {
++            std::string device(props.device.data, props.device.length);
++            std::string description(props.description.data, props.description.length);
++            if (device.find(adapterFilter) == std::string::npos &&
++                description.find(adapterFilter) == std::string::npos) {
++                continue;
++            }
++            SkDebugf("SKIA_ORACLE_DAWN_ADAPTER: using '%s' (%s)\n",
++                     device.c_str(), description.c_str());
+         }
++        matchedAdaptor = adapter;
++        break;
+     }
+ 
+     if (!matchedAdaptor) {

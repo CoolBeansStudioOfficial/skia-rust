@@ -29,14 +29,16 @@ A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests ma
 ## When output doesn't match
 Use the oracle's debug dumps (raster pipeline stages, generated WGSL, path verbs) to find the first divergence before changing code. Don't adjust code by trial and error until the hash matches.
 
-## Escalation (Sonnet → Opus)
-After 2 full failed attempts on the same entry, stop and write `notes/<manifest-id>.md`: what you tried, the mismatching hashes/diffs, the relevant dumps, and your best hypothesis. An Opus agent continues from that file.
+## Escalation (Haiku → Sonnet → Opus)
+After 2 full failed attempts on the same entry, stop and write `notes/<manifest-id>.md`: what you tried, the mismatching hashes/diffs, the relevant dumps, and your best hypothesis. An agent on the next more capable model continues from that file.
 
 ## Commands
 ```
 cargo xtask skia fetch          # clone pinned Skia into third_party/skia
 cargo xtask inventory sync      # rescan Skia, update manifest (preserves module/status/reason)
 cargo xtask inventory stats     # pass rates by kind and module
+cargo xtask oracle tiers        # oracle CPU tiers (server only for build/run; see oracle/README.md)
+cargo xtask oracle compare <tier> <dir>   # check our outputs against a tier's golden hashes
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ```

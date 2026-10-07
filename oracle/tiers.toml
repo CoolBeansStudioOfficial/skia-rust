@@ -1,0 +1,107 @@
+# Oracle builds. See docs/PLAN.md §5 and oracle/README.md.
+#
+# A *build* is one GN output directory of Skia with DM. A CPU *tier* is a build plus a
+# runtime CPU cap (SKIA_ORACLE_CPU_CAP, added by oracle/patches/skia-oracle.patch).
+# Goldens are generated and compared per tier.
+#
+# Skia picks x64 code paths in two places:
+#   - compile time: SK_CPU_X64_LEVEL, from the baseline the whole library is built for;
+#   - run time: SkOpts / Init_* functions switch to ssse3, ml3 (x86-64-v3) or ml4
+#     (x86-64-v4) kernels when SkCpu::Supports() reports the CPU has them.
+# xtask derives one tier per (build, runtime level) pair a shipped Skia can run: every
+# runtime level from the build's own `level` upward. Tier names are `cpu-<build>` for the
+# build's own level and `cpu-<build>-rt-<level>` above it.
+#
+# Baselines are raised with additive `-m` feature flags, never `/arch:`. GN appends
+# extra_cflags after each target's own flags, so an `/arch:` here would override (lower)
+# the `/arch:AVX2` / `/arch:AVX512` Skia compiles its ml3/ml4 kernels with.
+#
+# All builds use clang-cl, the compiler Chrome ships Skia with, so FMA contraction and
+# other codegen choices match what real Skia users get.
+
+[gn]
+# Args shared by every build.
+args = [
+    "is_debug=false",
+    "is_official_build=false",
+    "skia_enable_tools=true",
+    "skia_use_gl=false",
+]
+
+# `level` is the runtime level the build's compile-time baseline already implies:
+# baseline < ssse3 < ml3 < ml4.
+
+[[build]]
+name = "x64-sse2"
+level = "baseline"
+args = []
+
+[[build]]
+name = "x64-ssse3"
+level = "ssse3"
+args = ['extra_cflags=["/clang:-mssse3"]']
+
+[[build]]
+name = "x64-sse41"
+level = "ssse3"
+args = ['extra_cflags=["/clang:-msse4.1"]']
+
+[[build]]
+name = "x64-sse42"
+level = "ssse3"
+args = ['extra_cflags=["/clang:-msse4.2"]']
+
+[[build]]
+name = "x64-avx"
+level = "ssse3"
+args = ['extra_cflags=["/clang:-mavx"]']
+
+[[build]]
+name = "x64-v3"
+level = "ml3"
+args = ['extra_cflags=["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma"]']
+
+[[build]]
+name = "x64-v4"
+level = "ml4"
+args = ['extra_cflags=["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma", "/clang:-mavx512f", "/clang:-mavx512dq", "/clang:-mavx512cd", "/clang:-mavx512bw", "/clang:-mavx512vl"]']
+
+# GPU (Graphite + Dawn). Built on the sse2 baseline; each GPU tier pins a runtime CPU
+# level because Graphite still does some work (software masks, uploads) on the CPU.
+[[build]]
+name = "gpu-dawn"
+gpu = true
+args = [
+    "skia_enable_graphite=true",
+    "skia_use_dawn=true",
+    "skia_enable_ganesh=false",
+    "dawn_enable_d3d12=true",
+    "dawn_enable_vulkan=true",
+]
+
+# GPU tiers. `adapter` is matched against the Dawn adapter's device name/description
+# (SKIA_ORACLE_DAWN_ADAPTER, added by the oracle patch); no match means no context.
+# Vulkan/lavapipe needs a Linux build under WSL2 and isn't listed yet.
+
+[[gpu_tier]]
+name = "gpu-dawn-d3d12-warp"
+build = "gpu-dawn"
+configs = ["grdawn_d3d12"]
+adapter = "Microsoft Basic Render Driver"
+cpu_level = "ml3"
+
+[[gpu_tier]]
+name = "gpu-dawn-d3d12-rtx4070s"
+build = "gpu-dawn"
+configs = ["grdawn_d3d12"]
+adapter = "RTX 4070 SUPER"
+cpu_level = "ml3"
+report_only = true
+
+[[gpu_tier]]
+name = "gpu-dawn-vk-rtx4070s"
+build = "gpu-dawn"
+configs = ["grdawn_vk"]
+adapter = "RTX 4070 SUPER"
+cpu_level = "ml3"
+report_only = true
