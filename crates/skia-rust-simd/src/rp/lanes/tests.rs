@@ -215,6 +215,14 @@ enum NanRule {
     /// (the unoptimized test build negates `m`, which the model follows). Everything but the
     /// sign bit is compared there, in every build.
     NeonFusedNeg,
+    /// Neon's reciprocal and reciprocal-square-root primitives: the Newton step is
+    /// `vmulq_f32(vrecpsq_f32(v, e), e)` (or the `vrsqrtsq_f32` analogue), where `FRECPS` flips
+    /// the sign of a NaN `v` and `FMUL` returns its first NaN, so a NaN input comes out of the
+    /// multiply as either `e` (sign kept) or the step (sign flipped) depending on which operand
+    /// order LLVM emits: the unoptimized build keeps the source order (which the model follows),
+    /// optimized builds commute the multiply. When the input is NaN, everything but the sign bit
+    /// is compared, in every build.
+    NeonRecipNan,
 }
 
 impl NanRule {
@@ -226,7 +234,15 @@ impl NanRule {
             Prim::Mad if fused => NanRule::Fused,
             // Neon's rcp_precise uses FRECPS, which negates inside the instruction: exact.
             Prim::Nmad if tier == Tier::Neon => NanRule::NeonFusedNeg,
-            Prim::RcpPrecise if tier == Tier::Neon => NanRule::Exact,
+            Prim::RcpPrecise
+            | Prim::RcpApprox
+            | Prim::RcpFast
+            | Prim::RsqrtApprox
+            | Prim::Rsqrt
+                if tier == Tier::Neon =>
+            {
+                NanRule::NeonRecipNan
+            }
             Prim::Nmad | Prim::RcpPrecise if fused => NanRule::FusedNeg,
             Prim::Mad => NanRule::Unfused {
                 outer_commutes: true,
@@ -268,6 +284,7 @@ impl NanRule {
                 fma_nan_ambiguous(f, m, a)
                     || (cfg!(debug_assertions) && nan(f) && (native ^ model) == 0x8000_0000)
             }
+            NanRule::NeonRecipNan => nan(f) && (native ^ model) == 0x8000_0000,
             NanRule::NeonFusedNeg => {
                 fma_nan_ambiguous(f, m, a)
                     || ((nan(f) || nan(m)) && (native ^ model) == 0x8000_0000)
@@ -475,6 +492,8 @@ fn exhaustive_unary_native_matches_model() {
 #[derive(Clone, Copy, Debug)]
 enum E {
     Bits(u32),
+    /// These bits, or these bits with the sign flipped (an unspecified NaN sign).
+    BitsAnySign(u32),
     Nan,
 }
 
@@ -482,6 +501,7 @@ impl E {
     fn matches(self, got: u32) -> bool {
         match self {
             E::Bits(b) => b == got,
+            E::BitsAnySign(b) => b == got || b ^ 0x8000_0000 == got,
             E::Nan => f32::from_bits(got).is_nan(),
         }
     }
@@ -1232,8 +1252,9 @@ fn known_answers_neon() {
     kat_neon(Rsqrt, [0, 0, 0], b(f(f32::INFINITY)));
     kat_neon(Rsqrt, [f(-1.0), 0, 0], b(NAN));
     // FRECPS negates its first operand before NaN processing, and FMUL returns its first NaN:
-    // rcp_approx(+qNaN) comes out with the sign flipped.
-    kat_neon(RcpApprox, [NAN, 0, 0], b(0xffc0_0000));
+    // rcp_approx(+qNaN) comes out with the sign flipped in the unoptimized build; optimized
+    // builds commute the multiply and keep the sign (`NanRule::NeonRecipNan`).
+    kat_neon(RcpApprox, [NAN, 0, 0], E::BitsAnySign(0xffc0_0000));
 }
 
 /// Known answers for the `Neon` lowp primitives.

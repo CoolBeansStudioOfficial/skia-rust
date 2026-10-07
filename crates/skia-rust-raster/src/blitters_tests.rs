@@ -31,7 +31,7 @@ use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{self, OPAQUE_ALPHA_FLAG, ShaderContext};
 use skia_rust_simd::testing::force_tier;
-use skia_rust_simd::{Estimates, Selection, Tier};
+use skia_rust_simd::{Selection, Tier};
 
 use crate::blit_row::{blend_argb32_lanes, color32, factory32};
 use crate::blitter::{Blitter, NullBlitter};
@@ -606,18 +606,7 @@ fn model_src_over(tier: Tier, s: PMColor, d: PMColor) -> PMColor {
 fn all_tiers() -> Vec<Selection> {
     Tier::ALL
         .into_iter()
-        .filter_map(|tier| {
-            let native = Selection::native(tier);
-            if native.check().is_ok() {
-                return Some(native);
-            }
-            let estimates = if tier == Tier::Neon {
-                Estimates::Arm
-            } else {
-                Estimates::AmdZen4
-            };
-            Selection::model(tier, estimates).check().ok()
-        })
+        .map(skia_rust_simd::testing::oracle_selection)
         .collect()
 }
 
