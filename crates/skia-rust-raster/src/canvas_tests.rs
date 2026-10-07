@@ -27,9 +27,10 @@ fn surface(w: i32, h: i32) -> crate::surface::Surface<'static> {
     surfaces::raster(&ImageInfo::new_n32_premul((w, h), None), None, None).expect("surface")
 }
 
+/// The pixel at (x, y) as unpremultiplied ARGB, independent of the platform's N32 byte order.
 fn px(s: &mut crate::surface::Surface<'_>, x: i32, y: i32) -> u32 {
     let peek = s.peek_pixels().expect("pixels");
-    peek.pixmap().addr32(x, y)
+    u32::from(peek.pixmap().get_color((x, y)))
 }
 
 #[test]
