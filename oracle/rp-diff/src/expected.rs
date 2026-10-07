@@ -176,6 +176,27 @@ pub fn selection_name(sel: Selection) -> String {
     format!("{}/{backend}", sel.tier.name())
 }
 
+/// Whether `sel` runs host arithmetic whose invalid operations (`inf - inf`, `0 * inf`) produce a
+/// different default NaN than the x86 oracle's: `Scalar` on a host that is not x86 gives
+/// `0x7FC00000` where x86 gives `0xFFC00000` (the x86 tiers' lanes and models spell the indefinite
+/// out; `Scalar` is plain Rust arithmetic, and on wasm32 the sign is up to the engine).
+fn host_nan_sign_differs(sel: Selection) -> bool {
+    sel.tier == Tier::Scalar && !cfg!(any(target_arch = "x86", target_arch = "x86_64"))
+}
+
+/// `out` with every word that is exactly the positive default NaN `0x7FC00000` replaced by x86's
+/// indefinite `0xFFC00000`. A lane whose NaN was an input propagated unchanged is changed too, so
+/// this is a second chance after an exact comparison failed, never a replacement for it.
+fn with_x86_default_nan(out: &[u8]) -> Vec<u8> {
+    let mut v = out.to_vec();
+    for w in v.as_chunks_mut::<4>().0 {
+        if *w == 0x7FC0_0000u32.to_le_bytes() {
+            *w = 0xFFC0_0000u32.to_le_bytes();
+        }
+    }
+    v
+}
+
 /// Replays `cases` for `tier` on every selection of [`selections`] and checks them against
 /// `expected`. Returns one line per problem (empty = every case matched on every selection):
 /// a case without a stored result, a stale result (case edited since), a stored result for a
@@ -212,6 +233,9 @@ pub fn check(tier: Tier, cases: &[Case], expected: &Expected) -> Vec<String> {
         for &sel in &sels {
             match run_case(c, &stages, sel) {
                 Ok(out) if fnv1a(&out) == entry.output_hash => {}
+                Ok(out)
+                    if host_nan_sign_differs(sel)
+                        && fnv1a(&with_x86_default_nan(&out)) == entry.output_hash => {}
                 Ok(out) => problems.push(format!(
                     "{} on {}: output {:016x}, Skia {:016x}",
                     c.name,
