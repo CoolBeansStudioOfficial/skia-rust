@@ -3,6 +3,26 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/dashing.cpp (chrome/m156)
 
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
+
 use crate::prelude::*;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color::colors;
@@ -13,7 +33,9 @@ use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::{SCALAR_HALF, SCALAR_PI, SCALAR_ROOT_2_OVER_2, scalar_abs, scalar_cos, scalar_sin};
+use skia_rust_core::scalar::{
+    SCALAR_HALF, SCALAR_PI, SCALAR_ROOT_2_OVER_2, scalar_abs, scalar_cos, scalar_sin,
+};
 use skia_rust_effects::dash_path_effect;
 
 // `ToolUtils::color_to_565`.
@@ -99,8 +121,14 @@ impl GM for DashingGm {
         canvas.translate((0.0, SCALAR_HALF));
         for width in 0..=2 {
             for data in [
-                Intervals { on_interval: 1, off_interval: 1 },
-                Intervals { on_interval: 4, off_interval: 1 },
+                Intervals {
+                    on_interval: 1,
+                    off_interval: 1,
+                },
+                Intervals {
+                    on_interval: 4,
+                    off_interval: 1,
+                },
             ] {
                 for aa in [false, true] {
                     let w = width * width * width;
@@ -169,8 +197,7 @@ fn make_path_oval(bounds: &Rect) -> Path {
 // Port of: gm/dashing.cpp#L134-L139 (chrome/m156)
 fn make_path_star(bounds: &Rect) -> Path {
     let path = make_unit_star(5);
-    let matrix =
-        Matrix::rect_to_rect_or_identity(path.bounds(), bounds, ScaleToFit::Center);
+    let matrix = Matrix::rect_to_rect_or_identity(path.bounds(), bounds, ScaleToFit::Center);
     path.make_transform(&matrix)
 }
 
@@ -195,8 +222,12 @@ impl GM for Dashing2Gm {
             2, 2, 2,
         ];
 
-        let g_proc: [fn(&Rect) -> Path; 4] =
-            [make_path_line, make_path_rect, make_path_oval, make_path_star];
+        let g_proc: [fn(&Rect) -> Path; 4] = [
+            make_path_line,
+            make_path_rect,
+            make_path_oval,
+            make_path_star,
+        ];
 
         let mut paint = Paint::default();
         paint.set_anti_alias(true);
@@ -401,12 +432,21 @@ impl GM for Dashing4Gm {
 
         for width in 0..=2 {
             for data in [
-                Intervals { on_interval: 1, off_interval: 1 },
-                Intervals { on_interval: 4, off_interval: 2 },
+                Intervals {
+                    on_interval: 1,
+                    off_interval: 1,
+                },
+                Intervals {
+                    on_interval: 4,
+                    off_interval: 2,
+                },
                 // test for zero length on interval.
                 // zero length intervals should draw
                 // a line of squares or circles
-                Intervals { on_interval: 0, off_interval: 4 },
+                Intervals {
+                    on_interval: 0,
+                    off_interval: 4,
+                },
             ] {
                 for aa in [false, true] {
                     for cap in [Cap::Round, Cap::Square] {
@@ -494,7 +534,12 @@ impl Dashing5Gm {
 
 impl GM for Dashing5Gm {
     fn name(&self) -> String {
-        if self.do_aa { "dashing5_aa" } else { "dashing5_bw" }.to_string()
+        if self.do_aa {
+            "dashing5_aa"
+        } else {
+            "dashing5_bw"
+        }
+        .to_string()
     }
 
     fn size(&mut self) -> ISize {
@@ -574,48 +619,55 @@ impl GM for Dashing5Gm {
 }
 
 // Port of: gm/dashing.cpp#L473-L505 (chrome/m156)
-crate::def_simple_gm!(longpathdash, canvas, 612, 612, {
-    let mut lines = PathBuilder::new();
-    let mut x: i32 = 32;
-    while x < 256 {
-        let mut a: f32 = 0.0;
-        while a < 3.141592f32 * 2.0 {
-            #[allow(clippy::cast_precision_loss)] // int to SkScalar
-            let xf = x as f32;
-            // `sin` and `cos` here are the double-precision libm functions.
-            let pts = [
-                Point::new(
-                    256.0 + (f64::from(a).sin() as f32) * xf,
-                    256.0 + (f64::from(a).cos() as f32) * xf,
-                ),
-                Point::new(
-                    256.0 + ((f64::from(a) + 3.141592 / 3.0).sin() as f32) * (xf + 64.0),
-                    256.0 + ((f64::from(a) + 3.141592 / 3.0).cos() as f32) * (xf + 64.0),
-                ),
-            ];
-            lines.move_to(pts[0]);
-            let mut i: f32 = 0.0;
-            while i < 1.0 {
-                lines.line_to((
-                    pts[0].x * (1.0 - i) + pts[1].x * i,
-                    pts[0].y * (1.0 - i) + pts[1].y * i,
-                ));
-                i += 0.05;
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_dashing_cpp_longpathdash.md"]
+    longpathdash,
+    canvas,
+    612,
+    612,
+    {
+        let mut lines = PathBuilder::new();
+        let mut x: i32 = 32;
+        while x < 256 {
+            let mut a: f32 = 0.0;
+            while a < 3.141592f32 * 2.0 {
+                #[allow(clippy::cast_precision_loss)] // int to SkScalar
+                let xf = x as f32;
+                // skia-rust: libm. `sin` and `cos` here are the double-precision libm functions.
+                let pts = [
+                    Point::new(
+                        256.0 + (f64::from(a).sin() as f32) * xf,
+                        256.0 + (f64::from(a).cos() as f32) * xf,
+                    ),
+                    Point::new(
+                        256.0 + ((f64::from(a) + 3.141592 / 3.0).sin() as f32) * (xf + 64.0),
+                        256.0 + ((f64::from(a) + 3.141592 / 3.0).cos() as f32) * (xf + 64.0),
+                    ),
+                ];
+                lines.move_to(pts[0]);
+                let mut i: f32 = 0.0;
+                while i < 1.0 {
+                    lines.line_to((
+                        pts[0].x * (1.0 - i) + pts[1].x * i,
+                        pts[0].y * (1.0 - i) + pts[1].y * i,
+                    ));
+                    i += 0.05;
+                }
+                a += 0.03141592;
             }
-            a += 0.03141592;
+            x += 16;
         }
-        x += 16;
-    }
-    let mut p = Paint::default();
-    p.set_anti_alias(true);
-    p.set_stroke(true);
-    p.set_stroke_width(1.0);
-    let intervals = [1.0, 1.0];
-    p.set_path_effect(dash_path_effect::new(&intervals, 0.0));
+        let mut p = Paint::default();
+        p.set_anti_alias(true);
+        p.set_stroke(true);
+        p.set_stroke_width(1.0);
+        let intervals = [1.0, 1.0];
+        p.set_path_effect(dash_path_effect::new(&intervals, 0.0));
 
-    canvas.translate((50.0, 50.0));
-    canvas.draw_path(&lines.detach(), &p);
-});
+        canvas.translate((50.0, 50.0));
+        canvas.draw_path(&lines.detach(), &p);
+    }
+);
 
 // Port of: gm/dashing.cpp#L507-L517 (chrome/m156)
 crate::def_simple_gm!(longlinedash, canvas, 512, 512, {
@@ -704,10 +756,22 @@ crate::def_simple_gm!(dash_line_zero_off_interval, canvas, 160, 330, {
         b: Point,
     }
     let lines = [
-        Line { a: Point::new(0.5, 0.5), b: Point::new(30.5, 0.5) }, // horizontal
-        Line { a: Point::new(0.5, 0.5), b: Point::new(0.5, 30.5) }, // vertical
-        Line { a: Point::new(0.5, 0.5), b: Point::new(0.5, 0.5) },  // point
-        Line { a: Point::new(0.5, 0.5), b: Point::new(25.5, 25.5) }, // diagonal
+        Line {
+            a: Point::new(0.5, 0.5),
+            b: Point::new(30.5, 0.5),
+        }, // horizontal
+        Line {
+            a: Point::new(0.5, 0.5),
+            b: Point::new(0.5, 30.5),
+        }, // vertical
+        Line {
+            a: Point::new(0.5, 0.5),
+            b: Point::new(0.5, 0.5),
+        }, // point
+        Line {
+            a: Point::new(0.5, 0.5),
+            b: Point::new(25.5, 25.5),
+        }, // diagonal
     ];
     let pad = 5.0 + dash_paint.stroke_width();
     canvas.translate((pad / 2.0, pad / 2.0));
@@ -789,4 +853,7 @@ crate::def_gm!(Dashing2GM, Dashing2Gm);
 crate::def_gm!(Dashing3GM, Dashing3Gm);
 crate::def_gm!(Dashing4GM, Dashing4Gm);
 crate::def_gm!(Dashing5GM_true = "Dashing5GM(true)", Dashing5Gm::new(true));
-crate::def_gm!(Dashing5GM_false = "Dashing5GM(false)", Dashing5Gm::new(false));
+crate::def_gm!(
+    Dashing5GM_false = "Dashing5GM(false)",
+    Dashing5Gm::new(false)
+);

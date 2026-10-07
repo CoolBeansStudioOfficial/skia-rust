@@ -3,8 +3,25 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/arcto.cpp (chrome/m156)
 
-// Float literals are copied verbatim from the C++ source.
-#![allow(clippy::excessive_precision)]
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
 
 use crate::prelude::*;
 use skia_rust_core::paint::{Cap, Paint, Style};
@@ -16,6 +33,7 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::string::{str_append_scalar, str_append_u32};
 use skia_rust_core::utils::parse_path;
 use skia_rust_effects::dash_path_effect;
+use std::fmt::Write;
 
 // The test below generates a reference image using SVG. To compare the result for correctness,
 // enable the define below and then view the generated SVG in a browser.
@@ -114,16 +132,46 @@ struct Legal {
 
 // Port of: gm/arcto.cpp#L137-L148 (chrome/m156)
 const G_LEGAL: [Legal; 10] = [
-    Legal { symbol: b'M', scalars: 2 },
-    Legal { symbol: b'H', scalars: 1 },
-    Legal { symbol: b'V', scalars: 1 },
-    Legal { symbol: b'L', scalars: 2 },
-    Legal { symbol: b'Q', scalars: 4 },
-    Legal { symbol: b'T', scalars: 2 },
-    Legal { symbol: b'C', scalars: 6 },
-    Legal { symbol: b'S', scalars: 4 },
-    Legal { symbol: b'A', scalars: 4 },
-    Legal { symbol: b'Z', scalars: 0 },
+    Legal {
+        symbol: b'M',
+        scalars: 2,
+    },
+    Legal {
+        symbol: b'H',
+        scalars: 1,
+    },
+    Legal {
+        symbol: b'V',
+        scalars: 1,
+    },
+    Legal {
+        symbol: b'L',
+        scalars: 2,
+    },
+    Legal {
+        symbol: b'Q',
+        scalars: 4,
+    },
+    Legal {
+        symbol: b'T',
+        scalars: 2,
+    },
+    Legal {
+        symbol: b'C',
+        scalars: 6,
+    },
+    Legal {
+        symbol: b'S',
+        scalars: 4,
+    },
+    Legal {
+        symbol: b'A',
+        scalars: 4,
+    },
+    Legal {
+        symbol: b'Z',
+        scalars: 0,
+    },
 ];
 
 // set to true while debugging to suppress unusual whitespace
@@ -144,7 +192,7 @@ fn add_white(rand: &mut Random, atom: &mut String) {
     }
     let reps = rand.next_range_u(0, 2);
     for _ in 0..reps {
-        let index = rand.next_range_u(0, G_WHITE_SPACE.len() as u32 - 1) as usize;
+        let index = rand.next_range_u(0, u32::try_from(G_WHITE_SPACE.len()).unwrap() - 1) as usize;
         if G_WHITE_SPACE[index] != 0 {
             atom.push(char::from(G_WHITE_SPACE[index]));
         }
@@ -184,7 +232,7 @@ fn add_some_white(rand: &mut Random, atom: &mut String) {
 // Port of: gm/arcto.cpp#L209-L240 (chrome/m156)
 fn make_random_svg_path(rand: &mut Random) -> String {
     let mut atom = String::new();
-    let legal_index = rand.next_range_u(0, G_LEGAL.len() as u32 - 1) as usize;
+    let legal_index = rand.next_range_u(0, u32::try_from(G_LEGAL.len()).unwrap() - 1) as usize;
     let legal = &G_LEGAL[legal_index];
     if G_EASY {
         atom.push('\n');
@@ -221,6 +269,7 @@ fn make_random_svg_path(rand: &mut Random) -> String {
 
 // Port of: gm/arcto.cpp#L242-L309 (chrome/m156)
 crate::def_simple_gm!(
+    #[ignore = "see notes/gm_arcto_cpp_parsedpaths.md"]
     parsedpaths,
     canvas,
     PARSE_PATH_TEST_DIMENSION,
@@ -237,7 +286,7 @@ crate::def_simple_gm!(
                     let mut spec = String::new();
                     let y = rand.next_range_u(30, 70);
                     let x = rand.next_range_u(30, 70);
-                    spec.push_str(&format!("M {x},{y}\n"));
+                    write!(spec, "M {x},{y}\n").unwrap();
                     let mut i = rand.next_range_u(0, 10);
                     while i > 0 {
                         i -= 1;

@@ -3,8 +3,26 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/strokes.cpp (chrome/m156)
 
-// Float literals are copied verbatim from the C++ source.
-#![allow(clippy::excessive_precision)]
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::struct_field_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
 
 use crate::prelude::*;
 use skia_rust_core::canvas::AutoCanvasRestore;
@@ -195,8 +213,16 @@ impl TeenyStrokesGm {
         canvas.save();
         p.set_stroke_width(scale * 5.0);
         canvas.scale((1.0 / scale, 1.0 / scale));
-        canvas.draw_line((20.0 * scale, 20.0 * scale), (20.0 * scale, 100.0 * scale), &p);
-        canvas.draw_line((20.0 * scale, 20.0 * scale), (100.0 * scale, 100.0 * scale), &p);
+        canvas.draw_line(
+            (20.0 * scale, 20.0 * scale),
+            (20.0 * scale, 100.0 * scale),
+            &p,
+        );
+        canvas.draw_line(
+            (20.0 * scale, 20.0 * scale),
+            (100.0 * scale, 100.0 * scale),
+            &p,
+        );
         canvas.restore();
     }
 }

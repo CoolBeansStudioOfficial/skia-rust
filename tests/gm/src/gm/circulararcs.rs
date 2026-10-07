@@ -3,6 +3,26 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/circulararcs.cpp (chrome/m156)
 
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
+
 use crate::prelude::*;
 use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::matrix::Matrix;
@@ -125,29 +145,73 @@ crate::def_simple_gm!(circular_arcs_weird, canvas, 1000, 400, {
     }
     let no_draw_arcs = [
         // no sweep
-        Arc { oval: Rect::from_wh(S, S), start: 0.0, sweep: 0.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 0.0,
+            sweep: 0.0,
+        },
         // empty rect in x
-        Arc { oval: Rect::from_wh(-S, S), start: 0.0, sweep: 90.0 },
+        Arc {
+            oval: Rect::from_wh(-S, S),
+            start: 0.0,
+            sweep: 90.0,
+        },
         // empty rect in y
-        Arc { oval: Rect::from_wh(S, -S), start: 0.0, sweep: 90.0 },
+        Arc {
+            oval: Rect::from_wh(S, -S),
+            start: 0.0,
+            sweep: 90.0,
+        },
         // empty rect in x and y
-        Arc { oval: Rect::from_wh(0.0, 0.0), start: 0.0, sweep: 90.0 },
+        Arc {
+            oval: Rect::from_wh(0.0, 0.0),
+            start: 0.0,
+            sweep: 90.0,
+        },
     ];
     let arcs = [
         // large start
-        Arc { oval: Rect::from_wh(S, S), start: 810.0, sweep: 90.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 810.0,
+            sweep: 90.0,
+        },
         // large negative start
-        Arc { oval: Rect::from_wh(S, S), start: -810.0, sweep: 90.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: -810.0,
+            sweep: 90.0,
+        },
         // exactly 360 sweep
-        Arc { oval: Rect::from_wh(S, S), start: 0.0, sweep: 360.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 0.0,
+            sweep: 360.0,
+        },
         // exactly -360 sweep
-        Arc { oval: Rect::from_wh(S, S), start: 0.0, sweep: -360.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 0.0,
+            sweep: -360.0,
+        },
         // exactly 540 sweep
-        Arc { oval: Rect::from_wh(S, S), start: 0.0, sweep: 540.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 0.0,
+            sweep: 540.0,
+        },
         // exactly -540 sweep
-        Arc { oval: Rect::from_wh(S, S), start: 0.0, sweep: -540.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 0.0,
+            sweep: -540.0,
+        },
         // generic large sweep and large start
-        Arc { oval: Rect::from_wh(S, S), start: 1125.0, sweep: 990.0 },
+        Arc {
+            oval: Rect::from_wh(S, S),
+            start: 1125.0,
+            sweep: 990.0,
+        },
     ];
     let mut paints: Vec<Paint> = Vec::new();
     // fill
@@ -283,13 +347,73 @@ crate::def_simple_gm!(circular_arc_stroke_matrix, canvas, 820, 1090, {
     m.set_rotate(RADIUS, Some(Point::new(RADIUS, 45.0)));
     matrices.push(m);
     matrices.push(Matrix::i().clone());
-    matrices.push(Matrix::new_all(-1.0, 0.0, 2.0 * RADIUS, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0));
-    matrices.push(Matrix::new_all(1.0, 0.0, 0.0, 0.0, -1.0, 2.0 * RADIUS, 0.0, 0.0, 1.0));
-    matrices.push(Matrix::new_all(1.0, 0.0, 0.0, 0.0, -1.0, 2.0 * RADIUS, 0.0, 0.0, 1.0));
-    matrices.push(Matrix::new_all(0.0, -1.0, 2.0 * RADIUS, -1.0, 0.0, 2.0 * RADIUS, 0.0, 0.0, 1.0));
-    matrices.push(Matrix::new_all(0.0, -1.0, 2.0 * RADIUS, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0));
+    matrices.push(Matrix::new_all(
+        -1.0,
+        0.0,
+        2.0 * RADIUS,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    ));
+    matrices.push(Matrix::new_all(
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        2.0 * RADIUS,
+        0.0,
+        0.0,
+        1.0,
+    ));
+    matrices.push(Matrix::new_all(
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        2.0 * RADIUS,
+        0.0,
+        0.0,
+        1.0,
+    ));
+    matrices.push(Matrix::new_all(
+        0.0,
+        -1.0,
+        2.0 * RADIUS,
+        -1.0,
+        0.0,
+        2.0 * RADIUS,
+        0.0,
+        0.0,
+        1.0,
+    ));
+    matrices.push(Matrix::new_all(
+        0.0,
+        -1.0,
+        2.0 * RADIUS,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    ));
     matrices.push(Matrix::new_all(0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0));
-    matrices.push(Matrix::new_all(0.0, 1.0, 0.0, -1.0, 0.0, 2.0 * RADIUS, 0.0, 0.0, 1.0));
+    matrices.push(Matrix::new_all(
+        0.0,
+        1.0,
+        0.0,
+        -1.0,
+        0.0,
+        2.0 * RADIUS,
+        0.0,
+        0.0,
+        1.0,
+    ));
     let base_matrix_cnt = matrices.len();
 
     let mut tiny_cw = Matrix::new_identity();

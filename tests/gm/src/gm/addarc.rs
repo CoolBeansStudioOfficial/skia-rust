@@ -3,8 +3,25 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/addarc.cpp (chrome/m156)
 
-// Float literals are copied verbatim from the C++ source.
-#![allow(clippy::excessive_precision)]
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
 
 use crate::prelude::*;
 use skia_rust_core::canvas::AutoCanvasRestore;
@@ -14,9 +31,7 @@ use skia_rust_core::path_measure::PathMeasure;
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::{
-    SCALAR_PI, degrees_to_radians, scalar_cos, scalar_sin, scalar_sqrt,
-};
+use skia_rust_core::scalar::{SCALAR_PI, degrees_to_radians, scalar_cos, scalar_sin, scalar_sqrt};
 
 // `ToolUtils::color_to_565`.
 // Port of: tools/ToolUtils.cpp#L142-L151 (chrome/m156)
@@ -236,8 +251,26 @@ crate::def_simple_gm!(manyarcs, canvas, 620, 330, {
 
     // 20 angles.
     let mut sweep_angles: [f32; 20] = [
-        -123.7, -2.3, -2.0, -1.0, -0.3, -0.000001, 0.0, 0.000001, 0.3, 0.7, 1.0, 1.3, 1.5, 1.7,
-        1.99999, 2.0, 2.00001, 2.3, 4.3, 3934723942837.3,
+        -123.7,
+        -2.3,
+        -2.0,
+        -1.0,
+        -0.3,
+        -0.000001,
+        0.0,
+        0.000001,
+        0.3,
+        0.7,
+        1.0,
+        1.3,
+        1.5,
+        1.7,
+        1.99999,
+        2.0,
+        2.00001,
+        2.3,
+        4.3,
+        3934723942837.3,
     ];
     for angle in &mut sweep_angles {
         *angle *= 180.0;
@@ -298,6 +331,7 @@ crate::def_simple_gm!(tinyanglearcs, canvas, 620, 330, {
     for start_angle in start_angles {
         let mut path = PathBuilder::new();
         let end_angle = start_angle + sweep_angle;
+        // skia-rust: libm (`std::cos`/`std::sin` on float are `cosf`/`sinf`)
         path.move_to((
             center_x + inner_radius * start_angle.cos(),
             center_y + inner_radius * start_angle.sin(),

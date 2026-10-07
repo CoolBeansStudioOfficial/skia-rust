@@ -3,6 +3,26 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/strokerects.cpp (chrome/m156)
 
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
+
 use crate::prelude::*;
 use skia_rust_core::canvas::AutoCanvasRestore;
 use skia_rust_core::paint::{Paint, Style};
@@ -88,5 +108,11 @@ impl GM for StrokeRectsGm {
 }
 
 // Port of: gm/strokerects.cpp#L88-L89 (chrome/m156)
-crate::def_gm!(StrokeRectsGM_false = "StrokeRectsGM(false)", StrokeRectsGm::new(false));
-crate::def_gm!(StrokeRectsGM_true = "StrokeRectsGM(true)", StrokeRectsGm::new(true));
+crate::def_gm!(
+    StrokeRectsGM_false = "StrokeRectsGM(false)",
+    StrokeRectsGm::new(false)
+);
+crate::def_gm!(
+    StrokeRectsGM_true = "StrokeRectsGM(true)",
+    StrokeRectsGm::new(true)
+);

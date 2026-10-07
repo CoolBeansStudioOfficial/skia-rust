@@ -3,8 +3,25 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/cubicpaths.cpp (chrome/m156)
 
-// Float literals are copied verbatim from the C++ source.
-#![allow(clippy::excessive_precision)]
+// GM ports mirror the C++ source line by line: literals, short names, local constants, int/float
+// conversions, index loops and long bodies are kept as they are there.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::needless_range_loop,
+    clippy::trivially_copy_pass_by_ref,
+    clippy::write_with_newline,
+    clippy::excessive_precision,
+    clippy::items_after_statements,
+    clippy::many_single_char_names,
+    clippy::mixed_case_hex_literals,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
 
 use crate::prelude::*;
 use skia_rust_core::matrix::Matrix;
@@ -102,13 +119,29 @@ impl GM for ClippedCubic2Gm {
         canvas.restore();
         canvas.save();
         canvas.translate((20.0, -2.0));
-        Self::draw_one(canvas, &self.flipped, &Rect::from_ltrb(0.0, 0.0, 150.0, 80.0));
+        Self::draw_one(
+            canvas,
+            &self.flipped,
+            &Rect::from_ltrb(0.0, 0.0, 150.0, 80.0),
+        );
         canvas.translate((170.0, 0.0));
-        Self::draw_one(canvas, &self.flipped, &Rect::from_ltrb(0.0, 0.0, 100.0, 80.0));
+        Self::draw_one(
+            canvas,
+            &self.flipped,
+            &Rect::from_ltrb(0.0, 0.0, 100.0, 80.0),
+        );
         canvas.translate((170.0, 0.0));
-        Self::draw_one(canvas, &self.flipped, &Rect::from_ltrb(0.0, 0.0, 150.0, 30.0));
+        Self::draw_one(
+            canvas,
+            &self.flipped,
+            &Rect::from_ltrb(0.0, 0.0, 150.0, 30.0),
+        );
         canvas.translate((170.0, 0.0));
-        Self::draw_one(canvas, &self.flipped, &Rect::from_ltrb(0.0, 0.0, 150.0, 10.0));
+        Self::draw_one(
+            canvas,
+            &self.flipped,
+            &Rect::from_ltrb(0.0, 0.0, 150.0, 10.0),
+        );
         canvas.restore();
     }
 
@@ -163,7 +196,9 @@ crate::def_simple_gm!(bug6083, canvas, 100, 50, {
     canvas.translate((-500.0, -130.0));
 
     let mut builder = PathBuilder::new();
-    builder.move_to((500.988, 155.200)).line_to((526.109, 155.200));
+    builder
+        .move_to((500.988, 155.200))
+        .line_to((526.109, 155.200));
 
     let _path = builder.snapshot();
     let p1 = Point::new(526.109, 155.200);
