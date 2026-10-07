@@ -15,8 +15,16 @@
 use super::*;
 
 si! {
-    pub(super) fn init_lane_masks(_p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("init_lane_masks", "B6a")
+    // Port of: src/opts/SkRasterPipeline_opts.h#L4209-L4215 (chrome/m156)
+    // (Minimal version, needed by the B6d trace tests; B6a owns this file.)
+    pub(super) fn init_lane_masks(p: &mut Regs, e: &mut Params<'_, '_>) {
+        let tail = U32::splat(u32::from(e.tail));
+        let mask: I32 = cond_to_mask(U32::load(&IOTA_U32[..N]).lt_mask(tail).bit_cast());
+        let mask: F = mask.bit_cast();
+        p.r = mask;
+        p.g = mask;
+        p.b = mask;
+        p.a = mask;
     }
 
     pub(super) fn store_device_xy01(_ctx: MemPtr, _p: &mut Regs, _e: &mut Params<'_, '_>) {
@@ -27,8 +35,13 @@ si! {
         not_ported!("exchange_src", "B6a")
     }
 
-    pub(super) fn load_condition_mask(_ctx: MemPtr, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("load_condition_mask", "B6a")
+    // Port of: src/opts/SkRasterPipeline_opts.h#L4245-L4248 (chrome/m156)
+    // (Minimal version, needed by the B6d trace tests; B6a owns this file.)
+    pub(super) fn load_condition_mask(ctx: MemPtr, p: &mut Regs, e: &mut Params<'_, '_>) {
+        p.r = F::load_bytes(e.ptr(ctx));
+        // update_execution_mask()
+        let (cond, lp, ret): (I32, I32, I32) = (p.r.bit_cast(), p.g.bit_cast(), p.b.bit_cast());
+        p.a = (cond & lp & ret).bit_cast();
     }
 
     pub(super) fn store_condition_mask(_ctx: MemPtr, _p: &mut Regs, _e: &mut Params<'_, '_>) {
