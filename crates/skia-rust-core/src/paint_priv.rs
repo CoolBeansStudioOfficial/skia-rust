@@ -5,14 +5,18 @@
 
 //! `SkPaintPriv`: private paint helpers (overwrite analysis, dithering, luminance color).
 //!
-//! skia-rust: `Flatten` / `Unflatten` need `SkWriteBuffer` / `SkReadBuffer` (not ported), and
-//! `RemoveColorFilter` needs `SkColorFilterShader` (Phase 3); they come with those.
+//! skia-rust: `Flatten` / `Unflatten` need `SkWriteBuffer` / `SkReadBuffer` (not ported); they
+//! come with those.
 
 use crate::blend_mode::{BlendMode, BlendModeCoeff};
 use crate::color::{Color, Color4f};
+use crate::color_filter::ColorFilter;
+use crate::color_space::ColorSpace;
+use crate::color_space_priv::srgb_singleton;
 use crate::color_type::ColorType;
 use crate::paint::Paint;
 use crate::shader::Shader;
+use crate::shaders::ColorFilterShader;
 
 /// What overrides the paint's shader when drawing (an image or bitmap shader), and whether it
 /// is opaque (`SkPaintPriv::ShaderOverrideOpacity`).
@@ -108,6 +112,29 @@ pub fn overwrites(paint: Option<&Paint>, override_opacity: ShaderOverrideOpacity
         return false; // don't know for sure, so we play it safe and return false.
     };
     blend_mode_is_opaque(bm, opacity_type)
+}
+
+/// Applies the paint's color filter to its color or shader and clears it
+/// (`SkPaintPriv::RemoveColorFilter`): with a shader the filter moves into a
+/// [`ColorFilterShader`] (which modulates the shader's colors by the paint alpha first, so the
+/// paint becomes opaque); with just a color, the filtered color replaces the paint's.
+// Port of: src/core/SkPaintPriv.cpp#L161-L175 (chrome/m156)
+#[doc(alias = "RemoveColorFilter")]
+pub fn remove_color_filter(p: &mut Paint, dst_cs: Option<&ColorSpace>) {
+    if let Some(filter) = p.color_filter() {
+        if let Some(shader) = p.shader() {
+            // SkColorFilterShader will modulate the shader color by paint alpha
+            // before applying the filter, so we'll reset it to opaque.
+            let alpha = p.alpha_f();
+            p.set_shader(ColorFilterShader::make(shader, alpha, Some(filter)));
+            p.set_alpha_f(1.0);
+        } else {
+            let filtered =
+                ColorFilter::filter_color4f(&filter, p.color4f(), Some(srgb_singleton()), dst_cs);
+            p.set_color4f(filtered, dst_cs);
+        }
+        p.set_color_filter(None);
+    }
 }
 
 /// True if drawing with `p` into `dst_ct` should dither (`SkPaintPriv::ShouldDither`).
@@ -262,5 +289,47 @@ mod tests {
             alpha_unchanged: false,
         }));
         assert_eq!(compute_luminance_color(&p), Color::from_argb(0, 0, 0, 0));
+    }
+
+    #[test]
+    fn remove_color_filter_cases() {
+        let clear = ColorFilter::from_base(TestFilter {
+            clear: true,
+            alpha_unchanged: false,
+        });
+
+        // No color filter: nothing changes.
+        let mut p = Paint::default();
+        p.set_color(Color::from_argb(0x80, 0x10, 0x20, 0x30));
+        let before = p.clone();
+        remove_color_filter(&mut p, None);
+        assert_eq!(p, before);
+
+        // A plain color is run through the filter.
+        p.set_color_filter(clear.clone());
+        remove_color_filter(&mut p, None);
+        assert!(p.color_filter().is_none());
+        assert_eq!(p.color(), Color::from_argb(0, 0, 0, 0));
+        assert!(p.shader().is_none());
+
+        // With a shader, the filter moves into a color filter shader, which takes over the paint's
+        // alpha (the paint becomes opaque).
+        let shader = shaders::color(Color::from_argb(0xFF, 1, 2, 3));
+        let mut p = Paint::default();
+        p.set_color(Color::from_argb(0x40, 0x10, 0x20, 0x30));
+        p.set_shader(shader.clone());
+        p.set_color_filter(clear.clone());
+        remove_color_filter(&mut p, None);
+        assert!(p.color_filter().is_none());
+        #[allow(clippy::float_cmp)] // alpha was reset to exactly 1
+        {
+            assert_eq!(p.alpha_f(), 1.0);
+        }
+        let new_shader = p.shader().unwrap();
+        let base: &dyn core::any::Any = new_shader.as_base();
+        let cfs = base.downcast_ref::<ColorFilterShader>().unwrap();
+        assert_eq!(cfs.shader(), &shader);
+        assert_eq!(cfs.filter(), &clear);
+        assert_eq!(cfs.alpha(), f32::from(0x40u8) / 255.0);
     }
 }

@@ -5,15 +5,16 @@
 
 //! `SkMaskFilter`: filters applied to the coverage mask of a draw (e.g. blurs).
 //!
-//! skia-rust: a stub (D2). Only what `SkPaint` needs is here: the [`MaskFilter`] handle and
-//! [`MaskFilterBase::compute_fast_bounds`]. The mask filters (`SkMaskFilter::MakeBlur`, ...) and
-//! the rest of `SkMaskFilterBase` (`filterMask`, `getFormat`, `asABlur`, ...) are Phase 3 and
-//! extend the trait.
+//! skia-rust: a stub (D2, extended by D4). Only what `SkPaint` and `SkBlitter::Choose` need is
+//! here: the [`MaskFilter`] handle, [`MaskFilterBase::compute_fast_bounds`] and
+//! [`MaskFilterBase::format`]. The mask filters (`SkMaskFilter::MakeBlur`, ...) and the rest of
+//! `SkMaskFilterBase` (`filterMask`, `asABlur`, ...) are Phase 3 and extend the trait.
 
 use core::any::Any;
 use core::fmt;
 use std::sync::Arc;
 
+use crate::mask::MaskFormat;
 use crate::rect::Rect;
 
 /// The virtual interface of a mask filter (`SkMaskFilterBase`), reduced to what is ported.
@@ -24,6 +25,15 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
     /// (`computeFastBounds(src, dest)`).
     #[doc(alias = "computeFastBounds")]
     fn compute_fast_bounds(&self, src: &Rect) -> Rect;
+
+    /// The format of the masks the filter produces (`getFormat`).
+    ///
+    /// skia-rust: Skia's is pure virtual; the default is [`MaskFormat::A8`], what every mask
+    /// filter but the 3D emboss one produces.
+    #[doc(alias = "getFormat")]
+    fn format(&self) -> MaskFormat {
+        MaskFormat::A8
+    }
 }
 
 /// A shared mask filter (`sk_sp<SkMaskFilter>`): a cheaply clonable handle to a

@@ -3,10 +3,15 @@
 pub mod aa_clip;
 pub mod alpha_runs;
 pub mod analytic_edge;
+pub mod blit_row;
 pub mod blitter;
+pub mod blitter_a8;
+pub mod blitter_choose;
 pub mod blitter_dump;
+pub mod core_blitters;
 pub mod edge;
 pub mod edge_builder;
+mod pixel_rows;
 pub mod raster_clip;
 pub mod raster_pipeline_blitter;
 pub mod region_path;
@@ -16,6 +21,7 @@ pub mod scan_anti_path;
 pub mod scan_antihair;
 pub mod scan_hairline;
 pub mod scan_priv;
+pub mod sprite_blitter;
 
 #[cfg(test)]
 mod aa_clip_region_tests;
@@ -23,6 +29,10 @@ mod aa_clip_region_tests;
 mod aa_clip_tests;
 #[cfg(test)]
 mod blitter_tests;
+#[cfg(test)]
+mod blitters_tests;
+#[cfg(test)]
+mod legacy_blitters_tests;
 #[cfg(test)]
 mod raster_pipeline_blitter_tests;
 #[cfg(test)]

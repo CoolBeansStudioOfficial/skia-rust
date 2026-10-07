@@ -64,6 +64,10 @@ const EMBOSS_ADD: MemSlot = MemSlot(3);
 /// `fClipShaderBuffer`.
 const CLIP: MemSlot = MemSlot(4);
 
+/// The source pixels of a pre-baked shader pipeline that loads from memory, bound by
+/// [`RasterPipelineBlitter::blit_rect_with_source`]: the sprite blitter's `fSrcPtr`.
+pub const SOURCE: MemSlot = MemSlot(5);
+
 /// Bytes of the clip shader's alpha buffer: `kMaxStride` floats (large enough for highp floats
 /// or lowp `U16`s).
 const CLIP_BUFFER_BYTES: usize = MAX_STRIDE * 4;
@@ -681,6 +685,31 @@ impl<'a> RasterPipelineBlitter<'a> {
     #[must_use]
     pub fn dst(&self) -> &Pixmap<'a> {
         &self.dst
+    }
+
+    /// `blit_rect` with `source` bound to [`SOURCE`], for a blitter made by
+    /// [`create_raster_pipeline_blitter_with_pipeline`] from a shader pipeline that loads its
+    /// pixels through `MemoryCtx::new(SOURCE)`. This is the part of
+    /// `SkRasterPipelineSpriteBlitter::blitRect` after it points `fSrcPtr` at the sprite
+    /// (`fBlitter->blitRect(x, y, width, height)`); the view's origin is Skia's "fake base"
+    /// pointer, so device pixel `(x, y)` reads the source's pixel `(x - left, y - top)`.
+    ///
+    /// skia-rust: Skia's blitter reads `fSrcPtr` through the pipeline's `MemoryCtx`; here the
+    /// pixels are bound for the run, like every other plane.
+    ///
+    /// # Panics
+    /// If the blitter has a `memset` fill (it only has one when the color pipeline is constant,
+    /// which a pipeline that loads pixels is not).
+    pub fn blit_rect_with_source(
+        &mut self,
+        (x, y, w, h): (i32, i32, i32, i32),
+        source: MemView<'_>,
+    ) {
+        assert!(
+            self.memset_shift.is_none(),
+            "a shader pipeline that loads pixels is not constant"
+        );
+        self.run_blit(BlitKind::Rect, (x, y, w, h), vec![(SOURCE, source)]);
     }
 
     /// Whether the pipeline of `kind` has been built yet (`fBlit* != nullptr`).

@@ -10,10 +10,12 @@
 //! needed to generate pixels for the destination and how src/generated pixels map to the
 //! destination. The coordinates passed to the `blit_*` calls are in destination pixel space.
 //!
-//! Not ported here (they belong to the legacy-blitter task): `SkBlitter::Choose`,
-//! `ChooseSprite`, `UseLegacyBlitter` and `gSkForceRasterPipelineBlitter`. The debug-only
-//! `SkRectClipCheckBlitter` is not ported either. `canDirectBlit` is [`Blitter::can_direct_blit`]
-//! (implemented by the raster pipeline blitter, task D3).
+//! `SkBlitter::Choose`, `ChooseSprite` and `UseLegacyBlitter` are in
+//! [`blitter_choose`](crate::blitter_choose) and [`sprite_blitter`](crate::sprite_blitter); the
+//! legacy blitters are in [`core_blitters`](crate::core_blitters) and
+//! [`blitter_a8`](crate::blitter_a8); the raster pipeline blitter is
+//! [`raster_pipeline_blitter`](crate::raster_pipeline_blitter). The debug-only
+//! `SkRectClipCheckBlitter` is not ported. `canDirectBlit` is [`Blitter::can_direct_blit`].
 
 use skia_rust_core::color::Alpha;
 use skia_rust_core::mask::{Mask, MaskFormat};
@@ -70,6 +72,38 @@ fn scalar_to_alpha(a: f32) -> Alpha {
     }
 }
 
+/// The default `SkBlitter::blitV`, for blitters that override [`Blitter::blit_v`] and fall back
+/// to the base class (`INHERITED::blitV(x, y, height, alpha)`).
+// Port of: src/core/SkBlitter.cpp#L106-L118 (chrome/m156)
+#[doc(alias = "blitV")]
+pub fn blit_v_default<B: Blitter + ?Sized>(
+    blitter: &mut B,
+    x: i32,
+    y: i32,
+    height: i32,
+    alpha: Alpha,
+) {
+    if alpha == 255 {
+        blitter.blit_rect(x, y, 1, height);
+    } else {
+        let mut runs = [0i16; 2];
+        runs[0] = 1;
+        runs[1] = 0;
+
+        let mut alpha = alpha;
+        let mut y = y;
+        let mut height = height;
+        loop {
+            height -= 1;
+            if height < 0 {
+                break;
+            }
+            blitter.blit_anti_h(x, y, std::slice::from_mut(&mut alpha), &mut runs);
+            y += 1;
+        }
+    }
+}
+
 /// What [`Blitter::can_direct_blit`] returns: a solid fill the caller may write straight into the
 /// destination pixels.
 ///
@@ -119,25 +153,7 @@ pub trait Blitter {
     // Port of: src/core/SkBlitter.cpp#L106-L118 (chrome/m156)
     #[doc(alias = "blitV")]
     fn blit_v(&mut self, x: i32, y: i32, height: i32, alpha: Alpha) {
-        if alpha == 255 {
-            self.blit_rect(x, y, 1, height);
-        } else {
-            let mut runs = [0i16; 2];
-            runs[0] = 1;
-            runs[1] = 0;
-
-            let mut alpha = alpha;
-            let mut y = y;
-            let mut height = height;
-            loop {
-                height -= 1;
-                if height < 0 {
-                    break;
-                }
-                self.blit_anti_h(x, y, std::slice::from_mut(&mut alpha), &mut runs);
-                y += 1;
-            }
-        }
+        blit_v_default(self, x, y, height, alpha);
     }
 
     /// Blit a solid rectangle one or more pixels wide.

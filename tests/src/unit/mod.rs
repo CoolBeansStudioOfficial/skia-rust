@@ -13,6 +13,8 @@ pub mod bitmap_test;
 #[cfg(test)]
 pub mod blend_test;
 #[cfg(test)]
+pub mod blit_mask_clip;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
@@ -24,6 +26,8 @@ pub mod color_priv_test;
 pub mod color_space_test;
 #[cfg(test)]
 pub mod color_test;
+#[cfg(test)]
+pub mod core_blitters_test;
 #[cfg(test)]
 pub mod cubic_map_test;
 #[cfg(test)]

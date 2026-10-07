@@ -28535,8 +28535,8 @@ id = "tests/BlitMaskClip.cpp::BlitAndClip"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlitMaskClip.cpp#L43-L69"
-module = "effects"
-status = "todo"
+module = "raster"
+status = "passing"
 span_hash = "7b1e564002506ef663dfd9dd4d41d33f70e3338d6565c5afe2166c53309eb33b"
 
 [[test]]
@@ -30063,8 +30063,8 @@ id = "tests/CoreBlittersTest.cpp::SkARGB32BlackBlitter_MaskAndAntiHDrawTheSame"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CoreBlittersTest.cpp#L149-L166"
-module = "effects"
-status = "todo"
+module = "raster"
+status = "passing"
 span_hash = "d7772e425eb58144ec9ef9fbed4b19af00692b37b01a2c7286464374e0767fa9"
 
 [[test]]
@@ -30072,8 +30072,8 @@ id = "tests/CoreBlittersTest.cpp::SkARGB32Blitter_MaskAndAntiHDrawTheSame"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CoreBlittersTest.cpp#L168-L199"
-module = "effects"
-status = "todo"
+module = "raster"
+status = "passing"
 span_hash = "11cb85d5e95c721a312dfa334408b1cd6661aadf4cb29ab19e517a16d6e9f565"
 
 [[test]]
@@ -30081,8 +30081,8 @@ id = "tests/CoreBlittersTest.cpp::SkARGB32OpaqueBlitter_MaskAndAntiHDrawTheSame"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CoreBlittersTest.cpp#L122-L147"
-module = "effects"
-status = "todo"
+module = "raster"
+status = "passing"
 span_hash = "829c04d3ab71efeddbc99b79145772806755eb8e0569aee5203e46507f41599c"
 
 [[test]]

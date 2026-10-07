@@ -1647,8 +1647,8 @@ the same framework.
   `alloc_blit_memory`, `blit_fat_anti_rect`, `blit_mask_region`, `blit_rect_region`, `blit_region`.
   `Blitter` is object safe; wrappers hold `&mut dyn Blitter`.
 - **Wrappers.** `NullBlitter`, `RectClipBlitter`, `RgnClipBlitter` and `BlitterClipper` (returns `&mut dyn
-  Blitter` borrowed from the clipper) are straight ports. `can_direct_blit`, `Choose*` and the debug-only
-  `SkRectClipCheckBlitter` are not ported.
+  Blitter` borrowed from the clipper) are straight ports. `can_direct_blit` and `Choose*` came with D4 (below); the debug-only
+  `SkRectClipCheckBlitter` is not ported.
 - **`AlphaRuns`** owns `runs`/`alpha` `Vec`s; `break_runs`/`break_at` are associated functions over slices
   so the blitters can call them on sub-slices (a pointer bump is a re-slice).
 - **`Mask`/`MaskBuilder`** live in core (mask filters need them): borrowed vs owned image, `get_addr*`
@@ -1952,6 +1952,59 @@ image_filter}`, all in core, per R11):
   draws through `SkCanvas::clipRegion`; they are ported but `#[ignore]`d with the manifest entries
   `todo` until D6. `aa_clip_region_tests.rs` runs the same random comparisons with the region mask
   filled directly.
+
+**As implemented in D4** (`skia_rust_raster::{blitter_choose, core_blitters, blitter_a8, sprite_blitter,
+blit_row}`; `skia_rust_core::{draw_types, shaders::{color_filter_shader, shader_base}}`):
+
+- **Files.** `SkCoreBlitters.h` + `SkBlitter_ARGB32.cpp` (+ `SkBlitBWMaskTemplate.h`) are `core_blitters`
+  (`Argb32Blitter`, `Argb32OpaqueBlitter` wrapping it, `Argb32BlackBlitter` wrapping that, and
+  `Argb32ShaderBlitter`); `SkBlitter_A8.cpp` is `blitter_a8`; `SkBlitRow_D32.cpp` is `blit_row`
+  (`factory32`, `color32`, the two blend procs); `SkBlitter_Sprite.cpp` + `SkSpriteBlitter_ARGB32.cpp` are
+  `sprite_blitter`; `SkBlitter.cpp#L612-L760` is `blitter_choose` (`use_legacy_blitter`, `choose`).
+  Blitters own the `Pixmap` they draw into. Inheritance is composition with the inherited methods forwarded;
+  where an override calls the base class (`this->SkBlitter::blitMask`, `INHERITED::blitV`) the D1 trait's default
+  bodies are also free functions, `blit_mask_default` and `blit_v_default`.
+- **Pixels.** The `SkOpts` kernels (`memset32`, `rect_memset32`, `blit_row_color32`, `blit_row_s32a_opaque`,
+  `blit_mask_d32_a8`, B7) take `&mut [u32]`, a `Pixmap` holds bytes, and `unsafe` is out of the question:
+  `pixel_rows` loads the affected pixels into a scratch `Vec<u32>`, runs the kernel and stores them back. Same
+  pixels, same arithmetic, the current CPU tier's kernel. `blit_row_s32_blend`/`blit_row_s32a_blend` (compiled
+  into `SkBlitRow_D32.cpp`, SSE2 on x86-64, NEON on arm64) are ported as the lane math (4-pixel SSE2 chunks with
+  the portable `SkBlendARGB32` for the tail, NEON two pixels at a time without a tail), which equals the portable
+  code for every premultiplied source; tests show the lerp is exact for all bytes and that NEON's destination
+  scale equals x86's.
+- **LCD16.** `blit_row_lcd16*` are the portable per-pixel functions. Skia's SSE2/NEON versions agree on the color
+  channels and on the alpha channel for opaque destinations (the only supported case: `0xFF` either way); with a
+  non-opaque destination they differ among themselves (the SSE2 one compares a 16-bit-replicated alpha with the
+  destination's lowest byte, so it always takes the max coverage, and which pixels it handles depends on the
+  destination's 16-byte alignment). Documented in `core_blitters`; the oracle dump only has opaque destinations.
+- **`Choose`.** Same order of decisions as Skia (null for `kUnknown`; blend-mode fast paths; `Clear` becomes `Src` of
+  transparent black; `RemoveColorFilter`; coverage draws; dither dropped when it does nothing; legacy blitters for
+  `kN32` source-over; shader context else pipeline). `SkPaintPriv::RemoveColorFilter` needed
+  `SkColorFilterShader`, so that small shader is ported too (`Shader::with_color_filter`). The legacy shader context
+  (`SkShaderBase::Context`, `makeContext`) is ported as a trait and `ENABLE_LEGACY_SHADER_CONTEXT = false`, as
+  `SK_ENABLE_LEGACY_SHADERCONTEXT` is not defined in the oracle builds: `Choose` never makes the shader blitter, and
+  every paint with a shader goes to the pipeline. `gSkForceRasterPipelineBlitter` (a global) is a `bool`
+  parameter; `SkSurfaceProps` is left out of the signatures until D6. `Blitter::can_direct_blit`/`DirectBlit` exist
+  now (opaque ARGB32 blitters return `{pixels, pm_color}`).
+- **Raster pipeline blitter (D3).** D3 landed first, so `Choose` calls `create_raster_pipeline_blitter`
+  directly, with the arena it takes as a parameter (`choose(device, ctm, paint, alloc, coverage, clip_shader,
+  dev_bounds, force)`), and `RasterPipelineSpriteBlitter` builds its pipeline in that arena (`load_*` through
+  `MemoryCtx::new(SOURCE)`, `set_rgb` + `premul` for alpha-only sources, the color space steps, the paint alpha) and
+  hands it to `create_raster_pipeline_blitter_with_pipeline`. The one change to D3's file: Skia's `fSrcPtr` is memory
+  the pre-baked pipeline reads, so `RasterPipelineBlitter::blit_rect_with_source` binds it to a new `SOURCE` slot for
+  one rectangle (the view's origin is the "fake base" pointer).
+- **Tests.** `CoreBlittersTest` (3 tests) and `BlitMaskClip::BlitAndClip` pass (the first per CPU tier; their
+  `Canvas::clear` is `Pixmap::erase`, the same pixels for opaque colors, with the blitters recreated after each
+  clear since a Rust blitter borrows its pixels). `oracle/rp-builder/d4_blitters.cpp` (`build-d4.ps1`) runs the real
+  Skia blitters on 1040 deterministic steps (`ARGB32`/`Opaque`/`Black` by hand and through `Choose`, the A8
+  blitters, sprite blitters, `SkBlitRow` procs including non-premultiplied sources, `Color32`; every `blit*` call,
+  strided devices, A8/BW/ARGB32/LCD16 masks with sub-clips) and writes a hash per step to
+  `crates/skia-rust-raster/src/skia_d4_dump.txt`; `legacy_blitters_tests.rs` regenerates the inputs and matches
+  all of them on every x86 tier and `Scalar` (the pipeline sprite lines, ten steps whose lowp/highp stages differ by
+  tier, are recorded at the baseline and under the ml3 and ml4 caps and checked on `Sse2`/`Ml3`/`Ml4`; `Neon` has different `blit_row_s32a_opaque`/`blit_mask_d32_a8`
+  kernels and no oracle yet, so it is not compared). `blitters_tests.rs` covers what the dump cannot: `Choose`'s
+  decisions (against the pipeline D3 builds for the paint `Choose` should have tweaked it into), the shader blitter
+  against independent per-channel formulas, LCD16 values, direct blits and the sprite offsets.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

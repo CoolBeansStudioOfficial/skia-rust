@@ -7,6 +7,7 @@
 //! `SkShaders`: the shader factories, and the shader implementations of `src/shaders` that
 //! core needs (the shader base, color and empty shaders).
 
+pub mod color_filter_shader;
 pub mod color_shader;
 pub mod empty_shader;
 pub mod shader_base;
@@ -19,9 +20,13 @@ use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::floating_point::is_finite_array;
 use crate::shader::Shader;
 
+pub use color_filter_shader::ColorFilterShader;
 pub use color_shader::ColorShader;
 pub use empty_shader::EmptyShader;
-pub use shader_base::{MatrixRec, ShaderBase, ShaderType};
+pub use shader_base::{
+    ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, MatrixRec, OPAQUE_ALPHA_FLAG, ShaderBase,
+    ShaderContext, ShaderType,
+};
 
 /// A shader that draws nothing (`SkShaders::Empty`).
 // Port of: src/shaders/SkEmptyShader.cpp#L20 (chrome/m156)
