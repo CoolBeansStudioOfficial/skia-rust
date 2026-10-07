@@ -703,7 +703,7 @@ impl CanvasState {
                 inset.right - 1,
                 inset.bottom - 1,
             );
-            new_device.clip_rect(&Rect::from_irect(&inset), ClipOp::Intersect, false);
+            new_device.clip_rect(&Rect::from_irect(inset), ClipOp::Intersect, false);
         }
 
         // Configure device to match determined mapping for any image filters.
@@ -875,7 +875,7 @@ impl CanvasState {
     fn android_framework_set_device_clip_restriction(&mut self, rect: &IRect) {
         // See the long comment in SkCanvas.cpp: the restriction is remembered so that
         // `resetClip` respects it, and reset when the canvas is restored past this save count.
-        debug_assert!(self.mc_rec().device == 0); // shouldn't be in a nested layer
+        debug_assert_eq!(self.mc_rec().device, 0); // shouldn't be in a nested layer
         // and shouldn't already have a restriction
         debug_assert!(
             self.clip_restriction_save_count < 0 && self.clip_restriction_rect.is_empty()
@@ -1039,7 +1039,7 @@ impl CanvasState {
         let margin = 1;
 
         inverse
-            .map_rect(Rect::from_irect(&IRect::new(
+            .map_rect(Rect::from_irect(IRect::new(
                 ibounds.left - margin,
                 ibounds.top - margin,
                 ibounds.right + margin,
@@ -1061,7 +1061,7 @@ impl CanvasState {
         } else {
             let mut dev_clip_bounds = map_rect(
                 dev.state().device_to_global(),
-                &Rect::from_irect(&dev.dev_clip_bounds()),
+                &Rect::from_irect(dev.dev_clip_bounds()),
             );
             if outset_for_aa {
                 // Expand bounds out by 1 in case we are anti-aliasing.  We store the bounds as
@@ -1319,6 +1319,8 @@ impl CanvasState {
 /// (`get_layer_mapping_and_bounds` with an empty filter span). `None` if the layer should be
 /// skipped.
 // Port of: src/core/SkCanvas.cpp#L569-L666 (chrome/m156)
+const MIN_DIM_THRESHOLD: i32 = 2048;
+
 fn get_layer_mapping_and_bounds(
     local_to_dst: &M44,
     target_output: &IRect,
@@ -1358,7 +1360,6 @@ fn get_layer_mapping_and_bounds(
     // to be 2X larger per side of the prior device in order to fully cover it. We use the max of
     // that and 2048 for a reasonable upper limit (this allows small layers under extreme
     // transforms to use more relative resolution than a larger layer).
-    const MIN_DIM_THRESHOLD: i32 = 2048;
     let w64 = i64::from(target_output.right) - i64::from(target_output.left);
     let h64 = i64::from(target_output.bottom) - i64::from(target_output.top);
     let max_layer_dim = crate::safe32::pin_to_s32(2 * w64.max(h64)).max(MIN_DIM_THRESHOLD);
@@ -1387,8 +1388,8 @@ fn get_layer_mapping_and_bounds(
             layer_bounds.height().min(max_layer_dim),
         );
         let adjust = M44::rect_to_rect(
-            Rect::from_irect(&layer_bounds),
-            Rect::from_irect(&new_layer_bounds),
+            Rect::from_irect(layer_bounds),
+            Rect::from_irect(new_layer_bounds),
         );
         if !mapping.adjust_layer_space(&adjust) {
             return None;
@@ -1412,6 +1413,9 @@ pub struct PeekedPixels<'a>(Ref<'a, dyn Device + 'static>);
 
 impl PeekedPixels<'_> {
     /// The pixels, for reading.
+    ///
+    /// # Panics
+    /// Never: the guard is only made for a device with pixels.
     #[must_use]
     pub fn pixmap(&self) -> Pixmap<'_> {
         self.0.peek_pixels().expect("checked on creation")
@@ -1433,6 +1437,9 @@ pub struct TopLayerPixels<'a> {
 
 impl TopLayerPixels<'_> {
     /// The pixels, for writing.
+    ///
+    /// # Panics
+    /// Never: the guard is only made for a device with pixels.
     pub fn pixmap(&mut self) -> Pixmap<'_> {
         self.device.access_pixels().expect("checked on creation")
     }
@@ -1650,23 +1657,20 @@ impl Canvas {
     }
 
     /// Saves the matrix and clip; returns the previous save count (`save`).
-    #[must_use]
     pub fn save(&self) -> usize {
-        self.state.borrow_mut().save() as usize
+        usize::try_from(self.state.borrow_mut().save()).unwrap_or(0)
     }
 
     /// Saves the matrix and clip and allocates a layer; returns the previous save count
     /// (`saveLayer`).
     #[doc(alias = "saveLayer")]
-    #[must_use]
     pub fn save_layer(&self, layer_rec: &SaveLayerRec<'_>) -> usize {
-        self.state.borrow_mut().save_layer(layer_rec) as usize
+        usize::try_from(self.state.borrow_mut().save_layer(layer_rec)).unwrap_or(0)
     }
 
     /// `saveLayerAlphaf`.
     // Port of: src/core/SkCanvas.cpp#L1092-L1100 (chrome/m156)
     #[doc(alias = "saveLayerAlphaf")]
-    #[must_use]
     pub fn save_layer_alpha_f(&self, bounds: impl Into<Option<Rect>>, alpha: f32) -> usize {
         let bounds = bounds.into();
         let mut rec = SaveLayerRec::default();
@@ -1684,7 +1688,6 @@ impl Canvas {
 
     /// `saveLayerAlpha` (an 8-bit alpha).
     #[doc(alias = "saveLayerAlpha")]
-    #[must_use]
     pub fn save_layer_alpha(&self, bounds: impl Into<Option<Rect>>, alpha: u8) -> usize {
         self.save_layer_alpha_f(bounds, f32::from(alpha) * (1.0 / 255.0))
     }
@@ -1699,7 +1702,7 @@ impl Canvas {
     #[doc(alias = "getSaveCount")]
     #[must_use]
     pub fn save_count(&self) -> usize {
-        self.state.borrow().save_count as usize
+        usize::try_from(self.state.borrow().save_count).unwrap_or(0)
     }
 
     /// Restores to the state when [`save`](Self::save) returned `save_count` (`restoreToCount`).
@@ -2077,8 +2080,8 @@ impl Canvas {
         paint: &Paint,
     ) -> &Self {
         if rx > 0.0 && ry > 0.0 {
-            let rrect = RRect::new_rect_xy(rect, rx, ry);
-            self.draw_rrect(rrect, paint)
+            let rr = RRect::new_rect_xy(rect, rx, ry);
+            self.draw_rrect(rr, paint)
         } else {
             self.draw_rect(rect, paint)
         }

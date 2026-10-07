@@ -96,22 +96,18 @@ impl Mapping {
         capability: MatrixCapability,
         _representative_pt: Point,
     ) -> bool {
-        let remainder;
-        let layer;
-        if capability == MatrixCapability::Translate {
+        let (remainder, layer) = if capability == MatrixCapability::Translate {
             // Apply the entire CTM post-filtering
-            remainder = *ctm;
-            layer = M44::new_identity();
+            (*ctm, M44::new_identity())
         } else if is_scale_translate_as_m33(ctm) || capability == MatrixCapability::Complex {
             // Either layer space can be anything (kComplex) - or - it can be scale+translate, and
             // the ctm is. In both cases, the layer space can be equivalent to device space.
-            remainder = M44::new_identity();
-            layer = *ctm;
+            (M44::new_identity(), *ctm)
         } else {
             // This case implies some amount of sampling post-filtering, either due to skew or
             // rotation in the original matrix. TODO(Phase 3, image filters): `decompose_transform`.
             return false;
-        }
+        };
 
         let Some(inv_remainder) = remainder.invert() else {
             // Under floating point arithmetic, it's possible to decompose an invertible matrix

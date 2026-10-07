@@ -110,7 +110,7 @@ pub fn create_draw_arc_path(arc: &Arc, is_fill_no_path_effect: bool) -> Path {
     builder.set_is_volatile(true);
 
     if is_fill_no_path_effect && scalar_abs(sweep_angle) >= 360.0 {
-        builder.add_oval(&oval, None, None);
+        builder.add_oval(oval, None, None);
         debug_assert!(draw_arc_is_convex(
             sweep_angle,
             ArcType::Arc,

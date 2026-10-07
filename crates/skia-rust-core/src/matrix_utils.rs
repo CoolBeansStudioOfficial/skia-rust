@@ -194,7 +194,7 @@ pub fn treat_as_sprite(
     }
 
     let mut isrc = IRect::from_wh(size.width, size.height);
-    let mut dst = mat.map_rect(Rect::from_irect(&isrc)).0;
+    let mut dst = mat.map_rect(Rect::from_irect(isrc)).0;
 
     // just apply the translate to isrc
     isrc.offset((

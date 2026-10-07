@@ -15,7 +15,7 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::size::ISize;
 
-use crate::canvas::{PixelGeometry, Surface, SurfaceProps};
+use crate::canvas::{PixelGeometry, Surface, SurfaceProps, SurfacePropsFlags};
 use crate::registry::GmRegistration;
 use crate::{DrawResult, GM, GmInstance};
 
@@ -242,7 +242,7 @@ impl RasterSink {
         // allocPixelsFlags(..., kZeroPixels_AllocFlag): our allocation is always zeroed.
         dst.alloc_pixels_flags(&self.config.image_info(size));
 
-        let mut props = SurfaceProps::new(0, PixelGeometry::RGBH);
+        let mut props = SurfaceProps::new(SurfacePropsFlags::empty(), PixelGeometry::RGBH);
         src.modify_surface_props(&mut props);
         let mut surface =
             Surface::wrap_pixels(&mut dst, Some(&props)).expect("allocated pixels can be wrapped");

@@ -567,7 +567,6 @@ impl<'a> Draw<'a> {
                 );
                 if let Some(mut blitter) = blitter {
                     fill_irect_clip(&IRect::from_xywh(ix, iy, w, h), self.rc, &mut *blitter);
-                    return;
                 }
                 // if !blitter, then we fall-through to the slower case
             }
