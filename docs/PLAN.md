@@ -30,7 +30,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | Layout | Cargo workspace of internal crates + `skia-rust` facade crate with feature flags |
 | Skia pin | Latest Skia release (`chrome/mNNN` branch), upgraded **every milestone** |
 | Implementation style | Faithful function-by-function port: same arithmetic and operation order, written as idiomatic Rust, each item linked to its C++ source |
-| API naming | Drop `Sk` prefix, Rust casing (`SkCanvas::drawRect` → `Canvas::draw_rect`), `#[doc(alias = "SkCanvas")]` on everything |
+| API naming | Mirror rust-skia's `skia-safe` public API (names, paths, signatures), without its FFI plumbing; where it has no equivalent, drop `Sk` + Rust casing. `#[doc(alias = "SkCanvas")]` on everything (`docs/PORTING.md` §3) |
 | Unsafe | Workspace `deny(unsafe_code)`; allowed **only** in `skia-rust-simd`, with documented, minimal, Miri-checked blocks |
 | Lints | `clippy::pedantic` (warn, CI treats warnings as errors) + `cargo deny` |
 | Test scope | Everything: core, effects, CPU raster, PathOps, GPU (Graphite), text, codecs, skcms, PDF, SVG, Skottie, Paragraph |
@@ -99,7 +99,8 @@ skia-rust/
 ### 3.2 Facade features
 `default = ["raster", "effects", "pathops", "codec", "text"]`; opt-in: `gpu`, `sksl` (pulled in by `gpu` / runtime effects), `paragraph`, `svg`, `skottie`, `pdf`.
 
-### 3.3 API conventions (detailed in `docs/API_MAPPING.md`)
+### 3.3 API conventions (detailed in `docs/PORTING.md` §3 and `docs/API_MAPPING.md`)
+- **Reference API: rust-skia's `skia-safe`** (pinned in `inventory/api-reference.toml`). skia-rust matches its type names, method names, signatures and module paths, so users can switch with minimal edits. The points below apply where `skia-safe` has no equivalent or exposes FFI plumbing.
 - `sk_sp<T>` → `Arc<T>` for immutable shared objects (`Shader`, `Image`, `Typeface`, …); plain values for value types (`Paint`, `Path`, `Matrix`).
 - A nullptr return becomes `Option<T>`, or `Result<T, Error>` where Skia reports a reason.
 - Integer flags become `bitflags!` types; C++ enums become Rust `enum`s with Skia's discriminants preserved.

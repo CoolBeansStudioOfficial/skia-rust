@@ -47,7 +47,7 @@ pub fn fetch(root: &Path) -> Result<()> {
                 "third_party/skia already at {} ({})",
                 pin.branch, pin.commit
             );
-            return Ok(());
+            return fetch_api_reference(root);
         }
         bail!(
             "third_party/skia is at {head}, pin is {}; delete the directory and re-run",
@@ -77,6 +77,42 @@ pub fn fetch(root: &Path) -> Result<()> {
         git(&dir, &["checkout", "--detach", &pin.commit])?;
     }
     println!("fetched Skia {} ({})", pin.branch, pin.commit);
+    fetch_api_reference(root)
+}
+
+/// Contents of `inventory/api-reference.toml`: the rust-skia commit whose `skia-safe`
+/// API skia-rust mirrors.
+#[derive(Debug, Deserialize)]
+struct ApiReference {
+    repo: String,
+    commit: String,
+}
+
+/// Fetches rust-skia at the pinned commit into `third_party/rust-skia` (reference only;
+/// never built or depended on).
+fn fetch_api_reference(root: &Path) -> Result<()> {
+    let path = root.join("inventory").join("api-reference.toml");
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    let api: ApiReference =
+        toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))?;
+    let dir = root.join("third_party").join("rust-skia");
+    if !dir.join(".git").exists() {
+        std::fs::create_dir_all(&dir)?;
+        git(&dir, &["init", "-q"])?;
+        git(&dir, &["remote", "add", "origin", &api.repo])?;
+    }
+    if git(&dir, &["rev-parse", "HEAD"]).ok().as_deref() != Some(api.commit.as_str()) {
+        git(
+            &dir,
+            &["fetch", "-q", "--depth", "1", "origin", &api.commit],
+        )?;
+        git(&dir, &["checkout", "-q", "--detach", &api.commit])?;
+    }
+    println!(
+        "API reference: rust-skia {} in third_party/rust-skia",
+        &api.commit[..12]
+    );
     Ok(())
 }
 

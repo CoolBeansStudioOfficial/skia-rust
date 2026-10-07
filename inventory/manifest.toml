@@ -27965,7 +27965,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L19-L113"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "2a2e169d8ff56c0c49d5586f4f95e5bdd9b436aa9ea1718205d20c7efa46408b"
 
 [[test]]
@@ -27974,7 +27975,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L165-L200"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "c46332e5e27c4bfeb979145d267b24534e972fab83d7622bbf532060afb9a235"
 
 [[test]]
@@ -27983,7 +27985,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L122-L141"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "2cf98ff82a801e6f78b92c10a96051836f0c6b8b51c39ed53f6db40e1f82b913"
 
 [[test]]
@@ -27992,7 +27995,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L115-L120"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "cf57f2b9eb9bdc3eefd235a00f4fd9fe185316c2693667ebed88195f658d127b"
 
 [[test]]
@@ -28001,7 +28005,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L202-L209"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "c9d4bc0636d155ab93c3d7ab25cf4b91e0568adb8258db20961f355a8d93fda4"
 
 [[test]]
@@ -28010,7 +28015,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L143-L163"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "49beb84fff0550735368be850dc59cdf48780fed839972d794561c6aae9d3350"
 
 [[test]]
@@ -28019,7 +28025,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ArenaAllocTest.cpp#L211-L245"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkArenaAlloc; Rust uses ownership/Vec"
 span_hash = "88e68a959dfbe61f5a78f3b8f75c7688d87c1b6eb9f20fb6706d3cca964fbef1"
 
 [[test]]
@@ -28341,7 +28348,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitSetTest.cpp#L14-L63"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBitSet; Rust uses Vec<bool>/bit ops"
 span_hash = "dd416a0679f866ddff2ee640340ad9c1f3720afc79c1306fc86bd9905126d8f5"
 
 [[test]]
@@ -28350,7 +28358,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitSetTest.cpp#L81-L116"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBitSet; Rust uses Vec<bool>/bit ops"
 span_hash = "79f648c6132843b9097a43faa8644002a63cf23c2fc772338c317be44f7f176f"
 
 [[test]]
@@ -28359,7 +28368,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitSetTest.cpp#L65-L79"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBitSet; Rust uses Vec<bool>/bit ops"
 span_hash = "c0759cc3774151543851252ec041483ded47a5c04a4ed099dcc18c86f95833bb"
 
 [[test]]
@@ -30500,7 +30510,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DequeTest.cpp#L164-L169"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkDeque; Rust uses VecDeque"
 span_hash = "bb5f1da41953e419e3f0ddaacf8344c23770a464c277b17d3ac6a3f32ee495e3"
 
 [[test]]
@@ -30938,7 +30949,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExecutorTest.cpp#L119-L124"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkExecutor thread pool; internal threading utility"
 span_hash = "1af7eb4dac585f39bcb8fff466b9f4de014727c188ecb294c32eb5b6ffca3b58"
 
 [[test]]
@@ -33720,7 +33732,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L378-L397"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "91d864dd176516a826878cee9fe39e5de39c863f02655ea942f8c19d1b68eb3b"
 
 [[test]]
@@ -33729,7 +33742,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L29-L150"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "ff0c43dbaffc7cd4ba49ee9212bd1b0055c02f3b7c7ea715c0871a4cb2375943"
 
 [[test]]
@@ -33738,7 +33752,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L152-L178"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "6f5616db0349129cead86f37c87b15b0147fc1d30685f18554b6f175d4cc3d98"
 
 [[test]]
@@ -33747,7 +33762,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L180-L202"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "bdc627f72a3f57fdccb7f66cc9c95df330d34092d9048250ae8e391f9c1cc15f"
 
 [[test]]
@@ -33756,7 +33772,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L477-L497"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "fd46f9d9b2f0784f4f2cb7ef53194a27a89f39c27272d7b5770a4434de6c7836"
 
 [[test]]
@@ -33765,7 +33782,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L351-L376"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "a7254879e2a5c448102b2fbb16fb2980fcb7fa93d9a7aeb3322478a3581b89e2"
 
 [[test]]
@@ -33774,7 +33792,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L204-L215"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "38fc49d1ca604965ac8e2f5027c766ea04dac0de4294dffcb5f40e8e9800c6c0"
 
 [[test]]
@@ -33783,7 +33802,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L217-L232"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "392aa8190529df16a4b59fbf694761ea23e552f5e4adf8a282e507996c6f8e25"
 
 [[test]]
@@ -33792,7 +33812,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L499-L519"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "99fd61ec1514cfce43397bb81507212589be93c7c965bdffa9b8372e71cdb489"
 
 [[test]]
@@ -33801,7 +33822,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L294-L296"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "080476a5ca30ab6477716540aa437bcce03f047a9435e5c7a11ba55ac428afa2"
 
 [[test]]
@@ -33810,7 +33832,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L298-L300"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "976c4c321bc2093fbe6ce791f0ca5024458ef5f624e7bae31c9b5bcd7aaec775"
 
 [[test]]
@@ -33819,7 +33842,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L302-L304"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "4d1fb13522769b3491f96d405c94731da1e8857a0b13d25c0bf5511ad80942c2"
 
 [[test]]
@@ -33828,7 +33852,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HashTest.cpp#L399-L475"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTHashMap/SkTHashSet; Rust uses HashMap/HashSet"
 span_hash = "e239022df98f10475fa67ce12490773d56e5b750712d78a834cbc7de81e52e53"
 
 [[test]]
@@ -35042,7 +35067,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IncrTopoSortTest.cpp#L493-L498"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTTopoSort; internal utility with no public API"
 span_hash = "b1291856e4c6f3240331da569143415f777566f29b55bd4115b6b4fefb686399"
 
 [[test]]
@@ -35249,7 +35275,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/LRUCacheTest.cpp#L51-L87"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkLRUCache; internal container"
 span_hash = "d093d0eafe82acd31776e3b0777bd7a52016d73e84c377c2aceb0c6be6ca557a"
 
 [[test]]
@@ -35258,7 +35285,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/LRUCacheTest.cpp#L29-L49"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkLRUCache; internal container"
 span_hash = "c186f8afa729d7a1b7520672eed91d992e8a66d9e9ce0500924540509f07bc27"
 
 [[test]]
@@ -36290,7 +36318,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OnceTest.cpp#L32-L47"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkOnce; Rust uses std::sync::Once/OnceLock"
 span_hash = "b2fb21f7e848a4ef2b2ab4b395b04744cc05cff600555bef1c6f119eab967813"
 
 [[test]]
@@ -36299,7 +36328,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OnceTest.cpp#L52-L58"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkOnce; Rust uses std::sync::Once/OnceLock"
 span_hash = "54488dae54bf6b93c49382cbf6d85b5e280c32c4fe1eee430447f54caa3aa436"
 
 [[test]]
@@ -36308,7 +36338,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OnceTest.cpp#L18-L30"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkOnce; Rust uses std::sync::Once/OnceLock"
 span_hash = "264c968cbb08c4f799c77efb6994a3061f00439ab11f26a46d58ada8e825d7ae"
 
 [[test]]
@@ -40349,7 +40380,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RefCntTest.cpp#L73-L76"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRefCnt/sk_sp; Rust uses Arc"
 span_hash = "5f3d19f254cad9611a56e99903c48a51b94920696b93fee089552aa86ceb2be6"
 
 [[test]]
@@ -40358,7 +40390,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RefCntTest.cpp#L346-L348"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRefCnt/sk_sp; Rust uses Arc"
 span_hash = "69b04c9eff5f631034adfcd928ba43252284953a4e17f2960febc4a1658878e9"
 
 [[test]]
@@ -40367,7 +40400,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RefCntTest.cpp#L152-L331"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRefCnt/sk_sp; Rust uses Arc"
 span_hash = "6c16c595d33bda96b2b1f5d706f5551df87cab3df45f9c013e4ded2e9f5b14c5"
 
 [[test]]
@@ -40376,7 +40410,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RefCntTest.cpp#L368-L379"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRefCnt/sk_sp; Rust uses Arc"
 span_hash = "0296e94b4b7480293d24bdbca0be45b54caa58f78597c6fa3a8e1eb4d168b97f"
 
 [[test]]
@@ -40385,7 +40420,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RefCntTest.cpp#L352-L366"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRefCnt/sk_sp; Rust uses Arc"
 span_hash = "72adc15abcee915d95c6a9bab66499fbcf19392a1ef78d12d5caaf97ff76781d"
 
 [[test]]
@@ -41528,7 +41564,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L107-L186"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "46eaf42dee32544c67ed4894a5e6f0d472e891bd89e15fde5461996e374c9b0e"
 
 [[test]]
@@ -41537,7 +41574,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L609-L626"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "a214730663ad05dd681af31a9ef0c286a4e1271fe5ba40a5af4831c4e86c1b6e"
 
 [[test]]
@@ -41546,7 +41584,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L298-L325"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "714e0b3f3fb7cd2a96447205d6ef8bb43cc882342aeb4ffedfedc62f40323264"
 
 [[test]]
@@ -41555,7 +41594,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L421-L456"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "0e0e5852a0426d4c74d647b59422c1aabb15e1e3ee422fb63e4d9d7cb450a44f"
 
 [[test]]
@@ -41564,7 +41604,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L571-L607"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "02215c32b0d73252bd7ce1da5d5252da0c71b2a592c505a09afb77a85afb1270"
 
 [[test]]
@@ -41573,7 +41614,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L657-L672"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "0ed538565f5b27663a0bad9a181b1c32064459bd9cf03d9f299beffed88a4187"
 
 [[test]]
@@ -41582,7 +41624,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L81-L105"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "b56140f6a684b136a50bb04259915c7f4daf35129226873104ce630040dba9d5"
 
 [[test]]
@@ -41591,7 +41634,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L241-L271"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "b6822ab60ef7043ed35376656a56092e056687585786381b1cfa0b62bbb84c2b"
 
 [[test]]
@@ -41600,7 +41644,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L360-L419"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "23442ac0481e6afa7f571410bdf8175eca82a46a7bbb710b196b7752ff77dc59"
 
 [[test]]
@@ -41609,7 +41654,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L327-L358"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "804e2b9e63acf52b612613f2b5a05b53b29f7201b392fb65d9e4ba96898dfb98"
 
 [[test]]
@@ -41618,7 +41664,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L188-L239"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "49905e186fd995bbb1b55d405c7098a89ead23a545f86697657daf395987e33d"
 
 [[test]]
@@ -41627,7 +41674,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L273-L296"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "ad53646417dc75671df223aa5442538b93998a2b888e0ae0c4e00b5f7965414e"
 
 [[test]]
@@ -41636,7 +41684,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L458-L519"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "28aabb089ad7cff205179df44122e2d892880b20b1087c3531165f292e640a4d"
 
 [[test]]
@@ -41645,7 +41694,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBlockAllocatorTest.cpp#L521-L559"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkBlockAllocator; internal allocator"
 span_hash = "82899e39553a91feb03993127559388239c7181a1dce7ad1c701107f49c34016"
 
 [[test]]
@@ -41853,7 +41903,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkContainersTest.cpp#L30-L92"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkContainerAllocator; Rust uses Vec"
 span_hash = "bf9405f0591d93775548b8b5c484c908751bb66f3d6d8eb19227ce1cacec3b23"
 
 [[test]]
@@ -41871,7 +41922,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkEnumBitMaskTest.cpp#L19-L46"
 module = "effects"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkEnumBitMask; Rust uses bitflags"
 span_hash = "506e73d9361473a2726fe05ab535e8ac96658cdab9e3c6e89eb2a887c46e88c3"
 
 [[test]]
@@ -42339,7 +42391,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkMallocTest.cpp#L20-L38"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc; Rust uses the global allocator"
 span_hash = "557498dcef899a93a0339b15c71f3baf0ffa237ed0f7574aff1cbc572b7d0637"
 
 [[test]]
@@ -42348,7 +42401,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkMallocTest.cpp#L15-L18"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc; Rust uses the global allocator"
 span_hash = "219eaf3ff99f9953e7cd814ce9b805f365436c75c634a8a7e80884de04475a78"
 
 [[test]]
@@ -42357,7 +42411,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkMallocTest.cpp#L40-L56"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc; Rust uses the global allocator"
 span_hash = "f8feabf493da4b480b8fc3129ec77ebb5c9f9fc7bacc7339c2dc29831a03df4e"
 
 [[test]]
@@ -42366,7 +42421,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkMallocTest.cpp#L58-L93"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc; Rust uses the global allocator"
 span_hash = "bc42499f8971c7b94f4e6a18084ff32f2895b318ca1a797710c9d009b17d71be"
 
 [[test]]
@@ -46855,7 +46911,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSharedMutexTest.cpp#L14-L22"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkSharedMutex; Rust uses RwLock"
 span_hash = "65109cc012c0fc160efddc2e96719982a62b7883efe7c1ef1869ee8fb7d68ee2"
 
 [[test]]
@@ -46864,7 +46921,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSharedMutexTest.cpp#L24-L60"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkSharedMutex; Rust uses RwLock"
 span_hash = "3b135b7f72d19ab0f4b0b13ed1daf07b8feb08a7eaac6bc7bd6858cf566eaa67"
 
 [[test]]
@@ -46873,7 +46931,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSpanTest.cpp#L17-L75"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkSpan; Rust uses slices"
 span_hash = "3b565e77ee8aac8c3cc51990924cc9179fa3b381cf756a5e5c599fa880ec1a17"
 
 [[test]]
@@ -46882,7 +46941,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSpanTest.cpp#L81-L111"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkSpan; Rust uses slices"
 span_hash = "4199b226813d2e6df972ffcf73b84ef20295bb2a5b4a8a6110350a5d7e64e020"
 
 [[test]]
@@ -46891,7 +46951,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSpanTest.cpp#L113-L130"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkSpan; Rust uses slices"
 span_hash = "afe51902de3e654948d92bb639c8d6ef27dd25903ca73471288bd252e049ba0a"
 
 [[test]]
@@ -46927,7 +46988,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStringViewTest.cpp#L53-L69"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's std::string_view helpers; Rust uses &str"
 span_hash = "f2ae1cbfe9a90f58e3370c9a856b9cd8c46e5cab734badb142be9d0438547764"
 
 [[test]]
@@ -46936,7 +46998,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStringViewTest.cpp#L14-L51"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's std::string_view helpers; Rust uses &str"
 span_hash = "4710c4155c3483442d62eae4b245fdf246162cb2c31c2a6fc6b7e9aa9890ebae"
 
 [[test]]
@@ -46945,7 +47008,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkTBlockListTest.cpp#L330-L367"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTBlockList; internal container"
 span_hash = "7da45d293003d21d71634a636f477311bbcd5620c050a53738e596e0d3c6dbc5"
 
 [[test]]
@@ -47258,7 +47322,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SortTest.cpp#L38-L64"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTQSort/SkTHeapSort; Rust uses slice::sort"
 span_hash = "22f48ddc722037684550e1dc29ba4e6631f8aaf9ffe7117dd17d48587363d11f"
 
 [[test]]
@@ -47433,7 +47498,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L24-L186"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "cfc731576e5e7395decc92c0e1e69c850a81276868a9a9107428d862c4221c8d"
 
 [[test]]
@@ -47442,7 +47508,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L217-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "5a20709052601a0e1cd442600e39a176d30f02b4c98d5e5a1086b188b028d4cf"
 
 [[test]]
@@ -47451,7 +47518,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L242-L289"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "f994611b9f5c436e34bfdbd150d1a3ced6aca3d1f464086616c9d6655e50d861"
 
 [[test]]
@@ -47460,7 +47528,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L292-L305"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "86a16f0e220d59b8368bdc8fc69aee7f053a606b9bd2476407592ade52226bd7"
 
 [[test]]
@@ -47469,7 +47538,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L390-L394"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "1c134b019541cf33b16f9dcf58c27775ee680029c803356fd1ff3bc53f2c4b1e"
 
 [[test]]
@@ -47478,7 +47548,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L442-L446"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "d197d20ee2d4f123e48983302a66977701c326293a02428f535080fd8064e0d0"
 
 [[test]]
@@ -47487,7 +47558,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L329-L346"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "ec9c1a1fe541783ee8b475874acde15756806a4211112bbbd6b8f8f24ce4dfda"
 
 [[test]]
@@ -47496,7 +47568,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L309-L327"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "cb1217afcfb8d31525e4225949584a8d6840d6254602375e263e833b86549621"
 
 [[test]]
@@ -47505,7 +47578,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L195-L215"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "083c4cb29f967490ce0aacb51788d8d1c1f2c1b3af199ca3b93beb7856dbf7bf"
 
 [[test]]
@@ -47514,7 +47588,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L470-L480"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "91e494bbce9f1c83bd7737005e97acc9100917f81e8b7913f1fad3215c16e3bc"
 
 [[test]]
@@ -47523,7 +47598,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L491-L494"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "680f935607bf99c857605f23b2401b451f35f102adf526920261289b6b647b2f"
 
 [[test]]
@@ -47532,7 +47608,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L462-L468"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "14c12067359c34b799283aa0ea78608602391d102fa040363ac63b911d1ac368"
 
 [[test]]
@@ -47541,7 +47618,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L455-L460"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "830d5afb3cd6ab5e0de65f65dcdb687c09ae2391eb076d2bd575169362c08ccf"
 
 [[test]]
@@ -47550,7 +47628,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StringTest.cpp#L448-L453"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkString; Rust uses String"
 span_hash = "56287406bff267eeae7febac93807ea340d12d5a1e191ea0d06d9761552ec8b1"
 
 [[test]]
@@ -48080,7 +48159,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L566-L570"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "9293d7419a3bfdfa0eb49a0b1c4fd959995da98be3bee58c53ca355522149960"
 
 [[test]]
@@ -48089,7 +48169,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L468-L472"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "b81d28f65a16b9eb9fd79c70aa4976e45a92d72c7aa3e679254ba857fadc2ef9"
 
 [[test]]
@@ -48098,7 +48179,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L594-L598"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "fb20997325a402851e95bcecc993c10d74d40442f6d1b6e20859c8ff61e4bf07"
 
 [[test]]
@@ -48107,7 +48189,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L607-L611"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "a46792f2b92d469fd073011f01866e0002b9ec0680b129933f248fd4ea765a70"
 
 [[test]]
@@ -48116,7 +48199,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L415-L418"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "a0e7b618283218ce51ac7bb6a63b809659bec552d053cf7d139f9f2cee564db2"
 
 [[test]]
@@ -48125,7 +48209,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L684-L689"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "5ea54cf3012401cfe6d1344f8f37e6fc4772e4fb55ea51c221cb504757980800"
 
 [[test]]
@@ -48134,7 +48219,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L557-L564"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "1f203dbc3134ca95fe74fb3040389ae504f3f634b863272e82207b456011060f"
 
 [[test]]
@@ -48143,7 +48229,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L633-L638"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "9fb42a24936b81847c44245de93a81a445f9b357dbe871036df0b5c087e0c22a"
 
 [[test]]
@@ -48152,7 +48239,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L458-L466"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "667956e1e6258ade381d899889d12efe5da9da53ef8c6564c5b24572ab7ae576"
 
 [[test]]
@@ -48161,7 +48249,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L584-L592"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "bfa953f8c689968b7bf9d430833ddbf6d036edb0fc57f25456e0f5ac68a6c414"
 
 [[test]]
@@ -48170,7 +48259,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L613-L618"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "1cd9e478bbccf13ecaa713f37053396b7aecda52f2ca30413a8084446befae68"
 
 [[test]]
@@ -48179,7 +48269,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L600-L605"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "d18ba110a4a613f9d7114fad0969ac0c3ba019bb83a36a43ba9d375802910797"
 
 [[test]]
@@ -48188,7 +48279,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L320-L336"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "a7c3c29843dd940df51cd4ce7c0786e2f7b1ac830aee4b24b203f61c95982376"
 
 [[test]]
@@ -48197,7 +48289,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L338-L394"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "cb19b0eca104f37e68f0d1f7fb8d734d9f1e9c802aa89b3fc0c2e3971f3af6ab"
 
 [[test]]
@@ -48206,7 +48299,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L572-L582"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "70988a3c1dad320f7abf2535942aea3f24d1e5d41051f1ddf7acf36725855d1c"
 
 [[test]]
@@ -48215,7 +48309,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L620-L631"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "dc2e698721cd5fa0582bb78ffeaf12816e3cd16cfc9fe1bd63eee1e0fef8c5bb"
 
 [[test]]
@@ -48224,7 +48319,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L410-L413"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "62973681c0186d90286ec48aef84076f347fd7aa0248288e34287fc03cb06b91"
 
 [[test]]
@@ -48233,7 +48329,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TArrayTest.cpp#L261-L277"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's skia_private::TArray; Rust uses Vec"
 span_hash = "ff9c62efad666ef2db9e1df42faae806b3e793ee9d2b1cf0f034e8b999c1b534"
 
 [[test]]
@@ -48242,7 +48339,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TDPQueueTest.cpp#L202-L206"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTDPQueue; Rust uses BinaryHeap"
 span_hash = "c14570c6d2d966898e322906de2f2add9b3ab67b67cba883bb355579089b1a27"
 
 [[test]]
@@ -48251,7 +48349,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TLazyTest.cpp#L36-L77"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTLazy/SkTCopyOnFirstWrite; Rust uses Option/Cow"
 span_hash = "8014bdd7eba3fd1ec2c3aa233f0707c3bdb67c12050d412d01730fd15f6b53b6"
 
 [[test]]
@@ -48260,7 +48359,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TLazyTest.cpp#L11-L34"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTLazy/SkTCopyOnFirstWrite; Rust uses Option/Cow"
 span_hash = "a27ca1150236c2e482f9664cea450501bc6d098c850398359e178f19357aea88"
 
 [[test]]
@@ -48269,7 +48369,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TemplatesTest.cpp#L192-L195"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkAutoTMalloc/SkAutoSTArray templates; Rust uses Vec/arrays"
 span_hash = "43efa223ac2ff58fe7551159914da00cfe8762a9ef1d58dee811238d12acc696"
 
 [[test]]
@@ -48278,7 +48379,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TemplatesTest.cpp#L197-L217"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkAutoTMalloc/SkAutoSTArray templates; Rust uses Vec/arrays"
 span_hash = "4e678c6239a3fc717bc4eb21531e39ccfa49ca7e36b55209233613fde791e68d"
 
 [[test]]
@@ -48287,7 +48389,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TemplatesTest.cpp#L167-L172"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkAutoTMalloc/SkAutoSTArray templates; Rust uses Vec/arrays"
 span_hash = "3eaad300182e173b7f98f1df81e0caf60a1dc0755076732e286edf0f239a413b"
 
 [[test]]
@@ -48296,7 +48399,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TemplatesTest.cpp#L148-L165"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkAutoTMalloc/SkAutoSTArray templates; Rust uses Vec/arrays"
 span_hash = "0d71415e899b9b18fd0e13262b42584e5120797ecb3e0db1f4f7fed22604f44c"
 
 [[test]]
@@ -48305,7 +48409,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TemplatesTest.cpp#L75-L77"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkAutoTMalloc/SkAutoSTArray templates; Rust uses Vec/arrays"
 span_hash = "3749cffee43605b3d74e175b804a0e97eebb7a18e108ccca4afcc286066c458a"
 
 [[test]]
@@ -48650,7 +48755,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TopoSortTest.cpp#L174-L251"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkTTopoSort; internal utility with no public API"
 span_hash = "de384fd2b3b8f142bdcc89dbfc56dda700d2803b9758e52ae192f9d18819179e"
 
 [[test]]
@@ -48719,7 +48825,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TracingTest.cpp#L180-L184"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's Skia's trace-event infrastructure; not ported"
 span_hash = "0b269a07b6bf40eeefe614bab5c59999d02ede07e3e10c2ca6d0312e7e594fdf"
 
 [[test]]

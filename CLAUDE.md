@@ -1,6 +1,6 @@
 # skia-rust — agent instructions
 
-A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests matched **exactly** against real Skia. Read `docs/PLAN.md` for the full plan; this file is the working rule set.
+A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests matched **exactly** against real Skia. Read `docs/PLAN.md` for the full plan and `docs/PORTING.md` for the step-by-step porting mechanics (module layout, API mapping, arithmetic rules, test harness, PR flow); this file is the working rule set.
 
 ## Picking work
 - Work comes from `inventory/manifest.toml`. Pick `status = "todo"` (or `"stale"`) entries; one entry or a small cohesive batch per PR.
@@ -12,7 +12,7 @@ A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests ma
    `// Port of: src/core/SkScan_AntiPath.cpp#L120-L180 (chrome/m156)`
 2. **Keep the arithmetic exact.** Same types (`f32`/`f64`/fixed-point/integer widths), same evaluation order, same rounding, same constants. Use `mul_add` only where Skia uses FMA. No reassociation, no "simplified" formulas, no swapping in `std` functions that round differently.
 3. **Idiomatic Rust around the arithmetic:** ownership instead of refcounting where possible, `Arc` for shared immutable objects, `Option`/`Result` instead of null, enums/bitflags instead of int flags, iterators, no global mutable state.
-4. **API naming:** drop the `Sk` prefix, Rust casing (`SkCanvas::drawRect` → `Canvas::draw_rect`), and add `#[doc(alias = "SkCanvas")]` / `#[doc(alias = "drawRect")]`.
+4. **API shape:** mirror rust-skia's `skia-safe` public API (in `third_party/rust-skia`, see `docs/PORTING.md` §3): same names, paths and signatures, minus its FFI plumbing. Copy its API shape only, never its code. Where it has no equivalent: drop `Sk`, Rust casing. Always add `#[doc(alias = "SkCanvas")]` / `#[doc(alias = "drawRect")]`.
 5. **No `unsafe`** outside `crates/skia-rust-simd`. Inside it: one operation per `unsafe` block, a `// SAFETY:` comment on each, and a scalar twin for every SIMD kernel that must produce bit-identical results.
 6. **Lints:** `clippy::pedantic` must be clean (`cargo clippy --workspace --all-targets -- -D warnings`). An `#[allow(clippy::...)]` needs a comment saying why (typically: mirrors a C++ cast in ported arithmetic).
 
@@ -37,6 +37,8 @@ After 2 full failed attempts on the same entry, stop and write `notes/<manifest-
 cargo xtask skia fetch          # clone pinned Skia into third_party/skia
 cargo xtask inventory sync      # rescan Skia, update manifest (preserves module/status/reason)
 cargo xtask inventory stats     # pass rates by kind and module
+cargo xtask inventory module-path <id>   # where a unit test's Rust port goes
+cargo xtask inventory verify [--update]  # run ported tests; --update marks passing entries
 cargo xtask oracle tiers        # oracle CPU tiers (server only for build/run; see oracle/README.md)
 cargo xtask oracle compare <tier> <dir>   # check our outputs against a tier's golden hashes
 cargo test --workspace
