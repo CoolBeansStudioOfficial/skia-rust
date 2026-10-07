@@ -2,6 +2,10 @@
 
 pub mod align;
 pub mod checksum;
+pub mod color;
+pub mod color_data;
+#[doc(hidden)]
+pub mod color_priv;
 pub mod endian;
 pub mod fixed;
 pub mod floating_point;
@@ -16,4 +20,5 @@ pub mod scalar;
 pub mod t_fits_in;
 pub mod t_pin;
 pub mod to;
+pub mod un_pre_multiply;
 pub mod utf;
