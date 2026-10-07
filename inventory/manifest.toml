@@ -35358,7 +35358,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/M44Test.cpp#L262-L372"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e2d9fcc9c70f0e22d5ccecd3a40d86cdb3e6c36ad3af469e1e1d8de3f497afcd"
 
 [[test]]
@@ -35701,7 +35701,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixTest.cpp#L1090-L1102"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "07890bd2b6884b681841f23501aa08e0444fbb1ce31e4fe106d7d05f2f31a257"
 
 [[test]]
@@ -36849,7 +36849,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParsePathTest.cpp#L49-L69"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1dc0fcf31aa7c987f614c53370fbcfdb9f4f26ed282113f9906ab3d8871cab78"
 
 [[test]]
@@ -36858,7 +36858,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParsePathTest.cpp#L132-L140"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7853566135a5e7095207a986e6fe2d0de3eb131f2fc4a28773d59af5d7306119"
 
 [[test]]
@@ -36867,7 +36867,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParsePathTest.cpp#L91-L130"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "2e4cfd4879b9ccc7f8e4dda284aa6abcea7b5b0946c642272f3ce778a51b5ffd"
 
 [[test]]
@@ -36876,7 +36876,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParsePathTest.cpp#L78-L89"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "765b9947da9d27eb26d86bd2151662a674ef32fd89599e4c27a7c5fc30d7d1fe"
 
 [[test]]
@@ -36885,7 +36885,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L634-L657"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0ede8da479b343af5908fffcd3b45fc0a6f9039f863d9dd48d7f3b503eddfb1f"
 
 [[test]]
@@ -36894,7 +36894,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L659-L677"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "53b4ed64b3d938c6c1b59497cc0245c87b1bd2f2b583fea18fd37d360ed60fbb"
 
 [[test]]
@@ -36903,7 +36903,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L1127-L1176"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "26936a26f154ab60a82f4cbe93c199d76715e7631fd7187766ad0ec32962b187"
 
 [[test]]
@@ -36912,7 +36912,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L1063-L1079"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "26378f68a9a39013aa8ea292f9b9aa706d8b447ce6724d2ccfcf2ec0f9868ec1"
 
 [[test]]
@@ -36921,7 +36921,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L793-L808"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "daf4391c9f798b81d250c23d51e310de532a10a9803bb86146c02aeb8e1fa439"
 
 [[test]]
@@ -36930,7 +36930,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L1081-L1125"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "46e74e7224af31f9544c17e6782dfe29aed390b027590da3aac5248e21d5f44c"
 
 [[test]]
@@ -36939,7 +36939,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L998-L1023"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3a3ed212da3979b9a1545f5354c8945a9eaa57201f75d231d80a14cf88a3a726"
 
 [[test]]
@@ -36948,7 +36948,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L947-L996"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6ca3857c10a6fcb07e98fe2adf90ff250c8ab733e9915c20c0503201ca0450b5"
 
 [[test]]
@@ -36957,7 +36957,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L679-L689"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a096de65ed0a5888a3751bb6dc51dda223282f1c970d3e1948a0474f9c1264e3"
 
 [[test]]
@@ -36966,7 +36966,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L615-L632"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "79c4c181a35847b33ba2d489e3cebd9b7956640935106ed330b592c398427667"
 
 [[test]]
@@ -36975,7 +36975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L592-L613"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c35bb9244ff6fe261d304c1908d1f2e919a1a69bb644c1149f813f72c30f83b2"
 
 [[test]]
@@ -36984,7 +36984,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L810-L875"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "942a006c12cf6c035d24f81f0f522cc70370d02715bce6b30b5f0be96d557259"
 
 [[test]]
@@ -36993,7 +36993,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L908-L938"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0b95955cd7dd0aaab5283c7c256024e2ef96c853963f041dbfc53cb59bbf39e2"
 
 [[test]]
@@ -37002,7 +37002,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L1025-L1061"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0954dff7206a213b4c71fdc59b89e3421c054a9d2fdd4876a1729772869a1f04"
 
 [[test]]
@@ -37011,7 +37011,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L691-L791"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7dddf23fcdeeb1ce5627b4a83eddc9ed6064af006d5c5bd8fa778526fc1cfaac"
 
 [[test]]
@@ -37020,7 +37020,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L34-L57"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8f7c0f379c8b762f7aec65456e382f0d2bd73e5b8a812104a81f4e08c981017c"
 
 [[test]]
@@ -37029,7 +37029,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L203-L229"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "48a11dde1e840348b214c7892978df2952452976a38e8e9b78bdb4bbb4a1d0c5"
 
 [[test]]
@@ -37038,7 +37038,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L515-L539"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b4521625dc4d853d66ce2462a2097ebb2f10ee0b267ceac7428bcbf7c56c6dc0"
 
 [[test]]
@@ -37047,7 +37047,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L288-L312"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "16923222780e486b09ad95112084286ebbadf6005340845b3ba6b292eb66ade1"
 
 [[test]]
@@ -37056,7 +37056,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L231-L254"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "02510d2ad40479c5b26042d808bc98941eb7afa140fe60a2e1635e837bafa415"
 
 [[test]]
@@ -37065,7 +37065,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L129-L159"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ed6ed95c897d4e7fd6cb92c4beac5ebc00ae44b75cea861a5bfd4cfb0afbdc65"
 
 [[test]]
@@ -37074,7 +37074,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L541-L567"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aae8cf1bdf532844f6085337ab72bcfdd2c3a388e55ec17aba2a83ed3419a347"
 
 [[test]]
@@ -37083,7 +37083,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L59-L74"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4ee16bda29e701974d0e3b1f0d307970983321c72773713b9ce3be90ffd11055"
 
 [[test]]
@@ -37092,7 +37092,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L276-L286"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "19c6ed11587b1644cf1a3e55ee9bdaaa7c98e0524959dd4f5a916114c9dbf3d1"
 
 [[test]]
@@ -37101,7 +37101,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L256-L274"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7126902ccb1667da3169d08beec12996b5f6518460f87d3b26091b7c14245f15"
 
 [[test]]
@@ -37110,7 +37110,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathBuilderTest.cpp#L112-L127"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "93895ff475070dbd158d0627166accade3e6c78d3bad0f8cd5fc9ca644ff35dc"
 
 [[test]]
@@ -37128,7 +37128,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L32-L50"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "82618ee0072c076f4d5b455b544b861aa235361e258f7e6e9f93e54651ad4417"
 
 [[test]]
@@ -37137,7 +37137,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L509-L552"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e12c7629bbb79a0be9b7f7379d2e1e3f95a235a24763d89b16b0168d83668fa2"
 
 [[test]]
@@ -37146,7 +37146,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L293-L360"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "588e9a149f6bb038b222bd1a4804770cc39d1e48bd3f0ada774464f576424d4a"
 
 [[test]]
@@ -37155,7 +37155,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L375-L415"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "585295630b10d0777630e656890050639284b1fe35ade195a4935f0b5f0377aa"
 
 [[test]]
@@ -37164,7 +37164,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L233-L256"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0eae7da4a1325d4dcbd82289923b24e9ec3dfd75506b66dfa542dfdcb9e73e97"
 
 [[test]]
@@ -37173,7 +37173,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L176-L222"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9b88bd1c5e597f9dd751c0439ed61d9fd8885e0af7fabdc498ec6b75e8ba488"
 
 [[test]]
@@ -37182,7 +37182,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L121-L165"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1e667423581dfc610f14e6860479f69366910943fa88af8409ce192e08376e74"
 
 [[test]]
@@ -37191,7 +37191,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L267-L291"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b23c6a2958eeb4193c8e37c4f4dd6236f00a370b92ec882d073be18336e232f1"
 
 [[test]]
@@ -37200,7 +37200,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L417-L447"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b53118358fed43dca8c1a5056579e8bbe7e1d131aad85cb01ef938ced78a5e12"
 
 [[test]]
@@ -37209,7 +37209,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathDataTest.cpp#L458-L507"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2701b4f5500daa5484f93c70310345695f50ecaec2281c9381c15e06388686e9"
 
 [[test]]
@@ -37218,7 +37218,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathMeasureTest.cpp#L107-L234"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "149b01a4f9be74ccf882886368d6db881a35aa7aa0bf6e4c059dc91d2186f0c5"
 
 [[test]]
@@ -37227,7 +37227,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathMeasureTest.cpp#L236-L252"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e7c3890129574f8126ea1985cfd58c952f55bc5d3b87868143ca62724c372df4"
 
 [[test]]
@@ -37236,7 +37236,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathMeasureTest.cpp#L255-L261"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5da444e0ca0e7f4f0a64cf1f7590149380868c5b606de3f2d3ec4ade081cd9ba"
 
 [[test]]
@@ -37245,7 +37245,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathMeasureTest.cpp#L310-L336"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "313f5c01d3dd4f753319a1854ca490b4c4183e381a910fabe1aaf202bcfa1545"
 
 [[test]]
@@ -37254,7 +37254,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathMeasureTest.cpp#L338-L430"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a1d6fa362a02110dde0eb60e28d416217cfecc71807175bac61e16237367acb4"
 
 [[test]]
@@ -38262,7 +38262,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathRawShapesTest.cpp#L63-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "31e3e8047298c124cf766556a098c22968dde97c28d74b6f2a0dda5d74f0bbc4"
 
 [[test]]
@@ -38271,7 +38271,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathRawShapesTest.cpp#L47-L61"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e7d97e96f468ccd834180768634c098cfa3d2594ba2061694e8ca72451ded10e"
 
 [[test]]
@@ -38280,7 +38280,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathRawShapesTest.cpp#L79-L95"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4ded8855948b5d0d90536e6c133a8e2784bebfaa95d83b5b726f2fe4eb83dd9d"
 
 [[test]]
@@ -38289,7 +38289,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathRawTest.cpp#L171-L229"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5be2fddb32684f363cdd8763296dc51d573b23e6f9634093b3d6ac4e922f4e91"
 
 [[test]]
@@ -38298,7 +38298,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathRawTest.cpp#L231-L300"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bdf393e79b1a82ac81f508fd43c117d7b1c93ea69153bc8cbb73ee79faab3dc1"
 
 [[test]]
@@ -38327,7 +38327,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4922-L4942"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ad942d862293aef9d2d7fda7ae33b1ec005f5d9996d56ff988a12f245b80c8ad"
 
 [[test]]
@@ -38372,7 +38372,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4914-L4920"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0fa5d5af38620d2fea4fffcd857c9997f031fd30f75b618e0075c98f279943a7"
 
 [[test]]
@@ -38390,7 +38390,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4776-L4778"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "de200266b17419e9ce323799e16ced8801be8b3910b11aa9ca040f60ac1da634"
 
 [[test]]
@@ -38399,7 +38399,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4756-L4758"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ba71057d2919396e45eab798fb0446484c24e9c733097a24a259d4ad5ff232ab"
 
 [[test]]
@@ -38408,7 +38408,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5887-L5896"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f04da2cb4d47b1de8d06d3413bad813c6054f7d97fbf49d4fa7c2dcd6770d7b8"
 
 [[test]]
@@ -38417,7 +38417,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5201-L5211"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aa8fe1dcf142c25bb830945c5b8005296858edf4f49310f7e8725b9435865f67"
 
 [[test]]
@@ -38426,7 +38426,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5008-L5159"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8f1050c5ad6a126cee36c89ffd51906d2bb056404b33ad3462c3217fa6e52751"
 
 [[test]]
@@ -38435,7 +38435,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5874-L5885"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9e6b3451db9eed2079857f1a848b5eea915e81c8ad0455972c66a37149925078"
 
 [[test]]
@@ -38444,7 +38444,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5862-L5872"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "15af2d3baa8483a95200f8565e1e12d076c3931529a02ee1f9ad3c4b1d3ba3aa"
 
 [[test]]
@@ -38453,7 +38453,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5898-L5928"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1274c382c0b8ebdc234150a1871b7f24a627d817413af1862174b979fede504d"
 
 [[test]]
@@ -38462,7 +38462,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5279-L5297"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fca1ffd2a8846f5b8b3aff1b742f211bf7bb77578b6e4de1b48d787da7c38408"
 
 [[test]]
@@ -38480,7 +38480,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4875-L4887"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2f122efe28c67a01d2745b2fdb8c0538a5a1b32054f7ca91330d1df667ec20b2"
 
 [[test]]
@@ -38489,7 +38489,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5845-L5860"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0a6955947490738e9952f91014d70345834965a11730ed19c75c97a0f74ba4e2"
 
 [[test]]
@@ -38498,7 +38498,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5627-L5653"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "62685aa7bb985292e9656e7fbc5df3bf89e0f21da9371c78eb020a2c49029fad"
 
 [[test]]
@@ -38507,7 +38507,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5406-L5416"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7bf48f58b1c8f7afb919463450797b0d01c57ae20faad46fab4b77af29233539"
 
 [[test]]
@@ -38516,7 +38516,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5838-L5843"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "671b84dea52e75e284bc34b490d272c2164772c9ea8e0290f3e4c90c2460a1f3"
 
 [[test]]
@@ -38525,7 +38525,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5745-L5753"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f85afacd54bbcca8b595336f0ae5300b4a48388349e884e4f31c962c46353de5"
 
 [[test]]
@@ -38534,7 +38534,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5512-L5528"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "47fa74f5b0856d4525f3df2f06b2427a1dffb5d3f8a0d111522342674713a9ae"
 
 [[test]]
@@ -38543,7 +38543,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5700-L5743"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7e37193f2e1adbc44e848db7f99cc2aaad011c87322a788476a9a0d78ca4770c"
 
 [[test]]
@@ -38552,7 +38552,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5419-L5451"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5327aaeec3ea066c2027ec9e5c0fef921bfdc851bd01fac85809bc5102031e5c"
 
 [[test]]
@@ -38561,7 +38561,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5454-L5471"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5d852d400ba4e7148001e34bdf549ee78478f0db07418e65fc118538f6239f53"
 
 [[test]]
@@ -38570,7 +38570,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5828-L5836"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "74486f926c32bfe154431b5f006711c1170cbc8bff2a710248f7b1434fdd87a5"
 
 [[test]]
@@ -38579,7 +38579,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5755-L5825"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "59dd746039e3672f059881e7fdd2fca243bf10d909e83da47b0f677858263258"
 
 [[test]]
@@ -38588,7 +38588,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5655-L5698"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "34bc3c9be9c4bd94e0b297d4a44af8e4687c60f1111b1d9c7e7f3dc440f21008"
 
 [[test]]
@@ -38615,7 +38615,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5387-L5404"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "32073d5c6524c27af4a74d4d30a02c4e0436410a530ba661ba92de4d87909c46"
 
 [[test]]
@@ -39317,7 +39317,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RRectInPathTest.cpp#L393-L414"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f43d504fa4dbbed290650f796ecf65687d382d8d2bbdea56bf9771e9e3981d1a"
 
 [[test]]
@@ -39326,7 +39326,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RRectInPathTest.cpp#L380-L391"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8475043dbad71b0ca3d08db6b90e72da9ec42ad1353dc3a3fd09b762f5a3ddab"
 
 [[test]]
@@ -40333,7 +40333,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L113-L117"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6f44ae53310207e370efdc04a46d9d2d66db0ffbbeeb000082fe8bd8825a14c9"
 
 [[test]]
@@ -40729,7 +40729,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1786-L1803"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "844e138780994399fa50b8fe3d74f7efae73ec4b0d5a5efdf3a6a72d5ce5cd4f"
 
 [[test]]
@@ -40738,7 +40738,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1805-L1818"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0db1c0cd1e9ba4f83a110fbf7abd4bbecdef219b9a911da5c66ea6909565704f"
 
 [[test]]
@@ -42448,7 +42448,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkPathRangeIterTest.cpp#L17-L140"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "10d28d02218a26d83764cb65f0f082f39552beb9d319d8293a87f42cc99a3de5"
 
 [[test]]

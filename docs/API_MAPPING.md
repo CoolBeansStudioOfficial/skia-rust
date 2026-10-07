@@ -149,7 +149,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkMatrix::isSimilarity(tol)`, `preservesRightAngles(tol)` | no `tol` | `is_similarity` / `is_similarity_tol`, `preserves_right_angles` / `preserves_right_angles_tol` | overloads get distinct names |
 | `SkMatrix::getMinMaxScales` | `min_max_scales() -> (scalar, scalar)` (ignores the `bool`) | `min_max_scales() -> Option<(scalar, scalar)>` | `None` when the C++ returns false |
 | `SkMatrix::mapRadius` | `map_radius() -> Option<scalar>` (`None` with perspective) | `map_radius() -> scalar` | C++ also handles perspective |
-| `SkMatrix::mapRect` | `map_rect() -> (Rect, bool)` | same, but panics (`unimplemented!`) for matrices with perspective | needs `SkPathBuilder::transform` and `SkPathPriv::PerspectiveClip` (SkPath, SkEdgeClipper); `Matrix_mapRect_skbug12335` stays `todo` |
+| `SkMatrix::mapRect` | `map_rect() -> (Rect, bool)` | same | perspective goes through `PathBuilder::transform` (clipped to `w > 0` by `path_priv::perspective_clip`), as in C++ |
 | `SkMatrix::mapRectScaleTranslate` | `map_rect_scale_translate() -> Option<Rect>` | same | same as skia-safe |
 | `SkMatrix::mapPoints` (span overloads) | `map_points(dst, src)` (asserts `dst.len() >= src.len()`), `map_points_inplace` | same names; maps `min(dst.len(), src.len())` points | C++ `min_count`; same for `map_vectors`, `map_homogeneous_points`, `map_points_to_homogeneous` |
 | `SkMatrix::RectToRect`, `MakeRectToRect`, `setRectToRect` (`SK_SUPPORT_LEGACY_MATRIX_RECTTORECT`) | deprecated `rect_to_rect -> Option` / `from_rect_to_rect` | `make_rect_to_rect -> Matrix` (identity on failure), `set_rect_to_rect -> bool` (resets on failure) | C++ semantics; use `rect_2_rect` / `rect_to_rect_or_identity` in new code |
@@ -167,7 +167,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkMatrixPriv::M44ColMajor` | not exposed | `matrix_priv::m44_col_major` (returns `[scalar; 16]` by value) | no pointer into the matrix |
 | `SkMatrixPriv::NearlyAffine` | not exposed | `matrix_priv::nearly_affine(m, bounds, tolerance)` | no default argument: pass `SCALAR_NEARLY_ZERO` |
 | `SkMatrixPriv::kMaxFlattenSize` | not exposed | `matrix_priv::MAX_FLATTEN_SIZE` | |
-| `SkPathPriv::kW0PlaneDistance` | not exposed | `matrix_priv::W0_PLANE_DISTANCE` | needed by `matrix_priv::map_rect`; move to `path_priv` when SkPath is ported |
+| `SkPathPriv::kW0PlaneDistance` | not exposed | `path_priv::W0_PLANE_DISTANCE` (re-exported as `matrix_priv::W0_PLANE_DISTANCE`) | PORTING §3 |
 | `SkDecomposeUpper2x2` (`SkMatrixUtils.h`) | not exposed | `#[doc(hidden)] matrix_utils::decompose_upper_2x2(&Matrix, Option<&mut Point>, Option<&mut Point>, Option<&mut Point>) -> bool` | null out-params become `Option` |
 | `SkTreatAsSprite` (`SkMatrixUtils.h`) | not exposed | not ported | needs `SkSamplingOptions` |
 | **geometry** | | | |
@@ -179,7 +179,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkConic` | not exposed | `geometry::Conic { pts, w }` | public fields as in C++; `set` overloads are `set` / `set_points`; the constructors are `new` / `from_points` |
 | `SkConic::evalAt(t, SkPoint*, SkVector*)`, `chopAt(t1, t2, SkConic*)` | not exposed | `eval_at_pos_tangent`, `chop_at_interval` | overloads get distinct names |
 | `SkConic::findXExtrema/findYExtrema(SkScalar*)`, `computeAsQuadError(SkVector*)`, `computeTightBounds(SkRect*)`, `computeFastBounds(SkRect*)` | not exposed | return `Option<scalar>` / `Vector` / `Rect` | out-parameters become return values |
-| `SkConic::TransformW`, `SkConic::BuildUnitArc` | not exposed | not ported yet | need `SkMatrix` and `SkPathDirection` |
+| `SkConic::TransformW`, `SkConic::BuildUnitArc` | not exposed | `Conic::transform_w(pts, w, &Matrix)`, `Conic::build_unit_arc(u_start, u_stop, dir, Option<&Matrix>, &mut [Conic; MAX_CONICS_FOR_ARC]) -> usize` | statics become associated functions; the nullable matrix is an `Option` |
 | `SkAutoConicToQuads::computeQuads` (3 overloads) | not exposed | `AutoConicToQuads::{compute_quads, compute_quads_with_weight}` | the pointer and `SkSpan` overloads merge; the storage is a `Vec<Point>` instead of `AutoSTMalloc` |
 | `SkQuadCoeff`, `SkConicCoeff`, `SkCubicCoeff` | not exposed | `geometry::{QuadCoeff, ConicCoeff, CubicCoeff}` with public `a, b, c, d` / `numer, denom` fields | public so `CubicMapTest` can use them |
 | `skgpu::tess::FindCubicConvex180Chops(pts, T, bool*)` | not exposed | `tessellation::find_cubic_convex_180_chops(pts, &mut t, &mut are_cusps)` | lives in `skia-rust-core` until a GPU crate exists |
@@ -187,6 +187,56 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkBezierCubic`, `SkBezierQuad` | not exposed | `bezier_curves::{BezierCubic, BezierQuad}` (unit structs with associated functions) | `SkSpan<const float>` results are slices of the caller's storage array |
 | `SkCubicClipper::ChopMonoAtY(pts, y, SkScalar*)` | not exposed | `CubicClipper::chop_mono_at_y(pts, y) -> Option<scalar>` | bool + out-param becomes `Option` |
 | `SkCubicMap` | `CubicMap` | `cubic_map::CubicMap` | same API as skia-safe (`new`, `is_linear`, `compute_y_from_x`, `compute_from_t`) |
+| **path** | | | |
+| `SkPath` | `Path = Handle<SkPath>` | `Path { data: Arc<PathData>, fill_type, is_volatile }` (`Clone`, not `Copy`) | m156 paths are immutable and share `SkPathData`; a clone shares the data (the C++ copy); see `docs/design/path.md` |
+| `SkPath::getGenerationID` | `generation_id() -> u32` | `generation_id() -> u64` | m156 returns `uint64_t` (the `SkPathData` unique id) |
+| `SkPath::Rect(r, ft, dir, startIndex)`, `Rect(r, dir, startIndex)` | `rect_with_fill_type(r, ft, dir)`, `rect(r, dir)` (no start index) | adds `rect_with_start_index(r, dir, start)` and `rect_with_fill_type_and_start_index(r, ft, dir, start)` | the start index overloads are missing from skia-safe |
+| `SkPath::RRect(bounds, rx, ry, dir)` | missing | `Path::rrect_xy(bounds, rx, ry, dir)` | overloads get distinct names |
+| `SkPath::Raw` / `Make` / `Polygon` / `Line` / `Circle` / `Oval` | `raw`, `new_from`, `polygon`, `line`, `circle`, `oval`, `oval_with_start_index` | same | invalid or non-finite input gives a path with `is_finite() == false`, as in C++ |
+| `SkPath::isOval(SkRect*)`, `isRRect(SkRRect*)`, `isLine(SkPoint[2])`, `isRect(SkRect*, bool*, SkPathDirection*)` | `Option` returns | same | out-params become `Option` |
+| `SkPath::getPoint`, `getPoints`, `getVerbs` (deprecated) | `get_point`, `get_points`, `get_verbs` | same | `get_point` returns `None` out of range (C++ returns (0, 0)) |
+| `SkPath::getLastPt` | `last_pt` | same | |
+| `SkPath::interpolate(ending, w, SkPath*)`, `makeInterpolate` | `interpolate -> Option`, `interpolate_inplace` | same, plus `make_interpolate` | |
+| `SkPath::writeToMemory(void*)`, `ReadFromMemory`, `serialize` | `serialize() -> Data`, `deserialize(&Data)` | `write_to_memory(Option<&mut [u8]>) -> usize`, `read_from_memory(&[u8]) -> (Option<Path>, usize)`, `serialize() -> Vec<u8>`, `deserialize(&[u8]) -> Option<Path>` | `SkData` is not ported; bytes match Skia (native-endian) |
+| `SkPath::dump(SkWStream*, bool)`, `dump()`, `dumpHex()` | `dump_as_data(hex) -> Data`, `dump`, `dump_hex` | `dump_to_string(hex) -> String`, `dump`, `dump_hex` (stderr) | `SkWStream` / `SkData` are not ported |
+| `SkPath::Iter::next(SkPoint[4])`, `next() -> optional<IterRec>` | `Iterator<Item = (Verb, Vec<Point>)>` | same `Iterator`, plus `next_verb(&mut [Point; 4]) -> Verb` and `next_rec() -> Option<IterRec>` | overloads get distinct names; `IterRec` is `PathIterRec` |
+| `SkPath::Iter::conicWeight` | `conic_weight() -> Option<scalar>` | same | `None` until a conic is returned |
+| `SkPath::RawIter` | deprecated `RawIter` | same, plus `next_verb` / `next_rec` | |
+| `SkPath::RangeIter`, `SkPathPriv::Iterate` | not exposed | `path_priv::RangeIter` (`Iterator<Item = (PathVerb, &[Point], Option<scalar>)>`), `path_priv::iterate(&Path)`, `iterate_raw(verbs, points, weights)` | the points slice starts at the C++ "backset" (the current point); `iter == end()` is `is_done()` |
+| `SkPathIter::Rec`, `SkPathContourIter::Rec` | `PathIterRec<'a>`, `PathContourIterRec<'a>` | `PathIterRec` (owns its <= 4 points; `points()`, `verb()`, `conic_weight()`), `PathContourIterRec<'a>` | an `Iterator` cannot lend the iterator's close-point storage |
+| `SkPathBuilder` | `PathBuilder = RefHandle<SkPathBuilder>` | `PathBuilder` (`Clone`, `PartialEq`, `Default`) | plain struct |
+| `SkPathBuilder::operator=(const SkPath&)` | missing | `PathBuilder::assign_path(&Path)` | operator overload |
+| `SkPathBuilder::snapshot(const SkMatrix*)`, `detach(const SkMatrix*)` | `snapshot`, `snapshot_and_transform`, `detach`, `detach_and_transform` | same | |
+| `SkPathBuilder::snapshotData`, `detachData` | missing | `snapshot_data`, `detach_data -> Option<Arc<PathData>>` | |
+| `SkPathBuilder::incReserve(int, int, int)` | `inc_reserve(usize, usize, usize)` | `inc_reserve(i32, i32, i32)` | C++ `int` (negative counts are ignored; `PathTest` passes `0xffffffff`) |
+| `SkPathBuilder::arcTo` (3 overloads) | `arc_to`, `arc_to_tangent`, `arc_to_radius` | same | same as skia-safe |
+| `SkPathBuilder::addPath(src, dx, dy, mode)`, `addPath(src, matrix, mode)` | `add_path`, `add_path_with_offset`, `add_path_with_transform` (returns `()`) | same; `add_path_with_transform` returns `&mut Self` | builder-style return |
+| `SkPathBuilder::addRaw(const SkPathRaw&, Reserve)` | missing | `add_raw(&PathRaw, Reserve)` | |
+| `SkPathBuilder::dumpToString(DumpFormat)`, `dump(DumpFormat)` | `dump_to_string`, `dump` | same | `SkString` is `String` |
+| `SkPathBuilder::setLastPt`, `setLastPoint`, `setPoint` | `set_last_pt`, `set_last_point`, `set_point` | same | |
+| `SkPathData` (`sk_sp`, nullable) | missing | `path_data::PathData`, factories return `Option<Arc<PathData>>` | `nullptr` becomes `None` |
+| `SkPathData::Rect/Oval/RRect` default arguments | missing | `rect(r, dir, start)` + `rect_default(r)`, `oval` + `oval_default`, `rrect` + `rrect_default(rr, dir)` | default arguments split into two functions |
+| `SkPathData::MakeTransform(const SkPathRaw&, ...)`, `makeTransform`, `makeOffset` | missing | `make_transform_raw(&PathRaw, &Matrix)`, `make_transform(self: &Arc<Self>, &Matrix)`, `make_offset` | overloads get distinct names; identity returns the same `Arc` |
+| `SkPathData::addGenIDChangeListener`, `genIDChangeListenerCount`, `SkPathPriv::AddGenIDChangeListener` | missing | not ported | `SkIDChangeListener` is not ported |
+| `SkPathRaw` | missing | `path_raw::PathRaw<'a>` (public fields `points`, `verbs`, `conics`, `bounds`, `fill_type`, `convexity`, `segment_mask`) | borrowed slices |
+| `SkPathRawShapes::{Rect, Oval, RRect, Triangle}` | missing | `path_raw_shapes::{Rect, Oval, RRect}` (`Shape<N>` with `.raw()`), `path_raw_shapes::triangle(pts, bounds) -> PathRaw` | C++ inheritance from `SkPathRaw` becomes a `raw()` view |
+| `SkPathConvexity`, `SkPathFirstDirection`, `SkResolveConvexity` (`SkPathEnums.h`) | missing | `path_enums::{PathConvexity, PathFirstDirection, ResolveConvexity}` with the free helpers as methods | `#[doc(hidden)]` private enums |
+| `SkPathRectInfo`, `SkPathOvalInfo`, `SkPathRRectInfo`, `SkPathIsAType`, `SkPathIsAData` (`SkPathRef.h`) | missing | `path_ref::*` | `#[doc(hidden)]`; fields lose the `f` prefix |
+| `SkPathPriv` | not exposed | `#[doc(hidden)] path_priv` free functions | PORTING §3; `Raw(const SkPathBuilder&)` is `raw_builder`, `IsNestedFillRects` returns `Option<([Rect; 2], [PathDirection; 2])>`, `PerspectiveClip` returns `Option<Path>`, `ComputeFirstDirection(const SkPath&)` is `compute_first_direction_path` |
+| `SkPathPriv::CreateDrawArcPath`, `DrawArcIsConvex` | not exposed | not ported | need `SkArc` |
+| `SkPathEdgeIter` | not exposed | `path_priv::PathEdgeIter` (`next() -> Option<EdgeResult>`) | the result carries a copy of the edge's points |
+| `SkEdgeClipper`, `SkLineClipper` | not exposed | `#[doc(hidden)] edge_clipper::EdgeClipper` (`clip_path` takes a closure), `line_clipper::{clip_line, intersect_line}` | function pointer + `void*` context becomes a closure |
+| `SkPathUtils` (`FillPathWithPaint`) | `path_utils::fill_path_with_paint` | not ported | needs `SkPaint` and the stroker |
+| `SkContourMeasure` | `ContourMeasure = RCHandle<..>` | `ContourMeasure` (`Clone`, shares an `Arc`) | |
+| `SkContourMeasure::getPosTan(d, SkPoint*, SkVector*)` | `pos_tan(d) -> Option<(Point, Vector)>` | same, plus `get_pos_tan(d, Option<&mut Point>, Option<&mut Vector>) -> bool` | the nullable out-params of the C++ |
+| `SkContourMeasure::begin()/end()` (`ForwardVerbIterator`) | `verbs() -> ForwardVerbIterator` | same (`Iterator<Item = VerbMeasure>`) | |
+| `SkContourMeasureIter::next() -> sk_sp` | `Iterator` | same | |
+| `SkPathMeasure::setPath(const SkPath*, bool)` | `set_path(&Path, bool)` | same | |
+| `SkPathMeasure::getLength`, `getPosTan` | `length(&mut self)`, `pos_tan(&mut self, ..)` | `length(&self)`, `pos_tan(&self, ..)`, plus `get_pos_tan(d, Option<&mut Point>, Option<&mut Vector>)` | no interior state changes |
+| `SkPathMeasurePriv::CountSegments` | not exposed | `path_measure::path_measure_priv::count_segments` | PORTING §3 |
+| `SkParsePath::FromSVGString`, `ToSVGString` | `utils::parse_path::{from_svg, to_svg, to_svg_with_encoding}`, `Path::from_svg` / `to_svg` | same | lives in `skia_rust_core::utils::parse_path` |
+| `SkParse` | not exposed | `utils::parse::{find_scalar, find_scalars, find_s32, find_hex, find_bool, find_list, count}` | strings are byte slices and the returned pointer is an index; `strtod` is reimplemented (`utils::parse::strtod`) |
+| `SkAppendScalar`, `SkStrAppendScalar` | not exposed | `#[doc(hidden)] string_utils::{append_scalar, str_append_scalar, format_g}` | `SkString` is `String`; `format_g` reproduces `printf("%.*g")` |
 | **point** | | | |
 | `SkIVector` | `pub use IPoint as IVector` | `pub type IVector = IPoint` | a type alias is equivalent |
 | `SkIPoint` `+ - += -=` | plain `+`/`-` (panics on overflow) | saturating (`Sk32_sat_add` / `Sk32_sat_sub`) | Skia's semantics (PORTING §3) |
@@ -213,7 +263,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRect::offsetTo` | `with_offset_to` returns `(x, y, x - left, y - top)` | `offset_to` / `with_offset_to` mirror C++ (`right += newX - left`, ...) | skia-safe's version looks like a bug |
 | `SkRect::roundOut(SkIRect*)`, `roundOut(SkRect*)` | `RoundOut<R>` trait | `rect::RoundOut<R>` | same as skia-safe |
 | `SkRect::set(SkPoint, SkPoint)`, `intersect(a, b)`, `join(a, b)` | `set_bounds2`, `intersect2`, `join2` | same | same as skia-safe |
-| `SkRect::toQuad`, `copyToQuad` | `to_quad`, `copy_to_quad` | not ported yet | need `SkPathDirection` (`SkPathTypes.h`) |
+| `SkRect::toQuad`, `copyToQuad` | `to_quad`, `copy_to_quad` | `to_quad(dir: impl Into<Option<PathDirection>>) -> [Point; 4]`, `copy_to_quad(&mut [Point], dir)` | `None` is the C++ default `kCW`; the deprecated `toQuad(SkPoint[4])` is `copy_to_quad` |
 | `SkRectPriv` | not exposed | `#[doc(hidden)] rect::rect_priv` free functions | PORTING §3 |
 | `SkRectPriv::FitsInFixed` | not exposed | `rect_priv::fits_in_fixed_rect` | avoids clashing with `math_priv::fits_in_fixed` |
 | `SkRectPriv::QuadContainsRect` (2 overloads), `QuadContainsRectMask` | not exposed | `rect_priv::quad_contains_rect` (`&Matrix`, `&IRect`), `quad_contains_rect_m44`, `quad_contains_rect_mask` (returns `vx::Int4`) | overloads get distinct names; the C++ default `tol = 0.f` is an explicit `tol` argument |
@@ -231,7 +281,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRRect::writeToMemory` | `write_to_memory(&mut Vec<u8>)` | same; native-endian floats, replaces the vector's contents | same as skia-safe |
 | `SkRRect::readFromMemory` | `read_from_memory(&[u8]) -> usize` | same | same as skia-safe |
 | `SkRRect::kSizeInMemory` | `SIZE_IN_MEMORY` | `SIZE_IN_MEMORY` (`12 * 4`) | same as skia-safe |
-| `SkRRect::transform` (both overloads) | `transform(&Matrix) -> Option<RRect>` | not ported yet | needs `SkMatrix` (and `SkPathPriv::DeduceRRectFromContour`) |
+| `SkRRect::transform` (both overloads) | `transform(&Matrix) -> Option<RRect>` | same (the `bool transform(const SkMatrix&, SkRRect*)` overload is not ported) | the non-legacy m156 implementation (`SK_SUPPORT_LEGACY_RRECT_TRANSFORM` is not defined) |
 | `SkRRect::dump`, `dumpToString`, `dumpHex` | `dump`, `dump_to_string`, `dump_hex` | not ported yet | need `SkString` / `SkAppendScalar` |
 | `SkRRect::operator==` / `!=` | `PartialEq` | `PartialEq` comparing the rect and the 8 radii as floats (not the type) | Skia's semantics |
 | `SkRRectPriv` | not exposed | `#[doc(hidden)] rrect::rrect_priv` free functions | PORTING §3 |
@@ -248,7 +298,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRegion::Spanerator::next(int*, int*)` | `Iterator<Item = (i32, i32)>` | same | out-parameters become a tuple |
 | `QuickReject` | crate-root trait | `region::QuickReject` | `skia-safe` defines it in `core.rs`; lives in `region` until another port needs it elsewhere |
 | `SkRegionPriv::VisitSpans`, `Validate`, `kRunTypeSentinel`, `SkRegionValueIsSentinel` | not exposed | `#[doc(hidden)] region::region_priv::{visit_spans, validate, RUN_TYPE_SENTINEL, region_value_is_sentinel}` | PORTING §3 |
-| `SkRegion::setPath`, `addBoundaryPath`, `getBoundaryPath` (`SkRegion_path.cpp`) | `set_path`, `add_boundary_path`, `boundary_path` | not ported yet | need `SkPath` / `SkPathBuilder` / scan conversion |
+| `SkRegion::setPath`, `addBoundaryPath`, `getBoundaryPath` (`SkRegion_path.cpp`) | `set_path`, `add_boundary_path`, `boundary_path` | not ported yet | need scan conversion (`SkScan`) |
 | `SkRegion::toString` (Android framework only) | not exposed | not ported | `SK_BUILD_FOR_ANDROID_FRAMEWORK` only |
 | **skcms** | | | |
 | `skcms_Matrix3x3`, `skcms_Matrix3x4` | missing | `Matrix3x3`, `Matrix3x4` (`vals`) | drop prefix; `bit_eq` is the C++ `memcmp` |

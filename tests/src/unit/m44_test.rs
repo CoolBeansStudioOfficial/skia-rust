@@ -2,18 +2,16 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/M44Test.cpp (chrome/m156)
-//
-// Not ported yet (manifest stays `todo`): `M44_mapRect`, which compares against
-// `SkPathBuilder::addRect(..).transform(..).detach().getBounds()` (SkPath, SkPathBuilder).
 
 #![cfg(test)]
 
 use skia_rust_core::m44::{M44, V2, V3, V4};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::matrix_priv;
+use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::{Scalar, scalar};
+use skia_rust_core::scalar::{SCALAR_PI, Scalar, scalar};
 
 use crate::{Reporter, def_test, reporter_assert};
 
@@ -344,6 +342,173 @@ def_test!(M44_rectToRect, |reporter| {
         assert_edges(reporter, tl.y, bl.y, dst.top, dst.bottom);
         assert_edges(reporter, tr.y, br.y, dst.top, dst.bottom);
     }
+});
+
+// Port of: tests/M44Test.cpp#L262-L372 (chrome/m156)
+#[allow(clippy::too_many_lines)] // mirrors the C++ test
+fn m44_map_rect_body(reporter: &mut Reporter) {
+    let assert_rects_nearly_equal =
+        |reporter: &mut Reporter, actual: &Rect, expected: &Rect, e: &Rect| {
+            reporter_assert!(
+                reporter,
+                scalar::nearly_equal(actual.left, expected.left, e.left),
+                "Expected {} == {}",
+                actual.left,
+                expected.left
+            );
+            reporter_assert!(
+                reporter,
+                scalar::nearly_equal(actual.top, expected.top, e.top),
+                "Expected {} == {}",
+                actual.top,
+                expected.top
+            );
+            reporter_assert!(
+                reporter,
+                scalar::nearly_equal(actual.right, expected.right, e.right),
+                "Expected {} == {}",
+                actual.right,
+                expected.right
+            );
+            reporter_assert!(
+                reporter,
+                scalar::nearly_equal(actual.bottom, expected.bottom, e.bottom),
+                "Expected {} == {}",
+                actual.bottom,
+                expected.bottom
+            );
+        };
+    let assert_map_rect =
+        |reporter: &mut Reporter, m: &M44, src: &Rect, expected: Option<&Rect>| {
+            let mut epsilon = Rect::new(1e-5, 1e-5, 1e-5, 1e-5);
+
+            let actual = matrix_priv::map_rect(m, src);
+            reporter_assert!(reporter, !actual.is_empty());
+
+            if let Some(expected) = expected {
+                assert_rects_nearly_equal(reporter, &actual, expected, &epsilon);
+            }
+
+            let corners = [
+                V4::new(src.left, src.top, 0.0, 1.0),
+                V4::new(src.right, src.top, 0.0, 1.0),
+                V4::new(src.right, src.bottom, 0.0, 1.0),
+                V4::new(src.left, src.bottom, 0.0, 1.0),
+            ];
+            let mut left_found = false;
+            let mut top_found = false;
+            let mut right_found = false;
+            let mut bottom_found = false;
+            let mut clipped = false;
+            for corner in corners {
+                let mapped = m * corner;
+                if mapped.w > 0.0 {
+                    // Should be contained in actual and might be on one or two of actual's edges
+                    let x = mapped.x / mapped.w;
+                    let y = mapped.y / mapped.w;
+
+                    // Can't use SkRect::contains() since it treats right and bottom edges as exclusive
+                    reporter_assert!(
+                        reporter,
+                        actual.left <= x && x <= actual.right,
+                        "Expected {} contained in [{}, {}]",
+                        x,
+                        actual.left,
+                        actual.right
+                    );
+                    reporter_assert!(
+                        reporter,
+                        actual.top <= y && y <= actual.bottom,
+                        "Expected {} contained in [{}, {}]",
+                        y,
+                        actual.top,
+                        actual.bottom
+                    );
+
+                    left_found |= scalar::nearly_equal(x, actual.left, None);
+                    top_found |= scalar::nearly_equal(y, actual.top, None);
+                    right_found |= scalar::nearly_equal(x, actual.right, None);
+                    bottom_found |= scalar::nearly_equal(y, actual.bottom, None);
+                } else {
+                    // The mapped point would be clipped so the clipped mapped bounds don't
+                    // necessarily contain it
+                    clipped = true;
+                }
+            }
+
+            if clipped {
+                // At least one of the mapped corners should have contributed to the rect
+                reporter_assert!(
+                    reporter,
+                    left_found || top_found || right_found || bottom_found
+                );
+                // For any edge that came from a clipped corner, increase its error tolerance relative
+                // to what SkPath::ApplyPerspectiveClip calculates.
+                if !left_found {
+                    epsilon.left = 0.01 * actual.left;
+                }
+                if !top_found {
+                    epsilon.top = 0.01 * actual.top;
+                }
+                if !right_found {
+                    epsilon.right = 0.01 * actual.right;
+                }
+                if !bottom_found {
+                    epsilon.bottom = 0.01 * actual.bottom;
+                }
+            } else {
+                // The mapped corners should have contributed to all four edges of the returned rect
+                reporter_assert!(
+                    reporter,
+                    left_found && top_found && right_found && bottom_found
+                );
+            }
+
+            let path = PathBuilder::new()
+                .add_rect(src, None, None)
+                .transform(&m.to_m33())
+                .detach();
+            assert_rects_nearly_equal(reporter, &actual, path.bounds(), &epsilon);
+        };
+
+    // src chosen arbitrarily
+    let src = Rect::from_ltrb(4.83, -0.48, 5.53, 30.68);
+
+    // Identity maps src to src
+    assert_map_rect(reporter, &M44::default(), &src, Some(&src));
+    // Scale+Translate just offsets src
+    let st = Rect::from_ltrb(
+        10.0 + 2.0 * src.left,
+        8.0 + 4.0 * src.top,
+        10.0 + 2.0 * src.right,
+        8.0 + 4.0 * src.bottom,
+    );
+    let mut m = M44::scale(2.0, 4.0, 1.0);
+    m.post_translate(10.0, 8.0, None);
+    assert_map_rect(reporter, &m, &src, Some(&st));
+    // Rotate 45 degrees about center
+    let mut m = M44::rotate(V3::new(0.0, 0.0, 1.0), SCALAR_PI / 4.0);
+    m.pre_translate(-src.center_x(), -src.center_y(), None)
+        .post_translate(src.center_x(), src.center_y(), None);
+    assert_map_rect(reporter, &m, &src, None);
+
+    // Perspective matrix where src does not need to be clipped w > 0
+    let mut p = M44::perspective(0.01, 10.0, SCALAR_PI / 3.0);
+    p.pre_translate(0.0, 5.0, -0.1);
+    p.pre_concat(&M44::rotate(
+        V3::new(0.0, 1.0, 0.0),
+        0.008, /* radians */
+    ));
+    assert_map_rect(reporter, &p, &src, None);
+
+    // Perspective matrix where src *does* need to be clipped w > 0
+    p.set_identity();
+    p.set_row(3, &V4::new(-0.2, -0.6, 0.0, 8.0));
+    assert_map_rect(reporter, &p, &src, None);
+}
+
+def_test!(M44_mapRect, |reporter| {
+    m44_map_rect_body(reporter);
 });
 
 // Port of: tests/M44Test.cpp#L374-L386 (chrome/m156)

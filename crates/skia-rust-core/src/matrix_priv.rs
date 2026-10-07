@@ -31,14 +31,8 @@ use skia_rust_simd::vx::{Float2, Float4, shuffle};
 pub const MAX_FLATTEN_SIZE: usize = 9 * size_of::<scalar>() + size_of::<u32>();
 
 /// The distance of the plane `w = kW0PlaneDistance`, where perspective-mapped rectangles are
-/// clipped (`SkPathPriv::kW0PlaneDistance`).
-///
-/// skbug.com/40041027: Not a perfect solution for W plane clipping, but 1/16384 is a
-/// reasonable limit (roughly 5e-5).
-// Port of: src/core/SkPathPriv.h#L72-L74 (chrome/m156)
-#[doc(alias = "kW0PlaneDistance")]
-#[allow(clippy::cast_precision_loss)] // 1 << 14 is exact
-pub const W0_PLANE_DISTANCE: scalar = 1.0 / ((1 << 14) as scalar);
+/// clipped (`SkPathPriv::kW0PlaneDistance`, defined in [`path_priv`](crate::path_priv)).
+pub use crate::path_priv::W0_PLANE_DISTANCE;
 
 /// Writes the nine members of `matrix` as native-endian floats into `buffer` (if any) and
 /// returns the number of bytes needed (`SkMatrixPriv::WriteToMemory`).

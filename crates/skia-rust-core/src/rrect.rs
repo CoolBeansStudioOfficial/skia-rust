@@ -17,10 +17,13 @@
 //! radii is zero or less: radii are stored as zero; corner is square. If corner curves overlap,
 //! radii are proportionally reduced to fit within bounds.
 //!
-//! `SkRRect::transform`, `SkRRect::dump*` and `SkRRectPriv::{Read,Write}*Buffer` are not ported
-//! yet (they need `SkMatrix`, `SkString` and `SkRBuffer`/`SkWBuffer`).
+//! `SkRRect::dump*` and `SkRRectPriv::{Read,Write}*Buffer` are not ported yet (they need
+//! `SkString` and `SkRBuffer`/`SkWBuffer`).
 
 use crate::floating_point::{float_midpoint, ieee_float_divide, is_finite_all, is_finite_array};
+use crate::matrix::Matrix;
+use crate::path_priv;
+use crate::path_raw_shapes;
 use crate::point::{Point, Vector};
 use crate::rect::{Contains, Rect, rect_priv};
 use crate::scalar::{SCALAR_1, Scalar, scalar};
@@ -818,6 +821,44 @@ impl RRect {
             buffer.extend_from_slice(&v.to_ne_bytes());
         }
         debug_assert_eq!(buffer.len(), Self::SIZE_IN_MEMORY);
+    }
+
+    /// The round rect transformed by `matrix`, which must preserve axis alignment (scale,
+    /// translate and multiples of 90 degree rotations). Returns `None` if it doesn't, or if the
+    /// result is not finite or is empty.
+    // Port of: src/core/SkRRect.cpp#L484-L521 (chrome/m156)
+    #[must_use]
+    pub fn transform(&self, matrix: &Matrix) -> Option<RRect> {
+        if matrix.is_identity() {
+            return Some(*self);
+        }
+
+        if !matrix.preserves_axis_alignment() {
+            return None;
+        }
+
+        if self.is_empty() {
+            return Some(Self::new_empty());
+        }
+
+        let new_rect = matrix.map_rect(self.rect).0;
+        if !new_rect.is_finite() || new_rect.is_empty() {
+            return None;
+        }
+
+        match self.get_type() {
+            Type::Rect => return Some(Self::new_rect(new_rect)),
+            Type::Oval => return Some(Self::new_oval(new_rect)),
+            _ => {}
+        }
+
+        let mut raw = path_raw_shapes::RRect::from_rrect(self);
+        matrix.map_points_inplace(raw.points_mut());
+        Some(path_priv::deduce_rrect_from_contour(
+            &new_rect,
+            raw.points(),
+            raw.raw().verbs,
+        ))
     }
 
     /// Reads [`RRect`] from `buffer`, validating the contents (via [`RRect::set_rect_radii`]).
