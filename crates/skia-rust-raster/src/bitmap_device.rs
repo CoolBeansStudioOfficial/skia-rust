@@ -21,7 +21,7 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
-use skia_rust_core::canvas::PointMode;
+use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::device::{CreateInfo, Device, DeviceState};
 use skia_rust_core::image_info::ImageInfo;
@@ -34,6 +34,7 @@ use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::region::Region;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::shader::Shader;
+use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::draw::Draw;
@@ -519,6 +520,47 @@ impl Device for BitmapDevice {
     // Port of: src/core/SkBitmapDevice.h#L130 (chrome/m156)
     fn set_immutable(&mut self) {
         self.bitmap.set_immutable();
+    }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L573-L593 (chrome/m156)
+    fn draw_special(
+        &mut self,
+        src: &SpecialImage,
+        local_to_device: &Matrix,
+        paint: &Paint,
+        _constraint: SrcRectConstraint,
+    ) {
+        debug_assert!(paint.image_filter().is_none());
+        debug_assert!(paint.mask_filter().is_none());
+
+        if let Some(result_bm) = src.as_bitmap() {
+            let BitmapDevice {
+                bitmap, rc_stack, ..
+            } = self;
+            // `accessPixels(&draw.fDst)`
+            if bitmap.color_type() == ColorType::Unknown || bitmap.peek_pixels().is_none() {
+                return; // no pixels to draw to so skip it
+            }
+            bitmap.notify_pixels_changed();
+            let Some(dst) = bitmap.peek_pixels_mut() else {
+                return;
+            };
+            let mut draw = Draw::new(dst, local_to_device, rc_stack.rc());
+            draw.draw_bitmap(&result_bm, Matrix::i(), None, false, paint);
+        }
+    }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L641-L647 (chrome/m156)
+    fn snap_special(&mut self, bounds: &IRect, force_copy: bool) -> Option<SpecialImage> {
+        if force_copy {
+            SpecialImage::copy_from_raster(bounds, &self.bitmap, self.state.surface_props())
+        } else {
+            SpecialImage::make_from_raster(bounds, &self.bitmap, self.state.surface_props())
+        }
+    }
+
+    fn bitmap_mut(&mut self) -> Option<&mut Bitmap> {
+        Some(&mut self.bitmap)
     }
 
     // Port of: src/core/SkBitmapDevice.cpp#L330-L332 (chrome/m156)

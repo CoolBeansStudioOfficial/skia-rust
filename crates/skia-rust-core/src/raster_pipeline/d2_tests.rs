@@ -44,6 +44,7 @@ fn stage_rec<'r, 'a>(
         dst_color_type: ColorType::RGBA8888,
         dst_cs,
         paint_color: Color4f::new(0.0, 0.0, 0.0, 1.0),
+        surface_props: crate::surface_props::SurfaceProps::default(),
         dst_bounds: Rect::new_empty(),
     }
 }

@@ -23,8 +23,7 @@
 //! - **Memset.** Skia's `rect_memset16/32/64` take typed pointers; the destination here is
 //!   bytes, so the fill writes the same pixel bytes row by row (a memset has the same result
 //!   however it is executed).
-//! - **Not ported.** `SkSurfaceProps` (the `StageRec` has none yet, see `effect_priv`) and the
-//!   viewer-only `SkRasterPipelineVisualizer::CreateBlitter`.
+//! - **Not ported.** The viewer-only `SkRasterPipelineVisualizer::CreateBlitter`.
 
 use std::cell::Cell;
 
@@ -50,6 +49,7 @@ use skia_rust_core::raster_pipeline::{
 };
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::blitter::{BlitMemory, Blitter, DirectBlit, blit_mask_default};
 
@@ -193,6 +193,7 @@ fn create_pipeline_for_blitter<'a>(
     paint: &Paint,
     ctm: &Matrix,
     alloc: &'a ArenaAlloc,
+    props: &SurfaceProps,
     shader_pipeline: &mut RasterPipeline<'a>,
     dev_bounds: &Rect,
 ) -> Option<ShaderInfo> {
@@ -221,6 +222,7 @@ fn create_pipeline_for_blitter<'a>(
             dst_color_type: dst.color_type(),
             dst_cs: color_space.as_ref(),
             paint_color: dst_paint_color,
+            surface_props: *props,
             dst_bounds: *dev_bounds,
         },
         ctm,
@@ -248,8 +250,7 @@ fn create_pipeline_for_blitter<'a>(
 /// rect when expensive to compute) and `clip_shader`, if any, scales the coverage of every blit.
 ///
 /// skia-rust: Skia allocates the blitter in `alloc`; here it is returned by value and borrows
-/// `alloc` and the pixels of `dst`. There is no `SkSurfaceProps` parameter (see the module
-/// documentation).
+/// `alloc` and the pixels of `dst`.
 // Port of: src/core/SkRasterPipelineBlitter.cpp#L195-L226 (chrome/m156)
 #[doc(alias = "SkCreateRasterPipelineBlitter")]
 #[must_use]
@@ -259,11 +260,19 @@ pub fn create_raster_pipeline_blitter<'a>(
     ctm: &Matrix,
     alloc: &'a ArenaAlloc,
     clip_shader: Option<&Shader>,
+    props: &SurfaceProps,
     dev_bounds: &Rect,
 ) -> Option<RasterPipelineBlitter<'a>> {
     let mut shader_pipeline = RasterPipeline::new();
-    let info =
-        create_pipeline_for_blitter(&dst, paint, ctm, alloc, &mut shader_pipeline, dev_bounds)?;
+    let info = create_pipeline_for_blitter(
+        &dst,
+        paint,
+        ctm,
+        alloc,
+        props,
+        &mut shader_pipeline,
+        dev_bounds,
+    )?;
 
     RasterPipelineBlitter::create(
         dst,
@@ -380,6 +389,7 @@ impl<'a> RasterPipelineBlitter<'a> {
                 dst_color_type: clip_ct,
                 dst_cs: None, // clipCS
                 paint_color: colors::BLACK,
+                surface_props: SurfaceProps::default(), // default OK; no text here
                 dst_bounds: Rect::new_empty(),
             };
             if clip_shader
@@ -410,6 +420,7 @@ impl<'a> RasterPipelineBlitter<'a> {
                 dst_color_type: blitter.dst.color_type(),
                 dst_cs: dst_cs.as_ref(),
                 paint_color: dst_paint_color,
+                surface_props: SurfaceProps::default(), // default OK; no text here
                 dst_bounds: Rect::new_empty(),
             };
             if !color_filter.as_base().append_stages(&mut rec, is_opaque) {
@@ -543,6 +554,7 @@ impl<'a> RasterPipelineBlitter<'a> {
                 dst_color_type: blitter.dst.color_type(),
                 dst_cs: dst_cs.as_ref(),
                 paint_color: dst_paint_color,
+                surface_props: SurfaceProps::default(), // default OK; no text here
                 dst_bounds: Rect::new_empty(),
             };
             if !blender.as_base().append_stages(&mut rec) {

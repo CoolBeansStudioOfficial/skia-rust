@@ -298,6 +298,7 @@ fn chosen(
         &alloc,
         coverage,
         clip_shader,
+        &skia_rust_core::surface_props::SurfaceProps::default(),
         &Rect::from_wh(19.0, 4.0),
         force_rp,
     );
@@ -320,6 +321,7 @@ fn direct(info: &ImageInfo, paint: &Paint, clip_shader: Option<&Shader>) -> Stri
         &Matrix::translate((1.0, 2.0)),
         &alloc,
         clip_shader,
+        &skia_rust_core::surface_props::SurfaceProps::default(),
         &Rect::from_wh(19.0, 4.0),
     )
     .expect("the pipeline can draw the paint")

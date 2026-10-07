@@ -11,9 +11,7 @@
 //! blitter when nothing can be drawn, and otherwise the raster pipeline blitter
 //! ([`create_raster_pipeline_blitter`]).
 //!
-//! skia-rust: `SkSurfaceProps` is not ported yet, so `Choose` has no `props` parameter (it only
-//! reaches the raster pipeline blitter and the legacy shader context). The global
-//! `gSkForceRasterPipelineBlitter` (set by `dm --forceRasterPipeline`) is the
+//! skia-rust: the global `gSkForceRasterPipelineBlitter` (set by `dm --forceRasterPipeline`) is the
 //! `force_raster_pipeline_blitter` parameter.
 
 use std::borrow::Cow;
@@ -33,6 +31,7 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{ContextRec, MatrixRec};
+use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::blitter::{Blitter, NullBlitter};
 use crate::blitter_a8::A8CoverageBlitter;
@@ -134,6 +133,7 @@ pub fn choose<'a>(
     alloc: &'a ArenaAlloc,
     draw_coverage: DrawCoverage,
     clip_shader: Option<&Shader>,
+    props: &SurfaceProps,
     dev_bounds: &Rect,
     force_raster_pipeline_blitter: bool,
 ) -> Box<dyn Blitter + 'a> {
@@ -144,6 +144,7 @@ pub fn choose<'a>(
         alloc,
         draw_coverage,
         clip_shader,
+        props,
         dev_bounds,
         force_raster_pipeline_blitter,
     )
@@ -159,6 +160,7 @@ pub(crate) fn choose_kind<'a>(
     alloc: &'a ArenaAlloc,
     draw_coverage: DrawCoverage,
     clip_shader: Option<&Shader>,
+    props: &SurfaceProps,
     dev_bounds: &Rect,
     force_raster_pipeline_blitter: bool,
 ) -> Chosen<'a> {
@@ -211,7 +213,15 @@ pub(crate) fn choose_kind<'a>(
     }
 
     let create_rp_blitter = |device: Pixmap<'a>, paint: &Paint| -> Chosen<'a> {
-        match create_raster_pipeline_blitter(device, paint, ctm, alloc, clip_shader, dev_bounds) {
+        match create_raster_pipeline_blitter(
+            device,
+            paint,
+            ctm,
+            alloc,
+            clip_shader,
+            props,
+            dev_bounds,
+        ) {
             Some(blitter) => Chosen::RasterPipeline(Box::new(blitter)),
             None => Chosen::Null(NullBlitter::new()),
         }

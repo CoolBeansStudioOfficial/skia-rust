@@ -95,6 +95,7 @@ pub trait ColorFilterBase: Any + fmt::Debug + Send + Sync {
             dst_color_type: ColorType::RGBAF32,
             dst_cs,
             paint_color: color.unpremul(),
+            surface_props: crate::surface_props::SurfaceProps::default(),
             dst_bounds: Rect::new_empty(),
         };
 

@@ -9,6 +9,7 @@
 
 pub mod color_filter_shader;
 pub mod color_shader;
+pub mod ctm_shader;
 pub mod empty_shader;
 pub mod shader_base;
 
@@ -22,6 +23,7 @@ use crate::shader::Shader;
 
 pub use color_filter_shader::ColorFilterShader;
 pub use color_shader::ColorShader;
+pub use ctm_shader::CtmShader;
 pub use empty_shader::EmptyShader;
 pub use shader_base::{
     ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, MatrixRec, OPAQUE_ALPHA_FLAG, ShaderBase,
@@ -148,6 +150,7 @@ mod tests {
             dst_color_type: ColorType::RGBA8888,
             dst_cs: None,
             paint_color: colors::BLACK,
+            surface_props: crate::surface_props::SurfaceProps::default(),
             dst_bounds: Rect::new_empty(),
         };
         assert!(!s.as_base().append_root_stages(&mut rec, Matrix::i()));
