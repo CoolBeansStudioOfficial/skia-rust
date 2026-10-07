@@ -22,6 +22,8 @@
 use std::fmt;
 
 pub mod resources;
+pub mod tmp_dir;
+pub mod tools;
 pub mod unit;
 
 /// One recorded failure: where it happened, the failed condition and the message.
