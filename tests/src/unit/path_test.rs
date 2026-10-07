@@ -11,12 +11,12 @@
 //   PathBigCubic, HugeGeometry, ClipPath_nonfinite, skbug_6450, triangle_onehalf, triangle_big,
 //   path_walk_simple_edges_1154864, path_walk_edges_concave_large_dx (SkSurface / SkCanvas).
 
-use crate::tools::stroke_paint::{Paint, fill_path_with_paint_builder};
 use crate::{Reporter, def_test, reporter_assert};
 use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::geometry::{Conic, eval_cubic_at, eval_quad_at, eval_quad_at_pos_tangent};
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::paint::Style;
 use skia_rust_core::path::{Iter, Path};
 use skia_rust_core::path_builder::PathBuilder;
@@ -25,6 +25,7 @@ use skia_rust_core::path_enums::ResolveConvexity;
 use skia_rust_core::path_iter::PathIter;
 use skia_rust_core::path_priv::{self, PathEdgeIter};
 use skia_rust_core::path_types::{PathDirection, PathFillType, PathVerb};
+use skia_rust_core::path_utils::fill_path_with_paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
@@ -1533,12 +1534,12 @@ def_test!(Fuzz_b464232697_ExtremeStrokeBounds, |reporter| {
         .line_to((0.0, 574_404_044.0))
         .detach();
 
-    let mut paint = Paint::new();
+    let mut paint = Paint::default();
     paint.set_style(Style::Stroke);
     paint.set_stroke_width(37.002);
 
     let mut dst_builder = PathBuilder::new();
-    let success = fill_path_with_paint_builder(&path, &paint, &mut dst_builder);
+    let success = fill_path_with_paint(&path, &paint, &mut dst_builder, None, None);
     // skia-rust: SK_BUILD_FOR_FUZZER is not defined, so only the non-fuzzer expectation applies.
     reporter_assert!(reporter, success);
 });
@@ -1552,12 +1553,12 @@ def_test!(Fuzz_b42534575_ExtremeStrokeBounds, |reporter| {
         .move_to((1.362_683_7E+19, -1.537_513_5E+19))
         .cubic_to((1.4E-45, 0.0), (0.0, 0.0), (0.0, 0.0))
         .detach();
-    let mut paint = Paint::new();
+    let mut paint = Paint::default();
     paint.set_style(Style::Stroke);
     paint.set_stroke_width(3.226_380_3E+19);
 
     let mut dst_builder = PathBuilder::new();
-    let success = fill_path_with_paint_builder(&path, &paint, &mut dst_builder);
+    let success = fill_path_with_paint(&path, &paint, &mut dst_builder, None, None);
     // skia-rust: SK_BUILD_FOR_FUZZER is not defined, so only the non-fuzzer expectation applies.
     reporter_assert!(reporter, success);
 });

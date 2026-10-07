@@ -6,7 +6,7 @@
 //! `SkStrokeRec`: the stroke parameters (width, caps, joins, miter limit, resolution scale) that
 //! turn a path into its stroked outline.
 
-use crate::paint::{Cap, DEFAULT_MITER_LIMIT, Join, Style as PaintStyle};
+use crate::paint::{Cap, DEFAULT_MITER_LIMIT, Join, Paint, Style as PaintStyle};
 use crate::path::Path;
 use crate::path_builder::PathBuilder;
 use crate::scalar::{SCALAR_1, SCALAR_SQRT2, scalar};
@@ -90,23 +90,20 @@ impl StrokeRec {
         Self::new(InitStyle::Fill)
     }
 
-    /// The equivalent of `SkStrokeRec(const SkPaint&, SkPaint::Style, SkScalar resScale)`, taking
-    /// the stroke members of the paint explicitly: `stroke_width`, `miter` limit, `cap` and
-    /// `join`; `style` is the style override (the paint's own style when there is no override).
-    ///
-    /// skia-rust: `SkPaint` is not ported yet, so `skia_safe`'s `StrokeRec::from_paint` is
-    /// replaced by this constructor.
-    // Port of: src/core/SkStrokeRec.cpp#L35-L69 (chrome/m156)
+    /// The stroke of `paint`, with `style` overriding the paint's style if given, and a
+    /// resolution scale of `res_scale` (1 if `None`) (`SkStrokeRec(const SkPaint&,
+    /// [SkPaint::Style,] SkScalar resScale)`).
+    // Port of: src/core/SkStrokeRec.cpp#L27-L69 (chrome/m156)
     #[doc(alias = "SkStrokeRec")]
     #[must_use]
-    pub fn from_paint_params(
-        style: PaintStyle,
-        stroke_width: scalar,
-        miter: scalar,
-        cap: Cap,
-        join: Join,
-        res_scale: scalar,
+    pub fn from_paint(
+        paint: &Paint,
+        style: impl Into<Option<PaintStyle>>,
+        res_scale: impl Into<Option<scalar>>,
     ) -> Self {
+        let style = style.into().unwrap_or(paint.style());
+        let res_scale = res_scale.into().unwrap_or(1.0);
+        let stroke_width = paint.stroke_width();
         let (width, stroke_and_fill) = match style {
             PaintStyle::Fill => (STROKE_REC_FILL_STYLE_WIDTH, false),
             PaintStyle::Stroke => (stroke_width, false),
@@ -124,9 +121,9 @@ impl StrokeRec {
             res_scale,
             width,
             // copy these from the paint, regardless of our "style"
-            miter_limit: miter,
-            cap,
-            join,
+            miter_limit: paint.stroke_miter(),
+            cap: paint.stroke_cap(),
+            join: paint.stroke_join(),
             stroke_and_fill,
         }
     }
@@ -328,26 +325,23 @@ impl StrokeRec {
         stroke_width / 2.0 * multiplier
     }
 
-    /// The inflation radius for the stroke members of a paint, with `style` overriding the
-    /// paint's style (`GetInflationRadius(const SkPaint&, SkPaint::Style)`).
-    ///
-    /// skia-rust: `SkPaint` is not ported yet; the paint's stroke members are passed explicitly.
+    /// The inflation radius of `paint`'s stroke, with `style` overriding the paint's style
+    /// (`GetInflationRadius(const SkPaint&, SkPaint::Style)`).
     // Port of: src/core/SkStrokeRec.cpp#L144-L149 (chrome/m156)
     #[doc(alias = "GetInflationRadius")]
     #[must_use]
-    pub fn inflation_radius_from_paint_params(
-        style: PaintStyle,
-        stroke_width: scalar,
-        miter: scalar,
-        cap: Cap,
-        join: Join,
-    ) -> scalar {
+    pub fn inflation_radius_from_paint_and_style(paint: &Paint, style: PaintStyle) -> scalar {
         let width = if PaintStyle::Fill == style {
             -SCALAR_1
         } else {
-            stroke_width
+            paint.stroke_width()
         };
-        Self::inflation_radius_from_params(join, miter, cap, width)
+        Self::inflation_radius_from_params(
+            paint.stroke_join(),
+            paint.stroke_miter(),
+            paint.stroke_cap(),
+            width,
+        )
     }
 
     /// True if two recs have an equal effect on a path. Equal recs produce equal paths. Equality

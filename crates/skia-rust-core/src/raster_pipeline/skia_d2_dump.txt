@@ -1,0 +1,753 @@
+== blender_Clear
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	clear
+	store_8888
+
+== blender_Src
+ok 1
+SkRasterPipeline, 2 stages
+	load_8888_dst
+	store_8888
+
+== blender_Dst
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	move_dst_src
+	store_8888
+
+== blender_SrcOver
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	srcover
+	store_8888
+
+== blender_DstOver
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	dstover
+	store_8888
+
+== blender_SrcIn
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	srcin
+	store_8888
+
+== blender_DstIn
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	dstin
+	store_8888
+
+== blender_SrcOut
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	srcout
+	store_8888
+
+== blender_DstOut
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	dstout
+	store_8888
+
+== blender_SrcATop
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	srcatop
+	store_8888
+
+== blender_DstATop
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	dstatop
+	store_8888
+
+== blender_Xor
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	xor_
+	store_8888
+
+== blender_Plus
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	plus_
+	store_8888
+
+== blender_Modulate
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	modulate
+	store_8888
+
+== blender_Screen
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	screen
+	store_8888
+
+== blender_Overlay
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	overlay
+	store_8888
+
+== blender_Darken
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	darken
+	store_8888
+
+== blender_Lighten
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	lighten
+	store_8888
+
+== blender_ColorDodge
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	colordodge
+	store_8888
+
+== blender_ColorBurn
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	colorburn
+	store_8888
+
+== blender_HardLight
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	hardlight
+	store_8888
+
+== blender_SoftLight
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	softlight
+	store_8888
+
+== blender_Difference
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	difference
+	store_8888
+
+== blender_Exclusion
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	exclusion
+	store_8888
+
+== blender_Multiply
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	multiply
+	store_8888
+
+== blender_Hue
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	hue
+	store_8888
+
+== blender_Saturation
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	saturation
+	store_8888
+
+== blender_Color
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	color
+	store_8888
+
+== blender_Luminosity
+ok 1
+SkRasterPipeline, 3 stages
+	load_8888_dst
+	luminosity
+	store_8888
+
+== color_shader_opaque_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.25 0.5 0.75 1 | 64 128 191 255
+== color_shader_opaque_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.25 0.5 0.75 1 | 64 128 191 255
+== color_shader_opaque_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0508639812 0.213993073 0.522483826 1 | 13 55 133 255
+== color_shader_opaque_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.331975937 0.440891266 0.696357727 1 | 85 112 178 255
+== color_shader_opaque_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.537120819 0.735393524 0.880851746 1 | 137 188 225 255
+== color_shader_opaque_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.537120819 0.735393524 0.880851746 1 | 137 188 225 255
+== color_shader_opaque_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.249966621 0.500041962 0.749874115 1 | 64 128 191 255
+== color_shader_opaque_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.589645386 0.694900513 0.848686218 1 | 150 177 216 255
+== color_shader_opaque_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.123873711 0.507354736 0.771198273 1 | 32 129 197 255
+== color_shader_opaque_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.123873711 0.507354736 0.771198273 1 | 32 129 197 255
+== color_shader_opaque_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0141346455 0.22085762 0.556091309 1 | 4 56 142 255
+== color_shader_opaque_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.300582886 0.445747375 0.718105316 1 | 77 114 183 255
+== color_shader_translucent_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0400000028 0.0800000057 0.120000005 0.400000006 | 10 20 31 102
+== color_shader_translucent_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0400000028 0.0800000057 0.120000005 0.400000006 | 10 20 31 102
+== color_shader_translucent_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.00400829315 0.0132392887 0.029293824 0.400000006 | 1 3 7 102
+== color_shader_translucent_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0365077965 0.0536495224 0.0920120254 0.400000006 | 9 14 23 102
+== color_shader_translucent_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.139688879 0.193817139 0.2335556 0.400000006 | 36 49 60 102
+== color_shader_translucent_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.139688879 0.193817139 0.2335556 0.400000006 | 36 49 60 102
+== color_shader_translucent_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0400053039 0.0799949691 0.120004274 0.400000006 | 10 20 31 102
+== color_shader_translucent_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.142744452 0.170596316 0.211378485 0.400000006 | 36 44 54 102
+== color_shader_translucent_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.023724556 0.0812454224 0.123519138 0.400000006 | 6 21 31 102
+== color_shader_translucent_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.023724556 0.0812454224 0.123519138 0.400000006 | 6 21 31 102
+== color_shader_translucent_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.001930058 0.0136311529 0.0310676582 0.400000006 | 0 3 8 102
+== color_shader_translucent_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.0317072421 0.0544250496 0.0953903198 0.400000006 | 8 14 24 102
+== color_shader_white_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.00006104 0.999946594 0.999923706 1
+== color_shader_white_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_white_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.00006104 0.999946594 0.999923706 1
+== color_shader_white_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.99987793 1.00006104 1.00008392 1
+== color_shader_white_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.99987793 1.00006104 1.00008392 1
+== color_shader_white_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.999729156 1.00013733 1.00017548 1
+== color_shader_white_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	white_color
+
+== color_shader_black_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_black_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	black_color
+
+== color_shader_transparent_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_transparent_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+== color_shader_wide_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.20000005 -0.200000003 0.400000006 0.800000012
+== color_shader_wide_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.20000005 -0.200000003 0.400000006 0.800000012
+== color_shader_wide_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 2.02966309 -0.0406911857 0.171194464 0.800000012
+== color_shader_wide_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.00242925 0.272842407 0.373315424 0.800000012
+== color_shader_wide_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.955371082 -0.429696649 0.588314831 0.800000012
+== color_shader_wide_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.955371082 -0.429696649 0.588314831 0.800000012
+== color_shader_wide_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.1998657 -0.1999733 0.400033563 0.800000012
+== color_shader_wide_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 0.751001 -0.25995332 0.534756482 0.800000012
+== color_shader_wide_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.31174934 -0.348997504 0.377832025 0.800000012
+== color_shader_wide_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.31174934 -0.348997504 0.377832025 0.800000012
+== color_shader_wide_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 2.49487305 -0.127733618 0.151425943 0.800000012
+== color_shader_wide_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+# 0 unbounded_uniform_color 1.09799194 0.187690735 0.353012085 0.800000012
+== color_shader_alpha_over_null_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.5 0.5 0.5 1 | 128 128 128 255
+== color_shader_alpha_over_null_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.5 0.5 0.5 1 | 128 128 128 255
+== color_shader_alpha_over_null_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.213993073 0.213993073 0.213993073 1 | 55 55 55 255
+== color_shader_alpha_over_null_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.449996948 0.449935913 0.449924469 1 | 115 115 115 255
+== color_shader_alpha_over_linear_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.735393524 0.735393524 0.735393524 1 | 188 188 188 255
+== color_shader_alpha_over_linear_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.735393524 0.735393524 0.735393524 1 | 188 188 188 255
+== color_shader_alpha_over_linear_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.500041962 0.500041962 0.500041962 1 | 128 128 128 255
+== color_shader_alpha_over_linear_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.705532074 0.705448151 0.705429077 1 | 180 180 180 255
+== color_shader_alpha_over_p3_null
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.499904633 0.499996185 0.500011444 1 | 127 127 128 255
+== color_shader_alpha_over_p3_srgb
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.499904633 0.499996185 0.500011444 1 | 127 127 128 255
+== color_shader_alpha_over_p3_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.213903427 0.213990211 0.21400547 1 | 55 55 55 255
+== color_shader_alpha_over_p3_rec2020
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.449932098 0.449928284 0.449939728 1 | 115 115 115 255
+== color_shader_skcolor
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.501960814 0.251964658 0.125982329 0.501960814 | 128 64 32 128
+== color_shader_skcolor_linear
+ok 1
+SkRasterPipeline, 1 stages
+	uniform_color
+
+# 0 uniform_color 0.501960814 0.108328551 0.0257294308 0.501960814 | 128 28 7 128
+== empty_shader
+ok 0
+SkRasterPipeline, 0 stages
+
+== mrec_identity
+ok 1
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== mrec_ctm_translate
+ok 1
+SkRasterPipeline, 2 stages
+	seed_shader
+	matrix_translate
+
+# 1 matrix_translate -3 4.5
+== mrec_scale_lm_translate
+ok 1
+SkRasterPipeline, 2 stages
+	seed_shader
+	matrix_scale_translate
+
+# 1 matrix_scale_translate 0.5 0.25 -1 -1
+== mrec_affine
+ok 1
+SkRasterPipeline, 2 stages
+	seed_shader
+	matrix_2x3
+
+# 1 matrix_2x3 0.307692319 0.205128208 1.02564108 -0.205128208 0.307692319 8.20512867
+== mrec_perspective
+ok 1
+SkRasterPipeline, 2 stages
+	seed_shader
+	matrix_perspective
+
+# 1 matrix_perspective 1.07093322 -0.136533335 -2.66666675 -0.264533341 0.531733334 -1.33333337 -0.00159999996 0.00120000006 1
+== mrec_post_inv
+ok 1
+SkRasterPipeline, 2 stages
+	seed_shader
+	matrix_scale_translate
+
+# 1 matrix_scale_translate 0.5 0.5 5 6
+== mrec_ctm_applied
+ok 1
+SkRasterPipeline, 1 stages
+	matrix_translate
+
+# 0 matrix_translate -7 -8
+== mrec_singular
+ok 0
+SkRasterPipeline, 0 stages
+

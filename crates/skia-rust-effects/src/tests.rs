@@ -3,27 +3,26 @@
 
 //! Sanity tests of the path effects that are not ports of Skia tests.
 
-use skia_rust_core::matrix::Matrix;
-use skia_rust_core::paint::{Cap, DEFAULT_MITER_LIMIT, Join, Style};
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::PathEffect;
-use skia_rust_core::path_utils::fill_path_with_stroke_rec_and_effect;
+use skia_rust_core::path_utils::fill_path_with_paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::stroke_rec::StrokeRec;
 
 use crate::dash_path_effect::new;
 
+fn stroke_paint(width: scalar) -> Paint {
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_stroke_width(width);
+    paint
+}
+
 fn stroke_rec(width: scalar) -> StrokeRec {
-    StrokeRec::from_paint_params(
-        Style::Stroke,
-        width,
-        DEFAULT_MITER_LIMIT,
-        Cap::Butt,
-        Join::Miter,
-        1.0,
-    )
+    StrokeRec::from_paint(&stroke_paint(width), None, None)
 }
 
 // The path-effect part of what `DashPathEffectTest_asPoints_limit` does through
@@ -35,14 +34,9 @@ fn long_line_with_many_dashes_is_bounded() {
     let path = Path::line((1.0, 1.0), (1.0, 5.0e10));
     let cull = Rect::from_wh(256.0, 256.0);
     let mut builder = PathBuilder::new();
-    let _ = fill_path_with_stroke_rec_and_effect(
-        &path,
-        stroke_rec(5.0e10),
-        Some(&dash),
-        &mut builder,
-        Some(&cull),
-        Matrix::i(),
-    );
+    let mut paint = stroke_paint(5.0e10);
+    paint.set_path_effect(dash);
+    let _ = fill_path_with_paint(&path, &paint, &mut builder, Some(&cull), None);
 }
 
 #[test]

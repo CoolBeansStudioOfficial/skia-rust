@@ -7,11 +7,11 @@
 
 use crate::{def_test, reporter_assert};
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::paint::{Cap, DEFAULT_MITER_LIMIT, Join, Style};
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::{PathEffect, PointData};
-use skia_rust_core::path_utils::fill_path_with_stroke_rec_and_effect;
+use skia_rust_core::path_utils::{fill_path_with_paint, fill_path_with_paint_to_path};
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{SCALAR_INFINITY, scalar};
@@ -77,14 +77,10 @@ def_test!(DashPathEffectTest_asPoints, |r| {
 
     // SkPaint paint; paint.setStyle(kStroke_Style); paint.setStrokeWidth(1.0f);
     // SkStrokeRec rec(paint);
-    let rec = StrokeRec::from_paint_params(
-        Style::Stroke,
-        1.0,
-        DEFAULT_MITER_LIMIT,
-        Cap::Butt,
-        Join::Miter,
-        1.0,
-    );
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_stroke_width(1.0);
+    let rec = StrokeRec::from_paint(&paint, None, None);
 
     let mut mats = [const { Matrix::new_identity() }; K_NUM_MATS];
     mats[0].reset();
@@ -122,25 +118,12 @@ def_test!(DashPath_bug4871, |_r| {
     let dash = PathEffect::dash(&intervals, 0.0);
 
     // SkPaint paint; paint.setStyle(kStroke_Style); paint.setPathEffect(dash);
-    let rec = StrokeRec::from_paint_params(
-        Style::Stroke,
-        0.0,
-        DEFAULT_MITER_LIMIT,
-        Cap::Butt,
-        Join::Miter,
-        1.0,
-    );
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_path_effect(dash);
 
     // (void)skpathutils::FillPathWithPaint(path, paint);
-    let mut builder = PathBuilder::new();
-    let _ = fill_path_with_stroke_rec_and_effect(
-        &path,
-        rec,
-        dash.as_ref(),
-        &mut builder,
-        None,
-        Matrix::i(),
-    );
+    let _ = fill_path_with_paint_to_path(&path, &paint);
 });
 
 // Verify that long lines with many dashes don't cause overflows/OOMs.
@@ -168,21 +151,8 @@ def_test!(DashCrazy_crbug_875494, |_r| {
 
     let mut builder = PathBuilder::new();
     // SkPaint paint; paint.setStyle(kStroke_Style); paint.setPathEffect(Make(vals, 222));
-    let dash = PathEffect::dash(&vals, 222.0);
-    let rec = StrokeRec::from_paint_params(
-        Style::Stroke,
-        0.0,
-        DEFAULT_MITER_LIMIT,
-        Cap::Butt,
-        Join::Miter,
-        1.0,
-    );
-    fill_path_with_stroke_rec_and_effect(
-        &path,
-        rec,
-        dash.as_ref(),
-        &mut builder,
-        Some(&cull),
-        Matrix::i(),
-    );
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_path_effect(PathEffect::dash(&vals, 222.0));
+    fill_path_with_paint(&path, &paint, &mut builder, Some(&cull), None);
 });

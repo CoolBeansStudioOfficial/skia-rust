@@ -1591,16 +1591,18 @@ the same framework.
   (including `onAsPoints` and `cull_line`), `SkDashPathEffect::Make` is `dash_path_effect::new`.
   `SkCornerPathEffect` is ported too because `AsADashTest_noneDash` uses it as the non-dash effect.
   `PathEffect::dash`/`corner_path` are extension traits (inherent impls cannot live outside core).
-- **`FillPathWithPaint`.** `Paint` carries no path effect yet, so `path_utils::fill_path_with_stroke_rec_and_effect`
-  takes the `StrokeRec`, the optional effect, the cull rect and the ctm explicitly (it overwrites the rec's
-  res scale with the one from the ctm, as the C++ builds the rec with it). When `Paint` gains a path effect
-  its `fill_path_with_paint` should delegate to it.
+- **`FillPathWithPaint`.** With D2 merged, `path_utils::fill_path_with_paint(src, &Paint, dst, cull_rect, ctm)`
+  is the only entry point: it builds the `StrokeRec` from the paint and applies the paint's `PathEffect`
+  (the interim `fill_path_with_stroke_rec_and_effect` and `res_scale_for_ctm` are gone).
+  `PathEffect` is the one type in `core::path_effect`; `DashImpl` implements `PathEffectBase`
+  (`on_filter_path`, `on_as_points`, `as_a_dash`, `compute_fast_bounds`) and `PathEffect::dash` is the
+  skia-safe-shaped factory.
 - **Tests.** `AsADashTest` (3) and `DashPathEffectTest` (4 of 5: `crbug_348821`, `asPoints`, `bug4871`,
   `DashCrazy_crbug_875494`) pass. `DashPathEffectTest_asPoints_limit` needs `Canvas::drawLine` and a raster
   `Surface` (D6): it is registered and `#[ignore]`d, with its manifest entry left `todo` plus a reason.
   `skia-rust-effects/src/tests.rs` covers its path-effect half (`FillPathWithPaint` with a huge stroke width
-  and a cull rect) plus basic dashing, sum and compose sanity. `bug4871` and `DashCrazy` build the
-  `StrokeRec` with `StrokeRec::from_paint_params` in place of `SkPaint`.
+  and a cull rect) plus basic dashing, sum and compose sanity. `bug4871` and `DashCrazy` use `Paint` and
+  `fill_path_with_paint` as the C++ does.
 **As implemented in C2** (`skia_rust_raster::{scan, scan_priv, region_path}`, `skia_rust_core::{t_sort,
 region_path}`):
 
@@ -1655,7 +1657,8 @@ region_path}`):
   `rgbA_to_RGBA`, everything else runs the pipeline.
 - **Not portable here.** In-place conversion (`srcPixels == dstPixels`) has no safe form (`&mut` and
   `&` cannot alias). `Pixmap::scalePixels` draws through an image shader (Phase 3). `extractAlpha`
-  has only its no-mask-filter path (no `SkPaint` yet).
+  takes the `Paint`, but its mask-filter branch waits for `MaskFilterBase::filterMask` (Phase 3): a filter
+  is treated as failing, which is Skia's own `NO_FILTER_CASE` fallback.
 - **Tests.** Ported and passing: `BitmapCopy_extractSubset`, `BitmapReadPixels`,
   `Bitmap_setColorSpace`, `Bitmap_getColor_Swizzle`, `getalphaf`,
   `PremulAlphaRoundTripSkConvertPixels` (`ToolUtils::copy_to`/`colortype_name` in
@@ -1695,6 +1698,53 @@ region_path}`):
   derived traces (the derivations are in comments): non-AA horizontal/diagonal/clipped lines,
   `hair_rect`, caps, the four AA hairline kinds, partial-pixel caps, clipping, `anti_fill_rect`
   and `anti_frame_rect`.
+**As implemented in D2** (`skia_rust_core::{paint, paint_priv, blend_mode, blend_mode_priv, blender,
+blend_mode_blender, effect_priv, shader, shaders, color_filter, path_effect, mask_filter,
+image_filter}`, all in core, per R11):
+
+- **Shared effects are handles over trait objects.** Every `sk_sp<SkFoo>` effect is a clonable
+  handle `Foo(Arc<dyn FooBase>)` with skia-safe's methods plus `from_base(impl FooBase)`,
+  `as_base() -> &dyn FooBase` (`as_SB`/`as_BB`/`as_CFB`/...) and `ptr_eq`; `PartialEq` is identity,
+  as Skia compares `sk_sp`s. `FooBase` is the trait of `SkFooBase`'s virtuals (Skia's defaults as
+  default methods); its non-virtual members are inherent methods of `dyn FooBase`. The traits are
+  `Any + Debug + Send + Sync`, so code that checks `shader_type()` can downcast like Skia's
+  `static_cast`s. Implementations in other crates (raster, Phase 3 effects) implement the traits.
+- **`StageRec<'r, 'a>`** holds `&'r mut RasterPipeline<'a>` and the `&'a ArenaAlloc`; effects take
+  `&mut StageRec` (Skia's `const SkStageRec&` with a mutable pipeline pointer) and allocate their
+  contexts in the arena. `ShaderBase::append_stages(&self, &mut StageRec, &MatrixRec) -> bool`;
+  `dyn ShaderBase::append_root_stages(rec, ctm)`; `BlenderBase::on_append_stages(&mut StageRec)`;
+  `ColorFilterBase::append_stages(&mut StageRec, shader_is_opaque)`. `MatrixRec` is a full port
+  (`apply` appends `seed_shader` + `append_matrix`). `fSurfaceProps` is left out until D6 ports
+  `SkSurfaceProps` (nothing ported reads it).
+- **Blend modes.** `blend_mode_priv::append_stages(mode, &mut RasterPipeline)` (nothing for `Src`),
+  `should_pre_scale_coverage(mode, rgb_coverage)` / `supports_coverage_as_alpha` (D3's coverage
+  decision), `check_fast_path(&Paint, dst_is_opaque) -> BlendFastPath`, `apply(mode, src, dst)`
+  (a one-pixel `load_f32`/`store_f32` pipeline for the non-trivial modes). `Blender::mode(m)` returns
+  per-mode singletons (`get_blend_mode_singleton`), so paints with equal blend modes compare equal.
+- **Paint** is a plain struct (`Clone` = Skia's shallow copy) with optional `PathEffect`, `Shader`,
+  `MaskFilter`, `ColorFilter`, `ImageFilter`, `Blender`; `set_blend_mode(SrcOver)` clears the
+  blender as Skia does. `nothing_to_draw`, `can_compute_fast_bounds`, `compute_fast_bounds` (returns
+  the rect instead of `storage`), `paint_priv::{overwrites, should_dither, compute_luminance_color}`.
+  `StrokeRec::from_paint`, `inflation_radius_from_paint_and_style` and
+  `path_utils::fill_path_with_paint` (with the path effect) replace the D1-era stand-ins.
+- **Shaders.** `shaders::{empty, color, color_in_space}`; `ColorShader` stores unpremul extended
+  sRGB and appends `append_constant_color` of the color converted to the dst color space, premul
+  (m156 has no separate `SkColor4Shader`); `EmptyShader` appends nothing and returns false.
+- **Stubs.** `ColorFilterBase` (with Skia's pipeline-based `on_filter_color4f` default and
+  `affects_transparent_black`), `MaskFilterBase` and `ImageFilterBase` (fast bounds only) carry what
+  `SkPaint` needs; Phase 3 extends them. (`PathEffectBase` is C7's full trait, which D2 uses as is.)
+- **Tests.** `oracle/rp-builder/rp_builder.cpp` gained a `d2` mode (run by `build.ps1`): 124 cases
+  (all 29 blenders between a dst load and a store; color shaders for 7 colors x 3 source x 4 dst
+  color spaces, `SkColor` shaders, the empty shader; 8 `MatrixRec::apply` cases including a
+  singular matrix and a pre-applied CTM) written to `raster_pipeline/skia_d2_{dump,rp_dump}.txt`
+  with the appenders' results and every `uniform_color`/`unbounded_uniform_color`/matrix context.
+  `raster_pipeline/d2_tests.rs` matches them bit for bit, including the SSE2 lowp decisions. Module
+  tests cover `Paint` semantics (equality, setters, `nothing_to_draw`, fast bounds),
+  `paint_priv`, `blend_mode_priv` and the color filter default. Skia tests: `PaintTest::Paint_dither`
+  and `Paint_regression_cubic` pass; `Paint_copy` (blur mask filter), `Paint_flattening`,
+  `Paint_MoreFlattening` (`SkReadBuffer`/`SkWriteBuffer`), `Paint_nothingToDraw` (matrix color
+  filter), `Paint_regression_measureText` and `Font_getpos` (fonts) wait for those ports;
+  `BlendTest` has nothing left for raster.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
