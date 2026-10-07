@@ -28396,7 +28396,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapGetColorTest.cpp#L21-L58"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9493f7f14b72615489dd5ff6f367645859010da91b505c7557675f70d05a94f"
 
 [[test]]
@@ -28405,7 +28405,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L159-L177"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "658ec71fc30a7486d0896f84ba141ef4b7b6d84db828fd5bb2b36f6ab8c772fc"
 
 [[test]]
@@ -28414,7 +28414,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L322-L327"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5adb2dbfe28f259af09cc82b365cb133c12c3c609bd0839a67bafe7ee3bcea0d"
 
 [[test]]
@@ -28423,7 +28423,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L267-L282"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7dab32f7539afa0d54cf5ce230334e8f13d55125101768aec99fbaf59d084fd4"
 
 [[test]]
@@ -28432,7 +28432,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L331-L359"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aa80859794a1fc1dbe70de6e5de31130720c1dd2c02b327dbb864211a449eb7e"
 
 [[test]]
@@ -28441,7 +28441,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L257-L264"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f84e9bc35bf09c9ed8e84a8ef6d9009b1ed53ce5c73dfe662df70b8ea7f83ed8"
 
 [[test]]
@@ -28450,7 +28450,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L285-L305"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "010f49f925f8c4bd5608fcf15b787b803a1f59a9744b3804f0e5d37d2a0a8b5c"
 
 [[test]]
@@ -28459,7 +28459,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L309-L319"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d9fd09be2b672cb04cd0b8bbc35b564f2b0466d73f1cbe92a467a32066b218fc"
 
 [[test]]
@@ -28486,7 +28486,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L477-L503"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6a7150d72a7b5851861ce73e0e1ecb1f0ee1b4f79a7db918680dd208a21948ce"
 
 [[test]]
@@ -35421,7 +35421,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MallocPixelRefTest.cpp#L28-L108"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "979cea2cb9f1933e19083c5b13b2bd0cc7db0ef5cfffa55b76d74ba959d38c7a"
 
 [[test]]
@@ -38888,7 +38888,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PixelRefTest.cpp#L72-L126"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4f03d63d8ea4b03924d0aad497831b3431cba26077669f769f102d8d2cc7e902"
 
 [[test]]
@@ -38897,7 +38897,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PixelsRecTest.cpp#L18-L113"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6d46ee2f967ee1fecddedbb1f66b09caec1f03b4f97017bfdc42e38503de5932"
 
 [[test]]
@@ -38906,7 +38906,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PixelsRecTest.cpp#L115-L210"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9dee7f51d3d79508a10bff6739b518d035296b7ffa1939f69a32604df98770bb"
 
 [[test]]
