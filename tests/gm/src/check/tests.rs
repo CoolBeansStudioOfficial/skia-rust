@@ -11,6 +11,7 @@ use crate::canvas::{BlendMode, Canvas};
 use crate::goldens::Objects;
 use crate::prelude::{Color, ISize};
 use crate::{DrawResult, GM};
+use skia_rust_core::color_type::ColorType;
 
 /// A fake GM: clears to `bg` (red by default), then fills with opaque blue (8888 bytes
 /// `ff 00 00 ff`, 565 `1f 00`, f16 `0 0 1 1`), or returns `result`.
@@ -52,6 +53,24 @@ fn fake(name: &'static str, result: DrawResult) -> Box<dyn GM> {
         size: ISize::new(4, 3),
         result,
     })
+}
+
+/// Options for tests that compare bytes: only the byte-order-independent configs, so the
+/// result does not depend on the host's N32 order.
+fn byte_opts() -> Options {
+    Options {
+        configs: vec![Config::Rgb565, Config::F16],
+        ..Options::default()
+    }
+}
+
+/// Options for tests that never compare 8888 bytes (skips, failures, missing goldens): all
+/// configs, on a host described as having the goldens' N32 order.
+fn all_configs_opts() -> Options {
+    Options {
+        host_n32: Config::N32.golden_color_type(),
+        ..Options::default()
+    }
 }
 
 fn fixture_store(objects: Objects) -> GoldenStore {
@@ -105,20 +124,14 @@ fn fake_gm_matches_fixture_on_every_tier_and_config() {
     let store = fixture_store(Objects::None);
     let plan = fixture_plan(&store);
     let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
-    let report = check_gm(
-        "gm::fixture::blue",
-        &src,
-        &store,
-        &plan,
-        &Options::default(),
-    );
+    let report = check_gm("gm::fixture::blue", &src, &store, &plan, &byte_opts());
     assert_eq!(report.verdict, Verdict::Passing, "{report}");
-    // 3 configs x (2 Sse2 + Sse41 + Ml3 + Ml4) decisive comparisons, all matches.
-    assert_eq!(decisive(&report).count(), 15, "{report}");
+    // 2 configs x (2 Sse2 + Sse41 + Ml3 + Ml4) decisive comparisons, all matches.
+    assert_eq!(decisive(&report).count(), 10, "{report}");
     assert!(decisive(&report).all(|c| c.outcome == Outcome::Match));
-    // The proxy disagrees on 8888 only: reported, not decisive.
+    // The proxy disagrees on 565 only: reported, not decisive.
     let proxy: Vec<_> = report.checks.iter().filter(|c| c.proxy).collect();
-    assert_eq!(proxy.len(), 3);
+    assert_eq!(proxy.len(), 2);
     assert!(
         proxy
             .iter()
@@ -129,14 +142,14 @@ fn fake_gm_matches_fixture_on_every_tier_and_config() {
         .filter(|c| c.outcome != Outcome::Match)
         .collect();
     assert_eq!(mismatched.len(), 1);
-    assert_eq!(mismatched[0].config, "8888");
+    assert_eq!(mismatched[0].config, "565");
 }
 
 #[test]
 fn mismatch_fails_and_writes_a_diff() {
-    // The golden object behind the wrong 8888 hash on cpu-x64-sse41: all red.
+    // The golden object behind the wrong 565 hash on cpu-x64-sse41: all red (0xf800).
     let objects = temp_dir("fixture-objects");
-    let red: Vec<u8> = [0u8, 0, 0xff, 0xff].repeat(12);
+    let red: Vec<u8> = [0x00u8, 0xf8].repeat(12);
     let sha = sha256_hex(&red);
     std::fs::create_dir_all(objects.join(&sha[..2])).unwrap();
     std::fs::write(
@@ -149,8 +162,8 @@ fn mismatch_fails_and_writes_a_diff() {
     let plan = fixture_plan(&store);
     let src = GmSrc::new(|| fake("fixture_wrong", DrawResult::Ok));
     let opts = Options {
-        configs: Config::ALL.to_vec(),
         diffs: Some(diffs.clone()),
+        ..byte_opts()
     };
     let report = check_gm("gm::fixture::wrong", &src, &store, &plan, &opts);
     assert_eq!(report.verdict, Verdict::Failing, "{report}");
@@ -170,7 +183,7 @@ fn mismatch_fails_and_writes_a_diff() {
         png,
         diffs
             .join("cpu-x64-sse41")
-            .join("8888")
+            .join("565")
             .join("fixture_wrong.png")
     );
     std::fs::remove_dir_all(&objects).unwrap();
@@ -188,7 +201,7 @@ fn skips_match_only_when_the_oracle_skipped_too() {
         &src,
         &store,
         &plan,
-        &Options::default(),
+        &all_configs_opts(),
     );
     assert_eq!(report.verdict, Verdict::Passing, "{report}");
 
@@ -243,7 +256,7 @@ fn failures_panics_and_missing_goldens_fail() {
     let plan = fixture_plan(&store);
 
     let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Fail));
-    let report = check_gm("gm::fixture::f", &src, &store, &plan, &Options::default());
+    let report = check_gm("gm::fixture::f", &src, &store, &plan, &all_configs_opts());
     assert_eq!(report.verdict, Verdict::Failing);
     assert!(
         decisive(&report)
@@ -252,13 +265,13 @@ fn failures_panics_and_missing_goldens_fail() {
 
     // Not in the fixture: the oracle has no such result.
     let src = GmSrc::new(|| fake("fixture_unknown", DrawResult::Ok));
-    let report = check_gm("gm::fixture::u", &src, &store, &plan, &Options::default());
+    let report = check_gm("gm::fixture::u", &src, &store, &plan, &all_configs_opts());
     assert_eq!(report.verdict, Verdict::Failing);
     assert!(decisive(&report).all(|c| matches!(c.outcome, Outcome::NoGolden { .. })));
 
     // A draw the stub cannot do panics; the harness reports it and keeps going.
     let src = GmSrc::new(|| Box::new(Translucent));
-    let report = check_gm("gm::fixture::p", &src, &store, &plan, &Options::default());
+    let report = check_gm("gm::fixture::p", &src, &store, &plan, &all_configs_opts());
     assert_eq!(report.verdict, Verdict::Failing);
     assert!(
         decisive(&report)
@@ -276,13 +289,35 @@ fn not_checkable_tiers_never_pass() {
         t => Ok(Selection::model(t, Estimates::AmdZen4)),
     });
     let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
-    let report = check_gm("gm::fixture::nc", &src, &store, &plan, &Options::default());
+    let report = check_gm("gm::fixture::nc", &src, &store, &plan, &byte_opts());
     assert_eq!(report.verdict, Verdict::NotCheckable, "{report}");
     assert_eq!(
         decisive(&report)
             .filter(|c| matches!(c.outcome, Outcome::NotCheckable { .. }))
             .count(),
-        3
+        2
+    );
+}
+
+#[test]
+fn n32_is_not_checkable_when_the_host_order_differs_from_the_goldens() {
+    let store = fixture_store(Objects::None);
+    let plan = fixture_plan(&store);
+    let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
+    let opts = Options {
+        configs: vec![Config::N32],
+        host_n32: ColorType::RGBA8888,
+        ..Options::default()
+    };
+    let report = check_gm("gm::fixture::rgba", &src, &store, &plan, &opts);
+    assert_eq!(report.verdict, Verdict::NotCheckable, "{report}");
+    assert!(
+        !report.checks.is_empty()
+            && report
+                .checks
+                .iter()
+                .all(|c| matches!(c.outcome, Outcome::NotCheckable { .. }) && c.config == "8888"),
+        "{report}"
     );
 }
 
@@ -351,8 +386,20 @@ fn background_matches_real_goldens() {
     );
     eprintln!("goldens: {}\n{report}", store.source);
     assert_ne!(report.verdict, Verdict::Failing, "{report}");
-    // Sse2 is checkable on every host (natively or by its model), on all three configs.
+    // Sse2 is checkable on every host (natively or by its model), on every config whose byte
+    // order matches the goldens' (8888 only on a BGRA host).
     for config in Config::ALL {
+        if crate::sink::config_checkable(config, ColorType::N32).is_err() {
+            assert!(
+                report
+                    .checks
+                    .iter()
+                    .filter(|c| c.config == config.tag())
+                    .all(|c| matches!(c.outcome, Outcome::NotCheckable { .. })),
+                "{report}"
+            );
+            continue;
+        }
         assert!(
             report.checks.iter().any(|c| c.config == config.tag()
                 && c.oracle_tier == Some("cpu-x64-sse2")

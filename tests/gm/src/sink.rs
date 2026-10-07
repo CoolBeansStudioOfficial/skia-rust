@@ -26,7 +26,7 @@ use crate::{DrawResult, GM, GmInstance};
 // Port of: dm/DM.cpp#L1053-L1068 (chrome/m156)
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Config {
-    /// `8888`: `kN32_SkColorType` (BGRA on every platform Skia supports), premul.
+    /// `8888`: `kN32_SkColorType` (BGRA on Windows, RGBA elsewhere), premul.
     N32,
     /// `565`: `kRGB_565_SkColorType`, opaque.
     Rgb565,
@@ -59,6 +59,17 @@ impl Config {
         }
     }
 
+    /// The color type the oracle's goldens store for this config (`meta.json` `color_type`).
+    /// The oracle runs on a Windows host, where `kN32_SkColorType` is `BGRA_8888`.
+    #[must_use]
+    pub const fn golden_color_type(self) -> ColorType {
+        match self {
+            Config::N32 => ColorType::BGRA8888,
+            Config::Rgb565 => ColorType::RGB565,
+            Config::F16 => ColorType::RGBAF16,
+        }
+    }
+
     /// `RasterSink::colorInfo()`'s alpha type: premul, corrected by
     /// `SkColorTypeValidateAlphaType` (565 becomes opaque).
     // Port of: dm/DMSrcSink.h#L547-L553 (chrome/m156)
@@ -85,6 +96,23 @@ impl Config {
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.tag())
+    }
+}
+
+/// Whether `config` can be compared with the goldens on a host whose `kN32_SkColorType` is
+/// `host_n32`. Bytes are never swizzled: `8888` is only checkable when the host's N32 order is the
+/// goldens' (`BGRA_8888`); `565` and `f16` are byte-order independent.
+///
+/// # Errors
+/// Why the config is not checkable on this host.
+pub fn config_checkable(config: Config, host_n32: ColorType) -> Result<(), String> {
+    let golden = config.golden_color_type();
+    match config {
+        Config::N32 if host_n32 != golden => Err(format!(
+            "this host's 8888 is {host_n32:?} but the goldens are {golden:?} \
+             (needs an RGBA oracle variant, SK_R32_SHIFT=0)"
+        )),
+        _ => Ok(()),
     }
 }
 
@@ -260,8 +288,18 @@ mod tests {
     /// CPU result (`BGRA_8888`/`Premul`, `RGB_565`/`Opaque`, `RGBA_F16`/`Premul`, no color space).
     #[test]
     fn configs_match_the_oracle_metadata() {
-        assert_eq!(Config::N32.color_type(), ColorType::BGRA8888);
+        // The host's N32 is whichever order Skia picks for it; the goldens' is BGRA everywhere.
+        let host_n32 = if skia_rust_core::color_priv::PMCOLOR_IS_BGRA {
+            ColorType::BGRA8888
+        } else {
+            ColorType::RGBA8888
+        };
+        assert_eq!(Config::N32.color_type(), host_n32);
+        assert_eq!(Config::N32.golden_color_type(), ColorType::BGRA8888);
         assert_eq!(Config::N32.alpha_type(), AlphaType::Premul);
+        for c in [Config::Rgb565, Config::F16] {
+            assert_eq!(c.color_type(), c.golden_color_type());
+        }
         assert_eq!(Config::Rgb565.color_type(), ColorType::RGB565);
         assert_eq!(Config::Rgb565.alpha_type(), AlphaType::Opaque);
         assert_eq!(Config::F16.color_type(), ColorType::RGBAF16);
@@ -272,6 +310,16 @@ mod tests {
                 .all(|c| c.image_info(ISize::new(1, 1)).color_space().is_none())
         );
         assert_eq!(Config::F16.result_id("aarectmodes"), "f16/gm/aarectmodes");
+    }
+
+    #[test]
+    fn n32_is_checkable_only_when_the_byte_order_matches_the_goldens() {
+        assert!(config_checkable(Config::N32, ColorType::BGRA8888).is_ok());
+        assert!(config_checkable(Config::N32, ColorType::RGBA8888).is_err());
+        for host in [ColorType::BGRA8888, ColorType::RGBA8888] {
+            assert!(config_checkable(Config::Rgb565, host).is_ok());
+            assert!(config_checkable(Config::F16, host).is_ok());
+        }
     }
 
     #[test]

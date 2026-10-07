@@ -17,6 +17,12 @@
 //! oracle tiers ([`PROXY_ORACLE_TIERS`]: `cpu-x64-scalar` stands in for the wasm oracle, §4.5)
 //! are compared and reported, but never make a GM pass or fail.
 //!
+//! # Configs
+//! `8888` is `kN32_SkColorType`: BGRA on Windows (where the goldens were made), RGBA elsewhere.
+//! Bytes are never swizzled, so on a host whose N32 order differs from the golden's
+//! `color_type` the `8888` config is **not checkable** ([`config_checkable`]). `565` and `f16`
+//! do not depend on byte order.
+//!
 //! # Verdicts
 //! A GM is [`Verdict::Passing`] only when every config matches on every non-proxy oracle tier
 //! with goldens and every such tier was checkable here. Any mismatch (or a draw failure, a panic,
@@ -37,7 +43,8 @@ use skia_rust_simd::{Estimates, Selection, Tier};
 use crate::diff;
 use crate::goldens::{GoldenStore, sha256_hex};
 use crate::registry::GmRegistration;
-use crate::sink::{Config, GmSrc, RasterSink, Status, packed_bytes};
+use crate::sink::{Config, GmSrc, RasterSink, Status, config_checkable, packed_bytes};
+use skia_rust_core::color_type::ColorType;
 
 /// Oracle tiers that only approximate the tier they stand for (design §4.5).
 pub const PROXY_ORACLE_TIERS: &[&str] = &["cpu-x64-scalar"];
@@ -236,6 +243,9 @@ pub struct Options {
     /// Where to write diff images for mismatches (fetching the golden objects if needed), or
     /// `None` for no diffs.
     pub diffs: Option<PathBuf>,
+    /// The host's `kN32_SkColorType`. `8888` is only compared when it is the goldens' order
+    /// ([`config_checkable`]); injectable so tests do not depend on the real host.
+    pub host_n32: ColorType,
 }
 
 impl Default for Options {
@@ -244,6 +254,7 @@ impl Default for Options {
         Self {
             configs: Config::ALL.to_vec(),
             diffs: Some(diff::diff_root()),
+            host_n32: ColorType::N32,
         }
     }
 }
@@ -300,6 +311,21 @@ pub fn check_gm(
     let mut checks = Vec::new();
     for &config in &opts.configs {
         let id = config.result_id(&name);
+        if let Err(reason) = config_checkable(config, opts.host_n32) {
+            for tp in plan.iter().filter(|tp| !tp.oracle_tiers.is_empty()) {
+                checks.push(Check {
+                    config: config.tag(),
+                    tier: tp.tier.name(),
+                    selection: None,
+                    oracle_tier: None,
+                    proxy: !tp.is_authoritative(),
+                    outcome: Outcome::NotCheckable {
+                        reason: reason.clone(),
+                    },
+                });
+            }
+            continue;
+        }
         for tp in plan.iter().filter(|tp| !tp.oracle_tiers.is_empty()) {
             let mut push = |selection: Option<Selection>,
                             oracle_tier: Option<&'static str>,

@@ -900,6 +900,13 @@ config it renders once per `Selection` and compares the SHA-256 with that tier's
   `AMD_ZEN4` for the tier, else `Model(AmdZen4)`; `Ml4` without a match is not checkable until
   an `rcp14` model exists (R2). `Neon` falls back to `Model(Arm)`; it has no goldens yet.
   `cpu-x64-scalar` is a proxy (§4.5): compared and reported, never decisive.
+- **N32 byte order.** `8888` is `kN32` (BGRA on Windows, RGBA elsewhere) and the goldens are
+  `BGRA_8888` (Windows oracle host). Bytes are never swizzled: if the host's N32 order differs
+  from the golden's `meta.json` `color_type`, `8888` is *not checkable* on that host
+  (`sink::config_checkable(config, host_n32)`, pure; `Options::host_n32` injects the order),
+  reported but neither a pass nor a failure. `565`/`f16` are byte-order independent. Follow-up:
+  an RGBA oracle variant (`SK_R32_SHIFT=0` build) with its own goldens, to make `8888`
+  checkable on non-Windows hosts. Until then a GM is at best `not-checkable` on those hosts.
 - **Verdicts and the manifest.** `passing` = every config matches on every non-proxy oracle tier
   with goldens and all were checkable; any mismatch, draw failure, panic, unexpected skip or
   missing golden is `failing`; otherwise `not-checkable`. `cargo xtask inventory verify` runs
