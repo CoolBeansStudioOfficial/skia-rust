@@ -65,11 +65,18 @@ enum OracleCommand {
         /// DM worker threads.
         #[arg(long)]
         threads: Option<usize>,
+        /// Replace the tier's existing goldens instead of merging into them.
+        #[arg(long)]
+        fresh: bool,
     },
-    /// Rewrite `hashes.json` for a tier's goldens.
-    Hash {
+    /// Write one golden's raw bytes to a file (for diffing).
+    Extract {
         /// Tier name.
         tier: String,
+        /// Result id, e.g. `8888/gm/aarectmodes`.
+        id: String,
+        /// Output file.
+        dest: PathBuf,
     },
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
@@ -121,6 +128,7 @@ fn main() -> Result<()> {
                 src,
                 r#match,
                 threads,
+                fresh,
             } => oracle::run_tier(
                 &root,
                 &oracle::RunOptions {
@@ -129,9 +137,10 @@ fn main() -> Result<()> {
                     srcs: src,
                     matches: r#match,
                     threads,
+                    fresh,
                 },
             ),
-            OracleCommand::Hash { tier } => oracle::hash(&root, &tier),
+            OracleCommand::Extract { tier, id, dest } => oracle::extract(&root, &tier, &id, &dest),
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
         },
     }

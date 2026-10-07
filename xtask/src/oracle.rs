@@ -388,10 +388,45 @@ pub fn build(root: &Path, name: &str) -> Result<()> {
     Ok(())
 }
 
+/// Goldens for the current pin: `goldens/<commit>/`.
+///
+/// Layout:
+/// - `objects/<sha[..2]>/<sha>.zst`: every distinct output once, zstd-compressed;
+/// - `<tier>/hashes.json`: result id -> SHA-256 of its raw bytes;
+/// - `<tier>/meta.json`: result id -> `OracleDump` metadata (size, color type, ...);
+/// - `<tier>/toolchain.txt`: compiler and GN args the tier was rendered with.
+///
+/// Many outputs are identical across tiers, so storing them by hash keeps the full
+/// tier matrix within a few GB.
+fn pin_golden_dir(root: &Path) -> Result<PathBuf> {
+    let pin = skia::read_pin(root)?;
+    Ok(root.join("goldens").join(&pin.commit))
+}
+
 /// Golden directory for one tier at the current pin.
 fn golden_dir(root: &Path, tier: &str) -> Result<PathBuf> {
-    let pin = skia::read_pin(root)?;
-    Ok(root.join("goldens").join(&pin.commit).join(tier))
+    Ok(pin_golden_dir(root)?.join(tier))
+}
+
+fn object_path(pin_dir: &Path, sha: &str) -> PathBuf {
+    pin_dir
+        .join("objects")
+        .join(&sha[..2])
+        .join(format!("{sha}.zst"))
+}
+
+fn read_json_map<T: serde::de::DeserializeOwned>(path: &Path) -> Result<BTreeMap<String, T>> {
+    if !path.exists() {
+        return Ok(BTreeMap::new());
+    }
+    let text =
+        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    serde_json::from_str(&text).with_context(|| format!("parsing {}", path.display()))
+}
+
+fn write_json<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
+    std::fs::write(path, serde_json::to_string_pretty(value)? + "\n")
+        .with_context(|| format!("writing {}", path.display()))
 }
 
 /// Options for one DM run.
@@ -402,6 +437,8 @@ pub struct RunOptions {
     pub srcs: Vec<String>,
     pub matches: Vec<String>,
     pub threads: Option<usize>,
+    /// Drop the tier's existing results first instead of merging into them.
+    pub fresh: bool,
 }
 
 /// Renders goldens for one tier with DM, then checks every result ran at that CPU tier.
@@ -424,7 +461,7 @@ pub fn run_tier(root: &Path, opts: &RunOptions) -> Result<()> {
         dm.display(),
         tier.build
     );
-    let out = golden_dir(root, &tier.name)?;
+    let out = pin_golden_dir(root)?.join(".staging").join(&tier.name);
     if out.exists() {
         std::fs::remove_dir_all(&out).with_context(|| format!("clearing {}", out.display()))?;
     }
@@ -471,12 +508,89 @@ pub fn run_tier(root: &Path, opts: &RunOptions) -> Result<()> {
     if let Some(threads) = opts.threads {
         cmd.args(["--threads", &threads.to_string()]);
     }
-    run(&mut cmd)?;
+    // Keep whatever DM rendered even if some sources fail; report the failure after.
+    let dm_status = cmd.status().with_context(|| format!("running {cmd:?}"))?;
 
     let count = check_tier(&out, &tier.level)?;
-    write_toolchain(root, &out, &tier)?;
-    println!("{count} results for {} in {}", tier.name, out.display());
-    hash(root, &tier.name)
+    let tier_dir = golden_dir(root, &tier.name)?;
+    if opts.fresh && tier_dir.exists() {
+        std::fs::remove_dir_all(&tier_dir)
+            .with_context(|| format!("clearing {}", tier_dir.display()))?;
+    }
+    std::fs::create_dir_all(&tier_dir)?;
+    let stored = ingest(root, &tier_dir, &out)?;
+    write_toolchain(root, &tier_dir, &tier)?;
+    std::fs::remove_dir_all(&out).with_context(|| format!("clearing {}", out.display()))?;
+    println!(
+        "{count} results for {} ({stored} new objects) -> {}",
+        tier.name,
+        tier_dir.display()
+    );
+    ensure!(
+        dm_status.success(),
+        "DM exited with {dm_status}; results that rendered were kept (see its log above)"
+    );
+    Ok(())
+}
+
+/// Moves a DM run's outputs from `staging` into the object store and merges their
+/// hashes and metadata into the tier's `hashes.json` / `meta.json`.
+/// Returns how many objects were new.
+fn ingest(root: &Path, tier_dir: &Path, staging: &Path) -> Result<usize> {
+    let pin_dir = pin_golden_dir(root)?;
+    let mut hashes: BTreeMap<String, String> = read_json_map(&tier_dir.join("hashes.json"))?;
+    let mut metas: BTreeMap<String, serde_json::Value> =
+        read_json_map(&tier_dir.join("meta.json"))?;
+    let mut stored = 0;
+    for (id, path) in outputs(staging)? {
+        let bytes = std::fs::read(&path)?;
+        let sha = sha256_hex(&bytes);
+        let object = object_path(&pin_dir, &sha);
+        if !object.exists() {
+            std::fs::create_dir_all(object.parent().context("object has no parent")?)?;
+            let compressed = zstd::encode_all(bytes.as_slice(), 19)?;
+            // Write then rename, so an interrupted run never leaves a truncated object.
+            let tmp = object.with_extension("tmp");
+            std::fs::write(&tmp, compressed)?;
+            std::fs::rename(&tmp, &object)?;
+            stored += 1;
+        }
+        let meta_text = std::fs::read_to_string(path.with_extension("json"))
+            .with_context(|| format!("metadata for {id}"))?;
+        let mut meta: serde_json::Value = serde_json::from_str(&meta_text)?;
+        if let Some(obj) = meta.as_object_mut() {
+            // Tier facts live in toolchain.txt; keep meta.json about the output only.
+            for key in ["cpu_x64_level", "cpu_cap", "cpu_tier"] {
+                obj.remove(key);
+            }
+        }
+        hashes.insert(id.clone(), sha);
+        metas.insert(id, meta);
+    }
+    write_json(&tier_dir.join("hashes.json"), &hashes)?;
+    write_json(&tier_dir.join("meta.json"), &metas)?;
+    Ok(stored)
+}
+
+/// Writes the raw bytes of one golden (`<config>/<src>/[<options>/]<name>`) to `dest`.
+pub fn extract(root: &Path, tier: &str, id: &str, dest: &Path) -> Result<()> {
+    let hashes: BTreeMap<String, String> =
+        read_json_map(&golden_dir(root, tier)?.join("hashes.json"))?;
+    let sha = hashes
+        .get(id)
+        .with_context(|| format!("no golden `{id}` in tier {tier}"))?;
+    let object = object_path(&pin_golden_dir(root)?, sha);
+    let compressed =
+        std::fs::read(&object).with_context(|| format!("reading {}", object.display()))?;
+    let bytes = zstd::decode_all(compressed.as_slice())?;
+    ensure!(
+        sha256_hex(&bytes) == *sha,
+        "object {} is corrupt",
+        object.display()
+    );
+    std::fs::write(dest, bytes)?;
+    println!("{id} ({tier}) -> {}", dest.display());
+    Ok(())
 }
 
 /// Verifies every result's metadata reports the expected runtime CPU tier.
@@ -538,10 +652,10 @@ fn sha256_hex(bytes: &[u8]) -> String {
     out
 }
 
-/// Hashes every `.raw`/`.bin` output under `dir`, keyed by path relative to `dir`
-/// with `/` separators and no extension.
-pub fn hash_dir(dir: &Path) -> Result<BTreeMap<String, String>> {
-    let mut hashes = BTreeMap::new();
+/// Every `.raw`/`.bin` output under `dir`, keyed by its path relative to `dir` with
+/// `/` separators and no extension (the result id).
+fn outputs(dir: &Path) -> Result<BTreeMap<String, PathBuf>> {
+    let mut found = BTreeMap::new();
     for entry in WalkDir::new(dir) {
         let entry = entry?;
         let path = entry.path();
@@ -555,30 +669,29 @@ pub fn hash_dir(dir: &Path) -> Result<BTreeMap<String, String>> {
             .map(|c| c.as_os_str().to_string_lossy().into_owned())
             .collect::<Vec<_>>()
             .join("/");
-        let bytes = std::fs::read(path)?;
-        hashes.insert(rel, sha256_hex(&bytes));
+        found.insert(rel, path.to_path_buf());
     }
-    Ok(hashes)
+    Ok(found)
 }
 
-/// Writes `hashes.json` for one tier's goldens.
-pub fn hash(root: &Path, tier: &str) -> Result<()> {
-    let dir = golden_dir(root, tier)?;
-    ensure!(dir.exists(), "no goldens for {tier} at {}", dir.display());
-    let hashes = hash_dir(&dir)?;
-    let path = dir.join("hashes.json");
-    std::fs::write(&path, serde_json::to_string_pretty(&hashes)? + "\n")?;
-    println!("{} hashes -> {}", hashes.len(), path.display());
-    Ok(())
+/// Hashes every output under `dir` (see [`outputs`]).
+pub fn hash_dir(dir: &Path) -> Result<BTreeMap<String, String>> {
+    outputs(dir)?
+        .into_iter()
+        .map(|(id, path)| Ok((id, sha256_hex(&std::fs::read(path)?))))
+        .collect()
 }
 
 /// Compares a directory of skia-rust outputs (same layout as the goldens) against a tier.
 /// Returns an error listing every mismatch; outputs with no golden are reported too.
 pub fn compare(root: &Path, tier: &str, ours: &Path) -> Result<()> {
     let golden_path = golden_dir(root, tier)?.join("hashes.json");
-    let text = std::fs::read_to_string(&golden_path)
-        .with_context(|| format!("reading {}", golden_path.display()))?;
-    let goldens: BTreeMap<String, String> = serde_json::from_str(&text)?;
+    ensure!(
+        golden_path.exists(),
+        "no goldens at {}",
+        golden_path.display()
+    );
+    let goldens: BTreeMap<String, String> = read_json_map(&golden_path)?;
     let ours = hash_dir(ours)?;
     ensure!(!ours.is_empty(), "no .raw/.bin outputs found");
 

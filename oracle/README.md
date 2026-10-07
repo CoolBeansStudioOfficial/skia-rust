@@ -32,11 +32,19 @@ Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is
 cargo xtask oracle deps                   # git-sync-deps (Dawn, codecs, …), gn, ninja
 cargo xtask oracle build x64-sse2         # gn gen + ninja dm, into third_party/skia/out/oracle/<build>
 cargo xtask oracle tiers                  # list derived tiers
-cargo xtask oracle run cpu-x64-sse2-rt-ml3 --config 8888 --src gm [--match aarect]
+cargo xtask oracle run cpu-x64-sse2-rt-ml3 --config 8888 f16 --src gm [--match aarect] [--fresh]
 cargo xtask oracle compare cpu-x64-sse2-rt-ml3 path/to/our/outputs
+cargo xtask oracle extract cpu-x64-sse2-rt-ml3 8888/gm/aarectmodes out.raw
 ```
 
-Goldens land in `goldens/<skia-commit>/<tier>/<config>/<src>/[<options>/]<name>.{raw,bin,json}`, with `hashes.json` (SHA-256 per output) and `toolchain.txt` alongside. `goldens/` is git-ignored; hash files are published as described in PLAN §5.3.
+Result ids are `<config>/<src>/[<options>/]<name>`, e.g. `8888/gm/aarectmodes`. Goldens live in `goldens/<skia-commit>/` (git-ignored):
+
+- `objects/<sha[..2]>/<sha>.zst`: each distinct output stored once, zstd-compressed. Most outputs are identical across tiers, so the full matrix stays small.
+- `<tier>/hashes.json`: result id → SHA-256 of the raw bytes. This is all `compare` needs.
+- `<tier>/meta.json`: result id → size, color type, alpha type, serialized color space.
+- `<tier>/toolchain.txt`: compiler version and GN args.
+
+`run` merges into a tier's existing results, so a tier can be filled in several `--match` runs; `--fresh` starts over. If some sources fail, everything that rendered is still stored and the run then reports DM's failure. Hash files and objects are published as described in PLAN §5.3.
 
 Prerequisites on Windows: Visual Studio 2022 Build Tools (MSVC + Windows SDK), Python 3, and LLVM (`clang-cl`) at `C:\Program Files\LLVM` or wherever `SKIA_ORACLE_CLANG_WIN` points.
 
