@@ -298,7 +298,9 @@ pub enum Estimates {
     /// `frecpe`/`frsqrte`), executed one lane at a time. Requires the host to have them.
     Host,
     /// The oracle host's tables (AMD Ryzen 7 7800X3D, Zen 4; fingerprints in
-    /// [`crate::estimates::AMD_ZEN4`]). x86 tiers only.
+    /// [`crate::estimates::AMD_ZEN4`]). x86 tiers only. The lane functions are
+    /// [`crate::estimates::amd_zen4`]`::{rcp, rsqrt}` (Sse2/Sse41/Ml3) and
+    /// `::{rcp14, rsqrt14}` (Ml4), exact on every input.
     AmdZen4,
     // IntelCore: once measured (design §6, R1/R2).
     /// The Arm ARM's architectural `RecipEstimate`/`RecipSqrtEstimate`. `Neon` only.

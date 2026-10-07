@@ -7,7 +7,8 @@
 //!
 //! - [`tier`]: the CPU tiers ([`Tier`]), detection and [`Selection`] (design §2.2–§2.3).
 //! - [`cpu`]: the port of `SkCpu` and the feature tokens that prove a tier can run.
-//! - [`estimates`]: the host's `rcp`/`rsqrt` estimate instructions, fingerprints and tables.
+//! - [`estimates`]: the host's `rcp`/`rsqrt` estimate instructions, fingerprints, tables and
+//!   bit-exact software models (`estimates::amd_zen4`).
 //! - `testing` (feature `testing`): `force_tier`.
 //! - [`vx`](mod@vx): `skvx`.
 #![allow(unsafe_code)]
