@@ -3,6 +3,7 @@
 mod cpp;
 mod inventory;
 mod oracle;
+mod publish;
 mod skia;
 mod verify;
 
@@ -78,6 +79,13 @@ enum OracleCommand {
         id: String,
         /// Output file.
         dest: PathBuf,
+    },
+    /// Bundle the pin's goldens, upload them to the `goldens-<mNNN>` GitHub release,
+    /// and write `inventory/goldens.lock`.
+    Publish {
+        /// Build the bundle and print the lock file without uploading.
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
@@ -156,6 +164,7 @@ fn main() -> Result<()> {
             ),
             OracleCommand::Extract { tier, id, dest } => oracle::extract(&root, &tier, &id, &dest),
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
+            OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },
     }
 }
