@@ -59,6 +59,8 @@ pub mod meta_data_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
 #[cfg(test)]
+pub mod parametric_stage_test;
+#[cfg(test)]
 pub mod parse_path_test;
 #[cfg(test)]
 pub mod path_builder_test;

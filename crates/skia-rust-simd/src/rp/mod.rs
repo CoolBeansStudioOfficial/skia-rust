@@ -46,6 +46,8 @@ mod tests;
 #[cfg(test)]
 mod tests_blend;
 #[cfg(test)]
+mod tests_color;
+#[cfg(test)]
 mod tests_geometry;
 #[cfg(test)]
 mod tests_sksl;
