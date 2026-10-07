@@ -16,6 +16,9 @@
 //! - [`tables`]: the committed `rcpps`/`rsqrtps` tables ([`tables::AMD_ZEN4`]) and the
 //!   table-driven `rcp_approx`/`rsqrt_approx` that extend them to every input.
 //! - [`recip14`]: `vrcp14ps`/`vrsqrt14ps` (Intel's reference algorithm, which Zen 4 follows).
+//! - [`arm`]: `FRECPE`/`FRSQRTE`, the Arm ARM's architectural `RecipEstimate`/`RecipSqrtEstimate`
+//!   (exact by construction on every Arm core), what [`Estimates::Arm`](crate::Estimates::Arm)
+//!   uses; plus the host's own instructions on `aarch64`.
 //!
 //! # Fingerprints
 //! A fingerprint is FNV-1a over 32-bit words: starting from `0xcbf29ce484222325`, for each output
@@ -27,6 +30,7 @@
 use crate::tier::Tier;
 
 pub mod amd_zen4;
+pub mod arm;
 pub mod recip14;
 pub mod tables;
 

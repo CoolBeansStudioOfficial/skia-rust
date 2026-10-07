@@ -681,6 +681,65 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   checkable on hosts without AVX-512 (or with other AVX-512 estimates): it runs
   `Model(AmdZen4)` like the other x86 tiers (§4.6 item 4; `docs/PORTING.md` §11 updated).
 
+**As implemented in A2c** (`rp::lanes::neon`, `model_neon`, `neon_model`, `estimates::arm`):
+
+- **Modules.** `rp::lanes::neon` (`aarch64` only; every function `#[target_feature(enable =
+  "neon")]`, same names as `sse2`), its register conversions in `rp/lanes/aarch64.rs`, the model
+  `model_neon::{host, arm}` (the same `imp.rs` mounted per `Estimates`, as in A2a) and
+  `neon_model` (per-lane models of the A64 instructions, the counterpart of `x86_model`).
+  `portable::{div_i32, div_u32}` are Skia's generic `div_fn` over `Vec` (Neon has no optimized
+  one); Neon also re-exports the portable integer `min`/`max`/`abs` (`vminq_s32` etc. give the
+  same results).
+- **`estimates::arm`**: table-free ports of the Arm ARM's `FPRecipEstimate`/`RecipEstimate` and
+  `FPRSqrtEstimate`/`RecipSqrtEstimate` for single precision (`frecpe`, `frsqrte`,
+  `recip_estimate`, `recip_sqrt_estimate`), for the default `FPCR` (`DN = 0`, `FZ = 0`,
+  `AH = 0`, so no `FEAT_RPRES`): NaN → quieted, `±0 → ±inf`, `±inf → ±0`, `|x| < 2⁻¹²⁸ →
+  ±inf`, denormal results for `|x| >= 2¹²⁶`; `frsqrte` of any negative non-zero input is the
+  default NaN `0x7FC00000`, denormal inputs are normalized. `host_frecpe`/`host_frsqrte` run the
+  instruction on `aarch64` (one lane of `vrecpeq_f32`/`vrsqrteq_f32`; `None` elsewhere and under
+  Miri). `Selection::check` accepts `Model(Neon, Host)` only where they run. `EstimateOp`
+  stays x86-only (its `ALL` drives the x86 fingerprints and A2d's exhaustive check).
+- **Arm semantics the model reproduces** (`neon_model`): `FPProcessNaNs` (the first *signalling*
+  NaN operand wins, then the first quiet one; quieted, payload kept), the positive default NaN
+  `0x7FC00000` for invalid operations (x86: `0xFFC00000`), `FMIN`/`FMAX` (NaN propagates,
+  `-0 < +0`), `FABS`/`FNEG` (sign bit only, no quieting), `FMLA`/`FMLS` (`FPMulAdd`: NaN order
+  addend, op1, op2; a quiet-NaN addend with `0·inf` is the default NaN; `FMLS` negates op1
+  first. `vfmsq_f32(a, f, m)` is `fma(-f, m, a)` in LLVM IR, which LLVM's AArch64 instruction
+  selection emits as `FMLS Vd=a, Vn=m, Vm=f`, so on the hardware it is `m` that gets negated —
+  a NaN `m` comes out sign-flipped and `m` precedes `f` in NaN priority; clang does the same for
+  Skia, and the native twin test confirmed it), `FRECPS`/`FRSQRTS` (fused; `0·inf` gives `2`/`1.5`; op1
+  negated before NaN processing; `(3 - a·b)/2` rounded once, also where `3 - a·b` alone would
+  overflow), `FCVTNS`/`FCVTNU`/`FCVTZS` (saturating, NaN → 0; `round` is *unsigned* on Neon,
+  so negatives give 0), `SCVTF`, `FRINTM`/`FRINTP`, `FSQRT`, IEEE half conversions
+  (`FCVTL`/`FCVTN`: RNE, half denormals kept, overflow to `±inf`, NaN payload truncated to 9
+  bits and quieted), `URSRA`+`URSHR` `div255`, saturating `SQRDMULH`. Neon's `rcp_approx` is
+  `FMUL(FRECPS(v, e), e)` with `e = FRECPE(v)` (`opts#L223`), `rcp_precise` one more step,
+  `rsqrt_approx` `FMUL(FRSQRTS(v, FMUL(e, e)), e)`; `rcp_fast`/`rsqrt` are the approx forms.
+- **Differences from §1.3/§1.6 worth knowing:** lowp `min_intr`/`max_intr` on Neon are the
+  compare-select `min`/`max` (Skia's generic branch, `opts#L5881-L5889`), not `FMIN`/`FMAX`; lowp
+  `mad` is unfused (`a+f*m`, `opts#L5920`) while highp `mad` is fused; `trunc_` of `5e9` is
+  `0x7FFFFFFF` (FCVTZS saturates as *signed*); `to_half` rounds (`1 + 2⁻¹¹ + 2⁻¹²` → `0x3C01`,
+  the software path gives `0x3C00`).
+- **`unsafe`:** six blocks in `rp/lanes/aarch64.rs` (`vld1q_f32`/`vst1q_f32`,
+  `vld1q_u32`/`vst1q_u32` for every other 16-byte shape via `bit_cast` + `vreinterpretq_*`,
+  `vld1_u16`/`vst1_u16` for the 8-byte highp `U16` of the half conversions), two in
+  `estimates::arm` (calling the host's `FRECPE`/`FRSQRTE` after `NeonToken`), and one per
+  (native Neon, harness) call in the tests. `vcvt_f32_f16`/`vcvt_f16_f32` and `float16x4_t` are
+  stable as of rustc 1.99.
+- **Tests.** The A2a harnesses now include Neon: on `aarch64` (CI's `ubuntu-24.04-arm` and
+  `macos-latest`), `native_matches_model_highp`/`_lowp` compare native `Neon` with both
+  `Model(Host)` and `Model(Arm)` bit for bit, on every primitive (the Arm estimates are
+  architectural, so `Model(Arm)` must equal the hardware everywhere). The fused highp `mad`
+  uses A2b's `NanRule::Fused` (NaN-ness only where two operands are NaN); `nmad` uses
+  `NanRule::NeonFusedNeg`, which additionally ignores the sign bit when `f` or `m` is NaN (which
+  multiplicand `FMLS` negates is LLVM's choice). `estimates::arm` has known answers derived from
+  the pseudocode (`FRECPE(1) = FRSQRTE(1) = 0x3F7F8000`, both denormal-result exponents,
+  normalized denormal inputs, every special case), an 8-bit-accuracy sweep (all on any host and
+  under Miri), `sampled_arm_vs_host` (every 4093rd pattern, `aarch64` only) and the `#[ignore]`d
+  `exhaustive_arm_vs_host`. `known_answers_neon`/`known_answers_lowp_neon` cite the C++ lines and
+  run on `Model(Arm)` everywhere (also Miri) and natively on `aarch64`; `lowp_halves_match_highp`
+  covers Neon except the pairs Neon defines differently (above).
+
 ### 2.5 Stage code: written once, stamped per tier
 
 Skia compiles one header N times in N namespaces. We do the same with `include!`:

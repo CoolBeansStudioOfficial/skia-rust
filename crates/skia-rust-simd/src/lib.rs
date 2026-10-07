@@ -8,7 +8,7 @@
 //! - [`tier`]: the CPU tiers ([`Tier`]), detection and [`Selection`] (design §2.2–§2.3).
 //! - [`cpu`]: the port of `SkCpu` and the feature tokens that prove a tier can run.
 //! - [`estimates`]: the host's `rcp`/`rsqrt` estimate instructions, fingerprints, tables and
-//!   bit-exact software models (`estimates::amd_zen4`).
+//!   bit-exact software models (`estimates::amd_zen4`, `estimates::arm`).
 //! - `testing` (feature `testing`): `force_tier`.
 //! - [`rp`]: the raster pipeline's CPU code: lane types and per-tier primitives ([`rp::lanes`]).
 //! - [`vx`](mod@vx): `skvx`.

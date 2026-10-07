@@ -16,7 +16,7 @@
 use super::test_support::{
     Budget, Kind, LowpPrim, Prim, fma_nan_ambiguous, inputs, mad_nan_ambiguous,
 };
-use crate::estimates::EstimateOp;
+use crate::estimates::{EstimateOp, arm};
 use crate::testing::force_tier;
 use crate::tier::{Backend, Estimates, Selection, Tier};
 
@@ -88,6 +88,19 @@ fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u
         (Tier::Ml4, Backend::Model(Estimates::AmdZen4)) => {
             super::model_ml4::amd_zen4::harness_highp(op, a, b, c)
         }
+        #[cfg(target_arch = "aarch64")]
+        (Tier::Neon, Backend::Native) => {
+            let _tok = crate::cpu::NeonToken::get().expect("native Neon (Selection::check)");
+            // SAFETY: `harness_highp` enables exactly `NeonToken::FEATURES` ("neon"); `_tok`
+            // exists only because NEON was detected at run time.
+            unsafe { super::neon::harness_highp(op, a, b, c) }
+        }
+        (Tier::Neon, Backend::Model(Estimates::Host)) => {
+            super::model_neon::host::harness_highp(op, a, b, c)
+        }
+        (Tier::Neon, Backend::Model(Estimates::Arm)) => {
+            super::model_neon::arm::harness_highp(op, a, b, c)
+        }
         _ => panic!("no lane module for {sel} yet"),
     }
 }
@@ -147,6 +160,19 @@ fn run_lowp(sel: Selection, op: LowpPrim, a: &[u32], b: &[u32], c: &[u32]) -> Ve
         (Tier::Ml4, Backend::Model(Estimates::AmdZen4)) => {
             super::model_ml4::amd_zen4::lowp::harness_lowp(op, a, b, c)
         }
+        #[cfg(target_arch = "aarch64")]
+        (Tier::Neon, Backend::Native) => {
+            let _tok = crate::cpu::NeonToken::get().expect("native Neon (Selection::check)");
+            // SAFETY: `harness_lowp` enables exactly `NeonToken::FEATURES` ("neon"); `_tok`
+            // exists only because NEON was detected at run time.
+            unsafe { super::neon::lowp::harness_lowp(op, a, b, c) }
+        }
+        (Tier::Neon, Backend::Model(Estimates::Host)) => {
+            super::model_neon::host::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Neon, Backend::Model(Estimates::Arm)) => {
+            super::model_neon::arm::lowp::harness_lowp(op, a, b, c)
+        }
         _ => panic!("no lowp lane module for {sel}"),
     }
 }
@@ -183,14 +209,24 @@ enum NanRule {
     /// optimization. With `debug_assertions` everything but the sign bit is compared there;
     /// optimized test builds compare every bit.
     FusedNeg,
+    /// Neon's fused `nmad` (`vfmsq_f32(a, f, m)`, i.e. `fma(-f, m, a)`): as [`NanRule::Fused`],
+    /// and when `f` or `m` is NaN the result's **sign** is not specified: LLVM selects `FMLS`,
+    /// which negates one multiplicand, and which one it puts first is a code-generation choice
+    /// (the unoptimized test build negates `m`, which the model follows). Everything but the
+    /// sign bit is compared there, in every build.
+    NeonFusedNeg,
 }
 
 impl NanRule {
-    /// The rule for highp `op` on `tier` (`mad`/`nmad`/`rcp_precise` are fused on Ml3/Ml4).
+    /// The rule for highp `op` on `tier` (`mad`/`nmad`/`rcp_precise` are fused on Ml3/Ml4;
+    /// `mad`/`nmad` on Neon).
     fn highp(tier: Tier, op: Prim) -> NanRule {
-        let fused = matches!(tier, Tier::Ml3 | Tier::Ml4);
+        let fused = matches!(tier, Tier::Ml3 | Tier::Ml4 | Tier::Neon);
         match op {
             Prim::Mad if fused => NanRule::Fused,
+            // Neon's rcp_precise uses FRECPS, which negates inside the instruction: exact.
+            Prim::Nmad if tier == Tier::Neon => NanRule::NeonFusedNeg,
+            Prim::RcpPrecise if tier == Tier::Neon => NanRule::Exact,
             Prim::Nmad | Prim::RcpPrecise if fused => NanRule::FusedNeg,
             Prim::Mad => NanRule::Unfused {
                 outer_commutes: true,
@@ -232,6 +268,10 @@ impl NanRule {
                 fma_nan_ambiguous(f, m, a)
                     || (cfg!(debug_assertions) && nan(f) && (native ^ model) == 0x8000_0000)
             }
+            NanRule::NeonFusedNeg => {
+                fma_nan_ambiguous(f, m, a)
+                    || ((nan(f) || nan(m)) && (native ^ model) == 0x8000_0000)
+            }
         }
     }
 }
@@ -268,11 +308,17 @@ fn assert_same(
     );
 }
 
-/// The native x86 tiers this host runs, with a note for the ones it cannot.
-fn native_x86() -> Vec<Tier> {
+/// The native SIMD tiers this host runs (x86 or Neon), with a note for the ones it cannot.
+fn native_tiers() -> Vec<Tier> {
     X86.into_iter()
-        .filter(|t| {
-            let ok = t.is_native() && estimate_op(*t).is_available();
+        .chain([Tier::Neon])
+        .filter(|&t| {
+            let estimates = if t == Tier::Neon {
+                arm::host_available()
+            } else {
+                estimate_op(t).is_available()
+            };
+            let ok = t.is_native() && estimates;
             if !ok {
                 eprintln!("skipping native {t}: not supported by this host");
             }
@@ -293,9 +339,14 @@ fn host_is_amd_zen4(tier: Tier) -> bool {
 /// The models a native tier is compared with: `Model(Host)` always, and `Model(AmdZen4)`, which
 /// must be bit-identical too wherever the host's estimates are the oracle host's. On other hosts
 /// `Model(AmdZen4)` is compared only on the primitives that use no estimates.
+///
+/// `Neon`'s model is compared with `Model(Host)` and `Model(Arm)` on every primitive: the Arm
+/// estimates are architectural, so they must be the host's.
 fn twin_models(tier: Tier, uses_estimates: bool) -> Vec<Selection> {
     let mut sels = vec![Selection::model(tier, Estimates::Host)];
-    if !uses_estimates || host_is_amd_zen4(tier) {
+    if tier == Tier::Neon {
+        sels.push(Selection::model(tier, Estimates::Arm));
+    } else if !uses_estimates || host_is_amd_zen4(tier) {
         sels.push(Selection::model(tier, Estimates::AmdZen4));
     }
     sels
@@ -305,7 +356,7 @@ fn twin_models(tier: Tier, uses_estimates: bool) -> Vec<Selection> {
 #[cfg(not(miri))] // intrinsics: Miri emulates rcpps/rsqrtps with random error
 fn native_matches_model_highp() {
     let budget = Budget::current();
-    for tier in native_x86() {
+    for tier in native_tiers() {
         if !host_is_amd_zen4(tier) {
             eprintln!("{tier}: host estimates differ from AmdZen4; comparing those with Host only");
         }
@@ -330,7 +381,7 @@ fn native_matches_model_highp() {
 #[cfg(not(miri))] // intrinsics: Miri emulates rcpps/rsqrtps with random error
 fn native_matches_model_lowp() {
     let budget = Budget::current();
-    for tier in native_x86() {
+    for tier in native_tiers() {
         // One thread per primitive (`force_tier` is per thread).
         std::thread::scope(|s| {
             for (seed, op) in (100u64..).zip(LowpPrim::ALL) {
@@ -370,7 +421,7 @@ fn exhaustive_unary_native_matches_model() {
     let chunks: Vec<u32> = (0..=u32::MAX - (CHUNK - 1))
         .step_by(CHUNK as usize)
         .collect();
-    for tier in native_x86() {
+    for tier in native_tiers() {
         // Lanes compared (each native result against each twin model), for the report.
         let compared = std::sync::atomic::AtomicU64::new(0);
         std::thread::scope(|s| {
@@ -454,6 +505,20 @@ fn kat_selections(estimates: bool) -> Vec<Selection> {
         if cfg!(not(miri)) && t.is_native() && host_estimates {
             sels.push(Selection::native(t));
         }
+    }
+    sels
+}
+
+/// Every `Neon` selection a known-answer test can run here: `Model(Arm)` (any host, Miri),
+/// `Model(Host)` (any host for estimate-free primitives, else `aarch64` only) and native `Neon`
+/// on `aarch64`.
+fn neon_selections(estimates: bool) -> Vec<Selection> {
+    let mut sels = vec![Selection::model(Tier::Neon, Estimates::Arm)];
+    if !estimates || arm::host_available() {
+        sels.push(Selection::model(Tier::Neon, Estimates::Host));
+    }
+    if cfg!(not(miri)) && Tier::Neon.is_native() && arm::host_available() {
+        sels.push(Selection::native(Tier::Neon));
     }
     sels
 }
@@ -924,6 +989,9 @@ fn known_answers_lowp() {
 /// Skia defines several lowp primitives as the highp primitive on each half (`rcp_precise`,
 /// `sqrt_`, `trunc_`, `max_intr`/`min_intr` on F), so lane by lane they must agree with highp.
 /// Runs on every selection available, including the models under Miri.
+///
+/// On `Neon`, lowp `mad`/`nmad` (unfused) and `min_intr`/`max_intr` (compare-select) are *not*
+/// the highp primitives (fused `FMLA`, `FMIN`/`FMAX`), so those pairs are x86-only.
 #[test]
 fn lowp_halves_match_highp() {
     let budget = Budget::current();
@@ -942,8 +1010,13 @@ fn lowp_halves_match_highp() {
         for (seed, (lop, hop)) in (200u64..).zip(pairs) {
             s.spawn(move || {
                 let ins = inputs(lop.kind(), seed, budget);
-                for sel in kat_selections(lop.uses_estimates()) {
-                    if sel.tier == Tier::Scalar {
+                let est = lop.uses_estimates();
+                for sel in kat_selections(est).into_iter().chain(neon_selections(est)) {
+                    let neon_differs = matches!(
+                        lop,
+                        LowpPrim::MinIntrF | LowpPrim::MaxIntrF | LowpPrim::Mad | LowpPrim::Nmad
+                    );
+                    if sel.tier == Tier::Scalar || (sel.tier == Tier::Neon && neon_differs) {
                         continue;
                     }
                     // Lowp `mad` is plain arithmetic (`opts#L5920-L5934`); highp `mad` is an
@@ -998,4 +1071,207 @@ fn scalar_soft_half_reference() {
         };
         assert_eq!(g, want, "to_half({x:#010x})");
     }
+}
+
+/// Checks a `Neon` primitive on `ins` (splatted over 16 lanes) on every `Neon` selection
+/// available (`Model(Arm)` everywhere, including Miri; native on `aarch64`).
+#[track_caller]
+fn kat_neon(op: Prim, ins: [u32; 3], want: E) {
+    for sel in neon_selections(op.uses_estimates()) {
+        let [a, b, c] = ins.map(|x| vec![x; 16]);
+        let out = match sel.backend {
+            Backend::Native => forced_highp(sel, op, &[a, b, c]),
+            Backend::Model(_) => run_highp(sel, op, &a, &b, &c),
+        };
+        for (lane, &got) in out.iter().enumerate() {
+            assert!(
+                want.matches(got),
+                "{sel} {op:?}({:#010x}, {:#010x}, {:#010x}) lane {lane}: got {got:#010x}, want {want:x?}",
+                ins[0],
+                ins[1],
+                ins[2]
+            );
+        }
+    }
+}
+
+/// Known answers for the `Neon` tier (`opts#L205-L244`, arm64 branches), from the A64
+/// instructions' Arm ARM pseudocode. Where Neon differs from the x86 tiers, the x86 answer is
+/// noted.
+#[test]
+#[allow(clippy::too_many_lines)] // one block per primitive group
+fn known_answers_neon() {
+    use Prim::{
+        AbsF, All, Any, CastF, Ceil, CondToMask, DivI32, DivU32, Floor, FromHalf, IfThenElseF,
+        Iround, Mad, MaxF, MinF, Nmad, PackU16, PackU32, RcpApprox, RcpFast, RcpPrecise, Round,
+        Rsqrt, RsqrtApprox, Sqrt, ToHalf, ToI32, Trunc,
+    };
+    let b = E::Bits;
+    let i = |x: i32| x.cast_unsigned();
+    // min/max: vminq_f32/vmaxq_f32 (`opts#L215-L220`) are FMIN/FMAX: a NaN propagates (x86
+    // returns the second operand), a signalling NaN wins over a quiet one, -0 < +0.
+    kat_neon(MinF, [NAN, f(1.0), 0], b(NAN));
+    kat_neon(MinF, [f(1.0), NAN, 0], b(NAN));
+    kat_neon(MinF, [f(1.0), 0x7f80_0001, 0], b(0x7fc0_0001));
+    kat_neon(MinF, [0x7fc0_1234, 0xff80_0001, 0], b(0xffc0_0001));
+    kat_neon(MinF, [f(-0.0), f(0.0), 0], b(f(-0.0)));
+    kat_neon(MinF, [f(0.0), f(-0.0), 0], b(f(-0.0)));
+    kat_neon(MaxF, [f(-0.0), f(0.0), 0], b(f(0.0)));
+    kat_neon(MaxF, [f(0.0), f(-0.0), 0], b(f(0.0)));
+    kat_neon(MaxF, [f(2.0), f(3.0), 0], b(f(3.0)));
+    // abs_: vabsq_f32 (`opts#L222`) clears the sign bit, also of (signalling) NaNs.
+    kat_neon(AbsF, [0xffc0_0001, 0, 0], b(0x7fc0_0001));
+    kat_neon(AbsF, [0xff80_0001, 0, 0], b(0x7f80_0001));
+    kat_neon(AbsF, [f(-2.5), 0, 0], b(f(2.5)));
+    // floor_/ceil_: vrndmq/vrndpq (`opts#L240-L241`), exact; NaNs quieted.
+    kat_neon(Floor, [f(-0.0), 0, 0], b(f(-0.0)));
+    kat_neon(Floor, [0x7f80_0001, 0, 0], b(0x7fc0_0001));
+    kat_neon(Floor, [f(-3e9), 0, 0], b(f(-3e9)));
+    kat_neon(Floor, [f(-1.5), 0, 0], b(f(-2.0)));
+    kat_neon(Ceil, [f(-0.5), 0, 0], b(f(-0.0)));
+    kat_neon(Ceil, [f(1.25), 0, 0], b(f(2.0)));
+    // iround/round: vcvtnq_s32_f32/vcvtnq_u32_f32 (`opts#L243-L244`): ties to even, saturating,
+    // NaN -> 0 (x86: 0x80000000); `round` converts to *unsigned*, so negatives give 0.
+    kat_neon(Iround, [f(2.5), 0, 0], b(2));
+    kat_neon(Iround, [f(-2.5), 0, 0], b(i(-2)));
+    kat_neon(Iround, [f(-0.7), 0, 0], b(u32::MAX));
+    kat_neon(Iround, [NAN, 0, 0], b(0));
+    kat_neon(Iround, [f(3e9), 0, 0], b(0x7fff_ffff));
+    kat_neon(Iround, [f(-3e9), 0, 0], b(0x8000_0000));
+    kat_neon(Round, [f(-1.0), 0, 0], b(0));
+    kat_neon(Round, [f(254.5), 0, 0], b(254));
+    kat_neon(Round, [f(255.5), 0, 0], b(256));
+    kat_neon(Round, [f(3e9), 0, 0], b(3_000_000_000));
+    kat_neon(Round, [f(5e9), 0, 0], b(u32::MAX));
+    kat_neon(Round, [NAN, 0, 0], b(0));
+    // trunc_ / casts: __builtin_convertvector(v, I32) (`opts#L1595-L1599`) is FCVTZS.
+    kat_neon(Trunc, [f(-1.5), 0, 0], b(u32::MAX));
+    kat_neon(Trunc, [f(5e9), 0, 0], b(0x7fff_ffff));
+    kat_neon(Trunc, [f(-5e9), 0, 0], b(0x8000_0000));
+    kat_neon(ToI32, [NAN, 0, 0], b(0));
+    kat_neon(ToI32, [f(-1.5), 0, 0], b(u32::MAX));
+    kat_neon(CastF, [0x8000_0000, 0, 0], b(f(-2_147_483_648.0)));
+    kat_neon(CastF, [u32::MAX, 0, 0], b(f(-1.0)));
+    kat_neon(CastF, [16_777_217, 0, 0], b(f(16_777_216.0)));
+    // pack: __builtin_convertvector (`opts#L228-L229`): truncation.
+    kat_neon(PackU32, [0x0001_2345, 0, 0], b(0x2345));
+    kat_neon(PackU32, [u32::MAX, 0, 0], b(0xffff));
+    kat_neon(PackU16, [0x1ff, 0, 0], b(0xff));
+    kat_neon(PackU16, [0x100, 0, 0], b(0));
+    kat_neon(PackU16, [0xff80, 0, 0], b(0x80));
+    // if_then_else: vbslq (`opts#L231-L232`), bitwise. any/all: vmaxvq/vminvq (`opts#L235-L236`):
+    // any bit of a lane counts (x86 reads only sign bits).
+    kat_neon(
+        IfThenElseF,
+        [0x0000_ffff, 0x3f80_1234, f(2.0)],
+        b(0x4000_1234),
+    );
+    kat_neon(Any, [1, 0, 0], b(1));
+    kat_neon(Any, [0x7fff_ffff, 0, 0], b(1));
+    kat_neon(Any, [0, 0, 0], b(0));
+    kat_neon(All, [1, 0, 0], b(1));
+    kat_neon(All, [0x8000_0000, 0, 0], b(1));
+    kat_neon(CondToMask, [1, 0, 0], b(1));
+    // from_half/to_half: vcvt_f32_f16/vcvt_f16_f32 (`opts#L1652-L1677`): IEEE, half denormals
+    // kept, round to nearest even, overflow to infinity, NaNs quieted.
+    kat_neon(FromHalf, [0x0001, 0, 0], b(0x3380_0000));
+    kat_neon(FromHalf, [0x83ff, 0, 0], b(0xb87f_c000));
+    kat_neon(FromHalf, [0x3c00, 0, 0], b(f(1.0)));
+    kat_neon(FromHalf, [0x7c00, 0, 0], b(f(f32::INFINITY)));
+    kat_neon(FromHalf, [0x7c01, 0, 0], b(0x7fc0_2000));
+    kat_neon(ToHalf, [f(1.0), 0, 0], b(0x3c00));
+    kat_neon(ToHalf, [0x3f80_1800, 0, 0], b(0x3c01)); // 1 + 2^-11 + 2^-12 rounds up
+    kat_neon(ToHalf, [0x3f80_1000, 0, 0], b(0x3c00)); // a tie: to even
+    kat_neon(ToHalf, [f(-9.536_743e-7), 0, 0], b(0x8010)); // -2^-20: a half denormal
+    kat_neon(ToHalf, [f(65520.0), 0, 0], b(0x7c00));
+    kat_neon(ToHalf, [f(f32::MAX), 0, 0], b(0x7c00));
+    kat_neon(ToHalf, [f(f32::NEG_INFINITY), 0, 0], b(0xfc00));
+    kat_neon(ToHalf, [NAN, 0, 0], b(0x7e00));
+    // div_fn: the generic version (`opts#L4950-L4970`), as on Scalar.
+    kat_neon(DivI32, [7, 0, 0], b(i(-7)));
+    kat_neon(DivI32, [0x8000_0000, i(-1), 0], b(0x4000_0000));
+    kat_neon(DivI32, [0x8000_0000, 0, 0], b(0x4000_0000));
+    kat_neon(DivI32, [i(-7), 2, 0], b(i(-3)));
+    kat_neon(DivU32, [7, 0, 0], b(0));
+    kat_neon(DivU32, [u32::MAX, 2, 0], b(0x7fff_ffff));
+    // mad/nmad: vfmaq_f32/vfmsq_f32 (`opts#L238-L239`), fused: -1 + (1+2^-23)(1-2^-23) keeps
+    // -2^-46 (unfused tiers give 0), and a finite product never overflows on its way to -inf.
+    let (p, q) = (1.0 + f32::EPSILON, 1.0 - f32::EPSILON);
+    kat_neon(Mad, [f(2.0), f(3.0), f(1.0)], b(f(7.0)));
+    kat_neon(Nmad, [f(2.0), f(3.0), f(1.0)], b(f(-5.0)));
+    kat_neon(Mad, [f(p), f(q), f(-1.0)], b(0xa880_0000));
+    kat_neon(Nmad, [f(p), f(q), f(1.0)], b(0x2880_0000));
+    kat_neon(
+        Mad,
+        [f(1e30), f(1e30), f(f32::NEG_INFINITY)],
+        b(0xff80_0000),
+    );
+    // 0 * inf is invalid: the default NaN (positive; x86's indefinite is negative).
+    kat_neon(Mad, [0, f(f32::INFINITY), f(1.0)], b(NAN));
+    kat_neon(Sqrt, [f(-1.0), 0, 0], b(NAN));
+    kat_neon(Sqrt, [f(-0.0), 0, 0], b(f(-0.0)));
+    kat_neon(Sqrt, [f(6.25), 0, 0], b(f(2.5)));
+    // Estimates (`opts#L223-L225`): FRECPE(1) = 1 - 2^-9; one FRECPS step gives
+    // (2 - e) * e = 1 - 2^-18, a second one 1 - 2^-36, which rounds to 1.
+    kat_neon(RcpApprox, [f(1.0), 0, 0], b(0x3f7f_ffc0));
+    kat_neon(RcpFast, [f(1.0), 0, 0], b(0x3f7f_ffc0));
+    kat_neon(RcpPrecise, [f(1.0), 0, 0], b(f(1.0)));
+    // FRSQRTE(1) = 511/512; FRSQRTS(1, e*e) * e = 1 - 1535 * 2^-28, rounded to 1 - 96 * 2^-24.
+    kat_neon(RsqrtApprox, [f(1.0), 0, 0], b(0x3f7f_ffa0));
+    kat_neon(Rsqrt, [f(1.0), 0, 0], b(0x3f7f_ffa0));
+    // FRECPE(±0) = ±inf, FRECPS(0, inf) = 2 (not NaN), 2 * inf = inf; FRECPE(inf) = 0.
+    kat_neon(RcpFast, [0, 0, 0], b(f(f32::INFINITY)));
+    kat_neon(RcpFast, [0x8000_0000, 0, 0], b(f(f32::NEG_INFINITY)));
+    kat_neon(RcpFast, [f(f32::INFINITY), 0, 0], b(0));
+    kat_neon(RcpPrecise, [0, 0, 0], b(f(f32::INFINITY)));
+    kat_neon(Rsqrt, [0, 0, 0], b(f(f32::INFINITY)));
+    kat_neon(Rsqrt, [f(-1.0), 0, 0], b(NAN));
+    // FRECPS negates its first operand before NaN processing, and FMUL returns its first NaN:
+    // rcp_approx(+qNaN) comes out with the sign flipped.
+    kat_neon(RcpApprox, [NAN, 0, 0], b(0xffc0_0000));
+}
+
+/// Known answers for the `Neon` lowp primitives.
+#[test]
+fn known_answers_lowp_neon() {
+    use LowpPrim::{
+        Div255, Div255Accurate, Floor, Mad, MaxF, MaxIntrF, MinIntrF, ScaledMult, Trunc,
+    };
+    let check = |op: LowpPrim, ins: [u32; 3], want: u32| {
+        for sel in neon_selections(op.uses_estimates()) {
+            let [a, b, c] = ins.map(|x| vec![x; 16]);
+            let out = match sel.backend {
+                Backend::Native => forced_lowp(sel, op, &[a, b, c]),
+                Backend::Model(_) => run_lowp(sel, op, &a, &b, &c),
+            };
+            for (lane, &got) in out.iter().enumerate() {
+                assert_eq!(got, want, "{sel} lowp {op:?}({ins:#x?}) lane {lane}");
+            }
+        }
+    };
+    // div255 (`opts#L5706-L5709`): vrshrq_n_u16(vrsraq_n_u16(v, v, 8), 8), exact rounding of
+    // v/255 for byte products (x86's (v+255)/256 gives 1 for 127); div255_accurate is the same.
+    check(Div255, [127, 0, 0], 0);
+    check(Div255, [128, 0, 0], 1);
+    check(Div255, [254, 0, 0], 1);
+    check(Div255, [255 * 255, 0, 0], 255);
+    check(Div255, [0xffff, 0, 0], 1); // the accumulate wraps: 0xffff + 256 = 255
+    check(Div255Accurate, [127, 0, 0], 0);
+    check(Div255Accurate, [0x7f00, 0, 0], 127); // 32512 / 255 = 127.498
+    // min_intr/max_intr are the compare-select min/max on Neon (`opts#L5881-L5889`).
+    check(MaxF, [NAN, f(1.0), 0], NAN);
+    check(MaxIntrF, [NAN, f(1.0), 0], NAN);
+    check(MaxIntrF, [f(-0.0), f(0.0), 0], f(-0.0));
+    check(MinIntrF, [f(1.0), NAN, 0], NAN);
+    // scaled_mult: vqrdmulhq_s16 (`opts#L6049-L6050`) saturates -32768 * -32768 to 32767.
+    check(ScaledMult, [0x8000, 0x8000, 0], 0x7fff);
+    check(ScaledMult, [0x4000, 0x4000, 0], 0x2000);
+    check(ScaledMult, [0xffff, 1, 0], 0);
+    // floor_: vrndmq_f32 per half (`opts#L6009-L6012`).
+    check(Floor, [f(-0.0), 0, 0], f(-0.0));
+    check(Floor, [f(-1.25), 0, 0], f(-2.0));
+    check(Trunc, [f(5e9), 0, 0], 0x7fff_ffff);
+    // lowp mad is unfused on every tier (`opts#L5920`): the product rounds to 1 first.
+    let (p, q) = (1.0 + f32::EPSILON, 1.0 - f32::EPSILON);
+    check(Mad, [f(p), f(q), f(-1.0)], 0);
 }
