@@ -677,3 +677,30 @@ def_test!(SkRasterPipeline_TraceScope, |r| {
 
     reporter_assert!(r, *trace.buffer.borrow() == vec![1, 4, -5]);
 });
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3244-L3270 (chrome/m156)
+def_test!(SkRasterPipeline_lowp, |r| {
+    let mut rgba = [0u32; 64];
+    for (i, px) in (0u32..).zip(rgba.iter_mut()) {
+        *px = (4 * i) | ((4 * i + 1) << 8) | ((4 * i + 2) << 16) | ((4 * i + 3) << 24);
+    }
+    // `MemoryCtx ptr = { rgba, 0 }`: the pixels are bound to the context's slot for the run.
+    let mut bytes: Vec<u8> = rgba.iter().flat_map(|px| px.to_ne_bytes()).collect();
+    let ptr = MemoryCtx::new(MemSlot(0));
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::Load8888(ptr));
+    p.append(Stage::SwapRb);
+    p.append(Stage::Store8888(ptr));
+    let mut mem = MemoryBindings::new().with(MemSlot(0), MemView::write(&mut bytes));
+    p.run(0, 0, 64, 1, &mut mem);
+    drop(mem);
+
+    for (i, c) in (0u32..).zip(bytes.as_chunks::<4>().0) {
+        let want = ((4 * i) << 16) | ((4 * i + 1) << 8) | (4 * i + 2) | ((4 * i + 3) << 24);
+        let got = u32::from_ne_bytes(*c);
+        if got != want {
+            errorf!(r, "got {got:08x}, want {want:08x}\n");
+        }
+    }
+});

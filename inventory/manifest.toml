@@ -43520,7 +43520,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L3244-L3270"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "231a58f7f366b57cb515c5f770ec008b93529ae961a4d0f74c8f9e788e4f68b2"
 
 [[test]]

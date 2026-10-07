@@ -53,3 +53,5 @@ mod tests_geometry;
 mod tests_sksl;
 #[cfg(test)]
 mod tests_wide;
+#[cfg(test)]
+mod tests_memory;
