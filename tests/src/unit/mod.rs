@@ -93,6 +93,8 @@ pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
 #[cfg(test)]
+pub mod sk_raster_pipeline_test;
+#[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
