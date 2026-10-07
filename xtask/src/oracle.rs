@@ -32,6 +32,9 @@ struct Config {
 #[derive(Debug, Deserialize)]
 struct GnConfig {
     args: Vec<String>,
+    /// `extra_cflags` for every build, before each build's own.
+    #[serde(default)]
+    extra_cflags: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,7 +44,10 @@ struct Build {
     level: Option<String>,
     #[serde(default)]
     gpu: bool,
+    #[serde(default)]
     args: Vec<String>,
+    #[serde(default)]
+    extra_cflags: Vec<String>,
 }
 
 /// A GPU tier as written in `oracle/tiers.toml`.
@@ -363,6 +369,17 @@ pub fn build(root: &Path, name: &str) -> Result<()> {
     let mut args = String::new();
     for arg in config.gn.args.iter().chain(&build.args) {
         writeln!(args, "{arg}")?;
+    }
+    // GN allows one `extra_cflags` assignment, so merge the common and per-build lists.
+    let cflags: Vec<String> = config
+        .gn
+        .extra_cflags
+        .iter()
+        .chain(&build.extra_cflags)
+        .map(|f| format!("{f:?}"))
+        .collect();
+    if !cflags.is_empty() {
+        writeln!(args, "extra_cflags = [{}]", cflags.join(", "))?;
     }
     if cfg!(windows) {
         writeln!(args, "clang_win = \"{}\"", clang_win()?)?;
