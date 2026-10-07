@@ -29090,8 +29090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L80-L173"
 module = "core"
-status = "todo"
-reason = "needs SkBitmap/SkCanvas/SkPath (test_giantClip); SkCubicClipper itself is ported"
+status = "passing"
 span_hash = "c0f3cab9c863d60cb20ac57f37d81da9a71c7fc22128bc0cc8870c3917268b82"
 
 [[test]]
@@ -29129,7 +29128,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipperTest.cpp#L159-L163"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f5566791cb2f6d3fa0b89ae15911947993cfef4dd8337df955722c515134976a"
 
 [[test]]
@@ -29138,7 +29137,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipperTest.cpp#L165-L171"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e018cc5d25ed7c766a58e630dbc4878591426366faceb57b5e7a2132a5c01171"
 
 [[test]]
@@ -30774,7 +30773,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L277-L321"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "78a0966b47c61aaf61a9d3b3ee3332ff14045aa7a77adae5279300e7b425ea7f"
 
 [[test]]
@@ -30783,7 +30782,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L55-L69"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cf15f16bd6cae167113ab173932ce6dc081bc3cf4182943778887a6435e1dcd1"
 
 [[test]]
@@ -30792,7 +30791,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L37-L53"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bbedae7867342012ce00bb4260410eaa2d5320b63415c84351e91274108ab550"
 
 [[test]]
@@ -30801,7 +30800,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L19-L35"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7a6e067b6b49418c5d2c2a91927a4ae6b538837c823aa09beb2c1305f1eea7cd"
 
 [[test]]
@@ -30810,7 +30809,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L220-L275"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ab7278cbca718c6804ae11f913a9993832a17d4d16517d8d75aa35c6158acc90"
 
 [[test]]
@@ -30819,7 +30818,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L213-L218"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ad85e6922583cbe41a8001be94064096557f9abe7a4558eccb74475b60c15974"
 
 [[test]]
@@ -30828,7 +30827,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L186-L211"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8caf1a8c223b1b858fbcc1736cb7df726e098b0ceef77b955ef0b91ff5a2e588"
 
 [[test]]
@@ -30837,7 +30836,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EdgeTest.cpp#L128-L184"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "556887aa2535870be4ec4b6279c8761e0d7883afcf16713fdff29e743aae1391"
 
 [[test]]

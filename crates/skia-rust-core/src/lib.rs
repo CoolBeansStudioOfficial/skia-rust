@@ -26,6 +26,7 @@ pub mod data_table;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod endian;
+pub mod fdot6;
 pub mod fixed;
 pub mod float_bits;
 pub mod floating_point;
