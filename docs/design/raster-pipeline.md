@@ -1631,6 +1631,42 @@ region_path}`):
   `SkSurface`/`SkCanvas` and stay `todo`. `crates/skia-rust-raster/src/scan_tests.rs` checks hand-derived
   spans (rect, triangle staircase, even-odd/winding nested squares, inverse fill, clipping) and
   `Region::set_path` / `boundary_path` round trips.
+**As implemented in D8** (`skia_rust_core::{convert_pixels, pixmap, bitmap, pixel_ref}`,
+`ColorSpaceXformSteps::apply_to_pipeline`, `skia_rust_simd::swizzle`; closes #21 and #22):
+
+- **Pixel access first (#22).** `PixelRef`/`Bitmap`/`Pixmap` no longer use locks: reads borrow
+  `&[u8]`, writes need `&mut` and copy pixels shared with another handle first (copy-on-write).
+  Decision, semantics and alternatives: `docs/design/pixels.md`. Canvas/Surface (D6) draw into
+  pixels they borrow mutably or own; the GM harness's surface stub already does
+  (`Surface::wrap_pixels(&mut Bitmap, …)`).
+- **`convert_pixels`** is `SkConvertPixels` 1:1: stride checks, `SkColorSpaceXformSteps`, then
+  `rect_memcpy` → `swizzle_or_premul` → `convert_to_alpha8` → `convert_with_pipeline`
+  (`append_load`, `steps.apply_to_pipeline`, `append_store`, `run` with the source bound read-only
+  to slot 0 and the destination to slot 1, strides in pixels). The pipeline runs on the current
+  selection, so lowp/highp and every tier's arithmetic (FMA on ml3/ml4) are Skia's; the one-pixel
+  stand-in `convert_rgba_f32_premul_pixel` of PR #19 is deleted (#21) and `Pixmap::erase_4f` calls
+  `convert_pixels` on its 1×1 `RGBA_F32` premul source like Skia.
+- **Swizzles.** `SkOpts::RGBA_to_BGRA/RGBA_to_rgbA/RGBA_to_bgrA/rgbA_to_RGBA/rgbA_to_BGRA` are
+  ported once (portable): the SSSE3/AVX2 (`((x+128)*257)>>16`) and NEON (`vraddhn(x, vrshr(x,8))`)
+  premul divisions equal the portable `(x+127)/255` for every byte product (exhaustive test), and the
+  unpremul kernels compute the same float products; only `pixel_round_as_RP` differs (ties to even
+  except on `Scalar`, which adds 0.5 and truncates). `swizzle_or_premul`'s `#if
+  !defined(SK_ARM_HAS_NEON)` is keyed on `Tier::Neon`: Skia's NEON builds unpremultiply 8888 with
+  `rgbA_to_RGBA`, everything else runs the pipeline.
+- **Not portable here.** In-place conversion (`srcPixels == dstPixels`) has no safe form (`&mut` and
+  `&` cannot alias). `Pixmap::scalePixels` draws through an image shader (Phase 3). `extractAlpha`
+  has only its no-mask-filter path (no `SkPaint` yet).
+- **Tests.** Ported and passing: `BitmapCopy_extractSubset`, `BitmapReadPixels`,
+  `Bitmap_setColorSpace`, `Bitmap_getColor_Swizzle`, `getalphaf`,
+  `PremulAlphaRoundTripSkConvertPixels` (`ToolUtils::copy_to`/`colortype_name` in
+  `tests/src/tools/tool_utils.rs`). Every test that converts pixels — those plus the existing
+  `Bitmap_erase*`, `Bitmap_compute_is_opaque`, `Bitmap_eraseColor_Premul` and `GetColor` — runs once
+  per CPU tier through `def_tier_test!` (`tier_selections()`: native where the host can, else the
+  tier's model with the oracle host's / Arm estimates, so all six tiers on every host). Waiting for a
+  raster `SkSurface`/`SkCanvas` (D6) or `SkImage`: `ConvertPixels_in_place`, `ReadPixels`,
+  `ReadPixels_InvalidRowBytes`, `ReadPixels_ValidConversion`, `WritePixels`,
+  `WritePixels_InvalidRowBytes`, `WritePixelsSurfaceGenID`, `PremulAlphaRoundTrip` (manifest
+  `reason`s say which). `PremulAlphaRoundTripGrConvertPixels` is Ganesh-only (excluded).
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

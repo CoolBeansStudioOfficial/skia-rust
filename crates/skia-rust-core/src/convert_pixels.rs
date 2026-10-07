@@ -1,499 +1,429 @@
 // Copyright 2014 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/core/SkConvertPixels.cpp, src/core/SkRasterPipeline.cpp (appendStore,
-// appendTransferFunction), src/opts/SkRasterPipeline_opts.h (the highp stages used here)
+// Ported from Skia: src/core/SkConvertPixels.{h,cpp}, src/core/SkRectMemcpy.h
 
-//! A restricted stand-in for `SkConvertPixels`, for exactly what `Pixmap::erase` needs.
+//! `SkConvertPixels`: converts a rectangle of pixels between color types, alpha types and color
+//! spaces.
 //!
-//! `SkPixmap::erase` converts one premultiplied `RGBA_F32` pixel to the pixmap's color type, alpha
-//! type and color space with `SkConvertPixels`, which in turn runs `SkRasterPipeline`. Neither is
-//! ported yet, so [`convert_rgba_f32_premul_pixel`] reproduces that one conversion: the
-//! `rect_memcpy` / `convert_to_alpha8` fast paths, and otherwise the highp pipeline
-//! `load_f32, <SkColorSpaceXformSteps stages>, <appendStore stages>` evaluated for a single pixel.
+//! The fast paths are tried in Skia's order (`rect_memcpy`, `swizzle_or_premul`,
+//! `convert_to_alpha8`); everything else runs a raster pipeline
+//! (`load, <SkColorSpaceXformSteps stages>, store`) on the current CPU tier.
 //!
-//! The highp pipeline is compiled per CPU tier in Skia; this follows the portable shape:
-//! `mad(f, m, a)` is `f * m + a` (the AVX2 tiers use an FMA there), and `round` rounds half to
-//! even as `_mm_cvtps_epi32` does. The two only differ in the last ulp / on exact ties.
-//!
-//! Replace this with the real `SkConvertPixels` once `SkRasterPipeline` is ported.
+//! skia-rust: the C++ converts in place when `srcPixels == dstPixels`. A `&mut [u8]` and a
+//! `&[u8]` cannot alias, so that case does not exist here.
 
-use crate::alpha_type::AlphaType;
-use crate::color::PMColor4f;
+use crate::arena_alloc::ArenaAlloc;
+use crate::color_data::packed4444_to_a32;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
-use crate::half::float_to_half;
+use crate::half::half_to_float;
 use crate::image_info::ImageInfo;
-use skia_rust_skcms::{TfType, TransferFunction, srgb_inverse_transfer_function};
+use crate::image_info_priv::image_info_valid_conversion;
+use crate::raster_pipeline::{MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline};
+use crate::t_pin::t_pin;
+use skia_rust_simd::{Tier, swizzle};
 
-// `_mm_max_ps(a, b)` is `a > b ? a : b` and `_mm_min_ps(a, b)` is `a < b ? a : b`: with a NaN
-// operand they return the second operand.
-fn sse_max(a: f32, b: f32) -> f32 {
-    if a > b { a } else { b }
+/// The fast paths' signature (`dstInfo, dstPixels, dstRB, srcInfo, srcPixels, srcRB, steps`).
+type FastPath =
+    fn(&ImageInfo, &mut [u8], usize, &ImageInfo, &[u8], usize, &ColorSpaceXformSteps) -> bool;
+
+fn get_u16(bytes: &[u8], off: usize) -> u16 {
+    u16::from_ne_bytes([bytes[off], bytes[off + 1]])
 }
 
-fn sse_min(a: f32, b: f32) -> f32 {
-    if a < b { a } else { b }
+fn get_u32(bytes: &[u8], off: usize) -> u32 {
+    u32::from_ne_bytes([bytes[off], bytes[off + 1], bytes[off + 2], bytes[off + 3]])
 }
 
-// `SI F mad(F f, F m, F a)`
-fn mad(f: f32, m: f32, a: f32) -> f32 {
-    f * m + a
+fn get_u64(bytes: &[u8], off: usize) -> u64 {
+    let mut b = [0u8; 8];
+    b.copy_from_slice(&bytes[off..off + 8]);
+    u64::from_ne_bytes(b)
 }
 
-// `SI F nmad(F f, F m, F a)`
-fn nmad(f: f32, m: f32, a: f32) -> f32 {
-    a - f * m
+fn get_f32(bytes: &[u8], off: usize) -> f32 {
+    f32::from_bits(get_u32(bytes, off))
 }
 
-// `SI U32 round(F v)`: round to nearest, ties to even (`_mm_cvtps_epi32`).
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // v is clamped by the callers
-fn round(v: f32) -> u32 {
-    (v.round_ties_even() as i32).cast_unsigned()
+// `int` dimensions of an image already checked by `convert_pixels` (non-negative).
+#[allow(clippy::cast_sign_loss)] // mirrors the C++ loops over non-negative ints
+fn dims(info: &ImageInfo) -> (usize, usize) {
+    (info.width().max(0) as usize, info.height().max(0) as usize)
 }
 
-// Port of: src/opts/SkRasterPipeline_opts.h#L2269-L2275 (chrome/m156)
-fn to_unorm_full(v: f32, scale: f32, bias: f32, max_i: i32) -> u32 {
-    // Any time we use round() we probably want to use to_unorm().
-    #[allow(clippy::cast_precision_loss)] // maxI is at most 1023
-    let max_i = max_i as f32;
-    round(sse_min(sse_max(0.0f32, mad(v, scale, bias)), max_i))
-}
+/// `SkRectMemcpy(dst, dstRB, src, srcRB, trimRowBytes, rowCount)`.
+// Port of: src/core/SkRectMemcpy.h#L16-L30 (chrome/m156)
+fn rect_memcpy_rows(
+    dst: &mut [u8],
+    dst_rb: usize,
+    src: &[u8],
+    src_rb: usize,
+    trim_row_bytes: usize,
+    row_count: usize,
+) {
+    debug_assert!(trim_row_bytes <= dst_rb);
+    debug_assert!(trim_row_bytes <= src_rb);
+    if trim_row_bytes == dst_rb && trim_row_bytes == src_rb {
+        let n = trim_row_bytes * row_count;
+        dst[..n].copy_from_slice(&src[..n]);
+        return;
+    }
 
-#[allow(clippy::cast_precision_loss)] // scale is at most 65535
-fn to_unorm(v: f32, scale: i32) -> u32 {
-    to_unorm_full(v, scale as f32, 0.0f32, scale)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L1590-L1650 (chrome/m156)
-fn fract(v: f32) -> f32 {
-    v - v.floor()
-}
-
-// See http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
-// Port of: src/opts/SkRasterPipeline_opts.h#L1604-L1613 (chrome/m156)
-#[allow(
-    clippy::unreadable_literal,
-    clippy::excessive_precision,
-    clippy::approx_constant
-)] // Skia's float literals kept verbatim
-#[allow(clippy::cast_precision_loss)] // mirrors the C++ int -> float conversions
-fn approx_log2(x: f32) -> f32 {
-    // e - 127 is a fair approximation of log2(x) in its own right...
-    // cast(U32) converts the bits as a signed integer.
-    let e = (x.to_bits().cast_signed() as f32) * (1.0f32 / (1 << 23) as f32);
-
-    // ... but using the mantissa to refine its error is _much_ better.
-    let m = f32::from_bits((x.to_bits() & 0x007f_ffff) | 0x3f00_0000);
-
-    nmad(m, 1.498030302f32, e - 124.225514990f32) - 1.725879990f32 / (0.3520887068f32 + m)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L1615-L1618 (chrome/m156)
-#[allow(
-    clippy::unreadable_literal,
-    clippy::excessive_precision,
-    clippy::approx_constant
-)] // Skia's float literals kept verbatim
-fn approx_log(x: f32) -> f32 {
-    let ln2 = 0.69314718f32;
-    ln2 * approx_log2(x)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L1620-L1631 (chrome/m156)
-#[allow(
-    clippy::unreadable_literal,
-    clippy::excessive_precision,
-    clippy::approx_constant
-)] // Skia's float literals kept verbatim
-#[allow(clippy::cast_precision_loss)] // mirrors the C++ int -> float conversions
-fn approx_pow2(x: f32) -> f32 {
-    // constexpr float kInfinityBits = 0x7f800000; (the numeric value, as a float)
-    const INFINITY_BITS: f32 = 0x7f80_0000 as f32;
-
-    let f = fract(x);
-    let mut approx = nmad(f, 1.490129070f32, x + 121.274057500f32);
-    approx += 27.728023300f32 / (4.84252568f32 - f);
-    approx *= 1.0f32 * (1 << 23) as f32;
-    approx = sse_min(sse_max(approx, 0.0f32), INFINITY_BITS); // guard against underflow/overflow
-
-    f32::from_bits(round(approx))
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L1633-L1636 (chrome/m156)
-#[allow(
-    clippy::unreadable_literal,
-    clippy::excessive_precision,
-    clippy::approx_constant
-)] // Skia's float literals kept verbatim
-fn approx_exp(x: f32) -> f32 {
-    let log2_e = 1.4426950408889634074f32;
-    approx_pow2(log2_e * x)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L1638-L1641 (chrome/m156)
-#[allow(clippy::float_cmp)] // mirrors (x == 0) | (x == 1)
-fn approx_powf(x: f32, y: f32) -> f32 {
-    if x == 0.0 || x == 1.0 {
-        x
-    } else {
-        approx_pow2(approx_log2(x) * y)
+    for y in 0..row_count {
+        let d = y * dst_rb;
+        let s = y * src_rb;
+        dst[d..d + trim_row_bytes].copy_from_slice(&src[s..s + trim_row_bytes]);
     }
 }
 
-// Port of: src/opts/SkRasterPipeline_opts.h#L2990-L2998 (chrome/m156)
-fn strip_sign(x: f32) -> (f32, u32) {
-    let bits = x.to_bits();
-    let sign = bits & 0x8000_0000;
-    (f32::from_bits(bits ^ sign), sign)
-}
+// Port of: src/core/SkConvertPixels.cpp#L28-L45 (chrome/m156)
+fn rect_memcpy(
+    dst_info: &ImageInfo,
+    dst_pixels: &mut [u8],
+    dst_rb: usize,
+    src_info: &ImageInfo,
+    src_pixels: &[u8],
+    src_rb: usize,
+    steps: &ColorSpaceXformSteps,
+) -> bool {
+    // We can copy the pixels when no color type, alpha type, or color space changes.
+    if dst_info.color_type() != src_info.color_type() {
+        return false;
+    }
+    if dst_info.color_type() != ColorType::Alpha8 && steps.flags.mask() != 0b00000 {
+        return false;
+    }
 
-fn apply_sign(x: f32, sign: u32) -> f32 {
-    f32::from_bits(sign | x.to_bits())
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L3000-L3012 (chrome/m156)
-fn parametric(tf: &TransferFunction, v: f32) -> f32 {
-    let (v, sign) = strip_sign(v);
-    let r = if v <= tf.d {
-        mad(tf.c, v, tf.f)
-    } else {
-        approx_powf(mad(tf.a, v, tf.b), tf.g) + tf.e
-    };
-    apply_sign(r, sign)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L3014-L3023 (chrome/m156)
-fn gamma_(g: f32, v: f32) -> f32 {
-    let (v, sign) = strip_sign(v);
-    apply_sign(approx_powf(v, g), sign)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L3025-L3039 (chrome/m156)
-fn pq_ish(tf: &TransferFunction, v: f32) -> f32 {
-    let (v, sign) = strip_sign(v);
-    let r = approx_powf(
-        sse_max(mad(tf.b, approx_powf(v, tf.c), tf.a), 0.0f32)
-            / (mad(tf.e, approx_powf(v, tf.c), tf.d)),
-        tf.f,
+    // (srcPixels != dstPixels: always true for a `&mut` and a `&` slice.)
+    rect_memcpy_rows(
+        dst_pixels,
+        dst_rb,
+        src_pixels,
+        src_rb,
+        dst_info.min_row_bytes(),
+        dims(dst_info).1,
     );
-    apply_sign(r, sign)
+    true
 }
 
-// Port of: src/opts/SkRasterPipeline_opts.h#L3041-L3059 (chrome/m156)
-#[allow(clippy::many_single_char_names)] // the names of the C++ locals
-fn hlg_ish(tf: &TransferFunction, v: f32) -> f32 {
-    let (v, sign) = strip_sign(v);
-    let (big_r, big_g) = (tf.a, tf.b);
-    let (a, b, c) = (tf.c, tf.d, tf.e);
-    let k = tf.f + 1.0f32;
-
-    let r = if v * big_r <= 1.0 {
-        approx_powf(v * big_r, big_g)
-    } else {
-        approx_exp((v - c) * a) + b
-    };
-    k * apply_sign(r, sign)
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L3061-L3078 (chrome/m156)
-#[allow(clippy::many_single_char_names)] // the names of the C++ locals
-fn hlg_inv_ish(tf: &TransferFunction, v: f32) -> f32 {
-    let (mut v, sign) = strip_sign(v);
-    let (big_r, big_g) = (tf.a, tf.b);
-    let (a, b, c) = (tf.c, tf.d, tf.e);
-    let k = tf.f + 1.0f32;
-
-    v /= k;
-    let r = if v <= 1.0 {
-        big_r * approx_powf(v, big_g)
-    } else {
-        a * approx_log(v - b) + c
-    };
-    apply_sign(r, sign)
-}
-
-// Port of: src/core/SkRasterPipeline.cpp#L549-L566 (chrome/m156)
-#[allow(clippy::float_cmp)] // mirrors the exact comparisons of the C++
-fn append_transfer_function(tf: &TransferFunction, rgba: &mut [f32; 4]) {
-    let rgb = &mut rgba[..3];
-    match tf.tf_type() {
-        TfType::SRGBish => {
-            if tf.a == 1.0
-                && tf.b == 0.0
-                && tf.c == 0.0
-                && tf.d == 0.0
-                && tf.e == 0.0
-                && tf.f == 0.0
-            {
-                for v in rgb {
-                    *v = gamma_(tf.g, *v);
-                }
-            } else {
-                for v in rgb {
-                    *v = parametric(tf, *v);
-                }
-            }
-        }
-        TfType::PQish => {
-            for v in rgb {
-                *v = pq_ish(tf, *v);
-            }
-        }
-        TfType::HLGish => {
-            for v in rgb {
-                *v = hlg_ish(tf, *v);
-            }
-        }
-        TfType::HLGinvish => {
-            for v in rgb {
-                *v = hlg_inv_ish(tf, *v);
-            }
-        }
-        _ => debug_assert!(false),
+// Port of: src/core/SkConvertPixels.cpp#L47-L86 (chrome/m156)
+fn swizzle_or_premul(
+    dst_info: &ImageInfo,
+    dst_pixels: &mut [u8],
+    dst_rb: usize,
+    src_info: &ImageInfo,
+    src_pixels: &[u8],
+    src_rb: usize,
+    steps: &ColorSpaceXformSteps,
+) -> bool {
+    let is_8888 = |ct: ColorType| ct == ColorType::RGBA8888 || ct == ColorType::BGRA8888;
+    // `#if !defined(SK_ARM_HAS_NEON) steps.fFlags.unpremul ||`: Skia's NEON builds unpremul
+    // with the swizzler; the Neon tier stands for those builds (design §2.2).
+    let arm_has_neon = skia_rust_simd::selection().tier == Tier::Neon;
+    if !is_8888(dst_info.color_type())
+        || !is_8888(src_info.color_type())
+        || steps.flags.linearize
+        || steps.flags.gamut_transform
+        || (!arm_has_neon && steps.flags.unpremul)
+        || steps.flags.encode
+    {
+        return false;
     }
-}
 
-// Port of: src/core/SkColorSpaceXformSteps.cpp#L268-L277 (chrome/m156), with the highp stages
-// `unpremul`, `ootf`, `matrix_3x3` and `premul`.
-fn apply_steps_pipeline(steps: &ColorSpaceXformSteps, rgba: &mut [f32; 4]) {
-    if steps.flags.unpremul {
-        // Port of: src/opts/SkRasterPipeline_opts.h#L2710-L2716 (chrome/m156)
-        let inf = f32::from_bits(0x7f80_0000);
-        let scale = if 1.0f32 / rgba[3] < inf {
-            1.0f32 / rgba[3]
+    let swap_rb = dst_info.color_type() != src_info.color_type();
+
+    let f: fn(&mut [u8], &[u8], usize) = if steps.flags.premul {
+        if swap_rb {
+            swizzle::rgba_to_bgra_premul
         } else {
-            0.0f32
-        };
-        rgba[0] *= scale;
-        rgba[1] *= scale;
-        rgba[2] *= scale;
-    }
-    if steps.flags.linearize {
-        append_transfer_function(&steps.src_tf, rgba);
-    }
-    if steps.flags.src_ootf {
-        ootf(&steps.src_ootf, rgba);
-    }
-    if steps.flags.gamut_transform {
-        // Port of: src/opts/SkRasterPipeline_opts.h#L3686-L3695 (chrome/m156)
-        let m = &steps.src_to_dst_matrix;
-        let [r, g, b, _] = *rgba;
-        rgba[0] = mad(r, m[0], mad(g, m[3], b * m[6]));
-        rgba[1] = mad(r, m[1], mad(g, m[4], b * m[7]));
-        rgba[2] = mad(r, m[2], mad(g, m[5], b * m[8]));
-    }
-    if steps.flags.dst_ootf {
-        ootf(&steps.dst_ootf, rgba);
-    }
-    if steps.flags.encode {
-        append_transfer_function(&steps.dst_tf_inv, rgba);
-    }
-    if steps.flags.premul {
-        // Port of: src/opts/SkRasterPipeline_opts.h#L2700-L2704 (chrome/m156)
-        rgba[0] *= rgba[3];
-        rgba[1] *= rgba[3];
-        rgba[2] *= rgba[3];
-    }
-}
-
-// Port of: src/opts/SkRasterPipeline_opts.h#L3080-L3089 (chrome/m156)
-fn ootf(ctx: &[f32; 4], rgba: &mut [f32; 4]) {
-    let y = ctx[0] * rgba[0] + ctx[1] * rgba[1] + ctx[2] * rgba[2];
-
-    let (y, sign) = strip_sign(y);
-    let y_to_gamma_minus_one = apply_sign(approx_powf(y, ctx[3]), sign);
-    rgba[0] *= y_to_gamma_minus_one;
-    rgba[1] *= y_to_gamma_minus_one;
-    rgba[2] *= y_to_gamma_minus_one;
-}
-
-fn put16(out: &mut [u8], index: usize, v: u32) {
-    // pack(U32): the values stored here never exceed 16 bits.
-    #[allow(clippy::cast_possible_truncation)] // mirrors the pack() to 16 bits
-    let v = v as u16;
-    out[2 * index..2 * index + 2].copy_from_slice(&v.to_ne_bytes());
-}
-
-fn put32(out: &mut [u8], v: u32) {
-    out[..4].copy_from_slice(&v.to_ne_bytes());
-}
-
-// store_8888, shared by several color types.
-fn store_8888(out: &mut [u8], [r, g, b, a]: [f32; 4]) {
-    let px = to_unorm(r, 255)
-        | (to_unorm(g, 255) << 8)
-        | (to_unorm(b, 255) << 16)
-        | (to_unorm(a, 255) << 24);
-    put32(out, px);
-}
-
-// store_1010102, shared by several color types.
-fn store_1010102(out: &mut [u8], [r, g, b, a]: [f32; 4]) {
-    let px = to_unorm(r, 1023)
-        | (to_unorm(g, 1023) << 10)
-        | (to_unorm(b, 1023) << 20)
-        | (to_unorm(a, 3) << 30);
-    put32(out, px);
-}
-
-fn swap_rb([r, g, b, a]: [f32; 4]) -> [f32; 4] {
-    [b, g, r, a]
-}
-
-fn force_opaque([r, g, b, _]: [f32; 4]) -> [f32; 4] {
-    [r, g, b, 1.0f32]
-}
-
-// store_f16
-fn store_f16(out: &mut [u8], rgba: [f32; 4]) {
-    for (i, v) in rgba.into_iter().enumerate() {
-        put16(out, i, u32::from(float_to_half(v)));
-    }
-}
-
-// Port of: src/core/SkRasterPipeline.cpp#L482-L547 (chrome/m156) and the store stages at
-// src/opts/SkRasterPipeline_opts.h#L3109-L3562 (chrome/m156). Returns false for
-// `ColorType::Unknown`.
-#[allow(clippy::too_many_lines)] // one arm per color type, as appendStore
-fn append_store(ct: ColorType, rgba: [f32; 4], out: &mut [u8; 16]) -> bool {
-    let [r, g, b, a] = rgba;
-    match ct {
-        ColorType::Unknown => return false,
-
-        ColorType::Alpha8 => out[0] = to_unorm(a, 255).to_ne_bytes()[0],
-        ColorType::R8UNorm => out[0] = to_unorm(r, 255).to_ne_bytes()[0],
-        ColorType::A16UNorm => put16(out, 0, to_unorm(a, 65535)),
-        ColorType::A16Float => put16(out, 0, u32::from(float_to_half(a))),
-        ColorType::RGB565 => {
-            let px = (to_unorm(r, 31) << 11) | (to_unorm(g, 63) << 5) | to_unorm(b, 31);
-            put16(out, 0, px);
+            swizzle::rgba_to_rgba_premul
         }
+    } else if steps.flags.unpremul {
+        if swap_rb {
+            swizzle::rgba_premul_to_bgra
+        } else {
+            swizzle::rgba_premul_to_rgba
+        }
+    } else {
+        // If we're not swizzling, we ought to have used rect_memcpy().
+        debug_assert!(swap_rb);
+        swizzle::rgba_to_bgra
+    };
+
+    let (width, height) = dims(dst_info);
+    for y in 0..height {
+        f(
+            &mut dst_pixels[y * dst_rb..],
+            &src_pixels[y * src_rb..],
+            width,
+        );
+    }
+    true
+}
+
+// Port of: src/core/SkConvertPixels.cpp#L88-L248 (chrome/m156)
+#[allow(clippy::too_many_lines)] // one arm per color type, as the C++ switch
+#[allow(clippy::match_same_arms)] // one arm per color type, as the C++ switch
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+// mirrors the C++ narrowing conversions to uint8_t
+fn convert_to_alpha8(
+    dst_info: &ImageInfo,
+    dst: &mut [u8],
+    dst_rb: usize,
+    src_info: &ImageInfo,
+    src: &[u8],
+    src_rb: usize,
+    _steps: &ColorSpaceXformSteps,
+) -> bool {
+    if dst_info.color_type() != ColorType::Alpha8 {
+        return false;
+    }
+    let (width, height) = dims(src_info);
+
+    // Runs `f(src_row_offset, x)` for every pixel, storing the result at `dst[x]` of the row.
+    let mut each = |f: &dyn Fn(usize, usize) -> u8| {
+        for y in 0..height {
+            let (d, s) = (y * dst_rb, y * src_rb);
+            for x in 0..width {
+                dst[d + x] = f(s, x);
+            }
+        }
+    };
+
+    match src_info.color_type() {
+        ColorType::Unknown | ColorType::Alpha8 => {
+            // Unknown should never happen.
+            // Alpha8 should have been handled by rect_memcpy().
+            debug_assert!(false);
+            return false;
+        }
+
+        ColorType::A16UNorm => each(&|s, x| (get_u16(src, s + 2 * x) >> 8) as u8),
+
+        ColorType::Gray8
+        | ColorType::RGB565
+        | ColorType::R8G8UNorm
+        | ColorType::R16UNorm
+        | ColorType::R16Float
+        | ColorType::R16G16UNorm
+        | ColorType::R16G16Float
+        | ColorType::RGB888x
+        | ColorType::RGB101010x
+        | ColorType::BGR101010x
+        | ColorType::BGR101010xXR
+        | ColorType::RGBF16F16F16x
+        | ColorType::R8UNorm => {
+            for y in 0..height {
+                dst[y * dst_rb..y * dst_rb + width].fill(0xFF);
+            }
+        }
+
         ColorType::ARGB4444 => {
-            let px = (to_unorm(r, 15) << 12)
-                | (to_unorm(g, 15) << 8)
-                | (to_unorm(b, 15) << 4)
-                | to_unorm(a, 15);
-            put16(out, 0, px);
-        }
-        ColorType::R8G8UNorm => {
-            let px = to_unorm(r, 255) | (to_unorm(g, 255) << 8);
-            put16(out, 0, px);
-        }
-        ColorType::R16UNorm => put16(out, 0, to_unorm(r, 65535)),
-        ColorType::R16Float => put16(out, 0, u32::from(float_to_half(r))),
-        ColorType::R16G16UNorm => {
-            let px = to_unorm(r, 65535) | (to_unorm(g, 65535) << 16);
-            put32(out, px);
-        }
-        ColorType::R16G16Float => {
-            put16(out, 0, u32::from(float_to_half(r)));
-            put16(out, 1, u32::from(float_to_half(g)));
-        }
-        ColorType::RGBA8888 => store_8888(out, rgba),
-        ColorType::RGBA1010102 => store_1010102(out, rgba),
-        ColorType::R16G16B16A16UNorm => {
-            for (i, v) in rgba.into_iter().enumerate() {
-                put16(out, i, to_unorm(v, 65535));
-            }
-        }
-        ColorType::RGBAF16Norm | ColorType::RGBAF16 => store_f16(out, rgba),
-        ColorType::RGBAF32 => {
-            for (i, v) in rgba.into_iter().enumerate() {
-                out[4 * i..4 * i + 4].copy_from_slice(&v.to_ne_bytes());
-            }
-        }
-        ColorType::RGBA10x6 => {
-            for (i, v) in rgba.into_iter().enumerate() {
-                put16(out, i, to_unorm(v, 1023) << 6);
-            }
+            each(&|s, x| packed4444_to_a32(u32::from(get_u16(src, s + 2 * x))) as u8);
         }
 
-        ColorType::RGB888x => store_8888(out, force_opaque(rgba)),
-        ColorType::BGRA1010102 => store_1010102(out, swap_rb(rgba)),
-        ColorType::RGB101010x => store_1010102(out, force_opaque(rgba)),
-        ColorType::BGR101010x => store_1010102(out, swap_rb(force_opaque(rgba))),
-        ColorType::BGR101010xXR => {
-            let [r, g, b, a] = swap_rb(force_opaque(rgba));
-            // This is the inverse of from_1010102_xr, e.g. (v * 510 + 384)
-            let px = to_unorm_full(r, 510.0, 384.0, 1023)
-                | (to_unorm_full(g, 510.0, 384.0, 1023) << 10)
-                | (to_unorm_full(b, 510.0, 384.0, 1023) << 20)
-                | (to_unorm(a, 3) << 30);
-            put32(out, px);
+        ColorType::BGRA8888 | ColorType::RGBA8888 | ColorType::SRGBA8888 => {
+            each(&|s, x| (get_u32(src, s + 4 * x) >> 24) as u8);
         }
-        ColorType::RGBF16F16F16x => store_f16(out, force_opaque(rgba)),
+
+        ColorType::RGBA1010102 | ColorType::BGRA1010102 => {
+            each(&|s, x| ((get_u32(src, s + 4 * x) >> 30) * 0x55) as u8);
+        }
+
+        ColorType::RGBAF16Norm | ColorType::RGBAF16 => {
+            each(&|s, x| (255.0f32 * half_to_float((get_u64(src, s + 8 * x) >> 48) as u16)) as u8);
+        }
+
+        ColorType::RGBAF32 => each(&|s, x| (255.0f32 * get_f32(src, s + 16 * x + 12)) as u8),
+
+        ColorType::A16Float => {
+            each(&|s, x| (255.0f32 * half_to_float(get_u16(src, s + 2 * x))) as u8);
+        }
+
         ColorType::BGRA10101010XR => {
-            // This is the inverse of from_10101010_xr, e.g. (v * 510 + 384)
-            for (i, v) in swap_rb(rgba).into_iter().enumerate() {
-                put16(out, i, to_unorm_full(v, 510.0, 384.0, 1023) << 6);
-            }
+            each(&|s, x| {
+                const ZERO: i64 = 384;
+                const RANGE: i64 = 510;
+                const MAX_U8: i64 = 0xff;
+                const MIN_U8: i64 = 0x00;
+                const DIVISOR: i64 = RANGE / MAX_U8;
+                let raw_alpha = (get_u64(src, s + 8 * x) >> 54).cast_signed();
+                // f(384) = 0
+                // f(894) = 255
+                let alpha = t_pin((raw_alpha - ZERO) / DIVISOR, MIN_U8, MAX_U8);
+                alpha as u8
+            });
         }
-        ColorType::Gray8 => {
-            // bt709_luminance_or_luma_to_alpha, then store_a8
-            let a = r * 0.2126f32 + g * 0.7152f32 + b * 0.0722f32;
-            out[0] = to_unorm(a, 255).to_ne_bytes()[0];
-        }
-        ColorType::BGRA8888 => store_8888(out, swap_rb(rgba)),
-        ColorType::SRGBA8888 => {
-            let mut rgba = rgba;
-            append_transfer_function(srgb_inverse_transfer_function(), &mut rgba);
-            store_8888(out, rgba);
+        ColorType::RGBA10x6 | ColorType::R16G16B16A16UNorm => {
+            each(&|s, x| ((get_u64(src, s + 8 * x) >> 48) >> 8) as u8);
         }
     }
     true
 }
 
-/// Converts one premultiplied `RGBA_F32` pixel (with no color space) to the color type, alpha type
-/// and color space of the 1x1 image info `dst`, as
-/// `SkConvertPixels(dst, dstPixel, 16, 1x1 RGBA_F32 premul, &c, 16)` does. The converted pixel is
-/// returned in the first `dst.bytes_per_pixel()` bytes of the result, in native byte order.
+// Default: Use the pipeline.
+// Port of: src/core/SkConvertPixels.cpp#L250-L262 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // the C++ signature
+fn convert_with_pipeline(
+    dst_info: &ImageInfo,
+    dst_row: &mut [u8],
+    dst_stride: i32,
+    src_info: &ImageInfo,
+    src_row: &[u8],
+    src_stride: i32,
+    steps: &ColorSpaceXformSteps,
+) {
+    let src = MemoryCtx::new(MemSlot(0));
+    let dst = MemoryCtx::new(MemSlot(1));
+
+    let alloc = ArenaAlloc::new();
+    let mut pipeline = RasterPipeline::new();
+    pipeline.append_load(src_info.color_type(), src);
+    steps.apply_to_pipeline(&mut pipeline, &alloc);
+    pipeline.append_store(dst_info.color_type(), dst);
+
+    let (width, height) = dims(src_info);
+    let mut mem = MemoryBindings::new()
+        .with(
+            MemSlot(0),
+            MemView::read(src_row).with_stride(src_stride as isize),
+        )
+        .with(
+            MemSlot(1),
+            MemView::write(dst_row).with_stride(dst_stride as isize),
+        );
+    pipeline.run(0, 0, width, height, &mut mem);
+}
+
+/// Converts the `dst_info.dimensions()` pixels of `src_pixels` (described by `src_info`, rows
+/// `src_rb` bytes apart) to `dst_info`'s color type, alpha type and color space, into
+/// `dst_pixels` (rows `dst_rb` bytes apart).
 ///
-/// Returns `None` where `SkConvertPixels` returns false (an unknown color type).
-// Port of: src/core/SkConvertPixels.cpp#L26-L45 and #L205-L291 (chrome/m156)
+/// Returns false if a row-byte count is not a multiple of its color type's pixel size.
+///
+/// skia-rust: also returns false if either color type is [`ColorType::Unknown`] (a division by
+/// zero in C++, which asserts `SkImageInfoValidConversion`) or if either slice is too small for
+/// its info and row bytes (the C++ trusts the caller).
+// Port of: src/core/SkConvertPixels.cpp#L264-L292 (chrome/m156)
 #[doc(alias = "SkConvertPixels")]
 #[must_use]
-pub fn convert_rgba_f32_premul_pixel(dst: &ImageInfo, c: &PMColor4f) -> Option<[u8; 16]> {
-    let dst_ct = dst.color_type();
-    if dst_ct == ColorType::Unknown {
-        return None;
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+// mirrors (int)(srcRB / srcInfo.bytesPerPixel())
+#[allow(clippy::cast_sign_loss)] // mirrors (size_t)srcStride
+pub fn convert_pixels(
+    dst_info: &ImageInfo,
+    dst_pixels: &mut [u8],
+    dst_rb: usize,
+    src_info: &ImageInfo,
+    src_pixels: &[u8],
+    src_rb: usize,
+) -> bool {
+    debug_assert_eq!(dst_info.dimensions(), src_info.dimensions());
+    debug_assert!(image_info_valid_conversion(dst_info, src_info));
+
+    let (src_bpp, dst_bpp) = (src_info.bytes_per_pixel(), dst_info.bytes_per_pixel());
+    if src_bpp == 0 || dst_bpp == 0 {
+        return false;
+    }
+    let src_stride = (src_rb / src_bpp) as i32;
+    let dst_stride = (dst_rb / dst_bpp) as i32;
+    if (src_stride as usize).wrapping_mul(src_bpp) != src_rb
+        || (dst_stride as usize).wrapping_mul(dst_bpp) != dst_rb
+    {
+        return false;
+    }
+
+    if src_pixels.len() < src_info.compute_byte_size(src_rb)
+        || dst_pixels.len() < dst_info.compute_byte_size(dst_rb)
+    {
+        return false;
     }
 
     let steps = ColorSpaceXformSteps::new(
-        None,
-        AlphaType::Premul,
-        dst.color_space().as_ref(),
-        dst.alpha_type(),
+        src_info.color_space().as_ref(),
+        src_info.alpha_type(),
+        dst_info.color_space().as_ref(),
+        dst_info.alpha_type(),
     );
 
-    let mut out = [0u8; 16];
-
-    // rect_memcpy: no color type, alpha type, or color space changes.
-    if dst_ct == ColorType::RGBAF32 && steps.flags.mask() == 0 {
-        for (i, v) in [c.r, c.g, c.b, c.a].into_iter().enumerate() {
-            out[4 * i..4 * i + 4].copy_from_slice(&v.to_ne_bytes());
+    for f in [
+        rect_memcpy as FastPath,
+        swizzle_or_premul,
+        convert_to_alpha8,
+    ] {
+        if f(
+            dst_info, dst_pixels, dst_rb, src_info, src_pixels, src_rb, &steps,
+        ) {
+            return true;
         }
-        return Some(out);
+    }
+    convert_with_pipeline(
+        dst_info, dst_pixels, dst_stride, src_info, src_pixels, src_stride, &steps,
+    );
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::alpha_type::AlphaType;
+
+    fn info(ct: ColorType, at: AlphaType) -> ImageInfo {
+        ImageInfo::new((3, 2), ct, at, None)
     }
 
-    // swizzle_or_premul needs an 8888 source.
-
-    // convert_to_alpha8
-    if dst_ct == ColorType::Alpha8 {
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        // mirrors (uint8_t)(255.0f * rgba[3])
-        {
-            out[0] = (255.0f32 * c.a) as u8;
-        }
-        return Some(out);
+    #[test]
+    fn rejects_row_bytes_that_are_not_whole_pixels() {
+        let src = info(ColorType::RGBA8888, AlphaType::Premul);
+        let dst = info(ColorType::RGB565, AlphaType::Opaque);
+        let s = [0u8; 64];
+        let mut d = [0u8; 64];
+        assert!(!convert_pixels(&dst, &mut d, 7, &src, &s, 12));
+        assert!(!convert_pixels(&dst, &mut d, 6, &src, &s, 13));
+        assert!(convert_pixels(&dst, &mut d, 6, &src, &s, 12));
+        // skia-rust: too-small slices are rejected instead of overrun.
+        assert!(!convert_pixels(&dst, &mut d[..11], 6, &src, &s, 12));
+        assert!(!convert_pixels(&dst, &mut d, 6, &src, &s[..23], 12));
     }
 
-    // convert_with_pipeline: load_f32, the xform steps, then the store stages.
-    let mut rgba = [c.r, c.g, c.b, c.a];
-    apply_steps_pipeline(&steps, &mut rgba);
-    if append_store(dst_ct, rgba, &mut out) {
-        Some(out)
-    } else {
-        None
+    #[test]
+    fn fast_paths() {
+        let src_info = info(ColorType::RGBA8888, AlphaType::Premul);
+        let mut src = [0u8; 2 * 16];
+        for (i, b) in src.iter_mut().enumerate() {
+            #[allow(clippy::cast_possible_truncation)] // i < 32
+            {
+                *b = i as u8 * 7;
+            }
+        }
+        // rect_memcpy, with padded source rows.
+        let mut dst = [0u8; 24];
+        assert!(convert_pixels(&src_info, &mut dst, 12, &src_info, &src, 16));
+        assert_eq!(dst[..12], src[..12]);
+        assert_eq!(dst[12..], src[16..28]);
+        // swizzle_or_premul: swap R and B.
+        let bgra = info(ColorType::BGRA8888, AlphaType::Premul);
+        assert!(convert_pixels(&bgra, &mut dst, 12, &src_info, &src, 16));
+        assert_eq!(dst[..4], [src[2], src[1], src[0], src[3]]);
+        // convert_to_alpha8.
+        let a8 = info(ColorType::Alpha8, AlphaType::Premul);
+        let mut alpha = [0u8; 8];
+        assert!(convert_pixels(&a8, &mut alpha, 4, &src_info, &src, 16));
+        assert_eq!(
+            alpha,
+            [src[3], src[7], src[11], 0, src[19], src[23], src[27], 0]
+        );
+    }
+
+    #[test]
+    fn pipeline_565() {
+        let src_info = ImageInfo::new((1, 1), ColorType::RGBA8888, AlphaType::Opaque, None);
+        let dst_info = ImageInfo::new((1, 1), ColorType::RGB565, AlphaType::Opaque, None);
+        let src = [0xFF, 0x80, 0x00, 0xFF];
+        let mut dst = [0u8; 2];
+        assert!(convert_pixels(&dst_info, &mut dst, 2, &src_info, &src, 4));
+        // r = 31, g = round(0x80/255 * 63) = 32, b = 0.
+        assert_eq!(u16::from_ne_bytes(dst), (31 << 11) | (32 << 5));
     }
 }

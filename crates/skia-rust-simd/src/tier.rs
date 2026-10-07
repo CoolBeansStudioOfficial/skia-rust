@@ -356,6 +356,7 @@ impl Selection {
     /// Checks that this host can execute the selection.
     ///
     /// - `Native` needs [`Tier::is_native`].
+    /// - Every non-`Scalar` `Model` needs the `models` feature.
     /// - `Model(AmdZen4)` is valid for the x86 tiers, `Model(Arm)` for `Neon`, `Model(Host)` for
     ///   any tier whose estimate instructions this host has. `Scalar` uses no estimates, so every
     ///   `Model` is valid for it (and equivalent to `Native`).
@@ -368,6 +369,9 @@ impl Selection {
                 "the host cannot execute this tier's instructions"
             }
             (Tier::Scalar, _) | (_, Backend::Native) => return Ok(self),
+            (_, Backend::Model(_)) if !cfg!(any(test, feature = "models")) => {
+                "the model tiers are not built (enable the `models` feature)"
+            }
             (t, Backend::Model(Estimates::Host)) if !t.host_has_estimates() => {
                 "the host lacks this tier's estimate instructions"
             }

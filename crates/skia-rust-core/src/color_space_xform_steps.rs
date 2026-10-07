@@ -9,9 +9,11 @@
 use skia_rust_skcms::{Matrix3x3, TfType, TransferFunction};
 
 use crate::alpha_type::AlphaType;
+use crate::arena_alloc::ArenaAlloc;
 use crate::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use crate::color_space_priv::srgb_singleton;
 use crate::floating_point::ieee_float_divide;
+use crate::raster_pipeline::{RasterPipeline, Stage, transfer_function_ctx};
 
 /// Which steps are needed.
 // Port of: src/core/SkColorSpaceXformSteps.h#L22-L38 (chrome/m156)
@@ -309,6 +311,34 @@ impl ColorSpaceXformSteps {
     #[must_use]
     pub fn is_needed(&self) -> bool {
         self.flags.mask() != 0
+    }
+
+    /// Appends the stages of the steps to `p` (`apply(SkRasterPipeline*)`). The contexts
+    /// (transfer functions, matrix, OOTF coefficients) are copied into `alloc`.
+    // Port of: src/core/SkColorSpaceXformSteps.cpp#L268-L276 (chrome/m156)
+    #[doc(alias = "apply")]
+    pub fn apply_to_pipeline<'a>(&self, p: &mut RasterPipeline<'a>, alloc: &'a ArenaAlloc) {
+        if self.flags.unpremul {
+            p.append(Stage::Unpremul);
+        }
+        if self.flags.linearize {
+            p.append_transfer_function(alloc.make(transfer_function_ctx(&self.src_tf)));
+        }
+        if self.flags.src_ootf {
+            p.append(Stage::Ootf(alloc.make(self.src_ootf)));
+        }
+        if self.flags.gamut_transform {
+            p.append(Stage::Matrix3x3(alloc.make(self.src_to_dst_matrix)));
+        }
+        if self.flags.dst_ootf {
+            p.append(Stage::Ootf(alloc.make(self.dst_ootf)));
+        }
+        if self.flags.encode {
+            p.append_transfer_function(alloc.make(transfer_function_ctx(&self.dst_tf_inv)));
+        }
+        if self.flags.premul {
+            p.append(Stage::Premul);
+        }
     }
 
     /// Applies the steps to one color, `rgba`.

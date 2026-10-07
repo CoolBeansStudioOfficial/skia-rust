@@ -5,18 +5,20 @@
 
 //! [`Bitmap`]: a two-dimensional raster pixel array.
 //!
-//! Not ported (they need drawing, `SkConvertPixels`, `SkImage`, shaders or mask filters):
-//! `readPixels` (2 overloads), `writePixels`, `extractAlpha`, `asImage`, `makeShader` (4
-//! overloads), `getBounds` (out-parameter forms; use [`Bitmap::bounds`]), custom
-//! `SkBitmap::Allocator`s (only the default heap allocation exists), and `installPixels(const
-//! SkPixmap&)` (a pixmap borrows its bytes, so a bitmap cannot share them; install an owned copy
-//! with [`Bitmap::install_pixels`] instead).
+//! Not ported (they need `SkImage`, shaders or mask filters): `asImage`, `makeShader` (4
+//! overloads), the mask-filter path of `extractAlpha`, `getBounds` (out-parameter forms; use
+//! [`Bitmap::bounds`]), custom `SkBitmap::Allocator`s (only the default heap allocation exists),
+//! and `installPixels(const SkPixmap&)` (a pixmap borrows its bytes, so a bitmap cannot share
+//! them; install an owned copy with [`Bitmap::install_pixels`] instead).
 
+use crate::align::align4;
 use crate::alpha_type::AlphaType;
 use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
+use crate::convert_pixels::convert_pixels;
 use crate::image_info::ImageInfo;
+use crate::image_info_priv::image_info_valid_conversion;
 use crate::malloc_pixel_ref;
 use crate::pixel_ref::{PixelRef, ReleaseProc};
 use crate::pixel_ref_priv::make_pixel_ref_with_proc;
@@ -25,6 +27,7 @@ use crate::point::IPoint;
 use crate::rect::IRect;
 use crate::size::ISize;
 use crate::t_fits_in::t_fits_in;
+use crate::write_pixels_rec::WritePixelsRec;
 use std::mem;
 
 /// Describes a two-dimensional raster pixel array. [`Bitmap`] is built on [`ImageInfo`],
@@ -42,14 +45,16 @@ use std::mem;
 /// array is primarily written to, use `Surface` for better performance.
 ///
 /// Cloning a [`Bitmap`] copies its [`ImageInfo`] and shares the [`PixelRef`], so both bitmaps
-/// reference the same pixels. A `&Bitmap` is enough to change the pixels (`erase_color`, ...),
-/// as in C++ where those methods are `const`.
+/// reference the same pixels.
 ///
 /// # Pixel access
-/// [`Bitmap::peek_pixels`] and [`Bitmap::pixmap`] borrow the pixels for reading,
-/// [`Bitmap::peek_pixels_mut`] for writing. The borrows hold a lock on the shared pixels: do not
-/// call another pixel-touching method of a bitmap sharing the same [`PixelRef`] (such as
-/// [`Bitmap::erase_color`]) on the same thread while one is alive.
+/// [`Bitmap::peek_pixels`] and [`Bitmap::pixmap`] borrow the pixels for reading (`&self`);
+/// [`Bitmap::peek_pixels_mut`] and every method that writes pixels ([`Bitmap::erase_color`],
+/// [`Bitmap::write_pixels`], …) take `&mut self`. There are no locks: the borrow checker keeps a
+/// writer exclusive. If the pixels are shared with another bitmap or [`PixelRef`] handle, a write
+/// first gives this bitmap its own copy (copy-on-write), so it never changes the pixels another
+/// bitmap sees. See `docs/design/pixels.md`; C++ writes through `const` methods into the shared
+/// memory.
 // Port of: include/core/SkBitmap.h#L51-L1200 (chrome/m156)
 #[doc(alias = "SkBitmap")]
 #[derive(Clone, Debug, Default)]
@@ -89,14 +94,25 @@ impl Bitmap {
     // Port of: include/core/SkBitmap.h#L121 (chrome/m156)
     #[must_use]
     pub fn pixmap(&self) -> Pixmap<'_> {
+        match self.pixel_bytes() {
+            Some(bytes) => Pixmap::from_shared(self.info.clone(), bytes, self.row_bytes),
+            None => Pixmap::without_pixels(self.info.clone(), self.row_bytes),
+        }
+    }
+
+    // The pixels from the first pixel of this bitmap on (`fPixmap.addr()`), if any.
+    fn pixel_bytes(&self) -> Option<&[u8]> {
         match (&self.pixel_ref, self.offset) {
-            (Some(pixel_ref), Some(offset)) => Pixmap::from_read_guard(
-                self.info.clone(),
-                pixel_ref.pixels(),
-                offset,
-                self.row_bytes,
-            ),
-            _ => Pixmap::without_pixels(self.info.clone(), self.row_bytes),
+            (Some(pixel_ref), Some(offset)) => pixel_ref.pixels().get(offset..),
+            _ => None,
+        }
+    }
+
+    // The writable pixels from the first pixel on, detaching shared pixels first.
+    fn pixel_bytes_mut(&mut self) -> Option<&mut [u8]> {
+        match (&mut self.pixel_ref, self.offset) {
+            (Some(pixel_ref), Some(offset)) => pixel_ref.pixels_mut().get_mut(offset..),
+            _ => None,
         }
     }
 
@@ -846,7 +862,7 @@ impl Bitmap {
     /// have higher color resolution.
     // Port of: src/core/SkBitmap.cpp#L426-L428 (chrome/m156)
     #[doc(alias = "eraseColor")]
-    pub fn erase_color(&self, c: impl Into<Color>) {
+    pub fn erase_color(&mut self, c: impl Into<Color>) {
         self.erase_4f(
             Color4f::from_color(c.into()),
             IRect::from_wh(self.width(), self.height()),
@@ -857,7 +873,7 @@ impl Bitmap {
     /// pixels contained by [`Self::bounds()`] are affected.
     // Port of: src/core/SkBitmap.cpp#L422-L424 (chrome/m156)
     #[doc(alias = "eraseColor")]
-    pub fn erase_color_4f(&self, c: impl AsRef<Color4f>) {
+    pub fn erase_color_4f(&mut self, c: impl AsRef<Color4f>) {
         self.erase_4f(c, IRect::from_wh(self.width(), self.height()));
     }
 
@@ -866,14 +882,14 @@ impl Bitmap {
     /// [`Self::bounds()`] are affected.
     // Port of: include/core/SkBitmap.h#L1060-L1062 (chrome/m156)
     #[doc(alias = "eraseARGB")]
-    pub fn erase_argb(&self, a: u8, r: u8, g: u8, b: u8) {
+    pub fn erase_argb(&mut self, a: u8, r: u8, g: u8, b: u8) {
         self.erase_color(Color::from_argb(a, r, g, b));
     }
 
     /// Replaces pixel values inside `area` with `c`, interpreted as being in the sRGB
     /// [`ColorSpace`]. If `area` does not intersect [`Self::bounds()`], the call has no effect.
     // Port of: src/core/SkBitmap.cpp#L418-L420 (chrome/m156)
-    pub fn erase(&self, c: impl Into<Color>, area: impl AsRef<IRect>) {
+    pub fn erase(&mut self, c: impl Into<Color>, area: impl AsRef<IRect>) {
         self.erase_4f(Color4f::from_color(c.into()), area);
     }
 
@@ -881,7 +897,7 @@ impl Bitmap {
     /// [`ColorSpace`]. If `area` does not intersect [`Self::bounds()`], the call has no effect.
     // Port of: src/core/SkBitmap.cpp#L400-L416 (chrome/m156)
     #[doc(alias = "erase")]
-    pub fn erase_4f(&self, c: impl AsRef<Color4f>, area: impl AsRef<IRect>) {
+    pub fn erase_4f(&mut self, c: impl AsRef<Color4f>, area: impl AsRef<IRect>) {
         self.validate();
 
         if ColorType::Unknown == self.color_type() {
@@ -901,7 +917,7 @@ impl Bitmap {
     /// Replaces pixel values inside `area` with `c`. Deprecated: use [`Self::erase`].
     // Port of: include/core/SkBitmap.h#L848-L850 (chrome/m156)
     #[doc(alias = "eraseArea")]
-    pub fn erase_area(&self, area: impl AsRef<IRect>, c: impl Into<Color>) {
+    pub fn erase_area(&mut self, area: impl AsRef<IRect>, c: impl Into<Color>) {
         self.erase(c, area);
     }
 
@@ -946,7 +962,7 @@ impl Bitmap {
     /// # Panics
     /// If the bitmap has no pixels, or they cannot be written to.
     #[doc(alias = "getAddr8")]
-    pub fn set_addr8(&self, x: i32, y: i32, value: u8) {
+    pub fn set_addr8(&mut self, x: i32, y: i32, value: u8) {
         let mut pixmap = self
             .peek_pixels_mut()
             .expect("the bitmap has no writable pixels");
@@ -959,7 +975,7 @@ impl Bitmap {
     /// # Panics
     /// If the bitmap has no pixels, or they cannot be written to.
     #[doc(alias = "getAddr16")]
-    pub fn set_addr16(&self, x: i32, y: i32, value: u16) {
+    pub fn set_addr16(&mut self, x: i32, y: i32, value: u16) {
         let mut pixmap = self
             .peek_pixels_mut()
             .expect("the bitmap has no writable pixels");
@@ -972,7 +988,7 @@ impl Bitmap {
     /// # Panics
     /// If the bitmap has no pixels, or they cannot be written to.
     #[doc(alias = "getAddr32")]
-    pub fn set_addr32(&self, x: i32, y: i32, value: u32) {
+    pub fn set_addr32(&mut self, x: i32, y: i32, value: u32) {
         let mut pixmap = self
             .peek_pixels_mut()
             .expect("the bitmap has no writable pixels");
@@ -1068,22 +1084,168 @@ impl Bitmap {
         self.offset.map(|_| self.pixmap())
     }
 
-    /// Returns a pixmap over the pixels that can also write to them, if there are any and they
-    /// can be written to (pixels shared as immutable [`Data`](crate::data::Data) cannot).
+    /// Returns a pixmap over the pixels that can also write to them, if there are any. Does not
+    /// change the generation ID (call [`Self::notify_pixels_changed`] after writing, as in C++).
     ///
-    /// skia-rust: `SkPixmap` writes through a `const_cast`; this takes the [`PixelRef`]'s write
-    /// lock for as long as the returned pixmap lives.
+    /// skia-rust: `SkPixmap` writes through a `const_cast`. Here the bitmap is borrowed mutably
+    /// for as long as the pixmap lives, and pixels shared with another bitmap or [`PixelRef`]
+    /// handle (or immutable [`Data`](crate::data::Data)) are first copied into a pixel ref of
+    /// this bitmap's own (`docs/design/pixels.md`).
     #[must_use]
-    pub fn peek_pixels_mut(&self) -> Option<Pixmap<'_>> {
-        match (&self.pixel_ref, self.offset) {
-            (Some(pixel_ref), Some(offset)) => Some(Pixmap::from_write_guard(
-                self.info.clone(),
-                pixel_ref.pixels_mut()?,
-                offset,
-                self.row_bytes,
-            )),
-            _ => None,
+    pub fn peek_pixels_mut(&mut self) -> Option<Pixmap<'_>> {
+        let info = self.info.clone();
+        let row_bytes = self.row_bytes;
+        let bytes = self.pixel_bytes_mut()?;
+        Some(Pixmap::from_unique(info, bytes, row_bytes))
+    }
+
+    /// Copies a rectangle of pixels from the bitmap to `dst_pixels`. Copy starts at
+    /// `(src_x, src_y)`, and does not exceed the bitmap (`width()`, `height()`).
+    ///
+    /// `dst_info` specifies width, height, color type, alpha type, and color space of the
+    /// destination; `dst_row_bytes` the row length. Returns true if pixels are copied; false if
+    /// `dst_row_bytes` is less than `dst_info.min_row_bytes()`, if pixel conversion is not
+    /// possible, if the bitmap has no pixels, or if `abs(src_x) >= width()` or
+    /// `abs(src_y) >= height()`. Negative `src_x`/`src_y` copy only the top or left of the source.
+    ///
+    /// skia-rust: the destination is a byte slice (the C++ and skia-safe take a raw pointer); it
+    /// also returns false if the slice is too small.
+    // Port of: src/core/SkBitmap.cpp#L468-L475 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels(
+        &self,
+        dst_info: &ImageInfo,
+        dst_pixels: &mut [u8],
+        dst_row_bytes: usize,
+        src_x: i32,
+        src_y: i32,
+    ) -> bool {
+        let Some(src) = self.peek_pixels() else {
+            return false;
+        };
+        src.read_pixels(dst_info, dst_pixels, dst_row_bytes, (src_x, src_y))
+    }
+
+    /// Copies a rectangle of pixels from the bitmap to `dst` (`readPixels(const SkPixmap&, int,
+    /// int)`); see [`Self::read_pixels`]. Returns false if `dst` has no writable pixels.
+    // Port of: src/core/SkBitmap.cpp#L477-L479 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels_to_pixmap(&self, dst: &mut Pixmap<'_>, src: impl Into<IPoint>) -> bool {
+        let IPoint { x, y } = src.into();
+        let info = dst.info().clone();
+        let row_bytes = dst.row_bytes();
+        let Some(dst_pixels) = dst.writable_addr() else {
+            return false;
+        };
+        self.read_pixels(&info, dst_pixels, row_bytes, x, y)
+    }
+
+    /// Copies a rectangle of pixels from `src` to the bitmap, starting at `(dst_x, dst_y)` and
+    /// converting to the bitmap's color type, alpha type and color space. Returns true and
+    /// changes the generation ID if pixels are copied; false if pixel conversion is not possible
+    /// or `src` does not overlap the bitmap.
+    // Port of: src/core/SkBitmap.cpp#L481-L499 (chrome/m156)
+    #[doc(alias = "writePixels")]
+    pub fn write_pixels(&mut self, src: &Pixmap<'_>, dst_x: i32, dst_y: i32) -> bool {
+        if !image_info_valid_conversion(self.info(), src.info()) {
+            return false;
         }
+
+        let mut rec = WritePixelsRec::new(src.info(), src.addr(), src.row_bytes(), dst_x, dst_y);
+        if !rec.trim(self.width(), self.height()) {
+            return false;
+        }
+
+        let dst_info = self.info.with_dimensions(rec.info.dimensions());
+        let dst_row_bytes = self.row_bytes;
+        let Some(src_pixels) = rec.pixels.and_then(|p| p.get(rec.offset..)) else {
+            return false;
+        };
+        let Some(mut dst) = self.peek_pixels_mut() else {
+            return false;
+        };
+        let Some(dst_pixels) = dst.writable_addr_at((rec.x, rec.y)) else {
+            return false;
+        };
+        if !convert_pixels(
+            &dst_info,
+            dst_pixels,
+            dst_row_bytes,
+            &rec.info,
+            src_pixels,
+            rec.row_bytes,
+        ) {
+            return false;
+        }
+        self.notify_pixels_changed();
+        true
+    }
+
+    /// Sets `dst` to the alpha of this bitmap's pixels (an [`ColorType::Alpha8`] bitmap with row
+    /// bytes rounded up to a multiple of 4) and returns the offset of `dst`'s top-left corner
+    /// relative to this bitmap: `(0, 0)`. Returns `None` if this bitmap is empty or `dst`'s
+    /// pixels cannot be allocated. If this bitmap has no pixels, `dst` is all zeros.
+    ///
+    /// skia-rust: `SkPaint` (and its mask filter) is not ported yet, so there is no `paint`
+    /// parameter: this is `extractAlpha(dst, nullptr, …)`. (With a mask filter, Skia filters the
+    /// alpha and returns the filter's offset.)
+    // Port of: src/core/SkBitmap.cpp#L503-L584 (chrome/m156)
+    #[doc(alias = "extractAlpha")]
+    pub fn extract_alpha(&self, dst: &mut Self) -> Option<IPoint> {
+        // static bool GetBitmapAlpha(const SkBitmap& src, uint8_t* alpha, int alphaRowBytes)
+        fn get_bitmap_alpha(src: &Bitmap, alpha: &mut [u8], alpha_row_bytes: usize) -> bool {
+            #[allow(clippy::cast_sign_loss)] // width() is positive here
+            let width = src.width() as usize;
+            debug_assert!(alpha_row_bytes >= width);
+
+            let Some(pmap) = src.peek_pixels() else {
+                for row in alpha.chunks_mut(alpha_row_bytes).take(height_usize(src)) {
+                    row[..width].fill(0);
+                }
+                return false;
+            };
+            convert_pixels(
+                &ImageInfo::new_a8((pmap.width(), pmap.height())),
+                alpha,
+                alpha_row_bytes,
+                pmap.info(),
+                pmap.addr().unwrap_or(&[]),
+                pmap.row_bytes(),
+            )
+        }
+
+        #[allow(clippy::cast_sign_loss)] // height() is positive here
+        fn height_usize(bm: &Bitmap) -> usize {
+            bm.height() as usize
+        }
+
+        self.validate();
+
+        if self.width() == 0 || self.height() == 0 {
+            return None;
+        }
+        #[allow(clippy::cast_sign_loss)] // width() is positive here
+        let row_bytes = align4(self.width() as usize); // srcM.rowBytes() = SkAlign4(width)
+
+        // SkMaskFilter* filter = paint ? paint->getMaskFilter() : nullptr; is always null here.
+
+        // NO_FILTER_CASE:
+        let mut tmp_bitmap = Bitmap::new();
+        let _ = tmp_bitmap.set_info(&ImageInfo::new_a8(self.dimensions()), row_bytes);
+        if !tmp_bitmap.try_alloc_pixels() {
+            // Allocation of pixels for alpha bitmap failed.
+            eprintln!(
+                "extractAlpha failed to allocate ({},{}) alpha bitmap",
+                tmp_bitmap.width(),
+                tmp_bitmap.height()
+            );
+            return None;
+        }
+        if let Some(alpha) = tmp_bitmap.pixel_bytes_mut() {
+            get_bitmap_alpha(self, alpha, row_bytes);
+        }
+        tmp_bitmap.swap(dst);
+        Some(IPoint { x: 0, y: 0 })
     }
 
     /// Asserts if internal values are illegal or inconsistent (debug builds only).
@@ -1109,5 +1271,94 @@ impl Bitmap {
                 debug_assert!(pixel_ref.row_bytes() >= self.info.min_row_bytes());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn bitmap_2x2() -> Bitmap {
+        let mut bm = Bitmap::new();
+        bm.alloc_n32_pixels((2, 2), None);
+        bm
+    }
+
+    /// Issue #22: reads may nest freely; writes are exclusive by construction.
+    #[test]
+    fn nested_access_does_not_block() {
+        let mut bm = bitmap_2x2();
+        bm.erase_color(Color::WHITE);
+        let a = bm.peek_pixels().unwrap();
+        let b = bm.pixmap();
+        assert_eq!(a.get_color((1, 1)), b.get_color((0, 0)));
+        assert_eq!(bm.get_color((1, 0)), Color::WHITE);
+        let mut dst = [0u8; 16];
+        assert!(bm.read_pixels(a.info(), &mut dst, 8, 0, 0));
+    }
+
+    #[test]
+    fn writes_to_shared_pixels_copy_on_write() {
+        let mut bm = bitmap_2x2();
+        bm.erase_color(Color::WHITE);
+        let shared = bm.clone();
+        let id = shared.generation_id();
+        assert!(bm.pixel_ref().unwrap().ptr_eq(&shared.pixel_ref().unwrap()));
+
+        bm.erase_color(Color::BLACK);
+        assert!(!bm.pixel_ref().unwrap().ptr_eq(&shared.pixel_ref().unwrap()));
+        assert_eq!(bm.get_color((0, 0)), Color::BLACK);
+        assert_eq!(shared.get_color((0, 0)), Color::WHITE);
+        assert_eq!(shared.generation_id(), id);
+        assert_ne!(bm.generation_id(), id);
+    }
+
+    #[test]
+    fn writes_to_unique_pixels_stay_in_place() {
+        let mut bm = bitmap_2x2();
+        let pr = bm.pixel_ref().unwrap();
+        let ptr = pr.pixels().as_ptr();
+        drop(pr);
+        let id = bm.generation_id();
+        // A raw write keeps the generation ID, as in Skia.
+        bm.set_addr32(0, 0, 0xFFFF_FFFF);
+        assert_eq!(bm.generation_id(), id);
+        assert_eq!(bm.pixmap().addr().unwrap().as_ptr(), ptr);
+        // erase notifies.
+        bm.erase_color(Color::BLACK);
+        assert_ne!(bm.generation_id(), id);
+        assert_eq!(bm.pixmap().addr().unwrap().as_ptr(), ptr);
+    }
+
+    #[test]
+    fn subset_writes_detach_from_the_parent() {
+        let mut parent = bitmap_2x2();
+        parent.erase_color(Color::WHITE);
+        let mut sub = Bitmap::new();
+        assert!(parent.extract_subset(&mut sub, IRect::from_xywh(1, 1, 1, 1)));
+        sub.erase_color(Color::BLACK);
+        assert_eq!(sub.get_color((0, 0)), Color::BLACK);
+        assert_eq!(sub.pixel_ref_origin(), IPoint { x: 1, y: 1 });
+        assert_eq!(parent.get_color((1, 1)), Color::WHITE);
+    }
+
+    #[test]
+    fn write_pixels_and_extract_alpha() {
+        let mut bm = bitmap_2x2();
+        let src_bytes = [0x80u8; 4];
+        let src_info = ImageInfo::new_a8((1, 1));
+        let src = Pixmap::new_readonly(&src_info, &src_bytes, 4).unwrap();
+        let id = bm.generation_id();
+        assert!(bm.write_pixels(&src, 1, 0));
+        assert_ne!(bm.generation_id(), id);
+        assert_eq!(bm.get_color((1, 0)).a(), 0x80);
+        assert_eq!(bm.get_color((0, 0)).a(), 0);
+
+        let mut alpha = Bitmap::new();
+        assert_eq!(bm.extract_alpha(&mut alpha), Some(IPoint { x: 0, y: 0 }));
+        assert_eq!(alpha.color_type(), ColorType::Alpha8);
+        assert_eq!(alpha.row_bytes(), 4);
+        assert_eq!(alpha.get_addr8(1, 0), 0x80);
+        assert_eq!(alpha.get_addr8(0, 1), 0);
     }
 }

@@ -3,6 +3,8 @@
 #[cfg(test)]
 pub mod as_a_dash_test;
 #[cfg(test)]
+pub mod bitmap_copy_test;
+#[cfg(test)]
 pub mod bitmap_get_color_test;
 #[cfg(test)]
 pub mod bitmap_test;
@@ -94,6 +96,8 @@ pub mod pixels_rec_test;
 pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
+#[cfg(test)]
+pub mod premul_alpha_round_trip_test;
 #[cfg(test)]
 pub mod quad_roots_test;
 #[cfg(test)]
