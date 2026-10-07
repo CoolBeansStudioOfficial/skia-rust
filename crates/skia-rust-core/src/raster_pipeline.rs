@@ -734,3 +734,6 @@ impl CompiledPipeline<'_> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod d2_tests;

@@ -36670,7 +36670,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L246-L253"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b3fa360b0c77fe6dc094f56998d924d9eef37cf0b2e0d6fbb2d89d30c2f65319"
 
 [[test]]
@@ -36697,7 +36697,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L71-L101"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "474af9fe0c798a414c4976567bb4ea1be3450de6420a142c0fe53dd27c0f1fbb"
 
 [[test]]

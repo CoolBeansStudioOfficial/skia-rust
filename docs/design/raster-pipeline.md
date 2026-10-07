@@ -1581,6 +1581,55 @@ the same framework.
   blitters), so there is nothing to flip; `crates/skia-rust-raster/src/blitter_tests.rs` and
   `alpha_runs.rs` test against hand-derived traces of the C++ defaults with a recording blitter.
 
+**As implemented in D2** (`skia_rust_core::{paint, paint_priv, blend_mode, blend_mode_priv, blender,
+blend_mode_blender, effect_priv, shader, shaders, color_filter, path_effect, mask_filter,
+image_filter}`, all in core, per R11):
+
+- **Shared effects are handles over trait objects.** Every `sk_sp<SkFoo>` effect is a clonable
+  handle `Foo(Arc<dyn FooBase>)` with skia-safe's methods plus `from_base(impl FooBase)`,
+  `as_base() -> &dyn FooBase` (`as_SB`/`as_BB`/`as_CFB`/...) and `ptr_eq`; `PartialEq` is identity,
+  as Skia compares `sk_sp`s. `FooBase` is the trait of `SkFooBase`'s virtuals (Skia's defaults as
+  default methods); its non-virtual members are inherent methods of `dyn FooBase`. The traits are
+  `Any + Debug + Send + Sync`, so code that checks `shader_type()` can downcast like Skia's
+  `static_cast`s. Implementations in other crates (raster, Phase 3 effects) implement the traits.
+- **`StageRec<'r, 'a>`** holds `&'r mut RasterPipeline<'a>` and the `&'a ArenaAlloc`; effects take
+  `&mut StageRec` (Skia's `const SkStageRec&` with a mutable pipeline pointer) and allocate their
+  contexts in the arena. `ShaderBase::append_stages(&self, &mut StageRec, &MatrixRec) -> bool`;
+  `dyn ShaderBase::append_root_stages(rec, ctm)`; `BlenderBase::on_append_stages(&mut StageRec)`;
+  `ColorFilterBase::append_stages(&mut StageRec, shader_is_opaque)`. `MatrixRec` is a full port
+  (`apply` appends `seed_shader` + `append_matrix`). `fSurfaceProps` is left out until D6 ports
+  `SkSurfaceProps` (nothing ported reads it).
+- **Blend modes.** `blend_mode_priv::append_stages(mode, &mut RasterPipeline)` (nothing for `Src`),
+  `should_pre_scale_coverage(mode, rgb_coverage)` / `supports_coverage_as_alpha` (D3's coverage
+  decision), `check_fast_path(&Paint, dst_is_opaque) -> BlendFastPath`, `apply(mode, src, dst)`
+  (a one-pixel `load_f32`/`store_f32` pipeline for the non-trivial modes). `Blender::mode(m)` returns
+  per-mode singletons (`get_blend_mode_singleton`), so paints with equal blend modes compare equal.
+- **Paint** is a plain struct (`Clone` = Skia's shallow copy) with optional `PathEffect`, `Shader`,
+  `MaskFilter`, `ColorFilter`, `ImageFilter`, `Blender`; `set_blend_mode(SrcOver)` clears the
+  blender as Skia does. `nothing_to_draw`, `can_compute_fast_bounds`, `compute_fast_bounds` (returns
+  the rect instead of `storage`), `paint_priv::{overwrites, should_dither, compute_luminance_color}`.
+  `StrokeRec::from_paint`, `inflation_radius_from_paint_and_style` and
+  `path_utils::fill_path_with_paint` (with the path effect) replace the D1-era stand-ins.
+- **Shaders.** `shaders::{empty, color, color_in_space}`; `ColorShader` stores unpremul extended
+  sRGB and appends `append_constant_color` of the color converted to the dst color space, premul
+  (m156 has no separate `SkColor4Shader`); `EmptyShader` appends nothing and returns false.
+- **Stubs.** `ColorFilterBase` (with Skia's pipeline-based `on_filter_color4f` default and
+  `affects_transparent_black`), `PathEffectBase` (`on_filter_path`, `on_needs_ctm`,
+  `compute_fast_bounds`), `MaskFilterBase` and `ImageFilterBase` (fast bounds only) carry what
+  `SkPaint` needs; C7 and Phase 3 extend them.
+- **Tests.** `oracle/rp-builder/rp_builder.cpp` gained a `d2` mode (run by `build.ps1`): 124 cases
+  (all 29 blenders between a dst load and a store; color shaders for 7 colors x 3 source x 4 dst
+  color spaces, `SkColor` shaders, the empty shader; 8 `MatrixRec::apply` cases including a
+  singular matrix and a pre-applied CTM) written to `raster_pipeline/skia_d2_{dump,rp_dump}.txt`
+  with the appenders' results and every `uniform_color`/`unbounded_uniform_color`/matrix context.
+  `raster_pipeline/d2_tests.rs` matches them bit for bit, including the SSE2 lowp decisions. Module
+  tests cover `Paint` semantics (equality, setters, `nothing_to_draw`, fast bounds),
+  `paint_priv`, `blend_mode_priv` and the color filter default. Skia tests: `PaintTest::Paint_dither`
+  and `Paint_regression_cubic` pass; `Paint_copy` (blur mask filter), `Paint_flattening`,
+  `Paint_MoreFlattening` (`SkReadBuffer`/`SkWriteBuffer`), `Paint_nothingToDraw` (matrix color
+  filter), `Paint_regression_measureText` and `Font_getpos` (fonts) wait for those ports;
+  `BlendTest` has nothing left for raster.
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

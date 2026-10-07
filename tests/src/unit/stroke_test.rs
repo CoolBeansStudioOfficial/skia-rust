@@ -5,13 +5,14 @@
 
 #![cfg(test)]
 
-use crate::tools::stroke_paint::{Paint, fill_path_with_paint};
 use crate::{Reporter, def_test, reporter_assert};
 use skia_rust_core::float_bits::bits_to_float;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::paint::{Cap, Join, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_priv;
+use skia_rust_core::path_utils::fill_path_with_paint_to_path;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::Scalar;
@@ -44,7 +45,7 @@ fn test_strokecubic(_reporter: &mut Reporter) {
         Point::new(51.016_365_1, 1_511.524_78),
         Point::new(51.016_696_9, 1_511.524_66),
     ];
-    let mut paint = Paint::new();
+    let mut paint = Paint::default();
 
     paint.set_style(Style::Stroke);
     paint.set_stroke_width(0.394_537_568);
@@ -52,7 +53,7 @@ fn test_strokecubic(_reporter: &mut Reporter) {
     let mut builder = PathBuilder::new();
     builder.move_to(cubic_vals[0]);
     builder.cubic_to(cubic_vals[1], cubic_vals[2], cubic_vals[3]);
-    let _ = fill_path_with_paint(&builder.detach(), &paint);
+    let _ = fill_path_with_paint_to_path(&builder.detach(), &paint).0;
 
     let b = bits_to_float;
     builder.move_to((b(hex_cubic_vals[0]), b(hex_cubic_vals[1])));
@@ -61,13 +62,13 @@ fn test_strokecubic(_reporter: &mut Reporter) {
         (b(hex_cubic_vals[4]), b(hex_cubic_vals[5])),
         (b(hex_cubic_vals[6]), b(hex_cubic_vals[7])),
     );
-    let _ = fill_path_with_paint(&builder.detach(), &paint);
+    let _ = fill_path_with_paint_to_path(&builder.detach(), &paint).0;
 }
 
 // Port of: tests/StrokeTest.cpp#L68-L100 (chrome/m156)
 fn test_strokerect(reporter: &mut Reporter) {
     let width: f32 = 10.0;
-    let mut paint = Paint::new();
+    let mut paint = Paint::default();
 
     paint.set_style(Style::Stroke);
     paint.set_stroke_width(width);
@@ -83,7 +84,7 @@ fn test_strokerect(reporter: &mut Reporter) {
         paint.set_stroke_join(join);
 
         let path = Path::rect(r, None);
-        let fill_path = fill_path_with_paint(&path, &paint);
+        let fill_path = fill_path_with_paint_to_path(&path, &paint).0;
 
         reporter_assert!(reporter, equal(&outer, fill_path.bounds()));
 
@@ -179,7 +180,7 @@ fn test_strokerec_equality(reporter: &mut Reporter) {
 // From skbug.com/40037699. The large stroke width can cause numerical instabilities.
 // Port of: tests/StrokeTest.cpp#L166-L183 (chrome/m156)
 fn test_big_stroke(_reporter: &mut Reporter) {
-    let mut paint = Paint::new();
+    let mut paint = Paint::default();
     paint.set_style(Style::StrokeAndFill);
     paint.set_stroke_width(1.496_790_7e10);
 
@@ -192,7 +193,7 @@ fn test_big_stroke(_reporter: &mut Reporter) {
     builder.line_to((b(0x4638_0000), b(0xc638_0000))); // 11776, -11776
     builder.close();
 
-    let _ = fill_path_with_paint(&builder.detach(), &paint);
+    let _ = fill_path_with_paint_to_path(&builder.detach(), &paint).0;
 }
 
 // Port of: tests/StrokeTest.cpp#L185-L190 (chrome/m156)

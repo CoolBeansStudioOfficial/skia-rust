@@ -55,4 +55,13 @@ if ($LASTEXITCODE) { exit $LASTEXITCODE }
 # Normalize to LF line endings.
 [IO.File]::WriteAllText("$dest/skia_dump.txt", ([IO.File]::ReadAllText("$out/dump.txt") -replace "`r`n", "`n"))
 [IO.File]::WriteAllText("$dest/skia_rp_dump.txt", ([IO.File]::ReadAllText($rpDump) -replace "`r`n", "`n"))
+
+# The D2 cases (blenders, color/empty shaders, MatrixRec): skia_d2_dump.txt, skia_d2_rp_dump.txt.
+$rpDump = Join-Path $out "d2_rp_dump.txt"
+Remove-Item -ErrorAction SilentlyContinue $rpDump
+$env:SKIA_ORACLE_RP_DUMP = $rpDump
+& "$out/rp_builder.exe" d2 2> "$out/d2_dump.txt"
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+[IO.File]::WriteAllText("$dest/skia_d2_dump.txt", ([IO.File]::ReadAllText("$out/d2_dump.txt") -replace "`r`n", "`n"))
+[IO.File]::WriteAllText("$dest/skia_d2_rp_dump.txt", ([IO.File]::ReadAllText($rpDump) -replace "`r`n", "`n"))
 exit 0
