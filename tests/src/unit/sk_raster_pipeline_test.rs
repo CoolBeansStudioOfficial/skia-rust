@@ -34,10 +34,11 @@ use skia_rust_core::raster_pipeline::{
     MemPtr, MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage,
 };
 use skia_rust_core::raster_pipeline_context_utils::{Packed, pack, unpack};
+use skia_rust_core::swizzle::Swizzle;
 use skia_rust_simd::rp::contexts::{
-    BranchCtx, BranchIfEqualCtx, CaseOpCtx, ConstantCtx, CopyIndirectCtx, CopyIndirectUniformCtx,
-    ShuffleCtx, SwizzleCopyCtx, SwizzleCopyIndirectCtx, SwizzleCtx, TraceFuncCtx, TraceHook,
-    TraceLineCtx, TraceScopeCtx, TraceVarCtx, UniformCtx,
+    BranchCtx, BranchIfEqualCtx, CallbackCtx, CaseOpCtx, ConstantCtx, CopyIndirectCtx,
+    CopyIndirectUniformCtx, ShuffleCtx, SwizzleCopyCtx, SwizzleCopyIndirectCtx, SwizzleCtx,
+    TraceFuncCtx, TraceHook, TraceLineCtx, TraceScopeCtx, TraceVarCtx, UniformCtx,
 };
 
 use crate::{def_test, errorf, reporter_assert};
@@ -858,6 +859,283 @@ def_test!(SkRasterPipeline_lowp, |r| {
         if got != want {
             errorf!(r, "got {got:08x}, want {want:08x}\n");
         }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2901-L2929 (chrome/m156)
+def_test!(SkRasterPipeline_JIT, |r| {
+    // This tests a couple odd corners that a JIT backend can stumble over.
+
+    let mut buf: [u32; 72] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, //
+        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, //
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //
+    ];
+
+    // `src = { buf + 0, 0 }, dst = { buf + 36, 0 }`: two slots, over the two halves of `buf`.
+    let src = MemoryCtx::new(MemSlot(0));
+    let dst = MemoryCtx::new(MemSlot(1));
+
+    // Copy buf[x] to buf[x+36] for x in [15,35).
+    let mut p = RasterPipeline::new();
+    p.append(Stage::Load8888(src));
+    p.append(Stage::Store8888(dst));
+    let mut bytes: Vec<u8> = buf.iter().flat_map(|px| px.to_ne_bytes()).collect();
+    {
+        let (src_bytes, dst_bytes) = bytes.split_at_mut(36 * 4);
+        let mut mem = MemoryBindings::new()
+            .with(MemSlot(0), MemView::read(src_bytes))
+            .with(MemSlot(1), MemView::write(dst_bytes));
+        p.run(15, 0, 20, 1, &mut mem);
+    }
+    for (px, c) in buf.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *px = u32::from_ne_bytes(*c);
+    }
+
+    for i in 0..36 {
+        if i < 15 || i == 35 {
+            reporter_assert!(r, buf[i + 36] == 0);
+        } else {
+            reporter_assert!(r, buf[i + 36] == (i - 11) as u32);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3272-L3329 (chrome/m156)
+def_test!(SkRasterPipeline_swizzle, |r| {
+    // This takes the lowp code path
+    {
+        let mut rg = [0u16; 64];
+        for i in 0..64u16 {
+            rg[usize::from(i)] = (4 * i) | ((4 * i + 1) << 8);
+        }
+
+        let swizzle = Swizzle::new("g1b1");
+
+        let ptr = MemoryCtx::new(MemSlot(0));
+        let mut p = RasterPipeline::new();
+        p.append(Stage::LoadRg88(ptr));
+        swizzle.apply(&mut p);
+        p.append(Stage::StoreRg88(ptr));
+        let mut bytes = halves_to_bytes(&rg);
+        p.run(
+            0,
+            0,
+            64,
+            1,
+            &mut MemoryBindings::new().with(MemSlot(0), MemView::write(&mut bytes)),
+        );
+        let rg = bytes_to_halves(&bytes);
+
+        for i in 0..64u32 {
+            let want: u32 = (0xff << 8) | (4 * i + 1);
+            if u32::from(rg[i as usize]) != want {
+                errorf!(r, "got {:08x}, want {:08x}\n", rg[i as usize], want);
+            }
+        }
+    }
+    // This takes the highp code path
+    {
+        let mut rg = [[0f32; 4]; 64];
+        for i in 0..64 {
+            rg[i][0] = (i + 1) as f32;
+            rg[i][1] = (2 * i + 1) as f32;
+            rg[i][2] = 0.;
+            rg[i][3] = 1.;
+        }
+
+        let swizzle = Swizzle::new("0gra");
+
+        let mut buffer = [[0u16; 4]; 64];
+        let src = MemoryCtx::new(MemSlot(0));
+        let dst = MemoryCtx::new(MemSlot(1));
+        let mut p = RasterPipeline::new();
+        p.append(Stage::LoadF32(src));
+        swizzle.apply(&mut p);
+        p.append(Stage::StoreF16(dst));
+        let src_bytes: Vec<u8> = rg.iter().flatten().flat_map(|v| v.to_ne_bytes()).collect();
+        let mut dst_bytes = vec![0u8; 64 * 4 * 2];
+        p.run(
+            0,
+            0,
+            64,
+            1,
+            &mut MemoryBindings::new()
+                .with(MemSlot(0), MemView::read(&src_bytes))
+                .with(MemSlot(1), MemView::write(&mut dst_bytes)),
+        );
+        for (px, c) in buffer.iter_mut().zip(bytes_to_halves(&dst_bytes).chunks(4)) {
+            px.copy_from_slice(c);
+        }
+
+        for i in 0..64 {
+            let want: [u16; 4] = [h(0.), h((2 * i + 1) as f32), h((i + 1) as f32), h(1.)];
+            reporter_assert!(r, want == buffer[i]);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3331-L3345 (chrome/m156)
+def_test!(SkRasterPipeline_lowp_clamp01, |_r| {
+    // This may seem like a funny pipeline to create,
+    // but it certainly shouldn't crash when you run it.
+
+    let rgba: u32 = 0xff00_ff00;
+    let mut bytes = rgba.to_ne_bytes();
+
+    let ptr = MemoryCtx::new(MemSlot(0));
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::Load8888(ptr));
+    p.append(Stage::SwapRb);
+    p.append(Stage::Clamp01);
+    p.append(Stage::Store8888(ptr));
+    p.run(
+        0,
+        0,
+        1,
+        1,
+        &mut MemoryBindings::new().with(MemSlot(0), MemView::write(&mut bytes)),
+    );
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3347-L3406 (chrome/m156)
+/// Helper struct that can be used to scrape stack addresses at different points in a pipeline.
+/// (The C++ `fn` lambda is [`StackCheckerCtx::record`], which the tests wrap in a `CallbackCtx`.)
+struct StackCheckerCtx {
+    stack_addrs: RefCell<Vec<usize>>,
+    expected_behavior: RefCell<Vec<Behavior>>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Behavior {
+    Growth,
+    Baseline,
+    Unknown,
+}
+
+impl StackCheckerCtx {
+    fn new() -> StackCheckerCtx {
+        StackCheckerCtx {
+            stack_addrs: RefCell::new(Vec::new()),
+            expected_behavior: RefCell::new(Vec::new()),
+        }
+    }
+
+    /// The callback's body: `ctx->fStackAddrs.push_back(&active_pixels)`.
+    fn record(&self, active_pixels: usize) {
+        self.stack_addrs
+            .borrow_mut()
+            .push(std::ptr::from_ref(&active_pixels).addr());
+    }
+
+    fn growth_behavior() -> Behavior {
+        // Only some stages use the musttail attribute, so we have no way of knowing what's going to
+        // happen. In release builds, it's likely that the compiler will apply tail-call
+        // optimization. Even in some debug builds (on Windows), we don't see stack growth.
+        Behavior::Unknown
+    }
+
+    // Call one of these two each time the checker callback is added:
+    fn expect_growth(&self) {
+        self.expected_behavior
+            .borrow_mut()
+            .push(StackCheckerCtx::growth_behavior());
+    }
+
+    fn expect_baseline(&self) {
+        self.expected_behavior.borrow_mut().push(Behavior::Baseline);
+    }
+
+    fn validate(&self, r: &mut crate::Reporter) {
+        let stack_addrs = self.stack_addrs.borrow();
+        let expected_behavior = self.expected_behavior.borrow();
+        reporter_assert!(r, stack_addrs.len() == expected_behavior.len());
+
+        let baseline = stack_addrs[0];
+        for i in 1..stack_addrs.len() {
+            if expected_behavior[i] == Behavior::Growth {
+                reporter_assert!(r, stack_addrs[i] != baseline);
+            } else if expected_behavior[i] == Behavior::Baseline {
+                reporter_assert!(r, stack_addrs[i] == baseline);
+            } else {
+                // Unknown behavior, nothing we can assert here
+            }
+        }
+    }
+}
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3408-L3452 (chrome/m156)
+def_test!(SkRasterPipeline_stack_rewind, |r| {
+    // This test verifies that we can control stack usage with stack_rewind
+
+    // Without stack_rewind, we should (maybe) see stack growth
+    {
+        let stack = StackCheckerCtx::new();
+        let mut bytes = 0xff00_00ffu32.to_ne_bytes();
+        let ptr = MemoryCtx::new(MemSlot(0));
+        let record = |_: &mut [f32; 64], active: usize| stack.record(active);
+        let cb = CallbackCtx { callback: &record };
+
+        let mut p = RasterPipeline::new();
+        stack.expect_baseline();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::Load8888(ptr));
+        stack.expect_growth();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::SwapRb);
+        stack.expect_growth();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::Store8888(ptr));
+        p.run(
+            0,
+            0,
+            1,
+            1,
+            &mut MemoryBindings::new().with(MemSlot(0), MemView::write(&mut bytes)),
+        );
+
+        reporter_assert!(r, u32::from_ne_bytes(bytes) == 0xffff_0000); // Ensure the pipeline worked
+        stack.validate(r);
+    }
+
+    // With stack_rewind, we should (always) be able to get back to baseline
+    {
+        let stack = StackCheckerCtx::new();
+        let mut bytes = 0xff00_00ffu32.to_ne_bytes();
+        let ptr = MemoryCtx::new(MemSlot(0));
+        let record = |_: &mut [f32; 64], active: usize| stack.record(active);
+        let cb = CallbackCtx { callback: &record };
+
+        let mut p = RasterPipeline::new();
+        stack.expect_baseline();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::Load8888(ptr));
+        stack.expect_growth();
+        p.append(Stage::Callback(&cb));
+        p.append_stack_rewind();
+        stack.expect_baseline();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::SwapRb);
+        stack.expect_growth();
+        p.append(Stage::Callback(&cb));
+        p.append_stack_rewind();
+        stack.expect_baseline();
+        p.append(Stage::Callback(&cb));
+        p.append(Stage::Store8888(ptr));
+        p.run(
+            0,
+            0,
+            1,
+            1,
+            &mut MemoryBindings::new().with(MemSlot(0), MemView::write(&mut bytes)),
+        );
+
+        reporter_assert!(r, u32::from_ne_bytes(bytes) == 0xffff_0000); // Ensure the pipeline worked
+        stack.validate(r);
     }
 });
 
