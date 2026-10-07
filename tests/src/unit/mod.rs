@@ -123,6 +123,8 @@ pub mod r_rect_in_path_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
+pub mod read_pixels_test;
+#[cfg(test)]
 pub mod rect_test;
 #[cfg(test)]
 pub mod region_test;
@@ -156,3 +158,7 @@ pub mod stream_test;
 pub mod stroke_test;
 #[cfg(test)]
 pub mod stroker_test;
+#[cfg(test)]
+pub mod surface_test;
+#[cfg(test)]
+pub mod write_pixels_test;
