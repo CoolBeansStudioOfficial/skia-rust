@@ -40,3 +40,5 @@ pub use program::{Program, has_lowp};
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_sksl;

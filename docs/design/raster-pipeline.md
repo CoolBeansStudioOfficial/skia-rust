@@ -986,6 +986,26 @@ si! {
   `run()`, and a codegen check of the lowp register shuffles (LLVM splits some `U16` registers
   across GPR/XMM halves in the giant function).
 
+**As implemented in B6c/B6d** (`tiers/highp/sksl_math.rs`, `sksl_trace.rs`):
+
+- The polynomial approximations (`sin_`, `tan_`, `approx_atan_unit`, `asin_`, `atan2_`,
+  `approx_log2`/`approx_pow2`/`approx_exp`/`approx_powf`, …) are private `si!` functions of
+  `sksl_math.rs`, ported from `SkRasterPipeline_opts.h` with its evaluation order and `mad`/`nmad`
+  placement; no libm. The 1-slot unary stages and the binary n-way stages (`atan2`, `pow`) are
+  macros over those functions, because a `#[target_feature]` function cannot be passed as an
+  `Fn`. `invsqrt` uses `rsqrt` and `inverse_mat*` use `rcp_precise`, so those stages (and only
+  those) depend on the tier's estimates.
+- Skia's `SkRasterPipelineOptsTest` calls the private functions on the host tier; the ports in
+  `tests/src/unit/sk_raster_pipeline_opts_test.rs` run the stage that applies each function
+  (`sin_float`, `exp2_float`, …) on `skia_rust_simd::selection()`, and observe `any`/`all` through
+  `branch_if_any_lanes_active`/`branch_if_all_lanes_active`.
+- `callback`'s array is `store4`'s layout, interleaved per pixel (`r0 g0 b0 a0 r1 …`) on every
+  tier; `CallbackFn<'a>` is not `'static` so callbacks may borrow. The trace ops report to
+  `rp::contexts::TraceHook`, a small trait standing in for `SkSL::TraceHook` until an `SkSL`
+  crate exists (temporary).
+- `init_lane_masks` and `load_condition_mask` are implemented in `sksl_masks.rs` (B6a's file)
+  because the trace tests need them; when B6a lands, keep its versions.
+
 ### 2.7 The builder (`SkRasterPipeline.cpp`)
 
 Ported 1:1 in core: `append`, `appendMatrix` (op choice by matrix type), `appendConstantColor`
