@@ -31,6 +31,7 @@ pub mod cubic_map;
 pub mod cubics;
 pub mod data;
 pub mod data_table;
+pub mod draw_types;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod effect_priv;

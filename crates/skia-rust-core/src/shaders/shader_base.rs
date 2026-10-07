@@ -9,7 +9,11 @@
 use core::any::Any;
 use core::fmt;
 
-use crate::color::Color4f;
+use crate::alpha_type::AlphaType;
+use crate::color::{Alpha, Color4f, PMColor};
+use crate::color_space::ColorSpace;
+use crate::color_space_xform_steps::ColorSpaceXformSteps;
+use crate::color_type::ColorType;
 use crate::effect_priv::StageRec;
 use crate::matrix::Matrix;
 use crate::raster_pipeline::Stage;
@@ -164,6 +168,104 @@ impl MatrixRec {
     }
 }
 
+/// `SkShaderBase::Flags::kOpaqueAlpha_Flag`: set by a [`ShaderContext`] if all of its colors will
+/// be opaque.
+// Port of: src/shaders/SkShaderBase.h#L254-L257 (chrome/m156)
+#[doc(alias = "kOpaqueAlpha_Flag")]
+pub const OPAQUE_ALPHA_FLAG: u32 = 1 << 0;
+
+/// `SK_ENABLE_LEGACY_SHADERCONTEXT`: whether shaders can make a legacy [`ShaderContext`]. Skia
+/// builds with it off unless a client defines it, and the pinned oracle builds do not, so
+/// `SkShaderBase::makeContext` returns null and the legacy shader blitter is never chosen.
+// Port of: src/shaders/SkShaderBase.cpp#L97-L107 (chrome/m156)
+pub const ENABLE_LEGACY_SHADER_CONTEXT: bool = false;
+
+/// A parameter bundle for creating a [`ShaderContext`] (`SkShaderBase::ContextRec`).
+///
+/// skia-rust: `fProps` (`SkSurfaceProps`) is left out until the surface port.
+// Port of: src/shaders/SkShaderBase.h#L266-L298 (chrome/m156)
+#[doc(alias = "SkShaderBase::ContextRec")]
+#[derive(Clone, Debug)]
+pub struct ContextRec {
+    /// `fMatrixRec`.
+    pub matrix_rec: MatrixRec,
+    /// `fDstColorType`: the color type of the dest surface.
+    pub dst_color_type: ColorType,
+    /// `fDstColorSpace`: the color space of the dest surface (if any).
+    pub dst_color_space: Option<ColorSpace>,
+    /// `fPaintAlpha`.
+    pub paint_alpha: Alpha,
+}
+
+impl ContextRec {
+    /// `SkShaderBase::ContextRec::ContextRec`.
+    #[must_use]
+    pub fn new(
+        paint_alpha: Alpha,
+        matrix_rec: MatrixRec,
+        dst_color_type: ColorType,
+        dst_color_space: Option<ColorSpace>,
+    ) -> ContextRec {
+        ContextRec {
+            matrix_rec,
+            dst_color_type,
+            dst_color_space,
+            paint_alpha,
+        }
+    }
+
+    /// The rec for a child shader with local matrix `local_m` (`Concat`).
+    // Port of: src/shaders/SkShaderBase.h#L281-L287 (chrome/m156)
+    #[must_use]
+    pub fn concat(parent_rec: &ContextRec, local_m: &Matrix) -> ContextRec {
+        ContextRec {
+            matrix_rec: parent_rec.matrix_rec.concat(local_m),
+            dst_color_type: parent_rec.dst_color_type,
+            dst_color_space: parent_rec.dst_color_space.clone(),
+            paint_alpha: parent_rec.paint_alpha,
+        }
+    }
+
+    /// True if a shader producing colors in `shaders_color_space` needs no color space
+    /// conversion into the destination in the legacy pipeline, where shaders always produce
+    /// premul (or opaque) and so does the destination (`isLegacyCompatible`).
+    // Port of: src/shaders/SkShaderBase.cpp#L121-L127 (chrome/m156)
+    #[doc(alias = "isLegacyCompatible")]
+    #[must_use]
+    pub fn is_legacy_compatible(&self, shaders_color_space: Option<&ColorSpace>) -> bool {
+        0 == ColorSpaceXformSteps::new(
+            shaders_color_space,
+            AlphaType::Premul,
+            self.dst_color_space.as_ref(),
+            AlphaType::Premul,
+        )
+        .flags
+        .mask()
+    }
+}
+
+/// The legacy per-span shading interface that the ARGB32 shader blitter drives
+/// (`SkShaderBase::Context`).
+///
+/// A shader makes one with [`ShaderBase::on_make_context`] when [`ENABLE_LEGACY_SHADER_CONTEXT`]
+/// is on.
+// Port of: src/shaders/SkShaderBase.h#L297-L329 (chrome/m156)
+#[doc(alias = "SkShaderBase::Context")]
+pub trait ShaderContext: fmt::Debug {
+    /// Called sometimes before drawing with this shader: returns [`OPAQUE_ALPHA_FLAG`] if the
+    /// shader's colors are all opaque. The default returns 0 (`getFlags`).
+    #[doc(alias = "getFlags")]
+    fn flags(&self) -> u32 {
+        0
+    }
+
+    /// Called for each span of the object being drawn: sets `span` to the premultiplied colors
+    /// that correspond to the device coordinates `(x, y)` and the `span.len()` pixels to its
+    /// right (`shadeSpan`).
+    #[doc(alias = "shadeSpan")]
+    fn shade_span(&mut self, x: i32, y: i32, span: &mut [PMColor]);
+}
+
 /// Concatenates a parent and a child local matrix (`SkShaderBase::ConcatLocalMatrices`; Skia's
 /// Android-framework order is not used).
 // Port of: src/shaders/SkShaderBase.h#L383-L388 (chrome/m156)
@@ -217,10 +319,11 @@ pub enum ShaderType {
 /// `&dyn ShaderBase` whose [`shader_type`](Self::shader_type) is known can be downcast to its
 /// concrete type (Skia's `static_cast`s).
 ///
-/// skia-rust: the legacy shader context (`makeContext`, `SK_ENABLE_LEGACY_SHADERCONTEXT`, not
-/// defined in the oracle builds), `asGradient` (gradients are Phase 3), `onIsAImage`,
-/// `asRuntimeEffect`, `makeAsALocalMatrixShader` (deprecated) and the flattening hooks are not
-/// ported yet.
+/// skia-rust: the legacy shader context is [`ShaderContext`] and
+/// [`on_make_context`](Self::on_make_context); `SK_ENABLE_LEGACY_SHADERCONTEXT` is not defined in
+/// the oracle builds ([`ENABLE_LEGACY_SHADER_CONTEXT`]), so no shader makes one. `asGradient`
+/// (gradients are Phase 3), `onIsAImage`, `asRuntimeEffect`, `makeAsALocalMatrixShader`
+/// (deprecated) and the flattening hooks are not ported yet.
 // Port of: src/shaders/SkShaderBase.h#L185-L411 (chrome/m156)
 #[doc(alias = "SkShaderBase")]
 pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
@@ -251,9 +354,36 @@ pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
     fn on_as_luminance_color(&self) -> Option<Color4f> {
         None
     }
+
+    /// Makes a legacy shader context, if the shader has one (`onMakeContext`). Only called by
+    /// `make_context` when [`ENABLE_LEGACY_SHADER_CONTEXT`] is
+    /// on.
+    #[doc(alias = "onMakeContext")]
+    fn on_make_context(&self, _rec: &ContextRec) -> Option<Box<dyn ShaderContext>> {
+        None
+    }
 }
 
 impl dyn ShaderBase {
+    /// Makes a legacy shader context, or `None` if the shader cannot make one
+    /// (`makeContext`). Shaders with perspective or a singular total matrix never can; and since
+    /// [`ENABLE_LEGACY_SHADER_CONTEXT`] is off in the pinned builds, none can.
+    // Port of: src/shaders/SkShaderBase.cpp#L97-L109 (chrome/m156)
+    #[doc(alias = "makeContext")]
+    #[must_use]
+    pub fn make_context(&self, rec: &ContextRec) -> Option<Box<dyn ShaderContext>> {
+        if !ENABLE_LEGACY_SHADER_CONTEXT {
+            return None;
+        }
+        // We always fall back to raster pipeline when perspective is present.
+        let total_matrix = rec.matrix_rec.total_matrix();
+        if total_matrix.has_perspective() || total_matrix.invert().is_none() {
+            return None;
+        }
+
+        self.on_make_context(rec)
+    }
+
     /// If the shader can represent its "average" luminance in a single color, that color, made
     /// opaque (only the RGB components are used to compute luminance) (`asLuminanceColor`).
     // Port of: src/shaders/SkShaderBase.cpp#L85-L95 (chrome/m156)
@@ -350,5 +480,37 @@ mod tests {
         b.mark_total_matrix_invalid();
         assert!(!b.total_matrix_is_valid());
         assert!(a.total_matrix_is_valid());
+    }
+
+    #[test]
+    fn legacy_shader_contexts_are_off_as_in_the_pinned_builds() {
+        use crate::shaders;
+        const { assert!(!ENABLE_LEGACY_SHADER_CONTEXT) };
+        let s = shaders::color(crate::color::Color::new(0xFF00_0000));
+        let rec = ContextRec::new(0xFF, MatrixRec::new(Matrix::i()), ColorType::N32, None);
+        assert!(s.as_base().make_context(&rec).is_none());
+    }
+
+    #[test]
+    fn context_rec_concat_and_legacy_compatibility() {
+        let rec = ContextRec::new(
+            0x80,
+            MatrixRec::new(&Matrix::scale((2.0, 2.0))),
+            ColorType::N32,
+            Some(ColorSpace::new_srgb()),
+        );
+        let child = ContextRec::concat(&rec, &Matrix::translate((1.0, 0.0)));
+        assert_eq!(child.paint_alpha, 0x80);
+        assert_eq!(child.dst_color_type, ColorType::N32);
+        assert_eq!(
+            child.matrix_rec.total_matrix(),
+            Matrix::concat(&Matrix::scale((2.0, 2.0)), &Matrix::translate((1.0, 0.0)))
+        );
+
+        // The legacy pipeline needs no conversion into an sRGB destination from sRGB, or from
+        // the untagged (sRGB) space; it does from linear sRGB.
+        assert!(rec.is_legacy_compatible(Some(&ColorSpace::new_srgb())));
+        assert!(rec.is_legacy_compatible(None));
+        assert!(!rec.is_legacy_compatible(Some(&ColorSpace::new_srgb_linear())));
     }
 }

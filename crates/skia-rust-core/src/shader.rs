@@ -12,6 +12,8 @@
 use core::fmt;
 use std::sync::Arc;
 
+use crate::color_filter::ColorFilter;
+use crate::shaders::color_filter_shader::ColorFilterShader;
 use crate::shaders::shader_base::ShaderBase;
 
 /// A shared shader (`sk_sp<SkShader>`): a cheaply clonable handle to a [`ShaderBase`].
@@ -22,9 +24,8 @@ use crate::shaders::shader_base::ShaderBase;
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`Shader::ptr_eq`]).
 ///
-/// skia-rust: `isAImage`, `makeWithLocalMatrix`, `makeWithColorFilter` and
-/// `makeWithWorkingColorSpace` need shaders that are not ported yet (image, local-matrix,
-/// color-filter and working-color-space shaders, Phase 3).
+/// skia-rust: `isAImage`, `makeWithLocalMatrix` and `makeWithWorkingColorSpace` need shaders that
+/// are not ported yet (image, local-matrix and working-color-space shaders, Phase 3).
 // Port of: include/core/SkShader.h#L36-L96 (chrome/m156)
 #[doc(alias = "SkShader")]
 #[derive(Clone)]
@@ -51,6 +52,14 @@ impl Shader {
     #[must_use]
     pub fn is_opaque(&self) -> bool {
         self.0.is_opaque()
+    }
+
+    /// A shader that runs this shader's colors through `color_filter` (`makeWithColorFilter`).
+    // Port of: src/shaders/SkShader.cpp#L43-L45 (chrome/m156)
+    #[doc(alias = "makeWithColorFilter")]
+    #[must_use]
+    pub fn with_color_filter(&self, color_filter: impl Into<ColorFilter>) -> Shader {
+        ColorFilterShader::make(self.clone(), 1.0, Some(color_filter.into()))
     }
 
     /// True if `self` and `other` are the same shader (Skia's `sk_sp` comparison).
