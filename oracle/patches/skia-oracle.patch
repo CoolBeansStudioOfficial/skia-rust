@@ -12,7 +12,7 @@ index 07a3e96..ea0ff29 100644
          deps = [
            ":common_flags_config",
 diff --git a/dm/DM.cpp b/dm/DM.cpp
-index ee1df4a..5706b36 100644
+index 0000000..0000000 100644
 --- a/dm/DM.cpp
 +++ b/dm/DM.cpp
 @@ -7,6 +7,7 @@
@@ -23,20 +23,28 @@ index ee1df4a..5706b36 100644
  #include "include/codec/SkCodec.h"
  #include "include/codec/SkEncodedImageFormat.h"
  #include "include/core/SkBBHFactory.h"
-@@ -1235,6 +1236,13 @@ struct Task {
+@@ -1213,6 +1214,7 @@
+             SkDynamicMemoryWStream stream;
+             start(task.sink.tag.c_str(), task.src.tag.c_str(),
+                   task.src.options.c_str(), name.c_str());
++            OracleDump::SetResult(task.sink.tag, task.src.tag, task.src.options, name);
+             Result result = task.sink->draw(*task.src, &bitmap, &stream, &log);
+             if (!log.isEmpty()) {
+                 info("%s %s %s %s:\n%s\n", task.sink.tag.c_str()
+@@ -1233,6 +1235,13 @@
+                                     task.src.options.c_str(),
+                                     name.c_str(),
                                      result.c_str()));
-             }
- 
++            }
++
 +            if (OracleDump::Enabled()) {
 +                sk_sp<SkData> bytes = stream.detachAsData();
 +                OracleDump::Write(task.sink.tag, task.src.tag, task.src.options, name, bitmap,
 +                                  bytes->data(), bytes->size());
 +                stream.write(bytes->data(), bytes->size());
-+            }
-+
+             }
+ 
              // We're likely switching threads here, so we must capture by value, [=] or [foo,bar].
-             SkStreamAsset* data = stream.detachAsStream().release();
-             gDefinitelyThreadSafeWork->add([task,name,bitmap,data]{
 diff --git a/src/core/SkCpu.cpp b/src/core/SkCpu.cpp
 index 07afa2d..801af92 100644
 --- a/src/core/SkCpu.cpp
@@ -84,6 +92,134 @@ index 07afa2d..801af92 100644
 -    once([] { gCachedFeatures = read_cpu_features(); });
 +    once([] { gCachedFeatures = skia_oracle_cap_features(read_cpu_features()); });
  }
+diff --git a/src/core/SkRasterPipeline.cpp b/src/core/SkRasterPipeline.cpp
+index 0000000..0000000 100644
+--- a/src/core/SkRasterPipeline.cpp
++++ b/src/core/SkRasterPipeline.cpp
+@@ -22,6 +22,11 @@
+ #include <algorithm>
+ #include <cstring>
+ #include <vector>
++
++#include <cstdio>
++#include <cstdlib>
++#include <mutex>
++#include <string>
+ 
+ using namespace skia_private;
+ using Op = SkRasterPipelineOp;
+@@ -621,13 +626,111 @@
+     }
+ }
+ 
++// skia-rust oracle: SKIA_ORACLE_RP_DUMP=<file> appends one record per pipeline build (every
++// run() and compile()): `<result id> <highp|lowp> <op> <op> ...` followed by `# <index> <op> <ctx>`
++// lines carrying the values of the contexts that matter for exactness. The result id is set by
++// DM per task (see SkOracleSetResultId). Test tooling only.
++static thread_local char gOracleResultId[512] = "";
++
++void SkOracleSetResultId(const char* id);
++void SkOracleSetResultId(const char* id) {
++    snprintf(gOracleResultId, sizeof(gOracleResultId), "%s", id ? id : "");
++}
++
++static void oracle_dump_floats(std::string* out, const float* f, int n) {
++    for (int i = 0; i < n; i++) {
++        char buf[32];
++        snprintf(buf, sizeof(buf), i ? " %.9g" : "%.9g", f[i]);
++        out->append(buf);
++    }
++}
++
++static void oracle_dump_pipeline(const SkRasterPipeline::StageList* fStages, bool lowp) {
++    static const char* path = getenv("SKIA_ORACLE_RP_DUMP");
++    if (!path || !*path) {
++        return;
++    }
++    std::vector<const SkRasterPipeline::StageList*> stages;
++    for (auto st = fStages; st; st = st->prev) {
++        stages.push_back(st);
++    }
++    std::reverse(stages.begin(), stages.end());
++
++    std::string text = gOracleResultId[0] ? gOracleResultId : "-";
++    text += lowp ? " lowp" : " highp";
++    for (auto st : stages) {
++        text += ' ';
++        text += SkRasterPipeline::GetOpName(st->stage);
++    }
++    text += '\n';
++    for (size_t i = 0; i < stages.size(); i++) {
++        using Op = SkRasterPipelineOp;
++        const auto* st = stages[i];
++        std::string c;
++        switch (st->stage) {
++            case Op::uniform_color:
++            case Op::uniform_color_dst: {
++                auto* u = (const SkRasterPipelineContexts::UniformColorCtx*)st->ctx;
++                oracle_dump_floats(&c, &u->r, 4);
++                char buf[64];
++                snprintf(buf, sizeof(buf), " | %u %u %u %u", u->rgba[0], u->rgba[1], u->rgba[2],
++                         u->rgba[3]);
++                c += buf;
++                break;
++            }
++            case Op::set_rgb:
++            case Op::unbounded_set_rgb:   oracle_dump_floats(&c, (const float*)st->ctx, 3); break;
++            case Op::matrix_translate:    oracle_dump_floats(&c, (const float*)st->ctx, 2); break;
++            case Op::matrix_scale_translate:
++                                          oracle_dump_floats(&c, (const float*)st->ctx, 4); break;
++            case Op::matrix_2x3:          oracle_dump_floats(&c, (const float*)st->ctx, 6); break;
++            case Op::matrix_3x3:
++            case Op::matrix_perspective:  oracle_dump_floats(&c, (const float*)st->ctx, 9); break;
++            case Op::matrix_3x4:
++            case Op::matrix_4x3:          oracle_dump_floats(&c, (const float*)st->ctx, 12); break;
++            case Op::matrix_4x5:          oracle_dump_floats(&c, (const float*)st->ctx, 20); break;
++            case Op::parametric:          oracle_dump_floats(&c, (const float*)st->ctx, 7); break;
++            case Op::gamma_:              oracle_dump_floats(&c, (const float*)st->ctx, 1); break;
++            case Op::evenly_spaced_2_stop_gradient: {
++                auto* g = (const SkRasterPipelineContexts::EvenlySpaced2StopGradientCtx*)st->ctx;
++                oracle_dump_floats(&c, g->factor, 4);
++                c += " |";
++                c += ' ';
++                oracle_dump_floats(&c, g->bias, 4);
++                break;
++            }
++            case Op::gradient:
++            case Op::evenly_spaced_gradient: {
++                auto* g = (const SkRasterPipelineContexts::GradientCtx*)st->ctx;
++                char buf[64];
++                snprintf(buf, sizeof(buf), "stops=%zu", g->stopCount);
++                c += buf;
++                break;
++            }
++            default: break;
++        }
++        if (!c.empty()) {
++            text += "# " + std::to_string(i) + " " + SkRasterPipeline::GetOpName(st->stage) +
++                    " " + c + "\n";
++        }
++    }
++    static std::mutex mutex;
++    std::lock_guard<std::mutex> lock(mutex);
++    if (FILE* f = fopen(path, "ab")) {
++        fwrite(text.data(), 1, text.size(), f);
++        fclose(f);
++    }
++}
++
+ SkRasterPipeline::StartPipelineFn SkRasterPipeline::buildPipeline(SkRasterPipelineStage* ip) const {
+     // We try to build a lowp pipeline first; if that fails, we fall back to a highp float pipeline.
+     if (this->buildLowpPipeline(ip)) {
++        oracle_dump_pipeline(fStages, /*lowp=*/true);
+         return SkOpts::start_pipeline_lowp;
+     }
+ 
+     this->buildHighpPipeline(ip);
++    oracle_dump_pipeline(fStages, /*lowp=*/false);
+     return SkOpts::start_pipeline_highp;
+ }
+ 
 diff --git a/third_party/dawn/build_dawn.py b/third_party/dawn/build_dawn.py
 index fbe770a..54dca5d 100644
 --- a/third_party/dawn/build_dawn.py

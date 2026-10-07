@@ -75,7 +75,23 @@ bool write_file(const SkString& path, const void* data, size_t len) {
 
 }  // namespace
 
+// Defined in src/core/SkRasterPipeline.cpp by the oracle patch.
+void SkOracleSetResultId(const char* id);
+
 namespace OracleDump {
+
+void SetResult(const SkString& sinkTag,
+               const SkString& srcTag,
+               const SkString& srcOptions,
+               const SkString& name) {
+    SkString id = sinkTag;
+    id.appendf("/%s", srcTag.c_str());
+    if (!srcOptions.isEmpty()) {
+        id.appendf("/%s", srcOptions.c_str());
+    }
+    id.appendf("/%s", name.c_str());
+    SkOracleSetResultId(id.c_str());
+}
 
 bool Enabled() { return !FLAGS_oracleRawPath.isEmpty(); }
 

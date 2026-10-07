@@ -69,6 +69,18 @@ name = "x64-v4"
 level = "ml4"
 extra_cflags = ["/clang:-mavx2", "/clang:-mbmi", "/clang:-mbmi2", "/clang:-mf16c", "/clang:-mfma", "/clang:-mavx512f", "/clang:-mavx512dq", "/clang:-mavx512cd", "/clang:-mavx512bw", "/clang:-mavx512vl"]
 
+# Scalar raster-pipeline proxy for wasm (design docs/design/raster-pipeline.md §4.5): Skia's
+# `SkRasterPipeline_opts.h` honours a predefined SKRP_CPU_*, so this build runs the same
+# scalar code (and lowp scalar pipeline) wasm32 gets, on x64. SkOpts kernels outside the raster
+# pipeline stay SSE2. libm differs from Emscripten's musl, so a real wasm oracle still has the
+# final word. Only its own tier is derived: runtime ml3/ml4 dispatch changes nothing here that a
+# wasm host could do.
+[[build]]
+name = "x64-scalar"
+level = "baseline"
+single_tier = true
+extra_cflags = ["/clang:-DSKRP_CPU_SCALAR"]
+
 # GPU (Graphite + Dawn). Built on the sse2 baseline; each GPU tier pins a runtime CPU
 # level because Graphite still does some work (software masks, uploads) on the CPU.
 [[build]]
@@ -108,3 +120,34 @@ configs = ["grdawn_vk"]
 adapter = "RTX 4070 SUPER"
 cpu_level = "ml3"
 report_only = true
+
+# Expected CPU behaviour classes (docs/design/raster-pipeline.md §4.4): tiers listed together
+# must have identical hashes on every result, and two classes must differ. `cargo xtask oracle
+# check-classes` enforces this against the goldens; a split or merge means the number of x64
+# code paths skia-rust needs has changed.
+[[class]]
+name = "x64-1-sse2"
+tiers = ["cpu-x64-sse2", "cpu-x64-sse2-rt-ssse3", "cpu-x64-ssse3"]
+
+[[class]]
+name = "x64-2-sse41"
+tiers = ["cpu-x64-sse41", "cpu-x64-sse42", "cpu-x64-avx"]
+
+[[class]]
+name = "x64-3-ml3"
+tiers = [
+    "cpu-x64-sse2-rt-ml3", "cpu-x64-ssse3-rt-ml3", "cpu-x64-sse41-rt-ml3",
+    "cpu-x64-sse42-rt-ml3", "cpu-x64-avx-rt-ml3", "cpu-x64-v3",
+]
+
+[[class]]
+name = "x64-4-ml4"
+tiers = [
+    "cpu-x64-sse2-rt-ml4", "cpu-x64-ssse3-rt-ml4", "cpu-x64-sse41-rt-ml4",
+    "cpu-x64-sse42-rt-ml4", "cpu-x64-avx-rt-ml4", "cpu-x64-v3-rt-ml4", "cpu-x64-v4",
+]
+
+# Not an x64 behaviour: the wasm stand-in must stay distinct from all four.
+[[class]]
+name = "scalar-proxy"
+tiers = ["cpu-x64-scalar"]

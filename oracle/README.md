@@ -10,7 +10,7 @@ The oracle **is Skia's own test runner, DM**, with one small addition. DM alread
 |---|---|
 | `dm/OracleDump.{h,cpp}` | Adds `--oracleRawPath <dir>` to DM. For every result it writes the exact bytes: `.raw` for pixels (rows tightly packed, `minRowBytes` each) or `.bin` for encoded output (PDF, SVG, SKP), plus a `.json` with size, color type, alpha type, serialized color space and the CPU tier that actually ran. |
 | `patches/skia-oracle.patch` | Hooks `OracleDump` into DM's result path and adds it to the `dm` GN target. Adds `SKIA_ORACLE_CPU_CAP` to `SkCpu`, which hides runtime CPU features above a level so one binary can produce every runtime tier. Adds `SKIA_ORACLE_DAWN_ADAPTER` to Graphite's Dawn test context, which picks the adapter by name (WARP, lavapipe, a real GPU) and fails rather than falling back. |
-| `tiers.toml` | The GN builds (one per compile-time x86 baseline, plus Graphite+Dawn) from which xtask derives CPU tiers. |
+| `tiers.toml` | The expected tier equivalence classes, and the GN builds (one per compile-time x86 baseline, plus Graphite+Dawn) from which xtask derives CPU tiers. |
 
 `cargo xtask oracle patch` copies `dm/` into Skia and applies the patch (idempotent). On a pin bump, if the patch no longer applies, regenerate it against the new milestone; it is small on purpose.
 
@@ -35,7 +35,13 @@ cargo xtask oracle tiers                  # list derived tiers
 cargo xtask oracle run cpu-x64-sse2-rt-ml3 --config 8888 f16 --src gm [--match aarect] [--fresh]
 cargo xtask oracle compare cpu-x64-sse2-rt-ml3 path/to/our/outputs
 cargo xtask oracle extract cpu-x64-sse2-rt-ml3 8888/gm/aarectmodes out.raw
+cargo xtask oracle rp-dump cpu-x64-sse2 aarectmodes [--config f16] [--ctx] [--out f.txt]
+cargo xtask oracle check-classes          # do the [[class]] tier groups in tiers.toml still hold?
 ```
+
+`rp-dump` runs DM single-threaded for one GM with `SKIA_ORACLE_RP_DUMP=<file>` (added by the oracle patch to `SkRasterPipeline::buildPipeline`, so it sees every `run()` and `compile()`). Each pipeline is one line, `<result id> <highp|lowp> <op> <op> ...` with Skia's op names, followed by `# <index> <op> <values>` lines for stages whose context matters to exactness (`uniform_color`, `set_rgb`, `matrix_*`, `parametric`, `gamma_`, 2-stop gradients, gradient stop counts); `--ctx` prints those too. The raw file is kept in `target/oracle-rp-dump/<tier>/<config>/<gm>.txt`. DM sets the result id per task, so `SKIA_ORACLE_RP_DUMP` also works with a plain `cargo xtask oracle run` (it appends; delete the file first).
+
+`check-classes` reads the `[[class]]` entries of `tiers.toml` (the measured equivalence classes below), loads each tier's `hashes.json`, and fails if tiers inside a class differ on any result (split) or two classes become identical (merge). Run it after every golden publish.
 
 Result ids are `<config>/<src>/[<options>/]<name>`, e.g. `8888/gm/aarectmodes`. Goldens live in `goldens/<skia-commit>/` (git-ignored):
 
@@ -59,6 +65,7 @@ Prerequisites on Windows: Visual Studio 2022 Build Tools (MSVC + Windows SDK), P
 
 ## Findings
 
+- **2026-10-06, scalar proxy build `x64-scalar` (`-DSKRP_CPU_SCALAR`, tier `cpu-x64-scalar`):** **811 of 2,727 outputs differ from `cpu-x64-sse2`** (565: 490, 8888: 227, f16: 94; 1,582 differ from the ml3 class), so the scalar raster pipeline is a fifth behaviour and gets its own goldens and, in skia-rust, its own code path (`Scalar`). Rendering the full suite took one DM run with no failures. `check-classes` now covers 5 classes (the four x64 behaviours and `scalar-proxy`) and passes. Build note: a full oracle build must run from a short path (`C:6` junction); Dawn/partition_alloc includes exceed MAX_PATH under `.claude/worktrees/...`.
 - **2026-10-06, m156, build `x64-sse2`:** runtime tiers produce different pixels. On `--match ^gradients` (35 GMs × `8888`, `f16`), 62 of 70 outputs differ between `cpu-x64-sse2` and `cpu-x64-sse2-rt-ml3`, and the perspective-gradient GMs differ again between `ml3` and `ml4`. `ssse3` matched `sse2` on that slice. Simple stroke/AA-rect GMs were identical across all four runtime tiers. Per-tier goldens are required, as the plan assumed.
 - **2026-10-06, build flags:** raising a build's baseline with `/arch:` in `extra_cflags` silently lowers Skia's ml3/ml4 kernels, because GN appends `extra_cflags` after each target's own `/arch:AVX2` / `/arch:AVX512`. A 19-tier comparison caught it: `x64-avx-rt-ml3` came out identical to the SSE2 baseline. Baselines now use additive `/clang:-m…` flags only.
 - **2026-10-06, Dawn on Windows:** Skia builds Dawn with CMake. Dawn enables a C++20-modules target when `clang-scan-deps` exists, but CMake can't scan modules for clang-cl, so the oracle patch passes `-DDAWN_SUPPORTS_CXX_MODULES=OFF` in `third_party/dawn/build_dawn.py`. xtask also puts VS's bundled CMake and Skia's ninja on `PATH`, which Dawn's build script needs.
