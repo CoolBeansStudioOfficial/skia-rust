@@ -587,9 +587,11 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   port the generic `div_fn` (`x/0 → x/-1`, `INT_MIN/-1 → INT_MIN/-2`, `u/0 → u/0xFFFFFFFF`).
 - **Models per estimate source.** A model module is instantiated once per `Estimates` value by
   mounting the same body (`model_*/imp.rs`, via `#[path]`) under a submodule that defines
-  `const EST`. Only `host` exists; `x86_model::rcpps`/`rsqrtps` panic for `AmdZen4` with a
-  `TODO(A2d)`: when the tables land, add `model_sse2::amd_zen4` / `model_sse41::amd_zen4`
-  (two lines each) and the table lookup in `x86_model::estimate`.
+  `const EST` (or, for `model_sse41`, its `model_sse2` base): `model_sse2::{host, amd_zen4}`,
+  `model_sse41::{host, amd_zen4}`. `x86_model::rcpps`/`rsqrtps` take the `Estimates`: `Host` runs
+  the host's instruction, `AmdZen4` calls A2d's `estimates::amd_zen4::{rcp, rsqrt}` (pure, any
+  host, Miri). The twin tests compare `Native` with both `Model(Host)` and `Model(AmdZen4)`; the
+  latter only on estimate-free primitives when the host's fingerprint is not the oracle host's.
 - **NaN payloads.** The models never let a NaN come out of Rust arithmetic (unspecified in Rust,
   randomized by Miri, different on Arm). One thing is unspecified on x86 itself: when two NaNs
   meet in one *commutative* operation, LLVM may commute `fmul`/`fadd` operands, for us and for
@@ -613,7 +615,8 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   of all 2³² patterns (every 16411th in debug, 257th in release), every 16-bit value for
   `from_half`/`pack_u16`/`div255*`, special-value cross products + random lanes for binary/ternary
   ops, random and non-canonical masks for selects/`any`/`all`. `SKIA_RUST_EXHAUSTIVE=1` runs every
-  unary float primitive (highp and lowp) on all 2³² inputs. Known-answer tests per tier cite the
+  unary float primitive (highp and lowp) on all 2³² inputs, native vs both models (0
+  mismatches on the Zen 4 oracle host for Sse2 and Sse41). Known-answer tests per tier cite the
   C++ line they come from and run on Scalar, the models (also under Miri) and the native tiers.
   `vx::Vec::bit_cast` (size checked at compile time) is built from the sealed `Lane` trait's new
   `ne_byte`/`from_ne_byte_fn`.

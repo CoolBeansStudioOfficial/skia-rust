@@ -9,7 +9,7 @@
 //! The model is instantiated once per estimate source, as a submodule:
 //!
 //! - [`host`]: `rcpps`/`rsqrtps` executed on this host (x86 only).
-//! - `amd_zen4`: TODO(A2d), once the oracle host's tables are committed.
+//! - [`amd_zen4`]: the oracle host's estimates (`estimates::amd_zen4`), on any host.
 
 /// `model_sse2` with [`Estimates::Host`](crate::Estimates::Host).
 pub mod host {
@@ -18,6 +18,20 @@ pub mod host {
     /// The estimate source of this instantiation.
     const EST: Estimates = Estimates::Host;
 
+    #[path = "../imp.rs"]
+    mod imp;
+    pub use imp::*;
+}
+
+/// `model_sse2` with [`Estimates::AmdZen4`](crate::Estimates::AmdZen4).
+pub mod amd_zen4 {
+    use crate::tier::Estimates;
+
+    /// The estimate source of this instantiation.
+    const EST: Estimates = Estimates::AmdZen4;
+
+    // The same body as `host`, mounted again with another `EST` (design §2.8).
+    #[allow(clippy::duplicate_mod)]
     #[path = "../imp.rs"]
     mod imp;
     pub use imp::*;
