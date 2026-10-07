@@ -28514,7 +28514,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlendTest.cpp#L64-L89"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "394732d8353f23d2fc0c433d993c77e270a2e64dc453331666bf9b97eb771a9e"
 
 [[test]]
