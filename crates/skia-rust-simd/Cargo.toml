@@ -18,3 +18,6 @@ bitflags.workspace = true
 [features]
 # Test-only hooks (`testing::force_tier`). Never enable in release builds of downstream crates.
 testing = []
+# The model tiers (`rp::lanes::model_*`, design §2.8): per-lane reference twins of the SIMD tiers
+# that run on any host. Always built for this crate's own tests.
+models = []
