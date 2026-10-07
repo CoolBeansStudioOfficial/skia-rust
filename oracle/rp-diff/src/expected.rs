@@ -226,7 +226,7 @@ pub fn check(tier: Tier, cases: &[Case], expected: &Expected) -> Vec<String> {
             ));
             continue;
         }
-        let stages = match build_stages(&c.stages) {
+        let stages = match build_stages(&c.stages, tier) {
             Ok(s) => s,
             Err(e) => {
                 problems.push(format!("{}: {e}", c.name));
