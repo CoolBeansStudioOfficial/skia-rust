@@ -534,6 +534,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "skia-rust-core",
+ "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-simd",
  "zstd",
