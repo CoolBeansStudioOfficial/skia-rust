@@ -1069,10 +1069,9 @@ estimates allow), native-vs-model twins, tail chunks with offset `MemoryCtx` mem
   portable code and are not modelled separately.
 - **Facts the tests pin down.** 565 expands differently in the two precisions (lowp replicates
   bits, highp rounds `R/31*255`; e.g. `R = 3` gives 24 vs 25); 4444 and 8888 → 565/4444 agree;
-  every 16-bit value of 565/4444 survives a load+store in both. Of the unlocked tests only
-  `SkRasterPipeline_lowp` runs here: `SkRasterPipeline` needs `load_f16`/`store_f16` (B2),
-  `SkRasterPipeline_u16` needs the 16-bit stages (B2), `SkRasterPipeline_swizzle` needs
-  `swizzle` (B4) and `load_f32`/`store_f16` (B2) plus A4's `Swizzle::apply`.
+  every 16-bit value of 565/4444 survives a load+store in both. Ported with B2 on main:
+  `SkRasterPipeline`, `SkRasterPipeline_u16`, `SkRasterPipeline_lowp`; `_swizzle` and `_lowp_clamp01`
+  wait for B4 (`swizzle`, `clamp_01`).
 
 ### 2.7 The builder (`SkRasterPipeline.cpp`)
 

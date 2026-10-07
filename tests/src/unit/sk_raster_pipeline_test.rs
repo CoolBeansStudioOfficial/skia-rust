@@ -678,6 +678,142 @@ def_test!(SkRasterPipeline_TraceScope, |r| {
     reporter_assert!(r, *trace.buffer.borrow() == vec![1, 4, -5]);
 });
 
+// Port of: tests/SkRasterPipelineTest.cpp#L23-L46 (chrome/m156)
+def_test!(SkRasterPipeline, |r| {
+    // Build and run a simple pipeline to exercise SkRasterPipeline,
+    // drawing 50% transparent blue over opaque red in half-floats.
+    let red: u64 = 0x3c00_0000_0000_3c00;
+    let blue: u64 = 0x3800_3800_0000_0000;
+    let (red, blue) = (red.to_ne_bytes(), blue.to_ne_bytes());
+    let mut result = [0u8; 8];
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadF16(MemoryCtx::new(MemSlot(0))));
+    p.append(Stage::LoadF16Dst(MemoryCtx::new(MemSlot(1))));
+    p.append(Stage::Srcover);
+    p.append(Stage::StoreF16(MemoryCtx::new(MemSlot(2))));
+    p.run(
+        0,
+        0,
+        1,
+        1,
+        &mut MemoryBindings::new()
+            .with(MemSlot(0), MemView::read(&blue))
+            .with(MemSlot(1), MemView::read(&red))
+            .with(MemSlot(2), MemView::write(&mut result)),
+    );
+    let result = u64::from_ne_bytes(result);
+
+    // We should see half-intensity magenta.
+    #[allow(clippy::verbose_bit_mask)] // mirrors the C++ assertion
+    {
+        reporter_assert!(r, ((result) & 0xffff) == 0x3800);
+        reporter_assert!(r, ((result >> 16) & 0xffff) == 0x0000);
+        reporter_assert!(r, ((result >> 32) & 0xffff) == 0x3800);
+        reporter_assert!(r, ((result >> 48) & 0xffff) == 0x3c00);
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L3123-L3242 (chrome/m156)
+def_test!(SkRasterPipeline_u16, |r| {
+    {
+        let data: [[u16; 2]; 4] = [
+            [0x0000, 0x0111],
+            [0x1010, 0x1111],
+            [0x2020, 0x2121],
+            [0x3030, 0x3131],
+        ];
+        let src: Vec<u8> = data
+            .iter()
+            .flatten()
+            .flat_map(|v| v.to_ne_bytes())
+            .collect();
+        for i in 1..=4usize {
+            let mut buffer = [0xabu8; 16];
+            run_tail(Stage::LoadRg1616, Stage::Store8888, &src, &mut buffer, i);
+            for j in 0..i {
+                let expected = [(data[j][0] >> 8) as u8, (data[j][1] >> 8) as u8, 0, 0xff];
+                reporter_assert!(r, buffer[4 * j..4 * j + 4] == expected);
+            }
+            for b in &buffer[4 * i..] {
+                reporter_assert!(r, *b == 0xab);
+            }
+        }
+    }
+
+    {
+        let data: [u16; 4] = [0x0000, 0x1010, 0x2020, 0x3030];
+        let src = halves_to_bytes(&data);
+        for i in 1..=4usize {
+            let mut buffer = [0xffu8; 16];
+            run_tail(Stage::LoadA16, Stage::Store8888, &src, &mut buffer, i);
+            for j in 0..i {
+                let expected = [0x00, 0x00, 0x00, (data[j] >> 8) as u8];
+                reporter_assert!(r, buffer[4 * j..4 * j + 4] == expected);
+            }
+            for b in &buffer[4 * i..] {
+                reporter_assert!(r, *b == 0xff);
+            }
+        }
+    }
+
+    {
+        let data: [[u8; 4]; 4] = [
+            [0x00, 0x01, 0x02, 0x03],
+            [0x10, 0x11, 0x12, 0x13],
+            [0x20, 0x21, 0x22, 0x23],
+            [0x30, 0x31, 0x32, 0x33],
+        ];
+        let src: Vec<u8> = data.iter().flatten().copied().collect();
+        for i in 1..=4usize {
+            let mut buffer = [0xffu8; 8];
+            run_tail(Stage::Load8888, Stage::StoreA16, &src, &mut buffer, i);
+            let buffer = bytes_to_halves(&buffer);
+            for j in 0..i {
+                let expected = (u16::from(data[j][3]) << 8) | u16::from(data[j][3]);
+                reporter_assert!(r, buffer[j] == expected);
+            }
+            for v in &buffer[i..] {
+                reporter_assert!(r, *v == 0xffff);
+            }
+        }
+    }
+
+    {
+        let data: [[u16; 4]; 4] = [
+            [0x0000, 0x1000, 0x2000, 0x3000],
+            [0x0001, 0x1001, 0x2001, 0x3001],
+            [0x0002, 0x1002, 0x2002, 0x3002],
+            [0x0003, 0x1003, 0x2003, 0x3003],
+        ];
+        let src = halves_to_bytes(&data.iter().flatten().copied().collect::<Vec<_>>());
+        for i in 1..=4usize {
+            let mut buffer = [0xffu8; 32];
+            let mut p = RasterPipeline::new();
+            p.append(Stage::Load16161616(MemoryCtx::new(MemSlot(0))));
+            p.append(Stage::SwapRb);
+            p.append(Stage::Store16161616(MemoryCtx::new(MemSlot(1))));
+            p.run(
+                0,
+                0,
+                i,
+                1,
+                &mut MemoryBindings::new()
+                    .with(MemSlot(0), MemView::read(&src))
+                    .with(MemSlot(1), MemView::write(&mut buffer)),
+            );
+            let buffer = bytes_to_halves(&buffer);
+            for j in 0..i {
+                let expected = [data[j][2], data[j][1], data[j][0], data[j][3]];
+                reporter_assert!(r, expected == buffer[4 * j..4 * j + 4]);
+            }
+            for u in &buffer[4 * i..] {
+                reporter_assert!(r, *u == 0xffff);
+            }
+        }
+    }
+});
+
 // Port of: tests/SkRasterPipelineTest.cpp#L3244-L3270 (chrome/m156)
 def_test!(SkRasterPipeline_lowp, |r| {
     let mut rgba = [0u32; 64];
