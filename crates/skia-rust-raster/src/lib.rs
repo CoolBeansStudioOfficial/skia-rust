@@ -2,13 +2,19 @@
 
 pub mod alpha_runs;
 pub mod blitter;
+pub mod blitter_dump;
 pub mod edge;
 pub mod edge_builder;
 pub mod region_path;
 pub mod scan;
+pub mod scan_antihair;
+pub mod scan_clip;
+pub mod scan_hairline;
 pub mod scan_priv;
 
 #[cfg(test)]
 mod blitter_tests;
+#[cfg(test)]
+mod scan_hairline_tests;
 #[cfg(test)]
 mod scan_tests;
