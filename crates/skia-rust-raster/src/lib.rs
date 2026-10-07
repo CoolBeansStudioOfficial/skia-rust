@@ -19,9 +19,9 @@ pub mod scan_priv;
 #[cfg(test)]
 mod blitter_tests;
 #[cfg(test)]
-mod scan_aaa_tests;
-#[cfg(test)]
 mod raster_pipeline_blitter_tests;
+#[cfg(test)]
+mod scan_aaa_tests;
 #[cfg(test)]
 mod scan_hairline_tests;
 #[cfg(test)]
