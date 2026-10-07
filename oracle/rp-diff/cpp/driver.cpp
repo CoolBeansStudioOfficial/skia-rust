@@ -171,6 +171,20 @@ static void* make_ctx(Case& c, Op op, const std::vector<std::string>& t, SkArena
         }
         return u;
     }
+    if (kind == "gather") {
+        auto* g = alloc->make<ctx::GatherCtx>();
+        size_t len = std::stoul(t.at(6));
+        std::vector<uint8_t> px = unhex(t.at(7), len);
+        uint8_t* copy = alloc->makeArray<uint8_t>(len ? len : 1);
+        memcpy(copy, px.data(), len);
+        g->pixels = copy;
+        g->stride = std::stoi(t.at(2));
+        g->width = hex_f32(t.at(3));
+        g->height = hex_f32(t.at(4));
+        for (float& w : g->weights) w = 0;
+        g->roundDownAtInteger = t.at(5) == "1";
+        return g;
+    }
     fail(c.name + ": unknown context kind " + kind + " for " +
          SkRasterPipeline::GetOpName(op));
 }

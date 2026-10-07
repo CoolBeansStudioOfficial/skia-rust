@@ -25,7 +25,9 @@
 //! - Contexts ([`Ctx`]): `-`, `ptr <slot> <byte offset>`, `mem <slot>`, `f32 <n> <bits>...`
 //!   (hex `f32` bits; Skia: a `const float*`), `u8x4 <b0> <b1> <b2> <b3>` (packed into the
 //!   pointer value), `branch <offset>`, `branch_eq <offset> <value> <slot> <byte offset>`,
-//!   `uniform_color <r> <g> <b> <a> <r16> <g16> <b16> <a16>` (hex `f32` bits, then decimal).
+//!   `uniform_color <r> <g> <b> <a> <r16> <g16> <b16> <a16>` (hex `f32` bits, then decimal),
+//!   `gather <stride> <width bits> <height bits> <round_down 0|1> <len> <hex>` (a `GatherCtx`
+//!   with its own copy of the pixels; `stride` is in pixels).
 //!
 //! The output of a case is the bytes of all its buffers after the runs, concatenated in slot
 //! order; results are compared (and stored) as [`fnv1a`] hashes of them.
@@ -138,6 +140,19 @@ pub enum Ctx {
         rgba: [f32; 4],
         /// `rgba[4]` (`[0, 255]` in 16-bit lanes).
         rgba16: [u16; 4],
+    },
+    /// `GatherCtx`, with its own copy of the pixels (gathers are never patched).
+    Gather {
+        /// The pixels, from `(0, 0)`.
+        pixels: Vec<u8>,
+        /// Row stride in pixels.
+        stride: i32,
+        /// `GatherCtx::width`.
+        width: f32,
+        /// `GatherCtx::height`.
+        height: f32,
+        /// `GatherCtx::round_down_at_integer`.
+        round_down_at_integer: bool,
     },
 }
 
@@ -282,6 +297,26 @@ fn write_ctx(s: &mut String, ctx: &Ctx) {
             }
             for h in rgba16 {
                 let _ = write!(s, " {h}");
+            }
+            Ok(())
+        }
+        Ctx::Gather {
+            pixels,
+            stride,
+            width,
+            height,
+            round_down_at_integer,
+        } => {
+            let _ = write!(
+                s,
+                "gather {stride} {:08x} {:08x} {} {} ",
+                width.to_bits(),
+                height.to_bits(),
+                u8::from(*round_down_at_integer),
+                pixels.len()
+            );
+            for x in pixels {
+                let _ = write!(s, "{x:02x}");
             }
             Ok(())
         }
