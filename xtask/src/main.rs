@@ -96,6 +96,24 @@ enum OracleCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Run DM for one GM with `SKIA_ORACLE_RP_DUMP` and print its raster-pipeline stage lists.
+    RpDump {
+        /// CPU tier name.
+        tier: String,
+        /// GM name, e.g. `aarectmodes`.
+        gm: String,
+        /// DM config (color type).
+        #[arg(long, default_value = "8888")]
+        config: String,
+        /// Where to keep the raw dump (default `target/oracle-rp-dump/<tier>/<config>/<gm>.txt`).
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Also print the `#` lines with context values (colors, matrices, ...).
+        #[arg(long)]
+        ctx: bool,
+    },
+    /// Check that the `[[class]]` tier groups in `oracle/tiers.toml` still match the goldens.
+    CheckClasses,
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
         /// Tier name.
@@ -172,6 +190,14 @@ fn main() -> Result<()> {
                 },
             ),
             OracleCommand::Extract { tier, id, dest } => oracle::extract(&root, &tier, &id, &dest),
+            OracleCommand::RpDump {
+                tier,
+                gm,
+                config,
+                out,
+                ctx,
+            } => oracle::rp_dump(&root, &tier, &gm, &config, out.as_deref(), ctx),
+            OracleCommand::CheckClasses => oracle::check_classes(&root),
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },

@@ -27,6 +27,16 @@ struct Config {
     build: Vec<Build>,
     #[serde(default)]
     gpu_tier: Vec<GpuTier>,
+    /// Expected behaviour classes of CPU tiers (see [`check_classes`]).
+    #[serde(default)]
+    class: Vec<Class>,
+}
+
+/// A set of tiers expected to produce byte-identical outputs on every result.
+#[derive(Debug, Deserialize)]
+struct Class {
+    name: String,
+    tiers: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,6 +54,10 @@ struct Build {
     level: Option<String>,
     #[serde(default)]
     gpu: bool,
+    /// Derive only the build's own tier, not the runtime tiers above it (for builds, like the
+    /// scalar raster-pipeline proxy, where a higher runtime level changes nothing meaningful).
+    #[serde(default)]
+    single_tier: bool,
     #[serde(default)]
     args: Vec<String>,
     #[serde(default)]
@@ -110,6 +124,9 @@ fn derive_tiers(config: &Config) -> Result<Vec<Tier>> {
             .with_context(|| format!("CPU build `{}` has no `level`", build.name))?;
         let own = level_index(level)?;
         for (i, rt) in LEVELS.iter().enumerate().skip(own) {
+            if build.single_tier && i != own {
+                break;
+            }
             let name = if i == own {
                 format!("cpu-{}", build.name)
             } else {
@@ -735,6 +752,217 @@ pub fn compare(root: &Path, tier: &str, ours: &Path) -> Result<()> {
     )
 }
 
+/// Runs DM for one GM on one CPU tier with `SKIA_ORACLE_RP_DUMP` set, then prints the raster
+/// pipeline stage lists every draw built (design §4.3). The raw file is kept at `out`
+/// (default `target/oracle-rp-dump/<tier>/<config>/<gm>.txt`).
+///
+/// Format: one `<result id> <highp|lowp> <op> <op> ...` line per pipeline, optionally followed
+/// by `# <stage index> <op> <context values>` lines. With `ctx` false the `#` lines are hidden.
+pub fn rp_dump(
+    root: &Path,
+    tier_name: &str,
+    gm: &str,
+    config_name: &str,
+    out: Option<&Path>,
+    ctx: bool,
+) -> Result<()> {
+    let config = read_config(root)?;
+    let tier = find_tier(&config, tier_name)?;
+    ensure!(
+        tier.gpu.is_none(),
+        "rp-dump needs a CPU tier; `{tier_name}` is a GPU tier"
+    );
+    let dm = build_dir(root, &tier.build).join(exe("dm"));
+    ensure!(
+        dm.exists(),
+        "{} missing; run `cargo xtask oracle build {}`",
+        dm.display(),
+        tier.build
+    );
+    let out = out.map_or_else(
+        || {
+            root.join("target")
+                .join("oracle-rp-dump")
+                .join(&tier.name)
+                .join(config_name)
+                .join(format!("{gm}.txt"))
+        },
+        Path::to_path_buf,
+    );
+    std::fs::create_dir_all(out.parent().context("output path has no parent")?)?;
+    if out.exists() {
+        std::fs::remove_file(&out)?;
+    }
+    let mut cmd = Command::new(&dm);
+    cmd.current_dir(skia::checkout_path(root))
+        .env("SKIA_ORACLE_CPU_CAP", &tier.level)
+        .env("SKIA_ORACLE_RP_DUMP", &out)
+        .args(["--resourcePath", "resources"])
+        .args(["--nativeFonts", "false"])
+        .args(["--cpu", "true", "--gpu", "false", "--graphite", "false"])
+        .args(["--threads", "1"])
+        .args(["--config", config_name])
+        .args(["--src", "gm"])
+        .args(["--match", &format!("^{gm}$")]);
+    let status = cmd.status().with_context(|| format!("running {cmd:?}"))?;
+    ensure!(status.success(), "DM exited with {status}");
+    ensure!(
+        out.exists(),
+        "no pipelines were dumped: does the GM `{gm}` exist, use raster pipeline, and is the \
+         `{}` build current? (`cargo xtask oracle build {}` re-applies the patch)",
+        tier.build,
+        tier.build
+    );
+    let text = std::fs::read_to_string(&out)?;
+    let mut count = 0;
+    for line in text.lines() {
+        if let Some(rest) = line.strip_prefix("# ") {
+            if ctx {
+                println!("    {rest}");
+            }
+        } else {
+            count += 1;
+            println!("{line}");
+        }
+    }
+    eprintln!(
+        "{count} pipelines for {gm} on {} -> {}",
+        tier.name,
+        out.display()
+    );
+    Ok(())
+}
+
+/// Groups `tiers` (name -> result id -> hash) by identical hash maps.
+fn group_by_hashes(tiers: &BTreeMap<String, BTreeMap<String, String>>) -> Vec<Vec<String>> {
+    let mut groups: Vec<(&BTreeMap<String, String>, Vec<String>)> = Vec::new();
+    for (name, hashes) in tiers {
+        if let Some(g) = groups.iter_mut().find(|(h, _)| *h == hashes) {
+            g.1.push(name.clone());
+        } else {
+            groups.push((hashes, vec![name.clone()]));
+        }
+    }
+    groups.into_iter().map(|(_, names)| names).collect()
+}
+
+/// Checks the expected behaviour classes against measured hash sets: all tiers of a class must
+/// have identical hashes, and no two classes may. Returns one message per violation.
+fn class_violations(
+    classes: &[Class],
+    tiers: &BTreeMap<String, BTreeMap<String, String>>,
+) -> Vec<String> {
+    let mut bad = Vec::new();
+    for class in classes {
+        for t in &class.tiers {
+            if !tiers.contains_key(t) {
+                bad.push(format!("class `{}`: tier `{t}` has no goldens", class.name));
+            }
+        }
+    }
+    let present: BTreeMap<String, BTreeMap<String, String>> = classes
+        .iter()
+        .flat_map(|c| &c.tiers)
+        .filter_map(|t| tiers.get(t).map(|h| (t.clone(), h.clone())))
+        .collect();
+    let groups = group_by_hashes(&present);
+    let class_of = |tier: &str| {
+        classes
+            .iter()
+            .position(|c| c.tiers.iter().any(|t| t == tier))
+    };
+    for group in &groups {
+        let mut in_classes: Vec<usize> = group.iter().filter_map(|t| class_of(t)).collect();
+        in_classes.sort_unstable();
+        in_classes.dedup();
+        if in_classes.len() > 1 {
+            let names: Vec<&str> = in_classes
+                .iter()
+                .map(|&i| classes[i].name.as_str())
+                .collect();
+            bad.push(format!(
+                "MERGE: classes {names:?} produce identical hashes ({} tiers: {})",
+                group.len(),
+                group.join(", ")
+            ));
+        }
+    }
+    for class in classes {
+        let mut distinct: Vec<usize> = class
+            .tiers
+            .iter()
+            .filter(|t| present.contains_key(*t))
+            .filter_map(|t| groups.iter().position(|g| g.contains(t)))
+            .collect();
+        distinct.sort_unstable();
+        distinct.dedup();
+        if distinct.len() > 1 {
+            let parts: Vec<String> = distinct
+                .iter()
+                .map(|&g| {
+                    let members: Vec<&String> = groups[g]
+                        .iter()
+                        .filter(|t| class.tiers.contains(t))
+                        .collect();
+                    format!("{members:?}")
+                })
+                .collect();
+            bad.push(format!(
+                "SPLIT: class `{}` is not uniform: {}",
+                class.name,
+                parts.join(" vs ")
+            ));
+        }
+    }
+    bad
+}
+
+/// `cargo xtask oracle check-classes`: asserts the `[[class]]` groups of `oracle/tiers.toml`
+/// still hold in the goldens (design §4.4). Fails on any split or merge, and lists CPU tiers
+/// that belong to no class.
+pub fn check_classes(root: &Path) -> Result<()> {
+    let config = read_config(root)?;
+    ensure!(
+        !config.class.is_empty(),
+        "no [[class]] entries in oracle/tiers.toml"
+    );
+    let mut tiers = BTreeMap::new();
+    for class in &config.class {
+        for t in &class.tiers {
+            let path = golden_dir(root, t)?.join("hashes.json");
+            if path.exists() {
+                tiers.insert(t.clone(), read_json_map::<String>(&path)?);
+            }
+        }
+    }
+    let bad = class_violations(&config.class, &tiers);
+    for class in &config.class {
+        let n = tiers.get(&class.tiers[0]).map_or(0, BTreeMap::len);
+        println!(
+            "class {:<12} {:>2} tiers, {n} results",
+            class.name,
+            class.tiers.len()
+        );
+    }
+    let classed: Vec<&String> = config.class.iter().flat_map(|c| &c.tiers).collect();
+    for tier in derive_tiers(&config)?.iter().filter(|t| t.gpu.is_none()) {
+        if !classed.contains(&&tier.name) {
+            println!("note: CPU tier `{}` is in no class", tier.name);
+        }
+    }
+    if bad.is_empty() {
+        println!("OK: {} classes hold", config.class.len());
+        return Ok(());
+    }
+    for b in &bad {
+        eprintln!("FAIL {b}");
+    }
+    bail!(
+        "{} class violation(s); update docs/design/raster-pipeline.md §4.4 before bumping",
+        bad.len()
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -809,11 +1037,74 @@ mod tests {
         );
     }
 
+    fn hashes(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+            .collect()
+    }
+
+    fn classes() -> Vec<Class> {
+        vec![
+            Class {
+                name: "a".into(),
+                tiers: vec!["t1".into(), "t2".into()],
+            },
+            Class {
+                name: "b".into(),
+                tiers: vec!["t3".into()],
+            },
+        ]
+    }
+
+    #[test]
+    fn class_check_accepts_the_expected_grouping() {
+        let tiers = BTreeMap::from([
+            ("t1".to_owned(), hashes(&[("x", "1")])),
+            ("t2".to_owned(), hashes(&[("x", "1")])),
+            ("t3".to_owned(), hashes(&[("x", "2")])),
+        ]);
+        assert!(class_violations(&classes(), &tiers).is_empty());
+    }
+
+    #[test]
+    fn class_check_reports_split_and_merge() {
+        let split = BTreeMap::from([
+            ("t1".to_owned(), hashes(&[("x", "1")])),
+            ("t2".to_owned(), hashes(&[("x", "3")])),
+            ("t3".to_owned(), hashes(&[("x", "2")])),
+        ]);
+        let bad = class_violations(&classes(), &split);
+        assert!(bad.iter().any(|b| b.starts_with("SPLIT")), "{bad:?}");
+        let merge = BTreeMap::from([
+            ("t1".to_owned(), hashes(&[("x", "1")])),
+            ("t2".to_owned(), hashes(&[("x", "1")])),
+            ("t3".to_owned(), hashes(&[("x", "1")])),
+        ]);
+        let bad = class_violations(&classes(), &merge);
+        assert!(bad.iter().any(|b| b.starts_with("MERGE")), "{bad:?}");
+    }
+
     #[test]
     fn checked_in_config_parses() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let tiers = derive_tiers(&read_config(root).unwrap()).unwrap();
         assert!(tiers.iter().any(|t| t.name == "cpu-x64-sse2-rt-ml4"));
+        let config = read_config(root).unwrap();
+        for class in &config.class {
+            for t in &class.tiers {
+                assert!(
+                    tiers.iter().any(|d| &d.name == t),
+                    "class tier `{t}` is not derived"
+                );
+            }
+        }
+        assert!(tiers.iter().any(|t| t.name == "cpu-x64-scalar"));
+        assert!(
+            !tiers
+                .iter()
+                .any(|t| t.name.starts_with("cpu-x64-scalar-rt"))
+        );
     }
 
     #[test]
