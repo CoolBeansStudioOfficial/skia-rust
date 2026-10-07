@@ -40685,7 +40685,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1684-L1712"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e8738233a2cede479ca8741940dca77d7b0f6eaaafdf898205b57ccdf8e86c0e"
 
 [[test]]
@@ -40694,7 +40694,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1714-L1729"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8eae06540fa4fd386154dba641566954053d8af349db034cd4e9df4abef320c2"
 
 [[test]]
@@ -40703,7 +40703,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1731-L1784"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "67de7e4392250ccc50d9be96189534319b503f244bfed2d3c83e317acf3a5e60"
 
 [[test]]
@@ -40730,7 +40730,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1652-L1682"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1febc516db407009631a446e0e1ee1af082ae514852764c7bd59a0d87581f20c"
 
 [[test]]
