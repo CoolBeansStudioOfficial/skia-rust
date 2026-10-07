@@ -24,8 +24,8 @@
 
 pub mod case;
 pub mod cases;
-pub mod cases_memory;
 pub mod cases_blend_color;
+pub mod cases_memory;
 pub mod expected;
 pub mod replay;
 
