@@ -19000,7 +19000,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawregion.cpp#L57-L57"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c3509d47cc802824ec014f6c351b6dc970ae15e651a962475945a99aa643e7a3"
 
 [[test]]
@@ -22727,7 +22727,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/points.cpp#L72-L72"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "63c3605c22b1e80b30adbdeaaf7a8914f4ba0dcb5b8dc9d2310ac78aed1164fa"
 
 [[test]]

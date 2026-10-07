@@ -4,4 +4,6 @@
 //! Ported GMs: `gm/<file>.cpp` → `gm::<file_snake>` (`docs/PORTING.md`, "Porting GMs").
 //! Keep the list sorted.
 
+pub mod drawregion;
 pub mod fiddle;
+pub mod points;
