@@ -55,6 +55,9 @@ pub struct Surface<'a> {
     target: Option<Target<'a>>,
 }
 
+/// `kMaxTotalSize` (`SK_MaxS32`).
+const MAX_TOTAL_SIZE: u64 = 0x7FFF_FFFF;
+
 /// `SkSurfaceValidateRasterInfo`: whether a raster surface can have this info and row bytes
 /// (`rowBytes == 0` means "any").
 // Port of: src/image/SkSurface_Raster.cpp#L26-L45 (chrome/m156)
@@ -74,7 +77,6 @@ pub fn surface_validate_raster_info(info: &ImageInfo, row_bytes: usize) -> bool 
     }
 
     let size = u64::try_from(info.height()).unwrap_or(0) * row_bytes as u64;
-    const MAX_TOTAL_SIZE: u64 = i32::MAX as u64;
     size <= MAX_TOTAL_SIZE
 }
 

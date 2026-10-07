@@ -39,6 +39,8 @@ mod blitter_tests;
 #[cfg(test)]
 mod blitters_tests;
 #[cfg(test)]
+mod canvas_tests;
+#[cfg(test)]
 mod draw_tests;
 #[cfg(test)]
 mod legacy_blitters_tests;
