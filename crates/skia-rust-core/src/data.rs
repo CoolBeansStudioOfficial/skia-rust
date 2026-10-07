@@ -106,6 +106,15 @@ impl Data {
         self.as_bytes().is_empty()
     }
 
+    /// Returns true if this is the only reference to the data (`SkRefCnt::unique()`).
+    ///
+    /// skia-rust: counts the shared handles (`Arc::strong_count`), including the ones held by
+    /// [`PixelRef`](crate::pixel_ref::PixelRef)s made with `make_with_data`.
+    #[must_use]
+    pub fn unique(&self) -> bool {
+        Arc::strong_count(&self.0) == 1
+    }
+
     /// The stored bytes.
     // Port of: include/core/SkData.h#L58-L64 (chrome/m156)
     #[doc(alias = "data")]

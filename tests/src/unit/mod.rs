@@ -1,6 +1,10 @@
 //! Ports of `skia/tests/*.cpp`, one module per Skia file (see the crate docs for naming).
 
 #[cfg(test)]
+pub mod bitmap_get_color_test;
+#[cfg(test)]
+pub mod bitmap_test;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod color_priv_test;
@@ -33,6 +37,8 @@ pub mod inf_rect_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
+pub mod malloc_pixel_ref_test;
+#[cfg(test)]
 pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
@@ -40,6 +46,10 @@ pub mod matrix_test;
 pub mod meta_data_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
+#[cfg(test)]
+pub mod pixel_ref_test;
+#[cfg(test)]
+pub mod pixels_rec_test;
 #[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
