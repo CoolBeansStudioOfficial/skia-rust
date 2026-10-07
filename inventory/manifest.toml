@@ -40439,7 +40439,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L271-L358"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1977f4d53f8c65425928b7123ec2b2fb3adc59ee64f9e845795adb896bade210"
 
 [[test]]
@@ -40448,7 +40448,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L688-L730"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c0670dbba6f5fbaff0bdf58876c16328ac53d4ed190bd59b5a49ec9ac1300030"
 
 [[test]]
@@ -40457,7 +40457,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L241-L269"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "565ee19b1d8c1f82e8d0984cddaa372e045427682d8499519ef12eb5ce5ed499"
 
 [[test]]
@@ -40466,7 +40466,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L558-L602"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c33a4b5a58e0f35536b4e7da569e799d0fe6877c7e07525272803807794d5f18"
 
 [[test]]
@@ -40475,7 +40475,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L604-L638"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a7499c92fdd63945287ce43b341b4984b37852828a65cc3c3d3ab89530d1298c"
 
 [[test]]
@@ -40484,7 +40484,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L640-L665"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "517cd3e7777036ff2187a571564e916c4610a0cc8b3d39a24be793e5bfd7b92a"
 
 [[test]]
@@ -40511,7 +40511,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L432-L438"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c58159137bceff14b13365583b7b89f2834cf6112a5f9e837d43b97c13346ece"
 
 [[test]]
@@ -40520,7 +40520,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L440-L479"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "105fe2c23448361a45943dcd6e48ea6e6c2d40841aa9fc5c18c20711b10d2129"
 
 [[test]]
@@ -40538,7 +40538,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L360-L380"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0f57eca5aa85d028f3bd9527d3bee2a958617ce1ff9d7a0fe73432004b6fca19"
 
 [[test]]
