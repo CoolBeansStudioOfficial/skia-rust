@@ -3,8 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/BitmapTest.cpp (chrome/m156)
 //
-// Not ported (they need `SkBitmap::readPixels` / `SkConvertPixels`, which are not ported yet):
-// `Bitmap_setColorSpace`, `Bitmap_getColor_Swizzle` (`ToolUtils::copy_to`) and `getalphaf`.
+// The tests that convert pixels (erase, readPixels) run once per CPU tier (`def_tier_test!`).
 
 #![cfg(test)]
 
@@ -17,7 +16,10 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::malloc_pixel_ref;
 use skia_rust_core::random::Random;
 
-use crate::{Reporter, def_test, infof, reporter_assert};
+use skia_rust_core::scalar::{Scalar, scalar};
+
+use crate::tools::tool_utils;
+use crate::{Reporter, def_test, def_tier_test, errorf, infof, reporter_assert};
 
 // Port of: tests/BitmapTest.cpp#L31-L53 (chrome/m156)
 fn test_peekpixels(reporter: &mut Reporter) {
@@ -184,6 +186,80 @@ def_test!(Bitmap, |reporter| {
     test_peekpixels(reporter);
 });
 
+// Port of: tests/BitmapTest.cpp#L179-L222 (chrome/m156)
+def_tier_test!(Bitmap_setColorSpace, |r| {
+    // Make a 1x1 bitmap holding 50% gray in default colorspace.
+    let mut source = Bitmap::new();
+    source.alloc_n32_pixels((1, 1), None);
+    source.erase_color(Color::from_argb(0xFF, 0x80, 0x80, 0x80));
+
+    // Readback should use the normal sRGB colorspace.
+    let readback_info = ImageInfo::new(
+        (/*width=*/ 1, /*height=*/ 1),
+        ColorType::N32,
+        AlphaType::Opaque,
+        ColorSpace::new_srgb(),
+    );
+    // Do readback and verify that the color is gray.
+    let mut pixel_data = [0u8; 4];
+    reporter_assert!(
+        r,
+        source.read_pixels(
+            &readback_info,
+            &mut pixel_data,
+            /*dst_row_bytes=*/ 4,
+            /*src_x=*/ 0,
+            /*src_y=*/ 0
+        )
+    );
+    reporter_assert!(r, pixel_data[0] == 0x80);
+    reporter_assert!(r, pixel_data[1] == 0x80);
+    reporter_assert!(r, pixel_data[2] == 0x80);
+
+    // Also check the color with getColor4f, which does not honor colorspaces.
+    let mut color_rgba = source.get_color_4f((0, 0)).to_bytes();
+    reporter_assert!(r, color_rgba == 0xFF80_8080, "RGBA={color_rgba:08X}");
+
+    // Convert the SkBitmap's colorspace to linear.
+    source.set_color_space(ColorSpace::new_srgb_linear());
+
+    // Readback again and verify that the color is interpreted differently.
+    reporter_assert!(
+        r,
+        source.read_pixels(
+            &readback_info,
+            &mut pixel_data,
+            /*dst_row_bytes=*/ 4,
+            /*src_x=*/ 0,
+            /*src_y=*/ 0
+        )
+    );
+    reporter_assert!(r, pixel_data[0] == 0xBC, "R:{:02X}", pixel_data[0]);
+    reporter_assert!(r, pixel_data[1] == 0xBC, "G:{:02X}", pixel_data[1]);
+    reporter_assert!(r, pixel_data[2] == 0xBC, "B:{:02X}", pixel_data[2]);
+
+    // Since getColor4f does not honor colorspaces, this should still contain 50% gray.
+    color_rgba = source.get_color_4f((0, 0)).to_bytes();
+    reporter_assert!(r, color_rgba == 0xFF80_8080, "RGBA={color_rgba:08X}");
+});
+
+// This test checks that getColor works for both swizzles.
+// Port of: tests/BitmapTest.cpp#L224-L243 (chrome/m156)
+def_tier_test!(Bitmap_getColor_Swizzle, |r| {
+    let mut source = Bitmap::new();
+    source.alloc_n32_pixels((1, 1), None);
+    source.erase_color(Color::new(0xFFFF_0000)); // SK_ColorRED
+    let color_types = [ColorType::RGBA8888, ColorType::BGRA8888];
+    for ct in color_types {
+        let mut copy = Bitmap::new();
+        if !tool_utils::copy_to(&mut copy, ct, &source) {
+            errorf!(r, "SkBitmap::copy failed {}", ct as i32);
+            continue;
+        }
+        reporter_assert!(r, source.get_color((0, 0)) == copy.get_color((0, 0)));
+    }
+});
+
 // Port of: tests/BitmapTest.cpp#L245-L252 (chrome/m156)
 fn test_erasecolor_premul(reporter: &mut Reporter, ct: ColorType, input: Color, expected: Color) {
     let mut bm = Bitmap::new();
@@ -200,7 +276,7 @@ fn test_erasecolor_premul(reporter: &mut Reporter, ct: ColorType, input: Color, 
 
 // This test checks that eraseColor premultiplies the color correctly.
 // Port of: tests/BitmapTest.cpp#L254-L264 (chrome/m156)
-def_test!(Bitmap_eraseColor_Premul, |r| {
+def_tier_test!(Bitmap_eraseColor_Premul, |r| {
     let color = Color::new(0x80FF_0080);
     test_erasecolor_premul(r, ColorType::Alpha8, color, Color::new(0x8000_0000));
     test_erasecolor_premul(r, ColorType::RGB565, color, Color::new(0xFF84_0042));
@@ -211,7 +287,7 @@ def_test!(Bitmap_eraseColor_Premul, |r| {
 
 // Test that SkBitmap::ComputeOpaque() is correct for various colortypes.
 // Port of: tests/BitmapTest.cpp#L266-L282 (chrome/m156)
-def_test!(Bitmap_compute_is_opaque, |r| {
+def_tier_test!(Bitmap_compute_is_opaque, |r| {
     for i in 1..=ColorType::LAST_ENUM as i32 {
         let ct = ColorType::from_i32(i).unwrap();
         let mut bm = Bitmap::new();
@@ -233,7 +309,7 @@ def_test!(Bitmap_compute_is_opaque, |r| {
 
 // Test that erase+getColor round trips with RGBA_F16 pixels.
 // Port of: tests/BitmapTest.cpp#L284-L305 (chrome/m156)
-def_test!(Bitmap_erase_f16_erase_getColor, |r| {
+def_tier_test!(Bitmap_erase_f16_erase_getColor, |r| {
     let mut random = Random::default();
     let mut bm = Bitmap::new();
     bm.alloc_pixels_info(
@@ -264,7 +340,7 @@ def_test!(Bitmap_erase_f16_erase_getColor, |r| {
 // Verify that SkBitmap::erase erases in SRGB, regardless of the SkColorSpace of the
 // SkBitmap.
 // Port of: tests/BitmapTest.cpp#L307-L319 (chrome/m156)
-def_test!(Bitmap_erase_srgb, |r| {
+def_tier_test!(Bitmap_erase_srgb, |r| {
     let mut bm = Bitmap::new();
     // Use a color spin from SRGB.
     bm.alloc_pixels_info(
@@ -296,7 +372,7 @@ def_test!(Bitmap_clear_pixelref_keep_info, |r| {
 // At the time of writing, SkBitmap::erase() works when the color is zero for all formats,
 // but some formats failed when the color is non-zero!
 // Port of: tests/BitmapTest.cpp#L329-L359 (chrome/m156)
-def_test!(Bitmap_erase, |r| {
+def_tier_test!(Bitmap_erase, |r| {
     let color_types = [
         ColorType::RGB565,
         ColorType::ARGB4444,
@@ -323,6 +399,127 @@ def_test!(Bitmap_erase, |r| {
         bm.erase_color(Color::new(0xaabb_ccdd));
         reporter_assert!(r, bm.get_color((0, 0)) != Color::new(0xff00_0000));
         reporter_assert!(r, bm.get_color((0, 0)) != Color::new(0x0000_0000));
+    }
+});
+
+// Port of: tests/BitmapTest.cpp#L361-L378 (chrome/m156)
+fn check_alphas(reporter: &mut Reporter, bm: &Bitmap, pred: fn(f32, f32) -> bool, ct: ColorType) {
+    debug_assert_eq!(bm.width(), 16);
+    debug_assert_eq!(bm.height(), 16);
+
+    let mut alpha = 0;
+    for y in 0..16 {
+        for x in 0..16 {
+            #[allow(clippy::cast_precision_loss)] // alpha < 256
+            let expected = alpha as f32 / 255.0f32;
+            let actual = bm.get_alpha_f((x, y));
+            if !pred(expected, actual) {
+                errorf!(
+                    reporter,
+                    "{}: got {actual}, want {expected}\n",
+                    tool_utils::colortype_name(ct)
+                );
+            }
+            alpha += 1;
+        }
+    }
+}
+
+// Port of: tests/BitmapTest.cpp#L380-L388 (chrome/m156)
+#[allow(clippy::float_cmp)] // mirrors the exact comparisons of the C++
+fn unit_compare(expected: f32, actual: f32, tol: f32) -> bool {
+    debug_assert!((0.0..=1.0).contains(&expected));
+    debug_assert!((0.0..=1.0).contains(&actual));
+    if expected == 0.0 || expected == 1.0 {
+        actual == expected
+    } else {
+        scalar::nearly_equal(expected, actual, tol)
+    }
+}
+
+// Port of: tests/BitmapTest.cpp#L390-L397 (chrome/m156)
+#[allow(clippy::float_cmp)] // mirrors `value == 1`
+fn unit_discretize(value: f32, scale: f32) -> f32 {
+    debug_assert!((0.0..=1.0).contains(&value));
+    if value == 1.0 {
+        1.0
+    } else {
+        (value * scale + 0.5f32).floor() / scale
+    }
+}
+
+// `unit_compare`'s default tolerance, `1.0f/(1<<12)`.
+const UNIT_TOL: f32 = 1.0f32 / 4096.0f32;
+
+// `bool (*fPred)(float, float)`.
+type Pred = fn(f32, f32) -> bool;
+
+// Port of: tests/BitmapTest.cpp#L399-L468 (chrome/m156)
+def_tier_test!(getalphaf, |reporter| {
+    let info = ImageInfo::new_n32_premul((16, 16), None);
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(&info, None);
+
+    let mut alpha: u32 = 0;
+    for y in 0..16 {
+        for x in 0..16 {
+            // *bm.getAddr32(x, y) = alpha++ << 24;
+            bm.set_addr32(x, y, alpha << 24);
+            alpha += 1;
+        }
+    }
+
+    let nearly: fn(f32, f32) -> bool = |expected, actual| unit_compare(expected, actual, UNIT_TOL);
+    let nearly4bit: fn(f32, f32) -> bool = |expected, actual| {
+        let expected = unit_discretize(expected, 15.0);
+        unit_compare(expected, actual, UNIT_TOL)
+    };
+    let nearly2bit: fn(f32, f32) -> bool = |expected, actual| {
+        let expected = unit_discretize(expected, 3.0);
+        unit_compare(expected, actual, UNIT_TOL)
+    };
+    #[allow(clippy::float_cmp)] // mirrors `actual == 1.0f`
+    let opaque: fn(f32, f32) -> bool = |_expected, actual| actual == 1.0f32;
+
+    let nearly_half: fn(f32, f32) -> bool =
+        |expected, actual| unit_compare(expected, actual, 1.0f32 / 1024.0f32); // 1.0f/(1<<10)
+
+    let recs: [(ColorType, Pred); 20] = [
+        (ColorType::RGB565, opaque),
+        (ColorType::Gray8, opaque),
+        (ColorType::R8G8UNorm, opaque),
+        (ColorType::R16UNorm, opaque),
+        (ColorType::R16Float, opaque),
+        (ColorType::R16G16UNorm, opaque),
+        (ColorType::R16G16Float, opaque),
+        (ColorType::RGB888x, opaque),
+        (ColorType::RGB101010x, opaque),
+        (ColorType::RGBF16F16F16x, opaque),
+        (ColorType::Alpha8, nearly),
+        (ColorType::A16UNorm, nearly),
+        (ColorType::A16Float, nearly_half),
+        (ColorType::RGBA8888, nearly),
+        (ColorType::BGRA8888, nearly),
+        (ColorType::R16G16B16A16UNorm, nearly),
+        (ColorType::RGBAF16, nearly_half),
+        (ColorType::RGBAF32, nearly),
+        (ColorType::RGBA1010102, nearly2bit),
+        (ColorType::ARGB4444, nearly4bit),
+    ];
+
+    for (color_type, pred) in recs {
+        let mut tmp = Bitmap::new();
+        tmp.alloc_pixels_info(&bm.info().with_color_type(color_type), None);
+        // bm.readPixels(tmp.pixmap()): `tmp`'s pixmap that can be written to.
+        let read = {
+            let mut dst = tmp.peek_pixels_mut().expect("allocated");
+            bm.read_pixels_to_pixmap(&mut dst, (0, 0))
+        };
+        if read {
+            check_alphas(reporter, &tmp, pred, color_type);
+        } else {
+            eprintln!("can't readpixels");
+        }
     }
 });
 

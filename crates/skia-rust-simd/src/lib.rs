@@ -16,6 +16,7 @@
 //!   (`blit_row_s32a_opaque`, `blit_row_color32`, `blit_mask_d32_a8`, `memset16/32/64`,
 //!   `rect_memset16/32/64`), per tier with scalar twins; [`color_util`] has the few
 //!   `SkColorPriv.h` helpers they need.
+//! - [`swizzle`]: the 8888 premul/unpremul/swap-RB swizzles of `SkOpts` (`SkSwizzler_opts.inc`).
 #![allow(unsafe_code)]
 
 pub mod blit_mask;
@@ -25,6 +26,7 @@ pub mod cpu;
 pub mod estimates;
 pub mod memset;
 pub mod rp;
+pub mod swizzle;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod tier;

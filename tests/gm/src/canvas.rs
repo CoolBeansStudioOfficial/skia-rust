@@ -17,7 +17,7 @@
 //! every color the background uses; any other draw panics with a "needs D6" message. A stub
 //! result is still compared against the goldens, so it can never produce a false pass.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color4f;
@@ -123,8 +123,9 @@ impl SurfaceProps {
 #[doc(alias = "SkCanvas")]
 #[derive(Debug)]
 pub struct Canvas {
-    /// Shares the pixels of the bitmap the surface wraps.
-    bitmap: Bitmap,
+    /// The bitmap the surface wraps, moved in for the surface's lifetime (draws take `&self`, as
+    /// in skia-safe; each draw borrows the cell only for its own duration).
+    bitmap: RefCell<Bitmap>,
     props: SurfaceProps,
     /// `SkCanvas::fSaveCount` (starts at 1).
     save_count: Cell<usize>,
@@ -133,7 +134,7 @@ pub struct Canvas {
 impl Canvas {
     fn new(bitmap: Bitmap, props: SurfaceProps) -> Self {
         Self {
-            bitmap,
+            bitmap: RefCell::new(bitmap),
             props,
             save_count: Cell::new(1),
         }
@@ -143,14 +144,14 @@ impl Canvas {
     #[doc(alias = "imageInfo")]
     #[must_use]
     pub fn image_info(&self) -> ImageInfo {
-        self.bitmap.info().clone()
+        self.bitmap.borrow().info().clone()
     }
 
     /// `SkCanvas::getBaseLayerSize()`.
     #[doc(alias = "getBaseLayerSize")]
     #[must_use]
     pub fn base_layer_size(&self) -> ISize {
-        self.bitmap.dimensions()
+        self.bitmap.borrow().dimensions()
     }
 
     /// `SkCanvas::getBaseProps()`.
@@ -214,7 +215,7 @@ impl Canvas {
             "Surface stub: draw_color with {mode:?} and alpha {} needs the real Canvas (task D6)",
             color.a
         );
-        self.bitmap.erase_color_4f(color);
+        self.bitmap.borrow_mut().erase_color_4f(color);
         self
     }
 
@@ -226,23 +227,31 @@ impl Canvas {
 }
 
 /// Stub of a raster `SkSurface` wrapping caller-owned pixels (`SkSurfaces::WrapPixels`).
+///
+/// Borrows the caller's bitmap mutably for its lifetime, like skia-safe's
+/// `surfaces::wrap_pixels(…) -> Borrows<'pixels, Surface>` (pixel writes need exclusive access,
+/// `docs/design/pixels.md`): the bitmap is moved into the canvas and moved back when the surface
+/// drops, so the caller sees every draw afterwards.
 #[doc(alias = "SkSurface")]
 #[derive(Debug)]
-pub struct Surface {
+pub struct Surface<'a> {
     canvas: Canvas,
+    target: &'a mut Bitmap,
 }
 
-impl Surface {
+impl<'a> Surface<'a> {
     /// `SkSurfaces::WrapPixels(bitmap.pixmap(), props)`: draws go straight into `bitmap`'s
     /// pixels. `None` if the bitmap has no pixels.
     #[doc(alias = "WrapPixels")]
     #[must_use]
-    pub fn wrap_pixels(bitmap: &Bitmap, props: Option<&SurfaceProps>) -> Option<Surface> {
+    pub fn wrap_pixels(bitmap: &'a mut Bitmap, props: Option<&SurfaceProps>) -> Option<Self> {
         if bitmap.is_null() || bitmap.draws_nothing() {
             return None;
         }
+        let pixels = std::mem::take(bitmap);
         Some(Surface {
-            canvas: Canvas::new(bitmap.clone(), props.copied().unwrap_or_default()),
+            canvas: Canvas::new(pixels, props.copied().unwrap_or_default()),
+            target: bitmap,
         })
     }
 
@@ -250,5 +259,12 @@ impl Surface {
     #[doc(alias = "getCanvas")]
     pub fn canvas(&mut self) -> &Canvas {
         &self.canvas
+    }
+}
+
+impl Drop for Surface<'_> {
+    fn drop(&mut self) {
+        // Hand the drawn-into bitmap back to its owner.
+        *self.target = std::mem::take(self.canvas.bitmap.get_mut());
     }
 }

@@ -55,6 +55,8 @@ pub struct Reporter {
     name: &'static str,
     failures: Vec<Failure>,
     test_count: usize,
+    /// Prefixed to the message of every failure (the CPU tier of [`def_tier_test!`]).
+    context: Option<String>,
 }
 
 impl Reporter {
@@ -64,12 +66,21 @@ impl Reporter {
             name,
             failures: Vec::new(),
             test_count: 0,
+            context: None,
         }
     }
 
     /// Port of `Reporter::reportFailed`. Use [`reporter_assert!`] or [`errorf!`].
-    pub fn report_failed(&mut self, failure: Failure) {
+    pub fn report_failed(&mut self, mut failure: Failure) {
+        if let Some(context) = &self.context {
+            failure.message = format!("[{context}] {}", failure.message);
+        }
         self.failures.push(failure);
+    }
+
+    /// Sets the text prefixed to later failures' messages (`None` for none).
+    pub fn set_context(&mut self, context: Option<String>) {
+        self.context = context;
     }
 
     /// Port of `Reporter::bumpTestCount`.
@@ -134,6 +145,55 @@ macro_rules! def_test {
                 let $reporter: &mut $crate::Reporter = &mut reporter;
                 $body
             }
+            reporter.finish();
+        }
+    };
+}
+
+/// Every CPU tier this host can run (`Tier::ALL` order): natively where the CPU has the tier's
+/// instructions, else by the tier's model (with the oracle host's `AmdZen4` estimates for the
+/// x86 tiers, the architectural `Arm` estimates for `Neon`).
+#[must_use]
+pub fn tier_selections() -> Vec<skia_rust_simd::Selection> {
+    use skia_rust_simd::{Estimates, Selection, Tier};
+    Tier::ALL
+        .into_iter()
+        .filter_map(|tier| {
+            let native = Selection::native(tier);
+            if native.check().is_ok() {
+                return Some(native);
+            }
+            let estimates = if tier == Tier::Neon {
+                Estimates::Arm
+            } else {
+                Estimates::AmdZen4
+            };
+            Selection::model(tier, estimates).check().ok()
+        })
+        .collect()
+}
+
+/// [`def_test!`] for a test whose results depend on the CPU tier (it runs raster pipelines or
+/// `SkOpts` kernels): runs the body once per [`tier_selections`] entry under
+/// `skia_rust_simd::testing::force_tier`, with the tier prefixed to each failure.
+#[macro_export]
+macro_rules! def_tier_test {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            for sel in $crate::tier_selections() {
+                let _guard = ::skia_rust_simd::testing::force_tier(sel)
+                    .expect("tier_selections() returns checked selections");
+                reporter.set_context(Some(sel.to_string()));
+                {
+                    let $reporter: &mut $crate::Reporter = &mut reporter;
+                    $body
+                }
+            }
+            reporter.set_context(None);
             reporter.finish();
         }
     };
