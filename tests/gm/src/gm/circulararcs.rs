@@ -92,7 +92,8 @@ fn draw_arcs(canvas: &Canvas, configure_style: impl Fn(&mut Paint)) {
 }
 
 // Port of: gm/circulararcs.cpp#L83-L88 (chrome/m156)
-crate::def_simple_gm!(circular_arcs_fill, canvas, W, H, {
+// `DEF_ARC_GM(fill)`: the manifest id is the macro argument, the GM is named `circular_arcs_fill`.
+crate::def_simple_gm_bg_name!(fill, canvas, W, H, Color::WHITE, "circular_arcs_fill", {
     let set_fill = |p: &mut Paint| {
         p.set_stroke(false);
     };
@@ -100,40 +101,76 @@ crate::def_simple_gm!(circular_arcs_fill, canvas, W, H, {
 });
 
 // Port of: gm/circulararcs.cpp#L90-L98 (chrome/m156)
-crate::def_simple_gm!(circular_arcs_hairline, canvas, W, H, {
-    let set_hairline = |p: &mut Paint| {
-        p.set_stroke(true);
-        p.set_stroke_width(0.0);
-    };
-    draw_arcs(canvas, set_hairline);
-});
+// `DEF_ARC_GM(hairline)`: the manifest id is the macro argument, the GM is named `circular_arcs_hairline`.
+crate::def_simple_gm_bg_name!(
+    hairline,
+    canvas,
+    W,
+    H,
+    Color::WHITE,
+    "circular_arcs_hairline",
+    {
+        let set_hairline = |p: &mut Paint| {
+            p.set_stroke(true);
+            p.set_stroke_width(0.0);
+        };
+        draw_arcs(canvas, set_hairline);
+    }
+);
 
 // Port of: gm/circulararcs.cpp#L100-L107 (chrome/m156)
-crate::def_simple_gm!(circular_arcs_stroke_butt, canvas, W, H, {
-    let set_stroke = |p: &mut Paint| {
-        p.set_stroke(true);
-        p.set_stroke_cap(Cap::Butt);
-    };
-    draw_arcs(canvas, set_stroke);
-});
+// `DEF_ARC_GM(stroke_butt)`: the manifest id is the macro argument, the GM is named `circular_arcs_stroke_butt`.
+crate::def_simple_gm_bg_name!(
+    stroke_butt,
+    canvas,
+    W,
+    H,
+    Color::WHITE,
+    "circular_arcs_stroke_butt",
+    {
+        let set_stroke = |p: &mut Paint| {
+            p.set_stroke(true);
+            p.set_stroke_cap(Cap::Butt);
+        };
+        draw_arcs(canvas, set_stroke);
+    }
+);
 
 // Port of: gm/circulararcs.cpp#L109-L116 (chrome/m156)
-crate::def_simple_gm!(circular_arcs_stroke_square, canvas, W, H, {
-    let set_stroke = |p: &mut Paint| {
-        p.set_stroke(true);
-        p.set_stroke_cap(Cap::Square);
-    };
-    draw_arcs(canvas, set_stroke);
-});
+// `DEF_ARC_GM(stroke_square)`: the manifest id is the macro argument, the GM is named `circular_arcs_stroke_square`.
+crate::def_simple_gm_bg_name!(
+    stroke_square,
+    canvas,
+    W,
+    H,
+    Color::WHITE,
+    "circular_arcs_stroke_square",
+    {
+        let set_stroke = |p: &mut Paint| {
+            p.set_stroke(true);
+            p.set_stroke_cap(Cap::Square);
+        };
+        draw_arcs(canvas, set_stroke);
+    }
+);
 
 // Port of: gm/circulararcs.cpp#L118-L125 (chrome/m156)
-crate::def_simple_gm!(circular_arcs_stroke_round, canvas, W, H, {
-    let set_stroke = |p: &mut Paint| {
-        p.set_stroke(true);
-        p.set_stroke_cap(Cap::Round);
-    };
-    draw_arcs(canvas, set_stroke);
-});
+// `DEF_ARC_GM(stroke_round)`: the manifest id is the macro argument, the GM is named `circular_arcs_stroke_round`.
+crate::def_simple_gm_bg_name!(
+    stroke_round,
+    canvas,
+    W,
+    H,
+    Color::WHITE,
+    "circular_arcs_stroke_round",
+    {
+        let set_stroke = |p: &mut Paint| {
+            p.set_stroke(true);
+            p.set_stroke_cap(Cap::Round);
+        };
+        draw_arcs(canvas, set_stroke);
+    }
+);
 
 // Port of: gm/circulararcs.cpp#L127-L212 (chrome/m156)
 crate::def_simple_gm!(circular_arcs_weird, canvas, 1000, 400, {
