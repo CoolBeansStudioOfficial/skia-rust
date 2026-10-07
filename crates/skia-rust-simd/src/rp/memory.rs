@@ -192,7 +192,7 @@ pub(crate) struct MemoryCtxPatch {
 
 impl MemoryCtxPatch {
     /// A patch with zeroed scratch (`memset(patches[i].scratch, 0, …)` in `run`/`compile`).
-    pub(crate) fn new(info: MemoryCtxInfo) -> MemoryCtxPatch {
+    pub(crate) const fn new(info: MemoryCtxInfo) -> MemoryCtxPatch {
         MemoryCtxPatch {
             scratch: [0; MAX_SCRATCH_PER_PATCH],
             info,
@@ -205,7 +205,7 @@ impl MemoryCtxPatch {
 #[allow(clippy::match_same_arms)] // one arm per Skia COLOR_TYPE_CASE
 fn memory_access(stage: &Stage<'_>) -> Option<(MemoryCtx, usize, bool, bool)> {
     use Stage as S;
-    // Port of: src/core/SkRasterPipeline.cpp#L71-L156 (chrome/m156) (COLOR_TYPE_CASE et al.)
+    // Port of: src/core/SkRasterPipeline.cpp#L72-L146 (chrome/m156) (COLOR_TYPE_CASE et al.)
     let (ctx, bpp, load, store) = match *stage {
         // a8: kAlpha_8
         S::LoadA8(c) | S::LoadA8Dst(c) => (c, 1, true, false),
@@ -282,9 +282,9 @@ fn memory_access(stage: &Stage<'_>) -> Option<(MemoryCtx, usize, bool, bool)> {
     Some((ctx, bpp, load, store))
 }
 
-// Port of: src/core/SkRasterPipeline.cpp#L695-L712 (chrome/m156)
+// Port of: src/core/SkRasterPipeline.cpp#L799-L815 (chrome/m156)
 /// `addMemoryContext`: registers a use of `ctx`, merging the load/store flags of repeated uses.
-fn add_memory_context(
+pub fn add_memory_context(
     infos: &mut Vec<MemoryCtxInfo>,
     ctx: MemoryCtx,
     bytes_per_pixel: usize,
@@ -305,20 +305,27 @@ fn add_memory_context(
     }
 }
 
+/// Registers the [`MemoryCtx`]s `stage` uses (the part of `uncheckedAppend` that fills
+/// `fMemoryCtxInfos`).
+pub fn register_memory_ctxs(infos: &mut Vec<MemoryCtxInfo>, stage: &Stage<'_>) {
+    // Port of: src/core/SkRasterPipeline.cpp#L147-L158 (chrome/m156)
+    if let Stage::Emboss(e) = stage {
+        // Special-case, this op uses a context that holds *two* MemoryCtxs
+        add_memory_context(infos, e.add, 1, true, false);
+        add_memory_context(infos, e.mul, 1, true, false);
+    } else if let Some((ctx, bpp, load, store)) = memory_access(stage) {
+        // Port of: src/core/SkRasterPipeline.cpp#L176-L182 (chrome/m156)
+        add_memory_context(infos, ctx, bpp, load, store);
+    }
+}
+
 /// The [`MemoryCtxInfo`]s a pipeline registers, in registration order (what `uncheckedAppend`
 /// accumulates in `fMemoryCtxInfos` while the stages are appended).
 #[must_use]
 pub fn memory_ctx_infos(stages: &[Stage<'_>]) -> Vec<MemoryCtxInfo> {
     let mut infos = Vec::new();
     for stage in stages {
-        // Port of: src/core/SkRasterPipeline.cpp#L141-L152 (chrome/m156)
-        if let Stage::Emboss(e) = stage {
-            // Special-case, this op uses a context that holds *two* MemoryCtxs
-            add_memory_context(&mut infos, e.add, 1, true, false);
-            add_memory_context(&mut infos, e.mul, 1, true, false);
-        } else if let Some((ctx, bpp, load, store)) = memory_access(stage) {
-            add_memory_context(&mut infos, ctx, bpp, load, store);
-        }
+        register_memory_ctxs(&mut infos, stage);
     }
     infos
 }

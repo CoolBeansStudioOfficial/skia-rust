@@ -1044,6 +1044,77 @@ Ported 1:1 in core: `append`, `appendMatrix` (op choice by matrix type), `append
 against the oracle's stage dumps, §4.3). `gForceHighPrecisionRasterPipeline` becomes a field of the
 builder set by tests, not a global.
 
+**As implemented in A4** (`crates/skia-rust-core/src/raster_pipeline.rs`, `arena_alloc.rs`,
+`raster_pipeline_context_utils.rs`; `skia_rust_simd::rp::program`):
+
+- **Allocation strategy.** `RasterPipeline<'a>` keeps `fStages` as a `Vec<Stage<'a>>` (oldest
+  first), `fMemoryCtxInfos` as a `Vec` filled at append time like Skia's, and `fRewindCtx` as a
+  `has_rewind` flag (the context itself has no counterpart, §2.6). `reset()` keeps both vectors'
+  capacity, so a pipeline rebuilt in the same `RasterPipeline` does not allocate. Contexts the
+  appenders create live in an **`ArenaAlloc`** passed like Skia's `SkArenaAlloc*`
+  (`append_matrix(&'a ArenaAlloc, &Matrix)` etc.); its lifetime is the pipeline's `'a`.
+  `ArenaAlloc` (`skia_rust_core::arena_alloc`) is safe Rust, no `unsafe`: values sit in `OnceCell`
+  slots of boxed chunks that never move (`TypedArena<T>`, chunks of 8, 16, 32… slots), so
+  `make(&self, v) -> &T` hands out references that live as long as the arena; one `TypedArena`
+  per type (found by `Any` downcast, so `make` needs `T: 'static`; contexts that borrow, like
+  `GatherCtx<'p>`, use a `TypedArena` directly). `reset(&mut self)` drops the values and keeps
+  the chunks (`SkArenaAllocWithReset`). Contexts of at most 8 bytes are held in the `Stage` by
+  value and never allocated (`matrix_translate`'s two floats, `gamma_`'s exponent).
+- **`run()` allocates nothing** for pipelines of up to 31 stages and 2 memory contexts:
+  `ProgramDesc::run` (simd) builds the program and the zeroed tail patches in stack arrays, as
+  Skia's `AutoSTMalloc<32>`/`<2>` do, falling back to the heap beyond that. (This removes the
+  three heap allocations per `run()` measured in A3 / issue #36. The bench's `run` column now
+  uses it; the host was too loaded by concurrent builds during A4 to give stable numbers.)
+  `compile()` builds a `Program` from the same `ProgramDesc` (`Program::build`); `Program::new`
+  (A3's entry for raw stage slices) derives the infos and the rewind flag from the stages.
+- **Appenders**, each a 1:1 port: `append` (with Skia's debug assertions), `unchecked_append`
+  (registers memory contexts, `rp::register_memory_ctxs`), `extend` (merges the infos with
+  `addMemoryContext`, propagates the rewind flag; the tail-pointer/rewind-context rewrites are
+  interpreter state here), `append_set_rgb` / `append_set_rgb_color4f`, `append_constant_color`
+  / `append_constant_color4f` (`black_color`/`white_color`, `uniform_color` with the
+  `(uint16_t)(c * 255 + 0.5)` lanes, `unbounded_uniform_color`), `append_matrix` (identity →
+  nothing, `matrix_translate`, `matrix_scale_translate`, `matrix_2x3`, `matrix_perspective` by
+  `TypeMask`; the 2x3 context keeps only the 6 floats the stage reads), `append_load` /
+  `append_load_dst` / `append_store` (all 28 color types; `kUnknown` is a debug assertion),
+  `append_transfer_function` (skcms classification via `TransferFunction::tf_type`; `gamma_`
+  for a pure power; invalid/PQ/HLG are a debug assertion and append nothing),
+  `append_clamp_if_normalized`, `append_stack_rewind`, `stages_needed`, `is_lowp(tier)`
+  (`buildLowpPipeline`'s test: not forced, no rewind context, every op lowp on the tier),
+  `run`, `compile`, `get_op_name`, `stages()`/`num_stages()` (`getStageList`/`getNumStages`),
+  `dump()` (to stderr) and `Display` (its exact text). There are no stage-list rewrites at build
+  time in m156 beyond these (no merging), and no `append_copy_*`/SkSL helpers in
+  `SkRasterPipeline.cpp` (they live in `SkSLRasterPipelineBuilder`, a later task).
+- **Transfer functions.** `rp::contexts::TransferFunction` is a copy of skcms's type (the simd
+  crate sits below skcms), so `append_transfer_function` takes the stage type
+  (`&'a rp::TransferFunction`, borrowed like Skia's `const skcms_TransferFunction&`);
+  `transfer_function_ctx(&skcms::TransferFunction)` converts, and
+  `SRGB_TRANSFER_FUNCTION`/`SRGB_INVERSE_TRANSFER_FUNCTION` are static stage contexts equal to
+  skcms's (tested), used by the `kSRGBA_8888` load/store paths.
+- **`SkRPCtxUtils`** (`raster_pipeline_context_utils`): `pack(&ctx, &ArenaAlloc) ->
+  Packed<'a, T>` (`Inline(T)` when `sizeof(T) <= sizeof(void*)`, else `Allocated(&'a T)`) and
+  `unpack`. Rust stages hold typed contexts, so nothing in the builder needs it; it is there for
+  ports that pack contexts the way Skia's SkSL builder does.
+- **Tests.** `oracle/rp-builder/rp_builder.cpp` (built and run by its `build.ps1` against the
+  x64-sse2 oracle) builds 91 pipelines through Skia's appenders: constant colors (fast paths,
+  rounding, `-0`, unpremul, out of range), set-RGB, 8 matrix types, load/load-dst/store for
+  every color type, 7 transfer functions, clamp-if-normalized for every color type, stack
+  rewind, `extend` (including rewind propagation), a highp-only op, and the empty pipeline. It
+  writes `dump()`'s text and the oracle's compile records (`SKIA_ORACLE_RP_DUMP`: lowp/highp
+  decision, op list, context values) to `raster_pipeline/skia_{dump,rp_dump}.txt`;
+  `raster_pipeline/tests.rs` builds the same pipelines and checks the `Display` text verbatim,
+  the lowp decision on `Sse2`, and every dumped context value bit for bit, plus memory-context
+  registration (bytes per pixel, load/store merging across `extend`), `stages_needed` with a
+  rewind context, and `run()` = `compile().run()` beyond the stack buffers (40 stages, 3
+  slots).
+- **Skia tests.** Ported: `SkRasterPipeline_PackSmallContext`, `SkRasterPipeline_PackBigContext`
+  (with `empty` and `nonsense` from A3). Not yet portable (their stages are not on `main`):
+  `SkRasterPipeline` (B2: `load_f16`/`store_f16`), `SkRasterPipeline_Jump` (B4:
+  `uniform_color`), `SkRasterPipeline_JIT`, `_lowp` (B1), `_lowp_clamp01` (B1, B4), `_tail`
+  (B2), `_u16` (B1, B2), `_stack_rewind` (B1, B6d: `callback`), `_swizzle` (B1, B2, and
+  `skgpu::Swizzle`), and the SkSL-stage tests (`ExchangeSrc`, `BranchIf*`, `Copy*`, `Compare*`,
+  `*Arithmetic*`, `MatrixMultiply*`, `Mix*`, `Swizzle*`, `Shuffle`, `Trace*`, `*Mask*`,
+  `CaseOp`, `InitLaneMasks`, `Unary*`: B6a–d).
+
 ### 2.8 Scalar twins = model tiers
 
 For each SIMD tier there is a model lane module `lanes/model_<tier>.rs` with the same `N` and the

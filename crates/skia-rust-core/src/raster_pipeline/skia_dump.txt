@@ -1,0 +1,544 @@
+== constant_black
+SkRasterPipeline, 1 stages
+	black_color
+
+== constant_white
+SkRasterPipeline, 1 stages
+	white_color
+
+== constant_neg_zero
+SkRasterPipeline, 1 stages
+	black_color
+
+== constant_opaque
+SkRasterPipeline, 1 stages
+	uniform_color
+
+== constant_rounding
+SkRasterPipeline, 1 stages
+	uniform_color
+
+== constant_half
+SkRasterPipeline, 1 stages
+	uniform_color
+
+== constant_transparent
+SkRasterPipeline, 1 stages
+	uniform_color
+
+== constant_unpremul
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+== constant_out_of_range
+SkRasterPipeline, 1 stages
+	unbounded_uniform_color
+
+== constant_color4f
+SkRasterPipeline, 1 stages
+	uniform_color
+
+== set_rgb_in_range
+SkRasterPipeline, 1 stages
+	set_rgb
+
+== set_rgb_zero
+SkRasterPipeline, 1 stages
+	set_rgb
+
+== set_rgb_negative
+SkRasterPipeline, 1 stages
+	unbounded_set_rgb
+
+== set_rgb_over
+SkRasterPipeline, 1 stages
+	unbounded_set_rgb
+
+== set_rgb_color4f
+SkRasterPipeline, 1 stages
+	set_rgb
+
+== matrix_identity
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== matrix_translate
+SkRasterPipeline, 2 stages
+	matrix_translate
+	seed_shader
+
+== matrix_scale
+SkRasterPipeline, 2 stages
+	matrix_scale_translate
+	seed_shader
+
+== matrix_scale_translate
+SkRasterPipeline, 2 stages
+	matrix_scale_translate
+	seed_shader
+
+== matrix_skew
+SkRasterPipeline, 2 stages
+	matrix_2x3
+	seed_shader
+
+== matrix_affine
+SkRasterPipeline, 2 stages
+	matrix_2x3
+	seed_shader
+
+== matrix_perspective
+SkRasterPipeline, 2 stages
+	matrix_perspective
+	seed_shader
+
+== matrix_persp_scale
+SkRasterPipeline, 2 stages
+	matrix_perspective
+	seed_shader
+
+== load_store_ct1
+SkRasterPipeline, 4 stages
+	load_a8
+	load_a8_dst
+	srcover
+	store_a8
+
+== load_store_ct2
+SkRasterPipeline, 4 stages
+	load_565
+	load_565_dst
+	srcover
+	store_565
+
+== load_store_ct3
+SkRasterPipeline, 4 stages
+	load_4444
+	load_4444_dst
+	srcover
+	store_4444
+
+== load_store_ct4
+SkRasterPipeline, 4 stages
+	load_8888
+	load_8888_dst
+	srcover
+	store_8888
+
+== load_store_ct5
+SkRasterPipeline, 7 stages
+	load_8888
+	force_opaque
+	load_8888_dst
+	force_opaque_dst
+	srcover
+	force_opaque
+	store_8888
+
+== load_store_ct6
+SkRasterPipeline, 7 stages
+	load_8888
+	swap_rb
+	load_8888_dst
+	swap_rb_dst
+	srcover
+	swap_rb
+	store_8888
+
+== load_store_ct7
+SkRasterPipeline, 4 stages
+	load_1010102
+	load_1010102_dst
+	srcover
+	store_1010102
+
+== load_store_ct8
+SkRasterPipeline, 7 stages
+	load_1010102
+	swap_rb
+	load_1010102_dst
+	swap_rb_dst
+	srcover
+	swap_rb
+	store_1010102
+
+== load_store_ct9
+SkRasterPipeline, 7 stages
+	load_1010102
+	force_opaque
+	load_1010102_dst
+	force_opaque_dst
+	srcover
+	force_opaque
+	store_1010102
+
+== load_store_ct10
+SkRasterPipeline, 10 stages
+	load_1010102
+	force_opaque
+	swap_rb
+	load_1010102_dst
+	force_opaque_dst
+	swap_rb_dst
+	srcover
+	force_opaque
+	swap_rb
+	store_1010102
+
+== load_store_ct11
+SkRasterPipeline, 10 stages
+	load_1010102_xr
+	force_opaque
+	swap_rb
+	load_1010102_xr_dst
+	force_opaque_dst
+	swap_rb_dst
+	srcover
+	force_opaque
+	swap_rb
+	store_1010102_xr
+
+== load_store_ct12
+SkRasterPipeline, 7 stages
+	load_10101010_xr
+	swap_rb
+	load_10101010_xr_dst
+	swap_rb_dst
+	srcover
+	swap_rb
+	store_10101010_xr
+
+== load_store_ct13
+SkRasterPipeline, 4 stages
+	load_10x6
+	load_10x6_dst
+	srcover
+	store_10x6
+
+== load_store_ct14
+SkRasterPipeline, 7 stages
+	load_a8
+	alpha_to_gray
+	load_a8_dst
+	alpha_to_gray_dst
+	srcover
+	bt709_luminance_or_luma_to_alpha
+	store_a8
+
+== load_store_ct15
+SkRasterPipeline, 4 stages
+	load_f16
+	load_f16_dst
+	srcover
+	store_f16
+
+== load_store_ct16
+SkRasterPipeline, 4 stages
+	load_f16
+	load_f16_dst
+	srcover
+	store_f16
+
+== load_store_ct17
+SkRasterPipeline, 7 stages
+	load_f16
+	force_opaque
+	load_f16_dst
+	force_opaque_dst
+	srcover
+	force_opaque
+	store_f16
+
+== load_store_ct18
+SkRasterPipeline, 4 stages
+	load_f32
+	load_f32_dst
+	srcover
+	store_f32
+
+== load_store_ct19
+SkRasterPipeline, 4 stages
+	load_rg88
+	load_rg88_dst
+	srcover
+	store_rg88
+
+== load_store_ct20
+SkRasterPipeline, 4 stages
+	load_af16
+	load_af16_dst
+	srcover
+	store_af16
+
+== load_store_ct21
+SkRasterPipeline, 4 stages
+	load_rf16
+	load_rf16_dst
+	srcover
+	store_rf16
+
+== load_store_ct22
+SkRasterPipeline, 4 stages
+	load_rgf16
+	load_rgf16_dst
+	srcover
+	store_rgf16
+
+== load_store_ct23
+SkRasterPipeline, 4 stages
+	load_a16
+	load_a16_dst
+	srcover
+	store_a16
+
+== load_store_ct24
+SkRasterPipeline, 4 stages
+	load_r16
+	load_r16_dst
+	srcover
+	store_r16
+
+== load_store_ct25
+SkRasterPipeline, 4 stages
+	load_rg1616
+	load_rg1616_dst
+	srcover
+	store_rg1616
+
+== load_store_ct26
+SkRasterPipeline, 4 stages
+	load_16161616
+	load_16161616_dst
+	srcover
+	store_16161616
+
+== load_store_ct27
+SkRasterPipeline, 9 stages
+	load_8888
+	parametric
+	load_8888_dst
+	swap_src_dst
+	parametric
+	swap_src_dst
+	srcover
+	parametric
+	store_8888
+
+== load_store_ct28
+SkRasterPipeline, 6 stages
+	load_a8
+	alpha_to_red
+	load_a8_dst
+	alpha_to_red_dst
+	srcover
+	store_r8
+
+== tf_srgb
+SkRasterPipeline, 3 stages
+	load_8888
+	parametric
+	store_8888
+
+== tf_srgb_inv
+SkRasterPipeline, 3 stages
+	load_8888
+	parametric
+	store_8888
+
+== tf_gamma
+SkRasterPipeline, 3 stages
+	load_8888
+	gamma_
+	store_8888
+
+== tf_linear
+SkRasterPipeline, 3 stages
+	load_8888
+	gamma_
+	store_8888
+
+== tf_pqish
+SkRasterPipeline, 3 stages
+	load_8888
+	PQish
+	store_8888
+
+== tf_hlgish
+SkRasterPipeline, 3 stages
+	load_8888
+	HLGish
+	store_8888
+
+== tf_hlginvish
+SkRasterPipeline, 3 stages
+	load_8888
+	HLGinvish
+	store_8888
+
+== clamp_if_normalized_ct1
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct2
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct3
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct4
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct5
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct6
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct7
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct8
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct9
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct10
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct11
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct12
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct13
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct14
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct15
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct16
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct17
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct18
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct19
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct20
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct21
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct22
+SkRasterPipeline, 1 stages
+	seed_shader
+
+== clamp_if_normalized_ct23
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct24
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct25
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct26
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct27
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== clamp_if_normalized_ct28
+SkRasterPipeline, 2 stages
+	seed_shader
+	clamp_01
+
+== stack_rewind
+SkRasterPipeline, 5 stages
+	load_8888
+	stack_rewind
+	swap_rb
+	stack_rewind
+	store_8888
+
+== extend
+SkRasterPipeline, 7 stages
+	load_8888
+	load_565
+	srcover
+	store_565
+	load_565
+	srcover
+	store_565
+
+== extend_rewind
+SkRasterPipeline, 4 stages
+	black_color
+	seed_shader
+	stack_rewind
+	store_8888
+
+== highp_only_op
+SkRasterPipeline, 3 stages
+	load_8888
+	unpremul
+	store_8888
+
+== empty
+SkRasterPipeline, 0 stages
+
