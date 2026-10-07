@@ -466,7 +466,7 @@ mod tests {
         assert_eq!(h(0x0000_0001), 0);
         assert_eq!(h(0x7f80_0001), 0x7e00);
         assert_eq!(h(0xffc0_2000), 0xfe01);
-        for x in 0..=u16::MAX {
+        for x in (0..=u16::MAX).step_by(if cfg!(miri) { 251 } else { 1 }) {
             let back = cvtps2ph(cvtph2ps(x));
             // Every half survives the round trip, except that a signalling NaN is quieted.
             let want = if x & 0x7c00 == 0x7c00 && x & 0x3ff != 0 {

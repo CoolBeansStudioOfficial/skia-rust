@@ -37,7 +37,18 @@ const COVER: MemSlot = MemSlot(4);
 
 /// Rounds of random lanes per test.
 fn rounds() -> usize {
-    if cfg!(miri) { 3 } else { 150 }
+    // Two rounds under Miri: a full chunk and a tail chunk (the sweeps run natively).
+    if cfg!(miri) { 2 } else { 150 }
+}
+
+/// Under Miri, every third stage of a family (the per-stage sweeps run natively); all of them
+/// otherwise.
+fn sample<T>(v: Vec<T>) -> Vec<T> {
+    if cfg!(miri) {
+        v.into_iter().step_by(3).collect()
+    } else {
+        v
+    }
 }
 
 /// Every selection this host can run (Scalar, native tiers, models; only Scalar and the
@@ -453,7 +464,7 @@ fn highp_blends_match_the_reference() {
             fused: fused(sel.tier),
         };
         let mut rng = Rng::new(0xb3_0001);
-        for (st, rcp) in highp_blends() {
+        for (st, rcp) in sample(highp_blends()) {
             // `rcp_fast` is 1/x on Scalar only (the others use estimates, covered by the twins).
             if rcp && sel.tier != Tier::Scalar {
                 continue;
@@ -641,7 +652,7 @@ fn lowp_blends_match_the_reference() {
             continue;
         };
         let mut rng = Rng::new(0xb3_0002);
-        for st in lowp_blends() {
+        for st in sample(lowp_blends()) {
             for round in 0..rounds() {
                 let lanes: Vec<[u16; 8]> = (0..n).map(|_| gen_lowp_px(&mut rng)).collect();
                 let (src, dst) = lowp_regs(&lanes);
@@ -876,7 +887,10 @@ fn highp_coverage_matches_the_reference() {
             fused: fused(sel.tier),
         };
         let mut rng = Rng::new(0xb3_0005);
-        for cover in Cover::ALL {
+        for cover in Cover::ALL
+            .into_iter()
+            .step_by(if cfg!(miri) { 3 } else { 1 })
+        {
             for round in 0..rounds() {
                 // Tail chunks (w < n) and full chunks, at an offset into the coverage memory.
                 let w = if round % 2 == 0 { n } else { (n - 1).max(1) };
@@ -954,7 +968,10 @@ fn lowp_coverage_matches_the_reference() {
         };
         let t = sel.tier;
         let mut rng = Rng::new(0xb3_0006);
-        for cover in Cover::ALL {
+        for cover in Cover::ALL
+            .into_iter()
+            .step_by(if cfg!(miri) { 3 } else { 1 })
+        {
             for round in 0..rounds() {
                 let w = if round % 2 == 0 { n } else { (n - 1).max(1) };
                 let x0 = rng.below(4);

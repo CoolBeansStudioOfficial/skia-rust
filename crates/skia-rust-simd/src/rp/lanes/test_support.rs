@@ -472,7 +472,8 @@ pub(crate) fn inputs(kind: Kind, seed: u64, budget: Budget) -> [std::vec::Vec<u3
             a.extend_from_slice(specials);
             a.extend((0..=u32::MAX).step_by(budget.sweep_step as usize));
             // Every lane position sees every special (lane-order bugs).
-            for i in 0..4 {
+            // (One rotation under Miri.)
+            for i in 0..if cfg!(miri) { 1 } else { 4 } {
                 a.extend(specials.iter().skip(i));
             }
         }

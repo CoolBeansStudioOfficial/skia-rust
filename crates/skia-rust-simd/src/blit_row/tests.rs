@@ -67,7 +67,7 @@ fn x86_formula_equals_scalar() {
 /// The Neon formula is exactly rounded.
 #[test]
 fn neon_formula_is_exact_rounding() {
-    for sa in 0..=255u32 {
+    for sa in (0..=255u32).step_by(if cfg!(miri) { 5 } else { 1 }) {
         for d in (0..=255u32).step_by(if cfg!(miri) { 17 } else { 1 }) {
             let expected = (sa + mul_div_255_round(255 - sa, d)).min(255);
             let px = src_over_neon(sa << 24, d << 24);
@@ -79,8 +79,14 @@ fn neon_formula_is_exact_rounding() {
 #[test]
 fn every_tier_matches_its_formula() {
     let mut rng = Rng(0xDEAD_BEEF_0BAD_F00D);
+    // Under Miri: a few lengths around the vector widths and tails (sweeps run natively).
+    let lens: Vec<usize> = if cfg!(miri) {
+        vec![0, 1, 3, 4, 5, 9, 17, 33, 129]
+    } else {
+        (0..70).chain([127, 128, 129, 1000]).collect()
+    };
     for sel in test_selections() {
-        for len in (0..70).chain([127, 128, 129, 1000]) {
+        for &len in &lens {
             let src = random_pixels(&mut rng, len);
             let dst0 = random_pixels(&mut rng, len);
             let expected: Vec<u32> = dst0
@@ -142,7 +148,7 @@ fn opaque_src_replaces_and_transparent_src_keeps() {
 #[test]
 fn color32_matches_scalar_twin() {
     let mut rng = Rng(99);
-    for alpha in 1..=254u32 {
+    for alpha in (1..=254u32).step_by(if cfg!(miri) { 41 } else { 1 }) {
         let color = (alpha << 24) | (rng.next_u32() & 0x00FF_FFFF);
         for len in [0, 1, 3, 4, 5, 8, 9, 31] {
             let dst0 = random_pixels(&mut rng, len);

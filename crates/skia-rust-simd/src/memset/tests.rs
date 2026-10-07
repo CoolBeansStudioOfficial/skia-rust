@@ -27,8 +27,14 @@ macro_rules! memset_tests {
         fn $name() {
             let value: $t = $value;
             for sel in test_selections() {
-                for count in (0..100).step_by(if cfg!(miri) { 7 } else { 1 }) {
-                    for offset in 0..9 {
+                // Under Miri: counts around the block sizes and a few misalignments.
+                let counts: Vec<usize> = if cfg!(miri) {
+                    vec![0, 1, 3, 5, 8, 9, 17, 33, 65]
+                } else {
+                    (0..100).collect()
+                };
+                for count in counts {
+                    for offset in (0..9).step_by(if cfg!(miri) { 4 } else { 1 }) {
                         let mut a = vec![1; 120];
                         let mut b = vec![1; 120];
                         $with(sel, &mut a[offset..], value, count);

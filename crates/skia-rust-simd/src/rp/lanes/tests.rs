@@ -499,7 +499,10 @@ fn kat_selections(estimates: bool) -> Vec<Selection> {
     for t in X86 {
         let host_estimates = estimate_op(t).is_available();
         sels.push(Selection::model(t, Estimates::AmdZen4));
-        if !estimates || host_estimates {
+        // Under Miri the Host-estimates model is the same code as the AmdZen4 one with another
+        // estimate source: one representative tier (Sse2) keeps the `Host` wrappers covered.
+        let host_model = !cfg!(miri) || t == Tier::Sse2;
+        if host_model && (!estimates || host_estimates) {
             sels.push(Selection::model(t, Estimates::Host));
         }
         if cfg!(not(miri)) && t.is_native() && host_estimates {
@@ -514,7 +517,7 @@ fn kat_selections(estimates: bool) -> Vec<Selection> {
 /// on `aarch64`.
 fn neon_selections(estimates: bool) -> Vec<Selection> {
     let mut sels = vec![Selection::model(Tier::Neon, Estimates::Arm)];
-    if !estimates || arm::host_available() {
+    if !cfg!(miri) && (!estimates || arm::host_available()) {
         sels.push(Selection::model(Tier::Neon, Estimates::Host));
     }
     if cfg!(not(miri)) && Tier::Neon.is_native() && arm::host_available() {
@@ -1006,8 +1009,10 @@ fn lowp_halves_match_highp() {
         (LowpPrim::Floor, Prim::Floor),
         (LowpPrim::RcpPrecise, Prim::RcpPrecise),
     ];
+    // Under Miri: two representative pairs (the rest are model-vs-model sweeps run natively).
+    let pairs = &pairs[..if cfg!(miri) { 2 } else { pairs.len() }];
     std::thread::scope(|s| {
-        for (seed, (lop, hop)) in (200u64..).zip(pairs) {
+        for (seed, (lop, hop)) in (200u64..).zip(pairs.iter().copied()) {
             s.spawn(move || {
                 let ins = inputs(lop.kind(), seed, budget);
                 let est = lop.uses_estimates();
