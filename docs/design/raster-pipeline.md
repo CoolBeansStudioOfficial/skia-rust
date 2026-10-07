@@ -20,7 +20,9 @@ Raster Pipeline, "opts" = `src/opts/SkRasterPipeline_opts.h`.
    outputs), and `rcp14` vs `rcpps` (ml3 → ml4, 104 outputs) (§1.9).
 4. **Hardware estimates are vendor-specific.** On this Zen 4 host `rcpps`/`rsqrtps` are exact
    functions of the top 12 mantissa bits (4096-entry tables model them bit-exactly); `rcp14`/
-   `rsqrt14` depend on all 23 bits. Goldens embed the oracle host's estimate tables (§1.4, §4.6).
+   `rsqrt14` follow Intel's published reference algorithm bit for bit. All four have software
+   models exact on all 2³² inputs (`estimates::amd_zen4`, A2d). Goldens embed the oracle host's
+   estimate tables (§1.4, §4.6).
 5. **Stage code is written once and stamped per tier** with `macro_rules!` + `include!`, inside
    per-tier modules whose every function is a safe `#[target_feature]` function. Generic code
    over a `Lanes` trait was rejected: trait methods cannot carry `#[target_feature]` and generic
@@ -164,17 +166,27 @@ round to `1/x`. Measured on this host over all 2²³ mantissas in [1,2): the Sse
   width-independent.
 - `rcpps` and `rsqrtps` results are exact functions of the **top 12 mantissa bits** (not of 11),
   and `rcpps(x·2ᵉ) = rcpps(x)·2⁻ᵉ` in the normal range. A 4096-entry table (8192 for `rsqrtps`,
-  exponent parity) models them bit-exactly; specials (±0, denormals, ±inf, NaN, results that
-  underflow) must be verified exhaustively over 2³² inputs.
-- `vrcp14ps`/`vrsqrt14ps` depend on **all** 23 mantissa bits (tested up to 22): a table model is
-  not practical; it needs Intel's published reference algorithm, if Zen 4 matches it (§6).
+  exponent parity) models them bit-exactly. Specials (A2d, verified over all 2³² inputs):
+  NaN → the input quieted (`| 0x400000`, sign and payload kept); ±0 **and every denormal
+  input** → ±∞ (denormals read as zero, sign kept, also for `rsqrtps(-denormal) = -∞`); `+∞` →
+  `+0`, `rcpps(-∞) = -0`; `rsqrtps` of any other negative input (normal or `-∞`) → the default
+  NaN `0xffc00000`; `rcpps` results below the normal range (`|x| ≥ 2¹²⁶`) flush to ±0 (no
+  denormal results). `rsqrtps` results are always normal.
+- `vrcp14ps`/`vrsqrt14ps` are Intel's reference algorithm (§6 R2): `rcp14` depends on the top
+  16 mantissa bits, `rsqrt14` on the top 15, plus an exact power-of-two case (`rcp14(2ᵉ) = 2⁻ᵉ`,
+  `rsqrt14(4ᵉ) = 2⁻ᵉ`). (A1's "all 23 bits" came from that special case at mantissa 0.) Unlike
+  the 12-bit forms they handle denormals: denormal inputs are normalized (`rcp14(x)` = ±∞ only
+  for `|x| ≤ 0x00200000`, where `1/x` overflows), results down to `2⁻¹⁴⁹` are produced as
+  denormals, and `rsqrt14(-denormal)` is the default NaN.
 - Fingerprints (FNV-1a of the outputs over [1,2), [2,4) for `rsqrt`) for comparison with other
   hosts: `rcpps[1,2)=f7ba415b37cf2325`, `rsqrtps[1,2)=df1c5fd75f2c2325`,
   `rsqrtps[2,4)=a918bea842f82325`, `rcp14[1,2)=80dd67e92b89c525`, `rsqrt14[1,2)=9c830943fb7e9e25`.
 
 The SDM only bounds `rcpps`/`rsqrtps` error (|rel err| ≤ 1.5·2⁻¹²); Intel and AMD implement
-different tables, so **Sse2/Sse41/Ml3 outputs that use any estimate are vendor-specific**, and
-Ml4's are too unless AMD's `rcp14` matches Intel's. ARM's `FRECPE`/`FRSQRTE` are defined
+different tables, so **Sse2/Sse41/Ml3 outputs that use any estimate are vendor-specific**. Ml4's
+are expected to be portable across vendors: Zen 4's `rcp14`/`rsqrt14` follow Intel's reference
+algorithm and coefficient tables exactly (§6 R2; still worth confirming on one Intel AVX-512
+runner). ARM's `FRECPE`/`FRSQRTE` are defined
 bit-exactly by Arm ARM pseudocode (`RecipEstimate`/`RecipSqrtEstimate`), and `FRECPS`/`FRSQRTS`
 are fused, so Neon outputs are portable across Apple and Neoverse cores.
 
@@ -425,7 +437,7 @@ This is the only mutable state, it is test-only, and it is scoped.
   `0x3f800000 | i << 11`), `rsqrtps.bin` (8192 × u32 LE: [1,2) then [2,4)) and `estimates.txt`
   (host, fingerprints, mismatch counts), and checks the tables against the host over all 2²³
   mantissas of [1,2) (`rcpps`) and [1,4) (`rsqrtps`): 0 mismatches on the oracle host. Specials
-  and other binades are A2d's exhaustive check.
+  and other binades are covered by A2d's exhaustive check (§2.8).
 
 ### 2.3 Dispatch
 
@@ -696,7 +708,7 @@ features**:
 | `iround` x86 | NaN or out of `i32` range → `i32::MIN`, else `round_ties_even() as i32` |
 | `trunc_`/casts x86 | NaN or out of range → `i32::MIN`, else truncation |
 | `floor_` Sse2 | `cvtt` model + compare, as in `opts#L1069-L1070` |
-| `rcp_approx`/`rsqrt_approx` x86 | `Estimates::AmdZen4`: 4096/8192-entry tables + specials; `Estimates::Host`: `_mm_rcp_ss`/`_mm_rcp14_ss` on one lane (native hosts only) |
+| `rcp_approx`/`rsqrt_approx` x86 | `Estimates::AmdZen4`: `estimates::amd_zen4::{rcp, rsqrt}` (4096/8192-entry tables + specials) and `::{rcp14, rsqrt14}` (Ml4; Intel's reference algorithm); `Estimates::Host`: `_mm_rcp_ss`/`_mm_rcp14_ss` on one lane (native hosts only) |
 | `rcp_approx`/`rsqrt_approx` Neon | port of Arm ARM `RecipEstimate`/`RecipSqrtEstimate`; `FRECPS`/`FRSQRTS` fused |
 | `to_half` F16C/Neon | IEEE f32→f16 RNE with denormals and NaN quieting (as `vcvtps2ph`/`FCVTN`) |
 | `if_then_else` Ml3/Ml4 | select on the sign bit only |
@@ -709,13 +721,26 @@ for free, with only the ~55 primitives written twice. Uses:
    contexts through `Native` and `Model` must be bit-identical; primitives are additionally
    checked exhaustively over all 2³² `f32` inputs on the server (seconds per primitive).
 2. **Any tier on any host**: CI runners without AVX-512 check `Ml4` goldens with
-   `Backend::Model(AmdZen4)` (once `rcp14` has a model), arm64 runners check x86 tiers, x86
-   runners check `Neon`.
+   `Backend::Model(AmdZen4)`, arm64 runners check x86 tiers, x86 runners check `Neon`.
 3. **Miri** runs the model instantiations (no intrinsics apart from `Estimates::Host`).
 
-The estimate tables are data generated by `cargo xtask cpu-probe --dump-tables` on the oracle
-host and committed under `crates/skia-rust-simd/src/rp/lanes/estimates/` (4096 × u32 for `rcpps`,
-2 × 4096 for `rsqrtps`), with the host's fingerprint.
+**Estimate models (A2d).** The estimate tables are data generated by
+`cargo xtask cpu-probe --dump-tables` on the oracle host and committed under
+`crates/skia-rust-simd/src/estimates/amd_zen4/` (`rcpps.bin` 4096 × u32 LE, `rsqrtps.bin`
+2 × 4096, `estimates.txt` with the host and its fingerprints), decoded at compile time with
+`include_bytes!` into `estimates::tables::AMD_ZEN4`, whose `rcp_approx`/`rsqrt_approx` add the
+special-value and exponent rules of §1.4. `estimates::recip14` models `vrcp14ps`/`vrsqrt14ps`
+(§6 R2). The API model lanes call is `estimates::amd_zen4::{rcp, rsqrt, rcp14, rsqrt14}(f32) ->
+f32`. Verification:
+
+- `exhaustive_amd_zen4_vs_host` (`#[ignore]`d; on the oracle host:
+  `cargo test -p skia-rust-simd --release -- --ignored exhaustive_amd_zen4`, ~10 s on 16
+  threads): all 2³² inputs, model vs host instruction. Result on the oracle host: **0
+  mismatches** for each of `rcpps`, `rsqrtps`, `rcp14`, `rsqrt14`. It fails (never passes
+  vacuously) on a host whose fingerprints differ.
+- Always run: the models reproduce the five §1.4 fingerprints (host-independent, 5 × 2²³
+  inputs), known oracle-host values incl. specials (also under Miri), and a ~10⁶-input sample
+  vs the host when the host's fingerprints match.
 
 ---
 
@@ -871,11 +896,13 @@ Policy:
    instantiated with table-driven `rcp_approx`/`rsqrt_approx` (`cfg(feature = "emulated-estimates")`,
    test-only) — so the GMs still check everything except the vendor's own tables. The model twin
    tests still compare `Native` against `Model(Host)` on that runner.
-4. Ml4 on a non-AVX-512 runner uses `Model`, which needs an `rcp14`/`rsqrt14` model (§6, R2); until
-   then those runners skip Ml4 GMs that hit an estimate, reporting them as `not-checkable` (never as
-   passing).
-5. Intel SDE (PLAN §7) executes `vrcp14ps` with Intel's semantics and runs `rcpps` natively on the
-   host, so it cannot reproduce AMD-generated goldens for affected GMs; prefer `Model` runs.
+4. Ml4 on a non-AVX-512 runner uses `Model(AmdZen4)`, whose `rcp14`/`rsqrt14` model is exact on
+   all 2³² inputs (§2.8, §6 R2), so those runners check every Ml4 GM. An Intel AVX-512 runner's
+   `rcp14`/`rsqrt14` fingerprints are expected to equal `AMD_ZEN4`'s (same reference algorithm);
+   if one does not, its Ml4 tier falls under item 3.
+5. Intel SDE (PLAN §7) executes `vrcp14ps` with Intel's semantics (expected to equal Zen 4's) and
+   runs `rcpps` natively on the host, so it cannot reproduce AMD-generated goldens for GMs that
+   use `rcpps`/`rsqrtps`; prefer `Model` runs.
 6. Optional later: generate Intel goldens for the affected tiers on an Intel runner (DM binary
    built on the server, run with `SKIA_ORACLE_CPU_CAP`) and select goldens by fingerprint.
 
@@ -977,8 +1004,8 @@ P1 ─ C1 ─┬─ C2, C3, C4 (need D1) ─ C5 ──────────�
 
 | # | Risk / question | Recommendation |
 |---|---|---|
-| R1 | **Vendor-specific estimates** make some Sse2/Sse41/Ml3/Ml4 goldens unreproducible on Intel runners. | Fingerprint every host; emulate the oracle host's tables in tests (§4.6); never mark an estimate-dependent GM passing without a matching fingerprint or emulation. Consider Intel goldens later. |
-| R2 | **No software model for `rcp14`/`rsqrt14`** yet (they use all 23 bits). | Locate Intel's reference implementation ("Reference Implementations for IA Approximation Instructions VRCP14, VRSQRT14, …") and test it exhaustively against Zen 4. If it matches, it is the Ml4 model on every host; if not, measure an Intel AVX-512 runner too and decide which goldens to keep. Until then, Ml4 checks for estimate-dependent GMs need a Zen 4 / AVX-512 host. |
+| R1 | **Vendor-specific estimates** make some Sse2/Sse41/Ml3 goldens unreproducible on Intel runners (Ml4 is expected to be portable, R2). | Fingerprint every host; emulate the oracle host's tables in tests (§4.6); never mark an estimate-dependent GM passing without a matching fingerprint or emulation. Consider Intel goldens later. |
+| R2 | ~~No software model for `rcp14`/`rsqrt14`~~ **Resolved (A2d).** | Intel's "Reference Implementations for IA Approximation Instructions VRCP14, VRSQRT14, VRCP28, VRSQRT28, and VEXP2" (`RECIP14.c`, `RCP14S`/`RSQRT14S`): linear interpolation on 64 segments (`rcp14`, input truncated to 16 mantissa bits, `a − 2⁸·b·(x − y)`) or 32 + 32 (`rsqrt14`, 15 bits, slope scale 2⁸ on [1,2) and 2⁷ on [2,4)), evaluated exactly in `f64`, truncated to 16 fraction bits (`& ~(2³⁶−1)`), scaled by 2⁻¹⁸/2⁻¹⁹; exact power-of-two case; denormal inputs normalized (`≤ 0x00200000` → ±∞); denormal results by right shift. `estimates::recip14` implements that structure with coefficients **fitted from the Zen 4 host** (each segment's pair is the unique integer solution reproducing all 1024 host outputs of the segment); they equal Intel's published `RCP14_Coeff`/`RSQRT14_Coeff` (all 256 numbers compared with the published file). Exhaustive check vs Zen 4: **0 mismatches** over 2³² inputs for both. We did not compile Intel's C code itself; the special-value paths were modelled from Zen 4 measurements and agree with the reference's described behaviour. Remaining: run the cheap fingerprint check (`cargo xtask cpu-probe`) on one Intel AVX-512 runner to confirm Intel silicon matches its own reference. |
 | R3 | **Interpreter performance** vs Skia's register-passing tail calls. | Bench in A3 before Wave B scales out; fused programs for hot sequences; keep stage bodies small and `#[inline]`; profile LLVM's inlining in the giant `match`. |
 | R4 | **Compile time / code size**: 6 native + 5 model instantiations of ~7k lines of stage code. | Models behind `cfg(any(test, feature = "models"))`; native tiers by `target_arch`; measure in A3. If needed, split highp into per-file sub-modules so codegen units parallelize. |
 | R5 | **Wasm oracle missing**; Emscripten libm (musl) and `(int)` conversions (`i32.trunc_sat` with nontrapping-fptoint, the default in current LLVM) differ from Windows. | `x64-scalar` proxy now (§4.5); the real wasm oracle before Scalar GMs are marked passing. Rust's `as` saturates like `trunc_sat`. |
@@ -1009,3 +1036,7 @@ Open questions for the coordinator:
   sse41 ≡ avx (0); 1,701 identical across all four.
 - Estimate probe (Zen 4, rustc 1.99): see §1.4. The probe and the golden-comparison script are
   throwaway and not committed; A1/A2d re-implement them as `cargo xtask cpu-probe`.
+- `rcp14`/`rsqrt14` (A2d): outputs over [1,2) and [2,4) are constant on blocks of 2⁷ (`rcp14`)
+  and 2⁸ (`rsqrt14`) mantissas apart from mantissa 0; the outputs have ≥ 7 trailing zero bits.
+  Fitting `trunc17(S·a − b·(k − 512))` per segment (k = the 10 bits below the segment index)
+  gave exactly one integer pair per segment, for all 64 + 32 + 32 segments.

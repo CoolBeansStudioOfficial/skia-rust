@@ -1,0 +1,12 @@
+# Host estimate tables written by `cargo xtask cpu-probe --dump-tables`.
+# rcpps.bin: 4096 x u32 LE, entry i = rcpps(bits 0x3f800000 | i << 11).
+# rsqrtps.bin: 8192 x u32 LE, [1,2) (0x3f800000 | i << 11) then [2,4) (0x40000000 | i << 11).
+cpu = "AMD Ryzen 7 7800X3D 8-Core Processor"
+vendor = "AuthenticAMD"
+rcpps[1,2) = f7ba415b37cf2325
+rsqrtps[1,2) = df1c5fd75f2c2325
+rsqrtps[2,4) = a918bea842f82325
+rcp14[1,2) = 80dd67e92b89c525
+rsqrt14[1,2) = 9c830943fb7e9e25
+rcpps_table_mismatches_1_2 = 0
+rsqrtps_table_mismatches_1_4 = 0

@@ -10,6 +10,13 @@
 //! be compared with the oracle host, and extracts the 4096-entry tables that model `rcpps` and
 //! `rsqrtps` (used by `cargo xtask cpu-probe`).
 //!
+//! Software models (bit-exact on every `f32` input, verified exhaustively on the oracle host):
+//! - [`amd_zen4`]: `rcp`, `rsqrt`, `rcp14`, `rsqrt14` of the oracle host, the functions model
+//!   tiers use for [`Estimates::AmdZen4`](crate::Estimates::AmdZen4).
+//! - [`tables`]: the committed `rcpps`/`rsqrtps` tables ([`tables::AMD_ZEN4`]) and the
+//!   table-driven `rcp_approx`/`rsqrt_approx` that extend them to every input.
+//! - [`recip14`]: `vrcp14ps`/`vrsqrt14ps` (Intel's reference algorithm, which Zen 4 follows).
+//!
 //! # Fingerprints
 //! A fingerprint is FNV-1a over 32-bit words: starting from `0xcbf29ce484222325`, for each output
 //! `h = (h ^ bits as u64) * 0x100000001b3` (wrapping), over the inputs `f32::from_bits(base | m)`
@@ -18,6 +25,10 @@
 //! the low bits of the hash are data-independent; that is expected.)
 
 use crate::tier::Tier;
+
+pub mod amd_zen4;
+pub mod recip14;
+pub mod tables;
 
 /// One estimate instruction, applied lane-wise.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
