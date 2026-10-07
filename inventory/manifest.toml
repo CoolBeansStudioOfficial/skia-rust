@@ -31139,7 +31139,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FillPathTest.cpp#L39-L55"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "69cf49113c22f477e6e204142bfbe0258ea0e9721420f243b71d1fdf635bc3fb"
 
 [[test]]
@@ -40449,7 +40449,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L220-L225"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f8a802d19e0940460bc87461d418f0b5b0f803ce6a65b570589accbb0accc758"
 
 [[test]]
@@ -40512,7 +40512,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L400-L409"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8718517c8ded845ca7ffc205357609e4bd6fdb66c0b9dd382067dcf75f63404f"
 
 [[test]]
@@ -40521,7 +40521,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L537-L556"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fa43d7d4d9adb21251ba706c38b3d18bd0b49bac46c63d9bfc1d7f684c9c741d"
 
 [[test]]
@@ -40548,7 +40548,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L382-L398"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "28f9bcae50bc10adb2bc1589ad56ef89f3764faf55bce9b6f76b32e0c7da201b"
 
 [[test]]
@@ -40566,7 +40566,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L481-L535"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "68f91c82057f5138c22f885c808c9a17cdb314d49ac2207b420efe576e0ef007"
 
 [[test]]
@@ -40575,7 +40575,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RegionTest.cpp#L411-L430"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e4dc9c3e95da5b3c1bc5a4fc5f4d308a81b80023e468c590a303177c390ea5c5"
 
 [[test]]

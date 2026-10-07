@@ -1601,6 +1601,36 @@ the same framework.
   `skia-rust-effects/src/tests.rs` covers its path-effect half (`FillPathWithPaint` with a huge stroke width
   and a cull rect) plus basic dashing, sum and compose sanity. `bug4871` and `DashCrazy` build the
   `StrokeRec` with `StrokeRec::from_paint_params` in place of `SkPaint`.
+**As implemented in C2** (`skia_rust_raster::{scan, scan_priv, region_path}`, `skia_rust_core::{t_sort,
+region_path}`):
+
+- **`scan`** is `SkScan.cpp` + `SkScan_Path.cpp`: `fill_path`, `fill_irect/xrect/rect`, `fill_triangle`,
+  `path_requires_tiling`, `XRect` helpers, `walk_edges`, `walk_simple_edges`, the inverse-fill
+  `InverseBlitter` and `sk_fill_path`. All edges of a path live in one `Vec<AnyEdge>` with the
+  `headEdge`/`tailEdge` sentinels appended; `fPrev`/`fNext` are indices and `NIL` (`usize::MAX`) is
+  the null pointer. The sorted list is built with the ported `SkTQSort` (`core::t_sort`) so ties
+  (equal `fFirstY` and `fX`) end up in Skia's order. `walk_edges` is generic over the blitter so the
+  `PrePostProc` of the inverse fill gets the concrete `InverseBlitter`. `ASSERT_RETURN` returns
+  without a debug abort (a release Skia's behaviour).
+- **`scan_priv`** is `SkScanPriv.h` plus `SkScanClipper` and `sk_blit_above/below`: the list helpers
+  are generic over a `LinkedEdge` trait so C3's analytic edges can reuse them; `ScanClipper` is an
+  enum of the wrapper blitters (plain, `RectClipBlitter`, `RgnClipBlitter`) and hands out
+  `Option<&mut dyn Blitter>`.
+- **`SkRasterClip` overloads are not ported** (they wrap an `SkAAClip` blitter): C5 adds them on top
+  of the region functions here. `fill_triangle` therefore takes a `Region`.
+- **`Region::set_path`** needs the scan converter, which depends on core, so it is the extension trait
+  `skia_rust_raster::region_path::RegionExt` (documented in `API_MAPPING.md`). `SkRgnBuilder` is a
+  private blitter over a `Vec<i32>` that grows on demand; core gained the `#[doc(hidden)]
+  region_priv::{count_runtype_values, make_complex, RECT_REGION_RUNS}` hooks. `addBoundaryPath` /
+  `getBoundaryPath` need no scan conversion and are inherent `Region` methods
+  (`core::region_path`).
+- **Tests.** `FillPathTest::FillPathInverse`, `RegionTest::{Region, giant_path_region,
+  rrect_region_crbug_850350, region_inverse_union_skbug_7491, region_very_large, region_b510359475}`
+  flipped (`Region` is the whole `test_proc`/`test_empties`/`test_fromchrome` group).
+  `PathTest::Paths` and the other `PathTest` entries that mention `setPath` draw through
+  `SkSurface`/`SkCanvas` and stay `todo`. `crates/skia-rust-raster/src/scan_tests.rs` checks hand-derived
+  spans (rect, triangle staircase, even-odd/winding nested squares, inverse fill, clipping) and
+  `Region::set_path` / `boundary_path` round trips.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
