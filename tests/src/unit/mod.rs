@@ -19,6 +19,8 @@ pub mod cubic_roots_test;
 #[cfg(test)]
 pub mod data_ref_test;
 #[cfg(test)]
+pub mod f16_stages_test;
+#[cfg(test)]
 pub mod find_cubic_convex180_chops_test;
 #[cfg(test)]
 pub mod float16_test;

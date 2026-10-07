@@ -31092,7 +31092,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/F16StagesTest.cpp#L15-L57"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "63550bdb0b6e7003ffbe0df2f034df579fc029f0b5187ad14c6a3728aea4f702"
 
 [[test]]
@@ -43564,7 +43564,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2945-L3121"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9fd61244b8dc22d9f254673ea0519f7fe2c175c764db9aee64fad9671492c69b"
 
 [[test]]
