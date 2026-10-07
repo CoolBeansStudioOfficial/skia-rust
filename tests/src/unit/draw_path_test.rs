@@ -213,14 +213,14 @@ fn test_crbug_1239558(reporter: &mut Reporter) {
         // forms (described below).
         let mut builder = PathBuilder::new_with_fill_type(PathFillType::Winding);
         builder.move_to((7.00649e-45_f32, 2.0));
-        builder.move_to((0.0160219_f32, 7.45063e-09_f32));
+        builder.move_to((0.016_021_9_f32, 7.45063e-09_f32));
         builder.move_to((192.263_f32, 8.40779e-44_f32));
         builder.move_to((7.34684e-40_f32, 194.25));
         builder.move_to((2.3449e-38_f32, 6.01858e-36_f32));
         builder.move_to((7.34684e-40_f32, 194.25));
         builder.cubic_to(
             (5.07266e-39_f32, 56.0488_f32),
-            (0.0119172_f32, 0.0),
+            (0.011_917_2_f32, 0.0),
             (7.34684e-40_f32, 194.25),
         );
 

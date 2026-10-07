@@ -71,6 +71,7 @@ fn assert_color_in_range(
 }
 
 // Port of: tests/CappedHairlinesTest.cpp#L67-L119 (chrome/m156)
+#[allow(clippy::too_many_lines)] // one function, as the C++
 fn draw_aa_hairline_path_with_caps_no_offset(reporter: &mut Reporter, cap: Cap) {
     let mut surface = create_white_raster_surface().expect("surface");
 
