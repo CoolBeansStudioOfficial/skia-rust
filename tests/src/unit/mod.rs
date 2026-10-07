@@ -13,11 +13,23 @@ pub mod floating_point_test;
 #[cfg(test)]
 pub mod hsv_round_trip_test;
 #[cfg(test)]
+pub mod inf_rect_test;
+#[cfg(test)]
 pub mod math_test;
+#[cfg(test)]
+pub mod point3_test;
+#[cfg(test)]
+pub mod point_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
+pub mod rect_test;
+#[cfg(test)]
 pub mod safe_math_test;
+#[cfg(test)]
+pub mod scalar_test;
+#[cfg(test)]
+pub mod size_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
