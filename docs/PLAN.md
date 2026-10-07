@@ -47,7 +47,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | wasm oracle | Skia built with Emscripten (CanvasKit-style) at the **simd128** tier, run under Node; matched exactly |
 | Perf | Gate: ≤ 0% slower than Skia per bench (measured on the server); GPU benches compare against the wgpu-capability-restricted oracle |
 | GPU perf features | Async pipeline compilation (background threads) + wgpu `PipelineCache`. Dawn-only tile-GPU extensions (transient attachments, MSAA render-to-single-sampled, load-resolve, framebuffer fetch) are not pursued; desktop parity is the target |
-| Agents | Cheapest model first, escalating on failure: Haiku 4.5 → Sonnet 5.5 → Opus 5.5; wide parallel fan-out allowed (§8.3) |
+| Agents | Sonnet 5.5 first, escalating to Opus 5.5 on failure (Haiku dropped: couldn't handle the ports); wide parallel fan-out allowed (§8.3) |
 | Workflow | Inventory-driven, small PRs (one manifest entry or a small batch per PR) |
 | Publishing | Reserve the name now; first real release when core + CPU raster are at 100% |
 | Versioning | `0.NNN.patch`, where NNN = the Skia milestone being matched |
@@ -246,7 +246,7 @@ cargo xtask diff gm/strokes::strokes_round --config cpu-x64-hsw-8888   # fetch g
 - Pin bumps happen on `bump/mNNN` branches (§9.1).
 
 ### 8.3 Agent staffing and escalation
-- **Model ladder: cheapest first.** Every manifest task starts on Haiku 4.5. On failure it moves up one rung: Haiku 4.5 → Sonnet 5.5 → Opus 5.5.
+- **Model ladder:** every manifest task starts on Sonnet 5.5; on failure it moves up to Opus 5.5. (Haiku 4.5 was tried first and dropped on 2026-10-06: it couldn't complete even mid-sized ports such as `SkVx`.)
 - **Escalation triggers** (any one moves the task up a rung):
   - the manifest entry is still not `passing` after **2 full attempts** (each = port, run the oracle comparison, apply a debug-dump-driven fix);
   - a `passing → failing` regression the agent can't root-cause in one attempt;
