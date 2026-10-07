@@ -1,0 +1,6 @@
+# API reference: rust-skia's skia-safe crate, whose public API skia-rust mirrors
+# (docs/PORTING.md §3). Fetched into third_party/rust-skia by `cargo xtask skia fetch`.
+# Bump alongside the Skia pin when rust-skia releases the matching milestone.
+repo = "https://github.com/rust-skia/rust-skia"
+# main at the m155 bump (skia-safe 0.155.0); no tag yet.
+commit = "594bb85bad45777ff5f7e284ba54c51346fb9e2e"

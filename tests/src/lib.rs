@@ -115,11 +115,15 @@ impl Reporter {
 /// def_test!(Point, |reporter| {
 ///     reporter_assert!(reporter, 1 + 1 == 2);
 /// });
+///
+/// // A test that doesn't pass yet: manifest status `failing`, plus a note.
+/// def_test!(#[ignore = "see notes/PathTest-Path_arcTo.md"] Path_arcTo, |reporter| { ... });
 /// ```
 #[macro_export]
 macro_rules! def_test {
-    ($name:ident, |$reporter:ident| $body:block) => {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident| $body:block) => {
         #[test]
+        $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
@@ -183,6 +187,14 @@ macro_rules! infof {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    def_test!(
+        #[ignore = "demonstrates attributes on def_test!"]
+        HarnessIgnoredExample,
+        |reporter| {
+            errorf!(reporter, "never runs");
+        }
+    );
 
     #[test]
     fn reporter_collects_failures_and_keeps_going() {
