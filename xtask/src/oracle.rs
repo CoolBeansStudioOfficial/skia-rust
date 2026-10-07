@@ -982,10 +982,12 @@ mod tests {
             .filter(|t| t.gpu.is_none() && t.name.starts_with("cpu-x64-"))
             .map(|t| t.name)
             .collect();
+        // Every x64 oracle tier maps to exactly one simd `Tier` (x86 tiers, plus
+        // `Scalar` for the `x64-scalar` stand-in build).
         let mut mapped: Vec<String> = skia_rust_simd::Tier::ALL
             .iter()
-            .filter(|t| t.is_x86())
             .flat_map(|t| t.oracle_tiers().iter().map(|s| (*s).to_owned()))
+            .filter(|name| name.starts_with("cpu-x64-"))
             .collect();
         derived.sort();
         mapped.sort();
