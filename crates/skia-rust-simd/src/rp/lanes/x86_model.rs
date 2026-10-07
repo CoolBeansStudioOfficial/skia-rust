@@ -84,7 +84,7 @@ fn fma_nan(a: f32, b: f32, c: f32) -> Option<f32> {
 }
 
 /// `vfmadd…ps` (one lane): `a*b + c` with a single rounding; a NaN operand is returned quieted
-/// ([`fma_nan`]), invalid operations (`0 * inf`, `inf - inf`) give the indefinite.
+/// (`fma_nan`), invalid operations (`0 * inf`, `inf - inf`) give the indefinite.
 #[inline]
 #[must_use]
 pub fn fmadd(a: f32, b: f32, c: f32) -> f32 {

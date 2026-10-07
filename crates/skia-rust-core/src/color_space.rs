@@ -343,8 +343,8 @@ pub mod named_transfer_fn {
 
     /// Rec. ITU-R BT.709-6, value 1. This follows note 1, which reads: "In the cases
     /// of [...] `TransferCharacteristics` equal to 1, 6, 14 or 15 [...], although the
-    /// value is defined in terms of a reference [OETF], a suggested corresponding
-    /// reference [EOTF] has been specified in Rec. ITU-R BT.1886-0."
+    /// value is defined in terms of a reference \[OETF\], a suggested corresponding
+    /// reference \[EOTF\] has been specified in Rec. ITU-R BT.1886-0."
     #[doc(alias = "kRec709")]
     pub const REC709: ColorSpaceTransferFn =
         ColorSpaceTransferFn::new(2.4, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0);

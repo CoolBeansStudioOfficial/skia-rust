@@ -6,7 +6,7 @@
 //! [`ColorSpaceXformSteps`]: the minimal set of steps needed to convert color (and alpha type)
 //! between two color spaces. See skia.org/docs/user/color.
 
-use skia_rust_skcms::{Matrix3x3, TfType, TransferFunction};
+use skia_rust_skcms::{TfType, TransferFunction};
 
 use crate::alpha_type::AlphaType;
 use crate::arena_alloc::ArenaAlloc;
@@ -238,8 +238,8 @@ impl ColorSpaceXformSteps {
         } else {
             #[cfg(debug_assertions)]
             {
-                let src_m: Matrix3x3 = src.to_xyzd50();
-                let dst_m: Matrix3x3 = dst.to_xyzd50();
+                let src_m: skia_rust_skcms::Matrix3x3 = src.to_xyzd50();
+                let dst_m: skia_rust_skcms::Matrix3x3 = dst.to_xyzd50();
                 debug_assert!(src_m.bit_eq(&dst_m), "Hash collision");
             }
         }

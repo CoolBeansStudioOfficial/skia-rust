@@ -272,6 +272,28 @@ impl Rng {
     }
 }
 
+/// Make sure no two NaNs meet in one lane of a twin-test input (`lanes` lanes per register, so
+/// word `i` is in lane `i % lanes`): in each lane only the first NaN of the `regs` slices is kept
+/// (none with `keep_one == false`); the others become `1.5`.
+///
+/// Which of two NaN operands a commutative `addps`/`mulps` returns is up to the compiler, for
+/// Skia's clang as for rustc: LLVM commutes the operands differently in debug and release, so the
+/// native tier and its model can legitimately disagree on the NaN's sign and payload (design §2.4
+/// "NaN payloads"). The twin tests therefore never feed a stage two NaNs in one lane.
+pub(crate) fn thin_nans(regs: &mut [&mut [u32]], lanes: usize, keep_one: bool) {
+    let mut seen = std::vec![!keep_one; lanes];
+    for reg in regs.iter_mut() {
+        for (i, w) in reg.iter_mut().enumerate() {
+            if f32::from_bits(*w).is_nan() {
+                if seen[i % lanes] {
+                    *w = 1.5f32.to_bits();
+                }
+                seen[i % lanes] = true;
+            }
+        }
+    }
+}
+
 /// Special float bit patterns (design §4.1): zeros, denormals, `FLT_MIN`, ±1, values around 0.5
 /// and rounding ties, the `i32`/`u32` limits, half-float limits, `FLT_MAX`, infinities, and
 /// quiet/signalling NaNs with both signs and several payloads.

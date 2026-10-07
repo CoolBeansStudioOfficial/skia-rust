@@ -22,7 +22,7 @@
 )]
 
 use super::contexts::{EmbossCtx, TablesCtx, TransferFunction, UniformColorCtx};
-use super::lanes::test_support::{Rng, float_specials};
+use super::lanes::test_support::{Rng, float_specials, thin_nans};
 use super::{MemPtr, MemSlot, MemView, MemoryBindings, MemoryCtx, Program, Stage};
 use crate::tier::{Backend, Estimates, Selection, Tier};
 
@@ -752,6 +752,8 @@ fn highp_color_stage_twins() {
                     random_lanes(&mut rng, &specials, 4 * n),
                 )
             };
+            let (mut src, mut dst) = (src, dst);
+            thin_nans(&mut [&mut src, &mut dst], n, true);
             let (sb, db) = (bytes(&src), bytes(&dst));
             let mul: Vec<u8> = (0..n).map(|_| rng.next_u32() as u8).collect();
             let add: Vec<u8> = (0..n).map(|_| rng.next_u32() as u8).collect();

@@ -41,6 +41,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace
 
+  # Exactness is defined on optimized builds (#34, #69): the debug job above can miss
+  # optimizer-dependent float behaviour (FMA folding, NaN operand order), so run the whole suite
+  # in release too, on the same four platforms (parallel with `test`, so no extra wall time).
+  test-release:
+    name: test-release (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --release --workspace
+
   wasm:
     runs-on: ubuntu-latest
     env:

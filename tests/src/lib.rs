@@ -150,26 +150,16 @@ macro_rules! def_test {
     };
 }
 
-/// Every CPU tier this host can run (`Tier::ALL` order): natively where the CPU has the tier's
-/// instructions, else by the tier's model (with the oracle host's `AmdZen4` estimates for the
-/// x86 tiers, the architectural `Arm` estimates for `Neon`).
+/// Every CPU tier (`Tier::ALL` order), as `skia_rust_simd::testing::oracle_selection` picks it:
+/// natively where the CPU has the tier's instructions and the oracle host's estimates, else by
+/// the tier's model (with the oracle host's `AmdZen4` estimates for the x86 tiers, the
+/// architectural `Arm` estimates for `Neon`).
 #[must_use]
 pub fn tier_selections() -> Vec<skia_rust_simd::Selection> {
-    use skia_rust_simd::{Estimates, Selection, Tier};
+    use skia_rust_simd::Tier;
     Tier::ALL
         .into_iter()
-        .filter_map(|tier| {
-            let native = Selection::native(tier);
-            if native.check().is_ok() {
-                return Some(native);
-            }
-            let estimates = if tier == Tier::Neon {
-                Estimates::Arm
-            } else {
-                Estimates::AmdZen4
-            };
-            Selection::model(tier, estimates).check().ok()
-        })
+        .map(skia_rust_simd::testing::oracle_selection)
         .collect()
 }
 

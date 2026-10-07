@@ -34,7 +34,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_simd::testing::force_tier;
-use skia_rust_simd::{Estimates, Selection, Tier};
+use skia_rust_simd::{Selection, Tier};
 
 use crate::blit_row::{color32, factory32};
 use crate::blitter::Blitter;
@@ -881,13 +881,7 @@ fn x86_and_scalar_tiers() -> Vec<Selection> {
     Tier::ALL
         .into_iter()
         .filter(|t| *t != Tier::Neon)
-        .filter_map(|tier| {
-            let native = Selection::native(tier);
-            if native.check().is_ok() {
-                return Some(native);
-            }
-            Selection::model(tier, Estimates::AmdZen4).check().ok()
-        })
+        .map(skia_rust_simd::testing::oracle_selection)
         .collect()
 }
 

@@ -40,7 +40,7 @@ use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::{self, MatrixRec, ShaderBase, ShaderType};
 use skia_rust_simd::testing::force_tier;
-use skia_rust_simd::{Estimates, Selection, Tier};
+use skia_rust_simd::{Selection, Tier};
 
 use crate::blitter::Blitter;
 use crate::raster_pipeline_blitter::{
@@ -533,12 +533,7 @@ const COLOR_TYPES: [ColorType; 28] = [
 
 /// `tier`, natively where the host can, else its model (as `tier_selections()`).
 fn selection_of(tier: Tier) -> Selection {
-    let native = Selection::native(tier);
-    if native.check().is_ok() {
-        native
-    } else {
-        Selection::model(tier, Estimates::AmdZen4)
-    }
+    skia_rust_simd::testing::oracle_selection(tier)
 }
 
 /// Runs `run_d3`'s cases on `tier`.

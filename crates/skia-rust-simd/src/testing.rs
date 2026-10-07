@@ -45,6 +45,40 @@ pub fn force_tier(sel: Selection) -> Result<TierGuard, Unsupported> {
     })
 }
 
+/// The selection a test compared against the oracle's goldens must use for `tier` on this host:
+/// native where the host runs `tier` *and* (for the x86 tiers) its `rcpps`/`rsqrtps`/`rcp14`/
+/// `rsqrt14` estimates are the oracle host's (AMD Zen 4, compared by fingerprint, design
+/// section 1.4); otherwise the tier's model with the oracle host's estimates
+/// (`Estimates::AmdZen4`), or the architectural `Estimates::Arm` for `Neon`. Without the
+/// fingerprint check, an Intel host (or an older AMD one) runs its own, different estimates and
+/// misses goldens that depend on them (`rcp_fast` in the dodge/burn blends, for instance).
+///
+/// # Panics
+/// If the selection is not available on this host (a model needs the `models` feature, which
+/// the test builds of the workspace enable).
+#[must_use]
+pub fn oracle_selection(tier: crate::tier::Tier) -> Selection {
+    use crate::estimates::{AMD_ZEN4, Fingerprints};
+    use crate::tier::{Estimates, Tier};
+    use std::sync::OnceLock;
+
+    static HOST: OnceLock<Fingerprints> = OnceLock::new();
+    let native = Selection::native(tier);
+    let use_native = native.check().is_ok()
+        && (!tier.is_x86()
+            || HOST
+                .get_or_init(Fingerprints::host)
+                .matches_for(&AMD_ZEN4, tier));
+    let sel = if use_native {
+        native
+    } else if tier == Tier::Neon {
+        Selection::model(tier, Estimates::Arm)
+    } else {
+        Selection::model(tier, Estimates::AmdZen4)
+    };
+    sel.check().unwrap_or_else(|e| panic!("{e}"))
+}
+
 /// Restores the previous selection of this thread when dropped. Not `Send`: it must drop on the
 /// thread that created it.
 #[must_use = "the tier is only forced while the guard is alive"]
