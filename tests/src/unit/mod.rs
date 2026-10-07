@@ -15,6 +15,10 @@ pub mod blend_test;
 #[cfg(test)]
 pub mod blit_mask_clip;
 #[cfg(test)]
+pub mod canvas_test;
+#[cfg(test)]
+pub mod capped_hairlines_test;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
@@ -38,6 +42,8 @@ pub mod cubic_roots_test;
 pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
+#[cfg(test)]
+pub mod draw_path_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]
@@ -117,6 +123,8 @@ pub mod r_rect_in_path_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
+pub mod read_pixels_test;
+#[cfg(test)]
 pub mod rect_test;
 #[cfg(test)]
 pub mod region_test;
@@ -150,3 +158,7 @@ pub mod stream_test;
 pub mod stroke_test;
 #[cfg(test)]
 pub mod stroker_test;
+#[cfg(test)]
+pub mod surface_test;
+#[cfg(test)]
+pub mod write_pixels_test;

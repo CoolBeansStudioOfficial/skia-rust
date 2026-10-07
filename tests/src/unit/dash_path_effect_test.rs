@@ -6,6 +6,7 @@
 #![cfg(test)]
 
 use crate::{def_test, reporter_assert};
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
@@ -17,6 +18,7 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{SCALAR_INFINITY, scalar};
 use skia_rust_core::stroke_rec::StrokeRec;
 use skia_rust_effects::dash_path_effect::DashPathEffectExt;
+use skia_rust_raster::surfaces;
 
 // crbug.com/348821 was rooted in SkDashPathEffect refusing to flatten and unflatten itself when
 // the effect is nonsense.  Here we test that it fails when passed nonsense parameters.
@@ -128,17 +130,19 @@ def_test!(DashPath_bug4871, |_r| {
 
 // Verify that long lines with many dashes don't cause overflows/OOMs.
 // Port of: tests/DashPathEffectTest.cpp#L118-L129 (chrome/m156)
-def_test!(
-    #[ignore = "needs Canvas and Surface (D6): drawLine is not ported yet"]
-    DashPathEffectTest_asPoints_limit,
-    |_r| {
-        // TODO(D6): sk_sp<SkSurface> surface(SkSurfaces::Raster(SkImageInfo::MakeN32Premul(256,
-        // 256))); SkCanvas* canvas = surface->getCanvas(); SkPaint p; p.setStyle(kStroke_Style);
-        // p.setStrokeWidth(5.0e10f) (force the bounds to outset by a large amount);
-        // const SkScalar intervals[] = { 1, 1 }; p.setPathEffect(SkDashPathEffect::Make(
-        // intervals, 0)); canvas->drawLine(1, 1, 1, 5.0e10f, p);
-    }
-);
+def_test!(DashPathEffectTest_asPoints_limit, |_r| {
+    let mut surface =
+        surfaces::raster(&ImageInfo::new_n32_premul((256, 256), None), None, None).unwrap();
+    let canvas = surface.canvas();
+
+    let mut p = Paint::default();
+    p.set_style(Style::Stroke);
+    // force the bounds to outset by a large amount
+    p.set_stroke_width(5.0e10_f32);
+    let intervals: [scalar; 2] = [1.0, 1.0];
+    p.set_path_effect(PathEffect::dash(&intervals, 0.0));
+    canvas.draw_line((1.0, 1.0), (1.0, 5.0e10_f32), &p);
+});
 
 // This used to cause SkDashImpl to walk off the end of the intervals array, due to underflow
 // trying to substract a smal value from a large one in floats.

@@ -6,7 +6,11 @@
 #![cfg(test)]
 #![allow(clippy::excessive_precision)] // literals are copied verbatim from the C++
 
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
 use skia_rust_core::clip_op::ClipOp;
+use skia_rust_core::color::Color;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mask::{AllocType, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
@@ -17,6 +21,7 @@ use skia_rust_core::region::{Op, Region};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::scalar::{int_to_scalar, scalar};
 use skia_rust_raster::aa_clip::AAClip;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::raster_clip::RasterClip;
 use skia_rust_raster::region_path::RegionExt;
 
@@ -69,9 +74,28 @@ fn copy_to_mask_region(rgn: &Region, mask: &mut MaskBuilder) {
     mask.row_bytes = u32::try_from(mask.bounds.width()).expect("width");
     mask.image = MaskBuilder::alloc_image(mask.compute_image_size(), AllocType::ZeroInit);
 
-    // The C++ now installs the mask as the pixels of an A8 SkBitmap, translates a copy of the
-    // region to (0, 0), and draws black through it with an SkCanvas (`clipRegion`, `drawColor`).
-    todo!("needs Canvas (D6): SkCanvas::clipRegion and drawColor");
+    let info = ImageInfo::new_a8((mask.bounds.width(), mask.bounds.height()));
+    let mut bitmap = Bitmap::new();
+    // skia-rust: the bitmap owns a copy of the mask image (docs/design/pixels.md); it is copied
+    // back into the mask once the canvas is done drawing.
+    let installed = bitmap.install_pixels(&info, mask.image.clone(), mask.row_bytes as usize);
+    assert!(installed, "installPixels failed");
+
+    // canvas expects its coordinate system to always be 0,0 in the top/left
+    // so we translate the rgn to match that before drawing into the mask.
+    //
+    let mut tmp_rgn = rgn.clone();
+    tmp_rgn.translate((-rgn.bounds().left, -rgn.bounds().top));
+
+    {
+        let canvas = Canvas::from_bitmap(&mut bitmap, None).expect("canvas");
+        canvas.clip_region(&tmp_rgn, None);
+        canvas.draw_color(Color::BLACK, None);
+    }
+    let pixmap = bitmap.peek_pixels().expect("pixels");
+    let bytes = pixmap.addr().expect("bytes");
+    let n = mask.image.len().min(bytes.len());
+    mask.image[..n].copy_from_slice(&bytes[..n]);
 }
 
 // Port of: tests/AAClipTest.cpp#L118-L125 (chrome/m156)
@@ -147,34 +171,30 @@ fn set_rgn_to_path(rgn: &mut Region, path: &Path) {
 }
 
 // Port of: tests/AAClipTest.cpp#L180-L202 (chrome/m156)
-def_test!(
-    #[ignore = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas"]
-    AAClip_setPath_RandomRegion_MatchesSkRegion,
-    |reporter| {
-        let mut rand = Random::default();
-        for _ in 0..1000 {
-            let mut rgn = Region::new();
-            make_rand_rgn(&mut rgn, &mut rand);
-            reporter_assert!(reporter, equals_aa_clip(&rgn));
-        }
-
-        {
-            let mut rgn = Region::new();
-            set_rgn_to_path(&mut rgn, &Path::circle((0.0, 0.0), 30.0, None));
-            reporter_assert!(reporter, equals_aa_clip(&rgn));
-
-            let mut builder = PathBuilder::new();
-            builder
-                .move_to((0.0, 0.0))
-                .line_to((100.0, 0.0))
-                .line_to((100.0 - 20.0, 20.0))
-                .line_to((20.0, 20.0));
-            let path = builder.detach();
-            set_rgn_to_path(&mut rgn, &path);
-            reporter_assert!(reporter, equals_aa_clip(&rgn));
-        }
+def_test!(AAClip_setPath_RandomRegion_MatchesSkRegion, |reporter| {
+    let mut rand = Random::default();
+    for _ in 0..1000 {
+        let mut rgn = Region::new();
+        make_rand_rgn(&mut rgn, &mut rand);
+        reporter_assert!(reporter, equals_aa_clip(&rgn));
     }
-);
+
+    {
+        let mut rgn = Region::new();
+        set_rgn_to_path(&mut rgn, &Path::circle((0.0, 0.0), 30.0, None));
+        reporter_assert!(reporter, equals_aa_clip(&rgn));
+
+        let mut builder = PathBuilder::new();
+        builder
+            .move_to((0.0, 0.0))
+            .line_to((100.0, 0.0))
+            .line_to((100.0 - 20.0, 20.0))
+            .line_to((20.0, 20.0));
+        let path = builder.detach();
+        set_rgn_to_path(&mut rgn, &path);
+        reporter_assert!(reporter, equals_aa_clip(&rgn));
+    }
+});
 
 // Port of: tests/AAClipTest.cpp#L204-L228 (chrome/m156)
 def_test!(
@@ -254,80 +274,76 @@ fn rand_irect(r: &mut IRect, n: i32, rand: &mut Random) {
 }
 
 // Port of: tests/AAClipTest.cpp#L267-L308 (chrome/m156)
-def_test!(
-    #[ignore = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas"]
-    AAClip_setRect_RandomRects_MatchesSkRegion,
-    |reporter| {
-        let mut rand = Random::default();
+def_test!(AAClip_setRect_RandomRects_MatchesSkRegion, |reporter| {
+    let mut rand = Random::default();
 
-        for _ in 0..10000 {
-            let mut clip0 = AAClip::new();
-            let mut clip1 = AAClip::new();
-            let mut rgn0 = Region::new();
-            let mut rgn1 = Region::new();
-            let mut r0 = IRect::default();
-            let mut r1 = IRect::default();
+    for _ in 0..10000 {
+        let mut clip0 = AAClip::new();
+        let mut clip1 = AAClip::new();
+        let mut rgn0 = Region::new();
+        let mut rgn1 = Region::new();
+        let mut r0 = IRect::default();
+        let mut r1 = IRect::default();
 
-            rand_irect(&mut r0, 10, &mut rand);
-            rand_irect(&mut r1, 10, &mut rand);
-            clip0.set_rect(&r0);
-            clip1.set_rect(&r1);
-            rgn0.set_rect(r0);
-            rgn1.set_rect(r1);
-            for op in [ClipOp::Difference, ClipOp::Intersect] {
-                let mut clip2 = clip0.clone(); // leave clip0 unchanged for future iterations
-                let mut rgn2 = Region::new();
-                let non_empty_aa = clip2.op_aa_clip(&clip1, op);
-                let non_empty_bw = rgn2.op_region_region(&rgn0, &rgn1, op.into());
-                if non_empty_aa != non_empty_bw || *clip2.bounds() != *rgn2.bounds() {
-                    errorf!(
-                        reporter,
-                        "{} {} [{} {} {} {}] {} [{} {} {} {}] = BW:[{} {} {} {}] AA:[{} {} {} {}]\n",
-                        if non_empty_aa == non_empty_bw {
-                            "true"
-                        } else {
-                            "false"
-                        },
-                        if *clip2.bounds() == *rgn2.bounds() {
-                            "true"
-                        } else {
-                            "false"
-                        },
-                        r0.left,
-                        r0.top,
-                        r0.right,
-                        r0.bottom,
-                        if op == ClipOp::Difference {
-                            "DIFF"
-                        } else {
-                            "INTERSECT"
-                        },
-                        r1.left,
-                        r1.top,
-                        r1.right,
-                        r1.bottom,
-                        rgn2.bounds().left,
-                        rgn2.bounds().top,
-                        rgn2.bounds().right,
-                        rgn2.bounds().bottom,
-                        clip2.bounds().left,
-                        clip2.bounds().top,
-                        clip2.bounds().right,
-                        clip2.bounds().bottom
-                    );
-                }
-
-                let mut mask_bw = MaskBuilder::default();
-                copy_to_mask_region(&rgn2, &mut mask_bw);
-                let mask_aa = clip2.copy_to_mask();
-                reporter_assert!(
+        rand_irect(&mut r0, 10, &mut rand);
+        rand_irect(&mut r1, 10, &mut rand);
+        clip0.set_rect(&r0);
+        clip1.set_rect(&r1);
+        rgn0.set_rect(r0);
+        rgn1.set_rect(r1);
+        for op in [ClipOp::Difference, ClipOp::Intersect] {
+            let mut clip2 = clip0.clone(); // leave clip0 unchanged for future iterations
+            let mut rgn2 = Region::new();
+            let non_empty_aa = clip2.op_aa_clip(&clip1, op);
+            let non_empty_bw = rgn2.op_region_region(&rgn0, &rgn1, op.into());
+            if non_empty_aa != non_empty_bw || *clip2.bounds() != *rgn2.bounds() {
+                errorf!(
                     reporter,
-                    masks_equal(&mask_bw.as_mask(), &mask_aa.as_mask())
+                    "{} {} [{} {} {} {}] {} [{} {} {} {}] = BW:[{} {} {} {}] AA:[{} {} {} {}]\n",
+                    if non_empty_aa == non_empty_bw {
+                        "true"
+                    } else {
+                        "false"
+                    },
+                    if *clip2.bounds() == *rgn2.bounds() {
+                        "true"
+                    } else {
+                        "false"
+                    },
+                    r0.left,
+                    r0.top,
+                    r0.right,
+                    r0.bottom,
+                    if op == ClipOp::Difference {
+                        "DIFF"
+                    } else {
+                        "INTERSECT"
+                    },
+                    r1.left,
+                    r1.top,
+                    r1.right,
+                    r1.bottom,
+                    rgn2.bounds().left,
+                    rgn2.bounds().top,
+                    rgn2.bounds().right,
+                    rgn2.bounds().bottom,
+                    clip2.bounds().left,
+                    clip2.bounds().top,
+                    clip2.bounds().right,
+                    clip2.bounds().bottom
                 );
             }
+
+            let mut mask_bw = MaskBuilder::default();
+            copy_to_mask_region(&rgn2, &mut mask_bw);
+            let mask_aa = clip2.copy_to_mask();
+            reporter_assert!(
+                reporter,
+                masks_equal(&mask_bw.as_mask(), &mask_aa.as_mask())
+            );
         }
     }
-);
+});
 
 // Port of: tests/AAClipTest.cpp#L310-L348 (chrome/m156)
 def_test!(AAClip_setPath_PathHasHole_MaskIsCorrect, |reporter| {
@@ -418,7 +434,6 @@ fn did_dx_affect(reporter: &mut Reporter, dx: &[scalar], count: usize, changed: 
 
 // Port of: tests/AAClipTest.cpp#L397-L409 (chrome/m156)
 def_test!(
-    #[ignore = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas"]
     #[allow(clippy::items_after_statements)] // mirrors the two static tables of the C++
     AAClip_op_NearlyIntegral_GenerateSameRasterClips,
     |reporter| {
