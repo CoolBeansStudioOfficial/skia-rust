@@ -2,5 +2,6 @@
 /third_party/
 /oracle/out/
 /oracle/rp-bench/out/
+/oracle/rp-builder/out/
 /goldens/
 *.profraw

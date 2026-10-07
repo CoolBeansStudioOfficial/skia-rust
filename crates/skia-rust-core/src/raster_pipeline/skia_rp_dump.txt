@@ -1,0 +1,114 @@
+constant_black lowp black_color
+constant_white lowp white_color
+constant_neg_zero lowp black_color
+constant_opaque lowp uniform_color
+# 0 uniform_color 0.25 0.5 0.75 1 | 64 128 191 255
+constant_rounding lowp uniform_color
+# 0 uniform_color 0.100000001 0.200000003 0.300000012 0.400000006 | 26 51 77 102
+constant_half lowp uniform_color
+# 0 uniform_color 0.00196078443 0.00588235306 0.998039186 1 | 1 2 255 255
+constant_transparent lowp uniform_color
+# 0 uniform_color 0 0 0 0 | 0 0 0 0
+constant_unpremul highp unbounded_uniform_color
+constant_out_of_range highp unbounded_uniform_color
+constant_color4f lowp uniform_color
+# 0 uniform_color 0.125 0.25 0.375 0.5 | 32 64 96 128
+set_rgb_in_range lowp set_rgb
+# 0 set_rgb 0.5 0.25 1
+set_rgb_zero lowp set_rgb
+# 0 set_rgb 0 -0 0
+set_rgb_negative highp unbounded_set_rgb
+# 0 unbounded_set_rgb -0.100000001 0 0
+set_rgb_over highp unbounded_set_rgb
+# 0 unbounded_set_rgb 0 0 1.00010002
+set_rgb_color4f lowp set_rgb
+# 0 set_rgb 0.75 0.5 0.25
+matrix_identity lowp seed_shader
+matrix_translate lowp matrix_translate seed_shader
+# 0 matrix_translate 3 -4.5
+matrix_scale lowp matrix_scale_translate seed_shader
+# 0 matrix_scale_translate 2 3 0 0
+matrix_scale_translate lowp matrix_scale_translate seed_shader
+# 0 matrix_scale_translate 2 -3 5 7
+matrix_skew lowp matrix_2x3 seed_shader
+# 0 matrix_2x3 1 0.5 0 0 1 0
+matrix_affine lowp matrix_2x3 seed_shader
+# 0 matrix_2x3 0.75 -0.5 10 0.5 0.75 -20
+matrix_perspective lowp matrix_perspective seed_shader
+# 0 matrix_perspective 1 0.25 3 0.5 2 4 0.00100000005 -0.00200000009 1
+matrix_persp_scale lowp matrix_perspective seed_shader
+# 0 matrix_perspective 2 0 0 0 2 0 0 0 2
+load_store_ct1 lowp load_a8 load_a8_dst srcover store_a8
+load_store_ct2 lowp load_565 load_565_dst srcover store_565
+load_store_ct3 lowp load_4444 load_4444_dst srcover store_4444
+load_store_ct4 lowp load_8888 load_8888_dst srcover store_8888
+load_store_ct5 lowp load_8888 force_opaque load_8888_dst force_opaque_dst srcover force_opaque store_8888
+load_store_ct6 lowp load_8888 swap_rb load_8888_dst swap_rb_dst srcover swap_rb store_8888
+load_store_ct7 highp load_1010102 load_1010102_dst srcover store_1010102
+load_store_ct8 highp load_1010102 swap_rb load_1010102_dst swap_rb_dst srcover swap_rb store_1010102
+load_store_ct9 highp load_1010102 force_opaque load_1010102_dst force_opaque_dst srcover force_opaque store_1010102
+load_store_ct10 highp load_1010102 force_opaque swap_rb load_1010102_dst force_opaque_dst swap_rb_dst srcover force_opaque swap_rb store_1010102
+load_store_ct11 highp load_1010102_xr force_opaque swap_rb load_1010102_xr_dst force_opaque_dst swap_rb_dst srcover force_opaque swap_rb store_1010102_xr
+load_store_ct12 highp load_10101010_xr swap_rb load_10101010_xr_dst swap_rb_dst srcover swap_rb store_10101010_xr
+load_store_ct13 highp load_10x6 load_10x6_dst srcover store_10x6
+load_store_ct14 lowp load_a8 alpha_to_gray load_a8_dst alpha_to_gray_dst srcover bt709_luminance_or_luma_to_alpha store_a8
+load_store_ct15 highp load_f16 load_f16_dst srcover store_f16
+load_store_ct16 highp load_f16 load_f16_dst srcover store_f16
+load_store_ct17 highp load_f16 force_opaque load_f16_dst force_opaque_dst srcover force_opaque store_f16
+load_store_ct18 highp load_f32 load_f32_dst srcover store_f32
+load_store_ct19 lowp load_rg88 load_rg88_dst srcover store_rg88
+load_store_ct20 highp load_af16 load_af16_dst srcover store_af16
+load_store_ct21 highp load_rf16 load_rf16_dst srcover store_rf16
+load_store_ct22 highp load_rgf16 load_rgf16_dst srcover store_rgf16
+load_store_ct23 highp load_a16 load_a16_dst srcover store_a16
+load_store_ct24 highp load_r16 load_r16_dst srcover store_r16
+load_store_ct25 highp load_rg1616 load_rg1616_dst srcover store_rg1616
+load_store_ct26 highp load_16161616 load_16161616_dst srcover store_16161616
+load_store_ct27 highp load_8888 parametric load_8888_dst swap_src_dst parametric swap_src_dst srcover parametric store_8888
+# 1 parametric 2.4000001 0.947867274 0.0521326996 0.0773993805 0.0404499993 0 0
+# 4 parametric 2.4000001 0.947867274 0.0521326996 0.0773993805 0.0404499993 0 0
+# 7 parametric 0.416666657 1.13728333 -0 12.9200001 0.00313080498 -0.0549697876 -0
+load_store_ct28 lowp load_a8 alpha_to_red load_a8_dst alpha_to_red_dst srcover store_r8
+tf_srgb highp load_8888 parametric store_8888
+# 1 parametric 2.4000001 0.947867274 0.0521326996 0.0773993805 0.0404499993 0 0
+tf_srgb_inv highp load_8888 parametric store_8888
+# 1 parametric 0.416666657 1.13728333 -0 12.9200001 0.00313080498 -0.0549697876 -0
+tf_gamma highp load_8888 gamma_ store_8888
+# 1 gamma_ 2.20000005
+tf_linear highp load_8888 gamma_ store_8888
+# 1 gamma_ 1
+tf_pqish highp load_8888 PQish store_8888
+tf_hlgish highp load_8888 HLGish store_8888
+tf_hlginvish highp load_8888 HLGinvish store_8888
+clamp_if_normalized_ct1 lowp seed_shader clamp_01
+clamp_if_normalized_ct2 lowp seed_shader clamp_01
+clamp_if_normalized_ct3 lowp seed_shader clamp_01
+clamp_if_normalized_ct4 lowp seed_shader clamp_01
+clamp_if_normalized_ct5 lowp seed_shader clamp_01
+clamp_if_normalized_ct6 lowp seed_shader clamp_01
+clamp_if_normalized_ct7 lowp seed_shader clamp_01
+clamp_if_normalized_ct8 lowp seed_shader clamp_01
+clamp_if_normalized_ct9 lowp seed_shader clamp_01
+clamp_if_normalized_ct10 lowp seed_shader clamp_01
+clamp_if_normalized_ct11 lowp seed_shader
+clamp_if_normalized_ct12 lowp seed_shader
+clamp_if_normalized_ct13 lowp seed_shader clamp_01
+clamp_if_normalized_ct14 lowp seed_shader clamp_01
+clamp_if_normalized_ct15 lowp seed_shader clamp_01
+clamp_if_normalized_ct16 lowp seed_shader
+clamp_if_normalized_ct17 lowp seed_shader
+clamp_if_normalized_ct18 lowp seed_shader
+clamp_if_normalized_ct19 lowp seed_shader clamp_01
+clamp_if_normalized_ct20 lowp seed_shader clamp_01
+clamp_if_normalized_ct21 lowp seed_shader
+clamp_if_normalized_ct22 lowp seed_shader
+clamp_if_normalized_ct23 lowp seed_shader clamp_01
+clamp_if_normalized_ct24 lowp seed_shader clamp_01
+clamp_if_normalized_ct25 lowp seed_shader clamp_01
+clamp_if_normalized_ct26 lowp seed_shader clamp_01
+clamp_if_normalized_ct27 lowp seed_shader clamp_01
+clamp_if_normalized_ct28 lowp seed_shader clamp_01
+stack_rewind highp load_8888 stack_rewind swap_rb stack_rewind store_8888
+extend lowp load_8888 load_565 srcover store_565 load_565 srcover store_565
+extend_rewind highp black_color seed_shader stack_rewind store_8888
+highp_only_op highp load_8888 unpremul store_8888

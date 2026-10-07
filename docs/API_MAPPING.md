@@ -250,6 +250,18 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkPointPriv::SetRectFan`, `SetRectTriStrip` | not exposed | not ported | write through a byte `stride` into raw vertex memory; not expressible without `unsafe` |
 | **point3** | | | |
 | `SkPoint3::makeScale` | `Point3::scaled` | `Point3::scaled` | same as skia-safe |
+| **raster_pipeline** (not in skia-safe) | | | |
+| `SkArenaAlloc`, `SkArenaAllocWithReset` | none | `arena_alloc::ArenaAlloc` (`make(&self, T) -> &T`, `T: 'static`; `reset(&mut self)`, `is_empty`) and `arena_alloc::TypedArena<T>` | safe arena (no `unsafe` in core): `OnceCell` slots in chunks that never move; a typed arena for contexts that borrow |
+| `SkRasterPipeline` / `SkRasterPipeline_<N>` | none | `raster_pipeline::RasterPipeline<'a>` | `'a` is the arena / context lifetime; no built-in arena (pass an `ArenaAlloc` to the appenders that allocate) |
+| `SkRasterPipeline::append(op, ctx)` | none | `append(Stage<'a>)` | the op and its typed context are one `Stage` value |
+| `appendConstantColor(alloc, const float[4])` / `(alloc, const SkColor4f&)` | none | `append_constant_color(&ArenaAlloc, &[f32; 4])` / `append_constant_color4f(&ArenaAlloc, &Color4f)` | overloads (PORTING §3) |
+| `appendSetRGB(alloc, const float[3])` / `(alloc, const SkColor4f&)` | none | `append_set_rgb` / `append_set_rgb_color4f` | overloads |
+| `appendLoad`, `appendLoadDst`, `appendStore` (`const MemoryCtx*`) | none | same names, `MemoryCtx` by value | the pixels are bound per run (`MemoryBindings`) |
+| `appendTransferFunction(const skcms_TransferFunction&)` | none | `append_transfer_function(&'a rp::contexts::TransferFunction)`, plus `transfer_function_ctx(&skcms::TransferFunction)` and the `SRGB_TRANSFER_FUNCTION` / `SRGB_INVERSE_TRANSFER_FUNCTION` statics | the stage crate has its own copy of the struct (it sits below skcms) |
+| `getStageList()`, `getNumStages()`, `dump()` | none | `stages() -> &[Stage]` (oldest first), `num_stages()`, `dump()` (stderr) and `Display` (the same text) | `Vec` instead of a newest-first linked list |
+| `compile()` → `std::function` | none | `compile() -> CompiledPipeline<'a>` with `run(x, y, w, h, &mut MemoryBindings)` | writable memory is bound per run |
+| `gForceHighPrecisionRasterPipeline` | none | `RasterPipeline::set_force_high_precision` | no global mutable state |
+| `SkRPCtxUtils::Pack`, `Unpack` | none | `raster_pipeline_context_utils::{pack, unpack, Packed}` | a `void*`-sized slot becomes an enum (`Inline(T)` / `Allocated(&T)`) |
 | **rect** | | | |
 | `SkIRect::asInt32s`, `SkRect::asScalars` | `&[i32]` / `&[f32; 4]` into the struct | `[i32; 4]` / `[scalar; 4]` by value | no `unsafe` |
 | `SkIRect::inset` / `makeInset` | via `with_outset(-delta)` | direct `sat_add`/`sat_sub`, as in C++ | differs from skia-safe only at saturation |

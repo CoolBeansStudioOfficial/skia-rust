@@ -34,9 +34,12 @@ mod program;
 mod tiers;
 
 pub use contexts::{MemPtr, MemSlot, MemoryCtx, MemoryCtxInfo};
-pub use memory::{MemView, MemoryBindings, NO_TAIL, Params, memory_ctx_infos};
+pub use memory::{
+    MemView, MemoryBindings, NO_TAIL, Params, add_memory_context, memory_ctx_infos,
+    register_memory_ctxs,
+};
 pub use ops::{NUM_HIGHP_OPS, NUM_LOWP_OPS, Op, Stage};
-pub use program::{Program, has_lowp};
+pub use program::{Program, ProgramDesc, has_lowp};
 
 #[cfg(test)]
 mod tests;

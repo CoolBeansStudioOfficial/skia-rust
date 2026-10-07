@@ -2,6 +2,7 @@
 
 pub mod align;
 pub mod alpha_type;
+pub mod arena_alloc;
 pub mod bezier_curves;
 pub mod bitmap;
 pub mod buffer;
@@ -78,6 +79,7 @@ pub mod point3;
 pub mod quads;
 pub mod random;
 pub mod raster_pipeline;
+pub mod raster_pipeline_context_utils;
 #[doc(hidden)]
 pub mod read_pixels_rec;
 pub mod rect;

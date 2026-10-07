@@ -20,7 +20,9 @@
 use std::hint::black_box;
 use std::time::{Duration, Instant};
 
-use skia_rust_simd::rp::{MemPtr, MemSlot, MemView, MemoryBindings, Program, Stage};
+use skia_rust_simd::rp::{
+    MemPtr, MemSlot, MemView, MemoryBindings, Program, ProgramDesc, Stage, memory_ctx_infos,
+};
 use skia_rust_simd::{Selection, Tier};
 
 const W: usize = 128;
@@ -96,11 +98,17 @@ fn main() {
                 let mut mem = MemoryBindings::new()
                     .with(MemSlot(0), MemView::write(&mut a))
                     .with(MemSlot(1), MemView::write(&mut b));
-                // `SkRasterPipeline::run()`: build the program (fresh scratch) every call.
+                // `SkRasterPipeline::run()`: build the program (fresh scratch) every call, on the
+                // stack (`ProgramDesc::run`, what `RasterPipeline::run` does).
+                let infos = memory_ctx_infos(stages);
+                let desc = ProgramDesc {
+                    stages,
+                    memory_ctx_infos: &infos,
+                    has_rewind: false,
+                    force_highp,
+                };
                 let run_ns = time(|| {
-                    let mut p =
-                        Program::new(black_box(stages), Selection::native(tier), force_highp);
-                    p.run(0, 0, W, 1, black_box(&mut mem));
+                    black_box(&desc).run(Selection::native(tier), 0, 0, W, 1, black_box(&mut mem));
                 });
                 // `compile()` once, then run the compiled program.
                 let ns = time(|| program.run(0, 0, W, 1, black_box(&mut mem)));
