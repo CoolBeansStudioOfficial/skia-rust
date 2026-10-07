@@ -310,7 +310,7 @@ fn build_dir(root: &Path, build: &str) -> PathBuf {
 }
 
 /// `clang_win` for GN: `SKIA_ORACLE_CLANG_WIN`, else the default LLVM install location.
-fn clang_win() -> Result<String> {
+pub(crate) fn clang_win() -> Result<String> {
     let dir = std::env::var("SKIA_ORACLE_CLANG_WIN")
         .unwrap_or_else(|_| "C:/Program Files/LLVM".to_owned());
     ensure!(

@@ -5,6 +5,7 @@ mod cpu_probe;
 mod inventory;
 mod oracle;
 mod publish;
+mod rp_diff;
 mod skia;
 mod verify;
 mod verify_gms;
@@ -115,6 +116,32 @@ enum OracleCommand {
     },
     /// Check that the `[[class]]` tier groups in `oracle/tiers.toml` still match the goldens.
     CheckClasses,
+    /// Run the per-stage raster pipeline cases (`oracle/rp-diff`) through Skia and skia-rust
+    /// and compare them byte for byte (design §4.2).
+    RpDiff {
+        /// Code paths to run: `scalar`, `sse2`, `sse41`, `ml3`, `ml4` (repeat or comma-separate;
+        /// default all).
+        #[arg(long)]
+        tier: Vec<String>,
+        /// Only cases whose names match this glob (`*` matches anything), e.g. `srcover/*`.
+        #[arg(long)]
+        case_glob: Option<String>,
+        /// Store Skia's results in `oracle/rp-diff/expected/<tier>.txt`.
+        #[arg(long)]
+        update: bool,
+        /// Only check skia-rust against the stored results (no C++; any host).
+        #[arg(long)]
+        replay: bool,
+        /// Oracle build whose static libraries the driver links against.
+        #[arg(long, default_value = "x64-sse2")]
+        build: String,
+        /// Rebuild the C++ driver.
+        #[arg(long)]
+        rebuild: bool,
+        /// Mismatches to describe in detail per tier.
+        #[arg(long, default_value_t = 10)]
+        details: usize,
+    },
     /// Compare a directory of skia-rust outputs (golden layout) against a tier's hashes.
     Compare {
         /// Tier name.
@@ -199,6 +226,26 @@ fn main() -> Result<()> {
                 ctx,
             } => oracle::rp_dump(&root, &tier, &gm, &config, out.as_deref(), ctx),
             OracleCommand::CheckClasses => oracle::check_classes(&root),
+            OracleCommand::RpDiff {
+                tier,
+                case_glob,
+                update,
+                replay,
+                build,
+                rebuild,
+                details,
+            } => rp_diff::run(
+                &root,
+                &rp_diff::Options {
+                    tiers: tier,
+                    case_glob,
+                    update,
+                    replay,
+                    build,
+                    rebuild,
+                    details,
+                },
+            ),
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },
