@@ -4,21 +4,23 @@
 // Port of: tests/RectTest.cpp (chrome/m156)
 //
 // Not ported yet (manifest stays `todo`): `Rect`, `Rect_grow` (SkBitmap, SkCanvas, SkPaint),
-// `Rect_path_nan` (SkPath), `Rect_QuadContainsRect` (SkMatrix, SkM44) and
-// `big_tiled_rect_crbug_927075` (SkSurface, SkCanvas). Their helpers `has_green_pixels`,
+// `Rect_path_nan` (SkPath) and `big_tiled_rect_crbug_927075` (SkSurface, SkCanvas). Their helpers `has_green_pixels`,
 // `test_stroke_width_clipping` and `test_skbug4406` go with `Rect`/`Rect_grow`.
 
 #![cfg(test)]
 
 use skia_rust_core::floating_point::is_finite;
-use skia_rust_core::point::Point;
+use skia_rust_core::m44::{M44, V3, V4};
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::rect_priv::subtract;
 use skia_rust_core::rect::rect_priv::{
     closest_disjoint_edge, half_height, half_width, make_i_large, make_i_largest_inverted,
-    make_large_s32, make_largest, make_largest_inverted, subtract_irect,
+    make_large_s32, make_largest, make_largest_inverted, quad_contains_rect,
+    quad_contains_rect_m44, subtract_irect,
 };
 use skia_rust_core::rect::{IRect, Rect};
-use skia_rust_core::scalar::{SCALAR_INFINITY, SCALAR_MAX, SCALAR_NAN, scalar};
+use skia_rust_core::scalar::{SCALAR_INFINITY, SCALAR_MAX, SCALAR_NAN, SCALAR_PI, scalar};
 
 use crate::{Reporter, def_test, reporter_assert};
 
@@ -236,6 +238,261 @@ def_test!(Rect_subtract_overflow, |reporter| {
     exact = subtract_irect(&reasonable, &really_big, &mut difference);
     reporter_assert!(reporter, exact);
     reporter_assert!(reporter, difference == reasonable);
+});
+
+// Port of: tests/RectTest.cpp#L281-L396 (chrome/m156)
+def_test!(Rect_QuadContainsRect, |reporter| {
+    struct TestCase {
+        label: &'static str,
+        expect: bool,
+        m: Matrix,
+        a: IRect,
+        b: IRect,
+        tol: f32,
+    }
+
+    let tc =
+        |label: &'static str, expect: bool, m: Matrix, a: IRect, b: IRect, tol: f32| TestCase {
+            label,
+            expect,
+            m,
+            a,
+            b,
+            tol,
+        };
+
+    let epsilon_matrix = {
+        let mut m = Matrix::new_all(
+            0.984_808, 0.173_648, -98.4808, -0.173_648, 0.984_808, 17.3648, 0.000_000, 0.000_000,
+            1.0000,
+        );
+        m.pre_translate((65.0, 0.0));
+        m
+    };
+
+    let tests = [
+        tc(
+            "Identity matrix contains success",
+            true,
+            Matrix::i().clone(),
+            IRect::new(0, 0, 15, 15),
+            IRect::new(2, 2, 10, 10),
+            0.0,
+        ),
+        tc(
+            "Identity matrix contains failure",
+            false,
+            Matrix::i().clone(),
+            IRect::new(0, 0, 15, 15),
+            IRect::new(-2, -2, 10, 10),
+            0.0,
+        ),
+        tc(
+            "Identity mapped rect contains itself",
+            true,
+            Matrix::i().clone(),
+            IRect::new(0, 0, 10, 10),
+            IRect::new(0, 0, 10, 10),
+            0.0,
+        ),
+        tc(
+            "Scaled rect contains success",
+            true,
+            Matrix::scale((2.0, 3.4)),
+            IRect::new(0, 0, 4, 4),
+            IRect::new(1, 1, 6, 6),
+            0.0,
+        ),
+        tc(
+            "Scaled rect contains failure",
+            false,
+            Matrix::scale((0.25, 0.3)),
+            IRect::new(0, 0, 8, 8),
+            IRect::new(0, 0, 5, 5),
+            0.0,
+        ),
+        tc(
+            "Rotate rect contains success",
+            true,
+            Matrix::rotate_deg_pivot(45.0, (10.0, 10.0)),
+            IRect::new(0, 0, 20, 20),
+            IRect::new(3, 3, 17, 17),
+            0.0,
+        ),
+        tc(
+            "Rotate rect contains failure",
+            false,
+            Matrix::rotate_deg_pivot(45.0, (10.0, 10.0)),
+            IRect::new(0, 0, 20, 20),
+            IRect::new(2, 2, 18, 18),
+            0.0,
+        ),
+        tc(
+            "Negative scale contains success",
+            true,
+            Matrix::scale((-1.0, 1.0)),
+            IRect::new(0, 0, 10, 10),
+            IRect::new(-9, 1, -1, 9),
+            0.0,
+        ),
+        tc(
+            "Empty rect contains nothing",
+            false,
+            Matrix::rotate_deg_pivot(45.0, (0.0, 0.0)),
+            IRect::new(10, 10, 10, 20),
+            IRect::new(10, 14, 10, 16),
+            0.0,
+        ),
+        tc(
+            "MakeEmpty() contains nothing",
+            false,
+            Matrix::rotate_deg_pivot(45.0, (0.0, 0.0)),
+            IRect::new_empty(),
+            IRect::new(0, 0, 1, 1),
+            0.0,
+        ),
+        tc(
+            "Unsorted rect contains nothing",
+            false,
+            Matrix::i().clone(),
+            IRect::new(10, 10, 0, 0),
+            IRect::new(2, 2, 8, 8),
+            0.0,
+        ),
+        tc(
+            "Unsorted rect is contained",
+            true,
+            Matrix::i().clone(),
+            IRect::new(0, 0, 10, 10),
+            IRect::new(8, 8, 2, 2),
+            0.0,
+        ),
+        // NOTE: preTranslate(65.f, 0.f) gives enough of a different matrix that the contains()
+        // passes even without the epsilon allowance.
+        tc(
+            "Epsilon not contained",
+            true,
+            epsilon_matrix,
+            IRect::new(0, 0, 134, 215),
+            IRect::new(0, 0, 100, 200),
+            0.001,
+        ),
+    ];
+
+    for t in &tests {
+        // `skiatest::ReporterContext c{reporter, t.label}`: the label is added to each message.
+        reporter_assert!(
+            reporter,
+            quad_contains_rect(&t.m, &t.a, &t.b, t.tol) == t.expect,
+            "{}",
+            t.label
+        );
+
+        // Generate equivalent tests for SkRect and SkM44 by translating a by 1/2px and 'b' by
+        // 1/2px in post-transform space
+        let mut b_offset: Vector = t.m.map_vector((0.5, 0.5));
+        let mut af = Rect::from_irect(t.a).with_offset((0.5, 0.5));
+        let mut bf = Rect::from_irect(t.b).with_offset((b_offset.x, b_offset.y));
+        reporter_assert!(
+            reporter,
+            quad_contains_rect_m44(&M44::from(&t.m), &af, &bf, t.tol) == t.expect,
+            "{}",
+            t.label
+        );
+
+        if t.tol != 0.0 {
+            // Expect the opposite result if we do not provide any tol.
+            reporter_assert!(
+                reporter,
+                quad_contains_rect(&t.m, &t.a, &t.b, 0.0) != t.expect,
+                "{}",
+                t.label
+            );
+
+            b_offset = t.m.map_vector((0.5, 0.5));
+            af = Rect::from_irect(t.a).with_offset((0.5, 0.5));
+            bf = Rect::from_irect(t.b).with_offset((b_offset.x, b_offset.y));
+            reporter_assert!(
+                reporter,
+                quad_contains_rect_m44(&M44::from(&t.m), &af, &bf, 0.0) != t.expect,
+                "{}",
+                t.label
+            );
+        }
+    }
+
+    // Test some more complicated scenarios with perspective that don't fit into the TestCase
+    // structure as nicely.
+    let a = Rect::new(1.83, -0.48, 15.53, 30.68); // arbitrary
+
+    // Perspective matrix where the mapped A has all corners' W > 0
+    {
+        let label = "Perspective, W > 0";
+        let mut p = M44::perspective(0.01, 10.0, SCALAR_PI / 3.0);
+        p.pre_translate(0.0, 5.0, -0.1);
+        p.pre_concat(&M44::rotate(
+            V3::new(0.0, 1.0, 0.0),
+            0.008, /* radians */
+        ));
+        reporter_assert!(
+            reporter,
+            quad_contains_rect_m44(&p, &a, &Rect::new(4.0, 10.0, 20.0, 45.0), 0.0),
+            "{}",
+            label
+        );
+        reporter_assert!(
+            reporter,
+            !quad_contains_rect_m44(&p, &a, &Rect::new(2.0, 6.0, 23.0, 50.0), 0.0),
+            "{}",
+            label
+        );
+    }
+    // Perspective matrix where the mapped A has some corners' W < 0
+    {
+        let label = "Perspective, some W > 0";
+        let mut p = M44::default();
+        p.set_row(3, &V4::new(-0.2, -0.6, 0.0, 8.0));
+        reporter_assert!(
+            reporter,
+            quad_contains_rect_m44(&p, &a, &Rect::new(10.0, 50.0, 20.0, 60.0), 0.0),
+            "{}",
+            label
+        );
+        reporter_assert!(
+            reporter,
+            !quad_contains_rect_m44(&p, &a, &Rect::new(0.0, 1.0, 10.0, 10.0), 0.0),
+            "{}",
+            label
+        );
+    }
+    // Perspective matrix where the mapped A has all corners' W < 0)
+    // For B, we use the previous success contains query above; a rectangle that is inside the
+    // convex hull of the mapped corners of A, projecting each corner with its negative W; and a
+    // rectangle that contains said convex hull.
+    {
+        let label = "Perspective, no W > 0";
+        let mut p = M44::default();
+        p.set_row(3, &V4::new(-0.2, -0.6, 0.0, 8.0));
+        let na = a.with_offset((16.0, 31.0));
+        reporter_assert!(
+            reporter,
+            !quad_contains_rect_m44(&p, &na, &Rect::new(10.0, 50.0, 20.0, 60.0), 0.0),
+            "{}",
+            label
+        );
+        reporter_assert!(
+            reporter,
+            !quad_contains_rect_m44(&p, &na, &Rect::new(-1.1, -1.8, -1.0, -1.79), 0.0),
+            "{}",
+            label
+        );
+        reporter_assert!(
+            reporter,
+            !quad_contains_rect_m44(&p, &na, &Rect::new(-1.9, -2.3, -0.4, -1.6), 0.0),
+            "{}",
+            label
+        );
+    }
 });
 
 // Port of: tests/RectTest.cpp#L398-L438 (chrome/m156)

@@ -11,9 +11,16 @@ pub mod fixed;
 pub mod float_bits;
 pub mod floating_point;
 pub mod half;
+pub mod m44;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
+pub mod matrix;
+pub mod matrix_invert;
+#[doc(hidden)]
+pub mod matrix_priv;
+#[doc(hidden)]
+pub mod matrix_utils;
 pub mod point;
 pub mod point3;
 pub mod random;

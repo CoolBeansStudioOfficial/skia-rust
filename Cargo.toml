@@ -19,6 +19,7 @@ authors = ["The skia-rust Authors"]
 [workspace.dependencies]
 skia-rust-simd = { path = "crates/skia-rust-simd", version = "0.156.0" }
 skia-rust-core = { path = "crates/skia-rust-core", version = "0.156.0" }
+bitflags = "2"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

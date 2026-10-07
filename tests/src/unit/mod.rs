@@ -15,7 +15,11 @@ pub mod hsv_round_trip_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
+pub mod m44_test;
+#[cfg(test)]
 pub mod math_test;
+#[cfg(test)]
+pub mod matrix_test;
 #[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
