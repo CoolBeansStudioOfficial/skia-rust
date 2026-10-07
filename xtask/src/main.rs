@@ -4,6 +4,7 @@ mod cpp;
 mod inventory;
 mod oracle;
 mod skia;
+mod verify;
 
 use std::path::{Path, PathBuf};
 
@@ -96,6 +97,17 @@ enum InventoryCommand {
     },
     /// Print pass-rate statistics from the manifest.
     Stats,
+    /// Print the Rust test path a unit-test id must be ported to.
+    ModulePath {
+        /// Manifest id, e.g. `tests/PointTest.cpp::Point`.
+        id: String,
+    },
+    /// Run the ported unit tests and check them against the manifest.
+    Verify {
+        /// Mark newly passing entries `passing` (and failing ported ones `failing`).
+        #[arg(long)]
+        update: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -109,6 +121,8 @@ fn main() -> Result<()> {
                 inventory::sync(&root, allow_pin_mismatch)
             }
             InventoryCommand::Stats => inventory::stats(&root),
+            InventoryCommand::ModulePath { id } => inventory::module_path(&root, &id),
+            InventoryCommand::Verify { update } => inventory::verify(&root, update),
         },
         Command::Oracle { command } => match command {
             OracleCommand::Deps => oracle::deps(&root),

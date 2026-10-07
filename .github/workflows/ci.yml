@@ -22,7 +22,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Unsafe policy (only skia-rust-simd may allow unsafe_code)
         run: |
-          if grep -rnE 'allow\((.*\b)?unsafe_code' --include=*.rs --include=*.toml crates xtask \
+          if grep -rnE 'allow\((.*\b)?unsafe_code' --include=*.rs --include=*.toml crates tests xtask \
                | grep -v '^crates/skia-rust-simd/'; then
             echo "::error::unsafe_code may only be allowed in crates/skia-rust-simd (docs/UNSAFE.md)"
             exit 1
@@ -77,3 +77,5 @@ jobs:
       - run: cargo xtask skia fetch
       - run: cargo xtask inventory sync
       - run: git diff --exit-code inventory/manifest.toml
+      - name: Ported tests agree with the manifest (no regressions, no unmarked passes)
+        run: cargo xtask inventory verify
