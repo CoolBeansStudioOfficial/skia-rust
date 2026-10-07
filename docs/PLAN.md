@@ -47,7 +47,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | wasm oracle | Skia built with Emscripten (CanvasKit-style) at the **simd128** tier, run under Node; matched exactly |
 | Perf | Gate: ≤ 0% slower than Skia per bench (measured on the server); GPU benches compare against the wgpu-capability-restricted oracle |
 | GPU perf features | Async pipeline compilation (background threads) + wgpu `PipelineCache`. Dawn-only tile-GPU extensions (transient attachments, MSAA render-to-single-sampled, load-resolve, framebuffer fetch) are not pursued; desktop parity is the target |
-| Agents | Sonnet 5.5 by default; escalate to Opus 5.5 on failure (§8.3) |
+| Agents | Cheapest model first, escalating on failure: Haiku 4.5 → Sonnet 5.5 → Opus 5.5; wide parallel fan-out allowed (§8.3) |
 | Workflow | Inventory-driven, small PRs (one manifest entry or a small batch per PR) |
 | Publishing | Reserve the name now; first real release when core + CPU raster are at 100% |
 | Versioning | `0.NNN.patch`, where NNN = the Skia milestone being matched |
@@ -129,10 +129,8 @@ Real Skia, built from source at the pin, is the single source of truth. It is te
 
 ### 5.1 Builds (on the server, driven by `cargo xtask oracle build`)
 - Source: `chrome/mNNN` branch of Skia, synced with `tools/git-sync-deps`.
-- GN args (common): `is_official_build=true`, `skia_use_dawn=true`, `skia_enable_graphite=true`, `skia_use_fontations=true`, test-font manager, no system fonts.
-- **CPU builds, one per baseline tier,** so every SkOpts tier can be exercised:
-  - `x64-sse2`, `x64-sse41`, `x64-avx`: build-time baselines.
-  - `x64-hsw` (AVX2) and `x64-skx` (AVX-512): runtime tiers, forced with a small oracle-side patch to `SkCpu` (test tooling only). The 7800X3D (Zen 4) runs both natively.
+- GN args (common): release, non-official (bundled third-party libs, tools enabled), clang-cl on Windows (the compiler Chrome ships Skia with), test-font manager, no system fonts. Graphite + Dawn and Fontations in the builds that need them. Exact args live in `oracle/tiers.toml`.
+- **CPU builds, one per compile-time x86 baseline** (`x64-sse2`, `x64-ssse3`, `x64-sse41`, `x64-sse42`, `x64-avx`, `x64-v3`, `x64-v4`). Each build also runs at every runtime `SkOpts` level above its baseline (ssse3, ml3 = x86-64-v3, ml4 = x86-64-v4), selected by `SKIA_ORACLE_CPU_CAP`, a small oracle-side patch to `SkCpu`. A tier is one (build, runtime level) pair; xtask derives the full list (19 x64 tiers at m156). The 7800X3D (Zen 4) runs all of them natively, and each run verifies the tier that actually executed.
   - `arm64-neon`: built and run on macOS arm64 / Linux aarch64 hosted runners. The first time, goldens are generated there and uploaded.
   - `wasm-simd128`: Skia built with Emscripten the way CanvasKit is (`-msimd128`), with `oracle-dump` compiled to wasm and run under Node. The reference for our wasm32 target, whose `Tier::WasmSimd128` must match it exactly. No non-SIMD wasm tier.
   - Raster Pipeline **highp and lowp** are both exercised; the dump tool records which pipeline each draw used.
@@ -140,9 +138,10 @@ Real Skia, built from source at the pin, is the single source of truth. It is te
   - Dawn toggles and Graphite caps are restricted to **wgpu's feature set** (e.g. no Dawn-only extensions), so both sides take the same Graphite code paths.
 - Environments: D3D12/WARP (Windows host), Vulkan/lavapipe (WSL2 on the server), plus D3D12 and Vulkan on the RTX 4070 SUPER (report only).
 
-### 5.2 `oracle-dump` (C++ tool linked against Skia)
-- Inputs: list of GM / test IDs, config (`cpu-x64-hsw-8888`, `gpu-dawn-vk-lavapipe-8888`, …).
-- Outputs per item: raw pixel buffer (exact bytes plus color type, alpha type and color space), PNG for humans, and JSON metadata: Skia commit, config, SHA-256 of the raw bytes, pipeline used.
+### 5.2 The dump tool: DM + `OracleDump`
+- The oracle is Skia's own test runner **DM**, so sources, configs and rendering are exactly what Skia's bots run. `oracle/dm/OracleDump.cpp` (copied in by `cargo xtask oracle patch`) adds `--oracleRawPath`; see `oracle/README.md`.
+- Inputs: DM's own `--src`, `--config`, `--match`, plus the tier (runtime CPU cap).
+- Outputs per item: raw pixel buffer (exact bytes) or encoded bytes for PDF/SVG/SKP sinks, and JSON metadata (size, color type, alpha type, serialized color space, CPU tier that ran). xtask computes the SHA-256 hashes and records the compiler version and GN args in `toolchain.txt`.
 - **Debug modes** for diagnosing mismatches: dump the Raster Pipeline stage list, generated SkSL/WGSL text, path verbs after transforms, Graphite draw-pass/renderer choices, glyph-cache contents.
 - Color configs mirror Skia DM's: `8888`, `565`, `gray8`, `f16`, `srgb`, `rec2020`, and so on. In-scope configs are listed in the manifest.
 
@@ -246,18 +245,19 @@ cargo xtask diff gm/strokes::strokes_round --config cpu-x64-hsw-8888   # fetch g
 - Pin bumps happen on `bump/mNNN` branches (§9.1).
 
 ### 8.3 Agent staffing and escalation
-- **Default worker: Sonnet 5.5.** Every manifest task starts with a Sonnet agent: ports, test translations, bench ports, manifest updates.
-- **Escalate to Opus 5.5 only when Sonnet fails.** Triggers:
-  - the same manifest entry is still not `passing` after **2 full attempts** (each = port, run the oracle comparison, apply a debug-dump-driven fix);
-  - a `passing → failing` regression that Sonnet can't root-cause in one attempt;
+- **Model ladder: cheapest first.** Every manifest task starts on Haiku 4.5. On failure it moves up one rung: Haiku 4.5 → Sonnet 5.5 → Opus 5.5.
+- **Escalation triggers** (any one moves the task up a rung):
+  - the manifest entry is still not `passing` after **2 full attempts** (each = port, run the oracle comparison, apply a debug-dump-driven fix);
+  - a `passing → failing` regression the agent can't root-cause in one attempt;
   - the CI unsafe-policy or Miri checks fail in `skia-rust-simd`.
-- **Escalation handoff:** the failing agent writes `notes/<manifest-id>.md` with what it tried, the diff images/hashes, and the relevant oracle dumps. Opus starts from that file, not from scratch. Notes stay in the repo as a record of hard cases.
-- **Opus by default (exceptions to Sonnet-first)**, limited to work where a wrong design is expensive:
+- **Escalation handoff:** the failing agent writes `notes/<manifest-id>.md` with what it tried, the diff images/hashes, and the relevant oracle dumps. The next rung starts from that file, not from scratch. Notes stay in the repo as a record of hard cases.
+- **Opus from the start**, limited to work where a wrong design is expensive:
   - per-module design notes before porting starts (e.g. how Graphite's `Recorder`/`DrawPass` map onto wgpu and Rust ownership);
   - review of every `unsafe` block added to `skia-rust-simd`;
   - pin-bump triage when a milestone changes a ported region structurally.
-- CI is the reviewer for ordinary Sonnet PRs. Exact-match hashes and the manifest checks are strict enough that a model review adds little.
-- Track escalation rate per module. A module with frequent escalations gets an Opus-written design note so later Sonnet tasks succeed first time.
+- **Parallelism:** independent manifest entries are worked by many agents at once (workflow fan-out), each in its own git worktree and branch.
+- CI is the reviewer for ordinary PRs. Exact-match hashes and the manifest checks are strict enough that a model review adds little. PRs are squash-merged once CI is green.
+- Track escalation rate per module and per rung. A module with frequent escalations gets an Opus-written design note so later tasks succeed on a cheaper rung.
 
 ### 8.4 Docs
 - `docs/PORTING.md`: the full rule set, Skia → Rust idiom cookbook.
@@ -340,9 +340,11 @@ Each phase ends when its exit criteria are met; later phases can start early whe
 ---
 
 ## 12. Open items for Phase 0
-- Confirm Skia exposes a usable switch for forcing SkOpts tiers at runtime; otherwise maintain the small oracle patch.
+- ~~Confirm Skia exposes a usable switch for forcing SkOpts tiers at runtime~~: it doesn't; `oracle/patches/skia-oracle.patch` adds `SKIA_ORACLE_CPU_CAP`.
+- Fontations in Skia's GN build compiles Rust through Bazel; confirm that works on Windows, or fall back to a Linux (WSL2) text oracle.
+- ~~Dawn adapter selection~~: `SKIA_ORACLE_DAWN_ADAPTER` in the oracle patch.
+- Linux/WSL2 oracle build for lavapipe; WARP determinism across hosts (it is deterministic run-to-run on the server).
 - Confirm Skia's Fontations backend covers everything the test font manager needs (and which test typefaces bypass it).
-- Measure lavapipe and WARP cross-CPU determinism.
 - Decide the exact list of DM color configs in scope (start: `8888`, `f16`, `565`, `gray8`, `srgb`).
 - Reference hardware for any future tile-GPU feature paths: deferred until/unless those features are pursued.
 - Get the real test/GM/bench counts from the inventory and turn the phase table into dated milestones.

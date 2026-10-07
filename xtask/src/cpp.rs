@@ -273,6 +273,15 @@ mod tests {
     }
 
     #[test]
+    fn line_splice_inside_string_literal() {
+        // From tests/JSONTest.cpp: braces inside a spliced string aren't code.
+        let src = "DEF_TEST(JSON, r) {\n    const char j[] = \"{ \\n\\\n    \\\"k\\\": { } \\n\\\n    }\";\n    use(j);\n}\n";
+        let uses = find_macro_uses(src, &|s| s == "DEF_TEST");
+        assert_eq!(uses.len(), 1);
+        assert_eq!(uses[0].end_line, 6);
+    }
+
+    #[test]
     fn skips_defines_and_continuations() {
         let src =
             "#define DEF_X_TEST(n) \\\n    DEF_TEST(n, r) {}\nDEF_GM(return new FooGM(1, 2);)\n";
