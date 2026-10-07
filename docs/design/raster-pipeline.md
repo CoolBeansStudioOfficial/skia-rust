@@ -1335,6 +1335,26 @@ the same framework.
 | D7 | Pictures: `SkRecord`, `SkRecordCanvas`/`SkRecorder`, `SkRecordDraw`, `SkRecordOpts`, `SkPictureRecorder`, `SkBigPicture`, R-tree | `src/core/SkRecord*.cpp`, `SkPicture*.cpp`, `SkRTree.cpp` | D6 | L | `RecordTest` (3), `RecordDrawTest` (9), `RecordOptsTest` (7), `RecordPatternTest` (6), `RecorderTest` (4), `PictureBBHTest` (2), part of `PictureTest` (19) |
 | D8 | Pixel ops on the pipeline: `SkConvertPixels`, `Pixmap::readPixels/erase`, `Bitmap` copies | `SkConvertPixels.cpp`, `SkPixmap.cpp`, `SkBitmap.cpp` | A4, B1, B2, B4 | M | `ConvertPixelsTest`, `ReadPixelsTest` (3), `WritePixelsTest` (3), `BitmapCopyTest` (2), `PremulAlphaRoundTripTest` (3), `BitmapTest` (10) |
 
+**As implemented in D1** (`skia_rust_core::mask`; `skia_rust_raster::{blitter, alpha_runs}`, the new
+`skia-rust-raster` crate, depends on core + simd):
+
+- **`Blitter` trait.** Required: `blit_h`, `blit_anti_h(x, y, &mut [Alpha], &mut [i16])` (mutable because
+  the clip blitters rewrite the runs, as Skia does behind `const_cast`) and `blit_memory`. Provided with
+  Skia's default bodies: `blit_v`, `blit_rect`, `blit_anti_rect`, `blit_mask` (BW via `bits_to_runs`, A8
+  via `blit_anti_h` with all-1 runs, LCD16 a no-op), `blit_anti_h2/v2`, `request_rows_preserved`,
+  `alloc_blit_memory`, `blit_fat_anti_rect`, `blit_mask_region`, `blit_rect_region`, `blit_region`.
+  `Blitter` is object safe; wrappers hold `&mut dyn Blitter`.
+- **Wrappers.** `NullBlitter`, `RectClipBlitter`, `RgnClipBlitter` and `BlitterClipper` (returns `&mut dyn
+  Blitter` borrowed from the clipper) are straight ports. `can_direct_blit`, `Choose*` and the debug-only
+  `SkRectClipCheckBlitter` are not ported.
+- **`AlphaRuns`** owns `runs`/`alpha` `Vec`s; `break_runs`/`break_at` are associated functions over slices
+  so the blitters can call them on sub-slices (a pointer bump is a re-slice).
+- **`Mask`/`MaskBuilder`** live in core (mask filters need them): borrowed vs owned image, `get_addr*`
+  return byte slices starting at the element.
+- **Tests.** No manifest test needs only these types (`BlitMaskClip`/`CoreBlittersTest` need D4's real
+  blitters), so there is nothing to flip; `crates/skia-rust-raster/src/blitter_tests.rs` and
+  `alpha_runs.rs` test against hand-derived traces of the C++ defaults with a recording blitter.
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

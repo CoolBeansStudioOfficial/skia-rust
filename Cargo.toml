@@ -5,6 +5,7 @@ members = [
     "crates/skia-rust-simd",
     "crates/skia-rust-skcms",
     "crates/skia-rust-core",
+    "crates/skia-rust-raster",
     "tests",
     "tests/gm",
     "xtask",
@@ -22,6 +23,7 @@ authors = ["The skia-rust Authors"]
 skia-rust-simd = { path = "crates/skia-rust-simd", version = "0.156.0" }
 skia-rust-skcms = { path = "crates/skia-rust-skcms", version = "0.156.0" }
 skia-rust-core = { path = "crates/skia-rust-core", version = "0.156.0" }
+skia-rust-raster = { path = "crates/skia-rust-raster", version = "0.156.0" }
 bitflags = "2"
 
 [workspace.lints.rust]
