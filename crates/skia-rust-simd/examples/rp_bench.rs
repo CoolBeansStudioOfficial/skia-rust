@@ -71,10 +71,17 @@ fn main() {
             ],
         ),
     ];
-    let tiers: Vec<Tier> = [Tier::Scalar, Tier::Sse2, Tier::Sse41]
-        .into_iter()
-        .filter(|t| t.is_native())
-        .collect();
+    let tiers: Vec<Tier> = [
+        Tier::Scalar,
+        Tier::Sse2,
+        Tier::Sse41,
+        Tier::Ml3,
+        Tier::Ml4,
+        Tier::Neon,
+    ]
+    .into_iter()
+    .filter(|t| t.is_native())
+    .collect();
     println!("ns per run(0, 0, {W}, 1), best of 7");
     for (name, stages) in &cases {
         println!("{name}");

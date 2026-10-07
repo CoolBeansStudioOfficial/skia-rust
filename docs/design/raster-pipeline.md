@@ -896,8 +896,9 @@ si! {
   have no counterpart: the tail byte is interpreter state and the stack ops are no-ops. Wave B
   tasks may change their own ops' context types (only the `Stage` variant and the stage
   functions see them).
-- **Stamping without `include!`.** `rp/tiers/<tier>.rs` (`scalar`, `sse2`, `sse41`,
-  `model_sse{2,41}_{host,amd_zen4}`) each `use`s its lane module `as lanes`, defines `tier_fn!`
+- **Stamping without `include!`.** `rp/tiers/<tier>.rs` (`scalar`, `sse2`, `sse41`, `ml3`, `ml4`,
+  `neon`, `model_{sse2,sse41,ml3,ml4}_{host,amd_zen4}`, `model_neon_{host,arm}`; A2b/A2c's lane
+  modules landed while A3 was in review and were instantiated here) each `use`s its lane module `as lanes`, defines `tier_fn!`
   (`#[target_feature]`) and `si!` (`tier_fn!` + `#[inline]`), and mounts the shared sources with
   `#[path = "highp/mod.rs"] mod highp;` (and `lowp/mod.rs` on SIMD tiers): no `..` paths, and
   rustfmt formats the stage files. `Scalar` has no lowp module. Adding a tier is one ~20-line
@@ -934,11 +935,9 @@ si! {
   Skia. Every access is bounds-checked (panics, never UB).
 - **Dispatch.** `Program::new(stages, selection, force_highp)` = `buildLowpPipeline` /
   `buildHighpPipeline` + `compile`; `Program::run` dispatches on `(tier, backend)`: natives take
-  their token and call the `#[target_feature]` entry in one `unsafe` block each (4 blocks for
-  Sse2/Sse41 × highp/lowp), models and Scalar are plain calls. Until A2b/A2c land, a *native*
-  `Ml3`/`Ml4` selection runs the compile-time baseline tier (Sse2, or Sse41 for an SSE4.1 build)
-  and native `Neon` runs `Scalar` (`tiers::effective`, marked TODO); explicit models of missing
-  tiers panic.
+  their token and call the `#[target_feature]` entry in one `unsafe` block each (2 blocks in the
+  `native!` macro, highp/lowp, instantiated for the 5 SIMD tiers), models and Scalar are plain
+  calls. Every `Tier` × `Backend` that `Selection::check` accepts runs.
 - **Builder.** `skia_rust_core::raster_pipeline::RasterPipeline` has the part of
   `SkRasterPipeline` A3 needs: `append` (with Skia's debug assertions), `unchecked_append`,
   `empty`, `stages_needed`, `run(x, y, w, h, &mut MemoryBindings)`, `compile() ->
@@ -950,8 +949,8 @@ si! {
   `branch_if_{all,any,no}_lanes_active`, `branch_if_no_active_lanes_eq`, `stack_checkpoint`,
   `stack_rewind`, `set_base_pointer`. Tests (`rp/tests.rs`): op list, program layout, memory
   registration, tail patching and stale scratch lanes (R8), known answers on every selection
-  (Scalar and the models also under Miri), and stage twins native vs `Model(Host)` vs
-  `Model(AmdZen4)` on random/special lanes (srcover compares only NaN-ness where two NaNs meet in
+  (Scalar and the `AmdZen4`/`Arm` models also under Miri), and stage twins native vs
+  `Model(Host)` vs `Model(AmdZen4)` (`Model(Arm)` for Neon) on random/special lanes (srcover compares only NaN-ness where two NaNs meet in
   its `mad`).
 - **`vx` changes.** `Vec::load_bytes`/`store_bytes` (and on `S`) = `sk_unaligned_load/store`
   from/to bytes, via new `Lane::load_ne`/`store_ne`; `Vec::bit_cast` now goes through a byte
@@ -971,7 +970,9 @@ si! {
   | `load_src, load_dst, srcover, store_dst` | Sse2 | 75 (91) | 152 (235) | 131 (147) | 221 (290) |
   | | Sse41 | 75 (84) | 172 (247) | 130 (150) | 227 (310) |
 
-  Scalar (ours; Skia's scalar build is not in the oracle set): 224, 323, 591 ns. So the
+  Scalar (ours; Skia's scalar build is not in the oracle set): 224, 323, 591 ns. Ml3/Ml4 (ours,
+  compiled, lowp / highp): measured below. (The oracle harness could not force Skia's ml3/ml4 path:
+  `SKIA_ORACLE_CPU_CAP=ml3` still reported the SSE strides, so no Skia numbers for them yet.) So the
   interpreter is **1.3–2.7× slower than Skia** on these short pipelines (compiled), and building
   a `Program` per `run()` costs ~75 ns more than Skia's stack-allocated build (three heap
   allocations). Found while measuring: LLVM hoists loop-invariant parts of stage arms (anything

@@ -11,10 +11,9 @@
 //! | Module | Lanes | Features |
 //! |---|---|---|
 //! | `scalar` | `lanes::scalar` (highp only) | none |
-//! | `sse2` (x86-64) | `lanes::sse2` | `sse2` |
-//! | `sse41` (x86-64) | `lanes::sse41` | `sse2,ssse3,sse4.1` |
-//! | `model_sse2_host`, `model_sse2_amd_zen4` (feature `models`) | `lanes::model_sse2::*` | none |
-//! | `model_sse41_host`, `model_sse41_amd_zen4` (feature `models`) | `lanes::model_sse41::*` | none |
+//! | `sse2`, `sse41`, `ml3`, `ml4` (x86-64) | `lanes::{sse2,sse41,ml3,ml4}` | the tier token's `FEATURES` |
+//! | `neon` (aarch64) | `lanes::neon` | `neon` |
+//! | `model_{sse2,sse41,ml3,ml4}_{host,amd_zen4}`, `model_neon_{host,arm}` (feature `models`) | `lanes::model_*::*` | none |
 //!
 //! # Adding a tier
 //! Copy `sse41.rs` (or a model file) with the new lane module and feature string, declare it
@@ -23,9 +22,11 @@
 
 use super::memory::{MemView, MemoryCtxPatch};
 use super::ops::Stage;
+#[allow(unused_imports)] // unused on targets without native SIMD tiers or models (wasm32)
+use crate::tier::Backend;
 #[cfg(any(test, feature = "models"))]
 use crate::tier::Estimates;
-use crate::tier::{Backend, Selection, Tier};
+use crate::tier::{Selection, Tier};
 
 /// An instruction of a compiled program: a stage, or the `just_return` that ends it.
 #[derive(Clone, Copy, Debug)]
@@ -35,12 +36,30 @@ pub(crate) enum Instr<'a> {
     Return,
 }
 
+#[cfg(target_arch = "x86_64")]
+pub(crate) mod ml3;
+#[cfg(target_arch = "x86_64")]
+pub(crate) mod ml4;
+#[cfg(target_arch = "aarch64")]
+pub(crate) mod neon;
 pub(crate) mod scalar;
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod sse2;
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod sse41;
 
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_ml3_amd_zen4;
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_ml3_host;
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_ml4_amd_zen4;
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_ml4_host;
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_neon_arm;
+#[cfg(any(test, feature = "models"))]
+pub(crate) mod model_neon_host;
 #[cfg(any(test, feature = "models"))]
 pub(crate) mod model_sse2_amd_zen4;
 #[cfg(any(test, feature = "models"))]
@@ -50,37 +69,11 @@ pub(crate) mod model_sse41_amd_zen4;
 #[cfg(any(test, feature = "models"))]
 pub(crate) mod model_sse41_host;
 
-/// The selection a program compiled for `sel` runs on: `sel` itself, except for tiers whose
-/// stage code is not instantiated yet.
-///
-/// Until tasks A2b/A2c instantiate them, a *native* `Ml3`/`Ml4` selection runs the tier Skia
-/// would run without `SkOpts::Init`'s upgrade (the compile-time baseline: `Sse41` if the build
-/// enables SSE4.1, else `Sse2`), and native `Neon` runs as `Scalar`, so that every host can run
-/// pipelines. Only `detect()` produces those selections; GM checks force their tiers
-/// explicitly, and an explicit model of a missing tier still panics in [`run`].
-#[must_use]
-pub(crate) fn effective(sel: Selection) -> Selection {
-    match (sel.tier, sel.backend) {
-        // TODO(A2b): remove once the Ml3/Ml4 tiers are instantiated.
-        (Tier::Ml3 | Tier::Ml4, Backend::Native) => {
-            Selection::native(if cfg!(target_feature = "sse4.1") {
-                Tier::Sse41
-            } else {
-                Tier::Sse2
-            })
-        }
-        // TODO(A2c): remove once the Neon tier is instantiated.
-        (Tier::Neon, Backend::Native) => Selection::native(Tier::Scalar),
-        _ => sel,
-    }
-}
-
 /// Runs `prog` (highp or lowp) over `[x0, xlimit) × [y0, ylimit)` on the tier `sel` selects.
 ///
 /// # Panics
-/// If `sel` names a tier whose stage code is not instantiated yet (Ml3/Ml4: task A2b; Neon:
-/// A2c), a native tier this host cannot run, a lowp program on `Scalar`, or a model without
-/// the `models` feature.
+/// If `sel` is a native tier this host cannot run (or another architecture's), a lowp program
+/// on `Scalar`, or a model without the `models` feature (see [`Selection::check`]).
 #[allow(clippy::too_many_arguments)] // start_pipeline's arguments
 pub(crate) fn run(
     sel: Selection,
@@ -94,7 +87,7 @@ pub(crate) fn run(
     patches: &mut [MemoryCtxPatch],
 ) {
     /// Calls a native tier's interpreter after taking the tier's token.
-    #[allow(unused_macros)] // no native SIMD tier is instantiated on some targets yet
+    #[allow(unused_macros)] // no native SIMD tier on wasm32
     macro_rules! native {
         ($tier:ident, $token:ident) => {{
             let _token = crate::cpu::$token::get()
@@ -115,9 +108,9 @@ pub(crate) fn run(
     macro_rules! model {
         ($tier:ident) => {{
             if lowp {
-                $tier::lowp::run(prog, x0, y0, xlimit, ylimit, views, patches)
+                $tier::lowp::run(prog, x0, y0, xlimit, ylimit, views, patches);
             } else {
-                $tier::highp::run(prog, x0, y0, xlimit, ylimit, views, patches)
+                $tier::highp::run(prog, x0, y0, xlimit, ylimit, views, patches);
             }
         }};
     }
@@ -131,14 +124,36 @@ pub(crate) fn run(
         (Tier::Sse2, Backend::Native) => native!(sse2, Sse2Token),
         #[cfg(target_arch = "x86_64")]
         (Tier::Sse41, Backend::Native) => native!(sse41, Sse41Token),
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml3, Backend::Native) => native!(ml3, Ml3Token),
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml4, Backend::Native) => native!(ml4, Ml4Token),
+        #[cfg(target_arch = "aarch64")]
+        (Tier::Neon, Backend::Native) => native!(neon, NeonToken),
         #[cfg(any(test, feature = "models"))]
         (Tier::Sse2, Backend::Model(Estimates::Host)) => model!(model_sse2_host),
         #[cfg(any(test, feature = "models"))]
-        (Tier::Sse2, Backend::Model(Estimates::AmdZen4)) => model!(model_sse2_amd_zen4),
+        (Tier::Sse2, Backend::Model(Estimates::AmdZen4)) => {
+            model!(model_sse2_amd_zen4);
+        }
         #[cfg(any(test, feature = "models"))]
         (Tier::Sse41, Backend::Model(Estimates::Host)) => model!(model_sse41_host),
         #[cfg(any(test, feature = "models"))]
-        (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => model!(model_sse41_amd_zen4),
-        _ => panic!("{sel}: no raster pipeline implementation in this build (tasks A2b/A2c)"),
+        (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => {
+            model!(model_sse41_amd_zen4);
+        }
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Ml3, Backend::Model(Estimates::Host)) => model!(model_ml3_host),
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Ml3, Backend::Model(Estimates::AmdZen4)) => model!(model_ml3_amd_zen4),
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Ml4, Backend::Model(Estimates::Host)) => model!(model_ml4_host),
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Ml4, Backend::Model(Estimates::AmdZen4)) => model!(model_ml4_amd_zen4),
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Neon, Backend::Model(Estimates::Host)) => model!(model_neon_host),
+        #[cfg(any(test, feature = "models"))]
+        (Tier::Neon, Backend::Model(Estimates::Arm)) => model!(model_neon_arm),
+        _ => panic!("{sel}: no raster pipeline implementation in this build"),
     }
 }

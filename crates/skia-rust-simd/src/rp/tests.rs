@@ -29,39 +29,53 @@ use super::{
     MemPtr, MemSlot, MemView, MemoryBindings, MemoryCtx, NO_TAIL, NUM_HIGHP_OPS, NUM_LOWP_OPS, Op,
     Params, Program, Stage, memory_ctx_infos,
 };
-use crate::tier::{Estimates, Selection, Tier};
+use crate::tier::{Backend, Estimates, Selection, Tier};
 
-/// Every selection this host can run with an instantiated stage set.
+/// The SIMD tiers.
+const SIMD: [Tier; 5] = [Tier::Sse2, Tier::Sse41, Tier::Ml3, Tier::Ml4, Tier::Neon];
+
+/// A tier's model estimate sources: the host's, then the oracle's (`AmdZen4` on x86, `Arm`).
+fn estimate_sources(t: Tier) -> [Estimates; 2] {
+    if t == Tier::Neon {
+        [Estimates::Host, Estimates::Arm]
+    } else {
+        [Estimates::Host, Estimates::AmdZen4]
+    }
+}
+
+/// The models of `t` this host can run (`Model(Host)` needs the host's estimate instructions,
+/// and is not run under Miri).
+fn models(t: Tier) -> Vec<Selection> {
+    estimate_sources(t)
+        .into_iter()
+        .map(|e| Selection::model(t, e))
+        .filter(|s| {
+            s.check().is_ok() && !(cfg!(miri) && s.backend == Backend::Model(Estimates::Host))
+        })
+        .collect()
+}
+
+/// Every selection this host can run.
 fn selections() -> Vec<Selection> {
     let mut v = vec![Selection::native(Tier::Scalar)];
-    for t in [Tier::Sse2, Tier::Sse41] {
-        if !cfg!(miri) && cfg!(target_arch = "x86_64") && t.is_native() {
+    for t in SIMD {
+        if !cfg!(miri) && t.is_native() {
             v.push(Selection::native(t));
         }
-        if !cfg!(miri) && Selection::model(t, Estimates::Host).check().is_ok() {
-            v.push(Selection::model(t, Estimates::Host));
-        }
-        v.push(Selection::model(t, Estimates::AmdZen4));
+        v.extend(models(t));
     }
     v
 }
 
 /// The SIMD tiers with a native backend on this host, each with its models.
 fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
-    let mut v = Vec::new();
     if cfg!(miri) {
-        return v;
+        return Vec::new();
     }
-    for t in [Tier::Sse2, Tier::Sse41] {
-        if cfg!(target_arch = "x86_64") && t.is_native() {
-            let models = vec![
-                Selection::model(t, Estimates::Host),
-                Selection::model(t, Estimates::AmdZen4),
-            ];
-            v.push((Selection::native(t), models));
-        }
-    }
-    v
+    SIMD.into_iter()
+        .filter(|t| t.is_native())
+        .map(|t| (Selection::native(t), models(t)))
+        .collect()
 }
 
 const IN0: MemPtr = MemPtr::new(MemSlot(0), 0);

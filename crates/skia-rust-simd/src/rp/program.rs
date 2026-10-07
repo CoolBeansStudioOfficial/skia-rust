@@ -41,7 +41,6 @@ impl<'a> Program<'a> {
     /// otherwise highp, with a `stack_checkpoint` first if there is a `stack_rewind`.
     #[must_use]
     pub fn new(stages: &[Stage<'a>], selection: Selection, force_highp: bool) -> Program<'a> {
-        let selection = tiers::effective(selection);
         let has_rewind = stages.iter().any(|s| matches!(s, Stage::StackRewind));
 
         // Port of: src/core/SkRasterPipeline.cpp#L588-L604 (chrome/m156)
