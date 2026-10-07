@@ -38345,7 +38345,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5951-L5968"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4dbddcb851b897ca62fe662534ea79bb3594c144874ef4de753cdd0dbca1dc1f"
 
 [[test]]
@@ -38354,7 +38354,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5930-L5949"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0f108eeed453dca1e669382e2e49facfce903c04bb5887e651638a477012c504"
 
 [[test]]
@@ -47655,7 +47655,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokeTest.cpp#L189-L194"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2af094bb3d4cebfc8cf8502f2d574677490ed9e6fc0e634b3b961fc561b7659b"
 
 [[test]]
@@ -47664,7 +47664,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L296-L354"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a12bb8781377e0e94284fa3a4c18c23791bb5c1bdb901ebd271885d6c622948b"
 
 [[test]]
@@ -47673,7 +47673,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L470-L494"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a27586a6d5d3075c9314d806301852c812d09d58a53a6c746ffbc4a8138fe7e5"
 
 [[test]]
@@ -47682,7 +47682,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L402-L441"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ca344b862ef8ba307f1d7618e426b434e8b4c639f17640ad5e478d1c7951e56"
 
 [[test]]
@@ -47691,7 +47691,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L142-L151"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "654ac8d979a2b127826a9187904dae020ca232131c767cc2ea46842b2672d7ba"
 
 [[test]]
@@ -47700,7 +47700,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L202-L242"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f053b124280bc53dda854f8d26f7f558e3aa114347adb5b0ddd61d8bd3c785da"
 
 [[test]]
@@ -47709,7 +47709,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L244-L294"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a11df9052e615be83aaf8d06f5ce63028c8b1bb516d42e0d52ed7317e09fd550"
 
 [[test]]
@@ -47718,7 +47718,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L444-L468"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "433fe9d0fa632530b911b4ee45c6b8136884114a73d0bcd49fe726a3ed926708"
 
 [[test]]
@@ -47727,7 +47727,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L356-L400"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6214523739cfd96873331815b0e7f5dee99180d7ea44f0bd8ac22256fa4d3148"
 
 [[test]]
@@ -47736,7 +47736,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L135-L140"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "dc2af84ee3141dbfec78538dc5f772db153794b98f5fe2f11d9ec086b0e835ab"
 
 [[test]]
@@ -47745,7 +47745,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StrokerTest.cpp#L163-L200"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e312ce2b0aa77be5285fc2556c49f6ecab838b2c60003d1e3db1e70b52ee8c26"
 
 [[test]]
