@@ -25,7 +25,9 @@
 //! - Contexts ([`Ctx`]): `-`, `ptr <slot> <byte offset>`, `mem <slot>`, `f32 <n> <bits>...`
 //!   (hex `f32` bits; Skia: a `const float*`), `u8x4 <b0> <b1> <b2> <b3>` (packed into the
 //!   pointer value), `branch <offset>`, `branch_eq <offset> <value> <slot> <byte offset>`,
-//!   `uniform_color <r> <g> <b> <a> <r16> <g16> <b16> <a16>` (hex `f32` bits, then decimal).
+//!   `uniform_color <r> <g> <b> <a> <r16> <g16> <b16> <a16>` (hex `f32` bits, then decimal),
+//!   `emboss <mul slot> <add slot>` (`EmbossCtx`: two `MemoryCtx` over buffers), `tables <hex>`
+//!   (`TablesCtx`: four 256-byte tables r, g, b, a, 2048 hex digits).
 //!
 //! The output of a case is the bytes of all its buffers after the runs, concatenated in slot
 //! order; results are compared (and stored) as [`fnv1a`] hashes of them.
@@ -132,6 +134,15 @@ pub enum Ctx {
         /// Byte offset of the ints.
         byte_offset: u32,
     },
+    /// `EmbossCtx`: two A8 memory contexts.
+    Emboss {
+        /// Buffer slot of the multiplier plane.
+        mul: u16,
+        /// Buffer slot of the addend plane.
+        add: u16,
+    },
+    /// `TablesCtx`: four 256-byte tables (`r`, `g`, `b`, `a`), 1024 bytes in all.
+    Tables(Vec<u8>),
     /// `UniformColorCtx`.
     UniformColor {
         /// `r, g, b, a`.
@@ -275,6 +286,15 @@ fn write_ctx(s: &mut String, ctx: &Ctx) {
             slot,
             byte_offset,
         } => write!(s, "branch_eq {offset} {value} {slot} {byte_offset}"),
+        Ctx::Emboss { mul, add } => write!(s, "emboss {mul} {add}"),
+        Ctx::Tables(t) => {
+            assert_eq!(t.len(), 1024, "a TablesCtx holds four 256-byte tables");
+            let _ = write!(s, "tables ");
+            for b in t {
+                let _ = write!(s, "{b:02x}");
+            }
+            Ok(())
+        }
         Ctx::UniformColor { rgba, rgba16 } => {
             let _ = write!(s, "uniform_color");
             for f in rgba {

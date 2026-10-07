@@ -1371,6 +1371,32 @@ add cases: `docs/PORTING.md` §12):
   `Model(Host)` and `Model(AmdZen4)`). Decision 3's attribution of the tier differences to
   `rcp_fast`/fused `mad`/`rcp14` is confirmed stage by stage as Wave B adds the stages that use
   them.
+- **Cases at B3/B4** (`src/cases_blend_color.rs`, 6,096 cases): every blend, coverage and color
+  stage, lowp and highp where the stage has both, on the A5 input kinds plus `grid` (coarse
+  values, so `d == da`, `s == 0` happen), `sorted` (premultiplied for every lane count: words
+  ascend) and lowp `edge`/`sorted16`; context sets for `set_rgb`, `uniform_color*`,
+  `scale/lerp_1_float` (incl. negative and huge, which hit the C++ float to `uint16_t` conversion),
+  `*_native`, `swizzle` (all 24 permutations of `rgba` plus `0`/`1`/unknown characters),
+  `matrix_*`, `parametric`/`PQish`/`HLGish`/`HLGinvish`/`gamma_`/`ootf`, `byte_tables`; pixel-memory
+  cases (whole rects, tails, compiled runs on several rects) for `scale/lerp_u8/565`, `emboss`
+  and `dither`; and `px/*`: every stage again over pixel memory, whose output does not depend on
+  the register layout, so the five paths' stored hashes can be compared with each other.
+  **All match on every selection.** What the `px/*` hashes show (patterns over scalar, sse2,
+  sse41, ml3, ml4): `colorburn`, `colordodge`, `hue`, `saturation`, `color`, `luminosity` produce
+  five different results on unit/premul inputs (Scalar `1/x`, Sse2 `rcpps` + Newton-Raphson, Sse41
+  `rcpps`, Ml3 `rcpps` (fused), Ml4 `rcp14`) and no other stage does: decision 3's `rcp_fast`
+  claim holds. Every stage with a `mad`/`nmad` (Porter-Duff and separable modes, `matrix_*`,
+  `parametric`, `gamma_`, `ootf`, `lerp_1_float`, `dither`) separates Ml3/Ml4 from the rest and
+  nothing else (fused versus unfused). Sse2 versus Sse41 differ elsewhere only on special inputs
+  (`floor_` outside the `cvtt` range: `HLGish`, `css_hsl_to_srgb`, `css_hwb_to_srgb`; Scalar versus
+  SSE `min`/`max` NaN and zero rules: `clamp_01`, `lighten`, `hsl_to_rgb`). `screen` runs without
+  NaN inputs: `nmad(s, d, s + d)` makes a NaN `s` both product and addend, the same
+  NaN-meets-NaN case as above (native Ml3/Ml4 returned the other NaN's sign; the models agree
+  with Skia).
+  The run found one bug: B3's lowp `from_float` (`scale_1_float`, `lerp_1_float`) converted with
+  Rust's saturating `as u16`, Skia's `uint16_t(f * 255.0f + 0.5f)` is a truncating float to int
+  conversion (negative coverages wrap, huge ones give the tier's `cvttps2dq` result); both lowp
+  `from_float`s now use the tier's `to_i32` and truncate.
 - **Not covered yet:** `MemoryCtx` stages and tail patching through real pixel memory (B1/B2
   add them; the format already has `mem` contexts, strides, origins and compiled runs), Neon
   and wasm (no oracle host), and the `dr..da` registers' persistence across chunks in the

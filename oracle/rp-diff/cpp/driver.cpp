@@ -160,6 +160,27 @@ static void* make_ctx(Case& c, Op op, const std::vector<std::string>& t, SkArena
         b->ptr = (const int*)slot_ptr(c, t.at(4), t.at(5));
         return b;
     }
+    if (kind == "emboss") {
+        auto* e = alloc->make<ctx::EmbossCtx>();
+        for (int i = 0; i < 2; i++) {
+            Buffer& b = c.buffers.at(std::stoul(t.at(2 + i)));
+            ctx::MemoryCtx& m = i == 0 ? e->mul : e->add;
+            m.pixels = (void*)((uintptr_t)b.bytes.data() + (uintptr_t)(intptr_t)b.origin);
+            m.stride = (int)b.stride;
+        }
+        return e;
+    }
+    if (kind == "tables") {
+        std::vector<uint8_t> bytes = unhex(t.at(2), 1024);
+        auto* tb = alloc->make<ctx::TablesCtx>();
+        uint8_t* data = alloc->makeArray<uint8_t>(1024);
+        memcpy(data, bytes.data(), 1024);
+        tb->r = data;
+        tb->g = data + 256;
+        tb->b = data + 512;
+        tb->a = data + 768;
+        return tb;
+    }
     if (kind == "uniform_color") {
         auto* u = alloc->make<ctx::UniformColorCtx>();
         u->r = hex_f32(t.at(2));
