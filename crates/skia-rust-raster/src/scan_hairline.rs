@@ -37,6 +37,7 @@ use skia_rust_core::scalar::{SCALAR_PI, scalar_ceil_to_int, scalar_floor_to_int}
 use skia_rust_simd::vx::{self, Float2};
 
 use crate::blitter::{Blitter, BlitterClipper};
+use crate::scan::fill_rect_clip;
 use crate::scan_antihair::anti_hair_line_rgn;
 use crate::scan_clip::ScanClip;
 
@@ -880,17 +881,9 @@ pub fn anti_hair_round_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mu
 ///////////////////////////////////////////////////////////////////////////////
 
 /// Strokes the frame of `r` with a non-antialiased stroke of `stroke_size` (`SkScan::FrameRect`).
-///
-/// `fill_rect` is `SkScan::FillRect` (task C2), which this function calls.
 // Port of: src/core/SkScan_Hairline.cpp#L788-L831 (chrome/m156)
 #[doc(alias = "FrameRect")]
-pub fn frame_rect(
-    r: &Rect,
-    stroke_size: &Point,
-    clip: &dyn ScanClip,
-    blitter: &mut dyn Blitter,
-    fill_rect: &mut dyn FnMut(&Rect, &dyn ScanClip, &mut dyn Blitter),
-) {
+pub fn frame_rect(r: &Rect, stroke_size: &Point, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
     debug_assert!(stroke_size.x >= 0.0 && stroke_size.y >= 0.0);
 
     if stroke_size.x < 0.0 || stroke_size.y < 0.0 {
@@ -916,15 +909,15 @@ pub fn frame_rect(
             outer.left = r.left;
             outer.right = r.right;
         }
-        fill_rect(&outer, clip, blitter);
+        fill_rect_clip(&outer, clip, blitter);
         return;
     }
 
     let mut tmp = Rect::new(outer.left, outer.top, outer.right, outer.top + dy);
-    fill_rect(&tmp, clip, blitter);
+    fill_rect_clip(&tmp, clip, blitter);
     tmp.top = outer.bottom - dy;
     tmp.bottom = outer.bottom;
-    fill_rect(&tmp, clip, blitter);
+    fill_rect_clip(&tmp, clip, blitter);
 
     tmp = Rect::new(
         outer.left,
@@ -932,10 +925,10 @@ pub fn frame_rect(
         outer.left + dx,
         outer.bottom - dy,
     );
-    fill_rect(&tmp, clip, blitter);
+    fill_rect_clip(&tmp, clip, blitter);
     tmp.left = outer.right - dx;
     tmp.right = outer.right;
-    fill_rect(&tmp, clip, blitter);
+    fill_rect_clip(&tmp, clip, blitter);
 }
 
 /// Draws hairline segments through `pts` (`SkScan::HairLine`).

@@ -452,36 +452,62 @@ fn anti_frame_rect_outline() {
 fn frame_rect_uses_fill_rect() {
     let clip = big_clip();
     let mut d = DumpBlitter::new();
-    let mut filled = Vec::new();
     frame_rect(
         &Rect::new(0.0, 0.0, 10.0, 10.0),
         &pt(2.0, 4.0),
         &clip,
         &mut d,
-        &mut |r, _clip, _b| filled.push(*r),
     );
     // outer = (-1,-2,11,12); top (-1,-2,11,2), bottom (-1,8,11,12), left (-1,2,1,8), right
-    // (9,2,11,8).
+    // (9,2,11,8); each is rounded and blitted by `fill_rect`.
     assert_eq!(
-        filled,
+        d.calls,
         [
-            Rect::new(-1.0, -2.0, 11.0, 2.0),
-            Rect::new(-1.0, 8.0, 11.0, 12.0),
-            Rect::new(-1.0, 2.0, 1.0, 8.0),
-            Rect::new(9.0, 2.0, 11.0, 8.0),
+            BlitCall::Rect {
+                x: -1,
+                y: -2,
+                width: 12,
+                height: 4
+            },
+            BlitCall::Rect {
+                x: -1,
+                y: 8,
+                width: 12,
+                height: 4
+            },
+            BlitCall::Rect {
+                x: -1,
+                y: 2,
+                width: 2,
+                height: 6
+            },
+            BlitCall::Rect {
+                x: 9,
+                y: 2,
+                width: 2,
+                height: 6
+            },
         ]
     );
 
-    // Stroke wider than the rect: a single fill of the outset rect.
-    let mut filled = Vec::new();
+    // Stroke wider than the rect: a single fill of the outset rect (-1,-0.5,2,10.5), which
+    // rounds to (-1,0,2,11).
+    let mut d = DumpBlitter::new();
     frame_rect(
         &Rect::new(0.0, 0.0, 1.0, 10.0),
         &pt(2.0, 1.0),
         &clip,
         &mut d,
-        &mut |r, _clip, _b| filled.push(*r),
     );
-    assert_eq!(filled, [Rect::new(-1.0, -0.5, 2.0, 10.5)]);
+    assert_eq!(
+        d.calls,
+        [BlitCall::Rect {
+            x: -1,
+            y: 0,
+            width: 3,
+            height: 11
+        }]
+    );
 }
 
 // A butt-capped line (1,1)->(5,1): x0 = 64, x1 = 320 -> ix 1..5 at y = 1.
