@@ -60,6 +60,17 @@ fn selections() -> Vec<Selection> {
     v
 }
 
+/// Under Miri (docs/UNSAFE.md): Scalar and one x86 and the Arm model; natively: everything.
+fn miri_selections() -> Vec<Selection> {
+    if !cfg!(miri) {
+        return selections();
+    }
+    selections()
+        .into_iter()
+        .filter(|s| matches!(s.tier, Tier::Scalar | Tier::Ml3 | Tier::Neon))
+        .collect()
+}
+
 /// The SIMD tiers with a native backend on this host, each with its models.
 fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
     if cfg!(miri) {
@@ -720,10 +731,18 @@ fn same(a: u32, b: u32, by_value: bool) -> bool {
 #[test]
 fn sksl_arith_matches_reference() {
     let rounds = if cfg!(miri) { 1 } else { 24 };
-    for sel in selections() {
+    for sel in miri_selections() {
         let n = sel.tier.highp_stride();
         let mut rng = Rng::new(0x00b6_b001);
-        for case in cases().iter().filter(|c| !matches!(c.elem, Elem::None)) {
+        for (index, case) in cases()
+            .iter()
+            .filter(|c| !matches!(c.elem, Elem::None))
+            .enumerate()
+        {
+            // Miri policy (docs/UNSAFE.md): a representative sample of the ops.
+            if cfg!(miri) && index % 6 != 0 {
+                continue;
+            }
             let by_value = case.name.starts_with("floor") || case.name.starts_with("ceil");
             for &k in case.ks {
                 // Miri is slow: only the first and last slot counts.
@@ -751,7 +770,7 @@ fn sksl_arith_matches_reference() {
 /// division per tier; the twin test compares each tier with its models on such lanes).
 #[test]
 fn int_division_edge_cases_run() {
-    for sel in selections() {
+    for sel in miri_selections() {
         let n = sel.tier.highp_stride();
         let init: Vec<u32> = (0..SLOTS * n)
             .map(|w| match (w / n) % 2 {
