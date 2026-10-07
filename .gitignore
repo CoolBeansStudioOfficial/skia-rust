@@ -7,3 +7,4 @@
 /goldens/
 *.profraw
 /oracle/aaclip/out/
+/oracle/draw/out/

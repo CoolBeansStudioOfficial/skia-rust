@@ -1764,7 +1764,7 @@ region_path}`):
   The `XRect` helpers live in `scan` (C2).
 - **Arithmetic.** The fixed-point steps (`FDot6`, `Fixed`, `FDot8`) use wrapping ops where C++
   silently overflows; the float2 loops of `hair_quad`/`hair_cubic` use the `Float2` type with the
-  same operation order. `canDirectBlit` is not ported (see `API_MAPPING.md`).
+  same operation order. `canDirectBlit` was not ported by C4; D5 did (its `horiline`/`vertline` fast path has different colors from `blit_h` for non-sRGB destinations).
 - **Cap helpers.** `hair_path` is `hair_path_with_cap(Cap, ...)` (the C++ template parameter becomes
   a value); `extend_pts` mirrors the `do/while` structure, including that `controls` is only
   decremented when the tangent is zero.
@@ -2008,6 +2008,63 @@ blit_row}`; `skia_rust_core::{draw_types, shaders::{color_filter_shader, shader_
   kernels and no oracle yet, so it is not compared). `blitters_tests.rs` covers what the dump cannot: `Choose`'s
   decisions (against the pipeline D3 builds for the paint `Choose` should have tweaked it into), the shader blitter
   against independent per-channel formulas, LCD16 values, direct blits and the sprite offsets.
+
+**As implemented in D5** (`skia_rust_core::{device, canvas, surface_props, draw_procs}`,
+`skia_rust_raster::{draw, auto_blitter_choose, bitmap_device, raster_clip_stack}`):
+
+- **Files.** `SkDraw.{h,cpp}` is `draw` (m156 has no `SkDrawBase`: `skcpu::Draw` holds
+  everything): `Draw`, `PtProcRec` and its eight procs, `ComputeRectType`, `drawPaint/Rect/Oval/RRect/Path/
+  Points/DevicePoints/DevMask`, `modifyPaintForHairlines`, `DrawToMask`. `SkDrawProcs.h` is core
+  `draw_procs`; `SkAutoBlitterChoose.h` is `auto_blitter_choose` (a closure-taking function, because
+  the blitter borrows the arena); `SkRasterClipStack.h`, `SkBitmapDevice.{h,cpp}` (with `SkDrawTiler`,
+  `Bounder`, `BDDraw`) are `raster_clip_stack` and `bitmap_device`; `SkDevice.{h,cpp}` is core `device`
+  (a `Device` trait over `DeviceState`, `NoPixelsDevice`); `SkSurfaceProps` and `SkCanvas::PointMode`
+  came along (`surface_props`, `canvas`). `Draw` takes `&mut self` and holds `Pixmap<'a>`, `&Matrix`,
+  `&RasterClip`; the blitter chooser is a `fn` pointer (default `SkBlitter::Choose`), now with the
+  `SurfaceProps` parameter that D3/D4 left out (ignored by `choose` for now).
+- **Tiling.** `DrawTiler` ports the 8191-pixel tile loop exactly (origin stepping, translated matrix and
+  clip, the "done" test that can skip the last tile); `BitmapDevice::loop_tiler` builds one `Draw` per
+  tile. `drawPaint` is not tiled in Skia either (`BDDraw`).
+- **Found by the oracle.** C4 skipped `canDirectBlit` in `horiline`/`vertline` on the grounds that the
+  `blit_h` loop gives the same pixels. It does not: `RasterPipelineBlitter::canDirectBlit` converts the
+  paint's color from unpremul `RGBA_F32` *without* the destination color space, so non-AA hairlines on
+  e.g. a linear `Gray_8` device have another color than the fills. Now ported
+  (`scan_hairline::horiline`).
+- **Exactness evidence.** `oracle/draw` (`draw.cpp`, `gen_cases.py`, `build.ps1`): a C++ interpreter of a
+  case script (`crates/skia-rust-raster/src/draw_tests/cases.txt`, 4,619 cases) that drives a real
+  `SkBitmapDevice` and `skcpu::Draw::{drawDevMask, drawPathCoverage}` and hashes the device (n32 as
+  logical A,R,G,B, so the dump does not depend on the host byte order): every shape (rects incl. tiny,
+  huge, unsorted, rotated; ovals; rrects, complex rrects, drrects; regions; paths with quads, conics,
+  cubics, inverse fills, holes, off-device and enormous coordinates; points in all modes, with the dash
+  `asPoints` fast paths) x style (fill, stroke, hairline, thin AA strokes that become modulated
+  hairlines, stroke-and-fill) x AA x caps/joins x path effects (dash, corner, sum, compose) x all 29
+  blend modes x color types (`n32`, `a8`, `gray8`, `rgb565`, `argb4444`, `rgbaf16`, `rgbaf32`,
+  `rgba1010102`) x alpha types x color spaces x clips (rect, rrect, path, region, difference, nested
+  save/restore, replace, AA and BW, state queries) x CTMs (translate, scale, flips, rotation, skew,
+  perspective, non-invertible), the tiler's >8191 devices, row-padded devices,
+  `readPixels`/`writePixels`, seeded random mixes. Dumps for the five x86 code paths (`x64-sse2`
+  baseline/`ml3`/`ml4`, `x64-sse41`, `x64-scalar`: 6,824 lines each, 1,238-1,499 of which differ from
+  the baseline) are committed; `draw_tests.rs` interprets the same script with `BitmapDevice` and
+  requires every hash on all five `Tier`s (natively or by model). All match; `Neon` has no oracle.
+  Rerun `oracle/draw/build.ps1` after editing the generator; `DRAW_ONLY=<case>` and `DRAW_PIXELS=1`
+  (both sides) print one case's pixels to find a divergence.
+- **Tests.** No manifest test becomes runnable: `DrawPathTest::DrawPath`,
+  `DeviceTest::SpecialImage_BitmapDevice` and the other consumers need `SkCanvas`/`SkSurface` (D6) or
+  special images; `VerticesTest` needs `SkVertices`. Their entries stay `todo`. Unit tests cover
+  `NoPixelsDevice`, the device coordinate systems, `RasterClipStack`, `DrawTiler`, `BitmapDevice`
+  clips, reads and writes, `SurfaceProps` and `draw_procs`.
+- **What D6 must wire up.** (1) `Canvas` creates `BitmapDevice`s and drives `DeviceState::set_origin`/
+  `set_global_ctm`/`set_local_to_device` on save/restore/concat, `clip_*` and `push/pop_clip_stack`;
+  `SkDevice::clipShader` (`makeWithCTM`, `makeInvertAlpha` on `Shader`) then calls
+  `Device::on_clip_shader`. (2) The `Device` trait lacks `drawImageRect`, `drawVertices`, `drawMesh`,
+  `drawAtlas`, `drawDrawable`, `drawShadow`, `drawPatch`, `drawArc` (needs `SkArc`), `drawSpecial`,
+  `drawDevice`, `snapSpecial`, `makeSurface`, `onDrawGlyphRunList`: add them with Skia's default bodies.
+  (3) `Draw::draw_bitmap/draw_sprite/draw_bitmap_as_mask` (`SkTreatAsSprite`, image shaders;
+  `choose_sprite` is ready), `drawVertices`, `drawAtlas`. (4) The mask filter paths of `draw_dev_path`
+  and `draw_rrect_nine_patch` (`filterPath`, `filterRects`, `filterRRect`) are TODO(Phase 3) and draw
+  unfiltered today. (5) `SurfaceProps` should reach `StageRec` (D2 left it out) through the chooser's
+  `props` parameter. (6) The device owns its `Bitmap`; `Surface::wrap_pixels(&mut Bitmap)` moves it in
+  and takes it back with `into_bitmap`.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

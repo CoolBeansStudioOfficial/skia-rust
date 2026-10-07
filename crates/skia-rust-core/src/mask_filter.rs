@@ -8,13 +8,17 @@
 //! skia-rust: a stub (D2, extended by D4). Only what `SkPaint` and `SkBlitter::Choose` need is
 //! here: the [`MaskFilter`] handle, [`MaskFilterBase::compute_fast_bounds`] and
 //! [`MaskFilterBase::format`]. The mask filters (`SkMaskFilter::MakeBlur`, ...) and the rest of
-//! `SkMaskFilterBase` (`filterMask`, `asABlur`, ...) are Phase 3 and extend the trait.
+//! `SkMaskFilterBase` (`asABlur`, `filterPath`, `filterRects`, ...) are Phase 3 and extend the
+//! trait; D5 added [`MaskFilterBase::filter_mask`], which `SkDraw::drawDevMask` and `DrawToMask`
+//! call.
 
 use core::any::Any;
 use core::fmt;
 use std::sync::Arc;
 
-use crate::mask::MaskFormat;
+use crate::mask::{Mask, MaskBuilder, MaskFormat};
+use crate::matrix::Matrix;
+use crate::point::IPoint;
 use crate::rect::Rect;
 
 /// The virtual interface of a mask filter (`SkMaskFilterBase`), reduced to what is ported.
@@ -33,6 +37,24 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
     #[doc(alias = "getFormat")]
     fn format(&self) -> MaskFormat {
         MaskFormat::A8
+    }
+
+    /// Filters `src` into `dst` under `ctm` and returns true if it did. If `margin` is given and
+    /// `src` has no image (a bounds query), the filter sets it to how far the result extends
+    /// beyond the source on each side (`filterMask`).
+    ///
+    /// skia-rust: Skia's is pure virtual; the default does nothing and returns false, which is
+    /// what an unsupported source or matrix gets, until Phase 3's mask filters implement it.
+    // Port of: src/core/SkMaskFilterBase.h#L60-L61 (chrome/m156)
+    #[doc(alias = "filterMask")]
+    fn filter_mask(
+        &self,
+        _dst: &mut MaskBuilder,
+        _src: &Mask<'_>,
+        _ctm: &Matrix,
+        _margin: Option<&mut IPoint>,
+    ) -> bool {
+        false
     }
 }
 

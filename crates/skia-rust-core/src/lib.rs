@@ -11,6 +11,7 @@ pub mod blend_mode_blender;
 pub mod blend_mode_priv;
 pub mod blender;
 pub mod buffer;
+pub mod canvas;
 pub mod checksum;
 pub mod clip_op;
 pub mod color;
@@ -31,6 +32,8 @@ pub mod cubic_map;
 pub mod cubics;
 pub mod data;
 pub mod data_table;
+pub mod device;
+pub mod draw_procs;
 pub mod draw_types;
 #[doc(hidden)]
 pub mod edge_clipper;
@@ -120,6 +123,7 @@ pub mod stroke;
 pub mod stroke_rec;
 #[doc(hidden)]
 pub mod stroker_priv;
+pub mod surface_props;
 pub mod swizzle;
 pub mod t_fits_in;
 pub mod t_pin;

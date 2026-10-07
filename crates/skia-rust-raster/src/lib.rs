@@ -3,16 +3,20 @@
 pub mod aa_clip;
 pub mod alpha_runs;
 pub mod analytic_edge;
+pub mod auto_blitter_choose;
+pub mod bitmap_device;
 pub mod blit_row;
 pub mod blitter;
 pub mod blitter_a8;
 pub mod blitter_choose;
 pub mod blitter_dump;
 pub mod core_blitters;
+pub mod draw;
 pub mod edge;
 pub mod edge_builder;
 mod pixel_rows;
 pub mod raster_clip;
+pub mod raster_clip_stack;
 pub mod raster_pipeline_blitter;
 pub mod region_path;
 pub mod scan;
@@ -31,6 +35,8 @@ mod aa_clip_tests;
 mod blitter_tests;
 #[cfg(test)]
 mod blitters_tests;
+#[cfg(test)]
+mod draw_tests;
 #[cfg(test)]
 mod legacy_blitters_tests;
 #[cfg(test)]

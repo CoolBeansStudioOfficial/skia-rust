@@ -48,3 +48,11 @@ debug = 1
 
 [profile.bench]
 debug = 1
+
+# The oracle replays (draw_tests, rp-diff) run tens of thousands of draws; debug assertions stay on.
+[profile.dev.package.skia-rust-simd]
+opt-level = 2
+[profile.dev.package.skia-rust-core]
+opt-level = 2
+[profile.dev.package.skia-rust-raster]
+opt-level = 2

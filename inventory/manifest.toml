@@ -30622,6 +30622,7 @@ macro = "DEF_TEST"
 source = "tests/DeviceTest.cpp#L38-L55"
 module = "core"
 status = "todo"
+reason = "needs SkSpecialImage and SkSurface (D6/Phase 3); BitmapDevice itself is ported (D5)"
 span_hash = "e98ae4af49b03bc91c570a3581c42fa8c8afdff9093f82207d1ce2b6ad4dec0d"
 
 [[test]]
@@ -30726,6 +30727,7 @@ macro = "DEF_TEST"
 source = "tests/DrawPathTest.cpp#L440-L458"
 module = "core"
 status = "todo"
+reason = "needs Canvas and Surface (D6); BitmapDevice/Draw (D5) are oracle-checked in skia-rust-raster draw_tests"
 span_hash = "ff4ffebbb833257a110ac64256d851330e15419a60e5e79348bbb75e1531d44a"
 
 [[test]]
@@ -49191,6 +49193,7 @@ macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L86-L147"
 module = "core"
 status = "todo"
+reason = "needs SkVertices (not ported yet); Draw::drawVertices/drawAtlas are left for it"
 span_hash = "a5299b684c84e23485a36e600f08610f88fcc9659a4132ea4d9249b345fe5bfe"
 
 [[test]]
@@ -49200,6 +49203,7 @@ macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L155-L174"
 module = "core"
 status = "todo"
+reason = "needs SkVertices and Canvas (D6)"
 span_hash = "fd3b3d5044848229b2c287514f1415bc69c979611379f638a6ad71d4e2e9bae6"
 
 [[test]]
@@ -49209,6 +49213,7 @@ macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L176-L213"
 module = "core"
 status = "todo"
+reason = "needs SkVertices (not ported yet)"
 span_hash = "f1efe3656e6eeabf87e00bceb6ec1bbce897de8b8f67aa1d1c2e981af88d1b09"
 
 [[test]]
