@@ -7,6 +7,10 @@ pub mod bitmap_test;
 #[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
+pub mod clip_cubic_test;
+#[cfg(test)]
+pub mod clipper_test;
+#[cfg(test)]
 pub mod color_priv_test;
 #[cfg(test)]
 pub mod color_space_test;
@@ -18,6 +22,8 @@ pub mod cubic_map_test;
 pub mod cubic_roots_test;
 #[cfg(test)]
 pub mod data_ref_test;
+#[cfg(test)]
+pub mod edge_test;
 #[cfg(test)]
 pub mod find_cubic_convex180_chops_test;
 #[cfg(test)]
