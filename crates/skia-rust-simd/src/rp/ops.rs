@@ -31,13 +31,20 @@
 //! `macro_rules!` callbacks consume the table (`rp_ops!(callback)` expands to
 //! `callback! { <table> }`): this module defines [`Op`] and [`Stage`] with it, and each tier's
 //! interpreters generate their dispatch `match` with it (`rp/tiers/{highp,lowp}/mod.rs`).
+//!
+//! The table is also exported, hidden, as `skia_rust_simd::rp_op_table!` for test tooling that
+//! needs one generated `match` arm per op (the `oracle/rp-diff` replayer builds a [`Stage`] from an
+//! op name and a serialized context with it). A callback outside this crate must have the
+//! context types in scope (`use skia_rust_simd::rp::contexts::*; use core::cell::Cell;`).
 
 #[allow(clippy::wildcard_imports)] // every context type appears in the generated `Stage`
 use super::contexts::*;
 use core::cell::Cell;
 
 /// Invokes `$cb! { <the op table> }` (see the [module docs](self)).
-macro_rules! rp_ops {
+#[doc(hidden)]
+#[macro_export]
+macro_rules! rp_op_table {
     ($cb:ident) => {
         $cb! {
             move_src_dst                        MoveSrcDst                      []                                  n  pp A3;
@@ -570,7 +577,7 @@ macro_rules! rp_ops {
         }
     };
 }
-pub(crate) use rp_ops;
+pub(crate) use crate::rp_op_table as rp_ops;
 
 /// `1` for a lowp op, `0` for a highp-only op (by lowp kind).
 macro_rules! lowp_count {

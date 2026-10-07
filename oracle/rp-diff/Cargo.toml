@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-rp-diff"
+description = "Per-stage raster pipeline oracle harness: cases, the Rust replayer and the stored Skia results (docs/design/raster-pipeline.md §4.2)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-simd = { workspace = true, features = ["models"] }
+
+[lints]
+workspace = true

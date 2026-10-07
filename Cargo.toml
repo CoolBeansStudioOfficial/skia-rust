@@ -8,6 +8,7 @@ members = [
     "crates/skia-rust-raster",
     "tests",
     "tests/gm",
+    "oracle/rp-diff",
     "xtask",
 ]
 
