@@ -6,12 +6,57 @@
 #![cfg(test)]
 
 use crate::{Reporter, def_test, reporter_assert};
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::edge_clipper::EdgeClipper;
 use skia_rust_core::float_bits::float_to_bits;
 use skia_rust_core::line_clipper::intersect_line;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
+use skia_rust_raster::raster_canvas::RasterCanvas;
+
+// Port of: tests/ClipperTest.cpp#L24-L58 (chrome/m156)
+fn test_hairclipping(reporter: &mut Reporter) {
+    let mut bm = Bitmap::new();
+    bm.alloc_n32_pixels((4, 4), None);
+    bm.erase_color(Color::WHITE);
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+
+    {
+        // The canvas owns the bitmap while it lives (docs/design/pixels.md), so it is scoped
+        // before the pixels are read back.
+        let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+        canvas.clip_rect(Rect::from_wh(4.0, 2.0), None, None);
+        canvas.draw_line((1.5, 1.5), (3.5, 3.5), &paint);
+    }
+
+    /*
+     *  We had a bug where we misinterpreted the bottom of the clip, and
+     *  would draw another pixel (to the right in this case) on the same
+     *  last scanline. i.e. we would draw to [2,1], even though this hairline
+     *  should just draw to [1,1], [2,2], [3,3] modulo the clip.
+     *
+     *  The result of this entire draw should be that we only draw to [1,1]
+     *
+     *  Fixed in rev. 3366
+     */
+    for y in 0..4 {
+        for x in 0..4 {
+            let non_white = (1 == y) && (1 == x);
+            let c = bm.get_addr32(x, y);
+            if non_white {
+                reporter_assert!(reporter, 0xFFFF_FFFF != c);
+            } else {
+                reporter_assert!(reporter, 0xFFFF_FFFF == c);
+            }
+        }
+    }
+}
 
 // Port of: tests/ClipperTest.cpp#L60-L76 (chrome/m156)
 fn test_edgeclipper() {
@@ -187,16 +232,11 @@ fn test_intersectline(reporter: &mut Reporter) {
 }
 
 // Port of: tests/ClipperTest.cpp#L159-L163 (chrome/m156)
-def_test!(
-    #[ignore = "needs Canvas (D6): test_hairclipping not ported yet"]
-    Clipper,
-    |reporter| {
-        test_intersectline(reporter);
-        test_edgeclipper();
-        // TODO(D6): test_hairclipping(reporter); (Tests/ClipperTest.cpp#L24-L58, needs Canvas
-        // and N32 Bitmap drawing)
-    }
-);
+def_test!(Clipper, |reporter| {
+    test_intersectline(reporter);
+    test_edgeclipper();
+    test_hairclipping(reporter);
+});
 
 // Port of: tests/ClipperTest.cpp#L165-L171 (chrome/m156)
 def_test!(LineClipper_skbug_7981, |_r| {

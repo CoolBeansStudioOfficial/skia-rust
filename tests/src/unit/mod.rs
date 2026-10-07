@@ -15,6 +15,8 @@ pub mod blend_test;
 #[cfg(test)]
 pub mod blit_mask_clip;
 #[cfg(test)]
+pub mod capped_hairlines_test;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
@@ -38,6 +40,8 @@ pub mod cubic_roots_test;
 pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
+#[cfg(test)]
+pub mod draw_path_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]

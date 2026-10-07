@@ -6,10 +6,43 @@
 #![cfg(test)]
 
 use crate::{def_test, reporter_assert};
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::cubic_clipper::CubicClipper;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::path::Path;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::scalar::scalar_abs;
+use skia_rust_raster::raster_canvas::RasterCanvas;
+
+// Currently the supersampler blitter uses int16_t for its index into an array
+// the width of the clip. Test that we don't crash/assert if we try to draw
+// with a device/clip that is larger.
+// Port of: tests/ClipCubicTest.cpp#L26-L38 (chrome/m156)
+fn test_giant_clip() {
+    let mut bm = Bitmap::new();
+    bm.alloc_n32_pixels((64919, 1), None);
+    let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+    canvas.clear(Color::TRANSPARENT);
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    canvas.draw_path(
+        &Path::polygon(
+            &[
+                Point::new(0.0, 0.0),
+                Point::new(1.0, 0.0),
+                Point::new(33.0, 1.0),
+            ],
+            false,
+            None,
+            None,
+        ),
+        &paint,
+    );
+}
 
 // Port of: tests/ClipCubicTest.cpp#L40-L48 (chrome/m156)
 fn print_curve(name: &str, crv: &[Point; 4]) {
@@ -57,7 +90,6 @@ fn set_curve(
 
 // Port of: tests/ClipCubicTest.cpp#L80-L173 (chrome/m156)
 def_test!(
-    #[ignore = "needs Canvas (D6): test_giantClip not ported yet"]
     #[allow(
         clippy::excessive_precision,
         clippy::similar_names,
@@ -180,8 +212,7 @@ def_test!(
         );
         reporter_assert!(reporter, curves_are_equal(&clipped, &sb, tol));
 
-        // TODO(D6): test_giantClip() (tests/ClipCubicTest.cpp#L26-L38, needs Canvas, N32 Bitmap
-        // and antialiased drawPath)
+        test_giant_clip();
     }
 );
 
