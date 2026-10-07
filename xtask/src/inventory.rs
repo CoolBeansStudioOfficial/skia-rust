@@ -443,10 +443,15 @@ impl MacroScope<'_> {
     }
 }
 
+/// Read a source file as text with CRLF normalized to LF, so scanning gives the same
+/// result whatever the checkout's `core.autocrlf` is. (With CRLF, a `\` line splice
+/// inside a string literal looks like an escaped `\r`, and the literal appears to end
+/// at the line break.)
 fn read_lossy(path: &Path) -> Result<String> {
     let bytes = std::fs::read(path)?;
-    Ok(String::from_utf8(bytes)
-        .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned()))
+    let text = String::from_utf8(bytes)
+        .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
+    Ok(text.replace("\r\n", "\n"))
 }
 
 fn macro_kind(name: &str) -> Kind {
