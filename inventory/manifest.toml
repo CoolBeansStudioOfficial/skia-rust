@@ -35086,7 +35086,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/InfRectTest.cpp#L26-L45"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6f1465c208e636c286fbf49d8f96f57ebb8a19862c20a85d949bdb486e347cd5"
 
 [[test]]
@@ -38928,7 +38928,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Point3Test.cpp#L126-L148"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ed7e5f35d2e56e55a1435e9a15a4d2039599fc723f32ed269e963c2267bf966f"
 
 [[test]]
@@ -38937,7 +38937,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PointTest.cpp#L133-L152"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "38db8d8f08ec2abbcff4e5a857120e747d40ea51d7d21216886f9c9d1d70157b"
 
 [[test]]
@@ -38946,7 +38946,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PointTest.cpp#L154-L173"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0c72af4628e6fdab1ccc797e1cc3041b0bcbf4e9aee2ff7d04d970bee5cae285"
 
 [[test]]
@@ -40280,7 +40280,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L398-L436"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8339af0174f9603f1d08da24a840eea356f36506d0af735b7a630ac3e04ff912"
 
 [[test]]
@@ -40307,7 +40307,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L119-L126"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d8a41ca6404cc02bcb43b1afd9a0208bc73c0e0772a8861ea0330611ab43f900"
 
 [[test]]
@@ -40325,7 +40325,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L133-L153"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8f6c6f5a24c725d0852e94635572121359d197ce0b05a270edcc9bae286d8748"
 
 [[test]]
@@ -40334,7 +40334,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L182-L253"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "eedef6b2b86be15e9ee0af65d0a68422956853ce1aa046b9c5e91bc17b9593c4"
 
 [[test]]
@@ -40343,7 +40343,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L255-L279"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "21846e84b776488a0f38597c9c42782bd0e1dd4ea2879d1df43a685941fdccd2"
 
 [[test]]
@@ -40352,7 +40352,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L163-L180"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9540329537c332675bf11c17c9355dafdb46e337a867c8eb30f601d03998a274"
 
 [[test]]
@@ -41273,7 +41273,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ScalarTest.cpp#L212-L215"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2394d4a8c644786de64cffb71f778676e1ff9922f9984064751b86bbacc96df6"
 
 [[test]]
@@ -41537,7 +41537,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SizeTest.cpp#L12-L32"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7536be53fffefca17c708e3933d700e4483850b88870b56207df3ac23c284204"
 
 [[test]]
@@ -41546,7 +41546,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SizeTest.cpp#L34-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "edfde5c49678b44ec3ea690f45593a60f7bc46b03975902af1f0de5c64bd6631"
 
 [[test]]
