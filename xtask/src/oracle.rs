@@ -58,6 +58,10 @@ struct Build {
     /// scalar raster-pipeline proxy, where a higher runtime level changes nothing meaningful).
     #[serde(default)]
     single_tier: bool,
+    /// Derive only these runtime levels (each must be at or above `level`). Keeps a variant
+    /// build to the class representatives. Empty means every level from `level` up.
+    #[serde(default)]
+    runtime_levels: Vec<String>,
     #[serde(default)]
     args: Vec<String>,
     #[serde(default)]
@@ -123,9 +127,19 @@ fn derive_tiers(config: &Config) -> Result<Vec<Tier>> {
             .as_deref()
             .with_context(|| format!("CPU build `{}` has no `level`", build.name))?;
         let own = level_index(level)?;
+        for rt in &build.runtime_levels {
+            ensure!(
+                level_index(rt)? >= own,
+                "build `{}`: runtime level `{rt}` is below its level `{level}`",
+                build.name
+            );
+        }
         for (i, rt) in LEVELS.iter().enumerate().skip(own) {
             if build.single_tier && i != own {
                 break;
+            }
+            if !build.runtime_levels.is_empty() && !build.runtime_levels.iter().any(|l| l == rt) {
+                continue;
             }
             let name = if i == own {
                 format!("cpu-{}", build.name)
@@ -983,10 +997,15 @@ mod tests {
             .map(|t| t.name)
             .collect();
         // Every x64 oracle tier maps to exactly one simd `Tier` (x86 tiers, plus
-        // `Scalar` for the `x64-scalar` stand-in build).
+        // `Scalar` for the `x64-scalar` stand-in build), BGRA and `-rgba` variants alike.
         let mut mapped: Vec<String> = skia_rust_simd::Tier::ALL
             .iter()
-            .flat_map(|t| t.oracle_tiers().iter().map(|s| (*s).to_owned()))
+            .flat_map(|t| {
+                t.oracle_tiers()
+                    .iter()
+                    .chain(t.oracle_tiers_rgba())
+                    .map(|s| (*s).to_owned())
+            })
             .filter(|name| name.starts_with("cpu-x64-"))
             .collect();
         derived.sort();
@@ -1103,10 +1122,53 @@ mod tests {
             }
         }
         assert!(tiers.iter().any(|t| t.name == "cpu-x64-scalar"));
+        // RGBA variants: only the class representatives.
+        let rgba: Vec<_> = tiers
+            .iter()
+            .filter(|t| t.name.ends_with("-rgba") || t.name.contains("-rgba-rt-"))
+            .map(|t| t.name.as_str())
+            .collect();
+        assert_eq!(
+            rgba,
+            [
+                "cpu-x64-sse2-rgba",
+                "cpu-x64-sse2-rgba-rt-ml3",
+                "cpu-x64-sse2-rgba-rt-ml4",
+                "cpu-x64-sse41-rgba",
+                "cpu-x64-scalar-rgba",
+            ]
+        );
         assert!(
             !tiers
                 .iter()
                 .any(|t| t.name.starts_with("cpu-x64-scalar-rt"))
+        );
+    }
+
+    #[test]
+    fn runtime_levels_limit_the_derived_tiers() {
+        let c = config(
+            r#"
+            [gn]
+            args = []
+            [[build]]
+            name = "x64-sse2-rgba"
+            level = "baseline"
+            runtime_levels = ["baseline", "ml3", "ml4"]
+            "#,
+        );
+        let names: Vec<_> = derive_tiers(&c)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.name)
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "cpu-x64-sse2-rgba",
+                "cpu-x64-sse2-rgba-rt-ml3",
+                "cpu-x64-sse2-rgba-rt-ml4"
+            ]
         );
     }
 

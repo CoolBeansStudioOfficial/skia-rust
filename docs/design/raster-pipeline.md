@@ -416,7 +416,8 @@ This is the only mutable state, it is test-only, and it is scoped.
 - **`oracle_tiers()`** lists the canonical tier first (`cpu-x64-sse2`, `cpu-x64-sse41`,
   `cpu-x64-sse2-rt-ml3`, `cpu-x64-sse2-rt-ml4`: what a default Skia runs). `Scalar` lists
   `wasm-simd128` then the `cpu-x64-scalar` proxy; harnesses use the first with published goldens.
-  `Tier::for_oracle_tier(name)` is the inverse.
+  `Tier::oracle_tiers_rgba()` lists the one RGBA-variant tier per class (§4.4, N32 byte order);
+  `Tier::for_oracle_tier(name)` is the inverse of both.
 - **`Selection::check()`** (also run by `force_tier`): `Native` needs `is_native()`;
   `Model(AmdZen4)` only for x86 tiers, `Model(Arm)` only for `Neon`, `Model(Host)` only if the
   host has the tier's estimate instructions (`rcpps` for Sse2/Sse41/Ml3, `vrcp14ps` for Ml4,
@@ -971,13 +972,16 @@ config it renders once per `Selection` and compares the SHA-256 with that tier's
   `AMD_ZEN4` for the tier, else `Model(AmdZen4)`; `Ml4` without a match is not checkable until
   an `rcp14` model exists (R2). `Neon` falls back to `Model(Arm)`; it has no goldens yet.
   `cpu-x64-scalar` is a proxy (§4.5): compared and reported, never decisive.
-- **N32 byte order.** `8888` is `kN32` (BGRA on Windows, RGBA elsewhere) and the goldens are
-  `BGRA_8888` (Windows oracle host). Bytes are never swizzled: if the host's N32 order differs
-  from the golden's `meta.json` `color_type`, `8888` is *not checkable* on that host
-  (`sink::config_checkable(config, host_n32)`, pure; `Options::host_n32` injects the order),
-  reported but neither a pass nor a failure. `565`/`f16` are byte-order independent. Follow-up:
-  an RGBA oracle variant (`SK_R32_SHIFT=0` build) with its own goldens, to make `8888`
-  checkable on non-Windows hosts. Until then a GM is at best `not-checkable` on those hosts.
+- **N32 byte order.** `8888` is `kN32` (BGRA on Windows, RGBA elsewhere) and the default goldens
+  are `BGRA_8888` (Windows oracle host). Bytes are never swizzled. Hosts whose N32 is RGBA
+  compare `8888` with the RGBA oracle variants instead: builds with `-DSK_R32_SHIFT=0`, tiers
+  suffixed `-rgba`, listed by `Tier::oracle_tiers_rgba()` (`sink::uses_rgba_goldens(config,
+  host_n32)`, pure; `Options::host_n32` injects the order; `TierPlan::oracle_tiers_for`). Only the
+  class representatives are built (`x64-sse2-rgba` at baseline/ml3/ml4, `x64-sse41-rgba`,
+  `x64-scalar-rgba`, the last a proxy like `cpu-x64-scalar`), as classes of their own in
+  `check-classes`. A tier with no golden of the host's byte order (`Neon`, or goldens published
+  without the variants) is *not checkable* for `8888`, reported but neither a pass nor a
+  failure. `565`/`f16` are byte-order independent and always use the default tiers.
 - **Verdicts and the manifest.** `passing` = every config matches on every non-proxy oracle tier
   with goldens and all were checkable; any mismatch, draw failure, panic, unexpected skip or
   missing golden is `failing`; otherwise `not-checkable`. `cargo xtask inventory verify` runs

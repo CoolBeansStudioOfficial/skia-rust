@@ -18,10 +18,11 @@
 //! are compared and reported, but never make a GM pass or fail.
 //!
 //! # Configs
-//! `8888` is `kN32_SkColorType`: BGRA on Windows (where the goldens were made), RGBA elsewhere.
-//! Bytes are never swizzled, so on a host whose N32 order differs from the golden's
-//! `color_type` the `8888` config is **not checkable** ([`config_checkable`]). `565` and `f16`
-//! do not depend on byte order.
+//! `8888` is `kN32_SkColorType`: BGRA on Windows (where the default goldens were made), RGBA
+//! elsewhere. Bytes are never swizzled: on a host whose N32 is RGBA, `8888` is compared with the
+//! RGBA oracle variants (`Tier::oracle_tiers_rgba()`, built with `SK_R32_SHIFT=0`;
+//! [`uses_rgba_goldens`]). A tier with no such golden is **not checkable** for `8888` there.
+//! `565` and `f16` do not depend on byte order and always use the default tiers.
 //!
 //! # Verdicts
 //! A GM is [`Verdict::Passing`] only when every config matches on every non-proxy oracle tier
@@ -43,11 +44,11 @@ use skia_rust_simd::{Estimates, Selection, Tier};
 use crate::diff;
 use crate::goldens::{GoldenStore, sha256_hex};
 use crate::registry::GmRegistration;
-use crate::sink::{Config, GmSrc, RasterSink, Status, config_checkable, packed_bytes};
+use crate::sink::{Config, GmSrc, RasterSink, Status, packed_bytes, uses_rgba_goldens};
 use skia_rust_core::color_type::ColorType;
 
 /// Oracle tiers that only approximate the tier they stand for (design §4.5).
-pub const PROXY_ORACLE_TIERS: &[&str] = &["cpu-x64-scalar"];
+pub const PROXY_ORACLE_TIERS: &[&str] = &["cpu-x64-scalar", "cpu-x64-scalar-rgba"];
 
 /// How one [`Tier`] is checked on this host.
 #[derive(Clone, Debug)]
@@ -57,6 +58,8 @@ pub struct TierPlan {
     pub run: Result<Selection, String>,
     /// Oracle tiers mapped to `tier` that have goldens (authoritative ones first, proxies last).
     pub oracle_tiers: Vec<&'static str>,
+    /// The same for the RGBA-order oracle variants, which `8888` uses on hosts whose N32 is RGBA.
+    pub rgba_oracle_tiers: Vec<&'static str>,
 }
 
 impl TierPlan {
@@ -64,6 +67,16 @@ impl TierPlan {
     #[must_use]
     pub fn is_authoritative(&self) -> bool {
         self.oracle_tiers.iter().any(|t| !is_proxy(t))
+    }
+
+    /// The oracle tiers `config` is compared with on a host whose N32 is `host_n32`.
+    #[must_use]
+    pub fn oracle_tiers_for(&self, config: Config, host_n32: ColorType) -> &[&'static str] {
+        if uses_rgba_goldens(config, host_n32) {
+            &self.rgba_oracle_tiers
+        } else {
+            &self.oracle_tiers
+        }
     }
 }
 
@@ -117,17 +130,20 @@ pub fn plan_with(
     Tier::ALL
         .into_iter()
         .map(|tier| {
-            let mut oracle_tiers: Vec<&'static str> = tier
-                .oracle_tiers()
-                .iter()
-                .copied()
-                .filter(|t| store.has_tier(t))
-                .collect();
-            oracle_tiers.sort_by_key(|t| is_proxy(t));
+            let with_goldens = |names: &'static [&'static str]| {
+                let mut v: Vec<&'static str> = names
+                    .iter()
+                    .copied()
+                    .filter(|t| store.has_tier(t))
+                    .collect();
+                v.sort_by_key(|t| is_proxy(t));
+                v
+            };
             TierPlan {
                 tier,
                 run: select(tier),
-                oracle_tiers,
+                oracle_tiers: with_goldens(tier.oracle_tiers()),
+                rgba_oracle_tiers: with_goldens(tier.oracle_tiers_rgba()),
             }
         })
         .collect()
@@ -243,8 +259,8 @@ pub struct Options {
     /// Where to write diff images for mismatches (fetching the golden objects if needed), or
     /// `None` for no diffs.
     pub diffs: Option<PathBuf>,
-    /// The host's `kN32_SkColorType`. `8888` is only compared when it is the goldens' order
-    /// ([`config_checkable`]); injectable so tests do not depend on the real host.
+    /// The host's `kN32_SkColorType`: `8888` is compared with the oracle variant of that byte
+    /// order ([`uses_rgba_goldens`]); injectable so tests do not depend on the real host.
     pub host_n32: ColorType,
 }
 
@@ -297,6 +313,24 @@ fn render(src: GmSrc, config: Config, sel: Selection) -> Render {
     }
 }
 
+/// `8888` on a host whose N32 is `host_n32`, for a tier the goldens have no variant of that byte
+/// order for.
+fn no_variant_check(config: Config, tp: &TierPlan, host_n32: ColorType) -> Check {
+    Check {
+        config: config.tag(),
+        tier: tp.tier.name(),
+        selection: None,
+        oracle_tier: None,
+        proxy: !tp.is_authoritative(),
+        outcome: Outcome::NotCheckable {
+            reason: format!(
+                "this host's 8888 is {host_n32:?} and the goldens have no tier of that byte                  order for {} (needs an RGBA oracle variant, SK_R32_SHIFT=0)",
+                tp.tier
+            ),
+        },
+    }
+}
+
 /// Renders `src` for every config in `opts` and every tier in `plan`, and compares against
 /// `store`.
 #[must_use]
@@ -311,22 +345,12 @@ pub fn check_gm(
     let mut checks = Vec::new();
     for &config in &opts.configs {
         let id = config.result_id(&name);
-        if let Err(reason) = config_checkable(config, opts.host_n32) {
-            for tp in plan.iter().filter(|tp| !tp.oracle_tiers.is_empty()) {
-                checks.push(Check {
-                    config: config.tag(),
-                    tier: tp.tier.name(),
-                    selection: None,
-                    oracle_tier: None,
-                    proxy: !tp.is_authoritative(),
-                    outcome: Outcome::NotCheckable {
-                        reason: reason.clone(),
-                    },
-                });
-            }
-            continue;
-        }
         for tp in plan.iter().filter(|tp| !tp.oracle_tiers.is_empty()) {
+            let oracle_tiers = tp.oracle_tiers_for(config, opts.host_n32);
+            if oracle_tiers.is_empty() {
+                checks.push(no_variant_check(config, tp, opts.host_n32));
+                continue;
+            }
             let mut push = |selection: Option<Selection>,
                             oracle_tier: Option<&'static str>,
                             outcome: Outcome| {
@@ -351,7 +375,7 @@ pub fn check_gm(
                 Render::Panicked(msg) => push(Some(sel), None, Outcome::Panicked { msg }),
                 Render::Failed(msg) => push(Some(sel), None, Outcome::DrawFailed { msg }),
                 Render::Skipped(msg) => {
-                    for &ot in &tp.oracle_tiers {
+                    for &ot in oracle_tiers {
                         let outcome = if store.golden(ot, &id).is_some() {
                             Outcome::SkippedButGolden { msg: msg.clone() }
                         } else {
@@ -362,7 +386,7 @@ pub fn check_gm(
                 }
                 Render::Pixels { bytes, size } => {
                     let ours = sha256_hex(&bytes);
-                    for &ot in &tp.oracle_tiers {
+                    for &ot in oracle_tiers {
                         let outcome = match store.golden(ot, &id) {
                             None => Outcome::NoGolden { ours: ours.clone() },
                             Some(golden) if golden == ours => Outcome::Match,

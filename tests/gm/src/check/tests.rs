@@ -111,10 +111,13 @@ fn fixture_plan_maps_oracle_tiers() {
         get(Tier::Sse2).oracle_tiers,
         ["cpu-x64-sse2", "cpu-x64-sse2-rt-ssse3"]
     );
+    assert_eq!(get(Tier::Sse2).rgba_oracle_tiers, ["cpu-x64-sse2-rgba"]);
     assert_eq!(get(Tier::Sse41).oracle_tiers, ["cpu-x64-sse41"]);
+    assert_eq!(get(Tier::Sse41).rgba_oracle_tiers, ["cpu-x64-sse41-rgba"]);
     assert_eq!(get(Tier::Ml3).oracle_tiers, ["cpu-x64-sse2-rt-ml3"]);
     assert_eq!(get(Tier::Ml4).oracle_tiers, ["cpu-x64-sse2-rt-ml4"]);
     assert_eq!(get(Tier::Scalar).oracle_tiers, ["cpu-x64-scalar"]);
+    assert_eq!(get(Tier::Scalar).rgba_oracle_tiers, ["cpu-x64-scalar-rgba"]);
     assert!(!get(Tier::Scalar).is_authoritative());
     assert_eq!(get(Tier::Neon).oracle_tiers, [] as [&str; 0]);
 }
@@ -300,9 +303,13 @@ fn not_checkable_tiers_never_pass() {
 }
 
 #[test]
-fn n32_is_not_checkable_when_the_host_order_differs_from_the_goldens() {
+fn n32_is_not_checkable_without_goldens_of_the_host_byte_order() {
     let store = fixture_store(Objects::None);
-    let plan = fixture_plan(&store);
+    let mut plan = fixture_plan(&store);
+    // A golden set with no RGBA variant tiers.
+    for tp in &mut plan {
+        tp.rgba_oracle_tiers.clear();
+    }
     let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
     let opts = Options {
         configs: vec![Config::N32],
@@ -318,6 +325,47 @@ fn n32_is_not_checkable_when_the_host_order_differs_from_the_goldens() {
                 .iter()
                 .all(|c| matches!(c.outcome, Outcome::NotCheckable { .. }) && c.config == "8888"),
         "{report}"
+    );
+}
+
+#[test]
+fn n32_on_an_rgba_host_is_compared_with_the_rgba_variant_tiers() {
+    let store = fixture_store(Objects::None);
+    let plan = fixture_plan(&store);
+    let src = GmSrc::new(|| fake("fixture_blue", DrawResult::Ok));
+    let opts = Options {
+        configs: vec![Config::N32],
+        host_n32: ColorType::RGBA8888,
+        diffs: None,
+    };
+    let report = check_gm("gm::fixture::rgba", &src, &store, &plan, &opts);
+    // The injected order only selects the goldens; the bytes are rendered in this host's order,
+    // so they match the (RGBA) fixture hashes only on an RGBA host. What does not depend on
+    // the host: every comparison is against an `-rgba` tier, once per tier with one.
+    let against: Vec<_> = report.checks.iter().filter_map(|c| c.oracle_tier).collect();
+    assert_eq!(
+        against,
+        [
+            "cpu-x64-scalar-rgba",
+            "cpu-x64-sse2-rgba",
+            "cpu-x64-sse41-rgba",
+            "cpu-x64-sse2-rgba-rt-ml3",
+            "cpu-x64-sse2-rgba-rt-ml4",
+        ],
+        "{report}"
+    );
+    assert_eq!(report.checks.len(), 5, "{report}");
+    let expect_match = skia_rust_core::color_priv::PMCOLOR_IS_RGBA;
+    for c in &report.checks {
+        assert_eq!(c.outcome == Outcome::Match, expect_match, "{report}");
+        assert_eq!(c.proxy, c.oracle_tier == Some("cpu-x64-scalar-rgba"));
+    }
+    // The BGRA tiers are not consulted for it.
+    assert!(
+        report
+            .checks
+            .iter()
+            .all(|c| c.oracle_tier.is_some_and(|t| t.contains("-rgba")))
     );
 }
 
@@ -386,10 +434,16 @@ fn background_matches_real_goldens() {
     );
     eprintln!("goldens: {}\n{report}", store.source);
     assert_ne!(report.verdict, Verdict::Failing, "{report}");
-    // Sse2 is checkable on every host (natively or by its model), on every config whose byte
-    // order matches the goldens' (8888 only on a BGRA host).
+    // Sse2 is checkable on every host (natively or by its model).
     for config in Config::ALL {
-        if crate::sink::config_checkable(config, ColorType::N32).is_err() {
+        // On an RGBA host `8888` is compared with the RGBA variant tiers, when the goldens have
+        // them (otherwise it is not checkable there).
+        let oracle_tier = if crate::sink::uses_rgba_goldens(config, ColorType::N32) {
+            "cpu-x64-sse2-rgba"
+        } else {
+            "cpu-x64-sse2"
+        };
+        if !store.has_tier(oracle_tier) {
             assert!(
                 report
                     .checks
@@ -402,7 +456,7 @@ fn background_matches_real_goldens() {
         }
         assert!(
             report.checks.iter().any(|c| c.config == config.tag()
-                && c.oracle_tier == Some("cpu-x64-sse2")
+                && c.oracle_tier == Some(oracle_tier)
                 && c.outcome == Outcome::Match),
             "{report}"
         );

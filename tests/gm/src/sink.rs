@@ -99,21 +99,13 @@ impl fmt::Display for Config {
     }
 }
 
-/// Whether `config` can be compared with the goldens on a host whose `kN32_SkColorType` is
-/// `host_n32`. Bytes are never swizzled: `8888` is only checkable when the host's N32 order is the
-/// goldens' (`BGRA_8888`); `565` and `f16` are byte-order independent.
-///
-/// # Errors
-/// Why the config is not checkable on this host.
-pub fn config_checkable(config: Config, host_n32: ColorType) -> Result<(), String> {
-    let golden = config.golden_color_type();
-    match config {
-        Config::N32 if host_n32 != golden => Err(format!(
-            "this host's 8888 is {host_n32:?} but the goldens are {golden:?} \
-             (needs an RGBA oracle variant, SK_R32_SHIFT=0)"
-        )),
-        _ => Ok(()),
-    }
+/// Whether `config` is compared with the RGBA oracle variants on a host whose
+/// `kN32_SkColorType` is `host_n32`. Bytes are never swizzled: `8888` on a host whose N32 is
+/// RGBA uses the `-rgba` tiers (built with `SK_R32_SHIFT=0`); everything else (BGRA hosts, and
+/// the byte-order independent `565` and `f16`) uses the default tiers.
+#[must_use]
+pub fn uses_rgba_goldens(config: Config, host_n32: ColorType) -> bool {
+    config == Config::N32 && host_n32 == ColorType::RGBA8888
 }
 
 /// `DM::Result::Status`.
@@ -313,12 +305,12 @@ mod tests {
     }
 
     #[test]
-    fn n32_is_checkable_only_when_the_byte_order_matches_the_goldens() {
-        assert!(config_checkable(Config::N32, ColorType::BGRA8888).is_ok());
-        assert!(config_checkable(Config::N32, ColorType::RGBA8888).is_err());
+    fn n32_uses_the_golden_variant_of_the_host_byte_order() {
+        assert!(!uses_rgba_goldens(Config::N32, ColorType::BGRA8888));
+        assert!(uses_rgba_goldens(Config::N32, ColorType::RGBA8888));
         for host in [ColorType::BGRA8888, ColorType::RGBA8888] {
-            assert!(config_checkable(Config::Rgb565, host).is_ok());
-            assert!(config_checkable(Config::F16, host).is_ok());
+            assert!(!uses_rgba_goldens(Config::Rgb565, host));
+            assert!(!uses_rgba_goldens(Config::F16, host));
         }
     }
 

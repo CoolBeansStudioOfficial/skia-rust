@@ -81,6 +81,28 @@ level = "baseline"
 single_tier = true
 extra_cflags = ["/clang:-DSKRP_CPU_SCALAR"]
 
+# RGBA variants (`SK_R32_SHIFT=0`, a define only). The goldens come from a Windows host, where
+# N32 is BGRA; on macOS/Linux N32 is RGBA, so `8888` is only checkable there against goldens
+# rendered with RGBA N32. Only the class representatives are built (one build per code-path
+# class; `runtime_levels` limits the derived tiers), named with the suffix `-rgba`.
+[[build]]
+name = "x64-sse2-rgba"
+level = "baseline"
+runtime_levels = ["baseline", "ml3", "ml4"]
+extra_cflags = ["/clang:-DSK_R32_SHIFT=0"]
+
+[[build]]
+name = "x64-sse41-rgba"
+level = "ssse3"
+single_tier = true
+extra_cflags = ["/clang:-msse4.1", "/clang:-DSK_R32_SHIFT=0"]
+
+[[build]]
+name = "x64-scalar-rgba"
+level = "baseline"
+single_tier = true
+extra_cflags = ["/clang:-DSKRP_CPU_SCALAR", "/clang:-DSK_R32_SHIFT=0"]
+
 # GPU (Graphite + Dawn). Built on the sse2 baseline; each GPU tier pins a runtime CPU
 # level because Graphite still does some work (software masks, uploads) on the CPU.
 [[build]]
@@ -151,3 +173,25 @@ tiers = [
 [[class]]
 name = "scalar-proxy"
 tiers = ["cpu-x64-scalar"]
+
+# RGBA variants (SK_R32_SHIFT=0): the same behaviour classes, in RGBA byte order. They are
+# separate classes because their bytes differ from the BGRA ones.
+[[class]]
+name = "x64-1-sse2-rgba"
+tiers = ["cpu-x64-sse2-rgba"]
+
+[[class]]
+name = "x64-2-sse41-rgba"
+tiers = ["cpu-x64-sse41-rgba"]
+
+[[class]]
+name = "x64-3-ml3-rgba"
+tiers = ["cpu-x64-sse2-rgba-rt-ml3"]
+
+[[class]]
+name = "x64-4-ml4-rgba"
+tiers = ["cpu-x64-sse2-rgba-rt-ml4"]
+
+[[class]]
+name = "scalar-proxy-rgba"
+tiers = ["cpu-x64-scalar-rgba"]
