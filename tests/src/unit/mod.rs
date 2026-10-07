@@ -13,11 +13,15 @@ pub mod cubic_map_test;
 #[cfg(test)]
 pub mod cubic_roots_test;
 #[cfg(test)]
+pub mod data_ref_test;
+#[cfg(test)]
 pub mod find_cubic_convex180_chops_test;
 #[cfg(test)]
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+#[cfg(test)]
+pub mod front_buffered_stream_test;
 #[cfg(test)]
 pub mod geometry_test;
 #[cfg(test)]
@@ -32,6 +36,8 @@ pub mod m44_test;
 pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
+#[cfg(test)]
+pub mod meta_data_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
 #[cfg(test)]
@@ -62,3 +68,5 @@ pub mod sk_color_space_xform_steps_test;
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
+#[cfg(test)]
+pub mod stream_test;

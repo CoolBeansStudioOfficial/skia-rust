@@ -30328,7 +30328,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DataRefTest.cpp#L260-L287"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "59fdc8f406042a4f500f68aa58b61ef787db70b9a7148a49039008ac3de89a71"
 
 [[test]]
@@ -30337,7 +30337,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DataRefTest.cpp#L113-L118"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "42c3d5c44f6dd5ad39a09aa90b1d63023020974161132f3a211f4407917d1e1d"
 
 [[test]]
@@ -30346,7 +30346,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DataRefTest.cpp#L289-L306"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4f4d966efdd25a3c9c5e0daaceb465d1741f245110034eb53a6848216b3e732c"
 
 [[test]]
@@ -32202,7 +32202,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FrontBufferedStreamTest.cpp#L263-L268"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f64772aec61c34d5a8dcafbbb27ae91e62fe4dd2687676bf85d881675a4836a7"
 
 [[test]]
@@ -36007,7 +36007,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MetaDataTest.cpp#L17-L86"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7e551f6d4eaaf427e1c7647e28e7922ec7245493a60c78cb033e77ae49cdf34b"
 
 [[test]]
@@ -47416,7 +47416,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L482-L500"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4d0c250a71dd178e8639d69af7243031997e396a9a86035cda32d5c08fc3eccf"
 
 [[test]]
@@ -47425,7 +47425,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L502-L518"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2e206c4608c8f11239a126686efbdd1c565781892d5fa3da2ffe53b2cd329f93"
 
 [[test]]
@@ -47434,7 +47434,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L540-L699"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2942fe3d22f760724d873c80a395a33a3abe7faa3c9f2aba0636220c43d20f66"
 
 [[test]]
@@ -47443,7 +47443,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L701-L712"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c629e52b606a8ed3fc53294e54584c10d006b9e851d79b0f25d7994078ed559a"
 
 [[test]]
@@ -47452,7 +47452,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L420-L439"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a1eb595f034cb55d222817a871aa5ac2ef0e74d249ac7bb15cb083dd27600da5"
 
 [[test]]
@@ -47461,7 +47461,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L207-L211"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2f938ec5cc3ff073bae9f0f85df9e0fa9fa2707d454ea34222ce2c6c40481dbd"
 
 [[test]]
@@ -47470,7 +47470,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L520-L532"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7aa7394bd3d3a09aab7a651a7faef31a357af5d741312253df405af257b591aa"
 
 [[test]]
@@ -47479,7 +47479,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L534-L538"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "674a6da0c5d249ba2cade43d7730821f4e227490a6c58cb340d730388dcc7478"
 
 [[test]]
@@ -47488,7 +47488,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L310-L352"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6ca1dafa70eaa1537bc81130cc6bfaa9edbb10be872cd971c71f3ee04e1a0bcb"
 
 [[test]]
@@ -47497,7 +47497,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/StreamTest.cpp#L390-L418"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "88f24efd1e6f05d956a8738f213b5e321588504b10ad03b8a7ff680cad6d1d02"
 
 [[test]]

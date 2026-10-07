@@ -38,6 +38,48 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkColorSpaceXformSteps::apply(float*)` | not exposed | `apply(&mut [f32; 4])` | no raw pointer |
 | `SkColorSpaceXformSteps::apply(SkRasterPipeline*)` | not exposed | not ported yet | needs `SkRasterPipeline` |
 | `SkColorSpaceXformSteps::operator bool` | not exposed | `is_needed()` | mechanical name |
+| **data / stream** | | | |
+| `SkData` | `Data = RCHandle<SkData>` | `data::Data` (`Clone`, `Arc`-backed; `Deref<Target=[u8]>`, `PartialEq`/`Eq` with Skia's `operator==`) | PORTING §3 |
+| `SkData::MakeWithCopy`, `MakeEmpty`, `MakeZeroInitialized`, `MakeSubset` | `new_copy`, `new_empty`, `new_zero_initialized`, `new_subset` | same | same as skia-safe |
+| `SkData::MakeUninitialized` | `unsafe new_uninitialized` | `Data::new_uninitialized(len) -> Data` (safe, zero-filled) + `writable_data(&mut self) -> Option<&mut [u8]>` | safe Rust cannot expose uninitialised bytes; `writable_data` works only while the buffer is uniquely owned (Skia: "use with caution") |
+| `SkData::MakeWithoutCopy` | `unsafe new_bytes` | `Data::new_static(&'static [u8])` | a borrowed pointer cannot be held safely; static memory is the safe subset |
+| `SkData::MakeWithProc(ptr, len, proc, ctx)` | `new_with_owner(T: AsRef<[u8]> + Send)` | `Data::new_with_owner(T: AsRef<[u8]> + Send + Sync + 'static)` | the owner's `Drop` is the release proc; `Sync` because `Data` is shared across threads |
+| `SkData::MakeFromMalloc` | none | `Data::new_from_vec(Vec<u8>)` | an owned buffer |
+| `SkData::MakeWithCString` | `new_cstr(&CStr)` | `Data::new_with_cstring(Option<&CStr>)` | `None` is Skia's `nullptr` (the empty string, size 1); includes the nul like Skia |
+| `SkData::MakeFromFILE`, `MakeFromFD` | none | `Data::new_from_file(&File)` | a `File` is both; reads the file instead of mmap, `None` for an empty file (as the failed mmap), position unchanged |
+| `SkData::MakeFromFileName` | `from_filename` | same | same as skia-safe |
+| `SkData::MakeFromStream` | `from_stream(impl io::Read, size)` | `Data::from_stream(&mut dyn Stream, size)` | takes a skia-rust `Stream` |
+| `SkData::shareSubset`, `copySubset` | `share_subset` | `share_subset`, `copy_subset` (`Option<Data>`) | same as skia-safe, plus `copy_subset` |
+| `SkData::copyRange` | `copy_range(offset, &mut [u8]) -> &Self` | `copy_range(offset, length, Option<&mut [u8]>) -> usize` | Skia returns the count, and the buffer may be null |
+| `SkData::equals`, `Equals` | none | `Data::equals(Option<&Data>)`, `Data::equals_opt(a, b)` | mechanical names |
+| `SkData::byteSpan`, `bytes`, `data`, `size`, `empty`, `isEmpty` | `as_bytes`, `size`, `is_empty` | same | |
+| `SkDataTable` | not exposed | `data_table::DataTable` (`Clone`, `Arc`-backed); `count`/indices are `usize` | `int` becomes `usize` |
+| `SkDataTable::at(i, size*)`, `atT<T>`, `atSize`, `atStr` | not exposed | `at(i) -> &[u8]` (its length is the size), `at_size`, `at_str(i) -> &str` | no raw pointers; `atT<T>` is a reinterpret of the bytes |
+| `SkDataTable::MakeCopyArrays(ptrs, sizes, count)` | not exposed | `make_copy_arrays(&[&[u8]])` | sizes are the slice lengths |
+| `SkDataTable::MakeCopyArray(array, elemSize, count)` | not exposed | `make_copy_array(&[u8], elem_size, count)` | |
+| `SkDataTable::MakeArrayProc(array, elemSize, count, proc, ctx)` | not exposed | `make_array_proc(impl AsRef<[u8]> + Send + Sync + 'static, elem_size, count)` | the owner's `Drop` is the free proc |
+| `SkStream` | `Stream<N>` pointer wrapper | `stream::Stream` trait (all capabilities, as m156's `SkStream`) | `SkStream` in Skia is one class declaring every capability with a "not supported" default; the trait has the same methods and defaults |
+| `SkStreamRewindable`, `SkStreamSeekable`, `SkStreamAsset`, `SkStreamMemory` | `StreamAsset`, `MemoryStream` wrappers | marker sub-traits `StreamRewindable: Stream`, `StreamSeekable`, `StreamAsset`, `StreamMemory` | an implementation declares the capability it promises; `StreamAsset` also has `duplicate_asset` / `fork_asset` (the covariant `duplicate()` / `fork()` return types) |
+| `SkStream::read(void* buffer, size_t size)` | n/a | `read(&mut self, &mut [u8]) -> usize`, plus `skip(size)` | the `buffer == nullptr` "skip" mode is `skip`; the default `skip` reads into scratch, streams override it |
+| `SkStream::peek(buffer, size) const` | n/a | `peek(&mut self, &mut [u8]) -> usize` | `&mut self`: `FrontBufferedStream::peek` buffers through the wrapped stream, which `const_cast`s in Skia |
+| `SkStream::readS8`... `readScalar`, `readPackedUInt`, `readBool` | n/a | `read_s8` ... `read_scalar`, `read_packed_uint`, `read_bool` returning `Option<T>` | out-param + `bool` becomes `Option`; native-endian like Skia |
+| `SkStream::duplicate()`, `fork()` | n/a | `Option<Box<dyn Stream>>` | |
+| `SkStream::move(long)` | n/a | `move_by(i64)` | `move` is a keyword; `long` is 64-bit as on Linux/macOS |
+| `SkStream::getMemoryBase()`, `getData()` | n/a | `get_memory_base(&self) -> Option<&[u8]>`, `get_data(&self) -> Option<Data>` | `None` for an empty `MemoryStream` (Skia's `SkData::MakeEmpty()->data()` is null) |
+| `SkStream::MakeFromFile` | n/a | `stream::make_from_file(path) -> Option<Box<dyn StreamAsset>>` | a free function |
+| `SkMemoryStream` | `MemoryStream<'a>` (`from_bytes`) | `stream::MemoryStream` (holds a `Data`): `new`, `with_length`, `from_data(Option<Data>)`, `make`, `make_copy`, `make_direct(&'static [u8])`, `set_data`, `set_memory_copy`, `set_memory_static`, `set_memory_owned`, `get_at_pos` | borrowed memory is not expressible; `SkMemoryStream(size)` is zero-filled and not writable through `getMemoryBase()`; inherent `duplicate()` / `fork()` return `Box<MemoryStream>` |
+| `SkFILEStream` | none | `stream::FileStream` (`new(path)`, `from_file(File)`, `from_file_with_size`, `make`, `is_valid`, `close`) over `std::fs::File` | reads at absolute offsets (`sk_qread`), so duplicates and forks share one open file |
+| `SkFILEWStream` | none | `stream::FileWStream` (`new(path)`, `is_valid`, `fsync`) | buffered by `BufWriter`; `bytes_written` counts the bytes written |
+| `SkWStream` | `WStream` pointer wrapper | `stream::WStream` trait | |
+| `SkWStream::write8/16/32/64`, `writeText`, `writeBool`, `writeScalar`, `writePackedUInt` | n/a | `write8(u8)`, `write16(u16)`, `write32`, `write64`, `write_text(&str)`, `write_bool`, `write_scalar`, `write_packed_uint` | native-endian like Skia; Skia's `U8CPU`/`U16CPU` parameters are `u8`/`u16` |
+| `SkWStream::writeDecAsText`, `writeBigDecAsText`, `writeHexAsText`, `writeScalarAsText` | n/a | `write_dec_as_text`, `write_big_dec_as_text` (formats as unsigned, like Skia), `write_hex_as_text`, `write_scalar_as_text` | use `string::str_append_*` (below) |
+| `SkWStream::SizeOfPackedUInt` | n/a | `stream::size_of_packed_uint` | a free function (a static in C++) |
+| `SkNullWStream` | none | `stream::NullWStream` | |
+| `SkDynamicMemoryWStream` | `DynamicMemoryWStream` | `stream::DynamicMemoryWStream` | the block list is a `Vec` of blocks with Skia's block sizes; `read(buffer, offset)`, `copy_to(&mut [u8])` (copies the first `bytes_written()` bytes), `copy_to_and_reset(Option<&mut [u8]>)`, `write_to_stream`, `write_to_and_reset(&mut dyn WStream)` and `write_to_and_reset_dynamic(&mut DynamicMemoryWStream)` (overloads get distinct names), `prepend_to_and_reset`, `detach_as_data/vector/stream`, `pad_to_align4`, `reset` |
+| `SkStreamPriv` | not exposed | `#[doc(hidden)] stream_priv::{copy_stream_to_data, copy, DebugfStream, write_u16_be.., read_u16_be.., remaining_length_is_below}` | PORTING §3 |
+| `SkRBuffer` | not exposed | `buffer::RBuffer<'a>` over a `&[u8]` | `read(&mut [u8]) -> bool`, `read_u8/s32/u32 -> Option`, `skip -> Option<&[u8]>`; `skipToAlign4` aligns the offset, not the address; `SkWBuffer` is not ported (unused so far) |
+| `SkStrAppendU32/S32/U64/S64/Scalar`, `SkString::appendHex` | not exposed | `string::{str_append_u32, str_append_s32, str_append_u64, str_append_s64, str_append_scalar, str_append_hex}` appending to a `String` | `SkString` itself is `String`; the number formatting is ported because Skia's output format is observable (`%.8g` with `nan`/`inf` spelled out) |
+| `android::skia::FrontBufferedStream::Make` (`client_utils/android`) | not exposed | `front_buffered_stream::FrontBufferedStream::make(Option<Box<dyn Stream>>, size) -> Option<Box<dyn StreamRewindable>>` | |
 | **float_bits** | | | |
 | `SkFloat2Bits`, `SkBits2Float`, `SkFloatAs2sCompliment`, ... (`SkFloatBits.h`) | not exposed | `float_bits::{float_to_bits, bits_to_float, float_as_2s_compliment, ...}` | mechanical names; needed by `ScalarTest` |
 | **m44** | | | |
