@@ -1,6 +1,7 @@
 //! Project automation: `cargo xtask <command>`. See `docs/PLAN.md`.
 
 mod cpp;
+mod cpu_probe;
 mod inventory;
 mod oracle;
 mod publish;
@@ -35,6 +36,14 @@ enum Command {
     Oracle {
         #[command(subcommand)]
         command: OracleCommand,
+    },
+    /// Print this host's CPU tiers and `rcp`/`rsqrt` estimate fingerprints
+    /// (`docs/design/raster-pipeline.md` §1.4, §4.6).
+    CpuProbe {
+        /// Also write the host's `rcpps`/`rsqrtps` tables (`rcpps.bin`, `rsqrtps.bin`,
+        /// `estimates.txt`) into this directory.
+        #[arg(long, value_name = "DIR")]
+        dump_tables: Option<PathBuf>,
     },
 }
 
@@ -166,6 +175,7 @@ fn main() -> Result<()> {
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },
+        Command::CpuProbe { dump_tables } => cpu_probe::probe(dump_tables.as_deref()),
     }
 }
 

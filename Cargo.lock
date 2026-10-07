@@ -431,6 +431,9 @@ dependencies = [
 [[package]]
 name = "skia-rust-simd"
 version = "0.156.0"
+dependencies = [
+ "bitflags",
+]
 
 [[package]]
 name = "skia-rust-skcms"
@@ -569,6 +572,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "skia-rust-simd",
  "toml",
  "walkdir",
  "zstd",

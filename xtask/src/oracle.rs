@@ -743,6 +743,27 @@ mod tests {
         toml::from_str(text).unwrap()
     }
 
+    /// `skia_rust_simd::Tier::oracle_tiers` must name exactly the x64 CPU tiers derived from
+    /// `oracle/tiers.toml`, so every golden set maps to one `Tier`.
+    #[test]
+    fn simd_tiers_cover_the_x64_oracle_tiers() {
+        let config = read_config(&crate::workspace_root()).unwrap();
+        let mut derived: Vec<String> = derive_tiers(&config)
+            .unwrap()
+            .into_iter()
+            .filter(|t| t.gpu.is_none() && t.name.starts_with("cpu-x64-"))
+            .map(|t| t.name)
+            .collect();
+        let mut mapped: Vec<String> = skia_rust_simd::Tier::ALL
+            .iter()
+            .filter(|t| t.is_x86())
+            .flat_map(|t| t.oracle_tiers().iter().map(|s| (*s).to_owned()))
+            .collect();
+        derived.sort();
+        mapped.sort();
+        assert_eq!(derived, mapped);
+    }
+
     #[test]
     fn tiers_cover_every_runtime_level_from_the_build_level_up() {
         let c = config(

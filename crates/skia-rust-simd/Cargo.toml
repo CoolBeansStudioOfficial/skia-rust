@@ -11,3 +11,10 @@ publish = false
 
 [lints]
 workspace = true
+
+[dependencies]
+bitflags.workspace = true
+
+[features]
+# Test-only hooks (`testing::force_tier`). Never enable in release builds of downstream crates.
+testing = []

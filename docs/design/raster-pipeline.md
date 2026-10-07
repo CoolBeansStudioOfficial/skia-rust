@@ -296,7 +296,7 @@ When porting any stage or kernel:
 |---|---|
 | `src/opts/SkRasterPipeline_opts.h`, `src/core/SkOpts.*`, `SkRasterPipelineOpList.h`, `SkRasterPipelineOpContexts.h` | `skia_rust_simd::raster_pipeline` (`rp`): ops, contexts, lane types, tier primitives, stages, interpreter |
 | `src/opts/SkBlitRow_opts.h`, `SkBlitMask_opts.h`, `SkMemset_opts.h` (later `SkBitmapProcState_opts.h`, `SkSwizzler_opts.inc`) | `skia_rust_simd::{blit_row, blit_mask, memset, …}` |
-| `src/core/SkCpu.*` | `skia_rust_simd::tier` (`Tier::detect`) |
+| `src/core/SkCpu.*` | `skia_rust_simd::cpu` (features, tokens); `skia_rust_simd::tier` (`Tier::detect`) |
 | `src/core/SkRasterPipeline.{h,cpp}` (builder: `append*`, `buildLowpPipeline`, `compile`, `run`, `dump`) | `skia_rust_core::raster_pipeline` (needs `ColorType`, `Matrix`, skcms) |
 | blitters, scan converters, edges, `SkRasterClip`, `SkAAClip`, `SkDraw`, `SkBitmapDevice`, raster `Surface` | `skia-rust-raster` (new crate) |
 | `SkStroke`, `SkStrokeRec`, `SkPaint`, `SkCanvas` + `Device` trait, `SkClipStack`, `SkRecord*`/`SkPicture` | `skia-rust-core` |
@@ -371,6 +371,61 @@ pub mod testing {
 The override is thread-local (each GM render runs on one thread) and is read where Skia reads its
 `SkOpts` tables: when a pipeline is compiled and when a blitter picks `blit_row`/`memset` kernels.
 This is the only mutable state, it is test-only, and it is scoped.
+
+**As implemented in A1** (decisions where the sketch above was open):
+
+- **Modules.** `skia_rust_simd::cpu` is the `SkCpu` port: `CpuFeatures` (bitflags with `SkX64`'s
+  bit values, incl. `ML3`/`ML4`), `CpuFeatures::read()` (`read_cpu_features()`, decoding `cpuid`
+  exactly like Skia), `X64Level` (`SK_CPU_X64_LEVEL`, from `cfg!(target_feature)` as
+  `SkFeatures.h` derives it), `CpuFeatures::supports` (`SkCpu::Supports`, ORing in the baseline),
+  `CpuCap`, and the tokens. `skia_rust_simd::tier` holds `Tier`, `select_x64` (pure:
+  baseline + features → tier, i.e. `SKRP_CPU_*` choice + `SkOpts::Init`), `Selection`, `Backend`,
+  `Estimates`, `Unsupported`, `selection()`. `skia_rust_simd::estimates` runs the host's estimate
+  instructions (§1.4). `skia_rust_simd::testing` (feature `testing`, also on under `cfg(test)`).
+- **Skia's decoding, not `std`'s.** `detect()` uses the ported `cpuid` decoding, because it differs
+  from `is_x86_feature_detected!`: Skia reports AVX-512 only on AMD or on Intel with VBMI2 (Ice
+  Lake+), so a Skylake-X runs `Ml3` in Skia and must in skia-rust too. `std` detection builds the
+  tokens. If Skia's decoding ever claims a tier whose `#[target_feature]` list `std` does not fully
+  confirm, `detect()` steps down (ml4 → ml3 → compile-time path); `detect()` is always native.
+- **Tokens.** `Sse2Token`, `Sse41Token`, `Ml3Token`, `Ml4Token`, `NeonToken`: zero-sized,
+  `get() -> Option<Self>` (cached `OnceLock<bool>`), `FEATURES` = the exact string the tier's
+  `#[target_feature(enable = …)]` must use (§2.4 table). `Sse2Token`/`NeonToken` exist for
+  uniformity of the §3.1 safety argument even though their features are baseline.
+- **Compile-time baseline.** Rust's `x86_64-pc-windows-msvc` target enables `sse3` by default, so
+  `X64Level::compiled()` is `Sse3` there; Skia built with `-msse3` also runs `SKRP_CPU_SSE2`, so
+  the tier is still `Sse2`. An SSE1-only x86 build would be `Scalar`.
+- **CPU cap.** `CpuCap {Baseline, Ssse3, Ml3, Ml4}` reproduces `SKIA_ORACLE_CPU_CAP`
+  (`oracle/patches/skia-oracle.patch`) bit for bit and is exposed as `Tier::detect_with_cap(cap)`
+  (uncached; `detect()` = `detect_with_cap(Ml4)`). The library does **not** read an environment
+  variable: production detection must be what Skia does, and tests choose tiers with
+  `force_tier`. A unit test runs `select_x64` for all 19 x64 oracle tiers (build level + cap on a
+  Zen 4 feature set) and checks each lands on the `Tier` whose `oracle_tiers()` lists it; an xtask
+  test checks `oracle_tiers()` covers exactly the tiers derived from `oracle/tiers.toml`.
+- **`oracle_tiers()`** lists the canonical tier first (`cpu-x64-sse2`, `cpu-x64-sse41`,
+  `cpu-x64-sse2-rt-ml3`, `cpu-x64-sse2-rt-ml4`: what a default Skia runs). `Scalar` lists
+  `wasm-simd128` then the `cpu-x64-scalar` proxy; harnesses use the first with published goldens.
+  `Tier::for_oracle_tier(name)` is the inverse.
+- **`Selection::check()`** (also run by `force_tier`): `Native` needs `is_native()`;
+  `Model(AmdZen4)` only for x86 tiers, `Model(Arm)` only for `Neon`, `Model(Host)` only if the
+  host has the tier's estimate instructions (`rcpps` for Sse2/Sse41/Ml3, `vrcp14ps` for Ml4,
+  NEON for Neon). `Scalar` uses no estimates and accepts every backend.
+- **`force_tier`** pushes onto a thread-local stack; `TierGuard` (`!Send`, `#[must_use]`) pops on
+  drop and panics if guards are dropped out of order. `selection()` consults the stack only under
+  `cfg(any(test, feature = "testing"))`; without the feature it is `detect()` + `Native`, with no
+  thread-local access. Parallel tests cannot interfere (tested with overlapping threads).
+- **Estimate fingerprints** (`estimates::Fingerprints`, `AMD_ZEN4`): FNV-1a over 32-bit words,
+  `h = (h ^ bits) * 0x100000001b3` from `0xcbf29ce484222325`, over the outputs for inputs
+  `base | m`, `m = 0..2²³` ascending (`base` = `0x3f800000` for [1,2), `0x40000000` for [2,4)).
+  This reproduces the §1.4 values on the oracle host. `Fingerprints::matches_for(reference, tier)`
+  implements the §4.6 per-tier policy check.
+- **`cargo xtask cpu-probe [--dump-tables DIR]`** prints vendor/brand, `SkCpu` features, the
+  compile-time level, `detect()` and `detect_with_cap` for every cap, the native tiers, the five
+  fingerprints with a verdict against `AMD_ZEN4`, and a per-tier "estimates match the goldens'
+  host" line. `--dump-tables` writes `rcpps.bin` (4096 × u32 LE, entry `i` = output for
+  `0x3f800000 | i << 11`), `rsqrtps.bin` (8192 × u32 LE: [1,2) then [2,4)) and `estimates.txt`
+  (host, fingerprints, mismatch counts), and checks the tables against the host over all 2²³
+  mantissas of [1,2) (`rcpps`) and [1,4) (`rsqrtps`): 0 mismatches on the oracle host. Specials
+  and other binades are A2d's exhaustive check.
 
 ### 2.3 Dispatch
 
