@@ -6,6 +6,7 @@ members = [
     "crates/skia-rust-skcms",
     "crates/skia-rust-core",
     "tests",
+    "tests/gm",
     "xtask",
 ]
 

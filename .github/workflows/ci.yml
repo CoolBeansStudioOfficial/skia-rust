@@ -51,7 +51,9 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --target wasm32-unknown-unknown --workspace --exclude xtask
+      # skia-rust-gm is host tooling (files, curl, tar, zstd-sys); it checks the wasm code path on the
+      # host as the Scalar tier.
+      - run: cargo build --target wasm32-unknown-unknown --workspace --exclude xtask --exclude skia-rust-gm
 
   miri:
     runs-on: ubuntu-latest

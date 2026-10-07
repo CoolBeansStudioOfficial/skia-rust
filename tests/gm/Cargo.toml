@@ -1,0 +1,26 @@
+[package]
+name = "skia-rust-gm"
+description = "1:1 ports of Skia's GMs (gm/*.cpp) and the DM-equivalent harness that checks them against the oracle goldens"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-simd = { workspace = true, features = ["testing"] }
+# Static GM registry: the Rust counterpart of Skia's `sk_tools::Registry` behind `DEF_GM`.
+inventory = "0.3.24"
+# PNG diff images on golden mismatches.
+png = "0.18.1"
+# Golden hashes and reports (JSON), SHA-256 and zstd golden objects: the crates xtask uses.
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
+zstd = "0.14.0"
+
+[lints]
+workspace = true

@@ -1,0 +1,73 @@
+{
+  "skia_branch": "fixture",
+  "skia_commit": "fixture",
+  "tiers": {
+    "cpu-x64-sse2": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "8888/gm/fixture_skip_golden": "92e9c1e04a395f7b841ae5e4c16efb99e6fb861fc8c669c6fd60dff01e7a5625",
+        "8888/gm/fixture_wrong": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    },
+    "cpu-x64-sse2-rt-ssse3": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "8888/gm/fixture_wrong": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    },
+    "cpu-x64-sse41": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "8888/gm/fixture_wrong": "92e9c1e04a395f7b841ae5e4c16efb99e6fb861fc8c669c6fd60dff01e7a5625",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    },
+    "cpu-x64-sse2-rt-ml3": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "8888/gm/fixture_wrong": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    },
+    "cpu-x64-sse2-rt-ml4": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "8888/gm/fixture_wrong": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    },
+    "cpu-x64-scalar": {
+      "toolchain": "fixture",
+      "results": {
+        "565/gm/fixture_blue": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "565/gm/fixture_wrong": "8b89e606f98fcc3dd052d1525de0b47bef15ec455b4543947e861704d906f64a",
+        "8888/gm/fixture_blue": "92e9c1e04a395f7b841ae5e4c16efb99e6fb861fc8c669c6fd60dff01e7a5625",
+        "8888/gm/fixture_wrong": "f2c059094ad04f3e4046d2fd2d4a86d9da67c439c4e659791ffe8e64d906302d",
+        "f16/gm/fixture_blue": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2",
+        "f16/gm/fixture_wrong": "8d0478505b8a24ddf326fab9e5da2536a74030f263b4b86dd61b666119c283e2"
+      }
+    }
+  }
+}

@@ -7,8 +7,9 @@
 //! | Skia path | Rust module prefix |
 //! |---|---|
 //! | `tests/…` | `unit` |
-//! | `gm/…` | `gm` |
 //! | `modules/<m>/tests/…` | `modules::<m>` |
+//!
+//! GMs (`gm/…`) live in the `skia-rust-gm` crate and are checked by [`crate::verify_gms`].
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -133,6 +134,9 @@ pub struct Report {
     pub excluded_but_ported: Vec<String>,
     /// Entries whose test exists but fails (id), for `--update`.
     pub failing: Vec<String>,
+    /// GMs that could not be checked on every tier on this host (never marked passing, never a
+    /// regression).
+    pub not_checkable: Vec<String>,
 }
 
 /// Compares test outcomes with manifest statuses. `entries` is (id, status) for every
@@ -172,11 +176,14 @@ pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) 
     report
 }
 
-/// Prints `report` and fails unless it's clean. With `update`, the caller has already
-/// written the new statuses, so only hard errors fail.
-pub fn finish(report: &Report, update: bool) -> Result<()> {
+/// Prints `report` (about `what`: `"unit test"` or `"GM"`) and fails unless it's clean. With
+/// `update`, the caller has already written the new statuses, so only hard errors fail.
+pub fn finish(report: &Report, update: bool, what: &str) -> Result<()> {
     for p in &report.unknown {
-        println!("UNKNOWN TEST {p} (no manifest unit test maps to it)");
+        println!("UNKNOWN {p} (no manifest {what} maps to it)");
+    }
+    for id in &report.not_checkable {
+        println!("NOT CHECKABLE on this host (status unchanged) {id}");
     }
     for id in &report.excluded_but_ported {
         println!("EXCLUDED BUT PORTED {id}");
@@ -194,15 +201,15 @@ pub fn finish(report: &Report, update: bool) -> Result<()> {
     }
     let hard = report.unknown.len() + report.excluded_but_ported.len() + report.regressions.len();
     if hard > 0 {
-        bail!("{hard} problem(s) between ported tests and the manifest");
+        bail!("{hard} problem(s) between ported {what}s and the manifest");
     }
     if !update && !report.newly_passing.is_empty() {
         bail!(
-            "{} passing test(s) not marked passing; run `cargo xtask inventory verify --update`",
+            "{} passing {what}(s) not marked passing; run `cargo xtask inventory verify --update`",
             report.newly_passing.len()
         );
     }
-    println!("ported tests and manifest agree");
+    println!("ported {what}s and manifest agree");
     Ok(())
 }
 

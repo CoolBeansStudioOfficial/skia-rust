@@ -110,6 +110,7 @@ Pixels must match Skia bit for bit, so arithmetic is translated, never paraphras
 - **C++-only assertions** (pointer identity, `sizeof`, layout via `reinterpret_cast`): translate them to the closest Rust-observable property if one exists (e.g. `size_of::<Point>() == 8`). If none exists, keep the line as a comment starting `// skia-rust: not expressible in Rust:` with the reason. That is the only allowed omission.
 - `SkRandom` is ported (`skia_rust_core::random`), so random-driven tests reproduce Skia's exact sequences.
 - A test that exercises only Skia's own containers or utilities, where Rust uses `std` instead (`SkString`, `SkTArray`, `SkTDArray`, `SkTHash*`, `SkArenaAlloc`, `SkSpan`, `SkTSort`, `SkBitSet`, `SkStringView`, `SkSemaphore`, `SkOnce`), is **excluded**: set `status = "excluded"` and `reason = "tests Skia's <X>; Rust uses <Y>"` in the manifest, and don't port it.
+- GMs (`gm/*.cpp`) have their own harness: see §11.
 
 ## 7. Clippy and lints
 
@@ -137,3 +138,48 @@ Pixels must match Skia bit for bit, so arithmetic is translated, never paraphras
 
 1. Find the first divergence: print intermediate values on both sides. You can build a tiny C++ harness against `third_party/skia/out/oracle/x64-sse2` if needed. Don't tweak code until the numbers happen to match.
 2. After **2 full attempts**, stop. Write `notes/<file>-<test>.md` with what you tried, the expected vs actual values, the suspicious code and your best hypothesis, then mark the test `def_test!(#[ignore = "see notes/<file>-<test>.md"] Name, …)` and set its entry to `status = "failing"` with a one-line `reason` (CI runs `cargo test`, so a failing test must be ignored, never left red or deleted). Commit what passes, open the PR, and report the failure. The next model up the ladder (Sonnet → Opus) continues from your note.
+
+## 11. Porting GMs
+
+A GM is checked by rendering it exactly as DM does and comparing the SHA-256 of the bytes with the oracle's goldens (`oracle/README.md`), for every config (`8888`, `565`, `f16`) on every CPU tier. There are no tolerances: a GM passes when every hash matches. The harness is the `skia-rust-gm` crate in `tests/gm` (design: `docs/design/raster-pipeline.md` §4.4, "As implemented in A7").
+
+**Where it goes.** `gm/<file>.cpp` → `tests/gm/src/gm/<file_snake>.rs`, registered in `tests/gm/src/gm/mod.rs` (sorted). `<file_snake>` is the file name snake-cased like test files (§6); a name starting with a digit gets a `_` (`gm/3d.cpp` → `gm::_3d`). The file starts with the licence header and `// Port of: gm/<file>.cpp (chrome/m156)`, and imports `use crate::prelude::*;`.
+
+**Registrations.** Each `DEF_*GM*` becomes the macro with the same name and arguments, the body as a block:
+
+| Skia | skia-rust |
+|---|---|
+| `DEF_SIMPLE_GM(name, canvas, W, H) { … }` | `def_simple_gm!(name, canvas, W, H, { … });` |
+| `DEF_SIMPLE_GM_BG(name, canvas, W, H, BG) { … }` | `def_simple_gm_bg!(name, canvas, W, H, BG, { … });` |
+| `DEF_SIMPLE_GM_BG_NAME(name, canvas, W, H, BG, NAME_STR) { … }` | `def_simple_gm_bg_name!(name, canvas, W, H, BG, "result_name", { … });` |
+| `DEF_SIMPLE_GM_CAN_FAIL(name, canvas, errorMsg, W, H) { … }` | `def_simple_gm_can_fail!(name, canvas, error_msg, W, H, { …; DrawResult::Ok });` |
+| `DEF_SIMPLE_GM_BG_CAN_FAIL` / `DEF_SIMPLE_GM_BG_NAME_CAN_FAIL` | `def_simple_gm_bg_can_fail!` / `def_simple_gm_bg_name_can_fail!` |
+| `DEF_GM(return new FooGM;)` | `def_gm!(FooGM, FooGM::new());` |
+| `DEF_GM(return new FooGM(true);)` | `def_gm!(FooGM_true = "FooGM(true)", FooGM::new(true));` |
+
+The registration name must equal the manifest id's name verbatim (`gm/dashing.cpp::Dashing5GM(true)` → `"Dashing5GM(true)"`; a second registration with the same name in one file is `"FooGM#2"`): `cargo xtask inventory verify` maps the registry key `gm::<file_snake>::<name>` back to the manifest id. When the name is not an identifier, give the generated test an identifier and the name as a string (`FooGM_true = "FooGM(true)"`). `BG` is a `Color` (`SK_ColorWHITE` → `Color::WHITE`); `canvas` is a `&Canvas`; `error_msg` is a `&mut String`.
+
+**Class GMs** (`class FooGM : public skiagm::GM`) implement the `GM` trait, one method per override:
+
+| `skiagm::GM` | `GM` trait |
+|---|---|
+| `getName()` | `fn name(&self) -> String` |
+| `getISize()` | `fn size(&mut self) -> ISize` |
+| `GM(bgColor)` / `setBGColor()` | `fn bg_color(&self) -> Color` (default white; keep it in a field if `onOnceBeforeDraw` sets it) |
+| `onOnceBeforeDraw()` | `fn on_once_before_draw(&mut self)` |
+| `onDraw(SkCanvas*)` | `fn on_draw(&mut self, canvas: &Canvas)` |
+| `onDraw(SkCanvas*, SkString*)` returning `DrawResult` | `fn on_draw_with_error(&mut self, canvas: &Canvas, error_msg: &mut String) -> DrawResult` |
+| `modifySurfaceProps()` | `fn modify_surface_props(&self, props: &mut SurfaceProps)` |
+| `onGpuSetup()` | `fn on_gpu_setup(&mut self, canvas: &Canvas, error_msg: &mut String) -> DrawResult` (DM calls it for raster too, without a GPU context) |
+
+Constructor arguments become `FooGM::new(…)`; the GM's member variables become struct fields. Static helpers become private `fn`s with snake-cased names, as for tests.
+
+**The canvas.** `Canvas` mirrors `skia-safe`'s (`&self` methods returning `&Self`). Until task D6 it is a stub (`tests/gm/src/canvas.rs`) that only clears; a GM whose drawing needs more panics with a "needs the real Canvas (task D6)" message, and its test fails. Port such GMs after D6.
+
+**Running.** Each registration is also a `#[test]` named after it: `cargo test -p skia-rust-gm <name>` renders it under `force_tier` for every tier this host can check and every config, and fails on any mismatch, printing every comparison. On a mismatch the diff images are in `target/gm-diffs/<oracle tier>/<config>/<name>.png` (golden | ours | difference in magenta), with our bytes as `<name>.raw` and the golden as `<name>.golden.raw`. Then debug as in CLAUDE.md: `cargo xtask oracle rp-dump <tier> <gm>` for the oracle's raster-pipeline stages, never trial and error.
+
+**Goldens.** The harness uses `goldens/<skia-commit>/` from the workspace, from the main checkout when run in a git worktree, or from `$SKIA_RUST_GOLDENS`; otherwise it downloads `hashes-m156.json` (5 MB) from the release in `inventory/goldens.lock`, checks its SHA-256 against the lock and caches it in `target/goldens/`. The objects archive (~540 MB) is downloaded the same way only when a mismatch needs a diff image. `SKIA_RUST_GOLDENS=release` forces the download path.
+
+**Tiers.** Every GM is checked against every oracle tier that records its `Tier`'s behaviour (`Tier::oracle_tiers()`). `Scalar` runs natively; an x86 tier runs natively when the host has it and its `rcp`/`rsqrt` estimates match the oracle host's (AMD Zen 4), otherwise as its model with the oracle host's estimate tables; `Ml4` without a match is *not checkable* (no `vrcp14ps` model yet). `Neon` runs natively on arm64, otherwise as its model; it has no goldens yet. `cpu-x64-scalar` (the wasm proxy) is compared and reported but never decides a verdict.
+
+**Done.** `cargo xtask inventory verify --update` runs every registered GM (`gm-verify`) and marks an entry `passing` only when all configs match on every oracle tier with goldens and every tier was checkable on this host; it marks mismatching entries `failing`. A GM that is not checkable on some host (CI runners without AVX-512 or with another vendor's estimates) keeps its status there; it is never a regression and never a pass. A GM that doesn't match after 2 attempts follows §10, with `def_gm!(#[ignore = "see notes/…"] …)`.
