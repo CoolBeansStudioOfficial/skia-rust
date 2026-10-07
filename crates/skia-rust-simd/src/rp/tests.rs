@@ -22,7 +22,11 @@
     clippy::float_cmp
 )]
 
-use super::contexts::{BranchCtx, BranchIfEqualCtx, MemoryCtxInfo};
+use super::contexts::{
+    BinaryOpCtx, BranchCtx, BranchIfEqualCtx, CaseOpCtx, ConstantCtx, CopyIndirectCtx,
+    CopyIndirectUniformCtx, MemoryCtxInfo, ShuffleCtx, SwizzleCopyCtx, SwizzleCopyIndirectCtx,
+    SwizzleCtx, UniformCtx,
+};
 use super::lanes::test_support::{Rng, float_specials, mad_nan_ambiguous};
 use super::memory::{MemoryCtxPatch, patch_memory_contexts, restore_memory_contexts};
 use super::{
@@ -1033,6 +1037,266 @@ fn model_backends_match_on_every_host() {
                 &f32_bytes(&dst),
             );
             assert_eq!(h, z);
+        }
+    }
+}
+
+// ~~~ B6a: SkSL masks, branches and copies ~~~
+
+/// The contexts of the B6a stages that are not plain values, for a highp stride of `n`.
+struct SkslCtxs {
+    uniform: UniformCtx<'static>,
+    from_indirect: CopyIndirectCtx,
+    from_indirect_uniform: CopyIndirectUniformCtx<'static>,
+    to_indirect: CopyIndirectCtx,
+    swizzle_to_indirect: SwizzleCopyIndirectCtx,
+    shuffle: ShuffleCtx,
+    swizzle_copy: SwizzleCopyCtx,
+}
+
+/// Uniform data of `SkslCtxs`.
+static SKSL_UNIFORMS: [i32; 8] = [0x7fbf_ffff, -1, 0, 1, 0x1234_5678, -77, i32::MIN, i32::MAX];
+
+/// Read-only data (slot 0), the initial `SkSL` slots (slot 3) and the registers (slot 1) of the
+/// B6a twin tests.
+const SKSL_DATA_BYTES: usize = 2048;
+
+impl SkslCtxs {
+    fn new(n: usize) -> SkslCtxs {
+        // One slot is `4 * n` bytes; `SkSL` slots live in slot 3, read-only data in slot 0.
+        let sb = u32::try_from(4 * n).unwrap();
+        let data = |offset: u32| MemPtr::new(MemSlot(0), offset);
+        let slots = |offset: u32| MemPtr::new(MemSlot(3), offset);
+        let sb16 = u16::try_from(sb).unwrap();
+        SkslCtxs {
+            uniform: UniformCtx {
+                dst: slots(5 * sb),
+                src: &SKSL_UNIFORMS[..4],
+            },
+            from_indirect: CopyIndirectCtx {
+                dst: slots(20 * sb),
+                src: slots(0),
+                indirect_offset: data(0),
+                indirect_limit: 4,
+                slots: 3,
+            },
+            from_indirect_uniform: CopyIndirectUniformCtx {
+                dst: slots(20 * sb),
+                src: &SKSL_UNIFORMS,
+                indirect_offset: data(0),
+                indirect_limit: 4,
+                slots: 3,
+            },
+            to_indirect: CopyIndirectCtx {
+                dst: slots(8 * sb),
+                src: slots(0),
+                indirect_offset: data(0),
+                indirect_limit: 4,
+                slots: 3,
+            },
+            swizzle_to_indirect: SwizzleCopyIndirectCtx {
+                copy: CopyIndirectCtx {
+                    dst: slots(8 * sb),
+                    src: data(3 * sb),
+                    indirect_offset: data(0),
+                    indirect_limit: 2,
+                    slots: 3,
+                },
+                offsets: [2 * sb16, 0, sb16, 3 * sb16],
+            },
+            shuffle: ShuffleCtx {
+                ptr: slots(4 * sb),
+                count: 7,
+                offsets: [
+                    6 * sb16,
+                    0,
+                    3 * sb16,
+                    3 * sb16,
+                    sb16,
+                    15 * sb16,
+                    8 * sb16,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            },
+            swizzle_copy: SwizzleCopyCtx {
+                dst: slots(12 * sb),
+                src: data(sb),
+                offsets: [3 * sb16, 0, 2 * sb16, sb16],
+            },
+        }
+    }
+}
+
+/// Every B6a stage (one list entry each) for a highp stride of `n`.
+fn sksl_stages(n: usize, c: &SkslCtxs) -> Vec<Stage<'_>> {
+    let sb = u32::try_from(4 * n).unwrap();
+    let sb8 = u8::try_from(sb).unwrap();
+    let data = |offset: u32| MemPtr::new(MemSlot(0), offset);
+    let slots = |offset: u32| MemPtr::new(MemSlot(3), offset);
+    let binary = BinaryOpCtx {
+        dst: 9 * sb,
+        src: 2 * sb,
+    };
+    let constant = ConstantCtx {
+        value: 0x7fbf_ffff,
+        dst: 6 * sb,
+    };
+    let swizzle = SwizzleCtx {
+        dst: 3 * sb,
+        offsets: [3 * sb8, 3 * sb8, sb8, 0],
+    };
+    vec![
+        Stage::InitLaneMasks,
+        Stage::StoreDeviceXy01(slots(10 * sb)),
+        Stage::ExchangeSrc(slots(2 * sb)),
+        Stage::LoadConditionMask(data(sb)),
+        Stage::StoreConditionMask(slots(sb)),
+        Stage::MergeConditionMask(data(2 * sb)),
+        Stage::MergeInvConditionMask(data(2 * sb)),
+        Stage::LoadLoopMask(data(sb)),
+        Stage::StoreLoopMask(slots(sb)),
+        Stage::MaskOffLoopMask,
+        Stage::ReenableLoopMask(data(3 * sb)),
+        Stage::MergeLoopMask(data(3 * sb)),
+        Stage::CaseOp(CaseOpCtx {
+            expected_value: SKSL_UNIFORMS[4],
+            offset: 6 * sb,
+        }),
+        Stage::ContinueOp(slots(7 * sb)),
+        Stage::LoadReturnMask(data(sb)),
+        Stage::StoreReturnMask(slots(sb)),
+        Stage::MaskOffReturnMask,
+        Stage::CopyUniform(&c.uniform),
+        Stage::Copy2Uniforms(&c.uniform),
+        Stage::Copy3Uniforms(&c.uniform),
+        Stage::Copy4Uniforms(&c.uniform),
+        Stage::CopyConstant(constant),
+        Stage::Splat2Constants(constant),
+        Stage::Splat3Constants(constant),
+        Stage::Splat4Constants(constant),
+        Stage::CopySlotMasked(binary),
+        Stage::Copy2SlotsMasked(binary),
+        Stage::Copy3SlotsMasked(binary),
+        Stage::Copy4SlotsMasked(binary),
+        Stage::CopyFromIndirectUnmasked(&c.from_indirect),
+        Stage::CopyFromIndirectUniformUnmasked(&c.from_indirect_uniform),
+        Stage::CopyToIndirectMasked(&c.to_indirect),
+        Stage::SwizzleCopyToIndirectMasked(&c.swizzle_to_indirect),
+        Stage::CopySlotUnmasked(binary),
+        Stage::Copy2SlotsUnmasked(binary),
+        Stage::Copy3SlotsUnmasked(binary),
+        Stage::Copy4SlotsUnmasked(binary),
+        Stage::CopyImmutableUnmasked(binary),
+        Stage::Copy2ImmutablesUnmasked(binary),
+        Stage::Copy3ImmutablesUnmasked(binary),
+        Stage::Copy4ImmutablesUnmasked(binary),
+        Stage::SwizzleCopySlotMasked(&c.swizzle_copy),
+        Stage::SwizzleCopy2SlotsMasked(&c.swizzle_copy),
+        Stage::SwizzleCopy3SlotsMasked(&c.swizzle_copy),
+        Stage::SwizzleCopy4SlotsMasked(&c.swizzle_copy),
+        Stage::Swizzle1(swizzle),
+        Stage::Swizzle2(swizzle),
+        Stage::Swizzle3(swizzle),
+        Stage::Swizzle4(swizzle),
+        Stage::Shuffle(&c.shuffle),
+    ]
+}
+
+/// Runs `LoadSrc(slot 1), SetBasePointer(slot 3), [InitLaneMasks], stage, StoreSrc(slot 2)` over
+/// `w` pixels at `at` with read-only `data` in slot 0, the registers in slot 1 and the `SkSL`
+/// slots (initially `data`) in slot 3; returns the stored registers and the slots.
+fn run_sksl(
+    stage: Stage<'_>,
+    init_masks: bool,
+    sel: Selection,
+    at: (usize, usize, usize),
+    regs: &[u8],
+    data: &[u8],
+) -> (Vec<u8>, Vec<u8>) {
+    let mut stages = vec![
+        Stage::LoadSrc(MemPtr::new(MemSlot(1), 0)),
+        Stage::SetBasePointer(MemPtr::new(MemSlot(3), 0)),
+    ];
+    if init_masks {
+        stages.push(Stage::InitLaneMasks);
+    }
+    stages.push(stage);
+    stages.push(Stage::StoreSrc(OUT0));
+    let mut out = vec![0u8; REGS_BYTES];
+    let mut slots = data.to_vec();
+    let mut program = Program::new(&stages, sel, true);
+    let mut mem = MemoryBindings::new()
+        .with(MemSlot(0), MemView::read(data))
+        .with(MemSlot(1), MemView::read(regs))
+        .with(MemSlot(2), MemView::write(&mut out))
+        .with(MemSlot(3), MemView::write(&mut slots));
+    program.run(at.0, at.1, at.2, 1, &mut mem);
+    drop(mem);
+    (out, slots)
+}
+
+/// Random lane words that are mostly all-ones/all-zero (masks) and signaling NaNs.
+fn sksl_random_bytes(rng: &mut Rng, count: usize) -> Vec<u8> {
+    random_lanes(rng, &[0, u32::MAX, 0x7fbf_ffff, 0xffbf_ffff], count)
+        .iter()
+        .flat_map(|w| w.to_ne_bytes())
+        .collect()
+}
+
+#[test]
+fn sksl_mask_and_copy_stages_run_on_every_selection() {
+    // Under Miri this covers Scalar and the AmdZen4 models; each stage runs on one of them (and
+    // without `init_lane_masks`) to keep the interpreted run short.
+    let sels = selections();
+    for (sel_index, sel) in sels.iter().copied().enumerate() {
+        let n = highp_n(sel);
+        let ctxs = SkslCtxs::new(n);
+        let mut rng = Rng::new(0xb6a0);
+        for (stage_index, stage) in sksl_stages(n, &ctxs).into_iter().enumerate() {
+            if cfg!(miri) && stage_index % sels.len() != sel_index {
+                continue;
+            }
+            let regs = sksl_random_bytes(&mut rng, REGS_BYTES / 4);
+            let data = sksl_random_bytes(&mut rng, SKSL_DATA_BYTES / 4);
+            let variants: &[bool] = if cfg!(miri) { &[false] } else { &[false, true] };
+            for &init_masks in variants {
+                let at = (rng.below(1 << 20), rng.below(1 << 20), 1 + rng.below(2 * n));
+                let _ = run_sksl(stage, init_masks, sel, at, &regs, &data);
+            }
+        }
+    }
+}
+
+#[test]
+fn sksl_mask_and_copy_stage_twins() {
+    for (native, models) in twin_sets() {
+        let n = highp_n(native);
+        let ctxs = SkslCtxs::new(n);
+        let mut rng = Rng::new(0xb6a1);
+        for round in 0..20 {
+            for stage in sksl_stages(n, &ctxs) {
+                let regs = sksl_random_bytes(&mut rng, REGS_BYTES / 4);
+                let data = sksl_random_bytes(&mut rng, SKSL_DATA_BYTES / 4);
+                for init_masks in [false, true] {
+                    let at = (rng.below(1 << 20), rng.below(1 << 20), 1 + rng.below(2 * n));
+                    let want = run_sksl(stage, init_masks, native, at, &regs, &data);
+                    for model in &models {
+                        let got = run_sksl(stage, init_masks, *model, at, &regs, &data);
+                        assert_eq!(
+                            want, got,
+                            "{native} vs {model}, {stage:?}, round {round}, init_masks {init_masks}"
+                        );
+                    }
+                }
+            }
         }
     }
 }
