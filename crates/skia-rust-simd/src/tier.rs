@@ -220,12 +220,31 @@ impl Tier {
         }
     }
 
-    /// The tier whose behaviour an oracle tier records (inverse of [`Tier::oracle_tiers`]).
+    /// The RGBA-order counterparts of [`Tier::oracle_tiers`]: oracle builds with
+    /// `SK_R32_SHIFT=0`, whose `8888` results are RGBA bytes (for hosts whose N32 is RGBA:
+    /// macOS, Linux). Only the class representatives are built, so each list has one entry
+    /// (`Scalar`'s is the `x64-scalar` proxy) and `Neon` has none yet. Each has the behaviour
+    /// of its BGRA class, bytes swizzled (`xtask oracle check-classes` holds them as classes
+    /// of their own).
+    #[must_use]
+    pub fn oracle_tiers_rgba(self) -> &'static [&'static str] {
+        match self {
+            Tier::Scalar => &["cpu-x64-scalar-rgba"],
+            Tier::Sse2 => &["cpu-x64-sse2-rgba"],
+            Tier::Sse41 => &["cpu-x64-sse41-rgba"],
+            Tier::Ml3 => &["cpu-x64-sse2-rgba-rt-ml3"],
+            Tier::Ml4 => &["cpu-x64-sse2-rgba-rt-ml4"],
+            Tier::Neon => &[],
+        }
+    }
+
+    /// The tier whose behaviour an oracle tier records (inverse of [`Tier::oracle_tiers`] and
+    /// [`Tier::oracle_tiers_rgba`]).
     #[must_use]
     pub fn for_oracle_tier(name: &str) -> Option<Tier> {
         Tier::ALL
             .into_iter()
-            .find(|t| t.oracle_tiers().contains(&name))
+            .find(|t| t.oracle_tiers().contains(&name) || t.oracle_tiers_rgba().contains(&name))
     }
 
     /// The estimates the tier's model uses on this host when asked for [`Estimates::Host`]
@@ -465,6 +484,26 @@ mod tests {
     }
 
     #[test]
+    fn rgba_oracle_tiers_select_their_tier() {
+        let mut n = 0;
+        for tier in Tier::ALL.into_iter().filter(|t| t.is_x86()) {
+            for name in tier.oracle_tiers_rgba() {
+                // `cpu-x64-sse2-rgba-rt-ml3` behaves as `cpu-x64-sse2-rt-ml3`.
+                let bgra = name.replacen("-rgba", "", 1);
+                let (level, cap) = parse_oracle_tier(&bgra);
+                assert_eq!(select_x64(level, cap.apply(zen4())), tier, "{name}");
+                assert_eq!(Tier::for_oracle_tier(name), Some(tier));
+                n += 1;
+            }
+        }
+        assert_eq!(n, 4);
+        assert_eq!(
+            Tier::for_oracle_tier("cpu-x64-scalar-rgba"),
+            Some(Tier::Scalar)
+        );
+    }
+
+    #[test]
     fn select_x64_mirrors_skopts_init() {
         let none = CpuFeatures::empty();
         assert_eq!(select_x64(X64Level::Sse2, none), Tier::Sse2);
@@ -518,7 +557,7 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for t in Tier::ALL {
             assert_ne!(t.oracle_tiers(), &[] as &[&str]);
-            for name in t.oracle_tiers() {
+            for name in t.oracle_tiers().iter().chain(t.oracle_tiers_rgba()) {
                 assert!(seen.insert(*name), "{name} listed twice");
             }
         }

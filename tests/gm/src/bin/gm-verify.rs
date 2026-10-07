@@ -22,6 +22,7 @@ struct PlanEntry {
     tier: &'static str,
     run: String,
     oracle_tiers: Vec<&'static str>,
+    rgba_oracle_tiers: Vec<&'static str>,
 }
 
 #[derive(Serialize)]
@@ -76,6 +77,7 @@ fn main() -> ExitCode {
                     Err(reason) => format!("not checkable: {reason}"),
                 },
                 oracle_tiers: p.oracle_tiers.clone(),
+                rgba_oracle_tiers: p.rgba_oracle_tiers.clone(),
             })
             .collect();
         let opts = Options {
