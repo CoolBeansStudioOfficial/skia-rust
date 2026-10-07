@@ -44,7 +44,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | Codecs | Faithful Rust ports of the decode paths of the libraries Skia wraps (libjpeg-turbo, libwebp, Wuffs GIF, libpng / Rust `png` as Skia configures it), incl. JPEG gainmaps. Scope = codecs enabled in Skia's default GN build at the pin; others (AVIF, JPEG XL, RAW) excluded with reason until revisited |
 | Goldens | Generated on the local server (Windows, Ryzen 7 7800X3D, RTX 4070 SUPER) and **published** as release artifacts |
 | CI platforms | Windows x64, Linux x64, macOS arm64, Linux aarch64, wasm32 |
-| wasm oracle | Skia built with Emscripten (CanvasKit-style) at the **simd128** tier, run under Node; matched exactly |
+| wasm oracle | Skia built with Emscripten (CanvasKit-style), run under Node; matched exactly. Skia's raster pipeline is **scalar** on wasm (`SKRP_CPU_SCALAR`; CanvasKit doesn't pass `-msimd128`), so our wasm target matches the `Scalar` tier and may use simd128 internally only where results are bit-identical. Until that oracle exists, an `x64-scalar` build stands in |
 | Perf | Gate: ≤ 0% slower than Skia per bench (measured on the server); GPU benches compare against the wgpu-capability-restricted oracle |
 | GPU perf features | Async pipeline compilation (background threads) + wgpu `PipelineCache`. Dawn-only tile-GPU extensions (transient attachments, MSAA render-to-single-sampled, load-resolve, framebuffer fetch) are not pursued; desktop parity is the target |
 | Agents | Sonnet 5.5 first, escalating to Opus 5.5 on failure (Haiku dropped: couldn't handle the ports); wide parallel fan-out allowed (§8.3) |
@@ -133,7 +133,8 @@ Real Skia, built from source at the pin, is the single source of truth. It is te
 - GN args (common): release, non-official (bundled third-party libs, tools enabled), clang-cl on Windows (the compiler Chrome ships Skia with), test-font manager, no system fonts. Graphite + Dawn and Fontations in the builds that need them. Exact args live in `oracle/tiers.toml`.
 - **CPU builds, one per compile-time x86 baseline** (`x64-sse2`, `x64-ssse3`, `x64-sse41`, `x64-sse42`, `x64-avx`, `x64-v3`, `x64-v4`). Each build also runs at every runtime `SkOpts` level above its baseline (ssse3, ml3 = x86-64-v3, ml4 = x86-64-v4), selected by `SKIA_ORACLE_CPU_CAP`, a small oracle-side patch to `SkCpu`. A tier is one (build, runtime level) pair; xtask derives the full list (19 x64 tiers at m156). The 7800X3D (Zen 4) runs all of them natively, and each run verifies the tier that actually executed.
   - `arm64-neon`: built and run on macOS arm64 / Linux aarch64 hosted runners. The first time, goldens are generated there and uploaded.
-  - `wasm-simd128`: Skia built with Emscripten the way CanvasKit is (`-msimd128`), with `oracle-dump` compiled to wasm and run under Node. The reference for our wasm32 target, whose `Tier::WasmSimd128` must match it exactly. No non-SIMD wasm tier.
+  - `wasm`: Skia built with Emscripten the way CanvasKit is, DM compiled to wasm and run under Node. Skia's raster pipeline compiles its scalar path on wasm (`src/opts/SkRasterPipeline_opts.h#L76-L100`), so this is the reference for our wasm32 target running `Tier::Scalar`. An `x64-scalar` native build (`SKRP_CPU_SCALAR`) stands in until it exists.
+  - **Measured (full GM suite, `-ffp-contract=off`):** the 19 x64 tiers collapse into 4 behaviours: sse2/ssse3; sse4.1/sse4.2/avx baselines; ml3 runtime (= v3 build); ml4 runtime (= v4 build). See `oracle/README.md` Findings and `docs/design/raster-pipeline.md` §1.9.
   - Raster Pipeline **highp and lowp** are both exercised; the dump tool records which pipeline each draw used.
 - **GPU builds:** Graphite + Dawn on D3D12 and on Vulkan.
   - Dawn toggles and Graphite caps are restricted to **wgpu's feature set** (e.g. no Dawn-only extensions), so both sides take the same Graphite code paths.
@@ -211,8 +212,8 @@ cargo xtask diff gm/strokes::strokes_round --config cpu-x64-hsw-8888   # fetch g
 |---|---|---|
 | fmt, clippy (pedantic, `-D warnings`), `cargo deny`, unsafe-policy check | Linux x64 | yes |
 | Build + unit tests | Windows x64, Linux x64, macOS arm64, Linux aarch64 | yes |
-| wasm32 (`+simd128`) build + CPU tests under wasmtime vs `wasm-simd128` goldens | Linux x64 | yes |
-| CPU GMs vs published hashes, all tiers the runner supports; SKX via Intel SDE | Windows x64, Linux x64, macOS arm64, Linux aarch64 | yes |
+| wasm32 build + CPU tests under wasmtime vs scalar-tier goldens | Linux x64 | yes |
+| CPU GMs vs published hashes, all tiers the runner supports natively, others via model tiers; vendor-specific estimate tables emulated when the runner's fingerprint differs from the goldens' (`docs/design/raster-pipeline.md` §4.6) | Windows x64, Linux x64, macOS arm64, Linux aarch64 | yes |
 | GPU GMs on lavapipe | Linux x64 (Mesa lavapipe) | yes* |
 | GPU GMs on WARP | Windows x64 | yes* |
 | Miri | Linux x64 | yes |
@@ -337,6 +338,7 @@ Each phase ends when its exit criteria are met; later phases can start early whe
 | Scale (thousands of tests, a large SkSL compiler, Graphite) | Slow progress | Inventory-driven small PRs, an always-visible pass-rate, strict phase order |
 | Matching every CPU tier (incl. NEON, AVX-512, future tiers) | Lots of extra kernels | Scalar twins + a shared SkVx-style abstraction; SKX native on Zen 4; NEON on hosted ARM runners |
 | Oracle build complexity on Windows (Skia + Dawn + WSL2 for lavapipe) | Phase 0 slips | Script everything in `xtask`; cache builds keyed by pin + GN args |
+| **x86 estimate instructions are vendor-specific** (`rcpps`/`rsqrtps` tables differ AMD vs Intel; `rcp14` too), and Skia's pipeline uses them on every x86 tier, so goldens from the Zen 4 server embed AMD's tables | Hosted-runner GM mismatches on Intel parts | Per-host fingerprints (`xtask cpu-probe`); emulate the golden host's tables on other hosts; model tiers for non-native ISAs; optionally Intel goldens later (`docs/design/raster-pipeline.md` §4.6) |
 
 ---
 
