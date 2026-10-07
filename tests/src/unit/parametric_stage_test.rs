@@ -3,7 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/ParametricStageTest.cpp (chrome/m156)
 //
-// Mapping notes (skia-rust): the C++ pipeline is `load_f32, appendTransferFunction(fn),
+// Mapping notes (skia-rust): these tests are ignored (manifest status todo) until B2/A4 land and
+// the port can be rewritten 1:1. The C++ pipeline is `load_f32, appendTransferFunction(fn),
 // store_f32`, run over 64 pixels. `load_f32`/`store_f32` (task B2) and `appendTransferFunction`
 // (task A4) are not ported yet, so each pixel is run on its own: `unbounded_uniform_color` sets
 // the pixel's four floats, the stage that `appendTransferFunction` picks for a `sRGBish`
@@ -106,75 +107,131 @@ fn check_error_gamma(r: &mut crate::Reporter, limit: f32, gamma: f32) {
 }
 
 // Port of: tests/ParametricStageTest.cpp#L54-L65 (chrome/m156)
-def_test!(Parametric_sRGB, |r| {
-    // Test our good buddy the sRGB transfer function in resplendent 7-parameter glory.
-    check_error(
-        r,
-        1.0 / 510.0,
-        TransferFunction {
-            g: 2.4,
-            a: 1.0 / 1.055,
-            b: 0.055 / 1.055,
-            c: 1.0 / 12.92,
-            d: 0.04045,
-            e: 0.0,
-            f: 0.0,
-        },
-    );
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_sRGB,
+    |r| {
+        // Test our good buddy the sRGB transfer function in resplendent 7-parameter glory.
+        check_error(
+            r,
+            1.0 / 510.0,
+            TransferFunction {
+                g: 2.4,
+                a: 1.0 / 1.055,
+                b: 0.055 / 1.055,
+                c: 1.0 / 12.92,
+                d: 0.04045,
+                e: 0.0,
+                f: 0.0,
+            },
+        );
+    }
+);
 
 // A nice little spread of simple gammas.
 // Port of: tests/ParametricStageTest.cpp#L68-L68 (chrome/m156)
-def_test!(Parametric_1dot0, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_1dot0,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0);
+    }
+);
 
 // Port of: tests/ParametricStageTest.cpp#L70-L70 (chrome/m156)
-def_test!(Parametric_1dot2, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.2);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_1dot2,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.2);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L71-L71 (chrome/m156)
-def_test!(Parametric_1dot4, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.4);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_1dot4,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.4);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L72-L72 (chrome/m156)
-def_test!(Parametric_1dot8, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.8);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_1dot8,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.8);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L73-L73 (chrome/m156)
-def_test!(Parametric_2dot0, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 2.0);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_2dot0,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 2.0);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L74-L74 (chrome/m156)
-def_test!(Parametric_2dot2, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 2.2);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_2dot2,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 2.2);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L75-L75 (chrome/m156)
-def_test!(Parametric_2dot4, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 2.4);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_2dot4,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 2.4);
+    }
+);
 
 // Port of: tests/ParametricStageTest.cpp#L77-L77 (chrome/m156)
-def_test!(Parametric_inv_1dot2, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.2);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_1dot2,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.2);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L78-L78 (chrome/m156)
-def_test!(Parametric_inv_1dot4, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.4);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_1dot4,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.4);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L79-L79 (chrome/m156)
-def_test!(Parametric_inv_1dot8, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.8);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_1dot8,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 1.8);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L80-L80 (chrome/m156)
-def_test!(Parametric_inv_2dot0, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.0);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_2dot0,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.0);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L81-L81 (chrome/m156)
-def_test!(Parametric_inv_2dot2, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.2);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_2dot2,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.2);
+    }
+);
 // Port of: tests/ParametricStageTest.cpp#L82-L82 (chrome/m156)
-def_test!(Parametric_inv_2dot4, |r| {
-    check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.4);
-});
+def_test!(
+    #[ignore = "needs B2/A4 for a 1:1 port"]
+    Parametric_inv_2dot4,
+    |r| {
+        check_error_gamma(r, 1.0 / 510.0, 1.0 / 2.4);
+    }
+);
