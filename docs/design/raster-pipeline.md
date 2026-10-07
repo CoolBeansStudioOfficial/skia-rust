@@ -971,7 +971,10 @@ si! {
   | | Sse41 | 75 (84) | 172 (247) | 130 (150) | 227 (310) |
 
   Scalar (ours; Skia's scalar build is not in the oracle set): 224, 323, 591 ns. Ml3/Ml4 (ours,
-  compiled, lowp / highp): measured below. (The oracle harness could not force Skia's ml3/ml4 path:
+  compiled, lowp / highp; the lowp numbers vary by up to 1.6x between runs): Ml3 `srcover`
+  125–163 / 42, `seed_shader, store_src` 45–105 / 63–86, four stages 146–181 / 107–113; Ml4
+  145–238 / 26, 61–66 / 61, 158–242 / 64. The 16-lane lowp interpreters are the slowest
+  relative to their highp (register pressure in the giant `match`). (The oracle harness could not force Skia's ml3/ml4 path:
   `SKIA_ORACLE_CPU_CAP=ml3` still reported the SSE strides, so no Skia numbers for them yet.) So the
   interpreter is **1.3–2.7× slower than Skia** on these short pipelines (compiled), and building
   a `Program` per `run()` costs ~75 ns more than Skia's stack-allocated build (three heap
