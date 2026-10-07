@@ -7,9 +7,17 @@ pub mod color_priv_test;
 #[cfg(test)]
 pub mod color_test;
 #[cfg(test)]
+pub mod cubic_map_test;
+#[cfg(test)]
+pub mod cubic_roots_test;
+#[cfg(test)]
+pub mod find_cubic_convex180_chops_test;
+#[cfg(test)]
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+#[cfg(test)]
+pub mod geometry_test;
 #[cfg(test)]
 pub mod hsv_round_trip_test;
 #[cfg(test)]
@@ -24,6 +32,8 @@ pub mod matrix_test;
 pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
+#[cfg(test)]
+pub mod quad_roots_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]

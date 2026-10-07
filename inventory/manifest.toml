@@ -29091,6 +29091,7 @@ macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L80-L173"
 module = "core"
 status = "todo"
+reason = "needs SkBitmap/SkCanvas/SkPath (test_giantClip); SkCubicClipper itself is ported"
 span_hash = "c0f3cab9c863d60cb20ac57f37d81da9a71c7fc22128bc0cc8870c3917268b82"
 
 [[test]]
@@ -29100,6 +29101,7 @@ macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L213-L231"
 module = "core"
 status = "todo"
+reason = "needs SkSurface/SkCanvas/SkPathBuilder"
 span_hash = "1d79b8fb638636aa1a5cf35929aec7347754573ce6ec530f38106491f9201e72"
 
 [[test]]
@@ -29109,6 +29111,7 @@ macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L175-L211"
 module = "core"
 status = "todo"
+reason = "needs SkSurface/SkCanvas/SkPathBuilder"
 span_hash = "7646cf3c7fb754eef2e29b01466c36d317e3601f0e65538be12dac3a3e07b878"
 
 [[test]]
@@ -30084,6 +30087,7 @@ macro = "DEF_TEST"
 source = "tests/CubicChopTest.cpp#L479-L551"
 module = "skcms"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "d4dbdbf700789aee8ee5754287c478715f3f277ffca2150bc3278cdc03fcd81e"
 
 [[test]]
@@ -30093,6 +30097,7 @@ macro = "DEF_TEST"
 source = "tests/CubicChopTest.cpp#L173-L209"
 module = "skcms"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "16329b83669313ca7dff59452320d022f01f6eabccf4190e7f83fb9c46462814"
 
 [[test]]
@@ -30102,6 +30107,7 @@ macro = "DEF_TEST"
 source = "tests/CubicChopTest.cpp#L83-L171"
 module = "skcms"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "fae80100e12dfbb7a4c4e9aa3e16c4611102c0331235d194ab4cf6c27553fb12"
 
 [[test]]
@@ -30111,6 +30117,7 @@ macro = "DEF_TEST"
 source = "tests/CubicChopTest.cpp#L268-L330"
 module = "skcms"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "c034e7380dbbff83a6a26540f8558ebb64d736ebfb4e48840f486ad49303fa3c"
 
 [[test]]
@@ -30120,6 +30127,7 @@ macro = "DEF_TEST"
 source = "tests/CubicChopTest.cpp#L390-L417"
 module = "skcms"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "788e8d4f5b28663513ee74523ad7ed19b139b9b42d8031e2573e17554c8f1820"
 
 [[test]]
@@ -30128,7 +30136,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicMapTest.cpp#L63-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e576c98f3c75e8e93da86d7e7870d75f52a49e60211cd0736b6543324714264d"
 
 [[test]]
@@ -30138,6 +30146,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L96-L200"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "4e25fc4d29a89a5e9fb0f1a94bb3754c966dbb0e1cf4661a823e3606bba56a29"
 
 [[test]]
@@ -30147,6 +30156,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L240-L248"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "562a1196d5162b20cf50da0b6c6f0cff08e3678e54280aff046ee6d6a2ba9099"
 
 [[test]]
@@ -30156,6 +30166,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L230-L238"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "2f10b2ff28e14b0e210668fe29c2df7e3c47a93893fa48711ba494ce238f2289"
 
 [[test]]
@@ -30164,7 +30175,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L250-L289"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d758d2f0a0e31a070e1da900c2b0dd97e7e06c2a22044a21fe37202a6d299f50"
 
 [[test]]
@@ -30174,6 +30185,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L202-L228"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "522cdb76b6665d602c9d4b4d3a49d222f288c74d2e9ef1a5a464950cf643b572"
 
 [[test]]
@@ -30183,6 +30195,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L381-L420"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "65482ef3c6f86f17b99ed88e10a18e54215ba22dbcda08423698ab449c598e31"
 
 [[test]]
@@ -30192,6 +30205,7 @@ macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L422-L452"
 module = "core"
 status = "todo"
+reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "674dfa64615e2f74d402e7cf09344344c679d4c01b62ee71a1ec8ee756a211ba"
 
 [[test]]
@@ -31402,7 +31416,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FindCubicConvex180ChopsTest.cpp#L76-L129"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "72e0d9e1e545c31ed2bbc1be5a88f601564390018e347e55b9baf91cc4f826c5"
 
 [[test]]
@@ -32302,7 +32316,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L978-L1026"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "be1a8962d9b85dac466f517ea9ec5b727785cc78cc7158ec5eb14bca1031fc05"
 
 [[test]]
@@ -32311,7 +32325,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L632-L671"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b1f9b113cbfca80aaa97e5c956e16345f378d4ca5900ce1f2510dcd05ca00dc0"
 
 [[test]]
@@ -32320,7 +32334,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L968-L976"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d34babfc0fa8abb4a56b9c7f330d5d5b00c953da3461f6b7ce0264b42eb66bf0"
 
 [[test]]
@@ -32329,7 +32343,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L851-L966"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "40ed5200f365989bc1a76e52810c400b7719bbd0fc02588e9b4cfe4accc9e7b4"
 
 [[test]]
@@ -32338,7 +32352,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L818-L826"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3605ba3d7d0f97196d95fbd5edb90bcb2de41d1097d16e50cbfb09e7941d52f4"
 
 [[test]]
@@ -32347,7 +32361,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GeometryTest.cpp#L692-L816"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "42931dab959ee5840377efefdc6e97a2e8f2e0957fb30f40fa154ee19d5e0ec7"
 
 [[test]]
@@ -35461,7 +35475,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L421-L518"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fb4e803b28e74d3edfb13c007925706bda5e8463c41b085b930e96161b414c70"
 
 [[test]]
@@ -39210,7 +39224,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L209-L222"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "21a4a2dbb044875e1c286664b88d7e02fa4d428a85aa98b9079823e628cf7529"
 
 [[test]]
@@ -39220,6 +39234,7 @@ macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L92-L158"
 module = "core"
 status = "todo"
+reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "095110dc93caa823137921edfa9856a10bf4bb7c326f3b3edf7f64b164ee6de8"
 
 [[test]]
@@ -39229,6 +39244,7 @@ macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L170-L178"
 module = "core"
 status = "todo"
+reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "84d0ef1a863a0da5dc42f271a6a2075b3d3a4cdc99617775d2aaa823fe6312fe"
 
 [[test]]
@@ -39238,6 +39254,7 @@ macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L160-L168"
 module = "core"
 status = "todo"
+reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "da3e909d9fe2094bffd345508acddb1aae30f8f795fda24057f5d80c56afb8c2"
 
 [[test]]
@@ -39246,7 +39263,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L180-L204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4323172828a16d9a71e44d27b7f68e1d7679e6dca0a559396fee022faf0281d5"
 
 [[test]]
@@ -39255,7 +39272,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L224-L238"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6ee41d14f90c7ab4de303686b1ba9ee96c1c046dee4933cdfa78f2e199cb0a76"
 
 [[test]]
@@ -39264,7 +39281,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L243-L273"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "80fdac7232e9436309eb4a9cd8a461546efddae39de5899674aba909610d8f5c"
 
 [[test]]
@@ -39273,7 +39290,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L287-L376"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e8ef18d299694daaddf8ce705de40cb3ac4e3b38c6d02b5742122a5cf6655f3a"
 
 [[test]]
