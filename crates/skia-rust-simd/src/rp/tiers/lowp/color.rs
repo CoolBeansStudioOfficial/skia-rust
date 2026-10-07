@@ -13,11 +13,11 @@ use super::*;
 si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L5732-L5732 (chrome/m156)
     fn from_float(f: f32) -> U16 {
-        // `U16_(f * 255.0f + 0.5f)`: the float converts to `uint16_t` (a truncating conversion;
-        // x86 and Arm agree on in-range values).
-        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // mirrors the C conversion
-        let v = (f * 255.0f32 + 0.5f32) as i32 as u16;
-        U16::splat(v)
+        // The scalar `uint16_t` conversion of a float is a truncating float -> int conversion
+        // (x86 `cvttss2si`: out of range and NaN give 0x80000000; Arm `fcvtzs` saturates), then
+        // a truncation to 16 bits. `to_i32` is the tier's float -> int conversion, so negative
+        // and huge coverages behave as Skia's (rp-diff `scale_1_float/{neg,huge}`).
+        to_i32(F::splat(f * 255.0f32 + 0.5f32)).cast()
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L6740-L6742 (chrome/m156)
