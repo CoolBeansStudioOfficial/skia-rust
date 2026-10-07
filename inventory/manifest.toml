@@ -27729,8 +27729,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L386-L398"
 module = "core"
-status = "todo"
-reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas"
+status = "passing"
 span_hash = "f75b29351e78606d5cc12eecb3169f44974ac6a12994b6b67c25e21414c356e2"
 
 [[test]]
@@ -27775,8 +27774,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L173-L195"
 module = "core"
-status = "todo"
-reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas; aa_clip_region_tests.rs checks the AAClip half"
+status = "passing"
 span_hash = "d7bfaca36d922b284ad9d546a65189a068d960078818df32b883a06e1b596854"
 
 [[test]]
@@ -27794,8 +27792,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L257-L298"
 module = "core"
-status = "todo"
-reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas; aa_clip_region_tests.rs checks the AAClip half"
+status = "passing"
 span_hash = "856d355e1b65333aa4156877c998ae84a3414250b27b0ec9370df3059203c2bc"
 
 [[test]]
@@ -28965,7 +28962,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L195-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aafbb0ffa831445b3794a6262cd474a64a9bb26392759d28464dbb83a7e9d822"
 
 [[test]]
@@ -28974,7 +28971,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L131-L134"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e0b7285840b583c3bca3cdc9866e5015e733ef77a446452cf185ba01bfd0ed47"
 
 [[test]]
@@ -28983,7 +28980,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L190-L193"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "452a1267c8415900455ecb3be365c0e2ca05b78040292e44ced60cc06db68294"
 
 [[test]]
@@ -28992,7 +28989,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L126-L129"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5e64b9ed5cbaaa89e3df94ab59908b7233179fe5878bba48a5d69fcc217127ff"
 
 [[test]]
@@ -29001,7 +28998,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L185-L188"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b1da74c8b19ade09fa4f4ef655680e1d60ae83cd3e460b7472b36596c9ce93c1"
 
 [[test]]
@@ -29010,7 +29007,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CappedHairlinesTest.cpp#L121-L124"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "eeb8dfe45113b47e2471816f2bb143a84f76a0a3889f3f97592ca4ee565ce15d"
 
 [[test]]
@@ -29093,8 +29090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L80-L173"
 module = "core"
-status = "todo"
-reason = "needs Canvas (D6): test_giantClip not ported yet"
+status = "passing"
 span_hash = "c0f3cab9c863d60cb20ac57f37d81da9a71c7fc22128bc0cc8870c3917268b82"
 
 [[test]]
@@ -29132,8 +29128,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipperTest.cpp#L159-L163"
 module = "core"
-status = "todo"
-reason = "needs Canvas (D6): test_hairclipping not ported yet"
+status = "passing"
 span_hash = "f5566791cb2f6d3fa0b89ae15911947993cfef4dd8337df955722c515134976a"
 
 [[test]]
@@ -30296,8 +30291,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L118-L129"
 module = "effects"
-status = "todo"
-reason = "needs Canvas and Surface (D6): drawLine is not ported yet"
+status = "passing"
 span_hash = "1a43cd28dcbbf2dafb4df05cced8a565c80d25487ee179ce01d5dc824697181b"
 
 [[test]]
@@ -30726,8 +30720,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawPathTest.cpp#L440-L458"
 module = "core"
-status = "todo"
-reason = "needs Canvas and Surface (D6); BitmapDevice/Draw (D5) are oracle-checked in skia-rust-raster draw_tests"
+status = "passing"
 span_hash = "ff4ffebbb833257a110ac64256d851330e15419a60e5e79348bbb75e1531d44a"
 
 [[test]]
@@ -39310,6 +39303,7 @@ macro = "DEF_TEST"
 source = "tests/QuickRejectTest.cpp#L102-L106"
 module = "core"
 status = "todo"
+reason = "needs SkImage (not ported): test_drawBitmap uses SkBitmap::asImage and SkCanvas::drawImage; Canvas/Surface are available"
 span_hash = "d86c41a5ff5f77d273eee6d3aab7315befb9e5406714a628ed8e7b1db4be055c"
 
 [[test]]
@@ -39319,6 +39313,7 @@ macro = "DEF_TEST"
 source = "tests/QuickRejectTest.cpp#L111-L129"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilters::DistantLitDiffuse (lighting image filters, Phase 3); Canvas is available"
 span_hash = "44dec2acedb8b6afbee41c2f55392f6cf44e5ab7ff5e6b3a6cff720e31bd2ae9"
 
 [[test]]
