@@ -12,3 +12,5 @@ pub mod random_test;
 pub mod safe_math_test;
 #[cfg(test)]
 pub mod sk_utf_test;
+#[cfg(test)]
+pub mod sk_vx_test;

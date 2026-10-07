@@ -47054,7 +47054,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L18-L157"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7afb8e8a08ae20d090434123248cd0c70aef0827ba57bb4f53e336666b9db8d2"
 
 [[test]]
@@ -47063,7 +47063,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L316-L352"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d1776c7d20316f21de9582221426746d1a538eda36520c8f72b2ba494d9e3da4"
 
 [[test]]
@@ -47072,7 +47072,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L246-L276"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b2e244c96c341564d58f1b80bcbd774e76f6f10d7970e2d7f0990eb5b1023693"
 
 [[test]]
@@ -47081,7 +47081,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L425-L449"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "489d892a1904b22c55183f31586568bdfec462616975ddd7a35ae705454088db"
 
 [[test]]
@@ -47090,7 +47090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L366-L383"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "367c3c5c467ac7472204e3c081d7720b7cba4c01ce2a8bfa311bad3d7f37dd5a"
 
 [[test]]
@@ -47099,7 +47099,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L385-L406"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "06c20661082797eca310fa1635fd9022a81832f810a81ac7dd0ee60d53b4d99d"
 
 [[test]]
@@ -47108,7 +47108,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L408-L423"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d9cca185ce5b2584558b6962946634beddf8f2febe31874fa782177054be8791"
 
 [[test]]
@@ -47117,7 +47117,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L354-L364"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1fa646966a84fe2c38c4bc03b4bcc02b15df9b696a4d9cd6af3c9cbdc39db446"
 
 [[test]]
@@ -47126,7 +47126,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L306-L314"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b4e2d5c05516ed89839be794ad15d2b02b0bf035626b43bc0d4e29d31acadea0"
 
 [[test]]
@@ -47135,7 +47135,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L159-L188"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "85208b48a79ac94628a90a6ce5c6c1abee46b59d3444f10a96d6e32533306299"
 
 [[test]]
@@ -47144,7 +47144,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkVxTest.cpp#L190-L244"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e1a3bb807cebfab909c9fa7e9d2d73b4025e30c6b42234bbaef74db8489b9f98"
 
 [[test]]

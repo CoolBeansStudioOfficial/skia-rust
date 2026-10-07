@@ -7,5 +7,6 @@
 #![allow(unsafe_code)]
 
 mod tier;
+pub mod vx;
 
 pub use tier::Tier;
