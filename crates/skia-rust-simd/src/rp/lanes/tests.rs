@@ -42,6 +42,12 @@ fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u
         (Tier::Sse41, Backend::Model(Estimates::Host)) => {
             super::model_sse41::host::harness_highp(op, a, b, c)
         }
+        (Tier::Sse2, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_sse2::amd_zen4::harness_highp(op, a, b, c)
+        }
+        (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_sse41::amd_zen4::harness_highp(op, a, b, c)
+        }
         _ => panic!("no lane module for {sel} yet"),
     }
 }
@@ -68,6 +74,12 @@ fn run_lowp(sel: Selection, op: LowpPrim, a: &[u32], b: &[u32], c: &[u32]) -> Ve
         }
         (Tier::Sse41, Backend::Model(Estimates::Host)) => {
             super::model_sse41::host::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Sse2, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_sse2::amd_zen4::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_sse41::amd_zen4::lowp::harness_lowp(op, a, b, c)
         }
         _ => panic!("no lowp lane module for {sel}"),
     }
@@ -137,24 +149,49 @@ fn native_x86() -> Vec<Tier> {
         .collect()
 }
 
+/// Whether this host's `rcpps`/`rsqrtps` are the oracle host's (fingerprints, design §4.6).
+/// Measured once per test process.
+fn host_is_amd_zen4(tier: Tier) -> bool {
+    use crate::estimates::{AMD_ZEN4, Fingerprints};
+    static HOST: std::sync::OnceLock<Fingerprints> = std::sync::OnceLock::new();
+    HOST.get_or_init(Fingerprints::host)
+        .matches_for(&AMD_ZEN4, tier)
+}
+
+/// The models a native tier is compared with: `Model(Host)` always, and `Model(AmdZen4)`, which
+/// must be bit-identical too wherever the host's estimates are the oracle host's. On other hosts
+/// `Model(AmdZen4)` is compared only on the primitives that use no estimates.
+fn twin_models(tier: Tier, uses_estimates: bool) -> Vec<Selection> {
+    let mut sels = vec![Selection::model(tier, Estimates::Host)];
+    if !uses_estimates || host_is_amd_zen4(tier) {
+        sels.push(Selection::model(tier, Estimates::AmdZen4));
+    }
+    sels
+}
+
 #[test]
 #[cfg(not(miri))] // intrinsics: Miri emulates rcpps/rsqrtps with random error
 fn native_matches_model_highp() {
     let budget = Budget::current();
     for tier in native_x86() {
+        if !host_is_amd_zen4(tier) {
+            eprintln!("{tier}: host estimates differ from AmdZen4; comparing those with Host only");
+        }
         // One thread per primitive (`force_tier` is per thread).
         std::thread::scope(|s| {
             for (seed, op) in (1u64..).zip(Prim::ALL) {
                 s.spawn(move || {
                     let ins = inputs(op.kind(), seed, budget);
                     let native = forced_highp(Selection::native(tier), op, &ins);
-                    let model = forced_highp(Selection::model(tier, Estimates::Host), op, &ins);
                     let mad = match op {
                         Prim::Mad => Some(true),
                         Prim::Nmad => Some(false),
                         _ => None,
                     };
-                    assert_same(&format!("{tier} {op:?}"), mad, &ins, &native, &model);
+                    for sel in twin_models(tier, op.uses_estimates()) {
+                        let model = forced_highp(sel, op, &ins);
+                        assert_same(&format!("{sel} {op:?}"), mad, &ins, &native, &model);
+                    }
                 });
             }
         });
@@ -172,13 +209,15 @@ fn native_matches_model_lowp() {
                 s.spawn(move || {
                     let ins = inputs(op.kind(), seed, budget);
                     let native = forced_lowp(Selection::native(tier), op, &ins);
-                    let model = forced_lowp(Selection::model(tier, Estimates::Host), op, &ins);
                     let mad = match op {
                         LowpPrim::Mad => Some(true),
                         LowpPrim::Nmad => Some(false),
                         _ => None,
                     };
-                    assert_same(&format!("{tier} lowp {op:?}"), mad, &ins, &native, &model);
+                    for sel in twin_models(tier, op.uses_estimates()) {
+                        let model = forced_lowp(sel, op, &ins);
+                        assert_same(&format!("{sel} lowp {op:?}"), mad, &ins, &native, &model);
+                    }
                 });
             }
         });
@@ -217,16 +256,19 @@ fn exhaustive_unary_native_matches_model() {
                         let ins = [a, vec![0; CHUNK as usize], vec![0; CHUNK as usize]];
                         for &op in unary {
                             let native = forced_highp(Selection::native(tier), op, &ins);
-                            let sel = Selection::model(tier, Estimates::Host);
-                            let model = forced_highp(sel, op, &ins);
-                            assert_same(&format!("{tier} {op:?}"), None, &ins, &native, &model);
+                            for sel in twin_models(tier, op.uses_estimates()) {
+                                let model = forced_highp(sel, op, &ins);
+                                let what = format!("{sel} {op:?}");
+                                assert_same(&what, None, &ins, &native, &model);
+                            }
                         }
                         for &op in lowp_unary {
                             let native = forced_lowp(Selection::native(tier), op, &ins);
-                            let sel = Selection::model(tier, Estimates::Host);
-                            let model = forced_lowp(sel, op, &ins);
-                            let what = format!("{tier} lowp {op:?}");
-                            assert_same(&what, None, &ins, &native, &model);
+                            for sel in twin_models(tier, op.uses_estimates()) {
+                                let model = forced_lowp(sel, op, &ins);
+                                let what = format!("{sel} lowp {op:?}");
+                                assert_same(&what, None, &ins, &native, &model);
+                            }
                         }
                     }
                 });
@@ -256,12 +298,13 @@ fn f(x: f32) -> u32 {
     x.to_bits()
 }
 
-/// Every selection a known-answer test can run here: Scalar, the x86 models (whose primitives
-/// without estimates run on any host, so they are called directly) and the native x86 tiers.
-/// `estimates` says whether the primitive needs the host's `rcpps`/`rsqrtps`.
+/// Every selection a known-answer test can run here: Scalar, the x86 models (`AmdZen4` runs on
+/// any host and under Miri; `Host` without estimates too, so models are called directly) and the
+/// native x86 tiers. `estimates` says whether the primitive needs `rcpps`/`rsqrtps`.
 fn kat_selections(estimates: bool) -> Vec<Selection> {
     let mut sels = vec![Selection::native(Tier::Scalar)];
     for t in X86 {
+        sels.push(Selection::model(t, Estimates::AmdZen4));
         if !estimates || EstimateOp::Rcpps.is_available() {
             sels.push(Selection::model(t, Estimates::Host));
         }

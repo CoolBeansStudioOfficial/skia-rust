@@ -16,7 +16,7 @@
 //! Rust's own float arithmetic leaves NaN payloads unspecified (Miri randomizes them, and Arm
 //! hosts pick NaNs differently), so these never let a NaN come out of Rust arithmetic.
 
-use crate::estimates::{EstimateOp, host_estimates};
+use crate::estimates::{EstimateOp, amd_zen4, host_estimates};
 use crate::tier::Estimates;
 
 /// The `QNaN` floating-point indefinite (`-nan`, bits `0xFFC00000`).
@@ -217,10 +217,15 @@ fn estimate<const N: usize>(op: EstimateOp, estimates: Estimates, xs: [f32; N]) 
             });
             out
         }
-        // TODO(A2d): the oracle host's `rcpps`/`rsqrtps` tables (4096/8192 entries + specials)
-        // land with task A2d; then add a `model_*::amd_zen4` instantiation (design §2.8).
+        // The oracle host's instructions as pure functions (A2d), exact on every input.
         Estimates::AmdZen4 => {
-            panic!("Estimates::AmdZen4 tables are not available yet (task A2d)")
+            let f = match op {
+                EstimateOp::Rcpps => amd_zen4::rcp,
+                EstimateOp::Rsqrtps => amd_zen4::rsqrt,
+                EstimateOp::Rcp14 => amd_zen4::rcp14,
+                EstimateOp::Rsqrt14 => amd_zen4::rsqrt14,
+            };
+            xs.map(f)
         }
         Estimates::Arm => {
             unreachable!("Arm estimates exist only for the Neon tier (Selection::check)")

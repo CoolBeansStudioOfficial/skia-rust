@@ -18,7 +18,7 @@
 //! | [`scalar`] | `Scalar` (`SKRP_CPU_SCALAR`) | [`S<T>`], 1 lane, no lowp | plain `#[inline]` (it is its own model) |
 //! | `sse2` (x86-64) | `Sse2` (`SKRP_CPU_SSE2`) | `Vec<4, _>`, lowp `Vec<8, _>` | `#[target_feature(enable = "sse2")]` |
 //! | `sse41` (x86-64) | `Sse41` (`SKRP_CPU_SSE41`/`AVX`) | same | `#[target_feature(enable = "sse2,ssse3,sse4.1")]` |
-//! | `model_sse2::host`, `model_sse41::host` (feature `models`, tests) | the models (§2.8) | same | plain; per-lane x86 semantics, `rcpps`/`rsqrtps` from [`Estimates::Host`](crate::Estimates::Host) |
+//! | `model_sse2::{host, amd_zen4}`, `model_sse41::{host, amd_zen4}` (feature `models`, tests) | the models (§2.8) | same | plain; per-lane x86 semantics, `rcpps`/`rsqrtps` from [`Estimates::Host`](crate::Estimates::Host) or [`Estimates::AmdZen4`](crate::Estimates::AmdZen4) |
 //!
 //! # What every tier module exports (the stage author's API)
 //!
