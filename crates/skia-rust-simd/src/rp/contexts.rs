@@ -233,10 +233,10 @@ pub struct CoordClampCtx {
     pub max_y: f32,
 }
 
-/// The function of a [`CallbackCtx`]: called with the active pixels' `r,g,b,a` (planar,
+/// The function of a [`CallbackCtx`]: called with the active pixels' `r,g,b,a` (interleaved per pixel,
 /// `N` lanes each, as `store4` writes them) and the number of active pixels; whatever it leaves
 /// in the array is loaded back.
-pub type CallbackFn = dyn Fn(&mut [f32; 4 * MAX_STRIDE_HIGHP], usize);
+pub type CallbackFn<'a> = dyn Fn(&mut [f32; 4 * MAX_STRIDE_HIGHP], usize) + 'a;
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L151-L158 (chrome/m156)
 /// `CallbackCtx`. (Skia's `read_from` pointer, which lets the callback point the pipeline at
@@ -244,7 +244,7 @@ pub type CallbackFn = dyn Fn(&mut [f32; 4 * MAX_STRIDE_HIGHP], usize);
 #[doc(alias = "SkRasterPipelineContexts::CallbackCtx")]
 #[derive(Clone, Copy)]
 pub struct CallbackCtx<'a> {
-    pub callback: &'a CallbackFn,
+    pub callback: &'a CallbackFn<'a>,
 }
 
 impl fmt::Debug for CallbackCtx<'_> {
