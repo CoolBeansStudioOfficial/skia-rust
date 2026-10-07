@@ -185,7 +185,11 @@ fn compare(
             "{}: driver output has the wrong length",
             c.name
         );
-        let stages = build_stages(&c.stages).map_err(anyhow::Error::msg)?;
+        let stages = build_stages(&c.stages, tier).map_err(anyhow::Error::msg)?;
+        // Skia's x64 scalar proxy differs from wasm's libc in these (design R5).
+        if tier == Tier::Scalar && c.scalar_proxy_differs() {
+            continue;
+        }
         for (i, &sel) in sels.iter().enumerate() {
             let got = run_case(c, &stages, sel);
             if got.as_deref().ok() == Some(want.as_slice()) {

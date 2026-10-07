@@ -15,6 +15,7 @@
 #include "src/core/SkCpu.h"
 #include "src/core/SkOpts.h"
 #include "src/core/SkRasterPipeline.h"
+#include "src/core/SkRasterPipelineContextUtils.h"
 #include "src/core/SkRasterPipelineOpContexts.h"
 #include "src/core/SkRasterPipelineOpList.h"
 
@@ -23,6 +24,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -99,6 +101,7 @@ struct Case {
     std::vector<Buffer> buffers;
     std::vector<std::vector<std::string>> stages;  // tokens after "stage"
     std::vector<size_t> runs;                      // x y w h, flattened
+    std::map<unsigned, SkRasterPipelineContexts::DecalTileCtx*> decals;  // shared by id
 };
 
 static uint8_t* slot_ptr(Case& c, const std::string& slot, const std::string& offset) {
@@ -109,8 +112,21 @@ static uint8_t* slot_ptr(Case& c, const std::string& slot, const std::string& of
     return c.buffers[i].bytes.data() + std::stoul(offset);
 }
 
+// SkSL slots hold N lanes of 4 bytes; the case text names them by index.
+static uint32_t slot_offset(const std::string& index) {
+    return (uint32_t)(std::stoul(index) * 4 * SkOpts::raster_pipeline_highp_stride);
+}
+
+static uint8_t* sksl_ptr(Case& c, const std::string& buf, const std::string& slot) {
+    return slot_ptr(c, buf, std::to_string(slot_offset(slot)));
+}
+
 // Builds the context of one stage (`stage <op> <kind> <args>`; see oracle/rp-diff/src/case.rs).
 static void* make_ctx(Case& c, Op op, const std::vector<std::string>& t, SkArenaAlloc* alloc) {
+    if (op == Op::init_lane_masks) {
+        // The builder points `tail` at its tail counter.
+        return alloc->make<ctx::InitLaneMasksCtx>();
+    }
     const std::string& kind = t.at(1);
     if (kind == "-") {
         return nullptr;
@@ -205,6 +221,132 @@ static void* make_ctx(Case& c, Op op, const std::vector<std::string>& t, SkArena
         for (float& w : g->weights) w = 0;
         g->roundDownAtInteger = t.at(5) == "1";
         return g;
+    }
+    if (kind == "decal") {
+        // Stages with the same id share one context (and its mask), as in Skia.
+        unsigned id = (unsigned)std::stoul(t.at(2));
+        auto it = c.decals.find(id);
+        if (it != c.decals.end()) {
+            return it->second;
+        }
+        auto* d = alloc->make<ctx::DecalTileCtx>();
+        memset(d->mask, 0, sizeof(d->mask));
+        d->limit_x = hex_f32(t.at(3));
+        d->limit_y = hex_f32(t.at(4));
+        d->inclusiveEdge_x = hex_f32(t.at(5));
+        d->inclusiveEdge_y = hex_f32(t.at(6));
+        c.decals[id] = d;
+        return d;
+    }
+    if (kind == "tile") {
+        auto* tc = alloc->make<ctx::TileCtx>();
+        tc->scale = hex_f32(t.at(2));
+        tc->invScale = hex_f32(t.at(3));
+        tc->mirrorBiasDir = std::stoi(t.at(4));
+        return tc;
+    }
+    if (kind == "coord_clamp") {
+        auto* cc = alloc->make<ctx::CoordClampCtx>();
+        cc->min_x = hex_f32(t.at(2));
+        cc->min_y = hex_f32(t.at(3));
+        cc->max_x = hex_f32(t.at(4));
+        cc->max_y = hex_f32(t.at(5));
+        return cc;
+    }
+    // SkSL contexts: slot indices times 4 * N bytes (what the SkRP builder does).
+    if (kind == "sksl_ptr") {
+        return sksl_ptr(c, t.at(2), t.at(3));
+    }
+    if (kind == "sksl_constant") {
+        ctx::ConstantCtx k;
+        k.value = std::stoi(t.at(2));
+        k.dst = slot_offset(t.at(3));
+        return SkRPCtxUtils::Pack(k, alloc);
+    }
+    if (kind == "sksl_binary") {
+        ctx::BinaryOpCtx b;
+        b.dst = slot_offset(t.at(2));
+        b.src = slot_offset(t.at(3));
+        return SkRPCtxUtils::Pack(b, alloc);
+    }
+    if (kind == "sksl_ternary") {
+        ctx::TernaryOpCtx b;
+        b.dst = slot_offset(t.at(2));
+        b.delta = slot_offset(t.at(3));
+        return SkRPCtxUtils::Pack(b, alloc);
+    }
+    if (kind == "sksl_matmul") {
+        ctx::MatrixMultiplyCtx m;
+        m.dst = slot_offset(t.at(2));
+        m.leftColumns = (uint8_t)std::stoul(t.at(3));
+        m.leftRows = (uint8_t)std::stoul(t.at(4));
+        m.rightColumns = (uint8_t)std::stoul(t.at(5));
+        m.rightRows = (uint8_t)std::stoul(t.at(6));
+        return SkRPCtxUtils::Pack(m, alloc);
+    }
+    if (kind == "sksl_swizzle") {
+        ctx::SwizzleCtx s;
+        s.dst = slot_offset(t.at(2));
+        for (int i = 0; i < 4; i++) {
+            s.offsets[i] = (uint8_t)slot_offset(t.at(3 + i));
+        }
+        return SkRPCtxUtils::Pack(s, alloc);
+    }
+    if (kind == "sksl_shuffle") {
+        auto* s = alloc->make<ctx::ShuffleCtx>();
+        s->ptr = (int32_t*)sksl_ptr(c, t.at(2), t.at(3));
+        s->count = std::stoi(t.at(4));
+        for (int i = 0; i < 16; i++) {
+            s->offsets[i] = (uint16_t)slot_offset(t.at(6 + i));
+        }
+        return s;
+    }
+    if (kind == "sksl_swizzle_copy") {
+        auto* s = alloc->make<ctx::SwizzleCopyCtx>();
+        s->dst = (int32_t*)sksl_ptr(c, t.at(2), t.at(3));
+        s->src = (const int32_t*)sksl_ptr(c, t.at(2), t.at(4));
+        for (int i = 0; i < 4; i++) {
+            s->offsets[i] = (uint16_t)slot_offset(t.at(5 + i));
+        }
+        return s;
+    }
+    if (kind == "sksl_indirect") {
+        // SwizzleCopyIndirectCtx extends CopyIndirectCtx, so one allocation serves all three.
+        auto* s = alloc->make<ctx::SwizzleCopyIndirectCtx>();
+        s->dst = (int32_t*)sksl_ptr(c, t.at(2), t.at(3));
+        s->src = (const int32_t*)sksl_ptr(c, t.at(2), t.at(4));
+        s->indirectOffset = (const uint32_t*)sksl_ptr(c, t.at(2), t.at(5));
+        s->indirectLimit = (uint32_t)std::stoul(t.at(6));
+        s->slots = (uint32_t)std::stoul(t.at(7));
+        for (int i = 0; i < 4; i++) {
+            s->offsets[i] = (uint16_t)slot_offset(t.at(8 + i));
+        }
+        size_t n = std::stoul(t.at(12));
+        if (n > 0) {
+            int32_t* u = alloc->makeArray<int32_t>(n);
+            for (size_t i = 0; i < n; i++) {
+                u[i] = std::stoi(t.at(13 + i));
+            }
+            s->src = u;
+        }
+        return s;
+    }
+    if (kind == "sksl_case") {
+        ctx::CaseOpCtx k;
+        k.expectedValue = std::stoi(t.at(2));
+        k.offset = slot_offset(t.at(3));
+        return SkRPCtxUtils::Pack(k, alloc);
+    }
+    if (kind == "sksl_uniform") {
+        auto* u = alloc->make<ctx::UniformCtx>();
+        u->dst = (int32_t*)sksl_ptr(c, t.at(2), t.at(3));
+        size_t n = std::stoul(t.at(4));
+        int32_t* src = alloc->makeArray<int32_t>(n);
+        for (size_t i = 0; i < n; i++) {
+            src[i] = std::stoi(t.at(5 + i));
+        }
+        u->src = src;
+        return u;
     }
     fail(c.name + ": unknown context kind " + kind + " for " +
          SkRasterPipeline::GetOpName(op));
