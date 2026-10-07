@@ -1437,12 +1437,17 @@ add cases: `docs/PORTING.md` §12):
   out-of-range or negative float → `int`/`uint` conversion (`cast_to_int/uint_from_*`, `mirror_*`'s
   `trunc_` of a negative `s`) or `±0` bounds in `fminf` (`clamp_x_and_y` v6) have a `/r5/` name
   segment and are skipped on `Scalar` only (`Case::scalar_proxy_differs`); all x86 tiers still
-  compare them (258 of the 3,502 cases).
-- **`Scalar` runs on the host's FPU**, so the default NaN of an invalid operation (`inf * 0`,
-  `sqrt(-1)`) is `0xFFC00000` on x86 (the oracle) and `0x7FC00000` on Arm (macOS and Linux
-  arm64 CI hosts; wasm leaves it unspecified). `Scalar`'s outputs are therefore compared with every `0x7FC00000` word
-  read as `0xFFC00000`, on both sides (`expected::output_hash`); the x86 tiers are exact on every
-  host. `floor`/`ceil` of signaling NaNs depend on the host's libm: those inputs are `/r5/`.
+  compare them (258 of the 6,410 cases).
+- **Default NaN off x86.** The NaN of an invalid operation (`inf * 0`, `sqrt(-1)`) is
+  `0xFFC00000` on x86 (the oracle) and `0x7FC00000` on Arm (macOS and Linux arm64 CI hosts; wasm
+  leaves it unspecified). The `Scalar` tier runs on the host FPU, and the models' generic stage
+  code (`F + F`, `-F`, ... are Rust `f32` operators on the vector lane type, not `x86_model`
+  functions) does too, so on those hosts the two differ from the oracle in that bit pattern
+  only. Stored results therefore carry a second, *canonical* hash (every `0x7FC00000` word read as
+  `0xFFC00000`), accepted in addition to the exact one on non-x86 hosts only
+  (`expected::output_matches`); every result is exact on x86 hosts. Routing the models' float
+  operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
+  depend on the host's libm: those inputs are `/r5/`.
 - **Bugs found:** the `Scalar` tier evaluated `smoothstep` and `refract`'s `k` in `float`
   where C++ promotes to `double` (the literals are `double`s); `Ml4`'s `cast_to_uint_from_*` used
   the signed conversion where clang emits `vcvttps2udq`.
