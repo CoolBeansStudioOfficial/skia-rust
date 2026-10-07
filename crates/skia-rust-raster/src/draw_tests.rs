@@ -39,8 +39,8 @@ use skia_rust_core::rrect::RRect;
 use skia_rust_core::shaders;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_effects::{corner_path_effect, dash_path_effect};
-use skia_rust_simd::testing::force_tier;
-use skia_rust_simd::{Estimates, Selection, Tier};
+use skia_rust_simd::Tier;
+use skia_rust_simd::testing::{force_tier, oracle_selection};
 
 use crate::bitmap_device::BitmapDevice;
 use crate::draw::Draw;
@@ -691,23 +691,9 @@ fn dump_for(tier: Tier) -> &'static str {
     }
 }
 
-// The selection that checks `tier` on this host: natively where the host has it, by its model
-// otherwise (`None` for `Neon`, which has no oracle).
-fn selection_for(tier: Tier) -> Option<Selection> {
-    if tier == Tier::Neon {
-        return None;
-    }
-    let native = Selection::native(tier);
-    if native.check().is_ok() {
-        return Some(native);
-    }
-    Selection::model(tier, Estimates::AmdZen4).check().ok()
-}
-
 fn check_tier(tier: Tier) {
-    let Some(sel) = selection_for(tier) else {
-        return;
-    };
+    // Native only where the host's rcp/rsqrt estimates are the oracle host's, else the model.
+    let sel = oracle_selection(tier);
     let _guard = force_tier(sel).expect("a checked selection");
     let want: Vec<&str> = dump_for(tier).lines().filter(|l| !l.is_empty()).collect();
     let got = run_script(CASES);
