@@ -865,6 +865,58 @@ config it renders once per `Selection` and compares the SHA-256 with that tier's
 (`Tier::oracle_tiers()[0]`). On this host (Zen 4) all four x86 tiers run natively; `Scalar` and
 `Neon` run as models. A full pass is 2,727 renders × 6 tiers.
 
+**As implemented in A7** (usage: `docs/PORTING.md` §11):
+
+- **Crate.** `tests/gm` is the crate `skia-rust-gm` (`publish = false`): `canvas` (the seam),
+  `sink` (`GMSrc` + `RasterSink`), `goldens`, `check` (per-tier loop, verdicts), `diff`, `gm`
+  (the ports, `gm::<file_snake>`), and the binary `gm-verify`. It is excluded from the wasm CI
+  build (host tooling: files, `curl`, `tar`, `zstd-sys`).
+- **Registration.** `def_gm!` and the `def_simple_gm*!` family mirror `DEF_GM`/`DEF_SIMPLE_GM*`;
+  each registers a `GmRegistration { module_path, name, factory }` with the `inventory` crate
+  (Skia's static `sk_tools::Registry`) and defines a `#[test]` of the same name. The `GM` trait
+  holds the overridable virtuals (`name`, `size`, `bg_color`, `on_once_before_draw`, `on_draw`,
+  `on_draw_with_error`, `modify_surface_props`, `on_gpu_setup`); `GmInstance` is the
+  non-virtual driver (`draw` = `drawBackground` (`drawColor(bg, kSrc)`) + `drawContent`
+  (`onDraw` inside `SkAutoCanvasRestore`), `onceBeforeDraw`, `gpuSetup` with no GPU context).
+- **Surface stub until D6.** `canvas::{Canvas, Surface, SurfaceProps, PixelGeometry, BlendMode}`
+  have `skia-safe`'s shape; the stub `Canvas` does `save`/`restore`/`restore_to_count` and
+  `draw_color`/`clear` that replace every pixel (`Pixmap::erase_4f`), and panics on anything
+  else. D6 replaces the module with re-exports of the real types; GM ports don't change.
+- **DM semantics.** `RasterSink::draw`: skip empty sizes (`"Skipping empty source: <name>"`),
+  zeroed pixels of `SkImageInfo::Make(size, colorInfo())` with the config's color type
+  (`8888` = `kN32` (BGRA), `565`, `f16`), premul corrected by `SkColorTypeValidateAlphaType`
+  (565 → opaque), null color space (no config has a color-space via), surface props
+  `(0, kRGB_H)` adjusted by the GM, a fresh GM per query as `GMSrc` does. `DrawResult::Skip`
+  writes nothing (a match only if the oracle has no result either); `Fail` is always a failure
+  (DM writes a failure-message image with text). Bytes are extracted like `OracleDump`
+  (`minRowBytes` per row, tightly packed).
+- **Goldens.** Local `goldens/<commit>/` (workspace, main checkout of a worktree, or
+  `$SKIA_RUST_GOLDENS`), else the release `hashes-<mNNN>.json` verified against
+  `inventory/goldens.lock` and cached in `target/goldens/`; objects (for diff PNGs, `png` crate)
+  come from the local store or the release tar, fetched only on a mismatch.
+- **Tier policy (§4.6).** Each `Tier` renders once per config under `force_tier` and is compared
+  with *every* oracle tier in `oracle_tiers()` that has goldens (not only the first, so a class
+  split shows up as a GM failure too). x86 tiers run `Native` when the host's fingerprints match
+  `AMD_ZEN4` for the tier, else `Model(AmdZen4)`; `Ml4` without a match is not checkable until
+  an `rcp14` model exists (R2). `Neon` falls back to `Model(Arm)`; it has no goldens yet.
+  `cpu-x64-scalar` is a proxy (§4.5): compared and reported, never decisive.
+- **N32 byte order.** `8888` is `kN32` (BGRA on Windows, RGBA elsewhere) and the goldens are
+  `BGRA_8888` (Windows oracle host). Bytes are never swizzled: if the host's N32 order differs
+  from the golden's `meta.json` `color_type`, `8888` is *not checkable* on that host
+  (`sink::config_checkable(config, host_n32)`, pure; `Options::host_n32` injects the order),
+  reported but neither a pass nor a failure. `565`/`f16` are byte-order independent. Follow-up:
+  an RGBA oracle variant (`SK_R32_SHIFT=0` build) with its own goldens, to make `8888`
+  checkable on non-Windows hosts. Until then a GM is at best `not-checkable` on those hosts.
+- **Verdicts and the manifest.** `passing` = every config matches on every non-proxy oracle tier
+  with goldens and all were checkable; any mismatch, draw failure, panic, unexpected skip or
+  missing golden is `failing`; otherwise `not-checkable`. `cargo xtask inventory verify` runs
+  `gm-verify`, maps registry keys `gm::<file_snake>::<name>` to manifest ids
+  `gm/<file>.cpp::<name>`, marks `passing`/`failing` with `--update`, and treats
+  `not-checkable` as neither a pass nor a regression.
+- **First port.** `gm/fiddle.cpp::fiddle` (draws nothing; solid white goldens) passes on all
+  19 x64 oracle tiers and the proxy, on this host natively. A harness self-test also checks a
+  background-only stand-in for `path_effect_empty_result` against the real goldens.
+
 `cargo xtask oracle check-classes` (run on every golden publish) asserts that the oracle tiers
 mapped to one `Tier` still have identical hash files; a new difference means a fifth behaviour and
 blocks the pin bump until this design is updated.

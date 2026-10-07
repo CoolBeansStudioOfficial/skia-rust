@@ -19234,7 +19234,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/fiddle.cpp#L12-L12"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "681b22708a886b68f7ac565d8c2b7f07ae07687096870f50481de39c7793c4c2"
 
 [[test]]

@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::cpp;
 use crate::skia::{self, Pin};
-use crate::verify;
+use crate::{verify, verify_gms};
 
 const MANIFEST: &str = "inventory/manifest.toml";
 
@@ -174,29 +174,46 @@ pub fn module_path(root: &Path, id: &str) -> Result<()> {
 /// marks newly passing entries `passing` and failing ported ones `failing`.
 pub fn verify(root: &Path, update: bool) -> Result<()> {
     let mut m = read_manifest(root)?;
-    let entries: Vec<(String, String)> = m
-        .tests
-        .iter()
-        .filter(|e| e.kind == Kind::Unit)
-        .map(|e| (e.id.clone(), status_name(e.status).to_owned()))
-        .collect();
-    let results = verify::run_ported_tests(root)?;
-    let report = verify::check(&entries, &results);
+    let entries = |kind: Kind| -> Vec<(String, String)> {
+        m.tests
+            .iter()
+            .filter(|e| e.kind == kind)
+            .map(|e| (e.id.clone(), status_name(e.status).to_owned()))
+            .collect()
+    };
+    let unit_entries = entries(Kind::Unit);
+    let gm_entries = entries(Kind::Gm);
+    let unit = verify::check(&unit_entries, &verify::run_ported_tests(root)?);
+    let gms = verify_gms::check(&gm_entries, &verify_gms::run_gm_verify(root)?);
     if update {
-        for e in &mut m.tests {
-            if report.newly_passing.iter().any(|(id, _)| *id == e.id) {
-                e.status = Status::Passing;
-                e.reason.clear();
-            } else if report.failing.contains(&e.id) && e.status != Status::Failing {
-                e.status = Status::Failing;
-                if e.reason.is_empty() {
-                    "ported test fails".clone_into(&mut e.reason);
-                }
-            }
+        for report in [&unit, &gms] {
+            apply_update(&mut m, report);
         }
         write_manifest(root, &m)?;
     }
-    verify::finish(&report, update)
+    let unit_result = verify::finish(&unit, update, "unit test");
+    let gm_result = verify::finish(&gms, update, "GM");
+    unit_result.and(gm_result)
+}
+
+/// Marks newly passing entries `passing` and failing ported ones `failing`.
+fn apply_update(m: &mut Manifest, report: &verify::Report) {
+    for e in &mut m.tests {
+        if report.newly_passing.iter().any(|(id, _)| *id == e.id) {
+            e.status = Status::Passing;
+            e.reason.clear();
+        } else if report.failing.contains(&e.id) && e.status != Status::Failing {
+            e.status = Status::Failing;
+            if e.reason.is_empty() {
+                let reason = if e.kind == Kind::Gm {
+                    "ported GM does not match the goldens"
+                } else {
+                    "ported test fails"
+                };
+                reason.clone_into(&mut e.reason);
+            }
+        }
+    }
 }
 
 pub fn stats(root: &Path) -> Result<()> {

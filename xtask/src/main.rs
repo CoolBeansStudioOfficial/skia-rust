@@ -7,6 +7,7 @@ mod oracle;
 mod publish;
 mod skia;
 mod verify;
+mod verify_gms;
 
 use std::path::{Path, PathBuf};
 
@@ -144,7 +145,7 @@ enum InventoryCommand {
         /// Manifest id, e.g. `tests/PointTest.cpp::Point`.
         id: String,
     },
-    /// Run the ported unit tests and check them against the manifest.
+    /// Run the ported unit tests and GMs and check them against the manifest.
     Verify {
         /// Mark newly passing entries `passing` (and failing ported ones `failing`).
         #[arg(long)]
