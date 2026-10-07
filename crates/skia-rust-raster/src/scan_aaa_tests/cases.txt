@@ -1,0 +1,3100 @@
+# Scan conversion cases shared by oracle/scan-aaa (Skia) and scan_aaa_tests.rs (skia-rust).
+# Format: see oracle/scan-aaa/scan_aaa.cpp. Generated once by a throwaway script, then edited by hand.
+
+case rect_fat
+clip 0 0 100 100
+fill winding
+op path
+M 10.5 10.25
+L 40.75 10.25
+L 40.75 30.5
+L 10.5 30.5
+Z
+end
+
+case rect_thin_mask
+clip 0 0 100 100
+fill winding
+op path
+M 10.5 10.25
+L 12.25 10.25
+L 12.25 30.5
+L 10.5 30.5
+Z
+end
+
+case rect_big_rle
+clip 0 0 100 100
+fill winding
+op path
+M 3.3 4.7
+L 90.2 4.7
+L 90.2 80.9
+L 3.3 80.9
+Z
+end
+
+case rect_subpixel
+clip 0 0 100 100
+fill winding
+op path
+M 20.1 20.2
+L 20.6 20.2
+L 20.6 20.9
+L 20.1 20.9
+Z
+end
+
+case triangle_small
+clip 0 0 100 100
+fill winding
+op path
+M 10.3 5.1
+L 30.7 25.9
+L 4.2 20.4
+Z
+end
+
+case triangle_large
+clip 0 0 100 100
+fill winding
+op path
+M 50.3 2.1
+L 97.7 90.9
+L 3.2 70.4
+Z
+end
+
+case triangle_flat
+clip 0 0 100 100
+fill winding
+op path
+M 1.5 50.25
+L 98.5 51.75
+L 2.25 52.5
+Z
+end
+
+case triangle_steep
+clip 0 0 100 100
+fill winding
+op path
+M 50.1 1.2
+L 51.3 98.7
+L 49.6 60.0
+Z
+end
+
+case quad_mask
+clip 0 0 100 100
+fill winding
+op path
+M 5 5
+Q 25 0 28 28
+L 5 28
+Z
+end
+
+case quad_rle
+clip 0 0 100 100
+fill winding
+op path
+M 5 5
+Q 95 0 90 90
+L 5 90
+Z
+end
+
+case cubic_mask
+clip 0 0 100 100
+fill winding
+op path
+M 4 20
+C 4 2 28 2 28 20
+C 28 30 4 30 4 20
+Z
+end
+
+case cubic_rle
+clip 0 0 100 100
+fill winding
+op path
+M 10 50
+C 10 0 90 0 90 50
+C 90 99 10 99 10 50
+Z
+end
+
+case cubic_s
+clip 0 0 100 100
+fill winding
+op path
+M 10 90
+C 90 90 10 10 90 10
+L 95 95
+Z
+end
+
+case conic
+clip 0 0 100 100
+fill winding
+op path
+M 10 50
+K 10 10 50 10 0.7071
+K 90 10 90 50 0.5
+K 90 90 50 90 2
+L 10 50
+Z
+end
+
+case circle_small
+clip 0 0 100 100
+fill winding
+op path
+circle 15.5 15.5 10
+end
+
+case circle_large
+clip 0 0 100 100
+fill winding
+op path
+circle 50.25 49.75 40.3
+end
+
+case circle_tiny
+clip 0 0 100 100
+fill winding
+op path
+circle 30.3 30.7 1.2
+end
+
+case oval
+clip 0 0 100 100
+fill winding
+op path
+oval 5.5 20.25 94.75 70.5
+end
+
+case rrect
+clip 0 0 100 100
+fill winding
+op path
+rrect 10.2 10.7 89.9 60.1 12 8
+end
+
+case rrect_small
+clip 0 0 100 100
+fill winding
+op path
+rrect 2.5 3.5 26 24 5 5
+end
+
+case star_concave
+clip 0 0 100 100
+fill winding
+op path
+M 50 5
+L 61 38
+L 95 38
+L 67 58
+L 78 92
+L 50 71
+L 22 92
+L 33 58
+L 5 38
+L 39 38
+Z
+end
+
+case star_self_winding
+clip 0 0 100 100
+fill winding
+op path
+M 50 5
+L 78 92
+L 5 38
+L 95 38
+L 22 92
+Z
+end
+
+case star_self_evenodd
+clip 0 0 100 100
+fill evenodd
+op path
+M 50 5
+L 78 92
+L 5 38
+L 95 38
+L 22 92
+Z
+end
+
+case star_small_evenodd
+clip 0 0 100 100
+fill evenodd
+op path
+M 15 1
+L 23 29
+L 1 12
+L 29 12
+L 7 29
+Z
+end
+
+case donut_winding
+clip 0 0 100 100
+fill winding
+op path
+circle 50 50 40
+circleccw 50 50 20
+end
+
+case donut_evenodd
+clip 0 0 100 100
+fill evenodd
+op path
+circle 50 50 40
+circle 50 50 20
+end
+
+case overlap_winding
+clip 0 0 100 100
+fill winding
+op path
+circle 40 50 30
+circle 60 50 30
+end
+
+case inverse_triangle
+clip 0 0 100 100
+fill invwinding
+op path
+M 30.3 20.1
+L 70.7 25.9
+L 40.2 80.4
+Z
+end
+
+case inverse_circle_evenodd
+clip 0 0 100 100
+fill invevenodd
+op path
+circle 50 50 30
+end
+
+case inverse_empty
+clip 0 0 100 100
+fill invwinding
+op path
+end
+
+case inverse_offscreen
+clip 0 0 100 100
+fill invwinding
+op path
+M 130 20
+L 170 25
+L 140 80
+Z
+end
+
+case clipped_triangle
+clip 10 10 90 90
+fill winding
+op path
+M -20.3 -10.1
+L 120.7 40.9
+L 30.2 140.4
+Z
+end
+
+case clipped_concave
+clip 10 10 90 90
+fill winding
+op path
+M -20 -10
+L 120 40
+L 50 50
+L 30 140
+Z
+end
+
+case clipped_circle_right
+clip 0 0 100 100
+fill winding
+op path
+circle 95 50 20
+end
+
+case clipped_region
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+circle 50 50 45
+end
+
+case clipped_region_mask
+clip 0 0 15 30 + 18 0 30 30
+fill winding
+op path
+circle 15 15 12
+end
+
+case clipped_out
+clip 70 70 100 100
+fill winding
+op path
+circle 50 50 10
+end
+
+case clipped_out_inverse
+clip 70 70 100 100
+fill invwinding
+op path
+circle 50 50 10
+end
+
+case rle_triangle
+clip 0 0 100 100
+fill winding
+op rle
+M 10.3 5.1
+L 30.7 25.9
+L 4.2 20.4
+Z
+end
+
+case rle_star
+clip 0 0 100 100
+fill evenodd
+op rle
+M 50 5
+L 78 92
+L 5 38
+L 95 38
+L 22 92
+Z
+end
+
+case rle_circle
+clip 0 0 100 100
+fill winding
+op rle
+circle 50.25 49.75 40.3
+end
+
+case rle_rect
+clip 0 0 100 100
+fill winding
+op rle
+M 10.5 10.25
+L 40.75 10.25
+L 40.75 30.5
+L 10.5 30.5
+Z
+end
+
+case sliver
+clip 0 0 100 100
+fill winding
+op path
+M 10 10
+L 90 10.3
+L 10 10.6
+Z
+end
+
+case vertical_edges
+clip 0 0 100 100
+fill winding
+op path
+M 10.5 10
+L 10.5 90
+L 30.25 90
+L 30.25 50
+L 60.75 50
+L 60.75 90
+L 80.5 90
+L 80.5 10
+Z
+end
+
+case vertical_combine
+clip 0 0 100 100
+fill winding
+op path
+M 20 10
+L 20 30
+L 20 50
+L 40 50
+L 40 10
+Z
+M 20 30
+L 20 70
+L 30 70
+Z
+end
+
+case many_contours
+clip 0 0 100 100
+fill winding
+op path
+circle 10 10.0 5.0
+circle 13 30.0 5.5
+circle 16 50.0 6.0
+circle 19 70.0 6.5
+circle 30 10.5 6.0
+circle 33 30.5 6.5
+circle 36 50.5 7.0
+circle 39 70.5 7.5
+circle 50 11.0 7.0
+circle 53 31.0 7.5
+circle 56 51.0 8.0
+circle 59 71.0 8.5
+circle 70 11.5 8.0
+circle 73 31.5 8.5
+circle 76 51.5 9.0
+circle 79 71.5 9.5
+end
+
+case random_poly_0
+clip 0 0 100 100
+fill evenodd
+op path
+M 40.937 76.431
+L 79.428 11.716
+L 100.383 90.804
+L 92.316 77.303
+L 43.995 31.103
+L 11.644 12.086
+L -3.433 98.799
+L 53.949 36.982
+L 93.319 99.894
+L 84.09 33.469
+Z
+end
+
+case random_poly_1
+clip 0 0 100 100
+fill winding
+op path
+M 0.585 88.057
+L 10.904 92.965
+L 94.306 22.739
+L -0.409 3.315
+L 11.917 77.777
+L 24.547 8.92
+L 85.863 63.079
+L 6.022 1.968
+Z
+end
+
+case random_poly_2
+clip 0 0 100 100
+fill winding
+op path
+M 83.865 93.525
+L 71.07 47.073
+L 13.955 31.58
+L 65.613 91.561
+L 80.726 32.318
+L -0.4 2.367
+L 38.891 -2.916
+L 100.02 51.724
+L 90.535 67.234
+L 6.568 28.258
+L 73.541 46.278
+L 64.802 61.409
+Z
+end
+
+case random_poly_3
+clip 0 0 100 100
+fill evenodd
+op path
+M 30.287 21.657
+L 94.191 59.179
+L 55.215 8.381
+L 85.141 78.889
+L 11.227 54.404
+L 40.245 63.358
+L 81.654 19.422
+L 52.548 37.842
+L 75.474 -4.462
+L 34.645 26.747
+L 29.239 40.179
+Z
+end
+
+case random_poly_4
+clip 0 0 100 100
+fill evenodd
+op path
+M 33.472 19.601
+L 0.896 99.882
+L 55.161 99.287
+L -2.973 8.269
+L 17.885 98.949
+Z
+end
+
+case random_poly_5
+clip 0 0 100 100
+fill winding
+op path
+M 12.141 17.972
+L 37.003 84.432
+L 9.823 98.622
+L 99.609 79.667
+L 69.016 55.151
+L 71.266 43.441
+Z
+end
+
+case random_poly_6
+clip 0 0 100 100
+fill evenodd
+op path
+M 74.627 -0.963
+L 14.913 38.551
+L 8.952 37.881
+L 9.607 86.793
+L 11.154 96.306
+L 37.061 -3.624
+L 23.106 8.345
+L 8.705 75.774
+Z
+end
+
+case random_poly_7
+clip 0 0 100 100
+fill winding
+op path
+M 95.824 69.942
+L 88.988 77.683
+L 90.031 21.737
+Z
+end
+
+case random_quads_mask_0
+clip 0 0 32 32
+fill winding
+op path
+M 8.04 29.83
+Q 23.64 1.44 10.33 24.62
+Q 1.39 8.32 28.49 21.31
+Q 29.9 0.16 25.38 5.33
+Z
+end
+
+case random_quads_mask_1
+clip 0 0 32 32
+fill evenodd
+op path
+M 21.51 18.39
+Q 21.99 6.91 15.26 26.37
+Q 2.35 15.6 5.12 18.81
+Z
+end
+
+case random_quads_mask_2
+clip 0 0 32 32
+fill winding
+op path
+M 22.74 8.65
+Q 16.7 8.55 15.95 19.23
+Q 11.25 18.78 23.75 18.0
+Q 15.27 23.32 23.07 29.07
+Q 16.66 4.54 13.74 3.88
+Q 1.61 30.04 27.63 6.84
+Z
+end
+
+case random_quads_mask_3
+clip 0 0 32 32
+fill evenodd
+op path
+M 7.8 1.89
+Q 7.9 4.21 11.0 29.99
+Q 10.17 26.81 31.16 19.03
+Q 13.93 12.18 16.42 24.24
+Q 0.1 29.45 8.72 27.66
+Z
+end
+
+case random_cubics_0
+clip 0 0 100 100
+fill winding
+op path
+M 25.11 102.42
+C -5.88 11.03 99.83 45.71 -0.41 73.12
+C 89.77 -5.52 24.62 53.56 107.54 82.27
+C -3.5 32.71 2.41 71.95 49.41 15.36
+C 12.66 66.03 30.51 90.69 105.68 17.72
+Z
+end
+
+case random_cubics_1
+clip 0 0 100 100
+fill evenodd
+op path
+M -1.76 25.62
+C 75.56 60.06 4.8 68.21 32.33 107.81
+C 70.22 96.91 62.12 -9.15 98.3 39.23
+C 91.78 51.36 57.9 33.93 70.97 11.76
+Z
+end
+
+case random_cubics_2
+clip 0 0 100 100
+fill winding
+op path
+M 32.86 96.48
+C 5.37 -6.92 35.48 31.32 25.83 92.81
+C 80.15 79.58 1.47 93.97 79.2 75.9
+Z
+end
+
+case random_cubics_3
+clip 0 0 100 100
+fill winding
+op path
+M 8.72 56.85
+C 75.79 19.93 98.59 88.85 34.52 77.57
+C 29.7 14.01 -4.19 19.97 -0.95 106.8
+C 5.81 99.98 -4.08 12.8 98.2 105.19
+Z
+end
+
+case anti_fill_rect
+clip 0 0 100 100
+fill winding
+op rect
+rect 10.3 20.7 50.2 21.4
+end
+
+case anti_fill_rect_big
+clip 0 0 100 100
+fill winding
+op rect
+rect 1.1 2.9 98.6 97.25
+end
+
+case anti_fill_rect_pixel
+clip 0 0 100 100
+fill winding
+op rect
+rect 30.25 30.25 30.75 30.75
+end
+
+case anti_fill_rect_clipped
+clip 0 0 100 100
+fill winding
+op rect
+rect -10.5 5.5 50.5 150.5
+end
+
+case anti_fill_rect_region
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op rect
+rect 5.5 5.5 95.5 95.5
+end
+
+case anti_fill_rect_noclip
+noclip
+fill winding
+op rect
+rect 3.6 4.4 9.9 50.1
+end
+
+case anti_fill_xrect
+clip 0 0 100 100
+fill winding
+op xrect
+xrect 655360 1310720 3276800 2000000
+end
+
+case anti_fill_xrect_region
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op xrect
+xrect 100000 200000 6000000 6100000
+end
+
+case anti_fill_xrect_noclip
+noclip
+fill winding
+op xrect
+xrect 70000 80000 900000 990000
+end
+
+case anti_frame_rect_1
+clip 0 0 100 100
+fill winding
+op frame
+frame 10.5 10.5 60.5 40.5 1 1
+end
+
+case anti_frame_rect_thin
+clip 0 0 100 100
+fill winding
+op frame
+frame 10.3 10.6 60.2 40.1 0.5 0.25
+end
+
+case anti_frame_rect_thick
+clip 0 0 100 100
+fill winding
+op frame
+frame 10.3 10.6 60.2 40.1 6.5 3
+end
+
+case anti_frame_rect_fill
+clip 0 0 100 100
+fill winding
+op frame
+frame 10.3 10.6 20.2 16.1 12 12
+end
+
+case anti_frame_rect_line
+clip 0 0 100 100
+fill winding
+op frame
+frame 10.3 10.6 60.2 10.6 2 2
+end
+
+case anti_frame_rect_clipped
+clip 0 0 100 100
+fill winding
+op frame
+frame -10.3 10.6 160.2 40.1 3 3
+end
+
+case anti_frame_rect_region
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame 5.3 10.6 90.2 80.1 4 4
+end
+
+case anti_frame_rect_noclip
+noclip
+fill winding
+op frame
+frame 5.3 10.6 90.2 80.1 2.5 1.5
+end
+
+# Randomized cases (seeded generator, not re-run).
+
+case rnd_poly_0
+clip 7 3 93 88
+fill invevenodd
+op path
+M 28.34 104.16
+L 67.66 104.35
+L 96.09 97.38
+L 64.58 40.47
+L 58.71 91.09
+L 83.19 48.91
+L 82.77 42.93
+L -9.7 -0.31
+L 24.47 1.77
+L -8.62 96.92
+Z
+end
+
+case rnd_poly_1
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op path
+M 20.18 107.59
+L 101.52 86.62
+L 109.96 51.63
+L -0.84 30.85
+L 56.89 25.05
+L 44.89 95.18
+L 74.48 59.29
+L -7.03 75.3
+L 33.63 40.67
+L 37.85 60.29
+L 49.81 3.97
+L 50.76 80.02
+L 62.02 48.92
+L 100.01 21.04
+L 40.4 101.15
+L 47.5 52.16
+L -6.95 16.94
+L 5.48 -4.13
+L 74.56 96.42
+L 2.31 64.68
+L 46.4 47.85
+L 17.47 96.31
+L 65.2 44.82
+L 46.33 101.54
+L 108.47 55.48
+L 57.18 70.37
+L 26.92 85.98
+L 50.23 47.47
+Z
+end
+
+case rnd_poly_2
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+M 89.82 -8.89
+L 7.98 95.85
+L 105.28 86.43
+L 101.23 33.19
+L 13.98 73.12
+L 46.0 82.0
+L 49.66 42.11
+L 69.67 -5.97
+L 24.81 44.92
+L 87.43 42.61
+L 75.98 105.47
+L 21.06 100.64
+L 11.97 41.09
+L 77.36 102.82
+L 67.83 98.39
+L 34.42 13.35
+L 92.8 7.56
+L 99.98 1.06
+L 44.15 55.59
+L 90.36 63.22
+L 13.86 4.5
+Z
+end
+
+case rnd_poly_3
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op rle
+M 8.57 27.61
+L 59.97 82.34
+L 103.99 49.04
+L 76.46 6.18
+L 16.75 60.55
+L 104.99 95.12
+L 50.57 0.13
+L 70.23 102.21
+L 84.01 99.8
+L 26.72 39.44
+L 86.96 52.4
+L 13.6 -8.3
+L 2.74 96.53
+L -3.83 31.64
+L 32.41 82.34
+L -6.91 51.25
+L 29.33 26.44
+L 29.13 4.56
+L 103.85 58.59
+L 86.59 8.47
+L 52.35 42.03
+L 30.37 61.79
+L 71.42 -1.66
+L 37.9 13.46
+L 100.57 -4.57
+Z
+end
+
+case rnd_poly_4
+clip 7 3 93 88
+fill invevenodd
+op path
+M 48.06 71.44
+L -7.54 67.48
+L 16.25 95.92
+L 97.35 6.53
+L 69.35 12.32
+L 22.74 53.96
+L 94.17 35.98
+L 12.46 10.96
+L 45.67 109.91
+L 87.8 24.52
+L 11.24 52.32
+L 43.35 53.27
+L 52.96 22.86
+L 1.35 15.72
+L -9.41 1.17
+Z
+end
+
+case rnd_poly_5
+clip 0 0 100 100
+fill invwinding
+op rle
+M 84.0 91.94
+L 70.45 105.34
+L 32.23 8.81
+L 57.44 58.68
+L 54.61 3.16
+L 75.92 56.7
+L 58.16 15.73
+L 25.36 22.17
+L 56.69 2.17
+L 21.65 104.59
+L 10.55 72.15
+L 81.09 76.68
+L 12.26 65.61
+L 50.8 23.21
+L 90.49 24.92
+L 27.75 21.3
+L -2.45 39.4
+L 97.77 83.21
+L 39.74 -8.15
+L 1.57 -7.24
+L 4.76 72.3
+L 59.18 102.33
+L 32.04 83.57
+L 62.87 68.57
+L 63.82 100.97
+L 27.93 15.88
+L 45.52 107.49
+L 95.41 72.38
+L 93.36 71.77
+L 100.85 36.69
+L 103.65 32.76
+L 78.25 42.41
+L -7.16 73.44
+L 24.75 104.99
+L 85.98 4.68
+L 82.15 28.27
+L 98.36 55.06
+Z
+end
+
+case rnd_poly_6
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op rle
+M 76.6 3.51
+L 64.28 4.19
+L 5.08 32.48
+L 67.75 68.7
+L -6.54 59.38
+L 32.72 36.09
+Z
+end
+
+case rnd_poly_7
+clip 0 0 100 100
+fill invwinding
+op rle
+M 82.99 12.02
+L -6.59 76.07
+L 54.96 56.59
+L 96.7 84.39
+L 17.39 -8.01
+L 54.94 40.15
+L 105.02 6.64
+L 65.21 0.73
+L 11.52 -5.44
+L 93.94 88.85
+L 88.38 30.89
+L 52.45 79.17
+L -3.25 90.88
+L 65.34 19.14
+L -3.0 16.62
+L 51.03 8.1
+L 79.42 94.61
+Z
+end
+
+case rnd_poly_8
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op rle
+M 31.24 14.12
+L 33.09 66.44
+L 55.86 46.89
+L 84.64 59.67
+L 12.55 65.36
+L 8.45 97.26
+L 104.05 87.65
+L 90.21 74.28
+L 85.44 66.69
+L 0.1 34.74
+L 77.72 6.56
+L 78.74 109.86
+L -7.8 16.05
+L 91.85 59.89
+L 58.72 104.67
+L 35.67 105.58
+L 51.99 67.29
+L 8.97 51.05
+L 0.26 77.91
+L 30.03 21.37
+Z
+end
+
+case rnd_poly_9
+clip 0 0 100 100
+fill evenodd
+op path
+M 9.47 25.15
+L 54.94 32.87
+L 106.73 12.64
+L 79.64 -8.87
+L 62.71 47.6
+L 40.72 87.46
+L 98.26 107.48
+L 109.62 10.51
+L 51.94 11.55
+L 54.69 9.67
+L 96.46 51.8
+L 95.88 67.21
+L -9.76 34.95
+L 34.16 15.94
+L 8.51 63.2
+Z
+end
+
+case rnd_poly_10
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op rle
+M 2.89 90.46
+L -1.22 21.51
+L 26.18 4.11
+L 46.93 49.85
+L 56.67 19.64
+L 33.04 87.83
+L 100.12 31.41
+L -1.72 107.05
+L 87.01 83.36
+L 21.84 69.45
+L 10.2 41.91
+L 57.39 28.72
+L 97.77 68.85
+L 49.18 27.64
+L 13.58 45.56
+L 93.85 100.37
+L 81.06 32.01
+L 89.79 60.78
+L 15.55 43.0
+L 57.99 78.33
+L 41.76 29.48
+L 4.14 21.97
+L 94.01 21.63
+L 55.41 22.18
+L 29.81 7.22
+L 82.69 22.15
+L 58.93 65.98
+L 37.93 55.97
+L 29.5 39.16
+L 1.4 82.06
+L 49.36 71.38
+L 65.96 90.92
+L 81.72 52.0
+L 40.93 67.79
+Z
+end
+
+case rnd_poly_11
+clip 7 3 93 88
+fill evenodd
+op path
+M -8.74 57.07
+L 20.26 30.08
+L 67.32 39.75
+L 83.38 47.11
+L 96.7 30.65
+L -5.5 16.38
+L 4.5 92.23
+L 22.24 -7.87
+L 15.11 44.86
+L 23.23 65.62
+L -0.52 73.09
+L 54.68 -8.63
+L 1.47 29.6
+L 16.33 45.62
+Z
+end
+
+case rnd_poly_12
+clip 0 0 100 100
+fill winding
+op path
+M 40.04 52.62
+L 60.69 5.99
+L -6.6 102.68
+L -4.66 56.03
+L 51.61 17.76
+L 103.22 46.49
+L 69.57 31.23
+L 28.14 47.56
+L 48.6 29.24
+L 20.01 67.23
+L 5.99 47.68
+L 33.94 90.38
+L 45.93 34.11
+L 51.48 77.86
+L 26.49 59.81
+L 87.79 93.55
+L 77.11 67.45
+L 51.08 53.87
+L 92.96 107.72
+L 63.97 92.37
+L 106.93 61.5
+L 48.71 69.27
+L 33.21 -0.63
+L 57.45 85.75
+L 81.12 105.67
+L 105.26 53.36
+L 94.2 65.66
+L 101.06 107.55
+L -6.53 18.91
+L 41.48 92.66
+L 5.18 15.35
+L 93.36 83.09
+L 75.97 6.41
+L 71.42 92.82
+L 33.65 68.11
+L 53.92 77.14
+L 12.69 62.81
+L 74.58 8.37
+L 7.28 85.68
+Z
+end
+
+case rnd_poly_13
+clip 0 0 100 100
+fill invwinding
+op path
+M 102.92 11.48
+L 22.11 54.84
+L 32.8 44.88
+L 12.39 -3.56
+L 12.28 8.47
+L 66.95 48.77
+L 55.53 -6.52
+L 16.51 33.7
+L 55.13 45.88
+L 79.66 8.6
+L 28.94 75.78
+L -5.17 -9.09
+L 1.36 60.32
+L 74.56 87.61
+L 20.87 80.81
+L 9.66 12.96
+L 87.97 40.74
+L 41.98 89.97
+L 10.48 16.96
+L 106.15 15.53
+L 9.02 109.02
+L 40.64 40.78
+Z
+end
+
+case rnd_poly_14
+clip 0 0 100 100
+fill invwinding
+op path
+M 102.21 57.08
+L 47.82 95.45
+L 15.33 13.45
+L 80.73 32.47
+L 71.48 72.55
+L 3.82 14.43
+L 42.03 97.94
+L 105.9 41.35
+L 55.63 7.39
+L 97.49 66.11
+L 22.25 78.7
+L 37.8 47.19
+L 45.22 22.77
+L 32.5 108.16
+L 2.9 7.28
+L 16.71 33.08
+L 35.29 65.97
+L -4.21 73.78
+L 57.22 80.59
+L 106.08 -0.54
+L 46.23 55.53
+L 85.57 88.52
+L 103.57 87.63
+L 25.61 -0.33
+L -4.98 53.32
+L 44.29 3.06
+L 85.9 86.02
+L 105.13 63.6
+L 54.89 8.37
+L 28.21 -6.81
+L 37.02 10.18
+Z
+end
+
+case rnd_poly_15
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+M 80.31 52.5
+L 77.89 92.78
+L 30.19 8.39
+L 104.98 19.04
+L 76.04 46.24
+L 19.1 18.61
+L 93.34 27.51
+Z
+end
+
+case rnd_poly_16
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op path
+M 42.62 82.25
+L 60.6 60.87
+L 47.94 -8.04
+L 103.45 36.17
+L -5.91 45.85
+L 6.83 18.92
+L 52.56 22.08
+L 41.81 78.23
+L -6.84 62.27
+L 52.4 104.38
+L 4.66 34.22
+L 16.02 -0.88
+L 10.41 38.65
+L 3.33 2.68
+Z
+end
+
+case rnd_poly_17
+clip 10 10 50 50 + 50 50 90 90
+fill evenodd
+op rle
+M 13.6 21.52
+L 86.05 52.97
+L 99.46 0.15
+L 10.12 99.38
+L 16.23 91.06
+L 86.37 57.48
+L 97.93 55.96
+L -5.73 105.19
+L 107.46 73.26
+L 90.91 51.86
+L 102.08 104.84
+L 98.25 106.09
+L 68.05 106.52
+L -4.36 0.93
+L 68.22 23.49
+L -9.12 64.13
+L -4.77 100.98
+L -1.44 74.08
+Z
+end
+
+case rnd_poly_18
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op rle
+M 60.05 18.56
+L 88.43 55.0
+L 17.4 37.16
+L 0.5 -6.23
+L 39.62 56.71
+L 42.94 64.7
+L 10.59 9.75
+L 13.92 80.76
+L 37.98 108.03
+L 68.67 46.17
+L -7.73 -1.08
+L 80.35 107.72
+L 58.03 52.02
+L 19.18 88.17
+L 94.47 7.88
+L 85.87 11.08
+L 56.01 6.64
+L 87.73 0.75
+L 73.76 65.51
+L 70.5 30.63
+L 103.11 -0.01
+L 71.8 -7.48
+L 20.27 3.87
+L 95.32 103.21
+L 61.36 59.15
+L 109.26 11.56
+L 79.58 -8.74
+L -6.57 100.43
+L 11.06 44.98
+L 1.65 69.74
+L 80.06 9.1
+L 104.54 101.93
+L 47.37 -1.9
+L -9.52 53.29
+L 7.72 102.83
+L -7.57 63.02
+Z
+end
+
+case rnd_poly_19
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op path
+M 43.29 4.58
+L 17.29 28.97
+L 87.17 91.49
+Z
+end
+
+case rnd_poly_20
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op path
+M 20.11 78.76
+L 39.25 25.57
+L 27.58 10.18
+L 63.49 -6.32
+L 15.6 73.89
+L 75.51 81.19
+L 38.4 94.12
+L 69.76 9.91
+L 2.18 36.22
+L 62.19 67.34
+L 37.35 63.97
+L 26.35 55.15
+L 106.49 73.23
+L 31.72 100.66
+L 19.11 51.04
+L -5.51 64.54
+L 13.45 10.38
+L 41.66 59.66
+L 43.38 35.02
+L 49.63 -2.9
+L 26.86 -5.66
+L 61.6 30.49
+Z
+end
+
+case rnd_poly_21
+clip 10 10 50 50 + 50 50 90 90
+fill invwinding
+op rle
+M 95.82 103.72
+L 51.3 86.13
+L 89.73 63.71
+L 32.02 108.8
+L 80.15 53.09
+L -8.38 53.08
+L 36.49 97.07
+L 33.7 103.42
+L 19.28 60.15
+L 32.75 79.17
+L 94.59 2.84
+L 15.84 48.86
+L 37.23 109.7
+L 8.88 51.57
+L 34.88 55.44
+L 107.82 4.03
+L 37.71 44.88
+L 31.64 51.91
+L 95.78 1.82
+L 18.2 27.27
+L -9.59 96.86
+L 81.41 69.07
+L 45.31 39.66
+L 67.24 89.21
+L 12.88 85.73
+L 93.18 30.91
+L 11.73 0.39
+L 18.4 43.2
+L 104.06 99.9
+L 100.18 56.09
+L 107.79 80.43
+L 5.71 -7.53
+L 45.65 95.17
+L -2.47 49.74
+L 43.86 32.19
+L 1.83 -4.35
+L 11.77 66.84
+Z
+end
+
+case rnd_poly_22
+clip 7 3 93 88
+fill invwinding
+op path
+M 40.95 32.01
+L 10.27 92.79
+L 62.3 84.94
+L 20.98 86.18
+L 84.31 73.38
+L 33.79 80.29
+L 39.26 66.05
+L 59.34 64.14
+L 28.3 92.94
+L 94.01 27.29
+L 79.0 62.58
+L 11.75 40.29
+L -5.91 63.15
+L 53.28 24.82
+L 78.62 94.29
+L 14.95 101.89
+L 77.34 43.01
+L 32.94 52.07
+Z
+end
+
+case rnd_poly_23
+clip 0 0 100 100
+fill invwinding
+op path
+M -9.77 13.77
+L 61.39 73.66
+L 77.36 105.21
+L 4.73 30.37
+L 67.63 63.47
+L 63.05 71.08
+L 107.08 94.33
+L 109.12 80.68
+L 44.35 28.93
+L 35.29 -8.27
+L 32.75 78.26
+L 85.08 83.88
+L -8.8 39.6
+L -4.72 -7.22
+L 75.08 54.85
+L 55.36 -3.44
+L 82.36 41.81
+L 36.07 99.74
+Z
+end
+
+case rnd_poly_24
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+M -3.08 17.47
+L -4.03 34.05
+L 94.33 64.26
+L 44.74 71.1
+L 54.39 65.94
+L -3.48 5.23
+L 94.9 17.53
+L 73.37 -1.98
+L 2.59 85.13
+L 109.86 94.93
+L 76.48 -5.58
+L 42.9 90.08
+L 78.29 80.77
+L 93.46 39.07
+L 34.52 71.17
+L 85.25 12.82
+Z
+end
+
+case rnd_poly_25
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 22.1 101.68
+L 54.34 62.79
+L 75.9 -1.78
+L 105.88 39.51
+L 47.36 66.27
+L 7.63 -9.9
+L 83.39 1.34
+L 5.45 13.0
+L 105.6 45.44
+L 64.57 14.67
+L 9.11 86.16
+L 25.41 96.39
+Z
+end
+
+case rnd_poly_26
+clip 0 0 100 100
+fill invwinding
+op path
+M 33.13 106.06
+L 92.9 -8.8
+L 59.24 1.13
+L 56.3 13.33
+L 20.74 26.44
+L 57.47 88.9
+L -1.22 17.02
+Z
+end
+
+case rnd_poly_27
+clip 0 0 100 100
+fill invevenodd
+op path
+M 13.3 20.24
+L 4.36 20.17
+L 67.61 33.58
+L 12.52 11.36
+L 33.16 -2.25
+L 66.77 6.24
+L 109.13 85.8
+L 85.78 -4.09
+L 56.65 91.7
+L 17.16 23.13
+L 66.22 -5.92
+L 26.65 22.19
+Z
+end
+
+case rnd_poly_28
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+M 4.83 106.12
+L 88.65 -1.38
+L 27.95 25.84
+L 106.57 74.25
+L 89.98 101.12
+L 24.93 42.2
+L 95.14 68.5
+L 102.46 -8.64
+L 108.14 14.25
+L 65.13 28.21
+L 20.36 107.44
+L 90.59 71.96
+L 54.87 63.87
+L -4.87 91.04
+L 59.1 49.08
+L 72.22 72.8
+L -2.52 68.14
+L 94.86 14.22
+L 102.52 56.58
+L 52.97 85.71
+L 54.48 81.58
+L 66.38 96.43
+Z
+end
+
+case rnd_poly_29
+clip 0 0 100 100
+fill invwinding
+op path
+M 67.15 -5.26
+L 7.49 69.14
+L 38.41 75.65
+L 67.45 32.71
+L 4.6 4.14
+L 40.72 67.44
+Z
+end
+
+case rnd_poly_30
+clip 0 0 100 100
+fill evenodd
+op rle
+M 4.55 78.8
+L 53.3 32.13
+L 37.25 86.31
+Z
+end
+
+case rnd_poly_31
+clip 7 3 93 88
+fill invevenodd
+op path
+M 11.52 80.11
+L 24.34 88.54
+L 56.74 14.11
+L 37.58 91.92
+L 94.9 62.95
+L 78.61 58.74
+L 74.57 48.76
+L 82.67 107.41
+L 18.65 96.47
+L 78.84 84.16
+L 55.99 92.69
+L 78.76 12.4
+L 45.2 16.47
+L 82.85 101.67
+L 64.67 45.98
+L 44.56 103.46
+L 92.54 76.47
+L 88.79 73.29
+L 65.7 23.11
+L 96.73 45.73
+L 73.44 -1.92
+L 36.51 53.04
+Z
+end
+
+case rnd_poly_32
+clip 7 3 93 88
+fill invevenodd
+op path
+M 4.36 72.3
+L 4.3 -3.38
+L 93.88 19.66
+L 29.08 59.25
+L 28.11 17.1
+L 63.7 22.42
+L 71.54 99.25
+L 57.89 22.85
+Z
+end
+
+case rnd_poly_33
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op path
+M 80.08 109.35
+L -1.08 55.94
+L 21.91 21.97
+L -9.05 36.9
+L 1.14 34.43
+L 80.62 72.83
+L 78.64 -9.95
+L -3.43 -8.09
+L 75.94 65.16
+L 66.17 -7.76
+L 48.75 82.32
+L 61.2 2.99
+L 82.14 13.85
+L 86.43 8.7
+L 14.1 16.26
+L 34.8 -6.05
+L -5.66 53.03
+L 50.42 43.87
+L 53.49 82.26
+L 97.57 105.97
+L 37.98 -0.69
+L 2.61 38.08
+L 32.66 -0.38
+L 12.29 19.44
+L 18.83 -5.33
+L 91.95 -9.33
+L 14.74 103.97
+L 27.12 36.81
+L 80.62 105.69
+L 95.09 49.11
+L 30.46 32.18
+L 87.71 19.38
+L -4.61 96.73
+L 6.6 42.85
+L 51.34 1.23
+L 7.97 62.27
+Z
+end
+
+case rnd_poly_34
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 84.41 62.43
+L 10.79 75.28
+L 10.35 61.36
+L 51.0 78.17
+L 97.6 13.6
+L -2.63 5.47
+L 48.4 93.3
+L 51.46 4.76
+L 56.97 4.39
+L 87.52 93.21
+L 61.33 2.74
+L 25.04 48.67
+L -7.22 38.31
+L 88.85 27.68
+L 55.39 27.69
+L 40.77 106.17
+L 17.58 29.57
+L 37.36 39.79
+L 90.65 7.59
+L 98.42 27.99
+L 45.66 20.58
+L 76.98 6.58
+L 4.24 97.3
+L 97.24 108.84
+Z
+end
+
+case rnd_poly_35
+clip 7 3 93 88
+fill winding
+op path
+M 87.72 79.92
+L 38.8 86.94
+L 52.03 10.39
+L -7.02 69.1
+L 63.41 107.73
+L -8.22 77.69
+L 75.81 6.09
+L 76.51 8.52
+L 8.57 79.65
+L 6.32 9.58
+L 16.84 46.05
+L 107.36 84.11
+L 71.92 61.27
+L 73.91 -4.7
+L -2.77 109.88
+L 4.41 108.29
+L 60.55 56.58
+Z
+end
+
+case rnd_poly_36
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+M 4.46 99.2
+L -3.45 2.63
+L 17.72 65.03
+L 31.15 11.36
+L 60.98 96.64
+L 42.45 103.49
+L 108.48 46.47
+L 102.92 86.49
+L 99.84 37.51
+L -6.06 51.36
+L 1.46 92.65
+L 38.34 3.1
+L 1.26 53.43
+L 31.46 -2.69
+L -4.98 9.97
+L 15.59 38.55
+L 81.43 59.6
+L 62.17 30.13
+L 21.22 5.18
+L 25.47 37.45
+L 28.22 28.47
+L -2.11 94.29
+L 79.54 4.3
+Z
+end
+
+case rnd_poly_37
+clip 7 3 93 88
+fill invwinding
+op rle
+M 105.94 76.95
+L 100.21 81.68
+L -1.29 67.36
+L 10.29 98.89
+L 22.41 18.25
+L 33.91 40.13
+L 56.47 -5.76
+L 93.82 68.65
+L 107.69 -8.09
+L 2.64 20.45
+L 3.0 -0.85
+L 13.33 65.3
+L -7.0 11.23
+L -9.79 3.05
+L 91.07 -9.78
+L 107.34 4.14
+L 22.69 97.61
+L 62.14 20.08
+L 4.02 51.23
+L 15.35 3.92
+L -7.89 53.44
+L 87.36 108.93
+L 38.32 66.39
+L 89.14 34.99
+L 5.85 3.66
+L 76.39 12.17
+L 102.99 74.22
+L 86.3 96.31
+L 73.05 14.57
+L 85.17 102.67
+L 53.88 48.26
+L -4.47 75.58
+L 33.15 99.1
+L 24.34 36.49
+Z
+end
+
+case rnd_poly_38
+clip 0 0 100 100
+fill invevenodd
+op rle
+M 20.72 80.76
+L 41.65 90.14
+L -1.55 74.63
+L 63.7 97.76
+L 65.37 48.83
+L 20.61 65.92
+L 38.47 -5.26
+L 89.61 100.46
+L 46.04 16.87
+L 17.31 76.92
+L 69.41 30.86
+L 24.16 37.29
+Z
+end
+
+case rnd_poly_39
+clip 10 10 50 50 + 50 50 90 90
+fill evenodd
+op path
+M -4.23 41.26
+L 73.51 17.39
+L 51.06 101.18
+L 91.61 62.19
+L 36.64 91.3
+L 45.76 -8.78
+L 80.81 62.04
+L 23.76 24.36
+L 89.45 26.62
+L 87.89 95.31
+L 45.15 -6.81
+L 40.06 19.3
+L 92.57 5.3
+L 40.51 108.77
+L 100.18 47.29
+L 36.64 61.12
+L 35.82 -0.43
+L 77.21 55.55
+L 49.95 52.88
+L -4.66 103.54
+L 19.87 41.69
+L 86.71 -5.93
+L 65.12 96.29
+L 39.18 29.87
+L 77.12 109.5
+L 63.98 0.61
+L -9.2 83.41
+L 52.12 84.3
+L 38.91 -7.31
+Z
+end
+
+case rnd_small_0
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 27.08 11.13
+Q 27.84 9.38 16.8 17.01
+Q 12.54 7.06 27.62 3.37
+C 15.25 14.7 24.37 5.33 26.95 7.15
+Q 14.4 4.26 18.75 8.61
+Z
+end
+
+case rnd_small_1
+clip 10 10 50 50 + 50 50 90 90
+fill evenodd
+op path
+M 43.77 11.16
+C 44.15 10.26 47.09 8.09 42.46 7.85
+Q 42.08 10.98 44.88 10.3
+Q 42.65 6.63 44.1 8.1
+Z
+end
+
+case rnd_small_2
+clip 0 0 100 100
+fill winding
+op path
+M 12.4 69.65
+Q 24.67 65.71 25.46 62.87
+Z
+end
+
+case rnd_small_3
+clip 7 3 93 88
+fill evenodd
+op path
+M 52.75 54.45
+Q 49.08 66.26 51.18 60.28
+K 45.96 62.86 47.52 57.99 1.4
+L 53.95 65.43
+Z
+end
+
+case rnd_small_4
+clip 0 0 100 100
+fill winding
+op path
+M 2.18 64.91
+K 0.44 64.67 2.46 61.9 1.98
+C 1.95 63.95 0.5 62.4 1.64 62.72
+L 4.89 62.83
+Z
+end
+
+case rnd_small_5
+clip 0 0 100 100
+fill evenodd
+op path
+M 23.66 17.72
+Q 36.53 29.25 36.71 31.65
+Z
+end
+
+case rnd_small_6
+clip 0 0 100 100
+fill winding
+op path
+M 67.02 5.57
+C 68.72 2.52 64.63 1.56 65.99 3.36
+Q 67.22 4.05 67.87 1.31
+Q 65.97 3.75 67.82 5.07
+Z
+end
+
+case rnd_small_7
+clip 0 0 100 100
+fill evenodd
+op path
+M 57.17 42.45
+C 44.82 37.19 46.07 40.87 54.35 40.73
+K 54.84 54.44 52.83 56.88 0.47
+C 61.12 42.58 45.3 42.96 61.29 48.14
+C 53.23 60.17 51.19 53.81 47.85 48.48
+C 61.63 54.23 58.08 54.38 43.09 42.17
+Z
+end
+
+case rnd_small_8
+clip 0 0 100 100
+fill evenodd
+op path
+M 72.67 56.69
+K 70.76 61.61 80.98 56.6 1.84
+C 71.86 65.6 78.87 64.05 71.32 60.69
+Q 73.13 62.97 83.27 57.44
+Z
+end
+
+case rnd_small_9
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 55.37 37.43
+K 58.61 35.55 48.7 45.87 2.61
+C 49.69 41.08 49.57 47.19 58.58 44.48
+L 63.65 47.27
+C 55.06 37.94 63.57 37.34 57.53 47.63
+C 63.21 45.7 63.77 36.14 49.46 41.32
+Z
+end
+
+case rnd_small_10
+clip 0 0 100 100
+fill evenodd
+op path
+M 46.44 12.49
+K 35.53 10.71 33.08 23.98 2.82
+Q 38.88 12.31 36.2 18.88
+C 44.15 8.27 33.26 13.93 40.93 20.42
+K 39.44 21.53 36.89 16.32 1.63
+Z
+end
+
+case rnd_small_11
+clip 0 0 100 100
+fill evenodd
+op path
+M 51.44 40.46
+K 45.65 51.88 43.81 52.26 2.0
+Q 58.43 51.31 51.88 50.04
+K 47.22 46.4 53.44 45.38 0.73
+Z
+end
+
+case rnd_small_12
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+M 19.44 28.98
+Q 25.21 26.01 32.24 23.64
+L 27.93 28.81
+Q 28.78 24.76 23.84 27.07
+C 27.32 29.36 26.65 29.89 35.23 27.02
+C 24.28 31.26 18.79 37.88 32.95 31.18
+Z
+end
+
+case rnd_small_13
+clip 0 0 100 100
+fill winding
+op path
+M 17.41 53.02
+C 20.42 53.63 27.64 55.15 29.87 53.54
+Q 23.62 60.39 18.25 58.49
+C 23.34 56.8 23.07 53.88 16.55 68.27
+C 21.39 68.56 31.29 67.02 30.39 59.94
+Z
+end
+
+case rnd_small_14
+clip 7 3 93 88
+fill winding
+op path
+M 20.62 31.47
+L 17.75 35.42
+Q 17.25 34.37 21.28 39.45
+Z
+end
+
+case rnd_small_15
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 74.42 23.28
+L 69.9 26.69
+C 72.87 19.02 72.06 19.2 72.57 19.84
+Z
+end
+
+case rnd_small_16
+clip 0 0 100 100
+fill evenodd
+op path
+M 12.53 49.0
+L 15.89 49.08
+Q 13.83 49.99 12.24 48.93
+Z
+end
+
+case rnd_small_17
+clip 7 3 93 88
+fill winding
+op path
+M 37.58 64.31
+L 32.79 81.28
+L 56.98 68.02
+K 38.01 74.51 40.24 66.92 0.46
+Q 29.06 86.27 46.1 70.75
+C 51.89 67.01 38.33 67.06 50.18 78.1
+Z
+end
+
+case rnd_small_18
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+M 45.14 38.15
+C 38.87 44.01 41.3 41.4 38.54 41.22
+C 38.44 43.9 39.65 44.06 43.14 36.61
+K 37.57 42.28 37.83 40.65 1.11
+C 39.38 44.29 43.84 39.2 38.99 42.68
+Z
+end
+
+case rnd_small_19
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+M 89.17 63.36
+Q 87.29 62.84 83.49 65.35
+L 79.87 60.22
+Q 86.62 42.01 72.4 54.69
+Q 67.5 46.24 77.15 63.02
+K 81.14 48.14 81.44 50.63 1.12
+Z
+end
+
+case rnd_small_20
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 23.71 55.46
+Q 31.87 62.3 29.66 61.9
+K 19.25 62.87 27.11 63.65 2.89
+Z
+end
+
+case rnd_small_21
+clip 0 0 100 100
+fill evenodd
+op path
+M 24.07 41.88
+K 31.81 48.93 22.55 32.47 1.01
+L 28.16 39.66
+Z
+end
+
+case rnd_small_22
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+M 13.62 71.7
+C 14.56 69.12 16.35 70.35 16.42 72.07
+L 13.87 70.45
+L 14.8 69.47
+C 14.88 69.86 12.89 67.81 12.68 69.98
+Z
+end
+
+case rnd_small_23
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 34.08 45.3
+K 33.73 45.77 36.72 46.57 1.28
+Z
+end
+
+case rnd_small_24
+clip 0 0 100 100
+fill winding
+op path
+M 45.73 71.22
+K 48.62 72.42 48.31 67.5 1.01
+Z
+end
+
+case rnd_small_25
+clip 0 0 100 100
+fill evenodd
+op path
+M 45.04 75.95
+K 39.72 73.51 35.38 73.87 1.49
+L 33.35 74.15
+Z
+end
+
+case rnd_small_26
+clip 10 10 50 50 + 50 50 90 90
+fill evenodd
+op path
+M 22.36 15.62
+Q 15.4 21.83 18.5 17.34
+L 16.53 18.53
+Q 17.5 18.21 17.21 13.7
+C 15.33 21.06 22.07 19.28 19.22 15.06
+Z
+end
+
+case rnd_small_27
+clip 7 3 93 88
+fill evenodd
+op path
+M 40.04 48.04
+L 43.73 41.97
+K 41.45 50.36 53.27 53.66 2.12
+Z
+end
+
+case rnd_small_28
+clip 0 0 100 100
+fill winding
+op path
+M 50.97 60.2
+Q 59.57 68.66 45.13 52.63
+L 58.04 54.56
+K 64.26 60.26 53.89 59.74 2.04
+K 63.26 63.85 45.57 58.88 2.04
+Z
+end
+
+case rnd_small_29
+clip 7 3 93 88
+fill evenodd
+op path
+M 43.84 54.6
+Q 49.75 60.94 41.49 55.02
+Z
+end
+
+case rnd_curves_0
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op rle
+M 35.04 9.29
+C 78.13 64.91 -4.6 43.55 105.52 56.14
+L 49.64 56.03
+K 84.92 62.66 103.07 106.37 1.05
+Z
+M 61.7 96.76
+C -8.26 7.87 10.05 58.29 -4.39 42.35
+Q 54.19 40.75 15.86 3.3
+L 24.72 -4.3
+Z
+M 84.99 43.94
+L 76.96 47.69
+L 20.33 81.62
+K 73.18 60.91 37.65 104.64 0.58
+K 74.1 24.49 11.9 69.41 2.39
+Z
+end
+
+case rnd_curves_1
+clip 0 0 100 100
+fill invwinding
+op path
+M 77.41 25.69
+Q 55.63 79.33 86.58 99.36
+C 73.38 5.32 9.75 67.51 102.48 65.47
+Q 80.13 0.13 96.2 42.61
+Z
+M 87.75 22.53
+Q 56.46 87.49 8.73 0.06
+Q 61.95 84.32 36.23 101.38
+L 80.17 109.15
+Z
+M 106.66 -0.69
+C 50.78 -3.28 99.87 87.84 24.14 51.58
+Z
+end
+
+case rnd_curves_2
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op path
+M 32.24 11.87
+K 100.59 34.63 26.87 53.91 1.72
+L 73.07 -8.46
+L -4.7 106.93
+Q -6.21 102.99 14.63 41.65
+Z
+end
+
+case rnd_curves_3
+clip 0 0 100 100
+fill evenodd
+op path
+M 5.17 18.33
+Q 95.66 103.6 75.17 89.96
+Q -5.63 22.09 92.76 19.82
+L 38.13 53.5
+L 21.53 81.57
+Z
+end
+
+case rnd_curves_4
+clip 0 0 100 100
+fill invwinding
+op path
+M 87.01 -8.09
+Q -0.09 104.02 -4.0 35.51
+Z
+M 97.34 3.81
+C 108.98 100.02 65.95 89.65 74.72 55.66
+Z
+end
+
+case rnd_curves_5
+clip 7 3 93 88
+fill evenodd
+op path
+M 79.68 -4.26
+K 33.68 40.04 5.37 97.04 1.2
+Q 20.04 0.73 69.84 56.29
+L 22.53 108.88
+Z
+M 35.94 97.64
+L 14.85 84.75
+C 82.12 106.49 80.33 19.31 6.39 1.74
+Z
+M 108.47 79.47
+Q 92.61 6.66 29.42 -5.52
+L 10.35 25.3
+Z
+end
+
+case rnd_curves_6
+clip 7 3 93 88
+fill evenodd
+op path
+M 108.93 95.18
+L 84.97 28.08
+K 77.58 8.35 -8.31 84.76 2.86
+Z
+end
+
+case rnd_curves_7
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op rle
+M 80.46 80.85
+L 106.62 91.75
+C 13.25 61.81 30.78 7.21 4.18 68.52
+L 83.46 39.28
+K 73.16 56.2 29.26 -5.79 2.18
+Z
+M 97.28 45.33
+K 93.05 3.25 92.17 71.38 2.88
+Z
+M 77.1 96.95
+C 24.05 31.79 65.08 73.47 20.63 -1.81
+C 48.62 52.56 12.7 88.77 64.18 16.36
+C 16.45 109.1 27.01 64.8 92.31 98.85
+L 48.69 -1.91
+Z
+end
+
+case rnd_curves_8
+clip 7 3 93 88
+fill invevenodd
+op path
+M 60.55 59.47
+L 103.38 25.11
+L 81.98 24.08
+Z
+M 76.19 -2.47
+C 71.09 17.93 96.21 -6.15 57.96 90.51
+Z
+end
+
+case rnd_curves_9
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+M -4.97 67.06
+C 8.58 99.77 27.33 80.0 35.83 1.92
+Q 25.9 46.88 44.49 30.24
+Q 35.99 35.37 105.59 81.22
+L -2.83 109.38
+Z
+end
+
+case rnd_curves_10
+clip 0 0 100 100
+fill invevenodd
+op path
+M 105.15 -4.8
+L 76.07 67.44
+Z
+M 31.34 15.87
+L 1.56 5.95
+Z
+end
+
+case rnd_curves_11
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+M 5.79 78.2
+L 23.33 6.98
+Q 68.35 84.29 1.01 58.95
+L -9.4 67.35
+Z
+end
+
+case rnd_curves_12
+clip 7 3 93 88
+fill invwinding
+op rle
+M 22.17 65.74
+K 62.23 65.91 37.29 99.24 2.6
+Z
+M 82.27 4.09
+C 62.35 103.04 35.56 32.82 73.54 39.98
+K 58.84 33.14 1.88 57.86 1.38
+Z
+M 19.18 5.31
+K 88.17 106.23 5.4 89.91 2.5
+Z
+end
+
+case rnd_curves_13
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op path
+M 61.88 -6.13
+L 101.89 24.76
+C 59.01 29.57 64.15 105.92 109.17 -4.88
+Z
+end
+
+case rnd_curves_14
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op rle
+M 22.51 85.63
+L 25.74 15.8
+L 30.78 38.49
+L -5.78 77.59
+Z
+M 107.3 -5.73
+L 9.88 95.57
+L 53.4 30.82
+K 65.46 64.65 -2.66 93.14 2.61
+Z
+M 24.47 34.07
+Q 70.55 50.14 106.71 77.58
+K 5.35 15.05 34.83 41.39 2.75
+L 38.84 35.4
+C -9.21 74.95 38.95 100.46 79.53 -3.44
+Z
+end
+
+case rnd_curves_15
+clip 0 0 100 100
+fill evenodd
+op path
+M 62.03 37.07
+K 27.36 6.18 46.96 40.92 1.13
+Q 24.25 5.99 49.62 85.07
+Z
+M 33.55 -4.96
+C 60.52 94.06 74.33 101.01 9.1 48.99
+Q 77.61 73.92 36.08 71.52
+Z
+M 18.28 47.96
+K -0.81 -4.49 21.53 20.91 0.53
+C 48.67 34.62 67.42 86.53 103.03 79.94
+Q 82.63 29.93 12.55 29.93
+Z
+end
+
+case rnd_curves_16
+clip 0 0 100 100
+fill invevenodd
+op path
+M 64.8 15.76
+C 2.06 -1.64 59.87 108.97 76.25 44.58
+Z
+M 92.83 100.32
+L 99.03 109.52
+L 22.42 21.52
+Z
+end
+
+case rnd_curves_17
+clip 0 0 100 100
+fill invevenodd
+op rle
+M 89.7 16.23
+K 30.66 20.73 66.91 8.22 2.91
+C 28.94 23.71 60.92 92.79 50.26 22.03
+Q 5.91 66.12 56.87 1.98
+Z
+M 70.79 12.0
+K 99.99 77.43 76.1 82.15 2.8
+L 14.58 18.9
+C 57.51 19.78 85.66 38.56 38.09 78.76
+L -3.92 27.32
+Z
+end
+
+case rnd_curves_18
+clip 0 0 100 100
+fill invwinding
+op rle
+M 57.94 27.33
+Q 36.84 75.06 4.6 50.92
+L 6.49 102.21
+C -1.0 47.38 83.14 2.55 -8.47 73.04
+Z
+M 98.29 22.54
+L 46.21 81.94
+Z
+end
+
+case rnd_curves_19
+clip 7 3 93 88
+fill invevenodd
+op path
+M -6.59 57.91
+L -8.61 -8.52
+L 28.98 80.65
+C 24.11 70.21 53.75 -7.68 103.42 -0.52
+Z
+end
+
+case rnd_curves_20
+clip 0 0 100 100
+fill invwinding
+op rle
+M 87.96 51.15
+L 52.66 23.24
+Q 78.18 76.83 1.58 28.6
+Z
+M 102.09 8.32
+C -0.25 12.42 85.38 46.36 80.63 -8.56
+C 22.85 53.78 8.65 -9.0 9.98 -5.28
+K 53.99 105.7 65.49 -0.97 0.54
+Z
+end
+
+case rnd_curves_21
+clip 10 10 50 50 + 50 50 90 90
+fill evenodd
+op path
+M 47.33 93.08
+C 50.3 80.21 -3.98 86.61 46.92 56.77
+K 108.83 21.1 0.62 41.08 1.65
+C 62.74 60.1 75.29 17.33 104.51 23.73
+L 62.01 60.3
+Z
+M 1.05 -7.42
+C 39.4 62.14 56.54 38.48 30.13 55.52
+K -0.14 31.45 13.83 20.01 0.5
+Q 45.41 109.18 13.92 3.73
+Z
+end
+
+case rnd_curves_22
+clip 0 0 100 100
+fill winding
+op path
+M 22.43 38.74
+L 22.57 76.21
+L 88.23 86.91
+K 79.08 107.89 11.79 81.44 2.31
+C 81.05 45.81 19.21 52.67 104.24 70.99
+Z
+end
+
+case rnd_curves_23
+clip 0 0 100 100
+fill winding
+op path
+M -3.41 64.2
+C 86.27 64.02 18.29 95.55 10.84 99.37
+Q 46.99 99.95 21.33 18.03
+Z
+M 69.16 101.68
+K 46.26 18.23 85.06 21.73 2.23
+L 33.96 92.75
+C 22.98 53.99 107.13 63.38 106.76 101.09
+K 17.42 81.52 58.25 103.35 0.85
+Z
+end
+
+case rnd_curves_24
+clip 10 10 50 50 + 50 50 90 90
+fill invevenodd
+op path
+M 49.99 -5.24
+C 48.15 105.11 90.68 48.21 2.46 40.59
+Z
+end
+
+case rnd_curves_25
+clip 0 0 100 100
+fill invevenodd
+op path
+M 22.07 66.34
+L 63.29 91.16
+C 71.08 95.37 -6.94 -7.75 28.69 -2.1
+K 70.77 17.17 64.89 54.64 2.21
+Z
+end
+
+case rnd_curves_26
+clip 0 0 100 100
+fill invevenodd
+op rle
+M -1.41 7.61
+Q 41.08 47.91 1.13 48.91
+C 20.31 82.89 2.19 74.14 63.26 34.97
+K 64.97 53.1 45.48 90.5 0.69
+C 90.75 98.64 104.83 97.11 87.28 28.71
+Z
+end
+
+case rnd_curves_27
+clip 0 0 100 100
+fill winding
+op path
+M -6.48 105.21
+Q 83.96 77.77 67.46 13.56
+C 27.71 40.42 109.12 27.74 16.44 21.52
+Z
+M 7.84 19.98
+L 3.73 109.1
+C 67.5 3.09 60.28 15.52 72.58 82.16
+Z
+M 23.44 84.03
+Q 89.61 12.54 74.6 101.51
+Q 65.86 78.78 51.83 98.25
+Q 48.61 26.03 105.81 34.99
+Z
+end
+
+case rnd_curves_28
+clip 10 10 50 50 + 50 50 90 90
+fill invevenodd
+op path
+M 7.58 10.1
+L 44.89 68.96
+L 20.55 42.23
+C 9.3 59.71 80.74 31.09 -8.49 55.21
+Z
+M 29.3 22.63
+C 32.79 19.41 54.6 18.4 59.91 -6.72
+Z
+M 86.6 1.92
+C 97.33 106.47 27.22 75.73 102.35 -8.48
+K 34.87 19.77 20.87 -4.11 1.68
+K 96.83 0.82 90.75 21.68 2.42
+C 97.6 64.02 24.01 -3.77 39.58 23.32
+Z
+end
+
+case rnd_curves_29
+clip 0 0 100 100
+fill evenodd
+op rle
+M 49.5 31.72
+K 80.07 80.11 97.02 59.17 0.54
+Z
+M 80.68 30.53
+L 10.24 96.23
+Q 2.09 2.96 21.4 21.0
+C 80.45 77.15 80.33 70.92 1.92 -1.76
+C 43.47 14.78 -8.75 56.13 63.4 20.4
+Z
+M 9.83 74.14
+C 20.46 30.11 109.59 48.2 29.8 -9.01
+K 8.42 102.77 108.92 14.63 2.29
+L 27.24 5.79
+Z
+end
+
+case rnd_shape_0
+clip 0 0 100 100
+fill evenodd
+op path
+oval 75.43 1.73 112.53 40.73
+end
+
+case rnd_shape_1
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op rle
+rrect 64.16 86.23 124.1 143.0 10.84 8.36
+end
+
+case rnd_shape_2
+clip 0 0 100 100
+fill invevenodd
+op path
+oval 75.3 69.05 109.04 88.15
+end
+
+case rnd_shape_3
+clip 0 0 100 100
+fill invwinding
+op rle
+oval 10.1 42.33 27.89 68.76
+end
+
+case rnd_shape_4
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op rle
+oval 28.3 42.16 48.85 81.55
+end
+
+case rnd_shape_5
+clip 10 10 50 50 + 50 50 90 90
+fill invwinding
+op rle
+oval 56.38 36.68 87.22 48.18
+end
+
+case rnd_shape_6
+clip 7 3 93 88
+fill evenodd
+op rle
+circle 2.71 74.61 25.79
+end
+
+case rnd_shape_7
+clip 7 3 93 88
+fill invevenodd
+op path
+rrect 2.16 46.24 58.21 61.7 5.62 4.55
+end
+
+case rnd_shape_8
+clip 0 0 100 100
+fill evenodd
+op path
+circle 20.28 17.43 13.5
+end
+
+case rnd_shape_9
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op path
+circle 26.17 91.21 14.0
+end
+
+case rnd_shape_10
+clip 0 0 100 100
+fill invevenodd
+op path
+oval 83.07 73.57 109.65 74.64
+end
+
+case rnd_shape_11
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op path
+circle 65.16 21.66 43.8
+end
+
+case rnd_shape_12
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op path
+circle 77.61 70.03 14.13
+end
+
+case rnd_shape_13
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill evenodd
+op rle
+oval 52.28 2.93 66.57 36.34
+end
+
+case rnd_shape_14
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op rle
+circle 33.65 58.94 19.8
+end
+
+case rnd_shape_15
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invevenodd
+op rle
+oval 11.23 5.11 47.93 36.94
+end
+
+case rnd_shape_16
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op path
+circle 86.26 13.97 22.47
+end
+
+case rnd_shape_17
+clip 10 10 50 50 + 50 50 90 90
+fill invwinding
+op rle
+circle 94.71 3.44 40.19
+end
+
+case rnd_shape_18
+clip 10 10 50 50 + 50 50 90 90
+fill invwinding
+op path
+rrect 49.85 28.35 53.23 61.47 8.22 2.25
+end
+
+case rnd_shape_19
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill invwinding
+op rle
+rrect 46.65 17.76 102.9 67.42 4.7 8.64
+end
+
+case rnd_rect_0
+clip 0 0 100 100
+fill winding
+op rect
+rect 31.09 26.48 56.32 35.25
+end
+
+case rnd_rect_1
+noclip
+fill winding
+op rect
+rect 80.92 14.48 108.77 53.56
+end
+
+case rnd_rect_2
+clip 0 0 100 100
+fill winding
+op rect
+rect 42.01 32.06 75.68 58.96
+end
+
+case rnd_rect_3
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op rect
+rect 20.78 -2.75 58.58 38.47
+end
+
+case rnd_rect_4
+clip 0 0 100 100
+fill winding
+op rect
+rect 65.87 69.25 69.18 100.21
+end
+
+case rnd_rect_5
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op rect
+rect 96.6 33.72 130.59 82.05
+end
+
+case rnd_rect_6
+clip 7 3 93 88
+fill winding
+op rect
+rect 2.83 41.03 34.0 73.99
+end
+
+case rnd_rect_7
+clip 0 0 100 100
+fill winding
+op rect
+rect 5.97 32.62 18.67 62.33
+end
+
+case rnd_rect_8
+clip 0 0 100 100
+fill winding
+op rect
+rect 30.29 18.44 48.84 61.7
+end
+
+case rnd_rect_9
+clip 0 0 100 100
+fill winding
+op rect
+rect -9.36 73.87 13.8 84.12
+end
+
+case rnd_rect_10
+clip 0 0 100 100
+fill winding
+op rect
+rect 38.62 25.2 69.24 71.66
+end
+
+case rnd_rect_11
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op rect
+rect 5.03 86.36 46.51 136.17
+end
+
+case rnd_rect_12
+clip 0 0 100 100
+fill winding
+op rect
+rect 11.88 83.4 17.71 126.29
+end
+
+case rnd_rect_13
+noclip
+fill winding
+op rect
+rect 17.69 48.75 24.48 70.06
+end
+
+case rnd_rect_14
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op rect
+rect 31.75 77.58 40.04 113.94
+end
+
+case rnd_frame_0
+clip 0 0 100 100
+fill winding
+op frame
+frame 92.67 10.18 137.74 36.95 6.89 6.22
+end
+
+case rnd_frame_1
+clip 0 0 100 100
+fill winding
+op frame
+frame 85.97 51.44 107.62 59.98 5.23 7.0
+end
+
+case rnd_frame_2
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op frame
+frame 5.7 8.56 42.12 10.37 1.23 4.94
+end
+
+case rnd_frame_3
+clip 0 0 100 100
+fill winding
+op frame
+frame 92.94 25.29 116.94 43.87 5.57 1.33
+end
+
+case rnd_frame_4
+noclip
+fill winding
+op frame
+frame 81.37 10.92 104.6 29.09 6.86 1.98
+end
+
+case rnd_frame_5
+noclip
+fill winding
+op frame
+frame 5.77 85.51 9.02 86.72 7.43 6.91
+end
+
+case rnd_frame_6
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame 2.13 39.62 41.88 84.0 2.33 6.95
+end
+
+case rnd_frame_7
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame 46.85 11.37 64.67 55.39 0.36 0.1
+end
+
+case rnd_frame_8
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame -2.52 48.43 4.71 54.91 0.24 5.63
+end
+
+case rnd_frame_9
+clip 0 0 100 100
+fill winding
+op frame
+frame 16.07 -9.06 40.72 27.05 2.09 1.72
+end
+
+case rnd_frame_10
+clip 0 0 100 100
+fill winding
+op frame
+frame -8.62 53.17 30.39 62.84 0.62 0.37
+end
+
+case rnd_frame_11
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op frame
+frame 13.94 84.25 21.27 114.58 7.89 1.11
+end
+
+case rnd_frame_12
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame 32.67 -7.0 35.39 27.27 5.95 2.82
+end
+
+case rnd_frame_13
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op frame
+frame 79.45 77.53 90.52 121.74 2.94 2.88
+end
+
+case rnd_frame_14
+noclip
+fill winding
+op frame
+frame 49.3 53.61 49.31 80.8 5.24 1.19
+end
+
+case rnd_xrect_0
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op xrect
+xrect 68052 1072497 695802 2207565
+end
+
+case rnd_xrect_1
+noclip
+fill winding
+op xrect
+xrect 1150840 6239946 2411760 6459884
+end
+
+case rnd_xrect_2
+clip 0 0 100 100
+fill winding
+op xrect
+xrect 3235482 3704293 4026697 4945587
+end
+
+case rnd_xrect_3
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op xrect
+xrect 1928422 139334 3372184 1286829
+end
+
+case rnd_xrect_4
+noclip
+fill winding
+op xrect
+xrect 3646088 891076 5498498 3008485
+end
+
+case rnd_xrect_5
+clip 0 0 100 100
+fill winding
+op xrect
+xrect 845323 2432781 2350027 3646153
+end
+
+case rnd_xrect_6
+clip 0 0 40 100 + 60 0 100 100 + 40 30 60 70
+fill winding
+op xrect
+xrect 2489754 1290555 4347638 2153761
+end
+
+case rnd_xrect_7
+noclip
+fill winding
+op xrect
+xrect 6484338 5984710 7586256 6067870
+end
+
+case rnd_xrect_8
+clip 10 10 50 50 + 50 50 90 90
+fill winding
+op xrect
+xrect -627148 514612 641787 654461
+end
+
+case rnd_xrect_9
+clip 7 3 93 88
+fill winding
+op xrect
+xrect 5826397 5787712 7054279 8423717
+end
+
+# All edges clipped away (above and below the clip) while the bounds overlap it.
+case count0_inverse
+clip 0 0 100 100
+fill invwinding
+op path
+M 10 -30
+L 60 -10
+L 20 -12
+Z
+M 30 110
+L 80 130
+L 40 125
+Z
+end
+
+case count0_inverse_rle
+clip 0 0 100 100
+fill invevenodd
+op rle
+M 10 -30
+L 60 -10
+L 20 -12
+Z
+M 30 110
+L 80 130
+L 40 125
+Z
+end
+
+case count0_plain
+clip 0 0 100 100
+fill winding
+op path
+M 10 -30
+L 60 -10
+L 20 -12
+Z
+M 30 110
+L 80 130
+L 40 125
+Z
+end

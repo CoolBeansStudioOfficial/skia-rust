@@ -36,6 +36,7 @@ use skia_rust_core::safe32::can_overflow_add;
 use crate::blitter::Blitter;
 use crate::edge::{AnyEdge, Edge};
 use crate::edge_builder::{BasicEdgeBuilder, EdgeBuilder};
+use crate::scan_clip::ScanClip;
 use crate::scan_priv::{
     NIL, ScanClipper, backward_insert_edge_based_on_x, backward_insert_start, blit_above,
     blit_below, insert_edge_after, remove_edge,
@@ -150,6 +151,28 @@ pub fn fill_xrect(xr: &XRect, clip: Option<&Region>, blitter: &mut dyn Blitter) 
 pub fn fill_rect(r: &Rect, clip: Option<&Region>, blitter: &mut dyn Blitter) {
     let ir = r.round();
     fill_irect(&ir, clip, blitter);
+}
+
+/// Fills the rounded rect, clipped to a raster clip (`SkScan::FillRect(const SkRect&, const
+/// SkRasterClip&, SkBlitter*)`).
+///
+/// skia-rust: `clip` is the [`ScanClip`] stand-in for `SkRasterClip` (task C5 ports the real
+/// one); [`fill_irect`]'s and [`fill_xrect`]'s raster-clip overloads are added with it.
+// Port of: src/core/SkScan.cpp#L97-L110 (chrome/m156)
+#[doc(alias = "FillRect")]
+pub fn fill_rect_clip(r: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+    if clip.is_empty() || r.is_empty() {
+        return;
+    }
+
+    if clip.is_bw() {
+        fill_rect(r, Some(clip.bw_rgn()), blitter);
+        return;
+    }
+
+    clip.with_aa_wrapper(blitter, &mut |rgn, b| {
+        fill_rect(r, Some(rgn), b);
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

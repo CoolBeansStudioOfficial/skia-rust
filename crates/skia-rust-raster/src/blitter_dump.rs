@@ -14,6 +14,10 @@
 //! blit_rect(x=2, y=2, w=3, h=1)
 //! ```
 //!
+//! [`DumpBlitter::oracle_text`] renders the same record in the line format `oracle/scan-aaa`
+//! prints from real Skia (`blitAntiH x y alpha:run ...`, `blitMask A8 ...` with the mask rows),
+//! so a scan conversion can be diffed call by call against the oracle.
+//!
 //! The calls are recorded at the level the scan converter makes them (`blit_anti_h2` is
 //! recorded as such, not as the two `blit_anti_h` calls its default expands to), which is what
 //! the C++ code reads like. With an inner blitter, every call is forwarded unchanged.
@@ -21,7 +25,7 @@
 use std::fmt::Write as _;
 
 use skia_rust_core::color::Alpha;
-use skia_rust_core::mask::Mask;
+use skia_rust_core::mask::{Mask, MaskFormat};
 use skia_rust_core::rect::IRect;
 
 use crate::blitter::{BlitMemory, Blitter};
@@ -64,8 +68,14 @@ pub enum BlitCall {
     AntiH2 { x: i32, y: i32, a0: u32, a1: u32 },
     /// `blit_anti_v2(x, y, a0, a1)`.
     AntiV2 { x: i32, y: i32, a0: u32, a1: u32 },
-    /// `blit_mask(mask, clip)`: the mask's bounds and the clip.
-    Mask { bounds: IRect, clip: IRect },
+    /// `blit_mask(mask, clip)`: the mask's format, bounds and the clip, and for an A8 mask its
+    /// pixels (`bounds.height()` rows of `bounds.width()` bytes; empty for other formats).
+    Mask {
+        format: MaskFormat,
+        bounds: IRect,
+        clip: IRect,
+        rows: Vec<u8>,
+    },
 }
 
 impl std::fmt::Display for BlitCall {
@@ -111,7 +121,7 @@ impl std::fmt::Display for BlitCall {
             BlitCall::AntiV2 { x, y, a0, a1 } => {
                 write!(f, "blit_anti_v2(x={x}, y={y}, a0={a0}, a1={a1})")
             }
-            BlitCall::Mask { bounds, clip } => write!(
+            BlitCall::Mask { bounds, clip, .. } => write!(
                 f,
                 "blit_mask(bounds=[{},{},{},{}], clip=[{},{},{},{}])",
                 bounds.left,
@@ -123,6 +133,91 @@ impl std::fmt::Display for BlitCall {
                 clip.right,
                 clip.bottom
             ),
+        }
+    }
+}
+
+fn format_name(format: MaskFormat) -> &'static str {
+    match format {
+        MaskFormat::BW => "BW",
+        MaskFormat::A8 => "A8",
+        MaskFormat::ThreeD => "3D",
+        MaskFormat::Argb32 => "ARGB32",
+        MaskFormat::Lcd16 => "LCD16",
+        MaskFormat::Sdf => "SDF",
+    }
+}
+
+impl BlitCall {
+    /// This call as `oracle/scan-aaa` prints it (see [`DumpBlitter::oracle_text`]); no trailing
+    /// newline.
+    #[must_use]
+    #[allow(clippy::cast_sign_loss)] // widths are non-negative here
+    pub fn oracle_line(&self) -> String {
+        match self {
+            BlitCall::H { x, y, width } => format!("blitH {x} {y} {width}"),
+            BlitCall::AntiH { x, y, runs } => {
+                let mut s = format!("blitAntiH {x} {y}");
+                for (n, a) in runs {
+                    let _ = write!(s, " {a}:{n}");
+                }
+                s
+            }
+            BlitCall::V {
+                x,
+                y,
+                height,
+                alpha,
+            } => format!("blitV {x} {y} {height} {alpha}"),
+            BlitCall::Rect {
+                x,
+                y,
+                width,
+                height,
+            } => format!("blitRect {x} {y} {width} {height}"),
+            BlitCall::AntiRect {
+                x,
+                y,
+                width,
+                height,
+                left_alpha,
+                right_alpha,
+            } => format!("blitAntiRect {x} {y} {width} {height} {left_alpha} {right_alpha}"),
+            BlitCall::AntiH2 { x, y, a0, a1 } => format!("blitAntiH2 {x} {y} {a0} {a1}"),
+            BlitCall::AntiV2 { x, y, a0, a1 } => format!("blitAntiV2 {x} {y} {a0} {a1}"),
+            BlitCall::Mask {
+                format,
+                bounds: b,
+                clip,
+                rows,
+            } => {
+                let mut s = format!(
+                    "blitMask {} {} {} {} {} clip {} {} {} {}",
+                    format_name(*format),
+                    b.left,
+                    b.top,
+                    b.right,
+                    b.bottom,
+                    clip.left,
+                    clip.top,
+                    clip.right,
+                    clip.bottom
+                );
+                if *format == MaskFormat::A8 {
+                    let width = b.width() as usize;
+                    for (i, y) in (b.top..b.bottom).enumerate() {
+                        let _ = write!(
+                            s,
+                            "
+ row {y}:"
+                        );
+                        for v in &rows[i * width..(i + 1) * width] {
+                            let _ = write!(s, " {v:02x}");
+                        }
+                    }
+                }
+                s
+            }
         }
     }
 }
@@ -179,6 +274,19 @@ impl<'a> DumpBlitter<'a> {
         let mut s = String::new();
         for c in &self.calls {
             let _ = writeln!(s, "{c}");
+        }
+        s
+    }
+}
+
+impl DumpBlitter<'_> {
+    /// The recorded calls in the format `oracle/scan-aaa` prints from real Skia, one per line
+    /// (an A8 mask is followed by one ` row y: aa bb ..` line per row).
+    #[must_use]
+    pub fn oracle_text(&self) -> String {
+        let mut s = String::new();
+        for c in &self.calls {
+            let _ = writeln!(s, "{}", c.oracle_line());
         }
         s
     }
@@ -264,9 +372,19 @@ impl Blitter for DumpBlitter<'_> {
     }
 
     fn blit_mask(&mut self, mask: &Mask<'_>, clip: &IRect) {
+        let mut rows = Vec::new();
+        if mask.format == MaskFormat::A8 {
+            let width = usize::try_from(mask.bounds.width()).unwrap_or(0);
+            for y in 0..usize::try_from(mask.bounds.height()).unwrap_or(0) {
+                let row = y * mask.row_bytes as usize;
+                rows.extend_from_slice(&mask.image[row..row + width]);
+            }
+        }
         self.calls.push(BlitCall::Mask {
+            format: mask.format,
             bounds: mask.bounds,
             clip: *clip,
+            rows,
         });
         if let Some(inner) = self.inner.as_deref_mut() {
             inner.blit_mask(mask, clip);

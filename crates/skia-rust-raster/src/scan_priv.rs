@@ -21,6 +21,18 @@ use crate::edge::AnyEdge;
 // Port of: src/core/SkScanPriv.h#L17 (chrome/m156)
 pub const SUPERSAMPLE_SHIFT: i32 = 2;
 
+/// `(int)x` for a float, as the oracle's x86-64 build evaluates it (`cvttss2si`): truncation,
+/// and `i32::MIN` for NaN and out-of-range values (undefined behaviour in C++). Used by the
+/// analytic edges' fixed-point setup.
+#[allow(clippy::cast_possible_truncation)] // the range is checked
+pub(crate) fn float_to_int(v: f32) -> i32 {
+    if v >= 2_147_483_648.0_f32 || v < -2_147_483_648.0_f32 || v.is_nan() {
+        i32::MIN
+    } else {
+        v as i32
+    }
+}
+
 /// The "null pointer" of an edge link.
 pub const NIL: usize = usize::MAX;
 
@@ -71,8 +83,9 @@ pub struct ScanClipper<'a> {
 
 #[derive(Debug)]
 enum ClipperBlitter<'a> {
-    /// `fBlitter == nullptr`: blit nothing.
-    Nothing,
+    /// `fBlitter == nullptr`: blit nothing. Holds the blitter that was passed in, which the C++
+    /// caller still has a pointer to ([`ScanClipper::clipped_out_blitter`]).
+    Nothing(&'a mut dyn Blitter),
     Plain(&'a mut dyn Blitter),
     Rect(RectClipBlitter<'a>),
     Rgn(RgnClipBlitter<'a>),
@@ -97,7 +110,7 @@ impl<'a> ScanClipper<'a> {
         if !skip_reject_test && !IRect::intersects(&clip_bounds, ir) {
             // completely clipped out
             return ScanClipper {
-                blitter: ClipperBlitter::Nothing,
+                blitter: ClipperBlitter::Nothing(blitter),
                 clip_rect,
             };
         }
@@ -124,10 +137,21 @@ impl<'a> ScanClipper<'a> {
     #[doc(alias = "getBlitter")]
     pub fn blitter(&mut self) -> Option<&mut dyn Blitter> {
         match &mut self.blitter {
-            ClipperBlitter::Nothing => None,
+            ClipperBlitter::Nothing(_) => None,
             ClipperBlitter::Plain(b) => Some(&mut **b),
             ClipperBlitter::Rect(b) => Some(b),
             ClipperBlitter::Rgn(b) => Some(b),
+        }
+    }
+
+    /// The blitter that was passed in, when everything was clipped out (`blitter()` is `None`).
+    ///
+    /// skia-rust: the C++ caller keeps using its own `SkBlitter*` (`AntiFillPath` blits the
+    /// clip region of a clipped-out inverse fill through it); here the clipper holds the borrow.
+    pub fn clipped_out_blitter(&mut self) -> Option<&mut dyn Blitter> {
+        match &mut self.blitter {
+            ClipperBlitter::Nothing(b) => Some(&mut **b),
+            _ => None,
         }
     }
 

@@ -3,5 +3,6 @@
 /oracle/out/
 /oracle/rp-bench/out/
 /oracle/rp-builder/out/
+/oracle/scan-aaa/out/
 /goldens/
 *.profraw
