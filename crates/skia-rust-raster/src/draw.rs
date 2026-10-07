@@ -14,8 +14,9 @@
 //! * `skcpu::Draw`'s methods are `const` but draw into `fDst`'s pixels through blitters; the
 //!   Rust methods take `&mut self` because the blitter holds the `&mut` pixels. `Draw draw(*this)`
 //!   (a copy that changes `fCTM`) is [`Draw::reborrow`] plus a field assignment.
-//! * Not ported yet (they need images, vertices, text or mask filters, ported in D6/D7 and Phase
-//!   3): `drawBitmap`, `drawSprite`, `drawBitmapAsMask` (images and `SkTreatAsSprite`),
+//! * Not ported yet (they need images, vertices, text or mask filters, ported in D7 and Phase
+//!   3): `drawBitmap` is ported for the sprite case only (D6, layer restores), `drawSprite`,
+//!   `drawBitmapAsMask`,
 //!   `drawGlyphRunList`/`paintMasks` (text), `drawVertices`/`drawFixedVertices` and `drawAtlas`
 //!   (`SkVertices`), and the mask filter branches of `drawDevPath`/`drawRRectNinePatch`
 //!   (`SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect`). Where a mask filter would have
@@ -26,16 +27,20 @@
 use std::borrow::Cow;
 
 use skia_rust_core::arena_alloc::ArenaAlloc;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode_priv::supports_coverage_as_alpha;
 use skia_rust_core::canvas::PointMode;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::device::Device;
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
-use skia_rust_core::floating_point::float_saturate2int;
+use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::matrix_utils::treat_as_sprite;
 use skia_rust_core::paint::{Cap, Join, Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
@@ -71,6 +76,7 @@ use crate::scan_hairline::{
     anti_hair_path, anti_hair_round_path, anti_hair_square_path, frame_rect, hair_line, hair_path,
     hair_rect, hair_round_path, hair_square_path,
 };
+use crate::sprite_blitter::choose_sprite;
 
 /// The function `Draw` calls to choose a blitter (`Draw::BlitterChooser`). The default is
 /// [`choose`] (`SkBlitter::Choose`).
@@ -89,8 +95,7 @@ pub type BlitterChooser = for<'b> fn(
     dev_bounds: &Rect,
 ) -> Box<dyn Blitter + 'b>;
 
-/// `SkBlitter::Choose` as a [`BlitterChooser`] (`SkSurfaceProps` is accepted and ignored, as
-/// `blitter_choose::choose` has no use for it yet).
+/// `SkBlitter::Choose` as a [`BlitterChooser`].
 #[allow(clippy::too_many_arguments)] // Skia's BlitterChooser signature
 fn choose_default<'b>(
     dst: Pixmap<'b>,
@@ -99,7 +104,7 @@ fn choose_default<'b>(
     alloc: &'b ArenaAlloc,
     draw_coverage: DrawCoverage,
     clip_shader: Option<&Shader>,
-    _props: &SurfaceProps,
+    props: &SurfaceProps,
     dev_bounds: &Rect,
 ) -> Box<dyn Blitter + 'b> {
     choose(
@@ -109,6 +114,7 @@ fn choose_default<'b>(
         alloc,
         draw_coverage,
         clip_shader,
+        props,
         dev_bounds,
         false,
     )
@@ -126,6 +132,18 @@ pub enum RectType {
     Stroke,
     /// `kPath`.
     Path,
+}
+
+// Port of: src/core/SkDraw.cpp#L351-L363 (chrome/m156)
+fn clipped_out(m: &Matrix, c: &RasterClip, width: i32, height: i32) -> bool {
+    let r = Rect::from_iwh(width, height);
+    let dst_r = m.map_rect(r).0;
+    c.quick_reject(&dst_r.round_out())
+}
+
+// Port of: src/core/SkDraw.cpp#L365-L367 (chrome/m156)
+fn clip_handles_sprite(clip: &RasterClip, x: i32, y: i32, pmap: &Pixmap<'_>) -> bool {
+    clip.is_bw() || clip.quick_contains(&IRect::from_xywh(x, y, pmap.width(), pmap.height()))
 }
 
 /// The context of one drawing operation: destination pixels, matrix, clip and properties
@@ -478,6 +496,84 @@ impl<'a> Draw<'a> {
             rc: self.rc,
             props: self.props,
         }
+    }
+
+    /// Draws `bitmap` mapped by the CTM and `prematrix` with `paint` (`drawBitmap`), with nearest
+    /// sampling (`linear_filter` is `sampling.filter == kLinear`).
+    ///
+    /// skia-rust: only the sprite path is ported (the bitmap lands on integer device pixels,
+    /// which is every layer restore without a transform). Anything else draws through an image
+    /// shader (`make_paint_with_image_and_mips` and `SkImageShader`, Phase 3) and is a
+    /// TODO(Phase 3): it draws nothing here.
+    // Port of: src/core/SkDraw.cpp#L369-L443 (chrome/m156)
+    #[doc(alias = "drawBitmap")]
+    pub fn draw_bitmap(
+        &mut self,
+        bitmap: &Bitmap,
+        prematrix: &Matrix,
+        _dst_bounds: Option<&Rect>,
+        linear_filter: bool,
+        orig_paint: &Paint,
+    ) {
+        self.validate();
+
+        // nothing to draw
+        if self.rc.is_empty()
+            || bitmap.width() == 0
+            || bitmap.height() == 0
+            || bitmap.color_type() == ColorType::Unknown
+        {
+            return;
+        }
+
+        let mut paint = Cow::Borrowed(orig_paint);
+        if orig_paint.style() != Style::Fill {
+            paint.to_mut().set_style(Style::Fill);
+        }
+
+        let matrix = Matrix::concat(self.ctm, prematrix);
+
+        if clipped_out(&matrix, self.rc, bitmap.width(), bitmap.height()) {
+            return;
+        }
+
+        if !color_type_is_alpha_only(bitmap.color_type())
+            && treat_as_sprite(
+                &matrix,
+                bitmap.dimensions(),
+                linear_filter,
+                paint.is_anti_alias(),
+            )
+        {
+            // It is safe to call lock pixels now, since we know the matrix is (more or less)
+            // identity.
+            let Some(pmap) = bitmap.peek_pixels() else {
+                return;
+            };
+            let ix = float_round2int(matrix.translate_x());
+            let iy = float_round2int(matrix.translate_y());
+            if clip_handles_sprite(self.rc, ix, iy, &pmap) {
+                let alloc = ArenaAlloc::new();
+                let (w, h) = (pmap.width(), pmap.height());
+                let blitter = choose_sprite(
+                    self.dst.reborrow_mut(),
+                    &paint,
+                    pmap,
+                    ix,
+                    iy,
+                    &alloc,
+                    self.rc.clip_shader(),
+                    false,
+                );
+                if let Some(mut blitter) = blitter {
+                    fill_irect_clip(&IRect::from_xywh(ix, iy, w, h), self.rc, &mut *blitter);
+                    return;
+                }
+                // if !blitter, then we fall-through to the slower case
+            }
+        }
+
+        // TODO(Phase 3): the slower case draws the bitmap's rect with an image shader.
     }
 
     /// Debug checks of the draw's state (`validate`).

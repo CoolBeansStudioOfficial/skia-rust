@@ -422,6 +422,7 @@ mod tests {
             dst_color_type: ColorType::RGBA8888,
             dst_cs: None,
             paint_color: colors::BLACK,
+            surface_props: crate::surface_props::SurfaceProps::default(),
             dst_bounds: Rect::new_empty(),
         }
     }

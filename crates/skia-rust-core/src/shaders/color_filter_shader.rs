@@ -122,6 +122,7 @@ mod tests {
             dst_color_type: ColorType::RGBA8888,
             dst_cs: None,
             paint_color: colors::BLACK,
+            surface_props: crate::surface_props::SurfaceProps::default(),
             dst_bounds: crate::rect::Rect::new_empty(),
         };
         let ok = shader.as_base().append_root_stages(&mut rec, Matrix::i());
