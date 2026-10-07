@@ -73,9 +73,21 @@ that needs a fresh oracle run as an issue labelled `needs-oracle`.
 - Pass rate: 382 / 6,221 in-scope (6.1%); unit 381 / 2,464; GM 1 / 1,095.
 - Phase 2 Waves A, B, C (C1–C7) and D1–D5, D8 are merged. Design notes: "As implemented in …"
   sections of `docs/design/raster-pipeline.md`; API deviations in `docs/API_MAPPING.md`.
-- **D6 (Canvas, ClipStack, raster Surface)** was in progress; work in progress pushed to branch
-  `port/canvas-wip` (see the PR/commit message there for done / half-done / not-started). D6
-  should: port raster Canvas + ClipStack + Surface (skia-safe API shape), plumb SurfaceProps into
+- **D6 (Canvas, ClipStack, raster Surface)** was in progress:
+  - **PR #72** (`port/canvas`, = `port/canvas-wip`): Canvas core, SkClipStack (`ClipStackTest::ClipStack`
+    passing), raster Surface + `surfaces`, SurfaceProps in StageRec, GM harness on the real Canvas,
+    design note + API_MAPPING rows. Local fmt/clippy/tests (debug+release)/verify passed; **CI never
+    reported** — re-run CI, fix, land.
+  - Test branches based on the *pre-rebase* D6 commit (`port/canvas-pre-rebase`), each needing
+    `git rebase --onto <landed main> port/canvas-pre-rebase <branch>` (expect conflicts in
+    `tests/src/unit/mod.rs` and `inventory/manifest.toml`; use `tools/orch` resolvers):
+    `port/canvas-tests-a` (clip/draw tests; state unknown — no report was received),
+    `port/canvas-tests-b` (6 CanvasTest tests), `port/canvas-tests-c` (8 tests: WritePixels family,
+    ReadPixels_InvalidRowBytes, PremulAlphaRoundTrip, SurfaceEmpty, SurfaceCanvasPeek,
+    surface_raster_zeroinitialized). `port/canvas-clipstack` is an intermediate branch.
+  - Not started: the final GM sweep count; remaining Canvas/Surface tests mostly need SkImage,
+    pictures or image filters.
+  The full D6 scope: port raster Canvas + ClipStack + Surface (skia-safe API shape), plumb SurfaceProps into
   StageRec and the blitter create fns, switch the GM harness (`tests/gm`) from its Surface stub to
   the real Surface, un-ignore every test `#[ignore]`d for needing Canvas/Surface, port
   Canvas/ClipStack/Surface tests, and report the GM pass count. The D5 design note lists what D6
