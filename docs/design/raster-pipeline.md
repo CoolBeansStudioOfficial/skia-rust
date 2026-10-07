@@ -1667,6 +1667,34 @@ region_path}`):
   `ReadPixels_InvalidRowBytes`, `ReadPixels_ValidConversion`, `WritePixels`,
   `WritePixels_InvalidRowBytes`, `WritePixelsSurfaceGenID`, `PremulAlphaRoundTrip` (manifest
   `reason`s say which). `PremulAlphaRoundTripGrConvertPixels` is Ganesh-only (excluded).
+**As implemented in C4** (`skia_rust_raster::{scan_hairline, scan_antihair, scan_clip, blitter_dump}`):
+
+- **Files.** `SkScan_Hairline.cpp` is `scan_hairline` (non-AA `hair_line_rgn`, `hair_rect`,
+  `hair_path`/`hair_square_path`/`hair_round_path` and their `anti_` twins, quad/cubic/conic
+  flattening, cap extension, `frame_rect`, `hair_line`); `SkScan_Antihair.cpp` is `scan_antihair`
+  (`anti_hair_line_rgn` with the four `HLine`/`Horish`/`VLine`/`Vertish` blitters as one enum
+  `AntiHairKind`, `anti_hair_rect`, `anti_fill_rect`, `anti_fill_x_rect`, `anti_frame_rect`, and
+  their raster-clip overloads). `AntiFillRect`/`AntiFillXRect`/`AntiFrameRect` live in
+  `SkScan_Antihair.cpp`, not in AntiPath, so C3 does not need to port them.
+- **Clips.** `SkRasterClip` and `SkAAClipBlitterWrapper` belong to C5, so the scan functions that
+  take a `const SkRasterClip&` take a `&dyn ScanClip` (`scan_clip`), implemented for `Region` as
+  the BW clip. `with_aa_wrapper(blitter, closure)` stands for constructing the wrapper and using its
+  region and blitter; C5 implements the trait for `RasterClip` and the AA path starts working.
+  `scan_clip` also has `XRect`/`XRect_*` from `SkScan.h`; C2/C3 can use them.
+- **Arithmetic.** The fixed-point steps (`FDot6`, `Fixed`, `FDot8`) use wrapping ops where C++
+  silently overflows; the float2 loops of `hair_quad`/`hair_cubic` use the `Float2` type with the
+  same operation order. `canDirectBlit` is not ported (see `API_MAPPING.md`).
+- **Cap helpers.** `hair_path` is `hair_path_with_cap(Cap, ...)` (the C++ template parameter becomes
+  a value); `extend_pts` mirrors the `do/while` structure, including that `controls` is only
+  decremented when the tangent is zero.
+- **Debug dump.** `blitter_dump::DumpBlitter` records every call at the level the scan converter
+  makes it (`blit_anti_v2` is not expanded into two `blit_anti_h` calls) and can wrap a real blitter;
+  `dump()` prints one call per line for diffing against an oracle trace.
+- **Tests.** `CappedHairlinesTest` needs the real `Canvas` (D6), and no other manifest test
+  exercises these files alone, so no manifest entries change. `scan_hairline_tests.rs` checks hand
+  derived traces (the derivations are in comments): non-AA horizontal/diagonal/clipped lines,
+  `hair_rect`, caps, the four AA hairline kinds, partial-pixel caps, clipping, `anti_fill_rect`
+  and `anti_frame_rect`.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
