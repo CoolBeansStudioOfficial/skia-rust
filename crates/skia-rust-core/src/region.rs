@@ -9,8 +9,10 @@
 //! array of rectangles. The [`Iterator`] returns the scan lines or rectangles contained by it,
 //! optionally intersecting a bounding rectangle.
 //!
-//! `SkRegion::setPath`, `addBoundaryPath` and `getBoundaryPath` (and everything else in
-//! `SkRegion_path.cpp`) need `SkPath` and scan conversion and are not ported yet.
+//! `SkRegion_path.cpp` is split by what it needs: `addBoundaryPath`/`getBoundaryPath` are in
+//! [`region_path`](crate::region_path) (inherent methods of [`Region`]); `setPath` needs the scan
+//! converter, which lives in `skia-rust-raster`, so it is the extension method
+//! `skia_rust_raster::region_path::RegionExt::set_path`.
 
 use std::{cmp::Ordering, fmt, iter, sync::Arc};
 
@@ -2207,8 +2209,50 @@ impl iter::Iterator for Spanerator<'_> {
 /// Private helpers of `SkRegion` (`SkRegionPriv.h`), used by Skia's own code and tests.
 #[doc(hidden)]
 pub mod region_priv {
-    use super::{Region, Runs, SENTINEL};
+    use super::{Region, RunHead, Runs, SENTINEL};
     use crate::rect::IRect;
+    use std::sync::Arc;
+
+    /// `SkRegion::kRectRegionRuns`: the number of run values describing one rectangle.
+    pub const RECT_REGION_RUNS: usize = super::RECT_REGION_RUNS;
+
+    /// `SkRegion::RunType`.
+    pub type RunType = i32;
+
+    /// `SkRegion::count_runtype_values`: returns `(max transitions, top, bottom)`. The region
+    /// must not be empty.
+    // Port of: src/core/SkRegion.cpp#L284-L296 (chrome/m156)
+    #[must_use]
+    pub fn count_runtype_values(rgn: &Region) -> (i32, i32, i32) {
+        let max_t = if rgn.is_rect() {
+            2
+        } else {
+            debug_assert!(rgn.is_complex());
+            match &rgn.runs {
+                Runs::Complex(head) => head.interval_count * 2,
+                _ => 0,
+            }
+        };
+        (max_t, rgn.bounds.top, rgn.bounds.bottom)
+    }
+
+    /// Makes a complex region out of `runs` (`tmp.fRunHead = RunHead::Alloc(count);
+    /// copy; tmp.fRunHead->computeRunBounds(&tmp.fBounds)` in `SkRegion::setPath`). The runs must
+    /// be well formed and describe more than a rectangle.
+    // Port of: src/core/SkRegion_path.cpp#L384-L388 (chrome/m156)
+    #[must_use]
+    pub fn make_complex(runs: Vec<RunType>) -> Region {
+        let mut head = RunHead {
+            y_span_count: 0,
+            interval_count: 0,
+            runs,
+        };
+        let bounds = head.compute_run_bounds();
+        Region {
+            bounds,
+            runs: Runs::Complex(Arc::new(head)),
+        }
+    }
 
     /// `SkRegionPriv::kRunTypeSentinel` / `SkRegion_kRunTypeSentinel`.
     pub const RUN_TYPE_SENTINEL: i32 = SENTINEL;
