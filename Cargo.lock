@@ -540,6 +540,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-rp-diff"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-simd",
+]
+
+[[package]]
 name = "skia-rust-simd"
 version = "0.156.0"
 dependencies = [
@@ -684,6 +691,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "skia-rust-rp-diff",
  "skia-rust-simd",
  "toml",
  "walkdir",

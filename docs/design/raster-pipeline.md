@@ -1150,6 +1150,74 @@ the stage-level harness is where tier semantics get pinned down.
   `force_tier` and compares hashes, so CI checks stage exactness without a C++ toolchain.
 - Neon and wasm cases are produced the same way on their oracle hosts once those exist.
 
+**As implemented in A5** (`oracle/rp-diff`, crate `skia-rust-rp-diff`, `publish = false`; how to
+add cases: `docs/PORTING.md` §12):
+
+- **Layout.** `src/case.rs` (a `Case`: buffers by slot with stride/origin, stages with
+  serialized contexts, `highp`/`auto`, `run` or `compile`, rects; its line-based text form),
+  `src/cases.rs` (the case list, `cases::all()`, generated deterministically from fixed-seed
+  xorshift), `src/replay.rs` (Rust replayer), `src/expected.rs` (stored results and the check),
+  `tests/oracle.rs` (the CI test), `cpp/driver.cpp` + `cpp/tier.cpp` (C++ side),
+  `expected/<tier>.txt` (Skia's results). `cargo xtask oracle rp-diff [--tier ml3,ml4]
+  [--case-glob 'srcover/*'] [--update] [--replay] [--details N] [--rebuild] [--build x64-sse2]`.
+- **C++ side: Skia's own builder.** Instead of assembling `SkRasterPipelineStage[]` by hand,
+  the driver builds every case with `SkRasterPipeline` (`append`, `appendStackRewind`, `run`,
+  `compile`, `gForceHighPrecisionRasterPipeline`) linked from the `x64-sse2` oracle build, after
+  pointing `SkOpts`' tables at the requested tier exactly like `SkOpts::Init_ml3()` does. So
+  memory-context registration, tail patching, the lowp/highp choice, the injected
+  `stack_checkpoint` and the branch contexts' tail pointer are Skia's code, not a re-port.
+  `tier.cpp` is compiled five times into namespaces `rpdiff_<tier>` with the oracle's flags, read
+  from the build's `obj/ml3.ninja` (`defines`, `include_dirs`, `cflags` incl. `/fp:precise
+  /clang:-ffp-contract=off`, `cflags_cc`; minus `/arch:AVX2` and debug info) plus, per tier,
+  `-DSKRP_CPU_SCALAR`, nothing, `/clang:-msse4.1`, `/arch:AVX2`, `/arch:AVX512`; `lld-link` links
+  every static library of the build except `dm.lib` with DM's link flags. The driver refuses a
+  tier the CPU lacks (`SkCpu::Supports`). Building takes ~10 s; all cases on all five tiers
+  ~25 s.
+- **Rust side.** The op table is exported (hidden) as `skia_rust_simd::rp_op_table!`; the
+  replayer generates a `match` with one arm per op that builds the `Stage` from the case's
+  context through `FromCtx`, one impl per Rust context type (`MemPtr`, `MemoryCtx`, `f32`,
+  `[f32; N]`, `&[f32; N]`, `&Cell<f32>`, `&TransferFunction`, `[u8; 4]`, `BranchCtx`,
+  `&BranchIfEqualCtx`, `&UniformColorCtx`); the other types fail with a message naming the
+  type until a Wave B task needs them. Borrowed contexts are leaked once per case (test
+  tooling). Each tier is replayed on `Native` and `Model(Host)` when the host can run them and
+  its estimate fingerprints match `AMD_ZEN4` for the tier, and always on `Model(AmdZen4)`;
+  `Scalar` natively. So every CI host (Windows, Linux, macOS arm64, Linux arm64) checks every
+  x86 path at least through its model.
+- **Publishing: committed hashes, not the goldens release.** `expected/<tier>.txt` holds
+  `<case> <case hash> <output hash>` (FNV-1a 64 of the case's text and of the concatenated
+  buffers after the runs) plus a header with the Skia commit, compiler and the host's estimate
+  verdict, ~35 KB per tier for the A5 list. Committing them keeps a stage, its cases and their
+  results in one PR, needs no network in CI, and a Wave B author on the oracle host regenerates
+  them with one command (`--update` merges, dropping removed cases). The case hash makes an
+  edited case fail as stale rather than compare against old results. Full bytes exist only on
+  the oracle host: the driver writes them and xtask prints the first differing words per
+  buffer.
+- **NaN-meets-NaN is not specified.** The first run found ml3/ml4 `srcover` (highp) differing
+  from Skia only where two NaN inputs met in its `mad`: x86 returns the first NaN in *encoding*
+  order, and Skia's clang chose a different `vfmadd…` form than rustc (e.g. Skia returned `r`'s
+  `0x7fc00000` where we returned `dr`'s quieted `0xffc00001`). Skia's result there is a property
+  of its codegen, not of its source (the models document the same, §2.8), so inputs never let
+  two input NaNs meet: `Special` and `Bits` inputs contain no NaN, and NaN propagation is tested
+  by `NanSrc`/`NanDst`, which place NaNs on words that land in distinct lanes for every stride
+  (1, 4, 8, 16) beside tame values only (finite, nonzero, magnitude in `[0.25, 2)`).
+  Internally generated NaNs (`0 * inf`, `inf - inf` from the specials) are all the indefinite
+  `0xFFC00000`, so their order does not matter.
+- **Cases at A5 (516):** `move_src_dst`, `move_dst_src`, `swap_src_dst`, `srcover`, and loads/
+  stores only, each in lowp and highp × 3–5 input kinds × widths 1, 7, 16, 19; `store_src_a`;
+  `seed_shader` at coordinates up to 2³¹ − 1 and in a compiled pipeline run on several rects;
+  `branch_if_{all,any,no}_lanes_active` × 8 lane-mask patterns (all on/off, sign bit only,
+  low bit only, first, last, alternate, mixed) × widths 1, 3, 4, 5, 8, 15, 16, 17;
+  `branch_if_no_active_lanes_eq` × masks × 4 int patterns; `jump`; `stack_rewind`;
+  `set_base_pointer`. **Result on the oracle host: all 516 cases match Skia byte for byte on
+  every tier and every selection** (`scalar` native; `sse2`, `sse41`, `ml3`, `ml4` native,
+  `Model(Host)` and `Model(AmdZen4)`). Decision 3's attribution of the tier differences to
+  `rcp_fast`/fused `mad`/`rcp14` is confirmed stage by stage as Wave B adds the stages that use
+  them.
+- **Not covered yet:** `MemoryCtx` stages and tail patching through real pixel memory (B1/B2
+  add them; the format already has `mem` contexts, strides, origins and compiled runs), Neon
+  and wasm (no oracle host), and the `dr..da` registers' persistence across chunks in the
+  Windows oracle's narrow ABI (§2.6): cases always load `dst` before reading it.
+
 ### 4.3 DM stage-list dump
 
 Add to `oracle/patches/skia-oracle.patch`: when `SKIA_ORACLE_RP_DUMP=<file>` is set, every

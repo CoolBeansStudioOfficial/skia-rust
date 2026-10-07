@@ -42,6 +42,7 @@ cargo xtask inventory module-path <id>   # where a unit test's Rust port goes
 cargo xtask inventory verify [--update]  # run ported tests; --update marks passing entries
 cargo xtask oracle tiers        # oracle CPU tiers (server only for build/run; see oracle/README.md)
 cargo xtask oracle compare <tier> <dir>   # check our outputs against a tier's golden hashes
+cargo xtask oracle rp-diff [--update]     # per-stage raster pipeline oracle (docs/PORTING.md §12)
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ```
