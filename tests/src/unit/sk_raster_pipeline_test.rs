@@ -18,7 +18,13 @@
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    clippy::many_single_char_names,
+    clippy::erasing_op,
+    clippy::identity_op,
+    clippy::needless_range_loop,
+    clippy::explicit_counter_loop,
+    clippy::similar_names
 )]
 
 use std::cell::RefCell;
@@ -29,7 +35,9 @@ use skia_rust_core::raster_pipeline::{
 };
 use skia_rust_core::raster_pipeline_context_utils::{Packed, pack, unpack};
 use skia_rust_simd::rp::contexts::{
-    TraceFuncCtx, TraceHook, TraceLineCtx, TraceScopeCtx, TraceVarCtx,
+    BranchCtx, BranchIfEqualCtx, CaseOpCtx, ConstantCtx, CopyIndirectCtx, CopyIndirectUniformCtx,
+    ShuffleCtx, SwizzleCopyCtx, SwizzleCopyIndirectCtx, SwizzleCtx, TraceFuncCtx, TraceHook,
+    TraceLineCtx, TraceScopeCtx, TraceVarCtx, UniformCtx,
 };
 
 use crate::{def_test, errorf, reporter_assert};
@@ -1941,3 +1949,1802 @@ def_test!(SkRasterPipeline_MixIntTest, |r| {
         }
     }
 });
+
+// ~~~ B6a: SkSL masks, branches and copies ~~~
+//
+// Mapping notes: `SkOpts::raster_pipeline_highp_stride` is the selected tier's highp stride.
+// The C++ `alignas(64) int32_t x[]` arrays are `Ints`, byte buffers bound to a `MemSlot` (the
+// pipeline never borrows writable memory); a context pointer into such an array is a `MemPtr`.
+// `SkRPCtxUtils::Pack` and the arena disappear: contexts are values, or references that outlive
+// the pipeline. `InitLaneMasksCtx` has no counterpart (the tail is interpreter state).
+
+/// The bit pattern of the "largest" signaling NaN. The next integer is a quiet NaN. We use this as
+/// the starting point for various memory-shuffling tests below, to ensure that our code doesn't
+/// interpret values as float when they might be integral.
+const K_LAST_SIGNALING_NAN: i32 = 0x7fbf_ffff;
+
+/// Similarly, this is the "smallest" (in magnitude) negative signaling NaN. The next integer is a
+/// quiet negative NaN.
+#[allow(clippy::cast_possible_wrap)] // 0xffbfffff, as the C++ `int` constant
+const K_LAST_SIGNALING_NEG_NAN: i32 = 0xffbf_ffff_u32 as i32;
+
+/// A C++ `alignas(64) int32_t x[]`: native-endian bytes that can be bound to a pipeline slot.
+struct Ints(Vec<u8>);
+
+impl Ints {
+    fn new(values: &[i32]) -> Ints {
+        Ints(values.iter().flat_map(|v| v.to_ne_bytes()).collect())
+    }
+
+    fn from_u32(values: &[u32]) -> Ints {
+        Ints(values.iter().flat_map(|v| v.to_ne_bytes()).collect())
+    }
+
+    fn zeroed(len: usize) -> Ints {
+        Ints::new(&vec![0; len])
+    }
+
+    fn get(&self) -> Vec<i32> {
+        self.0
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|c| i32::from_ne_bytes(*c))
+            .collect()
+    }
+}
+
+/// `std::iota(&v[from], &v[to], start)`.
+fn iota(v: &mut [i32], from: usize, to: usize, start: i32) {
+    let mut value = start;
+    for slot in &mut v[from..to] {
+        *slot = value;
+        value = value.wrapping_add(1);
+    }
+}
+
+/// A pointer to the start of slot `index`.
+fn slot(index: u16) -> MemPtr {
+    MemPtr::new(MemSlot(index), 0)
+}
+
+/// `MemView`s for the bindings of slots `0..` (read-only first, then writable ones).
+fn bind<'m>(read: &'m [&'m Ints], write: &'m mut [&'m mut Ints]) -> MemoryBindings<'m> {
+    let mut mem = MemoryBindings::new();
+    let mut index = 0;
+    for ints in read {
+        mem.bind(MemSlot(index), MemView::read(&ints.0));
+        index += 1;
+    }
+    for ints in write {
+        mem.bind(MemSlot(index), MemView::write(&mut ints.0));
+        index += 1;
+    }
+    mem
+}
+
+// Port of: tests/SkRasterPipelineTest.cpp#L107-L149 (chrome/m156)
+def_test!(SkRasterPipeline_LoadStoreConditionMask, |reporter| {
+    let mask = Ints::new(&[!0, 0, !0, 0, !0, !0, !0, 0, !0, 0, !0, 0, !0, !0, !0, 0]);
+    let mut mask_copy = Ints::zeroed(MAX_STRIDE_HIGHP);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let mask_values = mask.get();
+    let n = highp_stride();
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::InitLaneMasks);
+    p.append(Stage::LoadConditionMask(slot(0)));
+    p.append(Stage::StoreConditionMask(slot(1)));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(
+        0,
+        0,
+        n,
+        1,
+        &mut bind(&[&mask], &mut [&mut mask_copy, &mut src]),
+    );
+    let (mask_copy, src) = (mask_copy.get(), src.get());
+
+    {
+        // `maskCopy` should be populated with `mask` in the frontmost positions
+        // (depending on the architecture that SkRasterPipeline is targeting).
+        let mut index = 0;
+        while index < n {
+            reporter_assert!(reporter, mask_copy[index] == mask_values[index]);
+            index += 1;
+        }
+
+        // The remaining slots should have been left alone.
+        while index < mask_copy.len() {
+            reporter_assert!(reporter, mask_copy[index] == 0);
+            index += 1;
+        }
+    }
+    {
+        // `r` and `a` should be populated with `mask`.
+        // `g` and `b` should remain initialized to true.
+        let r = 0 * n;
+        let g = n;
+        let b = 2 * n;
+        let a = 3 * n;
+        for index in 0..n {
+            reporter_assert!(reporter, src[r + index] == mask_values[index]);
+            reporter_assert!(reporter, src[g + index] == !0);
+            reporter_assert!(reporter, src[b + index] == !0);
+            reporter_assert!(reporter, src[a + index] == mask_values[index]);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L151-L193 (chrome/m156)
+def_test!(SkRasterPipeline_LoadStoreLoopMask, |reporter| {
+    let mask = Ints::new(&[!0, 0, !0, 0, !0, !0, !0, 0, !0, 0, !0, 0, !0, !0, !0, 0]);
+    let mut mask_copy = Ints::zeroed(MAX_STRIDE_HIGHP);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let mask_values = mask.get();
+    let n = highp_stride();
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::InitLaneMasks);
+    p.append(Stage::LoadLoopMask(slot(0)));
+    p.append(Stage::StoreLoopMask(slot(1)));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(
+        0,
+        0,
+        n,
+        1,
+        &mut bind(&[&mask], &mut [&mut mask_copy, &mut src]),
+    );
+    let (mask_copy, src) = (mask_copy.get(), src.get());
+
+    {
+        // `maskCopy` should be populated with `mask` in the frontmost positions
+        // (depending on the architecture that SkRasterPipeline is targeting).
+        let mut index = 0;
+        while index < n {
+            reporter_assert!(reporter, mask_copy[index] == mask_values[index]);
+            index += 1;
+        }
+
+        // The remaining slots should have been left alone.
+        while index < mask_copy.len() {
+            reporter_assert!(reporter, mask_copy[index] == 0);
+            index += 1;
+        }
+    }
+    {
+        // `g` and `a` should be populated with `mask`.
+        // `r` and `b` should remain initialized to true.
+        let r = 0 * n;
+        let g = n;
+        let b = 2 * n;
+        let a = 3 * n;
+        for index in 0..n {
+            reporter_assert!(reporter, src[r + index] == !0);
+            reporter_assert!(reporter, src[g + index] == mask_values[index]);
+            reporter_assert!(reporter, src[b + index] == !0);
+            reporter_assert!(reporter, src[a + index] == mask_values[index]);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L195-L237 (chrome/m156)
+def_test!(SkRasterPipeline_LoadStoreReturnMask, |reporter| {
+    let mask = Ints::new(&[!0, 0, !0, 0, !0, !0, !0, 0, !0, 0, !0, 0, !0, !0, !0, 0]);
+    let mut mask_copy = Ints::zeroed(MAX_STRIDE_HIGHP);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let mask_values = mask.get();
+    let n = highp_stride();
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::InitLaneMasks);
+    p.append(Stage::LoadReturnMask(slot(0)));
+    p.append(Stage::StoreReturnMask(slot(1)));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(
+        0,
+        0,
+        n,
+        1,
+        &mut bind(&[&mask], &mut [&mut mask_copy, &mut src]),
+    );
+    let (mask_copy, src) = (mask_copy.get(), src.get());
+
+    {
+        // `maskCopy` should be populated with `mask` in the frontmost positions
+        // (depending on the architecture that SkRasterPipeline is targeting).
+        let mut index = 0;
+        while index < n {
+            reporter_assert!(reporter, mask_copy[index] == mask_values[index]);
+            index += 1;
+        }
+
+        // The remaining slots should have been left alone.
+        while index < mask_copy.len() {
+            reporter_assert!(reporter, mask_copy[index] == 0);
+            index += 1;
+        }
+    }
+    {
+        // `b` and `a` should be populated with `mask`.
+        // `r` and `g` should remain initialized to true.
+        let r = 0 * n;
+        let g = n;
+        let b = 2 * n;
+        let a = 3 * n;
+        for index in 0..n {
+            reporter_assert!(reporter, src[r + index] == !0);
+            reporter_assert!(reporter, src[g + index] == !0);
+            reporter_assert!(reporter, src[b + index] == mask_values[index]);
+            reporter_assert!(reporter, src[a + index] == mask_values[index]);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L239-L267 (chrome/m156)
+def_test!(SkRasterPipeline_MergeConditionMask, |reporter| {
+    let mask = Ints::new(&[
+        0, 0, !0, !0, 0, !0, 0, !0, !0, !0, !0, !0, 0, 0, 0, 0, 0, 0, !0, !0, 0, !0, 0, !0, !0, !0,
+        !0, !0, 0, 0, 0, 0,
+    ]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let mask_values = mask.get();
+    let n = highp_stride();
+    assert_eq!(mask_values.len(), 2 * MAX_STRIDE_HIGHP);
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::InitLaneMasks);
+    p.append(Stage::MergeConditionMask(slot(0)));
+    p.append(Stage::StoreSrc(slot(1)));
+    p.run(0, 0, n, 1, &mut bind(&[&mask], &mut [&mut src]));
+    let src = src.get();
+
+    // `r` and `a` should be populated with `mask[x] & mask[y]` in the frontmost positions.
+    // `g` and `b` should remain initialized to true.
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    for index in 0..n {
+        let expected = mask_values[index] & mask_values[index + n];
+        reporter_assert!(reporter, src[r + index] == expected);
+        reporter_assert!(reporter, src[g + index] == !0);
+        reporter_assert!(reporter, src[b + index] == !0);
+        reporter_assert!(reporter, src[a + index] == expected);
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L269-L303 (chrome/m156)
+def_test!(SkRasterPipeline_MergeLoopMask, |reporter| {
+    let initial = Ints::new(&[
+        !0, !0, !0, !0, !0, 0, !0, !0, // r (condition)
+        !0, 0, !0, 0, !0, !0, !0, !0, //
+        !0, !0, !0, !0, !0, !0, 0, !0, // g (loop)
+        !0, !0, !0, !0, !0, !0, !0, !0, //
+        !0, !0, !0, !0, !0, 0, !0, !0, // b (return)
+        !0, 0, !0, 0, !0, !0, !0, !0, //
+        !0, !0, !0, !0, !0, !0, 0, !0, // a (combined)
+        !0, !0, !0, !0, !0, !0, !0, !0,
+    ]);
+    let mask = Ints::new(&[0, !0, !0, 0, !0, !0, !0, !0, 0, !0, !0, 0, !0, !0, !0, !0]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let (initial_values, mask_values) = (initial.get(), mask.get());
+    let n = highp_stride();
+    assert_eq!(initial_values.len(), 4 * MAX_STRIDE_HIGHP);
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::MergeLoopMask(slot(1)));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(0, 0, n, 1, &mut bind(&[&initial, &mask], &mut [&mut src]));
+    let src = src.get();
+
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    for index in 0..n {
+        // `g` should contain `g & mask` in each lane.
+        reporter_assert!(
+            reporter,
+            src[g + index] == (initial_values[g + index] & mask_values[index])
+        );
+
+        // `r` and `b` should be unchanged.
+        reporter_assert!(reporter, src[r + index] == initial_values[r + index]);
+        reporter_assert!(reporter, src[b + index] == initial_values[b + index]);
+
+        // `a` should contain `r & g & b`.
+        reporter_assert!(
+            reporter,
+            src[a + index] == (src[r + index] & src[g + index] & src[b + index])
+        );
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L305-L339 (chrome/m156)
+def_test!(SkRasterPipeline_ReenableLoopMask, |reporter| {
+    let initial = Ints::new(&[
+        !0, !0, !0, !0, !0, 0, !0, !0, // r (condition)
+        !0, 0, !0, 0, !0, !0, 0, !0, //
+        0, !0, !0, !0, 0, 0, 0, !0, // g (loop)
+        0, 0, !0, 0, 0, 0, 0, !0, //
+        !0, !0, !0, !0, !0, 0, !0, !0, // b (return)
+        !0, 0, !0, 0, !0, !0, 0, !0, //
+        0, !0, !0, !0, 0, 0, 0, !0, // a (combined)
+        0, 0, !0, 0, 0, 0, 0, !0,
+    ]);
+    let mask = Ints::new(&[0, !0, 0, 0, 0, 0, !0, 0, 0, !0, 0, 0, 0, 0, !0, 0]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let (initial_values, mask_values) = (initial.get(), mask.get());
+    let n = highp_stride();
+    assert_eq!(initial_values.len(), 4 * MAX_STRIDE_HIGHP);
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::ReenableLoopMask(slot(1)));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(0, 0, n, 1, &mut bind(&[&initial, &mask], &mut [&mut src]));
+    let src = src.get();
+
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    for index in 0..n {
+        // `g` should contain `g | mask` in each lane.
+        reporter_assert!(
+            reporter,
+            src[g + index] == (initial_values[g + index] | mask_values[index])
+        );
+
+        // `r` and `b` should be unchanged.
+        reporter_assert!(reporter, src[r + index] == initial_values[r + index]);
+        reporter_assert!(reporter, src[b + index] == initial_values[b + index]);
+
+        // `a` should contain `r & g & b`.
+        reporter_assert!(
+            reporter,
+            src[a + index] == (src[r + index] & src[g + index] & src[b + index])
+        );
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L341-L400 (chrome/m156)
+def_test!(SkRasterPipeline_CaseOp, |reporter| {
+    let initial = Ints::new(&[
+        !0, !0, !0, !0, !0, 0, !0, !0, // r (condition)
+        0, !0, !0, 0, !0, !0, 0, !0, //
+        !0, 0, !0, !0, 0, 0, 0, !0, // g (loop)
+        0, 0, !0, 0, 0, 0, 0, !0, //
+        !0, !0, !0, !0, !0, 0, !0, !0, // b (return)
+        0, !0, !0, 0, !0, !0, 0, !0, //
+        !0, 0, !0, !0, 0, 0, 0, !0, // a (combined)
+        0, 0, !0, 0, 0, 0, 0, !0,
+    ]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let initial_values = initial.get();
+    let n = highp_stride();
+    assert_eq!(initial_values.len(), 4 * MAX_STRIDE_HIGHP);
+
+    let actual_values: [i32; 16] = [2, 1, 2, 4, 5, 2, 2, 8, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert_eq!(actual_values.len(), MAX_STRIDE_HIGHP);
+
+    let mut case_op_data = vec![0; 2 * MAX_STRIDE_HIGHP];
+    for index in 0..n {
+        case_op_data[index] = actual_values[index];
+        case_op_data[n + index] = !0;
+    }
+    let mut case_op_data = Ints::new(&case_op_data);
+
+    let ctx = CaseOpCtx {
+        offset: 0,
+        expected_value: 2,
+    };
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::SetBasePointer(slot(1)));
+    p.append(Stage::CaseOp(ctx));
+    p.append(Stage::StoreSrc(slot(2)));
+    p.run(
+        0,
+        0,
+        n,
+        1,
+        &mut bind(&[&initial], &mut [&mut case_op_data, &mut src]),
+    );
+    let (src, case_op_data) = (src.get(), case_op_data.get());
+
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    let actual_value_idx = 0 * n;
+    let default_mask_idx = n;
+
+    for index in 0..n {
+        // `g` should have been set to true for each lane containing 2.
+        let mut expected = if actual_values[index] == 2 {
+            !0
+        } else {
+            initial_values[g + index]
+        };
+        reporter_assert!(reporter, src[g + index] == expected);
+
+        // `r` and `b` should be unchanged.
+        reporter_assert!(reporter, src[r + index] == initial_values[r + index]);
+        reporter_assert!(reporter, src[b + index] == initial_values[b + index]);
+
+        // `a` should contain `r & g & b`.
+        reporter_assert!(
+            reporter,
+            src[a + index] == (src[r + index] & src[g + index] & src[b + index])
+        );
+
+        // The actual-value part of `caseOpData` should be unchanged from the inputs.
+        reporter_assert!(
+            reporter,
+            case_op_data[actual_value_idx + index] == actual_values[index]
+        );
+
+        // The default-mask part of `caseOpData` should have been zeroed where the values matched.
+        expected = if actual_values[index] == 2 { 0 } else { !0 };
+        reporter_assert!(reporter, case_op_data[default_mask_idx + index] == expected);
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L402-L433 (chrome/m156)
+def_test!(SkRasterPipeline_MaskOffLoopMask, |reporter| {
+    let initial = Ints::new(&[
+        !0, !0, !0, !0, !0, 0, !0, !0, // r (condition)
+        !0, 0, !0, !0, 0, 0, 0, !0, //
+        !0, !0, 0, !0, 0, 0, !0, !0, // g (loop)
+        !0, 0, 0, !0, 0, 0, 0, !0, //
+        !0, !0, !0, !0, !0, 0, !0, !0, // b (return)
+        !0, 0, !0, !0, 0, 0, 0, !0, //
+        !0, !0, 0, !0, 0, 0, !0, !0, // a (combined)
+        !0, 0, 0, !0, 0, 0, 0, !0,
+    ]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let initial_values = initial.get();
+    let n = highp_stride();
+    assert_eq!(initial_values.len(), 4 * MAX_STRIDE_HIGHP);
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::MaskOffLoopMask);
+    p.append(Stage::StoreSrc(slot(1)));
+    p.run(0, 0, n, 1, &mut bind(&[&initial], &mut [&mut src]));
+    let src = src.get();
+
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    for index in 0..n {
+        // `g` should have masked off any lanes that are currently executing.
+        let mut expected = initial_values[g + index] & !initial_values[a + index];
+        reporter_assert!(reporter, src[g + index] == expected);
+
+        // `a` should contain `r & g & b`.
+        expected = src[r + index] & src[g + index] & src[b + index];
+        reporter_assert!(reporter, src[a + index] == expected);
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L435-L466 (chrome/m156)
+def_test!(SkRasterPipeline_MaskOffReturnMask, |reporter| {
+    let initial = Ints::new(&[
+        !0, !0, !0, !0, !0, 0, !0, !0, // r (condition)
+        !0, 0, !0, !0, 0, 0, 0, !0, //
+        !0, !0, 0, !0, 0, 0, !0, !0, // g (loop)
+        !0, 0, 0, !0, 0, 0, 0, !0, //
+        !0, !0, !0, !0, !0, 0, !0, !0, // b (return)
+        !0, 0, !0, !0, 0, 0, 0, !0, //
+        !0, !0, 0, !0, 0, 0, !0, !0, // a (combined)
+        !0, 0, 0, !0, 0, 0, 0, !0,
+    ]);
+    let mut src = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let initial_values = initial.get();
+    let n = highp_stride();
+    assert_eq!(initial_values.len(), 4 * MAX_STRIDE_HIGHP);
+
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::MaskOffReturnMask);
+    p.append(Stage::StoreSrc(slot(1)));
+    p.run(0, 0, n, 1, &mut bind(&[&initial], &mut [&mut src]));
+    let src = src.get();
+
+    let r = 0 * n;
+    let g = n;
+    let b = 2 * n;
+    let a = 3 * n;
+    for index in 0..n {
+        // `b` should have masked off any lanes that are currently executing.
+        let mut expected = initial_values[b + index] & !initial_values[a + index];
+        reporter_assert!(reporter, src[b + index] == expected);
+
+        // `a` should contain `r & g & b`.
+        expected = src[r + index] & src[g + index] & src[b + index];
+        reporter_assert!(reporter, src[a + index] == expected);
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L468-L510 (chrome/m156)
+def_test!(SkRasterPipeline_InitLaneMasks, |reporter| {
+    let n = highp_stride();
+    for width in 1..=n {
+        let alloc = ArenaAlloc::new();
+        let mut p = RasterPipeline::new();
+
+        // Initialize RGBA to unrelated values.
+        const K_ARBITRARY_COLOR: [f32; 4] = [0.0, 0.25, 0.50, 0.75];
+        p.append_constant_color(&alloc, &K_ARBITRARY_COLOR);
+
+        // Overwrite RGBA with lane masks up to the tail width.
+        p.append(Stage::InitLaneMasks);
+
+        // Use the store_src command to write out RGBA for inspection.
+        let mut rgba = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+        p.append(Stage::StoreSrc(slot(0)));
+
+        // Execute our program.
+        p.run(0, 0, width, 1, &mut bind(&[], &mut [&mut rgba]));
+        let rgba = rgba.get();
+
+        // Initialized data should look like on/on/on/on (RGBA are all set) and is
+        // striped by the raster pipeline stride because we wrote it using store_src.
+        let mut index = 0;
+        let channel_r = 0;
+        let channel_g = channel_r + n;
+        let channel_b = channel_g + n;
+        let channel_a = channel_b + n;
+        while index < width {
+            reporter_assert!(reporter, rgba[channel_r + index] == !0);
+            reporter_assert!(reporter, rgba[channel_g + index] == !0);
+            reporter_assert!(reporter, rgba[channel_b + index] == !0);
+            reporter_assert!(reporter, rgba[channel_a + index] == !0);
+            index += 1;
+        }
+
+        // The rest of the output array should be untouched (all zero).
+        while index < n {
+            reporter_assert!(reporter, rgba[channel_r + index] == 0);
+            reporter_assert!(reporter, rgba[channel_g + index] == 0);
+            reporter_assert!(reporter, rgba[channel_b + index] == 0);
+            reporter_assert!(reporter, rgba[channel_a + index] == 0);
+            index += 1;
+        }
+    }
+});
+
+/// The indirect-offset mixes of the indirect copy tests.
+const K_INDIRECT_OFFSETS: [[u32; 16]; 4] = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+    [0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2],
+    [99, 99, 0, 0, 99, 99, 0, 0, 99, 99, 0, 0, 99, 99, 0, 0],
+];
+
+/// The indirect-offset mixes of the tests that use `~99u`.
+const K_INDIRECT_OFFSETS_NOT_99: [[u32; 16]; 4] = [
+    K_INDIRECT_OFFSETS[0],
+    K_INDIRECT_OFFSETS[1],
+    K_INDIRECT_OFFSETS[2],
+    [99, !99, 0, 0, !99, 99, 0, 0, 99, !99, 0, 0, !99, 99, 0, 0],
+];
+
+/// The execution masks of the masked indirect copy tests.
+const K_COPY_MASKS: [[i32; 16]; 4] = [
+    [!0, !0, !0, !0, !0, 0, !0, !0, !0, !0, !0, !0, !0, 0, !0, !0],
+    [!0, 0, !0, !0, 0, 0, 0, !0, !0, 0, !0, !0, 0, 0, 0, !0],
+    [!0, !0, 0, !0, 0, 0, !0, !0, !0, !0, 0, !0, 0, 0, !0, !0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
+// Port of: tests/SkRasterPipelineTest.cpp#L524-L594 (chrome/m156)
+def_test!(SkRasterPipeline_CopyFromIndirectUnmasked, |reporter| {
+    let n = highp_stride();
+
+    for offsets in &K_INDIRECT_OFFSETS {
+        for copy_size in 1..=5_usize {
+            // Initialize the destination slots to 0,1,2.. and the source slots to various NaNs
+            let mut dst_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+            let mut src_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+            iota(&mut dst_values, 0, 5 * n, 0);
+            iota(&mut src_values, 0, 5 * n, K_LAST_SIGNALING_NAN);
+            let src = Ints::new(&src_values);
+            let mut dst = Ints::new(&dst_values);
+            let offsets_ints = Ints::from_u32(offsets);
+
+            // Run `copy_from_indirect_unmasked` over our data.
+            let ctx = CopyIndirectCtx {
+                dst: slot(2),
+                src: slot(0),
+                indirect_offset: slot(1),
+                indirect_limit: u32::try_from(5 - copy_size).unwrap(),
+                slots: u32::try_from(copy_size).unwrap(),
+            };
+            let mut p = RasterPipeline::new();
+            p.append(Stage::CopyFromIndirectUnmasked(&ctx));
+            p.run(
+                0,
+                0,
+                n,
+                1,
+                &mut bind(&[&src, &offsets_ints], &mut [&mut dst]),
+            );
+            let dst = dst.get();
+
+            // If the offset plus copy-size would overflow the source data, the results don't
+            // matter; indexing off the end of the buffer is UB, and we don't make any promises
+            // about the values you get. If we didn't crash, that's success. (In practice, we
+            // will have clamped the source pointer so that we don't read past the end.)
+            let max_offset = *offsets[..n].iter().max().unwrap();
+            if copy_size + max_offset as usize > 5 {
+                continue;
+            }
+
+            // Verify that the destination has been overwritten in the mask-on fields, and has
+            // not been overwritten in the mask-off fields, for each destination slot.
+            let mut expected_unchanged = 0;
+            let mut expected_from_zero = src_values[0];
+            let mut expected_from_two = src_values[2 * n];
+            let mut dest_ptr = 0;
+            for check_slot in 0..5 {
+                for check_lane in 0..n {
+                    if check_slot < copy_size {
+                        if offsets[check_lane] == 0 {
+                            reporter_assert!(reporter, dst[dest_ptr] == expected_from_zero);
+                        } else if offsets[check_lane] == 2 {
+                            reporter_assert!(reporter, dst[dest_ptr] == expected_from_two);
+                        } else {
+                            errorf!(reporter, "unexpected offset value");
+                        }
+                    } else {
+                        reporter_assert!(reporter, dst[dest_ptr] == expected_unchanged);
+                    }
+
+                    dest_ptr += 1;
+                    expected_unchanged += 1;
+                    expected_from_zero += 1;
+                    expected_from_two += 1;
+                }
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L596-L666 (chrome/m156)
+def_test!(
+    SkRasterPipeline_CopyFromIndirectUniformUnmasked,
+    |reporter| {
+        let n = highp_stride();
+
+        for offsets in &K_INDIRECT_OFFSETS_NOT_99 {
+            for copy_size in 1..=5_usize {
+                // Initialize the destination slots to 0,1,2.. and the source uniforms to various NaNs
+                let mut dst_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+                iota(&mut dst_values, 0, 5 * n, 0);
+                let mut src = [0; 5];
+                iota(&mut src, 0, 5, K_LAST_SIGNALING_NAN);
+                let mut dst = Ints::new(&dst_values);
+                let offsets_ints = Ints::from_u32(offsets);
+
+                // Run `copy_from_indirect_unmasked` over our data.
+                let ctx = CopyIndirectUniformCtx {
+                    dst: slot(1),
+                    src: &src,
+                    indirect_offset: slot(0),
+                    indirect_limit: u32::try_from(5 - copy_size).unwrap(),
+                    slots: u32::try_from(copy_size).unwrap(),
+                };
+                let mut p = RasterPipeline::new();
+                p.append(Stage::CopyFromIndirectUniformUnmasked(&ctx));
+                p.run(0, 0, n, 1, &mut bind(&[&offsets_ints], &mut [&mut dst]));
+                let dst = dst.get();
+
+                // If the offset plus copy-size would overflow the source data, the results don't
+                // matter; indexing off the end of the buffer is UB, and we don't make any promises
+                // about the values you get. If we didn't crash, that's success. (In practice, we
+                // will have clamped the source pointer so that we don't read past the end.)
+                let max_offset = *offsets[..n].iter().max().unwrap();
+                if copy_size + max_offset as usize > 5 {
+                    continue;
+                }
+
+                // Verify that the destination has been overwritten in each slot.
+                let mut expected_unchanged = 0;
+                let mut expected_from_zero = src[0];
+                let mut expected_from_two = src[2];
+                let mut dest_ptr = 0;
+                for check_slot in 0..5 {
+                    for check_lane in 0..n {
+                        if check_slot < copy_size {
+                            if offsets[check_lane] == 0 {
+                                reporter_assert!(reporter, dst[dest_ptr] == expected_from_zero);
+                            } else if offsets[check_lane] == 2 {
+                                reporter_assert!(reporter, dst[dest_ptr] == expected_from_two);
+                            } else {
+                                errorf!(reporter, "unexpected offset value");
+                            }
+                        } else {
+                            reporter_assert!(reporter, dst[dest_ptr] == expected_unchanged);
+                        }
+
+                        dest_ptr += 1;
+                        expected_unchanged += 1;
+                    }
+                    expected_from_zero += 1;
+                    expected_from_two += 1;
+                }
+            }
+        }
+    }
+);
+
+// Port of: tests/SkRasterPipelineTest.cpp#L668-L757 (chrome/m156)
+def_test!(SkRasterPipeline_CopyToIndirectMasked, |reporter| {
+    let n = highp_stride();
+
+    for mask in &K_COPY_MASKS {
+        for offsets in &K_INDIRECT_OFFSETS_NOT_99 {
+            for copy_size in 1..=5_usize {
+                // Initialize the destination slots to 0,1,2.. and the source slots to various
+                // NaNs
+                let mut dst_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+                let mut src_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+                iota(&mut dst_values, 0, 5 * n, 0);
+                iota(&mut src_values, 0, 5 * n, K_LAST_SIGNALING_NAN);
+                let src = Ints::new(&src_values);
+                let mut dst = Ints::new(&dst_values);
+                let offsets_ints = Ints::from_u32(offsets);
+                let mask_ints = Ints::new(mask);
+
+                // Run `copy_to_indirect_masked` over our data.
+                let ctx = CopyIndirectCtx {
+                    dst: slot(3),
+                    src: slot(0),
+                    indirect_offset: slot(1),
+                    indirect_limit: u32::try_from(5 - copy_size).unwrap(),
+                    slots: u32::try_from(copy_size).unwrap(),
+                };
+                let mut p = RasterPipeline::new();
+                p.append(Stage::InitLaneMasks);
+                p.append(Stage::LoadConditionMask(slot(2)));
+                p.append(Stage::CopyToIndirectMasked(&ctx));
+                p.run(
+                    0,
+                    0,
+                    n,
+                    1,
+                    &mut bind(&[&src, &offsets_ints, &mask_ints], &mut [&mut dst]),
+                );
+                let dst = dst.get();
+
+                // If the offset plus copy-size would overflow the destination, the results don't
+                // matter; indexing off the end of the buffer is UB, and we don't make any
+                // promises about the values you get. If we didn't crash, that's success. (In
+                // practice, we will have clamped the destination pointer so that we don't read
+                // past the end.)
+                let max_offset = *offsets[..n].iter().max().unwrap();
+                if copy_size + max_offset as usize > 5 {
+                    continue;
+                }
+
+                // Verify that the destination has been overwritten in the mask-on fields, and
+                // has not been overwritten in the mask-off fields, for each destination slot.
+                let mut expected_unchanged = 0;
+                let mut expected_from_zero = src_values[0];
+                let mut expected_from_two = src_values[0] - (2 * n) as i32;
+                let mut dest_ptr = 0;
+                let mut pos = 0;
+                for _check_slot in 0..5 {
+                    for check_lane in 0..n {
+                        let range_start = offsets[check_lane] as usize * n;
+                        let range_end = (offsets[check_lane] as usize + copy_size) * n;
+                        if mask[check_lane] != 0 && pos >= range_start && pos < range_end {
+                            if offsets[check_lane] == 0 {
+                                reporter_assert!(reporter, dst[dest_ptr] == expected_from_zero);
+                            } else if offsets[check_lane] == 2 {
+                                reporter_assert!(reporter, dst[dest_ptr] == expected_from_two);
+                            } else {
+                                errorf!(reporter, "unexpected offset value");
+                            }
+                        } else {
+                            reporter_assert!(reporter, dst[dest_ptr] == expected_unchanged);
+                        }
+
+                        pos += 1;
+                        dest_ptr += 1;
+                        expected_unchanged += 1;
+                        expected_from_zero += 1;
+                        expected_from_two += 1;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L759-L904 (chrome/m156)
+def_test!(SkRasterPipeline_SwizzleCopyToIndirectMasked, |reporter| {
+    // Test with various swizzle permutations.
+    struct TestPattern {
+        swizzle_size: usize,
+        swizzle_upper_bound: usize,
+        swizzle: [u16; 4],
+    }
+
+    const K_PATTERNS: [TestPattern; 4] = [
+        TestPattern {
+            swizzle_size: 1,
+            swizzle_upper_bound: 4,
+            swizzle: [3, 0, 0, 0],
+        }, // v.w    = (1)
+        TestPattern {
+            swizzle_size: 2,
+            swizzle_upper_bound: 2,
+            swizzle: [1, 0, 0, 0],
+        }, // v.yx   = (1,2)
+        TestPattern {
+            swizzle_size: 3,
+            swizzle_upper_bound: 3,
+            swizzle: [2, 1, 0, 0],
+        }, // v.zyx  = (1,2,3)
+        TestPattern {
+            swizzle_size: 4,
+            swizzle_upper_bound: 4,
+            swizzle: [3, 0, 1, 2],
+        }, // v.wxyz = (1,2,3,4)
+    ];
+
+    #[derive(Clone, Copy)]
+    enum Expect {
+        OutOfBounds,
+        Unchanged,
+        S0,
+        S1,
+        S2,
+        S3,
+        #[allow(dead_code)] // as in the C++ enum
+        S4,
+    }
+    use Expect::{OutOfBounds as XX, S0, S1, S2, S3, Unchanged as __};
+
+    const K_EXPECTATIONS_AT_ZERO: [[Expect; 5]; 4] = [
+        //  d[0].w = 1        d[0].yx = (1,2)   d[0].zyx = (1,2,3) d[0].wxyz = (1,2,3,4)
+        [__, __, __, S0, __],
+        [S1, S0, __, __, __],
+        [S2, S1, S0, __, __],
+        [S1, S2, S3, S0, __],
+    ];
+    const K_EXPECTATIONS_AT_TWO: [[Expect; 5]; 4] = [
+        //  d[2].w = 1        d[2].yx = (1,2)   d[2].zyx = (1,2,3) d[2].wxyz = (1,2,3,4)
+        [XX, XX, XX, XX, XX],
+        [__, __, S1, S0, __],
+        [__, __, S2, S1, S0],
+        [XX, XX, XX, XX, XX],
+    ];
+
+    let n = highp_stride();
+
+    for mask in &K_COPY_MASKS {
+        for offsets in &K_INDIRECT_OFFSETS_NOT_99 {
+            for (pattern_index, pattern) in K_PATTERNS.iter().enumerate() {
+                // Initialize the destination slots to 0,1,2.. and the source slots to various
+                // NaNs
+                let mut dst_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+                let mut src_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+                iota(&mut dst_values, 0, 5 * n, 0);
+                iota(&mut src_values, 0, 5 * n, K_LAST_SIGNALING_NAN);
+                let src = Ints::new(&src_values);
+                let mut dst = Ints::new(&dst_values);
+                let offsets_ints = Ints::from_u32(offsets);
+                let mask_ints = Ints::new(mask);
+
+                // Run `swizzle_copy_to_indirect_masked` over our data.
+                let stride_bytes = u16::try_from(n * 4).unwrap();
+                let ctx = SwizzleCopyIndirectCtx {
+                    copy: CopyIndirectCtx {
+                        dst: slot(3),
+                        src: slot(0),
+                        indirect_offset: slot(1),
+                        indirect_limit: u32::try_from(5 - pattern.swizzle_upper_bound).unwrap(),
+                        slots: u32::try_from(pattern.swizzle_size).unwrap(),
+                    },
+                    offsets: pattern.swizzle.map(|s| s * stride_bytes),
+                };
+                let mut p = RasterPipeline::new();
+                p.append(Stage::InitLaneMasks);
+                p.append(Stage::LoadConditionMask(slot(2)));
+                p.append(Stage::SwizzleCopyToIndirectMasked(&ctx));
+                p.run(
+                    0,
+                    0,
+                    n,
+                    1,
+                    &mut bind(&[&src, &offsets_ints, &mask_ints], &mut [&mut dst]),
+                );
+                let dst = dst.get();
+
+                // If the offset plus copy-size would overflow the destination, the results don't
+                // matter; indexing off the end of the buffer is UB, and we don't make any
+                // promises about the values you get. If we didn't crash, that's success. (In
+                // practice, we will have clamped the destination pointer so that we don't read
+                // past the end.)
+                let max_offset = *offsets[..n].iter().max().unwrap();
+                if pattern.swizzle_upper_bound + max_offset as usize > 5 {
+                    continue;
+                }
+
+                // Verify that the destination has been overwritten in the mask-on fields, and
+                // has not been overwritten in the mask-off fields, for each destination slot.
+                let mut expected_unchanged = 0;
+                let mut dest_ptr = 0;
+                for check_slot in 0..5 {
+                    for check_lane in 0..n {
+                        let mut expected_type = __;
+                        if offsets[check_lane] == 0 {
+                            expected_type = K_EXPECTATIONS_AT_ZERO[pattern_index][check_slot];
+                        } else if offsets[check_lane] == 2 {
+                            expected_type = K_EXPECTATIONS_AT_TWO[pattern_index][check_slot];
+                        }
+                        if mask[check_lane] == 0 {
+                            expected_type = __;
+                        }
+                        match expected_type {
+                            Expect::OutOfBounds => {} // out of bounds; ignore result
+                            Expect::Unchanged => {
+                                reporter_assert!(reporter, dst[dest_ptr] == expected_unchanged);
+                            }
+                            Expect::S0 => {
+                                // destination should match source 0
+                                reporter_assert!(reporter, dst[dest_ptr] == src_values[check_lane]);
+                            }
+                            Expect::S1 => {
+                                // destination should match source 1
+                                reporter_assert!(
+                                    reporter,
+                                    dst[dest_ptr] == src_values[n + check_lane]
+                                );
+                            }
+                            Expect::S2 => {
+                                // destination should match source 2
+                                reporter_assert!(
+                                    reporter,
+                                    dst[dest_ptr] == src_values[2 * n + check_lane]
+                                );
+                            }
+                            Expect::S3 => {
+                                // destination should match source 3
+                                reporter_assert!(
+                                    reporter,
+                                    dst[dest_ptr] == src_values[3 * n + check_lane]
+                                );
+                            }
+                            Expect::S4 => {
+                                // destination should match source 4
+                                reporter_assert!(
+                                    reporter,
+                                    dst[dest_ptr] == src_values[4 * n + check_lane]
+                                );
+                            }
+                        }
+
+                        dest_ptr += 1;
+                        expected_unchanged += 1;
+                    }
+                }
+            }
+        }
+    }
+});
+
+/// The execution masks of `SkRasterPipeline_CopySlotsMasked`.
+const K_SLOT_MASKS: [[i32; 16]; 4] = [
+    [
+        !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0, !0,
+    ],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [!0, 0, !0, !0, !0, !0, 0, !0, !0, 0, !0, !0, !0, !0, 0, !0],
+    [0, !0, 0, 0, 0, !0, !0, 0, 0, !0, 0, 0, 0, !0, !0, 0],
+];
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1140-L1208 (chrome/m156)
+def_test!(SkRasterPipeline_CopySlotsMasked, |reporter| {
+    let src_index = 0;
+    let dst_index = 5;
+
+    struct CopySlotsOp {
+        stage: fn(BinaryOpCtx) -> Stage<'static>,
+        num_slots_affected: usize,
+    }
+
+    let k_copy_ops = [
+        CopySlotsOp {
+            stage: Stage::CopySlotMasked,
+            num_slots_affected: 1,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy2SlotsMasked,
+            num_slots_affected: 2,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy3SlotsMasked,
+            num_slots_affected: 3,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy4SlotsMasked,
+            num_slots_affected: 4,
+        },
+    ];
+
+    let n = highp_stride();
+
+    for op in &k_copy_ops {
+        for mask in &K_SLOT_MASKS {
+            // Initialize the destination slots to 0,1,2.. and the source slots to various NaNs
+            let mut slot_values = vec![0; 10 * MAX_STRIDE_HIGHP];
+            iota(&mut slot_values, n * dst_index, n * (dst_index + 5), 0);
+            iota(
+                &mut slot_values,
+                n * src_index,
+                n * (src_index + 5),
+                K_LAST_SIGNALING_NAN,
+            );
+            let mut slots = Ints::new(&slot_values);
+            let mask_ints = Ints::new(mask);
+
+            // Run `copy_slots_masked` over our data.
+            let ctx = BinaryOpCtx {
+                dst: u32::try_from(n * dst_index * 4).unwrap(),
+                src: u32::try_from(n * src_index * 4).unwrap(),
+            };
+
+            let mut p = RasterPipeline::new();
+            p.append(Stage::InitLaneMasks);
+            p.append(Stage::SetBasePointer(slot(1)));
+            p.append(Stage::LoadConditionMask(slot(0)));
+            p.append((op.stage)(ctx));
+            p.run(0, 0, n, 1, &mut bind(&[&mask_ints], &mut [&mut slots]));
+            let slots = slots.get();
+
+            // Verify that the destination has been overwritten in the mask-on fields, and has
+            // not been overwritten in the mask-off fields, for each destination slot.
+            let mut expected_unchanged = 0;
+            let mut expected_changed = K_LAST_SIGNALING_NAN;
+            let mut dest_ptr = n * dst_index;
+            for check_slot in 0..5 {
+                for check_mask in 0..n {
+                    if check_slot < op.num_slots_affected && mask[check_mask] != 0 {
+                        reporter_assert!(reporter, slots[dest_ptr] == expected_changed);
+                    } else {
+                        reporter_assert!(reporter, slots[dest_ptr] == expected_unchanged);
+                    }
+
+                    dest_ptr += 1;
+                    expected_unchanged += 1;
+                    expected_changed += 1;
+                }
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1210-L1260 (chrome/m156)
+def_test!(SkRasterPipeline_CopySlotsUnmasked, |reporter| {
+    let src_index = 0;
+    let dst_index = 5;
+    let n = highp_stride();
+
+    struct CopySlotsOp {
+        stage: fn(BinaryOpCtx) -> Stage<'static>,
+        num_slots_affected: usize,
+    }
+
+    let k_copy_ops = [
+        CopySlotsOp {
+            stage: Stage::CopySlotUnmasked,
+            num_slots_affected: 1,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy2SlotsUnmasked,
+            num_slots_affected: 2,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy3SlotsUnmasked,
+            num_slots_affected: 3,
+        },
+        CopySlotsOp {
+            stage: Stage::Copy4SlotsUnmasked,
+            num_slots_affected: 4,
+        },
+    ];
+
+    for op in &k_copy_ops {
+        // Initialize the destination slots to 0,1,2.. and the source slots to various NaNs
+        let mut slot_values = vec![0; 10 * MAX_STRIDE_HIGHP];
+        iota(&mut slot_values, n * dst_index, n * (dst_index + 5), 0);
+        iota(
+            &mut slot_values,
+            n * src_index,
+            n * (src_index + 5),
+            K_LAST_SIGNALING_NAN,
+        );
+        let mut slots = Ints::new(&slot_values);
+
+        // Run `copy_slots_unmasked` over our data.
+        let ctx = BinaryOpCtx {
+            dst: u32::try_from(n * dst_index * 4).unwrap(),
+            src: u32::try_from(n * src_index * 4).unwrap(),
+        };
+        let mut p = RasterPipeline::new();
+        p.append(Stage::SetBasePointer(slot(0)));
+        p.append((op.stage)(ctx));
+        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        let slots = slots.get();
+
+        // Verify that the destination has been overwritten in each slot.
+        let mut expected_unchanged = 0;
+        let mut expected_changed = K_LAST_SIGNALING_NAN;
+        let mut dest_ptr = n * dst_index;
+        for check_slot in 0..5 {
+            for _check_lane in 0..n {
+                if check_slot < op.num_slots_affected {
+                    reporter_assert!(reporter, slots[dest_ptr] == expected_changed);
+                } else {
+                    reporter_assert!(reporter, slots[dest_ptr] == expected_unchanged);
+                }
+
+                dest_ptr += 1;
+                expected_unchanged += 1;
+                expected_changed += 1;
+            }
+        }
+    }
+});
+
+/// The `copy_[n_]uniform[s]` stage with `count` uniforms.
+fn copy_uniforms_stage<'a>(count: usize, ctx: &'a UniformCtx<'a>) -> Stage<'a> {
+    match count {
+        1 => Stage::CopyUniform(ctx),
+        2 => Stage::Copy2Uniforms(ctx),
+        3 => Stage::Copy3Uniforms(ctx),
+        4 => Stage::Copy4Uniforms(ctx),
+        _ => unreachable!(),
+    }
+}
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1262-L1313 (chrome/m156)
+def_test!(SkRasterPipeline_CopyUniforms, |reporter| {
+    let n = highp_stride();
+
+    for num_slots_affected in 1..=4_usize {
+        // Initialize the destination slots to 1,2,3...
+        let mut slot_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+        iota(&mut slot_values, 0, 5 * n, 1);
+        let mut slots = Ints::new(&slot_values);
+        // Initialize the uniform buffer to various NaNs
+        let mut uniforms = [0; 5];
+        iota(&mut uniforms, 0, 5, K_LAST_SIGNALING_NAN);
+
+        // Run `copy_n_uniforms` over our data.
+        let ctx = UniformCtx {
+            dst: slot(0),
+            src: &uniforms,
+        };
+        let mut p = RasterPipeline::new();
+        p.append(copy_uniforms_stage(num_slots_affected, &ctx));
+        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        let slots = slots.get();
+
+        // Verify that our uniforms have been broadcast into each slot.
+        let mut expected_unchanged = 1;
+        let mut expected_changed = K_LAST_SIGNALING_NAN;
+        let mut dest_ptr = 0;
+        for check_slot in 0..5 {
+            for _check_lane in 0..n {
+                if check_slot < num_slots_affected {
+                    reporter_assert!(reporter, slots[dest_ptr] == expected_changed);
+                } else {
+                    reporter_assert!(reporter, slots[dest_ptr] == expected_unchanged);
+                }
+
+                dest_ptr += 1;
+                expected_unchanged += 1;
+            }
+            expected_changed += 1;
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1315-L1350 (chrome/m156)
+def_test!(SkRasterPipeline_CopyConstant, |reporter| {
+    let n = highp_stride();
+
+    for index in 0..5_usize {
+        // Initialize the destination slots to 1,2,3...
+        let mut slot_values = vec![0; 5 * MAX_STRIDE_HIGHP];
+        iota(&mut slot_values, 0, 5 * n, 1);
+        let mut slots = Ints::new(&slot_values);
+
+        // Overwrite one destination slot with a constant (some NaN based on slot number).
+        let ctx = ConstantCtx {
+            dst: u32::try_from(n * index * 4).unwrap(),
+            value: K_LAST_SIGNALING_NAN + i32::try_from(index).unwrap(),
+        };
+        let mut p = RasterPipeline::new();
+        p.append(Stage::SetBasePointer(slot(0)));
+        p.append(Stage::CopyConstant(ctx));
+        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        let slots = slots.get();
+
+        // Verify that our constant value has been broadcast into exactly one slot.
+        let mut expected_unchanged = 1;
+        let mut dest_ptr = 0;
+        for check_slot in 0..5 {
+            for _check_lane in 0..n {
+                if check_slot == index {
+                    reporter_assert!(reporter, slots[dest_ptr] == ctx.value);
+                } else {
+                    reporter_assert!(reporter, slots[dest_ptr] == expected_unchanged);
+                }
+
+                dest_ptr += 1;
+                expected_unchanged += 1;
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1352-L1398 (chrome/m156)
+def_test!(SkRasterPipeline_Swizzle, |reporter| {
+    let n = highp_stride();
+
+    struct TestPattern {
+        stage: fn(SwizzleCtx) -> Stage<'static>,
+        swizzle: [u8; 4],
+        expectation: [u8; 4],
+    }
+    let k_patterns = [
+        TestPattern {
+            stage: Stage::Swizzle1,
+            swizzle: [3, 0, 0, 0],
+            expectation: [3, 1, 2, 3],
+        }, // (1,2,3,4).w    = (4)
+        TestPattern {
+            stage: Stage::Swizzle2,
+            swizzle: [1, 0, 0, 0],
+            expectation: [1, 0, 2, 3],
+        }, // (1,2,3,4).yx   = (2,1)
+        TestPattern {
+            stage: Stage::Swizzle3,
+            swizzle: [2, 2, 2, 0],
+            expectation: [2, 2, 2, 3],
+        }, // (1,2,3,4).zzz  = (3,3,3)
+        TestPattern {
+            stage: Stage::Swizzle4,
+            swizzle: [0, 0, 1, 2],
+            expectation: [0, 0, 1, 2],
+        }, // (1,2,3,4).xxyz = (1,1,2,3)
+    ];
+
+    for pattern in &k_patterns {
+        // Initialize the destination slots to various NaNs
+        let mut slot_values = vec![0; 4 * MAX_STRIDE_HIGHP];
+        iota(&mut slot_values, 0, 4 * n, K_LAST_SIGNALING_NAN);
+        let mut slots = Ints::new(&slot_values);
+
+        // Apply the test-pattern swizzle.
+        let mut ctx = SwizzleCtx {
+            dst: 0,
+            offsets: [0; 4],
+        };
+        for index in 0..ctx.offsets.len() {
+            ctx.offsets[index] = pattern.swizzle[index] * u8::try_from(n * 4).unwrap();
+        }
+        let mut p = RasterPipeline::new();
+        p.append(Stage::SetBasePointer(slot(0)));
+        p.append((pattern.stage)(ctx));
+        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        let slots = slots.get();
+
+        // Verify that the swizzle has been applied in each slot.
+        let mut dest_ptr = 0;
+        for check_slot in 0..4 {
+            let mut expected = i32::from(pattern.expectation[check_slot])
+                * i32::try_from(n).unwrap()
+                + K_LAST_SIGNALING_NAN;
+            for _check_lane in 0..n {
+                reporter_assert!(reporter, slots[dest_ptr] == expected);
+
+                dest_ptr += 1;
+                expected += 1;
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1400-L1456 (chrome/m156)
+def_test!(SkRasterPipeline_SwizzleCopy, |reporter| {
+    let n = highp_stride();
+
+    struct TestPattern {
+        slots: usize,
+        swizzle: [u16; 4],
+        expectation: [u16; 4],
+    }
+    const NA: u16 = !0;
+    let k_patterns = [
+        TestPattern {
+            slots: 1,
+            swizzle: [3, NA, NA, NA],
+            expectation: [NA, NA, NA, 0],
+        }, // v.w    = (1)
+        TestPattern {
+            slots: 2,
+            swizzle: [1, 0, NA, NA],
+            expectation: [1, 0, NA, NA],
+        }, // v.yx   = (1,2)
+        TestPattern {
+            slots: 3,
+            swizzle: [2, 3, 0, NA],
+            expectation: [2, NA, 0, 1],
+        }, // v.zwy  = (1,2,3)
+        TestPattern {
+            slots: 4,
+            swizzle: [3, 0, 1, 2],
+            expectation: [1, 2, 3, 0],
+        }, // v.wxyz = (1,2,3,4)
+    ];
+
+    for pattern in &k_patterns {
+        // Allocate space for 4 dest slots, and initialize them to zero.
+        let mut dest = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+
+        // Allocate 4 source slots and initialize them to various NaNs
+        let mut source_values = vec![0; 4 * MAX_STRIDE_HIGHP];
+        iota(&mut source_values, 0, 4 * n, K_LAST_SIGNALING_NAN);
+        let source = Ints::new(&source_values);
+
+        // Apply the dest-swizzle pattern.
+        let mut ctx = SwizzleCopyCtx {
+            src: slot(0),
+            dst: slot(1),
+            offsets: [0; 4],
+        };
+        for index in 0..ctx.offsets.len() {
+            if pattern.swizzle[index] != NA {
+                ctx.offsets[index] = pattern.swizzle[index] * u16::try_from(n * 4).unwrap();
+            }
+        }
+        let mut p = RasterPipeline::new();
+        p.append(Stage::InitLaneMasks);
+        p.append(swizzle_copy_stage(pattern.slots, &ctx));
+        p.run(0, 0, n, 1, &mut bind(&[&source], &mut [&mut dest]));
+        let dest = dest.get();
+
+        // Verify that the swizzle has been applied in each slot.
+        let mut dest_ptr = 0;
+        for check_slot in 0..4 {
+            for check_lane in 0..n {
+                if pattern.expectation[check_slot] == NA {
+                    reporter_assert!(reporter, dest[dest_ptr] == 0);
+                } else {
+                    let expected_idx =
+                        usize::from(pattern.expectation[check_slot]) * n + check_lane;
+                    reporter_assert!(reporter, dest[dest_ptr] == source_values[expected_idx]);
+                }
+
+                dest_ptr += 1;
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L1458-L1514 (chrome/m156)
+def_test!(SkRasterPipeline_Shuffle, |reporter| {
+    let n = highp_stride();
+
+    struct TestPattern {
+        count: i32,
+        shuffle: [u16; 16],
+        expectation: [u16; 16],
+    }
+    let k_patterns = [
+        TestPattern {
+            count: 9,
+            shuffle: [
+                0, 3, 6, 1, 4, 7, 2, 5, 8, /* past end: */ 0, 0, 0, 0, 0, 0, 0,
+            ],
+            expectation: [
+                0, 3, 6, 1, 4, 7, 2, 5, 8, /* unchanged: */ 9, 10, 11, 12, 13, 14, 15,
+            ],
+        },
+        TestPattern {
+            count: 16,
+            shuffle: [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15],
+            expectation: [0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15],
+        },
+    ];
+
+    for pattern in &k_patterns {
+        // Initialize the destination slots to various NaNs
+        let mut slot_values = vec![0; 16 * MAX_STRIDE_HIGHP];
+        iota(&mut slot_values, 0, 16 * n, K_LAST_SIGNALING_NAN);
+        let mut slots = Ints::new(&slot_values);
+
+        // Apply the shuffle.
+        let mut ctx = ShuffleCtx {
+            ptr: slot(0),
+            count: pattern.count,
+            offsets: [0; 16],
+        };
+        for index in 0..ctx.offsets.len() {
+            ctx.offsets[index] = pattern.shuffle[index] * u16::try_from(n * 4).unwrap();
+        }
+        let mut p = RasterPipeline::new();
+        p.append(Stage::Shuffle(&ctx));
+        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        let slots = slots.get();
+
+        // Verify that the shuffle has been applied in each slot.
+        let mut dest_ptr = 0;
+        for check_slot in 0..16 {
+            let mut expected = i32::from(pattern.expectation[check_slot])
+                * i32::try_from(n).unwrap()
+                + K_LAST_SIGNALING_NAN;
+            for _check_lane in 0..n {
+                reporter_assert!(reporter, slots[dest_ptr] == expected);
+
+                dest_ptr += 1;
+                expected += 1;
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2487-L2513 (chrome/m156)
+def_test!(SkRasterPipeline_Jump, |reporter| {
+    // Allocate space for 4 slots.
+    let mut slots = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+    let n = highp_stride();
+
+    const K_COLOR_DARK_RED: [f32; 4] = [0.5, 0.0, 0.0, 0.75];
+    const K_COLOR_GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+    let ctx = BranchCtx { offset: 2 };
+
+    // Make a program which jumps over an appendConstantColor op.
+    let alloc = ArenaAlloc::new();
+    let mut p = RasterPipeline::new();
+    p.append_constant_color(&alloc, &K_COLOR_GREEN); // assign green
+    p.append(Stage::Jump(ctx)); // jump over the dark-red color assignment
+    p.append_constant_color(&alloc, &K_COLOR_DARK_RED); // (not executed)
+    p.append(Stage::StoreSrc(slot(0))); // store the result so we can check it
+    p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+    let slots = slots.get();
+
+    // Verify that the slots contain green.
+    let mut dest_ptr = 0;
+    for check_slot in 0..4 {
+        for _check_lane in 0..n {
+            reporter_assert!(
+                reporter,
+                slots[dest_ptr] == K_COLOR_GREEN[check_slot].to_bits() as i32
+            );
+            dest_ptr += 1;
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2515-L2543 (chrome/m156)
+def_test!(SkRasterPipeline_ExchangeSrc, |reporter| {
+    let n = highp_stride();
+
+    let mut register_values = vec![0; 4 * MAX_STRIDE_HIGHP];
+    let mut exchange_values = vec![0; 4 * MAX_STRIDE_HIGHP];
+    iota(&mut register_values, 0, 4 * n, K_LAST_SIGNALING_NAN);
+    iota(&mut exchange_values, 0, 4 * n, K_LAST_SIGNALING_NEG_NAN);
+    let mut register_value = Ints::new(&register_values);
+    let mut exchange_value = Ints::new(&exchange_values);
+
+    // This program should swap the contents of `registerValue` and `exchangeValue`.
+    let mut p = RasterPipeline::new();
+    p.append(Stage::LoadSrc(slot(0)));
+    p.append(Stage::ExchangeSrc(slot(1)));
+    p.append(Stage::StoreSrc(slot(0)));
+    p.run(
+        0,
+        0,
+        n,
+        1,
+        &mut bind(&[], &mut [&mut register_value, &mut exchange_value]),
+    );
+    let (register_value, exchange_value) = (register_value.get(), exchange_value.get());
+
+    let mut register_ptr = 0;
+    let mut exchange_ptr = 0;
+    let mut expected_register = K_LAST_SIGNALING_NEG_NAN;
+    let mut expected_exchange = K_LAST_SIGNALING_NAN;
+    for _check_slot in 0..4 {
+        for _check_lane in 0..n {
+            reporter_assert!(reporter, register_value[register_ptr] == expected_register);
+            register_ptr += 1;
+            reporter_assert!(reporter, exchange_value[exchange_ptr] == expected_exchange);
+            exchange_ptr += 1;
+            expected_register += 1;
+            expected_exchange += 1;
+        }
+    }
+});
+
+/// `first`/`second` start as `0x12345678`; the branch program stores `a` into both.
+const K_MARKER: i32 = 0x1234_5678;
+
+/// Runs `init; branch; store_src_a first; store_src_a second` over `n` lanes (the `a` register
+/// comes from `init`, a program prefix) and returns `(first, second)` (`N` lanes each).
+fn run_branch(
+    init: &[Stage<'_>],
+    branch: Stage<'_>,
+    extra: &[&Ints],
+    n: usize,
+) -> (Vec<i32>, Vec<i32>) {
+    let mut first = Ints::new(&[K_MARKER; MAX_STRIDE_HIGHP]);
+    let mut second = Ints::new(&[K_MARKER; MAX_STRIDE_HIGHP]);
+    let mut p = RasterPipeline::new();
+    for stage in init {
+        p.append(*stage);
+    }
+    p.append(branch);
+    // `first` and `second` are bound after the read-only `extra` inputs.
+    let first_slot = u16::try_from(extra.len()).unwrap();
+    p.append(Stage::StoreSrcA(slot(first_slot)));
+    p.append(Stage::StoreSrcA(slot(first_slot + 1)));
+    p.run(0, 0, n, 1, &mut bind(extra, &mut [&mut first, &mut second]));
+    (first.get(), second.get())
+}
+
+/// A color for `load_src` with `a` in lane `n - 1` set to `a_last`, all other channels `~0`
+/// when `fill` is true (all zero otherwise).
+fn regs(n: usize, fill: bool, a_last: i32) -> Ints {
+    let mut values = vec![0; 4 * MAX_STRIDE_HIGHP];
+    if fill {
+        values[..4 * n].fill(!0);
+    }
+    values[4 * n - 1] = a_last;
+    Ints::new(&values)
+}
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2545-L2625 (chrome/m156)
+def_test!(SkRasterPipeline_BranchIfAllLanesActive, |reporter| {
+    let n = highp_stride();
+
+    let ctx = BranchCtx { offset: 2 };
+
+    // The branch should be taken when lane masks are all-on.
+    {
+        let (first, second) = run_branch(
+            &[Stage::InitLaneMasks],
+            Stage::BranchIfAllLanesActive(ctx),
+            &[],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should not be taken when lane masks are all-off.
+    {
+        let no_lanes_active = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfAllLanesActive(ctx),
+            &[&no_lanes_active],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should not be taken when lane masks are partially-on.
+    if n > 1 {
+        // An array of ~0s, except for a single zero in the last A slot.
+        let one_lane_inactive = regs(n, true, 0);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfAllLanesActive(ctx),
+            &[&one_lane_inactive],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2627-L2706 (chrome/m156)
+def_test!(SkRasterPipeline_BranchIfAnyLanesActive, |reporter| {
+    let n = highp_stride();
+
+    let ctx = BranchCtx { offset: 2 };
+
+    // The branch should be taken when lane masks are all-on.
+    {
+        let (first, second) = run_branch(
+            &[Stage::InitLaneMasks],
+            Stage::BranchIfAnyLanesActive(ctx),
+            &[],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should not be taken when lane masks are all-off.
+    {
+        let no_lanes_active = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfAnyLanesActive(ctx),
+            &[&no_lanes_active],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should be taken when lane masks are partially-on.
+    if n > 1 {
+        // An array of all zeros, except for a single ~0 in the last A slot.
+        let one_lane_active = regs(n, false, !0);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfAnyLanesActive(ctx),
+            &[&one_lane_active],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2708-L2787 (chrome/m156)
+def_test!(SkRasterPipeline_BranchIfNoLanesActive, |reporter| {
+    let n = highp_stride();
+
+    let ctx = BranchCtx { offset: 2 };
+
+    // The branch should not be taken when lane masks are all-on.
+    {
+        let (first, second) = run_branch(
+            &[Stage::InitLaneMasks],
+            Stage::BranchIfNoLanesActive(ctx),
+            &[],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should be taken when lane masks are all-off.
+    {
+        let no_lanes_active = Ints::zeroed(4 * MAX_STRIDE_HIGHP);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfNoLanesActive(ctx),
+            &[&no_lanes_active],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should not be taken when lane masks are partially-on.
+    if n > 1 {
+        // An array of all zeros, except for a single ~0 in the last A slot.
+        let one_lane_active = regs(n, false, !0);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(0))],
+            Stage::BranchIfNoLanesActive(ctx),
+            &[&one_lane_active],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+});
+
+// Port of: tests/SkRasterPipelineTest.cpp#L2789-L2885 (chrome/m156)
+def_test!(SkRasterPipeline_BranchIfActiveLanesEqual, |reporter| {
+    let n = highp_stride();
+
+    // An array of all 6s.
+    let all_sixes = Ints::new(&[6; MAX_STRIDE_HIGHP]);
+
+    // An array of all 6s, except for a single 5 in one lane.
+    let mut mostly_sixes_with_one_five = [6; MAX_STRIDE_HIGHP];
+    mostly_sixes_with_one_five[n - 1] = 5;
+    let mostly_sixes_with_one_five = Ints::new(&mostly_sixes_with_one_five);
+
+    // comparing all-six vs five will match
+    let matching = BranchIfEqualCtx {
+        offset: 2,
+        value: 5,
+        ptr: slot(0),
+    };
+
+    // comparing mostly-six vs five won't match
+    let nonmatching = BranchIfEqualCtx {
+        offset: 2,
+        value: 5,
+        ptr: slot(0),
+    };
+
+    // The branch should be taken when lane masks are all-on and we're checking 6 ≠ 5.
+    {
+        let (first, second) = run_branch(
+            &[Stage::InitLaneMasks],
+            Stage::BranchIfNoActiveLanesEq(&matching),
+            &[&all_sixes],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should not be taken when lane masks are all-on and we're checking 5 ≠ 5
+    {
+        let (first, second) = run_branch(
+            &[Stage::InitLaneMasks],
+            Stage::BranchIfNoActiveLanesEq(&nonmatching),
+            &[&mostly_sixes_with_one_five],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] != K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+    // The branch should be taken when the 5 = 5 lane is dead.
+    if n > 1 {
+        // An execution mask with all lanes on except for the five-lane.
+        let mask = regs(n, true, 0);
+        let (first, second) = run_branch(
+            &[Stage::LoadSrc(slot(1))],
+            Stage::BranchIfNoActiveLanesEq(&nonmatching),
+            &[&mostly_sixes_with_one_five, &mask],
+            n,
+        );
+        for check_lane in 0..n {
+            reporter_assert!(reporter, first[check_lane] == K_MARKER);
+            reporter_assert!(reporter, second[check_lane] != K_MARKER);
+        }
+    }
+});
+
+/// The `swizzle_copy_[n_]slot[s]_masked` stage copying `count` slots.
+fn swizzle_copy_stage(count: usize, ctx: &SwizzleCopyCtx) -> Stage<'_> {
+    match count {
+        1 => Stage::SwizzleCopySlotMasked(ctx),
+        2 => Stage::SwizzleCopy2SlotsMasked(ctx),
+        3 => Stage::SwizzleCopy3SlotsMasked(ctx),
+        4 => Stage::SwizzleCopy4SlotsMasked(ctx),
+        _ => unreachable!(),
+    }
+}
