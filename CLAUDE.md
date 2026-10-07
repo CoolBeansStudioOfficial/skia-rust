@@ -24,6 +24,7 @@ A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests ma
 ## Definition of done for a PR
 - The manifest entries it targets are `passing`; nothing previously `passing` regressed.
 - `cargo fmt --all --check`, clippy (above), and `cargo test --workspace` are clean.
+- **CI is green on every platform** (Windows, Linux x64, macOS arm64, Linux aarch64, wasm32, Miri). Local runs on the Windows server don't catch: module `#[path]`/`include!` paths through `..` or non-existent directories (never use them), code that is dead or warns only on another `cfg` (CI builds with `RUSTFLAGS=-D warnings`), arch-specific intrinsics without `cfg(target_arch)` gates, and host-dependent test expectations (CPU tier, N32 byte order, path separators).
 - For GMs: output hashes match the oracle goldens on every CPU tier the host supports.
 
 ## When output doesn't match
