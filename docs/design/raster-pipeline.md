@@ -1393,6 +1393,14 @@ add cases: `docs/PORTING.md` §12):
   NaN inputs: `nmad(s, d, s + d)` makes a NaN `s` both product and addend, the same
   NaN-meets-NaN case as above (native Ml3/Ml4 returned the other NaN's sign; the models agree
   with Skia).
+  **Host NaN sign (open).** On a non-x86 host the plain operators (`+ - * /`, `sqrt`) in the x86
+  models' stage code and in `Scalar` give Arm's default NaN `0x7FC00000` for an invalid operation,
+  x86's is `0xFFC00000` (only the modelled instructions, `mad`/`min`/`max`/conversions/estimates,
+  spell the indefinite out). Mostly that is only a sign bit, which `expected::check` forgives on
+  those hosts (a second comparison with `0x7FC00000` words read as `0xFFC00000`); but a generated
+  NaN that reaches a bit-casting stage (`approx_log2` in `PQish`/`ootf` after an overflowing
+  `inf / inf`) changes values, so the cases avoid overflowing parameters. Making the models'
+  float operators exact on every host (a lane type with x86 arithmetic) is future work.
   The run found one bug: B3's lowp `from_float` (`scale_1_float`, `lerp_1_float`) converted with
   Rust's saturating `as u16`, Skia's `uint16_t(f * 255.0f + 0.5f)` is a truncating float to int
   conversion (negative coverages wrap, huge ones give the tier's `cvttps2dq` result); both lowp
