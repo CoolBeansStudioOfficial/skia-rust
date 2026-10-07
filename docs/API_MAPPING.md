@@ -130,6 +130,13 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkBitmap::ComputeIsOpaque` | `compute_is_opaque(&Bitmap)` | same | same as skia-safe |
 | `SkBitmap::readPixels` (2 overloads), `writePixels`, `extractAlpha`, `asImage`, `makeShader` (4 overloads), `getBounds` (out-parameter forms) | | not ported | `SkConvertPixels`, `SkImage`, shaders, mask filters not ported; `bounds()` replaces `getBounds` |
 | `SkReadPixelsRec`, `SkWritePixelsRec` | not exposed | `#[doc(hidden)] read_pixels_rec::ReadPixelsRec<'a>`, `write_pixels_rec::WritePixelsRec<'a>` with public fields `pixels: Option<&[u8]>` (`&mut` for read), `offset`, `row_bytes`, `info`, `x`, `y`; `trim` | the advanced `fPixels` pointer is the byte `offset` into the original slice (`rec.fPixels == pixels + n` is `rec.offset == n`) |
+| **mask** (`skia_rust_core::mask`) | | | |
+| `SkMask` | none | `Mask<'a>` (`image: &'a [u8]`, `bounds`, `row_bytes`, `format`) | borrowed image; an empty slice is the `nullptr` image |
+| `SkMask::Format` (`kBW_Format`, `kA8_Format`, `k3D_Format`, `kARGB32_Format`, `kLCD16_Format`, `kSDF_Format`) | none | `MaskFormat::{BW, A8, ThreeD, Argb32, Lcd16, Sdf}`; `COUNT_MASK_FORMATS`, `MaskFormat::is_valid_format(u8)` | enum without prefix |
+| `SkMask::getAddr1/8/LCD16/32/getAddr` (pointers) | none | `Mask::get_addr1/8/lcd16/32/get_addr` -> `&[u8]` starting at the addressed element; value helpers `lcd16(x, y) -> u16`, `argb32(x, y) -> u32` | safe slice access; bounds-checked; panics where Skia's debug asserts fire (wrong format, `(x, y)` outside `bounds`) |
+| `SkMask::computeImageSize`, `computeTotalImageSize`, `isEmpty` | none | `compute_image_size`, `compute_total_image_size`, `is_empty` | mechanical names |
+| `SkMask::AlphaIter`, `SkAutoMaskFreeImage` | none | not ported | raw-pointer iterator (blur code only) / subsumed by `Vec` ownership |
+| `SkMaskBuilder` | none | `MaskBuilder` (owns `image: Vec<u8>`; `as_mask() -> Mask`, mutable `get_addr*` slices) | owned image instead of `uint8_t*`; `AllocImage` is `alloc_image(size, AllocType) -> Vec<u8>` (always zero-filled, 4-byte aligned), `FreeImage` is `Drop`; `PrepareDestination` is `prepare_destination` |
 | **m44** | | | |
 | `SkM44` | `M44` (`Clone`) | `M44` (`Copy + Clone`) | plain data, so `Copy` is a superset of skia-safe's API |
 | `SkM44::operator==` | `PartialEq` via FFI | `PartialEq`, with the C++ `this == &other` shortcut (`std::ptr::eq`) | `m == m` is true even for NaN members, as in C++ |
@@ -300,6 +307,21 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRegionPriv::VisitSpans`, `Validate`, `kRunTypeSentinel`, `SkRegionValueIsSentinel` | not exposed | `#[doc(hidden)] region::region_priv::{visit_spans, validate, RUN_TYPE_SENTINEL, region_value_is_sentinel}` | PORTING §3 |
 | `SkRegion::setPath`, `addBoundaryPath`, `getBoundaryPath` (`SkRegion_path.cpp`) | `set_path`, `add_boundary_path`, `boundary_path` | not ported yet | need scan conversion (`SkScan`) |
 | `SkRegion::toString` (Android framework only) | not exposed | not ported | `SK_BUILD_FOR_ANDROID_FRAMEWORK` only |
+| **blitter** (`skia_rust_raster::blitter`, `alpha_runs`) | | | |
+| `SkBlitter` (abstract class) | none | `trait Blitter`; required: `blit_h`, `blit_anti_h`, `blit_memory`; all other methods have Skia's default bodies | virtuals become provided trait methods |
+| `SkBlitter::blitAntiH(x, y, const SkAlpha[], const int16_t runs[])` | none | `blit_anti_h(x, y, &mut [Alpha], &mut [i16])` | Skia's clip blitters `const_cast` and rewrite the runs (`SkAlphaRuns::Break`), and `blitAntiV2` depends on it, so the arrays are `&mut`; pointer offsets become re-slicing |
+| `SkBlitter::blitMask(const SkMask&, const SkIRect&)` | none | `blit_mask(&Mask<'_>, &IRect)` | `SkMask` -> `Mask` |
+| `SkBlitter::blitAntiH2/V2(int, int, U8CPU, U8CPU)` | none | `blit_anti_h2/v2(x, y, a0: u32, a1: u32)` | `U8CPU` is `u32`; debug-asserted to fit a byte like `SkToU8` |
+| `SkBlitter::fBlitMemory`, `allocBlitMemory(size_t)` -> `void*` | none | required `blit_memory(&mut self) -> &mut BlitMemory`; provided `alloc_blit_memory(sz) -> &mut [u8]` | no state in trait defaults, so the owner supplies the `BlitMemory`; clip blitters forward to the wrapped blitter. `blit_fat_anti_rect` uses local `Vec`s instead (a slice borrowed from `self` cannot be held across `self.blit_anti_h`) |
+| `SkBlitter::canDirectBlit`, `DirectBlit` | none | not ported yet | returns a borrowed `SkPixmap`; decided with the first blitter that implements it (D3/D4) |
+| `SkBlitter::blitMaskRegion/blitRectRegion/blitRegion` (non-virtual) | none | provided trait methods `blit_mask_region/blit_rect_region/blit_region` | callable on `dyn Blitter` |
+| `SkBlitter::blitFatAntiRect` | none | `blit_fat_anti_rect(&Rect)` | mechanical name |
+| `SkBlitter::Choose`, `ChooseSprite`, `UseLegacyBlitter`, `gSkForceRasterPipelineBlitter` | none | not in D1 | D4 |
+| `SkNullBlitter`, `SkRectClipBlitter`, `SkRgnClipBlitter` (`init(...)`) | none | `NullBlitter`, `RectClipBlitter::new(&mut dyn Blitter, IRect)`, `RgnClipBlitter::new(&mut dyn Blitter, &Region)` | `init` is the constructor; wrapped blitter/region are borrowed (`'a`) |
+| `SkBlitterClipper::apply(SkBlitter*, const SkRegion*, const SkIRect*)` -> `SkBlitter*` | none | `BlitterClipper<'a>::apply(&'b mut self, &'a mut dyn Blitter, Option<&'a Region>, Option<&IRect>) -> &'b mut dyn Blitter` | pointer to a member becomes a borrow of the clipper; members are `Option`s |
+| `SkRectClipCheckBlitter` | none | not ported | `SK_DEBUG`-only checker |
+| `SkAlphaRuns` (`SkAlphaRuns.h`; there is no `SkAntiRun.h` in m156) | none | `AlphaRuns` (`pub runs: Vec<i16>`, `pub alpha: Vec<Alpha>`; `new(max_width)`, `reset`, `add`, `is_empty`, `assert_valid`, `dump() -> String`) | owns its buffers (`width + 1` entries) instead of pointing into caller memory; `add` returns the new `offsetX`; `dump` returns the text instead of printing |
+| `SkAlphaRuns::Break`, `BreakAt`, `CatchOverflow` | none | `AlphaRuns::break_runs(&mut [i16], &mut [Alpha], x, count)`, `break_at`, `catch_overflow(i32) -> Alpha` | `Break` is a Rust keyword-adjacent name; slices instead of pointers |
 | **skcms** | | | |
 | `skcms_Matrix3x3`, `skcms_Matrix3x4` | missing | `Matrix3x3`, `Matrix3x4` (`vals`) | drop prefix; `bit_eq` is the C++ `memcmp` |
 | `skcms_Matrix3x3_invert`, `skcms_Matrix3x3_concat` | missing | `Matrix3x3::invert() -> Option<Matrix3x3>`, `Matrix3x3::concat`; free-function forms `matrix3x3_invert`, `matrix3x3_concat` | out-param becomes `Option` |

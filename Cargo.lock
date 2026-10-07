@@ -532,6 +532,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-raster"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+ "skia-rust-simd",
+]
+
+[[package]]
 name = "skia-rust-simd"
 version = "0.156.0"
 dependencies = [

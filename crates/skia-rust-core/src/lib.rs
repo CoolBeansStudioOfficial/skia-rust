@@ -40,6 +40,7 @@ pub mod image_info_priv;
 pub mod line_clipper;
 pub mod m44;
 pub mod malloc_pixel_ref;
+pub mod mask;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
