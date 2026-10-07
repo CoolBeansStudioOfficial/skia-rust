@@ -12,6 +12,46 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkUnPreMultiply` | none | `un_pre_multiply::{get_scale, apply_scale, pm_color_to_color}` | class with only statics becomes a module |
 | **float_bits** | | | |
 | `SkFloat2Bits`, `SkBits2Float`, `SkFloatAs2sCompliment`, ... (`SkFloatBits.h`) | not exposed | `float_bits::{float_to_bits, bits_to_float, float_as_2s_compliment, ...}` | mechanical names; needed by `ScalarTest` |
+| **m44** | | | |
+| `SkM44` | `M44` (`Clone`) | `M44` (`Copy + Clone`) | plain data, so `Copy` is a superset of skia-safe's API |
+| `SkM44::operator==` | `PartialEq` via FFI | `PartialEq`, with the C++ `this == &other` shortcut (`std::ptr::eq`) | `m == m` is true even for NaN members, as in C++ |
+| `SkM44::operator*` | `Mul` for `&M44` / `&V3` / `&V4` | same (`&M44 * &M44`, `&M44 * V3`, `&M44 * V4`) | same as skia-safe |
+| `SkM44::preConcat(const SkMatrix&)` | not exposed | `M44::pre_concat_matrix` | overloads get distinct names |
+| `SkM44::dump` | `dump` | not ported | needs `SkDebugf` |
+| `SkM44::kUninitialized_Constructor` | none | not ported | no uninitialised values in safe Rust |
+| `SkMatrixPriv::MapRect(const SkM44&, ...)` | not exposed | `matrix_priv::map_rect` | defined in `SkM44.cpp`, declared in `SkMatrixPriv.h` |
+| `SkMatrixInvert.h` | not exposed | `matrix_invert::{invert_2x2_matrix, invert_3x3_matrix, invert_4x4_matrix}` | `outMatrix` may be null: `Option<&mut [scalar; N]>`; the determinant is returned as a `scalar` (a tiny double determinant underflows to 0, as in C++) |
+| `SkV2` / `SkV3` / `SkV4` | `V2` / `V3` / `V4` | same | `as_array` / `as_mut_array` (unsafe in skia-safe) become `to_array` (by value); `SkV4::operator[]` is `Index` + `IndexMut`; the static `Dot` / `Cross` / `Normalize` are the same methods |
+| **matrix** | | | |
+| `SkMatrix` | `Matrix` (`Copy + Clone`) | `Matrix` (`Clone`, not `Copy`) | `fTypeMask` is `mutable` in C++ and is updated through `const` methods (`getType()`, ...). Rust stores it in an `AtomicU32` (relaxed), so `Matrix` is `Send + Sync` and `&self` getters keep the exact C++ caching behaviour, but it cannot be `Copy` |
+| `SkMatrix::operator[]` (non-const) | `IndexMut<usize>` / `IndexMut<Member>` | same | dirties the type cache, as in C++ |
+| `SkMatrix::kASkewY`, ... | `AffineMember` (+ `Index<AffineMember>`) | `AffineMember` (no `Index` impl) | skia-safe's `Index<AffineMember>` indexes the 3x3 array with the affine index, which is wrong; use `to_affine()` |
+| `SkMatrix::get(int)`, `set(int, v)` | `IndexGet` / `IndexSet` traits | inherent `get` / `set` taking `impl Into<usize>` (`usize`, `Member`, `AffineMember`) | |
+| `SkMatrix::setScale(sx, sy[, px, py])` and the other pivot overloads (`setRotate`, `setSkew`, `setSinCos`, `preScale`, ... `postSkew`) | `(.., pivot: impl Into<Option<Point>>)`; `None` is passed as pivot `(0, 0)` to the 4-arg C++ overload | same signature, but `None` calls the C++ overload *without* pivot | the two C++ overloads give different type masks (and NaN results), so skia-rust keeps them distinct |
+| `SkMatrix::isSimilarity(tol)`, `preservesRightAngles(tol)` | no `tol` | `is_similarity` / `is_similarity_tol`, `preserves_right_angles` / `preserves_right_angles_tol` | overloads get distinct names |
+| `SkMatrix::getMinMaxScales` | `min_max_scales() -> (scalar, scalar)` (ignores the `bool`) | `min_max_scales() -> Option<(scalar, scalar)>` | `None` when the C++ returns false |
+| `SkMatrix::mapRadius` | `map_radius() -> Option<scalar>` (`None` with perspective) | `map_radius() -> scalar` | C++ also handles perspective |
+| `SkMatrix::mapRect` | `map_rect() -> (Rect, bool)` | same, but panics (`unimplemented!`) for matrices with perspective | needs `SkPathBuilder::transform` and `SkPathPriv::PerspectiveClip` (SkPath, SkEdgeClipper); `Matrix_mapRect_skbug12335` stays `todo` |
+| `SkMatrix::mapRectScaleTranslate` | `map_rect_scale_translate() -> Option<Rect>` | same | same as skia-safe |
+| `SkMatrix::mapPoints` (span overloads) | `map_points(dst, src)` (asserts `dst.len() >= src.len()`), `map_points_inplace` | same names; maps `min(dst.len(), src.len())` points | C++ `min_count`; same for `map_vectors`, `map_homogeneous_points`, `map_points_to_homogeneous` |
+| `SkMatrix::RectToRect`, `MakeRectToRect`, `setRectToRect` (`SK_SUPPORT_LEGACY_MATRIX_RECTTORECT`) | deprecated `rect_to_rect -> Option` / `from_rect_to_rect` | `make_rect_to_rect -> Matrix` (identity on failure), `set_rect_to_rect -> bool` (resets on failure) | C++ semantics; use `rect_2_rect` / `rect_to_rect_or_identity` in new code |
+| `SkMatrix::PolyToPoly`, `setPolyToPoly` | `poly_to_poly`, `from_poly_to_poly`, `set_poly_to_poly` | `poly_to_poly`, `set_poly_to_poly` | `from_poly_to_poly` is a duplicate of `poly_to_poly` |
+| `SkMatrix::postIDiv` (private) | deprecated `post_idiv` | `matrix_priv::post_i_div` | `SkMatrixPriv::PostIDiv` |
+| `SkMatrix::I`, `InvalidMatrix` | `Matrix::i()`, `invalid_matrix()`, `matrix::IDENTITY` (`const`) | same, `matrix::IDENTITY` is a `static` | `Matrix` holds an atomic, so a `const` would trip `declare_interior_mutable_const` |
+| `SkMatrix::setRSXform` | `set_rsxform` | not ported | needs `SkRSXform` |
+| `SkMatrix::dump` | `dump` | not ported | needs `SkString` / `SkDebugf` |
+| `SkMatrix::getMapPtsProc`, `SkMatrixPriv::GetMapPtsProc` | not exposed | not ported | function-pointer table; `map_points` dispatches on the type mask |
+| `SkMatrixPriv::MapPointsWithStride` (2 overloads), `MapHomogeneousPointsWithStride` | not exposed | not ported | walk raw memory by byte stride: not expressible without `unsafe` |
+| `SkMatrixPriv` | not exposed | `#[doc(hidden)] matrix_priv` free functions | PORTING §3 |
+| `SkMatrixPriv::WriteToMemory`, `ReadFromMemory` | not exposed | `matrix_priv::write_to_memory(&Matrix, Option<&mut [u8]>) -> usize`, `read_from_memory(&mut Matrix, &[u8]) -> usize` | `Option` for the null buffer; native-endian floats; panics if `buffer` is shorter than the returned size |
+| `SkMatrixPriv::InverseMapRect` | not exposed | `matrix_priv::inverse_map_rect(&Matrix, &Rect) -> Option<Rect>` | `bool` + out-param becomes `Option` |
+| `SkMatrixPriv::CheapEqual` | not exposed | `matrix_priv::cheap_equal` | bitwise compare of the nine members (`memcmp`) |
+| `SkMatrixPriv::M44ColMajor` | not exposed | `matrix_priv::m44_col_major` (returns `[scalar; 16]` by value) | no pointer into the matrix |
+| `SkMatrixPriv::NearlyAffine` | not exposed | `matrix_priv::nearly_affine(m, bounds, tolerance)` | no default argument: pass `SCALAR_NEARLY_ZERO` |
+| `SkMatrixPriv::kMaxFlattenSize` | not exposed | `matrix_priv::MAX_FLATTEN_SIZE` | |
+| `SkPathPriv::kW0PlaneDistance` | not exposed | `matrix_priv::W0_PLANE_DISTANCE` | needed by `matrix_priv::map_rect`; move to `path_priv` when SkPath is ported |
+| `SkDecomposeUpper2x2` (`SkMatrixUtils.h`) | not exposed | `#[doc(hidden)] matrix_utils::decompose_upper_2x2(&Matrix, Option<&mut Point>, Option<&mut Point>, Option<&mut Point>) -> bool` | null out-params become `Option` |
+| `SkTreatAsSprite` (`SkMatrixUtils.h`) | not exposed | not ported | needs `SkSamplingOptions` |
 | **point** | | | |
 | `SkIVector` | `pub use IPoint as IVector` | `pub type IVector = IPoint` | a type alias is equivalent |
 | `SkIPoint` `+ - += -=` | plain `+`/`-` (panics on overflow) | saturating (`Sk32_sat_add` / `Sk32_sat_sub`) | Skia's semantics (PORTING §3) |
@@ -41,7 +81,7 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRect::toQuad`, `copyToQuad` | `to_quad`, `copy_to_quad` | not ported yet | need `SkPathDirection` (`SkPathTypes.h`) |
 | `SkRectPriv` | not exposed | `#[doc(hidden)] rect::rect_priv` free functions | PORTING §3 |
 | `SkRectPriv::FitsInFixed` | not exposed | `rect_priv::fits_in_fixed_rect` | avoids clashing with `math_priv::fits_in_fixed` |
-| `SkRectPriv::QuadContainsRect*` | not exposed | not ported yet | need `SkMatrix` / `SkM44` |
+| `SkRectPriv::QuadContainsRect` (2 overloads), `QuadContainsRectMask` | not exposed | `rect_priv::quad_contains_rect` (`&Matrix`, `&IRect`), `quad_contains_rect_m44`, `quad_contains_rect_mask` (returns `vx::Int4`) | overloads get distinct names; the C++ default `tol = 0.f` is an explicit `tol` argument |
 | `SkRectPriv::Subtract` (4 overloads) | not exposed | `subtract`, `subtract_irect` (bool + out-param), `subtract_diff`, `subtract_irect_diff` | overloads get distinct names |
 | **rrect** | | | |
 | `SkRRect::Type`, `SkRRect::Corner` | `rrect::Type`, `rrect::Corner` (`Empty`, `Rect`, ..; `UpperLeft`, ..) | same; `Type::LAST` for `kLastType` | same as skia-safe; `Corner` is `repr(usize)` so `corner as usize` indexes the radii |

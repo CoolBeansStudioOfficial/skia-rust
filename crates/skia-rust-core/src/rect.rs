@@ -1253,11 +1253,14 @@ impl From<IRect> for Rect {
 pub mod rect_priv {
     use super::{Contains, IRect, Rect, std_max, std_min};
     use crate::floating_point::float_midpoint;
+    use crate::m44::M44;
     use crate::math::{MAX_S32, MIN_S32};
     use crate::math_priv::fits_in_fixed;
+    use crate::matrix::Matrix;
     use crate::point::Point;
     use crate::scalar::{SCALAR_MAX, SCALAR_MIN, scalar};
     use crate::t_pin::t_pin;
+    use skia_rust_simd::vx::{Float4, Int4, all, shuffle};
 
     /// Returns an irect that is very large, and can be safely round-tripped with [`Rect`] and
     /// still be considered non-empty (width/height > 0) even if we round-out the [`Rect`].
@@ -1493,6 +1496,90 @@ pub mod rect_priv {
         let mut diff = IRect::new_empty();
         subtract_irect(a, b, &mut diff);
         diff
+    }
+
+    /// Returns true if the quadrilateral formed by transforming the four corners of `a` by `m`
+    /// contains `b`. `tol` is in the same coordinate space as `b`, to treat `b` as `tol` units
+    /// inset (`SkRectPriv::QuadContainsRect(const SkMatrix&, const SkIRect&, ...)`; pass `0.0`
+    /// for the default `tol`).
+    // Port of: src/core/SkRect.cpp#L298-L303 (chrome/m156)
+    #[doc(alias = "QuadContainsRect")]
+    #[must_use]
+    pub fn quad_contains_rect(m: &Matrix, a: &IRect, b: &IRect, tol: scalar) -> bool {
+        quad_contains_rect_m44(
+            &M44::from(m),
+            &Rect::from_irect(a),
+            &Rect::from_irect(b),
+            tol,
+        )
+    }
+
+    /// Returns true if the quadrilateral formed by transforming the four corners of `a` by `m`
+    /// contains `b` (`SkRectPriv::QuadContainsRect(const SkM44&, const SkRect&, ...)`; pass
+    /// `0.0` for the default `tol`).
+    // Port of: src/core/SkRect.cpp#L305-L307 (chrome/m156)
+    #[doc(alias = "QuadContainsRect")]
+    #[must_use]
+    pub fn quad_contains_rect_m44(m: &M44, a: &Rect, b: &Rect, tol: scalar) -> bool {
+        all(quad_contains_rect_mask(m, a, b, tol))
+    }
+
+    /// Like [`quad_contains_rect_m44`] but returns the edge test masks ordered T, R, B, L
+    /// (`SkRectPriv::QuadContainsRectMask`).
+    // Port of: src/core/SkRect.cpp#L309-L355 (chrome/m156)
+    #[doc(alias = "QuadContainsRectMask")]
+    #[must_use]
+    pub fn quad_contains_rect_mask(m: &M44, a: &Rect, b: &Rect, tol: scalar) -> Int4 {
+        debug_assert!(m.invert().is_some());
+        // With empty rectangles, the calculated edges could give surprising results. If 'a' were
+        // not sorted, its normals would point outside the sorted rectangle, so lots of potential
+        // rects would be seen as "contained". If 'a' is all 0s, its edge equations are also
+        // (0,0,0) so every point has a distance of 0, and would be interpreted as inside.
+        if a.is_empty() {
+            return Int4::splat(0); // all "false"
+        }
+        // However, 'b' is only used to define its 4 corners to check against the transformed
+        // edges. This is valid regardless of b's emptiness or sortedness.
+
+        // Calculate the 4 homogenous coordinates of 'a' transformed by 'm' where Z=0 and W=1.
+        let ax = Float4::new(a.left, a.right, a.right, a.left);
+        let ay = Float4::new(a.top, a.top, a.bottom, a.bottom);
+
+        let max = m.rc(0, 0) * ax + m.rc(0, 1) * ay + m.rc(0, 3);
+        let may = m.rc(1, 0) * ax + m.rc(1, 1) * ay + m.rc(1, 3);
+        let maw = m.rc(3, 0) * ax + m.rc(3, 1) * ay + m.rc(3, 3);
+
+        if all(maw.lt_mask(0.0)) {
+            // If all points of A are mapped to w < 0, then the edge equations end up representing
+            // the convex hull of projected points when A should in fact be considered empty.
+            return Int4::splat(0); // all "false"
+        }
+
+        // Cross product of adjacent vertices provides homogenous lines for the 4 sides of the
+        // quad
+        let rot = |v: Float4| shuffle(v, [1, 2, 3, 0]);
+        let l_a = may * rot(maw) - maw * rot(may);
+        let l_b = maw * rot(max) - max * rot(maw);
+        let l_c = max * rot(may) - may * rot(max);
+
+        // Before transforming, the corners of 'a' were in CW order, but afterwards they may become
+        // CCW, so the sign corrects the direction of the edge normals to point inwards.
+        let sign: scalar = if (l_a[0] * l_b[1] - l_b[0] * l_a[1]) < 0.0 {
+            -1.0
+        } else {
+            1.0
+        };
+
+        // Calculate distance from 'b' to each edge. Since 'b' has presumably been transformed by
+        // 'm' *and* projected, this assumes W = 1.
+        let b_inset = b.with_inset((tol, tol));
+        let d0 = sign * (l_a * b_inset.left + l_b * b_inset.top + l_c);
+        let d1 = sign * (l_a * b_inset.right + l_b * b_inset.top + l_c);
+        let d2 = sign * (l_a * b_inset.right + l_b * b_inset.bottom + l_c);
+        let d3 = sign * (l_a * b_inset.left + l_b * b_inset.bottom + l_c);
+
+        // 'b' is contained in the mapped rectangle if all distances are >= 0
+        d0.ge_mask(0.0) & d1.ge_mask(0.0) & d2.ge_mask(0.0) & d3.ge_mask(0.0)
     }
 
     /// Assuming `src` does not intersect `dst`, returns the edge or corner of `src` that is
