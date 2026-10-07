@@ -18,6 +18,7 @@ pub mod point;
 pub mod point3;
 pub mod random;
 pub mod rect;
+pub mod region;
 pub mod rrect;
 pub mod safe32;
 pub mod safe_math;

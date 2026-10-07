@@ -25,6 +25,8 @@ pub mod random_test;
 #[cfg(test)]
 pub mod rect_test;
 #[cfg(test)]
+pub mod region_test;
+#[cfg(test)]
 pub mod round_rect_test;
 #[cfg(test)]
 pub mod safe_math_test;
