@@ -10,8 +10,9 @@
 
 use crate::color::{Color, PMColor, PMColor4f};
 use crate::color_priv::{
-    A32_SHIFT, B32_BITS, B32_SHIFT, G32_BITS, G32_SHIFT, R32_BITS, R32_SHIFT, alpha_255_to_256,
-    alpha_mul, get_packed_a32, get_packed_b32, get_packed_g32, get_packed_r32, pack_argb32,
+    A32_SHIFT, B32_BITS, B32_SHIFT, G32_BITS, G32_SHIFT, PMCOLOR_IS_BGRA, PMCOLOR_IS_RGBA,
+    R32_BITS, R32_SHIFT, alpha_255_to_256, alpha_mul, get_packed_a32, get_packed_b32,
+    get_packed_g32, get_packed_r32, pack_argb32,
 };
 use crate::floating_point::FLOAT_NEGATIVE_INFINITY;
 use crate::math::{U8CPU, U16CPU};
@@ -147,16 +148,14 @@ pub fn pack_argb_as_bgra(a: U8CPU, r: U8CPU, g: U8CPU, b: U8CPU) -> u32 {
 #[doc(alias = "SkSwizzle_RGBA_to_PMColor")]
 #[must_use]
 pub const fn swizzle_rgba_to_pm_color(c: u32) -> PMColor {
-    // SK_PMCOLOR_IS_RGBA
-    c
+    if PMCOLOR_IS_RGBA { c } else { swizzle_rb(c) }
 }
 
 // Port of: src/core/SkColorData.h#L94-L100 (chrome/m156)
 #[doc(alias = "SkSwizzle_BGRA_to_PMColor")]
 #[must_use]
 pub const fn swizzle_bgra_to_pm_color(c: u32) -> PMColor {
-    // not SK_PMCOLOR_IS_BGRA
-    swizzle_rb(c)
+    if PMCOLOR_IS_BGRA { c } else { swizzle_rb(c) }
 }
 
 /// See ITU-R Recommendation BT.709.

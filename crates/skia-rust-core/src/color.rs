@@ -9,8 +9,8 @@
 //! `skia-safe` does for `SkColor4f`: [`Color4f`] (unpremultiplied) and [`PMColor4f`]
 //! (premultiplied), sharing their implementation through a private macro.
 //!
-//! `SkPMColor` has the byte order `RGBA` (`SK_R32_SHIFT == 0`), Skia's default off Windows,
-//! which is what the oracle uses. See [`crate::color_priv`].
+//! `SkPMColor`'s byte order follows Skia's default: `BGRA` on Windows (`SK_R32_SHIFT == 16`),
+//! `RGBA` elsewhere (`SK_R32_SHIFT == 0`).
 
 use std::ops::{BitAnd, BitOr, Index, IndexMut, Mul};
 

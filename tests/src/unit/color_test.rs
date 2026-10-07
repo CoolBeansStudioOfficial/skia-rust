@@ -8,6 +8,7 @@ use skia_rust_core::color::{
     pm_color_set_argb, pre_multiply_color,
 };
 use skia_rust_core::color_data::{fast_four_byte_interp, four_byte_interp};
+use skia_rust_core::color_priv::PMCOLOR_IS_RGBA;
 use skia_rust_core::math_priv::mul_div_255_ceiling;
 use skia_rust_core::random::Random;
 use skia_rust_core::un_pre_multiply::pm_color_to_color;
@@ -40,8 +41,11 @@ def_test!(ColorPremul, |reporter| {
 def_test!(SkPMColor_SetAndRetrieveChannels, |reporter| {
     let pmc: PMColor = pm_color_set_argb(0xFE, 0xDC, 0xBA, 0x98);
 
-    // SK_PMCOLOR_IS_RGBA
-    reporter_assert!(reporter, pmc == 0xFE98_BADC);
+    if PMCOLOR_IS_RGBA {
+        reporter_assert!(reporter, pmc == 0xFE98_BADC);
+    } else {
+        reporter_assert!(reporter, pmc == 0xFEDC_BA98);
+    }
 
     reporter_assert!(reporter, pm_color_get_a(pmc) == 0xFE);
     reporter_assert!(reporter, pm_color_get_r(pmc) == 0xDC);

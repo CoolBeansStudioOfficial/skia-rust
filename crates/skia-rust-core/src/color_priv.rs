@@ -5,8 +5,10 @@
 
 //! Private color helpers (`SkColorPriv.h`).
 //!
-//! `SkPMColor` is `RGBA` in memory (`SK_R32_SHIFT == 0`), Skia's default off Windows, which is
-//! what the oracle uses. `SkColorConverter` is not ported yet.
+//! `SkPMColor`'s byte order follows Skia's default: `BGRA` on Windows (`SK_R32_SHIFT == 16`),
+//! `RGBA` elsewhere (`SK_R32_SHIFT == 0`).
+//!
+//! `SkColorConverter` is not ported yet.
 
 use crate::color::PMColor;
 use crate::math::{U8CPU, mul_div_255_round};
@@ -81,9 +83,9 @@ pub const BGRA_R32_SHIFT: u32 = 16;
 pub const BGRA_A32_SHIFT: u32 = 24;
 
 // Port of: include/core/SkTypes.h#L36-L55 (chrome/m156)
-// skia-rust: SK_R32_SHIFT is fixed to 0 (RGBA), Skia's default everywhere except Windows.
+// Like Skia's default: BGRA on Windows, RGBA everywhere else.
 #[doc(alias = "SK_R32_SHIFT")]
-pub const R32_SHIFT: u32 = 0;
+pub const R32_SHIFT: u32 = if cfg!(windows) { 16 } else { 0 };
 #[doc(alias = "SK_G32_SHIFT")]
 pub const G32_SHIFT: u32 = 8;
 #[doc(alias = "SK_B32_SHIFT")]
