@@ -587,7 +587,7 @@ fn pq_sets() -> Vec<(&'static str, Ctx)> {
             ]),
         ),
         // Moderate parameters: nothing overflows (an overflow gives `inf / inf`, whose NaN the
-        // x86 models only get right on x86 hosts; see `expected::host_nan_sign_differs`).
+        // x86 models only get right on x86 hosts; see `expected::output_matches`).
         ("pq_mid", tf([-5.0, 0.1, 2.0, 0.5, 0.25, 0.8, 0.45])),
         ("odd", tf([0.0, 0.1, 0.9, 0.3, 1.7, 0.6, 1.3])),
         ("zero", tf([0.0; 7])),
