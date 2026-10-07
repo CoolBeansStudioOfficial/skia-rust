@@ -206,7 +206,7 @@ fn skips_match_only_when_the_oracle_skipped_too() {
     assert_eq!(report.verdict, Verdict::Passing, "{report}");
 
     let src = GmSrc::new(|| fake("fixture_skip_golden", DrawResult::Skip));
-    let report = check_gm("gm::fixture::sg", &src, &store, &plan, &Options::default());
+    let report = check_gm("gm::fixture::sg", &src, &store, &plan, &all_configs_opts());
     assert_eq!(report.verdict, Verdict::Failing, "{report}");
     let bad: Vec<_> = decisive(&report)
         .filter(|c| c.outcome != Outcome::Match)
