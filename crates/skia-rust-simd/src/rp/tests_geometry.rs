@@ -27,7 +27,8 @@
     clippy::many_single_char_names
 )]
 
-use super::lanes::test_support::{Rng, float_specials};
+use super::lanes::test_support::{Prim, Rng, float_specials};
+use super::lanes::tests::run_highp;
 use super::{
     MemPtr, MemSlot, MemView, MemoryBindings, Program, Stage,
     contexts::{CoordClampCtx, DecalTileCtx, TileCtx},
@@ -200,19 +201,6 @@ fn assert_lanes(what: &str, sel: Selection, got: &[f32], want: &[f32]) {
     }
 }
 
-/// `|got - want| <= want * 2^-20` (the Newton-Raphson step on a 12-bit estimate is good to about
-/// 2^-22; the exact value is checked on Scalar, and the exact bits by the twins and the lane
-/// tests of `rcp_precise`).
-fn assert_close(what: &str, sel: Selection, got: &[f32], want: &[f32]) {
-    for (i, g) in got.iter().enumerate() {
-        let w = want[i % want.len()];
-        assert!(
-            (g - w).abs() <= w.abs() * 2f32.powi(-20),
-            "{what} on {sel}, lane {i}: got {g}, want {w}"
-        );
-    }
-}
-
 // ~~~ Matrices ~~~
 
 #[test]
@@ -276,48 +264,38 @@ fn matrix_2x3_known_answers() {
 #[test]
 fn matrix_perspective_known_answers() {
     // Row-major: X = r*m0 + (g*m1 + m2); Y = r*m3 + (g*m4 + m5); Z = r*m6 + (g*m7 + m8);
-    // r = X * rcp_precise(Z); g = Y * rcp_precise(Z).
+    // r = X * rcp_precise(Z); g = Y * rcp_precise(Z), with the selection's own rcp_precise.
     let m = [1.0, 0.0, 0.0, 0.0, 2.0, 1.0, 0.5, 0.25, 1.0];
     let (xs, ys) = ([0.0, 2.0, 4.0, -1.0], [0.0, 4.0, 8.0, 3.0]);
-    // Z = 0.5x + 0.25y + 1 = 1, 3, 5, 1.25; Y = 2y + 1 = 1, 9, 17, 7.
+    // X = x, Y = 2y + 1 = 1, 9, 17, 7 and Z = 0.5x + 0.25y + 1 = 1, 3, 5, 1.25: all exact.
+    let (wx, wy) = ([0.0f32, 2.0, 4.0, -1.0], [1.0f32, 9.0, 17.0, 7.0]);
     let z = [1.0f32, 3.0, 5.0, 1.25];
-    let wx: Vec<f32> = [0.0f32, 2.0, 4.0, -1.0]
-        .iter()
-        .zip(z)
-        .map(|(x, z)| x / z)
-        .collect();
-    let wy: Vec<f32> = [1.0f32, 9.0, 17.0, 7.0]
-        .iter()
-        .zip(z)
-        .map(|(y, z)| y / z)
-        .collect();
     for sel in selections() {
+        // rcp_precise(Z) from the lane module that executes `sel`, on 16 lanes (a multiple of
+        // every stride).
+        let zbits: Vec<u32> = (0..16).map(|i| z[i % 4].to_bits()).collect();
+        let zero = vec![0u32; 16];
+        let rcp: Vec<f32> = run_highp(sel, Prim::RcpPrecise, &zbits, &zero, &zero)
+            .into_iter()
+            .map(f32::from_bits)
+            .collect();
+        let want_x: Vec<f32> = (0..16).map(|i| wx[i % 4] * rcp[i]).collect();
+        let want_y: Vec<f32> = (0..16).map(|i| wy[i % 4] * rcp[i]).collect();
         let (r, g, ..) = highp4(&[Stage::MatrixPerspective(&m)], sel, &xs, &ys);
+        assert_lanes("highp matrix_perspective r", sel, &r, &want_x);
+        assert_lanes("highp matrix_perspective g", sel, &g, &want_y);
         let lowp = lowp2(&[Stage::MatrixPerspective(&m)], sel, &xs, &ys);
-        if sel.tier == Tier::Scalar {
-            // Scalar's rcp_precise is exactly 1/v, so the stage is X * (1/Z).
-            let rx: Vec<f32> = [0.0f32, 2.0, 4.0, -1.0]
-                .iter()
-                .zip(z)
-                .map(|(x, z)| x * (1.0 / z))
-                .collect();
-            let ry: Vec<f32> = [1.0f32, 9.0, 17.0, 7.0]
-                .iter()
-                .zip(z)
-                .map(|(y, z)| y * (1.0 / z))
-                .collect();
-            assert_lanes("scalar matrix_perspective r", sel, &r, &rx);
-            assert_lanes("scalar matrix_perspective g", sel, &g, &ry);
-            assert!(lowp.is_none());
-        } else {
-            assert_close("highp matrix_perspective r", sel, &r, &wx);
-            assert_close("highp matrix_perspective g", sel, &g, &wy);
-            let (x, y) = lowp.unwrap();
-            assert_close("lowp matrix_perspective x", sel, &x, &wx);
-            assert_close("lowp matrix_perspective y", sel, &y, &wy);
+        assert_eq!(lowp.is_none(), sel.tier == Tier::Scalar);
+        if let Some((x, y)) = lowp {
+            assert_lanes("lowp matrix_perspective x", sel, &x, &want_x);
+            assert_lanes("lowp matrix_perspective y", sel, &y, &want_y);
         }
-        // (0, 0): X = 0 so r = 0 * rcp(1) = 0 exactly.
-        assert_eq!(r[0], 0.0, "{sel}");
+        if sel.tier == Tier::Scalar {
+            // Scalar's rcp_precise is exactly 1/v.
+            for (i, v) in rcp.iter().enumerate() {
+                assert_eq!(v.to_bits(), (1.0 / z[i % 4]).to_bits());
+            }
+        }
     }
 }
 

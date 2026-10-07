@@ -33,7 +33,7 @@ fn estimate_op(tier: Tier) -> EstimateOp {
 }
 
 /// Runs `harness_highp` of the lane module that executes `sel`.
-fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
+pub(crate) fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
     match (sel.tier, sel.backend) {
         (Tier::Scalar, _) => super::scalar::harness_highp(op, a, b, c),
         #[cfg(target_arch = "x86_64")]
