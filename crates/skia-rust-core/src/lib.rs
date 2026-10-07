@@ -14,6 +14,7 @@ pub mod buffer;
 pub mod canvas;
 pub mod checksum;
 pub mod clip_op;
+pub mod clip_stack;
 pub mod color;
 pub mod color_data;
 pub mod color_filter;
