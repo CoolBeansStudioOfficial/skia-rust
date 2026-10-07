@@ -10,6 +10,9 @@
 //!   the Scalar tier under Miri);
 //! - structural checks (lowp primitives that Skia defines as two highp calls).
 
+// Under Miri the native-vs-model tests are compiled out (intrinsics), leaving helpers unused.
+#![cfg_attr(miri, allow(dead_code))]
+
 use super::test_support::{Budget, Kind, LowpPrim, Prim, inputs, mad_nan_ambiguous};
 use crate::estimates::EstimateOp;
 use crate::testing::force_tier;

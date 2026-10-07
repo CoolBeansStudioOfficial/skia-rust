@@ -4,6 +4,9 @@
 //! Test support for the lane primitives: the primitive lists driven through each tier's stamped
 //! harness, and input generation (special values, sweeps, random lanes).
 
+// Under Miri the native-vs-model tests are compiled out, leaving parts of this module unused.
+#![cfg_attr(miri, allow(dead_code))]
+
 /// A highp primitive, as dispatched by `harness_highp`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Prim {
