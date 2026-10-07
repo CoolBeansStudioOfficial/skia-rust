@@ -28740,6 +28740,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L204-L298"
 module = "core"
 status = "todo"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState), SkImage and PNG encode: not ported"
 span_hash = "8e2ed5d7d6bf160427e047ea21ef7b5af34130338931fab3b06dd7f84f465e90"
 
 [[test]]
@@ -28749,6 +28750,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L125-L200"
 module = "core"
 status = "todo"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState), SkImage and PNG encode: not ported"
 span_hash = "91a53d0aebe949a0729c192958aa762da9070dc4254e6224e6a3d81efc232f4c"
 
 [[test]]
@@ -28758,6 +28760,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L316-L336"
 module = "core"
 status = "todo"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState): not ported"
 span_hash = "bc225287c1f621b6cddd43f1625d94af08084eb7608f3c4419b71cf481ccd19c"
 
 [[test]]
@@ -28767,6 +28770,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L302-L314"
 module = "core"
 status = "todo"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState): not ported"
 span_hash = "c1e85ee62ecbcd78f5b718b678d337f2efc62d252c8d7361bea8c08f15e1efe7"
 
 [[test]]
@@ -28775,7 +28779,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L594-L605"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e1f0572c528e85dcad30889edecf2e1fc8d74fbaa33b20ca197fba7d989e4cfe"
 
 [[test]]
@@ -28784,7 +28788,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L200-L243"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d7f4cc0392acab84da2db92957d1ec1b14b0e8804fdada5db039557408f0e02a"
 
 [[test]]
@@ -28794,6 +28798,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L547-L566"
 module = "core"
 status = "todo"
+reason = "needs SkCanvasStack (SkNWayCanvas) and SkCanvas subclassing (LifeLineCanvas): not ported"
 span_hash = "aefb78412dea48269953b9bf2d4ccdf28a24fa45a0fbba6acfc4f26c9ff6352b"
 
 [[test]]
@@ -28802,7 +28807,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L448-L465"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d14b49232e5f12efad9d882f34ab5db4dc427d2df2ae60dcbda72bb62a851ecd"
 
 [[test]]
@@ -28812,6 +28817,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L656-L678"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Blur (image filters, Phase 3)"
 span_hash = "6458ecd400f32c021dadecb44127867458044e250bc27f1fe0adaf9214813166"
 
 [[test]]
@@ -28821,6 +28827,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L608-L624"
 module = "core"
 status = "todo"
+reason = "compiled only under SK_BUILD_FOR_ANDROID_FRAMEWORK (SkCanvas::ColorBehavior); not part of the pinned non-Android build"
 span_hash = "79ed7ce7a705ac9670489bc79c8e8c92a161e022baa3f30c881feec50bb2d8e1"
 
 [[test]]
@@ -28830,6 +28837,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L627-L635"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Empty (image filters, Phase 3)"
 span_hash = "fd424754688b2854e68eb312142b5201a8dbeaf97a965a03b2fbb627ca6db8de"
 
 [[test]]
@@ -28838,7 +28846,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L430-L446"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "62ed02cbb3431ea525bc3767a493d2e4099a174b4b0f973de4ce544543970661"
 
 [[test]]
@@ -28848,6 +28856,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L408-L414"
 module = "core"
 status = "todo"
+reason = "steps need SkPictureRecorder/drawPicture, SkVertices and image shaders (SkBitmap::makeShader): not ported"
 span_hash = "41b9a745bd6cee61998f968f3125d234fa20257ce860a6c2cd5a9bb2ffa8dd0f"
 
 [[test]]
@@ -28857,6 +28866,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L639-L654"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilters::Shader (image filters, Phase 3)"
 span_hash = "60a74398886192d821e1761d9c0dc8f1c350b7ba74f8c4abb2e3dac1c1f316ca"
 
 [[test]]
@@ -28866,6 +28876,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L417-L427"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF backend"
 span_hash = "d7b93abad16ec3a9cc129ab3aebb9c09facafe313b4eaed5f86906a0d9fefc1f"
 
 [[test]]
@@ -28874,7 +28885,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L738-L754"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "5e9dfef38f07d0f0edadbb4ff9bf9e39210d657b933a408443a2f1a09a60df8b"
 
 [[test]]
@@ -28884,6 +28895,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L518-L544"
 module = "core"
 status = "todo"
+reason = "needs SkNWayCanvas and SkCanvas subclassing (LifeLineCanvas): not ported"
 span_hash = "3019540f28bbff2b2a987546491216be8a010ac6eed35a24f57b3bcbbfaa7ec2"
 
 [[test]]
@@ -28893,6 +28905,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L483-L496"
 module = "effects"
 status = "todo"
+reason = "needs SkPaintFilterCanvas (SkCanvas subclassing): not ported"
 span_hash = "b231ed0d91ff3eed30536bdc6733e5612b4ce81adcd72e4c6df681bc6bf0158b"
 
 [[test]]
@@ -28921,6 +28934,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L183-L186"
 module = "core"
 status = "todo"
+reason = "compiled only with SK_SUPPORT_PDF and drives a recording canvas and a PDF canvas as well as raster: needs SkPictureRecorder and PDF"
 span_hash = "b411483d5169109a4857bd181d09b5555864a0d2e87543c5f7f8abc86ce9f96f"
 
 [[test]]
@@ -28930,6 +28944,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L110-L145"
 module = "core"
 status = "todo"
+reason = "last block needs SkPictureRecorder::beginRecording, and SkCanvas(-10,-20) which Canvas::new_no_pixels (skia-safe shape) rejects"
 span_hash = "66cf91477ed9ba1037164561973e45428eabeccc1dc1e18275b53b198c0fbdbd"
 
 [[test]]
@@ -28939,6 +28954,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L188-L196"
 module = "core"
 status = "todo"
+reason = "compiled only with SK_SUPPORT_PDF and drives a recording canvas and a PDF canvas as well as raster: needs SkPictureRecorder and PDF"
 span_hash = "586b58721a05f9871b4e6bafc9a926c5b949409b5d94a539a6f2c89a3c021da0"
 
 [[test]]
@@ -28947,7 +28963,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L680-L736"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ee9ef116bf5ee2ffe9125444c5251f87132afd55e71bc8eca91a7d7f784d2182"
 
 [[test]]
@@ -28957,6 +28973,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L89-L108"
 module = "core"
 status = "todo"
+reason = "needs SkPictureRecorder / SkRecord: not ported"
 span_hash = "957cfa6dfe0849a76228ec6826a153741f53a726991d2418176074e599f0fa4a"
 
 [[test]]
@@ -30622,7 +30639,7 @@ macro = "DEF_TEST"
 source = "tests/DeviceTest.cpp#L38-L55"
 module = "core"
 status = "todo"
-reason = "needs SkSpecialImage and SkSurface (D6/Phase 3); BitmapDevice itself is ported (D5)"
+reason = "the C++ test is inside #if 0 (never compiled by Skia); nothing to port"
 span_hash = "e98ae4af49b03bc91c570a3581c42fa8c8afdff9093f82207d1ce2b6ad4dec0d"
 
 [[test]]
