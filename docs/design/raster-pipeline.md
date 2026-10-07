@@ -263,6 +263,34 @@ levels from them. On Neon, `blit_row_s32a_opaque` and `blit_mask_d32_a8` are dif
 For premultiplied input the portable/scalar `SkPMSrcOver` equals the x86 formula; with
 non-premultiplied garbage the x86 saturating add and the scalar wrap-around differ.
 
+**As implemented in B7** (`skia_rust_simd::{blit_row, blit_mask, memset}`, helpers in `color_util`;
+task B7 placed them at the top level per §2.1, not under an `opts` module):
+
+- **API.** Safe slice functions, each with a dispatching entry (`blit_row_s32a_opaque`, … read
+  `selection()`), a `*_with(sel, …)` variant for tests, and a `*_scalar` twin. `len`/`count`/`w`/`h`
+  are `usize` (`dst.len()` is the row length); `blit_mask_d32_a8` takes `dst_rb`/`mask_rb` in bytes
+  (`dst_rb % 4 == 0`, `mask_rb` may be 0) and an `SkColor`, premultiplying in `N32` order (a
+  private copy of `SK_R32_SHIFT`, held equal to core's by a `const` assertion in `color_priv.rs`).
+- **`blit_row_s32a_opaque`.** `Sse2`/`Sse41` run `SkPMSrcOver_SSE2` (4 wide, scalar tail), `Ml3`/`Ml4`
+  `SkPMSrcOver_AVX2` (8 wide, then the SSE2 loop and scalar tail), `Neon` the `vld4`/`vtbl`
+  intrinsics (`SkMulDiv255Round` formula), `Scalar` `SkPMSrcOver`. Models (`Backend::Model`) run the
+  per-byte formula of the tier. A test shows the x86 formula equals the scalar `SkPMSrcOver` on
+  every input, **including non-premultiplied garbage** (the saturating `min`s of `SkPMSrcOver`
+  coincide with `adds_epu8`; alpha cannot overflow), so the §1.8 remark above applies only to older
+  scalar code: x86 and `Scalar` differ from `Neon` only through the multiply formula.
+- **`blit_row_color32`.** One implementation (the `skvx` code, ported with `vx::Vec`), plus a
+  per-byte twin; no tier dispatch because Skia has none.
+- **`blit_mask_d32_a8`.** Non-Neon tiers share the portable `Sk4px` code (`approx_scale`), executed
+  per pixel (exact, so also the scalar twin); `Neon` has intrinsics (aarch64, 8 pixels at a time,
+  `SkAlphaMulQ` on each row's tail, so wrap-around of garbage input is per byte in the vector part
+  and per `u32` in the tail) and a per-byte model that mirrors that split.
+- **`memset*`/`rect_memset*`.** Every tier is exact; the tier chooses Skia's store block (32 bytes
+  on `Ml3`/`Ml4`, 16 bytes otherwise, `memsetT`'s `VecSize`) and the block store is a safe array
+  fill. No `unsafe`; the `rep stos` (ERMS) path is not replicated since it cannot change the bytes.
+- `unsafe` is confined to the register loads/stores of `blit_row` (x86: `loadu`/`storeu` of
+  `[u32; 4|8]`; aarch64: `vld4_u8`/`vst4_u8`/`vld1_u8`/`vst1_u8`/`vld1_u8` in `blit_mask`) and one
+  call per tier entry behind its token.
+
 ### 1.9 The four measured x86 behaviours, explained
 
 From the published goldens (`goldens-m156`, 2,727 results per tier; computed for this document):

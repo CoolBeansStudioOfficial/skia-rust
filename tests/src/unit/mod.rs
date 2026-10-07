@@ -51,6 +51,8 @@ pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
 #[cfg(test)]
+pub mod memset_test;
+#[cfg(test)]
 pub mod meta_data_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
@@ -112,6 +114,8 @@ pub mod sk_raster_pipeline_test;
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
+#[cfg(test)]
+pub mod src_over_test;
 #[cfg(test)]
 pub mod stream_test;
 #[cfg(test)]

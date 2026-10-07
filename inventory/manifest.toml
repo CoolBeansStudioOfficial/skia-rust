@@ -35738,7 +35738,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MemsetTest.cpp#L88-L91"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1e995a726ce71a36d6c1548d567a22dcd5f8ce425845af54f79b7cd8832f52db"
 
 [[test]]
@@ -47378,7 +47378,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SrcOverTest.cpp#L29-L78"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ab180ba25e1c93ac301137479da0e6da37db0f720bc74e93926fe60e19871a3c"
 
 [[test]]

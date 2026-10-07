@@ -110,6 +110,15 @@ pub const PMCOLOR_IS_BGRA: bool = R32_SHIFT == BGRA_R32_SHIFT
 // need 32bit packing to be either RGBA or BGRA
 const _: () = assert!(PMCOLOR_IS_RGBA || PMCOLOR_IS_BGRA);
 
+// The SkOpts blit kernels in skia-rust-simd (which cannot depend on this crate) premultiply with
+// their own copy of the N32 byte order; it must be this one.
+const _: () = assert!(
+    R32_SHIFT == skia_rust_simd::color_util::R32_SHIFT
+        && G32_SHIFT == skia_rust_simd::color_util::G32_SHIFT
+        && B32_SHIFT == skia_rust_simd::color_util::B32_SHIFT
+        && A32_SHIFT == skia_rust_simd::color_util::A32_SHIFT
+);
+
 /// Alpha component of a packed [`PMColor`].
 // Port of: src/core/SkColorPriv.h#L97 (chrome/m156)
 #[doc(alias = "SkGetPackedA32")]
