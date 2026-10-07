@@ -13,13 +13,6 @@ use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
 
-// Port of: tests/ClipperTest.cpp#L24-L58 (chrome/m156)
-fn test_hairclipping(_reporter: &mut Reporter) {
-    // skia-rust: omitted until the real `Canvas` and N32 `Bitmap` drawing exist (task D6): the
-    // C++ draws an antialiased hairline into a 4x4 bitmap clipped to a 4x2 rect and checks
-    // that only pixel [1,1] changed.
-}
-
 // Port of: tests/ClipperTest.cpp#L60-L76 (chrome/m156)
 fn test_edgeclipper() {
     let mut clipper = EdgeClipper::new(false);
@@ -194,11 +187,16 @@ fn test_intersectline(reporter: &mut Reporter) {
 }
 
 // Port of: tests/ClipperTest.cpp#L159-L163 (chrome/m156)
-def_test!(Clipper, |reporter| {
-    test_intersectline(reporter);
-    test_edgeclipper();
-    test_hairclipping(reporter);
-});
+def_test!(
+    #[ignore = "needs Canvas (D6): test_hairclipping not ported yet"]
+    Clipper,
+    |reporter| {
+        test_intersectline(reporter);
+        test_edgeclipper();
+        // TODO(D6): test_hairclipping(reporter); (Tests/ClipperTest.cpp#L24-L58, needs Canvas
+        // and N32 Bitmap drawing)
+    }
+);
 
 // Port of: tests/ClipperTest.cpp#L165-L171 (chrome/m156)
 def_test!(LineClipper_skbug_7981, |_r| {

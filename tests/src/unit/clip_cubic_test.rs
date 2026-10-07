@@ -11,16 +11,6 @@ use skia_rust_core::point::Point;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::scalar::scalar_abs;
 
-// Currently the supersampler blitter uses int16_t for its index into an array
-// the width of the clip. Test that we don't crash/assert if we try to draw
-// with a device/clip that is larger.
-// Port of: tests/ClipCubicTest.cpp#L26-L38 (chrome/m156)
-fn test_giant_clip() {
-    // skia-rust: omitted until the real `Canvas`, N32 `Bitmap` and antialiased `drawPath` exist
-    // (task D6): the C++ draws `SkPath::Polygon({{0,0}, {1,0}, {33,1}})` with an antialiased
-    // paint into a 64919x1 bitmap and only checks that nothing crashes or asserts.
-}
-
 // Port of: tests/ClipCubicTest.cpp#L40-L48 (chrome/m156)
 fn print_curve(name: &str, crv: &[Point; 4]) {
     eprintln!(
@@ -67,6 +57,7 @@ fn set_curve(
 
 // Port of: tests/ClipCubicTest.cpp#L80-L173 (chrome/m156)
 def_test!(
+    #[ignore = "needs Canvas (D6): test_giantClip not ported yet"]
     #[allow(
         clippy::excessive_precision,
         clippy::similar_names,
@@ -189,7 +180,8 @@ def_test!(
         );
         reporter_assert!(reporter, curves_are_equal(&clipped, &sb, tol));
 
-        test_giant_clip();
+        // TODO(D6): test_giantClip() (tests/ClipCubicTest.cpp#L26-L38, needs Canvas, N32 Bitmap
+        // and antialiased drawPath)
     }
 );
 
