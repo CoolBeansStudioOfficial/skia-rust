@@ -45,6 +45,7 @@ pub use program::{Program, ProgramDesc, has_lowp};
 mod tests;
 #[cfg(test)]
 mod tests_blend;
+#[cfg(test)]
 mod tests_sksl;
 #[cfg(test)]
 mod tests_wide;
