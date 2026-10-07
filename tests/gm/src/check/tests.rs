@@ -371,19 +371,18 @@ fn n32_on_an_rgba_host_is_compared_with_the_rgba_variant_tiers() {
 
 #[test]
 fn host_policy_is_consistent() {
-    // Whatever this host is, the policy only picks selections it can execute, never runs Ml4 by
-    // a model, and runs Scalar natively.
+    // Whatever this host is, the policy picks a selection it can execute for every tier (x86
+    // tiers natively or as `Model(AmdZen4)`, Ml4 included), and runs Scalar natively.
     let fp = host_fingerprints();
     for tier in Tier::ALL {
-        match selection_for(tier, fp) {
-            Ok(sel) => {
-                assert_eq!(sel.tier, tier);
-                assert!(sel.check().is_ok());
-                if tier == Tier::Ml4 {
-                    assert_eq!(sel.backend, skia_rust_simd::Backend::Native);
-                }
-            }
-            Err(reason) => assert_eq!(tier, Tier::Ml4, "{reason}"),
+        let sel = selection_for(tier, fp).unwrap_or_else(|reason| panic!("{tier}: {reason}"));
+        assert_eq!(sel.tier, tier);
+        assert!(sel.check().is_ok());
+        if tier.is_x86() && sel.backend != skia_rust_simd::Backend::Native {
+            assert_eq!(
+                sel.backend,
+                skia_rust_simd::Backend::Model(skia_rust_simd::Estimates::AmdZen4)
+            );
         }
     }
     assert_eq!(

@@ -13,13 +13,24 @@
 // Under Miri the native-vs-model tests are compiled out (intrinsics), leaving helpers unused.
 #![cfg_attr(miri, allow(dead_code))]
 
-use super::test_support::{Budget, Kind, LowpPrim, Prim, inputs, mad_nan_ambiguous};
+use super::test_support::{
+    Budget, Kind, LowpPrim, Prim, fma_nan_ambiguous, inputs, mad_nan_ambiguous,
+};
 use crate::estimates::EstimateOp;
 use crate::testing::force_tier;
 use crate::tier::{Backend, Estimates, Selection, Tier};
 
-/// The x86 tiers implemented so far.
-const X86: [Tier; 2] = [Tier::Sse2, Tier::Sse41];
+/// The x86 tiers.
+const X86: [Tier; 4] = [Tier::Sse2, Tier::Sse41, Tier::Ml3, Tier::Ml4];
+
+/// The estimate instruction an x86 tier's `rcp_approx` uses.
+fn estimate_op(tier: Tier) -> EstimateOp {
+    if tier == Tier::Ml4 {
+        EstimateOp::Rcp14
+    } else {
+        EstimateOp::Rcpps
+    }
+}
 
 /// Runs `harness_highp` of the lane module that executes `sel`.
 fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
@@ -39,6 +50,20 @@ fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u
             // ("sse2,ssse3,sse4.1"); `_tok` exists only because they were detected at run time.
             unsafe { super::sse41::harness_highp(op, a, b, c) }
         }
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml3, Backend::Native) => {
+            let _tok = crate::cpu::Ml3Token::get().expect("native Ml3 (Selection::check)");
+            // SAFETY: `harness_highp` enables exactly `Ml3Token::FEATURES`; `_tok` exists only
+            // because every one of them was detected at run time.
+            unsafe { super::ml3::harness_highp(op, a, b, c) }
+        }
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml4, Backend::Native) => {
+            let _tok = crate::cpu::Ml4Token::get().expect("native Ml4 (Selection::check)");
+            // SAFETY: `harness_highp` enables exactly `Ml4Token::FEATURES`; `_tok` exists only
+            // because every one of them was detected at run time.
+            unsafe { super::ml4::harness_highp(op, a, b, c) }
+        }
         (Tier::Sse2, Backend::Model(Estimates::Host)) => {
             super::model_sse2::host::harness_highp(op, a, b, c)
         }
@@ -50,6 +75,18 @@ fn run_highp(sel: Selection, op: Prim, a: &[u32], b: &[u32], c: &[u32]) -> Vec<u
         }
         (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => {
             super::model_sse41::amd_zen4::harness_highp(op, a, b, c)
+        }
+        (Tier::Ml3, Backend::Model(Estimates::Host)) => {
+            super::model_ml3::host::harness_highp(op, a, b, c)
+        }
+        (Tier::Ml3, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_ml3::amd_zen4::harness_highp(op, a, b, c)
+        }
+        (Tier::Ml4, Backend::Model(Estimates::Host)) => {
+            super::model_ml4::host::harness_highp(op, a, b, c)
+        }
+        (Tier::Ml4, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_ml4::amd_zen4::harness_highp(op, a, b, c)
         }
         _ => panic!("no lane module for {sel} yet"),
     }
@@ -72,6 +109,20 @@ fn run_lowp(sel: Selection, op: LowpPrim, a: &[u32], b: &[u32], c: &[u32]) -> Ve
             // ("sse2,ssse3,sse4.1"); `_tok` exists only because they were detected at run time.
             unsafe { super::sse41::lowp::harness_lowp(op, a, b, c) }
         }
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml3, Backend::Native) => {
+            let _tok = crate::cpu::Ml3Token::get().expect("native Ml3 (Selection::check)");
+            // SAFETY: `harness_lowp` enables exactly `Ml3Token::FEATURES`; `_tok` exists only
+            // because every one of them was detected at run time.
+            unsafe { super::ml3::lowp::harness_lowp(op, a, b, c) }
+        }
+        #[cfg(target_arch = "x86_64")]
+        (Tier::Ml4, Backend::Native) => {
+            let _tok = crate::cpu::Ml4Token::get().expect("native Ml4 (Selection::check)");
+            // SAFETY: `harness_lowp` enables exactly `Ml4Token::FEATURES`; `_tok` exists only
+            // because every one of them was detected at run time.
+            unsafe { super::ml4::lowp::harness_lowp(op, a, b, c) }
+        }
         (Tier::Sse2, Backend::Model(Estimates::Host)) => {
             super::model_sse2::host::lowp::harness_lowp(op, a, b, c)
         }
@@ -83,6 +134,18 @@ fn run_lowp(sel: Selection, op: LowpPrim, a: &[u32], b: &[u32], c: &[u32]) -> Ve
         }
         (Tier::Sse41, Backend::Model(Estimates::AmdZen4)) => {
             super::model_sse41::amd_zen4::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Ml3, Backend::Model(Estimates::Host)) => {
+            super::model_ml3::host::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Ml3, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_ml3::amd_zen4::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Ml4, Backend::Model(Estimates::Host)) => {
+            super::model_ml4::host::lowp::harness_lowp(op, a, b, c)
+        }
+        (Tier::Ml4, Backend::Model(Estimates::AmdZen4)) => {
+            super::model_ml4::amd_zen4::lowp::harness_lowp(op, a, b, c)
         }
         _ => panic!("no lowp lane module for {sel}"),
     }
@@ -101,24 +164,90 @@ fn forced_lowp(sel: Selection, op: LowpPrim, [a, b, c]: &[Vec<u32>; 3]) -> Vec<u
     run_lowp(crate::selection(), op, a, b, c)
 }
 
-/// Asserts `native == model` lane by lane. `mad_outer_commutes` is `Some` for `mad`/`nmad`,
-/// whose NaN payload is unspecified when two NaNs meet (`mad_nan_ambiguous`).
+/// Where a primitive's NaN result is unspecified, so that less than every bit is compared.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum NanRule {
+    /// Every lane is compared bit for bit.
+    Exact,
+    /// An unfused `mad` (`outer_commutes`) or `nmad`: two NaNs meeting in one commutative
+    /// operation (`mad_nan_ambiguous`); only NaN-ness is compared there.
+    Unfused { outer_commutes: bool },
+    /// A fused `mad`: two NaN operands of one FMA (`fma_nan_ambiguous`); only NaN-ness is
+    /// compared there.
+    Fused,
+    /// A fused `nmad` (`fnmadd(f, m, a)`), or Ml3/Ml4's `rcp_precise` (`fnmadd(v, e, 2) * e`):
+    /// as [`NanRule::Fused`], and when the negated operand `f` (or `v`) is NaN the result's
+    /// **sign** is not specified: the intrinsic is `fma(-f, m, a)`, and whether the compiler
+    /// folds the negation into `vfnmadd` (which never negates a NaN, like Skia's release build
+    /// and ours) or materializes it (a sign flip, as unoptimized builds do) depends on
+    /// optimization. With `debug_assertions` everything but the sign bit is compared there;
+    /// optimized test builds compare every bit.
+    FusedNeg,
+}
+
+impl NanRule {
+    /// The rule for highp `op` on `tier` (`mad`/`nmad`/`rcp_precise` are fused on Ml3/Ml4).
+    fn highp(tier: Tier, op: Prim) -> NanRule {
+        let fused = matches!(tier, Tier::Ml3 | Tier::Ml4);
+        match op {
+            Prim::Mad if fused => NanRule::Fused,
+            Prim::Nmad | Prim::RcpPrecise if fused => NanRule::FusedNeg,
+            Prim::Mad => NanRule::Unfused {
+                outer_commutes: true,
+            },
+            Prim::Nmad => NanRule::Unfused {
+                outer_commutes: false,
+            },
+            _ => NanRule::Exact,
+        }
+    }
+
+    /// The rule for lowp `op` on `tier` (lowp `mad`/`nmad` are unfused on every tier; lowp
+    /// `rcp_precise` is highp's).
+    fn lowp(tier: Tier, op: LowpPrim) -> NanRule {
+        match op {
+            LowpPrim::Mad => NanRule::Unfused {
+                outer_commutes: true,
+            },
+            LowpPrim::Nmad => NanRule::Unfused {
+                outer_commutes: false,
+            },
+            LowpPrim::RcpPrecise => NanRule::highp(tier, Prim::RcpPrecise),
+            _ => NanRule::Exact,
+        }
+    }
+
+    /// Whether `native` and `model` (which differ) are both acceptable results for the inputs
+    /// `f, m, a` under this rule.
+    fn accepts(self, [f, m, a]: [u32; 3], native: u32, model: u32) -> bool {
+        let nan = |x: u32| f32::from_bits(x).is_nan();
+        if !(nan(native) && nan(model)) {
+            return false;
+        }
+        match self {
+            NanRule::Exact => false,
+            NanRule::Unfused { outer_commutes } => mad_nan_ambiguous(f, m, a, outer_commutes),
+            NanRule::Fused => fma_nan_ambiguous(f, m, a),
+            NanRule::FusedNeg => {
+                fma_nan_ambiguous(f, m, a)
+                    || (cfg!(debug_assertions) && nan(f) && (native ^ model) == 0x8000_0000)
+            }
+        }
+    }
+}
+
+/// Asserts `native == model` lane by lane, except where `rule` says the result is unspecified.
 fn assert_same(
     what: &str,
-    mad_outer_commutes: Option<bool>,
+    rule: NanRule,
     [a, b, c]: &[Vec<u32>; 3],
     native: &[u32],
     model: &[u32],
 ) {
     assert_eq!(native.len(), model.len());
-    let nan = |x: u32| f32::from_bits(x).is_nan();
     let bad: Vec<usize> = (0..native.len())
         .filter(|&i| native[i] != model[i])
-        .filter(|&i| {
-            !mad_outer_commutes.is_some_and(|outer| {
-                nan(native[i]) && nan(model[i]) && mad_nan_ambiguous(a[i], b[i], c[i], outer)
-            })
-        })
+        .filter(|&i| !rule.accepts([a[i], b[i], c[i]], native[i], model[i]))
         .collect();
     let detail = |&i: &usize| {
         format!(
@@ -143,7 +272,7 @@ fn assert_same(
 fn native_x86() -> Vec<Tier> {
     X86.into_iter()
         .filter(|t| {
-            let ok = t.is_native() && EstimateOp::Rcpps.is_available();
+            let ok = t.is_native() && estimate_op(*t).is_available();
             if !ok {
                 eprintln!("skipping native {t}: not supported by this host");
             }
@@ -186,14 +315,10 @@ fn native_matches_model_highp() {
                 s.spawn(move || {
                     let ins = inputs(op.kind(), seed, budget);
                     let native = forced_highp(Selection::native(tier), op, &ins);
-                    let mad = match op {
-                        Prim::Mad => Some(true),
-                        Prim::Nmad => Some(false),
-                        _ => None,
-                    };
+                    let rule = NanRule::highp(tier, op);
                     for sel in twin_models(tier, op.uses_estimates()) {
                         let model = forced_highp(sel, op, &ins);
-                        assert_same(&format!("{sel} {op:?}"), mad, &ins, &native, &model);
+                        assert_same(&format!("{sel} {op:?}"), rule, &ins, &native, &model);
                     }
                 });
             }
@@ -212,14 +337,10 @@ fn native_matches_model_lowp() {
                 s.spawn(move || {
                     let ins = inputs(op.kind(), seed, budget);
                     let native = forced_lowp(Selection::native(tier), op, &ins);
-                    let mad = match op {
-                        LowpPrim::Mad => Some(true),
-                        LowpPrim::Nmad => Some(false),
-                        _ => None,
-                    };
+                    let rule = NanRule::lowp(tier, op);
                     for sel in twin_models(tier, op.uses_estimates()) {
                         let model = forced_lowp(sel, op, &ins);
-                        assert_same(&format!("{sel} lowp {op:?}"), mad, &ins, &native, &model);
+                        assert_same(&format!("{sel} lowp {op:?}"), rule, &ins, &native, &model);
                     }
                 });
             }
@@ -250,33 +371,51 @@ fn exhaustive_unary_native_matches_model() {
         .step_by(CHUNK as usize)
         .collect();
     for tier in native_x86() {
+        // Lanes compared (each native result against each twin model), for the report.
+        let compared = std::sync::atomic::AtomicU64::new(0);
         std::thread::scope(|s| {
             for t in 0..threads {
                 let (chunks, unary, lowp_unary) = (&chunks, &unary, &lowp_unary);
+                let compared = &compared;
                 s.spawn(move || {
+                    let count = |n: usize| {
+                        compared.fetch_add(n as u64, std::sync::atomic::Ordering::Relaxed);
+                    };
                     for &start in chunks.iter().skip(t).step_by(threads) {
                         let a: Vec<u32> = (start..=start + (CHUNK - 1)).collect();
                         let ins = [a, vec![0; CHUNK as usize], vec![0; CHUNK as usize]];
                         for &op in unary {
                             let native = forced_highp(Selection::native(tier), op, &ins);
+                            let rule = NanRule::highp(tier, op);
                             for sel in twin_models(tier, op.uses_estimates()) {
                                 let model = forced_highp(sel, op, &ins);
                                 let what = format!("{sel} {op:?}");
-                                assert_same(&what, None, &ins, &native, &model);
+                                assert_same(&what, rule, &ins, &native, &model);
+                                count(native.len());
                             }
                         }
                         for &op in lowp_unary {
                             let native = forced_lowp(Selection::native(tier), op, &ins);
+                            let rule = NanRule::lowp(tier, op);
                             for sel in twin_models(tier, op.uses_estimates()) {
                                 let model = forced_lowp(sel, op, &ins);
                                 let what = format!("{sel} lowp {op:?}");
-                                assert_same(&what, None, &ins, &native, &model);
+                                assert_same(&what, rule, &ins, &native, &model);
+                                count(native.len());
                             }
                         }
                     }
                 });
             }
         });
+        eprintln!(
+            "exhaustive {tier}: {} unary primitives ({} highp, {} lowp) on all 2^32 inputs, {} \
+             lanes compared with the models, 0 mismatches",
+            unary.len() + lowp_unary.len(),
+            unary.len(),
+            lowp_unary.len(),
+            compared.into_inner()
+        );
     }
 }
 
@@ -303,29 +442,40 @@ fn f(x: f32) -> u32 {
 
 /// Every selection a known-answer test can run here: Scalar, the x86 models (`AmdZen4` runs on
 /// any host and under Miri; `Host` without estimates too, so models are called directly) and the
-/// native x86 tiers. `estimates` says whether the primitive needs `rcpps`/`rsqrtps`.
+/// native x86 tiers. `estimates` says whether the primitive needs the tier's estimates.
 fn kat_selections(estimates: bool) -> Vec<Selection> {
     let mut sels = vec![Selection::native(Tier::Scalar)];
     for t in X86 {
+        let host_estimates = estimate_op(t).is_available();
         sels.push(Selection::model(t, Estimates::AmdZen4));
-        if !estimates || EstimateOp::Rcpps.is_available() {
+        if !estimates || host_estimates {
             sels.push(Selection::model(t, Estimates::Host));
         }
-        if cfg!(not(miri)) && t.is_native() && EstimateOp::Rcpps.is_available() {
+        if cfg!(not(miri)) && t.is_native() && host_estimates {
             sels.push(Selection::native(t));
         }
     }
     sels
 }
 
-/// Checks `op` on inputs `ins` (splatted over 16 lanes) against `[scalar, sse2, sse41]`.
+/// Checks `op` on inputs `ins` (splatted over 16 lanes) against `[scalar, sse2, sse41]`, where
+/// Ml3 and Ml4 give Sse41's result.
 #[track_caller]
-fn kat(op: Prim, ins: [u32; 3], expect: [E; 3]) {
+fn kat(op: Prim, ins: [u32; 3], [s, sse2, sse41]: [E; 3]) {
+    kat5(op, ins, [s, sse2, sse41, sse41, sse41]);
+}
+
+/// Checks `op` on inputs `ins` (splatted over 16 lanes) against
+/// `[scalar, sse2, sse41, ml3, ml4]`.
+#[track_caller]
+fn kat5(op: Prim, ins: [u32; 3], expect: [E; 5]) {
     for sel in kat_selections(op.uses_estimates()) {
         let want = match sel.tier {
             Tier::Scalar => expect[0],
             Tier::Sse2 => expect[1],
-            _ => expect[2],
+            Tier::Sse41 => expect[2],
+            Tier::Ml3 => expect[3],
+            _ => expect[4],
         };
         let [a, b, c] = ins.map(|x| vec![x; 16]);
         let out = match sel.backend {
@@ -499,17 +649,41 @@ fn known_answers_pack() {
 #[test]
 fn known_answers_masks() {
     use Prim::{All, Any, CondToMask, IfThenElseF};
-    // x86 if_then_else is bitwise (`opts#L942-L948`); Scalar is `c ? t : e` (`opts#L156`).
-    kat(
+    let e = E::Bits;
+    // Sse2/Sse41 if_then_else is bitwise (`opts#L942-L948`); Scalar is `c ? t : e`
+    // (`opts#L156`); Ml3's `_mm256_blendv_ps` (`opts#L731-L734`) and Ml4's sign-bit test +
+    // `_mm512_mask_blend_ps` (`opts#L373-L382`) look only at the sign bit.
+    kat5(
         IfThenElseF,
         [0x0000_ffff, 0x3f80_1234, f(2.0)],
-        sx(E::Bits(0x3f80_1234), 0x4000_1234),
+        [
+            e(0x3f80_1234),
+            e(0x4000_1234),
+            e(0x4000_1234),
+            e(f(2.0)),
+            e(f(2.0)),
+        ],
+    );
+    kat5(
+        IfThenElseF,
+        [0x8000_0000, 0x3f80_1234, f(2.0)],
+        [
+            e(0x3f80_1234),
+            e(0x4000_0000),
+            e(0x4000_0000),
+            e(0x3f80_1234),
+            e(0x3f80_1234),
+        ],
     );
     kat(IfThenElseF, [0, f(1.0), f(2.0)], all3(f(2.0)));
-    // any/all: `_mm_movemask_ps` (`opts#L1062-L1063`) reads only the sign bits.
-    kat(Any, [1, 0, 0], sx(E::Bits(1), 0));
-    kat(Any, [0x7fff_ffff, 0, 0], sx(E::Bits(1), 0));
-    kat(All, [0x8000_0000, 0, 0], all3(1));
+    // any/all: `_mm_movemask_ps` (`opts#L1062-L1063`) reads only the sign bits; Ml3's
+    // `_mm256_testz_si256`/`_mm256_testc_si256` (`opts#L736-L738`) test every bit of the
+    // register; Ml4's `_mm512_test_epi32_mask` (`opts#L383-L390`) tests each lane for nonzero.
+    kat5(Any, [1, 0, 0], [e(1), e(0), e(0), e(1), e(1)]);
+    kat5(Any, [0x7fff_ffff, 0, 0], [e(1), e(0), e(0), e(1), e(1)]);
+    kat5(All, [0x8000_0000, 0, 0], [e(1), e(1), e(1), e(0), e(1)]);
+    kat5(All, [1, 0, 0], [e(1), e(0), e(0), e(0), e(1)]);
+    kat(All, [u32::MAX, 0, 0], all3(1));
     kat(Any, [0, 0, 0], all3(0));
     // cond_to_mask (`opts#L2277-L2286`): Scalar turns 0/1 into 0/~0; SIMD is the identity.
     kat(CondToMask, [1, 0, 0], sx(E::Bits(u32::MAX), 1));
@@ -520,37 +694,60 @@ fn known_answers_masks() {
 fn known_answers_half() {
     use Prim::{FromHalf, ToHalf};
     let e = E::Bits;
+    // Ml3/Ml4 (`opts#L1651-L1682`) use F16C's `vcvtph2ps`/`vcvtps2ph`: IEEE conversions (half
+    // denormals, inf and NaN kept; round to nearest even with _MM_FROUND_CUR_DIRECTION).
+    let soft_f16c = |soft: u32, f16c: u32| [e(soft), e(soft), e(soft), e(f16c), e(f16c)];
     // from_half (`opts#L1651-L1672`, software): denormal halfs flush to +0 (sign lost), and
     // the exponent is rebiased without special-casing inf/NaN.
-    kat(FromHalf, [0x0001, 0, 0], all3(0));
-    kat(FromHalf, [0x83ff, 0, 0], all3(0));
+    kat5(FromHalf, [0x0001, 0, 0], soft_f16c(0, 0x3380_0000)); // 2^-24
+    kat5(FromHalf, [0x83ff, 0, 0], soft_f16c(0, 0xb87f_c000));
     kat(FromHalf, [0x3c00, 0, 0], all3(f(1.0)));
     kat(FromHalf, [0x8400, 0, 0], all3(f(-6.103_515_6e-5)));
-    kat(FromHalf, [0x7c00, 0, 0], all3(f(65536.0)));
+    kat5(
+        FromHalf,
+        [0x7c00, 0, 0],
+        soft_f16c(f(65536.0), f(f32::INFINITY)),
+    );
+    kat5(
+        FromHalf,
+        [0x7c01, 0, 0],
+        soft_f16c(0x4780_2000, 0x7fc0_2000),
+    ); // sNaN, quieted
     // to_half (`opts#L1674-L1695`, software): truncates, flushes, and ends in the tier's pack.
     kat(ToHalf, [f(1.0), 0, 0], all3(0x3c00));
     kat(ToHalf, [f(-1.0), 0, 0], all3(0xbc00));
-    kat(ToHalf, [0x3f80_1800, 0, 0], all3(0x3c00)); // 1 + 2^-11 + 2^-12: truncated, not RNE
-    kat(ToHalf, [f(-9.536_743e-7), 0, 0], all3(0)); // -2^-20: flushed, sign lost
+    // 1 + 2^-11 + 2^-12: truncated by the software path, rounded up by F16C.
+    kat5(ToHalf, [0x3f80_1800, 0, 0], soft_f16c(0x3c00, 0x3c01));
+    // 1 + 2^-11: a tie, to even.
+    kat(ToHalf, [0x3f80_1000, 0, 0], all3(0x3c00));
+    // -2^-20: flushed (sign lost) by the software path, a half denormal with F16C.
+    kat5(ToHalf, [f(-9.536_743e-7), 0, 0], soft_f16c(0, 0x8010));
     kat(ToHalf, [f(65536.0), 0, 0], all3(0x7c00));
+    // 65519.99 truncates to 65504 (0x7bff) in software; F16C rounds it to 65504 too, while
+    // 65520 is the first value F16C rounds to infinity.
+    kat5(ToHalf, [f(65520.0), 0, 0], soft_f16c(0x7bff, 0x7c00));
     // (s>>16) + (em>>13) - (112<<10) exceeds 16 bits for |f| >= 2^32: truncated by Scalar and
-    // Sse2's pack, saturated to 0xffff by Sse4.1's _mm_packus_epi32.
-    kat(
+    // Sse2's pack, saturated to 0xffff by Sse4.1's _mm_packus_epi32; F16C gives ±inf / qNaN.
+    kat5(
         ToHalf,
         [f(f32::MAX), 0, 0],
-        [e(0x3bff), e(0x3bff), e(0xffff)],
+        [e(0x3bff), e(0x3bff), e(0xffff), e(0x7c00), e(0x7c00)],
     );
-    kat(
+    kat5(
         ToHalf,
         [f(f32::INFINITY), 0, 0],
-        [e(0x3c00), e(0x3c00), e(0xffff)],
+        [e(0x3c00), e(0x3c00), e(0xffff), e(0x7c00), e(0x7c00)],
     );
-    kat(
+    kat5(
         ToHalf,
         [f(f32::NEG_INFINITY), 0, 0],
-        [e(0xbc00), e(0xbc00), e(0xffff)],
+        [e(0xbc00), e(0xbc00), e(0xffff), e(0xfc00), e(0xfc00)],
     );
-    kat(ToHalf, [NAN, 0, 0], [e(0x3e00), e(0x3e00), e(0xffff)]);
+    kat5(
+        ToHalf,
+        [NAN, 0, 0],
+        [e(0x3e00), e(0x3e00), e(0xffff), e(0x7e00), e(0x7e00)],
+    );
 }
 
 #[test]
@@ -570,8 +767,23 @@ fn known_answers_div() {
     kat(DivI32, [0x8000_0000, 0, 0], sx(e(0x4000_0000), 0x8000_0000));
     kat(DivI32, [i(-7), 2, 0], all3(i(-3)));
     kat(DivI32, [0, 0, 0], sx(e(0), 0x8000_0000));
-    kat(DivU32, [7, 0, 0], sx(e(0), 0x8000_0000));
-    kat(DivU32, [u32::MAX, 2, 0], sx(e(0x7fff_ffff), 0x3fff_ffff));
+    // Ml4 (`opts#L491-L540`) converts the uint operands exactly (`_mm256_cvtepu32_pd`) and
+    // back with `_mm256_cvttpd_epu32`, whose indefinite (x/0) is 0xffffffff.
+    let ml4 = |s: E, x86: u32, ml4: u32| [s, e(x86), e(x86), e(x86), e(ml4)];
+    kat5(DivU32, [7, 0, 0], ml4(e(0), 0x8000_0000, u32::MAX));
+    kat5(DivU32, [0, 0, 0], ml4(e(0), 0x8000_0000, u32::MAX));
+    kat5(
+        DivU32,
+        [u32::MAX, 2, 0],
+        ml4(e(0x7fff_ffff), 0x3fff_ffff, 0x7fff_ffff),
+    );
+    kat5(
+        DivU32,
+        [0x8000_0000, 3, 0],
+        ml4(e(0x2aaa_aaaa), 0x2aaa_aaaa, 0x2aaa_aaaa),
+    );
+    kat5(DivU32, [u32::MAX, 0x8000_0000, 0], ml4(e(1), 1, 1));
+    kat5(DivU32, [10, u32::MAX, 0], ml4(e(0), 0, 0));
     kat(DivU32, [u32::MAX, u32::MAX, 0], all3(1));
     kat(DivU32, [10, 3, 0], all3(3));
 }
@@ -581,11 +793,27 @@ fn known_answers_arithmetic() {
     use Prim::{Mad, Nmad, RcpFast, RcpPrecise, Rsqrt, Sqrt};
     kat(Mad, [f(2.0), f(3.0), f(1.0)], all3(f(7.0)));
     kat(Nmad, [f(2.0), f(3.0), f(1.0)], all3(f(-5.0)));
-    // inf + -inf is invalid: x86 returns the QNaN indefinite.
-    kat(
+    let e = E::Bits;
+    // Unfused, 1e30*1e30 overflows to inf and inf + -inf is invalid: x86 returns the QNaN
+    // indefinite. Ml3/Ml4's `_mm256_fmadd_ps`/`_mm512_fmadd_ps` (`opts#L698`, `opts#L343`)
+    // round once: 1e60 - inf = -inf.
+    let ninf = f(f32::NEG_INFINITY);
+    kat5(
         Mad,
-        [f(1e30), f(1e30), f(f32::NEG_INFINITY)],
-        sx(E::Nan, INDEFINITE),
+        [f(1e30), f(1e30), ninf],
+        [E::Nan, e(INDEFINITE), e(INDEFINITE), e(ninf), e(ninf)],
+    );
+    // (1 + 2^-23)(1 - 2^-23) - 1 = -2^-46: lost to the intermediate rounding when unfused.
+    let eps = f32::EPSILON;
+    kat5(
+        Mad,
+        [f(1.0 + eps), f(1.0 - eps), f(-1.0)],
+        [e(0), e(0), e(0), e(f(-(eps * eps))), e(f(-(eps * eps)))],
+    );
+    kat5(
+        Nmad,
+        [f(1.0 + eps), f(1.0 - eps), f(1.0)],
+        [e(0), e(0), e(0), e(f(eps * eps)), e(f(eps * eps))],
     );
     kat(Sqrt, [f(-1.0), 0, 0], sx(E::Nan, INDEFINITE));
     kat(Sqrt, [f(-0.0), 0, 0], all3(f(-0.0)));
@@ -593,7 +821,7 @@ fn known_answers_arithmetic() {
     // Estimates on special inputs are architectural (SDM: rcpps(±0) = ±inf, rcpps(±inf) = ±0,
     // rsqrtps(negative) = indefinite). Sse2's rcp_fast is rcp_precise (`opts#L1737-L1741`):
     // e*(2 - v*e) with v*e = 0*inf → indefinite. Sse4.1's is the raw estimate (`#L1742-L1745`).
-    let e = E::Bits;
+    // Ml4's rcp14/rsqrt14 (`opts#L355-L356`) give the same specials.
     kat(RcpPrecise, [0, 0, 0], sx(e(f(f32::INFINITY)), INDEFINITE));
     kat(
         RcpFast,
@@ -617,17 +845,24 @@ fn known_answers_arithmetic() {
     );
 }
 
-/// Checks a lowp primitive on `ins` (splatted over 16 lanes) against `[sse2, sse41]`.
+/// Checks a lowp primitive on `ins` (splatted over 16 lanes) against `[sse2, sse41]`, where
+/// Ml3 and Ml4 give Sse41's result.
 #[track_caller]
-fn kat_lowp(op: LowpPrim, ins: [u32; 3], expect: [E; 2]) {
+fn kat_lowp(op: LowpPrim, ins: [u32; 3], [sse2, sse41]: [E; 2]) {
+    kat_lowp4(op, ins, [sse2, sse41, sse41, sse41]);
+}
+
+/// Checks a lowp primitive on `ins` (splatted over 16 lanes) against
+/// `[sse2, sse41, ml3, ml4]`.
+#[track_caller]
+fn kat_lowp4(op: LowpPrim, ins: [u32; 3], expect: [E; 4]) {
     for sel in kat_selections(op.uses_estimates()) {
-        if sel.tier == Tier::Scalar {
-            continue; // no lowp pipeline
-        }
-        let want = if sel.tier == Tier::Sse2 {
-            expect[0]
-        } else {
-            expect[1]
+        let want = match sel.tier {
+            Tier::Scalar => continue, // no lowp pipeline
+            Tier::Sse2 => expect[0],
+            Tier::Sse41 => expect[1],
+            Tier::Ml3 => expect[2],
+            _ => expect[3],
         };
         let [a, b, c] = ins.map(|x| vec![x; 16]);
         let out = match sel.backend {
@@ -649,7 +884,7 @@ fn kat_lowp(op: LowpPrim, ins: [u32; 3], expect: [E; 2]) {
 #[test]
 fn known_answers_lowp() {
     use LowpPrim::{
-        Div255, Div255Accurate, Floor, MaxF, MaxIntrF, MinF, MinIntrF, ScaledMult, Trunc,
+        Div255, Div255Accurate, Floor, Mad, MaxF, MaxIntrF, MinF, MinIntrF, ScaledMult, Trunc,
     };
     let both = |x: u32| [E::Bits(x); 2];
     // div255 on x86 (`opts#L5701-L5714`) is (v+255)/256, wrapping in 16 bits; div255_accurate
@@ -676,6 +911,14 @@ fn known_answers_lowp() {
     kat_lowp(ScaledMult, [0x4000, 0x4000, 0], both(0x2000));
     kat_lowp(ScaledMult, [0xffff, 1, 0], both(0));
     kat_lowp(Trunc, [f(-1.5), 0, 0], both(u32::MAX));
+    // lowp mad is `a+f*m` (`opts#L5920-L5934`) on every tier, unfused even on Ml3/Ml4.
+    kat_lowp(
+        Mad,
+        [f(1e30), f(1e30), f(f32::NEG_INFINITY)],
+        both(INDEFINITE),
+    );
+    let eps = f32::EPSILON;
+    kat_lowp(Mad, [f(1.0 + eps), f(1.0 - eps), f(-1.0)], both(0));
 }
 
 /// Skia defines several lowp primitives as the highp primitive on each half (`rcp_precise`,
@@ -703,6 +946,12 @@ fn lowp_halves_match_highp() {
                     if sel.tier == Tier::Scalar {
                         continue;
                     }
+                    // Lowp `mad` is plain arithmetic (`opts#L5920-L5934`); highp `mad` is an
+                    // FMA on Ml3/Ml4 (both checked in `known_answers_lowp`/`_arithmetic`).
+                    let fused = matches!(sel.tier, Tier::Ml3 | Tier::Ml4);
+                    if fused && matches!(lop, LowpPrim::Mad | LowpPrim::Nmad) {
+                        continue;
+                    }
                     let [a, b, c] = &ins;
                     let (lo, hi) = match sel.backend {
                         Backend::Native => {
@@ -712,7 +961,8 @@ fn lowp_halves_match_highp() {
                             (run_lowp(sel, lop, a, b, c), run_highp(sel, hop, a, b, c))
                         }
                     };
-                    assert_same(&format!("{sel} {lop:?} vs {hop:?}"), None, &ins, &lo, &hi);
+                    let what = format!("{sel} {lop:?} vs {hop:?}");
+                    assert_same(&what, NanRule::Exact, &ins, &lo, &hi);
                 }
             });
         }

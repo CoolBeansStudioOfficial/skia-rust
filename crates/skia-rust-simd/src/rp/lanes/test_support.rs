@@ -166,7 +166,7 @@ impl Prim {
         }
     }
 
-    /// Whether the x86 tiers' result depends on `rcpps`/`rsqrtps`.
+    /// Whether the x86 tiers' result depends on `rcpps`/`rsqrtps` (`rcp14`/`rsqrt14` on Ml4).
     pub(crate) fn uses_estimates(self) -> bool {
         matches!(
             self,
@@ -579,4 +579,16 @@ pub(crate) fn mad_nan_ambiguous(f: u32, m: u32, a: u32, outer_commutes: bool) ->
     use super::x86_model;
     let (f, m, a) = (f32::from_bits(f), f32::from_bits(m), f32::from_bits(a));
     (f.is_nan() && m.is_nan()) || (outer_commutes && a.is_nan() && x86_model::mul(f, m).is_nan())
+}
+
+/// Whether several operands of a fused `mad(f, m, a)`/`nmad` (one `vfmadd`/`vfnmadd`) are NaN,
+/// so that which NaN comes out is not specified: it depends on the instruction form
+/// (`…132`/`…213`/`…231`) the compiler picks, for us and for Skia's clang. Only NaN-ness is
+/// then comparable. (One NaN operand, or a NaN from an invalid operation, is fully specified.)
+pub(crate) fn fma_nan_ambiguous(f: u32, m: u32, a: u32) -> bool {
+    [f, m, a]
+        .into_iter()
+        .filter(|&x| f32::from_bits(x).is_nan())
+        .count()
+        >= 2
 }

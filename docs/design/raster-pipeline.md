@@ -622,6 +622,65 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   `vx::Vec::bit_cast` (size checked at compile time) is built from the sealed `Lane` trait's new
   `ne_byte`/`from_ne_byte_fn`.
 
+**As implemented in A2b** (`rp/lanes/{ml3,ml4}.rs`, `rp/lanes/model_{ml3,ml4}/`):
+
+- **Modules.** `rp::lanes::{ml3, ml4}` (`x86_64` only) and the models `model_ml3::{host,
+  amd_zen4}`, `model_ml4::{host, amd_zen4}` (same `imp.rs` mounting as A2a). They export exactly
+  the A2a names (no additions); every native function carries the tier token's full feature
+  string (`Ml3Token::FEATURES` / `Ml4Token::FEATURES`). Ml3's lowp (`N = 16`) splits into two
+  highp halves wherever Skia does (`max_intr`/`min_intr` on `F` and `I32`, `rcp_precise`,
+  `sqrt_`, `floor_`, `trunc_`); Ml4's lowp has the highp width (`N = LOWP_N = 16`) and calls the
+  highp primitives directly. `rcp_approx`/`rsqrt_approx` are `vrcpps`/`vrsqrtps` (Ml3) and
+  `vrcp14ps`/`vrsqrt14ps` (Ml4); the Ml4 models take them from `x86_model::{rcp14ps,
+  rsqrt14ps}` (`Estimates::Host` on AVX-512 hosts, `Estimates::AmdZen4` =
+  `estimates::amd_zen4::{rcp14, rsqrt14}` anywhere). Ml4's `floor_`/`ceil_` use
+  `_mm512_roundscale_ps::<_MM_FROUND_FLOOR/CEIL>`, which is what clang's `_mm512_floor_ps`
+  expands to (Rust has no `_mm512_floor_ps`).
+- **Fused `mad`.** Highp `mad`/`nmad` and Ml3/Ml4's `rcp_precise` (`fnmadd(v, e, 2) * e`) are
+  single FMAs; lowp `mad`/`nmad` stay `a + f*m` (unfused) on these tiers too. The models use
+  `x86_model::{fmadd, fnmadd}`: `f32::mul_add` on non-NaN inputs (correctly rounded on every
+  host and under Miri), invalid operations → the indefinite, and a single NaN operand comes out
+  quieted **with its own sign** (measured: `vfnmadd` never negates a NaN, and a NaN operand wins
+  over an invalid `0 * inf`). Two codegen-dependent cases, both also present in Skia's clang:
+  which NaN an FMA returns when several operands are NaN (the compiler picks the
+  `132`/`213`/`231` form; twin tests compare NaN-ness, `test_support::fma_nan_ambiguous`), and the
+  sign of `nmad`'s/`rcp_precise`'s NaN when the negated operand is NaN: `_mm*_fnmadd_ps(a, b, c)`
+  is `fma(-a, b, c)` in both Rust and clang; optimized builds fold the negation into `vfnmadd`
+  (matching the model bit for bit, checked in release, exhaustively for `rcp_precise`), but an
+  unoptimized build materializes it and flips the NaN's sign. Debug twin tests therefore accept a
+  sign-only difference there (`NanRule::FusedNeg`); release builds compare every bit.
+- **Selects and masks.** `if_then_else` is `vblendvps` (Ml3) / `vptestmd` + masked blend (Ml4):
+  only the sign bit of the condition matters. `any`/`all` are `vptest` over the whole 256-bit
+  register on Ml3 (any bit set / every bit set) and `vptestmd` per lane on Ml4 (some / every lane
+  nonzero), as §1.3 says; known-answer tests pin non-canonical masks for all four x86 tiers.
+- **F16C.** `x86_model::{cvtph2ps, cvtps2ph}` model `vcvtph2ps`/`vcvtps2ph` with
+  `_MM_FROUND_CUR_DIRECTION` under the default MXCSR: exact half → float (denormals kept, NaN
+  quieted with its payload shifted up), float → half rounded to nearest even with half
+  denormals, `|f| ≥ 65520` (incl. `inf`) → `±inf`, NaN quieted keeping the top 10 payload bits.
+  So none of the software path's quirks (§1.5, A2a's Sse41 `pack` saturation of `to_half`)
+  exist on Ml3/Ml4.
+- **`div_fn`.** `div_i32` is the `f64` path on both tiers (`x / 0`, `INT_MIN / -1` →
+  `0x80000000`); Ml3's `div_u32` clamps both operands to `INT_MAX` with `pminud` (= Sse41). Ml4's
+  `div_u32` converts with `vcvtudq2pd` and back with `vcvttpd2udq`, so it is the exact quotient,
+  and `x / 0` (and `0 / 0`) gives **`0xFFFFFFFF`**, the unsigned integer indefinite (Skia's
+  comment there says `INT_MIN`; the instruction says otherwise, measured and modelled by
+  `x86_model::cvttpd2udq`).
+- **`unsafe`:** eight more blocks in `rp/lanes/x86.rs` (`_mm256_{loadu,storeu}_{ps,si256}`,
+  `_mm512_{loadu,storeu}_{ps,si512}`), the same one-op pattern as A2a's four; every other register
+  shape is a `bit_cast` or an intrinsic on those. Tests add four blocks (native harness calls
+  after `Ml3Token`/`Ml4Token`).
+- **Tests.** The A2a harnesses now cover all four x86 tiers (`X86`), native vs `Model(Host)` and
+  `Model(AmdZen4)`; known-answer tests take per-tier expectations (`kat5`: Scalar, Sse2, Sse41,
+  Ml3, Ml4; `kat_lowp4`) for the new differences: fused vs unfused `mad`/`nmad` (also lowp
+  staying unfused), sign-bit selects, `any`/`all`, F16C conversions, Ml4's exact `div_u32`.
+  `x86_model` has its own tests (FMA NaN rules measured on the oracle host, an all-halves
+  round trip). `SKIA_RUST_EXHAUSTIVE=1` (release, Zen 4 oracle host): 19 unary primitives
+  (14 highp, 5 lowp) on all 2³² inputs against both models per tier, 1.63·10¹¹ lane comparisons
+  per tier, **0 mismatches** for Sse2, Sse41, Ml3 and Ml4.
+- **GM harness.** With `model_ml4` in place `tests/gm`'s policy no longer reports `Ml4` as not
+  checkable on hosts without AVX-512 (or with other AVX-512 estimates): it runs
+  `Model(AmdZen4)` like the other x86 tiers (§4.6 item 4; `docs/PORTING.md` §11 updated).
+
 ### 2.5 Stage code: written once, stamped per tier
 
 Skia compiles one header N times in N namespaces. We do the same with `include!`:
@@ -969,8 +1028,8 @@ config it renders once per `Selection` and compares the SHA-256 with that tier's
 - **Tier policy (§4.6).** Each `Tier` renders once per config under `force_tier` and is compared
   with *every* oracle tier in `oracle_tiers()` that has goldens (not only the first, so a class
   split shows up as a GM failure too). x86 tiers run `Native` when the host's fingerprints match
-  `AMD_ZEN4` for the tier, else `Model(AmdZen4)`; `Ml4` without a match is not checkable until
-  an `rcp14` model exists (R2). `Neon` falls back to `Model(Arm)`; it has no goldens yet.
+  `AMD_ZEN4` for the tier, else `Model(AmdZen4)` (`Ml4` too since A2b's `model_ml4`; before it,
+  `Ml4` without a match was not checkable). `Neon` falls back to `Model(Arm)`; it has no goldens yet.
   `cpu-x64-scalar` is a proxy (§4.5): compared and reported, never decisive.
 - **N32 byte order.** `8888` is `kN32` (BGRA on Windows, RGBA elsewhere) and the default goldens
   are `BGRA_8888` (Windows oracle host). Bytes are never swizzled. Hosts whose N32 is RGBA
