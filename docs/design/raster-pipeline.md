@@ -1033,6 +1033,22 @@ si! {
   crate exists (temporary).
 - `init_lane_masks` and `load_condition_mask` are implemented in `sksl_masks.rs` (B6a's file)
   because the trace tests need them; when B6a lands, keep its versions.
+**As implemented in B3** (`rp/tiers/{highp,lowp}/blend.rs`, tests `rp/tests_blend.rs`): all
+Porter-Duff, separable and non-separable blend modes and the coverage stages. Skia's two
+`BLEND_MODE` macros are two local `macro_rules!` (`blend_mode_all!`, `blend_mode_color!`) over
+the `name_channel` functions, which keep Skia's names and operand order. highp `min`/`max` are
+`min_f`/`max_f`; `rcp_fast` (colorburn, colordodge, `set_sat`, `clip_color`: hue, saturation,
+color, luminosity) is the only estimate use, so those stages differ between Sse2/Scalar and
+Sse41+ exactly as the goldens do. lowp is the accurate-div255 branch of
+`SK_USE_INACCURATE_DIV255_IN_BLEND` (the define is never set); colorburn, colordodge, softlight
+and the four non-separable modes are highp-only. lowp `from_565`/`load_8`/`from_float` and highp
+`from_byte`/`from_565` are private helpers of the blend files (B1 ports its own for the load
+stages). Coverage reads its context through `Params::ptr_at_xy` (U8: 1 byte, 565: 2 bytes per
+pixel, so tails come from the scratch buffer); `*_native` reads `N` floats (highp) / `N` 16-bit
+values (lowp) at its `MemPtr`; `*_1_float` reads the `Cell<f32>`. Tests: every stage against an
+independent scalar transcription of the C++ (Scalar exactly; other tiers where `mad` fusing and
+estimates allow), native-vs-model twins, tail chunks with offset `MemoryCtx` memory, and
+`BlendTest::Blend_byte_multiply` (`tests/src/unit/blend_test.rs`).
 
 ### 2.7 The builder (`SkRasterPipeline.cpp`)
 
