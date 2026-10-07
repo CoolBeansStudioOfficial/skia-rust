@@ -1050,6 +1050,29 @@ independent scalar transcription of the C++ (Scalar exactly; other tiers where `
 estimates allow), native-vs-model twins, tail chunks with offset `MemoryCtx` memory, and
 `BlendTest::Blend_byte_multiply` (`tests/src/unit/blend_test.rs`).
 
+**As implemented in B1** (`tiers/{highp,lowp}/memory.rs`; tests in `rp/tests_memory.rs`):
+
+- **Stages.** `load`/`load_dst`/`store`/`gather` of a8, 565, 4444, 8888, rg88 (no `gather`/`load`
+  for r8: `store_r8` only), `srcover_rgba_8888`, `swap_rb[_dst]`, `alpha_to_{gray,red}[_dst]`
+  and every `debug_*` (the highp `debug_x/y` are `r`/`g`, lowp's are `gg`). Skia's
+  `from_*`/`to_unorm`/`ix_and_ptr`/`clamp_ex`/`lowp_fixed_point` are private `si!` helpers of
+  the file (no shared helper module; B2 and B4 define their own).
+- **Memory.** Loads/stores are `Vec::{load,store}_bytes` on `Params::ptr_at_xy[_mut]` (the
+  scratch during the tail chunk). Gathers (`GatherCtx::pixels` is bytes) read lane by lane with
+  native-endian `from_ne_bytes` and bounds checks (`gather_unaligned`); the index vector is
+  Skia's `ix_and_ptr` (highp: `clamp_ex` with `min_f`/`max_f`; lowp: `min_intr_f`/`max_intr_f`,
+  so x86 NaN behaviour is each tier's own).
+- **Tier differences kept.** `to_unorm`'s `round` (x86 ties-to-even, Scalar `(int)(v+0.5f)`,
+  Neon `FCVTNU`), `pack_u32`'s truncation vs saturation, lowp `div255` (x86 `(v+255)/256`, Neon
+  exact) in `srcover_rgba_8888`, and `mad` fusion in highp `srcover_rgba_8888`. NEON's
+  `vld4`/`vst4`/`vld2`/`vst2` forms of the 8888/88 loads/stores have the same results as the
+  portable code and are not modelled separately.
+- **Facts the tests pin down.** 565 expands differently in the two precisions (lowp replicates
+  bits, highp rounds `R/31*255`; e.g. `R = 3` gives 24 vs 25); 4444 and 8888 → 565/4444 agree;
+  every 16-bit value of 565/4444 survives a load+store in both. Ported with B2 on main:
+  `SkRasterPipeline`, `SkRasterPipeline_u16`, `SkRasterPipeline_lowp`; `_swizzle` and `_lowp_clamp01`
+  wait for B4 (`swizzle`, `clamp_01`).
+
 ### 2.7 The builder (`SkRasterPipeline.cpp`)
 
 Ported 1:1 in core: `append`, `appendMatrix` (op choice by matrix type), `appendConstantColor`
