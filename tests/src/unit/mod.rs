@@ -5,6 +5,8 @@ pub mod bitmap_get_color_test;
 #[cfg(test)]
 pub mod bitmap_test;
 #[cfg(test)]
+pub mod blend_test;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
