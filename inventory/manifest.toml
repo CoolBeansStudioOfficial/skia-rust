@@ -29090,7 +29090,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipCubicTest.cpp#L80-L173"
 module = "core"
-status = "passing"
+status = "todo"
+reason = "needs Canvas (D6): test_giantClip not ported yet"
 span_hash = "c0f3cab9c863d60cb20ac57f37d81da9a71c7fc22128bc0cc8870c3917268b82"
 
 [[test]]
@@ -29128,7 +29129,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipperTest.cpp#L159-L163"
 module = "core"
-status = "passing"
+status = "todo"
+reason = "needs Canvas (D6): test_hairclipping not ported yet"
 span_hash = "f5566791cb2f6d3fa0b89ae15911947993cfef4dd8337df955722c515134976a"
 
 [[test]]
