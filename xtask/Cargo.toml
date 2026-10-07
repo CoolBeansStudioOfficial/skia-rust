@@ -15,6 +15,7 @@ clap = { version = "4.6.7", features = ["derive"] }
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+skia-rust-simd.workspace = true
 sha2 = "0.11.0"
 toml = "1.1.6"
 walkdir = "2.5.0"
