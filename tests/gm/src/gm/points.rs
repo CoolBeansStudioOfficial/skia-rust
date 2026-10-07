@@ -10,6 +10,8 @@ use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 
 // Port of: gm/points.cpp#L22-L63 (chrome/m156)
+const N: usize = 99;
+
 struct PointsGm;
 
 impl PointsGm {
@@ -47,7 +49,6 @@ impl GM for PointsGm {
         let mut p1 = Paint::default();
         let mut p2 = Paint::default();
         let mut p3 = Paint::default();
-        const N: usize = 99;
 
         p0.set_color(Color::RED);
         p1.set_color(Color::GREEN);
