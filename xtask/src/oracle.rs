@@ -1064,7 +1064,8 @@ mod tests {
             ("t2".to_owned(), hashes(&[("x", "1")])),
             ("t3".to_owned(), hashes(&[("x", "2")])),
         ]);
-        assert!(class_violations(&classes(), &tiers).is_empty());
+        let bad = class_violations(&classes(), &tiers);
+        assert!(bad.is_empty(), "{bad:?}");
     }
 
     #[test]
