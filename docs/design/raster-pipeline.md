@@ -1581,6 +1581,27 @@ the same framework.
   blitters), so there is nothing to flip; `crates/skia-rust-raster/src/blitter_tests.rs` and
   `alpha_runs.rs` test against hand-derived traces of the C++ defaults with a recording blitter.
 
+**As implemented in C7** (`skia_rust_core::path_effect`, `path_utils`; the new `skia-rust-effects` crate, depends on core):
+
+- **Base type.** `SkPathEffect` is `path_effect::PathEffect(Arc<dyn PathEffectBase>)`; `SkPathEffectBase`'s
+  virtuals are the `PathEffectBase` trait (`Send + Sync + Debug`). `SkComposePathEffect`/`SkSumPathEffect`
+  are private structs holding the pair. Flattening is not ported (no `SkWriteBuffer`/`SkReadBuffer` yet).
+- **Effects crate.** `SkDashPath.cpp` is `dash_path` (`calc_dash_parameters`, `internal_filter` with the
+  `cull_path`/`clip_line`/`SpecialLineRec` fast paths, `valid_dash_path`), `SkDashImpl` is `dash_impl`
+  (including `onAsPoints` and `cull_line`), `SkDashPathEffect::Make` is `dash_path_effect::new`.
+  `SkCornerPathEffect` is ported too because `AsADashTest_noneDash` uses it as the non-dash effect.
+  `PathEffect::dash`/`corner_path` are extension traits (inherent impls cannot live outside core).
+- **`FillPathWithPaint`.** `Paint` carries no path effect yet, so `path_utils::fill_path_with_stroke_rec_and_effect`
+  takes the `StrokeRec`, the optional effect, the cull rect and the ctm explicitly (it overwrites the rec's
+  res scale with the one from the ctm, as the C++ builds the rec with it). When `Paint` gains a path effect
+  its `fill_path_with_paint` should delegate to it.
+- **Tests.** `AsADashTest` (3) and `DashPathEffectTest` (4 of 5: `crbug_348821`, `asPoints`, `bug4871`,
+  `DashCrazy_crbug_875494`) pass. `DashPathEffectTest_asPoints_limit` needs `Canvas::drawLine` and a raster
+  `Surface` (D6): it is registered and `#[ignore]`d, with its manifest entry left `todo` plus a reason.
+  `skia-rust-effects/src/tests.rs` covers its path-effect half (`FillPathWithPaint` with a huge stroke width
+  and a cull rect) plus basic dashing, sum and compose sanity. `bug4871` and `DashCrazy` build the
+  `StrokeRec` with `StrokeRec::from_paint_params` in place of `SkPaint`.
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

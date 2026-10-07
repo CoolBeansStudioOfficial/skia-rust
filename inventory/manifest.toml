@@ -28035,7 +28035,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AsADashTest.cpp#L19-L25"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d96661ccff471f8e1e447930b61677fef1eaaef3e333fb6966fb35b9e91101b4"
 
 [[test]]
@@ -28044,7 +28044,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AsADashTest.cpp#L27-L34"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d91fce96de11abee7652923dbb1df3e9c7dada301359f6b59ec63453bebbe2e3"
 
 [[test]]
@@ -28053,7 +28053,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AsADashTest.cpp#L36-L52"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "183b9279fb2c38f5ba6d6d151efc1c6593d9c51d3a747c51e830eccd265471a7"
 
 [[test]]
@@ -30274,7 +30274,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L133-L144"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e2891b2333d2a7fea4199f43c638f4a7d7baced4c36a7c43d2336e2a137e5cb6"
 
 [[test]]
@@ -30283,7 +30283,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L41-L98"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "09c7367e632677de06a8a17e95e9f8f5f34c62904e86b2ac7a0c7f04c8c11f0e"
 
 [[test]]
@@ -30293,6 +30293,7 @@ macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L118-L129"
 module = "effects"
 status = "todo"
+reason = "needs Canvas and Surface (D6): drawLine is not ported yet"
 span_hash = "1a43cd28dcbbf2dafb4df05cced8a565c80d25487ee179ce01d5dc824697181b"
 
 [[test]]
@@ -30301,7 +30302,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L32-L38"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ee9f92262a649f5a0d80c7307188344b6240013957161210c39eb4eca046ea21"
 
 [[test]]
@@ -30310,7 +30311,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DashPathEffectTest.cpp#L100-L115"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c9b4ead736d87557cafd79d13c872de3a76d4648f3f25187d8bc4a6328106231"
 
 [[test]]

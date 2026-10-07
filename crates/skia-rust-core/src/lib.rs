@@ -57,6 +57,7 @@ pub mod path;
 pub mod path_builder;
 pub mod path_data;
 mod path_dump;
+pub mod path_effect;
 #[doc(hidden)]
 pub mod path_enums;
 mod path_interpolate;
