@@ -27,7 +27,7 @@
     clippy::many_single_char_names
 )]
 
-use super::lanes::test_support::{Prim, Rng, float_specials};
+use super::lanes::test_support::{Prim, Rng, float_specials, thin_nans};
 use super::lanes::tests::run_highp;
 use super::{
     MemPtr, MemSlot, MemView, MemoryBindings, Program, Stage,
@@ -683,6 +683,22 @@ struct Ctxs {
     decal: DecalTileCtx,
 }
 
+impl Ctxs {
+    fn has_nan(&self) -> bool {
+        let t = &self.tile;
+        let c = &self.clamp;
+        let d = &self.decal;
+        [t.scale, t.inv_scale, c.min_x, c.min_y, c.max_x, c.max_y]
+            .iter()
+            .chain([d.limit_x, d.limit_y, d.inclusive_edge_x, d.inclusive_edge_y].iter())
+            .chain(self.m2.iter())
+            .chain(self.m4.iter())
+            .chain(self.m6.iter())
+            .chain(self.m9.iter())
+            .any(|x| x.is_nan())
+    }
+}
+
 fn random_ctxs(rng: &mut Rng, specials: &[u32]) -> Ctxs {
     let v: Vec<f32> = random_lanes(rng, specials, 40)
         .into_iter()
@@ -826,8 +842,13 @@ fn geometry_stage_twins() {
         let mut rng = Rng::new(0x6e0_5e7);
         for round in 0..300 {
             let ctxs = random_ctxs(&mut rng, &specials);
-            let high_in = word_bytes(&random_lanes(&mut rng, &specials, 4 * n));
-            let low_in = word_bytes(&random_lanes(&mut rng, &specials, 2 * lowp_n));
+            let mut high_in = random_lanes(&mut rng, &specials, 4 * n);
+            let mut low_in = random_lanes(&mut rng, &specials, 2 * lowp_n);
+            // A NaN in a context would meet a NaN input in every lane: keep the inputs NaN-free.
+            let keep = !ctxs.has_nan();
+            thin_nans(&mut [&mut high_in], n, keep);
+            thin_nans(&mut [&mut low_in], lowp_n, keep);
+            let (high_in, low_in) = (word_bytes(&high_in), word_bytes(&low_in));
             for (name, stages, lowp_ok, estimate, mad_like) in all_stage_programs(&ctxs) {
                 let (_, hn) = run(&stages, native, true, n, &high_in);
                 let lowp_native = lowp_ok.then(|| run(&stages, native, false, lowp_n, &low_in));

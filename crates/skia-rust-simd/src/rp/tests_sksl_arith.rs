@@ -27,7 +27,7 @@
 )]
 
 use super::contexts::{BinaryOpCtx, ConstantCtx, MatrixMultiplyCtx, TernaryOpCtx};
-use super::lanes::test_support::{Rng, float_specials, int_specials};
+use super::lanes::test_support::{Rng, float_specials, int_specials, thin_nans};
 use super::{MemPtr, MemSlot, MemView, MemoryBindings, Program, Stage};
 use crate::tier::{Backend, Estimates, Selection, Tier};
 
@@ -697,14 +697,18 @@ fn wild_inputs(case: &Case, rng: &mut Rng, n: usize, specials: &[u32], int_sp: &
         || case.name.contains("refract")
         || case.name.contains("matrix")
         || case.name.contains("mod");
-    (0..SLOTS * n)
+    let mut words: Vec<u32> = (0..SLOTS * n)
         .map(|_| match rng.below(4) {
             0 => rng.next_u32(),
             1 if float_like => rng.pick(specials),
             1 => rng.pick(int_sp),
             _ => Dom::Float.word(rng),
         })
-        .collect()
+        .collect();
+    if float_like {
+        thin_nans(&mut [&mut words], n, true);
+    }
+    words
 }
 
 fn expected(case: &Case, k: usize, n: usize, init: &[u32]) -> Vec<u32> {

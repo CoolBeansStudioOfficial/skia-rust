@@ -630,6 +630,9 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   The same caveat applies to portable `Vec` arithmetic in stages (A3+): stage-twin tests must
   either avoid inputs where two NaNs meet or compare NaN-ness there, and models run on Arm hosts
   inherit Arm's NaN choice in portable arithmetic.
+  The release twin tests (CI runs them, #69) enforce this with `test_support::thin_nans`: the
+  geometry, color and SkSL-arithmetic twin tests keep at most one NaN per lane (none when a stage
+  context holds a NaN), because release LLVM commutes `addps`/`mulps` operands where debug does not.
 - **Codegen** (release, checked): a `sse2` stage computing `mad(d, 1 - a, r) * rcp_fast(a)`,
   `min_f`, `bit_cast`, `if_then_else_f`, `floor_` compiles to straight `rcpps`/`mulps`/`subps`/
   `minps`/`cmpltps`/`cvttps2dq`/`andps`/`andnps`/`orps` with one load per input and one store; the
