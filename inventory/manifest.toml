@@ -29865,7 +29865,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorPrivTest.cpp#L32-L54"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5e0904d88dcbb5382e903baa16c48ab1cbc9c4e917c2d76aa35e67ae713547e9"
 
 [[test]]
@@ -29874,7 +29874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorPrivTest.cpp#L56-L81"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3f220dc92021bbc1487bfd33ea03eb33dafe42586f4b9230e7b15321e3733b19"
 
 [[test]]
@@ -29883,7 +29883,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorPrivTest.cpp#L18-L30"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1b3d524bf5e6601f3fef84f086e0652f1c05c2e668481fa3698a02998fb481c3"
 
 [[test]]
@@ -29991,7 +29991,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorTest.cpp#L78-L92"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "65dbc2e99ff755a2bc14a3af1071a6844cb97f1104b5c729beb2723d56868123"
 
 [[test]]
@@ -30000,7 +30000,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorTest.cpp#L60-L76"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c75602cd5c0a64010c396b3fadc4ae620d954bb1d0919b696cabf985e9438b1e"
 
 [[test]]
@@ -30009,7 +30009,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorTest.cpp#L19-L38"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3d763655291504dcfd46a24b208c5355aee327571bbecd2972111e89eb9382e4"
 
 [[test]]
@@ -30018,7 +30018,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorTest.cpp#L40-L53"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ff70219211cf7a0306312233578f1d967afefb8b165e708ff5d5fc78fdd82f89"
 
 [[test]]
@@ -33723,7 +33723,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HSVRoundTripTest.cpp#L14-L32"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a0621828bbcd4278ea2418214fb1aa905dfef275df9914c518473cf224e64231"
 
 [[test]]
@@ -41848,7 +41848,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkColor4fTest.cpp#L11-L28"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3467c43d3d3b9dc3b5bebd88e3fd17d0bf6c3de71104e3043aec666248eb199a"
 
 [[test]]
