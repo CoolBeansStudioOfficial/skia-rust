@@ -15,6 +15,8 @@ pub mod blend_test;
 #[cfg(test)]
 pub mod blit_mask_clip;
 #[cfg(test)]
+pub mod canvas_test;
+#[cfg(test)]
 pub mod capped_hairlines_test;
 #[cfg(test)]
 pub mod checksum_test;
