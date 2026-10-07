@@ -288,6 +288,25 @@ impl<'a> Pixmap<'a> {
         Some((r, offset))
     }
 
+    /// A pixmap over the same pixels and row bytes, borrowed from this one (what copying an
+    /// `SkPixmap` does in C++, where the copy shares the pixel memory). It writes to the pixels if
+    /// this pixmap can.
+    ///
+    /// skia-rust: not in `SkPixmap`; the `Clone` a borrowed pixmap cannot have.
+    #[must_use]
+    pub fn reborrow_mut(&mut self) -> Pixmap<'_> {
+        let storage = match &mut self.storage {
+            Storage::None => Storage::None,
+            Storage::Shared(bytes) => Storage::Shared(bytes),
+            Storage::Unique(bytes) => Storage::Unique(bytes),
+        };
+        Pixmap {
+            storage,
+            row_bytes: self.row_bytes,
+            info: self.info.clone(),
+        }
+    }
+
     /// Returns the pixmap of the intersection of this pixmap with `area`, if the intersection is
     /// not empty (a read-only view of the same pixels). Otherwise returns `None`.
     ///

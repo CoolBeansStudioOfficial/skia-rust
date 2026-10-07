@@ -3,9 +3,14 @@
 # (crates/skia-rust-core/src/raster_pipeline/skia_dump.txt and skia_rp_dump.txt).
 # Usage, from this directory:
 #   ./build.ps1 -Skia ../../third_party/skia -Build x64-sse2
+# The D3 destination hashes of the other tiers (skia_d3_pixels_<tier>.txt) come from
+#   ./build.ps1 -Build x64-sse2 -Cap ml3 -Tier ml3      (also ml4)
+#   ./build.ps1 -Build x64-sse41 -Cap ssse3 -Tier sse41
 param(
     [string]$Skia = "../../third_party/skia",
     [string]$Build = "x64-sse2",
+    [string]$Cap = "baseline",
+    [string]$Tier = "",
     [string]$Llvm = "C:/Program Files/LLVM/bin",
     [string]$Msvc = "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207",
     [string]$Sdk = "C:/Program Files (x86)/Windows Kits/10",
@@ -43,6 +48,19 @@ $libs = Get-ChildItem "$lib/*.lib" | Where-Object { $_.Name -ne "dm.lib" } | For
     "/LIBPATH:$Msvc/lib/x64"
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
+# Another tier's D3 destination hashes only.
+if ($Tier) {
+    $dest3 = Join-Path $PSScriptRoot "../../crates/skia-rust-raster/src/rp_blitter_oracle"
+    New-Item -ItemType Directory -Force $dest3 | Out-Null
+    $env:SKIA_ORACLE_CPU_CAP = $Cap
+    Remove-Item Env:SKIA_ORACLE_RP_DUMP -ErrorAction SilentlyContinue
+    $ErrorActionPreference = "Continue"
+    & "$out/rp_builder.exe" d3 2> "$out/d3_dump_$Tier.txt"
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
+    [IO.File]::WriteAllText("$dest3/skia_d3_pixels_$Tier.txt", ([IO.File]::ReadAllText("$out/d3_dump_$Tier.txt") -replace "`r`n", "`n"))
+    exit 0
+}
+
 # Run on the baseline tier (no ml3/ml4 upgrade); dump() goes to stderr (SkDebugf).
 $dest = Join-Path $PSScriptRoot "../../crates/skia-rust-core/src/raster_pipeline"
 $rpDump = Join-Path $out "rp_dump.txt"
@@ -64,4 +82,15 @@ $env:SKIA_ORACLE_RP_DUMP = $rpDump
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 [IO.File]::WriteAllText("$dest/skia_d2_dump.txt", ([IO.File]::ReadAllText("$out/d2_dump.txt") -replace "`r`n", "`n"))
 [IO.File]::WriteAllText("$dest/skia_d2_rp_dump.txt", ([IO.File]::ReadAllText($rpDump) -replace "`r`n", "`n"))
+# The D3 cases (SkRasterPipelineBlitter): skia_d3_pixels.txt (destination hashes after each blit),
+# skia_d3_rp_dump.txt (the oracle's compile records, tagged <case>/<step>).
+$dest3 = Join-Path $PSScriptRoot "../../crates/skia-rust-raster/src/rp_blitter_oracle"
+New-Item -ItemType Directory -Force $dest3 | Out-Null
+$rpDump = Join-Path $out "d3_rp_dump.txt"
+Remove-Item -ErrorAction SilentlyContinue $rpDump
+$env:SKIA_ORACLE_RP_DUMP = $rpDump
+& "$out/rp_builder.exe" d3 2> "$out/d3_dump.txt"
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+[IO.File]::WriteAllText("$dest3/skia_d3_pixels.txt", ([IO.File]::ReadAllText("$out/d3_dump.txt") -replace "`r`n", "`n"))
+[IO.File]::WriteAllText("$dest3/skia_d3_rp_dump.txt", ([IO.File]::ReadAllText($rpDump) -replace "`r`n", "`n"))
 exit 0
