@@ -106,3 +106,15 @@ def_test!(ChecksumConsistent, |r| {
 
 // skia-rust: ChecksumStrings is not ported: it exercises SkGoodHash on SkString, which is not
 // ported (manifest status stays `todo`).
+
+// Port of: tests/ChecksumTest.cpp#L98-L105 (chrome/m156)
+def_test!(ChecksumStrings, |r| {
+    const K_MESSAGE: &str = "Checksums are supported for SkString, string, and string_view.";
+    let expected_hash = checksum::hash32(K_MESSAGE.as_bytes(), 0);
+
+    // skia-rust: SkString is not ported (Rust uses `String`); `String` and `&str` stand in for
+    // SkString, std::string and std::string_view.
+    reporter_assert!(r, expected_hash == String::from(K_MESSAGE).good_hash());
+    reporter_assert!(r, expected_hash == K_MESSAGE.to_owned().good_hash());
+    reporter_assert!(r, expected_hash == K_MESSAGE.good_hash());
+});
