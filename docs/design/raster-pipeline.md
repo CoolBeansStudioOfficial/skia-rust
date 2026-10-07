@@ -1869,6 +1869,50 @@ image_filter}`, all in core, per R11):
   sequence of one draw in the oracle harness's format, and add the path to `cases.txt` to get
   Skia's.
 - **Tests.** `PathCoverageTest::PathCoverage` (it only checks Skia's curve subdivision estimates).
+**As implemented in D3** (`skia_rust_raster::raster_pipeline_blitter`; `Blitter::can_direct_blit`,
+`blitter::blit_mask_default`, `Pixmap::reborrow_mut`):
+
+- **The blitter.** `RasterPipelineBlitter<'a>` is `SkRasterPipelineBlitter` 1:1: the color pipeline
+  (clip shader's `store_src_a`, shader, color filter, dither, collapse-to-constant), the blend
+  pipeline, the `memset` fast path, and the five lazily compiled blit pipelines (`BlitKind`:
+  rect, anti-h, A8, LCD16, 3D). `create_raster_pipeline_blitter(dst, &paint, &ctm, &alloc,
+  clip_shader, &dev_bounds)` is `SkCreateRasterPipelineBlitter`; `..._with_pipeline` is the
+  overload that takes a pre-baked shader pipeline (sprites, vertices, atlases: D4/D5). Both
+  return `None` where Skia returns `nullptr`.
+- **Lifetimes and memory.** The blitter is a value (not in the arena) holding the destination
+  `Pixmap<'a>` and the arena for `'a`; pass `Pixmap::reborrow_mut()` / `extract_subset_mut()`
+  if the pixels are needed afterwards. Pipeline memory is bound by slot at every run: 0 = the
+  destination (`fDstPtr`, always the top left of `fDst`), 1 = the mask plane of the current
+  `blit_mask`, 2/3 = the 3D mask's `mul`/`add` planes, 4 = the clip shader's alpha buffer
+  (owned by the blitter). The mask views use a negative `MemView` origin (Skia's "fake base"
+  pointer) and, for `blit_v`, a row stride of 0. `fCurrentCoverage` is a `Cell<f32>` in the
+  arena that `scale_1_float`/`lerp_1_float` read.
+- **`SkBlitter` defaults.** `blit_mask` falls back to the base class for BW masks, so the default
+  body is now the free function `blit_mask_default` (the trait method calls it). `canDirectBlit`
+  is a trait method returning `DirectBlit { pm: Pixmap<'_>, value }`; only this blitter
+  implements it so far (a pixmap reborrow stands for `SkPixmap`'s sharing copy).
+- **Deviations.** `SkSurfaceProps` is not a parameter (the `StageRec` has none; D6 adds both).
+  The `memset` fill writes bytes row by row instead of `rect_memset16/32/64` on typed pointers
+  (identical bytes). `SkRasterPipelineVisualizer::CreateBlitter` (viewer only) is not ported.
+  A destination that is not writable panics at the first blit (Skia casts the constness away).
+- **Tests.** `oracle/rp-builder` gained a `d3` mode (`build.ps1`): `SkCreateRasterPipelineBlitter`
+  for 29 blend modes x 3 destinations x 4 paints, every color type x its alpha types x 5
+  paint/mode/dither configurations, clip shaders, color filters, a non-mode blender, failing
+  effects, pre-baked pipelines and `canDirectBlit`, each driven through `blitH`, `blitRect`,
+  `blitAntiH` (partial, 0 and 0xff runs), `blitV`, `blitAntiH2/V2` and A8, LCD16, 3D and BW
+  masks. It writes the FNV hash of the destination after every call
+  (`rp_blitter_oracle/skia_d3_pixels{,_ml3,_ml4}.txt`: 8461 lines, the SSE2 baseline and the `ml3`/`ml4`
+  runtime caps, ~4000 lines of which differ between the tiers) and the oracle's record of every
+  pipeline Skia compiled (`skia_d3_rp_dump.txt`). `raster_pipeline_blitter_tests.rs` rebuilds the
+  same cases and requires every hash on the Sse2/Ml3/Ml4 tiers and every compiled pipeline (lowp
+  decision, ops, `uniform_color` and matrix contexts) to be Skia's. (The oracle's
+  `rp_builder` now calls `SkGraphics::Init()` so `SKIA_ORACLE_CPU_CAP` takes effect.) No manifest
+  test becomes runnable: `CoreBlittersTest` and `BlitMaskClip` use the legacy blitters (D4) and
+  `Canvas`/`Surface` (D6).
+- **For D4/D5/D6.** `SkBlitter::Choose` falls back to `create_raster_pipeline_blitter`; sprite,
+  vertices and atlas draws use the `_with_pipeline` form. `ScanClip`/clip blitters wrap
+  `&mut dyn Blitter`, and `RasterPipelineBlitter` is one (`dst()` reads the pixels while it is
+  alive). The Sse41 tier has no oracle output (the `x64-sse41` build predates the record patch).
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
