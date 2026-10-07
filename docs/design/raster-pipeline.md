@@ -703,8 +703,11 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
   NaN operand wins, then the first quiet one; quieted, payload kept), the positive default NaN
   `0x7FC00000` for invalid operations (x86: `0xFFC00000`), `FMIN`/`FMAX` (NaN propagates,
   `-0 < +0`), `FABS`/`FNEG` (sign bit only, no quieting), `FMLA`/`FMLS` (`FPMulAdd`: NaN order
-  addend, op1, op2; a quiet-NaN addend with `0·inf` is the default NaN; `FMLS` negates op1 first,
-  so a NaN `f` comes out sign-flipped), `FRECPS`/`FRSQRTS` (fused; `0·inf` gives `2`/`1.5`; op1
+  addend, op1, op2; a quiet-NaN addend with `0·inf` is the default NaN; `FMLS` negates op1
+  first. `vfmsq_f32(a, f, m)` is `fma(-f, m, a)` in LLVM IR, which LLVM's AArch64 instruction
+  selection emits as `FMLS Vd=a, Vn=m, Vm=f`, so on the hardware it is `m` that gets negated —
+  a NaN `m` comes out sign-flipped and `m` precedes `f` in NaN priority; clang does the same for
+  Skia, and the native twin test confirmed it), `FRECPS`/`FRSQRTS` (fused; `0·inf` gives `2`/`1.5`; op1
   negated before NaN processing; `(3 - a·b)/2` rounded once, also where `3 - a·b` alone would
   overflow), `FCVTNS`/`FCVTNU`/`FCVTZS` (saturating, NaN → 0; `round` is *unsigned* on Neon,
   so negatives give 0), `SCVTF`, `FRINTM`/`FRINTP`, `FSQRT`, IEEE half conversions

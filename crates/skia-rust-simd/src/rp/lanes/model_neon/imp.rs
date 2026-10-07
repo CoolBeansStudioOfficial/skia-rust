@@ -107,9 +107,14 @@ si! {
         map3(|f, mm, a| m::fmla(a, f, mm), f, mm, a)
     }
 
-    /// `nmad(f, m, a)`: `FMLS` (`FPMulAdd(a, -f, m)`).
+    /// `nmad(f, m, a)`: `FMLS Vd=a, Vn=m, Vm=f`, i.e. `FPMulAdd(a, -m, f)`.
+    ///
+    /// `vfmsq_f32(a, f, m)` is `fma(-f, m, a)` in LLVM IR (clang and rustc alike), and LLVM's
+    /// `AArch64` instruction selection puts the negated multiplicand in `Vm`, so the instruction
+    /// negates `m`: a NaN `m` comes out sign-flipped, and `m` precedes `f` in NaN priority
+    /// (checked against the hardware by the native twin test).
     pub fn nmad(f: F, mm: F, a: F) -> F {
-        map3(|f, mm, a| m::fmls(a, f, mm), f, mm, a)
+        map3(|f, mm, a| m::fmls(a, mm, f), f, mm, a)
     }
 
     /// `floor_`: `FRINTM`.

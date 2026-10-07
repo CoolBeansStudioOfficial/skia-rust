@@ -138,7 +138,8 @@ si! {
         from_ps(vfmaq_f32(ps(a), ps(f), ps(m)))
     }
 
-    /// `nmad(f, m, a)`: `vfmsq_f32(a, f, m)`, fused `a - f*m` (`FMLS`).
+    /// `nmad(f, m, a)`: `vfmsq_f32(a, f, m)`, fused `a - f*m`; LLVM emits
+    /// `FMLS Vd=a, Vn=m, Vm=f` (which negates `m`; this only shows in NaN signs).
     pub fn nmad(f: F, m: F, a: F) -> F {
         from_ps(vfmsq_f32(ps(a), ps(f), ps(m)))
     }

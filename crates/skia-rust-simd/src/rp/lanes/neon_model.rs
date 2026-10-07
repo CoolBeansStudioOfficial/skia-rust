@@ -111,7 +111,8 @@ pub fn fmla(addend: f32, op1: f32, op2: f32) -> f32 {
     if r.is_nan() { DEFAULT_NAN } else { r }
 }
 
-/// `FMLS`: `FPMulAdd(addend, FPNeg(op1), op2)` (`vfmsq_f32(addend, op1, op2)`).
+/// `FMLS Vd=addend, Vn=op1, Vm=op2`: `FPMulAdd(addend, FPNeg(op1), op2)`. (Which multiplicand
+/// LLVM puts in `Vn` is a code-generation choice; see `model_neon`'s `nmad`.)
 #[inline]
 #[must_use]
 pub fn fmls(addend: f32, op1: f32, op2: f32) -> f32 {
