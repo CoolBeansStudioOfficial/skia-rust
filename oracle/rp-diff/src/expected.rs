@@ -176,12 +176,15 @@ pub fn selection_name(sel: Selection) -> String {
     format!("{}/{backend}", sel.tier.name())
 }
 
-/// Whether `sel` runs host arithmetic whose invalid operations (`inf - inf`, `0 * inf`) produce a
-/// different default NaN than the x86 oracle's: `Scalar` on a host that is not x86 gives
-/// `0x7FC00000` where x86 gives `0xFFC00000` (the x86 tiers' lanes and models spell the indefinite
-/// out; `Scalar` is plain Rust arithmetic, and on wasm32 the sign is up to the engine).
+/// Whether `sel` runs host arithmetic whose invalid operations (`inf - inf`, `0 * inf`, `sqrt` of
+/// a negative) produce a different default NaN than the x86 oracle's. On a host that is not x86
+/// that is `0x7FC00000` where x86 gives `0xFFC00000`: `Scalar` is plain Rust arithmetic (on
+/// wasm32 the sign is up to the engine), and so are the plain operators (`+ - * /`, `sqrt`) in
+/// the x86 models' stage code, which spell out the indefinite only in the modelled instructions
+/// (`mad`, `min`, conversions, estimates). Native x86 tiers only run on x86 hosts.
 fn host_nan_sign_differs(sel: Selection) -> bool {
-    sel.tier == Tier::Scalar && !cfg!(any(target_arch = "x86", target_arch = "x86_64"))
+    let is_arithmetic_model = sel.tier == Tier::Scalar || matches!(sel.backend, Backend::Model(_));
+    is_arithmetic_model && !cfg!(any(target_arch = "x86", target_arch = "x86_64"))
 }
 
 /// `out` with every word that is exactly the positive default NaN `0x7FC00000` replaced by x86's
