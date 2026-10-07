@@ -28,6 +28,12 @@
 //!   `uniform_color <r> <g> <b> <a> <r16> <g16> <b16> <a16>` (hex `f32` bits, then decimal),
 //!   `gather <stride> <width bits> <height bits> <round_down 0|1> <len> <hex>` (a `GatherCtx`
 //!   with its own copy of the pixels; `stride` is in pixels).
+//!   `emboss <mul slot> <add slot>` (`EmbossCtx`: two `MemoryCtx` over buffers), `tables <hex>`
+//!   (`TablesCtx`: four 256-byte tables r, g, b, a, 2048 hex digits).
+//! - `SkSL` contexts (the `sksl_*` kinds): `SkSL` slots hold `N` lanes (`N` = the tier's highp
+//!   stride), so their offsets depend on the tier. The text names slots by *index*; each side
+//!   multiplies by `4 * N` bytes (Skia: what the `SkRP` builder does with
+//!   `raster_pipeline_highp_stride`). See [`Ctx`].
 //!
 //! The output of a case is the bytes of all its buffers after the runs, concatenated in slot
 //! order; results are compared (and stored) as [`fnv1a`] hashes of them.
@@ -134,6 +140,15 @@ pub enum Ctx {
         /// Byte offset of the ints.
         byte_offset: u32,
     },
+    /// `EmbossCtx`: two A8 memory contexts.
+    Emboss {
+        /// Buffer slot of the multiplier plane.
+        mul: u16,
+        /// Buffer slot of the addend plane.
+        add: u16,
+    },
+    /// `TablesCtx`: four 256-byte tables (`r`, `g`, `b`, `a`), 1024 bytes in all.
+    Tables(Vec<u8>),
     /// `UniformColorCtx`.
     UniformColor {
         /// `r, g, b, a`.
@@ -153,6 +168,131 @@ pub enum Ctx {
         height: f32,
         /// `GatherCtx::round_down_at_integer`.
         round_down_at_integer: bool,
+    },
+    /// `DecalTileCtx`. `id` names the context within the case: `decal_*` and `check_decal_mask`
+    /// stages with the same `id` share one context (and its mask), as in Skia.
+    Decal {
+        /// Sharing key.
+        id: u32,
+        /// `limit_x`, `limit_y`.
+        limit: [f32; 2],
+        /// `inclusiveEdge_x`, `inclusiveEdge_y`.
+        edge: [f32; 2],
+    },
+    /// `TileCtx` (`repeat_*`, `mirror_*`).
+    Tile {
+        /// `scale`.
+        scale: f32,
+        /// `invScale`.
+        inv_scale: f32,
+        /// `mirrorBiasDir`.
+        mirror_bias_dir: i32,
+    },
+    /// `CoordClampCtx`: `min_x, min_y, max_x, max_y`.
+    CoordClamp([f32; 4]),
+    /// A pointer to `SkSL` slot `slot` of buffer `buf` (`float*`, `I32*`, `F*`: the context of
+    /// the 1 to 4 slot ops and the masks): `MemPtr(buf, slot * 4 * N)`.
+    SkslPtr {
+        /// Buffer.
+        buf: u16,
+        /// Slot index.
+        slot: u32,
+    },
+    /// `ConstantCtx`: a 32-bit value and the destination slot (offset from the base pointer).
+    SkslConstant {
+        /// The value (bits).
+        value: i32,
+        /// Destination slot index.
+        dst: u32,
+    },
+    /// `BinaryOpCtx`: destination and source slot indices (offsets from the base pointer).
+    SkslBinary {
+        /// Destination slot index.
+        dst: u32,
+        /// Source slot index.
+        src: u32,
+    },
+    /// `TernaryOpCtx`: destination slot index and the distance between operands in slots.
+    SkslTernary {
+        /// Destination slot index.
+        dst: u32,
+        /// Operand distance in slots.
+        delta: u32,
+    },
+    /// `MatrixMultiplyCtx`.
+    SkslMatmul {
+        /// Destination slot index.
+        dst: u32,
+        /// `leftColumns, leftRows, rightColumns, rightRows`.
+        dims: [u8; 4],
+    },
+    /// `SwizzleCtx`: destination slot index and component indices (offsets are
+    /// `4 * N * component`).
+    SkslSwizzle {
+        /// Destination slot index.
+        dst: u32,
+        /// Components.
+        comps: [u8; 4],
+    },
+    /// `ShuffleCtx`: slot `slot` of buffer `buf`, the number of slots to write, and the 16
+    /// component indices.
+    SkslShuffle {
+        /// Buffer.
+        buf: u16,
+        /// Slot index.
+        slot: u32,
+        /// Number of slots to write.
+        count: i32,
+        /// Component indices (16).
+        comps: Vec<u16>,
+    },
+    /// `SwizzleCopyCtx`: `dst`/`src` slots of buffer `buf` and component indices.
+    SkslSwizzleCopy {
+        /// Buffer.
+        buf: u16,
+        /// Destination slot index.
+        dst: u32,
+        /// Source slot index.
+        src: u32,
+        /// Component indices.
+        comps: [u16; 4],
+    },
+    /// `CopyIndirectCtx` / `SwizzleCopyIndirectCtx` / the uniform variant, all in buffer `buf`.
+    /// `uniform` (non-empty) replaces `src` by that array of `int32_t`s (as
+    /// `copy_from_indirect_uniform_unmasked` reads it); `comps` is the swizzle (unused else).
+    SkslIndirect {
+        /// Buffer.
+        buf: u16,
+        /// Destination slot index.
+        dst: u32,
+        /// Source slot index.
+        src: u32,
+        /// Slot holding the per-lane indirect offsets.
+        indirect: u32,
+        /// `indirectLimit`.
+        limit: u32,
+        /// Number of slots to copy.
+        slots: u32,
+        /// Swizzle component indices.
+        comps: [u16; 4],
+        /// Uniform source values.
+        uniform: Vec<i32>,
+    },
+    /// `CaseOpCtx`: expected value and the slot of the `{actualValue, defaultMask}` pair.
+    SkslCase {
+        /// `expectedValue`.
+        expected: i32,
+        /// Slot index.
+        slot: u32,
+    },
+    /// `UniformCtx`: destination slot of buffer `buf` and the uniform `int32_t`s.
+    SkslUniform {
+        /// Buffer.
+        buf: u16,
+        /// Destination slot index.
+        dst: u32,
+        /// Source values.
+        values: Vec<i32>,
     },
 }
 
@@ -256,6 +396,18 @@ impl Case {
         s
     }
 
+    /// Whether the `Scalar` tier is not compared for this case: its name has a `/r5/` segment.
+    ///
+    /// skia-rust's `Scalar` tier is what Skia runs on wasm32 (musl's `fminf`/`fmaxf`,
+    /// WebAssembly's saturating float → int conversions), while Skia's results come from the
+    /// `x64-scalar` proxy build (MSVC CRT, `cvttss2si`). The two differ for `±0` ties in
+    /// `fminf`/`fmaxf` and for out-of-range or NaN float → integer casts (design R5); cases whose
+    /// inputs reach those get the segment, and still run on the four x86 tiers.
+    #[must_use]
+    pub fn scalar_proxy_differs(&self) -> bool {
+        self.name.split('/').any(|s| s == "r5")
+    }
+
     /// [`fnv1a`] of [`to_text`](Self::to_text): identifies the case's exact content, so stored
     /// results of an edited case are detected as stale.
     #[must_use]
@@ -270,6 +422,8 @@ impl Case {
     }
 }
 
+// One arm per context kind.
+#[allow(clippy::too_many_lines)]
 fn write_ctx(s: &mut String, ctx: &Ctx) {
     let _ = match ctx {
         Ctx::None => write!(s, "-"),
@@ -290,6 +444,15 @@ fn write_ctx(s: &mut String, ctx: &Ctx) {
             slot,
             byte_offset,
         } => write!(s, "branch_eq {offset} {value} {slot} {byte_offset}"),
+        Ctx::Emboss { mul, add } => write!(s, "emboss {mul} {add}"),
+        Ctx::Tables(t) => {
+            assert_eq!(t.len(), 1024, "a TablesCtx holds four 256-byte tables");
+            let _ = write!(s, "tables ");
+            for b in t {
+                let _ = write!(s, "{b:02x}");
+            }
+            Ok(())
+        }
         Ctx::UniformColor { rgba, rgba16 } => {
             let _ = write!(s, "uniform_color");
             for f in rgba {
@@ -317,6 +480,100 @@ fn write_ctx(s: &mut String, ctx: &Ctx) {
             );
             for x in pixels {
                 let _ = write!(s, "{x:02x}");
+            }
+            Ok(())
+        }
+        Ctx::Decal { id, limit, edge } => write!(
+            s,
+            "decal {id} {:08x} {:08x} {:08x} {:08x}",
+            limit[0].to_bits(),
+            limit[1].to_bits(),
+            edge[0].to_bits(),
+            edge[1].to_bits()
+        ),
+        Ctx::Tile {
+            scale,
+            inv_scale,
+            mirror_bias_dir,
+        } => write!(
+            s,
+            "tile {:08x} {:08x} {mirror_bias_dir}",
+            scale.to_bits(),
+            inv_scale.to_bits()
+        ),
+        Ctx::CoordClamp(v) => write!(
+            s,
+            "coord_clamp {:08x} {:08x} {:08x} {:08x}",
+            v[0].to_bits(),
+            v[1].to_bits(),
+            v[2].to_bits(),
+            v[3].to_bits()
+        ),
+        Ctx::SkslPtr { buf, slot } => write!(s, "sksl_ptr {buf} {slot}"),
+        Ctx::SkslConstant { value, dst } => write!(s, "sksl_constant {value} {dst}"),
+        Ctx::SkslBinary { dst, src } => write!(s, "sksl_binary {dst} {src}"),
+        Ctx::SkslTernary { dst, delta } => write!(s, "sksl_ternary {dst} {delta}"),
+        Ctx::SkslMatmul { dst, dims } => write!(
+            s,
+            "sksl_matmul {dst} {} {} {} {}",
+            dims[0], dims[1], dims[2], dims[3]
+        ),
+        Ctx::SkslSwizzle { dst, comps } => write!(
+            s,
+            "sksl_swizzle {dst} {} {} {} {}",
+            comps[0], comps[1], comps[2], comps[3]
+        ),
+        Ctx::SkslShuffle {
+            buf,
+            slot,
+            count,
+            comps,
+        } => {
+            let _ = write!(s, "sksl_shuffle {buf} {slot} {count} {}", comps.len());
+            for c in comps {
+                let _ = write!(s, " {c}");
+            }
+            Ok(())
+        }
+        Ctx::SkslSwizzleCopy {
+            buf,
+            dst,
+            src,
+            comps,
+        } => write!(
+            s,
+            "sksl_swizzle_copy {buf} {dst} {src} {} {} {} {}",
+            comps[0], comps[1], comps[2], comps[3]
+        ),
+        Ctx::SkslIndirect {
+            buf,
+            dst,
+            src,
+            indirect,
+            limit,
+            slots,
+            comps,
+            uniform,
+        } => {
+            let _ = write!(
+                s,
+                "sksl_indirect {buf} {dst} {src} {indirect} {limit} {slots} {} {} {} {} {}",
+                comps[0],
+                comps[1],
+                comps[2],
+                comps[3],
+                uniform.len()
+            );
+            for u in uniform {
+                let _ = write!(s, " {u}");
+            }
+            Ok(())
+        }
+        Ctx::SkslCase { expected, slot } => write!(s, "sksl_case {expected} {slot}"),
+        Ctx::SkslUniform { buf, dst, values } => {
+            let _ = write!(s, "sksl_uniform {buf} {dst} {}", values.len());
+            for v in values {
+                let _ = write!(s, " {v}");
             }
             Ok(())
         }

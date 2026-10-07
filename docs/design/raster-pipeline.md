@@ -1371,10 +1371,86 @@ add cases: `docs/PORTING.md` §12):
   `Model(Host)` and `Model(AmdZen4)`). Decision 3's attribution of the tier differences to
   `rcp_fast`/fused `mad`/`rcp14` is confirmed stage by stage as Wave B adds the stages that use
   them.
+- **Cases at B3/B4** (`src/cases_blend_color.rs`, 6,096 cases): every blend, coverage and color
+  stage, lowp and highp where the stage has both, on the A5 input kinds plus `grid` (coarse
+  values, so `d == da`, `s == 0` happen), `sorted` (premultiplied for every lane count: words
+  ascend) and lowp `edge`/`sorted16`; context sets for `set_rgb`, `uniform_color*`,
+  `scale/lerp_1_float` (incl. negative and huge, which hit the C++ float to `uint16_t` conversion),
+  `*_native`, `swizzle` (all 24 permutations of `rgba` plus `0`/`1`/unknown characters),
+  `matrix_*`, `parametric`/`PQish`/`HLGish`/`HLGinvish`/`gamma_`/`ootf`, `byte_tables`; pixel-memory
+  cases (whole rects, tails, compiled runs on several rects) for `scale/lerp_u8/565`, `emboss`
+  and `dither`; and `px/*`: every stage again over pixel memory, whose output does not depend on
+  the register layout, so the five paths' stored hashes can be compared with each other.
+  **All match on every selection.** What the `px/*` hashes show (patterns over scalar, sse2,
+  sse41, ml3, ml4): `colorburn`, `colordodge`, `hue`, `saturation`, `color`, `luminosity` produce
+  five different results on unit/premul inputs (Scalar `1/x`, Sse2 `rcpps` + Newton-Raphson, Sse41
+  `rcpps`, Ml3 `rcpps` (fused), Ml4 `rcp14`) and no other stage does: decision 3's `rcp_fast`
+  claim holds. Every stage with a `mad`/`nmad` (Porter-Duff and separable modes, `matrix_*`,
+  `parametric`, `gamma_`, `ootf`, `lerp_1_float`, `dither`) separates Ml3/Ml4 from the rest and
+  nothing else (fused versus unfused). Sse2 versus Sse41 differ elsewhere only on special inputs
+  (`floor_` outside the `cvtt` range: `HLGish`, `css_hsl_to_srgb`, `css_hwb_to_srgb`; Scalar versus
+  SSE `min`/`max` NaN and zero rules: `clamp_01`, `lighten`, `hsl_to_rgb`). `screen` runs without
+  NaN inputs: `nmad(s, d, s + d)` makes a NaN `s` both product and addend, the same
+  NaN-meets-NaN case as above (native Ml3/Ml4 returned the other NaN's sign; the models agree
+  with Skia).
+  **Host NaN sign (open).** On a non-x86 host the plain operators (`+ - * /`, `sqrt`) in the x86
+  models' stage code and in `Scalar` give Arm's default NaN `0x7FC00000` for an invalid operation,
+  x86's is `0xFFC00000` (only the modelled instructions, `mad`/`min`/`max`/conversions/estimates,
+  spell the indefinite out). Mostly that is only a sign bit, which `expected::output_matches` forgives on
+  those hosts (canonical hash, see below); but a generated
+  NaN that reaches a bit-casting stage (`approx_log2` in `PQish`/`ootf` after an overflowing
+  `inf / inf`) changes values, so the cases avoid overflowing parameters. Making the models'
+  float operators exact on every host (a lane type with x86 arithmetic) is future work.
+  The run found one bug: B3's lowp `from_float` (`scale_1_float`, `lerp_1_float`) converted with
+  Rust's saturating `as u16`, Skia's `uint16_t(f * 255.0f + 0.5f)` is a truncating float to int
+  conversion (negative coverages wrap, huge ones give the tier's `cvttps2dq` result); both lowp
+  `from_float`s now use the tier's `to_i32` and truncate.
 - **Not covered yet:** `MemoryCtx` stages and tail patching through real pixel memory (B1/B2
   add them; the format already has `mem` contexts, strides, origins and compiled runs), Neon
   and wasm (no oracle host), and the `dr..da` registers' persistence across chunks in the
   Windows oracle's narrow ABI (§2.6): cases always load `dst` before reading it.
+
+**As implemented for B5/B6a-c** (`oracle/rp-diff/src/{geometry,sksl}.rs`):
+
+- **Geometry/tiling** (`matrix_*`, `repeat/mirror/clamp/decal`, `check_decal_mask`,
+  `clamp_x_and_y`): register cases in lowp and highp. A lowp "GG" stage reads `x = r++g`,
+  `y = b++a` as `f32`s, i.e. word `j` of the `load_src` buffer is lane `j` of `x` and word `N + j`
+  lane `j` of `y`, the same words as highp's `r`, `g`, so the same float inputs serve both.
+  Inputs add coordinates around multiples of the tile size and their ulp neighbours.
+  `Ctx::Decal` carries an `id`: stages with the same id share one `DecalTileCtx`.
+- **SkSL slots depend on the tier** (`N` lanes of 4 bytes per slot), so `SkSL` contexts
+  (`Ctx::Sksl*`) name slots by *index*; the Rust side multiplies by `4 * N` in `build_stages(specs,
+  tier)` and the driver by `4 * SkOpts::raster_pipeline_highp_stride`. Small contexts are packed
+  with `SkRPCtxUtils::Pack` as Skia does. Every `SkSL` case is `set_base_pointer load_src <stages>
+  store_src` with the slot buffer, the registers (the masks) and the stored registers all compared.
+  Slot data is generated per *word*, so what a word means changes with `N`; masks of the control
+  flow cases use `Regs` (lane patterns in `a`, constants in `r, g, b`).
+- **Not covered:** the trace ops and `callback` (B6d): they report to a host `SkSL::TraceHook`,
+  which the text format cannot express (covered by the ported Skia tests).
+- **NaNs, again:** besides two input NaNs meeting, `asin`/`acos` and `inverse_mat*` generate NaNs
+  inside fused `nmad`s whose *sign* depends on whether the compiler folds a later `fneg` into
+  the FMA (rustc does, Skia's clang does not; the models match Skia), so their data stays in the
+  domain / free of infinities; `matrix_perspective`'s `x * rcp_precise(z)` lets the NaN of `x`
+  meet the NaN of `z`, so its `Special` inputs have no infinities.
+- **R5 (Scalar vs the x64 proxy):** `Scalar` follows wasm (saturating float → int conversions,
+  musl's `fminf`), Skia's results come from the x64 proxy. Cases whose inputs reach an
+  out-of-range or negative float → `int`/`uint` conversion (`cast_to_int/uint_from_*`, `mirror_*`'s
+  `trunc_` of a negative `s`) or `±0` bounds in `fminf` (`clamp_x_and_y` v6) have a `/r5/` name
+  segment and are skipped on `Scalar` only (`Case::scalar_proxy_differs`); all x86 tiers still
+  compare them (258 of the 6,410 cases).
+- **Default NaN off x86.** The NaN of an invalid operation (`inf * 0`, `sqrt(-1)`) is
+  `0xFFC00000` on x86 (the oracle) and `0x7FC00000` on Arm (macOS and Linux arm64 CI hosts; wasm
+  leaves it unspecified). The `Scalar` tier runs on the host FPU, and the models' generic stage
+  code (`F + F`, `-F`, ... are Rust `f32` operators on the vector lane type, not `x86_model`
+  functions) does too, so on those hosts the two differ from the oracle in that bit pattern
+  only. Stored results therefore carry a second, *canonical* hash (every `0x7FC00000` word read as
+  `0xFFC00000`), accepted in addition to the exact one on non-x86 hosts only
+  (`expected::output_matches`); every result is exact on x86 hosts. Routing the models' float
+  operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
+  depend on the host's libm: those inputs are `/r5/`.
+- **Bugs found:** the `Scalar` tier evaluated `smoothstep` and `refract`'s `k` in `float`
+  where C++ promotes to `double` (the literals are `double`s); `Ml4`'s `cast_to_uint_from_*` used
+  the signed conversion where clang emits `vcvttps2udq`.
 
 ### 4.3 DM stage-list dump
 

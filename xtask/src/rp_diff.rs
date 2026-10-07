@@ -19,7 +19,7 @@ use anyhow::{Context, Result, bail, ensure};
 use skia_rust_rp_diff::case::{Case, cases_to_text, fnv1a, glob_match};
 use skia_rust_rp_diff::cases;
 use skia_rust_rp_diff::expected::{
-    self, Entry, Expected, ORACLE_TIERS, selection_name, selections,
+    self, Entry, Expected, ORACLE_TIERS, canonical_hash, selection_name, selections,
 };
 use skia_rust_rp_diff::replay::{build_stages, run_case};
 use skia_rust_simd::Tier;
@@ -185,7 +185,11 @@ fn compare(
             "{}: driver output has the wrong length",
             c.name
         );
-        let stages = build_stages(&c.stages).map_err(anyhow::Error::msg)?;
+        let stages = build_stages(&c.stages, tier).map_err(anyhow::Error::msg)?;
+        // Skia's x64 scalar proxy differs from wasm's libc in these (design R5).
+        if tier == Tier::Scalar && c.scalar_proxy_differs() {
+            continue;
+        }
         for (i, &sel) in sels.iter().enumerate() {
             let got = run_case(c, &stages, sel);
             if got.as_deref().ok() == Some(want.as_slice()) {
@@ -267,6 +271,7 @@ fn update_expected(
             Entry {
                 case_hash: c.hash(),
                 output_hash: fnv1a(&skia[&c.name]),
+                canonical_hash: Some(canonical_hash(&skia[&c.name])),
             },
         );
     }

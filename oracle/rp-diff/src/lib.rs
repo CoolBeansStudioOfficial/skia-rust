@@ -24,8 +24,11 @@
 
 pub mod case;
 pub mod cases;
+pub mod cases_blend_color;
 pub mod cases_memory;
 pub mod expected;
+pub mod geometry;
 pub mod replay;
+pub mod sksl;
 
 pub use case::{Buffer, Case, Ctx, Rect, StageSpec};

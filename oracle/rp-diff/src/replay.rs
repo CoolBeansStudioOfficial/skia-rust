@@ -13,11 +13,12 @@
 #[allow(clippy::wildcard_imports)]
 use skia_rust_simd::rp::contexts::*;
 
-use core::cell::Cell;
+use core::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use skia_rust_simd::rp::{MemPtr, MemSlot, MemView, MemoryBindings, MemoryCtx, Op, Program, Stage};
-use skia_rust_simd::tier::Selection;
+use skia_rust_simd::tier::{Selection, Tier};
 
 use crate::case::{Case, Ctx, StageSpec};
 
@@ -53,6 +54,7 @@ impl FromCtx<'_> for MemPtr {
     fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
         match *ctx {
             Ctx::Ptr { slot, offset } => Ok(MemPtr::new(MemSlot(slot), offset)),
+            Ctx::SkslPtr { buf, slot } => Ok(sksl_ptr(buf, slot)),
             ref other => Err(wrong("MemPtr", other)),
         }
     }
@@ -180,6 +182,294 @@ impl<'a> FromCtx<'a> for &'a GatherCtx<'a> {
     }
 }
 
+thread_local! {
+    /// Bytes of one `SkSL` slot on the tier being built (`4 * N`, `N` the highp stride): `SkSL`
+    /// offsets are slot indices in the case text (see [`Ctx::SkslPtr`]).
+    static SLOT_BYTES: Cell<u32> = const { Cell::new(16) };
+    /// The `DecalTileCtx`s of the case being built, by [`Ctx::Decal`] id (`decal_*` and
+    /// `check_decal_mask` stages share one).
+    static DECALS: RefCell<HashMap<u32, &'static DecalTileCtx>> = RefCell::new(HashMap::new());
+}
+
+/// Bytes of one `SkSL` slot on the tier being built.
+fn slot_bytes() -> u32 {
+    SLOT_BYTES.with(Cell::get)
+}
+
+/// The byte offset of `SkSL` slot `index`.
+fn slot_offset(index: u32) -> u32 {
+    index * slot_bytes()
+}
+
+fn sksl_ptr(buf: u16, slot: u32) -> MemPtr {
+    MemPtr::new(MemSlot(buf), slot_offset(slot))
+}
+
+fn u16_offsets<const N: usize>(comps: &[u16]) -> [u16; N] {
+    core::array::from_fn(|i| {
+        u16::try_from(u32::from(comps[i]) * slot_bytes()).expect("swizzle offset fits u16")
+    })
+}
+
+impl FromCtx<'_> for BinaryOpCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslBinary { dst, src } => Ok(BinaryOpCtx {
+                dst: slot_offset(dst),
+                src: slot_offset(src),
+            }),
+            ref other => Err(wrong("BinaryOpCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for TernaryOpCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslTernary { dst, delta } => Ok(TernaryOpCtx {
+                dst: slot_offset(dst),
+                delta: slot_offset(delta),
+            }),
+            ref other => Err(wrong("TernaryOpCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for ConstantCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslConstant { value, dst } => Ok(ConstantCtx {
+                value,
+                dst: slot_offset(dst),
+            }),
+            ref other => Err(wrong("ConstantCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for MatrixMultiplyCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslMatmul { dst, dims } => Ok(MatrixMultiplyCtx {
+                dst: slot_offset(dst),
+                left_columns: dims[0],
+                left_rows: dims[1],
+                right_columns: dims[2],
+                right_rows: dims[3],
+            }),
+            ref other => Err(wrong("MatrixMultiplyCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for SwizzleCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslSwizzle { dst, comps } => Ok(SwizzleCtx {
+                dst: slot_offset(dst),
+                offsets: comps.map(|c| {
+                    u8::try_from(u32::from(c) * slot_bytes()).expect("swizzle offset fits u8")
+                }),
+            }),
+            ref other => Err(wrong("SwizzleCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for CaseOpCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslCase { expected, slot } => Ok(CaseOpCtx {
+                expected_value: expected,
+                offset: slot_offset(slot),
+            }),
+            ref other => Err(wrong("CaseOpCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a ShuffleCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match ctx {
+            Ctx::SkslShuffle {
+                buf,
+                slot,
+                count,
+                comps,
+            } if comps.len() == 16 => Ok(leak(ShuffleCtx {
+                ptr: sksl_ptr(*buf, *slot),
+                count: *count,
+                offsets: u16_offsets::<16>(comps),
+            })),
+            other => Err(wrong("ShuffleCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a SwizzleCopyCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::SkslSwizzleCopy {
+                buf,
+                dst,
+                src,
+                comps,
+            } => Ok(leak(SwizzleCopyCtx {
+                dst: sksl_ptr(buf, dst),
+                src: sksl_ptr(buf, src),
+                offsets: u16_offsets::<4>(&comps),
+            })),
+            ref other => Err(wrong("SwizzleCopyCtx", other)),
+        }
+    }
+}
+
+fn copy_indirect(ctx: &Ctx) -> Result<(CopyIndirectCtx, [u16; 4], Vec<i32>), String> {
+    match ctx {
+        Ctx::SkslIndirect {
+            buf,
+            dst,
+            src,
+            indirect,
+            limit,
+            slots,
+            comps,
+            uniform,
+        } => Ok((
+            CopyIndirectCtx {
+                dst: sksl_ptr(*buf, *dst),
+                src: sksl_ptr(*buf, *src),
+                indirect_offset: sksl_ptr(*buf, *indirect),
+                indirect_limit: *limit,
+                slots: *slots,
+            },
+            u16_offsets::<4>(comps),
+            uniform.clone(),
+        )),
+        other => Err(wrong("CopyIndirectCtx", other)),
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a CopyIndirectCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        Ok(leak(copy_indirect(ctx)?.0))
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a SwizzleCopyIndirectCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        let (copy, offsets, _) = copy_indirect(ctx)?;
+        Ok(leak(SwizzleCopyIndirectCtx { copy, offsets }))
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a CopyIndirectUniformCtx<'a> {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        let (c, _, uniform) = copy_indirect(ctx)?;
+        Ok(leak(CopyIndirectUniformCtx {
+            dst: c.dst,
+            src: Vec::leak(uniform),
+            indirect_offset: c.indirect_offset,
+            indirect_limit: c.indirect_limit,
+            slots: c.slots,
+        }))
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a UniformCtx<'a> {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match ctx {
+            Ctx::SkslUniform { buf, dst, values } => Ok(leak(UniformCtx {
+                dst: sksl_ptr(*buf, *dst),
+                src: Vec::leak(values.clone()),
+            })),
+            other => Err(wrong("UniformCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a TileCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::Tile {
+                scale,
+                inv_scale,
+                mirror_bias_dir,
+            } => Ok(leak(TileCtx {
+                scale,
+                inv_scale,
+                mirror_bias_dir,
+            })),
+            ref other => Err(wrong("TileCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a CoordClampCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::CoordClamp([min_x, min_y, max_x, max_y]) => Ok(leak(CoordClampCtx {
+                min_x,
+                min_y,
+                max_x,
+                max_y,
+            })),
+            ref other => Err(wrong("CoordClampCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a DecalTileCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::Decal { id, limit, edge } => Ok(DECALS.with(|d| {
+                *d.borrow_mut().entry(id).or_insert_with(|| {
+                    leak(DecalTileCtx {
+                        mask: Cell::default(),
+                        limit_x: limit[0],
+                        limit_y: limit[1],
+                        inclusive_edge_x: edge[0],
+                        inclusive_edge_y: edge[1],
+                    })
+                })
+            })),
+            ref other => Err(wrong("DecalTileCtx", other)),
+        }
+    }
+}
+
+impl FromCtx<'_> for EmbossCtx {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match *ctx {
+            Ctx::Emboss { mul, add } => Ok(EmbossCtx {
+                mul: MemoryCtx::new(MemSlot(mul)),
+                add: MemoryCtx::new(MemSlot(add)),
+            }),
+            ref other => Err(wrong("EmbossCtx", other)),
+        }
+    }
+}
+
+impl<'a> FromCtx<'a> for &'a TablesCtx<'a> {
+    fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
+        match ctx {
+            Ctx::Tables(t) if t.len() == 1024 => {
+                let t: &'static [u8] = Box::leak(t.clone().into_boxed_slice());
+                let table = |i: usize| -> &'static [u8; 256] {
+                    t[256 * i..256 * (i + 1)].try_into().expect("256 bytes")
+                };
+                Ok(leak(TablesCtx {
+                    r: table(0),
+                    g: table(1),
+                    b: table(2),
+                    a: table(3),
+                }))
+            }
+            other => Err(wrong("TablesCtx", other)),
+        }
+    }
+}
+
 /// Context types rp-diff cannot build yet: `from_ctx` always fails, naming the type.
 macro_rules! unsupported {
     ($($ty:ty),* $(,)?) => { $(
@@ -197,33 +487,16 @@ macro_rules! unsupported {
 }
 
 unsupported!(
-    BinaryOpCtx,
-    ConstantCtx,
-    SwizzleCtx,
-    TernaryOpCtx,
-    MatrixMultiplyCtx,
-    EmbossCtx,
-    CaseOpCtx,
     &'a SamplerCtx,
     &'a Conical2PtCtx,
-    &'a UniformCtx<'a>,
-    &'a TileCtx,
-    &'a SwizzleCopyCtx,
-    &'a DecalTileCtx,
     &'a MipmapCtx,
     &'a TraceFuncCtx<'a>,
     &'a TraceVarCtx<'a>,
     &'a TraceScopeCtx<'a>,
     &'a TraceLineCtx<'a>,
     &'a GradientCtx<'a>,
-    &'a CopyIndirectCtx,
-    &'a CopyIndirectUniformCtx<'a>,
-    &'a SwizzleCopyIndirectCtx,
-    &'a ShuffleCtx,
-    &'a TablesCtx<'a>,
     &'a PerlinNoiseCtx<'a>,
     &'a EvenlySpaced2StopGradientCtx,
-    &'a CoordClampCtx,
     &'a Cell<[u32; MAX_STRIDE_HIGHP]>,
     &'a CallbackCtx<'a>,
 );
@@ -251,11 +524,18 @@ macro_rules! stage_builder {
 
 skia_rust_simd::rp_op_table!(stage_builder);
 
-/// A case's stages, built once.
+/// A case's stages for `tier`, built once (`SkSL` slot indices become byte offsets of the tier's
+/// highp stride; the stages are valid on every selection of the tier).
 ///
 /// # Errors
 /// If a context cannot be built (unsupported type or wrong shape), naming the stage.
-pub fn build_stages(specs: &[StageSpec]) -> Result<Vec<Stage<'static>>, String> {
+///
+/// # Panics
+/// Never for valid cases (a swizzle offset that does not fit its field panics).
+pub fn build_stages(specs: &[StageSpec], tier: Tier) -> Result<Vec<Stage<'static>>, String> {
+    let stride = u32::try_from(tier.highp_stride()).expect("small");
+    SLOT_BYTES.with(|b| b.set(4 * stride));
+    DECALS.with(|d| d.borrow_mut().clear());
     specs
         .iter()
         .enumerate()
