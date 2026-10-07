@@ -12,10 +12,10 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::rect::IRect;
 
-use crate::{def_test, reporter_assert};
+use crate::{def_tier_test, reporter_assert};
 
 // Port of: tests/BitmapGetColorTest.cpp#L21-L58 (chrome/m156)
-def_test!(GetColor, |reporter| {
+def_tier_test!(GetColor, |reporter| {
     struct Rec {
         color_type: ColorType,
         in_color: Color,

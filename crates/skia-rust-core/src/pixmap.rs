@@ -7,19 +7,20 @@
 //!
 //! # Pixel memory
 //! `SkPixmap` holds a `const void*` and casts the constness away for `erase()` and
-//! `writable_addr()`. In Rust a [`Pixmap<'a>`] borrows its bytes for `'a` in one of four ways: a
-//! shared `&[u8]` ([`Pixmap::new_readonly`]), a unique `&mut [u8]` ([`Pixmap::new`]), or a read or
-//! write lock on the pixels of a [`PixelRef`](crate::pixel_ref::PixelRef) (what
-//! [`Bitmap`](crate::bitmap::Bitmap)`::peek_pixels` / `peek_pixels_mut` return). Methods that
-//! write ([`Pixmap::erase`], [`Pixmap::writable_addr`], the `set_addr*` family) need one of the
-//! two writable kinds; [`Pixmap::erase`] returns `false` on a read-only pixmap, the others panic.
+//! `writable_addr()`. In Rust a [`Pixmap<'a>`] borrows its bytes for `'a`, either shared
+//! (`&[u8]`: [`Pixmap::new_readonly`], [`Bitmap::peek_pixels`](crate::bitmap::Bitmap::peek_pixels))
+//! or unique (`&mut [u8]`: [`Pixmap::new`],
+//! [`Bitmap::peek_pixels_mut`](crate::bitmap::Bitmap::peek_pixels_mut)); the borrow checker keeps
+//! writers exclusive (`docs/design/pixels.md`). Methods that write ([`Pixmap::erase`],
+//! [`Pixmap::writable_addr`], the `set_addr*` family) need the unique kind; [`Pixmap::erase`]
+//! returns `false` on a read-only pixmap, the others panic.
 //!
 //! Pixel addresses (`addr8(x, y)` & co.) cannot be references in safe Rust (a `&[u8]` is not
 //! aligned for `u16`, `u32` or `u64`), so they return the pixel value (little-endian layout, as
 //! Skia assumes) and the `set_addr*` methods write one.
 //!
-//! Not ported (they need `SkRasterPipeline`/`SkConvertPixels` or other missing pieces):
-//! `readPixels` (3 overloads), `scalePixels`, `reset(const SkMask&)`.
+//! Not ported: `scalePixels` (it draws through an image shader, Phase 3) and
+//! `reset(const SkMask&)`.
 
 use crate::alpha_type::AlphaType;
 use crate::color::{Color, Color4f, PMColor4f};
@@ -30,12 +31,12 @@ use crate::color_data::{
 use crate::color_priv::get_packed_a32;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
-use crate::convert_pixels::convert_rgba_f32_premul_pixel;
+use crate::convert_pixels::convert_pixels;
 use crate::half::{HALF_1, half_to_float};
 use crate::image_info::ImageInfo;
-use crate::image_info_priv::color_type_shift_per_pixel;
-use crate::pixel_ref::{PixelsRead, PixelsWrite};
+use crate::image_info_priv::{color_type_shift_per_pixel, image_info_valid_conversion};
 use crate::point::IPoint;
+use crate::read_pixels_rec::ReadPixelsRec;
 use crate::rect::IRect;
 use crate::size::ISize;
 use crate::t_pin::t_pin;
@@ -49,10 +50,6 @@ enum Storage<'a> {
     None,
     Shared(&'a [u8]),
     Unique(&'a mut [u8]),
-    // A read lock on a pixel ref's bytes, with the byte offset of the pixmap's first pixel.
-    Read(PixelsRead<'a>, usize),
-    // The write lock on a pixel ref's bytes, with the byte offset of the pixmap's first pixel.
-    Write(PixelsWrite<'a>, usize),
 }
 
 /// Pairs [`ImageInfo`] with pixels and row bytes.
@@ -231,29 +228,20 @@ impl<'a> Pixmap<'a> {
         }
     }
 
-    // A pixmap over a read lock on a pixel ref (`Bitmap::peek_pixels`).
-    pub(crate) fn from_read_guard(
-        info: ImageInfo,
-        pixels: PixelsRead<'a>,
-        offset: usize,
-        row_bytes: usize,
-    ) -> Self {
+    // A read-only pixmap over a bitmap's pixels (`Bitmap::peek_pixels`); no size checks (the
+    // bitmap validated them).
+    pub(crate) fn from_shared(info: ImageInfo, pixels: &'a [u8], row_bytes: usize) -> Self {
         Self {
-            storage: Storage::Read(pixels, offset),
+            storage: Storage::Shared(pixels),
             row_bytes,
             info,
         }
     }
 
-    // A pixmap over the write lock of a pixel ref (`Bitmap::peek_pixels_mut`, `Bitmap::erase`).
-    pub(crate) fn from_write_guard(
-        info: ImageInfo,
-        pixels: PixelsWrite<'a>,
-        offset: usize,
-        row_bytes: usize,
-    ) -> Self {
+    // A writable pixmap over a bitmap's pixels (`Bitmap::peek_pixels_mut`).
+    pub(crate) fn from_unique(info: ImageInfo, pixels: &'a mut [u8], row_bytes: usize) -> Self {
         Self {
-            storage: Storage::Write(pixels, offset),
+            storage: Storage::Unique(pixels),
             row_bytes,
             info,
         }
@@ -331,8 +319,6 @@ impl<'a> Pixmap<'a> {
             Storage::None => Storage::None,
             Storage::Shared(bytes) => Storage::Shared(&bytes[offset..]),
             Storage::Unique(bytes) => Storage::Unique(&mut bytes[offset..]),
-            Storage::Read(guard, base) => Storage::Shared(&guard[*base + offset..]),
-            Storage::Write(guard, base) => Storage::Unique(&mut guard[*base + offset..]),
         };
         Some(Pixmap {
             storage,
@@ -375,8 +361,6 @@ impl<'a> Pixmap<'a> {
             Storage::None => None,
             Storage::Shared(bytes) => Some(bytes),
             Storage::Unique(bytes) => Some(bytes),
-            Storage::Read(guard, offset) => Some(&guard[*offset..]),
-            Storage::Write(guard, offset) => Some(&guard[*offset..]),
         }
     }
 
@@ -384,16 +368,15 @@ impl<'a> Pixmap<'a> {
     #[must_use]
     pub fn bytes_mut(&mut self) -> Option<&mut [u8]> {
         match &mut self.storage {
-            Storage::None | Storage::Shared(_) | Storage::Read(..) => None,
+            Storage::None | Storage::Shared(_) => None,
             Storage::Unique(bytes) => Some(bytes),
-            Storage::Write(guard, offset) => Some(&mut guard[*offset..]),
         }
     }
 
     /// Returns true if the pixels can be written to.
     #[must_use]
     pub fn is_writable(&self) -> bool {
-        matches!(self.storage, Storage::Unique(_) | Storage::Write(..))
+        matches!(self.storage, Storage::Unique(_))
     }
 
     /// Returns the pixel width in the [`ImageInfo`].
@@ -1338,6 +1321,70 @@ impl<'a> Pixmap<'a> {
         self.px_mut()[off..off + 8].copy_from_slice(&value.to_ne_bytes());
     }
 
+    /// Copies a rectangle of pixels to `dst_pixels`. Copy starts at `src`, and does not exceed
+    /// the pixmap (`width()`, `height()`). `dst_info` specifies width, height, color type, alpha
+    /// type, and color space of the destination; `dst_row_bytes` the destination row length.
+    /// Returns true if pixels are copied. Returns false if `dst_row_bytes` is less than
+    /// `dst_info.min_row_bytes()`.
+    ///
+    /// Pixels are copied only if pixel conversion is possible (`SkImageInfoValidConversion`).
+    /// `src.x` and `src.y` may be negative to copy only the top or left of the source. Returns
+    /// false if the pixmap width or height is zero or negative, if `abs(src.x)` is greater than or
+    /// equal to the pixmap width, or if `abs(src.y)` is greater than or equal to the pixmap
+    /// height.
+    ///
+    /// skia-rust: also returns false if this pixmap has no pixels, or if `dst_pixels` is too
+    /// small for `dst_info` and `dst_row_bytes` (the C++ trusts the caller).
+    // Port of: src/core/SkPixmap.cpp#L175-L190 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels(
+        &self,
+        dst_info: &ImageInfo,
+        dst_pixels: &mut [u8],
+        dst_row_bytes: usize,
+        src: impl Into<IPoint>,
+    ) -> bool {
+        let IPoint { x, y } = src.into();
+        if !image_info_valid_conversion(dst_info, &self.info) {
+            return false;
+        }
+
+        let mut rec = ReadPixelsRec::new(dst_info, Some(dst_pixels), dst_row_bytes, x, y);
+        if !rec.trim(self.info.width(), self.info.height()) {
+            return false;
+        }
+
+        let Some(src_pixels) = self.addr_at((rec.x, rec.y)) else {
+            return false;
+        };
+        let src_info = self.info.with_dimensions(rec.info.dimensions());
+        let Some(dst_pixels) = rec.pixels.and_then(|p| p.get_mut(rec.offset..)) else {
+            return false;
+        };
+        convert_pixels(
+            &rec.info,
+            dst_pixels,
+            rec.row_bytes,
+            &src_info,
+            src_pixels,
+            self.row_bytes,
+        )
+    }
+
+    /// Copies a rectangle of pixels to `dst` (`readPixels(const SkPixmap&, int, int)`): like
+    /// [`Self::read_pixels`] with `dst`'s info, pixels and row bytes. Returns false if `dst` has
+    /// no writable pixels.
+    // Port of: include/core/SkPixmap.h#L652-L654 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels_to_pixmap(&self, dst: &mut Pixmap<'_>, src: impl Into<IPoint>) -> bool {
+        let info = dst.info().clone();
+        let row_bytes = dst.row_bytes();
+        let Some(dst_pixels) = dst.writable_addr() else {
+            return false;
+        };
+        self.read_pixels(&info, dst_pixels, row_bytes, src)
+    }
+
     /// Writes `color` to the pixels bounded by `subset` (or the pixmap's bounds, for `None`);
     /// returns true on success. Returns false if the color type is [`ColorType::Unknown`], if
     /// `subset` does not intersect `bounds()`, or if the pixels are read-only.
@@ -1385,17 +1432,23 @@ impl<'a> Pixmap<'a> {
             self.alpha_type(),
             self.color_space(),
         );
+        let src = ImageInfo::new((1, 1), ColorType::RGBAF32, AlphaType::Premul, None);
 
-        // be large enough for our widest config (F32 x 4)
-        let Some(dst_pixel) = convert_rgba_f32_premul_pixel(&dst, &c) else {
+        let mut dst_pixel = [0u8; 16]; // be large enough for our widest config (F32 x 4)
+        debug_assert!(dst.bytes_per_pixel() <= dst_pixel.len());
+
+        let mut src_pixel = [0u8; 16];
+        for (i, v) in [c.r, c.g, c.b, c.a].into_iter().enumerate() {
+            src_pixel[4 * i..4 * i + 4].copy_from_slice(&v.to_ne_bytes());
+        }
+
+        if !convert_pixels(&dst, &mut dst_pixel, 16, &src, &src_pixel, 16) {
             return false;
-        };
+        }
         let bpp = dst.bytes_per_pixel();
-        debug_assert!(bpp <= dst_pixel.len());
 
         // The C++ memsets each row with the converted pixel (as the 8/16/32/64-bit value of the
-        // first `bpp` bytes of `dstPixel`, or as an RGBA_F32 color); that is this byte copy on
-        // the little-endian machines Skia assumes.
+        // first `bpp` bytes of `dstPixel`, or as an RGBA_F32 color); that is this byte copy.
         let row_bytes = self.row_bytes;
         let shift = self.shift_per_pixel();
         let left = clip.left as usize;

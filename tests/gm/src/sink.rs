@@ -245,8 +245,9 @@ impl RasterSink {
         let mut props = SurfaceProps::new(0, PixelGeometry::RGBH);
         src.modify_surface_props(&mut props);
         let mut surface =
-            Surface::wrap_pixels(&dst, Some(&props)).expect("allocated pixels can be wrapped");
+            Surface::wrap_pixels(&mut dst, Some(&props)).expect("allocated pixels can be wrapped");
         let result = src.draw(surface.canvas());
+        drop(surface); // gives the drawn pixels back to `dst`
         Rendered {
             result,
             bitmap: Some(dst),

@@ -8,9 +8,12 @@
 //!
 //! skia-rust: `SkPixelRef` points at raw memory owned by someone else (a `malloc`ed block, an
 //! `SkData`, or caller-managed storage with a release proc). Here the [`PixelRef`] always *owns*
-//! its bytes (a `Vec<u8>`), behind a read/write lock so that bitmaps sharing it can mutate the
-//! pixels through `&self`, as in C++. Caller-managed storage is handed over together with a
-//! release proc that gets the bytes back when the last reference goes away (see
+//! its bytes (a `Vec<u8>`, or shared immutable [`Data`]). It is a reference-counted handle:
+//! clones share the pixels, reads borrow them ([`PixelRef::pixels`]) and a write
+//! ([`PixelRef::pixels_mut`]) first detaches the handle onto a private copy if the pixels are
+//! shared (copy-on-write; `docs/design/pixels.md`). There are no locks, so pixel access can
+//! neither block nor deadlock. Caller-managed storage is handed over together with a release proc
+//! that gets the bytes back when the last reference goes away (see
 //! [`crate::pixel_ref_priv::make_pixel_ref_with_proc`]).
 //!
 //! `SkPixelStorage` (the base class, tracking storage and content IDs for GPU proxies) is not
@@ -18,44 +21,12 @@
 //! `SkBitmapCache` is not ported, so `SkNotifyBitmapGenIDIsStale` is a no-op.
 
 use std::fmt;
-use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::data::Data;
 use crate::id_change_listener::{IdChangeListener, IdChangeListenerList};
 use crate::size::ISize;
-
-enum ReadRepr<'a> {
-    Guard(RwLockReadGuard<'a, Vec<u8>>),
-    Data(&'a [u8]),
-}
-
-/// Read access to the bytes of a [`PixelRef`] (holds a read lock, unless the pixels are
-/// immutable [`Data`]). Dereferences to the bytes.
-pub struct PixelsRead<'a>(ReadRepr<'a>);
-
-impl Deref for PixelsRead<'_> {
-    type Target = [u8];
-
-    fn deref(&self) -> &[u8] {
-        match &self.0 {
-            ReadRepr::Guard(guard) => guard.as_slice(),
-            ReadRepr::Data(bytes) => bytes,
-        }
-    }
-}
-
-impl fmt::Debug for PixelsRead<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PixelsRead")
-            .field("len", &self.len())
-            .finish()
-    }
-}
-
-/// Write access to the bytes of a [`PixelRef`] (holds the write lock).
-pub type PixelsWrite<'a> = RwLockWriteGuard<'a, Vec<u8>>;
 
 /// Called with the pixel bytes when the last reference to a [`PixelRef`] goes away
 /// (`void (*releaseProc)(void* addr, void* ctx)`; the context is whatever the closure captures).
@@ -82,8 +53,17 @@ const IMMUTABLE: u8 = 2; // Once set to this state, it never leaves.
 // The pixel memory: bytes that the pixel ref owns and that can be written to, or shared immutable
 // [`Data`] (`SkMallocPixelRef::MakeWithData`).
 enum Pixels {
-    Owned(RwLock<Vec<u8>>),
+    Owned(Vec<u8>),
     Data(Data),
+}
+
+impl Pixels {
+    fn bytes(&self) -> &[u8] {
+        match self {
+            Pixels::Owned(bytes) => bytes,
+            Pixels::Data(data) => data.as_bytes(),
+        }
+    }
 }
 
 struct Inner {
@@ -96,13 +76,16 @@ struct Inner {
     gen_id_change_listeners: IdChangeListenerList,
     added_to_cache: AtomicBool,
     mutability: AtomicU8,
+    // Only taken (with `get_mut`) when the pixel ref is dropped: the `Mutex` just makes `Inner`
+    // `Sync` around a `Send`-only closure. It is never locked, so it cannot block.
     release_proc: Mutex<Option<ReleaseProc>>,
 }
 
 /// This class is the smart container for pixel memory, and is used with
 /// [`Bitmap`](crate::bitmap::Bitmap). This class can be shared/accessed between multiple threads.
 ///
-/// Cloning a [`PixelRef`] shares the pixels (it is a reference-counted handle).
+/// Cloning a [`PixelRef`] shares the pixels (it is a reference-counted handle). Writing through
+/// [`PixelRef::pixels_mut`] while they are shared first gives this handle its own copy.
 // Port of: include/core/SkPixelRef.h#L33-L113 (chrome/m156)
 #[doc(alias = "SkPixelRef")]
 #[derive(Clone)]
@@ -141,7 +124,7 @@ impl PixelRef {
             width,
             height,
             row_bytes,
-            Pixels::Owned(RwLock::new(pixels)),
+            Pixels::Owned(pixels),
             release_proc,
         )
     }
@@ -201,32 +184,46 @@ impl PixelRef {
         self.0.height
     }
 
-    /// Read access to the pixel bytes.
-    ///
-    /// The returned guard holds a read lock; do not call mutating methods of this pixel ref (or
-    /// of a bitmap sharing it) on the same thread while holding it.
+    /// The pixel bytes (`SkPixelRef::pixels()`), borrowed for as long as this handle is.
     // Port of: include/core/SkPixelRef.h#L45 (chrome/m156)
     #[must_use]
-    pub fn pixels(&self) -> PixelsRead<'_> {
-        match &self.0.pixels {
-            Pixels::Owned(pixels) => PixelsRead(ReadRepr::Guard(
-                pixels.read().unwrap_or_else(PoisonError::into_inner),
-            )),
-            Pixels::Data(data) => PixelsRead(ReadRepr::Data(data.as_bytes())),
+    pub fn pixels(&self) -> &[u8] {
+        self.0.pixels.bytes()
+    }
+
+    /// The pixel bytes, writable.
+    ///
+    /// skia-rust: `SkPixelRef::pixels()` returns a writable `void*` from a `const` method, and
+    /// every sharer sees the writes. Here, if the pixels are shared (another handle to this pixel
+    /// ref exists, or they are immutable [`Data`]), this handle is first detached onto a private
+    /// copy of the bytes: a new pixel ref with the same dimensions and row bytes, mutable, without
+    /// listeners or release proc, with a new generation ID. Other handles keep the old pixels
+    /// (copy-on-write, like `Arc::make_mut`; see `docs/design/pixels.md`).
+    pub fn pixels_mut(&mut self) -> &mut [u8] {
+        let unique =
+            matches!(self.0.pixels, Pixels::Owned(_)) && Arc::get_mut(&mut self.0).is_some();
+        if !unique {
+            let copy = self.0.pixels.bytes().to_vec();
+            *self = Self::from_pixels(
+                self.0.width,
+                self.0.height,
+                self.0.row_bytes,
+                Pixels::Owned(copy),
+                None,
+            );
+        }
+        match Arc::get_mut(&mut self.0).map(|inner| &mut inner.pixels) {
+            Some(Pixels::Owned(bytes)) => bytes,
+            // Made unique and owned just above.
+            _ => unreachable!("a detached pixel ref owns its bytes"),
         }
     }
 
-    /// Write access to the pixel bytes, or `None` if the pixels are shared immutable
-    /// [`Data`] (`SkMallocPixelRef::MakeWithData`).
-    ///
-    /// skia-rust: `SkPixelRef::pixels()` returns a writable `void*` from a `const` method. This
-    /// holds the write lock for the lifetime of the guard.
+    /// Returns true if this handle is the only one to its pixels and they can be written in
+    /// place: [`Self::pixels_mut`] will not copy them.
     #[must_use]
-    pub fn pixels_mut(&self) -> Option<PixelsWrite<'_>> {
-        match &self.0.pixels {
-            Pixels::Owned(pixels) => Some(pixels.write().unwrap_or_else(PoisonError::into_inner)),
-            Pixels::Data(_) => None,
-        }
+    pub fn is_unique(&self) -> bool {
+        matches!(self.0.pixels, Pixels::Owned(_)) && Arc::strong_count(&self.0) == 1
     }
 
     /// Returns the size of one pixel row in bytes.
@@ -384,7 +381,7 @@ impl Drop for Inner {
         // The derived classes' destructors run first: free the pixels, or hand them back to the
         // release proc.
         if let Pixels::Owned(pixels) = &mut self.pixels {
-            let pixels = std::mem::take(pixels.get_mut().unwrap_or_else(PoisonError::into_inner));
+            let pixels = std::mem::take(pixels);
             let release_proc = self
                 .release_proc
                 .get_mut()

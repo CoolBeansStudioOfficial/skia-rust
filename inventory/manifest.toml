@@ -28378,7 +28378,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapCopyTest.cpp#L89-L132"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d1226a956330901188d85696291f905dfa367ea8858bd5c2107b019312f6cbf8"
 
 [[test]]
@@ -28387,7 +28387,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapCopyTest.cpp#L164-L222"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "44b54cd68ba4e6950cb87c382ce8c7d22e5faecb4b0138fb94835219a061eb65"
 
 [[test]]
@@ -28468,7 +28468,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L227-L243"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "534953784785879b08e89308b0dba6c82c0776e44ce51da5f8ca1035238683a4"
 
 [[test]]
@@ -28477,7 +28477,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L179-L222"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "8b5f229cacf9030d60a940983cacf05590bac87c709ac0b4df1308fde9f553c3"
 
 [[test]]
@@ -28495,7 +28495,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BitmapTest.cpp#L399-L468"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2be5bad76bc33a5357630a27a3666af58757c4ea25e04cf8c81d49af7a02863f"
 
 [[test]]
@@ -30042,6 +30042,7 @@ macro = "DEF_TEST"
 source = "tests/ConvertPixelsTest.cpp#L19-L54"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface and SkImage::readPixels for its source pixels (D6); in-place SkConvertPixels has no safe-Rust form"
 span_hash = "5a6e236c3a6c5830a6911819d2b181e2009087d22554d1e03f2d4975e7a6d1bd"
 
 [[test]]
@@ -38989,6 +38990,7 @@ macro = "DEF_TEST"
 source = "tests/PremulAlphaRoundTripTest.cpp#L112-L118"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface (readPixels/writePixels), task D6"
 span_hash = "7f80aecfd3f6c7473700840f10770139cd53debd470e1c34e2be39bee487fab7"
 
 [[test]]
@@ -38997,7 +38999,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PremulAlphaRoundTripTest.cpp#L132-L188"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only (GrConvertPixels, under SK_GANESH); Graphite is the only GPU backend in scope"
 span_hash = "1ea650b8cb092530ec9e5f1246a97bab885943cd6300d5c20f944f854c3aa6ab"
 
 [[test]]
@@ -39006,7 +39009,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PremulAlphaRoundTripTest.cpp#L191-L246"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1d1d72f85495517d2eb644a2bf36cf7a379965b5182883066306143b76583e6a"
 
 [[test]]
@@ -39805,6 +39808,7 @@ macro = "DEF_TEST"
 source = "tests/ReadPixelsTest.cpp#L397-L401"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface, task D6"
 span_hash = "5523a175565d3ce2b8f889fd15561559c817b75d191e24bfb26c0ccafe6d4583"
 
 [[test]]
@@ -39814,6 +39818,7 @@ macro = "DEF_TEST"
 source = "tests/ReadPixelsTest.cpp#L541-L555"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface, task D6"
 span_hash = "e8261a83ccbb40a119780949f08c0a73ffc0c5461609777e55f31f7680c76879"
 
 [[test]]
@@ -39823,6 +39828,7 @@ macro = "DEF_TEST"
 source = "tests/ReadPixelsTest.cpp#L500-L539"
 module = "core"
 status = "todo"
+reason = "needs SkImages::RasterFromPixmap / SkImage::readPixels (Phase 3)"
 span_hash = "3caf9db1b245f11bb30261f9b8ff9ba52310ab80e156fd3d5199e2727adc66b0"
 
 [[test]]
@@ -49746,6 +49752,7 @@ macro = "DEF_TEST"
 source = "tests/WritePixelsTest.cpp#L449-L462"
 module = "core"
 status = "todo"
+reason = "needs SkCanvas::writePixels on a raster surface, task D6"
 span_hash = "00d9480c4023e3c787f2983487d456f4da0284bd2dcd3dca2e6cd6821280ac14"
 
 [[test]]
@@ -49795,6 +49802,7 @@ macro = "DEF_TEST"
 source = "tests/WritePixelsTest.cpp#L344-L351"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface and SkImage, task D6"
 span_hash = "792f6cf1bffbee48238dac4ab889ffba536f59b2c05e3fb62a726d09bc3d282c"
 
 [[test]]
@@ -49823,6 +49831,7 @@ macro = "DEF_TEST"
 source = "tests/WritePixelsTest.cpp#L647-L665"
 module = "core"
 status = "todo"
+reason = "needs a raster SkSurface, task D6"
 span_hash = "738dde18ca73876ed25b7501893b5586c3c6460315a3a2206a8641cea9566455"
 
 [[test]]
