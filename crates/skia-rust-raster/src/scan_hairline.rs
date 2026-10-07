@@ -46,18 +46,45 @@ use crate::scan_antihair::anti_hair_line_rgn;
 // Port of: src/core/SkScan.h#L35 (chrome/m156)
 pub type HairRgnProc = fn(&[Point], Option<&Region>, &mut dyn Blitter);
 
+/// Writes `value` (of the pixmap's pixel size) at `(x, y)` (`DISPATCH_LOOP`'s
+/// `*pm.writable_addrN(x, y) = value`).
+// Port of: src/core/SkScan_Hairline.cpp#L39-L48 (chrome/m156)
+#[allow(clippy::cast_possible_truncation)] // the value's low bits match the pixel size
+fn direct_write(pm: &mut skia_rust_core::pixmap::Pixmap<'_>, bpp: usize, x: i32, y: i32, v: u64) {
+    match bpp {
+        1 => pm.set_addr8(x, y, v as u8),
+        2 => pm.set_addr16(x, y, v as u16),
+        4 => pm.set_addr32(x, y, v as u32),
+        8 => pm.set_addr64(x, y, v),
+        _ => {}
+    }
+}
+
 // Port of: src/core/SkScan_Hairline.cpp#L55-L67 (chrome/m156)
 fn horiline(x: i32, stopx: i32, fy: Fixed, dy: Fixed, blitter: &mut dyn Blitter) {
     debug_assert!(x < stopx);
 
     let mut x = x;
     let mut fy = fy;
-    loop {
-        blitter.blit_h(x, fy >> 16, 1);
-        fy = fy.wrapping_add(dy);
-        x += 1;
-        if x >= stopx {
-            break;
+    if let Some(mut direct) = blitter.can_direct_blit() {
+        let value = direct.value;
+        let bpp = direct.pm.info().bytes_per_pixel();
+        loop {
+            direct_write(&mut direct.pm, bpp, x, fy >> 16, value);
+            fy = fy.wrapping_add(dy);
+            x += 1;
+            if x >= stopx {
+                break;
+            }
+        }
+    } else {
+        loop {
+            blitter.blit_h(x, fy >> 16, 1);
+            fy = fy.wrapping_add(dy);
+            x += 1;
+            if x >= stopx {
+                break;
+            }
         }
     }
 }
@@ -68,12 +95,25 @@ fn vertline(y: i32, stopy: i32, fx: Fixed, dx: Fixed, blitter: &mut dyn Blitter)
 
     let mut y = y;
     let mut fx = fx;
-    loop {
-        blitter.blit_h(fx >> 16, y, 1);
-        fx = fx.wrapping_add(dx);
-        y += 1;
-        if y >= stopy {
-            break;
+    if let Some(mut direct) = blitter.can_direct_blit() {
+        let value = direct.value;
+        let bpp = direct.pm.info().bytes_per_pixel();
+        loop {
+            direct_write(&mut direct.pm, bpp, fx >> 16, y, value);
+            fx = fx.wrapping_add(dx);
+            y += 1;
+            if y >= stopy {
+                break;
+            }
+        }
+    } else {
+        loop {
+            blitter.blit_h(fx >> 16, y, 1);
+            fx = fx.wrapping_add(dx);
+            y += 1;
+            if y >= stopy {
+                break;
+            }
         }
     }
 }
