@@ -1396,8 +1396,8 @@ add cases: `docs/PORTING.md` §12):
   **Host NaN sign (open).** On a non-x86 host the plain operators (`+ - * /`, `sqrt`) in the x86
   models' stage code and in `Scalar` give Arm's default NaN `0x7FC00000` for an invalid operation,
   x86's is `0xFFC00000` (only the modelled instructions, `mad`/`min`/`max`/conversions/estimates,
-  spell the indefinite out). Mostly that is only a sign bit, which `expected::check` forgives on
-  those hosts (a second comparison with `0x7FC00000` words read as `0xFFC00000`); but a generated
+  spell the indefinite out). Mostly that is only a sign bit, which `expected::output_matches` forgives on
+  those hosts (canonical hash, see below); but a generated
   NaN that reaches a bit-casting stage (`approx_log2` in `PQish`/`ootf` after an overflowing
   `inf / inf`) changes values, so the cases avoid overflowing parameters. Making the models'
   float operators exact on every host (a lane type with x86 arithmetic) is future work.
@@ -1443,10 +1443,10 @@ add cases: `docs/PORTING.md` §12):
   leaves it unspecified). The `Scalar` tier runs on the host FPU, and the models' generic stage
   code (`F + F`, `-F`, ... are Rust `f32` operators on the vector lane type, not `x86_model`
   functions) does too, so on those hosts the two differ from the oracle in that bit pattern
-  only. `expected::check` therefore accepts, on non-x86 hosts only, a second comparison for
-  `Scalar` and the models: the output with every `0x7FC00000` word read as `0xFFC00000` (the
-  stored results are exact Skia hashes, no extra column); every result is exact on x86 hosts.
-  Routing the models' float operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
+  only. Stored results therefore carry a second, *canonical* hash (every `0x7FC00000` word read as
+  `0xFFC00000`), accepted in addition to the exact one on non-x86 hosts only
+  (`expected::output_matches`); every result is exact on x86 hosts. Routing the models' float
+  operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
   depend on the host's libm: those inputs are `/r5/`.
 - **Bugs found:** the `Scalar` tier evaluated `smoothstep` and `refract`'s `k` in `float`
   where C++ promotes to `double` (the literals are `double`s); `Ml4`'s `cast_to_uint_from_*` used
