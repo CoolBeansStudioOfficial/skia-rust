@@ -691,56 +691,74 @@ fn dump_for(tier: Tier) -> &'static str {
     }
 }
 
-// The tiers the dumps cover: every one but `Neon`, natively where this host has it and by its
-// model otherwise.
-fn x86_and_scalar_tiers() -> Vec<Selection> {
-    Tier::ALL
-        .into_iter()
-        .filter(|t| *t != Tier::Neon)
-        .filter_map(|tier| {
-            let native = Selection::native(tier);
-            if native.check().is_ok() {
-                return Some(native);
-            }
-            Selection::model(tier, Estimates::AmdZen4).check().ok()
-        })
-        .collect()
+// The selection that checks `tier` on this host: natively where the host has it, by its model
+// otherwise (`None` for `Neon`, which has no oracle).
+fn selection_for(tier: Tier) -> Option<Selection> {
+    if tier == Tier::Neon {
+        return None;
+    }
+    let native = Selection::native(tier);
+    if native.check().is_ok() {
+        return Some(native);
+    }
+    Selection::model(tier, Estimates::AmdZen4).check().ok()
+}
+
+fn check_tier(tier: Tier) {
+    let Some(sel) = selection_for(tier) else {
+        return;
+    };
+    let _guard = force_tier(sel).expect("a checked selection");
+    let want: Vec<&str> = dump_for(tier).lines().filter(|l| !l.is_empty()).collect();
+    let got = run_script(CASES);
+    let mut report = String::new();
+    if got.len() != want.len() {
+        let _ = writeln!(
+            report,
+            "{sel}: {} output lines, the dump has {}",
+            got.len(),
+            want.len()
+        );
+    }
+    let bad: Vec<String> = got
+        .iter()
+        .zip(&want)
+        .enumerate()
+        .filter(|(_, (g, w))| g != w)
+        .map(|(k, (g, w))| format!("  line {k}: skia `{w}`, ours `{g}`"))
+        .collect();
+    if !bad.is_empty() {
+        let _ = writeln!(report, "{sel}: {} mismatches (first shown):", bad.len());
+        for b in bad.iter().take(30) {
+            let _ = writeln!(report, "{b}");
+        }
+    }
+    assert!(report.is_empty(), "{report}");
+    assert_ne!(got.len(), 0);
+}
+
+// One test per tier, so the (long) replays run in parallel.
+#[test]
+fn draw_layer_matches_skia_scalar() {
+    check_tier(Tier::Scalar);
 }
 
 #[test]
-fn draw_layer_matches_skia_on_every_tier() {
-    let mut checked = 0usize;
-    let mut report = String::new();
-    for sel in x86_and_scalar_tiers() {
-        let _guard = force_tier(sel).expect("a checked selection");
-        let want: Vec<&str> = dump_for(sel.tier)
-            .lines()
-            .filter(|l| !l.is_empty())
-            .collect();
-        let got = run_script(CASES);
-        if got.len() != want.len() {
-            let _ = writeln!(
-                report,
-                "{sel}: {} output lines, the dump has {}",
-                got.len(),
-                want.len()
-            );
-        }
-        let bad: Vec<String> = got
-            .iter()
-            .zip(&want)
-            .enumerate()
-            .filter(|(_, (g, w))| g != w)
-            .map(|(k, (g, w))| format!("  line {k}: skia `{w}`, ours `{g}`"))
-            .collect();
-        if !bad.is_empty() {
-            let _ = writeln!(report, "{sel}: {} mismatches (first shown):", bad.len());
-            for b in bad.iter().take(30) {
-                let _ = writeln!(report, "{b}");
-            }
-        }
-        checked += got.len();
-    }
-    assert!(report.is_empty(), "{report}");
-    assert!(checked > 0);
+fn draw_layer_matches_skia_sse2() {
+    check_tier(Tier::Sse2);
+}
+
+#[test]
+fn draw_layer_matches_skia_sse41() {
+    check_tier(Tier::Sse41);
+}
+
+#[test]
+fn draw_layer_matches_skia_ml3() {
+    check_tier(Tier::Ml3);
+}
+
+#[test]
+fn draw_layer_matches_skia_ml4() {
+    check_tier(Tier::Ml4);
 }
