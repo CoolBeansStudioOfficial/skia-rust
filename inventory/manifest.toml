@@ -36715,7 +36715,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L68-L68"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2ac625da9baee10aeb75528b159614a26b1a745ae4c79ae2f397bfb15dec8449"
 
 [[test]]
@@ -36724,7 +36724,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L70-L70"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3b7d2f046631465fc075b5ff8a07880fdc565c43f99e2e505c06e174d54f7f84"
 
 [[test]]
@@ -36733,7 +36733,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L71-L71"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3e0dd0b1b762cd2b8b7604365c5ce61515cd1eb4409403f1a42746cbf9e51cfe"
 
 [[test]]
@@ -36742,7 +36742,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L72-L72"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3a9c33a46eafc161d5ff100706eefd880d90fcb764459d86a0b99c645df5a04f"
 
 [[test]]
@@ -36751,7 +36751,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L73-L73"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3b30c6d25fb9a3891ca8d64ff3be72dc8ab6d898fc39771ed491ac3dd93eabc6"
 
 [[test]]
@@ -36760,7 +36760,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L74-L74"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "584b2fdb3343440f078b790b9d40494485990dda2cfb22613549674a8d0a6851"
 
 [[test]]
@@ -36769,7 +36769,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L75-L75"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b7fb8b055883d50b09547d53939c36bec2b2d88a077053db489880fc4ba37037"
 
 [[test]]
@@ -36778,7 +36778,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L77-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2c32ccaf23635a6001b276d61818c8ca83ab48dce695af839de186d083dd27af"
 
 [[test]]
@@ -36787,7 +36787,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L78-L78"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1bf80b1f48ea47ed570361a5a3a7110a0b0e4d7cb45cd357bf64ee8729e0bc54"
 
 [[test]]
@@ -36796,7 +36796,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L79-L79"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b95739bc815d39d78d79af46ae640cd757a6bd2cdeb7994f4604b9d1691f8e98"
 
 [[test]]
@@ -36805,7 +36805,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L80-L80"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b13e31752970bd84f46a80dd539d6e40b91bc7a71f42f725240892fd8f341b28"
 
 [[test]]
@@ -36814,7 +36814,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L81-L81"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2ecfbc490ea17bb2d76952f3c349688486d74668c2fd42e6a1ac31614301bd93"
 
 [[test]]
@@ -36823,7 +36823,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L82-L82"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "993943c5a5d5210e5363303cc405befa4346b77bbb61eb9ff0db26cea43137a1"
 
 [[test]]
@@ -36832,7 +36832,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParametricStageTest.cpp#L54-L65"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b61e14cd72e22f654881c946f7294aaeb86898ddb67219bcac2d89a90e382918"
 
 [[test]]
