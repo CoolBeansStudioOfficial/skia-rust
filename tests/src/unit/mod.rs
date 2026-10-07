@@ -75,6 +75,8 @@ pub mod parse_path_test;
 #[cfg(test)]
 pub mod path_builder_test;
 #[cfg(test)]
+pub mod path_coverage_test;
+#[cfg(test)]
 pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;

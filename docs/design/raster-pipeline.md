@@ -1683,7 +1683,7 @@ region_path}`):
   take a `const SkRasterClip&` take a `&dyn ScanClip` (`scan_clip`), implemented for `Region` as
   the BW clip. `with_aa_wrapper(blitter, closure)` stands for constructing the wrapper and using its
   region and blitter; C5 implements the trait for `RasterClip` and the AA path starts working.
-  `scan_clip` also has `XRect`/`XRect_*` from `SkScan.h`; C2/C3 can use them.
+  The `XRect` helpers live in `scan` (C2); `scan_clip` has only the `ScanClip` trait.
 - **Arithmetic.** The fixed-point steps (`FDot6`, `Fixed`, `FDot8`) use wrapping ops where C++
   silently overflows; the float2 loops of `hair_quad`/`hair_cubic` use the `Float2` type with the
   same operation order. `canDirectBlit` is not ported (see `API_MAPPING.md`).
@@ -1692,7 +1692,8 @@ region_path}`):
   decremented when the tangent is zero.
 - **Debug dump.** `blitter_dump::DumpBlitter` records every call at the level the scan converter
   makes it (`blit_anti_v2` is not expanded into two `blit_anti_h` calls) and can wrap a real blitter;
-  `dump()` prints one call per line for diffing against an oracle trace.
+  `dump()` prints one call per line; `oracle_text()` prints the same record in the format of
+  `oracle/scan-aaa` (A8 masks with their rows), the one dump blitter shared with C3.
 - **Tests.** `CappedHairlinesTest` needs the real `Canvas` (D6), and no other manifest test
   exercises these files alone, so no manifest entries change. `scan_hairline_tests.rs` checks hand
   derived traces (the derivations are in comments): non-AA horizontal/diagonal/clipped lines,
@@ -1745,6 +1746,53 @@ image_filter}`, all in core, per R11):
   `Paint_MoreFlattening` (`SkReadBuffer`/`SkWriteBuffer`), `Paint_nothingToDraw` (matrix color
   filter), `Paint_regression_measureText` and `Font_getpos` (fonts) wait for those ports;
   `BlendTest` has nothing left for raster.
+
+**As implemented in C3** (`skia_rust_raster::{analytic_edge, scan_aaa_path, scan_anti_path}`,
+`edge_builder::AnalyticEdgeBuilder`; built on C2's and C4's `scan`, `scan_priv`, `scan_antihair`,
+`blitter_dump` and `core::t_sort`, which it shares):
+
+- **Edges.** `AnalyticEdge` + `AnalyticQuadraticEdge`/`AnalyticCubicEdge` (composition + `Deref`),
+  stored as `AnyAnalyticEdge` in the builder's `Vec`. The scan converter appends the head and tail
+  sentinels to that `Vec` and links everything through `usize` indices (`scan_priv::NIL` = null); the
+  `SkScanPriv.h` list templates (C2's) are generic over `scan_priv::LinkedEdge`, which the analytic
+  edges implement too.
+  Edges are sorted with C2's port of `SkTQSort` (introsort): `compare_edges` can tie, and the order of
+  tied edges is visible in the output, so `slice::sort` would not do.
+- **Arithmetic.** Fixed point throughout, `wrapping_*` where C++ relies on two's complement.
+  Overloads that C++ resolves by argument type are spelled out: `get_partial_alpha(SkAlpha,
+  SkFixed)` is `get_partial_alpha_fixed`, and `compute_alpha_above_line`'s `R == 1` case calls
+  the `(SkAlpha, SkAlpha)` overload after truncating its int argument, as C++ overload resolution
+  does. Int → `SkAlpha` assignments truncate (`to_alpha`), `(int)float` follows x86-64
+  `cvttss2si` (`scan_priv::float_to_int`). `CatchOverflow` in `add_alpha` is the unchecked
+  release-build formula.
+- **Additive blitters.** Trait `AdditiveBlitter`; `MaskAdditiveBlitter` keeps Skia's
+  1032-byte storage with the image at offset 1 (writes one pixel left of a row land in the previous
+  row's last byte, as in C++) and blits the mask in `Drop`; `RunBasedAdditiveBlitter` (with `safe`
+  for `SafeRLEAdditiveBlitter`) owns one `AlphaRuns` reset after each flushed row instead of a ring
+  of `requestRowsPreserved()` rows in the real blitter's memory (no Rust blitter can keep a borrow
+  of an earlier row, and the calls are identical), and flushes in `Drop`. The mask blitter is its
+  own "real blitter" (it implements `Blitter` for `blitV`/`blitRect`/`blitAntiRect`).
+- **Entry points.** `anti_fill_path_region` (`SkScan::AntiFillPath(raw, SkRegion, blitter,
+  forceRLE)`), `aaa_fill_path_raw` (`AAAFillPath`), `anti_fill_rect`/`anti_fill_x_rect`/
+  `anti_frame_rect` (the `SkRegion*` overloads from `SkScan_Antihair.cpp`; C4's file holds the one
+  implementation, which the oracle cases check call for call; the `ScanClip` overloads are C4's).
+  The non-AA fallback of `AntiFillPath` for clipped bounds beyond ±8191 px calls C2's
+  `scan::fill_path`. `ScanClipper` (C2's; `clipped_out_blitter()` hands the original blitter back
+  for a clipped-out inverse fill) and `blit_above`/`blit_below` are shared.
+- **Exactness evidence.** `oracle/scan-aaa` is a C++ harness linked against the oracle's
+  `x64-sse2` libraries: it runs the 242 cases of `crates/skia-rust-raster/src/scan_aaa_tests/
+  cases.txt` (rects, triangles, quads, cubics, conics, circles/ovals/rrects, concave and
+  self-intersecting stars, donuts, inverse fills, rect and region clips, `forceRLE`, edges clipped
+  away, 176 seeded random paths/rects/frames; mask, RLE and safe-RLE blitters, convex and general
+  walkers) through Skia's `SkScan` with a blitter that prints every call, and commits the output
+  (`skia_dump.txt`). `scan_aaa_tests.rs` runs the same cases through skia-rust with
+  `blitter_dump::DumpBlitter::oracle_text` and requires identical calls; all 242 match (debug and release). The
+  scan converters are integer code outside `SkOpts`, so the output is the same on every tier and
+  host. Rerun `oracle/scan-aaa/build.ps1` after editing the cases.
+- **GM diagnosis.** Wrap the device blitter in `DumpBlitter::wrapping(..)` to get the call
+  sequence of one draw in the oracle harness's format, and add the path to `cases.txt` to get
+  Skia's.
+- **Tests.** `PathCoverageTest::PathCoverage` (it only checks Skia's curve subdivision estimates).
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

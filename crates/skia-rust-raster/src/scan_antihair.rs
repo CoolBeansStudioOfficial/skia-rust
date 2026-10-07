@@ -22,7 +22,8 @@ use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::region::{Cliperator, Region};
 
 use crate::blitter::{Blitter, BlitterClipper, RectClipBlitter};
-use crate::scan_clip::{ScanClip, XRect, xrect_from_irect, xrect_from_rect, xrect_round_out};
+use crate::scan::{XRect, xrect_round_out, xrect_set_irect, xrect_set_rect};
+use crate::scan_clip::ScanClip;
 
 const HLINE_STACK_BUFFER: usize = 100;
 
@@ -827,7 +828,7 @@ pub fn anti_fill_x_rect(xr: &XRect, clip: Option<&Region>, blitter: &mut dyn Bli
             antifillrect_x(xr, blitter);
         } else {
             // this keeps our original edges fractional
-            let tmp_r = xrect_from_irect(&clip_bounds);
+            let tmp_r = xrect_set_irect(&clip_bounds);
             if let Some(tmp_r) = IRect::intersect(&tmp_r, xr) {
                 antifillrect_x(&tmp_r, blitter);
             }
@@ -837,7 +838,7 @@ pub fn anti_fill_x_rect(xr: &XRect, clip: Option<&Region>, blitter: &mut dyn Bli
 
         while !clipper.is_done() {
             // this keeps our original edges fractional
-            let tmp_r = xrect_from_irect(clipper.rect());
+            let tmp_r = xrect_set_irect(clipper.rect());
             if let Some(tmp_r) = IRect::intersect(&tmp_r, xr) {
                 antifillrect_x(&tmp_r, blitter);
             }
@@ -871,7 +872,7 @@ pub fn anti_fill_x_rect_clip(xr: &XRect, clip: &dyn ScanClip, blitter: &mut dyn 
 */
 // Port of: src/core/SkScan_Antihair.cpp#L769-L774 (chrome/m156)
 fn antifillrect(r: &Rect, blitter: &mut dyn Blitter) {
-    let xr = xrect_from_rect(r);
+    let xr = xrect_set_rect(r);
     antifillrect_x(&xr, blitter);
 }
 
