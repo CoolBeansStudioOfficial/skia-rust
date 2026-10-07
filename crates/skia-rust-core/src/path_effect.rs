@@ -152,12 +152,34 @@ pub trait PathEffectBase: fmt::Debug + Send + Sync + 'static {
 
 /// The base of objects that affect the geometry of a drawing primitive (`SkPathEffect`).
 /// Cloning is cheap (a reference-count bump).
+///
+/// Equality is identity, as Skia compares `sk_sp`s ([`PathEffect::ptr_eq`]).
 // Port of: include/core/SkPathEffect.h#L28-L82 (chrome/m156)
 #[doc(alias = "SkPathEffect")]
 #[derive(Clone, Debug)]
 pub struct PathEffect(Arc<dyn PathEffectBase>);
 
+impl PartialEq for PathEffect {
+    /// Identity, as Skia's `sk_sp<SkPathEffect>` `operator==`.
+    fn eq(&self, other: &PathEffect) -> bool {
+        self.ptr_eq(other)
+    }
+}
+
 impl PathEffect {
+    /// The implementation (`as_PEB`).
+    #[doc(alias = "as_PEB")]
+    #[must_use]
+    pub fn as_base(&self) -> &dyn PathEffectBase {
+        &*self.0
+    }
+
+    /// True if `self` and `other` are the same path effect (Skia's `sk_sp` comparison).
+    #[must_use]
+    pub fn ptr_eq(&self, other: &PathEffect) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
     /// Wraps an implementation of [`PathEffectBase`].
     #[must_use]
     pub fn from_base(effect: impl PathEffectBase) -> Self {

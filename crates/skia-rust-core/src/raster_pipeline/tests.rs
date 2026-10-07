@@ -284,7 +284,7 @@ fn dump_matches_skia() {
 
 /// A token of an oracle context line: a number or the `|` separator.
 #[derive(Debug)]
-enum Tok {
+pub(super) enum Tok {
     Num(f32),
     Bar,
 }
@@ -301,7 +301,7 @@ impl PartialEq for Tok {
 }
 
 /// The context values the oracle prints for `stage` (`oracle_dump_pipeline`'s switch), if any.
-fn ctx_tokens(stage: &Stage<'_>) -> Option<Vec<Tok>> {
+pub(super) fn ctx_tokens(stage: &Stage<'_>) -> Option<Vec<Tok>> {
     let nums = |v: &[f32]| v.iter().map(|&f| Tok::Num(f)).collect::<Vec<_>>();
     Some(match *stage {
         Stage::UniformColor(u) | Stage::UniformColorDst(u) => {
@@ -323,14 +323,14 @@ fn ctx_tokens(stage: &Stage<'_>) -> Option<Vec<Tok>> {
 
 /// One oracle record: the lowp decision, the op names and the context lines.
 #[derive(Debug, PartialEq)]
-struct Record {
-    name: String,
-    lowp: bool,
-    ops: Vec<String>,
-    ctxs: Vec<(usize, String, Vec<Tok>)>,
+pub(super) struct Record {
+    pub(super) name: String,
+    pub(super) lowp: bool,
+    pub(super) ops: Vec<String>,
+    pub(super) ctxs: Vec<(usize, String, Vec<Tok>)>,
 }
 
-fn parse_records(text: &str) -> Vec<Record> {
+pub(super) fn parse_records(text: &str) -> Vec<Record> {
     let mut records: Vec<Record> = Vec::new();
     for line in text.lines() {
         let mut words = line.split(' ');

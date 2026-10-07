@@ -20,6 +20,7 @@ use crate::convert_pixels::convert_pixels;
 use crate::image_info::ImageInfo;
 use crate::image_info_priv::image_info_valid_conversion;
 use crate::malloc_pixel_ref;
+use crate::paint::Paint;
 use crate::pixel_ref::{PixelRef, ReleaseProc};
 use crate::pixel_ref_priv::make_pixel_ref_with_proc;
 use crate::pixmap::Pixmap;
@@ -1186,12 +1187,20 @@ impl Bitmap {
     /// relative to this bitmap: `(0, 0)`. Returns `None` if this bitmap is empty or `dst`'s
     /// pixels cannot be allocated. If this bitmap has no pixels, `dst` is all zeros.
     ///
-    /// skia-rust: `SkPaint` (and its mask filter) is not ported yet, so there is no `paint`
-    /// parameter: this is `extractAlpha(dst, nullptr, …)`. (With a mask filter, Skia filters the
-    /// alpha and returns the filter's offset.)
+    /// With a `paint` that has a mask filter, Skia filters the alpha and returns the filter's
+    /// offset (and `dst` can be larger than this bitmap).
+    ///
+    /// skia-rust: `MaskFilterBase::filterMask` is not ported yet (Phase 3), so a mask filter
+    /// behaves like one whose `filterMask` returns false (the `SkMaskFilterBase` default): Skia
+    /// then takes the `NO_FILTER_CASE` path, which is what happens here. The allocator and
+    /// offset out-parameters are the heap allocator and the returned `Option<IPoint>`.
     // Port of: src/core/SkBitmap.cpp#L503-L584 (chrome/m156)
     #[doc(alias = "extractAlpha")]
-    pub fn extract_alpha(&self, dst: &mut Self) -> Option<IPoint> {
+    pub fn extract_alpha<'a>(
+        &self,
+        dst: &mut Self,
+        paint: impl Into<Option<&'a Paint>>,
+    ) -> Option<IPoint> {
         // static bool GetBitmapAlpha(const SkBitmap& src, uint8_t* alpha, int alphaRowBytes)
         fn get_bitmap_alpha(src: &Bitmap, alpha: &mut [u8], alpha_row_bytes: usize) -> bool {
             #[allow(clippy::cast_sign_loss)] // width() is positive here
@@ -1227,7 +1236,10 @@ impl Bitmap {
         #[allow(clippy::cast_sign_loss)] // width() is positive here
         let row_bytes = align4(self.width() as usize); // srcM.rowBytes() = SkAlign4(width)
 
-        // SkMaskFilter* filter = paint ? paint->getMaskFilter() : nullptr; is always null here.
+        // SkMaskFilter* filter = paint ? paint->getMaskFilter() : nullptr;
+        // With a filter, `filterMask` (not ported; the base default returns false) fails and
+        // `goto NO_FILTER_CASE`, so the filter is never consulted.
+        let _filter = paint.into().and_then(Paint::mask_filter);
 
         // NO_FILTER_CASE:
         let mut tmp_bitmap = Bitmap::new();
@@ -1355,7 +1367,10 @@ mod tests {
         assert_eq!(bm.get_color((0, 0)).a(), 0);
 
         let mut alpha = Bitmap::new();
-        assert_eq!(bm.extract_alpha(&mut alpha), Some(IPoint { x: 0, y: 0 }));
+        assert_eq!(
+            bm.extract_alpha(&mut alpha, None),
+            Some(IPoint { x: 0, y: 0 })
+        );
         assert_eq!(alpha.color_type(), ColorType::Alpha8);
         assert_eq!(alpha.row_bytes(), 4);
         assert_eq!(alpha.get_addr8(1, 0), 0x80);

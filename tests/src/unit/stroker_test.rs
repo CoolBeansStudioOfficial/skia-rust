@@ -13,11 +13,12 @@ use super::path_ops_cubic_intersection_test_data as cubic_data;
 use super::path_ops_quad_intersection_test_data as quad_data;
 use super::path_ops_test_common::{CubicPts, QuadPts};
 use crate::def_test;
-use crate::tools::stroke_paint::{Paint, fill_path_with_paint};
 use skia_rust_core::float_bits::bits_to_float;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::paint::Style;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::path_utils::fill_path_with_paint_to_path;
 use skia_rust_core::point::{Point, point_priv};
 use skia_rust_core::random::Random;
 use skia_rust_core::scalar::{double_to_scalar, scalar};
@@ -86,11 +87,11 @@ const WIDTHS: [scalar; 32] = [
 
 // Port of: tests/StrokerTest.cpp#L45-L52 (chrome/m156)
 fn path_test(path: &Path) {
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     for width in WIDTHS {
         p.set_stroke_width(width);
-        let _ = fill_path_with_paint(path, &p);
+        let _ = fill_path_with_paint_to_path(path, &p).0;
     }
 }
 
@@ -222,7 +223,7 @@ fn unbounded_pos(r: &mut Random) -> scalar {
 // Port of: tests/StrokerTest.cpp#L160-L193 (chrome/m156)
 def_test!(QuadStrokerUnbounded, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -234,7 +235,7 @@ def_test!(QuadStrokerUnbounded, |_reporter| {
             )
             .detach();
         p.set_stroke_width(unbounded_pos(&mut r));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -244,7 +245,7 @@ def_test!(QuadStrokerUnbounded, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L195-L231 (chrome/m156)
 def_test!(CubicStrokerUnbounded, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -257,7 +258,7 @@ def_test!(CubicStrokerUnbounded, |_reporter| {
             )
             .detach();
         p.set_stroke_width(unbounded_pos(&mut r));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -267,7 +268,7 @@ def_test!(CubicStrokerUnbounded, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L233-L281 (chrome/m156)
 def_test!(QuadStrokerConstrained, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -296,7 +297,7 @@ def_test!(QuadStrokerConstrained, |_reporter| {
             .quad_to(quad[1], quad[2])
             .detach();
         p.set_stroke_width(r.next_range_f(0.0, 500.0));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -306,7 +307,7 @@ def_test!(QuadStrokerConstrained, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L283-L348 (chrome/m156)
 def_test!(CubicStrokerConstrained, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -345,7 +346,7 @@ def_test!(CubicStrokerConstrained, |_reporter| {
             .cubic_to(cubic[1], cubic[2], cubic[3])
             .detach();
         p.set_stroke_width(r.next_range_f(0.0, 500.0));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -355,7 +356,7 @@ def_test!(CubicStrokerConstrained, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L350-L386 (chrome/m156)
 def_test!(QuadStrokerRange, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -371,7 +372,7 @@ def_test!(QuadStrokerRange, |_reporter| {
             .quad_to(quad[1], quad[2])
             .detach();
         p.set_stroke_width(r.next_range_f(0.0, 500.0));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -381,7 +382,7 @@ def_test!(QuadStrokerRange, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L388-L428 (chrome/m156)
 def_test!(CubicStrokerRange, |_reporter| {
     let mut r = Random::default();
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     let timer = Timer::new();
     for _ in 0..1_000_000 {
@@ -394,7 +395,7 @@ def_test!(CubicStrokerRange, |_reporter| {
             )
             .detach();
         p.set_stroke_width(r.next_range_f(0.0, 100.0));
-        let _fill = fill_path_with_paint(&path, &p);
+        let _fill = fill_path_with_paint_to_path(&path, &p).0;
         if FLAGS_TIMEOUT && timer.elapsed_ms() > MS_TEST_DURATION {
             return;
         }
@@ -404,7 +405,7 @@ def_test!(CubicStrokerRange, |_reporter| {
 // Port of: tests/StrokerTest.cpp#L431-L456 (chrome/m156)
 def_test!(QuadStrokerOneOff, |reporter| {
     let b = bits_to_float;
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     p.set_stroke_width(double_to_scalar(164.683_548));
 
@@ -415,7 +416,7 @@ def_test!(QuadStrokerOneOff, |reporter| {
             (b(0x43c9_41c8), b(0x42b3_ace3)),
         )
         .detach();
-    let fill = fill_path_with_paint(&path, &p);
+    let fill = fill_path_with_paint_to_path(&path, &p).0;
     if reporter.verbose() {
         println!("\nQuadStrokerOneOff path");
         path.dump();
@@ -427,7 +428,7 @@ def_test!(QuadStrokerOneOff, |reporter| {
 // Port of: tests/StrokerTest.cpp#L458-L494 (chrome/m156)
 def_test!(CubicStrokerOneOff, |reporter| {
     let b = bits_to_float;
-    let mut p = Paint::new();
+    let mut p = Paint::default();
     p.set_style(Style::Stroke);
     p.set_stroke_width(double_to_scalar(42.835_968));
 
@@ -439,7 +440,7 @@ def_test!(CubicStrokerOneOff, |reporter| {
             (b(0x43f1_cd32), b(0x4280_2ec1)),
         )
         .detach();
-    let fill = fill_path_with_paint(&path, &p);
+    let fill = fill_path_with_paint_to_path(&path, &p).0;
     if reporter.verbose() {
         println!("\nCubicStrokerOneOff path");
         path.dump();

@@ -5,10 +5,16 @@ pub mod alpha_type;
 pub mod arena_alloc;
 pub mod bezier_curves;
 pub mod bitmap;
+pub mod blend_mode;
+pub mod blend_mode_blender;
+#[doc(hidden)]
+pub mod blend_mode_priv;
+pub mod blender;
 pub mod buffer;
 pub mod checksum;
 pub mod color;
 pub mod color_data;
+pub mod color_filter;
 #[doc(hidden)]
 pub mod color_priv;
 pub mod color_space;
@@ -26,6 +32,7 @@ pub mod data;
 pub mod data_table;
 #[doc(hidden)]
 pub mod edge_clipper;
+pub mod effect_priv;
 pub mod endian;
 pub mod fdot6;
 pub mod fixed;
@@ -35,6 +42,7 @@ pub mod front_buffered_stream;
 pub mod geometry;
 pub mod half;
 pub mod id_change_listener;
+pub mod image_filter;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
@@ -43,6 +51,7 @@ pub mod line_clipper;
 pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod mask;
+pub mod mask_filter;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
@@ -53,6 +62,8 @@ pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
 pub mod paint;
+#[doc(hidden)]
+pub mod paint_priv;
 pub mod path;
 pub mod path_builder;
 pub mod path_data;
@@ -94,6 +105,8 @@ pub mod rrect;
 pub mod safe32;
 pub mod safe_math;
 pub mod scalar;
+pub mod shader;
+pub mod shaders;
 pub mod size;
 pub mod stream;
 #[doc(hidden)]
