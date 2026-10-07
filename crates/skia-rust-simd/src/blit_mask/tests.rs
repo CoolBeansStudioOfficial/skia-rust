@@ -44,12 +44,18 @@ fn run(
 #[test]
 fn tiers_agree() {
     let mut rng = Rng(0xFEED_FACE_CAFE_BEEF);
-    for color in COLORS {
+    // Under Miri: a few colors and widths (vector body, tail, empty), fewer heights.
+    let colors = if cfg!(miri) {
+        &COLORS[..3]
+    } else {
+        &COLORS[..]
+    };
+    for &color in colors {
         for w in (0..40)
-            .step_by(if cfg!(miri) { 7 } else { 1 })
+            .step_by(if cfg!(miri) { 13 } else { 1 })
             .chain([64, 65])
         {
-            for h in 1..4usize {
+            for h in 1..(if cfg!(miri) { 3 } else { 4 }) as usize {
                 let pad = (rng.next_u32() % 5) as usize;
                 let stride = w + pad;
                 let mask_rb = [0, w, w + 3][rng.next_u32() as usize % 3];

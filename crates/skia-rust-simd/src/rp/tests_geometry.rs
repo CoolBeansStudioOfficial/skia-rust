@@ -480,10 +480,15 @@ fn repeat_and_mirror_match_the_scalar_references() {
     let mut rng = Rng::new(0x0071_17e5);
     for sel in selections() {
         let n = sel.tier.highp_stride();
-        for scale in [1.0f32, 3.0, 4.0, 7.5, 0.375] {
+        let scales: &[f32] = if cfg!(miri) {
+            &[1.0, 7.5, 0.375]
+        } else {
+            &[1.0, 3.0, 4.0, 7.5, 0.375]
+        };
+        for &scale in scales {
             for dir in [1, -1] {
                 let ctx = tile(scale, dir);
-                for _ in 0..if cfg!(miri) { 4 } else { 100 } {
+                for _ in 0..if cfg!(miri) { 2 } else { 100 } {
                     let xs: Vec<f32> = (0..n)
                         .map(|_| (rng.below(200_000) as f32 - 100_000.0) / 256.0)
                         .collect();

@@ -335,7 +335,7 @@ mod tests {
     /// 8 fraction bits.
     #[test]
     fn estimates_are_8_bit() {
-        let step = if cfg!(miri) { 0x0010_0003 } else { 997 };
+        let step = if cfg!(miri) { 0x0040_0007 } else { 997 };
         for bits in (0x0020_0000u32..0x7f80_0000).step_by(step) {
             let x = f32::from_bits(bits);
             let r = f64::from(frecpe(x));

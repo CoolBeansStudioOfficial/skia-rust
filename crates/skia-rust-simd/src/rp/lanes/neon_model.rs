@@ -505,7 +505,7 @@ mod tests {
         assert_eq!(fcvt_f16_f32(f32::from_bits(0x387f_e000)), 0x0400);
         assert_eq!(fcvt_f16_f32(f32::from_bits(0x7f80_0001)), 0x7e00);
         assert_eq!(fcvt_f16_f32(f32::from_bits(0xffc0_2000)), 0xfe01);
-        for h in 0..=u16::MAX {
+        for h in (0..=u16::MAX).step_by(if cfg!(miri) { 251 } else { 1 }) {
             let x = fcvt_f32_f16(h);
             let back = fcvt_f16_f32(x);
             let want = if x.is_nan() { h | 0x0200 } else { h };

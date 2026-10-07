@@ -451,7 +451,12 @@ fn stores_round_trip_through_loads_with_a_tail() {
         let mut rng = Rng::new(0xb2_0002);
         for f in formats() {
             // Full chunks plus a tail chunk (every lane count from 1 to n).
-            for w in [n, 2 * n, 2 * n + 1, 3 * n - n / 2] {
+            let widths = if cfg!(miri) {
+                vec![n, 2 * n + 1]
+            } else {
+                vec![n, 2 * n, 2 * n + 1, 3 * n - n / 2]
+            };
+            for w in widths {
                 let px = (f.generate)(&mut rng, w);
                 let out = run(
                     &[(f.load)(SRC), (f.store)(DST)],
