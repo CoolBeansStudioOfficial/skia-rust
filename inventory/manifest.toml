@@ -27702,7 +27702,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L223-L247"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ce4faa7c7f7c550efd0d5ce4c6469d4a37c14feecbd1951388b6225676d37188"
 
 [[test]]
@@ -27711,7 +27711,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L340-L361"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "442a8b689d69d26d42c1aaa14c856352e060f9c53bb15ff0b1c9bc19da95336b"
 
 [[test]]
@@ -27720,7 +27720,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L419-L423"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "88f2062fd38750f419bb9099c8747f92d5e22acf7df109a88369e2d349200300"
 
 [[test]]
@@ -27730,6 +27730,7 @@ macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L386-L398"
 module = "core"
 status = "todo"
+reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas"
 span_hash = "f75b29351e78606d5cc12eecb3169f44974ac6a12994b6b67c25e21414c356e2"
 
 [[test]]
@@ -27738,7 +27739,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L400-L410"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cf594402e228ad9e028de83fd86bbdb1f14fb3eb13734d720d443bae61a75d2c"
 
 [[test]]
@@ -27747,7 +27748,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L197-L221"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "503e5b4f764ba3d2be212ac926d9df687fdd28218a45d99820454b2de24f791f"
 
 [[test]]
@@ -27756,7 +27757,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L434-L459"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "83a71f8b0ea8fd7352cbcffd8d4b232b209d6e9f60ef18ec3c2203cc8c065ce7"
 
 [[test]]
@@ -27765,7 +27766,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L300-L338"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d2f49c7cdbcae3deed93f8cd31a8f0ef3aae97f090b68df27dd2d0d1dd9f106d"
 
 [[test]]
@@ -27775,6 +27776,7 @@ macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L173-L195"
 module = "core"
 status = "todo"
+reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas; aa_clip_region_tests.rs checks the AAClip half"
 span_hash = "d7bfaca36d922b284ad9d546a65189a068d960078818df32b883a06e1b596854"
 
 [[test]]
@@ -27783,7 +27785,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L425-L432"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ebcebb4489142d0e53a245ccd99db5ed9ed94c55ad9f9ca2996af5e6cc2710a"
 
 [[test]]
@@ -27793,6 +27795,7 @@ macro = "DEF_TEST"
 source = "tests/AAClipTest.cpp#L257-L298"
 module = "core"
 status = "todo"
+reason = "needs Canvas (D6): copyToMask(SkRegion) draws with SkCanvas; aa_clip_region_tests.rs checks the AAClip half"
 span_hash = "856d355e1b65333aa4156877c998ae84a3414250b27b0ec9370df3059203c2bc"
 
 [[test]]

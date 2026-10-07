@@ -6,3 +6,4 @@
 /oracle/scan-aaa/out/
 /goldens/
 *.profraw
+/oracle/aaclip/out/

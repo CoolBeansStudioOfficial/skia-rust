@@ -10,10 +10,10 @@
 //! modules.
 //!
 //! # skia-rust deviations
-//! - The `SkRasterClip` overloads (`FillIRect(r, SkRasterClip, ...)`, `FillPath(raw,
-//!   SkRasterClip, ...)`, ...) wrap an `SkAAClip` blitter around the region versions; they come
-//!   with `SkRasterClip` (task C5). Everything below takes the region (`SkRegion*` / `SkRegion&`)
-//!   they delegate to; [`fill_triangle`] therefore takes the region of a BW raster clip.
+//! - C++ overloads on the clip type are spelled out: the `SkRegion*` / `SkRegion&` versions are
+//!   [`fill_irect`], [`fill_path`], ..., and the `const SkRasterClip&` versions have a `_clip`
+//!   suffix ([`fill_irect_clip`], [`fill_path_clip`], ...). [`fill_triangle`] only exists for a
+//!   raster clip.
 //! - The edges of a path are stored in one `Vec` with the sorted-list sentinels (`headEdge`,
 //!   `tailEdge`) appended; `fPrev`/`fNext` are indices ([`NIL`] is the null pointer).
 //! - `ASSERT_RETURN` in `walk_simple_edges` returns from the function when its condition fails
@@ -33,10 +33,11 @@ use skia_rust_core::rect::{Contains, IRect, Rect, rect_priv};
 use skia_rust_core::region::{Cliperator, Op, Region};
 use skia_rust_core::safe32::can_overflow_add;
 
+use crate::aa_clip::AAClipBlitter;
 use crate::blitter::Blitter;
 use crate::edge::{AnyEdge, Edge};
 use crate::edge_builder::{BasicEdgeBuilder, EdgeBuilder};
-use crate::scan_clip::ScanClip;
+use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan_priv::{
     NIL, ScanClipper, backward_insert_edge_based_on_x, backward_insert_start, blit_above,
     blit_below, insert_edge_after, remove_edge,
@@ -153,14 +154,49 @@ pub fn fill_rect(r: &Rect, clip: Option<&Region>, blitter: &mut dyn Blitter) {
     fill_irect(&ir, clip, blitter);
 }
 
+/// Fills `r`, clipped to a raster clip (`SkScan::FillIRect(const SkIRect&, const SkRasterClip&,
+/// SkBlitter*)`).
+// Port of: src/core/SkScan.cpp#L66-L78 (chrome/m156)
+#[doc(alias = "FillIRect")]
+pub fn fill_irect_clip(r: &IRect, clip: &RasterClip, blitter: &mut dyn Blitter) {
+    if clip.is_empty() || r.is_empty() {
+        return;
+    }
+
+    if clip.is_bw() {
+        fill_irect(r, Some(clip.bw_rgn()), blitter);
+        return;
+    }
+
+    let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+    let (rgn, blitter) = wrapper.parts();
+    fill_irect(r, Some(rgn), blitter);
+}
+
+/// Fills the rounded fixed-point rect, clipped to a raster clip (`SkScan::FillXRect(const
+/// SkXRect&, const SkRasterClip&, SkBlitter*)`).
+// Port of: src/core/SkScan.cpp#L80-L93 (chrome/m156)
+#[doc(alias = "FillXRect")]
+pub fn fill_xrect_clip(xr: &XRect, clip: &RasterClip, blitter: &mut dyn Blitter) {
+    if clip.is_empty() || xr.is_empty() {
+        return;
+    }
+
+    if clip.is_bw() {
+        fill_xrect(xr, Some(clip.bw_rgn()), blitter);
+        return;
+    }
+
+    let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+    let (rgn, blitter) = wrapper.parts();
+    fill_xrect(xr, Some(rgn), blitter);
+}
+
 /// Fills the rounded rect, clipped to a raster clip (`SkScan::FillRect(const SkRect&, const
 /// SkRasterClip&, SkBlitter*)`).
-///
-/// skia-rust: `clip` is the [`ScanClip`] stand-in for `SkRasterClip` (task C5 ports the real
-/// one); [`fill_irect`]'s and [`fill_xrect`]'s raster-clip overloads are added with it.
-// Port of: src/core/SkScan.cpp#L97-L110 (chrome/m156)
+// Port of: src/core/SkScan.cpp#L95-L108 (chrome/m156)
 #[doc(alias = "FillRect")]
-pub fn fill_rect_clip(r: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn fill_rect_clip(r: &Rect, clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_empty() || r.is_empty() {
         return;
     }
@@ -170,9 +206,9 @@ pub fn fill_rect_clip(r: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) 
         return;
     }
 
-    clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-        fill_rect(r, Some(rgn), b);
-    });
+    let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+    let (rgn, blitter) = wrapper.parts();
+    fill_rect(r, Some(rgn), blitter);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -844,11 +880,10 @@ fn sk_fill_triangle(
     walk_simple_edges(&mut edges, head_edge, blitter, start_y, stop_y);
 }
 
-/// Fills the triangle `pts[..3]`, clipped to `clip` (the region of a BW raster clip; see the
-/// module documentation) (`SkScan::FillTriangle`).
-// Port of: src/core/SkScan_Path.cpp#L712-L757 (chrome/m156)
+/// Fills the triangle `pts[..3]`, clipped to `clip` (`SkScan::FillTriangle`).
+// Port of: src/core/SkScan_Path.cpp#L726-L767 (chrome/m156)
 #[doc(alias = "FillTriangle")]
-pub fn fill_triangle(pts: &[Point], clip: &Region, blitter: &mut dyn Blitter) {
+pub fn fill_triangle(pts: &[Point], clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_empty() {
         return;
     }
@@ -864,7 +899,7 @@ pub fn fill_triangle(pts: &[Point], clip: &Region, blitter: &mut dyn Blitter) {
     let limit = (i32::from(i16::MAX) >> 1) as f32;
     if !Rect::new(-limit, -limit, limit, limit).contains(&r) {
         let tri = triangle(&pts[..3], &r);
-        fill_path(&tri, clip, blitter);
+        fill_path_clip(&tri, clip, blitter);
         return;
     }
 
@@ -873,9 +908,32 @@ pub fn fill_triangle(pts: &[Point], clip: &Region, blitter: &mut dyn Blitter) {
         return;
     }
 
-    let mut clipper = ScanClipper::new(blitter, clip, &ir, false, false);
+    let mut wrap = AAClipBlitterWrapper::new(clip, blitter);
+    let (clip_rgn, blitter) = wrap.parts();
+
+    let mut clipper = ScanClipper::new(blitter, clip_rgn, &ir, false, false);
     let clip_rect = clipper.clip_rect().copied();
     if let Some(blitter) = clipper.blitter() {
         sk_fill_triangle(pts, clip_rect.as_ref(), blitter, &ir);
+    }
+}
+
+/// Fills `raw` into `blitter`, clipped to a raster clip (`SkScan::FillPath(const SkPathRaw&,
+/// const SkRasterClip&, SkBlitter*)`).
+// Port of: src/core/SkScan_Path.cpp#L769-L781 (chrome/m156)
+#[doc(alias = "FillPath")]
+pub fn fill_path_clip(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
+    if clip.is_empty() {
+        return;
+    }
+
+    if clip.is_bw() {
+        fill_path(raw, clip.bw_rgn(), blitter);
+    } else {
+        let mut tmp = Region::new();
+
+        tmp.set_rect(*clip.bounds());
+        let mut aa_blitter = AAClipBlitter::new(blitter, clip.aa_rgn());
+        fill_path(raw, &tmp, &mut aa_blitter);
     }
 }

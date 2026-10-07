@@ -8,15 +8,17 @@
 //! In m156 there is no supersampling scan converter any more: after clipping, every antialiased
 //! fill goes through the analytic one ([`aaa_fill_path_raw`]).
 //!
-//! skia-rust: only the `SkRegion` overload is ported here. The `SkRasterClip` overload (which
-//! wraps AA clips in an `SkAAClipBlitter`) comes with the raster clip (task C5).
+//! skia-rust: the C++ overloads are [`anti_fill_path_region`] (`SkRegion`, with `forceRLE`) and
+//! [`anti_fill_path_clip`] (`SkRasterClip`, which wraps AA clips in an `SkAAClipBlitter`).
 
 use skia_rust_core::math::{MAX_S32, left_shift};
 use skia_rust_core::path_raw::PathRaw;
 use skia_rust_core::rect::{IRect, RoundOut};
 use skia_rust_core::region::{Op, Region};
 
+use crate::aa_clip::AAClipBlitter;
 use crate::blitter::Blitter;
+use crate::raster_clip::RasterClip;
 use crate::scan::fill_path;
 use crate::scan_aaa_path::aaa_fill_path_raw;
 use crate::scan_priv::{SUPERSAMPLE_SHIFT, ScanClipper, blit_above, blit_below};
@@ -63,9 +65,8 @@ fn rect_overflows_short_shift(rect: IRect, shift: i32) -> i32 {
 /// Fills `path` with antialiasing, clipped to `orig_clip` (`SkScan::AntiFillPath(const
 /// SkPathRaw&, const SkRegion&, SkBlitter*, bool forceRLE)`). `force_rle` is set by `SkAAClip`.
 ///
-/// skia-rust: when the clipped bounds are too large to antialias (beyond ±8191 pixels), Skia
-/// falls back to the non-AA `SkScan::FillPath` (task C2); until that lands, such paths draw
-/// nothing here.
+/// When the clipped bounds are too large to antialias (beyond ±8191 pixels), this falls back to
+/// the non-AA [`fill_path`].
 // Port of: src/core/SkScan_AntiPath.cpp#L59-L135 (chrome/m156)
 #[doc(alias = "AntiFillPath")]
 pub fn anti_fill_path_region(
@@ -147,5 +148,29 @@ pub fn anti_fill_path_region(
 
     if is_inverse {
         blit_below(blitter, &ir, clip_rgn);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/// Fills `raw` with antialiasing, clipped to a raster clip (`SkScan::AntiFillPath(const
+/// SkPathRaw&, const SkRasterClip&, SkBlitter*)`).
+// Port of: src/core/SkScan_AntiPath.cpp#L139-L154 (chrome/m156)
+#[doc(alias = "AntiFillPath")]
+pub fn anti_fill_path_clip(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
+    debug_assert!(raw.bounds().is_finite());
+    if clip.is_empty() {
+        return;
+    }
+
+    if clip.is_bw() {
+        anti_fill_path_region(raw, clip.bw_rgn(), blitter, false);
+    } else {
+        let mut tmp = Region::new();
+
+        tmp.set_rect(*clip.bounds());
+        let mut aa_blitter = AAClipBlitter::new(blitter, clip.aa_rgn());
+        // SkAAClipBlitter can blitMask, why forceRLE?
+        anti_fill_path_region(raw, &tmp, &mut aa_blitter, true);
     }
 }

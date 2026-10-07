@@ -16,6 +16,7 @@ use skia_rust_core::region::Region;
 
 use crate::blitter::Blitter;
 use crate::blitter_dump::{BlitCall, DumpBlitter};
+use crate::raster_clip::RasterClip;
 use crate::scan_antihair::{anti_fill_rect, anti_frame_rect, anti_hair_line_rgn, anti_hair_rect};
 use crate::scan_hairline::{
     frame_rect, hair_line, hair_line_rgn, hair_path, hair_rect, hair_round_path, hair_square_path,
@@ -147,7 +148,11 @@ fn hair_line_clipped() {
 fn hair_line_with_raster_clip() {
     let clip = big_clip();
     let mut d = DumpBlitter::new();
-    hair_line(&[pt(0.0, 0.0), pt(4.0, 4.0)], &clip, &mut d);
+    hair_line(
+        &[pt(0.0, 0.0), pt(4.0, 4.0)],
+        &RasterClip::from_region(&clip),
+        &mut d,
+    );
     assert_eq!(d.calls, [h(0, 0, 1), h(1, 1, 1), h(2, 2, 1), h(3, 3, 1)]);
 }
 
@@ -157,7 +162,11 @@ fn hair_line_with_raster_clip() {
 fn hair_rect_outline() {
     let clip = big_clip();
     let mut d = DumpBlitter::new();
-    hair_rect(&Rect::new(1.0, 1.0, 4.0, 3.0), &clip, &mut d);
+    hair_rect(
+        &Rect::new(1.0, 1.0, 4.0, 3.0),
+        &RasterClip::from_region(&clip),
+        &mut d,
+    );
     assert_eq!(
         d.calls,
         [
@@ -184,7 +193,11 @@ fn hair_rect_outline() {
 fn hair_rect_thin() {
     let clip = big_clip();
     let mut d = DumpBlitter::new();
-    hair_rect(&Rect::new(1.0, 1.0, 1.5, 10.0), &clip, &mut d);
+    hair_rect(
+        &Rect::new(1.0, 1.0, 1.5, 10.0),
+        &RasterClip::from_region(&clip),
+        &mut d,
+    );
     assert_eq!(
         d.calls,
         [BlitCall::Rect {
@@ -202,7 +215,11 @@ fn hair_rect_thin() {
 fn hair_rect_clipped() {
     let clip = Region::from_rect(IRect::new(0, 0, 3, 3));
     let mut d = DumpBlitter::new();
-    hair_rect(&Rect::new(1.0, 1.0, 4.0, 3.0), &clip, &mut d);
+    hair_rect(
+        &Rect::new(1.0, 1.0, 4.0, 3.0),
+        &RasterClip::from_region(&clip),
+        &mut d,
+    );
     // r = (1,1,5,4) ∩ (-1,-1,4,4) = (1,1,4,4): width 3, height 3. The clipper cuts to (0,0,3,3).
     // top blitH(1,1,3) -> (1,1,2); left blitRect(1,2,1,1); right blitRect(3,2,1,1) is outside;
     // bottom blitH(1,3,3) is outside (y == 3).
@@ -363,7 +380,11 @@ fn anti_hair_clipped() {
 fn anti_hair_rect_is_closed_polyline() {
     let clip = big_clip();
     let mut d = DumpBlitter::new();
-    anti_hair_rect(&Rect::new(1.0, 2.0, 5.0, 2.0), &clip, &mut d);
+    anti_hair_rect(
+        &Rect::new(1.0, 2.0, 5.0, 2.0),
+        &RasterClip::from_region(&clip),
+        &mut d,
+    );
     // The degenerate rect (zero height) is the line (1,2)->(5,2) drawn forwards, then the
     // zero-length vertical segments (nothing), then backwards (5,2)->(1,2): the same line.
     let mut line = DumpBlitter::new();
@@ -455,7 +476,7 @@ fn frame_rect_uses_fill_rect() {
     frame_rect(
         &Rect::new(0.0, 0.0, 10.0, 10.0),
         &pt(2.0, 4.0),
-        &clip,
+        &RasterClip::from_region(&clip),
         &mut d,
     );
     // outer = (-1,-2,11,12); top (-1,-2,11,2), bottom (-1,8,11,12), left (-1,2,1,8), right
@@ -496,7 +517,7 @@ fn frame_rect_uses_fill_rect() {
     frame_rect(
         &Rect::new(0.0, 0.0, 1.0, 10.0),
         &pt(2.0, 1.0),
-        &clip,
+        &RasterClip::from_region(&clip),
         &mut d,
     );
     assert_eq!(
@@ -518,13 +539,13 @@ fn hair_path_butt_square_round() {
     let raw = raw_of(&points, &verbs);
 
     let mut d = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut d);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.calls, [h(1, 1, 1), h(2, 1, 1), h(3, 1, 1), h(4, 1, 1)]);
 
     // Square caps extend each end by 0.5: (0.5,1)->(5.5,1): ix0 = round(32) = 1, ix1 =
     // round(352) = 6.
     let mut d = DumpBlitter::new();
-    hair_square_path(&raw, &clip, &mut d);
+    hair_square_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(
         d.calls,
         [h(1, 1, 1), h(2, 1, 1), h(3, 1, 1), h(4, 1, 1), h(5, 1, 1)]
@@ -533,7 +554,7 @@ fn hair_path_butt_square_round() {
     // Round caps extend by pi/8 = 0.3927: x0 = 38 (0.6073 * 64 = 38.87), x1 = 345 (5.3927 * 64):
     // ix0 = round(38) = 1, ix1 = round(345) = 5.
     let mut d = DumpBlitter::new();
-    hair_round_path(&raw, &clip, &mut d);
+    hair_round_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.calls, [h(1, 1, 1), h(2, 1, 1), h(3, 1, 1), h(4, 1, 1)]);
 }
 
@@ -552,9 +573,9 @@ fn hair_path_closed_contour_has_no_caps() {
     let raw = raw_of(&points, &verbs);
 
     let mut square = DumpBlitter::new();
-    hair_square_path(&raw, &clip, &mut square);
+    hair_square_path(&raw, &RasterClip::from_region(&clip), &mut square);
     let mut butt = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut butt);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut butt);
     assert_ne!(butt.dump(), "");
     assert_eq!(square.calls, butt.calls);
 }
@@ -567,7 +588,7 @@ fn anti_hair_path_draws_anti_lines() {
     let (points, verbs) = line_path(&[pt(1.0, 2.0), pt(5.0, 2.0)]);
     let raw = raw_of(&points, &verbs);
     let mut d = DumpBlitter::new();
-    anti_hair_path(&raw, &clip, &mut d);
+    anti_hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(
         d.calls,
         [
@@ -589,7 +610,7 @@ fn hair_path_straight_quad_is_a_line() {
     let verbs = [PathVerb::Move, PathVerb::Quad];
     let raw = raw_of(&points, &verbs);
     let mut d = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut d);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.calls, [h(1, 1, 1), h(2, 1, 1), h(3, 1, 1), h(4, 1, 1)]);
 }
 
@@ -600,7 +621,7 @@ fn hair_path_straight_cubic_is_a_line() {
     let verbs = [PathVerb::Move, PathVerb::Cubic];
     let raw = raw_of(&points, &verbs);
     let mut d = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut d);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.calls, [h(1, 1, 1), h(2, 1, 1), h(3, 1, 1), h(4, 1, 1)]);
 }
 
@@ -611,12 +632,12 @@ fn hair_path_clipping() {
     let (points, verbs) = line_path(&[pt(10.0, 1.0), pt(20.0, 1.0)]);
     let raw = raw_of(&points, &verbs);
     let mut d = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut d);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.dump(), "");
 
     let (points, verbs) = line_path(&[pt(-3.0, 1.5), pt(8.0, 1.5)]);
     let raw = raw_of(&points, &verbs);
     let mut d = DumpBlitter::new();
-    hair_path(&raw, &clip, &mut d);
+    hair_path(&raw, &RasterClip::from_region(&clip), &mut d);
     assert_eq!(d.calls, [h(0, 1, 1), h(1, 1, 1), h(2, 1, 1)]);
 }
