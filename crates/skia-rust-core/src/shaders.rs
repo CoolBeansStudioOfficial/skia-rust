@@ -2,11 +2,13 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: include/core/SkShader.h (namespace SkShaders), src/shaders/SkColorShader.cpp,
+// src/shaders/SkBlendShader.cpp (Blend),
 // src/shaders/SkEmptyShader.cpp
 
 //! `SkShaders`: the shader factories, and the shader implementations of `src/shaders` that
 //! core needs (the shader base, color and empty shaders).
 
+pub mod blend_shader;
 pub mod color_filter_shader;
 pub mod color_shader;
 pub mod ctm_shader;
@@ -14,6 +16,7 @@ pub mod empty_shader;
 pub mod shader_base;
 
 use crate::alpha_type::AlphaType;
+use crate::blend_mode::BlendMode;
 use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_space_priv::srgb_singleton;
@@ -21,6 +24,7 @@ use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::floating_point::is_finite_array;
 use crate::shader::Shader;
 
+pub use blend_shader::BlendShader;
 pub use color_filter_shader::ColorFilterShader;
 pub use color_shader::ColorShader;
 pub use ctm_shader::CtmShader;
@@ -36,6 +40,21 @@ pub use shader_base::{
 #[must_use]
 pub fn empty() -> Shader {
     Shader::from_base(EmptyShader)
+}
+
+/// A shader of `src` blended over `dst` with `mode` (`SkShaders::Blend(SkBlendMode, dst, src)`).
+/// `Clear` makes a transparent color shader, `Dst` is `dst` and `Src` is `src`. (The `SkBlender`
+/// overload needs runtime effects and is not ported.)
+// Port of: src/shaders/SkBlendShader.cpp#L119-L134 (chrome/m156)
+#[doc(alias = "Blend")]
+#[must_use]
+pub fn blend(mode: BlendMode, dst: Shader, src: Shader) -> Shader {
+    match mode {
+        BlendMode::Clear => color(Color::new(0)),
+        BlendMode::Dst => dst,
+        BlendMode::Src => src,
+        _ => Shader::from_base(BlendShader::new(mode, dst, src)),
+    }
 }
 
 /// A shader of a single sRGB color (`SkShaders::Color(SkColor)`).

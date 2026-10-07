@@ -19,6 +19,8 @@ pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
 #[cfg(test)]
+pub mod clip_stack_test;
+#[cfg(test)]
 pub mod clipper_test;
 #[cfg(test)]
 pub mod color_priv_test;
