@@ -29025,7 +29025,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ChecksumTest.cpp#L21-L43"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "496d118bb5f2075220b8b306f7a5865d7f1c73f47ab0e5b8af323655a33ab906"
 
 [[test]]
@@ -29034,7 +29034,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ChecksumTest.cpp#L51-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f3223c4aea0d72f3ecabf78c24276b61e2f3f594d667b0a8d2ed36efd2e50d24"
 
 [[test]]
@@ -29043,7 +29043,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ChecksumTest.cpp#L79-L96"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "129116791a1075a8b7a3e81c74dda36e375b3d4d7ed9ad4085bb8d20fd362c30"
 
 [[test]]
@@ -29061,7 +29061,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ChecksumTest.cpp#L45-L49"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4f7b1ba3ca1985a63842bfde6a44638dfce23efb85c6a5571c0f854ecec3a511"
 
 [[test]]
@@ -39327,7 +39327,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RandomTest.cpp#L186-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "28b0d4b105cf1118516f6a684095698aabf6fd5e593be2335bd5d835dbb81478"
 
 [[test]]
@@ -47018,7 +47018,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkUTFTest.cpp#L66-L100"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "58dc9178cad35620e01830b35760c1565913a7779904fed265682412b5502b3e"
 
 [[test]]
@@ -47027,7 +47027,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkUTFTest.cpp#L102-L142"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "29d9df76e45f82544c90e9ed12caea0d4046c6db46c0fa2d5c7bbbd225786ac7"
 
 [[test]]
@@ -47036,7 +47036,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkUTFTest.cpp#L13-L29"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ed8a285f66a191bebe1c101c2197a65969c87703f90cab3da660fc779e04a2ca"
 
 [[test]]
@@ -47045,7 +47045,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkUTFTest.cpp#L31-L58"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a6eaddc0adc3c06444a1d1598df72080ce63bd393fff095afd6ff715747982ef"
 
 [[test]]
