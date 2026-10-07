@@ -425,10 +425,15 @@ version = "0.156.0"
 dependencies = [
  "bitflags",
  "skia-rust-simd",
+ "skia-rust-skcms",
 ]
 
 [[package]]
 name = "skia-rust-simd"
+version = "0.156.0"
+
+[[package]]
+name = "skia-rust-skcms"
 version = "0.156.0"
 
 [[package]]
@@ -437,6 +442,7 @@ version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-simd",
+ "skia-rust-skcms",
 ]
 
 [[package]]

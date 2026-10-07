@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/skia-rust",
     "crates/skia-rust-simd",
+    "crates/skia-rust-skcms",
     "crates/skia-rust-core",
     "tests",
     "xtask",
@@ -18,6 +19,7 @@ authors = ["The skia-rust Authors"]
 
 [workspace.dependencies]
 skia-rust-simd = { path = "crates/skia-rust-simd", version = "0.156.0" }
+skia-rust-skcms = { path = "crates/skia-rust-skcms", version = "0.156.0" }
 skia-rust-core = { path = "crates/skia-rust-core", version = "0.156.0" }
 bitflags = "2"
 

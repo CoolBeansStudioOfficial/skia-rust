@@ -21,6 +21,7 @@
 
 use std::fmt;
 
+pub mod resources;
 pub mod unit;
 
 /// One recorded failure: where it happened, the failed condition and the message.

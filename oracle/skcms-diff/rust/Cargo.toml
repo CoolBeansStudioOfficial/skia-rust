@@ -1,0 +1,10 @@
+[package]
+name = "skcms-diff"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+skia-rust-skcms = { path = "../../../crates/skia-rust-skcms" }
+
+[workspace]

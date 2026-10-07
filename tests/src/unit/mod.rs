@@ -5,6 +5,8 @@ pub mod checksum_test;
 #[cfg(test)]
 pub mod color_priv_test;
 #[cfg(test)]
+pub mod color_space_test;
+#[cfg(test)]
 pub mod color_test;
 #[cfg(test)]
 pub mod cubic_map_test;
@@ -21,6 +23,8 @@ pub mod geometry_test;
 #[cfg(test)]
 pub mod hsv_round_trip_test;
 #[cfg(test)]
+pub mod icc_test;
+#[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
 pub mod m44_test;
@@ -28,6 +32,8 @@ pub mod m44_test;
 pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
+#[cfg(test)]
+pub mod nonlinear_blending_test;
 #[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
@@ -50,6 +56,8 @@ pub mod scalar_test;
 pub mod size_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
+#[cfg(test)]
+pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]

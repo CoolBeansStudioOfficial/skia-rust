@@ -4,12 +4,40 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 
 | Skia | skia-safe | skia-rust | Why |
 |---|---|---|---|
+| **alpha_type** | | | |
+| `SkAlphaType` | `AlphaType` (in `image_info`) | `alpha_type::AlphaType` | `SkAlphaType.h` is its own file (PORTING §2); the `ImageInfo` port will re-export it |
+| `SkAlphaTypeIsOpaque` | none | `AlphaType::is_opaque` | mechanical name |
 | **color** | | | |
 | `SkColor` | `Color` (no raw accessor) | `Color` + `From<Color> for u32` | safe replacement for skia-safe's crate-private `into_native` |
 | `SkColor4f::toSkColor` | `Color4f::to_color` (truncates) | `Color4f::to_color` (Skia rounding via `Sk4f_toL32`) | skia-safe's version differs from Skia; skia-rust ports Skia |
 | `SkPMColor4f` / `SkRGBA4f<kPremul>` | none | `PMColor4f` | alpha-type template modelled as two concrete types sharing a macro |
 | `SkPMColor` helpers | none | `color::{pm_color_set_argb, pm_color_get_*}` | mechanical rule; SkPMColor byte order is Skia's platform default (BGRA on Windows, RGBA elsewhere) |
 | `SkUnPreMultiply` | none | `un_pre_multiply::{get_scale, apply_scale, pm_color_to_color}` | class with only statics becomes a module |
+| **color_space** | | | |
+| `SkColorSpace` | `ColorSpace = RCHandle<SkColorSpace>` | `ColorSpace(Arc<..>)` | cheaply clonable shared handle, same methods |
+| `SkColorSpace::MakeSRGB`, `MakeSRGBLinear` | `new_srgb`, `new_srgb_linear` | same | same as skia-safe |
+| `SkColorSpace::MakeRGB` | missing (`// TODO: makeRGB`) | `ColorSpace::new_rgb(&TransferFunction, &Matrix3x3) -> Option<ColorSpace>` | mechanical name |
+| `SkColorSpace::Make(const skcms_ICCProfile&)` | `new_icc(&[u8])` (parses the bytes) | `ColorSpace::make(&IccProfile) -> Option` and `ColorSpace::new_icc(&[u8]) -> Option` | both entry points |
+| `SkColorSpace::MakeCICP` | `new_cicp` | same | same as skia-safe |
+| `SkColorSpace::toProfile(skcms_ICCProfile*)` | missing | `to_profile() -> IccProfile` | out-param becomes a return value |
+| `SkColorSpace::toXYZD50(skcms_Matrix3x3*)` (always true) | missing | `to_xyzd50() -> Matrix3x3` | the C++ cannot fail |
+| `SkColorSpace::isNumericalTransferFn` | missing | `is_numerical_transfer_fn() -> Option<TransferFunction>` | bool + out-param |
+| `SkColorSpace::makeLinearGamma`, `makeSRGBGamma`, `makeColorSpin` | `with_linear_gamma`, `with_srgb_gamma`, `with_color_spin` | same | same as skia-safe |
+| `SkColorSpace::serialize`, `writeToMemory`, `Deserialize` | `serialize() -> Data`, no `writeToMemory`, `deserialize(Data) -> Self` | `serialize() -> Vec<u8>`, `write_to_memory(Option<&mut [u8]>) -> usize`, `deserialize(&[u8]) -> Option<ColorSpace>` | `SkData` is not ported; failure is `None`, not a panic |
+| `SkColorSpace::Equals` / pointer comparison `a.get() == b.get()` | `PartialEq` (`Equals`) | `ColorSpace::equals(Option<&..>, Option<&..>)`, `PartialEq` (`Equals`), `ColorSpace::ptr_eq` | null handling; `ptr_eq` for identity, as Skia's tests need |
+| `SkColorSpace::transferFn(float[7])` (deprecated overload) | missing | not ported | deprecated; use `transfer_fn` |
+| `SkColorSpace::transferFn`, `invTransferFn`, `gamutTransformTo`, `transferFnHash`, `hash` | `transfer_fn`, `inv_transfer_fn`, no `gamutTransformTo`, `transfer_fn_hash`, `hash` | same, plus `gamut_transform_to(&ColorSpace) -> Matrix3x3` | mechanical name |
+| `SkColorSpacePrimaries` | `ColorSpacePrimaries` (`rx`, ...) | same; `to_xyzd50() -> Option<Matrix3x3>` | bool + out-param |
+| `skcms_TransferFunction` in `SkColorSpace.h` | `ColorSpaceTransferFn` struct | `ColorSpaceTransferFn = skcms::TransferFunction` | one type shared with `skia-rust-skcms` |
+| `SkNamedTransferFn::kSRGB`, `k2Dot2`, ... | `named_transfer_fn::{SRGB, DOT22, ...}` | same names; `kSRGB` is computed as in C++ (`(float)(1/1.055)` in `f64`) | skia-safe computes it in `f32` |
+| `SkNamedGamut::k*` | missing (`// TODO: SkNamedGamut`) | `named_gamut::{SRGB, ADOBE_RGB, DISPLAY_P3, REC2020, XYZ}` | mechanical names |
+| `SkNamedPrimaries::CicpId`, `SkNamedTransferFn::CicpId` | bindgen enums | Rust enums (`from_u8`; `CicpId::SRGB` is an alias constant of `IEC61966_2_1`) | a Rust enum cannot hold arbitrary `uint8_t` values |
+| `SkNamedPrimaries::GetCicp`, `GetCicpFromMatrix`, `SkNamedTransferFn::GetCicp` | not exposed | `named_primaries::{get_cicp, get_cicp_from_matrix}`, `named_transfer_fn::get_cicp` | out-params become `Option` |
+| `SkColorSpacePriv` (`sk_srgb_singleton`, `gNarrow_toXYZD50`, `is_almost_srgb`, ...) | not exposed | `#[doc(hidden)] color_space_priv::{srgb_singleton, srgb_linear_singleton, NARROW_TO_XYZD50, is_almost_srgb, ...}` | PORTING §3 |
+| `SkColorSpaceXformSteps` | not exposed | `color_space_xform_steps::ColorSpaceXformSteps` (`flags`, `src_tf`, `dst_tf_inv`, `src_to_dst_matrix`, ...) | fields lose the `f` prefix |
+| `SkColorSpaceXformSteps::apply(float*)` | not exposed | `apply(&mut [f32; 4])` | no raw pointer |
+| `SkColorSpaceXformSteps::apply(SkRasterPipeline*)` | not exposed | not ported yet | needs `SkRasterPipeline` |
+| `SkColorSpaceXformSteps::operator bool` | not exposed | `is_needed()` | mechanical name |
 | **float_bits** | | | |
 | `SkFloat2Bits`, `SkBits2Float`, `SkFloatAs2sCompliment`, ... (`SkFloatBits.h`) | not exposed | `float_bits::{float_to_bits, bits_to_float, float_as_2s_compliment, ...}` | mechanical names; needed by `ScalarTest` |
 | **m44** | | | |
@@ -132,3 +160,30 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `SkRegionPriv::VisitSpans`, `Validate`, `kRunTypeSentinel`, `SkRegionValueIsSentinel` | not exposed | `#[doc(hidden)] region::region_priv::{visit_spans, validate, RUN_TYPE_SENTINEL, region_value_is_sentinel}` | PORTING §3 |
 | `SkRegion::setPath`, `addBoundaryPath`, `getBoundaryPath` (`SkRegion_path.cpp`) | `set_path`, `add_boundary_path`, `boundary_path` | not ported yet | need `SkPath` / `SkPathBuilder` / scan conversion |
 | `SkRegion::toString` (Android framework only) | not exposed | not ported | `SK_BUILD_FOR_ANDROID_FRAMEWORK` only |
+| **skcms** | | | |
+| `skcms_Matrix3x3`, `skcms_Matrix3x4` | missing | `Matrix3x3`, `Matrix3x4` (`vals`) | drop prefix; `bit_eq` is the C++ `memcmp` |
+| `skcms_Matrix3x3_invert`, `skcms_Matrix3x3_concat` | missing | `Matrix3x3::invert() -> Option<Matrix3x3>`, `Matrix3x3::concat`; free-function forms `matrix3x3_invert`, `matrix3x3_concat` | out-param becomes `Option` |
+| `skcms_TransferFunction` | `ColorSpaceTransferFn` | `TransferFunction` (`g, a, b, c, d, e, f`) | drop prefix |
+| `skcms_TransferFunction_eval`, `_invert` | missing | `TransferFunction::eval`, `invert() -> Option<TransferFunction>` | out-param becomes `Option` |
+| `skcms_TransferFunction_getType`, `_isSRGBish`, `_isPQish`, `_isHLGish`, `_isPQ`, `_isHLG` | missing | `tf_type() -> TfType`, `is_srgbish`, `is_pqish`, `is_hlgish`, `is_pq`, `is_hlg` | mechanical names |
+| `skcms_TransferFunction_makePQish`, `makeScaledHLGish`, `makeHLGish`, `makePQ`, `makeHLG` | missing | `TransferFunction::make_pqish`, `make_scaled_hlgish`, `make_hlgish`, `make_pq`, `make_hlg` returning the function | out-param becomes a return value |
+| `skcms_TFType` (`skcms_TFType_sRGBish`, ...) | missing | `TfType::{Invalid, SRGBish, PQish, HLGish, HLGinvish, PQ, HLG}` | enum without prefix |
+| `skcms_Curve` (a union) | missing | `Curve::{Parametric(TransferFunction), Table8 { entries, table }, Table16 { entries, table }}`; `table_entries()` | tagged enum instead of a union with raw table pointers |
+| `skcms_A2B`, `skcms_B2A`, `skcms_CICP`, `skcms_HAGC` | missing | `A2B`, `B2A`, `Cicp`, `Hagc` | `const uint8_t*` table/grid pointers become `Option<ByteView>` (shared buffer + offset) |
+| `skcms_ICCProfile` | missing | `IccProfile` (`buffer: Option<Arc<[u8]>>`, `to_xyzd50`, `has_to_xyzd50`, `a2b`, `has_a2b`, `cicp`, `has_cicp`, ...) | the profile owns (shares) its bytes instead of borrowing them; `bit_eq` is the C++ `memcmp` |
+| `skcms_Init`, `skcms_SetTransferFunction`, `skcms_SetXYZD50` | missing | `IccProfile::new`, `set_transfer_function`, `set_xyzd50` | mechanical names |
+| `skcms_sRGB_profile`, `skcms_XYZD50_profile` | missing | `srgb_profile()`, `xyzd50_profile() -> &'static IccProfile` | drop prefix |
+| `skcms_sRGB_TransferFunction`, `_sRGB_Inverse_TransferFunction`, `_Identity_TransferFunction` | missing | `srgb_transfer_function()`, `srgb_inverse_transfer_function()`, `identity_transfer_function()` | drop prefix |
+| `skcms_Parse`, `skcms_ParseWithA2BPriority` | missing | `parse(&[u8]) -> Option<IccProfile>`, `parse_with_a2b_priority(&[u8], &[i32])` | the bytes are copied into the profile; failure is `None` |
+| `skcms_ApproximatelyEqualProfiles`, `skcms_AreApproximateInverses`, `skcms_TRCs_AreApproximateInverse` | missing | `approximately_equal_profiles`, `are_approximate_inverses`, `trcs_are_approximate_inverse` | drop prefix |
+| `skcms_ApproximateCurve` | missing | `approximate_curve(&Curve) -> Option<(TransferFunction, f32)>` | out-params become the `Option` payload |
+| `skcms_MaxRoundtripError`, `skcms_GetTagByIndex`, `skcms_GetTagBySignature`, `skcms_252_random_bytes`, `powf_` (`skcms_internals.h`) | missing | `max_roundtrip_error`, `get_tag_by_index`, `get_tag_by_signature` (return `Option<IccTag>`), `RANDOM_BYTES_252`, `powf_` | exposed for tests |
+| `skcms_GetCHAD`, `skcms_GetWTPT`, `skcms_GetInputChannelCount` | missing | `get_chad -> Option<Matrix3x3>`, `get_wtpt -> Option<[f32; 3]>`, `get_input_channel_count` | out-params become `Option` |
+| `skcms_Signature_*` | missing | `signature::{RGB, XYZ, CMYK, GRAY, LAB, ...}` | constants |
+| `skcms_PixelFormat_*` | missing | `PixelFormat::{A8, Rgb888, Rgba8888, RgbaFfff, ...}` (`Swap`/BGR variants are the odd values) | UpperCamelCase variants |
+| `skcms_AlphaFormat_*` | missing | `AlphaFormat::{Opaque, Unpremul, PremulAsEncoded}` | enum without prefix |
+| `skcms_Transform` | missing | `transform(src: &[u8], .., dst: &mut [u8], .., npixels) -> bool`; `transform_in_place` for `dst == src` | slices instead of aliasing pointers; `None` profile is sRGB; buffers are bounds-checked |
+| `skcms_MakeUsableAsDestination`, `skcms_MakeUsableAsDestinationWithSingleCurve` | missing | `make_usable_as_destination(&mut IccProfile) -> bool`, `make_usable_as_destination_with_single_curve` | drop prefix |
+| `skcms_AdaptToXYZD50`, `skcms_PrimariesToXYZD50` | missing | `adapt_to_xyzd50 -> Option<Matrix3x3>`, `primaries_to_xyzd50 -> Option<Matrix3x3>` | out-param becomes `Option` |
+| `skcms_DisableRuntimeCPUDetection` | missing | `disable_runtime_cpu_detection()` | a no-op: only the portable baseline exists so far |
+| `Transform_inl.h` HSW / SKX variants, NEON paths | missing | not ported yet | the portable scalar (`N == 1`) baseline only; per-tier kernels come later through `skia-rust-simd` |

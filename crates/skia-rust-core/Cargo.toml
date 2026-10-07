@@ -12,6 +12,7 @@ publish = false
 [dependencies]
 skia-rust-simd.workspace = true
 bitflags.workspace = true
+skia-rust-skcms.workspace = true
 
 [lints]
 workspace = true

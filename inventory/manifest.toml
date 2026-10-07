@@ -29904,7 +29904,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L163-L207"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "54cdf2427363207af319d8f00591d62c342e4e0d3d50160a2bd9fc920a276b86"
 
 [[test]]
@@ -29913,7 +29913,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L323-L338"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "99a417d67eb7970de46e732926c15246aa2c9978d6e74ec64d8eda2b20804864"
 
 [[test]]
@@ -29922,7 +29922,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L306-L321"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "3ca7f5d9360b97fbefa23536ea2fc67697b81c5f987df590eec74c38f0dd46aa"
 
 [[test]]
@@ -29931,7 +29931,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L228-L304"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "7d04fb2b7308d03faf2d9f38196ec97d061b708f42ef59eb5167c13c0ce8ee54"
 
 [[test]]
@@ -29940,7 +29940,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L129-L161"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "ddb053efdd1f7c9ec4d0892c228a68f092483b41a4889542373f3c4ebf211898"
 
 [[test]]
@@ -29949,7 +29949,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L352-L364"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "e2fdc9db3cbb5568a70c093c57d4e73ea00a98049d91988b83eb14facef3d2ec"
 
 [[test]]
@@ -29958,7 +29958,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L366-L382"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "bb2d8e9f27375488315abeb4b768d2c83b068b164ff61dbf11ce4b93539083f3"
 
 [[test]]
@@ -29967,7 +29967,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L74-L77"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "5cdc76660c3a306c84b3307198c237ea8a58e51b179c7d72fdfbffcf4b6fd35c"
 
 [[test]]
@@ -29976,7 +29976,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L340-L343"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "d0e39e16f8514d47802dd58f593a3dcf7ee4fa4be995821dfd1891d24b98c690"
 
 [[test]]
@@ -29985,7 +29985,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorSpaceTest.cpp#L345-L350"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "7f18303462208287714f201ced2b8207d6917d505c3fcb652ac2ecf55e204a81"
 
 [[test]]
@@ -33993,7 +33993,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ICCTest.cpp#L22-L32"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "8d0f285e220304f1ccb9e0e73d543434e3974c2d18adc515f9cbb19bd3c9c5e2"
 
 [[test]]
@@ -36305,7 +36305,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NonlinearBlendingTest.cpp#L18-L75"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "86f82ac2ca619a135b96dcf014e89f6032637341071a48b8905e29b631d53076"
 
 [[test]]
@@ -41874,7 +41874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L83-L266"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "ec871629dd986fbfd78cf5f0eb4bea28e9d8ecffb87c34376d718a37f60f8ccf"
 
 [[test]]
@@ -41883,7 +41883,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L414-L416"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "8c3d30f94f15df861ae3b3f0f6cb6b0955f463dc3768268cdf89f31c29893358"
 
 [[test]]
