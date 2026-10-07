@@ -56,6 +56,15 @@ fn selections() -> Vec<Selection> {
     v
 }
 
+/// `selections()`, thinned under Miri to Scalar and the `Ml4` and `Neon` models (the two stride
+/// classes; `Sse2` is covered by the memory tests), for the tests that cost one pipeline run per case.
+fn sample_selections() -> Vec<Selection> {
+    selections()
+        .into_iter()
+        .filter(|s| !cfg!(miri) || !matches!(s.tier, Tier::Sse2 | Tier::Sse41 | Tier::Ml3))
+        .collect()
+}
+
 /// The SIMD tiers with a native backend on this host, each with its models.
 fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
     if cfg!(miri) {
@@ -178,7 +187,7 @@ fn highp_known(
     src_color: [f32; 4],
     dst_color: [f32; 4],
 ) -> Vec<(Selection, [f32; 4], [f32; 4])> {
-    selections()
+    sample_selections()
         .into_iter()
         .map(|sel| {
             let n = sel.tier.highp_stride();
@@ -448,7 +457,7 @@ fn highp_tables_and_emboss() {
 fn lowp_known_answers() {
     let run =
         |stage: Stage<'_>, src: [u16; 4], dst: [u16; 4]| -> Vec<(Selection, [u16; 4], [u16; 4])> {
-            selections()
+            sample_selections()
                 .into_iter()
                 .filter(|s| s.tier.lowp_stride().is_some())
                 .map(|sel| {

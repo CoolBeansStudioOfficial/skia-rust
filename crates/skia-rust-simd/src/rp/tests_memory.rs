@@ -61,6 +61,15 @@ fn selections() -> Vec<Selection> {
     v
 }
 
+/// `selections()`, thinned under Miri to Scalar and the `Sse2`, `Ml4` and `Neon` models (one per
+/// stride class), for the tests that cost one pipeline run per case.
+fn sample_selections() -> Vec<Selection> {
+    selections()
+        .into_iter()
+        .filter(|s| !cfg!(miri) || !matches!(s.tier, Tier::Sse41 | Tier::Ml3))
+        .collect()
+}
+
 /// The SIMD tiers with a native backend on this host, each with its models.
 fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
     if cfg!(miri) {
@@ -215,7 +224,7 @@ fn round_trip_stages(f: Fmt) -> Vec<Stage<'static>> {
 #[test]
 fn formats_round_trip() {
     let mut rng = Rng::new(0xb1_0001);
-    for sel in selections() {
+    for sel in sample_selections() {
         for force_highp in precisions(sel) {
             for f in FORMATS {
                 // 565 and 4444 have their own test (every 16-bit value).
@@ -244,12 +253,23 @@ fn formats_round_trip() {
     }
 }
 
+/// The 16-bit pixel values to run: all of them natively; under Miri the channel extremes of 565
+/// and 4444 plus a spread of 37 values (a full chunk and a tail on every tier).
+fn sixteen_bit_values() -> Vec<u16> {
+    if cfg!(miri) {
+        let mut v = vec![0, 0xFFFF, 0xF800, 0x07E0, 0x001F, 0xF0F0, 0x1234, 0x8410];
+        v.extend((0..29u32).map(|i| (i * 2237 + 11) as u16));
+        v
+    } else {
+        (0..=u16::MAX).collect()
+    }
+}
+
 #[test]
 fn sixteen_bit_formats_round_trip_for_every_value() {
     // Every 16-bit value of 565 and 4444 survives load + store (highp and lowp).
-    let count = if cfg!(miri) { 300 } else { 65536 };
-    let step = 65536 / count;
-    let values: Vec<u16> = (0..count).map(|i| (i * step) as u16).collect();
+    let values = sixteen_bit_values();
+    let count = values.len();
     let src: Vec<u8> = values.iter().flat_map(|v| v.to_ne_bytes()).collect();
     for sel in selections() {
         for force_highp in precisions(sel) {
@@ -298,9 +318,8 @@ fn widen_to_8888(f: Fmt, sel: Selection, force_highp: bool, src: &[u8], count: u
 fn expanding_16_bit_formats_to_8888() {
     // 4444: both precisions give nibble * 17. 565: lowp replicates bits (`R << 3 | R >> 2`), highp
     // scales and rounds (`round(R / 31 * 255)`); the two differ for some values, as in Skia.
-    let count = if cfg!(miri) { 300 } else { 65536 };
-    let step = 65536 / count;
-    let values: Vec<u16> = (0..count).map(|i| (i * step) as u16).collect();
+    let values = sixteen_bit_values();
+    let count = values.len();
     let src: Vec<u8> = values.iter().flat_map(|v| v.to_ne_bytes()).collect();
     let pack = |r: u32, g: u32, b: u32, a: u32| r | (g << 8) | (b << 16) | (a << 24);
     let scale = |v: u32, max: u32| (v as f32 * (1.0 / max as f32) * 255.0).round_ties_even() as u32;
@@ -347,7 +366,9 @@ fn expanding_16_bit_formats_to_8888() {
 fn highp_and_lowp_round_to_565_and_4444_alike() {
     // 8888 to 565/4444: lowp's brute-force searched integer rounding equals highp's
     // `to_unorm`, for every value of each channel.
+    // (Miri: every 15th value, 255 included, so a full chunk and a tail.)
     let px: Vec<u32> = (0..256u32)
+        .step_by(if cfg!(miri) { 15 } else { 1 })
         .map(|v| v | (v << 8) | (v << 16) | (((255 - v) & 0xff) << 24))
         .collect();
     let src: Vec<u8> = px.iter().flat_map(|v| v.to_ne_bytes()).collect();
@@ -357,9 +378,9 @@ fn highp_and_lowp_round_to_565_and_4444_alike() {
         }
         for store in [Stage::Store565(DST), Stage::Store4444(DST)] {
             let stages = [Stage::Load8888(SRC), store];
-            let dst = vec![0; 2 * 256];
-            let hi = run_px(&stages, sel, true, (0, 256), &src, &dst);
-            let lo = run_px(&stages, sel, false, (0, 256), &src, &dst);
+            let dst = vec![0; 2 * px.len()];
+            let hi = run_px(&stages, sel, true, (0, px.len()), &src, &dst);
+            let lo = run_px(&stages, sel, false, (0, px.len()), &src, &dst);
             assert_eq!(hi, lo, "{sel} {store:?}");
         }
     }
@@ -513,10 +534,15 @@ fn load_known_answers() {
     };
     for sel in selections() {
         for h in precisions(sel) {
-            let a8: Vec<u8> = (0..=255).collect();
+            // (Miri: 19 values, a full chunk and a tail.)
+            let a8: Vec<u8> = if cfg!(miri) {
+                (0..19u8).map(|i| i.wrapping_mul(15)).collect()
+            } else {
+                (0..=255).collect()
+            };
             let got = go(sel, h, Stage::LoadA8(SRC), 1, &a8);
-            for (v, c) in got.as_chunks::<4>().0.iter().enumerate() {
-                assert_eq!(*c, [0, 0, 0, v as u8], "{sel} a8 {v}");
+            for (c, &v) in got.as_chunks::<4>().0.iter().zip(&a8) {
+                assert_eq!(*c, [0, 0, 0, v], "{sel} a8 {v}");
             }
             // 565: 0xF800 red, 0x07E0 green, 0x001F blue.
             let p565: Vec<u8> = [0xF800u16, 0x07E0, 0x001F, 0xFFFF, 0]
@@ -712,7 +738,7 @@ fn debug_stages_known_answers() {
 fn debug_x_and_y_show_the_device_coordinates() {
     // seed_shader gives x = dx + 0.5, y = dy + 0.5; debug_x/debug_y show them in 12.8 fixed
     // point (highp treats x and y as r and g, which seed_shader sets the same way).
-    for sel in selections() {
+    for sel in sample_selections() {
         for h in precisions(sel) {
             for stage in [Stage::DebugX(DST), Stage::DebugY(DST)] {
                 let is_x = matches!(stage, Stage::DebugX(_));
@@ -759,12 +785,13 @@ fn texture(rng: &mut Rng, f: Fmt, width: usize, height: usize, stride: usize) ->
 #[test]
 fn gather_equals_load_at_the_clamped_pixel() {
     let mut rng = Rng::new(0xb1_0004);
-    for sel in selections() {
+    for sel in sample_selections() {
         for h in precisions(sel) {
             for f in FORMATS.iter().filter(|f| f.name != "r8") {
+                // (Miri: only the 9 x 3 texture, whose clamp is hit by the 17 pixels.)
                 for (width, height, stride) in [(70usize, 1usize, 70usize), (9, 3, 12), (1, 2, 5)]
                     .into_iter()
-                    .take(if cfg!(miri) { 2 } else { 3 })
+                    .filter(|g| !cfg!(miri) || g.0 == 9)
                 {
                     let tex = texture(&mut rng, *f, width, height, stride);
                     let ctx = GatherCtx {
@@ -782,8 +809,9 @@ fn gather_equals_load_at_the_clamped_pixel() {
                         "8888" => Stage::Gather8888(&ctx),
                         _ => Stage::GatherRg88(&ctx),
                     };
-                    for row in 0..height {
-                        let w = 41;
+                    // Miri: the last row (which also tests the stride), and 17 pixels (a lowp chunk and a tail).
+                    for row in (0..height).filter(|r| !cfg!(miri) || *r + 1 == height) {
+                        let w = if cfg!(miri) { 17 } else { 41 };
                         // The pixels a clamped gather at (x + 0.5, row + 0.5) must read.
                         let want_src: Vec<u8> = (0..w)
                             .flat_map(|x| {

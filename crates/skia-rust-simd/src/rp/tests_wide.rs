@@ -58,6 +58,15 @@ fn models(t: Tier) -> Vec<Selection> {
         .collect()
 }
 
+/// `selections()`, thinned under Miri to Scalar and the `Sse2`, `Ml4` and `Neon` models (one per
+/// stride class), for the tests that cost one pipeline run per case.
+fn sample_selections() -> Vec<Selection> {
+    selections()
+        .into_iter()
+        .filter(|s| !cfg!(miri) || !matches!(s.tier, Tier::Sse41 | Tier::Ml3))
+        .collect()
+}
+
 /// The SIMD tiers with a native backend on this host, each with its models.
 fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
     if cfg!(miri) {
@@ -446,7 +455,7 @@ fn loads_decode_like_the_reference() {
 
 #[test]
 fn stores_round_trip_through_loads_with_a_tail() {
-    for sel in selections() {
+    for sel in sample_selections() {
         let n = lanes(sel);
         let mut rng = Rng::new(0xb2_0002);
         for f in formats() {
@@ -476,7 +485,7 @@ fn stores_round_trip_through_loads_with_a_tail() {
 fn gathers_match_loads() {
     const W: usize = 5;
     const H: usize = 3;
-    for sel in selections() {
+    for sel in sample_selections() {
         let n = lanes(sel);
         let mut rng = Rng::new(0xb2_0003);
         for f in formats() {
