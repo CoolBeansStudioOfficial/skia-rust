@@ -103,6 +103,7 @@ pub mod stroke;
 pub mod stroke_rec;
 #[doc(hidden)]
 pub mod stroker_priv;
+pub mod swizzle;
 pub mod t_fits_in;
 pub mod t_pin;
 pub mod tessellation;

@@ -43268,7 +43268,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2901-L2929"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1b6d856887de809b8886e490ec1dbcae31b51994035ee24ebea2519e2ddd1333"
 
 [[test]]
@@ -43529,7 +43529,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L3331-L3345"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5348fdde5acdcab122b1fb1b9891708370ecaa92a9e0e7eb3c615aae78923e0c"
 
 [[test]]
@@ -43547,7 +43547,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L3408-L3452"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5c4f00e4f3244e3e5e3f4f8499a78511414327cf2b1a2154354d7141fb3fcb1c"
 
 [[test]]
@@ -43556,7 +43556,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L3272-L3329"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f92d0cf9bf349a75795e56553889492a2a225f123bd21c336d8306084dfbf775"
 
 [[test]]
