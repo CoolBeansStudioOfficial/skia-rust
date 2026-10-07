@@ -1410,6 +1410,43 @@ add cases: `docs/PORTING.md` §12):
   and wasm (no oracle host), and the `dr..da` registers' persistence across chunks in the
   Windows oracle's narrow ABI (§2.6): cases always load `dst` before reading it.
 
+**As implemented for B5/B6a-c** (`oracle/rp-diff/src/{geometry,sksl}.rs`):
+
+- **Geometry/tiling** (`matrix_*`, `repeat/mirror/clamp/decal`, `check_decal_mask`,
+  `clamp_x_and_y`): register cases in lowp and highp. A lowp "GG" stage reads `x = r++g`,
+  `y = b++a` as `f32`s, i.e. word `j` of the `load_src` buffer is lane `j` of `x` and word `N + j`
+  lane `j` of `y`, the same words as highp's `r`, `g`, so the same float inputs serve both.
+  Inputs add coordinates around multiples of the tile size and their ulp neighbours.
+  `Ctx::Decal` carries an `id`: stages with the same id share one `DecalTileCtx`.
+- **SkSL slots depend on the tier** (`N` lanes of 4 bytes per slot), so `SkSL` contexts
+  (`Ctx::Sksl*`) name slots by *index*; the Rust side multiplies by `4 * N` in `build_stages(specs,
+  tier)` and the driver by `4 * SkOpts::raster_pipeline_highp_stride`. Small contexts are packed
+  with `SkRPCtxUtils::Pack` as Skia does. Every `SkSL` case is `set_base_pointer load_src <stages>
+  store_src` with the slot buffer, the registers (the masks) and the stored registers all compared.
+  Slot data is generated per *word*, so what a word means changes with `N`; masks of the control
+  flow cases use `Regs` (lane patterns in `a`, constants in `r, g, b`).
+- **Not covered:** the trace ops and `callback` (B6d): they report to a host `SkSL::TraceHook`,
+  which the text format cannot express (covered by the ported Skia tests).
+- **NaNs, again:** besides two input NaNs meeting, `asin`/`acos` and `inverse_mat*` generate NaNs
+  inside fused `nmad`s whose *sign* depends on whether the compiler folds a later `fneg` into
+  the FMA (rustc does, Skia's clang does not; the models match Skia), so their data stays in the
+  domain / free of infinities; `matrix_perspective`'s `x * rcp_precise(z)` lets the NaN of `x`
+  meet the NaN of `z`, so its `Special` inputs have no infinities.
+- **R5 (Scalar vs the x64 proxy):** `Scalar` follows wasm (saturating float → int conversions,
+  musl's `fminf`), Skia's results come from the x64 proxy. Cases whose inputs reach an
+  out-of-range or negative float → `int`/`uint` conversion (`cast_to_int/uint_from_*`, `mirror_*`'s
+  `trunc_` of a negative `s`) or `±0` bounds in `fminf` (`clamp_x_and_y` v6) have a `/r5/` name
+  segment and are skipped on `Scalar` only (`Case::scalar_proxy_differs`); all x86 tiers still
+  compare them (258 of the 3,502 cases).
+- **`Scalar` runs on the host's FPU**, so the default NaN of an invalid operation (`inf * 0`,
+  `sqrt(-1)`) is `0xFFC00000` on x86 (the oracle) and `0x7FC00000` on Arm (macOS and Linux
+  arm64 CI hosts; wasm leaves it unspecified). `Scalar`'s outputs are therefore compared with every `0x7FC00000` word
+  read as `0xFFC00000`, on both sides (`expected::output_hash`); the x86 tiers are exact on every
+  host. `floor`/`ceil` of signaling NaNs depend on the host's libm: those inputs are `/r5/`.
+- **Bugs found:** the `Scalar` tier evaluated `smoothstep` and `refract`'s `k` in `float`
+  where C++ promotes to `double` (the literals are `double`s); `Ml4`'s `cast_to_uint_from_*` used
+  the signed conversion where clang emits `vcvttps2udq`.
+
 ### 4.3 DM stage-list dump
 
 Add to `oracle/patches/skia-oracle.patch`: when `SKIA_ORACLE_RP_DUMP=<file>` is set, every

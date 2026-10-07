@@ -389,6 +389,8 @@ pub fn all() -> Vec<Case> {
     crate::cases_memory::memory(&mut c);
     crate::cases_blend_color::generate(&mut c);
     // Wave B: call your generators here.
+    crate::geometry::b5_geometry(&mut c);
+    crate::sksl::b6_sksl(&mut c);
     c.finish()
 }
 
@@ -658,7 +660,8 @@ mod tests {
         let cases = all();
         assert!(cases.len() > 100);
         for c in &cases {
-            build_stages(&c.stages).unwrap_or_else(|e| panic!("{}: {e}", c.name));
+            build_stages(&c.stages, skia_rust_simd::tier::Tier::Sse2)
+                .unwrap_or_else(|e| panic!("{}: {e}", c.name));
             assert!(!c.runs.is_empty(), "{}", c.name);
             let _ = c.to_text();
         }

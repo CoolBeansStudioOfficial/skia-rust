@@ -233,6 +233,9 @@ pub fn check(tier: Tier, cases: &[Case], expected: &Expected) -> Vec<String> {
                 continue;
             }
         };
+        if tier == Tier::Scalar && c.scalar_proxy_differs() {
+            continue;
+        }
         for &sel in &sels {
             match run_case(c, &stages, sel) {
                 Ok(out) if fnv1a(&out) == entry.output_hash => {}

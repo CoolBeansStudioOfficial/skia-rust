@@ -213,6 +213,72 @@ si! {
         min_f(max_f(F::splat(0.0), v), F::splat(1.0))
     }
 
+    /// The `f32` of the only lane of an `F` (`Scalar` tier, `N == 1`; never called elsewhere).
+    fn lane0(v: F) -> f32 {
+        let mut b = [0u8; 4];
+        v.store_bytes(&mut b);
+        f32::from_le_bytes(b)
+    }
+
+    /// An `F` of the only lane `x` (`Scalar` tier).
+    fn from_lane0(x: f32) -> F {
+        F::load_bytes(&x.to_le_bytes())
+    }
+
+    // Port of: src/opts/SkRasterPipeline_opts.h#L5284-L5287 (chrome/m156) (smoothstep_fn)
+    /// `t * t * (3.0 - 2.0 * t)`.
+    ///
+    /// On the `Scalar` tier `F` is a C `float` and the literals are `double`s: `3.0 - 2.0 * t`
+    /// and the final product are evaluated in double precision and narrowed once, on assignment.
+    /// The vector tiers' `F` is a vector of `float`s, to which clang converts the literals.
+    #[allow(clippy::cast_possible_truncation)] // narrowing the double result to float
+    fn smoothstep_poly(t: F) -> F {
+        if N == 1 {
+            let t = lane0(t);
+            from_lane0((f64::from(t * t) * (3.0 - 2.0 * f64::from(t))) as f32)
+        } else {
+            t * t * (F::splat(3.0) - F::splat(2.0) * t)
+        }
+    }
+
+    // Port of: src/opts/SkRasterPipeline_opts.h#L5227-L5247 (chrome/m156) (refract_4_floats)
+    /// `1.0 - eta * eta * (1.0 - dotNI * dotNI)` (double precision on the `Scalar` tier, see
+    /// [`smoothstep_poly`]).
+    #[allow(clippy::cast_possible_truncation)] // narrowing the double result to float
+    fn refract_k(eta: F, dot_ni: F) -> F {
+        if N == 1 {
+            let (eta, dot_ni) = (lane0(eta), lane0(dot_ni));
+            let (ee, dd) = (eta * eta, dot_ni * dot_ni);
+            from_lane0((1.0 - f64::from(ee) * (1.0 - f64::from(dd))) as f32)
+        } else {
+            let one = F::splat(1.0);
+            one - eta * eta * (one - dot_ni * dot_ni)
+        }
+    }
+
+    // Port of: src/opts/SkRasterPipeline_opts.h#L4742-L4755 (chrome/m156) (cast_to_uint_from_fn)
+    /// `__builtin_convertvector(v, U32)` (Skia's `cast_to_uint_from_fn`).
+    ///
+    /// Clang emits an unsigned conversion only on `Ml4` (`vcvttps2udq`, the only tier with 16
+    /// lanes): a value below `-1`, a NaN and a value of `2^32` or more give `0xFFFFFFFF`. The
+    /// other tiers' result is the signed conversion's bits, as `trunc_`.
+    fn float_to_uint(v: F) -> U32 {
+        if N != 16 {
+            return trunc_(v);
+        }
+        let two31 = F::splat(2_147_483_648.0);
+        let ge_two31: I32 = v.ge_mask(two31).bit_cast();
+        let (gt, lt): (I32, I32) = (
+            v.gt_mask(-1.0).bit_cast(),
+            v.lt_mask(4_294_967_296.0).bit_cast(),
+        );
+        let in_range = gt & lt;
+        // `v - 2^31` is exact for `v` in `[2^31, 2^32)`, and `to_i32` of it is in `[0, 2^31)`.
+        let high = to_i32(v - two31) | I32::splat(i32::MIN);
+        let r = if_then_else_i(ge_two31, high, to_i32(v));
+        if_then_else_i(in_range, r, I32::splat(-1)).bit_cast()
+    }
+
     // Port of: src/opts/SkRasterPipeline_opts.h#L4997-L5023 (chrome/m156) (cmp*_fn for U32)
     /// `cond_to_mask` of an unsigned comparison, as the `I32` that Skia `memcpy`s into the slot.
     fn u32_mask(m: U32) -> I32 {
@@ -255,7 +321,7 @@ unary_family!(
 );
 unary_family!(
     F,
-    |v: F| trunc_(v),
+    |v: F| float_to_uint(v),
     cast_to_uint_from_float,
     cast_to_uint_from_2_floats,
     cast_to_uint_from_3_floats,
@@ -736,8 +802,7 @@ si! {
 
         let dot_ni = mad(d(4), d(0), mad(d(5), d(1), mad(d(6), d(2), d(7) * d(3))));
 
-        let one = F::splat(1.0);
-        let k = one - eta * eta * (one - dot_ni * dot_ni);
+        let k = refract_k(eta, dot_ni);
         let sqrt_k = sqrt_(k);
 
         let mut out = [F::splat(0.0); 4];
@@ -787,7 +852,7 @@ si! {
     ) {
         ternary_packed!(e, ctx, F, |edge0: F, edge1: F, x: F| {
             let t = clamp_01_((x - edge0) / (edge1 - edge0));
-            t * t * (F::splat(3.0) - F::splat(2.0) * t)
+            smoothstep_poly(t)
         });
     }
 }

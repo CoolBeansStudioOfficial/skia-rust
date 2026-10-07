@@ -819,3 +819,113 @@ fn sksl_arith_twins() {
         }
     }
 }
+
+/// `cast_to_uint_from_float` is `__builtin_convertvector(F, U32)`: on `Ml4` an unsigned
+/// conversion (`vcvttps2udq`: below `-1`, NaN and `2^32` and more give `0xFFFFFFFF`), on the
+/// other x86 tiers the signed conversion's bits, on `Scalar` wasm's saturating `trunc_sat` (found
+/// by `oracle/rp-diff`: Ml4 used the signed conversion).
+#[test]
+fn cast_to_uint_from_float_semantics() {
+    let inputs = [
+        -300.0f32,
+        -0.5,
+        f32::NAN,
+        2_147_483_648.0,
+        4_294_967_040.0,
+        4_294_967_296.0,
+        1.0e10,
+        7.9,
+    ];
+    for sel in miri_selections() {
+        let n = sel.tier.highp_stride();
+        let init: Vec<u32> = (0..n * 4).map(|w| inputs[w % 8].to_bits()).collect();
+        let out = run(
+            sel,
+            Stage::CastToUintFromFloat(MemPtr::new(MemSlot(0), 0)),
+            &init,
+        );
+        let want: [u32; 8] = match sel.tier {
+            Tier::Ml4 => [
+                0xffff_ffff,
+                0,
+                0xffff_ffff,
+                0x8000_0000,
+                0xffff_ff00,
+                0xffff_ffff,
+                0xffff_ffff,
+                7,
+            ],
+            Tier::Scalar => [
+                0,
+                0,
+                0,
+                0x8000_0000,
+                0xffff_ff00,
+                0xffff_ffff,
+                0xffff_ffff,
+                7,
+            ],
+            // Neon has no oracle yet (Skia's would be `FCVTZU`).
+            Tier::Neon => continue,
+            _ => [
+                0xffff_fed4,
+                0,
+                0x8000_0000,
+                0x8000_0000,
+                0x8000_0000,
+                0x8000_0000,
+                0x8000_0000,
+                7,
+            ],
+        };
+        for w in 0..n {
+            assert_eq!(out[w], want[w % 8], "{sel}: lane {w}");
+        }
+    }
+}
+
+/// On the `Scalar` tier `F` is a C `float` and `smoothstep`'s `3.0 - 2.0 * t` and `refract`'s
+/// `1.0 - eta * eta * (1.0 - dotNI * dotNI)` are evaluated in double precision, narrowed on
+/// assignment (found by `oracle/rp-diff`); the vector tiers' `F` converts the literals to float.
+#[test]
+fn scalar_double_precision_literals() {
+    let sel = Selection::native(Tier::Scalar);
+    let mut rng = Rng::new(0x00b6_b003);
+    let unit = |rng: &mut Rng| (rng.below(1 << 24) as f32) / 16_777_216.0;
+    let mut differ = 0;
+    for _ in 0..400 {
+        // smoothstep(0, 1, x) = t * t * (3.0 - 2.0 * t), t = x.
+        let x = unit(&mut rng);
+        let init = [0.0f32.to_bits(), 1.0f32.to_bits(), x.to_bits()];
+        let stage = Stage::SmoothstepNFloats(TernaryOpCtx { dst: 0, delta: 4 });
+        let got = f32::from_bits(run(sel, stage, &init)[0]);
+        let want = (f64::from(x * x) * (3.0 - 2.0 * f64::from(x))) as f32;
+        assert_eq!(got.to_bits(), want.to_bits(), "smoothstep({x})");
+        differ += usize::from(want != x * x * (3.0f32 - 2.0f32 * x));
+
+        // refract: incident (4), normal (4), eta (1).
+        let v: Vec<f32> = (0..9).map(|_| unit(&mut rng) * 2.0 - 1.0).collect();
+        let init: Vec<u32> = v.iter().map(|x| x.to_bits()).collect();
+        let out = run(
+            sel,
+            Stage::Refract4Floats(MemPtr::new(MemSlot(0), 0)),
+            &init,
+        );
+        let (inc, nor, eta) = (&v[0..4], &v[4..8], v[8]);
+        let dot = nor[0] * inc[0] + (nor[1] * inc[1] + (nor[2] * inc[2] + nor[3] * inc[3]));
+        let k = (1.0 - f64::from(eta * eta) * (1.0 - f64::from(dot * dot))) as f32;
+        let sqrt_k = k.sqrt();
+        for idx in 0..4 {
+            let want = if k >= 0.0 {
+                eta * inc[idx] - (eta * dot + sqrt_k) * nor[idx]
+            } else {
+                0.0
+            };
+            assert_eq!(out[idx], want.to_bits(), "refract {v:?} component {idx}");
+        }
+    }
+    assert!(
+        differ > 0,
+        "the test must be able to tell double from float"
+    );
+}
