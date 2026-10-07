@@ -58,6 +58,35 @@ pub fn cond_to_mask<const N: usize>(cond: Vec<N, i32>) -> Vec<N, i32> {
     cond
 }
 
+// Port of: src/opts/SkRasterPipeline_opts.h#L4950-L4961 (chrome/m156) (generic div_fn)
+/// `SkSL` `int` division, the generic `div_fn(I32*, I32*)` (tiers without an optimized one:
+/// Neon): `x / 0` divides by `-1`, `INT_MIN / -1` by `-2`.
+#[inline(always)]
+#[must_use]
+pub fn div_i32<const N: usize>(d: Vec<N, i32>, s: Vec<N, i32>) -> Vec<N, i32> {
+    let mut divisor = s;
+    // Integer division crashes when we divide by 0, but we can divide by -1 to not crash (the
+    // result will be non-sensical). The mask will be 0xFFFFFFF if true, which happens to be -1.
+    divisor |= cond_to_mask(divisor.eq_mask(0));
+    // Dividing by -1 works for all numerators *except* INT_MIN, so we can add -1 once more if
+    // we are in that case.
+    divisor += cond_to_mask(divisor.eq_mask(-1) & d.eq_mask(i32::MIN));
+    d / divisor
+}
+
+// Port of: src/opts/SkRasterPipeline_opts.h#L4963-L4970 (chrome/m156) (generic div_fn)
+/// `SkSL` `uint` division, the generic `div_fn(U32*, U32*)`: `x / 0` divides by `0xFFFFFFFF`.
+#[inline(always)]
+#[must_use]
+pub fn div_u32<const N: usize>(d: Vec<N, u32>, s: Vec<N, u32>) -> Vec<N, u32> {
+    let mut divisor = s;
+    // Integer division crashes when we divide by 0, but we can divide by something else to not
+    // crash (the result will be non-sensical). The mask will be 0xFFFFFFF if true.
+    let is_zero: Vec<N, i32> = divisor.eq_mask(0).bit_cast();
+    divisor |= cond_to_mask(is_zero).bit_cast::<N, u32>();
+    d / divisor
+}
+
 /// The lowp functions shared by every x86 tier (and, except `div255*`, by Neon).
 pub mod lowp {
     use super::{IntLane, Lane, Vec, if_then_else};

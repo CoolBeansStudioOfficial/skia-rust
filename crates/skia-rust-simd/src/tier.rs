@@ -257,7 +257,8 @@ impl Tier {
             Tier::Sse2 | Tier::Sse41 | Tier::Ml3 => Sse2Token::get().is_some(),
             // vrcp14ps/vrsqrt14ps.
             Tier::Ml4 => Ml4Token::get().is_some(),
-            Tier::Neon => NeonToken::get().is_some(),
+            // FRECPE/FRSQRTE (NEON; not under Miri, like the x86 estimates).
+            Tier::Neon => crate::estimates::arm::host_available(),
         }
     }
 }
