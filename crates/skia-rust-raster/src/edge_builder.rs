@@ -7,8 +7,9 @@
 //!
 //! skia-rust: the C++ `SkEdgeBuilder` base class with virtual `addLine`/`addQuad`/`addCubic`
 //! becomes the [`EdgeBuilder`] trait with the shared `build*` code as provided methods.
-//! `SkBasicEdgeBuilder` is [`BasicEdgeBuilder`]; `SkAnalyticEdgeBuilder` (and the unused
-//! `addPolyLine`/`allocEdges` hooks) belong to the analytic AA scan converter task.
+//! `SkBasicEdgeBuilder` is [`BasicEdgeBuilder`] and `SkAnalyticEdgeBuilder` is
+//! [`AnalyticEdgeBuilder`]. The `addPolyLine`/`allocEdges` hooks are not ported: m156's
+//! `buildPoly` no longer calls them.
 
 use skia_rust_core::edge_clipper::EdgeClipper;
 use skia_rust_core::floating_point::is_finite;
@@ -23,7 +24,12 @@ use skia_rust_core::point::Point;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::safe_math::SafeMath;
 
+use crate::analytic_edge::{
+    AnalyticCubicEdge, AnalyticEdge, AnalyticQuadraticEdge, AnyAnalyticEdge,
+};
 use crate::edge::{AnyEdge, CubicEdge, Edge, EdgeType, QuadraticEdge};
+use skia_rust_core::fixed::Fixed;
+use skia_rust_core::safe32::abs32;
 
 /// The result of trying to merge a new vertical edge into the previous one.
 // Port of: src/core/SkEdgeBuilder.h#L38-L42 (chrome/m156)
@@ -338,6 +344,140 @@ impl EdgeBuilder for BasicEdgeBuilder {
         let mut edge = CubicEdge::default();
         if edge.set_cubic(pts) {
             self.list.push(AnyEdge::Cubic(edge));
+        }
+    }
+
+    fn edge_count(&self) -> usize {
+        self.list.len()
+    }
+}
+
+// Port of: src/core/SkEdgeBuilder.cpp#L70-L120 (chrome/m156)
+fn combine_vertical_analytic(edge: &AnalyticEdge, last: &mut AnalyticEdge) -> Combine {
+    let approximately_equal = |a: Fixed, b: Fixed| abs32(a.wrapping_sub(b)) < 0x100;
+
+    // We only consider edges that were originally lines to be vertical to avoid numerical issues
+    // (crbug.com/1154864).
+    if last.edge_type != EdgeType::Line || last.dx != 0 || edge.x != last.x {
+        return Combine::No;
+    }
+    if edge.winding == last.winding {
+        if edge.lower_y == last.upper_y {
+            last.upper_y = edge.upper_y;
+            last.y = last.upper_y;
+            return Combine::Partial;
+        }
+        if approximately_equal(edge.upper_y, last.lower_y) {
+            last.lower_y = edge.lower_y;
+            return Combine::Partial;
+        }
+        return Combine::No;
+    }
+    if approximately_equal(edge.upper_y, last.upper_y) {
+        if approximately_equal(edge.lower_y, last.lower_y) {
+            return Combine::Total;
+        }
+        if edge.lower_y < last.lower_y {
+            last.upper_y = edge.lower_y;
+            last.y = last.upper_y;
+            return Combine::Partial;
+        }
+        last.upper_y = last.lower_y;
+        last.y = last.upper_y;
+        last.lower_y = edge.lower_y;
+        last.winding = edge.winding;
+        return Combine::Partial;
+    }
+    if approximately_equal(edge.lower_y, last.lower_y) {
+        if edge.upper_y > last.upper_y {
+            last.lower_y = edge.upper_y;
+            return Combine::Partial;
+        }
+        last.lower_y = last.upper_y;
+        last.upper_y = edge.upper_y;
+        last.y = last.upper_y;
+        last.winding = edge.winding;
+        return Combine::Partial;
+    }
+    Combine::No
+}
+
+// We only consider edges that were originally lines to be vertical to avoid numerical issues
+// (crbug.com/1154864).
+// Port of: src/core/SkEdgeBuilder.cpp#L129-L134 (chrome/m156)
+fn is_vertical_analytic(edge: &AnalyticEdge) -> bool {
+    edge.dx == 0 && edge.edge_type == EdgeType::Line
+}
+
+/// The edge builder of the analytic antialiasing scan converter (`SkAnalyticEdgeBuilder`).
+// Port of: src/core/SkEdgeBuilder.h#L82-L98 (chrome/m156)
+#[doc(alias = "SkAnalyticEdgeBuilder")]
+#[derive(Clone, Debug, Default)]
+pub struct AnalyticEdgeBuilder {
+    list: Vec<AnyAnalyticEdge>,
+}
+
+impl AnalyticEdgeBuilder {
+    /// `SkAnalyticEdgeBuilder()`.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// The built edges (`analyticEdgeList()`).
+    #[doc(alias = "analyticEdgeList")]
+    #[must_use]
+    pub fn analytic_edge_list(&mut self) -> &mut [AnyAnalyticEdge] {
+        &mut self.list
+    }
+
+    /// Takes the built edges.
+    #[must_use]
+    pub fn into_edges(self) -> Vec<AnyAnalyticEdge> {
+        self.list
+    }
+}
+
+impl EdgeBuilder for AnalyticEdgeBuilder {
+    // Port of: src/core/SkEdgeBuilder.cpp#L212-L214 (chrome/m156)
+    fn recover_clip(&self, src: &IRect) -> Rect {
+        Rect::from(*src)
+    }
+
+    // Port of: src/core/SkEdgeBuilder.cpp#L153-L167 (chrome/m156)
+    fn add_line(&mut self, pts: &[Point]) {
+        let mut edge = AnalyticEdge::default();
+        if edge.set_line(pts[0], pts[1]) {
+            let combine = if is_vertical_analytic(&edge) && !self.list.is_empty() {
+                let last = self.list.last_mut().expect("list is not empty");
+                combine_vertical_analytic(&edge, last)
+            } else {
+                Combine::No
+            };
+
+            match combine {
+                Combine::Total => {
+                    self.list.pop();
+                }
+                Combine::Partial => {}
+                Combine::No => self.list.push(AnyAnalyticEdge::Line(edge)),
+            }
+        }
+    }
+
+    // Port of: src/core/SkEdgeBuilder.cpp#L174-L179 (chrome/m156)
+    fn add_quad(&mut self, pts: &[Point]) {
+        let mut edge = AnalyticQuadraticEdge::default();
+        if edge.set_quadratic(pts) {
+            self.list.push(AnyAnalyticEdge::Quad(edge));
+        }
+    }
+
+    // Port of: src/core/SkEdgeBuilder.cpp#L187-L192 (chrome/m156)
+    fn add_cubic(&mut self, pts: &[Point]) {
+        let mut edge = AnalyticCubicEdge::default();
+        if edge.set_cubic(pts) {
+            self.list.push(AnyAnalyticEdge::Cubic(edge));
         }
     }
 

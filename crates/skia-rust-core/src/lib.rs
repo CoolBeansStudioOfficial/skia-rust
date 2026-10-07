@@ -105,6 +105,7 @@ pub mod stroke_rec;
 pub mod stroker_priv;
 pub mod t_fits_in;
 pub mod t_pin;
+pub mod t_sort;
 pub mod tessellation;
 pub mod to;
 pub mod un_pre_multiply;

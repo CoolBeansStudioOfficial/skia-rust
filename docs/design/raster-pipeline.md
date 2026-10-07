@@ -1581,6 +1581,52 @@ the same framework.
   blitters), so there is nothing to flip; `crates/skia-rust-raster/src/blitter_tests.rs` and
   `alpha_runs.rs` test against hand-derived traces of the C++ defaults with a recording blitter.
 
+**As implemented in C3** (`skia_rust_raster::{analytic_edge, scan_aaa_path, scan_anti_path,
+scan_antihair, scan, scan_priv, dump_blitter}`, `edge_builder::AnalyticEdgeBuilder`,
+`skia_rust_core::t_sort`):
+
+- **Edges.** `AnalyticEdge` + `AnalyticQuadraticEdge`/`AnalyticCubicEdge` (composition + `Deref`),
+  stored as `AnyAnalyticEdge` in the builder's `Vec`. The scan converter appends the head and tail
+  sentinels to that `Vec` and links everything through `usize` indices (`NO_EDGE` = null); the
+  `SkScanPriv.h` list templates are generic over `scan_priv::LinkedEdge` so C2 can reuse them.
+  Edges are sorted with a port of `SkTQSort` (introsort): `compare_edges` can tie, and the order of
+  tied edges is visible in the output, so `slice::sort` would not do.
+- **Arithmetic.** Fixed point throughout, `wrapping_*` where C++ relies on two's complement.
+  Overloads that C++ resolves by argument type are spelled out: `get_partial_alpha(SkAlpha,
+  SkFixed)` is `get_partial_alpha_fixed`, and `compute_alpha_above_line`'s `R == 1` case calls
+  the `(SkAlpha, SkAlpha)` overload after truncating its int argument, as C++ overload resolution
+  does. Int → `SkAlpha` assignments truncate (`to_alpha`), `(int)float` follows x86-64
+  `cvttss2si` (`scan_priv::float_to_int`). `CatchOverflow` in `add_alpha` is the unchecked
+  release-build formula.
+- **Additive blitters.** Trait `AdditiveBlitter`; `MaskAdditiveBlitter` keeps Skia's
+  1032-byte storage with the image at offset 1 (writes one pixel left of a row land in the previous
+  row's last byte, as in C++) and blits the mask in `Drop`; `RunBasedAdditiveBlitter` (with `safe`
+  for `SafeRLEAdditiveBlitter`) owns one `AlphaRuns` reset after each flushed row instead of a ring
+  of `requestRowsPreserved()` rows in the real blitter's memory (no Rust blitter can keep a borrow
+  of an earlier row, and the calls are identical), and flushes in `Drop`. The mask blitter is its
+  own "real blitter" (it implements `Blitter` for `blitV`/`blitRect`/`blitAntiRect`).
+- **Entry points.** `anti_fill_path_region` (`SkScan::AntiFillPath(raw, SkRegion, blitter,
+  forceRLE)`), `aaa_fill_path_raw` (`AAAFillPath`), `anti_fill_rect`/`anti_fill_x_rect`/
+  `anti_frame_rect` (the `SkRegion*` overloads from `SkScan_Antihair.cpp`). The `SkRasterClip`
+  overloads need `SkRasterClip`/`SkAAClipBlitter` (C5). The non-AA fallback of `AntiFillPath` for
+  clipped bounds beyond ±8191 px calls `SkScan::FillPath` (C2) and is a `TODO(C2)` that draws
+  nothing until C2 lands. `SkScanClipper`/`sk_blit_above`/`sk_blit_below` (defined in
+  `SkScan_Path.cpp`) live in `scan_priv` for both converters.
+- **Exactness evidence.** `oracle/scan-aaa` is a C++ harness linked against the oracle's
+  `x64-sse2` libraries: it runs the 242 cases of `crates/skia-rust-raster/src/scan_aaa_tests/
+  cases.txt` (rects, triangles, quads, cubics, conics, circles/ovals/rrects, concave and
+  self-intersecting stars, donuts, inverse fills, rect and region clips, `forceRLE`, edges clipped
+  away, 176 seeded random paths/rects/frames; mask, RLE and safe-RLE blitters, convex and general
+  walkers) through Skia's `SkScan` with a blitter that prints every call, and commits the output
+  (`skia_dump.txt`). `scan_aaa_tests.rs` runs the same cases through skia-rust with
+  `dump_blitter::DumpBlitter` and requires identical calls; all 242 match (debug and release). The
+  scan converters are integer code outside `SkOpts`, so the output is the same on every tier and
+  host. Rerun `oracle/scan-aaa/build.ps1` after editing the cases.
+- **GM diagnosis.** Wrap the device blitter in `DumpBlitter::forwarding(..)` to get the call
+  sequence of one draw in the oracle harness's format, and add the path to `cases.txt` to get
+  Skia's.
+- **Tests.** `PathCoverageTest::PathCoverage` (it only checks Skia's curve subdivision estimates).
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

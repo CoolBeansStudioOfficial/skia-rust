@@ -37120,7 +37120,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathCoverageTest.cpp#L165-L168"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1499f8ddaba3a64e3f59907f74ce8e31eef181418495e27969c12bb0a6445876"
 
 [[test]]
