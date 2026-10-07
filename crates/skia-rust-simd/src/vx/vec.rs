@@ -37,6 +37,7 @@ pub struct Vec<const N: usize, T>(pub [T; N]);
 
 impl<const N: usize, T: Lane> Default for Vec<N, T> {
     /// All lanes zero, as `Vec<N,T>{}`.
+    #[inline(always)]
     fn default() -> Self {
         Self([T::ZERO; N])
     }
@@ -44,6 +45,7 @@ impl<const N: usize, T: Lane> Default for Vec<N, T> {
 
 impl<const N: usize, T: Lane> From<T> for Vec<N, T> {
     /// `Vec(T s)`: splat a scalar into every lane.
+    #[inline(always)]
     fn from(s: T) -> Self {
         Self([s; N])
     }
@@ -52,12 +54,14 @@ impl<const N: usize, T: Lane> From<T> for Vec<N, T> {
 impl<const N: usize, T> Index<usize> for Vec<N, T> {
     type Output = T;
     /// `operator[]`.
+    #[inline(always)]
     fn index(&self, i: usize) -> &T {
         &self.0[i]
     }
 }
 
 impl<const N: usize, T> IndexMut<usize> for Vec<N, T> {
+    #[inline(always)]
     fn index_mut(&mut self, i: usize) -> &mut T {
         &mut self.0[i]
     }
@@ -66,6 +70,7 @@ impl<const N: usize, T> IndexMut<usize> for Vec<N, T> {
 impl<const N: usize, T: Lane> Vec<N, T> {
     /// `Vec(T s)`: every lane is `s`.
     #[must_use]
+    #[inline(always)]
     pub fn splat(s: T) -> Self {
         Self([s; N])
     }
@@ -75,6 +80,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// # Panics
     /// If `xs` has more than `N` elements.
     #[must_use]
+    #[inline(always)]
     pub fn from_list(xs: &[T]) -> Self {
         assert!(xs.len() <= N);
         let mut vals = [T::ZERO; N];
@@ -88,6 +94,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// If `src` has fewer than `N` elements.
     #[must_use]
     #[doc(alias = "Load")]
+    #[inline(always)]
     pub fn load(src: &[T]) -> Self {
         Self(array::from_fn(|i| src[i]))
     }
@@ -96,12 +103,14 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     ///
     /// # Panics
     /// If `dst` has fewer than `N` elements.
+    #[inline(always)]
     pub fn store(&self, dst: &mut [T]) {
         dst[..N].copy_from_slice(&self.0);
     }
 
     /// Applies `f` to each lane: `map(fn, x)`.
     #[must_use]
+    #[inline(always)]
     pub fn map<U: Lane>(self, mut f: impl FnMut(T) -> U) -> Vec<N, U> {
         Vec(array::from_fn(|i| f(self.0[i])))
     }
@@ -109,12 +118,35 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// `cast<D>(x)`: a C cast of every lane.
     #[must_use]
     // Port of: src/core/SkVx.h#L628-L640 (chrome/m156)
+    #[inline(always)]
     pub fn cast<D: Lane + CastFrom<T>>(self) -> Vec<N, D> {
         Vec(array::from_fn(|i| D::cast_from(self.0[i])))
     }
 
+    /// `sk_bit_cast<Vec<M,U>>(x)`: reinterprets the bytes of the vector as `M` lanes of `U`.
+    ///
+    /// The total size must match (`N * size_of::<T>() == M * size_of::<U>()`, checked at compile
+    /// time). Lanes are laid out in memory order with native endianness, like `memcpy`.
+    #[inline(always)]
+    #[must_use]
+    #[doc(alias = "sk_bit_cast")]
+    // Port of: src/core/SkUtils.h#L66-L73 (chrome/m156) (`sk_bit_cast`), as used on vectors.
+    pub fn bit_cast<const M: usize, U: Lane>(self) -> Vec<M, U> {
+        const {
+            assert!(
+                N * size_of::<T>() == M * size_of::<U>(),
+                "bit_cast between vectors of different sizes"
+            );
+        }
+        let byte = |i: usize| self.0[i / size_of::<T>()].ne_byte(i % size_of::<T>());
+        Vec(array::from_fn(|j| {
+            U::from_ne_byte_fn(|k| byte(j * size_of::<U>() + k))
+        }))
+    }
+
     // Comparisons. Port of: src/core/SkVx.h#L313-L330 and L432-L451 (chrome/m156)
 
+    #[inline(always)]
     fn compare(self, rhs: impl Into<Self>, f: impl Fn(&T, &T) -> bool) -> Vec<N, T::Mask> {
         let rhs = rhs.into();
         Vec(array::from_fn(|i| {
@@ -128,36 +160,42 @@ impl<const N: usize, T: Lane> Vec<N, T> {
 
     /// `x == y`: all-ones lanes where equal, else zero.
     #[must_use]
+    #[inline(always)]
     pub fn eq_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a == b)
     }
 
     /// `x != y`.
     #[must_use]
+    #[inline(always)]
     pub fn ne_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a != b)
     }
 
     /// `x < y`.
     #[must_use]
+    #[inline(always)]
     pub fn lt_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a < b)
     }
 
     /// `x <= y`.
     #[must_use]
+    #[inline(always)]
     pub fn le_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a <= b)
     }
 
     /// `x > y`.
     #[must_use]
+    #[inline(always)]
     pub fn gt_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a > b)
     }
 
     /// `x >= y`.
     #[must_use]
+    #[inline(always)]
     pub fn ge_mask(self, rhs: impl Into<Self>) -> Vec<N, T::Mask> {
         self.compare(rhs, |a, b| a >= b)
     }
@@ -166,6 +204,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// (so a NaN `x` stays NaN and a NaN `y` yields `x`).
     #[must_use]
     // Port of: src/core/SkVx.h#L648-L654 (chrome/m156)
+    #[inline(always)]
     pub fn min(self, y: impl Into<Self>) -> Self {
         let y = y.into();
         // naive_if_then_else(y < x, y, x)
@@ -181,6 +220,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// `max(x, y)`, matching `std::max` lane-wise: `x < y ? y : x`.
     #[must_use]
     // Port of: src/core/SkVx.h#L648-L654 (chrome/m156)
+    #[inline(always)]
     pub fn max(self, y: impl Into<Self>) -> Self {
         let y = y.into();
         // naive_if_then_else(x < y, y, x)
@@ -196,6 +236,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// `pin(x, lo, hi)`, the logic of `SkTPin`: always within `lo..=hi`, and `lo` if `x` is NaN.
     #[must_use]
     // Port of: src/core/SkVx.h#L656-L660 (chrome/m156)
+    #[inline(always)]
     pub fn pin(self, lo: impl Into<Self>, hi: impl Into<Self>) -> Self {
         lo.into().max(self.min(hi))
     }
@@ -203,6 +244,7 @@ impl<const N: usize, T: Lane> Vec<N, T> {
     /// Lane-wise `!x`: all-ones where the lane is zero, else zero.
     #[must_use]
     // Port of: src/core/SkVx.h#L306 (chrome/m156)
+    #[inline(always)]
     pub fn logical_not(self) -> Self {
         Self(array::from_fn(|i| {
             if self.0[i].is_nonzero() {
@@ -218,47 +260,55 @@ impl<const N: usize, T: Lane> Vec<N, T> {
 impl<T: Lane> Vec<4, T> {
     /// `Vec(x, y, z, w)`.
     #[must_use]
+    #[inline(always)]
     pub fn new(x: T, y: T, z: T, w: T) -> Self {
         Self([x, y, z, w])
     }
 
     /// `Vec(Vec<2,T> xy, T z, T w)`.
     #[must_use]
+    #[inline(always)]
     pub fn from_xy_z_w(xy: Vec<2, T>, z: T, w: T) -> Self {
         Self([xy.0[0], xy.0[1], z, w])
     }
 
     /// `Vec(T x, T y, Vec<2,T> zw)`.
     #[must_use]
+    #[inline(always)]
     pub fn from_x_y_zw(x: T, y: T, zw: Vec<2, T>) -> Self {
         Self([x, y, zw.0[0], zw.0[1]])
     }
 
     /// `Vec(Vec<2,T> xy, Vec<2,T> zw)`.
     #[must_use]
+    #[inline(always)]
     pub fn from_xy_zw(xy: Vec<2, T>, zw: Vec<2, T>) -> Self {
         Self([xy.0[0], xy.0[1], zw.0[0], zw.0[1]])
     }
 
     /// `xy()` by value.
     #[must_use]
+    #[inline(always)]
     pub fn xy(self) -> Vec<2, T> {
         Vec([self.0[0], self.0[1]])
     }
 
     /// `zw()` by value.
     #[must_use]
+    #[inline(always)]
     pub fn zw(self) -> Vec<2, T> {
         Vec([self.0[2], self.0[3]])
     }
 
     /// `xy() = v`.
+    #[inline(always)]
     pub fn set_xy(&mut self, v: Vec<2, T>) {
         self.0[0] = v.0[0];
         self.0[1] = v.0[1];
     }
 
     /// `zw() = v`.
+    #[inline(always)]
     pub fn set_zw(&mut self, v: Vec<2, T>) {
         self.0[2] = v.0[0];
         self.0[3] = v.0[1];
@@ -266,61 +316,73 @@ impl<T: Lane> Vec<4, T> {
 
     /// The mutable `xy()` reference: the first two lanes.
     #[allow(clippy::missing_panics_doc)] // never panics: there are always 4 lanes
+    #[inline(always)]
     pub fn xy_mut(&mut self) -> &mut [T; 2] {
         self.0.first_chunk_mut::<2>().expect("4 lanes")
     }
 
     /// The mutable `zw()` reference: the last two lanes.
     #[allow(clippy::missing_panics_doc)] // never panics: there are always 4 lanes
+    #[inline(always)]
     pub fn zw_mut(&mut self) -> &mut [T; 2] {
         self.0.last_chunk_mut::<2>().expect("4 lanes")
     }
 
     /// `x()`.
     #[must_use]
+    #[inline(always)]
     pub fn x(self) -> T {
         self.0[0]
     }
     /// `y()`.
     #[must_use]
+    #[inline(always)]
     pub fn y(self) -> T {
         self.0[1]
     }
     /// `z()`.
     #[must_use]
+    #[inline(always)]
     pub fn z(self) -> T {
         self.0[2]
     }
     /// `w()`.
     #[must_use]
+    #[inline(always)]
     pub fn w(self) -> T {
         self.0[3]
     }
     /// Mutable `x()`.
+    #[inline(always)]
     pub fn x_mut(&mut self) -> &mut T {
         &mut self.0[0]
     }
     /// Mutable `y()`.
+    #[inline(always)]
     pub fn y_mut(&mut self) -> &mut T {
         &mut self.0[1]
     }
     /// Mutable `z()`.
+    #[inline(always)]
     pub fn z_mut(&mut self) -> &mut T {
         &mut self.0[2]
     }
     /// Mutable `w()`.
+    #[inline(always)]
     pub fn w_mut(&mut self) -> &mut T {
         &mut self.0[3]
     }
 
     /// `yxwz()`: `shuffle<1,0,3,2>`.
     #[must_use]
+    #[inline(always)]
     pub fn yxwz(self) -> Self {
         Self([self.0[1], self.0[0], self.0[3], self.0[2]])
     }
 
     /// `zwxy()`: `shuffle<2,3,0,1>`.
     #[must_use]
+    #[inline(always)]
     pub fn zwxy(self) -> Self {
         Self([self.0[2], self.0[3], self.0[0], self.0[1]])
     }
@@ -330,34 +392,41 @@ impl<T: Lane> Vec<4, T> {
 impl<T: Lane> Vec<2, T> {
     /// `Vec(x, y)`.
     #[must_use]
+    #[inline(always)]
     pub fn new(x: T, y: T) -> Self {
         Self([x, y])
     }
     /// `x()`.
     #[must_use]
+    #[inline(always)]
     pub fn x(self) -> T {
         self.0[0]
     }
     /// `y()`.
     #[must_use]
+    #[inline(always)]
     pub fn y(self) -> T {
         self.0[1]
     }
     /// Mutable `x()`.
+    #[inline(always)]
     pub fn x_mut(&mut self) -> &mut T {
         &mut self.0[0]
     }
     /// Mutable `y()`.
+    #[inline(always)]
     pub fn y_mut(&mut self) -> &mut T {
         &mut self.0[1]
     }
     /// `yx()`: `shuffle<1,0>`.
     #[must_use]
+    #[inline(always)]
     pub fn yx(self) -> Self {
         Self([self.0[1], self.0[0]])
     }
     /// `xyxy()`.
     #[must_use]
+    #[inline(always)]
     pub fn xyxy(self) -> Vec<4, T> {
         Vec([self.0[0], self.0[1], self.0[0], self.0[1]])
     }
@@ -367,6 +436,7 @@ impl<T: Lane> Vec<2, T> {
 impl<T: Lane> Vec<1, T> {
     /// The `val` member.
     #[must_use]
+    #[inline(always)]
     pub fn val(self) -> T {
         self.0[0]
     }
@@ -392,6 +462,7 @@ macro_rules! impl_halves {
     ($($h:literal => $n:literal),* $(,)?) => {$(
         impl<T: Lane> Join for Vec<$h, T> {
             type Output = Vec<$n, T>;
+            #[inline(always)]
             fn join(self, hi: Self) -> Vec<$n, T> {
                 Vec(array::from_fn(|i| if i < $h { self.0[i] } else { hi.0[i - $h] }))
             }
@@ -399,11 +470,13 @@ macro_rules! impl_halves {
         impl<T: Lane> Vec<$n, T> {
             /// The `lo` half (the first `N/2` lanes).
             #[must_use]
+            #[inline(always)]
             pub fn lo(self) -> Vec<$h, T> {
                 Vec(array::from_fn(|i| self.0[i]))
             }
             /// The `hi` half (the last `N/2` lanes).
             #[must_use]
+            #[inline(always)]
             pub fn hi(self) -> Vec<$h, T> {
                 Vec(array::from_fn(|i| self.0[i + $h]))
             }
@@ -418,22 +491,26 @@ macro_rules! impl_binop {
     ($tr:ident, $m:ident, $assign_tr:ident, $assign_m:ident, $lane:ident, $bound:ident) => {
         impl<const N: usize, T: $bound> $tr for Vec<N, T> {
             type Output = Self;
+            #[inline(always)]
             fn $m(self, rhs: Self) -> Self {
                 Self(array::from_fn(|i| self.0[i].$lane(rhs.0[i])))
             }
         }
         impl<const N: usize, T: $bound> $tr<T> for Vec<N, T> {
             type Output = Self;
+            #[inline(always)]
             fn $m(self, rhs: T) -> Self {
                 Self(array::from_fn(|i| self.0[i].$lane(rhs)))
             }
         }
         impl<const N: usize, T: $bound> $assign_tr for Vec<N, T> {
+            #[inline(always)]
             fn $assign_m(&mut self, rhs: Self) {
                 *self = $tr::$m(*self, rhs);
             }
         }
         impl<const N: usize, T: $bound> $assign_tr<T> for Vec<N, T> {
+            #[inline(always)]
             fn $assign_m(&mut self, rhs: T) {
                 *self = $tr::$m(*self, rhs);
             }
@@ -464,6 +541,7 @@ impl_binop!(BitOr, bitor, BitOrAssign, bitor_assign, lane_or, IntLane);
 
 impl<const N: usize, T: Lane> Neg for Vec<N, T> {
     type Output = Self;
+    #[inline(always)]
     fn neg(self) -> Self {
         Self(array::from_fn(|i| self.0[i].lane_neg()))
     }
@@ -472,6 +550,7 @@ impl<const N: usize, T: Lane> Neg for Vec<N, T> {
 /// `~x`.
 impl<const N: usize, T: IntLane> Not for Vec<N, T> {
     type Output = Self;
+    #[inline(always)]
     fn not(self) -> Self {
         Self(array::from_fn(|i| self.0[i].lane_not()))
     }
@@ -479,6 +558,7 @@ impl<const N: usize, T: IntLane> Not for Vec<N, T> {
 
 impl<const N: usize, T: IntLane> Shl<i32> for Vec<N, T> {
     type Output = Self;
+    #[inline(always)]
     fn shl(self, k: i32) -> Self {
         Self(array::from_fn(|i| self.0[i].lane_shl(k)))
     }
@@ -486,18 +566,21 @@ impl<const N: usize, T: IntLane> Shl<i32> for Vec<N, T> {
 
 impl<const N: usize, T: IntLane> Shr<i32> for Vec<N, T> {
     type Output = Self;
+    #[inline(always)]
     fn shr(self, k: i32) -> Self {
         Self(array::from_fn(|i| self.0[i].lane_shr(k)))
     }
 }
 
 impl<const N: usize, T: IntLane> ShlAssign<i32> for Vec<N, T> {
+    #[inline(always)]
     fn shl_assign(&mut self, k: i32) {
         *self = *self << k;
     }
 }
 
 impl<const N: usize, T: IntLane> ShrAssign<i32> for Vec<N, T> {
+    #[inline(always)]
     fn shr_assign(&mut self, k: i32) {
         *self = *self >> k;
     }
@@ -508,6 +591,7 @@ macro_rules! impl_scalar_lhs {
     ($t:ty: $($tr:ident $m:ident),*) => {$(
         impl<const N: usize> $tr<Vec<N, $t>> for $t {
             type Output = Vec<N, $t>;
+            #[inline(always)]
             fn $m(self, rhs: Vec<N, $t>) -> Vec<N, $t> {
                 $tr::$m(Vec::<N, $t>::splat(self), rhs)
             }
@@ -524,3 +608,34 @@ macro_rules! impl_scalar_lhs_int {
 }
 impl_scalar_lhs_float!(f32, f64);
 impl_scalar_lhs_int!(i8, u8, i16, u16, i32, u32, i64, u64);
+
+#[cfg(test)]
+mod tests {
+    use super::Vec;
+
+    #[test]
+    #[allow(clippy::many_single_char_names)] // f, i, h, b, w, d: one vector per lane type
+    fn bit_cast_is_memcpy() {
+        let f = Vec([1.0f32, -2.0, 0.5, f32::INFINITY]);
+        let i: Vec<4, u32> = f.bit_cast();
+        assert_eq!(i, Vec([0x3f80_0000, 0xc000_0000, 0x3f00_0000, 0x7f80_0000]));
+        let back: Vec<4, f32> = i.bit_cast();
+        assert_eq!(back, f);
+        // Different lane widths: memory order with native endianness, like sk_bit_cast.
+        let words = [0x1234_5678u32, 0x9abc_def0, 1, 0xffff_0000];
+        let h: Vec<8, u16> = Vec(words).bit_cast();
+        let bytes: std::vec::Vec<u8> = words.iter().flat_map(|w| w.to_ne_bytes()).collect();
+        let expected: std::vec::Vec<u16> = bytes
+            .chunks(2)
+            .map(|b| u16::from_ne_bytes([b[0], b[1]]))
+            .collect();
+        assert_eq!(h.0.as_slice(), expected.as_slice());
+        let b: Vec<16, u8> = h.bit_cast();
+        assert_eq!(b.0.as_slice(), bytes.as_slice());
+        let w: Vec<4, i32> = b.bit_cast();
+        assert_eq!(w.0[2], 1);
+        let d: Vec<2, f64> = Vec([1.5f32, 2.5, 3.5, 4.5]).bit_cast();
+        let f2: Vec<4, f32> = d.bit_cast();
+        assert_eq!(f2, Vec([1.5, 2.5, 3.5, 4.5]));
+    }
+}

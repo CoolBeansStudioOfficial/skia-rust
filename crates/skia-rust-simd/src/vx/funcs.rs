@@ -13,6 +13,7 @@ use super::vec::Vec;
 // Port of: src/core/SkVx.h#L477-L480 (chrome/m156)
 /// `naive_if_then_else(cond, t, e)`: `(cond & t) | (~cond & e)` on the lane bits.
 #[must_use]
+#[inline(always)]
 pub fn naive_if_then_else<const N: usize, T: Lane>(
     cond: Vec<N, T::Mask>,
     t: Vec<N, T>,
@@ -32,6 +33,7 @@ pub fn naive_if_then_else<const N: usize, T: Lane>(
 ///
 /// Bitwise select, so any lane of `cond` that is neither all-ones nor zero mixes the bits.
 #[must_use]
+#[inline(always)]
 pub fn if_then_else<const N: usize, T: Lane>(
     cond: Vec<N, T::Mask>,
     t: Vec<N, T>,
@@ -44,6 +46,7 @@ pub fn if_then_else<const N: usize, T: Lane>(
 // Port of: src/core/SkVx.h#L533-L583 (chrome/m156)
 /// `any(x)`: true if any lane is non-zero.
 #[must_use]
+#[inline(always)]
 pub fn any<const N: usize, T: Lane>(x: Vec<N, T>) -> bool {
     x.0.iter().any(|v| v.is_nonzero())
 }
@@ -51,6 +54,7 @@ pub fn any<const N: usize, T: Lane>(x: Vec<N, T>) -> bool {
 // Port of: src/core/SkVx.h#L585-L626 (chrome/m156)
 /// `all(x)`: true if every lane is non-zero.
 #[must_use]
+#[inline(always)]
 pub fn all<const N: usize, T: Lane>(x: Vec<N, T>) -> bool {
     x.0.iter().all(|v| v.is_nonzero())
 }
@@ -92,6 +96,7 @@ pub fn reduce_max<const N: usize, T: Lane>(x: Vec<N, T>) -> T {
 /// # Panics
 /// If an index is `>= N`.
 #[must_use]
+#[inline(always)]
 pub fn shuffle<const M: usize, const N: usize, T: Copy>(x: Vec<N, T>, ix: [usize; M]) -> Vec<M, T> {
     Vec(ix.map(|i| x.0[i]))
 }
@@ -99,6 +104,7 @@ pub fn shuffle<const M: usize, const N: usize, T: Copy>(x: Vec<N, T>, ix: [usize
 // Port of: src/core/SkVx.h#L679-L701 (chrome/m156)
 /// `map(fn, x, y)`: `{ fn(x[0], y[0]), fn(x[1], y[1]), ... }`. See also [`Vec::map`].
 #[must_use]
+#[inline(always)]
 pub fn map2<const N: usize, T: Lane, U: Lane, R: Lane>(
     mut f: impl FnMut(T, U) -> R,
     x: Vec<N, T>,
@@ -110,6 +116,7 @@ pub fn map2<const N: usize, T: Lane, U: Lane, R: Lane>(
 // Port of: src/core/SkVx.h#L679-L701 (chrome/m156)
 /// `map(fn, x, y, z)`. See also [`Vec::map`].
 #[must_use]
+#[inline(always)]
 pub fn map3<const N: usize, T: Lane, U: Lane, V: Lane, R: Lane>(
     mut f: impl FnMut(T, U, V) -> R,
     x: Vec<N, T>,
@@ -122,6 +129,7 @@ pub fn map3<const N: usize, T: Lane, U: Lane, V: Lane, R: Lane>(
 // Port of: src/core/SkVx.h#L703 (chrome/m156)
 /// `ceil(x)`.
 #[must_use]
+#[inline(always)]
 pub fn ceil<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_ceil)
 }
@@ -129,6 +137,7 @@ pub fn ceil<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L704 (chrome/m156)
 /// `floor(x)`.
 #[must_use]
+#[inline(always)]
 pub fn floor<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_floor)
 }
@@ -136,6 +145,7 @@ pub fn floor<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L705 (chrome/m156)
 /// `trunc(x)`.
 #[must_use]
+#[inline(always)]
 pub fn trunc<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_trunc)
 }
@@ -143,6 +153,7 @@ pub fn trunc<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L706 (chrome/m156)
 /// `round(x)`: half away from zero (`roundf`).
 #[must_use]
+#[inline(always)]
 pub fn round<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_round)
 }
@@ -150,6 +161,7 @@ pub fn round<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L707 (chrome/m156)
 /// `sqrt(x)`.
 #[must_use]
+#[inline(always)]
 pub fn sqrt<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_sqrt)
 }
@@ -157,6 +169,7 @@ pub fn sqrt<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L708 (chrome/m156)
 /// `abs(x)`.
 #[must_use]
+#[inline(always)]
 pub fn abs<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
     x.map(T::lane_abs)
 }
@@ -164,6 +177,7 @@ pub fn abs<const N: usize, T: FloatLane>(x: Vec<N, T>) -> Vec<N, T> {
 // Port of: src/core/SkVx.h#L709-L715 (chrome/m156)
 /// `fma(x, y, z)`: `x*y + z` with a single rounding.
 #[must_use]
+#[inline(always)]
 pub fn fma<const N: usize, T: FloatLane>(x: Vec<N, T>, y: Vec<N, T>, z: Vec<N, T>) -> Vec<N, T> {
     map3(T::lane_fma, x, y, z)
 }
@@ -203,6 +217,7 @@ pub fn lrint<const N: usize>(x: Vec<N, f32>) -> Vec<N, i32> {
 // Port of: src/core/SkVx.h#L745 (chrome/m156)
 /// `fract(x)`: `x - floor(x)`.
 #[must_use]
+#[inline(always)]
 pub fn fract<const N: usize>(x: Vec<N, f32>) -> Vec<N, f32> {
     x - floor(x)
 }
@@ -302,6 +317,7 @@ pub fn approx_scale<const N: usize>(x: Vec<N, u8>, y: Vec<N, u8>) -> Vec<N, u8> 
 // Port of: src/core/SkVx.h#L833-L860 (chrome/m156)
 /// `saturated_add(x, y)`: sums values and clamps to the maximum value instead of overflowing.
 #[must_use]
+#[inline(always)]
 pub fn saturated_add<const N: usize, T: UnsignedLane>(x: Vec<N, T>, y: Vec<N, T>) -> Vec<N, T> {
     // The saturating SIMD instructions agree with this portable form.
     let sum = x + y;
@@ -311,6 +327,7 @@ pub fn saturated_add<const N: usize, T: UnsignedLane>(x: Vec<N, T>, y: Vec<N, T>
 // Port of: src/core/SkVx.h#L908-L938 (chrome/m156)
 /// `mull(x, y)`: widening multiply, `u8 * u8 -> u16` or `u16 * u16 -> u32`.
 #[must_use]
+#[inline(always)]
 pub fn mull<const N: usize, T: MulWiden>(x: Vec<N, T>, y: Vec<N, T>) -> Vec<N, T::Wide> {
     x.cast::<T::Wide>() * y.cast::<T::Wide>()
 }
@@ -318,6 +335,7 @@ pub fn mull<const N: usize, T: MulWiden>(x: Vec<N, T>, y: Vec<N, T>) -> Vec<N, T
 // Port of: src/core/SkVx.h#L940-L964 (chrome/m156)
 /// `mulhi(x, y)`: the high 16 bits of the 32-bit product.
 #[must_use]
+#[inline(always)]
 pub fn mulhi<const N: usize>(x: Vec<N, u16>, y: Vec<N, u16>) -> Vec<N, u16> {
     (mull(x, y) >> 16).cast::<u16>()
 }

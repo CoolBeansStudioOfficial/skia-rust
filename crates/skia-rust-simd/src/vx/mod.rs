@@ -20,6 +20,7 @@
 //! | `min(x,y)`, `max(x,y)`, `pin(x,lo,hi)` | [`Vec::min`], [`Vec::max`], [`Vec::pin`] |
 //! | `min(x)`, `max(x)` (horizontal) | [`reduce_min`], [`reduce_max`] |
 //! | `cast<D>(x)` | [`Vec::cast`] |
+//! | `sk_bit_cast<Vec<M,U>>(x)` | [`Vec::bit_cast`] |
 //! | `shuffle<2,1,0,3>(x)` | [`shuffle`]`(x, [2, 1, 0, 3])` |
 //! | `join(a, b)`, `v.lo`, `v.hi` | [`join`], [`Vec::lo`], [`Vec::hi`] (sizes 1 to 32) |
 //! | `strided_load2(p, a, b)` | `let (a, b) = strided_load2(p)` |
@@ -29,8 +30,13 @@
 //! Lane masks are all-ones or zero: `i32`/`i64` for `f32`/`f64` lanes, the lane type itself for
 //! integers (`skvx::Mask<T>`).
 
+// `#[inline(always)]` on the lane operators is required by the raster pipeline design (§2.4):
+// they must inline into `#[target_feature]` stage functions so LLVM vectorizes them there.
+#[allow(clippy::inline_always)]
 mod funcs;
+#[allow(clippy::inline_always)]
 mod lane;
+#[allow(clippy::inline_always)]
 mod vec;
 
 pub use funcs::{
