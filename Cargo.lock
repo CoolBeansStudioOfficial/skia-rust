@@ -429,6 +429,7 @@ name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
+ "skia-rust-simd",
 ]
 
 [[package]]
