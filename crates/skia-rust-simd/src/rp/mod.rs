@@ -54,4 +54,6 @@ mod tests_memory;
 #[cfg(test)]
 mod tests_sksl;
 #[cfg(test)]
+mod tests_sksl_arith;
+#[cfg(test)]
 mod tests_wide;

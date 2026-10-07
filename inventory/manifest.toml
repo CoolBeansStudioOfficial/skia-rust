@@ -43115,7 +43115,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2003-L2068"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7142c3e869ef32ea5714dbe0a96f13db960ca5e1807f21b296321b214f025a49"
 
 [[test]]
@@ -43124,7 +43124,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1946-L2001"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "35a06c36176be0df1c644a12ee1dc7d99e486b20cb7cf089608e25a1cdfc406d"
 
 [[test]]
@@ -43133,7 +43133,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2136-L2213"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "80b0310781d8dc4166cf0f268ccfb39ad97b68c9c97817ff9df5033768e40b87"
 
 [[test]]
@@ -43142,7 +43142,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2073-L2134"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d4a31abbc4ea90c5ae891a9a11baabf43921a559cab922c7d86317bd5f9c3e13"
 
 [[test]]
@@ -43223,7 +43223,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1723-L1784"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5df38ee90f26b63dfc3ce49b07c393e288f4c8aeaded8db431540b14e98797bc"
 
 [[test]]
@@ -43232,7 +43232,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1670-L1721"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e1dc5291d0c9496956fd4e12d18866aba45e2ae0091286319c227454813bae9f"
 
 [[test]]
@@ -43250,7 +43250,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1851-L1944"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8c46b3b402eab71eee825ddc9b52210abdafb3496f1fbd7011909b875b7b2b1a"
 
 [[test]]
@@ -43259,7 +43259,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1790-L1849"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0c83f9ba97e235d75304dda8d1983a278d6e156df568e61a9803083d6a619892"
 
 [[test]]
@@ -43331,7 +43331,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1516-L1559"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c1a7067c0d49ff0895ba6b84da89e9e1780c34948213bb83d808e8260b4ca085"
 
 [[test]]
@@ -43340,7 +43340,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1561-L1612"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "58d8f78a1a07ed74117ae99c8e7a3a5d58244d842efa2ebfb2a54348ef099204"
 
 [[test]]
@@ -43349,7 +43349,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L1614-L1668"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9e6c52c1a5d6a5cb766d430ad3ad55547015814c3c90b2b4a3dc7562c149d4ed"
 
 [[test]]
@@ -43376,7 +43376,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2420-L2485"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d980fc7320181e87f9e8ea24b35aefbdc50b4caa5a4e832510275c3573d56048"
 
 [[test]]
@@ -43385,7 +43385,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2353-L2418"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "603f25f042813ce41a53b71334e7d376c55afbde730753b26ef9cce2251ef8ac"
 
 [[test]]
@@ -43493,7 +43493,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2272-L2345"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "89a07bed1e631b66d91860eb364f2c3bbd73e7a1f55c7efacddb0c67a23fcd0e"
 
 [[test]]
@@ -43502,7 +43502,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRasterPipelineTest.cpp#L2217-L2267"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "58af9a1bfcb498b31a9b6a5c503914ae465b87a272d5202ef35def39c1d66794"
 
 [[test]]
