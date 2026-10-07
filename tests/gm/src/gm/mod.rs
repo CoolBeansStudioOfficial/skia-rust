@@ -5,6 +5,9 @@
 //! Keep the list sorted.
 
 pub mod aaa;
+pub mod addarc;
+pub mod arcofzorro;
+pub mod arcto;
 pub mod batchedconvexpaths;
 pub mod bigrect;
 pub mod circle_sizes;
@@ -53,8 +56,10 @@ pub mod scaledrects;
 pub mod shapes;
 pub mod sharedcorners;
 pub mod simplerect;
+pub mod smallarc;
 pub mod strokerect;
 pub mod strokerects;
 pub mod strokes;
 pub mod thinconcavepaths;
 pub mod thinrects;
+pub mod thinstrokedrects;
