@@ -518,6 +518,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-effects"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+]
+
+[[package]]
 name = "skia-rust-gm"
 version = "0.156.0"
 dependencies = [
@@ -562,6 +569,7 @@ name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
+ "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",

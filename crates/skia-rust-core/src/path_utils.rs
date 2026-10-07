@@ -5,14 +5,18 @@
 
 //! `skpathutils`: path helpers built on the stroker.
 //!
-//! skia-rust: `SkPaint` and `SkPathEffect` are not ported yet, so `FillPathWithPaint` is
-//! available as [`fill_path_with_stroke_rec`], which takes the already-built [`StrokeRec`]
-//! (`SkStrokeRec(paint, resScale)`) and applies no path effect.
+//! skia-rust: `SkPaint` is not ported yet (it carries no path effect), so `FillPathWithPaint`
+//! is available as [`fill_path_with_stroke_rec`], which takes the already-built [`StrokeRec`]
+//! (`SkStrokeRec(paint, resScale)`) and applies no path effect, and as
+//! [`fill_path_with_stroke_rec_and_effect`], which also takes the paint's path effect, cull
+//! rect and CTM.
 
 use crate::matrix::Matrix;
 use crate::matrix_priv::compute_res_scale_for_stroking;
 use crate::path::Path;
 use crate::path_builder::PathBuilder;
+use crate::path_effect::PathEffect;
+use crate::rect::Rect;
 use crate::scalar::scalar;
 use crate::stroke_rec::StrokeRec;
 
@@ -61,4 +65,53 @@ pub fn fill_path_with_stroke_rec_to_path(orig_src: &Path, rec: &StrokeRec) -> (P
     let mut builder = PathBuilder::new();
     let is_fill = fill_path_with_stroke_rec(orig_src, rec, &mut builder);
     (builder.detach(), is_fill)
+}
+
+/// `FillPathWithPaint` with the paint's path effect: applies `path_effect` (if any, and if it
+/// can be applied) to `orig_src`, then the stroke `rec`, putting the result in `builder`.
+/// Returns true if the result is meant to be filled (that is, the rec is not a hairline).
+///
+/// `rec` is the `SkStrokeRec(paint, resScale)`; its resolution scale is replaced by the one
+/// computed from `ctm` (`SkMatrixPriv::ComputeResScaleForStroking`), as `FillPathWithPaint`
+/// does. `cull_rect` is the optional device-space culling rect handed to the path effect.
+///
+/// If `orig_src` is not finite, `builder` is reset and false is returned.
+///
+/// skia-rust: `SkPaint` does not carry a path effect yet; this entry point takes its pieces
+/// (the rec and the effect) explicitly.
+// Port of: src/core/SkPathUtils.cpp#L21-L60 (chrome/m156)
+#[doc(alias = "FillPathWithPaint")]
+pub fn fill_path_with_stroke_rec_and_effect(
+    orig_src: &Path,
+    mut rec: StrokeRec,
+    path_effect: Option<&PathEffect>,
+    builder: &mut PathBuilder,
+    cull_rect: Option<&Rect>,
+    ctm: &Matrix,
+) -> bool {
+    if !orig_src.is_finite() {
+        builder.reset();
+        return false;
+    }
+
+    let res_scale = compute_res_scale_for_stroking(ctm);
+    rec.set_res_scale(res_scale);
+
+    let mut path_storage = Path::default();
+    let mut use_storage = false;
+    if let Some(pe) = path_effect
+        && pe.filter_path_inplace_with_matrix(builder, orig_src, &mut rec, cull_rect, ctm)
+    {
+        path_storage = builder.detach();
+        use_storage = true;
+    }
+    let src_ptr = if use_storage { &path_storage } else { orig_src };
+    if !rec.apply_to_path(builder, src_ptr) {
+        builder.assign_path(src_ptr);
+    }
+
+    if !builder.is_finite() {
+        builder.reset();
+    }
+    !rec.is_hairline_style()
 }
