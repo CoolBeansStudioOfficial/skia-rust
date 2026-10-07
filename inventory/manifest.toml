@@ -29123,7 +29123,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ClipStackTest.cpp#L828-L875"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9a7f284126f9bad9c2699062986c8d5a5d07a5dcade914e089b00e804ea13384"
 
 [[test]]

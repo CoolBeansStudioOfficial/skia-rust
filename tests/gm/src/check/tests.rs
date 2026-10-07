@@ -7,7 +7,7 @@
 use std::path::{Path, PathBuf};
 
 use super::*;
-use crate::canvas::{BlendMode, Canvas};
+use crate::canvas::Canvas;
 use crate::goldens::Objects;
 use crate::prelude::{Color, ISize};
 use crate::{DrawResult, GM};
@@ -237,9 +237,9 @@ fn empty_sources_skip_like_dm() {
 }
 
 /// Draws a translucent color, which the canvas stub cannot do.
-struct Translucent;
+struct Panicking;
 
-impl GM for Translucent {
+impl GM for Panicking {
     fn name(&self) -> String {
         "fixture_blue".to_owned()
     }
@@ -249,7 +249,8 @@ impl GM for Translucent {
     }
 
     fn on_draw(&mut self, canvas: &Canvas) {
-        canvas.draw_color(Color::from_argb(0x80, 0, 0, 0xff), BlendMode::SrcOver);
+        let _ = canvas;
+        panic!("GM drew badly");
     }
 }
 
@@ -272,13 +273,14 @@ fn failures_panics_and_missing_goldens_fail() {
     assert_eq!(report.verdict, Verdict::Failing);
     assert!(decisive(&report).all(|c| matches!(c.outcome, Outcome::NoGolden { .. })));
 
-    // A draw the stub cannot do panics; the harness reports it and keeps going.
-    let src = GmSrc::new(|| Box::new(Translucent));
+    // A GM that panics: the harness reports it and keeps going.
+    let src = GmSrc::new(|| Box::new(Panicking));
     let report = check_gm("gm::fixture::p", &src, &store, &plan, &all_configs_opts());
     assert_eq!(report.verdict, Verdict::Failing);
     assert!(
-        decisive(&report)
-            .all(|c| matches!(&c.outcome, Outcome::Panicked { msg } if msg.contains("D6")))
+        decisive(&report).all(
+            |c| matches!(&c.outcome, Outcome::Panicked { msg } if msg.contains("GM drew badly"))
+        )
     );
 }
 

@@ -18,7 +18,9 @@
 //! (tasks D6/D7 and Phase 3, listed in `docs/design/raster-pipeline.md` "As implemented in
 //! D5"). `SkRefCnt` is not modelled: a canvas owns its devices.
 
-use crate::canvas::PointMode;
+use crate::arc::{Arc, create_draw_arc_path};
+use crate::bitmap::Bitmap;
+use crate::canvas::{PointMode, SrcRectConstraint};
 use crate::clip_op::ClipOp;
 use crate::floating_point::float_round2int;
 use crate::image_info::ImageInfo;
@@ -37,6 +39,7 @@ use crate::rrect::RRect;
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
+use crate::special_image::SpecialImage;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 
 /// What [`Device::create_device`] is asked to make (`SkDevice::CreateInfo`).
@@ -439,6 +442,87 @@ pub trait Device {
         self.draw_path(&path, paint);
     }
 
+    /// Draws an arc or wedge (`drawArc`).
+    // Port of: src/core/SkDevice.cpp#L137-L141 (chrome/m156)
+    #[doc(alias = "drawArc")]
+    fn draw_arc(&mut self, arc: &Arc, paint: &Paint) {
+        let is_fill_no_path_effect = Style::Fill == paint.style() && paint.path_effect().is_none();
+        let path = create_draw_arc_path(arc, is_fill_no_path_effect);
+        self.draw_path(&path, paint);
+    }
+
+    /// Whether `SkCanvas` should simulate mask filters with a layer and `drawCoverageMask`
+    /// (`useDrawCoverageMaskForMaskFilters`; false for the raster device).
+    #[doc(alias = "useDrawCoverageMaskForMaskFilters")]
+    fn use_draw_coverage_mask_for_mask_filters(&self) -> bool {
+        false
+    }
+
+    /// Draws `src` with `local_to_device` as the matrix and nearest-neighbor sampling
+    /// (`drawSpecial`). The default draws nothing.
+    ///
+    /// skia-rust: `SkSamplingOptions` is Phase 3 (image shaders); the only caller, `drawDevice`,
+    /// always passes the default (nearest) options.
+    #[doc(alias = "drawSpecial")]
+    fn draw_special(
+        &mut self,
+        _src: &SpecialImage,
+        _local_to_device: &Matrix,
+        _paint: &Paint,
+        _constraint: SrcRectConstraint,
+    ) {
+    }
+
+    /// A special image of the `bounds` of the device's pixels, copied if `force_copy`
+    /// (`snapSpecial`); `None` if the device cannot.
+    #[doc(alias = "snapSpecial")]
+    fn snap_special(&mut self, _bounds: &IRect, _force_copy: bool) -> Option<SpecialImage> {
+        None
+    }
+
+    /// A special image of the whole device (`snapSpecial()`).
+    // Port of: src/core/SkDevice.cpp#L318-L320 (chrome/m156)
+    #[doc(alias = "snapSpecial")]
+    fn snap_special_all(&mut self) -> Option<SpecialImage> {
+        let bounds = IRect::from_wh(self.state().width(), self.state().height());
+        self.snap_special(&bounds, false)
+    }
+
+    /// Draws the pixels of another device (a layer being restored) into this one, with nearest
+    /// sampling (`drawDevice`).
+    // Port of: src/core/SkDevice.cpp#L327-L343 (chrome/m156)
+    #[doc(alias = "drawDevice")]
+    fn draw_device(&mut self, device: &mut dyn Device, paint: &Paint) {
+        let Some(device_image) = device.snap_special_all() else {
+            return;
+        };
+        // SkCanvas only calls drawDevice() when there are no filters (so the transform is pixel
+        // aligned). As such it can be drawn without clamping.
+        let relative_transform = device.state().relative_transform(self.state()).to_m33();
+        let strict = !relative_transform.is_translate()
+            || !is_int(relative_transform.translate_x())
+            || !is_int(relative_transform.translate_y());
+        self.draw_special(
+            &device_image,
+            &relative_transform,
+            paint,
+            if strict {
+                SrcRectConstraint::Strict
+            } else {
+                SrcRectConstraint::Fast
+            },
+        );
+    }
+
+    /// The bitmap a raster device draws into, if it is one (the hook `Canvas` uses to hand a
+    /// wrapped bitmap back to its owner).
+    ///
+    /// skia-rust: Skia shares the pixel ref between the caller's bitmap and the device; here a
+    /// canvas that wraps caller pixels owns them for its lifetime (`docs/design/pixels.md`).
+    fn bitmap_mut(&mut self) -> Option<&mut Bitmap> {
+        None
+    }
+
     /// Copies pixels out of the device (the virtual `onReadPixels`); `false` if unsupported.
     #[doc(alias = "onReadPixels")]
     fn on_read_pixels(&mut self, _dst: &mut Pixmap<'_>, _x: i32, _y: i32) -> bool {
@@ -485,6 +569,18 @@ pub trait Device {
     fn peek_pixels(&self) -> Option<Pixmap<'_>> {
         self.on_peek_pixels()
     }
+}
+
+/// Clips `device` to `sh` (`SkDevice::clipShader`): the shader keeps the device's current
+/// local-to-device matrix, and for a difference clip its alpha is inverted.
+// Port of: src/core/SkDevice.h#L251-L257 (chrome/m156)
+#[doc(alias = "clipShader")]
+pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
+    let mut sh = sh.make_with_ctm(device.state().local_to_device());
+    if op == ClipOp::Difference {
+        sh = sh.make_invert_alpha();
+    }
+    device.on_clip_shader(sh);
 }
 
 /// A device with no pixels, which only tracks the clip bounds (`SkNoPixelsDevice`).

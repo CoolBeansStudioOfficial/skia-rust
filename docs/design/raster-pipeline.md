@@ -1485,10 +1485,9 @@ config it renders once per `Selection` and compares the SHA-256 with that tier's
   `on_draw_with_error`, `modify_surface_props`, `on_gpu_setup`); `GmInstance` is the
   non-virtual driver (`draw` = `drawBackground` (`drawColor(bg, kSrc)`) + `drawContent`
   (`onDraw` inside `SkAutoCanvasRestore`), `onceBeforeDraw`, `gpuSetup` with no GPU context).
-- **Surface stub until D6.** `canvas::{Canvas, Surface, SurfaceProps, PixelGeometry, BlendMode}`
-  have `skia-safe`'s shape; the stub `Canvas` does `save`/`restore`/`restore_to_count` and
-  `draw_color`/`clear` that replace every pixel (`Pixmap::erase_4f`), and panics on anything
-  else. D6 replaces the module with re-exports of the real types; GM ports don't change.
+- **Surface seam.** `canvas::{Canvas, Surface, SurfaceProps, PixelGeometry, BlendMode}` were a stub
+  of `skia-safe`'s shape until D6, which turned the module into re-exports of the real raster types
+  (GM ports did not change).
 - **DM semantics.** `RasterSink::draw`: skip empty sizes (`"Skipping empty source: <name>"`),
   zeroed pixels of `SkImageInfo::Make(size, colorInfo())` with the config's color type
   (`8888` = `kN32` (BGRA), `565`, `f16`), premul corrected by `SkColorTypeValidateAlphaType`
@@ -2065,6 +2064,67 @@ blit_row}`; `skia_rust_core::{draw_types, shaders::{color_filter_shader, shader_
   unfiltered today. (5) `SurfaceProps` should reach `StageRec` (D2 left it out) through the chooser's
   `props` parameter. (6) The device owns its `Bitmap`; `Surface::wrap_pixels(&mut Bitmap)` moves it in
   and takes it back with `into_bitmap`.
+
+**As implemented in D6** (`skia_rust_core::{canvas, special_image, image_filter_types, arc, clip_stack,
+color_filters, tile_mode}`, `shaders::ctm_shader`, `skia_rust_raster::{surface, surfaces, raster_canvas}`):
+
+- **Where things live.** `Canvas` is in core, over `Box<dyn Device>`; it cannot name `BitmapDevice`, so
+  the constructors that make a raster device are an extension trait in raster
+  (`raster_canvas::RasterCanvas::{from_raster_direct, from_bitmap}`, called as `Canvas::from_bitmap(..)`
+  with the trait in scope) and `Surface` + `surfaces::{raster, wrap_pixels}` are in raster. `Canvas`
+  has `skia-safe`'s shape: `&self` methods over a `RefCell<CanvasState>`, drawing methods return
+  `&Self`, so a canvas is not `Send`. The state is `SkCanvas`'s: an `MCRec` stack (matrix `M44`,
+  deferred save count, device index, optional layer), `fSaveCount`, `fQuickRejectBounds`, the clip
+  restriction and the surface link. The devices are a `Vec<Box<dyn Device>>`: `[0]` is the root device,
+  each layer pushes one and `internalRestore` pops it. The private `internalXxx`/`onXxx` functions are
+  methods of `CanvasState`, so the public wrappers never re-enter the `RefCell`.
+- **Ported 1:1.** `save/restore/restoreToCount` with the deferred save, `saveLayer`
+  (`internalSaveLayer`: restore paint cleanup, `trivialRestore`, `get_layer_mapping_and_bounds`, layer
+  device from `Device::create_device` or a `NoPixelsDevice` fallback, `setDeviceCoordinateSystem`,
+  `kInitWithPrevious`), `internalRestore` (layer drawn with `Device::draw_device`, clip restriction
+  reset), `translate/scale/rotate/skew/concat/setMatrix`, `clipRect/RRect/Path/Region/Shader` with the
+  rect/oval/rrect path simplification, `resetClip`, the device clip restriction, `quickReject`,
+  `internalQuickReject`, `getLocalClipBounds`/`getDeviceClipBounds`, `nothingToDraw`, every raster draw
+  entry (`drawPaint/Color/clear/Rect/IRect/Oval/RRect/DRRect/Arc/Circle/RoundRect/Path/Points/Point/Line/
+  Region`), `readPixels`/`writePixels` (with `predrawNotify` and the generation ID), `peekPixels`,
+  `accessTopLayerPixels`, `SkAutoCanvasRestore`. `SkClipStack` is the separate `clip_stack` module
+  (standalone: `SkCanvas` does not use it for the raster device, which keeps its clip in
+  `RasterClipStack`).
+- **Layers and the D5 device.** A layer's restore draws the layer device into its parent with
+  `Device::draw_device` (`SkDevice::drawDevice`): `snap_special_all` makes a raster `SpecialImage`
+  sharing the layer's pixel ref, `draw_special` (`SkBitmapDevice::drawSpecial`) calls
+  `Draw::draw_bitmap`. `draw_bitmap` is ported for the sprite case (`treat_as_sprite`, then
+  `choose_sprite` + `fill_irect_clip`), which is every layer restore whose relative transform is an
+  integer translation. The image shader branch (`make_paint_with_image_and_mips`) is Phase 3: a layer
+  restored under a rotation or scale draws nothing.
+- **Not ported (TODO D7/Phase 3).** Image filters on paints and layers (`AutoLayerForImageFilter`,
+  `internalDrawDeviceWithFilter`, backdrops; `skif` other than `Mapping`, which supports only the
+  `kComplex` capability a filterless layer asks for), the mask filter auto layer (the raster device's
+  `useDrawCoverageMaskForMaskFilters` is false), the blurred-rrect fast path, `saveBehind`, images,
+  text, vertices, patches, atlases, drawables, pictures, shadows, meshes, annotations and edge-AA
+  quads, the subclass hooks (`willSave`, `didConcat`, ...), `SkNoDrawCanvas`/`SkNWayCanvas`,
+  `SkRasterHandleAllocator`. `Device` gained `draw_arc`, `draw_special`, `snap_special`,
+  `snap_special_all`, `draw_device`, `use_draw_coverage_mask_for_mask_filters` and `bitmap_mut`;
+  `Shader::make_with_ctm`/`make_invert_alpha` (so `clipShader` works: `CtmShader` and a minimal
+  `color_filters::blend`).
+- **Pixel model.** A canvas owns the pixels its root device draws into (`docs/design/pixels.md`).
+  `Surface::wrap_pixels(&mut Bitmap, ..)` and `Canvas::from_bitmap(&mut Bitmap, ..)` move the bitmap in
+  and put it back when the surface or `OwnedCanvas` drops; the `&mut [u8]` variants copy in and out.
+  `peek_pixels`/`access_top_layer_pixels` return guards with `.pixmap()` (a `Pixmap` cannot outlive the
+  `RefCell` borrow).
+- **Surface.** `Surface` owns its `Canvas` and shares an `Rc<SurfaceBase>` with it; the canvas calls
+  `aboutToDraw` before every draw, which dirties the generation ID (`generationID` assigns lazily
+  from a process-wide counter, as Skia's static does). There is no `SkImage`, so there is no cached
+  snapshot and no copy-on-write: `makeImageSnapshot`, `draw` and the
+  `SurfaceCopyOnWrite`/`WriteableAfterSnapshotRelease` tests are D7/Phase 3.
+- **SurfaceProps in StageRec.** `StageRec` has `surface_props`; the chooser's `props` parameter now
+  reaches `create_raster_pipeline_blitter` (`SkBlitter::Choose`, `AutoBlitterChoose`). Pre-baked
+  pipelines, the clip shader, color filter and blender stages use `SurfaceProps::default()`, as
+  Skia's `SkSurfaceProps props{}` does.
+- **Evidence.** `canvas_tests.rs` (unit tests of the state machine, layers, wrapping, reads/writes)
+  and the ported Skia tests; the GM harness now draws with the real `Canvas`/`Surface`.
+  There is no oracle for the canvas layer itself (the draws below it are oracle-checked by D5's
+  `draw_tests`): layer restores are covered by Wave E's GMs.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

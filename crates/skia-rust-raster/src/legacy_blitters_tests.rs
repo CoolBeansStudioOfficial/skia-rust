@@ -598,6 +598,7 @@ fn run_all() -> Results {
                         alloc,
                         DrawCoverage::No,
                         None,
+                        &skia_rust_core::surface_props::SurfaceProps::default(),
                         &Rect::from_wh(19.0, 4.0),
                         false,
                     )
@@ -649,6 +650,7 @@ fn run_all() -> Results {
                     alloc,
                     DrawCoverage::Yes,
                     None,
+                    &skia_rust_core::surface_props::SurfaceProps::default(),
                     &Rect::from_wh(19.0, 4.0),
                     false,
                 )

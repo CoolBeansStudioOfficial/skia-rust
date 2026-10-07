@@ -28,7 +28,7 @@
 //! every config and tier and compares it against the goldens ([`check::run_gm_test`]).
 //!
 //! # Layout
-//! - [`canvas`]: the `Canvas`/`Surface` seam (a stub until task D6).
+//! - [`canvas`]: the `Canvas`/`Surface` seam (re-exports of the real raster types).
 //! - [`sink`]: DM's `GMSrc` + `RasterSink`, the configs `8888`/`565`/`f16`, byte extraction.
 //! - [`goldens`]: loading the oracle's golden hashes and objects.
 //! - [`check`]: the per-tier loop, verdicts and reports.

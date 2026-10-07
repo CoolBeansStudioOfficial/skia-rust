@@ -2,6 +2,7 @@
 
 pub mod align;
 pub mod alpha_type;
+pub mod arc;
 pub mod arena_alloc;
 pub mod bezier_curves;
 pub mod bitmap;
@@ -14,9 +15,11 @@ pub mod buffer;
 pub mod canvas;
 pub mod checksum;
 pub mod clip_op;
+pub mod clip_stack;
 pub mod color;
 pub mod color_data;
 pub mod color_filter;
+pub mod color_filters;
 #[doc(hidden)]
 pub mod color_priv;
 pub mod color_space;
@@ -48,6 +51,7 @@ pub mod geometry;
 pub mod half;
 pub mod id_change_listener;
 pub mod image_filter;
+pub mod image_filter_types;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
@@ -113,6 +117,7 @@ pub mod scalar;
 pub mod shader;
 pub mod shaders;
 pub mod size;
+pub mod special_image;
 pub mod stream;
 #[doc(hidden)]
 pub mod stream_priv;
@@ -129,6 +134,7 @@ pub mod t_fits_in;
 pub mod t_pin;
 pub mod t_sort;
 pub mod tessellation;
+pub mod tile_mode;
 pub mod to;
 pub mod un_pre_multiply;
 pub mod utf;

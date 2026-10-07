@@ -15,6 +15,7 @@ pub mod draw;
 pub mod edge;
 pub mod edge_builder;
 mod pixel_rows;
+pub mod raster_canvas;
 pub mod raster_clip;
 pub mod raster_clip_stack;
 pub mod raster_pipeline_blitter;
@@ -26,6 +27,8 @@ pub mod scan_antihair;
 pub mod scan_hairline;
 pub mod scan_priv;
 pub mod sprite_blitter;
+pub mod surface;
+pub mod surfaces;
 
 #[cfg(test)]
 mod aa_clip_region_tests;
@@ -35,6 +38,8 @@ mod aa_clip_tests;
 mod blitter_tests;
 #[cfg(test)]
 mod blitters_tests;
+#[cfg(test)]
+mod canvas_tests;
 #[cfg(test)]
 mod draw_tests;
 #[cfg(test)]

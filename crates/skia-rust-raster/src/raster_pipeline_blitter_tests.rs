@@ -470,6 +470,7 @@ fn run_case(
         &ramp_ctm(),
         &alloc,
         clip_shader,
+        &skia_rust_core::surface_props::SurfaceProps::default(),
         &Rect::new_empty(),
     ) else {
         out.lines.push(format!("{name} null"));
@@ -488,6 +489,7 @@ fn print_direct(out: &mut Output, name: &str, dst_cfg: &DstCfg, paint: &Paint) {
         &ramp_ctm(),
         &alloc,
         None,
+        &skia_rust_core::surface_props::SurfaceProps::default(),
         &Rect::new_empty(),
     ) else {
         out.lines.push(format!("direct {name} null"));

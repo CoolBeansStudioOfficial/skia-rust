@@ -5,11 +5,14 @@
 
 //! Matrix helpers declared in `SkMatrixUtils.h`.
 //!
-//! `SkTreatAsSprite` is not ported yet: it needs `SkSamplingOptions`.
+//! `SkTreatAsSprite` takes a `linear_filter` flag instead of `SkSamplingOptions` (not ported yet,
+//! Phase 3); cubic resampling with `B != 0` is the only other option that changes the answer.
 
-use crate::matrix::{Matrix, Member, is_degenerate_2x2};
+use crate::matrix::{Matrix, Member, TypeMask, is_degenerate_2x2};
 use crate::point::Point;
+use crate::rect::{IRect, Rect};
 use crate::scalar::{Scalar, double_to_scalar, scalar, scalar_invert, scalar_sqrt};
+use crate::size::ISize;
 
 /// Decomposes the upper-left 2x2 of the matrix into a rotation (represented by the cosine and
 /// sine of the rotation angle), followed by a non-uniform scale, followed by another rotation.
@@ -132,4 +135,86 @@ pub fn decompose_upper_2x2(
     }
 
     true
+}
+
+/// True if drawing a `size` bitmap with `mat` is the same as copying it to an integer position
+/// (`SkTreatAsSprite`). `linear_filter` is `sampling.filter == SkFilterMode::kLinear`.
+// Port of: src/core/SkMatrix.cpp#L1535-L1596 (chrome/m156)
+#[doc(alias = "SkTreatAsSprite")]
+#[must_use]
+#[allow(clippy::float_cmp)] // mirrors the exact comparison with `(int)` casts
+#[allow(clippy::cast_possible_truncation)] // mirrors `(int)mat.getTranslateX()`
+#[allow(clippy::cast_precision_loss)] // mirrors `(int)` -> float comparison
+pub fn treat_as_sprite(
+    mat: &Matrix,
+    size: ISize,
+    linear_filter: bool,
+    is_anti_alias: bool,
+) -> bool {
+    // Our path aa is 2-bits, and our rect aa is 8, so we could use 8, but in practice 4 seems
+    // enough (still looks smooth) and allows more slightly fractional cases to fall into the
+    // fast (sprite) case.
+    const ANTI_ALIAS_SUBPIXEL_BITS: u32 = 4;
+
+    let subpixel_bits = if is_anti_alias {
+        ANTI_ALIAS_SUBPIXEL_BITS
+    } else {
+        0
+    };
+
+    // quick reject on affine or perspective
+    if mat
+        .get_type()
+        .intersects(TypeMask::all() - TypeMask::SCALE - TypeMask::TRANSLATE)
+    {
+        return false;
+    }
+
+    // We don't want to snap to pixels if we're asking for linear filtering with a subpixel
+    // translation. (b/41322892). This mirrors `tweak_sampling` in SkImageShader.cpp
+    if linear_filter
+        && (mat.translate_x() != (mat.translate_x() as i32) as scalar
+            || mat.translate_y() != (mat.translate_y() as i32) as scalar)
+    {
+        return false;
+    }
+
+    // quick success check
+    if subpixel_bits == 0
+        && !mat
+            .get_type()
+            .intersects(TypeMask::all() - TypeMask::TRANSLATE)
+    {
+        return true;
+    }
+
+    // mapRect supports negative scales, so we eliminate those first
+    if mat.scale_x() < 0.0 || mat.scale_y() < 0.0 {
+        return false;
+    }
+
+    let mut isrc = IRect::from_wh(size.width, size.height);
+    let mut dst = mat.map_rect(Rect::from_irect(isrc)).0;
+
+    // just apply the translate to isrc
+    isrc.offset((
+        crate::floating_point::float_round2int(mat.translate_x()),
+        crate::floating_point::float_round2int(mat.translate_y()),
+    ));
+
+    if subpixel_bits != 0 {
+        isrc.left <<= subpixel_bits;
+        isrc.top <<= subpixel_bits;
+        isrc.right <<= subpixel_bits;
+        isrc.bottom <<= subpixel_bits;
+
+        let scale = (1_u32 << subpixel_bits) as f32;
+        dst.left *= scale;
+        dst.top *= scale;
+        dst.right *= scale;
+        dst.bottom *= scale;
+    }
+
+    let idst = dst.round();
+    isrc == idst
 }
