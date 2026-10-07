@@ -11,12 +11,13 @@
 //! destination. The coordinates passed to the `blit_*` calls are in destination pixel space.
 //!
 //! Not ported here (they belong to the legacy-blitter task): `SkBlitter::Choose`,
-//! `ChooseSprite`, `UseLegacyBlitter`, `gSkForceRasterPipelineBlitter`, and `canDirectBlit`
-//! (it returns a borrowed `SkPixmap`; its Rust shape is decided with the first blitter that
-//! implements it). The debug-only `SkRectClipCheckBlitter` is not ported either.
+//! `ChooseSprite`, `UseLegacyBlitter` and `gSkForceRasterPipelineBlitter`. The debug-only
+//! `SkRectClipCheckBlitter` is not ported either. `canDirectBlit` is [`Blitter::can_direct_blit`]
+//! (implemented by the raster pipeline blitter, task D3).
 
 use skia_rust_core::color::Alpha;
 use skia_rust_core::mask::{Mask, MaskFormat};
+use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::region::{Cliperator, Region, Spanerator, region_priv};
 
@@ -67,6 +68,22 @@ fn scalar_to_alpha(a: f32) -> Alpha {
     } else {
         alpha
     }
+}
+
+/// What [`Blitter::can_direct_blit`] returns: a solid fill the caller may write straight into the
+/// destination pixels.
+///
+/// `SkBlitter::DirectBlit` holds an `SkPixmap` copy (a shared view of the destination's pixels);
+/// here the pixmap is a reborrow of the blitter's own, so it lives as long as the borrow of the
+/// blitter.
+// Port of: src/core/SkBlitter.h#L125-L128 (chrome/m156)
+#[doc(alias = "SkBlitter::DirectBlit")]
+#[derive(Debug)]
+pub struct DirectBlit<'p> {
+    /// `pm`: the destination.
+    pub pm: Pixmap<'p>,
+    /// `value`: the pixel to write; the low bits match the pixmap's bit depth.
+    pub value: u64,
 }
 
 /// `SkBlitter`: writes pixels into memory. See the module documentation.
@@ -247,117 +264,7 @@ pub trait Blitter {
     // Port of: src/core/SkBlitter.cpp#L188-L267 (chrome/m156)
     #[doc(alias = "blitMask")]
     fn blit_mask(&mut self, mask: &Mask<'_>, clip: &IRect) {
-        debug_assert!(
-            mask.bounds.left <= clip.left
-                && mask.bounds.top <= clip.top
-                && clip.right <= mask.bounds.right
-                && clip.bottom <= mask.bounds.bottom
-        );
-
-        if mask.format == MaskFormat::Lcd16 {
-            return; // needs to be handled by subclass
-        }
-
-        if mask.format == MaskFormat::BW {
-            let cx = clip.left;
-            let mut cy = clip.top;
-            let mask_left = mask.bounds.left;
-            let mask_row_bytes = mask.row_bytes as usize;
-            let mut height = clip.height();
-
-            let bits = mask.get_addr1(cx, cy);
-            // Offset (in bytes) of the current row, relative to `bits`.
-            let mut row = 0usize;
-
-            if cx == mask_left && clip.right == mask.bounds.right {
-                loop {
-                    height -= 1;
-                    if height < 0 {
-                        break;
-                    }
-                    let affected_right_bit = mask.bounds.width() - 1;
-                    let row_bytes = (affected_right_bit >> 3) + 1;
-                    let right_mask = generate_right_mask((affected_right_bit & 7) + 1);
-                    bits_to_runs(
-                        self,
-                        cx,
-                        cy,
-                        &bits[row..],
-                        0xFF,
-                        row_bytes as isize,
-                        right_mask,
-                    );
-                    row += mask_row_bytes;
-                    cy += 1;
-                }
-            } else {
-                // Bits is calculated as the offset into the mask at the point {cx, cy} therefore,
-                // all addressing into the bit mask is relative to that point. Since this is an
-                // address calculated from a arbitrary bit in that byte, calculate the left most
-                // bit.
-                let bits_left = cx - ((cx - mask_left) & 7);
-
-                // Everything is relative to the bitsLeft.
-                let left_edge = cx - bits_left;
-                debug_assert!(left_edge >= 0);
-                let right_edge = clip.right - bits_left;
-                debug_assert!(right_edge > left_edge);
-
-                // Calculate left byte and mask
-                let left_mask = 0xFFu32 >> (left_edge & 7);
-
-                // Calculate right byte and mask
-                let affected_right_bit = right_edge - 1;
-                let right_mask = generate_right_mask((affected_right_bit & 7) + 1);
-
-                // leftByte and rightByte are byte locations therefore, to get a count of bytes the
-                // code must add one.
-                let row_bytes = (affected_right_bit >> 3) + 1;
-
-                loop {
-                    height -= 1;
-                    if height < 0 {
-                        break;
-                    }
-                    bits_to_runs(
-                        self,
-                        bits_left,
-                        cy,
-                        &bits[row..],
-                        to_u8(left_mask),
-                        row_bytes as isize,
-                        right_mask,
-                    );
-                    row += mask_row_bytes;
-                    cy += 1;
-                }
-            }
-        } else {
-            let width = clip.width();
-            let w = usize::try_from(width).expect("clip is non-empty");
-            let mut runs = vec![0i16; w + 1];
-            let mut row_aa = vec![0 as Alpha; w];
-            let mut aa = mask.get_addr8(clip.left, clip.top);
-
-            runs[..w].fill(1);
-            runs[w] = 0;
-
-            let mut height = clip.height();
-            let mut y = clip.top;
-            loop {
-                height -= 1;
-                if height < 0 {
-                    break;
-                }
-                // `aa` is const in C++ and may be rewritten by clipping blitters; hand out a copy.
-                row_aa.copy_from_slice(&aa[..w]);
-                self.blit_anti_h(clip.left, y, &mut row_aa, &mut runs);
-                if height > 0 {
-                    aa = &aa[mask.row_bytes as usize..];
-                }
-                y += 1;
-            }
-        }
+        blit_mask_default(self, mask, clip);
     }
 
     /// Blit `(x, y)` and `(x + 1, y)`.
@@ -390,6 +297,15 @@ pub trait Blitter {
     #[doc(alias = "requestRowsPreserved")]
     fn request_rows_preserved(&self) -> i32 {
         1
+    }
+
+    /// If the blitter would fill the whole destination with one constant pixel value for a solid
+    /// blit (and the blit may skip the pipeline), the destination and that value
+    /// (`canDirectBlit`). Wrappers return `None`, as the default does.
+    // Port of: src/core/SkBlitter.h#L129 (chrome/m156)
+    #[doc(alias = "canDirectBlit")]
+    fn can_direct_blit(&mut self) -> Option<DirectBlit<'_>> {
+        None
     }
 
     /// The memory owned by this blitter (`fBlitMemory`); wrappers forward to the wrapped blitter.
@@ -432,6 +348,127 @@ pub trait Blitter {
         region_priv::visit_spans(clip, &mut |r: &IRect| {
             self.blit_rect(r.left, r.top, r.width(), r.height());
         });
+    }
+}
+
+/// The default body of [`Blitter::blit_mask`], for blitters that override it and fall back to it
+/// (`SkBlitter::blitMask` called as `INHERITED::blitMask`).
+///
+/// # Panics
+/// If `clip` is not inside `mask.bounds` (a debug assertion in Skia) or the mask image is too
+/// small for its bounds and row bytes.
+// Port of: src/core/SkBlitter.cpp#L188-L267 (chrome/m156)
+pub fn blit_mask_default<B: Blitter + ?Sized>(blitter: &mut B, mask: &Mask<'_>, clip: &IRect) {
+    debug_assert!(
+        mask.bounds.left <= clip.left
+            && mask.bounds.top <= clip.top
+            && clip.right <= mask.bounds.right
+            && clip.bottom <= mask.bounds.bottom
+    );
+
+    if mask.format == MaskFormat::Lcd16 {
+        return; // needs to be handled by subclass
+    }
+
+    if mask.format == MaskFormat::BW {
+        let cx = clip.left;
+        let mut cy = clip.top;
+        let mask_left = mask.bounds.left;
+        let mask_row_bytes = mask.row_bytes as usize;
+        let mut height = clip.height();
+
+        let bits = mask.get_addr1(cx, cy);
+        // Offset (in bytes) of the current row, relative to `bits`.
+        let mut row = 0usize;
+
+        if cx == mask_left && clip.right == mask.bounds.right {
+            loop {
+                height -= 1;
+                if height < 0 {
+                    break;
+                }
+                let affected_right_bit = mask.bounds.width() - 1;
+                let row_bytes = (affected_right_bit >> 3) + 1;
+                let right_mask = generate_right_mask((affected_right_bit & 7) + 1);
+                bits_to_runs(
+                    blitter,
+                    cx,
+                    cy,
+                    &bits[row..],
+                    0xFF,
+                    row_bytes as isize,
+                    right_mask,
+                );
+                row += mask_row_bytes;
+                cy += 1;
+            }
+        } else {
+            // Bits is calculated as the offset into the mask at the point {cx, cy} therefore,
+            // all addressing into the bit mask is relative to that point. Since this is an
+            // address calculated from a arbitrary bit in that byte, calculate the left most
+            // bit.
+            let bits_left = cx - ((cx - mask_left) & 7);
+
+            // Everything is relative to the bitsLeft.
+            let left_edge = cx - bits_left;
+            debug_assert!(left_edge >= 0);
+            let right_edge = clip.right - bits_left;
+            debug_assert!(right_edge > left_edge);
+
+            // Calculate left byte and mask
+            let left_mask = 0xFFu32 >> (left_edge & 7);
+
+            // Calculate right byte and mask
+            let affected_right_bit = right_edge - 1;
+            let right_mask = generate_right_mask((affected_right_bit & 7) + 1);
+
+            // leftByte and rightByte are byte locations therefore, to get a count of bytes the
+            // code must add one.
+            let row_bytes = (affected_right_bit >> 3) + 1;
+
+            loop {
+                height -= 1;
+                if height < 0 {
+                    break;
+                }
+                bits_to_runs(
+                    blitter,
+                    bits_left,
+                    cy,
+                    &bits[row..],
+                    to_u8(left_mask),
+                    row_bytes as isize,
+                    right_mask,
+                );
+                row += mask_row_bytes;
+                cy += 1;
+            }
+        }
+    } else {
+        let width = clip.width();
+        let w = usize::try_from(width).expect("clip is non-empty");
+        let mut runs = vec![0i16; w + 1];
+        let mut row_aa = vec![0 as Alpha; w];
+        let mut aa = mask.get_addr8(clip.left, clip.top);
+
+        runs[..w].fill(1);
+        runs[w] = 0;
+
+        let mut height = clip.height();
+        let mut y = clip.top;
+        loop {
+            height -= 1;
+            if height < 0 {
+                break;
+            }
+            // `aa` is const in C++ and may be rewritten by clipping blitters; hand out a copy.
+            row_aa.copy_from_slice(&aa[..w]);
+            blitter.blit_anti_h(clip.left, y, &mut row_aa, &mut runs);
+            if height > 0 {
+                aa = &aa[mask.row_bytes as usize..];
+            }
+            y += 1;
+        }
     }
 }
 
