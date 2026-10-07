@@ -50,6 +50,7 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod paint;
 pub mod path;
 pub mod path_builder;
 pub mod path_data;
@@ -70,6 +71,7 @@ pub mod path_raw_shapes;
 pub mod path_ref;
 mod path_serial;
 pub mod path_types;
+pub mod path_utils;
 pub mod pixel_ref;
 #[doc(hidden)]
 pub mod pixel_ref_priv;
@@ -94,6 +96,10 @@ pub mod stream_priv;
 pub mod string;
 #[doc(hidden)]
 pub mod string_utils;
+pub mod stroke;
+pub mod stroke_rec;
+#[doc(hidden)]
+pub mod stroker_priv;
 pub mod t_fits_in;
 pub mod t_pin;
 pub mod tessellation;

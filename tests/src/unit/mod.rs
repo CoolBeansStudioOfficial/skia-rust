@@ -57,6 +57,12 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_cubic_intersection_test_data;
+#[cfg(test)]
+pub mod path_ops_quad_intersection_test_data;
+#[cfg(test)]
+pub mod path_ops_test_common;
+#[cfg(test)]
 pub mod path_raw_shapes_test;
 #[cfg(test)]
 pub mod path_raw_test;
@@ -102,3 +108,7 @@ pub mod sk_utf_test;
 pub mod sk_vx_test;
 #[cfg(test)]
 pub mod stream_test;
+#[cfg(test)]
+pub mod stroke_test;
+#[cfg(test)]
+pub mod stroker_test;
