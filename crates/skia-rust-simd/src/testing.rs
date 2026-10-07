@@ -162,3 +162,41 @@ mod tests {
         assert!(r.is_err());
     }
 }
+
+/// Every selection this host can run for a kernel whose result does not depend on estimates:
+/// each native tier, and every tier's model (executed by this host's portable code).
+#[cfg(test)]
+pub(crate) fn test_selections() -> Vec<Selection> {
+    use crate::tier::{Backend, Estimates, Tier};
+    let mut out = Vec::new();
+    for tier in Tier::ALL {
+        if tier.is_native() {
+            out.push(Selection::native(tier));
+        }
+        let estimates = if tier == Tier::Neon {
+            Estimates::Arm
+        } else {
+            Estimates::AmdZen4
+        };
+        out.push(Selection {
+            tier,
+            backend: Backend::Model(estimates),
+        });
+    }
+    out
+}
+
+/// A deterministic xorshift64* generator for kernel tests (no external crates).
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) struct Rng(pub u64);
+
+#[cfg(test)]
+impl Rng {
+    pub(crate) fn next_u32(&mut self) -> u32 {
+        self.0 ^= self.0 >> 12;
+        self.0 ^= self.0 << 25;
+        self.0 ^= self.0 >> 27;
+        u32::try_from(self.0.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 32).unwrap()
+    }
+}

@@ -12,10 +12,18 @@
 //! - `testing` (feature `testing`): `force_tier`.
 //! - [`rp`]: the raster pipeline's CPU code: lane types and per-tier primitives ([`rp::lanes`]).
 //! - [`vx`](mod@vx): `skvx`.
+//! - [`blit_row`], [`blit_mask`], [`memset`]: the standalone `SkOpts` kernels
+//!   (`blit_row_s32a_opaque`, `blit_row_color32`, `blit_mask_d32_a8`, `memset16/32/64`,
+//!   `rect_memset16/32/64`), per tier with scalar twins; [`color_util`] has the few
+//!   `SkColorPriv.h` helpers they need.
 #![allow(unsafe_code)]
 
+pub mod blit_mask;
+pub mod blit_row;
+pub mod color_util;
 pub mod cpu;
 pub mod estimates;
+pub mod memset;
 pub mod rp;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
