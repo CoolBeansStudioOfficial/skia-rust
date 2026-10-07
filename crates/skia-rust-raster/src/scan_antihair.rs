@@ -22,8 +22,8 @@ use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::region::{Cliperator, Region};
 
 use crate::blitter::{Blitter, BlitterClipper, RectClipBlitter};
+use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan::{XRect, xrect_round_out, xrect_set_irect, xrect_set_rect};
-use crate::scan_clip::ScanClip;
 
 const HLINE_STACK_BUFFER: usize = 100;
 
@@ -665,7 +665,7 @@ pub fn anti_hair_line_rgn(src: &[Point], clip: Option<&Region>, blitter: &mut dy
 /// Draws the outline of `rect` as antialiased hairlines (`SkScan::AntiHairRect`).
 // Port of: src/core/SkScan_Antihair.cpp#L611-L621 (chrome/m156)
 #[doc(alias = "AntiHairRect")]
-pub fn anti_hair_rect(rect: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_hair_rect(rect: &Rect, clip: &RasterClip, blitter: &mut dyn Blitter) {
     let pts = [
         Point::new(rect.left, rect.top),
         Point::new(rect.right, rect.top),
@@ -679,7 +679,7 @@ pub fn anti_hair_rect(rect: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitte
 /// `SkScan::AntiHairLine`: antialiased hairline segments through `pts`, clipped to a raster clip.
 // Port of: src/core/SkScan_Hairline.cpp#L851-L867 (chrome/m156)
 #[doc(alias = "AntiHairLine")]
-pub fn anti_hair_line(pts: &[Point], clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_hair_line(pts: &[Point], clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_bw() {
         anti_hair_line_rgn(pts, Some(clip.bw_rgn()), blitter);
     } else {
@@ -689,9 +689,9 @@ pub fn anti_hair_line(pts: &[Point], clip: &dyn ScanClip, blitter: &mut dyn Blit
         if clip.quick_contains(&rounded.with_outset(IPoint::new(1, 1))) {
             anti_hair_line_rgn(pts, None, blitter);
         } else {
-            clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-                anti_hair_line_rgn(pts, Some(rgn), b);
-            });
+            let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+            let (rgn, b) = wrapper.parts();
+            anti_hair_line_rgn(pts, Some(rgn), b);
         }
     }
 }
@@ -850,7 +850,7 @@ pub fn anti_fill_x_rect(xr: &XRect, clip: Option<&Region>, blitter: &mut dyn Bli
 /// `SkScan::AntiFillXRect` with a raster clip.
 // Port of: src/core/SkScan_Antihair.cpp#L748-L763 (chrome/m156)
 #[doc(alias = "AntiFillXRect")]
-pub fn anti_fill_x_rect_clip(xr: &XRect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_fill_x_rect_clip(xr: &XRect, clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_bw() {
         anti_fill_x_rect(xr, Some(clip.bw_rgn()), blitter);
     } else {
@@ -859,9 +859,9 @@ pub fn anti_fill_x_rect_clip(xr: &XRect, clip: &dyn ScanClip, blitter: &mut dyn 
         if clip.quick_contains(&outer_bounds) {
             anti_fill_x_rect(xr, None, blitter);
         } else {
-            clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-                anti_fill_x_rect(xr, Some(rgn), b);
-            });
+            let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+            let (rgn, b) = wrapper.parts();
+            anti_fill_x_rect(xr, Some(rgn), b);
         }
     }
 }
@@ -916,13 +916,13 @@ pub fn anti_fill_rect(orig_r: &Rect, clip: Option<&Region>, blitter: &mut dyn Bl
 /// `SkScan::AntiFillRect` with a raster clip.
 // Port of: src/core/SkScan_Antihair.cpp#L812-L820 (chrome/m156)
 #[doc(alias = "AntiFillRect")]
-pub fn anti_fill_rect_clip(r: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_fill_rect_clip(r: &Rect, clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_bw() {
         anti_fill_rect(r, Some(clip.bw_rgn()), blitter);
     } else {
-        clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-            anti_fill_rect(r, Some(rgn), b);
-        });
+        let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+        let (rgn, b) = wrapper.parts();
+        anti_fill_rect(r, Some(rgn), b);
     }
 }
 
@@ -1172,14 +1172,14 @@ pub fn anti_frame_rect(
 pub fn anti_frame_rect_clip(
     r: &Rect,
     stroke_size: &Point,
-    clip: &dyn ScanClip,
+    clip: &RasterClip,
     blitter: &mut dyn Blitter,
 ) {
     if clip.is_bw() {
         anti_frame_rect(r, stroke_size, Some(clip.bw_rgn()), blitter);
     } else {
-        clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-            anti_frame_rect(r, stroke_size, Some(rgn), b);
-        });
+        let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+        let (rgn, b) = wrapper.parts();
+        anti_frame_rect(r, stroke_size, Some(rgn), b);
     }
 }

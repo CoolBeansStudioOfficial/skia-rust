@@ -12,6 +12,7 @@ pub mod blend_mode_priv;
 pub mod blender;
 pub mod buffer;
 pub mod checksum;
+pub mod clip_op;
 pub mod color;
 pub mod color_data;
 pub mod color_filter;

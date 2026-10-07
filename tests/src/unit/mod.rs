@@ -1,6 +1,8 @@
 //! Ports of `skia/tests/*.cpp`, one module per Skia file (see the crate docs for naming).
 
 #[cfg(test)]
+pub mod aa_clip_test;
+#[cfg(test)]
 pub mod as_a_dash_test;
 #[cfg(test)]
 pub mod bitmap_copy_test;

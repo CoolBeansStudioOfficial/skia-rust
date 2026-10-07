@@ -1756,10 +1756,9 @@ region_path}`):
   their raster-clip overloads). `AntiFillRect`/`AntiFillXRect`/`AntiFrameRect` live in
   `SkScan_Antihair.cpp`, not in AntiPath, so C3 does not need to port them.
 - **Clips.** `SkRasterClip` and `SkAAClipBlitterWrapper` belong to C5, so the scan functions that
-  take a `const SkRasterClip&` take a `&dyn ScanClip` (`scan_clip`), implemented for `Region` as
-  the BW clip. `with_aa_wrapper(blitter, closure)` stands for constructing the wrapper and using its
-  region and blitter; C5 implements the trait for `RasterClip` and the AA path starts working.
-  The `XRect` helpers live in `scan` (C2); `scan_clip` has only the `ScanClip` trait.
+  take a `const SkRasterClip&` took a `&dyn ScanClip` stand-in trait (`scan_clip`), implemented for
+  `Region` as the BW clip; C5 replaced it with the real `RasterClip` and deleted the module.
+  The `XRect` helpers live in `scan` (C2).
 - **Arithmetic.** The fixed-point steps (`FDot6`, `Fixed`, `FDot8`) use wrapping ops where C++
   silently overflows; the float2 loops of `hair_quad`/`hair_cubic` use the `Float2` type with the
   same operation order. `canDirectBlit` is not ported (see `API_MAPPING.md`).
@@ -1913,6 +1912,46 @@ image_filter}`, all in core, per R11):
   vertices and atlas draws use the `_with_pipeline` form. `ScanClip`/clip blitters wrap
   `&mut dyn Blitter`, and `RasterPipelineBlitter` is one (`dst()` reads the pixels while it is
   alive). The Sse41 tier has no oracle output (the `x64-sse41` build predates the record patch).
+
+**As implemented in C5** (`skia_rust_raster::{aa_clip, raster_clip}`, `skia_rust_core::clip_op`; the
+`RasterClip` overloads of the `scan`, `scan_anti_path`, `scan_hairline` and `scan_antihair` entry points):
+
+- **`AAClip`.** The `RunHead` is `Arc<RunHead { y_offsets: Vec<YOffset>, data: Vec<u8> }>`; clones
+  and `translate` share it, and the builder's trimming (`trimTopBottom`/`trimLeftRight`, which
+  Skia does in place, with a `memmove`) runs on the still-unique head through `Arc::get_mut`: removed
+  top rows are drained from `y_offsets`, removed bottom rows truncated (the data bytes stay, as in
+  Skia, where only `fRowCount` shrinks), and `trimLeftRight` rewrites run counts and offsets in
+  place. `Builder` keeps its rows in a `Vec<Row>` with the current row as an index; its blitter
+  (`BuilderBlitter`) is driven by C3's `anti_fill_path_region(.., force_rle = true)` or C2's
+  `fill_path`. `SkAAClip::isRect` keeps Skia's quirk of comparing the first row's relative `fY`
+  with the absolute `fBounds.fBottom - 1`, so an AA rect whose top is not 0 is not a rect.
+- **`AAClipBlitter`** is a `Blitter` over `&mut dyn Blitter` with `Vec` scratch for the runs,
+  alphas and one mask row; `mergeT<T>` is one function over byte slices (1- or 2-byte elements).
+  Its `blit_anti_rect` is the trait default (Skia does not override it).
+- **`RasterClip`** caches `is_empty`/`is_rect` exactly as Skia does, including that
+  `SkRasterClip(const SkRegion&)` caches `isRect = !isEmpty` for a complex region; the debug
+  assertions that would reject that cache are left out (the oracle is a release build). `op_shader`
+  stores one clip shader; a second one needs `SkShaders::Blend`, which is not ported (panic).
+- **`AAClipBlitterWrapper`** replaces C4's `ScanClip` closure: `parts()` returns the region and
+  blitter to draw with (the raw ones for a BW clip, the bounds rect and an `AAClipBlitter` for AA).
+- **Entry points added:** `fill_irect_clip`, `fill_xrect_clip`, `fill_path_clip`, `anti_fill_path_clip`;
+  `fill_triangle` now takes the `RasterClip` (the only overload Skia has); the hairline, frame and
+  `AntiFill*Rect` functions that took `&dyn ScanClip` take `&RasterClip`.
+- **Exactness evidence.** `oracle/aaclip` runs the 955 cases of `crates/skia-rust-raster/src/
+  aa_clip_tests/cases.txt` (every `AAClip` setter/op on empty, rect, soft-path and region clips; the
+  cross product of `RasterClip` ops with BW and AA clips, rect/rrect/path/region operands, AA and BW,
+  intersect and difference, identity/scale/rotation/skew/perspective matrices; `AAClipBlitter`
+  calls on soft clips; every `SkRasterClip` scan entry point through four kinds of raster clip;
+  170 seeded random sequences) through real Skia (`x64-sse2` oracle libraries) and dumps clip
+  state, A8 masks and blitter calls to `skia_dump.txt`; `aa_clip_tests.rs` replays the script
+  through skia-rust and requires identical output (all 955 match, debug and release). Regenerate with
+  `oracle/aaclip/gen_cases.py` and `oracle/aaclip/build.ps1 -Skia <skia checkout>`.
+- **Tests.** Eight of `AAClipTest.cpp`'s 11 tests pass (`tests/src/unit/aa_clip_test.rs`). The
+  other three (`AAClip_setPath_RandomRegion_MatchesSkRegion`, `AAClip_setRect_RandomRects_MatchesSkRegion`,
+  `AAClip_op_NearlyIntegral_GenerateSameRasterClips`) compare against `copyToMask(SkRegion)`, which
+  draws through `SkCanvas::clipRegion`; they are ported but `#[ignore]`d with the manifest entries
+  `todo` until D6. `aa_clip_region_tests.rs` runs the same random comparisons with the region mask
+  filled directly.
 
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 

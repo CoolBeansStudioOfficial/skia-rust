@@ -16,6 +16,7 @@ use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::region::{Op, Region};
 
 use crate::blitter::{BlitMemory, Blitter};
+use crate::raster_clip::RasterClip;
 use crate::region_path::RegionExt;
 use crate::scan;
 
@@ -155,7 +156,7 @@ fn fill_triangle_matches_fill_path() {
     ];
     let clip = Region::from_rect(IRect::new(0, 0, 10, 10));
     let mut rec = Recorder::default();
-    scan::fill_triangle(&pts, &clip, &mut rec);
+    scan::fill_triangle(&pts, &RasterClip::from_region(&clip), &mut rec);
     assert_eq!(
         rec.calls,
         [

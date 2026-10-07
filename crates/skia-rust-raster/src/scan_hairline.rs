@@ -9,7 +9,7 @@
 //! Skia names are kept as snake case: `SkScan::HairLineRgn` is [`hair_line_rgn`],
 //! `SkScan::HairPath` is [`hair_path`], `SkScan::AntiHairSquarePath` is
 //! [`anti_hair_square_path`], and so on. A C++ `const SkRegion*` that may be null is an
-//! `Option<&Region>`; `const SkRasterClip&` is a [`ScanClip`].
+//! `Option<&Region>`; `const SkRasterClip&` is a [`RasterClip`].
 //!
 //! Not ported: the `canDirectBlit` fast path of `horiline`/`vertline` (it writes pixels straight
 //! into the destination for opaque solid-color blitters). The `blit_h` loop that follows it in
@@ -37,9 +37,9 @@ use skia_rust_core::scalar::{SCALAR_PI, scalar_ceil_to_int, scalar_floor_to_int}
 use skia_rust_simd::vx::{self, Float2};
 
 use crate::blitter::{Blitter, BlitterClipper};
+use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan::fill_rect_clip;
 use crate::scan_antihair::anti_hair_line_rgn;
-use crate::scan_clip::ScanClip;
 
 /// `SkScan::HairRgnProc`: draws `count - 1` line segments, one at a time:
 /// `line(pts[0], pts[1])`, `line(pts[1], pts[2])`, ...
@@ -218,7 +218,7 @@ fn hair_rect_blit(r: &IRect, blitter: &mut dyn Blitter) {
 /// Draws the hairline outline of `rect` (`SkScan::HairRect`).
 // Port of: src/core/SkScan_Hairline.cpp#L226-L276 (chrome/m156)
 #[doc(alias = "HairRect")]
-pub fn hair_rect(rect: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn hair_rect(rect: &Rect, clip: &RasterClip, blitter: &mut dyn Blitter) {
     // Create the enclosing bounds of the hairrect. i.e. we will stroke the interior of r.
     let r = IRect::new(
         scalar_floor_to_int(rect.left),
@@ -247,11 +247,11 @@ pub fn hair_rect(rect: &Rect, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
             let blitter = clipper.apply(blitter, Some(clip.bw_rgn()), None);
             hair_rect_blit(&r, blitter);
         } else {
-            clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-                let mut clipper = BlitterClipper::new();
-                let b = clipper.apply(b, Some(rgn), None);
-                hair_rect_blit(&r, b);
-            });
+            let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+            let (rgn, b) = wrapper.parts();
+            let mut clipper = BlitterClipper::new();
+            let b = clipper.apply(b, Some(rgn), None);
+            hair_rect_blit(&r, b);
         }
         return;
     }
@@ -803,7 +803,7 @@ fn hair_path_draw(
 fn hair_path_with_cap(
     cap_style: Cap,
     raw: &PathRaw<'_>,
-    rclip: &dyn ScanClip,
+    rclip: &RasterClip,
     blitter: &mut dyn Blitter,
     lineproc: HairRgnProc,
 ) {
@@ -830,51 +830,51 @@ fn hair_path_with_cap(
         );
     } else {
         let is_rect = rclip.is_rect();
-        rclip.with_aa_wrapper(blitter, &mut |rgn, b| {
-            hair_path_draw(cap_style, raw, Some(rgn), is_rect, b, lineproc);
-        });
+        let mut wrapper = AAClipBlitterWrapper::new(rclip, blitter);
+        let (rgn, b) = wrapper.parts();
+        hair_path_draw(cap_style, raw, Some(rgn), is_rect, b, lineproc);
     }
 }
 
 /// Draws the path as non-antialiased hairlines with butt caps (`SkScan::HairPath`).
 // Port of: src/core/SkScan_Hairline.cpp#L762-L764 (chrome/m156)
 #[doc(alias = "HairPath")]
-pub fn hair_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn hair_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Butt, raw, clip, blitter, hair_line_rgn);
 }
 
 /// Draws the path as antialiased hairlines with butt caps (`SkScan::AntiHairPath`).
 // Port of: src/core/SkScan_Hairline.cpp#L766-L768 (chrome/m156)
 #[doc(alias = "AntiHairPath")]
-pub fn anti_hair_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_hair_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Butt, raw, clip, blitter, anti_hair_line_rgn);
 }
 
 /// Draws the path as non-antialiased hairlines with square caps (`SkScan::HairSquarePath`).
 // Port of: src/core/SkScan_Hairline.cpp#L770-L772 (chrome/m156)
 #[doc(alias = "HairSquarePath")]
-pub fn hair_square_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn hair_square_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Square, raw, clip, blitter, hair_line_rgn);
 }
 
 /// Draws the path as antialiased hairlines with square caps (`SkScan::AntiHairSquarePath`).
 // Port of: src/core/SkScan_Hairline.cpp#L774-L776 (chrome/m156)
 #[doc(alias = "AntiHairSquarePath")]
-pub fn anti_hair_square_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_hair_square_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Square, raw, clip, blitter, anti_hair_line_rgn);
 }
 
 /// Draws the path as non-antialiased hairlines with round caps (`SkScan::HairRoundPath`).
 // Port of: src/core/SkScan_Hairline.cpp#L778-L780 (chrome/m156)
 #[doc(alias = "HairRoundPath")]
-pub fn hair_round_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn hair_round_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Round, raw, clip, blitter, hair_line_rgn);
 }
 
 /// Draws the path as antialiased hairlines with round caps (`SkScan::AntiHairRoundPath`).
 // Port of: src/core/SkScan_Hairline.cpp#L782-L784 (chrome/m156)
 #[doc(alias = "AntiHairRoundPath")]
-pub fn anti_hair_round_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn anti_hair_round_path(raw: &PathRaw<'_>, clip: &RasterClip, blitter: &mut dyn Blitter) {
     hair_path_with_cap(Cap::Round, raw, clip, blitter, anti_hair_line_rgn);
 }
 
@@ -883,7 +883,7 @@ pub fn anti_hair_round_path(raw: &PathRaw<'_>, clip: &dyn ScanClip, blitter: &mu
 /// Strokes the frame of `r` with a non-antialiased stroke of `stroke_size` (`SkScan::FrameRect`).
 // Port of: src/core/SkScan_Hairline.cpp#L788-L831 (chrome/m156)
 #[doc(alias = "FrameRect")]
-pub fn frame_rect(r: &Rect, stroke_size: &Point, clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn frame_rect(r: &Rect, stroke_size: &Point, clip: &RasterClip, blitter: &mut dyn Blitter) {
     debug_assert!(stroke_size.x >= 0.0 && stroke_size.y >= 0.0);
 
     if stroke_size.x < 0.0 || stroke_size.y < 0.0 {
@@ -934,7 +934,7 @@ pub fn frame_rect(r: &Rect, stroke_size: &Point, clip: &dyn ScanClip, blitter: &
 /// Draws hairline segments through `pts` (`SkScan::HairLine`).
 // Port of: src/core/SkScan_Hairline.cpp#L833-L849 (chrome/m156)
 #[doc(alias = "HairLine")]
-pub fn hair_line(pts: &[Point], clip: &dyn ScanClip, blitter: &mut dyn Blitter) {
+pub fn hair_line(pts: &[Point], clip: &RasterClip, blitter: &mut dyn Blitter) {
     if clip.is_bw() {
         hair_line_rgn(pts, Some(clip.bw_rgn()), blitter);
     } else {
@@ -944,9 +944,9 @@ pub fn hair_line(pts: &[Point], clip: &dyn ScanClip, blitter: &mut dyn Blitter) 
         if clip.quick_contains(&rounded) {
             hair_line_rgn(pts, None, blitter);
         } else {
-            clip.with_aa_wrapper(blitter, &mut |rgn, b| {
-                hair_line_rgn(pts, Some(rgn), b);
-            });
+            let mut wrapper = AAClipBlitterWrapper::new(clip, blitter);
+            let (rgn, b) = wrapper.parts();
+            hair_line_rgn(pts, Some(rgn), b);
         }
     }
 }
