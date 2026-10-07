@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 //! Per-lane reference models of the x86 instructions the lane primitives use (design §2.8),
-//! shared by the model tiers (`model_sse2`, `model_sse41`, and later `model_ml3`/`model_ml4`).
+//! shared by the model tiers (`model_sse2`, `model_sse41`, `model_ml3`, `model_ml4`).
 //!
 //! Each function computes one lane exactly as the instruction does under the default MXCSR
 //! (round to nearest even, no FTZ/DAZ), from the Intel SDM's definitions, including NaN results:
@@ -69,6 +69,41 @@ pub fn mul(a: f32, b: f32) -> f32 {
 #[must_use]
 pub fn div(a: f32, b: f32) -> f32 {
     arith(a, b, |a, b| a / b)
+}
+
+/// The NaN result of a fused multiply-add `±(a*b) + c` if any operand is NaN: the first NaN in
+/// `a, b, c` order, quieted. The negation of `vfnmadd…` never applies to a NaN (measured on the
+/// oracle host), and a NaN operand wins over an invalid `0 * inf` product.
+///
+/// Which NaN comes out when several operands are NaN depends on the instruction form
+/// (`…132`/`…213`/`…231`) the compiler picks, for us and for Skia's clang, so that case is not
+/// specified (the twin tests compare only NaN-ness there).
+#[inline]
+fn fma_nan(a: f32, b: f32, c: f32) -> Option<f32> {
+    [a, b, c].into_iter().find(|x| x.is_nan()).map(quiet)
+}
+
+/// `vfmadd…ps` (one lane): `a*b + c` with a single rounding; a NaN operand is returned quieted
+/// ([`fma_nan`]), invalid operations (`0 * inf`, `inf - inf`) give the indefinite.
+#[inline]
+#[must_use]
+pub fn fmadd(a: f32, b: f32, c: f32) -> f32 {
+    fma_nan(a, b, c).unwrap_or_else(|| {
+        let r = a.mul_add(b, c);
+        if r.is_nan() { INDEFINITE } else { r }
+    })
+}
+
+/// `vfnmadd…ps` (one lane): `-(a*b) + c` with a single rounding; NaN rules as [`fmadd`] (a NaN
+/// operand keeps its sign).
+#[inline]
+#[must_use]
+pub fn fnmadd(a: f32, b: f32, c: f32) -> f32 {
+    fma_nan(a, b, c).unwrap_or_else(|| {
+        // Negating `a` negates the exact product, so this is `-(a*b) + c` rounded once.
+        let r = (-a).mul_add(b, c);
+        if r.is_nan() { INDEFINITE } else { r }
+    })
 }
 
 /// `andps`.
@@ -150,6 +185,81 @@ pub fn cvttps2dq(x: f32) -> i32 {
 #[must_use]
 pub fn cvttpd2dq(x: f64) -> i32 {
     to_i32_or_indefinite(x.trunc())
+}
+
+/// `vcvttpd2udq` (one lane): truncate to `u32`; NaN and out of range give the unsigned integer
+/// indefinite `0xFFFFFFFF`.
+#[inline]
+#[must_use]
+pub fn cvttpd2udq(x: f64) -> u32 {
+    let r = x.trunc();
+    if r.is_nan() || !(0.0..4_294_967_296.0).contains(&r) {
+        u32::MAX
+    } else {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // integral, in range
+        let u = r as u32;
+        u
+    }
+}
+
+/// `vcvtph2ps` (F16C, one lane): exact half → float, half denormals kept, a NaN quieted
+/// (payload shifted into the top mantissa bits).
+#[inline]
+#[must_use]
+pub fn cvtph2ps(h: u16) -> f32 {
+    let h = u32::from(h);
+    let sign = (h & 0x8000) << 16;
+    let exp = (h >> 10) & 0x1f;
+    let mant = h & 0x3ff;
+    let bits = match (exp, mant) {
+        (0, 0) => sign,
+        // Denormal: mant * 2^-24, exact in f32 (normalized: shift the leading one to bit 10).
+        (0, _) => {
+            let shift = mant.leading_zeros() - 21;
+            let m = (mant << shift) & 0x3ff;
+            sign | ((127 - 15 + 1 - shift) << 23) | (m << 13)
+        }
+        (31, 0) => sign | 0x7f80_0000,
+        (31, _) => sign | 0x7fc0_0000 | (mant << 13),
+        _ => sign | ((exp + 127 - 15) << 23) | (mant << 13),
+    };
+    f32::from_bits(bits)
+}
+
+/// `vcvtps2ph` (F16C, one lane) with `_MM_FROUND_CUR_DIRECTION` under the default MXCSR: round
+/// to nearest even, half denormals produced (float denormals round to `±0`), overflow to `±inf`,
+/// a NaN quieted with the top 10 payload bits kept.
+#[inline]
+#[must_use]
+pub fn cvtps2ph(f: f32) -> u16 {
+    let bits = f.to_bits();
+    let sign = (bits >> 16) & 0x8000;
+    let abs = bits & 0x7fff_ffff;
+    let h = if abs > 0x7f80_0000 {
+        0x7e00 | ((abs >> 13) & 0x3ff) // NaN
+    } else if abs >= 0x477f_f000 {
+        0x7c00 // >= 65520 (incl. inf) rounds to inf
+    } else if abs < 0x3880_0000 {
+        // Below 2^-14: a half denormal, |f| / 2^-24 rounded to nearest even (exact in f64).
+        let scaled = (f64::from(f32::from_bits(abs)) * 16_777_216.0).round_ties_even();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // in [0, 1024]
+        let m = scaled as u32;
+        m
+    } else {
+        let e = (abs >> 23) - (127 - 15);
+        let mant = abs & 0x007f_ffff;
+        let h = (e << 10) | (mant >> 13);
+        let rem = mant & 0x1fff;
+        // Ties to even; a carry into the exponent is the correct next half.
+        if rem > 0x1000 || (rem == 0x1000 && h & 1 == 1) {
+            h + 1
+        } else {
+            h
+        }
+    };
+    #[allow(clippy::cast_possible_truncation)] // h < 0x8000, sign is 0 or 0x8000
+    let r = (sign | h) as u16;
+    r
 }
 
 /// `cvtdq2ps`: round to nearest even.
@@ -245,6 +355,18 @@ pub fn rsqrtps<const N: usize>(estimates: Estimates, xs: [f32; N]) -> [f32; N] {
     estimate(EstimateOp::Rsqrtps, estimates, xs)
 }
 
+/// `vrcp14ps` over `N` lanes, from `estimates`.
+#[must_use]
+pub fn rcp14ps<const N: usize>(estimates: Estimates, xs: [f32; N]) -> [f32; N] {
+    estimate(EstimateOp::Rcp14, estimates, xs)
+}
+
+/// `vrsqrt14ps` over `N` lanes, from `estimates`.
+#[must_use]
+pub fn rsqrt14ps<const N: usize>(estimates: Estimates, xs: [f32; N]) -> [f32; N] {
+    estimate(EstimateOp::Rsqrt14, estimates, xs)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -289,5 +411,70 @@ mod tests {
         assert_eq!(pmulhrsw(i16::MIN, i16::MIN), i16::MIN);
         assert_eq!(pmulhrsw(16384, 16384), 8192);
         assert_eq!(pmulhrsw(-1, 1), 0);
+        assert_eq!(cvttpd2udq(4_294_967_295.9), u32::MAX);
+        assert_eq!(cvttpd2udq(4_294_967_294.9), u32::MAX - 1);
+        assert_eq!(cvttpd2udq(-0.9), 0);
+        assert_eq!(cvttpd2udq(-1.0), u32::MAX);
+        assert_eq!(cvttpd2udq(f64::INFINITY), u32::MAX);
+        assert_eq!(cvttpd2udq(f64::NAN), u32::MAX);
+    }
+
+    #[test]
+    fn fma_rules() {
+        let q = f32::from_bits(0x7fc0_1234);
+        let s = f32::from_bits(0xff80_0001);
+        let inf = f32::INFINITY;
+        // Measured on the oracle host (`vfmadd`/`vfnmadd` ymm): the NaN operand, quieted, with
+        // its own sign, also over an invalid 0 * inf.
+        assert_eq!(fmadd(q, 1.0, 2.0).to_bits(), 0x7fc0_1234);
+        assert_eq!(fnmadd(1.0, 2.0, q).to_bits(), 0x7fc0_1234);
+        assert_eq!(fnmadd(s, 1.0, 2.0).to_bits(), 0xffc0_0001);
+        assert_eq!(fmadd(0.0, inf, q).to_bits(), 0x7fc0_1234);
+        assert_eq!(fmadd(inf, 0.0, 2.0).to_bits(), INDEFINITE.to_bits());
+        assert_eq!(fnmadd(inf, 0.0, 2.0).to_bits(), INDEFINITE.to_bits());
+        // One rounding: 1e30 * 1e30 does not overflow before the add.
+        assert_eq!(fmadd(1e30, 1e30, f32::NEG_INFINITY), f32::NEG_INFINITY);
+        let e = f32::EPSILON;
+        assert_eq!(fmadd(1.0 + e, 1.0 - e, -1.0), -(e * e));
+        assert_eq!(fnmadd(1.0 + e, 1.0 - e, 1.0), e * e);
+        assert_eq!(fnmadd(0.0, 1.0, 0.0).to_bits(), 0); // -(+0) + +0 = +0
+        assert_eq!(fnmadd(0.0, 1.0, -0.0).to_bits(), 0x8000_0000);
+    }
+
+    #[test]
+    fn half_conversions() {
+        assert_eq!(cvtph2ps(0x0001).to_bits(), 0x3380_0000); // 2^-24
+        assert_eq!(cvtph2ps(0x0400).to_bits(), 0x3880_0000); // 2^-14
+        assert_eq!(cvtph2ps(0x83ff).to_bits(), 0xb87f_c000); // -(2^-14 - 2^-24)
+        assert_eq!(cvtph2ps(0x3c00).to_bits(), 0x3f80_0000);
+        assert_eq!(cvtph2ps(0xfc00).to_bits(), 0xff80_0000);
+        assert_eq!(cvtph2ps(0x7c01).to_bits(), 0x7fc0_2000);
+        assert_eq!(cvtph2ps(0xfe00).to_bits(), 0xffc0_0000);
+        let h = |bits: u32| cvtps2ph(f32::from_bits(bits));
+        assert_eq!(h(0x3f80_0000), 0x3c00);
+        assert_eq!(h(0x3f80_1000), 0x3c00); // tie, even stays
+        assert_eq!(h(0x3f80_3000), 0x3c02); // tie, odd rounds up
+        assert_eq!(h(0x3f80_1001), 0x3c01);
+        assert_eq!(h(0x477f_e000), 0x7bff); // 65504
+        assert_eq!(h(0x477f_efff), 0x7bff);
+        assert_eq!(h(0x477f_f000), 0x7c00); // 65520
+        assert_eq!(h(0xff7f_ffff), 0xfc00); // -FLT_MAX
+        assert_eq!(h(0x3380_0000), 0x0001); // 2^-24
+        assert_eq!(h(0x3300_0000), 0x0000); // 2^-25: tie to even 0
+        assert_eq!(h(0xb3c0_0000), 0x8002); // -1.5 * 2^-24: tie to even 2
+        assert_eq!(h(0x387f_ffff), 0x0400); // rounds up to 2^-14
+        assert_eq!(h(0x0000_0001), 0);
+        assert_eq!(h(0x7f80_0001), 0x7e00);
+        assert_eq!(h(0xffc0_2000), 0xfe01);
+        for x in 0..=u16::MAX {
+            let back = cvtps2ph(cvtph2ps(x));
+            // Every half survives the round trip, except that a signalling NaN is quieted.
+            let want = if x & 0x7c00 == 0x7c00 && x & 0x3ff != 0 {
+                x | 0x200
+            } else {
+                x
+            };
+            assert_eq!(back, want, "{x:#06x}");
+        }
     }
 }

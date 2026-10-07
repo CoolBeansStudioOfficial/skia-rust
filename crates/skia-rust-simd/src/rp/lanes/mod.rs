@@ -18,44 +18,53 @@
 //! | [`scalar`] | `Scalar` (`SKRP_CPU_SCALAR`) | [`S<T>`], 1 lane, no lowp | plain `#[inline]` (it is its own model) |
 //! | `sse2` (x86-64) | `Sse2` (`SKRP_CPU_SSE2`) | `Vec<4, _>`, lowp `Vec<8, _>` | `#[target_feature(enable = "sse2")]` |
 //! | `sse41` (x86-64) | `Sse41` (`SKRP_CPU_SSE41`/`AVX`) | same | `#[target_feature(enable = "sse2,ssse3,sse4.1")]` |
-//! | `model_sse2::{host, amd_zen4}`, `model_sse41::{host, amd_zen4}` (feature `models`, tests) | the models (§2.8) | same | plain; per-lane x86 semantics, `rcpps`/`rsqrtps` from [`Estimates::Host`](crate::Estimates::Host) or [`Estimates::AmdZen4`](crate::Estimates::AmdZen4) |
+//! | `ml3` (x86-64) | `Ml3` (`SKRP_CPU_AVX2`) | `Vec<8, _>`, lowp `Vec<16, _>` | `#[target_feature(enable = "sse2,ssse3,sse4.1,sse4.2,avx,avx2,bmi1,bmi2,f16c,fma")]` |
+//! | `ml4` (x86-64) | `Ml4` (`SKRP_CPU_ML4`) | `Vec<16, _>`, lowp `Vec<16, _>` | `Ml3`'s + `"avx512f,avx512dq,avx512cd,avx512bw,avx512vl"` |
+//! | `model_{sse2,sse41,ml3,ml4}::{host, amd_zen4}` (feature `models`, tests) | the models (§2.8) | same as the tier | plain; per-lane x86 semantics, `rcpps`/`rsqrtps` (`rcp14`/`rsqrt14` for Ml4) from [`Estimates::Host`](crate::Estimates::Host) or [`Estimates::AmdZen4`](crate::Estimates::AmdZen4) |
 //!
 //! # What every tier module exports (the stage author's API)
 //!
 //! ```text
-//! N                                   highp stride (1 on Scalar, 4 on Sse2/Sse41)
-//! LOWP_N                              lowp stride (8; not defined on Scalar, which has no lowp)
+//! N                                   highp stride (1 on Scalar, 4 on Sse2/Sse41, 8 on Ml3, 16 on Ml4)
+//! LOWP_N                              lowp stride (8 on Sse*, 16 on Ml3/Ml4; not on Scalar: no lowp)
 //! F I32 U32 U16 U8 U64                highp lane types (Vec<N, _>, or S<_> on Scalar)
 //!
 //! min_f(a, b)  max_f(a, b)            float min/max with the tier's NaN and ±0 rules (keep Skia's
 //!                                     operand order: x86 returns the *second* operand on NaN/tie)
-//! mad(f, m, a) = a + f*m              nmad(f, m, a) = a - f*m   (unfused on these tiers)
+//! mad(f, m, a) = a + f*m              nmad(f, m, a) = a - f*m   (unfused on Scalar/Sse*, a single
+//!                                     FMA on Ml3/Ml4)
 //! abs_f(v)                            x86: v & (0 - v) (NaN keeps its sign); Scalar: fabsf
-//! floor_(v)  ceil_(v)                 Sse2: cvtt emulation; Sse41: roundps; Scalar: floorf/ceilf
+//! floor_(v)  ceil_(v)                 Sse2: cvtt emulation; Sse41+: roundps; Scalar: floorf/ceilf
 //! sqrt_(v)                            exact
 //! rcp_approx  rsqrt_approx            don't call directly (as in Skia); use rcp_fast / rsqrt
-//! rcp_precise(v)                      x86: one Newton–Raphson step on rcpps; Scalar: 1/v
-//! rcp_fast(v)  rsqrt(v)               Sse2/Scalar: precise forms; Sse41: the raw estimates
+//! rcp_precise(v)                      x86: one Newton–Raphson step on rcpps (Ml3/Ml4: fused, Ml4:
+//!                                     on rcp14); Scalar: 1/v
+//! rcp_fast(v)  rsqrt(v)               Sse2/Scalar: precise forms; Sse41+: the raw estimates
 //! iround(v) -> I32  round(v) -> U32   x86: cvtps2dq (ties-to-even, NaN/overflow → 0x80000000);
 //!                                     Scalar: (int)(v + 0.5f)
 //! trunc_(v) -> U32  to_i32(v) -> I32  every F → int vector cast (x86: cvttps2dq)
 //! cast_f(U32) -> F                    Skia's `cast(U32)`: SIMD converts as *signed* I32
-//! pack_u32(U32) -> U16                Scalar/Sse2: truncation; Sse41: unsigned saturation
+//! pack_u32(U32) -> U16                Scalar/Sse2: truncation; Sse41+: unsigned saturation
 //! pack_u16(U16) -> U8                 Scalar: truncation; x86: packuswb (signed-saturating)
-//! if_then_else_f(c, t, e)  if_then_else_i(c, t, e)   (c: I32; x86 bitwise, Scalar c != 0)
-//! any(c)  all(c)                      x86: lane sign bits only; Scalar: c != 0
+//! if_then_else_f(c, t, e)  if_then_else_i(c, t, e)   (c: I32; Sse* bitwise, Ml3/Ml4 the sign
+//!                                     bit only, Scalar c != 0)
+//! any(c)  all(c)                      Sse*: lane sign bits only; Ml3: any/every bit of the whole
+//!                                     register; Ml4: some/every lane nonzero; Scalar: c != 0
 //! cond_to_mask(c)                     identity except Scalar (0/1 → 0/-1)
-//! from_half(U16) -> F  to_half(F) -> U16   software on these tiers (flush denormals, truncate)
-//! div_i32(d, s)  div_u32(d, s)        SkSL integer `/` (x86: via f64; Scalar: guarded generic)
+//! from_half(U16) -> F  to_half(F) -> U16   Scalar/Sse*: software (flush denormals, truncate);
+//!                                     Ml3/Ml4: F16C (IEEE, round to nearest even)
+//! div_i32(d, s)  div_u32(d, s)        SkSL integer `/` (x86: via f64, unsigned operands clamped to
+//!                                     INT_MAX except on Ml4, which is exact; Scalar: guarded generic)
 //! min_i max_i min_u max_u abs_i       integer min/max/abs (identical on every tier)
 //!
 //! lowp::{N, U8, U16, I16, I32, U32, I64, U64, F}   lowp lane types (LOWP_N lanes)
 //! lowp::div255  lowp::div255_accurate (x86: (v+255)/256 and the exact two-step form)
 //! lowp::{min_f, max_f, min_i, max_i, min_u16, max_u16}   compare-select (portable)
-//! lowp::{min_intr_f, max_intr_f}      minps/maxps per 128-bit half (differs from min_f on NaN/±0)
+//! lowp::{min_intr_f, max_intr_f}      minps/maxps per register (differs from min_f on NaN/±0)
 //! lowp::{min_intr_i, max_intr_i, min_intr_u16, max_intr_u16}
 //! lowp::{if_then_else_f, if_then_else_i, if_then_else_u16, if_then_else_u32}  bitwise
-//! lowp::{mad, nmad, trunc_, to_i32, rcp_precise, sqrt_, floor_, scaled_mult}
+//! lowp::{mad, nmad, trunc_, to_i32, rcp_precise, sqrt_, floor_, scaled_mult}   (lowp mad/nmad are
+//!                                     unfused on every tier, Ml3/Ml4 included)
 //! ```
 //!
 //! Comparisons are the lane types' own methods (`eq_mask`, `lt_mask`, …): all-ones masks on
@@ -67,8 +76,8 @@
 //! # Safety
 //! The native x86 modules use `unsafe` only for the array ↔ register conversions in `x86`
 //! (design §3.2). Calling a native primitive from code without the tier's target features needs
-//! `unsafe` and a token (`crate::cpu::Sse2Token`, `Sse41Token`); stage code stamped into the
-//! tier's `#[target_feature]` functions calls them safely.
+//! `unsafe` and a token (`crate::cpu::Sse2Token`, `Sse41Token`, `Ml3Token`, `Ml4Token`); stage
+//! code stamped into the tier's `#[target_feature]` functions calls them safely.
 
 /// Stamps Skia's software `from_half`/`to_half` (the path taken by every tier without F16C or
 /// NEON half conversions: Scalar, Sse2, Sse41) into the invoking tier module, using that module's
@@ -270,12 +279,20 @@ pub mod portable;
 pub mod scalar;
 
 #[cfg(target_arch = "x86_64")]
+pub mod ml3;
+#[cfg(target_arch = "x86_64")]
+pub mod ml4;
+#[cfg(target_arch = "x86_64")]
 pub mod sse2;
 #[cfg(target_arch = "x86_64")]
 pub mod sse41;
 #[cfg(target_arch = "x86_64")]
 mod x86;
 
+#[cfg(any(test, feature = "models"))]
+pub mod model_ml3;
+#[cfg(any(test, feature = "models"))]
+pub mod model_ml4;
 #[cfg(any(test, feature = "models"))]
 pub mod model_sse2;
 #[cfg(any(test, feature = "models"))]

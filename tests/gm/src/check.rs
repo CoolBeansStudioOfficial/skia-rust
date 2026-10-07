@@ -9,8 +9,9 @@
 //! - `Scalar`: natively everywhere.
 //! - x86 tiers: `Native` when the host runs the tier and its `rcp`/`rsqrt` estimates match the
 //!   oracle host's (`Fingerprints::matches_for(&AMD_ZEN4, tier)`); otherwise the tier's model
-//!   with the oracle host's estimate tables (`Model(AmdZen4)`, §4.6 policy 3). `Ml4` has no model
-//!   for `vrcp14ps`/`vrsqrt14ps` yet (§6 R2), so on any other host it is **not checkable**.
+//!   with the oracle host's estimate tables (`Model(AmdZen4)`, §4.6 policies 3–4; for `Ml4` that
+//!   is the `vrcp14ps`/`vrsqrt14ps` model, exact on all inputs, so hosts without AVX-512 check
+//!   `Ml4` too).
 //! - `Neon`: natively on arm64, else `Model(Arm)`.
 //!
 //! An oracle tier without goldens (`wasm-simd128`, `arm64-neon` today) is not compared. Proxy
@@ -99,16 +100,6 @@ pub fn selection_for(tier: Tier, fingerprints: &Fingerprints) -> Result<Selectio
     let sel = match tier {
         Tier::Neon if !tier.is_native() => Selection::model(tier, Estimates::Arm),
         t if t.is_x86() && !(t.is_native() && fingerprints.matches_for(&AMD_ZEN4, t)) => {
-            if t == Tier::Ml4 {
-                return Err(format!(
-                    "{}; Ml4 has no vrcp14ps/vrsqrt14ps model yet (design §6 R2)",
-                    if t.is_native() {
-                        "this host's AVX-512 estimates differ from the oracle host's"
-                    } else {
-                        "this host cannot run Ml4"
-                    }
-                ));
-            }
             Selection::model(t, Estimates::AmdZen4)
         }
         t => Selection::native(t),
