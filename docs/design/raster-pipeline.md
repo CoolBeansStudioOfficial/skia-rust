@@ -1443,10 +1443,10 @@ add cases: `docs/PORTING.md` §12):
   leaves it unspecified). The `Scalar` tier runs on the host FPU, and the models' generic stage
   code (`F + F`, `-F`, ... are Rust `f32` operators on the vector lane type, not `x86_model`
   functions) does too, so on those hosts the two differ from the oracle in that bit pattern
-  only. Stored results therefore carry a second, *canonical* hash (every `0x7FC00000` word read as
-  `0xFFC00000`), accepted in addition to the exact one on non-x86 hosts only
-  (`expected::output_matches`); every result is exact on x86 hosts. Routing the models' float
-  operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
+  only. `expected::check` therefore accepts, on non-x86 hosts only, a second comparison for
+  `Scalar` and the models: the output with every `0x7FC00000` word read as `0xFFC00000` (the
+  stored results are exact Skia hashes, no extra column); every result is exact on x86 hosts.
+  Routing the models' float operators through `x86_model` would remove the exception. `floor`/`ceil` of signaling NaNs
   depend on the host's libm: those inputs are `/r5/`.
 - **Bugs found:** the `Scalar` tier evaluated `smoothstep` and `refract`'s `k` in `float`
   where C++ promotes to `double` (the literals are `double`s); `Ml4`'s `cast_to_uint_from_*` used
