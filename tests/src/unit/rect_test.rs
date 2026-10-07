@@ -4,7 +4,7 @@
 // Port of: tests/RectTest.cpp (chrome/m156)
 //
 // Not ported yet (manifest stays `todo`): `Rect`, `Rect_grow` (SkBitmap, SkCanvas, SkPaint),
-// `Rect_path_nan` (SkPath) and `big_tiled_rect_crbug_927075` (SkSurface, SkCanvas). Their helpers `has_green_pixels`,
+// `big_tiled_rect_crbug_927075` (SkSurface, SkCanvas). Their helpers `has_green_pixels`,
 // `test_stroke_width_clipping` and `test_skbug4406` go with `Rect`/`Rect_grow`.
 
 #![cfg(test)]
@@ -12,6 +12,7 @@
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::m44::{M44, V3, V4};
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::path::Path;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::rect_priv::subtract;
 use skia_rust_core::rect::rect_priv::{
@@ -90,6 +91,13 @@ fn make_big_value(_reporter: &Reporter) -> f32 {
     // hence, this stupid trick to try to fool their compiler.
     SCALAR_MAX * 0.75
 }
+
+// Port of: tests/RectTest.cpp#L113-L117 (chrome/m156)
+def_test!(Rect_path_nan, |reporter| {
+    let r = Rect::new(0.0, 0.0, SCALAR_NAN, 100.0);
+    // path normally just jams its bounds to be r, but it must notice that r is non-finite
+    reporter_assert!(reporter, !Path::rect(r, None).is_finite());
+});
 
 // Port of: tests/RectTest.cpp#L163-L180 (chrome/m156)
 def_test!(Rect_whOverflow, |reporter| {

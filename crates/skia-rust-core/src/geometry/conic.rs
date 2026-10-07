@@ -11,12 +11,15 @@ use super::{
     QuadCoeff, find_bisector, find_unit_quad_roots, from_point,
     solve_quadratic_equation_for_midtangent, times_2, to_point, to_vector,
 };
-use crate::floating_point::is_finite;
+use crate::floating_point::{ieee_double_divide, is_finite, is_nan};
+use crate::matrix::Matrix;
+use crate::path_types::PathDirection;
 use crate::point::{Point, Vector, point_priv};
 use crate::point3::Point3;
 use crate::rect::Rect;
 use crate::scalar::{
-    SCALAR_1, SCALAR_HALF, scalar, scalar_abs, scalar_interp, scalar_invert, scalar_sqrt,
+    SCALAR_1, SCALAR_HALF, SCALAR_NEARLY_ZERO, SCALAR_ROOT_2_OVER_2, scalar, scalar_abs,
+    scalar_interp, scalar_invert, scalar_sqrt,
 };
 
 // Port of: src/core/SkGeometry.h#L425-L453 (chrome/m156)
@@ -643,6 +646,143 @@ impl Conic {
     #[must_use]
     pub fn compute_fast_bounds(&self) -> Rect {
         Rect::bounds_or_empty(&self.pts)
+    }
+
+    /// The weight of the conic `pts`/`w` after it is transformed by `matrix` (unchanged unless
+    /// the matrix has perspective).
+    // Port of: src/core/SkGeometry.cpp#L1719-L1736 (chrome/m156)
+    #[doc(alias = "TransformW")]
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)] // sk_double_to_float
+    pub fn transform_w(pts: &[Point], w: scalar, matrix: &Matrix) -> scalar {
+        if !matrix.has_perspective() {
+            return w;
+        }
+
+        let src = ratquad_map_to_3d(pts, w);
+        let mut dst = [Point3::default(); 3];
+
+        matrix.map_homogeneous_points(&mut dst, &src);
+
+        // w' = sqrt(w1*w1/w0*w2)
+        // use doubles temporarily, to handle small numer/denom
+        let w0 = f64::from(dst[0].z);
+        let w1 = f64::from(dst[1].z);
+        let w2 = f64::from(dst[2].z);
+        ieee_double_divide(w1 * w1, w0 * w2).sqrt() as f32
+    }
+
+    /// Builds the conics (at most [`MAX_CONICS_FOR_ARC`]) for the unit-circle arc from `u_start`
+    /// to `u_stop` in direction `dir`, mapped by `user_matrix`; returns how many were written to
+    /// `dst` (0 if the vectors are effectively coincident).
+    // Port of: src/core/SkGeometry.cpp#L1738-L1823 (chrome/m156)
+    #[doc(alias = "BuildUnitArc")]
+    #[allow(clippy::float_cmp)] // exact comparisons, as in C++
+    #[allow(clippy::manual_range_contains)] // mirrors the C++ comparisons
+    #[allow(clippy::manual_midpoint)] // mirrors the C++ `(a + b) / 2` arithmetic
+    pub fn build_unit_arc(
+        u_start: Vector,
+        u_stop: Vector,
+        dir: PathDirection,
+        user_matrix: Option<&Matrix>,
+        dst: &mut [Conic; MAX_CONICS_FOR_ARC],
+    ) -> usize {
+        // rotate by x,y so that uStart is (1.0)
+        let x = Point::dot_product(u_start, u_stop);
+        let mut y = Point::cross_product(u_start, u_stop);
+
+        let abs_y = scalar_abs(y);
+
+        // check for (effectively) coincident vectors
+        // this can happen if our angle is nearly 0 or nearly 180 (y == 0)
+        // ... we use the dot-prod to distinguish between 0 and 180 (x > 0)
+        if abs_y <= SCALAR_NEARLY_ZERO
+            && x > 0.0
+            && ((y >= 0.0 && PathDirection::CW == dir) || (y <= 0.0 && PathDirection::CCW == dir))
+        {
+            return 0;
+        }
+
+        if dir == PathDirection::CCW {
+            y = -y;
+        }
+
+        // We decide to use 1-conic per quadrant of a circle. What quadrant does [xy] lie in?
+        //      0 == [0  .. 90)
+        //      1 == [90 ..180)
+        //      2 == [180..270)
+        //      3 == [270..360)
+        //
+        let mut quadrant = 0;
+        if 0.0 == y {
+            quadrant = 2; // 180
+            debug_assert!(scalar_abs(x + SCALAR_1) <= SCALAR_NEARLY_ZERO);
+        } else if 0.0 == x {
+            debug_assert!(abs_y - SCALAR_1 <= SCALAR_NEARLY_ZERO);
+            quadrant = if y > 0.0 { 1 } else { 3 }; // 90 : 270
+        } else {
+            if y < 0.0 {
+                quadrant += 2;
+            }
+            if (x < 0.0) != (y < 0.0) {
+                quadrant += 1;
+            }
+        }
+
+        let quadrant_pts = [
+            Point::new(1.0, 0.0),
+            Point::new(1.0, 1.0),
+            Point::new(0.0, 1.0),
+            Point::new(-1.0, 1.0),
+            Point::new(-1.0, 0.0),
+            Point::new(-1.0, -1.0),
+            Point::new(0.0, -1.0),
+            Point::new(1.0, -1.0),
+        ];
+        let quadrant_weight = SCALAR_ROOT_2_OVER_2;
+
+        let mut conic_count = quadrant;
+        for (i, conic) in dst.iter_mut().enumerate().take(conic_count) {
+            conic.set_points(&quadrant_pts[i * 2..i * 2 + 3], quadrant_weight);
+        }
+
+        // Now compute any remaing (sub-90-degree) arc for the last conic
+        let final_p = Point::new(x, y);
+        let last_q = quadrant_pts[quadrant * 2]; // will already be a unit-vector
+        let dot = Point::dot_product(last_q, final_p);
+        if is_nan(dot) {
+            return 0;
+        }
+        debug_assert!(0.0 <= dot && dot <= SCALAR_1 + SCALAR_NEARLY_ZERO);
+
+        if dot < 1.0 {
+            let mut off_curve = Vector::new(last_q.x + x, last_q.y + y);
+            // compute the bisector vector, and then rescale to be the off-curve point.
+            // we compute its length from cos(theta/2) = length / 1, using half-angle identity we
+            // get length = sqrt(2 / (1 + cos(theta)). We already have cos() when to computed the
+            // dot. This is nice, since our computed weight is cos(theta/2) as well!
+            //
+            let cos_theta_over_2 = scalar_sqrt((1.0 + dot) / 2.0);
+            off_curve.set_length(scalar_invert(cos_theta_over_2));
+            if !point_priv::equals_within_tolerance(last_q, off_curve) {
+                dst[conic_count].set(last_q, off_curve, final_p, cos_theta_over_2);
+                conic_count += 1;
+            }
+        }
+
+        // now handle counter-clockwise and the initial unitStart rotation
+        let mut matrix = Matrix::default();
+        matrix.set_sin_cos((u_start.y, u_start.x), None);
+        if dir == PathDirection::CCW {
+            matrix.pre_scale((SCALAR_1, -SCALAR_1), None);
+        }
+        if let Some(user_matrix) = user_matrix {
+            matrix.post_concat(user_matrix);
+        }
+        for conic in dst.iter_mut().take(conic_count) {
+            matrix.map_points_inplace(&mut conic.pts);
+        }
+        conic_count
     }
 }
 

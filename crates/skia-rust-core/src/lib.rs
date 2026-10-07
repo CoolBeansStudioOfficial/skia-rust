@@ -15,6 +15,7 @@ pub mod color_space;
 pub mod color_space_priv;
 pub mod color_space_xform_steps;
 pub mod color_type;
+pub mod contour_measure;
 #[doc(hidden)]
 pub mod convert_pixels;
 pub mod cubic_clipper;
@@ -22,6 +23,8 @@ pub mod cubic_map;
 pub mod cubics;
 pub mod data;
 pub mod data_table;
+#[doc(hidden)]
+pub mod edge_clipper;
 pub mod endian;
 pub mod fixed;
 pub mod float_bits;
@@ -33,6 +36,8 @@ pub mod id_change_listener;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
+#[doc(hidden)]
+pub mod line_clipper;
 pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod math;
@@ -44,6 +49,26 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod path;
+pub mod path_builder;
+pub mod path_data;
+mod path_dump;
+#[doc(hidden)]
+pub mod path_enums;
+mod path_interpolate;
+pub mod path_iter;
+#[doc(hidden)]
+pub mod path_makers;
+pub mod path_measure;
+#[doc(hidden)]
+pub mod path_priv;
+pub mod path_raw;
+#[doc(hidden)]
+pub mod path_raw_shapes;
+#[doc(hidden)]
+pub mod path_ref;
+mod path_serial;
+pub mod path_types;
 pub mod pixel_ref;
 #[doc(hidden)]
 pub mod pixel_ref_priv;
@@ -65,11 +90,14 @@ pub mod stream;
 #[doc(hidden)]
 pub mod stream_priv;
 pub mod string;
+#[doc(hidden)]
+pub mod string_utils;
 pub mod t_fits_in;
 pub mod t_pin;
 pub mod tessellation;
 pub mod to;
 pub mod un_pre_multiply;
 pub mod utf;
+pub mod utils;
 #[doc(hidden)]
 pub mod write_pixels_rec;

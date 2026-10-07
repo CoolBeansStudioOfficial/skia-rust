@@ -14,6 +14,7 @@ use skia_rust_core::geometry::{
     eval_quad_at_pos_tangent, eval_quad_tangent_at, find_cubic_cusp,
     measure_non_inflect_cubic_rotation, measure_quad_rotation,
 };
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::{Point, Vector, point_priv};
 use skia_rust_core::random::Random;
 use skia_rust_core::scalar::{SCALAR_PI, Scalar, scalar};
@@ -28,38 +29,6 @@ fn nearly_equal(a: Point, b: Point) -> bool {
 // Shorthand for `SkPoint{x, y}`.
 const fn pt(x: f32, y: f32) -> Point {
     Point::new(x, y)
-}
-
-// skia-rust: SkMatrix is not ported yet. This mirrors `SkMatrix::MakeAll(sx, kx, 0, ky, sy, 0, 0,
-// 0, 1)` and `SkMatrix::mapPoints` (the affine path, `x*sx + y*kx + tx`) for the non-perspective
-// matrices this test uses; replace it with `Matrix` once that is ported.
-#[derive(Copy, Clone)]
-struct Matrix {
-    sx: f32,
-    kx: f32,
-    ky: f32,
-    sy: f32,
-}
-
-impl Matrix {
-    const fn make_all(sx: f32, kx: f32, ky: f32, sy: f32) -> Self {
-        Self { sx, kx, ky, sy }
-    }
-
-    #[allow(clippy::float_cmp)] // exact identity check, as SkMatrix does via its type mask
-    fn map_points(&self, dst: &mut [Point], src: &[Point]) {
-        let identity = self.sx == 1.0 && self.kx == 0.0 && self.ky == 0.0 && self.sy == 1.0;
-        for (d, s) in dst.iter_mut().zip(src) {
-            *d = if identity {
-                *s
-            } else {
-                Point::new(
-                    s.x * self.sx + s.y * self.kx + 0.0,
-                    s.y * self.sy + s.x * self.ky + 0.0,
-                )
-            };
-        }
-    }
 }
 
 // Port of: tests/GeometryTest.cpp#L33-L130 (chrome/m156)
@@ -713,17 +682,19 @@ fn test_cubic_cusps(reporter: &mut Reporter) {
     }
 }
 
-// Port of: tests/GeometryTest.cpp#L472-L476 (chrome/m156)
-static K_SKEW_MATRICES: [Matrix; 3] = [
-    Matrix::make_all(1.0, 0.0, 0.0, 1.0),
-    Matrix::make_all(1.0, -1.0, 1.0, 1.0),
-    Matrix::make_all(0.889, 0.553, -0.443, 0.123),
-];
+// Port of: tests/GeometryTest.cpp#L467-L471 (chrome/m156)
+fn k_skew_matrices() -> [Matrix; 3] {
+    [
+        Matrix::new_all(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        Matrix::new_all(1.0, -1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        Matrix::new_all(0.889, 0.553, 0.0, -0.443, 0.123, 0.0, 0.0, 0.0, 1.0),
+    ]
+}
 
 // Port of: tests/GeometryTest.cpp#L478-L493 (chrome/m156)
 fn test_chop_quad_at_midtangent(reporter: &mut Reporter, pts: &[Point]) {
     const K_TOLERANCE: f32 = 1e-3;
-    for m in &K_SKEW_MATRICES {
+    for m in &k_skew_matrices() {
         let mut mapped = [Point::default(); 3];
         m.map_points(&mut mapped, &pts[..3]);
         let full_rotation = measure_quad_rotation(pts);
@@ -746,13 +717,14 @@ fn test_chop_quad_at_midtangent(reporter: &mut Reporter, pts: &[Point]) {
 #[allow(clippy::neg_cmp_op_on_partial_ord)] // inside reporter_assert!'s `!(cond)`
 fn test_chop_cubic_at_midtangent(reporter: &mut Reporter, pts: &[Point], cubic_type: CubicType) {
     const K_TOLERANCE: f32 = 1e-3;
-    let mut n = K_SKEW_MATRICES.len();
+    let skew_matrices = k_skew_matrices();
+    let mut n = skew_matrices.len();
     if cubic_type == CubicType::LocalCusp || cubic_type == CubicType::LineOrPoint {
         // FP precision isn't always enough to get the exact correct T value of the mid-tangent on
         // cusps and lines. Only test the identity matrix and the matrix with all 1's.
         n = 2;
     }
-    for matrix in &K_SKEW_MATRICES[..n] {
+    for matrix in &skew_matrices[..n] {
         let mut mapped = [Point::default(); 4];
         matrix.map_points(&mut mapped, &pts[..4]);
         let full_rotation = measure_non_inflect_cubic_rotation(&mapped);

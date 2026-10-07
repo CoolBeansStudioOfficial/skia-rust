@@ -47,6 +47,20 @@ pub mod meta_data_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
 #[cfg(test)]
+pub mod parse_path_test;
+#[cfg(test)]
+pub mod path_builder_test;
+#[cfg(test)]
+pub mod path_data_test;
+#[cfg(test)]
+pub mod path_measure_test;
+#[cfg(test)]
+pub mod path_raw_shapes_test;
+#[cfg(test)]
+pub mod path_raw_test;
+#[cfg(test)]
+pub mod path_test;
+#[cfg(test)]
 pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
@@ -56,6 +70,8 @@ pub mod point3_test;
 pub mod point_test;
 #[cfg(test)]
 pub mod quad_roots_test;
+#[cfg(test)]
+pub mod r_rect_in_path_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
@@ -74,6 +90,8 @@ pub mod size_test;
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
+#[cfg(test)]
+pub mod sk_path_range_iter_test;
 #[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]

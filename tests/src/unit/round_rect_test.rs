@@ -7,16 +7,16 @@
 
 use crate::{def_test, reporter_assert};
 use skia_rust_core::float_bits::bits_to_float;
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::path::Path;
+use skia_rust_core::path_types::PathDirection;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::rrect::rrect_priv::are_rect_and_radii_valid;
 
-// Skipped (need SkMatrix, SkPath or PathOps, none of which are ported yet):
-//   RoundRect (calls test_round_rect_transform, test_issue_2696 and
-//     test_empty_crbug_458524, which need SkMatrix, and test_conservative_intersection,
-//     which needs SkPath/PathOps),
-//   RRect_b561770646_part1 (SkPath::RRect), RRect_b561770646_part2 (SkMatrix, SkPath).
+// Not ported yet (manifest stays `todo`): RoundRect (its test_conservative_intersection helper
+// needs PathOps).
 
 // Port of: tests/RoundRectTest.cpp#L1652-L1682 (chrome/m156)
 def_test!(RRect_fuzzer_regressions, |r| {
@@ -187,4 +187,42 @@ def_test!(RRect_b547198215, |r| {
         ];
         reporter_assert!(r, !are_rect_and_radii_valid(&fuzzed_rect, &fuzzed_radii));
     }
+});
+
+// Port of: tests/RoundRectTest.cpp#L1786-L1803 (chrome/m156)
+def_test!(
+    #[allow(clippy::similar_names)] // names follow the C++
+    RRect_b561770646_part1,
+    |r| {
+        // Fuzzed testcase from b/561770646 where fBottom - fTop == fBottom in float due to tiny
+        // fTop, causing a scaled radius of height (fBottom) to produce fBottom - rad = 0 < fTop.
+        let rect = Rect::from_ltrb(0.0, 1e-30, 100.0, 100.0);
+        let radii = [
+            Vector::new(0.0, 0.0),    // Upper-Left
+            Vector::new(0.0, 0.0),    // Upper-Right
+            Vector::new(0.0, 0.0),    // Lower-Right
+            Vector::new(10.0, 100.0), // Lower-Left (fY == height == fBottom)
+        ];
+
+        let mut rrect = RRect::default();
+        rrect.set_rect_radii(rect, &radii);
+        reporter_assert!(r, rrect.is_valid());
+        let path = Path::rrect_with_start_index(rrect, PathDirection::CW, 0);
+        let _out = path.is_rrect();
+    }
+);
+
+// Port of: tests/RoundRectTest.cpp#L1805-L1818 (chrome/m156)
+def_test!(RRect_b561770646_part2, |r| {
+    // Axis-aligned transform that collapses an SkRRect / SkPath::RRect to empty bounds due to
+    // floating-point precision loss must fail transform and not crash DeduceRRectFromContour.
+    let rr = RRect::new_rect_xy(Rect::from_wh(100.0, 100.0), 10.0, 10.0);
+    let collapse_matrix = Matrix::translate((1e20, 0.0));
+
+    let transformed_rr = rr.transform(&collapse_matrix);
+    reporter_assert!(r, transformed_rr.is_none());
+
+    let path = Path::rrect(rr, None);
+    let transformed_path = path.make_transform(&collapse_matrix);
+    reporter_assert!(r, transformed_path.is_rrect().is_none());
 });

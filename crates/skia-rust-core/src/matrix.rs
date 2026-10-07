@@ -25,6 +25,7 @@
 use crate::float_bits::float_as_2s_compliment;
 use crate::floating_point::{double_to_float, ieee_float_divide, is_finite, is_finite_all};
 use crate::floating_point::{float_radians_to_degrees, is_finite_array};
+use crate::path_builder::PathBuilder;
 use crate::point::{Point, Vector};
 use crate::point3::Point3;
 use crate::rect::Rect;
@@ -2093,11 +2094,8 @@ impl Matrix {
     }
 
     /// Sets `dst` to the bounds of `src` mapped by the matrix; also returns true if the mapped
-    /// rectangle is still an axis-aligned rectangle (see [`Matrix::rect_stays_rect`]).
-    ///
-    /// # Panics
-    /// If the matrix has perspective: that needs `SkPathBuilder::transform` and
-    /// `SkPathPriv::PerspectiveClip`, which are not ported yet.
+    /// rectangle is still an axis-aligned rectangle (see [`Matrix::rect_stays_rect`]). With
+    /// perspective, the rectangle is clipped to the `w > 0` half-space first.
     // Port of: src/core/SkMatrix.cpp#L1147-L1172 (chrome/m156)
     #[doc(alias = "mapRect")]
     #[must_use]
@@ -2114,8 +2112,10 @@ impl Matrix {
         if self.is_scale_translate() {
             return (self.map_rect_scale_translate_unchecked(src), true);
         } else if self.has_perspective() {
-            // skia-rust: needs SkPathBuilder::transform / SkPathPriv::PerspectiveClip
-            unimplemented!("Matrix::map_rect with perspective needs SkPath, which is not ported");
+            let mut builder = PathBuilder::new();
+            builder.add_rect(src, None, None);
+            builder.transform(self);
+            return (builder.compute_bounds(), false);
         }
         let mut quad = to_quad_cw(src);
         self.map_points_inplace(&mut quad);

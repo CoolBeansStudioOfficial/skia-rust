@@ -2,10 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/MatrixTest.cpp (chrome/m156)
-//
-// Not ported yet (manifest stays `todo`): `Matrix_mapRect_skbug12335`, which maps a rect through
-// a perspective matrix (`SkMatrix::mapRect` needs `SkPathBuilder::transform` and
-// `SkPathPriv::PerspectiveClip`, i.e. SkPath).
 
 #![cfg(test)]
 
@@ -1393,6 +1389,34 @@ def_test!(Matrix_maprects, |r| {
         }
     }
 });
+
+// Port of: tests/MatrixTest.cpp#L1090-L1102 (chrome/m156)
+// Allowed lints: float literals are copied verbatim from the C++
+def_test!(
+    #[allow(clippy::excessive_precision)]
+    Matrix_mapRect_skbug12335,
+    |r| {
+        // Stripped down test case from skbug.com/40043416. Essentially, the corners of this rect
+        // would map to homogoneous coords with very small w's (below the old value of
+        // kW0PlaneDistance) and so they would be clipped "behind" the plane, resulting in an
+        // empty mapped rect. Coordinates with positive that wouldn't overflow when divided by w
+        // should still be included in the mapped rectangle.
+        let rect = Rect::from_ltrb(0.0, 0.0, 319.0, 620.0);
+        let m = Matrix::new_all(
+            0.000_152_695_269,
+            0.000_000_00,
+            -6.538_484_01e-05,
+            -1.756_975_33e-05,
+            0.000_157_153_074,
+            -1.108_479_75e-06,
+            -6.004_153_62e-08,
+            0.000_000_00,
+            0.000_169_880_834,
+        );
+        let out = m.map_rect(rect).0;
+        reporter_assert!(r, !out.is_empty());
+    }
+);
 
 // Port of: tests/MatrixTest.cpp#L1104-L1106 (chrome/m156)
 def_test!(Matrix_Ctor, |r| {

@@ -8,6 +8,7 @@
 use crate::floating_point::{
     float_ceil2int, float_floor2int, float_midpoint, float_round2int, is_finite_all,
 };
+use crate::path_types::PathDirection;
 use crate::point::{IPoint, IVector, Point, Vector};
 use crate::safe32::{can_overflow_sub, pin_to_s32, sat_add, sat_sub};
 use crate::scalar::{SCALAR_NAN, scalar};
@@ -774,7 +775,9 @@ impl Rect {
     #[doc(alias = "Bounds")]
     #[must_use]
     pub fn bounds(pts: &[Point]) -> Option<Rect> {
-        let first = pts.first()?;
+        let Some(first) = pts.first() else {
+            return Some(Rect::new_empty());
+        };
         // Skia has a 64-bit and a 32-bit (skvx) variant that "compute the same numerics"; this
         // is the 64-bit one.
         let (mut l, mut t, mut r, mut b) = (first.x, first.y, first.x, first.y);
@@ -1144,6 +1147,33 @@ impl Rect {
     #[must_use]
     pub const fn as_scalars(&self) -> [scalar; 4] {
         [self.left, self.top, self.right, self.bottom]
+    }
+
+    /// The four corners, starting at the top-left and going in `dir` (`SkRect::toQuad`).
+    // Port of: include/core/SkRect.h#L845-L849 (chrome/m156)
+    #[doc(alias = "toQuad")]
+    #[must_use]
+    pub fn to_quad(&self, dir: impl Into<Option<PathDirection>>) -> [Point; 4] {
+        let mut storage = [Point::default(); 4];
+        self.copy_to_quad(&mut storage, dir);
+        storage
+    }
+
+    /// Writes the four corners into `pts` (which must hold at least 4 points), starting at the
+    /// top-left and going in `dir` (`SkRect::copyToQuad`).
+    // Port of: include/core/SkRect.h#L853-L864 (chrome/m156)
+    #[doc(alias = "copyToQuad")]
+    pub fn copy_to_quad(&self, pts: &mut [Point], dir: impl Into<Option<PathDirection>>) {
+        debug_assert!(pts.len() >= 4);
+        pts[0] = self.tl();
+        pts[2] = self.br();
+        if dir.into().unwrap_or_default() == PathDirection::CW {
+            pts[1] = self.tr();
+            pts[3] = self.bl();
+        } else {
+            pts[1] = self.bl();
+            pts[3] = self.tr();
+        }
     }
 }
 
