@@ -729,8 +729,10 @@ Rust feature strings (Skia's in `src/opts/SkOpts_SetTarget.h#L74-L131`, `BUILD.g
 - **Tests.** The A2a harnesses now include Neon: on `aarch64` (CI's `ubuntu-24.04-arm` and
   `macos-latest`), `native_matches_model_highp`/`_lowp` compare native `Neon` with both
   `Model(Host)` and `Model(Arm)` bit for bit, on every primitive (the Arm estimates are
-  architectural, so `Model(Arm)` must equal the hardware everywhere; the fused highp `mad`/`nmad`
-  only tolerate the `f`/`m` NaN commutation). `estimates::arm` has known answers derived from
+  architectural, so `Model(Arm)` must equal the hardware everywhere). The fused highp `mad`
+  uses A2b's `NanRule::Fused` (NaN-ness only where two operands are NaN); `nmad` uses
+  `NanRule::NeonFusedNeg`, which additionally ignores the sign bit when `f` or `m` is NaN (which
+  multiplicand `FMLS` negates is LLVM's choice). `estimates::arm` has known answers derived from
   the pseudocode (`FRECPE(1) = FRSQRTE(1) = 0x3F7F8000`, both denormal-result exponents,
   normalized denormal inputs, every special case), an 8-bit-accuracy sweep (all on any host and
   under Miri), `sampled_arm_vs_host` (every 4093rd pattern, `aarch64` only) and the `#[ignore]`d
