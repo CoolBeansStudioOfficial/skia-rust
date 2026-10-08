@@ -121,6 +121,16 @@ impl BinaryWriteBuffer {
         self.writer.bytes_written()
     }
 
+    /// `SkBinaryWriteBuffer::snapshotAsData`: the bytes written so far, as data.
+    // Port of: src/core/SkWriteBuffer.cpp (snapshotAsData, chrome/m156)
+    #[doc(alias = "snapshotAsData")]
+    #[must_use]
+    pub fn snapshot_as_data(&self) -> crate::data::Data {
+        let mut bytes = vec![0u8; self.bytes_written()];
+        self.writer.flatten(&mut bytes);
+        crate::data::Data::new_from_vec(bytes)
+    }
+
     /// Writes the size of `data` and the bytes padded to 4 (`writeByteArray`).
     ///
     /// # Panics

@@ -233,6 +233,21 @@ impl StrikeCache {
         Self::internal_create_strike(&mut state, &self.state, spec, maybe_metrics, pinner)
     }
 
+    /// `SkStrike`'s constructor as a test builds one on the stack (`SkStrikeTest.cpp`): the strike
+    /// refers to this cache but is not attached to it, so the cache never purges it.
+    // Port of: src/core/SkStrike.cpp#L38-L51 (chrome/m156), constructed as tests/SkStrikeTest.cpp#L129
+    #[doc(hidden)]
+    #[must_use]
+    pub fn new_detached_strike(&self, spec: &StrikeSpec) -> Arc<Strike> {
+        Arc::new(Strike::new(
+            Arc::downgrade(&self.state),
+            spec,
+            spec.create_scaler_context(),
+            None,
+            None,
+        ))
+    }
+
     /// `SkStrikeCache::findOrCreateStrike`: the cached strike for `spec`, or a new one.
     // Port of: src/core/SkStrikeCache.cpp#L49-L57 (chrome/m156)
     #[must_use]

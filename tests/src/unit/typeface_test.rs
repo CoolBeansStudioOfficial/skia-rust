@@ -9,7 +9,9 @@ use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::FontDescriptor;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
 use skia_rust_core::stream::DynamicMemoryWStream;
+use skia_rust_core::typeface::Typeface;
 use skia_rust_core::typeface_cache::TypefaceCache;
+use skia_rust_tools::font_tool_utils::{create_test_typeface, default_typeface};
 use skia_rust_tools::fonts::test_empty_typeface::TestEmptyTypeface;
 
 use crate::{Reporter, def_test, errorf, reporter_assert};
@@ -80,5 +82,33 @@ def_test!(
         } else {
             errorf!(reporter, "descD.getVariationCoordinateCount() != 1");
         }
+    }
+);
+
+/// `SkTypeface::Equal(a, b)`: two nulls are equal, a null and a typeface are not.
+// Port of: src/core/SkTypeface.cpp#L148-L156 (chrome/m156)
+fn typeface_equal(a: Option<&Typeface>, b: Option<&Typeface>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => a == b,
+        _ => false,
+    }
+}
+
+// Port of: tests/TypefaceTest.cpp#L502-L514 (chrome/m156)
+def_test!(
+    #[ignore = "portable configuration only: the NativeFontations run needs T19b (docs/design/text.md §8)"]
+    Typeface,
+    |reporter| {
+        let t1 = create_test_typeface(None, FontStyle::default());
+        let t2 = default_typeface();
+
+        reporter_assert!(reporter, typeface_equal(Some(&t1), Some(&t2)));
+        reporter_assert!(reporter, typeface_equal(None, None));
+
+        reporter_assert!(reporter, !typeface_equal(None, Some(&t1)));
+        reporter_assert!(reporter, !typeface_equal(None, Some(&t2)));
+        reporter_assert!(reporter, !typeface_equal(Some(&t1), None));
+        reporter_assert!(reporter, !typeface_equal(Some(&t2), None));
     }
 );
