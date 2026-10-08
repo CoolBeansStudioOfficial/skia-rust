@@ -14,7 +14,10 @@ use std::sync::OnceLock;
 use skia_rust_core::font::Font;
 use skia_rust_core::font_mgr::FontMgr;
 use skia_rust_core::font_style::FontStyle;
+use skia_rust_core::font_types::TextEncoding;
+use skia_rust_core::scalar::scalar;
 use skia_rust_core::stream::StreamAsset;
+use skia_rust_core::text_blob::TextBlobBuilder;
 use skia_rust_core::typeface::Typeface;
 
 use crate::fonts::test_font_mgr::make_portable_font_mgr;
@@ -174,4 +177,35 @@ pub fn emoji_sample(format: EmojiFontFormat) -> EmojiTestSample {
             panic!("EmojiSample(Test) needs TestSVGTypeface, which is not ported yet (T20)")
         }
     }
+}
+
+/// `ToolUtils::add_to_text_blob_w_len(builder, text, encoding, font, x, y)`: adds a run of the
+/// glyphs of `text` at `(x, y)`, unless there are none.
+// Port of: tools/ToolUtils.cpp#L216-L229 (chrome/m156)
+pub fn add_to_text_blob_w_len(
+    builder: &mut TextBlobBuilder,
+    text: &[u8],
+    encoding: TextEncoding,
+    font: &Font,
+    x: scalar,
+    y: scalar,
+) {
+    let count = font.count_text(text, encoding);
+    if count < 1 {
+        return;
+    }
+    let glyphs = builder.alloc_run(font, count, x, y, None);
+    font.text_to_glyphs(text, encoding, glyphs);
+}
+
+/// `ToolUtils::add_to_text_blob(builder, text, font, x, y)` for a UTF-8 string.
+// Port of: tools/ToolUtils.cpp#L231-L237 (chrome/m156)
+pub fn add_to_text_blob(
+    builder: &mut TextBlobBuilder,
+    text: &str,
+    font: &Font,
+    x: scalar,
+    y: scalar,
+) {
+    add_to_text_blob_w_len(builder, text.as_bytes(), TextEncoding::UTF8, font, x, y);
 }

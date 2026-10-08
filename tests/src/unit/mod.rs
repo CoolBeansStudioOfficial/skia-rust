@@ -318,6 +318,7 @@ pub mod stroke_test;
 pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
+pub mod text_blob_test;
 #[cfg(test)]
 pub mod typeface_test;
 #[cfg(test)]

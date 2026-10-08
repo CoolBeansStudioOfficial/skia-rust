@@ -76,6 +76,7 @@ use crate::shader::Shader;
 use crate::size::ISize;
 use crate::slug::Slug;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
+use crate::text_blob::TextBlob;
 use crate::tile_mode::TileMode;
 use crate::utils::patch_utils;
 use crate::vertices::{VertexMode, Vertices};
@@ -3759,6 +3760,33 @@ impl Canvas {
             }
         };
         self.draw_glyph_run(run, origin.into(), paint);
+    }
+
+    /// Draws the text blob `blob` with its origin at `origin`, painted with `paint`
+    /// (`drawTextBlob`).
+    // Port of: src/core/SkCanvas.cpp#L2574-L2594 (chrome/m156), and onDrawTextBlob#L2436-L2441
+    #[doc(alias = "drawTextBlob")]
+    pub fn draw_text_blob(
+        &self,
+        blob: &TextBlob,
+        origin: impl Into<Point>,
+        paint: &Paint,
+    ) -> &Self {
+        let origin = origin.into();
+        if !blob.bounds().with_offset(origin).is_finite() {
+            return self;
+        }
+        // Overflow if more than 2^21 glyphs, stopping a buffer overflow later in the stack.
+        // See chromium:1080481.
+        let max_glyph_count: usize = 1 << 21;
+        let total_glyph_count: usize = blob.iter().map(|run| run.glyph_count()).sum();
+        if total_glyph_count > max_glyph_count {
+            return self;
+        }
+        let mut builder = GlyphRunBuilder::new();
+        let list = builder.blob_to_glyph_run_list(blob, origin);
+        self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+        self
     }
 
     /// Draws a slug (`drawSlug`). A null slug draws nothing; a [`Slug`] is never made on the CPU.

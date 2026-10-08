@@ -203,6 +203,7 @@ pub mod t_pin;
 pub mod t_sort;
 pub mod table_color_filter;
 pub mod tessellation;
+pub mod text_blob;
 pub mod tile_mode;
 pub mod tiled_image_utils;
 pub mod to;
