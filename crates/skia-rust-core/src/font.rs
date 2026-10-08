@@ -8,11 +8,16 @@
 //! added with the text engine.
 
 use crate::font_types::FontHinting;
+use crate::paint::{Paint, Style};
 use crate::scalar::scalar;
 use crate::typeface::Typeface;
 
 /// `SkPaintDefaults_TextSize`: the default text size, in pixels.
 // Port of: src/core/SkPaintDefaults.h (SkPaintDefaults_TextSize = 12, chrome/m156)
+/// `SkFontPriv::kCanonicalTextSizeForPaths`: the size glyphs are outlined at when drawn as paths.
+// Port of: src/core/SkFontPriv.h#L36 (chrome/m156)
+const CANONICAL_TEXT_SIZE_FOR_PATHS: scalar = 64.0;
+
 const DEFAULT_SIZE: scalar = 12.0;
 
 /// `SkPaintDefaults_Hinting`: the default hinting.
@@ -302,6 +307,29 @@ impl Font {
     // Port of: src/core/SkFont.cpp#L119-L121 (chrome/m156)
     pub fn set_baseline_snap(&mut self, value: bool) {
         self.set_flag(BASELINE_SNAP, value);
+    }
+
+    /// `SkFont::setupForAsPaths`: prepares the font to be drawn as paths. Sets the canonical size
+    /// (`kCanonicalTextSizeForPaths`), turns off hinting and bitmaps, and, if a paint is given,
+    /// makes it fill with no path effect. Returns the scale from the canonical size back to the
+    /// font's own size.
+    // Port of: src/core/SkFont.cpp#L148-L165 (chrome/m156)
+    #[doc(alias = "setupForAsPaths")]
+    pub fn setup_for_as_paths(&mut self, paint: Option<&mut Paint>) -> scalar {
+        // `kEmbeddedBitmaps_PrivFlag | kForceAutoHinting_PrivFlag`
+        const FLAGS_TO_IGNORE: u8 = EMBEDDED_BITMAPS | FORCE_AUTO_HINTING;
+        self.flags = (self.flags & !FLAGS_TO_IGNORE) | SUBPIXEL;
+        self.set_hinting(FontHinting::None);
+        if self.edging() == Edging::SubpixelAntiAlias {
+            self.set_edging(Edging::AntiAlias);
+        }
+        if let Some(paint) = paint {
+            paint.set_style(Style::Fill);
+            paint.set_path_effect(None);
+        }
+        let text_size = self.size;
+        self.set_size(CANONICAL_TEXT_SIZE_FOR_PATHS);
+        text_size / CANONICAL_TEXT_SIZE_FOR_PATHS
     }
 
     /// Reads one private flag bit.
