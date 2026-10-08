@@ -31713,8 +31713,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontHostStreamTest.cpp#L72-L157"
 module = "text"
-status = "todo"
-reason = "needs canvas text drawing (T13/T14) and SkTypeface::MakeDeserialize with the decoder table"
+status = "passing"
 span_hash = "173fc6f90562640f67cfd3b6575b1f55ea3fb88a4c3b7c9d5ba2fc75aa61c409"
 
 [[test]]
@@ -31812,8 +31811,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L264-L270"
 module = "text"
-status = "todo"
-reason = "needs SkFontMgr_New_FontConfig, the FontConfig backend (out of scope, docs/design/text.md §2.3)"
+status = "excluded"
+reason = "platform font backend (FontConfig) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "10a05dae170b8df1a540ba7f9784a52a3be0258775e8f2aee86c2a6cb51c7f5d"
 
 [[test]]
@@ -31915,8 +31914,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontNamesTest.cpp#L243-L246"
 module = "text"
-status = "todo"
-reason = "needs SkOTTableName::Iterator (src/sfnt/SkOTTable_name.{h,cpp}), not ported yet"
+status = "passing"
 span_hash = "4952e0621cdd6b1d02b64a7654e7167cee40eb8a4db3af2fa9263af609add1bd"
 
 [[test]]
