@@ -7,6 +7,7 @@ pub mod dash_impl;
 pub mod dash_path;
 pub mod dash_path_effect;
 pub mod discrete_path_effect;
+pub mod image_filters;
 pub mod line_2d_path_effect;
 pub mod path_1d_path_effect;
 pub mod path_2d_path_effect;
