@@ -179,6 +179,7 @@ pub mod t_fits_in;
 pub mod t_pin;
 pub mod t_sort;
 pub mod tessellation;
+pub mod text_blob;
 pub mod tile_mode;
 pub mod to;
 pub mod typeface;
