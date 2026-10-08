@@ -35,8 +35,7 @@ def_test!(SkStrikeCache_CachePurge, |reporter| {
         &SurfaceProps::new(SurfacePropsFlags::empty(), PixelGeometry::Unknown),
         ScalerContextBuildFlags::NONE,
         Matrix::i(),
-    )
-    .expect("a plain mask strike has no effects to reject");
+    );
 
     // Initially empty cache
     reporter_assert!(reporter, cache.total_memory_used() == 0);

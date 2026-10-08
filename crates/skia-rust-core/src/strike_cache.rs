@@ -371,8 +371,7 @@ mod tests {
             &SurfaceProps::default(),
             crate::scaler_context::ScalerContextBuildFlags::NONE,
             crate::matrix::Matrix::i(),
-        )
-        .expect("a paint without effects has a strike spec");
+        );
 
         assert_eq!(cache.total_memory_used(), 0);
         drop(cache.find_or_create_strike(&spec));

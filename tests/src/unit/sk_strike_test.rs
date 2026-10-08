@@ -134,8 +134,7 @@ def_test!(SkStrikeMultiThread, |_reporter| {
         &SurfaceProps::new(SurfacePropsFlags::empty(), PixelGeometry::Unknown),
         ScalerContextBuildFlags::NONE,
         Matrix::i(),
-    )
-    .expect("a plain mask strike has no effects to reject");
+    );
 
     let strike_cache = StrikeCache::new();
 

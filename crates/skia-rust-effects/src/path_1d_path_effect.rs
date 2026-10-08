@@ -10,6 +10,7 @@
 //! base, whose `begin`/`next` are overridden only by `SkPath1DPathEffectImpl`) is folded into
 //! [`Path1DPathEffectImpl`].
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::{float_midpoint, is_finite};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::{Iter, Path};
@@ -18,9 +19,11 @@ use skia_rust_core::path_effect::{PathEffect, PathEffectBase};
 use skia_rust_core::path_measure::PathMeasure;
 use skia_rust_core::path_types::PathVerb;
 use skia_rust_core::point::{Point, Vector};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{scalar, scalar_mod};
 use skia_rust_core::stroke_rec::StrokeRec;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 // Since we are stepping by a float, the do/while loop might go on forever (or nearly so).
 // Put in a governor to limit crash values from looping too long (and allocating too much ram).
@@ -98,7 +101,42 @@ impl Path1DPathEffectImpl {
     }
 }
 
+/// `SkPath1DPathEffect::CreateProc`: the advance, the path, the phase and the style.
+// Port of: src/effects/Sk1DPathEffect.cpp#L116-L128 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let advance = buffer.read_scalar();
+    let path = buffer.read_path()?;
+    let phase = buffer.read_scalar();
+    // kLastEnum_Style is kMorph_Style; an invalid style reads as 0 (kTranslate).
+    let style = match buffer.read32_le(Style::Morph as u32) {
+        1 => Style::Rotate,
+        2 => Style::Morph,
+        _ => Style::Translate,
+    };
+    if !buffer.is_valid() {
+        return None;
+    }
+    new(&path, advance, phase, style)
+}
+
 impl PathEffectBase for Path1DPathEffectImpl {
+    // Port of: src/effects/Sk1DPathEffect.cpp#L138 (chrome/m156), SK_REGISTER_FLATTENABLE's
+    // hook name (the registry is keyed by `SkPath1DPathEffectImpl`, as in C++)
+    fn type_name(&self) -> &'static str {
+        "SkPath1DPathEffect"
+    }
+
+    // Port of: src/effects/Sk1DPathEffect.cpp#L130-L135 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.advance);
+        buffer.write_path(&self.path);
+        buffer.write_scalar(self.initial_offset);
+        buffer.write_uint(self.style as u32);
+    }
+
     // Port of: src/effects/Sk1DPathEffect.cpp#L99-L103 (chrome/m156)
     fn on_filter_path(
         &self,

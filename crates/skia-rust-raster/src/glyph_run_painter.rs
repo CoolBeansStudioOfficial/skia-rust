@@ -109,9 +109,7 @@ impl GlyphRunListPainter {
 
             if StrikeSpec::should_draw_as_path(paint, run_font, &position_matrix) {
                 let (spec, strike_to_source_scale) =
-                    StrikeSpec::make_path(run_font, paint, &props, flags).expect(
-                        "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-                    );
+                    StrikeSpec::make_path(run_font, paint, &props, flags);
                 let strike = spec.find_or_create_strike();
                 {
                     let mut guard = strike.lock();
@@ -165,10 +163,7 @@ impl GlyphRunListPainter {
             }
 
             if !source.is_empty() && !position_matrix.has_perspective() {
-                let spec = StrikeSpec::make_mask(run_font, paint, &props, flags, &position_matrix)
-                    .expect(
-                        "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-                    );
+                let spec = StrikeSpec::make_mask(run_font, paint, &props, flags, &position_matrix);
                 let strike = spec.find_or_create_strike();
                 let mut guard = strike.lock();
                 let rounding = *strike.rounding_spec();
@@ -189,9 +184,7 @@ impl GlyphRunListPainter {
             if !source.is_empty() {
                 // Create a strike in source space to calculate scale information.
                 let scale_strike_spec =
-                    StrikeSpec::make_mask(run_font, paint, &props, flags, Matrix::i()).expect(
-                        "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-                    );
+                    StrikeSpec::make_mask(run_font, paint, &props, flags, Matrix::i());
                 let glyph_ids: Vec<GlyphId> = source.iter().map(|(id, _)| *id).collect();
                 let glyphs = BulkGlyphMetrics::new(&scale_strike_spec).glyphs(&glyph_ids);
 
@@ -226,9 +219,7 @@ impl GlyphRunListPainter {
                 let mut cache_scale = Matrix::default();
                 cache_scale.set_scale((max_scale, max_scale), None);
                 let strike_spec =
-                    StrikeSpec::make_mask(run_font, paint, &props, flags, &cache_scale).expect(
-                        "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-                    );
+                    StrikeSpec::make_mask(run_font, paint, &props, flags, &cache_scale);
                 let strike = strike_spec.find_or_create_strike();
                 let rounding = *strike.rounding_spec();
                 let mut guard = strike.lock();
