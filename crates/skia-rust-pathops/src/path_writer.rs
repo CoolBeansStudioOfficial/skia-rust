@@ -8,12 +8,37 @@
 //! A closed contour goes straight to the output. An open one is kept as a partial contour, and
 //! [`OpState::writer_assemble`] joins the partials into closed contours, pairing their ends by
 //! distance.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::path::{AddPathMode, Path};
-use skia_rust_core::path_enums::ResolveConvexity;
-use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::path_builder::{PathBuilder, Reserve};
+use skia_rust_core::path_enums::ResolveConvexity;
 use skia_rust_core::path_priv::{raw_builder, reverse_add_path, reverse_path_to};
+use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::Point;
 use skia_rust_core::t_sort::t_q_sort;
 
@@ -204,10 +229,10 @@ impl PathWriter {
             // Skia adds a degenerate line here; the caller should have checked.
             return true;
         }
-        if let Some(defer0) = self.defer[0] {
-            if state.ptt_contains_ptt(ptt, defer0) {
-                return true;
-            }
+        if let Some(defer0) = self.defer[0]
+            && state.ptt_contains_ptt(ptt, defer0)
+        {
+            return true;
         }
         if self.matched_last(state, Some(ptt)) {
             return false;
@@ -248,6 +273,12 @@ impl PathWriter {
 
     /// `SkPathWriter::isClosed()`: the current contour ends where it starts.
     // Port of: src/pathops/SkPathWriter.cpp#L163-L165 (chrome/m156)
+    /// `SkPathWriter::hasMove()`: no contour has been started yet.
+    // Port of: src/pathops/SkPathWriter.h#L31 (chrome/m156)
+    pub(crate) fn has_move(&self) -> bool {
+        self.first_ptt.is_none()
+    }
+
     pub(crate) fn is_closed(&self, state: &OpState) -> bool {
         self.matched_last(state, self.first_ptt)
     }
@@ -274,7 +305,12 @@ impl OpState {
     /// `SkOpSegment::isSimple(end, step)`: the segment that continues a chain without a choice
     /// of next curve, or `None`.
     // Port of: src/pathops/SkOpSegment.h#L265-L267 (chrome/m156)
-    pub(crate) fn seg_is_simple(&self, seg: SegId, start: &mut SpanId, step: &mut i32) -> Option<SegId> {
+    pub(crate) fn seg_is_simple(
+        &self,
+        seg: SegId,
+        start: &mut SpanId,
+        step: &mut i32,
+    ) -> Option<SegId> {
         self.next_chase(seg, start, step, None, None)
     }
 
@@ -303,29 +339,30 @@ impl OpState {
                     break;
                 }
                 let op_span_base = self.ptt_span(op_ptt);
-                let mut start = if t != 0.0 {
-                    match self.span_prev(op_span_base) {
-                        Some(s) => s,
-                        None => break,
-                    }
-                } else {
+                let mut start = if t == 0.0 {
                     match self.span_next(self.span_up_cast(op_span_base)) {
                         Some(s) => s,
                         None => break,
                     }
+                } else {
+                    match self.span_prev(op_span_base) {
+                        Some(s) => s,
+                        None => break,
+                    }
                 };
-                let mut step: i32 = if t != 0.0 { 1 } else { -1 };
+                let mut step: i32 = if t == 0.0 { -1 } else { 1 };
                 let op_segment = self.span_segment(op_span_base);
-                let Some(next_segment) = self.seg_is_simple(op_segment, &mut start, &mut step) else {
+                let Some(next_segment) = self.seg_is_simple(op_segment, &mut start, &mut step)
+                else {
                     break;
                 };
-                let op_span_end = if self.span_t(start) != 0.0 {
-                    match self.span_prev(start) {
+                let op_span_end = if self.span_t(start) == 0.0 {
+                    match self.span_next(self.span_up_cast(start)) {
                         Some(s) => s,
                         None => break,
                     }
                 } else {
-                    match self.span_next(self.span_up_cast(start)) {
+                    match self.span_prev(start) {
                         Some(s) => s,
                         None => break,
                     }
@@ -401,8 +438,16 @@ impl OpState {
                 continue;
             }
             let flip = end_one == end_two;
-            let value_one = if flip { !(ndx_two as i32) } else { ndx_two as i32 };
-            let value_two = if flip { !(ndx_one as i32) } else { ndx_one as i32 };
+            let value_one = if flip {
+                !(ndx_two as i32)
+            } else {
+                ndx_two as i32
+            };
+            let value_two = if flip {
+                !(ndx_one as i32)
+            } else {
+                ndx_one as i32
+            };
             link_set(&mut s_link, &mut e_link, end_one, ndx_one, value_one);
             link_set(&mut s_link, &mut e_link, end_two, ndx_two, value_two);
             remaining -= 1;
@@ -451,7 +496,11 @@ impl OpState {
                 }
                 first = false;
                 let r = r_index as i32;
-                let close_value = if (r != e_index) ^ forward { e_index } else { !e_index };
+                let close_value = if (r != e_index) ^ forward {
+                    e_index
+                } else {
+                    !e_index
+                };
                 if s_index == close_value {
                     writer.builder.close();
                     break;

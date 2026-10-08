@@ -1,3 +1,31 @@
+// Some ported helpers have no caller yet: the Op pieces that use them (tight bounds,
+// the builder) are later slices. Remove this allow as those callers are ported.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
+#![allow(dead_code)]
 // Copyright 2012 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
@@ -14,17 +42,18 @@
 use skia_rust_core::path::Verb;
 use skia_rust_core::point::Point;
 
+use crate::intersections::Intersections;
+use crate::line::DLine;
 use crate::op_angle::IncludeType;
-use crate::path_writer::PathWriter;
 use crate::op_curve::{
-    DCurveSweep,    DCurveBuf, curve_d_intersect_ray, curve_d_point_at_t, curve_d_slope_at_t, curve_dd_point_at_t,
-    curve_dd_slope_at_t, curve_intersect_ray, curve_is_vertical, curve_point_at_t, verb_points,
+    DCurveBuf, DCurveSweep, curve_d_intersect_ray, curve_d_point_at_t, curve_d_slope_at_t,
+    curve_dd_point_at_t, curve_dd_slope_at_t, curve_intersect_ray, curve_is_vertical,
+    curve_point_at_t, verb_points,
 };
 use crate::op_span::Collapsed;
 use crate::op_state::{AngleId, ContourId, OpState, PtTId, SK_MIN_S32, SegId, SpanId};
 use crate::path_op::PathOp;
-use crate::intersections::Intersections;
-use crate::line::DLine;
+use crate::path_writer::PathWriter;
 use crate::point::{DPoint, DVector};
 use crate::rect::Bounds;
 use crate::types::{between, precisely_equal, roughly_equal, std_max, zero_or_one};
@@ -32,10 +61,46 @@ use crate::types::{between, precisely_equal, roughly_equal, std_max, zero_or_one
 /// `kActiveEdge[op][miFrom][miTo][suFrom][suTo]`: which edges survive each operator.
 // Port of: src/pathops/SkOpSegment.cpp#L26-L44 (chrome/m156)
 const K_ACTIVE_EDGE: [[[[[bool; 2]; 2]; 2]; 2]; 4] = [
-    [[[[false, false], [false, false]], [[true, false], [true, false]]], [[[true, true], [false, false]], [[false, true], [true, false]]]],
-    [[[[false, false], [false, false]], [[false, true], [false, true]]], [[[false, false], [true, true]], [[false, true], [true, false]]]],
-    [[[[false, true], [true, false]], [[true, true], [false, false]]], [[[true, false], [true, false]], [[false, false], [false, false]]]],
-    [[[[false, true], [true, false]], [[true, false], [false, true]]], [[[true, false], [false, true]], [[false, true], [true, false]]]],
+    [
+        [
+            [[false, false], [false, false]],
+            [[true, false], [true, false]],
+        ],
+        [
+            [[true, true], [false, false]],
+            [[false, true], [true, false]],
+        ],
+    ],
+    [
+        [
+            [[false, false], [false, false]],
+            [[false, true], [false, true]],
+        ],
+        [
+            [[false, false], [true, true]],
+            [[false, true], [true, false]],
+        ],
+    ],
+    [
+        [
+            [[false, true], [true, false]],
+            [[true, true], [false, false]],
+        ],
+        [
+            [[true, false], [true, false]],
+            [[false, false], [false, false]],
+        ],
+    ],
+    [
+        [
+            [[false, true], [true, false]],
+            [[true, false], [false, true]],
+        ],
+        [
+            [[true, false], [false, true]],
+            [[false, true], [true, false]],
+        ],
+    ],
 ];
 
 /// `kUnaryActiveEdge[from][to]`.
@@ -325,7 +390,13 @@ impl OpState {
     #[must_use]
     pub(crate) fn seg_is_vertical_span(&self, seg: SegId, start: SpanId, end: SpanId) -> bool {
         let s = &self.segments[seg.0];
-        curve_is_vertical(s.verb, &s.pts, s.weight, self.span_t(start), self.span_t(end))
+        curve_is_vertical(
+            s.verb,
+            &s.pts,
+            s.weight,
+            self.span_t(start),
+            self.span_t(end),
+        )
     }
 
     /// `SkOpSegment::ptAtT(mid)`.
@@ -387,7 +458,12 @@ impl OpState {
 
     /// `SkOpSegment::markWinding(span, winding, oppWinding)`.
     // Port of: src/pathops/SkOpSegment.cpp#L1042-L1050 (chrome/m156)
-    pub(crate) fn seg_mark_winding_opp(&mut self, span: SpanId, winding: i32, opp_winding: i32) -> bool {
+    pub(crate) fn seg_mark_winding_opp(
+        &mut self,
+        span: SpanId,
+        winding: i32,
+        opp_winding: i32,
+    ) -> bool {
         if self.span_done(span) {
             return false;
         }
@@ -435,18 +511,17 @@ impl OpState {
             if self.ptts[test_ptt.0].t == t {
                 break;
             }
-            if !self.seg_match(seg, test_ptt, seg, t, pt) {
-                if t < self.ptts[test_ptt.0].t {
-                    return None;
-                }
-            } else {
+            if self.seg_match(seg, test_ptt, seg, t, pt) {
                 if opp.is_none() {
                     return Some(test_ptt);
                 }
                 let mut lp = self.ptt_next(test_ptt);
                 let mut found = false;
                 while lp != test_ptt {
-                    if self.ptt_segment(lp) == seg && self.ptts[lp.0].t == t && self.ptts[lp.0].pt == pt {
+                    if self.ptt_segment(lp) == seg
+                        && self.ptts[lp.0].t == t
+                        && self.ptts[lp.0].pt == pt
+                    {
                         found = true;
                         break;
                     }
@@ -456,14 +531,14 @@ impl OpState {
                     return None;
                 }
                 break; // foundMatch
+            } else if t < self.ptts[test_ptt.0].t {
+                return None;
             }
             test = self.span_next(test)?;
         }
         // foundMatch: `opp && !test->contains(opp) ? nullptr : testPtT`
         if let Some(opp) = opp {
-            if self.span_contains_seg(test, opp).is_none() {
-                return None;
-            }
+            self.span_contains_seg(test, opp)?;
         }
         Some(test_ptt)
     }
@@ -498,11 +573,18 @@ impl OpState {
     /// `SkOpSegment::ptsDisjoint(t1, pt1, t2, pt2)`.
     // Port of: src/pathops/SkOpSegment.cpp#L1505-L1519 (chrome/m156)
     #[must_use]
-    pub(crate) fn seg_pts_disjoint(&self, seg: SegId, t1: f64, pt1: Point, t2: f64, pt2: Point) -> bool {
+    pub(crate) fn seg_pts_disjoint(
+        &self,
+        seg: SegId,
+        t1: f64,
+        pt1: Point,
+        t2: f64,
+        pt2: Point,
+    ) -> bool {
         if self.segments[seg.0].verb == Verb::Line {
             return false;
         }
-        let mid_t = (t1 + t2) / 2.0;
+        let mid_t = f64::midpoint(t1, t2);
         let mid_pt = self.seg_pt_at_t(seg, mid_t);
         let se_dist_sq = std_max(dist_sq(pt1, pt2) * 2.0, f32::EPSILON * 2.0);
         dist_sq(mid_pt, pt1) > se_dist_sq || dist_sq(mid_pt, pt2) > se_dist_sq
@@ -595,7 +677,11 @@ impl OpState {
         self.seg_sub_divide(start_seg, start, end, &mut curve_part.curve);
         let seg_verb = self.segments[seg.0].verb;
         curve_part.set_curve_hull_sweep(seg_verb);
-        let verb = if curve_part.is_curve { seg_verb } else { Verb::Line };
+        let verb = if curve_part.is_curve {
+            seg_verb
+        } else {
+            Verb::Line
+        };
         let start_ptt = self.span_ptt(start);
         let end_ptt = self.span_ptt(end);
         path.deferred_move(self, start_ptt);
@@ -843,10 +929,10 @@ impl OpState {
                     try_reverse = true;
                 } else if let Some(base) = base_angle {
                     self.compute_one_sum(base, angle, include_type);
-                    base_angle = if SK_MIN_S32 != self.span_wind_sum(self.angle_starter(angle)) {
-                        Some(angle)
-                    } else {
+                    base_angle = if SK_MIN_S32 == self.span_wind_sum(self.angle_starter(angle)) {
                         None
+                    } else {
+                        Some(angle)
                     };
                 }
             }
@@ -854,11 +940,11 @@ impl OpState {
                 break;
             }
         }
-        if let Some(base) = base_angle {
-            if SK_MIN_S32 == self.span_wind_sum(self.angle_starter(first_angle)) {
-                first_angle = base;
-                try_reverse = true;
-            }
+        if let Some(base) = base_angle
+            && SK_MIN_S32 == self.span_wind_sum(self.angle_starter(first_angle))
+        {
+            first_angle = base;
+            try_reverse = true;
         }
         if try_reverse {
             base_angle = None;
@@ -878,10 +964,11 @@ impl OpState {
                         base_angle = Some(angle);
                     } else if let Some(base) = base_angle {
                         self.compute_one_sum_reverse(base, angle, include_type);
-                        base_angle = if SK_MIN_S32 != self.span_wind_sum(self.angle_starter(angle)) {
-                            Some(angle)
-                        } else {
+                        base_angle = if SK_MIN_S32 == self.span_wind_sum(self.angle_starter(angle))
+                        {
                             None
+                        } else {
+                            Some(angle)
                         };
                     }
                 }
@@ -895,7 +982,12 @@ impl OpState {
 
     /// `SkOpSegment::ComputeOneSum(baseAngle, nextAngle, includeType)`.
     // Port of: src/pathops/SkOpSegment.cpp#L350-L383 (chrome/m156)
-    fn compute_one_sum(&mut self, base_angle: AngleId, next_angle: AngleId, include_type: IncludeType) -> bool {
+    fn compute_one_sum(
+        &mut self,
+        base_angle: AngleId,
+        next_angle: AngleId,
+        include_type: IncludeType,
+    ) -> bool {
         let base_seg = self.angle_segment(base_angle);
         let mut sum_mi_winding = self.seg_update_winding_reverse(base_seg, base_angle);
         let mut sum_su_winding = 0;
@@ -911,13 +1003,14 @@ impl OpState {
         let next_end = self.angle_end(next_angle);
         let mut last: Option<SpanId> = None;
         if binary {
-            let (max_winding, sum_winding, opp_max_winding, opp_sum_winding) = self.seg_set_up_windings_opp(
-                next_seg,
-                next_start,
-                next_end,
-                &mut sum_mi_winding,
-                &mut sum_su_winding,
-            );
+            let (max_winding, sum_winding, opp_max_winding, opp_sum_winding) = self
+                .seg_set_up_windings_opp(
+                    next_seg,
+                    next_start,
+                    next_end,
+                    &mut sum_mi_winding,
+                    &mut sum_su_winding,
+                );
             if !self.seg_mark_angle_opp(
                 next_seg,
                 max_winding,
@@ -930,12 +1023,8 @@ impl OpState {
                 return false;
             }
         } else {
-            let (max_winding, sum_winding) = self.seg_set_up_windings(
-                next_seg,
-                next_start,
-                next_end,
-                &mut sum_mi_winding,
-            );
+            let (max_winding, sum_winding) =
+                self.seg_set_up_windings(next_seg, next_start, next_end, &mut sum_mi_winding);
             if !self.seg_mark_angle(next_seg, max_winding, sum_winding, next_angle, &mut last) {
                 return false;
             }
@@ -946,7 +1035,12 @@ impl OpState {
 
     /// `SkOpSegment::ComputeOneSumReverse(baseAngle, nextAngle, includeType)`.
     // Port of: src/pathops/SkOpSegment.cpp#L385-L419 (chrome/m156)
-    fn compute_one_sum_reverse(&mut self, base_angle: AngleId, next_angle: AngleId, include_type: IncludeType) -> bool {
+    fn compute_one_sum_reverse(
+        &mut self,
+        base_angle: AngleId,
+        next_angle: AngleId,
+        include_type: IncludeType,
+    ) -> bool {
         let base_seg = self.angle_segment(base_angle);
         let mut sum_mi_winding = self.seg_update_winding(base_seg, base_angle);
         let mut sum_su_winding = 0;
@@ -962,13 +1056,14 @@ impl OpState {
         let next_end = self.angle_start(next_angle);
         let mut last: Option<SpanId> = None;
         if binary {
-            let (max_winding, sum_winding, opp_max_winding, opp_sum_winding) = self.seg_set_up_windings_opp(
-                next_seg,
-                next_start,
-                next_end,
-                &mut sum_mi_winding,
-                &mut sum_su_winding,
-            );
+            let (max_winding, sum_winding, opp_max_winding, opp_sum_winding) = self
+                .seg_set_up_windings_opp(
+                    next_seg,
+                    next_start,
+                    next_end,
+                    &mut sum_mi_winding,
+                    &mut sum_su_winding,
+                );
             if !self.seg_mark_angle_opp(
                 next_seg,
                 max_winding,
@@ -981,12 +1076,8 @@ impl OpState {
                 return false;
             }
         } else {
-            let (max_winding, sum_winding) = self.seg_set_up_windings(
-                next_seg,
-                next_start,
-                next_end,
-                &mut sum_mi_winding,
-            );
+            let (max_winding, sum_winding) =
+                self.seg_set_up_windings(next_seg, next_start, next_end, &mut sum_mi_winding);
             if !self.seg_mark_angle(next_seg, max_winding, sum_winding, next_angle, &mut last) {
                 return false;
             }
@@ -1113,7 +1204,9 @@ impl OpState {
         if Self::use_inner_winding(max_winding, sum_winding) {
             max_winding = sum_winding;
         }
-        if opp_max_winding != opp_sum_winding && Self::use_inner_winding(opp_max_winding, opp_sum_winding) {
+        if opp_max_winding != opp_sum_winding
+            && Self::use_inner_winding(opp_max_winding, opp_sum_winding)
+        {
             opp_max_winding = opp_sum_winding;
         }
         let start = self.angle_start(angle);
@@ -1138,7 +1231,13 @@ impl OpState {
         let mut other = Some(seg);
         let mut safety_net = 1000;
         while let Some(o) = other {
-            other = self.next_chase(o, &mut start, &mut step, Some(&mut span_start), Some(&mut last));
+            other = self.next_chase(
+                o,
+                &mut start,
+                &mut step,
+                Some(&mut span_start),
+                Some(&mut last),
+            );
             let Some(o) = other else {
                 break;
             };
@@ -1174,7 +1273,13 @@ impl OpState {
         let mut other = Some(seg);
         let mut safety_net = 1000;
         while let Some(o) = other {
-            other = self.next_chase(o, &mut start, &mut step, Some(&mut span_start), Some(&mut last));
+            other = self.next_chase(
+                o,
+                &mut start,
+                &mut step,
+                Some(&mut span_start),
+                Some(&mut last),
+            );
             let Some(o) = other else {
                 break;
             };
@@ -1184,7 +1289,9 @@ impl OpState {
             }
             if self.span_wind_sum(span_start) != SK_MIN_S32 {
                 if self.seg_operand(seg) == self.seg_operand(o) {
-                    if self.span_wind_sum(span_start) != winding || self.span_opp_sum(span_start) != opp_winding {
+                    if self.span_wind_sum(span_start) != winding
+                        || self.span_opp_sum(span_start) != opp_winding
+                    {
                         self.set_winding_failed();
                         return true; // ... but let it succeed anyway
                     }
@@ -1223,7 +1330,8 @@ impl OpState {
         let orig_start = *start_ptr;
         let step = *step_ptr;
         let mut end_span = if step > 0 {
-            self.span_up_castable(orig_start).and_then(|s| self.span_next(s))?
+            self.span_up_castable(orig_start)
+                .and_then(|s| self.span_next(s))?
         } else {
             self.span_prev(orig_start)?
         };
@@ -1314,7 +1422,13 @@ impl OpState {
         let mut last_done: Option<SpanId> = None;
         let mut safety_net = 1000;
         while let Some(o) = other {
-            other = self.next_chase(o, &mut start, &mut step, Some(&mut min_span), Some(&mut last));
+            other = self.next_chase(
+                o,
+                &mut start,
+                &mut step,
+                Some(&mut min_span),
+                Some(&mut last),
+            );
             let Some(o) = other else {
                 break;
             };
@@ -1350,33 +1464,33 @@ impl OpState {
         end_ptr: &mut Option<SpanId>,
         done: &mut bool,
     ) -> Option<AngleId> {
-        if let Some(up_span) = self.span_up_castable(start) {
-            if self.span_wind_value(up_span) != 0 || self.span_opp_value(up_span) != 0 {
-                let next = self.span_next(up_span).expect("span has next");
-                if end_ptr.is_none() {
-                    *start_ptr = start;
-                    *end_ptr = Some(next);
+        if let Some(up_span) = self.span_up_castable(start)
+            && (self.span_wind_value(up_span) != 0 || self.span_opp_value(up_span) != 0)
+        {
+            let next = self.span_next(up_span).expect("span has next");
+            if end_ptr.is_none() {
+                *start_ptr = start;
+                *end_ptr = Some(next);
+            }
+            if !self.span_done(up_span) {
+                if self.span_wind_sum(up_span) != SK_MIN_S32 {
+                    return self.span_to_angle_toward(start, next);
                 }
-                if !self.span_done(up_span) {
-                    if self.span_wind_sum(up_span) != SK_MIN_S32 {
-                        return self.span_to_angle_toward(start, next);
-                    }
-                    *done = false;
-                }
+                *done = false;
             }
         }
-        if let Some(down_span) = self.span_prev(start) {
-            if self.span_wind_value(down_span) != 0 || self.span_opp_value(down_span) != 0 {
-                if end_ptr.is_none() {
-                    *start_ptr = start;
-                    *end_ptr = Some(down_span);
+        if let Some(down_span) = self.span_prev(start)
+            && (self.span_wind_value(down_span) != 0 || self.span_opp_value(down_span) != 0)
+        {
+            if end_ptr.is_none() {
+                *start_ptr = start;
+                *end_ptr = Some(down_span);
+            }
+            if !self.span_done(down_span) {
+                if self.span_wind_sum(down_span) != SK_MIN_S32 {
+                    return self.span_to_angle_toward(start, down_span);
                 }
-                if !self.span_done(down_span) {
-                    if self.span_wind_sum(down_span) != SK_MIN_S32 {
-                        return self.span_to_angle_toward(start, down_span);
-                    }
-                    *done = false;
-                }
+                *done = false;
             }
         }
         None
@@ -1482,7 +1596,12 @@ impl OpState {
 
     /// `SkOpSegment::activeWinding(start, end, sumWinding)`.
     // Port of: src/pathops/SkOpSegment.cpp#L164-L171 (chrome/m156)
-    pub(crate) fn seg_active_winding_sum(&self, start: SpanId, end: SpanId, sum_winding: &mut i32) -> bool {
+    pub(crate) fn seg_active_winding_sum(
+        &self,
+        start: SpanId,
+        end: SpanId,
+        sum_winding: &mut i32,
+    ) -> bool {
         let max_winding = self.seg_set_up_winding(start, end, sum_winding);
         let from = max_winding != 0;
         let to = *sum_winding != 0;
@@ -1492,7 +1611,12 @@ impl OpState {
     /// `SkOpSegment::setUpWinding(start, end, maxWinding, sumWinding)`: returns `maxWinding`.
     // Port of: src/pathops/SkOpSegment.h#L346-L354 (chrome/m156)
     #[must_use]
-    pub(crate) fn seg_set_up_winding(&self, start: SpanId, end: SpanId, sum_winding: &mut i32) -> i32 {
+    pub(crate) fn seg_set_up_winding(
+        &self,
+        start: SpanId,
+        end: SpanId,
+        sum_winding: &mut i32,
+    ) -> i32 {
         let delta_sum = self.span_sign(start, end);
         let max_winding = *sum_winding;
         if *sum_winding == SK_MIN_S32 {
@@ -1504,7 +1628,12 @@ impl OpState {
 
     /// `SkOpSegment::updateWinding(start, end)` on the segment (`this`).
     // Port of: src/pathops/SkOpSegment.cpp#L1744-L1759 (chrome/m156)
-    pub(crate) fn seg_update_winding_span(&mut self, _seg: SegId, start: SpanId, end: SpanId) -> i32 {
+    pub(crate) fn seg_update_winding_span(
+        &mut self,
+        _seg: SegId,
+        start: SpanId,
+        end: SpanId,
+    ) -> i32 {
         let lesser = self.span_starter(start, end);
         let mut winding = self.span_wind_sum(lesser);
         if winding == SK_MIN_S32 {
@@ -1514,7 +1643,10 @@ impl OpState {
             return winding;
         }
         let span_winding = self.span_sign(start, end);
-        if winding != 0 && Self::use_inner_winding(winding - span_winding, winding) && winding != i32::MAX {
+        if winding != 0
+            && Self::use_inner_winding(winding - span_winding, winding)
+            && winding != i32::MAX
+        {
             winding -= span_winding;
         }
         winding
@@ -1523,7 +1655,12 @@ impl OpState {
     /// `SkOpSegment::updateOppWinding(start, end)`.
     // Port of: src/pathops/SkOpSegment.cpp#L1721-L1730 (chrome/m156)
     #[must_use]
-    pub(crate) fn seg_update_opp_winding_span(&self, _seg: SegId, start: SpanId, end: SpanId) -> i32 {
+    pub(crate) fn seg_update_opp_winding_span(
+        &self,
+        _seg: SegId,
+        start: SpanId,
+        end: SpanId,
+    ) -> i32 {
         let lesser = self.span_starter(start, end);
         let mut opp_winding = self.span_opp_sum(lesser);
         let opp_span_winding = self.span_opp_sign(start, end);
@@ -1676,7 +1813,12 @@ impl OpState {
             if !self.seg_done(next_segment) {
                 if !active_angle {
                     let mut dummy = None;
-                    let _ = self.seg_mark_and_chase_done(next_segment, n_start, n_end, Some(&mut dummy));
+                    let _ = self.seg_mark_and_chase_done(
+                        next_segment,
+                        n_start,
+                        n_end,
+                        Some(&mut dummy),
+                    );
                 }
                 if let Some(last) = self.angle_last_marked(next_angle) {
                     chase.push(last);
@@ -1768,7 +1910,12 @@ impl OpState {
             if !self.seg_done(next_segment) {
                 if !active_angle {
                     let mut dummy = None;
-                    let _ = self.seg_mark_and_chase_done(next_segment, n_start, n_end, Some(&mut dummy));
+                    let _ = self.seg_mark_and_chase_done(
+                        next_segment,
+                        n_start,
+                        n_end,
+                        Some(&mut dummy),
+                    );
                 }
                 if let Some(last) = self.angle_last_marked(next_angle) {
                     chase.push(last);
@@ -1960,7 +2107,10 @@ impl OpState {
                 if span == tail || self.span_final(span) {
                     break;
                 }
-                span = self.span_up_castable(span).and_then(|s| self.span_next(s)).expect("span has next");
+                span = self
+                    .span_up_castable(span)
+                    .and_then(|s| self.span_next(s))
+                    .expect("span has next");
                 continue;
             }
             let mut wrote_after_header = false;
@@ -1993,14 +2143,14 @@ impl OpState {
                             self.angle_insert(base, o_angle);
                         }
                     }
-                    if !self.span_final(o_span) {
-                        if let Some(o_angle) = self.span_to_angle(o_span) {
-                            if !wrote_after_header {
-                                wrote_after_header = true;
-                            }
-                            if !self.angle_loop_contains(o_angle, base) {
-                                self.angle_insert(base, o_angle);
-                            }
+                    if !self.span_final(o_span)
+                        && let Some(o_angle) = self.span_to_angle(o_span)
+                    {
+                        if !wrote_after_header {
+                            wrote_after_header = true;
+                        }
+                        if !self.angle_loop_contains(o_angle, base) {
+                            self.angle_insert(base, o_angle);
                         }
                     }
                 }
@@ -2018,7 +2168,10 @@ impl OpState {
             if self.span_final(span) {
                 break;
             }
-            span = self.span_up_castable(span).and_then(|s| self.span_next(s)).expect("span has next");
+            span = self
+                .span_up_castable(span)
+                .and_then(|s| self.span_next(s))
+                .expect("span has next");
         }
         true
     }
@@ -2037,7 +2190,12 @@ impl OpState {
 
     /// `SkOpSegment::spansNearby(refSpan, checkSpan, found)`. `None` is Skia's `return false`.
     // Port of: src/pathops/SkOpSegment.cpp#L1371-L1440 (chrome/m156)
-    pub(crate) fn seg_spans_nearby(&self, ref_span: SpanId, check_span: SpanId, found: &mut bool) -> Option<()> {
+    pub(crate) fn seg_spans_nearby(
+        &self,
+        ref_span: SpanId,
+        check_span: SpanId,
+        found: &mut bool,
+    ) -> Option<()> {
         let ref_head = self.span_ptt(ref_span);
         let check_head = self.span_ptt(check_span);
         if !DPoint::way_roughly_equal(self.ptts[ref_head.0].pt, self.ptts[check_head.0].pt) {
@@ -2138,7 +2296,7 @@ impl OpState {
         span_base: SpanId,
         opp: SegId,
     ) -> bool {
-        let mid_t = (self.span_t(prior) + self.span_t(span_base)) / 2.0;
+        let mid_t = f64::midpoint(self.span_t(prior), self.span_t(span_base));
         let mid_pt = self.seg_pt_at_t(seg, mid_t);
         let mut coincident = true;
         let mid_d = DPoint::from_sk_point(mid_pt);
@@ -2218,10 +2376,10 @@ impl OpState {
                 if self.ptt_segment(ptt) == seg {
                     continue;
                 }
-                if let Some(span) = self.span_up_castable(span_base) {
-                    if self.span_contains_coincidence_seg(span, opp) {
-                        continue;
-                    }
+                if let Some(span) = self.span_up_castable(span_base)
+                    && self.span_contains_coincidence_seg(span, opp)
+                {
+                    continue;
                 }
                 if self.span_contains_coin_end_seg(span_base, opp) {
                     continue;
@@ -2276,7 +2434,9 @@ impl OpState {
                     // goto swapBack
                     continue;
                 }
-                if self.seg_test_for_coincidence(seg, root_prior, root_ptt, prior_span, span_base, opp) {
+                if self
+                    .seg_test_for_coincidence(seg, root_prior, root_ptt, prior_span, span_base, opp)
+                {
                     if !self.coin_extend(root_prior, root_ptt, root_opp_start, root_opp_end) {
                         self.coin_add(root_prior, root_ptt, root_opp_start, root_opp_end);
                     }
@@ -2507,10 +2667,14 @@ impl OpState {
     }
 
     /// `SkOpSegment::spansNearby` as called by `moveNearby`, where `None` means `return false`.
-    fn spans_nearby_ok(&self, ref_span: SpanId, check_span: SpanId, found: &mut bool) -> Option<()> {
+    fn spans_nearby_ok(
+        &self,
+        ref_span: SpanId,
+        check_span: SpanId,
+        found: &mut bool,
+    ) -> Option<()> {
         self.seg_spans_nearby(ref_span, check_span, found)
     }
-
 }
 
 /// `SK_NaN32`.

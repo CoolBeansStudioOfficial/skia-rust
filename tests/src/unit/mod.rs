@@ -158,6 +158,8 @@ pub mod path_ops_line_intersection_test;
 #[cfg(test)]
 pub mod path_ops_line_parameters_test;
 #[cfg(test)]
+pub mod path_ops_op_test;
+#[cfg(test)]
 pub mod path_ops_quad_intersection_test;
 #[cfg(test)]
 pub mod path_ops_quad_intersection_test_data;

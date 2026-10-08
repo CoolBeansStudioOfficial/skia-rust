@@ -8,6 +8,31 @@
 //! `preFetch` copies the path into flat point and verb arrays, dropping degenerate verbs and
 //! closing open contours. `walk` then splits curves that need it (at maximum curvature, or at
 //! complex cubic breaks) and adds each edge to the contour it belongs to.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::geometry::{Conic, chop_quad_at_max_curvature, find_quad_max_curvature};
 use skia_rust_core::path::{Path, Verb};
@@ -156,11 +181,11 @@ impl<'a> EdgeBuilder<'a> {
     // Port of: src/pathops/SkOpEdgeBuilder.h#L28-L37 (chrome/m156)
     pub(crate) fn complete(&mut self, state: &mut OpState) {
         self.contour_builder.flush(state);
-        if let Some(contour) = self.contour_builder.contour() {
-            if state.contour_count(contour) != 0 {
-                state.contour_complete(contour);
-                self.contour_builder.set_contour(state, None);
-            }
+        if let Some(contour) = self.contour_builder.contour()
+            && state.contour_count(contour) != 0
+        {
+            state.contour_complete(contour);
+            self.contour_builder.set_contour(state, None);
         }
     }
 
@@ -172,10 +197,10 @@ impl<'a> EdgeBuilder<'a> {
             return false;
         }
         self.complete(state);
-        if let Some(contour) = self.contour_builder.contour() {
-            if state.contour_count(contour) == 0 {
-                state.contour_head_remove(self.contours_head, contour);
-            }
+        if let Some(contour) = self.contour_builder.contour()
+            && state.contour_count(contour) == 0
+        {
+            state.contour_head_remove(self.contours_head, contour);
         }
         true
     }
@@ -195,18 +220,20 @@ impl<'a> EdgeBuilder<'a> {
     /// `SkOpEdgeBuilder::closeContour(curveEnd, curveStart)`.
     // Port of: src/pathops/SkOpEdgeBuilder.cpp#L130-L147 (chrome/m156)
     fn close_contour(&mut self, curve_end: Point, curve_start: Point) {
-        if !DPoint::approximately_equal_points(curve_end, curve_start) {
-            self.path_verbs.push(Verb::Line);
-            self.path_pts.push(curve_start);
-        } else {
+        if DPoint::approximately_equal_points(curve_end, curve_start) {
             let verb_count = self.path_verbs.len();
             let pts_count = self.path_pts.len();
-            if self.path_verbs[verb_count - 1] == Verb::Line && self.path_pts[pts_count - 2] == curve_start {
+            if self.path_verbs[verb_count - 1] == Verb::Line
+                && self.path_pts[pts_count - 2] == curve_start
+            {
                 self.path_verbs.pop();
                 self.path_pts.pop();
             } else {
                 self.path_pts[pts_count - 1] = curve_start;
             }
+        } else {
+            self.path_verbs.push(Verb::Line);
+            self.path_pts.push(curve_start);
         }
         self.path_verbs.push(Verb::Close);
     }
@@ -327,13 +354,13 @@ impl<'a> EdgeBuilder<'a> {
             verb_index += 1;
             match verb {
                 Verb::Move => {
-                    if let Some(c) = contour {
-                        if state.contour_count(c) != 0 {
-                            if self.allow_open_contours {
-                                self.complete(state);
-                            } else if !self.close(state) {
-                                return false;
-                            }
+                    if let Some(c) = contour
+                        && state.contour_count(c) != 0
+                    {
+                        if self.allow_open_contours {
+                            self.complete(state);
+                        } else if !self.close(state) {
+                            return false;
                         }
                     }
                     if contour.is_none() {
@@ -379,10 +406,12 @@ impl<'a> EdgeBuilder<'a> {
             points_index += verb_to_points(verb);
         }
         self.contour_builder.flush(state);
-        if let Some(c) = contour {
-            if state.contour_count(c) != 0 && !self.allow_open_contours && !self.close(state) {
-                return false;
-            }
+        if let Some(c) = contour
+            && state.contour_count(c) != 0
+            && !self.allow_open_contours
+            && !self.close(state)
+        {
+            return false;
         }
         true
     }
@@ -422,8 +451,16 @@ impl<'a> EdgeBuilder<'a> {
                 let second_half = [pair[2], pair[3], pair[4]];
                 let v1 = ReduceOrder::quad_verb(first_half, &mut storage1);
                 let v2 = ReduceOrder::quad_verb(second_half, &mut storage2);
-                let mut curve1 = if v1 != Verb::Line { first_half } else { storage1 };
-                let mut curve2 = if v2 != Verb::Line { second_half } else { storage2 };
+                let mut curve1 = if v1 == Verb::Line {
+                    storage1
+                } else {
+                    first_half
+                };
+                let mut curve2 = if v2 == Verb::Line {
+                    storage2
+                } else {
+                    second_half
+                };
                 if can_add_curve(v1, &mut curve1) && can_add_curve(v2, &mut curve2) {
                     self.contour_builder.add_curve(state, v1, &curve1, 1.0);
                     self.contour_builder.add_curve(state, v2, &curve2, 1.0);
@@ -460,11 +497,21 @@ impl<'a> EdgeBuilder<'a> {
                 let mut storage2 = [Point::default(); 3];
                 let v1 = ReduceOrder::conic_verb(pair[0].pts, pair[0].w, &mut storage1);
                 let v2 = ReduceOrder::conic_verb(pair[1].pts, pair[1].w, &mut storage2);
-                let mut curve1 = if v1 != Verb::Line { pair[0].pts } else { storage1 };
-                let mut curve2 = if v2 != Verb::Line { pair[1].pts } else { storage2 };
+                let mut curve1 = if v1 == Verb::Line {
+                    storage1
+                } else {
+                    pair[0].pts
+                };
+                let mut curve2 = if v2 == Verb::Line {
+                    storage2
+                } else {
+                    pair[1].pts
+                };
                 if can_add_curve(v1, &mut curve1) && can_add_curve(v2, &mut curve2) {
-                    self.contour_builder.add_curve(state, v1, &curve1, pair[0].w);
-                    self.contour_builder.add_curve(state, v2, &curve2, pair[1].w);
+                    self.contour_builder
+                        .add_curve(state, v1, &curve1, pair[0].w);
+                    self.contour_builder
+                        .add_curve(state, v2, &curve2, pair[1].w);
                     return;
                 }
             }
@@ -509,8 +556,16 @@ impl<'a> EdgeBuilder<'a> {
         t_q_sort(&mut split_t[..breaks], |a: &f32, b: &f32| a < b);
         for index in 0..=breaks {
             let split = &mut splits[index];
-            split.t[0] = if index > 0 { f64::from(split_t[index - 1]) } else { 0.0 };
-            split.t[1] = if index < breaks { f64::from(split_t[index]) } else { 1.0 };
+            split.t[0] = if index > 0 {
+                f64::from(split_t[index - 1])
+            } else {
+                0.0
+            };
+            split.t[1] = if index < breaks {
+                f64::from(split_t[index])
+            } else {
+                1.0
+            };
             let mut cubic = DCubic::default();
             cubic.set(pts);
             let part = cubic.sub_divide(split.t[0], split.t[1]);
@@ -551,7 +606,11 @@ impl<'a> EdgeBuilder<'a> {
                 split.verb = ReduceOrder::cubic_verb(split.pts, &mut split.reduced);
             }
             let split = &mut splits[index];
-            let mut curve = if split.verb == Verb::Cubic { split.pts } else { split.reduced };
+            let mut curve = if split.verb == Verb::Cubic {
+                split.pts
+            } else {
+                split.reduced
+            };
             if !can_add_curve(split.verb, &mut curve) {
                 return false;
             }

@@ -1,3 +1,31 @@
+// Some ported helpers have no caller yet: the Op pieces that use them (tight bounds,
+// the builder) are later slices. Remove this allow as those callers are ported.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
+#![allow(dead_code)]
 // Copyright 2012 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
@@ -16,13 +44,14 @@ use crate::intersections::Intersections;
 use crate::line::DLine;
 use crate::line_parameters::LineParameters;
 use crate::op_curve::{
-    DCurveBuf, DCurveSweep, curve_d_point_at_t, curve_d_slope_at_t, curve_intersect_ray, verb_points,
+    DCurveBuf, DCurveSweep, curve_d_point_at_t, curve_d_slope_at_t, curve_intersect_ray,
+    verb_points,
 };
 use crate::op_state::{AngleId, OpState, SegId, SpanId};
 use crate::point::{DPoint, DVector};
 use crate::types::{
-    almost_bequal_ulps, approximately_between_orderable, approximately_equal, approximately_equal_orderable,
-    approximately_zero, between, std_max, std_min,
+    almost_bequal_ulps, approximately_between_orderable, approximately_equal,
+    approximately_equal_orderable, approximately_zero, between, std_max, std_min,
 };
 
 /// `SkOpAngle::IncludeType`.
@@ -112,7 +141,13 @@ const SEDECIMANT: [[[i32; 3]; 3]; 3] = [
 
 /// `SkOpAngle::lineOnOneSide`, the "origin" form.
 // Port of: src/pathops/SkOpAngle.cpp#L (SkOpAngle::lineOnOneSide) (chrome/m156)
-fn line_on_one_side(origin: DPoint, line: DVector, test: &Angle, test_verb: Verb, use_original: bool) -> i32 {
+fn line_on_one_side(
+    origin: DPoint,
+    line: DVector,
+    test: &Angle,
+    test_verb: Verb,
+    use_original: bool,
+) -> i32 {
     let mut crosses = [0.0_f64; 3];
     let i_max = verb_points(test_verb);
     let test_curve = if use_original {
@@ -123,12 +158,17 @@ fn line_on_one_side(origin: DPoint, line: DVector, test: &Angle, test_verb: Verb
     for index in 1..=i_max {
         let xy1 = line.x * (test_curve.at(index).y - origin.y);
         let xy2 = line.y * (test_curve.at(index).x - origin.x);
-        crosses[index - 1] = if almost_bequal_ulps(xy1, xy2) { 0.0 } else { xy1 - xy2 };
+        crosses[index - 1] = if almost_bequal_ulps(xy1, xy2) {
+            0.0
+        } else {
+            xy1 - xy2
+        };
     }
     if crosses[0] * crosses[1] < 0.0 {
         return -1;
     }
-    if test_verb == Verb::Cubic && (crosses[0] * crosses[2] < 0.0 || crosses[1] * crosses[2] < 0.0) {
+    if test_verb == Verb::Cubic && (crosses[0] * crosses[2] < 0.0 || crosses[1] * crosses[2] < 0.0)
+    {
         return -1;
     }
     if crosses[0] != 0.0 {
@@ -309,7 +349,7 @@ impl OpState {
                     let test_index = index >> 1;
                     let mut test_t = test_ts[test_index];
                     if index & 1 != 0 {
-                        test_t = (test_t + test_ts[test_index + 1]) / 2.0;
+                        test_t = f64::midpoint(test_t, test_ts[test_index + 1]);
                     }
                     let pt = curve_d_point_at_t(Verb::Cubic, &pts, weight, test_t);
                     let mut test_part = LineParameters::default();
@@ -397,10 +437,10 @@ impl OpState {
         crosses_zero = self.angle_check_crosses_zero(a);
         let start = std_min(s_start, s_end);
         let end = std_max(s_start, s_end);
-        let mask = if !crosses_zero {
-            (u32::MAX >> (31 - end + start)) << start
-        } else {
+        let mask = if crosses_zero {
             (u32::MAX >> (31 - start)) | (u32::MAX << end)
+        } else {
+            (u32::MAX >> (31 - end + start)) << start
         };
         self.angles[a.0].sector_mask = mask;
     }
@@ -454,10 +494,10 @@ impl OpState {
                 break;
             }
             check_end = if step_up {
-                if !self.span_final(ce) {
-                    self.span_next(ce)
-                } else {
+                if self.span_final(ce) {
                     None
+                } else {
+                    self.span_next(ce)
                 }
             } else {
                 self.span_prev(ce)
@@ -527,7 +567,12 @@ impl OpState {
         let rh_start = i32::from(self.angles[rh.0].sector_start);
         let this_start = i32::from(self.angles[this.0].sector_start);
         let lr_order: i32;
-        if !lr_overlap {
+        if lr_overlap {
+            lr_order = self.angle_orderable(lh, rh);
+            if !ltr_overlap && lr_order >= 0 {
+                return lr_order == 0;
+            }
+        } else {
             // no lh/rh sector overlap
             if !ltr_overlap {
                 // no lh/this/rh sector overlap
@@ -535,7 +580,7 @@ impl OpState {
             }
             let lr_gap = (rh_start - lh_start + 32) & 0x1f;
             /* A tiny change can move the start +/- 4. The order can only be determined if
-               lr gap is not 12 to 20 or -12 to -20. */
+            lr gap is not 12 to 20 or -12 to -20. */
             lr_order = if lr_gap > 20 {
                 0
             } else if lr_gap > 11 {
@@ -543,11 +588,6 @@ impl OpState {
             } else {
                 1
             };
-        } else {
-            lr_order = self.angle_orderable(lh, rh);
-            if !ltr_overlap && lr_order >= 0 {
-                return lr_order == 0;
-            }
         }
         let mut lt_order: i32 = if lh_mask & this_mask != 0 {
             self.angle_orderable(lh, this)
@@ -723,7 +763,10 @@ impl OpState {
     /// `SkOpAngle::midT()`.
     #[must_use]
     fn angle_mid_t(&self, a: AngleId) -> f64 {
-        (self.span_t(self.angles[a.0].start) + self.span_t(self.angles[a.0].end)) / 2.0
+        f64::midpoint(
+            self.span_t(self.angles[a.0].start),
+            self.span_t(self.angles[a.0].end),
+        )
     }
 
     /// `SkOpAngle::tangentsDiverge(rh, s0xt0)`.
@@ -748,7 +791,7 @@ impl OpState {
             self.angle_dist_end_ratio(rh, t_dist)
         }
         .abs();
-        self.angles[this.0].tangents_ambiguous = m_factor >= 50.0 && m_factor < 200.0;
+        self.angles[this.0].tangents_ambiguous = (50.0..200.0).contains(&m_factor);
         m_factor < 50.0 // empirically found limit
     }
 
@@ -803,7 +846,8 @@ impl OpState {
         if end_dist == 0.0 {
             return None;
         }
-        let start_pt = DPoint::from_sk_point(self.ptts[self.span_ptt(self.angles[this.0].start).0].pt);
+        let start_pt =
+            DPoint::from_sk_point(self.ptts[self.span_ptt(self.angles[this.0].start).0].pt);
         let mut min_x = f64::INFINITY;
         let mut min_y = f64::INFINITY;
         let mut max_x = f64::NEG_INFINITY;
@@ -843,8 +887,8 @@ impl OpState {
         let start_pt = self.span_pt(self.angles[this.0].start);
         let end_pt = self.span_pt(self.angles[this.0].end);
         let d_start_pt = DPoint::from_sk_point(start_pt);
-        let mid_x = (start_pt.x + end_pt.x) / 2.0;
-        let mid_y = (start_pt.y + end_pt.y) / 2.0;
+        let mid_x = f32::midpoint(start_pt.x, end_pt.x);
+        let mid_y = f32::midpoint(start_pt.y, end_pt.y);
         let ray_mid = DLine::new([
             DPoint::new(f64::from(mid_x), f64::from(mid_y)),
             DPoint::new(
@@ -901,7 +945,8 @@ impl OpState {
         let origin = self.angles[this.0].part.curve.pts[0];
         let line = self.angles[this.0].part.curve.pts[1] - origin;
         let test_verb = self.angle_segment_verb(test);
-        let mut result = line_on_one_side(origin, line, &self.angles[test.0], test_verb, use_original);
+        let mut result =
+            line_on_one_side(origin, line, &self.angles[test.0], test_verb, use_original);
         if result == -2 {
             self.angles[this.0].unorderable = true;
             result = -1;
@@ -922,7 +967,11 @@ impl OpState {
             let xy1 = line.x * test_line.y;
             let xy2 = line.y * test_line.x;
             dots[index] = line.x * test_line.x + line.y * test_line.y;
-            crosses[index] = if almost_bequal_ulps(xy1, xy2) { 0.0 } else { xy1 - xy2 };
+            crosses[index] = if almost_bequal_ulps(xy1, xy2) {
+                0.0
+            } else {
+                xy1 - xy2
+            };
         }
         if crosses[0] * crosses[1] < 0.0 {
             return -1;
@@ -971,7 +1020,7 @@ impl OpState {
         } else if !rh_curve {
             let result = self.angle_line_on_one_side(rh, this, false);
             if result >= 0 {
-                return if result != 0 { 0 } else { 1 };
+                return i32::from(result == 0);
             }
             if self.angles[rh.0].unorderable || approximately_zero(self.angles[this.0].side) {
                 return self.angle_unorderable_pair(this, rh);
@@ -1178,7 +1227,8 @@ impl OpState {
                 && !use_intersect
                 && self.angles[this.0].part.is_curve
                 && self.angles[rh.0].part.is_curve
-                && self.angles[this.0].original_curve_part.pts[0] != self.angles[this.0].part.curve.pts[0]
+                && self.angles[this.0].original_curve_part.pts[0]
+                    != self.angles[this.0].part.curve.pts[0]
             {
                 let origin = self.angles[rh.0].original_curve_part.pts[0];
                 let count = verb_points(self.angle_segment_verb(rh));
@@ -1230,7 +1280,13 @@ impl OpState {
     }
 
     /// `lineOnOneSide(origin, line, test, useOriginal)`, called on the other angle.
-    fn line_on_one_side_of(&self, test: AngleId, origin: DPoint, line: DVector, use_original: bool) -> i32 {
+    fn line_on_one_side_of(
+        &self,
+        test: AngleId,
+        origin: DPoint,
+        line: DVector,
+        use_original: bool,
+    ) -> i32 {
         let test_verb = self.angle_segment_verb(test);
         line_on_one_side(origin, line, &self.angles[test.0], test_verb, use_original)
     }

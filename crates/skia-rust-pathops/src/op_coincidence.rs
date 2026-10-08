@@ -18,6 +18,31 @@
 //!
 //! C++ `continue` inside a `do { } while` loop jumps to the loop condition, so the advance
 //! happens. Those loops use a labeled block (`'body:`) followed by the advance.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::path::Verb;
 use skia_rust_core::point::Point;
@@ -218,10 +243,15 @@ impl OpState {
     /// `SkCoincidentSpans::contains(s, e)`: both points are inside this record.
     // Port of: src/pathops/SkOpCoincidence.cpp#L71-L88 (chrome/m156)
     fn rec_contains(&self, c: CoinId, s: PtTId, e: PtTId) -> bool {
-        let (s, e) = if self.ptt_t(s) > self.ptt_t(e) { (e, s) } else { (s, e) };
+        let (s, e) = if self.ptt_t(s) > self.ptt_t(e) {
+            (e, s)
+        } else {
+            (s, e)
+        };
         let coin_start = self.rec_coin_start(c);
         if self.ptt_segment(s) == self.ptt_segment(coin_start) {
-            self.ptt_t(coin_start) <= self.ptt_t(s) && self.ptt_t(e) <= self.ptt_t(self.rec_coin_end(c))
+            self.ptt_t(coin_start) <= self.ptt_t(s)
+                && self.ptt_t(e) <= self.ptt_t(self.rec_coin_end(c))
         } else {
             let mut opp_ts = self.ptt_t(self.rec_opp_start(c));
             let mut opp_te = self.ptt_t(self.rec_opp_end(c));
@@ -238,23 +268,20 @@ impl OpState {
     fn rec_correct_one_end(&mut self, c: CoinId, which: CoinPt) {
         let orig = self.rec_get(c, which);
         let orig_span = self.ptt_span(orig);
-        let test = match self.span_prev(orig_span) {
-            Some(prev) => {
-                let Some(next) = self.span_next(prev) else {
-                    return;
-                };
-                self.span_ptt(next)
-            }
-            None => {
-                let up = self.span_up_cast(orig_span);
-                let Some(next) = self.span_next(up) else {
-                    return;
-                };
-                let Some(prev) = self.span_prev(next) else {
-                    return;
-                };
-                self.span_ptt(prev)
-            }
+        let test = if let Some(prev) = self.span_prev(orig_span) {
+            let Some(next) = self.span_next(prev) else {
+                return;
+            };
+            self.span_ptt(next)
+        } else {
+            let up = self.span_up_cast(orig_span);
+            let Some(next) = self.span_next(up) else {
+                return;
+            };
+            let Some(prev) = self.span_prev(next) else {
+                return;
+            };
+            self.span_ptt(prev)
         };
         if orig != test {
             self.rec_set_which(c, which, test);
@@ -305,7 +332,7 @@ impl OpState {
             let Some(opp_ptt) = self.span_contains_seg(prev, opp_segment) else {
                 break;
             };
-            let mid_t = (self.span_t(prev) + self.span_t(start)) / 2.0;
+            let mid_t = f64::midpoint(self.span_t(prev), self.span_t(start));
             if !self.seg_is_close(segment, mid_t, opp_segment) {
                 break;
             }
@@ -320,10 +347,10 @@ impl OpState {
             } else {
                 self.span_next(self.span_up_cast(end))
             };
-            if let Some(n) = next {
-                if self.span_deleted(n) {
-                    break;
-                }
+            if let Some(n) = next
+                && self.span_deleted(n)
+            {
+                break;
             }
             let Some(next) = next else {
                 break;
@@ -331,7 +358,7 @@ impl OpState {
             let Some(opp_ptt) = self.span_contains_seg(next, opp_segment) else {
                 break;
             };
-            let mid_t = (self.span_t(end) + self.span_t(next)) / 2.0;
+            let mid_t = f64::midpoint(self.span_t(end), self.span_t(next));
             if !self.seg_is_close(segment, mid_t, opp_segment) {
                 break;
             }
@@ -344,7 +371,14 @@ impl OpState {
 
     /// `SkCoincidentSpans::extend(...)`: increases the range of this record.
     // Port of: src/pathops/SkOpCoincidence.cpp#L97-L108 (chrome/m156)
-    fn rec_extend(&mut self, c: CoinId, coin_start: PtTId, coin_end: PtTId, opp_start: PtTId, opp_end: PtTId) -> bool {
+    fn rec_extend(
+        &mut self,
+        c: CoinId,
+        coin_start: PtTId,
+        coin_end: PtTId,
+        opp_start: PtTId,
+        opp_end: PtTId,
+    ) -> bool {
         let mut result = false;
         if self.ptt_t(self.rec_coin_start(c)) > self.ptt_t(coin_start)
             || (if self.rec_flipped(c) {
@@ -410,7 +444,12 @@ impl OpState {
     }
 
     /// Sets the head of one of a set's lists.
-    pub(crate) fn cs_set_list_head(&mut self, set: CoinSetId, list: CoinList, head: Option<CoinId>) {
+    pub(crate) fn cs_set_list_head(
+        &mut self,
+        set: CoinSetId,
+        list: CoinList,
+        head: Option<CoinId>,
+    ) {
         match list {
             CoinList::Head => self.coin_sets[set.0].head = head,
             CoinList::Top => self.coin_sets[set.0].top = head,
@@ -419,7 +458,13 @@ impl OpState {
 
     /// `*headPtr = coin->next()`, where `prev` is the record whose `next` is `headPtr`
     /// (`None` when `headPtr` is the list head).
-    pub(crate) fn cs_unlink(&mut self, set: CoinSetId, list: CoinList, prev: Option<CoinId>, cur: CoinId) {
+    pub(crate) fn cs_unlink(
+        &mut self,
+        set: CoinSetId,
+        list: CoinList,
+        prev: Option<CoinId>,
+        cur: CoinId,
+    ) {
         let next = self.coin_spans[cur.0].next;
         match prev {
             None => self.cs_set_list_head(set, list, next),
@@ -470,14 +515,26 @@ impl OpState {
     /// `SkOpCoincidence::contains(seg, opp, oppT)`: checks the head and top lists for a record
     /// that covers `opp_t` on `opp`.
     // Port of: src/pathops/SkOpCoincidence.cpp#L859-L866 (chrome/m156)
-    pub(crate) fn cs_contains_seg_t(&self, set: CoinSetId, seg: SegId, opp: SegId, opp_t: f64) -> bool {
+    pub(crate) fn cs_contains_seg_t(
+        &self,
+        set: CoinSetId,
+        seg: SegId,
+        opp: SegId,
+        opp_t: f64,
+    ) -> bool {
         self.coin_list_contains_seg_t(self.cs_list_head(set, CoinList::Head), seg, opp, opp_t)
             || self.coin_list_contains_seg_t(self.cs_list_head(set, CoinList::Top), seg, opp, opp_t)
     }
 
     /// `SkOpCoincidence::contains(const SkCoincidentSpans* coin, seg, opp, oppT)`.
     // Port of: src/pathops/SkOpCoincidence.cpp#L868-L886 (chrome/m156)
-    fn coin_list_contains_seg_t(&self, head: Option<CoinId>, seg: SegId, opp: SegId, opp_t: f64) -> bool {
+    fn coin_list_contains_seg_t(
+        &self,
+        head: Option<CoinId>,
+        seg: SegId,
+        opp: SegId,
+        opp_t: f64,
+    ) -> bool {
         let mut coin = head;
         while let Some(c) = coin {
             let coin_start = self.rec_coin_start(c);
@@ -544,12 +601,18 @@ impl OpState {
                     break 'body;
                 }
                 if opp_min_t
-                    < std_min(self.ptt_t(self.rec_opp_start(test)), self.ptt_t(self.rec_opp_end(test)))
+                    < std_min(
+                        self.ptt_t(self.rec_opp_start(test)),
+                        self.ptt_t(self.rec_opp_end(test)),
+                    )
                 {
                     break 'body;
                 }
                 if opp_max_t
-                    > std_max(self.ptt_t(self.rec_opp_start(test)), self.ptt_t(self.rec_opp_end(test)))
+                    > std_max(
+                        self.ptt_t(self.rec_opp_start(test)),
+                        self.ptt_t(self.rec_opp_end(test)),
+                    )
                 {
                     break 'body;
                 }
@@ -599,8 +662,14 @@ impl OpState {
                 if opp_seg != self.ptt_segment(self.rec_opp_start(test)) {
                     break 'body;
                 }
-                let o_test_min = std_min(self.ptt_t(self.rec_opp_start(test)), self.ptt_t(self.rec_opp_end(test)));
-                let o_test_max = std_max(self.ptt_t(self.rec_opp_start(test)), self.ptt_t(self.rec_opp_end(test)));
+                let o_test_min = std_min(
+                    self.ptt_t(self.rec_opp_start(test)),
+                    self.ptt_t(self.rec_opp_end(test)),
+                );
+                let o_test_max = std_max(
+                    self.ptt_t(self.rec_opp_start(test)),
+                    self.ptt_t(self.rec_opp_end(test)),
+                );
                 if (self.ptt_t(self.rec_coin_start(test)) <= self.ptt_t(coin_end)
                     && self.ptt_t(coin_start) <= self.ptt_t(self.rec_coin_end(test)))
                     || (o_test_min <= o_test_max && opp_min_t <= o_test_max)
@@ -620,7 +689,14 @@ impl OpState {
     /// `SkOpCoincidence::add(coinPtTStart, coinPtTEnd, oppPtTStart, oppPtTEnd)`: adds a new
     /// coincident pair to the head list.
     // Port of: src/pathops/SkOpCoincidence.cpp#L208-L232 (chrome/m156)
-    pub(crate) fn cs_add(&mut self, set: CoinSetId, coin_start: PtTId, coin_end: PtTId, opp_start: PtTId, opp_end: PtTId) {
+    pub(crate) fn cs_add(
+        &mut self,
+        set: CoinSetId,
+        coin_start: PtTId,
+        coin_end: PtTId,
+        opp_start: PtTId,
+        opp_end: PtTId,
+    ) {
         if !self.cs_ordered_ptts(coin_start, opp_start) {
             if self.ptt_t(opp_start) < self.ptt_t(opp_end) {
                 self.cs_add(set, opp_start, opp_end, coin_start, coin_end);
@@ -648,7 +724,12 @@ impl OpState {
     /// `SkOpCoincidence::addEndMovedSpans(base, testSpan)`: looks for a missed coincidence along
     /// the implied line between a moved end and the other curve.
     // Port of: src/pathops/SkOpCoincidence.cpp#L235-L300 (chrome/m156)
-    pub(crate) fn cs_add_end_moved_base(&mut self, set: CoinSetId, base: SpanId, test_span: SpanId) -> bool {
+    pub(crate) fn cs_add_end_moved_base(
+        &mut self,
+        set: CoinSetId,
+        base: SpanId,
+        test_span: SpanId,
+    ) -> bool {
         let stop = self.span_ptt(test_span);
         let mut test_ptt = stop;
         let base_seg = self.span_segment(base);
@@ -733,7 +814,9 @@ impl OpState {
                     std::mem::swap(&mut opp_ts, &mut opp_te);
                 }
                 let mut added = false;
-                if !self.cs_add_or_overlap(set, coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, &mut added) {
+                if !self.cs_add_or_overlap(
+                    set, coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, &mut added,
+                ) {
                     return false;
                 }
             }
@@ -945,9 +1028,19 @@ impl OpState {
                     };
                     let mut start_over = false;
                     let success = if add_to_opp {
-                        self.seg_add_expanded(o_seg, o_prior_t + o_start_range * start_part, test, &mut start_over)
+                        self.seg_add_expanded(
+                            o_seg,
+                            o_prior_t + o_start_range * start_part,
+                            test,
+                            &mut start_over,
+                        )
                     } else {
-                        self.seg_add_expanded(seg, prior_t + start_range * o_start_part, o_test, &mut start_over)
+                        self.seg_add_expanded(
+                            seg,
+                            prior_t + start_range * o_start_part,
+                            o_test,
+                            &mut start_over,
+                        )
                     };
                     if !success {
                         return false;
@@ -1025,17 +1118,18 @@ impl OpState {
                 None => break,
             }
         }
-        let (Some(cs), Some(ce), Some(fs), Some(fe)) = (coin_start, coin_end, found_start, found_end)
+        let (Some(cs), Some(ce), Some(fs), Some(fe)) =
+            (coin_start, coin_end, found_start, found_end)
         else {
             return 1.0;
         };
         // Remap over1s, over1e, coinPtTStart, coinPtTEnd to the smallest range that captures
         // over1s, as Skia does.
         let denom = self.ptt_t(fe) - self.ptt_t(fs);
-        let s_ratio = if denom != 0.0 {
-            (t - self.ptt_t(fs)) / denom
-        } else {
+        let s_ratio = if denom == 0.0 {
             1.0
+        } else {
+            (t - self.ptt_t(fs)) / denom
         };
         self.ptt_t(cs) + (self.ptt_t(ce) - self.ptt_t(cs)) * s_ratio
     }
@@ -1058,12 +1152,20 @@ impl OpState {
     ) -> bool {
         if !self.cs_ordered_segs(coin_seg, opp_seg) {
             if opp_ts < opp_te {
-                return self.cs_check_overlap(check, opp_seg, coin_seg, opp_ts, opp_te, coin_ts, coin_te, overlaps);
+                return self.cs_check_overlap(
+                    check, opp_seg, coin_seg, opp_ts, opp_te, coin_ts, coin_te, overlaps,
+                );
             }
-            return self.cs_check_overlap(check, opp_seg, coin_seg, opp_te, opp_ts, coin_te, coin_ts, overlaps);
+            return self.cs_check_overlap(
+                check, opp_seg, coin_seg, opp_te, opp_ts, coin_te, coin_ts, overlaps,
+            );
         }
         let swap_opp = opp_ts > opp_te;
-        let (opp_ts, opp_te) = if swap_opp { (opp_te, opp_ts) } else { (opp_ts, opp_te) };
+        let (opp_ts, opp_te) = if swap_opp {
+            (opp_te, opp_ts)
+        } else {
+            (opp_ts, opp_te)
+        };
         let mut cur = check;
         while let Some(c) = cur {
             cur = self.rec_next(c);
@@ -1122,12 +1224,30 @@ impl OpState {
         let Some(top) = self.coin_sets[set.0].top else {
             return false;
         };
-        if !self.cs_check_overlap(Some(top), coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, &mut overlaps) {
+        if !self.cs_check_overlap(
+            Some(top),
+            coin_seg,
+            opp_seg,
+            coin_ts,
+            coin_te,
+            opp_ts,
+            opp_te,
+            &mut overlaps,
+        ) {
             return true;
         }
         let head = self.coin_sets[set.0].head;
         if head.is_some()
-            && !self.cs_check_overlap(head, coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, &mut overlaps)
+            && !self.cs_check_overlap(
+                head,
+                coin_seg,
+                opp_seg,
+                coin_ts,
+                coin_te,
+                opp_ts,
+                opp_te,
+                &mut overlaps,
+            )
         {
             return true;
         }
@@ -1164,28 +1284,33 @@ impl OpState {
                     let p = self.rec_opp_end(test);
                     self.rec_set_opp_end(ov, p);
                 }
-                if self.coin_sets[set.0].head.is_none() || !self.cs_release_rec(set, CoinList::Head, test) {
+                if self.coin_sets[set.0].head.is_none()
+                    || !self.cs_release_rec(set, CoinList::Head, test)
+                {
                     let released = self.cs_release_rec(set, CoinList::Top, test);
-                    debug_assert!(released, "coincidence record to release is missing from fTop");
+                    debug_assert!(
+                        released,
+                        "coincidence record to release is missing from fTop"
+                    );
                 }
             }
         }
         let cs = self.seg_existing(coin_seg, coin_ts, Some(opp_seg));
         let ce = self.seg_existing(coin_seg, coin_te, Some(opp_seg));
-        if let (Some(ov), Some(cs_v), Some(ce_v)) = (overlap, cs, ce) {
-            if self.rec_contains(ov, cs_v, ce_v) {
-                return true;
-            }
+        if let (Some(ov), Some(cs_v), Some(ce_v)) = (overlap, cs, ce)
+            && self.rec_contains(ov, cs_v, ce_v)
+        {
+            return true;
         }
         if cs.is_some() && cs == ce {
             return false;
         }
         let os = self.seg_existing(opp_seg, opp_ts, Some(coin_seg));
         let oe = self.seg_existing(opp_seg, opp_te, Some(coin_seg));
-        if let (Some(ov), Some(os_v), Some(oe_v)) = (overlap, os, oe) {
-            if self.rec_contains(ov, os_v, oe_v) {
-                return true;
-            }
+        if let (Some(ov), Some(os_v), Some(oe_v)) = (overlap, os, oe)
+            && self.rec_contains(ov, os_v, oe_v)
+        {
+            return true;
         }
         if cs.is_some_and(|p| self.ptt_deleted(p))
             || os.is_some_and(|p| self.ptt_deleted(p))
@@ -1288,7 +1413,11 @@ impl OpState {
         let (Some(cs), Some(os), Some(ce), Some(oe)) = (cs, os, ce, oe) else {
             return false;
         };
-        if self.ptt_deleted(cs) || self.ptt_deleted(os) || self.ptt_deleted(ce) || self.ptt_deleted(oe) {
+        if self.ptt_deleted(cs)
+            || self.ptt_deleted(os)
+            || self.ptt_deleted(ce)
+            || self.ptt_deleted(oe)
+        {
             return false;
         }
         if self.ptt_contains_ptt(cs, ce) || self.ptt_contains_ptt(os, oe) {
@@ -1409,7 +1538,9 @@ impl OpState {
             std::mem::swap(&mut opp_ts, &mut opp_te);
         }
         // The caller treats "nothing to add" as success, so the result is ignored.
-        let _ = self.cs_add_or_overlap(set, coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, added);
+        let _ = self.cs_add_or_overlap(
+            set, coin_seg, opp_seg, coin_ts, coin_te, opp_ts, opp_te, added,
+        );
         true
     }
 
@@ -1464,13 +1595,15 @@ impl OpState {
                     if self.ptt_deleted(ice) {
                         return false;
                     }
-                    if outer_opp != inner_opp {
-                        if let Some((ov_s, ov_e)) = self.coin_overlap(ocs, oce, ics, ice) {
-                            let s1 = self.ptt_starter(ocs, oce);
-                            let s2 = self.ptt_starter(ics, ice);
-                            if !self.cs_add_if_missing(set, s1, s2, ov_s, ov_e, outer_opp, inner_opp, added) {
-                                return false;
-                            }
+                    if outer_opp != inner_opp
+                        && let Some((ov_s, ov_e)) = self.coin_overlap(ocs, oce, ics, ice)
+                    {
+                        let s1 = self.ptt_starter(ocs, oce);
+                        let s2 = self.ptt_starter(ics, ice);
+                        if !self
+                            .cs_add_if_missing(set, s1, s2, ov_s, ov_e, outer_opp, inner_opp, added)
+                        {
+                            return false;
                         }
                     }
                 } else if outer_coin == inner_opp {
@@ -1482,13 +1615,15 @@ impl OpState {
                     if self.ptt_deleted(ioe) {
                         return false;
                     }
-                    if outer_opp != inner_coin {
-                        if let Some((ov_s, ov_e)) = self.coin_overlap(ocs, oce, ios, ioe) {
-                            let s1 = self.ptt_starter(ocs, oce);
-                            let s2 = self.ptt_starter(ios, ioe);
-                            if !self.cs_add_if_missing(set, s1, s2, ov_s, ov_e, outer_opp, inner_coin, added) {
-                                return false;
-                            }
+                    if outer_opp != inner_coin
+                        && let Some((ov_s, ov_e)) = self.coin_overlap(ocs, oce, ios, ioe)
+                    {
+                        let s1 = self.ptt_starter(ocs, oce);
+                        let s2 = self.ptt_starter(ios, ioe);
+                        if !self.cs_add_if_missing(
+                            set, s1, s2, ov_s, ov_e, outer_opp, inner_coin, added,
+                        ) {
+                            return false;
                         }
                     }
                 } else if outer_opp == inner_coin {
@@ -1503,7 +1638,9 @@ impl OpState {
                     if let Some((ov_s, ov_e)) = self.coin_overlap(oos, ooe, ics, ice) {
                         let s1 = self.ptt_starter(oos, ooe);
                         let s2 = self.ptt_starter(ics, ice);
-                        if !self.cs_add_if_missing(set, s1, s2, ov_s, ov_e, outer_coin, inner_opp, added) {
+                        if !self.cs_add_if_missing(
+                            set, s1, s2, ov_s, ov_e, outer_coin, inner_opp, added,
+                        ) {
                             return false;
                         }
                     }
@@ -1519,7 +1656,9 @@ impl OpState {
                     if let Some((ov_s, ov_e)) = self.coin_overlap(oos, ooe, ios, ioe) {
                         let s1 = self.ptt_starter(oos, ooe);
                         let s2 = self.ptt_starter(ios, ioe);
-                        if !self.cs_add_if_missing(set, s1, s2, ov_s, ov_e, outer_coin, inner_coin, added) {
+                        if !self.cs_add_if_missing(
+                            set, s1, s2, ov_s, ov_e, outer_coin, inner_coin, added,
+                        ) {
                             return false;
                         }
                     }
@@ -1538,7 +1677,13 @@ impl OpState {
     /// `SkOpCoincidence::overlap(coin1s, coin1e, coin2s, coin2e, &overS, &overE)`: returns the
     /// overlapping `t` range, if there is one.
     // Port of: src/pathops/SkOpCoincidence.cpp#L1245-L1251 (chrome/m156)
-    fn coin_overlap(&self, coin1s: PtTId, coin1e: PtTId, coin2s: PtTId, coin2e: PtTId) -> Option<(f64, f64)> {
+    fn coin_overlap(
+        &self,
+        coin1s: PtTId,
+        coin1e: PtTId,
+        coin2s: PtTId,
+        coin2e: PtTId,
+    ) -> Option<(f64, f64)> {
         let over_s = std_max(
             std_min(self.ptt_t(coin1s), self.ptt_t(coin1e)),
             std_min(self.ptt_t(coin2s), self.ptt_t(coin2e)),
@@ -1642,11 +1787,15 @@ impl OpState {
         while let Some(c) = cur {
             let next = self.rec_next(c);
             if self.rec_collapsed(c, test) {
-                if zero_or_one(self.ptt_t(self.rec_coin_start(c))) && zero_or_one(self.ptt_t(self.rec_coin_end(c))) {
+                if zero_or_one(self.ptt_t(self.rec_coin_start(c)))
+                    && zero_or_one(self.ptt_t(self.rec_coin_end(c)))
+                {
                     let seg = self.ptt_segment(self.rec_coin_start(c));
                     self.seg_mark_all_done(seg);
                 }
-                if zero_or_one(self.ptt_t(self.rec_opp_start(c))) && zero_or_one(self.ptt_t(self.rec_opp_end(c))) {
+                if zero_or_one(self.ptt_t(self.rec_opp_start(c)))
+                    && zero_or_one(self.ptt_t(self.rec_opp_end(c)))
+                {
                     let seg = self.ptt_segment(self.rec_opp_start(c));
                     self.seg_mark_all_done(seg);
                 }
@@ -1667,7 +1816,12 @@ impl OpState {
 
     /// `SkOpCoincidence::release(headPtr, remove)`: unlinks `remove` from `list`.
     // Port of: src/pathops/SkOpCoincidence.cpp#L1046-L1055 (chrome/m156)
-    pub(crate) fn cs_release_rec(&mut self, set: CoinSetId, list: CoinList, remove: CoinId) -> bool {
+    pub(crate) fn cs_release_rec(
+        &mut self,
+        set: CoinSetId,
+        list: CoinList,
+        remove: CoinId,
+    ) -> bool {
         let mut prev = None;
         let mut cur = self.cs_list_head(set, list);
         while let Some(c) = cur {
@@ -1734,7 +1888,13 @@ impl OpState {
     /// `SkOpCoincidence::fixUp(headPtr, deleted, kept)`: replaces the deleted point by the kept
     /// one, removing records that would become empty.
     // Port of: src/pathops/SkOpCoincidence.cpp#L1166-L1204 (chrome/m156)
-    pub(crate) fn cs_fix_up_list(&mut self, set: CoinSetId, list: CoinList, deleted: PtTId, kept: PtTId) {
+    pub(crate) fn cs_fix_up_list(
+        &mut self,
+        set: CoinSetId,
+        list: CoinList,
+        deleted: PtTId,
+        kept: PtTId,
+    ) {
         let mut prev = None;
         let mut cur = self.cs_list_head(set, list);
         while let Some(coin) = cur {
@@ -1870,10 +2030,12 @@ impl OpState {
                             found = s.zip(e);
                         }
                     }
-                    if let Some((over_s, over_e)) = found {
-                        if !self.cs_add_overlap(overlaps, outer_coin, outer_opp, inner_coin, inner_opp, over_s, over_e) {
-                            return false;
-                        }
+                    if let Some((over_s, over_e)) = found
+                        && !self.cs_add_overlap(
+                            overlaps, outer_coin, outer_opp, inner_coin, inner_opp, over_s, over_e,
+                        )
+                    {
+                        return false;
                     }
                 }
                 inner = self.rec_next(i);
@@ -1949,14 +2111,19 @@ impl OpState {
                     let mut o_opp_value = self.span_opp_value(o_start);
                     // Winding values are added or subtracted depending on direction and wind
                     // type. Same or opposite values are summed depending on the operand value.
-                    let mut wind_diff = if operand_swap { o_opp_value } else { o_wind_value };
+                    let mut wind_diff = if operand_swap {
+                        o_opp_value
+                    } else {
+                        o_wind_value
+                    };
                     let mut o_wind_diff = if operand_swap { opp_value } else { wind_value };
                     if !flipped {
                         wind_diff = -wind_diff;
                         o_wind_diff = -o_wind_diff;
                     }
                     let mut add_to_start = wind_value != 0
-                        && (wind_value > wind_diff || (wind_value == wind_diff && o_wind_value <= o_wind_diff));
+                        && (wind_value > wind_diff
+                            || (wind_value == wind_diff && o_wind_value <= o_wind_diff));
                     let done = if add_to_start {
                         self.span_done(start)
                     } else {
@@ -2094,7 +2261,13 @@ impl OpState {
     /// `globalState()->coincidence()->contains(...)` with four points.
     // Port of: src/pathops/SkOpCoincidence.h#L158-L159 (chrome/m156)
     #[must_use]
-    pub(crate) fn coin_contains(&self, coin_start: PtTId, coin_end: PtTId, opp_start: PtTId, opp_end: PtTId) -> bool {
+    pub(crate) fn coin_contains(
+        &self,
+        coin_start: PtTId,
+        coin_end: PtTId,
+        opp_start: PtTId,
+        opp_end: PtTId,
+    ) -> bool {
         match self.coin_global {
             Some(set) => self.cs_contains_ptts(set, coin_start, coin_end, opp_start, opp_end),
             None => false,
@@ -2118,7 +2291,13 @@ impl OpState {
 
     /// `globalState()->coincidence()->add(...)`.
     // Port of: src/pathops/SkOpCoincidence.cpp#L208 (chrome/m156)
-    pub(crate) fn coin_add(&mut self, coin_start: PtTId, coin_end: PtTId, opp_start: PtTId, opp_end: PtTId) {
+    pub(crate) fn coin_add(
+        &mut self,
+        coin_start: PtTId,
+        coin_end: PtTId,
+        opp_start: PtTId,
+        opp_end: PtTId,
+    ) {
         if let Some(set) = self.coin_global {
             self.cs_add(set, coin_start, coin_end, opp_start, opp_end);
         }
@@ -2162,7 +2341,7 @@ impl OpState {
 // Port of: src/pathops/SkOpCoincidence.cpp#L1396-L1400 (chrome/m156)
 fn float_at(pts: &[Point; 4], index: usize) -> f32 {
     let p = pts[index / 2];
-    if index % 2 == 0 { p.x } else { p.y }
+    if index.is_multiple_of(2) { p.x } else { p.y }
 }
 
 impl OpState {

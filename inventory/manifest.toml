@@ -38237,7 +38237,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyTest.cpp#L9979-L9987"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "674bd89911888b02881cefefaa64e8a47f3e22b1c44dcaa82810dd3f2903536c"
 
 [[test]]
@@ -38246,7 +38246,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyTest.cpp#L9989-L10015"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "bbf9f9aa613075e77e3ae48b57a1d9ba4482a6a6cfae9e7bda36595c3cbd13a2"
 
 [[test]]
