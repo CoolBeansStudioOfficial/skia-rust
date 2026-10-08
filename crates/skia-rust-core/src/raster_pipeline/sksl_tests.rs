@@ -262,7 +262,7 @@ fn a_program_that_invokes_a_child_needs_callbacks() {
 }
 
 #[test]
-fn trace_ops_are_not_appended_until_the_trace_hook_lands() {
+fn trace_ops_without_a_debug_trace_are_not_appended() {
     let mut b = Builder::new();
     b.trace_line(0, 1);
     let program = b.finish(0, 0, 0, None);

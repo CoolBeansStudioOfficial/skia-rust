@@ -245,6 +245,13 @@ impl Program {
         self.debug_trace.as_deref()
     }
 
+    /// A shared handle to the debug trace the program was finished with, if any. The trace ops
+    /// record into it while the program runs.
+    #[must_use]
+    pub fn debug_trace_handle(&self) -> Option<Arc<DebugTracePriv>> {
+        self.debug_trace.clone()
+    }
+
     /// `Program::numUniforms`.
     #[doc(alias = "numUniforms")]
     #[must_use]

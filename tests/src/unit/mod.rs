@@ -207,6 +207,8 @@ pub mod sk_raster_pipeline_opts_test;
 pub mod sk_raster_pipeline_test;
 pub mod sk_runtime_effect_test;
 #[cfg(test)]
+pub mod sk_sl_debug_trace_player_test;
+pub mod sk_sl_debug_trace_test;
 pub mod sk_sl_pipeline_stage_testbed;
 #[cfg(test)]
 pub mod sk_sl_test;

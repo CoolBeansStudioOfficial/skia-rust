@@ -21,11 +21,12 @@
 //! memory, so `Addr::Uniform` offsets become slab offsets and the uniform copies read them like
 //! Skia's `const int32_t*` sources. Every context is then `'static` and lives in the arena.
 //!
-//! One departure from Skia's shape: trace ops are not appended. They need a `TraceHook` (S23), so
-//! [`Program::append_stages`] returns `false` for a program that has them, as Skia does when it
-//! cannot append.
+//! Trace ops record into the program's debug trace through a [`TraceHook`]. Skia's `Program` owns
+//! the `Tracer` it creates for its `DebugTracePriv`; here `append_stages` creates one per call (it
+//! only holds an `Arc` to the same trace), and each trace context holds a handle to it.
 
 use core::cell::Cell;
+use std::sync::Arc;
 
 #[allow(clippy::wildcard_imports)]
 // every context type of the op table appears in `lower_table`
@@ -34,6 +35,7 @@ use skia_rust_simd::rp::{MemPtr, NUM_HIGHP_OPS, Op, Stage};
 
 use super::ops::BuilderOp;
 use super::program::{Addr, Program, SlotData, StageCtx};
+use crate::tracing::Tracer;
 
 /// What [`Program::append_stages`] needs from the pipeline it appends to (Skia's
 /// `SkRasterPipeline*`).
@@ -54,7 +56,7 @@ pub trait StageSink<'a> {
 /// The arena `appendStages` allocates contexts and slot memory from (Skia's `SkArenaAlloc*`).
 pub trait SlotAlloc<'a> {
     /// `alloc->make<T>(v)`.
-    fn make<T: Copy + 'static>(&'a self, v: T) -> &'a T;
+    fn make<T: 'static>(&'a self, v: T) -> &'a T;
     /// `makeBytesAlignedTo(bytes, align)` for writable pipeline memory, whose first `init.len()`
     /// bytes start as `init` and whose remaining bytes start as zero. Returns a pointer to the
     /// first byte. (`ArenaAlloc::alloc_scratch_init` in core, bound per run to the shader scratch
@@ -86,6 +88,8 @@ struct Env<'a, A> {
     base: MemPtr,
     /// The byte offset of the uniform block within the slab (after the immutable slots).
     uniform_base: isize,
+    /// The trace hook of the program (`Program::fTraceHook`), if it has trace ops.
+    trace_hook: Option<Arc<dyn TraceHook>>,
 }
 
 impl<A> Env<'_, A> {
@@ -335,10 +339,9 @@ impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for CaseOpCtx {
     }
 }
 
-/// Contexts that no stage the `SkSL` builder emits uses, or that are not built here: trace
-/// contexts need a `TraceHook` (S23), and the rest belong to other stage families, whose
-/// contexts the builder never produces. Lowering never reaches them (`append_stages` rejects
-/// trace ops first), and a stage of these would panic in [`lower`].
+/// Contexts that no stage the `SkSL` builder emits uses, or that are not built here: the rest
+/// belong to other stage families, whose contexts the builder never produces. Lowering never
+/// reaches them, and a stage of these would panic in [`lower`].
 macro_rules! unsupported_ctx {
     ($($ty:ty),* $(,)?) => { $(
         impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for $ty {
@@ -351,10 +354,6 @@ macro_rules! unsupported_ctx {
 
 unsupported_ctx!(
     MemoryCtx,
-    &'a TraceFuncCtx<'a>,
-    &'a TraceVarCtx<'a>,
-    &'a TraceScopeCtx<'a>,
-    &'a TraceLineCtx<'a>,
     &'a SamplerCtx,
     &'a Conical2PtCtx,
     &'a MipmapCtx,
@@ -382,6 +381,84 @@ unsupported_ctx!(
     f32,
     EmbossCtx,
 );
+
+/// The trace contexts. Each one holds the program's trace hook, which only a program with a
+/// debug trace has (the builder emits trace ops only then).
+impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for &'a TraceLineCtx {
+    // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp (`AllocTraceContext`, `trace_line`)
+    fn from_stage_ctx(ctx: &StageCtx, env: &Env<'a, A>) -> Option<Self> {
+        let &StageCtx::TraceLine { trace_mask, line } = ctx else {
+            return None;
+        };
+        Some(env.alloc.make(TraceLineCtx {
+            trace_mask: env.mem(trace_mask)?,
+            trace_hook: env.trace_hook.clone()?,
+            line_number: line,
+        }))
+    }
+}
+
+impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for &'a TraceScopeCtx {
+    // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp (`AllocTraceContext`, `trace_scope`)
+    fn from_stage_ctx(ctx: &StageCtx, env: &Env<'a, A>) -> Option<Self> {
+        let &StageCtx::TraceScope { trace_mask, delta } = ctx else {
+            return None;
+        };
+        Some(env.alloc.make(TraceScopeCtx {
+            trace_mask: env.mem(trace_mask)?,
+            trace_hook: env.trace_hook.clone()?,
+            delta,
+        }))
+    }
+}
+
+impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for &'a TraceFuncCtx {
+    // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp (`AllocTraceContext`, `trace_enter`)
+    fn from_stage_ctx(ctx: &StageCtx, env: &Env<'a, A>) -> Option<Self> {
+        let &StageCtx::TraceFunc {
+            trace_mask,
+            func_idx,
+        } = ctx
+        else {
+            return None;
+        };
+        Some(env.alloc.make(TraceFuncCtx {
+            trace_mask: env.mem(trace_mask)?,
+            trace_hook: env.trace_hook.clone()?,
+            func_idx,
+        }))
+    }
+}
+
+impl<'a, A: SlotAlloc<'a>> FromStageCtx<'a, A> for &'a TraceVarCtx {
+    // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp (`AllocTraceContext`, `trace_var`)
+    fn from_stage_ctx(ctx: &StageCtx, env: &Env<'a, A>) -> Option<Self> {
+        let &StageCtx::TraceVar {
+            trace_mask,
+            slot_idx,
+            num_slots,
+            data,
+            indirect_offset,
+            indirect_limit,
+        } = ctx
+        else {
+            return None;
+        };
+        let indirect_offset = match indirect_offset {
+            Some(offset) => Some(env.mem(offset)?),
+            None => None,
+        };
+        Some(env.alloc.make(TraceVarCtx {
+            trace_mask: env.mem(trace_mask)?,
+            trace_hook: env.trace_hook.clone()?,
+            slot_idx,
+            num_slots,
+            data: env.mem(data)?,
+            indirect_offset,
+            indirect_limit: u32::try_from(indirect_limit).ok()?,
+        }))
+    }
+}
 
 /// Generates [`lower_stage`] from the op table: one arm per op, its context built by
 /// [`FromStageCtx`].
@@ -430,7 +507,7 @@ fn native(op: BuilderOp) -> Op {
 /// Lowers a stage that is not one of the extended ops.
 ///
 /// # Panics
-/// If the context does not have the shape `make_stages` gives its op, or it is a trace op.
+/// If the context does not have the shape `make_stages` gives its op.
 fn lower<'a, A: SlotAlloc<'a>>(op: BuilderOp, ctx: &StageCtx, env: &Env<'a, A>) -> Stage<'a> {
     lower_stage(native(op), ctx, env).unwrap_or_else(|| {
         panic!(
@@ -440,8 +517,7 @@ fn lower<'a, A: SlotAlloc<'a>>(op: BuilderOp, ctx: &StageCtx, env: &Env<'a, A>) 
     })
 }
 
-/// The operations `appendStages` does not lower to a stage of its own: trace ops, which need a
-/// `TraceHook` (S23).
+/// The operations that record into the debug trace, and so need the program's `TraceHook`.
 fn is_trace_op(op: BuilderOp) -> bool {
     matches!(
         op,
@@ -532,6 +608,8 @@ impl Program {
     /// # Panics
     /// If `uniforms` does not have [`num_uniforms`](Self::num_uniforms) entries.
     // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp#L1697-L1819 (chrome/m156)
+    // Mirrors `Program::appendStages`, which is one function in Skia as well.
+    #[allow(clippy::too_many_lines)]
     pub fn append_stages<'a, P, A>(
         &self,
         pipeline: &mut P,
@@ -561,9 +639,16 @@ impl Program {
 
         // Convert the instruction list to stages, filling the immutable slots.
         let stages = self.make_stages(&uniform_bits, &mut slots, false);
-        if stages.iter().any(|s| is_trace_op(s.op)) {
-            return false;
-        }
+        // The trace ops record into the debug trace (`Program::fTraceHook`). The builder emits
+        // them only for a program that has one, so a program without one cannot append them.
+        let trace_hook: Option<Arc<dyn TraceHook>> = if stages.iter().any(|s| is_trace_op(s.op)) {
+            let Some(debug) = self.debug_trace.clone() else {
+                return false;
+            };
+            Some(Arc::new(Tracer::new(debug)))
+        } else {
+            None
+        };
         let vector = 4 * lanes;
         let immutable_base = vector * (slots.num_values + slots.num_stack);
         let uniform_base = immutable_base + 4 * slots.immutable.len();
@@ -581,6 +666,7 @@ impl Program {
             alloc,
             base,
             uniform_base: isize::try_from(uniform_base).expect("slab fits an int"),
+            trace_hook,
         };
 
         let mut label_offsets: Vec<Option<usize>> =

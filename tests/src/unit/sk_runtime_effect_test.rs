@@ -7,7 +7,6 @@
 //!
 //! Ported here: the factory and reflection tests, the shader, color filter and blender tests and
 //! the builders. Not ported yet, and left `todo` in the manifest with the reason:
-//! - the tracing tests (`MakeTraced`, task S23);
 //! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Graphite tests.
 
 // The ported tests keep the C++ declaration order and function lengths.
@@ -30,6 +29,7 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::point::IPoint;
 use skia_rust_core::runtime_effect::{
     ChildPtr, Options, RuntimeEffect, RuntimeShaderBuilder, uniform as uniform_flags,
 };
@@ -596,10 +596,38 @@ struct TestEffect {
 
 impl TestEffect {
     fn new() -> Self {
+        Self::with_size((2, 2))
+    }
+
+    /// `TestEffect(r, grContext, graphite, size)`: a surface of `size`.
+    fn with_size(size: (i32, i32)) -> Self {
         TestEffect {
-            surface: make_surface((2, 2)),
+            surface: make_surface(size),
             builder: None,
         }
+    }
+
+    /// `trace`: draws the traced copy of the built effect's shader on the surface, and returns the
+    /// dump of its debug trace.
+    fn trace(&mut self, r: &mut Reporter, trace_coord: IPoint) -> String {
+        let Some(shader) = self.builder().make_shader(None) else {
+            errorf!(r, "Effect didn't produce a shader");
+            return String::new();
+        };
+
+        let Some(traced) = RuntimeEffect::make_traced(&shader, trace_coord) else {
+            errorf!(r, "Effect didn't produce a traced shader");
+            return String::new();
+        };
+
+        let canvas = self.surface.canvas();
+        let mut paint = Paint::default();
+        paint.set_shader(traced.shader);
+        paint.set_blend_mode(BlendMode::Src);
+
+        paint_canvas(canvas, &mut paint, None);
+
+        traced.debug_trace.dump()
     }
 
     fn build(&mut self, r: &mut Reporter, src: &str) {
@@ -2070,4 +2098,172 @@ fn test_runtime_effect_blenders(r: &mut Reporter) {
 // Port of: tests/SkRuntimeEffectTest.cpp#L1216-L1218 (chrome/m156)
 def_test!(SkRuntimeEffect_Blender_CPU, |r| {
     test_runtime_effect_blenders(r);
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L925-L970 (chrome/m156)
+def_test!(SkRuntimeEffectTraceShader, |r| {
+    for image_size in [2, 80] {
+        let mut effect = TestEffect::with_size((image_size, image_size));
+        effect.build(
+            r,
+            r"
+            half4 main(float2 p) {
+                float2 val = p - 0.5;
+                return val.0y01;
+            }
+        ",
+        );
+        let center = image_size / 2;
+        let dump = effect.trace(r, IPoint { x: center, y: 1 });
+        const SK_RP_SLOT_DUMP: &str = r"$0 = p (float2 : slot 1/2, L0)
+$1 = p (float2 : slot 2/2, L0)
+$2 = [main].result (float4 : slot 1/4, L0)
+$3 = [main].result (float4 : slot 2/4, L0)
+$4 = [main].result (float4 : slot 3/4, L0)
+$5 = [main].result (float4 : slot 4/4, L0)
+$6 = val (float2 : slot 1/2, L0)
+$7 = val (float2 : slot 2/2, L0)
+F0 = half4 main(float2 p)
+";
+        let expected_trace = format!(
+            r"
+enter half4 main(float2 p)
+  p.x = {center}.5
+  p.y = 1.5
+  scope +1
+   line 3
+   val.x = {center}
+   val.y = 1
+   line 4
+   [main].result.x = 0
+   [main].result.y = 1
+   [main].result.z = 0
+   [main].result.w = 1
+  scope -1
+exit half4 main(float2 p)
+"
+        );
+        reporter_assert!(
+            r,
+            dump.starts_with(SK_RP_SLOT_DUMP) && dump.ends_with(&expected_trace),
+            "Trace does not match expectation for {}x{}:\n{}\n",
+            image_size,
+            image_size,
+            dump
+        );
+    }
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L972-L1030 (chrome/m156)
+def_test!(SkRuntimeEffectTracesAreUnoptimized, |r| {
+    let mut effect = TestEffect::new();
+
+    effect.build(
+        r,
+        r"
+        int globalUnreferencedVar = 7;
+        half inlinableFunction() {
+            return 1;
+        }
+        half4 main(float2 p) {
+            if (true) {
+                int localUnreferencedVar = 7;
+            }
+            return inlinableFunction().xxxx;
+        }
+    ",
+    );
+    let dump = effect.trace(r, IPoint { x: 1, y: 1 });
+    const SK_RP_SLOT_DUMP: &str = r"$0 = p (float2 : slot 1/2, L0)
+$1 = p (float2 : slot 2/2, L0)
+$2 = globalUnreferencedVar (int, L0)
+$3 = [main].result (float4 : slot 1/4, L0)
+$4 = [main].result (float4 : slot 2/4, L0)
+$5 = [main].result (float4 : slot 3/4, L0)
+$6 = [main].result (float4 : slot 4/4, L0)
+$7 = localUnreferencedVar (int, L0)
+$8 = [inlinableFunction].result (float, L0)
+F0 = half4 main(float2 p)
+F1 = half inlinableFunction()
+";
+    const EXPECTED_TRACE: &str = r"
+globalUnreferencedVar = 7
+enter half4 main(float2 p)
+  p.x = 1.5
+  p.y = 1.5
+  scope +1
+   line 7
+   scope +1
+    line 8
+    localUnreferencedVar = 7
+   scope -1
+   line 10
+   enter half inlinableFunction()
+     scope +1
+      line 4
+      [inlinableFunction].result = 1
+     scope -1
+   exit half inlinableFunction()
+   [main].result.x = 1
+   [main].result.y = 1
+   [main].result.z = 1
+   [main].result.w = 1
+  scope -1
+exit half4 main(float2 p)
+";
+    reporter_assert!(
+        r,
+        dump.starts_with(SK_RP_SLOT_DUMP) && dump.ends_with(EXPECTED_TRACE),
+        "Trace output does not match expectation:\n{}\n",
+        dump
+    );
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1032-L1074 (chrome/m156)
+def_test!(SkRuntimeEffectTraceCodeThatCannotBeUnoptimized, |r| {
+    let mut effect = TestEffect::new();
+
+    effect.build(
+        r,
+        r"
+        half4 main(float2 p) {
+            int variableThatGetsOptimizedAway = 7;
+            if (true) {
+                return half4(1);
+            }
+            // This (unreachable) path doesn't return a value.
+            // Without optimization, SkSL thinks this code doesn't return a value on every path.
+        }
+    ",
+    );
+    let dump = effect.trace(r, IPoint { x: 1, y: 1 });
+    const SK_RP_SLOT_DUMP: &str = r"$0 = p (float2 : slot 1/2, L0)
+$1 = p (float2 : slot 2/2, L0)
+$2 = [main].result (float4 : slot 1/4, L0)
+$3 = [main].result (float4 : slot 2/4, L0)
+$4 = [main].result (float4 : slot 3/4, L0)
+$5 = [main].result (float4 : slot 4/4, L0)
+F0 = half4 main(float2 p)
+";
+    const EXPECTED_TRACE: &str = r"
+enter half4 main(float2 p)
+  p.x = 1.5
+  p.y = 1.5
+  scope +1
+   scope +1
+    line 5
+    [main].result.x = 1
+    [main].result.y = 1
+    [main].result.z = 1
+    [main].result.w = 1
+   scope -1
+  scope -1
+exit half4 main(float2 p)
+";
+    reporter_assert!(
+        r,
+        dump.starts_with(SK_RP_SLOT_DUMP) && dump.ends_with(EXPECTED_TRACE),
+        "Trace output does not match expectation:\n{}\n",
+        dump
+    );
 });

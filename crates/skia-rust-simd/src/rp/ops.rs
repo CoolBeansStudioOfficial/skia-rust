@@ -569,11 +569,11 @@ macro_rules! rp_op_table {
             cmpne_2_ints                        Cmpne2Ints                      [MemPtr]                            n  hi B6b;
             cmpne_3_ints                        Cmpne3Ints                      [MemPtr]                            n  hi B6b;
             cmpne_4_ints                        Cmpne4Ints                      [MemPtr]                            n  hi B6b;
-            trace_line                          TraceLine                       [&'a TraceLineCtx<'a>]              n  hi B6d;
-            trace_var                           TraceVar                        [&'a TraceVarCtx<'a>]               n  hi B6d;
-            trace_enter                         TraceEnter                      [&'a TraceFuncCtx<'a>]              n  hi B6d;
-            trace_exit                          TraceExit                       [&'a TraceFuncCtx<'a>]              n  hi B6d;
-            trace_scope                         TraceScope                      [&'a TraceScopeCtx<'a>]             n  hi B6d;
+            trace_line                          TraceLine                       [&'a TraceLineCtx]              n  hi B6d;
+            trace_var                           TraceVar                        [&'a TraceVarCtx]               n  hi B6d;
+            trace_enter                         TraceEnter                      [&'a TraceFuncCtx]              n  hi B6d;
+            trace_exit                          TraceExit                       [&'a TraceFuncCtx]              n  hi B6d;
+            trace_scope                         TraceScope                      [&'a TraceScopeCtx]             n  hi B6d;
         }
     };
 }

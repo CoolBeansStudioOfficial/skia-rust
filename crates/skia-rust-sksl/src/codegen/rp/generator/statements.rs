@@ -1026,9 +1026,13 @@ impl Generator<'_> {
             (node.ty, node.position)
         };
         let pool = &self.ctx.pool;
-        let range =
-            self.immutable_slots
-                .create_slots(pool, || pool.expression_description(e), ty, pos);
+        let range = self.immutable_slots.create_slots(
+            pool,
+            || pool.expression_description(e),
+            ty,
+            pos,
+            false,
+        );
         self.store_immutable_value_to_slots(&immutable_values, range);
         self.builder.push_immutable(range);
         true

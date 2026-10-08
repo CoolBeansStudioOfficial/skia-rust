@@ -15,6 +15,7 @@
 //! filters and blenders (`makeColorFilter`, `makeBlender`, `SkRuntimeColorFilter`,
 //! `SkRuntimeBlender`) are S19; tracing (`MakeTraced`) is S23; flattening is not ported.
 
+use core::any::Any;
 use core::fmt;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -25,6 +26,7 @@ use skia_rust_sksl::compiler::Compiler;
 use skia_rust_sksl::defines::DEFAULT_INLINE_THRESHOLD;
 use skia_rust_sksl::ir::{ElemId, Program, ProgramElementKind, StatementKind, TypeId, TypeRef};
 use skia_rust_sksl::program_settings::{ProgramKind, ProgramSettings, Version};
+use skia_rust_sksl::tracing::DebugTracePriv;
 
 use crate::blender::Blender;
 use crate::capabilities::Capabilities;
@@ -32,6 +34,7 @@ use crate::checksum::hash32;
 use crate::color_filter::ColorFilter;
 use crate::data::Data;
 use crate::matrix::Matrix;
+use crate::point::IPoint;
 use crate::runtime_blender::RuntimeBlender;
 use crate::runtime_color_filter::RuntimeColorFilter;
 use crate::runtime_effect_priv as priv_;
@@ -247,6 +250,16 @@ pub struct Options<'a> {
     /// `maxVersionAllowed`: lifts the ES2 restrictions on runtime effects (tests and certain
     /// internally created effects only).
     pub(crate) max_version_allowed: Version,
+}
+
+/// The result of [`RuntimeEffect::make_traced`] (`SkRuntimeEffect::TracedShader`).
+#[doc(alias = "SkRuntimeEffect::TracedShader")]
+#[derive(Clone, Debug)]
+pub struct TracedShader {
+    /// The traced shader, which records its trace ops when it draws.
+    pub shader: Shader,
+    /// The debug trace the shader records into. Its `trace_info` holds the ops after a draw.
+    pub debug_trace: Arc<DebugTracePriv>,
 }
 
 /// An object that allows passing a [`Shader`], [`ColorFilter`] or [`Blender`] as a child to
@@ -691,8 +704,6 @@ impl RuntimeEffect {
 
     /// Compiles (once) and returns the Raster Pipeline program of this effect, or `None` if the
     /// Raster Pipeline back end does not support it (`getRPProgram`).
-    ///
-    /// skia-rust: the debug-trace variants of `getRPProgram` come with S23.
     // Port of: src/core/SkRuntimeEffect.cpp#L218-L284 (chrome/m156)
     #[doc(alias = "getRPProgram")]
     pub(crate) fn rp_program(&self) -> Option<&rp::Program> {
@@ -701,44 +712,104 @@ impl RuntimeEffect {
         // avoid the cost of invoking the RP code generator until it's actually needed.
         self.0
             .rp_program
-            .get_or_init(|| {
-                // We generally do not run the inliner when an SkRuntimeEffect program is
-                // initially created, because the final compile to native shader code will do
-                // this. However, in SkRP, there's no additional compilation occurring, so we
-                // need to optimize/inline here if we want the performance boost of inlining.
-                // If optimization is necessary, we re-compile the program from source with
-                // inlining and optimization enabled to get a freshly optimized copy.
-                let mut base = self
-                    .0
-                    .base_program
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-
-                let should_optimize = !self.0.flags.contains(EffectFlags::DISABLE_OPTIMIZATION);
-                let mut settings = base.config.settings;
-                let needs_optimization =
-                    !settings.optimize || settings.inline_threshold < DEFAULT_INLINE_THRESHOLD;
-                let mut optimized_copy: Option<Program> = None;
-                if should_optimize && needs_optimization {
-                    let mut compiler = Compiler::new();
-                    settings.optimize = true;
-                    settings.inline_threshold = DEFAULT_INLINE_THRESHOLD;
-                    // We might fail to inline the sksl if there's symbol conflicts. In that
-                    // case, we'll use the unoptimized version which may or may not produce what
-                    // the user wanted.
-                    optimized_copy =
-                        compiler.convert_program(base.config.kind, &base.source, settings);
-                }
-                let program: &mut Program = optimized_copy.as_mut().unwrap_or(&mut *base);
-                let main = program.get_function("main").expect("the effect has a main");
-                let main_definition = program
-                    .pool
-                    .function(main)
-                    .definition
-                    .expect("get_function finds only functions with a definition");
-                make_raster_pipeline_program(program, main_definition, None, false)
-            })
+            .get_or_init(|| self.compile_rp_program(None))
             .as_ref()
+    }
+
+    /// `getRPProgram(debugTrace)` on a fresh copy of an effect: compiles the program with trace
+    /// ops that record into `debug_trace`. As in Skia, the program is compiled once: if it already
+    /// was, the existing program is returned and `debug_trace` is dropped.
+    // Port of: src/core/SkRuntimeEffect.cpp#L218-L284 (chrome/m156) (the `debugTrace` branch)
+    pub(crate) fn rp_program_traced(&self, debug_trace: DebugTracePriv) -> Option<&rp::Program> {
+        let mut debug_trace = Some(debug_trace);
+        self.0
+            .rp_program
+            .get_or_init(|| self.compile_rp_program(debug_trace.take()))
+            .as_ref()
+    }
+
+    /// The body of `getRPProgram`'s `SkOnce`: optimizes if needed, then makes the program, with
+    /// trace ops when there is a debug trace (`writeTraceOps`).
+    fn compile_rp_program(&self, debug_trace: Option<DebugTracePriv>) -> Option<rp::Program> {
+        // We generally do not run the inliner when an SkRuntimeEffect program is
+        // initially created, because the final compile to native shader code will do
+        // this. However, in SkRP, there's no additional compilation occurring, so we
+        // need to optimize/inline here if we want the performance boost of inlining.
+        // If optimization is necessary, we re-compile the program from source with
+        // inlining and optimization enabled to get a freshly optimized copy.
+        let mut base = self
+            .0
+            .base_program
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let should_optimize = !self.0.flags.contains(EffectFlags::DISABLE_OPTIMIZATION);
+        let mut settings = base.config.settings;
+        let needs_optimization =
+            !settings.optimize || settings.inline_threshold < DEFAULT_INLINE_THRESHOLD;
+        let mut optimized_copy: Option<Program> = None;
+        if should_optimize && needs_optimization {
+            let mut compiler = Compiler::new();
+            settings.optimize = true;
+            settings.inline_threshold = DEFAULT_INLINE_THRESHOLD;
+            // We might fail to inline the sksl if there's symbol conflicts. In that
+            // case, we'll use the unoptimized version which may or may not produce what
+            // the user wanted.
+            optimized_copy = compiler.convert_program(base.config.kind, &base.source, settings);
+        }
+        let program: &mut Program = optimized_copy.as_mut().unwrap_or(&mut *base);
+        let main = program.get_function("main").expect("the effect has a main");
+        let main_definition = program
+            .pool
+            .function(main)
+            .definition
+            .expect("get_function finds only functions with a definition");
+        let write_trace_ops = debug_trace.is_some();
+        make_raster_pipeline_program(program, main_definition, debug_trace, write_trace_ops)
+    }
+
+    /// `makeUnoptimizedClone`: a copy of this effect compiled with optimization and inlining
+    /// off, so that a debugger shows results on every line. If the recompilation fails, the
+    /// effect itself is returned.
+    // Port of: src/core/SkRuntimeEffect.cpp#L644-L681 (chrome/m156)
+    #[doc(alias = "makeUnoptimizedClone")]
+    pub(crate) fn make_unoptimized_clone(&self) -> RuntimeEffect {
+        // Compile with maximally-permissive options; any restrictions were already handled when
+        // the original effect was made.
+        let options = Options {
+            force_unoptimized: true,
+            allow_private_access: true,
+            max_version_allowed: Version::K300,
+            ..Options::default()
+        };
+        // We do know the original ProgramKind, so we don't need to re-derive it.
+        let (kind, program) = {
+            let base = self
+                .0
+                .base_program
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let kind = base.config.kind;
+            let mut compiler = Compiler::new();
+            let settings = Self::make_settings(&options);
+            (kind, compiler.convert_program(kind, &base.source, settings))
+        };
+        // If recompilation fails, the debugger will just have to show the optimized code.
+        let Some(program) = program else {
+            return self.clone();
+        };
+        match Self::make_internal(program, &options, kind) {
+            Ok(effect) => effect,
+            Err(error_text) => {
+                // Nothing in MakeInternal should change as a result of optimizations being
+                // toggled.
+                debug_assert!(
+                    false,
+                    "makeUnoptimizedClone: MakeInternal failed\n{error_text}"
+                );
+                self.clone()
+            }
+        }
     }
 
     /// Creates a [`Shader`] from this effect (`makeShader`).
@@ -838,6 +909,16 @@ impl RuntimeEffect {
             uniforms,
             children,
         )))
+    }
+
+    /// `SkRuntimeEffect::MakeTraced`: a copy of `shader` that records a debug trace of the pixel at
+    /// `trace_coord`. `None` if `shader` is not a runtime shader.
+    // Port of: src/core/SkRuntimeEffect.cpp#L934-L944 (chrome/m156)
+    #[doc(alias = "MakeTraced")]
+    #[must_use]
+    pub fn make_traced(shader: &Shader, trace_coord: IPoint) -> Option<TracedShader> {
+        let runtime: &RuntimeShader = (shader.as_base() as &dyn Any).downcast_ref()?;
+        Some(runtime.make_traced_clone(trace_coord))
     }
 
     /// The `SkSL` source of the runtime effect shader (`source`).

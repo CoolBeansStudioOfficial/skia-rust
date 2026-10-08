@@ -24,6 +24,7 @@
 )]
 
 use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 use super::contexts::{BinaryOpCtx, CallbackCtx, TraceFuncCtx, TraceHook, TraceLineCtx};
 use super::contexts::{TraceScopeCtx, TraceVarCtx};
@@ -266,23 +267,23 @@ fn sksl_math_stage_twins() {
 
 /// A `TraceHook` that records its events.
 #[derive(Default)]
-struct Recorder(RefCell<Vec<i32>>);
+struct Recorder(Mutex<Vec<i32>>);
 
 impl TraceHook for Recorder {
     fn var(&self, slot: i32, val: i32) {
-        self.0.borrow_mut().extend([-1, slot, val]);
+        self.0.lock().unwrap().extend([-1, slot, val]);
     }
     fn line(&self, line_num: i32) {
-        self.0.borrow_mut().extend([-2, line_num]);
+        self.0.lock().unwrap().extend([-2, line_num]);
     }
     fn enter(&self, fn_idx: i32) {
-        self.0.borrow_mut().extend([-3, fn_idx]);
+        self.0.lock().unwrap().extend([-3, fn_idx]);
     }
     fn exit(&self, fn_idx: i32) {
-        self.0.borrow_mut().extend([-4, fn_idx]);
+        self.0.lock().unwrap().extend([-4, fn_idx]);
     }
     fn scope(&self, delta: i32) {
-        self.0.borrow_mut().extend([-5, delta]);
+        self.0.lock().unwrap().extend([-5, delta]);
     }
 }
 
@@ -314,7 +315,7 @@ fn trace_ops_mask_per_lane() {
             put(3, l, 1); // indirect offset
         }
 
-        let hook = Recorder::default();
+        let hook = Arc::new(Recorder::default());
         let run = |stages: &[Stage<'_>], lanes: &[bool]| {
             let mut regs = exec(lanes);
             let mut aux = aux.clone();
@@ -326,22 +327,22 @@ fn trace_ops_mask_per_lane() {
         };
         let line = TraceLineCtx {
             trace_mask,
-            trace_hook: &hook,
+            trace_hook: hook.clone(),
             line_number: 7,
         };
         let enter = TraceFuncCtx {
             trace_mask,
-            trace_hook: &hook,
+            trace_hook: hook.clone(),
             func_idx: 3,
         };
         let scope = TraceScopeCtx {
             trace_mask,
-            trace_hook: &hook,
+            trace_hook: hook.clone(),
             delta: -2,
         };
         let var = TraceVarCtx {
             trace_mask,
-            trace_hook: &hook,
+            trace_hook: hook.clone(),
             slot_idx: 10,
             num_slots: 2,
             data,
@@ -353,7 +354,7 @@ fn trace_ops_mask_per_lane() {
             indirect_limit: 1,
             slot_idx: 20,
             num_slots: 1,
-            ..var
+            ..var.clone()
         };
         let stages = [
             Stage::LoadSrc(MemPtr::new(MemSlot(0), 0)),
@@ -371,7 +372,7 @@ fn trace_ops_mask_per_lane() {
         run(&stages, &lanes);
         let last = (n - 1) as i32;
         assert_eq!(
-            *hook.0.borrow(),
+            *hook.0.lock().unwrap(),
             vec![
                 -2,
                 7,
@@ -396,10 +397,10 @@ fn trace_ops_mask_per_lane() {
 
         // The traced lane is not executing: only `trace_scope` (which ignores the execution
         // mask) reports.
-        hook.0.borrow_mut().clear();
+        hook.0.lock().unwrap().clear();
         run(&stages, &vec![false; n]);
         let expected: &[i32] = &[-5, -2];
-        assert_eq!(*hook.0.borrow(), expected, "{sel}");
+        assert_eq!(*hook.0.lock().unwrap(), expected, "{sel}");
     }
 }
 

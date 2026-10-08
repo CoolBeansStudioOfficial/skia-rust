@@ -44229,8 +44229,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1032-L1074"
 module = "sksl"
-status = "todo"
-reason = "needs RuntimeEffect::make_traced (tracing): task S23"
+status = "passing"
 span_hash = "ec204ce6e3ffaea6892af357d0018e38393c6beedd602e7853b8427aa77299fa"
 
 [[test]]
@@ -44239,8 +44238,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L925-L970"
 module = "sksl"
-status = "todo"
-reason = "needs RuntimeEffect::make_traced (tracing): task S23"
+status = "passing"
 span_hash = "cde2341405358cc958469bd86ba5594bd6e1afa548e4c6ee96104e173859860b"
 
 [[test]]
@@ -44249,8 +44247,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L972-L1030"
 module = "sksl"
-status = "todo"
-reason = "needs RuntimeEffect::make_traced (tracing): task S23"
+status = "passing"
 span_hash = "2007f6ff170f6cf820fcaf498d6fdf4ec93ba0745a3a3717b725ffbd029e9988"
 
 [[test]]
@@ -44418,7 +44415,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L828-L880"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "53cabb3756cf93537143a971d5b423225d592c3424c81bbb2735bc60f50dc3e9"
 
 [[test]]
@@ -44427,7 +44424,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L128-L139"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a6723a8e79bd771c184378c8c5fa21a3bd39f6aacba538047017b98652998d0a"
 
 [[test]]
@@ -44436,7 +44433,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L540-L614"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "535abb86785ebf2f7b71f79a97648d321dbf751bc8ca4a94a949e385f0bf3cff"
 
 [[test]]
@@ -44445,7 +44442,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L218-L306"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc31584b6ff1d89388f86bcbd9e462a22b0b3af206624b46ad3f20f7164e0aeb"
 
 [[test]]
@@ -44454,7 +44451,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L141-L180"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb35fc3aac13ee0ddad7eee7cb7cff334fc1083a2ea8463eb78a94adb870fb5c"
 
 [[test]]
@@ -44463,7 +44460,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L469-L538"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "429a858473c1e0f7865aea9de3b1dc3dbe29f26e771b45d7ff29383240f9d14b"
 
 [[test]]
@@ -44472,7 +44469,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L766-L787"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8facb06d4cf93d1c63f635050cc673a2975c879e67f74da67688a98c9babd402"
 
 [[test]]
@@ -44481,7 +44478,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L182-L216"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6cf76a3980120e366815de02c6590b18b10968fa0dbef1244d0444e9ec28cdb8"
 
 [[test]]
@@ -44490,7 +44487,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L616-L671"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "21b9aca059db5fb50b60d991689a0f89caa8483c5d64f2b0f4d1a7d7a046a165"
 
 [[test]]
@@ -44499,7 +44496,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L913-L950"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "af33f5a1c09f80b22cee83edf616a74edb3652816d6370452759954e0cd20e31"
 
 [[test]]
@@ -44508,7 +44505,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L882-L911"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4118ecd1cdc261d58c9b4475bab690b8a7a9629f625acf886621bb6f56ee02ff"
 
 [[test]]
@@ -44517,7 +44514,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L789-L826"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a8479301af69109af48b95d6e475728070b94a07253cf910eb8a3f7b16e85fbe"
 
 [[test]]
@@ -44526,7 +44523,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L405-L467"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3978a7f08d13c6d73a88b0bda68ac92b9cdbea11845557ce0b19677c7798ca67"
 
 [[test]]
@@ -44535,7 +44532,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L673-L764"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c9beba3edbc325c4e23d7fd391aaf2ca7f5c56ac46cebe7da11f0de3e8e30afd"
 
 [[test]]
@@ -44544,7 +44541,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTracePlayerTest.cpp#L308-L403"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3b88cfd25a601a280733cd59def9211dc0441292db48b156cfe406067af44466"
 
 [[test]]
@@ -44553,7 +44550,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTraceTest.cpp#L143-L187"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eaf51ce242a817a74407efcafb1928026a58abaef637a70fe510de995e518f91"
 
 [[test]]
@@ -44564,6 +44561,7 @@ source = "tests/SkSLDebugTraceTest.cpp#L85-L141"
 module = "sksl"
 status = "todo"
 span_hash = "2e953e985973465a3f4498c3840be77b96d542da6141cfcadbb91cb837788a7f"
+reason = "needs SkSLTraceUtils::WriteTrace/ReadTrace (SkJSONWriter and SkJSONReader, not ported) and stores NumberKind values 5 and 10, which the Rust enum cannot hold"
 
 [[test]]
 id = "tests/SkSLDebugTraceTest.cpp::DebugTracePrivSetSource"
@@ -44571,7 +44569,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTraceTest.cpp#L23-L35"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3bc575b3c62f83bf0b0ef53cc83d356ff967417ab4b4fb802152186aa8629f1a"
 
 [[test]]
@@ -44580,7 +44578,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLDebugTraceTest.cpp#L37-L45"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3eccd6415e32e165b299134f9f000dce6ec93d3297e630c91d5763ee6eb1846b"
 
 [[test]]
@@ -44591,6 +44589,7 @@ source = "tests/SkSLDebugTraceTest.cpp#L47-L83"
 module = "sksl"
 status = "todo"
 span_hash = "5b426d6756ab29f0b060e376e4cfb85594ad18d22b50be90c8e5f156e45308cd"
+reason = "needs SkSLTraceUtils::WriteTrace/ReadTrace (SkJSONWriter and SkJSONReader, not ported) and stores NumberKind values 5 and 10, which the Rust enum cannot hold"
 
 [[test]]
 id = "tests/SkSLES2ConformanceTest.cpp::SkSL_ES2Conformance_Fail"

@@ -91,7 +91,11 @@ impl Dumper<'_> {
         let mut unique_name_map: HashMap<&str, HashMap<usize, String>> = HashMap::new();
         for slot_info in &trace.slot_info {
             // Look up this variable by its name and source position.
-            let pos = slot_info.pos_start.unwrap_or(0);
+            let pos = if slot_info.pos.valid() {
+                usize::try_from(slot_info.pos.start_offset()).unwrap_or(0)
+            } else {
+                0
+            };
             let position_map = unique_name_map.entry(slot_info.name.as_str()).or_default();
 
             // Have we seen this variable name/position combination before?

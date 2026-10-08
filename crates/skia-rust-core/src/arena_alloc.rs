@@ -308,7 +308,7 @@ impl ArenaAlloc {
 // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp#L1697-L1819 (chrome/m156)
 // (the arena calls `appendStages` makes; the trait is `skia_rust_sksl`'s, see its docs)
 impl<'a> SlotAlloc<'a> for ArenaAlloc {
-    fn make<T: Copy + 'static>(&'a self, v: T) -> &'a T {
+    fn make<T: 'static>(&'a self, v: T) -> &'a T {
         ArenaAlloc::make(self, v)
     }
 

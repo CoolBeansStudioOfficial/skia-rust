@@ -568,41 +568,45 @@ pub trait TraceHook {
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L288-L292 (chrome/m156)
 /// `TraceFuncCtx`.
+///
+/// skia-rust: the trace hook is an `Arc` rather than the `SkSL::TraceHook*` of Skia. A context is
+/// arena-allocated (`'static`), and its hook is owned by the program that appended it, so sharing
+/// the handle keeps the context free of a lifetime without unsafe code.
 #[doc(alias = "SkRasterPipelineContexts::TraceFuncCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceFuncCtx<'a> {
+#[derive(Clone)]
+pub struct TraceFuncCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub func_idx: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L294-L298 (chrome/m156)
 /// `TraceScopeCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceScopeCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceScopeCtx<'a> {
+#[derive(Clone)]
+pub struct TraceScopeCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub delta: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L300-L304 (chrome/m156)
 /// `TraceLineCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceLineCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceLineCtx<'a> {
+#[derive(Clone)]
+pub struct TraceLineCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub line_number: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L306-L313 (chrome/m156)
 /// `TraceVarCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceVarCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceVarCtx<'a> {
+#[derive(Clone)]
+pub struct TraceVarCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub slot_idx: i32,
     pub num_slots: i32,
     pub data: MemPtr,
@@ -614,7 +618,7 @@ pub struct TraceVarCtx<'a> {
 
 macro_rules! debug_trace_ctx {
     ($($name:ident),*) => {$(
-        impl fmt::Debug for $name<'_> {
+        impl fmt::Debug for $name {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_struct(stringify!($name))
                     .field("trace_mask", &self.trace_mask)

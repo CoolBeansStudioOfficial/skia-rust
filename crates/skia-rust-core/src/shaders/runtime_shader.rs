@@ -5,19 +5,25 @@
 
 //! `SkRuntimeShader`: a shader that runs a [`RuntimeEffect`] through the Raster Pipeline.
 //!
-//! skia-rust: tracing (`makeTracedClone`, S23) and flattening are not ported.
+//! skia-rust: flattening is not ported.
 
 use core::fmt;
+use std::sync::Arc;
 
 use crate::capabilities::Capabilities;
 use crate::color_space::ColorSpace;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
 use crate::matrix::Matrix;
-use crate::runtime_effect::{ChildPtr, RuntimeEffect};
+use skia_rust_sksl::codegen::rp;
+use skia_rust_sksl::tracing::DebugTracePriv;
+
+use crate::point::IPoint;
+use crate::runtime_effect::{ChildPtr, RuntimeEffect, TracedShader};
 use crate::runtime_effect_priv::{
     self as priv_, RuntimeEffectRpCallbacks, UniformsCallback, UniformsCallbackContext,
 };
+use crate::shader::Shader;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 
 /// A shader that runs a [`RuntimeEffect`] (`SkRuntimeShader`).
@@ -106,6 +112,26 @@ impl RuntimeShader {
         uniforms
     }
 
+    /// `makeTracedClone`: a copy of this shader on an unoptimized copy of its effect, which
+    /// records a debug trace of the pixel at `coord`.
+    // Port of: src/shaders/SkRuntimeShader.cpp#L63-L77 (chrome/m156)
+    pub(crate) fn make_traced_clone(&self, coord: IPoint) -> TracedShader {
+        let unoptimized = self.effect.make_unoptimized_clone();
+        let source = unoptimized.source().as_bytes();
+        // The program is compiled now, with its trace ops recording into this trace (the copy is
+        // new, so its program is not compiled yet).
+        let debug_trace = unoptimized
+            .rp_program_traced(new_debug_trace(source, coord))
+            .and_then(rp::Program::debug_trace_handle)
+            // A program that does not compile has no trace to record into.
+            .unwrap_or_else(|| Arc::new(new_debug_trace(source, coord)));
+        let shader = RuntimeShader::new(unoptimized, self.uniform_data(None), &self.children);
+        TracedShader {
+            shader: Shader::from_base(shader),
+            debug_trace,
+        }
+    }
+
     // Port of: src/shaders/SkRuntimeShader.cpp#L95-L123 (chrome/m156)
     fn append_stages_impl(&self, rec: &mut StageRec<'_, '_>, m_rec: &MatrixRec) -> bool {
         if !priv_::can_draw(Capabilities::raster_backend(), &self.effect) {
@@ -138,6 +164,15 @@ impl RuntimeShader {
         }
         false
     }
+}
+
+/// A debug trace of the source of `source` for the pixel at `coord` (`makeDebugTrace`).
+// Port of: src/shaders/SkRuntimeShader.cpp#L63-L69 (chrome/m156)
+fn new_debug_trace(source: &[u8], coord: IPoint) -> DebugTracePriv {
+    let mut debug_trace = DebugTracePriv::default();
+    debug_trace.set_source(source);
+    debug_trace.set_trace_coord(coord.x, coord.y);
+    debug_trace
 }
 
 impl ShaderBase for RuntimeShader {

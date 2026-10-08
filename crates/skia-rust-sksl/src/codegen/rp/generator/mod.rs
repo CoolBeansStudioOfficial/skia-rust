@@ -102,7 +102,8 @@ impl SlotManager {
     }
 
     /// `addSlotDebugInfoForGroup`.
-    // Port of: src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp#L967-L1020 (chrome/m156)
+    // Port of: src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp#L1108-L1154 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // Skia's signature, plus the pool and the output.
     fn add_slot_debug_info_for_group(
         info: &mut Vec<SlotDebugInfo>,
         pool: &IrPool,
@@ -110,6 +111,7 @@ impl SlotManager {
         ty: TypeId,
         pos: Position,
         group_index: &mut i32,
+        is_function_return_value: bool,
     ) {
         let t = pool.ty(ty);
         match t.type_kind {
@@ -124,6 +126,7 @@ impl SlotManager {
                         elem_type,
                         pos,
                         group_index,
+                        is_function_return_value,
                     );
                 }
             }
@@ -136,11 +139,13 @@ impl SlotManager {
                         field.ty,
                         pos,
                         group_index,
+                        is_function_return_value,
                     );
                 }
             }
             // `kScalar`, `kVector` and `kMatrix` (the default case asserts, then falls through).
             _ => {
+                let number_kind = t.component_type().number_kind();
                 let nslots = t.slot_count();
                 for slot in 0..nslots {
                     info.push(SlotDebugInfo {
@@ -148,9 +153,11 @@ impl SlotManager {
                         columns: u8::try_from(t.columns()).unwrap_or(0),
                         rows: u8::try_from(t.rows()).unwrap_or(0),
                         component_index: u8::try_from(slot).unwrap_or(0),
-                        pos_start: pos
-                            .valid()
-                            .then(|| usize::try_from(pos.start_offset()).unwrap_or(0)),
+                        group_index: *group_index,
+                        number_kind,
+                        line: 0,
+                        pos,
+                        fn_return_value: if is_function_return_value { 1 } else { -1 },
                     });
                     *group_index += 1;
                 }
@@ -166,6 +173,7 @@ impl SlotManager {
         name: impl FnOnce() -> String,
         ty: TypeId,
         pos: Position,
+        is_function_return_value: bool,
     ) -> SlotRange {
         let nslots = i32::try_from(pool.ty(ty).slot_count()).expect("slot count fits i32");
         if nslots == 0 {
@@ -176,7 +184,15 @@ impl SlotManager {
             debug_assert_eq!(info.len(), usize::try_from(self.slot_count).unwrap_or(0));
             // Append slot names and types to our debug slot-info table.
             let mut group_index = 0;
-            Self::add_slot_debug_info_for_group(info, pool, &name(), ty, pos, &mut group_index);
+            Self::add_slot_debug_info_for_group(
+                info,
+                pool,
+                &name(),
+                ty,
+                pos,
+                &mut group_index,
+                is_function_return_value,
+            );
             debug_assert_eq!(group_index, nslots);
         }
         let result = SlotRange {
@@ -217,7 +233,7 @@ impl SlotManager {
             return *entry;
         }
         let var = pool.variable(v);
-        let range = self.create_slots(pool, || var.name.to_string(), var.ty, var.position);
+        let range = self.create_slots(pool, || var.name.to_string(), var.ty, var.position, false);
         self.map_variable_to_slots(pool, v, range);
         range
     }
@@ -235,6 +251,7 @@ impl SlotManager {
             || format!("[{}].result", decl.name),
             decl.return_type,
             decl.position,
+            true,
         );
         self.slot_map.insert(call_site, range);
         range
