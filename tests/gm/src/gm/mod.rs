@@ -37,6 +37,7 @@ pub mod crbug_913349;
 pub mod crbug_946965;
 pub mod crbug_947055;
 pub mod cubicpaths;
+pub mod daa;
 pub mod dashcircle;
 pub mod dashcubics;
 pub mod dashing;
