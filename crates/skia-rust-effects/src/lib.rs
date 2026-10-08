@@ -16,6 +16,7 @@ pub mod emboss_mask_filter;
 pub mod gradient;
 pub mod gradient_base_shader;
 pub mod gradient_shader;
+pub mod image_filters;
 pub mod line_2d_path_effect;
 pub mod linear_gradient;
 pub mod path_1d_path_effect;
