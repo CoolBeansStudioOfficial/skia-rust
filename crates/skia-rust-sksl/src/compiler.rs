@@ -218,3 +218,237 @@ pub fn handle_error(error_text: &mut Vec<u8>, src: &[u8], msg: &str, pos: Positi
         error_text.push(b'\n');
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::Compiler;
+    use crate::position::Position;
+
+    /// The byte range of the `nth` (0-based) occurrence of `needle` in `src`.
+    fn range_of(src: &str, needle: &str, nth: usize) -> Position {
+        let start = src
+            .match_indices(needle)
+            .nth(nth)
+            .expect("needle in source")
+            .0;
+        let start = i32::try_from(start).unwrap();
+        let len = i32::try_from(needle.len()).unwrap();
+        Position::range(start, start + len)
+    }
+
+    fn compiler_for(src: &str) -> Compiler {
+        let mut compiler = Compiler::new();
+        compiler.error_reporter().set_source(Arc::from(src));
+        compiler
+    }
+
+    /// The text `skslc` writes after its `### Compilation failed:\n\n` header.
+    fn golden_body(golden: &str) -> &str {
+        golden
+            .strip_prefix("### Compilation failed:\n\n")
+            .expect("an error golden")
+    }
+
+    #[test]
+    fn error_text_matches_ossfuzz38140_golden() {
+        // resources/sksl/errors/Ossfuzz38140.sksl and tests/sksl/errors/Ossfuzz38140.glsl.
+        let src = concat!(
+            "half4 blend_src_over(half4 src, half4 dst) {\n",
+            "    return src + (1 - src.a)*dst;\n",
+            "}\n",
+            "\n",
+            "half4 main(half4 src, half4 dst) {\n",
+            "    return blend_src_over(src, half4(1) - dst);\n",
+            "}\n",
+            "\n",
+            "/*%%*\n",
+            "differ only in modifiers\n",
+            "*%%*/\n",
+        );
+        let golden = concat!(
+            "### Compilation failed:\n",
+            "\n",
+            "error: 1: functions 'half4 blend_src_over(half4 src, half4 dst)' and '$pure half4 ",
+            "blend_src_over(half4 src, half4 dst)' differ only in modifiers\n",
+            "half4 blend_src_over(half4 src, half4 dst) {\n",
+            "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "error: 2: unknown identifier 'src'\n",
+            "    return src + (1 - src.a)*dst;\n",
+            "           ^^^\n",
+            "error: 2: unknown identifier 'src'\n",
+            "    return src + (1 - src.a)*dst;\n",
+            "                      ^^^\n",
+            "error: 2: unknown identifier 'dst'\n",
+            "    return src + (1 - src.a)*dst;\n",
+            "                             ^^^\n",
+            "error: 5: shader 'main' must be main() or main(float2)\n",
+            "half4 main(half4 src, half4 dst) {\n",
+            "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "error: 6: unknown identifier 'src'\n",
+            "    return blend_src_over(src, half4(1) - dst);\n",
+            "                          ^^^\n",
+            "error: 6: unknown identifier 'dst'\n",
+            "    return blend_src_over(src, half4(1) - dst);\n",
+            "                                          ^^^\n",
+            "7 errors\n",
+        );
+        let mut compiler = compiler_for(src);
+        let errors = [
+            (
+                range_of(src, "half4 blend_src_over(half4 src, half4 dst)", 0),
+                "functions 'half4 blend_src_over(half4 src, half4 dst)' and '$pure half4 \
+                 blend_src_over(half4 src, half4 dst)' differ only in modifiers",
+            ),
+            (range_of(src, "src", 2), "unknown identifier 'src'"),
+            (range_of(src, "src", 3), "unknown identifier 'src'"),
+            (range_of(src, "dst", 1), "unknown identifier 'dst'"),
+            (
+                range_of(src, "half4 main(half4 src, half4 dst)", 0),
+                "shader 'main' must be main() or main(float2)",
+            ),
+            (range_of(src, "src", 6), "unknown identifier 'src'"),
+            (range_of(src, "dst", 3), "unknown identifier 'dst'"),
+        ];
+        for (pos, msg) in errors {
+            compiler.context_mut().errors.error(pos, msg);
+        }
+        assert_eq!(compiler.error_count(), 7);
+        assert_eq!(compiler.error_text(true), golden_body(golden));
+        // errorText resets the errors.
+        assert_eq!(compiler.error_count(), 0);
+        assert_eq!(compiler.error_text(true), "");
+    }
+
+    #[test]
+    fn error_text_marks_ranges_that_run_past_the_line() {
+        // resources/sksl/errors/ForLoopOverflow.rts and tests/sksl/errors/ForLoopOverflow.glsl.
+        let src = concat!(
+            "half4 main(float2 coords) {\n",
+            "    half arr[4];\n",
+            "    for (int i = 2147483640; i < 2147483647; i += 100) {\n",
+            "        arr[i - 2147483640] = half(1);\n",
+            "    }\n",
+            "    return half4(0);\n",
+            "}\n",
+            "\n",
+            "/*%%*\n",
+            "loop must guarantee termination in fewer iterations\n",
+            "*%%*/\n",
+        );
+        let golden = concat!(
+            "### Compilation failed:\n",
+            "\n",
+            "error: 3: loop must guarantee termination in fewer iterations\n",
+            "    for (int i = 2147483640; i < 2147483647; i += 100) {\n",
+            "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...\n",
+            "1 error\n",
+        );
+        let mut compiler = compiler_for(src);
+        let start = range_of(src, "for (", 0).start_offset();
+        let end = range_of(src, "    }\n", 0).end_offset() - 1;
+        compiler.context_mut().errors.error(
+            Position::range(start, end),
+            "loop must guarantee termination in fewer iterations",
+        );
+        assert_eq!(compiler.error_text(true), golden_body(golden));
+    }
+
+    #[test]
+    fn error_text_echoes_multi_line_messages() {
+        // resources/sksl/errors/IllegalRecursionSimple.rts and its .glsl golden.
+        let src = concat!(
+            "// Expect 1 error\n",
+            "\n",
+            "// Simple recursion is not allowed, even with branching:\n",
+            "int fibonacci(int n) { return n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2); }\n",
+            "\n",
+            "/*%%*\n",
+            "potential recursion (function call cycle) not allowed:\n",
+            "\tint fibonacci(int n)\n",
+            "\tint fibonacci(int n)\n",
+            "*%%*/\n",
+        );
+        let golden = concat!(
+            "### Compilation failed:\n",
+            "\n",
+            "error: 4: potential recursion (function call cycle) not allowed:\n",
+            "\tint fibonacci(int n)\n",
+            "\tint fibonacci(int n)\n",
+            "int fibonacci(int n) { return n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2); }\n",
+            "                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+            "1 error\n",
+        );
+        let mut compiler = compiler_for(src);
+        let body = range_of(
+            src,
+            "{ return n <= 1 ? n : fibonacci(n - 1) + fibonacci(n - 2); }",
+            0,
+        );
+        compiler.context_mut().errors.error(
+            body,
+            "potential recursion (function call cycle) not allowed:\n\tint fibonacci(int n)\n\
+             \tint fibonacci(int n)",
+        );
+        assert_eq!(compiler.error_text(true), golden_body(golden));
+    }
+
+    #[test]
+    fn error_text_cuts_long_lines_with_ellipses() {
+        // The first two errors of tests/sksl/errors/Ossfuzz44561.glsl, from the first two lines
+        // of resources/sksl/errors/Ossfuzz44561.sksl (which hold a DEL and a CR byte).
+        let line1 = concat!(
+            "void m(){ix;void[(0).r1(((5).ss0s.ss0s.sss0.ss0s+(5).ss0s.sss.00ss.ss0s.ss .ss0.",
+            "ss00.ss0s+(5).ss0s.ss0.s0s.ss00.sssch (int) {case 0:{{{{{{{{{{{{{{{{{{{{{{{{\x7fe;",
+            "void n(){;; int \rm;;half x;",
+        );
+        let src = format!("{line1}\nx*x++.ss1.ss;0;\n");
+        let expected = format!(
+            "error: 1: unknown identifier 'ix'\n{}...\n{}^^\n\
+             error: 1: too many components in swizzle mask\n...{}\n{}^\n",
+            &line1[..111],
+            " ".repeat(9),
+            &line1[16..],
+            " ".repeat(103),
+        );
+        // The echoed texts above, as the golden spells them.
+        assert!(expected.contains(
+            "void m(){ix;void[(0).r1(((5).ss0s.ss0s.sss0.ss0s+(5).ss0s.sss.00ss.ss0s.ss .ss0.\
+             ss00.ss0s+(5).ss0s.ss0.s0s.ss00...\n"
+        ));
+        let mut compiler = compiler_for(&src);
+        compiler
+            .context_mut()
+            .errors
+            .error(Position::range(9, 11), "unknown identifier 'ix'");
+        compiler.context_mut().errors.error(
+            Position::range(116, 117),
+            "too many components in swizzle mask",
+        );
+        assert_eq!(compiler.error_text(false), expected);
+    }
+
+    #[test]
+    fn poison_errors_and_invalid_positions() {
+        let mut compiler = compiler_for("x");
+        compiler
+            .context_mut()
+            .errors
+            .error(Position::range(0, 1), "'<POISON>' is not a type");
+        assert_eq!(compiler.error_count(), 0, "errors about poison are dropped");
+        compiler
+            .context_mut()
+            .errors
+            .error(Position::default(), "no position");
+        // A position at the end of the text prints its line number but no source line.
+        compiler
+            .context_mut()
+            .errors
+            .error(Position::range(1, 1), "at end");
+        assert_eq!(
+            compiler.error_text(true),
+            "error: no position\nerror: 1: at end\n2 errors\n"
+        );
+    }
+}

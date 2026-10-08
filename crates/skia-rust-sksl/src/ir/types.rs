@@ -1389,7 +1389,8 @@ mod tests {
         assert_eq!(float4.columns(), 4);
         assert_eq!(float4.rows(), 1);
         assert_eq!(float4.slot_count(), 4);
-        assert!(float4.is_vector() && float4.is_float());
+        // Vectors have no number kind of their own (Skia: only scalars and literals do).
+        assert!(float4.is_vector() && !float4.is_float() && float4.component_type().is_float());
 
         let vec4 = pool.ty(TypeId::VEC4);
         assert_eq!(vec4.resolve().id(), TypeId::FLOAT4);

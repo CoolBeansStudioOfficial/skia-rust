@@ -84,3 +84,53 @@ impl Mangler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Mangler;
+    use crate::ir::{
+        IrPool, ModifierFlags, SymbolId, SymbolTable, TypeId, Variable, VariableStorage,
+    };
+    use crate::position::Position;
+
+    #[test]
+    fn unique_names_count_up_and_strip_old_prefixes() {
+        let mut pool = IrPool::new();
+        let table = pool.add_symbol_table(SymbolTable::new(None, false));
+        let mut mangler = Mangler::new();
+        // As in the inliner goldens (tests/sksl/inliner/*.glsl): `_0_x`, `_1_c`, …
+        assert_eq!(mangler.unique_name("x", &pool, table), "_0_x");
+        assert_eq!(mangler.unique_name("$private", &pool, table), "_1_private");
+        // An earlier mangler prefix is replaced, not stacked.
+        assert_eq!(mangler.unique_name("_0_x", &pool, table), "_2_x");
+        // A lone leading underscore is dropped (no `__` in GLSL).
+        assert_eq!(mangler.unique_name("_foo", &pool, table), "_3_foo");
+        // `_12_` alone is not a prefix: nothing follows it.
+        assert_eq!(mangler.unique_name("_12_", &pool, table), "_4_12_");
+        // Names already in the symbol table (or its parents) are skipped.
+        let taken = pool.add_variable(Variable::new(
+            Position::default(),
+            Position::default(),
+            ModifierFlags::empty(),
+            "_5_y",
+            TypeId::INT,
+            false,
+            VariableStorage::Local,
+        ));
+        pool.inject_symbol(table, SymbolId::Variable(taken));
+        let child = pool.add_symbol_table(SymbolTable::new(Some(table), false));
+        assert_eq!(mangler.unique_name("y", &pool, child), "_6_y");
+        mangler.reset();
+        assert_eq!(mangler.unique_name("y", &pool, child), "_0_y");
+    }
+
+    #[test]
+    fn long_names_are_cut_to_256_bytes() {
+        let mut pool = IrPool::new();
+        let table = pool.add_symbol_table(SymbolTable::new(None, false));
+        let long = "n".repeat(300);
+        let name = Mangler::new().unique_name(&long, &pool, table);
+        assert_eq!(name.len(), 256);
+        assert!(name.starts_with("_0_nnn"));
+    }
+}
