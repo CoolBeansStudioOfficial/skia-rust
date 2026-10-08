@@ -24,8 +24,9 @@ pub enum ErrorSink {
     },
     /// The parser checkpoint's `ForwardingErrorReporter`: keeps errors to forward or drop later.
     Forwarding {
-        /// The recorded `(message, position)` pairs.
-        errors: Vec<(String, Position)>,
+        /// The recorded `(message, position)` pairs. Messages are bytes, because Skia's
+        /// messages quote source bytes, which need not be UTF-8.
+        errors: Vec<(Vec<u8>, Position)>,
     },
     /// `NoOpErrorReporter`: discards errors (analysis passes that only probe).
     NoOp,
@@ -89,7 +90,13 @@ impl ErrorReporter {
     /// poison value.
     // Port of: src/sksl/SkSLErrorReporter.cpp#L16-L23 (chrome/m156)
     pub fn error(&mut self, position: Position, msg: &str) {
-        if msg.contains(Compiler::POISON_TAG) {
+        self.error_bytes(position, msg.as_bytes());
+    }
+
+    /// [`ErrorReporter::error`] for a message in bytes. Skia's messages are bytes: a message can
+    /// quote a source byte that is not UTF-8 (`Ossfuzz519154489`).
+    pub fn error_bytes(&mut self, position: Position, msg: &[u8]) {
+        if contains_bytes(msg, Compiler::POISON_TAG.as_bytes()) {
             // Don't report errors on poison values.
             return;
         }
@@ -101,15 +108,15 @@ impl ErrorReporter {
     ///
     /// # Panics
     ///
-    /// For [`ErrorSink::TestingOnlyAbort`], with the message.
-    fn handle_error(&mut self, msg: &str, position: Position) {
+    /// For [`ErrorSink::TestingOnlyAbort`], with the message (lossily converted).
+    fn handle_error(&mut self, msg: &[u8], position: Position) {
         match &mut self.sink {
             ErrorSink::Compiler { error_text } => {
                 compiler::handle_error(error_text, &self.source, msg, position);
             }
-            ErrorSink::Forwarding { errors } => errors.push((msg.to_owned(), position)),
+            ErrorSink::Forwarding { errors } => errors.push((msg.to_vec(), position)),
             ErrorSink::NoOp => {}
-            ErrorSink::TestingOnlyAbort => panic!("{msg}"),
+            ErrorSink::TestingOnlyAbort => panic!("{}", String::from_utf8_lossy(msg)),
         }
     }
 
@@ -166,7 +173,14 @@ impl ErrorReporter {
 pub fn forward_errors(from: &ErrorReporter, to: &mut ErrorReporter) {
     if let ErrorSink::Forwarding { errors } = from.sink() {
         for (msg, position) in errors {
-            to.error(*position, msg);
+            to.error_bytes(*position, msg);
         }
     }
+}
+
+/// Whether `needle` occurs in `haystack` (`std::string::find` on bytes).
+fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack
+        .windows(needle.len())
+        .any(|window| window == needle)
 }

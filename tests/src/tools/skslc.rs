@@ -7,13 +7,19 @@
 //!
 //! The program kind comes from the input's extension, the output format from the output's, and
 //! `/*#pragma settings …*/` in the input selects the shader caps and the program settings. The
-//! compiler itself (the front end and the back ends) is not ported yet, so [`skslc`] validates
-//! its arguments and then returns [`SkslcError::NotPorted`]. The golden harness reports those
-//! goldens as ignored until the compiler lands (`docs/design/sksl.md` §9).
+//! front end runs (`skia_rust_sksl::compiler::Compiler::convert_program`, `docs/design/sksl.md`
+//! §4.7), so a program that fails to compile yields the golden's error text. A program that
+//! compiles needs a code generator, which is not ported, so [`skslc`] returns
+//! [`SkslcError::NotPorted`] for it; the golden harness reports those goldens as ignored.
 
 // Port of: tools/skslc/Main.cpp#L349-L490 (chrome/m156), for `detect_shader_settings`.
 
 use std::fmt;
+
+use skia_rust_sksl::compiler::Compiler;
+use skia_rust_sksl::defines::DEFAULT_INLINE_THRESHOLD;
+use skia_rust_sksl::flavor::Flavor;
+use skia_rust_sksl::program_settings::{ProgramKind as CompilerKind, ProgramSettings, Version};
 
 /// `SkSL::ProgramKind`, for the kinds `skslc` accepts (`Main.cpp#L546-L566`).
 #[doc(alias = "SkSL::ProgramKind")]
@@ -144,6 +150,31 @@ impl Default for PragmaSettings {
             debug_trace: false,
         }
     }
+}
+
+impl PragmaSettings {
+    /// The `ProgramSettings` these pragmas give, before `skslc` sets the rt-flip fields. A
+    /// `NoInline` or `NoOptimize` pragma sets the threshold to zero; without one the default
+    /// threshold stays.
+    #[must_use]
+    pub fn program_settings(&self) -> ProgramSettings {
+        ProgramSettings {
+            allow_narrowing_conversions: self.allow_narrowing_conversions,
+            force_high_precision: self.force_high_precision,
+            sharpen_textures: self.sharpen_textures,
+            force_no_rt_flip: self.force_no_rt_flip,
+            optimize: self.optimize,
+            inline_threshold: self.inline_threshold.unwrap_or(DEFAULT_INLINE_THRESHOLD),
+            ..ProgramSettings::default()
+        }
+    }
+}
+
+/// The first position of `needle` in `haystack`.
+fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    haystack
+        .windows(needle.len())
+        .position(|window| window == needle)
 }
 
 /// One suffix the pragma understands, and what it sets.
@@ -278,24 +309,23 @@ impl fmt::Display for UnrecognizedSetting {
 ///
 /// Returns [`UnrecognizedSetting`] when a word in the pragma matches no known setting.
 // Port of: tools/skslc/Main.cpp#L349-L490 (chrome/m156)
-pub fn detect_shader_settings(text: &str) -> Result<PragmaSettings, UnrecognizedSetting> {
-    const PRAGMA: &str = "/*#pragma settings ";
+pub fn detect_shader_settings(text: &[u8]) -> Result<PragmaSettings, UnrecognizedSetting> {
+    const PRAGMA: &[u8] = b"/*#pragma settings ";
     let mut settings = PragmaSettings::default();
-    let Some(start) = text.find(PRAGMA) else {
+    let Some(start) = find_bytes(text, PRAGMA) else {
         return Ok(settings);
     };
     // Keep the space before the first item: each item is matched as a suffix that includes it.
     let body_start = start + PRAGMA.len() - 1;
-    let Some(body_len) = text[body_start..].find("*/") else {
+    let Some(body_len) = find_bytes(&text[body_start..], b"*/") else {
         return Ok(settings);
     };
-    let mut body = text[body_start..body_start + body_len].to_owned();
+    let mut body = &text[body_start..body_start + body_len];
     loop {
         let starting_length = body.len();
         for &(suffix, rule) in RULES {
-            if let Some(rest) = body.strip_suffix(suffix) {
-                let len = rest.len();
-                body.truncate(len);
+            if let Some(rest) = body.strip_suffix(suffix.as_bytes()) {
+                body = rest;
                 apply(rule, &mut settings);
             }
         }
@@ -303,7 +333,9 @@ pub fn detect_shader_settings(text: &str) -> Result<PragmaSettings, Unrecognized
             break;
         }
         if body.len() == starting_length {
-            return Err(UnrecognizedSetting(body));
+            return Err(UnrecognizedSetting(
+                String::from_utf8_lossy(body).into_owned(),
+            ));
         }
     }
     Ok(settings)
@@ -368,31 +400,101 @@ impl std::error::Error for SkslcError {}
 /// settings detection as the tool, on the input's `text`. `honor_settings` is `--settings` (the
 /// default) or `--nosettings`.
 ///
-/// On success it returns the bytes `skslc` writes to `output`. Until the compiler is ported every
-/// well-formed call returns [`SkslcError::NotPorted`].
+/// When the compiler fails, `skslc` writes this header and the compiler's error text.
+// Port of: tools/skslc/Main.cpp#L593-L599 (chrome/m156), `emitCompileError`.
+const COMPILE_FAILED_HEADER: &[u8] = b"### Compilation failed:\n\n";
+
+/// `skslc <input> <output> [--settings|--nosettings]` as a function: the same checks, the same
+/// settings detection and the same front-end run as the tool, on the input's `text` (bytes, since
+/// a golden's input need not be UTF-8). `honor_settings` is `--settings` (the default) or
+/// `--nosettings`.
+///
+/// When the program does not compile, the result holds the bytes `skslc` writes to `output`: the
+/// `### Compilation failed:` header and the compiler's error text (`Main.cpp`'s
+/// `emitCompileError`). When the program compiles, the output needs a code generator, which is
+/// not ported yet, so the call returns [`SkslcError::NotPorted`].
 ///
 /// # Errors
 ///
 /// Returns the reason for every failure `skslc` reports, in the order it checks them.
+// Port of: tools/skslc/Main.cpp#L535-L735 (chrome/m156), for the front end and the error path.
 // Skia compares extensions case-sensitively (`skstd::ends_with`), and so does skslc.
 #[allow(clippy::case_sensitive_file_extension_comparisons)]
 pub fn skslc(
     input: &str,
-    text: &str,
+    text: &[u8],
     output: &str,
     honor_settings: bool,
 ) -> Result<Vec<u8>, SkslcError> {
-    let _kind = program_kind_for_input(input).ok_or_else(|| SkslcError::Input(input.to_owned()))?;
-    let _format =
+    let kind = program_kind_for_input(input).ok_or_else(|| SkslcError::Input(input.to_owned()))?;
+    let format =
         output_format_for(output).ok_or_else(|| SkslcError::Configuration(output.to_owned()))?;
-    let _settings = if honor_settings {
+    let pragma = if honor_settings {
         detect_shader_settings(text).map_err(SkslcError::Pragma)?
     } else {
         PragmaSettings::default()
     };
-    Err(SkslcError::NotPorted(
-        "the SkSL compiler (front end: docs/design/sksl.md S5-S11)",
-    ))
+
+    let mut settings = pragma.program_settings();
+    // This tells the compiler where the rt-flip uniform will live should it be required. For
+    // testing purposes we don't care where that is, but the compiler will report an error if we
+    // leave them at their default invalid values, or if the offset overlaps another uniform.
+    settings.rt_flip_offset = 16384;
+    settings.rt_flip_set = 0;
+    settings.rt_flip_binding = 0;
+    match format {
+        OutputFormat::Wgsl => settings.force_no_rt_flip = true,
+        OutputFormat::Skrp => settings.max_version_allowed = Version::K300,
+        _ => {}
+    }
+
+    let mut kind = compiler_kind(kind);
+    if format == OutputFormat::Skrp {
+        // `compileProgramAsRuntimeShader`: a runtime shader cannot be a vertex program, and a
+        // `.sksl` or `.frag` input is compiled as a private runtime shader.
+        if kind == CompilerKind::Vertex {
+            return Ok(compile_failed(
+                "Runtime shaders do not support vertex programs\n",
+            ));
+        }
+        if kind == CompilerKind::Fragment {
+            kind = CompilerKind::PrivateRuntimeShader;
+        }
+    }
+
+    let mut compiler = Compiler::with_flavor(Flavor::Standalone);
+    if compiler.convert_program(kind, text, settings).is_some() {
+        // The program compiled. The output itself is written by a code generator, which is not
+        // ported (the Raster Pipeline, pipeline-stage, WGSL and GLSL back ends).
+        return Err(SkslcError::NotPorted(
+            "the code generator for this output format (docs/design/sksl.md S13-S26)",
+        ));
+    }
+    let mut output_bytes = COMPILE_FAILED_HEADER.to_vec();
+    output_bytes.extend_from_slice(&compiler.error_text_bytes(true));
+    Ok(output_bytes)
+}
+
+/// The bytes `skslc` writes when it fails with `error_text`.
+fn compile_failed(error_text: &str) -> Vec<u8> {
+    let mut bytes = COMPILE_FAILED_HEADER.to_vec();
+    bytes.extend_from_slice(error_text.as_bytes());
+    bytes
+}
+
+/// The `skia_rust_sksl` kind of a `skslc` input kind (`Main.cpp#L546-L566`).
+fn compiler_kind(kind: ProgramKind) -> CompilerKind {
+    match kind {
+        ProgramKind::Vertex => CompilerKind::Vertex,
+        ProgramKind::Fragment => CompilerKind::Fragment,
+        ProgramKind::MeshVertex => CompilerKind::MeshVertex,
+        ProgramKind::MeshFragment => CompilerKind::MeshFragment,
+        ProgramKind::Compute => CompilerKind::Compute,
+        ProgramKind::RuntimeBlender => CompilerKind::RuntimeBlender,
+        ProgramKind::RuntimeColorFilter => CompilerKind::RuntimeColorFilter,
+        ProgramKind::RuntimeShader => CompilerKind::RuntimeShader,
+        ProgramKind::PrivateRuntimeShader => CompilerKind::PrivateRuntimeShader,
+    }
 }
 
 #[cfg(test)]
@@ -436,7 +538,7 @@ mod tests {
     #[test]
     fn missing_pragma_keeps_the_defaults() {
         assert_eq!(
-            detect_shader_settings("half4 main() {}"),
+            detect_shader_settings(b"half4 main() {}"),
             Ok(PragmaSettings::default())
         );
     }
@@ -444,13 +546,13 @@ mod tests {
     #[test]
     fn pragma_words_are_consumed_in_any_order() {
         let text = "/*#pragma settings NoOptimize Default Sharpen*/\nhalf4 main() {}";
-        let s = detect_shader_settings(text).unwrap();
+        let s = detect_shader_settings(text.as_bytes()).unwrap();
         assert_eq!(s.caps, Some("Default"));
         assert!(s.sharpen_textures);
         assert!(!s.optimize);
         assert_eq!(s.inline_threshold, Some(0));
         let text = "/*#pragma settings Version110 AllowNarrowingConversions*/";
-        let s = detect_shader_settings(text).unwrap();
+        let s = detect_shader_settings(text.as_bytes()).unwrap();
         assert_eq!(s.caps, Some("Version110"));
         assert!(s.allow_narrowing_conversions);
     }
@@ -458,28 +560,46 @@ mod tests {
     #[test]
     fn unknown_pragma_word_is_an_error() {
         let text = "/*#pragma settings Sharpen Bogus*/";
-        let err = detect_shader_settings(text).unwrap_err();
+        let err = detect_shader_settings(text.as_bytes()).unwrap_err();
         assert_eq!(err.0, " Sharpen Bogus");
     }
 
     #[test]
     fn skslc_validates_before_the_compiler() {
         assert!(matches!(
-            skslc("x.txt", "", "x.skrp", true),
+            skslc("x.txt", b"", "x.skrp", true),
             Err(SkslcError::Input(_))
         ));
         assert!(matches!(
-            skslc("x.sksl", "", "x.minified.sksl", true),
+            skslc("x.sksl", b"", "x.minified.sksl", true),
             Err(SkslcError::Configuration(_))
         ));
         assert!(matches!(
-            skslc("x.sksl", "/*#pragma settings Nope*/", "x.skrp", true),
+            skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", true),
             Err(SkslcError::Pragma(_))
         ));
         // With --nosettings the pragma is not read at all.
         assert!(matches!(
-            skslc("x.sksl", "/*#pragma settings Nope*/", "x.skrp", false),
+            skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", false),
             Err(SkslcError::NotPorted(_))
         ));
+    }
+
+    #[test]
+    fn a_compile_error_is_written_as_the_golden_text() {
+        let text = b"half4 main() { return x; }";
+        let out = skslc("x.sksl", text, "x.glsl", true).unwrap();
+        let out = String::from_utf8(out).unwrap();
+        assert!(out.starts_with("### Compilation failed:\n\nerror: 1: unknown identifier 'x'\n"));
+        assert!(out.ends_with("1 error\n"));
+    }
+
+    #[test]
+    fn a_runtime_shader_cannot_be_a_vertex_program() {
+        let out = skslc("x.vert", b"void main() {}", "x.skrp", true).unwrap();
+        assert_eq!(
+            out,
+            b"### Compilation failed:\n\nRuntime shaders do not support vertex programs\n"
+        );
     }
 }

@@ -890,7 +890,7 @@ fn program_from(b: Builder, elements: Vec<ElemId>, kind: ProgramKind) -> Program
     let mut pool = b.pool;
     let symbols = pool.add_symbol_table(SymbolTable::new(None, false));
     Program {
-        source: Arc::from(""),
+        source: Arc::from(&b""[..]),
         config: ProgramConfig::new(ModuleType::Program, kind, ProgramSettings::default()),
         pool,
         symbols,
@@ -1242,7 +1242,7 @@ fn is_incomplete_reports_dangling_references() {
     assert_eq!(
         errors,
         &[(
-            "expected '(' to begin function call".to_owned(),
+            b"expected '(' to begin function call".to_vec(),
             Position::range(4, 5)
         )]
     );

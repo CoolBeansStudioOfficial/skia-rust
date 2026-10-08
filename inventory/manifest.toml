@@ -54508,7 +54508,7 @@ id = "tests/sksl/errors/ArgumentCountMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArgumentCountMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b6c13a8d3cc4a42932c095c7d78a79e41225f90242f0e5d2a0ce5d111ffce7f"
 
 [[test]]
@@ -54516,7 +54516,7 @@ id = "tests/sksl/errors/ArgumentMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArgumentMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ddbd4848e5ae5592a73be7030f515a019a77e0a3c8b54df4d005f23b86a47497"
 
 [[test]]
@@ -54524,7 +54524,7 @@ id = "tests/sksl/errors/ArgumentModifiers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArgumentModifiers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "97093ac89fb7c6cc1893ce92d86eadad4b8df6d1432d726eb7bd83095a23dd4e"
 
 [[test]]
@@ -54532,7 +54532,7 @@ id = "tests/sksl/errors/ArrayConstructorElementCount.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayConstructorElementCount.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e19c23f190b8404fcac0b75c7d45a6327bbbe2518df44eda5b0efafc50154468"
 
 [[test]]
@@ -54540,7 +54540,7 @@ id = "tests/sksl/errors/ArrayIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04c8ec4eac84de0072d150056a1242ff4a0892701625672fb951e283d1a01dfb"
 
 [[test]]
@@ -54549,6 +54549,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayInlinedIndexOutOfRange.glsl"
 module = "sksl"
 status = "todo"
+reason = "needs the inliner (S12): its error is reported while inlining"
 span_hash = "80d5ff2c1334d71e6f3c2e955f5e5d8e4794d0b3881ffc189f7ca148598dc386"
 
 [[test]]
@@ -54556,7 +54557,7 @@ id = "tests/sksl/errors/ArrayNegation.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayNegation.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1a7ac615e0beef15606503ed1c723fdbd7135284f435e0ee36e414737a1b22e7"
 
 [[test]]
@@ -54564,7 +54565,7 @@ id = "tests/sksl/errors/ArrayOfInvalidSize.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayOfInvalidSize.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "efd9bec147d62cdda6b21a35b8658776088f41d1510ec06c9b11ad125a9c9e04"
 
 [[test]]
@@ -54572,7 +54573,7 @@ id = "tests/sksl/errors/ArrayOfVoid.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayOfVoid.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9504be72d310236afe26d53e4a1a428d6452a07e4eeebc951586c6f31ba03387"
 
 [[test]]
@@ -54580,7 +54581,7 @@ id = "tests/sksl/errors/ArrayPlus.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayPlus.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "388c6f26ddfd4342676822ed9662932ae9994f881c8b87465da0a08eb45c8000"
 
 [[test]]
@@ -54588,7 +54589,7 @@ id = "tests/sksl/errors/ArrayReturnTypes.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayReturnTypes.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d85f93fd01f1efd4d692111a04ea39b49cd23c12770c678717377f74a891373f"
 
 [[test]]
@@ -54596,7 +54597,7 @@ id = "tests/sksl/errors/ArraySplitDimensions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArraySplitDimensions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "448302fd45e0e71001a8f3185f5a81f6fd2809bb7a34225c3209e2ba65fdde39"
 
 [[test]]
@@ -54604,7 +54605,7 @@ id = "tests/sksl/errors/ArraySplitDimensionsInFuncBody.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArraySplitDimensionsInFuncBody.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8970e89583c033c65512dd94ad556b4fbad79bbf00786c4272f92138194cac4d"
 
 [[test]]
@@ -54612,7 +54613,7 @@ id = "tests/sksl/errors/ArraySplitDimensionsInFuncDecl.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArraySplitDimensionsInFuncDecl.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "adb2f043d68bf24fcc9ab9958eff4487ccbfee90bf4b4d2c3b7ea1438549235c"
 
 [[test]]
@@ -54620,7 +54621,7 @@ id = "tests/sksl/errors/ArraySplitDimensionsInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArraySplitDimensionsInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ec25d3d44581616bac6ee0df1f2ef3b4bbc7a4fda583d8cb329ba3df19711c6f"
 
 [[test]]
@@ -54628,7 +54629,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f5667e73c191cac388f1d07d0a2efe761ec37e2a95ac28f349986f73fa3d9a95"
 
 [[test]]
@@ -54636,7 +54637,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBody.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBody.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d91cfd8e1744f8718108bd57a513daa2e2945e951309c8e843e2ad964f192ba6"
 
 [[test]]
@@ -54644,7 +54645,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBodyUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBodyUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e0bb23c2e53145243fa4f934019377c8c600381165f827031944e52187715b01"
 
 [[test]]
@@ -54652,7 +54653,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBodyUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncBodyUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "704b7e56a85a0fd52657d636c25d4bf2dfc2da23a9426ea2f50e4329b0f3969c"
 
 [[test]]
@@ -54660,7 +54661,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDecl.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDecl.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3811b21fb89f8dc508e3fd9360bc17f615088b3f4f8823ae83359f7f45335d15"
 
 [[test]]
@@ -54668,7 +54669,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDeclUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDeclUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "236cdf6223b936d47d8a6cb3e2ebd3da405cbd8a367c428803d7a4a73f531a04"
 
 [[test]]
@@ -54676,7 +54677,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDeclUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInFuncDeclUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "68c142e7626e244c355d54e8f3e60e59f9f2328bcb3a45b779563238f4baa2c6"
 
 [[test]]
@@ -54684,7 +54685,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f7d898ae32d0b302b21f73634690da29f89a930c7030da5faccc8a5b83822951"
 
 [[test]]
@@ -54692,7 +54693,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInStructUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInStructUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "86d3f03fa7a971fdfdaa066c599e1a069b56dc72ab688875ad20d14d8daadf15"
 
 [[test]]
@@ -54700,7 +54701,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsInStructUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsInStructUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a4aa4ddacf6d01a066942b670d3ab436e4ab11fce44b1ad961e5b45ba1a0f032"
 
 [[test]]
@@ -54708,7 +54709,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f3977296f171b42174ba1010caeafe452803953c043c8ce50ee661cc077bb015"
 
 [[test]]
@@ -54716,7 +54717,7 @@ id = "tests/sksl/errors/ArrayTooManyDimensionsUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTooManyDimensionsUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a3af2602b813a3518ab99cabfc56be2e50726ab78fc77a38d78232bcc7b884e2"
 
 [[test]]
@@ -54724,7 +54725,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2d72256a98ba3d13f0076f78e9b78c556f853db501f8a51d33d0a55182df2e25"
 
 [[test]]
@@ -54732,7 +54733,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBody.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBody.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7346e9f50d6564fb4ba83dff940e458288802685dbfb6919d51a90ef6e0df4a6"
 
 [[test]]
@@ -54740,7 +54741,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBodyUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBodyUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c046a2f92966d3f69ef2b745929c1f9e8f3b95897153cb9dcd245602a426a35"
 
 [[test]]
@@ -54748,7 +54749,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBodyUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncBodyUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f05d94472f4bd17a1a77a3efcf59dd9659092756cfdb6d0b9e5f30a56f129ede"
 
 [[test]]
@@ -54756,7 +54757,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDecl.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDecl.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2ae959077c1d2613c1dba100285ee221defeb9eee1529f815c309d39089585c8"
 
 [[test]]
@@ -54764,7 +54765,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDeclUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDeclUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c3cddc79f1e85f7b834fa07869c85e0ff4e0bf8961f06912b5a553f1033a028f"
 
 [[test]]
@@ -54772,7 +54773,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDeclUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInFuncDeclUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "44af46b8e8a8b2eca66b84cb4abd495e026e63153087707544e6f3123515bce0"
 
 [[test]]
@@ -54780,7 +54781,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6e7164e09130b18edfe90e0c8df38e7b7f2e316f102204d0ae057bbcd4e97424"
 
 [[test]]
@@ -54788,7 +54789,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStructUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStructUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c80c80b7b588d259db122881efc8cbb2ed741980e8ab14bdc675fc8dd2116fef"
 
 [[test]]
@@ -54796,7 +54797,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStructUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsInStructUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d17809180e8c629bd8d92887411cab605763d434ea67c11549548be89b2356f9"
 
 [[test]]
@@ -54804,7 +54805,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsUnsized1.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsUnsized1.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b132558969527de16e6f915183271329b5ccc9ae252f6b63ae144e0b76aeaee8"
 
 [[test]]
@@ -54812,7 +54813,7 @@ id = "tests/sksl/errors/ArrayTypeTooManyDimensionsUnsized2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayTypeTooManyDimensionsUnsized2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f104394f2f285b97cf7e24bd829aca0517435704283a0ecf84118d72a3943bb8"
 
 [[test]]
@@ -54829,7 +54830,7 @@ id = "tests/sksl/errors/ArrayUnspecifiedDimensions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayUnspecifiedDimensions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "28d6125d67cb7c7ce380448de05650475c06f05117d4e80362f2a5d3aaa3531b"
 
 [[test]]
@@ -54837,7 +54838,7 @@ id = "tests/sksl/errors/AssignmentTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/AssignmentTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "84befdf71e5f3e69fb38bcaaeb71d9e8d892cc08e1fc08ae9056735abf86eff5"
 
 [[test]]
@@ -54845,7 +54846,7 @@ id = "tests/sksl/errors/BadCaps.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadCaps.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f15409f7dc1b9cfed5c56bf397a82d74ba80c5c3edd25eaa6b8ba423f2681c2a"
 
 [[test]]
@@ -54853,7 +54854,7 @@ id = "tests/sksl/errors/BadConstInitializers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadConstInitializers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a08015b69bd43a97bdd5349855fbe08141e1ed6c66a7fa6ada5c330ef1690fc6"
 
 [[test]]
@@ -54861,7 +54862,7 @@ id = "tests/sksl/errors/BadFieldAccess.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadFieldAccess.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "71ad39fa265c7e1f2ee764baa492ead59b9e999b92ea233af18b31e5597cf2ca"
 
 [[test]]
@@ -54869,7 +54870,7 @@ id = "tests/sksl/errors/BadIndex.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadIndex.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "404e4c7da18dd1474cee3582550e6917568193dcff9d9635a4e5d97282787d5c"
 
 [[test]]
@@ -54877,7 +54878,7 @@ id = "tests/sksl/errors/BadModifiers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadModifiers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a175f115db49c8299ff6b3a1ee2ca3f9a471b487fb80600c7bfc47b190a37873"
 
 [[test]]
@@ -54885,7 +54886,7 @@ id = "tests/sksl/errors/BadOctal.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BadOctal.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "130557f9d452ca3b2a1159854bd4ee2f970efd1736f3a3b45043d792e613eae4"
 
 [[test]]
@@ -54893,7 +54894,7 @@ id = "tests/sksl/errors/BinaryInvalidType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BinaryInvalidType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d21189300192e7c7adeaedf8815c07fd35ecbd262d69ce7239af7630e071605c"
 
 [[test]]
@@ -54901,7 +54902,7 @@ id = "tests/sksl/errors/BinaryTypeCoercion.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BinaryTypeCoercion.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4989f40b6ede53e5f33230c4d479c307f925838fe39b4974d8e624b3252b20d4"
 
 [[test]]
@@ -54909,7 +54910,7 @@ id = "tests/sksl/errors/BinaryTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BinaryTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "069b9b1fb027c799055d6aa2c38570a840a92f7ed0ae536142ff30d42b914377"
 
 [[test]]
@@ -54917,7 +54918,7 @@ id = "tests/sksl/errors/BitShiftFloat.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BitShiftFloat.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "54eea7fba20b5e9956a4c8545ed21bd7da2db98c14f959802dd53bb4885bac3c"
 
 [[test]]
@@ -54925,7 +54926,7 @@ id = "tests/sksl/errors/BitShiftFloatMatrix.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BitShiftFloatMatrix.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "372e51d4c7f9b23176f7b669f54c82b61792fe56882940e9a2a6723fa2f8e2f1"
 
 [[test]]
@@ -54933,7 +54934,7 @@ id = "tests/sksl/errors/BitShiftFloatVector.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BitShiftFloatVector.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dc6aa1ed6b04e12baf39d81aeff85eaebec886b74d4802f8ecd734fdc351f2e2"
 
 [[test]]
@@ -54941,7 +54942,7 @@ id = "tests/sksl/errors/BooleanArithmetic.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BooleanArithmetic.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "567eb7bc49ebe9ea3903d64a46a0869b38433308a52a7b6fa8b8cdb7bb99eaa9"
 
 [[test]]
@@ -54949,7 +54950,7 @@ id = "tests/sksl/errors/BreakOutsideLoop.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/BreakOutsideLoop.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "05b227f1162002e8580072149b43e439a76f1e4edb897b39108ea358cc28604f"
 
 [[test]]
@@ -54957,7 +54958,7 @@ id = "tests/sksl/errors/CallMain.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/CallMain.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ae6c3665e8feec1a9fba6fce2963c611c6d14361e0870cd110e8cc12e95858eb"
 
 [[test]]
@@ -54965,7 +54966,7 @@ id = "tests/sksl/errors/CallNonFunction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/CallNonFunction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8f757979901066398ae53a61a78a756aa37bdd8de6a05fdc6eb5daff138fa564"
 
 [[test]]
@@ -54973,7 +54974,7 @@ id = "tests/sksl/errors/CanExitWithoutReturningValue.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/CanExitWithoutReturningValue.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "48fd912ed5e91b1aeab6ce0b0296ff970c778e1152df1aa0d48ac01e93b0f77a"
 
 [[test]]
@@ -54981,7 +54982,7 @@ id = "tests/sksl/errors/CommasAsConstantExpressions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/CommasAsConstantExpressions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "debc2416f6c7d23508ef65b789091ba7197b45fa91fd207ec20296dbf474d9d1"
 
 [[test]]
@@ -54989,7 +54990,7 @@ id = "tests/sksl/errors/CommasWithArrays.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/CommasWithArrays.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0ede0ab8f548c0f66c3db2a496a0ae53718b817423065cd4f120b8f5e0a6ff3c"
 
 [[test]]
@@ -54997,7 +54998,7 @@ id = "tests/sksl/errors/ComparisonDimensional.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ComparisonDimensional.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b175bfb5643ae38b104419d7d5530da542abc391c82cafc613bd901d5fcdd83"
 
 [[test]]
@@ -55005,7 +55006,7 @@ id = "tests/sksl/errors/ConstructorArgumentCount.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ConstructorArgumentCount.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "706ad0292ff1f189032e361a16b8312869aa30f6c19e770de674829fb02abf4c"
 
 [[test]]
@@ -55013,7 +55014,7 @@ id = "tests/sksl/errors/ConstructorTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ConstructorTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9a5422d78774578bb288f15ae1f44bfa6d95a532a22d20622c001f929c54d210"
 
 [[test]]
@@ -55021,7 +55022,7 @@ id = "tests/sksl/errors/ContinueOutsideLoop.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ContinueOutsideLoop.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "51b7441ddf2aa68d4bf37f95dcc3014effcbc3c0523c2ae2511df95ffdcb453b"
 
 [[test]]
@@ -55029,7 +55030,7 @@ id = "tests/sksl/errors/DivideByZero.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DivideByZero.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9b9fba561b5a9e01436551001055ab7e7ef8f6ced7c66b805d6af1ec4de9e15c"
 
 [[test]]
@@ -55037,7 +55038,7 @@ id = "tests/sksl/errors/DoTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DoTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e3b9382ff334fbb9fc4b076980153da2b32854cbc551b6da06b943e210a97ae1"
 
 [[test]]
@@ -55045,7 +55046,7 @@ id = "tests/sksl/errors/DuplicateBinding.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateBinding.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c1604c8843c01a866e83e0c0ff91c1803bfa995af6ae7518abc3717cd9b5b0db"
 
 [[test]]
@@ -55053,7 +55054,7 @@ id = "tests/sksl/errors/DuplicateBuiltinFunction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateBuiltinFunction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d869d0df943c0a8bf99b340a7dcd62f5c776734d669a491df08a55dba7408aa3"
 
 [[test]]
@@ -55061,7 +55062,7 @@ id = "tests/sksl/errors/DuplicateFunction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateFunction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f84516a2397e732826d2a899742cb2dc9f579492f7af746cf9faf0ad77bcac52"
 
 [[test]]
@@ -55069,7 +55070,7 @@ id = "tests/sksl/errors/DuplicateInterfaceBlockField.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateInterfaceBlockField.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "af1d5d521fe2a5e3947e332637ead8c6a476159063546e61422e5bfb223a3928"
 
 [[test]]
@@ -55077,7 +55078,7 @@ id = "tests/sksl/errors/DuplicateInterfaceBlockName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateInterfaceBlockName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5048a76bbc91c74f1f869f64e08daeeb548f829aa9f3f47a84e3be54d24c0aab"
 
 [[test]]
@@ -55085,7 +55086,7 @@ id = "tests/sksl/errors/DuplicateOutput.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateOutput.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "07c01d95b785c5889c2f22d4b623cc696973bb48d262cad9c11afcbf85e202e1"
 
 [[test]]
@@ -55093,7 +55094,7 @@ id = "tests/sksl/errors/DuplicateRTAdjust.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateRTAdjust.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6449ce5252290fecccc6244e7d99201f549946bd9c44b6bcdb2ff59ba6048fa2"
 
 [[test]]
@@ -55101,7 +55102,7 @@ id = "tests/sksl/errors/DuplicateSkClockwise.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateSkClockwise.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0fc191a11e62a06b9b349d6d9b1cbe69585c3f4336233e6be15ef5a4e2070051"
 
 [[test]]
@@ -55109,7 +55110,7 @@ id = "tests/sksl/errors/DuplicateSymbol.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateSymbol.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "63925f03e61c678e7f8ac9bd38613028b3ce7b8bf425ae7a6222d7a10d8cc9f4"
 
 [[test]]
@@ -55117,7 +55118,7 @@ id = "tests/sksl/errors/DuplicateSymbolInSwitch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateSymbolInSwitch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "adcfc36ba296bdd3053ad5c4d89b7405c3da1d68cfa02155a8a64d4fb7efaa98"
 
 [[test]]
@@ -55125,7 +55126,7 @@ id = "tests/sksl/errors/DuplicateWorkgroupSize.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/DuplicateWorkgroupSize.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7a8077ff28d363afaa531eb53881b10aaec06ee501d92441c8b4613f4889c8cb"
 
 [[test]]
@@ -55133,7 +55134,7 @@ id = "tests/sksl/errors/EmptyArray.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/EmptyArray.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0cdfb49df34a42a4825b68195020d61eee9badf43bec4e174c1f968710bc756d"
 
 [[test]]
@@ -55141,7 +55142,7 @@ id = "tests/sksl/errors/EmptyBuffer.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/EmptyBuffer.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a9b1c105c6cc44f1072316a6f16988741c0cbb27f8afa9fa7574fb76a76ddef6"
 
 [[test]]
@@ -55149,7 +55150,7 @@ id = "tests/sksl/errors/EmptyStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/EmptyStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04cc801546a24192336458707edf056e86d980335bbbaa47f059912d0a085392"
 
 [[test]]
@@ -55157,7 +55158,7 @@ id = "tests/sksl/errors/ErrorsInDeadCode.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ErrorsInDeadCode.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7708ae6e22872cafde7f3e47e7c60237a7886045d1e4cd33355c407dbfcc1600"
 
 [[test]]
@@ -55165,7 +55166,7 @@ id = "tests/sksl/errors/FloatRemainder.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/FloatRemainder.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b279220405e9a7409676fe76110b84211150870e0a8e51f80c913ef84f02915d"
 
 [[test]]
@@ -55173,7 +55174,7 @@ id = "tests/sksl/errors/ForInitStmt.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ForInitStmt.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a939e4266dcdb0f0f4fb53248eaa3d6f72c1730c264e3dfb64c2f80d512a784e"
 
 [[test]]
@@ -55181,7 +55182,7 @@ id = "tests/sksl/errors/ForLoopInductionVariableScope.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ForLoopInductionVariableScope.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a79b5760fc25bfbb1dca494d4039ed147db88dbbc7fffc492bd3f10c76d5d137"
 
 [[test]]
@@ -55189,7 +55190,7 @@ id = "tests/sksl/errors/ForLoopNEQOverflow.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ForLoopNEQOverflow.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "97bbc3a0e210c08d129244b64d404e103967f0c31e8be0fb16fdefeddc880774"
 
 [[test]]
@@ -55197,7 +55198,7 @@ id = "tests/sksl/errors/ForLoopOverflow.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ForLoopOverflow.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8c4d58324eb9b36167c7e022b0be066f4f2f1738090956346976a1bf3c8564bc"
 
 [[test]]
@@ -55205,7 +55206,7 @@ id = "tests/sksl/errors/ForTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ForTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f8f3dc78e03ae04cd5f54b36e324271013efcc3a5a4ff4fdbfece3a5ab9208bf"
 
 [[test]]
@@ -55213,7 +55214,7 @@ id = "tests/sksl/errors/FunctionParamBadType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/FunctionParamBadType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "648f45f78f7fabe9bb1c4100693470f4e0ae65546eeda6fa566ad8b022ea3c0f"
 
 [[test]]
@@ -55221,7 +55222,7 @@ id = "tests/sksl/errors/FunctionParamShadowedByLocal.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/FunctionParamShadowedByLocal.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "64736aa5be55d805e7c740421166c0a41f6e5947d340dd6d7fe8f55d4795ed6c"
 
 [[test]]
@@ -55229,7 +55230,7 @@ id = "tests/sksl/errors/FunctionParameterOfVoid.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/FunctionParameterOfVoid.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b19b035b51ad729baf93def1f7f74d6aa23eb28957e1a31661d8535fa822d84d"
 
 [[test]]
@@ -55237,7 +55238,7 @@ id = "tests/sksl/errors/GenericArgumentMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/GenericArgumentMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "65b5aab59e149f56bb3e2a0d3c9f7b608e3b56bd6cea3571fa868c881c457de3"
 
 [[test]]
@@ -55245,7 +55246,7 @@ id = "tests/sksl/errors/IfTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IfTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f7c27b9735b283723276c29dbc82b25d3be4fdc83117360f2f6054ac3875dc1b"
 
 [[test]]
@@ -55253,7 +55254,7 @@ id = "tests/sksl/errors/IllegalRecursionComplex.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IllegalRecursionComplex.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0822b23fd9eab7e6659a20162a822b91263a60b6b69d6b49b3ffa2be09dec0cd"
 
 [[test]]
@@ -55261,7 +55262,7 @@ id = "tests/sksl/errors/IllegalRecursionMutual.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IllegalRecursionMutual.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d70c92497869f7015dfe4ab94805559cf3b0315c3e7d0046623e1fd8c8dc8142"
 
 [[test]]
@@ -55269,7 +55270,7 @@ id = "tests/sksl/errors/IllegalRecursionSimple.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IllegalRecursionSimple.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "54fabdd14e84e15c8594092c6d67894a08848266e6251f14d6604a13643d8faa"
 
 [[test]]
@@ -55277,7 +55278,7 @@ id = "tests/sksl/errors/InVarWithInitializerExpression.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InVarWithInitializerExpression.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d994bdfa2b2889f175669b1ad3a8afc9ab1fef6fa4233bfcde4afb8c6f52b90e"
 
 [[test]]
@@ -55285,7 +55286,7 @@ id = "tests/sksl/errors/IncompleteExpression.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IncompleteExpression.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "054d82d84eeaa4271273d1f5deae185d3fccef57d60673a0adbbfc5754014dc5"
 
 [[test]]
@@ -55293,7 +55294,7 @@ id = "tests/sksl/errors/IncompleteFunctionCall.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IncompleteFunctionCall.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1d35ff065d13df8b4951f8e7f743f21cabeeaeb4e883da0dfc93b56fdbc1accc"
 
 [[test]]
@@ -55301,7 +55302,7 @@ id = "tests/sksl/errors/InterfaceBlockMemberReservedName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockMemberReservedName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2c7b4030dbf831cb3b8b9ff62ef414af5ec0237496af449d388a84142ed2b003"
 
 [[test]]
@@ -55309,7 +55310,7 @@ id = "tests/sksl/errors/InterfaceBlockMixedCommasAndSemicolons.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockMixedCommasAndSemicolons.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "28f349398db5c38ec8a4c1d07c44f0235cf576ba8386662b700abce2a2713573"
 
 [[test]]
@@ -55317,7 +55318,7 @@ id = "tests/sksl/errors/InterfaceBlockPrivateType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockPrivateType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6580205fb8c320d093f293389c1941e5d487c64b59bbe981ef28f7fc147b7428"
 
 [[test]]
@@ -55325,7 +55326,7 @@ id = "tests/sksl/errors/InterfaceBlockReservedName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockReservedName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d89c06dca4f70ff8cb7c4a56d4c610f6fc18372368e4d9a02cc2900e2c4584b1"
 
 [[test]]
@@ -55333,7 +55334,7 @@ id = "tests/sksl/errors/InterfaceBlockScope.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockScope.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "10e8e02bd32f958e8325d86a8cf056df37d2f0be97969fa7046b4580b50b702e"
 
 [[test]]
@@ -55341,7 +55342,7 @@ id = "tests/sksl/errors/InterfaceBlockStorageModifiers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockStorageModifiers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "741b9239413784af4e3994101a867ac874fd395e14b79ac0ff8683f1701f2607"
 
 [[test]]
@@ -55349,7 +55350,7 @@ id = "tests/sksl/errors/InterfaceBlockWithArrayOfStructOfBool.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockWithArrayOfStructOfBool.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "19a26f57f8a957c5b751a5a7095956cdfce5e0668f1ac8e34a2b33e0285d8b1f"
 
 [[test]]
@@ -55357,7 +55358,7 @@ id = "tests/sksl/errors/InterfaceBlockWithInvalidNestedStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockWithInvalidNestedStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f26b911e2a8a78fc719a287d8b50d45d8214c77e2d55502c94e581cce8b5ca87"
 
 [[test]]
@@ -55365,7 +55366,7 @@ id = "tests/sksl/errors/InterfaceBlockWithInvalidStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockWithInvalidStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "25cc72b46e3fbd8c20264a9fd88907ec2ee48c322fff5ef8ee0ef8cb7a5f183b"
 
 [[test]]
@@ -55373,7 +55374,7 @@ id = "tests/sksl/errors/InterfaceBlockWithNoMembers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InterfaceBlockWithNoMembers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "71ed4877a3904b6a59c749166c7a5572340c48edbda5bd5483d72c629360e377"
 
 [[test]]
@@ -55381,7 +55382,7 @@ id = "tests/sksl/errors/IntrinsicInGlobalVariable.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/IntrinsicInGlobalVariable.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "aa43375c92e32992f0ee07b796f0e75e058247765a7bf05d88998f3ae2f3bf1c"
 
 [[test]]
@@ -55389,7 +55390,7 @@ id = "tests/sksl/errors/InvalidAssignment.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidAssignment.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4be52e65b2a1f880217d830573baa7869639f1d63fa8702c402b28e26fe47c7b"
 
 [[test]]
@@ -55397,7 +55398,7 @@ id = "tests/sksl/errors/InvalidAssignmentPipelineInputs.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidAssignmentPipelineInputs.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "82d3657d51d9afdc44f6728628dddd275b8c78c0d692e3ab516e1b374e896ff3"
 
 [[test]]
@@ -55405,7 +55406,7 @@ id = "tests/sksl/errors/InvalidAtomicDeclarations.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidAtomicDeclarations.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0ce26bcf5dd0a271ba6f1ffec6e5ee4392319b1908e9c9506362b8787a6f0648"
 
 [[test]]
@@ -55413,7 +55414,7 @@ id = "tests/sksl/errors/InvalidAtomicOperations.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidAtomicOperations.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "62f0df4c9d82723036f1fdcd53fc6b053f8eeb57d687407400639145678356e1"
 
 [[test]]
@@ -55421,7 +55422,7 @@ id = "tests/sksl/errors/InvalidBackendBindingFlagsMetal.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidBackendBindingFlagsMetal.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "73ace1da150eab4b84158381f02c69a5fe9e6cc7fc1827145e856b182d065009"
 
 [[test]]
@@ -55429,7 +55430,7 @@ id = "tests/sksl/errors/InvalidBackendBindingFlagsSPIRV.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidBackendBindingFlagsSPIRV.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "02708ac2133c59d4f9144e96dad2aa8c7a93e3df133d16df1cd263f519a61836"
 
 [[test]]
@@ -55437,7 +55438,7 @@ id = "tests/sksl/errors/InvalidBackendBindingFlagsWGSL.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidBackendBindingFlagsWGSL.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "909c9631db4084077558aadb3988804416a1a4da99e2c59675bf4abb6ba6760e"
 
 [[test]]
@@ -55445,7 +55446,7 @@ id = "tests/sksl/errors/InvalidCapsUsage.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidCapsUsage.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a44882a80ceaab836806bb9e6f91a7be4de6d0be509142b98c1dae1e121bc04a"
 
 [[test]]
@@ -55453,7 +55454,7 @@ id = "tests/sksl/errors/InvalidComputeMainParameters.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidComputeMainParameters.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "31df4dc2b555d952f990c5c2465ac359b6e5bb7e0bf40c5e3722607d0da21be4"
 
 [[test]]
@@ -55461,7 +55462,7 @@ id = "tests/sksl/errors/InvalidComputeMainReturn.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidComputeMainReturn.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "495faaa1fd3b5692321a7d14c2c10c56632a9f72dcd36d5b08cafc19c43f7ed5"
 
 [[test]]
@@ -55469,7 +55470,7 @@ id = "tests/sksl/errors/InvalidExtensionDirective.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidExtensionDirective.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "63b97072e7c970aada194c7b287ffc68a7c13dada53e7cace680a7c4edc12e20"
 
 [[test]]
@@ -55477,7 +55478,7 @@ id = "tests/sksl/errors/InvalidInOutType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidInOutType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4f79d66ed30e9e9dc124a1be7564af507aac106f33acaf754f0dcc5469e792ca"
 
 [[test]]
@@ -55485,7 +55486,7 @@ id = "tests/sksl/errors/InvalidLocalSizeQualifier.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidLocalSizeQualifier.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4e67f158e68df406ffe147bb1abe97956fad4e63c48a08cb6988f866e7576cc6"
 
 [[test]]
@@ -55493,7 +55494,7 @@ id = "tests/sksl/errors/InvalidMeshFragmentMainParameters.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidMeshFragmentMainParameters.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "da9efd9cb7a0c1d21c3e9fa0230df891278029072082d9462136ce7a70c42bf4"
 
 [[test]]
@@ -55501,7 +55502,7 @@ id = "tests/sksl/errors/InvalidMeshFragmentMainReturn.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidMeshFragmentMainReturn.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c245c0fba7a1182fcf422422ab9ac69a6578df49b063f7afea66ee2e4fe5a5d2"
 
 [[test]]
@@ -55509,7 +55510,7 @@ id = "tests/sksl/errors/InvalidMeshVertexMainParameters.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidMeshVertexMainParameters.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7f4be1fdd3fe434f44e991967e7dcdee7c5f2416361de4695f67f5d1b6236f69"
 
 [[test]]
@@ -55517,7 +55518,7 @@ id = "tests/sksl/errors/InvalidMeshVertexMainReturn.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidMeshVertexMainReturn.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "be5327c736ad7f310d7c774ed8d20ce4628ec4d991fa70c06119a3d79deead05"
 
 [[test]]
@@ -55525,7 +55526,7 @@ id = "tests/sksl/errors/InvalidOutParams.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidOutParams.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "56a6190a022f72eaa30bdac5e5d316fc690af044edd83d61f17539e617a1040d"
 
 [[test]]
@@ -55533,7 +55534,7 @@ id = "tests/sksl/errors/InvalidToken.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidToken.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "224d13f4246f95afe886d5e865be0fd9e1906172af116849de4cc80778b232dd"
 
 [[test]]
@@ -55541,7 +55542,7 @@ id = "tests/sksl/errors/InvalidUnary.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidUnary.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cbe422208d82cc0bc4a57441e2374cc37be80d7626ce0b70a1442a5027201018"
 
 [[test]]
@@ -55549,7 +55550,7 @@ id = "tests/sksl/errors/InvalidUniformTypes.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidUniformTypes.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "975c3f4d862f599c879a8595872443f1695a1cb9e242fb6fb0d9d1f93ad0671f"
 
 [[test]]
@@ -55557,7 +55558,7 @@ id = "tests/sksl/errors/InvalidUnsizedArray.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidUnsizedArray.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c38963faa8bc969d04e33dc061ecf20768fe6894919e301a850647a307b50fb2"
 
 [[test]]
@@ -55565,7 +55566,7 @@ id = "tests/sksl/errors/InvalidVersionDirective.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidVersionDirective.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f784ede7b38b6329a647b66e5da6107c1e9f3bce632d0059d38f0e387a870ee4"
 
 [[test]]
@@ -55573,7 +55574,7 @@ id = "tests/sksl/errors/InvalidWorkgroupCompute.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidWorkgroupCompute.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8a36d70a029d2350efcc78bf1b81cfdf7b70b0f0c875cecc2ff415450f7d58ce"
 
 [[test]]
@@ -55581,7 +55582,7 @@ id = "tests/sksl/errors/InvalidWorkgroupRTS.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/InvalidWorkgroupRTS.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6e42e77cb7837ac2959911197fd94f67a9e58672f5ac74c7280311d0ed343f48"
 
 [[test]]
@@ -55589,7 +55590,7 @@ id = "tests/sksl/errors/LayoutInFunctions.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/LayoutInFunctions.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a2f4ed8356993507483c2bdf35efbd14e5533522f144708e8cc0ea4dd0f16da8"
 
 [[test]]
@@ -55606,7 +55607,7 @@ id = "tests/sksl/errors/LayoutInInterfaceBlock.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/LayoutInInterfaceBlock.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d59a1a9157b2c02429db00e1a7eeed0b90462d8dfaf9df26ca19bc35738222f9"
 
 [[test]]
@@ -55623,7 +55624,7 @@ id = "tests/sksl/errors/LayoutInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/LayoutInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "224b50782395a25bf4e0cd48e64e5432967e73aaadd0b6837c3e6802a7ecc468"
 
 [[test]]
@@ -55631,7 +55632,7 @@ id = "tests/sksl/errors/LayoutRepeatedQualifiers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/LayoutRepeatedQualifiers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8eec1245442a259a77b9897eaf6ad25bf03b623e51f693385c8a3eee91769bd0"
 
 [[test]]
@@ -55639,7 +55640,7 @@ id = "tests/sksl/errors/MatrixIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "99547184a4b63f3a9f96b37603fda26be2d99fc429e2e1241a8881514e116a43"
 
 [[test]]
@@ -55647,7 +55648,7 @@ id = "tests/sksl/errors/MatrixIndexOutOfRangeES3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixIndexOutOfRangeES3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9a02d0cdb532e7504f86460c6ba9022f4f8163869c14082ceeacebe50f36f169"
 
 [[test]]
@@ -55656,6 +55657,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixInlinedIndexOutOfRange.glsl"
 module = "sksl"
 status = "todo"
+reason = "needs the inliner (S12): its error is reported while inlining"
 span_hash = "43e913a9e4390905f3434f0d8f0bf2d0d3d4871113704b1814c73badfe2aa104"
 
 [[test]]
@@ -55663,7 +55665,7 @@ id = "tests/sksl/errors/MatrixToVectorCast3x3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixToVectorCast3x3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a9ca78dd83c8951c77527d285b2ba7d05e356af6284e66f7c8f6c7a31b8088d6"
 
 [[test]]
@@ -55671,7 +55673,7 @@ id = "tests/sksl/errors/MatrixToVectorCastBoolean.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixToVectorCastBoolean.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2db4e8f571c05e30bf811ecacd058f226b1027ffd81221310a661bb45cbb27b4"
 
 [[test]]
@@ -55679,7 +55681,7 @@ id = "tests/sksl/errors/MatrixToVectorCastInteger.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixToVectorCastInteger.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "47f677dc855eabbfdc4d90b996b4a4ce58b967db131d6d8ec20101f50fb6cc38"
 
 [[test]]
@@ -55687,7 +55689,7 @@ id = "tests/sksl/errors/MatrixToVectorCastTooSmall.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixToVectorCastTooSmall.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8339e66805d30f5c1b4a07126bd3bd06ce22b3f50a24769ee247772d09491b3f"
 
 [[test]]
@@ -55695,7 +55697,7 @@ id = "tests/sksl/errors/MeshVertexWithBlender.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MeshVertexWithBlender.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "76bc7d109dd12f2fcda511a7c5bd593fcb7613af00c7644352cc74fbeadfb31b"
 
 [[test]]
@@ -55703,7 +55705,7 @@ id = "tests/sksl/errors/MeshVertexWithColorFilter.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MeshVertexWithColorFilter.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b0d1a421dd2affd2741512e1f3630429864fd27cae432e3ac08d01acee072422"
 
 [[test]]
@@ -55711,7 +55713,7 @@ id = "tests/sksl/errors/MeshVertexWithShader.stage"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MeshVertexWithShader.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "557417349c48f4d28d9514ea565043ddf80435393444da2557970665510903b6"
 
 [[test]]
@@ -55719,7 +55721,7 @@ id = "tests/sksl/errors/MismatchedNumbers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MismatchedNumbers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "96e0f7496be010a78ce7bbf48e519d35c8cb3754d95d337bb138e605f1cbc631"
 
 [[test]]
@@ -55727,7 +55729,7 @@ id = "tests/sksl/errors/MismatchedNumbersES3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MismatchedNumbersES3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0396eb0f266e3ee0f99dc0e6c44600bfb98b34f4ff063dac67d958c092b7c27a"
 
 [[test]]
@@ -55735,7 +55737,7 @@ id = "tests/sksl/errors/MisplacedLocalSizeQualifier.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MisplacedLocalSizeQualifier.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "84b0ead21b531047813fb600074a0193702a47f935c8e0ae52dcb464ed5401bd"
 
 [[test]]
@@ -55743,7 +55745,7 @@ id = "tests/sksl/errors/MissingWorkgroupSize.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MissingWorkgroupSize.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d799e4402cc03546f5dc586a14927894f629c1812c07c530eb5c53baf52c9bc0"
 
 [[test]]
@@ -55751,7 +55753,7 @@ id = "tests/sksl/errors/ModifiersInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ModifiersInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "42d4c078c6b254fe22547ce3bb6a51c43cdccce1d1164105d6df6802fdb74e94"
 
 [[test]]
@@ -55759,7 +55761,7 @@ id = "tests/sksl/errors/ModifiersRepeated.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ModifiersRepeated.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6b96f50da88d77b281eb038d3dd42c7111f1907b01ccc74a5d666479b75d8bd6"
 
 [[test]]
@@ -55767,7 +55769,7 @@ id = "tests/sksl/errors/MultipleBackendFlags.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MultipleBackendFlags.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ee6555740c9fcf770cc5d9c3dfa6fb6c3b2b35f3efd69fbb312809338e10a8ab"
 
 [[test]]
@@ -55775,7 +55777,7 @@ id = "tests/sksl/errors/MultipleFields.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MultipleFields.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "14b9d0c7e3307a4d7b0c50f39bdc1a33d28c0ef677120e22e150fa83e04d2450"
 
 [[test]]
@@ -55783,7 +55785,7 @@ id = "tests/sksl/errors/MultipleFieldsInInterfaceBlocks.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MultipleFieldsInInterfaceBlocks.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c8c5d3ca9317edd145b2aa36d57df2fba8f6d4d51c58de7673feeed456fe0064"
 
 [[test]]
@@ -55791,7 +55793,7 @@ id = "tests/sksl/errors/NoES3ModifierInUserCode.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/NoES3ModifierInUserCode.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d07333743a103dcee3e5c6397ed0d0b64669f75e68d337a8d8c29b7631c864f7"
 
 [[test]]
@@ -55799,7 +55801,7 @@ id = "tests/sksl/errors/OpaqueTypeAssignment.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeAssignment.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c69276106cec5d52b7cc758a5bf1a05959962c1344b0c0cd77e719fd8de4fc2c"
 
 [[test]]
@@ -55807,7 +55809,7 @@ id = "tests/sksl/errors/OpaqueTypeConstruction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeConstruction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7643d5df39fcfd1e3a221fee6fdb19f8022243563ebc72df4b3921faf961be2f"
 
 [[test]]
@@ -55815,7 +55817,7 @@ id = "tests/sksl/errors/OpaqueTypeInArray.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeInArray.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0c8b766ed786615fecaf2728350a0f5cb7a7aa3fb18d66a6896d98648e9688b3"
 
 [[test]]
@@ -55823,7 +55825,7 @@ id = "tests/sksl/errors/OpaqueTypeInInterfaceBlock.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeInInterfaceBlock.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc2207b342d8495988bf4de07fb5e116bb7eb8ecc395a7ced810eaebb261ab14"
 
 [[test]]
@@ -55831,7 +55833,7 @@ id = "tests/sksl/errors/OpaqueTypeInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b2464aafca90515d1cc6b8a10f7f9de9e599dac25439649321cd668107fa8b4f"
 
 [[test]]
@@ -55839,7 +55841,7 @@ id = "tests/sksl/errors/OpaqueTypeOutParam.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpaqueTypeOutParam.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2806eacf175228bb1f3be326ee4c1ea6436b444a0bafe94216ac876af702bebb"
 
 [[test]]
@@ -55847,7 +55849,7 @@ id = "tests/sksl/errors/OpenArray.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OpenArray.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7f032abd328430c25ea144142a8a70302c01d7b534ef2b91a7777516d4692b0b"
 
 [[test]]
@@ -55855,7 +55857,7 @@ id = "tests/sksl/errors/Ossfuzz26700.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz26700.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5ff77ce6f22be0913a92265c8b80cd64413ff001db1d10d21b8354bad291aee6"
 
 [[test]]
@@ -55863,7 +55865,7 @@ id = "tests/sksl/errors/Ossfuzz27614.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz27614.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2bde00ed63ed6cb75e14318c00c8ee3c898422807a0b63af77287a25d959a2d5"
 
 [[test]]
@@ -55871,7 +55873,7 @@ id = "tests/sksl/errors/Ossfuzz27650.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz27650.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb3e4256a95c5e3909c46c6a1c1abaabb739f2345490e7d39ce18083a43bf689"
 
 [[test]]
@@ -55879,7 +55881,7 @@ id = "tests/sksl/errors/Ossfuzz27663.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz27663.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "da22b5e1c2f5b970fd837ff323dc7951a0baa656fdc69fac8654b41f8e7aef57"
 
 [[test]]
@@ -55887,7 +55889,7 @@ id = "tests/sksl/errors/Ossfuzz28050.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz28050.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e4fbd33f9c3dae349e09c65a2607a4ee78bf5f408584ad83e7dbeaafc655df62"
 
 [[test]]
@@ -55895,7 +55897,7 @@ id = "tests/sksl/errors/Ossfuzz29444.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz29444.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "52d6db98644880e400bef657c5d57f8527b08787481cd4a5b15acc4629db864b"
 
 [[test]]
@@ -55903,7 +55905,7 @@ id = "tests/sksl/errors/Ossfuzz29845.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz29845.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9ace4a89e83e0493353b4998fad2f39ecfcee1b29579ade7fac626172b40db9c"
 
 [[test]]
@@ -55911,7 +55913,7 @@ id = "tests/sksl/errors/Ossfuzz29849.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz29849.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "deb3e9150395ebef155ea7bc7aa9526535074c6ede077e3b2aad9b51a89e0340"
 
 [[test]]
@@ -55919,7 +55921,7 @@ id = "tests/sksl/errors/Ossfuzz31410.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz31410.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3e1dd73d87b798673324cc4717fffeeadd00562ff5e7a0c6f2f322e334ef841e"
 
 [[test]]
@@ -55927,7 +55929,7 @@ id = "tests/sksl/errors/Ossfuzz31469.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz31469.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b61017ce769f1e2124500aff2f8194d30e8e37469beab7d78ac966dd7ca3061d"
 
 [[test]]
@@ -55935,7 +55937,7 @@ id = "tests/sksl/errors/Ossfuzz32156.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz32156.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "412c98776b2eb865d6f425e20c990a94acf2621253cac2024f3cb17ecb4d101c"
 
 [[test]]
@@ -55943,7 +55945,7 @@ id = "tests/sksl/errors/Ossfuzz32587.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz32587.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8241794e6dfaa78b67e265ff3af1947cf4bf2ec3032469e003c4838d8b84e256"
 
 [[test]]
@@ -55951,7 +55953,7 @@ id = "tests/sksl/errors/Ossfuzz32851.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz32851.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b731c38655813caab2b5a22b89fe04fb0e1f4d674e308981d3d666bc094414ea"
 
 [[test]]
@@ -55968,7 +55970,7 @@ id = "tests/sksl/errors/Ossfuzz37457.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz37457.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2febc5f9f9ad429bd53050f80c7b84ae51259a2e45e059d5dc8f6cd4e596cd42"
 
 [[test]]
@@ -55976,7 +55978,7 @@ id = "tests/sksl/errors/Ossfuzz37465.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz37465.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ccca91d19adc22e152401328273ba7f1a866a5bdebf5ff769b42508f89ea65cf"
 
 [[test]]
@@ -55993,7 +55995,7 @@ id = "tests/sksl/errors/Ossfuzz37620.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz37620.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "57cc1c062547df50a711197968d9e47f2b00620e2dcb4ba44feb279b41e13c18"
 
 [[test]]
@@ -56001,7 +56003,7 @@ id = "tests/sksl/errors/Ossfuzz38106.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38106.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "413ce5e505fd180b9fdf05e352ee5a0ba3bd14f2f8e5ee72d706d51c205747bd"
 
 [[test]]
@@ -56009,7 +56011,7 @@ id = "tests/sksl/errors/Ossfuzz38107.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38107.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9df32df6255e81447cbc7e41a42a5a1b844472beac72832742e5ac8d499cfaf5"
 
 [[test]]
@@ -56017,7 +56019,7 @@ id = "tests/sksl/errors/Ossfuzz38108.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38108.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c8eef7299e7e529d331f66fa6c0485c49fe5ea070ea2ca399e25a8f917111383"
 
 [[test]]
@@ -56025,7 +56027,7 @@ id = "tests/sksl/errors/Ossfuzz38140.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38140.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d6403450130df31efb3c9ef8caeb8dfa3ef84c7a864a872b0330475b1b1a40d3"
 
 [[test]]
@@ -56033,7 +56035,7 @@ id = "tests/sksl/errors/Ossfuzz38560.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38560.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ee3fd0c0fa419aedd2b59b3c591586bed3f3159bd83bc5c53487487497304b42"
 
 [[test]]
@@ -56041,7 +56043,7 @@ id = "tests/sksl/errors/Ossfuzz38831.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38831.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bfb1ab41be5213e643b738845293c8d27ea6d7de210a374adf3a06f474f21501"
 
 [[test]]
@@ -56049,7 +56051,7 @@ id = "tests/sksl/errors/Ossfuzz38865.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38865.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8cb331fe75692631763af43f10d7dba5238beb0d99cc5a3b27ff65d4528e567c"
 
 [[test]]
@@ -56057,7 +56059,7 @@ id = "tests/sksl/errors/Ossfuzz38944.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz38944.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8cb331fe75692631763af43f10d7dba5238beb0d99cc5a3b27ff65d4528e567c"
 
 [[test]]
@@ -56065,7 +56067,7 @@ id = "tests/sksl/errors/Ossfuzz39000.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz39000.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5ff77ce6f22be0913a92265c8b80cd64413ff001db1d10d21b8354bad291aee6"
 
 [[test]]
@@ -56073,7 +56075,7 @@ id = "tests/sksl/errors/Ossfuzz40427.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz40427.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "27c32bbf285d972ef6c9bf866217cddd86cf9a194369c3c68c27b89731c213a3"
 
 [[test]]
@@ -56081,7 +56083,7 @@ id = "tests/sksl/errors/Ossfuzz40428.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz40428.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8059a8c7dd23153342b37db519d85dcde70cc170a7ae5c7107acc0f4fd5d36db"
 
 [[test]]
@@ -56089,7 +56091,7 @@ id = "tests/sksl/errors/Ossfuzz40479.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz40479.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3929c1d1e5b65fc262952de3f157bf3cbf82eb1623f5920b7c188ad11e373b84"
 
 [[test]]
@@ -56097,7 +56099,7 @@ id = "tests/sksl/errors/Ossfuzz40660.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz40660.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e30170785a50ec8be3f7f035f57e5296fcbfc708414d39a84421989c30b97149"
 
 [[test]]
@@ -56105,7 +56107,7 @@ id = "tests/sksl/errors/Ossfuzz44045.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44045.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9b6ab5c1c143dedb588089fe83a5146f6480d77162ffbfb0bf3ccc1d126763ab"
 
 [[test]]
@@ -56113,7 +56115,7 @@ id = "tests/sksl/errors/Ossfuzz44551.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44551.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f0f82a2a080b3d65c846ed48767af8a60767ebb0423a7e6390f896875d37387c"
 
 [[test]]
@@ -56121,7 +56123,7 @@ id = "tests/sksl/errors/Ossfuzz44555.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44555.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2707bb4bc8b424de46b38530fa1683a3e922bbf52009e074e0bd5ac3f3819f65"
 
 [[test]]
@@ -56129,7 +56131,7 @@ id = "tests/sksl/errors/Ossfuzz44557.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44557.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e42818c51716b582371b9e094e8f4d7c2f20f502fd7e0d128e6287f17c4544cf"
 
 [[test]]
@@ -56137,7 +56139,7 @@ id = "tests/sksl/errors/Ossfuzz44559.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44559.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "67b9e5e965b95682a69ab41b3cdc5fd31429e0138011d43a55f21251839b3f83"
 
 [[test]]
@@ -56145,7 +56147,7 @@ id = "tests/sksl/errors/Ossfuzz44561.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44561.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "15dd2ff57dfaa6e15bbf78bf53db78439be6f9428a89dba3cab54981fd5589d6"
 
 [[test]]
@@ -56153,7 +56155,7 @@ id = "tests/sksl/errors/Ossfuzz44565.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz44565.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d59ee5bfb6ff284e4987a93d9e70e5a120abeccabdec233f7b9f72f62b5271f7"
 
 [[test]]
@@ -56161,7 +56163,7 @@ id = "tests/sksl/errors/Ossfuzz47935.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz47935.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1ae7e05d670f686bc0e12958cb1f60f2a013accb9eb1bc998a6345b53af16242"
 
 [[test]]
@@ -56169,7 +56171,7 @@ id = "tests/sksl/errors/Ossfuzz48592.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz48592.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b2f7df8cc243d63604e2ca8e7752f078a8a411d705e02bb24542a083a05a4d88"
 
 [[test]]
@@ -56177,7 +56179,7 @@ id = "tests/sksl/errors/Ossfuzz49558.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz49558.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e3b9a51e339eb89b0b821871788bfa914d0c3bde3a3b18d358ccc5de444b319b"
 
 [[test]]
@@ -56185,7 +56187,7 @@ id = "tests/sksl/errors/Ossfuzz50798.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz50798.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8ce103a0c9c3380e7193704e7307801395a55225043da395b22d9063b097a9f7"
 
 [[test]]
@@ -56193,7 +56195,7 @@ id = "tests/sksl/errors/Ossfuzz50922.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz50922.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8ddcaa5ba3341a79d3906f9ec86ad33aec3da1c22669a93570f626d2b92cfc6e"
 
 [[test]]
@@ -56201,7 +56203,7 @@ id = "tests/sksl/errors/Ossfuzz515515145.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz515515145.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "01afe82a762291055eee5f68d66fc698287ebda6d61ae2828a7097260ca7141b"
 
 [[test]]
@@ -56209,7 +56211,7 @@ id = "tests/sksl/errors/Ossfuzz516126015.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz516126015.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "abd7bc99e65046ca6ee56d1334afbb9bab99db643531b3ea73b21f13494e5422"
 
 [[test]]
@@ -56217,7 +56219,7 @@ id = "tests/sksl/errors/Ossfuzz519154489.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz519154489.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4faf8b2823739d87e395e77e89ae8448a2461c995e1072ea3940a5dd3709d408"
 
 [[test]]
@@ -56225,7 +56227,7 @@ id = "tests/sksl/errors/Ossfuzz56373.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz56373.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f80b72b83872dd57274b33427f8f59dc385fcb4cf9c0d4ea7221b53d44eb8ba0"
 
 [[test]]
@@ -56233,7 +56235,7 @@ id = "tests/sksl/errors/Ossfuzz58037.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz58037.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "36f94e1af040c164d3da1090886e6436b51d4e5b0f75a9eb96340c2b499ed17b"
 
 [[test]]
@@ -56241,7 +56243,7 @@ id = "tests/sksl/errors/Ossfuzz58375.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz58375.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "69363d7ec9f39ebe4c4a68beac3e08d6087aae8b4e907f3c0bd95225c1aab8d6"
 
 [[test]]
@@ -56249,7 +56251,7 @@ id = "tests/sksl/errors/Ossfuzz63793.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz63793.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ccabb9781fc72c733191285ef212db529981c8205949f6d31f88299859e57dd5"
 
 [[test]]
@@ -56257,7 +56259,7 @@ id = "tests/sksl/errors/Ossfuzz70643.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/Ossfuzz70643.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "54f56379b947990043660d8c783474a28d000d1db20e0b24dcc48699379e4194"
 
 [[test]]
@@ -56265,7 +56267,7 @@ id = "tests/sksl/errors/OverflowFloatIntrinsic.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowFloatIntrinsic.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "41489d4a03ee79eba9f87c3d7dbdbc7e9dc3438d2112d5d21651ca28f0ce1d6a"
 
 [[test]]
@@ -56273,7 +56275,7 @@ id = "tests/sksl/errors/OverflowFloatLiteral.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowFloatLiteral.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "701baa9aa9dcb73e33924870473659c311f3a2bb37adc585bd859d7fd7cf76e1"
 
 [[test]]
@@ -56282,6 +56284,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowInlinedLiteral.glsl"
 module = "sksl"
 status = "todo"
+reason = "needs the inliner (S12): its error is reported while inlining"
 span_hash = "79803565e9d2f2d9bf7e51cb9d67b6c83ccf66f1245a42288fb8b0c5a7ed05ff"
 
 [[test]]
@@ -56289,7 +56292,7 @@ id = "tests/sksl/errors/OverflowInt64Literal.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowInt64Literal.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "da2b9afc29bb33a41c62a0d3acf05b03858bc41955f8544382da5707ab06fc30"
 
 [[test]]
@@ -56297,7 +56300,7 @@ id = "tests/sksl/errors/OverflowIntLiteral.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowIntLiteral.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bb43e3b809d8c6e4e59f7f34e11a534b69a7029f0168a8585cc9294f035c4917"
 
 [[test]]
@@ -56305,7 +56308,7 @@ id = "tests/sksl/errors/OverflowParamArraySize.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowParamArraySize.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "898c47f037abe65d698304309038a7cf99a1bf6b5a9748cf818105062facf5d7"
 
 [[test]]
@@ -56313,7 +56316,7 @@ id = "tests/sksl/errors/OverflowShortLiteral.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowShortLiteral.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "859dd30068881458c1e434d772238d54d19f1c668b984336a7d27efc91ec95c2"
 
 [[test]]
@@ -56321,7 +56324,7 @@ id = "tests/sksl/errors/OverflowUintLiteral.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowUintLiteral.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "27349cfc0cf158f76f67c918ae312f4803295c40876c3b9d6e0b1dcc89843d47"
 
 [[test]]
@@ -56329,7 +56332,7 @@ id = "tests/sksl/errors/OverloadedBuiltin.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverloadedBuiltin.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "77dfa4488b628cad4d2e66f79c6ef7d0f316ae481cc4615f7fc9557067faeb7f"
 
 [[test]]
@@ -56337,7 +56340,7 @@ id = "tests/sksl/errors/OverloadedMain.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverloadedMain.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3958a0b7ba16ba1099fb13603ee35c64096995e08c8b7c683b9f265a1024b5dd"
 
 [[test]]
@@ -56345,7 +56348,7 @@ id = "tests/sksl/errors/PixelFormatMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PixelFormatMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "33f94f18ca2c7c7f652be58e2776ba3f42c9af6ccd9312bd006f80bf3b5cf6f1"
 
 [[test]]
@@ -56353,7 +56356,7 @@ id = "tests/sksl/errors/PixelFormatMissing.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PixelFormatMissing.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4120ca15e324c29fcd4ddc4025e5655acd4a4fdb66a02e98fd3c62a6ede5a291"
 
 [[test]]
@@ -56361,7 +56364,7 @@ id = "tests/sksl/errors/PixelFormatOverloads.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PixelFormatOverloads.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1e0aa6e68d32c67774da379fb2fe82bb37a91c81442b98cb3bc39fa3392fde1a"
 
 [[test]]
@@ -56369,7 +56372,7 @@ id = "tests/sksl/errors/PrecisionQualifiersDisallowed.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PrecisionQualifiersDisallowed.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cda345927baeb7f707b7ea56955ff6b79081f26e8f820bd0f6f09808ac5d318f"
 
 [[test]]
@@ -56377,7 +56380,7 @@ id = "tests/sksl/errors/PrivateTypes.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PrivateTypes.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "46d71c74ad11bdbaaed847c4983f0aead9a3ff209960b21ef58912cdc5cb7541"
 
 [[test]]
@@ -56385,7 +56388,7 @@ id = "tests/sksl/errors/PrivateVariables.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PrivateVariables.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2ad0a0a4d13eefada9ec40720673ba960f799527ea019c3bf51c09ebffe3d55b"
 
 [[test]]
@@ -56393,7 +56396,7 @@ id = "tests/sksl/errors/ProgramTooLarge_Globals.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ProgramTooLarge_Globals.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1d061e4d887b593e9e11c14caf771fff095607995f23ce0578e24767c5761c18"
 
 [[test]]
@@ -56401,7 +56404,7 @@ id = "tests/sksl/errors/ProgramTooLarge_InterfaceBlock.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ProgramTooLarge_InterfaceBlock.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c48b546de974bf860109f7be05149bd528ad4f6c4ebdf41a418e9d05afdd41b"
 
 [[test]]
@@ -56409,7 +56412,7 @@ id = "tests/sksl/errors/ProgramTooLarge_Parameters.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ProgramTooLarge_Parameters.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fc4f68e0e499037fa16e543267b81cbe1fee8526bb4dac6c1deedb6b9f2367c8"
 
 [[test]]
@@ -56417,7 +56420,7 @@ id = "tests/sksl/errors/ProgramTooLarge_Stack.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ProgramTooLarge_Stack.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2ea933638d737380dc4c41a30d83633cc3fbd098b3ba4a4000d1b9cec4a39eb2"
 
 [[test]]
@@ -56425,7 +56428,7 @@ id = "tests/sksl/errors/ProgramTooLarge_Struct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ProgramTooLarge_Struct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c5da5c6f503c287ae84a8ecd530e3584dbe7ff505b462182b7d5b93b9c9d0afd"
 
 [[test]]
@@ -56433,7 +56436,7 @@ id = "tests/sksl/errors/PrototypeInFuncBody.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/PrototypeInFuncBody.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1a7fcb2731bc44e53d2b67caf89696f88eac9f2781da6ac4f4d4f64fe7e8336c"
 
 [[test]]
@@ -56441,7 +56444,7 @@ id = "tests/sksl/errors/RTAdjustType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RTAdjustType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "474720c4383da89139ea57d328314c728a8edcef566853adbfb5d0191d704f3a"
 
 [[test]]
@@ -56449,7 +56452,7 @@ id = "tests/sksl/errors/ReadonlyWriteonly.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReadonlyWriteonly.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "26ac8503d68afd3e02fb3a1cc0764b1d71f9b0cf2abc251c7361edc4e5f15d39"
 
 [[test]]
@@ -56457,7 +56460,7 @@ id = "tests/sksl/errors/RedeclareBasicType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareBasicType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "18797295e8054564616d6be7493beacc93c87f748a56cb82c875074a5252d5fe"
 
 [[test]]
@@ -56465,7 +56468,7 @@ id = "tests/sksl/errors/RedeclareBuiltinVariables.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareBuiltinVariables.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "74644e585665157381c899d7dd6aff67fcd2a118ed7723ddbdfe439d2f409cda"
 
 [[test]]
@@ -56473,7 +56476,7 @@ id = "tests/sksl/errors/RedeclareSamplerType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareSamplerType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f8feecb4c6e31c4291db5e676d33f5fb005306ff20e81335bee92e8c7cbc8a5f"
 
 [[test]]
@@ -56481,7 +56484,7 @@ id = "tests/sksl/errors/RedeclareShaderType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareShaderType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c91b52998553a56e7dc5c48483cef7b4d0e650b50f708b3f56278bd73bd1abea"
 
 [[test]]
@@ -56489,7 +56492,7 @@ id = "tests/sksl/errors/RedeclareStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "86f00e8294d0af007269639fa7f010d9b7a710452895c46ce886c33565882fdc"
 
 [[test]]
@@ -56497,7 +56500,7 @@ id = "tests/sksl/errors/RedeclareStructTypeWithName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareStructTypeWithName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "96778ce8e48bbcaf4ca98acbe298d70136cf98f97874de544ca59acd5ffa9dea"
 
 [[test]]
@@ -56505,7 +56508,7 @@ id = "tests/sksl/errors/RedeclareUserType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareUserType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "38b42c48a86d1ef6d52139d9d26832c7144364e468af25d566df58f080bd9cd2"
 
 [[test]]
@@ -56513,7 +56516,7 @@ id = "tests/sksl/errors/RedeclareVariable.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/RedeclareVariable.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "452c80be056e0d64d3854d996bdfb3b5191f538d321e70e53bb7d85cc21808c3"
 
 [[test]]
@@ -56521,7 +56524,7 @@ id = "tests/sksl/errors/ReservedNameAsm.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameAsm.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0a1238c54c16ad3d2b311004036c9ac305c1c5495579f192f4829e00b8ae8d62"
 
 [[test]]
@@ -56529,7 +56532,7 @@ id = "tests/sksl/errors/ReservedNameAtomic.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameAtomic.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eae727263d43fe381643fc368bf3ab267d66f49a075c5ac774a7e64ee3089b64"
 
 [[test]]
@@ -56537,7 +56540,7 @@ id = "tests/sksl/errors/ReservedNameAttribute.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameAttribute.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "803fbcf6a2b12850d6b35bab889d153b8c60cedaafcfd2c454ea7159b6ceec73"
 
 [[test]]
@@ -56545,7 +56548,7 @@ id = "tests/sksl/errors/ReservedNameCast.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameCast.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "54b6ce1bcd423286d43f2a97e2d3e5157b004dad33dbb34f0421a421181717c2"
 
 [[test]]
@@ -56553,7 +56556,7 @@ id = "tests/sksl/errors/ReservedNameDmat2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDmat2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c76524ecf7d631f166dadc57b0d8c8ef0c562b3ba58dbd9b16fd9819bb7c68a5"
 
 [[test]]
@@ -56561,7 +56564,7 @@ id = "tests/sksl/errors/ReservedNameDmat3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDmat3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "906a36a493d7eff2e64dc30c7b217eaf0d9d1a36ec713333fbdbd644848d04e4"
 
 [[test]]
@@ -56569,7 +56572,7 @@ id = "tests/sksl/errors/ReservedNameDmat4.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDmat4.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "15dc34d6cdd78759e2e773e5f74e3020a60c4125416528b659e3aed90e1aae0a"
 
 [[test]]
@@ -56577,7 +56580,7 @@ id = "tests/sksl/errors/ReservedNameDouble.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDouble.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b60a62ecec95f5a5e92ad855d20b9d222668da4ab5b124d06f7feb1fad3f5ce0"
 
 [[test]]
@@ -56585,7 +56588,7 @@ id = "tests/sksl/errors/ReservedNameDvec2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDvec2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b5dc0ba7072ef3871b7eea69f6c3e15069636c439aa9359796ac1a78e058ddb"
 
 [[test]]
@@ -56593,7 +56596,7 @@ id = "tests/sksl/errors/ReservedNameDvec3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDvec3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2ddd420ed81033217ac603840fdfae4b56bce191b9ba11b61d9677734a4e0400"
 
 [[test]]
@@ -56601,7 +56604,7 @@ id = "tests/sksl/errors/ReservedNameDvec4.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameDvec4.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bca16e435fe23ad71d7e638187e4d5b931861d9f6351bd64caac7d9b0674fe39"
 
 [[test]]
@@ -56609,7 +56612,7 @@ id = "tests/sksl/errors/ReservedNameEnum.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameEnum.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7061169b516beb491a23524c02fa86c2dc3b3b6d56bc30c59cfc327bc73b5c24"
 
 [[test]]
@@ -56617,7 +56620,7 @@ id = "tests/sksl/errors/ReservedNameExtern.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameExtern.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c7f71701b8e0659bbdb6e305de3788a3ea1c0917b7aa008ba4a9731c5b01a639"
 
 [[test]]
@@ -56625,7 +56628,7 @@ id = "tests/sksl/errors/ReservedNameExternal.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameExternal.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8395c50c684fad93dd5babbe1daf8d0eb8ad94295ce7723f2468673a1f07b358"
 
 [[test]]
@@ -56633,7 +56636,7 @@ id = "tests/sksl/errors/ReservedNameFixed.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameFixed.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3dbe9f64202141bf5694589c3a9244c0836661baf43b6860eb5e9c7c329247d8"
 
 [[test]]
@@ -56641,7 +56644,7 @@ id = "tests/sksl/errors/ReservedNameFvec2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameFvec2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3626750867d3b1340291c624c22a91231853d2d77405789eccbf78fba87b5950"
 
 [[test]]
@@ -56649,7 +56652,7 @@ id = "tests/sksl/errors/ReservedNameFvec3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameFvec3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b8f850a6d69ac01140359c0859067595068ef5cdb520bd56bf3f506747d73478"
 
 [[test]]
@@ -56657,7 +56660,7 @@ id = "tests/sksl/errors/ReservedNameFvec4.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameFvec4.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "219330ecb492b3627d186bb8ce90193dbd2aa5e160488bcc3951ed5c5dfd972f"
 
 [[test]]
@@ -56665,7 +56668,7 @@ id = "tests/sksl/errors/ReservedNameGoto.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameGoto.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3dd8a151885c300c434a1e272eac2d06bf8e6cfca1aa48c3f0d75641b73430aa"
 
 [[test]]
@@ -56673,7 +56676,7 @@ id = "tests/sksl/errors/ReservedNameHvec2.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameHvec2.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "47a2d31416cc82ab1f7f49670047d65d86da3a5634bab5c988abd0216c801c65"
 
 [[test]]
@@ -56681,7 +56684,7 @@ id = "tests/sksl/errors/ReservedNameHvec3.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameHvec3.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6bd2c30199bb4c9b0ec9cfe5b0c956699e883ca26ac90ccbfa84e6fd7c5e937e"
 
 [[test]]
@@ -56689,7 +56692,7 @@ id = "tests/sksl/errors/ReservedNameHvec4.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameHvec4.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a1374816f5ee990eccf0fa731732ce229b1c081e016eac7e2accf1c1ba16b6ad"
 
 [[test]]
@@ -56697,7 +56700,7 @@ id = "tests/sksl/errors/ReservedNameImage.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameImage.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4a8990fffa0ff896245df2d274471ac90ac1d2b19798ed044fc6203967344d45"
 
 [[test]]
@@ -56705,7 +56708,7 @@ id = "tests/sksl/errors/ReservedNameInput.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameInput.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6c452c7bac559c0ba9e3e5c4aafbc4b9d81966e6bb59fd1baa66794b5511d6fb"
 
 [[test]]
@@ -56713,7 +56716,7 @@ id = "tests/sksl/errors/ReservedNameInterface.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameInterface.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0f788c4905b24c88f61a9afd446d6071b4b533071281dd977205cde096810b87"
 
 [[test]]
@@ -56721,7 +56724,7 @@ id = "tests/sksl/errors/ReservedNameInvariant.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameInvariant.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "07eccaa919167aeeea0fdd290acf903a1b561fb64597397760c2e99117ca358c"
 
 [[test]]
@@ -56729,7 +56732,7 @@ id = "tests/sksl/errors/ReservedNameLong.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameLong.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "361510ae610d0f17bdad1ad993ed508f571cf8391c27ec8ba514cb856f1a38c8"
 
 [[test]]
@@ -56737,7 +56740,7 @@ id = "tests/sksl/errors/ReservedNameNamespace.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameNamespace.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dbdb1d8c300d3be75a020757fae05056d6e84b18c075d36b988779fc85a8f35d"
 
 [[test]]
@@ -56745,7 +56748,7 @@ id = "tests/sksl/errors/ReservedNameOutput.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameOutput.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d43f794f9cf24e771ebd2f88991aafdf201a34ccd08efe81818b7cf757bb8b85"
 
 [[test]]
@@ -56753,7 +56756,7 @@ id = "tests/sksl/errors/ReservedNamePacked.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNamePacked.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b2152b1d1a22bf68d5aed00921c673146d28960b37c36aea11da217198cc346c"
 
 [[test]]
@@ -56761,7 +56764,7 @@ id = "tests/sksl/errors/ReservedNamePrecision.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNamePrecision.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "50a62d4faa485cb66cae6ad2ab8a6f6513df65c0e1dc2d56d16e8039e6eb4b8b"
 
 [[test]]
@@ -56769,7 +56772,7 @@ id = "tests/sksl/errors/ReservedNamePublic.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNamePublic.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "505735e41281fbdc9c6627d3b521e48d02286d245c5f53cc0f1260ac8f936b5e"
 
 [[test]]
@@ -56777,7 +56780,7 @@ id = "tests/sksl/errors/ReservedNameSampler.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSampler.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e832ccdc3ac1efcfc94427bae24a3a1cd6f56df9fd91b9bf555647d44e9b4d0"
 
 [[test]]
@@ -56825,7 +56828,7 @@ id = "tests/sksl/errors/ReservedNameSizeof.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSizeof.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6a02b8656e28c01899cca1f4546fc1cd4c433b8cf2a37e2b96453e1e384dcd28"
 
 [[test]]
@@ -56833,7 +56836,7 @@ id = "tests/sksl/errors/ReservedNameStatic.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameStatic.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c689d4eab9abeb5ce7fe10a4445557ef8f0fa309f9bcbfb85281ea986c9ca6bc"
 
 [[test]]
@@ -56841,7 +56844,7 @@ id = "tests/sksl/errors/ReservedNameSubpassInput.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSubpassInput.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b47986b384a4cf906f0d94c88563081d382a661f119f38598b1205e39bbe8293"
 
 [[test]]
@@ -56849,7 +56852,7 @@ id = "tests/sksl/errors/ReservedNameSuperp.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameSuperp.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5f156d5322cd4f9d738e6baa7b7a040c6f4dbc68a9363b91890cdf611cc0cd58"
 
 [[test]]
@@ -56857,7 +56860,7 @@ id = "tests/sksl/errors/ReservedNameTemplate.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameTemplate.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9225d70acca287da591f460325926caa25664ed39dacfa42fe1640686cfdc028"
 
 [[test]]
@@ -56865,7 +56868,7 @@ id = "tests/sksl/errors/ReservedNameTexture.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameTexture.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "983f55b7e852735143e55148458052718f8855819c50540c3163da376849edb9"
 
 [[test]]
@@ -56873,7 +56876,7 @@ id = "tests/sksl/errors/ReservedNameThis.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameThis.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b49c32d23acadb5dac2032fa02b8da0cf24e223d972e78343fc6e11633ae694f"
 
 [[test]]
@@ -56881,7 +56884,7 @@ id = "tests/sksl/errors/ReservedNameTypedef.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameTypedef.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "62cfe3f1e19304f084171c4cdcce31d23edac220d41fb7488985def2ad427516"
 
 [[test]]
@@ -56889,7 +56892,7 @@ id = "tests/sksl/errors/ReservedNameUnion.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameUnion.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "605383c9718f6e8f85bb8d5eac03bae7e5c88921d822695c4e085b3945fec576"
 
 [[test]]
@@ -56897,7 +56900,7 @@ id = "tests/sksl/errors/ReservedNameUnsigned.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameUnsigned.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "facfd64cb7025071dd348622f7dc73c44dddbe4cf6b852ef4ecaa0425a108c67"
 
 [[test]]
@@ -56905,7 +56908,7 @@ id = "tests/sksl/errors/ReservedNameUsing.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameUsing.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "acc39454258c7d32780c1dc5702a4f93a22642edc9beaaff1b96f0fcdd2f11b8"
 
 [[test]]
@@ -56913,7 +56916,7 @@ id = "tests/sksl/errors/ReservedNameVarying.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameVarying.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "aeee3fa9bbd62c656f61ed8b44df3ef8174c36ea70c75517b0b14a3e8c6489ff"
 
 [[test]]
@@ -56921,7 +56924,7 @@ id = "tests/sksl/errors/ReservedNameVolatile.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReservedNameVolatile.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9027d33fea29e961342b2d087f20d0866d6cc7b3966a45fc36d18b44cad8c09a"
 
 [[test]]
@@ -56929,7 +56932,7 @@ id = "tests/sksl/errors/ReturnDifferentType.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReturnDifferentType.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "141cc7fe66a6784b78e82524f9d652eb919a2774c3a9a1d2cdd1d2074439bbc9"
 
 [[test]]
@@ -56937,7 +56940,7 @@ id = "tests/sksl/errors/ReturnFromVoid.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReturnFromVoid.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4e6799529ab9183ca0c7435f4e52f9ccb6121d7cbd5db6d1c3792659fdb0a515"
 
 [[test]]
@@ -56945,7 +56948,7 @@ id = "tests/sksl/errors/ReturnMissingValue.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReturnMissingValue.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "84bd661f671cad36f6f5f1f39ae6c871453a744dd5b7b42683bc44687b2ffa37"
 
 [[test]]
@@ -56953,7 +56956,7 @@ id = "tests/sksl/errors/ReturnTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ReturnTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6c949db954b44baace8c7c29a672053673c420e624d9cd9e867388a788ea8ed2"
 
 [[test]]
@@ -56961,7 +56964,8 @@ id = "tests/sksl/errors/SamplerExternalOES.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SamplerExternalOES.glsl"
 module = "sksl"
-status = "todo"
+status = "excluded"
+reason = "GLSL-only caps: the GLSL generator checks fExternalTextureSupport (docs/design/sksl.md R7)"
 span_hash = "d030e901019b35194c7ef6d84ca61a437dfc91079ffc8b06d4466627d8d9d709"
 
 [[test]]
@@ -56969,7 +56973,7 @@ id = "tests/sksl/errors/SelfReferentialInitializerExpression.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SelfReferentialInitializerExpression.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "38dffc00fbc596551a0d303e3b6ab47fafd7ede99f90ac74e0b495e9c7e09f05"
 
 [[test]]
@@ -56977,7 +56981,7 @@ id = "tests/sksl/errors/SpuriousFloat.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SpuriousFloat.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b225876da3f3c1064113a9a381f277e3818eae608bf7a29287d78fa57cdb9481"
 
 [[test]]
@@ -56985,7 +56989,7 @@ id = "tests/sksl/errors/StructMemberReservedName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/StructMemberReservedName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2c7b4030dbf831cb3b8b9ff62ef414af5ec0237496af449d388a84142ed2b003"
 
 [[test]]
@@ -56993,7 +56997,7 @@ id = "tests/sksl/errors/StructNameWithoutIdentifier.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/StructNameWithoutIdentifier.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4f71e33e064d56f7a3608472b989f5a0146ce5682b5b8443626e808e427153ba"
 
 [[test]]
@@ -57001,7 +57005,7 @@ id = "tests/sksl/errors/StructRedefinition.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/StructRedefinition.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8c3b6bae5cefb7acfb236b517055e27358e8f0fa6dc9c7b93f77c263a36ccd0c"
 
 [[test]]
@@ -57009,7 +57013,7 @@ id = "tests/sksl/errors/StructTooDeeplyNested.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/StructTooDeeplyNested.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "37a2acf0cb05de4956bca93935b7f37fef0a9d6a6ec757049237d712ee3a754f"
 
 [[test]]
@@ -57017,7 +57021,7 @@ id = "tests/sksl/errors/StructVariableReservedName.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/StructVariableReservedName.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d89c06dca4f70ff8cb7c4a56d4c610f6fc18372368e4d9a02cc2900e2c4584b1"
 
 [[test]]
@@ -57025,7 +57029,7 @@ id = "tests/sksl/errors/SwitchDuplicateCase.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchDuplicateCase.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1b9d44c24e4598e4c362602eb2103efe1b756ee40f75d432fba26b84be6f05ac"
 
 [[test]]
@@ -57033,7 +57037,7 @@ id = "tests/sksl/errors/SwitchDuplicateDefault.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchDuplicateDefault.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dad34ce1abda34bf1602871baf6c6ad9e2d297d2fb01f0b8a24c35a29f72a916"
 
 [[test]]
@@ -57041,7 +57045,7 @@ id = "tests/sksl/errors/SwitchDuplicateVariable.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchDuplicateVariable.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "df0a0ff0a5beaa4bedda989a00b97e4a23ddd98cf66bdeec897b19736d6b305e"
 
 [[test]]
@@ -57049,7 +57053,7 @@ id = "tests/sksl/errors/SwitchHoistingAtomicArray.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchHoistingAtomicArray.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "03519f35cdd38cb6c0ac1395a8c07f8234b8e4eb9fc8af26b7b9978c37300169"
 
 [[test]]
@@ -57057,7 +57061,7 @@ id = "tests/sksl/errors/SwitchTypes.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchTypes.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "48c2ef600976d337718920c8972425f0c40d1e30062a71e20fde856083acef99"
 
 [[test]]
@@ -57065,7 +57069,7 @@ id = "tests/sksl/errors/SwitchVariableScope.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchVariableScope.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ee83884d634033c456c9808b573fdc571909f9e1963f70f3f5fd5f59f5d65baf"
 
 [[test]]
@@ -57073,7 +57077,7 @@ id = "tests/sksl/errors/SwitchWithContinueInside.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwitchWithContinueInside.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "da2d30e4edbce28a1589d8d1ab52d27e06abc4714505cd9bc4be3bf0b4fa873b"
 
 [[test]]
@@ -57081,7 +57085,7 @@ id = "tests/sksl/errors/SwizzleConstantOutput.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleConstantOutput.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "46f35eb0f2295ee6212f033b714bf77700fc8b9fccfb469ebed29b85897c351d"
 
 [[test]]
@@ -57089,7 +57093,7 @@ id = "tests/sksl/errors/SwizzleDomain.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleDomain.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0ebc48bc19d65f3cecf036ff0054b30c05ad9668511c7f394a5aefb0cef04436"
 
 [[test]]
@@ -57097,7 +57101,7 @@ id = "tests/sksl/errors/SwizzleMatrix.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleMatrix.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "298c97e996b904b4fc90b3df423f354db0b767bcc331eec9dd96c311727fa744"
 
 [[test]]
@@ -57105,7 +57109,7 @@ id = "tests/sksl/errors/SwizzleOnlyLiterals.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleOnlyLiterals.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ab595159642c767f987365e5d30a851a6ab55767e83a871ae9e38fef70cbae02"
 
 [[test]]
@@ -57113,7 +57117,7 @@ id = "tests/sksl/errors/SwizzleOutOfBounds.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleOutOfBounds.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c7fd929f626c8b8ffe95e9766a4b5f1f1b12eddd520e3f44d693d66f7a5fed44"
 
 [[test]]
@@ -57121,7 +57125,7 @@ id = "tests/sksl/errors/SwizzleTooManyComponents.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SwizzleTooManyComponents.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a537fd9ec09fcc085462ba5490649fde9beacb16ac751ed57071afd4a325c71f"
 
 [[test]]
@@ -57129,7 +57133,7 @@ id = "tests/sksl/errors/TernaryMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/TernaryMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1e80ce38d314a3490a15785b2e3271354fed8ce8f6724b6222479c56f006c3c0"
 
 [[test]]
@@ -57137,7 +57141,7 @@ id = "tests/sksl/errors/UnassignedOutParameter.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnassignedOutParameter.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bcd5687acec7dcb319c9eb0180e0d2a9bbacb070dc5fc996fd11b4737d30f34f"
 
 [[test]]
@@ -57145,7 +57149,7 @@ id = "tests/sksl/errors/UndeclaredFunction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UndeclaredFunction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "532e1f7aa3e418db70687b66432a2d350c8b5346b6bed35c84aa9db9e8b82e2a"
 
 [[test]]
@@ -57162,7 +57166,7 @@ id = "tests/sksl/errors/UndefinedFunction.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UndefinedFunction.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "47c7de841917b9511718b024658e0794c2cc028c8ac0302e31d3f15a047458f0"
 
 [[test]]
@@ -57170,7 +57174,7 @@ id = "tests/sksl/errors/UndefinedSymbol.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UndefinedSymbol.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "10e25dbd0a059a7a0a7a5dfee772c0aaaf386eebec56b2a63f2d0c70688ffd40"
 
 [[test]]
@@ -57178,7 +57182,7 @@ id = "tests/sksl/errors/UniformStructFanOut.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UniformStructFanOut.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "03d78e938bfe6d2c9e38690b9a3e4b32ee3bbbcad3c4e22acb563ec55c85b5bd"
 
 [[test]]
@@ -57186,7 +57190,7 @@ id = "tests/sksl/errors/UniformVarWithInitializerExpression.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UniformVarWithInitializerExpression.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "72991ecd885e63d826ba225c0d4efee2d7e1dcd3a3db4fd7097ed896453e059b"
 
 [[test]]
@@ -57194,7 +57198,7 @@ id = "tests/sksl/errors/UnknownDivideByZero.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnknownDivideByZero.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "396ce93f0818019dc13461f55b9355ea43064a282d110d6edd95b3cb3030ed75"
 
 [[test]]
@@ -57202,7 +57206,7 @@ id = "tests/sksl/errors/UnscopedVariableInDoWhile.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnscopedVariableInDoWhile.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6dbad90a06f70a1af0e8060f4ba311e8faa8d5d409888210ab3b02e305dccfb6"
 
 [[test]]
@@ -57210,7 +57214,7 @@ id = "tests/sksl/errors/UnscopedVariableInElse.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnscopedVariableInElse.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4e2038bddb98d316b146ef48c3a34403213347f66abd572ec0d8bcfea43f5c89"
 
 [[test]]
@@ -57218,7 +57222,7 @@ id = "tests/sksl/errors/UnscopedVariableInFor.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnscopedVariableInFor.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b252eadf2ff30cb6ed952b6057d4b9ce16baef871fe0acb7fecec0a5a1fd93a5"
 
 [[test]]
@@ -57226,7 +57230,7 @@ id = "tests/sksl/errors/UnscopedVariableInIf.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnscopedVariableInIf.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a670a78715fe3ba558f448c8cd4650670e1ac78f5a6fe537d3fa801f5dfbb988"
 
 [[test]]
@@ -57234,7 +57238,7 @@ id = "tests/sksl/errors/UnscopedVariableInWhile.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnscopedVariableInWhile.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04e82095eb994a9fb5594ad45b56546b8db141b23e0df9a55d0df906bbe82fb6"
 
 [[test]]
@@ -57242,7 +57246,7 @@ id = "tests/sksl/errors/UnsupportedGLSLIdentifiers.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UnsupportedGLSLIdentifiers.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "869436e4987ce7a0021a9b25176e6a8b90794a30fcf2547c4155ff69da30a650"
 
 [[test]]
@@ -57250,7 +57254,7 @@ id = "tests/sksl/errors/UsingInvalidValue.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/UsingInvalidValue.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7ac29ffca71276835ed7dea1efd72ed1d2b2b927c017ce89d1f73bd353e8ae7b"
 
 [[test]]
@@ -57258,7 +57262,7 @@ id = "tests/sksl/errors/VectorIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VectorIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5290eaf5acb084ce64ba51b185c83670452651a66a13f6dfbc0ea545b356e731"
 
 [[test]]
@@ -57267,6 +57271,7 @@ kind = "sksl-golden"
 source = "tests/sksl/errors/VectorInlinedIndexOutOfRange.glsl"
 module = "sksl"
 status = "todo"
+reason = "needs the inliner (S12): its error is reported while inlining"
 span_hash = "a6407d33b705ce6789e1288e25cd8e4194877410c97df87db1e9b31ccdde8f90"
 
 [[test]]
@@ -57274,7 +57279,7 @@ id = "tests/sksl/errors/VectorSlice.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VectorSlice.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6dff7fd8a6ff8f83c234fd6f9092d4b7b6569a578301ac4604c5b1f8f2d65dc9"
 
 [[test]]
@@ -57282,7 +57287,7 @@ id = "tests/sksl/errors/VertexEarlyReturn.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VertexEarlyReturn.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9226e1f4379727d6c9a832721a56f88c9632c7f510c3bf1490935dfe4a56cceb"
 
 [[test]]
@@ -57290,7 +57295,7 @@ id = "tests/sksl/errors/VoidConstructor.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VoidConstructor.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "14de1365baa133315ce2dd1510217defeaa175d7c211f747a1aa2830aac88f82"
 
 [[test]]
@@ -57298,7 +57303,7 @@ id = "tests/sksl/errors/VoidInStruct.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VoidInStruct.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4d5adf1ababf18009f11fef75502d547fabf8b6bcbd481c1be78103edb5d1cf1"
 
 [[test]]
@@ -57306,7 +57311,7 @@ id = "tests/sksl/errors/VoidVariable.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VoidVariable.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6cf9d2f42b44ec41c12fd60cc3cdfaa94013fce4d353f7749770ac02699e7843"
 
 [[test]]
@@ -57314,7 +57319,7 @@ id = "tests/sksl/errors/WhileTypeMismatch.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/WhileTypeMismatch.glsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "388df2f918b6ede63797fe9f4f06545217af9e86e76c65ef4ace6dd9da2ae8bf"
 
 [[test]]
@@ -59237,7 +59242,7 @@ id = "tests/sksl/intrinsics/BitCount.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/BitCount.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b3c2cb78d53a8cee3d65542ca193fd5e2a178fd3416aab2195b6bacf9a339b00"
 
 [[test]]
@@ -59653,7 +59658,7 @@ id = "tests/sksl/intrinsics/CrossNoInline.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/CrossNoInline.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7a528433366a5a3d63a976b7ad477f9ae3f7cdff4f4074a82da1da80458e5b52"
 
 [[test]]
@@ -60069,7 +60074,7 @@ id = "tests/sksl/intrinsics/Equal.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Equal.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "be7ef5d6d88f462d8661cbc0a8db9164abbd20b57f8367bbc10f1f8f5a5b824e"
 
 [[test]]
@@ -60277,7 +60282,7 @@ id = "tests/sksl/intrinsics/FindLSB.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FindLSB.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e28a948cda30886e006258f1c0ae94d00471a6843fa17c0f1a3cde4f1a7867c2"
 
 [[test]]
@@ -60329,7 +60334,7 @@ id = "tests/sksl/intrinsics/FindMSB.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FindMSB.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0d2816593638408f946a2b49cb7dd8fa97feec5b67a2f05e06603dc7834bd9fe"
 
 [[test]]
@@ -60537,7 +60542,7 @@ id = "tests/sksl/intrinsics/Fma.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Fma.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9bf62dc0d1129bdc3cf4af93cf5a70284f7d5bd513306c36d24733f798a0d3b0"
 
 [[test]]
@@ -60641,7 +60646,7 @@ id = "tests/sksl/intrinsics/Frexp.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Frexp.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9975dfd815b5ee086cd7b76aa7102aa969654f2244541327c787abc47534c0e9"
 
 [[test]]
@@ -60745,7 +60750,7 @@ id = "tests/sksl/intrinsics/GreaterThan.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/GreaterThan.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e679237372b648dd777976dee68f3dd55d1fb9e10bbbe085831749d966de7fa3"
 
 [[test]]
@@ -60797,7 +60802,7 @@ id = "tests/sksl/intrinsics/GreaterThanEqual.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/GreaterThanEqual.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d98aa430d1efd592e25b108bc3a9e55143f07a76c1dfe43d4dc6de5d43e377c4"
 
 [[test]]
@@ -61109,7 +61114,7 @@ id = "tests/sksl/intrinsics/Ldexp.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Ldexp.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "89306793432e5c3e9e7466fc8434b45b78a16e003c1c20dbb5889b662fb362a2"
 
 [[test]]
@@ -61213,7 +61218,7 @@ id = "tests/sksl/intrinsics/LessThan.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/LessThan.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d08b6826154bf3f9da3f6d17bb52a4fa9599931d3a354e83a2f859fa53eb9629"
 
 [[test]]
@@ -61265,7 +61270,7 @@ id = "tests/sksl/intrinsics/LessThanEqual.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/LessThanEqual.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6ca5656fb5aee26df0326a7682ad7dcb3fc1153d4d59d542cfbc7b6607b2712b"
 
 [[test]]
@@ -61837,7 +61842,7 @@ id = "tests/sksl/intrinsics/MixBool.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MixBool.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9b2bd02a0cbb1ba32ec3edcaf77bd410ed179c4ed499933c1898016cf090f14a"
 
 [[test]]
@@ -62201,7 +62206,7 @@ id = "tests/sksl/intrinsics/NotEqual.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/NotEqual.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bff4434541dbdf19fbfb20e0c0b86b909d2bb4882417b77314ce90cace3551ae"
 
 [[test]]
@@ -62305,7 +62310,7 @@ id = "tests/sksl/intrinsics/Pack.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Pack.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2dbbf844511e1f77e19c6f73d8c7d82bf88809bb69393ea5503005b165aafc4f"
 
 [[test]]
@@ -62357,7 +62362,7 @@ id = "tests/sksl/intrinsics/PackHalf2x16.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/PackHalf2x16.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f5bf64513fb633204004582479b3130f2d4beda15b3ad5d1523261771338f555"
 
 [[test]]
@@ -62409,7 +62414,7 @@ id = "tests/sksl/intrinsics/PackSnorm2x16.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/PackSnorm2x16.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "56b054771b4393a3477929e9de9e6578000f0772af624aa96a20a66df657895c"
 
 [[test]]
@@ -62825,7 +62830,7 @@ id = "tests/sksl/intrinsics/Sample.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Sample.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cccc7d707ec9c4c679fdb5e1639ab3b579d0d8523911d32e0f232b2a2f84ffb6"
 
 [[test]]
@@ -62877,7 +62882,7 @@ id = "tests/sksl/intrinsics/SampleGrad.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SampleGrad.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9e6265e1aa03184f4a990317c30fbae32796852c890f0d55c2698703f86250c0"
 
 [[test]]
@@ -62929,7 +62934,7 @@ id = "tests/sksl/intrinsics/SampleLod.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SampleLod.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "151d932d9fa7bd8a11e6d0de4ffe297772d8a29d613ffb04ac06fe0097dceafb"
 
 [[test]]
@@ -63501,7 +63506,7 @@ id = "tests/sksl/intrinsics/TextureReadImage.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadImage.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a446f76795b8fff201393e2b83a4827c6b575fe08198e00d30a684df45e9868a"
 
 [[test]]
@@ -63553,7 +63558,7 @@ id = "tests/sksl/intrinsics/TextureReadSampler.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadSampler.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e39a5b9f5b901ffb5d0447f93b8c0ed03e5675e9ba7bc2c0b4ff6038067101bd"
 
 [[test]]
@@ -63605,7 +63610,7 @@ id = "tests/sksl/intrinsics/TextureReadTexture.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadTexture.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fbf7fa5ddfad5c64af9e22a0fb6c071e456361f754bb444c6fccc7cff17ccdd2"
 
 [[test]]
@@ -63657,7 +63662,7 @@ id = "tests/sksl/intrinsics/TextureSizeImage.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeImage.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "87f32b1e205e9a9bd40c70ce7d7e1b1c8512857ea23c38c96973298411f1fa2a"
 
 [[test]]
@@ -63709,7 +63714,7 @@ id = "tests/sksl/intrinsics/TextureSizeSampler.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeSampler.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7ee86b1f60357701a2fa86947a0d9ac8a3dfb528ab48d11cebfee0f4ec3d0983"
 
 [[test]]
@@ -63761,7 +63766,7 @@ id = "tests/sksl/intrinsics/TextureSizeTexture.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeTexture.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3d02f0131660468ef08111926d7b10249429af03a65e09c28530dcccbf17f92b"
 
 [[test]]
@@ -63969,7 +63974,7 @@ id = "tests/sksl/intrinsics/Unpack.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Unpack.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fb5dd116e6959c95ae4790a1ceddea49aa31b7be87bb43011d35fa56da3f88d3"
 
 [[test]]
@@ -64260,7 +64265,7 @@ id = "tests/sksl/realistic/GaussianBlur.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/GaussianBlur.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cf84f5cae74251781a687620af0265ef91b58d13cfcf7b97413fd212b713d3d6"
 
 [[test]]
@@ -65824,7 +65829,7 @@ id = "tests/sksl/shared/ArrayIndexTypes.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayIndexTypes.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f6581a45712b213fc07fa7b3ea3a655ff130f6e1a53cdc4f4be0c6852002b4fb"
 
 [[test]]
@@ -65980,7 +65985,7 @@ id = "tests/sksl/shared/ArrayUnsizedParam.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayUnsizedParam.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3deceaa87ebfe349ab261227f6cdc720563d15ca589cdcf9a6eb569af46bdad5"
 
 [[test]]
@@ -66084,7 +66089,7 @@ id = "tests/sksl/shared/Caps.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Caps.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb634ae89310dcd1c05ccf223ea90cef1ce554b73c571ff7f7ab2e069885a988"
 
 [[test]]
@@ -66188,7 +66193,7 @@ id = "tests/sksl/shared/Clockwise.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Clockwise.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "87bc4f395937b9759506eb2d069754ecd0d23aed80433914f2f4ae6d923b1839"
 
 [[test]]
@@ -66240,7 +66245,7 @@ id = "tests/sksl/shared/ClockwiseNoRTFlip.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ClockwiseNoRTFlip.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e2bd0615630601a3c9f01d9cda6d6d49508738292ff627c209217dcb477f8fcb"
 
 [[test]]
@@ -66448,7 +66453,7 @@ id = "tests/sksl/shared/ComplexDelete.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ComplexDelete.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b47de6e768bad4144d54a8bb80c20966a4b5efd386e93f613f9d77d853ff064d"
 
 [[test]]
@@ -66812,7 +66817,7 @@ id = "tests/sksl/shared/Control.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Control.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e37cc92b6cfad319b8cec312abc86df9940db8c91d87336402d51c480d04252d"
 
 [[test]]
@@ -66864,7 +66869,7 @@ id = "tests/sksl/shared/DeadDoWhileLoop.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadDoWhileLoop.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0383d9acedc0b0cfbcfa96feb7382aaa2d9301d705653148c6cb2f94328a15d0"
 
 [[test]]
@@ -67306,7 +67311,7 @@ id = "tests/sksl/shared/DerivativesUnused.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DerivativesUnused.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "77df32724e9d25a7762058972277ddc52b963fe1328a0198ee8479e5ca7325da"
 
 [[test]]
@@ -67358,7 +67363,7 @@ id = "tests/sksl/shared/Discard.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Discard.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0b1ce728b112f667ed09c553b33e53a65f4289325968efcf776002157a0c8f95"
 
 [[test]]
@@ -67774,7 +67779,7 @@ id = "tests/sksl/shared/FragCoords.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FragCoords.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c4a4edf2b2c3eb23560a7b4bb67af7311010ad78798d0327dc43fff95016153d"
 
 [[test]]
@@ -67826,7 +67831,7 @@ id = "tests/sksl/shared/FragCoordsNoRTFlip.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FragCoordsNoRTFlip.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a15e5262e4158b022fb21fd4185c14994bd0d9e7b6d4da369dbce94b7f853e26"
 
 [[test]]
@@ -67982,7 +67987,7 @@ id = "tests/sksl/shared/FunctionParametersOfTextureAndSamplerType.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionParametersOfTextureAndSamplerType.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e785d7f59c2b2a582a82f642352ad9d45bec81260b5a04fef20c500e8b2ca4fe"
 
 [[test]]
@@ -68554,7 +68559,7 @@ id = "tests/sksl/shared/InstanceID.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InstanceID.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -68606,7 +68611,7 @@ id = "tests/sksl/shared/InstanceIDInFunction.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InstanceIDInFunction.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -68710,7 +68715,7 @@ id = "tests/sksl/shared/InterfaceBlockBuffer.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockBuffer.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2074d81feb14daa2ddf0bb4ab7c4ce0e9fbdbb0ded7f69a6cbc6242d9502fe29"
 
 [[test]]
@@ -68762,7 +68767,7 @@ id = "tests/sksl/shared/InterfaceBlockInoutArray.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockInoutArray.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "057994ef3ccced737545225bf1319d4e027576a5534403d0dccc4fc65f9815b9"
 
 [[test]]
@@ -68814,7 +68819,7 @@ id = "tests/sksl/shared/InterfaceBlockMultipleAnonymous.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockMultipleAnonymous.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f599ded9fb83e2d57065a75fbdff79d762c642c6baaab83f2edfde1684311554"
 
 [[test]]
@@ -68866,7 +68871,7 @@ id = "tests/sksl/shared/InterfaceBlockNamed.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockNamed.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "123d08d5bf385ff34ecd3a9a4f5aad365843dfa381df098a49d1fe84b1fea0ef"
 
 [[test]]
@@ -68918,7 +68923,7 @@ id = "tests/sksl/shared/InterfaceBlockNamedArray.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockNamedArray.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d10801fc0ab65aa1271e2cfb0510aa532638a7f5000a6772fe1cfb17a4ba6bc5"
 
 [[test]]
@@ -68970,7 +68975,7 @@ id = "tests/sksl/shared/InterpolantIn.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterpolantIn.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8f8b4b130af1bdeff597616606718dfab02730481014fd99ad829e411d87738b"
 
 [[test]]
@@ -69022,7 +69027,7 @@ id = "tests/sksl/shared/InterpolantOut.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterpolantOut.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -69906,7 +69911,7 @@ id = "tests/sksl/shared/NoFragCoordsPos.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NoFragCoordsPos.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -69958,7 +69963,7 @@ id = "tests/sksl/shared/NoFragCoordsPosRT.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NoFragCoordsPosRT.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -70010,7 +70015,7 @@ id = "tests/sksl/shared/NormalizationVert.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NormalizationVert.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -70114,7 +70119,7 @@ id = "tests/sksl/shared/NumberConversions.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NumberConversions.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b5317174609fc0a1e8f42e84f83243736e77dc808c981d2919ce88dcccb58f26"
 
 [[test]]
@@ -70218,7 +70223,7 @@ id = "tests/sksl/shared/Offset.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Offset.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6152a5d52cc518dc3e134907cc7340d2ca9719e6cc9c5f172c90f3c5976d4354"
 
 [[test]]
@@ -70400,7 +70405,7 @@ id = "tests/sksl/shared/Ossfuzz26167.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz26167.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f23b4b6ae2805235675e4d418f3e583d4929be48efa6dbe344306ad0d0fce23e"
 
 [[test]]
@@ -70452,7 +70457,7 @@ id = "tests/sksl/shared/Ossfuzz26759.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz26759.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "99d198c6b1868f17e058eeb7b6d9b588cf212a167908ea81dea52b9e47336568"
 
 [[test]]
@@ -70504,7 +70509,7 @@ id = "tests/sksl/shared/Ossfuzz28794.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz28794.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d93e01e33e11298a2713a8d115f6471697f6bb3f56b91c3dead4b6f61eb0a5fb"
 
 [[test]]
@@ -70556,7 +70561,7 @@ id = "tests/sksl/shared/Ossfuzz28904.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz28904.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a0ce2d470225912b52b7165f2e1750be79b5d8dceb96ad82e27d5cacde30eab5"
 
 [[test]]
@@ -70608,7 +70613,7 @@ id = "tests/sksl/shared/Ossfuzz29085.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz29085.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e4cec91276a04de82727884277649cfb8d41ecc56e3f3adc3d875d49e2bc5763"
 
 [[test]]
@@ -70660,7 +70665,7 @@ id = "tests/sksl/shared/Ossfuzz29494.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz29494.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "296df0f6e825cb9c83984e96c3bc5fada6ec8343d26459309868107735d9e0a3"
 
 [[test]]
@@ -70712,7 +70717,7 @@ id = "tests/sksl/shared/Ossfuzz36770.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz36770.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "37f9a918554848083a87610574b516d1e9dfbcfcf5a6f5af53a1add4b20e8d88"
 
 [[test]]
@@ -70816,7 +70821,7 @@ id = "tests/sksl/shared/Ossfuzz37466.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz37466.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "71f8177aeadac1ab21181b16d8e730bed46143fcbda16df6446d2f2bb5eccf85"
 
 [[test]]
@@ -70920,7 +70925,7 @@ id = "tests/sksl/shared/Ossfuzz37900.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz37900.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3c1409d1723318bace0f43345d42ba1b31e7b95949ef6cb9287fa3ff63d4404b"
 
 [[test]]
@@ -70928,7 +70933,7 @@ id = "tests/sksl/shared/Ossfuzz37900.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz37900.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3f8f212099f65e02c0970f77cf500d168c939d646dc4188ba6e5d2e78fab1b6a"
 
 [[test]]
@@ -71024,7 +71029,7 @@ id = "tests/sksl/shared/Ossfuzz50636.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz50636.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c78438ae8079d69c321573939025acd0950b584451696deaa10c1ee791df4340"
 
 [[test]]
@@ -71032,7 +71037,7 @@ id = "tests/sksl/shared/Ossfuzz50636.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz50636.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0093b174a8b0070fcf282020694e242c9123dce1ba7b5908947797cb95f43512"
 
 [[test]]
@@ -71700,7 +71705,7 @@ id = "tests/sksl/shared/RectangleTexture.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/RectangleTexture.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6dc51534e427ea2f3ec3477f7ac81ef2713b46ceb921483f226b1c595aeb3f42"
 
 [[test]]
@@ -71908,7 +71913,7 @@ id = "tests/sksl/shared/ReturnBadTypeFromMain.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReturnBadTypeFromMain.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d2e995401f92e48493483b735495cb8af2b50abe591ab74fd703adda0fb4ae1e"
 
 [[test]]
@@ -72116,7 +72121,7 @@ id = "tests/sksl/shared/SampleLocations.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SampleLocations.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -72168,7 +72173,7 @@ id = "tests/sksl/shared/SampleMask.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SampleMask.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fbc8ef058376a01084cd27741dad1065fe4489b5e5b505a742cad249ccc08ccc"
 
 [[test]]
@@ -72480,7 +72485,7 @@ id = "tests/sksl/shared/StaticSwitchWithBreak.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithBreak.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e7ac3b59d00373012da59d76b55b00adaa7114dc75cfceef2c21c63da75a2480"
 
 [[test]]
@@ -72532,7 +72537,7 @@ id = "tests/sksl/shared/StaticSwitchWithBreakInsideBlock.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithBreakInsideBlock.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d1892b24559cb052378a9b7e2a39ba395a4da682d7878debca21a617ab5f9b84"
 
 [[test]]
@@ -72584,7 +72589,7 @@ id = "tests/sksl/shared/StaticSwitchWithConditionalBreak.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithConditionalBreak.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "805240ab0e37e6c26d392bb1ac3619b38b7bcdc86bb94c2c3fe6e298f82424fa"
 
 [[test]]
@@ -72636,7 +72641,7 @@ id = "tests/sksl/shared/StaticSwitchWithConditionalBreakInsideBlock.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithConditionalBreakInsideBlock.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04077b515a11f073e428ab72804d4c4d74c550b510a56d6949d97c9cb5296e16"
 
 [[test]]
@@ -72688,7 +72693,7 @@ id = "tests/sksl/shared/StaticSwitchWithFallthroughA.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithFallthroughA.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "11a316649579ee67a86c6046b4d9906dbf1bf3f989e3c9383901bf82a293fa35"
 
 [[test]]
@@ -72740,7 +72745,7 @@ id = "tests/sksl/shared/StaticSwitchWithFallthroughB.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithFallthroughB.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "11a316649579ee67a86c6046b4d9906dbf1bf3f989e3c9383901bf82a293fa35"
 
 [[test]]
@@ -72792,7 +72797,7 @@ id = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreak.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreak.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e7ac3b59d00373012da59d76b55b00adaa7114dc75cfceef2c21c63da75a2480"
 
 [[test]]
@@ -72844,7 +72849,7 @@ id = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreakInsideBlock.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreakInsideBlock.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5229ba038cc1260972824aa641d07783766d1d0d9a17bcd0ca81129778562b21"
 
 [[test]]
@@ -72948,7 +72953,7 @@ id = "tests/sksl/shared/StorageBuffer.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StorageBuffer.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0e57bf4e489b4237d9d0f798dbdf513be062efdf53a348d18a0d3e222ff37b66"
 
 [[test]]
@@ -73000,7 +73005,7 @@ id = "tests/sksl/shared/StorageBufferVertex.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StorageBufferVertex.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -73312,7 +73317,7 @@ id = "tests/sksl/shared/Structs.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Structs.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2c3f61514c51d65285755c0b4a7f77beacb0b7cc0536e7ddd4cb309ec315252b"
 
 [[test]]
@@ -74830,7 +74835,7 @@ id = "tests/sksl/shared/Texture2D.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Texture2D.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "14a462e735ff75f85e91f213c6580e42f49f192cd5d98dbfe5e05eb1e503b63f"
 
 [[test]]
@@ -74882,7 +74887,7 @@ id = "tests/sksl/shared/TextureSharpen.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TextureSharpen.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "69af6da465bfda95fa6ae717a4c19f4a7cf66c9bb2c89d7e4187ead057a940ab"
 
 [[test]]
@@ -75038,7 +75043,7 @@ id = "tests/sksl/shared/UniformBuffers.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UniformBuffers.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7f820fea492ecf7bc02aa2fe26877c20ee0027628595ecd3a338fde727cfedc3"
 
 [[test]]
@@ -75402,7 +75407,7 @@ id = "tests/sksl/shared/VertexID.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VertexID.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]
@@ -75454,7 +75459,7 @@ id = "tests/sksl/shared/VertexIDInFunction.skrp"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VertexIDInFunction.skrp"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5c10b96439aae39d76c4617c78ab0580a523123cca18e1a42a547e64e19bd146"
 
 [[test]]

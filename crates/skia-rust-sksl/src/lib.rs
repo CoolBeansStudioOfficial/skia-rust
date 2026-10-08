@@ -29,6 +29,7 @@ pub mod lexer;
 pub mod mangler;
 mod matrix_invert;
 pub mod memory_layout;
+pub mod module_loader;
 pub mod modules;
 pub mod operator;
 pub mod output_stream;

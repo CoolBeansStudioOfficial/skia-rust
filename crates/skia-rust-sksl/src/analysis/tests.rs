@@ -172,7 +172,10 @@ impl Builder {
 /// The messages reported to a forwarding reporter, in order.
 fn messages(errors: &ErrorReporter) -> Vec<String> {
     match errors.sink() {
-        ErrorSink::Forwarding { errors } => errors.iter().map(|(msg, _)| msg.clone()).collect(),
+        ErrorSink::Forwarding { errors } => errors
+            .iter()
+            .map(|(msg, _)| String::from_utf8(msg.clone()).expect("a UTF-8 message"))
+            .collect(),
         _ => panic!("expected a forwarding reporter"),
     }
 }

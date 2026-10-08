@@ -11,16 +11,17 @@
 //! must have a program config and a current symbol table (the module's or program's global
 //! table), as Skia's `Compiler::initializeContext` sets up.
 //!
-//! # The driver hooks (task S11)
+//! # The driver hooks
 //!
 //! Skia's `Parser::programInheritingFrom` and `Parser::moduleInheritingFrom` finish with calls
 //! into the compiler driver (`Compiler::releaseProgram`, `fCompiler.fGlobalSymbols`). Here they
-//! stop at the parse step and return the program elements:
+//! stop at the parse step and return the program elements, and the driver in
+//! [`crate::compiler`] (task S11) does the rest:
 //!
 //! - [`Parser::program_inheriting_from`] returns `Some(elements)` when parsing reported no errors,
-//!   and `None` otherwise. S11 builds the `Program` from them (`Compiler::releaseProgram`).
-//! - [`Parser::module_inheriting_from`] returns the module's elements. S11 builds the `Module`
-//!   (`fParent`, `fSymbols`, `fModuleType`) around them and keeps the source text alive.
+//!   and `None` otherwise. `Compiler::convert_program` builds the `Program` from them.
+//! - [`Parser::module_inheriting_from`] returns the module's elements. `Compiler::compile_module`
+//!   builds the `Module` (`fParent`, `fSymbols`, `fModuleType`) around them.
 
 use std::borrow::Cow;
 
@@ -175,8 +176,8 @@ impl<'a> Parser<'a> {
     }
 
     /// `programInheritingFrom(module)`: parses `declaration* END_OF_FILE`. Returns the program
-    /// elements when no error was reported. (Task S11 hook: `Compiler::releaseProgram` turns the
-    /// elements into a `Program`; Skia returns null when there were errors.)
+    /// elements when no error was reported. (`Compiler::convert_program` turns the elements into
+    /// a `Program` through `release_program`; Skia returns null when there were errors.)
     // Port of: src/sksl/SkSLParser.cpp#L406-L416 (chrome/m156)
     #[must_use]
     pub fn program_inheriting_from(mut self) -> Option<Vec<ElemId>> {
@@ -189,8 +190,8 @@ impl<'a> Parser<'a> {
     }
 
     /// `moduleInheritingFrom(parentModule)`: parses a module's declarations and returns its
-    /// elements. (Task S11 hook: the compiler wraps them, the global symbol table and the
-    /// parent in a `Module`, and keeps the source text alive.)
+    /// elements. (`Compiler::compile_module` wraps them, the global symbol table and the parent
+    /// in a `Module`, and keeps the source text alive.)
     // Port of: src/sksl/SkSLParser.cpp#L418-L427 (chrome/m156)
     #[must_use]
     pub fn module_inheriting_from(mut self) -> Vec<ElemId> {
@@ -411,8 +412,10 @@ impl<'a> Parser<'a> {
         if next.kind == Some(kind) {
             Some(next)
         } else {
-            let msg = format!("expected {expected}, but found '{}'", self.text(next));
-            self.error(next, &msg);
+            let mut msg = format!("expected {expected}, but found '").into_bytes();
+            msg.extend_from_slice(self.text_bytes(next));
+            msg.push(b'\'');
+            self.error_bytes(next, &msg);
             self.encountered_fatal_error = true;
             None
         }
@@ -453,6 +456,21 @@ impl<'a> Parser<'a> {
     /// `error(position, msg)`.
     fn error_at(&mut self, position: Position, msg: &str) {
         self.ctx.errors.error(position, msg);
+    }
+
+    /// `error(token, msg)` for a message in bytes, which may quote a source byte that is not
+    /// UTF-8.
+    fn error_bytes(&mut self, token: Token, msg: &[u8]) {
+        let pos = self.position(token);
+        self.ctx.errors.error_bytes(pos, msg);
+    }
+
+    /// `text(token)` as the exact source bytes, for messages that quote a token (a token may
+    /// hold a byte that is not UTF-8, and Skia's messages are bytes).
+    fn text_bytes(&self, token: Token) -> &'a [u8] {
+        let start = usize::try_from(token.offset).unwrap_or(0);
+        let length = usize::try_from(token.length).unwrap_or(0);
+        &self.text[start..start + length]
     }
 
     /// `rangeFrom(start)`: the range from `start` to the current parse position.
@@ -2234,11 +2252,10 @@ impl<'a> Parser<'a> {
                     Some(this.expression_or_poison(pos, converted))
                 }
                 _ => {
-                    let msg = format!(
-                        "expected expression suffix, but found '{}'",
-                        this.text(next)
-                    );
-                    this.error(next, &msg);
+                    let mut msg = b"expected expression suffix, but found '".to_vec();
+                    msg.extend_from_slice(this.text_bytes(next));
+                    msg.push(b'\'');
+                    this.error_bytes(next, &msg);
                     None
                 }
             }
@@ -2423,7 +2440,10 @@ mod tests {
         let elements =
             Parser::new(&mut ctx, settings, kind, text.as_bytes()).module_inheriting_from();
         let messages = match ctx.errors.sink() {
-            ErrorSink::Forwarding { errors } => errors.iter().map(|(m, _)| m.clone()).collect(),
+            ErrorSink::Forwarding { errors } => errors
+                .iter()
+                .map(|(m, _)| String::from_utf8(m.clone()).expect("a UTF-8 message"))
+                .collect(),
             other => panic!("expected a forwarding reporter, found {other:?}"),
         };
         Outcome {

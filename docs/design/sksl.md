@@ -648,6 +648,41 @@ tasks left for each other are gone. Every call goes to the function that owns it
   `Type::checkForOutOfRangeLiteral` no longer ask an unsized array for its slot count, and the
   compound-constructor check no longer asks a non-vector argument for its columns.
 
+### 4.7 As implemented in S11
+
+The driver is in `compiler.rs` (`Compiler`, with a `Flavor` chosen at construction), and the
+module chain is in `module_loader.rs`.
+
+- **Driver.** `finalize_settings` (`FinalizeSettings`, without Skia's static overrides),
+  `initialize_context`/`cleanup_context`, `module_for_program_kind`, `compile_module` (and
+  `compile_module_parts`, which the loader uses so it can add the public aliases before the pool
+  is frozen), `convert_program` (the parse, then `release_program`), `finalize` and `optimize`.
+  `finalize` runs the three `FindAndDeclareBuiltin*` transforms (`transform/find_and_declare.rs`),
+  then `do_finalization_checks`, the strict-ES2 indexing check and `check_program_structure`, in
+  Skia's order, inside `Context::with_program`.
+- **Modules.** `ModuleLoader::for_flavor` gives one loader per flavour. Each module (root, shared,
+  gpu, frag, vert, compute, public, rt_shader) is a `OnceLock`, compiled from its flavour's text.
+  `compile_and_shrink` drops the function prototypes and adds the public type aliases to
+  `sksl_public` (`addPublicTypeAliases`). `Module` keeps its source text.
+- **Bytes end to end.** `ErrorReporter::error_bytes`, `Parser::error_bytes` and `Program::source`
+  are bytes, so `Ossfuzz519154489` (a message quoting byte `0xFF`) compares exactly.
+  `ErrorReporter::error(&str)` stays for the messages that are text.
+- **skslc.** `tests/src/tools/skslc.rs` compiles with `Flavor::Standalone`. A program that fails
+  to compile gives `### Compilation failed:` and the error text, which is the golden. A program
+  that compiles needs a code generator, so it returns `NotPorted`. The golden runner reads inputs
+  as bytes.
+- **Deferred.** `tests/parser_errors.rs` compiles every `errors/*.glsl` input and compares the
+  bytes. Four goldens (`ArrayInlinedIndexOutOfRange`, `MatrixInlinedIndexOutOfRange`,
+  `VectorInlinedIndexOutOfRange`, `OverflowInlinedLiteral`) come from the inliner (S12): the test
+  requires that the front end accepts them. `SamplerExternalOES` comes from the GLSL generator
+  (`ShaderCaps::fExternalTextureSupport`, R7): excluded in the manifest.
+- **Hooks for S12 and S13.** `Compiler::optimize_module_after_loading` runs the module inliner
+  after the module is parsed and outside its context window (Skia's `AutoProgramConfig` set-up
+  belongs in S12). `Compiler::run_optimizer_passes` is the program optimizer: S12's inliner, then
+  S13's `EliminateUnreachableCode` and the dead-function and dead-variable passes, in Skia's order.
+  Both run only when `ProgramSettings::optimize` is set (`Compiler::optimize`). `Program` keeps no
+  cached usage: `analysis::get_usage` computes it, and the transforms update a local copy.
+
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |

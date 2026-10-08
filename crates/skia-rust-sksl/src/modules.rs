@@ -167,6 +167,9 @@ pub struct Module {
     pub elements: Vec<ElemId>,
     /// `fModuleType`.
     pub module_type: ModuleType,
+    /// The source text the module was compiled from (Skia: `takeOwnershipOfString`). It is kept
+    /// alive with the module, as the module's positions index into it.
+    pub source: Arc<[u8]>,
 }
 
 #[cfg(test)]

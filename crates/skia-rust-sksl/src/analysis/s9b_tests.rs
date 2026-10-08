@@ -286,7 +286,10 @@ fn context(pool: IrPool, kind: ProgramKind) -> Context {
 /// The messages that a forwarding reporter recorded, in order.
 fn messages(errors: &ErrorReporter) -> Vec<String> {
     match errors.sink() {
-        ErrorSink::Forwarding { errors } => errors.iter().map(|(msg, _)| msg.clone()).collect(),
+        ErrorSink::Forwarding { errors } => errors
+            .iter()
+            .map(|(msg, _)| String::from_utf8(msg.clone()).expect("a UTF-8 message"))
+            .collect(),
         _ => panic!("the test reporter must be a forwarding reporter"),
     }
 }

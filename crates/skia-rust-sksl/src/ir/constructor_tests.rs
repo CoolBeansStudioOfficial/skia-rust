@@ -25,7 +25,10 @@ fn context() -> Context {
 /// The messages reported so far, in order.
 fn messages(ctx: &Context) -> Vec<String> {
     match ctx.errors.sink() {
-        ErrorSink::Forwarding { errors } => errors.iter().map(|(msg, _)| msg.clone()).collect(),
+        ErrorSink::Forwarding { errors } => errors
+            .iter()
+            .map(|(msg, _)| String::from_utf8(msg.clone()).expect("a UTF-8 message"))
+            .collect(),
         other => panic!("expected a forwarding reporter, found {other:?}"),
     }
 }

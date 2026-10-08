@@ -273,7 +273,8 @@ pub fn run_job(job: &GoldenJob, skia: &Path) -> Verdict {
     }
     let input_path = skia.join("resources/sksl").join(&job.input);
     let golden_path = skia.join(&job.id);
-    let Ok(text) = std::fs::read_to_string(&input_path) else {
+    // Inputs are bytes: a fuzzer's input (`Ossfuzz519154489`) need not be UTF-8.
+    let Ok(text) = std::fs::read(&input_path) else {
         return Verdict::Ignored(format!("missing input {}", input_path.display()));
     };
     let Ok(expected) = std::fs::read(&golden_path) else {

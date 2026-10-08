@@ -77,7 +77,8 @@ pub struct ProgramInterface {
 #[derive(Debug)]
 pub struct Program {
     /// `fSource`: the text the program was compiled from. Positions are byte offsets into it.
-    pub source: Arc<str>,
+    /// Bytes, because a fuzzer's input need not be UTF-8 (`Ossfuzz519154489`).
+    pub source: Arc<[u8]>,
     /// `fConfig`.
     pub config: ProgramConfig,
     /// The program's IR (Skia: `fPool` and the nodes it holds).
