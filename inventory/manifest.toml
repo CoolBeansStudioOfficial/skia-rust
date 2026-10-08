@@ -29094,7 +29094,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CharToGlyphCache.cpp#L30-L57"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ed66ccdd6deadb2feb331077f85966f03b52bcc2ff88dbedaa3bfa018a61344f"
 
 [[test]]

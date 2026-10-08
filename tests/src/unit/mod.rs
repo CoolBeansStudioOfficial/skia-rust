@@ -19,6 +19,8 @@ pub mod canvas_test;
 #[cfg(test)]
 pub mod capped_hairlines_test;
 #[cfg(test)]
+pub mod char_to_glyph_cache_test;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
