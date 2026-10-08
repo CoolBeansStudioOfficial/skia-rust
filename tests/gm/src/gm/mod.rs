@@ -78,6 +78,7 @@ pub mod crbug_996140;
 pub mod crop_imagefilter;
 pub mod croppedrects;
 pub mod cubicpaths;
+pub mod daa;
 pub mod dashcircle;
 pub mod dashcubics;
 pub mod dashing;
