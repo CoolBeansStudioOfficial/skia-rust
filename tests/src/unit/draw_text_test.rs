@@ -7,17 +7,41 @@
 // - `DrawText_dashout`: its second draw uses a dash path effect, whose strike descriptor entry
 //   (`kEffects_SkDescriptorTag`, `writeFlattenable`) is not ported, so the glyph painter panics on
 //   it. The first draw alone would not make the test meaningful.
-// - `DrawText_noglyphs`: it draws `SkTextBlob::MakeFromText` (`TextBlob`, T15a).
 
 use skia_rust_core::font::Edging;
+use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::text_blob::TextBlob;
 use skia_rust_raster::surfaces;
 use skia_rust_tools::font_tool_utils::default_font;
 
 use crate::def_test;
+
+// Test drawing a text blob, then text whose bytes are not valid glyphs of the font.
+// Port of: tests/DrawTextTest.cpp#L173-L187 (chrome/m156), DrawText_noglyphs
+def_test!(DrawText_noglyphs, |_reporter| {
+    let mut surface =
+        surfaces::raster(&ImageInfo::new_n32_premul((100, 100), None), None, None).unwrap();
+    let canvas = surface.canvas();
+    let font = default_font();
+    let text = "Hamburgfons";
+    {
+        // scoped to ensure blob is deleted.
+        if let Some(blob) = TextBlob::from_str(text, &font) {
+            canvas.draw_text_blob(&blob, (10.0, 10.0), &Paint::default());
+        }
+    }
+    canvas.draw_simple_text(
+        b"\x0d\xf3\xf2\xf2\xe9\x0d\x0d\x0d\x05\x0d\x0d\xe3\xe3\xe3\xe3\xe3\xe3\xe3\xe3\xe3",
+        TextEncoding::UTF8,
+        (10.0, 20.0),
+        &font,
+        &Paint::default(),
+    );
+});
 
 // Test drawing text at some unusual coordinates.
 // We measure success by not crashing or asserting.

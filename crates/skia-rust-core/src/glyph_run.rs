@@ -27,6 +27,7 @@ use crate::rsxform::RSXform;
 use crate::scalar::scalar;
 use crate::scaler_context::ScalerContextBuildFlags;
 use crate::strike_spec::{BulkGlyphMetrics, StrikeSpec};
+use crate::text_blob::{GlyphPositioning, TextBlob};
 
 /// One run of glyphs with one font: the glyph ids, their positions and, for `RSXform` runs, the
 /// scale-rotation of each glyph (`sktext::GlyphRun`).
@@ -365,11 +366,74 @@ impl GlyphRunBuilder {
         }
     }
 
+    /// `blobToGlyphRunList(blob, origin)`: the runs of `blob`, drawn at `origin`. Runs without
+    /// glyphs, or with a non-finite font, are left out. Default-positioned glyphs get the advances
+    /// of the font, as in [`GlyphRunBuilder::text_to_glyph_run_list`].
+    // Port of: src/text/GlyphRun.cpp#L231-L268 (chrome/m156)
+    #[must_use]
+    pub fn blob_to_glyph_run_list(&mut self, blob: &TextBlob, origin: Point) -> GlyphRunList<'_> {
+        self.prepare_buffers();
+        let mut iter = blob.run_iter();
+        while !iter.done() {
+            let Some(font) = iter.font() else {
+                break;
+            };
+            let run_size = iter.glyph_count();
+            if run_size == 0 || !font_is_finite(font) {
+                // If no glyphs or the font is not finite, don't add the run.
+                iter.next();
+                continue;
+            }
+            let font = font.clone();
+            let glyph_ids = iter.glyphs().to_vec();
+            let positioning = iter.positioning();
+            let positions: Vec<Point> = match positioning {
+                GlyphPositioning::Default => draw_text_positions(&font, &glyph_ids, iter.offset()),
+                GlyphPositioning::Horizontal => {
+                    let y = iter.offset().y;
+                    iter.pos().iter().map(|&x| Point::new(x, y)).collect()
+                }
+                GlyphPositioning::Full => iter.points().to_vec(),
+                GlyphPositioning::RSXform => iter
+                    .xforms()
+                    .iter()
+                    .map(|x| Point::new(x.tx, x.ty))
+                    .collect(),
+            };
+            let scaled_rotations: Vec<Vector> = if positioning == GlyphPositioning::RSXform {
+                iter.xforms()
+                    .iter()
+                    .map(|x| Point::new(x.s_cos, x.s_sin))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            let text = iter.text().to_vec();
+            let clusters = iter.clusters().to_vec();
+            self.make_glyph_run(
+                &font,
+                glyph_ids,
+                positions,
+                text,
+                clusters,
+                scaled_rotations,
+            );
+            iter.next();
+        }
+        self.set_glyph_run_list(*blob.bounds(), origin)
+    }
+
     /// `setGlyphRunList(blob, bounds, origin)`, without a blob.
     // Port of: src/text/GlyphRun.cpp#L369-L373 (chrome/m156)
     fn set_glyph_run_list(&self, bounds: Rect, origin: Point) -> GlyphRunList<'_> {
         GlyphRunList::new(Cow::Borrowed(&self.storage), bounds, origin)
     }
+}
+
+/// `SkFontPriv::IsFinite(font)`: the size, x scale and skew are all finite.
+// Port of: src/core/SkFontPriv.h#L78-L80 (chrome/m156)
+fn font_is_finite(font: &Font) -> bool {
+    font.size().is_finite() && font.scale_x().is_finite() && font.skew_x().is_finite()
 }
 
 /// `GlyphRunBuilder::textToGlyphIDs`: the glyphs of `bytes`. Glyph-id text is read as native
