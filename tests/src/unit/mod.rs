@@ -74,10 +74,12 @@ pub mod find_cubic_convex180_chops_test;
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+pub mod font_host_stream_test;
 #[cfg(test)]
 pub mod font_host_test;
 #[cfg(test)]
 pub mod font_mgr_test;
+pub mod font_names_test;
 pub mod font_scanner_fontations_test;
 pub mod font_test;
 pub mod fontations_test;
