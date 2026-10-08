@@ -43,7 +43,9 @@ pub use expression_queries::{
 };
 pub use finalization_checks::do_finalization_checks;
 pub use loop_info::{LoopControlFlowInfo, get_loop_control_flow_info, get_loop_unroll_info};
-pub use program_usage::{ProgramUsage, VariableCounts, get_module_usage, get_usage};
+pub use program_usage::{
+    ProgramUsage, VariableCounts, get_module_parts_usage, get_module_usage, get_usage,
+};
 pub use program_visitor::{ProgramVisitor, walk_expression, walk_program_element, walk_statement};
 pub use return_complexity::{ReturnComplexity, get_return_complexity};
 pub use returns_input_alpha::returns_input_alpha;

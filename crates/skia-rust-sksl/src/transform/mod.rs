@@ -6,10 +6,12 @@
 //! `SwitchStatement::Convert` uses (task S7d), and the built-in declarations that finalization
 //! copies into a program (task S11). The optimizer transforms come with task S13.
 
+mod add_const_to_var_modifiers;
 mod find_and_declare;
 mod hoist_switch_var_declarations;
 mod program_writer;
 
+pub use add_const_to_var_modifiers::add_const_to_var_modifiers;
 pub use find_and_declare::{
     find_and_declare_builtin_functions, find_and_declare_builtin_structs,
     find_and_declare_builtin_variables,

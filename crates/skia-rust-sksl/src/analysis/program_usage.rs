@@ -312,6 +312,29 @@ pub fn get_usage(program: &Program) -> ProgramUsage {
     usage
 }
 
+/// `Analysis::GetUsage(const Module&)` for a module that is not frozen yet: the usage of `elements`
+/// (in `pool`, which extends `parent`'s pool) and of every module `parent` extends.
+// Port of: src/sksl/analysis/SkSLProgramUsage.cpp#L152-L162 (chrome/m156)
+#[must_use]
+pub fn get_module_parts_usage(pool: &IrPool, elements: &[ElemId], parent: &Module) -> ProgramUsage {
+    let mut usage = ProgramUsage::default();
+    let mut visitor = ProgramUsageVisitor {
+        usage: &mut usage,
+        delta: 1,
+    };
+    for &element in elements {
+        visitor.visit_program_element(pool, element);
+    }
+    let mut current = Some(parent);
+    while let Some(m) = current {
+        for &element in &m.elements {
+            visitor.visit_program_element(&m.pool, element);
+        }
+        current = m.parent.as_deref();
+    }
+    usage
+}
+
 /// `Analysis::GetUsage(const Module&)`: the usage of a module and of every module it extends.
 /// Named apart from [`get_usage`] because Rust has no overloads.
 // Port of: src/sksl/analysis/SkSLProgramUsage.cpp#L152-L162 (chrome/m156)
