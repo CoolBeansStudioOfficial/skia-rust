@@ -410,8 +410,9 @@ impl Intersections {
         }
         if self.used >= self.max {
             // SkOPASSERT(0): this error, if it is to be handled at runtime in release, must
-            // be handled by the caller.
-            debug_assert!(false, "SkIntersections::insert overflow");
+            // be handled by the caller. Skia's debug assert is skipped here when the global
+            // state's `debugSkipAssert` is set (the fuzz cases, `SkipAssert::kYes`). This port has
+            // no such flag, so the assert is omitted and the release behavior is kept.
             self.used = 0;
             return 0;
         }

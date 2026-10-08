@@ -89,7 +89,7 @@ const LINE_QUAD_TESTS: [LineQuad; 5] = [
 /// Port of `doIntersect`.
 // Port of: tests/PathOpsQuadLineIntersectionTest.cpp#L38-L65 (chrome/m156)
 #[allow(clippy::float_cmp)] // exact comparisons of the C++ test are kept as-is
-fn do_intersect(
+pub(crate) fn do_intersect(
     intersections: &mut Intersections,
     quad: &DQuad,
     line: &DLine,

@@ -14,6 +14,8 @@ use skia_rust_core::color::Color;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::rect::Rect;
 use skia_rust_pathops::path_op::PathOp;
 use skia_rust_pathops::{op, simplify};
@@ -37,6 +39,8 @@ enum ExpectSuccess {
 enum ExpectMatch {
     No,
     Yes,
+    /// `kFlaky`: the comparison result is not checked.
+    Flaky,
 }
 
 /// `kBitWidth` and `kBitHeight` of `PathOpsExtendedTest.cpp`.
@@ -199,6 +203,41 @@ pub(crate) fn test_simplify(reporter: &mut Reporter, path: &Path, filename: &str
 // Port of: tests/PathOpsExtendedTest.cpp#L416-L419 (chrome/m156)
 pub(crate) fn test_simplify_fail(reporter: &mut Reporter, path: &Path, filename: &str) -> bool {
     inner_simplify(reporter, path, filename, ExpectSuccess::No, ExpectMatch::No)
+}
+
+/// The `testSimplify(PathOpsThreadState&)` overload of the threaded runners, non-verbose path:
+/// builds `path` with the fill type (`use_xor` selects even-odd), and checks that Simplify
+/// succeeds. The verbose comparison and the test-source output are not ported (they run only with
+/// `--verbose`).
+// Port of: tests/PathOpsExtendedTest.cpp#L361-L394 (chrome/m156)
+pub(crate) fn test_simplify_threaded(reporter: &mut Reporter, path: &Path, use_xor: bool) -> bool {
+    let fill_type = if use_xor {
+        PathFillType::EvenOdd
+    } else {
+        PathFillType::Winding
+    };
+    let mut builder = PathBuilder::new_path(path);
+    builder.set_fill_type(fill_type);
+    let path = builder.detach();
+    reporter.bump_test_count();
+    if simplify(&path).is_none() {
+        reporter_assert!(reporter, false, "did not expect failure");
+        return false;
+    }
+    true
+}
+
+/// `testSimplifyFuzz(reporter, path, filename)`: neither the success nor the match is checked
+/// (`kFlaky`, `SkipAssert::kYes`).
+// Port of: tests/PathOpsExtendedTest.cpp#L517-L520 (chrome/m156)
+pub(crate) fn test_simplify_fuzz(reporter: &mut Reporter, path: &Path, filename: &str) -> bool {
+    inner_simplify(
+        reporter,
+        path,
+        filename,
+        ExpectSuccess::Flaky,
+        ExpectMatch::Flaky,
+    )
 }
 
 /// `innerPathOp(reporter, a, b, shapeOp, testName, expectSuccess, skipAssert, expectMatch)`,

@@ -72,3 +72,41 @@ Item 4 of the slice plan: other PathOps test files are still `todo`. Not started
 2. Run `cargo xtask inventory verify` in full (it runs the whole test suite, longer than one
    foreground call; split by test filter if needed) and confirm the 25 flipped entries.
 3. Consider the verbose region comparison (deviation 1) as a separate check to catch wrong geometry.
+
+## Slice 5 (`port/pathops-5`): remaining test files
+
+Ported and passing (101 of 101 ported unit entries; `cargo test -p skia-rust-tests -- path_ops`
+runs them in about 100 s in debug): `PathOpsSimplifyFail` (+ `DontFailOne`), the five threaded
+Simplify runners (`Quads`, `Rects`, `Triangles`, `Degenerates`, `Quadralaterals`), `OpCircle`,
+`OpCubic`, `OpLoop`, `OpRect` (`Rects`, `Fast`), `QuadLineIntersectionThreaded`, `Chalkboard`,
+`Fuzz763`, `Battle` (`battles`), `BuildUse`, `BuilderConic` (6), `Inverse`, `Issue3651`, `Skp`,
+`ThreeWay` (2), `Tiger`. Each threaded runner is run single-threaded with the same enumeration
+(`allowExtendedTest()` is false, so the runners stop after their first outer iteration, as in Skia).
+
+Deviations, to keep in mind:
+
+4. `SkIntersections::insert` overflow: Skia's `SkOPASSERT(0)` is skipped for the fuzz cases
+   (`SkipAssert::kYes`). The port has no `debugSkipAssert` flag, so the `debug_assert!` was removed
+   (the release behavior is kept). `PathOpsSimplifyFail` needs this.
+5. The threaded runners' verbose output (the generated test sources, `outputProgress`) and the
+   verbose-only `comparePaths` in `testSimplify` are not ported (they run only with `--verbose`).
+6. `PathOpsChalkboard` and `PathOpsTiger` keep Skia's truncation: `PathOpsThreadState` stores
+   `fA`/`fB` as `unsigned char`, so each runnable carries only the low byte of each 32-bit half of
+   `testlines`.
+7. `PathOpsBuilderConic`'s `setupOne` evaluates the arguments of `setXYWH` left to right (the C++
+   order is unspecified); the results of `comparePaths` are ignored by that test, as in Skia.
+8. `SixtyOvals` reuses one `trialRuns` counter across the outer loops (as Skia does), so only the
+   first (col, row, rot) combination runs its 100 trials.
+
+Still todo (reasons in the manifest):
+- `PathOpsAngleTest.cpp`: `FindCrossEpsilon`, `FindQuadEpsilon`, `FindSlop` are disabled by
+  `gDisableAngleTests = true` in Skia; `Circle`, `After`, `AllOnOneSide` need the SkOpAngle /
+  SkOpContour test hooks (`debugAddAngle`, `debugLastAngle`, `PathOpsAngleTester::Orderable`).
+- `PathOpsAngleIdeas.cpp`: four entries are gated by `gPathOpsAngleIdeasVerbose = false`;
+  `OverlapHullsOne` needs `testQuadAngles`.
+- GMs (`pathopsinverse` x2, `pathreverse`), bench (8) and fuzz (2) entries are not unit tests and
+  are left for their own slices.
+
+Manifest hygiene: 12 entries marked `passing` pointed at test modules whose file names did not
+match the xtask mapping (`PathOpsDCubicTest` -> `path_ops_d_cubic_test`, etc.); the files were
+renamed to match, and `PathOpsIssue3651` is `path_ops_issue3651`.
