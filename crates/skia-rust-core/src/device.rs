@@ -366,6 +366,14 @@ pub trait Device {
         false
     }
 
+    /// Resets a no-pixels device for a new picture with `bounds` of the same size; false if this
+    /// is not a no-pixels device or the size differs (`SkNoPixelsDevice::resetForNextPicture`).
+    /// skia-rust: a trait method because `SkCanvas::resetForNextPicture` casts its root device.
+    #[doc(alias = "resetForNextPicture")]
+    fn reset_for_next_picture(&mut self, _bounds: &IRect) -> bool {
+        false
+    }
+
     /// Marks the device's pixels immutable (`setImmutable`).
     #[doc(alias = "setImmutable")]
     fn set_immutable(&mut self) {}
@@ -861,6 +869,10 @@ impl Device for NoPixelsDevice {
 
     fn is_no_pixels_device(&self) -> bool {
         true
+    }
+
+    fn reset_for_next_picture(&mut self, bounds: &IRect) -> bool {
+        NoPixelsDevice::reset_for_next_picture(self, bounds)
     }
 
     // The draw calls do nothing.

@@ -38669,7 +38669,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureBBHTest.cpp#L90-L97"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ba62cf9113cc86c8f7dc83c7ab474ba88a2393edbc37b4c6fa07327ee7fe996"
 
 [[test]]
@@ -38678,7 +38678,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureBBHTest.cpp#L99-L127"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b3cf44d59b7324a9d2ff16e2cc8bfacfe7875b1244ce4e5c24ec58ce003f8426"
 
 [[test]]
@@ -38706,6 +38706,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L555-L561"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): drawImage/drawImageRect of a bitmap"
 span_hash = "65c8288875b8c22899d4c41b43925b0d49c86291340585a16acd5d6435a6e60a"
 
 [[test]]
@@ -38715,6 +38716,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L563-L608"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): drawImage of bitmaps"
 span_hash = "2d9b11d8bf9cecc157afa965a61f7a1f34b46cdf7b053d6542620a09587b1bfd"
 
 [[test]]
@@ -38724,6 +38726,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L517-L529"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3) (test_bad_bitmap) and SkFont/serialization (test_typeface)"
 span_hash = "7db5306c924057bb109fec7bad403e184cc6a5b545bda0376b301e65bca41712"
 
 [[test]]
@@ -38732,7 +38735,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L219-L261"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ddf8961842f7acd154532100c06df9daa1ff25c688c356dec2c648c0926f272b"
 
 [[test]]
@@ -38742,6 +38745,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L656-L687"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): drawImage of bitmaps"
 span_hash = "87be58656c5ff78f257be42a54b0a6f427937cb38a5fc779cc3fdc0b91ef7e98"
 
 [[test]]
@@ -38751,6 +38755,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L549-L553"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): drawImage/drawImageRect of a bitmap"
 span_hash = "9b6b616bd0d2bda43a5040b7fd0b7a539b806eaa65ec7ae9110218ee98b3f63b"
 
 [[test]]
@@ -38759,7 +38764,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L634-L654"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "30ac782f26e511706075893b6f4e041003a7c5123a4fa3279e85b67eae6803b7"
 
 [[test]]
@@ -38768,7 +38773,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L727-L740"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5efb681fa562da6b45cbe1edafd1f5342918110ba8182d213ec1c14814c7e09f"
 
 [[test]]
@@ -38777,7 +38782,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L741-L756"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "013af128b13e56264349fe264a7cc20b3518a56316a9732c232709cdb1aaa326"
 
 [[test]]
@@ -38786,7 +38791,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L797-L825"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "48c03738f0320e976ef1d3261d93020d52cc767c7e4d5cdd506be4897385e74b"
 
 [[test]]
@@ -38795,7 +38800,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L827-L867"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c0598b4fb994cc1c9a51d1a0c6d8aeb08befc586551b4f5d5c7e1a088913937"
 
 [[test]]
@@ -38805,6 +38810,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L782-L794"
 module = "core"
 status = "todo"
+reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromData), out of scope for D7"
 span_hash = "a03bb349654ecca26d01082ca891a7ca445b585219f6645c1abae886c25378de"
 
 [[test]]
@@ -38813,7 +38819,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L869-L893"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f7d24c1edf83376aed8135fc0b34e5743df8214e571575d191600ec4b2a5d253"
 
 [[test]]
@@ -38822,7 +38828,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L690-L699"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f7ca1e3b8f2ef41ce79bbe5a08bbc308788b2b81d484c5246a0bbf2e8186387a"
 
 [[test]]
@@ -38832,6 +38838,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L936-L1082"
 module = "core"
 status = "todo"
+reason = "needs SkDrawable (not ported)"
 span_hash = "d1fa0e3dc6ee446e34cffe5b577d80a264b7ee43468d88011475bc145035088c"
 
 [[test]]
@@ -38840,7 +38847,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L895-L934"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a7a7aa282e817ab6eb4ce75545f43f653a727da18d13f54d2d69b21efcbcfb4e"
 
 [[test]]
@@ -38850,6 +38857,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L701-L721"
 module = "core"
 status = "todo"
+reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromStream), out of scope for D7"
 span_hash = "a4f9e5fdd0df7e6913debf78fe48049d52f36ea1c0f5af366f1dc15fbaf7d9af"
 
 [[test]]
@@ -38859,6 +38867,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L1084-L1153"
 module = "core"
 status = "todo"
+reason = "needs SkDrawable (not ported) for its second half"
 span_hash = "b2b5fbc366357ad344a46298a1c6fe72265ba8585ef8bece181c1e347f7456ae"
 
 [[test]]
@@ -38867,7 +38876,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L758-L780"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5f899551795cc98707d32f1c11c2d16fbc7dfae1496829eae253b092a368b7d0"
 
 [[test]]
@@ -39356,7 +39365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RTreeTest.cpp#L65-L99"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e61c92e43e7a30cc08095c8ee5d3aada5451c92c573b6b349cd90b6dfe98140e"
 
 [[test]]
@@ -40023,7 +40032,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L71-L86"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0b145f707f842213b3ed1394c9db03207f8f456df8b29b8a4fdf3ac1fb8aad6e"
 
 [[test]]
@@ -40032,7 +40041,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L147-L162"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = """disabled with #if 0 in Skia ("we can't get it right today")"""
 span_hash = "ef13e73c25d00720eff53637492da8f994d5f95a0e2e059116cc812418cde55f"
 
 [[test]]
@@ -40042,6 +40052,7 @@ macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L204-L227"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Blur (image filters are not ported; Phase 3)"
 span_hash = "c2a68486b19a4895c9b6c3f346de159bbb86dc1dd66ae69185ecddae7f6d8fad"
 
 [[test]]
@@ -40050,7 +40061,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L44-L69"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "36b1d9daee0d6af14ddeeaa994df137dc37e9afdebad01fda37e3104b6dabbfe"
 
 [[test]]
@@ -40060,6 +40071,7 @@ macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L229-L256"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilters::DropShadow (image filters are not ported; Phase 3)"
 span_hash = "787148d5b2bc28ca56a1b125e2b2284d15546693956a141a953b4061fad1cf83"
 
 [[test]]
@@ -40069,6 +40081,7 @@ macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L170-L201"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilters::DropShadow (image filters are not ported; Phase 3)"
 span_hash = "bd0acff287009bbb3f3f81516f8d0629fe7d485df15e92c398d98e0772c086e8"
 
 [[test]]
@@ -40077,7 +40090,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L263-L280"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = """disabled with #if 0 in Skia ("we can't get it right today")"""
 span_hash = "bf1088683c69adc0cf6da8d2b45ecd3aa1e35f1d5135113f6877d29ab32f8232"
 
 [[test]]
@@ -40086,7 +40100,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L103-L135"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0f5ae2cfe16aea95d2a9bb169e716b7f6d110d0ffe04f5d1e3224f7413ad0f34"
 
 [[test]]
@@ -40095,7 +40109,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L88-L101"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cafd5381c67c63603045261aafe4f66e4cd661244e25963ed4bb0f3df745727b"
 
 [[test]]
@@ -40105,6 +40119,7 @@ macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L283-L303"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): snapshots a surface into an image"
 span_hash = "75cc1015551fcdfab8a6b48f4fcd3416c883085b4141e4220e4836784f471b98"
 
 [[test]]
@@ -40114,6 +40129,7 @@ macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L225-L362"
 module = "svg"
 status = "todo"
+reason = "needs SkImageFilters::Blur and ::Picture and SkColorFilters::Blend (image/color filters are not ported; Phase 3)"
 span_hash = "a0485662140c50b6e4276b6c93c9b55cab7d89598b92b8fdb9e293b4ac920455"
 
 [[test]]
@@ -40122,7 +40138,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L34-L47"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "99effdc768e0b834fb5d24178057d1e9000e276006f32f62ebda0380cd2054a7"
 
 [[test]]
@@ -40132,6 +40148,7 @@ macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L144-L208"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilters::Blur for its backdrop case (image filters are not ported; Phase 3)"
 span_hash = "f2620914f7c4ada1fe7bf3d0991aec0cf032ead371ebd54ef92e42cade7db0fa"
 
 [[test]]
@@ -40140,7 +40157,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L63-L84"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ce43b15f3630413f6041d91bb7f12d1db58bc411e7f9b946dfec32a5b691b3a"
 
 [[test]]
@@ -40149,7 +40166,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L86-L113"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "368c7a18b21adb984c9334a11859de8fb94953f7d2b7d6f8771b23e3e68a9465"
 
 [[test]]
@@ -40158,7 +40175,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L49-L61"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ff8aebb5f6a2df032426047685864e5cccf7f95e7287bce7d5e4bda3af3718bd"
 
 [[test]]
@@ -40167,7 +40184,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L427-L429"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b202cc5c39e4ff0281fbf6715485eceebbb8a2e602268d18664264b0eaf1a625"
 
 [[test]]
@@ -40176,7 +40193,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L423-L425"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d47f3bc1d1190d77df742be5252ef445989f4020bf03910e3c3bb3e98f712fa2"
 
 [[test]]
@@ -40185,7 +40202,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L102-L144"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0a369aa5848cab467b4e0ec076a528cc8c8afe75045bfe905191e6ed5e15e912"
 
 [[test]]
@@ -40194,7 +40211,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L68-L80"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c8c92ee2239d4bdeaeb13a97a72d96ecbed559e03834ddd2bdba1355dab70f4a"
 
 [[test]]
@@ -40203,7 +40220,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L82-L100"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7309b549b08f2a3006babfccd887cdb62546150521d2a7c6872df0acca6122e9"
 
 [[test]]
@@ -40212,7 +40229,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L146-L154"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3048070d56b7339f7c71dc3c1a0aafa2eb23c6c696e77d3da3736df6219973f1"
 
 [[test]]
@@ -40221,7 +40238,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L23-L43"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1091be2d279f4fba40687c61e45295619daff46d86c3f77a62dff4d3f23c041a"
 
 [[test]]
@@ -40230,7 +40247,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordPatternTest.cpp#L45-L66"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0005b1a67ceac1738f81784dbdb3dd13b023dc47e2f081b38b73cfa7ed948bbd"
 
 [[test]]
@@ -40239,7 +40256,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordTest.cpp#L59-L79"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6ee7e6b60ff80a7bb64a8ff25dbd9c083a8bf518503f12fa6230235e5bea85f7"
 
 [[test]]
@@ -40248,7 +40265,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordTest.cpp#L107-L119"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's SkRecord::alloc arena allocator; the Rust record stores its commands in a Vec"
 span_hash = "73fd22ee28519d0bf6faa5af559f43cff7e1cbc0810fa0796a330d86c96a4682"
 
 [[test]]
@@ -40257,7 +40275,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordTest.cpp#L81-L98"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "599a62c1ec26c6749dbd11365e8f07b320c412b8689b9088fd6c5c191fbba188"
 
 [[test]]
@@ -40266,7 +40284,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecorderTest.cpp#L50-L59"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6e60552e26df08a25429805cf66ebfd597086a7025d6539186df789b3802be29"
 
 [[test]]
@@ -40275,7 +40293,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecorderTest.cpp#L62-L79"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "561ac114f81f62402b27407adc83fc2dfdfc6b2760a4a3fa4f10994ee489e9b2"
 
 [[test]]
@@ -40284,7 +40302,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecorderTest.cpp#L123-L130"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7336c61f61d00264a98f86c1b7faf917553acbe7c51dc406128f775e094f8f5a"
 
 [[test]]
@@ -40294,6 +40312,7 @@ macro = "DEF_TEST"
 source = "tests/RecorderTest.cpp#L81-L120"
 module = "core"
 status = "todo"
+reason = "needs SkImage (images are not ported; Phase 3): snapshots a surface and calls drawImage/drawImageRect"
 span_hash = "c73b360f363327517863aca17a547e4ee4267eff284bff7ec77f4d8d7e6f818d"
 
 [[test]]
