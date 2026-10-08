@@ -47,7 +47,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | wasm oracle | Skia built with Emscripten (CanvasKit-style), run under Node; matched exactly. Skia's raster pipeline is **scalar** on wasm (`SKRP_CPU_SCALAR`; CanvasKit doesn't pass `-msimd128`), so our wasm target matches the `Scalar` tier and may use simd128 internally only where results are bit-identical. Until that oracle exists, an `x64-scalar` build stands in |
 | Perf | Gate: ≤ 0% slower than Skia per bench (measured on the server); GPU benches compare against the wgpu-capability-restricted oracle |
 | GPU perf features | Async pipeline compilation (background threads) + wgpu `PipelineCache`. Dawn-only tile-GPU extensions (transient attachments, MSAA render-to-single-sampled, load-resolve, framebuffer fetch) are not pursued; desktop parity is the target |
-| Agents | Sonnet 5.5 first, escalating to Opus 5.5 on failure (Haiku dropped: couldn't handle the ports); wide parallel fan-out allowed (§8.3) |
+| Agents | Haiku 5.5 first, escalating to Sonnet 5.5, then Opus 5.5 on failure; wide parallel fan-out allowed (§8.3) |
 | Workflow | Inventory-driven, small PRs (one manifest entry or a small batch per PR) |
 | Publishing | Reserve the name now; first real release when core + CPU raster are at 100% |
 | Versioning | `0.NNN.patch`, where NNN = the Skia milestone being matched |
@@ -247,7 +247,7 @@ cargo xtask diff gm/strokes::strokes_round --config cpu-x64-hsw-8888   # fetch g
 - Pin bumps happen on `bump/mNNN` branches (§9.1).
 
 ### 8.3 Agent staffing and escalation
-- **Model ladder:** every manifest task starts on Sonnet 5.5; on failure it moves up to Opus 5.5. (Haiku 4.5 was tried first and dropped on 2026-10-06: it couldn't complete even mid-sized ports such as `SkVx`.)
+- **Model ladder:** every manifest task starts on Haiku 5.5; on failure it moves up to Sonnet 5.5, then Opus 5.5. (History: Haiku 4.5 was tried first and dropped on 2026-10-06, when it couldn't complete even mid-sized ports such as `SkVx`; Sonnet 5.5 was the baseline until 2026-10-08, when Haiku 5.5 ported the remaining path effects (#81) with exact golden matches and the maintainer made it the baseline.)
 - **Escalation triggers** (any one moves the task up a rung):
   - the manifest entry is still not `passing` after **2 full attempts** (each = port, run the oracle comparison, apply a debug-dump-driven fix);
   - a `passing → failing` regression the agent can't root-cause in one attempt;

@@ -12,10 +12,11 @@ maintainer's standing instructions, the orchestration scripts, and the current s
   current head commit. Never merge on stale or partial checks.
 - **Installs** allowed without asking: rustup toolchains/components/targets, OS dev packages
   (apt in Linux environments, winget on Windows).
-- **Agents.** Fan out widely in parallel. Model ladder: **every agent starts on Sonnet** (set the
-  model explicitly; omitting it inherits the orchestrator's model). **Opus is emergency-only** —
-  only after a Sonnet agent has delivered an invalid result on that same task. Fix-ups and rebases
-  go to fresh Sonnet agents. **Never use Haiku.**
+- **Agents.** Fan out widely in parallel. Model ladder: **every agent starts on Haiku 5.5** (set the
+  model explicitly; omitting it inherits the orchestrator's model). **Sonnet 5.5** is the first
+  escalation step, after a Haiku agent has delivered an invalid result on that same task. **Opus is
+  emergency-only**, after Sonnet has also failed. Fix-ups and rebases go to fresh Haiku agents.
+  (Changed 2026-10-08 from Sonnet-first; Haiku 4.5 had been dropped, Haiku 5.5 proved itself.)
 - **No polling.** Never use wake-up/poll loops or chains of jobs that each notify. Put a whole
   landing sequence in ONE background job that reports once, on final success or first failure.
   Agents wait for CI with a single blocking `gh pr checks <n> --watch` / `gh run watch`.

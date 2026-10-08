@@ -30,7 +30,7 @@ A faithful port of Skia to safe, idiomatic Rust, measured by Skia's own tests ma
 ## When output doesn't match
 Use the oracle's debug dumps (raster pipeline stages, generated WGSL, path verbs) to find the first divergence before changing code. Don't adjust code by trial and error until the hash matches.
 
-## Escalation (Sonnet → Opus)
+## Escalation (Haiku → Sonnet → Opus)
 After 2 full failed attempts on the same entry, stop and write `notes/<manifest-id>.md`: what you tried, the mismatching hashes/diffs, the relevant dumps, and your best hypothesis. An agent on the next more capable model continues from that file.
 
 ## Commands
