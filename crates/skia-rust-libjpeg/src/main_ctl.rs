@@ -11,10 +11,45 @@
 //! component's storage, and `xbuffer[w][ci]` keeps `rgroup` extra entries in front so that the
 //! negative C indices stay valid (the C pointer `xbuf` is `list[rgroup..]`).
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
-use crate::error::{Error, Result};
-use crate::marker::ConsumeResult;
 use crate::coef::OutPlanes;
+use crate::error::{Error, Result};
 
 /// `CTX_PREPARE_FOR_IMCU`, `CTX_PROCESS_IMCU`, `CTX_POSTPONED_ROW`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -61,7 +96,8 @@ impl Decompress {
         }
         for ci in 0..n {
             let c = self.comp_info[ci];
-            let rgroup = ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
+            let rgroup =
+                ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
             self.main.xbase[ci] = rgroup;
             for w in 0..2 {
                 self.main.xbuffer[w][ci] = vec![0; rgroup * (m + 4)];
@@ -74,7 +110,8 @@ impl Decompress {
         let m = self.min_dct_scaled_size as usize;
         for ci in 0..self.num_components as usize {
             let c = self.comp_info[ci];
-            let rgroup = ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
+            let rgroup =
+                ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
             let base = self.main.xbase[ci];
             // xbuf0[i] = xbuf1[i] = buf[i] for i < rgroup * (M + 2)
             for i in 0..rgroup * (m + 2) {
@@ -124,7 +161,8 @@ impl Decompress {
         let m = self.min_dct_scaled_size as usize;
         for ci in 0..self.num_components as usize {
             let c = self.comp_info[ci];
-            let rgroup = ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
+            let rgroup =
+                ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
             let base = self.main.xbase[ci];
             for i in 0..rgroup {
                 for w in 0..2 {
@@ -158,16 +196,23 @@ impl Decompress {
         if self.upsample.need_context_rows && self.min_dct_scaled_size < 2 {
             return Err(Error::NotImplemented);
         }
-        let ngroups = if self.upsample.need_context_rows { m + 2 } else { m };
+        let ngroups = if self.upsample.need_context_rows {
+            m + 2
+        } else {
+            m
+        };
         if self.upsample.need_context_rows {
             self.alloc_funny_pointers();
         }
         self.main.buffer = Vec::with_capacity(self.num_components as usize);
         for ci in 0..self.num_components as usize {
             let c = self.comp_info[ci];
-            let rgroup = ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
+            let rgroup =
+                ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
             let width = (c.width_in_blocks as usize) * (c.dct_h_scaled_size as usize);
-            self.main.buffer.push(vec![vec![0u8; width]; rgroup * ngroups]);
+            self.main
+                .buffer
+                .push(vec![vec![0u8; width]; rgroup * ngroups]);
         }
         Ok(())
     }
@@ -215,13 +260,23 @@ impl Decompress {
         let identity: Vec<Vec<usize>> = (0..self.num_components as usize)
             .map(|ci| {
                 let c = self.comp_info[ci];
-                let rgroup = ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
+                let rgroup =
+                    ((c.v_samp_factor * c.dct_h_scaled_size) / self.min_dct_scaled_size) as usize;
                 (0..rgroup * self.min_dct_scaled_size as usize).collect()
             })
             .collect();
         let bases = vec![0usize; self.num_components as usize];
         let mut rg = self.main.rowgroup_ctr;
-        self.upsample_pass(buffer, &identity, &bases, &mut rg, rowgroups_avail, scanlines, out_row_ctr, out_rows_avail)?;
+        self.upsample_pass(
+            buffer,
+            &identity,
+            &bases,
+            &mut rg,
+            rowgroups_avail,
+            scanlines,
+            out_row_ctr,
+            out_rows_avail,
+        )?;
         self.main.rowgroup_ctr = rg;
         if self.main.rowgroup_ctr >= rowgroups_avail {
             self.main.buffer_full = false;
@@ -309,14 +364,27 @@ impl Decompress {
         let avail = self.main.rowgroups_avail;
         let bases = self.main.xbase.clone();
         let mut rg = self.main.rowgroup_ctr;
-        self.upsample_pass(buffer, &lists, &bases, &mut rg, avail, scanlines, out_row_ctr, out_rows_avail)?;
+        self.upsample_pass(
+            buffer,
+            &lists,
+            &bases,
+            &mut rg,
+            avail,
+            scanlines,
+            out_row_ctr,
+            out_rows_avail,
+        )?;
         self.main.rowgroup_ctr = rg;
         Ok(())
     }
 
     /// `decompress_data` dispatch for the main controller (`coef->_decompress_data`) with the
     /// rows of `lists` (or the plain buffer when `None`). Returns `false` on suspension.
-    fn decompress_data_into(&mut self, buffer: &mut [Vec<Vec<u8>>], lists: Option<&[Vec<usize>]>) -> Result<bool> {
+    fn decompress_data_into(
+        &mut self,
+        buffer: &mut [Vec<Vec<u8>>],
+        lists: Option<&[Vec<usize>]>,
+    ) -> Result<bool> {
         let identity: Vec<Vec<usize>>;
         let lists: &[Vec<usize>] = match lists {
             Some(l) => l,
@@ -336,12 +404,12 @@ impl Decompress {
             .map(|ci| &lists[ci][self.main.xbase.get(ci).copied().unwrap_or(0)..])
             .collect();
         let owned: Vec<Vec<usize>> = slices.iter().map(|s| s.to_vec()).collect();
-        let mut out = OutPlanes { storage: buffer, lists: &owned };
-        match self.decompress_onepass(&mut out)? {
-            None => Ok(false),
-            Some(ConsumeResult::RowCompleted) | Some(ConsumeResult::ScanCompleted) => Ok(true),
-            Some(_) => Ok(true),
-        }
+        let mut out = OutPlanes {
+            storage: buffer,
+            lists: &owned,
+        };
+        // Both completion codes produce rows; only a suspension produces none.
+        Ok(self.decompress_coef_output(&mut out)?.is_some())
     }
 
     /// `decompress_data` for raw output (`read_raw_data`): the planes are the caller's.
@@ -349,7 +417,10 @@ impl Decompress {
         let identity: Vec<Vec<usize>> = (0..self.num_components as usize)
             .map(|ci| (0..planes[ci].len()).collect())
             .collect();
-        let mut out = OutPlanes { storage: planes, lists: &identity };
-        Ok(self.decompress_onepass(&mut out)?.is_some())
+        let mut out = OutPlanes {
+            storage: planes,
+            lists: &identity,
+        };
+        Ok(self.decompress_coef_output(&mut out)?.is_some())
     }
 }

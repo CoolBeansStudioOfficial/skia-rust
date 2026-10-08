@@ -7,10 +7,49 @@
 //! The input controller: consumes markers until the first SOS, then hands control to the
 //! coefficient controller for each scan, and sets the per-image and per-scan geometry.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
 use crate::error::{Error, Result};
 use crate::marker::ConsumeResult;
-use crate::tables::{ColorSpace, DCTSIZE, D_MAX_BLOCKS_IN_MCU, JPEG_MAX_DIMENSION, MAX_COMPONENTS, MAX_COMPS_IN_SCAN, MAX_SAMP_FACTOR};
+use crate::tables::{
+    ColorSpace, D_MAX_BLOCKS_IN_MCU, DCTSIZE, JPEG_MAX_DIMENSION, MAX_COMPONENTS,
+    MAX_COMPS_IN_SCAN, MAX_SAMP_FACTOR,
+};
 
 /// `inputctl->consume_input`: which routine the input controller dispatches to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -149,7 +188,8 @@ impl Decompress {
             i64::from(self.image_height),
             i64::from(self.max_v_samp_factor * data_unit),
         ) as u32;
-        self.inputctl.has_multiple_scans = self.comps_in_scan < self.num_components || self.progressive_mode;
+        self.inputctl.has_multiple_scans =
+            self.comps_in_scan < self.num_components || self.progressive_mode;
         Ok(())
     }
 
@@ -235,7 +275,8 @@ impl Decompress {
             {
                 return Err(Error::Internal("missing quantization table"));
             }
-            let qtbl = self.quant_tbl_ptrs[qtblno as usize].ok_or(Error::Internal("quant table"))?;
+            let qtbl =
+                self.quant_tbl_ptrs[qtblno as usize].ok_or(Error::Internal("quant table"))?;
             self.comp_info[idx].quant_table = Some(qtbl.quantval);
             self.comp_info[idx].quant_table_latched = true;
         }

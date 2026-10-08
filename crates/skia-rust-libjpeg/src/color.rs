@@ -8,12 +8,50 @@
 //! extended RGB layouts), grayscale to RGB or gray, RGB to RGB layouts, YCCK to CMYK, and the
 //! pass-through cases.
 //!
-//! RGB565 output (`jdcol565.c`) is not ported yet, see `jinit_color_deconverter`.
+//! RGB565 output (`jdcol565.c`) is ported for `JDITHER_NONE`, the only mode Skia uses. The
+//! ordered-dither variants are reported as not implemented, see `jinit_color_deconverter`.
 //!
 //! Arithmetic: `FIX(x)` is `(JLONG)(x * 65536 + 0.5)`, `ONE_HALF` is `1 << 15`, and every shift is
 //! the arithmetic shift of a 32-bit `JLONG`, as in the C code. `RIGHT_SHIFT` is `>>`.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
+use crate::decompress::DitherMode;
 use crate::error::{Error, Result};
 use crate::tables::ColorSpace;
 
@@ -48,8 +86,27 @@ pub(crate) enum ConvKind {
     NullRgb,
     /// `null_convert` for four components (CMYK).
     NullCmyk,
+    /// `ycc_rgb565_convert` (JDITHER_NONE).
+    YccRgb565,
+    /// `gray_rgb565_convert` (JDITHER_NONE).
+    GrayRgb565,
+    /// `rgb_rgb565_convert` (JDITHER_NONE).
+    RgbRgb565,
     /// `ycck_cmyk_convert`.
     YcckCmyk,
+}
+
+/// `PACK_SHORT_565_LE` (`jdcolor.c`): one RGB565 pixel from 8-bit components, as the
+/// little-endian value of the `INT16` the C code stores.
+#[inline]
+fn pack_short_565(r: u32, g: u32, b: u32) -> u16 {
+    (((r << 8) & 0xF800) | ((g << 3) & 0x7E0) | (b >> 3)) as u16
+}
+
+/// Stores one RGB565 pixel at `dst[0..2]` in host (little-endian) order.
+#[inline]
+fn store_565(dst: &mut [u8], v: u16) {
+    dst[..2].copy_from_slice(&v.to_le_bytes());
 }
 
 /// `my_color_deconverter` (the tables and the selected method).
@@ -84,12 +141,48 @@ pub(crate) struct Layout {
 /// The layout of an RGB-type output colour space.
 pub(crate) fn layout(cs: ColorSpace) -> Option<Layout> {
     Some(match cs {
-        ColorSpace::Rgb | ColorSpace::ExtRgb => Layout { red: 0, green: 1, blue: 2, alpha: None, pixelsize: 3 },
-        ColorSpace::ExtRgbx | ColorSpace::ExtRgba => Layout { red: 0, green: 1, blue: 2, alpha: Some(3), pixelsize: 4 },
-        ColorSpace::ExtBgr => Layout { red: 2, green: 1, blue: 0, alpha: None, pixelsize: 3 },
-        ColorSpace::ExtBgrx | ColorSpace::ExtBgra => Layout { red: 2, green: 1, blue: 0, alpha: Some(3), pixelsize: 4 },
-        ColorSpace::ExtXbgr | ColorSpace::ExtAbgr => Layout { red: 3, green: 2, blue: 1, alpha: Some(0), pixelsize: 4 },
-        ColorSpace::ExtXrgb | ColorSpace::ExtArgb => Layout { red: 1, green: 2, blue: 3, alpha: Some(0), pixelsize: 4 },
+        ColorSpace::Rgb | ColorSpace::ExtRgb => Layout {
+            red: 0,
+            green: 1,
+            blue: 2,
+            alpha: None,
+            pixelsize: 3,
+        },
+        ColorSpace::ExtRgbx | ColorSpace::ExtRgba => Layout {
+            red: 0,
+            green: 1,
+            blue: 2,
+            alpha: Some(3),
+            pixelsize: 4,
+        },
+        ColorSpace::ExtBgr => Layout {
+            red: 2,
+            green: 1,
+            blue: 0,
+            alpha: None,
+            pixelsize: 3,
+        },
+        ColorSpace::ExtBgrx | ColorSpace::ExtBgra => Layout {
+            red: 2,
+            green: 1,
+            blue: 0,
+            alpha: Some(3),
+            pixelsize: 4,
+        },
+        ColorSpace::ExtXbgr | ColorSpace::ExtAbgr => Layout {
+            red: 3,
+            green: 2,
+            blue: 1,
+            alpha: Some(0),
+            pixelsize: 4,
+        },
+        ColorSpace::ExtXrgb | ColorSpace::ExtArgb => Layout {
+            red: 1,
+            green: 2,
+            blue: 3,
+            alpha: Some(0),
+            pixelsize: 4,
+        },
         _ => return None,
     })
 }
@@ -173,8 +266,23 @@ impl Decompress {
                 }
             }
             ColorSpace::Rgb565 => {
-                // jdcol565.c (ycc_rgb565 / gray_rgb565 / rgb_rgb565) is not ported yet.
-                return Err(Error::NotImplemented);
+                // jdcolor.c `JCS_RGB565`. Only JDITHER_NONE is ported (Skia sets it, see
+                // SkJpegCodec.cpp#L320-L330). The ordered dither variants depend on the output
+                // pointer's alignment (the first pixel of an unaligned row is not rotated), so
+                // they are reported as not implemented rather than guessed.
+                self.out_color_components = 3;
+                if self.dither_mode != DitherMode::None {
+                    return Err(Error::NotImplemented);
+                }
+                match self.jpeg_color_space {
+                    ColorSpace::YCbCr => {
+                        st.kind = ConvKind::YccRgb565;
+                        build_ycc_rgb_table(&mut st);
+                    }
+                    ColorSpace::Grayscale => st.kind = ConvKind::GrayRgb565,
+                    ColorSpace::Rgb => st.kind = ConvKind::RgbRgb565,
+                    _ => return Err(Error::BadColorspace),
+                }
             }
             ColorSpace::Cmyk => {
                 self.out_color_components = 4;
@@ -204,7 +312,12 @@ impl Decompress {
 
     /// `_color_convert` for the selected method: converts `num_rows` rows starting at
     /// `input_row` of `self.upsample.color_buf` into `output`.
-    pub(crate) fn color_convert(&self, input_row: usize, output: &mut [&mut [u8]], num_rows: usize) -> Result<()> {
+    pub(crate) fn color_convert(
+        &self,
+        input_row: usize,
+        output: &mut [&mut [u8]],
+        num_rows: usize,
+    ) -> Result<()> {
         let buf = &self.upsample.color_buf;
         let rl = &*self.range_limit;
         let st = &self.cconvert;
@@ -244,7 +357,8 @@ impl Decompress {
                         let g = i32::from(buf[1][input_row + r][col]);
                         let b = i32::from(buf[2][input_row + r][col]);
                         let t = &st.rgb_y_tab;
-                        let v = (t[rr as usize] + t[256 + g as usize] + t[512 + b as usize]) >> SCALEBITS;
+                        let v = (t[rr as usize] + t[256 + g as usize] + t[512 + b as usize])
+                            >> SCALEBITS;
                         out[col] = v as u8;
                     }
                 }
@@ -259,7 +373,8 @@ impl Decompress {
                         let cr = i32::from(buf[2][input_row + r][col]) as usize;
                         let o = col * lay.pixelsize;
                         out[o + lay.red] = rl.at(y + st.cr_r_tab[cr]);
-                        out[o + lay.green] = rl.at(y + ((st.cb_g_tab[cb] + st.cr_g_tab[cr]) >> SCALEBITS));
+                        out[o + lay.green] =
+                            rl.at(y + ((st.cb_g_tab[cb] + st.cr_g_tab[cr]) >> SCALEBITS));
                         out[o + lay.blue] = rl.at(y + st.cb_b_tab[cb]);
                         if let Some(a) = lay.alpha {
                             out[o + a] = 255;
@@ -298,6 +413,42 @@ impl Decompress {
                     }
                 }
             }
+            ConvKind::YccRgb565 => {
+                for r in 0..num_rows {
+                    let out = &mut output[r];
+                    for col in 0..width {
+                        let y = i32::from(buf[0][input_row + r][col]);
+                        let cb = i32::from(buf[1][input_row + r][col]) as usize;
+                        let cr = i32::from(buf[2][input_row + r][col]) as usize;
+                        let rr = u32::from(rl.at(y + st.cr_r_tab[cr]));
+                        let g = u32::from(
+                            rl.at(y + ((st.cb_g_tab[cb] + st.cr_g_tab[cr]) >> SCALEBITS)),
+                        );
+                        let b = u32::from(rl.at(y + st.cb_b_tab[cb]));
+                        store_565(&mut out[2 * col..], pack_short_565(rr, g, b));
+                    }
+                }
+            }
+            ConvKind::GrayRgb565 => {
+                for r in 0..num_rows {
+                    let out = &mut output[r];
+                    for col in 0..width {
+                        let g = u32::from(buf[0][input_row + r][col]);
+                        store_565(&mut out[2 * col..], pack_short_565(g, g, g));
+                    }
+                }
+            }
+            ConvKind::RgbRgb565 => {
+                for r in 0..num_rows {
+                    let out = &mut output[r];
+                    for col in 0..width {
+                        let rr = u32::from(buf[0][input_row + r][col]);
+                        let g = u32::from(buf[1][input_row + r][col]);
+                        let b = u32::from(buf[2][input_row + r][col]);
+                        store_565(&mut out[2 * col..], pack_short_565(rr, g, b));
+                    }
+                }
+            }
             ConvKind::YcckCmyk => {
                 for r in 0..num_rows {
                     let out = &mut output[r];
@@ -307,7 +458,8 @@ impl Decompress {
                         let cr = i32::from(buf[2][input_row + r][col]) as usize;
                         let o = 4 * col;
                         out[o] = rl.at(255 - (y + st.cr_r_tab[cr]));
-                        out[o + 1] = rl.at(255 - (y + ((st.cb_g_tab[cb] + st.cr_g_tab[cr]) >> SCALEBITS)));
+                        out[o + 1] =
+                            rl.at(255 - (y + ((st.cb_g_tab[cb] + st.cr_g_tab[cr]) >> SCALEBITS)));
                         out[o + 2] = rl.at(255 - (y + st.cb_b_tab[cb]));
                         out[o + 3] = buf[3][input_row + r][col];
                     }
@@ -327,10 +479,10 @@ fn build_ycc_rgb_table(st: &mut ColorState) {
     let mut x: i32 = -128;
     for i in 0..256usize {
         // i = Cr or Cb sample, x = i - CENTERJSAMPLE
-        st.cr_r_tab[i] = (fix(1.40200) * x + ONE_HALF) >> SCALEBITS;
-        st.cb_b_tab[i] = (fix(1.77200) * x + ONE_HALF) >> SCALEBITS;
-        st.cr_g_tab[i] = (-fix(0.71414)).wrapping_mul(x);
-        st.cb_g_tab[i] = (-fix(0.34414)).wrapping_mul(x).wrapping_add(ONE_HALF);
+        st.cr_r_tab[i] = (fix(1.402_00) * x + ONE_HALF) >> SCALEBITS;
+        st.cb_b_tab[i] = (fix(1.772_00) * x + ONE_HALF) >> SCALEBITS;
+        st.cr_g_tab[i] = (-fix(0.714_14)).wrapping_mul(x);
+        st.cb_g_tab[i] = (-fix(0.344_14)).wrapping_mul(x).wrapping_add(ONE_HALF);
         x += 1;
     }
 }
@@ -340,8 +492,8 @@ fn build_rgb_y_table(st: &mut ColorState) {
     st.rgb_y_tab = vec![0; 3 * 256];
     for i in 0..256usize {
         let i = i as i32;
-        st.rgb_y_tab[i as usize] = fix(0.29900).wrapping_mul(i);
-        st.rgb_y_tab[256 + i as usize] = fix(0.58700).wrapping_mul(i);
-        st.rgb_y_tab[512 + i as usize] = fix(0.11400).wrapping_mul(i).wrapping_add(ONE_HALF);
+        st.rgb_y_tab[i as usize] = fix(0.299_00).wrapping_mul(i);
+        st.rgb_y_tab[256 + i as usize] = fix(0.587_00).wrapping_mul(i);
+        st.rgb_y_tab[512 + i as usize] = fix(0.114_00).wrapping_mul(i).wrapping_add(ONE_HALF);
     }
 }

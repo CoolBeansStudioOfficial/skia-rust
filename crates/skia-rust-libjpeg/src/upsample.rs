@@ -9,6 +9,42 @@
 //! Fancy upsampling is what Skia gets (`do_fancy_upsampling` is on by default). The merged
 //! upsampler (`jdmerge.c`) is not used: `master.rs` refuses the combination that would select it.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
 use crate::error::{Error, Result};
 use crate::tables::CompInfo;
@@ -171,9 +207,14 @@ impl Decompress {
                     continue;
                 }
                 let c = self.comp_info[ci];
-                let base = bases[ci] + (*in_row_group_ctr as usize) * self.upsample.rowgroup_height[ci] as usize;
-                let row_refs: Vec<&[u8]> = lists[ci].iter().map(|&r| input[ci][r].as_slice()).collect();
-                let inr = InRows { rows: &row_refs, base };
+                let base = bases[ci]
+                    + (*in_row_group_ctr as usize) * self.upsample.rowgroup_height[ci] as usize;
+                let row_refs: Vec<&[u8]> =
+                    lists[ci].iter().map(|&r| input[ci][r].as_slice()).collect();
+                let inr = InRows {
+                    rows: &row_refs,
+                    base,
+                };
                 match method {
                     UpMethod::Fullsize => {
                         // The input rows themselves are the colour-convert source.
@@ -188,12 +229,29 @@ impl Decompress {
                         let h_exp = self.upsample.h_expand[ci];
                         let v_exp = self.upsample.v_expand[ci];
                         match method {
-                            UpMethod::Int => int_upsample(&inr, outrows, out_w, max_v, h_exp, v_exp),
+                            UpMethod::Int => {
+                                int_upsample(&inr, outrows, out_w, max_v, h_exp, v_exp);
+                            }
                             UpMethod::H2v1 => h2v1_upsample(&inr, outrows, out_w, max_v),
                             UpMethod::H2v2 => h2v2_upsample(&inr, outrows, out_w, max_v),
-                            UpMethod::H2v1Fancy => h2v1_fancy_upsample(&inr, outrows, c.downsampled_width as usize, max_v),
-                            UpMethod::H2v2Fancy => h2v2_fancy_upsample(&inr, outrows, c.downsampled_width as usize, max_v),
-                            UpMethod::H1v2Fancy => h1v2_fancy_upsample(&inr, outrows, c.downsampled_width as usize, max_v),
+                            UpMethod::H2v1Fancy => h2v1_fancy_upsample(
+                                &inr,
+                                outrows,
+                                c.downsampled_width as usize,
+                                max_v,
+                            ),
+                            UpMethod::H2v2Fancy => h2v2_fancy_upsample(
+                                &inr,
+                                outrows,
+                                c.downsampled_width as usize,
+                                max_v,
+                            ),
+                            UpMethod::H1v2Fancy => h1v2_fancy_upsample(
+                                &inr,
+                                outrows,
+                                c.downsampled_width as usize,
+                                max_v,
+                            ),
                             UpMethod::Fullsize | UpMethod::Noop => {}
                         }
                     }
@@ -230,7 +288,14 @@ fn round_up(a: usize, b: usize) -> usize {
 }
 
 /// `int_upsample`.
-fn int_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], out_w: usize, max_v: i32, h_expand: i32, v_expand: i32) {
+fn int_upsample(
+    inr: &InRows<'_>,
+    out: &mut [Vec<u8>],
+    out_w: usize,
+    max_v: i32,
+    h_expand: i32,
+    v_expand: i32,
+) {
     let mut inrow = 0usize;
     let mut outrow = 0usize;
     while outrow < max_v as usize {
@@ -301,7 +366,12 @@ fn h2v2_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], out_w: usize, max_v: i32
 }
 
 /// `h2v1_fancy_upsample`.
-fn h2v1_fancy_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], downsampled_width: usize, max_v: i32) {
+fn h2v1_fancy_upsample(
+    inr: &InRows<'_>,
+    out: &mut [Vec<u8>],
+    downsampled_width: usize,
+    max_v: i32,
+) {
     for inrow in 0..max_v as usize {
         let inptr = inr.row(inrow as isize);
         let outptr = &mut out[inrow];
@@ -333,13 +403,22 @@ fn h2v1_fancy_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], downsampled_width:
 }
 
 /// `h2v2_fancy_upsample`.
-fn h2v2_fancy_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], downsampled_width: usize, max_v: i32) {
+fn h2v2_fancy_upsample(
+    inr: &InRows<'_>,
+    out: &mut [Vec<u8>],
+    downsampled_width: usize,
+    max_v: i32,
+) {
     let mut inrow = 0isize;
     let mut outrow = 0usize;
     while outrow < max_v as usize {
         for v in 0..2 {
             let inptr0 = inr.row(inrow);
-            let inptr1 = if v == 0 { inr.row(inrow - 1) } else { inr.row(inrow + 1) };
+            let inptr1 = if v == 0 {
+                inr.row(inrow - 1)
+            } else {
+                inr.row(inrow + 1)
+            };
             let outptr = &mut out[outrow];
             outrow += 1;
             let mut ic = 0usize;
@@ -377,13 +456,22 @@ fn h2v2_fancy_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], downsampled_width:
 }
 
 /// `h1v2_fancy_upsample`.
-fn h1v2_fancy_upsample(inr: &InRows<'_>, out: &mut [Vec<u8>], downsampled_width: usize, max_v: i32) {
+fn h1v2_fancy_upsample(
+    inr: &InRows<'_>,
+    out: &mut [Vec<u8>],
+    downsampled_width: usize,
+    max_v: i32,
+) {
     let mut inrow = 0isize;
     let mut outrow = 0usize;
     while outrow < max_v as usize {
         for v in 0..2 {
             let inptr0 = inr.row(inrow);
-            let (inptr1, bias) = if v == 0 { (inr.row(inrow - 1), 1) } else { (inr.row(inrow + 1), 2) };
+            let (inptr1, bias) = if v == 0 {
+                (inr.row(inrow - 1), 1)
+            } else {
+                (inr.row(inrow + 1), 2)
+            };
             let outptr = &mut out[outrow];
             outrow += 1;
             for col in 0..downsampled_width {

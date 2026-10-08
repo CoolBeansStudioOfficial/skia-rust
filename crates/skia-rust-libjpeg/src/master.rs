@@ -11,11 +11,47 @@
 //! reached by Skia's use of libjpeg and are reported as `NotImplemented` when a call would need
 //! them.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
 use crate::decompress::{DctMethod, GlobalState};
 use crate::error::{Error, Result};
 use crate::input::jdiv_round_up;
-use crate::tables::{ColorSpace, DCTSIZE, MAX_COMPONENTS, rgb_pixelsize};
+use crate::tables::{ColorSpace, DCTSIZE, DCTSIZE2, MAX_COMPONENTS, rgb_pixelsize};
 
 /// `my_master_decompress` (the fields libjpeg keeps in the master controller).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,7 +161,7 @@ impl Decompress {
             | ColorSpace::ExtArgb => rgb_pixelsize(self.out_color_space),
             ColorSpace::YCbCr | ColorSpace::Rgb565 => 3,
             ColorSpace::Cmyk | ColorSpace::Ycck => 4,
-            _ => self.num_components,
+            ColorSpace::Unknown => self.num_components,
         };
         self.output_components = self.out_color_components;
         self.rec_outbuf_height = 1;
@@ -152,11 +188,6 @@ impl Decompress {
             self.jinit_upsampler()?;
         }
         self.jinit_entropy_decoder()?;
-        // Need the whole image in memory for progressive and multi-scan decoding (not ported yet).
-        let use_c_buffer = self.inputctl.has_multiple_scans || self.buffered_image;
-        if use_c_buffer {
-            return Err(Error::NotImplemented);
-        }
         self.jinit_inverse_dct()?;
         self.jinit_d_coef_controller()?;
         if !self.raw_data_out {
@@ -240,7 +271,7 @@ impl Decompress {
         for ci in 0..self.num_components as usize {
             let c = self.comp_info[ci];
             let size = c.dct_h_scaled_size;
-            if !(1..=8).contains(&size) {
+            if !(1..=16).contains(&size) {
                 return Err(Error::BadDctSize);
             }
             self.idct_size[ci] = size;
@@ -263,18 +294,28 @@ impl Decompress {
             return Err(Error::ArithNotImplemented);
         }
         if self.progressive_mode {
-            return Err(Error::NotImplemented);
+            // jinit_phuff_decoder: every coefficient starts at bit position -1 (not yet coded).
+            let nc = self.num_components as usize;
+            self.coef_bits = vec![[-1i32; DCTSIZE2]; 2 * nc];
         }
         Ok(())
     }
 
     /// `start_pass` of the entropy decoder.
     pub(crate) fn start_pass_entropy(&mut self) -> Result<()> {
+        if self.progressive_mode {
+            return self.start_pass_phuff_decoder();
+        }
         self.start_pass_huff_decoder()
     }
 
     /// `jinit_d_coef_controller` / `jinit_d_main_controller` allocations are sized on demand.
     pub(crate) fn jinit_d_coef_controller(&mut self) -> Result<()> {
+        // The whole image is buffered for multi-scan input and for buffered-image mode.
+        self.coef_buffered = self.inputctl.has_multiple_scans || self.buffered_image;
+        if self.coef_buffered {
+            self.alloc_whole_image();
+        }
         Ok(())
     }
 

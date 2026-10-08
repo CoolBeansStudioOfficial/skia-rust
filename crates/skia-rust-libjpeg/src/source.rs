@@ -25,6 +25,7 @@ pub struct SrcBuf {
 
 impl SrcBuf {
     /// The unread bytes, `next_input_byte[0..bytes_in_buffer]`.
+    #[must_use]
     pub fn unread(&self) -> &[u8] {
         &self.data[self.next..self.next + self.bytes_in_buffer]
     }

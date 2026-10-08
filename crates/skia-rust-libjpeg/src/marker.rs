@@ -10,6 +10,42 @@
 //! Each function returns `Ok(false)` where libjpeg returns `FALSE` (suspended on input) and
 //! `Err` where libjpeg calls `ERREXIT`. Warnings are counted in `num_warnings`.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use crate::Decompress;
 use crate::error::{Error, Result};
 use crate::tables::{ColorSpace, JHuffTbl, JQuantTbl, NATURAL_ORDER};
@@ -138,14 +174,24 @@ impl Decompress {
         self.progressive_mode = is_prog;
         self.arith_code = is_arith;
         let mut l = self.input_vars();
-        let Some(mut length) = self.input_2bytes(&mut l)? else { return Ok(false) };
-        let Some(precision) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(mut length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
+        let Some(precision) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         self.data_precision = i32::from(precision);
-        let Some(height) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(height) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         self.image_height = height as u32;
-        let Some(width) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(width) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         self.image_width = width as u32;
-        let Some(nc) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(nc) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         self.num_components = i32::from(nc);
         length -= 8;
         if self.image_height == 0 || self.image_width == 0 || self.num_components <= 0 {
@@ -160,13 +206,19 @@ impl Decompress {
         }
         for ci in 0..self.num_components as usize {
             self.comp_info[ci].component_index = ci as i32;
-            let Some(id) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(id) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             self.comp_info[ci].component_id = i32::from(id);
-            let Some(c) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(c) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             let c = i32::from(c);
             self.comp_info[ci].h_samp_factor = (c >> 4) & 15;
             self.comp_info[ci].v_samp_factor = c & 15;
-            let Some(q) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(q) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             self.comp_info[ci].quant_tbl_no = i32::from(q);
         }
         self.marker.saw_sof = true;
@@ -180,8 +232,12 @@ impl Decompress {
             return Err(Error::SosNoSof);
         }
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
-        let Some(n) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
+        let Some(n) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         let n = i32::from(n);
         if length != n * 2 + 6 || !(1..=4).contains(&n) {
             return Err(Error::BadLength);
@@ -189,8 +245,12 @@ impl Decompress {
         self.comps_in_scan = n;
         self.cur_comp_info = [None; 4];
         for i in 0..n as usize {
-            let Some(cc) = self.input_byte(&mut l)? else { return Ok(false) };
-            let Some(c) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(cc) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
+            let Some(c) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             let cc = i32::from(cc);
             let c = i32::from(c);
             let mut found = None;
@@ -214,11 +274,17 @@ impl Decompress {
                 }
             }
         }
-        let Some(ss) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(ss) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         self.ss = i32::from(ss);
-        let Some(se) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(se) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         self.se = i32::from(se);
-        let Some(a) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(a) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         self.ah = (i32::from(a) >> 4) & 15;
         self.al = i32::from(a) & 15;
         self.marker.next_restart_num = 0;
@@ -230,11 +296,17 @@ impl Decompress {
     /// `get_dac`: arithmetic coding conditioning tables (DAC).
     fn get_dac(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         let mut length = length - 2;
         while length > 0 {
-            let Some(index) = self.input_byte(&mut l)? else { return Ok(false) };
-            let Some(val) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(index) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
+            let Some(val) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             let index = i32::from(index);
             let val = i32::from(val);
             length -= 2;
@@ -261,15 +333,21 @@ impl Decompress {
     /// `get_dht`: Huffman tables.
     fn get_dht(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         let mut length = length - 2;
         while length > 16 {
-            let Some(index) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(index) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             let mut index = i32::from(index);
             let mut bits = [0u8; 17];
             let mut count: i32 = 0;
             for i in 1..=16 {
-                let Some(b) = self.input_byte(&mut l)? else { return Ok(false) };
+                let Some(b) = self.input_byte(&mut l)? else {
+                    return Ok(false);
+                };
                 bits[i] = b;
                 count += i32::from(b);
             }
@@ -279,7 +357,9 @@ impl Decompress {
             }
             let mut huffval = [0u8; 256];
             for i in 0..count as usize {
-                let Some(v) = self.input_byte(&mut l)? else { return Ok(false) };
+                let Some(v) = self.input_byte(&mut l)? else {
+                    return Ok(false);
+                };
                 huffval[i] = v;
             }
             length -= count;
@@ -290,7 +370,11 @@ impl Decompress {
             if !(0..4).contains(&index) {
                 return Err(Error::DhtIndex(index));
             }
-            let tbl = JHuffTbl { bits, huffval, sent_table: false };
+            let tbl = JHuffTbl {
+                bits,
+                huffval,
+                sent_table: false,
+            };
             if is_ac {
                 self.ac_huff_tbl_ptrs[index as usize] = Some(tbl);
             } else {
@@ -307,10 +391,14 @@ impl Decompress {
     /// `get_dqt`: quantization tables.
     fn get_dqt(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         let mut length = length - 2;
         while length > 0 {
-            let Some(nb) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(nb) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             let prec = i32::from(nb >> 4);
             let n = i32::from(nb & 0x0F);
             if n >= 4 {
@@ -319,15 +407,22 @@ impl Decompress {
             let mut quantval = [0u16; 64];
             for i in 0..64 {
                 let tmp = if prec != 0 {
-                    let Some(v) = self.input_2bytes(&mut l)? else { return Ok(false) };
+                    let Some(v) = self.input_2bytes(&mut l)? else {
+                        return Ok(false);
+                    };
                     v as u16
                 } else {
-                    let Some(v) = self.input_byte(&mut l)? else { return Ok(false) };
+                    let Some(v) = self.input_byte(&mut l)? else {
+                        return Ok(false);
+                    };
                     u16::from(v)
                 };
                 quantval[NATURAL_ORDER[i]] = tmp;
             }
-            self.quant_tbl_ptrs[n as usize] = Some(JQuantTbl { quantval, sent_table: false });
+            self.quant_tbl_ptrs[n as usize] = Some(JQuantTbl {
+                quantval,
+                sent_table: false,
+            });
             length -= 64 + 1;
             if prec != 0 {
                 length -= 64;
@@ -343,11 +438,15 @@ impl Decompress {
     /// `get_dri`: restart interval.
     fn get_dri(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         if length != 4 {
             return Err(Error::BadLength);
         }
-        let Some(tmp) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(tmp) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         self.restart_interval = tmp as u32;
         self.input_sync(&l);
         Ok(true)
@@ -357,7 +456,13 @@ impl Decompress {
     fn examine_app0(&mut self, data: &[u8], datalen: usize, remaining: i64) {
         let totallen = datalen as i64 + remaining;
         let _ = totallen;
-        if datalen >= 14 && data[0] == 0x4A && data[1] == 0x46 && data[2] == 0x49 && data[3] == 0x46 && data[4] == 0 {
+        if datalen >= 14
+            && data[0] == 0x4A
+            && data[1] == 0x46
+            && data[2] == 0x49
+            && data[3] == 0x46
+            && data[4] == 0
+        {
             self.saw_jfif_marker = true;
             self.jfif_major_version = data[5];
             self.jfif_minor_version = data[6];
@@ -372,7 +477,13 @@ impl Decompress {
 
     /// `examine_app14`: Adobe marker (transform flag).
     fn examine_app14(&mut self, data: &[u8], datalen: usize) {
-        if datalen >= 12 && data[0] == 0x41 && data[1] == 0x64 && data[2] == 0x6F && data[3] == 0x62 && data[4] == 0x65 {
+        if datalen >= 12
+            && data[0] == 0x41
+            && data[1] == 0x64
+            && data[2] == 0x6F
+            && data[3] == 0x62
+            && data[4] == 0x65
+        {
             let transform = data[11];
             self.saw_adobe_marker = true;
             self.adobe_transform = transform;
@@ -383,7 +494,9 @@ impl Decompress {
     /// the rest.
     fn get_interesting_appn(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         let mut length = i64::from(length) - 2;
         let mut b = [0u8; 14];
         let numtoread: usize = if length >= 14 {
@@ -394,7 +507,9 @@ impl Decompress {
             0
         };
         for item in b.iter_mut().take(numtoread) {
-            let Some(v) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(v) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             *item = v;
         }
         length -= numtoread as i64;
@@ -418,7 +533,9 @@ impl Decompress {
         let mut bytes_read: usize;
         let data_length: usize;
         if self.marker.cur_marker.is_none() {
-            let Some(len) = self.input_2bytes(&mut l)? else { return Ok(false) };
+            let Some(len) = self.input_2bytes(&mut l)? else {
+                return Ok(false);
+            };
             length = i64::from(len) - 2;
             if length >= 0 {
                 let mut limit = if self.unread_marker == M_COM {
@@ -490,7 +607,9 @@ impl Decompress {
     /// `skip_variable`: skips a marker segment.
     fn skip_variable(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(length) = self.input_2bytes(&mut l)? else { return Ok(false) };
+        let Some(length) = self.input_2bytes(&mut l)? else {
+            return Ok(false);
+        };
         let length = i64::from(length) - 2;
         self.input_sync(&l);
         if length > 0 {
@@ -504,18 +623,24 @@ impl Decompress {
         let mut l = self.input_vars();
         let mut c: i32;
         loop {
-            let Some(b) = self.input_byte(&mut l)? else { return Ok(false) };
+            let Some(b) = self.input_byte(&mut l)? else {
+                return Ok(false);
+            };
             c = i32::from(b);
             // Skip any non-FF bytes (this may be an error, or garbage).
             while c != 0xFF {
                 self.marker.discarded_bytes += 1;
                 self.input_sync(&l);
-                let Some(b) = self.input_byte(&mut l)? else { return Ok(false) };
+                let Some(b) = self.input_byte(&mut l)? else {
+                    return Ok(false);
+                };
                 c = i32::from(b);
             }
             // Skip any duplicate FFs (fill bytes).
             loop {
-                let Some(b) = self.input_byte(&mut l)? else { return Ok(false) };
+                let Some(b) = self.input_byte(&mut l)? else {
+                    return Ok(false);
+                };
                 c = i32::from(b);
                 if c != 0xFF {
                     break;
@@ -540,8 +665,12 @@ impl Decompress {
     /// `first_marker`: the file must start with SOI.
     fn first_marker(&mut self) -> Result<bool> {
         let mut l = self.input_vars();
-        let Some(c) = self.input_byte(&mut l)? else { return Ok(false) };
-        let Some(c2) = self.input_byte(&mut l)? else { return Ok(false) };
+        let Some(c) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
+        let Some(c2) = self.input_byte(&mut l)? else {
+            return Ok(false);
+        };
         let (c, c2) = (i32::from(c), i32::from(c2));
         if c != 0xFF || c2 != M_SOI {
             return Err(Error::NoSoi(c, c2));
@@ -681,6 +810,8 @@ impl Decompress {
     }
 
     /// `jpeg_resync_to_restart` (the default `resync_to_restart` method).
+    // The branch order is jdmarker.c's; two of its branches both give action 3.
+    #[allow(clippy::if_same_then_else)]
     pub(crate) fn resync_to_restart(&mut self, desired: i32) -> Result<bool> {
         let mut marker = self.unread_marker;
         let mut action;
@@ -690,9 +821,13 @@ impl Decompress {
                 action = 2;
             } else if !(M_RST0..=M_RST7).contains(&marker) {
                 action = 3;
-            } else if marker == M_RST0 + ((desired + 1) & 7) || marker == M_RST0 + ((desired + 2) & 7) {
+            } else if marker == M_RST0 + ((desired + 1) & 7)
+                || marker == M_RST0 + ((desired + 2) & 7)
+            {
                 action = 3;
-            } else if marker == M_RST0 + ((desired - 1) & 7) || marker == M_RST0 + ((desired - 2) & 7) {
+            } else if marker == M_RST0 + ((desired - 1) & 7)
+                || marker == M_RST0 + ((desired - 2) & 7)
+            {
                 action = 2;
             } else {
                 action = 1;
@@ -766,7 +901,12 @@ impl Decompress {
         self.set_marker_processor(marker_code, processor, length_limit)
     }
 
-    fn set_marker_processor(&mut self, marker_code: i32, proc: MarkerProc, limit: u32) -> Result<()> {
+    fn set_marker_processor(
+        &mut self,
+        marker_code: i32,
+        proc: MarkerProc,
+        limit: u32,
+    ) -> Result<()> {
         if marker_code == M_COM {
             self.marker.process_com = proc;
             self.marker.length_limit_com = limit;
@@ -784,7 +924,6 @@ impl Decompress {
         self.num_warnings += 1;
         self.last_warning = code;
     }
-
 }
 
 /// `JWRN_JFIF_MAJOR`.

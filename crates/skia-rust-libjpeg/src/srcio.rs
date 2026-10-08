@@ -21,7 +21,10 @@ pub(crate) struct Local {
 impl Decompress {
     /// `INPUT_VARS(cinfo)`: copies the source's state into locals.
     pub(crate) fn input_vars(&self) -> Local {
-        Local { next: self.srcbuf.next, bytes: self.srcbuf.bytes_in_buffer }
+        Local {
+            next: self.srcbuf.next,
+            bytes: self.srcbuf.bytes_in_buffer,
+        }
     }
 
     /// `INPUT_SYNC(cinfo)`: writes the locals back to the source.
@@ -33,7 +36,10 @@ impl Decompress {
     /// Calls the source's `fill_input_buffer`. On failure the buffer is reset to empty, as
     /// Skia's wrapper does (`next_input_byte = nullptr; bytes_in_buffer = 0`).
     pub(crate) fn fill_input(&mut self) -> Result<bool> {
-        let src = self.source.as_mut().ok_or(Error::Internal("no data source"))?;
+        let src = self
+            .source
+            .as_mut()
+            .ok_or(Error::Internal("no data source"))?;
         if src.fill_input_buffer(&mut self.srcbuf) {
             Ok(true)
         } else {
@@ -70,8 +76,12 @@ impl Decompress {
 
     /// `INPUT_2BYTES(cinfo, V, action)`: big-endian 16-bit value. `Ok(None)` is a suspension.
     pub(crate) fn input_2bytes(&mut self, l: &mut Local) -> Result<Option<i32>> {
-        let Some(hi) = self.input_byte(l)? else { return Ok(None) };
-        let Some(lo) = self.input_byte(l)? else { return Ok(None) };
+        let Some(hi) = self.input_byte(l)? else {
+            return Ok(None);
+        };
+        let Some(lo) = self.input_byte(l)? else {
+            return Ok(None);
+        };
         Ok(Some((i32::from(hi) << 8) + i32::from(lo)))
     }
 
@@ -79,7 +89,10 @@ impl Decompress {
     pub(crate) fn skip_input_data(&mut self, num_bytes: i64) -> Result<()> {
         // Callers sync before calling, so `srcbuf` is current.
         let n = usize::try_from(num_bytes).map_err(|_| Error::SourceSkipFailed)?;
-        let src = self.source.as_mut().ok_or(Error::Internal("no data source"))?;
+        let src = self
+            .source
+            .as_mut()
+            .ok_or(Error::Internal("no data source"))?;
         if !src.skip_input_bytes(n, &mut self.srcbuf) {
             self.srcbuf.next = 0;
             self.srcbuf.bytes_in_buffer = 0;

@@ -140,7 +140,9 @@ static void run_case(const unsigned char *data, size_t len, const casedef *cd, F
     free(rowbuf);
     return;
   }
-  if (cinfo.progressive_mode || cinfo.arith_code) {
+  /* Arithmetic coding is not decoded; progressive images are decoded through the buffered-image
+   * path Skia uses (SkJpegCodec.cpp#L508-L540), and the raw YUV path skips them. */
+  if (cinfo.arith_code || (cinfo.progressive_mode && cd->raw)) {
     *status = "skip";
     jpeg_destroy_decompress(&cinfo);
     free(rowbuf);
@@ -152,6 +154,8 @@ static void run_case(const unsigned char *data, size_t len, const casedef *cd, F
     cinfo.raw_data_out = TRUE;
   } else {
     cinfo.out_color_space = cd->out_cs;
+    /* SkJpegCodec.cpp#L320-L330: RGB565 output is decoded with JDITHER_NONE. */
+    if (cd->out_cs == JCS_RGB565) cinfo.dither_mode = JDITHER_NONE;
   }
 
   if (cd->raw) {
@@ -173,7 +177,8 @@ static void run_case(const unsigned char *data, size_t len, const casedef *cd, F
       nrows[i] = lines;
       planes[i] = (JSAMPARRAY)malloc(sizeof(JSAMPROW) * lines);
       for (k = 0; k < lines; k++) {
-        planes[i][k] = (JSAMPROW)malloc(width);
+        /* calloc: bytes the decoder does not write must read as zero, as in the Rust port. */
+        planes[i][k] = (JSAMPROW)calloc((size_t)width, 1);
       }
     }
     while (cinfo.output_scanline < cinfo.output_height) {
@@ -212,16 +217,37 @@ static void run_case(const unsigned char *data, size_t len, const casedef *cd, F
     return;
   }
 
-  if (!jpeg_start_decompress(&cinfo)) {
+  if (cinfo.progressive_mode) {
+    /* SkJpegCodec.cpp#L508-L540: keep consuming input until it stops, then output the last
+     * complete scan. */
+    unsigned int last_scan = 0;
+    cinfo.buffered_image = TRUE;
+    jpeg_start_decompress(&cinfo);
+    while (!jpeg_input_complete(&cinfo)) {
+      int res = jpeg_consume_input(&cinfo);
+      if (res == JPEG_SUSPENDED) break;
+      if (res == JPEG_SCAN_COMPLETED) last_scan = cinfo.input_scan_number;
+    }
+    if (last_scan == 0) {
+      *status = "suspended";
+      jpeg_destroy_decompress(&cinfo);
+      *hash = hs.h;
+      return;
+    }
+    jpeg_start_output(&cinfo, (int)last_scan);
+  } else if (!jpeg_start_decompress(&cinfo)) {
     *status = "suspended";
     jpeg_destroy_decompress(&cinfo);
     *hash = hs.h;
     return;
   }
   {
-    size_t rowbytes = (size_t)cinfo.output_width * cinfo.output_components;
+    /* RGB565 rows are two bytes per pixel, whatever output_components says. */
+    size_t rowbytes = cinfo.out_color_space == JCS_RGB565
+                          ? (size_t)cinfo.output_width * 2
+                          : (size_t)cinfo.output_width * cinfo.output_components;
     rowbuf = (JSAMPARRAY)malloc(sizeof(JSAMPROW));
-    rowbuf[0] = (JSAMPROW)malloc(rowbytes);
+    rowbuf[0] = (JSAMPROW)calloc(rowbytes, 1);
     while (cinfo.output_scanline < cinfo.output_height) {
       unsigned int got = jpeg_read_scanlines(&cinfo, rowbuf, 1);
       if (got == 0) {
@@ -237,6 +263,7 @@ static void run_case(const unsigned char *data, size_t len, const casedef *cd, F
   *rows = total_rows;
   *hash = hs.h;
   if (cinfo.output_scanline == cinfo.output_height) {
+    if (cinfo.progressive_mode) jpeg_finish_output(&cinfo);
     jpeg_finish_decompress(&cinfo);
     *status = "ok";
   } else {
@@ -296,6 +323,8 @@ int main(int argc, char **argv) {
   cases[ncases] = (casedef){"gray/s8", 8, JCS_GRAYSCALE, 0};
   ncases++;
   cases[ncases] = (casedef){"cmyk/s8", 8, JCS_CMYK, 0};
+  ncases++;
+  cases[ncases] = (casedef){"rgb565/s8", 8, JCS_RGB565, 0};
   ncases++;
   cases[ncases] = (casedef){"raw/s8", 8, JCS_UNKNOWN, 1};
   ncases++;

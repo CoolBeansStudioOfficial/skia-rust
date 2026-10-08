@@ -10,12 +10,50 @@
 //! (`decode_mcu_fast`) and the slow path (`decode_mcu_slow`) are both ported, and `decode_mcu`
 //! picks between them exactly as libjpeg does, so the same bytes are consumed in the same way.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use std::rc::Rc;
 
 use crate::Decompress;
 use crate::error::{Error, Result};
 use crate::srcio::Local;
-use crate::tables::{D_MAX_BLOCKS_IN_MCU, DCTSIZE2, JHuffTbl, MAX_COMPS_IN_SCAN, NATURAL_ORDER, NUM_HUFF_TBLS};
+use crate::tables::{
+    D_MAX_BLOCKS_IN_MCU, DCTSIZE2, JHuffTbl, MAX_COMPS_IN_SCAN, NATURAL_ORDER, NUM_HUFF_TBLS,
+};
 
 /// `HUFF_LOOKAHEAD`: bits of lookahead in the fast table.
 pub(crate) const HUFF_LOOKAHEAD: i32 = 8;
@@ -46,10 +84,12 @@ pub(crate) struct BitPerm {
     pub(crate) bits_left: i32,
 }
 
-/// `savable_state`: the DC predictors, saved with the bit buffer.
+/// `savable_state`: the DC predictors, saved with the bit buffer. `eobrun` is the progressive
+/// decoder's `EOBRUN` (`jdphuff.c`); the sequential decoder never uses it.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct Savable {
     pub(crate) last_dc_val: [i32; MAX_COMPS_IN_SCAN],
+    pub(crate) eobrun: u32,
 }
 
 /// `huff_entropy_decoder`.
@@ -64,10 +104,16 @@ pub(crate) struct HuffDecoder {
     pub(crate) ac_cur_tbls: [Option<Rc<DTbl>>; D_MAX_BLOCKS_IN_MCU],
     pub(crate) dc_needed: [bool; D_MAX_BLOCKS_IN_MCU],
     pub(crate) ac_needed: [bool; D_MAX_BLOCKS_IN_MCU],
+    /// Which progressive decoder the scan selected (`start_pass_phuff_decoder`).
+    pub(crate) phuff_kind: crate::phuff::PhuffKind,
 }
 
 /// `jpeg_make_d_derived_tbl`: builds the decoding tables for one Huffman table.
-pub(crate) fn make_d_derived_tbl(htbl: &JHuffTbl, is_dc: bool, dc_lossless_max: i32) -> Result<DTbl> {
+pub(crate) fn make_d_derived_tbl(
+    htbl: &JHuffTbl,
+    is_dc: bool,
+    dc_lossless_max: i32,
+) -> Result<DTbl> {
     // Figure C.1: size table, then code table (Figure C.2).
     let mut huffsize = [0i32; 257];
     let mut p: usize = 0;
@@ -169,7 +215,7 @@ pub(crate) fn huff_extend(x: i32, s: i32) -> i32 {
 
 /// `GET_BITS(nbits)` on the local bit buffer.
 #[inline]
-fn get_bits(get_buffer: u64, bits_left: &mut i32, nbits: i32) -> i32 {
+pub(crate) fn get_bits(get_buffer: u64, bits_left: &mut i32, nbits: i32) -> i32 {
     *bits_left -= nbits;
     ((get_buffer >> *bits_left) as i32) & ((1 << nbits) - 1)
 }
@@ -232,7 +278,9 @@ impl Decompress {
                         // A marker: remember it and pad with zeros.
                         self.unread_marker = c as i32;
                         // goto no_more_bytes
-                        return self.fill_no_more_bytes(br, get_buffer, bits_left, &mut gb, &mut bl, nbits, next, bytes);
+                        return self.fill_no_more_bytes(
+                            br, get_buffer, bits_left, &mut gb, &mut bl, nbits, next, bytes,
+                        );
                     }
                 }
                 gb = (gb << 8) | u64::from(c);
@@ -244,7 +292,9 @@ impl Decompress {
             *bits_left = bl;
             Ok(true)
         } else {
-            self.fill_no_more_bytes(br, get_buffer, bits_left, &mut gb, &mut bl, nbits, next, bytes)
+            self.fill_no_more_bytes(
+                br, get_buffer, bits_left, &mut gb, &mut bl, nbits, next, bytes,
+            )
         }
     }
 
@@ -331,7 +381,7 @@ impl Decompress {
 
     /// `process_restart`: at a restart boundary, drop the partial byte, read the RSTn marker
     /// and reset the DC predictors.
-    fn process_restart(&mut self) -> Result<bool> {
+    pub(crate) fn process_restart(&mut self) -> Result<bool> {
         // Throw away any unused bits remaining in the bit buffer.
         let bits = self.huff.bitstate.bits_left / 8;
         self.marker.discarded_bytes += bits as u32;
@@ -352,14 +402,21 @@ impl Decompress {
 
     /// `decode_mcu_slow`.
     fn decode_mcu_slow(&mut self, mcu: Option<&mut [[i16; DCTSIZE2]]>) -> Result<bool> {
-        let mut br = Local { next: self.srcbuf.next, bytes: self.srcbuf.bytes_in_buffer };
+        let mut br = Local {
+            next: self.srcbuf.next,
+            bytes: self.srcbuf.bytes_in_buffer,
+        };
         let mut get_buffer = self.huff.bitstate.get_buffer;
         let mut bits_left = self.huff.bitstate.bits_left;
         let mut state = self.huff.saved;
         let mut mcu = mcu;
         for blkn in 0..self.blocks_in_mcu as usize {
-            let dctbl = self.huff.dc_cur_tbls[blkn].clone().ok_or(Error::Internal("dc table"))?;
-            let actbl = self.huff.ac_cur_tbls[blkn].clone().ok_or(Error::Internal("ac table"))?;
+            let dctbl = self.huff.dc_cur_tbls[blkn]
+                .clone()
+                .ok_or(Error::Internal("dc table"))?;
+            let actbl = self.huff.ac_cur_tbls[blkn]
+                .clone()
+                .ok_or(Error::Internal("ac table"))?;
             let mut block = mcu.as_deref_mut().map(|m| &mut m[blkn]);
             // Section F.2.2.1: decode the DC coefficient difference.
             let mut s = match self.huff_decode(&mut br, &mut get_buffer, &mut bits_left, &dctbl)? {
@@ -385,10 +442,11 @@ impl Decompress {
                 // Section F.2.2.2: decode the AC coefficients.
                 let mut k = 1usize;
                 while k < DCTSIZE2 {
-                    let mut s = match self.huff_decode(&mut br, &mut get_buffer, &mut bits_left, &actbl)? {
-                        Some(v) => v,
-                        None => return self.decode_suspend(&br, get_buffer, bits_left),
-                    };
+                    let mut s =
+                        match self.huff_decode(&mut br, &mut get_buffer, &mut bits_left, &actbl)? {
+                            Some(v) => v,
+                            None => return self.decode_suspend(&br, get_buffer, bits_left),
+                        };
                     let mut r = s >> 4;
                     s &= 15;
                     if s != 0 {
@@ -414,10 +472,11 @@ impl Decompress {
                 // Skipping the AC coefficients: same bit consumption, nothing stored.
                 let mut k = 1usize;
                 while k < DCTSIZE2 {
-                    let mut s = match self.huff_decode(&mut br, &mut get_buffer, &mut bits_left, &actbl)? {
-                        Some(v) => v,
-                        None => return self.decode_suspend(&br, get_buffer, bits_left),
-                    };
+                    let mut s =
+                        match self.huff_decode(&mut br, &mut get_buffer, &mut bits_left, &actbl)? {
+                            Some(v) => v,
+                            None => return self.decode_suspend(&br, get_buffer, bits_left),
+                        };
                     let r = s >> 4;
                     s &= 15;
                     if s != 0 {
@@ -438,19 +497,33 @@ impl Decompress {
         // BITREAD_SAVE_STATE
         self.srcbuf.next = br.next;
         self.srcbuf.bytes_in_buffer = br.bytes;
-        self.huff.bitstate = BitPerm { get_buffer, bits_left };
+        self.huff.bitstate = BitPerm {
+            get_buffer,
+            bits_left,
+        };
         self.huff.saved = state;
         Ok(true)
     }
 
     /// The `return FALSE` exit of the slow path: the bit state is not saved (libjpeg returns
     /// before `BITREAD_SAVE_STATE`), so only the source keeps its last synced position.
-    fn decode_suspend(&mut self, _br: &Local, _get_buffer: u64, _bits_left: i32) -> Result<bool> {
+    pub(crate) fn decode_suspend(
+        &mut self,
+        _br: &Local,
+        _get_buffer: u64,
+        _bits_left: i32,
+    ) -> Result<bool> {
         Ok(false)
     }
 
     /// `CHECK_BIT_BUFFER(br_state, nbits, return FALSE)`.
-    fn check_bit_buffer(&mut self, br: &mut Local, get_buffer: &mut u64, bits_left: &mut i32, nbits: i32) -> Result<bool> {
+    pub(crate) fn check_bit_buffer(
+        &mut self,
+        br: &mut Local,
+        get_buffer: &mut u64,
+        bits_left: &mut i32,
+        nbits: i32,
+    ) -> Result<bool> {
         if *bits_left < nbits {
             let mut gb = *get_buffer;
             let mut bl = *bits_left;
@@ -467,7 +540,13 @@ impl Decompress {
     /// decoded symbol. A failing `jpeg_huff_decode` is a corrupt-code error in libjpeg (it
     /// returns -1 and the caller returns FALSE); here it is reported as a suspension-like
     /// failure to the same caller, which is what `failaction` does.
-    fn huff_decode(&mut self, br: &mut Local, get_buffer: &mut u64, bits_left: &mut i32, htbl: &DTbl) -> Result<Option<i32>> {
+    pub(crate) fn huff_decode(
+        &mut self,
+        br: &mut Local,
+        get_buffer: &mut u64,
+        bits_left: &mut i32,
+        htbl: &DTbl,
+    ) -> Result<Option<i32>> {
         let nb: i32;
         if *bits_left < HUFF_LOOKAHEAD {
             let mut gb = *get_buffer;
@@ -518,10 +597,15 @@ impl Decompress {
         let mut state = self.huff.saved;
         let mut mcu = mcu;
         for blkn in 0..self.blocks_in_mcu as usize {
-            let dctbl = self.huff.dc_cur_tbls[blkn].clone().ok_or(Error::Internal("dc table"))?;
-            let actbl = self.huff.ac_cur_tbls[blkn].clone().ok_or(Error::Internal("ac table"))?;
+            let dctbl = self.huff.dc_cur_tbls[blkn]
+                .clone()
+                .ok_or(Error::Internal("dc table"))?;
+            let actbl = self.huff.ac_cur_tbls[blkn]
+                .clone()
+                .ok_or(Error::Internal("ac table"))?;
             let mut block = mcu.as_deref_mut().map(|m| &mut m[blkn]);
-            let (mut s, _) = self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &dctbl);
+            let (mut s, _) =
+                self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &dctbl);
             if s != 0 {
                 self.fill_bit_buffer_fast(&mut get_buffer, &mut bits_left, &mut buffer);
                 let r = get_bits(get_buffer, &mut bits_left, s);
@@ -538,7 +622,8 @@ impl Decompress {
             if self.huff.ac_needed[blkn] && block.is_some() {
                 let mut k = 1usize;
                 while k < DCTSIZE2 {
-                    let (s0, _) = self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &actbl);
+                    let (s0, _) =
+                        self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &actbl);
                     let mut s = s0;
                     let mut r = s >> 4;
                     s &= 15;
@@ -560,7 +645,8 @@ impl Decompress {
             } else {
                 let mut k = 1usize;
                 while k < DCTSIZE2 {
-                    let (s0, _) = self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &actbl);
+                    let (s0, _) =
+                        self.huff_decode_fast(&mut get_buffer, &mut bits_left, &mut buffer, &actbl);
                     let mut s = s0;
                     let r = s >> 4;
                     s &= 15;
@@ -586,13 +672,22 @@ impl Decompress {
         let consumed = buffer - self.srcbuf.next;
         self.srcbuf.bytes_in_buffer -= consumed;
         self.srcbuf.next = buffer;
-        self.huff.bitstate = BitPerm { get_buffer, bits_left };
+        self.huff.bitstate = BitPerm {
+            get_buffer,
+            bits_left,
+        };
         self.huff.saved = state;
         Ok(true)
     }
 
     /// `HUFF_DECODE_FAST` (no suspension). Returns `(symbol, nb)`.
-    fn huff_decode_fast(&mut self, get_buffer: &mut u64, bits_left: &mut i32, buffer: &mut usize, htbl: &DTbl) -> (i32, i32) {
+    fn huff_decode_fast(
+        &mut self,
+        get_buffer: &mut u64,
+        bits_left: &mut i32,
+        buffer: &mut usize,
+        htbl: &DTbl,
+    ) -> (i32, i32) {
         self.fill_bit_buffer_fast(get_buffer, bits_left, buffer);
         let mut s = peek_bits(*get_buffer, *bits_left, HUFF_LOOKAHEAD);
         s = htbl.lookup[s as usize];
@@ -618,7 +713,12 @@ impl Decompress {
 
     /// `FILL_BIT_BUFFER_FAST`: when `bits_left <= 16`, shift in up to 6 bytes, handling 0xFF
     /// stuffing and stopping at a marker.
-    fn fill_bit_buffer_fast(&mut self, get_buffer: &mut u64, bits_left: &mut i32, buffer: &mut usize) {
+    fn fill_bit_buffer_fast(
+        &mut self,
+        get_buffer: &mut u64,
+        bits_left: &mut i32,
+        buffer: &mut usize,
+    ) {
         if *bits_left <= 16 {
             for _ in 0..6 {
                 self.get_byte_fast(get_buffer, bits_left, buffer);
@@ -653,7 +753,9 @@ impl Decompress {
             }
             usefast = false;
         }
-        if self.srcbuf.bytes_in_buffer < BUFSIZE * self.blocks_in_mcu as usize || self.unread_marker != 0 {
+        if self.srcbuf.bytes_in_buffer < BUFSIZE * self.blocks_in_mcu as usize
+            || self.unread_marker != 0
+        {
             usefast = false;
         }
         if !self.insufficient_data {
@@ -665,7 +767,7 @@ impl Decompress {
                         return Ok(false);
                     }
                 }
-            } else if !self.decode_mcu_slow(mcu.as_deref_mut())? {
+            } else if !self.decode_mcu_slow(mcu)? {
                 return Ok(false);
             }
         }
@@ -694,8 +796,8 @@ impl Decompress {
             let compptr = self.cur_comp_info[ci].ok_or(Error::Internal("cur_comp_info"))?;
             let dc = self.comp_info[compptr].dc_tbl_no as usize;
             let ac = self.comp_info[compptr].ac_tbl_no as usize;
-            self.huff.dc_cur_tbls[blkn] = self.huff.dc_derived[dc].clone();
-            self.huff.ac_cur_tbls[blkn] = self.huff.ac_derived[ac].clone();
+            self.huff.dc_cur_tbls[blkn].clone_from(&self.huff.dc_derived[dc]);
+            self.huff.ac_cur_tbls[blkn].clone_from(&self.huff.ac_derived[ac]);
             if self.comp_info[compptr].component_needed {
                 self.huff.dc_needed[blkn] = true;
                 self.huff.ac_needed[blkn] = self.comp_info[compptr].dct_h_scaled_size > 1;

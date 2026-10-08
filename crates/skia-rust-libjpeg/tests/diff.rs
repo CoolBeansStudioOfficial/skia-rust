@@ -8,10 +8,26 @@
 // `JPEG_DIFF_DUMP=<dir>` writes every output's bytes to `<dir>/<file>.<case>.bin`, for `cmp`
 // against the dumps of the C harness.
 
+// The harness mirrors jpeg_diff.c line by line (its FNV constants, its C-typed counters, and its
+// one-function-per-case run loop), so the casts and long function are kept as the C has them.
+#![allow(
+    clippy::assigning_clones,
+    clippy::case_sensitive_file_extension_comparisons,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::doc_markdown,
+    clippy::manual_let_else,
+    clippy::redundant_closure_for_method_calls,
+    clippy::too_many_lines,
+    clippy::unreadable_literal
+)]
+
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use skia_rust_libjpeg::{ColorSpace, DctMethod, Decompress, HeaderResult, JpegSource, SrcBuf};
+use skia_rust_libjpeg::{
+    ColorSpace, ConsumeResult, DctMethod, Decompress, DitherMode, HeaderResult, JpegSource, SrcBuf,
+};
 
 /// Skia's memory source: the whole buffer is available at once, and running out is a suspension.
 struct MemSource {
@@ -51,7 +67,10 @@ struct Hasher {
 
 impl Hasher {
     fn new(dump: bool) -> Self {
-        Hasher { h: FNV_OFFSET, dump: dump.then(Vec::new) }
+        Hasher {
+            h: FNV_OFFSET,
+            dump: dump.then(Vec::new),
+        }
     }
 
     fn bytes(&mut self, p: &[u8]) {
@@ -74,19 +93,90 @@ struct CaseDef {
 }
 
 const CASES: &[CaseDef] = &[
-    CaseDef { name: "rgba/s1", scale_num: 1, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s2", scale_num: 2, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s3", scale_num: 3, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s4", scale_num: 4, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s5", scale_num: 5, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s6", scale_num: 6, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s7", scale_num: 7, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "rgba/s8", scale_num: 8, out_cs: Some(ColorSpace::ExtRgba), raw: false },
-    CaseDef { name: "bgra/s8", scale_num: 8, out_cs: Some(ColorSpace::ExtBgra), raw: false },
-    CaseDef { name: "rgb/s8", scale_num: 8, out_cs: Some(ColorSpace::Rgb), raw: false },
-    CaseDef { name: "gray/s8", scale_num: 8, out_cs: Some(ColorSpace::Grayscale), raw: false },
-    CaseDef { name: "cmyk/s8", scale_num: 8, out_cs: Some(ColorSpace::Cmyk), raw: false },
-    CaseDef { name: "raw/s8", scale_num: 8, out_cs: None, raw: true },
+    CaseDef {
+        name: "rgba/s1",
+        scale_num: 1,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s2",
+        scale_num: 2,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s3",
+        scale_num: 3,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s4",
+        scale_num: 4,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s5",
+        scale_num: 5,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s6",
+        scale_num: 6,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s7",
+        scale_num: 7,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgba/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::ExtRgba),
+        raw: false,
+    },
+    CaseDef {
+        name: "bgra/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::ExtBgra),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgb/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::Rgb),
+        raw: false,
+    },
+    CaseDef {
+        name: "gray/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::Grayscale),
+        raw: false,
+    },
+    CaseDef {
+        name: "cmyk/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::Cmyk),
+        raw: false,
+    },
+    CaseDef {
+        name: "rgb565/s8",
+        scale_num: 8,
+        out_cs: Some(ColorSpace::Rgb565),
+        raw: false,
+    },
+    CaseDef {
+        name: "raw/s8",
+        scale_num: 8,
+        out_cs: None,
+        raw: true,
+    },
 ];
 
 /// Result of one decode: `status`, the rows produced, and the hash.
@@ -106,13 +196,17 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
         hash: hs.h,
         dump: hs.dump.clone(),
     };
-    let mut d = Decompress::new(Box::new(MemSource { data: data.to_vec() }));
+    let mut d = Decompress::new(Box::new(MemSource {
+        data: data.to_vec(),
+    }));
     match d.read_header(true) {
         Err(_) => return fail(&hs, "err"),
         Ok(HeaderResult::Suspended) => return fail(&hs, "suspended"),
         Ok(_) => {}
     }
-    if d.progressive_mode || d.arith_code {
+    // Arithmetic coding is not decoded; progressive images go through the buffered-image path
+    // Skia uses, and the raw YUV path skips them.
+    if d.arith_code || (d.progressive_mode && case.raw) {
         return fail(&hs, "skip");
     }
     d.scale_num = case.scale_num;
@@ -121,6 +215,13 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
         d.raw_data_out = true;
     } else if let Some(cs) = case.out_cs {
         d.out_color_space = cs;
+        // SkJpegCodec.cpp#L320-L330: RGB565 output is decoded with JDITHER_NONE.
+        if cs == ColorSpace::Rgb565 {
+            d.dither_mode = DitherMode::None;
+        }
+    }
+    if d.progressive_mode {
+        d.buffered_image = true;
     }
     let started = match d.start_decompress() {
         Err(_) => return fail(&hs, "err"),
@@ -128,6 +229,25 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
     };
     if !started {
         return fail(&hs, "suspended");
+    }
+    if d.progressive_mode {
+        // SkJpegCodec.cpp#L508-L540: keep consuming input until it stops, then output the last
+        // complete scan.
+        let mut last_scan = 0i32;
+        while !d.input_complete() {
+            match d.consume_input() {
+                Err(_) => return fail(&hs, "err"),
+                Ok(ConsumeResult::Suspended) => break,
+                Ok(ConsumeResult::ScanCompleted) => last_scan = d.input_scan_number,
+                Ok(_) => {}
+            }
+        }
+        if last_scan == 0 {
+            return fail(&hs, "suspended");
+        }
+        if d.start_output(last_scan).is_err() {
+            return fail(&hs, "err");
+        }
     }
     let mut total_rows: u32 = 0;
     if case.raw {
@@ -161,7 +281,12 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
             match d.finish_decompress() {
                 // C records the rows before finishing, so a failure here keeps them.
                 Err(_) => {
-                    return Outcome { status: "err", rows: total_rows, hash: hs.h, dump: hs.dump };
+                    return Outcome {
+                        status: "err",
+                        rows: total_rows,
+                        hash: hs.h,
+                        dump: hs.dump,
+                    };
                 }
                 Ok(_) => "ok",
             }
@@ -175,7 +300,12 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
             dump: hs.dump,
         };
     }
-    let width = d.output_width as usize * d.output_components as usize;
+    // RGB565 rows are two bytes per pixel, whatever `output_components` says.
+    let width = if case.out_cs == Some(ColorSpace::Rgb565) {
+        d.output_width as usize * 2
+    } else {
+        d.output_width as usize * d.output_components as usize
+    };
     let mut row = vec![0u8; width];
     while d.output_scanline() < d.output_height() {
         let got = {
@@ -192,9 +322,18 @@ fn run_case(data: &[u8], case: &CaseDef, want_dump: bool) -> Outcome {
         total_rows += got as u32;
     }
     let status = if d.output_scanline() == d.output_height() {
+        if d.progressive_mode {
+            // The return value is ignored, as in the C harness.
+            let _ = d.finish_output();
+        }
         match d.finish_decompress() {
             Err(_) => {
-                return Outcome { status: "err", rows: total_rows, hash: hs.h, dump: hs.dump };
+                return Outcome {
+                    status: "err",
+                    rows: total_rows,
+                    hash: hs.h,
+                    dump: hs.dump,
+                };
             }
             Ok(_) => "ok",
         }
@@ -242,21 +381,30 @@ fn report() -> String {
         if only.as_ref().is_some_and(|o| !name.contains(o.as_str())) {
             continue;
         }
-        let data = std::fs::read(&path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
+        let data =
+            std::fs::read(&path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
         for case in CASES {
             let o = run_case(&data, case, dump_dir.is_some());
             if let (Some(dir), Some(bytes)) = (dump_dir.as_ref(), o.dump.as_ref()) {
                 let cn = case.name.replace('/', "_");
                 std::fs::write(dir.join(format!("{name}.{cn}.bin")), bytes).expect("dump write");
             }
-            let _ = writeln!(s, "{name}|{}|{}|{}|{:016x}", case.name, o.status, o.rows, o.hash);
+            let _ = writeln!(
+                s,
+                "{name}|{}|{}|{}|{:016x}",
+                case.name, o.status, o.rows, o.hash
+            );
         }
         // Truncations: 1/16 .. 15/16 of the file, decoded as rgba/s8.
         let rgba8 = CASES[7];
         for k in 1..=15usize {
             let tl = data.len() * k / 16;
             let o = run_case(&data[..tl], &rgba8, false);
-            let _ = writeln!(s, "{name}#trunc{k}|{}|{}|{}|{:016x}", rgba8.name, o.status, o.rows, o.hash);
+            let _ = writeln!(
+                s,
+                "{name}#trunc{k}|{}|{}|{}|{:016x}",
+                rgba8.name, o.status, o.rows, o.hash
+            );
         }
         // Corruptions: one byte XOR 0x5A at len * k / 8.
         for k in 1..=7usize {
@@ -264,7 +412,11 @@ fn report() -> String {
             let pos = data.len() * k / 8;
             copy[pos] ^= 0x5A;
             let o = run_case(&copy, &rgba8, false);
-            let _ = writeln!(s, "{name}#flip{k}|{}|{}|{}|{:016x}", rgba8.name, o.status, o.rows, o.hash);
+            let _ = writeln!(
+                s,
+                "{name}#flip{k}|{}|{}|{}|{:016x}",
+                rgba8.name, o.status, o.rows, o.hash
+            );
         }
     }
     s
@@ -296,15 +448,30 @@ fn matches_libjpeg_oracle() {
         }
     }
     if got.lines().count() != expected.lines().count() {
-        diffs.push(format!("line count: port {} vs C {}", got.lines().count(), expected.lines().count()));
+        diffs.push(format!(
+            "line count: port {} vs C {}",
+            got.lines().count(),
+            expected.lines().count()
+        ));
     }
-    assert!(diffs.is_empty(), "{} differing lines, first:\n{}", diffs.len(), diffs.iter().take(20).cloned().collect::<Vec<_>>().join("\n"));
+    assert!(
+        diffs.is_empty(),
+        "{} differing lines, first:\n{}",
+        diffs.len(),
+        diffs
+            .iter()
+            .take(20)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
 }
 
 #[test]
 fn baseline_decode_matches_header_geometry() {
     // A tiny sanity check that does not need the C oracle: the dimensions of a known file.
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../third_party/skia/resources/images/color_wheel.jpg");
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../third_party/skia/resources/images/color_wheel.jpg");
     let data = std::fs::read(path).expect("color_wheel.jpg");
     let mut d = Decompress::new(Box::new(MemSource { data }));
     assert_eq!(d.read_header(true).expect("header"), HeaderResult::Ok);

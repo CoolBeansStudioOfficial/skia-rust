@@ -11,9 +11,46 @@
 //! `jpeg_read_header` → [`Decompress::read_header`], `jpeg_start_decompress` →
 //! [`Decompress::start_decompress`], and so on.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use std::rc::Rc;
 
 use crate::coef::CoefState;
+use crate::coef_buf::{CompCoefs, SAVED_COEFS};
 use crate::color::ColorState;
 use crate::error::{Error, Result};
 use crate::huff::HuffDecoder;
@@ -24,7 +61,7 @@ use crate::marker::{ConsumeResult, MarkerReader, SavedMarker};
 use crate::master::MasterState;
 use crate::source::{JpegSource, SrcBuf};
 use crate::tables::{
-    CompInfo, ColorSpace, JHuffTbl, JQuantTbl, NUM_ARITH_TBLS, NUM_HUFF_TBLS,
+    ColorSpace, CompInfo, DCTSIZE2, JHuffTbl, JQuantTbl, NUM_ARITH_TBLS, NUM_HUFF_TBLS,
     NUM_QUANT_TBLS,
 };
 use crate::upsample::UpsampleState;
@@ -65,6 +102,7 @@ pub(crate) enum GlobalState {
     Scanning,
     RawOk,
     BufImage,
+    BufPost,
     Stopping,
 }
 
@@ -81,6 +119,7 @@ pub enum HeaderResult {
 
 /// The decompressor. Fields are public so that a caller (Skia's `SkJpegCodec` port) can read and
 /// set the parameters that `jpeglib.h` exposes; the state machine is private.
+#[allow(clippy::struct_excessive_bools)] // mirrors jpeg_decompress_struct's flag fields
 pub struct Decompress {
     /// `image_width`, `image_height`: the frame size from SOF.
     pub image_width: u32,
@@ -222,6 +261,17 @@ pub struct Decompress {
     pub(crate) master: MasterState,
     /// Huffman entropy decoder state.
     pub(crate) huff: HuffDecoder,
+    /// `coef_bits[ci][coefi]`: the bit position each coefficient was last coded at, per
+    /// component (`ci`) and, from `ci + num_components`, for the previous scan.
+    pub(crate) coef_bits: Vec<[i32; DCTSIZE2]>,
+    /// `coef_bits_latch`: the bit positions block smoothing uses for this output pass.
+    pub(crate) coef_bits_latch: Vec<[i32; SAVED_COEFS]>,
+    /// `whole_image`: the coefficients of the whole image (multi-pass decoding only).
+    pub(crate) whole_image: Vec<CompCoefs>,
+    /// `coef->coef_arrays != NULL`: the coefficient controller buffers the whole image.
+    pub(crate) coef_buffered: bool,
+    /// The output pass uses `decompress_smooth_data` (block smoothing applies).
+    pub(crate) coef_smooth: bool,
     /// Coefficient buffer controller state.
     pub(crate) coef: CoefState,
     /// Main buffer controller state.
@@ -310,6 +360,11 @@ impl Decompress {
             inputctl: InputState::default(),
             master: MasterState::default(),
             huff: HuffDecoder::default(),
+            coef_bits: Vec::new(),
+            coef_bits_latch: Vec::new(),
+            whole_image: Vec::new(),
+            coef_buffered: false,
+            coef_smooth: false,
             coef: CoefState::default(),
             main: MainState::default(),
             upsample: UpsampleState::default(),
@@ -379,6 +434,7 @@ impl Decompress {
             | GlobalState::Scanning
             | GlobalState::RawOk
             | GlobalState::BufImage
+            | GlobalState::BufPost
             | GlobalState::Stopping => self.inputctl_consume()?,
         };
         Ok(retcode)
@@ -497,7 +553,7 @@ impl Decompress {
             return Ok(0);
         }
         let lines_per_imcu_row = self.max_v_samp_factor * self.min_dct_scaled_size;
-        if (planes.first().map_or(0, |p| p.len()) as i32) < lines_per_imcu_row {
+        if (planes.first().map_or(0, Vec::len) as i32) < lines_per_imcu_row {
             return Err(Error::Internal("raw buffer too small"));
         }
         if !self.decompress_data_raw(planes)? {
@@ -531,11 +587,41 @@ impl Decompress {
         Ok(true)
     }
 
+    /// `jpeg_start_output`: starts an output pass in buffered-image mode, for the input up to and
+    /// including scan `scan_number`.
+    pub fn start_output(&mut self, scan_number: i32) -> Result<()> {
+        if self.global_state != GlobalState::BufImage && self.global_state != GlobalState::Prescan {
+            return Err(Error::BadState(self.global_state as i32));
+        }
+        self.output_scan_number = scan_number;
+        self.output_pass_setup()?;
+        Ok(())
+    }
+
+    /// `jpeg_finish_output`: ends the output pass. Returns `Ok(false)` on suspension, in which
+    /// case the call is repeated.
+    pub fn finish_output(&mut self) -> Result<bool> {
+        if (self.global_state == GlobalState::Scanning || self.global_state == GlobalState::RawOk)
+            && self.buffered_image
+        {
+            // Terminate this pass: the whole pass need not have been read.
+            self.global_state = GlobalState::BufPost;
+        } else if self.global_state != GlobalState::BufPost {
+            return Err(Error::BadState(self.global_state as i32));
+        }
+        // Read markers looking for SOS or EOI.
+        while self.input_scan_number <= self.output_scan_number && !self.inputctl.eoi_reached {
+            if self.inputctl_consume()? == ConsumeResult::Suspended {
+                return Ok(false);
+            }
+        }
+        self.global_state = GlobalState::BufImage;
+        Ok(true)
+    }
+
     /// `jpeg_destroy_decompress`: releases the state (kept for API symmetry).
     pub fn destroy(self) {}
-
 }
-
 
 impl std::fmt::Debug for Decompress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

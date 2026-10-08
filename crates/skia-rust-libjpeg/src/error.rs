@@ -6,6 +6,42 @@
 //! 3.1.0). Warnings (`WARNMS*`) do not stop decoding; they are counted in
 //! [`crate::Decompress::num_warnings`] and their codes kept in `last_warning`.
 
+// Clippy (pedantic) allows, for this module. Each one fires on the C arithmetic and naming this
+// module mirrors, and the code is kept as the C writes it so it can be checked line by line:
+// JLONG/int/JDIMENSION casts (sign, truncation and wrap), C operator precedence and identity
+// terms that come out of macros (`x * 1`, `0 * n`), C loop shapes (`needless_range_loop`,
+// `explicit_counter_loop`, `collapsible_if`, `match_same_arms`), the C variable names
+// (`similar_names`, `struct_field_names`), libjpeg's constants written as in jdct.h
+// (`approx_constant`, `unreadable_literal`), functions whose C form returns a status that
+// this path never sets (`unnecessary_wraps`), and the long C routines (`too_many_lines`,
+// `too_many_arguments`). Error docs point at the `Error` variants, which name the C codes.
+#![allow(
+    clippy::approx_constant,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::collapsible_if,
+    clippy::doc_markdown,
+    clippy::erasing_op,
+    clippy::explicit_counter_loop,
+    clippy::identity_op,
+    clippy::manual_let_else,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_range_loop,
+    clippy::precedence,
+    clippy::similar_names,
+    clippy::single_match_else,
+    clippy::struct_field_names,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    clippy::unreadable_literal,
+    clippy::unused_self
+)]
+
 use std::fmt;
 
 /// A fatal libjpeg error (`ERREXIT*`). Each variant names the `JERR_*` code it stands for.
@@ -55,6 +91,8 @@ pub enum Error {
     BadDctSize,
     /// `JERR_NOT_COMPILED` or `JERR_NOTIMPL`: a feature this port does not provide.
     NotImplemented,
+    /// `JERR_BAD_DCT_COEF`: a progressive DC difference overflows.
+    BadDctCoef,
     /// `JERR_BAD_PROGRESSION`: an invalid progressive scan script.
     BadProgression,
     /// `JERR_BAD_PROG_SCRIPT`.
@@ -113,6 +151,9 @@ impl fmt::Display for Error {
             Error::BadSampling => f.write_str("Unsupported JPEG data precision or sampling"),
             Error::BadDctSize => f.write_str("Invalid DCT block size"),
             Error::NotImplemented => f.write_str("Requested feature was omitted at compile time"),
+            Error::BadDctCoef => {
+                f.write_str("DCT coefficient (lossy) or spatial difference (lossless) out of range")
+            }
             Error::BadProgression => f.write_str("Invalid progressive parameters"),
             Error::BadProgScript => f.write_str("Invalid progressive parameters"),
             Error::BadBufferMode => f.write_str("Bogus buffered-image mode"),
@@ -123,7 +164,9 @@ impl fmt::Display for Error {
             Error::ImageTooBig => f.write_str("Image too big"),
             Error::BadPrecision => f.write_str("Unsupported color conversion request"),
             Error::ArithNotImplemented => f.write_str("Arithmetic coding not supported"),
-            Error::FractSampleNotImplemented => f.write_str("Fractional sampling not implemented yet"),
+            Error::FractSampleNotImplemented => {
+                f.write_str("Fractional sampling not implemented yet")
+            }
             Error::BadDropSampling => f.write_str("Bogus drop-sampling request"),
             Error::HuffMissingCode => f.write_str("Corrupt JPEG data: bad Huffman code"),
             Error::SourceSkipFailed => f.write_str("Failure to skip input data"),

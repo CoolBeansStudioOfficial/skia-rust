@@ -21,6 +21,14 @@ extern void jpeg_idct_5x5(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSA
 extern void jpeg_idct_3x3(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
 extern void jpeg_idct_4x4(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
 extern void jpeg_idct_2x2(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_9x9(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_10x10(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_11x11(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_12x12(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_13x13(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_14x14(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_15x15(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
+extern void jpeg_idct_16x16(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
 extern void jpeg_idct_1x1(j_decompress_ptr, jpeg_component_info *, JCOEFPTR, JSAMPARRAY, JDIMENSION);
 
 static uint64_t lcg_state = 0;
@@ -59,22 +67,22 @@ int main(void) {
   build_range_limit(storage, &srl);
   cinfo.sample_range_limit = srl;
 
-  for (size = 1; size <= 8; size++) {
+  for (size = 1; size <= 16; size++) {
     lcg_state = 12345 + size;
     comp.DCT_h_scaled_size = size;
     comp.DCT_v_scaled_size = size;
     for (blk = 0; blk < nblocks; blk++) {
       JCOEF coef[64];
       int dct_table[64];
-      JSAMPLE outbuf[8][8];
-      JSAMPLE *rows[8];
+      JSAMPLE outbuf[16][16];
+      JSAMPLE *rows[16];
       int i, r, c;
       for (i = 0; i < 64; i++) {
         uint32_t v = lcg();
         coef[i] = (v & 1) ? (JCOEF)((int)((v >> 1) % 512) - 256) : 0;
         dct_table[i] = (int)(lcg() % 16) + 1;
       }
-      for (r = 0; r < 8; r++) rows[r] = outbuf[r];
+      for (r = 0; r < 16; r++) rows[r] = outbuf[r];
       memset(outbuf, 0, sizeof(outbuf));
       comp.dct_table = dct_table;
       switch (size) {
@@ -85,7 +93,16 @@ int main(void) {
         case 5: jpeg_idct_5x5(&cinfo, &comp, coef, rows, 0); break;
         case 6: jpeg_idct_6x6(&cinfo, &comp, coef, rows, 0); break;
         case 7: jpeg_idct_7x7(&cinfo, &comp, coef, rows, 0); break;
-        default: jpeg_idct_islow(&cinfo, &comp, coef, rows, 0); break;
+        case 9: jpeg_idct_9x9(&cinfo, &comp, coef, rows, 0); break;
+        case 10: jpeg_idct_10x10(&cinfo, &comp, coef, rows, 0); break;
+        case 11: jpeg_idct_11x11(&cinfo, &comp, coef, rows, 0); break;
+        case 12: jpeg_idct_12x12(&cinfo, &comp, coef, rows, 0); break;
+        case 13: jpeg_idct_13x13(&cinfo, &comp, coef, rows, 0); break;
+        case 14: jpeg_idct_14x14(&cinfo, &comp, coef, rows, 0); break;
+        case 15: jpeg_idct_15x15(&cinfo, &comp, coef, rows, 0); break;
+        case 16: jpeg_idct_16x16(&cinfo, &comp, coef, rows, 0); break;
+        case 8: jpeg_idct_islow(&cinfo, &comp, coef, rows, 0); break;
+        default: break;
       }
       printf("size %d block %d:", size, blk);
       for (r = 0; r < size; r++) {
