@@ -629,6 +629,7 @@ dependencies = [
  "font-types",
  "read-fonts",
  "skia-rust-core",
+ "skia-rust-raster",
  "skrifa",
 ]
 

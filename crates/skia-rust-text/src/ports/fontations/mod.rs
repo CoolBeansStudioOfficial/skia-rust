@@ -9,4 +9,5 @@ pub mod font_scanner;
 pub mod hinting;
 pub mod names;
 pub mod pen;
+pub mod scaler_context;
 pub mod typeface;
