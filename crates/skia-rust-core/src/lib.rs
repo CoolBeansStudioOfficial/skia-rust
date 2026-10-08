@@ -69,6 +69,7 @@ pub mod font_mgr;
 pub mod font_parameters;
 #[doc(hidden)]
 pub mod font_priv;
+pub mod font_stream;
 pub mod font_style;
 pub mod font_types;
 pub mod front_buffered_stream;
