@@ -18,11 +18,13 @@ use crate::descriptor::Descriptor;
 use crate::font_arguments::FontArguments;
 use crate::font_arguments::variation_position::Coordinate;
 use crate::font_descriptor::{FactoryId, FontDescriptor};
+use crate::font_priv::count_text_elements;
 use crate::font_style::{FontStyle, Slant, Weight};
-use crate::font_types::set_four_byte_tag;
+use crate::font_types::{GlyphId, TextEncoding, set_four_byte_tag};
 use crate::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
 use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
 use crate::typeface_cache::new_typeface_id;
+use crate::utf::{Unichar, next_utf8, next_utf16};
 
 /// A unique id of a typeface (`SkTypefaceID`).
 // Port of: include/core/SkTypeface.h#L40 (chrome/m156)
@@ -136,6 +138,30 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
         effects: &ScalerContextEffects,
         desc: &Descriptor,
     ) -> ScalerContext;
+
+    /// `SkTypeface::onCharsToGlyphs`: maps unichars to glyph ids. The default maps everything to
+    /// glyph 0, as `SkEmptyTypeface` does; a typeface with glyphs overrides it.
+    // Port of: include/core/SkTypeface.h (onCharsToGlyphs, chrome/m156)
+    #[doc(alias = "onCharsToGlyphs")]
+    fn on_chars_to_glyphs(&self, _unichars: &[Unichar], glyphs: &mut [GlyphId]) {
+        glyphs.fill(0);
+    }
+
+    /// `SkTypeface::onCountGlyphs`: the number of glyphs. The default is 0, as for the empty
+    /// typeface.
+    // Port of: include/core/SkTypeface.h (onCountGlyphs, chrome/m156)
+    #[doc(alias = "onCountGlyphs")]
+    fn on_count_glyphs(&self) -> i32 {
+        0
+    }
+
+    /// `SkTypeface::onGetGlyphToUnicodeMap`: the unichar of each glyph. The default is all zeros,
+    /// as for the empty typeface.
+    // Port of: include/core/SkTypeface.h (onGetGlyphToUnicodeMap, chrome/m156)
+    #[doc(alias = "onGetGlyphToUnicodeMap")]
+    fn on_get_glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
+        dst.fill(0);
+    }
 }
 
 /// A typeface handle (`sk_sp<SkTypeface>`). Cloning it shares the typeface.
@@ -326,6 +352,109 @@ impl Typeface {
         } else {
             None
         }
+    }
+}
+
+impl Typeface {
+    /// `SkTypeface::unicharToGlyph`: the glyph for one unichar, 0 if there is none.
+    // Port of: src/core/SkTypeface.cpp#L371-L375 (chrome/m156)
+    #[doc(alias = "unicharToGlyph")]
+    #[must_use]
+    pub fn unichar_to_glyph(&self, uni: Unichar) -> GlyphId {
+        let mut glyphs = [0];
+        self.0.on_chars_to_glyphs(&[uni], &mut glyphs);
+        glyphs[0]
+    }
+
+    /// `SkTypeface::unicharsToGlyphs`: the glyphs for the unichars, up to the shorter of the two
+    /// slices.
+    // Port of: src/core/SkTypeface.cpp#L365-L369 (chrome/m156)
+    #[doc(alias = "unicharsToGlyphs")]
+    pub fn unichars_to_glyphs(&self, unis: &[Unichar], glyphs: &mut [GlyphId]) {
+        let n = unis.len().min(glyphs.len());
+        if n > 0 {
+            self.0.on_chars_to_glyphs(&unis[..n], &mut glyphs[..n]);
+        }
+    }
+
+    /// `SkTypeface::textToGlyphs`: the glyphs for `text` in `encoding`. Returns the number of
+    /// glyphs the text has. If `glyphs` is too short for them, nothing is written.
+    // Port of: src/core/SkTypeface.cpp#L415-L438 (chrome/m156)
+    #[doc(alias = "textToGlyphs")]
+    pub fn text_to_glyphs(
+        &self,
+        text: &[u8],
+        encoding: TextEncoding,
+        glyphs: &mut [GlyphId],
+    ) -> usize {
+        if text.is_empty() {
+            return 0;
+        }
+        let count = count_text_elements(text, encoding);
+        if count > glyphs.len() {
+            return count;
+        }
+        if encoding == TextEncoding::GlyphId {
+            for (glyph, &[a, b]) in glyphs.iter_mut().zip(text.as_chunks::<2>().0) {
+                *glyph = GlyphId::from_ne_bytes([a, b]);
+            }
+            return count;
+        }
+        let unis = convert_to_utf32(text, encoding);
+        self.unichars_to_glyphs(&unis, glyphs);
+        count
+    }
+
+    /// `SkTypeface::countGlyphs`: the number of glyphs in the typeface.
+    // Port of: src/core/SkTypeface.cpp#L440-L442 (chrome/m156)
+    #[doc(alias = "countGlyphs")]
+    #[must_use]
+    pub fn count_glyphs(&self) -> i32 {
+        self.0.on_count_glyphs()
+    }
+
+    /// `SkTypeface::getGlyphToUnicodeMap`: the unichar of each glyph, from the start of `dst`.
+    // Port of: src/core/SkTypeface.cpp#L512-L514 (chrome/m156)
+    #[doc(alias = "getGlyphToUnicodeMap")]
+    pub fn glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
+        self.0.on_get_glyph_to_unicode_map(dst);
+    }
+}
+
+/// `SkConvertToUTF32::convert`: decodes `text` in `encoding` to unichars. The bytes are read as
+/// native-endian code units; a UTF-32 text is only reinterpreted in C++, so it is decoded here.
+// Port of: src/core/SkTypeface.cpp#L378-L409 (chrome/m156)
+fn convert_to_utf32(text: &[u8], encoding: TextEncoding) -> Vec<Unichar> {
+    match encoding {
+        TextEncoding::UTF8 => {
+            let mut ptr = text;
+            let mut out = Vec::new();
+            while !ptr.is_empty() {
+                out.push(next_utf8(&mut ptr));
+            }
+            out
+        }
+        TextEncoding::UTF16 => {
+            let units: Vec<u16> = text
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|&[a, b]| u16::from_ne_bytes([a, b]))
+                .collect();
+            let mut ptr = units.as_slice();
+            let mut out = Vec::new();
+            while !ptr.is_empty() {
+                out.push(next_utf16(&mut ptr));
+            }
+            out
+        }
+        TextEncoding::UTF32 => text
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|&bytes| Unichar::from_ne_bytes(bytes))
+            .collect(),
+        TextEncoding::GlyphId => Vec::new(),
     }
 }
 
