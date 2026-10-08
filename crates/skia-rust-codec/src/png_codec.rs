@@ -44,6 +44,7 @@ use crate::png_codec_base::{
 use crate::png_composite_chunk_reader::{
     PngChunkReader, PngCompositeChunkReader, UserChunkAdapter,
 };
+use crate::sampler::Sampler;
 use crate::swizzler::Swizzler;
 
 /// Port of `kGraySigBit_GrayAlphaIsJustAlpha` (src/codec/SkPngPriv.h): the significant bits Skia
@@ -928,6 +929,27 @@ fn read_stream(base: &mut CodecBase<'_>, buf: &mut [u8]) -> usize {
 /// Port of `SkPngCodec::MakeFromStream`'s codec construction: the header's encoded information and
 /// the libpng state become a codec over the stream.
 impl CodecImpl for PngCodec {
+    // Port of: src/codec/SkPngCodecBase.cpp#L278-L290 (SkPngCodecBase::getSampler). The swizzler is
+    // made on demand for a sampled decode, with the destination's width as the frame width.
+    fn on_get_sampler(
+        &mut self,
+        base: &CodecBase<'_>,
+        create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        if self.base_png.swizzler.is_none() && create_if_necessary {
+            let options = base.options().clone();
+            let frame_width = base.dst_info().width();
+            // Ignoring the result matches Skia: on failure the swizzler stays None.
+            let _ = self
+                .base_png
+                .initialize_swizzler(base, &options, true, frame_width);
+        }
+        self.base_png
+            .swizzler
+            .as_mut()
+            .map(|swizzler| swizzler as &mut dyn Sampler)
+    }
+
     // Port of: src/codec/SkPngCodecBase.cpp#L157-L160 (onGetEncodedFormat)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::PNG

@@ -1,16 +1,14 @@
 // Copyright 2026 The skia-rust Authors.
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: src/codec/SkAndroidCodec.cpp (the output rules and the constructors), and
-// include/codec/SkAndroidCodec.h (the same methods) (chrome/m156)
+// Port of: src/codec/SkAndroidCodec.cpp (the output rules, the constructors and the sampling and
+// subset API), and include/codec/SkAndroidCodec.h (the same methods) (chrome/m156)
 // Port of: src/codec/SkCodecColorProfile.cpp#L23-L51 (cicp_get_android_sk_color_space) and
 // #L146-L168 (ColorProfile::getAndroidOutputColorSpace), the parts the output colour space uses.
 // Ported from: src/codec/SkAndroidCodec.cpp, include/codec/SkAndroidCodec.h,
 // src/codec/SkCodecColorProfile.cpp
 //
-// Not ported yet: sampled decoding (`getAndroidPixels`, `getSampledDimensions`, `computeSampleSize`,
-// `getSupportedSubset`), which needs the sampler of each decoder (`getSampler`, SkSampledCodec),
-// and the adapter for WebP, GIF, AVIF and HEIF (SkAndroidCodecAdapter). The gainmap accessors are
-// not ported either.
+// The sampled path lives in `sampled_codec` (SkSampledCodec) and `android_codec_adapter`
+// (SkAndroidCodecAdapter). The gainmap accessors are not ported.
 
 //! The Android codec: a codec with the output colour type, alpha type and colour space rules that
 //! Android's image decoder uses.
@@ -20,11 +18,47 @@ use skia_rust_core::color_space::{ColorSpace, named_primaries, named_transfer_fn
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::rect::IRect;
+use skia_rust_core::size::ISize;
 use skia_rust_core::stream::Stream;
 use skia_rust_skcms::{IccProfile, TransferFunction};
 
-use crate::codec::Codec;
+use crate::android_codec_adapter;
+use crate::codec::{Codec, Options, Result};
+use crate::codec_priv::{get_sampled_dimension, is_valid_subset};
 use crate::codecs;
+use crate::sampled_codec;
+
+/// The options of an Android decode. Port of `SkAndroidCodec::AndroidOptions`, which extends
+/// `SkCodec::Options` with a sample size.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[doc(alias = "SkAndroidCodec::AndroidOptions")]
+pub struct AndroidOptions {
+    /// The `SkCodec::Options` base: the subset, zero-initialization and frame index.
+    pub base: Options,
+    /// Port of `fSampleSize`: the integer downscale factor. The default of 1 is no downscaling.
+    pub sample_size: i32,
+}
+
+impl Default for AndroidOptions {
+    // Port of: include/codec/SkAndroidCodec.h#L206-L210 (the AndroidOptions constructor)
+    fn default() -> Self {
+        Self {
+            base: Options::default(),
+            sample_size: 1,
+        }
+    }
+}
+
+// Which `SkAndroidCodec` subclass the codec is: the sampled one, or the adapter for codecs that
+// scale internally.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    // Port of `SkSampledCodec`.
+    Sampled,
+    // Port of `SkAndroidCodecAdapter`.
+    Adapter,
+}
 
 /// A codec with Android's output rules. Port of `SkAndroidCodec`.
 #[derive(Debug)]
@@ -33,28 +67,59 @@ pub struct AndroidCodec<'a> {
     // Port of `fInfo`: the codec's natural info, taken when the codec was made.
     info: ImageInfo,
     // Port of `fCodec`.
-    codec: Codec<'a>,
+    pub(crate) codec: Codec<'a>,
+    // The subclass, which decides how sampling and subsetting are done.
+    kind: Kind,
+}
+
+// Port of `is_valid_sample_size` in SkAndroidCodec.cpp. Skia's FIXME notes there is no maximum.
+// Port of: src/codec/SkAndroidCodec.cpp#L23-L26 (chrome/m156)
+fn is_valid_sample_size(sample_size: i32) -> bool {
+    sample_size > 0
+}
+
+// Port of `smaller_than` in SkAndroidCodec.cpp: either dimension of `a` is below that of `b`.
+// Port of: src/codec/SkAndroidCodec.cpp#L244-L247 (chrome/m156)
+fn smaller_than(a: ISize, b: ISize) -> bool {
+    a.width < b.width || a.height < b.height
+}
+
+// Port of `strictly_bigger_than` in SkAndroidCodec.cpp: both dimensions of `a` are above `b`'s.
+// Port of: src/codec/SkAndroidCodec.cpp#L249-L252 (chrome/m156)
+fn strictly_bigger_than(a: ISize, b: ISize) -> bool {
+    a.width > b.width && a.height > b.height
 }
 
 impl<'a> AndroidCodec<'a> {
     /// Port of `SkAndroidCodec::MakeFromCodec`: wraps a codec for the formats Android decodes. The
-    /// formats whose Android wrapper is not ported (GIF, WebP, AVIF, HEIF) and the ones Android does
-    /// not support return `None`.
-    // Port of: src/codec/SkAndroidCodec.cpp#L43-L72 (chrome/m156), the sampled arm
+    /// formats Android does not support (PKM, KTX, ASTC, JPEG XL) return `None`.
+    // Port of: src/codec/SkAndroidCodec.cpp#L43-L72 (chrome/m156)
     #[doc(alias = "SkAndroidCodec::MakeFromCodec")]
     #[must_use]
     pub fn make_from_codec(codec: Codec<'a>) -> Option<Self> {
-        match codec.encoded_format() {
+        let kind = match codec.encoded_format() {
             EncodedImageFormat::PNG
             | EncodedImageFormat::ICO
             | EncodedImageFormat::JPEG
             | EncodedImageFormat::BMP
-            | EncodedImageFormat::WBMP => Some(Self {
-                info: codec.info(),
-                codec,
-            }),
-            _ => None,
-        }
+            | EncodedImageFormat::WBMP => Kind::Sampled,
+            EncodedImageFormat::GIF
+            | EncodedImageFormat::WEBP
+            | EncodedImageFormat::DNG
+            // On the Android framework, both HEIF and AVIF are handled by SkCrabbyAvifCodec, which
+            // scales internally.
+            | EncodedImageFormat::AVIF
+            | EncodedImageFormat::HEIF => Kind::Adapter,
+            EncodedImageFormat::PKM
+            | EncodedImageFormat::KTX
+            | EncodedImageFormat::ASTC
+            | EncodedImageFormat::JPEGXL => return None,
+        };
+        Some(Self {
+            info: codec.info(),
+            codec,
+            kind,
+        })
     }
 
     /// Port of `SkAndroidCodec::MakeFromStream` (with no PNG chunk reader): makes the codec with the
@@ -78,6 +143,210 @@ impl<'a> AndroidCodec<'a> {
     #[must_use]
     pub fn codec(&self) -> &Codec<'a> {
         &self.codec
+    }
+
+    /// Port of `SkAndroidCodec::getSampledDimensions`: the size of the output for a sample size.
+    /// The codec may round up or down to the size it decodes most efficiently. Never zero: a sample
+    /// size larger than a dimension gives one.
+    // Port of: src/codec/SkAndroidCodec.cpp#L195-L205 (chrome/m156)
+    #[must_use]
+    #[doc(alias = "getSampledDimensions")]
+    pub fn get_sampled_dimensions(&self, sample_size: i32) -> ISize {
+        if !is_valid_sample_size(sample_size) {
+            return ISize::new(0, 0);
+        }
+        // Fast path for when we are not scaling.
+        if sample_size == 1 {
+            return self.codec.dimensions();
+        }
+        self.on_get_sampled_dimensions(sample_size)
+    }
+
+    /// Port of `SkAndroidCodec::getSupportedSubset`: adjusts `desired_subset` to a subset this codec
+    /// decodes. Returns false if the subset is not inside the image, or the codec cannot decode it.
+    // Port of: src/codec/SkAndroidCodec.cpp#L213-L219 (chrome/m156)
+    #[must_use]
+    #[doc(alias = "getSupportedSubset")]
+    pub fn get_supported_subset(&self, desired_subset: &mut IRect) -> bool {
+        if !is_valid_subset(*desired_subset, self.codec.dimensions()) {
+            return false;
+        }
+        match self.kind {
+            Kind::Sampled => true,
+            Kind::Adapter => self.codec.get_valid_subset(desired_subset),
+        }
+    }
+
+    /// Port of `SkAndroidCodec::getSampledSubsetDimensions`: the output size for a sample size and a
+    /// subset that `get_supported_subset` accepts unchanged. Zero for any other subset.
+    // Port of: src/codec/SkAndroidCodec.cpp#L221-L243 (chrome/m156)
+    #[must_use]
+    #[doc(alias = "getSampledSubsetDimensions")]
+    pub fn get_sampled_subset_dimensions(&self, sample_size: i32, subset: IRect) -> ISize {
+        if !is_valid_sample_size(sample_size) {
+            return ISize::new(0, 0);
+        }
+        // The subset must be one that is supported by the codec.
+        let mut copy_subset = subset;
+        if !self.get_supported_subset(&mut copy_subset) || copy_subset != subset {
+            return ISize::new(0, 0);
+        }
+        // If the subset is the entire image, for consistency, use get_sampled_dimensions().
+        if self.codec.dimensions() == subset.size() {
+            return self.get_sampled_dimensions(sample_size);
+        }
+        // Both subclasses want the same implementation here.
+        ISize::new(
+            get_sampled_dimension(subset.width(), sample_size),
+            get_sampled_dimension(subset.height(), sample_size),
+        )
+    }
+
+    /// Port of `SkAndroidCodec::computeSampleSize`: the sample size that decodes to the size nearest
+    /// `desired_size`. On return `desired_size` holds the size that sample size produces. Returns 1,
+    /// and the original size, when the image cannot be downscaled to a size of that kind.
+    // Port of: src/codec/SkAndroidCodec.cpp#L254-L330 (chrome/m156)
+    #[must_use]
+    #[doc(alias = "computeSampleSize")]
+    pub fn compute_sample_size(&self, desired_size: &mut ISize) -> i32 {
+        let orig_dims = self.codec.dimensions();
+        if *desired_size == orig_dims {
+            return 1;
+        }
+        if smaller_than(orig_dims, *desired_size) {
+            *desired_size = orig_dims;
+            return 1;
+        }
+        // Handle bad input.
+        if desired_size.width < 1 || desired_size.height < 1 {
+            *desired_size = ISize::new(desired_size.width.max(1), desired_size.height.max(1));
+        }
+        // Skia returns 1 for a WebP here, and keeps the original size when the WebP is animated
+        // (`getFrameCount() > 1`). WebP is not ported, so no codec reaches this branch yet, and the
+        // frame-count check lands with it.
+        if self.codec.encoded_format() == EncodedImageFormat::WEBP {
+            return 1;
+        }
+
+        let mut sample_size =
+            (orig_dims.width / desired_size.width).min(orig_dims.height / desired_size.height);
+        let mut computed_size = self.get_sampled_dimensions(sample_size);
+        if computed_size == *desired_size {
+            return sample_size;
+        }
+        if computed_size == orig_dims || sample_size == 1 {
+            // Cannot downscale.
+            *desired_size = computed_size;
+            return 1;
+        }
+
+        if strictly_bigger_than(computed_size, *desired_size) {
+            // See if there is a tighter fit.
+            loop {
+                let smaller = self.get_sampled_dimensions(sample_size + 1);
+                if smaller == *desired_size {
+                    return sample_size + 1;
+                }
+                if smaller == computed_size || smaller_than(smaller, *desired_size) {
+                    // Cannot get any smaller without being smaller than desired.
+                    *desired_size = computed_size;
+                    return sample_size;
+                }
+                sample_size += 1;
+                computed_size = smaller;
+            }
+        }
+
+        if !smaller_than(computed_size, *desired_size) {
+            // One of the computed dimensions is equal to desired, and the other is bigger. This is
+            // as close as we can get.
+            *desired_size = computed_size;
+            return sample_size;
+        }
+
+        // computed_size is too small. Make it larger.
+        while sample_size > 2 {
+            let bigger = self.get_sampled_dimensions(sample_size - 1);
+            if bigger == *desired_size || !smaller_than(bigger, *desired_size) {
+                *desired_size = bigger;
+                return sample_size - 1;
+            }
+            sample_size -= 1;
+        }
+
+        *desired_size = orig_dims;
+        1
+    }
+
+    /// Port of `SkAndroidCodec::getAndroidPixels`: decodes the image, or a subset of it, scaled by
+    /// `options.sample_size`, into `pixels` (`row_bytes` apart). `None` options decode the whole image
+    /// unscaled.
+    // Port of: src/codec/SkAndroidCodec.cpp#L332-L382 (chrome/m156), without the frame-callback
+    // recursion, which only animated codecs need (none is ported).
+    #[doc(alias = "getAndroidPixels")]
+    pub fn get_android_pixels(
+        &mut self,
+        request_info: &ImageInfo,
+        pixels: &mut [u8],
+        row_bytes: usize,
+        options: Option<&AndroidOptions>,
+    ) -> Result {
+        if pixels.is_empty() {
+            return Result::InvalidParameters;
+        }
+        if row_bytes < request_info.min_row_bytes() {
+            return Result::InvalidParameters;
+        }
+
+        let mut options = options.cloned().unwrap_or_default();
+        if let Some(subset) = options.base.subset {
+            if !is_valid_subset(subset, self.codec.dimensions()) {
+                return Result::InvalidParameters;
+            }
+            if IRect::from_size(self.codec.dimensions()) == subset {
+                // The caller wants the whole thing, rather than a subset.
+                options.base.subset = None;
+            }
+        }
+
+        let frame_result = self.codec.handle_frame_index(request_info, &options.base);
+        if frame_result != Result::Success {
+            return frame_result;
+        }
+
+        self.on_get_android_pixels(request_info, pixels, row_bytes, &options)
+    }
+
+    // Port of the virtual `SkAndroidCodec::onGetSampledDimensions`, dispatched on the subclass.
+    fn on_get_sampled_dimensions(&self, sample_size: i32) -> ISize {
+        match self.kind {
+            Kind::Sampled => sampled_codec::on_get_sampled_dimensions(&self.codec, sample_size),
+            Kind::Adapter => {
+                android_codec_adapter::on_get_sampled_dimensions(&self.codec, sample_size)
+            }
+        }
+    }
+
+    // Port of the virtual `SkAndroidCodec::onGetAndroidPixels`, dispatched on the subclass.
+    fn on_get_android_pixels(
+        &mut self,
+        info: &ImageInfo,
+        pixels: &mut [u8],
+        row_bytes: usize,
+        options: &AndroidOptions,
+    ) -> Result {
+        match self.kind {
+            Kind::Sampled => {
+                sampled_codec::on_get_android_pixels(self, info, pixels, row_bytes, options)
+            }
+            Kind::Adapter => android_codec_adapter::on_get_android_pixels(
+                &mut self.codec,
+                info,
+                pixels,
+                row_bytes,
+                options,
+            ),
+        }
     }
 
     /// Port of `SkAndroidCodec::getEncodedFormat` (through the wrapped codec).

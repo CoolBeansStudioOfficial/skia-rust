@@ -16,6 +16,7 @@ use skia_rust_core::stream::{MemoryStream, Stream};
 use crate::codec::{Codec, CodecBase, CodecImpl, Options, Result};
 use crate::codec_priv::valid_alpha;
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
+use crate::sampler::Sampler;
 use crate::swizzler::Swizzler;
 
 // Port of: src/codec/SkWbmpCodec.cpp#L33-L35 (get_src_row_bytes: SkAlign8(width) >> 3)
@@ -140,6 +141,17 @@ impl WbmpCodec {
 }
 
 impl CodecImpl for WbmpCodec {
+    // Port of: src/codec/SkWbmpCodec.h#L47-L50 (getSampler)
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        _create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        self.swizzler
+            .as_mut()
+            .map(|swizzler| swizzler as &mut dyn Sampler)
+    }
+
     // Port of: src/codec/SkWbmpCodec.cpp#L118-L120 (onGetEncodedFormat)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::WBMP

@@ -47,6 +47,47 @@ impl SamplerBase {
     }
 }
 
+/// A sampler: the part of a decoder that writes sampled rows. Port of `SkSampler`.
+///
+/// Every decoder that supports sampling implements this for its sampler object (the swizzler, or
+/// the codec itself where Skia has a separate `SkBmpRLESampler`). `SkSampledCodec` drives it through
+/// [`Sampler::set_sample_x`] and [`Sampler::set_sample_y`].
+#[doc(alias = "SkSampler")]
+pub trait Sampler {
+    /// Port of `SkSampler::onSetSampleX`: updates the sampler to take every `sample_x`th pixel, and
+    /// returns the width after sampling.
+    fn on_set_sample_x(&mut self, sample_x: i32) -> i32;
+
+    /// Port of `SkSampler::fillWidth`: the width of the rows this sampler writes.
+    fn fill_width(&self) -> i32;
+
+    /// The sample-Y state of this sampler (Skia's `fSampleY` in `SkSampler`).
+    fn sampler_base(&self) -> &SamplerBase;
+
+    /// The sample-Y state of this sampler, mutably.
+    fn sampler_base_mut(&mut self) -> &mut SamplerBase;
+
+    /// Port of `SkSampler::setSampleX`.
+    fn set_sample_x(&mut self, sample_x: i32) -> i32 {
+        self.on_set_sample_x(sample_x)
+    }
+
+    /// Port of `SkSampler::setSampleY`.
+    fn set_sample_y(&mut self, sample_y: i32) {
+        self.sampler_base_mut().set_sample_y(sample_y);
+    }
+
+    /// Port of `SkSampler::sampleY`.
+    fn sample_y(&self) -> i32 {
+        self.sampler_base().sample_y()
+    }
+
+    /// Port of `SkSampler::rowNeeded`.
+    fn row_needed(&self, row: i32) -> bool {
+        self.sampler_base().row_needed(row)
+    }
+}
+
 /// Port of `SkSampler::Fill`: writes zeros over the rows of `info` at `dst` (`rowBytes` apart).
 ///
 /// Skia zeroes only the colour types a decoder can produce incomplete images in (N32, 565,

@@ -34,6 +34,8 @@ pub mod clip_stack_test;
 pub mod clipper_test;
 #[cfg(test)]
 #[cfg(test)]
+pub mod codec_exact_read_test;
+#[cfg(test)]
 pub mod codec_partial_test;
 #[cfg(test)]
 pub mod codec_test;

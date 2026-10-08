@@ -28174,7 +28174,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
 status = "todo"
-reason = "needs JPEG, WebP and GIF decoders and sampled decoding (SkSampledCodec, not ported)"
+reason = "needs the JPEG, WebP and GIF decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -29579,8 +29579,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecExactReadTest.cpp#L53-L94"
 module = "codec"
-status = "todo"
-reason = "also decodes WBMP and BMP; needs the BMP decoder"
+status = "passing"
 span_hash = "488c453fae48481821efc8707ed3366808a3878b71a79f3087b23e8842b2ab71"
 
 [[test]]
@@ -29673,7 +29672,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1898-L1932"
 module = "codec"
 status = "todo"
-reason = "needs SkAndroidCodec and the JPEG decoder"
+reason = "needs the JPEG decoder"
 span_hash = "95a721367a84ab72bef0a9d1eadabbf88b75c0a8b40a2a1da01c89b2c9bf6325"
 
 [[test]]
@@ -29806,7 +29805,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L605-L608"
 module = "codec"
 status = "todo"
-reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which is ported (SkSampledCodec) but not yet run for this file"
 span_hash = "a8b8b4eab9faa920058d99ed8b7e694bf8e84b2be8e2397390da5a48f5ae7d04"
 
 [[test]]
@@ -29889,7 +29888,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L611-L618"
 module = "codec"
 status = "todo"
-reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which is ported (SkSampledCodec) but not yet run for this file"
 span_hash = "78a3852120b6c9457fb651b6fbbff96b61dcc2d9ae6df707f9c39248a23f07bd"
 
 [[test]]
@@ -29993,7 +29992,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L638-L655"
 module = "codec"
 status = "todo"
-reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which is ported (SkSampledCodec) but not yet run for this file"
 span_hash = "9f782bdbbb96b148028c1e8db515c9f81689e2406b1ac3a42cdf4760a8dec967"
 
 [[test]]
@@ -30061,8 +30060,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1572-L1598"
 module = "codec"
-status = "todo"
-reason = "needs sampled decoding: getAndroidPixels with fSampleSize (SkSampledCodec, not ported)"
+status = "passing"
 span_hash = "53fda6ec0202587058381328b67fd5261280ae469ee87e4842fea82f629b3872"
 
 [[test]]
@@ -39376,7 +39374,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L71-L117"
 module = "codec"
 status = "todo"
-reason = "needs gainmap metadata (core GainmapInfo, codecs C13) and SkAndroidCodec"
+reason = "needs gainmap metadata (core GainmapInfo, codecs C13); the SkAndroidCodec gainmap accessors are not ported"
 span_hash = "9990007533dc22e86f9ed929b022d6d00c0edb4a41d07b3c7ea4598cf074ddfa"
 
 [[test]]
@@ -39396,7 +39394,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L119-L138"
 module = "codec"
 status = "todo"
-reason = "needs gainmap metadata (core GainmapInfo, codecs C13) and SkAndroidCodec"
+reason = "needs gainmap metadata (core GainmapInfo, codecs C13); the SkAndroidCodec gainmap accessors are not ported"
 span_hash = "cdcff9f6314664c0b9285b8dbbb13a2fbcb31785e4ec8b230066ae94a9c4debf"
 
 [[test]]

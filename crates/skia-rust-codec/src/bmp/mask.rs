@@ -3,7 +3,7 @@
 // Port of: src/codec/SkBmpMaskCodec.cpp#L1-L113, src/codec/SkBmpMaskCodec.h (chrome/m156)
 // Ported from: src/codec/SkBmpMaskCodec.cpp, src/codec/SkBmpMaskCodec.h
 //
-// Not ported: `getSampler` (SkSampledCodec).
+// `getSampler` returns the mask swizzler, which samples for SkSampledCodec.
 
 //! The BMP decoder for files whose pixels are packed by bit masks (16, 24 or 32 bits per pixel).
 
@@ -14,6 +14,8 @@ use skia_rust_core::image_info::ImageInfo;
 
 use crate::codec::{CodecBase, CodecImpl, Options, Result, ScanlineOrder};
 use crate::mask_swizzler::MaskSwizzler;
+use crate::sampler::Sampler;
+
 use crate::masks::Masks;
 
 use super::{BmpBase, read_exact, rewind};
@@ -120,6 +122,17 @@ impl BmpMaskCodec {
 }
 
 impl CodecImpl for BmpMaskCodec {
+    // Port of: src/codec/SkBmpMaskCodec.h#L59-L62 (getSampler)
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        _create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        self.mask_swizzler
+            .as_mut()
+            .map(|swizzler| swizzler as &mut dyn Sampler)
+    }
+
     // Port of: src/codec/SkBmpCodec.h (onGetEncodedFormat)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::BMP

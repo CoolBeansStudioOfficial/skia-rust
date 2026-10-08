@@ -10,7 +10,8 @@
 // is the path Skia already takes for F16. For 8888 destinations the results are identical, since
 // the in-place and buffered transforms are the same per-pixel conversion.
 //
-// Not ported: sampling (`setSampleX`, `getSampler`, SkSampledCodec). The sample factor stays 1.
+// Sampling: the codec is its own sampler. Skia's SkBmpRLESampler only forwards to the codec, so
+// the forwarding is folded into `impl Sampler for BmpRleCodec`.
 
 //! The BMP decoder for RLE8 and RLE4 files (and the 24-bit RLE form some JPEG-compressed BMPs use).
 
@@ -26,7 +27,7 @@ use crate::codec_priv::{
     pack888_to_rgb16, pixel32_to_pixel16,
 };
 
-use crate::sampler;
+use crate::sampler::{self, Sampler, SamplerBase};
 
 use super::{BmpBase, choose_pack_argb, compute_row_bytes, read_exact, rewind};
 
@@ -79,10 +80,16 @@ pub(crate) struct BmpRleCodec {
     bytes_buffered: usize,
     // Port of `fCurrRLEByte`: the next unread byte of `stream_buffer`.
     curr_rle_byte: usize,
-    // Port of `fSampleX`: always 1 until sampling is ported.
+    // Port of `fSampleX`.
     sample_x: i32,
     // Port of `fLinesToSkip`: rows a DELTA code jumped past, to skip on the next call.
     lines_to_skip: i32,
+    // The image width, which `fillWidth` samples. Port of `dimensions().width()`.
+    width: i32,
+    // Port of `fSampler` (the SkSampler base, which holds fSampleY).
+    sampler: SamplerBase,
+    // Whether a sampler has been asked for. Port of `fSampler != nullptr`.
+    sampler_created: bool,
 }
 
 impl BmpRleCodec {
@@ -106,6 +113,9 @@ impl BmpRleCodec {
             curr_rle_byte: 0,
             sample_x: 1,
             lines_to_skip: 0,
+            width,
+            sampler: SamplerBase::default(),
+            sampler_created: false,
         }
     }
 
@@ -293,8 +303,7 @@ impl BmpRleCodec {
             return Result::Unimplemented;
         }
 
-        // Reset the sample factor and the skipped rows. Sampling is not ported, so the factor
-        // stays 1.
+        // Reset the sample factor and the skipped rows.
         self.sample_x = 1;
         self.lines_to_skip = 0;
 
@@ -608,7 +617,46 @@ impl BmpRleCodec {
     }
 }
 
+impl Sampler for BmpRleCodec {
+    // Port of: src/codec/SkBmpRLECodec.cpp#L582-L585 (SkBmpRLECodec::setSampleX) and the
+    // onSetSampleX of SkBmpRLESampler, which forwards to it.
+    fn on_set_sample_x(&mut self, sample_x: i32) -> i32 {
+        self.sample_x = sample_x;
+        self.fill_width()
+    }
+
+    // Port of: src/codec/SkBmpRLECodec.cpp#L587-L589 (SkBmpRLECodec::fillWidth)
+    fn fill_width(&self) -> i32 {
+        get_sampled_dimension(self.width, self.sample_x)
+    }
+
+    fn sampler_base(&self) -> &SamplerBase {
+        &self.sampler
+    }
+
+    fn sampler_base_mut(&mut self) -> &mut SamplerBase {
+        &mut self.sampler
+    }
+}
+
 impl CodecImpl for BmpRleCodec {
+    // Port of: src/codec/SkBmpRLECodec.cpp#L574-L580 (getSampler). The sampler exists once one has
+    // been requested; `None` before that.
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        if create_if_necessary {
+            self.sampler_created = true;
+        }
+        if self.sampler_created {
+            Some(self as &mut dyn Sampler)
+        } else {
+            None
+        }
+    }
+
     // Port of: src/codec/SkBmpCodec.h (onGetEncodedFormat)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::BMP

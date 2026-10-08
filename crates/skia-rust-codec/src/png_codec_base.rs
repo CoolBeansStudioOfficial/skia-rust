@@ -4,7 +4,7 @@
 // Ported from: src/codec/SkPngCodecBase.{h,cpp}
 //
 // Not ported yet: `onDecodeGainmap`, `onGetGainmapInfo` and `onGetGainmapCodec` (gainmap decoding
-// waits for core's gainmap info, codecs.md C13), and `getSampler`, which the sampled codec needs.
+// waits for core's gainmap info, codecs.md C13).
 
 //! The state and the row transforms that the PNG decoders share: the swizzler or colour transform
 //! for each row, the palette colour table, and the storage for colour-transformed rows.
@@ -260,7 +260,7 @@ impl PngCodecBase {
     }
 
     // Port of: src/codec/SkPngCodecBase.cpp#L203-L244 (SkPngCodecBase::initializeSwizzler)
-    fn initialize_swizzler(
+    pub(crate) fn initialize_swizzler(
         &mut self,
         base: &CodecBase<'_>,
         options: &Options,

@@ -9,6 +9,8 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::math::mul_div_255_round;
+use skia_rust_core::rect::{Contains, IRect};
+use skia_rust_core::size::ISize;
 use skia_rust_skcms::PixelFormat;
 
 /// Port of `SK_PMCOLOR_IS_RGBA`: true when the native 32-bit colour type is RGBA.
@@ -109,6 +111,42 @@ pub fn get_sampled_dimension(src_dimension: i32, sample_size: i32) -> i32 {
         return 0;
     }
     src_dimension / sample_size
+}
+
+/// Port of `SkCodecPriv::GetScaleFromSampleSize`.
+// Port of: src/codec/SkCodecPriv.h#L117 (chrome/m156)
+#[must_use]
+#[allow(clippy::cast_precision_loss)] // sample sizes are small integers, exact in f32
+pub fn get_scale_from_sample_size(sample_size: i32) -> f32 {
+    1.0 / (sample_size as f32)
+}
+
+/// Port of `SkCodecPriv::IsValidSubset`: whether `subset` lies inside an image of `image_dims`.
+// Port of: src/codec/SkCodecPriv.h#L119-L121 (chrome/m156)
+#[must_use]
+pub fn is_valid_subset(subset: IRect, image_dims: ISize) -> bool {
+    IRect::from_wh(image_dims.width, image_dims.height).contains(&subset)
+}
+
+/// Port of `SkCodecPriv::GetDstCoord`. Only called with a sample factor above 1.
+// Port of: src/codec/SkCodecPriv.h#L153 (chrome/m156)
+#[must_use]
+pub fn get_dst_coord(src_coord: i32, sample_factor: i32) -> i32 {
+    src_coord / sample_factor
+}
+
+/// Port of `SkCodecPriv::IsCoordNecessary`: whether a source row or column is kept by sampling.
+// Port of: src/codec/SkCodecPriv.h#L163-L174 (chrome/m156)
+#[must_use]
+pub fn is_coord_necessary(src_coord: i32, sample_factor: i32, scaled_dim: i32) -> bool {
+    // Get the first coordinate that we want to keep
+    let start_coord = get_start_coord(sample_factor);
+    // Return false on edge cases
+    if src_coord < start_coord || get_dst_coord(src_coord, sample_factor) >= scaled_dim {
+        return false;
+    }
+    // Every sample_factor rows are necessary
+    (src_coord - start_coord) % sample_factor == 0
 }
 
 /// Port of `SkCodecPriv::GetStartCoord`.

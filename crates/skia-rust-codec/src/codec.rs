@@ -26,7 +26,7 @@ use skia_rust_skcms::{
 
 use crate::codec_priv::{select_xform_format, valid_alpha};
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
-use crate::sampler;
+use crate::sampler::{self, Sampler};
 
 /// Port of `SkCodec::ZeroInitialized`: whether the destination was zeroed by the caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -377,6 +377,22 @@ pub trait CodecImpl: Send {
         ScanlineOrder::TopDown
     }
 
+    /// Port of `onGetScaledDimensions`: the size the codec scales to for `desired_scale`. Defaults
+    /// to the codec's own dimensions (no native scaling).
+    fn on_get_scaled_dimensions(&self, base: &CodecBase<'_>, _desired_scale: f32) -> ISize {
+        base.dimensions()
+    }
+
+    /// Port of `getSampler`: the sampler that writes sampled rows, or `None` when the codec has no
+    /// sampler yet and `create_if_necessary` is false. Defaults to `None`.
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        _create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        None
+    }
+
     /// Port of `usesColorXform`.
     fn uses_color_xform(&self) -> bool {
         true
@@ -641,7 +657,7 @@ impl<'a> Codec<'a> {
     /// Port of `SkCodec::handleFrameIndex`, for codecs without animation: frame 0 sets up the
     /// colour conversion, and any later frame is not present.
     // Port of: src/codec/SkCodec.cpp#L386-L417 (chrome/m156), the still-image part
-    fn handle_frame_index(&mut self, info: &ImageInfo, options: &Options) -> Result {
+    pub(crate) fn handle_frame_index(&mut self, info: &ImageInfo, options: &Options) -> Result {
         if !self.base.rewind_if_needed(self.imp.as_mut()) {
             return Result::CouldNotRewind;
         }
@@ -670,9 +686,51 @@ impl<'a> Codec<'a> {
         Result::IncompleteInput
     }
 
-    /// Port of `SkCodec::dimensionsSupported`.
-    fn dimensions_supported(&self, dim: ISize) -> bool {
+    /// Port of `SkCodec::dimensionsSupported`: whether `dim` is the codec's own size or a scaled
+    /// size it can decode to directly.
+    #[must_use]
+    pub fn dimensions_supported(&self, dim: ISize) -> bool {
         dim == self.base.dimensions() || self.imp.on_dimensions_supported(&self.base, dim)
+    }
+
+    /// Port of `SkCodec::getScaledDimensions`: the size the codec suggests for `desired_scale`. Only
+    /// downscales are native; a scale of one or more returns the codec's own dimensions.
+    // Port of: include/codec/SkCodec.h#L276-L289 (chrome/m156)
+    #[must_use]
+    pub fn get_scaled_dimensions(&self, desired_scale: f32) -> ISize {
+        // Negative and zero scales are errors.
+        if desired_scale <= 0.0 {
+            return ISize::new(0, 0);
+        }
+        // Upscaling is not supported. Return the original size if the client requests an upscale.
+        if desired_scale >= 1.0 {
+            return self.base.dimensions();
+        }
+        self.imp.on_get_scaled_dimensions(&self.base, desired_scale)
+    }
+
+    /// Port of `SkCodec::getSampler`: the sampler of the current decode, created on demand when
+    /// `create_if_necessary` is true.
+    // Port of: include/codec/SkCodec.h#L1120 (getSampler)
+    pub(crate) fn get_sampler(&mut self, create_if_necessary: bool) -> Option<&mut dyn Sampler> {
+        self.imp.on_get_sampler(&self.base, create_if_necessary)
+    }
+
+    /// Port of `SkCodec::outputScanline`: the output row for an input (encoded) row.
+    // Port of: src/codec/SkCodec.cpp#L763-L779 (chrome/m156)
+    #[must_use]
+    pub fn output_scanline(&self, input_scanline: i32) -> i32 {
+        match self.imp.on_get_scanline_order() {
+            ScanlineOrder::TopDown => input_scanline,
+            ScanlineOrder::BottomUp => self.base.encoded_info.height() - input_scanline - 1,
+        }
+    }
+
+    /// Port of `SkCodec::nextScanline`: the output row the next scanline decode produces.
+    // Port of: include/codec/SkCodec.h#L647 (nextScanline)
+    #[must_use]
+    pub fn next_scanline(&self) -> i32 {
+        self.output_scanline(self.base.curr_scanline)
     }
 
     /// Port of `SkCodec::startScanlineDecode(info, options)`.
@@ -732,7 +790,13 @@ impl<'a> Codec<'a> {
         // Not in Skia's `getScanlines`, which trusts its caller: a row stride shorter than one row,
         // or a destination too small for `count` rows, would panic on slice indexing below. Zero
         // lines decoded is the only failure value this signature can carry, so report that.
-        let min_row_bytes = self.base.dst_info.min_row_bytes();
+        // A sampled decode writes rows of the sampler's width, which is narrower than the native
+        // destination, so the check uses the width the sampler fills.
+        let row_width = match self.imp.on_get_sampler(&self.base, false) {
+            Some(sampler) => sampler.fill_width(),
+            None => self.base.dst_info.width(),
+        };
+        let min_row_bytes = self.base.dst_info.with_wh(row_width, 1).min_row_bytes();
         let Ok(count_usize) = usize::try_from(count) else {
             return 0;
         };
@@ -829,7 +893,11 @@ impl<'a> Codec<'a> {
             self.imp
                 .on_start_incremental_decode(&mut self.base, info, dst, row_bytes, options);
         if result == Result::Success {
-            Ok(IncrementalDecode { codec: self, dst })
+            Ok(IncrementalDecode {
+                codec: self,
+                dst,
+                row_bytes,
+            })
         } else {
             Err(result)
         }
@@ -855,12 +923,11 @@ impl<'a> Codec<'a> {
 
     /// Port of `SkCodec::fillIncompleteImage`: writes zeros over the rows a decode did not
     /// produce, unless the caller zeroed the destination.
-    // Port of: src/codec/SkCodec.cpp#L781-L797 (chrome/m156), without the sampler (no sampled
-    // codec yet, so the fill width is the subset or the image width)
+    // Port of: src/codec/SkCodec.cpp#L781-L797 (chrome/m156)
     // Line counts are non-negative, so the cast to usize is exact.
     #[allow(clippy::cast_sign_loss)]
-    fn fill_incomplete_image(
-        &self,
+    pub(crate) fn fill_incomplete_image(
+        &mut self,
         info: &ImageInfo,
         dst: &mut [u8],
         row_bytes: usize,
@@ -872,9 +939,13 @@ impl<'a> Codec<'a> {
             return;
         }
         let lines_remaining = lines_requested - lines_decoded;
-        let fill_width = match self.base.options.subset {
-            Some(subset) => subset.width(),
-            None => info.width(),
+        // Port of `sampler->fillWidth()` when the codec has a sampler, else the subset or image width.
+        let fill_width = match self.imp.on_get_sampler(&self.base, false) {
+            Some(sampler) => sampler.fill_width(),
+            None => match self.base.options.subset {
+                Some(subset) => subset.width(),
+                None => info.width(),
+            },
         };
         let fill_offset = if self.imp.on_get_scanline_order() == ScanlineOrder::BottomUp {
             0
@@ -936,9 +1007,35 @@ impl<'a> Codec<'a> {
 pub struct IncrementalDecode<'c, 'a, 'd> {
     codec: &'c mut Codec<'a>,
     dst: &'d mut [u8],
+    row_bytes: usize,
 }
 
 impl IncrementalDecode<'_, '_, '_> {
+    /// Port of `SkCodec::getSampler(true)` during an incremental decode: the sampler the decode
+    /// writes through.
+    pub(crate) fn sampler(&mut self) -> Option<&mut dyn Sampler> {
+        self.codec.get_sampler(true)
+    }
+
+    /// Port of `SkCodec::fillIncompleteImage` for the destination of this decode.
+    pub(crate) fn fill_incomplete_image(
+        &mut self,
+        info: &ImageInfo,
+        zero_init: ZeroInitialized,
+        lines_requested: i32,
+        lines_decoded: i32,
+    ) {
+        let row_bytes = self.row_bytes;
+        self.codec.fill_incomplete_image(
+            info,
+            &mut *self.dst,
+            row_bytes,
+            zero_init,
+            lines_requested,
+            lines_decoded,
+        );
+    }
+
     /// Port of `SkCodec::incrementalDecode`. Returns the result and the number of rows written
     /// into the destination so far. `Success` means every requested row is decoded. An
     /// `IncompleteInput` result means the decode may be resumed once more input is available.

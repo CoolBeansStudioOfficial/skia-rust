@@ -4,7 +4,7 @@
 // (chrome/m156)
 // Ported from: src/codec/SkIcoCodec.cpp, src/codec/SkIcoCodec.h, include/codec/SkIcoDecoder.h
 //
-// Not ported: `getSampler` (it returns the embedded codec's sampler, which SkSampledCodec needs).
+// `getSampler` and `onGetScaledDimensions` are forwarded to the embedded codec in use.
 
 //! The ICO decoder. An ICO file holds several images, each a BMP or a PNG. The codec makes one
 //! embedded codec per image and sends every request to the one whose size matches.
@@ -22,6 +22,7 @@ use crate::codec::{Codec, CodecBase, CodecImpl, Options, Result, ScanlineOrder};
 use crate::codecs;
 use crate::encoded_info::EncodedInfo;
 use crate::png_codec::{self, is_png_format};
+use crate::sampler::Sampler;
 
 // Header size constants. Port of `kIcoDirectoryBytes` and `kIcoDirEntryBytes`.
 const ICO_DIRECTORY_BYTES: u32 = 6;
@@ -343,6 +344,45 @@ impl CodecImpl for IcoCodec {
                 result
             }
             None => Result::InternalError,
+        }
+    }
+
+    // Port of: src/codec/SkIcoCodec.cpp#L234-L257 (onGetScaledDimensions): the embedded image whose
+    // area is closest to the desired area.
+    // The float arithmetic mirrors the C++ (int products converted to float).
+    #[allow(clippy::cast_precision_loss)] // dimensions are small; the C++ converts them to float too
+    fn on_get_scaled_dimensions(&self, base: &CodecBase<'_>, desired_scale: f32) -> ISize {
+        let orig_width = base.dimensions().width;
+        let orig_height = base.dimensions().height;
+        let desired_size = desired_scale * orig_width as f32 * orig_height as f32;
+        // At least one image will have smaller error than this initial value.
+        let mut min_error = (orig_width * orig_height) as f32 - desired_size + 1.0;
+        let mut min_index = None;
+        for (i, codec) in self.embedded.iter().enumerate() {
+            let dimensions = codec.dimensions();
+            let error = ((dimensions.width * dimensions.height) as f32 - desired_size).abs();
+            if error < min_error {
+                min_error = error;
+                min_index = Some(i);
+            }
+        }
+        match min_index {
+            Some(i) => self.embedded[i].dimensions(),
+            // Skia asserts that an embedded image was found; the codec's own size is the fallback.
+            None => base.dimensions(),
+        }
+    }
+
+    // Port of: src/codec/SkIcoCodec.cpp#L406-L412 (getSampler): the sampler of the embedded codec
+    // in use, if a decode has started.
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        match self.curr {
+            Some(i) => self.embedded[i].get_sampler(create_if_necessary),
+            None => None,
         }
     }
 

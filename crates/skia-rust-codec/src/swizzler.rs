@@ -31,7 +31,7 @@ use crate::codec_priv::{
     pack888_to_rgb16, pixel32_to_pixel16, premultiply_argb_as_bgra, premultiply_argb_as_rgba,
 };
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
-use crate::sampler::SamplerBase;
+use crate::sampler::{Sampler, SamplerBase};
 
 /// A row routine. Port of `SkSwizzler::RowProc`: writes `dst_width` pixels to `dst` from `src`,
 /// reading `delta_src` bytes (or bits, for sub-byte sources) per pixel starting at `offset`. `bpp`
@@ -1221,10 +1221,12 @@ impl Swizzler {
         let mut src_offset = 0usize;
         let mut src_width = dst_info.width() as usize;
         let mut dst_offset = 0usize;
-        let dst_width = src_width;
+        let mut dst_width = src_width;
         if let Some(subset) = options.subset {
             src_offset = subset.left() as usize;
             src_width = subset.width() as usize;
+            // Port of `dstWidth = srcWidth` in the subset branch: the destination row is the subset.
+            dst_width = src_width;
         } else if let Some(frame) = frame {
             dst_offset = frame.left() as usize;
             src_width = frame.width() as usize;
@@ -1349,5 +1351,25 @@ impl Swizzler {
             self.src_offset_units,
             &self.color_table,
         );
+    }
+}
+
+impl Sampler for Swizzler {
+    // Port of: src/codec/SkSwizzler.cpp#L1211-L1253 (onSetSampleX, through SkSampler::setSampleX)
+    fn on_set_sample_x(&mut self, sample_x: i32) -> i32 {
+        Swizzler::set_sample_x(self, sample_x)
+    }
+
+    // Port of: src/codec/SkSwizzler.h (fillWidth returns fAllocatedWidth)
+    fn fill_width(&self) -> i32 {
+        Swizzler::fill_width(self)
+    }
+
+    fn sampler_base(&self) -> &SamplerBase {
+        &self.sampler
+    }
+
+    fn sampler_base_mut(&mut self) -> &mut SamplerBase {
+        &mut self.sampler
     }
 }

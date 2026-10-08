@@ -17,6 +17,7 @@ use skia_rust_core::stream::{MemoryStream, Stream};
 use crate::codec::{CodecBase, CodecImpl, Options, Result, ScanlineOrder, ZeroInitialized};
 use crate::codec_priv::{get_sampled_dimension, get_start_coord, pack_argb32};
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
+use crate::sampler::Sampler;
 use crate::swizzler::Swizzler;
 
 use super::{BmpBase, choose_pack_argb, read_exact, rewind};
@@ -387,6 +388,17 @@ fn xform_palette(base: &CodecBase<'_>, colors: &mut [u32]) {
 }
 
 impl CodecImpl for BmpStandardCodec {
+    // Port of: src/codec/SkBmpStandardCodec.h#L72-L75 (getSampler)
+    fn on_get_sampler(
+        &mut self,
+        _base: &CodecBase<'_>,
+        _create_if_necessary: bool,
+    ) -> Option<&mut dyn Sampler> {
+        self.swizzler
+            .as_mut()
+            .map(|swizzler| swizzler as &mut dyn Sampler)
+    }
+
     // Port of: src/codec/SkBmpCodec.h (onGetEncodedFormat)
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::BMP

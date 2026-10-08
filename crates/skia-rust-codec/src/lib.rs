@@ -12,6 +12,7 @@
 //! lazy-image parts follow in later waves (`docs/design/codecs.md`).
 
 pub mod android_codec;
+mod android_codec_adapter;
 pub mod bmp;
 pub mod codec;
 mod codec_priv;
@@ -23,6 +24,7 @@ mod masks;
 pub mod png_codec;
 mod png_codec_base;
 pub mod png_composite_chunk_reader;
+mod sampled_codec;
 pub mod sampler;
 pub mod swizzler;
 pub mod wbmp;

@@ -6,8 +6,7 @@
 // Skia has 21 row procedures (three source widths times seven destinations), one function each.
 // Here they share one row routine that reads the source pixel for the width and packs the
 // destination with the same codec_priv helpers the C++ calls, so every output byte is produced
-// by the same formula. Sampling (`onSetSampleX`) is not ported: it is only reached through
-// SkSampledCodec, which lands with the sampled-codec wave.
+// by the same formula. The row routine takes the sample factor as the C++ procs do.
 
 //! Converts BMP rows whose pixels are packed by bit masks (16, 24 or 32 bits per pixel).
 
@@ -17,10 +16,11 @@ use skia_rust_core::image_info::ImageInfo;
 
 use crate::codec::Options;
 use crate::codec_priv::{
-    pack_argb_as_bgra, pack_argb_as_rgba, pack888_to_rgb16, premultiply_argb_as_bgra,
-    premultiply_argb_as_rgba,
+    get_sampled_dimension, get_start_coord, pack_argb_as_bgra, pack_argb_as_rgba, pack888_to_rgb16,
+    premultiply_argb_as_bgra, premultiply_argb_as_rgba,
 };
 use crate::masks::Masks;
+use crate::sampler::{Sampler, SamplerBase};
 
 // The source pixel width: which `RowProc` family reads the row.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,11 +59,17 @@ pub struct MaskSwizzler {
     masks: Masks,
     source: Source,
     output: Output,
-    // Port of `fDstWidth`. Sampling is not ported, so this is the subset width.
+    // Port of `fSampleY` (the `SkSampler` base).
+    sampler: SamplerBase,
+    // Port of `fSubsetWidth`.
+    subset_width: i32,
+    // Port of `fSrcOffset`: the first source pixel of the subset.
+    src_offset: i32,
+    // Port of `fDstWidth`: the width of the rows this swizzler writes.
     dst_width: i32,
-    // Port of `fX0`: the first source pixel, which is `fSrcOffset` without sampling.
+    // Port of `fX0`: the first source pixel that is kept.
     x0: i32,
-    // Port of `fSampleX`: always 1 until sampling is ported.
+    // Port of `fSampleX`.
     sample_x: i32,
 }
 
@@ -155,6 +161,9 @@ impl MaskSwizzler {
             masks,
             source,
             output,
+            sampler: SamplerBase::default(),
+            subset_width: src_width,
+            src_offset,
             dst_width: src_width,
             x0: src_offset,
             sample_x: 1,
@@ -164,6 +173,16 @@ impl MaskSwizzler {
     /// Port of `SkMaskSwizzler::swizzleWidth` (`fDstWidth`): the number of pixels a row produces.
     #[must_use]
     pub fn swizzle_width(&self) -> i32 {
+        self.dst_width
+    }
+
+    /// Port of `SkMaskSwizzler::onSetSampleX`: takes every `sample_x`th source pixel. Returns the
+    /// width after sampling.
+    // Port of: src/codec/SkMaskSwizzler.cpp#L554-L566 (chrome/m156)
+    pub fn set_sample_x(&mut self, sample_x: i32) -> i32 {
+        self.sample_x = sample_x;
+        self.x0 = get_start_coord(sample_x) + self.src_offset;
+        self.dst_width = get_sampled_dimension(self.subset_width, sample_x);
         self.dst_width
     }
 
@@ -197,5 +216,25 @@ impl MaskSwizzler {
             };
             dst[i * 4..i * 4 + 4].copy_from_slice(&v.to_ne_bytes());
         }
+    }
+}
+
+impl Sampler for MaskSwizzler {
+    // Port of: src/codec/SkMaskSwizzler.cpp#L554-L566 (onSetSampleX, through SkSampler::setSampleX)
+    fn on_set_sample_x(&mut self, sample_x: i32) -> i32 {
+        MaskSwizzler::set_sample_x(self, sample_x)
+    }
+
+    // Port of: src/codec/SkMaskSwizzler.h (fillWidth returns fDstWidth)
+    fn fill_width(&self) -> i32 {
+        self.dst_width
+    }
+
+    fn sampler_base(&self) -> &SamplerBase {
+        &self.sampler
+    }
+
+    fn sampler_base_mut(&mut self) -> &mut SamplerBase {
+        &mut self.sampler
     }
 }

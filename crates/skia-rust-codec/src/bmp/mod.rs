@@ -5,8 +5,8 @@
 // Ported from: src/codec/SkBmpCodec.cpp, src/codec/SkBmpCodec.h, src/codec/SkBmpBaseCodec.h,
 // src/codec/SkBmpBaseCodec.cpp, include/codec/SkBmpDecoder.h
 //
-// The BMP-in-ICO variant (`inIco`, which SkIcoCodec uses) is ported. Not ported yet: sampling
-// (`getSampler`, which SkSampledCodec uses), and the `SkCodecPrintf` diagnostics.
+// The BMP-in-ICO variant (`inIco`, which SkIcoCodec uses) is ported, and so is sampling
+// (`getSampler`, which SkSampledCodec uses). Not ported yet: the `SkCodecPrintf` diagnostics.
 
 //! The BMP decoder. [`read_header`] parses the file headers exactly as Skia does; the three
 //! codecs it can create (standard, bit-mask and RLE) live in the submodules.

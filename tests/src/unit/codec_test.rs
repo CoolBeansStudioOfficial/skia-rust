@@ -5,6 +5,7 @@
 // BMP and WBMP decoders. The rest of the file needs the Android codec, the image generator and the
 // other decoders, and is ported with them.
 
+use skia_rust_codec::android_codec::{AndroidCodec, AndroidOptions};
 use skia_rust_codec::codecs::{self, Decoder};
 use skia_rust_codec::{Codec, Options, Result, ZeroInitialized, decoders, png_codec};
 use skia_rust_core::color_space::ColorSpace;
@@ -247,4 +248,39 @@ def_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
         codec.is_ok(),
         "Expected fallback to libpng when PNG is not registered"
     );
+});
+
+// Port of: tests/CodecTest.cpp#L1572-L1598 (chrome/m156)
+def_test!(Codec_reusePng, |r| {
+    let path = "images/plane.png";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&data))
+        .ok()
+        .and_then(AndroidCodec::make_from_codec);
+    let Some(mut codec) = codec else {
+        reporter_assert!(r, false, "Failed to create codec");
+        return;
+    };
+
+    let mut opts = AndroidOptions {
+        sample_size: 5,
+        ..AndroidOptions::default()
+    };
+    let size = codec.get_sampled_dimensions(opts.sample_size);
+    let info = codec
+        .info()
+        .with_dimensions(size)
+        .with_color_type(ColorType::N32);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    let result = codec.get_android_pixels(&info, &mut pixels, row_bytes, Some(&opts));
+    reporter_assert!(r, result == Result::Success);
+
+    let info = codec.info().with_color_type(ColorType::N32);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    opts.sample_size = 1;
+    let result = codec.get_android_pixels(&info, &mut pixels, row_bytes, Some(&opts));
+    reporter_assert!(r, result == Result::Success);
 });
