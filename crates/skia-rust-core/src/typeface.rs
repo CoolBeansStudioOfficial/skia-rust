@@ -19,6 +19,7 @@ use crate::font::Font;
 use crate::font_arguments::FontArguments;
 use crate::font_arguments::variation_position::Coordinate;
 use crate::font_descriptor::{FactoryId, FontDescriptor};
+use crate::font_mgr::{FontMgr, TypefaceDecoder};
 use crate::font_parameters::variation::Axis;
 use crate::font_priv::count_text_elements;
 use crate::font_style::{FontStyle, Slant, Weight};
@@ -30,7 +31,7 @@ use crate::scalar::scalar;
 use crate::scaler_context::{
     ScalerContext, ScalerContextBuildFlags, ScalerContextEffects, ScalerContextRec,
 };
-use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
+use crate::stream::{DynamicMemoryWStream, Stream, StreamAsset, WStream};
 use crate::strike_spec::auto_descriptor_given_rec_and_effects;
 use crate::surface_props::SurfaceProps;
 use crate::typeface_cache::new_typeface_id;
@@ -594,6 +595,46 @@ impl Typeface {
         }
     }
 
+    /// `SkTypeface::MakeDeserialize`: reads a descriptor written by [`Typeface::serialize`] and
+    /// makes the typeface. There is no static registry (docs/design/text.md §5.2): the built-in
+    /// decoders of core come first, then the decoders that `last_resort_mgr` lists. A stream
+    /// without a decoder falls back to `last_resort_mgr` and then to the empty typeface.
+    /// `sanitizer` may rewrite the font data first; returning `None` from it fails the read.
+    // Port of: src/core/SkTypeface.cpp#L229-L270 (chrome/m156)
+    #[doc(alias = "MakeDeserialize")]
+    #[must_use]
+    pub fn make_deserialize(
+        stream: &mut dyn Stream,
+        last_resort_mgr: Option<&FontMgr>,
+        sanitizer: Option<&dyn Fn(Data) -> Option<Data>>,
+    ) -> Option<Typeface> {
+        let mut desc = FontDescriptor::deserialize(stream, sanitizer)?;
+        if desc.has_stream() {
+            let factory_id = desc.factory_id();
+            let manager_decoders =
+                last_resort_mgr.map_or_else(Vec::new, FontMgr::typeface_decoders);
+            let decoder = builtin_decoders()
+                .into_iter()
+                .chain(manager_decoders)
+                .find(|decoder| decoder.factory_id == factory_id);
+            if let Some(decoder) = decoder {
+                let font_stream = desc.detach_stream()?;
+                return (decoder.make_from_stream)(font_stream, &desc.font_arguments());
+            }
+            // C++ prints "Could not find factory" here (SkDEBUGF) and falls through.
+        }
+        if let Some(mgr) = last_resort_mgr {
+            // The last ditch effort: the manager may know the right face by name or data.
+            let font_stream = desc.detach_stream();
+            let typeface = mgr.make_from_stream_args(font_stream, &desc.font_arguments());
+            if typeface.is_some() {
+                return typeface;
+            }
+            return mgr.legacy_make_typeface(Some(desc.family_name()), desc.style());
+        }
+        Some(Typeface::empty())
+    }
+
     /// `SkTypeface::serialize(SkWStream*, behavior)`: writes the descriptor, and the font data
     /// when `behavior` asks for it. Returns false if a write fails.
     // Port of: src/core/SkTypeface.cpp#L201-L233 (chrome/m156)
@@ -777,6 +818,17 @@ impl EmptyTypeface {
             core: TypefaceCore::new(FontStyle::default(), true),
         }
     }
+}
+
+/// The decoders that core knows without a manager: `SkTypeface.cpp`'s static list, which has the
+/// empty typeface only in core (custom, Fontations and the test typefaces are listed by the
+/// managers that make them, docs/design/text.md §5.2).
+// Port of: src/core/SkTypeface.cpp#L162-L178 (chrome/m156)
+fn builtin_decoders() -> [TypefaceDecoder; 1] {
+    [TypefaceDecoder {
+        factory_id: EMPTY_FACTORY_ID,
+        make_from_stream: |_stream, _args| Some(Typeface::empty()),
+    }]
 }
 
 /// `SkEmptyTypeface::FactoryId`.

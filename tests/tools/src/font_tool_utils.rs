@@ -10,16 +10,19 @@
 //! manager run under both configurations ([`FontConfig`]; docs/design/text.md §8).
 
 use std::cell::Cell;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
+use skia_rust_core::data::Data;
 use skia_rust_core::font::Font;
-use skia_rust_core::font_mgr::FontMgr;
+use skia_rust_core::font_arguments::FontArguments;
+use skia_rust_core::font_mgr::{FontMgr, FontMgrBase, FontStyleSet, TypefaceDecoder};
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::stream::StreamAsset;
 use skia_rust_core::text_blob::TextBlobBuilder;
 use skia_rust_core::typeface::Typeface;
+use skia_rust_core::utf::Unichar;
 
 use crate::fonts::test_font_mgr::make_portable_font_mgr;
 
@@ -108,9 +111,15 @@ pub fn with_font_config<R>(config: FontConfig, body: impl FnOnce() -> R) -> R {
 pub fn test_font_mgr() -> FontMgr {
     match font_config() {
         FontConfig::Portable => portable_font_mgr().clone(),
-        FontConfig::NativeFontations => {
-            skia_rust_text::ports::fontations::font_mgr::new_fontations_empty()
-        }
+        // C++ registers the test typefaces globally (`TestTypeface::Register`), so they decode in
+        // every configuration. The Fontations manager cannot list them, so this wrapper does.
+        FontConfig::NativeFontations => with_typeface_decoders(
+            skia_rust_text::ports::fontations::font_mgr::new_fontations_empty(),
+            vec![TypefaceDecoder {
+                factory_id: crate::fonts::test_typeface::TestTypeface::FACTORY_ID,
+                make_from_stream: crate::fonts::test_typeface::TestTypeface::make_from_stream,
+            }],
+        ),
     }
 }
 
@@ -290,4 +299,94 @@ pub fn get_text_path(
         index += 1;
     });
     builder.detach()
+}
+
+/// A manager that answers like `inner` and also decodes with `extra` (`SkTypeface::Register`
+/// adds such decoders to C++'s global list; here the test that needs one wraps the manager).
+/// Every lookup is delegated unchanged.
+#[derive(Debug)]
+struct WithTypefaceDecoders {
+    inner: FontMgr,
+    extra: Vec<TypefaceDecoder>,
+}
+
+impl FontMgrBase for WithTypefaceDecoders {
+    fn on_count_families(&self) -> usize {
+        self.inner.count_families()
+    }
+
+    fn on_get_family_name(&self, index: usize) -> String {
+        self.inner.family_name(index)
+    }
+
+    fn on_create_style_set(&self, index: usize) -> Option<FontStyleSet> {
+        Some(self.inner.create_style_set(index))
+    }
+
+    fn on_match_family(&self, family_name: Option<&str>) -> Option<FontStyleSet> {
+        Some(self.inner.match_family(family_name))
+    }
+
+    fn on_match_family_style(
+        &self,
+        family_name: Option<&str>,
+        style: &FontStyle,
+    ) -> Option<Typeface> {
+        self.inner.match_family_style(family_name, style)
+    }
+
+    fn on_match_family_style_character(
+        &self,
+        family_name: Option<&str>,
+        style: &FontStyle,
+        bcp47: &[&str],
+        character: Unichar,
+    ) -> Option<Typeface> {
+        self.inner
+            .match_family_style_character(family_name, style, bcp47, character)
+    }
+
+    fn on_make_from_data(&self, data: &Data, tt_index: i32) -> Option<Typeface> {
+        self.inner.make_from_data(Some(data), tt_index)
+    }
+
+    fn on_make_from_stream_index(
+        &self,
+        stream: Box<dyn StreamAsset>,
+        tt_index: i32,
+    ) -> Option<Typeface> {
+        self.inner.make_from_stream(Some(stream), tt_index)
+    }
+
+    fn on_make_from_stream_args(
+        &self,
+        stream: Box<dyn StreamAsset>,
+        args: &FontArguments<'_, '_>,
+    ) -> Option<Typeface> {
+        self.inner.make_from_stream_args(Some(stream), args)
+    }
+
+    fn on_make_from_file(&self, path: &str, tt_index: i32) -> Option<Typeface> {
+        self.inner.make_from_file(Some(path), tt_index)
+    }
+
+    fn on_legacy_make_typeface(
+        &self,
+        family_name: Option<&str>,
+        style: FontStyle,
+    ) -> Option<Typeface> {
+        self.inner.legacy_make_typeface(family_name, style)
+    }
+
+    fn typeface_decoders(&self) -> Vec<TypefaceDecoder> {
+        let mut decoders = self.inner.typeface_decoders();
+        decoders.extend(self.extra.iter().copied());
+        decoders
+    }
+}
+
+/// `inner` with `extra` added to its typeface decoders.
+#[must_use]
+pub fn with_typeface_decoders(inner: FontMgr, extra: Vec<TypefaceDecoder>) -> FontMgr {
+    FontMgr::new(Arc::new(WithTypefaceDecoders { inner, extra }))
 }
