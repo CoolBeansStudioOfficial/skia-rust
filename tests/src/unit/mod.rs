@@ -43,6 +43,8 @@ pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
 #[cfg(test)]
+pub mod descriptor_test;
+#[cfg(test)]
 pub mod draw_path_test;
 #[cfg(test)]
 pub mod edge_test;
