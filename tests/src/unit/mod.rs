@@ -205,6 +205,8 @@ pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
 #[cfg(test)]
+pub mod sk_remote_glyph_cache_test;
+#[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;

@@ -293,6 +293,16 @@ impl PartialEq for Descriptor {
 
 impl Eq for Descriptor {}
 
+impl std::hash::Hash for Descriptor {
+    /// Hashes the bytes in use, so that equal descriptors hash equally (the strike cache's
+    /// `StrikeTraits::Hash` uses the checksum; the lookup result is the same).
+    // Port of: src/core/SkStrikeCache.cpp#L349-L351 (chrome/m156), StrikeTraits::Hash
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let end = self.length() as usize;
+        self.bytes.get(..end).hash(state);
+    }
+}
+
 impl fmt::Debug for Descriptor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Descriptor")
