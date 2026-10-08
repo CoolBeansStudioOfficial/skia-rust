@@ -23,6 +23,7 @@ use crate::image_info_priv::image_info_valid_conversion;
 use crate::image_raster::{CopyPixelsMode, ImageRaster};
 use crate::images;
 use crate::malloc_pixel_ref;
+use crate::mask::{AllocType, MaskBuilder, MaskFormat};
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::pixel_ref::{PixelRef, ReleaseProc};
@@ -1222,10 +1223,11 @@ impl Bitmap {
     /// With a `paint` that has a mask filter, Skia filters the alpha and returns the filter's
     /// offset (and `dst` can be larger than this bitmap).
     ///
-    /// skia-rust: `MaskFilterBase::filterMask` is not ported yet (Phase 3), so a mask filter
-    /// behaves like one whose `filterMask` returns false (the `SkMaskFilterBase` default): Skia
-    /// then takes the `NO_FILTER_CASE` path, which is what happens here. The allocator and
-    /// offset out-parameters are the heap allocator and the returned `Option<IPoint>`.
+    /// skia-rust: the allocator and offset out-parameters are the heap allocator and the
+    /// returned `Option<IPoint>`.
+    ///
+    /// # Panics
+    /// Never: the conversions of the (positive, 32-bit) mask sizes cannot fail.
     // Port of: src/core/SkBitmap.cpp#L503-L584 (chrome/m156)
     #[doc(alias = "extractAlpha")]
     pub fn extract_alpha<'a>(
@@ -1268,10 +1270,63 @@ impl Bitmap {
         #[allow(clippy::cast_sign_loss)] // width() is positive here
         let row_bytes = align4(self.width() as usize); // srcM.rowBytes() = SkAlign4(width)
 
-        // SkMaskFilter* filter = paint ? paint->getMaskFilter() : nullptr;
-        // With a filter, `filterMask` (not ported; the base default returns false) fails and
-        // `goto NO_FILTER_CASE`, so the filter is never consulted.
-        let _filter = paint.into().and_then(Paint::mask_filter);
+        let mut src_m = MaskBuilder::new(
+            Vec::new(),
+            IRect::from_wh(self.width(), self.height()),
+            u32::try_from(row_bytes).expect("fits"),
+            MaskFormat::A8,
+        );
+        let mut dst_m = MaskBuilder::default();
+
+        let filter = paint.into().and_then(Paint::mask_filter);
+
+        // compute our (larger?) dst bounds if we have a filter
+        if let Some(filter) = filter {
+            let identity = Matrix::i();
+            // `goto NO_FILTER_CASE` when the filter fails
+            if filter
+                .as_base()
+                .filter_mask(&mut dst_m, &src_m.as_mask(), identity, None)
+            {
+                dst_m.row_bytes = u32::try_from(align4(
+                    usize::try_from(dst_m.bounds.width()).expect("non-negative"),
+                ))
+                .expect("fits");
+
+                src_m.image =
+                    MaskBuilder::alloc_image(src_m.compute_image_size(), AllocType::Uninit);
+
+                get_bitmap_alpha(self, &mut src_m.image, row_bytes);
+                if filter
+                    .as_base()
+                    .filter_mask(&mut dst_m, &src_m.as_mask(), identity, None)
+                {
+                    let mut tmp_bitmap = Bitmap::new();
+                    let _ = tmp_bitmap.set_info(
+                        &ImageInfo::new_a8((dst_m.bounds.width(), dst_m.bounds.height())),
+                        dst_m.row_bytes as usize,
+                    );
+                    if !tmp_bitmap.try_alloc_pixels() {
+                        // Allocation of pixels for alpha bitmap failed.
+                        eprintln!(
+                            "extractAlpha failed to allocate ({},{}) alpha bitmap",
+                            tmp_bitmap.width(),
+                            tmp_bitmap.height()
+                        );
+                        return None;
+                    }
+                    if let Some(pixels) = tmp_bitmap.pixel_bytes_mut() {
+                        let size = dst_m.compute_image_size();
+                        pixels[..size].copy_from_slice(&dst_m.image[..size]);
+                    }
+                    tmp_bitmap.swap(dst);
+                    return Some(IPoint {
+                        x: dst_m.bounds.left,
+                        y: dst_m.bounds.top,
+                    });
+                }
+            }
+        }
 
         // NO_FILTER_CASE:
         let mut tmp_bitmap = Bitmap::new();

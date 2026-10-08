@@ -4,7 +4,9 @@
 // Port of: gm/points.cpp (chrome/m156)
 
 use crate::prelude::*;
+use skia_rust_core::blur_types::BlurStyle;
 use skia_rust_core::canvas::PointMode;
+use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::paint::{Cap, Paint};
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
@@ -67,3 +69,37 @@ impl GM for PointsGM {
 
 // Port of: gm/points.cpp#L83 (chrome/m156)
 crate::def_gm!(PointsGM_ = "PointsGM", PointsGM);
+
+// Port of: gm/points.cpp#L77-L108 (chrome/m156)
+crate::def_simple_gm!(points_maskfilter, canvas, 512, 256, {
+    const N: usize = 30;
+    let mut pts = [Point::default(); N];
+
+    let mut rand = Random::default();
+    for p in &mut pts {
+        p.x = rand.next_f() * 220.0 + 18.0;
+        p.y = rand.next_f() * 220.0 + 18.0;
+    }
+
+    let mf = MaskFilter::blur(BlurStyle::Normal, 6.0, None);
+    let caps = [Cap::Square, Cap::Round];
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    paint.set_stroke(true);
+    paint.set_stroke_width(10.0);
+
+    for cap in caps {
+        paint.set_stroke_cap(cap);
+
+        paint.set_mask_filter(mf.clone());
+        paint.set_color(Color::BLACK);
+        canvas.draw_points(PointMode::Points, &pts, &paint);
+
+        paint.set_mask_filter(None);
+        paint.set_color(Color::RED);
+        canvas.draw_points(PointMode::Points, &pts, &paint);
+
+        canvas.translate((256.0, 0.0));
+    }
+});

@@ -21,7 +21,7 @@ use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::effect_priv::StageRec;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mask::{Mask, MaskFormat};
-use skia_rust_core::mask_filter::{MaskFilter, MaskFilterBase};
+use skia_rust_core::mask_filter::{MaskFilter, MaskFilterBase, MaskFilterType};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::paint_priv::remove_color_filter;
@@ -236,6 +236,10 @@ impl MaskFilterBase for ThreeD {
     fn format(&self) -> MaskFormat {
         MaskFormat::ThreeD
     }
+
+    fn filter_type(&self) -> MaskFilterType {
+        MaskFilterType::Emboss
+    }
 }
 
 // A mask filter with the default (A8) format.
@@ -245,6 +249,10 @@ struct PlainA8;
 impl MaskFilterBase for PlainA8 {
     fn compute_fast_bounds(&self, src: &Rect) -> Rect {
         *src
+    }
+
+    fn filter_type(&self) -> MaskFilterType {
+        MaskFilterType::Table
     }
 }
 

@@ -15,6 +15,9 @@ impl crate::mask_filter::MaskFilterBase for Outset3 {
     fn compute_fast_bounds(&self, src: &Rect) -> Rect {
         src.with_outset((3.0, 3.0))
     }
+    fn filter_type(&self) -> crate::mask_filter::MaskFilterType {
+        crate::mask_filter::MaskFilterType::Table
+    }
 }
 
 /// A test image filter: doubles the bounds' right/bottom; `unbounded` affects transparent black.
