@@ -11528,6 +11528,7 @@ kind = "dm-image"
 source = "resources/images/16x1.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "614fe56361b9d77ccedaab7282df7b1ca17748a13a82a261354efd2bccfb49bf"
 
 [[test]]
@@ -11536,6 +11537,7 @@ kind = "dm-image"
 source = "resources/images/1x1.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f5e8050d56c6353e5631e3335774b57de44be205d849d3a1521cd0ca8559d15d"
 
 [[test]]
@@ -11544,6 +11546,7 @@ kind = "dm-image"
 source = "resources/images/1x16.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "01764b42816e292412f28961baf3f204f264b7bd6ff4dc31ac37bd206b7681a2"
 
 [[test]]
@@ -11552,6 +11555,7 @@ kind = "dm-image"
 source = "resources/images/1x3.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f0f41233a556e3d22d22cff525713d0ad2f1ffdfcaa214fa00b7f33ed36695ad"
 
 [[test]]
@@ -11560,6 +11564,7 @@ kind = "dm-image"
 source = "resources/images/2x2.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5bf8192b785c79817cad6557bab13f0331fae0b02b6f6548d96997cc66f835ba"
 
 [[test]]
@@ -11568,6 +11573,7 @@ kind = "dm-image"
 source = "resources/images/32bpp-topdown-320x240.bmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7ee01e418d3d28178ca23e2067c7f9488d97a04b1178dc0bdfeea7cb9d369fd5"
 
 [[test]]
@@ -11576,6 +11582,7 @@ kind = "dm-image"
 source = "resources/images/3x1.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6426d351f117351c611c09dd79d7dcc564b2aea2a0f76e16fdd2a45a96c7bc78"
 
 [[test]]
@@ -11584,6 +11591,7 @@ kind = "dm-image"
 source = "resources/images/3x3.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "3272e81e85f25339e040ccfce0192655d9710551ed82695df9f99926f632d7c7"
 
 [[test]]
@@ -11592,6 +11600,7 @@ kind = "dm-image"
 source = "resources/images/CMYK.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8d2abbcf9bd9460b54198e1939e518bd2ca92baee234a5767c86461dbe455ec1"
 
 [[test]]
@@ -11600,6 +11609,7 @@ kind = "dm-image"
 source = "resources/images/Connecting.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f8388039183048cf975aa01781444033a4c05af8bfbd269b1624943704cb8891"
 
 [[test]]
@@ -11608,6 +11618,7 @@ kind = "dm-image"
 source = "resources/images/F-exif-chunk-early.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e247042c8f24898f12954f7d1c22ad46507e6402530da9d5f02c717daf9b224c"
 
 [[test]]
@@ -11616,6 +11627,7 @@ kind = "dm-image"
 source = "resources/images/Generic_Error.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d600208dce133145607fca8c7b2b96c2e1e84376fc10854961e60d9727b8d67b"
 
 [[test]]
@@ -11624,6 +11636,7 @@ kind = "dm-image"
 source = "resources/images/Onboard.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "86dff1f53e84afb839f2ae993c6b2c1ad47868171a6f662cdef877238c072790"
 
 [[test]]
@@ -11631,7 +11644,8 @@ id = "dm/image/Webkit-logo-P3.jxl"
 kind = "dm-image"
 source = "resources/images/Webkit-logo-P3.jxl"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "dc1cf1440dee3b597f8197a08a4911b1817393ad8e753ad0f780a22024db0f26"
 
 [[test]]
@@ -11639,7 +11653,8 @@ id = "dm/image/alphabetAnim.avif"
 kind = "dm-image"
 source = "resources/images/alphabetAnim.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "328bdb9ee42c9809e278caef6fb88a06a811bd9bb071702a27daf5a45e1c3807"
 
 [[test]]
@@ -11648,6 +11663,7 @@ kind = "dm-image"
 source = "resources/images/alphabetAnim.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1200e0ed7ce004b51c44732e682f7534f30f547c2dccfd80a12cf9b519d287fd"
 
 [[test]]
@@ -11656,6 +11672,7 @@ kind = "dm-image"
 source = "resources/images/apng-single-frame-with-offset.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f961d865a8cb91ab358131ad302ec82c15cb05e2ca7cbbffe2caab0e2c929312"
 
 [[test]]
@@ -11664,6 +11681,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--basic--ignoring-default-image.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "328ae6149b8c65f0f7bb4afbc5cee51db44e332d8d4b8ca1619831f254efd836"
 
 [[test]]
@@ -11672,6 +11690,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--basic--trivial-static-image.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f8bb08c2c717a0ca4d0a513613797acb174b493001a7bd7bb84bc40b67138f50"
 
 [[test]]
@@ -11680,6 +11699,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--basic--using-default-image.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "def05de6147136409ac8133e98d5e25de5ba90f151ac98430c62f7835bb64788"
 
 [[test]]
@@ -11688,6 +11708,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--blend-ops--over-on-solid-and-transparent.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a291d9b89156d4d8eba9e658b44f38ca1543fb4fab10d3b00c3fd4ea306d5844"
 
 [[test]]
@@ -11696,6 +11717,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--blend-ops--over-repeatedly.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2b571f7034ef1fb355182cf00fa6ccd7d784720709f229e3bcc5948abf2f81ee"
 
 [[test]]
@@ -11704,6 +11726,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--blend-ops--source-on-nearly-transparent.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0ea550eed2be77a58dca9a2799669d4f501793dca16d723bd4b13d973a657d11"
 
 [[test]]
@@ -11712,6 +11735,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--blend-ops--source-on-solid.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "68ad45a3c5f082981b2229d6be192a492d067051d3ef307916385b60f5856522"
 
 [[test]]
@@ -11720,6 +11744,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--dispose-ops--none-basic.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1abab0c7de5252a16da34777ff34c4a29c6000493d23ac1777cd17415e6aab33"
 
 [[test]]
@@ -11728,6 +11753,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--invalid--num-frames-outside-valid-range.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "da82a37bd07f9d215d0e4afa201b62c8c91d6900b5ded2faae77a5584c6ff7f0"
 
 [[test]]
@@ -11736,6 +11762,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--num-plays--0.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "96e11a4777d431af686188e0d0de0588c953b649442fa6ffcdeaf50e8cbd76a0"
 
 [[test]]
@@ -11744,6 +11771,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--num-plays--1.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "3529e70621fe74654db60838bbef96ac055bc0248615d6e3ef51b7db0bda1ff2"
 
 [[test]]
@@ -11752,6 +11780,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--num-plays--2.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "14efff3306cab1c0fa02691b812d8e88582498c8ba8804ab12fa1a23b3dc86f2"
 
 [[test]]
@@ -11760,6 +11789,7 @@ kind = "dm-image"
 source = "resources/images/apng-test-suite--regions--dispose-op-none.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d0495c63d383f963704123f44272209877656fb0cee4b59a2099486c2d761e06"
 
 [[test]]
@@ -11768,6 +11798,7 @@ kind = "dm-image"
 source = "resources/images/arrow.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "60183fbd6539ab10598a9ce5df4fa1805b5fcad5c6ba8a0495741f5b532a73f5"
 
 [[test]]
@@ -11776,6 +11807,7 @@ kind = "dm-image"
 source = "resources/images/b78329453.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "dffa5638901f7e9abb604781a77223e469ce02c5aa44405b7d98165f0e01f02b"
 
 [[test]]
@@ -11783,7 +11815,8 @@ id = "dm/image/baby_tux.avif"
 kind = "dm-image"
 source = "resources/images/baby_tux.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "e442bc4199e61b9abac61b8a7a5b90a4cb2dbd25dc58e63a76e847bd81e18b28"
 
 [[test]]
@@ -11792,6 +11825,7 @@ kind = "dm-image"
 source = "resources/images/baby_tux.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "47c6e064bdf1c9538837b51390d521dc7afad9b179dbfd5f91a4e5fd408cc43e"
 
 [[test]]
@@ -11800,6 +11834,7 @@ kind = "dm-image"
 source = "resources/images/baby_tux.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "66ddb7ddadc310158d6007f902a5a67a71f7176543f7608ff3033ea11275fefd"
 
 [[test]]
@@ -11808,6 +11843,7 @@ kind = "dm-image"
 source = "resources/images/basi3p01.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6283a61b1f7344c0cfa741076d6aed4a16a6bc5582e81db8dd7374a34230b0df"
 
 [[test]]
@@ -11816,6 +11852,7 @@ kind = "dm-image"
 source = "resources/images/basn2c16-sbit565.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0fcbb0cca77b4d7bb00e141946eb1365be07d100965a0564743f4754ce9cfe22"
 
 [[test]]
@@ -11824,6 +11861,7 @@ kind = "dm-image"
 source = "resources/images/blendBG.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "90c9e346cee07f80e772db4ac747d07a9def3e0cda60437fd68ed03cb76facfc"
 
 [[test]]
@@ -11832,6 +11870,7 @@ kind = "dm-image"
 source = "resources/images/bmp-size-32x32-8bpp.bmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "cd4b8aeb21d261d8d06f11ea86f2e986c1ba09fe2cb51ac987a883d457c4c09e"
 
 [[test]]
@@ -11840,6 +11879,7 @@ kind = "dm-image"
 source = "resources/images/box.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6c600856e6bcb3ad335eb34840d86ac92725ab8a75b1a39ca4241ff82c644b38"
 
 [[test]]
@@ -11848,6 +11888,7 @@ kind = "dm-image"
 source = "resources/images/brickwork-texture.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "249489defbd816869d0e48e1463d894216447b8eef87cb8b173d44c9fe04c7c9"
 
 [[test]]
@@ -11856,6 +11897,7 @@ kind = "dm-image"
 source = "resources/images/brickwork_normal-map.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d247d0bfb2ca3b189d7f81c07a98344ea3459300945f21385a605b4ccc6f48c2"
 
 [[test]]
@@ -11864,6 +11906,7 @@ kind = "dm-image"
 source = "resources/images/cicp_pq.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "16a9c4d46ad44d4accea318872c6486b8bee1aabb597eeb0250d333c84dcd965"
 
 [[test]]
@@ -11872,6 +11915,7 @@ kind = "dm-image"
 source = "resources/images/cmyk_yellow_224_224_32.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "18b1d550877acaa88fd22223b09ff7d6e1bd1653199c314713faefabe269da54"
 
 [[test]]
@@ -11880,6 +11924,7 @@ kind = "dm-image"
 source = "resources/images/colorTables.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e1bb44459ca36b0af3b6381ff5daa5e3adfe0a0427cf77e07e9cdb9572f9e574"
 
 [[test]]
@@ -11887,7 +11932,8 @@ id = "dm/image/color_wheel.avif"
 kind = "dm-image"
 source = "resources/images/color_wheel.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "ea44252e10e5dfd14b3ab103ccfb58e9d2b698c166da055eeb54822453f2d4a4"
 
 [[test]]
@@ -11896,6 +11942,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2b7b70f98476b56cf4de4f2c87986c300a7bdf516787b981657237ed4260cabb"
 
 [[test]]
@@ -11904,6 +11951,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4f8347c13e97446680b63645177ade8a734c3d444e5ad266fc40ddee46a1f620"
 
 [[test]]
@@ -11912,6 +11960,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "06d85676705f9c30dcb78ae222ae844c7aaf4074ca3c3131f9c0f28b2f9ec1f2"
 
 [[test]]
@@ -11920,6 +11969,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "34e950720e40bce7229946d503a92f227cdc172997b2d9e9b6c5fb4019cf2ead"
 
 [[test]]
@@ -11928,6 +11978,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7c45be95136b63eb886b9f2089e1ff83de4fc1810a6ff588b7e642bed762e999"
 
 [[test]]
@@ -11936,6 +11987,7 @@ kind = "dm-image"
 source = "resources/images/color_wheel_with_profile.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0e7bc0040e456f812637e381b651feff5af695bd9d556b13706ae617c264dc47"
 
 [[test]]
@@ -11944,6 +11996,7 @@ kind = "dm-image"
 source = "resources/images/crbug1465627.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4a04e6dad63c5711219270eef3d720675d465955561b5bcd0e12ec470eda9b8b"
 
 [[test]]
@@ -11952,6 +12005,7 @@ kind = "dm-image"
 source = "resources/images/crbug445556737.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "bb70a5544f097a4263986ea225bf3bf86f19b315bad44fed77b82c9a40cb530e"
 
 [[test]]
@@ -11960,6 +12014,7 @@ kind = "dm-image"
 source = "resources/images/crbug807324.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "fe23c72286dec89274436015142e1178f88e6e04e9d23a078319fe85f9d15174"
 
 [[test]]
@@ -11968,6 +12023,7 @@ kind = "dm-image"
 source = "resources/images/crbug999986.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c31ef85b5730234f9b4cb118552fe746503437d4569fc17766c02592e798c2a3"
 
 [[test]]
@@ -11976,6 +12032,7 @@ kind = "dm-image"
 source = "resources/images/cropped_mandrill.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "54f1b9490f7259bf159f77260e7076f50ebe3a1c43ead110515b8cd99626e7be"
 
 [[test]]
@@ -11983,7 +12040,8 @@ id = "dm/image/dng_with_preview.dng"
 kind = "dm-image"
 source = "resources/images/dng_with_preview.dng"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "c0510af5ff1fa5c3be88b4803e73633ca8dd6d650c2cf57bab71953da3a32890"
 
 [[test]]
@@ -11991,7 +12049,8 @@ id = "dm/image/dog.avif"
 kind = "dm-image"
 source = "resources/images/dog.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "36bb0422e9d4fa734f17f52c3d8160bd22075be18f5ac2027dad01306c1e8e96"
 
 [[test]]
@@ -12000,6 +12059,7 @@ kind = "dm-image"
 source = "resources/images/dog.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "ba8671be2a2e6117dc82a0248683d16191d6b6b69c3575c10e795e55b4dfdfb3"
 
 [[test]]
@@ -12007,7 +12067,8 @@ id = "dm/image/ducky.avif"
 kind = "dm-image"
 source = "resources/images/ducky.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "8c03a19596fd4b51bce0af703deb89ad929d19d68f2f78d630d6bea1dec9f829"
 
 [[test]]
@@ -12016,6 +12077,7 @@ kind = "dm-image"
 source = "resources/images/ducky.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4674f0627a2180ad755f5e3a20a7b46dde9131204500ad7bfc80c9318692dd51"
 
 [[test]]
@@ -12024,6 +12086,7 @@ kind = "dm-image"
 source = "resources/images/ducky.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "237a62d33107a46c5b7cc057dbd6bd12b074cbb44faf906419fff0d08735a88b"
 
 [[test]]
@@ -12032,6 +12095,7 @@ kind = "dm-image"
 source = "resources/images/example_1.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2bb34f08751c19e791883a76985e0d6e106f7e461401368d76ee098e3dec3971"
 
 [[test]]
@@ -12039,7 +12103,8 @@ id = "dm/image/example_1_animated.avif"
 kind = "dm-image"
 source = "resources/images/example_1_animated.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "eba3efca3eee78ae749703d7e0a672a1036feaca726b417317ac05d8a20f6108"
 
 [[test]]
@@ -12048,6 +12113,7 @@ kind = "dm-image"
 source = "resources/images/example_2.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d42e8a564f0583cbd608bb07b97b81e3ca291d517ef6c6191a92ca45173f8e43"
 
 [[test]]
@@ -12056,6 +12122,7 @@ kind = "dm-image"
 source = "resources/images/example_3.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "75207458a0cd44ea33f91dc8dc1d8f1ee25e236777e1b97462fbf6d55e9b2db4"
 
 [[test]]
@@ -12063,7 +12130,8 @@ id = "dm/image/example_3_10bit.avif"
 kind = "dm-image"
 source = "resources/images/example_3_10bit.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "c8170bb2231c2b7469b44fa81748de3360f25e30f7afa9a0c1feaa6e1fa1bcb3"
 
 [[test]]
@@ -12071,7 +12139,8 @@ id = "dm/image/example_3_12bit.avif"
 kind = "dm-image"
 source = "resources/images/example_3_12bit.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "017aa47c9f35b86f1fb558b79b5cc45f37d5be04f12cf63a6b33c4f97b2be24f"
 
 [[test]]
@@ -12080,6 +12149,7 @@ kind = "dm-image"
 source = "resources/images/example_4.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "230c413b840392b8c603716bb2f4b3b1f4002de76c0a86c09b593eafb24f3934"
 
 [[test]]
@@ -12088,6 +12158,7 @@ kind = "dm-image"
 source = "resources/images/example_5.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8522a17b8472130d23aeaffbbe31fda45c859d4348f2959ac8343714eadd95f4"
 
 [[test]]
@@ -12096,6 +12167,7 @@ kind = "dm-image"
 source = "resources/images/example_6.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0e38c89c5b2b6bb11ebca93d13ed5475a4a272118ccc10280255b960dd1bec7e"
 
 [[test]]
@@ -12104,6 +12176,7 @@ kind = "dm-image"
 source = "resources/images/exif-orientation-2-ur.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "157674f9e9d66fa6804cd20c21e9fb2a860ec3adf2a2cdad51b7d11df776278d"
 
 [[test]]
@@ -12112,6 +12185,7 @@ kind = "dm-image"
 source = "resources/images/explosion_sprites.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f4144fb0839d070a608d44c1a12a4e62529a158386ec2db29921608c06fd7cdb"
 
 [[test]]
@@ -12120,6 +12194,7 @@ kind = "dm-image"
 source = "resources/images/f16-trc-tables.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "81cbbb847e86e30e97c023b02cbe9eeb46aa7917a783128913608fccc7da303d"
 
 [[test]]
@@ -12128,6 +12203,7 @@ kind = "dm-image"
 source = "resources/images/filter_reference.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "592bac172ff0cf3db2b9a92f6ae163de81b70c059e90763f02ecba92859bdbad"
 
 [[test]]
@@ -12136,6 +12212,7 @@ kind = "dm-image"
 source = "resources/images/flightAnim.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2d3a207d212b0db8f521d285d33c9f292cc3378fbf0dd4cd8ff6467379d0e90e"
 
 [[test]]
@@ -12143,7 +12220,8 @@ id = "dm/image/flower-bc1.dds"
 kind = "dm-image"
 source = "resources/images/flower-bc1.dds"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "439af536976e1a1a3bee249cb7bc93409e03d0cd526236cd34cb5f29121e5140"
 
 [[test]]
@@ -12151,7 +12229,8 @@ id = "dm/image/flower-etc1.ktx"
 kind = "dm-image"
 source = "resources/images/flower-etc1.ktx"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "3f9e9185b5180afbba7e53e64de433ace3b0771c201036c0fd28338344dd93bb"
 
 [[test]]
@@ -12160,6 +12239,7 @@ kind = "dm-image"
 source = "resources/images/flutter_logo.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "ee7e4e6f52baf808d79ead790427ef893193a15fd10dd90b8e5adcc2defd8c1f"
 
 [[test]]
@@ -12168,6 +12248,7 @@ kind = "dm-image"
 source = "resources/images/gainmap.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0dc28d306df210780e9ce9358ace5587243c8bb67b4527919ad530c2850daf4b"
 
 [[test]]
@@ -12176,6 +12257,7 @@ kind = "dm-image"
 source = "resources/images/gainmap_gcontainer_only.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f473059d6742d51e45b01808e45f08d6ad0ddbc9c713a6db11520ab92ad2063a"
 
 [[test]]
@@ -12184,6 +12266,7 @@ kind = "dm-image"
 source = "resources/images/gainmap_gdat_no_gmap.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c0bcb6d5584f22774a4abdab1e194fe0cf5a7406cb0304e17b90d11fea2d8d79"
 
 [[test]]
@@ -12192,6 +12275,7 @@ kind = "dm-image"
 source = "resources/images/gainmap_iso21496_1.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5a59ad3e36e3876d95b5bb6c76c0df2134e04cc06bd42092c84b83d4610d791f"
 
 [[test]]
@@ -12200,6 +12284,7 @@ kind = "dm-image"
 source = "resources/images/gainmap_iso21496_1_adobe_gcontainer.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "22a607c29dd1897c152be4b65e93ef08e8625dc7a3704e8368a42813e2bc5636"
 
 [[test]]
@@ -12208,6 +12293,7 @@ kind = "dm-image"
 source = "resources/images/gainmap_no_gdat.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "584971337024be44e100b9142afa3e4c1b1bf5f05732c1736fb5b777003c01cf"
 
 [[test]]
@@ -12216,6 +12302,7 @@ kind = "dm-image"
 source = "resources/images/gamut.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "64e89e30d8addb7765c9b6539aabe6b82831e38c3cd0b4cc2aea0cabaa78739a"
 
 [[test]]
@@ -12224,6 +12311,7 @@ kind = "dm-image"
 source = "resources/images/gif-transparent-index.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "32d3409a79b75614ef385354d54f148f08856f8e9ce0d55054582ff7f40f4461"
 
 [[test]]
@@ -12232,6 +12320,7 @@ kind = "dm-image"
 source = "resources/images/google_chrome.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7467acd8c83dd5cf0e43a5e5bbcc58b4704abe97ee6a47f533dff17b8d8fab6d"
 
 [[test]]
@@ -12240,6 +12329,7 @@ kind = "dm-image"
 source = "resources/images/gradient_adobe_to_p3.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "bcfbde011aa095152eb51b89cb2bd01f98a8f4aa5face67627fa3bd955fb9a7a"
 
 [[test]]
@@ -12248,6 +12338,7 @@ kind = "dm-image"
 source = "resources/images/gradient_adobe_to_p3.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5170a80856bbeca33063b0c87507f48faaeb04a1bb1315e2bbc0df3b2a9d889a"
 
 [[test]]
@@ -12256,6 +12347,7 @@ kind = "dm-image"
 source = "resources/images/gradient_adobergb.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0976225da5fd153c4c5aaaaae7027e2c0ddf72b676092f374d7a78fb9eb05fa1"
 
 [[test]]
@@ -12264,6 +12356,7 @@ kind = "dm-image"
 source = "resources/images/gradient_adobergb.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b37d4957f27f05eec1d011c9aa9f8d54aa429fe19fea3acf403e6ddf20f20bce"
 
 [[test]]
@@ -12272,6 +12365,7 @@ kind = "dm-image"
 source = "resources/images/gradient_displayp3.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "fb34f864a53fb8937b0e7a2661756c5650b8382672a74dc723cadd6da1d5d062"
 
 [[test]]
@@ -12280,6 +12374,7 @@ kind = "dm-image"
 source = "resources/images/gradient_displayp3.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "73b9efcfe6510b5f000500341c919ebf256033d8b5911734412cfe16b5a3265d"
 
 [[test]]
@@ -12288,6 +12383,7 @@ kind = "dm-image"
 source = "resources/images/gradient_p3_to_adobe.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "cd43e541f26f14c33530856fd64bdf21066ea00065b46806455f63719377df8b"
 
 [[test]]
@@ -12296,6 +12392,7 @@ kind = "dm-image"
 source = "resources/images/gradient_p3_to_adobe.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "3e9e885d25789af9ac35fb7f9506a9fdb44e6f66d6a0d95a2331fff51ea6f3f9"
 
 [[test]]
@@ -12304,6 +12401,7 @@ kind = "dm-image"
 source = "resources/images/grayscale.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d07a9815dc792543c16b796ec7729c19d6a29e7d9b4d0bbab50f4ef210be7767"
 
 [[test]]
@@ -12312,6 +12410,7 @@ kind = "dm-image"
 source = "resources/images/grayscale.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2eae559cffd23cc0322add9dec6b2fa9f8e827fb91c63ed55f0443536cc130d3"
 
 [[test]]
@@ -12320,6 +12419,7 @@ kind = "dm-image"
 source = "resources/images/green15x15.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c13ad4b64a599944498509d57251fd37e7324613789ed58d8b0783366ce6d921"
 
 [[test]]
@@ -12328,6 +12428,7 @@ kind = "dm-image"
 source = "resources/images/half-transparent-white-pixel.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5a647404fa5289da777b1bb9e1dcfe20027262f992a214f38efaecc3da0e08a4"
 
 [[test]]
@@ -12336,6 +12437,7 @@ kind = "dm-image"
 source = "resources/images/half-transparent-white-pixel.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8b09993d8ffc9a9ec4e7f5f26a1c126cf265c37b0d63c0c5be2506e20dbc6fea"
 
 [[test]]
@@ -12344,6 +12446,7 @@ kind = "dm-image"
 source = "resources/images/icc-v2-gbr.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d1918e83f8d13b8a4bc1f628b1ca2f05358339d59364885eaa4b04fc19fe1d76"
 
 [[test]]
@@ -12352,6 +12455,7 @@ kind = "dm-image"
 source = "resources/images/ico_nonsquare_128x96.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9687499f27aabda2d93f74d45270ff754f8554655e55901a44ef7134207597f8"
 
 [[test]]
@@ -12360,6 +12464,7 @@ kind = "dm-image"
 source = "resources/images/ico_nonsquare_200x150.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "fa1c41749379c9fb04cb5a356fbd115b75fbb5e15c16f812312e1a460581d4db"
 
 [[test]]
@@ -12368,6 +12473,7 @@ kind = "dm-image"
 source = "resources/images/ico_nonsquare_48x32.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "95001a328ca0fabc072e8ceead5c60539f39e70e6bd7eb0641c3632d81a6410d"
 
 [[test]]
@@ -12376,6 +12482,7 @@ kind = "dm-image"
 source = "resources/images/ico_nonsquare_64x48.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c2b6b8ee690bdd048ce218060b97fefc3d6442257417dfc4f49a9dd7588140d1"
 
 [[test]]
@@ -12384,6 +12491,7 @@ kind = "dm-image"
 source = "resources/images/ico_oversized_512x384.ico"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6fa0c7683895b6df98b3691a5f00ea2fb077c62f7a60600a43b4dde0a6b3c8b5"
 
 [[test]]
@@ -12392,6 +12500,7 @@ kind = "dm-image"
 source = "resources/images/iconstrip.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "bcbf1bc4bae292da69e487ddf7aad410221cd14eb58fef504a9a1206dee5d558"
 
 [[test]]
@@ -12400,6 +12509,7 @@ kind = "dm-image"
 source = "resources/images/index8.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a31fc2c38a8a03f131a6bf084843e9ec3110ae37cfd52a7c8706c674866f8f6f"
 
 [[test]]
@@ -12408,6 +12518,7 @@ kind = "dm-image"
 source = "resources/images/interlaced-multiframe-with-blending.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4f84d751530deb32d685e2e7e0d79a7493310c94c6d706312a0ae939b1e573dc"
 
 [[test]]
@@ -12416,6 +12527,7 @@ kind = "dm-image"
 source = "resources/images/iphone_13_pro.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4021e18069f452dae99f0b374a2a8cdcc2d6148344b46dd1ad526d1af0f02197"
 
 [[test]]
@@ -12424,6 +12536,7 @@ kind = "dm-image"
 source = "resources/images/iphone_15.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "51a64d8078491d66c834c7ee1b732e38263ff441ec4ac1304bdcd8834f098b5c"
 
 [[test]]
@@ -12432,6 +12545,7 @@ kind = "dm-image"
 source = "resources/images/lut_identity.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "82fca159b8cdc102648e2541c9f74c345f550c7c7534c7f863ca3c5154092d9a"
 
 [[test]]
@@ -12440,6 +12554,7 @@ kind = "dm-image"
 source = "resources/images/lut_sepia.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "867da055af380e2480eca8412e27d10128cfdae56a2cb11d3b9d580d13b3893e"
 
 [[test]]
@@ -12448,6 +12563,7 @@ kind = "dm-image"
 source = "resources/images/mandrill.wbmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "63b1e4e7b7b9bdfe9f722e1a465a1a474dea686f204d1e4c1ef5b40101d1679a"
 
 [[test]]
@@ -12456,6 +12572,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_128.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4e4e5465ad4220d1caf795b3a9ccb4dde3dc5c3efc7d5a9348f72838e5934ad1"
 
 [[test]]
@@ -12464,6 +12581,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_16.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4935cffbb07b166a26cc7b6ba10e437132a13604715bc09a4d1ea7bc453ce691"
 
 [[test]]
@@ -12472,6 +12590,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_1600.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e6fd1b277f6ac8eb70f190c54d0757b4d9d36e3e6c362cfe1064526684173a17"
 
 [[test]]
@@ -12480,6 +12599,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_256.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c081a2c9d83b4a10286abe3eecec111bd1a50834d6ec8d1bc9c17349fd504ac9"
 
 [[test]]
@@ -12488,6 +12608,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_32.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4dae706c264d7ced1e76783d56cc9bc4c9f631bae2a8be14e56fcb0d5a949cd6"
 
 [[test]]
@@ -12496,6 +12617,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_512.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a5190ceec2936c64d1aad402db48b4411a8d0aaba5ceeb3e567283ca2ed0ef7d"
 
 [[test]]
@@ -12504,6 +12626,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_512_q075.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "153c3e7a54a0a9e56db0f0f8d91d160770a2a27a1f559ae9461a5e96ce1d798e"
 
 [[test]]
@@ -12512,6 +12635,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_64.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a53da472802fdb36f7515d0eacddfd5416fd4c625fd940269192f925c57e6e08"
 
 [[test]]
@@ -12520,6 +12644,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_cmyk.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5a9f4a74035b1795575bad48bf2b54ed12987f2862feb4eb590badc51fdc4470"
 
 [[test]]
@@ -12528,6 +12653,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_h1v1.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "ba6fb89d18e6acf88b6cba53d62c186c7a96bc5425a1481d08025d9b13bb7093"
 
 [[test]]
@@ -12536,6 +12662,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_h2v1.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "af41e2683527aea50c640843bd2d714ec9f3f1ffd3ea5f4339d91b96ded58c9a"
 
 [[test]]
@@ -12544,6 +12671,7 @@ kind = "dm-image"
 source = "resources/images/mandrill_sepia.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9d503637191638467ce9f97ee24a906e9b66663f51f8a68eeb5cf94a4053da8f"
 
 [[test]]
@@ -12551,7 +12679,8 @@ id = "dm/image/monochrome.avif"
 kind = "dm-image"
 source = "resources/images/monochrome.avif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "413a69fbc755ac0714351134d59695a8ec196e9e6a3eba8de007a995040c7ea7"
 
 [[test]]
@@ -12560,6 +12689,7 @@ kind = "dm-image"
 source = "resources/images/ninepatch.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7fc0cfa40a2f49c55eb142e7e941f782e9c7832a6402ef33fe7f61f5cd06104a"
 
 [[test]]
@@ -12568,6 +12698,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9116f282633ef04a0fc66e1d3950339499cc3451077d81c055d7ab1f2695e08e"
 
 [[test]]
@@ -12576,6 +12707,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5ee3a836d8a78d437ec43389cec3558e1c196eccebb8ae4e77839e04c222d139"
 
 [[test]]
@@ -12584,6 +12716,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "16cb01fb2de25b7c18d90a1b7ab712f4d232e0ca0aee1d53e6425dab2db3eeb7"
 
 [[test]]
@@ -12592,6 +12725,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "94a97699d47b42ce56f06adb67ca855e8865b6120216cce8498633c60ba87d5d"
 
 [[test]]
@@ -12600,6 +12734,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "41108a41e477e43cc320a33d4107d994c48f92876575ac9367f85b58b50d8105"
 
 [[test]]
@@ -12608,6 +12743,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1d7d1d37616ed067551ed26a73957dade3c2d843b1e6087696d326c5f060ab6f"
 
 [[test]]
@@ -12616,6 +12752,7 @@ kind = "dm-image"
 source = "resources/images/orientation/1_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "cc0a0bfcba5f2cf1549196e288f39e76a1309bb86399acbfb8bb5f900a0afe19"
 
 [[test]]
@@ -12624,6 +12761,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f25da84ce3990ae0f0ace836fd74f5534c4eb120fcf54c8c1a9297ccb876719b"
 
 [[test]]
@@ -12632,6 +12770,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b34ed22f4c7105d4d726aa1fdffd19b3e2496298db76a7ca4078d3c3097f2295"
 
 [[test]]
@@ -12640,6 +12779,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0300ef016e52ac9d35eb8f1e74228e315eaac6866a259f6e4b6f54c58e091ba3"
 
 [[test]]
@@ -12648,6 +12788,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "605941497c3f680f9187f70483e1ef51f88293170710efaed18a3a80a7c468e5"
 
 [[test]]
@@ -12656,6 +12797,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6586c5384213f731ff4e8330dbaf5aec41599e2c1cb8fed9edb86882f141a2e4"
 
 [[test]]
@@ -12664,6 +12806,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d4c88be4124cf915c9efbf0d5893911f6a13a5a0ee9a4fa775e4fdea864f7b4d"
 
 [[test]]
@@ -12672,6 +12815,7 @@ kind = "dm-image"
 source = "resources/images/orientation/2_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1425c1d66d4f82b11ee4d75eaa6ff1984d4ea439b01d07c8aa038b80f3460718"
 
 [[test]]
@@ -12680,6 +12824,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8955e06194bd1dd82c2f09621300728f2da27333b44b2fa030170efeb007540f"
 
 [[test]]
@@ -12688,6 +12833,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "99b935508a12f5a9f7ec633d92268902ced72f07666d3632c2f77f2e28dd9f94"
 
 [[test]]
@@ -12696,6 +12842,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7264263644b07ff0d661855be07b2a4b244b461c4d8f9389f4d4e3ef75079218"
 
 [[test]]
@@ -12704,6 +12851,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "037386baf973db6030709b3d431efc4882fe4ff2a403c9d3dd1519996a452b0b"
 
 [[test]]
@@ -12712,6 +12860,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9f27849a762d8de53fafbfa49f4b04a26edec441e9ee4907868d5d794b7c53a2"
 
 [[test]]
@@ -12720,6 +12869,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "86a874e3f208182a97126a588c248de01f2605b1d7463f43ed7c0a2e331a7bce"
 
 [[test]]
@@ -12728,6 +12878,7 @@ kind = "dm-image"
 source = "resources/images/orientation/3_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1e9c3fbc10aafb4e08fb19658585e5250963fc8169916e0b5efc5210b876741f"
 
 [[test]]
@@ -12736,6 +12887,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e504526e4be0a5c93d121bdac1ed5517dcdc1964cf76d7d6e512524699d301ec"
 
 [[test]]
@@ -12744,6 +12896,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b97fa381a6ed8de81210504e880b8281de9782fa9dd2996ef84eca6036a3a78a"
 
 [[test]]
@@ -12752,6 +12905,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c1c3f25b02e360ce8a1dde76674fec76ef631915bff2a649d5b37574ac1dcb8e"
 
 [[test]]
@@ -12760,6 +12914,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7ab5aaab53286c494d0a3befc13508e04d471950ced0e92ca8e7979e57913670"
 
 [[test]]
@@ -12768,6 +12923,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b6b5b3aad16f376381d6d39c9ee0cc4dd8a3f8081147eeb1c23dbb14e61bcdfc"
 
 [[test]]
@@ -12776,6 +12932,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9ca43551bc8702df7cf40f1c485c040e565996d84df0a83a6e3dd2d3f51f2a8a"
 
 [[test]]
@@ -12784,6 +12941,7 @@ kind = "dm-image"
 source = "resources/images/orientation/4_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "da62a5a79c3ff4dcf1ad7c4f2819d0b5b33fc0af818689081ade8238c226f914"
 
 [[test]]
@@ -12792,6 +12950,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4a26b170bf0894f975d242b1bce7bd4aef528693e26bdec91ebbecc1d0148709"
 
 [[test]]
@@ -12800,6 +12959,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b3854de305513879348c67e9553571039cce08d0f259cd6602b245535895f564"
 
 [[test]]
@@ -12808,6 +12968,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "04732e3b584878d0ffac43b0ffefdda95da998e310b5c7af214e5d31e0fb7bfd"
 
 [[test]]
@@ -12816,6 +12977,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c5b7a61b783da10e989ba53355d614aafac5c8f2a3b94814ed57b10250ff478a"
 
 [[test]]
@@ -12824,6 +12986,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b7f9e656ce2603477468c6011ff89a1075fb5f3346b0976340d2691da378f826"
 
 [[test]]
@@ -12832,6 +12995,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e3a3002c5150ceb1a859936996b623260f231b3245eadbb6a10a22ecc4ca5a3d"
 
 [[test]]
@@ -12840,6 +13004,7 @@ kind = "dm-image"
 source = "resources/images/orientation/5_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "62832a93cd68073cf56ee6160709844dfa891df01befeaa6353f97c5ac13acb6"
 
 [[test]]
@@ -12848,6 +13013,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d49e55a9efc3ec2b473b0fe970c033154179f58b15d949c79f137862d61783d1"
 
 [[test]]
@@ -12856,6 +13022,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "f35b2b7749031edc8bcf28a2329260be1b8cc32ab774bbe4c3bc502bbb183398"
 
 [[test]]
@@ -12864,6 +13031,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "63a22a22b5d27b273668953281e0ec6db99c22ec1e9c3a10336744787ff1eb11"
 
 [[test]]
@@ -12872,6 +13040,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "59aabc244edff0836f4a3120f81f0900b10cb663294eaa7922f233cafe6673a1"
 
 [[test]]
@@ -12880,6 +13049,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e69da89b84098612e37a424cf0de07aab45d7103ac21b2609f18b955662c230a"
 
 [[test]]
@@ -12888,6 +13058,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "cbea2bab1dbdf4a2e4e5ec03ce670e50d2852651d18e4903dad809cbf7e4a392"
 
 [[test]]
@@ -12896,6 +13067,7 @@ kind = "dm-image"
 source = "resources/images/orientation/6_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b8f0f3b0d0d770e247d4ebb540bb5e8231bb36233b61dbba90cbe746203e4691"
 
 [[test]]
@@ -12904,6 +13076,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8c2fe80827092e2e247c0c312b88116983b4049f7dba51b4e1fe02e57ce6d528"
 
 [[test]]
@@ -12912,6 +13085,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "accdd6d7a6c57b0d0caab338c3aeff9dda49e7abcf2110880b84ccf4f68f3ddb"
 
 [[test]]
@@ -12920,6 +13094,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "06c11566d7a22b4f723b98e1e9af79ae9d34c22506442c0f3b728186c633ebf2"
 
 [[test]]
@@ -12928,6 +13103,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5e6f74e24d84b6381f68d1fd0058ed53e80bd54407a7bfb65821ed99b57758fb"
 
 [[test]]
@@ -12936,6 +13112,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c431aae6409b6c3323beedc9162c2422b261c102620287246ce48b67129dc311"
 
 [[test]]
@@ -12944,6 +13121,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "cdf5f13ca58019e4a28720a70cef2da416418ba8983cb170da9348c9bfb4b3d5"
 
 [[test]]
@@ -12952,6 +13130,7 @@ kind = "dm-image"
 source = "resources/images/orientation/7_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "161323645c005d800ddbea118bc5766a708ee82ab002065e45a50eabcdbb3048"
 
 [[test]]
@@ -12960,6 +13139,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "eb5efedbd3212d8e308fcf940f85f1e548ae2f51202815a967f9ed241bd4f0cb"
 
 [[test]]
@@ -12968,6 +13148,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_410.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "befd98060e05f7a1a55cd056e7ddd697cff941b584453366d62a6f933e14bca7"
 
 [[test]]
@@ -12976,6 +13157,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_411.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "830196b523885d40ae428ba1ade4fa0e5fee8c10aa80a0c71cec7f555c9bcd6a"
 
 [[test]]
@@ -12984,6 +13166,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_420.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "28160d07805662076019ff256a206f453219e0e3ee7ac9c502c9d93b2bdab48d"
 
 [[test]]
@@ -12992,6 +13175,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_422.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8d558486fcc582809188f669a4c964c823f5445cf570328269b2bd5e29dc9679"
 
 [[test]]
@@ -13000,6 +13184,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_440.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "5bad71365c892a9ad97904d6ea7fc265461518e2eb2b2686ea4c7616815e6cc1"
 
 [[test]]
@@ -13008,6 +13193,7 @@ kind = "dm-image"
 source = "resources/images/orientation/8_444.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "293c3f13a3168310bf7d12ac302b95787556a10f4b4a6ab6070ee9224aa62067"
 
 [[test]]
@@ -13016,6 +13202,7 @@ kind = "dm-image"
 source = "resources/images/orientation/exif.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "6f1638268ef8863993dd0397c31db60be13948cea66b678ceac108a2eb723310"
 
 [[test]]
@@ -13024,6 +13211,7 @@ kind = "dm-image"
 source = "resources/images/orientation/subifd.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "932e671ca6b6137c56192a913b812fb4b4afad57377acbfb55e24527b41e6c7f"
 
 [[test]]
@@ -13032,6 +13220,7 @@ kind = "dm-image"
 source = "resources/images/out-of-palette.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e5d9ee170e3e1a5480c364d7e0eeac340c5e9f03eb60d7593daff8e8aee26ebc"
 
 [[test]]
@@ -13040,6 +13229,7 @@ kind = "dm-image"
 source = "resources/images/plane.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4c0ccd026dc5f3900d780057dabb496dda6d2627b95d0d9c75b9fba1de874cb0"
 
 [[test]]
@@ -13048,6 +13238,7 @@ kind = "dm-image"
 source = "resources/images/plane_interlaced.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2e1595b0ffb318c455df53aa5df4a3d70606fdf1e211245c2dc33eb784223335"
 
 [[test]]
@@ -13056,6 +13247,7 @@ kind = "dm-image"
 source = "resources/images/plte_trns.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c17905f3397b8f492e2c26912e09ac091eb05dd3e6d5afa31ef93f833dcca3e5"
 
 [[test]]
@@ -13064,6 +13256,7 @@ kind = "dm-image"
 source = "resources/images/plte_trns_gama.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "16e48cd5db888263ca6f1855243f191aaa5e0f5012a8da5e85283891deff494f"
 
 [[test]]
@@ -13072,6 +13265,7 @@ kind = "dm-image"
 source = "resources/images/png-zero-gamma-color-profile.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "fd2f14de07d3dcc3356fb598b3e6057a3173886183f3b8b52e2828417fec6045"
 
 [[test]]
@@ -13080,6 +13274,7 @@ kind = "dm-image"
 source = "resources/images/pngsuite/basn0g04.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "fb2d42c4c8f5c51590e675994a9b0c718fbf71c80e28142f231cfa7c5b0e26e8"
 
 [[test]]
@@ -13088,6 +13283,7 @@ kind = "dm-image"
 source = "resources/images/pngsuite/basn2c08.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c90e86090a625661b19960cafdde6e347d6e32d73837aaae533f66dd3f099506"
 
 [[test]]
@@ -13096,6 +13292,7 @@ kind = "dm-image"
 source = "resources/images/pngsuite/basn2c16.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1e1c28ec0ee5da6224404b4005076dd30e2335a1a80c0ca722046a245c4a2b3b"
 
 [[test]]
@@ -13104,6 +13301,7 @@ kind = "dm-image"
 source = "resources/images/pngsuite/basn3p01.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c2d7cd682df5f74506b33a5d70c344aaee248fda79fdfef8e873426fd6f2b75b"
 
 [[test]]
@@ -13112,6 +13310,7 @@ kind = "dm-image"
 source = "resources/images/progressive_kitten_missing_eof.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c1c41b88bd0c0bceebf2cf45bd994d6845939b714b4e85d89efc89a51fb07334"
 
 [[test]]
@@ -13120,6 +13319,7 @@ kind = "dm-image"
 source = "resources/images/purple-displayprofile.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e2269ffa72f9ab58fbe133cd3a762ad7cbb227dcb274ab4d8b487cbb81a7a189"
 
 [[test]]
@@ -13128,6 +13328,7 @@ kind = "dm-image"
 source = "resources/images/rainbow-gradient.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "8fc5b3b3bde8cfba0d7188ee65ea66c6fcf89e220f4771014336230d7a70ac4f"
 
 [[test]]
@@ -13136,6 +13337,7 @@ kind = "dm-image"
 source = "resources/images/randPixels.bmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "d9cc5fff9e8e351727ad4519236ae46eaf37f8007dad5cdb8619fcd67ec68903"
 
 [[test]]
@@ -13144,6 +13346,7 @@ kind = "dm-image"
 source = "resources/images/randPixels.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "7c02d37b86b48219047d40a2892c6a477474fc59e2a0fae70d6a98d0bc245deb"
 
 [[test]]
@@ -13152,6 +13355,7 @@ kind = "dm-image"
 source = "resources/images/randPixels.jpg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "4e45048dbe3078943eb364221a9757df9b9845b80e795ccdc944f1c18b5e221b"
 
 [[test]]
@@ -13160,6 +13364,7 @@ kind = "dm-image"
 source = "resources/images/randPixels.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "649dcee3b94836bbc20ae49ac93fc4fdcb3e19bd47e1939bac3e3a8ec9db73da"
 
 [[test]]
@@ -13168,6 +13373,7 @@ kind = "dm-image"
 source = "resources/images/randPixels.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "24836d28a13d961bf458e0b379bb37fc1a408077c9e0cb617347004a274baf8c"
 
 [[test]]
@@ -13176,6 +13382,7 @@ kind = "dm-image"
 source = "resources/images/randPixelsAnim.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "98c1a83a9783747c96bed1f29a2143bda5d29595fa3d656f5f4c06c3b4878c29"
 
 [[test]]
@@ -13184,6 +13391,7 @@ kind = "dm-image"
 source = "resources/images/randPixelsAnim2.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "81b669f2e90f231034baedfa14e2752f4dbe1bbeda0a1764cdef43c1b4dfb896"
 
 [[test]]
@@ -13192,6 +13400,7 @@ kind = "dm-image"
 source = "resources/images/randPixelsOffset.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c2feb3fd36f8ed12aa8e083807f56bd83f462172568a40cb61dc69a734f917c0"
 
 [[test]]
@@ -13200,6 +13409,7 @@ kind = "dm-image"
 source = "resources/images/red-hlg-profile.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "9cf5df965aefb69ac6dc9845055c8a84309879dc1f451074cb632159cbb4a193"
 
 [[test]]
@@ -13208,6 +13418,7 @@ kind = "dm-image"
 source = "resources/images/red-pq-profile.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a2b2a147067b0e019ed7768abc424dc7755694fe920021517d3be8257338cb6b"
 
 [[test]]
@@ -13216,6 +13427,7 @@ kind = "dm-image"
 source = "resources/images/required.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "2f7d16db0c238182135eac6b8c3cd382abe37bbe855197718671d6190c4ce6d1"
 
 [[test]]
@@ -13224,6 +13436,7 @@ kind = "dm-image"
 source = "resources/images/required.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "3e50d8db78dd4b0797bf13e2569b083100e5c9d6173683997505b5fa4049578d"
 
 [[test]]
@@ -13232,6 +13445,7 @@ kind = "dm-image"
 source = "resources/images/rgb24prof.bmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "b5b483e9a9d3f3ebdeada2eff70800002c27c046bf971206af0ecc73fa1416e6"
 
 [[test]]
@@ -13240,6 +13454,7 @@ kind = "dm-image"
 source = "resources/images/rle.bmp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "787a6e46c422f081ac215a8257d2e42954082374852bb260bfbc53d4d468b859"
 
 [[test]]
@@ -13247,7 +13462,8 @@ id = "dm/image/sample_1mp.dng"
 kind = "dm-image"
 source = "resources/images/sample_1mp.dng"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "271aa1db6369f271e160acaf3029c8e86b8a86d2e9a44d1cc731f50575767ac0"
 
 [[test]]
@@ -13255,7 +13471,8 @@ id = "dm/image/sample_1mp_rotated.dng"
 kind = "dm-image"
 source = "resources/images/sample_1mp_rotated.dng"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "77503f7ed7b353b9eaf96c64adae8ec7a945af1950b77a374934258a720b32f1"
 
 [[test]]
@@ -13264,6 +13481,7 @@ kind = "dm-image"
 source = "resources/images/shadowreference.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "c155a0ac6417600b5804ed5ee6b661937d1d543a844579bcb6efbfb65f899faa"
 
 [[test]]
@@ -13272,6 +13490,7 @@ kind = "dm-image"
 source = "resources/images/ship.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "e2b749063c2e4f89d24e0900a614c8cef9e660fd1d15dd7b942a1943be3201e0"
 
 [[test]]
@@ -13280,6 +13499,7 @@ kind = "dm-image"
 source = "resources/images/stoplight.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "292753f066add623af1e30bbeeca58f15b3d6d1052e12b13e30f21f8d3c14505"
 
 [[test]]
@@ -13288,6 +13508,7 @@ kind = "dm-image"
 source = "resources/images/stoplight_h.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "94d4fa0cf3f96043af48503d1ad2438f9d1db2842fec44fbb0139c99e8a9ccee"
 
 [[test]]
@@ -13295,7 +13516,8 @@ id = "dm/image/test0-hdr.exif"
 kind = "dm-image"
 source = "resources/images/test0-hdr.exif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "23d8139bdd746412d67280889474d1a4c48dfa85888dd8856d0ed39dd09b1069"
 
 [[test]]
@@ -13303,7 +13525,8 @@ id = "dm/image/test1-pixel32.exif"
 kind = "dm-image"
 source = "resources/images/test1-pixel32.exif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "856e870ff43e8a1b5a514e21eb35732545713da485e014fa72603980f63abebd"
 
 [[test]]
@@ -13311,7 +13534,8 @@ id = "dm/image/test2-nonuniform.exif"
 kind = "dm-image"
 source = "resources/images/test2-nonuniform.exif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "841531b868b2d3fb69b39f4e82900adba0bc487209abe42595c005e1047dab71"
 
 [[test]]
@@ -13319,7 +13543,8 @@ id = "dm/image/test3-little-endian.exif"
 kind = "dm-image"
 source = "resources/images/test3-little-endian.exif"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "the oracle could not decode this file (no decoder in the m156 oracle build; codecs.md 9.4)"
 span_hash = "ad8cf44210dae19936e1c5c286921aa957d85bd3d22c91b33ec9b0c608e62dd3"
 
 [[test]]
@@ -13328,6 +13553,7 @@ kind = "dm-image"
 source = "resources/images/test640x479.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "373d0afd69b4c1f7551455a3389983b7ebc18a1876da0d9c110169e6920d1b83"
 
 [[test]]
@@ -13336,6 +13562,7 @@ kind = "dm-image"
 source = "resources/images/text.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "eb6a5e438023c312792c60b41f2a0bc13135b3a8b7949ecd307ac7b579c4515c"
 
 [[test]]
@@ -13344,6 +13571,7 @@ kind = "dm-image"
 source = "resources/images/webp-color-profile-crash.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1e058dc08716686247867784417767322d86a1e8b414a76729abe2ed2c6db491"
 
 [[test]]
@@ -13352,6 +13580,7 @@ kind = "dm-image"
 source = "resources/images/webp-color-profile-lossless.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "bcac5478a1eac17600957055a6cb2c950fef9e9dbed9705713a2f8077ca68176"
 
 [[test]]
@@ -13360,6 +13589,7 @@ kind = "dm-image"
 source = "resources/images/webp-color-profile-lossy-alpha.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "21dd5286455d1325fc3addee87299287a2544f7d31224e60e386e097adb1c29a"
 
 [[test]]
@@ -13368,6 +13598,7 @@ kind = "dm-image"
 source = "resources/images/webp-color-profile-lossy.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "80b132826369bd0f71eb1913d1fc209b942b33ab254fc8f52b4bab63c76b6037"
 
 [[test]]
@@ -13376,6 +13607,7 @@ kind = "dm-image"
 source = "resources/images/wide-gamut.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "0545787e922ed900ec639c6b4f708aa241a9308d2e93cf597d673dcf09bb22fb"
 
 [[test]]
@@ -13384,6 +13616,7 @@ kind = "dm-image"
 source = "resources/images/wide_gamut_yellow_224_224_64.jpeg"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "baa4cd74ca3bd882ea52f4ab51608bedcf18a337016f95cc496a0dae2c224232"
 
 [[test]]
@@ -13392,6 +13625,7 @@ kind = "dm-image"
 source = "resources/images/xOffsetTooBig.gif"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "20e280f3597dbefda75298568f13873f5af9a4496cc161ff520b16b5491ce17b"
 
 [[test]]
@@ -13400,6 +13634,7 @@ kind = "dm-image"
 source = "resources/images/yellow_rose.png"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "1782b1d1993fcd9f6fd8155adc6009a9693a8da7bb96d20270c4bc8a30c97570"
 
 [[test]]
@@ -13408,6 +13643,7 @@ kind = "dm-image"
 source = "resources/images/yellow_rose.webp"
 module = "codec"
 status = "todo"
+reason = "needs DM --src image goldens (codecs.md 9.4, Q2 deferred)"
 span_hash = "a954bc006a5d2cec3ac1db2f2d065778e21ae17d5552ca253f6d3a911f6c3730"
 
 [[test]]
@@ -28180,7 +28416,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L116-L127"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "f5ddb897cdcd7a78aabc4cb49645b58b1b059dafce142bbf536c8a9999d5374b"
 
 [[test]]
@@ -28189,7 +28426,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L129-L140"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "0a248f06e1beb74b2f7073ea2eea62e39c078334d3a1ed66fd66b5c8588e967d"
 
 [[test]]
@@ -28198,7 +28436,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L142-L153"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "daf51a578214f1cedd9ded6673fb9471f1363e8291e7bebecfb99caef9dc5107"
 
 [[test]]
@@ -28207,7 +28446,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L155-L166"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "5b647864a1fd7439b9452c454769ebb4e0de673fd32398f7b6ca55873de1468e"
 
 [[test]]
@@ -28216,7 +28456,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L168-L179"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "824d029fdc2673b454ba87454a48d6dd9754e3b01cbbe70000fb445e6d634034"
 
 [[test]]
@@ -28225,7 +28466,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L181-L192"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "5737f6f85820de50e3dbf4b120832932ae8a247474588abf95854f593f8e8baf"
 
 [[test]]
@@ -28234,7 +28476,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L207-L218"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "64a46b773f99a846b01a418f189817c0db2f94b47053936b5471d32a1831174f"
 
 [[test]]
@@ -28243,7 +28486,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L220-L231"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "19e9580ae35350460b3b3fc61bf845854714315b529d1db3cbe2ae68fb242947"
 
 [[test]]
@@ -28252,7 +28496,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L77-L88"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "b0e1ea71f1d1c406831aa35effbc3c4274a6297205c9aa81ebd39f12efd9f3b7"
 
 [[test]]
@@ -28261,7 +28506,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L194-L205"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "db2728693bccf977028492195a52d478e78d076c82faffed40f1e773d72d9c79"
 
 [[test]]
@@ -28270,7 +28516,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L233-L244"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "b61607743beed8311dad31ae5d76bb362fad213e0db5397162098ba3510ecb9a"
 
 [[test]]
@@ -28279,7 +28526,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L90-L101"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "b0306ef71cdad25a19188c794a18d182e2b0991b39a4c10fd4b7b89f2f8f2da0"
 
 [[test]]
@@ -28288,7 +28536,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AvifTest.cpp#L103-L114"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "AVIF is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "4e155c8a4774a1214ab0c00293b5788396a9337e4f8780d55e2fec44f30d3c71"
 
 [[test]]
@@ -29769,7 +30018,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L736-L740"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "RAW decoding is compiled out without SK_CODEC_DECODES_RAW (codecs.md 11)"
 span_hash = "943c13cd57547b0a0c0f287ba2eb0b935972433d23e4e87295f1600a582c01ff"
 
 [[test]]
@@ -29778,7 +30028,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1078-L1091"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "RAW decoding is compiled out without SK_CODEC_DECODES_RAW (codecs.md 11)"
 span_hash = "96dd2cfe0b96197410cd299ea1bed1cff10bf3502473c20c27f90ca421ab9bbb"
 
 [[test]]
@@ -35408,7 +35659,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/JpegxlTest.cpp#L21-L75"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "JPEG XL is off in the oracle build (codecs.md 1.1, 11)"
 span_hash = "247e29d82f170b4467df5d4c87bfdb0cc1002ba5a12aabe38b98497038ed9aef"
 
 [[test]]
@@ -36239,7 +36491,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L39-L69"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "718258a80a93232348bf8f4737510a5e6852317c4f568e0674a02a3a88fd097f"
 
 [[test]]
@@ -36248,7 +36501,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L472-L508"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "9a478564a5170af15e1a7c3447f4409b50f4376733127ee50cbf5348c1f43e40"
 
 [[test]]
@@ -36257,7 +36511,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L127-L199"
 module = "skcms"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "cf3d9436df0d90aa00a4babe71fb6f23348019007697e150e51c9e9cf6847b82"
 
 [[test]]
@@ -36266,7 +36521,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L397-L432"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "3eb3ad5b57c103a3b9cd9280288c51c63584fc0f33ff95ddbe74294ef5d214c3"
 
 [[test]]
@@ -36275,7 +36531,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L434-L470"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "3d4308e57245e02837b78f4e879ff01f753669bf647461c34c9f93fd5620d100"
 
 [[test]]
@@ -36284,7 +36541,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L510-L565"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "fab0056615132f99fbd0f891f51203d68dfc6e11c8d44fb0d8e2c82bbc6f796f"
 
 [[test]]
@@ -36293,7 +36551,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L311-L342"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "a9ca893754784a62c57d1ed30cffafd43baaf079df9968ac48a466b63fe3de35"
 
 [[test]]
@@ -36302,7 +36561,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L367-L395"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "4d3b4015a2c280cbbfcad83a003f78b8e6141ac609c3da0374dd96cda40b6521"
 
 [[test]]
@@ -36311,7 +36571,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L247-L274"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "3fd299ee601b42b4d1c47832ae34e28337943966982a9356209fde1b0952a6bd"
 
 [[test]]
@@ -36320,7 +36581,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L71-L74"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "5288bf403f6369598bf96aa6c25f5d4aed1c43c0735a35f13ce324493f008d5b"
 
 [[test]]
@@ -36329,7 +36591,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L84-L125"
 module = "skcms"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "2cc07d59df76bdd6c37d17ec662b209c8df97c9edcf011dfab109ba6410b954b"
 
 [[test]]
@@ -36338,7 +36601,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L344-L363"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "6bf4883dedcdcc394ff277169bd03b1ef715c3fb646a75b3884cbd31f84c5c0c"
 
 [[test]]
@@ -36347,7 +36611,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L201-L243"
 module = "skcms"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "5fdfd733e9743c4088d6d630d9d415a815b13bc27424456ca0b64151ebd075d2"
 
 [[test]]
@@ -36356,7 +36621,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkDecodeTest.cpp#L277-L308"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "63901f089132677797b03363d0eb9e7d389e47109240afdd79fb0e6b8d9e04d9"
 
 [[test]]
@@ -36365,7 +36631,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L71-L120"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "4e9835a30e23fc8f2488e50778a64a2f4540cc19451d9ccd7bdbc995d5711705"
 
 [[test]]
@@ -36374,7 +36641,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L295-L337"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "8c72f562ecb97c7e546164aef459bacb9a663318daea4c19db6f6cdd3e00c1bf"
 
 [[test]]
@@ -36383,7 +36651,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L171-L193"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "7679ca6b1e4c3d5e83873f668981c72a8d5d83852860fb95fa9df442bf170c65"
 
 [[test]]
@@ -36392,7 +36661,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L143-L158"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "d2f8c7288b85004f4ad10ae24c3f116e2164b5b02f4ccbf2555eb2329298c7aa"
 
 [[test]]
@@ -36401,7 +36671,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L160-L169"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "953ed3020861eddb26a8f10725cf209f3bb4ea55e0107d2cc2c26c1ad0b34a37"
 
 [[test]]
@@ -36410,7 +36681,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L239-L254"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "f2c00f03ec484a3f88a12c1a297afee348c785c6bb27237bd64adbab30e7d68f"
 
 [[test]]
@@ -36419,7 +36691,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L339-L384"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "15e06d97def95fca6825a267d7eb796df7a2228a7cb8900f2cb672d3e3a583d8"
 
 [[test]]
@@ -36428,7 +36701,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L195-L237"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "d29c22a790e2e2654b074a8404c3e865a40f987b289b1af7acdcc39a2706a9b8"
 
 [[test]]
@@ -36437,7 +36711,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/NdkEncodeTest.cpp#L122-L141"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "NDK image codecs are Android-only (codecs.md 11)"
 span_hash = "4cca6b48938b775e9d0e3472efc20507a25ab4cee9a126d968e177b51487e66d"
 
 [[test]]
@@ -40961,6 +41236,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L145-L149"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "955690a65087c0e6beb10a171846bd6c64614f09d4e9529575383c1383326ffa"
 
 [[test]]
@@ -40970,6 +41246,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L407-L413"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "d3a977d68468a86581d1e09cc2edca9836ffe75cfcee9b3a7e8581b5a80e4eed"
 
 [[test]]
@@ -40979,6 +41256,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L151-L157"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "d00980c771a07b02c1ad834e04d28f0be52d935882b0447d10066a6d2ccb8131"
 
 [[test]]
@@ -40988,6 +41266,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L190-L202"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "1ce27d7ec96c9954a08170109d1021a3192ce180cfdbffef4775dd332c42d476"
 
 [[test]]
@@ -40997,6 +41276,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L177-L188"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "cac45a9b9c8589264040b409ec081e0888baedbb22cda2fb7c18053244a8e125"
 
 [[test]]
@@ -41006,6 +41286,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L159-L175"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "29096af7f1e2b42d7f0d6c8b0daf1b54cf8ba2cb0167004769e59ce88541457e"
 
 [[test]]
@@ -41015,6 +41296,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L254-L271"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "146998a879826d63af3f8acdb012283be1094ea3135ecf3ff7612dfae205c62e"
 
 [[test]]
@@ -41024,6 +41306,7 @@ macro = "DEF_TEST"
 source = "tests/RustExifTest.cpp#L204-L227"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust EXIF parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "6f739e69273ff3acf209b125ddbf774506d0955bc38a3294f2741ada820f7479"
 
 [[test]]
@@ -41033,6 +41316,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L283-L315"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "734f0895e1ac726dd5ec8faee5e35d17761891bc1f9d3250c0e2825b51157d07"
 
 [[test]]
@@ -41042,6 +41326,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L244-L281"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "5a1c88a4c225aaf08d7d5aa63f1be46e407640ad44df9b3a7fe0db185a816d36"
 
 [[test]]
@@ -41051,6 +41336,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L765-L805"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "849f88c4478fa8798a214d555ff5a8ccb6848e2eb6473d26bb1fc88d54a1173b"
 
 [[test]]
@@ -41060,6 +41346,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L946-L1308"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "6c50b65b0701aeb7e5e6f6e2d6945ba8694b74c5a28b81a7d907f4ad3a658110"
 
 [[test]]
@@ -41069,6 +41356,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L88-L107"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "133d8af93be35e7970a854ac03d27fe4a65f2b5cbb5812bc7c6401e17e19af64"
 
 [[test]]
@@ -41078,6 +41366,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L1363-L1396"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "2eeea3d978d7afd4ab405a4df83b1315bdfc4315ecc42b82285c7c2ac18ba1cd"
 
 [[test]]
@@ -41087,6 +41376,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L128-L189"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "970c37a4dda704adcdd4184cf0fe2e40195c03fb35798df1098483965d1f2051"
 
 [[test]]
@@ -41096,6 +41386,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L226-L242"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "0a78be7359dd6274669d69b99ff363442e708a7769f6251d16159e709bb16746"
 
 [[test]]
@@ -41105,6 +41396,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L205-L224"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "eb54923d07f6a3272cd2e993ab2ddb41f5c5d9f0503a78ff42fb3ce335723a70"
 
 [[test]]
@@ -41114,6 +41406,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L191-L203"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "116176d9c0585917a72c091c4d8c5e40c5e0ca658f7877bfa3972ce3d63fa871"
 
 [[test]]
@@ -41123,6 +41416,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L317-L409"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "481012168780a2749104669052c228397981c456a6816e7f3436b964b05b57ae"
 
 [[test]]
@@ -41132,6 +41426,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L411-L493"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "ac3f48b50a720706a700011d2a35faaf89e762378971c087b415075ecb8cddcd"
 
 [[test]]
@@ -41141,6 +41436,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L668-L760"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "2fd1a8c84710ac27f428fa1d7c7e344450a5750b1118d5c3f6868cc4ae39705e"
 
 [[test]]
@@ -41150,6 +41446,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L498-L600"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "0390e7f989178d86eb35839c8ff34fefb61e2cf83eabc254c6b0aa7b5f061751"
 
 [[test]]
@@ -41159,6 +41456,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L605-L666"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "11d42c446585c0c7e8724351d55899d16316ecd84dc6565b30114d62b55523ca"
 
 [[test]]
@@ -41168,6 +41466,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L109-L126"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "cfb02520bcbc57d2a8f74aa53f81428de847404c53681ac61702e9ab53939bc3"
 
 [[test]]
@@ -41177,6 +41476,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L1318-L1356"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "3297c0f5abe57765543842185b50c2b0a9f68381d38d895554c44e9521adae3a"
 
 [[test]]
@@ -41186,6 +41486,7 @@ macro = "DEF_TEST"
 source = "tests/RustIccTest.cpp#L1398-L1453"
 module = "skcms"
 status = "todo"
+reason = "deferred: Skia Rust ICC parser, wave C-R3 (codecs.md 12, Q1)"
 span_hash = "c6d2fbf64bc2a892cc86ba7b1dfbd8db190677fd5a226f6829ad968c4eafa3fb"
 
 [[test]]
@@ -41891,7 +42192,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L706-L748"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "02e50cbf8848ff32f7a0a2d823674f3dd46a6bbedc9ce0b4c5cc20408f1add7e"
 
 [[test]]
@@ -41900,7 +42202,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L750-L786"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "a9804fe83b6a58740127d230a58482cfa3e276032dd2447a441882b31dd7119a"
 
 [[test]]
@@ -41909,7 +42212,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L622-L644"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "f0d0072030778fba349e4f12e4d75094e16307428f6a0fcd634d9d49c58d83fc"
 
 [[test]]
@@ -41918,7 +42222,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L647-L702"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "11608257792fa7d2a3e1ef12facfcc0ffacac09bc3c5174731434ec24b534439"
 
 [[test]]
@@ -41927,7 +42232,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L350-L410"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "e2b089c220ede60c5e90d636c9c292ed141fef312ead0b2c9ec5994430a76b6f"
 
 [[test]]
@@ -41936,7 +42242,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L417-L619"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "fef2c23d33a2178ca97898ff89f852859efeea90aa32835c62a4cdbefed7f2b7"
 
 [[test]]
@@ -41945,7 +42252,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L278-L283"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "cef5e1d568f219d7ffa0cc21d3d0cf51345c1621bc889be9b710cde5667c7ffd"
 
 [[test]]
@@ -41954,7 +42262,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L266-L275"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "9b0f4ca11a8ebe50f6a92f0da64f9b591c7e03ddc958f5fd3621c115c01faa99"
 
 [[test]]
@@ -41963,7 +42272,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L254-L263"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "974436660b19c59082f4381451c63e9c26afb21b4edbd863f51e1e331f327d73"
 
 [[test]]
@@ -41972,7 +42282,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L123-L158"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "4542aabf9bda07ec96ada3be847bb6c9534940909b94834881b8cdb5f80d07f9"
 
 [[test]]
@@ -41981,7 +42292,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L317-L346"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "d9157795370e6fb5952c5537726b4293f49abfd12d08b913a32ead1e8f643751"
 
 [[test]]
@@ -41990,7 +42302,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L228-L251"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "9144a91dbea2fc065372579fa228c324f64976b8399edda064ab68e288653e46"
 
 [[test]]
@@ -41999,7 +42312,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L286-L314"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "6b06c2b24fcd852a3fce6ac1d1fb37fbd2768cb3e74fccf97b128f4e92917dda"
 
 [[test]]
@@ -42008,7 +42322,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L161-L170"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "b4956e6ba848b5bf5e565cfc4f73cd5bcadd899e801ba97a7417aa2ff048a3a6"
 
 [[test]]
@@ -42017,7 +42332,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L173-L186"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "ee82e8fb06a6bfd43f5db090c9c42adc75aaf01bddbf15c82366355d46c7516f"
 
 [[test]]
@@ -42026,7 +42342,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBmpRustDecoderTest.cpp#L189-L225"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "6432d96c11916efc050401b4458b276b4899a06c407e471d9ef334f0fb3375b5"
 
 [[test]]
@@ -42209,7 +42526,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L407-L450"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "2f7e1d3e7db806e29cb49a7e4f20820deb1a72c0eacbe9422dfd1efe73a07ba1"
 
 [[test]]
@@ -42218,7 +42536,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L342-L403"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "dc4fbb97f1def8851bb7c17b8a7b99065ac3dd1200068df5173b67b546eb2bb9"
 
 [[test]]
@@ -42227,7 +42546,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L187-L192"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "a91e6b4c753d942143b70993cf076f672ae2ed6dff1d3fa7680f0fe014e8b63c"
 
 [[test]]
@@ -42236,7 +42556,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L179-L184"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "88f094867fec0f1b8fd04ba9ca9dda8aff01c6aeff835bceee43a0bc928f9c84"
 
 [[test]]
@@ -42245,7 +42566,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L167-L176"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "21319c18fec13b2bd0564c7241dac4c9e69236bc129a663886bbaa3a163cebba"
 
 [[test]]
@@ -42254,7 +42576,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L155-L164"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "0185db2ff59630856ee97e5ff8aed18f36c0c5bb26746b517f89df01617f07a6"
 
 [[test]]
@@ -42263,7 +42586,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L51-L65"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "820e1b63d4f76318904e94108170d2f1ee1350bc63bb0a064ac0b06905427ab1"
 
 [[test]]
@@ -42272,7 +42596,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L68-L86"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "1636a73da4aa86c9013438a62e2a29407a20c50b7e395b199db0dc067bb06f20"
 
 [[test]]
@@ -42281,7 +42606,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L250-L279"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "c2c5292eb6c49332f4118bcb8e96873ff8d23ba7e86adc7b4434522d8a473216"
 
 [[test]]
@@ -42290,7 +42616,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L231-L247"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "cefd3fb478715b5e2123eaf93f23bcdc86dce0be7ab0978071e0821013a36fd2"
 
 [[test]]
@@ -42299,7 +42626,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L195-L228"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "00408ac833f565dd4fa8d17636e358a0417bef19d698d14a37cfafae269d9875"
 
 [[test]]
@@ -42308,7 +42636,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L283-L317"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "999c5bb30a98fe775102c5c294eb5a5dd2881a0e0739afea109d9c03fb259a6b"
 
 [[test]]
@@ -42317,7 +42646,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L89-L97"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "62170484eeb64abf2f47d4f861d39f0e84f4ee9e4a7bd05c7c9b757c1005e936"
 
 [[test]]
@@ -42326,7 +42656,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L100-L113"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "102cd6903cd207f6998095cc5fd24267da2a5a53b448f23ce2c5fb2b99c9a48e"
 
 [[test]]
@@ -42335,7 +42666,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L321-L335"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "24264a75bd80428a374b7d0db18e4c63dfc6c2e3cd3c887c150bd937aa584e9b"
 
 [[test]]
@@ -42344,7 +42676,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L116-L152"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "78abb1664d19c7df024c13cc27ce0fb05984821b2e1cce0f265cac5f7f43a009"
 
 [[test]]
@@ -42353,7 +42686,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L455-L477"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "33f9becfcdaecb3a34d6bbe56985b628dd271bf50e5134c53779412b8449166c"
 
 [[test]]
@@ -42362,7 +42696,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkIcoRustDecoderTest.cpp#L489-L543"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "needs the image crate at a git revision; cargo-deny forbids git deps (codecs.md 12, C-R4)"
 span_hash = "70449b6aafe0ee09dfce1b0919df40c90845f1d157d90ed8a1f5e1a578c875fa"
 
 [[test]]
@@ -42390,6 +42725,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L77-L91"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "fea550954a6a7d3b9114497668434a4ca7291d29b5b41a4103a1dd0258c588de"
 
 [[test]]
@@ -42399,6 +42735,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L95-L137"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "ece8d2cdefd70a5c5678a5640ffc5c9f3ae9f259955bccfef2a8facfcb5defe1"
 
 [[test]]
@@ -42408,6 +42745,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L586-L610"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "bac004addcb2369ad9fefb24f604160e83be5e4b4d1f824758ae3f58535987ca"
 
 [[test]]
@@ -42417,6 +42755,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L546-L569"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "bda2008b5c02695fa5ed7ece77b0f346a18cdf9500c1c40b36bc2c9eba15bd1a"
 
 [[test]]
@@ -42426,6 +42765,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L571-L582"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "78ef0e4b4e00f37c1578f409779e5c27d84d97a72ee3b65bede4740325cc283c"
 
 [[test]]
@@ -42435,6 +42775,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L529-L544"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "1b1bcfc5daee5b3f1ff8d998f1ba135b4c4c87fa56dccf9c4085d0ed2cbdaf6d"
 
 [[test]]
@@ -42444,6 +42785,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L707-L752"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "b3043911a354d4a4dd4e78fdf1fae7fdb1b3c3f86f16e85ecb350b76931ead13"
 
 [[test]]
@@ -42453,6 +42795,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L679-L702"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "0eec45e2d9c21dc11c3ed531074c799f220de8ffb1da47768b552ef0f9314d00"
 
 [[test]]
@@ -42462,6 +42805,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L618-L677"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "7f21be6a544923726e85dc7bd7f68ec7d44dcd4c2026faa78dfc54564a79fbb1"
 
 [[test]]
@@ -42471,6 +42815,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L401-L437"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "75a38d74203bda93c94ee8525d1571e6cf789ac412a27415c41b76627500b16a"
 
 [[test]]
@@ -42480,6 +42825,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L439-L527"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "cccc8ea7d5de4f8b19f05539878b5314df034fe11baa4fa1c9b78d059cdee26f"
 
 [[test]]
@@ -42489,6 +42835,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L142-L363"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "1b6e06afcd944576ff136d7a284bcfbf2fce5b0e54c2593b86a19e7bb35b9ee9"
 
 [[test]]
@@ -42498,6 +42845,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L385-L399"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "f1ba473ed4d9a6d96a4f23e44ae28a138b9542099847f14771baffda5a97012d"
 
 [[test]]
@@ -42507,6 +42855,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L365-L383"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "cf9a33f033cee1b69123663449174eac166f7586c75df6c003d6f38bbae8a8e0"
 
 [[test]]
@@ -42516,6 +42865,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L763-L811"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "45af6f73cb654ec52bfa9a862e263ad35130121d4077b3e63a3b0380b653b6c0"
 
 [[test]]
@@ -42525,6 +42875,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L900-L933"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "471fbafe3a9de2084e462b789053ce5aac435865cff51a8f0d32cc36471f8da7"
 
 [[test]]
@@ -42534,6 +42885,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L982-L1047"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "060a0c5afe2acc84397d0d861f06223452e20139435c4f00990c1f830aa8cb88"
 
 [[test]]
@@ -42543,6 +42895,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L938-L978"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "e8f1e0fb849c3d6b9344caf28cb9f92e7d3a78aff7f68977d9de86297daf89ff"
 
 [[test]]
@@ -42628,6 +42981,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L703-L710"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "ed31aaf2ce5ae608b03d774f84bc8f04f24665e213d80bba681547d443c1f391"
 
 [[test]]
@@ -42637,6 +42991,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L677-L679"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "388dafc7b4398462c5d2fbd0401e231f6ab78266881704b5b7c370fe49597002"
 
 [[test]]
@@ -42646,6 +43001,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L683-L690"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "30dac0d8b34d1729dc83850c39d79da9f3f36831d66c6fbbcaef269a483db3e5"
 
 [[test]]
@@ -42655,6 +43011,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1052-L1066"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "273a41e32c20a1b818c79c4c10574dd71d4ab7545414e1488bbd8dbb7762e4b0"
 
 [[test]]
@@ -42664,6 +43021,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1070-L1084"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "77ed4e8a4cda0bda2fce4a9e27c2133b8704f645309f7c0293fbb0a9872c9a27"
 
 [[test]]
@@ -42673,6 +43031,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1029-L1048"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "1d339c464f9f79aa5bfa90939e464f139aa8a751d880ce63cb98222e895e8f5f"
 
 [[test]]
@@ -42682,6 +43041,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1002-L1025"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "130f29ab1c40a38fba9c7fce906eeaf4596ee8431629bad652dc7e729084b00f"
 
 [[test]]
@@ -42691,6 +43051,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L791-L852"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "3c387a9e14fdebbddcd9f45276f5b1ee21159db60d43986180bcad7d443da9a5"
 
 [[test]]
@@ -42700,6 +43061,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L862-L911"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "15bb6ab2efd2b8ddc824510004fd19a28ad7ccf264a2aa5913e252699585b639"
 
 [[test]]
@@ -42709,6 +43071,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L919-L998"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "9fc727d4e76adbb67948939c416af3a033f0d659065b4bfc1d23fcaa2737a19d"
 
 [[test]]
@@ -42718,6 +43081,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L719-L774"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "5bb6682982c8e4f2840127c774cd8e0ee4b25e20210c8da8a16db0b61849a0f2"
 
 [[test]]
@@ -42727,6 +43091,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1154-L1167"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "4b6aa20f0fe551f68f6bb23c199dc77d5b9543656d0bc2e314c575de3243c2a7"
 
 [[test]]
@@ -42736,6 +43101,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1115-L1122"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "cbd9886aa84cd9604fe2187d7f26ea49cc0ece31accb734fc5b8d6028c4bf445"
 
 [[test]]
@@ -42745,6 +43111,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1126-L1133"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "6591c705ba001cfbb7b00146e7c2d84254c55e10586d9825dd14bb149e036d5b"
 
 [[test]]
@@ -42754,6 +43121,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1137-L1144"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "0b85694793f45ffa618e73956bd2a7b95598f2f47ce45def9478ab36b894d620"
 
 [[test]]
@@ -42763,6 +43131,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1811-L1850"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "2278a7851d4fb6c16a8310b1910f1c2dee01ce73ef3107ae86812fdce7e36255"
 
 [[test]]
@@ -42772,6 +43141,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1888-L1921"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "1cbfe7da25dd5c9fc1445d1f67b0b92ca3481cc34d13e16af6e6317ad2bbf2cf"
 
 [[test]]
@@ -42781,6 +43151,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1857-L1882"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "b0d07412d52b796c6c7b5de6600129254755b274b9f25dc94846ec27daf2203d"
 
 [[test]]
@@ -42790,6 +43161,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1088-L1111"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "5b151eb0dd2f11cba52a9cf9745c9bf2a5efa7dd00ccbd4babf6cdd353b98bda"
 
 [[test]]
@@ -42799,6 +43171,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1271-L1286"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "42560d1dc2768a0094e17598de9b24a069391584b1f787b03390f1d2a5d56a57"
 
 [[test]]
@@ -42808,6 +43181,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1622-L1677"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "c412d62dd09b7379183f689a15dfe58964774111e5e0e5af727e60b0ad86e757"
 
 [[test]]
@@ -42817,6 +43191,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1700-L1743"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "f47631c8b7f08b9bf2de31a0912526d1e9db1e06e729affcbfe4bfd86b79685f"
 
 [[test]]
@@ -42826,6 +43201,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1247-L1254"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "e4669c16c2750c43c4cfd71c4f1f42149f78380c37f0ae71fbf6d868e2d09952"
 
 [[test]]
@@ -42835,6 +43211,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1256-L1269"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "72bc9e434fe85f406ddffd15de9631d7ac70e3e213db30a1f21af141de455361"
 
 [[test]]
@@ -42844,6 +43221,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1523-L1560"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "e2561413364607da7ca47d08d38b4a756371f78e976773b29a86003adbbe7f16"
 
 [[test]]
@@ -42853,6 +43231,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1679-L1698"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "49e3fd2e342302daa676f621557cd59168682dfd6cfdc56aab64c74cd35c63b4"
 
 [[test]]
@@ -42862,6 +43241,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1562-L1587"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "4c915b6b44d5e2bdab94dae28efab228e708028ab0db4b061fd4a62450f855bd"
 
 [[test]]
@@ -42871,6 +43251,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1227-L1245"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "10f5e02383dbd829359c369e2ecd67fb7ed15ba2a08afe5fa3f9bcb775421c32"
 
 [[test]]
@@ -42880,6 +43261,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2087-L2089"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "95bb55af38fa2c89f5a14c2d70fbe5bd25def1ee06c6eddce6e04e434dbd9bc4"
 
 [[test]]
@@ -42889,6 +43271,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2091-L2095"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "5bb7ef78eb29d6b077d95f0bef70c8c5fc0f0a4b6a88e9c3a1fba6571719b3cb"
 
 [[test]]
@@ -42898,6 +43281,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1472-L1495"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "94a78d37efbf949c44ed4c7463d2fa72d25d68c4f723f124550e54c9dc805def"
 
 [[test]]
@@ -42907,6 +43291,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1405-L1470"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "9d67e087928ffd7a14e64bfc2e45dbff0414b78c9997de31f0866faa08e7da48"
 
 [[test]]
@@ -42916,6 +43301,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1288-L1302"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "e3c35d589222557f263f8be5b3543574354ca27d807371713cdf7121031317af"
 
 [[test]]
@@ -42925,6 +43311,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2032-L2034"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "82e3a406e3b3e6674704aee0463d489c9c45fdc8b67fb9ebd356e36e9eed9a0a"
 
 [[test]]
@@ -42934,6 +43321,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2036-L2038"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "09be3e29b60793bacfcd3da6de809252bfae61f3bda477139a12e1edaab65e94"
 
 [[test]]
@@ -42943,6 +43331,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2042-L2044"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "2b30e9e932a3dae46a48397981111770796f930e0e723b8cdac17488d921c060"
 
 [[test]]
@@ -42952,6 +43341,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2046-L2048"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "2578774399a478d7b667417b84ae2bfee049b5c4df02e121c6cde3347856a5ba"
 
 [[test]]
@@ -42961,6 +43351,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1589-L1620"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "271d3bbc34fa979dccfc14ff290c90dbb0475003a484b0c2aa105bfd863748db"
 
 [[test]]
@@ -42970,6 +43361,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1208-L1225"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "3feeaebf035cca6c21ae6dd5792756b075853d4a0a78d1558c96837b9978d60b"
 
 [[test]]
@@ -42979,6 +43371,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1169-L1187"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "79826268f4d9828e442682ecbe06292a9c4d539dde17345cdd8a1107f16588dc"
 
 [[test]]
@@ -42988,6 +43381,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1189-L1206"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "ad717220553332265916d002109b234b463a9316987a82b01f214141b69f1121"
 
 [[test]]
@@ -42997,6 +43391,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1497-L1510"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "d5c8badff9373f5e840fa6a410acfbc7a8c6d5f80b317a5d063e73df25f70b2e"
 
 [[test]]
@@ -43006,6 +43401,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1769-L1773"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "07dcb458058edbcb7e98e03d232c4aa0b54b10273073bfc478d0d774b7a0087b"
 
 [[test]]
@@ -43015,6 +43411,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1988-L1991"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "d9d7b8b75428f95c6db84a40fa777e6964d41cdc0cbbe6f92846e1f71faf585c"
 
 [[test]]
@@ -43024,6 +43421,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1993-L1996"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "edcfeb597e53d4bd69b44ef912f88aeacbd51a5d50509963d969000031f1d78b"
 
 [[test]]
@@ -43033,6 +43431,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1775-L1779"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "bb2b00b67596852e357270bb7d3ee4856ace4dca42daf12ac6afede601ff2bdf"
 
 [[test]]
@@ -43042,6 +43441,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1781-L1787"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "b346944fdaf1cba2e21b905da1cee9c7c42c9a734f32c3476ba69f4ff58e81b3"
 
 [[test]]
@@ -43051,6 +43451,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1789-L1796"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "4b339759f9997481181ea61638438c87d7034feed128bfd854a49dc5120b30fa"
 
 [[test]]
@@ -43060,6 +43461,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1391-L1397"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "c0eed3349e35465b2cef03ffa221fa1956ad565465a5bc7db8dc94eea9acbb70"
 
 [[test]]
@@ -43069,6 +43471,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1970-L1977"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "401873de6c7d773d5fe8348bedeed8d75c3085b1cb97a5f70470d10261b0c489"
 
 [[test]]
@@ -43078,6 +43481,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1979-L1986"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "6a4a579a861e6a9f25b608b71828076734e450136b4e0ab17ee7a45269b8e636"
 
 [[test]]
@@ -43087,6 +43491,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L2000-L2026"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "8c3fd0c4135d7432834e2b9ce21a8c763a08d44ba015d43d1ee2f260ecbdcae8"
 
 [[test]]
@@ -43096,6 +43501,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustDecoderTest.cpp#L1746-L1767"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "446e4982c9cc5c28a5c2150ee90e2bbf4cd105d7bc4e89a0c9fcb638309853de"
 
 [[test]]
@@ -43105,6 +43511,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L57-L144"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "d7ac1e8bcd7855af9591cb7cb9f377759ca51d64b2f82ea18d8237e635ba5d82"
 
 [[test]]
@@ -43114,6 +43521,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L146-L182"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "6d4094f48b47c0d2992b07daf43fa1123bf77f781aed2e4fec60512589fe41f6"
 
 [[test]]
@@ -43123,6 +43531,7 @@ macro = "DEF_TEST"
 source = "tests/SkPngRustEncoderTest.cpp#L23-L54"
 module = "codec"
 status = "todo"
+reason = "deferred: Skia Rust-backed codec wave C-R (codecs.md 12, Q1)"
 span_hash = "f24d11a12f72dc85496485aa3bd2f9ca41723a6eb00a2ee32e63d0ca599e8452"
 
 [[test]]
@@ -49208,7 +49617,7 @@ id = "tests/TypefaceTest.cpp::TypefaceGlyphToUnicode"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L131-L159"
-module = "codec"
+module = "text"
 status = "todo"
 span_hash = "bec05c8d3886a2ab87578fa1ae567ddaf993eb037b9ad7320a3c6e080b1c0f5c"
 
@@ -49289,7 +49698,7 @@ id = "tests/UnicodeTest.cpp::Unicode_textencodings"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UnicodeTest.cpp#L22-L51"
-module = "codec"
+module = "text"
 status = "todo"
 span_hash = "02624007eef825587619a1c5e6924e831abf18fdeeca7271c376eac7bf257bcc"
 
@@ -49298,7 +49707,7 @@ id = "tests/UnicodeTest.cpp::glyphs_to_unichars"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UnicodeTest.cpp#L53-L68"
-module = "codec"
+module = "text"
 status = "todo"
 span_hash = "1513379b3f03333051b2989f084b767372d6cd991e66e4a79c3d70b48193fe57"
 
