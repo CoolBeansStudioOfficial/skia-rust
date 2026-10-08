@@ -8,14 +8,17 @@
 //!
 //! skia-rust: flattening (`CreateProc`, `flatten`) is not ported.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::{PathEffect, PathEffectBase};
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{SCALAR_HALF, int_to_scalar, scalar};
 use skia_rust_core::stroke_rec::StrokeRec;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::two_d_path_effect::{Sk2DBase, Sk2DKind};
 
@@ -50,7 +53,29 @@ impl Sk2DKind for Line2DPathEffectImpl {
     }
 }
 
+/// `SkLine2DPathEffect::CreateProc`: the matrix, then the width.
+// Port of: src/effects/Sk2DPathEffect.cpp#L149-L154 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let matrix = buffer.read_matrix();
+    let width = buffer.read_scalar();
+    new(width, &matrix)
+}
+
 impl PathEffectBase for Line2DPathEffectImpl {
+    // Port of: src/effects/Sk2DPathEffect.cpp#L162 (chrome/m156)
+    fn type_name(&self) -> &'static str {
+        "SkLine2DPathEffect"
+    }
+
+    // Port of: src/effects/Sk2DPathEffect.cpp#L156-L159 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_matrix(self.base.matrix());
+        buffer.write_scalar(self.width);
+    }
+
     // Port of: src/effects/Sk2DPathEffect.cpp#L120-L128 (chrome/m156)
     fn on_filter_path(
         &self,

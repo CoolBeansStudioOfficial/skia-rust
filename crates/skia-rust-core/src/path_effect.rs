@@ -9,21 +9,26 @@
 //! `skia-rust-effects`).
 //!
 //! skia-rust: `SkPathEffect` is a cheaply clonable `Arc` around a [`PathEffectBase`] trait
-//! object (C++: `SkPathEffect` / `SkPathEffectBase` and its subclasses). Flattening
-//! (`flatten`, `CreateProc`, `Deserialize`) is not ported.
+//! object (C++: `SkPathEffect` / `SkPathEffectBase` and its subclasses). Flattening is the
+//! `type_name` and `flatten` methods of the trait, read back through
+//! [`FlattenableRegistry`](crate::flattenable::FlattenableRegistry); `Deserialize` is not ported.
 
 use std::fmt;
 use std::sync::Arc;
 
 use bitflags::bitflags;
 
+use crate::data::Data;
+use crate::flattenable::FlattenableRegistry;
 use crate::matrix::Matrix;
 use crate::path::Path;
 use crate::path_builder::PathBuilder;
 use crate::point::{Point, Vector};
+use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::scalar::{SCALAR_1, scalar};
 use crate::stroke_rec::StrokeRec;
+use crate::write_buffer::BinaryWriteBuffer;
 
 bitflags! {
     /// Flags that impact the drawing of the points of a [`PointData`]
@@ -148,6 +153,16 @@ pub trait PathEffectBase: fmt::Debug + Send + Sync + 'static {
     /// could be computed.
     #[doc(alias = "computeFastBounds")]
     fn compute_fast_bounds(&self, bounds: Option<&mut Rect>) -> bool;
+
+    /// The name the effect is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks an effect that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the parameters of the effect (`flatten`). Writes nothing by default.
+    fn flatten(&self, _buffer: &mut BinaryWriteBuffer) {}
 }
 
 /// The base of objects that affect the geometry of a drawing primitive (`SkPathEffect`).
@@ -280,6 +295,38 @@ impl PathEffect {
             .on_filter_path(dst, src, stroke_rec, cull_rect.into(), ctm)
     }
 
+    /// The flattened effect, as `SkFlattenable::serialize` makes it: its name, then its body.
+    // Port of: src/core/SkFlattenable.cpp#L127-L139 (chrome/m156)
+    #[must_use]
+    pub fn serialize(&self) -> Data {
+        let mut writer = BinaryWriteBuffer::new();
+        writer.write_path_effect(Some(self));
+        writer.snapshot_as_data()
+    }
+
+    /// Writes the flattened effect into `memory`, and returns its size, or 0 if it does not fit
+    /// (the `serialize(void*, size_t)` overload).
+    // Port of: src/core/SkFlattenable.cpp#L141-L150 (chrome/m156)
+    pub fn serialize_into(&self, memory: &mut [u8]) -> usize {
+        let mut writer = BinaryWriteBuffer::new();
+        writer.write_path_effect(Some(self));
+        let size = writer.bytes_written();
+        if size > memory.len() {
+            return 0;
+        }
+        writer.write_to_memory(&mut memory[..size]);
+        size
+    }
+
+    /// Reads back an effect written by [`PathEffect::serialize`], with the factories of
+    /// `registry` (`SkFlattenable::Deserialize`).
+    // Port of: src/core/SkFlattenable.cpp#L152-L159 (chrome/m156)
+    #[doc(alias = "Deserialize")]
+    #[must_use]
+    pub fn deserialize(data: &[u8], registry: &FlattenableRegistry) -> Option<PathEffect> {
+        ReadBuffer::new(data).read_path_effect(registry)
+    }
+
     /// True if this path effect requires a valid CTM.
     // Port of: src/core/SkPathEffect.cpp#L33-L35 (chrome/m156)
     #[doc(alias = "needsCTM")]
@@ -325,6 +372,46 @@ impl PathEffect {
     }
 }
 
+/// `SkComposePathEffect::CreateProc`: the outer and then the inner effect, each of which may be
+/// absent (`SkComposePathEffect::Make` then returns the other one).
+// Port of: src/core/SkPathEffect.cpp#L126-L130 (chrome/m156)
+#[doc(alias = "SkComposePathEffect::CreateProc")]
+pub fn compose_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let pe0 = buffer.read_path_effect(registry);
+    let pe1 = buffer.read_path_effect(registry);
+    match (pe0, pe1) {
+        (Some(outer), Some(inner)) => Some(PathEffect::compose(outer, inner)),
+        (outer, inner) => outer.or(inner),
+    }
+}
+
+/// `SkSumPathEffect::CreateProc`: the first and then the second effect, each of which may be
+/// absent (`SkSumPathEffect::Make` then returns the other one).
+// Port of: src/core/SkPathEffect.cpp#L184-L188 (chrome/m156)
+#[doc(alias = "SkSumPathEffect::CreateProc")]
+pub fn sum_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let pe0 = buffer.read_path_effect(registry);
+    let pe1 = buffer.read_path_effect(registry);
+    match (pe0, pe1) {
+        (Some(first), Some(second)) => Some(PathEffect::sum(first, second)),
+        (first, second) => first.or(second),
+    }
+}
+
+/// The flattening of a pair of path effects (`SkPairPathEffect::flatten`): the two effects, each
+/// written as a flattenable.
+// Port of: src/core/SkPathEffect.cpp#L62-L65 (chrome/m156)
+fn flatten_pair(buffer: &mut BinaryWriteBuffer, pe0: &PathEffect, pe1: &PathEffect) {
+    buffer.write_path_effect(Some(pe0));
+    buffer.write_path_effect(Some(pe1));
+}
+
 // Port of: src/core/SkPathEffect.cpp#L111-L148 (chrome/m156)
 #[derive(Debug)]
 struct ComposePathEffect {
@@ -335,6 +422,15 @@ struct ComposePathEffect {
 }
 
 impl PathEffectBase for ComposePathEffect {
+    // Port of: src/core/SkPathEffect.cpp#L109 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkComposePathEffect"
+    }
+
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_pair(buffer, &self.pe0, &self.pe1);
+    }
+
     // Port of: src/core/SkPathEffect.cpp#L125-L136 (chrome/m156)
     fn on_filter_path(
         &self,
@@ -374,6 +470,15 @@ struct SumPathEffect {
 }
 
 impl PathEffectBase for SumPathEffect {
+    // Port of: src/core/SkPathEffect.cpp#L167 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkSumPathEffect"
+    }
+
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        flatten_pair(buffer, &self.pe0, &self.pe1);
+    }
+
     // Port of: src/core/SkPathEffect.cpp#L174-L180 (chrome/m156)
     fn on_filter_path(
         &self,

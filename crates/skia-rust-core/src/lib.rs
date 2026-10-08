@@ -57,6 +57,7 @@ pub mod effect_priv;
 pub mod endian;
 pub mod fdot6;
 pub mod fixed;
+pub mod flattenable;
 pub mod float_bits;
 pub mod floating_point;
 pub mod font;

@@ -133,3 +133,81 @@ fn invalid_discrete_and_trim_are_rejected() {
     );
     assert!(crate::trim_path_effect::new(scalar::NAN, 0.5, None).is_none());
 }
+
+// Flattening: every effect that has a `flatten` reads back to an effect that flattens to the same
+// bytes, through the registry of the effects.
+mod flatten_round_trip {
+    use skia_rust_core::blur_types::BlurStyle;
+    use skia_rust_core::mask_filter::MaskFilter;
+    use skia_rust_core::matrix::Matrix;
+    use skia_rust_core::path_builder::PathBuilder;
+    use skia_rust_core::path_effect::PathEffect;
+
+    use crate::flattenable::REGISTRY;
+    use crate::{
+        corner_path_effect, dash_path_effect, discrete_path_effect, emboss_mask_filter,
+        line_2d_path_effect, path_1d_path_effect, path_2d_path_effect, table_mask_filter,
+        trim_path_effect,
+    };
+
+    fn assert_path_effect_round_trips(effect: &PathEffect) {
+        let bytes = effect.serialize();
+        let back = PathEffect::deserialize(bytes.as_bytes(), &REGISTRY)
+            .expect("a registered effect reads back");
+        assert_eq!(back.serialize().as_bytes(), bytes.as_bytes());
+    }
+
+    fn assert_mask_filter_round_trips(filter: &MaskFilter) {
+        let bytes = filter.serialize();
+        let back = MaskFilter::deserialize(bytes.as_bytes(), &REGISTRY)
+            .expect("a registered filter reads back");
+        assert_eq!(back.serialize().as_bytes(), bytes.as_bytes());
+    }
+
+    #[test]
+    fn path_effects_round_trip() {
+        let dash = dash_path_effect::new(&[1.0, 2.0], 0.5).expect("valid dash");
+        assert_path_effect_round_trips(&dash);
+        assert_path_effect_round_trips(&corner_path_effect::new(4.0).expect("valid corner"));
+        assert_path_effect_round_trips(&discrete_path_effect::new(3.0, 2.0, 7).expect("discrete"));
+        assert_path_effect_round_trips(&trim_path_effect::new(0.25, 0.75, None).expect("trim"));
+        assert_path_effect_round_trips(&PathEffect::sum(dash.clone(), dash.clone()));
+        assert_path_effect_round_trips(&PathEffect::compose(dash.clone(), dash));
+    }
+
+    #[test]
+    fn mask_filters_round_trip() {
+        assert_mask_filter_round_trips(
+            &MaskFilter::blur(BlurStyle::Solid, 2.5, false).expect("valid blur"),
+        );
+        let table = table_mask_filter::new_gamma_table(0.5);
+        assert_mask_filter_round_trips(&table_mask_filter::new(&table));
+        let light = emboss_mask_filter::Light {
+            direction: [1.0, 2.0, 3.0],
+            pad: 0,
+            ambient: 40,
+            specular: 0x12,
+        };
+        assert_mask_filter_round_trips(&emboss_mask_filter::new(3.0, &light).expect("emboss"));
+    }
+
+    #[test]
+    fn effects_registered_under_another_name_do_not_read_back() {
+        // C++ registers the 1D, line 2D and path 2D effects as `...Impl` names, but writes them
+        // under their `getTypeName`s (`SkPath1DPathEffect`, `SkLine2DPathEffect` and
+        // `SkPath2DPathEffect`), so none of them reads back there either.
+        let mut builder = PathBuilder::new();
+        builder.move_to((0.0, 0.0)).line_to((1.0, 0.0));
+        let path = builder.detach();
+        let one_d =
+            path_1d_path_effect::new(&path, 2.0, 0.0, path_1d_path_effect::Style::Translate)
+                .expect("valid 1D effect");
+        assert!(PathEffect::deserialize(one_d.serialize().as_bytes(), &REGISTRY).is_none());
+        let matrix = Matrix::scale((2.0, 3.0));
+        let line_2d = line_2d_path_effect::new(1.5, &matrix).expect("valid line 2D effect");
+        assert!(PathEffect::deserialize(line_2d.serialize().as_bytes(), &REGISTRY).is_none());
+        let path_2d = path_2d_path_effect::new(&matrix, &path);
+        assert!(PathEffect::deserialize(path_2d.serialize().as_bytes(), &REGISTRY).is_none());
+        assert!(PathEffect::deserialize(&[], &REGISTRY).is_none());
+    }
+}

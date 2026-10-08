@@ -27,8 +27,7 @@ def_test!(
             &font,
             None,
             skia_rust_core::scaler_context::ScalerContextBuildFlags::NONE,
-        )
-        .expect("a font with no effects has a strike spec");
+        );
         let mut context = spec.create_scaler_context();
 
         // Check that font metrics round-trip.

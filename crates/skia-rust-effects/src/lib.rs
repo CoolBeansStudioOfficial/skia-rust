@@ -13,6 +13,7 @@ pub mod dash_path_effect;
 pub mod discrete_path_effect;
 pub mod emboss_mask;
 pub mod emboss_mask_filter;
+pub mod flattenable;
 pub mod gradient;
 pub mod gradient_base_shader;
 pub mod gradient_shader;

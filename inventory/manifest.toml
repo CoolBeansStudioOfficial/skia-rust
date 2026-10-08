@@ -41685,7 +41685,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1190-L1204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7998cea25710af3b30bacbb2925008290f7ab5c5dc88eb583b7d831ef8f0a166"
 
 [[test]]

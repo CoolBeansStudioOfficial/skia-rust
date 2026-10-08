@@ -232,9 +232,7 @@ impl Typeface {
         );
         // SkScalerContext::AutoDescriptorGivenRecAndEffects with no effects.
         let no_effects = ScalerContextEffects::default();
-        let Some(auto_descriptor) = auto_descriptor_given_rec_and_effects(&rec, &no_effects) else {
-            return Rect::default();
-        };
+        let auto_descriptor = auto_descriptor_given_rec_and_effects(&rec, &no_effects);
         let mut ctx = self.create_scaler_context(&no_effects, auto_descriptor.get_desc());
         let fm = ctx.get_font_metrics();
         if !fm.has_bounds() {

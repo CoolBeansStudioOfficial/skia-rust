@@ -460,13 +460,11 @@ fn text_to_glyph_ids(font: &Font, bytes: &[u8], encoding: TextEncoding) -> Vec<G
 /// `draw_text_positions`: each glyph's position, from the advances of the glyphs before it.
 // Port of: src/text/GlyphRun.cpp#L194-L207 (chrome/m156)
 fn draw_text_positions(font: &Font, glyph_ids: &[GlyphId], origin: Point) -> Vec<Point> {
-    // MakeWithNoDevice without a paint has no effects, so it always has a descriptor.
     let spec = StrikeSpec::make_with_no_device(
         font,
         None,
         ScalerContextBuildFlags::FAKE_GAMMA_AND_BOOST_CONTRAST,
-    )
-    .expect("a spec without a paint has no effects, so it has a descriptor");
+    );
     let glyphs = BulkGlyphMetrics::new(&spec).glyphs(glyph_ids);
     let mut positions = Vec::with_capacity(glyph_ids.len());
     let mut end_of_last_glyph = origin;
@@ -501,9 +499,7 @@ fn glyphrun_source_bounds(
         // Empty font bounds are likely a font bug. TightBounds has a better chance of producing
         // useful results in this case.
         let (strike_spec, strike_to_source_scale) =
-            StrikeSpec::make_canonicalized(font, Some(paint)).expect(
-                "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-            );
+            StrikeSpec::make_canonicalized(font, Some(paint));
         let glyphs = BulkGlyphMetrics::new(&strike_spec).glyphs(glyph_ids);
         return tight_source_bounds(positions, scaled_rotations, &glyphs, strike_to_source_scale);
     }

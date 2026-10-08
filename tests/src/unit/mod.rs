@@ -277,6 +277,8 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod serialization_test;
+#[cfg(test)]
 pub mod shader_test;
 #[cfg(test)]
 pub mod size_test;

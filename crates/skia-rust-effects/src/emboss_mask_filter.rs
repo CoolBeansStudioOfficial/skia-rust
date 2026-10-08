@@ -11,12 +11,15 @@
 
 use skia_rust_core::blur_mask::BlurMask;
 use skia_rust_core::blur_types::BlurStyle;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::mask::{AllocType, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{MaskFilter, MaskFilterBase, MaskFilterType};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::{IPoint, Point};
 use skia_rust_core::point3::Point3;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::{scalar, scalar_ceil_to_int};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::emboss_mask::emboss;
 
@@ -76,7 +79,53 @@ impl EmbossMaskFilter {
     }
 }
 
+/// `SkEmbossMaskFilter::CreateProc`: the light as its 16 bytes, then the sigma.
+// Port of: src/effects/SkEmbossMaskFilter.cpp#L139-L147 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<MaskFilter> {
+    let mut bytes = [0u8; LIGHT_SIZE];
+    if !buffer.read_byte_array(&mut bytes) {
+        return None;
+    }
+    let sigma = buffer.read_scalar();
+    let light = Light {
+        direction: [
+            f32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+            f32::from_ne_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]),
+            f32::from_ne_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]),
+        ],
+        // `light.fPad = 0`: the font-cache lookup needs it clean.
+        pad: 0,
+        ambient: bytes[14],
+        specular: bytes[15],
+    };
+    new(sigma, &light)
+}
+
+/// `sizeof(SkEmbossMaskFilter::Light)`: three scalars, a `u16` pad, and two bytes.
+const LIGHT_SIZE: usize = 16;
+
 impl MaskFilterBase for EmbossMaskFilter {
+    // Port of: src/effects/SkEmbossMaskFilter.h#L60 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkEmbossMaskFilter"
+    }
+
+    // Port of: src/effects/SkEmbossMaskFilter.cpp#L149-L154 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        // The light as `sizeof(Light)` bytes, with `fPad = 0` for the font-cache lookup.
+        let mut bytes = [0u8; LIGHT_SIZE];
+        for (i, direction) in self.light.direction.iter().enumerate() {
+            bytes[4 * i..4 * i + 4].copy_from_slice(&direction.to_ne_bytes());
+        }
+        bytes[14] = self.light.ambient;
+        bytes[15] = self.light.specular;
+        buffer.write_byte_array(&bytes);
+        buffer.write_scalar(self.blur_sigma);
+    }
+
     // Port of: src/effects/SkEmbossMaskFilter.cpp#L78-L80 (chrome/m156)
     fn format(&self) -> MaskFormat {
         MaskFormat::ThreeD

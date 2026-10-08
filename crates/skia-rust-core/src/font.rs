@@ -476,10 +476,6 @@ impl Font {
 
     /// `SkFont::measureText`: the advance of `text` and the bounding rectangle of its glyphs
     /// (empty when there are no glyphs). `paint` gives the strike's effects.
-    ///
-    /// # Panics
-    ///
-    /// If `paint` has a path effect or mask filter, whose strike descriptor is not ported yet.
     // Port of: src/core/SkFont.cpp#L187-L238 (chrome/m156)
     #[doc(alias = "measureText")]
     #[must_use]
@@ -514,10 +510,6 @@ impl Font {
 
     /// `SkFont::getWidthsBounds`: the advance and bounds of each glyph. An empty `widths` or
     /// `bounds` is not written.
-    ///
-    /// # Panics
-    ///
-    /// If `paint` has a path effect or mask filter (see [`Font::measure_text`]).
     // Port of: src/core/SkFont.cpp#L245-L266 (chrome/m156)
     #[doc(alias = "getWidthsBounds")]
     pub fn get_widths_bounds(
@@ -573,18 +565,13 @@ impl Font {
 
     /// `SkFont::getPaths`: calls `f` with each glyph's path and the matrix that scales it to this
     /// font's size. A glyph without a path gives `None`.
-    ///
-    /// # Panics
-    ///
-    /// Never for a paint-free font; the spec has no effects.
     // Port of: src/core/SkFont.cpp#L294-L307 (chrome/m156)
     #[doc(alias = "getPaths")]
     pub fn get_paths(&self, glyph_ids: &[GlyphId], mut f: impl FnMut(Option<&Path>, &Matrix)) {
         let mut font = self.clone();
         let scale = font.setup_for_as_paths(None);
         let mx = Matrix::scale((scale, scale));
-        let spec = StrikeSpec::make_with_no_device(&font, None, ScalerContextBuildFlags::NONE)
-            .expect("a paint-free spec has no path effect or mask filter");
+        let spec = StrikeSpec::make_with_no_device(&font, None, ScalerContextBuildFlags::NONE);
         let glyphs = BulkGlyphMetricsAndPaths::new(&spec).glyphs(glyph_ids);
         for glyph in &glyphs {
             f(glyph.path(), &mx);
@@ -648,14 +635,8 @@ impl Font {
     }
 
     /// The canonicalized strike spec of this font and `paint`.
-    ///
-    /// # Panics
-    ///
-    /// If `paint` has a path effect or mask filter, whose strike descriptor is not ported yet.
     fn canonicalized_spec(&self, paint: Option<&Paint>) -> (StrikeSpec, scalar) {
-        StrikeSpec::make_canonicalized(self, paint).expect(
-            "a path effect or mask filter needs its descriptor entry, which is not ported yet",
-        )
+        StrikeSpec::make_canonicalized(self, paint)
     }
 
     /// `SkFontPriv::Flatten`: writes the font. The packed word holds the flags, edging and

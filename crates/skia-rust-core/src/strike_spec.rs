@@ -7,13 +7,12 @@
 //! `SkStrikeSpec`: what a strike is made for (a descriptor, the typeface and effects), and the
 //! `SkBulkGlyphMetrics` family that reads a strike's glyphs in bulk.
 //!
-//! Not ported: the descriptor entry for path effects and mask filters (`kEffects_SkDescriptorTag`
-//! holds their flattened form, which needs `writeFlattenable`). A spec for a paint with either
-//! effect is therefore `None`, so no strike is ever keyed without its effects.
+//! The descriptor holds the record, and, if the paint has a path effect or a mask filter, the
+//! flattened effects in a `kEffects_SkDescriptorTag` entry, so that a strike is keyed by them.
 
 use std::sync::Arc;
 
-use crate::descriptor::{AutoDescriptor, Descriptor, REC_TAG};
+use crate::descriptor::{AutoDescriptor, Descriptor, EFFECTS_TAG, REC_TAG};
 use crate::font::Font;
 use crate::font_types::GlyphId;
 use crate::glyph::Glyph;
@@ -29,6 +28,7 @@ use crate::strike::Strike;
 use crate::strike_cache::StrikeCache;
 use crate::surface_props::SurfaceProps;
 use crate::typeface::Typeface;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// What a strike is made for (`SkStrikeSpec`): the descriptor (record and effects), the typeface
 /// and the effects themselves.
@@ -46,8 +46,7 @@ pub struct StrikeSpec {
 
 impl StrikeSpec {
     /// `SkStrikeSpec(font, paint, surfaceProps, flags, deviceMatrix)`: the descriptor and effects
-    /// of a font drawn with a paint. `None` if the paint has a path effect or mask filter, whose
-    /// descriptor entry is not ported.
+    /// of a font drawn with a paint.
     // Port of: src/core/SkStrikeSpec.cpp#L135-L146 (chrome/m156)
     fn from_font_and_paint(
         font: &Font,
@@ -55,15 +54,15 @@ impl StrikeSpec {
         surface_props: &SurfaceProps,
         flags: ScalerContextBuildFlags,
         device_matrix: &Matrix,
-    ) -> Option<Self> {
+    ) -> Self {
         let (rec, effects) =
             ScalerContext::make_rec_and_effects(font, paint, surface_props, flags, device_matrix);
-        let auto_descriptor = auto_descriptor_given_rec_and_effects(&rec, &effects)?;
-        Some(Self {
+        let auto_descriptor = auto_descriptor_given_rec_and_effects(&rec, &effects);
+        Self {
             auto_descriptor,
             typeface: font.typeface().clone(),
             effects,
-        })
+        }
     }
 
     /// `SkStrikeSpec::MakeMask`.
@@ -76,7 +75,7 @@ impl StrikeSpec {
         surface_props: &SurfaceProps,
         flags: ScalerContextBuildFlags,
         device_matrix: &Matrix,
-    ) -> Option<Self> {
+    ) -> Self {
         Self::from_font_and_paint(font, paint, surface_props, flags, device_matrix)
     }
 
@@ -90,7 +89,7 @@ impl StrikeSpec {
         surface_props: &SurfaceProps,
         flags: ScalerContextBuildFlags,
         device_matrix: &Matrix,
-    ) -> Option<Self> {
+    ) -> Self {
         let mut source = font.clone();
         source.set_subpixel(false);
         Self::from_font_and_paint(&source, paint, surface_props, flags, device_matrix)
@@ -106,13 +105,14 @@ impl StrikeSpec {
         paint: &Paint,
         surface_props: &SurfaceProps,
         flags: ScalerContextBuildFlags,
-    ) -> Option<(Self, scalar)> {
+    ) -> (Self, scalar) {
         let mut path_paint = paint.clone();
         let mut path_font = font.clone();
         path_font.set_subpixel(false);
         let strike_to_source_scale = path_font.setup_for_as_paths(Some(&mut path_paint));
-        Self::from_font_and_paint(&path_font, &path_paint, surface_props, flags, Matrix::i())
-            .map(|spec| (spec, strike_to_source_scale))
+        let spec =
+            Self::from_font_and_paint(&path_font, &path_paint, surface_props, flags, Matrix::i());
+        (spec, strike_to_source_scale)
     }
 
     /// `SkStrikeSpec::MakeCanonicalized`: the spec for `font` and `paint` with the size and
@@ -121,7 +121,7 @@ impl StrikeSpec {
     // Port of: src/core/SkStrikeSpec.cpp#L69-L89 (chrome/m156)
     #[doc(alias = "MakeCanonicalized")]
     #[must_use]
-    pub fn make_canonicalized(font: &Font, paint: Option<&Paint>) -> Option<(Self, scalar)> {
+    pub fn make_canonicalized(font: &Font, paint: Option<&Paint>) -> (Self, scalar) {
         let mut canonicalized_paint = paint.cloned().unwrap_or_default();
         let mut canonicalized_font = font.clone();
         let mut strike_to_source_scale = 1.0;
@@ -129,14 +129,14 @@ impl StrikeSpec {
             strike_to_source_scale = canonicalized_font.setup_for_as_paths(None);
             canonicalized_paint.reset();
         }
-        Self::from_font_and_paint(
+        let spec = Self::from_font_and_paint(
             &canonicalized_font,
             &canonicalized_paint,
             &SurfaceProps::default(),
             ScalerContextBuildFlags::FAKE_GAMMA_AND_BOOST_CONTRAST,
             Matrix::i(),
-        )
-        .map(|spec| (spec, strike_to_source_scale))
+        );
+        (spec, strike_to_source_scale)
     }
 
     /// `SkStrikeSpec::MakeWithNoDevice`: the spec of a font and paint with no device matrix.
@@ -147,7 +147,7 @@ impl StrikeSpec {
         font: &Font,
         paint: Option<&Paint>,
         flags: ScalerContextBuildFlags,
-    ) -> Option<Self> {
+    ) -> Self {
         let setup_paint = paint.cloned().unwrap_or_default();
         Self::from_font_and_paint(
             font,
@@ -209,24 +209,43 @@ impl StrikeSpec {
     }
 }
 
-/// `SkScalerContext::AutoDescriptorGivenRecAndEffects` for the paint-free case: the descriptor
-/// holds the record only. With effects it returns `None` (see [`StrikeSpec`]).
-// Port of: src/core/SkScalerContext.cpp#L1355-L1380 (chrome/m156), the no-effects branch
+/// `SkScalerContext::AutoDescriptorGivenRecAndEffects`: the descriptor of the record, and the
+/// flattened effects (`kEffects_SkDescriptorTag`) if there are any.
+// Port of: src/core/SkScalerContext.cpp#L1332-L1366 (chrome/m156), calculate_size_and_flatten and
+// generate_descriptor
 pub(crate) fn auto_descriptor_given_rec_and_effects(
     rec: &ScalerContextRec,
     effects: &ScalerContextEffects,
-) -> Option<AutoDescriptor> {
-    if effects.path_effect.is_some() || effects.mask_filter.is_some() {
-        return None;
-    }
+) -> AutoDescriptor {
+    let effect_bytes = flatten_effects(effects);
+    let entry_count = if effect_bytes.is_empty() { 1 } else { 2 };
     let mut auto_descriptor = AutoDescriptor::new();
-    // calculate_size_and_flatten: sizeof(rec) plus the overhead of one entry.
-    auto_descriptor.reset(SCALER_CONTEXT_REC_SIZE + Descriptor::compute_overhead(1));
+    auto_descriptor.reset(
+        SCALER_CONTEXT_REC_SIZE + effect_bytes.len() + Descriptor::compute_overhead(entry_count),
+    );
     let desc = auto_descriptor.get_desc_mut();
-    // generate_descriptor
     desc.add_entry(REC_TAG, SCALER_CONTEXT_REC_SIZE, Some(&rec.to_bytes()));
+    if !effect_bytes.is_empty() {
+        desc.add_entry(EFFECTS_TAG, effect_bytes.len(), Some(&effect_bytes));
+    }
     desc.compute_checksum();
-    Some(auto_descriptor)
+    auto_descriptor
+}
+
+/// The flattened path effect, then the mask filter, of `effects`: the body of the
+/// `kEffects_SkDescriptorTag` entry. Empty if there are neither.
+// Port of: src/core/SkScalerContext.cpp#L1332-L1343 (chrome/m156), calculate_size_and_flatten
+fn flatten_effects(effects: &ScalerContextEffects) -> Vec<u8> {
+    let mut buffer = BinaryWriteBuffer::new();
+    if let Some(path_effect) = &effects.path_effect {
+        buffer.write_path_effect(Some(path_effect));
+    }
+    if let Some(mask_filter) = &effects.mask_filter {
+        buffer.write_mask_filter(Some(mask_filter));
+    }
+    let mut bytes = vec![0; buffer.bytes_written()];
+    buffer.write_to_memory(&mut bytes);
+    bytes
 }
 
 /// `SkBulkGlyphMetrics`: the metrics of glyphs in a strike.
