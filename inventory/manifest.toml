@@ -22733,6 +22733,7 @@ macro = "DEF_GM"
 source = "gm/pictureimagefilter.cpp#L159-L159"
 module = "effects"
 status = "todo"
+reason = "needs text: the GM draws glyphs with SkFont/drawString, and text is not ported"
 span_hash = "93554f90877793b02dc492e2db40d726b3eb38ad1f2a9b7399ca81f6beee5183"
 
 [[test]]
@@ -34360,7 +34361,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1373-L1375"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "1528d8362ff8bb6c01ad7a3506f5be2c37c0e75ab9a71291088f2b818f94a731"
 
 [[test]]
@@ -34764,7 +34765,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2489-L2537"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a21482029d4f3c2233dd788a443dcd39ad8e4b00a0aeb0c3ceac539a6a4aa599"
 
 [[test]]

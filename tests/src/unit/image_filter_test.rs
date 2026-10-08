@@ -24,6 +24,7 @@ use skia_rust_core::image_filter_types::{Context, Mapping};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
@@ -215,6 +216,141 @@ def_tier_test!(DropShadowImageFilter_Huge, |reporter| {
     canvas.save_layer(&SaveLayerRec::default().paint(&paint));
     canvas.restore();
     let _ = reporter;
+});
+
+// Port of: tests/ImageFilterTest.cpp#L2489-L2537 (chrome/m156)
+def_tier_test!(PictureImageSourceBounds, |reporter| {
+    let mut recorder = PictureRecorder::new();
+    let recording_canvas = recorder.begin_recording(Rect::from_iwh(64, 64), false);
+
+    let mut green_paint = Paint::default();
+    green_paint.set_color(Color::GREEN);
+    recording_canvas.draw_rect(
+        Rect::from_irect(IRect::from_xywh(10, 10, 30, 20)),
+        &green_paint,
+    );
+    let picture = recorder
+        .finish_recording_as_picture(None)
+        .expect("a picture");
+
+    // Default target rect.
+    let source1 = image_filters::picture(Some(picture.clone()), None);
+    let picture_bounds = IRect::from_wh(64, 64);
+    let input = IRect::from_xywh(10, 20, 30, 40);
+    reporter_assert!(
+        reporter,
+        picture_bounds
+            == source1.as_ref().expect("a picture filter").filter_bounds(
+                &input,
+                &Matrix::new_identity(),
+                MapDirection::Forward,
+                None
+            )
+    );
+    reporter_assert!(
+        reporter,
+        source1
+            .as_ref()
+            .expect("a picture filter")
+            .filter_bounds(
+                &input,
+                &Matrix::new_identity(),
+                MapDirection::Reverse,
+                Some(&input)
+            )
+            .is_empty()
+    );
+    let scale = Matrix::scale((2.0, 2.0));
+    let scaled_picture_bounds = IRect::from_wh(128, 128);
+    reporter_assert!(
+        reporter,
+        scaled_picture_bounds
+            == source1.as_ref().expect("a picture filter").filter_bounds(
+                &input,
+                &scale,
+                MapDirection::Forward,
+                None
+            )
+    );
+    reporter_assert!(
+        reporter,
+        source1
+            .as_ref()
+            .expect("a picture filter")
+            .filter_bounds(&input, &scale, MapDirection::Reverse, Some(&input))
+            .is_empty()
+    );
+
+    // Specified target rect.
+    let mut target_rect = Rect::from_xywh(9.5, 9.5, 31.0, 21.0);
+    let source2 = image_filters::picture(Some(picture.clone()), Some(&target_rect));
+    reporter_assert!(
+        reporter,
+        <Rect as RoundOut<IRect>>::round_out(&target_rect)
+            == source2.as_ref().expect("a picture filter").filter_bounds(
+                &input,
+                &Matrix::new_identity(),
+                MapDirection::Forward,
+                None
+            )
+    );
+    reporter_assert!(
+        reporter,
+        source2
+            .as_ref()
+            .expect("a picture filter")
+            .filter_bounds(
+                &input,
+                &Matrix::new_identity(),
+                MapDirection::Reverse,
+                Some(&input)
+            )
+            .is_empty()
+    );
+    target_rect = scale.map_rect(target_rect).0;
+    reporter_assert!(
+        reporter,
+        <Rect as RoundOut<IRect>>::round_out(&target_rect)
+            == source2.as_ref().expect("a picture filter").filter_bounds(
+                &input,
+                &scale,
+                MapDirection::Forward,
+                None
+            )
+    );
+    reporter_assert!(
+        reporter,
+        source2
+            .as_ref()
+            .expect("a picture filter")
+            .filter_bounds(&input, &scale, MapDirection::Reverse, Some(&input))
+            .is_empty()
+    );
+});
+
+// Port of: tests/ImageFilterTest.cpp#L1345-L1375 (chrome/m156)
+def_tier_test!(ImageFilterClippedPictureImageFilter, |reporter| {
+    let picture = {
+        let mut recorder = PictureRecorder::new();
+        let recording_canvas = recorder.begin_recording(Rect::from_iwh(1, 1), true);
+
+        // Create an SkPicture which simply draws a green 1x1 rectangle.
+        let mut green_paint = Paint::default();
+        green_paint.set_color(Color::GREEN);
+        recording_canvas.draw_rect(Rect::from_irect(IRect::from_wh(1, 1)), &green_paint);
+        recorder.finish_recording_as_picture(None)
+    };
+
+    let src_img = create_empty_special_image(2, Color::TRANSPARENT);
+
+    let image_filter = image_filters::picture(picture, None).expect("a picture filter");
+
+    let ctx = make_context(IRect::from_xywh(1, 1, 1, 1), src_img);
+    let (result_image, _offset) = image_filter
+        .as_base()
+        .filter_image(&ctx)
+        .image_and_offset(&ctx);
+    reporter_assert!(reporter, result_image.is_none());
 });
 
 // Port of: tests/ImageFilterTest.cpp#L2571-L2592 (chrome/m156)
