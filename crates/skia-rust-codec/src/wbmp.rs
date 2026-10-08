@@ -181,7 +181,7 @@ impl CodecImpl for WbmpCodec {
         if options.subset.is_some() {
             return Result::Unimplemented;
         }
-        let Some(swizzler) = Swizzler::make(base.encoded_info(), info, options) else {
+        let Some(swizzler) = Swizzler::make(base.encoded_info(), None, info, options, None) else {
             return Result::InternalError;
         };
         let width_src = self.src_row_bytes;
@@ -211,7 +211,7 @@ impl CodecImpl for WbmpCodec {
         if options.subset.is_some() {
             return Result::Unimplemented;
         }
-        self.swizzler = Swizzler::make(base.encoded_info(), dst_info, options);
+        self.swizzler = Swizzler::make(base.encoded_info(), None, dst_info, options, None);
         self.src_buffer = vec![0u8; self.src_row_bytes];
         if self.swizzler.is_none() {
             return Result::InternalError;

@@ -5,16 +5,18 @@
 
 //! Skia's codec layer: the [`Codec`] base, its decoders, and the helpers they share.
 //!
-//! What is ported so far: the base (`SkCodec`) for still images, scanline decoding, the sampler's
-//! fill, the swizzler for 1-bit gray (WBMP), and the WBMP decoder. The remaining decoders and the
-//! animation, incremental and lazy-image parts follow in later waves (`docs/design/codecs.md`).
+//! What is ported so far: the base (`SkCodec`) for still images, scanline decoding, the sampler
+//! (`SkSampler`, its fill and sample-Y state), and the swizzler (`SkSwizzler`, every row routine
+//! and `Make`/`MakeSimple`/`setSampleX`), plus the WBMP decoder. The mask swizzler, the BMP, PNG,
+//! ICO and JPEG decoders, the Android and sampled codecs, and the animation, incremental and
+//! lazy-image parts follow in later waves (`docs/design/codecs.md`).
 
 pub mod codec;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
-mod sampler;
-mod swizzler;
+pub mod sampler;
+pub mod swizzler;
 pub mod wbmp;
 
 pub use codec::{

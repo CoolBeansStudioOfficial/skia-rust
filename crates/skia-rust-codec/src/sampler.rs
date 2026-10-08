@@ -10,6 +10,42 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 
 use crate::codec::ZeroInitialized;
+use crate::codec_priv::get_start_coord;
+
+/// The sample-Y state every sampler shares. Port of the `fSampleY` member of `SkSampler`.
+#[derive(Debug, Clone, Copy)]
+#[doc(alias = "SkSampler")]
+pub struct SamplerBase {
+    sample_y: i32,
+}
+
+impl Default for SamplerBase {
+    // Port of: src/codec/SkSampler.h (SkSampler constructor: fSampleY(1))
+    fn default() -> Self {
+        Self { sample_y: 1 }
+    }
+}
+
+impl SamplerBase {
+    /// Port of `SkSampler::setSampleY`.
+    pub fn set_sample_y(&mut self, sample_y: i32) {
+        self.sample_y = sample_y;
+    }
+
+    /// Port of `SkSampler::sampleY`.
+    #[must_use]
+    pub fn sample_y(&self) -> i32 {
+        self.sample_y
+    }
+
+    /// Port of `SkSampler::rowNeeded`: whether `row` (counted from the first row of the subset)
+    /// is one the sampler keeps.
+    // Port of: src/codec/SkSampler.h (rowNeeded)
+    #[must_use]
+    pub fn row_needed(&self, row: i32) -> bool {
+        (row - get_start_coord(self.sample_y)) % self.sample_y == 0
+    }
+}
 
 /// Port of `SkSampler::Fill`: writes zeros over the rows of `info` at `dst` (`rowBytes` apart).
 ///
