@@ -800,14 +800,19 @@ impl ScalerContext {
             );
         }
 
-        if let Some((mut builder, new_rec)) = self
-            .base
-            .path_effect
-            .as_ref()
-            .and_then(|path_effect| path_effect.filter_path(&local_path, &rec, None))
-        {
-            local_path = builder.detach();
-            rec = new_rec;
+        // `SkPathEffect::filterPath` updates `rec` in place even when it returns false, so the
+        // in-place variant is used rather than `filter_path`'s `Option`.
+        if let Some(path_effect) = self.base.path_effect.as_ref() {
+            let mut builder = PathBuilder::new();
+            if path_effect.filter_path_inplace_with_matrix(
+                &mut builder,
+                &local_path,
+                &mut rec,
+                None,
+                &matrix,
+            ) {
+                local_path = builder.detach();
+            }
         }
 
         if rec.need_to_apply() {
