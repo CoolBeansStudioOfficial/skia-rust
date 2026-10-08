@@ -19,6 +19,7 @@ use skia_rust_core::color::Color;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::md5::{Digest, Md5};
 use skia_rust_core::pixmap::Pixmap;
@@ -895,6 +896,87 @@ def_test!(Codec_F16_noColorSpace, |r| {
         .with_color_type(ColorType::RGBAF16)
         .with_color_space(None::<ColorSpace>);
     test_info(r, &mut codec, &info, Result::Success, None);
+});
+
+// Port of: tests/CodecTest.cpp#L546-L566 (decodeToSkImage)
+fn decode_to_sk_image(
+    reporter: &mut Reporter,
+    path: &str,
+    dst_color_type: ColorType,
+    dst_alpha_type: AlphaType,
+) -> Option<Image> {
+    let data = get_resource_as_data(path);
+    reporter_assert!(reporter, data.is_some());
+    let data = data?;
+
+    let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&data));
+    reporter_assert!(reporter, codec.is_ok());
+    let mut codec = codec.ok()?;
+
+    let dst_info = codec
+        .info()
+        .with_color_type(dst_color_type)
+        .with_alpha_type(dst_alpha_type)
+        .with_color_space(Some(ColorSpace::new_srgb()));
+    // C++: `REPORTER_ASSERT(r, !!result == SkCodec::kSuccess)` and `REPORTER_ASSERT(r, !!image)`.
+    let image = codec.get_image(dst_info, None);
+    reporter_assert!(reporter, image.is_ok());
+    image.ok()
+}
+
+// Port of: tests/CodecTest.cpp#L674-L703 (verifyFirstFourDecodedBytes). The expected bytes are
+// memory bytes of the destination colour type, so they hold on every byte order.
+fn verify_first_four_decoded_bytes(
+    reporter: &mut Reporter,
+    file_name: &str,
+    dst_color_type: ColorType,
+    dst_alpha_type: AlphaType,
+    expected: [u8; 4],
+) {
+    let resource_path = format!("images/{file_name}");
+    let Some(image) = decode_to_sk_image(reporter, &resource_path, dst_color_type, dst_alpha_type)
+    else {
+        // `REPORTER_ASSERT` should already fire in `decode_to_sk_image`.
+        return;
+    };
+    let Some(pixmap) = image.peek_pixels() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(addr) = pixmap.addr() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let pixel = &addr[..4];
+    for i in 0..4 {
+        reporter_assert!(reporter, pixel[i] == expected[i]);
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L706-L717 (Codec_png_plte_trns)
+def_test!(Codec_png_plte_trns, |r| {
+    // RGB in `PLTE` chunk is: 100 (0x64), 150 (0x96), 200 (0xC8)
+    // Alpha in `tRNS` chunk is: 64 (i.e. 25% or 0x40)
+    //
+    // After alpha premultiplication by 25% we should get: R=25, G=38, B=50.
+    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::RGBA8888, AlphaType::Unpremul, [100, 150, 200, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::BGRA8888, AlphaType::Unpremul, [200, 150, 100, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::RGBA8888, AlphaType::Premul, [25, 38, 50, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::BGRA8888, AlphaType::Premul, [50, 38, 25, 64]);
+});
+
+// Port of: tests/CodecTest.cpp#L719-L732 (Codec_png_plte_trns_gama)
+def_test!(Codec_png_plte_trns_gama, |r| {
+    // RGB in `PLTE` chunk is: 100 (0x64), 150 (0x96), 200 (0xC8)
+    // Alpha in `tRNS` chunk is: 64 (i.e. 25% or 0x40)
+    //
+    // After `gAMA` transformation we should get: R=161, G=197, B=227.
+    //
+    // After alpha premultiplication by 25% we should get: R=40, G=49, B=57.
+    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::RGBA8888, AlphaType::Unpremul, [161, 197, 227, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::BGRA8888, AlphaType::Unpremul, [227, 197, 161, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::RGBA8888, AlphaType::Premul, [40, 49, 57, 64]);
+    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::BGRA8888, AlphaType::Premul, [57, 49, 40, 64]);
 });
 
 // Port of: tests/CodecTest.cpp#L2262-L2283 (chrome/m156)

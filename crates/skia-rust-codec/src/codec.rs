@@ -672,6 +672,73 @@ impl<'a> Codec<'a> {
         result
     }
 
+    /// Port of `SkCodec::getImage(info, options)`: decodes the image into a new raster image,
+    /// rotated upright when the codec's origin says so. Without `info`, the codec's own info is
+    /// used, with width and height swapped for a rotated origin, as the C++ `getImage()` overload
+    /// does. The decode memory budget is not ported.
+    ///
+    /// # Errors
+    /// The decode result, if the pixels could not be decoded (`IncompleteInput` and
+    /// `ErrorInInput` still produce an image in Skia, and so here they return `Ok`).
+    // Port of: src/codec/SkCodec.cpp#L566-L615 (getImage, both overloads; chrome/m156)
+    #[doc(alias = "getImage")]
+    pub fn get_image<'o>(
+        &mut self,
+        info: impl Into<Option<ImageInfo>>,
+        options: impl Into<Option<&'o Options>>,
+    ) -> std::result::Result<skia_rust_core::image::Image, Result> {
+        let info = match info.into() {
+            Some(info) => info,
+            None => {
+                let info = self.info();
+                if self.origin().swaps_width_height() {
+                    info.with_wh(info.height(), info.width())
+                } else {
+                    info
+                }
+            }
+        };
+        let default_options = Options::default();
+        let options = options.into().unwrap_or(&default_options);
+
+        let row_bytes = info.min_row_bytes();
+        let mut storage = vec![0u8; info.compute_byte_size(row_bytes)];
+        let origin = self.origin();
+        let mut result = Result::InternalError;
+        {
+            let Some(mut pixmap) = skia_rust_core::pixmap::Pixmap::new(&info, &mut storage, row_bytes)
+            else {
+                return Err(Result::InternalError);
+            };
+            let decoded = crate::codec_image_generator::orient_decode(
+                &mut pixmap,
+                origin,
+                |pm: &mut skia_rust_core::pixmap::Pixmap<'_>| {
+                    let pm_info = pm.info().clone();
+                    let pm_row_bytes = pm.row_bytes();
+                    let Some(dst) = pm.writable_addr() else {
+                        return false;
+                    };
+                    result = self.get_pixels(&pm_info, dst, pm_row_bytes, Some(options));
+                    matches!(
+                        result,
+                        Result::Success | Result::IncompleteInput | Result::ErrorInInput
+                    )
+                },
+            );
+            if !decoded {
+                return Err(result);
+            }
+        }
+
+        let mut bitmap = skia_rust_core::bitmap::Bitmap::new();
+        if !bitmap.install_pixels(&info, storage, row_bytes) {
+            return Err(Result::InternalError);
+        }
+        bitmap.set_immutable();
+        skia_rust_core::images::raster_from_bitmap(&bitmap).ok_or(Result::InternalError)
+    }
+
     /// Port of `SkCodec::handleFrameIndex`, for codecs without animation: frame 0 sets up the
     /// colour conversion, and any later frame is not present.
     // Port of: src/codec/SkCodec.cpp#L386-L417 (chrome/m156), the still-image part

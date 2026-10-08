@@ -133,7 +133,7 @@ fn draw_orientation(dst: &mut Pixmap<'_>, src: &Pixmap<'_>, origin: EncodedOrigi
 /// into `dst` directly for the default origin, else into a temporary of the unrotated size, and
 /// then orients the result into `dst`.
 // Port of: src/codec/SkPixmapUtilsPriv.h#L17-L44 (chrome/m156)
-fn orient_decode(
+pub(crate) fn orient_decode(
     dst: &mut Pixmap<'_>,
     origin: EncodedOrigin,
     decode: impl FnOnce(&mut Pixmap<'_>) -> bool,

@@ -25,6 +25,7 @@ pub mod encoded_info;
 pub mod ico_codec;
 pub mod image_generator_from_encoded;
 pub mod images;
+pub mod jpeg_codec;
 mod mask_swizzler;
 mod masks;
 pub mod png_codec;
