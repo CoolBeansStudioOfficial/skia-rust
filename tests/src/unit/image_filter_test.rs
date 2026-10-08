@@ -3,10 +3,10 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/ImageFilterTest.cpp (chrome/m156)
 //
-// Only the tests whose filters are ported are here: the Offset, Merge, Blend and Image filters
-// and the raster backend. The blur, morphology, lighting, displacement, picture, shader, runtime,
-// matrix-convolution and drop-shadow filters, the Graphite and Ganesh variants, the blur-dependent
-// bounds tests and the image-filter-cache tests are not ported yet.
+// Only the tests whose filters are ported are here: the Offset, Merge, Blend, Image and
+// DropShadow filters and the raster backend. The morphology, lighting, displacement, picture,
+// shader, runtime and matrix-convolution filters, the Graphite and Ganesh variants, the
+// blur-dependent bounds tests and the image-filter-cache tests are not ported yet.
 
 #![cfg(test)]
 
@@ -15,19 +15,22 @@ use std::sync::Arc;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::color::Color;
+use skia_rust_core::canvas::SaveLayerRec;
+use skia_rust_core::color::{Color, Color4f};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_filter::MapDirection;
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_effects::image_filters;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
+use skia_rust_raster::surfaces;
 
 use crate::{def_tier_test, reporter_assert};
 
@@ -188,4 +191,26 @@ def_tier_test!(ImageFilterMergeResultSize, |reporter| {
         reporter,
         result_img.width() == 20 && result_img.height() == 20
     );
+});
+
+// Port of: tests/ImageFilterTest.cpp#L2539-L2549 (chrome/m156)
+def_tier_test!(DropShadowImageFilter_Huge, |reporter| {
+    // Successful if it doesn't crash or trigger ASAN. (crbug.com/1264705)
+    let mut surf = surfaces::raster(&ImageInfo::new_n32_premul((300, 150), None), None, None)
+        .expect("a raster surface");
+
+    let mut paint = Paint::default();
+    paint.set_image_filter(image_filters::drop_shadow_only(
+        (0.0, 0.437_009),
+        (14129.6, 14129.6),
+        Color4f::from_color(Color::GRAY),
+        None,
+        None,
+        None,
+    ));
+
+    let canvas = surf.canvas();
+    canvas.save_layer(&SaveLayerRec::default().paint(&paint));
+    canvas.restore();
+    let _ = reporter;
 });

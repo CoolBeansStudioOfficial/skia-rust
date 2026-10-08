@@ -19067,7 +19067,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dropshadowimagefilter.cpp#L129-L174"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c402f6add3141ea88ad86e3a27bb8a8fd8bf83a80493e8fc12f6cf3a65bf8977"
 
 [[test]]
@@ -34273,7 +34273,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2539-L2549"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8d1b4f7effe5de6ada50af54971c8f471df5d17797ba0e83d8ec3a6bcfb50322"
 
 [[test]]
