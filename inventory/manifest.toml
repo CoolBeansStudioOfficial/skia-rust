@@ -15308,6 +15308,7 @@ macro = "DEF_GM"
 source = "gm/aaxfermodes.cpp#L283-L283"
 module = "raster"
 status = "todo"
+reason = "not ported: draws ToolUtils::draw_checkerboard, a repeating bitmap image shader that is only on origin/main (this branch conflicts with main)"
 span_hash = "1f1216ba1e8f19bcc85739ddea202fc0844bc99ac45e594e9ba293dc85c72b79"
 
 [[test]]
@@ -17771,7 +17772,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip3.cpp#L139-L139"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c032da0fe017116dcb111edb0c662a599dcb5a9ee1bdcdf77559ae1c045df7f8"
 
 [[test]]
@@ -17780,7 +17781,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip3.cpp#L137-L137"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "885db0171c37569dadefbb33b8b63e5ec6c98d1cd8c9756a10c434e4e5985fda"
 
 [[test]]
@@ -18799,7 +18800,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/degeneratesegments.cpp#L372-L372"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7bbef330dee7538036e06bfe1a61ffc957f6f7d09f6445df144c6ecaada51684"
 
 [[test]]
@@ -19857,7 +19858,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontscalerdistortable.cpp#L186-L186"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d6c728dc7df0914d4f232724d50e77831375e6b6f5b9013f16036e88e7f3ffd9"
 
 [[test]]
@@ -21754,6 +21755,7 @@ macro = "DEF_GM"
 source = "gm/mac_aa_explorer.cpp#L137-L137"
 module = "text"
 status = "todo"
+reason = "compiled only under SK_BUILD_FOR_MAC, which the oracle build is not: no golden"
 span_hash = "875e75581673631c490a07a010c47071c2cf4eda9cccbc8c87e4725e220a7b38"
 
 [[test]]
@@ -21762,7 +21764,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/mac_aa_explorer.cpp#L141-L189"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "72825dd3015fa8d350c921647b8d265f1fde54189cc6038b1f589f0405911082"
 
 [[test]]
@@ -22626,8 +22628,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG_NAME"
 source = "gm/pathreverse.cpp#L75-L97"
 module = "raster"
-reason = "mismatch: 4955 px differ, all in the moveTo/lineTo + addOval block, in every config; root cause not found (first attempt; port unregistered)"
-status = "todo"
+status = "passing"
 span_hash = "4c5672d89bab16a15f8d4761bc54ed5611a02aa22a30d4a2628fcac5b7a7dfc8"
 
 [[test]]
@@ -22735,8 +22736,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/persptext.cpp#L124-L124"
 module = "text"
-reason = "mismatch: 17 px differ (max channel 5) under perspective, path-glyph rounding not root-caused (first attempt; port unregistered)"
-status = "todo"
+status = "passing"
 span_hash = "4a0b209fa35a7857c25cd76c77044beaa0dc10d9862661c594a337f4eb0de966"
 
 [[test]]
@@ -22745,8 +22745,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/persptext.cpp#L123-L123"
 module = "text"
-reason = "mismatch: 17 px differ (max channel 5) under perspective, path-glyph rounding not root-caused (first attempt; port unregistered)"
-status = "todo"
+status = "passing"
 span_hash = "22c19c1b7f1ad8c0dbba1948130d95b82308eeb2652e050170a999f62eed4a90"
 
 [[test]]
@@ -22882,7 +22881,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/poly2poly.cpp#L124-L124"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d127f36e100a9d4192888c8fe736ad58acf09cb20d2898bdb1bfe4e28e57546b"
 
 [[test]]
@@ -24333,6 +24332,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/stroketext.cpp#L88-L100"
 module = "text"
 status = "todo"
+reason = "needs path effects in glyph strike descriptors (kEffects, SkPathEffect flatten not ported) for the dashed draw"
 span_hash = "87c5c54c68dd99f788548233017c96410a275f87cf3ce62b05b5c046c972d567"
 
 [[test]]
@@ -24588,8 +24588,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/text_scale_skew.cpp#L38-L40"
 module = "text"
-reason = "needs SkTextUtils::DrawString, which draws a TextBlob (SkTextBlob::MakeFromText, T15a)"
-status = "todo"
+status = "passing"
 span_hash = "81087bd560cfcdcd2bf3d073f47ed08578ab566094913e6e18b82ca573452be9"
 
 [[test]]
@@ -24598,8 +24597,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/text_scale_skew.cpp#L43-L47"
 module = "text"
-reason = "needs SkTextUtils::DrawString, which draws a TextBlob (SkTextBlob::MakeFromText, T15a)"
-status = "todo"
+status = "passing"
 span_hash = "2b01dd9b8c656a0ce30affbe57301473122d35eef1a794eab170d953540c5565"
 
 [[test]]
@@ -24608,7 +24606,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblob.cpp#L200-L200"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a180af333018b1ce3c37cdfba2bad896b71c9adf4dc75041cfe9e31454c63407"
 
 [[test]]
@@ -24617,7 +24615,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobblockreordering.cpp#L98-L98"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f37c48362c22fe5c2b03762c3c7382ffb79bd83e67206d5f119e331f699720f8"
 
 [[test]]
@@ -24626,7 +24624,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobcolortrans.cpp#L108-L108"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e583bd3b6aa68500fab610665bf02b92857102bac9d405dcf44c414799e0ff6a"
 
 [[test]]
@@ -24689,7 +24687,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobuseaftergpufree.cpp#L71-L71"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c4639411a9e9db6f05bf4e4d8402dae582b5f60f3d41cab86d287a00df747465"
 
 [[test]]
@@ -30920,8 +30918,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L173-L186"
 module = "text"
-reason = "needs TextBlob (SkTextBlob::MakeFromText, T15a)"
-status = "todo"
+status = "passing"
 span_hash = "06346eb0b374423df2377a7cae8b62c246fbcc7cf3fc60f235e1285a29e5aa17"
 
 [[test]]
@@ -48925,6 +48922,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
 status = "todo"
+reason = "needs blob recording in pictures (T16) and a drawable typeface (T17)"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]
@@ -48933,7 +48931,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L473-L485"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c200a8aafe737f4ffe4e755c673123629f693c45e272128768aaa30ea2f525b1"
 
 [[test]]
@@ -48942,7 +48940,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L335-L338"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5420930367a1584d5f3d92301d172e94ed171c0047448c51412a3735bde68009"
 
 [[test]]
@@ -48951,7 +48949,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L344-L377"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "229145255d0e10627abe197326b63268bf812e01335d1f012f0e58f7ee1a539f"
 
 [[test]]
@@ -48961,6 +48959,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L519-L547"
 module = "text"
 status = "todo"
+reason = "needs SkTextBlob::getIntercepts (T15b)"
 span_hash = "aaf0aa50b281bd1479b7f302c4615122e4114bd24ac47b7711638eb5185bfe4a"
 
 [[test]]
@@ -48969,7 +48968,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L487-L517"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "93155586395a6d01260b8ac681d90431844399f3fbf9e5d84b56f5dab561fef8"
 
 [[test]]
@@ -48978,7 +48977,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L340-L342"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3c1a1dcabb321a39100a212b44e91746f284941b6394f0fcea5118cb0262a7fa"
 
 [[test]]
@@ -48988,6 +48987,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L440-L471"
 module = "text"
 status = "todo"
+reason = "needs SkTextBlob serialization (T15b)"
 span_hash = "6ea32fb8cd6b644cb5cd8580c0a8476a1e4031b59c2235195b0669787aa7ebd9"
 
 [[test]]
