@@ -12,7 +12,10 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    # Ported third-party C libraries (docs/design/codecs.md §2-3); see NOTICE.
+    "IJG",
     "ISC",
+    "libpng-2.0",
     "MIT",
     "Unicode-3.0",
     "Zlib",

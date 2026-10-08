@@ -1,0 +1,17 @@
+skia-rust NOTICE
+
+skia-rust is licensed under the BSD-3-Clause licence (see LICENSE). It also contains
+ports of third-party C libraries that Skia wraps. Each port is a separate crate with
+its own licence file, and the upstream licence text is reproduced there unchanged.
+
+| Library (pinned version)                                  | Ported as                | Licence       | Licence text                         |
+|-----------------------------------------------------------|--------------------------|---------------|--------------------------------------|
+| zlib, Chromium fork 1.3.0.1-motley (646b7f56)             | skia-rust-zlib           | Zlib          | crates/skia-rust-zlib/LICENSE        |
+| libpng 1.6.56                                             | skia-rust-libpng         | libpng-2.0    | crates/skia-rust-libpng/LICENSE      |
+| libjpeg-turbo 3.1.0 (e14cbfaa)                            | skia-rust-libjpeg        | IJG, BSD-3-Clause, Zlib | crates/skia-rust-libjpeg/LICENSE |
+| libwebp 1.4.0 (845d5476)                                  | skia-rust-libwebp        | BSD-3-Clause  | crates/skia-rust-libwebp/LICENSE     |
+| Wuffs v0.3 (e3f919cc)                                     | skia-rust-wuffs          | Apache-2.0    | crates/skia-rust-wuffs/LICENSE       |
+
+A row whose crate is not yet in the workspace is a planned port (docs/design/codecs.md
+§3); its licence file is added with the crate. The Rust-backed codecs Skia can use
+(png, zune-jpeg, jpeg-encoder) are dependencies, not ports, and are listed in Cargo.lock.
