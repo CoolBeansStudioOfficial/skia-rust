@@ -218,19 +218,19 @@ fn check_rowbytes_remain_consistent(surface: &mut Surface<'_>, reporter: &mut Re
     reporter_assert!(reporter, surface_rb.is_some());
 
     let image = surface.image_snapshot().expect("a snapshot");
-    let pm_rb = image.peek_pixels().map(|pm| pm.row_bytes());
-    reporter_assert!(reporter, pm_rb.is_some());
+    let first_rb = image.peek_pixels().map(|pm| pm.row_bytes());
+    reporter_assert!(reporter, first_rb.is_some());
 
-    reporter_assert!(reporter, surface_rb == pm_rb);
+    reporter_assert!(reporter, surface_rb == first_rb);
 
     // trigger a copy-on-write
     surface.canvas().draw_paint(&Paint::default());
     let image2 = surface.image_snapshot().expect("a snapshot");
     reporter_assert!(reporter, image.unique_id() != image2.unique_id());
 
-    let pm2_rb = image2.peek_pixels().map(|pm| pm.row_bytes());
-    reporter_assert!(reporter, pm2_rb.is_some());
-    reporter_assert!(reporter, pm2_rb == pm_rb);
+    let second_rb = image2.peek_pixels().map(|pm| pm.row_bytes());
+    reporter_assert!(reporter, second_rb.is_some());
+    reporter_assert!(reporter, second_rb == first_rb);
 }
 
 // Port of: tests/SurfaceTest.cpp#L779-L792 (chrome/m156)
