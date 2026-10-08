@@ -23,6 +23,9 @@ const SCAN_DIRS: &[&str] = &["tests", "gm", "bench", "fuzz", "modules"];
 /// generator are excluded.
 const SKSL_PORTED_EXTENSIONS: &[&str] = &["wgsl", "skrp", "sksl", "stage"];
 
+/// `tests/sksl/errors/*.glsl` are error-text goldens, scanned as in scope.
+const SKSL_ERROR_TEXT_DIR: &str = "tests/sksl/errors/";
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Manifest {
     skia: Pin,
@@ -368,7 +371,10 @@ fn scan_sksl_goldens(skia: &Path, out: &mut Vec<Entry>) -> Result<()> {
             .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("");
-        let (status, reason) = if SKSL_PORTED_EXTENSIONS.contains(&ext) {
+        // Error goldens are compiled with `--glsl` but fail in the front end, before any
+        // GLSL generator runs (`gn/sksl_tests.gni#L1059-L1061`), so they are in scope.
+        let is_error_text = ext == "glsl" && rel.starts_with(SKSL_ERROR_TEXT_DIR);
+        let (status, reason) = if SKSL_PORTED_EXTENSIONS.contains(&ext) || is_error_text {
             (Status::Todo, String::new())
         } else {
             (
