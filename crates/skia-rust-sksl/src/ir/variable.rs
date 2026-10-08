@@ -7,8 +7,8 @@
 //! [`Variable`]: a variable symbol (global, local, parameter or interface block).
 
 use super::{
-    IrPool, Layout, ModifierFlags, StatementKind,
-    ids::{ElemId, ExprId, StmtId, TypeId, VarId},
+    IrPool, Layout, ModifierFlags, StatementKind, VarDeclaration, add_symbol,
+    ids::{ElemId, ExprId, StmtId, SymTabId, SymbolId, TypeId, VarId},
 };
 use crate::compiler::Compiler;
 use crate::context::Context;
@@ -305,5 +305,75 @@ impl Variable {
         variable.layout = layout;
         variable.mangled_name = mangled_name.into();
         pool.add_variable(variable)
+    }
+}
+
+/// `Variable::ScratchVariable`: a local variable made by [`Variable::make_scratch_variable`], and
+/// its declaration.
+#[doc(alias = "SkSL::Variable::ScratchVariable")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScratchVariable {
+    /// `fVarSymbol`.
+    pub var: VarId,
+    /// `fVarDecl`: the `VarDeclaration` statement.
+    pub decl: StmtId,
+}
+
+impl Variable {
+    /// `Variable::MakeScratchVariable`: creates a local scratch variable with a fresh name, adds it
+    /// to `symbol_table`, and makes its declaration. Useful when doing IR rewrites, such as inlining
+    /// a function call.
+    // Port of: src/sksl/ir/SkSLVariable.cpp#L181-L217 (chrome/m156)
+    #[must_use]
+    pub fn make_scratch_variable(
+        ctx: &mut Context,
+        mangler: &mut Mangler,
+        base_name: &str,
+        ty: TypeId,
+        symbol_table: SymTabId,
+        initial_value: Option<ExprId>,
+    ) -> ScratchVariable {
+        // $floatLiteral or $intLiteral aren't real types that we can use for scratch variables, so
+        // replace them if they ever appear here. If this happens, we likely forgot to coerce a type
+        // somewhere during compilation.
+        let ty = if ctx.pool.ty(ty).is_literal() {
+            debug_assert!(false, "found a $literal type in MakeScratchVariable");
+            ctx.pool.ty(ty).scalar_type_for_literal().id()
+        } else {
+            ty
+        };
+
+        // Provide our new variable with a unique name, and add it to our symbol table.
+        let name = mangler.unique_name(base_name, &ctx.pool, symbol_table);
+        let builtin = ctx.pool.symbol_table(symbol_table).is_builtin();
+        let pos = initial_value.map_or_else(Position::default, |value| {
+            ctx.pool.expression(value).position
+        });
+
+        // Create our new variable and add it to the symbol table. Its type is the one given, which
+        // may be an array.
+        let var = ctx.pool.add_variable(Variable::new(
+            pos,
+            Position::default(),
+            ModifierFlags::empty(),
+            name.as_str(),
+            ty,
+            builtin,
+            VariableStorage::Local,
+        ));
+
+        // If we are creating an array type, reduce it to base type plus array-size.
+        let (decl_type, array_size) = if ctx.pool.ty(ty).is_array() {
+            (
+                ctx.pool.ty(ty).component_type().id(),
+                ctx.pool.ty(ty).columns(),
+            )
+        } else {
+            (ty, 0)
+        };
+        // Create our variable declaration.
+        let decl = VarDeclaration::make(&mut ctx.pool, var, decl_type, array_size, initial_value);
+        add_symbol(ctx, symbol_table, SymbolId::Variable(var));
+        ScratchVariable { var, decl }
     }
 }

@@ -3,15 +3,15 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/sksl/ir/SkSLDoStatement.{h,cpp}, SkSLExpressionStatement.{h,cpp},
 // SkSLForStatement.{h,cpp}, SkSLIfStatement.{h,cpp}, SkSLSwitchStatement.{h,cpp} and
-// SkSLSwitchCase.{h,cpp} (data and `description`). Their `Convert`/`Make` come with task S7d,
-// in files named after the Skia classes (`for_statement.rs`, …).
+// SkSLSwitchCase.{h,cpp} (data, `description`, and the `ExpressionStatement` factories). The other
+// factories live in files named after the Skia classes (`do_statement.rs`, `for_statement.rs`, …).
 
 //! The statements that hold expressions or other statements: [`DoStatement`],
 //! [`ExpressionStatement`], [`ForStatement`], [`IfStatement`], [`SwitchStatement`] and
 //! [`SwitchCase`].
 
 use super::{
-    ExpressionKind, IrPool, Nop, Statement, StatementKind, VariableRefKind,
+    Expression, ExpressionKind, IrPool, Nop, Statement, StatementKind, VariableRefKind,
     ids::{ExprId, StmtId, SymTabId, VarId},
 };
 use crate::analysis;
@@ -55,6 +55,18 @@ pub struct ExpressionStatement {
 }
 
 impl ExpressionStatement {
+    /// `ExpressionStatement::Convert`: a statement of `expr`, if `expr` is a complete expression.
+    // Port of: src/sksl/ir/SkSLExpressionStatement.cpp#L14-L23 (chrome/m156)
+    #[must_use]
+    pub fn convert(ctx: &mut Context, expr: ExprId) -> Option<StmtId> {
+        // Expression-statements need to represent a complete expression. Report an error on
+        // intermediate expressions, like FunctionReference or TypeReference.
+        if Expression::is_incomplete(ctx, expr) {
+            return None;
+        }
+        Some(Self::make(ctx, expr))
+    }
+
     /// `ExpressionStatement::Make`: a statement of `expr`. When optimizing, an expression with no
     /// side effects becomes a `Nop`, and an assignment whose target is read-write is demoted to a
     /// write, because the value of the assignment is discarded.

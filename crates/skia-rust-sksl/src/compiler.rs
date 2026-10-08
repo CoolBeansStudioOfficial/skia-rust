@@ -32,6 +32,8 @@ impl Compiler {
 
     /// `FRAGCOLOR_NAME`: the fragment output that `out location=0` may only declare.
     pub const FRAGCOLOR_NAME: &'static str = "sk_FragColor";
+    /// `RTADJUST_NAME`: the uniform that makes the IR generator emit position-fixup expressions.
+    pub const RTADJUST_NAME: &'static str = "sk_RTAdjust";
 
     /// A compiler whose context reports errors into the compiler's error text.
     #[must_use]

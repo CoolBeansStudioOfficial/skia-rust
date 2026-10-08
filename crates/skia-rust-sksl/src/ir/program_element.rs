@@ -4,8 +4,10 @@
 // Ported from Skia: src/sksl/ir/SkSLProgramElement.h, src/sksl/ir/SkSLIRNode.h
 // (`ProgramElementKind`), and the data and `description` of SkSLExtension.h,
 // SkSLFunctionDefinition.h, SkSLFunctionPrototype.h, SkSLInterfaceBlock.{h,cpp},
-// SkSLModifiersDeclaration.h and SkSLStructDefinition.{h,cpp}. Their `Convert`/`Make` come with
-// tasks S7c (functions) and S7d (the others), in files named after the Skia classes.
+// SkSLModifiersDeclaration.h and SkSLStructDefinition.{h,cpp}. Their `Convert`/`Make` are in files
+// named after the Skia classes: `function_definition.rs` (S7c), `extension.rs`,
+// `interface_block.rs`, `modifiers_declaration.rs`, `struct_definition.rs` (S7d), and
+// `var_declarations.rs` for `GlobalVarDeclaration::make`.
 
 //! [`ProgramElement`]: a top-level element of a program or module.
 
@@ -96,6 +98,19 @@ pub struct ModifiersDeclaration {
 pub struct StructDefinition {
     /// `type()`.
     pub ty: TypeId,
+}
+
+impl FunctionPrototype {
+    /// `FunctionPrototype(pos, declaration)`: a forward declaration. Skia has no factory for it,
+    /// and the parser constructs it directly; this is the same construction, as an element id.
+    // Port of: src/sksl/ir/SkSLFunctionPrototype.h#L21-L41 (chrome/m156)
+    #[must_use]
+    pub fn make(pool: &mut IrPool, pos: Position, declaration: FnId) -> ElemId {
+        pool.add_element(ProgramElement::new(
+            pos,
+            ProgramElementKind::FunctionPrototype(Self { declaration }),
+        ))
+    }
 }
 
 impl InterfaceBlock {

@@ -29,18 +29,24 @@ mod constructor_scalar_cast;
 mod constructor_splat;
 mod constructor_struct;
 mod control_statements;
+mod do_statement;
 mod expression;
+mod extension;
 mod field_access;
 mod field_symbol;
+mod for_statement;
 mod function_call;
 mod function_call_intrinsics;
 mod function_declaration;
 mod function_definition;
 mod ids;
+mod if_statement;
 mod index_expression;
+mod interface_block;
 mod layout;
 mod literal;
 mod modifier_flags;
+mod modifiers_declaration;
 mod pool;
 mod prefix_postfix;
 mod program;
@@ -49,6 +55,8 @@ mod setting;
 mod simple_expressions;
 mod simple_statements;
 mod statement;
+mod struct_definition;
+mod switch_statement;
 mod swizzle;
 mod symbol;
 mod symbol_table;
@@ -108,7 +116,7 @@ pub use types::{
     TypeRef,
 };
 pub use var_declarations::{GlobalVarDeclaration, VarDeclaration};
-pub use variable::{DeclaringElement, Variable, VariableStorage};
+pub use variable::{DeclaringElement, ScratchVariable, Variable, VariableStorage};
 pub use variable_reference::{VariableRefKind, VariableReference};
 
 #[cfg(test)]
@@ -117,6 +125,8 @@ mod constructor_tests;
 mod function_call_intrinsics_tests;
 #[cfg(test)]
 mod s7b_tests;
+#[cfg(test)]
+mod s7d_tests;
 #[cfg(test)]
 mod semantics_tests;
 #[cfg(test)]
