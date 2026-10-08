@@ -285,6 +285,8 @@ pub mod sk_gauss_filter_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
+pub mod sk_glyph_test;
+#[cfg(test)]
 pub mod sk_path_range_iter_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_opts_test;
