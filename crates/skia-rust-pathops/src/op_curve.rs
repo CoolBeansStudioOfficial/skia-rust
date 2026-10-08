@@ -1,3 +1,31 @@
+// Some ported helpers have no caller yet: the Op pieces that use them (tight bounds,
+// the builder) are later slices. Remove this allow as those callers are ported.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
+#![allow(dead_code)]
 // Copyright 2015 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
@@ -19,8 +47,8 @@ use crate::point::{DPoint, DVector};
 use crate::quad::DQuad;
 use crate::rect::{Bounds, DRect};
 use crate::types::{
-    almost_between_ulps, almost_equal_ulps, almost_equal_ulps_pin, pin_t, roughly_zero_when_compared_to,
-    std_max, std_min,
+    almost_between_ulps, almost_equal_ulps, almost_equal_ulps_pin, pin_t,
+    roughly_zero_when_compared_to, std_max, std_min,
 };
 
 /// `SkPathOpsVerbToPoints(verb)`: the number of control points after the start point.
@@ -102,10 +130,7 @@ impl DCurveBuf {
             return -1.0;
         }
         let mut i = Intersections::default();
-        let perp = DLine::new([
-            xy,
-            DPoint::new(xy.x + opp.y - xy.y, xy.y + xy.x - opp.x),
-        ]);
+        let perp = DLine::new([xy, DPoint::new(xy.x + opp.y - xy.y, xy.y + xy.x - opp.x)]);
         curve_d_intersect_ray(verb, self, &perp, &mut i);
         let mut min_index: i32 = -1;
         let mut min_dist = f64::from(f32::MAX);
@@ -265,8 +290,9 @@ impl DCurveSweep {
 #[must_use]
 pub(crate) fn curve_d_point_at_t(verb: Verb, pts: &[Point], weight: f32, t: f64) -> DPoint {
     match verb {
-        Verb::Line => DLine::new([DPoint::from_sk_point(pts[0]), DPoint::from_sk_point(pts[1])])
-            .pt_at_t(t),
+        Verb::Line => {
+            DLine::new([DPoint::from_sk_point(pts[0]), DPoint::from_sk_point(pts[1])]).pt_at_t(t)
+        }
         Verb::Quad => quad_from(pts).pt_at_t(t),
         Verb::Conic => conic_from(pts, weight).pt_at_t(t),
         Verb::Cubic => cubic_from(pts).pt_at_t(t),
@@ -333,7 +359,13 @@ pub(crate) fn curve_slope_at_t(verb: Verb, pts: &[Point], weight: f32, t: f64) -
 /// `CurveIsVertical[verb](pts, weight, startT, endT)`.
 // Port of: src/pathops/SkPathOpsCurve.h#L299-L355 (chrome/m156)
 #[must_use]
-pub(crate) fn curve_is_vertical(verb: Verb, pts: &[Point], weight: f32, start_t: f64, end_t: f64) -> bool {
+pub(crate) fn curve_is_vertical(
+    verb: Verb,
+    pts: &[Point],
+    weight: f32,
+    start_t: f64,
+    end_t: f64,
+) -> bool {
     match verb {
         Verb::Line => {
             let line = DLine::new([DPoint::from_sk_point(pts[0]), DPoint::from_sk_point(pts[1])]);
@@ -389,7 +421,12 @@ pub(crate) fn curve_intersect_ray(
 
 /// `CurveDIntersectRay[verb](curve, ray, i)`.
 // Port of: src/pathops/SkPathOpsCurve.h#L412-L440 (chrome/m156)
-pub(crate) fn curve_d_intersect_ray(verb: Verb, curve: &DCurveBuf, ray: &DLine, i: &mut Intersections) {
+pub(crate) fn curve_d_intersect_ray(
+    verb: Verb,
+    curve: &DCurveBuf,
+    ray: &DLine,
+    i: &mut Intersections,
+) {
     match verb {
         Verb::Line => {
             i.intersect_ray_line(&curve.line(), ray);

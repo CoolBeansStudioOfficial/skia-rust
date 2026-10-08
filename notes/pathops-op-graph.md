@@ -1,79 +1,70 @@
 # PathOps op graph (slice 3): status and hand-over
 
-Branch `port/pathops-3` (based on the unmerged `port/pathops-2`, a2cab7d).
-Manifest entries flipped to `passing`: **0**. No `PathOps*` test is ported yet, so no
-`tests/src/unit/path_ops_*` file was added. `inventory/manifest.toml` is untouched.
+Branch `port/pathops-3` (draft PR #93). Manifest entries flipped to `passing`:
+`tests/PathOpsSimplifyTest.cpp::PathOpsSimplify` and `::bug_513001309`.
 
-## What is in the tree (not yet in `lib.rs`)
+## Ported (crates/skia-rust-pathops/src)
 
-The new modules are in `crates/skia-rust-pathops/src/` but are **not declared in `lib.rs`**, so
-the crate still builds as before. To wire them in, add `pub mod` lines for each file below.
-
-| File | Ported from (m156) | State |
+| File | Skia source (m156) | State |
 |---|---|---|
-| `op_state.rs` | `SkPathOpsTypes.h` (`SkOpGlobalState`, `SkOpPhase`), `SkOpCoincidence.h` fields | arenas, ids (`ContourId`, `SegId`, `SpanId`, `PtTId`, `AngleId`, `CoinId`), global flags. Complete. |
-| `op_span.rs` | `SkOpSpan.h`, `SkOpSpan.cpp` | every `SkOpPtT`/`SkOpSpanBase`/`SkOpSpan` method. Complete except the calls into coincidence and winding (see below). |
-| `op_curve.rs` | `SkPathOpsCurve.h/.cpp` (dispatch tables, `SkDCurve`, `SkDCurveSweep`, `nearPoint`, bounds) | complete. `DCurveBuf` is `SkDCurve` as points + conic weight. |
-| `op_segment.rs` | `SkOpSegment.h/.cpp` | every method except the ones that live in `SkPathOpsWinding.cpp` (`sortableTop`, `rayCheck`, `windingSpanAtT`) and `addCurveTo`'s writer (see `PathWriter` below). Complete in draft; not yet type-checked against borrowck. |
-| `op_contour.rs` | `SkOpContour.h/.cpp` | complete except `sortableTop`/`findSortableTop`/`rayCheck` (winding file). `ContourBuilder` is `SkOpContourBuilder`. |
-| `op_angle.rs` | `SkOpAngle.h/.cpp` | every method incl. `after`, `orderable`, `endsIntersect`, `setSector`, `computeSector`, `insert`/`merge`/`loopCount`/`loopContains`/`previous`. Draft. |
-| `path_op.rs` | `include/pathops/SkPathOps.h` (`SkPathOp`) | complete. |
+| `op_state.rs` | SkPathOpsTypes.h (SkOpGlobalState), arenas and ids | complete |
+| `op_span.rs`, `op_segment.rs`, `op_contour.rs`, `op_angle.rs`, `op_curve.rs` | SkOpSpan, SkOpSegment, SkOpContour, SkOpAngle, SkPathOpsCurve | complete for the paths the ops use; some helpers unused until the tight-bounds and builder slices (`#![allow(dead_code)]` at the top of each file) |
+| `op_coincidence.rs` | SkOpCoincidence.cpp | complete |
+| `op_winding.rs` | SkPathOpsWinding.cpp (sortableTop, rayCheck, windingSpanAtT) | complete |
+| `path_writer.rs` | SkPathWriter.cpp (partials, assemble) | complete |
+| `op_edge_builder.rs` | SkOpEdgeBuilder.cpp | complete |
+| `op_add_intersections.rs` | SkAddIntersections.cpp, SkIntersectionHelper | complete |
+| `op_common.rs` | SkPathOpsCommon.cpp (AngleWinding, FindChase, SortContourList, HandleCoincidence) | complete |
+| `op_simplify.rs` | SkPathOpsSimplify.cpp | complete (`pub fn simplify`) |
+| `op_op.rs` | SkPathOpsOp.cpp (findChaseOp, bridgeOp, gOpInverse/gOutInverse, OpDebug, Op) | complete (`pub fn op`) |
 
-Compile status (checked with the modules temporarily wired into `lib.rs`): **10 errors, all
-missing names**, and 4 unused-variable warnings:
+Public surface so far: `skia_rust_pathops::{op, simplify}` and `path_op::PathOp`.
 
-- `coin_contains`, `coin_extend`, `coin_add`, `coin_release_seg`, `coin_mark_collapsed`,
-  `coin_release_deleted`, `coin_fix_up`: `SkOpCoincidence` (not ported yet).
-- `span_sortable_top`: `SkPathOpsWinding.cpp` (not ported yet).
-- `path_writer` module: `SkPathWriter` (not ported yet). The calls use points:
-  `deferred_move(Point)`, `deferred_line(Point) -> bool`, `quad_to(Point, Point)`,
-  `conic_to(Point, Point, f32)`, `cubic_to(Point, Point, Point)`. Check against `SkPathWriter.h`.
-- Warnings: unused `seg` in `seg_fixup`-style helpers, `weight` in `seg_add_curve_to`'s
-  caller, `this_end`/`rh_end` in `angle_set_sector`. Fix when wiring in.
+Not yet: `OpBuilder` (SkOpBuilder.cpp), `tight_bounds` (SkPathOpsTightBounds.cpp), `as_winding`
+(SkPathOpsAsWinding.cpp), the `PathOpsExt` extension trait on `Path` and its re-export in the
+`skia-rust` facade, and the `docs/API_MAPPING.md` note for the deviation.
 
-## Design (follow this when continuing)
+## Tests
 
-- One `OpState` (SkOpGlobalState) owns every arena: `contours`, `segments`, `spans`, `ptts`,
-  `angles`, `coin_spans`. Contour 0 is the head contour. Nothing is freed during an operation,
-  like Skia's arena.
-- A `Span` holds the fields of `SkOpSpanBase` and `SkOpSpan` together. The `SkOpPtT` embedded in a
-  span is a `PtT` in `ptts`, whose id is `Span::ptt`. Rings (`PtT::next`, `Span::coin_end`,
-  `Span::coincident`, angle `next`) use self-ids for "points to itself".
-- Graph methods are `impl OpState` blocks, named after the C++ owner (`span_*`, `ptt_*`, `seg_*`,
-  `contour_*`, `angle_*`, `coin_*`), spread over the files above.
-- Curves: `Segment::pts` is a copy of the points. Skia stores a pointer into the edge builder's
-  array. Confirm nothing writes through that pointer (the edge builder) before relying on the copy.
-- `SkPoint` distances (`SkPointPriv::DistanceToSqd`) are `f32`, because Skia returns `SkScalar`.
-  Double-precision distances stay `f64`.
-- `SK_NaN32` is used as a sentinel in `seg_compute_sum`. The value is set to `i32::MIN + 1`
-  (`op_segment.rs`). **Verify against `SkFloatingPoint`/`SkTypes`** before relying on it.
-- `kActiveEdge` (`op_segment.rs`) is transcribed literally from `SkOpSegment.cpp#L26-L44`.
+| Test file | Status |
+|---|---|
+| PathOpsSimplifyTest.cpp | 2 of 2 DEF_TESTs pass (PathOpsSimplify: all 470 table entries; bug_513001309). Flipped. |
+| PathOpsOpTest.cpp | partial: `tests/src/unit/path_ops_op_test.rs` ports testIntersect1/2, testUnion1/2, testDiff1/2, testXor1/2, testOp1d, testOp2d (10 of about 450 functions). `PathOpsOpPartial` passes. DEF_TEST(PathOpsOp) stays `todo`. |
+| PathOpsTightBoundsTest.cpp | not ported (needs `tight_bounds`) |
+| PathOpsAsWindingTest.cpp | not ported (needs `as_winding`) |
+| PathOpsBuilderTest.cpp | not ported (needs `OpBuilder`) |
 
-## Not started
+Helpers in `tests/src/unit/path_ops_extended_test.rs`: `inner_simplify`/`test_simplify`/
+`test_simplify_fail` and `test_path_op`.
 
-1. `SkOpCoincidence.cpp` (1437 lines). `SkCoincidentSpans` methods were read. `SkOpCoincidence`
-   `extend`, `add`, `addEndMovedSpans` (both forms), `addExpanded`/`apply` and `addOrOverlap`,
-   `checkOverlap`, `addIfMissing`, `TRange` were read in part. Still to read: `addOverlap`,
-   `overlap`, `findOverlaps`, `addMissing`, `correctEnds`, `expand`, `contains`, `mark`,
-   `markCollapsed`, `release`, `releaseDeleted`, `fixUp`, `restoreHead`, `Ordered`.
-2. `SkPathOpsWinding.cpp` (443 lines): `sortableTop`, `findSortableTop`, `rayCheck`,
-   `windingSpanAtT`, `SkOpRayHit` and the ray-cast helpers.
-3. `SkOpEdgeBuilder` (363), `SkAddIntersections` (595), `SkPathOpsCommon` (338),
-   `SkPathWriter` (453), `SkOpBuilder` (211), `SkPathOpsOp` (391), `SkPathOpsSimplify` (285),
-   `SkPathOpsTightBounds` (83), `SkPathOpsAsWinding` (460).
-4. Public API (`skia-rust-pathops`): `op`, `simplify`, `tight_bounds`, `as_winding`, `OpBuilder`.
-   **Decision needed:** `Path::op/simplify/tight_bounds/as_winding` cannot be inherent methods in
-   `skia-rust-core`, because `pathops` depends on `core` and not the other way round. Options: an
-   extension trait in the `skia-rust` facade crate, or a `pathops` extension trait re-exported
-   there. The facade route matches skia-safe's method names best.
-5. Tests: `PathOpsSimplifyTest` (10k lines, lines first, then quads/cubics, then Op),
-   `PathOpsTightBoundsTest`, `PathOpsAsWindingTest`, `PathOpsBuilderTest`, `PathOpsOpTest`
-   (12.5k lines), and the threaded runners (single-threaded). `PathOpsExtendedTest` helpers
-   (`testPathOp`, `testSimplify`, `comparePaths`) must be ported first.
+Deviations, to report with the PR:
 
-## Systematic failures
+1. `innerPathOp` only compares the result with the region boundary when `reporter->verbose()`.
+   That comparison (`comparePaths` with `SkRegion::op` and `getBoundaryPath`) is not ported. Our
+   `test_path_op` checks success only, which is exactly what Skia checks without `--verbose`.
+2. `testSimplify` in our port compares the result on every run (Skia compares only when verbose).
+   This is stricter than Skia, so it cannot hide a failure Skia would report.
+3. `comparePaths` for Simplify uses Skia's bitmap comparison (`pathsDrawTheSame`, `MAX_ERRORS` 9),
+   not a pure region comparison; a region comparison gave 133 false mismatches on curved cases.
+4. `Simplify` no longer calls `set_phase(Walking)`: that call is `DEBUG_VALIDATE` only in Skia.
 
-None observed yet, because nothing runs. Expect the first divergences in the coincidence code
-(`addExpanded`, `expand`, `checkOverlap` order of checks) and in the angle sort (`after`).
-When a test fails, find the first divergence against `SkOpSegment.cpp`/`SkOpAngle.cpp` before
-changing code.
+## Verification status of the op port
+
+The op is checked only by the success assertions in the 10 ported PathOpsOp cases and by the
+Simplify suite (which exercises the shared graph code). No geometric output check has run yet.
+The verbose-only region comparison (deviation 1) is the check that would catch a wrong result, so
+it is the first thing to add when porting PathOpsOpTest in full.
+
+Resolved from the previous hand-over: `SK_NaN32` is `i32::MIN` and `SK_MinS32` is `i32::MIN + 1`
+(SkMath.h); segment points are copied into `Segment::pts` (the edge builder does not write through
+its array after the segments are built).
+
+## Next steps
+
+1. Port the rest of `tests/PathOpsOpTest.cpp` (functions, the `tests[]`, `failTests[]` and
+   `repTests[]` tables, the `ops` arrays and `path_edit`). Flip only the tests seen passing.
+2. Port `SkOpBuilder.cpp`, `SkPathOpsTightBounds.cpp`, `SkPathOpsAsWinding.cpp`, then the
+   `PathOpsExt` trait and facade re-export, and `docs/API_MAPPING.md`.
+3. Port `PathOpsTightBoundsTest`, `PathOpsAsWindingTest`, `PathOpsBuilderTest`.
+4. Remove the module-level `clippy` and `dead_code` allows once the callers exist, and fix the
+   remaining lints they hide where they do not mirror Skia.

@@ -4,6 +4,8 @@
 // Port of: tests/PathOpsExtendedTest.cpp (chrome/m156): the helpers of the PathOps tests,
 // `inner_simplify`, `testSimplify`, `testSimplifyFail` and `comparePaths`.
 
+// The comparison grid sizes are small integers, exact in f32 (`K_BIT_WIDTH as f32`).
+#![allow(clippy::cast_precision_loss)]
 #![cfg(test)]
 
 use skia_rust_core::bitmap::Bitmap;
@@ -13,7 +15,8 @@ use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::rect::Rect;
-use skia_rust_pathops::simplify;
+use skia_rust_pathops::path_op::PathOp;
+use skia_rust_pathops::{op, simplify};
 use skia_rust_raster::raster_canvas::RasterCanvas;
 
 use crate::{Reporter, reporter_assert};
@@ -91,7 +94,8 @@ fn paths_draw_the_same(scaled_one: &Path, scaled_two: &Path) -> (i32, i32) {
     let mut bits = Bitmap::new();
     bits.alloc_n32_pixels((K_BIT_WIDTH * 2, K_BIT_HEIGHT), None);
     {
-        let canvas = Canvas::from_bitmap(&mut bits, None).expect("canvas over the comparison bitmap");
+        let canvas =
+            Canvas::from_bitmap(&mut bits, None).expect("canvas over the comparison bitmap");
         canvas.clear(Color::WHITE);
         // SkPaint's defaults: no anti-aliasing.
         let paint = Paint::default();
@@ -152,12 +156,22 @@ fn inner_simplify(
         return false;
     };
     if expect_success == ExpectSuccess::No {
-        reporter_assert!(reporter, false, "Simplify unexpected success for {}", filename);
+        reporter_assert!(
+            reporter,
+            false,
+            "Simplify unexpected success for {}",
+            filename
+        );
     }
     let matches = compare_paths(path, &out);
     if expect_match == ExpectMatch::No {
         if matches {
-            reporter_assert!(reporter, false, "Failing Simplify test {} now succeeds", filename);
+            reporter_assert!(
+                reporter,
+                false,
+                "Failing Simplify test {} now succeeds",
+                filename
+            );
             return false;
         }
     } else if expect_match == ExpectMatch::Yes && !matches {
@@ -170,11 +184,59 @@ fn inner_simplify(
 /// `testSimplify(reporter, path, filename)`.
 // Port of: tests/PathOpsExtendedTest.cpp#L402-L405 (chrome/m156)
 pub(crate) fn test_simplify(reporter: &mut Reporter, path: &Path, filename: &str) -> bool {
-    inner_simplify(reporter, path, filename, ExpectSuccess::Yes, ExpectMatch::Yes)
+    inner_simplify(
+        reporter,
+        path,
+        filename,
+        ExpectSuccess::Yes,
+        ExpectMatch::Yes,
+    )
 }
 
 /// `testSimplifyFail(reporter, path, filename)`.
 // Port of: tests/PathOpsExtendedTest.cpp#L416-L419 (chrome/m156)
 pub(crate) fn test_simplify_fail(reporter: &mut Reporter, path: &Path, filename: &str) -> bool {
     inner_simplify(reporter, path, filename, ExpectSuccess::No, ExpectMatch::No)
+}
+
+/// `innerPathOp(reporter, a, b, shapeOp, testName, expectSuccess, skipAssert, expectMatch)`,
+/// without the JSON output. The result is compared to the region of the operation only when the
+/// reporter is verbose; that comparison (`comparePaths` with the `SkRegion` boundary paths) is not
+/// ported yet, so verbose runs check only the success of the operation.
+// Port of: tests/PathOpsExtendedTest.cpp#L533-L595 (chrome/m156)
+fn inner_path_op(
+    reporter: &mut Reporter,
+    a: &Path,
+    b: &Path,
+    shape_op: PathOp,
+    filename: &str,
+    expect_success: ExpectSuccess,
+) -> bool {
+    let Some(_out) = op(a, b, shape_op) else {
+        if expect_success == ExpectSuccess::Yes {
+            reporter_assert!(reporter, false, "PathOp failed for {}", filename);
+        }
+        return false;
+    };
+    if expect_success == ExpectSuccess::No {
+        reporter_assert!(
+            reporter,
+            false,
+            "PathOp unexpected success for {}",
+            filename
+        );
+    }
+    true
+}
+
+/// `testPathOp(reporter, a, b, shapeOp, testName)`.
+// Port of: tests/PathOpsExtendedTest.cpp#L597-L601 (chrome/m156)
+pub(crate) fn test_path_op(
+    reporter: &mut Reporter,
+    a: &Path,
+    b: &Path,
+    shape_op: PathOp,
+    filename: &str,
+) -> bool {
+    inner_path_op(reporter, a, b, shape_op, filename, ExpectSuccess::Yes)
 }

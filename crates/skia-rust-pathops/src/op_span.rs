@@ -1,3 +1,31 @@
+// Some ported helpers have no caller yet: the Op pieces that use them (tight bounds,
+// the builder) are later slices. Remove this allow as those callers are ported.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
+#![allow(dead_code)]
 // Copyright 2012 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
@@ -16,7 +44,7 @@ use skia_rust_core::point::Point;
 use crate::op_state::{
     AngleId, ContourId, MAX_WINDING_TRIES, OpState, PtTId, SK_MIN_S32, SegId, SpanId,
 };
-use crate::types::{between, std_min, std_max, zero_or_one};
+use crate::types::{between, std_max, std_min, zero_or_one};
 
 /// `SkOpPtT`: a point on a segment, at parameter `t`, linked into a ring of points that
 /// describe the same place.
@@ -845,7 +873,9 @@ impl OpState {
     /// `SkOpSpan::release(const SkOpPtT* kept)`.
     // Port of: src/pathops/SkOpSpan.cpp#L334-L357 (chrome/m156)
     pub(crate) fn span_release(&mut self, s: SpanId, kept: PtTId) {
-        let prev = self.spans[s.0].prev.expect("released span has a previous span");
+        let prev = self.spans[s.0]
+            .prev
+            .expect("released span has a previous span");
         let next = self.spans[s.0].next.expect("released span has a next span");
         self.spans[prev.0].next = Some(next);
         self.spans[next.0].prev = Some(prev);
@@ -963,11 +993,14 @@ impl OpState {
             if self.ptt_segment(next) == segment {
                 let base = self.ptts[next.0].span;
                 let span = if !ordered {
-                    let Some(span_end_ptt) = self.span_contains_seg(self.spans[s.0].next.expect("span has next"), segment) else {
+                    let Some(span_end_ptt) = self
+                        .span_contains_seg(self.spans[s.0].next.expect("span has next"), segment)
+                    else {
                         return false;
                     };
                     let span_end = self.ptts[span_end_ptt.0].span;
-                    let start = self.ptt_starter(self.spans[base.0].ptt, self.spans[span_end.0].ptt);
+                    let start =
+                        self.ptt_starter(self.spans[base.0].ptt, self.spans[span_end.0].ptt);
                     let start_span = self.ptts[start.0].span;
                     let Some(start_span) = self.span_up_castable(start_span) else {
                         return false;

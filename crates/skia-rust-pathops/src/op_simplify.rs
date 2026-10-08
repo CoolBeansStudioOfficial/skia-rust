@@ -5,6 +5,31 @@
 
 //! Simplify: removes self-intersections, and gives every contour a consistent fill
 //! (`SkPathOpsSimplify.cpp`, `Simplify(path)`).
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::path::{Iter, Path, Verb};
 use skia_rust_core::path_types::PathFillType;
@@ -12,7 +37,7 @@ use skia_rust_core::point::Point;
 
 use crate::op_add_intersections::add_intersect_ts;
 use crate::op_edge_builder::EdgeBuilder;
-use crate::op_state::{ContourId, OpPhase, OpState, SpanId};
+use crate::op_state::{ContourId, OpState, SpanId};
 use crate::path_writer::PathWriter;
 
 /// `bridgeWinding(contourList, writer)`: walks the spans by winding, writing each closed
@@ -25,7 +50,9 @@ fn bridge_winding(state: &mut OpState, contour_list: ContourId, writer: &mut Pat
             break;
         };
         let mut current = state.span_segment(span);
-        let mut start = state.span_next(span).expect("a sortable span has a next span");
+        let mut start = state
+            .span_next(span)
+            .expect("a sortable span has a next span");
         let mut end = span;
         let mut chase: Vec<SpanId> = Vec::new();
         loop {
@@ -51,7 +78,9 @@ fn bridge_winding(state: &mut OpState, contour_list: ContourId, writer: &mut Pat
                     current = next;
                     start = next_start;
                     end = next_end;
-                    if writer.is_closed(state) || (unsortable && state.span_done(state.span_starter(start, end))) {
+                    if writer.is_closed(state)
+                        || (unsortable && state.span_done(state.span_starter(start, end)))
+                    {
                         break;
                     }
                 }
@@ -70,11 +99,11 @@ fn bridge_winding(state: &mut OpState, contour_list: ContourId, writer: &mut Pat
                 if !state.seg_mark_and_chase_done(current, start, end, Some(&mut last)) {
                     return false;
                 }
-                if let Some(last_span) = last {
-                    if !state.span_chased(last_span) {
-                        state.span_set_chased(last_span, true);
-                        chase.push(last_span);
-                    }
+                if let Some(last_span) = last
+                    && !state.span_chased(last_span)
+                {
+                    state.span_set_chased(last_span, true);
+                    chase.push(last_span);
                 }
             }
             let mut end_opt = Some(end);
@@ -101,7 +130,9 @@ fn bridge_xor(state: &mut OpState, contour_list: ContourId, writer: &mut PathWri
             break;
         };
         let mut current = state.span_segment(span);
-        let mut start = state.span_next(span).expect("an undone span has a next span");
+        let mut start = state
+            .span_next(span)
+            .expect("an undone span has a next span");
         let mut end = span;
         loop {
             safety_net -= 1;
@@ -113,7 +144,9 @@ fn bridge_xor(state: &mut OpState, contour_list: ContourId, writer: &mut PathWri
             }
             let mut next_start = start;
             let mut next_end = end;
-            let Some(next) = state.seg_find_next_xor(current, &mut next_start, &mut next_end, &mut unsortable) else {
+            let Some(next) =
+                state.seg_find_next_xor(current, &mut next_start, &mut next_end, &mut unsortable)
+            else {
                 break;
             };
             if !state.seg_add_curve_to(current, start, end, writer) {
@@ -122,7 +155,9 @@ fn bridge_xor(state: &mut OpState, contour_list: ContourId, writer: &mut PathWri
             current = next;
             start = next_start;
             end = next_end;
-            if writer.is_closed(state) || (unsortable && state.span_done(state.span_starter(start, end))) {
+            if writer.is_closed(state)
+                || (unsortable && state.span_done(state.span_starter(start, end)))
+            {
                 break;
             }
         }
@@ -250,7 +285,6 @@ pub fn simplify(path: &Path) -> Option<Path> {
         }
         current = state.contour_next(cur);
     }
-    state.set_phase(OpPhase::Walking);
     if !state.handle_coincidence(contour_list, coincidence) {
         return None;
     }
@@ -269,4 +303,3 @@ pub fn simplify(path: &Path) -> Option<Path> {
     state.writer_assemble(&mut writer);
     Some(writer.native_path())
 }
-

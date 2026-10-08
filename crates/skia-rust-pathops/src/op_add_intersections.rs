@@ -6,13 +6,38 @@
 
 //! Finds where the segments of two contours intersect, and records the intersections in the op
 //! graph (`AddIntersectTs`).
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::point::Point;
 
 use crate::intersections::Intersections;
 use crate::line::DLine;
-use crate::op_state::CoinSetId;
 use crate::op_curve::{conic_from, cubic_from, quad_from};
+use crate::op_state::CoinSetId;
 use crate::op_state::{ContourId, OpState, PtTId, SegId};
 use crate::point::DPoint;
 use crate::rect::Bounds;
@@ -135,18 +160,44 @@ impl IntersectionHelper {
 /// `SkIntersections::lineHorizontal(a, left, right, y, flipped)`: the line `a`, given as its
 /// first two points.
 // Port of: src/pathops/SkIntersections.h#L145-L151 (chrome/m156)
-fn line_horizontal(i: &mut Intersections, a: [Point; 4], left: f32, right: f32, y: f32, flipped: bool) -> usize {
+fn line_horizontal(
+    i: &mut Intersections,
+    a: [Point; 4],
+    left: f32,
+    right: f32,
+    y: f32,
+    flipped: bool,
+) -> usize {
     let line = line_from(a);
     i.set_max(2);
-    i.horizontal_line(&line, f64::from(left), f64::from(right), f64::from(y), flipped)
+    i.horizontal_line(
+        &line,
+        f64::from(left),
+        f64::from(right),
+        f64::from(y),
+        flipped,
+    )
 }
 
 /// `SkIntersections::lineVertical`.
 // Port of: src/pathops/SkIntersections.h#L153-L158 (chrome/m156)
-fn line_vertical(i: &mut Intersections, a: [Point; 4], top: f32, bottom: f32, x: f32, flipped: bool) -> usize {
+fn line_vertical(
+    i: &mut Intersections,
+    a: [Point; 4],
+    top: f32,
+    bottom: f32,
+    x: f32,
+    flipped: bool,
+) -> usize {
     let line = line_from(a);
     i.set_max(2);
-    i.vertical_line(&line, f64::from(top), f64::from(bottom), f64::from(x), flipped)
+    i.vertical_line(
+        &line,
+        f64::from(top),
+        f64::from(bottom),
+        f64::from(x),
+        flipped,
+    )
 }
 
 /// `SkIntersections::lineLine(a, b)`.
@@ -158,18 +209,44 @@ fn line_line(i: &mut Intersections, a: [Point; 4], b: [Point; 4]) -> usize {
 
 /// `SkIntersections::quadHorizontal(a, left, right, y, flipped)`.
 // Port of: src/pathops/SkIntersections.h#L181-L188 (chrome/m156)
-fn quad_horizontal(i: &mut Intersections, a: [Point; 4], left: f32, right: f32, y: f32, flipped: bool) -> usize {
+fn quad_horizontal(
+    i: &mut Intersections,
+    a: [Point; 4],
+    left: f32,
+    right: f32,
+    y: f32,
+    flipped: bool,
+) -> usize {
     let quad = quad_from(&a);
     i.set_max(2);
-    i.horizontal_quad(&quad, f64::from(left), f64::from(right), f64::from(y), flipped)
+    i.horizontal_quad(
+        &quad,
+        f64::from(left),
+        f64::from(right),
+        f64::from(y),
+        flipped,
+    )
 }
 
 /// `SkIntersections::quadVertical`.
 // Port of: src/pathops/SkIntersections.h#L189-L195 (chrome/m156)
-fn quad_vertical(i: &mut Intersections, a: [Point; 4], top: f32, bottom: f32, x: f32, flipped: bool) -> usize {
+fn quad_vertical(
+    i: &mut Intersections,
+    a: [Point; 4],
+    top: f32,
+    bottom: f32,
+    x: f32,
+    flipped: bool,
+) -> usize {
     let quad = quad_from(&a);
     i.set_max(2);
-    i.vertical_quad(&quad, f64::from(top), f64::from(bottom), f64::from(x), flipped)
+    i.vertical_quad(
+        &quad,
+        f64::from(top),
+        f64::from(bottom),
+        f64::from(x),
+        flipped,
+    )
 }
 
 /// `SkIntersections::quadLine(a, b)`: no `fMax` change.
@@ -191,7 +268,13 @@ fn conic_horizontal(
 ) -> usize {
     let conic = conic_from(&a[..3], weight);
     i.set_max(2);
-    i.horizontal_conic(&conic, f64::from(left), f64::from(right), f64::from(y), flipped)
+    i.horizontal_conic(
+        &conic,
+        f64::from(left),
+        f64::from(right),
+        f64::from(y),
+        flipped,
+    )
 }
 
 /// `SkIntersections::conicVertical`.
@@ -207,7 +290,13 @@ fn conic_vertical(
 ) -> usize {
     let conic = conic_from(&a[..3], weight);
     i.set_max(2);
-    i.vertical_conic(&conic, f64::from(top), f64::from(bottom), f64::from(x), flipped)
+    i.vertical_conic(
+        &conic,
+        f64::from(top),
+        f64::from(bottom),
+        f64::from(x),
+        flipped,
+    )
 }
 
 /// `SkIntersections::conicLine(a, weight, b)`.
@@ -220,18 +309,44 @@ fn conic_line(i: &mut Intersections, a: [Point; 4], weight: f32, b: [Point; 4]) 
 
 /// `SkIntersections::cubicHorizontal(a, left, right, y, flipped)`.
 // Port of: src/pathops/SkIntersections.h#L95-L101 (chrome/m156)
-fn cubic_horizontal(i: &mut Intersections, a: [Point; 4], left: f32, right: f32, y: f32, flipped: bool) -> usize {
+fn cubic_horizontal(
+    i: &mut Intersections,
+    a: [Point; 4],
+    left: f32,
+    right: f32,
+    y: f32,
+    flipped: bool,
+) -> usize {
     let cubic = cubic_from(&a);
     i.set_max(3);
-    i.horizontal_cubic(&cubic, f64::from(left), f64::from(right), f64::from(y), flipped)
+    i.horizontal_cubic(
+        &cubic,
+        f64::from(left),
+        f64::from(right),
+        f64::from(y),
+        flipped,
+    )
 }
 
 /// `SkIntersections::cubicVertical`.
 // Port of: src/pathops/SkIntersections.h#L103-L108 (chrome/m156)
-fn cubic_vertical(i: &mut Intersections, a: [Point; 4], top: f32, bottom: f32, x: f32, flipped: bool) -> usize {
+fn cubic_vertical(
+    i: &mut Intersections,
+    a: [Point; 4],
+    top: f32,
+    bottom: f32,
+    x: f32,
+    flipped: bool,
+) -> usize {
     let cubic = cubic_from(&a);
     i.set_max(3);
-    i.vertical_cubic(&cubic, f64::from(top), f64::from(bottom), f64::from(x), flipped)
+    i.vertical_cubic(
+        &cubic,
+        f64::from(top),
+        f64::from(bottom),
+        f64::from(x),
+        flipped,
+    )
 }
 
 /// `SkIntersections::cubicLine(a, b)`.
@@ -253,9 +368,17 @@ fn line_from(a: [Point; 4]) -> DLine {
 /// with `next`'s segments in the op graph. Returns false if the contours cannot intersect at
 /// all, and true otherwise (including when they are apart).
 // Port of: src/pathops/SkAddIntersections.cpp#L286-L360 (chrome/m156)
-pub(crate) fn add_intersect_ts(state: &mut OpState, test: ContourId, next: ContourId, coincidence: CoinSetId) -> bool {
+pub(crate) fn add_intersect_ts(
+    state: &mut OpState,
+    test: ContourId,
+    next: ContourId,
+    coincidence: CoinSetId,
+) -> bool {
     if test != next {
-        if almost_less_ulps(state.contour_bounds(test).bottom, state.contour_bounds(next).top) {
+        if almost_less_ulps(
+            state.contour_bounds(test).bottom,
+            state.contour_bounds(next).top,
+        ) {
             return false;
         }
         if !Bounds::intersects(&state.contour_bounds(test), &state.contour_bounds(next)) {
@@ -314,10 +437,24 @@ fn add_intersections_for_pair(
             swap = true;
             match wn.segment_type(state) {
                 SegmentType::HorizontalLine | SegmentType::VerticalLine | SegmentType::Line => {
-                    pts = line_horizontal(&mut ts, wn_pts, wt.left(state), wt.right(state), wt.y(state), wt.x_flipped(state));
+                    pts = line_horizontal(
+                        &mut ts,
+                        wn_pts,
+                        wt.left(state),
+                        wt.right(state),
+                        wt.y(state),
+                        wt.x_flipped(state),
+                    );
                 }
                 SegmentType::Quad => {
-                    pts = quad_horizontal(&mut ts, wn_pts, wt.left(state), wt.right(state), wt.y(state), wt.x_flipped(state));
+                    pts = quad_horizontal(
+                        &mut ts,
+                        wn_pts,
+                        wt.left(state),
+                        wt.right(state),
+                        wt.y(state),
+                        wt.x_flipped(state),
+                    );
                 }
                 SegmentType::Conic => {
                     pts = conic_horizontal(
@@ -331,7 +468,14 @@ fn add_intersections_for_pair(
                     );
                 }
                 SegmentType::Cubic => {
-                    pts = cubic_horizontal(&mut ts, wn_pts, wt.left(state), wt.right(state), wt.y(state), wt.x_flipped(state));
+                    pts = cubic_horizontal(
+                        &mut ts,
+                        wn_pts,
+                        wt.left(state),
+                        wt.right(state),
+                        wt.y(state),
+                        wt.x_flipped(state),
+                    );
                 }
             }
         }
@@ -339,10 +483,24 @@ fn add_intersections_for_pair(
             swap = true;
             match wn.segment_type(state) {
                 SegmentType::HorizontalLine | SegmentType::VerticalLine | SegmentType::Line => {
-                    pts = line_vertical(&mut ts, wn_pts, wt.top(state), wt.bottom(state), wt.x(state), wt.y_flipped(state));
+                    pts = line_vertical(
+                        &mut ts,
+                        wn_pts,
+                        wt.top(state),
+                        wt.bottom(state),
+                        wt.x(state),
+                        wt.y_flipped(state),
+                    );
                 }
                 SegmentType::Quad => {
-                    pts = quad_vertical(&mut ts, wn_pts, wt.top(state), wt.bottom(state), wt.x(state), wt.y_flipped(state));
+                    pts = quad_vertical(
+                        &mut ts,
+                        wn_pts,
+                        wt.top(state),
+                        wt.bottom(state),
+                        wt.x(state),
+                        wt.y_flipped(state),
+                    );
                 }
                 SegmentType::Conic => {
                     pts = conic_vertical(
@@ -356,16 +514,37 @@ fn add_intersections_for_pair(
                     );
                 }
                 SegmentType::Cubic => {
-                    pts = cubic_vertical(&mut ts, wn_pts, wt.top(state), wt.bottom(state), wt.x(state), wt.y_flipped(state));
+                    pts = cubic_vertical(
+                        &mut ts,
+                        wn_pts,
+                        wt.top(state),
+                        wt.bottom(state),
+                        wt.x(state),
+                        wt.y_flipped(state),
+                    );
                 }
             }
         }
         SegmentType::Line => match wn.segment_type(state) {
             SegmentType::HorizontalLine => {
-                pts = line_horizontal(&mut ts, wt_pts, wn.left(state), wn.right(state), wn.y(state), wn.x_flipped(state));
+                pts = line_horizontal(
+                    &mut ts,
+                    wt_pts,
+                    wn.left(state),
+                    wn.right(state),
+                    wn.y(state),
+                    wn.x_flipped(state),
+                );
             }
             SegmentType::VerticalLine => {
-                pts = line_vertical(&mut ts, wt_pts, wn.top(state), wn.bottom(state), wn.x(state), wn.y_flipped(state));
+                pts = line_vertical(
+                    &mut ts,
+                    wt_pts,
+                    wn.top(state),
+                    wn.bottom(state),
+                    wn.x(state),
+                    wn.y_flipped(state),
+                );
             }
             SegmentType::Line => {
                 pts = line_line(&mut ts, wt_pts, wn_pts);
@@ -385,10 +564,24 @@ fn add_intersections_for_pair(
         },
         SegmentType::Quad => match wn.segment_type(state) {
             SegmentType::HorizontalLine => {
-                pts = quad_horizontal(&mut ts, wt_pts, wn.left(state), wn.right(state), wn.y(state), wn.x_flipped(state));
+                pts = quad_horizontal(
+                    &mut ts,
+                    wt_pts,
+                    wn.left(state),
+                    wn.right(state),
+                    wn.y(state),
+                    wn.x_flipped(state),
+                );
             }
             SegmentType::VerticalLine => {
-                pts = quad_vertical(&mut ts, wt_pts, wn.top(state), wn.bottom(state), wn.x(state), wn.y_flipped(state));
+                pts = quad_vertical(
+                    &mut ts,
+                    wt_pts,
+                    wn.top(state),
+                    wn.bottom(state),
+                    wn.x(state),
+                    wn.y_flipped(state),
+                );
             }
             SegmentType::Line => {
                 pts = quad_line(&mut ts, wt_pts, wn_pts);
@@ -398,7 +591,10 @@ fn add_intersections_for_pair(
             }
             SegmentType::Conic => {
                 swap = true;
-                pts = ts.intersect_conic_quad(&conic_from(&wn_pts[..3], wn_weight), &quad_from(&wt_pts));
+                pts = ts.intersect_conic_quad(
+                    &conic_from(&wn_pts[..3], wn_weight),
+                    &quad_from(&wt_pts),
+                );
             }
             SegmentType::Cubic => {
                 swap = true;
@@ -432,7 +628,10 @@ fn add_intersections_for_pair(
                 pts = conic_line(&mut ts, wt_pts, wt_weight, wn_pts);
             }
             SegmentType::Quad => {
-                pts = ts.intersect_conic_quad(&conic_from(&wt_pts[..3], wt_weight), &quad_from(&wn_pts));
+                pts = ts.intersect_conic_quad(
+                    &conic_from(&wt_pts[..3], wt_weight),
+                    &quad_from(&wn_pts),
+                );
             }
             SegmentType::Conic => {
                 pts = ts.intersect_conic_conic(
@@ -442,15 +641,32 @@ fn add_intersections_for_pair(
             }
             SegmentType::Cubic => {
                 swap = true;
-                pts = ts.intersect_cubic_conic(&cubic_from(&wn_pts), &conic_from(&wt_pts[..3], wt_weight));
+                pts = ts.intersect_cubic_conic(
+                    &cubic_from(&wn_pts),
+                    &conic_from(&wt_pts[..3], wt_weight),
+                );
             }
         },
         SegmentType::Cubic => match wn.segment_type(state) {
             SegmentType::HorizontalLine => {
-                pts = cubic_horizontal(&mut ts, wt_pts, wn.left(state), wn.right(state), wn.y(state), wn.x_flipped(state));
+                pts = cubic_horizontal(
+                    &mut ts,
+                    wt_pts,
+                    wn.left(state),
+                    wn.right(state),
+                    wn.y(state),
+                    wn.x_flipped(state),
+                );
             }
             SegmentType::VerticalLine => {
-                pts = cubic_vertical(&mut ts, wt_pts, wn.top(state), wn.bottom(state), wn.x(state), wn.y_flipped(state));
+                pts = cubic_vertical(
+                    &mut ts,
+                    wt_pts,
+                    wn.top(state),
+                    wn.bottom(state),
+                    wn.x(state),
+                    wn.y_flipped(state),
+                );
             }
             SegmentType::Line => {
                 pts = cubic_line(&mut ts, wt_pts, wn_pts);
@@ -459,7 +675,10 @@ fn add_intersections_for_pair(
                 pts = ts.intersect_cubic_quad(&cubic_from(&wt_pts), &quad_from(&wn_pts));
             }
             SegmentType::Conic => {
-                pts = ts.intersect_cubic_conic(&cubic_from(&wt_pts), &conic_from(&wn_pts[..3], wn_weight));
+                pts = ts.intersect_cubic_conic(
+                    &cubic_from(&wt_pts),
+                    &conic_from(&wn_pts[..3], wn_weight),
+                );
             }
             SegmentType::Cubic => {
                 pts = ts.intersect_cubic_cubic(&cubic_from(&wt_pts), &cubic_from(&wn_pts));

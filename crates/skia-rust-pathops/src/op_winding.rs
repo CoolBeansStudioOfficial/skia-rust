@@ -9,6 +9,31 @@
 //! hits. The winding of the edge follows from the hits. The hits of one ray form a linked list
 //! in Skia (new hits are prepended, the base hit is at the end). This port keeps them in a `Vec`
 //! in insertion order with a `head` index, so the order that `SkTQSort` sees is the same.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::path::Verb;
 use skia_rust_core::point::Point;
@@ -18,10 +43,12 @@ use crate::cubic::DCubic;
 use crate::intersections::Intersections;
 use crate::line::DLine;
 use crate::op_curve::{conic_from, cubic_from, quad_from, verb_points};
-use crate::op_state::{MAX_WINDING_TRIES, ContourId, OpPhase, OpState, SK_MIN_S32, SegId, SpanId};
+use crate::op_state::{ContourId, MAX_WINDING_TRIES, OpPhase, OpState, SK_MIN_S32, SegId, SpanId};
 use crate::point::{DPoint, DVector};
 use crate::rect::Bounds;
-use crate::types::{approximately_between, approximately_equal, approximately_zero, between, roughly_equal};
+use crate::types::{
+    approximately_between, approximately_equal, approximately_zero, between, roughly_equal,
+};
 
 /// `SkOpRayDir`: the four directions a ray can take. The low bit selects the axis.
 // Port of: src/pathops/SkPathOpsWinding.cpp#L26-L31 (chrome/m156)
@@ -281,7 +308,14 @@ impl OpState {
     /// `SkOpSegment::rayCheck(base, dir, hits, allocator)`: adds the hits of the ray on this
     /// segment.
     // Port of: src/pathops/SkPathOpsWinding.cpp#L97-L179 (chrome/m156)
-    fn seg_ray_check(&self, seg: SegId, base: &RayHit, base_span_seg: SegId, dir: RayDir, hits: &mut RayHits) {
+    fn seg_ray_check(
+        &self,
+        seg: SegId,
+        base: &RayHit,
+        base_span_seg: SegId,
+        dir: RayDir,
+        hits: &mut RayHits,
+    ) {
         let bounds = self.seg_bounds(seg);
         if !sideways_overlap(bounds, base.pt, dir) {
             return;
@@ -317,7 +351,9 @@ impl OpState {
                     }
                 } else {
                     let pt_xy_v = pt_xy(pt, dir);
-                    if !approx_equal_scalar(base_xy, pt_xy_v) && ((base_xy < pt_xy_v) == check_less_than) {
+                    if !approx_equal_scalar(base_xy, pt_xy_v)
+                        && ((base_xy < pt_xy_v) == check_less_than)
+                    {
                         continue;
                     }
                     slope = self.seg_d_slope_at_t(seg, t);
@@ -356,7 +392,14 @@ impl OpState {
 
     /// `SkOpContour::rayCheck(base, dir, hits, allocator)`.
     // Port of: src/pathops/SkPathOpsWinding.cpp#L85-L99 (chrome/m156)
-    fn contour_ray_check(&self, contour: ContourId, base: &RayHit, base_span_seg: SegId, dir: RayDir, hits: &mut RayHits) {
+    fn contour_ray_check(
+        &self,
+        contour: ContourId,
+        base: &RayHit,
+        base_span_seg: SegId,
+        dir: RayDir,
+        hits: &mut RayHits,
+    ) {
         let bounds = self.contour_bounds(contour);
         let base_xy = pt_xy(base.pt, dir);
         let bounds_xy = rect_side(bounds, dir);
@@ -411,7 +454,9 @@ impl OpState {
         }
         let dir = base_dir.offset(dir_offset);
         let span_seg = self.span_segment(span);
-        if (self.seg_verb(span_seg) as u8) > (Verb::Line as u8) && is_falsy(pt_dydx(hit_base.slope, dir)) {
+        if (self.seg_verb(span_seg) as u8) > (Verb::Line as u8)
+            && is_falsy(pt_dydx(hit_base.slope, dir))
+        {
             return false;
         }
         let base_span_seg = span_seg;
@@ -457,10 +502,10 @@ impl OpState {
             if self.span_wind_value(hit_span) == 0 && self.span_opp_value(hit_span) == 0 {
                 continue;
             }
-            if let Some(l) = last {
-                if DPoint::approximately_equal_points(l, hit.pt) {
-                    return false;
-                }
+            if let Some(l) = last
+                && DPoint::approximately_equal_points(l, hit.pt)
+            {
+                return false;
             }
             if index + 1 < count {
                 let next_pt = hits.items[sorted[index + 1]].pt;
@@ -535,7 +580,11 @@ impl OpState {
 
     /// `SkOpSegment::findSortableTop(contourHead)`.
     // Port of: src/pathops/SkPathOpsWinding.cpp#L407-L423 (chrome/m156)
-    pub(crate) fn seg_find_sortable_top(&mut self, seg: SegId, contour_head: ContourId) -> Option<SpanId> {
+    pub(crate) fn seg_find_sortable_top(
+        &mut self,
+        seg: SegId,
+        contour_head: ContourId,
+    ) -> Option<SpanId> {
         let mut span = self.seg_head(seg);
         loop {
             let next = self.span_next(span)?;
@@ -559,7 +608,11 @@ impl OpState {
 
     /// `SkOpContour::findSortableTop(contourHead)`.
     // Port of: src/pathops/SkPathOpsWinding.cpp#L425-L444 (chrome/m156)
-    pub(crate) fn contour_find_sortable_top(&mut self, contour: ContourId, contour_head: ContourId) -> Option<SpanId> {
+    pub(crate) fn contour_find_sortable_top(
+        &mut self,
+        contour: ContourId,
+        contour_head: ContourId,
+    ) -> Option<SpanId> {
         let mut all_done = true;
         if self.contour_count(contour) != 0 {
             let mut test = self.contour_first(contour);
@@ -585,10 +638,10 @@ impl OpState {
         for _ in 0..MAX_WINDING_TRIES {
             let mut contour = Some(contour_head);
             while let Some(c) = contour {
-                if !self.contour_done(c) {
-                    if let Some(result) = self.contour_find_sortable_top(c, contour_head) {
-                        return Some(result);
-                    }
+                if !self.contour_done(c)
+                    && let Some(result) = self.contour_find_sortable_top(c, contour_head)
+                {
+                    return Some(result);
                 }
                 contour = self.contour_next(c);
             }

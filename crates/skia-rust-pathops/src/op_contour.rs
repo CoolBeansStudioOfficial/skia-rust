@@ -1,3 +1,31 @@
+// Some ported helpers have no caller yet: the Op pieces that use them (tight bounds,
+// the builder) are later slices. Remove this allow as those callers are ported.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
+#![allow(dead_code)]
 // Copyright 2013 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
@@ -221,7 +249,12 @@ impl OpState {
 
     /// `SkOpContour::addConic(pts, weight)`.
     // Port of: src/pathops/SkOpContour.h#L29-L31 (chrome/m156)
-    pub(crate) fn contour_add_conic(&mut self, c: ContourId, pts: [Point; 3], weight: f32) -> SegId {
+    pub(crate) fn contour_add_conic(
+        &mut self,
+        c: ContourId,
+        pts: [Point; 3],
+        weight: f32,
+    ) -> SegId {
         let seg = self.contour_append_segment(c);
         self.seg_init(seg, &pts, weight, c, Verb::Conic);
         self.seg_set_conic_bounds(seg);
@@ -275,7 +308,11 @@ impl OpState {
 
     /// Calls `f` on each segment of `c`, in order, stopping early when `f` returns `false`.
     /// Mirrors the `do { ... } while ((segment = segment->next()))` loops of `SkOpContour`.
-    fn contour_each_segment(&mut self, c: ContourId, mut f: impl FnMut(&mut Self, SegId) -> bool) -> bool {
+    fn contour_each_segment(
+        &mut self,
+        c: ContourId,
+        mut f: impl FnMut(&mut Self, SegId) -> bool,
+    ) -> bool {
         let Some(mut segment) = self.contours[c.0].head else {
             return true;
         };
@@ -343,19 +380,19 @@ impl OpState {
     /// `SkOpContour::moveMultiples()`.
     // Port of: src/pathops/SkOpContour.h#L194-L202 (chrome/m156)
     pub(crate) fn contour_move_multiples(&mut self, c: ContourId) -> bool {
-        self.contour_each_segment(c, |state, seg| state.seg_move_multiples(seg))
+        self.contour_each_segment(c, super::op_state::OpState::seg_move_multiples)
     }
 
     /// `SkOpContour::moveNearby()`.
     // Port of: src/pathops/SkOpContour.h#L204-L212 (chrome/m156)
     pub(crate) fn contour_move_nearby(&mut self, c: ContourId) -> bool {
-        self.contour_each_segment(c, |state, seg| state.seg_move_nearby(seg))
+        self.contour_each_segment(c, super::op_state::OpState::seg_move_nearby)
     }
 
     /// `SkOpContour::sortAngles()`.
     // Port of: src/pathops/SkOpContour.h#L250-L257 (chrome/m156)
     pub(crate) fn contour_sort_angles(&mut self, c: ContourId) -> bool {
-        self.contour_each_segment(c, |state, seg| state.seg_sort_angles(seg))
+        self.contour_each_segment(c, super::op_state::OpState::seg_sort_angles)
     }
 
     /// `SkOpContour::undoneSpan()`.
@@ -446,7 +483,13 @@ impl ContourBuilder {
 
     /// `SkOpContourBuilder::addCurve(verb, pts, weight)`.
     // Port of: src/pathops/SkOpContour.cpp#L36-L60 (chrome/m156)
-    pub(crate) fn add_curve(&mut self, state: &mut OpState, verb: Verb, pts: &[Point], weight: f32) {
+    pub(crate) fn add_curve(
+        &mut self,
+        state: &mut OpState,
+        verb: Verb,
+        pts: &[Point],
+        weight: f32,
+    ) {
         if verb == Verb::Line {
             self.add_line(state, [pts[0], pts[1]]);
             return;
@@ -504,7 +547,8 @@ impl ContourBuilder {
 
     /// `fContour` for the calls that Skia makes without a null check.
     fn contour_id(&self) -> ContourId {
-        self.contour.expect("SkOpContourBuilder adds curves only with a current contour")
+        self.contour
+            .expect("SkOpContourBuilder adds curves only with a current contour")
     }
 
     /// `SkOpContourBuilder::setContour(contour)`: flushes, then switches contours.

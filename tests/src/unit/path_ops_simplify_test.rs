@@ -3,12 +3,28 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/PathOpsSimplifyTest.cpp (chrome/m156)
 
+// The float literals below are Skia's test inputs, copied as written (SkBits2Float bit patterns
+// and decimal values, digit for digit), so the digit separators, the constant spellings and the
+// precision are kept to match the C++ source; the `as f32` casts mirror its double literals.
+#![allow(
+    clippy::unreadable_literal,
+    clippy::approx_constant,
+    clippy::excessive_precision,
+    clippy::unnecessary_cast,
+    clippy::used_underscore_binding,
+    clippy::redundant_closure,
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    clippy::cast_precision_loss,
+    clippy::many_single_char_names,
+    clippy::similar_names
+)]
 #![cfg(test)]
 
-use skia_rust_core::path::Path;
-use skia_rust_core::path_types::PathDirection;
-use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::path_types::PathDirection;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::rect::Rect;
 use skia_rust_pathops::simplify;
@@ -493,6 +509,8 @@ pub(crate) const TESTS: &[(&str, fn(&mut Reporter, &str))] = &[
 
 /// `static TestDesc subTests[]`: run only when `runSubTests` is set (it is not).
 // Port of: tests/PathOpsSimplifyTest.cpp#L9966-L9969 (chrome/m156)
+// Never run: Skia runs subTests only when runSubTests is set, and it is not.
+#[allow(dead_code)]
 pub(crate) const SUB_TESTS: &[(&str, fn(&mut Reporter, &str))] = &[
     ("fuzz994s_3414", fuzz994s_3414),
     ("fuzz994s_11", fuzz994s_11),
@@ -507,7 +525,7 @@ fn test_degenerates(reporter: &mut Reporter, _filename: &str) {
     }
     let mut simple = simplify(&doubleback);
     reporter_assert!(reporter, simple.is_some());
-    reporter_assert!(reporter, simple.as_ref().is_some_and(|p| p.is_empty()));
+    reporter_assert!(reporter, simple.as_ref().is_some_and(Path::is_empty));
     {
         let mut _b = PathBuilder::new();
         _b.line_to((1.0, 0.0)).line_to((2.0, 0.0));
@@ -515,64 +533,76 @@ fn test_degenerates(reporter: &mut Reporter, _filename: &str) {
     }
     simple = simplify(&doubleback);
     reporter_assert!(reporter, simple.is_some());
-    reporter_assert!(reporter, simple.as_ref().is_some_and(|p| p.is_empty()));
+    reporter_assert!(reporter, simple.as_ref().is_some_and(Path::is_empty));
     {
         let mut _b = PathBuilder::new();
-        _b.line_to((-1.0, 0.0)).line_to((-1.0, 1.0)).line_to((-1.0, 0.0));
+        _b.line_to((-1.0, 0.0))
+            .line_to((-1.0, 1.0))
+            .line_to((-1.0, 0.0));
         doubleback = _b.detach();
     }
     simple = simplify(&doubleback);
     reporter_assert!(reporter, simple.is_some());
-    reporter_assert!(reporter, simple.as_ref().is_some_and(|p| p.is_empty()));
+    reporter_assert!(reporter, simple.as_ref().is_some_and(Path::is_empty));
     {
         let mut _b = PathBuilder::new();
-        _b.line_to((1.0, 0.0)).line_to((1.0, 0.0)).line_to((1.0, 1.0)).line_to((1.0, 1.0)).line_to((1.0, 0.0));
+        _b.line_to((1.0, 0.0))
+            .line_to((1.0, 0.0))
+            .line_to((1.0, 1.0))
+            .line_to((1.0, 1.0))
+            .line_to((1.0, 0.0));
         doubleback = _b.detach();
     }
     simple = simplify(&doubleback);
     reporter_assert!(reporter, simple.is_some());
-    reporter_assert!(reporter, simple.as_ref().is_some_and(|p| p.is_empty()));
+    reporter_assert!(reporter, simple.as_ref().is_some_and(Path::is_empty));
 }
 
 fn test_line1(reporter: &mut Reporter, filename: &str) {
     let mut _b = PathBuilder::new();
-    _b.move_to((2.0,0.0)).line_to((1.0,1.0)).line_to((0.0,0.0)).close();
+    _b.move_to((2.0, 0.0))
+        .line_to((1.0, 1.0))
+        .line_to((0.0, 0.0))
+        .close();
     let path = _b.detach();
     test_simplify(reporter, &path, filename);
 }
 
 fn test_line1x(reporter: &mut Reporter, filename: &str) {
     let mut _b = PathBuilder::new_with_fill_type(PathFillType::EvenOdd);
-    _b.move_to((2.0,0.0)).line_to((1.0,1.0)).line_to((0.0,0.0)).close();
+    _b.move_to((2.0, 0.0))
+        .line_to((1.0, 1.0))
+        .line_to((0.0, 0.0))
+        .close();
     let path = _b.detach();
     test_simplify(reporter, &path, filename);
 }
 
 fn add_inner_cwtriangle(path: &mut PathBuilder) {
-    path.move_to((3.0,0.0));
-    path.line_to((4.0,1.0));
-    path.line_to((2.0,1.0));
+    path.move_to((3.0, 0.0));
+    path.line_to((4.0, 1.0));
+    path.line_to((2.0, 1.0));
     path.close();
 }
 
 fn add_inner_ccwtriangle(path: &mut PathBuilder) {
-    path.move_to((3.0,0.0));
-    path.line_to((2.0,1.0));
-    path.line_to((4.0,1.0));
+    path.move_to((3.0, 0.0));
+    path.line_to((2.0, 1.0));
+    path.line_to((4.0, 1.0));
     path.close();
 }
 
 fn add_outer_cwtriangle(path: &mut PathBuilder) {
-    path.move_to((3.0,0.0));
-    path.line_to((6.0,2.0));
-    path.line_to((0.0,2.0));
+    path.move_to((3.0, 0.0));
+    path.line_to((6.0, 2.0));
+    path.line_to((0.0, 2.0));
     path.close();
 }
 
 fn add_outer_ccwtriangle(path: &mut PathBuilder) {
-    path.move_to((3.0,0.0));
-    path.line_to((0.0,2.0));
-    path.line_to((6.0,2.0));
+    path.move_to((3.0, 0.0));
+    path.line_to((0.0, 2.0));
+    path.line_to((6.0, 2.0));
     path.close();
 }
 
@@ -668,13 +698,13 @@ fn test_line5x(reporter: &mut Reporter, filename: &str) {
 
 fn test_line6(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,0.0));
-    path.line_to((6.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((6.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -682,26 +712,26 @@ fn test_line6(reporter: &mut Reporter, filename: &str) {
 fn test_line6x(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,0.0));
-    path.line_to((6.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((6.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line7(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((6.0,0.0));
-    path.line_to((2.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 0.0));
+    path.line_to((2.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -709,22 +739,22 @@ fn test_line7(reporter: &mut Reporter, filename: &str) {
 fn test_line7x(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((6.0,0.0));
-    path.line_to((2.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 0.0));
+    path.line_to((2.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line7a(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -732,21 +762,21 @@ fn test_line7a(reporter: &mut Reporter, filename: &str) {
 fn test_line7ax(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
+    path.line_to((2.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line7b(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
     path.close();
-    path.move_to((6.0,0.0));
-    path.line_to((2.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 0.0));
+    path.line_to((2.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -754,25 +784,25 @@ fn test_line7b(reporter: &mut Reporter, filename: &str) {
 fn test_line7bx(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,0.0));
-    path.line_to((4.0,0.0));
+    path.move_to((0.0, 0.0));
+    path.line_to((4.0, 0.0));
     path.close();
-    path.move_to((6.0,0.0));
-    path.line_to((2.0,0.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 0.0));
+    path.line_to((2.0, 0.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line8(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,4.0));
-    path.line_to((6.0,4.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 4.0));
+    path.line_to((6.0, 4.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -780,26 +810,26 @@ fn test_line8(reporter: &mut Reporter, filename: &str) {
 fn test_line8x(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,4.0));
-    path.line_to((6.0,4.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 4.0));
+    path.line_to((6.0, 4.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line9(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((6.0,4.0));
-    path.line_to((2.0,4.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 4.0));
+    path.line_to((2.0, 4.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -807,26 +837,26 @@ fn test_line9(reporter: &mut Reporter, filename: &str) {
 fn test_line9x(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((6.0,4.0));
-    path.line_to((2.0,4.0));
-    path.line_to((4.0,2.0));
+    path.move_to((6.0, 4.0));
+    path.line_to((2.0, 4.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line10(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,1.0));
-    path.line_to((3.0,4.0));
-    path.line_to((6.0,1.0));
+    path.move_to((2.0, 1.0));
+    path.line_to((3.0, 4.0));
+    path.line_to((6.0, 1.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -834,26 +864,26 @@ fn test_line10(reporter: &mut Reporter, filename: &str) {
 fn test_line10x(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,4.0));
-    path.line_to((4.0,4.0));
-    path.line_to((2.0,2.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((2.0, 2.0));
     path.close();
-    path.move_to((2.0,1.0));
-    path.line_to((3.0,4.0));
-    path.line_to((6.0,1.0));
+    path.move_to((2.0, 1.0));
+    path.line_to((3.0, 4.0));
+    path.line_to((6.0, 1.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn test_line10a(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,4.0));
-    path.line_to((8.0,4.0));
-    path.line_to((4.0,0.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((8.0, 4.0));
+    path.line_to((4.0, 0.0));
     path.close();
-    path.move_to((2.0,2.0));
-    path.line_to((3.0,3.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 2.0));
+    path.line_to((3.0, 3.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -861,42 +891,42 @@ fn test_line10a(reporter: &mut Reporter, filename: &str) {
 fn test_line10ax(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((0.0,4.0));
-    path.line_to((8.0,4.0));
-    path.line_to((4.0,0.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((8.0, 4.0));
+    path.line_to((4.0, 0.0));
     path.close();
-    path.move_to((2.0,2.0));
-    path.line_to((3.0,3.0));
-    path.line_to((4.0,2.0));
+    path.move_to((2.0, 2.0));
+    path.line_to((3.0, 3.0));
+    path.line_to((4.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
 
 fn add_cwcontainer(path: &mut PathBuilder) {
-    path.move_to((6.0,4.0));
-    path.line_to((0.0,4.0));
-    path.line_to((3.0,1.0));
+    path.move_to((6.0, 4.0));
+    path.line_to((0.0, 4.0));
+    path.line_to((3.0, 1.0));
     path.close();
 }
 
 fn add_ccwcontainer(path: &mut PathBuilder) {
-    path.move_to((0.0,4.0));
-    path.line_to((6.0,4.0));
-    path.line_to((3.0,1.0));
+    path.move_to((0.0, 4.0));
+    path.line_to((6.0, 4.0));
+    path.line_to((3.0, 1.0));
     path.close();
 }
 
 fn add_cwcontents(path: &mut PathBuilder) {
-    path.move_to((2.0,3.0));
-    path.line_to((3.0,2.0));
-    path.line_to((4.0,3.0));
+    path.move_to((2.0, 3.0));
+    path.line_to((3.0, 2.0));
+    path.line_to((4.0, 3.0));
     path.close();
 }
 
 fn add_ccwcontents(path: &mut PathBuilder) {
-    path.move_to((3.0,2.0));
-    path.line_to((2.0,3.0));
-    path.line_to((4.0,3.0));
+    path.move_to((3.0, 2.0));
+    path.line_to((2.0, 3.0));
+    path.line_to((4.0, 3.0));
     path.close();
 }
 
@@ -961,12 +991,14 @@ fn test_line14x(reporter: &mut Reporter, filename: &str) {
 }
 
 fn test_line15(reporter: &mut Reporter, filename: &str) {
-    let path = Path::rect(Rect::new(0.0, 0.0, 9.0, 9.0), PathDirection::CW).with_fill_type(PathFillType::Winding);
+    let path = Path::rect(Rect::new(0.0, 0.0, 9.0, 9.0), PathDirection::CW)
+        .with_fill_type(PathFillType::Winding);
     test_simplify(reporter, &path, filename);
 }
 
 fn test_line15x(reporter: &mut Reporter, filename: &str) {
-    let path = Path::rect(Rect::new(0.0, 0.0, 9.0, 9.0), PathDirection::CW).with_fill_type(PathFillType::EvenOdd);
+    let path = Path::rect(Rect::new(0.0, 0.0, 9.0, 9.0), PathDirection::CW)
+        .with_fill_type(PathFillType::EvenOdd);
     test_simplify(reporter, &path, filename);
 }
 
@@ -1092,13 +1124,13 @@ fn test_line23x(reporter: &mut Reporter, filename: &str) {
 
 fn test_line24a(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((2.0,0.0));
-    path.line_to((4.0,4.0));
-    path.line_to((0.0,4.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((0.0, 4.0));
     path.close();
-    path.move_to((2.0,0.0));
-    path.line_to((1.0,2.0));
-    path.line_to((2.0,2.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((1.0, 2.0));
+    path.line_to((2.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -1106,13 +1138,13 @@ fn test_line24a(reporter: &mut Reporter, filename: &str) {
 fn test_line24ax(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((2.0,0.0));
-    path.line_to((4.0,4.0));
-    path.line_to((0.0,4.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((4.0, 4.0));
+    path.line_to((0.0, 4.0));
     path.close();
-    path.move_to((2.0,0.0));
-    path.line_to((1.0,2.0));
-    path.line_to((2.0,2.0));
+    path.move_to((2.0, 0.0));
+    path.line_to((1.0, 2.0));
+    path.line_to((2.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -2483,9 +2515,9 @@ fn test_faux_quadralateral6(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((1.0, 0.0));
     path.line_to((2.0, 0.0));
-    path.line_to((1.0 + 1.0/3.0, 2.0/3.0));
+    path.line_to((1.0 + 1.0 / 3.0, 2.0 / 3.0));
     path.close();
-    path.move_to((1.0 + 1.0/3.0, 2.0/3.0));
+    path.move_to((1.0 + 1.0 / 3.0, 2.0 / 3.0));
     path.line_to((0.0, 2.0));
     path.line_to((2.0, 2.0));
     path.close();
@@ -2501,9 +2533,9 @@ fn test_faux_quadralateral6x(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((1.0, 0.0));
     path.line_to((2.0, 0.0));
-    path.line_to((1.0 + 1.0/3.0, 2.0/3.0));
+    path.line_to((1.0 + 1.0 / 3.0, 2.0 / 3.0));
     path.close();
-    path.move_to((1.0 + 1.0/3.0, 2.0/3.0));
+    path.move_to((1.0 + 1.0 / 3.0, 2.0 / 3.0));
     path.line_to((0.0, 2.0));
     path.line_to((2.0, 2.0));
     path.close();
@@ -4064,10 +4096,10 @@ fn test_quadratic93(reporter: &mut Reporter, filename: &str) {
 
 fn test_cubic2(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,2.0));
+    path.move_to((0.0, 2.0));
     path.cubic_to((0.0, 3.0), (2.0, 1.0), (4.0, 0.0));
     path.close();
-    path.move_to((1.0,2.0));
+    path.move_to((1.0, 2.0));
     path.cubic_to((0.0, 4.0), (2.0, 0.0), (3.0, 0.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
@@ -4075,11 +4107,11 @@ fn test_cubic2(reporter: &mut Reporter, filename: &str) {
 
 fn test_quad1(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((0.0,0.0));
+    path.move_to((0.0, 0.0));
     path.quad_to((0.0, 0.0), (0.0, 1.0));
-    path.line_to((1.0,1.0));
+    path.line_to((1.0, 1.0));
     path.close();
-    path.move_to((0.0,0.0));
+    path.move_to((0.0, 0.0));
     path.quad_to((1.0, 1.0), (0.0, 2.0));
     path.close();
     test_simplify(reporter, &path.detach(), filename);
@@ -4327,7 +4359,11 @@ fn skphealth_com76s(reporter: &mut Reporter, filename: &str) {
     path.line_to((704.000000, 33.0000000));
     path.line_to((705.000000, 33.0000000));
     path.line_to((705.000000, 17.0000000));
-    path.cubic_to((705.000000, 13.4101496), (706.455078, 10.1601505), (708.807617, 7.80761385));
+    path.cubic_to(
+        (705.000000, 13.4101496),
+        (706.455078, 10.1601505),
+        (708.807617, 7.80761385),
+    );
     path.line_to((708.099182, 7.09919119));
     path.close();
     path.move_to((704.000000, 3.00000000));
@@ -4341,10 +4377,10 @@ fn too_close_test(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.move_to((0.0, 0.0));
     path.line_to((1.0, 1.0));
-    path.line_to((1.0,-1.0));
+    path.line_to((1.0, -1.0));
     path.close();
     path.move_to((0.0, 0.0));
-    path.line_to((1.0,-2.0));
+    path.line_to((1.0, -2.0));
     path.line_to((1.0, 2.0));
     path.line_to((2.0, 0.0));
     path.close();
@@ -5392,24 +5428,56 @@ fn cr514118(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.move_to((f32::from_bits(0x42c80000), f32::from_bits(0x42480000)));
     // 100, 50
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x00000000)), (f32::from_bits(0x42480000), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 0, 50, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x00000000)), (f32::from_bits(0x00000000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x00000000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 0, 0, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 100, 50, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 100, 100, 50, 0.707107f
     path.close();
     path.move_to((f32::from_bits(0x42c80133), f32::from_bits(0x42480000)));
     // 100.002f, 50
-    path.conic_to((f32::from_bits(0x42c80133), f32::from_bits(0x00000000)), (f32::from_bits(0x42480267), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80133), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x42480267), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100.002f, 0, 50.0023f, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x3b19b530), f32::from_bits(0x00000000)), (f32::from_bits(0x3b19b530), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x3b19b530), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x3b19b530), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0.00234539f, 0, 0.00234539f, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x3b19b530), f32::from_bits(0x42c80000)), (f32::from_bits(0x42480267), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x3b19b530), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42480267), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0.00234539f, 100, 50.0023f, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x42c80133), f32::from_bits(0x42c80000)), (f32::from_bits(0x42c80133), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80133), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42c80133), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100.002f, 100, 100.002f, 50, 0.707107f
     path.close();
     test_simplify(reporter, &path.detach(), filename);
@@ -5534,57 +5602,137 @@ fn fuzz994s_3414(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x42c80000), f32::from_bits(0x42480000)));
     // 100, 50
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x00000000)), (f32::from_bits(0x42480000), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 0, 50, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x00000000)), (f32::from_bits(0x00000000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x00000000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 0, 0, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 100, 50, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 100, 100, 50, 0.707107f
     path.close();
     path.move_to((f32::from_bits(0x42c84964), f32::from_bits(0x42480000)));
     // 100.143f, 50
-    path.conic_to((f32::from_bits(0x42c84964), f32::from_bits(0x00000000)), (f32::from_bits(0x424892c8), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c84964), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x424892c8), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100.143f, 0, 50.1433f, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x3e12c788), f32::from_bits(0x00000000)), (f32::from_bits(0x3e12c788), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x3e12c788), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x3e12c788), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0.143339f, 0, 0.143339f, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x3e12c788), f32::from_bits(0x42c80000)), (f32::from_bits(0x424892c8), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x3e12c788), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x424892c8), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0.143339f, 100, 50.1433f, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x42c84964), f32::from_bits(0x42c80000)), (f32::from_bits(0x42c84964), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c84964), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42c84964), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100.143f, 100, 100.143f, 50, 0.707107f
     path.close();
     path.move_to((f32::from_bits(0x42c80000), f32::from_bits(0x42480000)));
     // 100, 50
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x00000000)), (f32::from_bits(0x42480000), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 0, 50, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x00000000)), (f32::from_bits(0x00000000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x00000000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 0, 0, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x00000000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x00000000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42480000), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 0, 100, 50, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)), (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 100, 100, 100, 50, 0.707107f
     path.close();
     path.move_to((f32::from_bits(0x4c00006b), f32::from_bits(0x424c0000)));
     // 3.35549e+07f, 51
-    path.conic_to((f32::from_bits(0x4c00006b), f32::from_bits(0xcbffffe5)), (f32::from_bits(0x43d6e720), f32::from_bits(0xcbffffe5)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x4c00006b), f32::from_bits(0xcbffffe5)),
+        (f32::from_bits(0x43d6e720), f32::from_bits(0xcbffffe5)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 3.35549e+07f, -3.35544e+07f, 429.806f, -3.35544e+07f, 0.707107f
-    path.conic_to((f32::from_bits(0xcbffff28), f32::from_bits(0xcbffffe5)), (f32::from_bits(0xcbffff28), f32::from_bits(0x424c0000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0xcbffff28), f32::from_bits(0xcbffffe5)),
+        (f32::from_bits(0xcbffff28), f32::from_bits(0x424c0000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // -3.3554e+07f, -3.35544e+07f, -3.3554e+07f, 51, 0.707107f
-    path.conic_to((f32::from_bits(0xcbffff28), f32::from_bits(0x4c00000c)), (f32::from_bits(0x43d6e720), f32::from_bits(0x4c00000c)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0xcbffff28), f32::from_bits(0x4c00000c)),
+        (f32::from_bits(0x43d6e720), f32::from_bits(0x4c00000c)),
+        f32::from_bits(0x3f3504f3),
+    );
     // -3.3554e+07f, 3.35545e+07f, 429.806f, 3.35545e+07f, 0.707107f
-    path.conic_to((f32::from_bits(0x4c00006b), f32::from_bits(0x4c00000c)), (f32::from_bits(0x4c00006b), f32::from_bits(0x424c0000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x4c00006b), f32::from_bits(0x4c00000c)),
+        (f32::from_bits(0x4c00006b), f32::from_bits(0x424c0000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 3.35549e+07f, 3.35545e+07f, 3.35549e+07f, 51, 0.707107f
     path.close();
     path.move_to((f32::from_bits(0x43ef6720), f32::from_bits(0x42480000)));
     // 478.806f, 50
-    path.conic_to((f32::from_bits(0x43ef6720), f32::from_bits(0x00000000)), (f32::from_bits(0x43d66720), f32::from_bits(0x00000000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x43ef6720), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x43d66720), f32::from_bits(0x00000000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 478.806f, 0, 428.806f, 0, 0.707107f
-    path.conic_to((f32::from_bits(0x43bd6720), f32::from_bits(0x00000000)), (f32::from_bits(0x43bd6720), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x43bd6720), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x43bd6720), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 378.806f, 0, 378.806f, 50, 0.707107f
-    path.conic_to((f32::from_bits(0x43bd6720), f32::from_bits(0x42c80000)), (f32::from_bits(0x43d66720), f32::from_bits(0x42c80000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x43bd6720), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x43d66720), f32::from_bits(0x42c80000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 378.806f, 100, 428.806f, 100, 0.707107f
-    path.conic_to((f32::from_bits(0x43ef6720), f32::from_bits(0x42c80000)), (f32::from_bits(0x43ef6720), f32::from_bits(0x42480000)), f32::from_bits(0x3f3504f3));
+    path.conic_to(
+        (f32::from_bits(0x43ef6720), f32::from_bits(0x42c80000)),
+        (f32::from_bits(0x43ef6720), f32::from_bits(0x42480000)),
+        f32::from_bits(0x3f3504f3),
+    );
     // 478.806f, 100, 478.806f, 50, 0.707107f
     path.close();
     test_simplify(reporter, &path.detach(), filename);
@@ -5667,32 +5815,104 @@ fn fuzz763_4713_b(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x42240000), f32::from_bits(0x42040000)));
-    path.quad_to((f32::from_bits(0x42240000), f32::from_bits(0x4211413d)), (f32::from_bits(0x421aa09e), f32::from_bits(0x421aa09e)));
-    path.quad_to((f32::from_bits(0x4211413d), f32::from_bits(0x42240000)), (f32::from_bits(0x42040000), f32::from_bits(0x42240000)));
-    path.quad_to((f32::from_bits(0x41ed7d86), f32::from_bits(0x42240000)), (f32::from_bits(0x41dabec3), f32::from_bits(0x421aa09e)));
-    path.quad_to((f32::from_bits(0x41c80000), f32::from_bits(0x4211413d)), (f32::from_bits(0x41c80000), f32::from_bits(0x42040000)));
-    path.quad_to((f32::from_bits(0x41c80000), f32::from_bits(0x41ed7d86)), (f32::from_bits(0x41dabec3), f32::from_bits(0x41dabec3)));
-    path.quad_to((f32::from_bits(0x41ed7d86), f32::from_bits(0x41c80000)), (f32::from_bits(0x42040000), f32::from_bits(0x41c80000)));
-    path.quad_to((f32::from_bits(0x4211413d), f32::from_bits(0x41c80000)), (f32::from_bits(0x421aa09e), f32::from_bits(0x41dabec3)));
-    path.quad_to((f32::from_bits(0x42240000), f32::from_bits(0x41ed7d86)), (f32::from_bits(0x42240000), f32::from_bits(0x42040000)));
+    path.quad_to(
+        (f32::from_bits(0x42240000), f32::from_bits(0x4211413d)),
+        (f32::from_bits(0x421aa09e), f32::from_bits(0x421aa09e)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x4211413d), f32::from_bits(0x42240000)),
+        (f32::from_bits(0x42040000), f32::from_bits(0x42240000)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41ed7d86), f32::from_bits(0x42240000)),
+        (f32::from_bits(0x41dabec3), f32::from_bits(0x421aa09e)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41c80000), f32::from_bits(0x4211413d)),
+        (f32::from_bits(0x41c80000), f32::from_bits(0x42040000)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41c80000), f32::from_bits(0x41ed7d86)),
+        (f32::from_bits(0x41dabec3), f32::from_bits(0x41dabec3)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41ed7d86), f32::from_bits(0x41c80000)),
+        (f32::from_bits(0x42040000), f32::from_bits(0x41c80000)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x4211413d), f32::from_bits(0x41c80000)),
+        (f32::from_bits(0x421aa09e), f32::from_bits(0x41dabec3)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x42240000), f32::from_bits(0x41ed7d86)),
+        (f32::from_bits(0x42240000), f32::from_bits(0x42040000)),
+    );
     path.close();
     path.move_to((f32::from_bits(0x4204f72e), f32::from_bits(0x41c56cd2)));
-    path.quad_to((f32::from_bits(0x42123842), f32::from_bits(0x41c52adf)), (f32::from_bits(0x421baed7), f32::from_bits(0x41d7bac6)));
-    path.quad_to((f32::from_bits(0x4225256d), f32::from_bits(0x41ea4aad)), (f32::from_bits(0x42254667), f32::from_bits(0x4202666b)));
-    path.quad_to((f32::from_bits(0x42256760), f32::from_bits(0x420fa77f)), (f32::from_bits(0x421c1f6c), f32::from_bits(0x42191e14)));
-    path.quad_to((f32::from_bits(0x421bff97), f32::from_bits(0x42193e89)), (f32::from_bits(0x421bdf6b), f32::from_bits(0x42195eb8)));
-    path.quad_to((f32::from_bits(0x421bbff6), f32::from_bits(0x42197f32)), (f32::from_bits(0x421ba03b), f32::from_bits(0x42199f57)));
-    path.quad_to((f32::from_bits(0x421b605e), f32::from_bits(0x4219e00a)), (f32::from_bits(0x421b1fa8), f32::from_bits(0x421a1f22)));
-    path.quad_to((f32::from_bits(0x421ae0f1), f32::from_bits(0x421a604b)), (f32::from_bits(0x421aa09e), f32::from_bits(0x421aa09e)));
-    path.quad_to((f32::from_bits(0x4211413d), f32::from_bits(0x42240000)), (f32::from_bits(0x42040000), f32::from_bits(0x42240000)));
-    path.quad_to((f32::from_bits(0x41ed7d86), f32::from_bits(0x42240000)), (f32::from_bits(0x41dabec3), f32::from_bits(0x421aa09e)));
-    path.quad_to((f32::from_bits(0x41c80000), f32::from_bits(0x4211413d)), (f32::from_bits(0x41c80000), f32::from_bits(0x42040000)));
-    path.quad_to((f32::from_bits(0x41c80000), f32::from_bits(0x41ed7d86)), (f32::from_bits(0x41dabec3), f32::from_bits(0x41dabec3)));
-    path.quad_to((f32::from_bits(0x41db19b1), f32::from_bits(0x41da63d5)), (f32::from_bits(0x41db755b), f32::from_bits(0x41da0a9b)));
-    path.quad_to((f32::from_bits(0x41dbce01), f32::from_bits(0x41d9ae59)), (f32::from_bits(0x41dc285e), f32::from_bits(0x41d952ce)));
-    path.quad_to((f32::from_bits(0x41dc55b6), f32::from_bits(0x41d924df)), (f32::from_bits(0x41dc82cd), f32::from_bits(0x41d8f7cd)));
-    path.quad_to((f32::from_bits(0x41dcaf1e), f32::from_bits(0x41d8ca01)), (f32::from_bits(0x41dcdc4c), f32::from_bits(0x41d89bf0)));
-    path.quad_to((f32::from_bits(0x41ef6c33), f32::from_bits(0x41c5aec5)), (f32::from_bits(0x4204f72e), f32::from_bits(0x41c56cd2)));
+    path.quad_to(
+        (f32::from_bits(0x42123842), f32::from_bits(0x41c52adf)),
+        (f32::from_bits(0x421baed7), f32::from_bits(0x41d7bac6)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x4225256d), f32::from_bits(0x41ea4aad)),
+        (f32::from_bits(0x42254667), f32::from_bits(0x4202666b)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x42256760), f32::from_bits(0x420fa77f)),
+        (f32::from_bits(0x421c1f6c), f32::from_bits(0x42191e14)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x421bff97), f32::from_bits(0x42193e89)),
+        (f32::from_bits(0x421bdf6b), f32::from_bits(0x42195eb8)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x421bbff6), f32::from_bits(0x42197f32)),
+        (f32::from_bits(0x421ba03b), f32::from_bits(0x42199f57)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x421b605e), f32::from_bits(0x4219e00a)),
+        (f32::from_bits(0x421b1fa8), f32::from_bits(0x421a1f22)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x421ae0f1), f32::from_bits(0x421a604b)),
+        (f32::from_bits(0x421aa09e), f32::from_bits(0x421aa09e)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x4211413d), f32::from_bits(0x42240000)),
+        (f32::from_bits(0x42040000), f32::from_bits(0x42240000)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41ed7d86), f32::from_bits(0x42240000)),
+        (f32::from_bits(0x41dabec3), f32::from_bits(0x421aa09e)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41c80000), f32::from_bits(0x4211413d)),
+        (f32::from_bits(0x41c80000), f32::from_bits(0x42040000)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41c80000), f32::from_bits(0x41ed7d86)),
+        (f32::from_bits(0x41dabec3), f32::from_bits(0x41dabec3)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41db19b1), f32::from_bits(0x41da63d5)),
+        (f32::from_bits(0x41db755b), f32::from_bits(0x41da0a9b)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41dbce01), f32::from_bits(0x41d9ae59)),
+        (f32::from_bits(0x41dc285e), f32::from_bits(0x41d952ce)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41dc55b6), f32::from_bits(0x41d924df)),
+        (f32::from_bits(0x41dc82cd), f32::from_bits(0x41d8f7cd)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41dcaf1e), f32::from_bits(0x41d8ca01)),
+        (f32::from_bits(0x41dcdc4c), f32::from_bits(0x41d89bf0)),
+    );
+    path.quad_to(
+        (f32::from_bits(0x41ef6c33), f32::from_bits(0x41c5aec5)),
+        (f32::from_bits(0x4204f72e), f32::from_bits(0x41c56cd2)),
+    );
     path.close();
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -5801,22 +6021,46 @@ fn dean4(reporter: &mut Reporter, filename: &str) {
     // start loop, contour: 11
     // Segment 1156.6848182678223 2018.3533948063850 0.3569631313191 0.0000000000000 -0.2645167304388 0.2609454237780 1157.6574279406423 2017.9723661860094
     path.move_to(((1156.6848144531250 as f32), (2018.3533935546875 as f32)));
-    path.cubic_to(((1157.0417480468750 as f32), (2018.3533935546875 as f32)), ((1157.3929443359375 as f32), (2018.2332763671875 as f32)), ((1157.6574707031250 as f32), (2017.9724121093750 as f32)));
+    path.cubic_to(
+        ((1157.0417480468750 as f32), (2018.3533935546875 as f32)),
+        ((1157.3929443359375 as f32), (2018.2332763671875 as f32)),
+        ((1157.6574707031250 as f32), (2017.9724121093750 as f32)),
+    );
     // Segment 1157.6574279406423 2017.9723661860094 0.2653344079822 -0.2617520616521 0.0000000000000 0.3596905289350 1158.0474975705147 2017.0000000000000
-    path.cubic_to(((1157.9227294921875 as f32), (2017.7105712890625 as f32)), ((1158.0474853515625 as f32), (2017.3597412109375 as f32)), ((1158.0474853515625 as f32), (2017.0000000000000 as f32)));
+    path.cubic_to(
+        ((1157.9227294921875 as f32), (2017.7105712890625 as f32)),
+        ((1158.0474853515625 as f32), (2017.3597412109375 as f32)),
+        ((1158.0474853515625 as f32), (2017.0000000000000 as f32)),
+    );
     // Segment 1158.0474975705147 2017.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1156.6974975466728 2017.0000000000000
     path.line_to(((1156.6975097656250 as f32), (2017.0000000000000 as f32)));
     // Segment 1156.6974975466728 2017.0000000000000 0.0028009248351 0.0403311981485 0.0118595244351 -0.0220843520393 1156.6941780622435 2017.0325257649940
-    path.cubic_to(((1156.7003173828125 as f32), (2017.0402832031250 as f32)), ((1156.7060546875000 as f32), (2017.0104980468750 as f32)), ((1156.6942138671875 as f32), (2017.0324707031250 as f32)));
+    path.cubic_to(
+        ((1156.7003173828125 as f32), (2017.0402832031250 as f32)),
+        ((1156.7060546875000 as f32), (2017.0104980468750 as f32)),
+        ((1156.6942138671875 as f32), (2017.0324707031250 as f32)),
+    );
     // Segment 1156.6941780622435 2017.0325257649940 -0.0032637855860 0.0184860248562 0.0120617528380 -0.0065934603083 1156.7093435710913 2017.0113063061967
-    path.cubic_to(((1156.6909179687500 as f32), (2017.0510253906250 as f32)), ((1156.7214355468750 as f32), (2017.0047607421875 as f32)), ((1156.7093505859375 as f32), (2017.0113525390625 as f32)));
+    path.cubic_to(
+        ((1156.6909179687500 as f32), (2017.0510253906250 as f32)),
+        ((1156.7214355468750 as f32), (2017.0047607421875 as f32)),
+        ((1156.7093505859375 as f32), (2017.0113525390625 as f32)),
+    );
     // split at 0.4496445953846
     // path.cubicTo(1156.6927490234375, 2017.0407714843750, 1156.6981201171875, 2017.0360107421875, 1156.7033691406250, 2017.0289306640625);
     // path.cubicTo(1156.7097167968750, 2017.0201416015625, 1156.7159423828125, 2017.0076904296875, 1156.7093505859375, 2017.0113525390625);
     // Segment 1156.7093435710913 2017.0113063061967 -0.0070717276929 0.0122220954353 0.0203483811973 -0.0039136894418 1156.7268834554304 2016.9985353221975
-    path.cubic_to(((1156.7022705078125 as f32), (2017.0235595703125 as f32)), ((1156.7471923828125 as f32), (2016.9946289062500 as f32)), ((1156.7269287109375 as f32), (2016.9985351562500 as f32)));
+    path.cubic_to(
+        ((1156.7022705078125 as f32), (2017.0235595703125 as f32)),
+        ((1156.7471923828125 as f32), (2016.9946289062500 as f32)),
+        ((1156.7269287109375 as f32), (2016.9985351562500 as f32)),
+    );
     // Segment 1156.7268834554304 2016.9985353221975 -0.0244396787691 0.0123649140586 0.0433322464027 0.0026558844666 1156.6848182678223 2017.0033947825432
-    path.cubic_to(((1156.7023925781250 as f32), (2017.0108642578125 as f32)), ((1156.7281494140625 as f32), (2017.0061035156250 as f32)), ((1156.6848144531250 as f32), (2017.0034179687500 as f32)));
+    path.cubic_to(
+        ((1156.7023925781250 as f32), (2017.0108642578125 as f32)),
+        ((1156.7281494140625 as f32), (2017.0061035156250 as f32)),
+        ((1156.6848144531250 as f32), (2017.0034179687500 as f32)),
+    );
     // split at 0.4418420493603
     // path.cubicTo(1156.7160644531250, 2017.0040283203125, 1156.7150878906250, 2017.0061035156250, 1156.7136230468750, 2017.0065917968750);
     // path.cubicTo(1156.7116699218750, 2017.0070800781250, 1156.7089843750000, 2017.0048828125000, 1156.6848144531250, 2017.0034179687500);
@@ -5826,25 +6070,49 @@ fn dean4(reporter: &mut Reporter, filename: &str) {
     // start loop, contour: 12
     // Segment 1158.0474975705147 2017.0000000000000 0.0000000000000 -0.3596905289350 0.2653344079822 0.2617520616521 1157.6574279406423 2016.0276338139906
     path.move_to(((1158.0474853515625 as f32), (2017.0000000000000 as f32)));
-    path.cubic_to(((1158.0474853515625 as f32), (2016.6402587890625 as f32)), ((1157.9227294921875 as f32), (2016.2894287109375 as f32)), ((1157.6574707031250 as f32), (2016.0275878906250 as f32)));
+    path.cubic_to(
+        ((1158.0474853515625 as f32), (2016.6402587890625 as f32)),
+        ((1157.9227294921875 as f32), (2016.2894287109375 as f32)),
+        ((1157.6574707031250 as f32), (2016.0275878906250 as f32)),
+    );
     // Segment 1157.6574279406423 2016.0276338139906 -0.2645167304388 -0.2609454237780 0.3569631313191 0.0000000000000 1156.6848182678223 2015.6466051936150
-    path.cubic_to(((1157.3929443359375 as f32), (2015.7667236328125 as f32)), ((1157.0417480468750 as f32), (2015.6466064453125 as f32)), ((1156.6848144531250 as f32), (2015.6466064453125 as f32)));
+    path.cubic_to(
+        ((1157.3929443359375 as f32), (2015.7667236328125 as f32)),
+        ((1157.0417480468750 as f32), (2015.6466064453125 as f32)),
+        ((1156.6848144531250 as f32), (2015.6466064453125 as f32)),
+    );
     // split at 0.5481675863266
     // path.cubicTo(1157.5124511718750, 2015.8846435546875, 1157.3414306640625, 2015.7839355468750, 1157.1577148437500, 2015.7220458984375);
     // path.cubicTo(1157.0062255859375, 2015.6711425781250, 1156.8460693359375, 2015.6466064453125, 1156.6848144531250, 2015.6466064453125);
     // Segment 1156.6848182678223 2015.6466051936150 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1156.6848182678223 2016.9966052174568
     path.line_to(((1156.6848144531250 as f32), (2016.9965820312500 as f32)));
     // Segment 1156.6848182678223 2016.9966052174568 0.0433322464027 -0.0026558844666 -0.0244396787691 -0.0123649140586 1156.7268834554304 2017.0014646778025
-    path.cubic_to(((1156.7281494140625 as f32), (2016.9938964843750 as f32)), ((1156.7023925781250 as f32), (2016.9891357421875 as f32)), ((1156.7269287109375 as f32), (2017.0014648437500 as f32)));
+    path.cubic_to(
+        ((1156.7281494140625 as f32), (2016.9938964843750 as f32)),
+        ((1156.7023925781250 as f32), (2016.9891357421875 as f32)),
+        ((1156.7269287109375 as f32), (2017.0014648437500 as f32)),
+    );
     // split at 0.5581579208374
     // path.cubicTo(1156.7089843750000, 2016.9951171875000, 1156.7116699218750, 2016.9929199218750, 1156.7136230468750, 2016.9934082031250);
     // path.cubicTo(1156.7150878906250, 2016.9938964843750, 1156.7160644531250, 2016.9959716796875, 1156.7269287109375, 2017.0014648437500);
     // Segment 1156.7268834554304 2017.0014646778025 0.0203483811973 0.0039136894418 -0.0070717276929 -0.0122220954353 1156.7093435710913 2016.9886936938033
-    path.cubic_to(((1156.7471923828125 as f32), (2017.0053710937500 as f32)), ((1156.7022705078125 as f32), (2016.9764404296875 as f32)), ((1156.7093505859375 as f32), (2016.9886474609375 as f32)));
+    path.cubic_to(
+        ((1156.7471923828125 as f32), (2017.0053710937500 as f32)),
+        ((1156.7022705078125 as f32), (2016.9764404296875 as f32)),
+        ((1156.7093505859375 as f32), (2016.9886474609375 as f32)),
+    );
     // Segment 1156.7093435710913 2016.9886936938033 0.0120617528380 0.0065934603083 -0.0032637855860 -0.0184860248562 1156.6941780622435 2016.9674742350060
-    path.cubic_to(((1156.7214355468750 as f32), (2016.9952392578125 as f32)), ((1156.6909179687500 as f32), (2016.9489746093750 as f32)), ((1156.6942138671875 as f32), (2016.9675292968750 as f32)));
+    path.cubic_to(
+        ((1156.7214355468750 as f32), (2016.9952392578125 as f32)),
+        ((1156.6909179687500 as f32), (2016.9489746093750 as f32)),
+        ((1156.6942138671875 as f32), (2016.9675292968750 as f32)),
+    );
     // Segment 1156.6941780622435 2016.9674742350060 0.0118595244351 0.0220843520393 0.0028009248351 -0.0403311981485 1156.6974975466728 2017.0000000000000
-    path.cubic_to(((1156.7060546875000 as f32), (2016.9895019531250 as f32)), ((1156.7003173828125 as f32), (2016.9597167968750 as f32)), ((1156.6975097656250 as f32), (2017.0000000000000 as f32)));
+    path.cubic_to(
+        ((1156.7060546875000 as f32), (2016.9895019531250 as f32)),
+        ((1156.7003173828125 as f32), (2016.9597167968750 as f32)),
+        ((1156.6975097656250 as f32), (2017.0000000000000 as f32)),
+    );
     // split at 0.4572408795357
     // path.cubicTo(1156.6995849609375, 2016.9775390625000, 1156.7014160156250, 2016.9768066406250, 1156.7014160156250, 2016.9768066406250);
     // path.cubicTo(1156.7014160156250, 2016.9769287109375, 1156.6989746093750, 2016.9781494140625, 1156.6975097656250, 2017.0000000000000);
@@ -5876,22 +6144,38 @@ fn dean4(reporter: &mut Reporter, filename: &str) {
     // start loop, contour: 15
     // Segment 1147.8064220516883 2014.8347899786306 0.5430154146087 -0.5356841365729 0.5430154146087 0.5356841365729 1147.8064220516883 2012.9239773430752
     path.move_to(((1147.8063964843750 as f32), (2014.8348388671875 as f32)));
-    path.cubic_to(((1148.3494873046875 as f32), (2014.2990722656250 as f32)), ((1148.3494873046875 as f32), (2013.4597167968750 as f32)), ((1147.8063964843750 as f32), (2012.9239501953125 as f32)));
+    path.cubic_to(
+        ((1148.3494873046875 as f32), (2014.2990722656250 as f32)),
+        ((1148.3494873046875 as f32), (2013.4597167968750 as f32)),
+        ((1147.8063964843750 as f32), (2012.9239501953125 as f32)),
+    );
     // Segment 1147.8064220516883 2012.9239773430752 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8583375842370 2013.8850371263100
     path.line_to(((1146.8583984375000 as f32), (2013.8850097656250 as f32)));
     // Segment 1146.8583375842370 2013.8850371263100 0.0071280060876 0.0070317705240 0.0071280060876 -0.0070317705240 1146.8583375842370 2013.8737301953959
-    path.cubic_to(((1146.8654785156250 as f32), (2013.8920898437500 as f32)), ((1146.8654785156250 as f32), (2013.8666992187500 as f32)), ((1146.8583984375000 as f32), (2013.8737792968750 as f32)));
+    path.cubic_to(
+        ((1146.8654785156250 as f32), (2013.8920898437500 as f32)),
+        ((1146.8654785156250 as f32), (2013.8666992187500 as f32)),
+        ((1146.8583984375000 as f32), (2013.8737792968750 as f32)),
+    );
     // Segment 1146.8583375842370 2013.8737301953959 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1147.8064220516883 2014.8347899786306
     path.line_to(((1147.8063964843750 as f32), (2014.8348388671875 as f32)));
     path.close();
     // start loop, contour: 16
     // Segment 1147.8064220516883 2012.9239773430752 -0.5379138488298 -0.5306514472866 0.5379138488298 -0.5306514472866 1145.8955864341058 2012.9239773430752
     path.move_to(((1147.8063964843750 as f32), (2012.9239501953125 as f32)));
-    path.cubic_to(((1147.2685546875000 as f32), (2012.3933105468750 as f32)), ((1146.4334716796875 as f32), (2012.3933105468750 as f32)), ((1145.8956298828125 as f32), (2012.9239501953125 as f32)));
+    path.cubic_to(
+        ((1147.2685546875000 as f32), (2012.3933105468750 as f32)),
+        ((1146.4334716796875 as f32), (2012.3933105468750 as f32)),
+        ((1145.8956298828125 as f32), (2012.9239501953125 as f32)),
+    );
     // Segment 1145.8955864341058 2012.9239773430752 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8436709015571 2013.8850371263100
     path.line_to(((1146.8436279296875 as f32), (2013.8850097656250 as f32)));
     // Segment 1146.8436709015571 2013.8850371263100 0.0122295718664 -0.0120644598103 -0.0122295718664 -0.0120644598103 1146.8583375842370 2013.8850371263100
-    path.cubic_to(((1146.8559570312500 as f32), (2013.8729248046875 as f32)), ((1146.8460693359375 as f32), (2013.8729248046875 as f32)), ((1146.8583984375000 as f32), (2013.8850097656250 as f32)));
+    path.cubic_to(
+        ((1146.8559570312500 as f32), (2013.8729248046875 as f32)),
+        ((1146.8460693359375 as f32), (2013.8729248046875 as f32)),
+        ((1146.8583984375000 as f32), (2013.8850097656250 as f32)),
+    );
     // Segment 1146.8583375842370 2013.8850371263100 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1147.8064220516883 2012.9239773430752
     path.line_to(((1147.8063964843750 as f32), (2012.9239501953125 as f32)));
     path.close();
@@ -5909,68 +6193,136 @@ fn dean4(reporter: &mut Reporter, filename: &str) {
     // start loop, contour: 18
     // Segment 1142.7322615564860 2016.0445937045740 -0.0343838913237 0.0339196727021 0.0561572931720 -0.0710493024751 1142.5744069596683 2016.2183613784646
     path.move_to(((1142.7322998046875 as f32), (2016.0445556640625 as f32)));
-    path.cubic_to(((1142.6978759765625 as f32), (2016.0784912109375 as f32)), ((1142.6306152343750 as f32), (2016.1473388671875 as f32)), ((1142.5744628906250 as f32), (2016.2183837890625 as f32)));
+    path.cubic_to(
+        ((1142.6978759765625 as f32), (2016.0784912109375 as f32)),
+        ((1142.6306152343750 as f32), (2016.1473388671875 as f32)),
+        ((1142.5744628906250 as f32), (2016.2183837890625 as f32)),
+    );
     // Segment 1142.5744069596683 2016.2183613784646 -0.0547779032556 0.0720510806539 0.0000000000000 -0.2570904015602 1142.3937679156661 2016.7286419868469
-    path.cubic_to(((1142.5196533203125 as f32), (2016.2904052734375 as f32)), ((1142.3937988281250 as f32), (2016.4715576171875 as f32)), ((1142.3937988281250 as f32), (2016.7286376953125 as f32)));
+    path.cubic_to(
+        ((1142.5196533203125 as f32), (2016.2904052734375 as f32)),
+        ((1142.3937988281250 as f32), (2016.4715576171875 as f32)),
+        ((1142.3937988281250 as f32), (2016.7286376953125 as f32)),
+    );
     // Segment 1142.3937679156661 2016.7286419868469 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1143.7437679395080 2016.7286419868469
     path.line_to(((1143.7437744140625 as f32), (2016.7286376953125 as f32)));
     // Segment 1143.7437679395080 2016.7286419868469 -0.0051909534315 0.0665915567290 0.0133980913650 -0.0361675066532 1143.6976291086639 2016.9514128270803
-    path.cubic_to(((1143.7385253906250 as f32), (2016.7952880859375 as f32)), ((1143.7110595703125 as f32), (2016.9152832031250 as f32)), ((1143.6976318359375 as f32), (2016.9514160156250 as f32)));
+    path.cubic_to(
+        ((1143.7385253906250 as f32), (2016.7952880859375 as f32)),
+        ((1143.7110595703125 as f32), (2016.9152832031250 as f32)),
+        ((1143.6976318359375 as f32), (2016.9514160156250 as f32)),
+    );
     // Segment 1143.6976291086639 2016.9514128270803 -0.0142876819622 0.0277028472317 0.0040377216094 -0.0063254385208 1143.6490888124401 2017.0354042045738
-    path.cubic_to(((1143.6833496093750 as f32), (2016.9791259765625 as f32)), ((1143.6530761718750 as f32), (2017.0290527343750 as f32)), ((1143.6490478515625 as f32), (2017.0354003906250 as f32)));
+    path.cubic_to(
+        ((1143.6833496093750 as f32), (2016.9791259765625 as f32)),
+        ((1143.6530761718750 as f32), (2017.0290527343750 as f32)),
+        ((1143.6490478515625 as f32), (2017.0354003906250 as f32)),
+    );
     // Segment 1143.6490888124401 2017.0354042045738 -0.0045813437564 0.0032098513409 -0.0343840362634 0.0339198156850 1143.6803460239373 2017.0056534878088
-    path.cubic_to(((1143.6445312500000 as f32), (2017.0385742187500 as f32)), ((1143.6459960937500 as f32), (2017.0395507812500 as f32)), ((1143.6802978515625 as f32), (2017.0056152343750 as f32)));
+    path.cubic_to(
+        ((1143.6445312500000 as f32), (2017.0385742187500 as f32)),
+        ((1143.6459960937500 as f32), (2017.0395507812500 as f32)),
+        ((1143.6802978515625 as f32), (2017.0056152343750 as f32)),
+    );
     // Segment 1143.6803460239373 2017.0056534878088 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1142.7322615564860 2016.0445937045740
     path.line_to(((1142.7322998046875 as f32), (2016.0445556640625 as f32)));
     path.close();
     // start loop, contour: 19
     // Segment 1142.5947256938614 2016.2481120952295 -0.1857487117715 0.1832409092043 0.0167379373694 -0.0990717748979 1142.3430278987244 2016.7518748698508
     path.move_to(((1142.5947265625000 as f32), (2016.2481689453125 as f32)));
-    path.cubic_to(((1142.4089355468750 as f32), (2016.4313964843750 as f32)), ((1142.3597412109375 as f32), (2016.6528320312500 as f32)), ((1142.3430175781250 as f32), (2016.7518310546875 as f32)));
+    path.cubic_to(
+        ((1142.4089355468750 as f32), (2016.4313964843750 as f32)),
+        ((1142.3597412109375 as f32), (2016.6528320312500 as f32)),
+        ((1142.3430175781250 as f32), (2016.7518310546875 as f32)),
+    );
     // Segment 1142.3430278987244 2016.7518748698508 -0.0156657977007 0.1069052535795 0.0000000000000 -0.0339197441936 1142.3249999880791 2017.0000000000000
-    path.cubic_to(((1142.3273925781250 as f32), (2016.8587646484375 as f32)), ((1142.3249511718750 as f32), (2016.9660644531250 as f32)), ((1142.3249511718750 as f32), (2017.0000000000000 as f32)));
+    path.cubic_to(
+        ((1142.3273925781250 as f32), (2016.8587646484375 as f32)),
+        ((1142.3249511718750 as f32), (2016.9660644531250 as f32)),
+        ((1142.3249511718750 as f32), (2017.0000000000000 as f32)),
+    );
     // Segment 1142.3249999880791 2017.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1143.6750000119209 2017.0000000000000
     path.line_to(((1143.6750488281250 as f32), (2017.0000000000000 as f32)));
     // Segment 1143.6750000119209 2017.0000000000000 0.0000000000000 -0.0339197441936 -0.0015261841961 -0.0051459911965 1143.6741640831724 2016.9767671169961
-    path.cubic_to(((1143.6750488281250 as f32), (2016.9660644531250 as f32)), ((1143.6726074218750 as f32), (2016.9716796875000 as f32)), ((1143.6741943359375 as f32), (2016.9768066406250 as f32)));
+    path.cubic_to(
+        ((1143.6750488281250 as f32), (2016.9660644531250 as f32)),
+        ((1143.6726074218750 as f32), (2016.9716796875000 as f32)),
+        ((1143.6741943359375 as f32), (2016.9768066406250 as f32)),
+    );
     // Segment 1143.6741640831724 2016.9767671169961 -0.0007886982052 0.0013596649622 0.0074114058388 -0.0224954551713 1143.6525251830094 2017.0486861571169
-    path.cubic_to(((1143.6733398437500 as f32), (2016.9781494140625 as f32)), ((1143.6599121093750 as f32), (2017.0262451171875 as f32)), ((1143.6524658203125 as f32), (2017.0487060546875 as f32)));
+    path.cubic_to(
+        ((1143.6733398437500 as f32), (2016.9781494140625 as f32)),
+        ((1143.6599121093750 as f32), (2017.0262451171875 as f32)),
+        ((1143.6524658203125 as f32), (2017.0487060546875 as f32)),
+    );
     // split at 0.4203657805920
     // path.cubicTo(1143.6738281250000, 2016.9774169921875, 1143.6712646484375, 2016.9862060546875, 1143.6678466796875, 2016.9979248046875);
     // path.cubicTo(1143.6630859375000, 2017.0140380859375, 1143.6567382812500, 2017.0356445312500, 1143.6524658203125, 2017.0487060546875);
     // Segment 1143.6525251830094 2017.0486861571169 -0.0119644334077 0.0236755853369 0.0381324473830 -0.0447670202574 1143.5428101613127 2017.2091718784643
-    path.cubic_to(((1143.6405029296875 as f32), (2017.0723876953125 as f32)), ((1143.5809326171875 as f32), (2017.1644287109375 as f32)), ((1143.5428466796875 as f32), (2017.2092285156250 as f32)));
+    path.cubic_to(
+        ((1143.6405029296875 as f32), (2017.0723876953125 as f32)),
+        ((1143.5809326171875 as f32), (2017.1644287109375 as f32)),
+        ((1143.5428466796875 as f32), (2017.2092285156250 as f32)),
+    );
     // Segment 1143.5428101613127 2017.2091718784643 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1142.5947256938614 2016.2481120952295
     path.line_to(((1142.5947265625000 as f32), (2016.2481689453125 as f32)));
     path.close();
     // start loop, contour: 20
     // Segment 1142.3249999880791 2017.0000000000000 0.0000000000000 0.0339197441936 -0.0156657977007 -0.1069052535795 1142.3430278987244 2017.2481251301492
     path.move_to(((1142.3249511718750 as f32), (2017.0000000000000 as f32)));
-    path.cubic_to(((1142.3249511718750 as f32), (2017.0339355468750 as f32)), ((1142.3273925781250 as f32), (2017.1412353515625 as f32)), ((1142.3430175781250 as f32), (2017.2481689453125 as f32)));
+    path.cubic_to(
+        ((1142.3249511718750 as f32), (2017.0339355468750 as f32)),
+        ((1142.3273925781250 as f32), (2017.1412353515625 as f32)),
+        ((1142.3430175781250 as f32), (2017.2481689453125 as f32)),
+    );
     // Segment 1142.3430278987244 2017.2481251301492 0.0167379373694 0.0990717748979 -0.1857487117715 -0.1832409092043 1142.5947256938614 2017.7518879047705
-    path.cubic_to(((1142.3597412109375 as f32), (2017.3471679687500 as f32)), ((1142.4089355468750 as f32), (2017.5686035156250 as f32)), ((1142.5947265625000 as f32), (2017.7518310546875 as f32)));
+    path.cubic_to(
+        ((1142.3597412109375 as f32), (2017.3471679687500 as f32)),
+        ((1142.4089355468750 as f32), (2017.5686035156250 as f32)),
+        ((1142.5947265625000 as f32), (2017.7518310546875 as f32)),
+    );
     // split at 0.4008532166481
     // path.cubicTo(1142.3497314453125, 2017.2878417968750, 1142.3616943359375, 2017.3471679687500, 1142.3854980468750, 2017.4158935546875);
     // path.cubicTo(1142.4211425781250, 2017.5185546875000, 1142.4833984375000, 2017.6420898437500, 1142.5947265625000, 2017.7518310546875);
     // Segment 1142.5947256938614 2017.7518879047705 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1143.5428101613127 2016.7908281215357
     path.line_to(((1143.5428466796875 as f32), (2016.7907714843750 as f32)));
     // Segment 1143.5428101613127 2016.7908281215357 0.0381324473830 0.0447670202574 -0.0119644334077 -0.0236755853369 1143.6525251830094 2016.9513138428831
-    path.cubic_to(((1143.5809326171875 as f32), (2016.8355712890625 as f32)), ((1143.6405029296875 as f32), (2016.9276123046875 as f32)), ((1143.6524658203125 as f32), (2016.9512939453125 as f32)));
+    path.cubic_to(
+        ((1143.5809326171875 as f32), (2016.8355712890625 as f32)),
+        ((1143.6405029296875 as f32), (2016.9276123046875 as f32)),
+        ((1143.6524658203125 as f32), (2016.9512939453125 as f32)),
+    );
     // Segment 1143.6525251830094 2016.9513138428831 0.0074114058388 0.0224954551713 -0.0007886982052 -0.0013596649622 1143.6741640831724 2017.0232328830039
-    path.cubic_to(((1143.6599121093750 as f32), (2016.9737548828125 as f32)), ((1143.6733398437500 as f32), (2017.0218505859375 as f32)), ((1143.6741943359375 as f32), (2017.0231933593750 as f32)));
+    path.cubic_to(
+        ((1143.6599121093750 as f32), (2016.9737548828125 as f32)),
+        ((1143.6733398437500 as f32), (2017.0218505859375 as f32)),
+        ((1143.6741943359375 as f32), (2017.0231933593750 as f32)),
+    );
     // Segment 1143.6741640831724 2017.0232328830039 -0.0015261841961 0.0051459911965 0.0000000000000 0.0339197441936 1143.6750000119209 2017.0000000000000
-    path.cubic_to(((1143.6726074218750 as f32), (2017.0283203125000 as f32)), ((1143.6750488281250 as f32), (2017.0339355468750 as f32)), ((1143.6750488281250 as f32), (2017.0000000000000 as f32)));
+    path.cubic_to(
+        ((1143.6726074218750 as f32), (2017.0283203125000 as f32)),
+        ((1143.6750488281250 as f32), (2017.0339355468750 as f32)),
+        ((1143.6750488281250 as f32), (2017.0000000000000 as f32)),
+    );
     // Segment 1143.6750000119209 2017.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1142.3249999880791 2017.0000000000000
     path.line_to(((1142.3249511718750 as f32), (2017.0000000000000 as f32)));
     path.close();
     // start loop, contour: 21
     // Segment 1142.5947256938614 2017.7518879047705 -0.0799271403989 -0.1522613934208 -0.2174629955730 -0.2879403701950 1142.7322615564860 2017.9554062954260
     path.move_to(((1142.5947265625000 as f32), (2017.7518310546875 as f32)));
-    path.cubic_to(((1142.5147705078125 as f32), (2017.5996093750000 as f32)), ((1142.5147705078125 as f32), (2017.6674804687500 as f32)), ((1142.7322998046875 as f32), (2017.9554443359375 as f32)));
+    path.cubic_to(
+        ((1142.5147705078125 as f32), (2017.5996093750000 as f32)),
+        ((1142.5147705078125 as f32), (2017.6674804687500 as f32)),
+        ((1142.7322998046875 as f32), (2017.9554443359375 as f32)),
+    );
     // Segment 1142.7322615564860 2017.9554062954260 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1143.6803460239373 2016.9943465121912
     path.line_to(((1143.6802978515625 as f32), (2016.9943847656250 as f32)));
     // Segment 1143.6803460239373 2016.9943465121912 0.0799271403989 0.1522613934208 0.2174629955730 0.2879403701950 1143.5428101613127 2016.7908281215357
-    path.cubic_to(((1143.7602539062500 as f32), (2017.1466064453125 as f32)), ((1143.7602539062500 as f32), (2017.0787353515625 as f32)), ((1143.5428466796875 as f32), (2016.7907714843750 as f32)));
+    path.cubic_to(
+        ((1143.7602539062500 as f32), (2017.1466064453125 as f32)),
+        ((1143.7602539062500 as f32), (2017.0787353515625 as f32)),
+        ((1143.5428466796875 as f32), (2016.7907714843750 as f32)),
+    );
     // Segment 1143.5428101613127 2016.7908281215357 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1142.5947256938614 2017.7518879047705
     path.line_to(((1142.5947265625000 as f32), (2017.7518310546875 as f32)));
     path.close();
@@ -5988,40 +6340,72 @@ fn dean4(reporter: &mut Reporter, filename: &str) {
     // start loop, contour: 23
     // Segment 1145.8955864341058 2021.0760227314306 0.2730164534637 0.2693304447891 -0.3016608168437 0.0000000000000 1146.8510041236877 2021.4740112423897
     path.move_to(((1145.8956298828125 as f32), (2021.0760498046875 as f32)));
-    path.cubic_to(((1146.1685791015625 as f32), (2021.3453369140625 as f32)), ((1146.5493164062500 as f32), (2021.4739990234375 as f32)), ((1146.8509521484375 as f32), (2021.4739990234375 as f32)));
+    path.cubic_to(
+        ((1146.1685791015625 as f32), (2021.3453369140625 as f32)),
+        ((1146.5493164062500 as f32), (2021.4739990234375 as f32)),
+        ((1146.8509521484375 as f32), (2021.4739990234375 as f32)),
+    );
     // Segment 1146.8510041236877 2021.4740112423897 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8510041236877 2020.1240112185478
     path.line_to(((1146.8509521484375 as f32), (2020.1240234375000 as f32)));
     // Segment 1146.8510041236877 2020.1240112185478 -0.0031276099109 0.0031991747760 0.0281856144058 0.0140930868099 1146.8580791488898 2020.1202473991566
-    path.cubic_to(((1146.8479003906250 as f32), (2020.1271972656250 as f32)), ((1146.8862304687500 as f32), (2020.1343994140625 as f32)), ((1146.8580322265625 as f32), (2020.1202392578125 as f32)));
+    path.cubic_to(
+        ((1146.8479003906250 as f32), (2020.1271972656250 as f32)),
+        ((1146.8862304687500 as f32), (2020.1343994140625 as f32)),
+        ((1146.8580322265625 as f32), (2020.1202392578125 as f32)),
+    );
     // split at 0.3845077157021
     // path.cubicTo(1146.8497314453125, 2020.1252441406250, 1146.8547363281250, 2020.1270751953125, 1146.8596191406250, 2020.1280517578125);
     // path.cubicTo(1146.8675537109375, 2020.1296386718750, 1146.8753662109375, 2020.1289062500000, 1146.8580322265625, 2020.1202392578125);
     // Segment 1146.8580791488898 2020.1202473991566 -0.0369995545027 -0.0123195805663 0.0067223483810 0.0136883790721 1146.8436709015571 2020.1149629481959
-    path.cubic_to(((1146.8210449218750 as f32), (2020.1079101562500 as f32)), ((1146.8503417968750 as f32), (2020.1286621093750 as f32)), ((1146.8436279296875 as f32), (2020.1149902343750 as f32)));
+    path.cubic_to(
+        ((1146.8210449218750 as f32), (2020.1079101562500 as f32)),
+        ((1146.8503417968750 as f32), (2020.1286621093750 as f32)),
+        ((1146.8436279296875 as f32), (2020.1149902343750 as f32)),
+    );
     // Segment 1146.8436709015571 2020.1149629481959 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1145.8955864341058 2021.0760227314306
     path.line_to(((1145.8956298828125 as f32), (2021.0760498046875 as f32)));
     path.close();
     // start loop, contour: 24
     // Segment 1146.8510041236877 2021.4740112423897 0.3016605789999 0.0000000000000 -0.2730166120260 0.2693306012106 1147.8064220516883 2021.0760227314306
     path.move_to(((1146.8509521484375 as f32), (2021.4739990234375 as f32)));
-    path.cubic_to(((1147.1527099609375 as f32), (2021.4739990234375 as f32)), ((1147.5334472656250 as f32), (2021.3453369140625 as f32)), ((1147.8063964843750 as f32), (2021.0760498046875 as f32)));
+    path.cubic_to(
+        ((1147.1527099609375 as f32), (2021.4739990234375 as f32)),
+        ((1147.5334472656250 as f32), (2021.3453369140625 as f32)),
+        ((1147.8063964843750 as f32), (2021.0760498046875 as f32)),
+    );
     // Segment 1147.8064220516883 2021.0760227314306 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8583375842370 2020.1149629481959
     path.line_to(((1146.8583984375000 as f32), (2020.1149902343750 as f32)));
     // Segment 1146.8583375842370 2020.1149629481959 -0.0067222671256 0.0136883164611 0.0369996293611 -0.0123196021258 1146.8439293663473 2020.1202473404985
-    path.cubic_to(((1146.8515625000000 as f32), (2020.1286621093750 as f32)), ((1146.8809814453125 as f32), (2020.1079101562500 as f32)), ((1146.8438720703125 as f32), (2020.1202392578125 as f32)));
+    path.cubic_to(
+        ((1146.8515625000000 as f32), (2020.1286621093750 as f32)),
+        ((1146.8809814453125 as f32), (2020.1079101562500 as f32)),
+        ((1146.8438720703125 as f32), (2020.1202392578125 as f32)),
+    );
     // Segment 1146.8439293663473 2020.1202473404985 -0.0281857033438 0.0140931104690 0.0031276541428 0.0031991704542 1146.8510041236877 2020.1240112185478
-    path.cubic_to(((1146.8157958984375 as f32), (2020.1343994140625 as f32)), ((1146.8541259765625 as f32), (2020.1271972656250 as f32)), ((1146.8509521484375 as f32), (2020.1240234375000 as f32)));
+    path.cubic_to(
+        ((1146.8157958984375 as f32), (2020.1343994140625 as f32)),
+        ((1146.8541259765625 as f32), (2020.1271972656250 as f32)),
+        ((1146.8509521484375 as f32), (2020.1240234375000 as f32)),
+    );
     // Segment 1146.8510041236877 2020.1240112185478 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8510041236877 2021.4740112423897
     path.line_to(((1146.8509521484375 as f32), (2021.4739990234375 as f32)));
     path.close();
     // start loop, contour: 25
     // Segment 1147.8064220516883 2021.0760227314306 0.5430154146087 -0.5356841365729 0.5430154146087 0.5356841365729 1147.8064220516883 2019.1652101405787
     path.move_to(((1147.8063964843750 as f32), (2021.0760498046875 as f32)));
-    path.cubic_to(((1148.3494873046875 as f32), (2020.5402832031250 as f32)), ((1148.3494873046875 as f32), (2019.7009277343750 as f32)), ((1147.8063964843750 as f32), (2019.1651611328125 as f32)));
+    path.cubic_to(
+        ((1148.3494873046875 as f32), (2020.5402832031250 as f32)),
+        ((1148.3494873046875 as f32), (2019.7009277343750 as f32)),
+        ((1147.8063964843750 as f32), (2019.1651611328125 as f32)),
+    );
     // Segment 1147.8064220516883 2019.1652101405787 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1146.8583375842370 2020.1262699238134
     path.line_to(((1146.8583984375000 as f32), (2020.1262207031250 as f32)));
     // Segment 1146.8583375842370 2020.1262699238134 0.0071280060876 0.0070317705240 0.0071280060876 -0.0070317705240 1146.8583375842370 2020.1149629481959
-    path.cubic_to(((1146.8654785156250 as f32), (2020.1333007812500 as f32)), ((1146.8654785156250 as f32), (2020.1079101562500 as f32)), ((1146.8583984375000 as f32), (2020.1149902343750 as f32)));
+    path.cubic_to(
+        ((1146.8654785156250 as f32), (2020.1333007812500 as f32)),
+        ((1146.8654785156250 as f32), (2020.1079101562500 as f32)),
+        ((1146.8583984375000 as f32), (2020.1149902343750 as f32)),
+    );
     // Segment 1146.8583375842370 2020.1149629481959 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000 1147.8064220516883 2021.0760227314306
     path.line_to(((1147.8063964843750 as f32), (2021.0760498046875 as f32)));
     path.close();
@@ -6147,11 +6531,19 @@ fn bug5169(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.move_to((f32::from_bits(0x00000000), f32::from_bits(0x4281c71c)));
     // 0, 64.8889f
-    path.cubic_to((f32::from_bits(0x434e0000), f32::from_bits(0x4281c71c)), (f32::from_bits(0x00000000), f32::from_bits(0xc2a238e4)), (f32::from_bits(0x00000000), f32::from_bits(0x4281c71c)));
+    path.cubic_to(
+        (f32::from_bits(0x434e0000), f32::from_bits(0x4281c71c)),
+        (f32::from_bits(0x00000000), f32::from_bits(0xc2a238e4)),
+        (f32::from_bits(0x00000000), f32::from_bits(0x4281c71c)),
+    );
     // 206, 64.8889f, 0, -81.1111f, 0, 64.8889f
     path.move_to((f32::from_bits(0x43300000), f32::from_bits(0x41971c72)));
     // 176, 18.8889f
-    path.cubic_to((f32::from_bits(0xc29e0000), f32::from_bits(0xc25c71c7)), (f32::from_bits(0x42b20000), f32::from_bits(0x42fbc71c)), (f32::from_bits(0x43300000), f32::from_bits(0x41971c72)));
+    path.cubic_to(
+        (f32::from_bits(0xc29e0000), f32::from_bits(0xc25c71c7)),
+        (f32::from_bits(0x42b20000), f32::from_bits(0x42fbc71c)),
+        (f32::from_bits(0x43300000), f32::from_bits(0x41971c72)),
+    );
     // -79, -55.1111f, 89, 125.889f, 176, 18.8889f
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -6161,13 +6553,29 @@ fn tiger8_393(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x42b93333), f32::from_bits(0x43d5a666)));
     // 92.6f, 427.3f
-    path.cubic_to((f32::from_bits(0x42b93333), f32::from_bits(0x43d5a666)), (f32::from_bits(0x42b5cccd), f32::from_bits(0x43da1999)), (f32::from_bits(0x42b80000), f32::from_bits(0x43ddf333)));
+    path.cubic_to(
+        (f32::from_bits(0x42b93333), f32::from_bits(0x43d5a666)),
+        (f32::from_bits(0x42b5cccd), f32::from_bits(0x43da1999)),
+        (f32::from_bits(0x42b80000), f32::from_bits(0x43ddf333)),
+    );
     // 92.6f, 427.3f, 90.9f, 436.2f, 92, 443.9f
-    path.cubic_to((f32::from_bits(0x42b80000), f32::from_bits(0x43ddf333)), (f32::from_bits(0x42b30000), f32::from_bits(0x43e17333)), (f32::from_bits(0x42cf999a), f32::from_bits(0x43e1b333)));
+    path.cubic_to(
+        (f32::from_bits(0x42b80000), f32::from_bits(0x43ddf333)),
+        (f32::from_bits(0x42b30000), f32::from_bits(0x43e17333)),
+        (f32::from_bits(0x42cf999a), f32::from_bits(0x43e1b333)),
+    );
     // 92, 443.9f, 89.5f, 450.9f, 103.8f, 451.4f
-    path.cubic_to((f32::from_bits(0x42ec3334), f32::from_bits(0x43e14ccd)), (f32::from_bits(0x42e73334), f32::from_bits(0x43ddf333)), (f32::from_bits(0x42e73334), f32::from_bits(0x43ddf333)));
+    path.cubic_to(
+        (f32::from_bits(0x42ec3334), f32::from_bits(0x43e14ccd)),
+        (f32::from_bits(0x42e73334), f32::from_bits(0x43ddf333)),
+        (f32::from_bits(0x42e73334), f32::from_bits(0x43ddf333)),
+    );
     // 118.1f, 450.6f, 115.6f, 443.9f, 115.6f, 443.9f
-    path.cubic_to((f32::from_bits(0x42e7999a), f32::from_bits(0x43de8000)), (f32::from_bits(0x42ea6667), f32::from_bits(0x43db4000)), (f32::from_bits(0x42e60001), f32::from_bits(0x43d5a666)));
+    path.cubic_to(
+        (f32::from_bits(0x42e7999a), f32::from_bits(0x43de8000)),
+        (f32::from_bits(0x42ea6667), f32::from_bits(0x43db4000)),
+        (f32::from_bits(0x42e60001), f32::from_bits(0x43d5a666)),
+    );
     // 115.8f, 445, 117.2f, 438.5f, 115, 427.3f
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -6177,23 +6585,55 @@ fn carsvg_1(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x4393d61e), f32::from_bits(0x43e768f9)));
     // 295.673f, 462.82f
-    path.cubic_to((f32::from_bits(0x4396b50e), f32::from_bits(0x43e63c20)), (f32::from_bits(0x43998931), f32::from_bits(0x43e6c43e)), (f32::from_bits(0x439cb6a8), f32::from_bits(0x43e70ef9)));
+    path.cubic_to(
+        (f32::from_bits(0x4396b50e), f32::from_bits(0x43e63c20)),
+        (f32::from_bits(0x43998931), f32::from_bits(0x43e6c43e)),
+        (f32::from_bits(0x439cb6a8), f32::from_bits(0x43e70ef9)),
+    );
     // 301.414f, 460.47f, 307.072f, 461.533f, 313.427f, 462.117f
-    path.cubic_to((f32::from_bits(0x439dfc1e), f32::from_bits(0x43e72ce0)), (f32::from_bits(0x439a285c), f32::from_bits(0x43e717fb)), (f32::from_bits(0x4398e23c), f32::from_bits(0x43e7027c)));
+    path.cubic_to(
+        (f32::from_bits(0x439dfc1e), f32::from_bits(0x43e72ce0)),
+        (f32::from_bits(0x439a285c), f32::from_bits(0x43e717fb)),
+        (f32::from_bits(0x4398e23c), f32::from_bits(0x43e7027c)),
+    );
     // 315.97f, 462.351f, 308.315f, 462.187f, 305.767f, 462.019f
-    path.cubic_to((f32::from_bits(0x4398136f), f32::from_bits(0x43e6f4db)), (f32::from_bits(0x439a7e14), f32::from_bits(0x43e6d390)), (f32::from_bits(0x439b4ba9), f32::from_bits(0x43e6b956)));
+    path.cubic_to(
+        (f32::from_bits(0x4398136f), f32::from_bits(0x43e6f4db)),
+        (f32::from_bits(0x439a7e14), f32::from_bits(0x43e6d390)),
+        (f32::from_bits(0x439b4ba9), f32::from_bits(0x43e6b956)),
+    );
     // 304.152f, 461.913f, 308.985f, 461.653f, 310.591f, 461.448f
-    path.cubic_to((f32::from_bits(0x439c2b19), f32::from_bits(0x43e68603)), (f32::from_bits(0x43abf4df), f32::from_bits(0x43e9ca9e)), (f32::from_bits(0x43a1daea), f32::from_bits(0x43e912a5)));
+    path.cubic_to(
+        (f32::from_bits(0x439c2b19), f32::from_bits(0x43e68603)),
+        (f32::from_bits(0x43abf4df), f32::from_bits(0x43e9ca9e)),
+        (f32::from_bits(0x43a1daea), f32::from_bits(0x43e912a5)),
+    );
     // 312.337f, 461.047f, 343.913f, 467.583f, 323.71f, 466.146f
-    path.cubic_to((f32::from_bits(0x43a4f45a), f32::from_bits(0x43e78baf)), (f32::from_bits(0x43a2a391), f32::from_bits(0x43e86a82)), (f32::from_bits(0x43a946bd), f32::from_bits(0x43e90c56)));
+    path.cubic_to(
+        (f32::from_bits(0x43a4f45a), f32::from_bits(0x43e78baf)),
+        (f32::from_bits(0x43a2a391), f32::from_bits(0x43e86a82)),
+        (f32::from_bits(0x43a946bd), f32::from_bits(0x43e90c56)),
+    );
     // 329.909f, 463.091f, 325.278f, 464.832f, 338.553f, 466.096f
     path.line_to((f32::from_bits(0x43a4250b), f32::from_bits(0x43e998dc)));
     // 328.289f, 467.194f
-    path.cubic_to((f32::from_bits(0x43a8a9c8), f32::from_bits(0x43e8f06c)), (f32::from_bits(0x43a95cb5), f32::from_bits(0x43e84ea6)), (f32::from_bits(0x43a6f7c1), f32::from_bits(0x43e9bdb5)));
+    path.cubic_to(
+        (f32::from_bits(0x43a8a9c8), f32::from_bits(0x43e8f06c)),
+        (f32::from_bits(0x43a95cb5), f32::from_bits(0x43e84ea6)),
+        (f32::from_bits(0x43a6f7c1), f32::from_bits(0x43e9bdb5)),
+    );
     // 337.326f, 465.878f, 338.724f, 464.614f, 333.936f, 467.482f
-    path.cubic_to((f32::from_bits(0x43a59ed0), f32::from_bits(0x43e9d2ca)), (f32::from_bits(0x4395ea4d), f32::from_bits(0x43e92afe)), (f32::from_bits(0x43a06569), f32::from_bits(0x43e7773d)));
+    path.cubic_to(
+        (f32::from_bits(0x43a59ed0), f32::from_bits(0x43e9d2ca)),
+        (f32::from_bits(0x4395ea4d), f32::from_bits(0x43e92afe)),
+        (f32::from_bits(0x43a06569), f32::from_bits(0x43e7773d)),
+    );
     // 331.241f, 467.647f, 299.83f, 466.336f, 320.792f, 462.932f
-    path.cubic_to((f32::from_bits(0x438bf0ff), f32::from_bits(0x43ea0fef)), (f32::from_bits(0x43a0e17a), f32::from_bits(0x43e5f41b)), (f32::from_bits(0x4398f3fb), f32::from_bits(0x43e804c8)));
+    path.cubic_to(
+        (f32::from_bits(0x438bf0ff), f32::from_bits(0x43ea0fef)),
+        (f32::from_bits(0x43a0e17a), f32::from_bits(0x43e5f41b)),
+        (f32::from_bits(0x4398f3fb), f32::from_bits(0x43e804c8)),
+    );
     // 279.883f, 468.124f, 321.762f, 459.907f, 305.906f, 464.037f
     path.line_to((f32::from_bits(0x4393d61e), f32::from_bits(0x43e768f9)));
     // 295.673f, 462.82f
@@ -6206,11 +6646,17 @@ fn simplify_test_1(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x42bfefd4), f32::from_bits(0x42ef80ef)));
     // 95.9684f, 119.752f
-    path.quad_to((f32::from_bits(0x42c26810), f32::from_bits(0x42e214b8)), (f32::from_bits(0x42cdcad5), f32::from_bits(0x42d82aa2)));
+    path.quad_to(
+        (f32::from_bits(0x42c26810), f32::from_bits(0x42e214b8)),
+        (f32::from_bits(0x42cdcad5), f32::from_bits(0x42d82aa2)),
+    );
     // 97.2032f, 113.04f, 102.896f, 108.083f
     path.line_to((f32::from_bits(0x42cdcb21), f32::from_bits(0x42d82a61)));
     // 102.897f, 108.083f
-    path.quad_to((f32::from_bits(0x42d5e3c8), f32::from_bits(0x42d12140)), (f32::from_bits(0x42e20ee8), f32::from_bits(0x42cdc937)));
+    path.quad_to(
+        (f32::from_bits(0x42d5e3c8), f32::from_bits(0x42d12140)),
+        (f32::from_bits(0x42e20ee8), f32::from_bits(0x42cdc937)),
+    );
     // 106.945f, 104.565f, 113.029f, 102.893f
     path.line_to((f32::from_bits(0x42e256e3), f32::from_bits(0x42cdbc92)));
     // 113.17f, 102.868f
@@ -6218,15 +6664,24 @@ fn simplify_test_1(reporter: &mut Reporter, filename: &str) {
     // 122.959f, 102.087f
     path.line_to((f32::from_bits(0x42f746a6), f32::from_bits(0x42cccf85)));
     // 123.638f, 102.405f
-    path.quad_to((f32::from_bits(0x42fa586c), f32::from_bits(0x42d126c4)), (f32::from_bits(0x42f6c657), f32::from_bits(0x42d5d315)));
+    path.quad_to(
+        (f32::from_bits(0x42fa586c), f32::from_bits(0x42d126c4)),
+        (f32::from_bits(0x42f6c657), f32::from_bits(0x42d5d315)),
+    );
     // 125.173f, 104.576f, 123.387f, 106.912f
     path.line_to((f32::from_bits(0x42f591eb), f32::from_bits(0x42d4e76d)));
     // 122.785f, 106.452f
     path.line_to((f32::from_bits(0x42f6c6e0), f32::from_bits(0x42d5d261)));
     // 123.388f, 106.911f
-    path.quad_to((f32::from_bits(0x42f6bb33), f32::from_bits(0x42d5e1bb)), (f32::from_bits(0x42f6a3d8), f32::from_bits(0x42d6007c)));
+    path.quad_to(
+        (f32::from_bits(0x42f6bb33), f32::from_bits(0x42d5e1bb)),
+        (f32::from_bits(0x42f6a3d8), f32::from_bits(0x42d6007c)),
+    );
     // 123.366f, 106.941f, 123.32f, 107.001f
-    path.quad_to((f32::from_bits(0x42ea3850), f32::from_bits(0x42e65af0)), (f32::from_bits(0x42d97a6e), f32::from_bits(0x42ed841c)));
+    path.quad_to(
+        (f32::from_bits(0x42ea3850), f32::from_bits(0x42e65af0)),
+        (f32::from_bits(0x42d97a6e), f32::from_bits(0x42ed841c)),
+    );
     // 117.11f, 115.178f, 108.739f, 118.758f
     path.line_to((f32::from_bits(0x42d91d92), f32::from_bits(0x42ed9ec0)));
     // 108.558f, 118.81f
@@ -6249,13 +6704,22 @@ fn simplify_test_1(reporter: &mut Reporter, filename: &str) {
     // 108.441f, 118.061f
     path.line_to((f32::from_bits(0x42d84926), f32::from_bits(0x42eaba5c)));
     // 108.143f, 117.364f
-    path.quad_to((f32::from_bits(0x42e84a40), f32::from_bits(0x42e3e1f0)), (f32::from_bits(0x42f439a2), f32::from_bits(0x42d42af8)));
+    path.quad_to(
+        (f32::from_bits(0x42e84a40), f32::from_bits(0x42e3e1f0)),
+        (f32::from_bits(0x42f439a2), f32::from_bits(0x42d42af8)),
+    );
     // 116.145f, 113.941f, 122.113f, 106.084f
-    path.quad_to((f32::from_bits(0x42f45121), f32::from_bits(0x42d40c08)), (f32::from_bits(0x42f45cf6), f32::from_bits(0x42d3fc79)));
+    path.quad_to(
+        (f32::from_bits(0x42f45121), f32::from_bits(0x42d40c08)),
+        (f32::from_bits(0x42f45cf6), f32::from_bits(0x42d3fc79)),
+    );
     // 122.158f, 106.023f, 122.182f, 105.993f
     path.line_to((f32::from_bits(0x42f45d7f), f32::from_bits(0x42d3fbc5)));
     // 122.183f, 105.992f
-    path.quad_to((f32::from_bits(0x42f69510), f32::from_bits(0x42d114f4)), (f32::from_bits(0x42f4ccce), f32::from_bits(0x42ce8fb7)));
+    path.quad_to(
+        (f32::from_bits(0x42f69510), f32::from_bits(0x42d114f4)),
+        (f32::from_bits(0x42f4ccce), f32::from_bits(0x42ce8fb7)),
+    );
     // 123.291f, 104.541f, 122.4f, 103.281f
     path.line_to((f32::from_bits(0x42f609ba), f32::from_bits(0x42cdaf9e)));
     // 123.019f, 102.843f
@@ -6267,13 +6731,19 @@ fn simplify_test_1(reporter: &mut Reporter, filename: &str) {
     // 113.23f, 103.624f
     path.line_to((f32::from_bits(0x42e2dc9c), f32::from_bits(0x42d0b5c3)));
     // 113.431f, 104.355f
-    path.quad_to((f32::from_bits(0x42d75bb8), f32::from_bits(0x42d3df08)), (f32::from_bits(0x42cfc853), f32::from_bits(0x42da7457)));
+    path.quad_to(
+        (f32::from_bits(0x42d75bb8), f32::from_bits(0x42d3df08)),
+        (f32::from_bits(0x42cfc853), f32::from_bits(0x42da7457)),
+    );
     // 107.679f, 105.936f, 103.891f, 109.227f
     path.line_to((f32::from_bits(0x42cec9ba), f32::from_bits(0x42d94f5c)));
     // 103.394f, 108.655f
     path.line_to((f32::from_bits(0x42cfc89f), f32::from_bits(0x42da7416)));
     // 103.892f, 109.227f
-    path.quad_to((f32::from_bits(0x42c53268), f32::from_bits(0x42e3ac00)), (f32::from_bits(0x42c2eb4e), f32::from_bits(0x42f00d67)));
+    path.quad_to(
+        (f32::from_bits(0x42c53268), f32::from_bits(0x42e3ac00)),
+        (f32::from_bits(0x42c2eb4e), f32::from_bits(0x42f00d67)),
+    );
     // 98.5984f, 113.836f, 97.4596f, 120.026f
     path.line_to((f32::from_bits(0x42c2eb4e), f32::from_bits(0x42f00d68)));
     // 97.4596f, 120.026f
@@ -6440,451 +6910,1295 @@ fn joel_4(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x4199d4fe), f32::from_bits(0x4265ac08)));
     // 19.229f, 57.418f
-    path.cubic_to((f32::from_bits(0x419be979), f32::from_bits(0x426574bc)), (f32::from_bits(0x419c2b02), f32::from_bits(0x42653c6a)), (f32::from_bits(0x419af5c3), f32::from_bits(0x42645f3b)));
+    path.cubic_to(
+        (f32::from_bits(0x419be979), f32::from_bits(0x426574bc)),
+        (f32::from_bits(0x419c2b02), f32::from_bits(0x42653c6a)),
+        (f32::from_bits(0x419af5c3), f32::from_bits(0x42645f3b)),
+    );
     // 19.489f, 57.364f, 19.521f, 57.309f, 19.37f, 57.093f
-    path.cubic_to((f32::from_bits(0x419a1894), f32::from_bits(0x4263a3d7)), (f32::from_bits(0x4198cccd), f32::from_bits(0x4262f2b0)), (f32::from_bits(0x4197c290), f32::from_bits(0x4262374b)));
+    path.cubic_to(
+        (f32::from_bits(0x419a1894), f32::from_bits(0x4263a3d7)),
+        (f32::from_bits(0x4198cccd), f32::from_bits(0x4262f2b0)),
+        (f32::from_bits(0x4197c290), f32::from_bits(0x4262374b)),
+    );
     // 19.262f, 56.91f, 19.1f, 56.737f, 18.97f, 56.554f
-    path.cubic_to((f32::from_bits(0x41960832), f32::from_bits(0x42610c49)), (f32::from_bits(0x41944dd4), f32::from_bits(0x425fd709)), (f32::from_bits(0x41927cee), f32::from_bits(0x425ea0c4)));
+    path.cubic_to(
+        (f32::from_bits(0x41960832), f32::from_bits(0x42610c49)),
+        (f32::from_bits(0x41944dd4), f32::from_bits(0x425fd709)),
+        (f32::from_bits(0x41927cee), f32::from_bits(0x425ea0c4)),
+    );
     // 18.754f, 56.262f, 18.538f, 55.96f, 18.311f, 55.657f
-    path.cubic_to((f32::from_bits(0x4191b646), f32::from_bits(0x425e1cab)), (f32::from_bits(0x418edd30), f32::from_bits(0x425ca4dd)), (f32::from_bits(0x418f4bc7), f32::from_bits(0x425bdd2e)));
+    path.cubic_to(
+        (f32::from_bits(0x4191b646), f32::from_bits(0x425e1cab)),
+        (f32::from_bits(0x418edd30), f32::from_bits(0x425ca4dd)),
+        (f32::from_bits(0x418f4bc7), f32::from_bits(0x425bdd2e)),
+    );
     // 18.214f, 55.528f, 17.858f, 55.161f, 17.912f, 54.966f
     path.line_to((f32::from_bits(0x41903f7d), f32::from_bits(0x425b6e96)));
     // 18.031f, 54.858f
-    path.cubic_to((f32::from_bits(0x41921062), f32::from_bits(0x425aa6e8)), (f32::from_bits(0x4193872b), f32::from_bits(0x425bd1ea)), (f32::from_bits(0x41947ae1), f32::from_bits(0x425c77cd)));
+    path.cubic_to(
+        (f32::from_bits(0x41921062), f32::from_bits(0x425aa6e8)),
+        (f32::from_bits(0x4193872b), f32::from_bits(0x425bd1ea)),
+        (f32::from_bits(0x41947ae1), f32::from_bits(0x425c77cd)),
+    );
     // 18.258f, 54.663f, 18.441f, 54.955f, 18.56f, 55.117f
-    path.cubic_to((f32::from_bits(0x4195dd2f), f32::from_bits(0x425d6b83)), (f32::from_bits(0x4197ae14), f32::from_bits(0x425e1caa)), (f32::from_bits(0x419924dd), f32::from_bits(0x425ef9d9)));
+    path.cubic_to(
+        (f32::from_bits(0x4195dd2f), f32::from_bits(0x425d6b83)),
+        (f32::from_bits(0x4197ae14), f32::from_bits(0x425e1caa)),
+        (f32::from_bits(0x419924dd), f32::from_bits(0x425ef9d9)),
+    );
     // 18.733f, 55.355f, 18.96f, 55.528f, 19.143f, 55.744f
-    path.cubic_to((f32::from_bits(0x419a1893), f32::from_bits(0x425f9479)), (f32::from_bits(0x419adf3b), f32::from_bits(0x42601997)), (f32::from_bits(0x419bd2f1), f32::from_bits(0x42609db0)));
+    path.cubic_to(
+        (f32::from_bits(0x419a1893), f32::from_bits(0x425f9479)),
+        (f32::from_bits(0x419adf3b), f32::from_bits(0x42601997)),
+        (f32::from_bits(0x419bd2f1), f32::from_bits(0x42609db0)),
+    );
     // 19.262f, 55.895f, 19.359f, 56.025f, 19.478f, 56.154f
-    path.cubic_to((f32::from_bits(0x419c147a), f32::from_bits(0x4260c9b8)), (f32::from_bits(0x419c8312), f32::from_bits(0x4260e03f)), (f32::from_bits(0x419cb020), f32::from_bits(0x42610104)));
+    path.cubic_to(
+        (f32::from_bits(0x419c147a), f32::from_bits(0x4260c9b8)),
+        (f32::from_bits(0x419c8312), f32::from_bits(0x4260e03f)),
+        (f32::from_bits(0x419cb020), f32::from_bits(0x42610104)),
+    );
     // 19.51f, 56.197f, 19.564f, 56.219f, 19.586f, 56.251f
-    path.cubic_to((f32::from_bits(0x419d0830), f32::from_bits(0x42613850)), (f32::from_bits(0x419da3d6), f32::from_bits(0x4261bd6e)), (f32::from_bits(0x419e126e), f32::from_bits(0x4261d2f0)));
+    path.cubic_to(
+        (f32::from_bits(0x419d0830), f32::from_bits(0x42613850)),
+        (f32::from_bits(0x419da3d6), f32::from_bits(0x4261bd6e)),
+        (f32::from_bits(0x419e126e), f32::from_bits(0x4261d2f0)),
+    );
     // 19.629f, 56.305f, 19.705f, 56.435f, 19.759f, 56.456f
     path.line_to((f32::from_bits(0x419e28f5), f32::from_bits(0x4261d2f0)));
     // 19.77f, 56.456f
     path.line_to((f32::from_bits(0x419e28f5), f32::from_bits(0x4261f4bb)));
     // 19.77f, 56.489f
-    path.cubic_to((f32::from_bits(0x419e3d70), f32::from_bits(0x4261fef8)), (f32::from_bits(0x419e53f7), f32::from_bits(0x4261f4bb)), (f32::from_bits(0x419e8105), f32::from_bits(0x4261fef8)));
+    path.cubic_to(
+        (f32::from_bits(0x419e3d70), f32::from_bits(0x4261fef8)),
+        (f32::from_bits(0x419e53f7), f32::from_bits(0x4261f4bb)),
+        (f32::from_bits(0x419e8105), f32::from_bits(0x4261fef8)),
+    );
     // 19.78f, 56.499f, 19.791f, 56.489f, 19.813f, 56.499f
-    path.cubic_to((f32::from_bits(0x419eac07), f32::from_bits(0x426220c3)), (f32::from_bits(0x419eac07), f32::from_bits(0x42624187)), (f32::from_bits(0x419eef9d), f32::from_bits(0x4262580f)));
+    path.cubic_to(
+        (f32::from_bits(0x419eac07), f32::from_bits(0x426220c3)),
+        (f32::from_bits(0x419eac07), f32::from_bits(0x42624187)),
+        (f32::from_bits(0x419eef9d), f32::from_bits(0x4262580f)),
+    );
     // 19.834f, 56.532f, 19.834f, 56.564f, 19.867f, 56.586f
-    path.cubic_to((f32::from_bits(0x419fe353), f32::from_bits(0x4262f2af)), (f32::from_bits(0x41a0eb84), f32::from_bits(0x426377cd)), (f32::from_bits(0x41a1b22c), f32::from_bits(0x4263fbe6)));
+    path.cubic_to(
+        (f32::from_bits(0x419fe353), f32::from_bits(0x4262f2af)),
+        (f32::from_bits(0x41a0eb84), f32::from_bits(0x426377cd)),
+        (f32::from_bits(0x41a1b22c), f32::from_bits(0x4263fbe6)),
+    );
     // 19.986f, 56.737f, 20.115f, 56.867f, 20.212f, 56.996f
-    path.cubic_to((f32::from_bits(0x41a20a3c), f32::from_bits(0x42641db1)), (f32::from_bits(0x41a2e76b), f32::from_bits(0x4264a1c9)), (f32::from_bits(0x41a34188), f32::from_bits(0x4264ad0d)));
+    path.cubic_to(
+        (f32::from_bits(0x41a20a3c), f32::from_bits(0x42641db1)),
+        (f32::from_bits(0x41a2e76b), f32::from_bits(0x4264a1c9)),
+        (f32::from_bits(0x41a34188), f32::from_bits(0x4264ad0d)),
+    );
     // 20.255f, 57.029f, 20.363f, 57.158f, 20.407f, 57.169f
-    path.cubic_to((f32::from_bits(0x41a36c8a), f32::from_bits(0x4264ad0d)), (f32::from_bits(0x41a3c6a7), f32::from_bits(0x4264a1c9)), (f32::from_bits(0x41a3f1a9), f32::from_bits(0x4264ad0d)));
+    path.cubic_to(
+        (f32::from_bits(0x41a36c8a), f32::from_bits(0x4264ad0d)),
+        (f32::from_bits(0x41a3c6a7), f32::from_bits(0x4264a1c9)),
+        (f32::from_bits(0x41a3f1a9), f32::from_bits(0x4264ad0d)),
+    );
     // 20.428f, 57.169f, 20.472f, 57.158f, 20.493f, 57.169f
-    path.cubic_to((f32::from_bits(0x41a3f1a9), f32::from_bits(0x42648c48)), (f32::from_bits(0x41a41eb7), f32::from_bits(0x42648105)), (f32::from_bits(0x41a449b9), f32::from_bits(0x426475c1)));
+    path.cubic_to(
+        (f32::from_bits(0x41a3f1a9), f32::from_bits(0x42648c48)),
+        (f32::from_bits(0x41a41eb7), f32::from_bits(0x42648105)),
+        (f32::from_bits(0x41a449b9), f32::from_bits(0x426475c1)),
+    );
     // 20.493f, 57.137f, 20.515f, 57.126f, 20.536f, 57.115f
-    path.cubic_to((f32::from_bits(0x41a48d4f), f32::from_bits(0x4263f1a8)), (f32::from_bits(0x41a46040), f32::from_bits(0x42634082)), (f32::from_bits(0x41a48d4f), f32::from_bits(0x4262bb63)));
+    path.cubic_to(
+        (f32::from_bits(0x41a48d4f), f32::from_bits(0x4263f1a8)),
+        (f32::from_bits(0x41a46040), f32::from_bits(0x42634082)),
+        (f32::from_bits(0x41a48d4f), f32::from_bits(0x4262bb63)),
+    );
     // 20.569f, 56.986f, 20.547f, 56.813f, 20.569f, 56.683f
-    path.cubic_to((f32::from_bits(0x41a51061), f32::from_bits(0x426122d0)), (f32::from_bits(0x41a63126), f32::from_bits(0x425f51ea)), (f32::from_bits(0x41a82d0d), f32::from_bits(0x425e0624)));
+    path.cubic_to(
+        (f32::from_bits(0x41a51061), f32::from_bits(0x426122d0)),
+        (f32::from_bits(0x41a63126), f32::from_bits(0x425f51ea)),
+        (f32::from_bits(0x41a82d0d), f32::from_bits(0x425e0624)),
+    );
     // 20.633f, 56.284f, 20.774f, 55.83f, 21.022f, 55.506f
-    path.cubic_to((f32::from_bits(0x41a90a3c), f32::from_bits(0x425d820b)), (f32::from_bits(0x41aab01f), f32::from_bits(0x425cba5d)), (f32::from_bits(0x41ab0830), f32::from_bits(0x425c147a)));
+    path.cubic_to(
+        (f32::from_bits(0x41a90a3c), f32::from_bits(0x425d820b)),
+        (f32::from_bits(0x41aab01f), f32::from_bits(0x425cba5d)),
+        (f32::from_bits(0x41ab0830), f32::from_bits(0x425c147a)),
+    );
     // 21.13f, 55.377f, 21.336f, 55.182f, 21.379f, 55.02f
-    path.cubic_to((f32::from_bits(0x41aa147a), f32::from_bits(0x425bf3b5)), (f32::from_bits(0x41a8df3a), f32::from_bits(0x425c0936)), (f32::from_bits(0x41a7d4fd), f32::from_bits(0x425c147a)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa147a), f32::from_bits(0x425bf3b5)),
+        (f32::from_bits(0x41a8df3a), f32::from_bits(0x425c0936)),
+        (f32::from_bits(0x41a7d4fd), f32::from_bits(0x425c147a)),
+    );
     // 21.26f, 54.988f, 21.109f, 55.009f, 20.979f, 55.02f
-    path.cubic_to((f32::from_bits(0x41a74fde), f32::from_bits(0x425c147a)), (f32::from_bits(0x41a65e34), f32::from_bits(0x425c4082)), (f32::from_bits(0x41a5c28e), f32::from_bits(0x425c4082)));
+    path.cubic_to(
+        (f32::from_bits(0x41a74fde), f32::from_bits(0x425c147a)),
+        (f32::from_bits(0x41a65e34), f32::from_bits(0x425c4082)),
+        (f32::from_bits(0x41a5c28e), f32::from_bits(0x425c4082)),
+    );
     // 20.914f, 55.02f, 20.796f, 55.063f, 20.72f, 55.063f
-    path.cubic_to((f32::from_bits(0x41a56a7e), f32::from_bits(0x425c353e)), (f32::from_bits(0x41a4fbe6), f32::from_bits(0x425c147a)), (f32::from_bits(0x41a4ced8), f32::from_bits(0x425c0936)));
+    path.cubic_to(
+        (f32::from_bits(0x41a56a7e), f32::from_bits(0x425c353e)),
+        (f32::from_bits(0x41a4fbe6), f32::from_bits(0x425c147a)),
+        (f32::from_bits(0x41a4ced8), f32::from_bits(0x425c0936)),
+    );
     // 20.677f, 55.052f, 20.623f, 55.02f, 20.601f, 55.009f
-    path.cubic_to((f32::from_bits(0x41a53d70), f32::from_bits(0x425af4bb)), (f32::from_bits(0x41a5ed90), f32::from_bits(0x425abd6f)), (f32::from_bits(0x41a85a1c), f32::from_bits(0x425aa6e8)));
+    path.cubic_to(
+        (f32::from_bits(0x41a53d70), f32::from_bits(0x425af4bb)),
+        (f32::from_bits(0x41a5ed90), f32::from_bits(0x425abd6f)),
+        (f32::from_bits(0x41a85a1c), f32::from_bits(0x425aa6e8)),
+    );
     // 20.655f, 54.739f, 20.741f, 54.685f, 21.044f, 54.663f
-    path.cubic_to((f32::from_bits(0x41a920c4), f32::from_bits(0x425a9cab)), (f32::from_bits(0x41a9d0e5), f32::from_bits(0x425aa6e8)), (f32::from_bits(0x41aa5603), f32::from_bits(0x425a9167)));
+    path.cubic_to(
+        (f32::from_bits(0x41a920c4), f32::from_bits(0x425a9cab)),
+        (f32::from_bits(0x41a9d0e5), f32::from_bits(0x425aa6e8)),
+        (f32::from_bits(0x41aa5603), f32::from_bits(0x425a9167)),
+    );
     // 21.141f, 54.653f, 21.227f, 54.663f, 21.292f, 54.642f
-    path.cubic_to((f32::from_bits(0x41aa8311), f32::from_bits(0x425a8623)), (f32::from_bits(0x41aa9999), f32::from_bits(0x425a655f)), (f32::from_bits(0x41aab020), f32::from_bits(0x425a655f)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa8311), f32::from_bits(0x425a8623)),
+        (f32::from_bits(0x41aa9999), f32::from_bits(0x425a655f)),
+        (f32::from_bits(0x41aab020), f32::from_bits(0x425a655f)),
+    );
     // 21.314f, 54.631f, 21.325f, 54.599f, 21.336f, 54.599f
-    path.cubic_to((f32::from_bits(0x41aa3f7c), f32::from_bits(0x42599eb7)), (f32::from_bits(0x41a9a5e3), f32::from_bits(0x42591998)), (f32::from_bits(0x41a9374b), f32::from_bits(0x42586871)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa3f7c), f32::from_bits(0x42599eb7)),
+        (f32::from_bits(0x41a9a5e3), f32::from_bits(0x42591998)),
+        (f32::from_bits(0x41a9374b), f32::from_bits(0x42586871)),
+    );
     // 21.281f, 54.405f, 21.206f, 54.275f, 21.152f, 54.102f
-    path.cubic_to((f32::from_bits(0x41a8c8b3), f32::from_bits(0x4257e458)), (f32::from_bits(0x41a8b22c), f32::from_bits(0x42575f3a)), (f32::from_bits(0x41a85a1c), f32::from_bits(0x4256c49a)));
+    path.cubic_to(
+        (f32::from_bits(0x41a8c8b3), f32::from_bits(0x4257e458)),
+        (f32::from_bits(0x41a8b22c), f32::from_bits(0x42575f3a)),
+        (f32::from_bits(0x41a85a1c), f32::from_bits(0x4256c49a)),
+    );
     // 21.098f, 53.973f, 21.087f, 53.843f, 21.044f, 53.692f
-    path.cubic_to((f32::from_bits(0x41a76666), f32::from_bits(0x42551479)), (f32::from_bits(0x41a68937), f32::from_bits(0x4252cabf)), (f32::from_bits(0x41a74fdf), f32::from_bits(0x4250a1c9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a76666), f32::from_bits(0x42551479)),
+        (f32::from_bits(0x41a68937), f32::from_bits(0x4252cabf)),
+        (f32::from_bits(0x41a74fdf), f32::from_bits(0x4250a1c9)),
+    );
     // 20.925f, 53.27f, 20.817f, 52.698f, 20.914f, 52.158f
-    path.cubic_to((f32::from_bits(0x41a77ced), f32::from_bits(0x42500729)), (f32::from_bits(0x41a870a4), f32::from_bits(0x424e8417)), (f32::from_bits(0x41a8b22d), f32::from_bits(0x424e4ccb)));
+    path.cubic_to(
+        (f32::from_bits(0x41a77ced), f32::from_bits(0x42500729)),
+        (f32::from_bits(0x41a870a4), f32::from_bits(0x424e8417)),
+        (f32::from_bits(0x41a8b22d), f32::from_bits(0x424e4ccb)),
+    );
     // 20.936f, 52.007f, 21.055f, 51.629f, 21.087f, 51.575f
-    path.cubic_to((f32::from_bits(0x41a8b22d), f32::from_bits(0x424e4187)), (f32::from_bits(0x41aa147b), f32::from_bits(0x424cc9b9)), (f32::from_bits(0x41aab021), f32::from_bits(0x424c2f19)));
+    path.cubic_to(
+        (f32::from_bits(0x41a8b22d), f32::from_bits(0x424e4187)),
+        (f32::from_bits(0x41aa147b), f32::from_bits(0x424cc9b9)),
+        (f32::from_bits(0x41aab021), f32::from_bits(0x424c2f19)),
+    );
     // 21.087f, 51.564f, 21.26f, 51.197f, 21.336f, 51.046f
-    path.cubic_to((f32::from_bits(0x41aac49c), f32::from_bits(0x424c1892)), (f32::from_bits(0x41ab49bb), f32::from_bits(0x424b9eb7)), (f32::from_bits(0x41ab8b44), f32::from_bits(0x424b676b)));
+    path.cubic_to(
+        (f32::from_bits(0x41aac49c), f32::from_bits(0x424c1892)),
+        (f32::from_bits(0x41ab49bb), f32::from_bits(0x424b9eb7)),
+        (f32::from_bits(0x41ab8b44), f32::from_bits(0x424b676b)),
+    );
     // 21.346f, 51.024f, 21.411f, 50.905f, 21.443f, 50.851f
-    path.cubic_to((f32::from_bits(0x41ac3d71), f32::from_bits(0x424ab644)), (f32::from_bits(0x41ad45a2), f32::from_bits(0x424a26e8)), (f32::from_bits(0x41ae22d1), f32::from_bits(0x42498105)));
+    path.cubic_to(
+        (f32::from_bits(0x41ac3d71), f32::from_bits(0x424ab644)),
+        (f32::from_bits(0x41ad45a2), f32::from_bits(0x424a26e8)),
+        (f32::from_bits(0x41ae22d1), f32::from_bits(0x42498105)),
+    );
     // 21.53f, 50.678f, 21.659f, 50.538f, 21.767f, 50.376f
-    path.cubic_to((f32::from_bits(0x41ae6667), f32::from_bits(0x42496b84)), (f32::from_bits(0x41aeeb85), f32::from_bits(0x42491db1)), (f32::from_bits(0x41af0000), f32::from_bits(0x4248fbe6)));
+    path.cubic_to(
+        (f32::from_bits(0x41ae6667), f32::from_bits(0x42496b84)),
+        (f32::from_bits(0x41aeeb85), f32::from_bits(0x42491db1)),
+        (f32::from_bits(0x41af0000), f32::from_bits(0x4248fbe6)),
+    );
     // 21.8f, 50.355f, 21.865f, 50.279f, 21.875f, 50.246f
-    path.cubic_to((f32::from_bits(0x41b0624e), f32::from_bits(0x4248353e)), (f32::from_bits(0x41b1db23), f32::from_bits(0x424779da)), (f32::from_bits(0x41b353f8), f32::from_bits(0x4246bd6f)));
+    path.cubic_to(
+        (f32::from_bits(0x41b0624e), f32::from_bits(0x4248353e)),
+        (f32::from_bits(0x41b1db23), f32::from_bits(0x424779da)),
+        (f32::from_bits(0x41b353f8), f32::from_bits(0x4246bd6f)),
+    );
     // 22.048f, 50.052f, 22.232f, 49.869f, 22.416f, 49.685f
-    path.cubic_to((f32::from_bits(0x41b3c083), f32::from_bits(0x42468623)), (f32::from_bits(0x41b445a2), f32::from_bits(0x42464ed7)), (f32::from_bits(0x41b4cac1), f32::from_bits(0x4246178c)));
+    path.cubic_to(
+        (f32::from_bits(0x41b3c083), f32::from_bits(0x42468623)),
+        (f32::from_bits(0x41b445a2), f32::from_bits(0x42464ed7)),
+        (f32::from_bits(0x41b4cac1), f32::from_bits(0x4246178c)),
+    );
     // 22.469f, 49.631f, 22.534f, 49.577f, 22.599f, 49.523f
-    path.cubic_to((f32::from_bits(0x41b56667), f32::from_bits(0x4245c9b9)), (f32::from_bits(0x41b62d0f), f32::from_bits(0x4245872a)), (f32::from_bits(0x41b6c8b5), f32::from_bits(0x4245449a)));
+    path.cubic_to(
+        (f32::from_bits(0x41b56667), f32::from_bits(0x4245c9b9)),
+        (f32::from_bits(0x41b62d0f), f32::from_bits(0x4245872a)),
+        (f32::from_bits(0x41b6c8b5), f32::from_bits(0x4245449a)),
+    );
     // 22.675f, 49.447f, 22.772f, 49.382f, 22.848f, 49.317f
-    path.cubic_to((f32::from_bits(0x41b7624f), f32::from_bits(0x42450311)), (f32::from_bits(0x41b7e76d), f32::from_bits(0x4244a9fa)), (f32::from_bits(0x41b88313), f32::from_bits(0x42445d2d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b7624f), f32::from_bits(0x42450311)),
+        (f32::from_bits(0x41b7e76d), f32::from_bits(0x4244a9fa)),
+        (f32::from_bits(0x41b88313), f32::from_bits(0x42445d2d)),
+    );
     // 22.923f, 49.253f, 22.988f, 49.166f, 23.064f, 49.091f
-    path.cubic_to((f32::from_bits(0x41b949bb), f32::from_bits(0x4243ee95)), (f32::from_bits(0x41ba1063), f32::from_bits(0x424374ba)), (f32::from_bits(0x41baed92), f32::from_bits(0x42431166)));
+    path.cubic_to(
+        (f32::from_bits(0x41b949bb), f32::from_bits(0x4243ee95)),
+        (f32::from_bits(0x41ba1063), f32::from_bits(0x424374ba)),
+        (f32::from_bits(0x41baed92), f32::from_bits(0x42431166)),
+    );
     // 23.161f, 48.983f, 23.258f, 48.864f, 23.366f, 48.767f
-    path.cubic_to((f32::from_bits(0x41bb45a2), f32::from_bits(0x4242c393)), (f32::from_bits(0x41bbb43a), f32::from_bits(0x424276c6)), (f32::from_bits(0x41bc0e57), f32::from_bits(0x424228f3)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb45a2), f32::from_bits(0x4242c393)),
+        (f32::from_bits(0x41bbb43a), f32::from_bits(0x424276c6)),
+        (f32::from_bits(0x41bc0e57), f32::from_bits(0x424228f3)),
+    );
     // 23.409f, 48.691f, 23.463f, 48.616f, 23.507f, 48.54f
-    path.cubic_to((f32::from_bits(0x41bc6667), f32::from_bits(0x4241e664)), (f32::from_bits(0x41bc7ae2), f32::from_bits(0x4241a4da)), (f32::from_bits(0x41bcd2f3), f32::from_bits(0x4241624b)));
+    path.cubic_to(
+        (f32::from_bits(0x41bc6667), f32::from_bits(0x4241e664)),
+        (f32::from_bits(0x41bc7ae2), f32::from_bits(0x4241a4da)),
+        (f32::from_bits(0x41bcd2f3), f32::from_bits(0x4241624b)),
+    );
     // 23.55f, 48.475f, 23.56f, 48.411f, 23.603f, 48.346f
-    path.cubic_to((f32::from_bits(0x41bd0001), f32::from_bits(0x42411478)), (f32::from_bits(0x41bd0001), f32::from_bits(0x4240c6a5)), (f32::from_bits(0x41bd1689), f32::from_bits(0x4240851c)));
+    path.cubic_to(
+        (f32::from_bits(0x41bd0001), f32::from_bits(0x42411478)),
+        (f32::from_bits(0x41bd0001), f32::from_bits(0x4240c6a5)),
+        (f32::from_bits(0x41bd1689), f32::from_bits(0x4240851c)),
+    );
     // 23.625f, 48.27f, 23.625f, 48.194f, 23.636f, 48.13f
-    path.cubic_to((f32::from_bits(0x41bd2d10), f32::from_bits(0x42404cca)), (f32::from_bits(0x41bdb023), f32::from_bits(0x423fd3f5)), (f32::from_bits(0x41bd8521), f32::from_bits(0x423f7adf)));
+    path.cubic_to(
+        (f32::from_bits(0x41bd2d10), f32::from_bits(0x42404cca)),
+        (f32::from_bits(0x41bdb023), f32::from_bits(0x423fd3f5)),
+        (f32::from_bits(0x41bd8521), f32::from_bits(0x423f7adf)),
+    );
     // 23.647f, 48.075f, 23.711f, 47.957f, 23.69f, 47.87f
     path.line_to((f32::from_bits(0x41bd6e9a), f32::from_bits(0x423f7adf)));
     // 23.679f, 47.87f
-    path.cubic_to((f32::from_bits(0x41bd6e9a), f32::from_bits(0x423f7adf)), (f32::from_bits(0x41bd5813), f32::from_bits(0x423f4ed7)), (f32::from_bits(0x41bd168a), f32::from_bits(0x423f4499)));
+    path.cubic_to(
+        (f32::from_bits(0x41bd6e9a), f32::from_bits(0x423f7adf)),
+        (f32::from_bits(0x41bd5813), f32::from_bits(0x423f4ed7)),
+        (f32::from_bits(0x41bd168a), f32::from_bits(0x423f4499)),
+    );
     // 23.679f, 47.87f, 23.668f, 47.827f, 23.636f, 47.817f
-    path.cubic_to((f32::from_bits(0x41bc916b), f32::from_bits(0x423f22ce)), (f32::from_bits(0x41bc22d4), f32::from_bits(0x423f3955)), (f32::from_bits(0x41bb893a), f32::from_bits(0x423f178b)));
+    path.cubic_to(
+        (f32::from_bits(0x41bc916b), f32::from_bits(0x423f22ce)),
+        (f32::from_bits(0x41bc22d4), f32::from_bits(0x423f3955)),
+        (f32::from_bits(0x41bb893a), f32::from_bits(0x423f178b)),
+    );
     // 23.571f, 47.784f, 23.517f, 47.806f, 23.442f, 47.773f
-    path.cubic_to((f32::from_bits(0x41bb2f1d), f32::from_bits(0x423f0c47)), (f32::from_bits(0x41bb041b), f32::from_bits(0x423ee03f)), (f32::from_bits(0x41baac0b), f32::from_bits(0x423ec9b8)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb2f1d), f32::from_bits(0x423f0c47)),
+        (f32::from_bits(0x41bb041b), f32::from_bits(0x423ee03f)),
+        (f32::from_bits(0x41baac0b), f32::from_bits(0x423ec9b8)),
+    );
     // 23.398f, 47.762f, 23.377f, 47.719f, 23.334f, 47.697f
-    path.cubic_to((f32::from_bits(0x41baac0b), f32::from_bits(0x423ebf7b)), (f32::from_bits(0x41bac086), f32::from_bits(0x423ea8f3)), (f32::from_bits(0x41bac086), f32::from_bits(0x423e926c)));
+    path.cubic_to(
+        (f32::from_bits(0x41baac0b), f32::from_bits(0x423ebf7b)),
+        (f32::from_bits(0x41bac086), f32::from_bits(0x423ea8f3)),
+        (f32::from_bits(0x41bac086), f32::from_bits(0x423e926c)),
+    );
     // 23.334f, 47.687f, 23.344f, 47.665f, 23.344f, 47.643f
-    path.cubic_to((f32::from_bits(0x41bb2f1e), f32::from_bits(0x423e882f)), (f32::from_bits(0x41bc0e59), f32::from_bits(0x423e6664)), (f32::from_bits(0x41bc916b), f32::from_bits(0x423e5c26)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb2f1e), f32::from_bits(0x423e882f)),
+        (f32::from_bits(0x41bc0e59), f32::from_bits(0x423e6664)),
+        (f32::from_bits(0x41bc916b), f32::from_bits(0x423e5c26)),
+    );
     // 23.398f, 47.633f, 23.507f, 47.6f, 23.571f, 47.59f
-    path.cubic_to((f32::from_bits(0x41be4bc9), f32::from_bits(0x423e50e2)), (f32::from_bits(0x41c53542), f32::from_bits(0x423e926c)), (f32::from_bits(0x41c5ba61), f32::from_bits(0x423e24da)));
+    path.cubic_to(
+        (f32::from_bits(0x41be4bc9), f32::from_bits(0x423e50e2)),
+        (f32::from_bits(0x41c53542), f32::from_bits(0x423e926c)),
+        (f32::from_bits(0x41c5ba61), f32::from_bits(0x423e24da)),
+    );
     // 23.787f, 47.579f, 24.651f, 47.643f, 24.716f, 47.536f
-    path.cubic_to((f32::from_bits(0x41c61271), f32::from_bits(0x423de24b)), (f32::from_bits(0x41c61271), f32::from_bits(0x423d1a9d)), (f32::from_bits(0x41c63f80), f32::from_bits(0x423ca1c8)));
+    path.cubic_to(
+        (f32::from_bits(0x41c61271), f32::from_bits(0x423de24b)),
+        (f32::from_bits(0x41c61271), f32::from_bits(0x423d1a9d)),
+        (f32::from_bits(0x41c63f80), f32::from_bits(0x423ca1c8)),
+    );
     // 24.759f, 47.471f, 24.759f, 47.276f, 24.781f, 47.158f
-    path.cubic_to((f32::from_bits(0x41c68109), f32::from_bits(0x423bda1a)), (f32::from_bits(0x41c6ae18), f32::from_bits(0x423afceb)), (f32::from_bits(0x41c70628), f32::from_bits(0x423a2aff)));
+    path.cubic_to(
+        (f32::from_bits(0x41c68109), f32::from_bits(0x423bda1a)),
+        (f32::from_bits(0x41c6ae18), f32::from_bits(0x423afceb)),
+        (f32::from_bits(0x41c70628), f32::from_bits(0x423a2aff)),
+    );
     // 24.813f, 46.963f, 24.835f, 46.747f, 24.878f, 46.542f
-    path.cubic_to((f32::from_bits(0x41c71caf), f32::from_bits(0x42399ba3)), (f32::from_bits(0x41c81065), f32::from_bits(0x42379eb5)), (f32::from_bits(0x41c79fc2), f32::from_bits(0x4237459f)));
+    path.cubic_to(
+        (f32::from_bits(0x41c71caf), f32::from_bits(0x42399ba3)),
+        (f32::from_bits(0x41c81065), f32::from_bits(0x42379eb5)),
+        (f32::from_bits(0x41c79fc2), f32::from_bits(0x4237459f)),
+    );
     // 24.889f, 46.402f, 25.008f, 45.905f, 24.953f, 45.818f
-    path.cubic_to((f32::from_bits(0x41c70628), f32::from_bits(0x4236e24b)), (f32::from_bits(0x41c4dd33), f32::from_bits(0x4237459f)), (f32::from_bits(0x41c45814), f32::from_bits(0x423750e3)));
+    path.cubic_to(
+        (f32::from_bits(0x41c70628), f32::from_bits(0x4236e24b)),
+        (f32::from_bits(0x41c4dd33), f32::from_bits(0x4237459f)),
+        (f32::from_bits(0x41c45814), f32::from_bits(0x423750e3)),
+    );
     // 24.878f, 45.721f, 24.608f, 45.818f, 24.543f, 45.829f
-    path.cubic_to((f32::from_bits(0x41c245a5), f32::from_bits(0x42379eb6)), (f32::from_bits(0x41bea5e7), f32::from_bits(0x42380d4d)), (f32::from_bits(0x41bbf5c6), f32::from_bits(0x4237ec89)));
+    path.cubic_to(
+        (f32::from_bits(0x41c245a5), f32::from_bits(0x42379eb6)),
+        (f32::from_bits(0x41bea5e7), f32::from_bits(0x42380d4d)),
+        (f32::from_bits(0x41bbf5c6), f32::from_bits(0x4237ec89)),
+    );
     // 24.284f, 45.905f, 23.831f, 46.013f, 23.495f, 45.981f
-    path.cubic_to((f32::from_bits(0x41b9f9df), f32::from_bits(0x4237e145)), (f32::from_bits(0x41b7e770), f32::from_bits(0x4237a9fa)), (f32::from_bits(0x41b62d12), f32::from_bits(0x4237676a)));
+    path.cubic_to(
+        (f32::from_bits(0x41b9f9df), f32::from_bits(0x4237e145)),
+        (f32::from_bits(0x41b7e770), f32::from_bits(0x4237a9fa)),
+        (f32::from_bits(0x41b62d12), f32::from_bits(0x4237676a)),
+    );
     // 23.247f, 45.97f, 22.988f, 45.916f, 22.772f, 45.851f
-    path.cubic_to((f32::from_bits(0x41b4312b), f32::from_bits(0x423724db)), (f32::from_bits(0x41b1f1ae), f32::from_bits(0x42369fbc)), (f32::from_bits(0x41af9baa), f32::from_bits(0x423673b4)));
+    path.cubic_to(
+        (f32::from_bits(0x41b4312b), f32::from_bits(0x423724db)),
+        (f32::from_bits(0x41b1f1ae), f32::from_bits(0x42369fbc)),
+        (f32::from_bits(0x41af9baa), f32::from_bits(0x423673b4)),
+    );
     // 22.524f, 45.786f, 22.243f, 45.656f, 21.951f, 45.613f
-    path.cubic_to((f32::from_bits(0x41ae7ae5), f32::from_bits(0x42366977)), (f32::from_bits(0x41aced96), f32::from_bits(0x42365d2d)), (f32::from_bits(0x41ab8b48), f32::from_bits(0x42366977)));
+    path.cubic_to(
+        (f32::from_bits(0x41ae7ae5), f32::from_bits(0x42366977)),
+        (f32::from_bits(0x41aced96), f32::from_bits(0x42365d2d)),
+        (f32::from_bits(0x41ab8b48), f32::from_bits(0x42366977)),
+    );
     // 21.81f, 45.603f, 21.616f, 45.591f, 21.443f, 45.603f
-    path.cubic_to((f32::from_bits(0x41a9e771), f32::from_bits(0x42368a3c)), (f32::from_bits(0x41a82d13), f32::from_bits(0x4236d708)), (f32::from_bits(0x41a65e3a), f32::from_bits(0x4236b644)));
+    path.cubic_to(
+        (f32::from_bits(0x41a9e771), f32::from_bits(0x42368a3c)),
+        (f32::from_bits(0x41a82d13), f32::from_bits(0x4236d708)),
+        (f32::from_bits(0x41a65e3a), f32::from_bits(0x4236b644)),
+    );
     // 21.238f, 45.635f, 21.022f, 45.71f, 20.796f, 45.678f
-    path.cubic_to((f32::from_bits(0x41a65e3a), f32::from_bits(0x4236ab00)), (f32::from_bits(0x41a647b3), f32::from_bits(0x42369fbd)), (f32::from_bits(0x41a65e3a), f32::from_bits(0x42369479)));
+    path.cubic_to(
+        (f32::from_bits(0x41a65e3a), f32::from_bits(0x4236ab00)),
+        (f32::from_bits(0x41a647b3), f32::from_bits(0x42369fbd)),
+        (f32::from_bits(0x41a65e3a), f32::from_bits(0x42369479)),
+    );
     // 20.796f, 45.667f, 20.785f, 45.656f, 20.796f, 45.645f
-    path.cubic_to((f32::from_bits(0x41a672b5), f32::from_bits(0x42366977)), (f32::from_bits(0x41a7a7f4), f32::from_bits(0x42363125)), (f32::from_bits(0x41a81898), f32::from_bits(0x42361ba4)));
+    path.cubic_to(
+        (f32::from_bits(0x41a672b5), f32::from_bits(0x42366977)),
+        (f32::from_bits(0x41a7a7f4), f32::from_bits(0x42363125)),
+        (f32::from_bits(0x41a81898), f32::from_bits(0x42361ba4)),
+    );
     // 20.806f, 45.603f, 20.957f, 45.548f, 21.012f, 45.527f
-    path.cubic_to((f32::from_bits(0x41a85a21), f32::from_bits(0x42361060)), (f32::from_bits(0x41a8df40), f32::from_bits(0x4235d915)), (f32::from_bits(0x41a94dd7), f32::from_bits(0x4235cdd1)));
+    path.cubic_to(
+        (f32::from_bits(0x41a85a21), f32::from_bits(0x42361060)),
+        (f32::from_bits(0x41a8df40), f32::from_bits(0x4235d915)),
+        (f32::from_bits(0x41a94dd7), f32::from_bits(0x4235cdd1)),
+    );
     // 21.044f, 45.516f, 21.109f, 45.462f, 21.163f, 45.451f
-    path.cubic_to((f32::from_bits(0x41ab8b48), f32::from_bits(0x42356a7d)), (f32::from_bits(0x41af8523), f32::from_bits(0x423575c1)), (f32::from_bits(0x41b249be), f32::from_bits(0x42359685)));
+    path.cubic_to(
+        (f32::from_bits(0x41ab8b48), f32::from_bits(0x42356a7d)),
+        (f32::from_bits(0x41af8523), f32::from_bits(0x423575c1)),
+        (f32::from_bits(0x41b249be), f32::from_bits(0x42359685)),
+    );
     // 21.443f, 45.354f, 21.94f, 45.365f, 22.286f, 45.397f
-    path.cubic_to((f32::from_bits(0x41b3d70e), f32::from_bits(0x4235a1c9)), (f32::from_bits(0x41b6168b), f32::from_bits(0x4235cdd1)), (f32::from_bits(0x41b7e770), f32::from_bits(0x4235ad0c)));
+    path.cubic_to(
+        (f32::from_bits(0x41b3d70e), f32::from_bits(0x4235a1c9)),
+        (f32::from_bits(0x41b6168b), f32::from_bits(0x4235cdd1)),
+        (f32::from_bits(0x41b7e770), f32::from_bits(0x4235ad0c)),
+    );
     // 22.48f, 45.408f, 22.761f, 45.451f, 22.988f, 45.419f
-    path.cubic_to((f32::from_bits(0x41bac087), f32::from_bits(0x42359685)), (f32::from_bits(0x41bd6e9b), f32::from_bits(0x4234fbe5)), (f32::from_bits(0x41c03337), f32::from_bits(0x4234af18)));
+    path.cubic_to(
+        (f32::from_bits(0x41bac087), f32::from_bits(0x42359685)),
+        (f32::from_bits(0x41bd6e9b), f32::from_bits(0x4234fbe5)),
+        (f32::from_bits(0x41c03337), f32::from_bits(0x4234af18)),
+    );
     // 23.344f, 45.397f, 23.679f, 45.246f, 24.025f, 45.171f
-    path.cubic_to((f32::from_bits(0x41c2cac4), f32::from_bits(0x42346145)), (f32::from_bits(0x41c56252), f32::from_bits(0x4234820a)), (f32::from_bits(0x41c81066), f32::from_bits(0x42346145)));
+    path.cubic_to(
+        (f32::from_bits(0x41c2cac4), f32::from_bits(0x42346145)),
+        (f32::from_bits(0x41c56252), f32::from_bits(0x4234820a)),
+        (f32::from_bits(0x41c81066), f32::from_bits(0x42346145)),
+    );
     // 24.349f, 45.095f, 24.673f, 45.127f, 25.008f, 45.095f
-    path.cubic_to((f32::from_bits(0x41c824e1), f32::from_bits(0x42340935)), (f32::from_bits(0x41c89378), f32::from_bits(0x42330a3b)), (f32::from_bits(0x41c7b649), f32::from_bits(0x4232fef7)));
+    path.cubic_to(
+        (f32::from_bits(0x41c824e1), f32::from_bits(0x42340935)),
+        (f32::from_bits(0x41c89378), f32::from_bits(0x42330a3b)),
+        (f32::from_bits(0x41c7b649), f32::from_bits(0x4232fef7)),
+    );
     // 25.018f, 45.009f, 25.072f, 44.76f, 24.964f, 44.749f
-    path.cubic_to((f32::from_bits(0x41c6d91a), f32::from_bits(0x4232e976)), (f32::from_bits(0x41c5a3da), f32::from_bits(0x42338416)), (f32::from_bits(0x41c51ebc), f32::from_bits(0x4233a4da)));
+    path.cubic_to(
+        (f32::from_bits(0x41c6d91a), f32::from_bits(0x4232e976)),
+        (f32::from_bits(0x41c5a3da), f32::from_bits(0x42338416)),
+        (f32::from_bits(0x41c51ebc), f32::from_bits(0x4233a4da)),
+    );
     // 24.856f, 44.728f, 24.705f, 44.879f, 24.64f, 44.911f
-    path.cubic_to((f32::from_bits(0x41c42b06), f32::from_bits(0x4233bb61)), (f32::from_bits(0x41c2cac4), f32::from_bits(0x4233d0e2)), (f32::from_bits(0x41c1d70e), f32::from_bits(0x4233e769)));
+    path.cubic_to(
+        (f32::from_bits(0x41c42b06), f32::from_bits(0x4233bb61)),
+        (f32::from_bits(0x41c2cac4), f32::from_bits(0x4233d0e2)),
+        (f32::from_bits(0x41c1d70e), f32::from_bits(0x4233e769)),
+    );
     // 24.521f, 44.933f, 24.349f, 44.954f, 24.23f, 44.976f
-    path.cubic_to((f32::from_bits(0x41c08b47), f32::from_bits(0x4233f2ad)), (f32::from_bits(0x41bf1272), f32::from_bits(0x4233c6a4)), (f32::from_bits(0x41bdf3ba), f32::from_bits(0x4233bb61)));
+    path.cubic_to(
+        (f32::from_bits(0x41c08b47), f32::from_bits(0x4233f2ad)),
+        (f32::from_bits(0x41bf1272), f32::from_bits(0x4233c6a4)),
+        (f32::from_bits(0x41bdf3ba), f32::from_bits(0x4233bb61)),
+    );
     // 24.068f, 44.987f, 23.884f, 44.944f, 23.744f, 44.933f
-    path.cubic_to((f32::from_bits(0x41bcd2f5), f32::from_bits(0x4233b01d)), (f32::from_bits(0x41bbf5c6), f32::from_bits(0x4233b01d)), (f32::from_bits(0x41baed95), f32::from_bits(0x4233a4da)));
+    path.cubic_to(
+        (f32::from_bits(0x41bcd2f5), f32::from_bits(0x4233b01d)),
+        (f32::from_bits(0x41bbf5c6), f32::from_bits(0x4233b01d)),
+        (f32::from_bits(0x41baed95), f32::from_bits(0x4233a4da)),
+    );
     // 23.603f, 44.922f, 23.495f, 44.922f, 23.366f, 44.911f
-    path.cubic_to((f32::from_bits(0x41ba26ed), f32::from_bits(0x42338f59)), (f32::from_bits(0x41b91cb0), f32::from_bits(0x4233580d)), (f32::from_bits(0x41b83f81), f32::from_bits(0x4233580d)));
+    path.cubic_to(
+        (f32::from_bits(0x41ba26ed), f32::from_bits(0x42338f59)),
+        (f32::from_bits(0x41b91cb0), f32::from_bits(0x4233580d)),
+        (f32::from_bits(0x41b83f81), f32::from_bits(0x4233580d)),
+    );
     // 23.269f, 44.89f, 23.139f, 44.836f, 23.031f, 44.836f
-    path.cubic_to((f32::from_bits(0x41b4b43d), f32::from_bits(0x42333642)), (f32::from_bits(0x41b19791), f32::from_bits(0x4233a4da)), (f32::from_bits(0x41aea7f4), f32::from_bits(0x4233d0e2)));
+    path.cubic_to(
+        (f32::from_bits(0x41b4b43d), f32::from_bits(0x42333642)),
+        (f32::from_bits(0x41b19791), f32::from_bits(0x4233a4da)),
+        (f32::from_bits(0x41aea7f4), f32::from_bits(0x4233d0e2)),
+    );
     // 22.588f, 44.803f, 22.199f, 44.911f, 21.832f, 44.954f
-    path.cubic_to((f32::from_bits(0x41aba1cf), f32::from_bits(0x42340934)), (f32::from_bits(0x41a7666b), f32::from_bits(0x4233e769)), (f32::from_bits(0x41a4b856), f32::from_bits(0x42338415)));
+    path.cubic_to(
+        (f32::from_bits(0x41aba1cf), f32::from_bits(0x42340934)),
+        (f32::from_bits(0x41a7666b), f32::from_bits(0x4233e769)),
+        (f32::from_bits(0x41a4b856), f32::from_bits(0x42338415)),
+    );
     // 21.454f, 45.009f, 20.925f, 44.976f, 20.59f, 44.879f
-    path.cubic_to((f32::from_bits(0x41a46046), f32::from_bits(0x423378d1)), (f32::from_bits(0x41a3f1ae), f32::from_bits(0x4233580d)), (f32::from_bits(0x41a3c6ac), f32::from_bits(0x42334cc9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a46046), f32::from_bits(0x423378d1)),
+        (f32::from_bits(0x41a3f1ae), f32::from_bits(0x4233580d)),
+        (f32::from_bits(0x41a3c6ac), f32::from_bits(0x42334cc9)),
+    );
     // 20.547f, 44.868f, 20.493f, 44.836f, 20.472f, 44.825f
-    path.cubic_to((f32::from_bits(0x41a28f60), f32::from_bits(0x4233157d)), (f32::from_bits(0x41a19db6), f32::from_bits(0x42330a3a)), (f32::from_bits(0x41a0c087), f32::from_bits(0x4232c7aa)));
+    path.cubic_to(
+        (f32::from_bits(0x41a28f60), f32::from_bits(0x4233157d)),
+        (f32::from_bits(0x41a19db6), f32::from_bits(0x42330a3a)),
+        (f32::from_bits(0x41a0c087), f32::from_bits(0x4232c7aa)),
+    );
     // 20.32f, 44.771f, 20.202f, 44.76f, 20.094f, 44.695f
-    path.cubic_to((f32::from_bits(0x41a0eb89), f32::from_bits(0x4232bc66)), (f32::from_bits(0x41a0eb89), f32::from_bits(0x4232905e)), (f32::from_bits(0x41a10210), f32::from_bits(0x4232905e)));
+    path.cubic_to(
+        (f32::from_bits(0x41a0eb89), f32::from_bits(0x4232bc66)),
+        (f32::from_bits(0x41a0eb89), f32::from_bits(0x4232905e)),
+        (f32::from_bits(0x41a10210), f32::from_bits(0x4232905e)),
+    );
     // 20.115f, 44.684f, 20.115f, 44.641f, 20.126f, 44.641f
-    path.cubic_to((f32::from_bits(0x41a19db6), f32::from_bits(0x42325912)), (f32::from_bits(0x41a2645e), f32::from_bits(0x42326f99)), (f32::from_bits(0x41a35608), f32::from_bits(0x42326f99)));
+    path.cubic_to(
+        (f32::from_bits(0x41a19db6), f32::from_bits(0x42325912)),
+        (f32::from_bits(0x41a2645e), f32::from_bits(0x42326f99)),
+        (f32::from_bits(0x41a35608), f32::from_bits(0x42326f99)),
+    );
     // 20.202f, 44.587f, 20.299f, 44.609f, 20.417f, 44.609f
-    path.cubic_to((f32::from_bits(0x41a476cd), f32::from_bits(0x42324ed4)), (f32::from_bits(0x41a5ed95), f32::from_bits(0x4232384d)), (f32::from_bits(0x41a724e1), f32::from_bits(0x42320c45)));
+    path.cubic_to(
+        (f32::from_bits(0x41a476cd), f32::from_bits(0x42324ed4)),
+        (f32::from_bits(0x41a5ed95), f32::from_bits(0x4232384d)),
+        (f32::from_bits(0x41a724e1), f32::from_bits(0x42320c45)),
+    );
     // 20.558f, 44.577f, 20.741f, 44.555f, 20.893f, 44.512f
-    path.cubic_to((f32::from_bits(0x41a8c8b8), f32::from_bits(0x4231c9b6)), (f32::from_bits(0x41aa999d), f32::from_bits(0x42316662)), (f32::from_bits(0x41ac26ed), f32::from_bits(0x4231188f)));
+    path.cubic_to(
+        (f32::from_bits(0x41a8c8b8), f32::from_bits(0x4231c9b6)),
+        (f32::from_bits(0x41aa999d), f32::from_bits(0x42316662)),
+        (f32::from_bits(0x41ac26ed), f32::from_bits(0x4231188f)),
+    );
     // 21.098f, 44.447f, 21.325f, 44.35f, 21.519f, 44.274f
-    path.cubic_to((f32::from_bits(0x41af168b), f32::from_bits(0x423072ac)), (f32::from_bits(0x41b249be), f32::from_bits(0x42300f58)), (f32::from_bits(0x41b57ae5), f32::from_bits(0x422fe249)));
+    path.cubic_to(
+        (f32::from_bits(0x41af168b), f32::from_bits(0x423072ac)),
+        (f32::from_bits(0x41b249be), f32::from_bits(0x42300f58)),
+        (f32::from_bits(0x41b57ae5), f32::from_bits(0x422fe249)),
+    );
     // 21.886f, 44.112f, 22.286f, 44.015f, 22.685f, 43.971f
-    path.cubic_to((f32::from_bits(0x41b66e9b), f32::from_bits(0x422fd80c)), (f32::from_bits(0x41b7d0e9), f32::from_bits(0x422fee93)), (f32::from_bits(0x41b89791), f32::from_bits(0x422fee93)));
+    path.cubic_to(
+        (f32::from_bits(0x41b66e9b), f32::from_bits(0x422fd80c)),
+        (f32::from_bits(0x41b7d0e9), f32::from_bits(0x422fee93)),
+        (f32::from_bits(0x41b89791), f32::from_bits(0x422fee93)),
+    );
     // 22.804f, 43.961f, 22.977f, 43.983f, 23.074f, 43.983f
-    path.cubic_to((f32::from_bits(0x41bb1897), f32::from_bits(0x42300f58)), (f32::from_bits(0x41bd2d12), f32::from_bits(0x423024d9)), (f32::from_bits(0x41bfc49f), f32::from_bits(0x4230301c)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb1897), f32::from_bits(0x42300f58)),
+        (f32::from_bits(0x41bd2d12), f32::from_bits(0x423024d9)),
+        (f32::from_bits(0x41bfc49f), f32::from_bits(0x4230301c)),
+    );
     // 23.387f, 44.015f, 23.647f, 44.036f, 23.971f, 44.047f
-    path.cubic_to((f32::from_bits(0x41c0e357), f32::from_bits(0x423046a3)), (f32::from_bits(0x41c245a5), f32::from_bits(0x42305c24)), (f32::from_bits(0x41c3a7f3), f32::from_bits(0x423051e7)));
+    path.cubic_to(
+        (f32::from_bits(0x41c0e357), f32::from_bits(0x423046a3)),
+        (f32::from_bits(0x41c245a5), f32::from_bits(0x42305c24)),
+        (f32::from_bits(0x41c3a7f3), f32::from_bits(0x423051e7)),
+    );
     // 24.111f, 44.069f, 24.284f, 44.09f, 24.457f, 44.08f
-    path.cubic_to((f32::from_bits(0x41c50835), f32::from_bits(0x423046a3)), (f32::from_bits(0x41c69791), f32::from_bits(0x42300f58)), (f32::from_bits(0x41c79fc2), f32::from_bits(0x422fb641)));
+    path.cubic_to(
+        (f32::from_bits(0x41c50835), f32::from_bits(0x423046a3)),
+        (f32::from_bits(0x41c69791), f32::from_bits(0x42300f58)),
+        (f32::from_bits(0x41c79fc2), f32::from_bits(0x422fb641)),
+    );
     // 24.629f, 44.069f, 24.824f, 44.015f, 24.953f, 43.928f
-    path.cubic_to((f32::from_bits(0x41c7f9df), f32::from_bits(0x422fa0c0)), (f32::from_bits(0x41c86876), f32::from_bits(0x422f5e31)), (f32::from_bits(0x41c8eb89), f32::from_bits(0x422f52ed)));
+    path.cubic_to(
+        (f32::from_bits(0x41c7f9df), f32::from_bits(0x422fa0c0)),
+        (f32::from_bits(0x41c86876), f32::from_bits(0x422f5e31)),
+        (f32::from_bits(0x41c8eb89), f32::from_bits(0x422f52ed)),
+    );
     // 24.997f, 43.907f, 25.051f, 43.842f, 25.115f, 43.831f
-    path.cubic_to((f32::from_bits(0x41c9b43d), f32::from_bits(0x422f3c66)), (f32::from_bits(0x41c9df3f), f32::from_bits(0x422fb641)), (f32::from_bits(0x41c9f5c6), f32::from_bits(0x42300f57)));
+    path.cubic_to(
+        (f32::from_bits(0x41c9b43d), f32::from_bits(0x422f3c66)),
+        (f32::from_bits(0x41c9df3f), f32::from_bits(0x422fb641)),
+        (f32::from_bits(0x41c9f5c6), f32::from_bits(0x42300f57)),
+    );
     // 25.213f, 43.809f, 25.234f, 43.928f, 25.245f, 44.015f
-    path.cubic_to((f32::from_bits(0x41ca0c4d), f32::from_bits(0x4230e143)), (f32::from_bits(0x41c9df3f), f32::from_bits(0x42319ca7)), (f32::from_bits(0x41c9f5c6), f32::from_bits(0x4232384d)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca0c4d), f32::from_bits(0x4230e143)),
+        (f32::from_bits(0x41c9df3f), f32::from_bits(0x42319ca7)),
+        (f32::from_bits(0x41c9f5c6), f32::from_bits(0x4232384d)),
+    );
     // 25.256f, 44.22f, 25.234f, 44.403f, 25.245f, 44.555f
-    path.cubic_to((f32::from_bits(0x41ca395c), f32::from_bits(0x4234fbe2)), (f32::from_bits(0x41ca22d4), f32::from_bits(0x4237cabc)), (f32::from_bits(0x41ca7ae5), f32::from_bits(0x423a6d8c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca395c), f32::from_bits(0x4234fbe2)),
+        (f32::from_bits(0x41ca22d4), f32::from_bits(0x4237cabc)),
+        (f32::from_bits(0x41ca7ae5), f32::from_bits(0x423a6d8c)),
+    );
     // 25.278f, 45.246f, 25.267f, 45.948f, 25.31f, 46.607f
-    path.cubic_to((f32::from_bits(0x41ca916c), f32::from_bits(0x423b3f78)), (f32::from_bits(0x41ca645e), f32::from_bits(0x423ca1c5)), (f32::from_bits(0x41ca916c), f32::from_bits(0x423d9475)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca916c), f32::from_bits(0x423b3f78)),
+        (f32::from_bits(0x41ca645e), f32::from_bits(0x423ca1c5)),
+        (f32::from_bits(0x41ca916c), f32::from_bits(0x423d9475)),
+    );
     // 25.321f, 46.812f, 25.299f, 47.158f, 25.321f, 47.395f
-    path.cubic_to((f32::from_bits(0x41ca916c), f32::from_bits(0x423daafc)), (f32::from_bits(0x41ca7ae5), f32::from_bits(0x423dd704)), (f32::from_bits(0x41ca916c), f32::from_bits(0x423dec85)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca916c), f32::from_bits(0x423daafc)),
+        (f32::from_bits(0x41ca7ae5), f32::from_bits(0x423dd704)),
+        (f32::from_bits(0x41ca916c), f32::from_bits(0x423dec85)),
+    );
     // 25.321f, 47.417f, 25.31f, 47.46f, 25.321f, 47.481f
-    path.cubic_to((f32::from_bits(0x41caa5e7), f32::from_bits(0x423e0e50)), (f32::from_bits(0x41cb0004), f32::from_bits(0x423e459c)), (f32::from_bits(0x41cb2b06), f32::from_bits(0x423e50df)));
+    path.cubic_to(
+        (f32::from_bits(0x41caa5e7), f32::from_bits(0x423e0e50)),
+        (f32::from_bits(0x41cb0004), f32::from_bits(0x423e459c)),
+        (f32::from_bits(0x41cb2b06), f32::from_bits(0x423e50df)),
+    );
     // 25.331f, 47.514f, 25.375f, 47.568f, 25.396f, 47.579f
-    path.cubic_to((f32::from_bits(0x41cb6e9c), f32::from_bits(0x423e5c23)), (f32::from_bits(0x41ce47b2), f32::from_bits(0x423e7ce7)), (f32::from_bits(0x41ce8b48), f32::from_bits(0x423e6660)));
+    path.cubic_to(
+        (f32::from_bits(0x41cb6e9c), f32::from_bits(0x423e5c23)),
+        (f32::from_bits(0x41ce47b2), f32::from_bits(0x423e7ce7)),
+        (f32::from_bits(0x41ce8b48), f32::from_bits(0x423e6660)),
+    );
     // 25.429f, 47.59f, 25.785f, 47.622f, 25.818f, 47.6f
     path.line_to((f32::from_bits(0x41ceb64a), f32::from_bits(0x423e5c23)));
     // 25.839f, 47.59f
-    path.cubic_to((f32::from_bits(0x41d1395c), f32::from_bits(0x423e5c23)), (f32::from_bits(0x41d41273), f32::from_bits(0x423e50df)), (f32::from_bits(0x41d6666b), f32::from_bits(0x423e6660)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1395c), f32::from_bits(0x423e5c23)),
+        (f32::from_bits(0x41d41273), f32::from_bits(0x423e50df)),
+        (f32::from_bits(0x41d6666b), f32::from_bits(0x423e6660)),
+    );
     // 26.153f, 47.59f, 26.509f, 47.579f, 26.8f, 47.6f
-    path.cubic_to((f32::from_bits(0x41d71898), f32::from_bits(0x423e7ce7)), (f32::from_bits(0x41d80a42), f32::from_bits(0x423e5c23)), (f32::from_bits(0x41d8a5e8), f32::from_bits(0x423e7ce7)));
+    path.cubic_to(
+        (f32::from_bits(0x41d71898), f32::from_bits(0x423e7ce7)),
+        (f32::from_bits(0x41d80a42), f32::from_bits(0x423e5c23)),
+        (f32::from_bits(0x41d8a5e8), f32::from_bits(0x423e7ce7)),
+    );
     // 26.887f, 47.622f, 27.005f, 47.59f, 27.081f, 47.622f
-    path.cubic_to((f32::from_bits(0x41d8d2f6), f32::from_bits(0x423e882b)), (f32::from_bits(0x41d8d2f6), f32::from_bits(0x423e9268)), (f32::from_bits(0x41d8fdf8), f32::from_bits(0x423e9eb2)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8d2f6), f32::from_bits(0x423e882b)),
+        (f32::from_bits(0x41d8d2f6), f32::from_bits(0x423e9268)),
+        (f32::from_bits(0x41d8fdf8), f32::from_bits(0x423e9eb2)),
+    );
     // 27.103f, 47.633f, 27.103f, 47.643f, 27.124f, 47.655f
-    path.cubic_to((f32::from_bits(0x41d8e771), f32::from_bits(0x423ebf77)), (f32::from_bits(0x41d8fdf8), f32::from_bits(0x423ed4f8)), (f32::from_bits(0x41d8e771), f32::from_bits(0x423eeb7f)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8e771), f32::from_bits(0x423ebf77)),
+        (f32::from_bits(0x41d8fdf8), f32::from_bits(0x423ed4f8)),
+        (f32::from_bits(0x41d8e771), f32::from_bits(0x423eeb7f)),
+    );
     // 27.113f, 47.687f, 27.124f, 47.708f, 27.113f, 47.73f
-    path.cubic_to((f32::from_bits(0x41d88f61), f32::from_bits(0x423f4496)), (f32::from_bits(0x41d71898), f32::from_bits(0x423f4496)), (f32::from_bits(0x41d6aa00), f32::from_bits(0x423f9162)));
+    path.cubic_to(
+        (f32::from_bits(0x41d88f61), f32::from_bits(0x423f4496)),
+        (f32::from_bits(0x41d71898), f32::from_bits(0x423f4496)),
+        (f32::from_bits(0x41d6aa00), f32::from_bits(0x423f9162)),
+    );
     // 27.07f, 47.817f, 26.887f, 47.817f, 26.833f, 47.892f
-    path.cubic_to((f32::from_bits(0x41d547b2), f32::from_bits(0x42406e91)), (f32::from_bits(0x41d43d75), f32::from_bits(0x4241ba58)), (f32::from_bits(0x41d38d54), f32::from_bits(0x4242b952)));
+    path.cubic_to(
+        (f32::from_bits(0x41d547b2), f32::from_bits(0x42406e91)),
+        (f32::from_bits(0x41d43d75), f32::from_bits(0x4241ba58)),
+        (f32::from_bits(0x41d38d54), f32::from_bits(0x4242b952)),
+    );
     // 26.66f, 48.108f, 26.53f, 48.432f, 26.444f, 48.681f
-    path.cubic_to((f32::from_bits(0x41d1395c), f32::from_bits(0x4245a8f0)), (f32::from_bits(0x41d0b231), f32::from_bits(0x42491dac)), (f32::from_bits(0x41d2147f), f32::from_bits(0x424c2f15)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1395c), f32::from_bits(0x4245a8f0)),
+        (f32::from_bits(0x41d0b231), f32::from_bits(0x42491dac)),
+        (f32::from_bits(0x41d2147f), f32::from_bits(0x424c2f15)),
+    );
     // 26.153f, 49.415f, 26.087f, 50.279f, 26.26f, 51.046f
-    path.cubic_to((f32::from_bits(0x41d2418d), f32::from_bits(0x424c7be2)), (f32::from_bits(0x41d2999e), f32::from_bits(0x424cc9b5)), (f32::from_bits(0x41d2b025), f32::from_bits(0x424d0c44)));
+    path.cubic_to(
+        (f32::from_bits(0x41d2418d), f32::from_bits(0x424c7be2)),
+        (f32::from_bits(0x41d2999e), f32::from_bits(0x424cc9b5)),
+        (f32::from_bits(0x41d2b025), f32::from_bits(0x424d0c44)),
+    );
     // 26.282f, 51.121f, 26.325f, 51.197f, 26.336f, 51.262f
-    path.cubic_to((f32::from_bits(0x41d33544), f32::from_bits(0x424dc7a8)), (f32::from_bits(0x41d3a3db), f32::from_bits(0x424e8413)), (f32::from_bits(0x41d453fc), f32::from_bits(0x424f136f)));
+    path.cubic_to(
+        (f32::from_bits(0x41d33544), f32::from_bits(0x424dc7a8)),
+        (f32::from_bits(0x41d3a3db), f32::from_bits(0x424e8413)),
+        (f32::from_bits(0x41d453fc), f32::from_bits(0x424f136f)),
+    );
     // 26.401f, 51.445f, 26.455f, 51.629f, 26.541f, 51.769f
-    path.cubic_to((f32::from_bits(0x41d453fc), f32::from_bits(0x424f136f)), (f32::from_bits(0x41d59fc3), f32::from_bits(0x42506a79)), (f32::from_bits(0x41d6c087), f32::from_bits(0x4250e454)));
+    path.cubic_to(
+        (f32::from_bits(0x41d453fc), f32::from_bits(0x424f136f)),
+        (f32::from_bits(0x41d59fc3), f32::from_bits(0x42506a79)),
+        (f32::from_bits(0x41d6c087), f32::from_bits(0x4250e454)),
+    );
     // 26.541f, 51.769f, 26.703f, 52.104f, 26.844f, 52.223f
-    path.cubic_to((f32::from_bits(0x41d6c087), f32::from_bits(0x4250ef98)), (f32::from_bits(0x41d6eb89), f32::from_bits(0x4251105c)), (f32::from_bits(0x41d70210), f32::from_bits(0x4251105c)));
+    path.cubic_to(
+        (f32::from_bits(0x41d6c087), f32::from_bits(0x4250ef98)),
+        (f32::from_bits(0x41d6eb89), f32::from_bits(0x4251105c)),
+        (f32::from_bits(0x41d70210), f32::from_bits(0x4251105c)),
+    );
     // 26.844f, 52.234f, 26.865f, 52.266f, 26.876f, 52.266f
-    path.cubic_to((f32::from_bits(0x41d71897), f32::from_bits(0x42511ba0)), (f32::from_bits(0x41d75a20), f32::from_bits(0x4251105c)), (f32::from_bits(0x41d7872f), f32::from_bits(0x4251105c)));
+    path.cubic_to(
+        (f32::from_bits(0x41d71897), f32::from_bits(0x42511ba0)),
+        (f32::from_bits(0x41d75a20), f32::from_bits(0x4251105c)),
+        (f32::from_bits(0x41d7872f), f32::from_bits(0x4251105c)),
+    );
     // 26.887f, 52.277f, 26.919f, 52.266f, 26.941f, 52.266f
-    path.cubic_to((f32::from_bits(0x41d87ae5), f32::from_bits(0x42501ca6)), (f32::from_bits(0x41d9147f), f32::from_bits(0x424f136e)), (f32::from_bits(0x41da0835), f32::from_bits(0x424e157b)));
+    path.cubic_to(
+        (f32::from_bits(0x41d87ae5), f32::from_bits(0x42501ca6)),
+        (f32::from_bits(0x41d9147f), f32::from_bits(0x424f136e)),
+        (f32::from_bits(0x41da0835), f32::from_bits(0x424e157b)),
+    );
     // 27.06f, 52.028f, 27.135f, 51.769f, 27.254f, 51.521f
-    path.cubic_to((f32::from_bits(0x41da1ebc), f32::from_bits(0x424df4b6)), (f32::from_bits(0x41db1066), f32::from_bits(0x424d0c44)), (f32::from_bits(0x41db1066), f32::from_bits(0x424d0100)));
+    path.cubic_to(
+        (f32::from_bits(0x41da1ebc), f32::from_bits(0x424df4b6)),
+        (f32::from_bits(0x41db1066), f32::from_bits(0x424d0c44)),
+        (f32::from_bits(0x41db1066), f32::from_bits(0x424d0100)),
+    );
     // 27.265f, 51.489f, 27.383f, 51.262f, 27.383f, 51.251f
-    path.cubic_to((f32::from_bits(0x41db3d74), f32::from_bits(0x424cc9b4)), (f32::from_bits(0x41db9585), f32::from_bits(0x424c8725)), (f32::from_bits(0x41dbd91a), f32::from_bits(0x424c5b1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41db3d74), f32::from_bits(0x424cc9b4)),
+        (f32::from_bits(0x41db9585), f32::from_bits(0x424c8725)),
+        (f32::from_bits(0x41dbd91a), f32::from_bits(0x424c5b1d)),
+    );
     // 27.405f, 51.197f, 27.448f, 51.132f, 27.481f, 51.089f
-    path.cubic_to((f32::from_bits(0x41dc5e39), f32::from_bits(0x424bcbc1)), (f32::from_bits(0x41dcf7d2), f32::from_bits(0x424b301b)), (f32::from_bits(0x41dd7cf1), f32::from_bits(0x424aac02)));
+    path.cubic_to(
+        (f32::from_bits(0x41dc5e39), f32::from_bits(0x424bcbc1)),
+        (f32::from_bits(0x41dcf7d2), f32::from_bits(0x424b301b)),
+        (f32::from_bits(0x41dd7cf1), f32::from_bits(0x424aac02)),
+    );
     // 27.546f, 50.949f, 27.621f, 50.797f, 27.686f, 50.668f
-    path.cubic_to((f32::from_bits(0x41ddd501), f32::from_bits(0x424a5e2f)), (f32::from_bits(0x41ddeb89), f32::from_bits(0x424a105c)), (f32::from_bits(0x41de4399), f32::from_bits(0x4249b84c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ddd501), f32::from_bits(0x424a5e2f)),
+        (f32::from_bits(0x41ddeb89), f32::from_bits(0x424a105c)),
+        (f32::from_bits(0x41de4399), f32::from_bits(0x4249b84c)),
+    );
     // 27.729f, 50.592f, 27.74f, 50.516f, 27.783f, 50.43f
-    path.cubic_to((f32::from_bits(0x41de70a7), f32::from_bits(0x4249a1c5)), (f32::from_bits(0x41def5c6), f32::from_bits(0x42490725)), (f32::from_bits(0x41df20c8), f32::from_bits(0x4248e660)));
+    path.cubic_to(
+        (f32::from_bits(0x41de70a7), f32::from_bits(0x4249a1c5)),
+        (f32::from_bits(0x41def5c6), f32::from_bits(0x42490725)),
+        (f32::from_bits(0x41df20c8), f32::from_bits(0x4248e660)),
+    );
     // 27.805f, 50.408f, 27.87f, 50.257f, 27.891f, 50.225f
-    path.cubic_to((f32::from_bits(0x41df8f60), f32::from_bits(0x42488206)), (f32::from_bits(0x41e0c49f), f32::from_bits(0x42474cc6)), (f32::from_bits(0x41e10835), f32::from_bits(0x42472c02)));
+    path.cubic_to(
+        (f32::from_bits(0x41df8f60), f32::from_bits(0x42488206)),
+        (f32::from_bits(0x41e0c49f), f32::from_bits(0x42474cc6)),
+        (f32::from_bits(0x41e10835), f32::from_bits(0x42472c02)),
+    );
     // 27.945f, 50.127f, 28.096f, 49.825f, 28.129f, 49.793f
-    path.cubic_to((f32::from_bits(0x41e11ebc), f32::from_bits(0x42472c02)), (f32::from_bits(0x41e13337), f32::from_bits(0x4246fef4)), (f32::from_bits(0x41e13337), f32::from_bits(0x4246f4b6)));
+    path.cubic_to(
+        (f32::from_bits(0x41e11ebc), f32::from_bits(0x42472c02)),
+        (f32::from_bits(0x41e13337), f32::from_bits(0x4246fef4)),
+        (f32::from_bits(0x41e13337), f32::from_bits(0x4246f4b6)),
+    );
     // 28.14f, 49.793f, 28.15f, 49.749f, 28.15f, 49.739f
-    path.cubic_to((f32::from_bits(0x41e149be), f32::from_bits(0x4246c7a8)), (f32::from_bits(0x41e226ed), f32::from_bits(0x42461787)), (f32::from_bits(0x41e253fc), f32::from_bits(0x4245df35)));
+    path.cubic_to(
+        (f32::from_bits(0x41e149be), f32::from_bits(0x4246c7a8)),
+        (f32::from_bits(0x41e226ed), f32::from_bits(0x42461787)),
+        (f32::from_bits(0x41e253fc), f32::from_bits(0x4245df35)),
+    );
     // 28.161f, 49.695f, 28.269f, 49.523f, 28.291f, 49.468f
-    path.cubic_to((f32::from_bits(0x41e27efe), f32::from_bits(0x4245d3f1)), (f32::from_bits(0x41e2ac0c), f32::from_bits(0x42459ca6)), (f32::from_bits(0x41e2ac0c), f32::from_bits(0x42459162)));
+    path.cubic_to(
+        (f32::from_bits(0x41e27efe), f32::from_bits(0x4245d3f1)),
+        (f32::from_bits(0x41e2ac0c), f32::from_bits(0x42459ca6)),
+        (f32::from_bits(0x41e2ac0c), f32::from_bits(0x42459162)),
+    );
     // 28.312f, 49.457f, 28.334f, 49.403f, 28.334f, 49.392f
-    path.cubic_to((f32::from_bits(0x41e372b4), f32::from_bits(0x4244e141)), (f32::from_bits(0x41e4666a), f32::from_bits(0x42445c23)), (f32::from_bits(0x41e4eb89), f32::from_bits(0x42437ef3)));
+    path.cubic_to(
+        (f32::from_bits(0x41e372b4), f32::from_bits(0x4244e141)),
+        (f32::from_bits(0x41e4666a), f32::from_bits(0x42445c23)),
+        (f32::from_bits(0x41e4eb89), f32::from_bits(0x42437ef3)),
+    );
     // 28.431f, 49.22f, 28.55f, 49.09f, 28.615f, 48.874f
-    path.cubic_to((f32::from_bits(0x41e4a7f3), f32::from_bits(0x424373af)), (f32::from_bits(0x41e47ae5), f32::from_bits(0x42435e2e)), (f32::from_bits(0x41e4666a), f32::from_bits(0x42435e2e)));
+    path.cubic_to(
+        (f32::from_bits(0x41e4a7f3), f32::from_bits(0x424373af)),
+        (f32::from_bits(0x41e47ae5), f32::from_bits(0x42435e2e)),
+        (f32::from_bits(0x41e4666a), f32::from_bits(0x42435e2e)),
+    );
     // 28.582f, 48.863f, 28.56f, 48.842f, 28.55f, 48.842f
-    path.cubic_to((f32::from_bits(0x41e3893b), f32::from_bits(0x42433c63)), (f32::from_bits(0x41e1fbeb), f32::from_bits(0x4243686b)), (f32::from_bits(0x41e18b47), f32::from_bits(0x42431b9f)));
+    path.cubic_to(
+        (f32::from_bits(0x41e3893b), f32::from_bits(0x42433c63)),
+        (f32::from_bits(0x41e1fbeb), f32::from_bits(0x4243686b)),
+        (f32::from_bits(0x41e18b47), f32::from_bits(0x42431b9f)),
+    );
     // 28.442f, 48.809f, 28.248f, 48.852f, 28.193f, 48.777f
-    path.cubic_to((f32::from_bits(0x41e16045), f32::from_bits(0x4242f9d4)), (f32::from_bits(0x41e18b47), f32::from_bits(0x4242ee91)), (f32::from_bits(0x41e16045), f32::from_bits(0x4242d910)));
+    path.cubic_to(
+        (f32::from_bits(0x41e16045), f32::from_bits(0x4242f9d4)),
+        (f32::from_bits(0x41e18b47), f32::from_bits(0x4242ee91)),
+        (f32::from_bits(0x41e16045), f32::from_bits(0x4242d910)),
+    );
     // 28.172f, 48.744f, 28.193f, 48.733f, 28.172f, 48.712f
-    path.cubic_to((f32::from_bits(0x41e1a1ce), f32::from_bits(0x4242b84b)), (f32::from_bits(0x41e1fbeb), f32::from_bits(0x42429681)), (f32::from_bits(0x41e226ed), f32::from_bits(0x42429681)));
+    path.cubic_to(
+        (f32::from_bits(0x41e1a1ce), f32::from_bits(0x4242b84b)),
+        (f32::from_bits(0x41e1fbeb), f32::from_bits(0x42429681)),
+        (f32::from_bits(0x41e226ed), f32::from_bits(0x42429681)),
+    );
     // 28.204f, 48.68f, 28.248f, 48.647f, 28.269f, 48.647f
-    path.cubic_to((f32::from_bits(0x41e3cac4), f32::from_bits(0x42425f35)), (f32::from_bits(0x41e9c087), f32::from_bits(0x4242b84c)), (f32::from_bits(0x41ea5c2c), f32::from_bits(0x424248ae)));
+    path.cubic_to(
+        (f32::from_bits(0x41e3cac4), f32::from_bits(0x42425f35)),
+        (f32::from_bits(0x41e9c087), f32::from_bits(0x4242b84c)),
+        (f32::from_bits(0x41ea5c2c), f32::from_bits(0x424248ae)),
+    );
     // 28.474f, 48.593f, 29.219f, 48.68f, 29.295f, 48.571f
-    path.cubic_to((f32::from_bits(0x41eacac4), f32::from_bits(0x4241fbe1)), (f32::from_bits(0x41eacac4), f32::from_bits(0x42414aba)), (f32::from_bits(0x41eaf7d2), f32::from_bits(0x4240d0df)));
+    path.cubic_to(
+        (f32::from_bits(0x41eacac4), f32::from_bits(0x4241fbe1)),
+        (f32::from_bits(0x41eacac4), f32::from_bits(0x42414aba)),
+        (f32::from_bits(0x41eaf7d2), f32::from_bits(0x4240d0df)),
+    );
     // 29.349f, 48.496f, 29.349f, 48.323f, 29.371f, 48.204f
-    path.cubic_to((f32::from_bits(0x41eb395b), f32::from_bits(0x4240580a)), (f32::from_bits(0x41eba7f3), f32::from_bits(0x423fb121)), (f32::from_bits(0x41ebd501), f32::from_bits(0x423f21c4)));
+    path.cubic_to(
+        (f32::from_bits(0x41eb395b), f32::from_bits(0x4240580a)),
+        (f32::from_bits(0x41eba7f3), f32::from_bits(0x423fb121)),
+        (f32::from_bits(0x41ebd501), f32::from_bits(0x423f21c4)),
+    );
     // 29.403f, 48.086f, 29.457f, 47.923f, 29.479f, 47.783f
-    path.cubic_to((f32::from_bits(0x41ec2d11), f32::from_bits(0x423e4fd8)), (f32::from_bits(0x41ec5813), f32::from_bits(0x423d936e)), (f32::from_bits(0x41ecb230), f32::from_bits(0x423cb63f)));
+    path.cubic_to(
+        (f32::from_bits(0x41ec2d11), f32::from_bits(0x423e4fd8)),
+        (f32::from_bits(0x41ec5813), f32::from_bits(0x423d936e)),
+        (f32::from_bits(0x41ecb230), f32::from_bits(0x423cb63f)),
+    );
     // 29.522f, 47.578f, 29.543f, 47.394f, 29.587f, 47.178f
-    path.cubic_to((f32::from_bits(0x41ecc8b7), f32::from_bits(0x423c5e2f)), (f32::from_bits(0x41edba61), f32::from_bits(0x423b332d)), (f32::from_bits(0x41ed8f5f), f32::from_bits(0x423ac495)));
+    path.cubic_to(
+        (f32::from_bits(0x41ecc8b7), f32::from_bits(0x423c5e2f)),
+        (f32::from_bits(0x41edba61), f32::from_bits(0x423b332d)),
+        (f32::from_bits(0x41ed8f5f), f32::from_bits(0x423ac495)),
+    );
     // 29.598f, 47.092f, 29.716f, 46.8f, 29.695f, 46.692f
-    path.cubic_to((f32::from_bits(0x41ed6251), f32::from_bits(0x423a8d49)), (f32::from_bits(0x41ec9ba9), f32::from_bits(0x423a407c)), (f32::from_bits(0x41ec2d11), f32::from_bits(0x423a3539)));
+    path.cubic_to(
+        (f32::from_bits(0x41ed6251), f32::from_bits(0x423a8d49)),
+        (f32::from_bits(0x41ec9ba9), f32::from_bits(0x423a407c)),
+        (f32::from_bits(0x41ec2d11), f32::from_bits(0x423a3539)),
+    );
     // 29.673f, 46.638f, 29.576f, 46.563f, 29.522f, 46.552f
-    path.cubic_to((f32::from_bits(0x41ec0003), f32::from_bits(0x423a29f5)), (f32::from_bits(0x41ebeb88), f32::from_bits(0x423a3539)), (f32::from_bits(0x41ebd501), f32::from_bits(0x423a3539)));
+    path.cubic_to(
+        (f32::from_bits(0x41ec0003), f32::from_bits(0x423a29f5)),
+        (f32::from_bits(0x41ebeb88), f32::from_bits(0x423a3539)),
+        (f32::from_bits(0x41ebd501), f32::from_bits(0x423a3539)),
+    );
     // 29.5f, 46.541f, 29.49f, 46.552f, 29.479f, 46.552f
-    path.cubic_to((f32::from_bits(0x41eb6669), f32::from_bits(0x423a29f5)), (f32::from_bits(0x41ea72b3), f32::from_bits(0x4239f2aa)), (f32::from_bits(0x41e9c086), f32::from_bits(0x423a0931)));
+    path.cubic_to(
+        (f32::from_bits(0x41eb6669), f32::from_bits(0x423a29f5)),
+        (f32::from_bits(0x41ea72b3), f32::from_bits(0x4239f2aa)),
+        (f32::from_bits(0x41e9c086), f32::from_bits(0x423a0931)),
+    );
     // 29.425f, 46.541f, 29.306f, 46.487f, 29.219f, 46.509f
-    path.cubic_to((f32::from_bits(0x41e99584), f32::from_bits(0x423a0931)), (f32::from_bits(0x41e96876), f32::from_bits(0x423a29f6)), (f32::from_bits(0x41e953fb), f32::from_bits(0x423a3539)));
+    path.cubic_to(
+        (f32::from_bits(0x41e99584), f32::from_bits(0x423a0931)),
+        (f32::from_bits(0x41e96876), f32::from_bits(0x423a29f6)),
+        (f32::from_bits(0x41e953fb), f32::from_bits(0x423a3539)),
+    );
     // 29.198f, 46.509f, 29.176f, 46.541f, 29.166f, 46.552f
-    path.cubic_to((f32::from_bits(0x41e96876), f32::from_bits(0x423a8d49)), (f32::from_bits(0x41e9c086), f32::from_bits(0x423acfd9)), (f32::from_bits(0x41e9d70d), f32::from_bits(0x423b28ef)));
+    path.cubic_to(
+        (f32::from_bits(0x41e96876), f32::from_bits(0x423a8d49)),
+        (f32::from_bits(0x41e9c086), f32::from_bits(0x423acfd9)),
+        (f32::from_bits(0x41e9d70d), f32::from_bits(0x423b28ef)),
+    );
     // 29.176f, 46.638f, 29.219f, 46.703f, 29.23f, 46.79f
-    path.cubic_to((f32::from_bits(0x41ea041b), f32::from_bits(0x423bd910)), (f32::from_bits(0x41e8fbea), f32::from_bits(0x423c73b0)), (f32::from_bits(0x41e849bd), f32::from_bits(0x423cac01)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea041b), f32::from_bits(0x423bd910)),
+        (f32::from_bits(0x41e8fbea), f32::from_bits(0x423c73b0)),
+        (f32::from_bits(0x41e849bd), f32::from_bits(0x423cac01)),
+    );
     // 29.252f, 46.962f, 29.123f, 47.113f, 29.036f, 47.168f
-    path.cubic_to((f32::from_bits(0x41e75607), f32::from_bits(0x423cf8ce)), (f32::from_bits(0x41e5f3b9), f32::from_bits(0x423ced8a)), (f32::from_bits(0x41e4eb88), f32::from_bits(0x423cd809)));
+    path.cubic_to(
+        (f32::from_bits(0x41e75607), f32::from_bits(0x423cf8ce)),
+        (f32::from_bits(0x41e5f3b9), f32::from_bits(0x423ced8a)),
+        (f32::from_bits(0x41e4eb88), f32::from_bits(0x423cd809)),
+    );
     // 28.917f, 47.243f, 28.744f, 47.232f, 28.615f, 47.211f
-    path.cubic_to((f32::from_bits(0x41e372b3), f32::from_bits(0x423cb63e)), (f32::from_bits(0x41e2ac0b), f32::from_bits(0x423c0517)), (f32::from_bits(0x41e10834), f32::from_bits(0x423c52ea)));
+    path.cubic_to(
+        (f32::from_bits(0x41e372b3), f32::from_bits(0x423cb63e)),
+        (f32::from_bits(0x41e2ac0b), f32::from_bits(0x423c0517)),
+        (f32::from_bits(0x41e10834), f32::from_bits(0x423c52ea)),
+    );
     // 28.431f, 47.178f, 28.334f, 47.005f, 28.129f, 47.081f
-    path.cubic_to((f32::from_bits(0x41e0db26), f32::from_bits(0x423cd809)), (f32::from_bits(0x41e0999c), f32::from_bits(0x423d46a0)), (f32::from_bits(0x41dfd0e8), f32::from_bits(0x423d72a8)));
+    path.cubic_to(
+        (f32::from_bits(0x41e0db26), f32::from_bits(0x423cd809)),
+        (f32::from_bits(0x41e0999c), f32::from_bits(0x423d46a0)),
+        (f32::from_bits(0x41dfd0e8), f32::from_bits(0x423d72a8)),
+    );
     // 28.107f, 47.211f, 28.075f, 47.319f, 27.977f, 47.362f
-    path.cubic_to((f32::from_bits(0x41deb230), f32::from_bits(0x423dcab8)), (f32::from_bits(0x41dd3b67), f32::from_bits(0x423d8829)), (f32::from_bits(0x41dc312a), f32::from_bits(0x423d46a0)));
+    path.cubic_to(
+        (f32::from_bits(0x41deb230), f32::from_bits(0x423dcab8)),
+        (f32::from_bits(0x41dd3b67), f32::from_bits(0x423d8829)),
+        (f32::from_bits(0x41dc312a), f32::from_bits(0x423d46a0)),
+    );
     // 27.837f, 47.448f, 27.654f, 47.383f, 27.524f, 47.319f
-    path.cubic_to((f32::from_bits(0x41dae563), f32::from_bits(0x423cf8cd)), (f32::from_bits(0x41d98316), f32::from_bits(0x423cccc5)), (f32::from_bits(0x41d8645d), f32::from_bits(0x423c6971)));
+    path.cubic_to(
+        (f32::from_bits(0x41dae563), f32::from_bits(0x423cf8cd)),
+        (f32::from_bits(0x41d98316), f32::from_bits(0x423cccc5)),
+        (f32::from_bits(0x41d8645d), f32::from_bits(0x423c6971)),
+    );
     // 27.362f, 47.243f, 27.189f, 47.2f, 27.049f, 47.103f
-    path.cubic_to((f32::from_bits(0x41d7df3e), f32::from_bits(0x423c52ea)), (f32::from_bits(0x41d72d11), f32::from_bits(0x423c311f)), (f32::from_bits(0x41d6a9ff), f32::from_bits(0x423c0517)));
+    path.cubic_to(
+        (f32::from_bits(0x41d7df3e), f32::from_bits(0x423c52ea)),
+        (f32::from_bits(0x41d72d11), f32::from_bits(0x423c311f)),
+        (f32::from_bits(0x41d6a9ff), f32::from_bits(0x423c0517)),
+    );
     // 26.984f, 47.081f, 26.897f, 47.048f, 26.833f, 47.005f
-    path.cubic_to((f32::from_bits(0x41d67cf1), f32::from_bits(0x423bfada)), (f32::from_bits(0x41d572b3), f32::from_bits(0x423b967f)), (f32::from_bits(0x41d5893a), f32::from_bits(0x423b967f)));
+    path.cubic_to(
+        (f32::from_bits(0x41d67cf1), f32::from_bits(0x423bfada)),
+        (f32::from_bits(0x41d572b3), f32::from_bits(0x423b967f)),
+        (f32::from_bits(0x41d5893a), f32::from_bits(0x423b967f)),
+    );
     // 26.811f, 46.995f, 26.681f, 46.897f, 26.692f, 46.897f
-    path.cubic_to((f32::from_bits(0x41d5893a), f32::from_bits(0x423b967f)), (f32::from_bits(0x41d5b648), f32::from_bits(0x423b6a77)), (f32::from_bits(0x41d5ccd0), f32::from_bits(0x423b6a77)));
+    path.cubic_to(
+        (f32::from_bits(0x41d5893a), f32::from_bits(0x423b967f)),
+        (f32::from_bits(0x41d5b648), f32::from_bits(0x423b6a77)),
+        (f32::from_bits(0x41d5ccd0), f32::from_bits(0x423b6a77)),
+    );
     // 26.692f, 46.897f, 26.714f, 46.854f, 26.725f, 46.854f
-    path.cubic_to((f32::from_bits(0x41d6eb88), f32::from_bits(0x423b3e6f)), (f32::from_bits(0x41d8374f), f32::from_bits(0x423b967f)), (f32::from_bits(0x41d8fdf7), f32::from_bits(0x423bad06)));
+    path.cubic_to(
+        (f32::from_bits(0x41d6eb88), f32::from_bits(0x423b3e6f)),
+        (f32::from_bits(0x41d8374f), f32::from_bits(0x423b967f)),
+        (f32::from_bits(0x41d8fdf7), f32::from_bits(0x423bad06)),
+    );
     // 26.865f, 46.811f, 27.027f, 46.897f, 27.124f, 46.919f
-    path.cubic_to((f32::from_bits(0x41d9c6ab), f32::from_bits(0x423bb84a)), (f32::from_bits(0x41da49be), f32::from_bits(0x423bb84a)), (f32::from_bits(0x41db1066), f32::from_bits(0x423bd90e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d9c6ab), f32::from_bits(0x423bb84a)),
+        (f32::from_bits(0x41da49be), f32::from_bits(0x423bb84a)),
+        (f32::from_bits(0x41db1066), f32::from_bits(0x423bd90e)),
+    );
     // 27.222f, 46.93f, 27.286f, 46.93f, 27.383f, 46.962f
-    path.cubic_to((f32::from_bits(0x41db810a), f32::from_bits(0x423bd90e)), (f32::from_bits(0x41dc5e39), f32::from_bits(0x423bfad9)), (f32::from_bits(0x41dcf7d3), f32::from_bits(0x423bef95)));
+    path.cubic_to(
+        (f32::from_bits(0x41db810a), f32::from_bits(0x423bd90e)),
+        (f32::from_bits(0x41dc5e39), f32::from_bits(0x423bfad9)),
+        (f32::from_bits(0x41dcf7d3), f32::from_bits(0x423bef95)),
+    );
     // 27.438f, 46.962f, 27.546f, 46.995f, 27.621f, 46.984f
-    path.cubic_to((f32::from_bits(0x41ddd502), f32::from_bits(0x423bc38d)), (f32::from_bits(0x41dd4fe3), f32::from_bits(0x423b332b)), (f32::from_bits(0x41dd7cf2), f32::from_bits(0x423ab94f)));
+    path.cubic_to(
+        (f32::from_bits(0x41ddd502), f32::from_bits(0x423bc38d)),
+        (f32::from_bits(0x41dd4fe3), f32::from_bits(0x423b332b)),
+        (f32::from_bits(0x41dd7cf2), f32::from_bits(0x423ab94f)),
+    );
     // 27.729f, 46.941f, 27.664f, 46.8f, 27.686f, 46.681f
-    path.cubic_to((f32::from_bits(0x41dda7f4), f32::from_bits(0x423a77c6)), (f32::from_bits(0x41de2d13), f32::from_bits(0x423a29f3)), (f32::from_bits(0x41de70a8), f32::from_bits(0x423a136c)));
+    path.cubic_to(
+        (f32::from_bits(0x41dda7f4), f32::from_bits(0x423a77c6)),
+        (f32::from_bits(0x41de2d13), f32::from_bits(0x423a29f3)),
+        (f32::from_bits(0x41de70a8), f32::from_bits(0x423a136c)),
+    );
     // 27.707f, 46.617f, 27.772f, 46.541f, 27.805f, 46.519f
-    path.cubic_to((f32::from_bits(0x41dfba62), f32::from_bits(0x4239c69f)), (f32::from_bits(0x41e253fc), f32::from_bits(0x423a092f)), (f32::from_bits(0x41e372b4), f32::from_bits(0x423a4bbe)));
+    path.cubic_to(
+        (f32::from_bits(0x41dfba62), f32::from_bits(0x4239c69f)),
+        (f32::from_bits(0x41e253fc), f32::from_bits(0x423a092f)),
+        (f32::from_bits(0x41e372b4), f32::from_bits(0x423a4bbe)),
+    );
     // 27.966f, 46.444f, 28.291f, 46.509f, 28.431f, 46.574f
-    path.cubic_to((f32::from_bits(0x41e40e5a), f32::from_bits(0x423a6c83)), (f32::from_bits(0x41e49379), f32::from_bits(0x423a8d47)), (f32::from_bits(0x41e55a21), f32::from_bits(0x423ab94f)));
+    path.cubic_to(
+        (f32::from_bits(0x41e40e5a), f32::from_bits(0x423a6c83)),
+        (f32::from_bits(0x41e49379), f32::from_bits(0x423a8d47)),
+        (f32::from_bits(0x41e55a21), f32::from_bits(0x423ab94f)),
+    );
     // 28.507f, 46.606f, 28.572f, 46.638f, 28.669f, 46.681f
     path.line_to((f32::from_bits(0x41e58523), f32::from_bits(0x423acfd6)));
     // 28.69f, 46.703f
-    path.cubic_to((f32::from_bits(0x41e5b231), f32::from_bits(0x423acfd6)), (f32::from_bits(0x41e60a42), f32::from_bits(0x423ac492)), (f32::from_bits(0x41e66252), f32::from_bits(0x423acfd6)));
+    path.cubic_to(
+        (f32::from_bits(0x41e5b231), f32::from_bits(0x423acfd6)),
+        (f32::from_bits(0x41e60a42), f32::from_bits(0x423ac492)),
+        (f32::from_bits(0x41e66252), f32::from_bits(0x423acfd6)),
+    );
     // 28.712f, 46.703f, 28.755f, 46.692f, 28.798f, 46.703f
-    path.cubic_to((f32::from_bits(0x41e66252), f32::from_bits(0x423ab94f)), (f32::from_bits(0x41e68f60), f32::from_bits(0x423ab94f)), (f32::from_bits(0x41e6a5e8), f32::from_bits(0x423aae0b)));
+    path.cubic_to(
+        (f32::from_bits(0x41e66252), f32::from_bits(0x423ab94f)),
+        (f32::from_bits(0x41e68f60), f32::from_bits(0x423ab94f)),
+        (f32::from_bits(0x41e6a5e8), f32::from_bits(0x423aae0b)),
+    );
     // 28.798f, 46.681f, 28.82f, 46.681f, 28.831f, 46.67f
-    path.cubic_to((f32::from_bits(0x41e6fdf8), f32::from_bits(0x423a136b)), (f32::from_bits(0x41e5dd34), f32::from_bits(0x423978cc)), (f32::from_bits(0x41e68f61), f32::from_bits(0x4238fef0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e6fdf8), f32::from_bits(0x423a136b)),
+        (f32::from_bits(0x41e5dd34), f32::from_bits(0x423978cc)),
+        (f32::from_bits(0x41e68f61), f32::from_bits(0x4238fef0)),
+    );
     // 28.874f, 46.519f, 28.733f, 46.368f, 28.82f, 46.249f
-    path.cubic_to((f32::from_bits(0x41e72b07), f32::from_bits(0x42389058)), (f32::from_bits(0x41eaf7d4), f32::from_bits(0x42391577)), (f32::from_bits(0x41ec5815), f32::from_bits(0x4238f3ac)));
+    path.cubic_to(
+        (f32::from_bits(0x41e72b07), f32::from_bits(0x42389058)),
+        (f32::from_bits(0x41eaf7d4), f32::from_bits(0x42391577)),
+        (f32::from_bits(0x41ec5815), f32::from_bits(0x4238f3ac)),
+    );
     // 28.896f, 46.141f, 29.371f, 46.271f, 29.543f, 46.238f
-    path.cubic_to((f32::from_bits(0x41ef1cb1), f32::from_bits(0x4238bd66)), (f32::from_bits(0x41ed6252), f32::from_bits(0x4237d4f4)), (f32::from_bits(0x41ede771), f32::from_bits(0x42369eae)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef1cb1), f32::from_bits(0x4238bd66)),
+        (f32::from_bits(0x41ed6252), f32::from_bits(0x4237d4f4)),
+        (f32::from_bits(0x41ede771), f32::from_bits(0x42369eae)),
+    );
     // 29.889f, 46.185f, 29.673f, 45.958f, 29.738f, 45.655f
-    path.cubic_to((f32::from_bits(0x41ee28fa), f32::from_bits(0x423651e1)), (f32::from_bits(0x41ee8317), f32::from_bits(0x42366868)), (f32::from_bits(0x41eedb27), f32::from_bits(0x42365c1f)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee28fa), f32::from_bits(0x423651e1)),
+        (f32::from_bits(0x41ee8317), f32::from_bits(0x42366868)),
+        (f32::from_bits(0x41eedb27), f32::from_bits(0x42365c1f)),
+    );
     // 29.77f, 45.58f, 29.814f, 45.602f, 29.857f, 45.59f
-    path.cubic_to((f32::from_bits(0x41ef0629), f32::from_bits(0x4236a9f2)), (f32::from_bits(0x41ef3337), f32::from_bits(0x42371889)), (f32::from_bits(0x41ef3337), f32::from_bits(0x42375b19)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef0629), f32::from_bits(0x4236a9f2)),
+        (f32::from_bits(0x41ef3337), f32::from_bits(0x42371889)),
+        (f32::from_bits(0x41ef3337), f32::from_bits(0x42375b19)),
+    );
     // 29.878f, 45.666f, 29.9f, 45.774f, 29.9f, 45.839f
-    path.cubic_to((f32::from_bits(0x41ef49be), f32::from_bits(0x4237e038)), (f32::from_bits(0x41ef3337), f32::from_bits(0x42386450)), (f32::from_bits(0x41ef49be), f32::from_bits(0x4238d2e8)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef49be), f32::from_bits(0x4237e038)),
+        (f32::from_bits(0x41ef3337), f32::from_bits(0x42386450)),
+        (f32::from_bits(0x41ef49be), f32::from_bits(0x4238d2e8)),
+    );
     // 29.911f, 45.969f, 29.9f, 46.098f, 29.911f, 46.206f
-    path.cubic_to((f32::from_bits(0x41ef8b47), f32::from_bits(0x42394cc3)), (f32::from_bits(0x41eff9df), f32::from_bits(0x4239e763)), (f32::from_bits(0x41f026ed), f32::from_bits(0x423a613e)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef8b47), f32::from_bits(0x42394cc3)),
+        (f32::from_bits(0x41eff9df), f32::from_bits(0x4239e763)),
+        (f32::from_bits(0x41f026ed), f32::from_bits(0x423a613e)),
+    );
     // 29.943f, 46.325f, 29.997f, 46.476f, 30.019f, 46.595f
-    path.cubic_to((f32::from_bits(0x41f0ac0c), f32::from_bits(0x423b967d)), (f32::from_bits(0x41f11897), f32::from_bits(0x423ca0bb)), (f32::from_bits(0x41f1893b), f32::from_bits(0x423dd5fa)));
+    path.cubic_to(
+        (f32::from_bits(0x41f0ac0c), f32::from_bits(0x423b967d)),
+        (f32::from_bits(0x41f11897), f32::from_bits(0x423ca0bb)),
+        (f32::from_bits(0x41f1893b), f32::from_bits(0x423dd5fa)),
+    );
     // 30.084f, 46.897f, 30.137f, 47.157f, 30.192f, 47.459f
-    path.cubic_to((f32::from_bits(0x41f19db6), f32::from_bits(0x423e1889)), (f32::from_bits(0x41f1f5c6), f32::from_bits(0x423e7bdd)), (f32::from_bits(0x41f20e5a), f32::from_bits(0x423ebe6d)));
+    path.cubic_to(
+        (f32::from_bits(0x41f19db6), f32::from_bits(0x423e1889)),
+        (f32::from_bits(0x41f1f5c6), f32::from_bits(0x423e7bdd)),
+        (f32::from_bits(0x41f20e5a), f32::from_bits(0x423ebe6d)),
+    );
     // 30.202f, 47.524f, 30.245f, 47.621f, 30.257f, 47.686f
-    path.cubic_to((f32::from_bits(0x41f27ae5), f32::from_bits(0x423f9059)), (f32::from_bits(0x41f2be7b), f32::from_bits(0x42406d88)), (f32::from_bits(0x41f3168b), f32::from_bits(0x424128ec)));
+    path.cubic_to(
+        (f32::from_bits(0x41f27ae5), f32::from_bits(0x423f9059)),
+        (f32::from_bits(0x41f2be7b), f32::from_bits(0x42406d88)),
+        (f32::from_bits(0x41f3168b), f32::from_bits(0x424128ec)),
+    );
     // 30.31f, 47.891f, 30.343f, 48.107f, 30.386f, 48.29f
-    path.cubic_to((f32::from_bits(0x41f35814), f32::from_bits(0x42418203)), (f32::from_bits(0x41f35814), f32::from_bits(0x4241e556)), (f32::from_bits(0x41f38523), f32::from_bits(0x42423329)));
+    path.cubic_to(
+        (f32::from_bits(0x41f35814), f32::from_bits(0x42418203)),
+        (f32::from_bits(0x41f35814), f32::from_bits(0x4241e556)),
+        (f32::from_bits(0x41f38523), f32::from_bits(0x42423329)),
+    );
     // 30.418f, 48.377f, 30.418f, 48.474f, 30.44f, 48.55f
-    path.cubic_to((f32::from_bits(0x41f3b025), f32::from_bits(0x424248aa)), (f32::from_bits(0x41f420c9), f32::from_bits(0x424275b8)), (f32::from_bits(0x41f46252), f32::from_bits(0x424280fc)));
+    path.cubic_to(
+        (f32::from_bits(0x41f3b025), f32::from_bits(0x424248aa)),
+        (f32::from_bits(0x41f420c9), f32::from_bits(0x424275b8)),
+        (f32::from_bits(0x41f46252), f32::from_bits(0x424280fc)),
+    );
     // 30.461f, 48.571f, 30.516f, 48.615f, 30.548f, 48.626f
-    path.cubic_to((f32::from_bits(0x41f4fdf8), f32::from_bits(0x4242967d)), (f32::from_bits(0x41f5db27), f32::from_bits(0x424275b8)), (f32::from_bits(0x41f674c1), f32::from_bits(0x424280fc)));
+    path.cubic_to(
+        (f32::from_bits(0x41f4fdf8), f32::from_bits(0x4242967d)),
+        (f32::from_bits(0x41f5db27), f32::from_bits(0x424275b8)),
+        (f32::from_bits(0x41f674c1), f32::from_bits(0x424280fc)),
+    );
     // 30.624f, 48.647f, 30.732f, 48.615f, 30.807f, 48.626f
-    path.cubic_to((f32::from_bits(0x41f8f5c7), f32::from_bits(0x4242967d)), (f32::from_bits(0x41fc5609), f32::from_bits(0x424280fc)), (f32::from_bits(0x41feeb8a), f32::from_bits(0x4242a1c1)));
+    path.cubic_to(
+        (f32::from_bits(0x41f8f5c7), f32::from_bits(0x4242967d)),
+        (f32::from_bits(0x41fc5609), f32::from_bits(0x424280fc)),
+        (f32::from_bits(0x41feeb8a), f32::from_bits(0x4242a1c1)),
+    );
     // 31.12f, 48.647f, 31.542f, 48.626f, 31.865f, 48.658f
-    path.cubic_to((f32::from_bits(0x41ff45a7), f32::from_bits(0x4242a1c1)), (f32::from_bits(0x41ffdf40), f32::from_bits(0x424280fc)), (f32::from_bits(0x4200322f), f32::from_bits(0x4242a1c1)));
+    path.cubic_to(
+        (f32::from_bits(0x41ff45a7), f32::from_bits(0x4242a1c1)),
+        (f32::from_bits(0x41ffdf40), f32::from_bits(0x424280fc)),
+        (f32::from_bits(0x4200322f), f32::from_bits(0x4242a1c1)),
+    );
     // 31.909f, 48.658f, 31.984f, 48.626f, 32.049f, 48.658f
-    path.cubic_to((f32::from_bits(0x420048b6), f32::from_bits(0x4242a1c1)), (f32::from_bits(0x42005e37), f32::from_bits(0x4242c286)), (f32::from_bits(0x420074be), f32::from_bits(0x4242d90d)));
+    path.cubic_to(
+        (f32::from_bits(0x420048b6), f32::from_bits(0x4242a1c1)),
+        (f32::from_bits(0x42005e37), f32::from_bits(0x4242c286)),
+        (f32::from_bits(0x420074be), f32::from_bits(0x4242d90d)),
+    );
     // 32.071f, 48.658f, 32.092f, 48.69f, 32.114f, 48.712f
-    path.cubic_to((f32::from_bits(0x420074be), f32::from_bits(0x4242ee8e)), (f32::from_bits(0x42008002), f32::from_bits(0x42431b9c)), (f32::from_bits(0x420074be), f32::from_bits(0x4243311d)));
+    path.cubic_to(
+        (f32::from_bits(0x420074be), f32::from_bits(0x4242ee8e)),
+        (f32::from_bits(0x42008002), f32::from_bits(0x42431b9c)),
+        (f32::from_bits(0x420074be), f32::from_bits(0x4243311d)),
+    );
     // 32.114f, 48.733f, 32.125f, 48.777f, 32.114f, 48.798f
     path.line_to((f32::from_bits(0x420052f3), f32::from_bits(0x42433c61)));
     // 32.081f, 48.809f
-    path.cubic_to((f32::from_bits(0x42001cad), f32::from_bits(0x42439fb5)), (f32::from_bits(0x41ff2f1d), f32::from_bits(0x42436869)), (f32::from_bits(0x41fe7cf0), f32::from_bits(0x4243aaf9)));
+    path.cubic_to(
+        (f32::from_bits(0x42001cad), f32::from_bits(0x42439fb5)),
+        (f32::from_bits(0x41ff2f1d), f32::from_bits(0x42436869)),
+        (f32::from_bits(0x41fe7cf0), f32::from_bits(0x4243aaf9)),
+    );
     // 32.028f, 48.906f, 31.898f, 48.852f, 31.811f, 48.917f
-    path.cubic_to((f32::from_bits(0x41fe24e0), f32::from_bits(0x4243cbbe)), (f32::from_bits(0x41fd3336), f32::from_bits(0x4244cab7)), (f32::from_bits(0x41fd0627), f32::from_bits(0x42450203)));
+    path.cubic_to(
+        (f32::from_bits(0x41fe24e0), f32::from_bits(0x4243cbbe)),
+        (f32::from_bits(0x41fd3336), f32::from_bits(0x4244cab7)),
+        (f32::from_bits(0x41fd0627), f32::from_bits(0x42450203)),
+    );
     // 31.768f, 48.949f, 31.65f, 49.198f, 31.628f, 49.252f
-    path.cubic_to((f32::from_bits(0x41fcc291), f32::from_bits(0x4245438c)), (f32::from_bits(0x41fcc291), f32::from_bits(0x42457bde)), (f32::from_bits(0x41fcae17), f32::from_bits(0x4245be6d)));
+    path.cubic_to(
+        (f32::from_bits(0x41fcc291), f32::from_bits(0x4245438c)),
+        (f32::from_bits(0x41fcc291), f32::from_bits(0x42457bde)),
+        (f32::from_bits(0x41fcae17), f32::from_bits(0x4245be6d)),
+    );
     // 31.595f, 49.316f, 31.595f, 49.371f, 31.585f, 49.436f
-    path.cubic_to((f32::from_bits(0x41fc9790), f32::from_bits(0x4245fff6)), (f32::from_bits(0x41fc28f8), f32::from_bits(0x4246634a)), (f32::from_bits(0x41fc1271), f32::from_bits(0x4246b11d)));
+    path.cubic_to(
+        (f32::from_bits(0x41fc9790), f32::from_bits(0x4245fff6)),
+        (f32::from_bits(0x41fc28f8), f32::from_bits(0x4246634a)),
+        (f32::from_bits(0x41fc1271), f32::from_bits(0x4246b11d)),
+    );
     // 31.574f, 49.5f, 31.52f, 49.597f, 31.509f, 49.673f
-    path.cubic_to((f32::from_bits(0x41fbba61), f32::from_bits(0x42478e4c)), (f32::from_bits(0x41fba3d9), f32::from_bits(0x424880fc)), (f32::from_bits(0x41fbba61), f32::from_bits(0x424974b2)));
+    path.cubic_to(
+        (f32::from_bits(0x41fbba61), f32::from_bits(0x42478e4c)),
+        (f32::from_bits(0x41fba3d9), f32::from_bits(0x424880fc)),
+        (f32::from_bits(0x41fbba61), f32::from_bits(0x424974b2)),
+    );
     // 31.466f, 49.889f, 31.455f, 50.126f, 31.466f, 50.364f
-    path.cubic_to((f32::from_bits(0x41fbd0e8), f32::from_bits(0x424a7de9)), (f32::from_bits(0x41fc8109), f32::from_bits(0x424b5b18)), (f32::from_bits(0x41fd47b1), f32::from_bits(0x424c4ecf)));
+    path.cubic_to(
+        (f32::from_bits(0x41fbd0e8), f32::from_bits(0x424a7de9)),
+        (f32::from_bits(0x41fc8109), f32::from_bits(0x424b5b18)),
+        (f32::from_bits(0x41fd47b1), f32::from_bits(0x424c4ecf)),
+    );
     // 31.477f, 50.623f, 31.563f, 50.839f, 31.66f, 51.077f
-    path.cubic_to((f32::from_bits(0x41fd8b47), f32::from_bits(0x424c915e)), (f32::from_bits(0x41fdccd0), f32::from_bits(0x424cde2b)), (f32::from_bits(0x41fe3b67), f32::from_bits(0x424d167d)));
+    path.cubic_to(
+        (f32::from_bits(0x41fd8b47), f32::from_bits(0x424c915e)),
+        (f32::from_bits(0x41fdccd0), f32::from_bits(0x424cde2b)),
+        (f32::from_bits(0x41fe3b67), f32::from_bits(0x424d167d)),
+    );
     // 31.693f, 51.142f, 31.725f, 51.217f, 31.779f, 51.272f
-    path.cubic_to((f32::from_bits(0x41fe9377), f32::from_bits(0x424d4dc9)), (f32::from_bits(0x41fec086), f32::from_bits(0x424d8f52)), (f32::from_bits(0x41ff2f1d), f32::from_bits(0x424dc69e)));
+    path.cubic_to(
+        (f32::from_bits(0x41fe9377), f32::from_bits(0x424d4dc9)),
+        (f32::from_bits(0x41fec086), f32::from_bits(0x424d8f52)),
+        (f32::from_bits(0x41ff2f1d), f32::from_bits(0x424dc69e)),
+    );
     // 31.822f, 51.326f, 31.844f, 51.39f, 31.898f, 51.444f
-    path.cubic_to((f32::from_bits(0x41ff70a6), f32::from_bits(0x424df3ac)), (f32::from_bits(0x41ffdf3e), f32::from_bits(0x424e092d)), (f32::from_bits(0x42000626), f32::from_bits(0x424e3536)));
+    path.cubic_to(
+        (f32::from_bits(0x41ff70a6), f32::from_bits(0x424df3ac)),
+        (f32::from_bits(0x41ffdf3e), f32::from_bits(0x424e092d)),
+        (f32::from_bits(0x42000626), f32::from_bits(0x424e3536)),
+    );
     // 31.93f, 51.488f, 31.984f, 51.509f, 32.006f, 51.552f
-    path.cubic_to((f32::from_bits(0x42003d72), f32::from_bits(0x424e6c82)), (f32::from_bits(0x4200c18a), f32::from_bits(0x424f3e6d)), (f32::from_bits(0x4201041a), f32::from_bits(0x424f49b1)));
+    path.cubic_to(
+        (f32::from_bits(0x42003d72), f32::from_bits(0x424e6c82)),
+        (f32::from_bits(0x4200c18a), f32::from_bits(0x424f3e6d)),
+        (f32::from_bits(0x4201041a), f32::from_bits(0x424f49b1)),
+    );
     // 32.06f, 51.606f, 32.189f, 51.811f, 32.254f, 51.822f
-    path.cubic_to((f32::from_bits(0x420172b2), f32::from_bits(0x424f6b7c)), (f32::from_bits(0x4201ec8d), f32::from_bits(0x424e8309)), (f32::from_bits(0x42020d51), f32::from_bits(0x424e4bbd)));
+    path.cubic_to(
+        (f32::from_bits(0x420172b2), f32::from_bits(0x424f6b7c)),
+        (f32::from_bits(0x4201ec8d), f32::from_bits(0x424e8309)),
+        (f32::from_bits(0x42020d51), f32::from_bits(0x424e4bbd)),
+    );
     // 32.362f, 51.855f, 32.481f, 51.628f, 32.513f, 51.574f
-    path.cubic_to((f32::from_bits(0x4202be78), f32::from_bits(0x424d5807)), (f32::from_bits(0x42037ae2), f32::from_bits(0x424c6557)), (f32::from_bits(0x42044cce), f32::from_bits(0x424b9265)));
+    path.cubic_to(
+        (f32::from_bits(0x4202be78), f32::from_bits(0x424d5807)),
+        (f32::from_bits(0x42037ae2), f32::from_bits(0x424c6557)),
+        (f32::from_bits(0x42044cce), f32::from_bits(0x424b9265)),
+    );
     // 32.686f, 51.336f, 32.87f, 51.099f, 33.075f, 50.893f
-    path.cubic_to((f32::from_bits(0x42049aa1), f32::from_bits(0x424b4598)), (f32::from_bits(0x4204e874), f32::from_bits(0x424ae13e)), (f32::from_bits(0x42054084), f32::from_bits(0x424a9471)));
+    path.cubic_to(
+        (f32::from_bits(0x42049aa1), f32::from_bits(0x424b4598)),
+        (f32::from_bits(0x4204e874), f32::from_bits(0x424ae13e)),
+        (f32::from_bits(0x42054084), f32::from_bits(0x424a9471)),
+    );
     // 33.151f, 50.818f, 33.227f, 50.72f, 33.313f, 50.645f
-    path.cubic_to((f32::from_bits(0x42058d51), f32::from_bits(0x424a51e2)), (f32::from_bits(0x4206ef9f), f32::from_bits(0x4248fad7)), (f32::from_bits(0x42071063), f32::from_bits(0x4248cecf)));
+    path.cubic_to(
+        (f32::from_bits(0x42058d51), f32::from_bits(0x424a51e2)),
+        (f32::from_bits(0x4206ef9f), f32::from_bits(0x4248fad7)),
+        (f32::from_bits(0x42071063), f32::from_bits(0x4248cecf)),
+    );
     // 33.388f, 50.58f, 33.734f, 50.245f, 33.766f, 50.202f
-    path.cubic_to((f32::from_bits(0x42075e36), f32::from_bits(0x424876bf)), (f32::from_bits(0x4207cccd), f32::from_bits(0x4248342f)), (f32::from_bits(0x42083021), f32::from_bits(0x4247e65c)));
+    path.cubic_to(
+        (f32::from_bits(0x42075e36), f32::from_bits(0x424876bf)),
+        (f32::from_bits(0x4207cccd), f32::from_bits(0x4248342f)),
+        (f32::from_bits(0x42083021), f32::from_bits(0x4247e65c)),
+    );
     // 33.842f, 50.116f, 33.95f, 50.051f, 34.047f, 49.975f
-    path.cubic_to((f32::from_bits(0x42088831), f32::from_bits(0x42478308)), (f32::from_bits(0x4208f6c9), f32::from_bits(0x4247363b)), (f32::from_bits(0x420970a4), f32::from_bits(0x4246f3ac)));
+    path.cubic_to(
+        (f32::from_bits(0x42088831), f32::from_bits(0x42478308)),
+        (f32::from_bits(0x4208f6c9), f32::from_bits(0x4247363b)),
+        (f32::from_bits(0x420970a4), f32::from_bits(0x4246f3ac)),
+    );
     // 34.133f, 49.878f, 34.241f, 49.803f, 34.36f, 49.738f
-    path.cubic_to((f32::from_bits(0x4209f5c3), f32::from_bits(0x42469a95)), (f32::from_bits(0x420a645a), f32::from_bits(0x42464285)), (f32::from_bits(0x420add2f), f32::from_bits(0x4245f4b2)));
+    path.cubic_to(
+        (f32::from_bits(0x4209f5c3), f32::from_bits(0x42469a95)),
+        (f32::from_bits(0x420a645a), f32::from_bits(0x42464285)),
+        (f32::from_bits(0x420add2f), f32::from_bits(0x4245f4b2)),
+    );
     // 34.49f, 49.651f, 34.598f, 49.565f, 34.716f, 49.489f
-    path.cubic_to((f32::from_bits(0x420b2b02), f32::from_bits(0x4245be6c)), (f32::from_bits(0x420bc5a2), f32::from_bits(0x42455a12)), (f32::from_bits(0x420b8418), f32::from_bits(0x4244eb7b)));
+    path.cubic_to(
+        (f32::from_bits(0x420b2b02), f32::from_bits(0x4245be6c)),
+        (f32::from_bits(0x420bc5a2), f32::from_bits(0x42455a12)),
+        (f32::from_bits(0x420b8418), f32::from_bits(0x4244eb7b)),
+    );
     // 34.792f, 49.436f, 34.943f, 49.338f, 34.879f, 49.23f
-    path.cubic_to((f32::from_bits(0x420b624d), f32::from_bits(0x4244cab6)), (f32::from_bits(0x420b1fbe), f32::from_bits(0x42449eae)), (f32::from_bits(0x420b0a3d), f32::from_bits(0x42448827)));
+    path.cubic_to(
+        (f32::from_bits(0x420b624d), f32::from_bits(0x4244cab6)),
+        (f32::from_bits(0x420b1fbe), f32::from_bits(0x42449eae)),
+        (f32::from_bits(0x420b0a3d), f32::from_bits(0x42448827)),
+    );
     // 34.846f, 49.198f, 34.781f, 49.155f, 34.76f, 49.133f
-    path.cubic_to((f32::from_bits(0x420abd70), f32::from_bits(0x424450db)), (f32::from_bits(0x420a9ba5), f32::from_bits(0x42440e4c)), (f32::from_bits(0x420a5916), f32::from_bits(0x4243d700)));
+    path.cubic_to(
+        (f32::from_bits(0x420abd70), f32::from_bits(0x424450db)),
+        (f32::from_bits(0x420a9ba5), f32::from_bits(0x42440e4c)),
+        (f32::from_bits(0x420a5916), f32::from_bits(0x4243d700)),
+    );
     // 34.685f, 49.079f, 34.652f, 49.014f, 34.587f, 48.96f
-    path.cubic_to((f32::from_bits(0x420a3851), f32::from_bits(0x4243b63b)), (f32::from_bits(0x420a21ca), f32::from_bits(0x4243b63b)), (f32::from_bits(0x4209f5c2), f32::from_bits(0x42439fb4)));
+    path.cubic_to(
+        (f32::from_bits(0x420a3851), f32::from_bits(0x4243b63b)),
+        (f32::from_bits(0x420a21ca), f32::from_bits(0x4243b63b)),
+        (f32::from_bits(0x4209f5c2), f32::from_bits(0x42439fb4)),
+    );
     // 34.555f, 48.928f, 34.533f, 48.928f, 34.49f, 48.906f
-    path.cubic_to((f32::from_bits(0x4209ea7e), f32::from_bits(0x42439470)), (f32::from_bits(0x4209ea7e), f32::from_bits(0x424373ac)), (f32::from_bits(0x4209d3f7), f32::from_bits(0x42436868)));
+    path.cubic_to(
+        (f32::from_bits(0x4209ea7e), f32::from_bits(0x42439470)),
+        (f32::from_bits(0x4209ea7e), f32::from_bits(0x424373ac)),
+        (f32::from_bits(0x4209d3f7), f32::from_bits(0x42436868)),
+    );
     // 34.479f, 48.895f, 34.479f, 48.863f, 34.457f, 48.852f
-    path.cubic_to((f32::from_bits(0x4209b332), f32::from_bits(0x424352e7)), (f32::from_bits(0x42099db1), f32::from_bits(0x42435e2b)), (f32::from_bits(0x42097be7), f32::from_bits(0x424352e7)));
+    path.cubic_to(
+        (f32::from_bits(0x4209b332), f32::from_bits(0x424352e7)),
+        (f32::from_bits(0x42099db1), f32::from_bits(0x42435e2b)),
+        (f32::from_bits(0x42097be7), f32::from_bits(0x424352e7)),
+    );
     // 34.425f, 48.831f, 34.404f, 48.842f, 34.371f, 48.831f
-    path.cubic_to((f32::from_bits(0x420970a3), f32::from_bits(0x42433c60)), (f32::from_bits(0x42096560), f32::from_bits(0x42431b9b)), (f32::from_bits(0x4209449b), f32::from_bits(0x42431b9b)));
+    path.cubic_to(
+        (f32::from_bits(0x420970a3), f32::from_bits(0x42433c60)),
+        (f32::from_bits(0x42096560), f32::from_bits(0x42431b9b)),
+        (f32::from_bits(0x4209449b), f32::from_bits(0x42431b9b)),
+    );
     // 34.36f, 48.809f, 34.349f, 48.777f, 34.317f, 48.777f
-    path.cubic_to((f32::from_bits(0x4208f6c8), f32::from_bits(0x4242e349)), (f32::from_bits(0x42089eb8), f32::from_bits(0x4242c284)), (f32::from_bits(0x42083020), f32::from_bits(0x4242a1c0)));
+    path.cubic_to(
+        (f32::from_bits(0x4208f6c8), f32::from_bits(0x4242e349)),
+        (f32::from_bits(0x42089eb8), f32::from_bits(0x4242c284)),
+        (f32::from_bits(0x42083020), f32::from_bits(0x4242a1c0)),
+    );
     // 34.241f, 48.722f, 34.155f, 48.69f, 34.047f, 48.658f
-    path.cubic_to((f32::from_bits(0x42080f5b), f32::from_bits(0x4242967c)), (f32::from_bits(0x4207d810), f32::from_bits(0x42425f31)), (f32::from_bits(0x4207c188), f32::from_bits(0x42425f31)));
+    path.cubic_to(
+        (f32::from_bits(0x42080f5b), f32::from_bits(0x4242967c)),
+        (f32::from_bits(0x4207d810), f32::from_bits(0x42425f31)),
+        (f32::from_bits(0x4207c188), f32::from_bits(0x42425f31)),
+    );
     // 34.015f, 48.647f, 33.961f, 48.593f, 33.939f, 48.593f
-    path.cubic_to((f32::from_bits(0x420748b3), f32::from_bits(0x424227e5)), (f32::from_bits(0x42066040), f32::from_bits(0x4241fbdd)), (f32::from_bits(0x4205b957), f32::from_bits(0x42421ca2)));
+    path.cubic_to(
+        (f32::from_bits(0x420748b3), f32::from_bits(0x424227e5)),
+        (f32::from_bits(0x42066040), f32::from_bits(0x4241fbdd)),
+        (f32::from_bits(0x4205b957), f32::from_bits(0x42421ca2)),
+    );
     // 33.821f, 48.539f, 33.594f, 48.496f, 33.431f, 48.528f
-    path.cubic_to((f32::from_bits(0x4204c6a7), f32::from_bits(0x42423329)), (f32::from_bits(0x42041580), f32::from_bits(0x4242ad04)), (f32::from_bits(0x42032d0d), f32::from_bits(0x4242c285)));
+    path.cubic_to(
+        (f32::from_bits(0x4204c6a7), f32::from_bits(0x42423329)),
+        (f32::from_bits(0x42041580), f32::from_bits(0x4242ad04)),
+        (f32::from_bits(0x42032d0d), f32::from_bits(0x4242c285)),
+    );
     // 33.194f, 48.55f, 33.021f, 48.669f, 32.794f, 48.69f
-    path.cubic_to((f32::from_bits(0x42032d0d), f32::from_bits(0x4242b848)), (f32::from_bits(0x420322d0), f32::from_bits(0x4242a1c0)), (f32::from_bits(0x42032d0d), f32::from_bits(0x4242a1c0)));
+    path.cubic_to(
+        (f32::from_bits(0x42032d0d), f32::from_bits(0x4242b848)),
+        (f32::from_bits(0x420322d0), f32::from_bits(0x4242a1c0)),
+        (f32::from_bits(0x42032d0d), f32::from_bits(0x4242a1c0)),
+    );
     // 32.794f, 48.68f, 32.784f, 48.658f, 32.794f, 48.658f
-    path.cubic_to((f32::from_bits(0x42032d0d), f32::from_bits(0x424280fb)), (f32::from_bits(0x42036459), f32::from_bits(0x424275b8)), (f32::from_bits(0x42036f9c), f32::from_bits(0x42426a74)));
+    path.cubic_to(
+        (f32::from_bits(0x42032d0d), f32::from_bits(0x424280fb)),
+        (f32::from_bits(0x42036459), f32::from_bits(0x424275b8)),
+        (f32::from_bits(0x42036f9c), f32::from_bits(0x42426a74)),
+    );
     // 32.794f, 48.626f, 32.848f, 48.615f, 32.859f, 48.604f
-    path.cubic_to((f32::from_bits(0x4203e977), f32::from_bits(0x4241cfd4)), (f32::from_bits(0x4204580f), f32::from_bits(0x42418201)), (f32::from_bits(0x420529fa), f32::from_bits(0x42413f72)));
+    path.cubic_to(
+        (f32::from_bits(0x4203e977), f32::from_bits(0x4241cfd4)),
+        (f32::from_bits(0x4204580f), f32::from_bits(0x42418201)),
+        (f32::from_bits(0x420529fa), f32::from_bits(0x42413f72)),
+    );
     // 32.978f, 48.453f, 33.086f, 48.377f, 33.291f, 48.312f
     path.line_to((f32::from_bits(0x42054abf), f32::from_bits(0x424128eb)));
     // 33.323f, 48.29f
-    path.cubic_to((f32::from_bits(0x4205cfde), f32::from_bits(0x4240fde9)), (f32::from_bits(0x420649b9), f32::from_bits(0x4240fde9)), (f32::from_bits(0x4206b850), f32::from_bits(0x4240b016)));
+    path.cubic_to(
+        (f32::from_bits(0x4205cfde), f32::from_bits(0x4240fde9)),
+        (f32::from_bits(0x420649b9), f32::from_bits(0x4240fde9)),
+        (f32::from_bits(0x4206b850), f32::from_bits(0x4240b016)),
+    );
     // 33.453f, 48.248f, 33.572f, 48.248f, 33.68f, 48.172f
-    path.cubic_to((f32::from_bits(0x4206a1c9), f32::from_bits(0x4240998f)), (f32::from_bits(0x4206b850), f32::from_bits(0x42408e4b)), (f32::from_bits(0x4206a1c9), f32::from_bits(0x424078ca)));
+    path.cubic_to(
+        (f32::from_bits(0x4206a1c9), f32::from_bits(0x4240998f)),
+        (f32::from_bits(0x4206b850), f32::from_bits(0x42408e4b)),
+        (f32::from_bits(0x4206a1c9), f32::from_bits(0x424078ca)),
+    );
     // 33.658f, 48.15f, 33.68f, 48.139f, 33.658f, 48.118f
-    path.cubic_to((f32::from_bits(0x42068104), f32::from_bits(0x4240363b)), (f32::from_bits(0x42054081), f32::from_bits(0x423fb11c)), (f32::from_bits(0x4204d1ea), f32::from_bits(0x423f9057)));
+    path.cubic_to(
+        (f32::from_bits(0x42068104), f32::from_bits(0x4240363b)),
+        (f32::from_bits(0x42054081), f32::from_bits(0x423fb11c)),
+        (f32::from_bits(0x4204d1ea), f32::from_bits(0x423f9057)),
+    );
     // 33.626f, 48.053f, 33.313f, 47.923f, 33.205f, 47.891f
-    path.cubic_to((f32::from_bits(0x42044ccb), f32::from_bits(0x423f79d0)), (f32::from_bits(0x42035915), f32::from_bits(0x423f644f)), (f32::from_bits(0x4202be75), f32::from_bits(0x423f8513)));
+    path.cubic_to(
+        (f32::from_bits(0x42044ccb), f32::from_bits(0x423f79d0)),
+        (f32::from_bits(0x42035915), f32::from_bits(0x423f644f)),
+        (f32::from_bits(0x4202be75), f32::from_bits(0x423f8513)),
+    );
     // 33.075f, 47.869f, 32.837f, 47.848f, 32.686f, 47.88f
-    path.cubic_to((f32::from_bits(0x42022f19), f32::from_bits(0x423f9b9a)), (f32::from_bits(0x4201c081), f32::from_bits(0x423fde2a)), (f32::from_bits(0x420125e2), f32::from_bits(0x423ff3ab)));
+    path.cubic_to(
+        (f32::from_bits(0x42022f19), f32::from_bits(0x423f9b9a)),
+        (f32::from_bits(0x4201c081), f32::from_bits(0x423fde2a)),
+        (f32::from_bits(0x420125e2), f32::from_bits(0x423ff3ab)),
+    );
     // 32.546f, 47.902f, 32.438f, 47.967f, 32.287f, 47.988f
     path.line_to((f32::from_bits(0x42010f5b), f32::from_bits(0x423fc7a3)));
     // 32.265f, 47.945f
-    path.cubic_to((f32::from_bits(0x4201a9fb), f32::from_bits(0x423f167c)), (f32::from_bits(0x42036459), f32::from_bits(0x423d5c1e)), (f32::from_bits(0x4204580f), f32::from_bits(0x423d198f)));
+    path.cubic_to(
+        (f32::from_bits(0x4201a9fb), f32::from_bits(0x423f167c)),
+        (f32::from_bits(0x42036459), f32::from_bits(0x423d5c1e)),
+        (f32::from_bits(0x4204580f), f32::from_bits(0x423d198f)),
+    );
     // 32.416f, 47.772f, 32.848f, 47.34f, 33.086f, 47.275f
-    path.cubic_to((f32::from_bits(0x4205b957), f32::from_bits(0x423cabfe)), (f32::from_bits(0x4207c188), f32::from_bits(0x423cd806)), (f32::from_bits(0x42090d4e), f32::from_bits(0x423d24d3)));
+    path.cubic_to(
+        (f32::from_bits(0x4205b957), f32::from_bits(0x423cabfe)),
+        (f32::from_bits(0x4207c188), f32::from_bits(0x423cd806)),
+        (f32::from_bits(0x42090d4e), f32::from_bits(0x423d24d3)),
+    );
     // 33.431f, 47.168f, 33.939f, 47.211f, 34.263f, 47.286f
-    path.cubic_to((f32::from_bits(0x420ae871), f32::from_bits(0x423d936b)), (f32::from_bits(0x420c9892), f32::from_bits(0x423e7bdd)), (f32::from_bits(0x420e6871), f32::from_bits(0x423ed3ee)));
+    path.cubic_to(
+        (f32::from_bits(0x420ae871), f32::from_bits(0x423d936b)),
+        (f32::from_bits(0x420c9892), f32::from_bits(0x423e7bdd)),
+        (f32::from_bits(0x420e6871), f32::from_bits(0x423ed3ee)),
+    );
     // 34.727f, 47.394f, 35.149f, 47.621f, 35.602f, 47.707f
-    path.cubic_to((f32::from_bits(0x42103956), f32::from_bits(0x423f438c)), (f32::from_bits(0x42121479), f32::from_bits(0x423f0b3a)), (f32::from_bits(0x4213c49a), f32::from_bits(0x423e2e0b)));
+    path.cubic_to(
+        (f32::from_bits(0x42103956), f32::from_bits(0x423f438c)),
+        (f32::from_bits(0x42121479), f32::from_bits(0x423f0b3a)),
+        (f32::from_bits(0x4213c49a), f32::from_bits(0x423e2e0b)),
+    );
     // 36.056f, 47.816f, 36.52f, 47.761f, 36.942f, 47.545f
-    path.cubic_to((f32::from_bits(0x4214cdd1), f32::from_bits(0x423db536)), (f32::from_bits(0x4215c081), f32::from_bits(0x423d24d4)), (f32::from_bits(0x42169db1), f32::from_bits(0x423c696f)));
+    path.cubic_to(
+        (f32::from_bits(0x4214cdd1), f32::from_bits(0x423db536)),
+        (f32::from_bits(0x4215c081), f32::from_bits(0x423d24d4)),
+        (f32::from_bits(0x42169db1), f32::from_bits(0x423c696f)),
+    );
     // 37.201f, 47.427f, 37.438f, 47.286f, 37.654f, 47.103f
-    path.cubic_to((f32::from_bits(0x4216eb84), f32::from_bits(0x423c26e0)), (f32::from_bits(0x4217df3a), f32::from_bits(0x423afbde)), (f32::from_bits(0x4218580f), f32::from_bits(0x423b75b9)));
+    path.cubic_to(
+        (f32::from_bits(0x4216eb84), f32::from_bits(0x423c26e0)),
+        (f32::from_bits(0x4217df3a), f32::from_bits(0x423afbde)),
+        (f32::from_bits(0x4218580f), f32::from_bits(0x423b75b9)),
+    );
     // 37.73f, 47.038f, 37.968f, 46.746f, 38.086f, 46.865f
-    path.cubic_to((f32::from_bits(0x42189a9e), f32::from_bits(0x423bad05)), (f32::from_bits(0x421820c3), f32::from_bits(0x423c1b9c)), (f32::from_bits(0x4217ffff), f32::from_bits(0x423c311d)));
+    path.cubic_to(
+        (f32::from_bits(0x42189a9e), f32::from_bits(0x423bad05)),
+        (f32::from_bits(0x421820c3), f32::from_bits(0x423c1b9c)),
+        (f32::from_bits(0x4217ffff), f32::from_bits(0x423c311d)),
+    );
     // 38.151f, 46.919f, 38.032f, 47.027f, 38, 47.048f
-    path.cubic_to((f32::from_bits(0x4217a6e8), f32::from_bits(0x423c9577)), (f32::from_bits(0x42173851), f32::from_bits(0x423ced87)), (f32::from_bits(0x4216cac0), f32::from_bits(0x423d5c1f)));
+    path.cubic_to(
+        (f32::from_bits(0x4217a6e8), f32::from_bits(0x423c9577)),
+        (f32::from_bits(0x42173851), f32::from_bits(0x423ced87)),
+        (f32::from_bits(0x4216cac0), f32::from_bits(0x423d5c1f)),
+    );
     // 37.913f, 47.146f, 37.805f, 47.232f, 37.698f, 47.34f
-    path.cubic_to((f32::from_bits(0x42168831), f32::from_bits(0x423d9eae)), (f32::from_bits(0x421650e5), f32::from_bits(0x423deb7b)), (f32::from_bits(0x4215f7ce), f32::from_bits(0x423e23cd)));
+    path.cubic_to(
+        (f32::from_bits(0x42168831), f32::from_bits(0x423d9eae)),
+        (f32::from_bits(0x421650e5), f32::from_bits(0x423deb7b)),
+        (f32::from_bits(0x4215f7ce), f32::from_bits(0x423e23cd)),
+    );
     // 37.633f, 47.405f, 37.579f, 47.48f, 37.492f, 47.535f
     path.line_to((f32::from_bits(0x4215f7ce), f32::from_bits(0x423e4492)));
     // 37.492f, 47.567f
-    path.cubic_to((f32::from_bits(0x4215ed91), f32::from_bits(0x423e4fd6)), (f32::from_bits(0x4215d709), f32::from_bits(0x423e4492)), (f32::from_bits(0x4215cbc6), f32::from_bits(0x423e4fd6)));
+    path.cubic_to(
+        (f32::from_bits(0x4215ed91), f32::from_bits(0x423e4fd6)),
+        (f32::from_bits(0x4215d709), f32::from_bits(0x423e4492)),
+        (f32::from_bits(0x4215cbc6), f32::from_bits(0x423e4fd6)),
+    );
     // 37.482f, 47.578f, 37.46f, 47.567f, 37.449f, 47.578f
-    path.cubic_to((f32::from_bits(0x42158937), f32::from_bits(0x423e8722)), (f32::from_bits(0x42153126), f32::from_bits(0x423f00fd)), (f32::from_bits(0x4214ee97), f32::from_bits(0x423f3849)));
+    path.cubic_to(
+        (f32::from_bits(0x42158937), f32::from_bits(0x423e8722)),
+        (f32::from_bits(0x42153126), f32::from_bits(0x423f00fd)),
+        (f32::from_bits(0x4214ee97), f32::from_bits(0x423f3849)),
+    );
     // 37.384f, 47.632f, 37.298f, 47.751f, 37.233f, 47.805f
-    path.cubic_to((f32::from_bits(0x4214d810), f32::from_bits(0x423f438d)), (f32::from_bits(0x4214cdd2), f32::from_bits(0x423f590e)), (f32::from_bits(0x4214cdd2), f32::from_bits(0x423f590e)));
+    path.cubic_to(
+        (f32::from_bits(0x4214d810), f32::from_bits(0x423f438d)),
+        (f32::from_bits(0x4214cdd2), f32::from_bits(0x423f590e)),
+        (f32::from_bits(0x4214cdd2), f32::from_bits(0x423f590e)),
+    );
     // 37.211f, 47.816f, 37.201f, 47.837f, 37.201f, 47.837f
     path.line_to((f32::from_bits(0x4214b74b), f32::from_bits(0x423f590e)));
     // 37.179f, 47.837f
     path.line_to((f32::from_bits(0x4214b74b), f32::from_bits(0x423f79d3)));
     // 37.179f, 47.869f
-    path.cubic_to((f32::from_bits(0x42147fff), f32::from_bits(0x423f905a)), (f32::from_bits(0x421474bc), f32::from_bits(0x423fb11f)), (f32::from_bits(0x421448b3), f32::from_bits(0x423fc7a6)));
+    path.cubic_to(
+        (f32::from_bits(0x42147fff), f32::from_bits(0x423f905a)),
+        (f32::from_bits(0x421474bc), f32::from_bits(0x423fb11f)),
+        (f32::from_bits(0x421448b3), f32::from_bits(0x423fc7a6)),
+    );
     // 37.125f, 47.891f, 37.114f, 47.923f, 37.071f, 47.945f
     path.line_to((f32::from_bits(0x421448b3), f32::from_bits(0x423fdd27)));
     // 37.071f, 47.966f
@@ -6892,1047 +8206,2907 @@ fn joel_4(reporter: &mut Reporter, filename: &str) {
     // 37.05f, 47.966f
     path.line_to((f32::from_bits(0x4213b957), f32::from_bits(0x424077c7)));
     // 36.931f, 48.117f
-    path.cubic_to((f32::from_bits(0x4213a2d0), f32::from_bits(0x4240830b)), (f32::from_bits(0x4213b957), f32::from_bits(0x4240988c)), (f32::from_bits(0x4213b957), f32::from_bits(0x4240988c)));
+    path.cubic_to(
+        (f32::from_bits(0x4213a2d0), f32::from_bits(0x4240830b)),
+        (f32::from_bits(0x4213b957), f32::from_bits(0x4240988c)),
+        (f32::from_bits(0x4213b957), f32::from_bits(0x4240988c)),
+    );
     // 36.909f, 48.128f, 36.931f, 48.149f, 36.931f, 48.149f
-    path.cubic_to((f32::from_bits(0x4213c49b), f32::from_bits(0x4240988c)), (f32::from_bits(0x4213b957), f32::from_bits(0x4240ba57)), (f32::from_bits(0x4213da1c), f32::from_bits(0x4240af13)));
+    path.cubic_to(
+        (f32::from_bits(0x4213c49b), f32::from_bits(0x4240988c)),
+        (f32::from_bits(0x4213b957), f32::from_bits(0x4240ba57)),
+        (f32::from_bits(0x4213da1c), f32::from_bits(0x4240af13)),
+    );
     // 36.942f, 48.149f, 36.931f, 48.182f, 36.963f, 48.171f
-    path.cubic_to((f32::from_bits(0x42141cab), f32::from_bits(0x4240af13)), (f32::from_bits(0x4214a1ca), f32::from_bits(0x42405703)), (f32::from_bits(0x4214ee97), f32::from_bits(0x42403538)));
+    path.cubic_to(
+        (f32::from_bits(0x42141cab), f32::from_bits(0x4240af13)),
+        (f32::from_bits(0x4214a1ca), f32::from_bits(0x42405703)),
+        (f32::from_bits(0x4214ee97), f32::from_bits(0x42403538)),
+    );
     // 37.028f, 48.171f, 37.158f, 48.085f, 37.233f, 48.052f
-    path.cubic_to((f32::from_bits(0x42153126), f32::from_bits(0x42401473)), (f32::from_bits(0x42157ef9), f32::from_bits(0x423ffdec)), (f32::from_bits(0x4215cbc6), f32::from_bits(0x423fd1e4)));
+    path.cubic_to(
+        (f32::from_bits(0x42153126), f32::from_bits(0x42401473)),
+        (f32::from_bits(0x42157ef9), f32::from_bits(0x423ffdec)),
+        (f32::from_bits(0x4215cbc6), f32::from_bits(0x423fd1e4)),
+    );
     // 37.298f, 48.02f, 37.374f, 47.998f, 37.449f, 47.955f
-    path.cubic_to((f32::from_bits(0x421650e5), f32::from_bits(0x423f8f55)), (f32::from_bits(0x4216cac0), f32::from_bits(0x423f4288)), (f32::from_bits(0x42178624), f32::from_bits(0x423f20bd)));
+    path.cubic_to(
+        (f32::from_bits(0x421650e5), f32::from_bits(0x423f8f55)),
+        (f32::from_bits(0x4216cac0), f32::from_bits(0x423f4288)),
+        (f32::from_bits(0x42178624), f32::from_bits(0x423f20bd)),
+    );
     // 37.579f, 47.89f, 37.698f, 47.815f, 37.881f, 47.782f
-    path.cubic_to((f32::from_bits(0x42177ae0), f32::from_bits(0x423f8f55)), (f32::from_bits(0x421770a3), f32::from_bits(0x423fc6a0)), (f32::from_bits(0x42174395), f32::from_bits(0x423ffdec)));
+    path.cubic_to(
+        (f32::from_bits(0x42177ae0), f32::from_bits(0x423f8f55)),
+        (f32::from_bits(0x421770a3), f32::from_bits(0x423fc6a0)),
+        (f32::from_bits(0x42174395), f32::from_bits(0x423ffdec)),
+    );
     // 37.87f, 47.89f, 37.86f, 47.944f, 37.816f, 47.998f
-    path.cubic_to((f32::from_bits(0x4216bf7c), f32::from_bits(0x4240ba56)), (f32::from_bits(0x4215ab02), f32::from_bits(0x4241332b)), (f32::from_bits(0x4214f9db), f32::from_bits(0x4241c38e)));
+    path.cubic_to(
+        (f32::from_bits(0x4216bf7c), f32::from_bits(0x4240ba56)),
+        (f32::from_bits(0x4215ab02), f32::from_bits(0x4241332b)),
+        (f32::from_bits(0x4214f9db), f32::from_bits(0x4241c38e)),
+    );
     // 37.687f, 48.182f, 37.417f, 48.3f, 37.244f, 48.441f
-    path.cubic_to((f32::from_bits(0x42143333), f32::from_bits(0x424274b5)), (f32::from_bits(0x42136b85), f32::from_bits(0x42433019)), (f32::from_bits(0x4212c5a2), f32::from_bits(0x4243f7c7)));
+    path.cubic_to(
+        (f32::from_bits(0x42143333), f32::from_bits(0x424274b5)),
+        (f32::from_bits(0x42136b85), f32::from_bits(0x42433019)),
+        (f32::from_bits(0x4212c5a2), f32::from_bits(0x4243f7c7)),
+    );
     // 37.05f, 48.614f, 36.855f, 48.797f, 36.693f, 48.992f
-    path.cubic_to((f32::from_bits(0x42115917), f32::from_bits(0x42459b9e)), (f32::from_bits(0x421022d1), f32::from_bits(0x42476c83)), (f32::from_bits(0x420f0313), f32::from_bits(0x4249311f)));
+    path.cubic_to(
+        (f32::from_bits(0x42115917), f32::from_bits(0x42459b9e)),
+        (f32::from_bits(0x421022d1), f32::from_bits(0x42476c83)),
+        (f32::from_bits(0x420f0313), f32::from_bits(0x4249311f)),
+    );
     // 36.337f, 49.402f, 36.034f, 49.856f, 35.753f, 50.298f
-    path.cubic_to((f32::from_bits(0x420e1ba6), f32::from_bits(0x424a936d)), (f32::from_bits(0x420d75c3), f32::from_bits(0x424c21c3)), (f32::from_bits(0x420cdb23), f32::from_bits(0x424dba56)));
+    path.cubic_to(
+        (f32::from_bits(0x420e1ba6), f32::from_bits(0x424a936d)),
+        (f32::from_bits(0x420d75c3), f32::from_bits(0x424c21c3)),
+        (f32::from_bits(0x420cdb23), f32::from_bits(0x424dba56)),
+    );
     // 35.527f, 50.644f, 35.365f, 51.033f, 35.214f, 51.432f
-    path.cubic_to((f32::from_bits(0x420c3f7d), f32::from_bits(0x424f6a77)), (f32::from_bits(0x420b8419), f32::from_bits(0x42510e4e)), (f32::from_bits(0x420b1fbf), f32::from_bits(0x4252d3f0)));
+    path.cubic_to(
+        (f32::from_bits(0x420c3f7d), f32::from_bits(0x424f6a77)),
+        (f32::from_bits(0x420b8419), f32::from_bits(0x42510e4e)),
+        (f32::from_bits(0x420b1fbf), f32::from_bits(0x4252d3f0)),
+    );
     // 35.062f, 51.854f, 34.879f, 52.264f, 34.781f, 52.707f
-    path.cubic_to((f32::from_bits(0x420ad2f2), f32::from_bits(0x42548e4e)), (f32::from_bits(0x420ab127), f32::from_bits(0x42565e2d)), (f32::from_bits(0x420a9063), f32::from_bits(0x4258188c)));
+    path.cubic_to(
+        (f32::from_bits(0x420ad2f2), f32::from_bits(0x42548e4e)),
+        (f32::from_bits(0x420ab127), f32::from_bits(0x42565e2d)),
+        (f32::from_bits(0x420a9063), f32::from_bits(0x4258188c)),
+    );
     // 34.706f, 53.139f, 34.673f, 53.592f, 34.641f, 54.024f
-    path.cubic_to((f32::from_bits(0x420a7ae2), f32::from_bits(0x4258882a)), (f32::from_bits(0x420a9ba7), f32::from_bits(0x4258e03a)), (f32::from_bits(0x420a9ba7), f32::from_bits(0x42594ed2)));
+    path.cubic_to(
+        (f32::from_bits(0x420a7ae2), f32::from_bits(0x4258882a)),
+        (f32::from_bits(0x420a9ba7), f32::from_bits(0x4258e03a)),
+        (f32::from_bits(0x420a9ba7), f32::from_bits(0x42594ed2)),
+    );
     // 34.62f, 54.133f, 34.652f, 54.219f, 34.652f, 54.327f
-    path.cubic_to((f32::from_bits(0x420aa6eb), f32::from_bits(0x425e301a)), (f32::from_bits(0x420c820d), f32::from_bits(0x4262c495)), (f32::from_bits(0x420ecbc8), f32::from_bits(0x4266fff9)));
+    path.cubic_to(
+        (f32::from_bits(0x420aa6eb), f32::from_bits(0x425e301a)),
+        (f32::from_bits(0x420c820d), f32::from_bits(0x4262c495)),
+        (f32::from_bits(0x420ecbc8), f32::from_bits(0x4266fff9)),
+    );
     // 34.663f, 55.547f, 35.127f, 56.692f, 35.699f, 57.75f
-    path.cubic_to((f32::from_bits(0x420eed93), f32::from_bits(0x426721c4)), (f32::from_bits(0x420f0e57), f32::from_bits(0x42674dcc)), (f32::from_bits(0x420f3022), f32::from_bits(0x42676e91)));
+    path.cubic_to(
+        (f32::from_bits(0x420eed93), f32::from_bits(0x426721c4)),
+        (f32::from_bits(0x420f0e57), f32::from_bits(0x42674dcc)),
+        (f32::from_bits(0x420f3022), f32::from_bits(0x42676e91)),
+    );
     // 35.732f, 57.783f, 35.764f, 57.826f, 35.797f, 57.858f
-    path.cubic_to((f32::from_bits(0x420f7df5), f32::from_bits(0x42680a37)), (f32::from_bits(0x420fbf7e), f32::from_bits(0x42689993)), (f32::from_bits(0x42100d51), f32::from_bits(0x42693433)));
+    path.cubic_to(
+        (f32::from_bits(0x420f7df5), f32::from_bits(0x42680a37)),
+        (f32::from_bits(0x420fbf7e), f32::from_bits(0x42689993)),
+        (f32::from_bits(0x42100d51), f32::from_bits(0x42693433)),
+    );
     // 35.873f, 58.01f, 35.937f, 58.15f, 36.013f, 58.301f
-    path.cubic_to((f32::from_bits(0x42102e16), f32::from_bits(0x426955fe)), (f32::from_bits(0x42105a1e), f32::from_bits(0x426976c2)), (f32::from_bits(0x42106561), f32::from_bits(0x42698d4a)));
+    path.cubic_to(
+        (f32::from_bits(0x42102e16), f32::from_bits(0x426955fe)),
+        (f32::from_bits(0x42105a1e), f32::from_bits(0x426976c2)),
+        (f32::from_bits(0x42106561), f32::from_bits(0x42698d4a)),
+    );
     // 36.045f, 58.334f, 36.088f, 58.366f, 36.099f, 58.388f
-    path.cubic_to((f32::from_bits(0x4210872c), f32::from_bits(0x4269e55a)), (f32::from_bits(0x4210a7f0), f32::from_bits(0x426a3d6b)), (f32::from_bits(0x4210ea80), f32::from_bits(0x426a6a79)));
+    path.cubic_to(
+        (f32::from_bits(0x4210872c), f32::from_bits(0x4269e55a)),
+        (f32::from_bits(0x4210a7f0), f32::from_bits(0x426a3d6b)),
+        (f32::from_bits(0x4210ea80), f32::from_bits(0x426a6a79)),
+    );
     // 36.132f, 58.474f, 36.164f, 58.56f, 36.229f, 58.604f
-    path.cubic_to((f32::from_bits(0x42119aa1), f32::from_bits(0x426acdcd)), (f32::from_bits(0x42131376), f32::from_bits(0x426a48ae)), (f32::from_bits(0x4213e561), f32::from_bits(0x426a6a79)));
+    path.cubic_to(
+        (f32::from_bits(0x42119aa1), f32::from_bits(0x426acdcd)),
+        (f32::from_bits(0x42131376), f32::from_bits(0x426a48ae)),
+        (f32::from_bits(0x4213e561), f32::from_bits(0x426a6a79)),
+    );
     // 36.401f, 58.701f, 36.769f, 58.571f, 36.974f, 58.604f
-    path.cubic_to((f32::from_bits(0x4213fae2), f32::from_bits(0x426a75bd)), (f32::from_bits(0x42141cad), f32::from_bits(0x426a8b3e)), (f32::from_bits(0x42143d71), f32::from_bits(0x426a8b3e)));
+    path.cubic_to(
+        (f32::from_bits(0x4213fae2), f32::from_bits(0x426a75bd)),
+        (f32::from_bits(0x42141cad), f32::from_bits(0x426a8b3e)),
+        (f32::from_bits(0x42143d71), f32::from_bits(0x426a8b3e)),
+    );
     // 36.995f, 58.615f, 37.028f, 58.636f, 37.06f, 58.636f
-    path.cubic_to((f32::from_bits(0x42141cac), f32::from_bits(0x426acdcd)), (f32::from_bits(0x42143334), f32::from_bits(0x426aee92)), (f32::from_bits(0x42141cac), f32::from_bits(0x426b25de)));
+    path.cubic_to(
+        (f32::from_bits(0x42141cac), f32::from_bits(0x426acdcd)),
+        (f32::from_bits(0x42143334), f32::from_bits(0x426aee92)),
+        (f32::from_bits(0x42141cac), f32::from_bits(0x426b25de)),
+    );
     // 37.028f, 58.701f, 37.05f, 58.733f, 37.028f, 58.787f
-    path.cubic_to((f32::from_bits(0x4213e560), f32::from_bits(0x426b9fb9)), (f32::from_bits(0x4212dc29), f32::from_bits(0x426d0d4b)), (f32::from_bits(0x4212f1aa), f32::from_bits(0x426da7ea)));
+    path.cubic_to(
+        (f32::from_bits(0x4213e560), f32::from_bits(0x426b9fb9)),
+        (f32::from_bits(0x4212dc29), f32::from_bits(0x426d0d4b)),
+        (f32::from_bits(0x4212f1aa), f32::from_bits(0x426da7ea)),
+    );
     // 36.974f, 58.906f, 36.715f, 59.263f, 36.736f, 59.414f
-    path.cubic_to((f32::from_bits(0x4212f1aa), f32::from_bits(0x426dfffa)), (f32::from_bits(0x4213b958), f32::from_bits(0x426ed1e6)), (f32::from_bits(0x4213c49c), f32::from_bits(0x426edd29)));
+    path.cubic_to(
+        (f32::from_bits(0x4212f1aa), f32::from_bits(0x426dfffa)),
+        (f32::from_bits(0x4213b958), f32::from_bits(0x426ed1e6)),
+        (f32::from_bits(0x4213c49c), f32::from_bits(0x426edd29)),
+    );
     // 36.736f, 59.5f, 36.931f, 59.705f, 36.942f, 59.716f
-    path.cubic_to((f32::from_bits(0x4213e561), f32::from_bits(0x426f1fb8)), (f32::from_bits(0x42143d71), f32::from_bits(0x426f9993)), (f32::from_bits(0x421448b5), f32::from_bits(0x426ffce7)));
+    path.cubic_to(
+        (f32::from_bits(0x4213e561), f32::from_bits(0x426f1fb8)),
+        (f32::from_bits(0x42143d71), f32::from_bits(0x426f9993)),
+        (f32::from_bits(0x421448b5), f32::from_bits(0x426ffce7)),
+    );
     // 36.974f, 59.781f, 37.06f, 59.9f, 37.071f, 59.997f
-    path.cubic_to((f32::from_bits(0x421448b5), f32::from_bits(0x427076c2)), (f32::from_bits(0x4214072c), f32::from_bits(0x4270ef97)), (f32::from_bits(0x4213fae2), f32::from_bits(0x427148ae)));
+    path.cubic_to(
+        (f32::from_bits(0x421448b5), f32::from_bits(0x427076c2)),
+        (f32::from_bits(0x4214072c), f32::from_bits(0x4270ef97)),
+        (f32::from_bits(0x4213fae2), f32::from_bits(0x427148ae)),
+    );
     // 37.071f, 60.116f, 37.007f, 60.234f, 36.995f, 60.321f
-    path.cubic_to((f32::from_bits(0x4213e561), f32::from_bits(0x42717ffa)), (f32::from_bits(0x4213fae2), f32::from_bits(0x42718b3d)), (f32::from_bits(0x4213e561), f32::from_bits(0x4271b746)));
+    path.cubic_to(
+        (f32::from_bits(0x4213e561), f32::from_bits(0x42717ffa)),
+        (f32::from_bits(0x4213fae2), f32::from_bits(0x42718b3d)),
+        (f32::from_bits(0x4213e561), f32::from_bits(0x4271b746)),
+    );
     // 36.974f, 60.375f, 36.995f, 60.386f, 36.974f, 60.429f
-    path.cubic_to((f32::from_bits(0x4213da1d), f32::from_bits(0x4271ccc7)), (f32::from_bits(0x4213b959), f32::from_bits(0x42721a9a)), (f32::from_bits(0x4213a2d2), f32::from_bits(0x42721a9a)));
+    path.cubic_to(
+        (f32::from_bits(0x4213da1d), f32::from_bits(0x4271ccc7)),
+        (f32::from_bits(0x4213b959), f32::from_bits(0x42721a9a)),
+        (f32::from_bits(0x4213a2d2), f32::from_bits(0x42721a9a)),
+    );
     // 36.963f, 60.45f, 36.931f, 60.526f, 36.909f, 60.526f
-    path.cubic_to((f32::from_bits(0x42134ac2), f32::from_bits(0x42723c65)), (f32::from_bits(0x4212d0e6), f32::from_bits(0x427225de)), (f32::from_bits(0x42126d93), f32::from_bits(0x427225de)));
+    path.cubic_to(
+        (f32::from_bits(0x42134ac2), f32::from_bits(0x42723c65)),
+        (f32::from_bits(0x4212d0e6), f32::from_bits(0x427225de)),
+        (f32::from_bits(0x42126d93), f32::from_bits(0x427225de)),
+    );
     // 36.823f, 60.559f, 36.704f, 60.537f, 36.607f, 60.537f
-    path.cubic_to((f32::from_bits(0x42124bc8), f32::from_bits(0x427225de)), (f32::from_bits(0x4211bc6c), f32::from_bits(0x42723c65)), (f32::from_bits(0x42119064), f32::from_bits(0x42723c65)));
+    path.cubic_to(
+        (f32::from_bits(0x42124bc8), f32::from_bits(0x427225de)),
+        (f32::from_bits(0x4211bc6c), f32::from_bits(0x42723c65)),
+        (f32::from_bits(0x42119064), f32::from_bits(0x42723c65)),
+    );
     // 36.574f, 60.537f, 36.434f, 60.559f, 36.391f, 60.559f
-    path.cubic_to((f32::from_bits(0x4210d3fa), f32::from_bits(0x427246a2)), (f32::from_bits(0x420ff6ca), f32::from_bits(0x4272301b)), (f32::from_bits(0x420f676e), f32::from_bits(0x4272686d)));
+    path.cubic_to(
+        (f32::from_bits(0x4210d3fa), f32::from_bits(0x427246a2)),
+        (f32::from_bits(0x420ff6ca), f32::from_bits(0x4272301b)),
+        (f32::from_bits(0x420f676e), f32::from_bits(0x4272686d)),
+    );
     // 36.207f, 60.569f, 35.991f, 60.547f, 35.851f, 60.602f
-    path.cubic_to((f32::from_bits(0x420eb647), f32::from_bits(0x4272b53a)), (f32::from_bits(0x420e52f3), f32::from_bits(0x42737ce8)), (f32::from_bits(0x420dc291), f32::from_bits(0x4273f5bd)));
+    path.cubic_to(
+        (f32::from_bits(0x420eb647), f32::from_bits(0x4272b53a)),
+        (f32::from_bits(0x420e52f3), f32::from_bits(0x42737ce8)),
+        (f32::from_bits(0x420dc291), f32::from_bits(0x4273f5bd)),
+    );
     // 35.678f, 60.677f, 35.581f, 60.872f, 35.44f, 60.99f
-    path.cubic_to((f32::from_bits(0x420d116a), f32::from_bits(0x4274861f)), (f32::from_bits(0x420c5606), f32::from_bits(0x4274e973)), (f32::from_bits(0x420b999b), f32::from_bits(0x4275580b)));
+    path.cubic_to(
+        (f32::from_bits(0x420d116a), f32::from_bits(0x4274861f)),
+        (f32::from_bits(0x420c5606), f32::from_bits(0x4274e973)),
+        (f32::from_bits(0x420b999b), f32::from_bits(0x4275580b)),
+    );
     // 35.267f, 61.131f, 35.084f, 61.228f, 34.9f, 61.336f
-    path.cubic_to((f32::from_bits(0x420a9ba7), f32::from_bits(0x4275fdee)), (f32::from_bits(0x4209b335), f32::from_bits(0x42768d4a)), (f32::from_bits(0x42089eba), f32::from_bits(0x4276f1a5)));
+    path.cubic_to(
+        (f32::from_bits(0x420a9ba7), f32::from_bits(0x4275fdee)),
+        (f32::from_bits(0x4209b335), f32::from_bits(0x42768d4a)),
+        (f32::from_bits(0x42089eba), f32::from_bits(0x4276f1a5)),
+    );
     // 34.652f, 61.498f, 34.425f, 61.638f, 34.155f, 61.736f
-    path.cubic_to((f32::from_bits(0x4207ab04), f32::from_bits(0x42773e72)), (f32::from_bits(0x4206a1cc), f32::from_bits(0x42778101)), (f32::from_bits(0x4205b95a), f32::from_bits(0x4277c391)));
+    path.cubic_to(
+        (f32::from_bits(0x4207ab04), f32::from_bits(0x42773e72)),
+        (f32::from_bits(0x4206a1cc), f32::from_bits(0x42778101)),
+        (f32::from_bits(0x4205b95a), f32::from_bits(0x4277c391)),
+    );
     // 33.917f, 61.811f, 33.658f, 61.876f, 33.431f, 61.941f
-    path.cubic_to((f32::from_bits(0x4203bd73), f32::from_bits(0x42786974)), (f32::from_bits(0x4201cbc9), f32::from_bits(0x42793b60)), (f32::from_bits(0x4200ac0a), f32::from_bits(0x427af5be)));
+    path.cubic_to(
+        (f32::from_bits(0x4203bd73), f32::from_bits(0x42786974)),
+        (f32::from_bits(0x4201cbc9), f32::from_bits(0x42793b60)),
+        (f32::from_bits(0x4200ac0a), f32::from_bits(0x427af5be)),
+    );
     // 32.935f, 62.103f, 32.449f, 62.308f, 32.168f, 62.74f
-    path.cubic_to((f32::from_bits(0x420074be), f32::from_bits(0x427b428b)), (f32::from_bits(0x41ffb43d), f32::from_bits(0x427c4cc8)), (f32::from_bits(0x41ff872f), f32::from_bits(0x427ca4d9)));
+    path.cubic_to(
+        (f32::from_bits(0x420074be), f32::from_bits(0x427b428b)),
+        (f32::from_bits(0x41ffb43d), f32::from_bits(0x427c4cc8)),
+        (f32::from_bits(0x41ff872f), f32::from_bits(0x427ca4d9)),
+    );
     // 32.114f, 62.815f, 31.963f, 63.075f, 31.941f, 63.161f
-    path.cubic_to((f32::from_bits(0x41ff872f), f32::from_bits(0x427cbb60)), (f32::from_bits(0x41ff9db6), f32::from_bits(0x427cd0e1)), (f32::from_bits(0x41ff872f), f32::from_bits(0x427ce768)));
+    path.cubic_to(
+        (f32::from_bits(0x41ff872f), f32::from_bits(0x427cbb60)),
+        (f32::from_bits(0x41ff9db6), f32::from_bits(0x427cd0e1)),
+        (f32::from_bits(0x41ff872f), f32::from_bits(0x427ce768)),
+    );
     // 31.941f, 63.183f, 31.952f, 63.204f, 31.941f, 63.226f
-    path.cubic_to((f32::from_bits(0x41ffb43d), f32::from_bits(0x427cfce9)), (f32::from_bits(0x41ffb43d), f32::from_bits(0x427cfce9)), (f32::from_bits(0x41ffdf3f), f32::from_bits(0x427d1370)));
+    path.cubic_to(
+        (f32::from_bits(0x41ffb43d), f32::from_bits(0x427cfce9)),
+        (f32::from_bits(0x41ffb43d), f32::from_bits(0x427cfce9)),
+        (f32::from_bits(0x41ffdf3f), f32::from_bits(0x427d1370)),
+    );
     // 31.963f, 63.247f, 31.963f, 63.247f, 31.984f, 63.269f
-    path.cubic_to((f32::from_bits(0x4200ac0a), f32::from_bits(0x427cfce9)), (f32::from_bits(0x42010f5e), f32::from_bits(0x427cd0e1)), (f32::from_bits(0x4201a9fe), f32::from_bits(0x427ca4d8)));
+    path.cubic_to(
+        (f32::from_bits(0x4200ac0a), f32::from_bits(0x427cfce9)),
+        (f32::from_bits(0x42010f5e), f32::from_bits(0x427cd0e1)),
+        (f32::from_bits(0x4201a9fe), f32::from_bits(0x427ca4d8)),
+    );
     // 32.168f, 63.247f, 32.265f, 63.204f, 32.416f, 63.161f
-    path.cubic_to((f32::from_bits(0x4201c085), f32::from_bits(0x427c9994)), (f32::from_bits(0x4201f7d1), f32::from_bits(0x427c78d0)), (f32::from_bits(0x42020315), f32::from_bits(0x427c78d0)));
+    path.cubic_to(
+        (f32::from_bits(0x4201c085), f32::from_bits(0x427c9994)),
+        (f32::from_bits(0x4201f7d1), f32::from_bits(0x427c78d0)),
+        (f32::from_bits(0x42020315), f32::from_bits(0x427c78d0)),
+    );
     // 32.438f, 63.15f, 32.492f, 63.118f, 32.503f, 63.118f
-    path.cubic_to((f32::from_bits(0x420223da), f32::from_bits(0x427c6249)), (f32::from_bits(0x42022f1d), f32::from_bits(0x427c78d0)), (f32::from_bits(0x42023a61), f32::from_bits(0x427c78d0)));
+    path.cubic_to(
+        (f32::from_bits(0x420223da), f32::from_bits(0x427c6249)),
+        (f32::from_bits(0x42022f1d), f32::from_bits(0x427c78d0)),
+        (f32::from_bits(0x42023a61), f32::from_bits(0x427c78d0)),
+    );
     // 32.535f, 63.096f, 32.546f, 63.118f, 32.557f, 63.118f
-    path.cubic_to((f32::from_bits(0x42025b26), f32::from_bits(0x427c6249)), (f32::from_bits(0x42028834), f32::from_bits(0x427c4184)), (f32::from_bits(0x4202a8f9), f32::from_bits(0x427c4184)));
+    path.cubic_to(
+        (f32::from_bits(0x42025b26), f32::from_bits(0x427c6249)),
+        (f32::from_bits(0x42028834), f32::from_bits(0x427c4184)),
+        (f32::from_bits(0x4202a8f9), f32::from_bits(0x427c4184)),
+    );
     // 32.589f, 63.096f, 32.633f, 63.064f, 32.665f, 63.064f
-    path.cubic_to((f32::from_bits(0x4203e97c), f32::from_bits(0x427bc7a9)), (f32::from_bits(0x42061db5), f32::from_bits(0x427ba6e4)), (f32::from_bits(0x4207b649), f32::from_bits(0x427bfef5)));
+    path.cubic_to(
+        (f32::from_bits(0x4203e97c), f32::from_bits(0x427bc7a9)),
+        (f32::from_bits(0x42061db5), f32::from_bits(0x427ba6e4)),
+        (f32::from_bits(0x4207b649), f32::from_bits(0x427bfef5)),
+    );
     // 32.978f, 62.945f, 33.529f, 62.913f, 33.928f, 62.999f
-    path.cubic_to((f32::from_bits(0x42089ebc), f32::from_bits(0x427c20c0)), (f32::from_bits(0x420970a7), f32::from_bits(0x427c78d0)), (f32::from_bits(0x420a21ce), f32::from_bits(0x427cc59d)));
+    path.cubic_to(
+        (f32::from_bits(0x42089ebc), f32::from_bits(0x427c20c0)),
+        (f32::from_bits(0x420970a7), f32::from_bits(0x427c78d0)),
+        (f32::from_bits(0x420a21ce), f32::from_bits(0x427cc59d)),
+    );
     // 34.155f, 63.032f, 34.36f, 63.118f, 34.533f, 63.193f
-    path.cubic_to((f32::from_bits(0x420a6fa1), f32::from_bits(0x427cdc24)), (f32::from_bits(0x420ab12a), f32::from_bits(0x427ce768)), (f32::from_bits(0x420af3ba), f32::from_bits(0x427d1370)));
+    path.cubic_to(
+        (f32::from_bits(0x420a6fa1), f32::from_bits(0x427cdc24)),
+        (f32::from_bits(0x420ab12a), f32::from_bits(0x427ce768)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427d1370)),
+    );
     // 34.609f, 63.215f, 34.673f, 63.226f, 34.738f, 63.269f
-    path.cubic_to((f32::from_bits(0x420b0a41), f32::from_bits(0x427d1370)), (f32::from_bits(0x420af3ba), f32::from_bits(0x427d353b)), (f32::from_bits(0x420b1585), f32::from_bits(0x427d407e)));
+    path.cubic_to(
+        (f32::from_bits(0x420b0a41), f32::from_bits(0x427d1370)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427d353b)),
+        (f32::from_bits(0x420b1585), f32::from_bits(0x427d407e)),
+    );
     // 34.76f, 63.269f, 34.738f, 63.302f, 34.771f, 63.313f
-    path.cubic_to((f32::from_bits(0x420b0a41), f32::from_bits(0x427d6143)), (f32::from_bits(0x420b0a41), f32::from_bits(0x427d8207)), (f32::from_bits(0x420af3ba), f32::from_bits(0x427dae0f)));
+    path.cubic_to(
+        (f32::from_bits(0x420b0a41), f32::from_bits(0x427d6143)),
+        (f32::from_bits(0x420b0a41), f32::from_bits(0x427d8207)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427dae0f)),
+    );
     // 34.76f, 63.345f, 34.76f, 63.377f, 34.738f, 63.42f
-    path.cubic_to((f32::from_bits(0x420ad2f5), f32::from_bits(0x427df09e)), (f32::from_bits(0x420a2d12), f32::from_bits(0x427e54f8)), (f32::from_bits(0x420a4293), f32::from_bits(0x427ee455)));
+    path.cubic_to(
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x427df09e)),
+        (f32::from_bits(0x420a2d12), f32::from_bits(0x427e54f8)),
+        (f32::from_bits(0x420a4293), f32::from_bits(0x427ee455)),
+    );
     // 34.706f, 63.485f, 34.544f, 63.583f, 34.565f, 63.723f
-    path.cubic_to((f32::from_bits(0x420a591a), f32::from_bits(0x427f051a)), (f32::from_bits(0x420ad2f5), f32::from_bits(0x427f3122)), (f32::from_bits(0x420af3ba), f32::from_bits(0x427f47a9)));
+    path.cubic_to(
+        (f32::from_bits(0x420a591a), f32::from_bits(0x427f051a)),
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x427f3122)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427f47a9)),
+    );
     // 34.587f, 63.755f, 34.706f, 63.798f, 34.738f, 63.82f
-    path.cubic_to((f32::from_bits(0x420af3ba), f32::from_bits(0x427f5d2a)), (f32::from_bits(0x420af3ba), f32::from_bits(0x427f73b1)), (f32::from_bits(0x420b0a41), f32::from_bits(0x427f7ef5)));
+    path.cubic_to(
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427f5d2a)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x427f73b1)),
+        (f32::from_bits(0x420b0a41), f32::from_bits(0x427f7ef5)),
+    );
     // 34.738f, 63.841f, 34.738f, 63.863f, 34.76f, 63.874f
-    path.cubic_to((f32::from_bits(0x420add33), f32::from_bits(0x427fccc8)), (f32::from_bits(0x420a21ce), f32::from_bits(0x42803e74)), (f32::from_bits(0x420a2d12), f32::from_bits(0x4280701e)));
+    path.cubic_to(
+        (f32::from_bits(0x420add33), f32::from_bits(0x427fccc8)),
+        (f32::from_bits(0x420a21ce), f32::from_bits(0x42803e74)),
+        (f32::from_bits(0x420a2d12), f32::from_bits(0x4280701e)),
+    );
     // 34.716f, 63.95f, 34.533f, 64.122f, 34.544f, 64.219f
-    path.cubic_to((f32::from_bits(0x420a3856), f32::from_bits(0x42808bc4)), (f32::from_bits(0x420ad2f5), f32::from_bits(0x4280a7ed)), (f32::from_bits(0x420ae876), f32::from_bits(0x4280b2ad)));
+    path.cubic_to(
+        (f32::from_bits(0x420a3856), f32::from_bits(0x42808bc4)),
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x4280a7ed)),
+        (f32::from_bits(0x420ae876), f32::from_bits(0x4280b2ad)),
+    );
     // 34.555f, 64.273f, 34.706f, 64.328f, 34.727f, 64.349f
-    path.cubic_to((f32::from_bits(0x420af3ba), f32::from_bits(0x4280bdf1)), (f32::from_bits(0x420add32), f32::from_bits(0x4280c8b1)), (f32::from_bits(0x420af3ba), f32::from_bits(0x4280d3f5)));
+    path.cubic_to(
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x4280bdf1)),
+        (f32::from_bits(0x420add32), f32::from_bits(0x4280c8b1)),
+        (f32::from_bits(0x420af3ba), f32::from_bits(0x4280d3f5)),
+    );
     // 34.738f, 64.371f, 34.716f, 64.392f, 34.738f, 64.414f
-    path.cubic_to((f32::from_bits(0x420abd74), f32::from_bits(0x4280f53d)), (f32::from_bits(0x4209f5c6), f32::from_bits(0x4281428d)), (f32::from_bits(0x420a21ce), f32::from_bits(0x42816e95)));
+    path.cubic_to(
+        (f32::from_bits(0x420abd74), f32::from_bits(0x4280f53d)),
+        (f32::from_bits(0x4209f5c6), f32::from_bits(0x4281428d)),
+        (f32::from_bits(0x420a21ce), f32::from_bits(0x42816e95)),
+    );
     // 34.685f, 64.479f, 34.49f, 64.63f, 34.533f, 64.716f
-    path.cubic_to((f32::from_bits(0x420a4293), f32::from_bits(0x4281957e)), (f32::from_bits(0x420ad2f5), f32::from_bits(0x4281a664)), (f32::from_bits(0x420ae876), f32::from_bits(0x4281c187)));
+    path.cubic_to(
+        (f32::from_bits(0x420a4293), f32::from_bits(0x4281957e)),
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x4281a664)),
+        (f32::from_bits(0x420ae876), f32::from_bits(0x4281c187)),
+    );
     // 34.565f, 64.792f, 34.706f, 64.825f, 34.727f, 64.878f
-    path.cubic_to((f32::from_bits(0x420ae876), f32::from_bits(0x4281c729)), (f32::from_bits(0x420add32), f32::from_bits(0x4281d26c)), (f32::from_bits(0x420ae876), f32::from_bits(0x4281d26c)));
+    path.cubic_to(
+        (f32::from_bits(0x420ae876), f32::from_bits(0x4281c729)),
+        (f32::from_bits(0x420add32), f32::from_bits(0x4281d26c)),
+        (f32::from_bits(0x420ae876), f32::from_bits(0x4281d26c)),
+    );
     // 34.727f, 64.889f, 34.716f, 64.911f, 34.727f, 64.911f
-    path.cubic_to((f32::from_bits(0x420aa6ed), f32::from_bits(0x4281fe74)), (f32::from_bits(0x420a591a), f32::from_bits(0x42821a1a)), (f32::from_bits(0x4209f5c6), f32::from_bits(0x42823b62)));
+    path.cubic_to(
+        (f32::from_bits(0x420aa6ed), f32::from_bits(0x4281fe74)),
+        (f32::from_bits(0x420a591a), f32::from_bits(0x42821a1a)),
+        (f32::from_bits(0x4209f5c6), f32::from_bits(0x42823b62)),
+    );
     // 34.663f, 64.997f, 34.587f, 65.051f, 34.49f, 65.116f
-    path.cubic_to((f32::from_bits(0x420a168b), f32::from_bits(0x42825caa)), (f32::from_bits(0x420a010a), f32::from_bits(0x4282624b)), (f32::from_bits(0x420a2d12), f32::from_bits(0x42827850)));
+    path.cubic_to(
+        (f32::from_bits(0x420a168b), f32::from_bits(0x42825caa)),
+        (f32::from_bits(0x420a010a), f32::from_bits(0x4282624b)),
+        (f32::from_bits(0x420a2d12), f32::from_bits(0x42827850)),
+    );
     // 34.522f, 65.181f, 34.501f, 65.192f, 34.544f, 65.235f
-    path.cubic_to((f32::from_bits(0x420a645e), f32::from_bits(0x428288b2)), (f32::from_bits(0x420a9baa), f32::from_bits(0x428293f6)), (f32::from_bits(0x420ad2f5), f32::from_bits(0x4282a458)));
+    path.cubic_to(
+        (f32::from_bits(0x420a645e), f32::from_bits(0x428288b2)),
+        (f32::from_bits(0x420a9baa), f32::from_bits(0x428293f6)),
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x4282a458)),
+    );
     // 34.598f, 65.267f, 34.652f, 65.289f, 34.706f, 65.321f
-    path.cubic_to((f32::from_bits(0x420ad2f5), f32::from_bits(0x4282a458)), (f32::from_bits(0x420add32), f32::from_bits(0x4282d685)), (f32::from_bits(0x420abd74), f32::from_bits(0x4282c5a0)));
+    path.cubic_to(
+        (f32::from_bits(0x420ad2f5), f32::from_bits(0x4282a458)),
+        (f32::from_bits(0x420add32), f32::from_bits(0x4282d685)),
+        (f32::from_bits(0x420abd74), f32::from_bits(0x4282c5a0)),
+    );
     // 34.706f, 65.321f, 34.716f, 65.419f, 34.685f, 65.386f
-    path.cubic_to((f32::from_bits(0x420aa6ed), f32::from_bits(0x4282cb42)), (f32::from_bits(0x420a9066), f32::from_bits(0x4282e146)), (f32::from_bits(0x420a6fa1), f32::from_bits(0x4282e6e8)));
+    path.cubic_to(
+        (f32::from_bits(0x420aa6ed), f32::from_bits(0x4282cb42)),
+        (f32::from_bits(0x420a9066), f32::from_bits(0x4282e146)),
+        (f32::from_bits(0x420a6fa1), f32::from_bits(0x4282e6e8)),
+    );
     // 34.663f, 65.397f, 34.641f, 65.44f, 34.609f, 65.451f
-    path.cubic_to((f32::from_bits(0x4209df3f), f32::from_bits(0x42830830)), (f32::from_bits(0x4208f6cc), f32::from_bits(0x4282bae0)), (f32::from_bits(0x42088834), f32::from_bits(0x4282a459)));
+    path.cubic_to(
+        (f32::from_bits(0x4209df3f), f32::from_bits(0x42830830)),
+        (f32::from_bits(0x4208f6cc), f32::from_bits(0x4282bae0)),
+        (f32::from_bits(0x42088834), f32::from_bits(0x4282a459)),
+    );
     // 34.468f, 65.516f, 34.241f, 65.365f, 34.133f, 65.321f
-    path.cubic_to((f32::from_bits(0x420846ab), f32::from_bits(0x42829915)), (f32::from_bits(0x42080f5f), f32::from_bits(0x42829915)), (f32::from_bits(0x4207c18c), f32::from_bits(0x428293f7)));
+    path.cubic_to(
+        (f32::from_bits(0x420846ab), f32::from_bits(0x42829915)),
+        (f32::from_bits(0x42080f5f), f32::from_bits(0x42829915)),
+        (f32::from_bits(0x4207c18c), f32::from_bits(0x428293f7)),
+    );
     // 34.069f, 65.299f, 34.015f, 65.299f, 33.939f, 65.289f
-    path.cubic_to((f32::from_bits(0x42079584), f32::from_bits(0x428288b3)), (f32::from_bits(0x420748b7), f32::from_bits(0x42826d0e)), (f32::from_bits(0x42071ba9), f32::from_bits(0x42826d0e)));
+    path.cubic_to(
+        (f32::from_bits(0x42079584), f32::from_bits(0x428288b3)),
+        (f32::from_bits(0x420748b7), f32::from_bits(0x42826d0e)),
+        (f32::from_bits(0x42071ba9), f32::from_bits(0x42826d0e)),
+    );
     // 33.896f, 65.267f, 33.821f, 65.213f, 33.777f, 65.213f
-    path.cubic_to((f32::from_bits(0x4206cedc), f32::from_bits(0x4282624d)), (f32::from_bits(0x42068109), f32::from_bits(0x4282624d)), (f32::from_bits(0x42061272), f32::from_bits(0x4282624d)));
+    path.cubic_to(
+        (f32::from_bits(0x4206cedc), f32::from_bits(0x4282624d)),
+        (f32::from_bits(0x42068109), f32::from_bits(0x4282624d)),
+        (f32::from_bits(0x42061272), f32::from_bits(0x4282624d)),
+    );
     // 33.702f, 65.192f, 33.626f, 65.192f, 33.518f, 65.192f
-    path.cubic_to((f32::from_bits(0x4205cfe3), f32::from_bits(0x42825cab)), (f32::from_bits(0x4205614b), f32::from_bits(0x42824bc6)), (f32::from_bits(0x42051ebc), f32::from_bits(0x42824bc6)));
+    path.cubic_to(
+        (f32::from_bits(0x4205cfe3), f32::from_bits(0x42825cab)),
+        (f32::from_bits(0x4205614b), f32::from_bits(0x42824bc6)),
+        (f32::from_bits(0x42051ebc), f32::from_bits(0x42824bc6)),
+    );
     // 33.453f, 65.181f, 33.345f, 65.148f, 33.28f, 65.148f
-    path.cubic_to((f32::from_bits(0x42037ae5), f32::from_bits(0x428246a7)), (f32::from_bits(0x4201cbca), f32::from_bits(0x42829eb8)), (f32::from_bits(0x4200ac0c), f32::from_bits(0x4282e147)));
+    path.cubic_to(
+        (f32::from_bits(0x42037ae5), f32::from_bits(0x428246a7)),
+        (f32::from_bits(0x4201cbca), f32::from_bits(0x42829eb8)),
+        (f32::from_bits(0x4200ac0c), f32::from_bits(0x4282e147)),
+    );
     // 32.87f, 65.138f, 32.449f, 65.31f, 32.168f, 65.44f
-    path.cubic_to((f32::from_bits(0x42008b47), f32::from_bits(0x4282e6e9)), (f32::from_bits(0x42005e39), f32::from_bits(0x4282fced)), (f32::from_bits(0x42003d74), f32::from_bits(0x4283028f)));
+    path.cubic_to(
+        (f32::from_bits(0x42008b47), f32::from_bits(0x4282e6e9)),
+        (f32::from_bits(0x42005e39), f32::from_bits(0x4282fced)),
+        (f32::from_bits(0x42003d74), f32::from_bits(0x4283028f)),
+    );
     // 32.136f, 65.451f, 32.092f, 65.494f, 32.06f, 65.505f
-    path.cubic_to((f32::from_bits(0x41fdf9e2), f32::from_bits(0x42833f7d)), (f32::from_bits(0x41fa4190), f32::from_bits(0x42836041)), (f32::from_bits(0x41f674c3), f32::from_bits(0x42834fdf)));
+    path.cubic_to(
+        (f32::from_bits(0x41fdf9e2), f32::from_bits(0x42833f7d)),
+        (f32::from_bits(0x41fa4190), f32::from_bits(0x42836041)),
+        (f32::from_bits(0x41f674c3), f32::from_bits(0x42834fdf)),
+    );
     // 31.747f, 65.624f, 31.282f, 65.688f, 30.807f, 65.656f
-    path.cubic_to((f32::from_bits(0x41f59794), f32::from_bits(0x4283451e)), (f32::from_bits(0x41f48d56), f32::from_bits(0x4283451e)), (f32::from_bits(0x41f3b027), f32::from_bits(0x428339db)));
+    path.cubic_to(
+        (f32::from_bits(0x41f59794), f32::from_bits(0x4283451e)),
+        (f32::from_bits(0x41f48d56), f32::from_bits(0x4283451e)),
+        (f32::from_bits(0x41f3b027), f32::from_bits(0x428339db)),
+    );
     // 30.699f, 65.635f, 30.569f, 65.635f, 30.461f, 65.613f
-    path.cubic_to((f32::from_bits(0x41f32d15), f32::from_bits(0x42832e97)), (f32::from_bits(0x41f2666d), f32::from_bits(0x428312f2)), (f32::from_bits(0x41f1b440), f32::from_bits(0x42830831)));
+    path.cubic_to(
+        (f32::from_bits(0x41f32d15), f32::from_bits(0x42832e97)),
+        (f32::from_bits(0x41f2666d), f32::from_bits(0x428312f2)),
+        (f32::from_bits(0x41f1b440), f32::from_bits(0x42830831)),
+    );
     // 30.397f, 65.591f, 30.3f, 65.537f, 30.213f, 65.516f
-    path.cubic_to((f32::from_bits(0x41f1041f), f32::from_bits(0x4282fced)), (f32::from_bits(0x41f07f01), f32::from_bits(0x4282f74c)), (f32::from_bits(0x41efb859), f32::from_bits(0x4282e6e9)));
+    path.cubic_to(
+        (f32::from_bits(0x41f1041f), f32::from_bits(0x4282fced)),
+        (f32::from_bits(0x41f07f01), f32::from_bits(0x4282f74c)),
+        (f32::from_bits(0x41efb859), f32::from_bits(0x4282e6e9)),
+    );
     // 30.127f, 65.494f, 30.062f, 65.483f, 29.965f, 65.451f
-    path.cubic_to((f32::from_bits(0x41efa1d2), f32::from_bits(0x4282e147)), (f32::from_bits(0x41ef6049), f32::from_bits(0x4282d687)), (f32::from_bits(0x41ef49c1), f32::from_bits(0x4282d687)));
+    path.cubic_to(
+        (f32::from_bits(0x41efa1d2), f32::from_bits(0x4282e147)),
+        (f32::from_bits(0x41ef6049), f32::from_bits(0x4282d687)),
+        (f32::from_bits(0x41ef49c1), f32::from_bits(0x4282d687)),
+    );
     // 29.954f, 65.44f, 29.922f, 65.419f, 29.911f, 65.419f
-    path.cubic_to((f32::from_bits(0x41ef062b), f32::from_bits(0x4282cb43)), (f32::from_bits(0x41eec4a2), f32::from_bits(0x4282cb43)), (f32::from_bits(0x41ee560b), f32::from_bits(0x4282c5a2)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef062b), f32::from_bits(0x4282cb43)),
+        (f32::from_bits(0x41eec4a2), f32::from_bits(0x4282cb43)),
+        (f32::from_bits(0x41ee560b), f32::from_bits(0x4282c5a2)),
+    );
     // 29.878f, 65.397f, 29.846f, 65.397f, 29.792f, 65.386f
-    path.cubic_to((f32::from_bits(0x41ee1275), f32::from_bits(0x4282c000)), (f32::from_bits(0x41ed8f63), f32::from_bits(0x4282a45a)), (f32::from_bits(0x41ed3546), f32::from_bits(0x42829eb9)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee1275), f32::from_bits(0x4282c000)),
+        (f32::from_bits(0x41ed8f63), f32::from_bits(0x4282a45a)),
+        (f32::from_bits(0x41ed3546), f32::from_bits(0x42829eb9)),
+    );
     // 29.759f, 65.375f, 29.695f, 65.321f, 29.651f, 65.31f
-    path.cubic_to((f32::from_bits(0x41ebbe7d), f32::from_bits(0x42827d71)), (f32::from_bits(0x41ea72b7), f32::from_bits(0x42825cad)), (f32::from_bits(0x41e91069), f32::from_bits(0x42823b65)));
+    path.cubic_to(
+        (f32::from_bits(0x41ebbe7d), f32::from_bits(0x42827d71)),
+        (f32::from_bits(0x41ea72b7), f32::from_bits(0x42825cad)),
+        (f32::from_bits(0x41e91069), f32::from_bits(0x42823b65)),
+    );
     // 29.468f, 65.245f, 29.306f, 65.181f, 29.133f, 65.116f
-    path.cubic_to((f32::from_bits(0x41e6fdfa), f32::from_bits(0x42820419)), (f32::from_bits(0x41e4a7f6), f32::from_bits(0x4281ab86)), (f32::from_bits(0x41e18b4a), f32::from_bits(0x4281ab86)));
+    path.cubic_to(
+        (f32::from_bits(0x41e6fdfa), f32::from_bits(0x42820419)),
+        (f32::from_bits(0x41e4a7f6), f32::from_bits(0x4281ab86)),
+        (f32::from_bits(0x41e18b4a), f32::from_bits(0x4281ab86)),
+    );
     // 28.874f, 65.008f, 28.582f, 64.835f, 28.193f, 64.835f
-    path.cubic_to((f32::from_bits(0x41de9bac), f32::from_bits(0x4281b128)), (f32::from_bits(0x41dcf7d5), f32::from_bits(0x4281fe78)), (f32::from_bits(0x41db3d77), f32::from_bits(0x428246a9)));
+    path.cubic_to(
+        (f32::from_bits(0x41de9bac), f32::from_bits(0x4281b128)),
+        (f32::from_bits(0x41dcf7d5), f32::from_bits(0x4281fe78)),
+        (f32::from_bits(0x41db3d77), f32::from_bits(0x428246a9)),
+    );
     // 27.826f, 64.846f, 27.621f, 64.997f, 27.405f, 65.138f
-    path.cubic_to((f32::from_bits(0x41dacedf), f32::from_bits(0x4282570b)), (f32::from_bits(0x41da76cf), f32::from_bits(0x4282570b)), (f32::from_bits(0x41da0838), f32::from_bits(0x4282676e)));
+    path.cubic_to(
+        (f32::from_bits(0x41dacedf), f32::from_bits(0x4282570b)),
+        (f32::from_bits(0x41da76cf), f32::from_bits(0x4282570b)),
+        (f32::from_bits(0x41da0838), f32::from_bits(0x4282676e)),
+    );
     // 27.351f, 65.17f, 27.308f, 65.17f, 27.254f, 65.202f
-    path.cubic_to((f32::from_bits(0x41d9f1b1), f32::from_bits(0x4282676e)), (f32::from_bits(0x41d9f1b1), f32::from_bits(0x42827853)), (f32::from_bits(0x41d9db2a), f32::from_bits(0x42827d72)));
+    path.cubic_to(
+        (f32::from_bits(0x41d9f1b1), f32::from_bits(0x4282676e)),
+        (f32::from_bits(0x41d9f1b1), f32::from_bits(0x42827853)),
+        (f32::from_bits(0x41d9db2a), f32::from_bits(0x42827d72)),
+    );
     // 27.243f, 65.202f, 27.243f, 65.235f, 27.232f, 65.245f
-    path.cubic_to((f32::from_bits(0x41d96c92), f32::from_bits(0x428288b6)), (f32::from_bits(0x41d91482), f32::from_bits(0x428288b6)), (f32::from_bits(0x41d8a5eb), f32::from_bits(0x42829eba)));
+    path.cubic_to(
+        (f32::from_bits(0x41d96c92), f32::from_bits(0x428288b6)),
+        (f32::from_bits(0x41d91482), f32::from_bits(0x428288b6)),
+        (f32::from_bits(0x41d8a5eb), f32::from_bits(0x42829eba)),
+    );
     // 27.178f, 65.267f, 27.135f, 65.267f, 27.081f, 65.31f
     path.line_to((f32::from_bits(0x41d88f64), f32::from_bits(0x4282a9fe)));
     // 27.07f, 65.332f
-    path.cubic_to((f32::from_bits(0x41d6eb8d), f32::from_bits(0x4282e14a)), (f32::from_bits(0x41d4ac10), f32::from_bits(0x42830291)), (f32::from_bits(0x41d25818), f32::from_bits(0x428312f4)));
+    path.cubic_to(
+        (f32::from_bits(0x41d6eb8d), f32::from_bits(0x4282e14a)),
+        (f32::from_bits(0x41d4ac10), f32::from_bits(0x42830291)),
+        (f32::from_bits(0x41d25818), f32::from_bits(0x428312f4)),
+    );
     // 26.865f, 65.44f, 26.584f, 65.505f, 26.293f, 65.537f
-    path.cubic_to((f32::from_bits(0x41d0b235), f32::from_bits(0x42831896)), (f32::from_bits(0x41ce74c4), f32::from_bits(0x428312f4)), (f32::from_bits(0x41cce568), f32::from_bits(0x42830292)));
+    path.cubic_to(
+        (f32::from_bits(0x41d0b235), f32::from_bits(0x42831896)),
+        (f32::from_bits(0x41ce74c4), f32::from_bits(0x428312f4)),
+        (f32::from_bits(0x41cce568), f32::from_bits(0x42830292)),
+    );
     // 26.087f, 65.548f, 25.807f, 65.537f, 25.612f, 65.505f
-    path.cubic_to((f32::from_bits(0x41cca3df), f32::from_bits(0x4282fcf0)), (f32::from_bits(0x41cc1ec0), f32::from_bits(0x4282f1ad)), (f32::from_bits(0x41cbf3be), f32::from_bits(0x4282f1ad)));
+    path.cubic_to(
+        (f32::from_bits(0x41cca3df), f32::from_bits(0x4282fcf0)),
+        (f32::from_bits(0x41cc1ec0), f32::from_bits(0x4282f1ad)),
+        (f32::from_bits(0x41cbf3be), f32::from_bits(0x4282f1ad)),
+    );
     // 25.58f, 65.494f, 25.515f, 65.472f, 25.494f, 65.472f
-    path.cubic_to((f32::from_bits(0x41ca9170), f32::from_bits(0x4282dba9)), (f32::from_bits(0x41c99dba), f32::from_bits(0x4282e14b)), (f32::from_bits(0x41c8687a), f32::from_bits(0x4282cb47)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca9170), f32::from_bits(0x4282dba9)),
+        (f32::from_bits(0x41c99dba), f32::from_bits(0x4282e14b)),
+        (f32::from_bits(0x41c8687a), f32::from_bits(0x4282cb47)),
+    );
     // 25.321f, 65.429f, 25.202f, 65.44f, 25.051f, 65.397f
-    path.cubic_to((f32::from_bits(0x41c7b64d), f32::from_bits(0x4282c003)), (f32::from_bits(0x41c71cb3), f32::from_bits(0x4282bae5)), (f32::from_bits(0x41c6560b), f32::from_bits(0x4282a9ff)));
+    path.cubic_to(
+        (f32::from_bits(0x41c7b64d), f32::from_bits(0x4282c003)),
+        (f32::from_bits(0x41c71cb3), f32::from_bits(0x4282bae5)),
+        (f32::from_bits(0x41c6560b), f32::from_bits(0x4282a9ff)),
+    );
     // 24.964f, 65.375f, 24.889f, 65.365f, 24.792f, 65.332f
     path.line_to((f32::from_bits(0x41c628fd), f32::from_bits(0x42829ebb)));
     // 24.77f, 65.31f
-    path.cubic_to((f32::from_bits(0x41c58d57), f32::from_bits(0x428293fa)), (f32::from_bits(0x41c53547), f32::from_bits(0x42829919)), (f32::from_bits(0x41c4b028), f32::from_bits(0x428293fa)));
+    path.cubic_to(
+        (f32::from_bits(0x41c58d57), f32::from_bits(0x428293fa)),
+        (f32::from_bits(0x41c53547), f32::from_bits(0x42829919)),
+        (f32::from_bits(0x41c4b028), f32::from_bits(0x428293fa)),
+    );
     // 24.694f, 65.289f, 24.651f, 65.299f, 24.586f, 65.289f
     path.line_to((f32::from_bits(0x41c46e9f), f32::from_bits(0x42828315)));
     // 24.554f, 65.256f
-    path.cubic_to((f32::from_bits(0x41c1d712), f32::from_bits(0x4282570d)), (f32::from_bits(0x41be20cc), f32::from_bits(0x428209bd)), (f32::from_bits(0x41bb0420), f32::from_bits(0x42820f5f)));
+    path.cubic_to(
+        (f32::from_bits(0x41c1d712), f32::from_bits(0x4282570d)),
+        (f32::from_bits(0x41be20cc), f32::from_bits(0x428209bd)),
+        (f32::from_bits(0x41bb0420), f32::from_bits(0x42820f5f)),
+    );
     // 24.23f, 65.17f, 23.766f, 65.019f, 23.377f, 65.03f
-    path.cubic_to((f32::from_bits(0x41b9a1d2), f32::from_bits(0x42820f5f)), (f32::from_bits(0x41b7e774), f32::from_bits(0x42823024)), (f32::from_bits(0x41b6dd37), f32::from_bits(0x428246ab)));
+    path.cubic_to(
+        (f32::from_bits(0x41b9a1d2), f32::from_bits(0x42820f5f)),
+        (f32::from_bits(0x41b7e774), f32::from_bits(0x42823024)),
+        (f32::from_bits(0x41b6dd37), f32::from_bits(0x428246ab)),
+    );
     // 23.204f, 65.03f, 22.988f, 65.094f, 22.858f, 65.138f
-    path.cubic_to((f32::from_bits(0x41b5eb8d), f32::from_bits(0x4282570d)), (f32::from_bits(0x41b54fe7), f32::from_bits(0x4282570d)), (f32::from_bits(0x41b45c31), f32::from_bits(0x42826770)));
+    path.cubic_to(
+        (f32::from_bits(0x41b5eb8d), f32::from_bits(0x4282570d)),
+        (f32::from_bits(0x41b54fe7), f32::from_bits(0x4282570d)),
+        (f32::from_bits(0x41b45c31), f32::from_bits(0x42826770)),
+    );
     // 22.74f, 65.17f, 22.664f, 65.17f, 22.545f, 65.202f
-    path.cubic_to((f32::from_bits(0x41b3ed99), f32::from_bits(0x42826d12)), (f32::from_bits(0x41b35400), f32::from_bits(0x428288b8)), (f32::from_bits(0x41b2fbef), f32::from_bits(0x428293fb)));
+    path.cubic_to(
+        (f32::from_bits(0x41b3ed99), f32::from_bits(0x42826d12)),
+        (f32::from_bits(0x41b35400), f32::from_bits(0x428288b8)),
+        (f32::from_bits(0x41b2fbef), f32::from_bits(0x428293fb)),
+    );
     // 22.491f, 65.213f, 22.416f, 65.267f, 22.373f, 65.289f
-    path.cubic_to((f32::from_bits(0x41b274c4), f32::from_bits(0x4282991a)), (f32::from_bits(0x41b249c2), f32::from_bits(0x428293fb)), (f32::from_bits(0x41b1c4a3), f32::from_bits(0x42829ebc)));
+    path.cubic_to(
+        (f32::from_bits(0x41b274c4), f32::from_bits(0x4282991a)),
+        (f32::from_bits(0x41b249c2), f32::from_bits(0x428293fb)),
+        (f32::from_bits(0x41b1c4a3), f32::from_bits(0x42829ebc)),
+    );
     // 22.307f, 65.299f, 22.286f, 65.289f, 22.221f, 65.31f
-    path.cubic_to((f32::from_bits(0x41b1560b), f32::from_bits(0x4282a45e)), (f32::from_bits(0x41b08f64), f32::from_bits(0x4282c004)), (f32::from_bits(0x41aff3be), f32::from_bits(0x4282cb47)));
+    path.cubic_to(
+        (f32::from_bits(0x41b1560b), f32::from_bits(0x4282a45e)),
+        (f32::from_bits(0x41b08f64), f32::from_bits(0x4282c004)),
+        (f32::from_bits(0x41aff3be), f32::from_bits(0x4282cb47)),
+    );
     // 22.167f, 65.321f, 22.07f, 65.375f, 21.994f, 65.397f
-    path.cubic_to((f32::from_bits(0x41aea7f7), f32::from_bits(0x4282e14b)), (f32::from_bits(0x41ad893f), f32::from_bits(0x4282f1ad)), (f32::from_bits(0x41ac3d78), f32::from_bits(0x42830835)));
+    path.cubic_to(
+        (f32::from_bits(0x41aea7f7), f32::from_bits(0x4282e14b)),
+        (f32::from_bits(0x41ad893f), f32::from_bits(0x4282f1ad)),
+        (f32::from_bits(0x41ac3d78), f32::from_bits(0x42830835)),
+    );
     // 21.832f, 65.44f, 21.692f, 65.472f, 21.53f, 65.516f
-    path.cubic_to((f32::from_bits(0x41ac106a), f32::from_bits(0x428312f6)), (f32::from_bits(0x41aba1d2), f32::from_bits(0x42831e39)), (f32::from_bits(0x41ab76d0), f32::from_bits(0x428323db)));
+    path.cubic_to(
+        (f32::from_bits(0x41ac106a), f32::from_bits(0x428312f6)),
+        (f32::from_bits(0x41aba1d2), f32::from_bits(0x42831e39)),
+        (f32::from_bits(0x41ab76d0), f32::from_bits(0x428323db)),
+    );
     // 21.508f, 65.537f, 21.454f, 65.559f, 21.433f, 65.57f
-    path.cubic_to((f32::from_bits(0x41aac4a3), f32::from_bits(0x4283343d)), (f32::from_bits(0x41aa560b), f32::from_bits(0x4283343d)), (f32::from_bits(0x41a9ba66), f32::from_bits(0x42833f81)));
+    path.cubic_to(
+        (f32::from_bits(0x41aac4a3), f32::from_bits(0x4283343d)),
+        (f32::from_bits(0x41aa560b), f32::from_bits(0x4283343d)),
+        (f32::from_bits(0x41a9ba66), f32::from_bits(0x42833f81)),
+    );
     // 21.346f, 65.602f, 21.292f, 65.602f, 21.216f, 65.624f
     path.line_to((f32::from_bits(0x41a98f64), f32::from_bits(0x42834fe3)));
     // 21.195f, 65.656f
-    path.cubic_to((f32::from_bits(0x41a96256), f32::from_bits(0x42834fe3)), (f32::from_bits(0x41a93754), f32::from_bits(0x42834522)), (f32::from_bits(0x41a920cc), f32::from_bits(0x42834fe3)));
+    path.cubic_to(
+        (f32::from_bits(0x41a96256), f32::from_bits(0x42834fe3)),
+        (f32::from_bits(0x41a93754), f32::from_bits(0x42834522)),
+        (f32::from_bits(0x41a920cc), f32::from_bits(0x42834fe3)),
+    );
     // 21.173f, 65.656f, 21.152f, 65.635f, 21.141f, 65.656f
-    path.cubic_to((f32::from_bits(0x41a90a45), f32::from_bits(0x42834fe3)), (f32::from_bits(0x41a8b234), f32::from_bits(0x42836045)), (f32::from_bits(0x41a89bad), f32::from_bits(0x42836b89)));
+    path.cubic_to(
+        (f32::from_bits(0x41a90a45), f32::from_bits(0x42834fe3)),
+        (f32::from_bits(0x41a8b234), f32::from_bits(0x42836045)),
+        (f32::from_bits(0x41a89bad), f32::from_bits(0x42836b89)),
+    );
     // 21.13f, 65.656f, 21.087f, 65.688f, 21.076f, 65.71f
-    path.cubic_to((f32::from_bits(0x41a7d505), f32::from_bits(0x42837beb)), (f32::from_bits(0x41a7666e), f32::from_bits(0x4283818d)), (f32::from_bits(0x41a6cac8), f32::from_bits(0x42839d33)));
+    path.cubic_to(
+        (f32::from_bits(0x41a7d505), f32::from_bits(0x42837beb)),
+        (f32::from_bits(0x41a7666e), f32::from_bits(0x4283818d)),
+        (f32::from_bits(0x41a6cac8), f32::from_bits(0x42839d33)),
+    );
     // 20.979f, 65.742f, 20.925f, 65.753f, 20.849f, 65.807f
-    path.cubic_to((f32::from_bits(0x41a6b64d), f32::from_bits(0x4283a2d5)), (f32::from_bits(0x41a672b8), f32::from_bits(0x4283b3ba)), (f32::from_bits(0x41a65e3d), f32::from_bits(0x4283b8d9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a6b64d), f32::from_bits(0x4283a2d5)),
+        (f32::from_bits(0x41a672b8), f32::from_bits(0x4283b3ba)),
+        (f32::from_bits(0x41a65e3d), f32::from_bits(0x4283b8d9)),
+    );
     // 20.839f, 65.818f, 20.806f, 65.851f, 20.796f, 65.861f
-    path.cubic_to((f32::from_bits(0x41a6312f), f32::from_bits(0x4283be7b)), (f32::from_bits(0x41a60420), f32::from_bits(0x4283b8d9)), (f32::from_bits(0x41a5ed99), f32::from_bits(0x4283be7b)));
+    path.cubic_to(
+        (f32::from_bits(0x41a6312f), f32::from_bits(0x4283be7b)),
+        (f32::from_bits(0x41a60420), f32::from_bits(0x4283b8d9)),
+        (f32::from_bits(0x41a5ed99), f32::from_bits(0x4283be7b)),
+    );
     // 20.774f, 65.872f, 20.752f, 65.861f, 20.741f, 65.872f
-    path.cubic_to((f32::from_bits(0x41a5810e), f32::from_bits(0x4283cedd)), (f32::from_bits(0x41a4e568), f32::from_bits(0x428406ac)), (f32::from_bits(0x41a48d57), f32::from_bits(0x42840bcb)));
+    path.cubic_to(
+        (f32::from_bits(0x41a5810e), f32::from_bits(0x4283cedd)),
+        (f32::from_bits(0x41a4e568), f32::from_bits(0x428406ac)),
+        (f32::from_bits(0x41a48d57), f32::from_bits(0x42840bcb)),
+    );
     // 20.688f, 65.904f, 20.612f, 66.013f, 20.569f, 66.023f
     path.line_to((f32::from_bits(0x41a41ebf), f32::from_bits(0x42840bcb)));
     // 20.515f, 66.023f
-    path.cubic_to((f32::from_bits(0x41a40838), f32::from_bits(0x4283fb69)), (f32::from_bits(0x41a3f1b1), f32::from_bits(0x428406ac)), (f32::from_bits(0x41a3f1b1), f32::from_bits(0x4283fb69)));
+    path.cubic_to(
+        (f32::from_bits(0x41a40838), f32::from_bits(0x4283fb69)),
+        (f32::from_bits(0x41a3f1b1), f32::from_bits(0x428406ac)),
+        (f32::from_bits(0x41a3f1b1), f32::from_bits(0x4283fb69)),
+    );
     // 20.504f, 65.991f, 20.493f, 66.013f, 20.493f, 65.991f
-    path.cubic_to((f32::from_bits(0x41a38319), f32::from_bits(0x4283b8da)), (f32::from_bits(0x41a4b859), f32::from_bits(0x4282f750)), (f32::from_bits(0x41a4e567), f32::from_bits(0x4282cb48)));
+    path.cubic_to(
+        (f32::from_bits(0x41a38319), f32::from_bits(0x4283b8da)),
+        (f32::from_bits(0x41a4b859), f32::from_bits(0x4282f750)),
+        (f32::from_bits(0x41a4e567), f32::from_bits(0x4282cb48)),
+    );
     // 20.439f, 65.861f, 20.59f, 65.483f, 20.612f, 65.397f
-    path.cubic_to((f32::from_bits(0x41a5ed98), f32::from_bits(0x4281d273)), (f32::from_bits(0x41a74fe6), f32::from_bits(0x4280ea00)), (f32::from_bits(0x41a96255), f32::from_bits(0x42802e19)));
+    path.cubic_to(
+        (f32::from_bits(0x41a5ed98), f32::from_bits(0x4281d273)),
+        (f32::from_bits(0x41a74fe6), f32::from_bits(0x4280ea00)),
+        (f32::from_bits(0x41a96255), f32::from_bits(0x42802e19)),
+    );
     // 20.741f, 64.911f, 20.914f, 64.457f, 21.173f, 64.09f
-    path.cubic_to((f32::from_bits(0x41aa2b09), f32::from_bits(0x427fccd6)), (f32::from_bits(0x41ab1ebf), f32::from_bits(0x427f6982)), (f32::from_bits(0x41abfbef), f32::from_bits(0x427eefa7)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa2b09), f32::from_bits(0x427fccd6)),
+        (f32::from_bits(0x41ab1ebf), f32::from_bits(0x427f6982)),
+        (f32::from_bits(0x41abfbef), f32::from_bits(0x427eefa7)),
+    );
     // 21.271f, 63.95f, 21.39f, 63.853f, 21.498f, 63.734f
-    path.cubic_to((f32::from_bits(0x41ac7f01), f32::from_bits(0x427e9690)), (f32::from_bits(0x41aced99), f32::from_bits(0x427e49c4)), (f32::from_bits(0x41ad893f), f32::from_bits(0x427e0734)));
+    path.cubic_to(
+        (f32::from_bits(0x41ac7f01), f32::from_bits(0x427e9690)),
+        (f32::from_bits(0x41aced99), f32::from_bits(0x427e49c4)),
+        (f32::from_bits(0x41ad893f), f32::from_bits(0x427e0734)),
+    );
     // 21.562f, 63.647f, 21.616f, 63.572f, 21.692f, 63.507f
-    path.cubic_to((f32::from_bits(0x41aed506), f32::from_bits(0x427d8215)), (f32::from_bits(0x41b020cc), f32::from_bits(0x427d137e)), (f32::from_bits(0x41b1831a), f32::from_bits(0x427cbb6d)));
+    path.cubic_to(
+        (f32::from_bits(0x41aed506), f32::from_bits(0x427d8215)),
+        (f32::from_bits(0x41b020cc), f32::from_bits(0x427d137e)),
+        (f32::from_bits(0x41b1831a), f32::from_bits(0x427cbb6d)),
+    );
     // 21.854f, 63.377f, 22.016f, 63.269f, 22.189f, 63.183f
-    path.cubic_to((f32::from_bits(0x41b1f1b2), f32::from_bits(0x427c99a2)), (f32::from_bits(0x41b26049), f32::from_bits(0x427c6256)), (f32::from_bits(0x41b2cee1), f32::from_bits(0x427c4cd5)));
+    path.cubic_to(
+        (f32::from_bits(0x41b1f1b2), f32::from_bits(0x427c99a2)),
+        (f32::from_bits(0x41b26049), f32::from_bits(0x427c6256)),
+        (f32::from_bits(0x41b2cee1), f32::from_bits(0x427c4cd5)),
+    );
     // 22.243f, 63.15f, 22.297f, 63.096f, 22.351f, 63.075f
-    path.cubic_to((f32::from_bits(0x41b3106a), f32::from_bits(0x427c2b0a)), (f32::from_bits(0x41b445aa), f32::from_bits(0x427bff02)), (f32::from_bits(0x41b49dba), f32::from_bits(0x427bde3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b3106a), f32::from_bits(0x427c2b0a)),
+        (f32::from_bits(0x41b445aa), f32::from_bits(0x427bff02)),
+        (f32::from_bits(0x41b49dba), f32::from_bits(0x427bde3d)),
+    );
     // 22.383f, 63.042f, 22.534f, 62.999f, 22.577f, 62.967f
-    path.cubic_to((f32::from_bits(0x41b49dba), f32::from_bits(0x427bd2f9)), (f32::from_bits(0x41b4cac8), f32::from_bits(0x427ba6f1)), (f32::from_bits(0x41b4cac8), f32::from_bits(0x427ba6f1)));
+    path.cubic_to(
+        (f32::from_bits(0x41b49dba), f32::from_bits(0x427bd2f9)),
+        (f32::from_bits(0x41b4cac8), f32::from_bits(0x427ba6f1)),
+        (f32::from_bits(0x41b4cac8), f32::from_bits(0x427ba6f1)),
+    );
     // 22.577f, 62.956f, 22.599f, 62.913f, 22.599f, 62.913f
-    path.cubic_to((f32::from_bits(0x41b4cac8), f32::from_bits(0x427b6462)), (f32::from_bits(0x41b33b6c), f32::from_bits(0x427a4fe7)), (f32::from_bits(0x41b2fbef), f32::from_bits(0x427a189b)));
+    path.cubic_to(
+        (f32::from_bits(0x41b4cac8), f32::from_bits(0x427b6462)),
+        (f32::from_bits(0x41b33b6c), f32::from_bits(0x427a4fe7)),
+        (f32::from_bits(0x41b2fbef), f32::from_bits(0x427a189b)),
+    );
     // 22.599f, 62.848f, 22.404f, 62.578f, 22.373f, 62.524f
-    path.cubic_to((f32::from_bits(0x41b2cee1), f32::from_bits(0x4279f7d6)), (f32::from_bits(0x41b19795), f32::from_bits(0x42796774)), (f32::from_bits(0x41b1560c), f32::from_bits(0x42795c31)));
+    path.cubic_to(
+        (f32::from_bits(0x41b2cee1), f32::from_bits(0x4279f7d6)),
+        (f32::from_bits(0x41b19795), f32::from_bits(0x42796774)),
+        (f32::from_bits(0x41b1560c), f32::from_bits(0x42795c31)),
+    );
     // 22.351f, 62.492f, 22.199f, 62.351f, 22.167f, 62.34f
-    path.cubic_to((f32::from_bits(0x41b0e774), f32::from_bits(0x42793b6c)), (f32::from_bits(0x41aff3be), f32::from_bits(0x42795c31)), (f32::from_bits(0x41af70ac), f32::from_bits(0x42795c31)));
+    path.cubic_to(
+        (f32::from_bits(0x41b0e774), f32::from_bits(0x42793b6c)),
+        (f32::from_bits(0x41aff3be), f32::from_bits(0x42795c31)),
+        (f32::from_bits(0x41af70ac), f32::from_bits(0x42795c31)),
+    );
     // 22.113f, 62.308f, 21.994f, 62.34f, 21.93f, 62.34f
-    path.cubic_to((f32::from_bits(0x41ae0e5e), f32::from_bits(0x42796775)), (f32::from_bits(0x41ac9589), f32::from_bits(0x427946b0)), (f32::from_bits(0x41ab76d1), f32::from_bits(0x42793b6c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ae0e5e), f32::from_bits(0x42796775)),
+        (f32::from_bits(0x41ac9589), f32::from_bits(0x427946b0)),
+        (f32::from_bits(0x41ab76d1), f32::from_bits(0x42793b6c)),
+    );
     // 21.757f, 62.351f, 21.573f, 62.319f, 21.433f, 62.308f
-    path.cubic_to((f32::from_bits(0x41aa3f85), f32::from_bits(0x42793028)), (f32::from_bits(0x41a94ddb), f32::from_bits(0x42793b6c)), (f32::from_bits(0x41a82d17), f32::from_bits(0x42793028)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa3f85), f32::from_bits(0x42793028)),
+        (f32::from_bits(0x41a94ddb), f32::from_bits(0x42793b6c)),
+        (f32::from_bits(0x41a82d17), f32::from_bits(0x42793028)),
+    );
     // 21.281f, 62.297f, 21.163f, 62.308f, 21.022f, 62.297f
-    path.cubic_to((f32::from_bits(0x41a5c298), f32::from_bits(0x42791aa7)), (f32::from_bits(0x41a2e775), f32::from_bits(0x4278ed99)), (f32::from_bits(0x41a07cf6), f32::from_bits(0x4278c190)));
+    path.cubic_to(
+        (f32::from_bits(0x41a5c298), f32::from_bits(0x42791aa7)),
+        (f32::from_bits(0x41a2e775), f32::from_bits(0x4278ed99)),
+        (f32::from_bits(0x41a07cf6), f32::from_bits(0x4278c190)),
+    );
     // 20.72f, 62.276f, 20.363f, 62.232f, 20.061f, 62.189f
-    path.cubic_to((f32::from_bits(0x419f47b7), f32::from_bits(0x4278b753)), (f32::from_bits(0x419e810f), f32::from_bits(0x4278b753)), (f32::from_bits(0x419d4bcf), f32::from_bits(0x4278a0cb)));
+    path.cubic_to(
+        (f32::from_bits(0x419f47b7), f32::from_bits(0x4278b753)),
+        (f32::from_bits(0x419e810f), f32::from_bits(0x4278b753)),
+        (f32::from_bits(0x419d4bcf), f32::from_bits(0x4278a0cb)),
+    );
     // 19.91f, 62.179f, 19.813f, 62.179f, 19.662f, 62.157f
-    path.cubic_to((f32::from_bits(0x419c831b), f32::from_bits(0x42788a44)), (f32::from_bits(0x419b20cd), f32::from_bits(0x42785e3c)), (f32::from_bits(0x419a45aa), f32::from_bits(0x427847b4)));
+    path.cubic_to(
+        (f32::from_bits(0x419c831b), f32::from_bits(0x42788a44)),
+        (f32::from_bits(0x419b20cd), f32::from_bits(0x42785e3c)),
+        (f32::from_bits(0x419a45aa), f32::from_bits(0x427847b4)),
+    );
     // 19.564f, 62.135f, 19.391f, 62.092f, 19.284f, 62.07f
-    path.cubic_to((f32::from_bits(0x41949171), f32::from_bits(0x4277e460)), (f32::from_bits(0x418e5819), f32::from_bits(0x42778c50)), (f32::from_bits(0x41896a87), f32::from_bits(0x4275dd35)));
+    path.cubic_to(
+        (f32::from_bits(0x41949171), f32::from_bits(0x4277e460)),
+        (f32::from_bits(0x418e5819), f32::from_bits(0x42778c50)),
+        (f32::from_bits(0x41896a87), f32::from_bits(0x4275dd35)),
+    );
     // 18.571f, 61.973f, 17.793f, 61.887f, 17.177f, 61.466f
-    path.cubic_to((f32::from_bits(0x4182efa6), f32::from_bits(0x4273a8fc)), (f32::from_bits(0x417fd71a), f32::from_bits(0x42703f83)), (f32::from_bits(0x4180dd37), f32::from_bits(0x426c5b29)));
+    path.cubic_to(
+        (f32::from_bits(0x4182efa6), f32::from_bits(0x4273a8fc)),
+        (f32::from_bits(0x417fd71a), f32::from_bits(0x42703f83)),
+        (f32::from_bits(0x4180dd37), f32::from_bits(0x426c5b29)),
+    );
     // 16.367f, 60.915f, 15.99f, 60.062f, 16.108f, 59.089f
-    path.cubic_to((f32::from_bits(0x41813547), f32::from_bits(0x426b5d35)), (f32::from_bits(0x41821276), f32::from_bits(0x426a8006)), (f32::from_bits(0x4182560c), f32::from_bits(0x426976cf)));
+    path.cubic_to(
+        (f32::from_bits(0x41813547), f32::from_bits(0x426b5d35)),
+        (f32::from_bits(0x41821276), f32::from_bits(0x426a8006)),
+        (f32::from_bits(0x4182560c), f32::from_bits(0x426976cf)),
+    );
     // 16.151f, 58.841f, 16.259f, 58.625f, 16.292f, 58.366f
-    path.cubic_to((f32::from_bits(0x418228fe), f32::from_bits(0x426976cf)), (f32::from_bits(0x41823f85), f32::from_bits(0x42696b8b)), (f32::from_bits(0x418228fe), f32::from_bits(0x42694ac7)));
+    path.cubic_to(
+        (f32::from_bits(0x418228fe), f32::from_bits(0x426976cf)),
+        (f32::from_bits(0x41823f85), f32::from_bits(0x42696b8b)),
+        (f32::from_bits(0x418228fe), f32::from_bits(0x42694ac7)),
+    );
     // 16.27f, 58.366f, 16.281f, 58.355f, 16.27f, 58.323f
-    path.cubic_to((f32::from_bits(0x4181a5ec), f32::from_bits(0x42696b8c)), (f32::from_bits(0x41813548), f32::from_bits(0x42696b8c)), (f32::from_bits(0x41809bae), f32::from_bits(0x4269560b)));
+    path.cubic_to(
+        (f32::from_bits(0x4181a5ec), f32::from_bits(0x42696b8c)),
+        (f32::from_bits(0x41813548), f32::from_bits(0x42696b8c)),
+        (f32::from_bits(0x41809bae), f32::from_bits(0x4269560b)),
+    );
     // 16.206f, 58.355f, 16.151f, 58.355f, 16.076f, 58.334f
-    path.cubic_to((f32::from_bits(0x4180b235), f32::from_bits(0x4269560b)), (f32::from_bits(0x4180439e), f32::from_bits(0x426976d0)), (f32::from_bits(0x4180168f), f32::from_bits(0x42696b8c)));
+    path.cubic_to(
+        (f32::from_bits(0x4180b235), f32::from_bits(0x4269560b)),
+        (f32::from_bits(0x4180439e), f32::from_bits(0x426976d0)),
+        (f32::from_bits(0x4180168f), f32::from_bits(0x42696b8c)),
+    );
     // 16.087f, 58.334f, 16.033f, 58.366f, 16.011f, 58.355f
-    path.cubic_to((f32::from_bits(0x417eccdc), f32::from_bits(0x4269560b)), (f32::from_bits(0x417e9fce), f32::from_bits(0x4268d0ec)), (f32::from_bits(0x417f4fef), f32::from_bits(0x42688319)));
+    path.cubic_to(
+        (f32::from_bits(0x417eccdc), f32::from_bits(0x4269560b)),
+        (f32::from_bits(0x417e9fce), f32::from_bits(0x4268d0ec)),
+        (f32::from_bits(0x417f4fef), f32::from_bits(0x42688319)),
+    );
     // 15.925f, 58.334f, 15.914f, 58.204f, 15.957f, 58.128f
-    path.cubic_to((f32::from_bits(0x4180168f), f32::from_bits(0x4268364c)), (f32::from_bits(0x41849589), f32::from_bits(0x4267a5ea)), (f32::from_bits(0x4185b441), f32::from_bits(0x42679069)));
+    path.cubic_to(
+        (f32::from_bits(0x4180168f), f32::from_bits(0x4268364c)),
+        (f32::from_bits(0x41849589), f32::from_bits(0x4267a5ea)),
+        (f32::from_bits(0x4185b441), f32::from_bits(0x42679069)),
+    );
     // 16.011f, 58.053f, 16.573f, 57.912f, 16.713f, 57.891f
-    path.cubic_to((f32::from_bits(0x41891276), f32::from_bits(0x42674296)), (f32::from_bits(0x418c9dba), f32::from_bits(0x4266df42)), (f32::from_bits(0x418fd0ed), f32::from_bits(0x4266916f)));
+    path.cubic_to(
+        (f32::from_bits(0x41891276), f32::from_bits(0x42674296)),
+        (f32::from_bits(0x418c9dba), f32::from_bits(0x4266df42)),
+        (f32::from_bits(0x418fd0ed), f32::from_bits(0x4266916f)),
+    );
     // 17.134f, 57.815f, 17.577f, 57.718f, 17.977f, 57.642f
-    path.cubic_to((f32::from_bits(0x4190ae1c), f32::from_bits(0x42668732)), (f32::from_bits(0x4191333b), f32::from_bits(0x42668732)), (f32::from_bits(0x4192106a), f32::from_bits(0x426670aa)));
+    path.cubic_to(
+        (f32::from_bits(0x4190ae1c), f32::from_bits(0x42668732)),
+        (f32::from_bits(0x4191333b), f32::from_bits(0x42668732)),
+        (f32::from_bits(0x4192106a), f32::from_bits(0x426670aa)),
+    );
     // 18.085f, 57.632f, 18.15f, 57.632f, 18.258f, 57.61f
-    path.cubic_to((f32::from_bits(0x4193189b), f32::from_bits(0x42665a23)), (f32::from_bits(0x4194a5eb), f32::from_bits(0x426622d7)), (f32::from_bits(0x4195dd37), f32::from_bits(0x42660d56)));
+    path.cubic_to(
+        (f32::from_bits(0x4193189b), f32::from_bits(0x42665a23)),
+        (f32::from_bits(0x4194a5eb), f32::from_bits(0x426622d7)),
+        (f32::from_bits(0x4195dd37), f32::from_bits(0x42660d56)),
+    );
     // 18.387f, 57.588f, 18.581f, 57.534f, 18.733f, 57.513f
-    path.cubic_to((f32::from_bits(0x41975400), f32::from_bits(0x4265e254)), (f32::from_bits(0x41988b4b), f32::from_bits(0x4265c18f)), (f32::from_bits(0x4199d506), f32::from_bits(0x4265ac0e)));
+    path.cubic_to(
+        (f32::from_bits(0x41975400), f32::from_bits(0x4265e254)),
+        (f32::from_bits(0x41988b4b), f32::from_bits(0x4265c18f)),
+        (f32::from_bits(0x4199d506), f32::from_bits(0x4265ac0e)),
+    );
     // 18.916f, 57.471f, 19.068f, 57.439f, 19.229f, 57.418f
     path.move_to((f32::from_bits(0x41a4e568), f32::from_bits(0x4277d0eb)));
     // 20.612f, 61.954f
-    path.cubic_to((f32::from_bits(0x41a4cee1), f32::from_bits(0x4277d0eb)), (f32::from_bits(0x41a48d58), f32::from_bits(0x4277f1b0)), (f32::from_bits(0x41a48d58), f32::from_bits(0x4277f1b0)));
+    path.cubic_to(
+        (f32::from_bits(0x41a4cee1), f32::from_bits(0x4277d0eb)),
+        (f32::from_bits(0x41a48d58), f32::from_bits(0x4277f1b0)),
+        (f32::from_bits(0x41a48d58), f32::from_bits(0x4277f1b0)),
+    );
     // 20.601f, 61.954f, 20.569f, 61.986f, 20.569f, 61.986f
-    path.cubic_to((f32::from_bits(0x41a3831b), f32::from_bits(0x42781275)), (f32::from_bits(0x41a0c08b), f32::from_bits(0x4277c5a8)), (f32::from_bits(0x419fe35c), f32::from_bits(0x4277af21)));
+    path.cubic_to(
+        (f32::from_bits(0x41a3831b), f32::from_bits(0x42781275)),
+        (f32::from_bits(0x41a0c08b), f32::from_bits(0x4277c5a8)),
+        (f32::from_bits(0x419fe35c), f32::from_bits(0x4277af21)),
+    );
     // 20.439f, 62.018f, 20.094f, 61.943f, 19.986f, 61.921f
-    path.cubic_to((f32::from_bits(0x419dd0ed), f32::from_bits(0x42778319)), (f32::from_bits(0x419bbc73), f32::from_bits(0x42775711)), (f32::from_bits(0x4199c08b), f32::from_bits(0x42771481)));
+    path.cubic_to(
+        (f32::from_bits(0x419dd0ed), f32::from_bits(0x42778319)),
+        (f32::from_bits(0x419bbc73), f32::from_bits(0x42775711)),
+        (f32::from_bits(0x4199c08b), f32::from_bits(0x42771481)),
+    );
     // 19.727f, 61.878f, 19.467f, 61.835f, 19.219f, 61.77f
-    path.cubic_to((f32::from_bits(0x4199687b), f32::from_bits(0x4277093d)), (f32::from_bits(0x4198f7d7), f32::from_bits(0x4276f3bc)), (f32::from_bits(0x4198b64e), f32::from_bits(0x4276dd35)));
+    path.cubic_to(
+        (f32::from_bits(0x4199687b), f32::from_bits(0x4277093d)),
+        (f32::from_bits(0x4198f7d7), f32::from_bits(0x4276f3bc)),
+        (f32::from_bits(0x4198b64e), f32::from_bits(0x4276dd35)),
+    );
     // 19.176f, 61.759f, 19.121f, 61.738f, 19.089f, 61.716f
-    path.cubic_to((f32::from_bits(0x419847b6), f32::from_bits(0x4276d1f1)), (f32::from_bits(0x4198062d), f32::from_bits(0x4276dd35)), (f32::from_bits(0x4197ae1d), f32::from_bits(0x4276d1f1)));
+    path.cubic_to(
+        (f32::from_bits(0x419847b6), f32::from_bits(0x4276d1f1)),
+        (f32::from_bits(0x4198062d), f32::from_bits(0x4276dd35)),
+        (f32::from_bits(0x4197ae1d), f32::from_bits(0x4276d1f1)),
+    );
     // 19.035f, 61.705f, 19.003f, 61.716f, 18.96f, 61.705f
-    path.cubic_to((f32::from_bits(0x4196fbf0), f32::from_bits(0x4276c6ad)), (f32::from_bits(0x4196083a), f32::from_bits(0x42768f62)), (f32::from_bits(0x4195831b), f32::from_bits(0x427679e1)));
+    path.cubic_to(
+        (f32::from_bits(0x4196fbf0), f32::from_bits(0x4276c6ad)),
+        (f32::from_bits(0x4196083a), f32::from_bits(0x42768f62)),
+        (f32::from_bits(0x4195831b), f32::from_bits(0x427679e1)),
+    );
     // 18.873f, 61.694f, 18.754f, 61.64f, 18.689f, 61.619f
-    path.cubic_to((f32::from_bits(0x41951690), f32::from_bits(0x4276635a)), (f32::from_bits(0x41950009), f32::from_bits(0x427679e1)), (f32::from_bits(0x4194a5ec), f32::from_bits(0x4276635a)));
+    path.cubic_to(
+        (f32::from_bits(0x41951690), f32::from_bits(0x4276635a)),
+        (f32::from_bits(0x41950009), f32::from_bits(0x427679e1)),
+        (f32::from_bits(0x4194a5ec), f32::from_bits(0x4276635a)),
+    );
     // 18.636f, 61.597f, 18.625f, 61.619f, 18.581f, 61.597f
-    path.cubic_to((f32::from_bits(0x41940c52), f32::from_bits(0x42764dd9)), (f32::from_bits(0x41935a25), f32::from_bits(0x4276168d)), (f32::from_bits(0x4192c08c), f32::from_bits(0x42760006)));
+    path.cubic_to(
+        (f32::from_bits(0x41940c52), f32::from_bits(0x42764dd9)),
+        (f32::from_bits(0x41935a25), f32::from_bits(0x4276168d)),
+        (f32::from_bits(0x4192c08c), f32::from_bits(0x42760006)),
+    );
     // 18.506f, 61.576f, 18.419f, 61.522f, 18.344f, 61.5f
-    path.cubic_to((f32::from_bits(0x4190c298), f32::from_bits(0x42759cb2)), (f32::from_bits(0x418f6257), f32::from_bits(0x427544a2)), (f32::from_bits(0x418e2b0b), f32::from_bits(0x42748837)));
+    path.cubic_to(
+        (f32::from_bits(0x4190c298), f32::from_bits(0x42759cb2)),
+        (f32::from_bits(0x418f6257), f32::from_bits(0x427544a2)),
+        (f32::from_bits(0x418e2b0b), f32::from_bits(0x42748837)),
+    );
     // 18.095f, 61.403f, 17.923f, 61.317f, 17.771f, 61.133f
-    path.cubic_to((f32::from_bits(0x418e1690), f32::from_bits(0x4274666c)), (f32::from_bits(0x418dd2fb), f32::from_bits(0x4274666c)), (f32::from_bits(0x418dbe80), f32::from_bits(0x42745c2f)));
+    path.cubic_to(
+        (f32::from_bits(0x418e1690), f32::from_bits(0x4274666c)),
+        (f32::from_bits(0x418dd2fb), f32::from_bits(0x4274666c)),
+        (f32::from_bits(0x418dbe80), f32::from_bits(0x42745c2f)),
+    );
     // 17.761f, 61.1f, 17.728f, 61.1f, 17.718f, 61.09f
-    path.cubic_to((f32::from_bits(0x418da7f9), f32::from_bits(0x42742f21)), (f32::from_bits(0x418da7f9), f32::from_bits(0x42740e5c)), (f32::from_bits(0x418d6670), f32::from_bits(0x4273ed97)));
+    path.cubic_to(
+        (f32::from_bits(0x418da7f9), f32::from_bits(0x42742f21)),
+        (f32::from_bits(0x418da7f9), f32::from_bits(0x42740e5c)),
+        (f32::from_bits(0x418d6670), f32::from_bits(0x4273ed97)),
+    );
     // 17.707f, 61.046f, 17.707f, 61.014f, 17.675f, 60.982f
-    path.cubic_to((f32::from_bits(0x418d22da), f32::from_bits(0x42739fc4)), (f32::from_bits(0x418ccaca), f32::from_bits(0x427373bc)), (f32::from_bits(0x418c9dbc), f32::from_bits(0x42731aa5)));
+    path.cubic_to(
+        (f32::from_bits(0x418d22da), f32::from_bits(0x42739fc4)),
+        (f32::from_bits(0x418ccaca), f32::from_bits(0x427373bc)),
+        (f32::from_bits(0x418c9dbc), f32::from_bits(0x42731aa5)),
+    );
     // 17.642f, 60.906f, 17.599f, 60.863f, 17.577f, 60.776f
-    path.cubic_to((f32::from_bits(0x418bd714), f32::from_bits(0x4271b95d)), (f32::from_bits(0x418d22db), f32::from_bits(0x4270999f)), (f32::from_bits(0x418fd0ef), f32::from_bits(0x4270418e)));
+    path.cubic_to(
+        (f32::from_bits(0x418bd714), f32::from_bits(0x4271b95d)),
+        (f32::from_bits(0x418d22db), f32::from_bits(0x4270999f)),
+        (f32::from_bits(0x418fd0ef), f32::from_bits(0x4270418e)),
+    );
     // 17.48f, 60.431f, 17.642f, 60.15f, 17.977f, 60.064f
-    path.cubic_to((f32::from_bits(0x41919fc8), f32::from_bits(0x426ffeff)), (f32::from_bits(0x4193df45), f32::from_bits(0x42701fc3)), (f32::from_bits(0x4195f3c0), f32::from_bits(0x4270841d)));
+    path.cubic_to(
+        (f32::from_bits(0x41919fc8), f32::from_bits(0x426ffeff)),
+        (f32::from_bits(0x4193df45), f32::from_bits(0x42701fc3)),
+        (f32::from_bits(0x4195f3c0), f32::from_bits(0x4270841d)),
+    );
     // 18.203f, 59.999f, 18.484f, 60.031f, 18.744f, 60.129f
-    path.cubic_to((f32::from_bits(0x419847b8), f32::from_bits(0x4270e771)), (f32::from_bits(0x419a5a26), f32::from_bits(0x42718211)), (f32::from_bits(0x419bd2fb), f32::from_bits(0x42723231)));
+    path.cubic_to(
+        (f32::from_bits(0x419847b8), f32::from_bits(0x4270e771)),
+        (f32::from_bits(0x419a5a26), f32::from_bits(0x42718211)),
+        (f32::from_bits(0x419bd2fb), f32::from_bits(0x42723231)),
+    );
     // 19.035f, 60.226f, 19.294f, 60.377f, 19.478f, 60.549f
-    path.cubic_to((f32::from_bits(0x419be982), f32::from_bits(0x42723e7b)), (f32::from_bits(0x419be982), f32::from_bits(0x42726a83)), (f32::from_bits(0x419c1484), f32::from_bits(0x42726a83)));
+    path.cubic_to(
+        (f32::from_bits(0x419be982), f32::from_bits(0x42723e7b)),
+        (f32::from_bits(0x419be982), f32::from_bits(0x42726a83)),
+        (f32::from_bits(0x419c1484), f32::from_bits(0x42726a83)),
+    );
     // 19.489f, 60.561f, 19.489f, 60.604f, 19.51f, 60.604f
-    path.cubic_to((f32::from_bits(0x419c4192), f32::from_bits(0x42728004)), (f32::from_bits(0x419c831c), f32::from_bits(0x42728004)), (f32::from_bits(0x419c99a3), f32::from_bits(0x4272968b)));
+    path.cubic_to(
+        (f32::from_bits(0x419c4192), f32::from_bits(0x42728004)),
+        (f32::from_bits(0x419c831c), f32::from_bits(0x42728004)),
+        (f32::from_bits(0x419c99a3), f32::from_bits(0x4272968b)),
+    );
     // 19.532f, 60.625f, 19.564f, 60.625f, 19.575f, 60.647f
-    path.cubic_to((f32::from_bits(0x419cdb2c), f32::from_bits(0x4272b750)), (f32::from_bits(0x419d083b), f32::from_bits(0x4272ee9b)), (f32::from_bits(0x419d3549), f32::from_bits(0x427325e7)));
+    path.cubic_to(
+        (f32::from_bits(0x419cdb2c), f32::from_bits(0x4272b750)),
+        (f32::from_bits(0x419d083b), f32::from_bits(0x4272ee9b)),
+        (f32::from_bits(0x419d3549), f32::from_bits(0x427325e7)),
+    );
     // 19.607f, 60.679f, 19.629f, 60.733f, 19.651f, 60.787f
-    path.cubic_to((f32::from_bits(0x419e28ff), f32::from_bits(0x4273cbca)), (f32::from_bits(0x419f062e), f32::from_bits(0x4274666a)), (f32::from_bits(0x419ff7d8), f32::from_bits(0x42750c4d)));
+    path.cubic_to(
+        (f32::from_bits(0x419e28ff), f32::from_bits(0x4273cbca)),
+        (f32::from_bits(0x419f062e), f32::from_bits(0x4274666a)),
+        (f32::from_bits(0x419ff7d8), f32::from_bits(0x42750c4d)),
+    );
     // 19.77f, 60.949f, 19.878f, 61.1f, 19.996f, 61.262f
-    path.cubic_to((f32::from_bits(0x41a0c08c), f32::from_bits(0x42758628)), (f32::from_bits(0x41a1f5cc), f32::from_bits(0x4275df3f)), (f32::from_bits(0x41a2d2fb), f32::from_bits(0x42766357)));
+    path.cubic_to(
+        (f32::from_bits(0x41a0c08c), f32::from_bits(0x42758628)),
+        (f32::from_bits(0x41a1f5cc), f32::from_bits(0x4275df3f)),
+        (f32::from_bits(0x41a2d2fb), f32::from_bits(0x42766357)),
+    );
     // 20.094f, 61.381f, 20.245f, 61.468f, 20.353f, 61.597f
-    path.cubic_to((f32::from_bits(0x41a31484), f32::from_bits(0x42769aa3)), (f32::from_bits(0x41a36c95), f32::from_bits(0x4276f3b9)), (f32::from_bits(0x41a3db2c), f32::from_bits(0x42771fc1)));
+    path.cubic_to(
+        (f32::from_bits(0x41a31484), f32::from_bits(0x42769aa3)),
+        (f32::from_bits(0x41a36c95), f32::from_bits(0x4276f3b9)),
+        (f32::from_bits(0x41a3db2c), f32::from_bits(0x42771fc1)),
+    );
     // 20.385f, 61.651f, 20.428f, 61.738f, 20.482f, 61.781f
-    path.cubic_to((f32::from_bits(0x41a4083a), f32::from_bits(0x42774bc9)), (f32::from_bits(0x41a4b85b), f32::from_bits(0x42778315)), (f32::from_bits(0x41a4e569), f32::from_bits(0x4277af1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41a4083a), f32::from_bits(0x42774bc9)),
+        (f32::from_bits(0x41a4b85b), f32::from_bits(0x42778315)),
+        (f32::from_bits(0x41a4e569), f32::from_bits(0x4277af1d)),
+    );
     // 20.504f, 61.824f, 20.59f, 61.878f, 20.612f, 61.921f
-    path.cubic_to((f32::from_bits(0x41a4e569), f32::from_bits(0x4277ba61)), (f32::from_bits(0x41a4cee2), f32::from_bits(0x4277c5a4)), (f32::from_bits(0x41a4e569), f32::from_bits(0x4277d0e8)));
+    path.cubic_to(
+        (f32::from_bits(0x41a4e569), f32::from_bits(0x4277ba61)),
+        (f32::from_bits(0x41a4cee2), f32::from_bits(0x4277c5a4)),
+        (f32::from_bits(0x41a4e569), f32::from_bits(0x4277d0e8)),
+    );
     // 20.612f, 61.932f, 20.601f, 61.943f, 20.612f, 61.954f
     path.move_to((f32::from_bits(0x41ad72b9), f32::from_bits(0x42786044)));
     // 21.681f, 62.094f
-    path.cubic_to((f32::from_bits(0x41ac106b), f32::from_bits(0x42788c4c)), (f32::from_bits(0x41a9d0ee), f32::from_bits(0x4277d0e8)), (f32::from_bits(0x41a8b236), f32::from_bits(0x42778e58)));
+    path.cubic_to(
+        (f32::from_bits(0x41ac106b), f32::from_bits(0x42788c4c)),
+        (f32::from_bits(0x41a9d0ee), f32::from_bits(0x4277d0e8)),
+        (f32::from_bits(0x41a8b236), f32::from_bits(0x42778e58)),
+    );
     // 21.508f, 62.137f, 21.227f, 61.954f, 21.087f, 61.889f
-    path.cubic_to((f32::from_bits(0x41a2fdfd), f32::from_bits(0x42761689)), (f32::from_bits(0x41a10215), f32::from_bits(0x42733c6c)), (f32::from_bits(0x419fb64f), f32::from_bits(0x42704ccf)));
+    path.cubic_to(
+        (f32::from_bits(0x41a2fdfd), f32::from_bits(0x42761689)),
+        (f32::from_bits(0x41a10215), f32::from_bits(0x42733c6c)),
+        (f32::from_bits(0x419fb64f), f32::from_bits(0x42704ccf)),
+    );
     // 20.374f, 61.522f, 20.126f, 60.809f, 19.964f, 60.075f
-    path.cubic_to((f32::from_bits(0x419f9fc8), f32::from_bits(0x42700a40)), (f32::from_bits(0x419f47b7), f32::from_bits(0x426f9ba8)), (f32::from_bits(0x419f3130), f32::from_bits(0x426f5919)));
+    path.cubic_to(
+        (f32::from_bits(0x419f9fc8), f32::from_bits(0x42700a40)),
+        (f32::from_bits(0x419f47b7), f32::from_bits(0x426f9ba8)),
+        (f32::from_bits(0x419f3130), f32::from_bits(0x426f5919)),
+    );
     // 19.953f, 60.01f, 19.91f, 59.902f, 19.899f, 59.837f
-    path.cubic_to((f32::from_bits(0x419f3130), f32::from_bits(0x426f0b46)), (f32::from_bits(0x419f47b7), f32::from_bits(0x426ec9bd)), (f32::from_bits(0x419f3130), f32::from_bits(0x426e70a6)));
+    path.cubic_to(
+        (f32::from_bits(0x419f3130), f32::from_bits(0x426f0b46)),
+        (f32::from_bits(0x419f47b7), f32::from_bits(0x426ec9bd)),
+        (f32::from_bits(0x419f3130), f32::from_bits(0x426e70a6)),
+    );
     // 19.899f, 59.761f, 19.91f, 59.697f, 19.899f, 59.61f
-    path.cubic_to((f32::from_bits(0x419f1aa9), f32::from_bits(0x426de14a)), (f32::from_bits(0x419f062e), f32::from_bits(0x426ced94)), (f32::from_bits(0x419f3130), f32::from_bits(0x426c5d31)));
+    path.cubic_to(
+        (f32::from_bits(0x419f1aa9), f32::from_bits(0x426de14a)),
+        (f32::from_bits(0x419f062e), f32::from_bits(0x426ced94)),
+        (f32::from_bits(0x419f3130), f32::from_bits(0x426c5d31)),
+    );
     // 19.888f, 59.47f, 19.878f, 59.232f, 19.899f, 59.091f
-    path.cubic_to((f32::from_bits(0x419f72b9), f32::from_bits(0x426befa0)), (f32::from_bits(0x419fe35d), f32::from_bits(0x426b8108)), (f32::from_bits(0x41a00e5f), f32::from_bits(0x426b3335)));
+    path.cubic_to(
+        (f32::from_bits(0x419f72b9), f32::from_bits(0x426befa0)),
+        (f32::from_bits(0x419fe35d), f32::from_bits(0x426b8108)),
+        (f32::from_bits(0x41a00e5f), f32::from_bits(0x426b3335)),
+    );
     // 19.931f, 58.984f, 19.986f, 58.876f, 20.007f, 58.8f
-    path.cubic_to((f32::from_bits(0x41a0666f), f32::from_bits(0x426acfe1)), (f32::from_bits(0x41a10215), f32::from_bits(0x4269c6aa)), (f32::from_bits(0x41a19dbb), f32::from_bits(0x4269bb66)));
+    path.cubic_to(
+        (f32::from_bits(0x41a0666f), f32::from_bits(0x426acfe1)),
+        (f32::from_bits(0x41a10215), f32::from_bits(0x4269c6aa)),
+        (f32::from_bits(0x41a19dbb), f32::from_bits(0x4269bb66)),
+    );
     // 20.05f, 58.703f, 20.126f, 58.444f, 20.202f, 58.433f
-    path.cubic_to((f32::from_bits(0x41a220cd), f32::from_bits(0x4269bb66)), (f32::from_bits(0x41a2a5ec), f32::from_bits(0x4269f2b2)), (f32::from_bits(0x41a31484), f32::from_bits(0x426a3f7f)));
+    path.cubic_to(
+        (f32::from_bits(0x41a220cd), f32::from_bits(0x4269bb66)),
+        (f32::from_bits(0x41a2a5ec), f32::from_bits(0x4269f2b2)),
+        (f32::from_bits(0x41a31484), f32::from_bits(0x426a3f7f)),
+    );
     // 20.266f, 58.433f, 20.331f, 58.487f, 20.385f, 58.562f
-    path.cubic_to((f32::from_bits(0x41a3c6b1), f32::from_bits(0x426aa3d9)), (f32::from_bits(0x41a449c3), f32::from_bits(0x426b1cae)), (f32::from_bits(0x41a476d2), f32::from_bits(0x426b3e79)));
+    path.cubic_to(
+        (f32::from_bits(0x41a3c6b1), f32::from_bits(0x426aa3d9)),
+        (f32::from_bits(0x41a449c3), f32::from_bits(0x426b1cae)),
+        (f32::from_bits(0x41a476d2), f32::from_bits(0x426b3e79)),
+    );
     // 20.472f, 58.66f, 20.536f, 58.778f, 20.558f, 58.811f
-    path.cubic_to((f32::from_bits(0x41a5ac11), f32::from_bits(0x426c0521)), (f32::from_bits(0x41a6caca), f32::from_bits(0x426ce250)), (f32::from_bits(0x41a8189d), f32::from_bits(0x426da9fe)));
+    path.cubic_to(
+        (f32::from_bits(0x41a5ac11), f32::from_bits(0x426c0521)),
+        (f32::from_bits(0x41a6caca), f32::from_bits(0x426ce250)),
+        (f32::from_bits(0x41a8189d), f32::from_bits(0x426da9fe)),
+    );
     // 20.709f, 59.005f, 20.849f, 59.221f, 21.012f, 59.416f
-    path.cubic_to((f32::from_bits(0x41aa3f86), f32::from_bits(0x426f1689)), (f32::from_bits(0x41ac5401), f32::from_bits(0x4270841b)), (f32::from_bits(0x41ae7aeb), f32::from_bits(0x4271f0a6)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa3f86), f32::from_bits(0x426f1689)),
+        (f32::from_bits(0x41ac5401), f32::from_bits(0x4270841b)),
+        (f32::from_bits(0x41ae7aeb), f32::from_bits(0x4271f0a6)),
+    );
     // 21.281f, 59.772f, 21.541f, 60.129f, 21.81f, 60.485f
-    path.cubic_to((f32::from_bits(0x41af000a), f32::from_bits(0x427248b6)), (f32::from_bits(0x41afb237), f32::from_bits(0x4272a1cd)), (f32::from_bits(0x41b020ce), f32::from_bits(0x4272ee9a)));
+    path.cubic_to(
+        (f32::from_bits(0x41af000a), f32::from_bits(0x427248b6)),
+        (f32::from_bits(0x41afb237), f32::from_bits(0x4272a1cd)),
+        (f32::from_bits(0x41b020ce), f32::from_bits(0x4272ee9a)),
+    );
     // 21.875f, 60.571f, 21.962f, 60.658f, 22.016f, 60.733f
-    path.cubic_to((f32::from_bits(0x41b06257), f32::from_bits(0x42731aa2)), (f32::from_bits(0x41b19797), f32::from_bits(0x4273f7d1)), (f32::from_bits(0x41b19797), f32::from_bits(0x4274199c)));
+    path.cubic_to(
+        (f32::from_bits(0x41b06257), f32::from_bits(0x42731aa2)),
+        (f32::from_bits(0x41b19797), f32::from_bits(0x4273f7d1)),
+        (f32::from_bits(0x41b19797), f32::from_bits(0x4274199c)),
+    );
     // 22.048f, 60.776f, 22.199f, 60.992f, 22.199f, 61.025f
-    path.cubic_to((f32::from_bits(0x41b1c4a5), f32::from_bits(0x427424e0)), (f32::from_bits(0x41b1831c), f32::from_bits(0x42746669)), (f32::from_bits(0x41b1831c), f32::from_bits(0x42746669)));
+    path.cubic_to(
+        (f32::from_bits(0x41b1c4a5), f32::from_bits(0x427424e0)),
+        (f32::from_bits(0x41b1831c), f32::from_bits(0x42746669)),
+        (f32::from_bits(0x41b1831c), f32::from_bits(0x42746669)),
+    );
     // 22.221f, 61.036f, 22.189f, 61.1f, 22.189f, 61.1f
-    path.cubic_to((f32::from_bits(0x41ac3d7a), f32::from_bits(0x42742f1d)), (f32::from_bits(0x41a96257), f32::from_bits(0x4271ae17)), (f32::from_bits(0x41a7a7f9), f32::from_bits(0x426fb12a)));
+    path.cubic_to(
+        (f32::from_bits(0x41ac3d7a), f32::from_bits(0x42742f1d)),
+        (f32::from_bits(0x41a96257), f32::from_bits(0x4271ae17)),
+        (f32::from_bits(0x41a7a7f9), f32::from_bits(0x426fb12a)),
+    );
     // 21.53f, 61.046f, 21.173f, 60.42f, 20.957f, 59.923f
-    path.cubic_to((f32::from_bits(0x41a77cf7), f32::from_bits(0x426f9ba9)), (f32::from_bits(0x41a73b6e), f32::from_bits(0x426f79de)), (f32::from_bits(0x41a73b6e), f32::from_bits(0x426f591a)));
+    path.cubic_to(
+        (f32::from_bits(0x41a77cf7), f32::from_bits(0x426f9ba9)),
+        (f32::from_bits(0x41a73b6e), f32::from_bits(0x426f79de)),
+        (f32::from_bits(0x41a73b6e), f32::from_bits(0x426f591a)),
+    );
     // 20.936f, 59.902f, 20.904f, 59.869f, 20.904f, 59.837f
-    path.cubic_to((f32::from_bits(0x41a6e151), f32::from_bits(0x426eea82)), (f32::from_bits(0x41a68941), f32::from_bits(0x426e6564)), (f32::from_bits(0x41a672ba), f32::from_bits(0x426dec8f)));
+    path.cubic_to(
+        (f32::from_bits(0x41a6e151), f32::from_bits(0x426eea82)),
+        (f32::from_bits(0x41a68941), f32::from_bits(0x426e6564)),
+        (f32::from_bits(0x41a672ba), f32::from_bits(0x426dec8f)),
+    );
     // 20.86f, 59.729f, 20.817f, 59.599f, 20.806f, 59.481f
-    path.cubic_to((f32::from_bits(0x41a65e3f), f32::from_bits(0x426daa00)), (f32::from_bits(0x41a68941), f32::from_bits(0x426d71ae)), (f32::from_bits(0x41a65e3f), f32::from_bits(0x426d50e9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a65e3f), f32::from_bits(0x426daa00)),
+        (f32::from_bits(0x41a68941), f32::from_bits(0x426d71ae)),
+        (f32::from_bits(0x41a65e3f), f32::from_bits(0x426d50e9)),
+    );
     // 20.796f, 59.416f, 20.817f, 59.361f, 20.796f, 59.329f
-    path.cubic_to((f32::from_bits(0x41a63131), f32::from_bits(0x426d24e1)), (f32::from_bits(0x41a56a89), f32::from_bits(0x426cf8d9)), (f32::from_bits(0x41a4fbf1), f32::from_bits(0x426cf8d9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a63131), f32::from_bits(0x426d24e1)),
+        (f32::from_bits(0x41a56a89), f32::from_bits(0x426cf8d9)),
+        (f32::from_bits(0x41a4fbf1), f32::from_bits(0x426cf8d9)),
+    );
     // 20.774f, 59.286f, 20.677f, 59.243f, 20.623f, 59.243f
-    path.cubic_to((f32::from_bits(0x41a449c4), f32::from_bits(0x426ced95)), (f32::from_bits(0x41a36c95), f32::from_bits(0x426cf8d9)), (f32::from_bits(0x41a31484), f32::from_bits(0x426d24e1)));
+    path.cubic_to(
+        (f32::from_bits(0x41a449c4), f32::from_bits(0x426ced95)),
+        (f32::from_bits(0x41a36c95), f32::from_bits(0x426cf8d9)),
+        (f32::from_bits(0x41a31484), f32::from_bits(0x426d24e1)),
+    );
     // 20.536f, 59.232f, 20.428f, 59.243f, 20.385f, 59.286f
-    path.cubic_to((f32::from_bits(0x41a20a47), f32::from_bits(0x426d71ae)), (f32::from_bits(0x41a1f5cc), f32::from_bits(0x426f645e)), (f32::from_bits(0x41a220ce), f32::from_bits(0x42701fc2)));
+    path.cubic_to(
+        (f32::from_bits(0x41a20a47), f32::from_bits(0x426d71ae)),
+        (f32::from_bits(0x41a1f5cc), f32::from_bits(0x426f645e)),
+        (f32::from_bits(0x41a220ce), f32::from_bits(0x42701fc2)),
+    );
     // 20.255f, 59.361f, 20.245f, 59.848f, 20.266f, 60.031f
-    path.cubic_to((f32::from_bits(0x41a28f66), f32::from_bits(0x4272e45e)), (f32::from_bits(0x41a4b85b), f32::from_bits(0x4274c9be)), (f32::from_bits(0x41a7eb8e), f32::from_bits(0x427621ce)));
+    path.cubic_to(
+        (f32::from_bits(0x41a28f66), f32::from_bits(0x4272e45e)),
+        (f32::from_bits(0x41a4b85b), f32::from_bits(0x4274c9be)),
+        (f32::from_bits(0x41a7eb8e), f32::from_bits(0x427621ce)),
+    );
     // 20.32f, 60.723f, 20.59f, 61.197f, 20.99f, 61.533f
-    path.cubic_to((f32::from_bits(0x41a82d17), f32::from_bits(0x42764293)), (f32::from_bits(0x41a870ad), f32::from_bits(0x42764293)), (f32::from_bits(0x41a8b236), f32::from_bits(0x4276591a)));
+    path.cubic_to(
+        (f32::from_bits(0x41a82d17), f32::from_bits(0x42764293)),
+        (f32::from_bits(0x41a870ad), f32::from_bits(0x42764293)),
+        (f32::from_bits(0x41a8b236), f32::from_bits(0x4276591a)),
+    );
     // 21.022f, 61.565f, 21.055f, 61.565f, 21.087f, 61.587f
-    path.cubic_to((f32::from_bits(0x41a90a46), f32::from_bits(0x427679df)), (f32::from_bits(0x41a93755), f32::from_bits(0x4276b12a)), (f32::from_bits(0x41a98f65), f32::from_bits(0x4276c6ab)));
+    path.cubic_to(
+        (f32::from_bits(0x41a90a46), f32::from_bits(0x427679df)),
+        (f32::from_bits(0x41a93755), f32::from_bits(0x4276b12a)),
+        (f32::from_bits(0x41a98f65), f32::from_bits(0x4276c6ab)),
+    );
     // 21.13f, 61.619f, 21.152f, 61.673f, 21.195f, 61.694f
-    path.cubic_to((f32::from_bits(0x41aadb2c), f32::from_bits(0x42774086)), (f32::from_bits(0x41ac958a), f32::from_bits(0x42778e59)), (f32::from_bits(0x41adb64e), f32::from_bits(0x427828f9)));
+    path.cubic_to(
+        (f32::from_bits(0x41aadb2c), f32::from_bits(0x42774086)),
+        (f32::from_bits(0x41ac958a), f32::from_bits(0x42778e59)),
+        (f32::from_bits(0x41adb64e), f32::from_bits(0x427828f9)),
+    );
     // 21.357f, 61.813f, 21.573f, 61.889f, 21.714f, 62.04f
-    path.cubic_to((f32::from_bits(0x41adb64e), f32::from_bits(0x427828f9)), (f32::from_bits(0x41ad8940), f32::from_bits(0x42786045)), (f32::from_bits(0x41ad72b8), f32::from_bits(0x42786045)));
+    path.cubic_to(
+        (f32::from_bits(0x41adb64e), f32::from_bits(0x427828f9)),
+        (f32::from_bits(0x41ad8940), f32::from_bits(0x42786045)),
+        (f32::from_bits(0x41ad72b8), f32::from_bits(0x42786045)),
+    );
     // 21.714f, 62.04f, 21.692f, 62.094f, 21.681f, 62.094f
     path.move_to((f32::from_bits(0x41bd168f), f32::from_bits(0x4267be7a)));
     // 23.636f, 57.936f
-    path.cubic_to((f32::from_bits(0x41bd168f), f32::from_bits(0x42679caf)), (f32::from_bits(0x41bd2d16), f32::from_bits(0x4267666a)), (f32::from_bits(0x41bd168f), f32::from_bits(0x42674fe2)));
+    path.cubic_to(
+        (f32::from_bits(0x41bd168f), f32::from_bits(0x42679caf)),
+        (f32::from_bits(0x41bd2d16), f32::from_bits(0x4267666a)),
+        (f32::from_bits(0x41bd168f), f32::from_bits(0x42674fe2)),
+    );
     // 23.636f, 57.903f, 23.647f, 57.85f, 23.636f, 57.828f
-    path.cubic_to((f32::from_bits(0x41bd168f), f32::from_bits(0x4267449e)), (f32::from_bits(0x41bd0008), f32::from_bits(0x42674fe2)), (f32::from_bits(0x41bce981), f32::from_bits(0x42672f1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41bd168f), f32::from_bits(0x4267449e)),
+        (f32::from_bits(0x41bd0008), f32::from_bits(0x42674fe2)),
+        (f32::from_bits(0x41bce981), f32::from_bits(0x42672f1d)),
+    );
     // 23.636f, 57.817f, 23.625f, 57.828f, 23.614f, 57.796f
-    path.cubic_to((f32::from_bits(0x41bcd2fa), f32::from_bits(0x42672f1d)), (f32::from_bits(0x41bc9171), f32::from_bits(0x4267449e)), (f32::from_bits(0x41bc7ae9), f32::from_bits(0x42672f1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41bcd2fa), f32::from_bits(0x42672f1d)),
+        (f32::from_bits(0x41bc9171), f32::from_bits(0x4267449e)),
+        (f32::from_bits(0x41bc7ae9), f32::from_bits(0x42672f1d)),
+    );
     // 23.603f, 57.796f, 23.571f, 57.817f, 23.56f, 57.796f
-    path.cubic_to((f32::from_bits(0x41bb9dba), f32::from_bits(0x4267d500)), (f32::from_bits(0x41bbb441), f32::from_bits(0x42693648)), (f32::from_bits(0x41bb72b8), f32::from_bits(0x426a1377)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb9dba), f32::from_bits(0x4267d500)),
+        (f32::from_bits(0x41bbb441), f32::from_bits(0x42693648)),
+        (f32::from_bits(0x41bb72b8), f32::from_bits(0x426a1377)),
+    );
     // 23.452f, 57.958f, 23.463f, 58.303f, 23.431f, 58.519f
-    path.cubic_to((f32::from_bits(0x41bb45aa), f32::from_bits(0x426a6c8e)), (f32::from_bits(0x41bb2f22), f32::from_bits(0x426acfe1)), (f32::from_bits(0x41bb189b), f32::from_bits(0x426b3335)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb45aa), f32::from_bits(0x426a6c8e)),
+        (f32::from_bits(0x41bb2f22), f32::from_bits(0x426acfe1)),
+        (f32::from_bits(0x41bb189b), f32::from_bits(0x426b3335)),
+    );
     // 23.409f, 58.606f, 23.398f, 58.703f, 23.387f, 58.8f
     path.line_to((f32::from_bits(0x41baed99), f32::from_bits(0x426b5f3d)));
     // 23.366f, 58.843f
-    path.cubic_to((f32::from_bits(0x41baac10), f32::from_bits(0x426bd918)), (f32::from_bits(0x41bac08b), f32::from_bits(0x426c3129)), (f32::from_bits(0x41baac10), f32::from_bits(0x426cab04)));
+    path.cubic_to(
+        (f32::from_bits(0x41baac10), f32::from_bits(0x426bd918)),
+        (f32::from_bits(0x41bac08b), f32::from_bits(0x426c3129)),
+        (f32::from_bits(0x41baac10), f32::from_bits(0x426cab04)),
+    );
     // 23.334f, 58.962f, 23.344f, 59.048f, 23.334f, 59.167f
-    path.cubic_to((f32::from_bits(0x41ba7f02), f32::from_bits(0x426d50e7)), (f32::from_bits(0x41ba3b6c), f32::from_bits(0x426e0d52)), (f32::from_bits(0x41ba106a), f32::from_bits(0x426ec9bc)));
+    path.cubic_to(
+        (f32::from_bits(0x41ba7f02), f32::from_bits(0x426d50e7)),
+        (f32::from_bits(0x41ba3b6c), f32::from_bits(0x426e0d52)),
+        (f32::from_bits(0x41ba106a), f32::from_bits(0x426ec9bc)),
+    );
     // 23.312f, 59.329f, 23.279f, 59.513f, 23.258f, 59.697f
-    path.cubic_to((f32::from_bits(0x41b9ccd4), f32::from_bits(0x426f645c)), (f32::from_bits(0x41b974c4), f32::from_bits(0x42701fc0)), (f32::from_bits(0x41b949c2), f32::from_bits(0x4270c5a3)));
+    path.cubic_to(
+        (f32::from_bits(0x41b9ccd4), f32::from_bits(0x426f645c)),
+        (f32::from_bits(0x41b974c4), f32::from_bits(0x42701fc0)),
+        (f32::from_bits(0x41b949c2), f32::from_bits(0x4270c5a3)),
+    );
     // 23.225f, 59.848f, 23.182f, 60.031f, 23.161f, 60.193f
-    path.cubic_to((f32::from_bits(0x41b9333b), f32::from_bits(0x42713f7e)), (f32::from_bits(0x41b98b4b), f32::from_bits(0x4271820d)), (f32::from_bits(0x41b9f9e3), f32::from_bits(0x4271ae16)));
+    path.cubic_to(
+        (f32::from_bits(0x41b9333b), f32::from_bits(0x42713f7e)),
+        (f32::from_bits(0x41b98b4b), f32::from_bits(0x4271820d)),
+        (f32::from_bits(0x41b9f9e3), f32::from_bits(0x4271ae16)),
+    );
     // 23.15f, 60.312f, 23.193f, 60.377f, 23.247f, 60.42f
-    path.cubic_to((f32::from_bits(0x41ba3b6c), f32::from_bits(0x42718d51)), (f32::from_bits(0x41ba7f02), f32::from_bits(0x4271b95a)), (f32::from_bits(0x41ba9589), f32::from_bits(0x42716b87)));
+    path.cubic_to(
+        (f32::from_bits(0x41ba3b6c), f32::from_bits(0x42718d51)),
+        (f32::from_bits(0x41ba7f02), f32::from_bits(0x4271b95a)),
+        (f32::from_bits(0x41ba9589), f32::from_bits(0x42716b87)),
+    );
     // 23.279f, 60.388f, 23.312f, 60.431f, 23.323f, 60.355f
-    path.cubic_to((f32::from_bits(0x41baac10), f32::from_bits(0x4271343b)), (f32::from_bits(0x41ba9589), f32::from_bits(0x4270e76e)), (f32::from_bits(0x41ba9589), f32::from_bits(0x4270999b)));
+    path.cubic_to(
+        (f32::from_bits(0x41baac10), f32::from_bits(0x4271343b)),
+        (f32::from_bits(0x41ba9589), f32::from_bits(0x4270e76e)),
+        (f32::from_bits(0x41ba9589), f32::from_bits(0x4270999b)),
+    );
     // 23.334f, 60.301f, 23.323f, 60.226f, 23.323f, 60.15f
-    path.cubic_to((f32::from_bits(0x41ba9589), f32::from_bits(0x4270418b)), (f32::from_bits(0x41bac08b), f32::from_bits(0x426fd1ed)), (f32::from_bits(0x41baed99), f32::from_bits(0x426f645c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ba9589), f32::from_bits(0x4270418b)),
+        (f32::from_bits(0x41bac08b), f32::from_bits(0x426fd1ed)),
+        (f32::from_bits(0x41baed99), f32::from_bits(0x426f645c)),
+    );
     // 23.323f, 60.064f, 23.344f, 59.955f, 23.366f, 59.848f
-    path.cubic_to((f32::from_bits(0x41bb2f22), f32::from_bits(0x426e6562)), (f32::from_bits(0x41bb9dba), f32::from_bits(0x426d3b66)), (f32::from_bits(0x41bbf5ca), f32::from_bits(0x426c3c6c)));
+    path.cubic_to(
+        (f32::from_bits(0x41bb2f22), f32::from_bits(0x426e6562)),
+        (f32::from_bits(0x41bb9dba), f32::from_bits(0x426d3b66)),
+        (f32::from_bits(0x41bbf5ca), f32::from_bits(0x426c3c6c)),
+    );
     // 23.398f, 59.599f, 23.452f, 59.308f, 23.495f, 59.059f
-    path.cubic_to((f32::from_bits(0x41bc0e5d), f32::from_bits(0x426bb853)), (f32::from_bits(0x41bc0e5d), f32::from_bits(0x426b5f3d)), (f32::from_bits(0x41bc22d8), f32::from_bits(0x426ae562)));
+    path.cubic_to(
+        (f32::from_bits(0x41bc0e5d), f32::from_bits(0x426bb853)),
+        (f32::from_bits(0x41bc0e5d), f32::from_bits(0x426b5f3d)),
+        (f32::from_bits(0x41bc22d8), f32::from_bits(0x426ae562)),
+    );
     // 23.507f, 58.93f, 23.507f, 58.843f, 23.517f, 58.724f
-    path.cubic_to((f32::from_bits(0x41bc395f), f32::from_bits(0x426a820e)), (f32::from_bits(0x41bc9170), f32::from_bits(0x4269f2b2)), (f32::from_bits(0x41bca7f7), f32::from_bits(0x42698f5e)));
+    path.cubic_to(
+        (f32::from_bits(0x41bc395f), f32::from_bits(0x426a820e)),
+        (f32::from_bits(0x41bc9170), f32::from_bits(0x4269f2b2)),
+        (f32::from_bits(0x41bca7f7), f32::from_bits(0x42698f5e)),
+    );
     // 23.528f, 58.627f, 23.571f, 58.487f, 23.582f, 58.39f
-    path.cubic_to((f32::from_bits(0x41bcd2f9), f32::from_bits(0x426920c6)), (f32::from_bits(0x41bca7f7), f32::from_bits(0x4268d2f4)), (f32::from_bits(0x41bcd2f9), f32::from_bits(0x4268645c)));
+    path.cubic_to(
+        (f32::from_bits(0x41bcd2f9), f32::from_bits(0x426920c6)),
+        (f32::from_bits(0x41bca7f7), f32::from_bits(0x4268d2f4)),
+        (f32::from_bits(0x41bcd2f9), f32::from_bits(0x4268645c)),
+    );
     // 23.603f, 58.282f, 23.582f, 58.206f, 23.603f, 58.098f
-    path.cubic_to((f32::from_bits(0x41bcd2f9), f32::from_bits(0x42684291)), (f32::from_bits(0x41bd168f), f32::from_bits(0x4267df3d)), (f32::from_bits(0x41bd168f), f32::from_bits(0x4267be79)));
+    path.cubic_to(
+        (f32::from_bits(0x41bcd2f9), f32::from_bits(0x42684291)),
+        (f32::from_bits(0x41bd168f), f32::from_bits(0x4267df3d)),
+        (f32::from_bits(0x41bd168f), f32::from_bits(0x4267be79)),
+    );
     // 23.603f, 58.065f, 23.636f, 57.968f, 23.636f, 57.936f
     path.move_to((f32::from_bits(0x41bd6e9f), f32::from_bits(0x426e916b)));
     // 23.679f, 59.642f
-    path.cubic_to((f32::from_bits(0x41bdb028), f32::from_bits(0x426d199c)), (f32::from_bits(0x41bdf3be), f32::from_bits(0x426bb854)), (f32::from_bits(0x41be6255), f32::from_bits(0x426a343c)));
+    path.cubic_to(
+        (f32::from_bits(0x41bdb028), f32::from_bits(0x426d199c)),
+        (f32::from_bits(0x41bdf3be), f32::from_bits(0x426bb854)),
+        (f32::from_bits(0x41be6255), f32::from_bits(0x426a343c)),
+    );
     // 23.711f, 59.275f, 23.744f, 58.93f, 23.798f, 58.551f
-    path.cubic_to((f32::from_bits(0x41be78dc), f32::from_bits(0x4269f2b3)), (f32::from_bits(0x41bed0ed), f32::from_bits(0x4269841b)), (f32::from_bits(0x41bed0ed), f32::from_bits(0x4269418c)));
+    path.cubic_to(
+        (f32::from_bits(0x41be78dc), f32::from_bits(0x4269f2b3)),
+        (f32::from_bits(0x41bed0ed), f32::from_bits(0x4269841b)),
+        (f32::from_bits(0x41bed0ed), f32::from_bits(0x4269418c)),
+    );
     // 23.809f, 58.487f, 23.852f, 58.379f, 23.852f, 58.314f
-    path.cubic_to((f32::from_bits(0x41bee774), f32::from_bits(0x4268bc6d)), (f32::from_bits(0x41bee774), f32::from_bits(0x42684edc)), (f32::from_bits(0x41bf1276), f32::from_bits(0x4267df3e)));
+    path.cubic_to(
+        (f32::from_bits(0x41bee774), f32::from_bits(0x4268bc6d)),
+        (f32::from_bits(0x41bee774), f32::from_bits(0x42684edc)),
+        (f32::from_bits(0x41bf1276), f32::from_bits(0x4267df3e)),
+    );
     // 23.863f, 58.184f, 23.863f, 58.077f, 23.884f, 57.968f
-    path.cubic_to((f32::from_bits(0x41bf3f84), f32::from_bits(0x4267a7f2)), (f32::from_bits(0x41bf3f84), f32::from_bits(0x4267872e)), (f32::from_bits(0x41bf9795), f32::from_bits(0x426770a6)));
+    path.cubic_to(
+        (f32::from_bits(0x41bf3f84), f32::from_bits(0x4267a7f2)),
+        (f32::from_bits(0x41bf3f84), f32::from_bits(0x4267872e)),
+        (f32::from_bits(0x41bf9795), f32::from_bits(0x426770a6)),
+    );
     // 23.906f, 57.914f, 23.906f, 57.882f, 23.949f, 57.86f
-    path.cubic_to((f32::from_bits(0x41c0ccd4), f32::from_bits(0x42675b25)), (f32::from_bits(0x41c6810e), f32::from_bits(0x4268d2f4)), (f32::from_bits(0x41c6d91e), f32::from_bits(0x426920c7)));
+    path.cubic_to(
+        (f32::from_bits(0x41c0ccd4), f32::from_bits(0x42675b25)),
+        (f32::from_bits(0x41c6810e), f32::from_bits(0x4268d2f4)),
+        (f32::from_bits(0x41c6d91e), f32::from_bits(0x426920c7)),
+    );
     // 24.1f, 57.839f, 24.813f, 58.206f, 24.856f, 58.282f
-    path.cubic_to((f32::from_bits(0x41c7333b), f32::from_bits(0x42696d94)), (f32::from_bits(0x41c7062c), f32::from_bits(0x4270e76f)), (f32::from_bits(0x41c6ae1c), f32::from_bits(0x42713f7f)));
+    path.cubic_to(
+        (f32::from_bits(0x41c7333b), f32::from_bits(0x42696d94)),
+        (f32::from_bits(0x41c7062c), f32::from_bits(0x4270e76f)),
+        (f32::from_bits(0x41c6ae1c), f32::from_bits(0x42713f7f)),
+    );
     // 24.9f, 58.357f, 24.878f, 60.226f, 24.835f, 60.312f
-    path.cubic_to((f32::from_bits(0x41c63f84), f32::from_bits(0x4271a2d3)), (f32::from_bits(0x41c3a7f7), f32::from_bits(0x42716b87)), (f32::from_bits(0x41c2cac8), f32::from_bits(0x427176cb)));
+    path.cubic_to(
+        (f32::from_bits(0x41c63f84), f32::from_bits(0x4271a2d3)),
+        (f32::from_bits(0x41c3a7f7), f32::from_bits(0x42716b87)),
+        (f32::from_bits(0x41c2cac8), f32::from_bits(0x427176cb)),
+    );
     // 24.781f, 60.409f, 24.457f, 60.355f, 24.349f, 60.366f
-    path.cubic_to((f32::from_bits(0x41c2b441), f32::from_bits(0x427176cb)), (f32::from_bits(0x41c270ab), f32::from_bits(0x4271a2d3)), (f32::from_bits(0x41c245a9), f32::from_bits(0x4271a2d3)));
+    path.cubic_to(
+        (f32::from_bits(0x41c2b441), f32::from_bits(0x427176cb)),
+        (f32::from_bits(0x41c270ab), f32::from_bits(0x4271a2d3)),
+        (f32::from_bits(0x41c245a9), f32::from_bits(0x4271a2d3)),
+    );
     // 24.338f, 60.366f, 24.305f, 60.409f, 24.284f, 60.409f
-    path.cubic_to((f32::from_bits(0x41c1aa03), f32::from_bits(0x4271b95a)), (f32::from_bits(0x41c1106a), f32::from_bits(0x4271ae17)), (f32::from_bits(0x41c05e3c), f32::from_bits(0x4271b95a)));
+    path.cubic_to(
+        (f32::from_bits(0x41c1aa03), f32::from_bits(0x4271b95a)),
+        (f32::from_bits(0x41c1106a), f32::from_bits(0x4271ae17)),
+        (f32::from_bits(0x41c05e3c), f32::from_bits(0x4271b95a)),
+    );
     // 24.208f, 60.431f, 24.133f, 60.42f, 24.046f, 60.431f
-    path.cubic_to((f32::from_bits(0x41bf1275), f32::from_bits(0x4271e562)), (f32::from_bits(0x41be4bcd), f32::from_bits(0x427227f2)), (f32::from_bits(0x41bcd2f8), f32::from_bits(0x4272322f)));
+    path.cubic_to(
+        (f32::from_bits(0x41bf1275), f32::from_bits(0x4271e562)),
+        (f32::from_bits(0x41be4bcd), f32::from_bits(0x427227f2)),
+        (f32::from_bits(0x41bcd2f8), f32::from_bits(0x4272322f)),
+    );
     // 23.884f, 60.474f, 23.787f, 60.539f, 23.603f, 60.549f
-    path.cubic_to((f32::from_bits(0x41bc395e), f32::from_bits(0x427128f8)), (f32::from_bits(0x41bd2d15), f32::from_bits(0x426f8f5e)), (f32::from_bits(0x41bd6e9e), f32::from_bits(0x426e916a)));
+    path.cubic_to(
+        (f32::from_bits(0x41bc395e), f32::from_bits(0x427128f8)),
+        (f32::from_bits(0x41bd2d15), f32::from_bits(0x426f8f5e)),
+        (f32::from_bits(0x41bd6e9e), f32::from_bits(0x426e916a)),
+    );
     // 23.528f, 60.29f, 23.647f, 59.89f, 23.679f, 59.642f
     path.move_to((f32::from_bits(0x41d21481), f32::from_bits(0x42700a3f)));
     // 26.26f, 60.01f
-    path.cubic_to((f32::from_bits(0x41d22b08), f32::from_bits(0x42704cce)), (f32::from_bits(0x41d299a0), f32::from_bits(0x4270f1ac)), (f32::from_bits(0x41d2418f), f32::from_bits(0x42713f7e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d22b08), f32::from_bits(0x42704cce)),
+        (f32::from_bits(0x41d299a0), f32::from_bits(0x4270f1ac)),
+        (f32::from_bits(0x41d2418f), f32::from_bits(0x42713f7e)),
+    );
     // 26.271f, 60.075f, 26.325f, 60.236f, 26.282f, 60.312f
-    path.cubic_to((f32::from_bits(0x41d2418f), f32::from_bits(0x42714ac2)), (f32::from_bits(0x41d22b08), f32::from_bits(0x42713f7e)), (f32::from_bits(0x41d21481), f32::from_bits(0x42715605)));
+    path.cubic_to(
+        (f32::from_bits(0x41d2418f), f32::from_bits(0x42714ac2)),
+        (f32::from_bits(0x41d22b08), f32::from_bits(0x42713f7e)),
+        (f32::from_bits(0x41d21481), f32::from_bits(0x42715605)),
+    );
     // 26.282f, 60.323f, 26.271f, 60.312f, 26.26f, 60.334f
-    path.cubic_to((f32::from_bits(0x41d1bc71), f32::from_bits(0x42715605)), (f32::from_bits(0x41d1916f), f32::from_bits(0x42715605)), (f32::from_bits(0x41d1395e), f32::from_bits(0x42714ac1)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1bc71), f32::from_bits(0x42715605)),
+        (f32::from_bits(0x41d1916f), f32::from_bits(0x42715605)),
+        (f32::from_bits(0x41d1395e), f32::from_bits(0x42714ac1)),
+    );
     // 26.217f, 60.334f, 26.196f, 60.334f, 26.153f, 60.323f
-    path.cubic_to((f32::from_bits(0x41d0b233), f32::from_bits(0x42708419)), (f32::from_bits(0x41d0c8ba), f32::from_bits(0x426f645b)), (f32::from_bits(0x41d09db8), f32::from_bits(0x426e5a1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41d0b233), f32::from_bits(0x42708419)),
+        (f32::from_bits(0x41d0c8ba), f32::from_bits(0x426f645b)),
+        (f32::from_bits(0x41d09db8), f32::from_bits(0x426e5a1d)),
+    );
     // 26.087f, 60.129f, 26.098f, 59.848f, 26.077f, 59.588f
-    path.cubic_to((f32::from_bits(0x41d09db8), f32::from_bits(0x426e23d7)), (f32::from_bits(0x41d05a22), f32::from_bits(0x426d9375)), (f32::from_bits(0x41d070aa), f32::from_bits(0x426d50e6)));
+    path.cubic_to(
+        (f32::from_bits(0x41d09db8), f32::from_bits(0x426e23d7)),
+        (f32::from_bits(0x41d05a22), f32::from_bits(0x426d9375)),
+        (f32::from_bits(0x41d070aa), f32::from_bits(0x426d50e6)),
+    );
     // 26.077f, 59.535f, 26.044f, 59.394f, 26.055f, 59.329f
-    path.cubic_to((f32::from_bits(0x41d09db8), f32::from_bits(0x426d3b65)), (f32::from_bits(0x41d0b233), f32::from_bits(0x426d50e6)), (f32::from_bits(0x41d0b233), f32::from_bits(0x426d2f1b)));
+    path.cubic_to(
+        (f32::from_bits(0x41d09db8), f32::from_bits(0x426d3b65)),
+        (f32::from_bits(0x41d0b233), f32::from_bits(0x426d50e6)),
+        (f32::from_bits(0x41d0b233), f32::from_bits(0x426d2f1b)),
+    );
     // 26.077f, 59.308f, 26.087f, 59.329f, 26.087f, 59.296f
-    path.cubic_to((f32::from_bits(0x41d1395e), f32::from_bits(0x426d3b65)), (f32::from_bits(0x41d14dd9), f32::from_bits(0x426d2f1b)), (f32::from_bits(0x41d1916e), f32::from_bits(0x426d50e6)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1395e), f32::from_bits(0x426d3b65)),
+        (f32::from_bits(0x41d14dd9), f32::from_bits(0x426d2f1b)),
+        (f32::from_bits(0x41d1916e), f32::from_bits(0x426d50e6)),
+    );
     // 26.153f, 59.308f, 26.163f, 59.296f, 26.196f, 59.329f
-    path.cubic_to((f32::from_bits(0x41d1a5e9), f32::from_bits(0x426d50e6)), (f32::from_bits(0x41d1e97e), f32::from_bits(0x426de148)), (f32::from_bits(0x41d1e97e), f32::from_bits(0x426dec8c)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1a5e9), f32::from_bits(0x426d50e6)),
+        (f32::from_bits(0x41d1e97e), f32::from_bits(0x426de148)),
+        (f32::from_bits(0x41d1e97e), f32::from_bits(0x426dec8c)),
+    );
     // 26.206f, 59.329f, 26.239f, 59.47f, 26.239f, 59.481f
-    path.cubic_to((f32::from_bits(0x41d22b07), f32::from_bits(0x426e9cad)), (f32::from_bits(0x41d1e97e), f32::from_bits(0x426f4dd4)), (f32::from_bits(0x41d21480), f32::from_bits(0x42700a3e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d22b07), f32::from_bits(0x426e9cad)),
+        (f32::from_bits(0x41d1e97e), f32::from_bits(0x426f4dd4)),
+        (f32::from_bits(0x41d21480), f32::from_bits(0x42700a3e)),
+    );
     // 26.271f, 59.653f, 26.239f, 59.826f, 26.26f, 60.01f
     path.move_to((f32::from_bits(0x41ee1274), f32::from_bits(0x42564ac1)));
     // 29.759f, 53.573f
-    path.cubic_to((f32::from_bits(0x41ee1274), f32::from_bits(0x42566b86)), (f32::from_bits(0x41ee3f82), f32::from_bits(0x4256c49c)), (f32::from_bits(0x41ee28fb), f32::from_bits(0x4256fbe8)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee1274), f32::from_bits(0x42566b86)),
+        (f32::from_bits(0x41ee3f82), f32::from_bits(0x4256c49c)),
+        (f32::from_bits(0x41ee28fb), f32::from_bits(0x4256fbe8)),
+    );
     // 29.759f, 53.605f, 29.781f, 53.692f, 29.77f, 53.746f
-    path.cubic_to((f32::from_bits(0x41ee28fb), f32::from_bits(0x42571cad)), (f32::from_bits(0x41ede772), f32::from_bits(0x425748b5)), (f32::from_bits(0x41ede772), f32::from_bits(0x42576a80)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee28fb), f32::from_bits(0x42571cad)),
+        (f32::from_bits(0x41ede772), f32::from_bits(0x425748b5)),
+        (f32::from_bits(0x41ede772), f32::from_bits(0x42576a80)),
+    );
     // 29.77f, 53.778f, 29.738f, 53.821f, 29.738f, 53.854f
-    path.cubic_to((f32::from_bits(0x41ed8f62), f32::from_bits(0x425774bd)), (f32::from_bits(0x41ed20ca), f32::from_bits(0x42579688)), (f32::from_bits(0x41ec6e9d), f32::from_bits(0x42579688)));
+    path.cubic_to(
+        (f32::from_bits(0x41ed8f62), f32::from_bits(0x425774bd)),
+        (f32::from_bits(0x41ed20ca), f32::from_bits(0x42579688)),
+        (f32::from_bits(0x41ec6e9d), f32::from_bits(0x42579688)),
+    );
     // 29.695f, 53.864f, 29.641f, 53.897f, 29.554f, 53.897f
-    path.cubic_to((f32::from_bits(0x41ebeb8b), f32::from_bits(0x42579688)), (f32::from_bits(0x41eb666c), f32::from_bits(0x425774bd)), (f32::from_bits(0x41eaf7d4), f32::from_bits(0x42576a80)));
+    path.cubic_to(
+        (f32::from_bits(0x41ebeb8b), f32::from_bits(0x42579688)),
+        (f32::from_bits(0x41eb666c), f32::from_bits(0x425774bd)),
+        (f32::from_bits(0x41eaf7d4), f32::from_bits(0x42576a80)),
+    );
     // 29.49f, 53.897f, 29.425f, 53.864f, 29.371f, 53.854f
-    path.cubic_to((f32::from_bits(0x41eacac6), f32::from_bits(0x425676ca)), (f32::from_bits(0x41eb666c), f32::from_bits(0x42556d92)), (f32::from_bits(0x41ebbe7c), f32::from_bits(0x42549063)));
+    path.cubic_to(
+        (f32::from_bits(0x41eacac6), f32::from_bits(0x425676ca)),
+        (f32::from_bits(0x41eb666c), f32::from_bits(0x42556d92)),
+        (f32::from_bits(0x41ebbe7c), f32::from_bits(0x42549063)),
+    );
     // 29.349f, 53.616f, 29.425f, 53.357f, 29.468f, 53.141f
-    path.cubic_to((f32::from_bits(0x41ebd503), f32::from_bits(0x425421cb)), (f32::from_bits(0x41ebd503), f32::from_bits(0x4253d3f9)), (f32::from_bits(0x41ec0005), f32::from_bits(0x42537be8)));
+    path.cubic_to(
+        (f32::from_bits(0x41ebd503), f32::from_bits(0x425421cb)),
+        (f32::from_bits(0x41ebd503), f32::from_bits(0x4253d3f9)),
+        (f32::from_bits(0x41ec0005), f32::from_bits(0x42537be8)),
+    );
     // 29.479f, 53.033f, 29.479f, 52.957f, 29.5f, 52.871f
-    path.cubic_to((f32::from_bits(0x41ec2d13), f32::from_bits(0x42535a1d)), (f32::from_bits(0x41ec6e9d), f32::from_bits(0x42531894)), (f32::from_bits(0x41ecb232), f32::from_bits(0x42531894)));
+    path.cubic_to(
+        (f32::from_bits(0x41ec2d13), f32::from_bits(0x42535a1d)),
+        (f32::from_bits(0x41ec6e9d), f32::from_bits(0x42531894)),
+        (f32::from_bits(0x41ecb232), f32::from_bits(0x42531894)),
+    );
     // 29.522f, 52.838f, 29.554f, 52.774f, 29.587f, 52.774f
-    path.cubic_to((f32::from_bits(0x41ed3544), f32::from_bits(0x4253020d)), (f32::from_bits(0x41edd0ea), f32::from_bits(0x42531894)), (f32::from_bits(0x41ede771), f32::from_bits(0x4253449c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ed3544), f32::from_bits(0x4253020d)),
+        (f32::from_bits(0x41edd0ea), f32::from_bits(0x42531894)),
+        (f32::from_bits(0x41ede771), f32::from_bits(0x4253449c)),
+    );
     // 29.651f, 52.752f, 29.727f, 52.774f, 29.738f, 52.817f
-    path.cubic_to((f32::from_bits(0x41ee1273), f32::from_bits(0x42534fe0)), (f32::from_bits(0x41ede771), f32::from_bits(0x42536561)), (f32::from_bits(0x41ede771), f32::from_bits(0x42537be8)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee1273), f32::from_bits(0x42534fe0)),
+        (f32::from_bits(0x41ede771), f32::from_bits(0x42536561)),
+        (f32::from_bits(0x41ede771), f32::from_bits(0x42537be8)),
+    );
     // 29.759f, 52.828f, 29.738f, 52.849f, 29.738f, 52.871f
-    path.cubic_to((f32::from_bits(0x41ee3f81), f32::from_bits(0x42544290)), (f32::from_bits(0x41ede771), f32::from_bits(0x42554ccd)), (f32::from_bits(0x41ee1273), f32::from_bits(0x42564ac1)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee3f81), f32::from_bits(0x42544290)),
+        (f32::from_bits(0x41ede771), f32::from_bits(0x42554ccd)),
+        (f32::from_bits(0x41ee1273), f32::from_bits(0x42564ac1)),
+    );
     // 29.781f, 53.065f, 29.738f, 53.325f, 29.759f, 53.573f
     path.move_to((f32::from_bits(0x41f51273), f32::from_bits(0x4258cbc7)));
     // 30.634f, 54.199f
-    path.cubic_to((f32::from_bits(0x41f4e771), f32::from_bits(0x4259199a)), (f32::from_bits(0x41f3b025), f32::from_bits(0x4259bf7d)), (f32::from_bits(0x41f35815), f32::from_bits(0x4259eb85)));
+    path.cubic_to(
+        (f32::from_bits(0x41f4e771), f32::from_bits(0x4259199a)),
+        (f32::from_bits(0x41f3b025), f32::from_bits(0x4259bf7d)),
+        (f32::from_bits(0x41f35815), f32::from_bits(0x4259eb85)),
+    );
     // 30.613f, 54.275f, 30.461f, 54.437f, 30.418f, 54.48f
-    path.cubic_to((f32::from_bits(0x41f2395d), f32::from_bits(0x425aa6e9)), (f32::from_bits(0x41f2395d), f32::from_bits(0x425a449c)), (f32::from_bits(0x41f222d6), f32::from_bits(0x42596666)));
+    path.cubic_to(
+        (f32::from_bits(0x41f2395d), f32::from_bits(0x425aa6e9)),
+        (f32::from_bits(0x41f2395d), f32::from_bits(0x425a449c)),
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x42596666)),
+    );
     // 30.278f, 54.663f, 30.278f, 54.567f, 30.267f, 54.35f
-    path.cubic_to((f32::from_bits(0x41f222d6), f32::from_bits(0x425945a1)), (f32::from_bits(0x41f1f5c8), f32::from_bits(0x4258e24d)), (f32::from_bits(0x41f222d6), f32::from_bits(0x4258ab02)));
+    path.cubic_to(
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x425945a1)),
+        (f32::from_bits(0x41f1f5c8), f32::from_bits(0x4258e24d)),
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x4258ab02)),
+    );
     // 30.267f, 54.318f, 30.245f, 54.221f, 30.267f, 54.167f
-    path.cubic_to((f32::from_bits(0x41f2395d), f32::from_bits(0x42589fbe)), (f32::from_bits(0x41f2e97e), f32::from_bits(0x42588a3d)), (f32::from_bits(0x41f30005), f32::from_bits(0x425873b6)));
+    path.cubic_to(
+        (f32::from_bits(0x41f2395d), f32::from_bits(0x42589fbe)),
+        (f32::from_bits(0x41f2e97e), f32::from_bits(0x42588a3d)),
+        (f32::from_bits(0x41f30005), f32::from_bits(0x425873b6)),
+    );
     // 30.278f, 54.156f, 30.364f, 54.135f, 30.375f, 54.113f
-    path.cubic_to((f32::from_bits(0x41f3b026), f32::from_bits(0x42586872)), (f32::from_bits(0x41f48d55), f32::from_bits(0x42588937)), (f32::from_bits(0x41f51274), f32::from_bits(0x4258947b)));
+    path.cubic_to(
+        (f32::from_bits(0x41f3b026), f32::from_bits(0x42586872)),
+        (f32::from_bits(0x41f48d55), f32::from_bits(0x42588937)),
+        (f32::from_bits(0x41f51274), f32::from_bits(0x4258947b)),
+    );
     // 30.461f, 54.102f, 30.569f, 54.134f, 30.634f, 54.145f
-    path.cubic_to((f32::from_bits(0x41f4fdf9), f32::from_bits(0x42589fbf)), (f32::from_bits(0x41f51274), f32::from_bits(0x4258b646)), (f32::from_bits(0x41f51274), f32::from_bits(0x4258cbc7)));
+    path.cubic_to(
+        (f32::from_bits(0x41f4fdf9), f32::from_bits(0x42589fbf)),
+        (f32::from_bits(0x41f51274), f32::from_bits(0x4258b646)),
+        (f32::from_bits(0x41f51274), f32::from_bits(0x4258cbc7)),
+    );
     // 30.624f, 54.156f, 30.634f, 54.178f, 30.634f, 54.199f
     path.move_to((f32::from_bits(0x41f20e5b), f32::from_bits(0x425727f0)));
     // 30.257f, 53.789f
-    path.cubic_to((f32::from_bits(0x41f1cac5), f32::from_bits(0x4256da1d)), (f32::from_bits(0x41f222d6), f32::from_bits(0x42561375)), (f32::from_bits(0x41f222d6), f32::from_bits(0x4255d0e6)));
+    path.cubic_to(
+        (f32::from_bits(0x41f1cac5), f32::from_bits(0x4256da1d)),
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x42561375)),
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x4255d0e6)),
+    );
     // 30.224f, 53.713f, 30.267f, 53.519f, 30.267f, 53.454f
-    path.cubic_to((f32::from_bits(0x41f222d6), f32::from_bits(0x42553646)), (f32::from_bits(0x41f1b43e), f32::from_bits(0x4254374c)), (f32::from_bits(0x41f20e5b), f32::from_bits(0x42539169)));
+    path.cubic_to(
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x42553646)),
+        (f32::from_bits(0x41f1b43e), f32::from_bits(0x4254374c)),
+        (f32::from_bits(0x41f20e5b), f32::from_bits(0x42539169)),
+    );
     // 30.267f, 53.303f, 30.213f, 53.054f, 30.257f, 52.892f
-    path.cubic_to((f32::from_bits(0x41f222d6), f32::from_bits(0x42536561)), (f32::from_bits(0x41f2916d), f32::from_bits(0x4253449c)), (f32::from_bits(0x41f2be7c), f32::from_bits(0x4253449c)));
+    path.cubic_to(
+        (f32::from_bits(0x41f222d6), f32::from_bits(0x42536561)),
+        (f32::from_bits(0x41f2916d), f32::from_bits(0x4253449c)),
+        (f32::from_bits(0x41f2be7c), f32::from_bits(0x4253449c)),
+    );
     // 30.267f, 52.849f, 30.321f, 52.817f, 30.343f, 52.817f
-    path.cubic_to((f32::from_bits(0x41f3b026), f32::from_bits(0x42532e15)), (f32::from_bits(0x41f845a7), f32::from_bits(0x42539cac)), (f32::from_bits(0x41f88730), f32::from_bits(0x4253d3f8)));
+    path.cubic_to(
+        (f32::from_bits(0x41f3b026), f32::from_bits(0x42532e15)),
+        (f32::from_bits(0x41f845a7), f32::from_bits(0x42539cac)),
+        (f32::from_bits(0x41f88730), f32::from_bits(0x4253d3f8)),
+    );
     // 30.461f, 52.795f, 31.034f, 52.903f, 31.066f, 52.957f
-    path.cubic_to((f32::from_bits(0x41f8cac6), f32::from_bits(0x42540000)), (f32::from_bits(0x41f8cac6), f32::from_bits(0x42544290)), (f32::from_bits(0x41f8e14d), f32::from_bits(0x4254851f)));
+    path.cubic_to(
+        (f32::from_bits(0x41f8cac6), f32::from_bits(0x42540000)),
+        (f32::from_bits(0x41f8cac6), f32::from_bits(0x42544290)),
+        (f32::from_bits(0x41f8e14d), f32::from_bits(0x4254851f)),
+    );
     // 31.099f, 53, 31.099f, 53.065f, 31.11f, 53.13f
-    path.cubic_to((f32::from_bits(0x41f8f5c8), f32::from_bits(0x4254d1ec)), (f32::from_bits(0x41f97ae7), f32::from_bits(0x425578d5)), (f32::from_bits(0x41f9666c), f32::from_bits(0x4255e76d)));
+    path.cubic_to(
+        (f32::from_bits(0x41f8f5c8), f32::from_bits(0x4254d1ec)),
+        (f32::from_bits(0x41f97ae7), f32::from_bits(0x425578d5)),
+        (f32::from_bits(0x41f9666c), f32::from_bits(0x4255e76d)),
+    );
     // 31.12f, 53.205f, 31.185f, 53.368f, 31.175f, 53.476f
-    path.cubic_to((f32::from_bits(0x41f94dd9), f32::from_bits(0x42561375)), (f32::from_bits(0x41f88731), f32::from_bits(0x4256a2d1)), (f32::from_bits(0x41f85c2f), f32::from_bits(0x4256c49c)));
+    path.cubic_to(
+        (f32::from_bits(0x41f94dd9), f32::from_bits(0x42561375)),
+        (f32::from_bits(0x41f88731), f32::from_bits(0x4256a2d1)),
+        (f32::from_bits(0x41f85c2f), f32::from_bits(0x4256c49c)),
+    );
     // 31.163f, 53.519f, 31.066f, 53.659f, 31.045f, 53.692f
-    path.cubic_to((f32::from_bits(0x41f845a8), f32::from_bits(0x4256da1d)), (f32::from_bits(0x41f7d710), f32::from_bits(0x4256f0a4)), (f32::from_bits(0x41f7d710), f32::from_bits(0x4256fbe8)));
+    path.cubic_to(
+        (f32::from_bits(0x41f845a8), f32::from_bits(0x4256da1d)),
+        (f32::from_bits(0x41f7d710), f32::from_bits(0x4256f0a4)),
+        (f32::from_bits(0x41f7d710), f32::from_bits(0x4256fbe8)),
+    );
     // 31.034f, 53.713f, 30.98f, 53.735f, 30.98f, 53.746f
     path.line_to((f32::from_bits(0x41f7d710), f32::from_bits(0x42571cad)));
     // 30.98f, 53.778f
-    path.cubic_to((f32::from_bits(0x41f79587), f32::from_bits(0x4257322e)), (f32::from_bits(0x41f73b6a), f32::from_bits(0x425748b5)), (f32::from_bits(0x41f6f9e1), f32::from_bits(0x42575f3c)));
+    path.cubic_to(
+        (f32::from_bits(0x41f79587), f32::from_bits(0x4257322e)),
+        (f32::from_bits(0x41f73b6a), f32::from_bits(0x425748b5)),
+        (f32::from_bits(0x41f6f9e1), f32::from_bits(0x42575f3c)),
+    );
     // 30.948f, 53.799f, 30.904f, 53.821f, 30.872f, 53.843f
-    path.cubic_to((f32::from_bits(0x41f6062b), f32::from_bits(0x425774bd)), (f32::from_bits(0x41f2395e), f32::from_bits(0x425774bd)), (f32::from_bits(0x41f20e5c), f32::from_bits(0x425727f0)));
+    path.cubic_to(
+        (f32::from_bits(0x41f6062b), f32::from_bits(0x425774bd)),
+        (f32::from_bits(0x41f2395e), f32::from_bits(0x425774bd)),
+        (f32::from_bits(0x41f20e5c), f32::from_bits(0x425727f0)),
+    );
     // 30.753f, 53.864f, 30.278f, 53.864f, 30.257f, 53.789f
     path.move_to((f32::from_bits(0x42048f5f), f32::from_bits(0x426b072b)));
     // 33.14f, 58.757f
-    path.cubic_to((f32::from_bits(0x42046d94), f32::from_bits(0x426acfdf)), (f32::from_bits(0x42048f5f), f32::from_bits(0x426ab958)), (f32::from_bits(0x420478d8), f32::from_bits(0x426a77cf)));
+    path.cubic_to(
+        (f32::from_bits(0x42046d94), f32::from_bits(0x426acfdf)),
+        (f32::from_bits(0x42048f5f), f32::from_bits(0x426ab958)),
+        (f32::from_bits(0x420478d8), f32::from_bits(0x426a77cf)),
+    );
     // 33.107f, 58.703f, 33.14f, 58.681f, 33.118f, 58.617f
-    path.cubic_to((f32::from_bits(0x42045813), f32::from_bits(0x4269d0e6)), (f32::from_bits(0x42042c0b), f32::from_bits(0x42693646)), (f32::from_bits(0x42041584), f32::from_bits(0x4268851f)));
+    path.cubic_to(
+        (f32::from_bits(0x42045813), f32::from_bits(0x4269d0e6)),
+        (f32::from_bits(0x42042c0b), f32::from_bits(0x42693646)),
+        (f32::from_bits(0x42041584), f32::from_bits(0x4268851f)),
+    );
     // 33.086f, 58.454f, 33.043f, 58.303f, 33.021f, 58.13f
-    path.cubic_to((f32::from_bits(0x4203e97c), f32::from_bits(0x4267c9bb)), (f32::from_bits(0x42039caf), f32::from_bits(0x42670d50)), (f32::from_bits(0x4203a6ec), f32::from_bits(0x426624dd)));
+    path.cubic_to(
+        (f32::from_bits(0x4203e97c), f32::from_bits(0x4267c9bb)),
+        (f32::from_bits(0x42039caf), f32::from_bits(0x42670d50)),
+        (f32::from_bits(0x4203a6ec), f32::from_bits(0x426624dd)),
+    );
     // 32.978f, 57.947f, 32.903f, 57.763f, 32.913f, 57.536f
-    path.cubic_to((f32::from_bits(0x4203a6ec), f32::from_bits(0x426624dd)), (f32::from_bits(0x4203de38), f32::from_bits(0x4265f8d5)), (f32::from_bits(0x4203e97b), f32::from_bits(0x4265f8d5)));
+    path.cubic_to(
+        (f32::from_bits(0x4203a6ec), f32::from_bits(0x426624dd)),
+        (f32::from_bits(0x4203de38), f32::from_bits(0x4265f8d5)),
+        (f32::from_bits(0x4203e97b), f32::from_bits(0x4265f8d5)),
+    );
     // 32.913f, 57.536f, 32.967f, 57.493f, 32.978f, 57.493f
-    path.cubic_to((f32::from_bits(0x42042c0a), f32::from_bits(0x4265ee98)), (f32::from_bits(0x4204c6aa), f32::from_bits(0x4266199a)), (f32::from_bits(0x4204e875), f32::from_bits(0x42663b64)));
+    path.cubic_to(
+        (f32::from_bits(0x42042c0a), f32::from_bits(0x4265ee98)),
+        (f32::from_bits(0x4204c6aa), f32::from_bits(0x4266199a)),
+        (f32::from_bits(0x4204e875), f32::from_bits(0x42663b64)),
+    );
     // 33.043f, 57.483f, 33.194f, 57.525f, 33.227f, 57.558f
-    path.cubic_to((f32::from_bits(0x42051ebb), f32::from_bits(0x42668937)), (f32::from_bits(0x42051ebb), f32::from_bits(0x42671893)), (f32::from_bits(0x42054085), f32::from_bits(0x426770a3)));
+    path.cubic_to(
+        (f32::from_bits(0x42051ebb), f32::from_bits(0x42668937)),
+        (f32::from_bits(0x42051ebb), f32::from_bits(0x42671893)),
+        (f32::from_bits(0x42054085), f32::from_bits(0x426770a3)),
+    );
     // 33.28f, 57.634f, 33.28f, 57.774f, 33.313f, 57.86f
-    path.cubic_to((f32::from_bits(0x42058314), f32::from_bits(0x4268a6e9)), (f32::from_bits(0x4206072d), f32::from_bits(0x4269d0e5)), (f32::from_bits(0x42061271), f32::from_bits(0x426b3e76)));
+    path.cubic_to(
+        (f32::from_bits(0x42058314), f32::from_bits(0x4268a6e9)),
+        (f32::from_bits(0x4206072d), f32::from_bits(0x4269d0e5)),
+        (f32::from_bits(0x42061271), f32::from_bits(0x426b3e76)),
+    );
     // 33.378f, 58.163f, 33.507f, 58.454f, 33.518f, 58.811f
-    path.cubic_to((f32::from_bits(0x4205e669), f32::from_bits(0x426b3e76)), (f32::from_bits(0x4205e669), f32::from_bits(0x426b49ba)), (f32::from_bits(0x4205b95a), f32::from_bits(0x426b5f3b)));
+    path.cubic_to(
+        (f32::from_bits(0x4205e669), f32::from_bits(0x426b3e76)),
+        (f32::from_bits(0x4205e669), f32::from_bits(0x426b49ba)),
+        (f32::from_bits(0x4205b95a), f32::from_bits(0x426b5f3b)),
+    );
     // 33.475f, 58.811f, 33.475f, 58.822f, 33.431f, 58.843f
-    path.cubic_to((f32::from_bits(0x42056c8d), f32::from_bits(0x426b5f3b)), (f32::from_bits(0x4204e875), f32::from_bits(0x426b75c2)), (f32::from_bits(0x4204b023), f32::from_bits(0x426b49ba)));
+    path.cubic_to(
+        (f32::from_bits(0x42056c8d), f32::from_bits(0x426b5f3b)),
+        (f32::from_bits(0x4204e875), f32::from_bits(0x426b75c2)),
+        (f32::from_bits(0x4204b023), f32::from_bits(0x426b49ba)),
+    );
     // 33.356f, 58.843f, 33.227f, 58.865f, 33.172f, 58.822f
     path.line_to((f32::from_bits(0x4204b023), f32::from_bits(0x426b3333)));
     // 33.172f, 58.8f
-    path.cubic_to((f32::from_bits(0x4204b023), f32::from_bits(0x426b27ef)), (f32::from_bits(0x42048f5e), f32::from_bits(0x426b072b)), (f32::from_bits(0x42048f5e), f32::from_bits(0x426b072b)));
+    path.cubic_to(
+        (f32::from_bits(0x4204b023), f32::from_bits(0x426b27ef)),
+        (f32::from_bits(0x42048f5e), f32::from_bits(0x426b072b)),
+        (f32::from_bits(0x42048f5e), f32::from_bits(0x426b072b)),
+    );
     // 33.172f, 58.789f, 33.14f, 58.757f, 33.14f, 58.757f
     path.move_to((f32::from_bits(0x42035918), f32::from_bits(0x426b6a7f)));
     // 32.837f, 58.854f
-    path.cubic_to((f32::from_bits(0x42032d10), f32::from_bits(0x426b6a7f)), (f32::from_bits(0x42030108), f32::from_bits(0x426b75c3)), (f32::from_bits(0x4202d4ff), f32::from_bits(0x426b75c3)));
+    path.cubic_to(
+        (f32::from_bits(0x42032d10), f32::from_bits(0x426b6a7f)),
+        (f32::from_bits(0x42030108), f32::from_bits(0x426b75c3)),
+        (f32::from_bits(0x4202d4ff), f32::from_bits(0x426b75c3)),
+    );
     // 32.794f, 58.854f, 32.751f, 58.865f, 32.708f, 58.865f
-    path.cubic_to((f32::from_bits(0x42026667), f32::from_bits(0x426b75c3)), (f32::from_bits(0x42020d51), f32::from_bits(0x426b5f3c)), (f32::from_bits(0x4201ec8c), f32::from_bits(0x426b27f0)));
+    path.cubic_to(
+        (f32::from_bits(0x42026667), f32::from_bits(0x426b75c3)),
+        (f32::from_bits(0x42020d51), f32::from_bits(0x426b5f3c)),
+        (f32::from_bits(0x4201ec8c), f32::from_bits(0x426b27f0)),
+    );
     // 32.6f, 58.865f, 32.513f, 58.843f, 32.481f, 58.789f
-    path.cubic_to((f32::from_bits(0x4201cbc7), f32::from_bits(0x426ae561)), (f32::from_bits(0x4201cbc7), f32::from_bits(0x426a6c8c)), (f32::from_bits(0x4201b540), f32::from_bits(0x426a0832)));
+    path.cubic_to(
+        (f32::from_bits(0x4201cbc7), f32::from_bits(0x426ae561)),
+        (f32::from_bits(0x4201cbc7), f32::from_bits(0x426a6c8c)),
+        (f32::from_bits(0x4201b540), f32::from_bits(0x426a0832)),
+    );
     // 32.449f, 58.724f, 32.449f, 58.606f, 32.427f, 58.508f
-    path.cubic_to((f32::from_bits(0x42018938), f32::from_bits(0x426920c5)), (f32::from_bits(0x42016873), f32::from_bits(0x42683853)), (f32::from_bits(0x42013021), f32::from_bits(0x42672f1b)));
+    path.cubic_to(
+        (f32::from_bits(0x42018938), f32::from_bits(0x426920c5)),
+        (f32::from_bits(0x42016873), f32::from_bits(0x42683853)),
+        (f32::from_bits(0x42013021), f32::from_bits(0x42672f1b)),
+    );
     // 32.384f, 58.282f, 32.352f, 58.055f, 32.297f, 57.796f
-    path.cubic_to((f32::from_bits(0x42013021), f32::from_bits(0x4267020d)), (f32::from_bits(0x4200f9db), f32::from_bits(0x42669375)), (f32::from_bits(0x4200f9db), f32::from_bits(0x426651ec)));
+    path.cubic_to(
+        (f32::from_bits(0x42013021), f32::from_bits(0x4267020d)),
+        (f32::from_bits(0x4200f9db), f32::from_bits(0x42669375)),
+        (f32::from_bits(0x4200f9db), f32::from_bits(0x426651ec)),
+    );
     // 32.297f, 57.752f, 32.244f, 57.644f, 32.244f, 57.58f
-    path.cubic_to((f32::from_bits(0x42010418), f32::from_bits(0x4266199a)), (f32::from_bits(0x420151eb), f32::from_bits(0x4265ee98)), (f32::from_bits(0x42018937), f32::from_bits(0x4265ee98)));
+    path.cubic_to(
+        (f32::from_bits(0x42010418), f32::from_bits(0x4266199a)),
+        (f32::from_bits(0x420151eb), f32::from_bits(0x4265ee98)),
+        (f32::from_bits(0x42018937), f32::from_bits(0x4265ee98)),
+    );
     // 32.254f, 57.525f, 32.33f, 57.483f, 32.384f, 57.483f
-    path.cubic_to((f32::from_bits(0x4201e147), f32::from_bits(0x4265e24e)), (f32::from_bits(0x42022f1a), f32::from_bits(0x4265ee98)), (f32::from_bits(0x42023a5e), f32::from_bits(0x4266199a)));
+    path.cubic_to(
+        (f32::from_bits(0x4201e147), f32::from_bits(0x4265e24e)),
+        (f32::from_bits(0x42022f1a), f32::from_bits(0x4265ee98)),
+        (f32::from_bits(0x42023a5e), f32::from_bits(0x4266199a)),
+    );
     // 32.47f, 57.471f, 32.546f, 57.483f, 32.557f, 57.525f
-    path.cubic_to((f32::from_bits(0x420271aa), f32::from_bits(0x42665c29)), (f32::from_bits(0x42027be7), f32::from_bits(0x42670d50)), (f32::from_bits(0x42029db2), f32::from_bits(0x426770a4)));
+    path.cubic_to(
+        (f32::from_bits(0x420271aa), f32::from_bits(0x42665c29)),
+        (f32::from_bits(0x42027be7), f32::from_bits(0x42670d50)),
+        (f32::from_bits(0x42029db2), f32::from_bits(0x426770a4)),
+    );
     // 32.611f, 57.59f, 32.621f, 57.763f, 32.654f, 57.86f
-    path.cubic_to((f32::from_bits(0x42029db2), f32::from_bits(0x4267be77)), (f32::from_bits(0x4202d4fe), f32::from_bits(0x4268178d)), (f32::from_bits(0x4202e041), f32::from_bits(0x42684ed9)));
+    path.cubic_to(
+        (f32::from_bits(0x42029db2), f32::from_bits(0x4267be77)),
+        (f32::from_bits(0x4202d4fe), f32::from_bits(0x4268178d)),
+        (f32::from_bits(0x4202e041), f32::from_bits(0x42684ed9)),
+    );
     // 32.654f, 57.936f, 32.708f, 58.023f, 32.719f, 58.077f
-    path.cubic_to((f32::from_bits(0x4202ea7e), f32::from_bits(0x4268bc6a)), (f32::from_bits(0x4202ea7e), f32::from_bits(0x4268fefa)), (f32::from_bits(0x42030106), f32::from_bits(0x42695810)));
+    path.cubic_to(
+        (f32::from_bits(0x4202ea7e), f32::from_bits(0x4268bc6a)),
+        (f32::from_bits(0x4202ea7e), f32::from_bits(0x4268fefa)),
+        (f32::from_bits(0x42030106), f32::from_bits(0x42695810)),
+    );
     // 32.729f, 58.184f, 32.729f, 58.249f, 32.751f, 58.336f
-    path.cubic_to((f32::from_bits(0x420322d1), f32::from_bits(0x4269fced)), (f32::from_bits(0x4203645a), f32::from_bits(0x426a820c)), (f32::from_bits(0x4203645a), f32::from_bits(0x426b49ba)));
+    path.cubic_to(
+        (f32::from_bits(0x420322d1), f32::from_bits(0x4269fced)),
+        (f32::from_bits(0x4203645a), f32::from_bits(0x426a820c)),
+        (f32::from_bits(0x4203645a), f32::from_bits(0x426b49ba)),
+    );
     // 32.784f, 58.497f, 32.848f, 58.627f, 32.848f, 58.822f
-    path.cubic_to((f32::from_bits(0x42034395), f32::from_bits(0x426b49ba)), (f32::from_bits(0x42035916), f32::from_bits(0x426b49ba)), (f32::from_bits(0x42035916), f32::from_bits(0x426b6a7f)));
+    path.cubic_to(
+        (f32::from_bits(0x42034395), f32::from_bits(0x426b49ba)),
+        (f32::from_bits(0x42035916), f32::from_bits(0x426b49ba)),
+        (f32::from_bits(0x42035916), f32::from_bits(0x426b6a7f)),
+    );
     // 32.816f, 58.822f, 32.837f, 58.822f, 32.837f, 58.854f
     path.move_to((f32::from_bits(0x42009580), f32::from_bits(0x426b6a7f)));
     // 32.146f, 58.854f
     path.line_to((f32::from_bits(0x42008b43), f32::from_bits(0x426b8106)));
     // 32.136f, 58.876f
-    path.cubic_to((f32::from_bits(0x42007fff), f32::from_bits(0x426b8106)), (f32::from_bits(0x42005e35), f32::from_bits(0x426b75c2)), (f32::from_bits(0x420048b4), f32::from_bits(0x426b8106)));
+    path.cubic_to(
+        (f32::from_bits(0x42007fff), f32::from_bits(0x426b8106)),
+        (f32::from_bits(0x42005e35), f32::from_bits(0x426b75c2)),
+        (f32::from_bits(0x420048b4), f32::from_bits(0x426b8106)),
+    );
     // 32.125f, 58.876f, 32.092f, 58.865f, 32.071f, 58.876f
-    path.cubic_to((f32::from_bits(0x41fdcccc), f32::from_bits(0x426bad0e)), (f32::from_bits(0x41f94dd2), f32::from_bits(0x426b8c4a)), (f32::from_bits(0x41f6cccc), f32::from_bits(0x426b8c4a)));
+    path.cubic_to(
+        (f32::from_bits(0x41fdcccc), f32::from_bits(0x426bad0e)),
+        (f32::from_bits(0x41f94dd2), f32::from_bits(0x426b8c4a)),
+        (f32::from_bits(0x41f6cccc), f32::from_bits(0x426b8c4a)),
+    );
     // 31.725f, 58.919f, 31.163f, 58.887f, 30.85f, 58.887f
-    path.cubic_to((f32::from_bits(0x41f65e34), f32::from_bits(0x426b8106)), (f32::from_bits(0x41f39ba5), f32::from_bits(0x426b8106)), (f32::from_bits(0x41f35810), f32::from_bits(0x426b49bb)));
+    path.cubic_to(
+        (f32::from_bits(0x41f65e34), f32::from_bits(0x426b8106)),
+        (f32::from_bits(0x41f39ba5), f32::from_bits(0x426b8106)),
+        (f32::from_bits(0x41f35810), f32::from_bits(0x426b49bb)),
+    );
     // 30.796f, 58.876f, 30.451f, 58.876f, 30.418f, 58.822f
-    path.cubic_to((f32::from_bits(0x41f35810), f32::from_bits(0x426b3334)), (f32::from_bits(0x41f2e978), f32::from_bits(0x4267926f)), (f32::from_bits(0x41f31687), f32::from_bits(0x426723d8)));
+    path.cubic_to(
+        (f32::from_bits(0x41f35810), f32::from_bits(0x426b3334)),
+        (f32::from_bits(0x41f2e978), f32::from_bits(0x4267926f)),
+        (f32::from_bits(0x41f31687), f32::from_bits(0x426723d8)),
+    );
     // 30.418f, 58.8f, 30.364f, 57.893f, 30.386f, 57.785f
     path.line_to((f32::from_bits(0x41f36e97), f32::from_bits(0x4266ec8c)));
     // 30.429f, 57.731f
-    path.cubic_to((f32::from_bits(0x41f3f3b6), f32::from_bits(0x4266b540)), (f32::from_bits(0x41f4d0e5), f32::from_bits(0x4266b540)), (f32::from_bits(0x41f58106), f32::from_bits(0x42669eb9)));
+    path.cubic_to(
+        (f32::from_bits(0x41f3f3b6), f32::from_bits(0x4266b540)),
+        (f32::from_bits(0x41f4d0e5), f32::from_bits(0x4266b540)),
+        (f32::from_bits(0x41f58106), f32::from_bits(0x42669eb9)),
+    );
     // 30.494f, 57.677f, 30.602f, 57.677f, 30.688f, 57.655f
-    path.cubic_to((f32::from_bits(0x41f7ed91), f32::from_bits(0x42663b65)), (f32::from_bits(0x41fac6a8), f32::from_bits(0x4265ee98)), (f32::from_bits(0x41fdb646), f32::from_bits(0x4265d811)));
+    path.cubic_to(
+        (f32::from_bits(0x41f7ed91), f32::from_bits(0x42663b65)),
+        (f32::from_bits(0x41fac6a8), f32::from_bits(0x4265ee98)),
+        (f32::from_bits(0x41fdb646), f32::from_bits(0x4265d811)),
+    );
     // 30.991f, 57.558f, 31.347f, 57.483f, 31.714f, 57.461f
-    path.cubic_to((f32::from_bits(0x41fe51ec), f32::from_bits(0x4265c18a)), (f32::from_bits(0x41ff2f1b), f32::from_bits(0x4265d811)), (f32::from_bits(0x41ff872b), f32::from_bits(0x4265f8d6)));
+    path.cubic_to(
+        (f32::from_bits(0x41fe51ec), f32::from_bits(0x4265c18a)),
+        (f32::from_bits(0x41ff2f1b), f32::from_bits(0x4265d811)),
+        (f32::from_bits(0x41ff872b), f32::from_bits(0x4265f8d6)),
+    );
     // 31.79f, 57.439f, 31.898f, 57.461f, 31.941f, 57.493f
-    path.cubic_to((f32::from_bits(0x41ffb439), f32::from_bits(0x4266199b)), (f32::from_bits(0x41ffb439), f32::from_bits(0x42669eb9)), (f32::from_bits(0x41ffdf3b), f32::from_bits(0x4266d605)));
+    path.cubic_to(
+        (f32::from_bits(0x41ffb439), f32::from_bits(0x4266199b)),
+        (f32::from_bits(0x41ffb439), f32::from_bits(0x42669eb9)),
+        (f32::from_bits(0x41ffdf3b), f32::from_bits(0x4266d605)),
+    );
     // 31.963f, 57.525f, 31.963f, 57.655f, 31.984f, 57.709f
-    path.cubic_to((f32::from_bits(0x41fff5c2), f32::from_bits(0x42670d51)), (f32::from_bits(0x42001cac), f32::from_bits(0x42675b24)), (f32::from_bits(0x42001cac), f32::from_bits(0x4267926f)));
+    path.cubic_to(
+        (f32::from_bits(0x41fff5c2), f32::from_bits(0x42670d51)),
+        (f32::from_bits(0x42001cac), f32::from_bits(0x42675b24)),
+        (f32::from_bits(0x42001cac), f32::from_bits(0x4267926f)),
+    );
     // 31.995f, 57.763f, 32.028f, 57.839f, 32.028f, 57.893f
-    path.cubic_to((f32::from_bits(0x42003d71), f32::from_bits(0x42684290)), (f32::from_bits(0x420048b4), f32::from_bits(0x4268c7ae)), (f32::from_bits(0x42005e35), f32::from_bits(0x42696d92)));
+    path.cubic_to(
+        (f32::from_bits(0x42003d71), f32::from_bits(0x42684290)),
+        (f32::from_bits(0x420048b4), f32::from_bits(0x4268c7ae)),
+        (f32::from_bits(0x42005e35), f32::from_bits(0x42696d92)),
+    );
     // 32.06f, 58.065f, 32.071f, 58.195f, 32.092f, 58.357f
-    path.cubic_to((f32::from_bits(0x42008000), f32::from_bits(0x4269d0e6)), (f32::from_bits(0x4200ac08), f32::from_bits(0x426a5605)), (f32::from_bits(0x4200b74c), f32::from_bits(0x426acfe0)));
+    path.cubic_to(
+        (f32::from_bits(0x42008000), f32::from_bits(0x4269d0e6)),
+        (f32::from_bits(0x4200ac08), f32::from_bits(0x426a5605)),
+        (f32::from_bits(0x4200b74c), f32::from_bits(0x426acfe0)),
+    );
     // 32.125f, 58.454f, 32.168f, 58.584f, 32.179f, 58.703f
-    path.cubic_to((f32::from_bits(0x4200c189), f32::from_bits(0x426b072c)), (f32::from_bits(0x4200b74c), f32::from_bits(0x426b49bb)), (f32::from_bits(0x42009581), f32::from_bits(0x426b6a80)));
+    path.cubic_to(
+        (f32::from_bits(0x4200c189), f32::from_bits(0x426b072c)),
+        (f32::from_bits(0x4200b74c), f32::from_bits(0x426b49bb)),
+        (f32::from_bits(0x42009581), f32::from_bits(0x426b6a80)),
+    );
     // 32.189f, 58.757f, 32.179f, 58.822f, 32.146f, 58.854f
     path.move_to((f32::from_bits(0x41eeae14), f32::from_bits(0x426bef9f)));
     // 29.835f, 58.984f
-    path.cubic_to((f32::from_bits(0x41ee8312), f32::from_bits(0x426c26eb)), (f32::from_bits(0x41ed353f), f32::from_bits(0x426c52f3)), (f32::from_bits(0x41ecc8b4), f32::from_bits(0x426c73b8)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee8312), f32::from_bits(0x426c26eb)),
+        (f32::from_bits(0x41ed353f), f32::from_bits(0x426c52f3)),
+        (f32::from_bits(0x41ecc8b4), f32::from_bits(0x426c73b8)),
+    );
     // 29.814f, 59.038f, 29.651f, 59.081f, 29.598f, 59.113f
-    path.cubic_to((f32::from_bits(0x41eb7ae1), f32::from_bits(0x426cd70c)), (f32::from_bits(0x41ea3127), f32::from_bits(0x426d9376)), (f32::from_bits(0x41e96872), f32::from_bits(0x426e2e16)));
+    path.cubic_to(
+        (f32::from_bits(0x41eb7ae1), f32::from_bits(0x426cd70c)),
+        (f32::from_bits(0x41ea3127), f32::from_bits(0x426d9376)),
+        (f32::from_bits(0x41e96872), f32::from_bits(0x426e2e16)),
+    );
     // 29.435f, 59.21f, 29.274f, 59.394f, 29.176f, 59.545f
-    path.cubic_to((f32::from_bits(0x41e88b43), f32::from_bits(0x426ed3f9)), (f32::from_bits(0x41e7c49b), f32::from_bits(0x426fdd31)), (f32::from_bits(0x41e6a5e3), f32::from_bits(0x4270570c)));
+    path.cubic_to(
+        (f32::from_bits(0x41e88b43), f32::from_bits(0x426ed3f9)),
+        (f32::from_bits(0x41e7c49b), f32::from_bits(0x426fdd31)),
+        (f32::from_bits(0x41e6a5e3), f32::from_bits(0x4270570c)),
+    );
     // 29.068f, 59.707f, 28.971f, 59.966f, 28.831f, 60.085f
-    path.cubic_to((f32::from_bits(0x41e678d5), f32::from_bits(0x427078d7)), (f32::from_bits(0x41e6624d), f32::from_bits(0x42706d93)), (f32::from_bits(0x41e620c4), f32::from_bits(0x427078d7)));
+    path.cubic_to(
+        (f32::from_bits(0x41e678d5), f32::from_bits(0x427078d7)),
+        (f32::from_bits(0x41e6624d), f32::from_bits(0x42706d93)),
+        (f32::from_bits(0x41e620c4), f32::from_bits(0x427078d7)),
+    );
     // 28.809f, 60.118f, 28.798f, 60.107f, 28.766f, 60.118f
-    path.cubic_to((f32::from_bits(0x41e60a3d), f32::from_bits(0x4270841b)), (f32::from_bits(0x41e5f3b6), f32::from_bits(0x4270999c)), (f32::from_bits(0x41e5f3b6), f32::from_bits(0x4270999c)));
+    path.cubic_to(
+        (f32::from_bits(0x41e60a3d), f32::from_bits(0x4270841b)),
+        (f32::from_bits(0x41e5f3b6), f32::from_bits(0x4270999c)),
+        (f32::from_bits(0x41e5f3b6), f32::from_bits(0x4270999c)),
+    );
     // 28.755f, 60.129f, 28.744f, 60.15f, 28.744f, 60.15f
-    path.cubic_to((f32::from_bits(0x41e52d0e), f32::from_bits(0x4270d0e8)), (f32::from_bits(0x41e49374), f32::from_bits(0x4270e76f)), (f32::from_bits(0x41e39fbe), f32::from_bits(0x4270fcf0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e52d0e), f32::from_bits(0x4270d0e8)),
+        (f32::from_bits(0x41e49374), f32::from_bits(0x4270e76f)),
+        (f32::from_bits(0x41e39fbe), f32::from_bits(0x4270fcf0)),
+    );
     // 28.647f, 60.204f, 28.572f, 60.226f, 28.453f, 60.247f
-    path.cubic_to((f32::from_bits(0x41e2c28f), f32::from_bits(0x42711377)), (f32::from_bits(0x41e1a1ca), f32::from_bits(0x42714ac3)), (f32::from_bits(0x41e03f7c), f32::from_bits(0x4271343c)));
+    path.cubic_to(
+        (f32::from_bits(0x41e2c28f), f32::from_bits(0x42711377)),
+        (f32::from_bits(0x41e1a1ca), f32::from_bits(0x42714ac3)),
+        (f32::from_bits(0x41e03f7c), f32::from_bits(0x4271343c)),
+    );
     // 28.345f, 60.269f, 28.204f, 60.323f, 28.031f, 60.301f
-    path.cubic_to((f32::from_bits(0x41de2d0d), f32::from_bits(0x42711377)), (f32::from_bits(0x41e0c49b), f32::from_bits(0x426e9caf)), (f32::from_bits(0x41e149b9), f32::from_bits(0x426e23da)));
+    path.cubic_to(
+        (f32::from_bits(0x41de2d0d), f32::from_bits(0x42711377)),
+        (f32::from_bits(0x41e0c49b), f32::from_bits(0x426e9caf)),
+        (f32::from_bits(0x41e149b9), f32::from_bits(0x426e23da)),
+    );
     // 27.772f, 60.269f, 28.096f, 59.653f, 28.161f, 59.535f
-    path.cubic_to((f32::from_bits(0x41e23d6f), f32::from_bits(0x426d2f1e)), (f32::from_bits(0x41e38936), f32::from_bits(0x426c52f5)), (f32::from_bits(0x41e4eb84), f32::from_bits(0x426b8109)));
+    path.cubic_to(
+        (f32::from_bits(0x41e23d6f), f32::from_bits(0x426d2f1e)),
+        (f32::from_bits(0x41e38936), f32::from_bits(0x426c52f5)),
+        (f32::from_bits(0x41e4eb84), f32::from_bits(0x426b8109)),
+    );
     // 28.28f, 59.296f, 28.442f, 59.081f, 28.615f, 58.876f
-    path.cubic_to((f32::from_bits(0x41e55a1c), f32::from_bits(0x426b49bd)), (f32::from_bits(0x41e5dd2e), f32::from_bits(0x426b1caf)), (f32::from_bits(0x41e6624d), f32::from_bits(0x426ae563)));
+    path.cubic_to(
+        (f32::from_bits(0x41e55a1c), f32::from_bits(0x426b49bd)),
+        (f32::from_bits(0x41e5dd2e), f32::from_bits(0x426b1caf)),
+        (f32::from_bits(0x41e6624d), f32::from_bits(0x426ae563)),
+    );
     // 28.669f, 58.822f, 28.733f, 58.778f, 28.798f, 58.724f
-    path.cubic_to((f32::from_bits(0x41e78312), f32::from_bits(0x426a77d2)), (f32::from_bits(0x41e88b43), f32::from_bits(0x4269fcf0)), (f32::from_bits(0x41e99580), f32::from_bits(0x42698f5f)));
+    path.cubic_to(
+        (f32::from_bits(0x41e78312), f32::from_bits(0x426a77d2)),
+        (f32::from_bits(0x41e88b43), f32::from_bits(0x4269fcf0)),
+        (f32::from_bits(0x41e99580), f32::from_bits(0x42698f5f)),
+    );
     // 28.939f, 58.617f, 29.068f, 58.497f, 29.198f, 58.39f
-    path.cubic_to((f32::from_bits(0x41ea3126), f32::from_bits(0x42695813)), (f32::from_bits(0x41edd0e4), f32::from_bits(0x4267a7f2)), (f32::from_bits(0x41eeae13), f32::from_bits(0x42684292)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea3126), f32::from_bits(0x42695813)),
+        (f32::from_bits(0x41edd0e4), f32::from_bits(0x4267a7f2)),
+        (f32::from_bits(0x41eeae13), f32::from_bits(0x42684292)),
+    );
     // 29.274f, 58.336f, 29.727f, 57.914f, 29.835f, 58.065f
-    path.cubic_to((f32::from_bits(0x41eeae13), f32::from_bits(0x42684292)), (f32::from_bits(0x41eec49a), f32::from_bits(0x42684edc)), (f32::from_bits(0x41eec49a), f32::from_bits(0x42685919)));
+    path.cubic_to(
+        (f32::from_bits(0x41eeae13), f32::from_bits(0x42684292)),
+        (f32::from_bits(0x41eec49a), f32::from_bits(0x42684edc)),
+        (f32::from_bits(0x41eec49a), f32::from_bits(0x42685919)),
+    );
     // 29.835f, 58.065f, 29.846f, 58.077f, 29.846f, 58.087f
-    path.cubic_to((f32::from_bits(0x41ef0623), f32::from_bits(0x4268a6ec)), (f32::from_bits(0x41eedb21), f32::from_bits(0x426bb854)), (f32::from_bits(0x41eeae13), f32::from_bits(0x426befa0)));
+    path.cubic_to(
+        (f32::from_bits(0x41ef0623), f32::from_bits(0x4268a6ec)),
+        (f32::from_bits(0x41eedb21), f32::from_bits(0x426bb854)),
+        (f32::from_bits(0x41eeae13), f32::from_bits(0x426befa0)),
+    );
     // 29.878f, 58.163f, 29.857f, 58.93f, 29.835f, 58.984f
     path.move_to((f32::from_bits(0x41eaf7cd), f32::from_bits(0x4258947d)));
     // 29.371f, 54.145f
-    path.cubic_to((f32::from_bits(0x41ebd4fc), f32::from_bits(0x425873b8)), (f32::from_bits(0x41ed353e), f32::from_bits(0x42589fc1)), (f32::from_bits(0x41edba5c), f32::from_bits(0x4258ab04)));
+    path.cubic_to(
+        (f32::from_bits(0x41ebd4fc), f32::from_bits(0x425873b8)),
+        (f32::from_bits(0x41ed353e), f32::from_bits(0x42589fc1)),
+        (f32::from_bits(0x41edba5c), f32::from_bits(0x4258ab04)),
+    );
     // 29.479f, 54.113f, 29.651f, 54.156f, 29.716f, 54.167f
-    path.cubic_to((f32::from_bits(0x41ede76a), f32::from_bits(0x4259c9bc)), (f32::from_bits(0x41ee3f7b), f32::from_bits(0x425b6e9a)), (f32::from_bits(0x41ee126c), f32::from_bits(0x425c8314)));
+    path.cubic_to(
+        (f32::from_bits(0x41ede76a), f32::from_bits(0x4259c9bc)),
+        (f32::from_bits(0x41ee3f7b), f32::from_bits(0x425b6e9a)),
+        (f32::from_bits(0x41ee126c), f32::from_bits(0x425c8314)),
+    );
     // 29.738f, 54.447f, 29.781f, 54.858f, 29.759f, 55.128f
-    path.cubic_to((f32::from_bits(0x41ede76a), f32::from_bits(0x425d343b)), (f32::from_bits(0x41ee5602), f32::from_bits(0x425dda1e)), (f32::from_bits(0x41edd0e3), f32::from_bits(0x425e74be)));
+    path.cubic_to(
+        (f32::from_bits(0x41ede76a), f32::from_bits(0x425d343b)),
+        (f32::from_bits(0x41ee5602), f32::from_bits(0x425dda1e)),
+        (f32::from_bits(0x41edd0e3), f32::from_bits(0x425e74be)),
+    );
     // 29.738f, 55.301f, 29.792f, 55.463f, 29.727f, 55.614f
-    path.cubic_to((f32::from_bits(0x41ed624b), f32::from_bits(0x425f1aa1)), (f32::from_bits(0x41ec6e95), f32::from_bits(0x425f947c)), (f32::from_bits(0x41ebd4fc), f32::from_bits(0x426023d9)));
+    path.cubic_to(
+        (f32::from_bits(0x41ed624b), f32::from_bits(0x425f1aa1)),
+        (f32::from_bits(0x41ec6e95), f32::from_bits(0x425f947c)),
+        (f32::from_bits(0x41ebd4fc), f32::from_bits(0x426023d9)),
+    );
     // 29.673f, 55.776f, 29.554f, 55.895f, 29.479f, 56.035f
-    path.cubic_to((f32::from_bits(0x41eb22cf), f32::from_bits(0x4260c9bc)), (f32::from_bits(0x41ea5c27), f32::from_bits(0x4261645c)), (f32::from_bits(0x41e9957f), f32::from_bits(0x42621583)));
+    path.cubic_to(
+        (f32::from_bits(0x41eb22cf), f32::from_bits(0x4260c9bc)),
+        (f32::from_bits(0x41ea5c27), f32::from_bits(0x4261645c)),
+        (f32::from_bits(0x41e9957f), f32::from_bits(0x42621583)),
+    );
     // 29.392f, 56.197f, 29.295f, 56.348f, 29.198f, 56.521f
-    path.cubic_to((f32::from_bits(0x41e8e55e), f32::from_bits(0x4262c6aa)), (f32::from_bits(0x41e849b8), f32::from_bits(0x42638314)), (f32::from_bits(0x41e78310), f32::from_bits(0x426427f2)));
+    path.cubic_to(
+        (f32::from_bits(0x41e8e55e), f32::from_bits(0x4262c6aa)),
+        (f32::from_bits(0x41e849b8), f32::from_bits(0x42638314)),
+        (f32::from_bits(0x41e78310), f32::from_bits(0x426427f2)),
+    );
     // 29.112f, 56.694f, 29.036f, 56.878f, 28.939f, 57.039f
-    path.cubic_to((f32::from_bits(0x41e72b00), f32::from_bits(0x42646b88)), (f32::from_bits(0x41e6e76a), f32::from_bits(0x4264b854)), (f32::from_bits(0x41e68f5a), f32::from_bits(0x4264efa0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e72b00), f32::from_bits(0x42646b88)),
+        (f32::from_bits(0x41e6e76a), f32::from_bits(0x4264b854)),
+        (f32::from_bits(0x41e68f5a), f32::from_bits(0x4264efa0)),
+    );
     // 28.896f, 57.105f, 28.863f, 57.18f, 28.82f, 57.234f
-    path.cubic_to((f32::from_bits(0x41e6624c), f32::from_bits(0x42651ba8)), (f32::from_bits(0x41e60a3b), f32::from_bits(0x4265322f)), (f32::from_bits(0x41e5dd2d), f32::from_bits(0x426552f4)));
+    path.cubic_to(
+        (f32::from_bits(0x41e6624c), f32::from_bits(0x42651ba8)),
+        (f32::from_bits(0x41e60a3b), f32::from_bits(0x4265322f)),
+        (f32::from_bits(0x41e5dd2d), f32::from_bits(0x426552f4)),
+    );
     // 28.798f, 57.277f, 28.755f, 57.299f, 28.733f, 57.331f
-    path.cubic_to((f32::from_bits(0x41e570a2), f32::from_bits(0x4264ad11)), (f32::from_bits(0x41e620c3), f32::from_bits(0x4263c49e)), (f32::from_bits(0x41e6624c), f32::from_bits(0x426329fe)));
+    path.cubic_to(
+        (f32::from_bits(0x41e570a2), f32::from_bits(0x4264ad11)),
+        (f32::from_bits(0x41e620c3), f32::from_bits(0x4263c49e)),
+        (f32::from_bits(0x41e6624c), f32::from_bits(0x426329fe)),
+    );
     // 28.68f, 57.169f, 28.766f, 56.942f, 28.798f, 56.791f
-    path.cubic_to((f32::from_bits(0x41e6a5e2), f32::from_bits(0x4262418b)), (f32::from_bits(0x41e6e76b), f32::from_bits(0x42617ae3)), (f32::from_bits(0x41e72b00), f32::from_bits(0x42609271)));
+    path.cubic_to(
+        (f32::from_bits(0x41e6a5e2), f32::from_bits(0x4262418b)),
+        (f32::from_bits(0x41e6e76b), f32::from_bits(0x42617ae3)),
+        (f32::from_bits(0x41e72b00), f32::from_bits(0x42609271)),
+    );
     // 28.831f, 56.564f, 28.863f, 56.37f, 28.896f, 56.143f
-    path.cubic_to((f32::from_bits(0x41e75602), f32::from_bits(0x42604fe2)), (f32::from_bits(0x41e7978b), f32::from_bits(0x425fe250)), (f32::from_bits(0x41e7c49a), f32::from_bits(0x425f9fc1)));
+    path.cubic_to(
+        (f32::from_bits(0x41e75602), f32::from_bits(0x42604fe2)),
+        (f32::from_bits(0x41e7978b), f32::from_bits(0x425fe250)),
+        (f32::from_bits(0x41e7c49a), f32::from_bits(0x425f9fc1)),
+    );
     // 28.917f, 56.078f, 28.949f, 55.971f, 28.971f, 55.906f
-    path.cubic_to((f32::from_bits(0x41e7db21), f32::from_bits(0x425f25e6)), (f32::from_bits(0x41e7db21), f32::from_bits(0x425ec18c)), (f32::from_bits(0x41e80623), f32::from_bits(0x425e53fa)));
+    path.cubic_to(
+        (f32::from_bits(0x41e7db21), f32::from_bits(0x425f25e6)),
+        (f32::from_bits(0x41e7db21), f32::from_bits(0x425ec18c)),
+        (f32::from_bits(0x41e80623), f32::from_bits(0x425e53fa)),
+    );
     // 28.982f, 55.787f, 28.982f, 55.689f, 29.003f, 55.582f
     path.line_to((f32::from_bits(0x41e849b9), f32::from_bits(0x425e26ec)));
     // 29.036f, 55.538f
-    path.cubic_to((f32::from_bits(0x41e874bb), f32::from_bits(0x425da2d3)), (f32::from_bits(0x41e8b851), f32::from_bits(0x425d28f8)), (f32::from_bits(0x41e8e55f), f32::from_bits(0x425caf1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e874bb), f32::from_bits(0x425da2d3)),
+        (f32::from_bits(0x41e8b851), f32::from_bits(0x425d28f8)),
+        (f32::from_bits(0x41e8e55f), f32::from_bits(0x425caf1d)),
+    );
     // 29.057f, 55.409f, 29.09f, 55.29f, 29.112f, 55.171f
-    path.cubic_to((f32::from_bits(0x41e93b63), f32::from_bits(0x425b8f5f)), (f32::from_bits(0x41e97ef9), f32::from_bits(0x425a7ae4)), (f32::from_bits(0x41ea0417), f32::from_bits(0x42596669)));
+    path.cubic_to(
+        (f32::from_bits(0x41e93b63), f32::from_bits(0x425b8f5f)),
+        (f32::from_bits(0x41e97ef9), f32::from_bits(0x425a7ae4)),
+        (f32::from_bits(0x41ea0417), f32::from_bits(0x42596669)),
+    );
     // 29.154f, 54.89f, 29.187f, 54.62f, 29.252f, 54.35f
-    path.cubic_to((f32::from_bits(0x41ea3125), f32::from_bits(0x4259199c)), (f32::from_bits(0x41ea5c27), f32::from_bits(0x4258ab05)), (f32::from_bits(0x41eaf7cd), f32::from_bits(0x4258947d)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea3125), f32::from_bits(0x4259199c)),
+        (f32::from_bits(0x41ea5c27), f32::from_bits(0x4258ab05)),
+        (f32::from_bits(0x41eaf7cd), f32::from_bits(0x4258947d)),
+    );
     // 29.274f, 54.275f, 29.295f, 54.167f, 29.371f, 54.145f
     path.move_to((f32::from_bits(0x41e96871), f32::from_bits(0x4256a2d3)));
     // 29.176f, 53.659f
-    path.cubic_to((f32::from_bits(0x41e953f6), f32::from_bits(0x4256e562)), (f32::from_bits(0x41e96871), f32::from_bits(0x425727f2)), (f32::from_bits(0x41e93b63), f32::from_bits(0x42575f3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e953f6), f32::from_bits(0x4256e562)),
+        (f32::from_bits(0x41e96871), f32::from_bits(0x425727f2)),
+        (f32::from_bits(0x41e93b63), f32::from_bits(0x42575f3d)),
+    );
     // 29.166f, 53.724f, 29.176f, 53.789f, 29.154f, 53.843f
-    path.cubic_to((f32::from_bits(0x41e8fbe6), f32::from_bits(0x42578002)), (f32::from_bits(0x41e88b42), f32::from_bits(0x42578002)), (f32::from_bits(0x41e81cab), f32::from_bits(0x42578002)));
+    path.cubic_to(
+        (f32::from_bits(0x41e8fbe6), f32::from_bits(0x42578002)),
+        (f32::from_bits(0x41e88b42), f32::from_bits(0x42578002)),
+        (f32::from_bits(0x41e81cab), f32::from_bits(0x42578002)),
+    );
     // 29.123f, 53.875f, 29.068f, 53.875f, 29.014f, 53.875f
-    path.cubic_to((f32::from_bits(0x41e7db22), f32::from_bits(0x42578002)), (f32::from_bits(0x41e78311), f32::from_bits(0x42576a81)), (f32::from_bits(0x41e75603), f32::from_bits(0x42575f3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e7db22), f32::from_bits(0x42578002)),
+        (f32::from_bits(0x41e78311), f32::from_bits(0x42576a81)),
+        (f32::from_bits(0x41e75603), f32::from_bits(0x42575f3d)),
+    );
     // 28.982f, 53.875f, 28.939f, 53.854f, 28.917f, 53.843f
-    path.cubic_to((f32::from_bits(0x41e72b01), f32::from_bits(0x4257322f)), (f32::from_bits(0x41e72b01), f32::from_bits(0x4257322f)), (f32::from_bits(0x41e72b01), f32::from_bits(0x4256fbe9)));
+    path.cubic_to(
+        (f32::from_bits(0x41e72b01), f32::from_bits(0x4257322f)),
+        (f32::from_bits(0x41e72b01), f32::from_bits(0x4257322f)),
+        (f32::from_bits(0x41e72b01), f32::from_bits(0x4256fbe9)),
+    );
     // 28.896f, 53.799f, 28.896f, 53.799f, 28.896f, 53.746f
-    path.cubic_to((f32::from_bits(0x41e72b01), f32::from_bits(0x4256b95a)), (f32::from_bits(0x41e78311), f32::from_bits(0x42564ac2)), (f32::from_bits(0x41e7978c), f32::from_bits(0x42561376)));
+    path.cubic_to(
+        (f32::from_bits(0x41e72b01), f32::from_bits(0x4256b95a)),
+        (f32::from_bits(0x41e78311), f32::from_bits(0x42564ac2)),
+        (f32::from_bits(0x41e7978c), f32::from_bits(0x42561376)),
+    );
     // 28.896f, 53.681f, 28.939f, 53.573f, 28.949f, 53.519f
-    path.cubic_to((f32::from_bits(0x41e7db22), f32::from_bits(0x4255570c)), (f32::from_bits(0x41e80624), f32::from_bits(0x4254b128)), (f32::from_bits(0x41e86040), f32::from_bits(0x42540b45)));
+    path.cubic_to(
+        (f32::from_bits(0x41e7db22), f32::from_bits(0x4255570c)),
+        (f32::from_bits(0x41e80624), f32::from_bits(0x4254b128)),
+        (f32::from_bits(0x41e86040), f32::from_bits(0x42540b45)),
+    );
     // 28.982f, 53.335f, 29.003f, 53.173f, 29.047f, 53.011f
-    path.cubic_to((f32::from_bits(0x41e874bb), f32::from_bits(0x4253cac2)), (f32::from_bits(0x41e86040), f32::from_bits(0x4253916a)), (f32::from_bits(0x41e8b850), f32::from_bits(0x42536562)));
+    path.cubic_to(
+        (f32::from_bits(0x41e874bb), f32::from_bits(0x4253cac2)),
+        (f32::from_bits(0x41e86040), f32::from_bits(0x4253916a)),
+        (f32::from_bits(0x41e8b850), f32::from_bits(0x42536562)),
+    );
     // 29.057f, 52.948f, 29.047f, 52.892f, 29.09f, 52.849f
-    path.cubic_to((f32::from_bits(0x41e8ced7), f32::from_bits(0x42534fe1)), (f32::from_bits(0x41e953f6), f32::from_bits(0x42532e16)), (f32::from_bits(0x41e97ef8), f32::from_bits(0x42532e16)));
+    path.cubic_to(
+        (f32::from_bits(0x41e8ced7), f32::from_bits(0x42534fe1)),
+        (f32::from_bits(0x41e953f6), f32::from_bits(0x42532e16)),
+        (f32::from_bits(0x41e97ef8), f32::from_bits(0x42532e16)),
+    );
     // 29.101f, 52.828f, 29.166f, 52.795f, 29.187f, 52.795f
-    path.cubic_to((f32::from_bits(0x41ea0417), f32::from_bits(0x425323d9)), (f32::from_bits(0x41ea3125), f32::from_bits(0x42534fe1)), (f32::from_bits(0x41ea72ae), f32::from_bits(0x42535a1e)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea0417), f32::from_bits(0x425323d9)),
+        (f32::from_bits(0x41ea3125), f32::from_bits(0x42534fe1)),
+        (f32::from_bits(0x41ea72ae), f32::from_bits(0x42535a1e)),
+    );
     // 29.252f, 52.785f, 29.274f, 52.828f, 29.306f, 52.838f
-    path.cubic_to((f32::from_bits(0x41ea72ae), f32::from_bits(0x42548520)), (f32::from_bits(0x41e9d708), f32::from_bits(0x4255a4df)), (f32::from_bits(0x41e96871), f32::from_bits(0x4256a2d2)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea72ae), f32::from_bits(0x42548520)),
+        (f32::from_bits(0x41e9d708), f32::from_bits(0x4255a4df)),
+        (f32::from_bits(0x41e96871), f32::from_bits(0x4256a2d2)),
+    );
     // 29.306f, 53.13f, 29.23f, 53.411f, 29.176f, 53.659f
     path.move_to((f32::from_bits(0x41e874bb), f32::from_bits(0x4258b647)));
     // 29.057f, 54.178f
-    path.cubic_to((f32::from_bits(0x41e86040), f32::from_bits(0x42595c2a)), (f32::from_bits(0x41e849b9), f32::from_bits(0x4259bf7e)), (f32::from_bits(0x41e80623), f32::from_bits(0x425a4eda)));
+    path.cubic_to(
+        (f32::from_bits(0x41e86040), f32::from_bits(0x42595c2a)),
+        (f32::from_bits(0x41e849b9), f32::from_bits(0x4259bf7e)),
+        (f32::from_bits(0x41e80623), f32::from_bits(0x425a4eda)),
+    );
     // 29.047f, 54.34f, 29.036f, 54.437f, 29.003f, 54.577f
-    path.cubic_to((f32::from_bits(0x41e7db21), f32::from_bits(0x425ad3f9)), (f32::from_bits(0x41e76c89), f32::from_bits(0x425b8520)), (f32::from_bits(0x41e72b00), f32::from_bits(0x425c147c)));
+    path.cubic_to(
+        (f32::from_bits(0x41e7db21), f32::from_bits(0x425ad3f9)),
+        (f32::from_bits(0x41e76c89), f32::from_bits(0x425b8520)),
+        (f32::from_bits(0x41e72b00), f32::from_bits(0x425c147c)),
+    );
     // 28.982f, 54.707f, 28.928f, 54.88f, 28.896f, 55.02f
-    path.cubic_to((f32::from_bits(0x41e71479), f32::from_bits(0x425c570b)), (f32::from_bits(0x41e72b00), f32::from_bits(0x425c77d0)), (f32::from_bits(0x41e71479), f32::from_bits(0x425cba5f)));
+    path.cubic_to(
+        (f32::from_bits(0x41e71479), f32::from_bits(0x425c570b)),
+        (f32::from_bits(0x41e72b00), f32::from_bits(0x425c77d0)),
+        (f32::from_bits(0x41e71479), f32::from_bits(0x425cba5f)),
+    );
     // 28.885f, 55.085f, 28.896f, 55.117f, 28.885f, 55.182f
-    path.cubic_to((f32::from_bits(0x41e68f5a), f32::from_bits(0x425dfae2)), (f32::from_bits(0x41e5dd2d), f32::from_bits(0x425f676d)), (f32::from_bits(0x41e570a2), f32::from_bits(0x4260a8f7)));
+    path.cubic_to(
+        (f32::from_bits(0x41e68f5a), f32::from_bits(0x425dfae2)),
+        (f32::from_bits(0x41e5dd2d), f32::from_bits(0x425f676d)),
+        (f32::from_bits(0x41e570a2), f32::from_bits(0x4260a8f7)),
+    );
     // 28.82f, 55.495f, 28.733f, 55.851f, 28.68f, 56.165f
-    path.cubic_to((f32::from_bits(0x41e52d0c), f32::from_bits(0x42610c4b)), (f32::from_bits(0x41e55a1b), f32::from_bits(0x42614eda)), (f32::from_bits(0x41e52d0c), f32::from_bits(0x42619ba7)));
+    path.cubic_to(
+        (f32::from_bits(0x41e52d0c), f32::from_bits(0x42610c4b)),
+        (f32::from_bits(0x41e55a1b), f32::from_bits(0x42614eda)),
+        (f32::from_bits(0x41e52d0c), f32::from_bits(0x42619ba7)),
+    );
     // 28.647f, 56.262f, 28.669f, 56.327f, 28.647f, 56.402f
-    path.cubic_to((f32::from_bits(0x41e51685), f32::from_bits(0x4261f4be)), (f32::from_bits(0x41e4be74), f32::from_bits(0x42624cce)), (f32::from_bits(0x41e4a7ed), f32::from_bits(0x42628f5d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e51685), f32::from_bits(0x4261f4be)),
+        (f32::from_bits(0x41e4be74), f32::from_bits(0x42624cce)),
+        (f32::from_bits(0x41e4a7ed), f32::from_bits(0x42628f5d)),
+    );
     // 28.636f, 56.489f, 28.593f, 56.575f, 28.582f, 56.64f
-    path.cubic_to((f32::from_bits(0x41e46664), f32::from_bits(0x42634bc7)), (f32::from_bits(0x41e43b62), f32::from_bits(0x4263e667)), (f32::from_bits(0x41e3f7cc), f32::from_bits(0x4264a1cc)));
+    path.cubic_to(
+        (f32::from_bits(0x41e46664), f32::from_bits(0x42634bc7)),
+        (f32::from_bits(0x41e43b62), f32::from_bits(0x4263e667)),
+        (f32::from_bits(0x41e3f7cc), f32::from_bits(0x4264a1cc)),
+    );
     // 28.55f, 56.824f, 28.529f, 56.975f, 28.496f, 57.158f
-    path.cubic_to((f32::from_bits(0x41e39fbc), f32::from_bits(0x42657efb)), (f32::from_bits(0x41e31a9d), f32::from_bits(0x42669376)), (f32::from_bits(0x41e2ac05), f32::from_bits(0x426770a5)));
+    path.cubic_to(
+        (f32::from_bits(0x41e39fbc), f32::from_bits(0x42657efb)),
+        (f32::from_bits(0x41e31a9d), f32::from_bits(0x42669376)),
+        (f32::from_bits(0x41e2ac05), f32::from_bits(0x426770a5)),
+    );
     // 28.453f, 57.374f, 28.388f, 57.644f, 28.334f, 57.86f
-    path.cubic_to((f32::from_bits(0x41e27ef7), f32::from_bits(0x426821cc)), (f32::from_bits(0x41e253f5), f32::from_bits(0x4268bc6c)), (f32::from_bits(0x41e2105f), f32::from_bits(0x42695812)));
+    path.cubic_to(
+        (f32::from_bits(0x41e27ef7), f32::from_bits(0x426821cc)),
+        (f32::from_bits(0x41e253f5), f32::from_bits(0x4268bc6c)),
+        (f32::from_bits(0x41e2105f), f32::from_bits(0x42695812)),
+    );
     // 28.312f, 58.033f, 28.291f, 58.184f, 28.258f, 58.336f
-    path.cubic_to((f32::from_bits(0x41e1ced6), f32::from_bits(0x4269f2b2)), (f32::from_bits(0x41e1082e), f32::from_bits(0x426aa3d9)), (f32::from_bits(0x41e09996), f32::from_bits(0x426b3335)));
+    path.cubic_to(
+        (f32::from_bits(0x41e1ced6), f32::from_bits(0x4269f2b2)),
+        (f32::from_bits(0x41e1082e), f32::from_bits(0x426aa3d9)),
+        (f32::from_bits(0x41e09996), f32::from_bits(0x426b3335)),
+    );
     // 28.226f, 58.487f, 28.129f, 58.66f, 28.075f, 58.8f
     path.line_to((f32::from_bits(0x41e05600), f32::from_bits(0x426b3e79)));
     // 28.042f, 58.811f
-    path.cubic_to((f32::from_bits(0x41dfe768), f32::from_bits(0x426bb854)), (f32::from_bits(0x41dfba5a), f32::from_bits(0x426c3129)), (f32::from_bits(0x41df4dcf), f32::from_bits(0x426ccccf)));
+    path.cubic_to(
+        (f32::from_bits(0x41dfe768), f32::from_bits(0x426bb854)),
+        (f32::from_bits(0x41dfba5a), f32::from_bits(0x426c3129)),
+        (f32::from_bits(0x41df4dcf), f32::from_bits(0x426ccccf)),
+    );
     // 27.988f, 58.93f, 27.966f, 59.048f, 27.913f, 59.2f
-    path.cubic_to((f32::from_bits(0x41def5bf), f32::from_bits(0x426d50e8)), (f32::from_bits(0x41de5a19), f32::from_bits(0x426de14a)), (f32::from_bits(0x41ddeb81), f32::from_bits(0x426e70a6)));
+    path.cubic_to(
+        (f32::from_bits(0x41def5bf), f32::from_bits(0x426d50e8)),
+        (f32::from_bits(0x41de5a19), f32::from_bits(0x426de14a)),
+        (f32::from_bits(0x41ddeb81), f32::from_bits(0x426e70a6)),
+    );
     // 27.87f, 59.329f, 27.794f, 59.47f, 27.74f, 59.61f
-    path.cubic_to((f32::from_bits(0x41dd3b60), f32::from_bits(0x426f79dd)), (f32::from_bits(0x41dd4fdb), f32::from_bits(0x426e1896)), (f32::from_bits(0x41dd6662), f32::from_bits(0x426db43c)));
+    path.cubic_to(
+        (f32::from_bits(0x41dd3b60), f32::from_bits(0x426f79dd)),
+        (f32::from_bits(0x41dd4fdb), f32::from_bits(0x426e1896)),
+        (f32::from_bits(0x41dd6662), f32::from_bits(0x426db43c)),
+    );
     // 27.654f, 59.869f, 27.664f, 59.524f, 27.675f, 59.426f
-    path.cubic_to((f32::from_bits(0x41de9ba1), f32::from_bits(0x426aa3da)), (f32::from_bits(0x41e01476), f32::from_bits(0x42679271)), (f32::from_bits(0x41e1332f), f32::from_bits(0x42648109)));
+    path.cubic_to(
+        (f32::from_bits(0x41de9ba1), f32::from_bits(0x426aa3da)),
+        (f32::from_bits(0x41e01476), f32::from_bits(0x42679271)),
+        (f32::from_bits(0x41e1332f), f32::from_bits(0x42648109)),
+    );
     // 27.826f, 58.66f, 28.01f, 57.893f, 28.15f, 57.126f
-    path.cubic_to((f32::from_bits(0x41e149b6), f32::from_bits(0x42645f3e)), (f32::from_bits(0x41e1a1c7), f32::from_bits(0x4264072e)), (f32::from_bits(0x41e1a1c7), f32::from_bits(0x4263f1ad)));
+    path.cubic_to(
+        (f32::from_bits(0x41e149b6), f32::from_bits(0x42645f3e)),
+        (f32::from_bits(0x41e1a1c7), f32::from_bits(0x4264072e)),
+        (f32::from_bits(0x41e1a1c7), f32::from_bits(0x4263f1ad)),
+    );
     // 28.161f, 57.093f, 28.204f, 57.007f, 28.204f, 56.986f
-    path.cubic_to((f32::from_bits(0x41e253f4), f32::from_bits(0x42626e9b)), (f32::from_bits(0x41e2c28c), f32::from_bits(0x42610109)), (f32::from_bits(0x41e3459e), f32::from_bits(0x425f72b3)));
+    path.cubic_to(
+        (f32::from_bits(0x41e253f4), f32::from_bits(0x42626e9b)),
+        (f32::from_bits(0x41e2c28c), f32::from_bits(0x42610109)),
+        (f32::from_bits(0x41e3459e), f32::from_bits(0x425f72b3)),
+    );
     // 28.291f, 56.608f, 28.345f, 56.251f, 28.409f, 55.862f
-    path.cubic_to((f32::from_bits(0x41e372ac), f32::from_bits(0x425f51ee)), (f32::from_bits(0x41e3b642), f32::from_bits(0x425ef9de)), (f32::from_bits(0x41e3b642), f32::from_bits(0x425ed813)));
+    path.cubic_to(
+        (f32::from_bits(0x41e372ac), f32::from_bits(0x425f51ee)),
+        (f32::from_bits(0x41e3b642), f32::from_bits(0x425ef9de)),
+        (f32::from_bits(0x41e3b642), f32::from_bits(0x425ed813)),
+    );
     // 28.431f, 55.83f, 28.464f, 55.744f, 28.464f, 55.711f
-    path.cubic_to((f32::from_bits(0x41e46663), f32::from_bits(0x425d76cb)), (f32::from_bits(0x41e4be73), f32::from_bits(0x425c3542)), (f32::from_bits(0x41e570a0), f32::from_bits(0x425ad3fa)));
+    path.cubic_to(
+        (f32::from_bits(0x41e46663), f32::from_bits(0x425d76cb)),
+        (f32::from_bits(0x41e4be73), f32::from_bits(0x425c3542)),
+        (f32::from_bits(0x41e570a0), f32::from_bits(0x425ad3fa)),
+    );
     // 28.55f, 55.366f, 28.593f, 55.052f, 28.68f, 54.707f
-    path.cubic_to((f32::from_bits(0x41e570a0), f32::from_bits(0x425a916b)), (f32::from_bits(0x41e5dd2b), f32::from_bits(0x425a22d3)), (f32::from_bits(0x41e5f3b2), f32::from_bits(0x4259e044)));
+    path.cubic_to(
+        (f32::from_bits(0x41e570a0), f32::from_bits(0x425a916b)),
+        (f32::from_bits(0x41e5dd2b), f32::from_bits(0x425a22d3)),
+        (f32::from_bits(0x41e5f3b2), f32::from_bits(0x4259e044)),
+    );
     // 28.68f, 54.642f, 28.733f, 54.534f, 28.744f, 54.469f
-    path.cubic_to((f32::from_bits(0x41e620c0), f32::from_bits(0x42595c2b)), (f32::from_bits(0x41e60a39), f32::from_bits(0x4258ab05)), (f32::from_bits(0x41e72afe), f32::from_bits(0x4258947d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e620c0), f32::from_bits(0x42595c2b)),
+        (f32::from_bits(0x41e60a39), f32::from_bits(0x4258ab05)),
+        (f32::from_bits(0x41e72afe), f32::from_bits(0x4258947d)),
+    );
     // 28.766f, 54.34f, 28.755f, 54.167f, 28.896f, 54.145f
-    path.cubic_to((f32::from_bits(0x41e79789), f32::from_bits(0x4258947d)), (f32::from_bits(0x41e80621), f32::from_bits(0x4258ab04)), (f32::from_bits(0x41e874b8), f32::from_bits(0x4258b648)));
+    path.cubic_to(
+        (f32::from_bits(0x41e79789), f32::from_bits(0x4258947d)),
+        (f32::from_bits(0x41e80621), f32::from_bits(0x4258ab04)),
+        (f32::from_bits(0x41e874b8), f32::from_bits(0x4258b648)),
+    );
     // 28.949f, 54.145f, 29.003f, 54.167f, 29.057f, 54.178f
     path.move_to((f32::from_bits(0x41e5b229), f32::from_bits(0x4256a2d3)));
     // 28.712f, 53.659f
-    path.cubic_to((f32::from_bits(0x41e5851b), f32::from_bits(0x4256e562)), (f32::from_bits(0x41e59ba2), f32::from_bits(0x425727f2)), (f32::from_bits(0x41e570a0), f32::from_bits(0x42575f3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e5851b), f32::from_bits(0x4256e562)),
+        (f32::from_bits(0x41e59ba2), f32::from_bits(0x425727f2)),
+        (f32::from_bits(0x41e570a0), f32::from_bits(0x42575f3d)),
+    );
     // 28.69f, 53.724f, 28.701f, 53.789f, 28.68f, 53.843f
-    path.cubic_to((f32::from_bits(0x41e52d0a), f32::from_bits(0x42578002)), (f32::from_bits(0x41e4a7ec), f32::from_bits(0x42579689)), (f32::from_bits(0x41e43b61), f32::from_bits(0x42578002)));
+    path.cubic_to(
+        (f32::from_bits(0x41e52d0a), f32::from_bits(0x42578002)),
+        (f32::from_bits(0x41e4a7ec), f32::from_bits(0x42579689)),
+        (f32::from_bits(0x41e43b61), f32::from_bits(0x42578002)),
+    );
     // 28.647f, 53.875f, 28.582f, 53.897f, 28.529f, 53.875f
-    path.cubic_to((f32::from_bits(0x41e3f7cb), f32::from_bits(0x42578002)), (f32::from_bits(0x41e39fbb), f32::from_bits(0x425748b6)), (f32::from_bits(0x41e3459e), f32::from_bits(0x42573e79)));
+    path.cubic_to(
+        (f32::from_bits(0x41e3f7cb), f32::from_bits(0x42578002)),
+        (f32::from_bits(0x41e39fbb), f32::from_bits(0x425748b6)),
+        (f32::from_bits(0x41e3459e), f32::from_bits(0x42573e79)),
+    );
     // 28.496f, 53.875f, 28.453f, 53.821f, 28.409f, 53.811f
-    path.cubic_to((f32::from_bits(0x41e39fbb), f32::from_bits(0x42566044)), (f32::from_bits(0x41e40e52), f32::from_bits(0x42558e58)), (f32::from_bits(0x41e47add), f32::from_bits(0x4254c7b0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e39fbb), f32::from_bits(0x42566044)),
+        (f32::from_bits(0x41e40e52), f32::from_bits(0x42558e58)),
+        (f32::from_bits(0x41e47add), f32::from_bits(0x4254c7b0)),
+    );
     // 28.453f, 53.594f, 28.507f, 53.389f, 28.56f, 53.195f
-    path.cubic_to((f32::from_bits(0x41e49370), f32::from_bits(0x425479dd)), (f32::from_bits(0x41e49370), f32::from_bits(0x42541689)), (f32::from_bits(0x41e4eb81), f32::from_bits(0x4253df3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e49370), f32::from_bits(0x425479dd)),
+        (f32::from_bits(0x41e49370), f32::from_bits(0x42541689)),
+        (f32::from_bits(0x41e4eb81), f32::from_bits(0x4253df3d)),
+    );
     // 28.572f, 53.119f, 28.572f, 53.022f, 28.615f, 52.968f
-    path.cubic_to((f32::from_bits(0x41e4fffc), f32::from_bits(0x4253c9bc)), (f32::from_bits(0x41e5b229), f32::from_bits(0x4253916a)), (f32::from_bits(0x41e60a39), f32::from_bits(0x4253916a)));
+    path.cubic_to(
+        (f32::from_bits(0x41e4fffc), f32::from_bits(0x4253c9bc)),
+        (f32::from_bits(0x41e5b229), f32::from_bits(0x4253916a)),
+        (f32::from_bits(0x41e60a39), f32::from_bits(0x4253916a)),
+    );
     // 28.625f, 52.947f, 28.712f, 52.892f, 28.755f, 52.892f
-    path.cubic_to((f32::from_bits(0x41e68f58), f32::from_bits(0x4253872d)), (f32::from_bits(0x41e68f58), f32::from_bits(0x4253a7f1)), (f32::from_bits(0x41e6e768), f32::from_bits(0x4253be78)));
+    path.cubic_to(
+        (f32::from_bits(0x41e68f58), f32::from_bits(0x4253872d)),
+        (f32::from_bits(0x41e68f58), f32::from_bits(0x4253a7f1)),
+        (f32::from_bits(0x41e6e768), f32::from_bits(0x4253be78)),
+    );
     // 28.82f, 52.882f, 28.82f, 52.914f, 28.863f, 52.936f
-    path.cubic_to((f32::from_bits(0x41e68f58), f32::from_bits(0x4254c7af)), (f32::from_bits(0x41e60a39), f32::from_bits(0x4255af1c)), (f32::from_bits(0x41e5b229), f32::from_bits(0x4256a2d2)));
+    path.cubic_to(
+        (f32::from_bits(0x41e68f58), f32::from_bits(0x4254c7af)),
+        (f32::from_bits(0x41e60a39), f32::from_bits(0x4255af1c)),
+        (f32::from_bits(0x41e5b229), f32::from_bits(0x4256a2d2)),
+    );
     // 28.82f, 53.195f, 28.755f, 53.421f, 28.712f, 53.659f
     path.move_to((f32::from_bits(0x41e372ac), f32::from_bits(0x42589fc0)));
     // 28.431f, 54.156f
-    path.cubic_to((f32::from_bits(0x41e55a19), f32::from_bits(0x42586874)), (f32::from_bits(0x41e40e52), f32::from_bits(0x425a178f)), (f32::from_bits(0x41e3cabc), f32::from_bits(0x425a7ae3)));
+    path.cubic_to(
+        (f32::from_bits(0x41e55a19), f32::from_bits(0x42586874)),
+        (f32::from_bits(0x41e40e52), f32::from_bits(0x425a178f)),
+        (f32::from_bits(0x41e3cabc), f32::from_bits(0x425a7ae3)),
+    );
     // 28.669f, 54.102f, 28.507f, 54.523f, 28.474f, 54.62f
-    path.cubic_to((f32::from_bits(0x41e1fbe3), f32::from_bits(0x425f3b66)), (f32::from_bits(0x41dfd0e1), f32::from_bits(0x4263f1ac)), (f32::from_bits(0x41ddeb81), f32::from_bits(0x4268c7b0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e1fbe3), f32::from_bits(0x425f3b66)),
+        (f32::from_bits(0x41dfd0e1), f32::from_bits(0x4263f1ac)),
+        (f32::from_bits(0x41ddeb81), f32::from_bits(0x4268c7b0)),
+    );
     // 28.248f, 55.808f, 27.977f, 56.986f, 27.74f, 58.195f
-    path.cubic_to((f32::from_bits(0x41ddd4fa), f32::from_bits(0x42690a3f)), (f32::from_bits(0x41dd7ce9), f32::from_bits(0x42696d93)), (f32::from_bits(0x41dd6662), f32::from_bits(0x4269999c)));
+    path.cubic_to(
+        (f32::from_bits(0x41ddd4fa), f32::from_bits(0x42690a3f)),
+        (f32::from_bits(0x41dd7ce9), f32::from_bits(0x42696d93)),
+        (f32::from_bits(0x41dd6662), f32::from_bits(0x4269999c)),
+    );
     // 27.729f, 58.26f, 27.686f, 58.357f, 27.675f, 58.4f
-    path.cubic_to((f32::from_bits(0x41dd3b60), f32::from_bits(0x426a29fe)), (f32::from_bits(0x41dd3b60), f32::from_bits(0x426a8d52)), (f32::from_bits(0x41dcf7ca), f32::from_bits(0x426b1cae)));
+    path.cubic_to(
+        (f32::from_bits(0x41dd3b60), f32::from_bits(0x426a29fe)),
+        (f32::from_bits(0x41dd3b60), f32::from_bits(0x426a8d52)),
+        (f32::from_bits(0x41dcf7ca), f32::from_bits(0x426b1cae)),
+    );
     // 27.654f, 58.541f, 27.654f, 58.638f, 27.621f, 58.778f
-    path.cubic_to((f32::from_bits(0x41dcb641), f32::from_bits(0x426bf9dd)), (f32::from_bits(0x41dc0414), f32::from_bits(0x426cf8d7)), (f32::from_bits(0x41db957c), f32::from_bits(0x426dec8d)));
+    path.cubic_to(
+        (f32::from_bits(0x41dcb641), f32::from_bits(0x426bf9dd)),
+        (f32::from_bits(0x41dc0414), f32::from_bits(0x426cf8d7)),
+        (f32::from_bits(0x41db957c), f32::from_bits(0x426dec8d)),
+    );
     // 27.589f, 58.994f, 27.502f, 59.243f, 27.448f, 59.481f
-    path.cubic_to((f32::from_bits(0x41db53f3), f32::from_bits(0x426e916a)), (f32::from_bits(0x41db3d6c), f32::from_bits(0x426eea81)), (f32::from_bits(0x41daa3d2), f32::from_bits(0x426f5918)));
+    path.cubic_to(
+        (f32::from_bits(0x41db53f3), f32::from_bits(0x426e916a)),
+        (f32::from_bits(0x41db3d6c), f32::from_bits(0x426eea81)),
+        (f32::from_bits(0x41daa3d2), f32::from_bits(0x426f5918)),
+    );
     // 27.416f, 59.642f, 27.405f, 59.729f, 27.33f, 59.837f
-    path.cubic_to((f32::from_bits(0x41da76c4), f32::from_bits(0x426f4dd4)), (f32::from_bits(0x41da49b5), f32::from_bits(0x426f4291)), (f32::from_bits(0x41da082c), f32::from_bits(0x426f21cc)));
+    path.cubic_to(
+        (f32::from_bits(0x41da76c4), f32::from_bits(0x426f4dd4)),
+        (f32::from_bits(0x41da49b5), f32::from_bits(0x426f4291)),
+        (f32::from_bits(0x41da082c), f32::from_bits(0x426f21cc)),
+    );
     // 27.308f, 59.826f, 27.286f, 59.815f, 27.254f, 59.783f
-    path.cubic_to((f32::from_bits(0x41d9db1e), f32::from_bits(0x426f0b45)), (f32::from_bits(0x41d9f1a5), f32::from_bits(0x426f0b45)), (f32::from_bits(0x41d9c6a3), f32::from_bits(0x426eea80)));
+    path.cubic_to(
+        (f32::from_bits(0x41d9db1e), f32::from_bits(0x426f0b45)),
+        (f32::from_bits(0x41d9f1a5), f32::from_bits(0x426f0b45)),
+        (f32::from_bits(0x41d9c6a3), f32::from_bits(0x426eea80)),
+    );
     // 27.232f, 59.761f, 27.243f, 59.761f, 27.222f, 59.729f
     path.line_to((f32::from_bits(0x41d99995), f32::from_bits(0x426edf3c)));
     // 27.2f, 59.718f
-    path.cubic_to((f32::from_bits(0x41d91476), f32::from_bits(0x426ea7f0)), (f32::from_bits(0x41d8e768), f32::from_bits(0x426e6561)), (f32::from_bits(0x41d8a5df), f32::from_bits(0x426e020d)));
+    path.cubic_to(
+        (f32::from_bits(0x41d91476), f32::from_bits(0x426ea7f0)),
+        (f32::from_bits(0x41d8e768), f32::from_bits(0x426e6561)),
+        (f32::from_bits(0x41d8a5df), f32::from_bits(0x426e020d)),
+    );
     // 27.135f, 59.664f, 27.113f, 59.599f, 27.081f, 59.502f
-    path.cubic_to((f32::from_bits(0x41d8a5df), f32::from_bits(0x426e020d)), (f32::from_bits(0x41d86456), f32::from_bits(0x426dd605)), (f32::from_bits(0x41d8a5df), f32::from_bits(0x426dd605)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8a5df), f32::from_bits(0x426e020d)),
+        (f32::from_bits(0x41d86456), f32::from_bits(0x426dd605)),
+        (f32::from_bits(0x41d8a5df), f32::from_bits(0x426dd605)),
+    );
     // 27.081f, 59.502f, 27.049f, 59.459f, 27.081f, 59.459f
-    path.cubic_to((f32::from_bits(0x41d8e768), f32::from_bits(0x426d5c2a)), (f32::from_bits(0x41d8fdef), f32::from_bits(0x426cf8d6)), (f32::from_bits(0x41d92afe), f32::from_bits(0x426c7efb)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8e768), f32::from_bits(0x426d5c2a)),
+        (f32::from_bits(0x41d8fdef), f32::from_bits(0x426cf8d6)),
+        (f32::from_bits(0x41d92afe), f32::from_bits(0x426c7efb)),
+    );
     // 27.113f, 59.34f, 27.124f, 59.243f, 27.146f, 59.124f
-    path.cubic_to((f32::from_bits(0x41d9830e), f32::from_bits(0x426bb853)), (f32::from_bits(0x41da1eb4), f32::from_bits(0x426ae561)), (f32::from_bits(0x41da8d4c), f32::from_bits(0x426a29fd)));
+    path.cubic_to(
+        (f32::from_bits(0x41d9830e), f32::from_bits(0x426bb853)),
+        (f32::from_bits(0x41da1eb4), f32::from_bits(0x426ae561)),
+        (f32::from_bits(0x41da8d4c), f32::from_bits(0x426a29fd)),
+    );
     // 27.189f, 58.93f, 27.265f, 58.724f, 27.319f, 58.541f
-    path.cubic_to((f32::from_bits(0x41dccabd), f32::from_bits(0x4265d811)), (f32::from_bits(0x41e02afe), f32::from_bits(0x42617ae2)), (f32::from_bits(0x41e1332f), f32::from_bits(0x425cfcef)));
+    path.cubic_to(
+        (f32::from_bits(0x41dccabd), f32::from_bits(0x4265d811)),
+        (f32::from_bits(0x41e02afe), f32::from_bits(0x42617ae2)),
+        (f32::from_bits(0x41e1332f), f32::from_bits(0x425cfcef)),
+    );
     // 27.599f, 57.461f, 28.021f, 56.37f, 28.15f, 55.247f
-    path.cubic_to((f32::from_bits(0x41e149b6), f32::from_bits(0x425c4085)), (f32::from_bits(0x41e1a1c7), f32::from_bits(0x425b8f5e)), (f32::from_bits(0x41e1fbe3), f32::from_bits(0x425adf3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e149b6), f32::from_bits(0x425c4085)),
+        (f32::from_bits(0x41e1a1c7), f32::from_bits(0x425b8f5e)),
+        (f32::from_bits(0x41e1fbe3), f32::from_bits(0x425adf3d)),
+    );
     // 28.161f, 55.063f, 28.204f, 54.89f, 28.248f, 54.718f
-    path.cubic_to((f32::from_bits(0x41e226e5), f32::from_bits(0x425a4edb)), (f32::from_bits(0x41e226e5), f32::from_bits(0x42598833)), (f32::from_bits(0x41e2ac04), f32::from_bits(0x4258f7d0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e226e5), f32::from_bits(0x425a4edb)),
+        (f32::from_bits(0x41e226e5), f32::from_bits(0x42598833)),
+        (f32::from_bits(0x41e2ac04), f32::from_bits(0x4258f7d0)),
+    );
     // 28.269f, 54.577f, 28.269f, 54.383f, 28.334f, 54.242f
-    path.cubic_to((f32::from_bits(0x41e2c28b), f32::from_bits(0x4258ec8c)), (f32::from_bits(0x41e372ac), f32::from_bits(0x42589fc0)), (f32::from_bits(0x41e372ac), f32::from_bits(0x42589fc0)));
+    path.cubic_to(
+        (f32::from_bits(0x41e2c28b), f32::from_bits(0x4258ec8c)),
+        (f32::from_bits(0x41e372ac), f32::from_bits(0x42589fc0)),
+        (f32::from_bits(0x41e372ac), f32::from_bits(0x42589fc0)),
+    );
     // 28.345f, 54.231f, 28.431f, 54.156f, 28.431f, 54.156f
     path.move_to((f32::from_bits(0x41d9830e), f32::from_bits(0x427128f7)));
     // 27.189f, 60.29f
-    path.cubic_to((f32::from_bits(0x41d95600), f32::from_bits(0x42714ac2)), (f32::from_bits(0x41d92afe), f32::from_bits(0x427176ca)), (f32::from_bits(0x41d8e768), f32::from_bits(0x427176ca)));
+    path.cubic_to(
+        (f32::from_bits(0x41d95600), f32::from_bits(0x42714ac2)),
+        (f32::from_bits(0x41d92afe), f32::from_bits(0x427176ca)),
+        (f32::from_bits(0x41d8e768), f32::from_bits(0x427176ca)),
+    );
     // 27.167f, 60.323f, 27.146f, 60.366f, 27.113f, 60.366f
-    path.cubic_to((f32::from_bits(0x41d86456), f32::from_bits(0x42718d51)), (f32::from_bits(0x41d67ce9), f32::from_bits(0x4271820e)), (f32::from_bits(0x41d60e51), f32::from_bits(0x42716b86)));
+    path.cubic_to(
+        (f32::from_bits(0x41d86456), f32::from_bits(0x42718d51)),
+        (f32::from_bits(0x41d67ce9), f32::from_bits(0x4271820e)),
+        (f32::from_bits(0x41d60e51), f32::from_bits(0x42716b86)),
+    );
     // 27.049f, 60.388f, 26.811f, 60.377f, 26.757f, 60.355f
-    path.cubic_to((f32::from_bits(0x41d5f7ca), f32::from_bits(0x42716b86)), (f32::from_bits(0x41d5ccc8), f32::from_bits(0x42714ac1)), (f32::from_bits(0x41d5b641), f32::from_bits(0x42713f7e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d5f7ca), f32::from_bits(0x42716b86)),
+        (f32::from_bits(0x41d5ccc8), f32::from_bits(0x42714ac1)),
+        (f32::from_bits(0x41d5b641), f32::from_bits(0x42713f7e)),
+    );
     // 26.746f, 60.355f, 26.725f, 60.323f, 26.714f, 60.312f
-    path.cubic_to((f32::from_bits(0x41d5b641), f32::from_bits(0x42708e57)), (f32::from_bits(0x41d5f7ca), f32::from_bits(0x426ffefb)), (f32::from_bits(0x41d69370), f32::from_bits(0x426f8f5d)));
+    path.cubic_to(
+        (f32::from_bits(0x41d5b641), f32::from_bits(0x42708e57)),
+        (f32::from_bits(0x41d5f7ca), f32::from_bits(0x426ffefb)),
+        (f32::from_bits(0x41d69370), f32::from_bits(0x426f8f5d)),
+    );
     // 26.714f, 60.139f, 26.746f, 59.999f, 26.822f, 59.89f
-    path.cubic_to((f32::from_bits(0x41d6eb80), f32::from_bits(0x426f9ba7)), (f32::from_bits(0x41d7188f), f32::from_bits(0x426f8f5d)), (f32::from_bits(0x41d7709f), f32::from_bits(0x426f9ba7)));
+    path.cubic_to(
+        (f32::from_bits(0x41d6eb80), f32::from_bits(0x426f9ba7)),
+        (f32::from_bits(0x41d7188f), f32::from_bits(0x426f8f5d)),
+        (f32::from_bits(0x41d7709f), f32::from_bits(0x426f9ba7)),
+    );
     // 26.865f, 59.902f, 26.887f, 59.89f, 26.93f, 59.902f
-    path.cubic_to((f32::from_bits(0x41d7b228), f32::from_bits(0x426fb128)), (f32::from_bits(0x41d99995), f32::from_bits(0x42706d93)), (f32::from_bits(0x41d9c6a3), f32::from_bits(0x42708e57)));
+    path.cubic_to(
+        (f32::from_bits(0x41d7b228), f32::from_bits(0x426fb128)),
+        (f32::from_bits(0x41d99995), f32::from_bits(0x42706d93)),
+        (f32::from_bits(0x41d9c6a3), f32::from_bits(0x42708e57)),
+    );
     // 26.962f, 59.923f, 27.2f, 60.107f, 27.222f, 60.139f
-    path.cubic_to((f32::from_bits(0x41d9db1e), f32::from_bits(0x4270d0e6)), (f32::from_bits(0x41d99995), f32::from_bits(0x42710832)), (f32::from_bits(0x41d9830d), f32::from_bits(0x427128f7)));
+    path.cubic_to(
+        (f32::from_bits(0x41d9db1e), f32::from_bits(0x4270d0e6)),
+        (f32::from_bits(0x41d99995), f32::from_bits(0x42710832)),
+        (f32::from_bits(0x41d9830d), f32::from_bits(0x427128f7)),
+    );
     // 27.232f, 60.204f, 27.2f, 60.258f, 27.189f, 60.29f
     path.move_to((f32::from_bits(0x41e1603c), f32::from_bits(0x4255f1ab)));
     // 28.172f, 53.486f
-    path.cubic_to((f32::from_bits(0x41e149b5), f32::from_bits(0x42563f7e)), (f32::from_bits(0x41e1603c), f32::from_bits(0x425676ca)), (f32::from_bits(0x41e1332e), f32::from_bits(0x4256c49d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e149b5), f32::from_bits(0x42563f7e)),
+        (f32::from_bits(0x41e1603c), f32::from_bits(0x425676ca)),
+        (f32::from_bits(0x41e1332e), f32::from_bits(0x4256c49d)),
+    );
     // 28.161f, 53.562f, 28.172f, 53.616f, 28.15f, 53.692f
-    path.cubic_to((f32::from_bits(0x41e11eb3), f32::from_bits(0x4256f0a5)), (f32::from_bits(0x41e0db1e), f32::from_bits(0x425727f1)), (f32::from_bits(0x41e0b01c), f32::from_bits(0x425748b6)));
+    path.cubic_to(
+        (f32::from_bits(0x41e11eb3), f32::from_bits(0x4256f0a5)),
+        (f32::from_bits(0x41e0db1e), f32::from_bits(0x425727f1)),
+        (f32::from_bits(0x41e0b01c), f32::from_bits(0x425748b6)),
+    );
     // 28.14f, 53.735f, 28.107f, 53.789f, 28.086f, 53.821f
     path.line_to((f32::from_bits(0x41e055ff), f32::from_bits(0x425748b6)));
     // 28.042f, 53.821f
-    path.cubic_to((f32::from_bits(0x41e055ff), f32::from_bits(0x425748b6)), (f32::from_bits(0x41df4dce), f32::from_bits(0x4256e562)), (f32::from_bits(0x41df3747), f32::from_bits(0x4256da1e)));
+    path.cubic_to(
+        (f32::from_bits(0x41e055ff), f32::from_bits(0x425748b6)),
+        (f32::from_bits(0x41df4dce), f32::from_bits(0x4256e562)),
+        (f32::from_bits(0x41df3747), f32::from_bits(0x4256da1e)),
+    );
     // 28.042f, 53.821f, 27.913f, 53.724f, 27.902f, 53.713f
-    path.cubic_to((f32::from_bits(0x41deb228), f32::from_bits(0x4256820e)), (f32::from_bits(0x41de4391), f32::from_bits(0x42561376)), (f32::from_bits(0x41ddbe72), f32::from_bits(0x4255ba60)));
+    path.cubic_to(
+        (f32::from_bits(0x41deb228), f32::from_bits(0x4256820e)),
+        (f32::from_bits(0x41de4391), f32::from_bits(0x42561376)),
+        (f32::from_bits(0x41ddbe72), f32::from_bits(0x4255ba60)),
+    );
     // 27.837f, 53.627f, 27.783f, 53.519f, 27.718f, 53.432f
     path.line_to((f32::from_bits(0x41dd7ce9), f32::from_bits(0x4255af1c)));
     // 27.686f, 53.421f
-    path.cubic_to((f32::from_bits(0x41dd7ce9), f32::from_bits(0x4255a4df)), (f32::from_bits(0x41dda7eb), f32::from_bits(0x425578d6)), (f32::from_bits(0x41dd7ce9), f32::from_bits(0x42556d93)));
+    path.cubic_to(
+        (f32::from_bits(0x41dd7ce9), f32::from_bits(0x4255a4df)),
+        (f32::from_bits(0x41dda7eb), f32::from_bits(0x425578d6)),
+        (f32::from_bits(0x41dd7ce9), f32::from_bits(0x42556d93)),
+    );
     // 27.686f, 53.411f, 27.707f, 53.368f, 27.686f, 53.357f
-    path.cubic_to((f32::from_bits(0x41de9ba1), f32::from_bits(0x4255147c)), (f32::from_bits(0x41df8f58), f32::from_bits(0x4254c7b0)), (f32::from_bits(0x41e0b01c), f32::from_bits(0x42549064)));
+    path.cubic_to(
+        (f32::from_bits(0x41de9ba1), f32::from_bits(0x4255147c)),
+        (f32::from_bits(0x41df8f58), f32::from_bits(0x4254c7b0)),
+        (f32::from_bits(0x41e0b01c), f32::from_bits(0x42549064)),
+    );
     // 27.826f, 53.27f, 27.945f, 53.195f, 28.086f, 53.141f
-    path.cubic_to((f32::from_bits(0x41e0c497), f32::from_bits(0x42548520)), (f32::from_bits(0x41e11eb4), f32::from_bits(0x4254645c)), (f32::from_bits(0x41e1332e), f32::from_bits(0x4254645c)));
+    path.cubic_to(
+        (f32::from_bits(0x41e0c497), f32::from_bits(0x42548520)),
+        (f32::from_bits(0x41e11eb4), f32::from_bits(0x4254645c)),
+        (f32::from_bits(0x41e1332e), f32::from_bits(0x4254645c)),
+    );
     // 28.096f, 53.13f, 28.14f, 53.098f, 28.15f, 53.098f
-    path.cubic_to((f32::from_bits(0x41e18b3e), f32::from_bits(0x42545918)), (f32::from_bits(0x41e1ced4), f32::from_bits(0x425479dd)), (f32::from_bits(0x41e1fbe2), f32::from_bits(0x425479dd)));
+    path.cubic_to(
+        (f32::from_bits(0x41e18b3e), f32::from_bits(0x42545918)),
+        (f32::from_bits(0x41e1ced4), f32::from_bits(0x425479dd)),
+        (f32::from_bits(0x41e1fbe2), f32::from_bits(0x425479dd)),
+    );
     // 28.193f, 53.087f, 28.226f, 53.119f, 28.248f, 53.119f
-    path.cubic_to((f32::from_bits(0x41e1fbe2), f32::from_bits(0x4255147d)), (f32::from_bits(0x41e1a1c5), f32::from_bits(0x4255841a)), (f32::from_bits(0x41e1603c), f32::from_bits(0x4255f1ac)));
+    path.cubic_to(
+        (f32::from_bits(0x41e1fbe2), f32::from_bits(0x4255147d)),
+        (f32::from_bits(0x41e1a1c5), f32::from_bits(0x4255841a)),
+        (f32::from_bits(0x41e1603c), f32::from_bits(0x4255f1ac)),
+    );
     // 28.248f, 53.27f, 28.204f, 53.379f, 28.172f, 53.486f
     path.move_to((f32::from_bits(0x41df6248), f32::from_bits(0x425b4ccf)));
     // 27.923f, 54.825f
-    path.cubic_to((f32::from_bits(0x41dfe767), f32::from_bits(0x425b9aa2)), (f32::from_bits(0x41df4dcd), f32::from_bits(0x425c6c8d)), (f32::from_bits(0x41df20bf), f32::from_bits(0x425cd0e8)));
+    path.cubic_to(
+        (f32::from_bits(0x41dfe767), f32::from_bits(0x425b9aa2)),
+        (f32::from_bits(0x41df4dcd), f32::from_bits(0x425c6c8d)),
+        (f32::from_bits(0x41df20bf), f32::from_bits(0x425cd0e8)),
+    );
     // 27.988f, 54.901f, 27.913f, 55.106f, 27.891f, 55.204f
-    path.cubic_to((f32::from_bits(0x41ddeb80), f32::from_bits(0x425f893a)), (f32::from_bits(0x41dc8932), f32::from_bits(0x4262374e)), (f32::from_bits(0x41db105d), f32::from_bits(0x4264e45d)));
+    path.cubic_to(
+        (f32::from_bits(0x41ddeb80), f32::from_bits(0x425f893a)),
+        (f32::from_bits(0x41dc8932), f32::from_bits(0x4262374e)),
+        (f32::from_bits(0x41db105d), f32::from_bits(0x4264e45d)),
+    );
     // 27.74f, 55.884f, 27.567f, 56.554f, 27.383f, 57.223f
-    path.cubic_to((f32::from_bits(0x41daced4), f32::from_bits(0x42657efd)), (f32::from_bits(0x41d78726), f32::from_bits(0x426c52f5)), (f32::from_bits(0x41d6c07e), f32::from_bits(0x426c3c6d)));
+    path.cubic_to(
+        (f32::from_bits(0x41daced4), f32::from_bits(0x42657efd)),
+        (f32::from_bits(0x41d78726), f32::from_bits(0x426c52f5)),
+        (f32::from_bits(0x41d6c07e), f32::from_bits(0x426c3c6d)),
+    );
     // 27.351f, 57.374f, 26.941f, 59.081f, 26.844f, 59.059f
-    path.cubic_to((f32::from_bits(0x41d58932), f32::from_bits(0x426c3129)), (f32::from_bits(0x41d50620), f32::from_bits(0x426b1caf)), (f32::from_bits(0x41d48101), f32::from_bits(0x426aa3da)));
+    path.cubic_to(
+        (f32::from_bits(0x41d58932), f32::from_bits(0x426c3129)),
+        (f32::from_bits(0x41d50620), f32::from_bits(0x426b1caf)),
+        (f32::from_bits(0x41d48101), f32::from_bits(0x426aa3da)),
+    );
     // 26.692f, 59.048f, 26.628f, 58.778f, 26.563f, 58.66f
-    path.cubic_to((f32::from_bits(0x41d3d0e0), f32::from_bits(0x426a0834)), (f32::from_bits(0x41d34bc2), f32::from_bits(0x42696d94)), (f32::from_bits(0x41d2db1e), f32::from_bits(0x4268bc6d)));
+    path.cubic_to(
+        (f32::from_bits(0x41d3d0e0), f32::from_bits(0x426a0834)),
+        (f32::from_bits(0x41d34bc2), f32::from_bits(0x42696d94)),
+        (f32::from_bits(0x41d2db1e), f32::from_bits(0x4268bc6d)),
+    );
     // 26.477f, 58.508f, 26.412f, 58.357f, 26.357f, 58.184f
-    path.cubic_to((f32::from_bits(0x41d21476), f32::from_bits(0x42674fe2)), (f32::from_bits(0x41d19164), f32::from_bits(0x4265c18c)), (f32::from_bits(0x41d19164), f32::from_bits(0x426449bd)));
+    path.cubic_to(
+        (f32::from_bits(0x41d21476), f32::from_bits(0x42674fe2)),
+        (f32::from_bits(0x41d19164), f32::from_bits(0x4265c18c)),
+        (f32::from_bits(0x41d19164), f32::from_bits(0x426449bd)),
+    );
     // 26.26f, 57.828f, 26.196f, 57.439f, 26.196f, 57.072f
-    path.cubic_to((f32::from_bits(0x41d1a5df), f32::from_bits(0x4261bd73)), (f32::from_bits(0x41d3d0e1), f32::from_bits(0x425f51ee)), (f32::from_bits(0x41d79dae), f32::from_bits(0x425d820f)));
+    path.cubic_to(
+        (f32::from_bits(0x41d1a5df), f32::from_bits(0x4261bd73)),
+        (f32::from_bits(0x41d3d0e1), f32::from_bits(0x425f51ee)),
+        (f32::from_bits(0x41d79dae), f32::from_bits(0x425d820f)),
+    );
     // 26.206f, 56.435f, 26.477f, 55.83f, 26.952f, 55.377f
-    path.cubic_to((f32::from_bits(0x41d8a5df), f32::from_bits(0x425cfcf0)), (f32::from_bits(0x41d9db1f), f32::from_bits(0x425c8e59)), (f32::from_bits(0x41db105e), f32::from_bits(0x425c3542)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8a5df), f32::from_bits(0x425cfcf0)),
+        (f32::from_bits(0x41d9db1f), f32::from_bits(0x425c8e59)),
+        (f32::from_bits(0x41db105e), f32::from_bits(0x425c3542)),
+    );
     // 27.081f, 55.247f, 27.232f, 55.139f, 27.383f, 55.052f
-    path.cubic_to((f32::from_bits(0x41dbed8d), f32::from_bits(0x425bf4bf)), (f32::from_bits(0x41ddbe72), f32::from_bits(0x425b21cd)), (f32::from_bits(0x41dec8b0), f32::from_bits(0x425b21cd)));
+    path.cubic_to(
+        (f32::from_bits(0x41dbed8d), f32::from_bits(0x425bf4bf)),
+        (f32::from_bits(0x41ddbe72), f32::from_bits(0x425b21cd)),
+        (f32::from_bits(0x41dec8b0), f32::from_bits(0x425b21cd)),
+    );
     // 27.491f, 54.989f, 27.718f, 54.783f, 27.848f, 54.783f
-    path.cubic_to((f32::from_bits(0x41df20c0), f32::from_bits(0x425b374e)), (f32::from_bits(0x41df4dcf), f32::from_bits(0x425b4292)), (f32::from_bits(0x41df624a), f32::from_bits(0x425b4ccf)));
+    path.cubic_to(
+        (f32::from_bits(0x41df20c0), f32::from_bits(0x425b374e)),
+        (f32::from_bits(0x41df4dcf), f32::from_bits(0x425b4292)),
+        (f32::from_bits(0x41df624a), f32::from_bits(0x425b4ccf)),
+    );
     // 27.891f, 54.804f, 27.913f, 54.815f, 27.923f, 54.825f
     path.move_to((f32::from_bits(0x41d453f4), f32::from_bits(0x426fbc6d)));
     // 26.541f, 59.934f
-    path.cubic_to((f32::from_bits(0x41d48102), f32::from_bits(0x426f8521)), (f32::from_bits(0x41d51a9c), f32::from_bits(0x426ea7f2)), (f32::from_bits(0x41d4957d), f32::from_bits(0x426e872e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d48102), f32::from_bits(0x426f8521)),
+        (f32::from_bits(0x41d51a9c), f32::from_bits(0x426ea7f2)),
+        (f32::from_bits(0x41d4957d), f32::from_bits(0x426e872e)),
+    );
     // 26.563f, 59.88f, 26.638f, 59.664f, 26.573f, 59.632f
-    path.cubic_to((f32::from_bits(0x41d453f4), f32::from_bits(0x426e70a7)), (f32::from_bits(0x41d428f2), f32::from_bits(0x426e872e)), (f32::from_bits(0x41d3fbe3), f32::from_bits(0x426e70a7)));
+    path.cubic_to(
+        (f32::from_bits(0x41d453f4), f32::from_bits(0x426e70a7)),
+        (f32::from_bits(0x41d428f2), f32::from_bits(0x426e872e)),
+        (f32::from_bits(0x41d3fbe3), f32::from_bits(0x426e70a7)),
+    );
     // 26.541f, 59.61f, 26.52f, 59.632f, 26.498f, 59.61f
-    path.cubic_to((f32::from_bits(0x41d3d0e1), f32::from_bits(0x426e916c)), (f32::from_bits(0x41d3b84d), f32::from_bits(0x426e872e)), (f32::from_bits(0x41d3a3d3), f32::from_bits(0x426e916c)));
+    path.cubic_to(
+        (f32::from_bits(0x41d3d0e1), f32::from_bits(0x426e916c)),
+        (f32::from_bits(0x41d3b84d), f32::from_bits(0x426e872e)),
+        (f32::from_bits(0x41d3a3d3), f32::from_bits(0x426e916c)),
+    );
     // 26.477f, 59.642f, 26.465f, 59.632f, 26.455f, 59.642f
-    path.cubic_to((f32::from_bits(0x41d3603d), f32::from_bits(0x426f010a)), (f32::from_bits(0x41d3d0e1), f32::from_bits(0x426f9ba9)), (f32::from_bits(0x41d4126b), f32::from_bits(0x426fdd33)));
+    path.cubic_to(
+        (f32::from_bits(0x41d3603d), f32::from_bits(0x426f010a)),
+        (f32::from_bits(0x41d3d0e1), f32::from_bits(0x426f9ba9)),
+        (f32::from_bits(0x41d4126b), f32::from_bits(0x426fdd33)),
+    );
     // 26.422f, 59.751f, 26.477f, 59.902f, 26.509f, 59.966f
     path.line_to((f32::from_bits(0x41d43d6d), f32::from_bits(0x426fdd33)));
     // 26.53f, 59.966f
-    path.cubic_to((f32::from_bits(0x41d43d6d), f32::from_bits(0x426fd1ef)), (f32::from_bits(0x41d43d6d), f32::from_bits(0x426fbc6e)), (f32::from_bits(0x41d453f4), f32::from_bits(0x426fbc6e)));
+    path.cubic_to(
+        (f32::from_bits(0x41d43d6d), f32::from_bits(0x426fd1ef)),
+        (f32::from_bits(0x41d43d6d), f32::from_bits(0x426fbc6e)),
+        (f32::from_bits(0x41d453f4), f32::from_bits(0x426fbc6e)),
+    );
     // 26.53f, 59.955f, 26.53f, 59.934f, 26.541f, 59.934f
     path.move_to((f32::from_bits(0x42071ba4), f32::from_bits(0x42670210)));
     // 33.777f, 57.752f
-    path.cubic_to((f32::from_bits(0x42075e33), f32::from_bits(0x42670d54)), (f32::from_bits(0x4207957f), f32::from_bits(0x42671897)), (f32::from_bits(0x4207cccb), f32::from_bits(0x42672f1e)));
+    path.cubic_to(
+        (f32::from_bits(0x42075e33), f32::from_bits(0x42670d54)),
+        (f32::from_bits(0x4207957f), f32::from_bits(0x42671897)),
+        (f32::from_bits(0x4207cccb), f32::from_bits(0x42672f1e)),
+    );
     // 33.842f, 57.763f, 33.896f, 57.774f, 33.95f, 57.796f
-    path.cubic_to((f32::from_bits(0x4208a9fa), f32::from_bits(0x4267872e)), (f32::from_bits(0x42097be6), f32::from_bits(0x42681791)), (f32::from_bits(0x420a3850), f32::from_bits(0x42688522)));
+    path.cubic_to(
+        (f32::from_bits(0x4208a9fa), f32::from_bits(0x4267872e)),
+        (f32::from_bits(0x42097be6), f32::from_bits(0x42681791)),
+        (f32::from_bits(0x420a3850), f32::from_bits(0x42688522)),
+    );
     // 34.166f, 57.882f, 34.371f, 58.023f, 34.555f, 58.13f
-    path.cubic_to((f32::from_bits(0x420b0a3c), f32::from_bits(0x4268fefd)), (f32::from_bits(0x420d1167), f32::from_bits(0x4269e770)), (f32::from_bits(0x420d27ee), f32::from_bits(0x426ae564)));
+    path.cubic_to(
+        (f32::from_bits(0x420b0a3c), f32::from_bits(0x4268fefd)),
+        (f32::from_bits(0x420d1167), f32::from_bits(0x4269e770)),
+        (f32::from_bits(0x420d27ee), f32::from_bits(0x426ae564)),
+    );
     // 34.76f, 58.249f, 35.267f, 58.476f, 35.289f, 58.724f
-    path.cubic_to((f32::from_bits(0x420d0729), f32::from_bits(0x426af0a8)), (f32::from_bits(0x420cdb21), f32::from_bits(0x426afbeb)), (f32::from_bits(0x420cb956), f32::from_bits(0x426b072f)));
+    path.cubic_to(
+        (f32::from_bits(0x420d0729), f32::from_bits(0x426af0a8)),
+        (f32::from_bits(0x420cdb21), f32::from_bits(0x426afbeb)),
+        (f32::from_bits(0x420cb956), f32::from_bits(0x426b072f)),
+    );
     // 35.257f, 58.735f, 35.214f, 58.746f, 35.181f, 58.757f
-    path.cubic_to((f32::from_bits(0x420b9998), f32::from_bits(0x426b27f4)), (f32::from_bits(0x420a6f9c), f32::from_bits(0x426b27f4)), (f32::from_bits(0x42095b21), f32::from_bits(0x426b3337)));
+    path.cubic_to(
+        (f32::from_bits(0x420b9998), f32::from_bits(0x426b27f4)),
+        (f32::from_bits(0x420a6f9c), f32::from_bits(0x426b27f4)),
+        (f32::from_bits(0x42095b21), f32::from_bits(0x426b3337)),
+    );
     // 34.9f, 58.789f, 34.609f, 58.789f, 34.339f, 58.8f
-    path.cubic_to((f32::from_bits(0x42090d4e), f32::from_bits(0x426b3337)), (f32::from_bits(0x4207b644), f32::from_bits(0x426b49be)), (f32::from_bits(0x420773b4), f32::from_bits(0x426b3337)));
+    path.cubic_to(
+        (f32::from_bits(0x42090d4e), f32::from_bits(0x426b3337)),
+        (f32::from_bits(0x4207b644), f32::from_bits(0x426b49be)),
+        (f32::from_bits(0x420773b4), f32::from_bits(0x426b3337)),
+    );
     // 34.263f, 58.8f, 33.928f, 58.822f, 33.863f, 58.8f
-    path.cubic_to((f32::from_bits(0x4207322b), f32::from_bits(0x426b072f)), (f32::from_bits(0x4206ef9b), f32::from_bits(0x4269999d)), (f32::from_bits(0x4206ced7), f32::from_bits(0x426920c8)));
+    path.cubic_to(
+        (f32::from_bits(0x4207322b), f32::from_bits(0x426b072f)),
+        (f32::from_bits(0x4206ef9b), f32::from_bits(0x4269999d)),
+        (f32::from_bits(0x4206ced7), f32::from_bits(0x426920c8)),
+    );
     // 33.799f, 58.757f, 33.734f, 58.4f, 33.702f, 58.282f
-    path.cubic_to((f32::from_bits(0x42069685), f32::from_bits(0x4268645e)), (f32::from_bits(0x4205c49a), f32::from_bits(0x4266b543)), (f32::from_bits(0x42071ba4), f32::from_bits(0x42670210)));
+    path.cubic_to(
+        (f32::from_bits(0x42069685), f32::from_bits(0x4268645e)),
+        (f32::from_bits(0x4205c49a), f32::from_bits(0x4266b543)),
+        (f32::from_bits(0x42071ba4), f32::from_bits(0x42670210)),
+    );
     // 33.647f, 58.098f, 33.442f, 57.677f, 33.777f, 57.752f
     path.move_to((f32::from_bits(0x41f026e6), f32::from_bits(0x423f0c4e)));
     // 30.019f, 47.762f
-    path.cubic_to((f32::from_bits(0x41effbe4), f32::from_bits(0x42400004)), (f32::from_bits(0x41f0105f), f32::from_bits(0x4240e877)), (f32::from_bits(0x41f03b61), f32::from_bits(0x4241d0ea)));
+    path.cubic_to(
+        (f32::from_bits(0x41effbe4), f32::from_bits(0x42400004)),
+        (f32::from_bits(0x41f0105f), f32::from_bits(0x4240e877)),
+        (f32::from_bits(0x41f03b61), f32::from_bits(0x4241d0ea)),
+    );
     // 29.998f, 48, 30.008f, 48.227f, 30.029f, 48.454f
     path.line_to((f32::from_bits(0x41f03b61), f32::from_bits(0x424228fa)));
     // 30.029f, 48.54f
-    path.cubic_to((f32::from_bits(0x41f051e8), f32::from_bits(0x42423f81)), (f32::from_bits(0x41f0c080), f32::from_bits(0x424276cd)), (f32::from_bits(0x41f11890), f32::from_bits(0x424276cd)));
+    path.cubic_to(
+        (f32::from_bits(0x41f051e8), f32::from_bits(0x42423f81)),
+        (f32::from_bits(0x41f0c080), f32::from_bits(0x424276cd)),
+        (f32::from_bits(0x41f11890), f32::from_bits(0x424276cd)),
+    );
     // 30.04f, 48.562f, 30.094f, 48.616f, 30.137f, 48.616f
-    path.cubic_to((f32::from_bits(0x41f11890), f32::from_bits(0x424276cd)), (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)), (f32::from_bits(0x41f12f17), f32::from_bits(0x42426b89)));
+    path.cubic_to(
+        (f32::from_bits(0x41f11890), f32::from_bits(0x424276cd)),
+        (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)),
+        (f32::from_bits(0x41f12f17), f32::from_bits(0x42426b89)),
+    );
     // 30.137f, 48.616f, 30.192f, 48.605f, 30.148f, 48.605f
-    path.cubic_to((f32::from_bits(0x41f1459e), f32::from_bits(0x42426045)), (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)), (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)));
+    path.cubic_to(
+        (f32::from_bits(0x41f1459e), f32::from_bits(0x42426045)),
+        (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)),
+        (f32::from_bits(0x41f18934), f32::from_bits(0x42426b89)),
+    );
     // 30.159f, 48.594f, 30.192f, 48.605f, 30.192f, 48.605f
-    path.cubic_to((f32::from_bits(0x41f19daf), f32::from_bits(0x424249be)), (f32::from_bits(0x41f19daf), f32::from_bits(0x42423f81)), (f32::from_bits(0x41f1b436), f32::from_bits(0x42423f81)));
+    path.cubic_to(
+        (f32::from_bits(0x41f19daf), f32::from_bits(0x424249be)),
+        (f32::from_bits(0x41f19daf), f32::from_bits(0x42423f81)),
+        (f32::from_bits(0x41f1b436), f32::from_bits(0x42423f81)),
+    );
     // 30.202f, 48.572f, 30.202f, 48.562f, 30.213f, 48.562f
-    path.cubic_to((f32::from_bits(0x41f18934), f32::from_bits(0x42414087)), (f32::from_bits(0x41f11890), f32::from_bits(0x424079df)), (f32::from_bits(0x41f0ac05), f32::from_bits(0x423f9cb0)));
+    path.cubic_to(
+        (f32::from_bits(0x41f18934), f32::from_bits(0x42414087)),
+        (f32::from_bits(0x41f11890), f32::from_bits(0x424079df)),
+        (f32::from_bits(0x41f0ac05), f32::from_bits(0x423f9cb0)),
+    );
     // 30.192f, 48.313f, 30.137f, 48.119f, 30.084f, 47.903f
-    path.cubic_to((f32::from_bits(0x41f0957e), f32::from_bits(0x423f7ae5)), (f32::from_bits(0x41f0c080), f32::from_bits(0x423f5a21)), (f32::from_bits(0x41f0957e), f32::from_bits(0x423f395c)));
+    path.cubic_to(
+        (f32::from_bits(0x41f0957e), f32::from_bits(0x423f7ae5)),
+        (f32::from_bits(0x41f0c080), f32::from_bits(0x423f5a21)),
+        (f32::from_bits(0x41f0957e), f32::from_bits(0x423f395c)),
+    );
     // 30.073f, 47.87f, 30.094f, 47.838f, 30.073f, 47.806f
     path.line_to((f32::from_bits(0x41f026e6), f32::from_bits(0x423f0c4e)));
     // 30.019f, 47.762f
     path.move_to((f32::from_bits(0x41ed4dcf), f32::from_bits(0x423fd3fc)));
     // 29.663f, 47.957f
-    path.cubic_to((f32::from_bits(0x41ecc8b0), f32::from_bits(0x42408523)), (f32::from_bits(0x41ec580c), f32::from_bits(0x42414bcb)), (f32::from_bits(0x41ec580c), f32::from_bits(0x42423f81)));
+    path.cubic_to(
+        (f32::from_bits(0x41ecc8b0), f32::from_bits(0x42408523)),
+        (f32::from_bits(0x41ec580c), f32::from_bits(0x42414bcb)),
+        (f32::from_bits(0x41ec580c), f32::from_bits(0x42423f81)),
+    );
     // 29.598f, 48.13f, 29.543f, 48.324f, 29.543f, 48.562f
-    path.cubic_to((f32::from_bits(0x41ec6e93), f32::from_bits(0x42423f81)), (f32::from_bits(0x41ec9ba2), f32::from_bits(0x42426046)), (f32::from_bits(0x41ecb229), f32::from_bits(0x42426b89)));
+    path.cubic_to(
+        (f32::from_bits(0x41ec6e93), f32::from_bits(0x42423f81)),
+        (f32::from_bits(0x41ec9ba2), f32::from_bits(0x42426046)),
+        (f32::from_bits(0x41ecb229), f32::from_bits(0x42426b89)),
+    );
     // 29.554f, 48.562f, 29.576f, 48.594f, 29.587f, 48.605f
-    path.cubic_to((f32::from_bits(0x41ecc8b0), f32::from_bits(0x42426b89)), (f32::from_bits(0x41ecdd2b), f32::from_bits(0x42426045)), (f32::from_bits(0x41ecf3b2), f32::from_bits(0x42426b89)));
+    path.cubic_to(
+        (f32::from_bits(0x41ecc8b0), f32::from_bits(0x42426b89)),
+        (f32::from_bits(0x41ecdd2b), f32::from_bits(0x42426045)),
+        (f32::from_bits(0x41ecf3b2), f32::from_bits(0x42426b89)),
+    );
     // 29.598f, 48.605f, 29.608f, 48.594f, 29.619f, 48.605f
-    path.cubic_to((f32::from_bits(0x41ecf3b2), f32::from_bits(0x42426b89)), (f32::from_bits(0x41eda5df), f32::from_bits(0x42426045)), (f32::from_bits(0x41edba5a), f32::from_bits(0x42423f81)));
+    path.cubic_to(
+        (f32::from_bits(0x41ecf3b2), f32::from_bits(0x42426b89)),
+        (f32::from_bits(0x41eda5df), f32::from_bits(0x42426045)),
+        (f32::from_bits(0x41edba5a), f32::from_bits(0x42423f81)),
+    );
     // 29.619f, 48.605f, 29.706f, 48.594f, 29.716f, 48.562f
-    path.cubic_to((f32::from_bits(0x41ee126a), f32::from_bits(0x4241e66a)), (f32::from_bits(0x41edd0e1), f32::from_bits(0x42403750)), (f32::from_bits(0x41eda5df), f32::from_bits(0x423fdf3f)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee126a), f32::from_bits(0x4241e66a)),
+        (f32::from_bits(0x41edd0e1), f32::from_bits(0x42403750)),
+        (f32::from_bits(0x41eda5df), f32::from_bits(0x423fdf3f)),
+    );
     // 29.759f, 48.475f, 29.727f, 48.054f, 29.706f, 47.968f
     path.line_to((f32::from_bits(0x41ed4dcf), f32::from_bits(0x423fd3fb)));
     // 29.663f, 47.957f
     path.move_to((f32::from_bits(0x41d05a19), f32::from_bits(0x4258ab05)));
     // 26.044f, 54.167f
-    path.cubic_to((f32::from_bits(0x41d05a19), f32::from_bits(0x42589fc1)), (f32::from_bits(0x41d070a0), f32::from_bits(0x42588a40)), (f32::from_bits(0x41d05a19), f32::from_bits(0x42586876)));
+    path.cubic_to(
+        (f32::from_bits(0x41d05a19), f32::from_bits(0x42589fc1)),
+        (f32::from_bits(0x41d070a0), f32::from_bits(0x42588a40)),
+        (f32::from_bits(0x41d05a19), f32::from_bits(0x42586876)),
+    );
     // 26.044f, 54.156f, 26.055f, 54.135f, 26.044f, 54.102f
-    path.cubic_to((f32::from_bits(0x41d05a19), f32::from_bits(0x42583c6e)), (f32::from_bits(0x41d02f17), f32::from_bits(0x4257ee9b)), (f32::from_bits(0x41d00209), f32::from_bits(0x4257c293)));
+    path.cubic_to(
+        (f32::from_bits(0x41d05a19), f32::from_bits(0x42583c6e)),
+        (f32::from_bits(0x41d02f17), f32::from_bits(0x4257ee9b)),
+        (f32::from_bits(0x41d00209), f32::from_bits(0x4257c293)),
+    );
     // 26.044f, 54.059f, 26.023f, 53.983f, 26.001f, 53.94f
-    path.cubic_to((f32::from_bits(0x41cfeb82), f32::from_bits(0x42571cb0)), (f32::from_bits(0x41d00209), f32::from_bits(0x42568210)), (f32::from_bits(0x41cfeb82), f32::from_bits(0x4255c5a5)));
+    path.cubic_to(
+        (f32::from_bits(0x41cfeb82), f32::from_bits(0x42571cb0)),
+        (f32::from_bits(0x41d00209), f32::from_bits(0x42568210)),
+        (f32::from_bits(0x41cfeb82), f32::from_bits(0x4255c5a5)),
+    );
     // 25.99f, 53.778f, 26.001f, 53.627f, 25.99f, 53.443f
-    path.cubic_to((f32::from_bits(0x41cfeb82), f32::from_bits(0x4255a4e0)), (f32::from_bits(0x41cfc080), f32::from_bits(0x42552b05)), (f32::from_bits(0x41cfd4fb), f32::from_bits(0x4254dd32)));
+    path.cubic_to(
+        (f32::from_bits(0x41cfeb82), f32::from_bits(0x4255a4e0)),
+        (f32::from_bits(0x41cfc080), f32::from_bits(0x42552b05)),
+        (f32::from_bits(0x41cfd4fb), f32::from_bits(0x4254dd32)),
+    );
     // 25.99f, 53.411f, 25.969f, 53.292f, 25.979f, 53.216f
-    path.cubic_to((f32::from_bits(0x41cfeb82), f32::from_bits(0x4254b12a)), (f32::from_bits(0x41d05a1a), f32::from_bits(0x4254b12a)), (f32::from_bits(0x41d0df38), f32::from_bits(0x4254c7b1)));
+    path.cubic_to(
+        (f32::from_bits(0x41cfeb82), f32::from_bits(0x4254b12a)),
+        (f32::from_bits(0x41d05a1a), f32::from_bits(0x4254b12a)),
+        (f32::from_bits(0x41d0df38), f32::from_bits(0x4254c7b1)),
+    );
     // 25.99f, 53.173f, 26.044f, 53.173f, 26.109f, 53.195f
-    path.cubic_to((f32::from_bits(0x41d24186), f32::from_bits(0x42552b05)), (f32::from_bits(0x41d4ac05), f32::from_bits(0x42563f80)), (f32::from_bits(0x41d50621), f32::from_bits(0x42566044)));
+    path.cubic_to(
+        (f32::from_bits(0x41d24186), f32::from_bits(0x42552b05)),
+        (f32::from_bits(0x41d4ac05), f32::from_bits(0x42563f80)),
+        (f32::from_bits(0x41d50621), f32::from_bits(0x42566044)),
+    );
     // 26.282f, 53.292f, 26.584f, 53.562f, 26.628f, 53.594f
-    path.cubic_to((f32::from_bits(0x41d60e52), f32::from_bits(0x4256da1f)), (f32::from_bits(0x41d70208), f32::from_bits(0x425748b7)), (f32::from_bits(0x41d80a3a), f32::from_bits(0x4257c292)));
+    path.cubic_to(
+        (f32::from_bits(0x41d60e52), f32::from_bits(0x4256da1f)),
+        (f32::from_bits(0x41d70208), f32::from_bits(0x425748b7)),
+        (f32::from_bits(0x41d80a3a), f32::from_bits(0x4257c292)),
+    );
     // 26.757f, 53.713f, 26.876f, 53.821f, 27.005f, 53.94f
-    path.cubic_to((f32::from_bits(0x41d8a5e0), f32::from_bits(0x4257f9de)), (f32::from_bits(0x41da1eb5), f32::from_bits(0x4258947e)), (f32::from_bits(0x41d8a5e0), f32::from_bits(0x4258ab05)));
+    path.cubic_to(
+        (f32::from_bits(0x41d8a5e0), f32::from_bits(0x4257f9de)),
+        (f32::from_bits(0x41da1eb5), f32::from_bits(0x4258947e)),
+        (f32::from_bits(0x41d8a5e0), f32::from_bits(0x4258ab05)),
+    );
     // 27.081f, 53.994f, 27.265f, 54.145f, 27.081f, 54.167f
-    path.cubic_to((f32::from_bits(0x41d7df38), f32::from_bits(0x4258cbca)), (f32::from_bits(0x41d72d0b), f32::from_bits(0x4258b649)), (f32::from_bits(0x41d66663), f32::from_bits(0x4258b649)));
+    path.cubic_to(
+        (f32::from_bits(0x41d7df38), f32::from_bits(0x4258cbca)),
+        (f32::from_bits(0x41d72d0b), f32::from_bits(0x4258b649)),
+        (f32::from_bits(0x41d66663), f32::from_bits(0x4258b649)),
+    );
     // 26.984f, 54.199f, 26.897f, 54.178f, 26.8f, 54.178f
-    path.cubic_to((f32::from_bits(0x41d547ab), f32::from_bits(0x4258cbca)), (f32::from_bits(0x41d1bc67), f32::from_bits(0x42592f1e)), (f32::from_bits(0x41d0b22a), f32::from_bits(0x4258e251)));
+    path.cubic_to(
+        (f32::from_bits(0x41d547ab), f32::from_bits(0x4258cbca)),
+        (f32::from_bits(0x41d1bc67), f32::from_bits(0x42592f1e)),
+        (f32::from_bits(0x41d0b22a), f32::from_bits(0x4258e251)),
+    );
     // 26.66f, 54.199f, 26.217f, 54.296f, 26.087f, 54.221f
     path.line_to((f32::from_bits(0x41d0b22a), f32::from_bits(0x4258d70d)));
     // 26.087f, 54.21f
-    path.cubic_to((f32::from_bits(0x41d09daf), f32::from_bits(0x4258d70d)), (f32::from_bits(0x41d070a1), f32::from_bits(0x4258b648)), (f32::from_bits(0x41d05a1a), f32::from_bits(0x4258ab05)));
+    path.cubic_to(
+        (f32::from_bits(0x41d09daf), f32::from_bits(0x4258d70d)),
+        (f32::from_bits(0x41d070a1), f32::from_bits(0x4258b648)),
+        (f32::from_bits(0x41d05a1a), f32::from_bits(0x4258ab05)),
+    );
     // 26.077f, 54.21f, 26.055f, 54.178f, 26.044f, 54.167f
     path.move_to((f32::from_bits(0x41ce8b41), f32::from_bits(0x42588a40)));
     // 25.818f, 54.135f
-    path.cubic_to((f32::from_bits(0x41ceb643), f32::from_bits(0x4258ab05)), (f32::from_bits(0x41ce74ba), f32::from_bits(0x4258ab05)), (f32::from_bits(0x41ceccca), f32::from_bits(0x4258ab05)));
+    path.cubic_to(
+        (f32::from_bits(0x41ceb643), f32::from_bits(0x4258ab05)),
+        (f32::from_bits(0x41ce74ba), f32::from_bits(0x4258ab05)),
+        (f32::from_bits(0x41ceccca), f32::from_bits(0x4258ab05)),
+    );
     // 25.839f, 54.167f, 25.807f, 54.167f, 25.85f, 54.167f
-    path.cubic_to((f32::from_bits(0x41cef7cc), f32::from_bits(0x4258ab05)), (f32::from_bits(0x41cf0e53), f32::from_bits(0x4258b336)), (f32::from_bits(0x41cf0e53), f32::from_bits(0x42589db5)));
+    path.cubic_to(
+        (f32::from_bits(0x41cef7cc), f32::from_bits(0x4258ab05)),
+        (f32::from_bits(0x41cf0e53), f32::from_bits(0x4258b336)),
+        (f32::from_bits(0x41cf0e53), f32::from_bits(0x42589db5)),
+    );
     // 25.871f, 54.167f, 25.882f, 54.175f, 25.882f, 54.154f
-    path.cubic_to((f32::from_bits(0x41cf0e53), f32::from_bits(0x4258395b)), (f32::from_bits(0x41cf0a3a), f32::from_bits(0x42579790)), (f32::from_bits(0x41cedd2c), f32::from_bits(0x4257343c)));
+    path.cubic_to(
+        (f32::from_bits(0x41cf0e53), f32::from_bits(0x4258395b)),
+        (f32::from_bits(0x41cf0a3a), f32::from_bits(0x42579790)),
+        (f32::from_bits(0x41cedd2c), f32::from_bits(0x4257343c)),
+    );
     // 25.882f, 54.056f, 25.88f, 53.898f, 25.858f, 53.801f
-    path.cubic_to((f32::from_bits(0x41cec8b1), f32::from_bits(0x42564086)), (f32::from_bits(0x41ceccca), f32::from_bits(0x4254f3b9)), (f32::from_bits(0x41ce5e32), f32::from_bits(0x425421cd)));
+    path.cubic_to(
+        (f32::from_bits(0x41cec8b1), f32::from_bits(0x42564086)),
+        (f32::from_bits(0x41ceccca), f32::from_bits(0x4254f3b9)),
+        (f32::from_bits(0x41ce5e32), f32::from_bits(0x425421cd)),
+    );
     // 25.848f, 53.563f, 25.85f, 53.238f, 25.796f, 53.033f
     path.line_to((f32::from_bits(0x41cdef9a), f32::from_bits(0x425421cd)));
     // 25.742f, 53.033f
-    path.cubic_to((f32::from_bits(0x41cdd913), f32::from_bits(0x4254dd31)), (f32::from_bits(0x41ce126b), f32::from_bits(0x425626ec)), (f32::from_bits(0x41ce28f2), f32::from_bits(0x4256e250)));
+    path.cubic_to(
+        (f32::from_bits(0x41cdd913), f32::from_bits(0x4254dd31)),
+        (f32::from_bits(0x41ce126b), f32::from_bits(0x425626ec)),
+        (f32::from_bits(0x41ce28f2), f32::from_bits(0x4256e250)),
+    );
     // 25.731f, 53.216f, 25.759f, 53.538f, 25.77f, 53.721f
-    path.cubic_to((f32::from_bits(0x41ce3f79), f32::from_bits(0x42579377)), (f32::from_bits(0x41ce47aa), f32::from_bits(0x42580f5e)), (f32::from_bits(0x41ce8b40), f32::from_bits(0x42588a40)));
+    path.cubic_to(
+        (f32::from_bits(0x41ce3f79), f32::from_bits(0x42579377)),
+        (f32::from_bits(0x41ce47aa), f32::from_bits(0x42580f5e)),
+        (f32::from_bits(0x41ce8b40), f32::from_bits(0x42588a40)),
+    );
     // 25.781f, 53.894f, 25.785f, 54.015f, 25.818f, 54.135f
     path.move_to((f32::from_bits(0x41c58d4c), f32::from_bits(0x425271ad)));
     // 24.694f, 52.611f
-    path.cubic_to((f32::from_bits(0x41c58d4c), f32::from_bits(0x42525c2c)), (f32::from_bits(0x41c5ba5a), f32::from_bits(0x42523024)), (f32::from_bits(0x41c5fbe4), f32::from_bits(0x425224e0)));
+    path.cubic_to(
+        (f32::from_bits(0x41c58d4c), f32::from_bits(0x42525c2c)),
+        (f32::from_bits(0x41c5ba5a), f32::from_bits(0x42523024)),
+        (f32::from_bits(0x41c5fbe4), f32::from_bits(0x425224e0)),
+    );
     // 24.694f, 52.59f, 24.716f, 52.547f, 24.748f, 52.536f
     path.line_to((f32::from_bits(0x41c6126b), f32::from_bits(0x4252199c)));
     // 24.759f, 52.525f
-    path.cubic_to((f32::from_bits(0x41c6978a), f32::from_bits(0x42520f5f)), (f32::from_bits(0x41c774b9), f32::from_bits(0x42523023)), (f32::from_bits(0x41c79fbb), f32::from_bits(0x42525c2b)));
+    path.cubic_to(
+        (f32::from_bits(0x41c6978a), f32::from_bits(0x42520f5f)),
+        (f32::from_bits(0x41c774b9), f32::from_bits(0x42523023)),
+        (f32::from_bits(0x41c79fbb), f32::from_bits(0x42525c2b)),
+    );
     // 24.824f, 52.515f, 24.932f, 52.547f, 24.953f, 52.59f
-    path.cubic_to((f32::from_bits(0x41c7f9d8), f32::from_bits(0x4252a9fe)), (f32::from_bits(0x41c79fbb), f32::from_bits(0x4258e250)), (f32::from_bits(0x41c78b40), f32::from_bits(0x4259199c)));
+    path.cubic_to(
+        (f32::from_bits(0x41c7f9d8), f32::from_bits(0x4252a9fe)),
+        (f32::from_bits(0x41c79fbb), f32::from_bits(0x4258e250)),
+        (f32::from_bits(0x41c78b40), f32::from_bits(0x4259199c)),
+    );
     // 24.997f, 52.666f, 24.953f, 54.221f, 24.943f, 54.275f
     path.line_to((f32::from_bits(0x41c78b40), f32::from_bits(0x42592f1d)));
     // 24.943f, 54.296f
-    path.cubic_to((f32::from_bits(0x41c747aa), f32::from_bits(0x42595c2b)), (f32::from_bits(0x41c68103), f32::from_bits(0x42596669)), (f32::from_bits(0x41c5fbe4), f32::from_bits(0x42596669)));
+    path.cubic_to(
+        (f32::from_bits(0x41c747aa), f32::from_bits(0x42595c2b)),
+        (f32::from_bits(0x41c68103), f32::from_bits(0x42596669)),
+        (f32::from_bits(0x41c5fbe4), f32::from_bits(0x42596669)),
+    );
     // 24.91f, 54.34f, 24.813f, 54.35f, 24.748f, 54.35f
-    path.cubic_to((f32::from_bits(0x41c5353c), f32::from_bits(0x425971ad)), (f32::from_bits(0x41c41684), f32::from_bits(0x425971ad)), (f32::from_bits(0x41c3e975), f32::from_bits(0x42592f1d)));
+    path.cubic_to(
+        (f32::from_bits(0x41c5353c), f32::from_bits(0x425971ad)),
+        (f32::from_bits(0x41c41684), f32::from_bits(0x425971ad)),
+        (f32::from_bits(0x41c3e975), f32::from_bits(0x42592f1d)),
+    );
     // 24.651f, 54.361f, 24.511f, 54.361f, 24.489f, 54.296f
-    path.cubic_to((f32::from_bits(0x41c3a7ec), f32::from_bits(0x4258cbc9)), (f32::from_bits(0x41c42afe), f32::from_bits(0x4257d919)), (f32::from_bits(0x41c44185), f32::from_bits(0x42578002)));
+    path.cubic_to(
+        (f32::from_bits(0x41c3a7ec), f32::from_bits(0x4258cbc9)),
+        (f32::from_bits(0x41c42afe), f32::from_bits(0x4257d919)),
+        (f32::from_bits(0x41c44185), f32::from_bits(0x42578002)),
+    );
     // 24.457f, 54.199f, 24.521f, 53.962f, 24.532f, 53.875f
-    path.cubic_to((f32::from_bits(0x41c46e93), f32::from_bits(0x42563f7f)), (f32::from_bits(0x41c4c6a4), f32::from_bits(0x42550a3f)), (f32::from_bits(0x41c5353b), f32::from_bits(0x4253df3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41c46e93), f32::from_bits(0x42563f7f)),
+        (f32::from_bits(0x41c4c6a4), f32::from_bits(0x42550a3f)),
+        (f32::from_bits(0x41c5353b), f32::from_bits(0x4253df3d)),
+    );
     // 24.554f, 53.562f, 24.597f, 53.26f, 24.651f, 52.968f
-    path.cubic_to((f32::from_bits(0x41c54bc2), f32::from_bits(0x42537be9)), (f32::from_bits(0x41c56249), f32::from_bits(0x42530d51)), (f32::from_bits(0x41c58d4b), f32::from_bits(0x4252cac2)));
+    path.cubic_to(
+        (f32::from_bits(0x41c54bc2), f32::from_bits(0x42537be9)),
+        (f32::from_bits(0x41c56249), f32::from_bits(0x42530d51)),
+        (f32::from_bits(0x41c58d4b), f32::from_bits(0x4252cac2)),
+    );
     // 24.662f, 52.871f, 24.673f, 52.763f, 24.694f, 52.698f
-    path.cubic_to((f32::from_bits(0x41c58d4b), f32::from_bits(0x4252a9fd)), (f32::from_bits(0x41c56249), f32::from_bits(0x42528833)), (f32::from_bits(0x41c58d4b), f32::from_bits(0x425271ab)));
+    path.cubic_to(
+        (f32::from_bits(0x41c58d4b), f32::from_bits(0x4252a9fd)),
+        (f32::from_bits(0x41c56249), f32::from_bits(0x42528833)),
+        (f32::from_bits(0x41c58d4b), f32::from_bits(0x425271ab)),
+    );
     // 24.694f, 52.666f, 24.673f, 52.633f, 24.694f, 52.611f
     path.move_to((f32::from_bits(0x41c36662), f32::from_bits(0x42534fe0)));
     // 24.425f, 52.828f
-    path.cubic_to((f32::from_bits(0x41c33954), f32::from_bits(0x4253c9bb)), (f32::from_bits(0x41c34dcf), f32::from_bits(0x42541688)), (f32::from_bits(0x41c322cc), f32::from_bits(0x42549063)));
+    path.cubic_to(
+        (f32::from_bits(0x41c33954), f32::from_bits(0x4253c9bb)),
+        (f32::from_bits(0x41c34dcf), f32::from_bits(0x42541688)),
+        (f32::from_bits(0x41c322cc), f32::from_bits(0x42549063)),
+    );
     // 24.403f, 52.947f, 24.413f, 53.022f, 24.392f, 53.141f
-    path.cubic_to((f32::from_bits(0x41c2f5be), f32::from_bits(0x4254fefb)), (f32::from_bits(0x41c2b434), f32::from_bits(0x42558e57)), (f32::from_bits(0x41c29dad), f32::from_bits(0x42560832)));
+    path.cubic_to(
+        (f32::from_bits(0x41c2f5be), f32::from_bits(0x4254fefb)),
+        (f32::from_bits(0x41c2b434), f32::from_bits(0x42558e57)),
+        (f32::from_bits(0x41c29dad), f32::from_bits(0x42560832)),
+    );
     // 24.37f, 53.249f, 24.338f, 53.389f, 24.327f, 53.508f
-    path.cubic_to((f32::from_bits(0x41c2709f), f32::from_bits(0x4256e561)), (f32::from_bits(0x41c2459d), f32::from_bits(0x4257ad0f)), (f32::from_bits(0x41c1ed8c), f32::from_bits(0x42586874)));
+    path.cubic_to(
+        (f32::from_bits(0x41c2709f), f32::from_bits(0x4256e561)),
+        (f32::from_bits(0x41c2459d), f32::from_bits(0x4257ad0f)),
+        (f32::from_bits(0x41c1ed8c), f32::from_bits(0x42586874)),
+    );
     // 24.305f, 53.724f, 24.284f, 53.919f, 24.241f, 54.102f
-    path.cubic_to((f32::from_bits(0x41c1d705), f32::from_bits(0x4258cbc8)), (f32::from_bits(0x41c20207), f32::from_bits(0x42590e57)), (f32::from_bits(0x41c1c07e), f32::from_bits(0x425950e7)));
+    path.cubic_to(
+        (f32::from_bits(0x41c1d705), f32::from_bits(0x4258cbc8)),
+        (f32::from_bits(0x41c20207), f32::from_bits(0x42590e57)),
+        (f32::from_bits(0x41c1c07e), f32::from_bits(0x425950e7)),
+    );
     // 24.23f, 54.199f, 24.251f, 54.264f, 24.219f, 54.329f
-    path.cubic_to((f32::from_bits(0x41c1c07e), f32::from_bits(0x42596668)), (f32::from_bits(0x41c1686e), f32::from_bits(0x42599270)), (f32::from_bits(0x41c13b5f), f32::from_bits(0x42599270)));
+    path.cubic_to(
+        (f32::from_bits(0x41c1c07e), f32::from_bits(0x42596668)),
+        (f32::from_bits(0x41c1686e), f32::from_bits(0x42599270)),
+        (f32::from_bits(0x41c13b5f), f32::from_bits(0x42599270)),
+    );
     // 24.219f, 54.35f, 24.176f, 54.393f, 24.154f, 54.393f
-    path.cubic_to((f32::from_bits(0x41c0ccc7), f32::from_bits(0x4259a8f7)), (f32::from_bits(0x41c074b7), f32::from_bits(0x42599270)), (f32::from_bits(0x41c00620), f32::from_bits(0x425971ab)));
+    path.cubic_to(
+        (f32::from_bits(0x41c0ccc7), f32::from_bits(0x4259a8f7)),
+        (f32::from_bits(0x41c074b7), f32::from_bits(0x42599270)),
+        (f32::from_bits(0x41c00620), f32::from_bits(0x425971ab)),
+    );
     // 24.1f, 54.415f, 24.057f, 54.393f, 24.003f, 54.361f
-    path.cubic_to((f32::from_bits(0x41c00620), f32::from_bits(0x425825e4)), (f32::from_bits(0x41c08b3f), f32::from_bits(0x4256da1e)), (f32::from_bits(0x41c0f9d6), f32::from_bits(0x42558e57)));
+    path.cubic_to(
+        (f32::from_bits(0x41c00620), f32::from_bits(0x425825e4)),
+        (f32::from_bits(0x41c08b3f), f32::from_bits(0x4256da1e)),
+        (f32::from_bits(0x41c0f9d6), f32::from_bits(0x42558e57)),
+    );
     // 24.003f, 54.037f, 24.068f, 53.713f, 24.122f, 53.389f
-    path.cubic_to((f32::from_bits(0x41c151e6), f32::from_bits(0x425479dc)), (f32::from_bits(0x41c151e6), f32::from_bits(0x42534fe0)), (f32::from_bits(0x41c1ed8c), f32::from_bits(0x425245a3)));
+    path.cubic_to(
+        (f32::from_bits(0x41c151e6), f32::from_bits(0x425479dc)),
+        (f32::from_bits(0x41c151e6), f32::from_bits(0x42534fe0)),
+        (f32::from_bits(0x41c1ed8c), f32::from_bits(0x425245a3)),
+    );
     // 24.165f, 53.119f, 24.165f, 52.828f, 24.241f, 52.568f
-    path.cubic_to((f32::from_bits(0x41c22f15), f32::from_bits(0x42520f5d)), (f32::from_bits(0x41c22f15), f32::from_bits(0x4251d70b)), (f32::from_bits(0x41c25c24), f32::from_bits(0x4251ccce)));
+    path.cubic_to(
+        (f32::from_bits(0x41c22f15), f32::from_bits(0x42520f5d)),
+        (f32::from_bits(0x41c22f15), f32::from_bits(0x4251d70b)),
+        (f32::from_bits(0x41c25c24), f32::from_bits(0x4251ccce)),
+    );
     // 24.273f, 52.515f, 24.273f, 52.46f, 24.295f, 52.45f
-    path.cubic_to((f32::from_bits(0x41c2e143), f32::from_bits(0x4251b647)), (f32::from_bits(0x41c34dce), f32::from_bits(0x4251e24f)), (f32::from_bits(0x41c3a7eb), f32::from_bits(0x4251e24f)));
+    path.cubic_to(
+        (f32::from_bits(0x41c2e143), f32::from_bits(0x4251b647)),
+        (f32::from_bits(0x41c34dce), f32::from_bits(0x4251e24f)),
+        (f32::from_bits(0x41c3a7eb), f32::from_bits(0x4251e24f)),
+    );
     // 24.36f, 52.428f, 24.413f, 52.471f, 24.457f, 52.471f
-    path.cubic_to((f32::from_bits(0x41c3be72), f32::from_bits(0x42525c2a)), (f32::from_bits(0x41c37add), f32::from_bits(0x4252e149)), (f32::from_bits(0x41c36662), f32::from_bits(0x42534fe0)));
+    path.cubic_to(
+        (f32::from_bits(0x41c3be72), f32::from_bits(0x42525c2a)),
+        (f32::from_bits(0x41c37add), f32::from_bits(0x4252e149)),
+        (f32::from_bits(0x41c36662), f32::from_bits(0x42534fe0)),
+    );
     // 24.468f, 52.59f, 24.435f, 52.72f, 24.425f, 52.828f
     path.move_to((f32::from_bits(0x41b3105e), f32::from_bits(0x426e020d)));
     // 22.383f, 59.502f
-    path.cubic_to((f32::from_bits(0x41b2ced5), f32::from_bits(0x426dcac1)), (f32::from_bits(0x41b28b3f), f32::from_bits(0x426d9375)), (f32::from_bits(0x41b21ca8), f32::from_bits(0x426d676d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b2ced5), f32::from_bits(0x426dcac1)),
+        (f32::from_bits(0x41b28b3f), f32::from_bits(0x426d9375)),
+        (f32::from_bits(0x41b21ca8), f32::from_bits(0x426d676d)),
+    );
     // 22.351f, 59.448f, 22.318f, 59.394f, 22.264f, 59.351f
     path.line_to((f32::from_bits(0x41b1f1a6), f32::from_bits(0x426d676d)));
     // 22.243f, 59.351f
     path.line_to((f32::from_bits(0x41b1f1a6), f32::from_bits(0x426d50e6)));
     // 22.243f, 59.329f
-    path.cubic_to((f32::from_bits(0x41b1f1a6), f32::from_bits(0x426d2f1b)), (f32::from_bits(0x41b1830e), f32::from_bits(0x426d199a)), (f32::from_bits(0x41b15600), f32::from_bits(0x426d0f5d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b1f1a6), f32::from_bits(0x426d2f1b)),
+        (f32::from_bits(0x41b1830e), f32::from_bits(0x426d199a)),
+        (f32::from_bits(0x41b15600), f32::from_bits(0x426d0f5d)),
+    );
     // 22.243f, 59.296f, 22.189f, 59.275f, 22.167f, 59.265f
-    path.cubic_to((f32::from_bits(0x41b0e768), f32::from_bits(0x426cccce)), (f32::from_bits(0x41af1683), f32::from_bits(0x426bd917)), (f32::from_bits(0x41aefffc), f32::from_bits(0x426b8107)));
+    path.cubic_to(
+        (f32::from_bits(0x41b0e768), f32::from_bits(0x426cccce)),
+        (f32::from_bits(0x41af1683), f32::from_bits(0x426bd917)),
+        (f32::from_bits(0x41aefffc), f32::from_bits(0x426b8107)),
+    );
     // 22.113f, 59.2f, 21.886f, 58.962f, 21.875f, 58.876f
-    path.cubic_to((f32::from_bits(0x41aeeb81), f32::from_bits(0x426b3334)), (f32::from_bits(0x41af5a19), f32::from_bits(0x426acfe0)), (f32::from_bits(0x41af70a0), f32::from_bits(0x426a8d51)));
+    path.cubic_to(
+        (f32::from_bits(0x41aeeb81), f32::from_bits(0x426b3334)),
+        (f32::from_bits(0x41af5a19), f32::from_bits(0x426acfe0)),
+        (f32::from_bits(0x41af70a0), f32::from_bits(0x426a8d51)),
+    );
     // 21.865f, 58.8f, 21.919f, 58.703f, 21.93f, 58.638f
-    path.cubic_to((f32::from_bits(0x41b04dcf), f32::from_bits(0x42693647)), (f32::from_bits(0x41b1db1f), f32::from_bits(0x4268645b)), (f32::from_bits(0x41b43123), f32::from_bits(0x4267c9bc)));
+    path.cubic_to(
+        (f32::from_bits(0x41b04dcf), f32::from_bits(0x42693647)),
+        (f32::from_bits(0x41b1db1f), f32::from_bits(0x4268645b)),
+        (f32::from_bits(0x41b43123), f32::from_bits(0x4267c9bc)),
+    );
     // 22.038f, 58.303f, 22.232f, 58.098f, 22.524f, 57.947f
-    path.cubic_to((f32::from_bits(0x41b472ac), f32::from_bits(0x4267a7f1)), (f32::from_bits(0x41b4f7cb), f32::from_bits(0x426770a5)), (f32::from_bits(0x41b56662), f32::from_bits(0x42676668)));
+    path.cubic_to(
+        (f32::from_bits(0x41b472ac), f32::from_bits(0x4267a7f1)),
+        (f32::from_bits(0x41b4f7cb), f32::from_bits(0x426770a5)),
+        (f32::from_bits(0x41b56662), f32::from_bits(0x42676668)),
+    );
     // 22.556f, 57.914f, 22.621f, 57.86f, 22.675f, 57.85f
-    path.cubic_to((f32::from_bits(0x41b5a7eb), f32::from_bits(0x42675b24)), (f32::from_bits(0x41b5d4fa), f32::from_bits(0x42676668)), (f32::from_bits(0x41b62d0a), f32::from_bits(0x42675b24)));
+    path.cubic_to(
+        (f32::from_bits(0x41b5a7eb), f32::from_bits(0x42675b24)),
+        (f32::from_bits(0x41b5d4fa), f32::from_bits(0x42676668)),
+        (f32::from_bits(0x41b62d0a), f32::from_bits(0x42675b24)),
+    );
     // 22.707f, 57.839f, 22.729f, 57.85f, 22.772f, 57.839f
-    path.cubic_to((f32::from_bits(0x41b69ba2), f32::from_bits(0x42674fe0)), (f32::from_bits(0x41b78f58), f32::from_bits(0x42671895)), (f32::from_bits(0x41b828f1), f32::from_bits(0x42671895)));
+    path.cubic_to(
+        (f32::from_bits(0x41b69ba2), f32::from_bits(0x42674fe0)),
+        (f32::from_bits(0x41b78f58), f32::from_bits(0x42671895)),
+        (f32::from_bits(0x41b828f1), f32::from_bits(0x42671895)),
+    );
     // 22.826f, 57.828f, 22.945f, 57.774f, 23.02f, 57.774f
-    path.cubic_to((f32::from_bits(0x41b8ae10), f32::from_bits(0x42671895)), (f32::from_bits(0x41b8c497), f32::from_bits(0x42672f1c)), (f32::from_bits(0x41b91ca7), f32::from_bits(0x4267449d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b8ae10), f32::from_bits(0x42671895)),
+        (f32::from_bits(0x41b8c497), f32::from_bits(0x42672f1c)),
+        (f32::from_bits(0x41b91ca7), f32::from_bits(0x4267449d)),
+    );
     // 23.085f, 57.774f, 23.096f, 57.796f, 23.139f, 57.817f
     path.line_to((f32::from_bits(0x41b91ca7), f32::from_bits(0x42675b24)));
     // 23.139f, 57.839f
-    path.cubic_to((f32::from_bits(0x41b91ca7), f32::from_bits(0x42674fe0)), (f32::from_bits(0x41b9332e), f32::from_bits(0x426770a5)), (f32::from_bits(0x41b9332e), f32::from_bits(0x4267872c)));
+    path.cubic_to(
+        (f32::from_bits(0x41b91ca7), f32::from_bits(0x42674fe0)),
+        (f32::from_bits(0x41b9332e), f32::from_bits(0x426770a5)),
+        (f32::from_bits(0x41b9332e), f32::from_bits(0x4267872c)),
+    );
     // 23.139f, 57.828f, 23.15f, 57.86f, 23.15f, 57.882f
-    path.cubic_to((f32::from_bits(0x41b91ca7), f32::from_bits(0x4267df3c)), (f32::from_bits(0x41b90620), f32::from_bits(0x42685918)), (f32::from_bits(0x41b8db1e), f32::from_bits(0x4268bc6b)));
+    path.cubic_to(
+        (f32::from_bits(0x41b91ca7), f32::from_bits(0x4267df3c)),
+        (f32::from_bits(0x41b90620), f32::from_bits(0x42685918)),
+        (f32::from_bits(0x41b8db1e), f32::from_bits(0x4268bc6b)),
+    );
     // 23.139f, 57.968f, 23.128f, 58.087f, 23.107f, 58.184f
-    path.cubic_to((f32::from_bits(0x41b855ff), f32::from_bits(0x426a29fc)), (f32::from_bits(0x41b7d0e1), f32::from_bits(0x426bc290)), (f32::from_bits(0x41b76249), f32::from_bits(0x426d2f1b)));
+    path.cubic_to(
+        (f32::from_bits(0x41b855ff), f32::from_bits(0x426a29fc)),
+        (f32::from_bits(0x41b7d0e1), f32::from_bits(0x426bc290)),
+        (f32::from_bits(0x41b76249), f32::from_bits(0x426d2f1b)),
+    );
     // 23.042f, 58.541f, 22.977f, 58.94f, 22.923f, 59.296f
-    path.cubic_to((f32::from_bits(0x41b720c0), f32::from_bits(0x426e0d50)), (f32::from_bits(0x41b720c0), f32::from_bits(0x426ed3f8)), (f32::from_bits(0x41b69ba1), f32::from_bits(0x426f79dc)));
+    path.cubic_to(
+        (f32::from_bits(0x41b720c0), f32::from_bits(0x426e0d50)),
+        (f32::from_bits(0x41b720c0), f32::from_bits(0x426ed3f8)),
+        (f32::from_bits(0x41b69ba1), f32::from_bits(0x426f79dc)),
+    );
     // 22.891f, 59.513f, 22.891f, 59.707f, 22.826f, 59.869f
-    path.cubic_to((f32::from_bits(0x41b64391), f32::from_bits(0x426f645b)), (f32::from_bits(0x41b62d09), f32::from_bits(0x426f79dc)), (f32::from_bits(0x41b5eb80), f32::from_bits(0x426f645b)));
+    path.cubic_to(
+        (f32::from_bits(0x41b64391), f32::from_bits(0x426f645b)),
+        (f32::from_bits(0x41b62d09), f32::from_bits(0x426f79dc)),
+        (f32::from_bits(0x41b5eb80), f32::from_bits(0x426f645b)),
+    );
     // 22.783f, 59.848f, 22.772f, 59.869f, 22.74f, 59.848f
-    path.cubic_to((f32::from_bits(0x41b5a7ea), f32::from_bits(0x426f5917)), (f32::from_bits(0x41b57adc), f32::from_bits(0x426f374d)), (f32::from_bits(0x41b53953), f32::from_bits(0x426f1688)));
+    path.cubic_to(
+        (f32::from_bits(0x41b5a7ea), f32::from_bits(0x426f5917)),
+        (f32::from_bits(0x41b57adc), f32::from_bits(0x426f374d)),
+        (f32::from_bits(0x41b53953), f32::from_bits(0x426f1688)),
+    );
     // 22.707f, 59.837f, 22.685f, 59.804f, 22.653f, 59.772f
     path.line_to((f32::from_bits(0x41b53953), f32::from_bits(0x426f0107)));
     // 22.653f, 59.751f
-    path.cubic_to((f32::from_bits(0x41b472ab), f32::from_bits(0x426ea7f0)), (f32::from_bits(0x41b3ac03), f32::from_bits(0x426e5a1e)), (f32::from_bits(0x41b3105d), f32::from_bits(0x426e020d)));
+    path.cubic_to(
+        (f32::from_bits(0x41b472ab), f32::from_bits(0x426ea7f0)),
+        (f32::from_bits(0x41b3ac03), f32::from_bits(0x426e5a1e)),
+        (f32::from_bits(0x41b3105d), f32::from_bits(0x426e020d)),
+    );
     // 22.556f, 59.664f, 22.459f, 59.588f, 22.383f, 59.502f
     test_simplify(reporter, &path.detach(), filename);
 }
@@ -7952,9 +11126,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43af4e56), f32::from_bits(0x43dbc604)));
     // 350.612f, 439.547f
-    path.cubic_to((f32::from_bits(0x43b64a5e), f32::from_bits(0x43dc9604)), (f32::from_bits(0x43be0958), f32::from_bits(0x43dbb604)), (f32::from_bits(0x43c5145a), f32::from_bits(0x43dc8312)));
+    path.cubic_to(
+        (f32::from_bits(0x43b64a5e), f32::from_bits(0x43dc9604)),
+        (f32::from_bits(0x43be0958), f32::from_bits(0x43dbb604)),
+        (f32::from_bits(0x43c5145a), f32::from_bits(0x43dc8312)),
+    );
     // 364.581f, 441.172f, 380.073f, 439.422f, 394.159f, 441.024f
-    path.cubic_to((f32::from_bits(0x43be0958), f32::from_bits(0x43dbb604)), (f32::from_bits(0x43b64a5e), f32::from_bits(0x43dc9604)), (f32::from_bits(0x43af4e56), f32::from_bits(0x43dbc604)));
+    path.cubic_to(
+        (f32::from_bits(0x43be0958), f32::from_bits(0x43dbb604)),
+        (f32::from_bits(0x43b64a5e), f32::from_bits(0x43dc9604)),
+        (f32::from_bits(0x43af4e56), f32::from_bits(0x43dbc604)),
+    );
     // 380.073f, 439.422f, 364.581f, 441.172f, 350.612f, 439.547f
     path.close();
     path.move_to((f32::from_bits(0x43a9126f), f32::from_bits(0x43e11604)));
@@ -7964,9 +11146,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43a9126f), f32::from_bits(0x43e11604)));
     // 338.144f, 450.172f
-    path.cubic_to((f32::from_bits(0x43ab3c6b), f32::from_bits(0x43debc08)), (f32::from_bits(0x43ad1b65), f32::from_bits(0x43de18f6)), (f32::from_bits(0x43af4e77), f32::from_bits(0x43dbc604)));
+    path.cubic_to(
+        (f32::from_bits(0x43ab3c6b), f32::from_bits(0x43debc08)),
+        (f32::from_bits(0x43ad1b65), f32::from_bits(0x43de18f6)),
+        (f32::from_bits(0x43af4e77), f32::from_bits(0x43dbc604)),
+    );
     // 342.472f, 445.469f, 346.214f, 444.195f, 350.613f, 439.547f
-    path.cubic_to((f32::from_bits(0x43ad1b65), f32::from_bits(0x43de18f6)), (f32::from_bits(0x43ab3c6b), f32::from_bits(0x43debc08)), (f32::from_bits(0x43a9126f), f32::from_bits(0x43e11604)));
+    path.cubic_to(
+        (f32::from_bits(0x43ad1b65), f32::from_bits(0x43de18f6)),
+        (f32::from_bits(0x43ab3c6b), f32::from_bits(0x43debc08)),
+        (f32::from_bits(0x43a9126f), f32::from_bits(0x43e11604)),
+    );
     // 346.214f, 444.195f, 342.472f, 445.469f, 338.144f, 450.172f
     path.close();
     path.move_to((f32::from_bits(0x43aa9d50), f32::from_bits(0x43e173f8)));
@@ -7976,9 +11166,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43aa9d50), f32::from_bits(0x43e173f8)));
     // 341.229f, 450.906f
-    path.cubic_to((f32::from_bits(0x43aa0852), f32::from_bits(0x43e183f8)), (f32::from_bits(0x43a9be56), f32::from_bits(0x43e0d2f2)), (f32::from_bits(0x43a9124e), f32::from_bits(0x43e11604)));
+    path.cubic_to(
+        (f32::from_bits(0x43aa0852), f32::from_bits(0x43e183f8)),
+        (f32::from_bits(0x43a9be56), f32::from_bits(0x43e0d2f2)),
+        (f32::from_bits(0x43a9124e), f32::from_bits(0x43e11604)),
+    );
     // 340.065f, 451.031f, 339.487f, 449.648f, 338.143f, 450.172f
-    path.cubic_to((f32::from_bits(0x43a9be56), f32::from_bits(0x43e0d2f2)), (f32::from_bits(0x43aa0852), f32::from_bits(0x43e183f8)), (f32::from_bits(0x43aa9d50), f32::from_bits(0x43e173f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43a9be56), f32::from_bits(0x43e0d2f2)),
+        (f32::from_bits(0x43aa0852), f32::from_bits(0x43e183f8)),
+        (f32::from_bits(0x43aa9d50), f32::from_bits(0x43e173f8)),
+    );
     // 339.487f, 449.648f, 340.065f, 451.031f, 341.229f, 450.906f
     path.close();
     path.move_to((f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)));
@@ -7988,9 +11186,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)));
     // 354.425f, 441.758f
-    path.cubic_to((f32::from_bits(0x43aead71), f32::from_bits(0x43dd9d0e)), (f32::from_bits(0x43acd375), f32::from_bits(0x43dff20c)), (f32::from_bits(0x43aa9d71), f32::from_bits(0x43e173f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43aead71), f32::from_bits(0x43dd9d0e)),
+        (f32::from_bits(0x43acd375), f32::from_bits(0x43dff20c)),
+        (f32::from_bits(0x43aa9d71), f32::from_bits(0x43e173f8)),
+    );
     // 349.355f, 443.227f, 345.652f, 447.891f, 341.23f, 450.906f
-    path.cubic_to((f32::from_bits(0x43acd354), f32::from_bits(0x43dff20c)), (f32::from_bits(0x43aead50), f32::from_bits(0x43dd9d0f)), (f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)));
+    path.cubic_to(
+        (f32::from_bits(0x43acd354), f32::from_bits(0x43dff20c)),
+        (f32::from_bits(0x43aead50), f32::from_bits(0x43dd9d0f)),
+        (f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)),
+    );
     // 345.651f, 447.891f, 349.354f, 443.227f, 354.425f, 441.758f
     path.close();
     path.move_to((f32::from_bits(0x43ac8561), f32::from_bits(0x43e30106)));
@@ -8000,9 +11206,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43ac8561), f32::from_bits(0x43e30106)));
     // 345.042f, 454.008f
-    path.cubic_to((f32::from_bits(0x43adc76d), f32::from_bits(0x43e0f4fe)), (f32::from_bits(0x43b21a5f), f32::from_bits(0x43df7efa)), (f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)));
+    path.cubic_to(
+        (f32::from_bits(0x43adc76d), f32::from_bits(0x43e0f4fe)),
+        (f32::from_bits(0x43b21a5f), f32::from_bits(0x43df7efa)),
+        (f32::from_bits(0x43b13667), f32::from_bits(0x43dce106)),
+    );
     // 347.558f, 449.914f, 356.206f, 446.992f, 354.425f, 441.758f
-    path.cubic_to((f32::from_bits(0x43b21a5f), f32::from_bits(0x43df7efa)), (f32::from_bits(0x43adc76d), f32::from_bits(0x43e0f4fe)), (f32::from_bits(0x43ac8561), f32::from_bits(0x43e30106)));
+    path.cubic_to(
+        (f32::from_bits(0x43b21a5f), f32::from_bits(0x43df7efa)),
+        (f32::from_bits(0x43adc76d), f32::from_bits(0x43e0f4fe)),
+        (f32::from_bits(0x43ac8561), f32::from_bits(0x43e30106)),
+    );
     // 356.206f, 446.992f, 347.558f, 449.914f, 345.042f, 454.008f
     path.close();
     path.move_to((f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)));
@@ -8012,9 +11226,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)));
     // 358.386f, 441.023f
-    path.cubic_to((f32::from_bits(0x43b16169), f32::from_bits(0x43ded7f0)), (f32::from_bits(0x43aef375), f32::from_bits(0x43e13be8)), (f32::from_bits(0x43ac8561), f32::from_bits(0x43e300e6)));
+    path.cubic_to(
+        (f32::from_bits(0x43b16169), f32::from_bits(0x43ded7f0)),
+        (f32::from_bits(0x43aef375), f32::from_bits(0x43e13be8)),
+        (f32::from_bits(0x43ac8561), f32::from_bits(0x43e300e6)),
+    );
     // 354.761f, 445.687f, 349.902f, 450.468f, 345.042f, 454.007f
-    path.cubic_to((f32::from_bits(0x43aef355), f32::from_bits(0x43e13c09)), (f32::from_bits(0x43b16169), f32::from_bits(0x43ded811)), (f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)));
+    path.cubic_to(
+        (f32::from_bits(0x43aef355), f32::from_bits(0x43e13c09)),
+        (f32::from_bits(0x43b16169), f32::from_bits(0x43ded811)),
+        (f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)),
+    );
     // 349.901f, 450.469f, 354.761f, 445.688f, 358.386f, 441.023f
     path.close();
     path.move_to((f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)));
@@ -8024,9 +11246,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)));
     // 361.464f, 442.5f
-    path.cubic_to((f32::from_bits(0x43b44959), f32::from_bits(0x43dcddf4)), (f32::from_bits(0x43b3e76d), f32::from_bits(0x43dc48f6)), (f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)));
+    path.cubic_to(
+        (f32::from_bits(0x43b44959), f32::from_bits(0x43dcddf4)),
+        (f32::from_bits(0x43b3e76d), f32::from_bits(0x43dc48f6)),
+        (f32::from_bits(0x43b33169), f32::from_bits(0x43dc82f2)),
+    );
     // 360.573f, 441.734f, 359.808f, 440.57f, 358.386f, 441.023f
-    path.cubic_to((f32::from_bits(0x43b3e76d), f32::from_bits(0x43dc48f6)), (f32::from_bits(0x43b44959), f32::from_bits(0x43dcddf4)), (f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)));
+    path.cubic_to(
+        (f32::from_bits(0x43b3e76d), f32::from_bits(0x43dc48f6)),
+        (f32::from_bits(0x43b44959), f32::from_bits(0x43dcddf4)),
+        (f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)),
+    );
     // 359.808f, 440.57f, 360.573f, 441.734f, 361.464f, 442.5f
     path.close();
     path.move_to((f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)));
@@ -8036,9 +11266,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)));
     // 348.995f, 459.305f
-    path.cubic_to((f32::from_bits(0x43af945b), f32::from_bits(0x43e21d0e)), (f32::from_bits(0x43b3a74d), f32::from_bits(0x43e0ce14)), (f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)));
+    path.cubic_to(
+        (f32::from_bits(0x43af945b), f32::from_bits(0x43e21d0e)),
+        (f32::from_bits(0x43b3a74d), f32::from_bits(0x43e0ce14)),
+        (f32::from_bits(0x43b4bb65), f32::from_bits(0x43dd4000)),
+    );
     // 351.159f, 452.227f, 359.307f, 449.61f, 361.464f, 442.5f
-    path.cubic_to((f32::from_bits(0x43b3a76d), f32::from_bits(0x43e0cdf4)), (f32::from_bits(0x43af945b), f32::from_bits(0x43e21d0e)), (f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)));
+    path.cubic_to(
+        (f32::from_bits(0x43b3a76d), f32::from_bits(0x43e0cdf4)),
+        (f32::from_bits(0x43af945b), f32::from_bits(0x43e21d0e)),
+        (f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)),
+    );
     // 359.308f, 449.609f, 351.159f, 452.227f, 348.995f, 459.305f
     path.close();
     path.move_to((f32::from_bits(0x43b58a5f), f32::from_bits(0x43dce106)));
@@ -8048,9 +11286,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b58a5f), f32::from_bits(0x43dce106)));
     // 363.081f, 441.758f
-    path.cubic_to((f32::from_bits(0x43b2c063), f32::from_bits(0x43dfa604)), (f32::from_bits(0x43b1d561), f32::from_bits(0x43e374fe)), (f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)));
+    path.cubic_to(
+        (f32::from_bits(0x43b2c063), f32::from_bits(0x43dfa604)),
+        (f32::from_bits(0x43b1d561), f32::from_bits(0x43e374fe)),
+        (f32::from_bits(0x43ae7f5d), f32::from_bits(0x43e5a70a)),
+    );
     // 357.503f, 447.297f, 355.667f, 454.914f, 348.995f, 459.305f
-    path.cubic_to((f32::from_bits(0x43b1d561), f32::from_bits(0x43e374fe)), (f32::from_bits(0x43b2c063), f32::from_bits(0x43dfa604)), (f32::from_bits(0x43b58a5f), f32::from_bits(0x43dce106)));
+    path.cubic_to(
+        (f32::from_bits(0x43b1d561), f32::from_bits(0x43e374fe)),
+        (f32::from_bits(0x43b2c063), f32::from_bits(0x43dfa604)),
+        (f32::from_bits(0x43b58a5f), f32::from_bits(0x43dce106)),
+    );
     // 355.667f, 454.914f, 357.503f, 447.297f, 363.081f, 441.758f
     path.close();
     path.move_to((f32::from_bits(0x43b6b561), f32::from_bits(0x43dd4000)));
@@ -8072,9 +11318,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b07a5f), f32::from_bits(0x43e7220c)));
     // 352.956f, 462.266f
-    path.cubic_to((f32::from_bits(0x43b29f5d), f32::from_bits(0x43e3e810)), (f32::from_bits(0x43b59667), f32::from_bits(0x43e0f916)), (f32::from_bits(0x43b6b561), f32::from_bits(0x43dd4000)));
+    path.cubic_to(
+        (f32::from_bits(0x43b29f5d), f32::from_bits(0x43e3e810)),
+        (f32::from_bits(0x43b59667), f32::from_bits(0x43e0f916)),
+        (f32::from_bits(0x43b6b561), f32::from_bits(0x43dd4000)),
+    );
     // 357.245f, 455.813f, 363.175f, 449.946f, 365.417f, 442.5f
-    path.cubic_to((f32::from_bits(0x43b59667), f32::from_bits(0x43e0f8f6)), (f32::from_bits(0x43b29f5d), f32::from_bits(0x43e3e7f0)), (f32::from_bits(0x43b07a5f), f32::from_bits(0x43e7220c)));
+    path.cubic_to(
+        (f32::from_bits(0x43b59667), f32::from_bits(0x43e0f8f6)),
+        (f32::from_bits(0x43b29f5d), f32::from_bits(0x43e3e7f0)),
+        (f32::from_bits(0x43b07a5f), f32::from_bits(0x43e7220c)),
+    );
     // 363.175f, 449.945f, 357.245f, 455.812f, 352.956f, 462.266f
     path.close();
     path.move_to((f32::from_bits(0x43b0d853), f32::from_bits(0x43e84efa)));
@@ -8084,9 +11338,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b0d853), f32::from_bits(0x43e84efa)));
     // 353.69f, 464.617f
-    path.cubic_to((f32::from_bits(0x43b03a5f), f32::from_bits(0x43e934fe)), (f32::from_bits(0x43b1345b), f32::from_bits(0x43e7870a)), (f32::from_bits(0x43b07a5f), f32::from_bits(0x43e721ec)));
+    path.cubic_to(
+        (f32::from_bits(0x43b03a5f), f32::from_bits(0x43e934fe)),
+        (f32::from_bits(0x43b1345b), f32::from_bits(0x43e7870a)),
+        (f32::from_bits(0x43b07a5f), f32::from_bits(0x43e721ec)),
+    );
     // 352.456f, 466.414f, 354.409f, 463.055f, 352.956f, 462.265f
-    path.cubic_to((f32::from_bits(0x43b1345b), f32::from_bits(0x43e7870b)), (f32::from_bits(0x43b03a5f), f32::from_bits(0x43e934fe)), (f32::from_bits(0x43b0d853), f32::from_bits(0x43e84efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43b1345b), f32::from_bits(0x43e7870b)),
+        (f32::from_bits(0x43b03a5f), f32::from_bits(0x43e934fe)),
+        (f32::from_bits(0x43b0d853), f32::from_bits(0x43e84efa)),
+    );
     // 354.409f, 463.055f, 352.456f, 466.414f, 353.69f, 464.617f
     path.close();
     path.move_to((f32::from_bits(0x43b84063), f32::from_bits(0x43ddb106)));
@@ -8096,9 +11358,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b84063), f32::from_bits(0x43ddb106)));
     // 368.503f, 443.383f
-    path.cubic_to((f32::from_bits(0x43b42667), f32::from_bits(0x43e039fc)), (f32::from_bits(0x43b39d71), f32::from_bits(0x43e4e000)), (f32::from_bits(0x43b0d873), f32::from_bits(0x43e84efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43b42667), f32::from_bits(0x43e039fc)),
+        (f32::from_bits(0x43b39d71), f32::from_bits(0x43e4e000)),
+        (f32::from_bits(0x43b0d873), f32::from_bits(0x43e84efa)),
+    );
     // 360.3f, 448.453f, 359.23f, 457.75f, 353.691f, 464.617f
-    path.cubic_to((f32::from_bits(0x43b39d50), f32::from_bits(0x43e4e000)), (f32::from_bits(0x43b42667), f32::from_bits(0x43e039fc)), (f32::from_bits(0x43b84063), f32::from_bits(0x43ddb106)));
+    path.cubic_to(
+        (f32::from_bits(0x43b39d50), f32::from_bits(0x43e4e000)),
+        (f32::from_bits(0x43b42667), f32::from_bits(0x43e039fc)),
+        (f32::from_bits(0x43b84063), f32::from_bits(0x43ddb106)),
+    );
     // 359.229f, 457.75f, 360.3f, 448.453f, 368.503f, 443.383f
     path.close();
     path.move_to((f32::from_bits(0x43b89d51), f32::from_bits(0x43de0efa)));
@@ -8120,9 +11390,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b26270), f32::from_bits(0x43e90c08)));
     // 356.769f, 466.094f
-    path.cubic_to((f32::from_bits(0x43b48d72), f32::from_bits(0x43e569fc)), (f32::from_bits(0x43b7897a), f32::from_bits(0x43e21d0e)), (f32::from_bits(0x43b89d72), f32::from_bits(0x43de0efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43b48d72), f32::from_bits(0x43e569fc)),
+        (f32::from_bits(0x43b7897a), f32::from_bits(0x43e21d0e)),
+        (f32::from_bits(0x43b89d72), f32::from_bits(0x43de0efa)),
+    );
     // 361.105f, 458.828f, 367.074f, 452.227f, 369.23f, 444.117f
-    path.cubic_to((f32::from_bits(0x43b78959), f32::from_bits(0x43e21d0e)), (f32::from_bits(0x43b48d51), f32::from_bits(0x43e569fc)), (f32::from_bits(0x43b26270), f32::from_bits(0x43e90c08)));
+    path.cubic_to(
+        (f32::from_bits(0x43b78959), f32::from_bits(0x43e21d0e)),
+        (f32::from_bits(0x43b48d51), f32::from_bits(0x43e569fc)),
+        (f32::from_bits(0x43b26270), f32::from_bits(0x43e90c08)),
+    );
     // 367.073f, 452.227f, 361.104f, 458.828f, 356.769f, 466.094f
     path.close();
     path.move_to((f32::from_bits(0x43b3316a), f32::from_bits(0x43e90c08)));
@@ -8144,9 +11422,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43ba2853), f32::from_bits(0x43ddb106)));
     // 372.315f, 443.383f
-    path.cubic_to((f32::from_bits(0x43b7d74d), f32::from_bits(0x43e17604)), (f32::from_bits(0x43b5824f), f32::from_bits(0x43e59604)), (f32::from_bits(0x43b33149), f32::from_bits(0x43e90c08)));
+    path.cubic_to(
+        (f32::from_bits(0x43b7d74d), f32::from_bits(0x43e17604)),
+        (f32::from_bits(0x43b5824f), f32::from_bits(0x43e59604)),
+        (f32::from_bits(0x43b33149), f32::from_bits(0x43e90c08)),
+    );
     // 367.682f, 450.922f, 363.018f, 459.172f, 358.385f, 466.094f
-    path.cubic_to((f32::from_bits(0x43b58270), f32::from_bits(0x43e59604)), (f32::from_bits(0x43b7d76e), f32::from_bits(0x43e17604)), (f32::from_bits(0x43ba2853), f32::from_bits(0x43ddb106)));
+    path.cubic_to(
+        (f32::from_bits(0x43b58270), f32::from_bits(0x43e59604)),
+        (f32::from_bits(0x43b7d76e), f32::from_bits(0x43e17604)),
+        (f32::from_bits(0x43ba2853), f32::from_bits(0x43ddb106)),
+    );
     // 363.019f, 459.172f, 367.683f, 450.922f, 372.315f, 443.383f
     path.close();
     path.move_to((f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)));
@@ -8156,9 +11442,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)));
     // 374.651f, 444.117f
-    path.cubic_to((f32::from_bits(0x43bb1853), f32::from_bits(0x43dd92f2)), (f32::from_bits(0x43ba9e57), f32::from_bits(0x43ddab02)), (f32::from_bits(0x43ba2853), f32::from_bits(0x43ddb106)));
+    path.cubic_to(
+        (f32::from_bits(0x43bb1853), f32::from_bits(0x43dd92f2)),
+        (f32::from_bits(0x43ba9e57), f32::from_bits(0x43ddab02)),
+        (f32::from_bits(0x43ba2853), f32::from_bits(0x43ddb106)),
+    );
     // 374.19f, 443.148f, 373.237f, 443.336f, 372.315f, 443.383f
-    path.cubic_to((f32::from_bits(0x43ba9e57), f32::from_bits(0x43ddab02)), (f32::from_bits(0x43bb1853), f32::from_bits(0x43dd92f2)), (f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43ba9e57), f32::from_bits(0x43ddab02)),
+        (f32::from_bits(0x43bb1853), f32::from_bits(0x43dd92f2)),
+        (f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)),
+    );
     // 373.237f, 443.336f, 374.19f, 443.148f, 374.651f, 444.117f
     path.close();
     path.move_to((f32::from_bits(0x43b58a5f), f32::from_bits(0x43e90c08)));
@@ -8168,9 +11462,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b58a5f), f32::from_bits(0x43e90c08)));
     // 363.081f, 466.094f
-    path.cubic_to((f32::from_bits(0x43b76c6b), f32::from_bits(0x43e55d0e)), (f32::from_bits(0x43ba4a5f), f32::from_bits(0x43e21312)), (f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43b76c6b), f32::from_bits(0x43e55d0e)),
+        (f32::from_bits(0x43ba4a5f), f32::from_bits(0x43e21312)),
+        (f32::from_bits(0x43bb5355), f32::from_bits(0x43de0efa)),
+    );
     // 366.847f, 458.727f, 372.581f, 452.149f, 374.651f, 444.117f
-    path.cubic_to((f32::from_bits(0x43ba4a5f), f32::from_bits(0x43e212f2)), (f32::from_bits(0x43b76c6c), f32::from_bits(0x43e55d0e)), (f32::from_bits(0x43b58a5f), f32::from_bits(0x43e90c08)));
+    path.cubic_to(
+        (f32::from_bits(0x43ba4a5f), f32::from_bits(0x43e212f2)),
+        (f32::from_bits(0x43b76c6c), f32::from_bits(0x43e55d0e)),
+        (f32::from_bits(0x43b58a5f), f32::from_bits(0x43e90c08)),
+    );
     // 372.581f, 452.148f, 366.847f, 458.727f, 363.081f, 466.094f
     path.close();
     path.move_to((f32::from_bits(0x43b6b561), f32::from_bits(0x43e90c08)));
@@ -8192,9 +11494,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43bc8063), f32::from_bits(0x43e058f6)));
     // 377.003f, 448.695f
-    path.cubic_to((f32::from_bits(0x43b9de57), f32::from_bits(0x43e29df4)), (f32::from_bits(0x43b84355), f32::from_bits(0x43e5fefa)), (f32::from_bits(0x43b6b561), f32::from_bits(0x43e90be8)));
+    path.cubic_to(
+        (f32::from_bits(0x43b9de57), f32::from_bits(0x43e29df4)),
+        (f32::from_bits(0x43b84355), f32::from_bits(0x43e5fefa)),
+        (f32::from_bits(0x43b6b561), f32::from_bits(0x43e90be8)),
+    );
     // 371.737f, 453.234f, 368.526f, 459.992f, 365.417f, 466.093f
-    path.cubic_to((f32::from_bits(0x43b84355), f32::from_bits(0x43e5fefa)), (f32::from_bits(0x43b9de57), f32::from_bits(0x43e29df4)), (f32::from_bits(0x43bc8063), f32::from_bits(0x43e058f6)));
+    path.cubic_to(
+        (f32::from_bits(0x43b84355), f32::from_bits(0x43e5fefa)),
+        (f32::from_bits(0x43b9de57), f32::from_bits(0x43e29df4)),
+        (f32::from_bits(0x43bc8063), f32::from_bits(0x43e058f6)),
+    );
     // 368.526f, 459.992f, 371.737f, 453.234f, 377.003f, 448.695f
     path.close();
     path.move_to((f32::from_bits(0x43b89d51), f32::from_bits(0x43e969fc)));
@@ -8204,9 +11514,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43b89d51), f32::from_bits(0x43e969fc)));
     // 369.229f, 466.828f
-    path.cubic_to((f32::from_bits(0x43b98149), f32::from_bits(0x43e637f0)), (f32::from_bits(0x43bd3355), f32::from_bits(0x43e3adf4)), (f32::from_bits(0x43bc8043), f32::from_bits(0x43e058f6)));
+    path.cubic_to(
+        (f32::from_bits(0x43b98149), f32::from_bits(0x43e637f0)),
+        (f32::from_bits(0x43bd3355), f32::from_bits(0x43e3adf4)),
+        (f32::from_bits(0x43bc8043), f32::from_bits(0x43e058f6)),
+    );
     // 371.01f, 460.437f, 378.401f, 455.359f, 377.002f, 448.695f
-    path.cubic_to((f32::from_bits(0x43bd3355), f32::from_bits(0x43e3adf4)), (f32::from_bits(0x43b9816a), f32::from_bits(0x43e638f6)), (f32::from_bits(0x43b89d51), f32::from_bits(0x43e969fc)));
+    path.cubic_to(
+        (f32::from_bits(0x43bd3355), f32::from_bits(0x43e3adf4)),
+        (f32::from_bits(0x43b9816a), f32::from_bits(0x43e638f6)),
+        (f32::from_bits(0x43b89d51), f32::from_bits(0x43e969fc)),
+    );
     // 378.401f, 455.359f, 371.011f, 460.445f, 369.229f, 466.828f
     path.close();
     path.move_to((f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)));
@@ -8216,9 +11534,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)));
     // 373.05f, 467.562f
-    path.cubic_to((f32::from_bits(0x43ba1376), f32::from_bits(0x43e90000)), (f32::from_bits(0x43b94270), f32::from_bits(0x43e8f1ec)), (f32::from_bits(0x43b89d72), f32::from_bits(0x43e969fc)));
+    path.cubic_to(
+        (f32::from_bits(0x43ba1376), f32::from_bits(0x43e90000)),
+        (f32::from_bits(0x43b94270), f32::from_bits(0x43e8f1ec)),
+        (f32::from_bits(0x43b89d72), f32::from_bits(0x43e969fc)),
+    );
     // 372.152f, 466, 370.519f, 465.89f, 369.23f, 466.828f
-    path.cubic_to((f32::from_bits(0x43b94270), f32::from_bits(0x43e8f20c)), (f32::from_bits(0x43ba1355), f32::from_bits(0x43e90000)), (f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)));
+    path.cubic_to(
+        (f32::from_bits(0x43b94270), f32::from_bits(0x43e8f20c)),
+        (f32::from_bits(0x43ba1355), f32::from_bits(0x43e90000)),
+        (f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)),
+    );
     // 370.519f, 465.891f, 372.151f, 466, 373.05f, 467.562f
     path.close();
     path.move_to((f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)));
@@ -8228,9 +11554,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)));
     // 385.503f, 441.023f
-    path.cubic_to((f32::from_bits(0x43be095a), f32::from_bits(0x43e0acee)), (f32::from_bits(0x43bd8a60), f32::from_bits(0x43e5c0e6)), (f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)));
+    path.cubic_to(
+        (f32::from_bits(0x43be095a), f32::from_bits(0x43e0acee)),
+        (f32::from_bits(0x43bd8a60), f32::from_bits(0x43e5c0e6)),
+        (f32::from_bits(0x43ba8668), f32::from_bits(0x43e9c7f0)),
+    );
     // 380.073f, 449.351f, 379.081f, 459.507f, 373.05f, 467.562f
-    path.cubic_to((f32::from_bits(0x43bd8a60), f32::from_bits(0x43e5c107)), (f32::from_bits(0x43be095a), f32::from_bits(0x43e0ad0f)), (f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)));
+    path.cubic_to(
+        (f32::from_bits(0x43bd8a60), f32::from_bits(0x43e5c107)),
+        (f32::from_bits(0x43be095a), f32::from_bits(0x43e0ad0f)),
+        (f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)),
+    );
     // 379.081f, 459.508f, 380.073f, 449.352f, 385.503f, 441.023f
     path.close();
     path.move_to((f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)));
@@ -8240,9 +11574,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)));
     // 384.042f, 452.375f
-    path.cubic_to((f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e013f8)), (f32::from_bits(0x43c40668), f32::from_bits(0x43ddc2f2)), (f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)));
+    path.cubic_to(
+        (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e013f8)),
+        (f32::from_bits(0x43c40668), f32::from_bits(0x43ddc2f2)),
+        (f32::from_bits(0x43c0c064), f32::from_bits(0x43dc82f2)),
+    );
     // 383.37f, 448.156f, 392.05f, 443.523f, 385.503f, 441.023f
-    path.cubic_to((f32::from_bits(0x43c40668), f32::from_bits(0x43ddc2f2)), (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e013f8)), (f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)));
+    path.cubic_to(
+        (f32::from_bits(0x43c40668), f32::from_bits(0x43ddc2f2)),
+        (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e013f8)),
+        (f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)),
+    );
     // 392.05f, 443.523f, 383.37f, 448.156f, 384.042f, 452.375f
     path.close();
     path.move_to((f32::from_bits(0x43bed854), f32::from_bits(0x43e5370a)));
@@ -8252,9 +11594,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43bed854), f32::from_bits(0x43e5370a)));
     // 381.69f, 458.43f
-    path.cubic_to((f32::from_bits(0x43c06562), f32::from_bits(0x43e4b4fe)), (f32::from_bits(0x43bf095a), f32::from_bits(0x43e2fd0e)), (f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)));
+    path.cubic_to(
+        (f32::from_bits(0x43c06562), f32::from_bits(0x43e4b4fe)),
+        (f32::from_bits(0x43bf095a), f32::from_bits(0x43e2fd0e)),
+        (f32::from_bits(0x43c00562), f32::from_bits(0x43e23000)),
+    );
     // 384.792f, 457.414f, 382.073f, 453.977f, 384.042f, 452.375f
-    path.cubic_to((f32::from_bits(0x43bf095a), f32::from_bits(0x43e2fdf4)), (f32::from_bits(0x43c06562), f32::from_bits(0x43e4b4fe)), (f32::from_bits(0x43bed854), f32::from_bits(0x43e5370a)));
+    path.cubic_to(
+        (f32::from_bits(0x43bf095a), f32::from_bits(0x43e2fdf4)),
+        (f32::from_bits(0x43c06562), f32::from_bits(0x43e4b4fe)),
+        (f32::from_bits(0x43bed854), f32::from_bits(0x43e5370a)),
+    );
     // 382.073f, 453.984f, 384.792f, 457.414f, 381.69f, 458.43f
     path.close();
     path.move_to((f32::from_bits(0x43bf3668), f32::from_bits(0x43e5a70a)));
@@ -8276,9 +11626,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43bcde58), f32::from_bits(0x43e9c7ef)));
     // 377.737f, 467.562f
-    path.cubic_to((f32::from_bits(0x43bdfb66), f32::from_bits(0x43e888f5)), (f32::from_bits(0x43bd6854), f32::from_bits(0x43e69ced)), (f32::from_bits(0x43bf3668), f32::from_bits(0x43e5a6e9)));
+    path.cubic_to(
+        (f32::from_bits(0x43bdfb66), f32::from_bits(0x43e888f5)),
+        (f32::from_bits(0x43bd6854), f32::from_bits(0x43e69ced)),
+        (f32::from_bits(0x43bf3668), f32::from_bits(0x43e5a6e9)),
+    );
     // 379.964f, 465.07f, 378.815f, 461.226f, 382.425f, 459.304f
-    path.cubic_to((f32::from_bits(0x43bd6854), f32::from_bits(0x43e69d0e)), (f32::from_bits(0x43bdfb66), f32::from_bits(0x43e888f5)), (f32::from_bits(0x43bcde58), f32::from_bits(0x43e9c7ef)));
+    path.cubic_to(
+        (f32::from_bits(0x43bd6854), f32::from_bits(0x43e69d0e)),
+        (f32::from_bits(0x43bdfb66), f32::from_bits(0x43e888f5)),
+        (f32::from_bits(0x43bcde58), f32::from_bits(0x43e9c7ef)),
+    );
     // 378.815f, 461.227f, 379.964f, 465.07f, 377.737f, 467.562f
     path.close();
     path.move_to((f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)));
@@ -8288,9 +11646,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)));
     // 382.425f, 469.188f
-    path.cubic_to((f32::from_bits(0x43bebf5e), f32::from_bits(0x43e99e14)), (f32::from_bits(0x43bdc562), f32::from_bits(0x43e9d70a)), (f32::from_bits(0x43bcde58), f32::from_bits(0x43e9c810)));
+    path.cubic_to(
+        (f32::from_bits(0x43bebf5e), f32::from_bits(0x43e99e14)),
+        (f32::from_bits(0x43bdc562), f32::from_bits(0x43e9d70a)),
+        (f32::from_bits(0x43bcde58), f32::from_bits(0x43e9c810)),
+    );
     // 381.495f, 467.235f, 379.542f, 467.68f, 377.737f, 467.563f
-    path.cubic_to((f32::from_bits(0x43bdc562), f32::from_bits(0x43e9d70a)), (f32::from_bits(0x43bebf5e), f32::from_bits(0x43e99df3)), (f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)));
+    path.cubic_to(
+        (f32::from_bits(0x43bdc562), f32::from_bits(0x43e9d70a)),
+        (f32::from_bits(0x43bebf5e), f32::from_bits(0x43e99df3)),
+        (f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)),
+    );
     // 379.542f, 467.68f, 381.495f, 467.234f, 382.425f, 469.188f
     path.close();
     path.move_to((f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)));
@@ -8300,9 +11666,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)));
     // 385.503f, 463
-    path.cubic_to((f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e7f9fc)), (f32::from_bits(0x43bfbe58), f32::from_bits(0x43e98b02)), (f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)));
+    path.cubic_to(
+        (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e7f9fc)),
+        (f32::from_bits(0x43bfbe58), f32::from_bits(0x43e98b02)),
+        (f32::from_bits(0x43bf3668), f32::from_bits(0x43ea9810)),
+    );
     // 383.37f, 463.953f, 383.487f, 467.086f, 382.425f, 469.188f
-    path.cubic_to((f32::from_bits(0x43bfbe58), f32::from_bits(0x43e98b02)), (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e7f9fc)), (f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)));
+    path.cubic_to(
+        (f32::from_bits(0x43bfbe58), f32::from_bits(0x43e98b02)),
+        (f32::from_bits(0x43bfaf5e), f32::from_bits(0x43e7f9fc)),
+        (f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)),
+    );
     // 383.487f, 467.086f, 383.37f, 463.953f, 385.503f, 463
     path.close();
     path.move_to((f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)));
@@ -8312,9 +11686,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)));
     // 386.386f, 454.742f
-    path.cubic_to((f32::from_bits(0x43c35270), f32::from_bits(0x43e586ea)), (f32::from_bits(0x43beb064), f32::from_bits(0x43e561ec)), (f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)));
+    path.cubic_to(
+        (f32::from_bits(0x43c35270), f32::from_bits(0x43e586ea)),
+        (f32::from_bits(0x43beb064), f32::from_bits(0x43e561ec)),
+        (f32::from_bits(0x43c0c064), f32::from_bits(0x43e78000)),
+    );
     // 390.644f, 459.054f, 381.378f, 458.765f, 385.503f, 463
-    path.cubic_to((f32::from_bits(0x43beb064), f32::from_bits(0x43e5620c)), (f32::from_bits(0x43c35270), f32::from_bits(0x43e5870a)), (f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43beb064), f32::from_bits(0x43e5620c)),
+        (f32::from_bits(0x43c35270), f32::from_bits(0x43e5870a)),
+        (f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)),
+    );
     // 381.378f, 458.766f, 390.644f, 459.055f, 386.386f, 454.742f
     path.close();
     path.move_to((f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)));
@@ -8324,9 +11706,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)));
     // 391.808f, 446.336f
-    path.cubic_to((f32::from_bits(0x43c2ba60), f32::from_bits(0x43e07810)), (f32::from_bits(0x43c32a60), f32::from_bits(0x43e31106)), (f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)));
+    path.cubic_to(
+        (f32::from_bits(0x43c2ba60), f32::from_bits(0x43e07810)),
+        (f32::from_bits(0x43c32a60), f32::from_bits(0x43e31106)),
+        (f32::from_bits(0x43c1316a), f32::from_bits(0x43e35efa)),
+    );
     // 389.456f, 448.938f, 390.331f, 454.133f, 386.386f, 454.742f
-    path.cubic_to((f32::from_bits(0x43c32a60), f32::from_bits(0x43e31106)), (f32::from_bits(0x43c2ba60), f32::from_bits(0x43e07811)), (f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)));
+    path.cubic_to(
+        (f32::from_bits(0x43c32a60), f32::from_bits(0x43e31106)),
+        (f32::from_bits(0x43c2ba60), f32::from_bits(0x43e07811)),
+        (f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)),
+    );
     // 390.331f, 454.133f, 389.456f, 448.938f, 391.808f, 446.336f
     path.close();
     path.move_to((f32::from_bits(0x43c3e76e), f32::from_bits(0x43dd4000)));
@@ -8336,9 +11726,17 @@ fn joel_5(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43c3e76e), f32::from_bits(0x43dd4000)));
     // 391.808f, 442.5f
-    path.cubic_to((f32::from_bits(0x43c2a668), f32::from_bits(0x43ddbefa)), (f32::from_bits(0x43c35f7e), f32::from_bits(0x43def4fe)), (f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)));
+    path.cubic_to(
+        (f32::from_bits(0x43c2a668), f32::from_bits(0x43ddbefa)),
+        (f32::from_bits(0x43c35f7e), f32::from_bits(0x43def4fe)),
+        (f32::from_bits(0x43c3e76e), f32::from_bits(0x43df2b02)),
+    );
     // 389.3f, 443.492f, 390.746f, 445.914f, 391.808f, 446.336f
-    path.cubic_to((f32::from_bits(0x43c35f5e), f32::from_bits(0x43def4fe)), (f32::from_bits(0x43c2a668), f32::from_bits(0x43ddbefa)), (f32::from_bits(0x43c3e76e), f32::from_bits(0x43dd4000)));
+    path.cubic_to(
+        (f32::from_bits(0x43c35f5e), f32::from_bits(0x43def4fe)),
+        (f32::from_bits(0x43c2a668), f32::from_bits(0x43ddbefa)),
+        (f32::from_bits(0x43c3e76e), f32::from_bits(0x43dd4000)),
+    );
     // 390.745f, 445.914f, 389.3f, 443.492f, 391.808f, 442.5f
     path.close();
     path.move_to((f32::from_bits(0x43c44562), f32::from_bits(0x43ddb106)));
@@ -8497,13 +11895,25 @@ fn joel_7(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x431c6419), f32::from_bits(0x43eea7f0)));
     // 156.391f, 477.312f
-    path.cubic_to((f32::from_bits(0x431d6e15), f32::from_bits(0x43ee5ae2)), (f32::from_bits(0x431e2000), f32::from_bits(0x43ede000)), (f32::from_bits(0x431e69fc), f32::from_bits(0x43ed55e4)));
+    path.cubic_to(
+        (f32::from_bits(0x431d6e15), f32::from_bits(0x43ee5ae2)),
+        (f32::from_bits(0x431e2000), f32::from_bits(0x43ede000)),
+        (f32::from_bits(0x431e69fc), f32::from_bits(0x43ed55e4)),
+    );
     // 157.43f, 476.71f, 158.125f, 475.75f, 158.414f, 474.671f
-    path.cubic_to((f32::from_bits(0x431eb3f8), f32::from_bits(0x43eccbc8)), (f32::from_bits(0x431e93f8), f32::from_bits(0x43ec35e4)), (f32::from_bits(0x431df9db), f32::from_bits(0x43ebafe0)));
+    path.cubic_to(
+        (f32::from_bits(0x431eb3f8), f32::from_bits(0x43eccbc8)),
+        (f32::from_bits(0x431e93f8), f32::from_bits(0x43ec35e4)),
+        (f32::from_bits(0x431df9db), f32::from_bits(0x43ebafe0)),
+    );
     // 158.703f, 473.592f, 158.578f, 472.421f, 157.976f, 471.374f
     path.line_to((f32::from_bits(0x432121cb), f32::from_bits(0x43eac6ea)));
     // 161.132f, 469.554f
-    path.cubic_to((f32::from_bits(0x432355c3), f32::from_bits(0x43ecb0e6)), (f32::from_bits(0x432207ae), f32::from_bits(0x43ef1fe0)), (f32::from_bits(0x431e33b7), f32::from_bits(0x43f03ae2)));
+    path.cubic_to(
+        (f32::from_bits(0x432355c3), f32::from_bits(0x43ecb0e6)),
+        (f32::from_bits(0x432207ae), f32::from_bits(0x43ef1fe0)),
+        (f32::from_bits(0x431e33b7), f32::from_bits(0x43f03ae2)),
+    );
     // 163.335f, 473.382f, 162.03f, 478.249f, 158.202f, 480.46f
     path.line_to((f32::from_bits(0x431c6419), f32::from_bits(0x43eea7f0)));
     // 156.391f, 477.312f
@@ -8521,13 +11931,25 @@ fn joel_7(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x431673f8), f32::from_bits(0x43eddc08)));
     // 150.453f, 475.719f
-    path.cubic_to((f32::from_bits(0x43170e15), f32::from_bits(0x43ee620c)), (f32::from_bits(0x43180000), f32::from_bits(0x43eebb02)), (f32::from_bits(0x43191604), f32::from_bits(0x43eee000)));
+    path.cubic_to(
+        (f32::from_bits(0x43170e15), f32::from_bits(0x43ee620c)),
+        (f32::from_bits(0x43180000), f32::from_bits(0x43eebb02)),
+        (f32::from_bits(0x43191604), f32::from_bits(0x43eee000)),
+    );
     // 151.055f, 476.766f, 152, 477.461f, 153.086f, 477.75f
-    path.cubic_to((f32::from_bits(0x431a2c08), f32::from_bits(0x43ef04fe)), (f32::from_bits(0x431b5810), f32::from_bits(0x43eef4fe)), (f32::from_bits(0x431c6418), f32::from_bits(0x43eea7f0)));
+    path.cubic_to(
+        (f32::from_bits(0x431a2c08), f32::from_bits(0x43ef04fe)),
+        (f32::from_bits(0x431b5810), f32::from_bits(0x43eef4fe)),
+        (f32::from_bits(0x431c6418), f32::from_bits(0x43eea7f0)),
+    );
     // 154.172f, 478.039f, 155.344f, 477.914f, 156.391f, 477.312f
     path.line_to((f32::from_bits(0x431e33f7), f32::from_bits(0x43f03ae2)));
     // 158.203f, 480.46f
-    path.cubic_to((f32::from_bits(0x431a620b), f32::from_bits(0x43f154de)), (f32::from_bits(0x4315820c), f32::from_bits(0x43f0add4)), (f32::from_bits(0x43134c07), f32::from_bits(0x43eec4de)));
+    path.cubic_to(
+        (f32::from_bits(0x431a620b), f32::from_bits(0x43f154de)),
+        (f32::from_bits(0x4315820c), f32::from_bits(0x43f0add4)),
+        (f32::from_bits(0x43134c07), f32::from_bits(0x43eec4de)),
+    );
     // 154.383f, 482.663f, 149.508f, 481.358f, 147.297f, 477.538f
     path.line_to((f32::from_bits(0x431673f8), f32::from_bits(0x43eddc08)));
     // 150.453f, 475.719f
@@ -8543,26 +11965,50 @@ fn joel_7(reporter: &mut Reporter, filename: &str) {
     path.close();
     path.move_to((f32::from_bits(0x43180c08), f32::from_bits(0x43eae3f8)));
     // 152.047f, 469.781f
-    path.cubic_to((f32::from_bits(0x43170000), f32::from_bits(0x43eb31ec)), (f32::from_bits(0x43164e14), f32::from_bits(0x43ebabe8)), (f32::from_bits(0x43160418), f32::from_bits(0x43ec3604)));
+    path.cubic_to(
+        (f32::from_bits(0x43170000), f32::from_bits(0x43eb31ec)),
+        (f32::from_bits(0x43164e14), f32::from_bits(0x43ebabe8)),
+        (f32::from_bits(0x43160418), f32::from_bits(0x43ec3604)),
+    );
     // 151, 470.39f, 150.305f, 471.343f, 150.016f, 472.422f
-    path.cubic_to((f32::from_bits(0x4315ba1c), f32::from_bits(0x43ecc106)), (f32::from_bits(0x4315d810), f32::from_bits(0x43ed570a)), (f32::from_bits(0x43167439), f32::from_bits(0x43eddc08)));
+    path.cubic_to(
+        (f32::from_bits(0x4315ba1c), f32::from_bits(0x43ecc106)),
+        (f32::from_bits(0x4315d810), f32::from_bits(0x43ed570a)),
+        (f32::from_bits(0x43167439), f32::from_bits(0x43eddc08)),
+    );
     // 149.727f, 473.508f, 149.844f, 474.68f, 150.454f, 475.719f
     path.line_to((f32::from_bits(0x43134c49), f32::from_bits(0x43eec4fe)));
     // 147.298f, 477.539f
-    path.cubic_to((f32::from_bits(0x43111851), f32::from_bits(0x43ecdb02)), (f32::from_bits(0x43126830), f32::from_bits(0x43ea6c08)), (f32::from_bits(0x43163a5d), f32::from_bits(0x43e95106)));
+    path.cubic_to(
+        (f32::from_bits(0x43111851), f32::from_bits(0x43ecdb02)),
+        (f32::from_bits(0x43126830), f32::from_bits(0x43ea6c08)),
+        (f32::from_bits(0x43163a5d), f32::from_bits(0x43e95106)),
+    );
     // 145.095f, 473.711f, 146.407f, 468.844f, 150.228f, 466.633f
     path.line_to((f32::from_bits(0x43180c08), f32::from_bits(0x43eae3f8)));
     // 152.047f, 469.781f
     path.close();
     path.move_to((f32::from_bits(0x431dfa1d), f32::from_bits(0x43ebb000)));
     // 157.977f, 471.375f
-    path.cubic_to((f32::from_bits(0x431d620d), f32::from_bits(0x43eb29fc)), (f32::from_bits(0x431c6e15), f32::from_bits(0x43ead20c)), (f32::from_bits(0x431b5811), f32::from_bits(0x43eaad0e)));
+    path.cubic_to(
+        (f32::from_bits(0x431d620d), f32::from_bits(0x43eb29fc)),
+        (f32::from_bits(0x431c6e15), f32::from_bits(0x43ead20c)),
+        (f32::from_bits(0x431b5811), f32::from_bits(0x43eaad0e)),
+    );
     // 157.383f, 470.328f, 156.43f, 469.641f, 155.344f, 469.352f
-    path.cubic_to((f32::from_bits(0x431a420d), f32::from_bits(0x43ea8810)), (f32::from_bits(0x43191605), f32::from_bits(0x43ea970a)), (f32::from_bits(0x43180c09), f32::from_bits(0x43eae418)));
+    path.cubic_to(
+        (f32::from_bits(0x431a420d), f32::from_bits(0x43ea8810)),
+        (f32::from_bits(0x43191605), f32::from_bits(0x43ea970a)),
+        (f32::from_bits(0x43180c09), f32::from_bits(0x43eae418)),
+    );
     // 154.258f, 469.063f, 153.086f, 469.18f, 152.047f, 469.782f
     path.line_to((f32::from_bits(0x43163a1d), f32::from_bits(0x43e95126)));
     // 150.227f, 466.634f
-    path.cubic_to((f32::from_bits(0x431a0c09), f32::from_bits(0x43e8372a)), (f32::from_bits(0x431eec08), f32::from_bits(0x43e8de34)), (f32::from_bits(0x4321220d), f32::from_bits(0x43eac72a)));
+    path.cubic_to(
+        (f32::from_bits(0x431a0c09), f32::from_bits(0x43e8372a)),
+        (f32::from_bits(0x431eec08), f32::from_bits(0x43e8de34)),
+        (f32::from_bits(0x4321220d), f32::from_bits(0x43eac72a)),
+    );
     // 154.047f, 464.431f, 158.922f, 465.736f, 161.133f, 469.556f
     path.line_to((f32::from_bits(0x431dfa1d), f32::from_bits(0x43ebb000)));
     // 157.977f, 471.375f
@@ -8574,25 +12020,57 @@ fn joel_8(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
     path.move_to((f32::from_bits(0x42d97520), f32::from_bits(0x410ac429)));
     // 108.729f, 8.67289f
-    path.cubic_to((f32::from_bits(0x42d97520), f32::from_bits(0x410ac429)), (f32::from_bits(0x42e9a9ce), f32::from_bits(0x41834e87)), (f32::from_bits(0x42e99c8c), f32::from_bits(0x41c5c960)));
+    path.cubic_to(
+        (f32::from_bits(0x42d97520), f32::from_bits(0x410ac429)),
+        (f32::from_bits(0x42e9a9ce), f32::from_bits(0x41834e87)),
+        (f32::from_bits(0x42e99c8c), f32::from_bits(0x41c5c960)),
+    );
     // 108.729f, 8.67289f, 116.832f, 16.4133f, 116.806f, 24.7233f
-    path.cubic_to((f32::from_bits(0x42e98f49), f32::from_bits(0x4204221c)), (f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)), (f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)));
+    path.cubic_to(
+        (f32::from_bits(0x42e98f49), f32::from_bits(0x4204221c)),
+        (f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)),
+        (f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)),
+    );
     // 116.78f, 33.0333f, 108.729f, 40.8773f, 108.729f, 40.8773f
-    path.cubic_to((f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)), (f32::from_bits(0x42dbbc54), f32::from_bits(0x42099f18)), (f32::from_bits(0x42d1cb74), f32::from_bits(0x41f77dc0)));
+    path.cubic_to(
+        (f32::from_bits(0x42d97520), f32::from_bits(0x4223825f)),
+        (f32::from_bits(0x42dbbc54), f32::from_bits(0x42099f18)),
+        (f32::from_bits(0x42d1cb74), f32::from_bits(0x41f77dc0)),
+    );
     // 108.729f, 40.8773f, 109.868f, 34.4054f, 104.897f, 30.9364f
-    path.cubic_to((f32::from_bits(0x42c7da94), f32::from_bits(0x41dbbd4f)), (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41d802fb)), (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41d802fb)));
+    path.cubic_to(
+        (f32::from_bits(0x42c7da94), f32::from_bits(0x41dbbd4f)),
+        (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41d802fb)),
+        (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41d802fb)),
+    );
     // 99.9269f, 27.4674f, 88.8469f, 27.0015f, 88.8469f, 27.0015f
-    path.cubic_to((f32::from_bits(0x42a75637), f32::from_bits(0x41d6909f)), (f32::from_bits(0x4296c543), f32::from_bits(0x41f1b139)), (f32::from_bits(0x4296c543), f32::from_bits(0x41f1b139)));
+    path.cubic_to(
+        (f32::from_bits(0x42a75637), f32::from_bits(0x41d6909f)),
+        (f32::from_bits(0x4296c543), f32::from_bits(0x41f1b139)),
+        (f32::from_bits(0x4296c543), f32::from_bits(0x41f1b139)),
+    );
     // 83.6684f, 26.8206f, 75.3853f, 30.2115f, 75.3853f, 30.2115f
     path.line_to((f32::from_bits(0x42824475), f32::from_bits(0x41c69d70)));
     // 65.1337f, 24.8269f
     path.line_to((f32::from_bits(0x4296c543), f32::from_bits(0x419b89a8)));
     // 75.3853f, 19.4422f
-    path.cubic_to((f32::from_bits(0x4296c543), f32::from_bits(0x419b89a8)), (f32::from_bits(0x42a6b798), f32::from_bits(0x41b89815)), (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41b95c48)));
+    path.cubic_to(
+        (f32::from_bits(0x4296c543), f32::from_bits(0x419b89a8)),
+        (f32::from_bits(0x42a6b798), f32::from_bits(0x41b89815)),
+        (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41b95c48)),
+    );
     // 75.3853f, 19.4422f, 83.3586f, 23.0743f, 88.8469f, 23.1701f
-    path.cubic_to((f32::from_bits(0x42b1b1a1), f32::from_bits(0x41b95c48)), (f32::from_bits(0x42c80258), f32::from_bits(0x41b03f7a)), (f32::from_bits(0x42d1cb74), f32::from_bits(0x419340ee)));
+    path.cubic_to(
+        (f32::from_bits(0x42b1b1a1), f32::from_bits(0x41b95c48)),
+        (f32::from_bits(0x42c80258), f32::from_bits(0x41b03f7a)),
+        (f32::from_bits(0x42d1cb74), f32::from_bits(0x419340ee)),
+    );
     // 88.8469f, 23.1701f, 100.005f, 22.031f, 104.897f, 18.4067f
-    path.cubic_to((f32::from_bits(0x42db9490), f32::from_bits(0x416c84c2)), (f32::from_bits(0x42d97520), f32::from_bits(0x410ac42a)), (f32::from_bits(0x42d97520), f32::from_bits(0x410ac42a)));
+    path.cubic_to(
+        (f32::from_bits(0x42db9490), f32::from_bits(0x416c84c2)),
+        (f32::from_bits(0x42d97520), f32::from_bits(0x410ac42a)),
+        (f32::from_bits(0x42d97520), f32::from_bits(0x410ac42a)),
+    );
     // 109.79f, 14.7824f, 108.729f, 8.67289f, 108.729f, 8.67289f
     path.line_to((f32::from_bits(0x42d97520), f32::from_bits(0x410ac429)));
     // 108.729f, 8.67289f
@@ -8600,14 +12078,11 @@ fn joel_8(reporter: &mut Reporter, filename: &str) {
     test_simplify(reporter, &path.detach(), filename);
 }
 
-fn joel_9(_reporter: &mut Reporter, _filename: &str) {
-}
+fn joel_9(_reporter: &mut Reporter, _filename: &str) {}
 
-fn joel_10(_reporter: &mut Reporter, _filename: &str) {
-}
+fn joel_10(_reporter: &mut Reporter, _filename: &str) {}
 
-fn joel_11(_reporter: &mut Reporter, _filename: &str) {
-}
+fn joel_11(_reporter: &mut Reporter, _filename: &str) {}
 
 fn make_joel_12(path: &mut PathBuilder) {
     path.move_to((f32::from_bits(0x4324e9fc), f32::from_bits(0x437211ec)));
@@ -8634,13 +12109,25 @@ fn make_joel_12(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x431bd3f8), f32::from_bits(0x4371d810)));
     // 155.828f, 241.844f
-    path.cubic_to((f32::from_bits(0x431ce000), f32::from_bits(0x4372722d)), (f32::from_bits(0x431e0e15), f32::from_bits(0x43729020)), (f32::from_bits(0x431f2000), f32::from_bits(0x43724831)));
+    path.cubic_to(
+        (f32::from_bits(0x431ce000), f32::from_bits(0x4372722d)),
+        (f32::from_bits(0x431e0e15), f32::from_bits(0x43729020)),
+        (f32::from_bits(0x431f2000), f32::from_bits(0x43724831)),
+    );
     // 156.875f, 242.446f, 158.055f, 242.563f, 159.125f, 242.282f
-    path.cubic_to((f32::from_bits(0x43203604), f32::from_bits(0x4371fe35)), (f32::from_bits(0x43212c08), f32::from_bits(0x43714a3d)), (f32::from_bits(0x4321c5e3), f32::from_bits(0x43704041)));
+    path.cubic_to(
+        (f32::from_bits(0x43203604), f32::from_bits(0x4371fe35)),
+        (f32::from_bits(0x43212c08), f32::from_bits(0x43714a3d)),
+        (f32::from_bits(0x4321c5e3), f32::from_bits(0x43704041)),
+    );
     // 160.211f, 241.993f, 161.172f, 241.29f, 161.773f, 240.251f
     path.line_to((f32::from_bits(0x4324e9fc), f32::from_bits(0x4372122d)));
     // 164.914f, 242.071f
-    path.cubic_to((f32::from_bits(0x4322b3f8), f32::from_bits(0x4375e419)), (f32::from_bits(0x431dd810), f32::from_bits(0x4377322d)), (f32::from_bits(0x431a020c), f32::from_bits(0x4374fe35)));
+    path.cubic_to(
+        (f32::from_bits(0x4322b3f8), f32::from_bits(0x4375e419)),
+        (f32::from_bits(0x431dd810), f32::from_bits(0x4377322d)),
+        (f32::from_bits(0x431a020c), f32::from_bits(0x4374fe35)),
+    );
     // 162.703f, 245.891f, 157.844f, 247.196f, 154.008f, 244.993f
     path.line_to((f32::from_bits(0x431bd3f8), f32::from_bits(0x4371d810)));
     // 155.828f, 241.844f
@@ -8658,13 +12145,25 @@ fn make_joel_12(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x431a4000), f32::from_bits(0x436be7f0)));
     // 154.25f, 235.906f
-    path.cubic_to((f32::from_bits(0x4319a20c), f32::from_bits(0x436cf3f8)), (f32::from_bits(0x431985e3), f32::from_bits(0x436e1df4)), (f32::from_bits(0x4319ce14), f32::from_bits(0x436f33f8)));
+    path.cubic_to(
+        (f32::from_bits(0x4319a20c), f32::from_bits(0x436cf3f8)),
+        (f32::from_bits(0x431985e3), f32::from_bits(0x436e1df4)),
+        (f32::from_bits(0x4319ce14), f32::from_bits(0x436f33f8)),
+    );
     // 153.633f, 236.953f, 153.523f, 238.117f, 153.805f, 239.203f
-    path.cubic_to((f32::from_bits(0x431a1a1c), f32::from_bits(0x437047f0)), (f32::from_bits(0x431ac831), f32::from_bits(0x43713df4)), (f32::from_bits(0x431bd3f7), f32::from_bits(0x4371d811)));
+    path.cubic_to(
+        (f32::from_bits(0x431a1a1c), f32::from_bits(0x437047f0)),
+        (f32::from_bits(0x431ac831), f32::from_bits(0x43713df4)),
+        (f32::from_bits(0x431bd3f7), f32::from_bits(0x4371d811)),
+    );
     // 154.102f, 240.281f, 154.782f, 241.242f, 155.828f, 241.844f
     path.line_to((f32::from_bits(0x431a020b), f32::from_bits(0x4374fdf4)));
     // 154.008f, 244.992f
-    path.cubic_to((f32::from_bits(0x4316322c), f32::from_bits(0x4372c5e4)), (f32::from_bits(0x4314e417), f32::from_bits(0x436de9fc)), (f32::from_bits(0x4317180f), f32::from_bits(0x436a1604)));
+    path.cubic_to(
+        (f32::from_bits(0x4316322c), f32::from_bits(0x4372c5e4)),
+        (f32::from_bits(0x4314e417), f32::from_bits(0x436de9fc)),
+        (f32::from_bits(0x4317180f), f32::from_bits(0x436a1604)),
+    );
     // 150.196f, 242.773f, 148.891f, 237.914f, 151.094f, 234.086f
     path.line_to((f32::from_bits(0x431a4000), f32::from_bits(0x436be7f0)));
     // 154.25f, 235.906f
@@ -8682,26 +12181,50 @@ fn make_joel_12(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43202e14), f32::from_bits(0x436a4fdf)));
     // 160.18f, 234.312f
-    path.cubic_to((f32::from_bits(0x431f2418), f32::from_bits(0x4369b5c2)), (f32::from_bits(0x431df810), f32::from_bits(0x436995c2)), (f32::from_bits(0x431ce20c), f32::from_bits(0x4369dfbe)));
+    path.cubic_to(
+        (f32::from_bits(0x431f2418), f32::from_bits(0x4369b5c2)),
+        (f32::from_bits(0x431df810), f32::from_bits(0x436995c2)),
+        (f32::from_bits(0x431ce20c), f32::from_bits(0x4369dfbe)),
+    );
     // 159.141f, 233.71f, 157.969f, 233.585f, 156.883f, 233.874f
-    path.cubic_to((f32::from_bits(0x431bcc08), f32::from_bits(0x436a2bc6)), (f32::from_bits(0x431ad810), f32::from_bits(0x436adba5)), (f32::from_bits(0x431a4000), f32::from_bits(0x436be7ae)));
+    path.cubic_to(
+        (f32::from_bits(0x431bcc08), f32::from_bits(0x436a2bc6)),
+        (f32::from_bits(0x431ad810), f32::from_bits(0x436adba5)),
+        (f32::from_bits(0x431a4000), f32::from_bits(0x436be7ae)),
+    );
     // 155.797f, 234.171f, 154.844f, 234.858f, 154.25f, 235.905f
     path.line_to((f32::from_bits(0x43171810), f32::from_bits(0x436a15c2)));
     // 151.094f, 234.085f
-    path.cubic_to((f32::from_bits(0x43194e14), f32::from_bits(0x436643d6)), (f32::from_bits(0x431e2c08), f32::from_bits(0x4364f3b6)), (f32::from_bits(0x43220000), f32::from_bits(0x436729ba)));
+    path.cubic_to(
+        (f32::from_bits(0x43194e14), f32::from_bits(0x436643d6)),
+        (f32::from_bits(0x431e2c08), f32::from_bits(0x4364f3b6)),
+        (f32::from_bits(0x43220000), f32::from_bits(0x436729ba)),
+    );
     // 153.305f, 230.265f, 158.172f, 228.952f, 162, 231.163f
     path.line_to((f32::from_bits(0x43202e14), f32::from_bits(0x436a4fdf)));
     // 160.18f, 234.312f
     path.close();
     path.move_to((f32::from_bits(0x4321c5e3), f32::from_bits(0x43704000)));
     // 161.773f, 240.25f
-    path.cubic_to((f32::from_bits(0x43226000), f32::from_bits(0x436f3604)), (f32::from_bits(0x43228000), f32::from_bits(0x436e09fc)), (f32::from_bits(0x43223604), f32::from_bits(0x436cf3f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43226000), f32::from_bits(0x436f3604)),
+        (f32::from_bits(0x43228000), f32::from_bits(0x436e09fc)),
+        (f32::from_bits(0x43223604), f32::from_bits(0x436cf3f8)),
+    );
     // 162.375f, 239.211f, 162.5f, 238.039f, 162.211f, 236.953f
-    path.cubic_to((f32::from_bits(0x4321ec08), f32::from_bits(0x436be000)), (f32::from_bits(0x43213a1d), f32::from_bits(0x436ae9fc)), (f32::from_bits(0x43202e14), f32::from_bits(0x436a4fdf)));
+    path.cubic_to(
+        (f32::from_bits(0x4321ec08), f32::from_bits(0x436be000)),
+        (f32::from_bits(0x43213a1d), f32::from_bits(0x436ae9fc)),
+        (f32::from_bits(0x43202e14), f32::from_bits(0x436a4fdf)),
+    );
     // 161.922f, 235.875f, 161.227f, 234.914f, 160.18f, 234.312f
     path.line_to((f32::from_bits(0x43220000), f32::from_bits(0x436729fc)));
     // 162, 231.164f
-    path.cubic_to((f32::from_bits(0x4325d1ec), f32::from_bits(0x43696000)), (f32::from_bits(0x4327220c), f32::from_bits(0x436e4000)), (f32::from_bits(0x4324e9fc), f32::from_bits(0x437211ec)));
+    path.cubic_to(
+        (f32::from_bits(0x4325d1ec), f32::from_bits(0x43696000)),
+        (f32::from_bits(0x4327220c), f32::from_bits(0x436e4000)),
+        (f32::from_bits(0x4324e9fc), f32::from_bits(0x437211ec)),
+    );
     // 165.82f, 233.375f, 167.133f, 238.25f, 164.914f, 242.07f
     path.line_to((f32::from_bits(0x4321c5e3), f32::from_bits(0x43704000)));
     // 161.773f, 240.25f
@@ -8724,13 +12247,29 @@ fn joel_12x(reporter: &mut Reporter, filename: &str) {
 fn make_joel_13(path: &mut PathBuilder) {
     path.move_to((f32::from_bits(0x43b4126f), f32::from_bits(0x43c058f6)));
     // 360.144f, 384.695f
-    path.cubic_to((f32::from_bits(0x43bd7c6b), f32::from_bits(0x43c05b02)), (f32::from_bits(0x43c51d71), f32::from_bits(0x43b8e8f6)), (f32::from_bits(0x43c5276d), f32::from_bits(0x43afc1ec)));
+    path.cubic_to(
+        (f32::from_bits(0x43bd7c6b), f32::from_bits(0x43c05b02)),
+        (f32::from_bits(0x43c51d71), f32::from_bits(0x43b8e8f6)),
+        (f32::from_bits(0x43c5276d), f32::from_bits(0x43afc1ec)),
+    );
     // 378.972f, 384.711f, 394.23f, 369.82f, 394.308f, 351.515f
-    path.cubic_to((f32::from_bits(0x43c51d71), f32::from_bits(0x43a688f6)), (f32::from_bits(0x43bd7c6b), f32::from_bits(0x439f16ea)), (f32::from_bits(0x43b4126f), f32::from_bits(0x439f16ea)));
+    path.cubic_to(
+        (f32::from_bits(0x43c51d71), f32::from_bits(0x43a688f6)),
+        (f32::from_bits(0x43bd7c6b), f32::from_bits(0x439f16ea)),
+        (f32::from_bits(0x43b4126f), f32::from_bits(0x439f16ea)),
+    );
     // 394.23f, 333.07f, 378.972f, 318.179f, 360.144f, 318.179f
-    path.cubic_to((f32::from_bits(0x43aaa979), f32::from_bits(0x439f16ea)), (f32::from_bits(0x43a3076d), f32::from_bits(0x43a688f6)), (f32::from_bits(0x43a31063), f32::from_bits(0x43afc1ec)));
+    path.cubic_to(
+        (f32::from_bits(0x43aaa979), f32::from_bits(0x439f16ea)),
+        (f32::from_bits(0x43a3076d), f32::from_bits(0x43a688f6)),
+        (f32::from_bits(0x43a31063), f32::from_bits(0x43afc1ec)),
+    );
     // 341.324f, 318.179f, 326.058f, 333.07f, 326.128f, 351.515f
-    path.cubic_to((f32::from_bits(0x43a3076d), f32::from_bits(0x43b8e8f6)), (f32::from_bits(0x43aaa959), f32::from_bits(0x43c05b02)), (f32::from_bits(0x43b4126f), f32::from_bits(0x43c058f6)));
+    path.cubic_to(
+        (f32::from_bits(0x43a3076d), f32::from_bits(0x43b8e8f6)),
+        (f32::from_bits(0x43aaa959), f32::from_bits(0x43c05b02)),
+        (f32::from_bits(0x43b4126f), f32::from_bits(0x43c058f6)),
+    );
     // 326.058f, 369.82f, 341.323f, 384.711f, 360.144f, 384.695f
     path.close();
 }
@@ -8773,9 +12312,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43dfe76d), f32::from_bits(0x43d792f1)));
     // 447.808f, 431.148f
-    path.cubic_to((f32::from_bits(0x43e51979), f32::from_bits(0x43d611eb)), (f32::from_bits(0x43eb8667), f32::from_bits(0x43d765e3)), (f32::from_bits(0x43f0fd71), f32::from_bits(0x43d676e9)));
+    path.cubic_to(
+        (f32::from_bits(0x43e51979), f32::from_bits(0x43d611eb)),
+        (f32::from_bits(0x43eb8667), f32::from_bits(0x43d765e3)),
+        (f32::from_bits(0x43f0fd71), f32::from_bits(0x43d676e9)),
+    );
     // 458.199f, 428.14f, 471.05f, 430.796f, 481.98f, 428.929f
-    path.cubic_to((f32::from_bits(0x43eb8667), f32::from_bits(0x43d76604)), (f32::from_bits(0x43e51958), f32::from_bits(0x43d6120c)), (f32::from_bits(0x43dfe76d), f32::from_bits(0x43d792f1)));
+    path.cubic_to(
+        (f32::from_bits(0x43eb8667), f32::from_bits(0x43d76604)),
+        (f32::from_bits(0x43e51958), f32::from_bits(0x43d6120c)),
+        (f32::from_bits(0x43dfe76d), f32::from_bits(0x43d792f1)),
+    );
     // 471.05f, 430.797f, 458.198f, 428.141f, 447.808f, 431.148f
     path.close();
     path.move_to((f32::from_bits(0x43df776d), f32::from_bits(0x43d6d603)));
@@ -8797,9 +12344,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43dd3169), f32::from_bits(0x43d792f1)));
     // 442.386f, 431.148f
-    path.cubic_to((f32::from_bits(0x43de376d), f32::from_bits(0x43d743f7)), (f32::from_bits(0x43de2873), f32::from_bits(0x43d68df3)), (f32::from_bits(0x43df776d), f32::from_bits(0x43d6d5e3)));
+    path.cubic_to(
+        (f32::from_bits(0x43de376d), f32::from_bits(0x43d743f7)),
+        (f32::from_bits(0x43de2873), f32::from_bits(0x43d68df3)),
+        (f32::from_bits(0x43df776d), f32::from_bits(0x43d6d5e3)),
+    );
     // 444.433f, 430.531f, 444.316f, 429.109f, 446.933f, 429.671f
-    path.cubic_to((f32::from_bits(0x43de2852), f32::from_bits(0x43d68df3)), (f32::from_bits(0x43de376d), f32::from_bits(0x43d743f7)), (f32::from_bits(0x43dd3169), f32::from_bits(0x43d792f1)));
+    path.cubic_to(
+        (f32::from_bits(0x43de2852), f32::from_bits(0x43d68df3)),
+        (f32::from_bits(0x43de376d), f32::from_bits(0x43d743f7)),
+        (f32::from_bits(0x43dd3169), f32::from_bits(0x43d792f1)),
+    );
     // 444.315f, 429.109f, 444.433f, 430.531f, 442.386f, 431.148f
     path.close();
     path.move_to((f32::from_bits(0x43dcc169), f32::from_bits(0x43d6d603)));
@@ -8845,9 +12400,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43e22d51), f32::from_bits(0x43e41b01)));
     // 452.354f, 456.211f
-    path.cubic_to((f32::from_bits(0x43e2ba5f), f32::from_bits(0x43e3f9fb)), (f32::from_bits(0x43e37e57), f32::from_bits(0x43e46df3)), (f32::from_bits(0x43e3cb45), f32::from_bits(0x43e3bd0d)));
+    path.cubic_to(
+        (f32::from_bits(0x43e2ba5f), f32::from_bits(0x43e3f9fb)),
+        (f32::from_bits(0x43e37e57), f32::from_bits(0x43e46df3)),
+        (f32::from_bits(0x43e3cb45), f32::from_bits(0x43e3bd0d)),
+    );
     // 453.456f, 455.953f, 454.987f, 456.859f, 455.588f, 455.477f
-    path.cubic_to((f32::from_bits(0x43e37e57), f32::from_bits(0x43e46df2)), (f32::from_bits(0x43e2ba60), f32::from_bits(0x43e3f9fb)), (f32::from_bits(0x43e22d51), f32::from_bits(0x43e41b01)));
+    path.cubic_to(
+        (f32::from_bits(0x43e37e57), f32::from_bits(0x43e46df2)),
+        (f32::from_bits(0x43e2ba60), f32::from_bits(0x43e3f9fb)),
+        (f32::from_bits(0x43e22d51), f32::from_bits(0x43e41b01)),
+    );
     // 454.987f, 456.859f, 453.456f, 455.953f, 452.354f, 456.211f
     path.close();
     path.move_to((f32::from_bits(0x43e22d51), f32::from_bits(0x43e479fb)));
@@ -8893,9 +12456,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43e1726f), f32::from_bits(0x43e90c07)));
     // 450.894f, 466.094f
-    path.cubic_to((f32::from_bits(0x43e2226f), f32::from_bits(0x43e769fb)), (f32::from_bits(0x43e50a7f), f32::from_bits(0x43e63915)), (f32::from_bits(0x43e35a5f), f32::from_bits(0x43e41b01)));
+    path.cubic_to(
+        (f32::from_bits(0x43e2226f), f32::from_bits(0x43e769fb)),
+        (f32::from_bits(0x43e50a7f), f32::from_bits(0x43e63915)),
+        (f32::from_bits(0x43e35a5f), f32::from_bits(0x43e41b01)),
+    );
     // 452.269f, 462.828f, 458.082f, 460.446f, 454.706f, 456.211f
-    path.cubic_to((f32::from_bits(0x43e50a5f), f32::from_bits(0x43e638f5)), (f32::from_bits(0x43e2226f), f32::from_bits(0x43e769fb)), (f32::from_bits(0x43e1726f), f32::from_bits(0x43e90c07)));
+    path.cubic_to(
+        (f32::from_bits(0x43e50a5f), f32::from_bits(0x43e638f5)),
+        (f32::from_bits(0x43e2226f), f32::from_bits(0x43e769fb)),
+        (f32::from_bits(0x43e1726f), f32::from_bits(0x43e90c07)),
+    );
     // 458.081f, 460.445f, 452.269f, 462.828f, 450.894f, 466.094f
     path.close();
     path.move_to((f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea2709)));
@@ -8905,9 +12476,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea2709)));
     // 481.245f, 468.305f
-    path.cubic_to((f32::from_bits(0x43ebbc6b), f32::from_bits(0x43ea4105)), (f32::from_bits(0x43e56c6b), f32::from_bits(0x43ec9fff)), (f32::from_bits(0x43e1724f), f32::from_bits(0x43e90c07)));
+    path.cubic_to(
+        (f32::from_bits(0x43ebbc6b), f32::from_bits(0x43ea4105)),
+        (f32::from_bits(0x43e56c6b), f32::from_bits(0x43ec9fff)),
+        (f32::from_bits(0x43e1724f), f32::from_bits(0x43e90c07)),
+    );
     // 471.472f, 468.508f, 458.847f, 473.25f, 450.893f, 466.094f
-    path.cubic_to((f32::from_bits(0x43e56c6c), f32::from_bits(0x43ec9fff)), (f32::from_bits(0x43ebbc6c), f32::from_bits(0x43ea4105)), (f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea2709)));
+    path.cubic_to(
+        (f32::from_bits(0x43e56c6c), f32::from_bits(0x43ec9fff)),
+        (f32::from_bits(0x43ebbc6c), f32::from_bits(0x43ea4105)),
+        (f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea2709)),
+    );
     // 458.847f, 473.25f, 471.472f, 468.508f, 481.245f, 468.305f
     path.close();
     path.move_to((f32::from_bits(0x43eea45b), f32::from_bits(0x43e9c7ee)));
@@ -8917,9 +12496,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43eea45b), f32::from_bits(0x43e9c7ee)));
     // 477.284f, 467.562f
-    path.cubic_to((f32::from_bits(0x43ef0c4b), f32::from_bits(0x43ea7ef8)), (f32::from_bits(0x43eff355), f32::from_bits(0x43ea10e4)), (f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea26e8)));
+    path.cubic_to(
+        (f32::from_bits(0x43ef0c4b), f32::from_bits(0x43ea7ef8)),
+        (f32::from_bits(0x43eff355), f32::from_bits(0x43ea10e4)),
+        (f32::from_bits(0x43f09f5d), f32::from_bits(0x43ea26e8)),
+    );
     // 478.096f, 468.992f, 479.901f, 468.132f, 481.245f, 468.304f
-    path.cubic_to((f32::from_bits(0x43eff355), f32::from_bits(0x43ea1105)), (f32::from_bits(0x43ef0c6b), f32::from_bits(0x43ea7ef8)), (f32::from_bits(0x43eea45b), f32::from_bits(0x43e9c7ee)));
+    path.cubic_to(
+        (f32::from_bits(0x43eff355), f32::from_bits(0x43ea1105)),
+        (f32::from_bits(0x43ef0c6b), f32::from_bits(0x43ea7ef8)),
+        (f32::from_bits(0x43eea45b), f32::from_bits(0x43e9c7ee)),
+    );
     // 479.901f, 468.133f, 478.097f, 468.992f, 477.284f, 467.562f
     path.close();
     path.move_to((f32::from_bits(0x43ee4667), f32::from_bits(0x43ea2709)));
@@ -8941,9 +12528,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43e9f26f), f32::from_bits(0x43e6c2f0)));
     // 467.894f, 461.523f
-    path.cubic_to((f32::from_bits(0x43eb8873), f32::from_bits(0x43e7dcec)), (f32::from_bits(0x43eb747b), f32::from_bits(0x43ea9b00)), (f32::from_bits(0x43ee4667), f32::from_bits(0x43ea26e8)));
+    path.cubic_to(
+        (f32::from_bits(0x43eb8873), f32::from_bits(0x43e7dcec)),
+        (f32::from_bits(0x43eb747b), f32::from_bits(0x43ea9b00)),
+        (f32::from_bits(0x43ee4667), f32::from_bits(0x43ea26e8)),
+    );
     // 471.066f, 463.726f, 470.91f, 469.211f, 476.55f, 468.304f
-    path.cubic_to((f32::from_bits(0x43eb745b), f32::from_bits(0x43ea9b01)), (f32::from_bits(0x43eb8853), f32::from_bits(0x43e7dd0d)), (f32::from_bits(0x43e9f26f), f32::from_bits(0x43e6c2f0)));
+    path.cubic_to(
+        (f32::from_bits(0x43eb745b), f32::from_bits(0x43ea9b01)),
+        (f32::from_bits(0x43eb8853), f32::from_bits(0x43e7dd0d)),
+        (f32::from_bits(0x43e9f26f), f32::from_bits(0x43e6c2f0)),
+    );
     // 470.909f, 469.211f, 471.065f, 463.727f, 467.894f, 461.523f
     path.close();
     path.move_to((f32::from_bits(0x43ebee56), f32::from_bits(0x43decc07)));
@@ -8953,9 +12548,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43ebee56), f32::from_bits(0x43decc07)));
     // 471.862f, 445.594f
-    path.cubic_to((f32::from_bits(0x43e85f5c), f32::from_bits(0x43e04915)), (f32::from_bits(0x43eaa148), f32::from_bits(0x43e41c07)), (f32::from_bits(0x43e9f24e), f32::from_bits(0x43e6c311)));
+    path.cubic_to(
+        (f32::from_bits(0x43e85f5c), f32::from_bits(0x43e04915)),
+        (f32::from_bits(0x43eaa148), f32::from_bits(0x43e41c07)),
+        (f32::from_bits(0x43e9f24e), f32::from_bits(0x43e6c311)),
+    );
     // 464.745f, 448.571f, 469.26f, 456.219f, 467.893f, 461.524f
-    path.cubic_to((f32::from_bits(0x43eaa169), f32::from_bits(0x43e41c07)), (f32::from_bits(0x43e85f5c), f32::from_bits(0x43e048f4)), (f32::from_bits(0x43ebee56), f32::from_bits(0x43decc07)));
+    path.cubic_to(
+        (f32::from_bits(0x43eaa169), f32::from_bits(0x43e41c07)),
+        (f32::from_bits(0x43e85f5c), f32::from_bits(0x43e048f4)),
+        (f32::from_bits(0x43ebee56), f32::from_bits(0x43decc07)),
+    );
     // 469.261f, 456.219f, 464.745f, 448.57f, 471.862f, 445.594f
     path.close();
     path.move_to((f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)));
@@ -8965,9 +12568,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)));
     // 469.511f, 442.5f
-    path.cubic_to((f32::from_bits(0x43eb245a), f32::from_bits(0x43ddc7ef)), (f32::from_bits(0x43eaf45a), f32::from_bits(0x43dedd0d)), (f32::from_bits(0x43ebee76), f32::from_bits(0x43decc07)));
+    path.cubic_to(
+        (f32::from_bits(0x43eb245a), f32::from_bits(0x43ddc7ef)),
+        (f32::from_bits(0x43eaf45a), f32::from_bits(0x43dedd0d)),
+        (f32::from_bits(0x43ebee76), f32::from_bits(0x43decc07)),
+    );
     // 470.284f, 443.562f, 469.909f, 445.727f, 471.863f, 445.594f
-    path.cubic_to((f32::from_bits(0x43eaf459), f32::from_bits(0x43dedd0d)), (f32::from_bits(0x43eb2459), f32::from_bits(0x43ddc7ee)), (f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)));
+    path.cubic_to(
+        (f32::from_bits(0x43eaf459), f32::from_bits(0x43dedd0d)),
+        (f32::from_bits(0x43eb2459), f32::from_bits(0x43ddc7ee)),
+        (f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)),
+    );
     // 469.909f, 445.727f, 470.284f, 443.562f, 469.511f, 442.5f
     path.close();
     path.move_to((f32::from_bits(0x43ec4c6a), f32::from_bits(0x43dce105)));
@@ -8977,9 +12588,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43ec4c6a), f32::from_bits(0x43dce105)));
     // 472.597f, 441.758f
-    path.cubic_to((f32::from_bits(0x43ebcb64), f32::from_bits(0x43dd08f5)), (f32::from_bits(0x43eb0c6a), f32::from_bits(0x43dc9603)), (f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)));
+    path.cubic_to(
+        (f32::from_bits(0x43ebcb64), f32::from_bits(0x43dd08f5)),
+        (f32::from_bits(0x43eb0c6a), f32::from_bits(0x43dc9603)),
+        (f32::from_bits(0x43eac168), f32::from_bits(0x43dd3fff)),
+    );
     // 471.589f, 442.07f, 470.097f, 441.172f, 469.511f, 442.5f
-    path.cubic_to((f32::from_bits(0x43eb0c6a), f32::from_bits(0x43dc9603)), (f32::from_bits(0x43ebcb64), f32::from_bits(0x43dd08f5)), (f32::from_bits(0x43ec4c6a), f32::from_bits(0x43dce105)));
+    path.cubic_to(
+        (f32::from_bits(0x43eb0c6a), f32::from_bits(0x43dc9603)),
+        (f32::from_bits(0x43ebcb64), f32::from_bits(0x43dd08f5)),
+        (f32::from_bits(0x43ec4c6a), f32::from_bits(0x43dce105)),
+    );
     // 470.097f, 441.172f, 471.589f, 442.07f, 472.597f, 441.758f
     path.close();
     path.move_to((f32::from_bits(0x43ecbb64), f32::from_bits(0x43ddb105)));
@@ -9001,9 +12620,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43eea45a), f32::from_bits(0x43dc24fd)));
     // 477.284f, 440.289f
-    path.cubic_to((f32::from_bits(0x43eef354), f32::from_bits(0x43dd4c07)), (f32::from_bits(0x43ed4a5e), f32::from_bits(0x43dcfef9)), (f32::from_bits(0x43ecbb64), f32::from_bits(0x43ddb105)));
+    path.cubic_to(
+        (f32::from_bits(0x43eef354), f32::from_bits(0x43dd4c07)),
+        (f32::from_bits(0x43ed4a5e), f32::from_bits(0x43dcfef9)),
+        (f32::from_bits(0x43ecbb64), f32::from_bits(0x43ddb105)),
+    );
     // 477.901f, 442.594f, 474.581f, 441.992f, 473.464f, 443.383f
-    path.cubic_to((f32::from_bits(0x43ed4a5e), f32::from_bits(0x43dcfef9)), (f32::from_bits(0x43eef354), f32::from_bits(0x43dd4c07)), (f32::from_bits(0x43eea45a), f32::from_bits(0x43dc24fd)));
+    path.cubic_to(
+        (f32::from_bits(0x43ed4a5e), f32::from_bits(0x43dcfef9)),
+        (f32::from_bits(0x43eef354), f32::from_bits(0x43dd4c07)),
+        (f32::from_bits(0x43eea45a), f32::from_bits(0x43dc24fd)),
+    );
     // 474.581f, 441.992f, 477.901f, 442.594f, 477.284f, 440.289f
     path.close();
     path.move_to((f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)));
@@ -9013,9 +12640,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)));
     // 481.245f, 440.289f
-    path.cubic_to((f32::from_bits(0x43effc6a), f32::from_bits(0x43daeced)), (f32::from_bits(0x43ef6a5e), f32::from_bits(0x43dbe4fd)), (f32::from_bits(0x43eea45a), f32::from_bits(0x43dc24fd)));
+    path.cubic_to(
+        (f32::from_bits(0x43effc6a), f32::from_bits(0x43daeced)),
+        (f32::from_bits(0x43ef6a5e), f32::from_bits(0x43dbe4fd)),
+        (f32::from_bits(0x43eea45a), f32::from_bits(0x43dc24fd)),
+    );
     // 479.972f, 437.851f, 478.831f, 439.789f, 477.284f, 440.289f
-    path.cubic_to((f32::from_bits(0x43ef6a5e), f32::from_bits(0x43dbe4fd)), (f32::from_bits(0x43effc6a), f32::from_bits(0x43daed0d)), (f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)));
+    path.cubic_to(
+        (f32::from_bits(0x43ef6a5e), f32::from_bits(0x43dbe4fd)),
+        (f32::from_bits(0x43effc6a), f32::from_bits(0x43daed0d)),
+        (f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)),
+    );
     // 478.831f, 439.789f, 479.972f, 437.852f, 481.245f, 440.289f
     path.close();
     path.move_to((f32::from_bits(0x43f2f76c), f32::from_bits(0x43dbc603)));
@@ -9025,9 +12660,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43f2f76c), f32::from_bits(0x43dbc603)));
     // 485.933f, 439.547f
-    path.cubic_to((f32::from_bits(0x43f24c6a), f32::from_bits(0x43dc3b01)), (f32::from_bits(0x43f16b64), f32::from_bits(0x43dc2311)), (f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)));
+    path.cubic_to(
+        (f32::from_bits(0x43f24c6a), f32::from_bits(0x43dc3b01)),
+        (f32::from_bits(0x43f16b64), f32::from_bits(0x43dc2311)),
+        (f32::from_bits(0x43f09f5c), f32::from_bits(0x43dc24fd)),
+    );
     // 484.597f, 440.461f, 482.839f, 440.274f, 481.245f, 440.289f
-    path.cubic_to((f32::from_bits(0x43f16b64), f32::from_bits(0x43dc23f7)), (f32::from_bits(0x43f24c6a), f32::from_bits(0x43dc3b01)), (f32::from_bits(0x43f2f76c), f32::from_bits(0x43dbc603)));
+    path.cubic_to(
+        (f32::from_bits(0x43f16b64), f32::from_bits(0x43dc23f7)),
+        (f32::from_bits(0x43f24c6a), f32::from_bits(0x43dc3b01)),
+        (f32::from_bits(0x43f2f76c), f32::from_bits(0x43dbc603)),
+    );
     // 482.839f, 440.281f, 484.597f, 440.461f, 485.933f, 439.547f
     path.close();
     path.move_to((f32::from_bits(0x43f4de55), f32::from_bits(0x43d97d0d)));
@@ -9037,9 +12680,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43f4de55), f32::from_bits(0x43d97d0d)));
     // 489.737f, 434.977f
-    path.cubic_to((f32::from_bits(0x43f47665), f32::from_bits(0x43da020b)), (f32::from_bits(0x43f42851), f32::from_bits(0x43db9417)), (f32::from_bits(0x43f2f74b), f32::from_bits(0x43dbc603)));
+    path.cubic_to(
+        (f32::from_bits(0x43f47665), f32::from_bits(0x43da020b)),
+        (f32::from_bits(0x43f42851), f32::from_bits(0x43db9417)),
+        (f32::from_bits(0x43f2f74b), f32::from_bits(0x43dbc603)),
+    );
     // 488.925f, 436.016f, 488.315f, 439.157f, 485.932f, 439.547f
-    path.cubic_to((f32::from_bits(0x43f42851), f32::from_bits(0x43db93f7)), (f32::from_bits(0x43f47666), f32::from_bits(0x43da020b)), (f32::from_bits(0x43f4de55), f32::from_bits(0x43d97d0d)));
+    path.cubic_to(
+        (f32::from_bits(0x43f42851), f32::from_bits(0x43db93f7)),
+        (f32::from_bits(0x43f47666), f32::from_bits(0x43da020b)),
+        (f32::from_bits(0x43f4de55), f32::from_bits(0x43d97d0d)),
+    );
     // 488.315f, 439.156f, 488.925f, 436.016f, 489.737f, 434.977f
     path.close();
     path.move_to((f32::from_bits(0x43f48061), f32::from_bits(0x43d97d0d)));
@@ -9056,9 +12707,17 @@ fn make_joel_14(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43f3b353), f32::from_bits(0x43d67709)));
     // 487.401f, 428.93f
-    path.cubic_to((f32::from_bits(0x43f39957), f32::from_bits(0x43d79ef9)), (f32::from_bits(0x43f3ca5d), f32::from_bits(0x43d8a603)), (f32::from_bits(0x43f48061), f32::from_bits(0x43d97d0d)));
+    path.cubic_to(
+        (f32::from_bits(0x43f39957), f32::from_bits(0x43d79ef9)),
+        (f32::from_bits(0x43f3ca5d), f32::from_bits(0x43d8a603)),
+        (f32::from_bits(0x43f48061), f32::from_bits(0x43d97d0d)),
+    );
     // 487.198f, 431.242f, 487.581f, 433.297f, 489.003f, 434.977f
-    path.cubic_to((f32::from_bits(0x43f3ca5d), f32::from_bits(0x43d8a603)), (f32::from_bits(0x43f39957), f32::from_bits(0x43d79ef9)), (f32::from_bits(0x43f3b353), f32::from_bits(0x43d67709)));
+    path.cubic_to(
+        (f32::from_bits(0x43f3ca5d), f32::from_bits(0x43d8a603)),
+        (f32::from_bits(0x43f39957), f32::from_bits(0x43d79ef9)),
+        (f32::from_bits(0x43f3b353), f32::from_bits(0x43d67709)),
+    );
     // 487.581f, 433.297f, 487.198f, 431.242f, 487.401f, 428.93f
     path.close();
 }
@@ -9089,9 +12748,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439c1959), f32::from_bits(0x43d78000)));
     // 312.198f, 431
-    path.cubic_to((f32::from_bits(0x439ea45b), f32::from_bits(0x43d6d000)), (f32::from_bits(0x439cce57), f32::from_bits(0x43d9f3f8)), (f32::from_bits(0x439e274d), f32::from_bits(0x43dad106)));
+    path.cubic_to(
+        (f32::from_bits(0x439ea45b), f32::from_bits(0x43d6d000)),
+        (f32::from_bits(0x439cce57), f32::from_bits(0x43d9f3f8)),
+        (f32::from_bits(0x439e274d), f32::from_bits(0x43dad106)),
+    );
     // 317.284f, 429.625f, 313.612f, 435.906f, 316.307f, 437.633f
-    path.cubic_to((f32::from_bits(0x439cce57), f32::from_bits(0x43d9f3f8)), (f32::from_bits(0x439ea45b), f32::from_bits(0x43d6d000)), (f32::from_bits(0x439c1959), f32::from_bits(0x43d78000)));
+    path.cubic_to(
+        (f32::from_bits(0x439cce57), f32::from_bits(0x43d9f3f8)),
+        (f32::from_bits(0x439ea45b), f32::from_bits(0x43d6d000)),
+        (f32::from_bits(0x439c1959), f32::from_bits(0x43d78000)),
+    );
     // 313.612f, 435.906f, 317.284f, 429.625f, 312.198f, 431
     path.close();
     path.move_to((f32::from_bits(0x439c1959), f32::from_bits(0x43d8f8f6)));
@@ -9113,9 +12780,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439f7853), f32::from_bits(0x43e5820c)));
     // 318.94f, 459.016f
-    path.cubic_to((f32::from_bits(0x439e1647), f32::from_bits(0x43e17106)), (f32::from_bits(0x439d945b), f32::from_bits(0x43dd020c)), (f32::from_bits(0x439c1959), f32::from_bits(0x43d8f916)));
+    path.cubic_to(
+        (f32::from_bits(0x439e1647), f32::from_bits(0x43e17106)),
+        (f32::from_bits(0x439d945b), f32::from_bits(0x43dd020c)),
+        (f32::from_bits(0x439c1959), f32::from_bits(0x43d8f916)),
+    );
     // 316.174f, 450.883f, 315.159f, 442.016f, 312.198f, 433.946f
-    path.cubic_to((f32::from_bits(0x439d945b), f32::from_bits(0x43dd020c)), (f32::from_bits(0x439e1667), f32::from_bits(0x43e17106)), (f32::from_bits(0x439f7853), f32::from_bits(0x43e5820c)));
+    path.cubic_to(
+        (f32::from_bits(0x439d945b), f32::from_bits(0x43dd020c)),
+        (f32::from_bits(0x439e1667), f32::from_bits(0x43e17106)),
+        (f32::from_bits(0x439f7853), f32::from_bits(0x43e5820c)),
+    );
     // 315.159f, 442.016f, 316.175f, 450.883f, 318.94f, 459.016f
     path.close();
     path.move_to((f32::from_bits(0x439ffc6c), f32::from_bits(0x43e7f106)));
@@ -9125,9 +12800,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439ffc6c), f32::from_bits(0x43e7f106)));
     // 319.972f, 463.883f
-    path.cubic_to((f32::from_bits(0x439f5668), f32::from_bits(0x43e758f6)), (f32::from_bits(0x439fec6c), f32::from_bits(0x43e63604)), (f32::from_bits(0x439f7874), f32::from_bits(0x43e5820c)));
+    path.cubic_to(
+        (f32::from_bits(0x439f5668), f32::from_bits(0x43e758f6)),
+        (f32::from_bits(0x439fec6c), f32::from_bits(0x43e63604)),
+        (f32::from_bits(0x439f7874), f32::from_bits(0x43e5820c)),
+    );
     // 318.675f, 462.695f, 319.847f, 460.422f, 318.941f, 459.016f
-    path.cubic_to((f32::from_bits(0x439fec6c), f32::from_bits(0x43e63604)), (f32::from_bits(0x439f5668), f32::from_bits(0x43e758f5)), (f32::from_bits(0x439ffc6c), f32::from_bits(0x43e7f106)));
+    path.cubic_to(
+        (f32::from_bits(0x439fec6c), f32::from_bits(0x43e63604)),
+        (f32::from_bits(0x439f5668), f32::from_bits(0x43e758f5)),
+        (f32::from_bits(0x439ffc6c), f32::from_bits(0x43e7f106)),
+    );
     // 319.847f, 460.422f, 318.675f, 462.695f, 319.972f, 463.883f
     path.close();
     path.move_to((f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)));
@@ -9137,9 +12820,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)));
     // 322.315f, 475.828f
-    path.cubic_to((f32::from_bits(0x43a18c4b), f32::from_bits(0x43eb7604)), (f32::from_bits(0x439fe45b), f32::from_bits(0x43ea4b02)), (f32::from_bits(0x439ffc4b), f32::from_bits(0x43e7f106)));
+    path.cubic_to(
+        (f32::from_bits(0x43a18c4b), f32::from_bits(0x43eb7604)),
+        (f32::from_bits(0x439fe45b), f32::from_bits(0x43ea4b02)),
+        (f32::from_bits(0x439ffc4b), f32::from_bits(0x43e7f106)),
+    );
     // 323.096f, 470.922f, 319.784f, 468.586f, 319.971f, 463.883f
-    path.cubic_to((f32::from_bits(0x439fe45b), f32::from_bits(0x43ea4b02)), (f32::from_bits(0x43a18c6c), f32::from_bits(0x43eb7604)), (f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)));
+    path.cubic_to(
+        (f32::from_bits(0x439fe45b), f32::from_bits(0x43ea4b02)),
+        (f32::from_bits(0x43a18c6c), f32::from_bits(0x43eb7604)),
+        (f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)),
+    );
     // 319.784f, 468.586f, 323.097f, 470.922f, 322.315f, 475.828f
     path.close();
     path.move_to((f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)));
@@ -9149,9 +12840,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)));
     // 323.784f, 478.781f
-    path.cubic_to((f32::from_bits(0x43a20561), f32::from_bits(0x43eeb9fc)), (f32::from_bits(0x43a1ae57), f32::from_bits(0x43ee4be8)), (f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)));
+    path.cubic_to(
+        (f32::from_bits(0x43a20561), f32::from_bits(0x43eeb9fc)),
+        (f32::from_bits(0x43a1ae57), f32::from_bits(0x43ee4be8)),
+        (f32::from_bits(0x43a12853), f32::from_bits(0x43ede9fc)),
+    );
     // 324.042f, 477.453f, 323.362f, 476.593f, 322.315f, 475.828f
-    path.cubic_to((f32::from_bits(0x43a1ae57), f32::from_bits(0x43ee4c08)), (f32::from_bits(0x43a20561), f32::from_bits(0x43eeb9fc)), (f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43a1ae57), f32::from_bits(0x43ee4c08)),
+        (f32::from_bits(0x43a20561), f32::from_bits(0x43eeb9fc)),
+        (f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)),
+    );
     // 323.362f, 476.594f, 324.042f, 477.453f, 323.784f, 478.781f
     path.close();
     path.move_to((f32::from_bits(0x439fb169), f32::from_bits(0x43f032f2)));
@@ -9161,9 +12860,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439fb169), f32::from_bits(0x43f032f2)));
     // 319.386f, 480.398f
-    path.cubic_to((f32::from_bits(0x43a08063), f32::from_bits(0x43f022f2)), (f32::from_bits(0x43a1ec6b), f32::from_bits(0x43f078f6)), (f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43a08063), f32::from_bits(0x43f022f2)),
+        (f32::from_bits(0x43a1ec6b), f32::from_bits(0x43f078f6)),
+        (f32::from_bits(0x43a1e45b), f32::from_bits(0x43ef63f8)),
+    );
     // 321.003f, 480.273f, 323.847f, 480.945f, 323.784f, 478.781f
-    path.cubic_to((f32::from_bits(0x43a1ec6b), f32::from_bits(0x43f078f6)), (f32::from_bits(0x43a08063), f32::from_bits(0x43f022f2)), (f32::from_bits(0x439fb169), f32::from_bits(0x43f032f2)));
+    path.cubic_to(
+        (f32::from_bits(0x43a1ec6b), f32::from_bits(0x43f078f6)),
+        (f32::from_bits(0x43a08063), f32::from_bits(0x43f022f2)),
+        (f32::from_bits(0x439fb169), f32::from_bits(0x43f032f2)),
+    );
     // 323.847f, 480.945f, 321.003f, 480.273f, 319.386f, 480.398f
     path.close();
     path.move_to((f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)));
@@ -9173,9 +12880,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)));
     // 316.604f, 482.758f
-    path.cubic_to((f32::from_bits(0x439de45a), f32::from_bits(0x43f05000)), (f32::from_bits(0x439f445a), f32::from_bits(0x43f0b20c)), (f32::from_bits(0x439fb148), f32::from_bits(0x43f03312)));
+    path.cubic_to(
+        (f32::from_bits(0x439de45a), f32::from_bits(0x43f05000)),
+        (f32::from_bits(0x439f445a), f32::from_bits(0x43f0b20c)),
+        (f32::from_bits(0x439fb148), f32::from_bits(0x43f03312)),
+    );
     // 315.784f, 480.625f, 318.534f, 481.391f, 319.385f, 480.399f
-    path.cubic_to((f32::from_bits(0x439f445a), f32::from_bits(0x43f0b20c)), (f32::from_bits(0x439de45a), f32::from_bits(0x43f05000)), (f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)));
+    path.cubic_to(
+        (f32::from_bits(0x439f445a), f32::from_bits(0x43f0b20c)),
+        (f32::from_bits(0x439de45a), f32::from_bits(0x43f05000)),
+        (f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)),
+    );
     // 318.534f, 481.391f, 315.784f, 480.625f, 316.604f, 482.758f
     path.close();
     path.move_to((f32::from_bits(0x43a0de56), f32::from_bits(0x43f7470a)));
@@ -9185,9 +12900,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a0de56), f32::from_bits(0x43f7470a)));
     // 321.737f, 494.555f
-    path.cubic_to((f32::from_bits(0x439f4062), f32::from_bits(0x43f5a106)), (f32::from_bits(0x439f2b64), f32::from_bits(0x43f33106)), (f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)));
+    path.cubic_to(
+        (f32::from_bits(0x439f4062), f32::from_bits(0x43f5a106)),
+        (f32::from_bits(0x439f2b64), f32::from_bits(0x43f33106)),
+        (f32::from_bits(0x439e4d50), f32::from_bits(0x43f16106)),
+    );
     // 318.503f, 491.258f, 318.339f, 486.383f, 316.604f, 482.758f
-    path.cubic_to((f32::from_bits(0x439f2b64), f32::from_bits(0x43f33106)), (f32::from_bits(0x439f4062), f32::from_bits(0x43f5a106)), (f32::from_bits(0x43a0de56), f32::from_bits(0x43f7470a)));
+    path.cubic_to(
+        (f32::from_bits(0x439f2b64), f32::from_bits(0x43f33106)),
+        (f32::from_bits(0x439f4062), f32::from_bits(0x43f5a106)),
+        (f32::from_bits(0x43a0de56), f32::from_bits(0x43f7470a)),
+    );
     // 318.339f, 486.383f, 318.503f, 491.258f, 321.737f, 494.555f
     path.close();
     path.move_to((f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)));
@@ -9197,9 +12920,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)));
     // 327.159f, 500.156f
-    path.cubic_to((f32::from_bits(0x43a2dc4a), f32::from_bits(0x43f8ab02)), (f32::from_bits(0x43a0d74c), f32::from_bits(0x43f8f4fe)), (f32::from_bits(0x43a0de56), f32::from_bits(0x43f746ea)));
+    path.cubic_to(
+        (f32::from_bits(0x43a2dc4a), f32::from_bits(0x43f8ab02)),
+        (f32::from_bits(0x43a0d74c), f32::from_bits(0x43f8f4fe)),
+        (f32::from_bits(0x43a0de56), f32::from_bits(0x43f746ea)),
+    );
     // 325.721f, 497.336f, 321.682f, 497.914f, 321.737f, 494.554f
-    path.cubic_to((f32::from_bits(0x43a0d76d), f32::from_bits(0x43f8f4fe)), (f32::from_bits(0x43a2dc6a), f32::from_bits(0x43f8ab03)), (f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43a0d76d), f32::from_bits(0x43f8f4fe)),
+        (f32::from_bits(0x43a2dc6a), f32::from_bits(0x43f8ab03)),
+        (f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)),
+    );
     // 321.683f, 497.914f, 325.722f, 497.336f, 327.159f, 500.156f
     path.close();
     path.move_to((f32::from_bits(0x43a58e56), f32::from_bits(0x43fa98f6)));
@@ -9209,9 +12940,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a58e56), f32::from_bits(0x43fa98f6)));
     // 331.112f, 501.195f
-    path.cubic_to((f32::from_bits(0x43a50148), f32::from_bits(0x43fa2be8)), (f32::from_bits(0x43a45646), f32::from_bits(0x43fa02f2)), (f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)));
+    path.cubic_to(
+        (f32::from_bits(0x43a50148), f32::from_bits(0x43fa2be8)),
+        (f32::from_bits(0x43a45646), f32::from_bits(0x43fa02f2)),
+        (f32::from_bits(0x43a3945a), f32::from_bits(0x43fa13f8)),
+    );
     // 330.01f, 500.343f, 328.674f, 500.023f, 327.159f, 500.156f
-    path.cubic_to((f32::from_bits(0x43a45666), f32::from_bits(0x43fa02f2)), (f32::from_bits(0x43a50168), f32::from_bits(0x43fa2c08)), (f32::from_bits(0x43a58e56), f32::from_bits(0x43fa98f6)));
+    path.cubic_to(
+        (f32::from_bits(0x43a45666), f32::from_bits(0x43fa02f2)),
+        (f32::from_bits(0x43a50168), f32::from_bits(0x43fa2c08)),
+        (f32::from_bits(0x43a58e56), f32::from_bits(0x43fa98f6)),
+    );
     // 328.675f, 500.023f, 330.011f, 500.344f, 331.112f, 501.195f
     path.close();
     path.move_to((f32::from_bits(0x43a64958), f32::from_bits(0x43f8c000)));
@@ -9233,9 +12972,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a73e56), f32::from_bits(0x43f5820c)));
     // 334.487f, 491.016f
-    path.cubic_to((f32::from_bits(0x43a64d50), f32::from_bits(0x43f654fe)), (f32::from_bits(0x43a7174c), f32::from_bits(0x43f7de14)), (f32::from_bits(0x43a64958), f32::from_bits(0x43f8c000)));
+    path.cubic_to(
+        (f32::from_bits(0x43a64d50), f32::from_bits(0x43f654fe)),
+        (f32::from_bits(0x43a7174c), f32::from_bits(0x43f7de14)),
+        (f32::from_bits(0x43a64958), f32::from_bits(0x43f8c000)),
+    );
     // 332.604f, 492.664f, 334.182f, 495.735f, 332.573f, 497.5f
-    path.cubic_to((f32::from_bits(0x43a7176c), f32::from_bits(0x43f7ddf4)), (f32::from_bits(0x43a64d50), f32::from_bits(0x43f654fe)), (f32::from_bits(0x43a73e56), f32::from_bits(0x43f5820c)));
+    path.cubic_to(
+        (f32::from_bits(0x43a7176c), f32::from_bits(0x43f7ddf4)),
+        (f32::from_bits(0x43a64d50), f32::from_bits(0x43f654fe)),
+        (f32::from_bits(0x43a73e56), f32::from_bits(0x43f5820c)),
+    );
     // 334.183f, 495.734f, 332.604f, 492.664f, 334.487f, 491.016f
     path.close();
     path.move_to((f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)));
@@ -9245,9 +12992,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)));
     // 333.894f, 484.086f
-    path.cubic_to((f32::from_bits(0x43a78d71), f32::from_bits(0x43f2f810)), (f32::from_bits(0x43a72873), f32::from_bits(0x43f453f8)), (f32::from_bits(0x43a73e77), f32::from_bits(0x43f5820c)));
+    path.cubic_to(
+        (f32::from_bits(0x43a78d71), f32::from_bits(0x43f2f810)),
+        (f32::from_bits(0x43a72873), f32::from_bits(0x43f453f8)),
+        (f32::from_bits(0x43a73e77), f32::from_bits(0x43f5820c)),
+    );
     // 335.105f, 485.938f, 334.316f, 488.656f, 334.488f, 491.016f
-    path.cubic_to((f32::from_bits(0x43a72852), f32::from_bits(0x43f453f8)), (f32::from_bits(0x43a78d50), f32::from_bits(0x43f2f810)), (f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)));
+    path.cubic_to(
+        (f32::from_bits(0x43a72852), f32::from_bits(0x43f453f8)),
+        (f32::from_bits(0x43a78d50), f32::from_bits(0x43f2f810)),
+        (f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)),
+    );
     // 334.315f, 488.656f, 335.104f, 485.938f, 333.894f, 484.086f
     path.close();
     path.move_to((f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3d0e)));
@@ -9257,9 +13012,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3d0e)));
     // 333.456f, 478.477f
-    path.cubic_to((f32::from_bits(0x43a60e57), f32::from_bits(0x43f04000)), (f32::from_bits(0x43a82355), f32::from_bits(0x43f0fc08)), (f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)));
+    path.cubic_to(
+        (f32::from_bits(0x43a60e57), f32::from_bits(0x43f04000)),
+        (f32::from_bits(0x43a82355), f32::from_bits(0x43f0fc08)),
+        (f32::from_bits(0x43a6f26f), f32::from_bits(0x43f20b02)),
+    );
     // 332.112f, 480.5f, 336.276f, 481.969f, 333.894f, 484.086f
-    path.cubic_to((f32::from_bits(0x43a82354), f32::from_bits(0x43f0fc08)), (f32::from_bits(0x43a60e56), f32::from_bits(0x43f04000)), (f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3d0e)));
+    path.cubic_to(
+        (f32::from_bits(0x43a82354), f32::from_bits(0x43f0fc08)),
+        (f32::from_bits(0x43a60e56), f32::from_bits(0x43f04000)),
+        (f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3d0e)),
+    );
     // 336.276f, 481.969f, 332.112f, 480.5f, 333.456f, 478.477f
     path.close();
     path.move_to((f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef88f5)));
@@ -9269,9 +13032,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef88f5)));
     // 326.722f, 479.07f
-    path.cubic_to((f32::from_bits(0x43a4b26f), f32::from_bits(0x43efe105)), (f32::from_bits(0x43a5b76d), f32::from_bits(0x43ee2ef9)), (f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3ced)));
+    path.cubic_to(
+        (f32::from_bits(0x43a4b26f), f32::from_bits(0x43efe105)),
+        (f32::from_bits(0x43a5b76d), f32::from_bits(0x43ee2ef9)),
+        (f32::from_bits(0x43a6ba5f), f32::from_bits(0x43ef3ced)),
+    );
     // 329.394f, 479.758f, 331.433f, 476.367f, 333.456f, 478.476f
-    path.cubic_to((f32::from_bits(0x43a5b76d), f32::from_bits(0x43ee2ef9)), (f32::from_bits(0x43a4b26f), f32::from_bits(0x43efe106)), (f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef88f5)));
+    path.cubic_to(
+        (f32::from_bits(0x43a5b76d), f32::from_bits(0x43ee2ef9)),
+        (f32::from_bits(0x43a4b26f), f32::from_bits(0x43efe106)),
+        (f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef88f5)),
+    );
     // 331.433f, 476.367f, 329.394f, 479.758f, 326.722f, 479.07f
     path.close();
     path.move_to((f32::from_bits(0x43a08063), f32::from_bits(0x43e5a70a)));
@@ -9281,9 +13052,17 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x43a08063), f32::from_bits(0x43e5a70a)));
     // 321.003f, 459.305f
-    path.cubic_to((f32::from_bits(0x43a15169), f32::from_bits(0x43e90312)), (f32::from_bits(0x43a2626f), f32::from_bits(0x43ec4312)), (f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef8916)));
+    path.cubic_to(
+        (f32::from_bits(0x43a15169), f32::from_bits(0x43e90312)),
+        (f32::from_bits(0x43a2626f), f32::from_bits(0x43ec4312)),
+        (f32::from_bits(0x43a35c6b), f32::from_bits(0x43ef8916)),
+    );
     // 322.636f, 466.024f, 324.769f, 472.524f, 326.722f, 479.071f
-    path.cubic_to((f32::from_bits(0x43a2626f), f32::from_bits(0x43ec42f1)), (f32::from_bits(0x43a15169), f32::from_bits(0x43e902f1)), (f32::from_bits(0x43a08063), f32::from_bits(0x43e5a70a)));
+    path.cubic_to(
+        (f32::from_bits(0x43a2626f), f32::from_bits(0x43ec42f1)),
+        (f32::from_bits(0x43a15169), f32::from_bits(0x43e902f1)),
+        (f32::from_bits(0x43a08063), f32::from_bits(0x43e5a70a)),
+    );
     // 324.769f, 472.523f, 322.636f, 466.023f, 321.003f, 459.305f
     path.close();
     path.move_to((f32::from_bits(0x43a05a5f), f32::from_bits(0x43e407ef)));
@@ -9305,16 +13084,32 @@ fn make_joel_15(path: &mut PathBuilder) {
     path.close();
     path.move_to((f32::from_bits(0x439ecf5d), f32::from_bits(0x43dd3fff)));
     // 317.62f, 442.5f
-    path.cubic_to((f32::from_bits(0x439e9c6b), f32::from_bits(0x43dfcb01)), (f32::from_bits(0x439fbe57), f32::from_bits(0x43e1cc07)), (f32::from_bits(0x43a05a5f), f32::from_bits(0x43e407ef)));
+    path.cubic_to(
+        (f32::from_bits(0x439e9c6b), f32::from_bits(0x43dfcb01)),
+        (f32::from_bits(0x439fbe57), f32::from_bits(0x43e1cc07)),
+        (f32::from_bits(0x43a05a5f), f32::from_bits(0x43e407ef)),
+    );
     // 317.222f, 447.586f, 319.487f, 451.594f, 320.706f, 456.062f
-    path.cubic_to((f32::from_bits(0x439fbe57), f32::from_bits(0x43e1cc08)), (f32::from_bits(0x439e9c6b), f32::from_bits(0x43dfcb01)), (f32::from_bits(0x439ecf5d), f32::from_bits(0x43dd3fff)));
+    path.cubic_to(
+        (f32::from_bits(0x439fbe57), f32::from_bits(0x43e1cc08)),
+        (f32::from_bits(0x439e9c6b), f32::from_bits(0x43dfcb01)),
+        (f32::from_bits(0x439ecf5d), f32::from_bits(0x43dd3fff)),
+    );
     // 319.487f, 451.594f, 317.222f, 447.586f, 317.62f, 442.5f
     path.close();
     path.move_to((f32::from_bits(0x439e276d), f32::from_bits(0x43dad105)));
     // 316.308f, 437.633f
-    path.cubic_to((f32::from_bits(0x439e4979), f32::from_bits(0x43dba4fd)), (f32::from_bits(0x439dc375), f32::from_bits(0x43dce915)), (f32::from_bits(0x439ecf5d), f32::from_bits(0x43dd3fff)));
+    path.cubic_to(
+        (f32::from_bits(0x439e4979), f32::from_bits(0x43dba4fd)),
+        (f32::from_bits(0x439dc375), f32::from_bits(0x43dce915)),
+        (f32::from_bits(0x439ecf5d), f32::from_bits(0x43dd3fff)),
+    );
     // 316.574f, 439.289f, 315.527f, 441.821f, 317.62f, 442.5f
-    path.cubic_to((f32::from_bits(0x439dc355), f32::from_bits(0x43dce8f5)), (f32::from_bits(0x439e4959), f32::from_bits(0x43dba4fd)), (f32::from_bits(0x439e276d), f32::from_bits(0x43dad105)));
+    path.cubic_to(
+        (f32::from_bits(0x439dc355), f32::from_bits(0x43dce8f5)),
+        (f32::from_bits(0x439e4959), f32::from_bits(0x43dba4fd)),
+        (f32::from_bits(0x439e276d), f32::from_bits(0x43dad105)),
+    );
     // 315.526f, 441.82f, 316.573f, 439.289f, 316.308f, 437.633f
     path.close();
 }
@@ -9337,33 +13132,81 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 35.606f, 58.968f
     path.line_to((f32::from_bits(0x420fcccd), f32::from_bits(0x426c7ef9)));
     // 35.95f, 59.124f
-    path.cubic_to((f32::from_bits(0x420fcccd), f32::from_bits(0x426c7ef9)), (f32::from_bits(0x42093d71), f32::from_bits(0x426c6e97)), (f32::from_bits(0x42036c8b), f32::from_bits(0x426cbf7c)));
+    path.cubic_to(
+        (f32::from_bits(0x420fcccd), f32::from_bits(0x426c7ef9)),
+        (f32::from_bits(0x42093d71), f32::from_bits(0x426c6e97)),
+        (f32::from_bits(0x42036c8b), f32::from_bits(0x426cbf7c)),
+    );
     // 35.95f, 59.124f, 34.31f, 59.108f, 32.856f, 59.187f
-    path.cubic_to((f32::from_bits(0x41fb3958), f32::from_bits(0x426d0f5b)), (f32::from_bits(0x41f076c8), f32::from_bits(0x426d48b3)), (f32::from_bits(0x41ef47ae), f32::from_bits(0x426d947a)));
+    path.cubic_to(
+        (f32::from_bits(0x41fb3958), f32::from_bits(0x426d0f5b)),
+        (f32::from_bits(0x41f076c8), f32::from_bits(0x426d48b3)),
+        (f32::from_bits(0x41ef47ae), f32::from_bits(0x426d947a)),
+    );
     // 31.403f, 59.265f, 30.058f, 59.321f, 29.91f, 59.395f
-    path.cubic_to((f32::from_bits(0x41ee1aa0), f32::from_bits(0x426ddf3b)), (f32::from_bits(0x41ec6041), f32::from_bits(0x426edb22)), (f32::from_bits(0x41eb1aa0), f32::from_bits(0x426fee97)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee1aa0), f32::from_bits(0x426ddf3b)),
+        (f32::from_bits(0x41ec6041), f32::from_bits(0x426edb22)),
+        (f32::from_bits(0x41eb1aa0), f32::from_bits(0x426fee97)),
+    );
     // 29.763f, 59.468f, 29.547f, 59.714f, 29.388f, 59.983f
-    path.cubic_to((f32::from_bits(0x41eb1eb9), f32::from_bits(0x426feb85)), (f32::from_bits(0x41e9ba5e), f32::from_bits(0x42711eb8)), (f32::from_bits(0x41e9ba5e), f32::from_bits(0x42711eb8)));
+    path.cubic_to(
+        (f32::from_bits(0x41eb1eb9), f32::from_bits(0x426feb85)),
+        (f32::from_bits(0x41e9ba5e), f32::from_bits(0x42711eb8)),
+        (f32::from_bits(0x41e9ba5e), f32::from_bits(0x42711eb8)),
+    );
     // 29.39f, 59.98f, 29.216f, 60.28f, 29.216f, 60.28f
     path.line_to((f32::from_bits(0x41e99999), f32::from_bits(0x42718f5c)));
     // 29.2f, 60.39f
-    path.cubic_to((f32::from_bits(0x41ea76c8), f32::from_bits(0x4271a5e3)), (f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)), (f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)));
+    path.cubic_to(
+        (f32::from_bits(0x41ea76c8), f32::from_bits(0x4271a5e3)),
+        (f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)),
+        (f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)),
+    );
     // 29.308f, 60.412f, 36.716f, 60.124f, 36.716f, 60.124f
-    path.cubic_to((f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)), (f32::from_bits(0x42124395), f32::from_bits(0x42707be8)), (f32::from_bits(0x42131ba6), f32::from_bits(0x4270b646)));
+    path.cubic_to(
+        (f32::from_bits(0x4212dd2f), f32::from_bits(0x42707efa)),
+        (f32::from_bits(0x42124395), f32::from_bits(0x42707be8)),
+        (f32::from_bits(0x42131ba6), f32::from_bits(0x4270b646)),
+    );
     // 36.716f, 60.124f, 36.566f, 60.121f, 36.777f, 60.178f
-    path.cubic_to((f32::from_bits(0x42131581), f32::from_bits(0x42710000)), (f32::from_bits(0x42130831), f32::from_bits(0x42711688)), (f32::from_bits(0x4213072b), f32::from_bits(0x42711688)));
+    path.cubic_to(
+        (f32::from_bits(0x42131581), f32::from_bits(0x42710000)),
+        (f32::from_bits(0x42130831), f32::from_bits(0x42711688)),
+        (f32::from_bits(0x4213072b), f32::from_bits(0x42711688)),
+    );
     // 36.771f, 60.25f, 36.758f, 60.272f, 36.757f, 60.272f
-    path.cubic_to((f32::from_bits(0x4212fae1), f32::from_bits(0x42711aa1)), (f32::from_bits(0x42127cee), f32::from_bits(0x42714eda)), (f32::from_bits(0x42127cee), f32::from_bits(0x42714eda)));
+    path.cubic_to(
+        (f32::from_bits(0x4212fae1), f32::from_bits(0x42711aa1)),
+        (f32::from_bits(0x42127cee), f32::from_bits(0x42714eda)),
+        (f32::from_bits(0x42127cee), f32::from_bits(0x42714eda)),
+    );
     // 36.745f, 60.276f, 36.622f, 60.327f, 36.622f, 60.327f
-    path.cubic_to((f32::from_bits(0x42127ae2), f32::from_bits(0x42714eda)), (f32::from_bits(0x41c67ae2), f32::from_bits(0x42730f5d)), (f32::from_bits(0x41c345a2), f32::from_bits(0x427329fd)));
+    path.cubic_to(
+        (f32::from_bits(0x42127ae2), f32::from_bits(0x42714eda)),
+        (f32::from_bits(0x41c67ae2), f32::from_bits(0x42730f5d)),
+        (f32::from_bits(0x41c345a2), f32::from_bits(0x427329fd)),
+    );
     // 36.62f, 60.327f, 24.81f, 60.765f, 24.409f, 60.791f
-    path.cubic_to((f32::from_bits(0x41c247ae), f32::from_bits(0x42733e78)), (f32::from_bits(0x41c04396), f32::from_bits(0x42738e57)), (f32::from_bits(0x41bf4bc7), f32::from_bits(0x4273e45b)));
+    path.cubic_to(
+        (f32::from_bits(0x41c247ae), f32::from_bits(0x42733e78)),
+        (f32::from_bits(0x41c04396), f32::from_bits(0x42738e57)),
+        (f32::from_bits(0x41bf4bc7), f32::from_bits(0x4273e45b)),
+    );
     // 24.285f, 60.811f, 24.033f, 60.889f, 23.912f, 60.973f
-    path.cubic_to((f32::from_bits(0x41bf5c29), f32::from_bits(0x4273e042)), (f32::from_bits(0x41be9db3), f32::from_bits(0x4274322e)), (f32::from_bits(0x41be9db3), f32::from_bits(0x4274322e)));
+    path.cubic_to(
+        (f32::from_bits(0x41bf5c29), f32::from_bits(0x4273e042)),
+        (f32::from_bits(0x41be9db3), f32::from_bits(0x4274322e)),
+        (f32::from_bits(0x41be9db3), f32::from_bits(0x4274322e)),
+    );
     // 23.92f, 60.969f, 23.827f, 61.049f, 23.827f, 61.049f
     path.line_to((f32::from_bits(0x41be26ea), f32::from_bits(0x42746c8c)));
     // 23.769f, 61.106f
-    path.cubic_to((f32::from_bits(0x41be1eb9), f32::from_bits(0x427470a5)), (f32::from_bits(0x41bde354), f32::from_bits(0x42748313)), (f32::from_bits(0x41bde354), f32::from_bits(0x42748313)));
+    path.cubic_to(
+        (f32::from_bits(0x41be1eb9), f32::from_bits(0x427470a5)),
+        (f32::from_bits(0x41bde354), f32::from_bits(0x42748313)),
+        (f32::from_bits(0x41bde354), f32::from_bits(0x42748313)),
+    );
     // 23.765f, 61.11f, 23.736f, 61.128f, 23.736f, 61.128f
     path.line_to((f32::from_bits(0x41bcc083), f32::from_bits(0x42751582)));
     // 23.594f, 61.271f
@@ -9373,7 +13216,11 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 23.632f, 61.353f
     path.line_to((f32::from_bits(0x41bd7cee), f32::from_bits(0x42758313)));
     // 23.686f, 61.378f
-    path.cubic_to((f32::from_bits(0x41be8107), f32::from_bits(0x427572b1)), (f32::from_bits(0x41bf2d0f), f32::from_bits(0x42754290)), (f32::from_bits(0x41bfd2f2), f32::from_bits(0x4275147b)));
+    path.cubic_to(
+        (f32::from_bits(0x41be8107), f32::from_bits(0x427572b1)),
+        (f32::from_bits(0x41bf2d0f), f32::from_bits(0x42754290)),
+        (f32::from_bits(0x41bfd2f2), f32::from_bits(0x4275147b)),
+    );
     // 23.813f, 61.362f, 23.897f, 61.315f, 23.978f, 61.27f
     path.line_to((f32::from_bits(0x41c0ba5f), f32::from_bits(0x4274da1d)));
     // 24.091f, 61.213f
@@ -9381,31 +13228,67 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 24.117f, 61.217f
     path.line_to((f32::from_bits(0x41c13f7d), f32::from_bits(0x4274d3f9)));
     // 24.156f, 61.207f
-    path.cubic_to((f32::from_bits(0x41c13f7d), f32::from_bits(0x4274d3f9)), (f32::from_bits(0x41c174bc), f32::from_bits(0x4274c18a)), (f32::from_bits(0x41c17cee), f32::from_bits(0x4274be78)));
+    path.cubic_to(
+        (f32::from_bits(0x41c13f7d), f32::from_bits(0x4274d3f9)),
+        (f32::from_bits(0x41c174bc), f32::from_bits(0x4274c18a)),
+        (f32::from_bits(0x41c17cee), f32::from_bits(0x4274be78)),
+    );
     // 24.156f, 61.207f, 24.182f, 61.189f, 24.186f, 61.186f
-    path.cubic_to((f32::from_bits(0x41c18107), f32::from_bits(0x4274bf7e)), (f32::from_bits(0x41c1e561), f32::from_bits(0x4274b022)), (f32::from_bits(0x41c1e561), f32::from_bits(0x4274b022)));
+    path.cubic_to(
+        (f32::from_bits(0x41c18107), f32::from_bits(0x4274bf7e)),
+        (f32::from_bits(0x41c1e561), f32::from_bits(0x4274b022)),
+        (f32::from_bits(0x41c1e561), f32::from_bits(0x4274b022)),
+    );
     // 24.188f, 61.187f, 24.237f, 61.172f, 24.237f, 61.172f
     path.line_to((f32::from_bits(0x41c45e36), f32::from_bits(0x42746e99)));
     // 24.546f, 61.108f
-    path.cubic_to((f32::from_bits(0x41c4624f), f32::from_bits(0x42746e99)), (f32::from_bits(0x41cf999a), f32::from_bits(0x42743853)), (f32::from_bits(0x41cf999a), f32::from_bits(0x42743853)));
+    path.cubic_to(
+        (f32::from_bits(0x41c4624f), f32::from_bits(0x42746e99)),
+        (f32::from_bits(0x41cf999a), f32::from_bits(0x42743853)),
+        (f32::from_bits(0x41cf999a), f32::from_bits(0x42743853)),
+    );
     // 24.548f, 61.108f, 25.95f, 61.055f, 25.95f, 61.055f
     path.line_to((f32::from_bits(0x420d126f), f32::from_bits(0x4272b43a)));
     // 35.268f, 60.676f
-    path.cubic_to((f32::from_bits(0x420d0938), f32::from_bits(0x4272c084)), (f32::from_bits(0x420cfcee), f32::from_bits(0x4272c49c)), (f32::from_bits(0x420cfcee), f32::from_bits(0x4272d917)));
+    path.cubic_to(
+        (f32::from_bits(0x420d0938), f32::from_bits(0x4272c084)),
+        (f32::from_bits(0x420cfcee), f32::from_bits(0x4272c49c)),
+        (f32::from_bits(0x420cfcee), f32::from_bits(0x4272d917)),
+    );
     // 35.259f, 60.688f, 35.247f, 60.692f, 35.247f, 60.712f
     path.line_to((f32::from_bits(0x420d0938), f32::from_bits(0x4272b43a)));
     // 35.259f, 60.676f
-    path.cubic_to((f32::from_bits(0x420c7be8), f32::from_bits(0x42737efb)), (f32::from_bits(0x420b3128), f32::from_bits(0x42743128)), (f32::from_bits(0x420a27f0), f32::from_bits(0x4274c18a)));
+    path.cubic_to(
+        (f32::from_bits(0x420c7be8), f32::from_bits(0x42737efb)),
+        (f32::from_bits(0x420b3128), f32::from_bits(0x42743128)),
+        (f32::from_bits(0x420a27f0), f32::from_bits(0x4274c18a)),
+    );
     // 35.121f, 60.874f, 34.798f, 61.048f, 34.539f, 61.189f
     path.line_to((f32::from_bits(0x42099eb9), f32::from_bits(0x42750c4b)));
     // 34.405f, 61.262f
-    path.cubic_to((f32::from_bits(0x420872b1), f32::from_bits(0x4275b022)), (f32::from_bits(0x4206fbe8), f32::from_bits(0x42764397)), (f32::from_bits(0x42054396), f32::from_bits(0x4276c084)));
+    path.cubic_to(
+        (f32::from_bits(0x420872b1), f32::from_bits(0x4275b022)),
+        (f32::from_bits(0x4206fbe8), f32::from_bits(0x42764397)),
+        (f32::from_bits(0x42054396), f32::from_bits(0x4276c084)),
+    );
     // 34.112f, 61.422f, 33.746f, 61.566f, 33.316f, 61.688f
-    path.cubic_to((f32::from_bits(0x42028313), f32::from_bits(0x42776b86)), (f32::from_bits(0x42007be8), f32::from_bits(0x4278de36)), (f32::from_bits(0x41fe7ae2), f32::from_bits(0x427b0f5d)));
+    path.cubic_to(
+        (f32::from_bits(0x42028313), f32::from_bits(0x42776b86)),
+        (f32::from_bits(0x42007be8), f32::from_bits(0x4278de36)),
+        (f32::from_bits(0x41fe7ae2), f32::from_bits(0x427b0f5d)),
+    );
     // 32.628f, 61.855f, 32.121f, 62.217f, 31.81f, 62.765f
-    path.cubic_to((f32::from_bits(0x41fe4fe0), f32::from_bits(0x427b21cc)), (f32::from_bits(0x41fdbe78), f32::from_bits(0x427b8419)), (f32::from_bits(0x41fdbe78), f32::from_bits(0x427b8419)));
+    path.cubic_to(
+        (f32::from_bits(0x41fe4fe0), f32::from_bits(0x427b21cc)),
+        (f32::from_bits(0x41fdbe78), f32::from_bits(0x427b8419)),
+        (f32::from_bits(0x41fdbe78), f32::from_bits(0x427b8419)),
+    );
     // 31.789f, 62.783f, 31.718f, 62.879f, 31.718f, 62.879f
-    path.cubic_to((f32::from_bits(0x41fdccce), f32::from_bits(0x427b71aa)), (f32::from_bits(0x41fd1cad), f32::from_bits(0x427c27f0)), (f32::from_bits(0x41fd1cad), f32::from_bits(0x427c27f0)));
+    path.cubic_to(
+        (f32::from_bits(0x41fdccce), f32::from_bits(0x427b71aa)),
+        (f32::from_bits(0x41fd1cad), f32::from_bits(0x427c27f0)),
+        (f32::from_bits(0x41fd1cad), f32::from_bits(0x427c27f0)),
+    );
     // 31.725f, 62.861f, 31.639f, 63.039f, 31.639f, 63.039f
     path.line_to((f32::from_bits(0x41fc1eb9), f32::from_bits(0x427d178e)));
     // 31.515f, 63.273f
@@ -9419,33 +13302,69 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 31.36f, 63.281f
     path.line_to((f32::from_bits(0x41fa5812), f32::from_bits(0x427d178e)));
     // 31.293f, 63.273f
-    path.cubic_to((f32::from_bits(0x41f88108), f32::from_bits(0x427cf9dc)), (f32::from_bits(0x41f73541), f32::from_bits(0x427cb646)), (f32::from_bits(0x41f5d70c), f32::from_bits(0x427c6d92)));
+    path.cubic_to(
+        (f32::from_bits(0x41f88108), f32::from_bits(0x427cf9dc)),
+        (f32::from_bits(0x41f73541), f32::from_bits(0x427cb646)),
+        (f32::from_bits(0x41f5d70c), f32::from_bits(0x427c6d92)),
+    );
     // 31.063f, 63.244f, 30.901f, 63.178f, 30.73f, 63.107f
     path.line_to((f32::from_bits(0x41f5999b), f32::from_bits(0x427c6148)));
     // 30.7f, 63.095f
-    path.cubic_to((f32::from_bits(0x41f5999b), f32::from_bits(0x427c6148)), (f32::from_bits(0x41f2d0e7), f32::from_bits(0x427bdc29)), (f32::from_bits(0x41f2a9fd), f32::from_bits(0x427bd4fe)));
+    path.cubic_to(
+        (f32::from_bits(0x41f5999b), f32::from_bits(0x427c6148)),
+        (f32::from_bits(0x41f2d0e7), f32::from_bits(0x427bdc29)),
+        (f32::from_bits(0x41f2a9fd), f32::from_bits(0x427bd4fe)),
+    );
     // 30.7f, 63.095f, 30.352f, 62.965f, 30.333f, 62.958f
-    path.cubic_to((f32::from_bits(0x41f28d51), f32::from_bits(0x427bc49c)), (f32::from_bits(0x41f26667), f32::from_bits(0x427bb021)), (f32::from_bits(0x41f26667), f32::from_bits(0x427bb021)));
+    path.cubic_to(
+        (f32::from_bits(0x41f28d51), f32::from_bits(0x427bc49c)),
+        (f32::from_bits(0x41f26667), f32::from_bits(0x427bb021)),
+        (f32::from_bits(0x41f26667), f32::from_bits(0x427bb021)),
+    );
     // 30.319f, 62.942f, 30.3f, 62.922f, 30.3f, 62.922f
     path.line_to((f32::from_bits(0x41efed92), f32::from_bits(0x427b1db2)));
     // 29.991f, 62.779f
     path.line_to((f32::from_bits(0x41ec9582), f32::from_bits(0x427a624e)));
     // 29.573f, 62.596f
-    path.cubic_to((f32::from_bits(0x41eca1cc), f32::from_bits(0x427a645a)), (f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)), (f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)));
+    path.cubic_to(
+        (f32::from_bits(0x41eca1cc), f32::from_bits(0x427a645a)),
+        (f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)),
+        (f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)),
+    );
     // 29.579f, 62.598f, 29.372f, 62.547f, 29.372f, 62.547f
-    path.cubic_to((f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)), (f32::from_bits(0x41ea126f), f32::from_bits(0x427a1894)), (f32::from_bits(0x41e9f3b7), f32::from_bits(0x427a1687)));
+    path.cubic_to(
+        (f32::from_bits(0x41eaf9dc), f32::from_bits(0x427a3021)),
+        (f32::from_bits(0x41ea126f), f32::from_bits(0x427a1894)),
+        (f32::from_bits(0x41e9f3b7), f32::from_bits(0x427a1687)),
+    );
     // 29.372f, 62.547f, 29.259f, 62.524f, 29.244f, 62.522f
-    path.cubic_to((f32::from_bits(0x41e9ccce), f32::from_bits(0x427a072b)), (f32::from_bits(0x41e99375), f32::from_bits(0x4279f1aa)), (f32::from_bits(0x41e99375), f32::from_bits(0x4279f1aa)));
+    path.cubic_to(
+        (f32::from_bits(0x41e9ccce), f32::from_bits(0x427a072b)),
+        (f32::from_bits(0x41e99375), f32::from_bits(0x4279f1aa)),
+        (f32::from_bits(0x41e99375), f32::from_bits(0x4279f1aa)),
+    );
     // 29.225f, 62.507f, 29.197f, 62.486f, 29.197f, 62.486f
     path.line_to((f32::from_bits(0x41e86e98), f32::from_bits(0x4279d604)));
     // 29.054f, 62.459f
     path.line_to((f32::from_bits(0x41e6147b), f32::from_bits(0x4279a3d7)));
     // 28.76f, 62.41f
-    path.cubic_to((f32::from_bits(0x41e00625), f32::from_bits(0x42796b85)), (f32::from_bits(0x41db49ba), f32::from_bits(0x427a7ae1)), (f32::from_bits(0x41d62b02), f32::from_bits(0x427bc8b4)));
+    path.cubic_to(
+        (f32::from_bits(0x41e00625), f32::from_bits(0x42796b85)),
+        (f32::from_bits(0x41db49ba), f32::from_bits(0x427a7ae1)),
+        (f32::from_bits(0x41d62b02), f32::from_bits(0x427bc8b4)),
+    );
     // 28.003f, 62.355f, 27.411f, 62.62f, 26.771f, 62.946f
-    path.cubic_to((f32::from_bits(0x41d24fdf), f32::from_bits(0x427cba5e)), (f32::from_bits(0x41cecccd), f32::from_bits(0x427ce872)), (f32::from_bits(0x41ca0e56), f32::from_bits(0x427c6872)));
+    path.cubic_to(
+        (f32::from_bits(0x41d24fdf), f32::from_bits(0x427cba5e)),
+        (f32::from_bits(0x41cecccd), f32::from_bits(0x427ce872)),
+        (f32::from_bits(0x41ca0e56), f32::from_bits(0x427c6872)),
+    );
     // 26.289f, 63.182f, 25.85f, 63.227f, 25.257f, 63.102f
-    path.cubic_to((f32::from_bits(0x41ca0a3d), f32::from_bits(0x427c676c)), (f32::from_bits(0x41c9353f), f32::from_bits(0x427c570a)), (f32::from_bits(0x41c9353f), f32::from_bits(0x427c570a)));
+    path.cubic_to(
+        (f32::from_bits(0x41ca0a3d), f32::from_bits(0x427c676c)),
+        (f32::from_bits(0x41c9353f), f32::from_bits(0x427c570a)),
+        (f32::from_bits(0x41c9353f), f32::from_bits(0x427c570a)),
+    );
     // 25.255f, 63.101f, 25.151f, 63.085f, 25.151f, 63.085f
     path.line_to((f32::from_bits(0x41c73b64), f32::from_bits(0x427c26e9)));
     // 24.904f, 63.038f
@@ -9453,29 +13372,57 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 24.932f, 63.054f
     path.line_to((f32::from_bits(0x41c67ef9), f32::from_bits(0x427c0312)));
     // 24.812f, 63.003f
-    path.cubic_to((f32::from_bits(0x41c4df3b), f32::from_bits(0x427bc5a1)), (f32::from_bits(0x41c2a3d6), f32::from_bits(0x427b8d4f)), (f32::from_bits(0x41c0851e), f32::from_bits(0x427b6978)));
+    path.cubic_to(
+        (f32::from_bits(0x41c4df3b), f32::from_bits(0x427bc5a1)),
+        (f32::from_bits(0x41c2a3d6), f32::from_bits(0x427b8d4f)),
+        (f32::from_bits(0x41c0851e), f32::from_bits(0x427b6978)),
+    );
     // 24.609f, 62.943f, 24.33f, 62.888f, 24.065f, 62.853f
-    path.cubic_to((f32::from_bits(0x41bf1893), f32::from_bits(0x427b52f1)), (f32::from_bits(0x41bd2d0e), f32::from_bits(0x427b52f1)), (f32::from_bits(0x41bc020c), f32::from_bits(0x427b5e34)));
+    path.cubic_to(
+        (f32::from_bits(0x41bf1893), f32::from_bits(0x427b52f1)),
+        (f32::from_bits(0x41bd2d0e), f32::from_bits(0x427b52f1)),
+        (f32::from_bits(0x41bc020c), f32::from_bits(0x427b5e34)),
+    );
     // 23.887f, 62.831f, 23.647f, 62.831f, 23.501f, 62.842f
     path.line_to((f32::from_bits(0x41bac6a8), f32::from_bits(0x427b6871)));
     // 23.347f, 62.852f
-    path.cubic_to((f32::from_bits(0x41b9db23), f32::from_bits(0x427b72ae)), (f32::from_bits(0x41b87cee), f32::from_bits(0x427b820b)), (f32::from_bits(0x41b7fbe7), f32::from_bits(0x427b655f)));
+    path.cubic_to(
+        (f32::from_bits(0x41b9db23), f32::from_bits(0x427b72ae)),
+        (f32::from_bits(0x41b87cee), f32::from_bits(0x427b820b)),
+        (f32::from_bits(0x41b7fbe7), f32::from_bits(0x427b655f)),
+    );
     // 23.232f, 62.862f, 23.061f, 62.877f, 22.998f, 62.849f
-    path.cubic_to((f32::from_bits(0x41b7fbe7), f32::from_bits(0x427b5f3a)), (f32::from_bits(0x41b7dd2f), f32::from_bits(0x427b48b3)), (f32::from_bits(0x41b7dd2f), f32::from_bits(0x427b48b3)));
+    path.cubic_to(
+        (f32::from_bits(0x41b7fbe7), f32::from_bits(0x427b5f3a)),
+        (f32::from_bits(0x41b7dd2f), f32::from_bits(0x427b48b3)),
+        (f32::from_bits(0x41b7dd2f), f32::from_bits(0x427b48b3)),
+    );
     // 22.998f, 62.843f, 22.983f, 62.821f, 22.983f, 62.821f
     path.line_to((f32::from_bits(0x41b7a5e3), f32::from_bits(0x427b22d0)));
     // 22.956f, 62.784f
-    path.cubic_to((f32::from_bits(0x41b7be76), f32::from_bits(0x427b3332)), (f32::from_bits(0x41b74395), f32::from_bits(0x427aed91)), (f32::from_bits(0x41b74395), f32::from_bits(0x427aed91)));
+    path.cubic_to(
+        (f32::from_bits(0x41b7be76), f32::from_bits(0x427b3332)),
+        (f32::from_bits(0x41b74395), f32::from_bits(0x427aed91)),
+        (f32::from_bits(0x41b74395), f32::from_bits(0x427aed91)),
+    );
     // 22.968f, 62.8f, 22.908f, 62.732f, 22.908f, 62.732f
     path.line_to((f32::from_bits(0x41b70c49), f32::from_bits(0x427acfdf)));
     // 22.881f, 62.703f
-    path.cubic_to((f32::from_bits(0x41b70418), f32::from_bits(0x427ad916)), (f32::from_bits(0x41b6d70a), f32::from_bits(0x427a9168)), (f32::from_bits(0x41b6d70a), f32::from_bits(0x427a9168)));
+    path.cubic_to(
+        (f32::from_bits(0x41b70418), f32::from_bits(0x427ad916)),
+        (f32::from_bits(0x41b6d70a), f32::from_bits(0x427a9168)),
+        (f32::from_bits(0x41b6d70a), f32::from_bits(0x427a9168)),
+    );
     // 22.877f, 62.712f, 22.855f, 62.642f, 22.855f, 62.642f
     path.line_to((f32::from_bits(0x41b6bc6a), f32::from_bits(0x427a645a)));
     // 22.842f, 62.598f
     path.line_to((f32::from_bits(0x41b66e97), f32::from_bits(0x427a75c2)));
     // 22.804f, 62.615f
-    path.cubic_to((f32::from_bits(0x41b6872a), f32::from_bits(0x427a71a9)), (f32::from_bits(0x41b5a9fb), f32::from_bits(0x4279c6a7)), (f32::from_bits(0x41b5a9fb), f32::from_bits(0x4279c6a7)));
+    path.cubic_to(
+        (f32::from_bits(0x41b6872a), f32::from_bits(0x427a71a9)),
+        (f32::from_bits(0x41b5a9fb), f32::from_bits(0x4279c6a7)),
+        (f32::from_bits(0x41b5a9fb), f32::from_bits(0x4279c6a7)),
+    );
     // 22.816f, 62.611f, 22.708f, 62.444f, 22.708f, 62.444f
     path.line_to((f32::from_bits(0x41b59580), f32::from_bits(0x4279b645)));
     // 22.698f, 62.428f
@@ -9483,7 +13430,11 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 22.661f, 62.406f
     path.line_to((f32::from_bits(0x41b53957), f32::from_bits(0x42799ba5)));
     // 22.653f, 62.402f
-    path.cubic_to((f32::from_bits(0x41b52b01), f32::from_bits(0x42798d4f)), (f32::from_bits(0x41b4a3d6), f32::from_bits(0x427920c4)), (f32::from_bits(0x41b4a3d6), f32::from_bits(0x427920c4)));
+    path.cubic_to(
+        (f32::from_bits(0x41b52b01), f32::from_bits(0x42798d4f)),
+        (f32::from_bits(0x41b4a3d6), f32::from_bits(0x427920c4)),
+        (f32::from_bits(0x41b4a3d6), f32::from_bits(0x427920c4)),
+    );
     // 22.646f, 62.388f, 22.58f, 62.282f, 22.58f, 62.282f
     path.line_to((f32::from_bits(0x41b43126), f32::from_bits(0x4278be76)));
     // 22.524f, 62.186f
@@ -9497,25 +13448,53 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 22.415f, 62.097f
     path.line_to((f32::from_bits(0x41b33957), f32::from_bits(0x42786353)));
     // 22.403f, 62.097f
-    path.cubic_to((f32::from_bits(0x41b326e8), f32::from_bits(0x42785a1c)), (f32::from_bits(0x41b2fbe6), f32::from_bits(0x427846a7)), (f32::from_bits(0x41b2fbe6), f32::from_bits(0x427846a7)));
+    path.cubic_to(
+        (f32::from_bits(0x41b326e8), f32::from_bits(0x42785a1c)),
+        (f32::from_bits(0x41b2fbe6), f32::from_bits(0x427846a7)),
+        (f32::from_bits(0x41b2fbe6), f32::from_bits(0x427846a7)),
+    );
     // 22.394f, 62.088f, 22.373f, 62.069f, 22.373f, 62.069f
     path.line_to((f32::from_bits(0x41b2353e), f32::from_bits(0x4277f8d4)));
     // 22.276f, 61.993f
-    path.cubic_to((f32::from_bits(0x41b26040), f32::from_bits(0x42780624)), (f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)), (f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)));
+    path.cubic_to(
+        (f32::from_bits(0x41b26040), f32::from_bits(0x42780624)),
+        (f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)),
+        (f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)),
+    );
     // 22.297f, 62.006f, 22.179f, 61.954f, 22.179f, 61.954f
-    path.cubic_to((f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)), (f32::from_bits(0x41b10417), f32::from_bits(0x4277c188)), (f32::from_bits(0x41b0fffe), f32::from_bits(0x4277c188)));
+    path.cubic_to(
+        (f32::from_bits(0x41b16e96), f32::from_bits(0x4277d0e4)),
+        (f32::from_bits(0x41b10417), f32::from_bits(0x4277c188)),
+        (f32::from_bits(0x41b0fffe), f32::from_bits(0x4277c188)),
+    );
     // 22.179f, 61.954f, 22.127f, 61.939f, 22.125f, 61.939f
-    path.cubic_to((f32::from_bits(0x41b0fffe), f32::from_bits(0x4277bf7c)), (f32::from_bits(0x41b03f7b), f32::from_bits(0x427778d4)), (f32::from_bits(0x41b03f7b), f32::from_bits(0x427778d4)));
+    path.cubic_to(
+        (f32::from_bits(0x41b0fffe), f32::from_bits(0x4277bf7c)),
+        (f32::from_bits(0x41b03f7b), f32::from_bits(0x427778d4)),
+        (f32::from_bits(0x41b03f7b), f32::from_bits(0x427778d4)),
+    );
     // 22.125f, 61.937f, 22.031f, 61.868f, 22.031f, 61.868f
     path.line_to((f32::from_bits(0x41ae8729), f32::from_bits(0x4276f7ce)));
     // 21.816f, 61.742f
-    path.cubic_to((f32::from_bits(0x41adb644), f32::from_bits(0x4276d0e5)), (f32::from_bits(0x41ad22cf), f32::from_bits(0x42768e55)), (f32::from_bits(0x41ac8729), f32::from_bits(0x427648b3)));
+    path.cubic_to(
+        (f32::from_bits(0x41adb644), f32::from_bits(0x4276d0e5)),
+        (f32::from_bits(0x41ad22cf), f32::from_bits(0x42768e55)),
+        (f32::from_bits(0x41ac8729), f32::from_bits(0x427648b3)),
+    );
     // 21.714f, 61.704f, 21.642f, 61.639f, 21.566f, 61.571f
     path.line_to((f32::from_bits(0x41ab957f), f32::from_bits(0x4275e24d)));
     // 21.448f, 61.471f
-    path.cubic_to((f32::from_bits(0x41aa8f5a), f32::from_bits(0x42757df3)), (f32::from_bits(0x41a9b644), f32::from_bits(0x42751fbe)), (f32::from_bits(0x41a8a3d5), f32::from_bits(0x42747fff)));
+    path.cubic_to(
+        (f32::from_bits(0x41aa8f5a), f32::from_bits(0x42757df3)),
+        (f32::from_bits(0x41a9b644), f32::from_bits(0x42751fbe)),
+        (f32::from_bits(0x41a8a3d5), f32::from_bits(0x42747fff)),
+    );
     // 21.32f, 61.373f, 21.214f, 61.281f, 21.08f, 61.125f
-    path.cubic_to((f32::from_bits(0x41a6d708), f32::from_bits(0x4273a3d6)), (f32::from_bits(0x41a645a0), f32::from_bits(0x4272dd2e)), (f32::from_bits(0x41a58935), f32::from_bits(0x4271b126)));
+    path.cubic_to(
+        (f32::from_bits(0x41a6d708), f32::from_bits(0x4273a3d6)),
+        (f32::from_bits(0x41a645a0), f32::from_bits(0x4272dd2e)),
+        (f32::from_bits(0x41a58935), f32::from_bits(0x4271b126)),
+    );
     // 20.855f, 60.91f, 20.784f, 60.716f, 20.692f, 60.423f
     path.line_to((f32::from_bits(0x41a5851c), f32::from_bits(0x4271a7ef)));
     // 20.69f, 60.414f
@@ -9523,35 +13502,75 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 20.677f, 60.397f
     path.line_to((f32::from_bits(0x41a54dd0), f32::from_bits(0x4271820c)));
     // 20.663f, 60.377f
-    path.cubic_to((f32::from_bits(0x41a50209), f32::from_bits(0x42711062)), (f32::from_bits(0x41a4ced6), f32::from_bits(0x42707efa)), (f32::from_bits(0x41a4be74), f32::from_bits(0x426ff4bc)));
+    path.cubic_to(
+        (f32::from_bits(0x41a50209), f32::from_bits(0x42711062)),
+        (f32::from_bits(0x41a4ced6), f32::from_bits(0x42707efa)),
+        (f32::from_bits(0x41a4be74), f32::from_bits(0x426ff4bc)),
+    );
     // 20.626f, 60.266f, 20.601f, 60.124f, 20.593f, 59.989f
-    path.cubic_to((f32::from_bits(0x41a51478), f32::from_bits(0x427073b6)), (f32::from_bits(0x41a576c6), f32::from_bits(0x42710b43)), (f32::from_bits(0x41a576c6), f32::from_bits(0x42710b43)));
+    path.cubic_to(
+        (f32::from_bits(0x41a51478), f32::from_bits(0x427073b6)),
+        (f32::from_bits(0x41a576c6), f32::from_bits(0x42710b43)),
+        (f32::from_bits(0x41a576c6), f32::from_bits(0x42710b43)),
+    );
     // 20.635f, 60.113f, 20.683f, 60.261f, 20.683f, 60.261f
-    path.cubic_to((f32::from_bits(0x41a71478), f32::from_bits(0x42730418)), (f32::from_bits(0x41a9df39), f32::from_bits(0x42746666)), (f32::from_bits(0x41adc6a5), f32::from_bits(0x427526e9)));
+    path.cubic_to(
+        (f32::from_bits(0x41a71478), f32::from_bits(0x42730418)),
+        (f32::from_bits(0x41a9df39), f32::from_bits(0x42746666)),
+        (f32::from_bits(0x41adc6a5), f32::from_bits(0x427526e9)),
+    );
     // 20.885f, 60.754f, 21.234f, 61.1f, 21.722f, 61.288f
-    path.cubic_to((f32::from_bits(0x41adc499), f32::from_bits(0x427525e3)), (f32::from_bits(0x41ae47ab), f32::from_bits(0x42754395)), (f32::from_bits(0x41ae47ab), f32::from_bits(0x42754395)));
+    path.cubic_to(
+        (f32::from_bits(0x41adc499), f32::from_bits(0x427525e3)),
+        (f32::from_bits(0x41ae47ab), f32::from_bits(0x42754395)),
+        (f32::from_bits(0x41ae47ab), f32::from_bits(0x42754395)),
+    );
     // 21.721f, 61.287f, 21.785f, 61.316f, 21.785f, 61.316f
     path.line_to((f32::from_bits(0x41afe55d), f32::from_bits(0x4275978d)));
     // 21.987f, 61.398f
-    path.cubic_to((f32::from_bits(0x41b27cea), f32::from_bits(0x4275e147)), (f32::from_bits(0x41b54dd0), f32::from_bits(0x4275d916)), (f32::from_bits(0x41b772ad), f32::from_bits(0x42758106)));
+    path.cubic_to(
+        (f32::from_bits(0x41b27cea), f32::from_bits(0x4275e147)),
+        (f32::from_bits(0x41b54dd0), f32::from_bits(0x4275d916)),
+        (f32::from_bits(0x41b772ad), f32::from_bits(0x42758106)),
+    );
     // 22.311f, 61.47f, 22.663f, 61.462f, 22.931f, 61.376f
-    path.cubic_to((f32::from_bits(0x41b8df38), f32::from_bits(0x42753d70)), (f32::from_bits(0x41ba1684), f32::from_bits(0x4274d1eb)), (f32::from_bits(0x41bb4186), f32::from_bits(0x42746979)));
+    path.cubic_to(
+        (f32::from_bits(0x41b8df38), f32::from_bits(0x42753d70)),
+        (f32::from_bits(0x41ba1684), f32::from_bits(0x4274d1eb)),
+        (f32::from_bits(0x41bb4186), f32::from_bits(0x42746979)),
+    );
     // 23.109f, 61.31f, 23.261f, 61.205f, 23.407f, 61.103f
     path.line_to((f32::from_bits(0x41bdbc67), f32::from_bits(0x4273a1cb)));
     // 23.717f, 60.908f
-    path.cubic_to((f32::from_bits(0x41c0f1a6), f32::from_bits(0x4272cccd)), (f32::from_bits(0x41c3cabd), f32::from_bits(0x4272b958)), (f32::from_bits(0x41c71684), f32::from_bits(0x4272a3d7)));
+    path.cubic_to(
+        (f32::from_bits(0x41c0f1a6), f32::from_bits(0x4272cccd)),
+        (f32::from_bits(0x41c3cabd), f32::from_bits(0x4272b958)),
+        (f32::from_bits(0x41c71684), f32::from_bits(0x4272a3d7)),
+    );
     // 24.118f, 60.7f, 24.474f, 60.681f, 24.886f, 60.66f
     path.line_to((f32::from_bits(0x41ca4392), f32::from_bits(0x42728831)));
     // 25.283f, 60.633f
     path.line_to((f32::from_bits(0x41def9d8), f32::from_bits(0x42723f7d)));
     // 27.872f, 60.562f
-    path.cubic_to((f32::from_bits(0x41e15a1a), f32::from_bits(0x42722d0e)), (f32::from_bits(0x41e4105f), f32::from_bits(0x42723333)), (f32::from_bits(0x41e60e53), f32::from_bits(0x4271c7ae)));
+    path.cubic_to(
+        (f32::from_bits(0x41e15a1a), f32::from_bits(0x42722d0e)),
+        (f32::from_bits(0x41e4105f), f32::from_bits(0x42723333)),
+        (f32::from_bits(0x41e60e53), f32::from_bits(0x4271c7ae)),
+    );
     // 28.169f, 60.544f, 28.508f, 60.55f, 28.757f, 60.445f
-    path.cubic_to((f32::from_bits(0x41e87ceb), f32::from_bits(0x42715810)), (f32::from_bits(0x41e97ef7), f32::from_bits(0x427077cf)), (f32::from_bits(0x41ea9165), f32::from_bits(0x426f8a3d)));
+    path.cubic_to(
+        (f32::from_bits(0x41e87ceb), f32::from_bits(0x42715810)),
+        (f32::from_bits(0x41e97ef7), f32::from_bits(0x427077cf)),
+        (f32::from_bits(0x41ea9165), f32::from_bits(0x426f8a3d)),
+    );
     // 29.061f, 60.336f, 29.187f, 60.117f, 29.321f, 59.885f
     path.line_to((f32::from_bits(0x41ebccc9), f32::from_bits(0x426e8a3d)));
     // 29.475f, 59.635f
-    path.cubic_to((f32::from_bits(0x41ebced5), f32::from_bits(0x426e8937)), (f32::from_bits(0x41ec2d0b), f32::from_bits(0x426e4ccc)), (f32::from_bits(0x41ec2d0b), f32::from_bits(0x426e4ccc)));
+    path.cubic_to(
+        (f32::from_bits(0x41ebced5), f32::from_bits(0x426e8937)),
+        (f32::from_bits(0x41ec2d0b), f32::from_bits(0x426e4ccc)),
+        (f32::from_bits(0x41ec2d0b), f32::from_bits(0x426e4ccc)),
+    );
     // 29.476f, 59.634f, 29.522f, 59.575f, 29.522f, 59.575f
     path.line_to((f32::from_bits(0x41ecae11), f32::from_bits(0x426dde34)));
     // 29.585f, 59.467f
@@ -9559,15 +13578,27 @@ fn make_joel_16(path: &mut PathBuilder) {
     // 29.609f, 59.467f
     path.line_to((f32::from_bits(0x41ed26e6), f32::from_bits(0x426dc082)));
     // 29.644f, 59.438f
-    path.cubic_to((f32::from_bits(0x41ee1ca9), f32::from_bits(0x426d5a1c)), (f32::from_bits(0x41eeccc9), f32::from_bits(0x426d1061)), (f32::from_bits(0x41f01684), f32::from_bits(0x426ce978)));
+    path.cubic_to(
+        (f32::from_bits(0x41ee1ca9), f32::from_bits(0x426d5a1c)),
+        (f32::from_bits(0x41eeccc9), f32::from_bits(0x426d1061)),
+        (f32::from_bits(0x41f01684), f32::from_bits(0x426ce978)),
+    );
     // 29.764f, 59.338f, 29.85f, 59.266f, 30.011f, 59.228f
-    path.cubic_to((f32::from_bits(0x41f29fbb), f32::from_bits(0x426c8e55)), (f32::from_bits(0x420cced8), f32::from_bits(0x426bd4fd)), (f32::from_bits(0x420e6c8a), f32::from_bits(0x426bdf3b)));
+    path.cubic_to(
+        (f32::from_bits(0x41f29fbb), f32::from_bits(0x426c8e55)),
+        (f32::from_bits(0x420cced8), f32::from_bits(0x426bd4fd)),
+        (f32::from_bits(0x420e6c8a), f32::from_bits(0x426bdf3b)),
+    );
     // 30.328f, 59.139f, 35.202f, 58.958f, 35.606f, 58.968f
     path.move_to((f32::from_bits(0x41b60622), f32::from_bits(0x427adb22)));
     // 22.753f, 62.714f
     path.line_to((f32::from_bits(0x41b60416), f32::from_bits(0x427ad709)));
     // 22.752f, 62.71f
-    path.cubic_to((f32::from_bits(0x41b60416), f32::from_bits(0x427ad603)), (f32::from_bits(0x41b60416), f32::from_bits(0x427ad915)), (f32::from_bits(0x41b60622), f32::from_bits(0x427adb22)));
+    path.cubic_to(
+        (f32::from_bits(0x41b60416), f32::from_bits(0x427ad603)),
+        (f32::from_bits(0x41b60416), f32::from_bits(0x427ad915)),
+        (f32::from_bits(0x41b60622), f32::from_bits(0x427adb22)),
+    );
     // 22.752f, 62.709f, 22.752f, 62.712f, 22.753f, 62.714f
     path.move_to((f32::from_bits(0x41bed2ef), f32::from_bits(0x4274cbc6)));
     // 23.853f, 61.199f
@@ -9592,10 +13623,42 @@ fn joel_16x(reporter: &mut Reporter, filename: &str) {
 
 fn coincubics(reporter: &mut Reporter, filename: &str) {
     let mut path = PathBuilder::new();
-    path.move_to((((0.00000000000000000 as f32) as f32), ((0.00000000000000000 as f32) as f32)));
-    path.cubic_to((((0.00022939755581319332 as f32) as f32), ((0.00022927834652364254 as f32) as f32)), (((0.00022930106206331402 as f32) as f32), ((0.00022929999977350235 as f32) as f32)), (((0.00022930069826543331 as f32) as f32), ((0.00022913678549230099 as f32) as f32)));
-    path.line_to((((0.00022930069826543331 as f32) as f32), ((0.00022930069826543331 as f32) as f32)));
-    path.cubic_to((((0.00011465034913271666 as f32) as f32), ((0.00011465034913271666 as f32) as f32)), (((0.00011465061106719077 as f32) as f32), ((0.00011460937093943357 as f32) as f32)), (((0.00014331332931760699 as f32) as f32), ((0.00014325146912597120 as f32) as f32)));
+    path.move_to((
+        ((0.00000000000000000 as f32) as f32),
+        ((0.00000000000000000 as f32) as f32),
+    ));
+    path.cubic_to(
+        (
+            ((0.00022939755581319332 as f32) as f32),
+            ((0.00022927834652364254 as f32) as f32),
+        ),
+        (
+            ((0.00022930106206331402 as f32) as f32),
+            ((0.00022929999977350235 as f32) as f32),
+        ),
+        (
+            ((0.00022930069826543331 as f32) as f32),
+            ((0.00022913678549230099 as f32) as f32),
+        ),
+    );
+    path.line_to((
+        ((0.00022930069826543331 as f32) as f32),
+        ((0.00022930069826543331 as f32) as f32),
+    ));
+    path.cubic_to(
+        (
+            ((0.00011465034913271666 as f32) as f32),
+            ((0.00011465034913271666 as f32) as f32),
+        ),
+        (
+            ((0.00011465061106719077 as f32) as f32),
+            ((0.00011460937093943357 as f32) as f32),
+        ),
+        (
+            ((0.00014331332931760699 as f32) as f32),
+            ((0.00014325146912597120 as f32) as f32),
+        ),
+    );
     test_simplify(reporter, &path.detach(), filename);
 }
 
@@ -11181,39 +15244,87 @@ fn bug8249(reporter: &mut Reporter, filename: &str) {
     // 177, 258
     path.line_to((f32::from_bits(0x43480000), f32::from_bits(0x43868000)));
     // 200, 269
-    path.cubic_to((f32::from_bits(0x43480000), f32::from_bits(0x43b20000)), (f32::from_bits(0x437a0000), f32::from_bits(0x43cd0000)), (f32::from_bits(0x43c80000), f32::from_bits(0x43cd0000)));
+    path.cubic_to(
+        (f32::from_bits(0x43480000), f32::from_bits(0x43b20000)),
+        (f32::from_bits(0x437a0000), f32::from_bits(0x43cd0000)),
+        (f32::from_bits(0x43c80000), f32::from_bits(0x43cd0000)),
+    );
     // 200, 356, 250, 410, 400, 410
-    path.cubic_to((f32::from_bits(0x44098000), f32::from_bits(0x43cd0000)), (f32::from_bits(0x44160000), f32::from_bits(0x43b20000)), (f32::from_bits(0x44160000), f32::from_bits(0x43868000)));
+    path.cubic_to(
+        (f32::from_bits(0x44098000), f32::from_bits(0x43cd0000)),
+        (f32::from_bits(0x44160000), f32::from_bits(0x43b20000)),
+        (f32::from_bits(0x44160000), f32::from_bits(0x43868000)),
+    );
     // 550, 410, 600, 356, 600, 269
     path.line_to((f32::from_bits(0x44160000), f32::from_bits(0x43808000)));
     // 600, 257
-    path.cubic_to((f32::from_bits(0x44160000), f32::from_bits(0x43330000)), (f32::from_bits(0x44110000), f32::from_bits(0x429c0000)), (f32::from_bits(0x43cd0000), f32::from_bits(0x429c0000)));
+    path.cubic_to(
+        (f32::from_bits(0x44160000), f32::from_bits(0x43330000)),
+        (f32::from_bits(0x44110000), f32::from_bits(0x429c0000)),
+        (f32::from_bits(0x43cd0000), f32::from_bits(0x429c0000)),
+    );
     // 600, 179, 580, 78, 410, 78
-    path.cubic_to((f32::from_bits(0x43700000), f32::from_bits(0x429c0000)), (f32::from_bits(0x43480000), f32::from_bits(0x431f0000)), (f32::from_bits(0x43480000), f32::from_bits(0x438a8000)));
+    path.cubic_to(
+        (f32::from_bits(0x43700000), f32::from_bits(0x429c0000)),
+        (f32::from_bits(0x43480000), f32::from_bits(0x431f0000)),
+        (f32::from_bits(0x43480000), f32::from_bits(0x438a8000)),
+    );
     // 240, 78, 200, 159, 200, 277
     path.line_to((f32::from_bits(0x43480000), f32::from_bits(0x4401c000)));
     // 200, 519
-    path.cubic_to((f32::from_bits(0x43480000), f32::from_bits(0x441f0000)), (f32::from_bits(0x43660000), f32::from_bits(0x44340000)), (f32::from_bits(0x43c80000), f32::from_bits(0x44340000)));
+    path.cubic_to(
+        (f32::from_bits(0x43480000), f32::from_bits(0x441f0000)),
+        (f32::from_bits(0x43660000), f32::from_bits(0x44340000)),
+        (f32::from_bits(0x43c80000), f32::from_bits(0x44340000)),
+    );
     // 200, 636, 230, 720, 400, 720
-    path.cubic_to((f32::from_bits(0x4404c000), f32::from_bits(0x44340000)), (f32::from_bits(0x440d0000), f32::from_bits(0x442b8000)), (f32::from_bits(0x44118000), f32::from_bits(0x4416c000)));
+    path.cubic_to(
+        (f32::from_bits(0x4404c000), f32::from_bits(0x44340000)),
+        (f32::from_bits(0x440d0000), f32::from_bits(0x442b8000)),
+        (f32::from_bits(0x44118000), f32::from_bits(0x4416c000)),
+    );
     // 531, 720, 564, 686, 582, 603
     path.line_to((f32::from_bits(0x442cc000), f32::from_bits(0x441c8000)));
     // 691, 626
-    path.cubic_to((f32::from_bits(0x44260000), f32::from_bits(0x443d4000)), (f32::from_bits(0x44114000), f32::from_bits(0x444a8000)), (f32::from_bits(0x43c88000), f32::from_bits(0x444a8000)));
+    path.cubic_to(
+        (f32::from_bits(0x44260000), f32::from_bits(0x443d4000)),
+        (f32::from_bits(0x44114000), f32::from_bits(0x444a8000)),
+        (f32::from_bits(0x43c88000), f32::from_bits(0x444a8000)),
+    );
     // 664, 757, 581, 810, 401, 810
-    path.cubic_to((f32::from_bits(0x43350000), f32::from_bits(0x444a8000)), (f32::from_bits(0x42c80000), f32::from_bits(0x442e0000)), (f32::from_bits(0x42c80000), f32::from_bits(0x4401c000)));
+    path.cubic_to(
+        (f32::from_bits(0x43350000), f32::from_bits(0x444a8000)),
+        (f32::from_bits(0x42c80000), f32::from_bits(0x442e0000)),
+        (f32::from_bits(0x42c80000), f32::from_bits(0x4401c000)),
+    );
     // 181, 810, 100, 696, 100, 519
     path.line_to((f32::from_bits(0x42c80000), f32::from_bits(0x438a8000)));
     // 100, 277
-    path.cubic_to((f32::from_bits(0x42c80000), f32::from_bits(0x42cc0000)), (f32::from_bits(0x433e0000), f32::from_bits(0xc1200000)), (f32::from_bits(0x43cd0000), f32::from_bits(0xc1200000)));
+    path.cubic_to(
+        (f32::from_bits(0x42c80000), f32::from_bits(0x42cc0000)),
+        (f32::from_bits(0x433e0000), f32::from_bits(0xc1200000)),
+        (f32::from_bits(0x43cd0000), f32::from_bits(0xc1200000)),
+    );
     // 100, 102, 190, -10, 410, -10
-    path.cubic_to((f32::from_bits(0x441d8000), f32::from_bits(0xc1200000)), (f32::from_bits(0x442f0000), f32::from_bits(0x42e60000)), (f32::from_bits(0x442f0000), f32::from_bits(0x437a0000)));
+    path.cubic_to(
+        (f32::from_bits(0x441d8000), f32::from_bits(0xc1200000)),
+        (f32::from_bits(0x442f0000), f32::from_bits(0x42e60000)),
+        (f32::from_bits(0x442f0000), f32::from_bits(0x437a0000)),
+    );
     // 630, -10, 700, 115, 700, 250
     path.line_to((f32::from_bits(0x442f0000), f32::from_bits(0x43880000)));
     // 700, 272
-    path.cubic_to((f32::from_bits(0x442f0000), f32::from_bits(0x43d18000)), (f32::from_bits(0x44164000), f32::from_bits(0x43fa0000)), (f32::from_bits(0x43c88000), f32::from_bits(0x43fa0000)));
+    path.cubic_to(
+        (f32::from_bits(0x442f0000), f32::from_bits(0x43d18000)),
+        (f32::from_bits(0x44164000), f32::from_bits(0x43fa0000)),
+        (f32::from_bits(0x43c88000), f32::from_bits(0x43fa0000)),
+    );
     // 700, 419, 601, 500, 401, 500
-    path.cubic_to((f32::from_bits(0x43490000), f32::from_bits(0x43fa0000)), (f32::from_bits(0x43160000), f32::from_bits(0x43d00000)), (f32::from_bits(0x43160000), f32::from_bits(0x43868000)));
+    path.cubic_to(
+        (f32::from_bits(0x43490000), f32::from_bits(0x43fa0000)),
+        (f32::from_bits(0x43160000), f32::from_bits(0x43d00000)),
+        (f32::from_bits(0x43160000), f32::from_bits(0x43868000)),
+    );
     // 201, 500, 150, 416, 150, 269
     path.line_to((f32::from_bits(0x43310000), f32::from_bits(0x43810000)));
     // 177, 258
@@ -11297,13 +15408,25 @@ fn bug11958_a(reporter: &mut Reporter, filename: &str) {
     // 574.46f, 276.231f
     path.line_to((f32::from_bits(0x44387127), f32::from_bits(0x438a1d91)));
     // 737.768f, 276.231f
-    path.quad_to((f32::from_bits(0x444d04cd), f32::from_bits(0x438a1d91)), (f32::from_bits(0x4456f396), f32::from_bits(0x4372a76c)));
+    path.quad_to(
+        (f32::from_bits(0x444d04cd), f32::from_bits(0x438a1d91)),
+        (f32::from_bits(0x4456f396), f32::from_bits(0x4372a76c)),
+    );
     // 820.075f, 276.231f, 859.806f, 242.654f
-    path.quad_to((f32::from_bits(0x4460e25e), f32::from_bits(0x435113b6)), (f32::from_bits(0x4460e25e), f32::from_bits(0x4310276d)));
+    path.quad_to(
+        (f32::from_bits(0x4460e25e), f32::from_bits(0x435113b6)),
+        (f32::from_bits(0x4460e25e), f32::from_bits(0x4310276d)),
+    );
     // 899.537f, 209.077f, 899.537f, 144.154f
-    path.quad_to((f32::from_bits(0x4460e25e), f32::from_bits(0x429e0000)), (f32::from_bits(0x44555d70), f32::from_bits(0x421e0000)));
+    path.quad_to(
+        (f32::from_bits(0x4460e25e), f32::from_bits(0x429e0000)),
+        (f32::from_bits(0x44555d70), f32::from_bits(0x421e0000)),
+    );
     // 899.537f, 79, 853.46f, 39.5f
-    path.quad_to((f32::from_bits(0x4449d883), f32::from_bits(0x00000000)), (f32::from_bits(0x44321883), f32::from_bits(0x00000000)));
+    path.quad_to(
+        (f32::from_bits(0x4449d883), f32::from_bits(0x00000000)),
+        (f32::from_bits(0x44321883), f32::from_bits(0x00000000)),
+    );
     // 807.383f, 0, 712.383f, 0
     path.line_to((f32::from_bits(0x440f9d71), f32::from_bits(0x00000000)));
     // 574.46f, 0
@@ -11317,44 +15440,92 @@ fn bug11958_b(reporter: &mut Reporter, filename: &str) {
     path.set_fill_type(PathFillType::Winding);
     path.move_to((f32::from_bits(0x42240000), f32::from_bits(0x43420000)));
     // 41, 194
-    path.quad_to((f32::from_bits(0x42240000), f32::from_bits(0x43928000)), (f32::from_bits(0x42930000), f32::from_bits(0x43b38000)));
+    path.quad_to(
+        (f32::from_bits(0x42240000), f32::from_bits(0x43928000)),
+        (f32::from_bits(0x42930000), f32::from_bits(0x43b38000)),
+    );
     // 41, 293, 73.5f, 359
-    path.quad_to((f32::from_bits(0x42d40000), f32::from_bits(0x43d48000)), (f32::from_bits(0x43240000), f32::from_bits(0x43e58000)));
+    path.quad_to(
+        (f32::from_bits(0x42d40000), f32::from_bits(0x43d48000)),
+        (f32::from_bits(0x43240000), f32::from_bits(0x43e58000)),
+    );
     // 106, 425, 164, 459
-    path.quad_to((f32::from_bits(0x435e0000), f32::from_bits(0x43f68000)), (f32::from_bits(0x43958000), f32::from_bits(0x43f68000)));
+    path.quad_to(
+        (f32::from_bits(0x435e0000), f32::from_bits(0x43f68000)),
+        (f32::from_bits(0x43958000), f32::from_bits(0x43f68000)),
+    );
     // 222, 493, 299, 493
-    path.quad_to((f32::from_bits(0x43ab0000), f32::from_bits(0x43f68000)), (f32::from_bits(0x43bd0000), f32::from_bits(0x43f2c000)));
+    path.quad_to(
+        (f32::from_bits(0x43ab0000), f32::from_bits(0x43f68000)),
+        (f32::from_bits(0x43bd0000), f32::from_bits(0x43f2c000)),
+    );
     // 342, 493, 378, 485.5f
-    path.quad_to((f32::from_bits(0x43cf0000), f32::from_bits(0x43ef0000)), (f32::from_bits(0x43df8000), f32::from_bits(0x43e80000)));
+    path.quad_to(
+        (f32::from_bits(0x43cf0000), f32::from_bits(0x43ef0000)),
+        (f32::from_bits(0x43df8000), f32::from_bits(0x43e80000)),
+    );
     // 414, 478, 447, 464
-    path.quad_to((f32::from_bits(0x43f00000), f32::from_bits(0x43e10000)), (f32::from_bits(0x43ff8000), f32::from_bits(0x43d70000)));
+    path.quad_to(
+        (f32::from_bits(0x43f00000), f32::from_bits(0x43e10000)),
+        (f32::from_bits(0x43ff8000), f32::from_bits(0x43d70000)),
+    );
     // 480, 450, 511, 430
     path.line_to((f32::from_bits(0x43f78000), f32::from_bits(0x43cc0000)));
     // 495, 408
-    path.quad_to((f32::from_bits(0x43e90000), f32::from_bits(0x43d58000)), (f32::from_bits(0x43d9c000), f32::from_bits(0x43dc4000)));
+    path.quad_to(
+        (f32::from_bits(0x43e90000), f32::from_bits(0x43d58000)),
+        (f32::from_bits(0x43d9c000), f32::from_bits(0x43dc4000)),
+    );
     // 466, 427, 435.5f, 440.5f
-    path.quad_to((f32::from_bits(0x43ca8000), f32::from_bits(0x43e30000)), (f32::from_bits(0x43b9c000), f32::from_bits(0x43e68000)));
+    path.quad_to(
+        (f32::from_bits(0x43ca8000), f32::from_bits(0x43e30000)),
+        (f32::from_bits(0x43b9c000), f32::from_bits(0x43e68000)),
+    );
     // 405, 454, 371.5f, 461
-    path.quad_to((f32::from_bits(0x43a90000), f32::from_bits(0x43ea0000)), (f32::from_bits(0x43958000), f32::from_bits(0x43ea0000)));
+    path.quad_to(
+        (f32::from_bits(0x43a90000), f32::from_bits(0x43ea0000)),
+        (f32::from_bits(0x43958000), f32::from_bits(0x43ea0000)),
+    );
     // 338, 468, 299, 468
-    path.quad_to((f32::from_bits(0x43650000), f32::from_bits(0x43ea0000)), (f32::from_bits(0x43308000), f32::from_bits(0x43da4000)));
+    path.quad_to(
+        (f32::from_bits(0x43650000), f32::from_bits(0x43ea0000)),
+        (f32::from_bits(0x43308000), f32::from_bits(0x43da4000)),
+    );
     // 229, 468, 176.5f, 436.5f
-    path.quad_to((f32::from_bits(0x42f80000), f32::from_bits(0x43ca8000)), (f32::from_bits(0x42c00000), f32::from_bits(0x43ac0000)));
+    path.quad_to(
+        (f32::from_bits(0x42f80000), f32::from_bits(0x43ca8000)),
+        (f32::from_bits(0x42c00000), f32::from_bits(0x43ac0000)),
+    );
     // 124, 405, 96, 344
-    path.quad_to((f32::from_bits(0x42880000), f32::from_bits(0x438d8000)), (f32::from_bits(0x42880000), f32::from_bits(0x43420000)));
+    path.quad_to(
+        (f32::from_bits(0x42880000), f32::from_bits(0x438d8000)),
+        (f32::from_bits(0x42880000), f32::from_bits(0x43420000)),
+    );
     // 68, 283, 68, 194
     path.line_to((f32::from_bits(0x42240000), f32::from_bits(0x43420000)));
     // 41, 194
     path.close();
     path.move_to((f32::from_bits(0x43ddd958), f32::from_bits(0x440e8000)));
     // 443.698f, 570
-    path.quad_to((f32::from_bits(0x43ddd958), f32::from_bits(0x44094000)), (f32::from_bits(0x43da5958), f32::from_bits(0x4404c000)));
+    path.quad_to(
+        (f32::from_bits(0x43ddd958), f32::from_bits(0x44094000)),
+        (f32::from_bits(0x43da5958), f32::from_bits(0x4404c000)),
+    );
     // 443.698f, 549, 436.698f, 531
-    path.quad_to((f32::from_bits(0x43d6d958), f32::from_bits(0x44004000)), (f32::from_bits(0x43cfd958), f32::from_bits(0x43f98000)));
+    path.quad_to(
+        (f32::from_bits(0x43d6d958), f32::from_bits(0x44004000)),
+        (f32::from_bits(0x43cfd958), f32::from_bits(0x43f98000)),
+    );
     // 429.698f, 513, 415.698f, 499
-    path.quad_to((f32::from_bits(0x43c75958), f32::from_bits(0x43f18000)), (f32::from_bits(0x43ba9958), f32::from_bits(0x43ee0000)));
+    path.quad_to(
+        (f32::from_bits(0x43c75958), f32::from_bits(0x43f18000)),
+        (f32::from_bits(0x43ba9958), f32::from_bits(0x43ee0000)),
+    );
     // 398.698f, 483, 373.198f, 476
-    path.quad_to((f32::from_bits(0x43add958), f32::from_bits(0x43ea8000)), (f32::from_bits(0x4396d958), f32::from_bits(0x43ea8000)));
+    path.quad_to(
+        (f32::from_bits(0x43add958), f32::from_bits(0x43ea8000)),
+        (f32::from_bits(0x4396d958), f32::from_bits(0x43ea8000)),
+    );
     // 347.698f, 469, 301.698f, 469
     path.line_to((f32::from_bits(0x436cb2b0), f32::from_bits(0x43ea8000)));
     // 236.698f, 469
@@ -11362,13 +15533,25 @@ fn bug11958_b(reporter: &mut Reporter, filename: &str) {
     // 236.698f, 493
     path.line_to((f32::from_bits(0x43955958), f32::from_bits(0x43f68000)));
     // 298.698f, 493
-    path.quad_to((f32::from_bits(0x43a8d958), f32::from_bits(0x43f68000)), (f32::from_bits(0x43b3d958), f32::from_bits(0x43f90000)));
+    path.quad_to(
+        (f32::from_bits(0x43a8d958), f32::from_bits(0x43f68000)),
+        (f32::from_bits(0x43b3d958), f32::from_bits(0x43f90000)),
+    );
     // 337.698f, 493, 359.698f, 498
-    path.quad_to((f32::from_bits(0x43bed958), f32::from_bits(0x43fb8000)), (f32::from_bits(0x43c55958), f32::from_bits(0x4400c000)));
+    path.quad_to(
+        (f32::from_bits(0x43bed958), f32::from_bits(0x43fb8000)),
+        (f32::from_bits(0x43c55958), f32::from_bits(0x4400c000)),
+    );
     // 381.698f, 503, 394.698f, 515
-    path.quad_to((f32::from_bits(0x43cb5958), f32::from_bits(0x44030000)), (f32::from_bits(0x43cdd958), f32::from_bits(0x4406a000)));
+    path.quad_to(
+        (f32::from_bits(0x43cb5958), f32::from_bits(0x44030000)),
+        (f32::from_bits(0x43cdd958), f32::from_bits(0x4406a000)),
+    );
     // 406.698f, 524, 411.698f, 538.5f
-    path.quad_to((f32::from_bits(0x43d05958), f32::from_bits(0x440a4000)), (f32::from_bits(0x43d05958), f32::from_bits(0x440e8000)));
+    path.quad_to(
+        (f32::from_bits(0x43d05958), f32::from_bits(0x440a4000)),
+        (f32::from_bits(0x43d05958), f32::from_bits(0x440e8000)),
+    );
     // 416.698f, 553, 416.698f, 570
     path.line_to((f32::from_bits(0x43ddd958), f32::from_bits(0x440e8000)));
     // 443.698f, 570
@@ -11406,25 +15589,33 @@ def_test!(PathOpsSimplify, |reporter| {
 def_test!(bug_513001309, |_reporter| {
     let mut path = PathBuilder::new();
     for i in 0..5 {
-    let off: f32 = i as f32 * 0.0001;
-    path.set_fill_type(PathFillType::EvenOdd);
-    path.move_to((f32::from_bits(0x43b40000) + off, f32::from_bits(0xcf000000)));
-    path.cubic_to((f32::from_bits(0x4e0d628f), f32::from_bits(0xceffffff)), (f32::from_bits(0x4e800003), f32::from_bits(0xcec6b143)), (f32::from_bits(0x4e800002), f32::from_bits(0xce7ffffc)));
-    path.cubic_to((f32::from_bits(0x4e800002), f32::from_bits(0xcde53aee)), (f32::from_bits(0x4e0d6292), f32::from_bits(0xc307820e)), (f32::from_bits(0x44627d00), f32::from_bits(0x437ffff2)));
-    path.line_to((f32::from_bits(0x444bf3bc), f32::from_bits(0x4460537e)));
-    path.line_to((f32::from_bits(0x43553abd), f32::from_bits(0x440f3cbd)));
-    path.line_to((f32::from_bits(0x42000000), f32::from_bits(0x41800000)));
-    path.line_to((f32::from_bits(0x42c80000), f32::from_bits(0x44000000)));
-    path.line_to((f32::from_bits(0x43553abd), f32::from_bits(0x440f3cbd)));
-    path.line_to((f32::from_bits(0x43b40000), f32::from_bits(0x44800000)));
-    path.line_to((f32::from_bits(0x43b40000), f32::from_bits(0x45816000)));
-    path.set_fill_type(PathFillType::Winding);
-    path.move_to((f32::from_bits(0x42fe0000) + off, f32::from_bits(0x43a08000)));
-    path.line_to((f32::from_bits(0x45d5c000), f32::from_bits(0x43870000)));
-    path.line_to((f32::from_bits(0xd0a00000), f32::from_bits(0x4cbebc20)));
-    path.line_to((f32::from_bits(0x451f7000), f32::from_bits(0x42800000)));
-    path.line_to((f32::from_bits(0x42fe0000), f32::from_bits(0x43a08000)));
-    path.close();
+        let off: f32 = i as f32 * 0.0001;
+        path.set_fill_type(PathFillType::EvenOdd);
+        path.move_to((f32::from_bits(0x43b40000) + off, f32::from_bits(0xcf000000)));
+        path.cubic_to(
+            (f32::from_bits(0x4e0d628f), f32::from_bits(0xceffffff)),
+            (f32::from_bits(0x4e800003), f32::from_bits(0xcec6b143)),
+            (f32::from_bits(0x4e800002), f32::from_bits(0xce7ffffc)),
+        );
+        path.cubic_to(
+            (f32::from_bits(0x4e800002), f32::from_bits(0xcde53aee)),
+            (f32::from_bits(0x4e0d6292), f32::from_bits(0xc307820e)),
+            (f32::from_bits(0x44627d00), f32::from_bits(0x437ffff2)),
+        );
+        path.line_to((f32::from_bits(0x444bf3bc), f32::from_bits(0x4460537e)));
+        path.line_to((f32::from_bits(0x43553abd), f32::from_bits(0x440f3cbd)));
+        path.line_to((f32::from_bits(0x42000000), f32::from_bits(0x41800000)));
+        path.line_to((f32::from_bits(0x42c80000), f32::from_bits(0x44000000)));
+        path.line_to((f32::from_bits(0x43553abd), f32::from_bits(0x440f3cbd)));
+        path.line_to((f32::from_bits(0x43b40000), f32::from_bits(0x44800000)));
+        path.line_to((f32::from_bits(0x43b40000), f32::from_bits(0x45816000)));
+        path.set_fill_type(PathFillType::Winding);
+        path.move_to((f32::from_bits(0x42fe0000) + off, f32::from_bits(0x43a08000)));
+        path.line_to((f32::from_bits(0x45d5c000), f32::from_bits(0x43870000)));
+        path.line_to((f32::from_bits(0xd0a00000), f32::from_bits(0x4cbebc20)));
+        path.line_to((f32::from_bits(0x451f7000), f32::from_bits(0x42800000)));
+        path.line_to((f32::from_bits(0x42fe0000), f32::from_bits(0x43a08000)));
+        path.close();
     }
     // This caused a corruption/assert w/o the fix
     let _ = simplify(&path.detach());

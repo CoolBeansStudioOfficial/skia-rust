@@ -6,6 +6,31 @@
 //! The steps shared by the boolean operation and by simplify (`SkPathOpsCommon.cpp`): winding of
 //! a chain of angles, the search for a span to chase, contour sorting, and the handling of
 //! coincident edges.
+// Pedantic lints allowed for this module because it mirrors Skia line by line: SkScalar and
+// double comparisons are exact in Skia (no epsilon), the C++ integer casts are kept as they are
+// (the ids and counts are small), names follow Skia (pt1, pt2, oppTest), long Skia functions
+// keep their structure (goto-shaped control flow that would be harder to check if split), and
+// a few loops are Skia's do/while forms that run once.
+#![allow(
+    clippy::similar_names,
+    clippy::float_cmp,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::too_many_arguments,
+    clippy::struct_excessive_bools,
+    clippy::items_after_statements,
+    clippy::struct_field_names,
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::option_option,
+    clippy::question_mark,
+    clippy::while_let_loop,
+    clippy::while_let_on_iterator,
+    clippy::unused_self,
+    clippy::never_loop,
+    clippy::needless_range_loop
+)]
 
 use skia_rust_core::t_sort::t_q_sort;
 
@@ -92,10 +117,10 @@ impl OpState {
     pub(crate) fn find_undone(&mut self, contour_head: ContourId) -> Option<SpanId> {
         let mut contour = Some(contour_head);
         while let Some(c) = contour {
-            if !self.contour_done(c) {
-                if let Some(result) = self.contour_undone_span(c) {
-                    return Some(result);
-                }
+            if !self.contour_done(c)
+                && let Some(result) = self.contour_undone_span(c)
+            {
+                return Some(result);
             }
             contour = self.contour_next(c);
         }
@@ -162,7 +187,8 @@ impl OpState {
                 }
                 if !self.seg_done_angle(segment, angle) {
                     if first.is_none()
-                        && (found.sortable || self.span_wind_sum(self.span_starter(start, end)) != SK_MIN_S32)
+                        && (found.sortable
+                            || self.span_wind_sum(self.span_starter(start, end)) != SK_MIN_S32)
                     {
                         first = Some(segment);
                         *start_ptr = start;
@@ -171,7 +197,13 @@ impl OpState {
                     // OPTIMIZATION: should this also add to the chase?
                     if found.sortable {
                         let mut result: Option<SpanId> = None;
-                        let marked = self.seg_mark_angle(segment, max_winding, sum_winding, angle, &mut result);
+                        let marked = self.seg_mark_angle(
+                            segment,
+                            max_winding,
+                            sum_winding,
+                            angle,
+                            &mut result,
+                        );
                         // Skia asserts this result; the call itself runs in release builds.
                         debug_assert!(marked, "markAngle failed in FindChase");
                     }
@@ -202,12 +234,21 @@ impl OpState {
     /// `SortContourList(contourList, evenOdd, oppEvenOdd)`: keeps the contours that have edges,
     /// sorts them by bounds, and links them. Returns false if there are no such contours.
     // Port of: src/pathops/SkPathOpsCommon.cpp#L167-L195 (chrome/m156)
-    pub(crate) fn sort_contour_list(&mut self, contour_list: &mut ContourId, even_odd: bool, opp_even_odd: bool) -> bool {
+    pub(crate) fn sort_contour_list(
+        &mut self,
+        contour_list: &mut ContourId,
+        even_odd: bool,
+        opp_even_odd: bool,
+    ) -> bool {
         let mut list: Vec<ContourId> = Vec::new();
         let mut contour = Some(*contour_list);
         while let Some(c) = contour {
             if self.contour_count(c) != 0 {
-                let opp_xor = if self.contour_operand(c) { even_odd } else { opp_even_odd };
+                let opp_xor = if self.contour_operand(c) {
+                    even_odd
+                } else {
+                    opp_even_odd
+                };
                 self.contour_set_opp_xor(c, opp_xor);
                 list.push(c);
             }
@@ -219,7 +260,9 @@ impl OpState {
         }
         if count > 1 {
             let state: &OpState = self;
-            t_q_sort(&mut list, |a: &ContourId, b: &ContourId| contour_less(state, *a, *b));
+            t_q_sort(&mut list, |a: &ContourId, b: &ContourId| {
+                contour_less(state, *a, *b)
+            });
         }
         let head = list[0];
         self.contour_head = Some(head);
@@ -296,7 +339,11 @@ impl OpState {
     /// `HandleCoincidence(contourList, coincidence)`: matches up the points of coincident runs,
     /// and finds the overlaps between them.
     // Port of: src/pathops/SkPathOpsCommon.cpp#L247-L338 (chrome/m156)
-    pub(crate) fn handle_coincidence(&mut self, contour_list: ContourId, coincidence: CoinSetId) -> bool {
+    pub(crate) fn handle_coincidence(
+        &mut self,
+        contour_list: ContourId,
+        coincidence: CoinSetId,
+    ) -> bool {
         // Match up points within the coincident runs.
         if !self.cs_add_expanded(coincidence) {
             return false;
@@ -368,7 +415,11 @@ impl OpState {
         let overlaps = self.coin_new_set();
         let mut safety_hatch = SAFETY_COUNT;
         loop {
-            let pairs = if self.cs_is_empty(overlaps) { coincidence } else { overlaps };
+            let pairs = if self.cs_is_empty(overlaps) {
+                coincidence
+            } else {
+                overlaps
+            };
             // Adjust the winding value to account for coincident edges.
             if !self.cs_apply(pairs) {
                 return false;
