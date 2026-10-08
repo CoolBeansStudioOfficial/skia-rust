@@ -49211,7 +49211,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L309-L331"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7f6467aad0a5766c094be33c86484afe81d7317291be0b441659997e33b339ea"
 
 [[test]]
@@ -49256,7 +49256,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L667-L686"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0932da8a5221b0c96ed96c0dc59fec7e6ec026e1fbf97c814b3545cd6891dd0"
 
 [[test]]

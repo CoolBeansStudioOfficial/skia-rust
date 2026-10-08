@@ -464,3 +464,34 @@ pub fn scalars_equal(a: &[scalar], b: &[scalar]) -> bool {
     debug_assert_eq!(a.len(), b.len());
     a.iter().zip(b).all(|(x, y)| x == y)
 }
+
+/// Interpolates along the function described by `(keys, values)` for `search_key`. Keys outside
+/// `keys[0]..=keys[len-1]` clamp to the first or last value. Linear search, as in C++. Repeated
+/// keys are allowed; the first one wins.
+///
+/// # Panics
+///
+/// Panics if `keys` is empty or `values` is shorter than `keys`.
+// Port of: src/core/SkScalar.cpp#L11-L37 (SkFloatInterpFunc, chrome/m156)
+#[doc(alias = "SkFloatInterpFunc")]
+#[must_use]
+pub fn float_interp_func(search_key: scalar, keys: &[scalar], values: &[scalar]) -> scalar {
+    let length = keys.len();
+    assert!(length > 0 && values.len() >= length);
+    debug_assert!(keys.windows(2).all(|w| w[0] <= w[1]));
+    let mut right = 0;
+    while right < length && keys[right] < search_key {
+        right += 1;
+    }
+    if right == length {
+        return values[length - 1];
+    }
+    if right == 0 {
+        return values[0];
+    }
+    // Otherwise, interpolate between right - 1 and right.
+    let left_key = keys[right - 1];
+    let right_key = keys[right];
+    let fract = (search_key - left_key) / (right_key - left_key);
+    scalar_interp(values[right - 1], values[right], fract)
+}
