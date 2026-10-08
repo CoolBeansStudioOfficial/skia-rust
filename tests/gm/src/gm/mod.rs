@@ -63,6 +63,7 @@ pub mod manypaths;
 pub mod nested;
 pub mod pathfill;
 pub mod pathinterior;
+pub mod persptext;
 pub mod plus;
 pub mod points;
 pub mod poly2poly;
