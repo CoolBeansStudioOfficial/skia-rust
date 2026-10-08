@@ -41585,7 +41585,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
 status = "todo"
-reason = "needs picture typeface serialization (T16)"
+reason = "needs picture serialization (SkPicture::serialize/MakeFromData, SkPictureData typeface set), not ported (docs/design/text.md §6, T16)"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -48856,7 +48856,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
 status = "todo"
-reason = "needs blob recording in pictures (T16) and a drawable typeface (T17)"
+reason = "needs picture serialization (SkPicture::serialize/MakeFromData), not ported (docs/design/text.md §6, T16), and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]

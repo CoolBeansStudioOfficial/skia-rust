@@ -32,8 +32,8 @@ use crate::record::Record;
 use crate::records::{
     ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawArc,
     DrawDRRect, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath, DrawPicture,
-    DrawPoints, DrawRRect, DrawRect, DrawRegion, ResetClip, Restore, Save, SaveLayer, Scale,
-    SetM44, Translate,
+    DrawPoints, DrawRRect, DrawRect, DrawRegion, DrawTextBlob, ResetClip, Restore, Save, SaveLayer,
+    Scale, SetM44, Translate,
 };
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::region::Region;
@@ -41,6 +41,7 @@ use crate::rrect::RRect;
 use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
+use crate::text_blob::TextBlob;
 
 /// A record shared between the recording canvas and its owner (`SkRecord*`).
 pub type SharedRecord = Rc<RefCell<Record>>;
@@ -261,6 +262,17 @@ impl CanvasHooks for RecordHooks {
         self.append(DrawPath {
             paint: paint.clone(),
             path: path.clone(),
+        });
+        true
+    }
+
+    // Port of: src/core/SkRecordCanvas.cpp#L266-L271 (chrome/m156), onDrawTextBlob
+    fn on_draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+        self.append(DrawTextBlob {
+            paint: paint.clone(),
+            blob: blob.clone(),
+            x,
+            y,
         });
         true
     }
