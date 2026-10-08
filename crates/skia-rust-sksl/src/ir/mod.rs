@@ -19,6 +19,15 @@ mod binary_expression;
 mod block;
 mod child_call;
 pub mod constructor;
+mod constructor_array;
+mod constructor_array_cast;
+mod constructor_compound;
+mod constructor_compound_cast;
+mod constructor_diagonal_matrix;
+mod constructor_matrix_resize;
+mod constructor_scalar_cast;
+mod constructor_splat;
+mod constructor_struct;
 mod control_statements;
 mod expression;
 mod field_access;
@@ -99,6 +108,8 @@ pub use var_declarations::{GlobalVarDeclaration, VarDeclaration};
 pub use variable::{DeclaringElement, Variable, VariableStorage};
 pub use variable_reference::{VariableRefKind, VariableReference};
 
+#[cfg(test)]
+mod constructor_tests;
 #[cfg(test)]
 mod semantics_tests;
 #[cfg(test)]

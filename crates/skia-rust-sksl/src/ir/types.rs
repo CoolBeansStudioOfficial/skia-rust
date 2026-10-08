@@ -11,8 +11,13 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 
+use super::constructor::{constant_value_for_variable, get_constant_int};
 use super::symbol_table::{add_array_dimension, add_symbol};
-use super::{IrPool, Layout, LayoutFlags, ModifierFlags, SymbolId, ids::SymTabId, ids::TypeId};
+use super::{
+    ConstructorArrayCast, ConstructorCompoundCast, ConstructorScalarCast, Expression, IrPool,
+    Layout, LayoutFlags, ModifierFlags, SymbolId,
+    ids::{ExprId, SymTabId, TypeId},
+};
 use crate::context::Context;
 use crate::defines::{SkslInt, VARIABLE_SLOT_LIMIT};
 use crate::position::Position;
@@ -1476,9 +1481,9 @@ const BOOL_COMPOUNDS: [[TypeId; 4]; 4] = [
 
 // Port of: src/sksl/ir/SkSLType.h#L98-L558 and src/sksl/ir/SkSLType.cpp#L795-L1415 (chrome/m156):
 // the rest of `Type`. Coercion costs, `toCompound`, qualifiers, `clone`, the checked factories,
-// and the scalar range and array-size checks are here. `coerceExpression` and the expression
-// forms of `checkForOutOfRangeLiteral` and `convertArraySize` need the constructors and the
-// constant folder (S7a, S8), so they are not in S6.
+// and the scalar range and array-size checks are here. The expression forms of coercion, range
+// and array-size checks (`coerce_expression`, `check_for_out_of_range_literal`,
+// `convert_array_size`) follow `Type`'s value forms, at the end of this file (S7a).
 impl TypeRef<'_> {
     /// `coercionCost(other)`: how expensive it is to coerce this type to `other`.
     // Port of: src/sksl/ir/SkSLType.cpp#L943-L986 (chrome/m156)
@@ -2050,6 +2055,113 @@ impl TypeId {
             return 0;
         }
         size
+    }
+
+    /// `Type::coerceExpression(expr, context)`: converts `expr` to this type, as an implicit
+    /// conversion. Reports an error and returns `None` when the conversion is impossible.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1280-L1312 (chrome/m156)
+    pub fn coerce_expression(self, ctx: &mut Context, expr: ExprId) -> Option<ExprId> {
+        if Expression::is_incomplete(ctx, expr) {
+            return None;
+        }
+        let expr_ty = ctx.pool.expression(expr).ty;
+        if ctx.pool.ty(expr_ty).matches(self) {
+            return Some(expr);
+        }
+
+        let pos = ctx.pool.expression(expr).position;
+        let allow_narrowing = ctx.config().settings.allow_narrowing_conversions;
+        if !ctx
+            .pool
+            .ty(expr_ty)
+            .coercion_cost(self)
+            .is_possible(allow_narrowing)
+        {
+            let msg = format!(
+                "expected '{}', but found '{}'",
+                ctx.pool.ty(self).display_name(),
+                ctx.pool.ty(expr_ty).display_name()
+            );
+            ctx.errors.error(pos, &msg);
+            return None;
+        }
+
+        let (is_scalar, is_compound, is_array) = {
+            let t = ctx.pool.ty(self);
+            (t.is_scalar(), t.is_vector() || t.is_matrix(), t.is_array())
+        };
+        if is_scalar {
+            return Some(ConstructorScalarCast::make(ctx, pos, self, expr));
+        }
+        if is_compound {
+            return Some(ConstructorCompoundCast::make(ctx, pos, self, expr));
+        }
+        if is_array {
+            return Some(ConstructorArrayCast::make(ctx, pos, self, expr));
+        }
+        let name = ctx.pool.ty(self).display_name().to_owned();
+        ctx.errors.error(pos, &format!("cannot construct '{name}'"));
+        None
+    }
+
+    /// `Type::checkForOutOfRangeLiteral(context, expr)`: checks every constant slot of `expr`
+    /// against this type's range. Returns true if any slot is out of range (after reporting it).
+    // Port of: src/sksl/ir/SkSLType.cpp#L1314-L1337 (chrome/m156)
+    pub fn check_for_out_of_range_literal(self, ctx: &mut Context, expr: ExprId) -> bool {
+        let base_type = ctx.pool.ty(self).component_type().id();
+        let mut found_error = false;
+        // We don't need range checks for floats or booleans; any matched-type value is acceptable.
+        if !ctx.pool.ty(base_type).is_number() {
+            return false;
+        }
+        // Replace constant expressions with their corresponding values.
+        let value_expr = constant_value_for_variable(&ctx.pool, expr);
+        let (supports, unsized_array, num_slots, value_pos) = {
+            let value = ctx.pool.expression(value_expr);
+            let value_ty = ctx.pool.ty(value.ty);
+            (
+                value.supports_constant_values(),
+                value_ty.is_unsized_array(),
+                value_ty.slot_count(),
+                value.position,
+            )
+        };
+        // Unsized arrays can't have constants and fail to get a slot count.
+        if supports && !unsized_array {
+            // Iterate over every constant subexpression in the value.
+            for slot in 0..num_slots {
+                let slot_val = ctx
+                    .pool
+                    .expression(value_expr)
+                    .get_constant_value(&ctx.pool, slot);
+                // Check for Literal values that are out of range for the base type.
+                if let Some(slot_val) = slot_val {
+                    found_error |=
+                        base_type.check_for_out_of_range_literal_value(ctx, slot_val, value_pos);
+                }
+            }
+        }
+        found_error
+    }
+
+    /// `Type::convertArraySize(context, arrayPos, size)`: the array length of `size`, which must
+    /// be an integer constant. Returns 0 after an error.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1371-L1384 (chrome/m156)
+    pub fn convert_array_size(
+        self,
+        ctx: &mut Context,
+        array_pos: Position,
+        size: ExprId,
+    ) -> SkslInt {
+        let Some(size) = TypeId::INT.coerce_expression(ctx, size) else {
+            return 0;
+        };
+        let size_pos = ctx.pool.expression(size).position;
+        let Some(count) = get_constant_int(&ctx.pool, size) else {
+            ctx.errors.error(size_pos, "array size must be an integer");
+            return 0;
+        };
+        self.convert_array_size_value(ctx, array_pos, size_pos, count)
     }
 }
 
