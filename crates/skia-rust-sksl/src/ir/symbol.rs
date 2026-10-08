@@ -1,15 +1,17 @@
 // Copyright 2016 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/sksl/ir/SkSLSymbol.{h,cpp} (the shared `Symbol` accessors).
-// `Symbol::instantiate` comes with task S7b.
+// Ported from Skia: src/sksl/ir/SkSLSymbol.{h,cpp} (the shared `Symbol` accessors and
+// `instantiate`).
 
 //! The `Symbol` base-class accessors, over [`SymbolId`].
 
 use super::{
-    IrPool,
-    ids::{SymbolId, TypeId},
+    FieldAccess, FieldAccessOwnerKind, FunctionReference, IrPool, TypeReference, VariableRefKind,
+    VariableReference,
+    ids::{ExprId, SymbolId, TypeId},
 };
+use crate::context::Context;
 use crate::position::Position;
 
 /// `Symbol::Kind`.
@@ -31,6 +33,40 @@ impl SymbolId {
             Self::Variable(_) => SymbolKind::Variable,
             Self::FunctionDeclaration(_) => SymbolKind::FunctionDeclaration,
             Self::Field(_) => SymbolKind::Field,
+        }
+    }
+
+    /// `Symbol::instantiate(context, pos)`: an expression that refers to this symbol. A function
+    /// gives a function reference, a variable a read of it, a field of an anonymous interface
+    /// block the access to it, and a type a type reference.
+    // Port of: src/sksl/ir/SkSLSymbol.cpp#L24-L52 (chrome/m156)
+    pub fn instantiate(self, ctx: &mut Context, pos: Position) -> Option<ExprId> {
+        match self {
+            Self::FunctionDeclaration(function) => {
+                Some(FunctionReference::make(ctx, pos, function))
+            }
+            Self::Variable(variable) => Some(VariableReference::make(
+                &mut ctx.pool,
+                pos,
+                variable,
+                VariableRefKind::Read,
+            )),
+            Self::Field(field) => {
+                let (owner, field_index) = {
+                    let symbol = ctx.pool.field_symbol(field);
+                    (symbol.owner, symbol.field_index)
+                };
+                let base =
+                    VariableReference::make(&mut ctx.pool, pos, owner, VariableRefKind::Read);
+                Some(FieldAccess::make(
+                    ctx,
+                    pos,
+                    base,
+                    field_index,
+                    FieldAccessOwnerKind::AnonymousInterfaceBlock,
+                ))
+            }
+            Self::Type(ty) => TypeReference::convert(ctx, pos, ty),
         }
     }
 }
