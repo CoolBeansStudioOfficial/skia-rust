@@ -33,13 +33,21 @@ use crate::scaler_context::ScalerContext;
 use crate::strike_cache::{CacheState, lock_unpoisoned};
 use crate::strike_spec::StrikeSpec;
 
-/// `sizeof(SkStrike)` on x64 Linux, where `SkMutex` is a `pthread_mutex_t`. The strike starts
-/// with this much memory accounted to it (`fMemoryUsed{sizeof(SkStrike)}`). Tests compare
-/// totals, so the value is the C++ size, not `size_of::<Strike>()`.
+/// `sizeof(SkStrike)` on x64 Linux (g++). The strike starts with this much memory accounted to
+/// it (`fMemoryUsed{sizeof(SkStrike)}`). Tests compare totals, so the value is the C++ size, not
+/// `size_of::<Strike>()`.
+///
+/// MSVC x64 (the oracle's ABI, no longer built): `SkMutex` wraps `SkSemaphore` at this pin
+/// (`include/private/SkMutex.h`, `SkSemaphore.h`), which is `int` + `uint8` + pointer = 16 bytes on
+/// both ABIs. It is not a `pthread_mutex_t`. The other members are pointers, sized integers,
+/// `std::vector` and `std::unique_ptr`, whose sizes agree on both ABIs. The arena and hash table
+/// were not checked member by member, so the MSVC value is unverified. No ported test depends on
+/// it: the tests compare totals only with zero or with "> 0".
 // Port of: sizeof(SkStrike), src/core/SkStrike.h#L41-L215 (measured with g++, x64 Linux)
 pub(crate) const SIZEOF_STRIKE: usize = 424;
 
-/// `sizeof(SkGlyph)` on x64 (`fMemoryIncrease += sizeof(SkGlyph)` for each new glyph).
+/// `sizeof(SkGlyph)` on x64 (`fMemoryIncrease += sizeof(SkGlyph)` for each new glyph). The
+/// same MSVC caveat as [`SIZEOF_STRIKE`] applies: no ported test compares this value.
 // Port of: sizeof(SkGlyph), src/core/SkGlyph.h (measured with g++, x64 Linux)
 pub(crate) const SIZEOF_GLYPH: usize = 56;
 

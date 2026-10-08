@@ -283,11 +283,13 @@ pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
+pub mod sk_font_metrics_priv_test;
+#[cfg(test)]
 pub mod sk_gauss_filter_test;
 #[cfg(test)]
-pub mod sk_image_test;
-#[cfg(test)]
 pub mod sk_glyph_test;
+#[cfg(test)]
+pub mod sk_image_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
 #[cfg(test)]
@@ -296,6 +298,10 @@ pub mod sk_raster_pipeline_opts_test;
 pub mod sk_raster_pipeline_test;
 #[cfg(test)]
 pub mod sk_remote_glyph_cache_test;
+#[cfg(test)]
+pub mod sk_strike_cache_test;
+#[cfg(test)]
+pub mod sk_strike_test;
 #[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
@@ -311,8 +317,8 @@ pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
 #[cfg(test)]
-pub mod vertices_test;
-#[cfg(test)]
 pub mod typeface_test;
+#[cfg(test)]
+pub mod vertices_test;
 #[cfg(test)]
 pub mod write_pixels_test;

@@ -7,7 +7,7 @@ use super::{monospace, sans_serif, serif};
 use crate::fonts::test_typeface::{SubFont, TestFontData};
 
 /// `gTestFonts`: the twelve Liberation faces, by index.
-pub const TEST_FONTS: [TestFontData; 12] = [
+pub static TEST_FONTS: [TestFontData; 12] = [
     TestFontData {
         points: monospace::LIBERATION_MONO_NORMAL_POINTS,
         verbs: monospace::LIBERATION_MONO_NORMAL_VERBS,
@@ -143,7 +143,7 @@ pub const TEST_FONTS: [TestFontData; 12] = [
 ];
 
 /// `gSubFonts`: every face of every family, in Skia's order.
-pub const SUB_FONTS: [SubFont; 24] = [
+pub static SUB_FONTS: [SubFont; 24] = [
     SubFont {
         family: "monospace",
         style: "Normal",

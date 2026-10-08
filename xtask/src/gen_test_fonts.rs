@@ -76,7 +76,7 @@ pub fn run(root: &Path) -> Result<()> {
     let mut all_metrics: Vec<(String, &str)> = Vec::new();
     for (file, module) in DATA_FILES {
         let src = read_inc(&input, file)?;
-        let arrays = parse_arrays(&src)?;
+        let arrays = parse_arrays(&src);
         let metrics = parse_metrics(&src)?;
         let text = render_module(file, &arrays, &metrics);
         let path = output.join(format!("{module}.rs"));
@@ -117,7 +117,7 @@ fn strip_comments(src: &str) -> String {
     line.replace_all(&src, "").into_owned()
 }
 
-fn parse_arrays(src: &str) -> Result<Vec<Array>> {
+fn parse_arrays(src: &str) -> Vec<Array> {
     let re =
         Regex::new(r"(?s)const (SkScalar|SkFixed|SkUnichar|unsigned char) (\w+)\[\] = \{(.*?)\};")
             .expect("valid regex");
@@ -135,7 +135,7 @@ fn parse_arrays(src: &str) -> Result<Vec<Array>> {
             values: tokens(&cap[3]),
         });
     }
-    Ok(arrays)
+    arrays
 }
 
 fn parse_metrics(src: &str) -> Result<Vec<Metrics>> {
@@ -188,8 +188,7 @@ fn scalar_literal(token: &str) -> Result<String> {
 fn element_type(kind: ArrayKind) -> &'static str {
     match kind {
         ArrayKind::Scalar => "f32",
-        ArrayKind::Fixed => "i32",
-        ArrayKind::Unichar => "i32",
+        ArrayKind::Fixed | ArrayKind::Unichar => "i32",
         ArrayKind::Byte => "u8",
     }
 }
@@ -322,6 +321,7 @@ fn section<'a>(src: &'a str, start: &str) -> Result<&'a str> {
     Ok(&rest[start.len()..end])
 }
 
+#[allow(clippy::too_many_lines)] // the generated file is laid out top to bottom
 fn render_index(src: &str, names: &[(String, &str)], metrics: &[(String, &str)]) -> Result<String> {
     let module_of = |name: &str| -> Result<&str> {
         names

@@ -36902,8 +36902,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L208-L244"
 module = "text"
-status = "todo"
-reason = "needs T10 portable typeface (ToolUtils::DefaultFont)"
+status = "ported"
+reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
 span_hash = "b16c2eb134ce6f0f128e4895e95b4e2d8d048185ad9d69668965dad29fff177a"
 
 [[test]]
@@ -36966,8 +36966,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L149-L160"
 module = "text"
-status = "todo"
-reason = "needs T10 portable typeface (ToolUtils::DefaultFont)"
+status = "ported"
+reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
 span_hash = "6a99824825463a8ad4924f7abf6a12c3d8e1836c2b936a633841e11751fa16fc"
 
 [[test]]
@@ -42242,8 +42242,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkFontMetricsPrivTest.cpp#L22-L51"
 module = "text"
-status = "todo"
-reason = "needs T10 portable typeface (CreateTestTypeface)"
+status = "ported"
+reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
 span_hash = "0f7d86a4726e2462c894396f393db381c4991c2750721732021d1ae56c2ddbe9"
 
 [[test]]
@@ -47273,8 +47273,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStrikeCacheTest.cpp#L23-L63"
 module = "text"
-status = "todo"
-reason = "needs T10 portable typeface (CreatePortableTypeface)"
+status = "passing"
 span_hash = "261c28a3ade67fc0c1ec8de601aa9d0b90c16b727bdd716a772e67b2f3cd09fc"
 
 [[test]]
@@ -47283,8 +47282,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L109-L175"
 module = "text"
-status = "todo"
-reason = "needs T10 portable typeface (CreatePortableTypeface)"
+status = "passing"
 span_hash = "f5d05cda730c39f1c16f2a9cce764a78bb1e640f5878028f21f80337b7241ba9"
 
 [[test]]
@@ -49303,7 +49301,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L502-L514"
 module = "text"
-status = "todo"
+status = "ported"
+reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
 span_hash = "4cc1e6eab4ee4583fae41330c732aed42445e9662419054622568f7682c29865"
 
 [[test]]
