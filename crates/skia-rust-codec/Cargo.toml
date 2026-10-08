@@ -10,6 +10,7 @@ authors.workspace = true
 
 [dependencies]
 skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
 skia-rust-skcms.workspace = true
 skia-rust-libpng.workspace = true
 

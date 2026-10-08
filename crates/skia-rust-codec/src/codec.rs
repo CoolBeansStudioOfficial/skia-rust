@@ -569,6 +569,24 @@ impl<'a> Codec<'a> {
         self.imp.on_get_valid_subset(&self.base, subset)
     }
 
+    /// Port of `SkCodec::getEncodedData`: the encoded bytes the codec reads. A memory stream
+    /// shares its data; any other stream with a length is read again from a duplicate of it.
+    /// Returns `None` if the codec has no stream, or the stream has no data and no length.
+    // Port of: src/codec/SkCodec.cpp#L1087-L1100 (chrome/m156)
+    #[doc(alias = "getEncodedData")]
+    pub fn encoded_data(&mut self) -> Option<skia_rust_core::data::Data> {
+        let stream = self.base.stream.as_deref_mut()?;
+        if let Some(data) = stream.get_data() {
+            return Some(data);
+        }
+        let mut duplicate = stream.duplicate()?;
+        if !duplicate.has_length() {
+            return None;
+        }
+        let size = duplicate.get_length();
+        skia_rust_core::data::Data::from_stream(&mut *duplicate, size)
+    }
+
     /// Port of `SkCodec::getPixels(info, pixels, rowBytes, options)`. Decodes the image into
     /// `dst`, which holds `info.height()` rows `row_bytes` apart.
     // Port of: src/codec/SkCodec.cpp#L491-L499 and #L502-L564 (getPixels, getPixelsBudgeted),

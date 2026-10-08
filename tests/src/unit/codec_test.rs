@@ -6,13 +6,18 @@
 // other decoders, and is ported with them.
 
 use skia_rust_codec::{Codec, Options, Result, ZeroInitialized, decoders};
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::MemoryStream;
 
-use crate::resources::get_resource_as_data;
-use crate::{Reporter, def_test, reporter_assert, skip_missing_resource};
+use skia_rust_raster::raster_canvas::RasterCanvas;
+
+use crate::resources::{get_resource_as_data, get_resource_as_image, resource_dir};
+use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
 
 // Port of: tests/CodecTest.cpp#L122-L135 (test_info, without the digest comparison that these
 // cases do not use)
@@ -168,4 +173,44 @@ def_test!(Codec_Bmp_b511820841, |r| {
     let row_bytes = info.min_row_bytes();
     let result = codec.get_pixels(&info, &mut unused_pixels, row_bytes, Some(&opts));
     reporter_assert!(r, result != Result::Success);
+});
+
+// Port of: tests/CodecTest.cpp#L1953-L1986 (chrome/m156)
+def_test!(Codec_crbug807324, |r| {
+    // Port of `GetResourcePath().isEmpty()`: without Skia's resources there is nothing to test.
+    if resource_dir().is_none() {
+        return;
+    }
+
+    let file = "images/crbug807324.png";
+    let Some(image) = get_resource_as_image(file) else {
+        errorf!(r, "Missing {}", file);
+        return;
+    };
+
+    let width = image.width();
+    let height = image.height();
+
+    let mut bm = Bitmap::new();
+    if !bm.try_alloc_pixels_info(&ImageInfo::new_n32_premul((width, height), None), None) {
+        errorf!(r, "Could not allocate pixels ({} x {})", width, height);
+        return;
+    }
+
+    bm.erase_color(Color::TRANSPARENT);
+
+    let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+    canvas.draw_image(&image, (0, 0), None);
+    // skia-rust: the canvas borrows the bitmap until it drops (the C++ reads the bitmap through
+    // its own pointer meanwhile), so it is dropped before the pixels are read.
+    drop(canvas);
+
+    for i in 0..width {
+        for j in 0..height {
+            if bm.get_addr32(i, j) == u32::from(Color::TRANSPARENT) {
+                errorf!(r, "image should not be transparent! {}, {} is 0", i, j);
+                return;
+            }
+        }
+    }
 });

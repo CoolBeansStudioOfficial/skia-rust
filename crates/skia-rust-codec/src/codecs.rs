@@ -9,10 +9,14 @@
 //! (JPEG, WebP, GIF, ICO, and so on) joins as each decoder lands. `SkCodecs::Register` is not ported
 //! yet, so the list is fixed.
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::image::Image;
+use skia_rust_core::images::deferred_from_generator;
 use skia_rust_core::stream::Stream;
 
 use crate::bmp::{is_bmp, make_from_stream as make_bmp_from_stream};
 use crate::codec::{Codec, Result};
+use crate::codec_image_generator::CodecImageGenerator;
 use crate::png_codec::{self, is_png_format};
 use crate::wbmp::{WbmpCodec, is_wbmp};
 
@@ -59,4 +63,16 @@ static DECODERS: [Decoder; 3] = [
 #[must_use]
 pub fn decoders() -> &'static [Decoder] {
     &DECODERS
+}
+
+/// A lazy image that decodes with `codec` when its pixels are needed, with the alpha type
+/// `alpha_type` if given (`SkCodecs::DeferredImage`). Returns `None` if there is no codec.
+// Port of: src/codec/SkImageGenerator_FromEncoded.cpp#L71-L76 (chrome/m156)
+#[doc(alias = "DeferredImage")]
+#[must_use]
+pub fn deferred_image(
+    codec: Option<Codec<'static>>,
+    alpha_type: Option<AlphaType>,
+) -> Option<Image> {
+    deferred_from_generator(CodecImageGenerator::make_from_codec(codec, alpha_type))
 }

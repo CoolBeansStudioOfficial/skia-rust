@@ -505,6 +505,7 @@ checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
 name = "skia-rust"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-pathops",
 ]
@@ -515,6 +516,7 @@ version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-libpng",
+ "skia-rust-raster",
  "skia-rust-skcms",
 ]
 
@@ -545,6 +547,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-raster",

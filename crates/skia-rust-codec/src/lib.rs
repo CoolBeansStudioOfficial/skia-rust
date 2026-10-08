@@ -13,9 +13,12 @@
 
 pub mod bmp;
 pub mod codec;
+mod codec_image_generator;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
+pub mod image_generator_from_encoded;
+pub mod images;
 mod mask_swizzler;
 mod masks;
 pub mod png_codec;

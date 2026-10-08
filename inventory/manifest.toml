@@ -15642,7 +15642,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L45-L62"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "393d742ae0218a48550198e13585f06d31ecc39dba08e60d1daa9ea337aa45cb"
 
 [[test]]
@@ -15651,7 +15651,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L66-L88"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5d50b94dc07a707df4f263fff975060238680d3eb4242216b9c964216c3cfdf0"
 
 [[test]]
@@ -17924,7 +17924,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/complexclip.cpp#L254-L268"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "34b2fb6ad741e8bb7cbb9ae184f102c9634f8600578e3d92337eadfcb6ed20aa"
 
 [[test]]
@@ -19098,7 +19098,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/draw_bitmap_rect_skbug4374.cpp#L19-L30"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a84e6a20186e90873c1fc5a8a2b06d7c8280d020960fe95651002c6d33459c21"
 
 [[test]]
@@ -21961,7 +21961,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/make_raster_image.cpp#L15-L19"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "58a11454119f85273c396905e4686a988e8cad6187e5cef3a8b3b38c6c1206f8"
 
 [[test]]
@@ -23234,7 +23234,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/repeated_bitmap.cpp#L48-L51"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "18d2ab8f6548c585dd5abb8a0ce1193e04cff70da542908dbc61e0d5ef345649"
 
 [[test]]
@@ -24138,7 +24138,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_8664.cpp#L18-L65"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4a41f9f8345d6280791516226897a860b1fa10e0eaf0d7fe7d05a7ec5b0d55ec"
 
 [[test]]
@@ -25002,7 +25002,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/tilemodes_alpha.cpp#L19-L39"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "80b638eca55d764f12a953ba9c71531c9b55b3e299db5ba3c34a3077238067aa"
 
 [[test]]
@@ -29827,7 +29827,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1953-L1986"
 module = "codec"
-status = "todo"
+status = "passing"
 reason = "needs ToolUtils::GetResourceAsImage and drawImage onto a surface (lazy images, codecs C7)"
 span_hash = "79896a9abdfc4edc3fb32b63b4d7fbaae121c457df8ea0a9bc2da994859cf0ed"
 
@@ -35183,7 +35183,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L707-L715"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "its last assertion needs SkImages::DeferredFromGenerator (SkImageGenerator, lazy images): not ported"
 span_hash = "ac9f181c3df1013815928f641c8a56d644b78172af25dac7e9077fd81de43114"
 
@@ -35440,7 +35440,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1457-L1470"
 module = "codec"
-status = "todo"
+status = "passing"
 reason = "decodes images/mandrill_32.png (codecs and SkImageGenerators not ported)"
 span_hash = "b8f8c35d212d59e92be07dd064b0fc5fcc69888bf9629c9bfef31dabf18a95d8"
 

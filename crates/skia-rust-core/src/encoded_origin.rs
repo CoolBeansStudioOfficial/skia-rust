@@ -52,4 +52,26 @@ impl EncodedOrigin {
     pub fn swaps_width_height(self) -> bool {
         self as i32 >= Self::LeftTop as i32
     }
+
+    /// Port of `SkEncodedOriginToMatrix`: the matrix that maps an image of width `w` and height
+    /// `h` in its encoded orientation to the upright orientation.
+    // Port of: include/codec/SkEncodedOrigin.h#L32-L44 (chrome/m156)
+    #[doc(alias = "SkEncodedOriginToMatrix")]
+    #[must_use]
+    // mirrors the implicit int-to-float conversion of the C++ `MakeAll(..., w, ..., h, ...)` calls
+    #[allow(clippy::cast_precision_loss)]
+    pub fn to_matrix(self, w: i32, h: i32) -> crate::matrix::Matrix {
+        use crate::matrix::Matrix;
+        let (w, h) = (w as f32, h as f32);
+        match self {
+            Self::TopLeft => Matrix::new_identity(),
+            Self::TopRight => Matrix::new_all(-1.0, 0.0, w, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+            Self::BottomRight => Matrix::new_all(-1.0, 0.0, w, 0.0, -1.0, h, 0.0, 0.0, 1.0),
+            Self::BottomLeft => Matrix::new_all(1.0, 0.0, 0.0, 0.0, -1.0, h, 0.0, 0.0, 1.0),
+            Self::LeftTop => Matrix::new_all(0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            Self::RightTop => Matrix::new_all(0.0, -1.0, w, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            Self::RightBottom => Matrix::new_all(0.0, -1.0, w, -1.0, 0.0, h, 0.0, 0.0, 1.0),
+            Self::LeftBottom => Matrix::new_all(0.0, 1.0, 0.0, -1.0, 0.0, h, 0.0, 0.0, 1.0),
+        }
+    }
 }
