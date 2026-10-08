@@ -1,12 +1,12 @@
 // Copyright 2013 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/FontationsTest.cpp (chrome/m156), the cases that need only the Fontations typeface
-// (T19a). The outline cases (`Fontations_SyntheticXHeight`, `Fontations_SyntheticCapHeight`) need
-// the Fontations scaler context (T19b).
+// Port of: tests/FontationsTest.cpp (chrome/m156), the Fontations typeface cases (T19a) and the
+// outline cases that need the Fontations scaler context (T19b).
 
 #![cfg(test)]
 
+use skia_rust_core::font::Font;
 use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::VariationPosition;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
@@ -14,6 +14,7 @@ use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_types::set_four_byte_tag;
 use skia_rust_core::stream::{MemoryStream, StreamAsset};
 use skia_rust_core::typeface::Typeface;
+use skia_rust_core::utf::Unichar;
 use skia_rust_text::ports::fontations::typeface::make_from_stream;
 
 use crate::resources::get_resource_as_data;
@@ -23,6 +24,8 @@ const FONT_RESOURCE: &str = "fonts/ahem.ttf";
 const TTC_RESOURCE: &str = "fonts/test.ttc";
 const VARIABLE_RESOURCE: &str = "fonts/test_glyphs-glyf_colr_1_variable.ttf";
 const NUM_VARIABLE_AXES: usize = 44;
+const NO_CAP_HEIGHT_RESOURCE: &str = "fonts/DejaVuSans.subset.ttf";
+const NO_CAP_HEIGHT_NO_HX_RESOURCE: &str = "fonts/DejaVuSans.subset_noHx.ttf";
 
 /// `GetResourceAsStream(path)`: the resource as a memory stream, or `None` if it is missing.
 fn resource_stream(path: &str) -> Option<Box<dyn StreamAsset>> {
@@ -411,3 +414,96 @@ def_test!(Fontations_VariationParameters_BufferTooSmall, |reporter| {
             .is_none()
     );
 });
+
+// Port of: tests/FontationsTest.cpp#L303-L334 (chrome/m156)
+def_test!(
+    #[allow(clippy::float_cmp)] // exact comparisons, as the C++ test makes them
+    Fontations_SyntheticXHeight,
+    |reporter| {
+        let stream = skip_missing_resource!(
+            resource_stream(NO_CAP_HEIGHT_RESOURCE),
+            NO_CAP_HEIGHT_RESOURCE
+        );
+        let no_x_height_typeface = typeface_for(stream, &FontArguments::new());
+        let stream = skip_missing_resource!(
+            resource_stream(NO_CAP_HEIGHT_NO_HX_RESOURCE),
+            NO_CAP_HEIGHT_NO_HX_RESOURCE
+        );
+        let no_x_height_no_hx_typeface = typeface_for(stream, &FontArguments::new());
+
+        let x_height_font = Font::from_size(no_x_height_typeface.clone(), 12.0);
+        let x_height_font_no_hx = Font::from_size(no_x_height_no_hx_typeface.clone(), 12.0);
+
+        let (_, metrics) = x_height_font.metrics();
+        let x_char_height: f32 = 7.0;
+        reporter_assert!(
+            reporter,
+            metrics.x_height == x_char_height,
+            "Expected: {} vs actual: {}",
+            x_char_height,
+            metrics.x_height
+        );
+
+        let (_, metrics) = x_height_font_no_hx.metrics();
+        let glyph_id = no_x_height_no_hx_typeface.unichar_to_glyph('x' as Unichar);
+        reporter_assert!(
+            reporter,
+            glyph_id == 0,
+            "Glyph lookup for x should fail, but was: {}",
+            glyph_id
+        );
+
+        // xHeight falls back to ascent as well.
+        let expected: f32 = 11.138_672;
+        reporter_assert!(
+            reporter,
+            metrics.x_height == expected,
+            "Metrics mismatch: {} vs. {}",
+            expected,
+            metrics.x_height
+        );
+    }
+);
+
+// Port of: tests/FontationsTest.cpp#L275-L302 (chrome/m156)
+def_test!(
+    #[allow(clippy::float_cmp)] // exact comparisons, as the C++ test makes them
+    Fontations_SyntheticCapHeight,
+    |reporter| {
+        let stream = skip_missing_resource!(
+            resource_stream(NO_CAP_HEIGHT_RESOURCE),
+            NO_CAP_HEIGHT_RESOURCE
+        );
+        let no_cap_height_typeface = typeface_for(stream, &FontArguments::new());
+        let stream = skip_missing_resource!(
+            resource_stream(NO_CAP_HEIGHT_NO_HX_RESOURCE),
+            NO_CAP_HEIGHT_NO_HX_RESOURCE
+        );
+        let no_cap_height_no_hx_typeface = typeface_for(stream, &FontArguments::new());
+
+        let cap_height_font = Font::from_size(no_cap_height_typeface.clone(), 12.0);
+        let cap_height_font_no_hx = Font::from_size(no_cap_height_no_hx_typeface.clone(), 12.0);
+
+        let (_, metrics) = cap_height_font.metrics();
+        let h_char_height: f32 = 9.0;
+        reporter_assert!(reporter, metrics.cap_height == h_char_height);
+
+        let (_, metrics) = cap_height_font_no_hx.metrics();
+        let glyph_id = no_cap_height_no_hx_typeface.unichar_to_glyph('H' as Unichar);
+        reporter_assert!(
+            reporter,
+            glyph_id == 0,
+            "Glyph lookup for H should fail, but was: {}",
+            glyph_id
+        );
+
+        let expected: f32 = 11.138_672;
+        reporter_assert!(
+            reporter,
+            metrics.cap_height == expected,
+            "Metrics mismatch: {} vs. {}",
+            expected,
+            metrics.cap_height
+        );
+    }
+);
