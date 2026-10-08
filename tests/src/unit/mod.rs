@@ -3,7 +3,11 @@
 #[cfg(test)]
 pub mod aa_clip_test;
 #[cfg(test)]
+pub mod android_codec_test;
+#[cfg(test)]
 pub mod as_a_dash_test;
+#[cfg(test)]
+pub mod bad_ico_test;
 #[cfg(test)]
 pub mod bitmap_copy_test;
 #[cfg(test)]

@@ -157,7 +157,7 @@ impl CodecImpl for BmpMaskCodec {
 
     // Port of: src/codec/SkBmpCodec.cpp#L604-L608 (onRewind)
     fn on_rewind(&mut self, base: &mut CodecBase<'_>) -> bool {
-        rewind(base)
+        rewind(base, false)
     }
 
     // Port of: src/codec/SkBmpCodec.cpp#L636-L639 (onGetScanlineOrder, via the base's fRowOrder)

@@ -1288,6 +1288,12 @@ impl Swizzler {
         self.sampler.row_needed(row)
     }
 
+    /// Port of `SkSwizzler::sampleX` (`fSampleX`): the horizontal sample factor, 1 when unsampled.
+    #[must_use]
+    pub fn sample_x(&self) -> i32 {
+        self.sample_x as i32
+    }
+
     /// Port of `SkSwizzler::fillWidth` (`fAllocatedWidth`).
     #[must_use]
     pub fn fill_width(&self) -> i32 {

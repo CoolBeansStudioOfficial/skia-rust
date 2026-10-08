@@ -835,6 +835,24 @@ impl<'a> Codec<'a> {
         }
     }
 
+    /// Port of the `onSupportsIncrementalDecode` virtual, for a codec that wraps this one (the ICO
+    /// codec asks each embedded codec).
+    // Port of: src/codec/SkCodec.h (onSupportsIncrementalDecode, called on an embedded codec)
+    pub(crate) fn supports_incremental_decode_imp(&self, dst: &ImageInfo) -> bool {
+        self.imp.on_supports_incremental_decode(dst)
+    }
+
+    /// Port of `SkCodec::incrementalDecode` for a codec that wraps this one: decodes the next rows
+    /// into `dst`, which must be the destination of the start call.
+    // Port of: src/codec/SkCodec.cpp (incrementalDecode), without the started-decode bookkeeping
+    pub(crate) fn incremental_decode_imp(&mut self, dst: &mut [u8]) -> (Result, i32) {
+        let mut rows_decoded = 0;
+        let result = self
+            .imp
+            .on_incremental_decode(&mut self.base, dst, &mut rows_decoded);
+        (result, rows_decoded)
+    }
+
     /// Port of `SkCodec::fillIncompleteImage`: writes zeros over the rows a decode did not
     /// produce, unless the caller zeroed the destination.
     // Port of: src/codec/SkCodec.cpp#L781-L797 (chrome/m156), without the sampler (no sampled

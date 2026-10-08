@@ -5,12 +5,17 @@
 // BMP and WBMP decoders. The rest of the file needs the Android codec, the image generator and the
 // other decoders, and is ported with them.
 
-use skia_rust_codec::{Codec, Options, Result, ZeroInitialized, decoders};
+use skia_rust_codec::codecs::{self, Decoder};
+use skia_rust_codec::{Codec, Options, Result, ZeroInitialized, decoders, png_codec};
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::stream::MemoryStream;
+use skia_rust_core::size::ISize;
+use skia_rust_core::stream::{MemoryStream, Stream};
 
+use crate::codec_priv::{
+    ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
+};
 use crate::resources::get_resource_as_data;
 use crate::{Reporter, def_test, reporter_assert, skip_missing_resource};
 
@@ -168,4 +173,78 @@ def_test!(Codec_Bmp_b511820841, |r| {
     let row_bytes = info.min_row_bytes();
     let result = codec.get_pixels(&info, &mut unused_pixels, row_bytes, Some(&opts));
     reporter_assert!(r, result != Result::Success);
+});
+
+// Port of: tests/CodecTest.cpp#L1663-L1674 (test_invalid_header)
+fn test_invalid_header(reporter: &mut Reporter, path: &str) {
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let codec = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders());
+    reporter_assert!(reporter, codec.is_err());
+}
+
+// Port of: tests/CodecTest.cpp#L1675-L1687 (chrome/m156)
+def_test!(Codec_InvalidHeader, |r| {
+    // The ICO case needs SkIcoCodec, which is ported with the ICO decoder.
+    test_invalid_header(r, "invalid_images/int_overflow.ico");
+
+    // These files report values that have caused problems with SkFILEStreams.
+    // They are invalid, and should not create SkCodecs.
+    test_invalid_header(r, "invalid_images/b33651913.bmp");
+    test_invalid_header(r, "invalid_images/b34778578.bmp");
+});
+
+// The PNG decoder that Ico_usesRegisteredPngDecoder registers. It ignores the stream it is given and
+// decodes images/plane.png instead.
+// Port of: tests/CodecTest.cpp#L2695-L2701 (the lambda of Ico_usesRegisteredPngDecoder)
+fn plane_png_decoder<'a>(
+    _stream: Box<dyn Stream + Send + 'a>,
+) -> std::result::Result<Codec<'a>, Result> {
+    let data = get_resource_as_data("images/plane.png").ok_or(Result::InvalidInput)?;
+    png_codec::make_from_stream(MemoryStream::make_copy(&data))
+}
+
+// Port of: tests/CodecTest.cpp#L2690-L2713 (chrome/m156), a serial test
+def_test!(Ico_usesRegisteredPngDecoder, |r| {
+    let _lock = serial_test_lock();
+    let path = "images/mandrill_128.png";
+    let ico = skip_missing_resource!(make_ico_from_png_resource(path), path);
+
+    let _scoped = ScopedCodecDecoders::new();
+    // Register a custom PNG decoder that returns a different image ("images/plane.png", 250x126)
+    // than the embedded PNG ("images/mandrill_128.png", 128x128). This verifies that SkIcoCodec
+    // delegates to the registered PNG decoder rather than calling libpng directly.
+    codecs::register(Decoder {
+        id: "png",
+        is_format: png_codec::is_png_format,
+        make_from_stream: plane_png_decoder,
+    });
+
+    let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&ico));
+    reporter_assert!(r, codec.is_ok());
+    if let Ok(codec) = codec {
+        reporter_assert!(
+            r,
+            codec.dimensions() == ISize::new(250, 126),
+            "Expected SkIcoCodec to use the registered PNG decoder"
+        );
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L2715-L2725 (chrome/m156), a serial test
+def_test!(Ico_fallbackToLibpngWhenPngNotRegistered, |r| {
+    let _lock = serial_test_lock();
+    let scoped = ScopedCodecDecoders::new();
+    scoped.clear();
+    codecs::register(ico_decoder());
+
+    let path = "images/mandrill_128.png";
+    let ico = skip_missing_resource!(make_ico_from_png_resource(path), path);
+
+    // Even though no "png" decoder is registered, SkIcoCodec falls back to libpng.
+    let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&ico));
+    reporter_assert!(
+        r,
+        codec.is_ok(),
+        "Expected fallback to libpng when PNG is not registered"
+    );
 });

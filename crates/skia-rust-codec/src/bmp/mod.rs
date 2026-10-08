@@ -5,9 +5,8 @@
 // Ported from: src/codec/SkBmpCodec.cpp, src/codec/SkBmpCodec.h, src/codec/SkBmpBaseCodec.h,
 // src/codec/SkBmpBaseCodec.cpp, include/codec/SkBmpDecoder.h
 //
-// Not ported yet: the BMP-in-ICO variant (`inIco`: the ICO codec calls ReadHeader with it, and
-// SkIcoCodec is not ported), sampling (`getSampler`, which SkSampledCodec uses), and the
-// `SkCodecPrintf` diagnostics. Every other path of ReadHeader and of the three codecs is here.
+// The BMP-in-ICO variant (`inIco`, which SkIcoCodec uses) is ported. Not ported yet: sampling
+// (`getSampler`, which SkSampledCodec uses), and the `SkCodecPrintf` diagnostics.
 
 //! The BMP decoder. [`read_header`] parses the file headers exactly as Skia does; the three
 //! codecs it can create (standard, bit-mask and RLE) live in the submodules.
@@ -110,10 +109,13 @@ enum InputFormat {
 /// The format-specific part of a parsed header. Port of the `inputFormat` switch in `ReadHeader`.
 #[derive(Debug, Clone, Copy)]
 enum Format {
-    // The colour kind and bits per component the swizzler reads.
+    // The colour kind, alpha and bits per component the swizzler reads, and whether the image is
+    // opaque (an ICO image with 32 bits per pixel is not).
     Standard {
         color: Color,
+        alpha: Alpha,
         bits_per_component: u8,
+        is_opaque: bool,
     },
     // The raw masks from the file, trimmed and checked when the codec is made.
     Mask {
@@ -155,21 +157,43 @@ fn le_u16(buffer: &[u8], i: usize) -> u16 {
 // from the header's `u32` fields to `i32` are the C++ `int` reads.
 #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
 #[allow(clippy::too_many_lines)] // one branch per header type and compression method, as in C++
-fn read_header(stream: &mut dyn Stream) -> std::result::Result<Header, Result> {
-    // Read the first header and the size of the second header.
-    let mut h_buffer = [0u8; BMP_HEADER_BYTES_PLUS_FOUR];
-    if stream.read(&mut h_buffer) != h_buffer.len() {
-        return Err(Result::IncompleteInput);
-    }
-    let total_bytes = le_u32(&h_buffer, 2);
-    let offset = le_u32(&h_buffer, 10);
-    if offset < BMP_HEADER_BYTES + BMP_OS2V1_BYTES {
-        return Err(Result::InvalidInput);
-    }
-    // The size is the first field of the second header, so the first four bytes are already read.
-    let info_bytes = le_u32(&h_buffer, 14);
-    if info_bytes < BMP_OS2V1_BYTES {
-        return Err(Result::InvalidInput);
+fn read_header(stream: &mut dyn Stream, in_ico: bool) -> std::result::Result<Header, Result> {
+    // The total bytes in the file, the offset of the pixel data, and the size of the second
+    // (info) header.
+    let total_bytes: u32;
+    let offset: u32;
+    let info_bytes: u32;
+    if in_ico {
+        // Bitmaps embedded in ICO files skip the first header. They cannot specify an offset, so the
+        // pixel data is taken to begin right after the colour table; the offset is corrected below.
+        // Total bytes is only used by RLE, which ICO files do not use, so it is left at zero.
+        total_bytes = 0;
+        offset = 0;
+        let mut h_buffer = [0u8; 4];
+        if stream.read(&mut h_buffer) != h_buffer.len() {
+            return Err(Result::IncompleteInput);
+        }
+        info_bytes = le_u32(&h_buffer, 0);
+        if info_bytes < BMP_OS2V1_BYTES {
+            return Err(Result::InvalidInput);
+        }
+    } else {
+        // Read the first header and the size of the second header.
+        let mut h_buffer = [0u8; BMP_HEADER_BYTES_PLUS_FOUR];
+        if stream.read(&mut h_buffer) != h_buffer.len() {
+            return Err(Result::IncompleteInput);
+        }
+        total_bytes = le_u32(&h_buffer, 2);
+        offset = le_u32(&h_buffer, 10);
+        if offset < BMP_HEADER_BYTES + BMP_OS2V1_BYTES {
+            return Err(Result::InvalidInput);
+        }
+        // The size is the first field of the second header, so the first four bytes are already
+        // read.
+        info_bytes = le_u32(&h_buffer, 14);
+        if info_bytes < BMP_OS2V1_BYTES {
+            return Err(Result::InvalidInput);
+        }
     }
 
     // Determine image information depending on the second header format.
@@ -230,6 +254,12 @@ fn read_header(stream: &mut dyn Stream) -> std::result::Result<Header, Result> {
         row_order = ScanlineOrder::TopDown;
     }
 
+    // The height field for a BMP in an ICO is double the actual height, because it holds an XOR
+    // mask followed by an AND mask.
+    if in_ico {
+        height /= 2;
+    }
+
     // Arbitrary maximum. Matches Chromium.
     if width <= 0 || height <= 0 || width >= K_MAX_DIM || height >= K_MAX_DIM {
         return Err(Result::InvalidInput);
@@ -284,8 +314,11 @@ fn read_header(stream: &mut dyn Stream) -> std::result::Result<Header, Result> {
                     input_masks.green = le_u32(&i_buffer, 40);
                     input_masks.blue = le_u32(&i_buffer, 44);
                     // V4 and V5 files have an alpha mask. V2 has none, and neither does a V3 file
-                    // (V3 files are mostly opaque with a blank alpha channel).
-                    if matches!(header_type, HeaderType::InfoV4 | HeaderType::InfoV5) {
+                    // (V3 files are mostly opaque with a blank alpha channel), unless it is in an
+                    // ICO, whose V3 files carry the alpha mask.
+                    if matches!(header_type, HeaderType::InfoV4 | HeaderType::InfoV5)
+                        || (header_type == HeaderType::InfoV3 && in_ico)
+                    {
                         input_masks.alpha = le_u32(&i_buffer, 48);
                     }
                 }
@@ -307,29 +340,46 @@ fn read_header(stream: &mut dyn Stream) -> std::result::Result<Header, Result> {
         _ => return Err(Result::InvalidInput),
     };
 
-    // Calculate the number of bytes read so far.
+    // Calculate the number of bytes read so far. An ICO's offset is zero and is not checked; the
+    // wrapped difference is never used there.
     let bytes_read = BMP_HEADER_BYTES + info_bytes + mask_bytes;
-    if offset < bytes_read {
+    if !in_ico && offset < bytes_read {
         // Skia also fails here rather than guessing the offset of the pixel data.
         return Err(Result::InvalidInput);
     }
-    let offset_after_headers = offset - bytes_read;
+    let offset_after_headers = offset.wrapping_sub(bytes_read);
 
     let format = match input_format {
         InputFormat::Standard => {
-            // BMPs are opaque, and the palette and direct forms are the only ones read here.
+            // BMPs are opaque, and the palette and direct forms are the only ones read here. An ICO
+            // image is read as BGRA with binary alpha from its AND mask, and its palette is expanded.
+            // Only a 32-bit ICO image has per-pixel alpha.
+            let mut alpha = if in_ico { Alpha::Binary } else { Alpha::Opaque };
+            let mut is_opaque = true;
             let (color, bits_per_component) = match bits_per_pixel {
+                1 | 2 | 4 | 8 if in_ico => (Color::BGRA, 8),
                 1 | 2 | 4 | 8 => (Color::Palette, bits_per_pixel as u8),
-                24 => (Color::BGR, 8),
+                24 => (if in_ico { Color::BGRA } else { Color::BGR }, 8),
+                32 if in_ico => {
+                    is_opaque = false;
+                    alpha = Alpha::Unpremul;
+                    (Color::BGRA, 8)
+                }
                 32 => (Color::BGRX, 8),
                 _ => return Err(Result::InvalidInput),
             };
             Format::Standard {
                 color,
+                alpha,
                 bits_per_component,
+                is_opaque,
             }
         }
         InputFormat::BitMask => {
+            // Icos may not use the bit-mask format.
+            if in_ico {
+                return Err(Result::InvalidInput);
+            }
             match bits_per_pixel {
                 16 | 24 | 32 => {}
                 _ => return Err(Result::InvalidInput),
@@ -447,12 +497,12 @@ fn compute_row_bytes(width: i32, bits_per_pixel: u32) -> usize {
 /// Port of `SkBmpCodec::onRewind`: rewinds the stream and reads the header again, so the stream
 /// is at the pixel data (or the colour table) of a fresh decode.
 // Port of: src/codec/SkBmpCodec.cpp#L604-L608 (chrome/m156)
-fn rewind(base: &mut CodecBase<'_>) -> bool {
+fn rewind(base: &mut CodecBase<'_>, in_ico: bool) -> bool {
     if !base.rewind_stream() {
         return false;
     }
     match base.stream() {
-        Some(stream) => read_header(stream).is_ok(),
+        Some(stream) => read_header(stream, in_ico).is_ok(),
         None => false,
     }
 }
@@ -464,6 +514,7 @@ impl Header {
     fn into_codec<'a>(
         self,
         stream: Box<dyn Stream + Send + 'a>,
+        in_ico: bool,
     ) -> std::result::Result<Codec<'a>, Result> {
         let Self {
             width,
@@ -478,11 +529,11 @@ impl Header {
         match format {
             Format::Standard {
                 color,
+                alpha,
                 bits_per_component,
+                is_opaque,
             } => {
-                // Standard BMPs are opaque (the ICO mask is not ported).
-                let info =
-                    EncodedInfo::make(width, height, color, Alpha::Opaque, bits_per_component);
+                let info = EncodedInfo::make(width, height, color, alpha, bits_per_component);
                 let imp = BmpStandardCodec::new(
                     width,
                     bits_per_pixel,
@@ -490,6 +541,8 @@ impl Header {
                     bytes_per_color,
                     offset,
                     row_order,
+                    is_opaque,
+                    in_ico,
                 );
                 Ok(Codec::new(
                     info,
@@ -555,6 +608,20 @@ impl Header {
 pub fn make_from_stream<'a>(
     mut stream: Box<dyn Stream + Send + 'a>,
 ) -> std::result::Result<Codec<'a>, Result> {
-    let header = read_header(&mut *stream)?;
-    header.into_codec(stream)
+    let header = read_header(&mut *stream, false)?;
+    header.into_codec(stream, false)
+}
+
+/// Port of `SkBmpCodec::MakeFromIco`: makes the codec for a BMP embedded in an ICO, whose stream
+/// starts at the second header.
+///
+/// # Errors
+/// As [`make_from_stream`]: the [`Result`] that says why the image is not a supported BMP.
+// Port of: src/codec/SkBmpCodec.cpp#L91-L93 (chrome/m156), with MakeFromStream's inIco branch
+#[doc(alias = "SkBmpCodec::MakeFromIco")]
+pub fn make_from_ico<'a>(
+    mut stream: Box<dyn Stream + Send + 'a>,
+) -> std::result::Result<Codec<'a>, Result> {
+    let header = read_header(&mut *stream, true)?;
+    header.into_codec(stream, true)
 }

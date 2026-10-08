@@ -28146,8 +28146,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L204-L238"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec, which is not ported"
+status = "passing"
 span_hash = "839d0c13dbae3e00041f56dd78b1798f0bc62ee9e57b32dd462df0874ad477da"
 
 [[test]]
@@ -28156,8 +28155,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L165-L202"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec, which is not ported"
+status = "passing"
 span_hash = "18f7138f83d8cd5ca139632507400c5d1d74e159c36de8c0691f98b7160a05fb"
 
 [[test]]
@@ -28166,8 +28164,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L240-L274"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec, which is not ported"
+status = "passing"
 span_hash = "3ee3115bacea2e18cd20b64f7e4b2d4edbf203d16e2605128a5d04d045ad2776"
 
 [[test]]
@@ -28177,6 +28174,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
 status = "todo"
+reason = "needs JPEG, WebP and GIF decoders and sampled decoding (SkSampledCodec, not ported)"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -28185,8 +28183,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L135-L163"
 module = "codec"
-status = "todo"
-reason = "needs SkAndroidCodec, which is not ported"
+status = "passing"
 span_hash = "b458f7b23b3ca3834a33aac69f6d8343658ad744154e4a8e29be5959065d6064"
 
 [[test]]
@@ -28599,7 +28596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BadIcoTest.cpp#L33-L63"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "84e4713e50e0fe2991c4658fd2a4c415fa10d8b5009b4208da6590cb305fe9e6"
 
 [[test]]
@@ -28608,7 +28605,7 @@ kind = "unit"
 macro = "DEF_SERIAL_TEST"
 source = "tests/BadIcoTest.cpp#L121-L123"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "3c2839743e90a603c2fa11fa025b63e7a3bb293781629dd7a59e2a785370fd1f"
 
 [[test]]
@@ -28618,6 +28615,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/BadIcoTest.cpp#L115-L117"
 module = "codec"
 status = "todo"
+reason = "needs SkPngRustDecoder (codecs C-R, not ported)"
 span_hash = "ec94bc675078f73d9eb865b37a30e9add01b94fe45f4e99fe655937849183492"
 
 [[test]]
@@ -29779,8 +29777,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1676-L1685"
 module = "codec"
-status = "todo"
-reason = "needs SkIcoCodec for invalid_images/int_overflow.ico; the BMP cases alone are ported with the BMP codec"
+status = "passing"
 span_hash = "e0acd5b91a049703a5056d8b27e0d1ae7c51c045f4dc6ecf8a99bafd464bcfed"
 
 [[test]]
@@ -29809,7 +29806,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L605-L608"
 module = "codec"
 status = "todo"
-reason = "needs check(): SkAndroidCodec and SkCodecImageGenerator are not ported (check_android_codec, check_codec_image_generator)"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
 span_hash = "a8b8b4eab9faa920058d99ed8b7e694bf8e84b2be8e2397390da5a48f5ae7d04"
 
 [[test]]
@@ -29892,6 +29889,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L611-L618"
 module = "codec"
 status = "todo"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
 span_hash = "78a3852120b6c9457fb651b6fbbff96b61dcc2d9ae6df707f9c39248a23f07bd"
 
 [[test]]
@@ -29975,7 +29973,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L774-L779"
 module = "codec"
 status = "todo"
-reason = "needs SkAndroidCodec::MakeFromStream"
+reason = "needs SkAndroidCodec::MakeFromStream(nullptr); a null stream is not representable in the Rust API"
 span_hash = "33796e98d5fe8de9f793bf76c17d6e033bbc94b0e077a9916df5ff3b2c09ff0b"
 
 [[test]]
@@ -29995,7 +29993,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L638-L655"
 module = "codec"
 status = "todo"
-reason = "needs check(), which needs SkAndroidCodec and SkCodecImageGenerator (lazy images, codecs C7)"
+reason = "needs CodecImageGenerator (port/codec-lazy); check() also runs the Android branch, which needs sampled decoding (SkSampledCodec, not ported)"
 span_hash = "9f782bdbbb96b148028c1e8db515c9f81689e2406b1ac3a42cdf4760a8dec967"
 
 [[test]]
@@ -30064,7 +30062,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1572-L1598"
 module = "codec"
 status = "todo"
-reason = "needs SkAndroidCodec, which is not ported"
+reason = "needs sampled decoding: getAndroidPixels with fSampleSize (SkSampledCodec, not ported)"
 span_hash = "53fda6ec0202587058381328b67fd5261280ae469ee87e4842fea82f629b3872"
 
 [[test]]
@@ -30155,7 +30153,7 @@ kind = "unit"
 macro = "DEF_SERIAL_TEST"
 source = "tests/CodecTest.cpp#L2715-L2725"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b08011bebc507071ab7d2811f3d0f7afe50c63ed61107792d31365ce3b3d9c43"
 
 [[test]]
@@ -30164,7 +30162,7 @@ kind = "unit"
 macro = "DEF_SERIAL_TEST"
 source = "tests/CodecTest.cpp#L2690-L2713"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b36917f8311a1966f1e9fffaea5e40650eaf85b76a67e9a87b5fa69618bd30f4"
 
 [[test]]
