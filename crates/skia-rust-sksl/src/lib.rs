@@ -10,4 +10,5 @@
 //! and IR, the stage-binding `appendStages`, and the other back ends come in later tasks.
 
 pub mod codegen;
+pub mod skstd;
 pub mod tracing;

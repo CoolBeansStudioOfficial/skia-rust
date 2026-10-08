@@ -7,6 +7,7 @@
 //! [`program::Program`] it finishes and lowers to stages, and the [`dumper`] that prints them.
 
 pub mod builder;
+pub mod dumper;
 pub mod ops;
 pub mod program;
 

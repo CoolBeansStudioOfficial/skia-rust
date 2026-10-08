@@ -39488,7 +39488,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L58-L88"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0084925fcd16ab6f4f8f531944e260f7ad54ee5958e6fdfd8c63e101de2fda78"
 
 [[test]]
@@ -39497,7 +39497,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L857-L878"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cad66aafc64d05fb18648795699bbd6c8aa44ceb6b24b945c4e6970cf20d40e9"
 
 [[test]]
@@ -39506,7 +39506,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L564-L587"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "87986caa74fdc5ec381daa4f13ff84118644ce595b141080e8b0d135e1735592"
 
 [[test]]
@@ -39515,7 +39515,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L589-L621"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "adb21997ef40f728312d67161b25317875262ef4aefc66322ff541d1a7e9f353"
 
 [[test]]
@@ -39524,7 +39524,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L623-L663"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8161bd08f5934fe02beb9cbe6c1994d315dc3e8f496b6303aaa3a4eabe474005"
 
 [[test]]
@@ -39533,7 +39533,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L665-L713"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2bd40488b9b830eba18762d383cf60db29f3510dd105843be0d518c53a1208fd"
 
 [[test]]
@@ -39542,7 +39542,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L715-L743"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "450a0fb9e4ef9bc6c09231d9d4c1d5b73d76ecf74325faa4643bdf07cdf03538"
 
 [[test]]
@@ -39551,7 +39551,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L446-L562"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8d1501f8550a182d0c979ee5404619d8b2c9c300c4db23534f1076cabaabe351"
 
 [[test]]
@@ -39560,7 +39560,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L137-L156"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "52eff9383a928fcfa1cda5d651e4f92e26e0f2ea65cb56b986a92292201048ad"
 
 [[test]]
@@ -39569,7 +39569,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L264-L276"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3be32f3008fa72974cea2922d5eee74eb314169db4655334cc39c33890cb5857"
 
 [[test]]
@@ -39578,7 +39578,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L278-L291"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a8a43d4bce2923aaf0beb50d057dca05893ffd125ba675fdbdf03639ccbdb7e6"
 
 [[test]]
@@ -39587,7 +39587,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L380-L409"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8da3244e6048f04bcece2fab69129bce6f9a96e2d4cecf7c67e6db300641ac3a"
 
 [[test]]
@@ -39596,7 +39596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L319-L351"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d91c41499e78ea84629a1a5dff11177e49d2885d01be2b6192b4f89457f1a170"
 
 [[test]]
@@ -39605,7 +39605,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L182-L198"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4f57d321c6785a0c22341e12a09af959da4f8a5f99a46ae4b0aef855bec5c034"
 
 [[test]]
@@ -39614,7 +39614,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L411-L444"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f37a1efb8e085e95f2af02ffc2595d0c3fa63d6a66d6e22f2e4b8342aa52a58c"
 
 [[test]]
@@ -39623,7 +39623,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L230-L262"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8fb5dc0cdf1247666775613e065532423c0140dfb76e5b5ab97a48abd488c6fe"
 
 [[test]]
@@ -39632,7 +39632,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L90-L134"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "469170c51e499fa94f1fbb0b5b7c082389439a0857719be249881e9817a79e10"
 
 [[test]]
@@ -39641,7 +39641,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L293-L317"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f11556caeee49faf6734e1e708cae32e34566ae21a0ca94cc09ba0440c4d87b2"
 
 [[test]]
@@ -39650,7 +39650,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L158-L180"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e57e6e9c00a5866ad878e5ed4bd6cfc84979ce4018283982847140d86cb67cf6"
 
 [[test]]
@@ -39659,7 +39659,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L200-L228"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "493ca9cab1b2f8dccbd2afbbebde54bf3ebaf3ee78e9f007388c282857a39efb"
 
 [[test]]
@@ -39668,7 +39668,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L814-L836"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ccb0619e858adfd5dd341e5320ced7a1ce6847a3bf3dbbd8097d1b9c16c2049f"
 
 [[test]]
@@ -39677,7 +39677,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L838-L855"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "29efe6ecf867e4cb919071046ae4c23fbc68ecb907f333eebbc33f05011dbbea"
 
 [[test]]
@@ -39686,7 +39686,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L880-L942"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "93c583b6e548c2282e2179da74b3e07c42d53cc63d08df28fd092d38859d14b4"
 
 [[test]]
@@ -39695,7 +39695,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L353-L378"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ceacae97e0f20e697cb3eb6e0aeaaa348ea29887b8c9ce2985e61cee3e1eac56"
 
 [[test]]
@@ -39704,7 +39704,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L745-L787"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "63edbbe67b5315b744dac159182793e3c5d611321e25cd866d4b1a5dbc92ee28"
 
 [[test]]
@@ -39713,7 +39713,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RasterPipelineBuilderTest.cpp#L789-L812"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ad3d4e44d8cdcfd71d35037c7a9e34bf324ebd58ee96be6ad5063ceda1262c7a"
 
 [[test]]

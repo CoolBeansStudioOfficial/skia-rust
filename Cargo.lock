@@ -585,6 +585,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-sksl",
 ]
 
 [[package]]

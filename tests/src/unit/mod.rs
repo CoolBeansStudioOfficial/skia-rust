@@ -157,6 +157,8 @@ pub mod r_tree_test;
 #[cfg(test)]
 pub mod random_test;
 #[cfg(test)]
+pub mod raster_pipeline_builder_test;
+#[cfg(test)]
 pub mod read_pixels_test;
 #[cfg(test)]
 pub mod record_draw_test;
