@@ -121,11 +121,35 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_conic_line_intersection_test;
+#[cfg(test)]
 pub mod path_ops_cubic_intersection_test_data;
+#[cfg(test)]
+pub mod path_ops_cubic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_dcubic_test;
+#[cfg(test)]
+pub mod path_ops_dline_test;
+#[cfg(test)]
+pub mod path_ops_dpoint_test;
+#[cfg(test)]
+pub mod path_ops_drect_test;
+#[cfg(test)]
+pub mod path_ops_dvector_test;
+#[cfg(test)]
+pub mod path_ops_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_line_parameters_test;
 #[cfg(test)]
 pub mod path_ops_quad_intersection_test_data;
 #[cfg(test)]
+pub mod path_ops_quad_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_quad_reduce_order_test;
+#[cfg(test)]
 pub mod path_ops_test_common;
+#[cfg(test)]
+pub mod path_ops_types_test;
 #[cfg(test)]
 pub mod path_raw_shapes_test;
 #[cfg(test)]

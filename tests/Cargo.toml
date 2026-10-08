@@ -13,6 +13,7 @@ publish = false
 skia-rust-core.workspace = true
 skia-rust-raster.workspace = true
 skia-rust-effects.workspace = true
+skia-rust-pathops.workspace = true
 skia-rust-skcms.workspace = true
 skia-rust-simd = { workspace = true, features = ["testing", "models"] }
 
