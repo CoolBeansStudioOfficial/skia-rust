@@ -138,6 +138,7 @@ pub mod pathcontourstart;
 pub mod patheffects;
 pub mod pathfill;
 pub mod pathinterior;
+pub mod persptext;
 pub mod picture;
 pub mod plus;
 pub mod points;
