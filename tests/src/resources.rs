@@ -47,6 +47,19 @@ pub fn get_resource_as_data(path: &str) -> Option<Vec<u8>> {
     std::fs::read(full).ok()
 }
 
+/// Port of `ToolUtils::GetResourceAsImage`: a lazy image of the encoded resource at `path`, or
+/// `None` if the resource is missing or no codec decodes it
+/// (`SkImages::DeferredFromEncodedData(GetResourceAsData(path))`).
+// Port of: tools/DecodeUtils.h#L31-L33 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_image(path: &str) -> Option<skia_rust_core::image::Image> {
+    let data = get_resource_as_data(path)?;
+    skia_rust_codec::images::deferred_from_encoded_data(
+        Some(skia_rust_core::data::Data::new_from_vec(data)),
+        None,
+    )
+}
+
 /// Skips the rest of a test (with a note on stderr) when a resource is missing: use as
 /// `let data = skip_missing_resource!(get_resource_as_data("icc_profiles/x.icc"), "icc_profiles/x.icc");`.
 /// (An optional third argument is the value to return, for closures that return a value.)

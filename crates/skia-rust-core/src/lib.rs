@@ -67,9 +67,11 @@ pub mod image;
 pub mod image_base;
 pub mod image_filter;
 pub mod image_filter_types;
+pub mod image_generator;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
+pub mod image_lazy;
 pub mod image_raster;
 pub mod images;
 #[doc(hidden)]

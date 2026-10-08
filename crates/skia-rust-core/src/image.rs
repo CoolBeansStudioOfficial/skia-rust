@@ -193,12 +193,22 @@ impl Image {
         0
     }
 
-    /// Whether the image can be drawn by the CPU: raster images always can (`isValid`, the
-    /// `recorder` is for the CPU recorder in Skia).
+    /// Whether the image can be drawn by the CPU: raster images always can, lazy images when
+    /// their generator is valid (`isValid`, with no recorder).
+    // Port of: include/core/SkImage.h#L447 (chrome/m156)
     #[doc(alias = "isValid")]
     #[must_use]
     pub fn is_valid(&self) -> bool {
-        self.0.is_raster_backed()
+        self.0.on_is_valid()
+    }
+
+    /// The encoded data the image was made from, if it still has it (`refEncodedData`). Only
+    /// images made from encoded data (or lazy images of a codec) have it.
+    // Port of: src/image/SkImage.cpp#L246 (chrome/m156)
+    #[doc(alias = "refEncodedData")]
+    #[must_use]
+    pub fn ref_encoded_data(&self) -> Option<crate::data::Data> {
+        self.0.on_ref_encoded()
     }
 
     /// Returns true if the image has mipmap levels (`hasMipmaps`).

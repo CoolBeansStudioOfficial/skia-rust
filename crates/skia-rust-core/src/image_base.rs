@@ -19,6 +19,7 @@ use std::sync::Arc;
 use crate::bitmap::Bitmap;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
+use crate::data::Data;
 use crate::image::{Image, RequiredProperties};
 use crate::image_info::ImageInfo;
 use crate::mipmap::Mipmap;
@@ -185,6 +186,24 @@ pub trait ImageBase: Any + fmt::Debug + Send + Sync {
         target_color_space: Option<ColorSpace>,
         required_properties: RequiredProperties,
     ) -> Option<Image>;
+
+    /// The encoded data the image was made from, if it has any (`onRefEncoded`).
+    // Port of: src/image/SkImage_Base.h#L70 (chrome/m156)
+    #[doc(alias = "onRefEncoded")]
+    fn on_ref_encoded(&self) -> Option<Data> {
+        None
+    }
+
+    /// Whether the image can be drawn (`onIsValid`, with no recorder). Raster images always
+    /// can; lazy images ask their generator.
+    // Port of: src/image/SkImage_Base.h#L88 (chrome/m156)
+    #[doc(alias = "onIsValid")]
+    fn on_is_valid(&self) -> bool {
+        matches!(
+            self.image_type(),
+            ImageType::Raster | ImageType::RasterPinnable
+        )
+    }
 
     /// The implementation as `Any`, for downcasts (`static_cast`).
     fn as_any(&self) -> &dyn Any;
