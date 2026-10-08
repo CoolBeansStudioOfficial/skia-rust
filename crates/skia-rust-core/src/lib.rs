@@ -12,6 +12,7 @@ pub mod blend_mode_blender;
 #[doc(hidden)]
 pub mod blend_mode_priv;
 pub mod blender;
+pub mod blur_engine;
 pub mod buffer;
 pub mod canvas;
 #[doc(hidden)]
