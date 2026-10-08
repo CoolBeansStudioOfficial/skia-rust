@@ -891,7 +891,49 @@ definition of main */, Option<DebugTracePriv>, write_trace_ops) -> Option<rp::Pr
   them `### Compilation failed` (85 front end, 21 `code is not supported`). The 9
   `RasterPipelineCodeGeneratorTest` cases and the 69 `SkSLTest` entries without the `CPU` flag
   (`_RP` and `_Clone`) are ported (`tests/src/unit/raster_pipeline_code_generator_test.rs`,
-  `sk_sl_test.rs`). The 183 `CPU` entries need `RuntimeEffect` (S18) for `_CPU`; they are added with it.
+  `sk_sl_test.rs`). The 183 `CPU` entries need `RuntimeEffect` (S18) for `_CPU`; they are added with S18 (§6.7).
+
+### 6.7 As implemented in S18
+
+`skia_rust_core::{runtime_effect, runtime_effect_priv, shaders::runtime_shader, capabilities}`.
+
+- **`RuntimeEffect`** is an `Arc` handle (`runtime_effect.rs`). `make_for_{shader,color_filter,
+  blender}(sksl, Option<&Options>) -> Result<RuntimeEffect, String>` run `MakeFromSource` and
+  `MakeInternal` as written (kind checks, the `#version 100` rule for color filters, the
+  `Analysis::*` flags, uniform and child reflection, elided sample coords, the options hash).
+  `Options` has skia-safe's two public fields; `allowPrivateAccess`, `fStableKey` and
+  `maxVersionAllowed` are `pub(crate)` and set through `runtime_effect_priv::{allow_private_access,
+  es3_options, set_stable_key_on_options}`, as Skia's `friend class SkRuntimeEffectPriv`.
+  `make_settings` is `MakeSettings`. `Uniform`, `Child`, `ChildType`, `uniform::{Type, Flags}` have
+  accessors (skia-safe's names); `ChildPtr` is an enum with an extra `Empty` variant for Skia's null
+  child (`ty()` is therefore an `Option`; a null shader samples transparent black, a null color
+  filter passes its input, a null blender is `srcover`).
+- **`getRPProgram`** (`RuntimeEffect::rp_program`, crate-private) is a `OnceLock<Option<rp::Program>>`.
+  The generator needs `&mut Program` (it allocates literals in the pool), so the effect keeps its base
+  program under a `Mutex`; the optimized copy is recompiled from the source exactly as in Skia, and
+  the unoptimized case generates from the base program. Debug traces are S23.
+- **`RuntimeShader`** (`ShaderBase`, `ShaderType::Runtime`): `append_stages` is
+  `SkRuntimeShader.cpp#L95-L123`: `CanDraw` (ES2 raster caps), `MatrixRec::apply`,
+  `uniforms_as_span` (the `layout(color)` uniforms transformed from sRGB to the destination space with
+  `TransformUniforms`), then `Program::append_stages` with `RuntimeEffectRpCallbacks`
+  (`Callbacks`, S15). `uniforms_as_span` returns a `Vec<f32>` (no arena copy is needed: `append_stages`
+  copies the values into its slab). `make_deferred_shader` takes an `Arc<dyn Fn(&UniformsCallbackContext)
+  -> Data>`.
+- **Builders.** `RuntimeEffectBuilder` (= `RuntimeShaderBuilder`): `uniform(name)`/`child(name)` return
+  `BuilderUniform`/`BuilderChild` (`set_f32`, `set_i32`, `set_matrix`, `assign`, `assign_null`; a
+  missing variable or a wrong size returns `false` where Skia aborts in debug builds),
+  `set_uniform_float/int` (skia-safe) and `make_shader`. `make_color_filter`/`make_blender` come with S19.
+- **`Capabilities`** (`SkCapabilities`) only carries the `SkSL` version (`raster_backend()` is 100).
+- **Tests.** The 183 `CPU`-flagged `SkSLTest` entries run `_CPU` first (`MakeForShader`, a 2x2 raster
+  surface, optimized and unoptimized, every pixel green), then `_RP` and `_Clone`;
+  `SkRuntimeEffectTest` ports the factory, reflection, shader, builder and opacity tests (22 of 46; the
+  rest need color filters and blenders, S19, tracing, S23, or Ganesh/Graphite); `SkSLES2ConformanceTest`
+  passes vacuously, as the conformance shaders are not part of Skia's repository. GMs: `runtimeshader`
+  (`SimpleRT`, `SpiralRT`, `LinearGradientRT`, `child_sampling_rt`, `deferred_shader_rt`,
+  `paint_alpha_normals_rt`, `raw_image_shader_normals_rt`, `lit_shader_linear_rt`) and
+  `runtimefunctions` match the goldens on every checkable tier. The other `runtimeshader` GMs need
+  image decoding or runtime color filters, `runtimeintrinsics` draws labels with text, and `destcolor`
+  and `image_dither` make runtime blenders.
 
 ## 7. RuntimeEffect integration (core)
 

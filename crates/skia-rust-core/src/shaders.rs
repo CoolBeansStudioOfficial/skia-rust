@@ -15,6 +15,7 @@ pub mod ctm_shader;
 pub mod empty_shader;
 pub mod image_shader;
 pub mod local_matrix_shader;
+pub mod runtime_shader;
 pub mod shader_base;
 pub mod transform_shader;
 pub mod tri_color_shader;
@@ -36,6 +37,7 @@ pub use ctm_shader::CtmShader;
 pub use empty_shader::EmptyShader;
 pub use image_shader::ImageShader;
 pub use local_matrix_shader::LocalMatrixShader;
+pub use runtime_shader::RuntimeShader;
 pub use shader_base::{
     ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, GradientInfo, GradientType, MatrixRec,
     OPAQUE_ALPHA_FLAG, ShaderBase, ShaderContext, ShaderType,

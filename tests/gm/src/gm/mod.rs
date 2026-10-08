@@ -129,6 +129,8 @@ pub mod rect_poly_stroke;
 pub mod roundrects;
 pub mod rrect;
 pub mod rrects;
+pub mod runtimefunctions;
+pub mod runtimeshader;
 pub mod scaledrects;
 pub mod scaledstrokes;
 pub mod shallowgradient;

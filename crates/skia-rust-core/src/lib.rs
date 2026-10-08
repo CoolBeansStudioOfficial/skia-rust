@@ -19,6 +19,7 @@ pub mod buffer;
 pub mod canvas;
 #[doc(hidden)]
 pub mod canvas_priv;
+pub mod capabilities;
 pub mod checksum;
 pub mod clip_op;
 pub mod clip_stack;
@@ -145,6 +146,9 @@ pub mod region;
 pub mod region_path;
 pub mod rrect;
 pub mod rsxform;
+pub mod runtime_effect;
+#[doc(hidden)]
+pub mod runtime_effect_priv;
 pub mod safe32;
 pub mod safe_math;
 pub mod safe_range;
