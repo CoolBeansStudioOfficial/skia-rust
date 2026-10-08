@@ -212,7 +212,7 @@ impl StrikeSpec {
 /// `SkScalerContext::AutoDescriptorGivenRecAndEffects` for the paint-free case: the descriptor
 /// holds the record only. With effects it returns `None` (see [`StrikeSpec`]).
 // Port of: src/core/SkScalerContext.cpp#L1355-L1380 (chrome/m156), the no-effects branch
-fn auto_descriptor_given_rec_and_effects(
+pub(crate) fn auto_descriptor_given_rec_and_effects(
     rec: &ScalerContextRec,
     effects: &ScalerContextEffects,
 ) -> Option<AutoDescriptor> {
