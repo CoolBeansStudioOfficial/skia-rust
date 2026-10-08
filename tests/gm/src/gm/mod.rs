@@ -75,6 +75,7 @@ pub mod strokefill;
 pub mod strokerect;
 pub mod strokerects;
 pub mod strokes;
+pub mod text_scale_skew;
 pub mod thinconcavepaths;
 pub mod thinrects;
 pub mod thinstrokedrects;
