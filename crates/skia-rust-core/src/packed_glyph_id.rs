@@ -40,7 +40,7 @@ const FIXED_POINT_SUB_PIXEL_POS_BITS: u32 = FIXED_POINT_BINARY_POINT_POS - SUB_P
 /// A glyph id and its sub-pixel x and y position, in one `u32` (`SkPackedGlyphID`).
 ///
 /// The default value is `kImpossibleID`, which no glyph has.
-// Port of: src/core/SkGlyph.h#L46-L216 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L46-L213 (chrome/m156)
 #[doc(alias = "SkPackedGlyphID")]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct PackedGlyphId {
@@ -49,7 +49,7 @@ pub struct PackedGlyphId {
 
 impl Default for PackedGlyphId {
     /// `SkPackedGlyphID()`: `kImpossibleID`.
-    // Port of: src/core/SkGlyph.h#L70 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L94 (chrome/m156)
     fn default() -> Self {
         Self { id: u32::MAX }
     }
@@ -63,7 +63,7 @@ impl PartialOrd for PackedGlyphId {
 
 impl Ord for PackedGlyphId {
     /// `SkPackedGlyphID::operator<`: compares the packed values.
-    // Port of: src/core/SkGlyph.h#L58 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L102-L104 (chrome/m156)
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.id.cmp(&other.id)
     }
@@ -71,22 +71,22 @@ impl Ord for PackedGlyphId {
 
 impl PackedGlyphId {
     /// `kImpossibleID`: the default value.
-    // Port of: src/core/SkGlyph.h#L48 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L47 (chrome/m156)
     pub const IMPOSSIBLE_ID: u32 = u32::MAX;
 
     /// `kSubpixelRound`: half of one sub-pixel step, as a scalar.
-    // Port of: src/core/SkGlyph.h#L62-L63 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L69-L70 (chrome/m156)
     pub const SUBPIXEL_ROUND: f32 = 0.125;
 
     /// `kXYFieldMask`: the sub-pixel bits of x and y.
-    // Port of: src/core/SkGlyph.h#L64-L65 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L72-L73 (chrome/m156)
     pub const XY_FIELD_MASK: IPoint = IPoint::new(
         (SUB_PIXEL_POS_MASK << SUB_PIXEL_X).cast_signed(),
         (SUB_PIXEL_POS_MASK << SUB_PIXEL_Y).cast_signed(),
     );
 
     /// `SkPackedGlyphID(SkGlyphID glyphID)`: the glyph with no sub-pixel offset.
-    // Port of: src/core/SkGlyph.h#L75 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L81-L82 (chrome/m156)
     #[must_use]
     pub const fn from_glyph_id(glyph_id: GlyphId) -> Self {
         Self {
@@ -96,7 +96,7 @@ impl PackedGlyphId {
 
     /// `SkPackedGlyphID(SkGlyphID glyphID, Fixed x, Fixed y)`: takes the sub-pixel bits from
     /// the top of the fractional part of the fixed-point positions.
-    // Port of: src/core/SkGlyph.h#L76-L77 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L84-L85 (chrome/m156)
     #[must_use]
     pub const fn from_fixed(glyph_id: GlyphId, x: Fixed, y: Fixed) -> Self {
         Self {
@@ -106,7 +106,7 @@ impl PackedGlyphId {
 
     /// `SkPackedGlyphID(SkGlyphID glyphID, uint32_t x, uint32_t y)`: the sub-pixel positions are
     /// already in `0..4`.
-    // Port of: src/core/SkGlyph.h#L78-L79 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L87-L88 (chrome/m156)
     #[must_use]
     pub const fn from_sub_pixel(glyph_id: GlyphId, x: u32, y: u32) -> Self {
         Self {
@@ -116,7 +116,7 @@ impl PackedGlyphId {
 
     /// `SkPackedGlyphID(SkGlyphID glyphID, SkPoint pt, SkIPoint mask)`: the sub-pixel bits of a
     /// device point, masked by `mask`.
-    // Port of: src/core/SkGlyph.h#L80-L81 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L90-L91 (chrome/m156)
     #[must_use]
     pub fn from_point(glyph_id: GlyphId, pt: Point, mask: IPoint) -> Self {
         Self {
@@ -125,49 +125,49 @@ impl PackedGlyphId {
     }
 
     /// `SkPackedGlyphID(uint32_t v)`: keeps the low 20 bits of `v`.
-    // Port of: src/core/SkGlyph.h#L82 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L93 (chrome/m156)
     #[must_use]
     pub const fn from_raw(v: u32) -> Self {
         Self { id: v & MASK_ALL }
     }
 
     /// `SkPackedGlyphID::glyphID`.
-    // Port of: src/core/SkGlyph.h#L94-L96 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L106-L108 (chrome/m156)
     #[must_use]
     pub const fn glyph_id(self) -> GlyphId {
         ((self.id >> GLYPH_ID) & GLYPH_ID_MASK) as GlyphId
     }
 
     /// `SkPackedGlyphID::value`: the packed bits.
-    // Port of: src/core/SkGlyph.h#L98 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L110-L112 (chrome/m156)
     #[must_use]
     pub const fn value(self) -> u32 {
         self.id
     }
 
     /// `SkPackedGlyphID::getSubXFixed`: the sub-pixel x position as a fixed-point fraction.
-    // Port of: src/core/SkGlyph.h#L101-L103 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L114-L116 (chrome/m156)
     #[must_use]
     pub const fn sub_x_fixed(self) -> Fixed {
         self.sub_to_fixed(SUB_PIXEL_X)
     }
 
     /// `SkPackedGlyphID::getSubYFixed`: the sub-pixel y position as a fixed-point fraction.
-    // Port of: src/core/SkGlyph.h#L104-L106 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L118-L120 (chrome/m156)
     #[must_use]
     pub const fn sub_y_fixed(self) -> Fixed {
         self.sub_to_fixed(SUB_PIXEL_Y)
     }
 
     /// `SkPackedGlyphID::hash`: a cheap mix of the packed value.
-    // Port of: src/core/SkGlyph.h#L107-L109 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L122-L124 (chrome/m156)
     #[must_use]
     pub fn hash(self) -> u32 {
         cheap_mix(self.id)
     }
 
     /// `SkPackedGlyphID::shortDump` as `"0x<glyph>|<x>|<y>"`.
-    // Port of: src/core/SkGlyph.h#L114-L120 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L132-L138 (chrome/m156)
     #[must_use]
     pub fn short_dump(self) -> String {
         format!(
@@ -179,7 +179,7 @@ impl PackedGlyphId {
     }
 
     /// `PackIDSubXSubY`.
-    // Port of: src/core/SkGlyph.h#L126-L131 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L141-L146 (chrome/m156)
     const fn pack_sub_x_sub_y(glyph_id: GlyphId, x: u32, y: u32) -> u32 {
         debug_assert!(x < (1 << SUB_PIXEL_POS_LEN));
         debug_assert!(y < (1 << SUB_PIXEL_POS_LEN));
@@ -187,19 +187,19 @@ impl PackedGlyphId {
     }
 
     /// `FixedToSub`: the top two fractional bits of a fixed-point position.
-    // Port of: src/core/SkGlyph.h#L141-L143 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L199-L201 (chrome/m156)
     const fn fixed_to_sub(n: Fixed) -> u32 {
         (n.cast_unsigned() >> FIXED_POINT_SUB_PIXEL_POS_BITS) & SUB_PIXEL_POS_MASK
     }
 
     /// `subPixelField`.
-    // Port of: src/core/SkGlyph.h#L146-L148 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L203-L205 (chrome/m156)
     const fn sub_pixel_field(self, sub_pixel_pos_bit: u32) -> u32 {
         (self.id >> sub_pixel_pos_bit) & SUB_PIXEL_POS_MASK
     }
 
     /// `subToFixed`.
-    // Port of: src/core/SkGlyph.h#L150-L153 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L207-L210 (chrome/m156)
     const fn sub_to_fixed(self, sub_pixel_pos_bit: u32) -> Fixed {
         let sub_pixel_position = self.sub_pixel_field(sub_pixel_pos_bit);
         (sub_pixel_position << FIXED_POINT_SUB_PIXEL_POS_BITS).cast_signed()
@@ -208,7 +208,7 @@ impl PackedGlyphId {
 
 /// `SkPackedGlyphID::PackIDSkPoint`: the sub-pixel bits of a point, with the fractional part
 /// biased into `[1, 2)` so the truncation picks the right quarter.
-// Port of: src/core/SkGlyph.h#L132-L159 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L164-L193 (chrome/m156)
 #[allow(clippy::cast_possible_truncation)] // (int)(float) truncation, as in C++
 fn pack_id_sk_point(glyph_id: GlyphId, pt: Point, mask: IPoint) -> u32 {
     // 1.f * (1u << (kSubPixelPosLen + kSubPixelX)) and the same for y: exact powers of two.

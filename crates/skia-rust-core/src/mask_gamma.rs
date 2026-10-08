@@ -24,11 +24,11 @@ use crate::scalar::{SCALAR_1, scalar, scalar_round_to_int};
 #[doc(alias = "SkColorSpaceLuminance")]
 pub trait ColorSpaceLuminance: Send + Sync {
     /// Converts a color component luminance in the color space to a linear luma.
-    // Port of: src/core/SkMaskGamma.h#L35 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L36-L37 (chrome/m156)
     fn to_luma(&self, gamma: scalar, luminance: scalar) -> scalar;
 
     /// Converts a linear luma to a color component luminance in the color space.
-    // Port of: src/core/SkMaskGamma.h#L37 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L38-L39 (chrome/m156)
     #[allow(clippy::wrong_self_convention)] // the name mirrors SkColorSpaceLuminance::fromLuma
     fn from_luma(&self, gamma: scalar, luma: scalar) -> scalar;
 }
@@ -124,7 +124,7 @@ pub fn compute_luminance(gamma: scalar, color: Color) -> u32 {
 
 /// Scales `base`, which has `N` bits (`1..=8`), to `0..=255` by replicating its bits
 /// (`sk_t_scale255`).
-// Port of: src/core/SkMaskGamma.h#L63-L84 (chrome/m156)
+// Port of: src/core/SkMaskGamma.h#L64-L80 (chrome/m156)
 #[must_use]
 pub fn sk_t_scale255<const N: u32>(base: u32) -> u32 {
     // The C++ specializations for 1, 2, 4 and 8 are the same values as the loop below; they are
@@ -149,7 +149,7 @@ pub fn sk_t_scale255<const N: u32>(base: u32) -> u32 {
 
 /// `SkTMaskGamma_build_correcting_lut`: fills one 256-entry table for the source luminance
 /// `src_i` (0..=255) and the device gamma.
-// Port of: src/core/SkMaskGamma.cpp#L74-L113 (chrome/m156)
+// Port of: src/core/SkMaskGamma.cpp#L78-L128 (chrome/m156)
 #[allow(clippy::float_cmp, clippy::cast_precision_loss)] // mirrors the C++ float arithmetic; src_i <= 255 is exact in f32
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // SkToU8: static_cast<uint8_t>
 fn build_correcting_lut(
@@ -211,21 +211,21 @@ pub struct TMaskGamma<const R: u32, const G: u32, const B: u32> {
 
 impl<const R: u32, const G: u32, const B: u32> TMaskGamma<R, G, B> {
     /// `kMaxLumBits`.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L173 (chrome/m156)
     const MAX_LUM_BITS: u32 = max3(R, G, B);
     /// `kNumTables`: one table per canonical value of the widest channel.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L174 (chrome/m156)
     const NUM_TABLES: usize = 1 << Self::MAX_LUM_BITS;
     /// `kTableWidth`.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L175 (chrome/m156)
     const TABLE_WIDTH: usize = 256;
     /// `kTableNumElements`.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L176 (chrome/m156)
     const TABLE_NUM_ELEMENTS: usize = Self::NUM_TABLES * Self::TABLE_WIDTH;
 
     /// `SkTMaskGamma(contrast, deviceGamma)`: builds the tables for the device gamma and contrast
     /// (`contrast` is in `[0, 1]`).
-    // Port of: src/core/SkMaskGamma.h#L117-L127 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L117-L126 (chrome/m156)
     #[must_use]
     pub fn new(contrast: scalar, device_gamma: scalar) -> Self {
         let mut tables = vec![0u8; Self::TABLE_NUM_ELEMENTS].into_boxed_slice();
@@ -242,7 +242,7 @@ impl<const R: u32, const G: u32, const B: u32> TMaskGamma<R, G, B> {
     }
 
     /// `SkTMaskGamma::CanonicalColor`: the closest color that has the same luminance bits.
-    // Port of: src/core/SkMaskGamma.h#L129-L135 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L129-L134 (chrome/m156)
     #[must_use]
     pub fn canonical_color(color: Color) -> Color {
         let r = sk_t_scale255_bits(R, u32::from(color.r()) >> (8 - R));
@@ -253,21 +253,21 @@ impl<const R: u32, const G: u32, const B: u32> TMaskGamma<R, G, B> {
     }
 
     /// `SkTMaskGamma::getGammaTableDimensions`: `(tableWidth, numTables)`.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L150-L153 (chrome/m156)
     #[must_use]
     pub const fn gamma_table_dimensions() -> (usize, usize) {
         (Self::TABLE_WIDTH, Self::NUM_TABLES)
     }
 
     /// `SkTMaskGamma::getGammaTableSizeInBytes`.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L159-L161 (chrome/m156)
     #[must_use]
     pub const fn gamma_table_size_in_bytes() -> usize {
         Self::TABLE_NUM_ELEMENTS
     }
 
     /// `SkTMaskGamma::getGammaTables`: the flattened tables, or `None` for a linear value.
-    // Port of: src/core/SkMaskGamma.h#L102-L199 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L168-L170 (chrome/m156)
     #[must_use]
     pub fn gamma_tables(&self) -> Option<&[u8]> {
         self.gamma_tables.as_deref()
@@ -275,7 +275,7 @@ impl<const R: u32, const G: u32, const B: u32> TMaskGamma<R, G, B> {
 
     /// `SkTMaskGamma::preBlend`: the tables for the channels of `color`. A linear value gives a
     /// [`PreBlend`] that is not applicable.
-    // Port of: src/core/SkMaskGamma.h#L230-L247 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L229-L246 (chrome/m156)
     #[must_use]
     pub fn pre_blend(self: &Arc<Self>, color: Color) -> PreBlend<R, G, B> {
         if self.gamma_tables.is_none() {
@@ -309,7 +309,7 @@ pub type MaskGamma = TMaskGamma<3, 3, 3>;
 ///
 /// When the value is not applicable, [`PreBlend::r`], [`PreBlend::g`] and [`PreBlend::b`] are
 /// `None` (the C++ pointers are null).
-// Port of: src/core/SkMaskGamma.h#L200-L225 (chrome/m156)
+// Port of: src/core/SkMaskGamma.h#L200-L227 (chrome/m156)
 #[doc(alias = "SkTMaskPreBlend")]
 #[derive(Debug, Clone, Default)]
 pub struct PreBlend<const R: u32, const G: u32, const B: u32> {
@@ -325,7 +325,7 @@ pub type MaskPreBlend = PreBlend<3, 3, 3>;
 
 impl<const R: u32, const G: u32, const B: u32> PreBlend<R, G, B> {
     /// `SkTMaskPreBlend()`: not applicable.
-    // Port of: src/core/SkMaskGamma.h#L200-L225 (chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L209-L210 (chrome/m156)
     #[must_use]
     pub fn not_applicable() -> Self {
         Self {
@@ -344,21 +344,21 @@ impl<const R: u32, const G: u32, const B: u32> PreBlend<R, G, B> {
     }
 
     /// The red table: 256 entries. `None` when not applicable.
-    // Port of: src/core/SkMaskGamma.h#L200-L225 (fR, chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L224 (fR, chrome/m156)
     #[must_use]
     pub fn r(&self) -> Option<&[u8]> {
         self.table(self.r)
     }
 
     /// The green table: 256 entries. `None` when not applicable.
-    // Port of: src/core/SkMaskGamma.h#L200-L225 (fG, chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L225 (fG, chrome/m156)
     #[must_use]
     pub fn g(&self) -> Option<&[u8]> {
         self.table(self.g)
     }
 
     /// The blue table: 256 entries. `None` when not applicable.
-    // Port of: src/core/SkMaskGamma.h#L200-L225 (fB, chrome/m156)
+    // Port of: src/core/SkMaskGamma.h#L226 (fB, chrome/m156)
     #[must_use]
     pub fn b(&self) -> Option<&[u8]> {
         self.table(self.b)

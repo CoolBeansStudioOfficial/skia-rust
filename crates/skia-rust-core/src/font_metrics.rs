@@ -84,7 +84,7 @@ pub struct FontMetrics {
 impl FontMetrics {
     /// Returns `Some(thickness)` if the font metrics have a valid underline thickness, otherwise
     /// `None` (`SkFontMetrics::hasUnderlineThickness`).
-    // Port of: include/core/SkFontMetrics.h#L76-L83 (chrome/m156)
+    // Port of: include/core/SkFontMetrics.h#L76-L82 (chrome/m156)
     #[must_use]
     pub fn underline_thickness(&self) -> Option<scalar> {
         self.if_valid(
@@ -95,7 +95,7 @@ impl FontMetrics {
 
     /// Returns `Some(position)` if the font metrics have a valid underline position, otherwise
     /// `None` (`SkFontMetrics::hasUnderlinePosition`).
-    // Port of: include/core/SkFontMetrics.h#L91-L98 (chrome/m156)
+    // Port of: include/core/SkFontMetrics.h#L91-L97 (chrome/m156)
     #[must_use]
     pub fn underline_position(&self) -> Option<scalar> {
         self.if_valid(Flags::UNDERLINE_POSITION_IS_VALID, self.underline_position)
@@ -103,7 +103,7 @@ impl FontMetrics {
 
     /// Returns `Some(thickness)` if the font metrics have a valid strikeout thickness, otherwise
     /// `None` (`SkFontMetrics::hasStrikeoutThickness`).
-    // Port of: include/core/SkFontMetrics.h#L106-L113 (chrome/m156)
+    // Port of: include/core/SkFontMetrics.h#L106-L112 (chrome/m156)
     #[must_use]
     pub fn strikeout_thickness(&self) -> Option<scalar> {
         self.if_valid(
@@ -114,7 +114,7 @@ impl FontMetrics {
 
     /// Returns `Some(position)` if the font metrics have a valid strikeout position, otherwise
     /// `None` (`SkFontMetrics::hasStrikeoutPosition`).
-    // Port of: include/core/SkFontMetrics.h#L121-L128 (chrome/m156)
+    // Port of: include/core/SkFontMetrics.h#L121-L127 (chrome/m156)
     #[must_use]
     pub fn strikeout_position(&self) -> Option<scalar> {
         self.if_valid(Flags::STRIKEOUT_POSITION_IS_VALID, self.strikeout_position)

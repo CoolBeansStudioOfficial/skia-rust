@@ -148,21 +148,21 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::getFamilyName`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L98 (chrome/m156)
     #[must_use]
     pub fn family_name(&self) -> &str {
         &self.family_name
     }
 
     /// `SkFontDescriptor::getFullName`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L99 (chrome/m156)
     #[must_use]
     pub fn full_name(&self) -> &str {
         &self.full_name
     }
 
     /// `SkFontDescriptor::getPostscriptName`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L100 (chrome/m156)
     #[must_use]
     pub fn postscript_name(&self) -> &str {
         &self.postscript_name
@@ -175,7 +175,7 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::setFullName`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L103 (chrome/m156)
     pub fn set_full_name(&mut self, name: &str) {
         name.clone_into(&mut self.full_name);
     }
@@ -187,7 +187,7 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::hasStream`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L106 (chrome/m156)
     #[must_use]
     pub fn has_stream(&self) -> bool {
         self.stream.is_some()
@@ -206,7 +206,7 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::getCollectionIndex`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L108 (chrome/m156)
     #[must_use]
     pub fn collection_index(&self) -> i32 {
         self.collection_index
@@ -219,21 +219,21 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::getPaletteIndex`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L109 (chrome/m156)
     #[must_use]
     pub fn palette_index(&self) -> i32 {
         self.palette_index
     }
 
     /// `SkFontDescriptor::setPaletteIndex`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L127 (chrome/m156)
     pub fn set_palette_index(&mut self, palette_index: i32) {
         self.palette_index = palette_index;
     }
 
     /// `SkFontDescriptor::getVariation`: the variation coordinates, with the count given by
     /// `getVariationCoordinateCount`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L111-L113 (chrome/m156)
     #[must_use]
     pub fn variation(&self) -> &[Coordinate] {
         &self.variation
@@ -241,14 +241,14 @@ impl FontDescriptor {
 
     /// `SkFontDescriptor::setVariationCoordinates(count)`: replaces the coordinates with `count`
     /// zeroed ones and returns them for filling in.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L128-L131 (chrome/m156)
     pub fn set_variation_coordinates(&mut self, count: usize) -> &mut [Coordinate] {
         self.variation = vec![Coordinate::default(); count];
         &mut self.variation
     }
 
     /// `SkFontDescriptor::getPaletteEntryOverrides`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L114-L117 (chrome/m156)
     #[must_use]
     pub fn palette_entry_overrides(&self) -> &[Override] {
         &self.palette_entry_overrides
@@ -256,21 +256,21 @@ impl FontDescriptor {
 
     /// `SkFontDescriptor::setPaletteEntryOverrides(count)`: replaces the overrides with `count`
     /// zeroed ones and returns them for filling in.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L132-L135 (chrome/m156)
     pub fn set_palette_entry_overrides(&mut self, count: usize) -> &mut [Override] {
         self.palette_entry_overrides = vec![Override::default(); count];
         &mut self.palette_entry_overrides
     }
 
     /// `SkFontDescriptor::getSyntheticBold`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L118 (chrome/m156)
     #[must_use]
     pub fn synthetic_bold(&self) -> bool {
         self.synthetic_bold
     }
 
     /// `SkFontDescriptor::setSyntheticBold`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L136 (chrome/m156)
     pub fn set_synthetic_bold(&mut self, bold: bool) {
         self.synthetic_bold = bold;
     }
@@ -283,20 +283,20 @@ impl FontDescriptor {
     }
 
     /// `SkFontDescriptor::setSyntheticOblique`.
-    // Port of: src/core/SkFontDescriptor.h#L85-L152 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L137 (chrome/m156)
     pub fn set_synthetic_oblique(&mut self, oblique: bool) {
         self.synthetic_oblique = oblique;
     }
 
     /// `SkFontDescriptor::getFactoryId`.
-    // Port of: src/core/SkFontDescriptor.h#L120 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L120-L122 (chrome/m156)
     #[must_use]
     pub fn factory_id(&self) -> FactoryId {
         self.factory_id
     }
 
     /// `SkFontDescriptor::setFactoryId`.
-    // Port of: src/core/SkFontDescriptor.h#L138 (chrome/m156)
+    // Port of: src/core/SkFontDescriptor.h#L138-L140 (chrome/m156)
     pub fn set_factory_id(&mut self, factory_id: FactoryId) {
         self.factory_id = factory_id;
     }

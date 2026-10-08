@@ -95,7 +95,7 @@ pub mod palette {
 impl<'vp, 'p> FontArguments<'vp, 'p> {
     /// `SkFontArguments()`: collection index 0, no variation position, default palette, and
     /// synthetic bold and oblique unset.
-    // Port of: include/core/SkFontArguments.h#L51-L59 (chrome/m156)
+    // Port of: include/core/SkFontArguments.h#L51-L54 (chrome/m156)
     #[must_use]
     pub fn new() -> Self {
         Self::default()
