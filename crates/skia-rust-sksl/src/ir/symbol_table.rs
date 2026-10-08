@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/sksl/ir/SkSLSymbolTable.{h,cpp}: storage, lookup, `injectWithoutOwnership`,
 // and (with task S6) adding with duplicate checks, renaming, removal, `moveSymbolTo`,
-// `insertNewParent`, `addArrayDimension` and `wouldShadowSymbolsFrom`. `instantiateSymbolRef` needs
-// `Symbol::instantiate` (S7b) and is not here yet.
+// `insertNewParent`, `addArrayDimension` and `wouldShadowSymbolsFrom`, and (with task S7b)
+// `instantiateSymbolRef`.
 
 //! [`SymbolTable`]: maps names to symbols, with a parent chain.
 
@@ -13,9 +13,10 @@ use std::collections::HashMap;
 
 use super::{
     IrPool, Type,
-    ids::{SymTabId, SymbolId, TypeId},
+    ids::{ExprId, SymTabId, SymbolId, TypeId},
 };
 use crate::context::Context;
+use crate::position::Position;
 
 /// `SkSL::SymbolTable`. Symbols are owned by the pool, not by the table (Skia's
 /// `fOwnedSymbols` and `takeOwnershipOfSymbol` reduce to allocating in the pool), so the table
@@ -303,4 +304,21 @@ pub fn add_array_dimension(
     let id = ctx.pool.add_type(array);
     add_symbol(ctx, table, SymbolId::Type(id));
     id
+}
+
+/// `SymbolTable::instantiateSymbolRef(context, name, pos)`: an expression for the symbol `name`
+/// that is visible from `table`. Reports an unknown identifier and returns `None`.
+// Port of: src/sksl/ir/SkSLSymbolTable.cpp#L200-L208 (chrome/m156)
+pub fn instantiate_symbol_ref(
+    ctx: &mut Context,
+    table: SymTabId,
+    name: &str,
+    pos: Position,
+) -> Option<ExprId> {
+    if let Some(symbol) = ctx.pool.find_symbol(table, name) {
+        return symbol.instantiate(ctx, pos);
+    }
+    ctx.errors
+        .error(pos, &format!("unknown identifier '{name}'"));
+    None
 }

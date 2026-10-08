@@ -18,6 +18,7 @@
 mod binary_expression;
 mod block;
 mod child_call;
+mod constant_folder_stub;
 pub mod constructor;
 mod constructor_array;
 mod constructor_array_cast;
@@ -43,6 +44,7 @@ mod pool;
 mod prefix_postfix;
 mod program;
 mod program_element;
+mod s7b_shims;
 mod setting;
 mod simple_expressions;
 mod simple_statements;
@@ -95,6 +97,7 @@ pub use simple_statements::{
 pub use statement::{Statement, StatementKind};
 pub use swizzle::{ComponentArray, Swizzle, swizzle_component};
 pub use symbol::SymbolKind;
+pub use symbol_table::instantiate_symbol_ref;
 pub use symbol_table::{
     SymbolTable, add_array_dimension, add_symbol, insert_new_parent, move_symbol_to, remove_symbol,
     rename_symbol, would_shadow_symbols_from,
@@ -110,6 +113,7 @@ pub use variable_reference::{VariableRefKind, VariableReference};
 
 #[cfg(test)]
 mod constructor_tests;
+mod s7b_tests;
 #[cfg(test)]
 mod semantics_tests;
 #[cfg(test)]
