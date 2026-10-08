@@ -233,9 +233,13 @@ impl Compiler {
     /// `module_type` atop `parent`. Returns the parts of the module (its pool, global symbols and
     /// elements), so that the loader can add the public aliases before freezing the pool.
     /// `None` when the module has errors.
+    ///
+    /// # Panics
+    ///
+    /// If the parser leaves no global symbol table for the module, which the parser never does.
     // Port of: src/sksl/SkSLCompiler.cpp#L183-L212 (chrome/m156), with the post-load inlining
     // of `shouldInline` left to `optimize_module_after_loading`.
-    pub(crate) fn compile_module_parts(
+    pub fn compile_module_parts(
         &mut self,
         kind: ProgramKind,
         module_type: ModuleType,
@@ -502,9 +506,8 @@ impl Compiler {
     /// minifier runs. `module` is the module's unfrozen parts and `parent` the module it extends.
     /// Returns false when an error was reported.
     // Port of: src/sksl/SkSLCompiler.cpp#L253-L304 (chrome/m156)
-    // Only the tests call this until the minifier (S24) lands.
-    #[allow(dead_code)]
-    pub(crate) fn optimize_module_before_minifying(
+    // Called by the minifier (`tests/src/tools/sksl_minify.rs`, S24).
+    pub fn optimize_module_before_minifying(
         &mut self,
         kind: ProgramKind,
         module: &mut ModuleParts,
@@ -593,18 +596,19 @@ impl Compiler {
 }
 
 /// The parts of a module before it is frozen: the pool and symbols built while it was parsed.
-pub(crate) struct ModuleParts {
-    pub(crate) pool: IrPool,
-    pub(crate) symbols: SymTabId,
-    pub(crate) elements: Vec<ElemId>,
-    pub(crate) module_type: ModuleType,
-    pub(crate) source: Arc<[u8]>,
+#[derive(Debug)]
+pub struct ModuleParts {
+    pub pool: IrPool,
+    pub symbols: SymTabId,
+    pub elements: Vec<ElemId>,
+    pub module_type: ModuleType,
+    pub source: Arc<[u8]>,
 }
 
 impl ModuleParts {
     /// Freezes the pool into a [`Module`] that inherits from `parent`.
     #[must_use]
-    pub(crate) fn freeze(self, parent: Arc<Module>) -> Arc<Module> {
+    pub fn freeze(self, parent: Arc<Module>) -> Arc<Module> {
         Arc::new(Module {
             parent: Some(parent),
             pool: self.pool.freeze(),

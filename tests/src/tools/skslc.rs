@@ -16,13 +16,17 @@
 
 use std::fmt;
 
+use skia_rust_sksl::codegen::pipeline_stage::{
+    Callbacks as PipelineStageCallbacks, convert_program as convert_pipeline_stage,
+};
 use skia_rust_sksl::codegen::rp::make_raster_pipeline_program;
 use skia_rust_sksl::compiler::Compiler;
 use skia_rust_sksl::defines::DEFAULT_INLINE_THRESHOLD;
 use skia_rust_sksl::flavor::Flavor;
-use skia_rust_sksl::ir::Program;
+use skia_rust_sksl::ir::{IrPool, Program, VarDeclaration};
 use skia_rust_sksl::position::Position;
 use skia_rust_sksl::program_settings::{ProgramKind as CompilerKind, ProgramSettings, Version};
+use skia_rust_sksl::shader_utils::pretty_print;
 use skia_rust_sksl::tracing::DebugTracePriv;
 
 /// `SkSL::ProgramKind`, for the kinds `skslc` accepts (`Main.cpp#L546-L566`).
@@ -472,11 +476,13 @@ pub fn skslc(
             if let Some(output) = write_skrp(&mut compiler, &mut program, pragma.debug_trace) {
                 return Ok(output);
             }
+        } else if format == OutputFormat::Stage {
+            return Ok(write_stage(&program));
         } else {
             // The program compiled. The output itself is written by a code generator, which is
-            // not ported (the pipeline-stage, WGSL and GLSL back ends).
+            // not ported (the WGSL and GLSL back ends).
             return Err(SkslcError::NotPorted(
-                "the code generator for this output format (docs/design/sksl.md S24-S26)",
+                "the code generator for this output format (docs/design/sksl.md S26)",
             ));
         }
     }
@@ -515,6 +521,81 @@ fn write_skrp(
         return None;
     };
     Some(raster_prog.dump_with(true, true).into_bytes())
+}
+
+/// The `.stage` writer of `skslc`: the pipeline-stage text of `program`, pretty-printed.
+// Port of: tools/skslc/Main.cpp#L729-L790 (chrome/m156), the `.stage` branch.
+fn write_stage(program: &Program) -> Vec<u8> {
+    let mut callbacks = StageCallbacks::default();
+    // The .stage output looks almost like valid SkSL, but not quite. Children are sampled by
+    // index, not name, and the input color and coords keep their names as `_inColor`/`_coords`.
+    convert_pipeline_stage(
+        program,
+        "_coords",
+        "_inColor",
+        "_canvasColor",
+        &mut callbacks,
+    );
+    pretty_print(callbacks.output.as_bytes())
+}
+
+/// The callbacks of `skslc`'s `.stage` writer: the text is collected in `output`, and every child
+/// is named `child_<index>`.
+// Port of: tools/skslc/Main.cpp#L729-L790 (the `Callbacks` class of the `.stage` branch, chrome/m156).
+#[derive(Debug, Default)]
+pub struct StageCallbacks {
+    /// The unformatted text (`fOutput`).
+    pub output: String,
+}
+
+impl PipelineStageCallbacks for StageCallbacks {
+    fn get_mangled_name(&mut self, name: &str) -> String {
+        format!("{name}_0")
+    }
+
+    fn declare_uniform(&mut self, pool: &IrPool, decl: &VarDeclaration) -> String {
+        self.output.push_str(&decl.description(pool));
+        pool.variable(decl.var).name.to_string()
+    }
+
+    fn define_function(&mut self, declaration: &str, body: &str, _is_main: bool) {
+        self.output.push_str(declaration);
+        self.output.push('{');
+        self.output.push_str(body);
+        self.output.push('}');
+    }
+
+    fn declare_function(&mut self, declaration: &str) {
+        self.output.push_str(declaration);
+    }
+
+    fn define_struct(&mut self, definition: &str) {
+        self.output.push_str(definition);
+    }
+
+    fn declare_global(&mut self, declaration: &str) {
+        self.output.push_str(declaration);
+    }
+
+    fn sample_shader(&mut self, index: i32, coords: &str) -> String {
+        format!("child_{index}.eval({coords})")
+    }
+
+    fn sample_color_filter(&mut self, index: i32, color: &str) -> String {
+        format!("child_{index}.eval({color})")
+    }
+
+    fn sample_blender(&mut self, index: i32, src: &str, dst: &str) -> String {
+        format!("child_{index}.eval({src}, {dst})")
+    }
+
+    fn to_linear_srgb(&mut self, color: &str) -> String {
+        format!("toLinearSrgb({color})")
+    }
+
+    fn from_linear_srgb(&mut self, color: &str) -> String {
+        format!("fromLinearSrgb({color})")
+    }
 }
 
 /// The bytes `skslc` writes when it fails with `error_text`.

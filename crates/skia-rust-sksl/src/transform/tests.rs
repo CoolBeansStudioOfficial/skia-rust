@@ -6,7 +6,6 @@
 //! optimized program, the test checks the same structure (`resources/sksl/shared/Dead*.sksl` with
 //! `tests/sksl/shared/*.glsl`).
 
-use std::path::Path;
 use std::sync::Arc;
 
 use super::{
@@ -21,12 +20,11 @@ use crate::context::Context;
 use crate::error_reporter::ErrorReporter;
 use crate::flavor::Flavor;
 use crate::ir::{
-    ElemId, ExprId, ExpressionKind, IrPool, ModifierFlags, Program, ProgramElementKind,
-    StatementKind, StmtId, VarId,
+    ElemId, ExprId, ExpressionKind, IrPool, ModifierFlags, Program, StatementKind, StmtId, VarId,
 };
 use crate::module_loader::ModuleLoader;
 use crate::modules::ModuleType;
-use crate::program_settings::{ProgramConfig, ProgramKind, ProgramSettings};
+use crate::program_settings::{ProgramKind, ProgramSettings};
 
 /// Compiles `src` as a program of `kind` without the optimizer, so that one pass can run alone.
 /// The passes check the settings the optimizer would have enabled, so those are turned on.
@@ -427,143 +425,6 @@ fn module_optimizer_keeps_public_globals_and_drops_private_ones() {
     assert!(text.contains("keep"), "{text}");
     assert!(text.contains("float use(float x)"), "{text}");
 }
-
-/// The spelling that `sksl-minify`'s lexer pass (`tools/sksl-minify/SkSLMinify.cpp`,
-/// `generate_minified_text`) gives a text: float literals lose trailing zeros (`2.0` is `2.`) and
-/// leading zeros before the point (`0.5` is `.5`), and whitespace goes. The lexer pass is S24's
-/// port; until it lands, the golden comparison below applies this to both texts.
-fn lexer_like(text: &str) -> String {
-    let is_ident = |c: char| c.is_ascii_alphanumeric() || c == '_' || c == '$';
-    let chars: Vec<char> = text.chars().collect();
-    let mut out = String::new();
-    let mut i = 0;
-    while i < chars.len() {
-        let c = chars[i];
-        let starts_number =
-            c.is_ascii_digit() || (c == '.' && chars.get(i + 1).is_some_and(char::is_ascii_digit));
-        // A number is a token of its own only where it does not continue an identifier.
-        if starts_number && (i == 0 || !is_ident(chars[i - 1])) {
-            let start = i;
-            while i < chars.len() && chars[i].is_ascii_digit() {
-                i += 1;
-            }
-            if chars.get(i) == Some(&'.') {
-                i += 1;
-                while i < chars.len() && chars[i].is_ascii_digit() {
-                    i += 1;
-                }
-            }
-            let mut literal: String = chars[start..i].iter().collect();
-            if literal.contains('.') {
-                while literal.ends_with('0') && literal.len() >= 3 {
-                    literal.pop();
-                }
-            }
-            if literal.starts_with("0.") && literal.len() >= 3 {
-                literal.remove(0);
-            }
-            out.push_str(&literal);
-        } else {
-            out.push(c);
-            i += 1;
-        }
-    }
-    out.chars().filter(|c| !c.is_whitespace()).collect()
-}
-
-/// `sksl-minify` on every runtime-effect and mesh input that has a `.minified.sksl` golden
-/// (`folding`, `rte` and `mesh`), with shrinking on: the module optimizer's renames, dead-code
-/// removal and rewrites must give the golden's elements. Mesh programs leave out their
-/// `Attributes` and `Varyings` structs, as the minifier does. Skipped without a Skia checkout.
-#[test]
-fn minified_goldens_match_the_module_optimizer() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../third_party/skia");
-    let mut checked = 0;
-    let mut failures = Vec::new();
-    for dir in ["folding", "rte", "mesh"] {
-        let Ok(entries) = std::fs::read_dir(root.join("tests/sksl").join(dir)) else {
-            eprintln!("todo: skipping, missing Skia checkout");
-            return;
-        };
-        let mut goldens: Vec<String> = entries
-            .filter_map(Result::ok)
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
-            .filter(|name| name.ends_with(".minified.sksl"))
-            .collect();
-        goldens.sort();
-        for golden_name in goldens {
-            let stem = golden_name.trim_end_matches(".minified.sksl");
-            let found = MINIFY_INPUTS.iter().find_map(|&(ext, kind)| {
-                let path = root
-                    .join("resources/sksl")
-                    .join(dir)
-                    .join(format!("{stem}.{ext}"));
-                path.exists().then_some((path, kind))
-            });
-            let Some((input_path, kind)) = found else {
-                failures.push(format!("{dir}/{golden_name}: no input"));
-                continue;
-            };
-            let input = std::fs::read(&input_path).expect("the input is readable");
-            let golden =
-                std::fs::read_to_string(root.join("tests/sksl").join(dir).join(&golden_name))
-                    .expect("the golden is readable");
-            let parent = if ProgramConfig::is_runtime_effect(kind) {
-                ModuleLoader::for_flavor(Flavor::Standalone).public()
-            } else {
-                ModuleLoader::for_flavor(Flavor::Standalone).root()
-            };
-            let mut compiler = Compiler::with_flavor(Flavor::Standalone);
-            let Some(mut parts) =
-                compiler.compile_module_parts(kind, ModuleType::Unknown, &input, &parent)
-            else {
-                failures.push(format!("{dir}/{golden_name}: does not compile"));
-                continue;
-            };
-            if !compiler.optimize_module_before_minifying(kind, &mut parts, &parent, true) {
-                failures.push(format!(
-                    "{dir}/{golden_name}: the optimizer reported errors"
-                ));
-                continue;
-            }
-            let is_mesh = matches!(kind, ProgramKind::MeshFragment | ProgramKind::MeshVertex);
-            let text: String = parts
-                .elements
-                .iter()
-                .filter(|&&element| {
-                    !(is_mesh
-                        && matches!(
-                            &parts.pool.element(element).kind,
-                            ProgramElementKind::StructDefinition(def)
-                                if matches!(parts.pool.ty(def.ty).name(), "Attributes" | "Varyings")
-                        ))
-                })
-                .map(|&element| parts.pool.element_description(element))
-                .collect();
-            checked += 1;
-            if lexer_like(&text) != lexer_like(&golden) {
-                failures.push(format!("{dir}/{golden_name}: the elements differ"));
-            }
-        }
-    }
-    assert!(checked > 0, "no minified goldens were found");
-    assert!(
-        failures.is_empty(),
-        "{checked} checked:\n{}",
-        failures.join("\n")
-    );
-}
-
-/// The input extensions of the minified goldens, with the program kind `sksl-minify` gets for
-/// each (`gn/minify_sksl_tests.py`).
-const MINIFY_INPUTS: &[(&str, ProgramKind)] = &[
-    ("rts", ProgramKind::RuntimeShader),
-    ("privrts", ProgramKind::PrivateRuntimeShader),
-    ("rtcf", ProgramKind::RuntimeColorFilter),
-    ("rtb", ProgramKind::RuntimeBlender),
-    ("mfrag", ProgramKind::MeshFragment),
-    ("mvert", ProgramKind::MeshVertex),
-];
 
 /// The whole optimizer on `DeadIfStatement`: the constant `if`s fold away, and the live return is
 /// what the optimized golden `tests/sksl/shared/DeadIfStatement.glsl` shows. The `;` lines are the

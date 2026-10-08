@@ -44790,7 +44790,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLPipelineStageTestbed.cpp#L84-L92"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "18ea2436e17e1c61568fadbfdd96debda065389c34611732d40bce95de683863"
 
 [[test]]
@@ -57375,7 +57375,7 @@ id = "tests/sksl/folding/ArraySizeFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/ArraySizeFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ccfe0b955a703760dd472f629f7c753f26bf54805cf59e09b417e7213dada15c"
 
 [[test]]
@@ -57408,7 +57408,7 @@ id = "tests/sksl/folding/AssignmentOps.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/AssignmentOps.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "857447867f7108a4b591bde518a46a088381bc239f2a17fcc882dcea022543b5"
 
 [[test]]
@@ -57441,7 +57441,7 @@ id = "tests/sksl/folding/BoolFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/BoolFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "57f297e6675ec2a9f40001f2e62ae686553c972691c0482241a5d20643c13984"
 
 [[test]]
@@ -57474,7 +57474,7 @@ id = "tests/sksl/folding/CastFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/CastFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bac3e2b24351869c2dc7990f37f22a35d289ddea27ccca9e2a5c7e4754573fee"
 
 [[test]]
@@ -57507,7 +57507,7 @@ id = "tests/sksl/folding/FloatFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/FloatFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dadef667dd0a7bdad86c3747ef3421d7efbbb4b592a8faa35543e9471ab10d06"
 
 [[test]]
@@ -57540,7 +57540,7 @@ id = "tests/sksl/folding/IntFoldingES2.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/IntFoldingES2.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3c622ca656f86d195829c5b9ce762c654884958afca02e22e0d67538c8df81c3"
 
 [[test]]
@@ -57598,7 +57598,7 @@ id = "tests/sksl/folding/LogicalNot.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/LogicalNot.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c08072c4a20c2241ed9a21d602c9b6e8cc2a1bbc7bcc508fb66cb7884a91621b"
 
 [[test]]
@@ -57631,7 +57631,7 @@ id = "tests/sksl/folding/MatrixFoldingES2.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixFoldingES2.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3fef1b91d4cdabc62c5ef26ea2ccfdcb582f41952a7b4f73ec4056a83a36453d"
 
 [[test]]
@@ -57689,7 +57689,7 @@ id = "tests/sksl/folding/MatrixNoOpFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixNoOpFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "808ed89b915539ae63da864056fbe76af5a019b8d4020f5b9d54ce38816d904f"
 
 [[test]]
@@ -57722,7 +57722,7 @@ id = "tests/sksl/folding/MatrixScalarNoOpFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixScalarNoOpFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04dfa1ef10cdc760bbaa91bf4726cb96329469a1caffb4f9458b6c600fcbf179"
 
 [[test]]
@@ -57755,7 +57755,7 @@ id = "tests/sksl/folding/MatrixVectorNoOpFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixVectorNoOpFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "933b2b2cfb83c90ee906b9d89922d0be11652a3580137b8970b08e9c1d2b534f"
 
 [[test]]
@@ -57788,7 +57788,7 @@ id = "tests/sksl/folding/Negation.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/Negation.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "21d9e3811dfdb28427c88bc2a254a247a3884b223ac4eaeebea17befd135a052"
 
 [[test]]
@@ -57821,7 +57821,7 @@ id = "tests/sksl/folding/PreserveSideEffects.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/PreserveSideEffects.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2e8a395e60a5cee661a82f6de35691da2c607a7effd7bb98c93dc4787fa5eb67"
 
 [[test]]
@@ -57854,7 +57854,7 @@ id = "tests/sksl/folding/SelfAssignment.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SelfAssignment.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "18dbd0cfff7ef4b07bd545bc08909ad9ae4555edf4d4309fd75593fc142f151f"
 
 [[test]]
@@ -57887,7 +57887,7 @@ id = "tests/sksl/folding/ShortCircuitBoolFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/ShortCircuitBoolFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b94a853158e910194dd6b3e547c35c4cb342f77c7ce01bd8ab2882b522208bab"
 
 [[test]]
@@ -57920,7 +57920,7 @@ id = "tests/sksl/folding/StructFieldFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/StructFieldFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "11c4cfc3107dc1d61f69832bca20ddbe4716c7851404836c694271f929bb8de1"
 
 [[test]]
@@ -57953,7 +57953,7 @@ id = "tests/sksl/folding/StructFieldNoFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/StructFieldNoFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5933660bc886c7d0bd574daf50912f87a1f029c344fe312fa6071361280aa144"
 
 [[test]]
@@ -57986,7 +57986,7 @@ id = "tests/sksl/folding/SwitchCaseFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SwitchCaseFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3cce99eab07d9def311eb99af8a99c51495381512f7a6a338b1ee8908926b2f9"
 
 [[test]]
@@ -58019,7 +58019,7 @@ id = "tests/sksl/folding/SwizzleFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SwizzleFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4533d89c96566847e0ff9b39872dde422a635cae680c607ea53743139de54ba1"
 
 [[test]]
@@ -58052,7 +58052,7 @@ id = "tests/sksl/folding/TernaryFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/TernaryFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "23589203cd6ed75c5f52f1fc5b63571640be94dcdb9ba5e449720e60a6584bc2"
 
 [[test]]
@@ -58085,7 +58085,7 @@ id = "tests/sksl/folding/VectorScalarFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/VectorScalarFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb80e05fc638d7ab3be3fae942a97c40d1f45d78e10c4a09690c6d7591d138e4"
 
 [[test]]
@@ -58118,7 +58118,7 @@ id = "tests/sksl/folding/VectorVectorFolding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/VectorVectorFolding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fa40b80848f601a940840a5f2403cae8f8c77061e1e2d0f7355b045596abb3dc"
 
 [[test]]
@@ -64004,7 +64004,7 @@ id = "tests/sksl/mesh/MeshFragment.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragment.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7f58373044cba4493e8c66b0f039e7148cd9b503581db8635e36f23eed405d64"
 
 [[test]]
@@ -64012,7 +64012,7 @@ id = "tests/sksl/mesh/MeshFragment.stage"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragment.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ea26d4190c617c1f4bd46b6e42b388d8ba2ad774d8097fbffcfe93eb4df39674"
 
 [[test]]
@@ -64020,7 +64020,7 @@ id = "tests/sksl/mesh/MeshFragmentWithBlender.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithBlender.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "07034a7bbb4d45228e8dc2b48023ef4fc840eb52aeb2a87e25a562e648d0e6f7"
 
 [[test]]
@@ -64028,7 +64028,7 @@ id = "tests/sksl/mesh/MeshFragmentWithBlender.stage"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithBlender.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b90e95238cb29b1c233d58a052787e3748ab4eb3c56fca535b2d3e774f92e159"
 
 [[test]]
@@ -64036,7 +64036,7 @@ id = "tests/sksl/mesh/MeshFragmentWithColorFilter.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithColorFilter.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e2e233baeec1bccab26a5b1c406f1eb8cede5f6b202695143060a4e5fc18fa5e"
 
 [[test]]
@@ -64044,7 +64044,7 @@ id = "tests/sksl/mesh/MeshFragmentWithColorFilter.stage"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithColorFilter.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2d7cbabd74f1061430051c0b818129ad59ee9b90cd22e40dda1f69ebbe270e28"
 
 [[test]]
@@ -64052,7 +64052,7 @@ id = "tests/sksl/mesh/MeshFragmentWithShader.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithShader.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "417a6503230806b95d422a14e3870890ab95b7bc2c5979ebc2b00f6612662cfe"
 
 [[test]]
@@ -64060,7 +64060,7 @@ id = "tests/sksl/mesh/MeshFragmentWithShader.stage"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshFragmentWithShader.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3116f6ad2c56fe35b9882fa288023a225daf4590e2241736e4faee267bac30ae"
 
 [[test]]
@@ -64068,7 +64068,7 @@ id = "tests/sksl/mesh/MeshVertex.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshVertex.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "190e1990ee16b4675eae038dacfc1ac6aa732044e8773f7ceb96e0340c8705f3"
 
 [[test]]
@@ -64076,7 +64076,7 @@ id = "tests/sksl/mesh/MeshVertex.stage"
 kind = "sksl-golden"
 source = "tests/sksl/mesh/MeshVertex.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4a347923381081695f2c2cc87a646b0dde80fb7d41e7b36f2e4ea07828fa0cec"
 
 [[test]]
@@ -64219,7 +64219,7 @@ id = "tests/sksl/realistic/BlueNeurons.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/BlueNeurons.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "96df4c921fe62d473fd4389d95f04346629c5a389cd3a4381c8d47120fd601c8"
 
 [[test]]
@@ -64235,7 +64235,7 @@ id = "tests/sksl/realistic/BlueNeurons.stage"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/BlueNeurons.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3f90bcb7cf20f867e26384ee83ca487001a4ea434aff90c4b912a13370170544"
 
 [[test]]
@@ -64295,7 +64295,7 @@ id = "tests/sksl/realistic/HSLColorFilter.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/HSLColorFilter.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "acfa1229e3a0cf3e55448aec08b9233c3626cdb1e596f9426159e4adf7a952c7"
 
 [[test]]
@@ -64311,7 +64311,7 @@ id = "tests/sksl/realistic/HSLColorFilter.stage"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/HSLColorFilter.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c5c36f8353f4809aa1fc13281d0a180cc28688da4d9611a35f728ef4a8221c89"
 
 [[test]]
@@ -64319,7 +64319,7 @@ id = "tests/sksl/realistic/HighContrastFilter.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/HighContrastFilter.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "84f7e9e0f530cdbf5ebcc25165c3357b194718593d88a63214819afd2d1255bf"
 
 [[test]]
@@ -64335,7 +64335,7 @@ id = "tests/sksl/realistic/HighContrastFilter.stage"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/HighContrastFilter.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "073977bc43de6e82ebc3209389870cb7329fdf0147d41934fddb71a6e358de43"
 
 [[test]]
@@ -64343,7 +64343,7 @@ id = "tests/sksl/realistic/RippleShader.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/RippleShader.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3341027cd86af7751c6189a93050054ca1cf7bb11d59dd78f60503952cce2fd8"
 
 [[test]]
@@ -64359,7 +64359,7 @@ id = "tests/sksl/realistic/RippleShader.stage"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/RippleShader.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ea68c39f80c33b8e332e39c77868f13ed8485302bf5004f60e362c32772bc572"
 
 [[test]]
@@ -64367,7 +64367,7 @@ id = "tests/sksl/runtime/AllowNarrowingConversions.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/AllowNarrowingConversions.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c16ba5871ef8352b9414e5fabb536376216ffa42c4d22c8c77e0695700838e3b"
 
 [[test]]
@@ -64383,7 +64383,7 @@ id = "tests/sksl/runtime/AllowNarrowingConversions.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/AllowNarrowingConversions.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "582cf6a2ba4d682db8b8ac65b8ed39c77f6431ce1f34f726ab4576109d071ed7"
 
 [[test]]
@@ -64391,7 +64391,7 @@ id = "tests/sksl/runtime/ArrayIndexing.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ArrayIndexing.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8bbc065dc7c8ae18605b8f9c2dfab355467486af350811bdd2437fe9db678b34"
 
 [[test]]
@@ -64407,7 +64407,7 @@ id = "tests/sksl/runtime/ArrayIndexing.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ArrayIndexing.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9b81a700a4f93037c9fbefe0185dc288e691ae33e82b739f05bc0f19cd82d48b"
 
 [[test]]
@@ -64415,7 +64415,7 @@ id = "tests/sksl/runtime/ArrayNarrowingConversions.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ArrayNarrowingConversions.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ca370715367e39db55f051dd393eaf9409258cbdece1d3b670fd8313276733e1"
 
 [[test]]
@@ -64431,7 +64431,7 @@ id = "tests/sksl/runtime/ArrayNarrowingConversions.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ArrayNarrowingConversions.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "207c239e0306e18a2b3c93f70d364bbe3df5aab6b4e9ca94ef67a03eb834cb04"
 
 [[test]]
@@ -64439,7 +64439,7 @@ id = "tests/sksl/runtime/Blend.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Blend.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4cfe4c2679eff5d518493875b254c79397d9319b8c342c15fd0aa63c89f10579"
 
 [[test]]
@@ -64455,7 +64455,7 @@ id = "tests/sksl/runtime/Blend.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Blend.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3c40c1a2835b9207397ae1888fe1472762935c52f435e08003fe5694de5ae6f3"
 
 [[test]]
@@ -64463,7 +64463,7 @@ id = "tests/sksl/runtime/ChildEffectSimple.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSimple.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "25a7fe035aae719618caee5e65d81a0f220bb78c219e347798143db10bad994d"
 
 [[test]]
@@ -64479,7 +64479,7 @@ id = "tests/sksl/runtime/ChildEffectSimple.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSimple.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "02c39bac507c3cb9ddfe73aaa497f7502c9a9bec6ca9621b7d5089163b2f8991"
 
 [[test]]
@@ -64487,7 +64487,7 @@ id = "tests/sksl/runtime/ChildEffectSpecialization.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSpecialization.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bb04de1f44e91ebc0e6c20ff394c2bc1f36920a319dc673d134177e376e322dc"
 
 [[test]]
@@ -64503,7 +64503,7 @@ id = "tests/sksl/runtime/ChildEffectSpecialization.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSpecialization.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "974fa433c38b7b5dec55cdc257b901ffe6cc2c0fc1b56152ab6f0d8944d3bef3"
 
 [[test]]
@@ -64511,7 +64511,7 @@ id = "tests/sksl/runtime/ChildEffectSpecializationFanOut.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSpecializationFanOut.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "480bf98d17c899e8fa3c0ba8b19901f0336dd303924ac31a654964bb6df361a0"
 
 [[test]]
@@ -64527,7 +64527,7 @@ id = "tests/sksl/runtime/ChildEffectSpecializationFanOut.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffectSpecializationFanOut.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5ffaea028b3d88a165b7b225c3beaac10456d77ed1782f9f3fa05b166b072d36"
 
 [[test]]
@@ -64535,7 +64535,7 @@ id = "tests/sksl/runtime/ChildEffects.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffects.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "19da90d205fc20d70f35099f5b0caf29c90243498ffacdf04569814f9cb76306"
 
 [[test]]
@@ -64551,7 +64551,7 @@ id = "tests/sksl/runtime/ChildEffects.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ChildEffects.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9bd88ae654f464304496e6c25f44e4da0927d55c38f398f049df9b7e0fd1f203"
 
 [[test]]
@@ -64559,7 +64559,7 @@ id = "tests/sksl/runtime/ColorConversion.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ColorConversion.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "91d0869e0f7bcb8499b07a853c8cdc609054ca6544e35ab550982af460db4ab3"
 
 [[test]]
@@ -64575,7 +64575,7 @@ id = "tests/sksl/runtime/ColorConversion.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ColorConversion.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3253a26e45be3ad92d55d60546114e97f2d12b9a5e03b9c6513f572654148ec3"
 
 [[test]]
@@ -64583,7 +64583,7 @@ id = "tests/sksl/runtime/Commutative.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Commutative.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ec7cc3d4015359eddf56635b7716d1c54242542a6f6b040e1f402ac4b5be8e11"
 
 [[test]]
@@ -64599,7 +64599,7 @@ id = "tests/sksl/runtime/Commutative.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Commutative.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0fc73b606401248452c9b6e703eabd84a469d00370593170d8eb3118b09d561d"
 
 [[test]]
@@ -64607,7 +64607,7 @@ id = "tests/sksl/runtime/ConstPreservation.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ConstPreservation.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9663b76a58cf8c20db78a6cd7fa8959549c9fe92e7f5d98067061c9eafb561c4"
 
 [[test]]
@@ -64623,7 +64623,7 @@ id = "tests/sksl/runtime/ConstPreservation.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ConstPreservation.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1f64b34d7165d7f7b077c7f3b747268bf61ce7a7e7c93e475ada1b9290c8a7d7"
 
 [[test]]
@@ -64631,7 +64631,7 @@ id = "tests/sksl/runtime/ConversionConstructors.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ConversionConstructors.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "96ece23b36eba926bcc42bcef14c42764fdc55a684f2a11909c786a6df435663"
 
 [[test]]
@@ -64647,7 +64647,7 @@ id = "tests/sksl/runtime/ConversionConstructors.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/ConversionConstructors.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9a631247459f813d368cb93af787a1a9886fe33a7fc35e7661a6bf9258b9e2d2"
 
 [[test]]
@@ -64655,7 +64655,7 @@ id = "tests/sksl/runtime/DivideByZero.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/DivideByZero.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c33c6843a15d8849d923922fadfbeed0d3c134e2420fada42e338e3c06568c9e"
 
 [[test]]
@@ -64671,7 +64671,7 @@ id = "tests/sksl/runtime/DivideByZero.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/DivideByZero.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "24c2728cb5574174ea0885090ba6ffddecdbe10162132fcea669165d1df7033d"
 
 [[test]]
@@ -64679,7 +64679,7 @@ id = "tests/sksl/runtime/FragCoordAccess.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FragCoordAccess.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a0dae320fb6c0e093bc67f7dd033e959c9335429f6134f9bd5da7036e0f11b74"
 
 [[test]]
@@ -64695,7 +64695,7 @@ id = "tests/sksl/runtime/FragCoordAccess.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FragCoordAccess.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f94d508b092b53487a55ff7949880cd2b32b60fa81a399f47aa1500f5cf9c6af"
 
 [[test]]
@@ -64703,7 +64703,7 @@ id = "tests/sksl/runtime/FunctionParameterAliasingFirst.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FunctionParameterAliasingFirst.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7d96babe6728c25718b1bc0667045359ccfc377bff2cac28cb37da478be63b9b"
 
 [[test]]
@@ -64719,7 +64719,7 @@ id = "tests/sksl/runtime/FunctionParameterAliasingFirst.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FunctionParameterAliasingFirst.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "81ad0a7ae034a909e07938bd29edd83b8c0a6466ebbab4b45eadc50c47febe1d"
 
 [[test]]
@@ -64727,7 +64727,7 @@ id = "tests/sksl/runtime/FunctionParameterAliasingSecond.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FunctionParameterAliasingSecond.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a2e1d5a4de88fd11d072b2633f5efeada9bda811a6e8159204c551d83bd9749c"
 
 [[test]]
@@ -64743,7 +64743,7 @@ id = "tests/sksl/runtime/FunctionParameterAliasingSecond.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/FunctionParameterAliasingSecond.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1bd394dcc9e73ad67cc4e06e3ca4b5b6e07adaaf75316719a2fcedc825bd89b2"
 
 [[test]]
@@ -64751,7 +64751,7 @@ id = "tests/sksl/runtime/GLSLTypeNames.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNames.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3c40e2c5c6f38d36b2d086cb3ff8a664b4dd17903b6b5b13f8b47214acbf2e87"
 
 [[test]]
@@ -64767,7 +64767,7 @@ id = "tests/sksl/runtime/GLSLTypeNames.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNames.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "155bf1424048a98e30e83542d249ea98cc45cf63e5feedee06039a3f6bc3934e"
 
 [[test]]
@@ -64783,7 +64783,7 @@ id = "tests/sksl/runtime/GLSLTypeNamesES3.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNamesES3.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "240c07a491cf9ba80436aea2fdaf8c8350896f56b06bdaaf63ad62a2e48c5d5b"
 
 [[test]]
@@ -64799,7 +64799,7 @@ id = "tests/sksl/runtime/GLSLTypeNamesES3.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNamesES3.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e015fa536ff61027806934f5167fde806b20b001674c3dcdfdc332fd61ba27da"
 
 [[test]]
@@ -64815,7 +64815,7 @@ id = "tests/sksl/runtime/GlobalVariables.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GlobalVariables.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5d3fd762bf7bd5324d19862a516957ad2b5cfbf6dc8d37bbe02b344725055187"
 
 [[test]]
@@ -64831,7 +64831,7 @@ id = "tests/sksl/runtime/GlobalVariables.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GlobalVariables.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ba3fed17cadcb197a5248f259e175117702695c4c9f72bc241835b134d7a7d4f"
 
 [[test]]
@@ -64847,7 +64847,7 @@ id = "tests/sksl/runtime/IfElseBinding.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/IfElseBinding.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "874957fda56dab3abf18b0ca678bef87a9f4abc479fd8d9f851439b3a8e15b2f"
 
 [[test]]
@@ -64863,7 +64863,7 @@ id = "tests/sksl/runtime/IfElseBinding.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/IfElseBinding.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "23735e5e26774c540f185721f664373e5881b9ca9948ccdd7177c9e517b56ddb"
 
 [[test]]
@@ -64871,7 +64871,7 @@ id = "tests/sksl/runtime/IncrementDisambiguation.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/IncrementDisambiguation.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d8e4cc5c49371d35d645f7af35bdd8138f769fef53f55cf16cc343d1154632f6"
 
 [[test]]
@@ -64887,7 +64887,7 @@ id = "tests/sksl/runtime/IncrementDisambiguation.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/IncrementDisambiguation.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8287d2e9b20d68741b6e5d2bb6809d49bb86fca911f1cd2a3c6dc4d459909a2f"
 
 [[test]]
@@ -64895,7 +64895,7 @@ id = "tests/sksl/runtime/LargeProgram_BlocklessLoops.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_BlocklessLoops.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c22dc841b9d38e4704dcf6736374a00d06061d1d6118bfdc752dabd7efec23ce"
 
 [[test]]
@@ -64911,7 +64911,7 @@ id = "tests/sksl/runtime/LargeProgram_BlocklessLoops.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_BlocklessLoops.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4f2b1699a8b97ce0001ad1f23dd6ba779a7da9cce5288d8cd7896a57346eb75c"
 
 [[test]]
@@ -64927,7 +64927,7 @@ id = "tests/sksl/runtime/LargeProgram_FlatLoop.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_FlatLoop.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fa2c7245fc102af49969b2d073207b310b46eb509b175fe16c7f444a128f528d"
 
 [[test]]
@@ -64943,7 +64943,7 @@ id = "tests/sksl/runtime/LargeProgram_FlatLoop.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_FlatLoop.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "59f4570eb6d16c6142a51819a3987b0c38b4c2aabbfa0e087735d49a1709a637"
 
 [[test]]
@@ -64959,7 +64959,7 @@ id = "tests/sksl/runtime/LargeProgram_Functions.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_Functions.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e9f7c387e776c227550ad0341b43e0cb0424b464daafa93378a7faab66bffb0"
 
 [[test]]
@@ -64975,7 +64975,7 @@ id = "tests/sksl/runtime/LargeProgram_Functions.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_Functions.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e4ca9bd3b70191b3c8b1277a6bc3de71458c1b74ef19d10e3349ddf08db39152"
 
 [[test]]
@@ -64991,7 +64991,7 @@ id = "tests/sksl/runtime/LargeProgram_NestedLoops.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_NestedLoops.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c22dc841b9d38e4704dcf6736374a00d06061d1d6118bfdc752dabd7efec23ce"
 
 [[test]]
@@ -65007,7 +65007,7 @@ id = "tests/sksl/runtime/LargeProgram_NestedLoops.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_NestedLoops.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b64e83f64654fa9dbb8f2caf61ad6e71a426d9445e4b09941e2d27fa26b9b8a9"
 
 [[test]]
@@ -65023,7 +65023,7 @@ id = "tests/sksl/runtime/LargeProgram_SplitLoops.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_SplitLoops.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3b3f79aeacde1da75db7c0c431cbe8a9cdbb222b5b1040d3261cd7ad6962153f"
 
 [[test]]
@@ -65039,7 +65039,7 @@ id = "tests/sksl/runtime/LargeProgram_SplitLoops.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_SplitLoops.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f006342fa912825d740bb7fc8131dd89aa14623e434cc1b34b1eb685f825845b"
 
 [[test]]
@@ -65055,7 +65055,7 @@ id = "tests/sksl/runtime/LargeProgram_StackDepth.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_StackDepth.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "44de0f09ba8fd96a8b3a0fcb57645a3a5786d767d10e86d6da7fc0c19c7bf7dc"
 
 [[test]]
@@ -65071,7 +65071,7 @@ id = "tests/sksl/runtime/LargeProgram_StackDepth.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_StackDepth.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dcf598542839136a6cbf2c115f0c95566ed74394e856ae855ef7bc09887bcef5"
 
 [[test]]
@@ -65079,7 +65079,7 @@ id = "tests/sksl/runtime/LargeProgram_ZeroIterFor.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_ZeroIterFor.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "70a9a196d1e01c639d47d25d4c334454c505c0153d3e24db59665226aea85e36"
 
 [[test]]
@@ -65095,7 +65095,7 @@ id = "tests/sksl/runtime/LargeProgram_ZeroIterFor.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_ZeroIterFor.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f2738529e86db8ada0740fdb9429d052defd526b6982bf6f360836e781f82782"
 
 [[test]]
@@ -65111,7 +65111,7 @@ id = "tests/sksl/runtime/LoopFloat.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopFloat.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f191bf9afa115081d9d3fe6762de6e495b03f933bc162b89d63335980156affe"
 
 [[test]]
@@ -65127,7 +65127,7 @@ id = "tests/sksl/runtime/LoopFloat.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopFloat.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a01513074b723ff622c719769f1d6eaafcfe07c5aab7c63d2b798c8a6e05bd22"
 
 [[test]]
@@ -65143,7 +65143,7 @@ id = "tests/sksl/runtime/LoopInt.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopInt.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d2285280df2d01960416854141787888cff5f2d2f6001d30adab4d12f9b68835"
 
 [[test]]
@@ -65159,7 +65159,7 @@ id = "tests/sksl/runtime/LoopInt.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopInt.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2e9d0b50395a206bfd25c40fc2c382be96cdeb95ae961b0670051e3d4f0ffe6f"
 
 [[test]]
@@ -65175,7 +65175,7 @@ id = "tests/sksl/runtime/MultipleCallsInOneStatement.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/MultipleCallsInOneStatement.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "40b147da34ef4fa66d4fd88e9e0091fa5562ff2701bb7c6d5137b9350c26df83"
 
 [[test]]
@@ -65191,7 +65191,7 @@ id = "tests/sksl/runtime/MultipleCallsInOneStatement.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/MultipleCallsInOneStatement.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3028d8e45ba86364c617538d3d481f816b2034b78d38ae4fb22e12259114aaf3"
 
 [[test]]
@@ -65199,7 +65199,7 @@ id = "tests/sksl/runtime/Ossfuzz52603.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Ossfuzz52603.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d99bc8fb27e9e44f3d4bf9fefd659ab336325db6c88c4e830b636c8d7e0798f9"
 
 [[test]]
@@ -65215,7 +65215,7 @@ id = "tests/sksl/runtime/Ossfuzz52603.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Ossfuzz52603.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "696fd2e2fcb1378050b15174aaa06e2b377ff511f81d54684e531be82499c849"
 
 [[test]]
@@ -65223,7 +65223,7 @@ id = "tests/sksl/runtime/Ossfuzz65111.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Ossfuzz65111.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3d16e12f7f180d94078f3e74fe606f3a0c9224573dd5a976d3c9afe8eedd742e"
 
 [[test]]
@@ -65239,7 +65239,7 @@ id = "tests/sksl/runtime/Ossfuzz65111.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Ossfuzz65111.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d0bd288ed74f97457ad20e0dc1417c38a6eaab370277d9fbc3a0a94db618e666"
 
 [[test]]
@@ -65247,7 +65247,7 @@ id = "tests/sksl/runtime/PrecisionQualifiers.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/PrecisionQualifiers.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "83493fd0971729aeca269c48d27ececb9a5976e0d6889578df9465ca4b244b6c"
 
 [[test]]
@@ -65263,7 +65263,7 @@ id = "tests/sksl/runtime/PrecisionQualifiers.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/PrecisionQualifiers.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "22876e0f148046244caf02cac09e2a155d4b458d8c656848a07f9fcc227ae7d0"
 
 [[test]]
@@ -65271,7 +65271,7 @@ id = "tests/sksl/runtime/QualifierOrder.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/QualifierOrder.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b3098851a8a4fd86372a76d8153151da39b23404847cc99eb6325e37dd5689e"
 
 [[test]]
@@ -65287,7 +65287,7 @@ id = "tests/sksl/runtime/QualifierOrder.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/QualifierOrder.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "71391d76cb7f58e6d44aece444ddbc1a0c1c81c204e5a0c76b0783f500e93d4c"
 
 [[test]]
@@ -65303,7 +65303,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Arrays.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Arrays.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "76cefd726ab86f25f01575d9f0d2c4e8edae97f51db0a0a0da0befe3d4fd2939"
 
 [[test]]
@@ -65319,7 +65319,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Arrays.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Arrays.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a4a8a005375817b7fe7a7fc85002b8c162e4f5eefaad57569ae693f93e87b0cb"
 
 [[test]]
@@ -65335,7 +65335,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Structs.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Structs.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc4ac2ae898e47bd83141f21556626e961bc9dfad8b0fa1d8fc58b4df91bd1ea"
 
 [[test]]
@@ -65351,7 +65351,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Structs.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Structs.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f15e9d4d81efc79fe58e6a163ddc83930928e8bd2393f3a9016e7f37b364b2ed"
 
 [[test]]
@@ -65367,7 +65367,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Types.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Types.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9d6d6771590766dd09b0b84622d1cef6345b58b166f1cad253dd512f3795cfd3"
 
 [[test]]
@@ -65383,7 +65383,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Types.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Types.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b1bb1e79951b9dda0c67aa5d12c9edb9539cfec4a590a1478ece79d107b7a57b"
 
 [[test]]
@@ -65399,7 +65399,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Vectors.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Vectors.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5039ccd0f55ba15f68782952d1be7ad21b0d796939278361af58f3e3b4f783e6"
 
 [[test]]
@@ -65415,7 +65415,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Vectors.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Vectors.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0d35ecb86f0e78a23c7a402b766ca5dbfaef68a411147be5bda38858c65c30a7"
 
 [[test]]
@@ -65431,7 +65431,7 @@ id = "tests/sksl/runtime/SampleWithExplicitCoord.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SampleWithExplicitCoord.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ff1a5233920cf512b016710f7352c0508d7985dd5df54d1866d0a72f538d9a70"
 
 [[test]]
@@ -65447,7 +65447,7 @@ id = "tests/sksl/runtime/SampleWithExplicitCoord.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SampleWithExplicitCoord.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8c0fbf085569d4ab3ca836cd751dc98369612865a22609abfe9ada30b92c12ed"
 
 [[test]]
@@ -65455,7 +65455,7 @@ id = "tests/sksl/runtime/SharedFunctions.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SharedFunctions.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "08240eb8b55de6c262383d016408e90733923a42ecde854368393e2f3625587d"
 
 [[test]]
@@ -65471,7 +65471,7 @@ id = "tests/sksl/runtime/SharedFunctions.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SharedFunctions.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "848c2e1cd6194a723adf7a364f8d9a7844ecc2bc92886f6ca34a1ef0b19f8180"
 
 [[test]]
@@ -65479,7 +65479,7 @@ id = "tests/sksl/runtime/Switch.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Switch.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f94c95d42323523fcb009024a9426d6e9a6709dd95e2e3767fb98747da3565cb"
 
 [[test]]
@@ -65495,7 +65495,7 @@ id = "tests/sksl/runtime/Switch.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/Switch.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "09ef990dd419bb23d0b96e4d6715780f8d0ae524b0d7e352647d9a2674e09d0b"
 
 [[test]]
@@ -65503,7 +65503,7 @@ id = "tests/sksl/runtime/SwitchDefaultOnly.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchDefaultOnly.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bd0bc30905c09b210f6c9a64586497290cc75f4d1e082cf496ae6d44b3b86539"
 
 [[test]]
@@ -65519,7 +65519,7 @@ id = "tests/sksl/runtime/SwitchDefaultOnly.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchDefaultOnly.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c9d7158912db543fa0cc23ac5f673e08ff28bb7f377a700b7fb1918d27f8b271"
 
 [[test]]
@@ -65527,7 +65527,7 @@ id = "tests/sksl/runtime/SwitchWithFallthrough.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchWithFallthrough.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6dc33b28262f241e4fcdded7aa8af9706b8dbf09b806e84459d1549523badb81"
 
 [[test]]
@@ -65543,7 +65543,7 @@ id = "tests/sksl/runtime/SwitchWithFallthrough.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchWithFallthrough.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7826fa093f2fcc8db89b90e08e8bbb3ca5a5c09012772828cf488b8fae3880a6"
 
 [[test]]
@@ -65551,7 +65551,7 @@ id = "tests/sksl/runtime/SwitchWithLoops.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchWithLoops.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cef11222ba2bc917d3ee8b7219596addec94b47944e9b84c0dbf639758ca0b5c"
 
 [[test]]
@@ -65567,7 +65567,7 @@ id = "tests/sksl/runtime/SwitchWithLoops.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/SwitchWithLoops.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "10a42bc21def16d5e2d1bafc9a8c867579bc70748e4ab5e9fdd95ce31449be49"
 
 [[test]]
@@ -65575,7 +65575,7 @@ id = "tests/sksl/runtime/VectorIndexing.minified.sksl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/VectorIndexing.minified.sksl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9e090cec77a8662d468fffc0ac79c3e2b1ad00e9be137d3d255ff06fe2ff2163"
 
 [[test]]
@@ -65591,7 +65591,7 @@ id = "tests/sksl/runtime/VectorIndexing.stage"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/VectorIndexing.stage"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4677b86a72a59e697d7709ebca6d4d87005ff204501e2dcca87db7863bef0539"
 
 [[test]]

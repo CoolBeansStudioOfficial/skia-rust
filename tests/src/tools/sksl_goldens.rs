@@ -17,6 +17,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use crate::tools::sksl_minify::{minify, test_input_rule};
 use crate::tools::skslc::{SkslcError, skslc};
 
 /// A parsed `gni` file: each variable's list of strings (`sksl_blend_tests`, …), with `+`
@@ -268,8 +269,7 @@ pub enum Verdict {
 #[must_use]
 pub fn run_job(job: &GoldenJob, skia: &Path) -> Verdict {
     if job.id.ends_with(".minified.sksl") {
-        // Made by `tools/sksl-minify`, not `skslc` (`minify_sksl_tests.py`): S24.
-        return Verdict::Ignored("sksl-minify is not ported yet (S24)".to_owned());
+        return minified_golden(job, skia);
     }
     let input_path = skia.join("resources/sksl").join(&job.input);
     let golden_path = skia.join(&job.id);
@@ -284,6 +284,30 @@ pub fn run_job(job: &GoldenJob, skia: &Path) -> Verdict {
         Ok(actual) if actual == expected => Verdict::Ok,
         Ok(_) => Verdict::Failed("output differs from the golden".to_owned()),
         Err(SkslcError::NotPorted(what)) => Verdict::Ignored(what.to_owned()),
+        Err(e) => Verdict::Failed(e.to_string()),
+    }
+}
+
+/// A `.minified.sksl` golden: `sksl-minify` run the way `gn/minify_sksl_tests.py` runs it, with
+/// the input's program kind, then the modules that worklist names, from the Skia checkout.
+// Port of: gn/minify_sksl_tests.py (the worklist for each input) and tools/sksl-minify (chrome/m156)
+fn minified_golden(job: &GoldenJob, skia: &Path) -> Verdict {
+    let Some((kind, modules)) = test_input_rule(&job.input) else {
+        return Verdict::Failed(format!("no sksl-minify rule for {}", job.input));
+    };
+    let Ok(expected) = std::fs::read(skia.join(&job.id)) else {
+        return Verdict::Ignored(format!("missing golden {}", job.id));
+    };
+    let sksl_dir = skia.join("src/sksl");
+    let mut paths = vec![skia.join("resources/sksl").join(&job.input)];
+    paths.extend(
+        modules
+            .iter()
+            .map(|module| sksl_dir.join(format!("{module}.sksl"))),
+    );
+    match minify(kind, &paths, &sksl_dir) {
+        Ok(actual) if actual == expected => Verdict::Ok,
+        Ok(_) => Verdict::Failed("output differs from the golden".to_owned()),
         Err(e) => Verdict::Failed(e.to_string()),
     }
 }

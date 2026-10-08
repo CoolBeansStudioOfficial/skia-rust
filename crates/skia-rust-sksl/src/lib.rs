@@ -37,6 +37,7 @@ pub mod output_stream;
 pub mod parser;
 pub mod position;
 pub mod program_settings;
+pub mod shader_utils;
 pub mod skstd;
 pub mod string;
 pub mod thash;

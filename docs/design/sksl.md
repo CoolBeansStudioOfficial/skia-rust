@@ -715,8 +715,8 @@ lists. Usage is an explicit `ProgramUsage` the caller holds, and the transforms 
   nothing. Programs keep their Nops: Skia runs `EliminateEmptyStatements` on modules only.
 - **Module.** `Compiler::optimize_module_before_minifying(kind, &mut ModuleParts, parent, shrink)`
   installs the module's pool, configuration and symbols (`with_module_parts`), runs the module passes
-  in Skia's order, and asserts the usage. Its caller is the minifier (S24), so it is `dead_code`
-  allowed until then. `optimize_module_after_loading` is unchanged: its only work is the inliner.
+  in Skia's order, and asserts the usage. Its caller is the minifier (S24, `tests/src/tools/
+  sksl_minify.rs`). `optimize_module_after_loading` is unchanged: its only work is the inliner.
 - **Slots.** Overwriting a statement is `replace_with_nop` or `pool.replace_statement`, and copying a
   node into an existing slot is `move_statement_into`. Where a child must keep its id (the brace
   pass), the parent's field is rewritten instead. A `VarDeclaration` that moves to another id
@@ -725,10 +725,9 @@ lists. Usage is an explicit `ProgramUsage` the caller holds, and the transforms 
   transform and the inliner's enclosing-statement move both rely on this.
 - **Checks.** `transform/tests.rs` has one test per pass on small snippets, and the Skia optimized
   programs from `DeadStripFunctions`, `DeadGlobals` and `DeadIfStatement` (through `convert_program`).
-  `minified_goldens_match_the_module_optimizer` runs all 27 `folding`, `rte` and `mesh`
-  `.minified.sksl` goldens through the module path with shrinking on. The comparison applies the
-  minifier's literal and whitespace rules (`lexer_like`) to both texts, because S24 owns that lexer
-  pass. Without the lexer, the goldens are not checked byte for byte.
+  The module path with shrinking on is checked byte for byte by the `.minified.sksl` goldens
+  (`sksl-golden-verify`, through S24's `tests/src/tools/sksl_minify.rs`), which replaced the
+  normalized comparison this section used to describe.
 >
 ## 5. Exactness requirements
 

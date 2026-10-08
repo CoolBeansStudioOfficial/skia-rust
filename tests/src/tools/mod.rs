@@ -2,5 +2,6 @@
 
 pub mod sk_meta_data;
 pub mod sksl_goldens;
+pub mod sksl_minify;
 pub mod skslc;
 pub mod tool_utils;

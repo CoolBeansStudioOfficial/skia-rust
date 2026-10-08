@@ -185,7 +185,12 @@ fn make_root_module() -> Arc<Module> {
 /// `ModuleLoader::addPublicTypeAliases`: the GLSL-style aliases, and the private type names
 /// aliased to `invalid` so that code cannot use them as variable names.
 // Port of: src/sksl/SkSLModuleLoader.cpp#L192-L219 (chrome/m156)
-fn add_public_type_aliases(pool: &mut crate::ir::IrPool, table: SymTabId) {
+pub fn add_public_type_aliases(parts: &mut crate::compiler::ModuleParts) {
+    inject_public_type_aliases(&mut parts.pool, parts.symbols);
+}
+
+/// The body of [`add_public_type_aliases`], on a module's pool and symbol table.
+fn inject_public_type_aliases(pool: &mut crate::ir::IrPool, table: SymTabId) {
     for &ty in PUBLIC_ALIASES {
         pool.inject_symbol(table, SymbolId::Type(ty));
     }
@@ -240,7 +245,7 @@ fn compile_and_shrink(
         }
     });
     if public_aliases {
-        add_public_type_aliases(&mut parts.pool, parts.symbols);
+        inject_public_type_aliases(&mut parts.pool, parts.symbols);
     }
     parts.freeze(parent.clone())
 }
