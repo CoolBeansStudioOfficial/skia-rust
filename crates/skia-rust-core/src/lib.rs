@@ -75,6 +75,7 @@ pub mod front_buffered_stream;
 pub mod gauss_filter;
 pub mod geometry;
 pub mod glyph;
+mod glyph_intercepts;
 pub mod glyph_run;
 pub mod graphics;
 pub mod half;

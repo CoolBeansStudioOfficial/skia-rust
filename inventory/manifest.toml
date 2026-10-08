@@ -19904,7 +19904,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/getpostextpath.cpp#L36-L71"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7886384c64bc59557d66fa5b8541478dbf02893c3bfdd6408be1add315e9e453"
 
 [[test]]
@@ -24664,7 +24664,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/texteffects.cpp#L243-L265"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ec322a10bd4e349a7737e5af2f3c904d99743147ef9b6f1765ae47809217786d"
 
 [[test]]
@@ -48890,8 +48890,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L519-L547"
 module = "text"
-status = "todo"
-reason = "needs SkTextBlob::getIntercepts (T15b)"
+status = "passing"
 span_hash = "aaf0aa50b281bd1479b7f302c4615122e4114bd24ac47b7711638eb5185bfe4a"
 
 [[test]]

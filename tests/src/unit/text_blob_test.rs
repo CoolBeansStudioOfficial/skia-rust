@@ -4,8 +4,7 @@
 // Port of: tests/TextBlobTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// - `TextBlob_getIntercepts` and `TextBlob_serialize`: they need `SkTextBlob::getIntercepts` and
-//   the blob serialization (T15b).
+// - `TextBlob_serialize`: it needs the blob serialization with typeface procs (T15b).
 // - `SkCanvas_drawTextBlob_b513820666`: it records and replays a picture with typeface procs
 //   (T16) and draws through a drawable typeface (T17).
 
@@ -452,6 +451,50 @@ def_test!(TextBlob_extended, |reporter| {
         reporter_assert!(reporter, text2 == it.text());
         it.next();
     }
+});
+
+// Port of: tests/TextBlobTest.cpp#L519-L547 (chrome/m156), TextBlob_getIntercepts
+def_test!(TextBlob_getIntercepts, |reporter| {
+    let mut font = default_font();
+    font.set_size(16.0);
+
+    let low_pos = [Point::new(0.0, 5.0)];
+    let high_pos = [Point::new(0.0, -8.0)];
+    let zero_pos = [Point::new(0.0, 0.0)];
+
+    // 'x' sitting on baseline
+    let blob_zero_x =
+        TextBlob::from_pos_text(b"x", TextEncoding::UTF8, &zero_pos, &font).expect("a blob of 'x'");
+    // 'x' lowered to intersect baseline
+    let blob_low_x =
+        TextBlob::from_pos_text(b"x", TextEncoding::UTF8, &low_pos, &font).expect("a blob of 'x'");
+    // 'y' sitting on baseline
+    let blob_zero_y =
+        TextBlob::from_pos_text(b"y", TextEncoding::UTF8, &zero_pos, &font).expect("a blob of 'y'");
+    // 'y' raised to not intersect baseline
+    let blob_high_y =
+        TextBlob::from_pos_text(b"y", TextEncoding::UTF8, &high_pos, &font).expect("a blob of 'y'");
+
+    // bounds right below baseline
+    let bounds = [1.0, 2.0];
+
+    // 'x' on baseline should not intersect
+    reporter_assert!(
+        reporter,
+        blob_zero_x.get_intercepts(bounds, None).is_empty()
+    );
+    // lowered 'x' should intersect
+    reporter_assert!(reporter, blob_low_x.get_intercepts(bounds, None).len() == 2);
+    // 'y' on baseline should intersect
+    reporter_assert!(
+        reporter,
+        blob_zero_y.get_intercepts(bounds, None).len() == 2
+    );
+    // raised 'y' should not intersect
+    reporter_assert!(
+        reporter,
+        blob_high_y.get_intercepts(bounds, None).is_empty()
+    );
 });
 
 // Port of: tests/TextBlobTest.cpp#L473-L485 (chrome/m156), TextBlob_MakeAsDrawText

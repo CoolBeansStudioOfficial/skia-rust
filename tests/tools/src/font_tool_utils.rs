@@ -209,3 +209,43 @@ pub fn add_to_text_blob(
 ) {
     add_to_text_blob_w_len(builder, text.as_bytes(), TextEncoding::UTF8, font, x, y);
 }
+
+/// `ToolUtils::get_text_path(font, text, encoding, pos)`: the outline of the glyphs of `text`,
+/// each at its position in `pos` (or at the font's own positions when `pos` is `None`).
+// Port of: tools/ToolUtils.cpp#L239-L268 (chrome/m156)
+#[must_use]
+pub fn get_text_path(
+    font: &Font,
+    text: &[u8],
+    encoding: TextEncoding,
+    pos: Option<&[skia_rust_core::point::Point]>,
+) -> skia_rust_core::path::Path {
+    let count = font.count_text(text, encoding);
+    let mut glyphs = vec![0; count];
+    font.text_to_glyphs(text, encoding, &mut glyphs);
+    let computed: Vec<skia_rust_core::point::Point>;
+    let pos = if let Some(pos) = pos {
+        pos
+    } else {
+        let mut positions = vec![skia_rust_core::point::Point::default(); count];
+        font.get_pos(
+            &glyphs,
+            &mut positions,
+            skia_rust_core::point::Point::default(),
+        );
+        computed = positions;
+        &computed
+    };
+
+    let mut builder = skia_rust_core::path_builder::PathBuilder::new();
+    let mut index = 0;
+    font.get_paths(&glyphs, |src, mx| {
+        if let Some(src) = src {
+            let mut tmp = mx.clone();
+            tmp.post_translate(pos[index]);
+            builder.add_path_with_transform(src, &tmp, None);
+        }
+        index += 1;
+    });
+    builder.detach()
+}

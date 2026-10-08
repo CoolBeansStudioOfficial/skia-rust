@@ -18,7 +18,10 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use crate::font::Font;
 use crate::font_priv::get_font_bounds;
 use crate::font_types::{GlyphId, TextEncoding};
+use crate::glyph_intercepts::glyph_run_intercepts;
+use crate::glyph_run::GlyphRunBuilder;
 use crate::matrix::Matrix;
+use crate::paint::Paint;
 use crate::point::Point;
 use crate::rect::Rect;
 use crate::rsxform::RSXform;
@@ -282,6 +285,34 @@ impl TextBlob {
         builder.make()
     }
 
+    /// `SkTextBlob::MakeFromPosHGlyphs(glyphs, xpos, constY, font)`: a blob of `glyphs` at the x
+    /// positions `xpos` on the baseline `const_y`.
+    // Port of: include/core/SkTextBlob.h#L162-L166 (chrome/m156)
+    #[doc(alias = "MakeFromPosHGlyphs")]
+    #[must_use]
+    pub fn from_pos_h_glyphs(
+        glyphs: &[GlyphId],
+        xpos: &[scalar],
+        const_y: scalar,
+        font: &Font,
+    ) -> Option<Self> {
+        Self::from_pos_text_h(
+            &glyph_bytes(glyphs),
+            TextEncoding::GlyphId,
+            xpos,
+            const_y,
+            font,
+        )
+    }
+
+    /// `SkTextBlob::MakeFromPosGlyphs(glyphs, pos, font)`: a blob of `glyphs` at `pos`.
+    // Port of: include/core/SkTextBlob.h#L168-L171 (chrome/m156)
+    #[doc(alias = "MakeFromPosGlyphs")]
+    #[must_use]
+    pub fn from_pos_glyphs(glyphs: &[GlyphId], pos: &[Point], font: &Font) -> Option<Self> {
+        Self::from_pos_text(&glyph_bytes(glyphs), TextEncoding::GlyphId, pos, font)
+    }
+
     /// `SkTextBlob::MakeFromRSXform(text, byteLength, xform, font, encoding)`: a blob with the
     /// glyphs of `text`, each placed by its `RSXform`, or `None` when there are no glyphs or too
     /// few transforms.
@@ -303,6 +334,26 @@ impl TextBlob {
         font.text_to_glyphs(text, encoding, glyphs);
         xforms.copy_from_slice(&xform[..count]);
         builder.make()
+    }
+
+    /// The x intervals where the horizontal band `bounds` (its top and bottom y) crosses the
+    /// outlines of the glyphs, as pairs `[start, end]`. `RSXform` runs are ignored. `paint` gives
+    /// the stroke and path effect that change the outlines (`getIntercepts`).
+    // Port of: src/core/SkTextBlob.cpp#L933-L954 (chrome/m156)
+    #[doc(alias = "getIntercepts")]
+    #[must_use]
+    pub fn get_intercepts(&self, bounds: [scalar; 2], paint: Option<&Paint>) -> Vec<scalar> {
+        let paint = paint.cloned().unwrap_or_default();
+        let mut builder = GlyphRunBuilder::new();
+        let list = builder.blob_to_glyph_run_list(self, Point::new(0.0, 0.0));
+        let mut intervals = Vec::new();
+        for run in list.runs() {
+            // Ignore RSXForm runs.
+            if run.scaled_rotations().is_empty() {
+                glyph_run_intercepts(run, &paint, bounds, &mut intervals);
+            }
+        }
+        intervals
     }
 
     /// `SkTextBlob::Iter`: the runs of the blob, as glyph indices and typefaces.
@@ -490,6 +541,14 @@ impl<'a> RunIterator<'a> {
     pub fn clusters(&self) -> &'a [u32] {
         self.current().map_or(&[], |run| run.clusters.as_slice())
     }
+}
+
+/// The bytes of `glyphs` in the native byte order of the glyph encoding (`kGlyphID`).
+fn glyph_bytes(glyphs: &[GlyphId]) -> Vec<u8> {
+    glyphs
+        .iter()
+        .flat_map(|glyph| glyph.to_ne_bytes())
+        .collect()
 }
 
 /// Builds a text blob one run at a time (`SkTextBlobBuilder`). Each `alloc_run*` returns the
