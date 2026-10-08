@@ -7,12 +7,12 @@
 //! `SkWriter32` and `SkBinaryWriteBuffer`: serialization of primitives into a flat binary blob
 //! of 4-byte words.
 //!
-//! Only what `SkVerticesPriv::encode` needs is ported: [`Writer32`] (`reserve`, `write32`,
-//! `writePad`, `bytesWritten`, `flatten`) and [`BinaryWriteBuffer`] (`writeInt`, `writeUInt`,
-//! `writeByteArray`, `writePad32`, `bytesWritten`, `writeToMemory`). Not ported: external
-//! storage (`SkWriter32(void*, size_t)`, `usingInitialStorage`), the `SkSerialProcs`, the
-//! factory and typeface sets, and every write that needs a type that is not ported yet
-//! (flattenables, paths, images, paints, ...).
+//! Ported: [`Writer32`] (`reserve`, `write32`, `writeScalar`, `writePad`, `bytesWritten`,
+//! `flatten`) and [`BinaryWriteBuffer`] (`writeInt`, `writeUInt`, `writeScalar`,
+//! `writeByteArray`, `writePad32`, `writeTypeface` (the empty case), `bytesWritten`,
+//! `writeToMemory`). Not ported: external storage (`SkWriter32(void*, size_t)`,
+//! `usingInitialStorage`), the `SkSerialProcs`, the factory and typeface sets, and every write
+//! that needs a type that is not ported yet (flattenables, paths, images, paints, ...).
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`).
 fn align4(x: usize) -> usize {
@@ -57,6 +57,12 @@ impl Writer32 {
     pub fn write32(&mut self, value: i32) {
         self.reserve(size_of::<i32>())
             .copy_from_slice(&value.to_ne_bytes());
+    }
+
+    /// Writes a scalar as its bit pattern in one word (`writeScalar`).
+    // Port of: src/core/SkWriter32.h#L122-L124 (chrome/m156)
+    pub fn write_scalar(&mut self, value: f32) {
+        self.reserve(size_of::<f32>()).copy_from_slice(&value.to_ne_bytes());
     }
 
     /// Reserves `size` bytes, which need not be a multiple of 4: the remaining space (if any) is
@@ -141,6 +147,23 @@ impl BinaryWriteBuffer {
     #[doc(alias = "writeUInt")]
     pub fn write_uint(&mut self, value: u32) {
         self.writer.write32(i32::from_ne_bytes(value.to_ne_bytes()));
+    }
+
+    /// Writes a scalar (`writeScalar`).
+    // Port of: src/core/SkWriteBuffer.cpp#L57-L59 (chrome/m156)
+    #[doc(alias = "writeScalar")]
+    pub fn write_scalar(&mut self, value: f32) {
+        self.writer.write_scalar(value);
+    }
+
+    /// Writes a typeface reference (`writeTypeface`). Only the empty case is ported: without a
+    /// typeface set or serial procs, C++ writes `0` for every typeface, null or not. The index
+    /// and custom (serial proc) arms arrive with picture serialization (T16).
+    // Port of: src/core/SkWriteBuffer.cpp#L226-L251 (chrome/m156), the `fTFSet == nullptr`
+    // and `fProcs.fTypefaceProc == nullptr` path
+    #[doc(alias = "writeTypeface")]
+    pub fn write_typeface(&mut self, _typeface: Option<&crate::typeface::Typeface>) {
+        self.writer.write32(0);
     }
 
     /// Copies the bytes written into `dst` (`writeToMemory`).
