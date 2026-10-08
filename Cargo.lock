@@ -587,6 +587,15 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-tools",
+]
+
+[[package]]
+name = "skia-rust-tools"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+ "skia-rust-raster",
 ]
 
 [[package]]

@@ -5,88 +5,14 @@
 
 #![cfg(test)]
 
-use std::sync::Arc;
-
-use skia_rust_core::descriptor::Descriptor;
-use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::FontDescriptor;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
-use skia_rust_core::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
-use skia_rust_core::stream::{DynamicMemoryWStream, StreamAsset};
-use skia_rust_core::typeface::{Typeface, TypefaceBase, TypefaceCore};
+use skia_rust_core::stream::DynamicMemoryWStream;
 use skia_rust_core::typeface_cache::TypefaceCache;
+use skia_rust_tools::fonts::test_empty_typeface::TestEmptyTypeface;
 
 use crate::{Reporter, def_test, errorf, reporter_assert};
-
-/// The test-only typeface with no glyphs and no data (`TestEmptyTypeface`).
-///
-/// Port of: tools/fonts/TestEmptyTypeface.h (chrome/m156). It lives here until the test tools
-/// crate exists (docs/design/text.md T10), and then moves there.
-// Port of: tools/fonts/TestEmptyTypeface.h#L16-L63 (chrome/m156)
-#[derive(Debug)]
-struct TestEmptyTypeface {
-    core: TypefaceCore,
-}
-
-impl TestEmptyTypeface {
-    /// `TestEmptyTypeface::Make()`: a new typeface, with a new unique id.
-    // Port of: tools/fonts/TestEmptyTypeface.h#L18 (chrome/m156)
-    fn make() -> Typeface {
-        Typeface::new(Arc::new(Self {
-            core: TypefaceCore::new(FontStyle::default(), true),
-        }))
-    }
-}
-
-impl TypefaceBase for TestEmptyTypeface {
-    fn core(&self) -> &TypefaceCore {
-        &self.core
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L36 (chrome/m156)
-    fn on_get_font_descriptor(&self) -> (FontDescriptor, bool) {
-        (FontDescriptor::new(), false)
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L23 (chrome/m156)
-    fn on_open_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
-        None
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L48 (chrome/m156)
-    fn on_get_family_name(&self) -> String {
-        String::new()
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L54-L62 (chrome/m156)
-    fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
-        Some(Vec::new())
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L24-L26 (chrome/m156)
-    fn on_make_clone(&self, this: Typeface, _args: &FontArguments<'_, '_>) -> Typeface {
-        this
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L27-L31 (chrome/m156)
-    fn on_create_scaler_context(
-        &self,
-        this: Typeface,
-        effects: &ScalerContextEffects,
-        desc: &Descriptor,
-    ) -> ScalerContext {
-        ScalerContext::make_empty(this, effects, desc)
-    }
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L32 (chrome/m156)
-    fn on_filter_rec(&self, _rec: &mut ScalerContextRec) {}
-
-    // Port of: tools/fonts/TestEmptyTypeface.h#L53 (chrome/m156)
-    fn on_glyph_mask_needs_current_color(&self) -> bool {
-        false
-    }
-}
 
 /// `count_proc` and `count`: the number of typefaces the cache holds, counted with a search that
 /// never matches.
