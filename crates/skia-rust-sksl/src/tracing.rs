@@ -57,4 +57,20 @@ pub struct DebugTracePriv {
     pub uniform_info: Vec<SlotDebugInfo>,
     /// `fFuncInfo`: one entry per function.
     pub func_info: Vec<FunctionDebugInfo>,
+    /// `fTraceCoord`: the device coordinate to trace.
+    pub trace_coord: (i32, i32),
+    /// `fSource`: the program's source, one entry per line (`setSource`).
+    pub source: Vec<String>,
+}
+
+impl DebugTracePriv {
+    /// `setSource`: splits `source` into lines on `'\n'`. As with Skia's `std::getline` loop, a
+    /// trailing newline produces a final empty line.
+    // Port of: src/sksl/tracing/SkSLDebugTracePriv.cpp#L85-L92 (chrome/m156)
+    pub fn set_source(&mut self, source: &[u8]) {
+        self.source = String::from_utf8_lossy(source)
+            .split('\n')
+            .map(str::to_owned)
+            .collect();
+    }
 }

@@ -607,12 +607,20 @@ impl Program {
     /// instruction and invocation counts, as `skslc` does.
     #[must_use]
     pub fn dump(&self, write_instruction_count: bool) -> String {
+        self.dump_with(write_instruction_count, false)
+    }
+
+    /// `Program::dump`, with the build configuration that decides whether `stack_rewind` stages
+    /// appear: `non_tail_rewinds` is `SKSL_STANDALONE || !SK_HAS_MUSTTAIL`. The `skslc` tool is
+    /// `SKSL_STANDALONE`, so its goldens have the rewinds; Skia's unit tests do not.
+    #[must_use]
+    pub fn dump_with(&self, write_instruction_count: bool, non_tail_rewinds: bool) -> String {
         let lanes = skia_rust_simd::selection().tier.highp_stride();
         let mut slots = self.slot_data(lanes);
         let uniforms = vec![0_i32; usize::try_from(self.num_uniform_slots).unwrap_or(0)];
 
         // Turn this program into an array of Raster Pipeline stages.
-        let stages = self.make_stages(&uniforms, &mut slots, false);
+        let stages = self.make_stages(&uniforms, &mut slots, non_tail_rewinds);
         let uniform_slots = uniforms.len();
         let mut dumper = Dumper {
             program: self,

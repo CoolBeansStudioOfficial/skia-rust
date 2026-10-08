@@ -551,18 +551,19 @@ impl Program {
         let lanes = skia_rust_simd::selection().tier.highp_stride();
         let uniform_bits: Vec<i32> = uniforms.iter().map(|u| u.to_bits().cast_signed()).collect();
 
-        // Convert the instruction list to stages, filling the immutable slots.
+        // allocateSlotData: values, then the temp stacks, then the immutable slots, then the
+        // uniform block (which the uniform copies read as scalars, from slot memory). A program
+        // whose slots do not fit an `int` fails here, before any stage is made.
         let mut slots = self.slot_data(lanes);
+        let Some(size) = slab_bytes(&slots, uniform_bits.len()) else {
+            return false;
+        };
+
+        // Convert the instruction list to stages, filling the immutable slots.
         let stages = self.make_stages(&uniform_bits, &mut slots, false);
         if stages.iter().any(|s| is_trace_op(s.op)) {
             return false;
         }
-
-        // allocateSlotData: values, then the temp stacks, then the immutable slots, then the
-        // uniform block (which the uniform copies read as scalars, from slot memory).
-        let Some(size) = slab_bytes(&slots, uniform_bits.len()) else {
-            return false;
-        };
         let vector = 4 * lanes;
         let immutable_base = vector * (slots.num_values + slots.num_stack);
         let uniform_base = immutable_base + 4 * slots.immutable.len();

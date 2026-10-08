@@ -849,6 +849,50 @@ the same slot regions Skia derives from pointers (values `v`, temp stack `$`, im
   rejected trace op, and a lane-count mismatch (should panic). The rp-diff uniform cases still
   match their committed expectations.
 
+### 6.6 As implemented in S17
+
+`crates/skia-rust-sksl/src/codegen/rp/generator/` ports `SkSLRasterPipelineCodeGenerator.cpp`
+function by function; the entry point is `make_raster_pipeline_program(&mut Program, ElemId /* the
+definition of main */, Option<DebugTracePriv>, write_trace_ops) -> Option<rp::Program>`.
+
+- **Files.** `mod.rs` (`Generator`, `SlotManager`, stacks, `writeProgram`, `finish`),
+  `statements.rs` (`writeFunction`, `writeGlobals`, every `write*Statement`, immutable data),
+  `expressions.rs` (every `push*Expression`, typed ops, structured comparisons),
+  `intrinsics.rs` (the three `pushIntrinsic(IntrinsicKind, …)` tables and the `TypedOps` ones),
+  `lvalue.rs` (the `LValue` variants and `makeLValue`).
+- **Destructors are calls.** Skia's `AutoStack`, `AutoContinueMask`, `AutoLoopTarget` and
+  `LValue` destructors emit instructions or recycle stack ids, and the order is visible in the dump
+  (stack ids, `discard_stack`). `AutoStack` is a `Stack` id with `recycle_stack`
+  (`drop_auto_stack`) where the C++ scope ends; an `LValue` is a node of an arena named by
+  `LvId`, and `free_lvalue` runs the destructor chain (`ScratchLValue` and `DynamicIndexLValue`
+  discard their dedicated stacks, then recycle them, then free their parents). Locals die in
+  reverse declaration order, a `TArray` of lvalues front to back. An `UnownedLValueSlice` is a slice
+  node that does not own its parent.
+- **`unsupported()` is `Err(Unsupported)`.** It aborts the whole generation, so cleanup on error
+  paths is skipped. The non-fatal `false` results (`writeImmutableVarDeclaration`,
+  `pushImmutableData`, `getImmutableValueForExpression`) stay `bool`.
+- **Temporaries.** Skia's on-stack `Literal{Position{}, v, &type}` temporaries are pool nodes
+  (`make_literal`), built with the exact `double` value (no rounding through `Literal::Make`).
+- **Slot numbering.** Slots are created at the same calls as in C++ (`getVariableSlots` on first use),
+  so evaluation order of C++ arguments is Clang's, left to right. Immutable-slot reuse iterates a
+  `thash::THashSet<Slot>` as Skia does. `double` to `int`/`uint` conversions for immutable bits follow
+  x86 (`INT_MIN` out of range; 64-bit truncation, then the low half, for `uint`).
+- **Debug info.** The slot managers own `SlotDebugInfo` while generating and move it into the
+  `DebugTracePriv` that `finish` wraps in the program (`fSlotInfo`, `fUniformInfo`). `DebugTracePriv`
+  gained `source` (`setSource`) and `trace_coord`. `SlotDebugInfo` still lacks `numberKind`,
+  `groupIndex` and `fnReturnValue`, which only the trace player and JSON writer read (S23).
+- **Trace ops** are emitted (`shouldWriteTraceOps`) and dumped; `append_stages` still rejects them.
+- **Dump configuration.** `Program::dump_with(count, non_tail_rewinds)`. `skslc` is
+  `SKSL_STANDALONE`, so its goldens have `stack_rewind`; `dump` is the library build.
+- **`append_stages` order.** The slab size check (`allocateSlotData`) now runs before `make_stages`,
+  as in Skia, so a program with too many slots returns `false` instead of overflowing an offset.
+- **Tests.** `skslc` writes `.skrp` for every program that compiles (`tests/src/tools/skslc.rs`;
+  `tests/src/bin/skslc.rs` is its command line). All 365 `.skrp` goldens match byte for byte, 106 of
+  them `### Compilation failed` (85 front end, 21 `code is not supported`). The 9
+  `RasterPipelineCodeGeneratorTest` cases and the 69 `SkSLTest` entries without the `CPU` flag
+  (`_RP` and `_Clone`) are ported (`tests/src/unit/raster_pipeline_code_generator_test.rs`,
+  `sk_sl_test.rs`). The 183 `CPU` entries need `RuntimeEffect` (S18) for `_CPU`; they are added with it.
+
 ## 7. RuntimeEffect integration (core)
 
 - **API**: skia-safe's `effects/runtime_effect.rs`: `RuntimeEffect::make_for_{shader, color_filter,

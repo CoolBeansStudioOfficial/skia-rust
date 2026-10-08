@@ -9,10 +9,12 @@
 pub mod append;
 pub mod builder;
 pub mod dumper;
+pub mod generator;
 pub mod ops;
 pub mod program;
 
 pub use append::{Callbacks, SlotAlloc, StageSink};
 pub use builder::{Builder, Instruction, NA, Slot, SlotRange};
+pub use generator::make_raster_pipeline_program;
 pub use ops::{BuilderOp, ProgramOp};
 pub use program::{Addr, Program, Stage, StageCtx};

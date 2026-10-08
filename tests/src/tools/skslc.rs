@@ -16,10 +16,14 @@
 
 use std::fmt;
 
+use skia_rust_sksl::codegen::rp::make_raster_pipeline_program;
 use skia_rust_sksl::compiler::Compiler;
 use skia_rust_sksl::defines::DEFAULT_INLINE_THRESHOLD;
 use skia_rust_sksl::flavor::Flavor;
+use skia_rust_sksl::ir::Program;
+use skia_rust_sksl::position::Position;
 use skia_rust_sksl::program_settings::{ProgramKind as CompilerKind, ProgramSettings, Version};
+use skia_rust_sksl::tracing::DebugTracePriv;
 
 /// `SkSL::ProgramKind`, for the kinds `skslc` accepts (`Main.cpp#L546-L566`).
 #[doc(alias = "SkSL::ProgramKind")]
@@ -463,16 +467,54 @@ pub fn skslc(
     }
 
     let mut compiler = Compiler::with_flavor(Flavor::Standalone);
-    if compiler.convert_program(kind, text, settings).is_some() {
-        // The program compiled. The output itself is written by a code generator, which is not
-        // ported (the Raster Pipeline, pipeline-stage, WGSL and GLSL back ends).
-        return Err(SkslcError::NotPorted(
-            "the code generator for this output format (docs/design/sksl.md S13-S26)",
-        ));
+    if let Some(mut program) = compiler.convert_program(kind, text, settings) {
+        if format == OutputFormat::Skrp {
+            if let Some(output) = write_skrp(&mut compiler, &mut program, pragma.debug_trace) {
+                return Ok(output);
+            }
+        } else {
+            // The program compiled. The output itself is written by a code generator, which is
+            // not ported (the pipeline-stage, WGSL and GLSL back ends).
+            return Err(SkslcError::NotPorted(
+                "the code generator for this output format (docs/design/sksl.md S24-S26)",
+            ));
+        }
     }
     let mut output_bytes = COMPILE_FAILED_HEADER.to_vec();
     output_bytes.extend_from_slice(&compiler.error_text_bytes(true));
     Ok(output_bytes)
+}
+
+/// The `.skrp` writer of `skslc`: generates the Raster Pipeline program of `main` and dumps it
+/// with the instruction counts. `None` when it reports an error (the caller then writes the
+/// compiler's error text).
+// Port of: tools/skslc/Main.cpp#L707-L727 (chrome/m156)
+fn write_skrp(
+    compiler: &mut Compiler,
+    program: &mut Program,
+    want_trace_ops: bool,
+) -> Option<Vec<u8>> {
+    let main = program
+        .get_function("main")
+        .and_then(|f| program.pool.function(f).definition);
+    let Some(main) = main else {
+        compiler
+            .error_reporter()
+            .error(Position::default(), "code has no entrypoint");
+        return None;
+    };
+    let Some(raster_prog) = make_raster_pipeline_program(
+        program,
+        main,
+        Some(DebugTracePriv::default()),
+        want_trace_ops,
+    ) else {
+        compiler
+            .error_reporter()
+            .error(Position::default(), "code is not supported");
+        return None;
+    };
+    Some(raster_prog.dump_with(true, true).into_bytes())
 }
 
 /// The bytes `skslc` writes when it fails with `error_text`.
@@ -578,11 +620,53 @@ mod tests {
             skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", true),
             Err(SkslcError::Pragma(_))
         ));
-        // With --nosettings the pragma is not read at all.
+        // With --nosettings the pragma is not read at all: the (empty) program compiles, and has
+        // no `main`.
+        assert_eq!(
+            skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", false).unwrap(),
+            b"### Compilation failed:\n\nerror: code has no entrypoint\n1 error\n"
+        );
+        // The other generators are not ported.
         assert!(matches!(
-            skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", false),
+            skslc(
+                "x.sksl",
+                b"half4 main(float2 p) { return half4(1); }",
+                "x.wgsl",
+                true
+            ),
             Err(SkslcError::NotPorted(_))
         ));
+    }
+
+    #[test]
+    fn a_program_is_dumped_as_raster_pipeline_instructions() {
+        let out = skslc(
+            "x.sksl",
+            b"half4 main(float2 p) { return half4(1); }",
+            "x.skrp",
+            true,
+        )
+        .unwrap();
+        let out = String::from_utf8(out).unwrap();
+        assert!(out.contains(" instructions\n"), "{out}");
+        assert!(out.contains("init_lane_masks"), "{out}");
+    }
+
+    #[test]
+    fn a_program_the_generator_rejects_is_a_compile_error() {
+        // `sinh` has no Raster Pipeline implementation.
+        let out = skslc(
+            "x.sksl",
+            b"half4 main(float2 p) { return half4(half(sinh(p.x))); }",
+            "x.skrp",
+            true,
+        )
+        .unwrap();
+        let out = String::from_utf8(out).unwrap();
+        assert!(
+            out.starts_with("### Compilation failed:\n\nerror: code is not supported\n"),
+            "{out}"
+        );
     }
 
     #[test]

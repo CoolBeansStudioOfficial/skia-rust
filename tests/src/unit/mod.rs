@@ -159,6 +159,8 @@ pub mod random_test;
 #[cfg(test)]
 pub mod raster_pipeline_builder_test;
 #[cfg(test)]
+pub mod raster_pipeline_code_generator_test;
+#[cfg(test)]
 pub mod read_pixels_test;
 #[cfg(test)]
 pub mod record_draw_test;
@@ -200,6 +202,8 @@ pub mod sk_path_range_iter_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
+#[cfg(test)]
+pub mod sk_sl_test;
 #[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
