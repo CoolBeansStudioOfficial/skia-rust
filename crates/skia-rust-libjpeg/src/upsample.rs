@@ -129,6 +129,7 @@ impl Decompress {
         let mut v_expand = vec![0i32; n];
         let mut rowgroup_height = vec![0i32; n];
         let mut need_context_rows = false;
+        let no_alloc = self.master.jinit_upsampler_no_alloc;
         let mut color_buf = vec![Vec::new(); n];
         for ci in 0..n {
             let c: CompInfo = self.comp_info[ci];
@@ -167,21 +168,32 @@ impl Decompress {
             } else {
                 return Err(Error::FractSampleNotImplemented);
             }
-            if need_buffer {
+            if need_buffer && !no_alloc {
                 let width = round_up(self.output_width as usize, self.max_h_samp_factor as usize);
                 color_buf[ci] = vec![vec![0u8; width]; self.max_v_samp_factor as usize];
             }
         }
-        self.upsample = UpsampleState {
-            color_buf,
-            methods,
-            next_row_out: self.max_v_samp_factor,
-            rows_to_go: self.output_height,
-            rowgroup_height,
-            h_expand,
-            v_expand,
-            need_context_rows,
-        };
+        if no_alloc {
+            // `jinit_upsampler_no_alloc` (jpeg_crop_scanline): the buffers, the row counters and
+            // `need_context_rows` are kept; only the methods and the expansion factors change.
+            // `need_context_rows` is only ever set here, as in the C branches.
+            self.upsample.methods = methods;
+            self.upsample.rowgroup_height = rowgroup_height;
+            self.upsample.h_expand = h_expand;
+            self.upsample.v_expand = v_expand;
+            self.upsample.need_context_rows |= need_context_rows;
+        } else {
+            self.upsample = UpsampleState {
+                color_buf,
+                methods,
+                next_row_out: self.max_v_samp_factor,
+                rows_to_go: self.output_height,
+                rowgroup_height,
+                h_expand,
+                v_expand,
+                need_context_rows,
+            };
+        }
         Ok(())
     }
 
@@ -270,7 +282,9 @@ impl Decompress {
             num_rows = avail as u32;
         }
         let first = self.upsample.next_row_out as usize;
-        self.color_convert(first, &mut output[*out_row_ctr..], num_rows as usize)?;
+        if !self.cconvert.discard {
+            self.color_convert(first, &mut output[*out_row_ctr..], num_rows as usize)?;
+        }
         *out_row_ctr += num_rows as usize;
         self.upsample.rows_to_go -= num_rows;
         self.upsample.next_row_out += num_rows as i32;

@@ -124,6 +124,9 @@ pub(crate) struct ColorState {
     pub(crate) cb_g_tab: Vec<i32>,
     /// `rgb_y_tab` (for the RGB-to-gray case).
     pub(crate) rgb_y_tab: Vec<i32>,
+    /// `cconvert->_color_convert` is `noop_convert` (`read_and_discard_scanlines` in
+    /// jdapistd.c): the rows are upsampled and counted, but not converted.
+    pub(crate) discard: bool,
 }
 
 /// Byte offsets of the colour components in one output pixel, and the pixel size, for an

@@ -69,8 +69,13 @@ int main(void) {
 
   for (size = 1; size <= 16; size++) {
     lcg_state = 12345 + size;
+    /* Skia's jconfig.h has JPEG_LIB_VERSION 62, which has a single DCT_scaled_size field. */
+#if JPEG_LIB_VERSION >= 70
     comp.DCT_h_scaled_size = size;
     comp.DCT_v_scaled_size = size;
+#else
+    comp.DCT_scaled_size = size;
+#endif
     for (blk = 0; blk < nblocks; blk++) {
       JCOEF coef[64];
       int dct_table[64];
