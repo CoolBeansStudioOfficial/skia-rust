@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-sksl"
+description = "SkSL compiler of skia-rust: the Raster Pipeline builder and dumper (more stages to come)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-simd.workspace = true
+
+[lints]
+workspace = true
