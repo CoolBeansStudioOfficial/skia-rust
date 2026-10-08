@@ -12,6 +12,9 @@ pub mod blend_mode_blender;
 #[doc(hidden)]
 pub mod blend_mode_priv;
 pub mod blender;
+pub mod blur_mask;
+pub mod blur_mask_filter_impl;
+pub mod blur_types;
 pub mod buffer;
 pub mod canvas;
 #[doc(hidden)]
@@ -54,6 +57,7 @@ pub mod fixed;
 pub mod float_bits;
 pub mod floating_point;
 pub mod front_buffered_stream;
+pub mod gauss_filter;
 pub mod geometry;
 pub mod half;
 pub mod id_change_listener;
@@ -73,6 +77,7 @@ pub mod line_clipper;
 pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod mask;
+pub mod mask_blur_filter;
 pub mod mask_filter;
 pub mod math;
 #[doc(hidden)]

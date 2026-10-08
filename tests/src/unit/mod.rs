@@ -15,6 +15,8 @@ pub mod blend_test;
 #[cfg(test)]
 pub mod blit_mask_clip;
 #[cfg(test)]
+pub mod blur_test;
+#[cfg(test)]
 pub mod canvas_test;
 #[cfg(test)]
 pub mod capped_hairlines_test;
@@ -184,6 +186,8 @@ pub mod size_test;
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
+#[cfg(test)]
+pub mod sk_gauss_filter_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]

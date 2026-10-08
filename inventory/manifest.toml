@@ -15875,7 +15875,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bigblurs.cpp#L120-L120"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0776316cc837a9304e375d14db312990df8838abbd9104171ce006b405e4f306"
 
 [[test]]
@@ -16211,7 +16211,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurcircles.cpp#L76-L76"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2c6d46c005f3b7f5c89839b42cabe194fa9b482c842fad5dc1da198522c787d2"
 
 [[test]]
@@ -16220,7 +16220,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurcircles2.cpp#L168-L168"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d6a960d2e2b64a05b07d7f603dea89d3bf0fdab399dc588aee55abb415853855"
 
 [[test]]
@@ -16230,6 +16230,7 @@ macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L152-L152"
 module = "effects"
 status = "todo"
+reason = "needs text (drawOverlay uses SkFont/drawString)"
 span_hash = "559d2476777f23f1dbe6885e210cd2dd8c2a62c3c0d7c3db0c091bda859e719e"
 
 [[test]]
@@ -16239,6 +16240,7 @@ macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L154-L154"
 module = "effects"
 status = "todo"
+reason = "needs text (drawOverlay uses SkFont/drawString)"
 span_hash = "a0edb34c71eae556e59938bbafbaaeef94c5cefe773d11abc84c68f951dae892"
 
 [[test]]
@@ -16248,6 +16250,7 @@ macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L153-L153"
 module = "effects"
 status = "todo"
+reason = "needs text (drawOverlay uses SkFont/drawString)"
 span_hash = "6b7008989c271903fa3260085e6f426168368b4149cb2d11230e1963ebd95e63"
 
 [[test]]
@@ -16283,7 +16286,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurquickreject.cpp#L87-L87"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "5e9034b7ae9cdc7f61f13abc7c6e41bac1ee3f7fbc1404c4f6db56268cc83ed2"
 
 [[test]]
@@ -16293,6 +16296,7 @@ macro = "DEF_GM"
 source = "gm/blurrect.cpp#L528-L528"
 module = "effects"
 status = "todo"
+reason = "needs the two point conical gradient shader, Phase 3"
 span_hash = "b819bcdf0a20ff10d31c8d0865dce1bb8a7f9d75e5e5a68ad36ed574e6cc64ab"
 
 [[test]]
@@ -16302,6 +16306,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurrect.cpp#L533-L584"
 module = "effects"
 status = "todo"
+reason = "needs images and surfaces (drawImage), not ported yet"
 span_hash = "39e476be81e5405bf9008838e0c67fb9349fac36089604c1869ee2b81fc713c7"
 
 [[test]]
@@ -16311,6 +16316,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurrect.cpp#L190-L255"
 module = "effects"
 status = "todo"
+reason = "needs drawImage of A8 bitmaps, not ported yet"
 span_hash = "010335fdb9ed8f6355803cac763344659ebbec12eec4d295a0064091be116903"
 
 [[test]]
@@ -16320,6 +16326,7 @@ macro = "DEF_GM"
 source = "gm/blurrect.cpp#L529-L529"
 module = "effects"
 status = "todo"
+reason = "needs drawImage and canvas->makeSurface, not ported yet"
 span_hash = "35b6f27921caf75b453606ab78393c49f6c5eb8909ad1367782697d852baf60b"
 
 [[test]]
@@ -16328,7 +16335,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurredclippedcircle.cpp#L89-L89"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7a1fa72eef3afbd6c55e23b701fca882d4bf5dd14f4fbfe1c40a7bb397a70ce6"
 
 [[test]]
@@ -16338,6 +16345,7 @@ macro = "DEF_GM"
 source = "gm/blurroundrect.cpp#L96-L96"
 module = "effects"
 status = "todo"
+reason = "needs the two point conical gradient shader, Phase 3"
 span_hash = "420bd33472cd656f1226027fc1bb20656fb461eb5809ba0394b7e224a28fa0c8"
 
 [[test]]
@@ -16346,7 +16354,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurroundrect.cpp#L99-L114"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "fabaee439a927c2e6d4fe878a1147252b19bd63b16f4aa8e9348e95f6862bb53"
 
 [[test]]
@@ -16356,6 +16364,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L137-L143"
 module = "effects"
 status = "todo"
+reason = "needs the blur image filter, Phase 3"
 span_hash = "8abbc652846817e069bbc676f383d70011c82f48d60fa35b6733b405df062155"
 
 [[test]]
@@ -16365,6 +16374,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L127-L135"
 module = "effects"
 status = "todo"
+reason = "needs image decoding (mandrill_512_q075.jpg) and image drawing"
 span_hash = "6d2939092a35e7319b0e4446829cb3ad50684aac3141484418bc431c78d5e9f9"
 
 [[test]]
@@ -16374,6 +16384,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L145-L164"
 module = "effects"
 status = "todo"
+reason = "needs the blur image filter, Phase 3"
 span_hash = "b419fefd2639c0c1e4ba5ee12ce277af5c13e9c35839b9623b73c163712760e3"
 
 [[test]]
@@ -16383,6 +16394,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L168-L202"
 module = "effects"
 status = "todo"
+reason = "needs image filters (blur, blend, color filter) and saveLayer with an image filter, Phase 3"
 span_hash = "fafc6ab31799429e0bb16426b981da4a7de3846a621cd4276e5c7d0cd2896d07"
 
 [[test]]
@@ -16391,7 +16403,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L87-L104"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3f036f1c2dbcf6a0be9be5bf69997b240b9371520901fc47140f66d2bee6d91a"
 
 [[test]]
@@ -16400,7 +16412,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurs.cpp#L106-L125"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "74307caeee61983119d7be17a7bcfc360498b99f0d229775bc9003d639f69a52"
 
 [[test]]
@@ -16410,6 +16422,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/blurs.cpp#L29-L77"
 module = "effects"
 status = "todo"
+reason = "needs text (SkFont/drawString)"
 span_hash = "c2a0211b7f79d851b9f56a83abca6d8acbdb66fd7e21105b0230f130d7268a4f"
 
 [[test]]
@@ -19102,6 +19115,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L202-L324"
 module = "effects"
 status = "todo"
+reason = "needs images, text and the dither/color shader on an emboss paint"
 span_hash = "d65602f66fd45b7075b3c7dd8d2c738f0eebd9a20e171294f8e0b3c60e7fe4f1"
 
 [[test]]
@@ -22773,7 +22787,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/points.cpp#L77-L108"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f005e84858135ead088846ab126d16c27de05d231533c9d28702d151ba451fd6"
 
 [[test]]
@@ -23001,6 +23015,7 @@ macro = "DEF_GM"
 source = "gm/rrect.cpp#L315-L315"
 module = "effects"
 status = "todo"
+reason = "needs text (labels use SkFont/drawString)"
 span_hash = "8f8f0a49a7c24ea9b6edaaaf5195079ac982a5ca16ade39d37784ad94d85c972"
 
 [[test]]
@@ -23579,6 +23594,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadermaskfilter.cpp#L51-L64"
 module = "effects"
 status = "todo"
+reason = "needs SkShaderMaskFilter, gradients and pictures, Phase 3"
 span_hash = "c9e00906a380119a8f00736ffcb4b2202ae4cde68a174385a8505a5a48d7b5e3"
 
 [[test]]
@@ -24387,7 +24403,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/tablemaskfilter.cpp#L18-L38"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bf3234465963ade1cf93f88d79a803e38ee2c2672ab3123fee630af8dcaecf0a"
 
 [[test]]
@@ -28596,7 +28612,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L368-L430"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "fcd0ac835e32cc67b2d76ccf2ec8c1d22a5e13390f1c1a16a214efed0ce8fc20"
 
 [[test]]
@@ -28615,7 +28631,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L136-L182"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b65a907a48f6c3150dbafa724835b9a750d2c3c8c80f5db7ec6ec2e7f6b44d21"
 
 [[test]]
@@ -28643,7 +28659,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L321-L364"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ae9f36c5284e7c69d3aff066031c29621656f24617fe17dfcf67df69a0fbceae"
 
 [[test]]
@@ -28652,7 +28668,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L529-L556"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e91f3018bb7c4f6d70876e3b7d4e78fb2523eaa0e44476cfc2ead25685cf604e"
 
 [[test]]
@@ -28662,6 +28678,7 @@ macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L451-L510"
 module = "effects"
 status = "todo"
+reason = "tests GrBlurUtils::ComputeBlurredRRectParams, a Ganesh helper (SK_GANESH only)"
 span_hash = "e8113eb7274ae6167f2fe94e27779117074326184a02a789c4fbf9993e11afd0"
 
 [[test]]
@@ -28671,6 +28688,7 @@ macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L514-L525"
 module = "effects"
 status = "todo"
+reason = "needs SkShaders::MakeFractalNoise (Perlin noise shader), not ported yet"
 span_hash = "4fd9ddd0ff1cad7ea7617b06e2a3bd55bb8044f21a4f4948b77d76f00d955e32"
 
 [[test]]
@@ -28690,6 +28708,7 @@ macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L674-L710"
 module = "effects"
 status = "todo"
+reason = "needs the blur image filter (SkImageFilters::Blur/Offset), Phase 3"
 span_hash = "16168b90b74b85588f21cb1da754c3ee44d07163e06b650ae35c13637f5e3e17"
 
 [[test]]
@@ -28698,7 +28717,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L594-L601"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "1a2f326ae01ebf6abd21268843fc82939f95c5b6677fcf7742347f5d2a14f6d5"
 
 [[test]]
@@ -35520,6 +35539,7 @@ macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L39-L74"
 module = "effects"
 status = "todo"
+reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
 span_hash = "0d42bcac0c6de3beda7b36e163ef9673800f86c8beff43a84e8026be74f19f30"
 
 [[test]]
@@ -35529,6 +35549,7 @@ macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L76-L110"
 module = "effects"
 status = "todo"
+reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
 span_hash = "62af44fbf4e58e5c1e1594cd42cf0792eed48ea451d8a6f56c72964c66b4066d"
 
 [[test]]
@@ -42067,7 +42088,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGaussFilterTest.cpp#L30-L63"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2c0bee81af21c95498797ef262fe1e488aa58d6dbb8c01f1542ba3792d9b5087"
 
 [[test]]
@@ -42076,7 +42097,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGaussFilterTest.cpp#L65-L84"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c7c82c49dcbfd8aef816464158492582f4fec85da852afca2e44cd39f84dc25e"
 
 [[test]]

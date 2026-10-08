@@ -1,34 +1,132 @@
 // Copyright 2006 The Android Open Source Project
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: include/core/SkMaskFilter.h, src/core/SkMaskFilterBase.h
+// Ported from Skia: include/core/SkMaskFilter.h, src/core/SkMaskFilter.cpp,
+// src/core/SkMaskFilterBase.h, src/core/SkMaskFilterBase.cpp
 
 //! `SkMaskFilter`: filters applied to the coverage mask of a draw (e.g. blurs).
 //!
-//! skia-rust: a stub (D2, extended by D4). Only what `SkPaint` and `SkBlitter::Choose` need is
-//! here: the [`MaskFilter`] handle, [`MaskFilterBase::compute_fast_bounds`] and
-//! [`MaskFilterBase::format`]. The mask filters (`SkMaskFilter::MakeBlur`, ...) and the rest of
-//! `SkMaskFilterBase` (`asABlur`, `filterPath`, `filterRects`, ...) are Phase 3 and extend the
-//! trait; D5 added [`MaskFilterBase::filter_mask`], which `SkDraw::drawDevMask` and `DrawToMask`
-//! call.
+//! The [`MaskFilterBase`] trait is `SkMaskFilterBase`'s virtual interface. Its non-virtual
+//! drawing helpers (`filterPath`, `filterRects`, `filterRRect`, which are friends of
+//! `skcpu::Draw`) live in `skia_rust_raster::mask_filter_base`, since they need blitters and
+//! clips.
+//!
+//! skia-rust:
+//! * `SkResourceCache* cache` parameters (`filterRectsToNine`, `filterRRectToNine`) are not
+//!   ported: the cache only memoizes the nine-patch masks, so results are identical without it.
+//! * `asImageFilter` is not ported yet (it needs the blur image filter, Phase 3).
+//! * Flattening (`flatten`/`CreateProc`/`Deserialize`) is not ported (no `SkFlattenable` yet).
+//! * `filterRectsToNine`/`filterRRectToNine` draw small masks with `skcpu::Draw`, which lives in
+//!   the raster crate. They take a [`MaskRasterizer`], the part of `skcpu::Draw` they use, which
+//!   the raster crate implements.
 
 use core::any::Any;
 use core::fmt;
 use std::sync::Arc;
 
+use crate::blur_mask_filter_impl::BlurMaskFilterImpl;
+use crate::blur_types::BlurStyle;
 use crate::mask::{Mask, MaskBuilder, MaskFormat};
 use crate::matrix::Matrix;
 use crate::point::IPoint;
-use crate::rect::Rect;
+use crate::rect::{IRect, Rect, RoundOut};
+use crate::rrect::RRect;
+use crate::scalar::scalar;
 
-/// The virtual interface of a mask filter (`SkMaskFilterBase`), reduced to what is ported.
-// Port of: src/core/SkMaskFilterBase.h#L40-L206 (chrome/m156)
+/// What kind of mask filter a [`MaskFilterBase`] is (`SkMaskFilterBase::Type`).
+// Port of: src/core/SkMaskFilterBase.h#L63-L69 (chrome/m156)
+#[doc(alias = "SkMaskFilterBase::Type")]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum MaskFilterType {
+    /// `kBlur`.
+    Blur,
+    /// `kEmboss`.
+    Emboss,
+    /// `kSDF`.
+    Sdf,
+    /// `kShader`.
+    Shader,
+    /// `kTable`.
+    Table,
+}
+
+/// The sigma and style of a blur (`SkMaskFilterBase::BlurRec`).
+// Port of: src/core/SkMaskFilterBase.h#L84-L87 (chrome/m156)
+#[doc(alias = "SkMaskFilterBase::BlurRec")]
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct BlurRec {
+    /// `fSigma`.
+    pub sigma: scalar,
+    /// `fStyle`.
+    pub style: BlurStyle,
+}
+
+/// What `filterRects` decided (`SkMaskFilterBase::FilterReturn`).
+// Port of: src/core/SkMaskFilterBase.h#L98-L102 (chrome/m156)
+#[doc(alias = "SkMaskFilterBase::FilterReturn")]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum FilterReturn {
+    /// `kFalse`.
+    False,
+    /// `kTrue`.
+    True,
+    /// `kUnimplemented`.
+    Unimplemented,
+}
+
+/// A mask to be stretched over `outer_rect` as a nine-patch (`SkMaskFilterBase::NinePatch`).
+///
+/// skia-rust: the mask owns its image (Skia's refers to cached data).
+// Port of: src/core/SkMaskFilterBase.h#L104-L118 (chrome/m156)
+#[doc(alias = "SkMaskFilterBase::NinePatch")]
+#[derive(Clone, Debug)]
+pub struct NinePatch {
+    /// `fMask`; its bounds must have `[0, 0]` as top-left.
+    pub mask: MaskBuilder,
+    /// `fOuterRect`; its width/height must be at least those of the mask's bounds.
+    pub outer_rect: IRect,
+    /// `fCenter`: identifies the center row/col for stretching.
+    pub center: IPoint,
+}
+
+/// The part of `skcpu::Draw` that mask filters use to draw their small nine-patch masks:
+/// anti-aliased black geometry drawn into a zeroed A8 mask.
+///
+/// skia-rust: this is how `SkBlurMaskFilterImpl`'s `draw_into_mask` reaches `skcpu::Draw`, which
+/// lives in the raster crate (see the module documentation).
+pub trait MaskRasterizer {
+    /// Draws `rects` into the prepared A8 `mask` (the `proc` of `draw_rects_into_mask`): one
+    /// rect is filled, two are filled even-odd as one path. The mask's pixels are the device,
+    /// with the mask's bounds translated to the origin.
+    fn draw_rects(&self, mask: &mut MaskBuilder, rects: &[Rect]);
+
+    /// Draws `rrect` into the prepared A8 `mask` (the `proc` of `draw_rrect_into_mask`).
+    fn draw_rrect(&self, mask: &mut MaskBuilder, rrect: &RRect);
+}
+
+/// The virtual interface of a mask filter (`SkMaskFilterBase`).
+// Port of: src/core/SkMaskFilterBase.h#L38-L206 (chrome/m156)
 #[doc(alias = "SkMaskFilterBase")]
 pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
     /// The bounds of the filtered mask of geometry with bounds `src`, conservatively
     /// (`computeFastBounds(src, dest)`).
+    ///
+    /// The fast bounds function is used to enable the paint to be culled early in the drawing
+    /// pipeline. The default calls [`Self::filter_mask`] with a source mask having no image,
+    /// but subclasses may override this if they can compute the rect faster.
+    // Port of: src/core/SkMaskFilterBase.cpp#L218-L228 (chrome/m156)
     #[doc(alias = "computeFastBounds")]
-    fn compute_fast_bounds(&self, src: &Rect) -> Rect;
+    fn compute_fast_bounds(&self, src: &Rect) -> Rect {
+        let src_m = Mask::new(&[], src.round_out(), 0, MaskFormat::A8);
+        let mut dst_m = MaskBuilder::default();
+
+        let mut margin = IPoint::new(0, 0); // ignored
+        if self.filter_mask(&mut dst_m, &src_m, Matrix::i(), Some(&mut margin)) {
+            Rect::from_irect(dst_m.bounds)
+        } else {
+            Rect::from_irect(src_m.bounds)
+        }
+    }
 
     /// The format of the masks the filter produces (`getFormat`).
     ///
@@ -39,12 +137,15 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
         MaskFormat::A8
     }
 
-    /// Filters `src` into `dst` under `ctm` and returns true if it did. If `margin` is given and
-    /// `src` has no image (a bounds query), the filter sets it to how far the result extends
-    /// beyond the source on each side (`filterMask`).
+    /// Creates a new mask by filtering the `src` mask under `ctm`.
+    ///
+    /// If `src` has no image, `dst` does not get an image either but its other fields are
+    /// filled out. If `margin` is given, it is set to the buffer dx/dy needed when calculating
+    /// the effect: used when drawing a clipped object to know how much larger to allocate the
+    /// source before applying the filter. Returns true if `dst` was correctly created.
     ///
     /// skia-rust: Skia's is pure virtual; the default does nothing and returns false, which is
-    /// what an unsupported source or matrix gets, until Phase 3's mask filters implement it.
+    /// what an unsupported source or matrix gets.
     // Port of: src/core/SkMaskFilterBase.h#L60-L61 (chrome/m156)
     #[doc(alias = "filterMask")]
     fn filter_mask(
@@ -55,6 +156,57 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
         _margin: Option<&mut IPoint>,
     ) -> bool {
         false
+    }
+
+    /// What kind of mask filter this is (`type`).
+    #[doc(alias = "type")]
+    fn filter_type(&self) -> MaskFilterType;
+
+    /// If this filter can be represented by a [`BlurRec`], returns it (`asABlur`).
+    // Port of: src/core/SkMaskFilterBase.cpp#L47-L49 (chrome/m156)
+    #[doc(alias = "asABlur")]
+    fn as_a_blur(&self) -> Option<BlurRec> {
+        None
+    }
+
+    /// As an optimization, some filters can be applied to a smaller nine-patch instead of the
+    /// full-sized rectangle. These nine-patches are not only smaller, but more
+    /// re-usable/cacheable. Then, when drawing/blitting, the nine-patch can be expanded to the
+    /// desired size.
+    ///
+    /// Override if your subclass can filter a rect, and return the answer as a nine-patch mask
+    /// to be stretched over the returned outer rect. On success set `patch` and return
+    /// [`FilterReturn::True`]. On failure (e.g. out of memory) return [`FilterReturn::False`].
+    /// If the normal [`Self::filter_mask`] entry-point should be called (the default) return
+    /// [`FilterReturn::Unimplemented`].
+    ///
+    /// By convention, the caller will take the center row/col from the returned mask as the
+    /// slice it can replicate horizontally and vertically as we stretch the mask to fit inside
+    /// the outer rect.
+    // Port of: src/core/SkMaskFilterBase.cpp#L208-L215 (chrome/m156)
+    #[doc(alias = "filterRectsToNine")]
+    fn filter_rects_to_nine(
+        &self,
+        _rects: &[Rect],
+        _ctm: &Matrix,
+        _clip_bounds: &IRect,
+        _patch: &mut Option<NinePatch>,
+        _rasterizer: &dyn MaskRasterizer,
+    ) -> FilterReturn {
+        FilterReturn::Unimplemented
+    }
+
+    /// Similar to [`Self::filter_rects_to_nine`], except it performs the work on a round rect.
+    // Port of: src/core/SkMaskFilterBase.cpp#L203-L206 (chrome/m156)
+    #[doc(alias = "filterRRectToNine")]
+    fn filter_rrect_to_nine(
+        &self,
+        _rrect: &RRect,
+        _ctm: &Matrix,
+        _clip_bounds: &IRect,
+        _rasterizer: &dyn MaskRasterizer,
+    ) -> Option<NinePatch> {
+        None
     }
 }
 
@@ -85,6 +237,32 @@ impl MaskFilter {
     #[must_use]
     pub fn ptr_eq(&self, other: &MaskFilter) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// Creates a blur mask filter.
+    ///
+    /// * `style` - the [`BlurStyle`] to use.
+    /// * `sigma` - standard deviation of the Gaussian blur to apply. Must be > 0.
+    /// * `respect_ctm` - if true (the default) the blur's sigma is modified by the CTM.
+    ///
+    /// Returns `None` if `sigma` is not finite and positive.
+    // Port of: src/core/SkBlurMaskFilterImpl.cpp#L619-L625 (chrome/m156)
+    #[doc(alias = "MakeBlur")]
+    #[must_use]
+    pub fn blur(
+        style: BlurStyle,
+        sigma: scalar,
+        respect_ctm: impl Into<Option<bool>>,
+    ) -> Option<MaskFilter> {
+        if sigma.is_finite() && sigma > 0.0 {
+            Some(MaskFilter::from_base(BlurMaskFilterImpl::new(
+                sigma,
+                style,
+                respect_ctm.into().unwrap_or(true),
+            )))
+        } else {
+            None
+        }
     }
 }
 

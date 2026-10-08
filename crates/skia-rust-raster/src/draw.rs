@@ -16,12 +16,10 @@
 //!   (a copy that changes `fCTM`) is [`Draw::reborrow`] plus a field assignment.
 //! * `drawVertices`/`drawFixedVertices` and `drawAtlas` are in [`crate::draw_vertices`] and
 //!   [`crate::draw_atlas`] (`SkDraw_vertices.cpp`, `SkDraw_atlas.cpp`).
-//! * Not ported yet (they need text or mask filters, ported in D7 and Phase 3):
-//!   `drawSprite`, `drawBitmapAsMask`,
-//!   `drawGlyphRunList`/`paintMasks` (text), and the mask filter branches of
-//!   `drawDevPath`/`drawRRectNinePatch`
-//!   (`SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect`). Where a mask filter would have
-//!   drawn, the geometry is drawn unfiltered. See the "As implemented in D5" design note.
+//! * The mask filter branches of `drawDevPath`/`drawRRectNinePatch` call
+//!   `SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect` ([`crate::mask_filter_base`]).
+//! * Not ported yet (they need text): `drawSprite`, `drawBitmapAsMask`,
+//!   `drawGlyphRunList`/`paintMasks`. See the "As implemented in D5" design note.
 //! * `BitmapDevicePainter`, the interface text and bitmaps are painted through, is not ported
 //!   with them.
 
@@ -42,7 +40,7 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
-use skia_rust_core::mask_filter::MaskFilter;
+use skia_rust_core::mask_filter::{FilterReturn, MaskFilter};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::matrix_utils::treat_as_sprite;
 use skia_rust_core::mipmap::Mipmap;
@@ -70,6 +68,7 @@ use crate::auto_blitter_choose::auto_blitter_choose;
 use crate::blitter::Blitter;
 use crate::blitter_a8::choose_a8_blitter;
 use crate::blitter_choose::choose;
+use crate::mask_filter_base::{filter_path, filter_rects, filter_rrect};
 use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan::{
     fill_irect_clip, fill_path_clip, fill_rect_clip, fill_xrect_clip, xrect_set_rect,
@@ -959,20 +958,39 @@ impl<'a> Draw<'a> {
     }
 
     /// Specialized draw for round rects that only draws if it is nine-patchable
-    /// (`drawRRectNinePatch`).
-    ///
-    /// skia-rust: nine-patch blurs come from `SkMaskFilterBase::filterRects`/`filterRRect`,
-    /// which belong to the mask filters of Phase 3, so nothing is drawn and this returns false
-    /// (the caller then draws the path, as Skia does when the filter declines).
+    /// (`drawRRectNinePatch`). Returns true if the mask filter drew it.
     // Port of: src/core/SkDraw.cpp#L882-L902 (chrome/m156)
     #[doc(alias = "drawRRectNinePatch")]
     pub fn draw_rrect_nine_patch(&mut self, rrect: &RRect, paint: &Paint) -> bool {
-        debug_assert!(paint.mask_filter().is_some());
+        let mask_filter = paint.mask_filter();
+        debug_assert!(mask_filter.is_some());
+        let Some(mask_filter) = mask_filter else {
+            return false;
+        };
 
-        if let Some(_rr) = rrect.transform(self.ctm) {
-            // TODO(Phase 3): choose a blitter for `rrect.getBounds()` and call
-            // `maskFilter->filterRects` (for `RRect::Type::Rect`) or `filterRRect`.
-            let _ = RRectType::Rect;
+        if let Some(rr) = rrect.transform(self.ctm) {
+            let ctm = self.ctm;
+            let rc = self.rc;
+            return auto_blitter_choose(
+                self,
+                None,
+                paint,
+                rrect.rect(),
+                DrawCoverage::No,
+                |blitter| {
+                    if rrect.get_type() == RRectType::Rect {
+                        let dev_rect = *rr.rect();
+                        if filter_rects(&mask_filter, &[dev_rect], ctm, rc, blitter)
+                            == FilterReturn::True
+                        {
+                            return true;
+                        }
+                    } else if filter_rrect(&mask_filter, &rr, ctm, rc, blitter) {
+                        return true; // filterRRect() called the blitter, so we're done
+                    }
+                    false
+                },
+            );
         }
         false
     }
@@ -1107,11 +1125,17 @@ impl<'a> Draw<'a> {
         }
 
         let rc = self.rc;
+        let ctm = self.ctm;
         let run = |blitter: &mut dyn Blitter| {
-            if paint.mask_filter().is_some() {
-                // TODO(Phase 3): `SkMaskFilterBase::filterPath(raw, ctm, rc, blitter, style)`
-                // draws the filtered mask and returns true; no mask filter can draw yet, so this
-                // falls through to the unfiltered geometry.
+            if let Some(mask_filter) = paint.mask_filter() {
+                let style = if do_fill {
+                    InitStyle::Fill
+                } else {
+                    InitStyle::Hairline
+                };
+                if filter_path(&mask_filter, raw, ctm, rc, blitter, style) {
+                    return; // filterPath() called the blitter, so we're done
+                }
             }
 
             if do_fill {
