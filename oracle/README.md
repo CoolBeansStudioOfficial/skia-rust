@@ -26,7 +26,7 @@ All builds use clang-cl, the compiler Chrome ships Skia with. Every run records 
 
 ## Fonts
 
-Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is pure Skia and identical on every platform. GMs that load real font files go through whatever typeface factory the build has. **Text goldens are not trustworthy until the Fontations build works** (`skia_use_fontations=true`; see "Open problems").
+Runs use `--nativeFonts false`, i.e. Skia's portable test font manager, which is pure Skia and identical on every platform (and is what Skia's default bots run). That manager returns null for every font file, so GMs that load real fonts (`ToolUtils::CreateTypefaceFromResource`) skipped or drew with the empty typeface; no golden contains Fontations, FreeType or DirectWrite output. Text goldens are therefore trustworthy for the portable typefaces; Fontations pixels need a separate oracle configuration (`docs/design/text.md` §1, §7.3).
 
 ## Usage (on the server)
 

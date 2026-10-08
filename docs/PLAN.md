@@ -38,7 +38,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | CPU exactness | Match **every** Skia CPU tier exactly |
 | GPU oracle | Skia Graphite + Dawn (custom build at the pin) |
 | GPU reference environments | Vulkan/lavapipe and D3D12/WARP gate merges; real hardware (RTX 4070 SUPER) is report-only |
-| Text | Fontations (`skrifa`); the oracle uses Skia's Fontations typeface backend |
+| Text | Fontations (`skrifa`, pinned to Skia's exact versions). The m156 goldens were rendered with Skia's portable test fonts (`--nativeFonts false`, no Fontations); see `docs/design/text.md` |
 | Shaping / Unicode | HarfRust + ICU4X |
 | SkSL | Full port of Skia's SkSL compiler, including the WGSL and Raster Pipeline code generators |
 | Codecs | Faithful Rust ports of the decode paths of the libraries Skia wraps (libjpeg-turbo, libwebp, Wuffs GIF, libpng / Rust `png` as Skia configures it), incl. JPEG gainmaps. Scope = codecs enabled in Skia's default GN build at the pin; others (AVIF, JPEG XL, RAW) excluded with reason until revisited |
@@ -73,7 +73,8 @@ skia-rust/
 │  ├─ skia-rust-effects/      # shaders, gradients, color/mask/image filters, path effects, blenders
 │  ├─ skia-rust-sksl/         # SkSL front end, IR, optimizer; RP + WGSL code generators
 │  ├─ skia-rust-pathops/      # boolean path ops
-│  ├─ skia-rust-text/         # Typeface/Font (Fontations), strikes, glyph cache, TextBlob, test typefaces
+│  ├─ skia-rust-text/         # typeface backends: Fontations (skrifa), custom typefaces, remote glyph cache
+│  │                          #   (Font/Typeface/strikes/TextBlob engine is in core: docs/design/text.md §3)
 │  ├─ skia-rust-codec/        # Codec API + faithful ports: libjpeg-turbo, libwebp, Wuffs GIF, PNG, BMP/ICO/WBMP, gainmaps
 │  ├─ skia-rust-gpu/          # Graphite port on wgpu: Context, Recorder, Recording, DrawPass, renderers, atlases
 │  ├─ skia-rust-shaper/       # SkShaper on HarfRust
