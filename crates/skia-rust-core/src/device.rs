@@ -836,11 +836,8 @@ pub fn draw_glyph_run_list(device: &mut dyn Device, list: &GlyphRunList<'_>, pai
 ///
 /// The canvas-level `concat` of C++ becomes a device transform change, which is the same for
 /// the raster device (its matrix is the canvas matrix). A shader in `paint` needs the
-/// local-matrix shader that `make_post_inverse_lm` builds, which is not ported; it panics.
-///
-/// # Panics
-///
-/// If `paint` has a shader (see above).
+/// local-matrix shader that `make_post_inverse_lm` builds, which is not ported: those glyphs
+/// are skipped (see the TODO in the body).
 // Port of: src/core/SkDevice.cpp#L438-L479 (chrome/m156)
 #[doc(alias = "simplifyGlyphRunRSXFormAndRedraw")]
 pub fn simplify_glyph_run_rsxform_and_redraw(
@@ -866,11 +863,12 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
 
             // We want to rotate each glyph by the rsxform, but we don't want to rotate "space"
             // (the shader that cares about the CTM), so C++ wraps the shader in the inverse of
-            // the glyph matrix. With no shader there is nothing to wrap.
-            assert!(
-                paint.shader().is_none(),
-                "RSXform text with a shader needs make_post_inverse_lm, which is not ported yet"
-            );
+            // the glyph matrix. That wrapper is `make_post_inverse_lm`, a local-matrix shader,
+            // which is not ported yet. Until it is, such glyphs draw nothing.
+            // TODO(text-T14): port `make_post_inverse_lm` and draw these glyphs with it.
+            if paint.shader().is_some() {
+                continue;
+            }
             let sub_list = builder.make_glyph_run_list(
                 GlyphRun::new(
                     run.font().clone(),
