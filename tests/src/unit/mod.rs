@@ -99,6 +99,8 @@ pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
 #[cfg(test)]
+pub mod md5_test;
+#[cfg(test)]
 pub mod memset_test;
 #[cfg(test)]
 pub mod meta_data_test;

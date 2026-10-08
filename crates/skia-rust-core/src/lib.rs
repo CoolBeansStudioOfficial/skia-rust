@@ -51,6 +51,8 @@ pub mod draw_types;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod effect_priv;
+pub mod encoded_image_format;
+pub mod encoded_origin;
 pub mod endian;
 pub mod fdot6;
 pub mod fixed;
@@ -89,6 +91,7 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod md5;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod paint;
