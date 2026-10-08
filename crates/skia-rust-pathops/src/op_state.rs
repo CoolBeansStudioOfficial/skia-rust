@@ -15,8 +15,8 @@
 //! of the C++ files they come from.
 
 use crate::op_angle::Angle;
+use crate::op_coincidence::{CoinSet, CoincidentSpans};
 use crate::op_contour::Contour;
-use crate::op_coincidence::CoincidentSpans;
 use crate::op_segment::Segment;
 use crate::op_span::{PtT, Span};
 
@@ -51,6 +51,10 @@ arena_id!(
 arena_id!(
     /// Index of a [`CoincidentSpans`] record in an [`OpState`]: Skia's `SkCoincidentSpans*`.
     CoinId
+);
+arena_id!(
+    /// Index of a [`CoinSet`] (one `SkOpCoincidence` object) in an [`OpState`].
+    CoinSetId
 );
 
 /// `SkOpPhase`: which stage of the operation is running.
@@ -93,20 +97,10 @@ pub struct OpState {
     pub(crate) angles: Vec<Angle>,
     /// Every coincident span record (`SkCoincidentSpans`).
     pub(crate) coin_spans: Vec<CoincidentSpans>,
-    /// `SkOpCoincidence::fHead`.
-    pub(crate) coin_head: Option<CoinId>,
-    /// `SkOpCoincidence::fTop`.
-    pub(crate) coin_top: Option<CoinId>,
-    /// `SkOpCoincidence::fContinue`.
-    pub(crate) coin_continue: bool,
-    /// `SkOpCoincidence::fSpanDeleted`.
-    pub(crate) coin_span_deleted: bool,
-    /// `SkOpCoincidence::fPtAllocated`.
-    pub(crate) coin_pt_allocated: bool,
-    /// `SkOpCoincidence::fCoinExtended`.
-    pub(crate) coin_extended: bool,
-    /// `SkOpCoincidence::fSpanMerged`.
-    pub(crate) coin_span_merged: bool,
+    /// Every `SkOpCoincidence` object (its `fHead` and `fTop` lists).
+    pub(crate) coin_sets: Vec<CoinSet>,
+    /// The object `globalState()->coincidence()` returns (the last one constructed).
+    pub(crate) coin_global: Option<CoinSetId>,
     /// `SkOpGlobalState::fContourHead`.
     pub(crate) contour_head: Option<ContourId>,
     /// `SkOpGlobalState::fNested`.
@@ -198,13 +192,6 @@ impl OpState {
     #[must_use]
     pub(crate) fn nested(&self) -> i32 {
         self.nested
-    }
-
-    /// `SkOpCoincidence::isEmpty()`.
-    // Port of: src/pathops/SkOpCoincidence.h#L101-L103 (chrome/m156)
-    #[must_use]
-    pub(crate) fn coincidence_is_empty(&self) -> bool {
-        self.coin_head.is_none() && self.coin_top.is_none()
     }
 
     /// `new SkOpSpan` / `SkOpSpanBase` allocation: a span whose embedded `SkOpPtT` is its
