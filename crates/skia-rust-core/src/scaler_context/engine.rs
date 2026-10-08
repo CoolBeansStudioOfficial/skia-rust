@@ -59,14 +59,6 @@ const STD_FAKE_BOLD_INTERP_VALUES: [scalar; 2] = [1.0 / 24.0, 1.0 / 32.0];
 // Port of: src/core/SkPaintDefaults.h (SkPaintDefaults_MiterLimit = 4, chrome/m156)
 const PAINT_DEFAULT_MITER_LIMIT: scalar = 4.0;
 
-/// `SK_GAMMA_CONTRAST` (the default text contrast).
-// Port of: include/core/SkTypes.h#L93 (chrome/m156)
-const SK_GAMMA_CONTRAST: scalar = 0.5;
-
-/// `SK_GAMMA_EXPONENT` (0 selects sRGB).
-// Port of: include/core/SkTypes.h#L85 (chrome/m156)
-const SK_GAMMA_EXPONENT: scalar = 0.0;
-
 /// `SkScalerContextFlags` (`SkScalerContext.h`): what a caller of `MakeRecAndEffects` asks for.
 // Port of: src/core/SkScalerContext.h#L53-L58 (chrome/m156)
 #[doc(alias = "SkScalerContextFlags")]
@@ -904,18 +896,13 @@ pub fn get_gamma_lut_data(contrast: scalar, device_gamma: scalar) -> Option<Vec<
 #[must_use]
 pub fn cached_mask_gamma_for(contrast: u8, gamma: u8) -> Arc<MaskGamma> {
     static LINEAR: LazyLock<Arc<MaskGamma>> = LazyLock::new(|| Arc::new(MaskGamma::linear()));
-    static DEFAULT: LazyLock<Arc<MaskGamma>> =
-        LazyLock::new(|| Arc::new(MaskGamma::new(SK_GAMMA_CONTRAST, SK_GAMMA_EXPONENT)));
     let linear_contrast = ScalerContextRec::internal_contrast_from_external(0.0);
     let linear_gamma = ScalerContextRec::internal_gamma_from_external(1.0);
     if contrast == linear_contrast && gamma == linear_gamma {
         return Arc::clone(&LINEAR);
     }
-    let default_contrast = ScalerContextRec::internal_contrast_from_external(SK_GAMMA_CONTRAST);
-    let default_gamma = ScalerContextRec::internal_gamma_from_external(SK_GAMMA_EXPONENT);
-    if contrast == default_contrast && gamma == default_gamma {
-        return Arc::clone(&DEFAULT);
-    }
+    // The default is not special-cased: Skia builds it from the quantized values too
+    // (`ExternalContrastFromInternal(128)` = 128/255, not `SK_GAMMA_CONTRAST`).
     Arc::new(MaskGamma::new(
         ScalerContextRec::external_contrast_from_internal(contrast),
         ScalerContextRec::external_gamma_from_internal(gamma),

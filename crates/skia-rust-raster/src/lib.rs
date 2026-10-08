@@ -17,6 +17,7 @@ pub mod draw_vertices;
 pub mod edge;
 pub mod edge_builder;
 pub mod glyph_image;
+pub mod glyph_run_painter;
 pub mod mask_filter_base;
 mod pixel_rows;
 pub mod raster_canvas;

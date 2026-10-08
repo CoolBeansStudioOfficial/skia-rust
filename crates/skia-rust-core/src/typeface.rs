@@ -29,9 +29,9 @@ use crate::scalar::scalar;
 use crate::scaler_context::{
     ScalerContext, ScalerContextBuildFlags, ScalerContextEffects, ScalerContextRec,
 };
+use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
 use crate::strike_spec::auto_descriptor_given_rec_and_effects;
 use crate::surface_props::SurfaceProps;
-use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
 use crate::typeface_cache::new_typeface_id;
 use crate::utf::{Unichar, next_utf8, next_utf16};
 

@@ -16,14 +16,14 @@ use crate::canvas::Canvas;
 use crate::checksum::cheap_mix;
 use crate::drawable::{Drawable, DrawableBase};
 use crate::font_types::GlyphId;
-use crate::mask::MaskFormat;
+use crate::mask::{Mask, MaskFormat};
 use crate::packed_glyph_id::PackedGlyphId;
 use crate::path::Path;
 use crate::picture::Picture;
 use crate::point::{IPoint, Point};
 use crate::rect::IRect;
 use crate::rect::Rect;
-use crate::scalar::scalar;
+use crate::scalar::{scalar, scalar_floor_to_int};
 use crate::scaler_context::AxisAlignment;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
@@ -596,6 +596,36 @@ impl Glyph {
         self.image.as_deref()
     }
 
+    /// `SkGlyph::mask()`: the mask of the glyph at its own bounds (no image gives an empty image).
+    // Port of: src/core/SkGlyph.cpp#L127-L130 (chrome/m156)
+    #[must_use]
+    pub fn mask(&self) -> Mask<'_> {
+        Mask::new(
+            self.image().unwrap_or(&[]),
+            self.i_rect(),
+            row_bytes_u32(self.row_bytes()),
+            self.mask_format,
+        )
+    }
+
+    /// `SkGlyph::mask(position)`: the mask with its bounds moved by the floor of `position`. The
+    /// position must be integral in the painter, which is the only caller.
+    // Port of: src/core/SkGlyph.cpp#L132-L137 (chrome/m156)
+    #[must_use]
+    pub fn mask_at(&self, position: Point) -> Mask<'_> {
+        let mut bounds = self.i_rect();
+        bounds.offset((
+            scalar_floor_to_int(position.x),
+            scalar_floor_to_int(position.y),
+        ));
+        Mask::new(
+            self.image().unwrap_or(&[]),
+            bounds,
+            row_bytes_u32(self.row_bytes()),
+            self.mask_format,
+        )
+    }
+
     /// `SkGlyph::setImage(void*)`: installs an image the caller has produced.
     // Port of: src/core/SkGlyph.h#L541 (chrome/m156)
     pub fn set_image(&mut self, image: Box<[u8]>) {
@@ -929,4 +959,10 @@ impl GlyphPositionRoundingSpec {
             ignore_mask.y & PackedGlyphId::XY_FIELD_MASK.y,
         )
     }
+}
+
+/// `SkMask::fRowBytes` is 32-bit. A glyph row is a few hundred bytes at most, far below that.
+#[allow(clippy::cast_possible_truncation)] // see above
+fn row_bytes_u32(row_bytes: usize) -> u32 {
+    row_bytes as u32
 }
