@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 use super::ProgramUsage;
 use super::{ProgramVisitor, walk_expression, walk_program_element};
-use crate::base_shim::saturating_add_size;
+use crate::base_helpers::saturating_add_size;
 use crate::context::Context;
 use crate::defines::VARIABLE_SLOT_LIMIT;
 use crate::error_reporter::ErrorReporter;

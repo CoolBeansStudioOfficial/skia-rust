@@ -544,12 +544,9 @@ conventions of §4.3 hold, plus these:
   `Standard::{Std140, Std430, Metal, WgslUniformBase, …}`.
 - `Compiler::FRAGCOLOR_NAME` joins `POISON_TAG` in `compiler.rs`.
 
-**Deferred.** These need the S7a constructors or the S8 constant folder, so they wait for those:
+**Deferred, as of S6.** These needed the S7a constructors, the S7b operators or the S8 constant
+folder. The first two are done (see below). The other two are still open:
 
-- `Type::coerceExpression`, and the expression forms of `checkForOutOfRangeLiteral` and
-  `convertArraySize`. They become `coerce_expression`, `check_for_out_of_range_literal` and
-  `convert_array_size` (S7a and S8). The `_value` functions above are the scalar versions.
-- `SymbolTable::instantiateSymbolRef`: needs `Symbol::instantiate` (S7b).
 - `Variable::MakeScratchVariable`: needs `VarDeclaration::Make` (S7d).
 - `type_to_sksltype`: belongs with the runtime-effect uniform types (S18).
 
@@ -567,6 +564,50 @@ which are listed separately.
 Shared hot spots: `ir/mod.rs` (module lines and re-exports; S7a–d all add some), and
 `ir/program_element.rs` (S7c and S7d both edit it). Agree on one edit order, or rebase the second
 PR onto the first. `compiler.rs` belongs to S11.
+
+### 4.5 As integrated in S5–S9 (`port/sksl-5`)
+
+The S7a, S7b, S7c, S8, S9a and S9b branches are merged into one tree, and the stand-ins those
+tasks left for each other are gone. Every call goes to the function that owns it:
+
+- **Deferred from S6, now done.** `Type::coerce_expression` (`types.rs`),
+  `check_for_out_of_range_literal`, `convert_array_size` (`types.rs`, with
+  `constant_folder::get_constant_int`), and `SymbolTable::instantiate_symbol_ref` (`Symbol::instantiate`).
+- **S7b.** `ir/constant_folder_stub.rs` and `ir/s7b_shims.rs` are deleted. The operators call the
+  S7a `make`s, `Type::coerce_expression`, `constant_folder::{simplify, get_constant_value_for_variable}`
+  and `analysis::{is_assignable, update_variable_ref_kind}`. The folding of `-x`, `!b` and `~x`
+  (`SkSLPrefixExpression.cpp`) is complete in `ir/prefix_postfix.rs`.
+- **S8.** The private node builders and constant-value helpers are gone. The folder uses
+  `Literal::make*`, `ConstructorSplat/DiagonalMatrix/Array/Compound::make` (and
+  `make_from_constants`), `BinaryExpression::make*`, `PrefixExpression::make`,
+  `Expression::{get_constant_value, compare_constant, supports_constant_values}` and the S9a
+  analyses.
+- **S7a.** `ir/constructor.rs` has no stand-ins. Its constant-value methods are the ones S8 uses.
+  Skia m156 overrides `getConstantValue`/`supportsConstantValues` only in `Literal` and the
+  constructors (`SkSLLiteral.h`, `SkSLConstructor*.h`); `IndexExpression`, `PrefixExpression` and
+  `FunctionCall` have no override, so they stay on the default (no constant value).
+- **S9b.** `analysis/s9b_shims.rs` is deleted. `WriteCounts` is `ProgramUsage` (`get_variable(v).write`),
+  the constant-expression visitor with loop indices is `expression_queries::is_constant_expression_with_loop_indices`,
+  and `is_same_expression_tree`, `statement_writes_to_variable` and `BinaryExpression::make` are the
+  S9a and S7b functions. `SymbolTableStackBuilder` has one definition (S9a); its method is `finish`.
+  `SafeMath`, `saturating_add_size` and `double_saturate2int` moved to `base_helpers.rs`, and
+  `forward_errors` to `error_reporter.rs`.
+- **S7c.** No `pending()` path is left. `Constructor::Convert` is `constructor::convert`, argument
+  coercion and out-parameter reference kinds are real, `eval()` becomes `ChildCall::make`, and
+  the sk_Position fixup is built with the `IRHelpers` members it uses (local to
+  `ir/function_definition.rs`). `ExpressionStatement::make` is ported in `ir/control_statements.rs`
+  for the fixup. Intrinsic folding (`SkSLFunctionCall.cpp`, the `Intrinsics` namespace and
+  `optimize_intrinsic_call`) is `ir/function_call_intrinsics.rs`.
+- **S9a.** `analysis/returns_opaque_color.rs` ports `ReturnsNonOpaqueColorVisitor`.
+- **Tree-shape optimizations** (S7b's deferred list): the ternary `fOptimize` rewrites
+  (`ir/ternary_expression.rs`), constant array and matrix index extraction in
+  `IndexExpression::Make`, `optimize_constructor_swizzle` in `Swizzle::Make`, struct-constructor
+  field extraction in `FieldAccess::Make`, and constructor-cast folding (S7a's
+  `ConstructorScalarCast::make`).
+- **Copies of skia-rust-base helpers** that the sksl crate needs (it does not depend on
+  skia-rust-core): `base_helpers.rs` (`SafeMath`, `ieee_double_divide`, half floats, `is_finite_array`)
+  and `matrix_invert.rs` (the 2x2, 3x3 and 4x4 inverses). Both go away when skia-rust-base lands.
+- `intrinsic_list.rs` gained `not`, which Skia's `SKSL_INTRINSIC_LIST` has (106 entries).
 
 ## 5. Exactness requirements
 

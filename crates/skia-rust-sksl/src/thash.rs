@@ -18,7 +18,7 @@
 
 use std::marker::PhantomData;
 
-use crate::base_shim::{checksum_mix, next_pow2};
+use crate::base_helpers::{checksum_mix, next_pow2};
 
 /// `SkGoodHash` for the key types this crate uses: `Mix` of the four bytes of a 4-byte key.
 #[doc(alias = "SkGoodHash")]

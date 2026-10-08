@@ -369,12 +369,13 @@ fn ternary_node_has_the_type_of_its_true_branch() {
     let mut ctx = context(ProgramKind::Fragment);
     let x = var(&mut ctx, "x", TypeId::FLOAT, ModifierFlags::empty());
     let a = var_ref(&mut ctx, x, VariableRefKind::Read);
-    let b = var_ref(&mut ctx, x, VariableRefKind::Read);
+    // Equal branches would fold (`test ? x : x` is `x`), so the false branch is a literal.
+    let b = lit(&mut ctx, TypeId::FLOAT, 2.0);
     let test_var = var(&mut ctx, "c", TypeId::BOOL, ModifierFlags::empty());
     let test = var_ref(&mut ctx, test_var, VariableRefKind::Read);
     let ternary = TernaryExpression::convert(&mut ctx, at(), test, a, b).expect("converts");
     assert_eq!(ctx.pool.expression(ternary).ty, TypeId::FLOAT);
-    assert_eq!(ctx.pool.expression_description(ternary), "c ? x : x");
+    assert_eq!(ctx.pool.expression_description(ternary), "c ? x : 2.0");
 }
 
 #[test]

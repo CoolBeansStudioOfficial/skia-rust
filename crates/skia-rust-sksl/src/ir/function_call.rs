@@ -8,6 +8,9 @@
 //
 //! [`FunctionCall`]: `function(args…)`.
 
+use super::function_call_intrinsics::{
+    has_compile_time_constant_arguments, optimize_intrinsic_call,
+};
 use super::{
     ChildCall, CoercionCost, Expression, ExpressionKind, FnId, IrPool, LayoutFlags, ModifierFlags,
     VariableRefKind, constructor,
@@ -33,12 +36,6 @@ pub struct FunctionCall {
     /// it). It is the id the original call was allocated at
     /// ([`IrPool::next_expression_id`] before `add_expression`), and clones copy it.
     pub stable_pointer: ExprId,
-}
-
-/// Stops with the name of a Skia path that is not ported yet, so that no call is produced that
-/// would differ from Skia's.
-fn pending(what: &str) -> ! {
-    panic!("SkSL port: {what} is not ported yet")
 }
 
 impl FunctionCall {
@@ -86,6 +83,10 @@ impl FunctionCall {
     /// `FunctionCall::Convert(context, pos, functionValue, arguments)`: resolves the callee
     /// (a type, a function name or a method) and converts the call. Returns `None` after
     /// reporting an error.
+    ///
+    /// # Panics
+    ///
+    /// If a method call has no self argument, which Skia asserts.
     ///
     // Port of: src/sksl/ir/SkSLFunctionCall.cpp#L1117-L1162 (chrome/m156)
     #[must_use]
@@ -238,31 +239,7 @@ impl FunctionCall {
         };
 
         let mut arguments = arguments;
-        for (i, &param_ty) in types.iter().enumerate() {
-            // Coerce each argument to the proper type.
-            let Some(coerced) = param_ty.coerce_expression(ctx, arguments[i]) else {
-                return None;
-            };
-            arguments[i] = coerced;
-            // Update the refKind on out-parameters, and ensure that they are actually assignable.
-            let param = ctx.pool.function(function).parameters[i];
-            let param_flags = ctx.pool.variable(param).modifier_flags;
-            if param_flags.contains(ModifierFlags::OUT) {
-                let ref_kind = if param_flags.contains(ModifierFlags::IN) {
-                    VariableRefKind::ReadWrite
-                } else {
-                    VariableRefKind::Pointer
-                };
-                if !analysis::update_variable_ref_kind(
-                    &mut ctx.pool,
-                    arguments[i],
-                    ref_kind,
-                    Some(&mut ctx.errors),
-                ) {
-                    return None;
-                }
-            }
-        }
+        coerce_arguments(ctx, function, &mut arguments, &types)?;
 
         if ctx.pool.function(function).is_main {
             ctx.errors.error(pos, "call to 'main' is not allowed");
@@ -317,14 +294,15 @@ impl FunctionCall {
             ctx.pool.function(function).parameters.len(),
             arguments.len()
         );
+        // We might be able to optimize built-in intrinsics.
         if ctx.pool.function(function).is_intrinsic()
-            && !arguments
-                .iter()
-                .all(|&arg| is_definitely_not_constant(&ctx.pool, arg))
+            && has_compile_time_constant_arguments(&ctx.pool, &arguments)
+            && let Some(kind) = ctx.pool.function(function).intrinsic_kind
+            && let Some(folded) = optimize_intrinsic_call(ctx, kind, &arguments, return_type)
         {
-            pending(
-                "intrinsic constant folding (FunctionCall::Make, needs the S8 constant folder)",
-            );
+            // The function is an intrinsic and all inputs are compile-time constants. Optimize it.
+            ctx.pool.expression_mut(folded).position = pos;
+            return folded;
         }
         // The call's stable pointer is the id it is about to be allocated at.
         let stable_pointer = ctx.pool.next_expression_id();
@@ -338,6 +316,40 @@ impl FunctionCall {
             }),
         ))
     }
+}
+
+/// The coercion of each argument to its parameter type, and the reference kind of each
+/// out-parameter, as `FunctionCall::Convert` does them after the final types are known.
+// Port of: src/sksl/ir/SkSLFunctionCall.cpp#L1196-L1213 (chrome/m156)
+fn coerce_arguments(
+    ctx: &mut Context,
+    function: FnId,
+    arguments: &mut [ExprId],
+    types: &[TypeId],
+) -> Option<()> {
+    for (i, &param_ty) in types.iter().enumerate() {
+        // Coerce each argument to the proper type.
+        arguments[i] = param_ty.coerce_expression(ctx, arguments[i])?;
+        // Update the refKind on out-parameters, and ensure that they are actually assignable.
+        let param = ctx.pool.function(function).parameters[i];
+        let param_flags = ctx.pool.variable(param).modifier_flags;
+        if param_flags.contains(ModifierFlags::OUT) {
+            let ref_kind = if param_flags.contains(ModifierFlags::IN) {
+                VariableRefKind::ReadWrite
+            } else {
+                VariableRefKind::Pointer
+            };
+            if !analysis::update_variable_ref_kind(
+                &mut ctx.pool,
+                arguments[i],
+                ref_kind,
+                Some(&mut ctx.errors),
+            ) {
+                return None;
+            }
+        }
+    }
+    Some(())
 }
 
 /// `CallCost`: the cost of calling `function` with `arguments`, or impossible when the call is
@@ -430,19 +442,6 @@ fn workgroup_uniform_load_root(pool: &IrPool, argument: ExprId) -> Option<VarId>
             }
             _ => return None,
         }
-    }
-}
-
-/// Whether `expr` is certainly not a compile-time constant. A variable that is not `const` holds
-/// no constant value, so a call with only such arguments is never folded. Any other expression
-/// may be a constant, and is not decided here.
-fn is_definitely_not_constant(pool: &IrPool, expr: ExprId) -> bool {
-    match &pool.expression(expr).kind {
-        ExpressionKind::VariableReference(v) => !pool
-            .variable(v.variable)
-            .modifier_flags
-            .contains(ModifierFlags::CONST),
-        _ => false,
     }
 }
 

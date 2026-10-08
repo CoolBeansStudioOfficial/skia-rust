@@ -98,6 +98,7 @@ intrinsic_list! {
     Modf => "modf",
     Mod => "mod",
     Normalize => "normalize",
+    Not => "not",
     NotEqual => "notEqual",
     OuterProduct => "outerProduct",
     PackHalf2x16 => "packHalf2x16",
@@ -163,7 +164,8 @@ mod tests {
 
     #[test]
     fn finds_intrinsics_by_name() {
-        assert_eq!(IntrinsicKind::ALL.len(), 105);
+        // Skia's `SKSL_INTRINSIC_LIST` has 106 entries (`not` included).
+        assert_eq!(IntrinsicKind::ALL.len(), 106);
         assert_eq!(find_intrinsic_kind("abs"), Some(IntrinsicKind::Abs));
         assert_eq!(find_intrinsic_kind("$eval"), Some(IntrinsicKind::Eval));
         assert_eq!(find_intrinsic_kind("dFdx"), Some(IntrinsicKind::DFdx));

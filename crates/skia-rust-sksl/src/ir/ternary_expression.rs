@@ -6,7 +6,11 @@
 
 //! [`TernaryExpression`]: `test ? ifTrue : ifFalse`.
 
-use super::{ExprId, Expression, ExpressionKind, IrPool, TypeId};
+use super::{
+    BinaryExpression, ConstructorScalarCast, ExprId, Expression, ExpressionKind, IrPool,
+    PrefixExpression, TypeId,
+};
+use crate::analysis;
 use crate::constant_folder;
 use crate::context::Context;
 use crate::operator::{Operator, OperatorKind, OperatorPrecedence};
@@ -23,6 +27,21 @@ pub struct TernaryExpression {
     pub if_true: ExprId,
     /// `ifFalse()`.
     pub if_false: ExprId,
+}
+
+/// `isBoolLiteral()` and `as<Literal>().boolValue()`: the value of a Boolean literal.
+fn bool_literal(pool: &IrPool, expr: ExprId) -> Option<bool> {
+    let e = pool.expression(expr);
+    if e.is_bool_literal(pool) {
+        e.as_literal().map(|lit| lit.bool_value())
+    } else {
+        None
+    }
+}
+
+/// `is<Literal>()` and `as<Literal>().value()`: the value of a literal.
+fn literal_value(pool: &IrPool, expr: ExprId) -> Option<f64> {
+    pool.expression(expr).as_literal().map(|lit| lit.value)
 }
 
 impl TernaryExpression {
@@ -93,11 +112,7 @@ impl TernaryExpression {
     /// `Make(context, pos, test, ifTrue, ifFalse)`: builds the expression, simplifying it when
     /// possible. The branches must already have the same type.
     ///
-    /// Not ported: the `fOptimize` rewrites (`test ? x : x`, `test ? x : false`, `test ? true : x`,
-    /// `test ? false : true`, `test ? 1 : 0`). They need `Analysis::IsSameExpressionTree` and
-    /// `HasSideEffects` (S9a), and the constant folder (S8). The tree is therefore not reduced
-    /// where Skia would reduce it.
-    // Port of: src/sksl/ir/SkSLTernaryExpression.cpp#L72-L137 (chrome/m156), static-test part
+    // Port of: src/sksl/ir/SkSLTernaryExpression.cpp#L72-L137 (chrome/m156)
     pub fn make(
         ctx: &mut Context,
         pos: Position,
@@ -117,6 +132,72 @@ impl TernaryExpression {
             let chosen = if value { if_true } else { if_false };
             ctx.pool.expression_mut(chosen).position = pos;
             return chosen;
+        }
+
+        if ctx.config().settings.optimize {
+            let if_true_expr = constant_folder::get_constant_value_for_variable(&ctx.pool, if_true);
+            let if_false_expr =
+                constant_folder::get_constant_value_for_variable(&ctx.pool, if_false);
+
+            // A ternary with matching true- and false-cases does not need to branch.
+            if analysis::is_same_expression_tree(&ctx.pool, if_true_expr, if_false_expr) {
+                // If `test` has no side-effects, we can eliminate it too, and just return
+                // `ifTrue`.
+                if !analysis::has_side_effects(&ctx.pool, test) {
+                    ctx.pool.expression_mut(if_true).position = pos;
+                    return if_true;
+                }
+                // Return a comma-expression containing `(test, ifTrue)`.
+                return BinaryExpression::make(
+                    ctx,
+                    pos,
+                    test,
+                    Operator::from(OperatorKind::Comma),
+                    if_true,
+                );
+            }
+
+            // A ternary of the form `test ? expr : false` can be simplified to `test && expr`.
+            if bool_literal(&ctx.pool, if_false_expr) == Some(false) {
+                return BinaryExpression::make(
+                    ctx,
+                    pos,
+                    test,
+                    Operator::from(OperatorKind::LogicalAnd),
+                    if_true,
+                );
+            }
+
+            // A ternary of the form `test ? true : expr` can be simplified to `test || expr`.
+            if bool_literal(&ctx.pool, if_true_expr) == Some(true) {
+                return BinaryExpression::make(
+                    ctx,
+                    pos,
+                    test,
+                    Operator::from(OperatorKind::LogicalOr),
+                    if_false,
+                );
+            }
+
+            // A ternary of the form `test ? false : true` can be simplified to `!test`.
+            if bool_literal(&ctx.pool, if_true_expr) == Some(false)
+                && bool_literal(&ctx.pool, if_false_expr) == Some(true)
+            {
+                return PrefixExpression::make(
+                    ctx,
+                    pos,
+                    Operator::from(OperatorKind::LogicalNot),
+                    test,
+                );
+            }
+
+            // A ternary of the form `test ? 1 : 0` can be simplified to `cast(test)`.
+            if literal_value(&ctx.pool, if_true_expr) == Some(1.0)
+                && literal_value(&ctx.pool, if_false_expr) == Some(0.0)
+            {
+                let ty = ctx.pool.expression(if_true).ty;
+                return ConstructorScalarCast::make(ctx, pos, ty, test);
+            }
         }
 
         let ty = ctx.pool.expression(if_true).ty;

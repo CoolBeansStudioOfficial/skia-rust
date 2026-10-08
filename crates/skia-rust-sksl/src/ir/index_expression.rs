@@ -7,9 +7,10 @@
 //! [`IndexExpression`]: `base[index]`.
 
 use super::{
-    ComponentArray, ExprId, Expression, ExpressionKind, IrPool, Swizzle, TypeId, TypeReference,
-    add_array_dimension,
+    ComponentArray, ConstructorCompound, ExprId, Expression, ExpressionKind, IrPool, Swizzle,
+    TypeId, TypeReference, add_array_dimension,
 };
+use crate::analysis;
 use crate::constant_folder;
 use crate::context::Context;
 use crate::defines::SkslInt;
@@ -129,24 +130,73 @@ impl IndexExpression {
     /// `Make(context, pos, base, index)`: builds `base[index]`. A constant index into a vector
     /// becomes a swizzle (`v[2]` is `v.z`). The operands must already be valid.
     ///
-    /// Not ported: plucking a constant index out of an array constructor, and out of a matrix
-    /// constructor. Both need `Analysis::HasSideEffects` (S9a) and `getConstantValue` (S7a and S8).
-    // Port of: src/sksl/ir/SkSLIndexExpression.cpp#L107-L170 (chrome/m156), vector case
+    // Port of: src/sksl/ir/SkSLIndexExpression.cpp#L107-L170 (chrome/m156)
     pub fn make(ctx: &mut Context, pos: Position, base: ExprId, index: ExprId) -> ExprId {
         let base_ty = ctx.pool.expression(base).ty;
         if let Some(index_value) = constant_folder::get_constant_int(&ctx.pool, index) {
             let index_pos = ctx.pool.expression(index).position;
-            if !index_out_of_range(ctx, index_pos, index_value, base)
-                && ctx.pool.ty(base_ty).is_vector()
-            {
-                // Constant array indexes on vectors can be converted to swizzles: `v[2]` --> `v.z`.
-                // Swizzling is harmless and can unlock further simplifications for some base types.
-                // The index is in range for the vector, so it fits in a component.
-                #[allow(clippy::cast_possible_truncation)] // Mirrors Skia's `(int8_t)indexValue`.
-                let component = index_value as i8;
-                let mut components = ComponentArray::default();
-                components.push(component);
-                return Swizzle::make(ctx, pos, base, components);
+            if !index_out_of_range(ctx, index_pos, index_value, base) {
+                if ctx.pool.ty(base_ty).is_vector() {
+                    // Constant array indexes on vectors can be converted to swizzles: `v[2]` -->
+                    // `v.z`. Swizzling is harmless and can unlock further simplifications for some
+                    // base types. The index is in range for the vector, so it fits in a component.
+                    #[allow(clippy::cast_possible_truncation)]
+                    // Mirrors Skia's `(int8_t)indexValue`.
+                    let component = index_value as i8;
+                    let mut components = ComponentArray::default();
+                    components.push(component);
+                    return Swizzle::make(ctx, pos, base, components);
+                }
+
+                if ctx.pool.ty(base_ty).is_array() && !analysis::has_side_effects(&ctx.pool, base) {
+                    // Indexing an constant array constructor with a constant index can just pluck
+                    // out the requested value from the array.
+                    let base_expr =
+                        constant_folder::get_constant_value_for_variable(&ctx.pool, base);
+                    if let ExpressionKind::ConstructorArray(array_ctor) =
+                        &ctx.pool.expression(base_expr).kind
+                    {
+                        // The index is in range, so it is not negative.
+                        let element_index = usize::try_from(index_value).unwrap_or(0);
+                        let element = array_ctor.arguments[element_index];
+                        return ctx.pool.clone_expression_at(element, pos);
+                    }
+                }
+
+                if ctx.pool.ty(base_ty).is_matrix() && !analysis::has_side_effects(&ctx.pool, base)
+                {
+                    // Matrices can be constructed with vectors that don't line up on column
+                    // boundaries, so extracting out the values from the constructor can be tricky.
+                    // Fortunately, we can reconstruct an equivalent vector using
+                    // `getConstantValue`. If we can't extract the data using `getConstantValue`, it
+                    // wasn't constant and we're not obligated to simplify anything.
+                    let base_expr =
+                        constant_folder::get_constant_value_for_variable(&ctx.pool, base);
+                    let vec_width = usize::try_from(ctx.pool.ty(base_ty).rows()).unwrap_or(0);
+                    let vec_type = index_type(&ctx.pool, base_ty);
+                    let first_slot = usize::try_from(index_value).unwrap_or(0) * vec_width;
+
+                    let mut ctor_args = [0.0_f64; 4];
+                    let mut all_constant = true;
+                    for (slot, out) in ctor_args.iter_mut().enumerate().take(vec_width) {
+                        if let Some(slot_val) = ctx
+                            .pool
+                            .expression(base_expr)
+                            .get_constant_value(&ctx.pool, first_slot + slot)
+                        {
+                            *out = slot_val;
+                        } else {
+                            all_constant = false;
+                            break;
+                        }
+                    }
+
+                    if all_constant {
+                        return ConstructorCompound::make_from_constants(
+                            ctx, pos, vec_type, &ctor_args,
+                        );
+                    }
+                }
             }
         }
 

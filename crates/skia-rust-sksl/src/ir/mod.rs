@@ -33,6 +33,7 @@ mod expression;
 mod field_access;
 mod field_symbol;
 mod function_call;
+mod function_call_intrinsics;
 mod function_declaration;
 mod function_definition;
 mod ids;
@@ -112,6 +113,8 @@ pub use variable_reference::{VariableRefKind, VariableReference};
 
 #[cfg(test)]
 mod constructor_tests;
+#[cfg(test)]
+mod function_call_intrinsics_tests;
 #[cfg(test)]
 mod s7b_tests;
 #[cfg(test)]

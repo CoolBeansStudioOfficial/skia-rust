@@ -2,6 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/core/SkChecksum.h and src/core/SkMathPriv.h (the two helpers below).
 
+// The copied helpers mirror C++ `static_cast`s and implicit conversions, which truncate and wrap
+// the same way.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
+
 //! The few helpers this crate needs from `skia-rust-core`, copied until `skia-rust-base` exists.
 //!
 //! // TODO(S1): moves to skia-rust-base. The math modules move out of core into `skia-rust-base`
@@ -59,7 +67,7 @@ mod tests {
 }
 
 /// `SkSafeMath`'s integer operations. Each records overflow in `ok` and returns the C++ result.
-// Port of: src/core/SkSafeMath.h#L24-L60 (chrome/m156) (shim, owner skia-rust-base)
+// Port of: src/core/SkSafeMath.h#L24-L60 (chrome/m156) (copied until skia-rust-base exists)
 #[derive(Clone, Copy, Debug)]
 pub struct SafeMath {
     ok: bool,
@@ -131,7 +139,7 @@ impl SafeMath {
 }
 
 /// `SkSafeMath::Add(size_t, size_t)`: the sum, saturated to the maximum on overflow.
-// Port of: src/core/SkSafeMath.cpp#L10-L14 (chrome/m156) (shim, owner skia-rust-base)
+// Port of: src/core/SkSafeMath.cpp#L10-L14 (chrome/m156) (copied until skia-rust-base exists)
 #[must_use]
 pub fn saturating_add_size(x: usize, y: usize) -> usize {
     x.saturating_add(y)
@@ -139,7 +147,7 @@ pub fn saturating_add_size(x: usize, y: usize) -> usize {
 
 /// `sk_double_saturate2int`: clamps to the `int` range. NaN gives `INT_MAX`, as the C++
 /// comparisons do.
-// Port of: include/private/SkFloatingPoint.h#L99-L104 (chrome/m156) (shim, owner skia-rust-base)
+// Port of: include/private/SkFloatingPoint.h#L99-L104 (chrome/m156) (copied until skia-rust-base exists)
 #[must_use]
 pub fn double_saturate2int(x: f64) -> i32 {
     let x = if x < f64::from(i32::MAX) {
@@ -153,4 +161,51 @@ pub fn double_saturate2int(x: f64) -> i32 {
         f64::from(i32::MIN)
     };
     x as i32
+}
+
+/// `sk_ieee_double_divide`: well defined for non-finite values and zero denominators.
+// Port of: include/private/SkFloatingPoint.h#L165-L167 (chrome/m156)
+#[must_use]
+pub fn ieee_double_divide(numer: f64, denom: f64) -> f64 {
+    numer / denom
+}
+
+/// `static_cast<float>(double)`.
+// Port of: include/private/SkFloatingPoint.h (the implicit double-to-float conversions) (chrome/m156)
+#[must_use]
+pub fn double_to_float(x: f64) -> f32 {
+    x as f32
+}
+
+/// `SkIsFinite` on a float array: true when the product of the values is finite.
+// Port of: include/private/SkFloatingPoint.h#L113-L129 (chrome/m156)
+#[allow(clippy::eq_op, clippy::float_cmp)] // prod == prod is the NaN test
+#[must_use]
+pub fn is_finite_array(array: &[f32]) -> bool {
+    let x = array[0];
+    let mut prod = x - x;
+    for &v in &array[1..] {
+        prod *= v;
+    }
+    // At this point, `prod` will either be NaN or 0.
+    prod == prod
+}
+
+/// Converts a half to single precision.
+// Port of: src/core/SkHalf.cpp#L24-L26 (chrome/m156)
+#[must_use]
+pub fn half_to_float(h: u16) -> f32 {
+    skia_rust_simd::vx::from_half(skia_rust_simd::vx::Vec::<1, u16>::splat(h))[0]
+}
+
+/// Converts a float to half precision; unlike `skvx::to_half`, a float NaN becomes a half NaN.
+// Port of: src/core/SkHalf.cpp#L16-L22 (chrome/m156)
+#[must_use]
+pub fn float_to_half(f: f32) -> u16 {
+    if f.is_nan() {
+        // SK_HalfNaN
+        0x7c01
+    } else {
+        skia_rust_simd::vx::to_half(skia_rust_simd::vx::Vec::<1, f32>::splat(f))[0]
+    }
 }

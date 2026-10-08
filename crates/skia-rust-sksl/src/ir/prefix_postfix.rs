@@ -363,12 +363,10 @@ fn bitwise_not_operand(ctx: &mut Context, pos: Position, operand: ExprId) -> Exp
                 return expr;
             }
         }
-        ExpressionKind::Prefix(prefix) => {
-            // Convert `~(~expression)` into `expression`.
-            if prefix.operator.kind() == OperatorKind::BitwiseNot {
-                ctx.pool.expression_mut(prefix.operand).position = pos;
-                return prefix.operand;
-            }
+        // Convert `~(~expression)` into `expression`.
+        ExpressionKind::Prefix(prefix) if prefix.operator.kind() == OperatorKind::BitwiseNot => {
+            ctx.pool.expression_mut(prefix.operand).position = pos;
+            return prefix.operand;
         }
         _ => {}
     }

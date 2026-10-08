@@ -10,7 +10,7 @@
 
 use super::statement_queries::statement_writes_to_variable;
 use super::{ProgramVisitor, walk_statement};
-use crate::base_shim::{SafeMath, double_saturate2int};
+use crate::base_helpers::{SafeMath, double_saturate2int};
 use crate::constant_folder::get_constant_value;
 use crate::context::Context;
 use crate::error_reporter::ErrorReporter;

@@ -10,6 +10,8 @@ use super::{
     Expression, ExpressionKind, IrPool, MethodReference, Setting, SymbolId,
     ids::{ExprId, TypeId},
 };
+use crate::analysis;
+use crate::constant_folder;
 use crate::context::Context;
 use crate::operator::OperatorPrecedence;
 use crate::position::Position;
@@ -36,6 +38,29 @@ pub struct FieldAccess {
     pub field_index: usize,
     /// `ownerKind()`.
     pub owner_kind: FieldAccessOwnerKind,
+}
+
+/// `extract_field`: the field `field_index` of a struct constructor, when none of the other
+/// arguments has side effects.
+// Port of: src/sksl/ir/SkSLFieldAccess.cpp#L65-L82 (chrome/m156)
+fn extract_field(
+    ctx: &mut Context,
+    pos: Position,
+    args: &[ExprId],
+    field_index: usize,
+) -> Option<ExprId> {
+    // Confirm that the fields that are being removed are side-effect free.
+    for (index, &arg) in args.iter().enumerate() {
+        if field_index == index {
+            continue;
+        }
+        if analysis::has_side_effects(&ctx.pool, arg) {
+            return None;
+        }
+    }
+
+    // Return the desired field.
+    Some(ctx.pool.clone_expression_at(args[field_index], pos))
 }
 
 impl FieldAccess {
@@ -106,10 +131,7 @@ impl FieldAccess {
     /// `Make(context, pos, base, fieldIndex, ownerKind)`: the access to field `field_index` of the
     /// struct `base`. The field's type is the expression's type.
     ///
-    /// Not ported: replacing `S(a, b).field` with the field's value when the other fields have no
-    /// side effects. It needs `Analysis::HasSideEffects` (S9a) and `getConstantValue` (S7a and
-    /// S8).
-    // Port of: src/sksl/ir/SkSLFieldAccess.cpp#L84-L103 (chrome/m156), without the folding
+    // Port of: src/sksl/ir/SkSLFieldAccess.cpp#L84-L103 (chrome/m156)
     #[must_use]
     pub fn make(
         ctx: &mut Context,
@@ -121,6 +143,15 @@ impl FieldAccess {
         let base_ty = ctx.pool.expression(base).ty;
         debug_assert!(ctx.pool.ty(base_ty).is_struct());
         debug_assert!(field_index < ctx.pool.ty(base_ty).fields().len());
+
+        // Replace `knownStruct.field` with the field's value if there are no side-effects involved.
+        let expr = constant_folder::get_constant_value_for_variable(&ctx.pool, base);
+        if let ExpressionKind::ConstructorStruct(ctor) = ctx.pool.expression(expr).kind.clone()
+            && let Some(field) = extract_field(ctx, pos, &ctor.arguments, field_index)
+        {
+            return field;
+        }
+
         let ty = ctx.pool.ty(base_ty).fields()[field_index].ty;
         ctx.pool.add_expression(Expression::new(
             pos,

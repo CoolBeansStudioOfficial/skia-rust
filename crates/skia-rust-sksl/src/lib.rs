@@ -14,7 +14,7 @@
 //! the optimizer, the stage-binding `appendStages`, and the other back ends come in later tasks.
 
 pub mod analysis;
-mod base_shim;
+mod base_helpers;
 pub mod builtin_types;
 pub mod codegen;
 pub mod compiler;
@@ -27,6 +27,7 @@ pub mod intrinsic_list;
 pub mod ir;
 pub mod lexer;
 pub mod mangler;
+mod matrix_invert;
 pub mod memory_layout;
 pub mod modules;
 pub mod operator;

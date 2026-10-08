@@ -19,6 +19,7 @@ mod program_usage;
 mod program_visitor;
 mod return_complexity;
 mod returns_input_alpha;
+mod returns_opaque_color;
 mod sample_usage;
 mod specialization;
 mod statement_queries;
@@ -46,6 +47,7 @@ pub use program_usage::{ProgramUsage, VariableCounts, get_module_usage, get_usag
 pub use program_visitor::{ProgramVisitor, walk_expression, walk_program_element, walk_statement};
 pub use return_complexity::{ReturnComplexity, get_return_complexity};
 pub use returns_input_alpha::returns_input_alpha;
+pub use returns_opaque_color::returns_opaque_color;
 pub use sample_usage::{
     SampleUsage, SampleUsageKind, calls_color_transform_intrinsics, calls_sample_outside_main,
     get_sample_usage, references_builtin, references_frag_coords, references_sample_coords,

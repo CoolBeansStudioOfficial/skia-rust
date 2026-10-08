@@ -192,7 +192,7 @@ fn make_fixup_stmt(ctx: &mut Context, table: SymTabId, rt_adjust: SymbolId) -> S
     helpers::assign(ctx, target, value)
 }
 
-/// The `IRHelpers` members that the sk_Position fixup uses. Each one is named after its Skia
+/// The `IRHelpers` members that the `sk_Position` fixup uses. Each one is named after its Skia
 /// member; positions are `Position()` unless Skia derives them from an operand.
 mod helpers {
     use crate::analysis;

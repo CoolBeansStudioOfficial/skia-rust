@@ -8,12 +8,139 @@
 
 use super::{
     ConstructorCompound, ConstructorCompoundCast, ConstructorScalarCast, ConstructorSplat,
-    Expression, ExpressionKind, IrPool, Literal, ids::ExprId,
+    Expression, ExpressionKind, IrPool, Literal, TypeId, ids::ExprId,
 };
+use crate::analysis;
 use crate::constant_folder;
 use crate::context::Context;
 use crate::operator::OperatorPrecedence;
 use crate::position::Position;
+
+/// `optimize_constructor_swizzle`: a swizzle of a compound constructor, rebuilt as a constructor of
+/// the selected arguments. `None` when the arguments cannot be reordered without repeating an
+/// expression that has side effects or is not trivial.
+// Port of: src/sksl/ir/SkSLSwizzle.cpp#L121-L229 (chrome/m156)
+fn optimize_constructor_swizzle(
+    ctx: &mut Context,
+    pos: Position,
+    expr_ty: TypeId,
+    base_arguments: &[ExprId],
+    components: ComponentArray,
+) -> Option<ExprId> {
+    /// `ConstructorArgMap`: which argument holds a slot, and which component of it.
+    #[derive(Clone, Copy, Default)]
+    struct ConstructorArgMap {
+        arg_index: usize,
+        component: i8,
+    }
+
+    /// `ReorderedArgument`: an argument, and the components of it that the swizzle takes.
+    struct ReorderedArgument {
+        arg_index: usize,
+        components: ComponentArray,
+    }
+
+    let pool = &ctx.pool;
+    let component_type = pool.ty(expr_ty).component_type().id();
+    let swizzle_size = components.len();
+
+    // Swizzles can duplicate some elements and discard others, e.g. `half4(1, 2, 3, 4).xxz` -->
+    // `half3(1, 1, 3)`. However, there are constraints:
+    // - Expressions with side effects need to occur exactly once, even if they would otherwise be
+    //   swizzle-eliminated
+    // - Non-trivial expressions should not be repeated, but elimination is OK.
+    //
+    // Look up the argument for the constructor at each index.
+    let num_constructor_args = usize::try_from(pool.ty(expr_ty).columns()).unwrap_or(0);
+    let mut arg_map = [ConstructorArgMap::default(); 4];
+    let mut write_idx = 0;
+    for (arg_idx, &arg) in base_arguments.iter().enumerate() {
+        let arg_ty = pool.ty(pool.expression(arg).ty);
+        if !arg_ty.is_scalar() && !arg_ty.is_vector() {
+            return None;
+        }
+        for component_idx in 0..arg_ty.slot_count() {
+            arg_map[write_idx] = ConstructorArgMap {
+                arg_index: arg_idx,
+                component: i8::try_from(component_idx).unwrap_or(0),
+            };
+            write_idx += 1;
+        }
+    }
+
+    // Count up the number of times each constructor argument is used by the swizzle.
+    let mut expr_used = [0_i32; 4];
+    for &c in components.as_slice() {
+        expr_used[arg_map[usize::try_from(c).unwrap_or(0)].arg_index] += 1;
+    }
+
+    for &arg_map_entry in arg_map.iter().take(num_constructor_args) {
+        let constructor_arg_index = arg_map_entry.arg_index;
+        let base_arg = base_arguments[constructor_arg_index];
+
+        // Check that non-trivial expressions are not swizzled in more than once.
+        if expr_used[constructor_arg_index] > 1 && !analysis::is_trivial_expression(pool, base_arg)
+        {
+            return None;
+        }
+        // Check that side-effect-bearing expressions are swizzled in exactly once.
+        if expr_used[constructor_arg_index] != 1 && analysis::has_side_effects(pool, base_arg) {
+            return None;
+        }
+    }
+
+    let mut reordered_args: Vec<ReorderedArgument> = Vec::new();
+    for &c in components.as_slice() {
+        let argument = arg_map[usize::try_from(c).unwrap_or(0)];
+        let base_arg = base_arguments[argument.arg_index];
+
+        if pool.ty(pool.expression(base_arg).ty).is_scalar() {
+            // This argument is a scalar; add it to the list as-is.
+            reordered_args.push(ReorderedArgument {
+                arg_index: argument.arg_index,
+                components: ComponentArray::default(),
+            });
+        } else {
+            // This argument is a component from a vector.
+            match reordered_args.last_mut() {
+                Some(last) if last.arg_index == argument.arg_index => {
+                    // Build up the current argument with one more component.
+                    last.components.push(argument.component);
+                }
+                _ => {
+                    // This can't be combined with the previous argument. Add a new one.
+                    let mut components = ComponentArray::default();
+                    components.push(argument.component);
+                    reordered_args.push(ReorderedArgument {
+                        arg_index: argument.arg_index,
+                        components,
+                    });
+                }
+            }
+        }
+    }
+
+    // Convert our reordered argument list to an actual array of expressions, with the new order
+    // and any new inner swizzles that need to be applied.
+    let mut new_args = Vec::with_capacity(swizzle_size);
+    for reordered_arg in &reordered_args {
+        let new_arg = ctx
+            .pool
+            .clone_expression(base_arguments[reordered_arg.arg_index]);
+        if reordered_arg.components.is_empty() {
+            new_args.push(new_arg);
+        } else {
+            new_args.push(Swizzle::make(ctx, pos, new_arg, reordered_arg.components));
+        }
+    }
+
+    // Wrap the new argument list in a compound constructor.
+    let ty = ctx
+        .pool
+        .ty(component_type)
+        .to_compound(to_i32(swizzle_size), 1);
+    Some(ConstructorCompound::make(ctx, pos, ty, new_args))
+}
 
 impl Swizzle {
     /// `Convert(context, pos, maskPos, base, componentString)`: parses a swizzle mask such as
@@ -300,6 +427,15 @@ impl Swizzle {
                 } else {
                     ConstructorScalarCast::make(ctx, pos, cast_type, swizzled)
                 };
+            }
+            // Swizzles on compound constructors, like `half4(1, 2, 3, 4).yw`, can become
+            // `half2(2, 4)`.
+            ExpressionKind::ConstructorCompound(ctor) => {
+                if let Some(replacement) =
+                    optimize_constructor_swizzle(ctx, pos, value_ty, &ctor.arguments, components)
+                {
+                    return replacement;
+                }
             }
             _ => {}
         }
