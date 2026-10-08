@@ -76,7 +76,7 @@ impl GM for DrawGlyphsGm {
             let angle = SCALAR_PI * (self.length - length_to_glyph) / self.length;
             let cos = angle.cos();
             let sin = angle.sin();
-            *xform = RSXform::new(sin, cos, self.radius * cos, -self.radius * sin);
+            *xform = RSXform::new(sin, cos, (self.radius * cos, -self.radius * sin));
         }
     }
 

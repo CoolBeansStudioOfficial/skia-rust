@@ -326,7 +326,7 @@ impl GlyphRunBuilder {
     pub fn convert_rsxform(xforms: &[RSXform]) -> (Vec<Point>, Vec<Vector>) {
         xforms
             .iter()
-            .map(|x| (Point::new(x.tx, x.ty), Point::new(x.s_cos, x.s_sin)))
+            .map(|x| (Point::new(x.tx, x.ty), Point::new(x.scos, x.ssin)))
             .unzip()
     }
 
@@ -403,7 +403,7 @@ impl GlyphRunBuilder {
             let scaled_rotations: Vec<Vector> = if positioning == GlyphPositioning::RSXform {
                 iter.xforms()
                     .iter()
-                    .map(|x| Point::new(x.s_cos, x.s_sin))
+                    .map(|x| Point::new(x.scos, x.ssin))
                     .collect()
             } else {
                 Vec::new()
@@ -570,5 +570,5 @@ fn tight_source_bounds(
 /// The field order is C++'s, not the `RSXform`'s meaning (see [`glyphrun_source_bounds`]).
 // Port of: src/text/GlyphRun.cpp#L158 and #L180 (chrome/m156)
 fn rsxform_as_cpp(pos: Point, scale_rotate: Vector) -> RSXform {
-    RSXform::new(pos.x, pos.y, scale_rotate.x, scale_rotate.y)
+    RSXform::new(pos.x, pos.y, (scale_rotate.x, scale_rotate.y))
 }
