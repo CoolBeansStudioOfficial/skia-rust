@@ -5,10 +5,8 @@
 
 //! `SkRuntimeEffectTest`: runtime effect factories and shaders.
 //!
-//! Ported here: the factory and reflection tests, the shader tests and the shader builders.
-//! Not ported yet, and left `todo` in the manifest with the reason:
-//! - tests that make runtime color filters or blenders (`SkRuntimeColorFilter`,
-//!   `SkRuntimeBlender`, task S19);
+//! Ported here: the factory and reflection tests, the shader, color filter and blender tests and
+//! the builders. Not ported yet, and left `todo` in the manifest with the reason:
 //! - the tracing tests (`MakeTraced`, task S23);
 //! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Graphite tests.
 
@@ -21,19 +19,25 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::capabilities::Capabilities;
 use skia_rust_core::color::{Color, Color4f, colors};
+use skia_rust_core::color_filters;
+use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::runtime_effect::{
-    Options, RuntimeEffect, RuntimeShaderBuilder, uniform as uniform_flags,
+    ChildPtr, Options, RuntimeEffect, RuntimeShaderBuilder, uniform as uniform_flags,
 };
 use skia_rust_core::runtime_effect_priv;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::blenders as effects_blenders;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
@@ -1342,4 +1346,728 @@ def_test!(SkRuntimeColorFilter_b466744542, |r| {
             result.as_ref().err().cloned().unwrap_or_default()
         );
     }
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L759-L773 (chrome/m156)
+fn verify_draw_obeys_capabilities(
+    r: &mut Reporter,
+    effect: &RuntimeEffect,
+    surface: &mut Surface<'_>,
+    paint: &Paint,
+) {
+    // We expect the draw to do something if-and-only-if expectSuccess is true:
+    let expect_success = Capabilities::raster_backend().sksl_version() >= Version::K300;
+
+    let k_green: u32 = 0xFF00_FF00;
+    let k_red: u32 = 0xFF00_00FF;
+    let expected = if expect_success { k_green } else { k_red };
+
+    surface.canvas().clear(colors::RED);
+    surface.canvas().draw_paint(paint);
+    verify_2x2_surface_results(r, effect, surface, [expected; 4]);
+}
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1247-L1262 (chrome/m156)
+def_test!(SkRuntimeBlendBuilderReuse, |r| {
+    let k_source = "
+        uniform half x;
+        half4 main(half4 s, half4 d) { return half4(x); }
+    ";
+
+    let effect = RuntimeEffect::make_for_blender(k_source, None);
+    reporter_assert!(r, effect.is_ok());
+    let Ok(effect) = effect else {
+        return;
+    };
+
+    // We should be able to construct multiple SkBlenders in a row without asserting.
+    let mut b = RuntimeShaderBuilder::new(effect);
+    let mut x = 0.0_f32;
+    while x <= 2.0 {
+        b.uniform("x").set_f32(&[x]);
+        let _blender = b.make_blender();
+        x += 2.0;
+    }
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1355-L1368 (chrome/m156)
+def_test!(
+    #[allow(clippy::float_cmp)]
+    SkRuntimeColorFilterSingleColor,
+    |r| {
+        // Test runtime colorfilters support filterColor4f().
+        let effect =
+            RuntimeEffect::make_for_color_filter("half4 main(half4 c) { return c*c; }", None);
+        reporter_assert!(r, effect.is_ok());
+        let Ok(effect) = effect else {
+            return;
+        };
+
+        let cf = effect.make_color_filter(Data::new_empty(), &[]);
+        reporter_assert!(r, cf.is_some());
+        let Some(cf) = cf else {
+            return;
+        };
+
+        let srgb = srgb_singleton();
+        let c = cf.filter_color4f(Color4f::new(0.25, 0.5, 0.75, 1.0), Some(srgb), Some(srgb));
+        reporter_assert!(r, c.r == 0.0625);
+        reporter_assert!(r, c.g == 0.25);
+        reporter_assert!(r, c.b == 0.5625);
+        reporter_assert!(r, c.a == 1.0);
+    }
+);
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1412-L1462 (chrome/m156)
+def_test!(SkRuntimeColorFilterFlags, |r| {
+    // Builds `shader` as a color filter and checks its `isAlphaUnchanged` against `expected`.
+    let check = |r: &mut Reporter, shader: &str, expected: bool| {
+        let effect = RuntimeEffect::make_for_color_filter(shader, None);
+        reporter_assert!(r, effect.is_ok(), "{}", shader);
+        let Ok(effect) = effect else {
+            return;
+        };
+        let filter = effect.make_color_filter(Data::new_empty(), &[]);
+        reporter_assert!(
+            r,
+            filter
+                .as_ref()
+                .is_some_and(|f| f.is_alpha_unchanged() == expected),
+            "{}",
+            shader
+        );
+    };
+    let expect_alpha_unchanged = |r: &mut Reporter, shader: &str| check(r, shader, true);
+    let expect_alpha_changed = |r: &mut Reporter, shader: &str| check(r, shader, false);
+
+    // We expect these patterns to be detected as alpha-unchanged.
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return color; }");
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return color.aaaa; }");
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return color.bgra; }");
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return color.rraa; }");
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return color.010a; }");
+    expect_alpha_unchanged(
+        r,
+        "half4 main(half4 color) { return half4(0, 0, 0, color.a); }",
+    );
+    expect_alpha_unchanged(
+        r,
+        "half4 main(half4 color) { return half4(half2(1), color.ba); }",
+    );
+    expect_alpha_unchanged(
+        r,
+        "half4 main(half4 color) { return half4(half2(1), half2(color.a)); }",
+    );
+    expect_alpha_unchanged(r, "half4 main(half4 color) { return half4(color.a); }");
+    expect_alpha_unchanged(
+        r,
+        "half4 main(half4 color) { return half4(float4(color.baba)); }",
+    );
+    expect_alpha_unchanged(
+        r,
+        concat!(
+            "half4 main(half4 color) { return color.r != color.g ? color :",
+            "                                                                              color.000a; }"
+        ),
+    );
+    expect_alpha_unchanged(
+        r,
+        concat!(
+            "half4 main(half4 color) { return color.a == color.r ? color.rrra : ",
+            "color.g == color.b ? color.ggga : ",
+            "   color.bbba; }"
+        ),
+    );
+    // Modifying the input color invalidates the check.
+    expect_alpha_changed(r, "half4 main(half4 color) { color.a = 0; return color; }");
+
+    // These swizzles don't end in alpha.
+    expect_alpha_changed(r, "half4 main(half4 color) { return color.argb; }");
+    expect_alpha_changed(r, "half4 main(half4 color) { return color.rrrr; }");
+
+    // This compound constructor doesn't end in alpha.
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return half4(1, 1, 1, color.r); }",
+    );
+
+    // This splat constructor doesn't use alpha.
+    expect_alpha_changed(r, "half4 main(half4 color) { return half4(color.r); }");
+
+    // These ternaries don't return alpha on both sides
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return color.a > 0 ? half4(0) : color; }",
+    );
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return color.g < 1 ? color.bgra : color.abgr; }",
+    );
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return color.b > 0.5 ? half4(0) : half4(1); }",
+    );
+
+    // Performing arithmetic on the input causes it to report as "alpha changed" even if the
+    // arithmetic is a no-op; we aren't smart enough to see through it.
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return color + half4(1,1,1,0); }",
+    );
+    expect_alpha_changed(
+        r,
+        "half4 main(half4 color) { return color + half4(0,0,0,4); }",
+    );
+
+    // All exit paths are checked.
+    expect_alpha_changed(
+        r,
+        concat!(
+            "half4 main(half4 color) { ",
+            "    if (color.r > 0.5) { return color; }",
+            "    return half4(0);",
+            "}"
+        ),
+    );
+    expect_alpha_changed(
+        r,
+        concat!(
+            "half4 main(half4 color) { ",
+            "    if (color.r > 0.5) { return half4(0); }",
+            "    return color;",
+            "}"
+        ),
+    );
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1976-L1990 (chrome/m156)
+def_test!(SkRuntimeColorFilter_b520831887, |r| {
+    // b/520831887: loops with 16-bit integer induction variables (e.g. mediump int)
+    // must not trigger an assertion failure in GetLoopUnrollInfo.
+    let k_sksl = concat!(
+        "half4 main(half4 color) {",
+        "    for (mediump int b = 2; b < 4; ++b) {}",
+        "    return color;",
+        "}"
+    );
+
+    let effect = RuntimeEffect::make_for_color_filter(k_sksl, None);
+    reporter_assert!(
+        r,
+        effect.is_ok(),
+        "{}",
+        effect.as_ref().err().cloned().unwrap_or_default()
+    );
+    if let Ok(effect) = effect {
+        let cf = effect.make_color_filter(Data::new_empty(), &[]);
+        reporter_assert!(r, cf.is_some());
+    }
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L858-L872 (chrome/m156)
+def_test!(SkRuntimeEffectObeysCapabilities_CPU, |r| {
+    let mut surface = make_surface((2, 2));
+    test_runtime_effect_obeys_capabilities(r, &mut surface);
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L775-L857 (chrome/m156)
+fn test_runtime_effect_obeys_capabilities(r: &mut Reporter, surface: &mut Surface<'_>) {
+    // This test creates shaders and blenders that target `#version 300`. If a user validates an
+    // effect like this against a particular device, and later draws that effect to a device with
+    // insufficient capabilities -- we want to fail gracefully (drop the draw entirely).
+    // If the capabilities indicate that the effect is supported, we expect it to work.
+    //
+    // We test two different scenarios here:
+    // 1) An effect flagged as #version 300, but actually compatible with #version 100.
+    // 2) An effect flagged as #version 300, and using features not available in ES2.
+    //
+    // We expect both cases to fail cleanly on ES2-only devices -- nothing should be drawn, and
+    // there should be no asserts or driver shader-compilation errors.
+    //
+    // In all tests, we first clear the canvas to RED, then draw an effect that (if it renders)
+    // will fill the canvas with GREEN. We check that the final colors match our expectations,
+    // based on the device capabilities.
+
+    // Effect that would actually work on CPU/ES2, but should still fail on those devices:
+    {
+        let effect = RuntimeEffect::make_for_shader(
+            "
+            #version 300
+            half4 main(float2 xy) { return half4(0, 1, 0, 1); }
+        ",
+            None,
+        );
+        let Ok(effect) = effect else {
+            errorf!(r, "effect did not compile");
+            return;
+        };
+        let mut paint = Paint::default();
+        let shader = effect.make_shader(Data::new_empty(), &[], None);
+        reporter_assert!(r, shader.is_some());
+        paint.set_shader(shader);
+        reporter_assert!(r, paint.shader().is_some());
+        verify_draw_obeys_capabilities(r, &effect, surface, &paint);
+    }
+
+    // Effect that won't work on CPU/ES2 at all, and should fail gracefully on those devices.
+    // We choose to use bit-pun intrinsics because SkSL doesn't automatically inject an extension
+    // to enable them (like it does for derivatives). We pass a non-literal value so that SkSL's
+    // constant folding doesn't elide them entirely before the driver sees the shader.
+    {
+        let effect = RuntimeEffect::make_for_shader(
+            "
+            #version 300
+            half4 main(float2 xy) {
+                half4 result = half4(0, 1, 0, 1);
+                result.g = intBitsToFloat(floatBitsToInt(result.g));
+                return result;
+            }
+        ",
+            None,
+        );
+        let Ok(effect) = effect else {
+            errorf!(r, "effect did not compile");
+            return;
+        };
+        let mut paint = Paint::default();
+        let shader = effect.make_shader(Data::new_empty(), &[], None);
+        reporter_assert!(r, shader.is_some());
+        paint.set_shader(shader);
+        reporter_assert!(r, paint.shader().is_some());
+        verify_draw_obeys_capabilities(r, &effect, surface, &paint);
+    }
+
+    //
+    // As above, but with a blender
+    //
+
+    {
+        let effect = RuntimeEffect::make_for_blender(
+            "
+            #version 300
+            half4 main(half4 src, half4 dst) { return half4(0, 1, 0, 1); }
+        ",
+            None,
+        );
+        let Ok(effect) = effect else {
+            errorf!(r, "effect did not compile");
+            return;
+        };
+        let mut paint = Paint::default();
+        let blender = effect.make_blender(Data::new_empty(), &[]);
+        reporter_assert!(r, blender.is_some());
+        paint.set_blender(blender);
+        reporter_assert!(r, paint.blender().is_some());
+        verify_draw_obeys_capabilities(r, &effect, surface, &paint);
+    }
+
+    {
+        let effect = RuntimeEffect::make_for_blender(
+            "
+            #version 300
+            half4 main(half4 src, half4 dst) {
+                half4 result = half4(0, 1, 0, 1);
+                result.g = intBitsToFloat(floatBitsToInt(result.g));
+                return result;
+            }
+        ",
+            None,
+        );
+        let Ok(effect) = effect else {
+            errorf!(r, "effect did not compile");
+            return;
+        };
+        let mut paint = Paint::default();
+        let blender = effect.make_blender(Data::new_empty(), &[]);
+        reporter_assert!(r, blender.is_some());
+        paint.set_blender(blender);
+        reporter_assert!(r, paint.blender().is_some());
+        verify_draw_obeys_capabilities(r, &effect, surface, &paint);
+    }
+}
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1879-L1903 (chrome/m156)
+def_test!(SkRuntimeShader_b416061512, |r| {
+    let k_sksl = concat!(
+        "half4 main(half4 s,half4){",
+        "int x = int(s.x);",
+        "return half4(half(x - -2147483648));",
+        "}"
+    );
+
+    let effect = RuntimeEffect::make_for_blender(k_sksl, None);
+    match effect {
+        Err(err) => {
+            errorf!(r, "SkSL compile failed: {}", err);
+        }
+        Ok(effect) => {
+            let blender = effect.make_blender(Data::new_empty(), &[]);
+            reporter_assert!(r, blender.is_some());
+            let Some(blender) = blender else {
+                return;
+            };
+            let mut paint = Paint::default();
+            paint.set_color(Color::RED);
+            paint.set_blender(blender);
+
+            let info = ImageInfo::new((4, 4), ColorType::N32, AlphaType::Premul, None);
+            let s = surfaces::raster(&info, None, None);
+            reporter_assert!(r, s.is_some());
+            if let Some(mut s) = s {
+                // We should make sure this doesn't crash
+                s.canvas().draw_paint(&paint);
+            }
+        }
+    }
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1846-L1874 (chrome/m156)
+def_test!(SkRuntimeShader_b507643404, |r| {
+    let k_sksl = concat!(
+        "half4 blend_src_over(half4,half4 dst){",
+        "float a;return(a)/dst;",
+        "}",
+        "half4 main(half4 src,half4){",
+        "return blend_src_over(src,half4(0));",
+        "}"
+    );
+
+    // This effect compiles when we aren't optimizing/inlining, but fails when we are.
+    let effect = RuntimeEffect::make_for_blender(k_sksl, None);
+    match effect {
+        Err(err) => {
+            errorf!(r, "SkSL compile failed: {}", err);
+        }
+        Ok(effect) => {
+            let blender = effect.make_blender(Data::new_empty(), &[]);
+            reporter_assert!(r, blender.is_some());
+            let Some(blender) = blender else {
+                return;
+            };
+            let mut paint = Paint::default();
+            paint.set_color(Color::RED);
+            paint.set_blender(blender);
+
+            let info = ImageInfo::new((4, 4), ColorType::N32, AlphaType::Premul, None);
+            let s = surfaces::raster(&info, None, None);
+            reporter_assert!(r, s.is_some());
+            if let Some(mut s) = s {
+                // We should make sure this doesn't crash
+                s.canvas().draw_paint(&paint);
+            }
+        }
+    }
+});
+
+/// `TestBlend`: a 2x2 surface drawn with runtime blenders.
+// Port of: tests/SkRuntimeEffectTest.cpp#L546-L613 (chrome/m156)
+struct TestBlend {
+    surface: Surface<'static>,
+    builder: Option<RuntimeShaderBuilder>,
+}
+
+impl TestBlend {
+    fn new() -> Self {
+        TestBlend {
+            surface: make_surface((2, 2)),
+            builder: None,
+        }
+    }
+
+    fn build(&mut self, r: &mut Reporter, src: &str, allow_private_access: bool) {
+        let mut options = Options::default();
+        if allow_private_access {
+            runtime_effect_priv::allow_private_access(&mut options);
+        }
+        match RuntimeEffect::make_for_blender(src, Some(&options)) {
+            Ok(effect) => self.builder = Some(RuntimeShaderBuilder::new(effect)),
+            Err(error_text) => {
+                errorf!(r, "Effect didn't compile: {}", error_text);
+            }
+        }
+    }
+
+    fn builder(&mut self) -> &mut RuntimeShaderBuilder {
+        self.builder.as_mut().expect("a built effect")
+    }
+
+    fn uniform_f32(&mut self, name: &str, val: &[f32]) {
+        self.builder().uniform(name).set_f32(val);
+    }
+
+    fn uniform_i32(&mut self, name: &str, val: &[i32]) {
+        self.builder().uniform(name).set_i32(val);
+    }
+
+    fn child_null(&mut self, name: &str) {
+        self.builder().child(name).assign_null();
+    }
+
+    fn child(&mut self, name: &str, child: ChildPtr) {
+        self.builder().child(name).assign(child);
+    }
+
+    fn test(
+        &mut self,
+        r: &mut Reporter,
+        expected: [u32; 4],
+        pre_test_callback: Option<PreTestFn<'_>>,
+    ) {
+        let Some(blender) = self.builder().make_blender() else {
+            errorf!(r, "Effect didn't produce a blender");
+            return;
+        };
+
+        let mut paint = Paint::default();
+        paint.set_blender(blender);
+        paint.set_color(Color::GRAY);
+
+        paint_canvas(self.surface.canvas(), &mut paint, pre_test_callback);
+
+        let effect = self.builder().effect().clone();
+        verify_2x2_surface_results(r, &effect, &mut self.surface, expected);
+    }
+
+    fn test_uniform(
+        &mut self,
+        r: &mut Reporter,
+        expected: u32,
+        pre_test_callback: Option<PreTestFn<'_>>,
+    ) {
+        self.test(r, [expected; 4], pre_test_callback);
+    }
+}
+
+/// Fills `surface` with the RGBW shader, as `rgbwPaint` does.
+fn draw_rgbw(surface: &mut Surface<'_>) {
+    let mut paint = Paint::default();
+    paint.set_shader(make_rgbw_shader());
+    paint.set_blend_mode(BlendMode::Src);
+    surface.canvas().draw_paint(&paint);
+}
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1076-L1215 (chrome/m156)
+fn test_runtime_effect_blenders(r: &mut Reporter) {
+    let mut effect = TestBlend::new();
+
+    // Use of a simple uniform. (Draw twice with two values to ensure it's updated).
+    effect.build(
+        r,
+        "uniform float4 gColor; half4 main(half4 s, half4 d) { return half4(gColor); }",
+        false,
+    );
+    effect.uniform_f32("gColor", &[0.0, 0.25, 0.75, 1.0]);
+    effect.test_uniform(r, 0xFFBF_4000, None);
+    effect.uniform_f32("gColor", &[1.0, 0.0, 0.0, 0.498]);
+    effect.test_uniform(r, 0x7F00_00FF, None); // We don't clamp here either
+
+    // Same, with integer uniforms
+    effect.build(
+        r,
+        "uniform int4 gColor;\
+         half4 main(half4 s, half4 d) { return half4(gColor) / 255.0; }",
+        false,
+    );
+    effect.uniform_i32("gColor", &[0x00, 0x40, 0xBF, 0xFF]);
+    effect.test_uniform(r, 0xFFBF_4000, None);
+    effect.uniform_i32("gColor", &[0xFF, 0x00, 0x00, 0x7F]);
+    effect.test_uniform(r, 0x7F00_00FF, None); // We don't clamp here either
+
+    // Verify that mutating the source and destination colors is allowed
+    effect.build(
+        r,
+        "half4 main(half4 s, half4 d) { s += d; d += s; return half4(1); }",
+        false,
+    );
+    effect.test_uniform(r, 0xFFFF_FFFF, None);
+
+    // Verify that we can write out the source color (ignoring the dest color)
+    // This is equivalent to the kSrc blend mode.
+    effect.build(r, "half4 main(half4 s, half4 d) { return s; }", false);
+    effect.test_uniform(r, 0xFF88_8888, None);
+
+    // Fill the destination with a variety of colors (using the RGBW shader)
+    draw_rgbw(&mut effect.surface);
+
+    // Verify that we can read back the dest color exactly as-is (ignoring the source color)
+    // This is equivalent to the kDst blend mode.
+    effect.build(r, "half4 main(half4 s, half4 d) { return d; }", false);
+    effect.test(
+        r,
+        [0xFF00_00FF, 0xFF00_FF00, 0xFFFF_0000, 0xFFFF_FFFF],
+        None,
+    );
+
+    // Verify that we can invert the destination color (including the alpha channel).
+    // The expected outputs are the exact inverse of the previous test.
+    effect.build(
+        r,
+        "half4 main(half4 s, half4 d) { return half4(1) - d; }",
+        false,
+    );
+    effect.test(
+        r,
+        [0x00FF_FF00, 0x00FF_00FF, 0x0000_FFFF, 0x0000_0000],
+        None,
+    );
+
+    // Verify that color values are clamped to 0 and 1.
+    effect.build(
+        r,
+        "half4 main(half4 s, half4 d) { return half4(-1); }",
+        false,
+    );
+    effect.test_uniform(r, 0x0000_0000, None);
+    effect.build(
+        r,
+        "half4 main(half4 s, half4 d) { return half4(2); }",
+        false,
+    );
+    effect.test_uniform(r, 0xFFFF_FFFF, None);
+
+    //
+    // Sampling children
+    //
+
+    // Sampling a null shader should return transparent black.
+    effect.build(
+        r,
+        "uniform shader child;\
+         half4 main(half4 s, half4 d) { return child.eval(s.rg); }",
+        false,
+    );
+    effect.child_null("child");
+    effect.test_uniform(
+        r,
+        0x0000_0000,
+        Some(&|_: &Canvas, paint: &mut Paint| {
+            paint.set_color4f(Color4f::new(1.0, 1.0, 0.0, 1.0), None::<&ColorSpace>);
+        }),
+    );
+
+    effect.build(
+        r,
+        "uniform colorFilter child;\
+         half4 main(half4 s, half4 d) { return child.eval(s); }",
+        false,
+    );
+    effect.child_null("child");
+    effect.test_uniform(
+        r,
+        0xFF00_FFFF,
+        Some(&|_: &Canvas, paint: &mut Paint| {
+            paint.set_color4f(Color4f::new(1.0, 1.0, 0.0, 1.0), None::<&ColorSpace>);
+        }),
+    );
+
+    // Sampling a null blender should do a src-over blend. Draw 50% black over RGBW to verify this.
+    draw_rgbw(&mut effect.surface);
+    effect.build(
+        r,
+        "uniform blender child;\
+         half4 main(half4 s, half4 d) { return child.eval(s, d); }",
+        false,
+    );
+    effect.child_null("child");
+    effect.test(
+        r,
+        [0xFF00_0080, 0xFF00_8000, 0xFF80_0000, 0xFF80_8080],
+        Some(&|_: &Canvas, paint: &mut Paint| {
+            paint.set_color4f(Color4f::new(0.0, 0.0, 0.0, 0.497), None::<&ColorSpace>);
+        }),
+    );
+
+    // Sampling a shader at various coordinates
+    effect.build(
+        r,
+        "uniform shader child;\
+         uniform half2 pos;\
+         half4 main(half4 s, half4 d) { return child.eval(pos); }",
+        false,
+    );
+    effect.child("child", ChildPtr::from(make_rgbw_shader()));
+    effect.uniform_f32("pos", &[0.5, 0.5]);
+    effect.test_uniform(r, 0xFF00_00FF, None);
+
+    effect.uniform_f32("pos", &[1.5, 0.5]);
+    effect.test_uniform(r, 0xFF00_FF00, None);
+
+    effect.uniform_f32("pos", &[0.5, 1.5]);
+    effect.test_uniform(r, 0xFFFF_0000, None);
+
+    effect.uniform_f32("pos", &[1.5, 1.5]);
+    effect.test_uniform(r, 0xFFFF_FFFF, None);
+
+    // Sampling a shader as above, but via a helper function
+    effect.build(
+        r,
+        "uniform shader child;\
+         uniform half2 pos;\
+         half4 eval_at_pos(shader x) { return x.eval(pos); }\
+         half4 main(half4 s, half4 d) { return eval_at_pos(child); }",
+        true,
+    );
+    effect.child("child", ChildPtr::from(make_rgbw_shader()));
+    effect.uniform_f32("pos", &[0.5, 0.5]);
+    effect.test_uniform(r, 0xFF00_00FF, None);
+
+    effect.uniform_f32("pos", &[1.5, 0.5]);
+    effect.test_uniform(r, 0xFF00_FF00, None);
+
+    effect.uniform_f32("pos", &[0.5, 1.5]);
+    effect.test_uniform(r, 0xFFFF_0000, None);
+
+    effect.uniform_f32("pos", &[1.5, 1.5]);
+    effect.test_uniform(r, 0xFFFF_FFFF, None);
+
+    // Sampling a color filter
+    effect.build(
+        r,
+        "uniform colorFilter child;\
+         half4 main(half4 s, half4 d) { return child.eval(half4(1)); }",
+        false,
+    );
+    let blue_filter = color_filters::blend_color(Color::new(0xFF01_2345), BlendMode::Src);
+    effect.child("child", blue_filter.map_or(ChildPtr::Empty, ChildPtr::from));
+    effect.test_uniform(r, 0xFF45_2301, None);
+
+    // Sampling a built-in blender
+    draw_rgbw(&mut effect.surface);
+    effect.build(
+        r,
+        "uniform blender child;\
+         half4 main(half4 s, half4 d) { return child.eval(s, d); }",
+        false,
+    );
+    effect.child("child", ChildPtr::from(Blender::mode(BlendMode::Plus)));
+    effect.test(
+        r,
+        [0xFF45_23FF, 0xFF45_FF01, 0xFFFF_2301, 0xFFFF_FFFF],
+        Some(&|_: &Canvas, paint: &mut Paint| {
+            paint.set_color(Color::new(0xFF01_2345));
+        }),
+    );
+
+    // Sampling a runtime-effect blender
+    draw_rgbw(&mut effect.surface);
+    effect.build(
+        r,
+        "uniform blender child;\
+         half4 main(half4 s, half4 d) { return child.eval(s, d); }",
+        false,
+    );
+    let arithmetic = effects_blenders::arithmetic(0.0, 1.0, 1.0, 0.0, false);
+    effect.child("child", arithmetic.map_or(ChildPtr::Empty, ChildPtr::from));
+    effect.test(
+        r,
+        [0xFF45_23FF, 0xFF45_FF01, 0xFFFF_2301, 0xFFFF_FFFF],
+        Some(&|_: &Canvas, paint: &mut Paint| {
+            paint.set_color(Color::new(0xFF01_2345));
+        }),
+    );
+}
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1216-L1218 (chrome/m156)
+def_test!(SkRuntimeEffect_Blender_CPU, |r| {
+    test_runtime_effect_blenders(r);
 });

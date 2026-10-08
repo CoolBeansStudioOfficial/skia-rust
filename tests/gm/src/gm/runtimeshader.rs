@@ -5,9 +5,8 @@
 
 //! Runtime shader GMs.
 //!
-//! Not ported yet (left `todo` in the manifest): `ThresholdRT`, `UnsharpRT`, `ColorCubeRT` and
-//! `local_matrix_shader_rt` load images (codecs are not ported); `ColorCubeColorFilterRT`,
-//! `null_child_rt` and `alpha_image_shader_rt` make runtime color filters or blenders (task S19);
+//! Not ported yet (left `todo` in the manifest): `ThresholdRT`, `UnsharpRT`, `ColorCubeRT`,
+//! `ColorCubeColorFilterRT` and `local_matrix_shader_rt` load images (codecs are not ported);
 //! `ClipSuperRRect` is not in the manifest.
 
 // SkIntToScalar of small values; the ported lambdas keep the C++ declaration order.
@@ -15,18 +14,23 @@
 
 use crate::prelude::*;
 use crate::tool_utils::make_surface;
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::colors;
+use skia_rust_core::color_filter::ColorFilter;
 use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::rect::Rect;
-use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeShaderBuilder};
+use skia_rust_core::runtime_effect::{ChildPtr, RuntimeEffect, RuntimeShaderBuilder};
 use skia_rust_core::runtime_effect_priv;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
@@ -599,6 +603,207 @@ crate::def_simple_gm_can_fail!(deferred_shader_rt, canvas, error_msg, 150, 50, {
         canvas.draw_rect(Rect::new(0.0, 0.0, 50.0, 50.0), &paint);
         canvas.translate((50.0, 0.0));
     }
+
+    DrawResult::Ok
+});
+
+// Port of: gm/runtimeshader.cpp#L909-L1000 (chrome/m156)
+crate::def_simple_gm!(null_child_rt, canvas, 150, 100, {
+    // Every swatch should evaluate to the same shade of purple.
+    // Paint with a shader evaluating a null shader.
+    // Point passed to eval() is ignored; transparent black is returned.
+    {
+        let rt_shader = RuntimeEffect::make_for_shader(
+            "uniform shader s;\
+             half4 main(float2 p) { return s.eval(p) + half4(0.5, 0, 0.5, 1); }",
+            None,
+        )
+        .expect("the shader compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_shader(rt_shader.make_shader(Data::new_empty(), &children, None));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0xFF, 0x00)); // green (ignored)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+    // Paint with a shader evaluating a null color filter.
+    // Color passed to eval() is returned; paint color is ignored.
+    {
+        let rt_shader = RuntimeEffect::make_for_shader(
+            "uniform colorFilter cf;\
+             half4 main(float2 p) { return cf.eval(half4(0.5, 0, 0.5, 1)); }",
+            None,
+        )
+        .expect("the shader compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_shader(rt_shader.make_shader(Data::new_empty(), &children, None));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0x00, 0xFF)); // green (does not contribute)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+    // Paint with a shader evaluating a null blender.
+    // Colors passed to eval() are blended via src-over; paint color is ignored.
+    {
+        let rt_shader = RuntimeEffect::make_for_shader(
+            "uniform blender b;\
+             half4 main(float2 p) { return b.eval(half4(0.5, 0, 0, 0.5), half4(0, 0, 1, 1)); }",
+            None,
+        )
+        .expect("the shader compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_shader(rt_shader.make_shader(Data::new_empty(), &children, None));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0x00, 0xFF)); // green (does not contribute)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+
+    canvas.translate((-150.0, 50.0));
+
+    // Paint with a color filter evaluating a null shader.
+    // Point passed to eval() is ignored; transparent black is returned.
+    {
+        let rt_filter = RuntimeEffect::make_for_color_filter(
+            "uniform shader s;\
+             half4 main(half4 c) { return s.eval(float2(0)) + half4(0.5, 0, 0.5, 1); }",
+            None,
+        )
+        .expect("the color filter compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_color_filter(rt_filter.make_color_filter(Data::new_empty(), &children));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0xFF, 0x00)); // green (ignored)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+    // Paint with a color filter evaluating a null color filter.
+    // Color passed to eval() is returned; paint color is ignored.
+    {
+        let rt_filter = RuntimeEffect::make_for_color_filter(
+            "uniform colorFilter cf;\
+             half4 main(half4 c) { return cf.eval(half4(0.5, 0, 0.5, 1)); }",
+            None,
+        )
+        .expect("the color filter compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_color_filter(rt_filter.make_color_filter(Data::new_empty(), &children));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0x00, 0xFF)); // green (does not contribute)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+    // Paint with a color filter evaluating a null blender.
+    // Colors passed to eval() are blended via src-over; paint color is ignored.
+    {
+        let rt_filter = RuntimeEffect::make_for_color_filter(
+            "uniform blender b;\
+             half4 main(half4 c) { return b.eval(half4(0.5, 0, 0, 0.5), half4(0, 0, 1, 1)); }",
+            None,
+        )
+        .expect("the color filter compiles");
+
+        let mut paint = Paint::default();
+        let children = [ChildPtr::Empty];
+        paint.set_color_filter(rt_filter.make_color_filter(Data::new_empty(), &children));
+        paint.set_color(Color::from_argb(0xFF, 0x00, 0x00, 0xFF)); // green (does not contribute)
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), &paint);
+        canvas.translate((50.0, 0.0));
+    }
+});
+
+// Port of: gm/runtimeshader.cpp#L1057-L1062 (chrome/m156)
+fn paint_color_shader() -> Option<Shader> {
+    let mut bmp = Bitmap::new();
+    bmp.alloc_pixels_info(
+        &ImageInfo::new((1, 1), ColorType::Alpha8, AlphaType::Premul, None),
+        None,
+    );
+    bmp.erase_color(Color::WHITE);
+    bmp.to_shader(
+        (TileMode::Clamp, TileMode::Clamp),
+        FilterMode::Nearest,
+        None,
+    )
+}
+
+// Port of: gm/runtimeshader.cpp#L1064-L1133 (chrome/m156)
+crate::def_simple_gm_can_fail!(alpha_image_shader_rt, canvas, error_msg, 350, 50, {
+    // (Skia skips recording backends (DDL) here. The harness always draws to a surface, so the
+    // check is not needed.)
+    let _ = &error_msg;
+
+    // Skia typically applies the paint color (or input color, for more complex GPU-FP trees)
+    // to alpha-only images. This is useful in trivial cases, but surprising and inconsistent in
+    // more complex situations, especially when using SkSL.
+    //
+    // This GM checks that we suppress the paint-color tinting from SkSL, and always get {0,0,0,a}.
+    let checkerboard = crate::tool_utils::create_checkerboard_shader(Color::BLACK, Color::WHITE, 4);
+    let paint_shader = paint_color_shader();
+    let children = [paint_shader.clone().map_or(ChildPtr::Empty, ChildPtr::from)];
+
+    let mut paint = Paint::default();
+    paint.set_color4f(Color4f::new(0.5, 0.0, 0.5, 1.0), None::<&ColorSpace>);
+
+    let rect = |canvas: &Canvas, paint: &Paint| {
+        canvas.draw_rect(Rect::new(0.0, 0.0, 48.0, 48.0), paint);
+        canvas.translate((50.0, 0.0));
+    };
+
+    // Two simple cases: just paint color, then the "paint color" shader.
+    // These should both be PURPLE
+    rect(canvas, &paint);
+
+    paint.set_shader(paint_shader.clone());
+    rect(canvas, &paint);
+
+    // All remaining cases should be BLACK
+
+    // Shader that evaluates the "paint color" shader.
+    // For color-filter and blender, we test them with and without an actual SkShader on the paint.
+    // These should all be BLACK
+    let shader_effect = RuntimeEffect::make_for_shader(
+        "uniform shader s;\
+         half4 main(float2 p) { return s.eval(p); }",
+        None,
+    )
+    .expect("the shader compiles");
+    paint.set_shader(shader_effect.make_shader(Data::new_empty(), &children, None));
+    rect(canvas, &paint);
+
+    // Color-filter that evaluates the "paint color" shader, with and without a shader on the paint
+    paint.set_shader(None::<Shader>);
+    let cf_effect = RuntimeEffect::make_for_color_filter(
+        "uniform shader s;\
+         half4 main(half4 color) { return s.eval(float2(0)); }",
+        None,
+    )
+    .expect("the color filter compiles");
+    paint.set_color_filter(cf_effect.make_color_filter(Data::new_empty(), &children));
+    rect(canvas, &paint);
+
+    paint.set_shader(checkerboard.clone());
+    rect(canvas, &paint);
+
+    // Blender that evaluates the "paint color" shader, with and without a shader on the paint
+    paint.set_shader(None::<Shader>);
+    paint.set_color_filter(None::<ColorFilter>);
+    let blender_effect = RuntimeEffect::make_for_blender(
+        "uniform shader s;\
+         half4 main(half4 src, half4 dst) { return s.eval(float2(0)); }",
+        None,
+    )
+    .expect("the blender compiles");
+    paint.set_blender(blender_effect.make_blender(Data::new_empty(), &children));
+    rect(canvas, &paint);
+
+    paint.set_shader(checkerboard);
+    rect(canvas, &paint);
 
     DrawResult::Ok
 });

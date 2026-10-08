@@ -71,6 +71,7 @@ pub mod image_info;
 pub mod image_info_priv;
 pub mod image_raster;
 pub mod images;
+pub mod known_runtime_effects;
 #[doc(hidden)]
 pub mod lattice_iter;
 #[doc(hidden)]
@@ -146,6 +147,8 @@ pub mod region;
 pub mod region_path;
 pub mod rrect;
 pub mod rsxform;
+pub mod runtime_blender;
+pub mod runtime_color_filter;
 pub mod runtime_effect;
 #[doc(hidden)]
 pub mod runtime_effect_priv;
@@ -185,6 +188,7 @@ pub mod utf;
 pub mod utils;
 pub mod vert_state;
 pub mod vertices;
+pub mod working_format_color_filter;
 pub mod write_buffer;
 #[doc(hidden)]
 pub mod write_pixels_rec;

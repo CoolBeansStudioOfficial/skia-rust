@@ -27,7 +27,10 @@ use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_space_priv::srgb_singleton;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
+use crate::data::Data;
 use crate::floating_point::is_finite_array;
+use crate::known_runtime_effects::{StableKey, get_known_runtime_effect};
+use crate::runtime_effect::ChildPtr;
 use crate::shader::Shader;
 
 pub use blend_shader::BlendShader;
@@ -69,16 +72,24 @@ pub fn blend(mode: BlendMode, dst: Shader, src: Shader) -> Shader {
 }
 
 /// A shader of `src` blended over `dst` with `blender` (`SkShaders::Blend(sk_sp<SkBlender>, dst,
-/// src)`). A blender that is a blend mode makes the shader of [`blend`]; any other blender needs
-/// a runtime effect, which is not ported, so there is no shader (`None`).
+/// src)`). A blender that is a blend mode makes the shader of [`blend`]; any other blender is
+/// evaluated by the `Blend` known runtime effect, which can fail to make a shader (`None`).
 // Port of: src/shaders/SkBlendShader.cpp#L136-L156 (chrome/m156)
 #[doc(alias = "Blend")]
 #[must_use]
 pub fn blend_blender(blender: &Blender, dst: Shader, src: Shader) -> Option<Shader> {
-    blender
-        .as_base()
-        .as_blend_mode()
-        .map(|mode| blend(mode, dst, src))
+    if let Some(mode) = blender.as_base().as_blend_mode() {
+        return Some(blend(mode, dst, src));
+    }
+
+    // This isn't a built-in blend mode; we might as well use a runtime effect to evaluate it.
+    let blend_effect = get_known_runtime_effect(StableKey::Blend)?;
+    let children = [
+        ChildPtr::from(src),
+        ChildPtr::from(dst),
+        ChildPtr::from(blender.clone()),
+    ];
+    blend_effect.make_shader(Data::new_empty(), &children, None)
 }
 
 /// A shader of a single sRGB color (`SkShaders::Color(SkColor)`).

@@ -75,6 +75,7 @@ pub mod geometry_test;
 #[cfg(test)]
 pub mod gradient_test;
 #[cfg(test)]
+pub mod high_contrast_filter_test;
 pub mod hsv_round_trip_test;
 #[cfg(test)]
 pub mod icc_test;
@@ -181,6 +182,8 @@ pub mod region_test;
 #[cfg(test)]
 pub mod round_rect_test;
 #[cfg(test)]
+pub mod runtime_blend_test;
+#[cfg(test)]
 pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
@@ -202,7 +205,6 @@ pub mod sk_path_range_iter_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
-#[cfg(test)]
 pub mod sk_runtime_effect_test;
 #[cfg(test)]
 pub mod sk_sl_test;

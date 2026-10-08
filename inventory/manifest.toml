@@ -15615,6 +15615,7 @@ macro = "DEF_GM"
 source = "gm/arithmode.cpp#L282-L282"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Blend and SkImageFilters::Image (image filters are not ported)"
 span_hash = "b144fa1f0995da07cf1c14c44c7dc7e1fbd17d5bdc828024b33c462f534c5282"
 
 [[test]]
@@ -17804,8 +17805,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L81-L105"
 module = "effects"
-status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+status = "passing"
 span_hash = "756123cd3b62d0b866c858e31fca181618ee831d74b64cf84093598d0263382e"
 
 [[test]]
@@ -17815,7 +17815,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
 status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+reason = "needs SkShaders::MakeTurbulence and the SkImageFilters Shader, ColorFilter and Compose factories (not ported)"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -18799,7 +18799,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/destcolor.cpp#L17-L32"
 module = "raster"
 status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19; loads images (codecs are not ported)"
+reason = "loads images (codecs are not ported)"
 span_hash = "a00f1a801cb48dba93dedc341019b21e5a9183dfb41b3ac8471596ea989a198b"
 
 [[test]]
@@ -20763,7 +20763,7 @@ macro = "DEF_GM"
 source = "gm/highcontrastfilter.cpp#L155-L155"
 module = "effects"
 status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
 span_hash = "b25f94e0c659efbe603156987fe8dac3c1fa4c6c788a5748dca1836f298b9a4f"
 
 [[test]]
@@ -21027,8 +21027,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/imagedither.cpp#L28-L82"
 module = "raster"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "d3196891c134c2e5aee6e3fb6f9c7631ad7dc7af56673f7c0fd191843e4cbfe9"
 
 [[test]]
@@ -21672,7 +21671,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/lumafilter.cpp#L168-L198"
 module = "effects"
 status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+reason = "loads images (codecs are not ported)"
 span_hash = "73a163a8626ce07bc9bf40245ce53266c1464740d1045b84f4f62b174dd77836"
 
 [[test]]
@@ -21682,7 +21681,7 @@ macro = "DEF_GM"
 source = "gm/lumafilter.cpp#L166-L166"
 module = "effects"
 status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
 span_hash = "895b2194cce9eb7052a94e3c2cf7964f2c9b33320c621cf9073137c739bd2b5f"
 
 [[test]]
@@ -22215,8 +22214,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/overdrawcolorfilter.cpp#L56-L56"
 module = "effects"
-status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+status = "passing"
 span_hash = "5abf896346c4a9e004b0e5e9554a44f71799a260644602559215e600a136323f"
 
 [[test]]
@@ -23126,6 +23124,7 @@ macro = "DEF_GM"
 source = "gm/runtimecolorfilter.cpp#L126-L126"
 module = "effects"
 status = "todo"
+reason = "loads images (codecs are not ported)"
 span_hash = "8e8627738874523abcefc94d78520141df815827e5de346de36680b9782a0092"
 
 [[test]]
@@ -23269,7 +23268,7 @@ macro = "DEF_GM"
 source = "gm/runtimeshader.cpp#L430-L430"
 module = "effects"
 status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19; loads images (codecs are not ported)"
+reason = "loads images (codecs are not ported)"
 span_hash = "a89852aff05d18e5612ef3f0bc7f888ab4d5a735182f756c0fb538b5f131db75"
 
 [[test]]
@@ -23335,8 +23334,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/runtimeshader.cpp#L1064-L1133"
 module = "effects"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "046bbaf04346ff8fab3ce6b96f981258d7ff5e9c8533d79efbe41dbe80205d4e"
 
 [[test]]
@@ -23382,8 +23380,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeshader.cpp#L909-L1018"
 module = "effects"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "bae55b84a039758d081c0af0fea71d6b854cd6b28d40894e7c3ed68a51094d46"
 
 [[test]]
@@ -34100,8 +34097,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HighContrastFilterTest.cpp#L31-L63"
 module = "effects"
-status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+status = "passing"
 span_hash = "b4dbb6327babd5ad622ae3a372646c8220de2f728fa5e02911287e213ab2099d"
 
 [[test]]
@@ -34110,8 +34106,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/HighContrastFilterTest.cpp#L17-L29"
 module = "effects"
-status = "todo"
-reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
+status = "passing"
 span_hash = "e7d6dd0e414cec532627130c205a67081ff2d1a022845fa4bdd0256671c3d06e"
 
 [[test]]
@@ -40925,7 +40920,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RuntimeBlendTest.cpp#L108-L113"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3716f1b8500242cc8b211c792da64421f4d6f589b23870e30e63662da295be6b"
 
 [[test]]
@@ -44014,8 +44009,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1247-L1262"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "5e3262c4af36aa98b16a50333071dd5acf8e485b91f527019821602a04269e88"
 
 [[test]]
@@ -44033,8 +44027,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1412-L1475"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "279d65d59a88a0a9d67d713724fbb76651c06beb7ef7abb2ac1bb91bc5a2f946"
 
 [[test]]
@@ -44062,8 +44055,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1355-L1371"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "f6a00af766f18a11e586390feb09574782eb76940236217d7889fd3243212c9f"
 
 [[test]]
@@ -44081,8 +44073,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1976-L1991"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "07a2342296dc5d8e4323227c98359cf9b03159e9935382ad3878d6e5ec8dc949"
 
 [[test]]
@@ -44181,8 +44172,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L858-L863"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "6cc7af0e2bfab9e74628e254c8853cd530662c87e235edebede215dbc3053301"
 
 [[test]]
@@ -44287,8 +44277,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1216-L1218"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "9d1b510b52c4d24c3329eb16124f768ead290c890f032518047c138e07ecdde1"
 
 [[test]]
@@ -44373,8 +44362,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1879-L1905"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "831af261f0489548151ea71b58c14511406f0ba6bc0aa9512f9fcce9ab095be5"
 
 [[test]]
@@ -44392,8 +44380,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRuntimeEffectTest.cpp#L1846-L1877"
 module = "sksl"
-status = "todo"
-reason = "needs runtime color filters/blenders (RuntimeColorFilter, RuntimeBlender): task S19"
+status = "passing"
 span_hash = "07c1b3b7c7ab624a3ca1b9defd78426e8f8c09d1982eb44d094b6de5d8523082"
 
 [[test]]

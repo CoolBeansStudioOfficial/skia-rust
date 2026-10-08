@@ -935,6 +935,33 @@ definition of main */, Option<DebugTracePriv>, write_trace_ops) -> Option<rp::Pr
   image decoding or runtime color filters, `runtimeintrinsics` draws labels with text, and `destcolor`
   and `image_dither` make runtime blenders.
 
+### 6.8 As implemented in S19 and S20
+
+- **Color filters and blenders.** `skia_rust_core::{runtime_color_filter, runtime_blender}` port
+  `SkRuntimeColorFilter` and `SkRuntimeBlender`: the same `appendStages` body (`CanDraw`, the RP
+  program, `UniformsAsSpan`, `RuntimeEffectRPCallbacks` with an identity `MatrixRec` marked CTM-applied),
+  `onIsAlphaUnchanged` and the type. `RuntimeEffect::make_color_filter` / `make_blender` are
+  `makeColorFilter` / `makeBlender`; `RuntimeEffectBuilder` gains `make_color_filter` and `make_blender`,
+  and `RuntimeColorFilterBuilder` / `RuntimeBlendBuilder` are aliases of it (as in m156, where all three
+  names are one class). The paint and blitter paths already call `Blender::as_base().append_stages`.
+- **Known runtime effects.** `skia_rust_core::known_runtime_effects` ports `SkKnownRuntimeEffects`:
+  `StableKey` (the discriminants of Skia; `1DBlurBase` and `2DBlurBase` are constants, since a Rust
+  enum cannot repeat a discriminant), the SkSL of all 31 keys, and `get_known_runtime_effect` with one
+  `OnceLock` per key (`Option`: `Invalid` is `None`, as Skia's `nullptr`). The blur and matrix
+  convolution sources are built with `format!` from the same pieces as the C++.
+- **Clients.** `color_filters::lerp` (`SkColorFilters::Lerp`), `skia_rust_effects::{luma_color_filter,
+  overdraw_color_filter, high_contrast_filter, blenders}` (`SkLumaColorFilter`, `SkOverdrawColorFilter`,
+  `SkHighContrastFilter`, `SkBlenders::Arithmetic`), and `shaders::blend_blender` (`SkShaders::Blend`
+  with a non-mode blender, which is the `Blend` known effect). `SkHighContrastFilter` needs
+  `SkColorFilterPriv::WithWorkingFormat`, ported as `skia_rust_core::working_format_color_filter`
+  (`SkWorkingFormatColorFilter`; flattening is not ported).
+- **`InvertStyle` is a newtype.** `SkHighContrastConfig::InvertStyle` is an `enum class` that `isValid`
+  checks for out-of-range values, which a Rust enum cannot hold without `unsafe`.
+- **Not done.** `SkImageFilters::Blend`/`Image` (so `arithmode_blender` and `composeCFIF`) and the text
+  labels of `lumafilter`, `highcontrastfilter` and `arithmode` need the image filters and text. The
+  image-based GMs (`destcolor`, `ColorCubeColorFilterRT`, `AlternateLuma`, `RuntimeColorFilterGM`) need
+  codecs. `runtimecolorfilter_vertices_atlas_and_patch` was not attempted.
+
 ## 7. RuntimeEffect integration (core)
 
 - **API**: skia-safe's `effects/runtime_effect.rs`: `RuntimeEffect::make_for_{shader, color_filter,

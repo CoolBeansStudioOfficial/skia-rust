@@ -32,6 +32,8 @@ use crate::checksum::hash32;
 use crate::color_filter::ColorFilter;
 use crate::data::Data;
 use crate::matrix::Matrix;
+use crate::runtime_blender::RuntimeBlender;
+use crate::runtime_color_filter::RuntimeColorFilter;
 use crate::runtime_effect_priv as priv_;
 use crate::shader::Shader;
 use crate::shaders::runtime_shader::RuntimeShader;
@@ -773,6 +775,71 @@ impl RuntimeEffect {
         ))
     }
 
+    /// Creates a [`ColorFilter`] from this effect (`makeColorFilter`).
+    ///
+    /// - `uniforms`: a [`Data`] block of size [`RuntimeEffect::uniform_size`], containing values
+    ///   for all uniform variables
+    /// - `children`: the child color filters/shaders/blenders required by the effect, in the
+    ///   order given by [`RuntimeEffect::children`]
+    ///
+    /// Returns `None` if the effect is not a color filter effect or the arguments do not match.
+    // Port of: src/core/SkRuntimeEffect.cpp#L894-L909 (chrome/m156)
+    #[doc(alias = "makeColorFilter")]
+    #[must_use]
+    pub fn make_color_filter(
+        &self,
+        uniforms: impl Into<Data>,
+        children: &[ChildPtr],
+    ) -> Option<ColorFilter> {
+        if !self.allow_color_filter() {
+            return None;
+        }
+        if !verify_child_effects(&self.0.children, children) {
+            return None;
+        }
+        let uniforms: Data = uniforms.into();
+        if uniforms.size() != self.uniform_size() {
+            return None;
+        }
+        Some(ColorFilter::from_base(RuntimeColorFilter::new(
+            self.clone(),
+            uniforms,
+            children,
+        )))
+    }
+
+    /// Creates a [`Blender`] from this effect (`makeBlender`).
+    ///
+    /// - `uniforms`: a [`Data`] block of size [`RuntimeEffect::uniform_size`], containing values
+    ///   for all uniform variables
+    /// - `children`: the child blenders/color filters/shaders required by the effect
+    ///
+    /// Returns `None` if the effect is not a blender effect or the arguments do not match.
+    // Port of: src/core/SkRuntimeEffect.cpp#L915-L930 (chrome/m156)
+    #[doc(alias = "makeBlender")]
+    #[must_use]
+    pub fn make_blender(
+        &self,
+        uniforms: impl Into<Data>,
+        children: &[ChildPtr],
+    ) -> Option<Blender> {
+        if !self.allow_blender() {
+            return None;
+        }
+        if !verify_child_effects(&self.0.children, children) {
+            return None;
+        }
+        let uniforms: Data = uniforms.into();
+        if uniforms.size() != self.uniform_size() {
+            return None;
+        }
+        Some(Blender::from_base(RuntimeBlender::new(
+            self.clone(),
+            uniforms,
+            children,
+        )))
+    }
+
     /// The `SkSL` source of the runtime effect shader (`source`).
     // Port of: src/core/SkRuntimeEffect.cpp#L805-L807 (chrome/m156)
     #[must_use]
@@ -891,6 +958,12 @@ pub struct RuntimeEffectBuilder {
 
 /// `SkRuntimeShaderBuilder`.
 pub type RuntimeShaderBuilder = RuntimeEffectBuilder;
+
+/// `SkRuntimeColorFilterBuilder`: the same builder (deprecated in Skia, which uses one class).
+pub type RuntimeColorFilterBuilder = RuntimeEffectBuilder;
+
+/// `SkRuntimeBlendBuilder`: the same builder (deprecated in Skia, which uses one class).
+pub type RuntimeBlendBuilder = RuntimeEffectBuilder;
 
 /// A named uniform of a [`RuntimeEffectBuilder`] (`SkRuntimeEffectBuilder::BuilderUniform`).
 #[derive(Debug)]
@@ -1089,6 +1162,24 @@ impl RuntimeEffectBuilder {
     pub fn make_shader<'a>(&self, local_matrix: impl Into<Option<&'a Matrix>>) -> Option<Shader> {
         self.effect
             .make_shader(self.uniforms.clone(), &self.children, local_matrix)
+    }
+
+    /// Creates a [`ColorFilter`] from the configured builder (`makeColorFilter`).
+    // Port of: src/core/SkRuntimeEffect.cpp#L1000-L1002 (chrome/m156)
+    #[doc(alias = "makeColorFilter")]
+    #[must_use]
+    pub fn make_color_filter(&self) -> Option<ColorFilter> {
+        self.effect
+            .make_color_filter(self.uniforms.clone(), &self.children)
+    }
+
+    /// Creates a [`Blender`] from the configured builder (`makeBlender`).
+    // Port of: src/core/SkRuntimeEffect.cpp#L996-L998 (chrome/m156)
+    #[doc(alias = "makeBlender")]
+    #[must_use]
+    pub fn make_blender(&self) -> Option<Blender> {
+        self.effect
+            .make_blender(self.uniforms.clone(), &self.children)
     }
 
     // Port of: include/effects/SkRuntimeEffect.h#L470-L475 (chrome/m156)
