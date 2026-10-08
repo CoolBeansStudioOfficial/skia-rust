@@ -82,7 +82,7 @@ fn assign_variable(ctx: &mut Context, var: VarId, value: ExprId) -> StmtId {
 /// other declaration becomes a `Nop`. The variables' symbols move into the block's symbol table.
 ///
 /// `cases` holds the `SwitchCase` statements. Returns `None` when there are no such declarations.
-// Port of: src/sksl/transform/SkSLHoistSwitchVarDeclarationsAtTopLevel.cpp#L26-L129 (chrome/m156)
+// Port of: src/sksl/transform/SkSLHoistSwitchVarDeclarationsAtTopLevel.cpp#L35-L137 (chrome/m156)
 #[must_use]
 pub fn hoist_switch_var_declarations_at_top_level(
     ctx: &mut Context,

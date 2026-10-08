@@ -15,8 +15,8 @@
 use std::sync::Arc;
 
 use super::{
-    Expression, ExpressionKind, FieldSymbol, FunctionDeclaration, ProgramElement, Statement,
-    StatementKind, SymbolTable, Type, TypeRef, Variable,
+    DeclaringElement, Expression, ExpressionKind, FieldSymbol, FunctionDeclaration, ProgramElement,
+    Statement, StatementKind, SymbolTable, Type, TypeRef, Variable,
     ids::{ElemId, ExprId, FieldId, FnId, StmtId, SymTabId, TypeId, VarId},
 };
 use crate::builtin_types::{BUILTIN_TYPE_COUNT, BUILTIN_TYPES};
@@ -340,7 +340,29 @@ impl IrPool {
     pub fn relocate_statement(&mut self, id: StmtId) -> StmtId {
         let placeholder = Statement::new(Position::default(), StatementKind::Nop(super::Nop));
         let node = std::mem::replace(self.statement_mut(id), placeholder);
-        self.add_statement(node)
+        let moved = self.add_statement(node);
+        self.retarget_declaration(id, moved);
+        moved
+    }
+
+    /// Skia moves a `VarDeclaration` object with its `unique_ptr`, so `Variable::declaringElement`
+    /// keeps naming that object wherever it goes. An id-based node that moves to a new id must
+    /// point its variable at the new id, or the variable's declaration is left at a slot that
+    /// no longer holds it. `to` is the id the declaration now has; `from` is the id it left.
+    // Port of: the object identity that `std::unique_ptr` moves keep (SkSLVariable.h `fDeclaringElement`).
+    fn retarget_declaration(&mut self, from: StmtId, to: StmtId) {
+        let StatementKind::VarDeclaration(decl) = &self.statement(to).kind else {
+            return;
+        };
+        let var = decl.var;
+        // A declaration in a frozen parent cannot move, so its variable is not local either.
+        if !self.is_local_variable(var) {
+            return;
+        }
+        let variable = self.variable_mut(var);
+        if variable.declaring_element == Some(DeclaringElement::VarDeclaration(from)) {
+            variable.declaring_element = Some(DeclaringElement::VarDeclaration(to));
+        }
     }
 
     /// `Expression::clone()`: a deep copy of the expression at `id`, at the same position.
@@ -378,6 +400,7 @@ impl IrPool {
     pub fn move_statement_into(&mut self, slot: StmtId, source: StmtId) {
         let node = self.statement(source).clone();
         self.replace_statement(slot, node);
+        self.retarget_declaration(source, slot);
     }
 
     /// `ExpressionArray::clone()`: clones every element.

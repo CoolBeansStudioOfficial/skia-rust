@@ -564,7 +564,10 @@ impl Compiler {
         });
 
         // Make sure that program usage is still correct after the optimization pass is complete.
-        debug_assert_eq!(usage, get_module_parts_usage(&module.pool, &module.elements, parent));
+        debug_assert_eq!(
+            usage,
+            get_module_parts_usage(&module.pool, &module.elements, parent)
+        );
         self.error_count() == 0
     }
 

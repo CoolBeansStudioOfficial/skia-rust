@@ -719,8 +719,10 @@ lists. Usage is an explicit `ProgramUsage` the caller holds, and the transforms 
   allowed until then. `optimize_module_after_loading` is unchanged: its only work is the inliner.
 - **Slots.** Overwriting a statement is `replace_with_nop` or `pool.replace_statement`, and copying a
   node into an existing slot is `move_statement_into`. Where a child must keep its id (the brace
-  pass), the parent's field is rewritten instead. A `VarDeclaration` node is never copied into another
-  id, because `Variable::declaring_element` names it.
+  pass), the parent's field is rewritten instead. A `VarDeclaration` that moves to another id
+  (`relocate_statement`, `move_statement_into`) takes its variable's `declaring_element` with it,
+  because Skia's pointer names the moved object (`IrPool::retarget_declaration`). The hoisting
+  transform and the inliner's enclosing-statement move both rely on this.
 - **Checks.** `transform/tests.rs` has one test per pass on small snippets, and the Skia optimized
   programs from `DeadStripFunctions`, `DeadGlobals` and `DeadIfStatement` (through `convert_program`).
   `minified_goldens_match_the_module_optimizer` runs all 27 `folding`, `rte` and `mesh`

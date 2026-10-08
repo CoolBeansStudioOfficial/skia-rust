@@ -90,6 +90,8 @@ fn owned_function_names(program: &Program) -> Vec<String> {
 #[derive(Default)]
 struct Collector {
     variables: Vec<VarId>,
+    /// The `VarDeclaration` statements themselves, by id, in visiting order.
+    declarations: Vec<StmtId>,
     index_expressions: Vec<ExprId>,
 }
 
@@ -97,6 +99,7 @@ impl ProgramVisitor for Collector {
     fn visit_statement(&mut self, pool: &IrPool, stmt: StmtId) -> bool {
         if let StatementKind::VarDeclaration(decl) = &pool.statement(stmt).kind {
             self.variables.push(decl.var);
+            self.declarations.push(stmt);
         }
         walk_statement(self, pool, stmt)
     }
@@ -608,5 +611,94 @@ fn dead_globals_optimize_to_the_live_return() {
     assert_eq!(
         owned_text(&program),
         "uniform half4 colorGreen;uniform half4 colorRed;half4 main(float2 ) {\nreturn colorGreen;\n}\n"
+    );
+}
+
+/// The statement that declares the variable named `name`, as its `declaringElement` gives it, and
+/// whether that statement is one of the program's declarations.
+fn declaring_statement_of(program: &Program, name: &str) -> (StmtId, bool) {
+    let collector = collect(program);
+    let pool = &program.pool;
+    let var = collector
+        .variables
+        .iter()
+        .copied()
+        .find(|&var| &*pool.variable(var).name == name)
+        .unwrap_or_else(|| panic!("`{name}` is declared"));
+    let stmt = pool
+        .variable(var)
+        .var_declaration(pool)
+        .unwrap_or_else(|| panic!("`{name}` has a declaring statement"));
+    let reachable = collector.declarations.contains(&stmt);
+    (stmt, reachable)
+}
+
+/// `hoist_switch_var_declarations_at_top_level` moves `float x = 2.0;` out of its case into a
+/// scoped block and leaves `x = 2.0;` in the case. The moved `VarDeclaration` is a new statement,
+/// so `x`'s `declaringElement` must follow it: Skia's pointer keeps naming the same object.
+// Port of: src/sksl/transform/SkSLHoistSwitchVarDeclarationsAtTopLevel.cpp#L35-L137 (chrome/m156)
+#[test]
+fn hoisted_declarations_stay_reachable_from_their_variable() {
+    let program = compile_unoptimized(
+        ProgramKind::Fragment,
+        concat!(
+            "half4 main(float2 p) {\n",
+            "    float total = 0.0;\n",
+            "    switch (int(p.x)) {\n",
+            "        case 0:\n",
+            "            float x = 2.0;\n",
+            "            total = x;\n",
+            "            break;\n",
+            "        default:\n",
+            "            break;\n",
+            "    }\n",
+            "    return half4(total);\n",
+            "}\n",
+        ),
+    );
+    let (stmt, reachable) = declaring_statement_of(&program, "x");
+    assert!(
+        reachable,
+        "the declaring statement of `x` is in the program"
+    );
+    let StatementKind::VarDeclaration(decl) = &program.pool.statement(stmt).kind else {
+        panic!("`x` is declared by a VarDeclaration statement");
+    };
+    assert_eq!(
+        decl.value, None,
+        "the hoisted declaration has no initial value"
+    );
+    assert!(
+        owned_text(&program).contains("x = 2.0;"),
+        "the initial value became an assignment: {}",
+        owned_text(&program)
+    );
+}
+
+/// `Inliner::inline_statement` wraps the enclosing statement of a call in a block. For `float x =
+/// helper(p.x);` that statement is `x`'s `VarDeclaration`, which moves to a new id, so `x`'s
+/// `declaringElement` must follow it.
+// Port of: src/sksl/SkSLInliner.cpp#L1162-L1163 (chrome/m156), the enclosing-statement move.
+#[test]
+fn inlined_call_keeps_the_declaration_of_its_enclosing_statement() {
+    let program = compile_optimized(
+        ProgramKind::Fragment,
+        concat!(
+            "float helper(float a) { return a * 2.0; }\n",
+            "half4 main(float2 p) {\n",
+            "    float x = helper(p.x);\n",
+            "    return half4(x);\n",
+            "}\n",
+        ),
+    );
+    assert!(
+        !owned_text(&program).contains("helper("),
+        "the call is inlined: {}",
+        owned_text(&program)
+    );
+    let (_, reachable) = declaring_statement_of(&program, "x");
+    assert!(
+        reachable,
+        "the declaring statement of `x` is in the program"
     );
 }
