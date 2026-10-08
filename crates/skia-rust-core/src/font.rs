@@ -7,10 +7,94 @@
 //! the typeface's glyphs are rasterized. A plain value type. Measuring and glyph lookup are
 //! added with the text engine.
 
-use crate::font_types::FontHinting;
+use crate::font_metrics::FontMetrics;
+use crate::font_priv::{count_text_elements, scale_font_metrics};
+use crate::font_types::{FontHinting, GlyphId, TextEncoding};
+use crate::matrix::Matrix;
 use crate::paint::{Paint, Style};
+use crate::path::Path;
+use crate::point::Point;
+use crate::read_buffer::ReadBuffer;
+use crate::rect::Rect;
 use crate::scalar::scalar;
+use crate::scaler_context::ScalerContextBuildFlags;
+use crate::strike::StrikeRef;
+use crate::strike_spec::{BulkGlyphMetrics, BulkGlyphMetricsAndPaths, StrikeSpec};
 use crate::typeface::Typeface;
+use crate::utf::Unichar;
+use crate::write_buffer::BinaryWriteBuffer;
+
+// The packed word of `SkFont_serial.cpp`: control bits, the size as a byte, flags, edging and
+// hinting.
+// Port of: src/core/SkFont_serial.cpp#L19-L36 (chrome/m156)
+const SIZE_IS_BYTE_BIT: u32 = 1 << 31;
+const HAS_SCALE_X_BIT: u32 = 1 << 30;
+const HAS_SKEW_X_BIT: u32 = 1 << 29;
+const HAS_TYPEFACE_BIT: u32 = 1 << 28;
+const SHIFT_FOR_SIZE: u32 = 16;
+const MASK_FOR_SIZE: u32 = 0xFF;
+const SHIFT_FOR_FLAGS: u32 = 4;
+const SHIFT_FOR_EDGING: u32 = 2;
+const MASK_FOR_EDGING: u32 = 0x3;
+const SHIFT_FOR_HINTING: u32 = 0;
+const MASK_FOR_HINTING: u32 = 0x3;
+/// `SkFont::kAllFlags`: every private flag bit.
+const ALL_FLAGS: u8 =
+    FORCE_AUTO_HINTING | EMBEDDED_BITMAPS | SUBPIXEL | LINEAR_METRICS | EMBOLDEN | BASELINE_SNAP;
+
+/// `scalar_is_byte`: whether a size is an integer in `0..=255`.
+// Port of: src/core/SkFont_serial.cpp#L38-L41 (chrome/m156)
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::float_cmp
+)] // C++ `(int)x` and `ix == x`
+fn scalar_is_byte(x: scalar) -> bool {
+    let ix = x as i32;
+    ix as scalar == x && (0..=0xFF).contains(&ix)
+}
+
+/// The bits of an edging, as `SkFont::Edging` is stored in the packed word.
+fn edging_bits(edging: Edging) -> u32 {
+    match edging {
+        Edging::Alias => 0,
+        Edging::AntiAlias => 1,
+        Edging::SubpixelAntiAlias => 2,
+    }
+}
+
+fn edging_from_bits(bits: u32) -> Edging {
+    match bits {
+        1 => Edging::AntiAlias,
+        2 => Edging::SubpixelAntiAlias,
+        _ => Edging::Alias,
+    }
+}
+
+/// The bits of a hinting, as `SkFontHinting` is stored in the packed word.
+fn hinting_bits(hinting: FontHinting) -> u32 {
+    match hinting {
+        FontHinting::None => 0,
+        FontHinting::Slight => 1,
+        FontHinting::Normal => 2,
+        FontHinting::Full => 3,
+    }
+}
+
+fn hinting_from_bits(bits: u32) -> FontHinting {
+    match bits {
+        1 => FontHinting::Slight,
+        2 => FontHinting::Normal,
+        3 => FontHinting::Full,
+        _ => FontHinting::None,
+    }
+}
+
+/// `scale_rect` of `SkFont.cpp`: each side times `s`.
+// Port of: src/core/SkFont.cpp#L224-L228 (chrome/m156)
+fn scale_rect(r: Rect, s: scalar) -> Rect {
+    Rect::from_ltrb(r.left * s, r.top * s, r.right * s, r.bottom * s)
+}
 
 /// `SkPaintDefaults_TextSize`: the default text size, in pixels.
 // Port of: src/core/SkPaintDefaults.h (SkPaintDefaults_TextSize = 12, chrome/m156)
@@ -337,6 +421,331 @@ impl Font {
         self.flags & bit != 0
     }
 
+    /// `SkFont::makeWithSize`: a copy of this font with another size.
+    // Port of: src/core/SkFont.cpp#L140-L146 (chrome/m156)
+    #[doc(alias = "makeWithSize")]
+    #[must_use]
+    pub fn make_with_size(&self, size: scalar) -> Self {
+        let mut font = self.clone();
+        font.set_size(size);
+        font
+    }
+
+    /// `SkFont::hasSomeAntiAliasing`.
+    // Port of: src/core/SkFont.cpp#L168-L172 (chrome/m156)
+    #[doc(alias = "hasSomeAntiAliasing")]
+    #[must_use]
+    pub fn has_some_anti_aliasing(&self) -> bool {
+        matches!(self.edging(), Edging::AntiAlias | Edging::SubpixelAntiAlias)
+    }
+
+    /// `SkFont::unicharToGlyph`.
+    // Port of: src/core/SkFont.cpp#L174-L176 (chrome/m156)
+    #[doc(alias = "unicharToGlyph")]
+    #[must_use]
+    pub fn unichar_to_glyph(&self, uni: Unichar) -> GlyphId {
+        self.typeface().unichar_to_glyph(uni)
+    }
+
+    /// `SkFont::unicharsToGlyphs`.
+    // Port of: src/core/SkFont.cpp#L178-L180 (chrome/m156)
+    #[doc(alias = "unicharsToGlyphs")]
+    pub fn unichars_to_glyphs(&self, unis: &[Unichar], glyphs: &mut [GlyphId]) {
+        self.typeface().unichars_to_glyphs(unis, glyphs);
+    }
+
+    /// `SkFont::textToGlyphs`: the glyphs of `text`, returning their count.
+    // Port of: src/core/SkFont.cpp#L182-L185 (chrome/m156)
+    #[doc(alias = "textToGlyphs")]
+    pub fn text_to_glyphs(
+        &self,
+        text: &[u8],
+        encoding: TextEncoding,
+        glyphs: &mut [GlyphId],
+    ) -> usize {
+        self.typeface().text_to_glyphs(text, encoding, glyphs)
+    }
+
+    /// `SkFont::countText`: the number of characters (or glyphs) in `text`.
+    // Port of: src/core/SkFontPriv.h (CountTextElements via SkFont::countText, chrome/m156)
+    #[doc(alias = "countText")]
+    #[must_use]
+    pub fn count_text(&self, text: &[u8], encoding: TextEncoding) -> usize {
+        count_text_elements(text, encoding)
+    }
+
+    /// `SkFont::measureText`: the advance of `text` and the bounding rectangle of its glyphs
+    /// (empty when there are no glyphs). `paint` gives the strike's effects.
+    ///
+    /// # Panics
+    ///
+    /// If `paint` has a path effect or mask filter, whose strike descriptor is not ported yet.
+    // Port of: src/core/SkFont.cpp#L187-L238 (chrome/m156)
+    #[doc(alias = "measureText")]
+    #[must_use]
+    pub fn measure_text(
+        &self,
+        text: &[u8],
+        encoding: TextEncoding,
+        paint: Option<&Paint>,
+    ) -> (scalar, Rect) {
+        let glyph_ids = self.glyph_ids_of(text, encoding);
+        if glyph_ids.is_empty() {
+            return (0.0, Rect::from_ltrb(0.0, 0.0, 0.0, 0.0));
+        }
+        let (spec, scale) = self.canonicalized_spec(paint);
+        let glyphs = BulkGlyphMetrics::new(&spec).glyphs(&glyph_ids);
+
+        let mut bounds = glyphs[0].rect();
+        let mut width = glyphs[0].advance_x();
+        for glyph in &glyphs[1..] {
+            let mut r = glyph.rect();
+            r.offset((width, 0.0));
+            bounds.join(r);
+            width += glyph.advance_x();
+        }
+        #[allow(clippy::float_cmp)] // C++ `if (strikeToSourceScale != 1)`
+        if scale != 1.0 {
+            width *= scale;
+            bounds = scale_rect(bounds, scale);
+        }
+        (width, bounds)
+    }
+
+    /// `SkFont::getWidthsBounds`: the advance and bounds of each glyph. An empty `widths` or
+    /// `bounds` is not written.
+    ///
+    /// # Panics
+    ///
+    /// If `paint` has a path effect or mask filter (see [`Font::measure_text`]).
+    // Port of: src/core/SkFont.cpp#L245-L266 (chrome/m156)
+    #[doc(alias = "getWidthsBounds")]
+    pub fn get_widths_bounds(
+        &self,
+        glyph_ids: &[GlyphId],
+        widths: &mut [scalar],
+        bounds: &mut [Rect],
+        paint: Option<&Paint>,
+    ) {
+        let (spec, scale) = self.canonicalized_spec(paint);
+        let glyphs = BulkGlyphMetrics::new(&spec).glyphs(glyph_ids);
+        if !bounds.is_empty() {
+            let n = bounds.len().min(glyphs.len());
+            for (bound, glyph) in bounds[..n].iter_mut().zip(&glyphs[..n]) {
+                *bound = scale_rect(glyph.rect(), scale);
+            }
+        }
+        if !widths.is_empty() {
+            let n = widths.len().min(glyphs.len());
+            for (width, glyph) in widths[..n].iter_mut().zip(&glyphs[..n]) {
+                *width = glyph.advance_x() * scale;
+            }
+        }
+    }
+
+    /// `SkFont::getPos`: the origin of each glyph when the glyphs are laid out from `origin`.
+    // Port of: src/core/SkFont.cpp#L268-L279 (chrome/m156)
+    #[doc(alias = "getPos")]
+    pub fn get_pos(&self, glyph_ids: &[GlyphId], pos: &mut [Point], origin: Point) {
+        let (spec, scale) = self.canonicalized_spec(None);
+        let glyphs = BulkGlyphMetrics::new(&spec).glyphs(glyph_ids);
+        let mut sum = origin;
+        let n = pos.len().min(glyphs.len());
+        for (position, glyph) in pos[..n].iter_mut().zip(&glyphs[..n]) {
+            *position = sum;
+            sum += glyph.advance_vector() * scale;
+        }
+    }
+
+    /// `SkFont::getXPos`: the x origin of each glyph when the glyphs are laid out from `origin`.
+    // Port of: src/core/SkFont.cpp#L281-L292 (chrome/m156)
+    #[doc(alias = "getXPos")]
+    pub fn get_x_pos(&self, glyph_ids: &[GlyphId], xpos: &mut [scalar], origin: scalar) {
+        let (spec, scale) = self.canonicalized_spec(None);
+        let glyphs = BulkGlyphMetrics::new(&spec).glyphs(glyph_ids);
+        let mut loc = origin;
+        let n = xpos.len().min(glyphs.len());
+        for (xposition, glyph) in xpos[..n].iter_mut().zip(&glyphs[..n]) {
+            *xposition = loc;
+            loc += glyph.advance_x() * scale;
+        }
+    }
+
+    /// `SkFont::getPaths`: calls `f` with each glyph's path and the matrix that scales it to this
+    /// font's size. A glyph without a path gives `None`.
+    ///
+    /// # Panics
+    ///
+    /// Never for a paint-free font; the spec has no effects.
+    // Port of: src/core/SkFont.cpp#L294-L307 (chrome/m156)
+    #[doc(alias = "getPaths")]
+    pub fn get_paths(&self, glyph_ids: &[GlyphId], mut f: impl FnMut(Option<&Path>, &Matrix)) {
+        let mut font = self.clone();
+        let scale = font.setup_for_as_paths(None);
+        let mx = Matrix::scale((scale, scale));
+        let spec = StrikeSpec::make_with_no_device(&font, None, ScalerContextBuildFlags::NONE)
+            .expect("a paint-free spec has no path effect or mask filter");
+        let glyphs = BulkGlyphMetricsAndPaths::new(&spec).glyphs(glyph_ids);
+        for glyph in &glyphs {
+            f(glyph.path(), &mx);
+        }
+    }
+
+    /// `SkFont::getPath`: the path of one glyph at this font's size, if it has one.
+    // Port of: src/core/SkFont.cpp#L309-L320 (chrome/m156)
+    #[doc(alias = "getPath")]
+    #[must_use]
+    pub fn get_path(&self, glyph_id: GlyphId) -> Option<Path> {
+        let mut result = None;
+        self.get_paths(&[glyph_id], |path, mx| {
+            if let Some(path) = path {
+                result = path.try_make_transform(mx);
+            }
+        });
+        result
+    }
+
+    /// `SkFont::getMetrics`: the font metrics at this font's size, and the line spacing
+    /// (`descent - ascent + leading`).
+    // Port of: src/core/SkFont.cpp#L322-L340 (chrome/m156)
+    #[doc(alias = "getMetrics")]
+    #[must_use]
+    pub fn metrics(&self) -> (scalar, FontMetrics) {
+        let (spec, scale) = self.canonicalized_spec(None);
+        let cache = spec.find_or_create_strike();
+        let mut metrics = *cache.font_metrics();
+        #[allow(clippy::float_cmp)] // C++ `if (strikeToSourceScale != 1)`
+        if scale != 1.0 {
+            scale_font_metrics(&mut metrics, scale);
+        }
+        (metrics.descent - metrics.ascent + metrics.leading, metrics)
+    }
+
+    /// `SkFont::makeStrikeRef`: the strike of this font, with the scale back to this font's size.
+    // Port of: src/core/SkFont.cpp#L240-L243 (chrome/m156)
+    #[doc(alias = "makeStrikeRef")]
+    #[must_use]
+    pub fn make_strike_ref(&self) -> StrikeRef {
+        let (spec, scale) = self.canonicalized_spec(None);
+        StrikeRef::new(spec.find_or_create_strike(), scale)
+    }
+
+    /// The glyph ids of `text`, as `SkAutoToGlyphs` makes them.
+    // Port of: src/core/SkFontPriv.h#L93-L106 (chrome/m156), SkAutoToGlyphs
+    fn glyph_ids_of(&self, text: &[u8], encoding: TextEncoding) -> Vec<GlyphId> {
+        if encoding == TextEncoding::GlyphId || text.is_empty() {
+            return text
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|&[a, b]| GlyphId::from_ne_bytes([a, b]))
+                .collect();
+        }
+        let mut glyphs = vec![0; self.count_text(text, encoding)];
+        // The buffer holds exactly the count of the text, so every glyph is written.
+        let _ = self.text_to_glyphs(text, encoding, &mut glyphs);
+        glyphs
+    }
+
+    /// The canonicalized strike spec of this font and `paint`.
+    ///
+    /// # Panics
+    ///
+    /// If `paint` has a path effect or mask filter, whose strike descriptor is not ported yet.
+    fn canonicalized_spec(&self, paint: Option<&Paint>) -> (StrikeSpec, scalar) {
+        StrikeSpec::make_canonicalized(self, paint).expect(
+            "a path effect or mask filter needs its descriptor entry, which is not ported yet",
+        )
+    }
+
+    /// `SkFontPriv::Flatten`: writes the font. The packed word holds the flags, edging and
+    /// hinting, and says whether the size, scale, skew and typeface follow.
+    // Port of: src/core/SkFont_serial.cpp#L48-L86 (chrome/m156)
+    #[doc(alias = "Flatten")]
+    pub fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        let mut packed: u32 = 0;
+        packed |= u32::from(self.flags) << SHIFT_FOR_FLAGS;
+        packed |= edging_bits(self.edging) << SHIFT_FOR_EDGING;
+        packed |= hinting_bits(self.hinting) << SHIFT_FOR_HINTING;
+        if scalar_is_byte(self.size) {
+            packed |= SIZE_IS_BYTE_BIT;
+            // `(int)fSize`: the size is a byte here, checked by `scalar_is_byte`.
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let size_byte = self.size as u32;
+            packed |= size_byte << SHIFT_FOR_SIZE;
+        }
+        // Exact comparisons, as `SkFont_serial.cpp` makes them.
+        #[allow(clippy::float_cmp)]
+        if self.scale_x != 1.0 {
+            packed |= HAS_SCALE_X_BIT;
+        }
+        #[allow(clippy::float_cmp)]
+        if self.skew_x != 0.0 {
+            packed |= HAS_SKEW_X_BIT;
+        }
+        // A font always has a typeface (the empty one at least), so the bit is always set.
+        packed |= HAS_TYPEFACE_BIT;
+
+        buffer.write_uint(packed);
+        if packed & SIZE_IS_BYTE_BIT == 0 {
+            buffer.write_scalar(self.size);
+        }
+        if packed & HAS_SCALE_X_BIT != 0 {
+            buffer.write_scalar(self.scale_x);
+        }
+        if packed & HAS_SKEW_X_BIT != 0 {
+            buffer.write_scalar(self.skew_x);
+        }
+        if packed & HAS_TYPEFACE_BIT != 0 {
+            buffer.write_typeface(Some(&self.typeface));
+        }
+    }
+
+    /// `SkFontPriv::Unflatten`: reads a font written by [`Font::flatten`]. Unknown flag bits are
+    /// dropped, and out-of-range edging or hinting become the defaults. Returns whether the
+    /// buffer is still valid.
+    // Port of: src/core/SkFont_serial.cpp#L88-L123 (chrome/m156)
+    #[doc(alias = "Unflatten")]
+    pub fn unflatten(&mut self, buffer: &mut ReadBuffer<'_>) -> bool {
+        let packed = buffer.read_uint();
+        self.size = if packed & SIZE_IS_BYTE_BIT != 0 {
+            // A byte, so exact in a scalar.
+            #[allow(clippy::cast_precision_loss)]
+            {
+                ((packed >> SHIFT_FOR_SIZE) & MASK_FOR_SIZE) as scalar
+            }
+        } else {
+            buffer.read_scalar()
+        };
+        if packed & HAS_SCALE_X_BIT != 0 {
+            self.scale_x = buffer.read_scalar();
+        }
+        if packed & HAS_SKEW_X_BIT != 0 {
+            self.skew_x = buffer.read_scalar();
+        }
+        if packed & HAS_TYPEFACE_BIT != 0 {
+            // `setTypeface(nullptr)` makes the empty typeface.
+            self.typeface = buffer.read_typeface().unwrap_or_else(Typeface::empty);
+        }
+        // Keep only the flag bits that exist (`& kAllFlags`).
+        // The mask keeps the value within the 8 bits of `flags`.
+        #[allow(clippy::cast_possible_truncation)]
+        {
+            self.flags = ((packed >> SHIFT_FOR_FLAGS) & u32::from(ALL_FLAGS)) as u8;
+        }
+        let mut edging = (packed >> SHIFT_FOR_EDGING) & MASK_FOR_EDGING;
+        if edging > 2 {
+            edging = 0;
+        }
+        self.edging = edging_from_bits(edging);
+        let mut hinting = (packed >> SHIFT_FOR_HINTING) & MASK_FOR_HINTING;
+        if hinting > 3 {
+            hinting = 0;
+        }
+        self.hinting = hinting_from_bits(hinting);
+        buffer.is_valid()
+    }
+
     /// Sets or clears one private flag bit (`set_clear_mask`).
     // Port of: src/core/SkFont.cpp#L100-L102 (chrome/m156)
     fn set_flag(&mut self, bit: u8, value: bool) {
@@ -345,5 +754,53 @@ impl Font {
         } else {
             self.flags &= !bit;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::write_buffer::BinaryWriteBuffer;
+
+    /// `FontTest::Font_flatten`'s round trip, for the empty typeface (the test proper uses a
+    /// user typeface, which arrives with T17 and typeface serialization with T16).
+    #[test]
+    fn flatten_and_unflatten_round_trip_without_a_typeface_table() {
+        let mut font = Font::from_size(Typeface::empty(), 10.0);
+        font.set_scale_x(5.0);
+        font.set_skew_x(-5.0);
+        font.set_edging(Edging::SubpixelAntiAlias);
+        font.set_hinting(FontHinting::Full);
+        font.set_subpixel(true);
+        font.set_baseline_snap(false);
+
+        let mut buffer = BinaryWriteBuffer::new();
+        font.flatten(&mut buffer);
+        let mut data = vec![0; buffer.bytes_written()];
+        buffer.write_to_memory(&mut data);
+
+        let mut read = Font::default();
+        let mut reader = ReadBuffer::new(&data);
+        assert!(read.unflatten(&mut reader));
+        assert_eq!(read.size(), 10.0);
+        assert_eq!(read.scale_x(), 5.0);
+        assert_eq!(read.skew_x(), -5.0);
+        assert_eq!(read.edging(), Edging::SubpixelAntiAlias);
+        assert_eq!(read.hinting(), FontHinting::Full);
+        assert!(read.is_subpixel());
+        assert!(!read.is_baseline_snap());
+        // Without the typeface table the typeface reads back as the empty one.
+        assert_eq!(read.typeface().count_glyphs(), 0);
+    }
+
+    #[test]
+    fn measuring_empty_glyphs_gives_zero_advance() {
+        let font = Font::from_typeface(Some(Typeface::empty()));
+        // The empty typeface maps every character to glyph 0, which has no advance.
+        assert_eq!(
+            font.measure_text(b"ab", TextEncoding::UTF8, None),
+            (0.0, Rect::from_ltrb(0.0, 0.0, 0.0, 0.0))
+        );
+        assert_eq!(font.measure_text(b"", TextEncoding::UTF8, None).0, 0.0);
     }
 }

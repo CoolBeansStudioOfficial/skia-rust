@@ -63,7 +63,11 @@ pub mod font;
 pub mod font_arguments;
 pub mod font_descriptor;
 pub mod font_metrics;
+#[doc(hidden)]
+pub mod font_metrics_priv;
 pub mod font_parameters;
+#[doc(hidden)]
+pub mod font_priv;
 pub mod font_style;
 pub mod font_types;
 pub mod front_buffered_stream;

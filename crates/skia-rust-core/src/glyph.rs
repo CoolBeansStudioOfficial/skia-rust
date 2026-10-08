@@ -477,6 +477,13 @@ impl Glyph {
         }
     }
 
+    /// `SkGlyph::advanceVector`: the advance as a vector.
+    // Port of: src/core/SkGlyph.h#L436-L437 (chrome/m156)
+    #[must_use]
+    pub fn advance_vector(&self) -> Point {
+        Point::new(self.advance_x, self.advance_y)
+    }
+
     /// `SkGlyph::advanceX`.
     // Port of: src/core/SkGlyph.h#L435 (chrome/m156)
     #[must_use]
