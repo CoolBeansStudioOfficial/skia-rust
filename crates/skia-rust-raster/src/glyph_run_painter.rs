@@ -4,10 +4,9 @@
 // Ported from Skia: src/core/SkGlyphRunPainter.{h,cpp} (chrome/m156), the CPU painter
 // `skcpu::GlyphRunListPainter`.
 //
-// Not ported yet, and reached only by glyphs that wave 1 never draws: ARGB32 (color) glyph masks
-// and perspective leftovers that are color, which need `Draw::drawSprite` and `drawBitmap`
-// (T20), and glyph drawables, which need `SkDrawable::draw` on a canvas (T17/T20). Those paths
-// panic with the reason rather than drawing nothing.
+// Not ported yet, and reached only by glyphs that wave 1 never draws: ARGB32 (color) glyph masks,
+// which need `Draw::drawSprite` (T20), and glyph drawables, which need `SkDrawable::draw` on a
+// canvas (T17). Those glyphs are skipped with a TODO and draw nothing; they never panic.
 
 //! The CPU glyph painter: chooses, for each run, whether its glyphs draw as paths, as masks
 //! at device positions, or as scaled masks, and hands the accepted glyphs to the device.
@@ -19,7 +18,6 @@ use skia_rust_core::glyph::{
     ActionType, Glyph, GlyphAction, GlyphDigest, GlyphPositionRoundingSpec,
 };
 use skia_rust_core::glyph_run::GlyphRunList;
-use skia_rust_core::mask::MaskFormat;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
 use skia_rust_core::paint::{Paint, Style};
@@ -81,8 +79,8 @@ impl GlyphRunListPainter {
     ///
     /// # Panics
     ///
-    /// On the color glyph and drawable branches, which are not ported (see the module docs), and
-    /// when the paint has a path effect or mask filter (its strike descriptor is not ported).
+    /// When the paint has a path effect or mask filter (its strike descriptor is not ported).
+    /// Color glyphs and glyph drawables are skipped (see the module docs).
     // Port of: src/core/SkGlyphRunPainter.cpp#L219-L423 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     pub fn draw_for_bitmap_device(
@@ -157,12 +155,11 @@ impl GlyphRunListPainter {
                     // Glyph drawables are drawn with `SkDrawable::draw(canvas)`, which is not
                     // ported yet. A glyph that has one is a glyph the wave-1 typefaces never make.
                     let mut guard = strike.lock();
-                    let (accepted, rejected) =
+                    // TODO(text-T17): accepted glyph drawables are drawn with `SkDrawable::draw`
+                    // into a saveLayer of the canvas, which the device painter cannot reach yet.
+                    // Until then they draw nothing.
+                    let (_drawables, rejected) =
                         prepare_for_drawing(&mut guard, ActionType::Drawable, &source);
-                    assert!(
-                        accepted.is_empty(),
-                        "glyph drawables need SkDrawable::draw on a canvas, which is not ported yet"
-                    );
                     source = rejected;
                 }
             }
@@ -242,13 +239,10 @@ impl GlyphRunListPainter {
                     &source,
                 );
                 for (digest, _src_pos) in accepted {
-                    let mask = guard.glyph(digest).mask();
-                    // Only ARGB32 glyphs are drawn as bitmaps; the A8 and LCD glyphs of this
-                    // branch draw nothing (`if (mask.fFormat != kARGB32_Format) continue`).
-                    assert!(
-                        mask.format != MaskFormat::Argb32,
-                        "color glyph bitmaps need Draw::drawSprite, which is not ported yet"
-                    );
+                    let _mask = guard.glyph(digest).mask();
+                    // TODO(text-T20): the ARGB32 glyphs of this branch are drawn with
+                    // `Draw::drawSprite`, which is not ported. Until then they draw nothing, as
+                    // the A8 and LCD glyphs here do (`if (mask.fFormat != kARGB32_Format) continue`).
                 }
             }
         }
