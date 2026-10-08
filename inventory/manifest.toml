@@ -18534,8 +18534,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/cubicpaths.cpp#L544-L544"
 module = "skcms"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "15b7211964d56eb5a357704054b6bdb989423e638fd990007e64d79375d08b42"
 
 [[test]]
@@ -18544,8 +18543,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/cubicpaths.cpp#L542-L542"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "047ad45479ddc3bfc965691fb22fa2dee9ded81afab217238f9749b823ba629b"
 
 [[test]]
@@ -18936,7 +18934,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawglyphs.cpp#L85-L85"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "41bc11d94f04a8e22e6f97f52ac02ccb7f8ba3ac16100b8808ca60f63a072c3a"
 
 [[test]]
@@ -19997,7 +19995,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L150-L152"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "766c17a8ee59b3b5d53e25c81bbf296eec7c24fb9ee5667b3c5d16df4a96cfe9"
 
 [[test]]
@@ -20006,7 +20004,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L162-L164"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ffb7bb0ba5d3598156423d9d62fc2e5dc4b54e25e4ffb8f44abed01c102dcc29"
 
 [[test]]
@@ -20015,7 +20013,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L156-L158"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9014738cb78364994d6a3b2929ea8b2f050f6e3a2354d64cdf3ea76c6b0ff21a"
 
 [[test]]
@@ -20024,7 +20022,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L153-L155"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5382083f0b5a365260e48e0fd15ebe471fcb90866cfbc5ca88713f3a7875eaad"
 
 [[test]]
@@ -20033,7 +20031,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L165-L167"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e9daa4ebe2c9f12551c1a652712640caf84feaee57fa00e7aec2fe235bfeaa4"
 
 [[test]]
@@ -20042,7 +20040,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L159-L161"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e9eb632b86dbabd5cd28b27b0898eacfff3a3351dda0f5f5020aedc74630a1a5"
 
 [[test]]
@@ -21554,7 +21552,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L138-L138"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0b0e153c9b2e5a5c58a6e81adfab06516c505bccb2d45a69dea7657e08171d08"
 
 [[test]]
@@ -21563,7 +21561,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L139-L139"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e0623d2b0e4d20c0d7c3c2a319a34f6d883ed7efbd0785a31f8eb6b0c1e2f053"
 
 [[test]]
@@ -21572,7 +21570,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L140-L140"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fb97bde9af7bc24719c3baf751a14507e0eacd7bb94c3ac5686e757a2f7105ad"
 
 [[test]]
@@ -21590,8 +21588,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/linepaths.cpp#L151-L153"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "2a17e7adbcd5137bb814f152b13595f9e5763732141397a21d8f91b4f7019325"
 
 [[test]]
@@ -21600,8 +21597,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/linepaths.cpp#L148-L150"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "de582ea9d10419413fd86aeb594575fab4c57b2468906bb380b2ea4de3830632"
 
 [[test]]
@@ -22871,8 +22867,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/quadpaths.cpp#L289-L289"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "08d509ab6136059f36e5e4e297204cab30b8a106609047e05fdd8dcd4abecb37"
 
 [[test]]
@@ -22881,8 +22876,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/quadpaths.cpp#L287-L287"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "90f1e4e99fef3459d831870df726233b494c196dffa1d2e93cba8e336d0b18ac"
 
 [[test]]
@@ -24897,7 +24891,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L168-L168"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "462544cc1f8e70690bb06b28f4c176575e2a0e8b7fe87c22f5d518ce53102798"
 
 [[test]]
@@ -24906,7 +24900,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L170-L170"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a3cd862b0e853cd57ba4b90a52a59fba2cec9df347bd6d65568e5209d5df440b"
 
 [[test]]
@@ -24915,7 +24909,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L169-L169"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "51e77facc051d39a917655d69200576a248326a695120533cbe743c9793966f9"
 
 [[test]]
@@ -24924,7 +24918,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L171-L171"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "351136493974ea19251816208f7fddc081daeb962f7fdc8cf3ec378705bee267"
 
 [[test]]
