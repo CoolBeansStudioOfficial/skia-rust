@@ -6,3 +6,6 @@
 //! Code generators: the Raster Pipeline back end (`src/sksl/codegen/SkSLRasterPipeline*`).
 
 pub mod rp;
+
+#[cfg(feature = "wgsl")]
+pub mod wgsl;

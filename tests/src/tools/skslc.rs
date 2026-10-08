@@ -17,6 +17,7 @@
 use std::fmt;
 
 use skia_rust_sksl::codegen::rp::make_raster_pipeline_program;
+use skia_rust_sksl::codegen::wgsl::{IncludeSyntheticCode, PrettyPrint, to_wgsl};
 use skia_rust_sksl::compiler::Compiler;
 use skia_rust_sksl::defines::DEFAULT_INLINE_THRESHOLD;
 use skia_rust_sksl::flavor::Flavor;
@@ -24,6 +25,7 @@ use skia_rust_sksl::ir::Program;
 use skia_rust_sksl::position::Position;
 use skia_rust_sksl::program_settings::{ProgramKind as CompilerKind, ProgramSettings, Version};
 use skia_rust_sksl::tracing::DebugTracePriv;
+use skia_rust_sksl::util::{ShaderCaps, ShaderCapsFactory};
 
 /// `SkSL::ProgramKind`, for the kinds `skslc` accepts (`Main.cpp#L546-L566`).
 #[doc(alias = "SkSL::ProgramKind")]
@@ -472,9 +474,13 @@ pub fn skslc(
             if let Some(output) = write_skrp(&mut compiler, &mut program, pragma.debug_trace) {
                 return Ok(output);
             }
+        } else if format == OutputFormat::Wgsl {
+            if let Some(output) = write_wgsl(&mut compiler, &mut program, pragma_caps(&pragma)) {
+                return Ok(output);
+            }
         } else {
             // The program compiled. The output itself is written by a code generator, which is
-            // not ported (the pipeline-stage, WGSL and GLSL back ends).
+            // not ported (the pipeline-stage and GLSL back ends).
             return Err(SkslcError::NotPorted(
                 "the code generator for this output format (docs/design/sksl.md S24-S26)",
             ));
@@ -515,6 +521,36 @@ fn write_skrp(
         return None;
     };
     Some(raster_prog.dump_with(true, true).into_bytes())
+}
+
+/// The shader caps the pragma selected (`ShaderCapsFactory::Standalone()` without one). Only the
+/// factories that differ for the in-scope outputs are modelled: `Default`.
+fn pragma_caps(pragma: &PragmaSettings) -> &'static ShaderCaps {
+    match pragma.caps {
+        Some("Default") => ShaderCapsFactory::default_caps(),
+        _ => ShaderCapsFactory::standalone(),
+    }
+}
+
+/// The `.wgsl` writer of `skslc`: `ToWGSL(program, caps, out, PrettyPrint::kYes,
+/// IncludeSyntheticCode::kYes, ValidateWGSL)`. `None` when it reports an error (the caller then
+/// writes the compiler's error text). Skia's validator is Tint, which is not available, so no
+/// validator runs here.
+// Port of: tools/skslc/Main.cpp#L694-L706 (chrome/m156)
+fn write_wgsl(
+    compiler: &mut Compiler,
+    program: &mut Program,
+    caps: &ShaderCaps,
+) -> Option<Vec<u8>> {
+    to_wgsl(
+        compiler.context_mut(),
+        program,
+        caps,
+        PrettyPrint::Yes,
+        IncludeSyntheticCode::Yes,
+        None,
+    )
+    .map(String::into_bytes)
 }
 
 /// The bytes `skslc` writes when it fails with `error_text`.
@@ -626,12 +662,12 @@ mod tests {
             skslc("x.sksl", b"/*#pragma settings Nope*/", "x.skrp", false).unwrap(),
             b"### Compilation failed:\n\nerror: code has no entrypoint\n1 error\n"
         );
-        // The other generators are not ported.
+        // The GLSL generator is out of scope.
         assert!(matches!(
             skslc(
                 "x.sksl",
                 b"half4 main(float2 p) { return half4(1); }",
-                "x.wgsl",
+                "x.glsl",
                 true
             ),
             Err(SkslcError::NotPorted(_))
