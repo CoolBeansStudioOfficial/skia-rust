@@ -13,8 +13,9 @@
 
 use skia_rust_core::point::Point;
 
-use crate::op_angle::AngleId;
-use crate::op_state::{ContourId, MAX_WINDING_TRIES, OpState, PtTId, SK_MIN_S32, SegId, SpanId};
+use crate::op_state::{
+    AngleId, ContourId, MAX_WINDING_TRIES, OpState, PtTId, SK_MIN_S32, SegId, SpanId,
+};
 use crate::types::{between, std_min, std_max, zero_or_one};
 
 /// `SkOpPtT`: a point on a segment, at parameter `t`, linked into a ring of points that
@@ -442,6 +443,17 @@ impl OpState {
             return (false, s_out, e_out);
         }
         (s_out.is_some() && e_out.is_some(), s_out, e_out)
+    }
+
+    /// `SkOpSpanBase::starter(end)`: the span with the smaller `t`.
+    // Port of: src/pathops/SkOpSpan.h#L124-L131 (chrome/m156)
+    #[must_use]
+    pub(crate) fn span_starter(&self, s: SpanId, end: SpanId) -> SpanId {
+        if self.span_t(s) < self.span_t(end) {
+            s
+        } else {
+            end
+        }
     }
 
     /// `SkOpSpanBase::pt()`: the point cache of the span's own point record.

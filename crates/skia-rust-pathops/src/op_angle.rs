@@ -1238,6 +1238,144 @@ impl OpState {
     }
 }
 
+impl OpState {
+    /// `SkOpAngle::previous()`: the angle before this one in its circular list.
+    // Port of: src/pathops/SkOpAngle.cpp (SkOpAngle::previous) (chrome/m156)
+    #[must_use]
+    pub(crate) fn angle_previous(&self, a: AngleId) -> AngleId {
+        let mut last = self.angles[a.0].next.expect("angle has next");
+        loop {
+            let next = self.angles[last.0].next.expect("angle has next");
+            if next == a {
+                return last;
+            }
+            last = next;
+        }
+    }
+
+    /// `SkOpAngle::loopCount()`: the number of angles in this one's circular list.
+    // Port of: src/pathops/SkOpAngle.cpp (SkOpAngle::loopCount) (chrome/m156)
+    #[must_use]
+    pub(crate) fn angle_loop_count(&self, a: AngleId) -> i32 {
+        let mut count = 0;
+        let mut next = Some(a);
+        loop {
+            next = self.angles[next.expect("angle").0].next;
+            count += 1;
+            if next.is_none() || next == Some(a) {
+                break;
+            }
+        }
+        count
+    }
+
+    /// `SkOpAngle::loopContains(angle)`: some angle of this loop covers `angle`'s span.
+    // Port of: src/pathops/SkOpAngle.cpp (SkOpAngle::loopContains) (chrome/m156)
+    #[must_use]
+    pub(crate) fn angle_loop_contains(&self, a: AngleId, angle: AngleId) -> bool {
+        if self.angles[a.0].next.is_none() {
+            return false;
+        }
+        let first = a;
+        let mut lp = a;
+        let t_segment = self.span_segment(self.angles[angle.0].start);
+        let t_start = self.span_t(self.angles[angle.0].start);
+        let t_end = self.span_t(self.angles[angle.0].end);
+        loop {
+            let l_segment = self.span_segment(self.angles[lp.0].start);
+            if l_segment == t_segment {
+                let l_start = self.span_t(self.angles[lp.0].start);
+                if l_start == t_end {
+                    let l_end = self.span_t(self.angles[lp.0].end);
+                    if l_end == t_start {
+                        return true;
+                    }
+                }
+            }
+            lp = self.angles[lp.0].next.expect("angle has next");
+            if lp == first {
+                break;
+            }
+        }
+        false
+    }
+
+    /// `SkOpAngle::merge(angle)`: moves the angles of `angle`'s loop into this loop.
+    // Port of: src/pathops/SkOpAngle.cpp (SkOpAngle::merge) (chrome/m156)
+    fn angle_merge(&mut self, this: AngleId, angle: AngleId) -> bool {
+        let mut working = angle;
+        loop {
+            if this == working {
+                return false;
+            }
+            working = self.angles[working.0].next.expect("angle has next");
+            if working == angle {
+                break;
+            }
+        }
+        loop {
+            let next = self.angles[working.0].next.expect("angle has next");
+            self.angles[working.0].next = None;
+            self.angle_insert(this, working);
+            working = next;
+            if working == angle {
+                break;
+            }
+        }
+        true
+    }
+
+    /// `SkOpAngle::insert(angle)`: places `angle` in this angle's circular list, in order.
+    /// `false` is Skia's `FAIL_IF`.
+    // Port of: src/pathops/SkOpAngle.cpp (SkOpAngle::insert) (chrome/m156)
+    pub(crate) fn angle_insert(&mut self, this: AngleId, angle: AngleId) -> bool {
+        if self.angles[angle.0].next.is_some() {
+            if self.angle_loop_count(this) >= self.angle_loop_count(angle) {
+                let _ = self.angle_merge(this, angle);
+            } else if self.angles[this.0].next.is_some() {
+                let _ = self.angle_merge(angle, this);
+            } else {
+                let _ = self.angle_insert(angle, this);
+            }
+            return true;
+        }
+        let singleton = self.angles[this.0].next.is_none();
+        if singleton {
+            self.angles[this.0].next = Some(this);
+        }
+        let mut next = self.angles[this.0].next.expect("angle has next");
+        if self.angles[next.0].next == Some(this) {
+            if singleton || self.angle_after(angle, this) {
+                self.angles[this.0].next = Some(angle);
+                self.angles[angle.0].next = Some(next);
+            } else {
+                self.angles[next.0].next = Some(angle);
+                self.angles[angle.0].next = Some(this);
+            }
+            return true;
+        }
+        let mut last = this;
+        let mut flip_ambiguity = false;
+        loop {
+            let tangents = self.angles[angle.0].tangents_ambiguous;
+            if self.angle_after(angle, last) ^ (tangents && flip_ambiguity) {
+                self.angles[last.0].next = Some(angle);
+                self.angles[angle.0].next = Some(next);
+                break;
+            }
+            last = next;
+            if last == this {
+                if flip_ambiguity {
+                    return false;
+                }
+                flip_ambiguity = true;
+            }
+            next = self.angles[next.0].next.expect("angle has next");
+        }
+        true
+    }
+}
+
 /// `sk_ieee_double_divide(a, b)`: IEEE division, which never traps on zero.
 // Port of: src/base/SkFloatingPoint.h (sk_ieee_double_divide) (chrome/m156)
 #[must_use]
