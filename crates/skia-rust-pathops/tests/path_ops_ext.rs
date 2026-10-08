@@ -13,8 +13,11 @@ use skia_rust_pathops::{PathOpsExt, as_winding, op, simplify, tight_bounds};
 fn path_ops_ext_forwards_to_free_functions() {
     let one = Path::rect(Rect::new(0.0, 0.0, 6.0, 6.0), PathDirection::CW);
     let two = Path::rect(Rect::new(3.0, 3.0, 9.0, 9.0), PathDirection::CW);
-    assert!(one.op(&two, PathOp::Intersect) == op(&one, &two, PathOp::Intersect));
-    assert!(one.simplify() == simplify(&one));
-    assert!(one.tight_bounds() == tight_bounds(&one));
-    assert!(one.as_winding() == as_winding(&one));
+    assert_eq!(
+        one.op(&two, PathOp::Intersect),
+        op(&one, &two, PathOp::Intersect)
+    );
+    assert_eq!(one.simplify(), simplify(&one));
+    assert_eq!(one.tight_bounds(), tight_bounds(&one));
+    assert_eq!(one.as_winding(), as_winding(&one));
 }
