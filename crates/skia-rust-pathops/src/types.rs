@@ -649,11 +649,12 @@ pub fn more_roughly_equal(x: f64, y: f64) -> bool {
 #[must_use]
 pub fn points_to_verb(points: i32) -> Verb {
     let verb = (1 << points) >> 1;
+    // `SkPath::Verb` values: 0 move, 1 line, 2 quad, 3 conic, 4 cubic. Three points give cubic.
     match verb {
         0 => Verb::Move,
         1 => Verb::Line,
         2 => Verb::Quad,
-        3 => Verb::Cubic,
+        4 => Verb::Cubic,
         _ => unreachable!("should not be here"),
     }
 }

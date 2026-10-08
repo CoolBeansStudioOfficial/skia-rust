@@ -54,8 +54,8 @@ pub(crate) struct Contour {
 #[doc(alias = "SkOpContourBuilder")]
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ContourBuilder {
-    /// `SkOpContour* fContour`.
-    pub(crate) contour: ContourId,
+    /// `SkOpContour* fContour`: null between closed contours.
+    pub(crate) contour: Option<ContourId>,
     /// `SkPoint fLastLine[2]`.
     last_line: [Point; 2],
     /// `bool fLastIsLine`.
@@ -422,7 +422,7 @@ impl OpState {
 impl ContourBuilder {
     /// `SkOpContourBuilder(SkOpContour* contour)`.
     #[must_use]
-    pub(crate) fn new(contour: ContourId) -> Self {
+    pub(crate) fn new(contour: Option<ContourId>) -> Self {
         Self {
             contour,
             last_line: [Point::default(); 2],
@@ -469,21 +469,21 @@ impl ContourBuilder {
     // Port of: src/pathops/SkOpContour.cpp#L24-L28 (chrome/m156)
     pub(crate) fn add_conic(&mut self, state: &mut OpState, pts: [Point; 3], weight: f32) {
         self.flush(state);
-        state.contour_add_conic(self.contour, pts, weight);
+        state.contour_add_conic(self.contour_id(), pts, weight);
     }
 
     /// `SkOpContourBuilder::addCubic(pts)`.
     // Port of: src/pathops/SkOpContour.cpp#L30-L34 (chrome/m156)
     pub(crate) fn add_cubic(&mut self, state: &mut OpState, pts: [Point; 4]) {
         self.flush(state);
-        state.contour_add_cubic(self.contour, pts);
+        state.contour_add_cubic(self.contour_id(), pts);
     }
 
     /// `SkOpContourBuilder::addQuad(pts)`.
     // Port of: src/pathops/SkOpContour.cpp#L86-L90 (chrome/m156)
     pub(crate) fn add_quad(&mut self, state: &mut OpState, pts: [Point; 3]) {
         self.flush(state);
-        state.contour_add_quad(self.contour, pts);
+        state.contour_add_quad(self.contour_id(), pts);
     }
 
     /// `SkOpContourBuilder::flush()`.
@@ -492,18 +492,23 @@ impl ContourBuilder {
         if !self.last_is_line {
             return;
         }
-        state.contour_add_line(self.contour, self.last_line);
+        state.contour_add_line(self.contour_id(), self.last_line);
         self.last_is_line = false;
     }
 
     /// `SkOpContourBuilder::contour()`.
     #[must_use]
-    pub(crate) fn contour(&self) -> ContourId {
+    pub(crate) fn contour(&self) -> Option<ContourId> {
         self.contour
     }
 
+    /// `fContour` for the calls that Skia makes without a null check.
+    fn contour_id(&self) -> ContourId {
+        self.contour.expect("SkOpContourBuilder adds curves only with a current contour")
+    }
+
     /// `SkOpContourBuilder::setContour(contour)`: flushes, then switches contours.
-    pub(crate) fn set_contour(&mut self, state: &mut OpState, contour: ContourId) {
+    pub(crate) fn set_contour(&mut self, state: &mut OpState, contour: Option<ContourId>) {
         self.flush(state);
         self.contour = contour;
     }

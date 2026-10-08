@@ -409,7 +409,7 @@ pub(crate) fn curve_d_intersect_ray(verb: Verb, curve: &DCurveBuf, ray: &DLine, 
 
 /// `SkDQuad::set(pts)`.
 #[must_use]
-fn quad_from(pts: &[Point]) -> DQuad {
+pub(crate) fn quad_from(pts: &[Point]) -> DQuad {
     let mut quad = DQuad::default();
     quad.set([pts[0], pts[1], pts[2]]);
     quad
@@ -417,7 +417,7 @@ fn quad_from(pts: &[Point]) -> DQuad {
 
 /// `SkDConic::set(pts, weight)`.
 #[must_use]
-fn conic_from(pts: &[Point], weight: f32) -> DConic {
+pub(crate) fn conic_from(pts: &[Point], weight: f32) -> DConic {
     let mut conic = DConic::default();
     conic.set([pts[0], pts[1], pts[2]], weight);
     conic
@@ -425,7 +425,7 @@ fn conic_from(pts: &[Point], weight: f32) -> DConic {
 
 /// `SkDCubic::set(pts)`.
 #[must_use]
-fn cubic_from(pts: &[Point]) -> DCubic {
+pub(crate) fn cubic_from(pts: &[Point]) -> DCubic {
     let mut cubic = DCubic::default();
     cubic.set([pts[0], pts[1], pts[2], pts[3]]);
     cubic

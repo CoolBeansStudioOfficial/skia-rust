@@ -101,12 +101,12 @@ fn verb_rank(verb: Verb) -> u8 {
 
 impl OpState {
     /// `SkOpPtT::fT`.
-    fn ptt_t(&self, ptt: PtTId) -> f64 {
+    pub(crate) fn ptt_t(&self, ptt: PtTId) -> f64 {
         self.ptts[ptt.0].t
     }
 
     /// `SkOpPtT::fPt`.
-    fn ptt_pt(&self, ptt: PtTId) -> Point {
+    pub(crate) fn ptt_pt(&self, ptt: PtTId) -> Point {
         self.ptts[ptt.0].pt
     }
 
@@ -2050,6 +2050,16 @@ impl OpState {
             }
         }
         true
+    }
+
+    /// `SkOpCoincidence::correctEnds()` on `set`.
+    // Port of: src/pathops/SkOpCoincidence.cpp#L575-L583 (chrome/m156)
+    pub(crate) fn cs_correct_ends(&mut self, set: CoinSetId) {
+        let mut cur = self.coin_sets[set.0].head;
+        while let Some(c) = cur {
+            self.rec_correct_ends(c);
+            cur = self.rec_next(c);
+        }
     }
 
     // ----- SkOpGlobalState's coincidence pointer -----

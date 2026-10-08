@@ -153,6 +153,7 @@ pub mod path_ops_drect_test;
 #[cfg(test)]
 pub mod path_ops_dvector_test;
 #[cfg(test)]
+pub mod path_ops_extended_test;
 pub mod path_ops_line_intersection_test;
 #[cfg(test)]
 pub mod path_ops_line_parameters_test;
@@ -165,6 +166,7 @@ pub mod path_ops_quad_line_intersection_test;
 #[cfg(test)]
 pub mod path_ops_quad_reduce_order_test;
 #[cfg(test)]
+pub mod path_ops_simplify_test;
 pub mod path_ops_test_common;
 #[cfg(test)]
 pub mod path_ops_types_test;
