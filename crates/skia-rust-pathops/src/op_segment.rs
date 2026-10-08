@@ -14,14 +14,13 @@
 use skia_rust_core::path::Verb;
 use skia_rust_core::point::Point;
 
-use crate::op_angle::{AngleId, IncludeType};
-use crate::op_contour::ContourId;
+use crate::op_angle::IncludeType;
 use crate::op_curve::{
-    DCurveBuf, curve_d_point_at_t, curve_d_slope_at_t, curve_dd_point_at_t, curve_dd_slope_at_t,
-    curve_intersect_ray, curve_is_vertical, curve_point_at_t, verb_points,
+    DCurveBuf, curve_d_intersect_ray, curve_d_point_at_t, curve_d_slope_at_t, curve_dd_point_at_t,
+    curve_dd_slope_at_t, curve_intersect_ray, curve_is_vertical, curve_point_at_t, verb_points,
 };
 use crate::op_span::Collapsed;
-use crate::op_state::{OpState, PtTId, SK_MIN_S32, SegId, SpanId};
+use crate::op_state::{AngleId, ContourId, OpState, PtTId, SK_MIN_S32, SegId, SpanId};
 use crate::path_op::PathOp;
 use crate::intersections::Intersections;
 use crate::line::DLine;
