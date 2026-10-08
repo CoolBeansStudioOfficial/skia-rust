@@ -154,7 +154,7 @@ impl SlotManager {
                         rows: u8::try_from(t.rows()).unwrap_or(0),
                         component_index: u8::try_from(slot).unwrap_or(0),
                         group_index: *group_index,
-                        number_kind,
+                        number_kind_raw: number_kind as i32,
                         line: 0,
                         pos,
                         fn_return_value: if is_function_return_value { 1 } else { -1 },

@@ -33,6 +33,35 @@ pub enum TraceOp {
     Scope,
 }
 
+impl TraceOp {
+    /// The C++ enumerator's value (`SkSL::TraceInfo::Op`, in declaration order), as trace files
+    /// store it.
+    // Port of: src/sksl/tracing/SkSLDebugTracePriv.h#L28-L34 (chrome/m156)
+    #[must_use]
+    pub fn as_raw(self) -> i32 {
+        match self {
+            Self::Line => 0,
+            Self::Var => 1,
+            Self::Enter => 2,
+            Self::Exit => 3,
+            Self::Scope => 4,
+        }
+    }
+
+    /// The op for a raw enumerator value, or `None` for a value the enum does not have.
+    #[must_use]
+    pub fn from_raw(raw: i32) -> Option<Self> {
+        match raw {
+            0 => Some(Self::Line),
+            1 => Some(Self::Var),
+            2 => Some(Self::Enter),
+            3 => Some(Self::Exit),
+            4 => Some(Self::Scope),
+            _ => None,
+        }
+    }
+}
+
 /// `SkSL::TraceInfo`: one recorded trace op.
 #[doc(alias = "SkSL::TraceInfo")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -55,8 +84,10 @@ pub struct SlotDebugInfo {
     pub component_index: u8,
     /// Complex types (arrays/structs) can be tracked as a "group" of adjacent slots.
     pub group_index: i32,
-    /// What kind of numbers belong in this slot?
-    pub number_kind: NumberKind,
+    /// What kind of numbers belong in this slot? The raw `SkSL::Type::NumberKind` value, as C++
+    /// stores it: trace files can hold values outside the enum (5 and 10 in the trace tests), so
+    /// this is an `i32`. [`number_kind`](Self::number_kind) maps the known values to the enum.
+    pub number_kind_raw: i32,
     /// Where is this variable located in the program?
     pub line: i32,
     /// The source position of the variable's declaration.
@@ -75,7 +106,7 @@ impl Default for SlotDebugInfo {
             rows: 1,
             component_index: 0,
             group_index: 0,
-            number_kind: NumberKind::Nonnumeric,
+            number_kind_raw: NumberKind::Nonnumeric as i32,
             line: 0,
             pos: Position::default(),
             fn_return_value: -1,
@@ -90,6 +121,20 @@ impl SlotDebugInfo {
         Self {
             name: name.to_owned(),
             ..Self::default()
+        }
+    }
+
+    /// `numberKind` as the enum. `None` for a raw value the enum does not have; the C++ code
+    /// takes the `default:` branch of its switches for those.
+    #[must_use]
+    pub fn number_kind(&self) -> Option<NumberKind> {
+        match self.number_kind_raw {
+            0 => Some(NumberKind::Float),
+            1 => Some(NumberKind::Signed),
+            2 => Some(NumberKind::Unsigned),
+            3 => Some(NumberKind::Boolean),
+            4 => Some(NumberKind::Nonnumeric),
+            _ => None,
         }
     }
 }
@@ -209,9 +254,9 @@ impl DebugTracePriv {
     // Port of: src/sksl/tracing/SkSLDebugTracePriv.cpp#L35-L56 (chrome/m156)
     #[must_use]
     pub fn interpret_value_bits(&self, slot_index: usize, value_bits: i32) -> f64 {
-        match self.slot_info[slot_index].number_kind {
-            NumberKind::Unsigned => f64::from(value_bits.cast_unsigned()),
-            NumberKind::Float => f64::from(f32::from_bits(value_bits.cast_unsigned())),
+        match self.slot_info[slot_index].number_kind() {
+            Some(NumberKind::Unsigned) => f64::from(value_bits.cast_unsigned()),
+            Some(NumberKind::Float) => f64::from(f32::from_bits(value_bits.cast_unsigned())),
             _ => f64::from(value_bits),
         }
     }
@@ -220,8 +265,8 @@ impl DebugTracePriv {
     // Port of: src/sksl/tracing/SkSLDebugTracePriv.cpp#L58-L69 (chrome/m156)
     #[must_use]
     pub fn slot_value_to_string(&self, slot_index: usize, value: f64) -> String {
-        match self.slot_info[slot_index].number_kind {
-            NumberKind::Boolean => (if value == 0.0 { "false" } else { "true" }).to_owned(),
+        match self.slot_info[slot_index].number_kind() {
+            Some(NumberKind::Boolean) => (if value == 0.0 { "false" } else { "true" }).to_owned(),
             _ => format_g8(value),
         }
     }
@@ -245,12 +290,13 @@ impl DebugTracePriv {
         let mut o = String::new();
         for (index, info) in self.slot_info.iter().enumerate() {
             o += &format!("${index} = {} (", info.name);
-            o += match info.number_kind {
-                NumberKind::Float => "float",
-                NumberKind::Signed => "int",
-                NumberKind::Unsigned => "uint",
-                NumberKind::Boolean => "bool",
-                NumberKind::Nonnumeric => "???",
+            o += match info.number_kind() {
+                Some(NumberKind::Float) => "float",
+                Some(NumberKind::Signed) => "int",
+                Some(NumberKind::Unsigned) => "uint",
+                Some(NumberKind::Boolean) => "bool",
+                Some(NumberKind::Nonnumeric) => "???",
+                None => "",
             };
             let total = u32::from(info.rows) * u32::from(info.columns);
             if total > 1 {
