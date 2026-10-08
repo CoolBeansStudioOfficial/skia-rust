@@ -23,6 +23,7 @@ use crate::bitmap::Bitmap;
 use crate::canvas::{PointMode, SrcRectConstraint};
 use crate::clip_op::ClipOp;
 use crate::floating_point::float_round2int;
+use crate::glyph_run::{GlyphRun, GlyphRunBuilder, GlyphRunList};
 use crate::image_info::ImageInfo;
 use crate::m44::M44;
 use crate::matrix::{Matrix, TypeMask};
@@ -33,10 +34,13 @@ use crate::path_builder::PathBuilder;
 use crate::path_types::PathFillType;
 use crate::pixmap::Pixmap;
 use crate::point::IPoint;
+use crate::point::Point;
 use crate::rect::{IRect, Rect, RoundOut, rect_priv};
 use crate::region::{Iterator as RegionIterator, Region};
 use crate::rrect::RRect;
+use crate::rsxform::RSXform;
 use crate::scalar::scalar;
+use crate::scaler_context::ScalerContextBuildFlags;
 use crate::shader::Shader;
 use crate::size::ISize;
 use crate::special_image::SpecialImage;
@@ -407,6 +411,24 @@ pub trait Device {
     #[doc(alias = "drawPath")]
     fn draw_path(&mut self, path: &Path, paint: &Paint);
 
+    /// `SkDevice::onDrawGlyphRunList` (pure virtual in C++): draws the runs of `list`, none of
+    /// which has `RSXform`s, with the device's glyph painter.
+    // Port of: src/core/SkDevice.h#L535-L537 (chrome/m156)
+    #[doc(alias = "onDrawGlyphRunList")]
+    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint);
+
+    /// `SkDevice::scalerContextFlags`: the flags of the glyph masks drawn on this device. A
+    /// linear color space drops the gamma hacks; otherwise they stay on, and the contrast boost
+    /// always applies.
+    // Port of: src/core/SkDevice.cpp#L496-L506 (chrome/m156)
+    #[doc(alias = "scalerContextFlags")]
+    fn scaler_context_flags(&self) -> ScalerContextBuildFlags {
+        match self.state().image_info().color_space() {
+            Some(cs) if cs.gamma_is_linear() => ScalerContextBuildFlags::BOOST_CONTRAST,
+            _ => ScalerContextBuildFlags::FAKE_GAMMA_AND_BOOST_CONTRAST,
+        }
+    }
+
     /// Draws a region (`drawRegion`).
     // Port of: src/core/SkDevice.cpp#L121-L141 (chrome/m156)
     #[doc(alias = "drawRegion")]
@@ -589,6 +611,84 @@ pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
         sh = sh.make_invert_alpha();
     }
     device.on_clip_shader(sh);
+}
+
+/// `SkDevice::drawGlyphRunList` without the canvas: draws `list` on `device`, through
+/// [`Device::on_draw_glyph_run_list`], or through [`simplify_glyph_run_rsxform_and_redraw`] when a
+/// run has `RSXform`s. Nothing is drawn when the local-to-device matrix is not finite.
+// Port of: src/core/SkDevice.cpp#L424-L435 (chrome/m156)
+#[doc(alias = "drawGlyphRunList")]
+pub fn draw_glyph_run_list(device: &mut dyn Device, list: &GlyphRunList<'_>, paint: &Paint) {
+    if !device.state().local_to_device().is_finite() {
+        return;
+    }
+    if list.has_rsxform() {
+        simplify_glyph_run_rsxform_and_redraw(device, list, paint);
+    } else {
+        device.on_draw_glyph_run_list(list, paint);
+    }
+}
+
+/// `SkDevice::simplifyGlyphRunRSXFormAndRedraw`: draws each `RSXform` glyph as its own run, with
+/// the device transform set to the glyph's rotation-scale and translation.
+///
+/// The canvas-level `concat` of C++ becomes a device transform change, which is the same for
+/// the raster device (its matrix is the canvas matrix). A shader in `paint` needs the
+/// local-matrix shader that `make_post_inverse_lm` builds, which is not ported; it panics.
+///
+/// # Panics
+///
+/// If `paint` has a shader (see above).
+// Port of: src/core/SkDevice.cpp#L438-L479 (chrome/m156)
+#[doc(alias = "simplifyGlyphRunRSXFormAndRedraw")]
+pub fn simplify_glyph_run_rsxform_and_redraw(
+    device: &mut dyn Device,
+    list: &GlyphRunList<'_>,
+    paint: &Paint,
+) {
+    let builder = GlyphRunBuilder::new();
+    for run in list.runs() {
+        if run.scaled_rotations().is_empty() {
+            let sub_list = builder.make_glyph_run_list(run.clone(), paint, Point::default());
+            draw_glyph_run_list(device, &sub_list, paint);
+            continue;
+        }
+        let origin = list.origin();
+        for (i, (glyph_id, pos)) in run.source().enumerate() {
+            let scale_rotate = run.scaled_rotations()[i];
+            let rsxform = RSXform::new(scale_rotate.x, scale_rotate.y, pos.x, pos.y);
+            let mut glyph_to_local = Matrix::default();
+            glyph_to_local
+                .set_rsxform(&rsxform)
+                .post_translate(Point::new(origin.x, origin.y));
+
+            // We want to rotate each glyph by the rsxform, but we don't want to rotate "space"
+            // (the shader that cares about the CTM), so C++ wraps the shader in the inverse of
+            // the glyph matrix. With no shader there is nothing to wrap.
+            assert!(
+                paint.shader().is_none(),
+                "RSXform text with a shader needs make_post_inverse_lm, which is not ported yet"
+            );
+            let sub_list = builder.make_glyph_run_list(
+                GlyphRun::new(
+                    run.font().clone(),
+                    vec![Point::default()],
+                    vec![glyph_id],
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                ),
+                paint,
+                Point::default(),
+            );
+            let local_to_device = M44::concat(
+                device.state().local_to_device44(),
+                &M44::from(glyph_to_local),
+            );
+            let mut restore = DeviceTransformRestore::new(&mut *device, &local_to_device);
+            draw_glyph_run_list(restore.device(), &sub_list, paint);
+        }
+    }
 }
 
 /// A device with no pixels, which only tracks the clip bounds (`SkNoPixelsDevice`).
@@ -882,6 +982,7 @@ impl Device for NoPixelsDevice {
     fn draw_oval(&mut self, _oval: &Rect, _paint: &Paint) {}
     fn draw_rrect(&mut self, _rr: &RRect, _paint: &Paint) {}
     fn draw_path(&mut self, _path: &Path, _paint: &Paint) {}
+    fn on_draw_glyph_run_list(&mut self, _list: &GlyphRunList<'_>, _paint: &Paint) {}
 }
 
 /// Sets a device's local-to-device transform for the lifetime of the guard

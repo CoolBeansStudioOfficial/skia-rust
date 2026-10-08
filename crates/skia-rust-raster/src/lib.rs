@@ -15,6 +15,7 @@ pub mod draw;
 pub mod edge;
 pub mod edge_builder;
 pub mod glyph_image;
+pub mod glyph_run_painter;
 mod pixel_rows;
 pub mod raster_canvas;
 pub mod raster_clip;

@@ -35,6 +35,8 @@ use skia_rust_core::device::Device;
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
+use skia_rust_core::glyph::Glyph;
+use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
@@ -52,6 +54,7 @@ use skia_rust_core::path_utils::fill_path_with_paint;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point, Vector};
 use skia_rust_core::rect::{IRect, Rect, RoundOut, rect_priv};
+use skia_rust_core::region::Cliperator;
 use skia_rust_core::rrect::{RRect, Type as RRectType};
 use skia_rust_core::scalar::{SCALAR_HALF, SCALAR_SQRT2, Scalar, scalar};
 use skia_rust_core::shader::Shader;
@@ -63,6 +66,7 @@ use crate::auto_blitter_choose::auto_blitter_choose;
 use crate::blitter::Blitter;
 use crate::blitter_a8::choose_a8_blitter;
 use crate::blitter_choose::choose;
+use crate::glyph_run_painter::{BitmapDevicePainter, GlyphRunListPainter};
 use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan::{
     fill_irect_clip, fill_path_clip, fill_rect_clip, fill_xrect_clip, xrect_set_rect,
@@ -1433,6 +1437,133 @@ fn draw_into_mask(mask: &mut MaskBuilder, raw: &PathRaw<'_>, style: InitStyle) {
         InitStyle::Hairline => anti_hair_path(&raw, &clip, &mut *blitter),
         InitStyle::Fill => anti_fill_path_clip(&raw, &clip, &mut *blitter),
     }
+}
+
+impl Draw<'_> {
+    /// `skcpu::Draw::drawGlyphRunList`: draws `list` with `painter`, unless the clip is empty.
+    /// The canvas of C++ is not passed: glyph paths draw on this draw, see [`BitmapDevicePainter`].
+    // Port of: src/core/SkDraw_text.cpp#L125-L134 (chrome/m156)
+    #[doc(alias = "drawGlyphRunList")]
+    pub fn draw_glyph_run_list(
+        &mut self,
+        painter: &GlyphRunListPainter,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+    ) {
+        self.validate();
+        if self.rc.is_empty() {
+            return;
+        }
+        let ctm = self.ctm;
+        painter.draw_for_bitmap_device(self, list, paint, ctm);
+    }
+}
+
+/// `skcpu::Draw` as the glyph painter sees it: masks through `paintMasks` and paths through the
+/// draw itself.
+impl BitmapDevicePainter for Draw<'_> {
+    // Port of: src/core/SkDraw_text.cpp#L53-L123 (chrome/m156), Draw::paintMasks
+    fn paint_masks(&mut self, accepted: &[(&Glyph, Point)], paint: &Paint) {
+        let rc = self.rc;
+        let use_region = rc.is_bw() && !rc.is_rect();
+        auto_blitter_choose(
+            self,
+            None,
+            paint,
+            &Rect::default(),
+            DrawCoverage::No,
+            |blitter| {
+                let mut wrapper = AAClipBlitterWrapper::new(rc, blitter);
+                if use_region {
+                    for (glyph, pos) in accepted {
+                        if !check_glyph_position(*pos) {
+                            continue;
+                        }
+                        let mask = glyph.mask_at(*pos);
+                        let mut clipper = Cliperator::new(rc.bw_rgn(), mask.bounds);
+                        if clipper.is_done() {
+                            continue;
+                        }
+                        // Color masks are drawn as sprites (`drawSprite`), which is not ported.
+                        assert!(
+                            mask.format != MaskFormat::Argb32,
+                            "color glyph masks need Draw::drawSprite, which is not ported yet"
+                        );
+                        loop {
+                            wrapper.blitter().blit_mask(&mask, clipper.rect());
+                            clipper.next();
+                            if clipper.is_done() {
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    let clip_bounds = if rc.is_bw() {
+                        *rc.bw_rgn().bounds()
+                    } else {
+                        *rc.aa_rgn().bounds()
+                    };
+                    for (glyph, pos) in accepted {
+                        if !check_glyph_position(*pos) {
+                            continue;
+                        }
+                        let mask = glyph.mask_at(*pos);
+                        // this extra test is worth it, assuming that most of the time it succeeds
+                        // since we can avoid writing to storage
+                        let bounds = if clip_bounds.contains_no_empty_check(&mask.bounds) {
+                            mask.bounds
+                        } else {
+                            match IRect::intersect(&mask.bounds, &clip_bounds) {
+                                Some(bounds) => bounds,
+                                None => continue,
+                            }
+                        };
+                        assert!(
+                            mask.format != MaskFormat::Argb32,
+                            "color glyph masks need Draw::drawSprite, which is not ported yet"
+                        );
+                        wrapper.blitter().blit_mask(&mask, &bounds);
+                    }
+                }
+            },
+        );
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
+    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
+        // canvas->concat(m): the CTM becomes CTM * m for the path.
+        let ctm = Matrix::concat(self.ctm, matrix);
+        let mut draw = self.reborrow();
+        draw.ctm = &ctm;
+        draw.draw_path(path, paint, None);
+    }
+
+    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint) {
+        self.draw_path(path, paint, None);
+    }
+}
+
+/// `SkDraw_text.cpp`'s `check_glyph_position`: glyphs whose position would straddle the int range
+/// are not drawn. Written so that NaN is rejected.
+// Port of: src/core/SkDraw_text.cpp#L28-L36 (chrome/m156)
+// The negated comparisons are the point: a NaN fails them, as in C++.
+#[allow(
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::cast_precision_loss // (float)int, as in C++
+)]
+fn check_glyph_position(position: Point) -> bool {
+    // Comparisons written a little weirdly so that NaN coordinates are treated safely.
+    let gt = |a: f32, b: i32| !(a <= b as f32);
+    let lt = |a: f32, b: i32| !(a >= b as f32);
+    !(gt(
+        position.x,
+        i32::MAX - (i32::from(i16::MAX) + i32::from(u16::MAX)),
+    ) || lt(position.x, i32::MIN - i32::from(i16::MIN))
+        || gt(
+            position.y,
+            i32::MAX - (i32::from(i16::MAX) + i32::from(u16::MAX)),
+        )
+        || lt(position.y, i32::MIN - i32::from(i16::MIN)))
 }
 
 /// Creates a mask from a device-space path and the mask filter that will filter it, to size the

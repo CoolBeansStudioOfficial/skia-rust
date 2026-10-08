@@ -30808,6 +30808,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L71-L113"
 module = "text"
+reason = "needs the path-effect strike descriptor entry (kEffects_SkDescriptorTag, writeFlattenable), not ported"
 status = "todo"
 span_hash = "ea8d60471e15bacc3893be0fda07de8da14db7c783e97dd3e8ce755fbc6e7bd1"
 
@@ -30817,6 +30818,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L173-L186"
 module = "text"
+reason = "needs TextBlob (SkTextBlob::MakeFromText, T15a)"
 status = "todo"
 span_hash = "06346eb0b374423df2377a7cae8b62c246fbcc7cf3fc60f235e1285a29e5aa17"
 
@@ -30826,7 +30828,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L117-L132"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e5be064383096abb81d7693bd4f16d2a253588737c8e9a384e6fdd2983362aa"
 
 [[test]]
@@ -30835,7 +30837,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L136-L169"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "80004528d61443a495cde070264de4958ee49c5a7449e9a97f1e468c85a4adff"
 
 [[test]]
