@@ -121,11 +121,27 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_bounds_test;
+#[cfg(test)]
+pub mod path_ops_conic_intersection_test;
+#[cfg(test)]
 pub mod path_ops_conic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_conic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_conic_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_intersection_test;
 #[cfg(test)]
 pub mod path_ops_cubic_intersection_test_data;
 #[cfg(test)]
+pub mod path_ops_cubic_line_intersection_ideas_test;
+#[cfg(test)]
 pub mod path_ops_cubic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_reduce_order_test;
 #[cfg(test)]
 pub mod path_ops_dcubic_test;
 #[cfg(test)]
@@ -140,6 +156,8 @@ pub mod path_ops_dvector_test;
 pub mod path_ops_line_intersection_test;
 #[cfg(test)]
 pub mod path_ops_line_parameters_test;
+#[cfg(test)]
+pub mod path_ops_quad_intersection_test;
 #[cfg(test)]
 pub mod path_ops_quad_intersection_test_data;
 #[cfg(test)]
