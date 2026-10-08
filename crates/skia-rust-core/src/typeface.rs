@@ -245,6 +245,14 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
         dst.fill(0);
     }
 
+    /// `SkTypeface::onComputeBounds`: the bounds the typeface gives itself. `None` (the default)
+    /// makes [`Typeface::get_bounds`] measure the font.
+    // Port of: include/core/SkTypeface.h (onComputeBounds, chrome/m156), overridden by SkUserTypeface
+    #[doc(alias = "onComputeBounds")]
+    fn on_compute_bounds(&self) -> Option<Rect> {
+        None
+    }
+
     /// `SkTypeface::onIsSyntheticBold`: false, unless a backend fake-bolds the typeface.
     // Port of: src/core/SkTypeface.cpp#L509 (chrome/m156)
     #[doc(alias = "onIsSyntheticBold")]
@@ -311,6 +319,9 @@ impl Typeface {
         const TEXT_SIZE: scalar = 2048.0;
         const INV_TEXT_SIZE: scalar = 1.0 / TEXT_SIZE;
 
+        if let Some(bounds) = self.0.on_compute_bounds() {
+            return bounds;
+        }
         let mut font = Font::from_size(self.clone(), TEXT_SIZE);
         font.set_linear_metrics(true);
 

@@ -24974,7 +24974,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/userfont.cpp#L145-L145"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9975db25746adc7218f92620065c8f4b26f1eecda5b24f86633e26313247801e"
 
 [[test]]
@@ -32041,8 +32041,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontTest.cpp#L74-L116"
 module = "text"
-status = "todo"
-reason = "needs T17 custom typeface (SampleUserTypeface) and typeface serialization (T16)"
+status = "passing"
 span_hash = "4862e87eb273b206502f89e780f3a32644a0f6394027f4e06a82e613abdc00fb"
 
 [[test]]
@@ -41657,8 +41656,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L680-L683"
 module = "text"
-status = "todo"
-reason = "needs ToolUtils::SampleUserTypeface (T17)"
+status = "passing"
 span_hash = "76ee71b1321b5235db7914e139e18af18f8e9420ceb36fb6a19dc6bd9fe80730"
 
 [[test]]
@@ -42277,6 +42275,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L88-L129"
 module = "text"
 status = "todo"
+reason = "needs SkGlyph::flattenMetrics/MakeFromBuffer (glyph serialization, T5), not ported"
 span_hash = "e7d3e7b234b769636e26f98fe0a5d9013df5d1b9fc30848e2ad9e55f5480f4d7"
 
 [[test]]
@@ -42286,6 +42285,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L267-L330"
 module = "text"
 status = "todo"
+reason = "needs SkGlyph::flattenMetrics/flattenDrawable/MakeFromBuffer (glyph serialization, T5), not ported"
 span_hash = "c63f9dee1a4b577a6bee13d73dc911dac585fdcf19a2b42edf00c439a4035c2e"
 
 [[test]]
@@ -42295,6 +42295,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L131-L194"
 module = "text"
 status = "todo"
+reason = "needs SkGlyph::flattenMetrics/flattenImage/MakeFromBuffer (glyph serialization, T5), not ported"
 span_hash = "832e0c82f3f83445b17ec26998b09e96ee16535145eb78cee986660ce927f614"
 
 [[test]]
@@ -42304,6 +42305,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L196-L265"
 module = "text"
 status = "todo"
+reason = "needs SkGlyph::flattenMetrics/flattenPath/MakeFromBuffer (glyph serialization, T5), not ported"
 span_hash = "6a616eb05f585325ae2d22f7a4c77d008234f3cb5cf90cca1bfd3627f2f13295"
 
 [[test]]
@@ -49272,8 +49274,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L784-L798"
 module = "text"
-status = "todo"
-reason = "needs SkCustomTypefaceBuilder (src/utils/SkCustomTypeface.cpp, T17)"
+status = "passing"
 span_hash = "aac4be6e72364bf85f05f13454fe5596753671d6fdeaf58b7ee9534f11061ab3"
 
 [[test]]

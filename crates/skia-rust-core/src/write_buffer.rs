@@ -149,6 +149,8 @@ pub struct BinaryWriteBuffer {
     flattenable_dict: Vec<String>,
     /// `fProcs`: how the typefaces (and later the images) are written.
     serial_procs: SerialProcs,
+    /// `fTFSet`: the typefaces written by index, in order of first use (`setTypefaceRecorder`).
+    typeface_recorder: Option<Vec<Typeface>>,
 }
 
 impl BinaryWriteBuffer {
@@ -166,6 +168,22 @@ impl BinaryWriteBuffer {
             serial_procs,
             ..BinaryWriteBuffer::default()
         }
+    }
+
+    /// `setTypefaceRecorder`: from now on, typefaces are written as indices into a set that
+    /// [`typeface_recorder`](Self::typeface_recorder) returns. The set starts empty.
+    // Port of: src/core/SkWriteBuffer.h (setTypefaceRecorder, chrome/m156), with the set as a Vec
+    #[doc(alias = "setTypefaceRecorder")]
+    pub fn set_typeface_recorder(&mut self) {
+        self.typeface_recorder = Some(Vec::new());
+    }
+
+    /// The typefaces of the recorder, in index order (index 1 is the first). `None` if no
+    /// recorder is set.
+    #[must_use]
+    #[doc(alias = "typefaceRecorder")]
+    pub fn typeface_recorder(&self) -> Option<&[Typeface]> {
+        self.typeface_recorder.as_deref()
     }
 
     /// `writePoint`: the two scalars of a point (`SkBinaryWriteBuffer::writePoint`).
@@ -349,8 +367,22 @@ impl BinaryWriteBuffer {
             }
             return;
         }
-        // No data means fall through for the standard behaviour.
-        self.writer.write32(0);
+        // No data means fall through for the standard behaviour: the index in the set, which
+        // `SkRefCntSet::add` makes if the typeface is new.
+        let index = match self.typeface_recorder.as_mut() {
+            Some(set) => {
+                let position = set
+                    .iter()
+                    .position(|t| t.ptr_eq(typeface))
+                    .unwrap_or_else(|| {
+                        set.push(typeface.clone());
+                        set.len() - 1
+                    });
+                i32::try_from(position + 1).unwrap_or(i32::MAX)
+            }
+            None => 0,
+        };
+        self.writer.write32(index);
     }
 
     /// Copies the bytes written into `dst` (`writeToMemory`).

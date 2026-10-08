@@ -194,5 +194,6 @@ pub mod tiledscaledbitmap;
 pub mod tinybitmap;
 pub mod trickycubicstrokes;
 pub mod unpremul;
+pub mod userfont;
 pub mod variedtext;
 pub mod widebuttcaps;

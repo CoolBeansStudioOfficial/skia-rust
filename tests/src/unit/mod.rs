@@ -79,6 +79,7 @@ pub mod font_host_test;
 #[cfg(test)]
 pub mod font_mgr_test;
 pub mod font_scanner_fontations_test;
+pub mod font_test;
 pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
