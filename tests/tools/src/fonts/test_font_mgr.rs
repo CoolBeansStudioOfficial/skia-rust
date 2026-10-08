@@ -19,6 +19,7 @@ use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::stream::StreamAsset;
 use skia_rust_core::typeface::Typeface;
 use skia_rust_core::utf::Unichar;
+use skia_rust_text::utils::custom_typeface;
 
 use super::test_typeface::{TestTypeface, typefaces};
 
@@ -219,10 +220,17 @@ impl FontMgrBase for TestFontMgr {
     /// The factory that reads the test typefaces back (`TestTypeface::Register`).
     // Port of: tools/fonts/TestTypeface.cpp#L232-L237 (chrome/m156)
     fn typeface_decoders(&self) -> Vec<TypefaceDecoder> {
-        vec![TypefaceDecoder {
-            factory_id: TestTypeface::FACTORY_ID,
-            make_from_stream: TestTypeface::make_from_stream,
-        }]
+        vec![
+            TypefaceDecoder {
+                factory_id: TestTypeface::FACTORY_ID,
+                make_from_stream: TestTypeface::make_from_stream,
+            },
+            // `SkCustomTypefaceBuilder`'s decoder, which C++ registers for every configuration.
+            TypefaceDecoder {
+                factory_id: custom_typeface::FACTORY_ID,
+                make_from_stream: custom_typeface::make_from_stream,
+            },
+        ]
     }
 }
 

@@ -6,6 +6,7 @@
 use std::sync::Mutex;
 
 use skia_rust_core::data::Data;
+use skia_rust_core::font::Font;
 use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_descriptor::{FactoryId, FontDescriptor};
 use skia_rust_core::font_mgr::TypefaceDecoder;
@@ -16,10 +17,10 @@ use skia_rust_core::text_blob::TextBlobBuilder;
 use skia_rust_core::typeface::{SerializeBehavior, Typeface};
 use skia_rust_effects::dash_path_effect;
 use skia_rust_tools::font_tool_utils::{
-    default_font, default_typeface, test_font_mgr, with_typeface_decoders,
+    default_font, default_typeface, sample_user_typeface, test_font_mgr, with_typeface_decoders,
 };
 
-use crate::{def_font_test, def_test, errorf, reporter_assert};
+use crate::{Reporter, def_font_test, def_test, errorf, reporter_assert};
 
 // Port of: tests/SerializationTest.cpp#L1190-L1204 (chrome/m156), WriteBuffer_external_memory_flattenable
 def_test!(WriteBuffer_external_memory_flattenable, |reporter| {
@@ -161,4 +162,44 @@ def_test!(WriteBuffer_external_memory_textblob, |reporter| {
 
     let mut storage = vec![0u8; blob_size];
     reporter_assert!(reporter, blob.serialize_into(&procs, &mut storage) != 0);
+});
+
+/// `TestTypefaceSerialization`: the typeface serialized and deserialized with the test manager
+/// has the same glyphs, style and metrics.
+// Port of: tests/SerializationTest.cpp#L640-L679 (chrome/m156), TestTypefaceSerialization
+fn test_typeface_serialization(reporter: &mut Reporter, typeface: &Typeface) {
+    let mut wstream = DynamicMemoryWStream::new();
+    if !typeface.serialize_to(&mut wstream, SerializeBehavior::IncludeDataIfLocal) {
+        errorf!(reporter, "serialize typeface");
+        return;
+    }
+    let data = wstream.detach_as_data();
+    let mut stream = MemoryStream::make_copy(data.as_bytes());
+    let Some(clone_typeface) =
+        Typeface::make_deserialize(&mut *stream, Some(&test_font_mgr()), None)
+    else {
+        reporter_assert!(reporter, false, "the serialized typeface deserializes");
+        return;
+    };
+
+    reporter_assert!(
+        reporter,
+        typeface.count_glyphs() == clone_typeface.count_glyphs()
+    );
+    reporter_assert!(
+        reporter,
+        typeface.font_style() == clone_typeface.font_style()
+    );
+
+    let font = Font::from_size(typeface.clone(), 12.0);
+    let clone = Font::from_size(clone_typeface, 12.0);
+    let (_, font_metrics) = font.metrics();
+    let (_, clone_metrics) = clone.metrics();
+    reporter_assert!(reporter, font_metrics == clone_metrics);
+}
+
+// Port of: tests/SerializationTest.cpp#L680-L683 (chrome/m156), Serialization_Typeface
+def_font_test!(Serialization_Typeface, |reporter| {
+    test_typeface_serialization(reporter, &default_typeface());
+    test_typeface_serialization(reporter, &sample_user_typeface());
 });

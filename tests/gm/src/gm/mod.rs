@@ -156,5 +156,6 @@ pub mod thinstrokedrects;
 pub mod tiledscaledbitmap;
 pub mod tinybitmap;
 pub mod unpremul;
+pub mod userfont;
 pub mod variedtext;
 pub mod widebuttcaps;

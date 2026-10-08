@@ -46,6 +46,8 @@ pub struct ReadBuffer<'a> {
     flattenable_names: Vec<String>,
     /// `fProcs`: how the typefaces (and later the images) are read back.
     deserial_procs: DeserialProcs,
+    /// `fTFArray`: the typefaces that index references name, in order (1 is the first).
+    typeface_array: Vec<Typeface>,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -66,6 +68,13 @@ impl<'a> ReadBuffer<'a> {
         let mut buffer = ReadBuffer::new(data);
         buffer.deserial_procs = deserial_procs;
         buffer
+    }
+
+    /// `setTypefaceArray(array, count)`: the typefaces that the index arm of a typeface refers to.
+    // Port of: src/core/SkReadBuffer.h (setTypefaceArray, chrome/m156)
+    #[doc(alias = "setTypefaceArray")]
+    pub fn set_typeface_array(&mut self, typefaces: Vec<Typeface>) {
+        self.typeface_array = typefaces;
     }
 
     /// `readPoint`: two scalars (`SkReadBuffer::readPoint`).
@@ -249,8 +258,14 @@ impl<'a> ReadBuffer<'a> {
             return None;
         }
         if index > 0 {
-            self.validate(false);
-            return None;
+            // The index names a typeface of the array, 1-based.
+            let typeface = usize::try_from(index)
+                .ok()
+                .and_then(|i| self.typeface_array.get(i - 1).cloned());
+            if typeface.is_none() {
+                self.validate(false);
+            }
+            return typeface;
         }
         let size = usize::try_from(index.unsigned_abs()).unwrap_or(usize::MAX);
         let bytes = self.skip(size);

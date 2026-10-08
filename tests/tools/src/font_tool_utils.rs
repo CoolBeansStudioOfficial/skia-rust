@@ -115,10 +115,16 @@ pub fn test_font_mgr() -> FontMgr {
         // every configuration. The Fontations manager cannot list them, so this wrapper does.
         FontConfig::NativeFontations => with_typeface_decoders(
             skia_rust_text::ports::fontations::font_mgr::new_fontations_empty(),
-            vec![TypefaceDecoder {
-                factory_id: crate::fonts::test_typeface::TestTypeface::FACTORY_ID,
-                make_from_stream: crate::fonts::test_typeface::TestTypeface::make_from_stream,
-            }],
+            vec![
+                TypefaceDecoder {
+                    factory_id: crate::fonts::test_typeface::TestTypeface::FACTORY_ID,
+                    make_from_stream: crate::fonts::test_typeface::TestTypeface::make_from_stream,
+                },
+                TypefaceDecoder {
+                    factory_id: skia_rust_text::utils::custom_typeface::FACTORY_ID,
+                    make_from_stream: skia_rust_text::utils::custom_typeface::make_from_stream,
+                },
+            ],
         ),
     }
 }
@@ -389,4 +395,59 @@ impl FontMgrBase for WithTypefaceDecoders {
 #[must_use]
 pub fn with_typeface_decoders(inner: FontMgr, extra: Vec<TypefaceDecoder>) -> FontMgr {
     FontMgr::new(Arc::new(WithTypefaceDecoders { inner, extra }))
+}
+
+/// `ToolUtils::SampleUserTypeface()`: a custom typeface of 68 circle glyphs, drawn at 1/200 em,
+/// with metrics and an oblique style.
+///
+/// # Panics
+///
+/// Never: the builder always has glyphs.
+// Port of: tools/fonts/FontToolUtils.cpp#L182-L218 (chrome/m156)
+#[must_use]
+pub fn sample_user_typeface() -> Typeface {
+    use skia_rust_core::font_metrics::{Flags, FontMetrics};
+    use skia_rust_core::font_style::{Slant, Weight, Width};
+    use skia_rust_core::matrix::Matrix;
+    use skia_rust_core::path::Path;
+    use skia_rust_core::path_types::PathDirection;
+    use skia_rust_text::utils::custom_typeface::CustomTypefaceBuilder;
+
+    let mut builder = CustomTypefaceBuilder::new();
+    let upem: scalar = 200.0;
+    {
+        let metrics = FontMetrics {
+            flags: Flags::empty(),
+            top: -200.0,
+            ascent: -150.0,
+            descent: 50.0,
+            bottom: -75.0,
+            leading: 10.0,
+            avg_char_width: 150.0,
+            max_char_width: 300.0,
+            x_min: -20.0,
+            x_max: 290.0,
+            x_height: -100.0,
+            cap_height: 0.0,
+            underline_thickness: 5.0,
+            underline_position: 2.0,
+            strikeout_thickness: 5.0,
+            strikeout_position: -50.0,
+        };
+        builder.set_metrics(&metrics, 1.0 / upem);
+    }
+    builder.set_font_style(FontStyle::new(
+        Weight::from(367),
+        Width::from(3),
+        Slant::Oblique,
+    ));
+
+    let scale = Matrix::scale((1.0 / upem, 1.0 / upem));
+    for index in 0..=67 {
+        let width: scalar = 100.0;
+        let circle = Path::circle((50.0, -50.0), 75.0, PathDirection::CW).make_transform(&scale);
+        builder.set_glyph(index, width / upem, &circle);
+    }
+
+    builder.detach().expect("the sample has glyphs")
 }

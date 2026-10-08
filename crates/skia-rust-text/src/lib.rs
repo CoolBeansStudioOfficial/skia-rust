@@ -6,3 +6,4 @@
 
 pub mod font_scanner;
 pub mod ports;
+pub mod utils;

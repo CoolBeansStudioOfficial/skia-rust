@@ -8,16 +8,21 @@
 
 use skia_rust_core::data::Data;
 use skia_rust_core::fixed::scalar_to_fixed;
+use skia_rust_core::font::Font;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_arguments::{FontArguments, VariationPosition};
 use skia_rust_core::font_descriptor::FontDescriptor;
 use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
+use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::font_types::{FourByteTag, set_four_byte_tag};
+use skia_rust_core::path::Path;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream, StreamAsset};
 use skia_rust_core::typeface::{SerializeBehavior, Typeface};
 use skia_rust_core::typeface_cache::TypefaceCache;
 use skia_rust_core::utf::Unichar;
+use skia_rust_text::utils::custom_typeface::CustomTypefaceBuilder;
 use skia_rust_tools::font_tool_utils::{
     create_test_typeface, create_typeface_from_resource, default_typeface, test_font_mgr,
 };
@@ -825,4 +830,29 @@ def_font_test!(Typeface, |reporter| {
     reporter_assert!(reporter, !typeface_equal(None, Some(&t2)));
     reporter_assert!(reporter, !typeface_equal(Some(&t1), None));
     reporter_assert!(reporter, !typeface_equal(Some(&t2), None));
+});
+
+// Port of: tests/TypefaceTest.cpp#L784-L798 (chrome/m156), CustomTypeface_invalid_glyphid
+def_test!(CustomTypeface_invalid_glyphid, |reporter| {
+    let glyph_path = Path::rect(Rect::from_ltrb(10.0, 20.0, 30.0, 40.0), None);
+
+    let mut builder = CustomTypefaceBuilder::new();
+    builder.set_glyph(0, 42.0, &glyph_path);
+
+    let Some(typeface) = builder.detach() else {
+        errorf!(reporter, "the builder has a glyph");
+        return;
+    };
+    let custom_font = Font::from_size(typeface, 1.0);
+
+    let glyph_ids: [GlyphId; 2] = [0, 1];
+    let mut widths = [0.0; 2];
+    let mut bounds = [Rect::default(); 2];
+    custom_font.get_widths_bounds(&glyph_ids, &mut widths, &mut bounds, None);
+
+    reporter_assert!(
+        reporter,
+        bounds[0] == Rect::from_ltrb(10.0, 20.0, 30.0, 40.0)
+    );
+    reporter_assert!(reporter, bounds[1] == Rect::from_ltrb(0.0, 0.0, 0.0, 0.0));
 });
