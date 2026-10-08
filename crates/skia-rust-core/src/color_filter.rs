@@ -6,10 +6,10 @@
 
 //! `SkColorFilter`: the interface of color filters.
 //!
-//! skia-rust: only the interface is ported here (D2): the [`ColorFilter`] handle, the
-//! [`ColorFilterBase`] trait with Skia's default virtuals, and the non-virtual helpers that
-//! paints need. No color filter implementations exist yet; they (`SkColorFilters::Matrix`,
-//! `Blend`, `Compose`, ...) are Phase 3 and plug in by implementing [`ColorFilterBase`].
+//! skia-rust: the [`ColorFilter`] handle, the [`ColorFilterBase`] trait with Skia's default
+//! virtuals, and the non-virtual helpers that paints need. The implementations are in
+//! [`color_filters`](crate::color_filters) and the modules it names; they plug in by implementing
+//! [`ColorFilterBase`].
 
 use core::any::Any;
 use core::fmt;
@@ -23,6 +23,7 @@ use crate::color::{Color, Color4f, PMColor4f, colors};
 use crate::color_space::ColorSpace;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
+use crate::compose_color_filter::ComposeColorFilter;
 use crate::effect_priv::StageRec;
 use crate::raster_pipeline::{MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage};
 use crate::rect::Rect;
@@ -161,8 +162,7 @@ fn filter_color4f(
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`ColorFilter::ptr_eq`]).
 ///
-/// skia-rust: `makeComposed` and `makeWithWorkingColorSpace` need the compose and
-/// working-format filters (Phase 3).
+/// skia-rust: `makeWithWorkingColorSpace` needs `SkWorkingFormatColorFilter`, which is not ported.
 // Port of: include/core/SkColorFilter.h#L35-L80 (chrome/m156)
 #[doc(alias = "SkColorFilter")]
 #[derive(Clone)]
@@ -186,6 +186,17 @@ impl ColorFilter {
     #[must_use]
     pub fn ptr_eq(&self, other: &ColorFilter) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// `makeComposed`: this filter applied after `inner` (`None` gives `self`).
+    // Port of: src/core/SkColorFilter.cpp#L48-L54 (chrome/m156)
+    #[doc(alias = "makeComposed")]
+    #[must_use]
+    pub fn composed(&self, inner: Option<ColorFilter>) -> ColorFilter {
+        match inner {
+            None => self.clone(),
+            Some(inner) => ColorFilter::from_base(ComposeColorFilter::new(self.clone(), inner)),
+        }
     }
 
     /// If the filter can be represented by a source color plus a blend mode, those

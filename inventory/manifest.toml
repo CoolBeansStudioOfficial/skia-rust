@@ -16933,6 +16933,7 @@ macro = "DEF_GM"
 source = "gm/colorfilteralpha8.cpp#L51-L51"
 module = "effects"
 status = "todo"
+reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
 span_hash = "914ee812c94b6ef4aa702fef608d239e6765e445af8c0da2a3c2d71ef5af53cf"
 
 [[test]]
@@ -16969,6 +16970,7 @@ macro = "DEF_GM"
 source = "gm/colorfilters.cpp#L84-L84"
 module = "effects"
 status = "todo"
+reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
 span_hash = "ed51de5d2c5745e6f19f9586f4059bab8ebd542c729d61ddfb8fc59691a12b5c"
 
 [[test]]
@@ -16978,6 +16980,7 @@ macro = "DEF_GM"
 source = "gm/colorfilters.cpp#L183-L183"
 module = "effects"
 status = "todo"
+reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
 span_hash = "999922a287d95dae75e9de808020cbbd41b245af6d860325906ca45a420b4b40"
 
 [[test]]
@@ -16987,6 +16990,7 @@ macro = "DEF_GM"
 source = "gm/colormatrix.cpp#L139-L139"
 module = "raster"
 status = "todo"
+reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
 span_hash = "300416a2bc7d12c1d013822d8a7c6233b9278792419d8f2b1728cc2d37b7f3fc"
 
 [[test]]
@@ -17788,6 +17792,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L81-L105"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "756123cd3b62d0b866c858e31fca181618ee831d74b64cf84093598d0263382e"
 
 [[test]]
@@ -17797,6 +17802,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/composecolorfilter.cpp#L107-L148"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "6835bce8d9ed6bcd46b89b14f1646705578ee3334127219f47d876ce49c993fe"
 
 [[test]]
@@ -20727,6 +20733,7 @@ macro = "DEF_GM"
 source = "gm/highcontrastfilter.cpp#L155-L155"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "b25f94e0c659efbe603156987fe8dac3c1fa4c6c788a5748dca1836f298b9a4f"
 
 [[test]]
@@ -21633,6 +21640,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/lumafilter.cpp#L168-L198"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "73a163a8626ce07bc9bf40245ce53266c1464740d1045b84f4f62b174dd77836"
 
 [[test]]
@@ -21642,6 +21650,7 @@ macro = "DEF_GM"
 source = "gm/lumafilter.cpp#L166-L166"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "895b2194cce9eb7052a94e3c2cf7964f2c9b33320c621cf9073137c739bd2b5f"
 
 [[test]]
@@ -21976,6 +21985,7 @@ macro = "DEF_GM"
 source = "gm/modecolorfilters.cpp#L166-L166"
 module = "effects"
 status = "todo"
+reason = "needs gradient shaders (SkShaders::*Gradient, not ported); the color filters themselves are ported"
 span_hash = "7be129162b57edb92f9790ed2b29e5fc57980f93518da55fb6136a9d0a5a7cce"
 
 [[test]]
@@ -22174,6 +22184,7 @@ macro = "DEF_GM"
 source = "gm/overdrawcolorfilter.cpp#L56-L56"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "5abf896346c4a9e004b0e5e9554a44f71799a260644602559215e600a136323f"
 
 [[test]]
@@ -24347,6 +24358,7 @@ macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L291-L291"
 module = "effects"
 status = "todo"
+reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
 span_hash = "1c4ac1312be973f98b0c9cd22a9fe8348334b08102e4aaa647572810e7b70e8a"
 
 [[test]]
@@ -24356,6 +24368,7 @@ macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L300-L300"
 module = "effects"
 status = "todo"
+reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
 span_hash = "50ea2d83408fc631074a50ce0dc82a09cf901c206ed0188b7aae660dda6d0c3d"
 
 [[test]]
@@ -24365,6 +24378,7 @@ macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L209-L209"
 module = "effects"
 status = "todo"
+reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
 span_hash = "68b5bd024e8b875ed3fe356874e8e23a6e0cf44d7f09c2d297e1a5bf447ba51c"
 
 [[test]]
@@ -29870,6 +29884,7 @@ macro = "DEF_TEST"
 source = "tests/ColorFilterTest.cpp#L64-L118"
 module = "effects"
 status = "todo"
+reason = "needs flattening round trip (reincarnate_colorfilter): SkFlattenable serialization not ported"
 span_hash = "f2d36bdfae124843ba4125414a2b4e04c614ff0ca13cf1c6a79fbe9b4be25637"
 
 [[test]]
@@ -29878,7 +29893,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorFilterTest.cpp#L193-L207"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e73a9852c49fc176f0fe580b89a8162e040e1d46d8fe1f41903a67e8e9e2ba38"
 
 [[test]]
@@ -29898,6 +29913,7 @@ macro = "DEF_TEST"
 source = "tests/ColorFilterTest.cpp#L120-L153"
 module = "effects"
 status = "todo"
+reason = "needs SkWorkingFormatColorFilter (makeWithWorkingColorSpace), not ported"
 span_hash = "1026a45e4ef9a0d697611089c7d114be4896202ff21d254fdab0e1d5fd7e62d6"
 
 [[test]]
@@ -29906,7 +29922,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorMatrixTest.cpp#L99-L101"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e1b01f52884bf9ded1f2a6691ebfc69cb7bf186b48c76b530a3a8d4af921d67b"
 
 [[test]]
@@ -29915,7 +29931,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorMatrixTest.cpp#L104-L122"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "43d5a38a2b6d98efeefd08f81d358bd2320d8e29261c545d006a54ed8cf2e566"
 
 [[test]]
@@ -34033,6 +34049,7 @@ macro = "DEF_TEST"
 source = "tests/HighContrastFilterTest.cpp#L31-L63"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "b4dbb6327babd5ad622ae3a372646c8220de2f728fa5e02911287e213ab2099d"
 
 [[test]]
@@ -34042,6 +34059,7 @@ macro = "DEF_TEST"
 source = "tests/HighContrastFilterTest.cpp#L17-L29"
 module = "effects"
 status = "todo"
+reason = "needs SkSL known runtime effects (SkRuntimeEffect), not ported"
 span_hash = "e7d6dd0e414cec532627130c205a67081ff2d1a022845fa4bdd0256671c3d06e"
 
 [[test]]

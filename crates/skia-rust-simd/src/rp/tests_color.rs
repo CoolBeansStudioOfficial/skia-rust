@@ -399,12 +399,7 @@ fn highp_tables_and_emboss() {
         b[i] = (i as u8) / 2;
         a[i] = 7;
     }
-    let tables = TablesCtx {
-        r: &r,
-        g: &g,
-        b: &b,
-        a: &a,
-    };
+    let tables = TablesCtx { r, g, b, a };
     for (sel, s, _) in highp_known(Stage::ByteTables(&tables), [0.0, 1.0, 1.0, 0.5], [0.0; 4]) {
         assert_eq!(s[0], 255.0 * (1.0 / 255.0), "byte_tables {sel}");
         assert_eq!(s[1], 255.0 * (1.0 / 255.0), "byte_tables {sel}");
@@ -681,12 +676,7 @@ fn highp_color_stage_twins() {
         b[i] = (i / 3) as u8;
         a[i] = (i ^ 0x55) as u8;
     }
-    let tables = TablesCtx {
-        r: &r,
-        g: &g,
-        b: &b,
-        a: &a,
-    };
+    let tables = TablesCtx { r, g, b, a };
     let stages: Vec<(&str, Stage<'_>)> = vec![
         ("premul", Stage::Premul),
         ("premul_dst", Stage::PremulDst),

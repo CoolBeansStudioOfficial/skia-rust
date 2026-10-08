@@ -27,6 +27,10 @@ pub mod clip_stack_test;
 #[cfg(test)]
 pub mod clipper_test;
 #[cfg(test)]
+pub mod color_filter_test;
+#[cfg(test)]
+pub mod color_matrix_test;
+#[cfg(test)]
 pub mod color_priv_test;
 #[cfg(test)]
 pub mod color_space_test;

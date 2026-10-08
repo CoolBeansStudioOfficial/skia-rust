@@ -218,7 +218,7 @@ macro_rules! rp_op_table {
             store_10101010_xr                   Store10101010Xr                 [MemoryCtx]                         n  hi B2;
             store_src_rg                        StoreSrcRg                      [MemPtr]                            n  hi B2;
             load_src_rg                         LoadSrcRg                       [MemPtr]                            n  hi B2;
-            byte_tables                         ByteTables                      [&'a TablesCtx<'a>]                 n  hi B4;
+            byte_tables                         ByteTables                      [&'a TablesCtx]                     n  hi B4;
             colorburn                           Colorburn                       []                                  n  hi B3;
             colordodge                          Colordodge                      []                                  n  hi B3;
             softlight                           Softlight                       []                                  n  hi B3;
