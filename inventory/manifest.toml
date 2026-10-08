@@ -15298,7 +15298,7 @@ macro = "DEF_GM"
 source = "gm/aaxfermodes.cpp#L283-L283"
 module = "raster"
 status = "todo"
-reason = "not ported: draws ToolUtils::draw_checkerboard, a repeating bitmap image shader that is only on origin/main (this branch conflicts with main)"
+reason = "not ported: the GM itself (gm/aaxfermodes.cpp) is not in tests/gm; it also needs ToolUtils::DefaultPortableTypeface, which is not ported (ToolUtils::draw_checkerboard is now in tests/gm/src/tool_utils.rs)"
 span_hash = "1f1216ba1e8f19bcc85739ddea202fc0844bc99ac45e594e9ba293dc85c72b79"
 
 [[test]]

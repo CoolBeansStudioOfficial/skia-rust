@@ -18,10 +18,10 @@
 //!   [`crate::draw_atlas`] (`SkDraw_vertices.cpp`, `SkDraw_atlas.cpp`).
 //! * The mask filter branches of `drawDevPath`/`drawRRectNinePatch` call
 //!   `SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect` ([`crate::mask_filter_base`]).
-//! * Not ported yet (they need text): `drawSprite`, `drawBitmapAsMask`,
-//!   `drawGlyphRunList`/`paintMasks`. See the "As implemented in D5" design note.
-//! * `BitmapDevicePainter`, the interface text and bitmaps are painted through, is not ported
-//!   with them.
+//! * `drawGlyphRunList` and `paintMasks` are here, with [`BitmapDevicePainter`] (the interface
+//!   text is painted through, `SkDraw_text.cpp`).
+//! * Not ported yet: `drawSprite` and `drawBitmapAsMask`. See the "As implemented in D5" design
+//!   note.
 
 use std::borrow::Cow;
 use std::sync::Arc;
