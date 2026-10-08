@@ -12,13 +12,13 @@ use std::sync::Arc;
 
 use skia_rust_core::data::Data;
 use skia_rust_core::font_arguments::FontArguments;
-use skia_rust_core::font_mgr::{FontMgr, FontMgrBase, FontStyleSet};
+use skia_rust_core::font_mgr::{FontMgr, FontMgrBase, FontStyleSet, TypefaceDecoder};
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::stream::{MemoryStream, StreamAsset};
 use skia_rust_core::typeface::Typeface;
 use skia_rust_core::utf::Unichar;
 
-use super::typeface::make_from_stream;
+use super::typeface::{FACTORY_ID, make_from_stream};
 
 /// `SkFontMgr_Fontations_Empty`: a manager with no families, which makes typefaces from data.
 // Port of: src/ports/SkFontMgr_fontations_empty.cpp#L19-L72 (chrome/m156)
@@ -94,6 +94,15 @@ impl FontMgrBase for FontMgrFontationsEmpty {
     fn on_make_from_file(&self, path: &str, tt_index: i32) -> Option<Typeface> {
         let stream = skia_rust_core::stream::make_from_file(path)?;
         make_from_stream(stream, &index_arguments(tt_index))
+    }
+
+    // Port of: src/ports/SkTypeface_fontations.cpp#L27-L43 (the `SK_TYPEFACE_FACTORY_FONTATIONS`
+    // entry of `SkTypeface.cpp`'s decoder list, chrome/m156), listed by this manager.
+    fn typeface_decoders(&self) -> Vec<TypefaceDecoder> {
+        vec![TypefaceDecoder {
+            factory_id: FACTORY_ID,
+            make_from_stream,
+        }]
     }
 
     // Port of: src/ports/SkFontMgr_fontations_empty.cpp#L66-L68 (chrome/m156)

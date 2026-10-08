@@ -13,6 +13,7 @@ use std::fmt;
 use crate::data::Data;
 use crate::font_arguments::palette::Override;
 use crate::font_arguments::variation_position::Coordinate;
+use crate::font_arguments::{FontArguments, Palette, VariationPosition};
 use crate::font_style::{FontStyle, Slant, Weight, Width};
 use crate::scalar::{float_interp_func, scalar, scalar_round_to_int};
 use crate::stream::{MemoryStream, Stream, StreamAsset, WStream};
@@ -299,6 +300,28 @@ impl FontDescriptor {
     // Port of: src/core/SkFontDescriptor.h#L138-L140 (chrome/m156)
     pub fn set_factory_id(&mut self, factory_id: FactoryId) {
         self.factory_id = factory_id;
+    }
+
+    /// `SkFontDescriptor::getFontArguments`: the arguments that a decoder receives with the stream.
+    // Port of: src/core/SkFontDescriptor.h#L142-L151 (chrome/m156)
+    #[must_use]
+    pub fn font_arguments(&self) -> FontArguments<'_, '_> {
+        // C++ takes the collection index as `uint32_t`, so a negative `int` wraps the same way.
+        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        // Mirrors the C++ `uint32_t` conversion of the collection index (ported arithmetic).
+        let collection_index = (self.collection_index as u32) as usize;
+        let mut args = FontArguments::new();
+        args.set_collection_index(collection_index)
+            .set_variation_design_position(VariationPosition {
+                coordinates: &self.variation,
+            })
+            .set_palette(Palette {
+                index: self.palette_index,
+                overrides: &self.palette_entry_overrides,
+            })
+            .set_synthetic_bold(Some(self.synthetic_bold))
+            .set_synthetic_oblique(Some(self.synthetic_oblique));
+        args
     }
 
     /// `SkFontDescriptor::SkFontStyleWidthForWidthAxisValue`.

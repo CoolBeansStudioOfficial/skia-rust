@@ -41667,8 +41667,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L685-L720"
 module = "text"
-status = "todo"
-reason = "needs SkTypeface::MakeDeserialize with a sanitizer and the decoder table"
+status = "passing"
 span_hash = "399fad9724915821ddde413e29726ac17d5a938f6c429f7cece4a8b00094a869"
 
 [[test]]
@@ -41677,8 +41676,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L750-L783"
 module = "text"
-status = "todo"
-reason = "needs SkTypeface::MakeDeserialize with a sanitizer and the decoder table"
+status = "passing"
 span_hash = "3e4ac39537133f6e0cb073bf83e12a02b5053fafa827a7393a864f85fd41752c"
 
 [[test]]
