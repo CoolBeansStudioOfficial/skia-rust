@@ -539,6 +539,7 @@ dependencies = [
  "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-simd",
+ "skia-rust-tools",
  "zstd",
 ]
 
