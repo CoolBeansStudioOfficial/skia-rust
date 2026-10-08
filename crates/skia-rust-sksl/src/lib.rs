@@ -14,8 +14,11 @@
 mod base_shim;
 pub mod codegen;
 pub mod flavor;
+pub mod lexer;
 pub mod modules;
+pub mod operator;
 pub mod output_stream;
+pub mod position;
 pub mod skstd;
 pub mod string;
 pub mod thash;

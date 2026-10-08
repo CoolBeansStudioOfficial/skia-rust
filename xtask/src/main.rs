@@ -8,6 +8,7 @@ mod publish;
 mod rp_diff;
 mod skia;
 mod sksl;
+mod sksl_lexer;
 mod verify;
 mod verify_gms;
 mod verify_sksl;
@@ -173,6 +174,9 @@ enum SkslCommand {
         #[arg(long)]
         check: bool,
     },
+    /// Transcribe the lexer's DFA tables and token kinds from `SkSLLexer.{h,cpp}` into
+    /// `crates/skia-rust-sksl/src/lexer`.
+    GenLexer,
 }
 
 #[derive(Subcommand)]
@@ -206,6 +210,7 @@ fn main() -> Result<()> {
         } => skia::fetch(&root),
         Command::Sksl { command } => match command {
             SkslCommand::SyncModules { check } => sksl::sync_modules(&root, check),
+            SkslCommand::GenLexer => sksl_lexer::gen_lexer(&root),
         },
         Command::Inventory { command } => match command {
             InventoryCommand::Sync { allow_pin_mismatch } => {
