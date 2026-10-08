@@ -42,11 +42,7 @@ use std::fmt::Write;
 
 // The arcto test below should draw the same as the SVG in the C++ comment.
 // Port of: gm/arcto.cpp#L58-L127 (chrome/m156)
-// Not registered until ported trig is host-independent: matches the goldens on Linux and
-// Windows but not on macOS (notes/gm_arcto_cpp_arcto.md). Re-register as
-// `crate::def_simple_gm!(arcto, canvas, 500, 600, { arcto_draw(canvas) });` once it is.
-#[allow(dead_code)] // kept ported, registered again by the deterministic-libm work
-fn arcto_draw(canvas: &Canvas) {
+crate::def_simple_gm!(arcto, canvas, 500, 600, {
     let mut paint = Paint::default();
     paint.set_anti_alias(true);
     paint.set_style(Style::Stroke);
@@ -123,7 +119,7 @@ fn arcto_draw(canvas: &Canvas) {
         (200.0, 100.0),
     );
     canvas.draw_path(&path.detach(), &paint);
-}
+});
 
 // Port of: gm/arcto.cpp#L129 (chrome/m156)
 const PARSE_PATH_TEST_DIMENSION: i32 = 500;
@@ -273,7 +269,6 @@ fn make_random_svg_path(rand: &mut Random) -> String {
 
 // Port of: gm/arcto.cpp#L242-L309 (chrome/m156)
 crate::def_simple_gm!(
-    #[ignore = "see notes/gm_arcto_cpp_parsedpaths.md"]
     parsedpaths,
     canvas,
     PARSE_PATH_TEST_DIMENSION,

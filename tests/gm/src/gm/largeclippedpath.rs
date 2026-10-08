@@ -4,6 +4,7 @@
 // Port of: gm/largeclippedpath.cpp (chrome/m156)
 
 use crate::prelude::*;
+use skia_rust_core::libm;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::{PathDirection, PathFillType};
@@ -64,7 +65,10 @@ fn draw_clipped_flower(canvas: &Canvas, fill_type: PathFillType) {
     for i in 1..=K_NUM_PETALS {
         let c: f32 = 2.0 * SCALAR_PI * (i as f32 - 0.5) / K_NUM_PETALS as f32;
         let theta: f32 = 2.0 * SCALAR_PI * i as f32 / K_NUM_PETALS as f32;
-        flower.quad_to((c.cos() * 2.0, c.sin() * 2.0), (theta.cos(), theta.sin()));
+        flower.quad_to(
+            (libm::cosf(c) * 2.0, libm::sinf(c) * 2.0),
+            (libm::cosf(theta), libm::sinf(theta)),
+        );
     }
     flower.close();
     flower.add_arc(Rect::new(-0.75, -0.75, 0.75, 0.75), 0.0, 360.0);

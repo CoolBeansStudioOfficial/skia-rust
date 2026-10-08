@@ -58,6 +58,7 @@ pub mod image_filter_types;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
+pub mod libm;
 #[doc(hidden)]
 pub mod line_clipper;
 pub mod m44;

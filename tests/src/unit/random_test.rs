@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/RandomTest.cpp (chrome/m156)
 
+use skia_rust_core::libm;
 use skia_rust_core::random::Random;
 
 use crate::{Reporter, def_test, reporter_assert};
@@ -30,7 +31,7 @@ fn anderson_darling_test(p: &mut [f64; 32]) -> bool {
         if v < 1.0e-30 {
             v = 1.0e-30;
         }
-        s += (2.0 * f64::from(u32::try_from(k + 1).unwrap()) - 1.0) * v.ln();
+        s += (2.0 * f64::from(u32::try_from(k + 1).unwrap()) - 1.0) * libm::log(v);
     }
     let a2 = -32.0 - 0.03125 * s;
 
@@ -61,7 +62,7 @@ fn normal_cdf(z: f64) -> f64 {
     // unary-plus constant; that is ported as written.
     let mut t = ((-0.000_440_6 * z * z * 0.041_819_8) * z * z + 0.9) * z;
     t *= -1.772_453_850_91; // -sqrt(PI)
-    1.0 / (1.0 + t.exp())
+    1.0 / (1.0 + libm::exp(t))
 }
 
 // Port of: tests/RandomTest.cpp#L65-L75 (chrome/m156)

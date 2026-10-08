@@ -214,8 +214,7 @@ pub fn scalar_sqrt(x: scalar) -> scalar {
 #[doc(alias = "SkScalarPow")]
 #[must_use]
 pub fn scalar_pow(b: scalar, e: scalar) -> scalar {
-    // skia-rust: libm
-    b.powf(e)
+    crate::libm::powf(b, e)
 }
 
 /// `sin(radians)`.
@@ -223,8 +222,7 @@ pub fn scalar_pow(b: scalar, e: scalar) -> scalar {
 #[doc(alias = "SkScalarSin")]
 #[must_use]
 pub fn scalar_sin(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.sin()
+    crate::libm::sinf(radians)
 }
 
 /// `cos(radians)`.
@@ -232,8 +230,7 @@ pub fn scalar_sin(radians: scalar) -> scalar {
 #[doc(alias = "SkScalarCos")]
 #[must_use]
 pub fn scalar_cos(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.cos()
+    crate::libm::cosf(radians)
 }
 
 /// `tan(radians)`.
@@ -241,8 +238,7 @@ pub fn scalar_cos(radians: scalar) -> scalar {
 #[doc(alias = "SkScalarTan")]
 #[must_use]
 pub fn scalar_tan(radians: scalar) -> scalar {
-    // skia-rust: libm
-    radians.tan()
+    crate::libm::tanf(radians)
 }
 
 /// `asin(val)`.
@@ -250,8 +246,7 @@ pub fn scalar_tan(radians: scalar) -> scalar {
 #[doc(alias = "SkScalarASin")]
 #[must_use]
 pub fn scalar_asin(val: scalar) -> scalar {
-    // skia-rust: libm
-    val.asin()
+    crate::libm::asinf(val)
 }
 
 /// `acos(val)`.
@@ -259,8 +254,7 @@ pub fn scalar_asin(val: scalar) -> scalar {
 #[doc(alias = "SkScalarACos")]
 #[must_use]
 pub fn scalar_acos(val: scalar) -> scalar {
-    // skia-rust: libm
-    val.acos()
+    crate::libm::acosf(val)
 }
 
 /// `atan2(y, x)`.
@@ -268,8 +262,7 @@ pub fn scalar_acos(val: scalar) -> scalar {
 #[doc(alias = "SkScalarATan2")]
 #[must_use]
 pub fn scalar_atan2(y: scalar, x: scalar) -> scalar {
-    // skia-rust: libm
-    y.atan2(x)
+    crate::libm::atan2f(y, x)
 }
 
 /// `exp(x)`.
@@ -277,8 +270,7 @@ pub fn scalar_atan2(y: scalar, x: scalar) -> scalar {
 #[doc(alias = "SkScalarExp")]
 #[must_use]
 pub fn scalar_exp(x: scalar) -> scalar {
-    // skia-rust: libm
-    x.exp()
+    crate::libm::expf(x)
 }
 
 /// Natural log.
@@ -286,8 +278,7 @@ pub fn scalar_exp(x: scalar) -> scalar {
 #[doc(alias = "SkScalarLog")]
 #[must_use]
 pub fn scalar_log(x: scalar) -> scalar {
-    // skia-rust: libm
-    x.ln()
+    crate::libm::logf(x)
 }
 
 /// Base-2 log.
@@ -295,8 +286,7 @@ pub fn scalar_log(x: scalar) -> scalar {
 #[doc(alias = "SkScalarLog2")]
 #[must_use]
 pub fn scalar_log2(x: scalar) -> scalar {
-    // skia-rust: libm
-    x.log2()
+    crate::libm::log2f(x)
 }
 
 /// Converts an int to a scalar.

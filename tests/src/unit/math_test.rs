@@ -19,6 +19,7 @@ use skia_rust_core::floating_point::{
     float_rsqrt, float_saturate2int, float_saturate2int64, is_finite, is_finite_all, is_nan,
 };
 use skia_rust_core::half::{float_to_half, half_to_float};
+use skia_rust_core::libm;
 use skia_rust_core::math::{
     MAX_S32, MAX_S64, MIN_S32, MIN_S64, NAN32, left_shift_64, mul_div_255_round,
 };
@@ -313,10 +314,9 @@ def_test!(SkNextPow2, |reporter| {
     // exhaustive search for all the between numbers
     for i in 6..63356 {
         let actual = next_pow2(i);
-        // skia-rust: libm (ln, powf)
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         // mirrors the implicit float -> int conversion of the C++ initializer
-        let expected = 2f32.powf(((i as f32).ln() / 2f32.ln()).ceil()) as i32;
+        let expected = libm::powf(2.0, (libm::logf(i as f32) / libm::logf(2.0)).ceil()) as i32;
         reporter_assert!(
             reporter,
             expected == actual,
