@@ -1,70 +1,74 @@
-# PathOps op graph (slice 3): status and hand-over
+# PathOps op graph (slices 3 and 4): status and hand-over
 
-Branch `port/pathops-3` (draft PR #93). Manifest entries flipped to `passing`:
-`tests/PathOpsSimplifyTest.cpp::PathOpsSimplify` and `::bug_513001309`.
+Slice 3 (PR #93, `port/pathops-3`) ported the op graph, `Simplify` and `Op`. Slice 4 (`port/pathops-4`)
+completes the public surface and the op tests. Manifest entries flipped to `passing` in slice 4 (25):
+`PathOpsOpTest.cpp`: `PathOpsOp`, `PathOpsFailOp`, `PathOpsRepOp`, `bug_513820666`;
+`PathOpsBuilderTest.cpp`: all 11; `PathOpsTightBoundsTest.cpp`: all 9; `PathOpsAsWindingTest.cpp::PathOpsAsWinding`.
 
 ## Ported (crates/skia-rust-pathops/src)
 
 | File | Skia source (m156) | State |
 |---|---|---|
-| `op_state.rs` | SkPathOpsTypes.h (SkOpGlobalState), arenas and ids | complete |
-| `op_span.rs`, `op_segment.rs`, `op_contour.rs`, `op_angle.rs`, `op_curve.rs` | SkOpSpan, SkOpSegment, SkOpContour, SkOpAngle, SkPathOpsCurve | complete for the paths the ops use; some helpers unused until the tight-bounds and builder slices (`#![allow(dead_code)]` at the top of each file) |
-| `op_coincidence.rs` | SkOpCoincidence.cpp | complete |
-| `op_winding.rs` | SkPathOpsWinding.cpp (sortableTop, rayCheck, windingSpanAtT) | complete |
-| `path_writer.rs` | SkPathWriter.cpp (partials, assemble) | complete |
-| `op_edge_builder.rs` | SkOpEdgeBuilder.cpp | complete |
-| `op_add_intersections.rs` | SkAddIntersections.cpp, SkIntersectionHelper | complete |
-| `op_common.rs` | SkPathOpsCommon.cpp (AngleWinding, FindChase, SortContourList, HandleCoincidence) | complete |
+| `op_state.rs`, `op_span.rs`, `op_segment.rs`, `op_contour.rs`, `op_angle.rs`, `op_curve.rs` | SkOpGlobalState, SkOpSpan, SkOpSegment, SkOpContour, SkOpAngle, SkPathOpsCurve | complete |
+| `op_coincidence.rs`, `op_winding.rs`, `path_writer.rs`, `op_edge_builder.rs`, `op_add_intersections.rs`, `op_common.rs` | SkOpCoincidence, SkPathOpsWinding, SkPathWriter, SkOpEdgeBuilder, SkAddIntersections, SkPathOpsCommon | complete |
 | `op_simplify.rs` | SkPathOpsSimplify.cpp | complete (`pub fn simplify`) |
-| `op_op.rs` | SkPathOpsOp.cpp (findChaseOp, bridgeOp, gOpInverse/gOutInverse, OpDebug, Op) | complete (`pub fn op`) |
+| `op_op.rs` | SkPathOpsOp.cpp | complete (`pub fn op`) |
+| `op_builder.rs` | SkOpBuilder.cpp, `include/pathops/SkPathOps.h` (SkOpBuilder) | complete (`OpBuilder`) |
+| `tight_bounds.rs` | SkPathOpsTightBounds.cpp | complete (`pub fn tight_bounds`) |
+| `as_winding.rs` | SkPathOpsAsWinding.cpp | complete (`pub fn as_winding`) |
+| `path_ops_ext.rs` | (no Skia counterpart) | `PathOpsExt` trait on `Path`: `op`, `simplify`, `tight_bounds`, `as_winding`; re-exported by the `skia-rust` facade |
 
-Public surface so far: `skia_rust_pathops::{op, simplify}` and `path_op::PathOp`.
+Public surface: `skia_rust_pathops::{op, simplify, tight_bounds, as_winding, OpBuilder, PathOpsExt}`
+and `path_op::PathOp`. The facade re-exports `skia_rust::{pathops, PathOpsExt}`. Row added to
+`docs/API_MAPPING.md`.
 
-Not yet: `OpBuilder` (SkOpBuilder.cpp), `tight_bounds` (SkPathOpsTightBounds.cpp), `as_winding`
-(SkPathOpsAsWinding.cpp), the `PathOpsExt` extension trait on `Path` and its re-export in the
-`skia-rust` facade, and the `docs/API_MAPPING.md` note for the deviation.
+## Tests (tests/src/unit)
 
-## Tests
+| Test file | Ported | Passing |
+|---|---|---|
+| PathOpsSimplifyTest.cpp | 2 DEF_TESTs | 2/2 |
+| PathOpsOpTest.cpp (`path_ops_op_test.rs`) | all 446 static functions, `tests[]` (all entries), `failTests[]`, `repTests[]`, `bug_513820666`, `PathOpsOp`, `PathOpsFailOp`, `PathOpsRepOp` | 4 DEF_TESTs, all `PathOpsOp` cases pass (run as one DEF_TEST) |
+| PathOpsBuilderTest.cpp (`path_ops_builder_test.rs`) | 11 | 11/11 |
+| PathOpsTightBoundsTest.cpp (`path_ops_tight_bounds_test.rs`) | 9 (threaded runners run single-threaded, same cases) | 9/9 |
+| PathOpsAsWindingTest.cpp (`path_ops_as_winding_test.rs`) | 1 (with bug12040_1..5, bug13496_1..3) | 1/1 |
+| (new) `path_ops_ext_test.rs` | `PathOpsExt` forwards to free functions (not a Skia test) | 1/1 |
 
-| Test file | Status |
-|---|---|
-| PathOpsSimplifyTest.cpp | 2 of 2 DEF_TESTs pass (PathOpsSimplify: all 470 table entries; bug_513001309). Flipped. |
-| PathOpsOpTest.cpp | partial: `tests/src/unit/path_ops_op_test.rs` ports testIntersect1/2, testUnion1/2, testDiff1/2, testXor1/2, testOp1d, testOp2d (10 of about 450 functions). `PathOpsOpPartial` passes. DEF_TEST(PathOpsOp) stays `todo`. |
-| PathOpsTightBoundsTest.cpp | not ported (needs `tight_bounds`) |
-| PathOpsAsWindingTest.cpp | not ported (needs `as_winding`) |
-| PathOpsBuilderTest.cpp | not ported (needs `OpBuilder`) |
-
-Helpers in `tests/src/unit/path_ops_extended_test.rs`: `inner_simplify`/`test_simplify`/
-`test_simplify_fail` and `test_path_op`.
+Helpers: `tests/src/unit/path_ops_extended_test.rs` has `inner_simplify`, `test_simplify`,
+`test_simplify_fail`, `compare_paths`, `test_path_op`, `test_path_op_check`, `test_path_op_fuzz`,
+`test_path_op_fail`. `tests/src/unit/path_ops_test_common.rs` has `cubic_path_to_quads` (with the
+`CubicToQuads` helpers).
 
 Deviations, to report with the PR:
 
 1. `innerPathOp` only compares the result with the region boundary when `reporter->verbose()`.
    That comparison (`comparePaths` with `SkRegion::op` and `getBoundaryPath`) is not ported. Our
-   `test_path_op` checks success only, which is exactly what Skia checks without `--verbose`.
+   `test_path_op` checks success only, which is exactly what Skia checks without `--verbose`. So the
+   op results are not geometrically verified by these tests.
 2. `testSimplify` in our port compares the result on every run (Skia compares only when verbose).
-   This is stricter than Skia, so it cannot hide a failure Skia would report.
-3. `comparePaths` for Simplify uses Skia's bitmap comparison (`pathsDrawTheSame`, `MAX_ERRORS` 9),
-   not a pure region comparison; a region comparison gave 133 false mismatches on curved cases.
+3. `comparePaths` uses Skia's bitmap comparison (`pathsDrawTheSame`, `MAX_ERRORS` 9).
 4. `Simplify` no longer calls `set_phase(Walking)`: that call is `DEBUG_VALIDATE` only in Skia.
+5. `RunTestSet` is ported for the null-argument path only (`PathOpsOp`, `PathOpsFailOp`, `PathOpsRepOp`
+   call it that way); `subTests[]` and reverse order are gated by `runSubTests`/`runReverse`, false in Skia.
+6. `cubicOp130a` calls `complex_to_quads(pts2, &path)` where Skia's source also writes into `path`
+   (not `pathB`). Kept as in Skia.
+7. `AsWinding`: Skia's `cubic` branch of `left_edge` reads `t`, which is only set by the quad and
+   conic branches (`SK_INIT_TO_AVOID_WARNING` = 0). Ported as `t = 0`.
 
-## Verification status of the op port
+## Not done in slice 4
 
-The op is checked only by the success assertions in the 10 ported PathOpsOp cases and by the
-Simplify suite (which exercises the shared graph code). No geometric output check has run yet.
-The verbose-only region comparison (deviation 1) is the check that would catch a wrong result, so
-it is the first thing to add when porting PathOpsOpTest in full.
-
-Resolved from the previous hand-over: `SK_NaN32` is `i32::MIN` and `SK_MinS32` is `i32::MIN + 1`
-(SkMath.h); segment points are copied into `Segment::pts` (the edge builder does not write through
-its array after the segments are built).
+Item 4 of the slice plan: other PathOps test files are still `todo`. Not started:
+`PathOpsSimplifyFailTest`, `PathOpsSimplifyQuadThreadedTest`, `PathOpsSimplifyRectThreadedTest`,
+`PathOpsSimplifyTrianglesThreadedTest`, `PathOpsSimplifyDegenerateThreadedTest`,
+`PathOpsSimplifyQuadralateralsThreadedTest`, `PathOpsIssue3651`, `PathOpsInverseTest`,
+`PathOpsChalkboardTest`, `PathOpsFuzz763Test`, `PathOpsSkpTest`, `PathOpsBattles`,
+`PathOpsBuildUseTest`, `PathOpsBuilderConicTest`, `PathOpsOp*ThreadedTest`, `PathOpsThreeWayTest`,
+`PathOpsTigerTest`.
 
 ## Next steps
 
-1. Port the rest of `tests/PathOpsOpTest.cpp` (functions, the `tests[]`, `failTests[]` and
-   `repTests[]` tables, the `ops` arrays and `path_edit`). Flip only the tests seen passing.
-2. Port `SkOpBuilder.cpp`, `SkPathOpsTightBounds.cpp`, `SkPathOpsAsWinding.cpp`, then the
-   `PathOpsExt` trait and facade re-export, and `docs/API_MAPPING.md`.
-3. Port `PathOpsTightBoundsTest`, `PathOpsAsWindingTest`, `PathOpsBuilderTest`.
-4. Remove the module-level `clippy` and `dead_code` allows once the callers exist, and fix the
-   remaining lints they hide where they do not mirror Skia.
+1. Port the remaining test files above (PathOpsSimplifyFail and the threaded Simplify runners first:
+   small and based on helpers that exist). Fuzz763, Issue3651 and Skp are large data files; the
+   translator used for PathOpsOpTest (generate Rust from the C++ statements) applies to them.
+2. Run `cargo xtask inventory verify` in full (it runs the whole test suite, longer than one
+   foreground call; split by test filter if needed) and confirm the 25 flipped entries.
+3. Consider the verbose region comparison (deviation 1) as a separate check to catch wrong geometry.

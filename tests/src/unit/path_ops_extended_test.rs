@@ -27,6 +27,8 @@ use crate::{Reporter, reporter_assert};
 enum ExpectSuccess {
     No,
     Yes,
+    /// `kFlaky`: the outcome is not checked (used by the fuzz cases).
+    Flaky,
 }
 
 /// `enum class ExpectMatch`.
@@ -239,4 +241,52 @@ pub(crate) fn test_path_op(
     filename: &str,
 ) -> bool {
     inner_path_op(reporter, a, b, shape_op, filename, ExpectSuccess::Yes)
+}
+
+/// `testPathOpCheck(reporter, a, b, shapeOp, testName, checkFail)`: expects success when
+/// `check_fail` is set, and failure otherwise.
+// Port of: tests/PathOpsExtendedTest.cpp#L603-L607 (chrome/m156)
+pub(crate) fn test_path_op_check(
+    reporter: &mut Reporter,
+    a: &Path,
+    b: &Path,
+    shape_op: PathOp,
+    filename: &str,
+    check_fail: bool,
+) -> bool {
+    let expect = if check_fail {
+        ExpectSuccess::Yes
+    } else {
+        ExpectSuccess::No
+    };
+    inner_path_op(reporter, a, b, shape_op, filename, expect)
+}
+
+/// `testPathOpFuzz(reporter, a, b, shapeOp, testName)`: runs the operation without checking the
+/// outcome (`kFlaky`), and without the assertion skip of `SkipAssert::kYes`.
+// Port of: tests/PathOpsExtendedTest.cpp#L609-L613 (chrome/m156)
+pub(crate) fn test_path_op_fuzz(
+    reporter: &mut Reporter,
+    a: &Path,
+    b: &Path,
+    shape_op: PathOp,
+    filename: &str,
+) -> bool {
+    inner_path_op(reporter, a, b, shape_op, filename, ExpectSuccess::Flaky)
+}
+
+/// `testPathOpFail(reporter, a, b, shapeOp, testName)`: expects the operation to fail.
+// Port of: tests/PathOpsExtendedTest.cpp#L615-L624 (chrome/m156)
+pub(crate) fn test_path_op_fail(
+    reporter: &mut Reporter,
+    a: &Path,
+    b: &Path,
+    shape_op: PathOp,
+    filename: &str,
+) -> bool {
+    if op(a, b, shape_op).is_some() {
+        reporter_assert!(reporter, false, "{} test is expected to fail", filename);
+        return false;
+    }
+    true
 }

@@ -148,7 +148,7 @@ impl PathWriter {
 
     /// `SkPathWriter::finishContour()`.
     // Port of: src/pathops/SkPathWriter.cpp#L79-L97 (chrome/m156)
-    fn finish_contour(&mut self, state: &OpState) {
+    pub(crate) fn finish_contour(&mut self, state: &OpState) {
         if !self.matched_last(state, self.defer[0]) {
             if self.defer[1].is_none() {
                 return;
