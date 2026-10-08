@@ -131,6 +131,7 @@ pub mod surface;
 pub mod tablemaskfilter;
 pub mod tallstretchedbitmaps;
 pub mod testgradient;
+pub mod text_scale_skew;
 pub mod thinconcavepaths;
 pub mod thinrects;
 pub mod thinstrokedrects;
