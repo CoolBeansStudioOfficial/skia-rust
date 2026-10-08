@@ -11,13 +11,16 @@
 
 use crate::color::Color4f;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::image::Image;
 use crate::matrix::Matrix;
+use crate::read_buffer::ReadBuffer;
 use crate::shader::Shader;
 use crate::shaders::shader_base::{
     GradientInfo, GradientType, MatrixRec, ShaderBase, ShaderType, concat_local_matrices,
 };
 use crate::tile_mode::TileMode;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// A shader drawn with a local matrix (`SkLocalMatrixShader`).
 // Port of: src/shaders/SkLocalMatrixShader.h#L22-L70 (chrome/m156)
@@ -55,6 +58,17 @@ impl LocalMatrixShader {
 }
 
 impl ShaderBase for LocalMatrixShader {
+    // Port of: src/shaders/SkLocalMatrixShader.cpp#L100 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkLocalMatrixShader"
+    }
+
+    // Port of: src/shaders/SkLocalMatrixShader.cpp#L39-L42 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_matrix(&self.local_matrix);
+        buffer.write_shader(Some(&self.wrapped_shader));
+    }
+
     // Port of: src/shaders/SkLocalMatrixShader.h#L39 (chrome/m156)
     fn is_opaque(&self) -> bool {
         self.wrapped_shader.as_base().is_opaque()
@@ -144,4 +158,15 @@ impl Shader {
     pub fn is_a_image(&self) -> Option<(Image, Matrix, (TileMode, TileMode))> {
         self.as_base().on_is_a_image()
     }
+}
+
+/// `SkLocalMatrixShader::CreateProc`: the matrix, then the wrapped shader, made with the matrix
+/// (`makeWithLocalMatrix`). A missing wrapped shader is `None`.
+// Port of: src/shaders/SkLocalMatrixShader.cpp#L29-L37 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, registry: &FlattenableRegistry) -> Option<Shader> {
+    let local_matrix = buffer.read_matrix();
+    let base_shader = buffer.read_shader(registry)?;
+    Some(base_shader.with_local_matrix(&local_matrix))
 }

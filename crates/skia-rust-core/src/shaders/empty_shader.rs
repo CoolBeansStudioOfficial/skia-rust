@@ -6,6 +6,10 @@
 //! `SkEmptyShader`: a shader that draws nothing.
 
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
+use crate::read_buffer::ReadBuffer;
+use crate::shader::Shader;
+use crate::shaders;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 
 /// A shader that always draws nothing (`SkEmptyShader`): its stages fail to append. Create one
@@ -16,6 +20,11 @@ use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 pub struct EmptyShader;
 
 impl ShaderBase for EmptyShader {
+    // Port of: src/shaders/SkEmptyShader.cpp#L22-L23 (chrome/m156), SK_REGISTER_FLATTENABLE
+    fn type_name(&self) -> &'static str {
+        "SkEmptyShader"
+    }
+
     fn is_opaque(&self) -> bool {
         false
     }
@@ -27,4 +36,15 @@ impl ShaderBase for EmptyShader {
     fn append_stages(&self, _rec: &mut StageRec<'_, '_>, _m_rec: &MatrixRec) -> bool {
         false
     }
+}
+
+/// `SkEmptyShader::CreateProc`: an empty shader, which reads nothing.
+// Port of: src/shaders/SkEmptyShader.cpp#L16-L18 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(
+    _buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<Shader> {
+    Some(shaders::empty())
 }

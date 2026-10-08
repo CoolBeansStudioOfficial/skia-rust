@@ -18,8 +18,10 @@
 use crate::alpha_type::AlphaType;
 use crate::bitmap::Bitmap;
 use crate::blend_mode::BlendMode;
+use crate::blender::Blender;
 use crate::color::Color;
 use crate::color::Color4f;
+use crate::color_filter::ColorFilter;
 use crate::color_space_priv::srgb_singleton;
 use crate::data::Data;
 use crate::flattenable::FlattenableRegistry;
@@ -33,9 +35,11 @@ use crate::path_effect::PathEffect;
 use crate::picture_priv::{VERSION_ANISOTROPIC_FILTER, VERSION_SK_BLENDER_IN_SK_PAINT};
 use crate::point::Point;
 use crate::rect::{IRect, Rect};
+use crate::region::Region;
 use crate::rrect::RRect;
 use crate::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use crate::serial_procs::DeserialProcs;
+use crate::shader::Shader;
 use crate::stream::MemoryStream;
 use crate::typeface::Typeface;
 use crate::write_buffer::{CUSTOM_BLEND_MODE_SENTINEL, FLAT_HAS_EFFECTS};
@@ -649,6 +653,24 @@ impl ReadBuffer<'_> {
         matrix
     }
 
+    /// Reads a region written by `writeRegion`, and moves past it (`readRegion`). `None` if the
+    /// region is not valid, as the buffer then is not either: a region has a non-zero, 4-byte
+    /// aligned size.
+    // Port of: src/core/SkReadBuffer.cpp#L256-L265 (chrome/m156), readRegion
+    #[doc(alias = "readRegion")]
+    pub fn read_region(&mut self) -> Option<Region> {
+        let mut region = Region::new();
+        let size = if self.is_valid() {
+            region.read_from_memory(&self.data[self.curr..])
+        } else {
+            0
+        };
+        // The region is valid only with a non-zero size that is a multiple of 4.
+        let valid = self.validate(align4(size) == size && size != 0);
+        let _ = self.skip(size);
+        valid.then_some(region)
+    }
+
     /// Reads a path written by `writePath`, and moves past it whether or not it is valid
     /// (`readPath`).
     // Port of: src/core/SkReadBuffer.cpp#L267-L283 (chrome/m156)
@@ -737,11 +759,48 @@ impl ReadBuffer<'_> {
         self.validate(word == 0)
     }
 
+    /// Reads a shader written by `writeFlattenable` (`readShader`). `registry` maps the names to
+    /// their factories. A null shader is `None`, as is an error (see the buffer's validity).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readShader`
+    #[doc(alias = "readShader")]
+    pub fn read_shader(&mut self, registry: &FlattenableRegistry) -> Option<Shader> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.shader_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a color filter written by `writeFlattenable` (`readColorFilter`).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readColorFilter`
+    #[doc(alias = "readColorFilter")]
+    pub fn read_color_filter(&mut self, registry: &FlattenableRegistry) -> Option<ColorFilter> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.color_filter_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a blender written by `writeFlattenable` (`readBlender`).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readBlender`
+    #[doc(alias = "readBlender")]
+    pub fn read_blender(&mut self, registry: &FlattenableRegistry) -> Option<Blender> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.blender_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
     /// Reads a paint (`readPaint`, `SkPaintPriv::Unflatten`). The paint is reset if the buffer is
-    /// invalid afterwards. The path effect and mask filter are read with `registry`; a shader,
-    /// color filter, image filter or custom blender must be null, as they are not read yet.
+    /// invalid afterwards. The shader, path effect, mask filter, color filter and blender are read
+    /// with `registry`; an image filter must be null, as it is not read yet.
     // Port of: src/core/SkPaintPriv.cpp#L289-L331 (chrome/m156), with the arms of the
-    // flattenables that are ported (path effect, mask filter); the others must be null
+    // flattenables that are ported; the image filter must be null
     #[doc(alias = "readPaint")]
     pub fn read_paint(&mut self, registry: &FlattenableRegistry) -> Paint {
         let mut paint = Paint::default();
@@ -758,26 +817,27 @@ impl ReadBuffer<'_> {
         let flat_flags = unpack_v68(&mut paint, packed, &mut safe);
 
         if flat_flags & FLAT_HAS_EFFECTS != 0 {
-            let path_effect;
-            let mask_filter;
-            if self.is_version_lt(VERSION_SK_BLENDER_IN_SK_PAINT) {
-                // This paint predates the introduction of user blend functions (via SkBlender).
-                path_effect = self.read_path_effect(registry);
-                self.read_null_flattenable(); // shader
-                mask_filter = self.read_mask_filter(registry);
-                self.read_null_flattenable(); // color filter
+            // This paint predates the introduction of user blend functions (via SkBlender) when
+            // its version is older; it has no blender, and a draw looper (now deprecated) after
+            // the color filter.
+            let predates_blender = self.is_version_lt(VERSION_SK_BLENDER_IN_SK_PAINT);
+            let path_effect = self.read_path_effect(registry);
+            let shader = self.read_shader(registry);
+            let mask_filter = self.read_mask_filter(registry);
+            let color_filter = self.read_color_filter(registry);
+            let blender = if predates_blender {
                 self.read32(); // drawLooper, now deprecated
                 self.read_null_flattenable(); // image filter
+                None
             } else {
-                path_effect = self.read_path_effect(registry);
-                self.read_null_flattenable(); // shader
-                mask_filter = self.read_mask_filter(registry);
-                self.read_null_flattenable(); // color filter
                 self.read_null_flattenable(); // image filter
-                self.read_null_flattenable(); // blender
-            }
+                self.read_blender(registry)
+            };
             paint.set_path_effect(path_effect);
+            paint.set_shader(shader);
             paint.set_mask_filter(mask_filter);
+            paint.set_color_filter(color_filter);
+            paint.set_blender(blender);
         }
 
         if !self.validate(safe) {

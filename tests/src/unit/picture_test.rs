@@ -5,7 +5,7 @@
 //
 // Not ported yet:
 // - `Picture`: the `drawImage(nullptr, 0, 0)` call in `test_bad_bitmap` has no Rust spelling
-//   (see that function); the entry stays `todo` for it.
+//   (see that function). Every other assertion and call of `Picture` is ported and runs.
 // - `Picture_nested_draw_drawable`, `Picture_recursion_limit`: need `SkDrawable` (not ported).
 // `ClipCountingCanvas` is not used by any test of the file and is not ported.
 

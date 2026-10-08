@@ -22,6 +22,7 @@ use crate::raster_pipeline::Stage;
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::tile_mode::TileMode;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// Accumulates matrices, starting with the CTM, when building up a raster pipeline by walking
 /// the shader tree (`SkShaders::MatrixRec`). It avoids adding a matrix multiply for each
@@ -378,7 +379,7 @@ pub struct GradientInfo<'a> {
 /// skia-rust: the legacy shader context is [`ShaderContext`] and
 /// [`on_make_context`](Self::on_make_context); `SK_ENABLE_LEGACY_SHADERCONTEXT` is not defined in
 /// the oracle builds ([`ENABLE_LEGACY_SHADER_CONTEXT`]), so no shader makes one.
-/// `asRuntimeEffect` and the flattening hooks are not ported yet.
+/// `asRuntimeEffect` is not ported yet.
 // Port of: src/shaders/SkShaderBase.h#L185-L411 (chrome/m156)
 #[doc(alias = "SkShaderBase")]
 pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
@@ -396,6 +397,16 @@ pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
     /// The kind of shader (`type`).
     #[doc(alias = "type")]
     fn shader_type(&self) -> ShaderType;
+
+    /// The name the shader is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks a shader that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the parameters of the shader (`flatten`). Writes nothing by default.
+    fn flatten(&self, _buffer: &mut BinaryWriteBuffer) {}
 
     /// Adds stages to implement this shader. To ensure that the correct input coords are
     /// present in `r, g`, [`MatrixRec::apply`] must be called (unless the shader doesn't require

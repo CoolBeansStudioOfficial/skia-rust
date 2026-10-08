@@ -136,6 +136,14 @@ impl PictureRecordState {
             .copy_from_slice(&bytes);
     }
 
+    /// Writes a region, as `SkWriter32::writeRegion` does (`addRegion`).
+    // Port of: src/core/SkPictureRecord.cpp#L945-L947 (chrome/m156), addRegion
+    fn add_region(&mut self, region: &Region) {
+        let mut bytes = Vec::new();
+        region.write_to_memory(&mut bytes);
+        self.writer.reserve(bytes.len()).copy_from_slice(&bytes);
+    }
+
     /// Writes points, as they are in memory (`addPoints`).
     fn add_points(&mut self, pts: &[Point]) {
         for pt in pts {
@@ -361,6 +369,19 @@ impl PictureRecordState {
         self.record_restore_offset_placeholder();
     }
 
+    // Port of: src/core/SkPictureRecord.cpp#L418-L433 (chrome/m156), recordClipRegion
+    fn record_clip_region(&mut self, region: &Region, op: ClipOp) {
+        // op + clip params + region, and the restore offset when a save is open
+        let mut size = 2 * 4 + region.write_to_memory_size();
+        if !self.restore_offset_stack.is_empty() {
+            size += 4;
+        }
+        self.add_draw(draw_type::CLIP_REGION, size);
+        self.add_region(region);
+        self.add_word(clip_params_pack(op as u32, false) as usize);
+        self.record_restore_offset_placeholder();
+    }
+
     // Port of: src/core/SkPictureRecord.cpp#L381-L395 (chrome/m156), recordClipPath
     fn record_clip_path(&mut self, path_id: usize, op: ClipOp, do_aa: bool) {
         let mut size = 3 * 4;
@@ -502,9 +523,9 @@ impl CanvasHooks for PictureRecordHooks {
         self.unsupported();
     }
 
-    // Clip regions are not ported.
-    fn on_clip_region(&mut self, _device_rgn: &Region, _op: ClipOp) {
-        self.unsupported();
+    // Port of: src/core/SkPictureRecord.cpp#L413-L416 (chrome/m156), onClipRegion
+    fn on_clip_region(&mut self, device_rgn: &Region, op: ClipOp) {
+        self.with(|state| state.record_clip_region(device_rgn, op));
     }
 
     // Port of: src/core/SkPictureRecord.cpp#L435-L446 (chrome/m156), onResetClip
@@ -572,9 +593,16 @@ impl CanvasHooks for PictureRecordHooks {
         true
     }
 
-    // Regions are not ported.
-    fn on_draw_region(&mut self, _region: &Region, _paint: &Paint) -> bool {
-        self.unsupported()
+    // Port of: src/core/SkPictureRecord.cpp#L510-L518 (chrome/m156), onDrawRegion
+    fn on_draw_region(&mut self, region: &Region, paint: &Paint) -> bool {
+        self.with(|state| {
+            // op + paint index + region
+            let size = 2 * 4 + region.write_to_memory_size();
+            state.add_draw(draw_type::DRAW_REGION, size);
+            state.add_paint(paint);
+            state.add_region(region);
+        });
+        true
     }
 
     // Port of: src/core/SkPictureRecord.cpp#L520-L527 (chrome/m156), onDrawRRect

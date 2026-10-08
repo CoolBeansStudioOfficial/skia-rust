@@ -10,7 +10,7 @@
 //! manager run under both configurations ([`FontConfig`]; docs/design/text.md §8).
 
 use std::cell::Cell;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Once, OnceLock};
 
 use skia_rust_core::data::Data;
 use skia_rust_core::font::Font;
@@ -92,14 +92,36 @@ pub fn font_config() -> FontConfig {
 /// Runs `body` with `config` as the configuration of this thread, then restores the previous
 /// one (also when `body` panics).
 pub fn with_font_config<R>(config: FontConfig, body: impl FnOnce() -> R) -> R {
-    struct Restore(FontConfig);
-    impl Drop for Restore {
-        fn drop(&mut self) {
-            FONT_CONFIG.with(|c| c.set(self.0));
-        }
+    if config == FontConfig::NativeFontations {
+        register_native_decoders();
     }
-    let _restore = Restore(FONT_CONFIG.with(|c| c.replace(config)));
+    let _restore = RestoreFontConfig(FONT_CONFIG.with(|c| c.replace(config)));
     body()
+}
+
+/// Restores the previous [`FontConfig`] of the thread when dropped (see [`with_font_config`]).
+struct RestoreFontConfig(FontConfig);
+
+impl Drop for RestoreFontConfig {
+    fn drop(&mut self) {
+        FONT_CONFIG.with(|c| c.set(self.0));
+    }
+}
+
+/// The Fontations decoder, registered once for the process as Skia's test setup does for
+/// `SK_TYPEFACE_FACTORY_FONTATIONS` (`SkTypeface::Register`, docs/design/text.md §5.2). The
+/// registry is process-wide, so after the first [`FontConfig::NativeFontations`] run every later
+/// `Typeface::make_deserialize` in the test binary decodes Fontations descriptors, in any
+/// configuration. Only this configuration registers it.
+// Port of: src/ports/SkTypeface_fontations.cpp#L27-L43 (chrome/m156), `SkTypeface::Register` call
+fn register_native_decoders() {
+    static REGISTERED: Once = Once::new();
+    REGISTERED.call_once(|| {
+        Typeface::register_decoder(
+            skia_rust_text::ports::fontations::typeface::FACTORY_ID,
+            skia_rust_text::ports::fontations::typeface::make_from_stream,
+        );
+    });
 }
 
 /// `ToolUtils::TestFontMgr()`: the portable manager (`--nativeFonts false`, the GM oracle's

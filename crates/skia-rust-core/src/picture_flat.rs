@@ -28,6 +28,8 @@ pub(crate) fn pack_8_24(small: u8, large: u32) -> u32 {
 pub(crate) mod draw_type {
     /// `CLIP_PATH`.
     pub const CLIP_PATH: u8 = 1;
+    /// `CLIP_REGION`.
+    pub const CLIP_REGION: u8 = 2;
     /// `CLIP_RECT`.
     pub const CLIP_RECT: u8 = 3;
     /// `CLIP_RRECT`.
@@ -56,6 +58,8 @@ pub(crate) mod draw_type {
     pub const DRAW_DRRECT: u8 = 40;
     /// `DRAW_ARC`.
     pub const DRAW_ARC: u8 = 60;
+    /// `DRAW_REGION`.
+    pub const DRAW_REGION: u8 = 61;
     /// `CONCAT44`.
     pub const CONCAT44: u8 = 68;
     /// `SAVE_LAYER_SAVELAYERREC`.

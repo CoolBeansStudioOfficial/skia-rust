@@ -12,9 +12,12 @@ use core::cell::Cell;
 
 use crate::color_filter::ColorFilter;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::raster_pipeline::Stage;
+use crate::read_buffer::ReadBuffer;
 use crate::shader::Shader;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// A shader that modulates another shader's colors by `alpha`, then applies a color filter
 /// (`SkColorFilterShader`).
@@ -64,6 +67,17 @@ impl ColorFilterShader {
 }
 
 impl ShaderBase for ColorFilterShader {
+    // Port of: src/shaders/SkColorFilterShader.cpp#L62 (chrome/m156), SK_REGISTER_FLATTENABLE
+    fn type_name(&self) -> &'static str {
+        "SkColorFilterShader"
+    }
+
+    // Port of: src/shaders/SkColorFilterShader.cpp#L56-L60 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_shader(Some(&self.shader));
+        buffer.write_color_filter(Some(&self.filter));
+    }
+
     // Port of: src/shaders/SkColorFilterShader.cpp#L54-L56 (chrome/m156)
     #[allow(clippy::float_cmp)] // Skia compares the alpha with 1 exactly
     fn is_opaque(&self) -> bool {
@@ -93,6 +107,17 @@ impl ShaderBase for ColorFilterShader {
         }
         true
     }
+}
+
+/// `SkColorFilterShader::CreateProc`: the shader, then its filter, made with `Make` (so a missing
+/// filter gives the shader itself).
+// Port of: src/shaders/SkColorFilterShader.cpp#L46-L50 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, registry: &FlattenableRegistry) -> Option<Shader> {
+    let shader = buffer.read_shader(registry)?;
+    let filter = buffer.read_color_filter(registry);
+    Some(ColorFilterShader::make(shader, 1.0, filter))
 }
 
 #[cfg(test)]

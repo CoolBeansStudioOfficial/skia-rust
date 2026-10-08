@@ -51,6 +51,18 @@ pub(crate) const VERSION_SAVE_LAYER_BACKDROP_TILE_MODE: u32 = 106;
 // Port of: src/core/SkPicturePriv.h#L183 (chrome/m156)
 pub(crate) const VERSION_ANISOTROPIC_FILTER: u32 = 92;
 
+/// The version where the blend color filter became float, `kBlend4fColorFilter`.
+// Port of: src/core/SkPicturePriv.h#L160 (chrome/m156)
+pub(crate) const VERSION_BLEND_4F_COLOR_FILTER: u32 = 93;
+
+/// The version where the matrix color filter could be unclamped, `kUnclampedMatrixColorFilter`.
+// Port of: src/core/SkPicturePriv.h#L172 (chrome/m156)
+pub(crate) const VERSION_UNCLAMPED_MATRIX_COLOR_FILTER: u32 = 105;
+
+/// The version where the color shaders combined their color space, `kCombineColorShaders`.
+// Port of: src/core/SkPicturePriv.h#L174 (chrome/m156)
+pub(crate) const VERSION_COMBINE_COLOR_SHADERS: u32 = 107;
+
 /// Makes a picture from its parts (`MakePicture`). A `None` record makes a placeholder.
 // Port of: src/core/SkPicture.cpp#L355-L368 (chrome/m156)
 #[doc(alias = "MakePicture")]

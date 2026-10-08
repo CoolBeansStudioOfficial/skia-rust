@@ -450,20 +450,16 @@ fn test_picture_typeface_serialization(
 }
 
 // Port of: tests/SerializationTest.cpp#L577-L585 (chrome/m156), Serialization_PictureTypeface
-def_font_test!(
-    #[ignore = "NativeFontations: the call without serial procs deserializes the font data with builtin_decoders (only the empty typeface), so 5 pixel comparisons differ; see notes/picture-serialization.md"]
-    Serialization_PictureTypeface,
-    |reporter| {
-        test_picture_typeface_serialization(reporter, None, None);
+def_font_test!(Serialization_PictureTypeface, |reporter| {
+    test_picture_typeface_serialization(reporter, None, None);
 
-        let serial_procs = SerialProcs {
-            typeface: Some(serialize_typeface_proc()),
-            ..Default::default()
-        };
-        let deserial_procs = DeserialProcs {
-            typeface: Some(deserialize_typeface_proc()),
-            ..Default::default()
-        };
-        test_picture_typeface_serialization(reporter, Some(&serial_procs), Some(&deserial_procs));
-    }
-);
+    let serial_procs = SerialProcs {
+        typeface: Some(serialize_typeface_proc()),
+        ..Default::default()
+    };
+    let deserial_procs = DeserialProcs {
+        typeface: Some(deserialize_typeface_proc()),
+        ..Default::default()
+    };
+    test_picture_typeface_serialization(reporter, Some(&serial_procs), Some(&deserial_procs));
+});

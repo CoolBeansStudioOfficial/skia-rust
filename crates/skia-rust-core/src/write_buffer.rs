@@ -20,7 +20,9 @@
 //! image with mipmap levels is not written.
 
 use crate::alpha_type::AlphaType;
+use crate::blender::Blender;
 use crate::color::Color4f;
+use crate::color_filter::ColorFilter;
 use crate::image::Image;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
@@ -32,6 +34,7 @@ use crate::rect::Rect;
 use crate::rrect::RRect;
 use crate::sampling_options::SamplingOptions;
 use crate::serial_procs::SerialProcs;
+use crate::shader::Shader;
 use crate::typeface::Typeface;
 
 /// The image flags of `SkWriteBufferImageFlags`: unpremultiplied, and the mipmaps follow.
@@ -238,6 +241,10 @@ pub struct BinaryWriteBuffer {
     /// `fFactorySet`: the factories written by index, in order of first use
     /// (`setFactoryRecorder`). A factory is identified by its name.
     factory_recorder: Option<Vec<String>>,
+    /// Set when a flattenable without a name was written (its type is not flattenable, or a
+    /// flattenable nested in it is not). Such a buffer cannot be read back, so the picture writer
+    /// refuses the paint or picture that holds it.
+    flatten_failed: bool,
 }
 
 impl BinaryWriteBuffer {
@@ -396,31 +403,77 @@ impl BinaryWriteBuffer {
         }
     }
 
+    /// Writes a shader (`writeFlattenable(shader)`), or the null marker. The shader's
+    /// `flatten` writes its parameters; a shader that has no type name marks the buffer as failed
+    /// (see [`flatten_failed`](Self::flatten_failed)).
+    // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156), `writeFlattenable` of a shader
+    #[doc(alias = "writeFlattenable")]
+    pub fn write_shader(&mut self, shader: Option<&Shader>) {
+        match shader {
+            None => self.writer.write32(0),
+            Some(shader) => {
+                let base = shader.as_base();
+                self.write_flattenable(base.type_name(), |buffer| base.flatten(buffer));
+            }
+        }
+    }
+
+    /// Writes a color filter (`writeFlattenable(filter)`), or the null marker.
+    // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156), `writeFlattenable` of a filter
+    #[doc(alias = "writeFlattenable")]
+    pub fn write_color_filter(&mut self, filter: Option<&ColorFilter>) {
+        match filter {
+            None => self.writer.write32(0),
+            Some(filter) => {
+                let base = filter.as_base();
+                self.write_flattenable(base.type_name(), |buffer| base.flatten(buffer));
+            }
+        }
+    }
+
+    /// Writes a blender (`writeFlattenable(blender)`), or the null marker.
+    // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156), `writeFlattenable` of a blender
+    #[doc(alias = "writeFlattenable")]
+    pub fn write_blender(&mut self, blender: Option<&Blender>) {
+        match blender {
+            None => self.writer.write32(0),
+            Some(blender) => {
+                let base = blender.as_base();
+                self.write_flattenable(base.type_name(), |buffer| base.flatten(buffer));
+            }
+        }
+    }
+
+    /// True if a flattenable without a name was written, so the buffer cannot be read back.
+    #[must_use]
+    pub fn flatten_failed(&self) -> bool {
+        self.flatten_failed
+    }
+
     /// Writes a paint (`writePaint`): the stroke width and miter, the color, and the packed flags,
     /// then the effects if the paint has any (`SkPaintPriv::Flatten`).
     ///
-    /// Returns false, writing nothing, if the paint has a shader, color filter, image filter or
-    /// custom blender: those are not written yet (their flattenables are not ported).
-    // Port of: src/core/SkPaintPriv.cpp#L261-L287 (chrome/m156), with the effect arms of the
-    // flattenables that are ported (path effect, mask filter); the others are written as null
+    /// Returns false, if the paint has an image filter (not written yet) or an effect that cannot
+    /// be flattened. The buffer is then not usable.
+    // Port of: src/core/SkPaintPriv.cpp#L261-L287 (chrome/m156), with the arms of the
+    // flattenables that are ported; the image filter is written as null
     #[doc(alias = "writePaint")]
     pub fn write_paint(&mut self, paint: &Paint) -> bool {
-        if paint.shader().is_some()
-            || paint.color_filter().is_some()
-            || paint.image_filter().is_some()
-        {
+        if paint.image_filter().is_some() {
             return false;
         }
         let path_effect = paint.path_effect();
+        let shader = paint.shader();
         let mask_filter = paint.mask_filter();
+        let color_filter = paint.color_filter();
+        let blender = paint.blender();
         // The paint takes the simple form when it has no effects. A blend mode is not an effect
         // (a paint with one has a blender, which `asBlendMode` sees through).
-        let has_effects =
-            path_effect.is_some() || mask_filter.is_some() || paint.as_blend_mode().is_none();
-        // A blender is written with the effects, and only a null one is written so far.
-        if has_effects && paint.blender().is_some() {
-            return false;
-        }
+        let has_effects = path_effect.is_some()
+            || shader.is_some()
+            || mask_filter.is_some()
+            || color_filter.is_some()
+            || paint.as_blend_mode().is_none();
         let flat_flags = if has_effects { FLAT_HAS_EFFECTS } else { 0 };
 
         self.write_scalar(paint.stroke_width());
@@ -430,14 +483,14 @@ impl BinaryWriteBuffer {
 
         if has_effects {
             self.write_path_effect(path_effect.as_ref());
-            // The shader, color filter, image filter and blender are null.
-            self.writer.write32(0);
+            self.write_shader(shader.as_ref());
             self.write_mask_filter(mask_filter.as_ref());
+            self.write_color_filter(color_filter.as_ref());
+            // The image filter is null.
             self.writer.write32(0);
-            self.writer.write32(0);
-            self.writer.write32(0);
+            self.write_blender(blender.as_ref());
         }
-        true
+        !self.flatten_failed
     }
 
     /// Writes a color as its four scalars (`writeColor4f`).
@@ -465,6 +518,10 @@ impl BinaryWriteBuffer {
     /// else the name (or its dictionary index), then the size, and what `flatten` writes.
     // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156)
     fn write_flattenable(&mut self, name: &str, flatten: impl FnOnce(&mut Self)) {
+        if name.is_empty() {
+            // The object has no name, so it cannot be read back (`getTypeName` is null in C++).
+            self.flatten_failed = true;
+        }
         if let Some(factories) = self.factory_recorder.as_mut() {
             // `fFactorySet->add(factory)`: the index is the position plus one, and a new factory
             // is appended. The index is written as it is (it is not shifted).

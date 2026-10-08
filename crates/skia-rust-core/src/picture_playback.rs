@@ -234,6 +234,15 @@ fn handle_op(
                 canvas.clip_path(path, Some(op), Some(do_aa));
             })
         }
+        draw_type::CLIP_REGION => {
+            let Some(region) = reader.read_region() else {
+                return false;
+            };
+            let packed = reader.read_uint();
+            finish_clip(reader, canvas, packed, |canvas, op, _do_aa| {
+                canvas.clip_region(&region, Some(op));
+            })
+        }
         draw_type::RESET_CLIP => {
             canvas.reset_clip();
             true
@@ -382,6 +391,16 @@ fn handle_draw_op(
             }
             canvas.draw_drrect(outer, inner, paint);
             true
+        }
+        draw_type::DRAW_REGION => {
+            let Some(paint) = required_paint(reader, data) else {
+                return false;
+            };
+            let Some(region) = reader.read_region() else {
+                return false;
+            };
+            canvas.draw_region(&region, paint);
+            reader.is_valid()
         }
         draw_type::DRAW_PATH => {
             let Some(paint) = required_paint(reader, data) else {
