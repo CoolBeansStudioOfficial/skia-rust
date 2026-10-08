@@ -541,6 +541,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-pathops"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+]
+
+[[package]]
 name = "skia-rust-raster"
 version = "0.156.0"
 dependencies = [
@@ -573,6 +580,7 @@ version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",

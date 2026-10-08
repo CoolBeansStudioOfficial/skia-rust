@@ -1,23 +1,12 @@
 // Copyright 2012 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/PathOpsTestCommon.h#L22-L35 (chrome/m156), the point-set structs only
+// Port of: tests/PathOpsTestCommon.h (chrome/m156)
 
 #![cfg(test)]
 
-/// `SkDPoint`: a double-precision point (from `src/pathops/SkPathOpsPoint.h`).
-#[derive(Copy, Clone, Debug)]
-pub struct DPoint {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl DPoint {
-    #[must_use]
-    pub const fn new(x: f64, y: f64) -> Self {
-        Self { x, y }
-    }
-}
+/// `SkDPoint`, as used by the `PathOps` test data (the shared `skia-rust-pathops` type).
+pub use skia_rust_pathops::point::DPoint;
 
 /// `QuadPts`.
 #[derive(Copy, Clone, Debug)]
