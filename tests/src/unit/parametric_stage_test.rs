@@ -6,6 +6,7 @@
 // Mapping notes: `SkRasterPipeline_<256> p` is a `RasterPipeline`; the `MemoryCtx`s name slots
 // bound to the input and output buffers when the pipeline runs.
 
+use skia_rust_core::libm;
 use skia_rust_core::raster_pipeline::{
     MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage,
 };
@@ -52,7 +53,7 @@ fn check_error(r: &mut crate::Reporter, limit: f32, fn_: TransferFunction) {
         let mut want = if input[i] <= fn_.d {
             fn_.c * input[i] + fn_.f
         } else {
-            (input[i] * fn_.a + fn_.b).powf(fn_.g) + fn_.e
+            libm::powf(input[i] * fn_.a + fn_.b, fn_.g) + fn_.e
         };
         if i % 4 == 3 {
             // alpha should stay unchanged.

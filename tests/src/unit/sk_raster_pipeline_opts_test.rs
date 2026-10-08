@@ -13,8 +13,9 @@
 // lane". `any`/`all` themselves are observed through `branch_if_any_lanes_active` and
 // `branch_if_all_lanes_active`, whose result is `any(execution_mask())` and
 // `all(execution_mask() | tailLanes)` (no tail lanes in a full chunk). `std::sin` and friends are
-// `f32`'s (`// skia-rust: libm`, as in the C++, which calls the C library).
+// the C library's float functions, `skia_rust_core::libm` (the oracle's UCRT).
 
+use skia_rust_core::libm;
 use skia_rust_simd::rp::contexts::{BinaryOpCtx, BranchCtx};
 use skia_rust_simd::rp::{MemPtr, MemSlot, MemView, MemoryBindings, Program, Stage};
 
@@ -175,7 +176,7 @@ def_test!(SkRasterPipelineOpts_Sin, |r| {
     let mut rad = -5.0 * pi;
     while rad <= 5.0 * pi {
         let result = apply(&mut program, rad);
-        let expected = rad.sin();
+        let expected = libm::sinf(rad);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         rad += 0.1;
@@ -190,7 +191,7 @@ def_test!(SkRasterPipelineOpts_Cos, |r| {
     let mut rad = -5.0 * pi;
     while rad <= 5.0 * pi {
         let result = apply(&mut program, rad);
-        let expected = rad.cos();
+        let expected = libm::cosf(rad);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         rad += 0.1;
@@ -211,7 +212,7 @@ def_test!(SkRasterPipelineOpts_Tan, |r| {
         let mut rad = -pi / 2.0 + k_epsilon;
         while rad <= pi / 2.0 - k_epsilon {
             let result = apply(&mut program, rad + period);
-            let expected = rad.tan();
+            let expected = libm::tanf(rad);
 
             reporter_assert!(r, all_within(&result, expected, k_tolerance));
             rad += 0.01;
@@ -226,7 +227,7 @@ def_test!(SkRasterPipelineOpts_Asin, |r| {
     let mut x = -1.0f32;
     while x <= 1.0 {
         let result = apply(&mut program, x);
-        let expected = x.asin();
+        let expected = libm::asinf(x);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         x += 1.0 / 64.0;
@@ -240,7 +241,7 @@ def_test!(SkRasterPipelineOpts_Acos, |r| {
     let mut x = -1.0f32;
     while x <= 1.0 {
         let result = apply(&mut program, x);
-        let expected = x.acos();
+        let expected = libm::acosf(x);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         x += 1.0 / 64.0;
@@ -254,7 +255,7 @@ def_test!(SkRasterPipelineOpts_Atan, |r| {
     let mut x = -10.0f32;
     while x <= 10.0 {
         let result = apply(&mut program, x);
-        let expected = x.atan();
+        let expected = libm::atanf(x);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
         x += 0.1;
@@ -270,7 +271,7 @@ def_test!(SkRasterPipelineOpts_Atan2, |r| {
         let mut x = -3.0f32;
         while x <= 3.0 {
             let result = run_registers(&mut program, &[y, x], 1).remove(0);
-            let expected = y.atan2(x);
+            let expected = libm::atan2f(y, x);
 
             reporter_assert!(r, all_within(&result, expected, k_tolerance));
             x += 0.1;
@@ -285,7 +286,7 @@ def_test!(SkRasterPipelineOpts_Log2, |r| {
     let mut program = unary(Stage::Log2Float(REG));
     for value in [0.25f32, 0.5, 1.0, 2.0, 4.0, 8.0] {
         let result = apply(&mut program, value);
-        let expected = value.log2();
+        let expected = libm::log2f(value);
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
     }
@@ -299,7 +300,7 @@ def_test!(SkRasterPipelineOpts_Pow2, |r| {
         let result = apply(&mut program, value);
         // `std::pow(2.0, value)` is a double, converted by `F_(float)`.
         #[allow(clippy::cast_possible_truncation)] // mirrors the implicit double -> float
-        let expected = 2.0f64.powf(f64::from(value)) as f32;
+        let expected = libm::pow(2.0, f64::from(value)) as f32;
 
         reporter_assert!(r, all_within(&result, expected, k_tolerance));
     }

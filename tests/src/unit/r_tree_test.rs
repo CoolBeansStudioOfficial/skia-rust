@@ -7,6 +7,7 @@
 
 use crate::{Reporter, def_test, reporter_assert};
 use skia_rust_core::bbh_factory::BBoxHierarchy;
+use skia_rust_core::libm;
 use skia_rust_core::r_tree::RTree;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
@@ -64,8 +65,10 @@ def_test!(RTree, |reporter| {
     while tmp > 0 {
         // static_cast<int>(pow(double(kMaxChildren), double(expectedDepthMin + 1)))
         #[allow(clippy::cast_possible_truncation)] // mirrors the static_cast<int> of pow()
-        let term = f64::from(i32::try_from(RTree::MAX_CHILDREN).unwrap())
-            .powf(f64::from(expected_depth_min + 1)) as i32;
+        let term = libm::pow(
+            f64::from(i32::try_from(RTree::MAX_CHILDREN).unwrap()),
+            f64::from(expected_depth_min + 1),
+        ) as i32;
         tmp -= term;
         expected_depth_min += 1;
     }
@@ -74,8 +77,10 @@ def_test!(RTree, |reporter| {
     tmp = i32::try_from(NUM_RECTS).unwrap();
     while tmp > 0 {
         #[allow(clippy::cast_possible_truncation)] // mirrors the static_cast<int> of pow()
-        let term = f64::from(i32::try_from(RTree::MIN_CHILDREN).unwrap())
-            .powf(f64::from(expected_depth_max + 1)) as i32;
+        let term = libm::pow(
+            f64::from(i32::try_from(RTree::MIN_CHILDREN).unwrap()),
+            f64::from(expected_depth_max + 1),
+        ) as i32;
         tmp -= term;
         expected_depth_max += 1;
     }

@@ -154,7 +154,6 @@ impl CubicMap {
             return x;
         }
         let t = if self.type_ == Type::CubeRoot {
-            // skia-rust: libm (std::pow)
             scalar_pow(x / self.coeff[0].x, 1.0f32 / 3.0)
         } else {
             compute_t_from_x(self.coeff[0].x, self.coeff[1].x, self.coeff[2].x, x)

@@ -15576,8 +15576,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L67-L127"
 module = "raster"
-status = "todo"
-reason = "ported but unregistered until trig is host-independent: matches on Linux and Windows, not on macOS (notes/gm_arcto_cpp_arcto.md)"
+status = "passing"
 span_hash = "d66533a0a4696b80eef84fb6553f938ced3c1d0332a8eae32b3e13a51a71d9c6"
 
 [[test]]
@@ -15604,8 +15603,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L238-L305"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_arcto_cpp_parsedpaths.md (47 pixels differ; float libm trig in SVG arc conversion)"
+status = "passing"
 span_hash = "cdcf24cf04f8bba56ab060d99c0c86890f5a548e2bfe4bd5a7b37e34c0177104"
 
 [[test]]
@@ -18728,8 +18726,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dashing.cpp#L476-L502"
 module = "effects"
-status = "failing"
-reason = "see notes/gm_dashing_cpp_longpathdash.md (5 pixels differ; double libm sin/cos)"
+status = "passing"
 span_hash = "88bdc188087887d33ce0603726cdc0bb9f3cdfdd3e034b2b5a0ca2c97af263d2"
 
 [[test]]
