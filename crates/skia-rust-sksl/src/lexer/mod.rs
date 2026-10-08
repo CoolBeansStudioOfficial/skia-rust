@@ -64,6 +64,14 @@ pub struct Checkpoint {
     offset: i32,
 }
 
+impl Checkpoint {
+    /// `fOffset`: the byte offset the lexer will read from.
+    #[must_use]
+    pub fn offset(self) -> i32 {
+        self.offset
+    }
+}
+
 impl<'a> Lexer<'a> {
     /// A lexer positioned at the start of `text` (`start`). Offsets are byte offsets.
     #[must_use]

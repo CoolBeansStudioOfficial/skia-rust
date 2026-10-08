@@ -9,6 +9,7 @@
 //! ported `SkSL` code uses are implemented, and any other format panics, because format strings are
 //! literals in the port.
 
+use crate::defines::SkslInt;
 use crate::skstd::format_g;
 
 /// Whitespace as `isspace` sees it in the C locale.
@@ -16,13 +17,8 @@ fn is_c_space(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\n' | '\u{b}' | '\u{c}' | '\r')
 }
 
-/// `SkSL::stod`: reads a floating-point number the way `std::istream >> double` does, and returns
-/// it only if it is finite. Leading whitespace is skipped and trailing text is ignored, as the
-/// stream leaves it unread.
-// Port of: src/sksl/SkSLString.cpp#L58-L63 (chrome/m156)
-#[doc(alias = "SkSL::stod")]
-#[must_use]
-pub fn stod(s: &str) -> Option<f64> {
+/// The characters of `s` that `num_get` accumulates for a floating-point number.
+fn float_prefix(s: &str) -> &str {
     let s = s.trim_start_matches(is_c_space);
     let bytes = s.as_bytes();
     // `num_get` accumulates the characters a floating-point literal can contain, then converts
@@ -47,17 +43,37 @@ pub fn stod(s: &str) -> Option<f64> {
         }
         end += 1;
     }
-    let value: f64 = s[..end].parse().ok()?;
+    &s[..end]
+}
+
+/// `SkSL::stod`: reads a floating-point number the way `std::istream >> double` does, and returns
+/// it only if it is finite. Leading whitespace is skipped and trailing text is ignored, as the
+/// stream leaves it unread.
+// Port of: src/sksl/SkSLString.cpp#L58-L63 (chrome/m156)
+#[doc(alias = "SkSL::stod")]
+#[must_use]
+pub fn stod(s: &str) -> Option<f64> {
+    let value: f64 = float_prefix(s).parse().ok()?;
+    value.is_finite().then_some(value)
+}
+
+/// `SkSL::stod` with Skia's `SKSL_FLOAT` (`float`) output: the stream converts straight to
+/// `float` (`strtof`), which rounds once, unlike a `double` result narrowed afterwards.
+// Port of: src/sksl/SkSLString.cpp#L58-L63 (chrome/m156)
+#[doc(alias = "SkSL::stod")]
+#[must_use]
+pub fn stod_float(s: &str) -> Option<f32> {
+    let value: f32 = float_prefix(s).parse().ok()?;
     value.is_finite().then_some(value)
 }
 
 /// `SkSL::stoi`: parses an integer the way `strtoull(s, base 0)` does (`0x` hex, leading `0`
 /// octal, otherwise decimal), with an optional `u`/`U` suffix, and accepts it only if it fits in
-/// 32 bits. A negative value is negated in 64-bit unsigned arithmetic, as `strtoull` does.
+/// 32 bits (the result is an `SKSL_INT`, 64 bits, so 4294967295 stays positive). A negative value is negated in 64-bit unsigned arithmetic, as `strtoull` does.
 // Port of: src/sksl/SkSLString.cpp#L65-L84 (chrome/m156)
 #[doc(alias = "SkSL::stoi")]
 #[must_use]
-pub fn stoi(s: &str) -> Option<i32> {
+pub fn stoi(s: &str) -> Option<SkslInt> {
     if s.is_empty() {
         return None;
     }
@@ -103,7 +119,7 @@ pub fn stoi(s: &str) -> Option<i32> {
     if negative {
         value = value.wrapping_neg();
     }
-    u32::try_from(value).ok().map(u32::cast_signed)
+    u32::try_from(value).ok().map(SkslInt::from)
 }
 
 /// One argument of [`printf`], with the C type the format expects.
@@ -442,7 +458,7 @@ mod tests {
         assert_eq!(stoi("010"), Some(8));
         assert_eq!(stoi("0x1F"), Some(31));
         assert_eq!(stoi("7u"), Some(7));
-        assert_eq!(stoi("4294967295"), Some(-1));
+        assert_eq!(stoi("4294967295"), Some(4_294_967_295));
         assert_eq!(stoi("4294967296"), None);
         assert_eq!(stoi("-1"), None);
         assert_eq!(stoi("-0"), Some(0));

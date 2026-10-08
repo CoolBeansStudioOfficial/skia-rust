@@ -265,10 +265,11 @@ impl StructType {
                 break;
             }
         }
-        let mut slot_count = 0;
+        let mut slot_count: usize = 0;
         if !contains_unsized_array {
             for f in &fields {
-                slot_count += pool.ty(f.ty).slot_count();
+                // `size_t` arithmetic wraps in C++.
+                slot_count = slot_count.wrapping_add(pool.ty(f.ty).slot_count());
             }
         }
         Self {
@@ -985,7 +986,10 @@ impl<'a> TypeRef<'a> {
                 component, count, ..
             } => {
                 debug_assert!(*count > 0, "slotCount of an unsized array");
-                usize::try_from(*count).unwrap_or(0) * self.other(*component).slot_count()
+                // `fCount * fComponentType.slotCount()` is `size_t` arithmetic, which wraps.
+                usize::try_from(*count)
+                    .unwrap_or(0)
+                    .wrapping_mul(self.other(*component).slot_count())
             }
             TypeClass::Literal { .. } | TypeClass::Scalar { .. } => 1,
             TypeClass::Matrix { columns, rows, .. } => {
@@ -2119,10 +2123,17 @@ impl TypeId {
         let (supports, unsized_array, num_slots, value_pos) = {
             let value = ctx.pool.expression(value_expr);
             let value_ty = ctx.pool.ty(value.ty);
+            let supports = value.supports_constant_values();
+            let unsized_array = value_ty.is_unsized_array();
             (
-                value.supports_constant_values(),
-                value_ty.is_unsized_array(),
-                value_ty.slot_count(),
+                supports,
+                unsized_array,
+                // An unsized array has no slot count, and is not asked for.
+                if supports && !unsized_array {
+                    value_ty.slot_count()
+                } else {
+                    0
+                },
                 value.position,
             )
         };

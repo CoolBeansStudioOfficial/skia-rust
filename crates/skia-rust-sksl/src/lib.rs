@@ -10,7 +10,7 @@
 //! support code (number formatting and parsing, `printf`, the hash containers, output streams),
 //! the embedded built-in modules ([`modules`]), the lexer, and the IR core ([`ir`]: pools and
 //! ids, every node, `description()` and `clone()`, with [`context::Context`], the error
-//! reporter, the mangler and the visitor/writer traversals). The parser, the IR conversions,
+//! reporter, the mangler and the visitor/writer traversals) and the [`parser`]. The compiler driver,
 //! the optimizer, the stage-binding `appendStages`, and the other back ends come in later tasks.
 
 pub mod analysis;
@@ -32,6 +32,7 @@ pub mod memory_layout;
 pub mod modules;
 pub mod operator;
 pub mod output_stream;
+pub mod parser;
 pub mod position;
 pub mod program_settings;
 pub mod skstd;

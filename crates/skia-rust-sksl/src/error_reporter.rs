@@ -43,7 +43,7 @@ pub enum ErrorSink {
 #[doc(alias = "SkSL::ErrorReporter")]
 #[derive(Debug)]
 pub struct ErrorReporter {
-    source: Arc<str>,
+    source: Arc<[u8]>,
     error_count: i32,
     sink: ErrorSink,
 }
@@ -53,7 +53,7 @@ impl ErrorReporter {
     #[must_use]
     pub fn new(sink: ErrorSink) -> Self {
         Self {
-            source: Arc::from(""),
+            source: Arc::from(&b""[..]),
             error_count: 0,
             sink,
         }
@@ -105,7 +105,7 @@ impl ErrorReporter {
     fn handle_error(&mut self, msg: &str, position: Position) {
         match &mut self.sink {
             ErrorSink::Compiler { error_text } => {
-                compiler::handle_error(error_text, self.source.as_bytes(), msg, position);
+                compiler::handle_error(error_text, &self.source, msg, position);
             }
             ErrorSink::Forwarding { errors } => errors.push((msg.to_owned(), position)),
             ErrorSink::NoOp => {}
@@ -113,20 +113,26 @@ impl ErrorReporter {
         }
     }
 
-    /// `source()`: the text being compiled.
+    /// `source()`: the text being compiled, as bytes (Skia's `std::string_view` holds bytes, and
+    /// a fuzzer's input need not be UTF-8).
     #[must_use]
-    pub fn source(&self) -> &str {
+    pub fn source(&self) -> &[u8] {
         &self.source
     }
 
-    /// The shared handle to the source text.
+    /// The shared handle to the text.
     #[must_use]
-    pub fn source_arc(&self) -> &Arc<str> {
+    pub fn source_arc(&self) -> &Arc<[u8]> {
         &self.source
     }
 
     /// `setSource(source)`.
     pub fn set_source(&mut self, source: Arc<str>) {
+        self.source = source.into();
+    }
+
+    /// `setSource(source)` for text that is not valid UTF-8.
+    pub fn set_source_bytes(&mut self, source: Arc<[u8]>) {
         self.source = source;
     }
 

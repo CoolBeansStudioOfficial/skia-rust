@@ -323,11 +323,13 @@ impl Finalizer {
         let (is_unsized, is_parameter, name, slots) = {
             let v = ctx.pool.variable(var);
             let t = ctx.pool.ty(v.ty);
+            let is_unsized = t.is_or_contains_unsized_array();
             (
-                t.is_or_contains_unsized_array(),
+                is_unsized,
                 v.storage == VariableStorage::Parameter,
                 v.name.clone(),
-                t.slot_count(),
+                // The slot count of an unsized array is undefined, and not asked for.
+                if is_unsized { 0 } else { t.slot_count() },
             )
         };
         if is_unsized {

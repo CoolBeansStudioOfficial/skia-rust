@@ -262,7 +262,6 @@ fn convert_compound_constructor(
         let arg_ty = ctx.pool.expression(*arg).ty;
         let arg_is_scalar = ctx.pool.ty(arg_ty).is_scalar();
         let arg_is_vector = ctx.pool.ty(arg_ty).is_vector();
-        let arg_columns = ctx.pool.ty(arg_ty).columns();
         if !arg_is_scalar && !arg_is_vector {
             let msg = format!(
                 "'{}' is not a valid parameter to '{}' constructor",
@@ -277,6 +276,8 @@ fn convert_compound_constructor(
         // literal, this will make sure it's the right type of literal. If an expression of matching
         // type, the expression will be returned as-is. If it's an expression of mismatched type,
         // this adds a cast.
+        // (`columns()` is only defined for scalars and vectors, which the check above ensures.)
+        let arg_columns = ctx.pool.ty(arg_ty).columns();
         let ctor_type = ctx.pool.ty(ty).component_type().to_compound(arg_columns, 1);
         *arg = convert(ctx, pos, ctor_type, vec![*arg])?;
         actual += ctx.pool.ty(ctor_type).columns();

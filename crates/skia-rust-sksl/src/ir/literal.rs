@@ -92,8 +92,11 @@ impl Literal {
     /// type.
     // Port of: src/sksl/ir/SkSLLiteral.h#L54-L57 (chrome/m156)
     #[doc(alias = "SkSL::Literal::MakeInt")]
+    // The context overload of `MakeInt` builds the literal directly: it does not run the range
+    // asserts of the typed overload (the parser makes `$intLiteral`s up to 4294967295).
+    #[allow(clippy::cast_precision_loss)] // Mirrors Skia's `int64` to `double` store.
     pub fn make_int_literal(pool: &mut IrPool, pos: Position, value: SkslInt) -> ExprId {
-        Self::make_int(pool, pos, value, TypeId::INT_LITERAL)
+        Self::add(pool, pos, value as f64, TypeId::INT_LITERAL)
     }
 
     /// `Literal::MakeBool(context, pos, value)`: a boolean literal.

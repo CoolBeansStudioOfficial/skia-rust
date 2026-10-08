@@ -70,7 +70,7 @@ impl Compiler {
     pub fn handle_error(&mut self, msg: &str, pos: Position) {
         let reporter = &mut self.context.errors;
         let source = reporter.source_arc().clone();
-        handle_error(error_text_mut(reporter), source.as_bytes(), msg, pos);
+        handle_error(error_text_mut(reporter), &source, msg, pos);
     }
 
     /// `errorText(showCount)`: the accumulated error text (with the `N error(s)` line when

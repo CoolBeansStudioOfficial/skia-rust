@@ -609,6 +609,45 @@ tasks left for each other are gone. Every call goes to the function that owns it
   and `matrix_invert.rs` (the 2x2, 3x3 and 4x4 inverses). Both go away when skia-rust-base lands.
 - `intrinsic_list.rs` gained `not`, which Skia's `SKSL_INTRINSIC_LIST` has (106 entries).
 
+### 4.6 As implemented in S10
+
+`crates/skia-rust-sksl/src/parser.rs` ports `SkSLParser.{h,cpp}` (m156) function by function.
+
+- **API.** `Parser::new(&mut Context, ProgramSettings, ProgramKind, &[u8])` borrows the context
+  (Skia's `Compiler&`) and the source bytes. The context needs `config`, a current `symbol_table`
+  (the module's or program's global table, created with `mark_module_boundary`), and the error
+  reporter with `set_source`/`set_source_bytes`. The source is bytes because Skia's strings are
+  (fuzzer inputs need not be UTF-8); `ErrorReporter::source` is now `Arc<[u8]>`.
+- **Driver hooks for S11.** Skia's two entry points end in compiler code, so they stop at the parse:
+  `Parser::program_inheriting_from(self) -> Option<Vec<ElemId>>` (`None` when errors were
+  reported; S11 does `Compiler::releaseProgram`: build the `Program`, then `finalize` and
+  `optimize`) and `Parser::module_inheriting_from(self) -> Vec<ElemId>` (S11 wraps the elements,
+  the global symbol table and the parent in a `Module`). `initializeContext`/`cleanupContext` and
+  `FinalizeSettings` are S11's: `tests/parser_errors.rs` has a small version of each (root symbol
+  table, the module chain compiled with this parser from the original module texts,
+  `allow_narrowing_conversions` for runtime effects) that S11 can lift.
+- **Mechanics.** `AutoDepth` is `auto_depth(|this| ..)` plus `increase_depth()` (the depth is
+  restored when the closure returns, as the destructor does); `AutoSymbolTable` is
+  `with_symbol_table(enable, |this, table| ..)`; `Checkpoint` swaps in `ErrorReporter::forwarding()`
+  and `accept`/`rewind` restore the old reporter (forwarding the collected errors on accept). The
+  function body block adopts the function's table (`block(false, Some(table))`). The binary
+  precedence levels share `binary_level`/`binary_level_ops`, which are Skia's loops.
+- **Tests.** `tests/parser_errors.rs` runs the 333 `resources/sksl/errors` inputs against their
+  `tests/sksl/errors/*.glsl` goldens byte for byte, and the 38 `runtime_errors` inputs with
+  `SkSLErrorTest`'s rule (every expected message appears, in order). Cases whose messages come
+  from `finalize`, the inliner or `SkRuntimeEffect` validation are listed in
+  `DEFERRED_TO_FINALIZATION`/`DEFERRED_RUNTIME_ERRORS`; the test checks that the parser accepted
+  them, and S11 should delete those lists as it ports the phases. One golden quotes a non-UTF-8
+  source byte (`Ossfuzz519154489`); its messages are `&str`, so that case compares after lossy
+  conversion. The data is vendored under `tests/data` (`-text` in `.gitattributes`, since some
+  inputs hold CR bytes).
+- **Fixes in shared code that the parser exposed.** `string::stoi` returns an `SKSL_INT` (an
+  `i64`: `4294967295` stays positive), `string::stod_float` parses straight to `f32`
+  (`SKSL_FLOAT`), `Literal::make_int_literal` has no range assert (Skia's context overload
+  has none), and `slotCount` arithmetic wraps like `size_t`. The `Finalizer` and
+  `Type::checkForOutOfRangeLiteral` no longer ask an unsized array for its slot count, and the
+  compound-constructor check no longer asks a non-vector argument for its columns.
+
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |
