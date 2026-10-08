@@ -15,6 +15,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use crate::data::Data;
 use crate::font::Font;
 use crate::font_priv::get_font_bounds;
 use crate::font_types::{GlyphId, TextEncoding};
@@ -23,10 +24,13 @@ use crate::glyph_run::GlyphRunBuilder;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::point::Point;
+use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::rsxform::RSXform;
 use crate::scalar::scalar;
+use crate::serial_procs::{DeserialProcs, SerialProcs};
 use crate::typeface::Typeface;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// How the glyphs of a run are positioned (`SkTextBlob::GlyphPositioning`).
 #[doc(alias = "SkTextBlob::GlyphPositioning")]
@@ -1020,4 +1024,305 @@ fn conservative_run_bounds(run: &RunRecord) -> Rect {
 
     // Offset by run position.
     bounds.with_offset(run.offset)
+}
+
+impl GlyphPositioning {
+    /// The byte that `PositioningAndExtended` stores for the positioning
+    /// (`SkTextBlob::GlyphPositioning`'s values).
+    // Port of: src/core/SkTextBlob.cpp#L179-L186 (chrome/m156), the enum values
+    fn to_wire(self) -> u8 {
+        match self {
+            Self::Default => 0,
+            Self::Horizontal => 1,
+            Self::Full => 2,
+            Self::RSXform => 3,
+        }
+    }
+
+    /// The positioning of a stored byte, or `None` for a value past `kRSXform_Positioning`.
+    // Port of: src/core/SkTextBlob.cpp#L179-L186 and #L708-L713 (chrome/m156)
+    fn from_wire(value: u8) -> Option<Self> {
+        match value {
+            0 => Some(Self::Default),
+            1 => Some(Self::Horizontal),
+            2 => Some(Self::Full),
+            3 => Some(Self::RSXform),
+            _ => None,
+        }
+    }
+}
+
+/// The native-endian bytes of the positions of a run (`it.pos()`).
+fn positions_bytes(positions: &Positions) -> Vec<u8> {
+    match positions {
+        Positions::None => Vec::new(),
+        Positions::Horizontal(values) => values.iter().flat_map(|v| v.to_ne_bytes()).collect(),
+        Positions::Full(points) => points
+            .iter()
+            .flat_map(|p| p.x.to_ne_bytes().into_iter().chain(p.y.to_ne_bytes()))
+            .collect(),
+        Positions::RSXform(xforms) => xforms
+            .iter()
+            .flat_map(|x| {
+                x.scos
+                    .to_ne_bytes()
+                    .into_iter()
+                    .chain(x.ssin.to_ne_bytes())
+                    .chain(x.tx.to_ne_bytes())
+                    .chain(x.ty.to_ne_bytes())
+            })
+            .collect(),
+    }
+}
+
+/// The native-endian `u32` bytes of the clusters of a run (`it.clusters()`).
+fn cluster_bytes(clusters: &[u32]) -> Vec<u8> {
+    clusters.iter().flat_map(|c| c.to_ne_bytes()).collect()
+}
+
+/// A count as the `int32_t` the buffer stores. A blob never has `i32::MAX` glyphs.
+fn count_i32(count: usize) -> i32 {
+    i32::try_from(count).unwrap_or(i32::MAX)
+}
+
+/// `readByteArray` into a fresh buffer of `size` bytes, or `None` if the buffer rejects it.
+fn read_byte_array_of(reader: &mut ReadBuffer<'_>, size: usize) -> Option<Vec<u8>> {
+    let mut bytes = vec![0u8; size];
+    reader.read_byte_array(&mut bytes).then_some(bytes)
+}
+
+/// The native-endian `f32` values of `bytes`, in order.
+fn scalars_of(bytes: &[u8]) -> Vec<scalar> {
+    bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|c| scalar::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+        .collect()
+}
+
+/// The native-endian glyph ids of `bytes`, in order.
+fn glyphs_of(bytes: &[u8]) -> Vec<GlyphId> {
+    bytes
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| GlyphId::from_ne_bytes([c[0], c[1]]))
+        .collect()
+}
+
+/// The native-endian cluster values of `bytes`, in order.
+fn clusters_of(bytes: &[u8]) -> Vec<u32> {
+    bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+        .collect()
+}
+
+impl TextBlob {
+    /// `SkTextBlob::serialize(procs)`: the blob as bytes, with its typefaces written by
+    /// `procs.typeface`.
+    // Port of: src/core/SkTextBlob.cpp#L851-L859 (chrome/m156)
+    #[must_use]
+    pub fn serialize(&self, procs: &SerialProcs) -> Data {
+        let mut buffer = BinaryWriteBuffer::with_serial_procs(procs.clone());
+        self.flatten(&mut buffer);
+        buffer.snapshot_as_data()
+    }
+
+    /// `SkTextBlob::serialize(procs, memory, size)`: writes the blob into `memory` and returns
+    /// the bytes written, or 0 if the blob does not fit (C++ returns 0 when its buffer would
+    /// have to leave the caller's storage). The blob is serialized first and then copied, which
+    /// gives the same bytes.
+    // Port of: src/core/SkTextBlob.cpp#L870-L874 (chrome/m156)
+    #[doc(alias = "serialize")]
+    pub fn serialize_into(&self, procs: &SerialProcs, memory: &mut [u8]) -> usize {
+        let data = self.serialize(procs);
+        let bytes = data.as_bytes();
+        if bytes.len() > memory.len() {
+            return 0;
+        }
+        memory[..bytes.len()].copy_from_slice(bytes);
+        bytes.len()
+    }
+
+    /// `SkTextBlob::Deserialize(data, procs)`: the blob that `data` holds, or `None` if the data
+    /// is malformed.
+    // Port of: src/core/SkTextBlob.cpp#L861-L867 (chrome/m156)
+    #[must_use]
+    #[doc(alias = "Deserialize")]
+    pub fn deserialize(data: &[u8], procs: &DeserialProcs) -> Option<Self> {
+        let mut buffer = ReadBuffer::with_deserial_procs(data, procs.clone());
+        make_from_buffer(&mut buffer)
+    }
+
+    /// `SkTextBlobPriv::Flatten`: the bounds, then each run (its glyph count, positioning and
+    /// extended flag, text size, offset, font and arrays), then a zero glyph count.
+    // Port of: src/core/SkTextBlob.cpp#L663-L702 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_rect(&self.0.bounds);
+        for run in &self.0.runs {
+            buffer.write_int(count_i32(run.glyph_count()));
+            // `PositioningAndExtended`: the positioning in the low byte, the flag in the next.
+            let text_size = run.text.len();
+            let extended = text_size > 0;
+            let pe = u32::from_le_bytes([run.positioning().to_wire(), u8::from(extended), 0, 0]);
+            buffer.write_uint(pe);
+            if extended {
+                buffer.write_uint(u32::try_from(text_size).unwrap_or(u32::MAX));
+            }
+            buffer.write_point(run.offset);
+            run.font.flatten(buffer);
+            buffer.write_byte_array(&glyph_bytes(&run.glyphs));
+            buffer.write_byte_array(&positions_bytes(&run.positions));
+            if extended {
+                buffer.write_byte_array(&cluster_bytes(&run.clusters));
+                buffer.write_byte_array(&run.text);
+            }
+        }
+        // Marker for the last run (0 is not a valid glyph count).
+        buffer.write_int(0);
+    }
+}
+
+/// `SkTextBlobPriv::MakeFromBuffer`: reads the runs that `flatten` wrote. Each run's arrays are
+/// read and checked before its buffers are allocated, so a malformed stream gives `None`.
+// Port of: src/core/SkTextBlob.cpp#L703-L777 (chrome/m156)
+fn make_from_buffer(reader: &mut ReadBuffer<'_>) -> Option<TextBlob> {
+    let bounds = reader.read_rect();
+    let mut builder = TextBlobBuilder::new();
+    loop {
+        let glyph_count = reader.read_int();
+        if glyph_count == 0 {
+            // End-of-runs marker.
+            break;
+        }
+        let pe = reader.read_uint();
+        let [positioning_byte, extended_byte, _, _] = pe.to_le_bytes();
+        let positioning = GlyphPositioning::from_wire(positioning_byte)?;
+        let extended = extended_byte != 0;
+        if glyph_count < 0 {
+            return None;
+        }
+        let text_size = if extended { reader.read_int() } else { 0 };
+        let text_size = usize::try_from(text_size).ok()?;
+        let offset = reader.read_point();
+        let mut font = Font::default();
+        font.unflatten(reader);
+
+        // The expected size of the arrays. Overflow is a malformed run (`SkSafeMath`).
+        let count = usize::try_from(glyph_count).ok()?;
+        let glyph_size = count.checked_mul(size_of::<GlyphId>())?;
+        let pos_size = count
+            .checked_mul(size_of::<scalar>())?
+            .checked_mul(positioning.scalars_per_glyph())?;
+        let cluster_size = if extended {
+            count.checked_mul(size_of::<u32>())?
+        } else {
+            0
+        };
+        let total_size = glyph_size
+            .checked_add(pos_size)?
+            .checked_add(cluster_size.checked_add(text_size)?)?;
+        if !reader.is_valid() || total_size > reader.available() {
+            return None;
+        }
+
+        let glyph_data = read_byte_array_of(reader, glyph_size)?;
+        let pos_data = read_byte_array_of(reader, pos_size)?;
+        let (cluster_data, text_data) = if extended {
+            let clusters = read_byte_array_of(reader, cluster_size)?;
+            let text = read_byte_array_of(reader, text_size)?;
+            (clusters, text)
+        } else {
+            (Vec::new(), Vec::new())
+        };
+        let glyph_values = glyphs_of(&glyph_data);
+        let cluster_values = clusters_of(&cluster_data);
+        if extended && cluster_values.iter().any(|&c| c as usize >= text_size) {
+            return None;
+        }
+        let bounds_ref = Some(&bounds);
+        match positioning {
+            GlyphPositioning::Default => {
+                let (glyphs, text, clusters) =
+                    builder.alloc_run_text(&font, count, offset, text_size, bounds_ref);
+                fill_glyphs(glyphs, &glyph_values)?;
+                fill_bytes(text, &text_data);
+                fill_clusters(clusters, &cluster_values, extended)?;
+            }
+            GlyphPositioning::Horizontal => {
+                let (glyphs, pos, text, clusters) =
+                    builder.alloc_run_text_pos_h(&font, count, offset.y, text_size, bounds_ref);
+                fill_glyphs(glyphs, &glyph_values)?;
+                fill_scalars(pos, &scalars_of(&pos_data));
+                fill_bytes(text, &text_data);
+                fill_clusters(clusters, &cluster_values, extended)?;
+            }
+            GlyphPositioning::Full => {
+                let (glyphs, pos, text, clusters) =
+                    builder.alloc_run_text_pos(&font, count, text_size, bounds_ref);
+                fill_glyphs(glyphs, &glyph_values)?;
+                fill_points(pos, &scalars_of(&pos_data));
+                fill_bytes(text, &text_data);
+                fill_clusters(clusters, &cluster_values, extended)?;
+            }
+            GlyphPositioning::RSXform => {
+                let (glyphs, xforms, text, clusters) =
+                    builder.alloc_run_text_rsxform(&font, count, text_size, bounds_ref);
+                fill_glyphs(glyphs, &glyph_values)?;
+                fill_rsxforms(xforms, &scalars_of(&pos_data));
+                fill_bytes(text, &text_data);
+                fill_clusters(clusters, &cluster_values, extended)?;
+            }
+        }
+    }
+    builder.make()
+}
+
+/// Copies the decoded glyphs into the allocated buffer. An empty buffer means the allocation
+/// failed, which C++ sees as the `!buf->glyphs` check.
+fn fill_glyphs(dst: &mut [GlyphId], src: &[GlyphId]) -> Option<()> {
+    if dst.is_empty() {
+        return None;
+    }
+    dst.iter_mut().zip(src).for_each(|(d, s)| *d = *s);
+    Some(())
+}
+
+/// Copies the UTF-8 text of an extended run.
+fn fill_bytes(dst: &mut [u8], src: &[u8]) {
+    dst.iter_mut().zip(src).for_each(|(d, s)| *d = *s);
+}
+
+/// Copies the clusters of an extended run; an extended run must have them.
+fn fill_clusters(dst: &mut [u32], src: &[u32], extended: bool) -> Option<()> {
+    if extended && dst.is_empty() {
+        return None;
+    }
+    dst.iter_mut().zip(src).for_each(|(d, s)| *d = *s);
+    Some(())
+}
+
+fn fill_scalars(dst: &mut [scalar], src: &[scalar]) {
+    dst.iter_mut().zip(src).for_each(|(d, s)| *d = *s);
+}
+
+fn fill_points(dst: &mut [Point], src: &[scalar]) {
+    for (d, s) in dst.iter_mut().zip(src.as_chunks::<2>().0.iter()) {
+        *d = Point::new(s[0], s[1]);
+    }
+}
+
+fn fill_rsxforms(dst: &mut [RSXform], src: &[scalar]) {
+    for (d, s) in dst.iter_mut().zip(src.as_chunks::<4>().0.iter()) {
+        *d = RSXform {
+            scos: s[0],
+            ssin: s[1],
+            tx: s[2],
+            ty: s[3],
+        };
+    }
 }

@@ -20,6 +20,10 @@ use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
 use crate::path::Path;
 use crate::path_effect::PathEffect;
+use crate::point::Point;
+use crate::rect::Rect;
+use crate::serial_procs::SerialProcs;
+use crate::typeface::Typeface;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`).
 fn align4(x: usize) -> usize {
@@ -143,6 +147,8 @@ pub struct BinaryWriteBuffer {
     /// `fFlattenableDict`: the names already written, in order; the index of a name is its
     /// position plus one.
     flattenable_dict: Vec<String>,
+    /// `fProcs`: how the typefaces (and later the images) are written.
+    serial_procs: SerialProcs,
 }
 
 impl BinaryWriteBuffer {
@@ -150,6 +156,34 @@ impl BinaryWriteBuffer {
     #[must_use]
     pub fn new() -> BinaryWriteBuffer {
         BinaryWriteBuffer::default()
+    }
+
+    /// `SkBinaryWriteBuffer(const SkSerialProcs& procs)`: a buffer that writes with `procs`.
+    // Port of: include/core/SkSerialProcs.h and src/core/SkWriteBuffer.h#L44 (chrome/m156)
+    #[must_use]
+    pub fn with_serial_procs(serial_procs: SerialProcs) -> BinaryWriteBuffer {
+        BinaryWriteBuffer {
+            serial_procs,
+            ..BinaryWriteBuffer::default()
+        }
+    }
+
+    /// `writePoint`: the two scalars of a point (`SkBinaryWriteBuffer::writePoint`).
+    // Port of: src/core/SkWriteBuffer.cpp#L101-L104 (chrome/m156)
+    #[doc(alias = "writePoint")]
+    pub fn write_point(&mut self, point: Point) {
+        self.write_scalar(point.x);
+        self.write_scalar(point.y);
+    }
+
+    /// `writeRect`: the four scalars of a rectangle (`SkBinaryWriteBuffer::writeRect`).
+    // Port of: src/core/SkWriteBuffer.cpp#L127-L129 and src/core/SkWriter32.cpp (writeRect)
+    #[doc(alias = "writeRect")]
+    pub fn write_rect(&mut self, rect: &Rect) {
+        self.write_scalar(rect.left);
+        self.write_scalar(rect.top);
+        self.write_scalar(rect.right);
+        self.write_scalar(rect.bottom);
     }
 
     /// Writes a 4-byte-aligned scalar array: its count, then the scalars (`writeScalarArray`).
@@ -287,13 +321,35 @@ impl BinaryWriteBuffer {
         self.writer.write_scalar(value);
     }
 
-    /// Writes a typeface reference (`writeTypeface`). Only the empty case is ported: without a
-    /// typeface set or serial procs, C++ writes `0` for every typeface, null or not. The index
-    /// and custom (serial proc) arms arrive with picture serialization (T16).
-    // Port of: src/core/SkWriteBuffer.cpp#L226-L251 (chrome/m156), the `fTFSet == nullptr`
-    // and `fProcs.fTypefaceProc == nullptr` path
+    /// Writes a typeface reference (`writeTypeface`). A null typeface, or one the serial proc
+    /// declines, is written as the default: `0`, the empty font (the typeface set arm, the index,
+    /// arrives with picture serialization, T16). A typeface the proc writes is a negative size and
+    /// the bytes, padded to 4.
+    // Port of: src/core/SkWriteBuffer.cpp#L226-L251 (chrome/m156), the custom arm and the
+    // `fTFSet == nullptr` fallback
     #[doc(alias = "writeTypeface")]
-    pub fn write_typeface(&mut self, _typeface: Option<&crate::typeface::Typeface>) {
+    pub fn write_typeface(&mut self, typeface: Option<&Typeface>) {
+        // Write 32 bits (signed): 0 is the empty font, >0 an index, <0 custom (serial procs).
+        let Some(typeface) = typeface else {
+            self.writer.write32(0);
+            return;
+        };
+        let custom = self
+            .serial_procs
+            .typeface
+            .as_ref()
+            .and_then(|serialize| serialize(typeface));
+        if let Some(data) = custom {
+            // C++ falls back to the default font when the size does not fit in an `int32_t`.
+            let size = i32::try_from(data.size()).unwrap_or(0);
+            // Negative to signal custom.
+            self.writer.write32(-size);
+            if size != 0 {
+                self.write_pad32(data.as_bytes());
+            }
+            return;
+        }
+        // No data means fall through for the standard behaviour.
         self.writer.write32(0);
     }
 

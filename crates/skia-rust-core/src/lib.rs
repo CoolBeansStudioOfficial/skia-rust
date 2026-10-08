@@ -177,6 +177,7 @@ pub mod sampling_options;
 pub mod sampling_priv;
 pub mod scalar;
 pub mod scaler_context;
+pub mod serial_procs;
 pub mod sfnt;
 pub mod shader;
 pub mod shaders;

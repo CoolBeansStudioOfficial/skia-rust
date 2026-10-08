@@ -20,6 +20,10 @@ use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
 use crate::path::Path;
 use crate::path_effect::PathEffect;
+use crate::point::Point;
+use crate::rect::Rect;
+use crate::serial_procs::DeserialProcs;
+use crate::stream::MemoryStream;
 use crate::typeface::Typeface;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
@@ -40,6 +44,8 @@ pub struct ReadBuffer<'a> {
     error: bool,
     /// The names read so far (`fFlattenableDict`); the index of a name is its position plus one.
     flattenable_names: Vec<String>,
+    /// `fProcs`: how the typefaces (and later the images) are read back.
+    deserial_procs: DeserialProcs,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -50,6 +56,51 @@ impl<'a> ReadBuffer<'a> {
         let mut buffer = ReadBuffer::default();
         buffer.set_memory(data);
         buffer
+    }
+
+    /// `SkReadBuffer(data, size)` followed by `setDeserialProcs(procs)`: a buffer that reads
+    /// the typefaces of `data` with `procs`.
+    // Port of: src/core/SkReadBuffer.h (setDeserialProcs, chrome/m156)
+    #[must_use]
+    pub fn with_deserial_procs(data: &'a [u8], deserial_procs: DeserialProcs) -> ReadBuffer<'a> {
+        let mut buffer = ReadBuffer::new(data);
+        buffer.deserial_procs = deserial_procs;
+        buffer
+    }
+
+    /// `readPoint`: two scalars (`SkReadBuffer::readPoint`).
+    // Port of: src/core/SkReadBuffer.cpp#L175-L178 (chrome/m156)
+    #[doc(alias = "readPoint")]
+    pub fn read_point(&mut self) -> Point {
+        let x = self.read_scalar();
+        let y = self.read_scalar();
+        Point::new(x, y)
+    }
+
+    /// `readRect`: four scalars. A short read gives the empty rectangle.
+    // Port of: src/core/SkReadBuffer.cpp#L213-L217 (chrome/m156)
+    #[doc(alias = "readRect")]
+    pub fn read_rect(&mut self) -> Rect {
+        let left = self.read_scalar();
+        let top = self.read_scalar();
+        let right = self.read_scalar();
+        let bottom = self.read_scalar();
+        if self.is_valid() {
+            Rect {
+                left,
+                top,
+                right,
+                bottom,
+            }
+        } else {
+            // `rect->setEmpty()`
+            Rect {
+                left: 0.0,
+                top: 0.0,
+                right: 0.0,
+                bottom: 0.0,
+            }
+        }
     }
 
     /// Makes the buffer read `data` (`setMemory`).
@@ -185,25 +236,32 @@ impl<'a> ReadBuffer<'a> {
         value
     }
 
-    /// Reads a typeface reference (`readTypeface`). Only the empty case is ported: the buffer
-    /// has no typeface table and no deserial procs, so a non-zero index or custom size is
-    /// invalid, as it is in C++ with no table and no `fTypefaceStreamProc`. Arrives with T16.
-    // Port of: src/core/SkReadBuffer.cpp (readTypeface, chrome/m156), the `fTFCount == 0` and
-    // no-proc path
+    /// Reads a typeface reference (`readTypeface`). The index arm is invalid: the buffer has no
+    /// typeface table yet (it arrives with picture serialization, T16). The custom arm reads the
+    /// bytes and hands them to the deserial proc; without bytes or a proc the buffer is invalid.
+    // Port of: src/core/SkReadBuffer.cpp#L443-L466 (chrome/m156), the `fTFCount == 0` index arm
+    // and the custom arm
     #[doc(alias = "readTypeface")]
     pub fn read_typeface(&mut self) -> Option<Typeface> {
+        // 0 -- return null (empty font); >0 -- index; <0 -- custom: negative size in bytes.
         let index = self.read_int();
         if index == 0 {
             return None;
         }
-        // Index arm: no typeface table. Custom arm: no `fTypefaceStreamProc`. Either way the
-        // buffer becomes invalid (after skipping the custom bytes, as C++ does).
-        if index < 0 {
-            let size = usize::try_from(index.unsigned_abs()).unwrap_or(usize::MAX);
-            let _ = self.skip(size);
+        if index > 0 {
+            self.validate(false);
+            return None;
         }
-        self.validate(false);
-        None
+        let size = usize::try_from(index.unsigned_abs()).unwrap_or(usize::MAX);
+        let bytes = self.skip(size);
+        let read = self.deserial_procs.typeface.clone();
+        let (Some(bytes), Some(read)) = (bytes, read) else {
+            self.validate(false);
+            return None;
+        };
+        // C++ reads the bytes through an `SkMemoryStream` over them; the stream owns a copy here.
+        let mut stream = MemoryStream::make_copy(bytes);
+        read(&mut *stream)
     }
 
     /// Reads `buffer.len()` bytes, skipping the padding up to a multiple of 4 (`readPad32`).

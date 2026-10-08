@@ -4,7 +4,6 @@
 // Port of: tests/TextBlobTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// - `TextBlob_serialize`: it needs the blob serialization with typeface procs (T15b).
 // - `SkCanvas_drawTextBlob_b513820666`: it records and replays a picture with typeface procs
 //   (T16) and draws through a drawable typeface (T17).
 
@@ -20,19 +19,31 @@
     clippy::needless_range_loop
 )]
 
+use std::sync::{Arc, Mutex};
+
+use skia_rust_core::color::Color;
+use skia_rust_core::data::Data;
 use skia_rust_core::font::{Edging, Font};
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
+use skia_rust_core::image::Image;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::scalar::scalar;
+use skia_rust_core::scalar::{scalar, scalar_round_to_int};
+use skia_rust_core::serial_procs::{
+    DeserialProcs, SerialProcs, TypefaceDeserializer, TypefaceSerializer,
+};
+use skia_rust_core::stream::Stream;
 use skia_rust_core::text_blob::{GlyphPositioning, TextBlob, TextBlobBuilder};
 use skia_rust_core::typeface::Typeface;
+use skia_rust_raster::surfaces;
 use skia_rust_tools::font_tool_utils::{
     create_portable_typeface, create_test_typeface, default_font,
 };
 
-use crate::{Reporter, def_test, reporter_assert};
+use crate::{Reporter, def_font_test, def_test, errorf, reporter_assert};
 
 // Port of: tests/TextBlobTest.cpp#L20-L30 (chrome/m156), the RunDef of TextBlobTester
 #[derive(Clone, Copy)]
@@ -553,4 +564,130 @@ def_test!(TextBlob_iter, |reporter| {
     let run = iter2.next().expect("a first run");
     // Hello should have the same glyph repeated for the 'l'
     reporter_assert!(reporter, run.glyph_indices[2] == run.glyph_indices[3]);
+});
+
+/// `SerializeTypeface`'s context: the typefaces written so far, by index.
+type SerializedTypefaces = Arc<Mutex<Vec<Typeface>>>;
+
+/// `SerializeTypeface`: a typeface is written as its index in `array`. The empty font (no
+/// glyphs and no bounds) is not written at all, so the default encoding applies.
+// Port of: tests/TextBlobTest.cpp#L408-L418 (chrome/m156), SerializeTypeface
+fn serialize_typeface_proc(array: SerializedTypefaces) -> TypefaceSerializer {
+    Arc::new(move |typeface: &Typeface| {
+        // Do not serialize the empty font.
+        if typeface.count_glyphs() == 0 && typeface.get_bounds().is_empty() {
+            return None;
+        }
+        let mut array = array.lock().ok()?;
+        let idx = array.len();
+        array.push(typeface.clone());
+        // In this test, we are deserializing on the same machine, so we don't worry about
+        // endianness.
+        Some(Data::new_copy(&idx.to_ne_bytes()))
+    })
+}
+
+/// `DeserializeTypeface`: reads the index that `serialize_typeface_proc` wrote.
+// Port of: tests/TextBlobTest.cpp#L420-L432 (chrome/m156), DeserializeTypeface
+fn deserialize_typeface_proc(array: SerializedTypefaces) -> TypefaceDeserializer {
+    Arc::new(move |stream: &mut dyn Stream| {
+        let mut idx_bytes = [0u8; size_of::<usize>()];
+        if stream.read(&mut idx_bytes) != idx_bytes.len() {
+            return None;
+        }
+        let idx = usize::from_ne_bytes(idx_bytes);
+        let array = array.lock().ok()?;
+        array.get(idx).cloned()
+    })
+}
+
+/// `render(blob)`: the blob drawn white into a raster surface of its bounds.
+// Port of: tests/TextBlobTest.cpp#L395-L406 (chrome/m156), render
+fn render(blob: &TextBlob) -> Option<Image> {
+    let bounds = blob.bounds();
+    let width = scalar_round_to_int(bounds.width());
+    let height = scalar_round_to_int(bounds.height());
+    let info = ImageInfo::new_n32_premul((width, height), None);
+    let mut surface = surfaces::raster(&info, None, None)?;
+    let canvas = surface.canvas();
+    canvas.clear(Color::WHITE);
+    canvas.draw_text_blob(blob, (-bounds.left, -bounds.top), &Paint::default());
+    surface.image_snapshot()
+}
+
+/// `ToolUtils::equal_pixels(const SkImage*, const SkImage*)`: the same size, color type and
+/// bytes in every row.
+// Port of: tools/ToolUtils.cpp#L457-L475 and #L487-L500 (chrome/m156), equal_pixels
+fn equal_pixels(a: &Image, b: &Image) -> bool {
+    if a.dimensions() != b.dimensions()
+        || a.image_info().color_type() != b.image_info().color_type()
+    {
+        return false;
+    }
+    let info = a.image_info().clone();
+    let row_bytes = info.min_row_bytes();
+    let size = row_bytes * usize::try_from(info.height()).unwrap_or(0);
+    let mut pixels_a = vec![0u8; size];
+    let mut pixels_b = vec![0u8; size];
+    a.read_pixels(&info, &mut pixels_a, row_bytes, (0, 0))
+        && b.read_pixels(&info, &mut pixels_b, row_bytes, (0, 0))
+        && pixels_a == pixels_b
+}
+
+// Port of: tests/TextBlobTest.cpp#L434-L471 (chrome/m156), TextBlob_serialize
+def_font_test!(TextBlob_serialize, |reporter| {
+    let blob0 = {
+        let tf = create_test_typeface(None, FontStyle::bold_italic());
+        reporter_assert!(
+            reporter,
+            tf.count_glyphs() > 0,
+            "Test typeface had no glyphs"
+        );
+
+        let mut builder = TextBlobBuilder::new();
+        // don't flatten a typeface
+        add_text_run(&mut builder, "Hello", 10.0, 20.0, &Typeface::empty());
+        // do flatten this typeface
+        add_text_run(&mut builder, "World", 10.0, 40.0, &tf);
+        builder.make()
+    };
+    let Some(blob0) = blob0 else {
+        errorf!(reporter, "the blob has runs");
+        return;
+    };
+
+    let array: SerializedTypefaces = Arc::new(Mutex::new(Vec::new()));
+    let serialize_procs = SerialProcs {
+        typeface: Some(serialize_typeface_proc(Arc::clone(&array))),
+    };
+    let data = blob0.serialize(&serialize_procs);
+    let array_len = array.lock().map_or(0, |a| a.len());
+    reporter_assert!(
+        reporter,
+        array_len == 1,
+        "Did not serialize exactly one non-empty font, instead {}",
+        array_len
+    );
+    let serialized_glyphs = array
+        .lock()
+        .ok()
+        .and_then(|a| a.first().map(Typeface::count_glyphs));
+    reporter_assert!(
+        reporter,
+        serialized_glyphs.is_some_and(|n| n > 0),
+        "Serialized typeface had no glyphs"
+    );
+    let deserialize_procs = DeserialProcs {
+        typeface: Some(deserialize_typeface_proc(Arc::clone(&array))),
+    };
+    let Some(blob1) = TextBlob::deserialize(data.as_bytes(), &deserialize_procs) else {
+        errorf!(reporter, "the serialized blob deserializes");
+        return;
+    };
+
+    let img0 = render(&blob0);
+    let img1 = render(&blob1);
+    if let (Some(img0), Some(img1)) = (img0, img1) {
+        reporter_assert!(reporter, equal_pixels(&img0, &img1));
+    }
 });
