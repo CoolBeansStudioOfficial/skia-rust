@@ -33,6 +33,10 @@ use skia_rust_core::typeface::{Typeface, TypefaceBase, TypefaceCore};
 use skia_rust_core::utf::Unichar;
 use skia_rust_raster::glyph_image::GLYPH_PATH_RASTERIZER;
 
+/// `gHeaderString`: the header of a serialized test typeface. `sizeof` includes the NUL.
+// Port of: tools/fonts/TestTypeface.cpp#L149-L150 (chrome/m156)
+const HEADER: &[u8] = b"SkTestTypeface01\0";
+
 use super::test_font_data::index::{DEFAULT_FONT_INDEX, SUB_FONTS, TEST_FONTS};
 
 /// One font of the test data (`SkTestFontData`).
@@ -313,8 +317,6 @@ impl TypefaceBase for TestTypeface {
     /// `TestTypeface::MakeFromStream` reads back. The index is 0.
     // Port of: tools/fonts/TestTypeface.cpp#L155-L172 (chrome/m156)
     fn on_open_stream(&self) -> Option<(Box<dyn StreamAsset>, i32)> {
-        // `sizeof(gHeaderString)` includes the terminating NUL.
-        const HEADER: &[u8] = b"SkTestTypeface01\0";
         let mut wstream = DynamicMemoryWStream::new();
         wstream.write(HEADER);
 
@@ -400,6 +402,56 @@ impl TypefaceBase for TestTypeface {
     fn on_get_glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
         let count = self.test_font.char_codes.len().min(dst.len());
         dst[..count].copy_from_slice(&self.test_font.char_codes[..count]);
+    }
+}
+
+impl TestTypeface {
+    /// `TestTypeface::MakeFromStream`: reads back a typeface written by `onOpenStream`. The
+    /// family and style must name one of [`typefaces`]; otherwise there is no typeface.
+    // Port of: tools/fonts/TestTypeface.cpp#L174-L213 (chrome/m156)
+    #[allow(clippy::cast_possible_truncation)] // C++ converts the SkScalar weight/width to int
+    #[must_use]
+    pub fn make_from_stream(
+        mut stream: Box<dyn StreamAsset>,
+        _args: &FontArguments<'_, '_>,
+    ) -> Option<Typeface> {
+        let mut header = [0u8; HEADER.len()];
+        if stream.read(&mut header) != HEADER.len() || header.as_slice() != HEADER {
+            return None;
+        }
+
+        let family_name_size = stream.read_packed_uint()?;
+        let mut family_name = vec![0u8; family_name_size];
+        // C++ tests `!read(...)`, which is true for a read of zero bytes too.
+        if stream.read(&mut family_name) == 0 {
+            return None;
+        }
+
+        let weight = stream.read_scalar()?;
+        let width = stream.read_scalar()?;
+        let slant = match stream.read_packed_uint()? {
+            0 => Slant::Upright,
+            1 => Slant::Italic,
+            2 => Slant::Oblique,
+            // C++ casts any value to the enum; no typeface can match it.
+            _ => return None,
+        };
+        let style = FontStyle::new(
+            Weight::from(weight as i32),
+            Width::from(width as i32),
+            slant,
+        );
+
+        for family in &typefaces().families {
+            if family.name.as_bytes() == family_name.as_slice() {
+                for face in &family.faces {
+                    if face.typeface.font_style() == style {
+                        return Some(face.typeface.clone());
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
