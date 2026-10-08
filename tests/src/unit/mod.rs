@@ -121,11 +121,100 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_as_winding_test;
+#[cfg(test)]
+pub mod path_ops_battles;
+pub mod path_ops_bounds_test;
+pub mod path_ops_build_use_test;
+pub mod path_ops_builder_conic_test;
+pub mod path_ops_builder_test;
+#[cfg(test)]
+pub mod path_ops_chalkboard_test;
+#[cfg(test)]
+pub mod path_ops_conic_intersection_test;
+#[cfg(test)]
+pub mod path_ops_conic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_conic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_conic_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_intersection_test;
+#[cfg(test)]
 pub mod path_ops_cubic_intersection_test_data;
+#[cfg(test)]
+pub mod path_ops_cubic_line_intersection_ideas;
+#[cfg(test)]
+pub mod path_ops_cubic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_reduce_order_test;
+#[cfg(test)]
+pub mod path_ops_d_cubic_test;
+#[cfg(test)]
+pub mod path_ops_d_line_test;
+#[cfg(test)]
+pub mod path_ops_d_point_test;
+#[cfg(test)]
+pub mod path_ops_d_rect_test;
+#[cfg(test)]
+pub mod path_ops_d_vector_test;
+#[cfg(test)]
+pub mod path_ops_extended_test;
+#[cfg(test)]
+pub mod path_ops_fuzz763_test;
+#[cfg(test)]
+pub mod path_ops_inverse_test;
+#[cfg(test)]
+pub mod path_ops_issue3651;
+pub mod path_ops_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_line_parameteters_test;
+#[cfg(test)]
+pub mod path_ops_op_circle_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_cubic_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_loop_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_rect_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_test;
+#[cfg(test)]
+pub mod path_ops_quad_intersection_test;
 #[cfg(test)]
 pub mod path_ops_quad_intersection_test_data;
 #[cfg(test)]
+pub mod path_ops_quad_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_quad_line_intersection_threaded_test;
+#[cfg(test)]
+pub mod path_ops_quad_reduce_order_test;
+#[cfg(test)]
+pub mod path_ops_simplify_degenerate_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_fail_test;
+#[cfg(test)]
+pub mod path_ops_simplify_quad_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_quadralaterals_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_rect_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_test;
+#[cfg(test)]
+pub mod path_ops_simplify_triangles_threaded_test;
+#[cfg(test)]
+pub mod path_ops_skp_test;
 pub mod path_ops_test_common;
+#[cfg(test)]
+pub mod path_ops_three_way_test;
+#[cfg(test)]
+pub mod path_ops_tiger_test;
+pub mod path_ops_tight_bounds_test;
+#[cfg(test)]
+pub mod path_ops_types_test;
 #[cfg(test)]
 pub mod path_raw_shapes_test;
 #[cfg(test)]

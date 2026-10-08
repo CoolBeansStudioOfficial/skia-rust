@@ -8119,6 +8119,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L220-L220"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "64a37da2be68b2c68b3a4365b79d60d285c9ae812a542872f1a29fa1ade32818"
 
 [[test]]
@@ -8128,6 +8129,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L216-L216"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "42c48b9cecdd99c63cddbc5cfb63c63617634ccd54f8116bb20df928dbb1fae7"
 
 [[test]]
@@ -8137,6 +8139,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L218-L218"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "5ba5519064e026d9d5c0a886723c52a6cd76313ae9e7add714f49a8a6162afc4"
 
 [[test]]
@@ -8146,6 +8149,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L215-L215"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "3da26ef6d7b864deab75484393a9c774146291eabbe1cbe0787827bc79a817ac"
 
 [[test]]
@@ -8155,6 +8159,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L217-L217"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "b9ddda30e994eb51737e4b5ebc3db5f3d916da2fbe06d14c7973a8abe81b1822"
 
 [[test]]
@@ -8164,6 +8169,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L83-L83"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "1532cfb1095b9bb6877fe72e14ebc9058a3490e8c43d5a99006c8c376a4a386c"
 
 [[test]]
@@ -8173,6 +8179,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L82-L82"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "582217b7e29e84e561eb1f4d5154666f67b8412137ba3012ebc9334f2e257e2b"
 
 [[test]]
@@ -8182,6 +8189,7 @@ macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L96-L96"
 module = "pathops"
 status = "todo"
+reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
 span_hash = "81ff6ef830c6e4966e47954a070540682cd5b26887d890f59b6be208db4b1296"
 
 [[test]]
@@ -15136,6 +15144,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L181-L197"
 module = "pathops"
 status = "todo"
+reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
 span_hash = "6b6fe5290d6ecba05b6fde31cf3a5e954c97a2531291143bec1053ceacfd42ab"
 
 [[test]]
@@ -15145,6 +15154,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzPathop.cpp#L19-L106"
 module = "pathops"
 status = "todo"
+reason = "fuzz entry, not a unit test; run by the fuzz harness (fuzz slice)"
 span_hash = "ccda0ca5379db92b0be4cf59eef4260bc3c6d69a1e295ff6586526b5ffca84c5"
 
 [[test]]
@@ -22534,6 +22544,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pathopsblend.cpp#L61-L131"
 module = "pathops"
 status = "todo"
+reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
 span_hash = "dac07e0911e1234a39a6b7954cef8689387bc46fb9bb80900a4c21079ef0e86e"
 
 [[test]]
@@ -22543,6 +22554,7 @@ macro = "DEF_GM"
 source = "gm/pathopsinverse.cpp#L108-L108"
 module = "pathops"
 status = "todo"
+reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
 span_hash = "fca6d4ad40adf0d4c30fc4d043550fc4e1951edb11d4b0232201c62778f9b8d6"
 
 [[test]]
@@ -22552,6 +22564,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pathopsinverse.cpp#L114-L148"
 module = "pathops"
 status = "todo"
+reason = "PathOps slice 5 covers the unit tests; this GM is left for a GM slice (needs the GM harness and golden hashes on every tier, not checked in this slice)"
 span_hash = "f905f940a7380cd7f07c4c9595ab79195181752c08a2621f414b87beb1a53798"
 
 [[test]]
@@ -37392,6 +37405,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleIdeas.cpp#L631-L674"
 module = "pathops"
 status = "todo"
+reason = 'gated by gPathOpsAngleIdeasVerbose = false in Skia ("takes a while to run"); the body needs the SkOpAngle/SkOpContour test hooks (debugAddAngle, debugLastAngle) that skia-rust-pathops does not expose, so it is not ported'
 span_hash = "159ef95149ee9892a946f9807f7140b4061b3ab1ee2972158a058862987630d0"
 
 [[test]]
@@ -37401,6 +37415,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleIdeas.cpp#L676-L706"
 module = "pathops"
 status = "todo"
+reason = 'gated by gPathOpsAngleIdeasVerbose = false in Skia ("takes a while to run"); the body needs the SkOpAngle/SkOpContour test hooks (debugAddAngle, debugLastAngle) that skia-rust-pathops does not expose, so it is not ported'
 span_hash = "88e3e14181ea4a34482c8d72f4a7573b09bdd22f4a4a8df792a6b123329697a4"
 
 [[test]]
@@ -37410,6 +37425,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleIdeas.cpp#L844-L919"
 module = "pathops"
 status = "todo"
+reason = 'gated by gPathOpsAngleIdeasVerbose = false in Skia ("takes a while to run"); the body needs the SkOpAngle/SkOpContour test hooks (debugAddAngle, debugLastAngle) that skia-rust-pathops does not expose, so it is not ported'
 span_hash = "f92fe0bd1ca0c9041b633e7661d51c875817a63126059fee4b298774d105ad57"
 
 [[test]]
@@ -37419,6 +37435,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleIdeas.cpp#L599-L629"
 module = "pathops"
 status = "todo"
+reason = 'gated by gPathOpsAngleIdeasVerbose = false in Skia ("takes a while to run"); the body needs the SkOpAngle/SkOpContour test hooks (debugAddAngle, debugLastAngle) that skia-rust-pathops does not expose, so it is not ported'
 span_hash = "1f39188d7cca99bfc10069d2e58737111b1d01cc35236910a6c884c76e6594f8"
 
 [[test]]
@@ -37428,6 +37445,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleIdeas.cpp#L580-L597"
 module = "pathops"
 status = "todo"
+reason = "needs testQuadAngles (SkOpAngle angle ordering over SkOpContour/SkOpSegment), which skia-rust-pathops does not expose"
 span_hash = "840d3c2d421a25344d135572a17643a46e2099d13ae9c167c933f5137d27124a"
 
 [[test]]
@@ -37437,6 +37455,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L453-L497"
 module = "pathops"
 status = "todo"
+reason = "needs the SkOpContourHead/SkOpGlobalState/SkOpSegment test hooks (debugAddAngle, debugLastAngle, PathOpsAngleTester::Orderable), which skia-rust-pathops does not expose"
 span_hash = "51cb514922c1d39e50d35bfda122ad1ac024eaef26c0bcfafef30d97a81abca0"
 
 [[test]]
@@ -37446,6 +37465,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L499-L522"
 module = "pathops"
 status = "todo"
+reason = "needs the SkOpContourHead/SkOpGlobalState/SkOpSegment test hooks (debugAddAngle, debugLastAngle, PathOpsAngleTester::Orderable), which skia-rust-pathops does not expose"
 span_hash = "f8258dc3d34ebe2c5f7f4833a060056d82ac484905b4b3a1c9cd84b0fc2e7f6b"
 
 [[test]]
@@ -37455,6 +37475,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L261-L288"
 module = "pathops"
 status = "todo"
+reason = "needs the SkOpContourHead/SkOpGlobalState/SkOpSegment test hooks (debugAddAngle, debugLastAngle, PathOpsAngleTester::Orderable), which skia-rust-pathops does not expose"
 span_hash = "15e9be63c7880a9ba15289a8a688ba4a81cb20f29b7c2167ded820cb841daab8"
 
 [[test]]
@@ -37464,6 +37485,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L48-L80"
 module = "pathops"
 status = "todo"
+reason = "gDisableAngleTests is true in Skia, so the body returns immediately by default; the body is not ported (it needs the SkOpAngle/SkOpContour test hooks and a 10M-iteration search that Skia never runs)"
 span_hash = "cbc657f00ce199925bf805bd5d438082e7753975d1510cfd34bdc7f0c45ba021"
 
 [[test]]
@@ -37473,6 +37495,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L82-L141"
 module = "pathops"
 status = "todo"
+reason = "gDisableAngleTests is true in Skia, so the body returns immediately by default; the body is not ported (it needs the SkOpAngle/SkOpContour test hooks and a 10M-iteration search that Skia never runs)"
 span_hash = "b8b6d1b9fd0fb5eabe0d505a1a045cbd3f27324134c1006b3093ea208aa89e48"
 
 [[test]]
@@ -37482,6 +37505,7 @@ macro = "DEF_TEST"
 source = "tests/PathOpsAngleTest.cpp#L188-L206"
 module = "pathops"
 status = "todo"
+reason = "gDisableAngleTests is true in Skia, so the body returns immediately by default; the body is not ported (it needs the SkOpAngle/SkOpContour test hooks and a 10M-iteration search that Skia never runs)"
 span_hash = "8adcdfc7238245e9ced5428e111c35959e9da29bbe10b030dedc0d38eaa0cfd2"
 
 [[test]]
@@ -37490,7 +37514,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsAsWindingTest.cpp#L421-L569"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "bd58ff5728662f66a6c38c1c2008e9424bda8546c57d3c0a8b07cb37561730d1"
 
 [[test]]
@@ -37499,7 +37523,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBattles.cpp#L11130-L11132"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "336b9a5521053e48ea022c1edbafc3288b6b30950b4952c852a4edb152dac1ab"
 
 [[test]]
@@ -37508,7 +37532,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBoundsTest.cpp#L41-L83"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "6fb569c3b9c02cf38fcee7277f0a2a1dddcc775fa32da8bff17f9ab69919a298"
 
 [[test]]
@@ -37517,7 +37541,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuildUseTest.cpp#L2113-L2115"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c655aaa6d64bb7aa0b1a8cc6bd0453571a34fef7dec89c5b593b7e3520b2a3e1"
 
 [[test]]
@@ -37526,7 +37550,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L110-L132"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "0d48fa8f5176c3603817829c846950a492b2ee075fdf4db60826faff59996c91"
 
 [[test]]
@@ -37535,7 +37559,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L377-L416"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a2508d79bf6cc74610113979e74d1d05c8bf11c16c276565d09a510141d13c1f"
 
 [[test]]
@@ -37544,7 +37568,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L418-L459"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "747bf5b92d5fe22ad185925954b1ecf4ab2d13d75a2137b060c326f1ddd305a4"
 
 [[test]]
@@ -37553,7 +37577,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L134-L138"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "5662edbdf673f40a5113cd5a1072a1e5bdd37e529800a6e24c156c6204c36f7a"
 
 [[test]]
@@ -37562,7 +37586,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L140-L361"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "5900f85c7c40b973e8bae7701dca2417aa779fc7b2f8ff78d53f96b6cd69c6ac"
 
 [[test]]
@@ -37571,7 +37595,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderConicTest.cpp#L363-L375"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a2c3718b1063fa2ac4451bd67693dc83049009c0740c30c7280cf440408d74ad"
 
 [[test]]
@@ -37580,7 +37604,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L90-L110"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "ca6b9c3bd32f5d62b29279ecfaa51b79a5182311c3233d9c546f535bdffe23f0"
 
 [[test]]
@@ -37589,7 +37613,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L112-L122"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "e67bf86925854c0ca7f76919ac233b85b1ab3021b20458881bd9fcc42fe7fc77"
 
 [[test]]
@@ -37598,7 +37622,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L124-L143"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "b7bd59125d8f333162df6f3d60b73ad2ebfa52c5d9712c7097ab41e805d2b67f"
 
 [[test]]
@@ -37607,7 +37631,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L145-L158"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "5005b5fc1eb74504a1d1ad8a237108337ac41dd97b494ad14ff539e18e266d9a"
 
 [[test]]
@@ -37616,7 +37640,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L160-L277"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "32f2a6d2b0c71af6c9c3cc37dce0dfd65a523b87c27d3affd00e0f39cb21b207"
 
 [[test]]
@@ -37625,7 +37649,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L279-L309"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "8144611e284c52a198bfa6569ed9175d5e896c53913ea4d1cf4f3327f60f0845"
 
 [[test]]
@@ -37634,7 +37658,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L17-L88"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "98a0fe55d0ffbb3b25dcf2c95e99160eaa38bc86f43e44ca963f930bc6c11a03"
 
 [[test]]
@@ -37643,7 +37667,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L374-L397"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "40c9e9195d4435866b4ca9f088d2e35a5dd31d3b9c64821a36ef938ecb8424a8"
 
 [[test]]
@@ -37652,7 +37676,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L332-L353"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "0f3df7762f5288f6690238a5003fc6e113b9c218756bb011116cb50cd8ddd35c"
 
 [[test]]
@@ -37661,7 +37685,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L311-L330"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "67c2077ad6a09db24e9e06697f990f513287ae8455f4dd5926e0ac59a2409bad"
 
 [[test]]
@@ -37670,7 +37694,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsBuilderTest.cpp#L355-L372"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "523d0a434fa193d8d896723f3c39295d5bc40667589cb4f7c30e04f79c36ecb2"
 
 [[test]]
@@ -37679,7 +37703,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsChalkboardTest.cpp#L195-L197"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "ab13d101616b0f49be139c97f7b0f1a5a210f26089223ad897e549ca91a850b2"
 
 [[test]]
@@ -37688,7 +37712,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicIntersectionTest.cpp#L360-L362"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "ce3cfe8f5656e2cee2cae6018fa7d58560fc837162c934d78be3ae1e23f1af73"
 
 [[test]]
@@ -37697,7 +37721,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicIntersectionTest.cpp#L356-L358"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "19495c75c8b813373cdf28c2a5779640169f1d9f611798d7feaa40fb10216941"
 
 [[test]]
@@ -37706,7 +37730,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicLineIntersectionTest.cpp#L113-L165"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c7685c7153c8d5b4b63768672845fd5d9b11d3edd6b5781fc82b8f2795efe62f"
 
 [[test]]
@@ -37715,7 +37739,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicLineIntersectionTest.cpp#L109-L111"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "124ebbf15208afb9d651874f654bb354e703b2f18e87473daddca96ab117a390"
 
 [[test]]
@@ -37724,7 +37748,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicQuadIntersectionTest.cpp#L82-L87"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "b788c74412273ffd9695add9fcfb730ef5c160ab1a225729f96538b119fda7f5"
 
 [[test]]
@@ -37733,7 +37757,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsConicQuadIntersectionTest.cpp#L89-L91"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "2d7c5d26c16d10ce2035daa8ed8731743a6abd8574af8e7d7fb6f56474479acb"
 
 [[test]]
@@ -37742,7 +37766,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicConicIntersectionTest.cpp#L98-L103"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "fbda26a8c2b70c14dbe831617daaecc16fe8ea2d3a18fc4f68e9216cf78ecce6"
 
 [[test]]
@@ -37751,7 +37775,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicConicIntersectionTest.cpp#L105-L107"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "875d76fe6bd530950061f111f1c5870a4984d259e32c570e161fb0d072a6a387"
 
 [[test]]
@@ -37760,7 +37784,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicIntersectionTest.cpp#L886-L888"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c978134ffe277a00228f0e73a00a974222a16725a90fdd6d29c22ee4572385c7"
 
 [[test]]
@@ -37769,7 +37793,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicIntersectionTest.cpp#L902-L909"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "0979b79d79dcc958cbacbcbd9b1a799be7779ab82e660cea6c5a41c619ee6196"
 
 [[test]]
@@ -37778,7 +37802,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicIntersectionTest.cpp#L890-L892"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "7e6191b210660236fadc02b03dd68c960d7897eb199ccb0c343f6911101b11f4"
 
 [[test]]
@@ -37787,7 +37811,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicIntersectionTest.cpp#L894-L896"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "30194f0ebb41871cfebb6c26ddf8da648914da9a17697e4aaabff53829424e9d"
 
 [[test]]
@@ -37796,7 +37820,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicIntersectionTest.cpp#L898-L900"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "0e486e933941896ec4d73615692c3897c9ad09b07f3e7f971f5d1885c1892cef"
 
 [[test]]
@@ -37805,7 +37829,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionIdeas.cpp#L287-L295"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c19b2848599801563b433a4397d0771d3286f5f50e2c4dcfab935bcb319228cc"
 
 [[test]]
@@ -37814,7 +37838,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionIdeas.cpp#L297-L303"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "96635d55a6e2e7d0f7b7d013100273055e9efe2bd52efc60164d4b68532c57a5"
 
 [[test]]
@@ -37823,7 +37847,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionIdeas.cpp#L150-L264"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "d8a4a1695abd0ba9b9dd133cdd295b4e6f8a4c6d4f189025e64c77b2dfedba75"
 
 [[test]]
@@ -37832,7 +37856,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionTest.cpp#L216-L222"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "316a65573f492c9ef3904b279fd03ab6fa996027f5ac54018cbc9938b9f2e14e"
 
 [[test]]
@@ -37841,7 +37865,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionTest.cpp#L224-L234"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "b90700cdabae9ce1bdf999369e1bae599cfb9ff2556b2ccba42b7d49d4045168"
 
 [[test]]
@@ -37850,7 +37874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicLineIntersectionTest.cpp#L208-L214"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "2eae0807665d006bd255dd4f1fa331f06310c0a037d7935ade1b7ad2cf43069f"
 
 [[test]]
@@ -37859,7 +37883,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicQuadIntersectionTest.cpp#L127-L132"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "80f4cc72710f7294ed3f4b37ec9d237b42e43a7cc12bad075a4aa6eef31c2d6d"
 
 [[test]]
@@ -37868,7 +37892,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicQuadIntersectionTest.cpp#L134-L136"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c52ded25c8198af25f8876c8376223d0b6a6dcec15adc617db67276c57ba51d2"
 
 [[test]]
@@ -37877,7 +37901,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsCubicReduceOrderTest.cpp#L68-L269"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "f2074aa934426c25a52de0f1165306b001b1881f544891a31bfc059814a02e4f"
 
 [[test]]
@@ -37886,7 +37910,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDCubicTest.cpp#L27-L35"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "847ec09a575ca6ab3da9ae537669a71bba9ea4a42a690e411c1ab4560d089cf7"
 
 [[test]]
@@ -37895,7 +37919,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDCubicTest.cpp#L65-L74"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "00a8272bafb5bb01d4c2dbb4118c4de5621d9e08b27bf017e2886536264b7e9a"
 
 [[test]]
@@ -37904,7 +37928,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDLineTest.cpp#L29-L41"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "5abbba8568f6f114e80b2c8417db0ed4c94d00da7424900d1733fd26f4663092"
 
 [[test]]
@@ -37913,7 +37937,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDPointTest.cpp#L30-L55"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "439dffb4cdf53a2446b4870f251597704e303df705e0fd8a65f4e355e1817f9d"
 
 [[test]]
@@ -37922,7 +37946,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDRectTest.cpp#L48-L79"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "aa8900928549c0cb2492f7aefbfa368b56c88ac90e3bd5b1614f70ddda66e63a"
 
 [[test]]
@@ -37931,7 +37955,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDVectorTest.cpp#L32-L57"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "d475a828073aa6416bebe8d3b508f64d00314b0704ed4b985dabeed7e8c75efd"
 
 [[test]]
@@ -37940,7 +37964,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDVectorTest.cpp#L59-L75"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "e7c96ae20ce2e03fe858d75e88f3a400e88883760279709c9672b40f3d29e2f5"
 
 [[test]]
@@ -37949,7 +37973,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsDVectorTest.cpp#L77-L91"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "3f9d78208fd0a9ffd02f8bb128ecbfb78571ced50d8680ad5a52b6c0509b9da4"
 
 [[test]]
@@ -37958,7 +37982,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsFuzz763Test.cpp#L2448-L2450"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "ea0d8c2cd32fcf3540745c59de1267bdaff4dc2d014a7af9a9a02dadcbbb5308"
 
 [[test]]
@@ -37967,7 +37991,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsInverseTest.cpp#L14-L36"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a6b33c12ba6648bd83439816e840a0f2b8a685e98cc70400036cf09450f1712e"
 
 [[test]]
@@ -37976,7 +38000,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsIssue3651.cpp#L1688-L1690"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "d8eb7f68bcb416ae48c46bc3620aa7e47c2ba3ca26f8a77dfb8deabf4c7f3b69"
 
 [[test]]
@@ -37985,7 +38009,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsLineIntersectionTest.cpp#L209-L230"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "fb04527e101056cba414c0e5a1ec927db9b8dca344da061889d2305d283e8179"
 
 [[test]]
@@ -37994,7 +38018,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsLineIntersectionTest.cpp#L238-L242"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "0c96fefa673308cc5d8089f1cf959fc7370044f1e2bfbe2d13f3423d56339600"
 
 [[test]]
@@ -38003,7 +38027,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsLineIntersectionTest.cpp#L244-L250"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "cc1ae227638c2e8be958bac46071720ce58441e987183784d620eb4a5178356a"
 
 [[test]]
@@ -38012,7 +38036,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsLineIntersectionTest.cpp#L232-L236"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "d9f93712e80b237e4b38fdb2340f6c51bf93607b13cf1360f28c4d4d220265ad"
 
 [[test]]
@@ -38021,7 +38045,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsLineParametetersTest.cpp#L49-L90"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "856c26cfedff80b409eda106f4879b9ab75d26988419045a9afaebd1d121194f"
 
 [[test]]
@@ -38030,7 +38054,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpCircleThreadedTest.cpp#L80-L96"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "fd9c81df12bbc16d37a187268cd25de95071ad07701e18e8fc78da9217c325c1"
 
 [[test]]
@@ -38039,7 +38063,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpCubicThreadedTest.cpp#L92-L108"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a44dde72484c0ade04fc0844a5a7a13fc352720515eaf99da8bb743ced3754ac"
 
 [[test]]
@@ -38048,7 +38072,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpLoopThreadedTest.cpp#L105-L121"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "e4af1ea22894c94aabc333e153063bf3ef883e6352bd2e993d6803983c411854"
 
 [[test]]
@@ -38057,7 +38081,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpRectThreadedTest.cpp#L202-L217"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "808d0a99344e89821bf20a6e7d84be3a7b9bb854b58fe1a326d953aacedad568"
 
 [[test]]
@@ -38066,7 +38090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpRectThreadedTest.cpp#L105-L121"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "8fdfcffa8e5923c2f68306287b0873e478facb25beb9c7a3b55e96b8a1d15989"
 
 [[test]]
@@ -38075,7 +38099,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpTest.cpp#L12548-L12550"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "ea6b9f76bb010f47887fd631ed8c07497da68413b245099ae90c69775f77eedc"
 
 [[test]]
@@ -38084,7 +38108,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpTest.cpp#L9518-L9526"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "c495daa1b8396b9862329b44cd60cf2c8ea2a93db87eae262257ec53226d6e9f"
 
 [[test]]
@@ -38093,7 +38117,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpTest.cpp#L12556-L12562"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "3bd7aa03db36665df37b16b226193bac8c5b556aa8127222057df48388f594ce"
 
 [[test]]
@@ -38102,7 +38126,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsOpTest.cpp#L9108-L9134"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "9731154e0f9ef919b101e9561f1950aebb0ef757e078d2461fe1d60f368d8b46"
 
 [[test]]
@@ -38111,7 +38135,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadIntersectionTest.cpp#L626-L658"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "69ddcf69ff7fc6ea7b73a8ea83ca92e0ee039e1481bedea297ff0b12ccac0a19"
 
 [[test]]
@@ -38120,7 +38144,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadIntersectionTest.cpp#L619-L624"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "7a4907298d17dd21aafd6958fb4033fea3c18970e12e9107569ce44fe8fa5636"
 
 [[test]]
@@ -38129,7 +38153,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadIntersectionTest.cpp#L615-L617"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "07e9cf4b54cb5698cad778a5ce2f69b2e16f9e404d6a7082233fdbfd177e0a6b"
 
 [[test]]
@@ -38138,7 +38162,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadIntersectionTest.cpp#L611-L613"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "2b341cc4e34b284d4811ceb499b221d6546792d16b578a45347d4f1b95755819"
 
 [[test]]
@@ -38147,7 +38171,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadLineIntersectionTest.cpp#L123-L170"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "f45142773ccc587382b163f14ccb0c520ac20b7e099016cb1e095c241eba9232"
 
 [[test]]
@@ -38156,7 +38180,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadLineIntersectionTest.cpp#L119-L121"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "8a71b200f915a0349474cbeb3b8c2ae476b400143f10d1ce788fbf8afb923a54"
 
 [[test]]
@@ -38165,7 +38189,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadLineIntersectionThreadedTest.cpp#L124-L138"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "afc4feef69cd20d6a31ae5b0ff494c0fc7e03ebcd597ec0226b939ce0fdf784a"
 
 [[test]]
@@ -38174,7 +38198,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsQuadReduceOrderTest.cpp#L77-L80"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "02b7d74713d52c969ea4e3833fe9b7f1b2db33bdc3f721320cabedc75097ffa0"
 
 [[test]]
@@ -38183,7 +38207,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyDegenerateThreadedTest.cpp#L74-L95"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a84b407630489784fd34bd9f9eb56854d2e61b5eca49c631af661f9e1b41f02d"
 
 [[test]]
@@ -38192,7 +38216,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyFailTest.cpp#L239-L242"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "18aca379ae05cabc3569e7bea70883769fb46a321cdf992543fe1eb7f5044b8e"
 
 [[test]]
@@ -38201,7 +38225,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyFailTest.cpp#L224-L235"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "f74c7831162c10859b5819dcd7bdcc8a710b77063a9e6c50f60d18ac44ee908c"
 
 [[test]]
@@ -38210,7 +38234,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyQuadThreadedTest.cpp#L86-L103"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "550b9f701e8844985132bff288c0754695366f397f50692cb4f3c3e023bfbc18"
 
 [[test]]
@@ -38219,7 +38243,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyQuadralateralsThreadedTest.cpp#L88-L104"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "6016c267a7f2ec19ff40b11f9bcf1f302d47fa258f8f34d852e84fb327f787b3"
 
 [[test]]
@@ -38228,7 +38252,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyRectThreadedTest.cpp#L198-L214"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "8917427a1b993767a5d3ddaee29b6f8876e47ba38029ec221ed3f3aee4d07735"
 
 [[test]]
@@ -38237,7 +38261,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyTest.cpp#L9979-L9987"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "674bd89911888b02881cefefaa64e8a47f3e22b1c44dcaa82810dd3f2903536c"
 
 [[test]]
@@ -38246,7 +38270,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyTest.cpp#L9989-L10015"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "bbf9f9aa613075e77e3ae48b57a1d9ba4482a6a6cfae9e7bda36595c3cbd13a2"
 
 [[test]]
@@ -38255,7 +38279,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSimplifyTrianglesThreadedTest.cpp#L77-L103"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "eda43ebe0a017f034e0cf879a5fe0fe03dd4d62ba9549c3ce75f9cd27302b793"
 
 [[test]]
@@ -38264,7 +38288,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsSkpTest.cpp#L4766-L4768"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "38f35d7971e6170a19ea589d2efdcd5620c35cf88326c5866b0d20f3d7e218a8"
 
 [[test]]
@@ -38273,7 +38297,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsThreeWayTest.cpp#L82-L87"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "1f954ed7979abf2daf5cabdfa4fbaf0427f069669d49b1e82237d439d6707dda"
 
 [[test]]
@@ -38282,7 +38306,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsThreeWayTest.cpp#L89-L92"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "1f08f5250cd2218ec1dd52c383a642e67b287f10543a0a49d719916a5cad4fd3"
 
 [[test]]
@@ -38291,7 +38315,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTigerTest.cpp#L349-L351"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "a1c1462043babfb0e5dd55b2fa66ab49d1b6066266e004b2473d2f34f741e4ad"
 
 [[test]]
@@ -38300,7 +38324,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L199-L208"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "d7a36cce27966c928b7feebac09149374593526e8032768070c27799dc5b937f"
 
 [[test]]
@@ -38309,7 +38333,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L210-L221"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "5f8b63c4e9a3bd1e52ae6ec4d39e8891ef4f2c0e59feb818ae1395e6d42ffffd"
 
 [[test]]
@@ -38318,7 +38342,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L48-L59"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "321d5c96ec9115b1ea3a6b2d78a5d3fff0a4d420ec85d862d88c91e60b0a1356"
 
 [[test]]
@@ -38327,7 +38351,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L137-L152"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "90fdf822b55d0d245b3db29223fd06db6bbeb8e717add02dbd5b4f28a692115f"
 
 [[test]]
@@ -38336,7 +38360,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L154-L162"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "6bba2aa575d6ed2806a29c92ddf8657a5110131956fcfb9023b5b5f9eb7cd39f"
 
 [[test]]
@@ -38345,7 +38369,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L164-L173"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "10dcddccd8a0e334cedcb915bd5d781b2c32cf8327253699ae44af0409968c4f"
 
 [[test]]
@@ -38354,7 +38378,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L124-L135"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "af53fcb4c96ed9a750ce0d11577edb0f15d431b9bca28aa94740449e21bcd426"
 
 [[test]]
@@ -38363,7 +38387,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L175-L186"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "9160849fabda527c18cc89455b17b96f16ee2f88749e0416c4bc9f9b9c0a12b6"
 
 [[test]]
@@ -38372,7 +38396,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTightBoundsTest.cpp#L188-L197"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "42293bd46702da192e4731881a54c84c92827818f71f19b77229deb42dc4f7a8"
 
 [[test]]
@@ -38381,7 +38405,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathOpsTypesTest.cpp#L19-L24"
 module = "pathops"
-status = "todo"
+status = "passing"
 span_hash = "f734dac880599ee0f693fd49c4c5bd5c77c06c5355e07afc78678c0d537da584"
 
 [[test]]
