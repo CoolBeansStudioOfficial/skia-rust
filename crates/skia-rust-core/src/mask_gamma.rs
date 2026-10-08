@@ -223,9 +223,16 @@ impl<const R: u32, const G: u32, const B: u32> TMaskGamma<R, G, B> {
     // Port of: src/core/SkMaskGamma.h#L176 (chrome/m156)
     const TABLE_NUM_ELEMENTS: usize = Self::NUM_TABLES * Self::TABLE_WIDTH;
 
-    /// `SkTMaskGamma(contrast, deviceGamma)`: builds the tables for the device gamma and contrast
-    /// (`contrast` is in `[0, 1]`).
-    // Port of: src/core/SkMaskGamma.h#L117-L126 (chrome/m156)
+    /// `SkTMaskGamma()`: the linear gamma, with no tables.
+    // Port of: include/core/SkMaskGamma.h#L106-L107 (chrome/m156)
+    #[must_use]
+    pub const fn linear() -> Self {
+        Self { gamma_tables: None }
+    }
+
+    /// `SkTMaskGamma(SkScalar contrast, SkScalar deviceGamma)`: builds the tables for the device
+    /// gamma and contrast (`contrast` is in `[0, 1]`).
+    // Port of: include/core/SkMaskGamma.h#L117-L126 (chrome/m156)
     #[must_use]
     pub fn new(contrast: scalar, device_gamma: scalar) -> Self {
         let mut tables = vec![0u8; Self::TABLE_NUM_ELEMENTS].into_boxed_slice();

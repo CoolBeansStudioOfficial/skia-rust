@@ -20,7 +20,8 @@ use crate::mask::MaskFormat;
 use crate::packed_glyph_id::PackedGlyphId;
 use crate::path::Path;
 use crate::picture::Picture;
-use crate::point::{IPoint, Point};
+use crate::point::Point;
+use crate::rect::IRect;
 use crate::rect::Rect;
 use crate::scalar::scalar;
 
@@ -684,6 +685,17 @@ impl Glyph {
         self.mask_format = format;
     }
 
+    /// `SkGlyph::fScalerContextBits`, set from the metrics.
+    pub(crate) fn set_scaler_context_bits(&mut self, bits: u16) {
+        self.scaler_context_bits = bits;
+    }
+
+    /// Takes the image out of the glyph, leaving none (the scaler context fills it and gives it
+    /// back).
+    pub(crate) fn take_image(&mut self) -> Option<Box<[u8]>> {
+        self.image.take()
+    }
+
     /// `SkGlyph::maxDimension`.
     // Port of: src/core/SkGlyph.h#L514 (chrome/m156)
     #[must_use]
@@ -694,8 +706,13 @@ impl Glyph {
     /// `SkGlyph::iRect`.
     // Port of: src/core/SkGlyph.h#L515 (chrome/m156)
     #[must_use]
-    pub fn i_rect(&self) -> IPoint {
-        IPoint::new(i32::from(self.left), i32::from(self.top))
+    pub fn i_rect(&self) -> IRect {
+        IRect::from_xywh(
+            i32::from(self.left),
+            i32::from(self.top),
+            i32::from(self.width),
+            i32::from(self.height),
+        )
     }
 
     /// `SkGlyph::glyphRect`.

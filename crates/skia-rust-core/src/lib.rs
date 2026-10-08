@@ -59,6 +59,7 @@ pub mod fdot6;
 pub mod fixed;
 pub mod float_bits;
 pub mod floating_point;
+pub mod font;
 pub mod font_arguments;
 pub mod font_descriptor;
 pub mod font_metrics;
