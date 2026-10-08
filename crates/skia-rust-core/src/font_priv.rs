@@ -14,7 +14,8 @@ use crate::font_types::{GlyphId, TextEncoding};
 use crate::matrix::Matrix;
 use crate::matrix_priv::differential_area_scale;
 use crate::point::Point;
-use crate::scalar::scalar;
+use crate::rect::Rect;
+use crate::scalar::{Scalars, scalar};
 use crate::utf::{Unichar, count_utf8, count_utf16};
 
 /// `SkFontPriv::ScaleFontMetrics`: multiplies every scalar metric by `scale`.
@@ -66,6 +67,30 @@ pub fn approximate_transformed_text_size(
     } else {
         font.size() * matrix.max_scale()
     }
+}
+
+/// `SkFontPriv::GetFontBounds`: the typeface's bounds mapped by the font's size, scale and skew.
+// Port of: src/core/SkFont.cpp#L360-L370 (chrome/m156)
+#[doc(alias = "GetFontBounds")]
+#[must_use]
+pub fn get_font_bounds(font: &Font) -> Rect {
+    let mut m = Matrix::default();
+    m.set_scale(
+        (font.size() * font.scale_x(), font.size()),
+        None,
+    );
+    m.post_skew((font.skew_x(), 0.0), None);
+
+    let (bounds, _) = m.map_rect(font.typeface().get_bounds());
+    bounds
+}
+
+/// `SkFontPriv::IsFinite`: whether the font's size, scale and skew are all finite.
+// Port of: src/core/SkFontPriv.h#L78-L80 (chrome/m156)
+#[doc(alias = "IsFinite")]
+#[must_use]
+pub fn is_finite(font: &Font) -> bool {
+    [font.size(), font.scale_x(), font.skew_x()].are_finite()
 }
 
 /// `SkFontPriv::CountTextElements`: the number of characters (or glyphs) in `text`. Lengths are

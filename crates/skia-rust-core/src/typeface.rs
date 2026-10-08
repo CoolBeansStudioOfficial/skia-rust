@@ -15,13 +15,22 @@ use std::sync::{Arc, OnceLock};
 
 use crate::data::Data;
 use crate::descriptor::Descriptor;
+use crate::font::Font;
 use crate::font_arguments::FontArguments;
 use crate::font_arguments::variation_position::Coordinate;
 use crate::font_descriptor::{FactoryId, FontDescriptor};
 use crate::font_priv::count_text_elements;
 use crate::font_style::{FontStyle, Slant, Weight};
 use crate::font_types::{GlyphId, TextEncoding, set_four_byte_tag};
-use crate::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
+use crate::matrix::Matrix;
+use crate::paint::Paint;
+use crate::rect::Rect;
+use crate::scalar::scalar;
+use crate::scaler_context::{
+    ScalerContext, ScalerContextBuildFlags, ScalerContextEffects, ScalerContextRec,
+};
+use crate::strike_spec::auto_descriptor_given_rec_and_effects;
+use crate::surface_props::SurfaceProps;
 use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
 use crate::typeface_cache::new_typeface_id;
 use crate::utf::{Unichar, next_utf8, next_utf16};
@@ -71,6 +80,8 @@ pub struct TypefaceCore {
     unique_id: TypefaceId,
     style: FontStyle,
     is_fixed_pitch: bool,
+    /// `fBounds` with `fBoundsOnce`: computed on first use by [`Typeface::get_bounds`].
+    bounds: OnceLock<Rect>,
 }
 
 impl TypefaceCore {
@@ -82,6 +93,7 @@ impl TypefaceCore {
             unique_id: new_typeface_id(),
             style,
             is_fixed_pitch,
+            bounds: OnceLock::new(),
         }
     }
 }
@@ -187,6 +199,53 @@ impl Typeface {
         EMPTY
             .get_or_init(|| Self::new(Arc::new(EmptyTypeface::new())))
             .clone()
+    }
+
+    /// `SkTypeface::getBounds`: the bounds of the font, in font units scaled to one point.
+    /// Computed once per typeface.
+    // Port of: src/core/SkTypeface.cpp#L550-L557 (chrome/m156)
+    #[doc(alias = "getBounds")]
+    #[must_use]
+    pub fn get_bounds(&self) -> Rect {
+        *self.0.core().bounds.get_or_init(|| self.compute_bounds())
+    }
+
+    /// `SkTypeface::onComputeBounds`: the font's extremes, measured at 2048 points with linear
+    /// metrics and scaled back down. Empty when the font has no bounds.
+    // Port of: src/core/SkTypeface.cpp#L559-L586 (chrome/m156)
+    fn compute_bounds(&self) -> Rect {
+        // we use a big size to ensure lots of significant bits from the scalercontext.
+        // then we scale back down to return our final answer (at 1-pt)
+        const TEXT_SIZE: scalar = 2048.0;
+        const INV_TEXT_SIZE: scalar = 1.0 / TEXT_SIZE;
+
+        let mut font = Font::from_size(self.clone(), TEXT_SIZE);
+        font.set_linear_metrics(true);
+
+        // SkScalerContext::MakeRecAndEffectsFromFont: an empty paint, no flags.
+        let (rec, _effects) = ScalerContext::make_rec_and_effects(
+            &font,
+            &Paint::default(),
+            &SurfaceProps::default(),
+            ScalerContextBuildFlags::NONE,
+            Matrix::i(),
+        );
+        // SkScalerContext::AutoDescriptorGivenRecAndEffects with no effects.
+        let no_effects = ScalerContextEffects::default();
+        let Some(auto_descriptor) = auto_descriptor_given_rec_and_effects(&rec, &no_effects) else {
+            return Rect::default();
+        };
+        let mut ctx = self.create_scaler_context(&no_effects, auto_descriptor.get_desc());
+        let fm = ctx.get_font_metrics();
+        if !fm.has_bounds() {
+            return Rect::default();
+        }
+        Rect::from_ltrb(
+            fm.x_min * INV_TEXT_SIZE,
+            fm.top * INV_TEXT_SIZE,
+            fm.x_max * INV_TEXT_SIZE,
+            fm.bottom * INV_TEXT_SIZE,
+        )
     }
 
     /// `SkTypeface::uniqueID`.
