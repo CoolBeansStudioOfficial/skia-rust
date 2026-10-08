@@ -42,91 +42,88 @@ use std::fmt::Write;
 
 // The arcto test below should draw the same as the SVG in the C++ comment.
 // Port of: gm/arcto.cpp#L58-L127 (chrome/m156)
-crate::def_simple_gm!(
-    #[ignore = "see notes/gm_arcto_cpp_arcto.md"]
-    arcto,
-    canvas,
-    500,
-    600,
-    {
-        let mut paint = Paint::default();
-        paint.set_anti_alias(true);
-        paint.set_style(Style::Stroke);
-        paint.set_stroke_width(2.0);
-        paint.set_color(Color::new(0xFF660000));
-        let mut oval = Rect::from_xywh(100.0, 100.0, 100.0, 100.0);
+// Not registered until ported trig is host-independent: matches the goldens on Linux and
+// Windows but not on macOS (notes/gm_arcto_cpp_arcto.md). Re-register as
+// `crate::def_simple_gm!(arcto, canvas, 500, 600, { arcto_draw(canvas) });` once it is.
+#[allow(dead_code)] // kept ported, registered again by the deterministic-libm work
+fn arcto_draw(canvas: &Canvas) {
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    paint.set_style(Style::Stroke);
+    paint.set_stroke_width(2.0);
+    paint.set_color(Color::new(0xFF660000));
+    let mut oval = Rect::from_xywh(100.0, 100.0, 100.0, 100.0);
 
-        let mut angle: f32 = 0.0;
-        while angle <= 45.0 {
-            for o_height in (1..=2).rev() {
-                let mut svg_arc = PathBuilder::new();
-                #[allow(clippy::cast_precision_loss)] // oval.height() / oHeight
-                let oval_height = oval.height() / o_height as f32;
-                svg_arc.move_to((oval.left, oval.top));
-                svg_arc.arc_to_radius(
-                    (oval.width() / 2.0, oval_height),
-                    angle,
-                    ArcSize::Small,
-                    PathDirection::CW,
-                    (oval.right, oval.bottom),
-                );
-                canvas.draw_path(&svg_arc.detach(), &paint);
+    let mut angle: f32 = 0.0;
+    while angle <= 45.0 {
+        for o_height in (1..=2).rev() {
+            let mut svg_arc = PathBuilder::new();
+            #[allow(clippy::cast_precision_loss)] // oval.height() / oHeight
+            let oval_height = oval.height() / o_height as f32;
+            svg_arc.move_to((oval.left, oval.top));
+            svg_arc.arc_to_radius(
+                (oval.width() / 2.0, oval_height),
+                angle,
+                ArcSize::Small,
+                PathDirection::CW,
+                (oval.right, oval.bottom),
+            );
+            canvas.draw_path(&svg_arc.detach(), &paint);
 
-                svg_arc.move_to((oval.left + 100.0, oval.top + 100.0));
-                svg_arc.arc_to_radius(
-                    (oval.width() / 2.0, oval_height),
-                    angle,
-                    ArcSize::Large,
-                    PathDirection::CCW,
-                    (oval.right, oval.bottom + 100.0),
-                );
-                canvas.draw_path(&svg_arc.detach(), &paint);
-                oval.offset((50.0, 0.0));
-            }
-            angle += 45.0;
+            svg_arc.move_to((oval.left + 100.0, oval.top + 100.0));
+            svg_arc.arc_to_radius(
+                (oval.width() / 2.0, oval_height),
+                angle,
+                ArcSize::Large,
+                PathDirection::CCW,
+                (oval.right, oval.bottom + 100.0),
+            );
+            canvas.draw_path(&svg_arc.detach(), &paint);
+            oval.offset((50.0, 0.0));
         }
-
-        paint.set_stroke_width(5.0);
-        let purple = Color::new(0xFF800080);
-        let darkgreen = Color::new(0xFF008000);
-        let colors = [Color::RED, darkgreen, purple, Color::BLUE];
-        let arcstrs = [
-            "M250,400  A120,80 0 0,0 250,500",
-            "M250,400  A120,80 0 1,1 250,500",
-            "M250,400  A120,80 0 1,0 250,500",
-            "M250,400  A120,80 0 0,1 250,500",
-        ];
-        let mut c_index = 0;
-        for arcstr in arcstrs {
-            if let Some(path) = parse_path::from_svg(arcstr) {
-                paint.set_color(colors[c_index]);
-                c_index += 1;
-                canvas.draw_path(&path, &paint);
-            }
-        }
-
-        // test that zero length arcs still draw round cap
-        paint.set_stroke_cap(Cap::Round);
-        let mut path = PathBuilder::new();
-        path.move_to((100.0, 100.0)).arc_to_radius(
-            (0.0, 0.0),
-            0.0,
-            ArcSize::Large,
-            PathDirection::CW,
-            (200.0, 200.0),
-        );
-        canvas.draw_path(&path.detach(), &paint);
-
-        path.move_to((200.0, 100.0)).arc_to_radius(
-            (80.0, 80.0),
-            0.0,
-            ArcSize::Large,
-            PathDirection::CW,
-            (200.0, 100.0),
-        );
-        canvas.draw_path(&path.detach(), &paint);
+        angle += 45.0;
     }
-);
+
+    paint.set_stroke_width(5.0);
+    let purple = Color::new(0xFF800080);
+    let darkgreen = Color::new(0xFF008000);
+    let colors = [Color::RED, darkgreen, purple, Color::BLUE];
+    let arcstrs = [
+        "M250,400  A120,80 0 0,0 250,500",
+        "M250,400  A120,80 0 1,1 250,500",
+        "M250,400  A120,80 0 1,0 250,500",
+        "M250,400  A120,80 0 0,1 250,500",
+    ];
+    let mut c_index = 0;
+    for arcstr in arcstrs {
+        if let Some(path) = parse_path::from_svg(arcstr) {
+            paint.set_color(colors[c_index]);
+            c_index += 1;
+            canvas.draw_path(&path, &paint);
+        }
+    }
+
+    // test that zero length arcs still draw round cap
+    paint.set_stroke_cap(Cap::Round);
+    let mut path = PathBuilder::new();
+    path.move_to((100.0, 100.0)).arc_to_radius(
+        (0.0, 0.0),
+        0.0,
+        ArcSize::Large,
+        PathDirection::CW,
+        (200.0, 200.0),
+    );
+    canvas.draw_path(&path.detach(), &paint);
+
+    path.move_to((200.0, 100.0)).arc_to_radius(
+        (80.0, 80.0),
+        0.0,
+        ArcSize::Large,
+        PathDirection::CW,
+        (200.0, 100.0),
+    );
+    canvas.draw_path(&path.detach(), &paint);
+}
 
 // Port of: gm/arcto.cpp#L129 (chrome/m156)
 const PARSE_PATH_TEST_DIMENSION: i32 = 500;

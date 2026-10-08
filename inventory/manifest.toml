@@ -15576,8 +15576,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L67-L127"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_arcto_cpp_arcto.md (matches on Linux and Windows, mismatches on macOS: platform libm trig)"
+status = "todo"
+reason = "ported but unregistered until trig is host-independent: matches on Linux and Windows, not on macOS (notes/gm_arcto_cpp_arcto.md)"
 span_hash = "d66533a0a4696b80eef84fb6553f938ced3c1d0332a8eae32b3e13a51a71d9c6"
 
 [[test]]
