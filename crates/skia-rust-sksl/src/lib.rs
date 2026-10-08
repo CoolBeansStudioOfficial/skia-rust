@@ -18,6 +18,7 @@ mod base_shim;
 pub mod builtin_types;
 pub mod codegen;
 pub mod compiler;
+pub mod constant_folder;
 pub mod context;
 pub mod defines;
 pub mod error_reporter;
