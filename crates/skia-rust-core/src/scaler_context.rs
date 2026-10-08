@@ -13,6 +13,14 @@ use crate::font_types::FontHinting;
 use crate::mask::MaskFormat;
 use crate::scalar::scalar;
 
+mod engine;
+pub use engine::{
+    AxisAlignment, GeneratedPath, GlyphMetrics, GlyphPathRasterizer, NO_PATH_RASTERIZER,
+    NoPathRasterizer, PreMatrixScale, ScalerContext, ScalerContextBase, ScalerContextBuildFlags,
+    ScalerContextEffects, ScalerContextImpl, cached_mask_gamma_for, get_gamma_lut_data,
+    get_gamma_lut_size, get_mask_pre_blend, make_text_matrix,
+};
+
 /// `sizeof(SkScalerContextRec)` on every target. The record has no pointers and is dense
 /// (`SK_BEGIN_REQUIRE_DENSE`), so the size is the same on 32-bit and 64-bit platforms.
 // Port of: src/core/SkScalerContext.h#L68-L241 (SK_BEGIN/END_REQUIRE_DENSE, chrome/m156)

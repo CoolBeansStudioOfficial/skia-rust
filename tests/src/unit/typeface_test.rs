@@ -7,9 +7,12 @@
 
 use std::sync::Arc;
 
+use skia_rust_core::descriptor::Descriptor;
+use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::FontDescriptor;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
+use skia_rust_core::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
 use skia_rust_core::stream::{DynamicMemoryWStream, StreamAsset};
 use skia_rust_core::typeface::{Typeface, TypefaceBase, TypefaceCore};
 use skia_rust_core::typeface_cache::TypefaceCache;
@@ -59,6 +62,29 @@ impl TypefaceBase for TestEmptyTypeface {
     // Port of: tools/fonts/TestEmptyTypeface.h#L54-L62 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         Some(Vec::new())
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L24-L26 (chrome/m156)
+    fn on_make_clone(&self, this: Typeface, _args: &FontArguments<'_, '_>) -> Typeface {
+        this
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L27-L31 (chrome/m156)
+    fn on_create_scaler_context(
+        &self,
+        this: Typeface,
+        effects: &ScalerContextEffects,
+        desc: &Descriptor,
+    ) -> ScalerContext {
+        ScalerContext::make_empty(this, effects, desc)
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L32 (chrome/m156)
+    fn on_filter_rec(&self, _rec: &mut ScalerContextRec) {}
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L53 (chrome/m156)
+    fn on_glyph_mask_needs_current_color(&self) -> bool {
+        false
     }
 }
 
