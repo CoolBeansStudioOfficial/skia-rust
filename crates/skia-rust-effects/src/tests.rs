@@ -3,6 +3,7 @@
 
 //! Sanity tests of the path effects that are not ports of Skia tests.
 
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
@@ -43,7 +44,9 @@ fn long_line_with_many_dashes_is_bounded() {
 fn dashes_a_horizontal_line() {
     let dash = new(&[2.0, 2.0], 0.0).unwrap();
     let path = Path::line((0.0, 0.0), (10.0, 0.0));
-    let (builder, rec) = dash.filter_path(&path, &stroke_rec(1.0), None).unwrap();
+    let (builder, rec) = dash
+        .filter_path(&path, &stroke_rec(1.0), None, Matrix::i())
+        .unwrap();
     // The special line fast path strokes the dashes itself.
     assert!(rec.is_fill_style());
     let dashed = builder.snapshot();
@@ -66,7 +69,9 @@ fn sum_and_compose_filter() {
     let dash = new(&[2.0, 2.0], 0.0).unwrap();
     let sum = PathEffect::sum(dash.clone(), dash.clone());
     let path = Path::line((0.0, 0.0), (10.0, 0.0));
-    let (builder, _) = sum.filter_path(&path, &stroke_rec(1.0), None).unwrap();
+    let (builder, _) = sum
+        .filter_path(&path, &stroke_rec(1.0), None, Matrix::i())
+        .unwrap();
     // The first dash turns the shared rec into a fill, so the second one does not apply.
     assert_eq!(builder.snapshot().count_points(), 12);
     assert!(PathEffect::compose(dash.clone(), dash).compute_fast_bounds(None));
