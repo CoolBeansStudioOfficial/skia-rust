@@ -4,7 +4,8 @@
 // Ported from Skia: src/sksl/SkSLCompiler.{h,cpp}: the error text (`handleError`, `errorText`,
 // `writeErrorCount`, `resetErrors`) and `POISON_TAG`, and the driver (`initializeContext`,
 // `FinalizeSettings`, `convertProgram`, `compileModule`, `releaseProgram`, `finalize`; task S11).
-// The optimizer passes come with tasks S12 and S13.
+// The optimizer (`optimize`, `optimizeModuleBeforeMinifying`) runs the dead-code transforms of
+// task S13; the inliner comes with task S12.
 
 //! [`Compiler`]: owns the compilation [`Context`] and formats its errors.
 
@@ -25,8 +26,12 @@ use crate::parser::Parser;
 use crate::position::Position;
 use crate::program_settings::{ProgramConfig, ProgramKind, ProgramSettings};
 use crate::transform::{
-    find_and_declare_builtin_functions, find_and_declare_builtin_structs,
-    find_and_declare_builtin_variables,
+    eliminate_dead_functions, eliminate_dead_functions_in_program, eliminate_dead_global_variables,
+    eliminate_dead_global_variables_in_program, eliminate_dead_local_variables,
+    eliminate_dead_local_variables_in_program, eliminate_empty_statements,
+    eliminate_unnecessary_braces, eliminate_unreachable_code, find_and_declare_builtin_functions,
+    find_and_declare_builtin_structs, find_and_declare_builtin_variables, rename_private_symbols,
+    replace_const_vars_with_literals, replace_splat_casts_with_swizzles,
 };
 
 /// `SkSL::Compiler`.
@@ -422,8 +427,8 @@ impl Compiler {
 
     /// `optimize(program)`: the optimizer. Skia runs the inliner, then `EliminateUnreachableCode`,
     /// `EliminateDeadFunctions`, `EliminateDeadLocalVariables` and `EliminateDeadGlobalVariables`
-    /// (`SkSLCompiler.cpp#L341-L381`). The dead-code transforms (S13) land at the call point in
-    /// `run_optimizer_passes`.
+    /// (`SkSLCompiler.cpp#L341-L381`). The inliner (S12) and the dead-code transforms (S13) run in
+    /// `run_optimizer_passes`, in Skia's order.
     // Port of: src/sksl/SkSLCompiler.cpp#L341-L381 (chrome/m156)
     fn optimize(&mut self, program: &mut Program) -> bool {
         // The optimizer only needs to run when it is enabled.
@@ -434,20 +439,153 @@ impl Compiler {
         self.error_count() == 0
     }
 
-    /// The optimizer passes of `Compiler::optimize`, in Skia's order. S13 (the dead-code
-    /// transforms) fills in what follows the inliner.
+    /// The optimizer passes of `Compiler::optimize`, in Skia's order: the inliner (S12), then
+    /// `EliminateUnreachableCode`, the dead-function and dead-variable loops (S13).
+    // Port of: src/sksl/SkSLCompiler.cpp#L341-L381 (chrome/m156)
     fn run_optimizer_passes(&mut self, program: &mut Program) {
         // Run the inliner only once; it is expensive! Multiple passes can occasionally shake out
         // more wins, but it's diminishing returns.
         let mut inliner = Inliner::new();
+        // Usage is computed from the program, and then kept up to date by the passes.
         let mut usage = get_usage(program);
-        let elements = program.owned_elements.clone();
+        // The passes walk the element lists while the context lends them the program's pool.
+        let mut owned = std::mem::take(&mut program.owned_elements);
+        let mut shared = std::mem::take(&mut program.shared_elements);
         let symbols = program.symbols;
         // The program's symbol table was taken out of the context when the program was bundled;
         // `with_program` puts it back for the duration of the call, as `runInliner` does.
         self.context.with_program(program, |ctx| {
-            inliner.analyze(ctx, &elements, symbols, &mut usage);
+            inliner.analyze(ctx, &owned, symbols, &mut usage);
+
+            // Unreachable code can confuse some drivers, so it's worth removing. (skbug.com/40043094)
+            eliminate_unreachable_code(ctx, &owned, &mut usage);
+
+            while eliminate_dead_functions_in_program(ctx, &mut owned, &mut shared, &mut usage) {
+                // Removing dead functions may cause more functions to become unreferenced. Try again.
+            }
+            while eliminate_dead_local_variables_in_program(ctx, &owned, &mut usage) {
+                // Removing dead variables may cause more variables to become unreferenced. Try again.
+            }
+            while eliminate_dead_global_variables_in_program(
+                ctx,
+                &mut owned,
+                &mut shared,
+                &mut usage,
+            ) {
+                // Repeat until no changes occur.
+            }
+
+            // Make sure that variables are still declared in the correct symbol tables. Skia runs
+            // this check only in debug builds (`SkDEBUGCODE`), and it must not report to the
+            // program's errors, so its reporter is swapped out and the result asserted.
+            #[cfg(debug_assertions)]
+            {
+                let symbols = ctx.symbol_table.expect("the program's symbols are set");
+                let saved = ctx.set_error_reporter(ErrorReporter::no_op());
+                crate::analysis::check_symbol_table_correctness(ctx, symbols, &owned);
+                let check = ctx.set_error_reporter(saved);
+                debug_assert_eq!(
+                    check.error_count(),
+                    0,
+                    "a variable is out of its symbol table"
+                );
+            }
         });
+        program.owned_elements = owned;
+        program.shared_elements = shared;
+
+        // Make sure that program usage is still correct after the optimization pass is complete.
+        debug_assert_eq!(usage, get_usage(program));
+    }
+
+    /// `optimizeModuleBeforeMinifying(kind, module, shrinkSymbols)`: the module optimizer that the
+    /// minifier runs. `module` is the module's unfrozen parts and `parent` the module it extends.
+    /// Returns false when an error was reported.
+    // Port of: src/sksl/SkSLCompiler.cpp#L253-L304 (chrome/m156)
+    // Only the tests call this until the minifier (S24) lands.
+    #[allow(dead_code)]
+    pub(crate) fn optimize_module_before_minifying(
+        &mut self,
+        kind: ProgramKind,
+        module: &mut ModuleParts,
+        parent: &Module,
+        shrink_symbols: bool,
+    ) -> bool {
+        debug_assert_eq!(self.error_count(), 0);
+
+        // Create a temporary program configuration with default settings.
+        let config = ProgramConfig::new(module.module_type, kind, ProgramSettings::default());
+        let mut usage = get_module_parts_usage(&module.pool, &module.elements, parent);
+        self.with_module_parts(module, config, |ctx, elements, symbols| {
+            if shrink_symbols {
+                // Assign shorter names to symbols as long as it won't change the external meaning
+                // of the code.
+                rename_private_symbols(ctx, symbols, elements, kind);
+
+                // Replace constant variables with their literal values to save space.
+                replace_const_vars_with_literals(ctx, elements, &mut usage);
+            }
+
+            // Remove any unreachable code.
+            eliminate_unreachable_code(ctx, elements, &mut usage);
+
+            // We can only remove dead functions from runtime shaders, since runtime-effect helper
+            // functions are isolated from other parts of the program. In a module, an unreferenced
+            // function is intended to be called by the code that includes the module.
+            if kind == ProgramKind::RuntimeShader {
+                while eliminate_dead_functions(ctx, elements, &mut usage) {
+                    // Removing dead functions may cause more functions to become unreferenced. Try
+                    // again.
+                }
+            }
+
+            while eliminate_dead_local_variables(ctx, elements, &mut usage) {
+                // Removing dead variables may cause more variables to become unreferenced. Try
+                // again.
+            }
+
+            // Runtime shaders are isolated from other parts of the program via name mangling, so
+            // we can eliminate public globals if they aren't referenced. Otherwise, we only
+            // eliminate private globals (prefixed with `$`) to avoid changing the meaning of the
+            // module code.
+            let only_private_globals = !ProgramConfig::is_runtime_effect(kind);
+            while eliminate_dead_global_variables(ctx, elements, &mut usage, only_private_globals) {
+                // Repeat until no changes occur.
+            }
+
+            // We eliminate empty statements to avoid runs of `;;;;;;` caused by the previous passes.
+            eliminate_empty_statements(ctx, elements);
+
+            // We can eliminate `{}` around single-statement blocks.
+            eliminate_unnecessary_braces(ctx, elements);
+
+            // We can convert `float4(myFloat)` with `myFloat.xxxx` to save a few characters.
+            replace_splat_casts_with_swizzles(ctx, elements);
+        });
+
+        // Make sure that program usage is still correct after the optimization pass is complete.
+        debug_assert_eq!(usage, get_module_parts_usage(&module.pool, &module.elements, parent));
+        self.error_count() == 0
+    }
+
+    /// Runs `f` with the module's pool, its global symbols and `config` installed in the context,
+    /// with the module's element list. The context's pool is handed back to the module afterwards.
+    #[allow(dead_code)] // Used with `optimize_module_before_minifying` (see there).
+    fn with_module_parts<R>(
+        &mut self,
+        module: &mut ModuleParts,
+        config: ProgramConfig,
+        f: impl FnOnce(&mut Context, &mut Vec<ElemId>, SymTabId) -> R,
+    ) -> R {
+        let saved_pool =
+            std::mem::replace(&mut self.context.pool, std::mem::take(&mut module.pool));
+        let saved_config = self.context.config.replace(config);
+        let saved_symbols = self.context.symbol_table.replace(module.symbols);
+        let result = f(&mut self.context, &mut module.elements, module.symbols);
+        module.pool = std::mem::replace(&mut self.context.pool, saved_pool);
+        self.context.config = saved_config;
+        self.context.symbol_table = saved_symbols;
+        result
     }
 }
 
