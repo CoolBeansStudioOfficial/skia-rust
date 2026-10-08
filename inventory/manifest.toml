@@ -18744,8 +18744,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dashing.cpp#L569-L584"
 module = "text"
-reason = "needs the path-effect strike descriptor entry (dash effect on text, kEffects_SkDescriptorTag), not ported"
-status = "todo"
+status = "passing"
 span_hash = "994b0e2e69cccb65de311678c5827fe986c70a8b2f262d158e057dba0fb076cd"
 
 [[test]]
@@ -24331,8 +24330,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/stroketext.cpp#L88-L100"
 module = "text"
-status = "todo"
-reason = "needs path effects in glyph strike descriptors (kEffects, SkPathEffect flatten not ported) for the dashed draw"
+status = "passing"
 span_hash = "87c5c54c68dd99f788548233017c96410a275f87cf3ce62b05b5c046c972d567"
 
 [[test]]
@@ -24341,7 +24339,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/stroketext.cpp#L102-L172"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1b024bae951fdb6e83d97d4d5c5f294b70ab5932e321d98e188c62e695060845"
 
 [[test]]
@@ -24642,7 +24640,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobmixedsizes.cpp#L219-L219"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8c30f16feddf39d61ac8224dbb46235e08ca2058fad1edee0753862ee4901529"
 
 [[test]]
@@ -24651,7 +24649,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobmixedsizes.cpp#L220-L220"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8c0030897e3677a7bea2f2d6ca6332589ed69e1d2cb56aab7c6c4ac0c81e54ae"
 
 [[test]]
@@ -30908,8 +30906,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L71-L113"
 module = "text"
-reason = "needs the path-effect strike descriptor entry (kEffects_SkDescriptorTag, writeFlattenable), not ported"
-status = "todo"
+status = "passing"
 span_hash = "ea8d60471e15bacc3893be0fda07de8da14db7c783e97dd3e8ce755fbc6e7bd1"
 
 [[test]]

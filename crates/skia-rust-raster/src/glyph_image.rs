@@ -192,8 +192,11 @@ fn generate_image_from_path(
         // The A8 pixels live in a buffer of their own, then are packed into the mask.
         let mut intermediate = vec![0u8; a8_row_bytes * a8_rows];
         {
-            let pixmap = Pixmap::new(&info, intermediate.as_mut_slice(), a8_row_bytes)
-                .expect("the intermediate A8 pixmap is valid");
+            // `dst.tryAlloc(info)` fails for an invalid size, which the LCD formula gives for a
+            // narrow mask (a negative width): the mask stays empty and nothing is drawn.
+            let Some(pixmap) = Pixmap::new(&info, intermediate.as_mut_slice(), a8_row_bytes) else {
+                return;
+            };
             draw_glyph_path(pixmap, &matrix, &clip, path_to_use, &paint);
         }
         match dst_mask.format {
