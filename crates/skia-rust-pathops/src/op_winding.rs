@@ -198,7 +198,7 @@ impl RayHits {
 /// `CurveIntercept[verb * 2 + xy_index(dir)](pts, weight, axis, roots)`: the roots of the
 /// curve against the horizontal (`horizontal`) or vertical intercept.
 // Port of: src/pathops/SkPathOpsCurve.h#L300-L426 (chrome/m156)
-fn curve_intercept(
+pub(crate) fn curve_intercept(
     verb: Verb,
     horizontal: bool,
     pts: &[Point],

@@ -121,7 +121,9 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_as_winding_test;
 pub mod path_ops_bounds_test;
+pub mod path_ops_builder_test;
 #[cfg(test)]
 pub mod path_ops_conic_intersection_test;
 #[cfg(test)]
@@ -153,6 +155,7 @@ pub mod path_ops_drect_test;
 #[cfg(test)]
 pub mod path_ops_dvector_test;
 #[cfg(test)]
+pub mod path_ops_ext_test;
 pub mod path_ops_extended_test;
 pub mod path_ops_line_intersection_test;
 #[cfg(test)]
@@ -170,6 +173,7 @@ pub mod path_ops_quad_reduce_order_test;
 #[cfg(test)]
 pub mod path_ops_simplify_test;
 pub mod path_ops_test_common;
+pub mod path_ops_tight_bounds_test;
 #[cfg(test)]
 pub mod path_ops_types_test;
 #[cfg(test)]
