@@ -23,11 +23,13 @@ use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::paint::Paint;
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::rrect::RRect;
+use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
 use skia_rust_raster::surfaces;
@@ -214,3 +216,48 @@ def_tier_test!(DropShadowImageFilter_Huge, |reporter| {
     canvas.restore();
     let _ = reporter;
 });
+
+// Port of: tests/ImageFilterTest.cpp#L2571-L2592 (chrome/m156)
+def_tier_test!(
+    ImageFilter_DrawExtremeMatrixTransform_DoesNotAssert,
+    |reporter| {
+        // Found by fuzzing
+        let mut p = Paint::default();
+        p.set_dither(true);
+        p.set_color(Color::from_argb(255, 1, 255, 255));
+        p.set_style(Style::Fill);
+
+        let rr = RRect::new_rect_xy(Rect::new(5.0, 10.0, 15.0, 20.0), 2.0, 2.0);
+
+        let blur = image_filters::blur(
+            f32::from_bits(0x0e0e_0e0e),
+            f32::from_bits(0x1010_8000),
+            TileMode::Decal,
+            None,
+            None,
+        );
+        let sampling = SamplingOptions::new(FilterMode::Linear, MipmapMode::Linear);
+        let matrix = Matrix::new_all(
+            f32::from_bits(0xfdfe_0200),
+            f32::from_bits(0xfdfd_fdfd),
+            f32::from_bits(0x2a02_02fe),
+            f32::from_bits(0x0202_0202),
+            f32::from_bits(0x0202_0202),
+            f32::from_bits(0x2020_0202),
+            f32::from_bits(0x2fab_0024),
+            f32::from_bits(0x0000_0008),
+            f32::from_bits(0x0000_0000),
+        );
+        let matrix_filter = image_filters::matrix_transform(&matrix, sampling, None);
+        let shader_filter = image_filters::shader(None, image_filters::Dither::No, None);
+        let merged = image_filters::merge(&[None, blur, matrix_filter, shader_filter], None);
+        p.set_image_filter(merged);
+
+        let mut surf = surfaces::raster(&ImageInfo::new_n32_premul((128, 160), None), None, None)
+            .expect("a raster surface");
+        let canvas = surf.canvas();
+        canvas.clear(Color::WHITE);
+        canvas.draw_rrect(rr, &p);
+        let _ = reporter;
+    }
+);

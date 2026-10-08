@@ -34698,7 +34698,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2571-L2601"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b02e41eb3d79d9a48dda2a460b059a913b5e2db83577132cf7ae32f5abed5889"
 
 [[test]]
@@ -41624,6 +41624,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L149-L152"
 module = "effects"
 status = "todo"
+reason = "needs SkShaders::RadialGradient, which is not ported (the shader filter itself is ported)"
 span_hash = "7a104f9158f33fd41d9a0857e59d5e57e455f50afea991518cf2446ffc4c6cf9"
 
 [[test]]
