@@ -21004,6 +21004,7 @@ macro = "DEF_GM"
 source = "gm/imageblurclampmode.cpp#L111-L111"
 module = "effects"
 status = "todo"
+reason = "GM port attempted: ours renders the blur panels, golden is blank in the middle column and every cell mismatches (diff in target/gm-diffs); needs a golden/GM-setup check (fresh oracle not available)"
 span_hash = "a22b0158759743f979bb4b00adc5cb3204f577922f4af6d67905ac739672c447"
 
 [[test]]
