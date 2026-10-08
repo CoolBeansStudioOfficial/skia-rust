@@ -14,10 +14,13 @@ use std::fmt;
 use std::sync::{Arc, OnceLock};
 
 use crate::data::Data;
+use crate::descriptor::Descriptor;
+use crate::font_arguments::FontArguments;
 use crate::font_arguments::variation_position::Coordinate;
 use crate::font_descriptor::{FactoryId, FontDescriptor};
 use crate::font_style::{FontStyle, Slant, Weight};
 use crate::font_types::set_four_byte_tag;
+use crate::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
 use crate::stream::{DynamicMemoryWStream, StreamAsset, WStream};
 use crate::typeface_cache::new_typeface_id;
 
@@ -110,6 +113,29 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
     /// number of axes is unknown (C++ returns -1).
     // Port of: include/core/SkTypeface.h#L406-L408 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>>;
+
+    /// `SkTypeface::onFilterRec`: lets the typeface adjust a scaler context record.
+    // Port of: include/core/SkTypeface.h#L385 (chrome/m156)
+    fn on_filter_rec(&self, rec: &mut ScalerContextRec);
+
+    /// `SkTypeface::onGlyphMaskNeedsCurrentColor`.
+    // Port of: include/core/SkTypeface.h#L404 (chrome/m156)
+    fn on_glyph_mask_needs_current_color(&self) -> bool;
+
+    /// `SkTypeface::onMakeClone`. `this` is the handle of this typeface, which a clone may
+    /// return as is (C++ returns `sk_ref_sp(this)`).
+    // Port of: include/core/SkTypeface.h#L369 (chrome/m156)
+    fn on_make_clone(&self, this: Typeface, args: &FontArguments<'_, '_>) -> Typeface;
+
+    /// `SkTypeface::onCreateScalerContext`: a valid scaler context, never null. `this` is the
+    /// handle of this typeface, which the context keeps.
+    // Port of: include/core/SkTypeface.h#L381-L382 (chrome/m156)
+    fn on_create_scaler_context(
+        &self,
+        this: Typeface,
+        effects: &ScalerContextEffects,
+        desc: &Descriptor,
+    ) -> ScalerContext;
 }
 
 /// A typeface handle (`sk_sp<SkTypeface>`). Cloning it shares the typeface.
@@ -143,6 +169,46 @@ impl Typeface {
     #[must_use]
     pub fn unique_id(&self) -> TypefaceId {
         self.0.core().unique_id
+    }
+
+    /// `sk_sp` identity: whether two handles are the same typeface object (`SkFont::operator==`
+    /// compares the pointers).
+    // Port of: src/core/SkFont.cpp#L73 (fTypeface.get() ==, chrome/m156)
+    #[must_use]
+    pub fn ptr_eq(&self, other: &Typeface) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// `SkTypeface::makeClone`: a typeface with the given arguments applied.
+    // Port of: src/core/SkTypeface.cpp#L186-L188 (chrome/m156)
+    #[must_use]
+    pub fn make_clone(&self, args: &FontArguments<'_, '_>) -> Typeface {
+        self.0.on_make_clone(self.clone(), args)
+    }
+
+    /// `SkTypeface::createScalerContext` (`onCreateScalerContext`): a scaler context for the
+    /// descriptor and effects.
+    // Port of: include/core/SkTypeface.h#L381 (chrome/m156)
+    #[must_use]
+    pub fn create_scaler_context(
+        &self,
+        effects: &ScalerContextEffects,
+        desc: &Descriptor,
+    ) -> ScalerContext {
+        self.0.on_create_scaler_context(self.clone(), effects, desc)
+    }
+
+    /// `SkTypeface::filterRec`: lets the typeface adjust a record before a scaler context uses it.
+    // Port of: include/core/SkTypeface.h#L343-L346 (chrome/m156)
+    pub fn filter_rec(&self, rec: &mut ScalerContextRec) {
+        self.0.on_filter_rec(rec);
+    }
+
+    /// `SkTypeface::onGlyphMaskNeedsCurrentColor`: whether glyph masks depend on the paint color.
+    // Port of: include/core/SkTypeface.h#L404 (chrome/m156)
+    #[must_use]
+    pub fn glyph_mask_needs_current_color(&self) -> bool {
+        self.0.on_glyph_mask_needs_current_color()
     }
 
     /// `SkTypeface::fontStyle`.
@@ -332,5 +398,32 @@ impl TypefaceBase for EmptyTypeface {
     // Port of: src/core/SkTypeface.cpp#L127-L130 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         Some(Vec::new())
+    }
+
+    /// `SkEmptyTypeface::onMakeClone`: the same object.
+    // Port of: src/core/SkTypeface.cpp#L86-L88 (chrome/m156)
+    fn on_make_clone(&self, this: Typeface, _args: &FontArguments<'_, '_>) -> Typeface {
+        this
+    }
+
+    /// `SkEmptyTypeface::onCreateScalerContext`: `SkScalerContext::MakeEmpty`.
+    // Port of: src/core/SkTypeface.cpp#L89-L93 (chrome/m156)
+    fn on_create_scaler_context(
+        &self,
+        this: Typeface,
+        effects: &ScalerContextEffects,
+        desc: &Descriptor,
+    ) -> ScalerContext {
+        ScalerContext::make_empty(this, effects, desc)
+    }
+
+    /// `SkEmptyTypeface::onFilterRec`: no change.
+    // Port of: src/core/SkTypeface.cpp#L94 (chrome/m156)
+    fn on_filter_rec(&self, _rec: &mut ScalerContextRec) {}
+
+    /// `SkEmptyTypeface::onGlyphMaskNeedsCurrentColor`: false.
+    // Port of: src/core/SkTypeface.cpp#L124-L126 (chrome/m156)
+    fn on_glyph_mask_needs_current_color(&self) -> bool {
+        false
     }
 }
