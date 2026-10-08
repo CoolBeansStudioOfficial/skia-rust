@@ -515,6 +515,7 @@ name = "skia-rust-codec"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
+ "skia-rust-libjpeg",
  "skia-rust-libpng",
  "skia-rust-raster",
  "skia-rust-skcms",
