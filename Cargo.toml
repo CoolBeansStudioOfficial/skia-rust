@@ -7,6 +7,7 @@ members = [
     "crates/skia-rust-core",
     "crates/skia-rust-raster",
     "crates/skia-rust-effects",
+    "crates/skia-rust-text",
     "tests",
     "tests/gm",
     "tests/tools",
@@ -28,8 +29,15 @@ skia-rust-skcms = { path = "crates/skia-rust-skcms", version = "0.156.0" }
 skia-rust-core = { path = "crates/skia-rust-core", version = "0.156.0" }
 skia-rust-raster = { path = "crates/skia-rust-raster", version = "0.156.0" }
 skia-rust-effects = { path = "crates/skia-rust-effects", version = "0.156.0" }
+skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-tools = { path = "tests/tools", version = "0.156.0" }
 bitflags = "2"
+# Fontations backend: the exact versions Skia m156 pins (src/ports/fontations/Cargo.toml,
+# MODULE.bazel.lock). skrifa 0.43.2 requires read-fonts ^0.40.1, so all three are pinned with `=`
+# (docs/design/text.md §2.2). Bumped only with a Skia milestone bump.
+skrifa = "=0.43.2"
+read-fonts = "=0.40.1"
+font-types = "=0.12.0"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
