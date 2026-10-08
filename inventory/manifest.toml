@@ -29685,7 +29685,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2646-L2687"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "69beebb4559598a288e65331ffbdc32b66fd3a8169e0d7042230a7673f295c21"
 
 [[test]]
@@ -29713,6 +29713,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L859-L886"
 module = "codec"
 status = "todo"
+reason = "needs the GIF, ICO, JPEG, PNG and WebP decoders: the test asserts those files are rejected, which the missing decoders would also do"
 span_hash = "7265355321ed7268d44cbb4b4dbdcfdf963406abebfbf1f91de79d6ec45694c5"
 
 [[test]]
@@ -29767,6 +29768,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1676-L1685"
 module = "codec"
 status = "todo"
+reason = "needs SkIcoCodec for invalid_images/int_overflow.ico; the two BMP cases alone are ported with the BMP codec"
 span_hash = "e0acd5b91a049703a5056d8b27e0d1ae7c51c045f4dc6ecf8a99bafd464bcfed"
 
 [[test]]
@@ -29776,6 +29778,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1642-L1661"
 module = "codec"
 status = "todo"
+reason = "needs the PNG, JPEG and GIF decoders for bad_palette.png, many-progressive-scans.jpg and skbug5887.gif"
 span_hash = "13996169337ad20fa6107ae03de3ceacba68d2556d931abbde772bf0fe97bb8a"
 
 [[test]]
@@ -29794,6 +29797,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L605-L608"
 module = "codec"
 status = "todo"
+reason = "needs check(): SkAndroidCodec and SkCodecImageGenerator are not ported (check_android_codec, check_codec_image_generator)"
 span_hash = "a8b8b4eab9faa920058d99ed8b7e694bf8e84b2be8e2397390da5a48f5ae7d04"
 
 [[test]]
@@ -29802,7 +29806,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2262-L2283"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "c116ea9fc3fff7896121fa696032b6329da3fe881cad16397ec998be3cb53542"
 
 [[test]]

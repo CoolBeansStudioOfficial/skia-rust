@@ -11,10 +11,13 @@
 //! ICO and JPEG decoders, the Android and sampled codecs, and the animation, incremental and
 //! lazy-image parts follow in later waves (`docs/design/codecs.md`).
 
+pub mod bmp;
 pub mod codec;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
+mod mask_swizzler;
+mod masks;
 pub mod sampler;
 pub mod swizzler;
 pub mod wbmp;

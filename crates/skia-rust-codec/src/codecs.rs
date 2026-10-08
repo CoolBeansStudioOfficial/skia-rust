@@ -5,12 +5,13 @@
 
 //! The decoders, in the order `SkCodec::MakeFromStream` tries them.
 //!
-//! Only the decoders ported so far are listed: WBMP. The rest of Skia's default list (PNG, JPEG,
-//! WebP, GIF, ICO, BMP, and so on) joins as each decoder lands. `SkCodecs::Register` is not ported
+//! Only the decoders ported so far are listed: BMP and WBMP. The rest of Skia's default list (PNG,
+//! JPEG, WebP, GIF, ICO, and so on) joins as each decoder lands. `SkCodecs::Register` is not ported
 //! yet, so the list is fixed.
 
 use skia_rust_core::stream::Stream;
 
+use crate::bmp::{is_bmp, make_from_stream as make_bmp_from_stream};
 use crate::codec::{Codec, Result};
 use crate::wbmp::{WbmpCodec, is_wbmp};
 
@@ -35,11 +36,18 @@ impl std::fmt::Debug for Decoder {
     }
 }
 
-static DECODERS: [Decoder; 1] = [Decoder {
-    id: "wbmp",
-    is_format: is_wbmp,
-    make_from_stream: WbmpCodec::make_from_stream,
-}];
+static DECODERS: [Decoder; 2] = [
+    Decoder {
+        id: "bmp",
+        is_format: is_bmp,
+        make_from_stream: make_bmp_from_stream,
+    },
+    Decoder {
+        id: "wbmp",
+        is_format: is_wbmp,
+        make_from_stream: WbmpCodec::make_from_stream,
+    },
+];
 
 /// The default decoder list. Port of `SkCodecs::get_decoders()`.
 #[must_use]
