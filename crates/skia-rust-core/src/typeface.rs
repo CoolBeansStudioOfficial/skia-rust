@@ -19,9 +19,10 @@ use crate::font::Font;
 use crate::font_arguments::FontArguments;
 use crate::font_arguments::variation_position::Coordinate;
 use crate::font_descriptor::{FactoryId, FontDescriptor};
+use crate::font_parameters::variation::Axis;
 use crate::font_priv::count_text_elements;
 use crate::font_style::{FontStyle, Slant, Weight};
-use crate::font_types::{GlyphId, TextEncoding, set_four_byte_tag};
+use crate::font_types::{FourByteTag, GlyphId, TextEncoding, set_four_byte_tag};
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::rect::Rect;
@@ -71,6 +72,41 @@ pub trait LocalizedStrings {
     /// Returns the next name, or `None` at the end (`next` returning false in C++).
     // Port of: include/core/SkTypeface.h#L269 (chrome/m156)
     fn next(&mut self) -> Option<LocalizedString>;
+}
+
+/// A [`LocalizedStrings`] over names that were already read, in order. Backends that read the
+/// names up front (the Fontations port does) return one of these.
+#[derive(Debug, Default)]
+pub struct VecLocalizedStrings(std::vec::IntoIter<LocalizedString>);
+
+impl VecLocalizedStrings {
+    /// Iterates over `names` in order.
+    #[must_use]
+    pub fn new(names: Vec<LocalizedString>) -> Self {
+        Self(names.into_iter())
+    }
+}
+
+impl LocalizedStrings for VecLocalizedStrings {
+    // Port of: include/core/SkTypeface.h#L269 (chrome/m156)
+    fn next(&mut self) -> Option<LocalizedString> {
+        self.0.next()
+    }
+}
+
+/// Copies `all` into `out` as `SkTypeface`'s buffer APIs do: an empty `out` is a count query,
+/// a too-small `out` fails (C++ returns -1), and otherwise the values are copied and counted.
+// Port of: src/core/SkTypeface.cpp#L290-L294 (chrome/m156), the buffer contract of the on*
+// virtuals that these wrap
+fn fill_span<T: Copy>(all: &[T], out: &mut [T]) -> Option<usize> {
+    if out.is_empty() {
+        return Some(all.len());
+    }
+    if out.len() < all.len() {
+        return None;
+    }
+    out[..all.len()].copy_from_slice(all);
+    Some(all.len())
 }
 
 /// The state every typeface has (`SkTypeface`'s data members).
@@ -127,6 +163,39 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
     /// number of axes is unknown (C++ returns -1).
     // Port of: include/core/SkTypeface.h#L406-L408 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>>;
+
+    /// `SkTypeface::onGetVariationDesignParameters`: every axis of the typeface, or `None` if
+    /// they cannot be read. C++ fills a caller's buffer; the port returns the axes.
+    // Port of: include/core/SkTypeface.h#L409 (chrome/m156)
+    fn on_get_variation_design_parameters(&self) -> Option<Vec<Axis>>;
+
+    /// `SkTypeface::onGetUPEM`: the units per em, or 0 if unknown.
+    // Port of: include/core/SkTypeface.h#L419 (chrome/m156)
+    fn on_get_upem(&self) -> i32;
+
+    /// `SkTypeface::onGetPostScriptName`: `None` when the typeface has no PostScript name.
+    // Port of: include/core/SkTypeface.h#L427 (chrome/m156)
+    fn on_get_postscript_name(&self) -> Option<String>;
+
+    /// `SkTypeface::onCreateFamilyNameIterator`: the family names of the typeface.
+    // Port of: include/core/SkTypeface.h#L431 (chrome/m156)
+    fn on_create_family_name_iterator(&self) -> Box<dyn LocalizedStrings>;
+
+    /// `SkTypeface::onGetTableTags`: the tags of the font's tables, in directory order.
+    // Port of: include/core/SkTypeface.h#L433 (chrome/m156)
+    fn on_get_table_tags(&self) -> Vec<FourByteTag>;
+
+    /// `SkTypeface::onGetTableData`: copies the table from `offset` into `data`, which is empty
+    /// for a size query, and returns the bytes available up to `length` (C++ `min(copied,
+    /// length)`). The caller passes `data` with `length` bytes, or none.
+    // Port of: include/core/SkTypeface.h#L434-L435 (chrome/m156)
+    fn on_get_table_data(
+        &self,
+        tag: FourByteTag,
+        offset: usize,
+        length: usize,
+        data: &mut [u8],
+    ) -> usize;
 
     /// `SkTypeface::onFilterRec`: lets the typeface adjust a scaler context record.
     // Port of: include/core/SkTypeface.h#L385 (chrome/m156)
@@ -366,6 +435,106 @@ impl Typeface {
         self.0.on_get_variation_design_position()
     }
 
+    /// `SkTypeface::getVariationDesignPosition(span)`: an empty `coordinates` queries the count;
+    /// `None` is C++'s -1 (the buffer is too small, or the axes are unknown).
+    // Port of: src/core/SkTypeface.cpp#L290-L294 (chrome/m156)
+    #[doc(alias = "getVariationDesignPosition")]
+    pub fn get_variation_design_position(&self, coordinates: &mut [Coordinate]) -> Option<usize> {
+        fill_span(&self.0.on_get_variation_design_position()?, coordinates)
+    }
+
+    /// `SkTypeface::getVariationDesignParameters`: every axis of the typeface.
+    // Port of: include/core/SkTypeface.h (getVariationDesignParameters, chrome/m156)
+    #[doc(alias = "getVariationDesignParameters")]
+    #[must_use]
+    pub fn variation_design_parameters(&self) -> Option<Vec<Axis>> {
+        self.0.on_get_variation_design_parameters()
+    }
+
+    /// `SkTypeface::getVariationDesignParameters(span)`: as
+    /// [`get_variation_design_position`](Self::get_variation_design_position), for axes.
+    // Port of: src/core/SkTypeface.cpp#L297-L300 (chrome/m156)
+    #[doc(alias = "getVariationDesignParameters")]
+    pub fn get_variation_design_parameters(&self, parameters: &mut [Axis]) -> Option<usize> {
+        fill_span(&self.0.on_get_variation_design_parameters()?, parameters)
+    }
+
+    /// `SkTypeface::getUnitsPerEm`: the units per em, or `None` when the typeface reports 0.
+    // Port of: src/core/SkTypeface.cpp#L444-L447 (chrome/m156)
+    #[doc(alias = "getUnitsPerEm")]
+    #[must_use]
+    pub fn units_per_em(&self) -> Option<i32> {
+        let units = self.0.on_get_upem();
+        (units != 0).then_some(units)
+    }
+
+    /// `SkTypeface::getPostScriptName`: `None` when the typeface has none.
+    // Port of: src/core/SkTypeface.cpp (getPostScriptName, chrome/m156)
+    #[doc(alias = "getPostScriptName")]
+    #[must_use]
+    pub fn post_script_name(&self) -> Option<String> {
+        self.0.on_get_postscript_name()
+    }
+
+    /// `SkTypeface::createFamilyNameIterator`: the family names, in the font's order.
+    // Port of: src/core/SkTypeface.cpp (createFamilyNameIterator, chrome/m156)
+    #[doc(alias = "createFamilyNameIterator")]
+    pub fn new_family_name_iterator(&self) -> impl Iterator<Item = LocalizedString> {
+        let mut names = self.0.on_create_family_name_iterator();
+        std::iter::from_fn(move || names.next())
+    }
+
+    /// `SkTypeface::countTables`: the number of tables in the font.
+    // Port of: src/core/SkTypeface.cpp#L302-L304 (chrome/m156)
+    #[doc(alias = "countTables")]
+    #[must_use]
+    pub fn count_tables(&self) -> usize {
+        self.0.on_get_table_tags().len()
+    }
+
+    /// `SkTypeface::readTableTags`: copies the table tags into `tags`, and returns how many
+    /// tables the font has. An empty `tags` queries the count.
+    // Port of: src/core/SkTypeface.cpp#L306-L308 (chrome/m156)
+    #[doc(alias = "readTableTags")]
+    pub fn read_table_tags(&self, tags: &mut [FourByteTag]) -> usize {
+        let all = self.0.on_get_table_tags();
+        let n = all.len().min(tags.len());
+        tags[..n].copy_from_slice(&all[..n]);
+        all.len()
+    }
+
+    /// `SkTypeface::getTableSize`: the size of a table, or `None` if there is none.
+    // Port of: src/core/SkTypeface.cpp#L310-L312 (chrome/m156)
+    #[doc(alias = "getTableSize")]
+    #[must_use]
+    pub fn get_table_size(&self, tag: FourByteTag) -> Option<usize> {
+        let size = self.0.on_get_table_data(tag, 0, usize::MAX, &mut []);
+        (size != 0).then_some(size)
+    }
+
+    /// `SkTypeface::getTableData(tag, offset, length, data)`: copies at most `length` bytes of
+    /// the table, from `offset`, into `data` (when given), and returns the number of bytes. With
+    /// no `data` it returns the size the copy would have. `data` is never written past its end.
+    // Port of: src/core/SkTypeface.cpp#L314-L316 (chrome/m156)
+    #[doc(alias = "getTableData")]
+    #[must_use]
+    pub fn get_table_data(
+        &self,
+        tag: FourByteTag,
+        offset: usize,
+        length: usize,
+        data: Option<&mut [u8]>,
+    ) -> usize {
+        match data {
+            Some(data) => {
+                let n = length.min(data.len());
+                self.0
+                    .on_get_table_data(tag, offset, length, &mut data[..n])
+            }
+            None => self.0.on_get_table_data(tag, offset, length, &mut []),
+        }
+    }
+
     /// `SkTypeface::serialize(SkWStream*, behavior)`: writes the descriptor, and the font data
     /// when `behavior` asks for it. Returns false if a write fails.
     // Port of: src/core/SkTypeface.cpp#L201-L233 (chrome/m156)
@@ -584,6 +753,48 @@ impl TypefaceBase for EmptyTypeface {
     // Port of: src/core/SkTypeface.cpp#L127-L130 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         Some(Vec::new())
+    }
+
+    /// `SkEmptyTypeface::onGetVariationDesignParameters`: no axes.
+    // Port of: src/core/SkTypeface.cpp#L132-L135 (chrome/m156)
+    fn on_get_variation_design_parameters(&self) -> Option<Vec<Axis>> {
+        Some(Vec::new())
+    }
+
+    /// `SkEmptyTypeface::onGetUPEM`: 0.
+    // Port of: src/core/SkTypeface.cpp#L108 (chrome/m156)
+    fn on_get_upem(&self) -> i32 {
+        0
+    }
+
+    /// `SkEmptyTypeface::onGetPostScriptName`: none.
+    // Port of: src/core/SkTypeface.cpp#L118-L120 (chrome/m156)
+    fn on_get_postscript_name(&self) -> Option<String> {
+        None
+    }
+
+    /// `SkEmptyTypeface::onCreateFamilyNameIterator`: no names.
+    // Port of: src/core/SkTypeface.cpp#L121-L123 (chrome/m156)
+    fn on_create_family_name_iterator(&self) -> Box<dyn LocalizedStrings> {
+        Box::new(VecLocalizedStrings::default())
+    }
+
+    /// `SkEmptyTypeface::onGetTableTags`: no tables.
+    // Port of: src/core/SkTypeface.cpp#L136 (chrome/m156)
+    fn on_get_table_tags(&self) -> Vec<FourByteTag> {
+        Vec::new()
+    }
+
+    /// `SkEmptyTypeface::onGetTableData`: no data.
+    // Port of: src/core/SkTypeface.cpp#L137-L139 (chrome/m156)
+    fn on_get_table_data(
+        &self,
+        _tag: FourByteTag,
+        _offset: usize,
+        _length: usize,
+        _data: &mut [u8],
+    ) -> usize {
+        0
     }
 
     /// `SkEmptyTypeface::onMakeClone`: the same object.

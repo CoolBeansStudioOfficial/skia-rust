@@ -31962,7 +31962,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L25-L27"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "01fa9fe2501e71ef2ac53d8fd471f763016fc83cc55f28f9cb4f3142893746fb"
 
 [[test]]
@@ -31971,7 +31971,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L17-L19"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1e89f7e4948a711b81b9b731b59a36d4fb744b56344b21b7a11727c0c22ea642"
 
 [[test]]
@@ -31980,7 +31980,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L21-L23"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "94eebe37638d9285bcc5ea6914ccd6545fe76fb95b55cd43fbf60e7433b1676a"
 
 [[test]]
@@ -31989,7 +31989,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L13-L15"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0da4fa9f077c921cba3dd3d548227bcd2fa44a98480f8c215faa928b519fde8"
 
 [[test]]
@@ -32308,7 +32308,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L116-L122"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ca8e7fc69b0336d48ef6955c8661024c21a7d76c48cfdd20511b1a9c093bfdc7"
 
 [[test]]
@@ -32317,7 +32317,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L87-L94"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d3f40348a02ee2434e9140a53c460c8bc5f12623001cb26897223fcbfb7080c1"
 
 [[test]]
@@ -32326,7 +32326,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L80-L85"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9726d2f540200a89f9aaafa0a9538bd16722599af5ccf724139d0058459afddb"
 
 [[test]]
@@ -32335,7 +32335,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L102-L106"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4db5d006f583c095457a303128633cf6217e2ab46d808ec31bba559c604f27ed"
 
 [[test]]
@@ -32344,7 +32344,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L108-L114"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1e9d3c95d501c109933c6804ccf3cf0fc1240d0f228f939fbaa2d9cbe553a2fa"
 
 [[test]]
@@ -32353,7 +32353,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L96-L100"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8ad8f92505cc726667e2bf973bf0590915cc6ac114369966d3b8a61dc9aff0e9"
 
 [[test]]
@@ -32380,7 +32380,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L124-L183"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2b613ea76e17c62a88e8ce25025f3c7f1a53bc596aec58fa64af4a727e3c102f"
 
 [[test]]
@@ -32389,7 +32389,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L185-L200"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "12222ba77a35d123317eb3a0fce8e05bd321c6c011220f3636ab6859945901e9"
 
 [[test]]
@@ -32398,7 +32398,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L245-L261"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e418c040d5eca0172f5e3ad3e74391a989e33581341d16606bdd479d516c4a8"
 
 [[test]]
@@ -32407,7 +32407,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L263-L273"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "156a8971d6b0e0d2e26c229d5f8b28aba2cc9d1a87de24b98afdc8968fbf70d1"
 
 [[test]]
@@ -32416,7 +32416,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L202-L243"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8fa87d8e29d9731da2603545cd35dc0fc8059598ae225eee86bbc282275463b1"
 
 [[test]]
@@ -36897,8 +36897,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L208-L244"
 module = "text"
-status = "ported"
-reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
+status = "passing"
 span_hash = "b16c2eb134ce6f0f128e4895e95b4e2d8d048185ad9d69668965dad29fff177a"
 
 [[test]]
@@ -36961,8 +36960,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L149-L160"
 module = "text"
-status = "ported"
-reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
+status = "passing"
 span_hash = "6a99824825463a8ad4924f7abf6a12c3d8e1836c2b936a633841e11751fa16fc"
 
 [[test]]
@@ -42237,8 +42235,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkFontMetricsPrivTest.cpp#L22-L51"
 module = "text"
-status = "ported"
-reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
+status = "passing"
 span_hash = "0f7d86a4726e2462c894396f393db381c4991c2750721732021d1ae56c2ddbe9"
 
 [[test]]
@@ -49298,8 +49295,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L502-L514"
 module = "text"
-status = "ported"
-reason = "portable configuration passes; the NativeFontations run needs T19b (docs/design/text.md §8)"
+status = "passing"
 span_hash = "4cc1e6eab4ee4583fae41330c732aed42445e9662419054622568f7682c29865"
 
 [[test]]

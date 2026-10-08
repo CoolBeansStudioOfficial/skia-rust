@@ -12,10 +12,14 @@ use skia_rust_core::descriptor::Descriptor;
 use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::FontDescriptor;
+use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_style::FontStyle;
+use skia_rust_core::font_types::FourByteTag;
 use skia_rust_core::scaler_context::{ScalerContext, ScalerContextEffects, ScalerContextRec};
 use skia_rust_core::stream::StreamAsset;
-use skia_rust_core::typeface::{Typeface, TypefaceBase, TypefaceCore};
+use skia_rust_core::typeface::{
+    LocalizedStrings, Typeface, TypefaceBase, TypefaceCore, VecLocalizedStrings,
+};
 
 /// `TestEmptyTypeface`: no glyphs, no data, a fixed pitch and the default style.
 // Port of: tools/fonts/TestEmptyTypeface.h#L16-L63 (chrome/m156)
@@ -58,6 +62,42 @@ impl TypefaceBase for TestEmptyTypeface {
     // Port of: tools/fonts/TestEmptyTypeface.h#L54-L62 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         Some(Vec::new())
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L58-L60 (chrome/m156)
+    fn on_get_variation_design_parameters(&self) -> Option<Vec<Axis>> {
+        Some(Vec::new())
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L43 (chrome/m156)
+    fn on_get_upem(&self) -> i32 {
+        0
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L49 (chrome/m156)
+    fn on_get_postscript_name(&self) -> Option<String> {
+        None
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L44-L47 (chrome/m156)
+    fn on_create_family_name_iterator(&self) -> Box<dyn LocalizedStrings> {
+        Box::new(VecLocalizedStrings::default())
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L61 (chrome/m156)
+    fn on_get_table_tags(&self) -> Vec<FourByteTag> {
+        Vec::new()
+    }
+
+    // Port of: tools/fonts/TestEmptyTypeface.h#L62 (chrome/m156)
+    fn on_get_table_data(
+        &self,
+        _tag: FourByteTag,
+        _offset: usize,
+        _length: usize,
+        _data: &mut [u8],
+    ) -> usize {
+        0
     }
 
     // Port of: tools/fonts/TestEmptyTypeface.h#L24-L26 (chrome/m156)

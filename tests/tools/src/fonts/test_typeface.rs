@@ -14,10 +14,11 @@ use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::{FactoryId, FontDescriptor};
 use skia_rust_core::font_metrics::FontMetrics;
+use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_priv::scale_font_metrics;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
 use skia_rust_core::font_types::set_four_byte_tag;
-use skia_rust_core::font_types::{FontHinting, GlyphId};
+use skia_rust_core::font_types::{FontHinting, FourByteTag, GlyphId};
 use skia_rust_core::glyph::Glyph;
 use skia_rust_core::mask::MaskBuilder;
 use skia_rust_core::matrix::Matrix;
@@ -29,7 +30,9 @@ use skia_rust_core::scaler_context::{
     ScalerContextImpl, ScalerContextRec,
 };
 use skia_rust_core::stream::{DynamicMemoryWStream, StreamAsset, WStream};
-use skia_rust_core::typeface::{Typeface, TypefaceBase, TypefaceCore};
+use skia_rust_core::typeface::{
+    LocalizedString, LocalizedStrings, Typeface, TypefaceBase, TypefaceCore, VecLocalizedStrings,
+};
 use skia_rust_core::utf::Unichar;
 use skia_rust_raster::glyph_image::GLYPH_PATH_RASTERIZER;
 
@@ -345,6 +348,51 @@ impl TypefaceBase for TestTypeface {
     // Port of: tools/fonts/TestTypeface.h#L108-L111 (chrome/m156)
     fn on_get_variation_design_position(&self) -> Option<Vec<Coordinate>> {
         Some(Vec::new())
+    }
+
+    /// `TestTypeface::onGetVariationDesignParameters`: no axes.
+    // Port of: tools/fonts/TestTypeface.h#L120-L122 (chrome/m156)
+    fn on_get_variation_design_parameters(&self) -> Option<Vec<Axis>> {
+        Some(Vec::new())
+    }
+
+    /// `TestTypeface::onGetUPEM`.
+    // Port of: tools/fonts/TestTypeface.h#L107 (chrome/m156)
+    fn on_get_upem(&self) -> i32 {
+        2048
+    }
+
+    /// `TestTypeface::onGetPostScriptName`: none.
+    // Port of: tools/fonts/TestTypeface.cpp#L241 (chrome/m156)
+    fn on_get_postscript_name(&self) -> Option<String> {
+        None
+    }
+
+    /// `TestTypeface::onCreateFamilyNameIterator`: the family name, in the language `und`.
+    // Port of: tools/fonts/TestTypeface.cpp#L243-L247 (chrome/m156)
+    fn on_create_family_name_iterator(&self) -> Box<dyn LocalizedStrings> {
+        Box::new(VecLocalizedStrings::new(vec![LocalizedString {
+            string: self.family_name_str().to_owned(),
+            language: "und".to_owned(), // undetermined
+        }]))
+    }
+
+    /// `TestTypeface::onGetTableTags`: no tables.
+    // Port of: tools/fonts/TestTypeface.h#L124 (chrome/m156)
+    fn on_get_table_tags(&self) -> Vec<FourByteTag> {
+        Vec::new()
+    }
+
+    /// `TestTypeface::onGetTableData`: no data.
+    // Port of: tools/fonts/TestTypeface.h#L126-L131 (chrome/m156)
+    fn on_get_table_data(
+        &self,
+        _tag: FourByteTag,
+        _offset: usize,
+        _length: usize,
+        _data: &mut [u8],
+    ) -> usize {
+        0
     }
 
     /// `TestTypeface::onFilterRec`: fake bold strokes, and hinting is off.

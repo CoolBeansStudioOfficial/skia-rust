@@ -74,6 +74,8 @@ pub mod find_cubic_convex180_chops_test;
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+pub mod font_scanner_fontations_test;
+pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
 #[cfg(test)]

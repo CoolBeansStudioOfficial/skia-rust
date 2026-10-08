@@ -4,4 +4,5 @@
 //! Typeface backends of skia-rust (`docs/design/text.md` §2, §3.1): the Fontations typeface,
 //! its font scanner and the empty Fontations font manager.
 
+pub mod font_scanner;
 pub mod ports;
