@@ -10,18 +10,21 @@
 //! (`SkSwizzler`, every row routine and `Make`/`MakeSimple`/`setSampleX`), the mask swizzler, and
 //! the PNG, BMP, ICO and WBMP decoders. The Android codec (`SkAndroidCodec`) and the sampled codec
 //! (`SkSampledCodec`) are ported, and so are the lazy images: `SkImageGenerator`,
-//! `SkCodecImageGenerator` and the deferred images made from encoded data. The JPEG, WebP and GIF
-//! decoders, the animation parts, `SkCodec::getImage` and the PNG encoder follow in later waves
+//! `SkCodecImageGenerator` and the deferred images made from encoded data. The GIF decoder and the
+//! animation frames (`SkFrameHolder`, `SkWuffsCodec`) are ported. The JPEG and WebP
+//! decoders, `SkCodec::getImage` and the PNG encoder follow in later waves
 //! (`docs/design/codecs.md`).
 
 pub mod android_codec;
 mod android_codec_adapter;
 pub mod bmp;
 pub mod codec;
+pub mod codec_animation;
 mod codec_image_generator;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
+pub mod frame_holder;
 pub mod ico_codec;
 pub mod image_generator_from_encoded;
 pub mod images;
@@ -34,6 +37,7 @@ mod sampled_codec;
 pub mod sampler;
 pub mod swizzler;
 pub mod wbmp;
+pub mod wuffs_codec;
 
 pub use codec::{
     Codec, NO_FRAME, Options, Result, ScanlineOrder, SelectionPolicy, ZeroInitialized,

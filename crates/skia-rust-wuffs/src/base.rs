@@ -1,3 +1,7 @@
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this file ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+// Licensed under the Apache License, Version 2.0; see the LICENSE file of this crate. This file
+// is modified from the Wuffs sources.
 // Port of: wuffs-v0.3.c, the "base" module (status codes, I/O buffers, pixel formats, pixel
 // configs and buffers, the image and frame configs, and the pixel swizzler), as used by Skia's
 // SkWuffsCodec (third_party/skia/src/codec/SkWuffsCodec.cpp) and by the GIF decoder.

@@ -1,3 +1,7 @@
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this file ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+// Licensed under the Apache License, Version 2.0; see the LICENSE file of this crate. This file
+// is modified from the Wuffs sources.
 //! Replays the differential dump of the GIF decoder against the committed output of the C driver
 //! (`oracle/codec-diff/wuffs/wuffsdump.c`, built against Wuffs v0.3 at `e3f919cc`), which is
 //! stored in `oracle/codec-diff/wuffs/expected/gif.txt`.

@@ -518,6 +518,7 @@ dependencies = [
  "skia-rust-libpng",
  "skia-rust-raster",
  "skia-rust-skcms",
+ "skia-rust-wuffs",
 ]
 
 [[package]]

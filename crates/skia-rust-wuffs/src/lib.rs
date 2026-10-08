@@ -1,6 +1,12 @@
-// Copyright (c) 2018 Google Inc. (the Wuffs sources this crate ports)
-// Copyright (C) 2025 The skia-rust Authors.
-// Use of the ported code is governed by the BSD-style licence in the LICENSE file.
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this crate ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+// except in compliance with the License. You may obtain a copy of the License in the LICENSE
+// file of this crate, or at https://www.apache.org/licenses/LICENSE-2.0. Unless required by
+// applicable law or agreed to in writing, software distributed under the License is distributed
+// on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// This file has been modified from the Wuffs sources (it is a Rust port of them).
 //
 //! A port of the GIF decoder of Wuffs v0.3, as Skia's `SkWuffsCodec` drives it
 //! (`wuffs-v0.3.c`, `google/wuffs-mirror-release-c@e3f919cc`, the `DEPS` pin of

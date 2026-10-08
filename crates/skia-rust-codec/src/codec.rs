@@ -3,8 +3,8 @@
 // Port of: include/codec/SkCodec.h (chrome/m156), src/codec/SkCodec.cpp#L171-L1101 (chrome/m156)
 // Ported from: include/codec/SkCodec.h, src/codec/SkCodec.cpp
 //
-// Not ported yet in this layer: animation frames (SkFrameHolder and the frame logic of
-// handleFrameIndex beyond frame 0), the decode memory budget (getImage, fDecodeBudget), YUVA
+// Not ported yet in this layer: the callback path of handleFrameIndex (SkAndroidCodec), the decode
+// memory budget (getImage, fDecodeBudget), YUVA
 // planes, incremental decoding (startIncrementalDecode and incrementalDecode), the decoder
 // registry's Register, getImage and the gainmap/HDR accessors. Those arrive with the codecs and
 // the lazy-image wave that use them.
@@ -14,6 +14,7 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::data::Data;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::ImageInfo;
@@ -24,8 +25,10 @@ use skia_rust_skcms::{
     AlphaFormat, IccProfile, PixelFormat, approximately_equal_profiles, srgb_profile,
 };
 
+use crate::codec_animation::{Blend, DisposalMethod};
 use crate::codec_priv::{select_xform_format, valid_alpha};
 use crate::encoded_info::{Alpha, Color, EncodedInfo};
+use crate::frame_holder::{Frame, FrameHolder};
 use crate::sampler::{self, Sampler};
 
 /// Port of `SkCodec::ZeroInitialized`: whether the destination was zeroed by the caller.
@@ -111,7 +114,7 @@ impl Result {
 }
 
 /// Port of `SkCodec::Options`, without the decode budget and the frame-prior bookkeeping that
-/// animation adds (`fPriorFrame` is kept, as the frame-index checks read it).
+/// animation needs (`fPriorFrame` is kept, as the frame-index checks read it).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[doc(alias = "SkCodec::Options")]
 pub struct Options {
@@ -184,6 +187,23 @@ impl<'a> CodecBase<'a> {
     /// Port of `SkCodec::stream`: the stream the codec reads from.
     pub fn stream(&mut self) -> Option<&mut (dyn Stream + Send + 'a)> {
         self.stream.as_deref_mut()
+    }
+
+    /// Port of `SkCodec::getEncodedData` for the codec's own stream: the stream's data if it has
+    /// some, otherwise a read of a duplicate of the stream. `None` if there is no stream, or it
+    /// has neither data nor a length.
+    // Port of: src/codec/SkCodec.cpp#L1087-L1100 (chrome/m156)
+    pub fn encoded_data(&mut self) -> Option<Data> {
+        let stream = self.stream.as_deref_mut()?;
+        if let Some(data) = stream.get_data() {
+            return Some(data);
+        }
+        let mut duplicate = stream.duplicate()?;
+        if !duplicate.has_length() {
+            return None;
+        }
+        let size = duplicate.get_length();
+        Data::from_stream(&mut *duplicate, size)
     }
 
     /// Port of `SkCodec::rewindStream`.
@@ -466,11 +486,152 @@ pub trait CodecImpl: Send {
     ) -> Result {
         Result::Unimplemented
     }
+
+    /// Port of `onGetFrameCount`: the number of frames. Defaults to 1 (a still image).
+    // Port of: include/codec/SkCodec.h#L967-L969 (chrome/m156)
+    fn on_get_frame_count(&mut self) -> i32 {
+        1
+    }
+
+    /// Port of `onGetFrameInfo`: fills `info` (when given) for frame `index`, and reports whether
+    /// the frame exists. Defaults to false.
+    // Port of: include/codec/SkCodec.h#L971-L973 (chrome/m156)
+    fn on_get_frame_info(&self, _index: i32, _info: Option<&mut FrameInfo>) -> bool {
+        false
+    }
+
+    /// Port of `onGetRepetitionCount`. Defaults to 0.
+    // Port of: include/codec/SkCodec.h#L975-L977 (chrome/m156)
+    fn on_get_repetition_count(&mut self) -> i32 {
+        0
+    }
+
+    /// Port of `onIsAnimated`. Defaults to [`IsAnimated::No`].
+    // Port of: include/codec/SkCodec.h#L979-L981 (chrome/m156)
+    fn on_is_animated(&mut self) -> IsAnimated {
+        IsAnimated::No
+    }
+
+    /// Port of `getFrameHolder`: the frames of an animated image. Defaults to `None`.
+    // Port of: include/codec/SkCodec.h#L1046-L1048 (chrome/m156)
+    fn frame_holder(&self) -> Option<&dyn FrameHolder> {
+        None
+    }
+
+    /// Port of the virtual `getEncodedData`. The default reads the codec's own stream, through
+    /// [`CodecBase::encoded_data`].
+    // Port of: src/codec/SkCodec.cpp#L1087-L1100 (chrome/m156)
+    fn on_get_encoded_data(&mut self, base: &mut CodecBase<'_>) -> Option<Data> {
+        base.encoded_data()
+    }
+}
+
+/// Port of `SkCodec::FrameInfo`: what a client needs to know about one frame of an animation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[doc(alias = "SkCodec::FrameInfo")]
+pub struct FrameInfo {
+    /// Port of `fRequiredFrame`: the earliest frame this one can be blended with, or
+    /// [`NO_FRAME`].
+    pub required_frame: i32,
+    /// Port of `fDuration`: the milliseconds to show the frame.
+    pub duration: i32,
+    /// Port of `fFullyReceived`: whether the end of the frame is in the stream.
+    pub fully_received: bool,
+    /// Port of `fAlphaType`.
+    pub alpha_type: AlphaType,
+    /// Port of `fHasAlphaWithinBounds`.
+    pub has_alpha_within_bounds: bool,
+    /// Port of `fDisposalMethod`.
+    pub disposal_method: DisposalMethod,
+    /// Port of `fBlend`.
+    pub blend: Blend,
+    /// Port of `fFrameRect`: the rectangle the frame updates.
+    pub frame_rect: IRect,
+}
+
+impl Default for FrameInfo {
+    // Port of: include/codec/SkCodec.h (SkCodec::FrameInfo's member initializers)
+    fn default() -> Self {
+        Self {
+            required_frame: NO_FRAME,
+            duration: 0,
+            fully_received: false,
+            alpha_type: AlphaType::Unknown,
+            has_alpha_within_bounds: false,
+            disposal_method: DisposalMethod::Keep,
+            blend: Blend::SrcOver,
+            frame_rect: IRect::from_xywh(0, 0, 0, 0),
+        }
+    }
+}
+
+/// Port of `SkCodec::kRepetitionCountInfinite`.
+pub const REPETITION_COUNT_INFINITE: i32 = -1;
+
+/// Port of `SkCodec::IsAnimated`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[doc(alias = "SkCodec::IsAnimated")]
+pub enum IsAnimated {
+    /// Port of `kYes`.
+    Yes,
+    /// Port of `kNo`.
+    No,
+    /// Port of `kUnknown`: more frames may still arrive.
+    Unknown,
 }
 
 /// Port of `SkCodec::conversionSupported` (the default, used by the codecs that do not
 /// override it).
 // Port of: src/codec/SkCodec.cpp#L296-L319 (chrome/m156)
+/// The frame `index` of the codec's frame holder, copied out. `None` if the codec has no frames or
+/// no frame has that index.
+fn frame_at(imp: &dyn CodecImpl, index: i32) -> Option<Frame> {
+    imp.frame_holder()?.get_frame(index).cloned()
+}
+
+/// Port of `zero_rect`: clears the part of `dst` that `prev_rect` covers, to transparent black,
+/// for a frame of a `kRestoreBGColor` required frame. Scaled frames are not supported (the
+/// rectangle mapping of the C++ is not ported), so a `src_dimensions` other than the destination's
+/// reports failure.
+// Port of: src/codec/SkCodec.cpp#L356-L382 (chrome/m156), for unscaled frames
+fn zero_rect(
+    info: &ImageInfo,
+    dst: &mut [u8],
+    row_bytes: usize,
+    src_dimensions: ISize,
+    prev_rect: IRect,
+) -> bool {
+    let dimensions = info.dimensions();
+    if dimensions != src_dimensions {
+        return false;
+    }
+
+    let left = prev_rect.left().max(0);
+    let top = prev_rect.top().max(0);
+    let right = prev_rect.right().min(dimensions.width);
+    let bottom = prev_rect.bottom().min(dimensions.height);
+    if left >= right || top >= bottom {
+        // Nothing to zero.
+        return true;
+    }
+    let rect = IRect::from_ltrb(left, top, right, bottom);
+
+    let erase_info = info.with_dimensions(rect.size());
+    let bpp = info.bytes_per_pixel();
+    let offset = usize::try_from(rect.x()).unwrap_or(0) * bpp
+        + usize::try_from(rect.y()).unwrap_or(0) * row_bytes;
+    let Some(erase_dst) = dst.get_mut(offset..) else {
+        return false;
+    };
+    sampler::fill(
+        &erase_info,
+        erase_dst,
+        row_bytes,
+        crate::codec::ZeroInitialized::No,
+    );
+    true
+}
+
 fn default_conversion_supported(encoded: Color, dst: &ImageInfo, src_is_opaque: bool) -> bool {
     if !valid_alpha(dst.alpha_type(), src_is_opaque) {
         return false;
@@ -590,17 +751,69 @@ impl<'a> Codec<'a> {
     /// Returns `None` if the codec has no stream, or the stream has no data and no length.
     // Port of: src/codec/SkCodec.cpp#L1087-L1100 (chrome/m156)
     #[doc(alias = "getEncodedData")]
-    pub fn encoded_data(&mut self) -> Option<skia_rust_core::data::Data> {
-        let stream = self.base.stream.as_deref_mut()?;
-        if let Some(data) = stream.get_data() {
-            return Some(data);
-        }
-        let mut duplicate = stream.duplicate()?;
-        if !duplicate.has_length() {
+    pub fn encoded_data(&mut self) -> Option<Data> {
+        self.imp.on_get_encoded_data(&mut self.base)
+    }
+
+    /// Port of `SkCodec::getFrameCount`: the number of frames. A codec that reads its input
+    /// incrementally may report more frames later.
+    // Port of: include/codec/SkCodec.h#L670-L672 (chrome/m156)
+    #[doc(alias = "getFrameCount")]
+    pub fn get_frame_count(&mut self) -> i32 {
+        self.imp.on_get_frame_count()
+    }
+
+    /// Port of `SkCodec::getFrameInfo(index, info)`: the description of frame `index`, or `None`
+    /// if there is no such frame (or the codec does not report frames).
+    // Port of: include/codec/SkCodec.h#L763-L768 (chrome/m156)
+    #[doc(alias = "getFrameInfo")]
+    #[must_use]
+    pub fn get_frame_info(&self, index: i32) -> Option<FrameInfo> {
+        if index < 0 {
             return None;
         }
-        let size = duplicate.get_length();
-        skia_rust_core::data::Data::from_stream(&mut *duplicate, size)
+        let mut info = FrameInfo::default();
+        self.imp
+            .on_get_frame_info(index, Some(&mut info))
+            .then_some(info)
+    }
+
+    /// Port of `SkCodec::getFrameInfo()`: the description of every frame. Empty for a still
+    /// image, and for a codec that does not report its frames.
+    // Port of: src/codec/SkCodec.cpp#L900-L917 (chrome/m156)
+    #[doc(alias = "getFrameInfo")]
+    pub fn frame_infos(&mut self) -> Vec<FrameInfo> {
+        let frame_count = self.get_frame_count();
+        if frame_count <= 0 {
+            return Vec::new();
+        }
+        if frame_count == 1 && !self.imp.on_get_frame_info(0, None) {
+            // Not animated.
+            return Vec::new();
+        }
+        (0..frame_count)
+            .map(|i| {
+                let mut info = FrameInfo::default();
+                let found = self.imp.on_get_frame_info(i, Some(&mut info));
+                debug_assert!(found);
+                info
+            })
+            .collect()
+    }
+
+    /// Port of `SkCodec::getRepetitionCount`: how many times to play the animation after the
+    /// first play, or [`REPETITION_COUNT_INFINITE`].
+    // Port of: include/codec/SkCodec.h#L803-L805 (chrome/m156)
+    #[doc(alias = "getRepetitionCount")]
+    pub fn get_repetition_count(&mut self) -> i32 {
+        self.imp.on_get_repetition_count()
+    }
+
+    /// Port of `SkCodec::isAnimated`.
+    // Port of: include/codec/SkCodec.h#L835 (chrome/m156)
+    #[doc(alias = "isAnimated")]
+    pub fn is_animated(&mut self) -> IsAnimated {
+        self.imp.on_is_animated()
     }
 
     /// Port of `SkCodec::getPixels(info, pixels, rowBytes, options)`. Decodes the image into
@@ -633,7 +846,7 @@ impl<'a> Codec<'a> {
             }
         }
 
-        let frame_index_result = self.handle_frame_index(info, options);
+        let frame_index_result = self.handle_frame_index(info, dst, row_bytes, options);
         if frame_index_result != Result::Success {
             return frame_index_result;
         }
@@ -672,10 +885,20 @@ impl<'a> Codec<'a> {
         result
     }
 
-    /// Port of `SkCodec::handleFrameIndex`, for codecs without animation: frame 0 sets up the
-    /// colour conversion, and any later frame is not present.
-    // Port of: src/codec/SkCodec.cpp#L386-L417 (chrome/m156), the still-image part
-    pub(crate) fn handle_frame_index(&mut self, info: &ImageInfo, options: &Options) -> Result {
+    /// Port of `SkCodec::handleFrameIndex`, without the `getPixelsFn` callback that
+    /// `SkAndroidCodec` passes (not ported). Frame 0 sets up the colour conversion. A later frame
+    /// first decodes its required frame into `dst` (when it has one), clears the rectangle of a
+    /// `kRestoreBGColor` required frame, and then sets up the colour conversion for the frame.
+    /// A caller with no destination passes an empty `dst`: a required frame then fails with
+    /// `InvalidParameters`, as Skia's `getPixels(nullptr, ...)` does.
+    // Port of: src/codec/SkCodec.cpp#L386-L476 (chrome/m156)
+    pub(crate) fn handle_frame_index(
+        &mut self,
+        info: &ImageInfo,
+        dst: &mut [u8],
+        row_bytes: usize,
+        options: &Options,
+    ) -> Result {
         if !self.base.rewind_if_needed(self.imp.as_mut()) {
             return Result::CouldNotRewind;
         }
@@ -700,8 +923,66 @@ impl<'a> Codec<'a> {
         if options.subset.is_some() {
             return Result::InvalidParameters;
         }
-        // A still image has one frame.
-        Result::IncompleteInput
+        if index >= self.imp.on_get_frame_count() {
+            return Result::IncompleteInput;
+        }
+
+        // The frame is copied out, so that decoding the required frame can borrow `self`.
+        let Some(frame) = frame_at(self.imp.as_ref(), index) else {
+            return Result::InternalError;
+        };
+
+        let required_frame = frame.required_frame();
+        if required_frame != NO_FRAME {
+            // Decode the earlier frame if necessary.
+            let prepped = if options.prior_frame == NO_FRAME {
+                let mut prev_frame_options = options.clone();
+                prev_frame_options.frame_index = required_frame;
+                let result = self.get_pixels(info, dst, row_bytes, Some(&prev_frame_options));
+                if result != Result::Success {
+                    return result;
+                }
+                match frame_at(self.imp.as_ref(), required_frame) {
+                    Some(prepped) => prepped,
+                    None => return Result::InternalError,
+                }
+            } else {
+                // Check for a valid frame as a starting point.
+                if options.prior_frame < required_frame || options.prior_frame >= index {
+                    return Result::InvalidParameters;
+                }
+                match frame_at(self.imp.as_ref(), options.prior_frame) {
+                    Some(prepped) => prepped,
+                    None => return Result::InternalError,
+                }
+            };
+
+            match prepped.disposal_method() {
+                DisposalMethod::RestorePrevious => return Result::InvalidParameters,
+                DisposalMethod::RestoreBgColor => {
+                    // A frame after the required frame covers the cleared rectangle, so only the
+                    // required frame itself needs clearing.
+                    if prepped.frame_id() == required_frame {
+                        let prepped_rect = prepped.frame_rect();
+                        if !zero_rect(info, dst, row_bytes, self.base.dimensions(), prepped_rect) {
+                            return Result::InternalError;
+                        }
+                    }
+                }
+                DisposalMethod::Keep => {}
+            }
+        }
+
+        if self.base.initialize_color_xform(
+            self.imp.as_ref(),
+            info,
+            frame.reported_alpha(),
+            !frame.has_alpha(),
+        ) {
+            Result::Success
+        } else {
+            Result::InvalidConversion
+        }
     }
 
     /// Port of `SkCodec::dimensionsSupported`: whether `dim` is the codec's own size or a scaled
@@ -773,7 +1054,7 @@ impl<'a> Codec<'a> {
             return Result::Unimplemented;
         }
 
-        let frame_index_result = self.handle_frame_index(info, options);
+        let frame_index_result = self.handle_frame_index(info, &mut [], 0, options);
         if frame_index_result != Result::Success {
             return frame_index_result;
         }
@@ -897,7 +1178,7 @@ impl<'a> Codec<'a> {
             }
         }
 
-        let frame_index_result = self.handle_frame_index(info, options);
+        let frame_index_result = self.handle_frame_index(info, &mut *dst, row_bytes, options);
         if frame_index_result != Result::Success {
             return Err(frame_index_result);
         }

@@ -1,3 +1,7 @@
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this file ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+// Licensed under the Apache License, Version 2.0; see the LICENSE file of this crate. This file
+// is modified from the Wuffs sources.
 // Port of: wuffs-v0.3.c, the status code strings of the base, gif and lzw modules
 // (`wuffs_base__note__*`, `wuffs_base__suspension__*`, `wuffs_base__error__*`,
 // `wuffs_gif__error__*` and `wuffs_lzw__error__*`). The text is byte-for-byte the C text, because

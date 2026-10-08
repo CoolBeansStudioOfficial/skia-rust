@@ -1,3 +1,7 @@
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this file ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+// Licensed under the Apache License, Version 2.0; see the LICENSE file of this crate. This file
+// is modified from the Wuffs sources.
 // Port of: wuffs-v0.3.c, the "gif" module (`wuffs_gif__decoder__*`, lines 31677-34471 of the
 // release C file at google/wuffs-mirror-release-c@e3f919cc), restricted to the entry points
 // SkWuffsCodec calls: `initialize`, `set_quirk_enabled`, `decode_image_config`,

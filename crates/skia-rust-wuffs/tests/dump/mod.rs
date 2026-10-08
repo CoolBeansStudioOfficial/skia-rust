@@ -1,3 +1,7 @@
+// Copyright 2017 The Wuffs Authors (the Wuffs sources this file ports).
+// Modifications (the Rust port) Copyright (C) 2025 The skia-rust Authors.
+// Licensed under the Apache License, Version 2.0; see the LICENSE file of this crate. This file
+// is modified from the Wuffs sources.
 //! The differential driver: the Rust side of `oracle/codec-diff/wuffs/wuffsdump.c`. It drives the
 //! GIF decoder the way `SkWuffsCodec` does (`third_party/skia/src/codec/SkWuffsCodec.cpp`), and
 //! writes the same text as the C driver. Any difference between the two outputs is a bug in the
