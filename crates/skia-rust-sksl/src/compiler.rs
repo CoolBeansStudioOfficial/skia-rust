@@ -30,6 +30,9 @@ impl Compiler {
     /// whose message contains it are not reported.
     pub const POISON_TAG: &'static str = "<POISON>";
 
+    /// `FRAGCOLOR_NAME`: the fragment output that `out location=0` may only declare.
+    pub const FRAGCOLOR_NAME: &'static str = "sk_FragColor";
+
     /// A compiler whose context reports errors into the compiler's error text.
     #[must_use]
     pub fn new() -> Self {

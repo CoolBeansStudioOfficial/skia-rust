@@ -44690,7 +44690,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L810-L1098"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d356222f5f4bfeb99c236496e3117044ac4cec343c8ecb28049c3d17b4f6452b"
 
 [[test]]
@@ -44699,7 +44699,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L1100-L1388"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "520fb48513903ef5fc04294630447a69d95a7cfc735e11d6123c91d1d9d13628"
 
 [[test]]
@@ -44708,7 +44708,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L1417-L1511"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "59aced355000fe3d05074b3e9c39ece6d7799a1f982e38afef48d2a31552803b"
 
 [[test]]
@@ -44717,7 +44717,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L226-L516"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3c7b72a0da5d31eb3bb4119e91c6b8231f29db88f2eed6bfb733999d615fba26"
 
 [[test]]
@@ -44726,7 +44726,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L518-L808"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6f1bdd555639513f122b68d4f0a04b7b42d22c1c32c161ec6bea5a51b6def493"
 
 [[test]]
@@ -44735,7 +44735,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L1390-L1415"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "af90fe1e9c2d7cd8fb1c8b48d85428c504f0c9a9c07060389259b37b9db719a3"
 
 [[test]]
@@ -44744,7 +44744,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L28-L125"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d947205398cd0a1a228b06b7859df886c13289c1527753d5c6de90a009a3da87"
 
 [[test]]
@@ -44753,7 +44753,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLMemoryLayoutTest.cpp#L127-L224"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "79746d45650e48b89c655649bdfbb8aad925849dc6f2307367c64be31e7aec4e"
 
 [[test]]
@@ -47059,7 +47059,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLTypeTest.cpp#L16-L38"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cbb222999875cf02f6258cb60f102ea759b527f0f4156a1b4a8608e7bba908ab"
 
 [[test]]

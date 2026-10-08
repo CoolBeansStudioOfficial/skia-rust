@@ -1,16 +1,23 @@
 // Copyright 2016 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/sksl/ir/SkSLType.{h,cpp}: the data of every `Type` subclass and its
-// virtual accessors. Coercion, `toCompound`, qualifiers, literal range checks, array-size
-// conversion, `clone` and the checked `MakeStructType`/`MakeArrayType` come with task S6.
+// Ported from Skia: src/sksl/ir/SkSLType.{h,cpp}: the data of every `Type` subclass, its virtual
+// accessors, and (with task S6) coercion costs, `toCompound`, qualifiers, literal range checks,
+// array-size conversion, `clone` and the checked `MakeStructType`/`MakeArrayType`.
+// `coerceExpression` and the expression forms of the range and array-size checks wait for S7a/S8.
 
 //! [`Type`]: `SkSL` types, and [`TypeRef`], which answers Skia's `Type` queries through the pool.
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 
-use super::{IrPool, Layout, ModifierFlags, ids::TypeId};
+use super::symbol_table::{add_array_dimension, add_symbol};
+use super::{IrPool, Layout, LayoutFlags, ModifierFlags, SymbolId, ids::SymTabId, ids::TypeId};
+use crate::context::Context;
+use crate::defines::{SkslInt, VARIABLE_SLOT_LIMIT};
 use crate::position::Position;
+use crate::program_settings::ProgramConfig;
+use crate::string::{Arg, printf};
 
 /// `Type::TypeKind`.
 #[doc(alias = "Type::TypeKind")]
@@ -1371,6 +1378,678 @@ impl<'a> TypeRef<'a> {
             return format!("{name}[]");
         }
         format!("{name}[{array_size}]")
+    }
+}
+
+/// `kMaxStructDepth`.
+const MAX_STRUCT_DEPTH: i32 = 8;
+
+/// `toCompound` tables: the vector or matrix of each shape, indexed `[rows - 1][columns - 1]`.
+/// `INVALID` marks shapes the type does not have (a vector family has only its first row).
+const FLOAT_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [
+        TypeId::FLOAT,
+        TypeId::FLOAT2,
+        TypeId::FLOAT3,
+        TypeId::FLOAT4,
+    ],
+    [
+        TypeId::INVALID,
+        TypeId::FLOAT2X2,
+        TypeId::FLOAT3X2,
+        TypeId::FLOAT4X2,
+    ],
+    [
+        TypeId::INVALID,
+        TypeId::FLOAT2X3,
+        TypeId::FLOAT3X3,
+        TypeId::FLOAT4X3,
+    ],
+    [
+        TypeId::INVALID,
+        TypeId::FLOAT2X4,
+        TypeId::FLOAT3X4,
+        TypeId::FLOAT4X4,
+    ],
+];
+const HALF_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [TypeId::HALF, TypeId::HALF2, TypeId::HALF3, TypeId::HALF4],
+    [
+        TypeId::INVALID,
+        TypeId::HALF2X2,
+        TypeId::HALF3X2,
+        TypeId::HALF4X2,
+    ],
+    [
+        TypeId::INVALID,
+        TypeId::HALF2X3,
+        TypeId::HALF3X3,
+        TypeId::HALF4X3,
+    ],
+    [
+        TypeId::INVALID,
+        TypeId::HALF2X4,
+        TypeId::HALF3X4,
+        TypeId::HALF4X4,
+    ],
+];
+const INT_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [TypeId::INT, TypeId::INT2, TypeId::INT3, TypeId::INT4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+];
+const SHORT_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [
+        TypeId::SHORT,
+        TypeId::SHORT2,
+        TypeId::SHORT3,
+        TypeId::SHORT4,
+    ],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+];
+const UINT_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [TypeId::UINT, TypeId::UINT2, TypeId::UINT3, TypeId::UINT4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+];
+const USHORT_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [
+        TypeId::USHORT,
+        TypeId::USHORT2,
+        TypeId::USHORT3,
+        TypeId::USHORT4,
+    ],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+];
+const BOOL_COMPOUNDS: [[TypeId; 4]; 4] = [
+    [TypeId::BOOL, TypeId::BOOL2, TypeId::BOOL3, TypeId::BOOL4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+    [TypeId::INVALID; 4],
+];
+
+// Port of: src/sksl/ir/SkSLType.h#L98-L558 and src/sksl/ir/SkSLType.cpp#L795-L1415 (chrome/m156):
+// the rest of `Type`. Coercion costs, `toCompound`, qualifiers, `clone`, the checked factories,
+// and the scalar range and array-size checks are here. `coerceExpression` and the expression
+// forms of `checkForOutOfRangeLiteral` and `convertArraySize` need the constructors and the
+// constant folder (S7a, S8), so they are not in S6.
+impl TypeRef<'_> {
+    /// `coercionCost(other)`: how expensive it is to coerce this type to `other`.
+    // Port of: src/sksl/ir/SkSLType.cpp#L943-L986 (chrome/m156)
+    #[must_use]
+    pub fn coercion_cost(self, other: TypeId) -> CoercionCost {
+        let target = self.other(other);
+        if self.matches(other) {
+            return CoercionCost::free();
+        }
+        if self.ty.type_kind == target.ty.type_kind
+            && (self.is_vector() || self.is_matrix() || self.is_array())
+        {
+            // Vectors, matrices and arrays of the same size can be coerced if their component
+            // type can be.
+            if self.is_matrix() && self.rows() != target.rows() {
+                return CoercionCost::impossible();
+            }
+            if self.columns() != target.columns() {
+                return CoercionCost::impossible();
+            }
+            return self
+                .component_type()
+                .coercion_cost(target.component_type().id);
+        }
+
+        if self.is_number() && target.is_number() {
+            if self.is_literal()
+                && (self.is_integer() || self.number_kind() == target.number_kind())
+            {
+                // `${intLiteral}` and `${floatLiteral}` coerce freely to `float` and `half`.
+                // Without this, `${floatLiteral}`'s priority would make conversion to `half`
+                // cheaper than conversion to `float`. Overload selection then follows the
+                // non-literal arguments, and a call with only literals needs a cast.
+                return CoercionCost::free();
+            } else if self.number_kind() != target.number_kind() {
+                return CoercionCost::impossible();
+            } else if target.priority() >= self.priority() {
+                return CoercionCost::normal(target.priority() - self.priority());
+            }
+            return CoercionCost::narrowing(self.priority() - target.priority());
+        }
+        if self.ty.type_kind == TypeKind::Generic {
+            for (i, candidate) in self.coercible_types().iter().enumerate() {
+                if self.other(*candidate).matches(other) {
+                    // A generic type has only a few coercible types, so the index fits.
+                    let index = i32::try_from(i).unwrap_or(i32::MAX);
+                    return CoercionCost::normal(index + 1);
+                }
+            }
+        }
+        CoercionCost::impossible()
+    }
+
+    /// `canCoerceTo(other, allowNarrowing)`.
+    #[must_use]
+    pub fn can_coerce_to(self, other: TypeId, allow_narrowing: bool) -> bool {
+        self.coercion_cost(other).is_possible(allow_narrowing)
+    }
+
+    /// `isAllowedInES2(context)`: a strict-ES2 program may use only ES2 types.
+    #[must_use]
+    pub fn is_allowed_in_es2_for(self, ctx: &Context) -> bool {
+        !ctx.config().strict_es2_mode() || self.is_allowed_in_es2()
+    }
+
+    /// `toCompound(context, columns, rows)`: the vector or matrix of this scalar's type with the
+    /// given shape. A `columns`/`rows` of 1/1 returns this type unchanged.
+    ///
+    /// # Panics
+    ///
+    /// For a shape the scalar type has no vector or matrix for (Skia: `SK_ABORT`).
+    // Port of: src/sksl/ir/SkSLType.cpp#L1101-L1235 (chrome/m156)
+    #[must_use]
+    pub fn to_compound(self, columns: i32, rows: i32) -> TypeId {
+        debug_assert!(self.is_scalar(), "toCompound of a non-scalar type");
+        if columns == 1 && rows == 1 {
+            return self.id;
+        }
+        let table = if self.matches(TypeId::FLOAT) || self.matches(TypeId::FLOAT_LITERAL) {
+            &FLOAT_COMPOUNDS
+        } else if self.matches(TypeId::HALF) {
+            &HALF_COMPOUNDS
+        } else if self.matches(TypeId::INT) || self.matches(TypeId::INT_LITERAL) {
+            &INT_COMPOUNDS
+        } else if self.matches(TypeId::SHORT) {
+            &SHORT_COMPOUNDS
+        } else if self.matches(TypeId::UINT) {
+            &UINT_COMPOUNDS
+        } else if self.matches(TypeId::USHORT) {
+            &USHORT_COMPOUNDS
+        } else if self.matches(TypeId::BOOL) {
+            &BOOL_COMPOUNDS
+        } else {
+            debug_assert!(false, "unsupported toCompound type {}", self.description());
+            return TypeId::VOID;
+        };
+        let row = usize::try_from(rows)
+            .ok()
+            .filter(|r| (1..=4).contains(r))
+            .unwrap_or_else(|| panic!("unsupported row count ({rows})"));
+        let shape = if rows == 1 { "vector" } else { "matrix" };
+        let column = usize::try_from(columns)
+            .ok()
+            .filter(|c| (1..=4).contains(c))
+            .unwrap_or_else(|| panic!("unsupported {shape} column count ({columns})"));
+        let compound = table[row - 1][column - 1];
+        assert!(
+            compound != TypeId::INVALID,
+            "unsupported shape ({columns} columns, {rows} rows)"
+        );
+        compound
+    }
+}
+
+impl Type {
+    /// `MakeArrayType(context, name, componentType, columns)`: an array of `component`. Skia's
+    /// factory has no error checks of its own; its invariants are debug assertions here.
+    // Port of: src/sksl/ir/SkSLType.cpp#L807-L813 (chrome/m156)
+    #[must_use]
+    pub fn make_array_type(ctx: &Context, name: &str, component: TypeId, columns: i32) -> Self {
+        let comp = ctx.pool.ty(component);
+        debug_assert!(
+            columns > 0 || columns == Type::UNSIZED_ARRAY,
+            "array count must be positive or unsized"
+        );
+        debug_assert!(!comp.is_array(), "multi-dimensional arrays are disallowed");
+        Self::new_array_type(
+            name.to_owned(),
+            comp.abbreviated_name,
+            component,
+            columns,
+            ctx.config().is_builtin_code(),
+        )
+    }
+
+    /// `MakeStructType(context, pos, name, fields, interfaceBlock)`: a struct or interface block,
+    /// with Skia's checks on its fields and nesting. Errors go to `ctx`, and the struct is still
+    /// returned so that the caller can carry on.
+    // Port of: src/sksl/ir/SkSLType.cpp#L850-L929 (chrome/m156)
+    // Skia's `MakeStructType` is one function of this length, and its checks run in its order.
+    #[allow(clippy::too_many_lines)]
+    pub fn make_struct_type(
+        ctx: &mut Context,
+        pos: Position,
+        name: &str,
+        fields: Vec<Field>,
+        interface_block: bool,
+    ) -> Self {
+        let (struct_or_ib, a_struct_or_ib) = if interface_block {
+            ("interface block", "an interface block")
+        } else {
+            ("struct", "a struct")
+        };
+        let builtin_code = ctx.config().is_builtin_code();
+
+        if fields.is_empty() {
+            ctx.errors.error(
+                pos,
+                &format!("{struct_or_ib} '{name}' must contain at least one field"),
+            );
+        }
+        let mut slots: usize = 0;
+        let limit = usize::try_from(VARIABLE_SLOT_LIMIT).unwrap_or(usize::MAX);
+        let mut field_names: HashSet<&str> = HashSet::new();
+        for field in &fields {
+            // A repeated name is a duplicate: the set does not grow.
+            if !field_names.insert(&field.name) {
+                ctx.errors.error(
+                    field.position,
+                    &format!(
+                        "field '{}' was already defined in the same {struct_or_ib} ('{name}')",
+                        field.name
+                    ),
+                );
+            }
+            if field.modifier_flags != ModifierFlags::empty() {
+                let desc = field.modifier_flags.description();
+                ctx.errors.error(
+                    field.position,
+                    &format!("modifier '{desc}' is not permitted on {a_struct_or_ib} field"),
+                );
+            }
+            if field.layout.flags.contains(LayoutFlags::BINDING) {
+                ctx.errors.error(
+                    field.position,
+                    &format!(
+                        "layout qualifier 'binding' is not permitted on {a_struct_or_ib} field"
+                    ),
+                );
+            }
+            if field.layout.flags.contains(LayoutFlags::SET) {
+                ctx.errors.error(
+                    field.position,
+                    &format!("layout qualifier 'set' is not permitted on {a_struct_or_ib} field"),
+                );
+            }
+
+            let (is_void, is_opaque_not_atomic, display, contains_bool, unsized_array, slot_count) = {
+                let ty = ctx.pool.ty(field.ty);
+                (
+                    ty.is_void(),
+                    ty.is_opaque() && !ty.is_atomic(),
+                    ty.display_name().to_owned(),
+                    ty.is_or_contains_bool(),
+                    ty.is_or_contains_unsized_array(),
+                    // Only read for sized fields below (Skia asserts on unsized slot counts).
+                    if ty.is_or_contains_unsized_array() {
+                        0
+                    } else {
+                        ty.slot_count()
+                    },
+                )
+            };
+            if is_void {
+                ctx.errors.error(
+                    field.position,
+                    &format!("type 'void' is not permitted in {a_struct_or_ib}"),
+                );
+            }
+            if is_opaque_not_atomic {
+                ctx.errors.error(
+                    field.position,
+                    &format!("opaque type '{display}' is not permitted in {a_struct_or_ib}"),
+                );
+            }
+            if interface_block && contains_bool {
+                // Reject booleans anywhere in an interface block.
+                ctx.errors.error(
+                    field.position,
+                    "type 'bool' is not permitted in an interface block",
+                );
+            }
+            if unsized_array {
+                if !interface_block {
+                    // Reject unsized arrays anywhere in structs.
+                    ctx.errors
+                        .error(field.position, "unsized arrays are not permitted here");
+                }
+            } else if slots < limit {
+                // If we haven't already exceeded the struct size limit, see whether this field
+                // causes us to exceed it.
+                slots = slots.saturating_add(slot_count);
+                if slots >= limit {
+                    ctx.errors
+                        .error(pos, &format!("{struct_or_ib} is too large"));
+                }
+            }
+        }
+
+        let mut nesting_depth = 0;
+        for field in &fields {
+            nesting_depth = nesting_depth.max(ctx.pool.ty(field.ty).struct_nesting_depth());
+        }
+        if nesting_depth >= MAX_STRUCT_DEPTH {
+            ctx.errors.error(
+                pos,
+                &format!("{struct_or_ib} '{name}' is too deeply nested"),
+            );
+        }
+        let data = StructType::new(
+            &ctx.pool,
+            fields,
+            nesting_depth + 1,
+            interface_block,
+            builtin_code,
+        );
+        Self::new_struct_type(pos, name.to_owned(), data)
+    }
+}
+
+impl TypeId {
+    /// `applyQualifiers(context, modifierFlags, pos)`: the type a declaration with these
+    /// precision and access qualifiers has. Consumed qualifiers are removed from `flags`.
+    // Port of: src/sksl/ir/SkSLType.cpp#L988-L995 (chrome/m156)
+    #[must_use]
+    pub fn apply_qualifiers(
+        self,
+        ctx: &mut Context,
+        flags: &mut ModifierFlags,
+        pos: Position,
+    ) -> Self {
+        let ty = self.apply_precision_qualifiers(ctx, flags, pos);
+        ty.apply_access_qualifiers(ctx, flags, pos)
+    }
+
+    /// `applyPrecisionQualifiers`.
+    // Port of: src/sksl/ir/SkSLType.cpp#L997-L1064 (chrome/m156)
+    fn apply_precision_qualifiers(
+        self,
+        ctx: &mut Context,
+        flags: &mut ModifierFlags,
+        pos: Position,
+    ) -> Self {
+        let precision =
+            *flags & (ModifierFlags::HIGHP | ModifierFlags::MEDIUMP | ModifierFlags::LOWP);
+        if precision.is_empty() {
+            // No precision qualifiers here. Return the type as-is.
+            return self;
+        }
+        if !ProgramConfig::is_runtime_effect(ctx.config().kind) {
+            // Precision modifiers are discouraged internally: use the type for the precision
+            // you need (`half` vs `float`, `short` vs `int`).
+            ctx.errors
+                .error(pos, "precision qualifiers are not allowed");
+            return TypeId::POISON;
+        }
+        if precision.bits().count_ones() > 1 {
+            ctx.errors
+                .error(pos, "only one precision qualifier can be used");
+            return TypeId::POISON;
+        }
+
+        // We're going to return a whole new type, so the modifier bits can be cleared out.
+        *flags &= !(ModifierFlags::HIGHP | ModifierFlags::MEDIUMP | ModifierFlags::LOWP);
+
+        let (component_high_precision, number_kind) = {
+            let component = ctx.pool.ty(self).component_type();
+            (component.high_precision(), component.number_kind())
+        };
+        if component_high_precision {
+            if precision.contains(ModifierFlags::HIGHP) {
+                // Type is already high precision, and we are requesting high precision.
+                return self;
+            }
+
+            // SkSL doesn't support low precision, so `lowp` is interpreted as medium precision.
+            // Skia's `mediumpType` falls back to `fPoison`, which is never null, so this branch
+            // always returns.
+            let mediump = match number_kind {
+                NumberKind::Float => TypeId::HALF,
+                NumberKind::Signed => TypeId::SHORT,
+                NumberKind::Unsigned => TypeId::USHORT,
+                _ => TypeId::POISON,
+            };
+            // Convert the mediump component type into the final vector/matrix/array type.
+            let (is_array, columns, rows) = {
+                let ty = ctx.pool.ty(self);
+                if ty.is_array() {
+                    (true, ty.columns(), 0)
+                } else {
+                    (false, ty.columns(), ty.rows())
+                }
+            };
+            if is_array {
+                let table = ctx
+                    .symbol_table
+                    .expect("applyPrecisionQualifiers: no current symbol table");
+                return add_array_dimension(ctx, table, mediump, columns);
+            }
+            return ctx.pool.ty(mediump).to_compound(columns, rows);
+        }
+
+        let display = ctx.pool.ty(self).display_name().to_owned();
+        ctx.errors.error(
+            pos,
+            &format!("type '{display}' does not support precision qualifiers"),
+        );
+        TypeId::POISON
+    }
+
+    /// `applyAccessQualifiers`.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1066-L1099 (chrome/m156)
+    fn apply_access_qualifiers(
+        self,
+        ctx: &mut Context,
+        flags: &mut ModifierFlags,
+        pos: Position,
+    ) -> Self {
+        let access = *flags & (ModifierFlags::READ_ONLY | ModifierFlags::WRITE_ONLY);
+
+        // We're going to return a whole new type, so the modifier bits must be cleared out.
+        *flags &= !(ModifierFlags::READ_ONLY | ModifierFlags::WRITE_ONLY);
+
+        if ctx.pool.ty(self).matches(TypeId::TEXTURE2D) {
+            // Every texture2D must be qualified with `readonly` or `writeonly`. (Read-write
+            // textures are not yet supported in WGSL.)
+            if access == ModifierFlags::READ_ONLY {
+                return TypeId::READ_ONLY_TEXTURE2D;
+            }
+            if access == ModifierFlags::WRITE_ONLY {
+                return TypeId::WRITE_ONLY_TEXTURE2D;
+            }
+            ctx.errors.error(
+                pos,
+                if access.is_empty() {
+                    "'texture2D' requires a 'readonly' or 'writeonly' access qualifier"
+                } else {
+                    "'readonly' and 'writeonly' qualifiers cannot be combined"
+                },
+            );
+            return self;
+        }
+
+        if !access.is_empty() {
+            let display = ctx.pool.ty(self).display_name().to_owned();
+            let desc = access.description();
+            ctx.errors.error(
+                pos,
+                &format!("type '{display}' does not support qualifier '{desc}'"),
+            );
+        }
+        self
+    }
+
+    /// `clone(context, symbolTable)`: this type as a symbol of `table`. Built-in and root types
+    /// are returned as they are. A program's array or struct type is added to `table` (or found
+    /// there by name), and the id of the symbol in `table` is returned.
+    ///
+    /// # Panics
+    ///
+    /// If `table` already holds a non-type symbol under this type's name (Skia reinterprets it).
+    // Port of: src/sksl/ir/SkSLType.cpp#L1237-L1278 (chrome/m156)
+    pub fn clone_in(self, ctx: &mut Context, table: SymTabId) -> Option<Self> {
+        let (kind, name, position) = {
+            let ty = ctx.pool.ty(self);
+            // Many types are built-ins, and exist in every SymbolTable by default.
+            if ty.is_in_root_symbol_table() {
+                return Some(self);
+            }
+            (ty.type_kind, ty.name().to_owned(), ty.position)
+        };
+        let builtin_code = ctx.config().is_builtin_code();
+        // If the type comes from a module, it is in scope anywhere in the program.
+        if !builtin_code && ctx.pool.ty(self).is_builtin() {
+            return Some(self);
+        }
+        // Even if the type isn't a built-in, it might already exist in the table. Search by name.
+        if let Some(existing) = ctx.pool.find_symbol(table, &name) {
+            let SymbolId::Type(existing) = existing else {
+                panic!("clone: symbol '{name}' is not a type");
+            };
+            debug_assert_eq!(ctx.pool.ty(existing).type_kind, kind);
+            return Some(existing);
+        }
+        // This type needs to be cloned into the table.
+        match kind {
+            TypeKind::Array => {
+                let (component, columns) = {
+                    let ty = ctx.pool.ty(self);
+                    (ty.component_type().id, ty.columns())
+                };
+                Some(add_array_dimension(ctx, table, component, columns))
+            }
+            TypeKind::Struct => {
+                // We are cloning an existing struct, so there's no need to check it again.
+                let (fields, depth, interface_block) = {
+                    let ty = ctx.pool.ty(self);
+                    (
+                        ty.fields().to_vec(),
+                        ty.struct_nesting_depth(),
+                        ty.is_interface_block(),
+                    )
+                };
+                let data = StructType::new(&ctx.pool, fields, depth, interface_block, builtin_code);
+                let id = ctx
+                    .pool
+                    .add_type(Type::new_struct_type(position, name, data));
+                add_symbol(ctx, table, SymbolId::Type(id));
+                Some(id)
+            }
+            _ => {
+                debug_assert!(false, "don't know how to clone type '{name}'");
+                None
+            }
+        }
+    }
+
+    /// The value check of `checkForOutOfRangeLiteral(context, value, pos)`: reports `value` if it
+    /// does not fit in this scalar type. Floats and booleans accept any value.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1339-L1352 (chrome/m156)
+    pub fn check_for_out_of_range_literal_value(
+        self,
+        ctx: &mut Context,
+        value: f64,
+        pos: Position,
+    ) -> bool {
+        debug_assert!(ctx.pool.ty(self).is_scalar());
+        let (is_number, min, max, display) = {
+            let ty = ctx.pool.ty(self);
+            if ty.is_number() {
+                (
+                    true,
+                    ty.minimum_value(),
+                    ty.maximum_value(),
+                    ty.display_name().to_owned(),
+                )
+            } else {
+                (false, 0.0, 0.0, String::new())
+            }
+        };
+        if !is_number {
+            return false;
+        }
+        if value >= min && value <= max {
+            return false;
+        }
+        // We found a value that can't fit in our type. Flag it as an error.
+        let msg = printf(
+            "value is out of range for type '%s': %.0f",
+            &[Arg::Str(&display), Arg::Float(value)],
+        );
+        ctx.errors.error(pos, &msg);
+        true
+    }
+
+    /// `checkIfUsableInArray(context, arrayPos)`: whether an array may have this element type.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1354-L1369 (chrome/m156)
+    pub fn check_if_usable_in_array(self, ctx: &mut Context, array_pos: Position) -> bool {
+        let (is_array, is_void, opaque_not_atomic, name) = {
+            let ty = ctx.pool.ty(self);
+            (
+                ty.is_array(),
+                ty.is_void(),
+                ty.is_opaque() && !ty.is_atomic(),
+                ty.name().to_owned(),
+            )
+        };
+        if is_array {
+            ctx.errors
+                .error(array_pos, "multi-dimensional arrays are not supported");
+            return false;
+        }
+        if is_void {
+            ctx.errors
+                .error(array_pos, "type 'void' may not be used in an array");
+            return false;
+        }
+        if opaque_not_atomic {
+            ctx.errors.error(
+                array_pos,
+                &format!("opaque type '{name}' may not be used in an array"),
+            );
+            return false;
+        }
+        true
+    }
+
+    /// `convertArraySize(context, arrayPos, sizePos, size)` for an array size that is already a
+    /// constant integer. Returns `size`, or 0 after an error.
+    // Port of: src/sksl/ir/SkSLType.cpp#L1386-L1408 (chrome/m156)
+    pub fn convert_array_size_value(
+        self,
+        ctx: &mut Context,
+        array_pos: Position,
+        size_pos: Position,
+        size: SkslInt,
+    ) -> SkslInt {
+        if !self.check_if_usable_in_array(ctx, array_pos) {
+            // `checkIfUsableInArray` has reported the error.
+            return 0;
+        }
+        if size <= 0 {
+            ctx.errors.error(size_pos, "array size must be positive");
+            return 0;
+        }
+        // An interior type with an unsized array has no slot count. Such types are never valid
+        // in a runtime effect.
+        let too_large = {
+            let ty = ctx.pool.ty(self);
+            let limit = usize::try_from(VARIABLE_SLOT_LIMIT).unwrap_or(usize::MAX);
+            !ty.is_or_contains_unsized_array()
+                && ty
+                    .slot_count()
+                    .saturating_mul(usize::try_from(size).unwrap_or(usize::MAX))
+                    > limit
+        };
+        if too_large {
+            ctx.errors.error(size_pos, "array size is too large");
+            return 0;
+        }
+        size
     }
 }
 

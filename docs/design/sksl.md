@@ -520,6 +520,54 @@ layered pools sound. Where it differs from §4.1/§4.2, this section wins.
 - **S12** keeps its candidates as `StmtId`/`ExprId` slots and uses the relocate/replace idioms;
   `Mangler::unique_name(base, &ctx.pool, symbol_table)` matches Skia's counter and truncation.
 
+### 4.4 As implemented in S6
+
+S6 landed the type, symbol, declaration, layout and memory rules in `crates/skia-rust-sksl`. The
+conventions of §4.3 hold, plus these:
+
+- **Methods that report errors take `&mut Context`** and sit on `TypeId`: `apply_qualifiers`,
+  `clone_in`, `check_if_usable_in_array`, `check_for_out_of_range_literal_value`,
+  `convert_array_size_value`. Pure queries sit on `TypeRef`: `coercion_cost`, `can_coerce_to`,
+  `to_compound`, `is_allowed_in_es2_for`. The checked factories are `Type::make_array_type` and
+  `Type::make_struct_type`.
+- **Symbol-table operations are free functions** in `ir/symbol_table.rs`, re-exported from `ir`:
+  `add_symbol(ctx, table, symbol)` (reports duplicates, returns nothing), `rename_symbol`,
+  `remove_symbol`, `move_symbol_to`, `insert_new_parent`, `add_array_dimension` (returns the
+  `TypeId`), `would_shadow_symbols_from`. Ownership is the pool's, so `add` and
+  `addWithoutOwnership` are one function, and `removeSymbol` returns nothing.
+- `Variable::convert(ctx, …) -> VarId` validates and allocates; `Variable::make(pool, …) -> VarId`
+  allocates. `Layout::check_permitted_layout`, `ModifierFlags::check_permitted_flags`,
+  `Operator::determine_binary_type(ctx, left, right) -> Option<BinaryTypes>` and
+  `Operator::is_matrix_multiply(pool, …)` are in place.
+- `util::ShaderCaps` (its GLSL-only fields are not ported), `ShaderCapsFactory::{standalone,
+  default_caps}` (cached in `OnceLock`s), and `memory_layout::MemoryLayout` with
+  `Standard::{Std140, Std430, Metal, WgslUniformBase, …}`.
+- `Compiler::FRAGCOLOR_NAME` joins `POISON_TAG` in `compiler.rs`.
+
+**Deferred.** These need the S7a constructors or the S8 constant folder, so they wait for those:
+
+- `Type::coerceExpression`, and the expression forms of `checkForOutOfRangeLiteral` and
+  `convertArraySize`. They become `coerce_expression`, `check_for_out_of_range_literal` and
+  `convert_array_size` (S7a and S8). The `_value` functions above are the scalar versions.
+- `SymbolTable::instantiateSymbolRef`: needs `Symbol::instantiate` (S7b).
+- `Variable::MakeScratchVariable`: needs `VarDeclaration::Make` (S7d).
+- `type_to_sksltype`: belongs with the runtime-effect uniform types (S18).
+
+**File ownership for the parallel tasks.** Each file has one owner, except the shared hot spots,
+which are listed separately.
+
+| Task | Owns |
+|---|---|
+| S7a | `ir/constructor*.rs`, `ir/literal.rs`, and a `coerce_expression` addition to `ir/types.rs` |
+| S7b | `ir/binary_expression.rs`, `ir/prefix_postfix.rs`, `ir/ternary_expression.rs`, `ir/index_expression.rs`, `ir/swizzle.rs`, `ir/field_access.rs`, `ir/variable_reference.rs`, `ir/setting.rs`, `ir/simple_expressions.rs`, `ir/child_call.rs`, `Symbol::instantiate` in `ir/symbol.rs`, `instantiate_symbol_ref` in `ir/symbol_table.rs` |
+| S7c | `ir/function_call.rs`, `ir/function_declaration.rs`, `intrinsic_list.rs`, the function-definition part of `ir/program_element.rs` |
+| S7d | `ir/block.rs`, `ir/control_statements.rs`, `ir/simple_statements.rs`, `ir/var_declarations.rs`, the other element kinds of `ir/program_element.rs`, and new per-class files |
+| S8 | `constant_folder.rs` (new) |
+
+Shared hot spots: `ir/mod.rs` (module lines and re-exports; S7a–d all add some), and
+`ir/program_element.rs` (S7c and S7d both edit it). Agree on one edit order, or rebase the second
+PR onto the first. `compiler.rs` belongs to S11.
+
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |

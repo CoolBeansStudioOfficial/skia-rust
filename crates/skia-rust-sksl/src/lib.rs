@@ -26,6 +26,7 @@ pub mod intrinsic_list;
 pub mod ir;
 pub mod lexer;
 pub mod mangler;
+pub mod memory_layout;
 pub mod modules;
 pub mod operator;
 pub mod output_stream;
@@ -36,5 +37,6 @@ pub mod string;
 pub mod thash;
 pub mod tracing;
 pub mod transform;
+pub mod util;
 
 pub use flavor::{Flavor, ModuleSource};

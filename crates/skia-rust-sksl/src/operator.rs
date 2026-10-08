@@ -7,6 +7,9 @@
 //! The `SkSL` operators: their kinds, precedence, printed spelling and the predicates that decide
 //! which types they accept.
 
+use crate::context::Context;
+use crate::ir::{CoercionCost, IrPool, TypeId};
+
 /// `SkSL::OperatorKind`: every operator, unary, binary, assignment and increment.
 #[doc(alias = "SkSL::OperatorKind")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -307,6 +310,235 @@ impl Operator {
     #[must_use]
     pub fn is_allowed_in_strict_es2_mode(self) -> bool {
         !self.is_only_valid_for_integral_types()
+    }
+}
+
+/// The types of a binary operation's operands and result: Skia's `outLeftType`, `outRightType`
+/// and `outResultType` out-parameters of `Operator::determineBinaryType`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BinaryTypes {
+    /// `outLeftType`.
+    pub left: TypeId,
+    /// `outRightType`.
+    pub right: TypeId,
+    /// `outResultType`.
+    pub result: TypeId,
+}
+
+impl Operator {
+    /// `isMatrixMultiply(left, right)`: `*` with a matrix on the left, or a vector on the left and
+    /// a matrix on the right.
+    // Port of: src/sksl/SkSLOperator.cpp#L209-L217 (chrome/m156)
+    #[must_use]
+    pub fn is_matrix_multiply(self, pool: &IrPool, left: TypeId, right: TypeId) -> bool {
+        if self.kind() != OperatorKind::Star && self.kind() != OperatorKind::StarEq {
+            return false;
+        }
+        let (left, right) = (pool.ty(left), pool.ty(right));
+        if left.is_matrix() {
+            return right.is_matrix() || right.is_vector();
+        }
+        left.is_vector() && right.is_matrix()
+    }
+
+    /// `determineBinaryType(context, left, right, …)`: the operand and result types of this
+    /// operator applied to `left` and `right`, or `None` when the operator does not accept them.
+    // Port of: src/sksl/SkSLOperator.cpp#L219-L381 (chrome/m156)
+    // Skia's `determineBinaryType` is one function of this length, and its cases run in its order.
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
+    pub fn determine_binary_type(
+        self,
+        ctx: &Context,
+        left: TypeId,
+        right: TypeId,
+    ) -> Option<BinaryTypes> {
+        let allow_narrowing = ctx.config().settings.allow_narrowing_conversions;
+        let pool = &ctx.pool;
+        let (lt, rt) = (pool.ty(left), pool.ty(right));
+        match self.kind() {
+            OperatorKind::Eq => {
+                // left = right
+                if lt.is_void() {
+                    return None;
+                }
+                return rt
+                    .can_coerce_to(left, allow_narrowing)
+                    .then_some(BinaryTypes {
+                        left,
+                        right: left,
+                        result: left,
+                    });
+            }
+            OperatorKind::EqEq | OperatorKind::Neq => {
+                // left == right, left != right
+                if lt.is_void() || lt.is_opaque() {
+                    return None;
+                }
+                let right_to_left = rt.coercion_cost(left);
+                let left_to_right = lt.coercion_cost(right);
+                if right_to_left < left_to_right {
+                    if right_to_left.is_possible(allow_narrowing) {
+                        return Some(BinaryTypes {
+                            left,
+                            right: left,
+                            result: TypeId::BOOL,
+                        });
+                    }
+                } else if left_to_right.is_possible(allow_narrowing) {
+                    return Some(BinaryTypes {
+                        left: right,
+                        right,
+                        result: TypeId::BOOL,
+                    });
+                }
+                return None;
+            }
+            OperatorKind::LogicalOr | OperatorKind::LogicalAnd | OperatorKind::LogicalXor => {
+                // left || right, left && right, left ^^ right
+                let bool_ok = lt.can_coerce_to(TypeId::BOOL, allow_narrowing)
+                    && rt.can_coerce_to(TypeId::BOOL, allow_narrowing);
+                return bool_ok.then_some(BinaryTypes {
+                    left: TypeId::BOOL,
+                    right: TypeId::BOOL,
+                    result: TypeId::BOOL,
+                });
+            }
+            OperatorKind::Comma => {
+                // left, right
+                if lt.is_opaque() || rt.is_opaque() {
+                    return None;
+                }
+                return Some(BinaryTypes {
+                    left,
+                    right,
+                    result: right,
+                });
+            }
+            _ => {}
+        }
+
+        // Boolean types only support the operators listed above.
+        let left_component = lt.component_type();
+        let right_component = rt.component_type();
+        if left_component.is_boolean() || right_component.is_boolean() {
+            return None;
+        }
+
+        let is_assignment = self.is_assignment();
+        if self.is_matrix_multiply(pool, left, right) {
+            // `left * right`: determine the final component type first.
+            let inner =
+                self.determine_binary_type(ctx, left_component.id(), right_component.id())?;
+            // Convert the component type to a compound type.
+            let scalar_result = pool.ty(inner.result);
+            let out_left = scalar_result.to_compound(lt.columns(), lt.rows());
+            let out_right = scalar_result.to_compound(rt.columns(), rt.rows());
+            let (left_columns, left_rows) = (lt.columns(), lt.rows());
+            let (mut right_columns, mut right_rows) = (rt.columns(), rt.rows());
+            if rt.is_vector() {
+                // `matrix * vector` treats the vector as a column vector: transpose it.
+                std::mem::swap(&mut right_columns, &mut right_rows);
+                debug_assert_eq!(right_columns, 1);
+            }
+            let result = if right_columns > 1 {
+                scalar_result.to_compound(right_columns, left_rows)
+            } else {
+                // The result was a column vector. Transpose it back to a row.
+                scalar_result.to_compound(left_rows, right_columns)
+            };
+            let result_ty = pool.ty(result);
+            if is_assignment
+                && (result_ty.columns() != left_columns || result_ty.rows() != left_rows)
+            {
+                return None;
+            }
+            if left_columns != right_rows {
+                return None;
+            }
+            return Some(BinaryTypes {
+                left: out_left,
+                right: out_right,
+                result,
+            });
+        }
+
+        let left_is_vector_or_matrix = lt.is_vector() || lt.is_matrix();
+        let valid_matrix_or_vector_op = self.is_valid_for_matrix_or_vector();
+        if left_is_vector_or_matrix && valid_matrix_or_vector_op && rt.is_scalar() {
+            // Determine the final component type, then convert it to a compound type.
+            let inner = self.determine_binary_type(ctx, left_component.id(), right)?;
+            let out_left = pool.ty(inner.left).to_compound(lt.columns(), lt.rows());
+            let result = if self.is_relational() {
+                inner.result
+            } else {
+                pool.ty(inner.result).to_compound(lt.columns(), lt.rows())
+            };
+            return Some(BinaryTypes {
+                left: out_left,
+                right: inner.right,
+                result,
+            });
+        }
+
+        let right_is_vector_or_matrix = rt.is_vector() || rt.is_matrix();
+        if !is_assignment
+            && right_is_vector_or_matrix
+            && valid_matrix_or_vector_op
+            && lt.is_scalar()
+        {
+            // Determine the final component type, then convert it to a compound type.
+            let inner = self.determine_binary_type(ctx, left, right_component.id())?;
+            let out_right = pool.ty(inner.right).to_compound(rt.columns(), rt.rows());
+            let result = if self.is_relational() {
+                inner.result
+            } else {
+                pool.ty(inner.result).to_compound(rt.columns(), rt.rows())
+            };
+            return Some(BinaryTypes {
+                left: inner.left,
+                right: out_right,
+                result,
+            });
+        }
+
+        let right_to_left_cost = rt.coercion_cost(left);
+        let left_to_right_cost = if is_assignment {
+            CoercionCost::impossible()
+        } else {
+            lt.coercion_cost(right)
+        };
+        if (lt.is_scalar() && rt.is_scalar())
+            || (left_is_vector_or_matrix && valid_matrix_or_vector_op)
+        {
+            if self.is_only_valid_for_integral_types()
+                && (!left_component.is_integer() || !right_component.is_integer())
+            {
+                return None;
+            }
+            let operand = if right_to_left_cost.is_possible(allow_narrowing)
+                && right_to_left_cost < left_to_right_cost
+            {
+                // Right-to-left conversion is possible and cheaper.
+                left
+            } else if left_to_right_cost.is_possible(allow_narrowing) {
+                // Left-to-right conversion is possible, and at least as cheap.
+                right
+            } else {
+                return None;
+            };
+            let result = if self.is_relational() {
+                TypeId::BOOL
+            } else {
+                operand
+            };
+            return Some(BinaryTypes {
+                left: operand,
+                right: operand,
+                result,
+            });
+        }
+        None
     }
 }
 

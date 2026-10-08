@@ -205,6 +205,10 @@ pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
 #[cfg(test)]
+pub mod sksl_memory_layout_test;
+#[cfg(test)]
+pub mod sksl_type_test;
+#[cfg(test)]
 pub mod src_over_test;
 #[cfg(test)]
 pub mod stream_test;

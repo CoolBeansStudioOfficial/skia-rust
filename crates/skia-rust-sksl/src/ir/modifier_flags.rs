@@ -7,6 +7,7 @@
 //! [`ModifierFlags`] (`const`, `uniform`, `in`, `$pure`, …) and [`Modifiers`].
 
 use super::Layout;
+use crate::context::Context;
 use crate::position::Position;
 
 bitflags::bitflags! {
@@ -195,6 +196,55 @@ pub struct Modifiers {
     pub layout: Layout,
     /// `fFlags`.
     pub flags: ModifierFlags,
+}
+
+impl ModifierFlags {
+    /// `checkPermittedFlags(context, pos, permittedModifierFlags)`: reports each modifier that is
+    /// not permitted here, and returns whether every modifier is.
+    // Port of: src/sksl/ir/SkSLModifierFlags.cpp#L96-L135 (chrome/m156)
+    pub fn check_permitted_flags(
+        self,
+        ctx: &mut Context,
+        pos: Position,
+        permitted: ModifierFlags,
+    ) -> bool {
+        const MODIFIER_FLAG_NAMES: [(ModifierFlags, &str); 19] = [
+            (ModifierFlags::CONST, "const"),
+            (ModifierFlags::IN, "in"),
+            (ModifierFlags::OUT, "out"),
+            (ModifierFlags::UNIFORM, "uniform"),
+            (ModifierFlags::FLAT, "flat"),
+            (ModifierFlags::NO_PERSPECTIVE, "noperspective"),
+            (ModifierFlags::PURE, "$pure"),
+            (ModifierFlags::INLINE, "inline"),
+            (ModifierFlags::NO_INLINE, "noinline"),
+            (ModifierFlags::HIGHP, "highp"),
+            (ModifierFlags::MEDIUMP, "mediump"),
+            (ModifierFlags::LOWP, "lowp"),
+            (ModifierFlags::EXPORT, "$export"),
+            (ModifierFlags::ES3, "$es3"),
+            (ModifierFlags::WORKGROUP, "workgroup"),
+            (ModifierFlags::READ_ONLY, "readonly"),
+            (ModifierFlags::WRITE_ONLY, "writeonly"),
+            (ModifierFlags::BUFFER, "buffer"),
+            (ModifierFlags::PIXEL_LOCAL, "pixel_local"),
+        ];
+
+        let mut success = true;
+        let mut modifier_flags = self;
+        for (flag, name) in MODIFIER_FLAG_NAMES {
+            if modifier_flags.intersects(flag) {
+                if !permitted.intersects(flag) {
+                    ctx.errors
+                        .error(pos, &format!("'{name}' is not permitted here"));
+                    success = false;
+                }
+                modifier_flags.remove(flag);
+            }
+        }
+        debug_assert!(modifier_flags.is_empty(), "every modifier was checked");
+        success
+    }
 }
 
 #[cfg(test)]

@@ -6,6 +6,8 @@
 
 //! [`Layout`]: a `layout (…)` qualifier.
 
+use crate::context::Context;
+use crate::position::Position;
 use crate::string::Separator;
 
 bitflags::bitflags! {
@@ -197,6 +199,108 @@ impl Layout {
         let mut s = self.padded_description();
         s.pop();
         s
+    }
+}
+
+impl Layout {
+    /// `checkPermittedLayout(context, pos, permittedLayoutFlags)`: reports each qualifier that is
+    /// not permitted here, and returns whether every qualifier is.
+    // Port of: src/sksl/ir/SkSLLayout.cpp#L105-L168 (chrome/m156)
+    pub fn check_permitted_layout(
+        &self,
+        ctx: &mut Context,
+        pos: Position,
+        mut permitted: LayoutFlags,
+    ) -> bool {
+        const LAYOUT_FLAG_NAMES: [(LayoutFlags, &str); 23] = [
+            (LayoutFlags::ORIGIN_UPPER_LEFT, "origin_upper_left"),
+            (LayoutFlags::PUSH_CONSTANT, "push_constant"),
+            (
+                LayoutFlags::BLEND_SUPPORT_ALL_EQUATIONS,
+                "blend_support_all_equations",
+            ),
+            (LayoutFlags::COLOR, "color"),
+            (LayoutFlags::LOCATION, "location"),
+            (LayoutFlags::OFFSET, "offset"),
+            (LayoutFlags::BINDING, "binding"),
+            (LayoutFlags::TEXTURE, "texture"),
+            (LayoutFlags::SAMPLER, "sampler"),
+            (LayoutFlags::INDEX, "index"),
+            (LayoutFlags::SET, "set"),
+            (LayoutFlags::BUILTIN, "builtin"),
+            (
+                LayoutFlags::INPUT_ATTACHMENT_INDEX,
+                "input_attachment_index",
+            ),
+            (LayoutFlags::VULKAN, "vulkan"),
+            (LayoutFlags::METAL, "metal"),
+            (LayoutFlags::WEB_GPU, "webgpu"),
+            (LayoutFlags::DIRECT3D, "direct3d"),
+            (LayoutFlags::RGBA8, "rgba8"),
+            (LayoutFlags::RGBA32F, "rgba32f"),
+            (LayoutFlags::R32F, "r32f"),
+            (LayoutFlags::LOCAL_SIZE_X, "local_size_x"),
+            (LayoutFlags::LOCAL_SIZE_Y, "local_size_y"),
+            (LayoutFlags::LOCAL_SIZE_Z, "local_size_z"),
+        ];
+
+        let mut success = true;
+        let mut layout_flags = self.flags;
+
+        let backend_flags = layout_flags & LayoutFlags::ALL_BACKENDS;
+        if backend_flags.bits().count_ones() > 1 {
+            ctx.errors
+                .error(pos, "only one backend qualifier can be used");
+            success = false;
+        }
+
+        let pixel_format_flags = layout_flags & LayoutFlags::ALL_PIXEL_FORMATS;
+        if pixel_format_flags.bits().count_ones() > 1 {
+            ctx.errors
+                .error(pos, "only one pixel format qualifier can be used");
+            success = false;
+        }
+
+        if layout_flags.intersects(LayoutFlags::TEXTURE | LayoutFlags::SAMPLER)
+            && layout_flags.intersects(LayoutFlags::BINDING)
+        {
+            ctx.errors.error(
+                pos,
+                "'binding' modifier cannot coexist with 'texture'/'sampler'",
+            );
+            success = false;
+        }
+        // The `texture` and `sampler` flags are only allowed when targeting Metal, WebGPU or
+        // Direct3D.
+        if !layout_flags
+            .intersects(LayoutFlags::METAL | LayoutFlags::WEB_GPU | LayoutFlags::DIRECT3D)
+        {
+            permitted.remove(LayoutFlags::TEXTURE);
+            permitted.remove(LayoutFlags::SAMPLER);
+        }
+        // The `push_constant` flag is only allowed when targeting Vulkan or WebGPU.
+        if !layout_flags.intersects(LayoutFlags::VULKAN | LayoutFlags::WEB_GPU) {
+            permitted.remove(LayoutFlags::PUSH_CONSTANT);
+        }
+        // The `set` flag is not allowed when explicitly targeting Metal.
+        if layout_flags.intersects(LayoutFlags::METAL) {
+            permitted.remove(LayoutFlags::SET);
+        }
+
+        for (flag, name) in LAYOUT_FLAG_NAMES {
+            if layout_flags.intersects(flag) {
+                if !permitted.intersects(flag) {
+                    ctx.errors.error(
+                        pos,
+                        &format!("layout qualifier '{name}' is not permitted here"),
+                    );
+                    success = false;
+                }
+                layout_flags.remove(flag);
+            }
+        }
+        debug_assert!(layout_flags.is_empty(), "every layout flag was checked");
+        success
     }
 }
 

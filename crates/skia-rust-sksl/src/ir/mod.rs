@@ -86,7 +86,10 @@ pub use simple_statements::{
 pub use statement::{Statement, StatementKind};
 pub use swizzle::{ComponentArray, Swizzle, swizzle_component};
 pub use symbol::SymbolKind;
-pub use symbol_table::SymbolTable;
+pub use symbol_table::{
+    SymbolTable, add_array_dimension, add_symbol, insert_new_parent, move_symbol_to, remove_symbol,
+    rename_symbol, would_shadow_symbols_from,
+};
 pub use ternary_expression::TernaryExpression;
 pub use types::{
     CoercionCost, Field, NumberKind, SpvDim, StructType, TextureAccess, Type, TypeClass, TypeKind,
@@ -96,5 +99,7 @@ pub use var_declarations::{GlobalVarDeclaration, VarDeclaration};
 pub use variable::{DeclaringElement, Variable, VariableStorage};
 pub use variable_reference::{VariableRefKind, VariableReference};
 
+#[cfg(test)]
+mod semantics_tests;
 #[cfg(test)]
 mod tests;

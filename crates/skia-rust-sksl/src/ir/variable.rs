@@ -8,9 +8,14 @@
 
 use super::{
     IrPool, Layout, ModifierFlags, StatementKind,
-    ids::{ElemId, ExprId, StmtId, TypeId},
+    ids::{ElemId, ExprId, StmtId, TypeId, VarId},
 };
+use crate::compiler::Compiler;
+use crate::context::Context;
+use crate::intrinsic_list::find_intrinsic_kind;
+use crate::mangler::Mangler;
 use crate::position::Position;
+use crate::program_settings::ProgramConfig;
 
 /// `SkSL::VariableStorage`.
 #[doc(alias = "SkSL::VariableStorage")]
@@ -178,5 +183,127 @@ impl Variable {
             pool.ty(self.ty).display_name(),
             self.name
         )
+    }
+}
+
+impl Variable {
+    /// `Variable::Convert`: checks a variable declaration and adds the variable to the pool. The
+    /// caller decides which symbol table it belongs to. Skia's `namePos` parameter is unused in
+    /// its body, so it is not taken here.
+    ///
+    /// # Panics
+    ///
+    /// If a name that overlaps an intrinsic is declared with no current symbol table (Skia
+    /// requires `context.fSymbolTable` there).
+    // Port of: src/sksl/ir/SkSLVariable.cpp#L63-L118 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // Mirrors Skia's `Convert` parameter list, in order.
+    pub fn convert(
+        ctx: &mut Context,
+        pos: Position,
+        modifiers_pos: Position,
+        layout: Layout,
+        mut flags: ModifierFlags,
+        ty: TypeId,
+        name: &str,
+        storage: VariableStorage,
+    ) -> VarId {
+        let kind = ctx.config().kind;
+        if layout.location == 0
+            && layout.index == 0
+            && flags.intersects(ModifierFlags::OUT)
+            && ProgramConfig::is_fragment(kind)
+            && name != Compiler::FRAGCOLOR_NAME
+        {
+            ctx.errors.error(
+                modifiers_pos,
+                "out location=0, index=0 is reserved for sk_FragColor",
+            );
+        }
+        if ctx.pool.ty(ty).is_unsized_array()
+            && storage != VariableStorage::InterfaceBlock
+            && storage != VariableStorage::Parameter
+        {
+            ctx.errors
+                .error(pos, "unsized arrays are not permitted here");
+        }
+        if ProgramConfig::is_compute(kind)
+            && layout.builtin == -1
+            && storage == VariableStorage::Global
+        {
+            if flags.intersects(ModifierFlags::IN) {
+                ctx.errors
+                    .error(pos, "pipeline inputs not permitted in compute shaders");
+            } else if flags.intersects(ModifierFlags::OUT) {
+                ctx.errors
+                    .error(pos, "pipeline outputs not permitted in compute shaders");
+            }
+        }
+        if storage == VariableStorage::Parameter
+            && (flags & (ModifierFlags::OUT | ModifierFlags::IN)) == ModifierFlags::IN
+        {
+            // The `in` modifier on function parameters is implicit, so `in float x` is `float x`.
+            // This keeps overload matching by parameter types unambiguous.
+            flags.remove(ModifierFlags::OUT | ModifierFlags::IN);
+        }
+
+        // Invent a mangled name for the variable, if it needs one.
+        let mangled_name = if let Some(rest) = name.strip_prefix('$') {
+            // The $ prefix will fail to compile in GLSL, so replace it with `sk_Priv`.
+            format!("sk_Priv{rest}")
+        } else if find_intrinsic_kind(name).is_some() {
+            // A user name that overlaps an intrinsic would hide the intrinsic. Such a name is
+            // legal, so mangle it to avoid the collision.
+            let table = ctx
+                .symbol_table
+                .expect("Variable::Convert: no current symbol table");
+            Mangler::new().unique_name(name, &ctx.pool, table)
+        } else {
+            String::new()
+        };
+        let builtin = ctx.config().is_builtin_code();
+        Self::make(
+            &mut ctx.pool,
+            pos,
+            modifiers_pos,
+            layout,
+            flags,
+            ty,
+            name,
+            mangled_name,
+            builtin,
+            storage,
+        )
+    }
+
+    /// `Variable::Make`: allocates a variable in `pool`. Skia builds an `ExtendedVariable` when the
+    /// type is an interface block's, or the variable has a mangled name or a layout. Here every
+    /// variable holds those fields, and `extended` records which class Skia would have built.
+    // Port of: src/sksl/ir/SkSLVariable.cpp#L120-L151 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // Mirrors Skia's `Make` parameter list, in order.
+    pub fn make(
+        pool: &mut IrPool,
+        pos: Position,
+        modifiers_pos: Position,
+        layout: Layout,
+        flags: ModifierFlags,
+        ty: TypeId,
+        name: &str,
+        mangled_name: String,
+        builtin: bool,
+        storage: VariableStorage,
+    ) -> VarId {
+        // The `in` modifier on function parameters is implicit and should have been removed.
+        debug_assert!(
+            !(storage == VariableStorage::Parameter
+                && (flags & (ModifierFlags::OUT | ModifierFlags::IN)) == ModifierFlags::IN)
+        );
+        let extended = pool.ty(ty).component_type().is_interface_block()
+            || !mangled_name.is_empty()
+            || layout != Layout::new();
+        let mut variable = Variable::new(pos, modifiers_pos, flags, name, ty, builtin, storage);
+        variable.extended = extended;
+        variable.layout = layout;
+        variable.mangled_name = mangled_name.into();
+        pool.add_variable(variable)
     }
 }
