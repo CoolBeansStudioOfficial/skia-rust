@@ -23,13 +23,17 @@ pub mod color;
 pub mod color_data;
 pub mod color_filter;
 pub mod color_filters;
+pub mod color_matrix;
 #[doc(hidden)]
 pub mod color_priv;
 pub mod color_space;
 #[doc(hidden)]
 pub mod color_space_priv;
+pub mod color_space_xform_color_filter;
 pub mod color_space_xform_steps;
+pub mod color_table;
 pub mod color_type;
+pub mod compose_color_filter;
 pub mod contour_measure;
 #[doc(hidden)]
 pub mod convert_pixels;
@@ -74,6 +78,7 @@ pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
 pub mod matrix;
+pub mod matrix_color_filter;
 pub mod matrix_invert;
 #[doc(hidden)]
 pub mod matrix_priv;
@@ -161,6 +166,7 @@ pub mod swizzle;
 pub mod t_fits_in;
 pub mod t_pin;
 pub mod t_sort;
+pub mod table_color_filter;
 pub mod tessellation;
 pub mod tile_mode;
 pub mod tiled_image_utils;

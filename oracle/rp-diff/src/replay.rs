@@ -450,12 +450,11 @@ impl FromCtx<'_> for EmbossCtx {
     }
 }
 
-impl<'a> FromCtx<'a> for &'a TablesCtx<'a> {
+impl<'a> FromCtx<'a> for &'a TablesCtx {
     fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
         match ctx {
             Ctx::Tables(t) if t.len() == 1024 => {
-                let t: &'static [u8] = Box::leak(t.clone().into_boxed_slice());
-                let table = |i: usize| -> &'static [u8; 256] {
+                let table = |i: usize| -> [u8; 256] {
                     t[256 * i..256 * (i + 1)].try_into().expect("256 bytes")
                 };
                 Ok(leak(TablesCtx {

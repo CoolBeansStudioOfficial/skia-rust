@@ -493,7 +493,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L2983-L2988 (chrome/m156)
-    pub(super) fn byte_tables(tables: &TablesCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
+    pub(super) fn byte_tables(tables: &TablesCtx, p: &mut Regs, _e: &mut Params<'_, '_>) {
         // `gather(table, ix)`: `to_unorm(_, 255)` keeps every index in [0,255].
         p.r = from_byte(to_unorm(p.r, 255.0).map(|i| tables.r[i as usize]));
         p.g = from_byte(to_unorm(p.g, 255.0).map(|i| tables.g[i as usize]));

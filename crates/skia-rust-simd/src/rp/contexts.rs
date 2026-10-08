@@ -359,13 +359,16 @@ pub struct EmbossCtx {
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L202-L204 (chrome/m156)
 /// `TablesCtx`.
+///
+/// skia-rust: the four tables are owned (copied in), not borrowed, so the context can live in a
+/// pipeline's arena, which only holds `'static` values. The tables are 1 KiB in all.
 #[doc(alias = "SkRasterPipelineContexts::TablesCtx")]
 #[derive(Clone, Copy, Debug)]
-pub struct TablesCtx<'a> {
-    pub r: &'a [u8; 256],
-    pub g: &'a [u8; 256],
-    pub b: &'a [u8; 256],
-    pub a: &'a [u8; 256],
+pub struct TablesCtx {
+    pub r: [u8; 256],
+    pub g: [u8; 256],
+    pub b: [u8; 256],
+    pub a: [u8; 256],
 }
 
 /// `skcms_TransferFunction` (the context of `parametric`, `PQish`, `HLGish`, `HLGinvish`):
