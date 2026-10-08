@@ -8,11 +8,19 @@
 //! `cargo xtask sksl sync-modules`, and `cargo xtask sksl sync-modules --check` fails when they
 //! drift from it.
 
-use crate::flavor::ModuleSource;
+use std::sync::Arc;
 
-/// `SkSL::ModuleType`: the built-in modules, in `SKSL_MODULE_LIST` order.
+use crate::flavor::ModuleSource;
+use crate::ir::{ElemId, IrPool, SymTabId};
+
+/// `SkSL::ModuleType`: `program` (code that is not in a module), `unknown`, then the built-in
+/// modules in `SKSL_MODULE_LIST` order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ModuleType {
+    /// `program`: the code is not in a module at all.
+    Program,
+    /// `unknown`: the code is in a module outside of `SKSL_MODULE_LIST`.
+    Unknown,
     /// `sksl_shared`: root intrinsics (`genType`, `sin`, …).
     SkslShared,
     /// `sksl_compute`: compute program kind.
@@ -47,10 +55,13 @@ impl ModuleType {
         Self::SkslGraphiteVert,
     ];
 
-    /// The Skia name of the module (`sksl_shared`, …), which is also its file stem.
+    /// The Skia name of the module (`sksl_shared`, …), which is also its file stem
+    /// (`ModuleTypeToString`, which names `program` and `unknown` both "unknown").
+    #[doc(alias = "ModuleTypeToString")]
     #[must_use]
     pub fn name(self) -> &'static str {
         match self {
+            Self::Program | Self::Unknown => "unknown",
             Self::SkslShared => "sksl_shared",
             Self::SkslCompute => "sksl_compute",
             Self::SkslFrag => "sksl_frag",
@@ -71,9 +82,16 @@ impl ModuleType {
     }
 
     /// The module's source text in the given variant. Every module is non-empty.
+    ///
+    /// # Panics
+    ///
+    /// For [`ModuleType::Program`] and [`ModuleType::Unknown`], which have no module text.
     #[must_use]
     pub fn text(self, source: ModuleSource) -> &'static str {
         match (source, self) {
+            (_, Self::Program | Self::Unknown) => {
+                panic!("ModuleType::{self:?} has no module text")
+            }
             (ModuleSource::Minified, Self::SkslShared) => {
                 include_str!("modules/minified/sksl_shared.sksl")
             }
@@ -130,6 +148,25 @@ impl ModuleType {
             }
         }
     }
+}
+
+/// `SkSL::Module`: a compiled built-in module. Its IR lives in a frozen pool that extends its
+/// parent module's pool, and programs compiled against it extend that pool in turn
+/// (`docs/design/sksl.md` §4.1).
+// Port of: src/sksl/SkSLModule.h#L37-L42 (chrome/m156)
+#[doc(alias = "SkSL::Module")]
+#[derive(Debug)]
+pub struct Module {
+    /// `fParent`: the module this one inherits symbols from.
+    pub parent: Option<Arc<Module>>,
+    /// The module's frozen IR. Its parent pool is `parent`'s pool.
+    pub pool: Arc<IrPool>,
+    /// `fSymbols`: the module's symbol table (in `pool`); its parent is `parent`'s table.
+    pub symbols: SymTabId,
+    /// `fElements`: the module's program elements (in `pool`), in source order.
+    pub elements: Vec<ElemId>,
+    /// `fModuleType`.
+    pub module_type: ModuleType,
 }
 
 #[cfg(test)]

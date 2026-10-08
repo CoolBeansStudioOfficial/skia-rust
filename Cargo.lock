@@ -573,6 +573,7 @@ version = "0.156.0"
 name = "skia-rust-sksl"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
  "skia-rust-simd",
 ]
 

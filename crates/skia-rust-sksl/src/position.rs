@@ -20,14 +20,17 @@ pub struct Position {
 impl Default for Position {
     /// An invalid position: start -1, length 0.
     fn default() -> Self {
-        Self {
-            start_offset: -1,
-            length: 0,
-        }
+        Self::INVALID
     }
 }
 
 impl Position {
+    /// `Position()`: an invalid position (start -1, length 0), usable in `const` contexts.
+    pub const INVALID: Self = Self {
+        start_offset: -1,
+        length: 0,
+    };
+
     /// `kMaxOffset`: the largest start offset a 24-bit field holds.
     pub const MAX_OFFSET: i32 = 0x7F_FFFF;
 

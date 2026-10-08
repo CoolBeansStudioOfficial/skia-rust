@@ -7,21 +7,34 @@
 //!
 //! So far: the Raster Pipeline builder ([`codegen::rp::builder`]), the program it finishes
 //! ([`codegen::rp::program`]) and its `.skrp` dumper ([`codegen::rp::dumper`]), the compiler's
-//! support code (number formatting and parsing, `printf`, the hash containers, output streams), and
-//! the embedded built-in modules ([`modules`]). The lexer, parser and IR, the stage-binding
-//! `appendStages`, and the other back ends come in later tasks.
+//! support code (number formatting and parsing, `printf`, the hash containers, output streams),
+//! the embedded built-in modules ([`modules`]), the lexer, and the IR core ([`ir`]: pools and
+//! ids, every node, `description()` and `clone()`, with [`context::Context`], the error
+//! reporter, the mangler and the visitor/writer traversals). The parser, the IR conversions,
+//! the optimizer, the stage-binding `appendStages`, and the other back ends come in later tasks.
 
+pub mod analysis;
 mod base_shim;
+pub mod builtin_types;
 pub mod codegen;
+pub mod compiler;
+pub mod context;
+pub mod defines;
+pub mod error_reporter;
 pub mod flavor;
+pub mod intrinsic_list;
+pub mod ir;
 pub mod lexer;
+pub mod mangler;
 pub mod modules;
 pub mod operator;
 pub mod output_stream;
 pub mod position;
+pub mod program_settings;
 pub mod skstd;
 pub mod string;
 pub mod thash;
 pub mod tracing;
+pub mod transform;
 
 pub use flavor::{Flavor, ModuleSource};
