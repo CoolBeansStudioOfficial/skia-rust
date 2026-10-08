@@ -39,6 +39,7 @@ use skia_rust_core::glyph::Glyph;
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
+use skia_rust_core::m44::M44;
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::matrix::Matrix;
@@ -1531,8 +1532,9 @@ impl BitmapDevicePainter for Draw<'_> {
 
     // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
     fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
-        // canvas->concat(m): the CTM becomes CTM * m for the path.
-        let ctm = Matrix::concat(self.ctm, matrix);
+        // canvas->concat(m): the canvas matrix is an SkM44, so CTM * m is composed in 4x4 (float
+        // order of SkM44::setConcat), and the device takes its 3x3 part (`asM33`).
+        let ctm = M44::concat(&M44::from(self.ctm.clone()), &M44::from(matrix.clone())).to_m33();
         let mut draw = self.reborrow();
         draw.ctm = &ctm;
         draw.draw_path(path, paint, None);
