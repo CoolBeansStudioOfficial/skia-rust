@@ -14,6 +14,7 @@ pub mod core_blitters;
 pub mod draw;
 pub mod edge;
 pub mod edge_builder;
+pub mod glyph_image;
 mod pixel_rows;
 pub mod raster_canvas;
 pub mod raster_clip;
