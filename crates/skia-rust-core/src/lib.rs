@@ -178,6 +178,7 @@ pub mod sfnt;
 pub mod shader;
 pub mod shaders;
 pub mod size;
+pub mod slug;
 pub mod special_image;
 pub mod stream;
 #[doc(hidden)]

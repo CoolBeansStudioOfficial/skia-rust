@@ -202,18 +202,16 @@ impl<'a> GlyphRunList<'a> {
     // Port of: src/text/GlyphRun.h#L71-L78 (chrome/m156)
     #[must_use]
     pub fn max_glyph_run_size(&self) -> usize {
-        self.runs
-            .iter()
-            .map(GlyphRun::run_size)
-            .max()
-            .unwrap_or(0)
+        self.runs.iter().map(GlyphRun::run_size).max().unwrap_or(0)
     }
 
     /// `hasRSXForm()`: whether any run has scaled rotations.
     // Port of: src/text/GlyphRun.h#L79-L86 (chrome/m156)
     #[must_use]
     pub fn has_rsxform(&self) -> bool {
-        self.runs.iter().any(|run| !run.scaled_rotations().is_empty())
+        self.runs
+            .iter()
+            .any(|run| !run.scaled_rotations().is_empty())
     }
 
     /// `anyRunsLCD()`: whether any run uses subpixel (LCD) edging.
@@ -300,7 +298,14 @@ impl GlyphRunBuilder {
         let mut bounds = Rect::default();
         if !glyph_ids.is_empty() {
             let positions = draw_text_positions(font, &glyph_ids, Point::default());
-            self.make_glyph_run(font, glyph_ids, positions, Vec::new(), Vec::new(), Vec::new());
+            self.make_glyph_run(
+                font,
+                glyph_ids,
+                positions,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
             let run = &self.storage[0];
             bounds = glyphrun_source_bounds(
                 run.font(),
@@ -431,15 +436,12 @@ fn glyphrun_source_bounds(
     if font_bounds.is_empty() {
         // Empty font bounds are likely a font bug. TightBounds has a better chance of producing
         // useful results in this case.
-        let (strike_spec, strike_to_source_scale) = StrikeSpec::make_canonicalized(font, Some(paint))
-            .expect("a path effect or mask filter needs its descriptor entry, which is not ported yet");
+        let (strike_spec, strike_to_source_scale) =
+            StrikeSpec::make_canonicalized(font, Some(paint)).expect(
+                "a path effect or mask filter needs its descriptor entry, which is not ported yet",
+            );
         let glyphs = BulkGlyphMetrics::new(&strike_spec).glyphs(glyph_ids);
-        return tight_source_bounds(
-            positions,
-            scaled_rotations,
-            &glyphs,
-            strike_to_source_scale,
-        );
+        return tight_source_bounds(positions, scaled_rotations, &glyphs, strike_to_source_scale);
     }
 
     // Use conservative bounds. All glyph have a box of fontBounds size.
@@ -492,10 +494,7 @@ fn tight_source_bounds(
             if !glyph.rect().is_empty() {
                 let mut xform = Matrix::default();
                 xform.set_rsxform(&rsxform_as_cpp(*pos, *scale_rotate));
-                xform.pre_scale(
-                    (strike_to_source_scale, strike_to_source_scale),
-                    None,
-                );
+                xform.pre_scale((strike_to_source_scale, strike_to_source_scale), None);
                 bounds.join(xform.map_rect(glyph.rect()).0);
             }
         }

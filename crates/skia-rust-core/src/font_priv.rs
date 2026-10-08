@@ -75,10 +75,7 @@ pub fn approximate_transformed_text_size(
 #[must_use]
 pub fn get_font_bounds(font: &Font) -> Rect {
     let mut m = Matrix::default();
-    m.set_scale(
-        (font.size() * font.scale_x(), font.size()),
-        None,
-    );
+    m.set_scale((font.size() * font.scale_x(), font.size()), None);
     m.post_skew((font.skew_x(), 0.0), None);
 
     let (bounds, _) = m.map_rect(font.typeface().get_bounds());
