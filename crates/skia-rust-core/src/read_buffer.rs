@@ -5,14 +5,16 @@
 
 //! `SkReadBuffer`: deserialization of what `SkBinaryWriteBuffer` wrote.
 //!
-//! Only what `SkVerticesPriv::Decode` needs is ported: the cursor (`skip`, `available`,
-//! `isValid`, `validate`), the version check, `readInt`/`readUInt`/`read32`, `readPad32`,
-//! `readByteArray` and `skipByteArray`. Not ported: the deserial procs, the flattenable,
-//! typeface and image readers, the recursion limit, and every read of a type that is not
+//! Ported: the cursor (`skip`, `available`, `isValid`, `validate`), the version check,
+//! `readInt`/`readUInt`/`read32`/`readScalar`, `readPad32`, `readByteArray`, `skipByteArray`,
+//! and the empty case of `readTypeface`. Not ported: the deserial procs, the flattenable,
+//! typeface-table and image readers, the recursion limit, and every read of a type that is not
 //! ported yet (paths, paints, matrices, ...).
 //!
 //! skia-rust: `SkReadBuffer` requires its memory to be 4-byte aligned because it reads words in
 //! place; here the words are read from the bytes of a slice, so only the offsets are checked.
+
+use crate::typeface::Typeface;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
 fn align4(x: usize) -> usize {
@@ -160,6 +162,42 @@ impl<'a> ReadBuffer<'a> {
         self.read_int()
     }
 
+    /// Reads a scalar stored as its bit pattern (`readScalar`). Returns 0 if the buffer is
+    /// invalid.
+    // Port of: src/core/SkReadBuffer.cpp#L112-L120 (chrome/m156)
+    #[doc(alias = "readScalar")]
+    pub fn read_scalar(&mut self) -> f32 {
+        const INC: usize = size_of::<f32>();
+        if !self.validate(self.curr.is_multiple_of(4) && self.is_available(INC)) {
+            return 0.0;
+        }
+        let bytes = &self.data[self.curr..self.curr + INC];
+        let value = f32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+        self.curr += INC;
+        value
+    }
+
+    /// Reads a typeface reference (`readTypeface`). Only the empty case is ported: the buffer
+    /// has no typeface table and no deserial procs, so a non-zero index or custom size is
+    /// invalid, as it is in C++ with no table and no `fTypefaceStreamProc`. Arrives with T16.
+    // Port of: src/core/SkReadBuffer.cpp (readTypeface, chrome/m156), the `fTFCount == 0` and
+    // no-proc path
+    #[doc(alias = "readTypeface")]
+    pub fn read_typeface(&mut self) -> Option<Typeface> {
+        let index = self.read_int();
+        if index == 0 {
+            return None;
+        }
+        // Index arm: no typeface table. Custom arm: no `fTypefaceStreamProc`. Either way the
+        // buffer becomes invalid (after skipping the custom bytes, as C++ does).
+        if index < 0 {
+            let size = usize::try_from(index.unsigned_abs()).unwrap_or(usize::MAX);
+            let _ = self.skip(size);
+        }
+        self.validate(false);
+        None
+    }
+
     /// Reads `buffer.len()` bytes, skipping the padding up to a multiple of 4 (`readPad32`).
     // Port of: src/core/SkReadBuffer.cpp#L138-L146 (chrome/m156)
     #[doc(alias = "readPad32")]
@@ -259,6 +297,30 @@ mod tests {
 
         // A size that is not a multiple of 4.
         assert!(!ReadBuffer::new(&[0, 0, 0]).is_valid());
+    }
+
+    #[test]
+    fn scalars_and_empty_typefaces_round_trip() {
+        let mut w = BinaryWriteBuffer::new();
+        w.write_scalar(1.5);
+        w.write_typeface(None);
+        w.write_scalar(-0.25);
+        let data = bytes(&w);
+        assert_eq!(data.len(), 12);
+
+        let mut r = ReadBuffer::new(&data);
+        assert_eq!(r.read_scalar(), 1.5);
+        assert!(r.read_typeface().is_none());
+        assert_eq!(r.read_scalar(), -0.25);
+        assert!(r.is_valid());
+
+        // A non-zero typeface index has no table to refer to.
+        let mut w = BinaryWriteBuffer::new();
+        w.write_int(3);
+        let data = bytes(&w);
+        let mut r = ReadBuffer::new(&data);
+        assert!(r.read_typeface().is_none());
+        assert!(!r.is_valid());
     }
 
     #[test]
