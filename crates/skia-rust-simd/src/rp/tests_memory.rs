@@ -795,7 +795,7 @@ fn gather_equals_load_at_the_clamped_pixel() {
                 {
                     let tex = texture(&mut rng, *f, width, height, stride);
                     let ctx = GatherCtx {
-                        pixels: &tex,
+                        pixels: (&tex).into(),
                         stride: stride as i32,
                         width: width as f32,
                         height: height as f32,
@@ -896,7 +896,7 @@ fn memory_stage_twins() {
         .map(|bpp| random_bytes(&mut tex_rng, bpp * 13 * 7))
         .collect();
     let ctx = |i: usize| GatherCtx {
-        pixels: &tex[i],
+        pixels: (&tex[i]).into(),
         stride: 13,
         width: 11.0,
         height: 7.0,

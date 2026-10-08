@@ -5,12 +5,12 @@
 
 //! Matrix helpers declared in `SkMatrixUtils.h`.
 //!
-//! `SkTreatAsSprite` takes a `linear_filter` flag instead of `SkSamplingOptions` (not ported yet,
-//! Phase 3); cubic resampling with `B != 0` is the only other option that changes the answer.
 
 use crate::matrix::{Matrix, Member, TypeMask, is_degenerate_2x2};
 use crate::point::Point;
 use crate::rect::{IRect, Rect};
+use crate::sampling_options::{FilterMode, SamplingOptions};
+use crate::sampling_priv::no_change_with_identity_matrix;
 use crate::scalar::{Scalar, double_to_scalar, scalar, scalar_invert, scalar_sqrt};
 use crate::size::ISize;
 
@@ -138,7 +138,7 @@ pub fn decompose_upper_2x2(
 }
 
 /// True if drawing a `size` bitmap with `mat` is the same as copying it to an integer position
-/// (`SkTreatAsSprite`). `linear_filter` is `sampling.filter == SkFilterMode::kLinear`.
+/// (`SkTreatAsSprite`).
 // Port of: src/core/SkMatrix.cpp#L1535-L1596 (chrome/m156)
 #[doc(alias = "SkTreatAsSprite")]
 #[must_use]
@@ -148,13 +148,17 @@ pub fn decompose_upper_2x2(
 pub fn treat_as_sprite(
     mat: &Matrix,
     size: ISize,
-    linear_filter: bool,
+    sampling: &SamplingOptions,
     is_anti_alias: bool,
 ) -> bool {
     // Our path aa is 2-bits, and our rect aa is 8, so we could use 8, but in practice 4 seems
     // enough (still looks smooth) and allows more slightly fractional cases to fall into the
     // fast (sprite) case.
     const ANTI_ALIAS_SUBPIXEL_BITS: u32 = 4;
+
+    if !no_change_with_identity_matrix(sampling) {
+        return false;
+    }
 
     let subpixel_bits = if is_anti_alias {
         ANTI_ALIAS_SUBPIXEL_BITS
@@ -172,7 +176,7 @@ pub fn treat_as_sprite(
 
     // We don't want to snap to pixels if we're asking for linear filtering with a subpixel
     // translation. (b/41322892). This mirrors `tweak_sampling` in SkImageShader.cpp
-    if linear_filter
+    if sampling.filter == FilterMode::Linear
         && (mat.translate_x() != (mat.translate_x() as i32) as scalar
             || mat.translate_y() != (mat.translate_y() as i32) as scalar)
     {

@@ -4,9 +4,10 @@
 // Port of: tests/SurfaceTest.cpp (chrome/m156)
 //
 // Not ported (the raster-only tests that need types skia-rust does not have yet):
-// * `SurfaceSnapshotAlphaType`, `SurfaceCopyOnWrite`, `SurfaceWriteableAfterSnapshotRelease`,
-//   `SurfaceGetTexture`, `SurfaceNoCanvas` (`test_no_canvas2`), `surface_rowbytes`,
-//   `surface_image_unity`: `SkSurface::makeImageSnapshot` and `SkImage` (Phase 3).
+// * `SurfaceCopyOnWrite`: `drawString` (text, Phase 3).
+// * `SurfaceGetTexture`: GPU-only assertions.
+// * `surface_image_unity`: builds an `SkPixmap` over a one-byte address with a huge row-bytes,
+//   which a safe `Pixmap` cannot express.
 // * `Surface_null`: `SkSurfaces::Null` and `makeImageSnapshot() == nullptr`.
 // * `OverdrawSurface_Raster`: `SkOverdrawCanvas`/`SkOverdrawColorFilter` and `SkImage`.
 // The Ganesh/Graphite tests are excluded.
@@ -14,9 +15,11 @@
 #![cfg(test)]
 
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::canvas::ContentChangeMode;
 use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::paint::Paint;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
@@ -136,4 +139,114 @@ def_tier_test!(surface_raster_zeroinitialized, |reporter| {
             reporter_assert!(reporter, pixmap.addr32(i, j) == 0);
         }
     }
+});
+
+// Port of: tests/SurfaceTest.cpp#L328-L338 (chrome/m156)
+fn test_snapshot_alphatype(
+    reporter: &mut Reporter,
+    surface: &mut Surface<'_>,
+    expected_alpha_type: AlphaType,
+) {
+    let image = surface.image_snapshot();
+    reporter_assert!(reporter, image.is_some());
+    if let Some(image) = image {
+        reporter_assert!(reporter, image.alpha_type() == expected_alpha_type);
+    }
+}
+
+// Port of: tests/SurfaceTest.cpp#L339-L346 (chrome/m156)
+def_tier_test!(SurfaceSnapshotAlphaType, |reporter| {
+    for direct in [false, true] {
+        for at in [AlphaType::Opaque, AlphaType::Premul, AlphaType::Unpremul] {
+            let mut storage = Vec::new();
+            let mut surface = if direct {
+                create_direct_surface(&mut storage, at, None)
+            } else {
+                create_surface(at, None)
+            };
+            test_snapshot_alphatype(reporter, &mut surface, at);
+        }
+    }
+});
+
+// Port of: tests/SurfaceTest.cpp#L569-L578 (chrome/m156)
+fn test_writable_after_snapshot_release(surface: &mut Surface<'_>) {
+    // This test succeeds by not triggering an assertion.
+    // The test verifies that the surface remains writable (usable) after
+    // acquiring and releasing a snapshot without triggering a copy on write.
+    surface.canvas().clear(Color::new(1));
+    let _ = surface.image_snapshot(); // Create and destroy SkImage
+    surface.canvas().clear(Color::new(2)); // Must not assert internally
+}
+
+// Port of: tests/SurfaceTest.cpp#L579-L581 (chrome/m156)
+def_tier_test!(SurfaceWriteableAfterSnapshotRelease, |_reporter| {
+    test_writable_after_snapshot_release(&mut create_surface(AlphaType::Premul, None));
+});
+
+// Port of: tests/SurfaceTest.cpp#L714-L719 (chrome/m156)
+fn test_no_canvas1(_reporter: &mut Reporter, surface: &mut Surface<'_>, mode: ContentChangeMode) {
+    // Test passes by not asserting
+    surface.notify_content_will_change(mode);
+}
+
+// Port of: tests/SurfaceTest.cpp#L720-L731 (chrome/m156)
+fn test_no_canvas2(reporter: &mut Reporter, surface: &mut Surface<'_>, mode: ContentChangeMode) {
+    // Verifies the robustness of SkSurface for handling use cases where calls
+    // are made before a canvas is created.
+    let image1 = surface.image_snapshot().expect("a snapshot");
+    surface.notify_content_will_change(mode);
+    let image2 = surface.image_snapshot().expect("a snapshot");
+    reporter_assert!(reporter, !image1.ptr_eq(&image2));
+}
+
+// Port of: tests/SurfaceTest.cpp#L732-L741 (chrome/m156)
+def_tier_test!(SurfaceNoCanvas, |reporter| {
+    let modes = [ContentChangeMode::Discard, ContentChangeMode::Retain];
+    let test_funcs: [fn(&mut Reporter, &mut Surface<'_>, ContentChangeMode); 2] =
+        [test_no_canvas1, test_no_canvas2];
+    for test_func in test_funcs {
+        for mode in modes {
+            test_func(reporter, &mut create_surface(AlphaType::Premul, None), mode);
+        }
+    }
+});
+
+// Port of: tests/SurfaceTest.cpp#L758-L777 (chrome/m156)
+fn check_rowbytes_remain_consistent(surface: &mut Surface<'_>, reporter: &mut Reporter) {
+    let surface_rb = surface.peek_pixels().map(|p| p.pixmap().row_bytes());
+    reporter_assert!(reporter, surface_rb.is_some());
+
+    let image = surface.image_snapshot().expect("a snapshot");
+    let first_rb = image.peek_pixels().map(|pm| pm.row_bytes());
+    reporter_assert!(reporter, first_rb.is_some());
+
+    reporter_assert!(reporter, surface_rb == first_rb);
+
+    // trigger a copy-on-write
+    surface.canvas().draw_paint(&Paint::default());
+    let image2 = surface.image_snapshot().expect("a snapshot");
+    reporter_assert!(reporter, image.unique_id() != image2.unique_id());
+
+    let second_rb = image2.peek_pixels().map(|pm| pm.row_bytes());
+    reporter_assert!(reporter, second_rb.is_some());
+    reporter_assert!(reporter, second_rb == first_rb);
+}
+
+// Port of: tests/SurfaceTest.cpp#L779-L792 (chrome/m156)
+def_tier_test!(surface_rowbytes, |reporter| {
+    let info = ImageInfo::new_n32_premul((100, 100), None);
+
+    let mut surf0 = surfaces::raster(&info, None, None).expect("surface");
+    check_rowbytes_remain_consistent(&mut surf0, reporter);
+
+    // specify a larger rowbytes
+    let mut surf1 = surfaces::raster(&info, 500_usize, None).expect("surface");
+    check_rowbytes_remain_consistent(&mut surf1, reporter);
+
+    // Try some illegal rowByte values
+    let s = surfaces::raster(&info, 396_usize, None); // needs to be at least 400
+    reporter_assert!(reporter, s.is_none());
+    let s = surfaces::raster(&info, usize::MAX, None);
+    reporter_assert!(reporter, s.is_none());
 });

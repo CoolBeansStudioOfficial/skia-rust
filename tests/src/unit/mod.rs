@@ -65,6 +65,10 @@ pub mod hsv_round_trip_test;
 #[cfg(test)]
 pub mod icc_test;
 #[cfg(test)]
+pub mod image_bitmap_test;
+#[cfg(test)]
+pub mod image_new_shader_test;
+#[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
 pub mod m44_test;

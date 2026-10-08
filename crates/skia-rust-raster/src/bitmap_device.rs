@@ -11,10 +11,10 @@
 //! * The device owns its bitmap (`SkBitmapDevice` keeps a copy sharing the pixels, which the
 //!   copy-on-write pixel refs of `docs/design/pixels.md` rule out); read it with
 //!   [`BitmapDevice::bitmap`] or take it back with [`BitmapDevice::into_bitmap`].
-//! * Not ported yet (they need images, vertices, meshes, text or special images, ported in
-//!   D6/D7 and Phase 3): `drawImageRect`, `drawBitmap`, `drawVertices`, `drawMesh`, `drawAtlas`,
-//!   `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawSpecial`, `drawCoverageMask`,
-//!   `drawBlurredRRect`, `snapSpecial`, `makeSurface` and the `SkRasterHandleAllocator`
+//! * Not ported yet (they need vertices, meshes, text or mask filters, ported in D7 and
+//!   Phase 3): `drawVertices`, `drawMesh`, `drawAtlas`,
+//!   `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawCoverageMask`,
+//!   `drawBlurredRRect`, `makeSurface` and the `SkRasterHandleAllocator`
 //!   (`fRasterHandle`), nor the `skcpu::Recorder`. [`Device::clip_shader`]'s `makeWithCTM` /
 //!   `makeInvertAlpha` wrappers need shader machinery of Phase 3; [`Device::on_clip_shader`]
 //!   takes the finished shader. See the "As implemented in D5" design note for what D6 wires up.
@@ -24,18 +24,24 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::device::{CreateInfo, Device, DeviceState};
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::matrix::Matrix;
-use skia_rust_core::paint::Paint;
+use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
+use skia_rust_core::matrix::{Matrix, TypeMask};
+use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point};
-use skia_rust_core::rect::{IRect, Rect, RoundOut};
+use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::region::Region;
 use skia_rust_core::rrect::RRect;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::tile_mode::TileMode;
+use std::sync::Arc;
 
 use crate::draw::Draw;
 use crate::raster_clip::RasterClip;
@@ -431,6 +437,36 @@ impl BitmapDevice {
         }
     }
 
+    /// Draws `bitmap` mapped by `matrix` (`drawBitmap`).
+    // Port of: src/core/SkBitmapDevice.cpp#L389-L406 (chrome/m156)
+    #[doc(alias = "drawBitmap")]
+    fn draw_bitmap(
+        &mut self,
+        bitmap: &Bitmap,
+        matrix: &Matrix,
+        dst_or_null: Option<&Rect>,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        mips: Option<&Arc<Mipmap>>,
+    ) {
+        let mut storage = None;
+        if dst_or_null.is_none()
+            && DrawTiler::needs_tiling_for(self.state.width(), self.state.height())
+        {
+            let mapped = matrix
+                .map_rect(Rect::from_iwh(bitmap.width(), bitmap.height()))
+                .0;
+            let b = Bounder::new(&mapped, paint);
+            if let Some(bounds) = b.bounds() {
+                storage = Some(*bounds);
+            }
+        }
+        let bounds = dst_or_null.or(storage.as_ref());
+        self.loop_tiler(bounds, |draw| {
+            draw.draw_bitmap(bitmap, matrix, dst_or_null, sampling, paint, mips.cloned());
+        });
+    }
+
     /// Runs `code` with a draw over the whole device (`BDDraw`); no properties are set.
     // Port of: src/core/SkBitmapDevice.cpp#L197-L208 (chrome/m156)
     fn bd_draw(&mut self, code: impl FnOnce(&mut Draw<'_>)) {
@@ -443,6 +479,16 @@ impl BitmapDevice {
         let mut draw = Draw::new(dst, state.local_to_device(), rc_stack.rc());
         code(&mut draw);
     }
+}
+
+// Port of: src/core/SkBitmapDevice.cpp#L408-L415 (chrome/m156)
+fn can_apply_dst_matrix_as_ctm(m: &Matrix, paint: &Paint) -> bool {
+    if paint.mask_filter().is_none() {
+        return true;
+    }
+
+    // Some mask filters parameters (sigma) depend on the CTM/scale.
+    m.get_type().bits() <= TypeMask::TRANSLATE.bits()
 }
 
 impl Device for BitmapDevice {
@@ -522,11 +568,157 @@ impl Device for BitmapDevice {
         self.bitmap.set_immutable();
     }
 
+    // Port of: src/core/SkBitmapDevice.cpp#L417-L535 (chrome/m156)
+    fn draw_image_rect(
+        &mut self,
+        image: &Image,
+        src: Option<&Rect>,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        constraint: SrcRectConstraint,
+    ) {
+        debug_assert!(dst.is_finite());
+        debug_assert!(dst.is_sorted());
+
+        // TODO: Elevate direct context requirement to public API and remove cheat.
+        let image_base = image.as_base();
+        let Some(bitmap) = image_base.get_ro_pixels() else {
+            return;
+        };
+        let mut mips = image_base.on_peek_mips().cloned();
+
+        let bitmap_bounds = Rect::from_iwh(bitmap.width(), bitmap.height());
+
+        // Compute matrix from the two rectangles
+        let mut tmp_src = src.copied().unwrap_or(bitmap_bounds);
+        let mut matrix = Matrix::rect_to_rect_or_identity(tmp_src, dst, None);
+
+        let mut dst_rect = *dst;
+        let mut tmp_bitmap: Option<Bitmap> = None;
+
+        // clip the tmpSrc to the bounds of the bitmap, and recompute dstRect if
+        // needed (if the src was clipped). No check needed if src==null.
+        let mut src_is_subset = false;
+        if let Some(src) = src {
+            if !bitmap_bounds.contains(src) {
+                if !tmp_src.intersect(bitmap_bounds) {
+                    return; // nothing to draw
+                }
+                // recompute dst, based on the smaller tmpSrc
+                let tmp_dst = matrix.map_rect(tmp_src).0;
+                if !tmp_dst.is_finite() {
+                    return;
+                }
+                dst_rect = tmp_dst;
+            }
+            src_is_subset = !tmp_src.contains(bitmap_bounds);
+        }
+
+        // The C++ jumps between USE_DRAWBITMAP and USE_SHADER with gotos.
+        let mut try_draw_bitmap = false;
+        if src_is_subset
+            && SrcRectConstraint::Fast == constraint
+            && *sampling != SamplingOptions::default()
+        {
+            // src is smaller than the bounds of the bitmap, and we are filtering, so we don't
+            // know how much more of the bitmap we need, so we can't use extractSubset or
+            // drawBitmap, but we must use a shader w/ dst bounds (which can access all of the
+            // bitmap needed). (goto USE_SHADER)
+        } else if src_is_subset {
+            // since we may need to clamp to the borders of the src rect within
+            // the bitmap, we extract a subset.
+            let src_ir: IRect = tmp_src.round_out();
+            let mut subset = Bitmap::new();
+            if !bitmap.extract_subset(&mut subset, src_ir) {
+                return;
+            }
+            mips = None;
+
+            // Since we did an extract, we need to adjust the matrix accordingly
+            let mut dx = 0.0;
+            let mut dy = 0.0;
+            if src_ir.left > 0 {
+                #[allow(clippy::cast_precision_loss)] // mirrors SkIntToScalar
+                {
+                    dx = src_ir.left as f32;
+                }
+            }
+            if src_ir.top > 0 {
+                #[allow(clippy::cast_precision_loss)] // mirrors SkIntToScalar
+                {
+                    dy = src_ir.top as f32;
+                }
+            }
+            #[allow(clippy::float_cmp)] // mirrors `if (dx || dy)`
+            if dx != 0.0 || dy != 0.0 {
+                matrix.pre_translate((dx, dy));
+            }
+
+            // (`SK_DRAWBITMAPRECT_FAST_OFFSET` is not defined.)
+            let extracted_bitmap_bounds = Rect::from_iwh(subset.width(), subset.height());
+            tmp_bitmap = Some(subset);
+            if extracted_bitmap_bounds == tmp_src {
+                // no fractional part in src, we can just call drawBitmap (goto USE_DRAWBITMAP)
+                try_draw_bitmap = true;
+            }
+        } else {
+            // USE_DRAWBITMAP:
+            try_draw_bitmap = true;
+        }
+
+        let bitmap_ref = tmp_bitmap.as_ref().unwrap_or(&bitmap);
+        if try_draw_bitmap {
+            // We can go faster by just calling drawBitmap, which will concat the
+            // matrix with the CTM, and try to call drawSprite if it can. If not,
+            // it will make a shader and call drawRect, as we do below.
+            if can_apply_dst_matrix_as_ctm(&matrix, paint) {
+                self.draw_bitmap(
+                    bitmap_ref,
+                    &matrix,
+                    Some(&dst_rect),
+                    sampling,
+                    paint,
+                    mips.as_ref(),
+                );
+                return;
+            }
+        }
+
+        // USE_SHADER:
+
+        // construct a shader, so we can call drawRect with the dst
+        let Some(img) = ImageRaster::make_from_bitmap(bitmap_ref, CopyPixelsMode::Never, mips)
+        else {
+            return;
+        };
+        let img = Image::from_base(img);
+        let Some(shader) = ImageRaster::make_shader_for_paint(
+            &img,
+            paint,
+            TileMode::Clamp,
+            TileMode::Clamp,
+            sampling,
+            Some(&matrix),
+        ) else {
+            return;
+        };
+
+        let mut paint_with_shader = paint.clone();
+        paint_with_shader.set_style(Style::Fill);
+        paint_with_shader.set_shader(Some(shader));
+
+        // Call ourself, in case the subclass wanted to share this setup code
+        // but handle the drawRect code themselves.
+        Device::draw_rect(self, &dst_rect, &paint_with_shader);
+    }
+
     // Port of: src/core/SkBitmapDevice.cpp#L573-L593 (chrome/m156)
     fn draw_special(
         &mut self,
         src: &SpecialImage,
         local_to_device: &Matrix,
+        sampling: &SamplingOptions,
         paint: &Paint,
         _constraint: SrcRectConstraint,
     ) {
@@ -546,7 +738,7 @@ impl Device for BitmapDevice {
                 return;
             };
             let mut draw = Draw::new(dst, local_to_device, rc_stack.rc());
-            draw.draw_bitmap(&result_bm, Matrix::i(), None, false, paint);
+            draw.draw_bitmap(&result_bm, Matrix::i(), None, sampling, paint, None);
         }
     }
 

@@ -373,6 +373,17 @@ impl<'a> Pixmap<'a> {
         self.bytes()
     }
 
+    /// Consumes the pixmap, returning its pixels (shared) for the pixmap's whole lifetime `'a`,
+    /// if there are any.
+    #[must_use]
+    pub fn into_addr(self) -> Option<&'a [u8]> {
+        match self.storage {
+            Storage::None => None,
+            Storage::Shared(bytes) => Some(bytes),
+            Storage::Unique(bytes) => Some(bytes),
+        }
+    }
+
     /// The bytes of the pixels, if any.
     #[must_use]
     pub fn bytes(&self) -> Option<&[u8]> {

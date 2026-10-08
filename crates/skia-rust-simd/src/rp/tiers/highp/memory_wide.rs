@@ -277,7 +277,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3303-L3307 (chrome/m156)
     pub(super) fn gather_16161616(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        let [r, g, b, a] = from_16161616_w(gather4_u16(ctx.pixels, ix));
+        let [r, g, b, a] = from_16161616_w(gather4_u16(ctx.pixels.bytes(), ix));
         (p.r, p.g, p.b, p.a) = (r, g, b, a);
     }
 
@@ -306,7 +306,7 @@ si! {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
         let zero = F::splat(0.0);
         (p.r, p.g, p.b) = (zero, zero, zero);
-        p.a = from_short_w(gather_u16s(ctx.pixels, ix, 2, 0));
+        p.a = from_short_w(gather_u16s(ctx.pixels.bytes(), ix, 2, 0));
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3242-L3247 (chrome/m156)
@@ -337,7 +337,7 @@ si! {
         let zero = F::splat(0.0);
         (p.g, p.b) = (zero, zero);
         p.a = F::splat(1.0);
-        p.r = from_short_w(gather_u16s(ctx.pixels, ix, 2, 0));
+        p.r = from_short_w(gather_u16s(ctx.pixels.bytes(), ix, 2, 0));
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3268-L3273 (chrome/m156)
@@ -364,7 +364,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3280-L3286 (chrome/m156)
     pub(super) fn gather_rg1616(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        (p.r, p.g) = from_1616_w(gather_u32(ctx.pixels, ix));
+        (p.r, p.g) = from_1616_w(gather_u32(ctx.pixels.bytes(), ix));
         p.b = F::splat(0.0);
         p.a = F::splat(1.0);
     }
@@ -390,7 +390,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3433-L3444 (chrome/m156)
     pub(super) fn gather_f16(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        let [r, g, b, a] = from_half4(gather4_u16(ctx.pixels, ix));
+        let [r, g, b, a] = from_half4(gather4_u16(ctx.pixels.bytes(), ix));
         (p.r, p.g, p.b, p.a) = (r, g, b, a);
     }
 
@@ -420,7 +420,7 @@ si! {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
         let zero = F::splat(0.0);
         (p.r, p.g, p.b) = (zero, zero, zero);
-        p.a = from_half(gather_u16s(ctx.pixels, ix, 2, 0));
+        p.a = from_half(gather_u16s(ctx.pixels.bytes(), ix, 2, 0));
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3480-L3487 (chrome/m156)
@@ -449,7 +449,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3496-L3502 (chrome/m156)
     pub(super) fn gather_rf16(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        p.r = from_half(gather_u16s(ctx.pixels, ix, 2, 0));
+        p.r = from_half(gather_u16s(ctx.pixels.bytes(), ix, 2, 0));
         let zero = F::splat(0.0);
         (p.g, p.b) = (zero, zero);
         p.a = F::splat(1.0);
@@ -487,8 +487,8 @@ si! {
     pub(super) fn gather_rgf16(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
         let (r, g) = (
-            gather_u16s(ctx.pixels, ix, 4, 0),
-            gather_u16s(ctx.pixels, ix, 4, 1),
+            gather_u16s(ctx.pixels.bytes(), ix, 4, 0),
+            gather_u16s(ctx.pixels.bytes(), ix, 4, 1),
         );
         p.r = from_half(r);
         p.g = from_half(g);
@@ -534,10 +534,10 @@ si! {
     pub(super) fn gather_f32(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
         // `4*ix + c` indexes floats.
-        p.r = gather_u32(ctx.pixels, ix * 4u32).bit_cast();
-        p.g = gather_u32(ctx.pixels, ix * 4u32 + 1u32).bit_cast();
-        p.b = gather_u32(ctx.pixels, ix * 4u32 + 2u32).bit_cast();
-        p.a = gather_u32(ctx.pixels, ix * 4u32 + 3u32).bit_cast();
+        p.r = gather_u32(ctx.pixels.bytes(), ix * 4u32).bit_cast();
+        p.g = gather_u32(ctx.pixels.bytes(), ix * 4u32 + 1u32).bit_cast();
+        p.b = gather_u32(ctx.pixels.bytes(), ix * 4u32 + 2u32).bit_cast();
+        p.a = gather_u32(ctx.pixels.bytes(), ix * 4u32 + 3u32).bit_cast();
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3343-L3346 (chrome/m156)
@@ -564,7 +564,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3359-L3363 (chrome/m156)
     pub(super) fn gather_1010102(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        (p.r, p.g, p.b, p.a) = from_1010102_w(gather_u32(ctx.pixels, ix));
+        (p.r, p.g, p.b, p.a) = from_1010102_w(gather_u32(ctx.pixels.bytes(), ix));
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3351-L3354 (chrome/m156)
@@ -592,7 +592,7 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3364-L3368 (chrome/m156)
     pub(super) fn gather_1010102_xr(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        (p.r, p.g, p.b, p.a) = from_1010102_xr_w(gather_u32(ctx.pixels, ix));
+        (p.r, p.g, p.b, p.a) = from_1010102_xr_w(gather_u32(ctx.pixels.bytes(), ix));
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3319-L3322 (chrome/m156)
@@ -621,14 +621,14 @@ si! {
     // Port of: src/opts/SkRasterPipeline_opts.h#L3327-L3331 (chrome/m156)
     pub(super) fn gather_10x6(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        let [r, g, b, a] = from_10x6_w(gather4_u16(ctx.pixels, ix));
+        let [r, g, b, a] = from_10x6_w(gather4_u16(ctx.pixels.bytes(), ix));
         (p.r, p.g, p.b, p.a) = (r, g, b, a);
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3369-L3373 (chrome/m156)
     pub(super) fn gather_10101010_xr(ctx: &GatherCtx<'_>, p: &mut Regs, _e: &mut Params<'_, '_>) {
         let ix = ix_and_ptr_w(ctx, p.r, p.g);
-        let [r, g, b, a] = from_10101010_xr_w(gather4_u16(ctx.pixels, ix));
+        let [r, g, b, a] = from_10101010_xr_w(gather4_u16(ctx.pixels.bytes(), ix));
         (p.r, p.g, p.b, p.a) = (r, g, b, a);
     }
 

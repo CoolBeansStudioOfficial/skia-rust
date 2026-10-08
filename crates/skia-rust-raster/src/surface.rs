@@ -15,9 +15,10 @@
 //!   wraps caller pixels takes them for its lifetime (`docs/design/pixels.md`):
 //!   [`Surface::wrap_pixels`] moves a `&mut Bitmap` in and puts it back when the surface drops;
 //!   [`surfaces::wrap_pixels`](crate::surfaces::wrap_pixels) copies a `&mut [u8]` in and out.
-//! * There is no `SkImage`, so `makeImageSnapshot`, `draw` and the snapshot copy-on-write
-//!   (`onCopyOnWrite`, `onRestoreBackingMutability`) are not ported (D7/Phase 3): drawing only
-//!   dirties the generation ID. `notifyContentWillChange` does the same.
+//! * `makeImageSnapshot` shares the surface's pixel ref with the image (a copy if the surface
+//!   wraps caller pixels, as Skia); the surface's next draw detaches onto a copy
+//!   (`docs/design/pixels.md`), which replaces `onCopyOnWrite` and
+//!   `onRestoreBackingMutability`. The image is cached until then (`fCachedImage`).
 //! * `getCanvas` is `&mut self` and the canvas is created with the surface.
 //! * GPU surfaces, async readback, `characterize`, `wait`, capabilities and recorders are out of
 //!   scope.
@@ -26,7 +27,10 @@ use std::rc::Rc;
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::{Canvas, ContentChangeMode, PeekedPixels, SurfaceBase};
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::image_raster::CopyPixelsMode;
+use skia_rust_core::images;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::{Contains, IRect};
@@ -228,6 +232,65 @@ impl<'a> Surface<'a> {
     #[must_use]
     pub fn new_surface_with_dimensions(&self, dim: (i32, i32)) -> Option<Surface<'static>> {
         self.new_surface(&self.info.with_dimensions(dim))
+    }
+
+    /// An image of the surface's current pixels, which do not change when the surface is drawn
+    /// to later (`makeImageSnapshot`). The same image is returned until the next draw
+    /// (`refCachedImage`). `None` if the surface has no pixels.
+    // Port of: src/image/SkSurface.cpp#L90-L92 (chrome/m156)
+    #[doc(alias = "makeImageSnapshot")]
+    pub fn image_snapshot(&mut self) -> Option<Image> {
+        if let Some(cached) = self.base.cached_image() {
+            return Some(cached);
+        }
+        let cached = self.new_image_snapshot(None)?;
+        self.base.set_cached_image(cached.clone());
+        Some(cached)
+    }
+
+    /// An image of the `bounds` of the surface's current pixels (`makeImageSnapshot(bounds)`);
+    /// `None` if `bounds` does not intersect the surface.
+    // Port of: src/image/SkSurface.cpp#L94-L106 (chrome/m156)
+    #[doc(alias = "makeImageSnapshot")]
+    pub fn image_snapshot_with_bounds(&mut self, bounds: impl AsRef<IRect>) -> Option<Image> {
+        let surf_bounds = IRect::from_wh(self.width(), self.height());
+        let bounds = IRect::intersect(bounds.as_ref(), &surf_bounds)?;
+        debug_assert!(!bounds.is_empty());
+        if bounds == surf_bounds {
+            self.image_snapshot()
+        } else {
+            self.new_image_snapshot(Some(&bounds))
+        }
+    }
+
+    /// `SkSurface_Raster::onNewImageSnapshot`.
+    // Port of: src/image/SkSurface_Raster.cpp#L112-L136 (chrome/m156)
+    fn new_image_snapshot(&mut self, subset: Option<&IRect>) -> Option<Image> {
+        let we_own_the_pixels = self.target.is_none();
+        self.canvas.with_root_bitmap(|bitmap| {
+            if let Some(subset) = subset {
+                debug_assert!(IRect::from_wh(bitmap.width(), bitmap.height()).contains(subset));
+                let mut dst = Bitmap::new();
+                if !dst.try_alloc_pixels_info(&bitmap.info().with_dimensions(subset.size()), None) {
+                    return None;
+                }
+                let read = dst.peek_pixels_mut().is_some_and(|mut pm| {
+                    bitmap.read_pixels_to_pixmap(&mut pm, (subset.left, subset.top))
+                });
+                debug_assert!(read);
+                dst.set_immutable(); // key, so MakeFromBitmap doesn't make a copy of the buffer
+                return dst.as_image();
+            }
+
+            // The snapshot shares the pixel ref (a clone of the handle); the next write to the
+            // surface's bitmap copies it first. Pixels we do not own are always copied.
+            let cpm = if we_own_the_pixels {
+                CopyPixelsMode::Never
+            } else {
+                CopyPixelsMode::Always
+            };
+            images::make_image_from_raster_bitmap(bitmap, cpm)
+        })?
     }
 
     /// The pixels, if the surface has any (`peekPixels`).

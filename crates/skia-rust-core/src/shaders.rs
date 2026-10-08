@@ -13,6 +13,8 @@ pub mod color_filter_shader;
 pub mod color_shader;
 pub mod ctm_shader;
 pub mod empty_shader;
+pub mod image_shader;
+pub mod local_matrix_shader;
 pub mod shader_base;
 
 use crate::alpha_type::AlphaType;
@@ -29,6 +31,8 @@ pub use color_filter_shader::ColorFilterShader;
 pub use color_shader::ColorShader;
 pub use ctm_shader::CtmShader;
 pub use empty_shader::EmptyShader;
+pub use image_shader::ImageShader;
+pub use local_matrix_shader::LocalMatrixShader;
 pub use shader_base::{
     ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, MatrixRec, OPAQUE_ALPHA_FLAG, ShaderBase,
     ShaderContext, ShaderType,

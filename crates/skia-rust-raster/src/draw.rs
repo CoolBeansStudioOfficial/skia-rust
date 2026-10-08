@@ -14,9 +14,8 @@
 //! * `skcpu::Draw`'s methods are `const` but draw into `fDst`'s pixels through blitters; the
 //!   Rust methods take `&mut self` because the blitter holds the `&mut` pixels. `Draw draw(*this)`
 //!   (a copy that changes `fCTM`) is [`Draw::reborrow`] plus a field assignment.
-//! * Not ported yet (they need images, vertices, text or mask filters, ported in D7 and Phase
-//!   3): `drawBitmap` is ported for the sprite case only (D6, layer restores), `drawSprite`,
-//!   `drawBitmapAsMask`,
+//! * Not ported yet (they need vertices, text or mask filters, ported in D7 and Phase 3):
+//!   `drawSprite`, `drawBitmapAsMask`,
 //!   `drawGlyphRunList`/`paintMasks` (text), `drawVertices`/`drawFixedVertices` and `drawAtlas`
 //!   (`SkVertices`), and the mask filter branches of `drawDevPath`/`drawRRectNinePatch`
 //!   (`SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect`). Where a mask filter would have
@@ -25,6 +24,7 @@
 //!   with them.
 
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use skia_rust_core::arena_alloc::ArenaAlloc;
 use skia_rust_core::bitmap::Bitmap;
@@ -35,12 +35,15 @@ use skia_rust_core::device::Device;
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
+use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::MaskFilter;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::matrix_utils::treat_as_sprite;
+use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::paint::{Cap, Join, Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
@@ -53,10 +56,12 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point, Vector};
 use skia_rust_core::rect::{IRect, Rect, RoundOut, rect_priv};
 use skia_rust_core::rrect::{RRect, Type as RRectType};
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::{SCALAR_HALF, SCALAR_SQRT2, Scalar, scalar};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec};
 use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::{path_priv, scalar as scalar_mod};
 
 use crate::auto_blitter_choose::auto_blitter_choose;
@@ -132,6 +137,31 @@ pub enum RectType {
     Stroke,
     /// `kPath`.
     Path,
+}
+
+// Port of: src/core/SkDraw.cpp#L74-L89 (chrome/m156)
+fn make_paint_with_image_and_mips(
+    orig_paint: &Paint,
+    bitmap: &Bitmap,
+    sampling: &SamplingOptions,
+    matrix: Option<&Matrix>,
+    mips: Option<Arc<Mipmap>>,
+) -> Option<Paint> {
+    let mut paint = orig_paint.clone();
+    let img = Image::from_base(ImageRaster::make_from_bitmap(
+        bitmap,
+        CopyPixelsMode::Never,
+        mips,
+    )?);
+    paint.set_shader(ImageRaster::make_shader_for_paint(
+        &img,
+        orig_paint,
+        TileMode::Clamp,
+        TileMode::Clamp,
+        sampling,
+        matrix,
+    ));
+    Some(paint)
 }
 
 // Port of: src/core/SkDraw.cpp#L351-L363 (chrome/m156)
@@ -498,22 +528,20 @@ impl<'a> Draw<'a> {
         }
     }
 
-    /// Draws `bitmap` mapped by the CTM and `prematrix` with `paint` (`drawBitmap`), with nearest
-    /// sampling (`linear_filter` is `sampling.filter == kLinear`).
-    ///
-    /// skia-rust: only the sprite path is ported (the bitmap lands on integer device pixels,
-    /// which is every layer restore without a transform). Anything else draws through an image
-    /// shader (`make_paint_with_image_and_mips` and `SkImageShader`, Phase 3) and is a
-    /// TODO(Phase 3): it draws nothing here.
+    /// Draws `bitmap` mapped by the CTM and `prematrix` with `paint` and `sampling`
+    /// (`drawBitmap`). `dst_bounds` is the rect to fill when the bitmap is drawn through a
+    /// shader (the bitmap's rect mapped by `prematrix` otherwise), and `mips` the bitmap's
+    /// mipmaps, if it has any.
     // Port of: src/core/SkDraw.cpp#L369-L443 (chrome/m156)
     #[doc(alias = "drawBitmap")]
     pub fn draw_bitmap(
         &mut self,
         bitmap: &Bitmap,
         prematrix: &Matrix,
-        _dst_bounds: Option<&Rect>,
-        linear_filter: bool,
+        dst_bounds: Option<&Rect>,
+        sampling: &SamplingOptions,
         orig_paint: &Paint,
+        mips: Option<Arc<Mipmap>>,
     ) {
         self.validate();
 
@@ -541,7 +569,7 @@ impl<'a> Draw<'a> {
             && treat_as_sprite(
                 &matrix,
                 bitmap.dimensions(),
-                linear_filter,
+                sampling,
                 paint.is_anti_alias(),
             )
         {
@@ -567,12 +595,36 @@ impl<'a> Draw<'a> {
                 );
                 if let Some(mut blitter) = blitter {
                     fill_irect_clip(&IRect::from_xywh(ix, iy, w, h), self.rc, &mut *blitter);
+                    return;
                 }
                 // if !blitter, then we fall-through to the slower case
             }
         }
 
-        // TODO(Phase 3): the slower case draws the bitmap's rect with an image shader.
+        // For a long time, the CPU backend treated A8 bitmaps as coverage, rather than alpha.
+        // This was inconsistent with the GPU backend (skbug.com/40041022). When this was fixed,
+        // it altered behavior for some Android apps (b/231400686). Thus: keep the old behavior in
+        // the framework. (`SK_SUPPORT_LEGACY_ALPHA_BITMAP_AS_COVERAGE` is not defined.)
+
+        let Some(paint_with_shader) =
+            make_paint_with_image_and_mips(&paint, bitmap, sampling, None, mips)
+        else {
+            return;
+        };
+        let src_bounds = Rect::from_iwh(bitmap.width(), bitmap.height());
+        if let Some(dst_bounds) = dst_bounds {
+            self.draw_rect_with(
+                &src_bounds,
+                &paint_with_shader,
+                Some(prematrix),
+                Some(dst_bounds),
+            );
+        } else {
+            // now make a temp draw on the stack, and use it
+            let mut draw = self.reborrow();
+            draw.ctm = &matrix;
+            draw.draw_rect(&src_bounds, &paint_with_shader);
+        }
     }
 
     /// Debug checks of the draw's state (`validate`).

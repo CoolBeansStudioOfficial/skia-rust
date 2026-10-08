@@ -5,8 +5,8 @@
 
 //! [`Bitmap`]: a two-dimensional raster pixel array.
 //!
-//! Not ported (they need `SkImage`, shaders or mask filters): `asImage`, `makeShader` (4
-//! overloads), the mask-filter path of `extractAlpha`, `getBounds` (out-parameter forms; use
+//! Not ported (they need mask filters): the mask-filter path of `extractAlpha`, `getBounds`
+//! (out-parameter forms; use
 //! [`Bitmap::bounds`]), custom `SkBitmap::Allocator`s (only the default heap allocation exists),
 //! and `installPixels(const SkPixmap&)` (a pixmap borrows its bytes, so a bitmap cannot share
 //! them; install an owned copy with [`Bitmap::install_pixels`] instead).
@@ -17,19 +17,29 @@ use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::convert_pixels::convert_pixels;
+use crate::image::Image;
 use crate::image_info::ImageInfo;
 use crate::image_info_priv::image_info_valid_conversion;
+use crate::image_raster::{CopyPixelsMode, ImageRaster};
+use crate::images;
 use crate::malloc_pixel_ref;
+use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::pixel_ref::{PixelRef, ReleaseProc};
 use crate::pixel_ref_priv::make_pixel_ref_with_proc;
 use crate::pixmap::Pixmap;
 use crate::point::IPoint;
 use crate::rect::IRect;
+use crate::sampling_options::SamplingOptions;
+use crate::shader::Shader;
+use crate::shaders::image_shader::ImageShader;
 use crate::size::ISize;
 use crate::t_fits_in::t_fits_in;
+use crate::tile_mode::TileMode;
 use crate::write_pixels_rec::WritePixelsRec;
+use skia_rust_simd::rp::contexts::PixelBytes;
 use std::mem;
+use std::sync::Arc;
 
 /// Describes a two-dimensional raster pixel array. [`Bitmap`] is built on [`ImageInfo`],
 /// containing integer width and height, [`ColorType`] and [`AlphaType`] describing the pixel
@@ -98,6 +108,20 @@ impl Bitmap {
         match self.pixel_bytes() {
             Some(bytes) => Pixmap::from_shared(self.info.clone(), bytes, self.row_bytes),
             None => Pixmap::without_pixels(self.info.clone(), self.row_bytes),
+        }
+    }
+
+    /// The pixels from the first pixel of this bitmap on, as a shared owner of the bytes a gather
+    /// stage samples ([`PixelBytes`]), if there are any. It keeps the pixel ref alive.
+    #[must_use]
+    pub fn shared_pixel_bytes(&self) -> Option<Arc<dyn PixelBytes>> {
+        self.pixel_bytes()?;
+        match (&self.pixel_ref, self.offset) {
+            (Some(pixel_ref), Some(offset)) => Some(Arc::new(PixelRefBytes {
+                pixel_ref: pixel_ref.clone(),
+                offset,
+            })),
+            _ => None,
         }
     }
 
@@ -1283,6 +1307,53 @@ impl Bitmap {
                 debug_assert!(pixel_ref.row_bytes() >= self.info.min_row_bytes());
             }
         }
+    }
+}
+
+/// The pixels of a pixel ref from a byte offset on, as the bytes a gather stage samples.
+#[derive(Clone, Debug)]
+struct PixelRefBytes {
+    pixel_ref: PixelRef,
+    offset: usize,
+}
+
+impl PixelBytes for PixelRefBytes {
+    fn bytes(&self) -> &[u8] {
+        self.pixel_ref.pixels().get(self.offset..).unwrap_or(&[])
+    }
+}
+
+impl Bitmap {
+    /// Returns an [`Image`] of the bitmap's pixels (`asImage`): [`images::raster_from_bitmap`].
+    // Port of: src/core/SkBitmap.cpp#L625 (chrome/m156)
+    #[doc(alias = "asImage")]
+    #[must_use]
+    pub fn as_image(&self) -> Option<Image> {
+        images::raster_from_bitmap(self)
+    }
+
+    /// Returns a shader of the bitmap with the tile modes `tile_modes` (clamp if `None`) and
+    /// `sampling`, mapped by `local_matrix` (identity if `None`) (`makeShader`). `None` if the
+    /// matrix cannot be inverted or the bitmap is not valid for an image.
+    // Port of: src/core/SkBitmap.cpp#L627-L663 (chrome/m156)
+    #[doc(alias = "makeShader")]
+    #[must_use]
+    pub fn to_shader<'a>(
+        &self,
+        tile_modes: impl Into<Option<(TileMode, TileMode)>>,
+        sampling: impl Into<SamplingOptions>,
+        local_matrix: impl Into<Option<&'a Matrix>>,
+    ) -> Option<Shader> {
+        let (tmx, tmy) = tile_modes
+            .into()
+            .unwrap_or((TileMode::Clamp, TileMode::Clamp));
+        let lm = local_matrix.into();
+        if lm.is_some_and(|lm| lm.invert().is_none()) {
+            return None;
+        }
+        let image = ImageRaster::make_from_bitmap(self, CopyPixelsMode::IfMutable, None)
+            .map(Image::from_base);
+        ImageShader::make(image, tmx, tmy, &sampling.into(), lm, false)
     }
 }
 

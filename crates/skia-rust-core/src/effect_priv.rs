@@ -10,9 +10,14 @@ use crate::arena_alloc::ArenaAlloc;
 use crate::color::Color4f;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
-use crate::raster_pipeline::RasterPipeline;
+use crate::raster_pipeline::{MemSlot, RasterPipeline};
 use crate::rect::Rect;
 use crate::surface_props::SurfaceProps;
+
+/// The memory slot of the scratch memory shaders reserve with
+/// [`ArenaAlloc::alloc_scratch`]: the code that runs the pipeline binds a buffer of
+/// [`ArenaAlloc::scratch_bytes`] bytes to it (`SkStageRec::fAlloc`'s writable arrays).
+pub const SHADER_SCRATCH: MemSlot = MemSlot(6);
 
 /// Passed to effects that will add stages to a raster pipeline (`SkStageRec`).
 ///

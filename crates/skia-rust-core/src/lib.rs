@@ -53,11 +53,17 @@ pub mod front_buffered_stream;
 pub mod geometry;
 pub mod half;
 pub mod id_change_listener;
+pub mod image;
+pub mod image_base;
 pub mod image_filter;
 pub mod image_filter_types;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
+pub mod image_raster;
+pub mod images;
+#[doc(hidden)]
+pub mod lattice_iter;
 #[doc(hidden)]
 pub mod line_clipper;
 pub mod m44;
@@ -73,6 +79,8 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod mipmap;
+pub mod mipmap_accessor;
 pub mod paint;
 #[doc(hidden)]
 pub mod paint_priv;
@@ -127,6 +135,9 @@ pub mod region_path;
 pub mod rrect;
 pub mod safe32;
 pub mod safe_math;
+pub mod sampling_options;
+#[doc(hidden)]
+pub mod sampling_priv;
 pub mod scalar;
 pub mod shader;
 pub mod shaders;

@@ -50,40 +50,43 @@ si! {
 
     /// `gather<U8>(ptr, ix)`.
     fn gather_u8(ctx: &GatherCtx<'_>, ix: U32) -> U8 {
+        let px = ctx.pixels.bytes();
         let mut lanes = [0u8; MAX_STRIDE];
         for (i, lane) in lanes.iter_mut().enumerate().take(N) {
-            *lane = ctx.pixels[ix[i] as usize];
+            *lane = px[ix[i] as usize];
         }
         U8::load(&lanes[..N])
     }
 
     /// `gather_unaligned<U16>(ptr, ix)`.
     fn gather_u16(ctx: &GatherCtx<'_>, ix: U32) -> U16 {
+        let px = ctx.pixels.bytes();
         let mut lanes = [0u16; MAX_STRIDE];
         for (i, lane) in lanes.iter_mut().enumerate().take(N) {
             let at = 2 * ix[i] as usize;
-            *lane = u16::from_ne_bytes([ctx.pixels[at], ctx.pixels[at + 1]]);
+            *lane = u16::from_ne_bytes([px[at], px[at + 1]]);
         }
         U16::load(&lanes[..N])
     }
 
     /// `gather_unaligned<U32>(ptr, ix)`.
-    fn gather_u32(ctx: &GatherCtx<'_>, ix: U32) -> U32 {
+    pub(super) fn gather_u32(ctx: &GatherCtx<'_>, ix: U32) -> U32 {
+        let px = ctx.pixels.bytes();
         let mut lanes = [0u32; MAX_STRIDE];
         for (i, lane) in lanes.iter_mut().enumerate().take(N) {
             let at = 4 * ix[i] as usize;
             *lane = u32::from_ne_bytes([
-                ctx.pixels[at],
-                ctx.pixels[at + 1],
-                ctx.pixels[at + 2],
-                ctx.pixels[at + 3],
+                px[at],
+                px[at + 1],
+                px[at + 2],
+                px[at + 3],
             ]);
         }
         U32::load(&lanes[..N])
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L6452-L6514 (chrome/m156)
-    fn from_8888(rgba: U32) -> (U16, U16, U16, U16) {
+    pub(super) fn from_8888(rgba: U32) -> (U16, U16, U16, U16) {
         let lo: U16 = (rgba & 65535).cast();
         let hi: U16 = (rgba >> 16).cast();
         (lo & 255, lo >> 8, hi & 255, hi >> 8)

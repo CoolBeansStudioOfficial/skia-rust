@@ -18,12 +18,18 @@
 //! (tasks D6/D7 and Phase 3, listed in `docs/design/raster-pipeline.md` "As implemented in
 //! D5"). `SkRefCnt` is not modelled: a canvas owns its devices.
 
+use crate::alpha_type::AlphaType;
 use crate::arc::{Arc, create_draw_arc_path};
 use crate::bitmap::Bitmap;
 use crate::canvas::{PointMode, SrcRectConstraint};
 use crate::clip_op::ClipOp;
+use crate::color::Color;
+use crate::color_priv::{alpha_255_to_256, alpha_mul};
+use crate::color_type::ColorType;
 use crate::floating_point::float_round2int;
+use crate::image::Image;
 use crate::image_info::ImageInfo;
+use crate::lattice_iter::{Lattice, LatticeIter};
 use crate::m44::M44;
 use crate::matrix::{Matrix, TypeMask};
 use crate::matrix_priv::{is_scale_translate_as_m33, map_rect};
@@ -36,6 +42,7 @@ use crate::point::IPoint;
 use crate::rect::{IRect, Rect, RoundOut, rect_priv};
 use crate::region::{Iterator as RegionIterator, Region};
 use crate::rrect::RRect;
+use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
@@ -466,16 +473,85 @@ pub trait Device {
         false
     }
 
-    /// Draws `src` with `local_to_device` as the matrix and nearest-neighbor sampling
-    /// (`drawSpecial`). The default draws nothing.
-    ///
-    /// skia-rust: `SkSamplingOptions` is Phase 3 (image shaders); the only caller, `drawDevice`,
-    /// always passes the default (nearest) options.
+    /// Draws the `src` rect of `image` (all of it if `None`) into the `dst` rect with
+    /// `sampling` (`drawImageRect`). `dst` is finite and sorted.
+    // Port of: src/core/SkDevice.h#L362-L364 (chrome/m156)
+    #[doc(alias = "drawImageRect")]
+    fn draw_image_rect(
+        &mut self,
+        image: &Image,
+        src: Option<&Rect>,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        constraint: SrcRectConstraint,
+    );
+
+    /// Draws `image` divided by `lattice` into patches, stretched to fit `dst`
+    /// (`drawImageLattice`).
+    // Port of: src/core/SkDevice.cpp#L165-L205 (chrome/m156)
+    #[doc(alias = "drawImageLattice")]
+    fn draw_image_lattice(
+        &mut self,
+        image: &Image,
+        lattice: &Lattice<'_>,
+        dst: &Rect,
+        filter: FilterMode,
+        paint: &Paint,
+    ) {
+        let mut iter = LatticeIter::new(lattice, dst);
+
+        let info = ImageInfo::new((1, 1), ColorType::BGRA8888, AlphaType::Unpremul, None);
+
+        while let Some(patch) = iter.next_patch() {
+            let src_r = Rect::from_irect(patch.src);
+            let dst_r = patch.dst;
+            let mut color = patch.fixed_color;
+            let mut fast = color.is_some();
+            // TODO: support this fast-path for GPU images
+            if !fast && src_r.width() <= 1.0 && src_r.height() <= 1.0 {
+                let mut pixel = [0u8; 4];
+                if image.read_pixels(&info, &mut pixel, 4, (patch.src.left, patch.src.top)) {
+                    color = Some(Color::new(u32::from_ne_bytes(pixel)));
+                    fast = true;
+                }
+            }
+            if fast {
+                let c = color.unwrap_or_default();
+                // Fast draw with drawRect, if this is a patch containing a single color
+                // or if this is a patch containing a single pixel.
+                if c != Color::new(0) || !paint.is_src_over() {
+                    let mut paint_copy = paint.clone();
+                    let alpha = alpha_mul(
+                        i32::from(c.a()),
+                        i32::try_from(alpha_255_to_256(u32::from(paint.alpha()))).unwrap_or(256),
+                    );
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    // SkColorSetA takes a U8CPU and masks it to 8 bits
+                    paint_copy.set_color(c.with_a(alpha as u8));
+                    self.draw_rect(&dst_r, &paint_copy);
+                }
+            } else {
+                self.draw_image_rect(
+                    image,
+                    Some(&src_r),
+                    &dst_r,
+                    &SamplingOptions::from(filter),
+                    paint,
+                    SrcRectConstraint::Strict,
+                );
+            }
+        }
+    }
+
+    /// Draws `src` with `local_to_device` as the matrix (`drawSpecial`). The default draws
+    /// nothing.
     #[doc(alias = "drawSpecial")]
     fn draw_special(
         &mut self,
         _src: &SpecialImage,
         _local_to_device: &Matrix,
+        _sampling: &SamplingOptions,
         _paint: &Paint,
         _constraint: SrcRectConstraint,
     ) {
@@ -496,23 +572,28 @@ pub trait Device {
         self.snap_special(&bounds, false)
     }
 
-    /// Draws the pixels of another device (a layer being restored) into this one, with nearest
-    /// sampling (`drawDevice`).
+    /// Draws the pixels of another device (a layer being restored) into this one
+    /// (`drawDevice`).
     // Port of: src/core/SkDevice.cpp#L327-L343 (chrome/m156)
     #[doc(alias = "drawDevice")]
-    fn draw_device(&mut self, device: &mut dyn Device, paint: &Paint) {
+    fn draw_device(&mut self, device: &mut dyn Device, sampling: &SamplingOptions, paint: &Paint) {
         let Some(device_image) = device.snap_special_all() else {
             return;
         };
         // SkCanvas only calls drawDevice() when there are no filters (so the transform is pixel
         // aligned). As such it can be drawn without clamping.
         let relative_transform = device.state().relative_transform(self.state()).to_m33();
-        let strict = !relative_transform.is_translate()
+        let strict = sampling.filter != FilterMode::Nearest
+            || sampling.use_cubic
+            || sampling.mipmap != crate::sampling_options::MipmapMode::None
+            || sampling.is_aniso()
+            || !relative_transform.is_translate()
             || !is_int(relative_transform.translate_x())
             || !is_int(relative_transform.translate_y());
         self.draw_special(
             &device_image,
             &relative_transform,
+            sampling,
             paint,
             if strict {
                 SrcRectConstraint::Strict
@@ -756,6 +837,18 @@ impl NoPixelsDevice {
 impl Device for NoPixelsDevice {
     fn state(&self) -> &DeviceState {
         &self.state
+    }
+
+    // Port of: src/core/SkDevice.h#L586-L588 (chrome/m156)
+    fn draw_image_rect(
+        &mut self,
+        _image: &Image,
+        _src: Option<&Rect>,
+        _dst: &Rect,
+        _sampling: &SamplingOptions,
+        _paint: &Paint,
+        _constraint: SrcRectConstraint,
+    ) {
     }
 
     fn state_mut(&mut self) -> &mut DeviceState {

@@ -13,10 +13,6 @@
 use super::*;
 
 si! {
-    pub(super) fn bilerp_clamp_8888(_ctx: &GatherCtx<'_>, _x: F, _y: F, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilerp_clamp_8888", "P3")
-    }
-
     pub(super) fn evenly_spaced_gradient(_ctx: &GradientCtx<'_>, _x: F, _y: F, _p: &mut Regs, _e: &mut Params<'_, '_>) {
         not_ported!("evenly_spaced_gradient", "P3")
     }

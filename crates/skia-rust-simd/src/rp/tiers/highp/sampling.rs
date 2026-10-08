@@ -13,10 +13,6 @@
 use super::*;
 
 si! {
-    pub(super) fn bilerp_clamp_8888(_ctx: &GatherCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilerp_clamp_8888", "P3")
-    }
-
     pub(super) fn evenly_spaced_gradient(_ctx: &GradientCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
         not_ported!("evenly_spaced_gradient", "P3")
     }
@@ -41,88 +37,8 @@ si! {
         not_ported!("negate_x", "P3")
     }
 
-    pub(super) fn bilerp_clamp_8888_force_highp(_ctx: &GatherCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilerp_clamp_8888_force_highp", "P3")
-    }
-
-    pub(super) fn bicubic_clamp_8888(_ctx: &GatherCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_clamp_8888", "P3")
-    }
-
-    pub(super) fn bilinear_setup(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilinear_setup", "P3")
-    }
-
-    pub(super) fn bilinear_nx(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilinear_nx", "P3")
-    }
-
-    pub(super) fn bilinear_px(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilinear_px", "P3")
-    }
-
-    pub(super) fn bilinear_ny(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilinear_ny", "P3")
-    }
-
-    pub(super) fn bilinear_py(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bilinear_py", "P3")
-    }
-
-    pub(super) fn bicubic_setup(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_setup", "P3")
-    }
-
-    pub(super) fn bicubic_n3x(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_n3x", "P3")
-    }
-
-    pub(super) fn bicubic_n1x(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_n1x", "P3")
-    }
-
-    pub(super) fn bicubic_p1x(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_p1x", "P3")
-    }
-
-    pub(super) fn bicubic_p3x(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_p3x", "P3")
-    }
-
-    pub(super) fn bicubic_n3y(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_n3y", "P3")
-    }
-
-    pub(super) fn bicubic_n1y(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_n1y", "P3")
-    }
-
-    pub(super) fn bicubic_p1y(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_p1y", "P3")
-    }
-
-    pub(super) fn bicubic_p3y(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("bicubic_p3y", "P3")
-    }
-
-    pub(super) fn accumulate(_ctx: &SamplerCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("accumulate", "P3")
-    }
-
     pub(super) fn perlin_noise(_ctx: &PerlinNoiseCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
         not_ported!("perlin_noise", "P3")
-    }
-
-    pub(super) fn mipmap_linear_init(_ctx: &MipmapCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("mipmap_linear_init", "P3")
-    }
-
-    pub(super) fn mipmap_linear_update(_ctx: &MipmapCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("mipmap_linear_update", "P3")
-    }
-
-    pub(super) fn mipmap_linear_finish(_ctx: &MipmapCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("mipmap_linear_finish", "P3")
     }
 
     pub(super) fn xy_to_2pt_conical_strip(_ctx: &Conical2PtCtx, _p: &mut Regs, _e: &mut Params<'_, '_>) {

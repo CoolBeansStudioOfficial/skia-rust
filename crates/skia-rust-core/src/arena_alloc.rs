@@ -164,6 +164,7 @@ impl<T: 'static> ErasedArena for TypedArena<T> {
 #[derive(Default)]
 pub struct ArenaAlloc {
     arenas: TypedArena<Box<dyn ErasedArena>>,
+    scratch_bytes: Cell<usize>,
 }
 
 impl fmt::Debug for ArenaAlloc {
@@ -180,6 +181,7 @@ impl ArenaAlloc {
     pub const fn new() -> ArenaAlloc {
         ArenaAlloc {
             arenas: TypedArena::new(),
+            scratch_bytes: Cell::new(0),
         }
     }
 
@@ -206,6 +208,31 @@ impl ArenaAlloc {
 
     /// `isEmpty()`: whether nothing has been allocated since creation or the last
     /// [`reset`](Self::reset).
+    /// Reserves `bytes` of writable scratch memory for the pipeline built in this arena, and
+    /// returns its byte offset in the scratch buffer.
+    ///
+    /// skia-rust: Skia's shaders allocate writable storage in the arena that the pipeline's
+    /// stages read and write at run time (`rec.fAlloc->makeArray<float>(...)` for
+    /// `store_src`/`load_dst`). Rust arenas hand out shared references, and writable pipeline
+    /// memory is named by a [`MemSlot`](crate::raster_pipeline::MemSlot) bound per run, so the
+    /// arena only counts the bytes: whoever runs the pipeline binds a buffer of
+    /// [`scratch_bytes`](Self::scratch_bytes) bytes to
+    /// [`SHADER_SCRATCH`](crate::effect_priv::SHADER_SCRATCH).
+    ///
+    /// # Panics
+    /// If the scratch memory outgrows a `u32` offset.
+    pub fn alloc_scratch(&self, bytes: usize) -> u32 {
+        let offset = self.scratch_bytes.get();
+        self.scratch_bytes.set(offset + bytes);
+        u32::try_from(offset).expect("scratch memory offsets fit in a u32")
+    }
+
+    /// The bytes of scratch memory reserved with [`alloc_scratch`](Self::alloc_scratch).
+    #[must_use]
+    pub fn scratch_bytes(&self) -> usize {
+        self.scratch_bytes.get()
+    }
+
     #[doc(alias = "isEmpty")]
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -214,6 +241,7 @@ impl ArenaAlloc {
 
     /// `SkArenaAllocWithReset::reset()`: drops every value, keeping the storage for reuse.
     pub fn reset(&mut self) {
+        self.scratch_bytes.set(0);
         let mut chunk = self.arenas.first.get_mut().map(|c| &mut **c);
         while let Some(c) = chunk {
             for slot in &mut c.slots {
