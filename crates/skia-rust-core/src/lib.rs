@@ -57,6 +57,7 @@ pub mod font_descriptor;
 pub mod font_metrics;
 #[doc(hidden)]
 pub mod font_metrics_priv;
+pub mod font_mgr;
 pub mod font_parameters;
 #[doc(hidden)]
 pub mod font_priv;
