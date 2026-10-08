@@ -153,3 +153,14 @@ impl ErrorReporter {
         &mut self.sink
     }
 }
+
+/// Forwards the errors that an [`ErrorSink::Forwarding`] reporter recorded to `to`, in order.
+/// The analyses with an optional error reporter record into a forwarding reporter first, so
+/// that they can borrow the context mutably at the same time.
+pub fn forward_errors(from: &ErrorReporter, to: &mut ErrorReporter) {
+    if let ErrorSink::Forwarding { errors } = from.sink() {
+        for (msg, position) in errors {
+            to.error(*position, msg);
+        }
+    }
+}

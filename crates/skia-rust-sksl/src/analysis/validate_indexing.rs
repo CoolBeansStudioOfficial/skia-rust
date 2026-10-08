@@ -9,7 +9,7 @@
 
 use std::collections::HashSet;
 
-use super::s9b_shims::visit_constant_expression;
+use super::expression_queries::is_constant_expression_with_loop_indices;
 use super::{ProgramVisitor, walk_expression, walk_statement};
 use crate::error_reporter::ErrorReporter;
 use crate::ir::{ElemId, ExprId, ExpressionKind, IrPool, StatementKind, StmtId, VarId};
@@ -40,7 +40,7 @@ impl ProgramVisitor for Es2IndexingVisitor<'_> {
     // Port of: src/sksl/analysis/SkSLIsConstantExpression.cpp#L133-L148 (chrome/m156)
     fn visit_expression(&mut self, pool: &IrPool, expr: ExprId) -> bool {
         if let ExpressionKind::Index(index) = &pool.expression(expr).kind
-            && visit_constant_expression(pool, index.index, Some(&self.loop_indices))
+            && !is_constant_expression_with_loop_indices(pool, index.index, &self.loop_indices)
         {
             self.errors.error(
                 pool.expression(expr).position,

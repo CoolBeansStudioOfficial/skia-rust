@@ -7,10 +7,13 @@
 //! [`PrefixExpression`] (`-x`, `!b`, `++i`) and [`PostfixExpression`] (`i++`).
 
 use super::{
-    BinaryExpression, ExprId, Expression, ExpressionKind, IrPool, TypeId, VariableRefKind,
-    constant_folder_stub, s7b_shims,
+    BinaryExpression, ConstructorArray, ConstructorCompound, ConstructorDiagonalMatrix, ExprId,
+    Expression, ExpressionKind, IrPool, Literal, TypeId, VariableRefKind,
 };
+use crate::analysis;
+use crate::constant_folder;
 use crate::context::Context;
+use crate::defines::SkslInt;
 use crate::operator::{Operator, OperatorKind, OperatorPrecedence};
 use crate::position::Position;
 
@@ -63,7 +66,12 @@ impl PrefixExpression {
                     cannot_operate(ctx);
                     return None;
                 }
-                if !s7b_shims::update_variable_ref_kind(ctx, base, VariableRefKind::ReadWrite) {
+                if !analysis::update_variable_ref_kind(
+                    &mut ctx.pool,
+                    base,
+                    VariableRefKind::ReadWrite,
+                    Some(&mut ctx.errors),
+                ) {
                     return None;
                 }
             }
@@ -114,7 +122,8 @@ impl PrefixExpression {
                 if ctx.pool.ty(base_ty).is_literal() {
                     // The expression `~123` is no longer a literal; coerce to the actual type.
                     let scalar = ctx.pool.ty(base_ty).scalar_type_for_literal().id();
-                    base = s7b_shims::coerce_expression(ctx, scalar, base)
+                    base = scalar
+                        .coerce_expression(ctx, base)
                         .expect("a literal coerces to its scalar type");
                 }
                 return bitwise_not_operand(ctx, pos, base);
@@ -148,23 +157,111 @@ impl PrefixExpression {
     }
 }
 
-/// `simplify_negation`: the simplified form of `-original`, or `None`.
-///
-/// Stand-in in part. Folding a negated constant (`-1.0`, `-vec(...)`, `-array(...)`,
-/// `-matrix(...)`) needs S7a's `ConstructorCompound::MakeFromConstants` and `getConstantValue`, and
-/// S8. Those cases return `None`, so the node stays `-(…)`. The double negation `-(-x)` is
-/// Skia's and is kept.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L71-L120 (chrome/m156), partly
-fn simplify_negation(ctx: &mut Context, pos: Position, original: ExprId) -> Option<ExprId> {
-    let value = constant_folder_stub::get_constant_value_for_variable(&ctx.pool, original);
-    if let ExpressionKind::Prefix(prefix) = &ctx.pool.expression(value).kind
-        && prefix.operator.kind() == OperatorKind::Minus
-    {
-        // Convert `-(-expression)` into `expression`.
-        let operand = prefix.operand;
-        return Some(ctx.pool.clone_expression_at(operand, pos));
+/// `apply_to_elements`: applies `fn_` to each slot of a constant `expr` and rebuilds the value as
+/// a compound constant, or `None` if a slot is not constant or a result is out of range.
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L27-L51 (chrome/m156)
+fn apply_to_elements(
+    ctx: &mut Context,
+    pos: Position,
+    expr: ExprId,
+    fn_: fn(f64) -> f64,
+) -> Option<ExprId> {
+    let (expr_ty, component) = {
+        let e = ctx.pool.expression(expr);
+        (e.ty, ctx.pool.ty(e.ty).component_type().id())
+    };
+    let num_slots = ctx.pool.ty(expr_ty).slot_count();
+    // The expression has more slots than we expected.
+    if num_slots > 16 {
+        return None;
     }
-    None
+    let mut values = [0.0_f64; 16];
+    for (index, value) in values.iter_mut().enumerate().take(num_slots) {
+        // There's a non-constant element; we can't simplify this expression.
+        let slot_value = ctx
+            .pool
+            .expression(expr)
+            .get_constant_value(&ctx.pool, index)?;
+        *value = fn_(slot_value);
+        // We can't simplify the expression if the new value is out-of-range for the type.
+        if component.check_for_out_of_range_literal_value(ctx, *value, pos) {
+            return None;
+        }
+    }
+    Some(ConstructorCompound::make_from_constants(
+        ctx,
+        pos,
+        expr_ty,
+        &values[..num_slots],
+    ))
+}
+
+/// `simplify_negation`: the simplified form of `-original`, or `None`.
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L71-L120 (chrome/m156)
+fn simplify_negation(ctx: &mut Context, pos: Position, original: ExprId) -> Option<ExprId> {
+    let value = constant_folder::get_constant_value_for_variable(&ctx.pool, original);
+    match ctx.pool.expression(value).kind.clone() {
+        ExpressionKind::Literal(_)
+        | ExpressionKind::ConstructorSplat(_)
+        | ExpressionKind::ConstructorCompound(_) => {
+            // Convert `-vecN(literal, ...)` into `vecN(-literal, ...)`.
+            if let Some(expr) = apply_to_elements(ctx, pos, value, negate_value) {
+                return Some(expr);
+            }
+            None
+        }
+        ExpressionKind::Prefix(prefix) => {
+            // Convert `-(-expression)` into `expression`.
+            if prefix.operator.kind() == OperatorKind::Minus {
+                return Some(ctx.pool.clone_expression_at(prefix.operand, pos));
+            }
+            None
+        }
+        ExpressionKind::ConstructorArray(ctor) => {
+            // Convert `-array[N](literal, ...)` into `array[N](-literal, ...)`.
+            if analysis::is_compile_time_constant(&ctx.pool, value) {
+                let ty = ctx.pool.expression(value).ty;
+                let args = negate_operands(ctx, pos, &ctor.arguments);
+                return Some(ConstructorArray::make(ctx, pos, ty, args));
+            }
+            None
+        }
+        ExpressionKind::ConstructorDiagonalMatrix(ctor) => {
+            // Convert `-matrix(literal)` into `matrix(-literal)`.
+            if analysis::is_compile_time_constant(&ctx.pool, value) {
+                let ty = ctx.pool.expression(value).ty;
+                if let Some(simplified) = simplify_negation(ctx, pos, ctor.argument) {
+                    return Some(ConstructorDiagonalMatrix::make(ctx, pos, ty, simplified));
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+/// `negate_operands`: the negation of each argument, simplified where possible.
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L53-L69 (chrome/m156)
+fn negate_operands(ctx: &mut Context, pos: Position, array: &[ExprId]) -> Vec<ExprId> {
+    let mut replacement = Vec::with_capacity(array.len());
+    for &expr in array {
+        // The logic below is very similar to `negate_operand`, but with different ownership rules.
+        if let Some(simplified) = simplify_negation(ctx, pos, expr) {
+            replacement.push(simplified);
+        } else {
+            let operand = ctx.pool.clone_expression(expr);
+            let ty = ctx.pool.expression(operand).ty;
+            replacement.push(ctx.pool.add_expression(Expression::new(
+                pos,
+                ty,
+                ExpressionKind::Prefix(PrefixExpression {
+                    operator: Operator::from(OperatorKind::Minus),
+                    operand,
+                }),
+            )));
+        }
+    }
+    replacement
 }
 
 /// `negate_operand`: `-value`, simplified when possible.
@@ -187,12 +284,12 @@ fn negate_operand(ctx: &mut Context, pos: Position, value: ExprId) -> ExprId {
 /// `logical_not_operand`: `!operand`, simplified when possible.
 // Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L151-L196 (chrome/m156)
 fn logical_not_operand(ctx: &mut Context, pos: Position, operand: ExprId) -> ExprId {
-    let value = constant_folder_stub::get_constant_value_for_variable(&ctx.pool, operand);
+    let value = constant_folder::get_constant_value_for_variable(&ctx.pool, operand);
     let operand_ty = ctx.pool.expression(operand).ty;
     match ctx.pool.expression(value).kind.clone() {
         ExpressionKind::Literal(b) => {
             // Convert !boolLiteral(true) to boolLiteral(false).
-            return s7b_shims::make_bool_literal(ctx, pos, !b.bool_value(), operand_ty);
+            return Literal::make_bool(&mut ctx.pool, pos, !b.bool_value(), operand_ty);
         }
         ExpressionKind::Prefix(prefix) => {
             // Convert `!(!expression)` into `expression`.
@@ -237,19 +334,46 @@ fn logical_not_operand(ctx: &mut Context, pos: Position, operand: ExprId) -> Exp
     ))
 }
 
+/// `negate_value`: `-value` on a slot.
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L26-L28 (chrome/m156)
+fn negate_value(value: f64) -> f64 {
+    -value
+}
+
+/// `bitwise_not_value`: `~` on a slot, as `SKSL_INT`.
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L30-L32 (chrome/m156)
+#[allow(clippy::cast_possible_truncation)] // `static_cast<SKSL_INT>` truncates the double, as C++ does.
+fn bitwise_not_value(value: f64) -> f64 {
+    // `~static_cast<SKSL_INT>(value)`: the C++ truncates the double to an integer.
+    #[allow(clippy::cast_precision_loss)]
+    let result = !(value as SkslInt) as f64;
+    result
+}
+
 /// `bitwise_not_operand`: `~operand`, simplified when possible.
-///
-/// Stand-in in part: folding a constant operand needs S7a and S8, as in `simplify_negation`.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L198-L231 (chrome/m156), partly
+// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L198-L231 (chrome/m156)
 fn bitwise_not_operand(ctx: &mut Context, pos: Position, operand: ExprId) -> ExprId {
-    let value = constant_folder_stub::get_constant_value_for_variable(&ctx.pool, operand);
-    if let ExpressionKind::Prefix(prefix) = ctx.pool.expression(value).kind.clone()
-        && prefix.operator.kind() == OperatorKind::BitwiseNot
-    {
-        // Convert `~(~expression)` into `expression`.
-        ctx.pool.expression_mut(prefix.operand).position = pos;
-        return prefix.operand;
+    let value = constant_folder::get_constant_value_for_variable(&ctx.pool, operand);
+    match ctx.pool.expression(value).kind.clone() {
+        ExpressionKind::Literal(_)
+        | ExpressionKind::ConstructorSplat(_)
+        | ExpressionKind::ConstructorCompound(_) => {
+            // Convert ~vecN(1, 2, ...) to vecN(~1, ~2, ...).
+            if let Some(expr) = apply_to_elements(ctx, pos, value, bitwise_not_value) {
+                return expr;
+            }
+        }
+        ExpressionKind::Prefix(prefix) => {
+            // Convert `~(~expression)` into `expression`.
+            if prefix.operator.kind() == OperatorKind::BitwiseNot {
+                ctx.pool.expression_mut(prefix.operand).position = pos;
+                return prefix.operand;
+            }
+        }
+        _ => {}
     }
+
+    // No simplified form; convert expression to Prefix(BITWISENOT, expression).
     let operand_ty = ctx.pool.expression(operand).ty;
     ctx.pool.add_expression(Expression::new(
         pos,
@@ -296,7 +420,12 @@ impl PostfixExpression {
             );
             return None;
         }
-        if !s7b_shims::update_variable_ref_kind(ctx, base, VariableRefKind::ReadWrite) {
+        if !analysis::update_variable_ref_kind(
+            &mut ctx.pool,
+            base,
+            VariableRefKind::ReadWrite,
+            Some(&mut ctx.errors),
+        ) {
             return None;
         }
         Some(Self::make(ctx, pos, base, op))

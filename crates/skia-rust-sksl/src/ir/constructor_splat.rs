@@ -6,11 +6,12 @@
 
 //! [`ConstructorSplat`]'s factory.
 
-use super::constructor::{make_constant_value_for_variable, set_position};
+use super::constructor::set_position;
 use super::{
     ConstructorSplat, Expression, ExpressionKind,
     ids::{ExprId, TypeId},
 };
+use crate::constant_folder;
 use crate::context::Context;
 use crate::position::Position;
 
@@ -32,7 +33,7 @@ impl ConstructorSplat {
 
         // Replace constant variables with their corresponding values, so `float3(five)` can
         // compile down to `float3(5.0)` (the latter is a compile-time constant).
-        let arg = make_constant_value_for_variable(&mut ctx.pool, pos, arg);
+        let arg = constant_folder::make_constant_value_for_variable(ctx, pos, arg);
 
         ctx.pool.add_expression(Expression::new(
             pos,

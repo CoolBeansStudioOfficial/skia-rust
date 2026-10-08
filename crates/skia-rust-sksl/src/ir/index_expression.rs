@@ -8,8 +8,9 @@
 
 use super::{
     ComponentArray, ExprId, Expression, ExpressionKind, IrPool, Swizzle, TypeId, TypeReference,
-    add_array_dimension, constant_folder_stub, s7b_shims,
+    add_array_dimension,
 };
+use crate::constant_folder;
 use crate::context::Context;
 use crate::defines::SkslInt;
 use crate::operator::OperatorPrecedence;
@@ -73,7 +74,7 @@ impl IndexExpression {
         // Convert an array type reference: `int[10]`.
         if let ExpressionKind::TypeReference(reference) = &ctx.pool.expression(base).kind {
             let base_type = reference.value;
-            let array_size = s7b_shims::convert_array_size_expr(ctx, base_type, pos, index);
+            let array_size = base_type.convert_array_size(ctx, pos, index);
             if array_size == 0 {
                 return None;
             }
@@ -111,11 +112,11 @@ impl IndexExpression {
         let index = if ctx.pool.ty(index_ty).is_integer() {
             index
         } else {
-            s7b_shims::coerce_expression(ctx, TypeId::INT, index)?
+            TypeId::INT.coerce_expression(ctx, index)?
         };
 
         // Perform compile-time bounds checking on constant-expression indices.
-        if let Some(index_value) = constant_folder_stub::get_constant_int(&ctx.pool, index) {
+        if let Some(index_value) = constant_folder::get_constant_int(&ctx.pool, index) {
             let index_pos = ctx.pool.expression(index).position;
             if index_out_of_range(ctx, index_pos, index_value, base) {
                 return None;
@@ -133,7 +134,7 @@ impl IndexExpression {
     // Port of: src/sksl/ir/SkSLIndexExpression.cpp#L107-L170 (chrome/m156), vector case
     pub fn make(ctx: &mut Context, pos: Position, base: ExprId, index: ExprId) -> ExprId {
         let base_ty = ctx.pool.expression(base).ty;
-        if let Some(index_value) = constant_folder_stub::get_constant_int(&ctx.pool, index) {
+        if let Some(index_value) = constant_folder::get_constant_int(&ctx.pool, index) {
             let index_pos = ctx.pool.expression(index).position;
             if !index_out_of_range(ctx, index_pos, index_value, base)
                 && ctx.pool.ty(base_ty).is_vector()

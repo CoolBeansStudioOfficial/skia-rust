@@ -6,9 +6,7 @@
 
 //! [`ConstructorArrayCast`]'s factory.
 
-use super::constructor::{
-    is_compile_time_constant, make_constant_value_for_variable, set_position,
-};
+use super::constructor::set_position;
 use super::{
     ConstructorArray, ConstructorArrayCast, ConstructorCompoundCast, ConstructorScalarCast,
     Expression, ExpressionKind,
@@ -16,6 +14,7 @@ use super::{
 };
 use crate::context::Context;
 use crate::position::Position;
+use crate::{analysis, constant_folder};
 
 impl ConstructorArrayCast {
     /// `ConstructorArrayCast::Make`: an array cast of `arg` to `ty`. A no-op cast returns `arg`,
@@ -38,10 +37,10 @@ impl ConstructorArrayCast {
 
         // Look up the value of constant variables. This allows constant-expressions like
         // `myArray` to be replaced with the compile-time constant `int[2](0, 1)`.
-        let arg = make_constant_value_for_variable(&mut ctx.pool, pos, arg);
+        let arg = constant_folder::make_constant_value_for_variable(ctx, pos, arg);
 
         // We can cast a vector of compile-time constants at compile-time.
-        if is_compile_time_constant(&ctx.pool, arg) {
+        if analysis::is_compile_time_constant(&ctx.pool, arg) {
             return cast_constant_array(ctx, pos, ty, arg);
         }
         ctx.pool.add_expression(Expression::new(

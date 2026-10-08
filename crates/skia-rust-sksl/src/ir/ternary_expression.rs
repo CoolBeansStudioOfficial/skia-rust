@@ -6,7 +6,8 @@
 
 //! [`TernaryExpression`]: `test ? ifTrue : ifFalse`.
 
-use super::{ExprId, Expression, ExpressionKind, IrPool, TypeId, constant_folder_stub, s7b_shims};
+use super::{ExprId, Expression, ExpressionKind, IrPool, TypeId};
+use crate::constant_folder;
 use crate::context::Context;
 use crate::operator::{Operator, OperatorKind, OperatorPrecedence};
 use crate::position::Position;
@@ -35,7 +36,7 @@ impl TernaryExpression {
         if_true: ExprId,
         if_false: ExprId,
     ) -> Option<ExprId> {
-        let test = s7b_shims::coerce_expression(ctx, TypeId::BOOL, test)?;
+        let test = TypeId::BOOL.coerce_expression(ctx, test)?;
 
         let true_ty = ctx.pool.expression(if_true).ty;
         let false_ty = ctx.pool.expression(if_false).ty;
@@ -83,8 +84,8 @@ impl TernaryExpression {
             return None;
         }
 
-        let if_true = s7b_shims::coerce_expression(ctx, types.left, if_true)?;
-        let if_false = s7b_shims::coerce_expression(ctx, types.right, if_false)?;
+        let if_true = types.left.coerce_expression(ctx, if_true)?;
+        let if_false = types.right.coerce_expression(ctx, if_false)?;
 
         Some(Self::make(ctx, pos, test, if_true, if_false))
     }
@@ -104,7 +105,7 @@ impl TernaryExpression {
         if_true: ExprId,
         if_false: ExprId,
     ) -> ExprId {
-        let test_expr = constant_folder_stub::get_constant_value_for_variable(&ctx.pool, test);
+        let test_expr = constant_folder::get_constant_value_for_variable(&ctx.pool, test);
         let static_bool = ctx
             .pool
             .expression(test_expr)

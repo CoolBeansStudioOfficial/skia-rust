@@ -162,6 +162,21 @@ pub fn is_constant_expression(pool: &IrPool, expr: ExprId) -> bool {
     !ConstantExpressionVisitor { loop_indices: None }.visit_expression(pool, expr)
 }
 
+/// `ConstantExpressionVisitor` with loop indices: true when `expr` is not a constant expression,
+/// where the loop indices in `loop_indices` count as constant.
+// Port of: src/sksl/analysis/SkSLIsConstantExpression.cpp#L23-L110 (chrome/m156)
+#[must_use]
+pub fn is_constant_expression_with_loop_indices(
+    pool: &IrPool,
+    expr: ExprId,
+    loop_indices: &HashSet<VarId>,
+) -> bool {
+    !ConstantExpressionVisitor {
+        loop_indices: Some(loop_indices),
+    }
+    .visit_expression(pool, expr)
+}
+
 /// `Analysis::IsTrivialExpression`: an expression that is cheap enough to clone several times.
 // Port of: src/sksl/analysis/SkSLIsTrivialExpression.cpp#L25-L84 (chrome/m156)
 #[must_use]

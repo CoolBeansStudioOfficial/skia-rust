@@ -8,14 +8,16 @@
 //! [`get_loop_control_flow_info`], which finds the `break`, `continue` and `return` that affect
 //! a loop.
 
-use super::s9b_shims::{
-    SafeMath, binary_expression_make, double_saturate2int, forward_errors, get_constant_value,
-    statement_writes_to_variable,
-};
+use super::statement_queries::statement_writes_to_variable;
 use super::{ProgramVisitor, walk_statement};
+use crate::base_shim::{SafeMath, double_saturate2int};
+use crate::constant_folder::get_constant_value;
 use crate::context::Context;
 use crate::error_reporter::ErrorReporter;
-use crate::ir::{ExprId, ExpressionKind, IrPool, LoopUnrollInfo, StatementKind, StmtId, VarId};
+use crate::error_reporter::forward_errors;
+use crate::ir::{
+    BinaryExpression, ExprId, ExpressionKind, IrPool, LoopUnrollInfo, StatementKind, StmtId, VarId,
+};
 use crate::operator::{Operator, OperatorKind};
 use crate::position::{ForLoopPositions, Position};
 
@@ -458,7 +460,7 @@ fn unroll_info_checks(
                 };
                 let left = ctx.pool.clone_expression(cond_left);
                 let right = ctx.pool.clone_expression(cond_right);
-                *loop_test = Some(binary_expression_make(
+                *loop_test = Some(BinaryExpression::make(
                     ctx,
                     cond_pos,
                     left,

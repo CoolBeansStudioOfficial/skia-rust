@@ -5,16 +5,12 @@
 // `Finalizer` that checks a body (loops, returns, local variable slots) and fuses declarations
 // with their first assignment when optimizing.
 //
-// Not yet ported (see `pending`): coercing a returned value to the function's return type
-// (`Type::coerceExpression`, task S7a) and the `sk_Position` fixup that a vertex `main` gets when
-// `sk_RTAdjust` is in scope (it is built with the S7a/S7b expression helpers).
-
 //! [`FunctionDefinition`] construction: `FunctionDefinition::Convert` and `Make`.
 
 use super::{
     BinaryExpression, Block, ExprId, ExpressionKind, FnId, FunctionDefinition, IrPool, Nop,
-    ProgramElement, ProgramElementKind, Statement, StatementKind, StmtId, VarId, VariableStorage,
-    ids::ElemId,
+    ProgramElement, ProgramElementKind, Statement, StatementKind, StmtId, SymTabId, SymbolId,
+    VarId, VariableStorage, ids::ElemId, swizzle_component,
 };
 use crate::analysis::{ProgramVisitor, walk_expression};
 use crate::context::Context;
@@ -28,19 +24,9 @@ use crate::transform::ProgramWriter;
 // Port of: src/sksl/SkSLCompiler.h#L69 (chrome/m156)
 const RTADJUST_NAME: &str = "sk_RTAdjust";
 
-/// Stops with the name of a Skia path that is not ported yet, so that no body is produced that
-/// would differ from Skia's.
-fn pending(what: &str) -> ! {
-    panic!("SkSL port: {what} is not ported yet")
-}
-
 impl FunctionDefinition {
     /// `FunctionDefinition::Convert`: checks a function body and makes the definition. Returns
     /// `None` after reporting an error. `body` is `None` when the parser produced no body.
-    ///
-    /// # Panics
-    ///
-    /// On the paths that are not ported yet (see the module docs).
     // Port of: src/sksl/ir/SkSLFunctionDefinition.cpp#L209-L330 (chrome/m156)
     #[must_use]
     pub fn convert(
@@ -93,7 +79,7 @@ impl FunctionDefinition {
 
         let config = *ctx.config();
         if ctx.pool.function(function).is_main && ProgramConfig::is_vertex(config.kind) {
-            append_rtadjust_fixup_to_vertex_main(ctx);
+            append_rtadjust_fixup_to_vertex_main(ctx, body);
         }
 
         if can_exit_without_returning_value(&ctx.pool, function, body) {
@@ -137,15 +123,155 @@ impl FunctionDefinition {
     }
 }
 
-/// `append_rtadjust_fixup_to_vertex_main`: appends the `sk_Position` fixup when `sk_RTAdjust` is
-/// in scope. Only the check is ported; the fixup itself needs the expression helpers.
-// Port of: src/sksl/ir/SkSLFunctionDefinition.cpp#L20-L24 (chrome/m156), the lookup part
-fn append_rtadjust_fixup_to_vertex_main(ctx: &Context) {
+/// `append_rtadjust_fixup_to_vertex_main`: when `sk_RTAdjust` is in scope, appends to the body of
+/// a vertex `main` the statement that fixes up `sk_Position`.
+// Port of: src/sksl/ir/SkSLFunctionDefinition.cpp#L20-L43 (chrome/m156)
+fn append_rtadjust_fixup_to_vertex_main(ctx: &mut Context, body: StmtId) {
     let table = ctx
         .symbol_table
         .expect("FunctionDefinition::Convert: no current symbol table");
-    if ctx.pool.find_symbol(table, RTADJUST_NAME).is_some() {
-        pending("the sk_Position fixup of a vertex main (task S7a/S7b expression helpers)");
+    // If this program uses RTAdjust...
+    if let Some(rt_adjust) = ctx.pool.find_symbol(table, RTADJUST_NAME) {
+        // ...append a line to the end of the function body which fixes up sk_Position.
+        let fixup = make_fixup_stmt(ctx, table, rt_adjust);
+        if let StatementKind::Block(block) = &mut ctx.pool.statement_mut(body).kind {
+            block.children.push(fixup);
+        }
+    }
+}
+
+/// `AppendRTAdjustFixupHelper::makeFixupStmt`, with the `IRHelpers` it uses (`SkSLIRHelpers.h`):
+/// `sk_Position = float4(sk_Position.xy * rtAdjust.xz + sk_Position.ww * rtAdjust.yw, 0,
+/// sk_Position.w);`.
+// Port of: src/sksl/ir/SkSLFunctionDefinition.cpp#L45-L81 (chrome/m156)
+fn make_fixup_stmt(ctx: &mut Context, table: SymTabId, rt_adjust: SymbolId) -> StmtId {
+    // The field of `sk_Position` and the variable it belongs to.
+    let position_field = ctx
+        .pool
+        .find_symbol(table, "sk_Position")
+        .expect("sk_Position is declared in every vertex program");
+    let SymbolId::Field(field) = position_field else {
+        unreachable!("sk_Position is an interface-block field");
+    };
+    let (owner, field_index) = {
+        let f = ctx.pool.field_symbol(field);
+        (f.owner, f.field_index)
+    };
+    let pos = |ctx: &mut Context| helpers::field(ctx, owner, field_index);
+    let adjust = |ctx: &mut Context| {
+        rt_adjust
+            .instantiate(ctx, Position::default())
+            .expect("sk_RTAdjust is a variable")
+    };
+    let xy = {
+        let base = pos(ctx);
+        helpers::swizzle(ctx, base, &[swizzle_component::X, swizzle_component::Y])
+    };
+    let adj_xz = {
+        let base = adjust(ctx);
+        helpers::swizzle(ctx, base, &[swizzle_component::X, swizzle_component::Z])
+    };
+    let ww = {
+        let base = pos(ctx);
+        helpers::swizzle(ctx, base, &[swizzle_component::W, swizzle_component::W])
+    };
+    let adj_yw = {
+        let base = adjust(ctx);
+        helpers::swizzle(ctx, base, &[swizzle_component::Y, swizzle_component::W])
+    };
+    let xy_term = helpers::mul(ctx, xy, adj_xz);
+    let ww_term = helpers::mul(ctx, ww, adj_yw);
+    let sum = helpers::add(ctx, xy_term, ww_term);
+    let w = {
+        let base = pos(ctx);
+        helpers::swizzle(ctx, base, &[swizzle_component::W])
+    };
+    let zero = helpers::float(ctx, 0.0);
+    let value = helpers::ctor_xyzw(ctx, sum, zero, w);
+    let target = pos(ctx);
+    helpers::assign(ctx, target, value)
+}
+
+/// The `IRHelpers` members that the sk_Position fixup uses. Each one is named after its Skia
+/// member; positions are `Position()` unless Skia derives them from an operand.
+mod helpers {
+    use crate::analysis;
+    use crate::context::Context;
+    use crate::ir::{
+        BinaryExpression, ComponentArray, ConstructorCompound, ExprId, ExpressionStatement,
+        FieldAccess, FieldAccessOwnerKind, Literal, StmtId, Swizzle, TypeId, VarId,
+        VariableRefKind, VariableReference,
+    };
+    use crate::operator::{Operator, OperatorKind};
+    use crate::position::Position;
+
+    /// `IRHelpers::Field(var, idx)`.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L50-L53 (chrome/m156)
+    pub(super) fn field(ctx: &mut Context, var: VarId, idx: usize) -> ExprId {
+        let base = VariableReference::make(
+            &mut ctx.pool,
+            Position::default(),
+            var,
+            VariableRefKind::Read,
+        );
+        FieldAccess::make(
+            ctx,
+            Position::default(),
+            base,
+            idx,
+            FieldAccessOwnerKind::AnonymousInterfaceBlock,
+        )
+    }
+
+    /// `IRHelpers::Swizzle(base, c)`: positioned at the base.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L55-L59 (chrome/m156)
+    pub(super) fn swizzle(ctx: &mut Context, base: ExprId, components: &[i8]) -> ExprId {
+        let pos = ctx.pool.expression(base).position;
+        Swizzle::make(ctx, pos, base, ComponentArray::from_slice(components))
+    }
+
+    /// `IRHelpers::Binary(l, op, r)`: positioned from the left operand through the right one.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L61-L66 (chrome/m156)
+    pub(super) fn binary(ctx: &mut Context, l: ExprId, op: Operator, r: ExprId) -> ExprId {
+        let pos = ctx
+            .pool
+            .expression(l)
+            .position
+            .range_through(ctx.pool.expression(r).position);
+        BinaryExpression::make(ctx, pos, l, op, r)
+    }
+
+    /// `IRHelpers::Mul(l, r)`.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L68-L71 (chrome/m156)
+    pub(super) fn mul(ctx: &mut Context, l: ExprId, r: ExprId) -> ExprId {
+        binary(ctx, l, Operator::from(OperatorKind::Star), r)
+    }
+
+    /// `IRHelpers::Add(l, r)`.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L73-L76 (chrome/m156)
+    pub(super) fn add(ctx: &mut Context, l: ExprId, r: ExprId) -> ExprId {
+        binary(ctx, l, Operator::from(OperatorKind::Plus), r)
+    }
+
+    /// `IRHelpers::Float(value)`.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L78-L81 (chrome/m156)
+    pub(super) fn float(ctx: &mut Context, value: f32) -> ExprId {
+        Literal::make_float(&mut ctx.pool, Position::default(), value, TypeId::FLOAT)
+    }
+
+    /// `IRHelpers::CtorXYZW(xy, z, w)`: a `float4` of the three arguments.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L88-L97 (chrome/m156)
+    pub(super) fn ctor_xyzw(ctx: &mut Context, xy: ExprId, z: ExprId, w: ExprId) -> ExprId {
+        ConstructorCompound::make(ctx, Position::default(), TypeId::FLOAT4, vec![xy, z, w])
+    }
+
+    /// `IRHelpers::Assign(l, r)`: the statement `l = r;`.
+    // Port of: src/sksl/ir/SkSLIRHelpers.h#L99-L104 (chrome/m156)
+    pub(super) fn assign(ctx: &mut Context, l: ExprId, r: ExprId) -> StmtId {
+        let ok = analysis::update_variable_ref_kind(&mut ctx.pool, l, VariableRefKind::Write, None);
+        debug_assert!(ok, "the fixup target is assignable");
+        let expr = binary(ctx, l, Operator::from(OperatorKind::Eq), r);
+        ExpressionStatement::make(ctx, expr)
     }
 }
 
@@ -339,17 +465,20 @@ impl ProgramWriter for Finalizer {
                 // Verify that the return statement matches the function's return type.
                 if let Some(expression) = expression {
                     if self.returns_value {
-                        // Coerce the return expression to the function's return type
-                        // (`Type::coerceExpression`, task S7a).
-                        pending("coercing a returned value to the return type (task S7a)");
-                    }
-                    // Returning something from a function with a void return type. (The branch
-                    // above stops, so this is only reached for a void function.)
-                    let expr_pos = ctx.pool.expression(expression).position;
-                    ctx.errors
-                        .error(expr_pos, "may not return a value from a void function");
-                    if let StatementKind::Return(ret) = &mut ctx.pool.statement_mut(stmt).kind {
-                        ret.expression = None;
+                        // Coerce return expression to the function's return type.
+                        let return_type = ctx.pool.function(self.function).return_type;
+                        let coerced = return_type.coerce_expression(ctx, expression);
+                        if let StatementKind::Return(ret) = &mut ctx.pool.statement_mut(stmt).kind {
+                            ret.expression = coerced;
+                        }
+                    } else {
+                        // Returning something from a function with a void return type.
+                        let expr_pos = ctx.pool.expression(expression).position;
+                        ctx.errors
+                            .error(expr_pos, "may not return a value from a void function");
+                        if let StatementKind::Return(ret) = &mut ctx.pool.statement_mut(stmt).kind {
+                            ret.expression = None;
+                        }
                     }
                 } else if self.returns_value {
                     // Returning nothing from a function with a non-void return type.

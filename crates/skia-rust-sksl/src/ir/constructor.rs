@@ -14,11 +14,10 @@
 //! The constructor expressions (`AnyConstructor` and its subclasses).
 
 use super::{
-    ComparisonResult, Expression, ExpressionKind, IrPool, VariableRefKind,
+    ComparisonResult, Expression, ExpressionKind, IrPool,
     ids::{ExprId, TypeId},
 };
 use crate::context::Context;
-use crate::defines::SkslInt;
 use crate::operator::OperatorPrecedence;
 use crate::position::Position;
 use crate::string::Separator;
@@ -437,119 +436,4 @@ fn matrix_dimension(pool: &IrPool, ty: TypeId, rows: bool) -> usize {
     let t = pool.ty(ty);
     let dim = if rows { t.rows() } else { t.columns() };
     usize::try_from(dim).unwrap_or(0)
-}
-
-// ---------------------------------------------------------------------------------------------
-// Minimal stand-ins for S8 (`ConstantFolder`) and S9a (`Analysis`). They match Skia's functions
-// for the cases the constructors reach. S8 and S9a own the originals.
-// ---------------------------------------------------------------------------------------------
-
-/// `Analysis::IsCompileTimeConstant(expr)`: a literal, or a constructor of the kinds Skia lists
-/// whose arguments are all compile-time constants. Casting constructors are not included.
-// Stand-in for S9a. Port of: src/sksl/SkSLAnalysis.cpp#L473-L508 (chrome/m156)
-pub(crate) fn is_compile_time_constant(pool: &IrPool, id: ExprId) -> bool {
-    let expr = pool.expression(id);
-    match &expr.kind {
-        ExpressionKind::Literal(_) => true,
-        ExpressionKind::ConstructorArray(_)
-        | ExpressionKind::ConstructorCompound(_)
-        | ExpressionKind::ConstructorDiagonalMatrix(_)
-        | ExpressionKind::ConstructorMatrixResize(_)
-        | ExpressionKind::ConstructorSplat(_)
-        | ExpressionKind::ConstructorStruct(_) => expr
-            .any_constructor_arguments()
-            .is_some_and(|args| args.iter().all(|&a| is_compile_time_constant(pool, a))),
-        _ => false,
-    }
-}
-
-/// `ConstantFolder::GetConstantValueOrNull(expr)`: follows `const` variables with initial values
-/// to the constant they hold, or returns `None`.
-// Stand-in for S8. Port of: src/sksl/SkSLConstantFolder.cpp#L441-L460 (chrome/m156)
-pub(crate) fn constant_value_or_null(pool: &IrPool, id: ExprId) -> Option<ExprId> {
-    let mut expr = id;
-    while let ExpressionKind::VariableReference(r) = &pool.expression(expr).kind {
-        if r.ref_kind != VariableRefKind::Read {
-            return None;
-        }
-        let var = pool.variable(r.variable);
-        if !var.modifier_flags.is_const() {
-            return None;
-        }
-        // Generally, const variables must have initial values. Function parameters are an
-        // exception; they can be const but won't have an initial value.
-        expr = var.initial_value(pool)?;
-    }
-    is_compile_time_constant(pool, expr).then_some(expr)
-}
-
-/// `ConstantFolder::GetConstantValueForVariable(expr)`: the constant `expr` names, or `expr`.
-// Stand-in for S8. Port of: src/sksl/SkSLConstantFolder.cpp#L462-L465 (chrome/m156)
-pub(crate) fn constant_value_for_variable(pool: &IrPool, id: ExprId) -> ExprId {
-    constant_value_or_null(pool, id).unwrap_or(id)
-}
-
-/// `ConstantFolder::MakeConstantValueForVariable(pos, expr)`: a copy at `pos` of the constant
-/// `expr` names, or `expr` itself.
-// Stand-in for S8. Port of: src/sksl/SkSLConstantFolder.cpp#L467-L471 (chrome/m156)
-pub(crate) fn make_constant_value_for_variable(
-    pool: &mut IrPool,
-    pos: Position,
-    id: ExprId,
-) -> ExprId {
-    match constant_value_or_null(pool, id) {
-        Some(value) => pool.clone_expression_at(value, pos),
-        None => id,
-    }
-}
-
-/// `ConstantFolder::GetConstantInt(value, &out)`: the integer literal `id` names, if any.
-// Stand-in for S8. Port of: src/sksl/SkSLConstantFolder.cpp#L326-L333 (chrome/m156)
-pub(crate) fn get_constant_int(pool: &IrPool, id: ExprId) -> Option<SkslInt> {
-    let value = constant_value_for_variable(pool, id);
-    let expr = pool.expression(value);
-    if expr.is_int_literal(pool) {
-        expr.as_literal().map(|literal| literal.int_value())
-    } else {
-        None
-    }
-}
-
-/// `Analysis::IsSameExpressionTree(left, right)`: structural equality for the expression kinds
-/// Skia compares. Anything else is never the same tree.
-// Stand-in for S9a. Port of: src/sksl/analysis/SkSLIsSameExpressionTree.cpp#L28-L86 (chrome/m156)
-#[allow(clippy::float_cmp)] // Skia compares literal values with `==` on doubles.
-pub(crate) fn is_same_expression_tree(pool: &IrPool, left: ExprId, right: ExprId) -> bool {
-    let l = pool.expression(left);
-    let r = pool.expression(right);
-    if std::mem::discriminant(&l.kind) != std::mem::discriminant(&r.kind)
-        || !pool.ty(l.ty).matches(r.ty)
-    {
-        return false;
-    }
-    let same = |a: ExprId, b: ExprId| is_same_expression_tree(pool, a, b);
-    match (&l.kind, &r.kind) {
-        (ExpressionKind::Literal(a), ExpressionKind::Literal(b)) => a.value == b.value,
-        (ExpressionKind::FieldAccess(a), ExpressionKind::FieldAccess(b)) => {
-            a.field_index == b.field_index && same(a.base, b.base)
-        }
-        (ExpressionKind::Index(a), ExpressionKind::Index(b)) => {
-            same(a.index, b.index) && same(a.base, b.base)
-        }
-        (ExpressionKind::Prefix(a), ExpressionKind::Prefix(b)) => {
-            a.operator.kind() == b.operator.kind() && same(a.operand, b.operand)
-        }
-        (ExpressionKind::Swizzle(a), ExpressionKind::Swizzle(b)) => {
-            a.components == b.components && same(a.base, b.base)
-        }
-        (ExpressionKind::VariableReference(a), ExpressionKind::VariableReference(b)) => {
-            a.variable == b.variable
-        }
-        _ => match (l.any_constructor_arguments(), r.any_constructor_arguments()) {
-            (Some(la), Some(ra)) => {
-                la.len() == ra.len() && la.iter().zip(ra).all(|(&a, &b)| same(a, b))
-            }
-            _ => false,
-        },
-    }
 }

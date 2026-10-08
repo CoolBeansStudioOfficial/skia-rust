@@ -203,11 +203,13 @@ fn assignment_out_of_range_literal_is_reported_once() {
 #[test]
 fn binary_make_takes_the_result_type_of_the_operator() {
     let mut ctx = context(ProgramKind::Fragment);
-    let a = lit(&mut ctx, TypeId::FLOAT, 1.0);
+    // Non-constant operands: constant operands would be folded (ConstantFolder::Simplify).
+    let x = var(&mut ctx, "x", TypeId::FLOAT, ModifierFlags::empty());
+    let a = var_ref(&mut ctx, x, VariableRefKind::Read);
     let b = lit(&mut ctx, TypeId::FLOAT, 2.0);
     let compare = BinaryExpression::make(&mut ctx, at(), a, op(OperatorKind::Lt), b);
     assert_eq!(ctx.pool.expression(compare).ty, TypeId::BOOL);
-    assert_eq!(ctx.pool.expression_description(compare), "1.0 < 2.0");
+    assert_eq!(ctx.pool.expression_description(compare), "x < 2.0");
 }
 
 #[test]
@@ -272,7 +274,9 @@ fn double_negation_becomes_the_operand() {
 #[test]
 fn logical_not_of_a_comparison_flips_the_comparison() {
     let mut ctx = context(ProgramKind::Fragment);
-    let a = lit(&mut ctx, TypeId::FLOAT, 1.0);
+    // Non-constant operands: constant operands would be folded (ConstantFolder::Simplify).
+    let x = var(&mut ctx, "x", TypeId::FLOAT, ModifierFlags::empty());
+    let a = var_ref(&mut ctx, x, VariableRefKind::Read);
     let b = lit(&mut ctx, TypeId::FLOAT, 2.0);
     let equal = BinaryExpression::make_with_result_type(
         &mut ctx,

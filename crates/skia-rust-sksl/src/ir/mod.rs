@@ -18,7 +18,6 @@
 mod binary_expression;
 mod block;
 mod child_call;
-mod constant_folder_stub;
 pub mod constructor;
 mod constructor_array;
 mod constructor_array_cast;
@@ -45,7 +44,6 @@ mod pool;
 mod prefix_postfix;
 mod program;
 mod program_element;
-mod s7b_shims;
 mod setting;
 mod simple_expressions;
 mod simple_statements;

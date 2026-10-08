@@ -11,12 +11,14 @@
 //! [`SwitchCase`].
 
 use super::{
-    IrPool, StatementKind,
+    ExpressionKind, IrPool, Nop, Statement, StatementKind, VariableRefKind,
     ids::{ExprId, StmtId, SymTabId, VarId},
 };
+use crate::analysis;
+use crate::context::Context;
 use crate::defines::SkslInt;
 use crate::operator::OperatorPrecedence;
-use crate::position::ForLoopPositions;
+use crate::position::{ForLoopPositions, Position};
 
 /// `SkSL::DoStatement`: `do statement while (test);`.
 // Port of: src/sksl/ir/SkSLDoStatement.h#L23-L74 (chrome/m156)
@@ -50,6 +52,44 @@ impl DoStatement {
 pub struct ExpressionStatement {
     /// `expression()`.
     pub expression: ExprId,
+}
+
+impl ExpressionStatement {
+    /// `ExpressionStatement::Make`: a statement of `expr`. When optimizing, an expression with no
+    /// side effects becomes a `Nop`, and an assignment whose target is read-write is demoted to a
+    /// write, because the value of the assignment is discarded.
+    // Port of: src/sksl/ir/SkSLExpressionStatement.cpp#L31-L53 (chrome/m156)
+    #[must_use]
+    pub fn make(ctx: &mut Context, expr: ExprId) -> StmtId {
+        let pos = ctx.pool.expression(expr).position;
+        if ctx.config().settings.optimize {
+            // Expression-statements without any side effect can be replaced with a Nop.
+            if !analysis::has_side_effects(&ctx.pool, expr) {
+                return ctx
+                    .pool
+                    .add_statement(Statement::new(Position::default(), StatementKind::Nop(Nop)));
+            }
+            // If this is an assignment statement like `a += b;`, the ref-kind of `a` will be set
+            // as read-write; `a` is written-to by the +=, and read-from by the consumer of the
+            // expression. We can demote the ref-kind to "write" safely, because the result of the
+            // expression is discarded; that is, `a` is never actually read-from.
+            let assigned = match &ctx.pool.expression(expr).kind {
+                ExpressionKind::Binary(binary) => binary.is_assignment_into_variable(&ctx.pool),
+                _ => None,
+            };
+            if let Some(var_ref) = assigned
+                && let ExpressionKind::VariableReference(reference) =
+                    &mut ctx.pool.expression_mut(var_ref).kind
+                && reference.ref_kind == VariableRefKind::ReadWrite
+            {
+                reference.ref_kind = VariableRefKind::Write;
+            }
+        }
+        ctx.pool.add_statement(Statement::new(
+            pos,
+            StatementKind::Expression(ExpressionStatement { expression: expr }),
+        ))
+    }
 }
 
 impl ExpressionStatement {

@@ -6,11 +6,11 @@
 
 //! [`ConstructorDiagonalMatrix`]'s factory.
 
-use super::constructor::make_constant_value_for_variable;
 use super::{
     ConstructorDiagonalMatrix, Expression, ExpressionKind,
     ids::{ExprId, TypeId},
 };
+use crate::constant_folder;
 use crate::context::Context;
 use crate::position::Position;
 
@@ -25,7 +25,7 @@ impl ConstructorDiagonalMatrix {
 
         // Look up the value of constant variables. This allows constant-expressions like
         // `mat4(five)` to be replaced with `mat4(5.0)`.
-        let arg = make_constant_value_for_variable(&mut ctx.pool, pos, arg);
+        let arg = constant_folder::make_constant_value_for_variable(ctx, pos, arg);
 
         ctx.pool.add_expression(Expression::new(
             pos,

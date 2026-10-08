@@ -6,7 +6,11 @@
 
 //! [`Swizzle`]: `base.xyzw`.
 
-use super::{Expression, ExpressionKind, IrPool, constant_folder_stub, ids::ExprId, s7b_shims};
+use super::{
+    ConstructorCompound, ConstructorCompoundCast, ConstructorScalarCast, ConstructorSplat,
+    Expression, ExpressionKind, IrPool, Literal, ids::ExprId,
+};
+use crate::constant_folder;
 use crate::context::Context;
 use crate::operator::OperatorPrecedence;
 use crate::position::Position;
@@ -145,7 +149,7 @@ impl Swizzle {
         }
 
         // Coerce literals in expressions such as `(12345).xxx` to their actual type.
-        let base = s7b_shims::coerce_expression(ctx, base_scalar, base)?;
+        let base = base_scalar.coerce_expression(ctx, base)?;
 
         // Swizzles are complicated due to constant components. The most difficult case is a mask
         // like '.x1w0'. A naive approach might turn that into 'float4(base.x, 1, base.w, 0)', but
@@ -192,7 +196,7 @@ impl Swizzle {
                 swizzle_component::ZERO => {
                     let index = *constant_zero_idx.get_or_insert_with(|| {
                         // Synthesize a '0' argument at the end of the constructor.
-                        constructor_args.push(s7b_shims::make_literal(ctx, pos, 0.0, scalar_type));
+                        constructor_args.push(Literal::make(&mut ctx.pool, pos, 0.0, scalar_type));
                         constant_field_idx += 1;
                         constant_field_idx - 1
                     });
@@ -201,7 +205,7 @@ impl Swizzle {
                 swizzle_component::ONE => {
                     let index = *constant_one_idx.get_or_insert_with(|| {
                         // Synthesize a '1' argument at the end of the constructor.
-                        constructor_args.push(s7b_shims::make_literal(ctx, pos, 1.0, scalar_type));
+                        constructor_args.push(Literal::make(&mut ctx.pool, pos, 1.0, scalar_type));
                         constant_field_idx += 1;
                         constant_field_idx - 1
                     });
@@ -216,7 +220,7 @@ impl Swizzle {
         }
 
         let compound_type = ctx.pool.ty(scalar_type).to_compound(constant_field_idx, 1);
-        let expr = s7b_shims::make_compound(ctx, pos, compound_type, constructor_args);
+        let expr = ConstructorCompound::make(ctx, pos, compound_type, constructor_args);
 
         // Create (and potentially optimize-away) the resulting swizzle-expression.
         Some(Self::make(ctx, pos, expr, swizzle_components))
@@ -253,7 +257,7 @@ impl Swizzle {
         // this. Replace swizzles with equivalent splat constructors (`scalar.xxx` --> `half3(value)`).
         if ctx.pool.ty(expr_ty).is_scalar() {
             let ty = ctx.pool.ty(expr_ty).to_compound(n, 1);
-            return s7b_shims::make_splat(ctx, pos, ty, expr);
+            return ConstructorSplat::make(ctx, pos, ty, expr);
         }
 
         // Detect identity swizzles like `color.rgba` and optimize them away.
@@ -275,7 +279,7 @@ impl Swizzle {
 
         // If we are swizzling a constant expression, we can use its value instead here (so that
         // swizzles like `colorWhite.x` can be simplified to `1`).
-        let value = constant_folder_stub::get_constant_value_for_variable(&ctx.pool, expr);
+        let value = constant_folder::get_constant_value_for_variable(&ctx.pool, expr);
         let value_ty = ctx.pool.expression(value).ty;
         match ctx.pool.expression(value).kind.clone() {
             // `half4(scalar).zyy` can be optimized to `half3(scalar)`, and `half3(scalar).y` can be
@@ -284,7 +288,7 @@ impl Swizzle {
             ExpressionKind::ConstructorSplat(splat) => {
                 let ty = ctx.pool.ty(value_ty).component_type().to_compound(n, 1);
                 let argument = ctx.pool.clone_expression(splat.argument);
-                return s7b_shims::make_splat(ctx, pos, ty, argument);
+                return ConstructorSplat::make(ctx, pos, ty, argument);
             }
             // Swizzles on casts, like `half4(myFloat4).zyy`, can optimize to `half3(myFloat4.zyy)`.
             ExpressionKind::ConstructorCompoundCast(cast) => {
@@ -292,9 +296,9 @@ impl Swizzle {
                 let argument = ctx.pool.clone_expression(cast.argument);
                 let swizzled = Self::make(ctx, pos, argument, components);
                 return if ctx.pool.ty(cast_type).columns() > 1 {
-                    s7b_shims::make_compound_cast(ctx, pos, cast_type, swizzled)
+                    ConstructorCompoundCast::make(ctx, pos, cast_type, swizzled)
                 } else {
-                    s7b_shims::make_scalar_cast(ctx, pos, cast_type, swizzled)
+                    ConstructorScalarCast::make(ctx, pos, cast_type, swizzled)
                 };
             }
             _ => {}

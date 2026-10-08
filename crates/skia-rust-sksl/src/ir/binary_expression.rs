@@ -6,12 +6,10 @@
 
 //! [`BinaryExpression`]: `left op right`.
 
-use super::{
-    ExprId, Expression, ExpressionKind, IrPool, TypeId, VariableRefKind, constant_folder_stub,
-    s7b_shims,
-};
+use super::{ExprId, Expression, ExpressionKind, IrPool, TypeId, VariableRefKind};
+use crate::analysis::{self, AssignmentInfo};
+use crate::constant_folder;
 use crate::context::Context;
-use crate::error_reporter::ErrorReporter;
 use crate::operator::{Operator, OperatorKind, OperatorPrecedence};
 use crate::position::Position;
 
@@ -68,7 +66,8 @@ impl BinaryExpression {
             } else {
                 VariableRefKind::ReadWrite
             };
-            if !s7b_shims::update_variable_ref_kind(ctx, left, kind) {
+            if !analysis::update_variable_ref_kind(&mut ctx.pool, left, kind, Some(&mut ctx.errors))
+            {
                 return None;
             }
         }
@@ -132,8 +131,8 @@ impl BinaryExpression {
             }
         }
 
-        let new_left = s7b_shims::coerce_expression(ctx, types.left, left);
-        let new_right = s7b_shims::coerce_expression(ctx, types.right, right);
+        let new_left = types.left.coerce_expression(ctx, left);
+        let new_right = types.right.coerce_expression(ctx, right);
         let (new_left, new_right) = (new_left?, new_right?);
 
         Some(Self::make_with_result_type(
@@ -180,12 +179,11 @@ impl BinaryExpression {
         // For simple assignments, detect and report out-of-range literal values.
         if op.kind() == OperatorKind::Eq {
             let left_ty = ctx.pool.expression(left).ty;
-            s7b_shims::check_for_out_of_range_literal_expr(ctx, left_ty, right);
+            left_ty.check_for_out_of_range_literal(ctx, right);
         }
 
         // Perform constant-folding on the expression.
-        if let Some(result) = constant_folder_stub::simplify(ctx, pos, left, op, right, result_type)
-        {
+        if let Some(result) = constant_folder::simplify(ctx, pos, left, op, right, result_type) {
             return result;
         }
 
@@ -227,9 +225,12 @@ impl BinaryExpression {
         if !self.operator.is_assignment() {
             return None;
         }
-        let mut quiet = ErrorReporter::no_op();
-        let (ok, assigned) = s7b_shims::is_assignable(pool, &mut quiet, self.left);
-        if ok { assigned } else { None }
+        let mut info = AssignmentInfo::default();
+        if analysis::is_assignable(pool, self.left, Some(&mut info), None) {
+            info.assigned_var
+        } else {
+            None
+        }
     }
 
     /// `description(parentPrecedence)`.

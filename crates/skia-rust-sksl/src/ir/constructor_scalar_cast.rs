@@ -6,11 +6,12 @@
 
 //! [`ConstructorScalarCast`]'s factories.
 
-use super::constructor::{make_constant_value_for_variable, set_position};
+use super::constructor::set_position;
 use super::{
     ConstructorScalarCast, Expression, ExpressionKind, Literal,
     ids::{ExprId, TypeId},
 };
+use crate::constant_folder;
 use crate::context::Context;
 use crate::position::Position;
 
@@ -86,7 +87,7 @@ impl ConstructorScalarCast {
 
         // Look up the value of constant variables. This allows constant-expressions like
         // `int(zero)` to be replaced with a literal zero.
-        let arg = make_constant_value_for_variable(&mut ctx.pool, pos, arg);
+        let arg = constant_folder::make_constant_value_for_variable(ctx, pos, arg);
 
         // We can cast scalar literals at compile-time when possible. (If the resulting literal
         // would be out of range for its type, we report an error and return zero to minimize error

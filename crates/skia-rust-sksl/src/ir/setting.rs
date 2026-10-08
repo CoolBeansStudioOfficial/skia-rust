@@ -6,7 +6,7 @@
 
 //! [`Setting`]: `sk_Caps.flag`, a shader capability resolved at compile time.
 
-use super::{Expression, ExpressionKind, TypeId, ids::ExprId, s7b_shims};
+use super::{Expression, ExpressionKind, Literal, TypeId, ids::ExprId};
 use crate::context::Context;
 use crate::position::Position;
 use crate::program_settings::ProgramConfig;
@@ -130,7 +130,7 @@ impl Setting {
         ty: TypeId,
         caps: &ShaderCaps,
     ) -> ExprId {
-        s7b_shims::make_bool_literal(ctx, pos, self.caps.value_in(caps), ty)
+        Literal::make_bool(&mut ctx.pool, pos, self.caps.value_in(caps), ty)
     }
 
     /// `name()`.

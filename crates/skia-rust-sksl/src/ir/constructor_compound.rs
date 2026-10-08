@@ -6,13 +6,14 @@
 
 //! [`ConstructorCompound`]'s factories.
 
-use super::constructor::{is_same_expression_tree, make_constant_value_for_variable, set_position};
+use super::constructor::set_position;
 use super::{
     ConstructorCompound, ConstructorSplat, Expression, ExpressionKind, IrPool, Literal,
     ids::{ExprId, TypeId},
 };
 use crate::context::Context;
 use crate::position::Position;
+use crate::{analysis, constant_folder};
 
 impl ConstructorCompound {
     /// `ConstructorCompound::Make`: a vector or matrix built from `args`. A no-op constructor
@@ -80,7 +81,7 @@ impl ConstructorCompound {
         // Replace constant variables with their corresponding values, so `float2(one, two)` can
         // compile down to `float2(1.0, 2.0)` (the latter is a compile-time constant).
         for arg in &mut args {
-            *arg = make_constant_value_for_variable(&mut ctx.pool, pos, *arg);
+            *arg = constant_folder::make_constant_value_for_variable(ctx, pos, *arg);
         }
 
         if optimize {
@@ -159,7 +160,7 @@ fn make_splat_from_arguments(pool: &IrPool, ty: TypeId, args: &[ExprId]) -> Opti
             // On subsequent iterations, ensure that the expression we found matches the first
             // one. (IsSameExpressionTree always rejects an Expression with side effects.)
             Some(first) => {
-                if !is_same_expression_tree(pool, expr, first) {
+                if !analysis::is_same_expression_tree(pool, expr, first) {
                     return None;
                 }
             }

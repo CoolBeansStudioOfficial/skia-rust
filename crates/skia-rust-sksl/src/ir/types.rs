@@ -11,13 +11,13 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
 
-use super::constructor::{constant_value_for_variable, get_constant_int};
 use super::symbol_table::{add_array_dimension, add_symbol};
 use super::{
     ConstructorArrayCast, ConstructorCompoundCast, ConstructorScalarCast, Expression, IrPool,
     Layout, LayoutFlags, ModifierFlags, SymbolId,
     ids::{ExprId, SymTabId, TypeId},
 };
+use crate::constant_folder::{get_constant_int, get_constant_value_for_variable};
 use crate::context::Context;
 use crate::defines::{SkslInt, VARIABLE_SLOT_LIMIT};
 use crate::position::Position;
@@ -2115,7 +2115,7 @@ impl TypeId {
             return false;
         }
         // Replace constant expressions with their corresponding values.
-        let value_expr = constant_value_for_variable(&ctx.pool, expr);
+        let value_expr = get_constant_value_for_variable(&ctx.pool, expr);
         let (supports, unsized_array, num_slots, value_pos) = {
             let value = ctx.pool.expression(value_expr);
             let value_ty = ctx.pool.ty(value.ty);

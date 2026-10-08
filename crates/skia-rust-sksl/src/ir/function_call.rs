@@ -4,18 +4,16 @@
 // Ported from Skia: src/sksl/ir/SkSLFunctionCall.{h,cpp}: the data, `description`, overload
 // resolution (`FindBestFunctionForCall`), `Convert` and `Make`.
 //
-// Not yet ported (see `pending`): the argument coercion of `Convert` (`Type::coerceExpression`,
-// task S7a), the `Constructor::Convert` branch (S7a), `ChildCall::Make` for `eval` (S7b), the
-// out-parameter `UpdateVariableRefKind` (S7b), and the intrinsic constant folding of `Make` (needs
-// the S8 constant folder). Each of those paths panics with a message naming its task rather than
-// producing a call that differs from Skia's.
-
+// Ported from Skia: src/sksl/ir/SkSLFunctionCall.{h,cpp}.
+//
 //! [`FunctionCall`]: `function(args…)`.
 
 use super::{
-    CoercionCost, Expression, ExpressionKind, FnId, IrPool, LayoutFlags, ModifierFlags,
+    ChildCall, CoercionCost, Expression, ExpressionKind, FnId, IrPool, LayoutFlags, ModifierFlags,
+    VariableRefKind, constructor,
     ids::{ExprId, TypeId, VarId},
 };
+use crate::analysis;
 use crate::context::Context;
 use crate::intrinsic_list::IntrinsicKind;
 use crate::operator::OperatorPrecedence;
@@ -89,10 +87,6 @@ impl FunctionCall {
     /// (a type, a function name or a method) and converts the call. Returns `None` after
     /// reporting an error.
     ///
-    /// # Panics
-    ///
-    /// On the paths that are not ported yet (see the module docs): a constructor call, and a call
-    /// whose arguments need coercion.
     // Port of: src/sksl/ir/SkSLFunctionCall.cpp#L1117-L1162 (chrome/m156)
     #[must_use]
     pub fn convert(
@@ -102,14 +96,14 @@ impl FunctionCall {
         mut arguments: Vec<ExprId>,
     ) -> Option<ExprId> {
         enum Callee {
-            Type,
+            Type(TypeId),
             Function(FnId),
             Method { self_: ExprId, overload_chain: FnId },
             Poison,
             Other,
         }
         let callee = match &ctx.pool.expression(function_value).kind {
-            ExpressionKind::TypeReference(_) => Callee::Type,
+            ExpressionKind::TypeReference(r) => Callee::Type(r.value),
             ExpressionKind::FunctionReference(r) => Callee::Function(r.overload_chain),
             ExpressionKind::MethodReference(m) => Callee::Method {
                 self_: m.self_,
@@ -119,9 +113,9 @@ impl FunctionCall {
             _ => Callee::Other,
         };
         match callee {
-            Callee::Type => {
-                // Port of: Constructor::Convert (src/sksl/ir/SkSLConstructor.cpp), task S7a.
-                pending("Constructor::Convert (task S7a)")
+            Callee::Type(ty) => {
+                // Port of: src/sksl/ir/SkSLFunctionCall.cpp#L1119-L1125 (chrome/m156)
+                constructor::convert(ctx, pos, ty, arguments)
             }
             Callee::Function(overload_chain) => {
                 if let Some(best) =
@@ -173,9 +167,6 @@ impl FunctionCall {
     /// `FunctionCall::Convert(context, pos, function, arguments)`: checks a call to one resolved
     /// function, coerces its arguments and makes the call.
     ///
-    /// # Panics
-    ///
-    /// On the paths that are not ported yet (see the module docs).
     // Port of: src/sksl/ir/SkSLFunctionCall.cpp#L1164-L1273 (chrome/m156)
     #[must_use]
     pub fn convert_function(
@@ -232,7 +223,7 @@ impl FunctionCall {
         }
 
         // Resolve generic types.
-        let Some((_parameter_types, return_type)) = ctx
+        let Some((types, return_type)) = ctx
             .pool
             .function(function)
             .determine_final_types(&ctx.pool, &arguments)
@@ -246,11 +237,31 @@ impl FunctionCall {
             return None;
         };
 
-        if !arguments.is_empty() {
-            // Skia coerces each argument to its parameter type (`Type::coerceExpression`, which
-            // needs `_parameter_types`) and updates the reference kind of out-parameters
-            // (`Analysis::UpdateVariableRefKind`).
-            pending("argument coercion and out-parameter reference kinds (tasks S7a and S7b)");
+        let mut arguments = arguments;
+        for (i, &param_ty) in types.iter().enumerate() {
+            // Coerce each argument to the proper type.
+            let Some(coerced) = param_ty.coerce_expression(ctx, arguments[i]) else {
+                return None;
+            };
+            arguments[i] = coerced;
+            // Update the refKind on out-parameters, and ensure that they are actually assignable.
+            let param = ctx.pool.function(function).parameters[i];
+            let param_flags = ctx.pool.variable(param).modifier_flags;
+            if param_flags.contains(ModifierFlags::OUT) {
+                let ref_kind = if param_flags.contains(ModifierFlags::IN) {
+                    VariableRefKind::ReadWrite
+                } else {
+                    VariableRefKind::Pointer
+                };
+                if !analysis::update_variable_ref_kind(
+                    &mut ctx.pool,
+                    arguments[i],
+                    ref_kind,
+                    Some(&mut ctx.errors),
+                ) {
+                    return None;
+                }
+            }
         }
 
         if ctx.pool.function(function).is_main {
@@ -272,8 +283,15 @@ impl FunctionCall {
         }
 
         if intrinsic == Some(IntrinsicKind::Eval) {
-            // A method call on an effect child becomes a ChildCall (`ChildCall::Make`, task S7b).
-            pending("ChildCall::Make for eval() (task S7b)");
+            // This is a method call on an effect child. Translate it into a ChildCall, which
+            // simplifies handling in the generators and analysis code.
+            let child = match &ctx.pool.expression(arguments[arguments.len() - 1]).kind {
+                ExpressionKind::VariableReference(r) => r.variable,
+                _ => unreachable!("eval() is called on an effect child variable"),
+            };
+            let mut arguments = arguments;
+            arguments.pop();
+            return Some(ChildCall::make(ctx, pos, return_type, child, arguments));
         }
 
         Some(Self::make(ctx, pos, return_type, function, arguments))

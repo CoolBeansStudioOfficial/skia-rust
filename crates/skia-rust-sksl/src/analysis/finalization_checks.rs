@@ -7,8 +7,9 @@
 
 use std::collections::HashSet;
 
-use super::s9b_shims::{WriteCounts, saturating_add_size};
+use super::ProgramUsage;
 use super::{ProgramVisitor, walk_expression, walk_program_element};
+use crate::base_shim::saturating_add_size;
 use crate::context::Context;
 use crate::defines::VARIABLE_SLOT_LIMIT;
 use crate::error_reporter::ErrorReporter;
@@ -23,7 +24,7 @@ use crate::program_settings::{ProgramConfig, ProgramKind};
 struct FinalizationVisitor<'a> {
     kind: ProgramKind,
     errors: &'a mut ErrorReporter,
-    usage: &'a WriteCounts,
+    usage: &'a ProgramUsage,
     global_slots_used: usize,
     // We pack the set/binding pair into a single 64-bit key.
     bindings: HashSet<u64>,
@@ -35,7 +36,7 @@ struct FinalizationVisitor<'a> {
 }
 
 impl<'a> FinalizationVisitor<'a> {
-    fn new(kind: ProgramKind, errors: &'a mut ErrorReporter, usage: &'a WriteCounts) -> Self {
+    fn new(kind: ProgramKind, errors: &'a mut ErrorReporter, usage: &'a ProgramUsage) -> Self {
         Self {
             kind,
             errors,
@@ -111,7 +112,7 @@ impl<'a> FinalizationVisitor<'a> {
         for &param in &func_decl.parameters {
             let var = pool.variable(param);
             let param_inout = var.modifier_flags & (ModifierFlags::IN | ModifierFlags::OUT);
-            if param_inout == ModifierFlags::OUT && self.usage.writes(param) <= 0 {
+            if param_inout == ModifierFlags::OUT && self.usage.get_variable(param).write <= 0 {
                 self.errors.error(
                     var.position,
                     &format!(
@@ -217,7 +218,7 @@ impl ProgramVisitor for FinalizationVisitor<'_> {
 /// sizes. `usage` holds the write counts of the program (Skia's `program.usage()`), and
 /// `owned_elements` are the program's own elements; built-in elements are assumed valid.
 // Port of: src/sksl/analysis/SkSLFinalizationChecks.cpp#L207-L217 (chrome/m156)
-pub fn do_finalization_checks(ctx: &mut Context, usage: &WriteCounts, owned_elements: &[ElemId]) {
+pub fn do_finalization_checks(ctx: &mut Context, usage: &ProgramUsage, owned_elements: &[ElemId]) {
     let kind = ctx.config().kind;
     let pool: &IrPool = &ctx.pool;
     let errors = &mut ctx.errors;

@@ -15,7 +15,7 @@ use super::{
     switch_case_contains_conditional_exit, switch_case_contains_unconditional_exit,
     validate_indexing_for_es2,
 };
-use crate::analysis::s9b_shims::WriteCounts;
+use crate::analysis::ProgramUsage;
 use crate::context::Context;
 use crate::error_reporter::{ErrorReporter, ErrorSink};
 use crate::ir::{
@@ -312,6 +312,15 @@ fn unroll(
     )
 }
 
+/// The usage of `elements`, as Skia's `ProgramUsage::add` over each element.
+fn usage_for(pool: &IrPool, elements: &[ElemId]) -> ProgramUsage {
+    let mut usage = ProgramUsage::default();
+    for &element in elements {
+        usage.add_element(pool, element);
+    }
+    usage
+}
+
 #[test]
 fn finalization_reports_an_out_parameter_that_is_never_assigned() {
     // Golden: errors/UnassignedOutParameter.glsl.
@@ -324,7 +333,7 @@ fn finalization_reports_an_out_parameter_that_is_never_assigned() {
     );
     let f = ir.func("testOut", TypeId::VOID, vec![a]);
     let def = ir.define(f, vec![]);
-    let usage = WriteCounts::for_elements(&ir.pool, &[def]);
+    let usage = usage_for(&ir.pool, &[def]);
     let mut ctx = context(ir.pool, ProgramKind::Fragment);
     do_finalization_checks(&mut ctx, &usage, &[def]);
     assert_eq!(
@@ -348,7 +357,7 @@ fn finalization_accepts_an_out_parameter_that_is_assigned() {
     let assign = ir.binary(target, OperatorKind::Eq, value, TypeId::INT);
     let stmt = ir.expr_stmt(assign);
     let def = ir.define(f, vec![stmt]);
-    let usage = WriteCounts::for_elements(&ir.pool, &[def]);
+    let usage = usage_for(&ir.pool, &[def]);
     let mut ctx = context(ir.pool, ProgramKind::Fragment);
     do_finalization_checks(&mut ctx, &usage, &[def]);
     assert_eq!(messages(&ctx.errors), Vec::<String>::new());
@@ -382,7 +391,7 @@ fn finalization_reports_a_duplicate_binding() {
         var: second,
     }));
     let mut ctx = context(ir.pool, ProgramKind::Fragment);
-    do_finalization_checks(&mut ctx, &WriteCounts::default(), &[a, b]);
+    do_finalization_checks(&mut ctx, &ProgramUsage::default(), &[a, b]);
     assert_eq!(
         messages(&ctx.errors),
         ["layout(set=0, binding=0) has already been defined"]
@@ -404,7 +413,7 @@ fn finalization_reports_a_local_size_given_twice() {
         flags: ModifierFlags::empty(),
     }));
     let mut ctx = context(ir.pool, ProgramKind::Compute);
-    do_finalization_checks(&mut ctx, &WriteCounts::default(), &[first, second]);
+    do_finalization_checks(&mut ctx, &ProgramUsage::default(), &[first, second]);
     assert_eq!(
         messages(&ctx.errors),
         ["'local_size_x' was specified more than once"]
@@ -414,7 +423,7 @@ fn finalization_reports_a_local_size_given_twice() {
 #[test]
 fn finalization_requires_a_workgroup_size_in_compute_programs() {
     let mut ctx = context(IrPool::new(), ProgramKind::Compute);
-    do_finalization_checks(&mut ctx, &WriteCounts::default(), &[]);
+    do_finalization_checks(&mut ctx, &ProgramUsage::default(), &[]);
     assert_eq!(
         messages(&ctx.errors),
         ["compute programs must specify a workgroup size"]
@@ -437,7 +446,7 @@ fn finalization_reports_a_global_past_the_size_limit() {
         declaration: decl,
     }));
     let mut ctx = context(ir.pool, ProgramKind::RuntimeShader);
-    do_finalization_checks(&mut ctx, &WriteCounts::default(), &[global]);
+    do_finalization_checks(&mut ctx, &ProgramUsage::default(), &[global]);
     assert_eq!(
         messages(&ctx.errors),
         ["global variable 'extra_large' exceeds the size limit"]

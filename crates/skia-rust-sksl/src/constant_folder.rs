@@ -4,20 +4,6 @@
 // Ported from Skia: src/sksl/SkSLConstantFolder.{h,cpp} (chrome/m156). The `ConstantFolder`
 // class is a set of free functions here; `simplify` is `ConstantFolder::Simplify`.
 //
-// Stand-ins. Several helpers this file needs belong to other tasks, which had not landed when this
-// file was written. They are private here, named after their Skia counterpart, and each one says
-// which task owns it:
-//   - node builders (`Literal::Make`, `ConstructorSplat::Make`, `ConstructorCompound::Make`,
-//     `ConstructorDiagonalMatrix::Make`, `ConstructorArray::Make`, `BinaryExpression::Make`,
-//     `PrefixExpression::Make`): S7a and S7b. They build the node directly with
-//     `ctx.pool.add_expression`, and keep Skia's folding rules (`build_*`).
-//   - `Expression::getConstantValue`, `compareConstant`, `supportsConstantValues`: S7a and S8
-//     (`constant_value_at`, `compare_constant`, `supports_constant_values`).
-//   - `Analysis::IsCompileTimeConstant`, `HasSideEffects`, `IsSameExpressionTree` and
-//     `UpdateVariableRefKind`: S9a and S9b (`is_compile_time_constant`, `has_side_effects`,
-//     `is_same_expression_tree`, `update_variable_ref_kind`).
-// When those land, these stand-ins should be replaced by calls to them.
-
 //! [`simplify`] and the constant queries of Skia's `ConstantFolder`.
 
 // Skia compares constant slot values with `==` on doubles and converts between the integer, float
@@ -30,13 +16,13 @@
     clippy::cast_sign_loss
 )]
 
-use crate::analysis::{ProgramVisitor, walk_expression};
+use crate::analysis;
 use crate::context::Context;
 use crate::defines::SkslInt;
 use crate::ir::{
-    BinaryExpression, ComparisonResult, ConstructorArray, ConstructorCompound,
-    ConstructorDiagonalMatrix, ConstructorSplat, ExprId, Expression, ExpressionKind, IrPool,
-    Literal, ModifierFlags, PrefixExpression, TypeId, VariableRefKind, VariableStorage,
+    BinaryExpression, ComparisonResult, ConstructorCompound, ConstructorDiagonalMatrix,
+    ConstructorSplat, ExprId, ExpressionKind, IrPool, Literal, PrefixExpression, TypeId,
+    VariableRefKind,
 };
 use crate::operator::{Operator, OperatorKind};
 use crate::position::Position;
@@ -78,7 +64,7 @@ pub fn simplify(
 
     // If this is the assignment operator, and both sides are the same trivial expression, this is
     // self-assignment (i.e., `var = var`) and can be reduced to just a variable reference (`var`).
-    if op.kind() == OperatorKind::Eq && is_same_expression_tree(&ctx.pool, left, right) {
+    if op.kind() == OperatorKind::Eq && analysis::is_same_expression_tree(&ctx.pool, left, right) {
         return Some(ctx.pool.clone_expression_at(right, pos));
     }
 
@@ -94,7 +80,7 @@ pub fn simplify(
             OperatorKind::Neq => left_val != right_val,
             _ => return None,
         };
-        return Some(build_literal_bool(ctx, pos, result));
+        return Some(Literal::make_bool_literal(&mut ctx.pool, pos, result));
     }
 
     // If the left side is a Boolean literal, apply short-circuit optimizations.
@@ -105,7 +91,7 @@ pub fn simplify(
     // If the right side is a Boolean literal...
     if is_bool_literal(&ctx.pool, right) {
         // ... and the left side has no side effects...
-        if !has_side_effects(&ctx.pool, left) {
+        if !analysis::has_side_effects(&ctx.pool, left) {
             // We can reverse the expressions and short-circuit optimizations are still valid.
             return short_circuit_boolean(ctx, pos, right, op, left);
         }
@@ -113,16 +99,17 @@ pub fn simplify(
         return eliminate_no_op_boolean(ctx, pos, left, op, right);
     }
 
-    if op.kind() == OperatorKind::EqEq && is_same_expression_tree(&ctx.pool, left, right) {
+    if op.kind() == OperatorKind::EqEq && analysis::is_same_expression_tree(&ctx.pool, left, right)
+    {
         // With == comparison, if both sides are the same trivial expression, this is self-
         // comparison and is always true. (We are not concerned with NaN.)
-        return Some(build_literal_bool(ctx, pos, true));
+        return Some(Literal::make_bool_literal(&mut ctx.pool, pos, true));
     }
 
-    if op.kind() == OperatorKind::Neq && is_same_expression_tree(&ctx.pool, left, right) {
+    if op.kind() == OperatorKind::Neq && analysis::is_same_expression_tree(&ctx.pool, left, right) {
         // With != comparison, if both sides are the same trivial expression, this is self-
         // comparison and is always false. (We are not concerned with NaN.)
-        return Some(build_literal_bool(ctx, pos, false));
+        return Some(Literal::make_bool_literal(&mut ctx.pool, pos, false));
     }
 
     if error_on_divide_by_zero(ctx, pos, op, right) {
@@ -130,8 +117,8 @@ pub fn simplify(
     }
 
     // Perform full constant folding when both sides are compile-time constants.
-    let left_side_is_constant = is_compile_time_constant(&ctx.pool, left);
-    let right_side_is_constant = is_compile_time_constant(&ctx.pool, right);
+    let left_side_is_constant = analysis::is_compile_time_constant(&ctx.pool, left);
+    let right_side_is_constant = analysis::is_compile_time_constant(&ctx.pool, right);
     if left_side_is_constant && right_side_is_constant {
         return fold_two_constants(ctx, pos, left, op, right, result_type);
     }
@@ -186,7 +173,7 @@ pub fn is_constant_splat(pool: &IrPool, expr: ExprId, value: f64) -> bool {
     let num_slots = pool.ty(pool.expression(expr).ty).slot_count();
     for index in 0..num_slots {
         // `*slotVal != value` on doubles, as in the C++.
-        match constant_value_at(pool, expr, index) {
+        match pool.expression(expr).get_constant_value(pool, index) {
             Some(slot_val) if slot_val == value => {}
             _ => return false,
         }
@@ -213,7 +200,7 @@ pub fn get_constant_value_or_null(pool: &IrPool, in_expr: ExprId) -> Option<Expr
         // an exception; they can be const but won't have an initial value.
         expr = var.initial_value(pool)?;
     }
-    is_compile_time_constant(pool, expr).then_some(expr)
+    analysis::is_compile_time_constant(pool, expr).then_some(expr)
 }
 
 /// `ConstantFolder::GetConstantValueForVariable`: the constant value of `in_expr`, or `in_expr`
@@ -239,568 +226,6 @@ pub fn make_constant_value_for_variable(
         None => in_expr,
     }
 }
-
-// ---------------------------------------------------------------------------------------------
-// Constant values of expressions (`Expression::getConstantValue` and friends; stand-ins for S7a
-// and S8, see the file comment).
-
-/// `Expression::supportsConstantValues()`: literals and constructors.
-// Port of: src/sksl/ir/SkSLLiteral.h#L126-L128 and src/sksl/ir/SkSLConstructor.h#L45
-// (chrome/m156)
-fn supports_constant_values(pool: &IrPool, expr: ExprId) -> bool {
-    let e = pool.expression(expr);
-    matches!(e.kind, ExpressionKind::Literal(_)) || e.is_any_constructor()
-}
-
-/// `Expression::getConstantValue(n)`: the `n`th slot of `expr` if it is a compile-time constant.
-// Port of: src/sksl/ir/SkSLLiteral.h#L130-L133, src/sksl/ir/SkSLConstructor.cpp#L178-L190,
-// src/sksl/ir/SkSLConstructorSplat.h#L52-L55, src/sksl/ir/SkSLConstructorDiagonalMatrix.cpp#L32-L43,
-// src/sksl/ir/SkSLConstructorMatrixResize.cpp#L31-L58 (chrome/m156)
-fn constant_value_at(pool: &IrPool, expr: ExprId, n: usize) -> Option<f64> {
-    let e = pool.expression(expr);
-    match &e.kind {
-        ExpressionKind::Literal(lit) => Some(lit.value),
-        ExpressionKind::ConstructorSplat(splat) => constant_value_at(pool, splat.argument, 0),
-        ExpressionKind::ConstructorDiagonalMatrix(diag) => {
-            let rows = dim(pool.ty(e.ty).rows());
-            let row = n % rows;
-            let col = n / rows;
-            if col == row {
-                constant_value_at(pool, diag.argument, 0)
-            } else {
-                Some(0.0)
-            }
-        }
-        ExpressionKind::ConstructorMatrixResize(resize) => {
-            let rows = dim(pool.ty(e.ty).rows());
-            let row = n % rows;
-            let col = n / rows;
-            // Forward to the wrapped matrix if the position is in its bounds.
-            let arg_ty = pool.ty(pool.expression(resize.argument).ty);
-            let (arg_cols, arg_rows) = (dim(arg_ty.columns()), dim(arg_ty.rows()));
-            if col < arg_cols && row < arg_rows {
-                constant_value_at(pool, resize.argument, row + col * arg_rows)
-            } else {
-                // Synthesize an identity matrix for out-of-bounds positions.
-                Some(bool_to_double(col == row))
-            }
-        }
-        _ => {
-            // AnyConstructor::getConstantValue: find the argument that holds slot `n`.
-            let args = e.any_constructor_arguments()?;
-            let mut n = n;
-            for &arg in args {
-                let arg_slots = pool.ty(pool.expression(arg).ty).slot_count();
-                if n < arg_slots {
-                    return constant_value_at(pool, arg, n);
-                }
-                n -= arg_slots;
-            }
-            None
-        }
-    }
-}
-
-/// `Expression::compareConstant(other)`: compares two constant expressions, or reports that it
-/// cannot.
-// Port of: src/sksl/ir/SkSLLiteral.h#L113-L124, src/sksl/ir/SkSLConstructor.cpp#L192-L213
-// (chrome/m156)
-fn compare_constant(pool: &IrPool, left: ExprId, right: ExprId) -> ComparisonResult {
-    let left_expr = pool.expression(left);
-    let right_expr = pool.expression(right);
-    if let ExpressionKind::Literal(left_lit) = &left_expr.kind {
-        let ExpressionKind::Literal(right_lit) = &right_expr.kind else {
-            return ComparisonResult::Unknown;
-        };
-        if pool.ty(left_expr.ty).number_kind() != pool.ty(right_expr.ty).number_kind() {
-            return ComparisonResult::Unknown;
-        }
-        return if left_lit.value == right_lit.value {
-            ComparisonResult::Equal
-        } else {
-            ComparisonResult::NotEqual
-        };
-    }
-    if left_expr.is_any_constructor() {
-        if !supports_constant_values(pool, right) {
-            return ComparisonResult::Unknown;
-        }
-        let num_slots = pool.ty(left_expr.ty).slot_count();
-        for n in 0..num_slots {
-            // If either side is not known, the result is unknown.
-            let (Some(l), Some(r)) = (
-                constant_value_at(pool, left, n),
-                constant_value_at(pool, right, n),
-            ) else {
-                return ComparisonResult::Unknown;
-            };
-            // Both sides are known and can be compared for equality directly.
-            if l != r {
-                return ComparisonResult::NotEqual;
-            }
-        }
-        return ComparisonResult::Equal;
-    }
-    ComparisonResult::Unknown
-}
-
-// ---------------------------------------------------------------------------------------------
-// Analysis queries (stand-ins for S9a and S9b, see the file comment).
-
-/// `Analysis::IsCompileTimeConstant`: literals, and constructors of constants only.
-// Port of: src/sksl/SkSLAnalysis.cpp#L473-L505 (chrome/m156)
-fn is_compile_time_constant(pool: &IrPool, expr: ExprId) -> bool {
-    struct IsCompileTimeConstantVisitor {
-        is_constant: bool,
-    }
-    impl ProgramVisitor for IsCompileTimeConstantVisitor {
-        fn visit_expression(&mut self, pool: &IrPool, expr: ExprId) -> bool {
-            match &pool.expression(expr).kind {
-                // Literals are compile-time constants.
-                ExpressionKind::Literal(_) => false,
-                // Constructors might be compile-time constants, if they are composed entirely of
-                // literals and constructors. Casting constructors are intentionally omitted.
-                ExpressionKind::ConstructorArray(_)
-                | ExpressionKind::ConstructorCompound(_)
-                | ExpressionKind::ConstructorDiagonalMatrix(_)
-                | ExpressionKind::ConstructorMatrixResize(_)
-                | ExpressionKind::ConstructorSplat(_)
-                | ExpressionKind::ConstructorStruct(_) => walk_expression(self, pool, expr),
-                _ => {
-                    // This expression isn't a compile-time constant.
-                    self.is_constant = false;
-                    true
-                }
-            }
-        }
-    }
-    let mut visitor = IsCompileTimeConstantVisitor { is_constant: true };
-    visitor.visit_expression(pool, expr);
-    visitor.is_constant
-}
-
-/// `Analysis::HasSideEffects`: calls to impure functions, `++`/`--`, assignments and postfix
-/// operators anywhere in the expression.
-// Port of: src/sksl/analysis/SkSLHasSideEffects.cpp#L22-L58 (chrome/m156)
-fn has_side_effects(pool: &IrPool, expr: ExprId) -> bool {
-    struct HasSideEffectsVisitor;
-    impl ProgramVisitor for HasSideEffectsVisitor {
-        fn visit_expression(&mut self, pool: &IrPool, expr: ExprId) -> bool {
-            match &pool.expression(expr).kind {
-                ExpressionKind::FunctionCall(call) => {
-                    if !pool.function(call.function).modifier_flags.is_pure() {
-                        return true;
-                    }
-                }
-                ExpressionKind::Prefix(prefix) => {
-                    if matches!(
-                        prefix.operator.kind(),
-                        OperatorKind::PlusPlus | OperatorKind::MinusMinus
-                    ) {
-                        return true;
-                    }
-                }
-                ExpressionKind::Binary(binary) => {
-                    if binary.operator.is_assignment() {
-                        return true;
-                    }
-                }
-                ExpressionKind::Postfix(_) => return true,
-                _ => {}
-            }
-            walk_expression(self, pool, expr)
-        }
-    }
-    HasSideEffectsVisitor.visit_expression(pool, expr)
-}
-
-/// `Analysis::IsSameExpressionTree`: whether two expressions are structurally identical in the
-/// cases Skia checks (it does not look at binary expressions).
-// Port of: src/sksl/analysis/SkSLIsSameExpressionTree.cpp#L28-L92 (chrome/m156)
-fn is_same_expression_tree(pool: &IrPool, left: ExprId, right: ExprId) -> bool {
-    let (l, r) = (pool.expression(left), pool.expression(right));
-    if !std::mem::discriminant(&l.kind).eq(&std::mem::discriminant(&r.kind))
-        || !pool.ty(l.ty).matches(r.ty)
-    {
-        return false;
-    }
-    match (&l.kind, &r.kind) {
-        (ExpressionKind::Literal(a), ExpressionKind::Literal(b)) => a.value == b.value,
-        (ExpressionKind::FieldAccess(a), ExpressionKind::FieldAccess(b)) => {
-            a.field_index == b.field_index && is_same_expression_tree(pool, a.base, b.base)
-        }
-        (ExpressionKind::Index(a), ExpressionKind::Index(b)) => {
-            is_same_expression_tree(pool, a.index, b.index)
-                && is_same_expression_tree(pool, a.base, b.base)
-        }
-        (ExpressionKind::Prefix(a), ExpressionKind::Prefix(b)) => {
-            a.operator.kind() == b.operator.kind()
-                && is_same_expression_tree(pool, a.operand, b.operand)
-        }
-        (ExpressionKind::Swizzle(a), ExpressionKind::Swizzle(b)) => {
-            a.components.as_slice() == b.components.as_slice()
-                && is_same_expression_tree(pool, a.base, b.base)
-        }
-        (ExpressionKind::VariableReference(a), ExpressionKind::VariableReference(b)) => {
-            a.variable == b.variable
-        }
-        _ => {
-            // The constructors: the same kind, with the same argument list.
-            match (l.any_constructor_arguments(), r.any_constructor_arguments()) {
-                (Some(left_args), Some(right_args)) => {
-                    left_args.len() == right_args.len()
-                        && left_args
-                            .iter()
-                            .zip(right_args)
-                            .all(|(&a, &b)| is_same_expression_tree(pool, a, b))
-                }
-                _ => false,
-            }
-        }
-    }
-}
-
-/// The variable reference that `expr` assigns to, if `expr` is assignable (Skia's
-/// `IsAssignableVisitor`). Any error makes the expression unassignable.
-// Port of: src/sksl/SkSLAnalysis.cpp#L261-L330 (chrome/m156)
-fn assigned_variable_reference(pool: &IrPool, expr: ExprId) -> Option<ExprId> {
-    fn visit(pool: &IrPool, expr: ExprId, assigned: &mut Option<ExprId>, ok: &mut bool) {
-        match &pool.expression(expr).kind {
-            ExpressionKind::VariableReference(var_ref) => {
-                let var = pool.variable(var_ref.variable);
-                // A const or uniform variable, or a pipeline input, cannot be assigned.
-                let read_only = var.modifier_flags.is_const()
-                    || var.modifier_flags.is_uniform()
-                    || (var.storage == VariableStorage::Global
-                        && var.modifier_flags.contains(ModifierFlags::IN));
-                if read_only {
-                    *ok = false;
-                } else {
-                    *assigned = Some(expr);
-                }
-            }
-            ExpressionKind::FieldAccess(field) => visit(pool, field.base, assigned, ok),
-            ExpressionKind::Swizzle(swizzle) => {
-                // A swizzle may not write the same component twice.
-                let mut bits = 0_u32;
-                for &idx in swizzle.components.as_slice() {
-                    let bit = 1_u32 << u32::try_from(idx).unwrap_or(0);
-                    if bits & bit != 0 {
-                        *ok = false;
-                        break;
-                    }
-                    bits |= bit;
-                }
-                visit(pool, swizzle.base, assigned, ok);
-            }
-            ExpressionKind::Index(index) => visit(pool, index.base, assigned, ok),
-            // A poison value is not an error here, but it assigns nothing.
-            ExpressionKind::Poison(_) => {}
-            _ => *ok = false,
-        }
-    }
-    let mut assigned = None;
-    let mut ok = true;
-    visit(pool, expr, &mut assigned, &mut ok);
-    if ok { assigned } else { None }
-}
-
-/// `Analysis::UpdateVariableRefKind(expr, kind)` with no error reporter: sets the reference kind of
-/// the variable reference that `expr` assigns to. Does nothing if `expr` is not assignable.
-// Port of: src/sksl/SkSLAnalysis.cpp#L556-L571 (chrome/m156)
-fn update_variable_ref_kind(ctx: &mut Context, expr: ExprId, kind: VariableRefKind) {
-    if let Some(var_ref) = assigned_variable_reference(&ctx.pool, expr)
-        && let ExpressionKind::VariableReference(var_ref) =
-            &mut ctx.pool.expression_mut(var_ref).kind
-    {
-        var_ref.ref_kind = kind;
-    }
-}
-
-// ---------------------------------------------------------------------------------------------
-// Node builders (stand-ins for S7a and S7b, see the file comment). Each follows its Skia `Make`
-// function's folding rules and builds the node directly.
-
-/// `Literal::Make(pos, value, type)`: rounds `value` to the type, as the C++ implicit conversions
-/// to `float`, `SKSL_INT` or `bool` do.
-// Port of: src/sksl/ir/SkSLLiteral.h#L80-L90 (chrome/m156)
-fn build_literal(ctx: &mut Context, pos: Position, value: f64, ty: TypeId) -> ExprId {
-    let stored = {
-        let t = ctx.pool.ty(ty);
-        if t.is_float() {
-            // `MakeFloat(Position, float, Type)`: `value` converts to `float`.
-            let as_float = value as f32;
-            f64::from(as_float)
-        } else if t.is_integer() {
-            // `MakeInt(Position, SKSL_INT, Type)`: `value` converts to `SKSL_INT`.
-            value as SkslInt as f64
-        } else {
-            // `MakeBool(Position, bool, Type)`: `value` converts to `bool`.
-            bool_to_double(value != 0.0)
-        }
-    };
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::Literal(Literal { value: stored }),
-    )
-}
-
-/// `Literal::MakeBool(context, pos, value)`: a literal of the built-in `bool` type.
-// Port of: src/sksl/ir/SkSLLiteral.h#L68-L71 (chrome/m156)
-fn build_literal_bool(ctx: &mut Context, pos: Position, value: bool) -> ExprId {
-    build_literal(ctx, pos, bool_to_double(value), TypeId::BOOL)
-}
-
-/// `ConstructorSplat::Make`: a vector of `arg`; a scalar `type` returns `arg` itself.
-// Port of: src/sksl/ir/SkSLConstructorSplat.cpp#L14-L35 (chrome/m156)
-fn build_splat(ctx: &mut Context, pos: Position, ty: TypeId, arg: ExprId) -> ExprId {
-    // A "splat" to a scalar type is a no-op and can be eliminated.
-    if ctx.pool.ty(ty).is_scalar() {
-        set_position(ctx, arg, pos);
-        return arg;
-    }
-    // Replace constant variables with their corresponding values, so `float3(five)` can compile
-    // down to `float3(5.0)`.
-    let arg = make_constant_value_for_variable(ctx, pos, arg);
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::ConstructorSplat(ConstructorSplat { argument: arg }),
-    )
-}
-
-/// `ConstructorDiagonalMatrix::Make`.
-// Port of: src/sksl/ir/SkSLConstructorDiagonalMatrix.cpp#L16-L30 (chrome/m156)
-fn build_diagonal_matrix(ctx: &mut Context, pos: Position, ty: TypeId, arg: ExprId) -> ExprId {
-    // Look up the value of constant variables. This allows `mat4(five)` to become `mat4(5.0)`.
-    let arg = make_constant_value_for_variable(ctx, pos, arg);
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::ConstructorDiagonalMatrix(ConstructorDiagonalMatrix { argument: arg }),
-    )
-}
-
-/// `ConstructorArray::Make`: an array of `args`.
-// Port of: src/sksl/ir/SkSLConstructorArray.cpp#L79-L91 (chrome/m156)
-fn build_array(ctx: &mut Context, pos: Position, ty: TypeId, args: Vec<ExprId>) -> ExprId {
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::ConstructorArray(ConstructorArray { arguments: args }),
-    )
-}
-
-/// `ConstructorCompound::Make`: a vector or matrix of `args`, with the optimizer's flattening and
-/// splat reduction.
-// Port of: src/sksl/ir/SkSLConstructorCompound.cpp#L28-L157 (chrome/m156)
-fn build_compound(ctx: &mut Context, pos: Position, ty: TypeId, mut args: Vec<ExprId>) -> ExprId {
-    // No-op compound constructors (containing a single argument of the same type) are eliminated.
-    if args.len() == 1 && is_safe_to_eliminate(&ctx.pool, ty, args[0]) {
-        set_position(ctx, args[0], pos);
-        return args[0];
-    }
-
-    let optimize = ctx.config().settings.optimize;
-    if optimize {
-        // Find ConstructorCompounds embedded inside other ConstructorCompounds and flatten them.
-        // See how many fields we would have if composite constructors were flattened out.
-        let fields: usize = args
-            .iter()
-            .map(|&arg| match &ctx.pool.expression(arg).kind {
-                ExpressionKind::ConstructorCompound(c) => c.arguments.len(),
-                _ => 1,
-            })
-            .sum();
-        // If we added up more fields than we're starting with, at least one input can be flattened.
-        if fields > args.len() {
-            let mut flattened = Vec::with_capacity(fields);
-            for &arg in &args {
-                match &ctx.pool.expression(arg).kind {
-                    ExpressionKind::ConstructorCompound(c) => {
-                        flattened.extend(c.arguments.iter().copied());
-                    }
-                    _ => flattened.push(arg),
-                }
-            }
-            args = flattened;
-        }
-    }
-
-    // Replace constant variables with their corresponding values, so `float2(one, two)` can
-    // compile down to `float2(1.0, 2.0)`.
-    for arg in &mut args {
-        *arg = make_constant_value_for_variable(ctx, pos, *arg);
-    }
-
-    if optimize {
-        // Reduce compound constructors to splats where possible.
-        if let Some(splat) = make_splat_from_arguments(&ctx.pool, ty, &args) {
-            let copy = ctx.pool.clone_expression(splat);
-            return build_splat(ctx, pos, ty, copy);
-        }
-    }
-
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::ConstructorCompound(ConstructorCompound { arguments: args }),
-    )
-}
-
-/// `ConstructorCompound::MakeFromConstants`: a compound of `ty` whose slots are `values`.
-// Port of: src/sksl/ir/SkSLConstructorCompound.cpp#L159-L170 (chrome/m156)
-fn build_compound_from_constants(
-    ctx: &mut Context,
-    pos: Position,
-    ty: TypeId,
-    values: &[f64],
-) -> ExprId {
-    let component = ctx.pool.ty(ty).component_type().id();
-    let num_slots = ctx.pool.ty(ty).slot_count();
-    let mut args = Vec::with_capacity(num_slots);
-    for &value in values.iter().take(num_slots) {
-        args.push(build_literal(ctx, pos, value, component));
-    }
-    build_compound(ctx, pos, ty, args)
-}
-
-/// `BinaryExpression::Make(context, pos, left, op, right)`: the result type comes from
-/// `determineBinaryType`.
-// Port of: src/sksl/ir/SkSLBinaryExpression.cpp#L97-L110 (chrome/m156)
-fn build_binary(
-    ctx: &mut Context,
-    pos: Position,
-    left: ExprId,
-    op: Operator,
-    right: ExprId,
-) -> ExprId {
-    let left_ty = ctx.pool.expression(left).ty;
-    let right_ty = ctx.pool.expression(right).ty;
-    // SkAssertResult: the operands here always combine (the caller checked them).
-    let types = op
-        .determine_binary_type(ctx, left_ty, right_ty)
-        .expect("determineBinaryType failed for a folded expression");
-    build_binary_typed(ctx, pos, left, op, right, types.result)
-}
-
-/// `BinaryExpression::Make(context, pos, left, op, right, resultType)`. The Skia assertions and the
-/// `EQ` range check are omitted: the folder never builds an assignment.
-// Port of: src/sksl/ir/SkSLBinaryExpression.cpp#L112-L139 (chrome/m156)
-fn build_binary_typed(
-    ctx: &mut Context,
-    pos: Position,
-    left: ExprId,
-    op: Operator,
-    right: ExprId,
-    result_type: TypeId,
-) -> ExprId {
-    // Perform constant-folding on the expression.
-    if let Some(result) = simplify(ctx, pos, left, op, right, result_type) {
-        return result;
-    }
-    add_expression(
-        ctx,
-        pos,
-        result_type,
-        ExpressionKind::Binary(BinaryExpression {
-            left,
-            operator: op,
-            right,
-        }),
-    )
-}
-
-/// `PrefixExpression(pos, MINUS, operand)`: the node itself, with the operand's type.
-// Port of: src/sksl/ir/SkSLPrefixExpression.h#L32-L35 (chrome/m156)
-fn build_prefix_node(ctx: &mut Context, pos: Position, op: Operator, operand: ExprId) -> ExprId {
-    let ty = ctx.pool.expression(operand).ty;
-    add_expression(
-        ctx,
-        pos,
-        ty,
-        ExpressionKind::Prefix(PrefixExpression {
-            operator: op,
-            operand,
-        }),
-    )
-}
-
-/// `PrefixExpression::Make(context, pos, MINUS, operand)`: `negate_operand`, which folds the
-/// negation of a constant when it can.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L122-L150 (chrome/m156)
-fn build_negation(ctx: &mut Context, pos: Position, operand: ExprId) -> ExprId {
-    // Attempt to simplify this negation (e.g. eliminate double negation, literal values).
-    if let Some(simplified) = simplify_negation(ctx, pos, operand) {
-        return simplified;
-    }
-    // No simplified form; convert expression to Prefix(MINUS, expression).
-    build_prefix_node(ctx, pos, OperatorKind::Minus.into(), operand)
-}
-
-fn add_expression(ctx: &mut Context, pos: Position, ty: TypeId, kind: ExpressionKind) -> ExprId {
-    ctx.pool.add_expression(Expression::new(pos, ty, kind))
-}
-
-fn set_position(ctx: &mut Context, id: ExprId, pos: Position) {
-    ctx.pool.expression_mut(id).position = pos;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Folding rules. Each function is named after its Skia counterpart.
-
-/// `is_safe_to_eliminate`: a single argument that already has the compound's type.
-// Port of: src/sksl/ir/SkSLConstructorCompound.cpp#L28-L44 (chrome/m156)
-fn is_safe_to_eliminate(pool: &IrPool, ty: TypeId, arg: ExprId) -> bool {
-    let t = pool.ty(ty);
-    if t.is_scalar() {
-        // A scalar "compound type" with a single scalar argument is a no-op.
-        return true;
-    }
-    // A vector compound constructor containing a single argument of matching type can be
-    // eliminated.
-    t.is_vector() && pool.ty(pool.expression(arg).ty).matches(ty)
-}
-
-/// `make_splat_from_arguments`: the scalar that every argument (scalar, or a splat of a scalar)
-/// holds, when they are all the same expression.
-// Port of: src/sksl/ir/SkSLConstructorCompound.cpp#L47-L76 (chrome/m156)
-fn make_splat_from_arguments(pool: &IrPool, ty: TypeId, args: &[ExprId]) -> Option<ExprId> {
-    // Splats cannot represent a matrix.
-    if pool.ty(ty).is_matrix() {
-        return None;
-    }
-    let mut splat_expression: Option<ExprId> = None;
-    for &arg in args {
-        // Arguments must only be scalars or splat constructors (which can only contain scalars).
-        let arg_expr = pool.expression(arg);
-        let expr = if pool.ty(arg_expr.ty).is_scalar() {
-            arg
-        } else if let ExpressionKind::ConstructorSplat(splat) = &arg_expr.kind {
-            splat.argument
-        } else {
-            return None;
-        };
-        match splat_expression {
-            // On the first iteration, just remember the expression we encountered.
-            None => splat_expression = Some(expr),
-            // On subsequent iterations, the expression must match the first one.
-            Some(first) => {
-                if !is_same_expression_tree(pool, expr, first) {
-                    return None;
-                }
-            }
-        }
-    }
-    splat_expression
-}
-
 /// `ConstantFolder::error_on_divide_by_zero`.
 // Port of: src/sksl/SkSLConstantFolder.cpp#L424-L439 (chrome/m156)
 fn error_on_divide_by_zero(ctx: &mut Context, pos: Position, op: Operator, right: ExprId) -> bool {
@@ -823,7 +248,7 @@ fn error_on_divide_by_zero(ctx: &mut Context, pos: Position, op: Operator, right
 // Port of: src/sksl/SkSLConstantFolder.cpp#L344-L353 (chrome/m156)
 fn contains_constant_zero(pool: &IrPool, expr: ExprId) -> bool {
     let num_slots = pool.ty(pool.expression(expr).ty).slot_count();
-    (0..num_slots).any(|index| constant_value_at(pool, expr, index) == Some(0.0))
+    (0..num_slots).any(|index| pool.expression(expr).get_constant_value(pool, index) == Some(0.0))
 }
 
 /// `is_constant_diagonal`: a square matrix whose diagonal is `value` and whose other slots are 0.
@@ -838,7 +263,7 @@ fn is_constant_diagonal(pool: &IrPool, expr: ExprId, value: f64) -> bool {
     for c in 0..columns {
         for r in 0..rows {
             let expectation = if c == r { value } else { 0.0 };
-            if constant_value_at(pool, expr, c * rows + r) != Some(expectation) {
+            if pool.expression(expr).get_constant_value(pool, c * rows + r) != Some(expectation) {
                 return false;
             }
         }
@@ -877,7 +302,10 @@ fn make_reciprocal_expression(ctx: &mut Context, right: ExprId) -> Option<ExprId
     // Verify that each slot contains a finite, non-zero literal, take its reciprocal.
     let mut values = Vec::with_capacity(num_slots);
     for index in 0..num_slots {
-        let value = constant_value_at(&ctx.pool, right, index)?;
+        let value = ctx
+            .pool
+            .expression(right)
+            .get_constant_value(&ctx.pool, index)?;
         let reciprocal = 1.0 / value;
         let is_safe = (-FLT_MAX..=FLT_MAX).contains(&reciprocal) && reciprocal != 0.0;
         if !is_safe {
@@ -888,7 +316,9 @@ fn make_reciprocal_expression(ctx: &mut Context, right: ExprId) -> Option<ExprId
     }
     // Turn the expression array into a compound constructor. (If this is a single-slot expression,
     // this will return the literal as-is.)
-    Some(build_compound_from_constants(ctx, pos, ty, &values))
+    Some(ConstructorCompound::make_from_constants(
+        ctx, pos, ty, &values,
+    ))
 }
 
 /// `one_over_scalar`: the expression `1.0 / right` for a scalar `right`.
@@ -898,9 +328,9 @@ fn one_over_scalar(ctx: &mut Context, right: ExprId) -> ExprId {
         let e = ctx.pool.expression(right);
         (e.position, e.ty)
     };
-    let one = build_literal(ctx, pos, 1.0, ty);
+    let one = Literal::make(&mut ctx.pool, pos, 1.0, ty);
     let divisor = ctx.pool.clone_expression(right);
-    build_binary(ctx, pos, one, OperatorKind::Slash.into(), divisor)
+    BinaryExpression::make(ctx, pos, one, OperatorKind::Slash.into(), divisor)
 }
 
 /// `simplify_matrix_division`: `m / s` becomes `m * (1.0 / s)`, which SPIR-V and Metal prefer.
@@ -926,7 +356,7 @@ fn simplify_matrix_division(
                 };
                 let multiplicand = ctx.pool.clone_expression(left);
                 let reciprocal = one_over_scalar(ctx, right);
-                return Some(build_binary(
+                return Some(BinaryExpression::make(
                     ctx,
                     pos,
                     multiplicand,
@@ -947,11 +377,11 @@ fn cast_expression(ctx: &mut Context, pos: Position, expr: ExprId, ty: TypeId) -
     if ctx.pool.ty(expr_ty).is_scalar() {
         if ctx.pool.ty(ty).is_matrix() {
             let copy = ctx.pool.clone_expression(expr);
-            return Some(build_diagonal_matrix(ctx, pos, ty, copy));
+            return Some(ConstructorDiagonalMatrix::make(ctx, pos, ty, copy));
         }
         if ctx.pool.ty(ty).is_vector() {
             let copy = ctx.pool.clone_expression(expr);
-            return Some(build_splat(ctx, pos, ty, copy));
+            return Some(ConstructorSplat::make(ctx, pos, ty, copy));
         }
     }
     if ctx.pool.ty(ty).matches(expr_ty) {
@@ -967,14 +397,14 @@ fn splat_scalar(ctx: &mut Context, scalar: ExprId, ty: TypeId) -> Option<ExprId>
     let pos = ctx.pool.expression(scalar).position;
     if ctx.pool.ty(ty).is_vector() {
         let copy = ctx.pool.clone_expression(scalar);
-        return Some(build_splat(ctx, pos, ty, copy));
+        return Some(ConstructorSplat::make(ctx, pos, ty, copy));
     }
     if ctx.pool.ty(ty).is_matrix() {
         let num_slots = ctx.pool.ty(ty).slot_count();
         let args: Vec<ExprId> = (0..num_slots)
             .map(|_| ctx.pool.clone_expression(scalar))
             .collect();
-        return Some(build_compound(ctx, pos, ty, args));
+        return Some(ConstructorCompound::make(ctx, pos, ty, args));
     }
     // Skia: SkDEBUGFAILF("unsupported type"); the caller only passes vectors and matrices.
     None
@@ -984,15 +414,15 @@ fn splat_scalar(ctx: &mut Context, scalar: ExprId, ty: TypeId) -> Option<ExprId>
 // Port of: src/sksl/SkSLConstantFolder.cpp#L300-L315 (chrome/m156)
 fn zero_expression(ctx: &mut Context, pos: Position, ty: TypeId) -> Option<ExprId> {
     let component = ctx.pool.ty(ty).component_type().id();
-    let zero = build_literal(ctx, pos, 0.0, component);
+    let zero = Literal::make(&mut ctx.pool, pos, 0.0, component);
     if ctx.pool.ty(ty).is_scalar() {
         return Some(zero);
     }
     if ctx.pool.ty(ty).is_vector() {
-        return Some(build_splat(ctx, pos, ty, zero));
+        return Some(ConstructorSplat::make(ctx, pos, ty, zero));
     }
     if ctx.pool.ty(ty).is_matrix() {
-        return Some(build_diagonal_matrix(ctx, pos, ty, zero));
+        return Some(ConstructorDiagonalMatrix::make(ctx, pos, ty, zero));
     }
     // Skia: SkDEBUGFAILF("unsupported type").
     None
@@ -1002,121 +432,13 @@ fn zero_expression(ctx: &mut Context, pos: Position, ty: TypeId) -> Option<ExprI
 // Port of: src/sksl/SkSLConstantFolder.cpp#L317-L324 (chrome/m156)
 fn negate_expression(ctx: &mut Context, pos: Position, expr: ExprId, ty: TypeId) -> Option<ExprId> {
     let ctor = cast_expression(ctx, pos, expr, ty)?;
-    Some(build_negation(ctx, pos, ctor))
+    Some(PrefixExpression::make(
+        ctx,
+        pos,
+        OperatorKind::Minus.into(),
+        ctor,
+    ))
 }
-
-/// `apply_to_elements` (in `SkSLPrefixExpression.cpp`): applies `f` to each slot of a constant and
-/// rebuilds the constant from the results, unless a result is out of range for the type.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L36-L69 (chrome/m156)
-fn apply_to_elements(
-    ctx: &mut Context,
-    pos: Position,
-    expr: ExprId,
-    f: fn(f64) -> f64,
-) -> Option<ExprId> {
-    let (element_type, ty, num_slots) = {
-        let e = ctx.pool.expression(expr);
-        let t = ctx.pool.ty(e.ty);
-        (t.component_type().id(), e.ty, t.slot_count())
-    };
-    // The C++ buffer holds 16 slots.
-    if num_slots > 16 {
-        return None;
-    }
-    let mut values = vec![0.0; num_slots];
-    for (index, value) in values.iter_mut().enumerate() {
-        // A non-constant element means we can't simplify this expression.
-        let slot_value = constant_value_at(&ctx.pool, expr, index)?;
-        *value = f(slot_value);
-        if element_type.check_for_out_of_range_literal_value(ctx, *value, pos) {
-            // We can't simplify the expression if the new value is out-of-range for the type.
-            return None;
-        }
-    }
-    Some(build_compound_from_constants(ctx, pos, ty, &values))
-}
-
-/// `negate_value`.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L16-L18 (chrome/m156)
-fn negate_value(value: f64) -> f64 {
-    -value
-}
-
-/// The shape of a constant that `simplify_negation` cares about, read out of the pool before the
-/// pool is borrowed for building.
-enum NegationShape {
-    Elements,
-    Prefix(OperatorKind, ExprId),
-    Array(Vec<ExprId>),
-    Diagonal(ExprId),
-    Other,
-}
-
-/// `simplify_negation`: `-x` for a constant `x`, a double negation, or a negated array or diagonal
-/// matrix of constants. Returns `None` when there is no simpler form.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L71-L120 (chrome/m156)
-fn simplify_negation(ctx: &mut Context, pos: Position, original: ExprId) -> Option<ExprId> {
-    let value = get_constant_value_for_variable(&ctx.pool, original);
-    let value_ty = ctx.pool.expression(value).ty;
-    let shape = match &ctx.pool.expression(value).kind {
-        ExpressionKind::Literal(_)
-        | ExpressionKind::ConstructorSplat(_)
-        | ExpressionKind::ConstructorCompound(_) => NegationShape::Elements,
-        ExpressionKind::Prefix(prefix) => {
-            NegationShape::Prefix(prefix.operator.kind(), prefix.operand)
-        }
-        ExpressionKind::ConstructorArray(ctor) => NegationShape::Array(ctor.arguments.clone()),
-        ExpressionKind::ConstructorDiagonalMatrix(ctor) => NegationShape::Diagonal(ctor.argument),
-        _ => NegationShape::Other,
-    };
-    match shape {
-        // Convert `-vecN(literal, ...)` into `vecN(-literal, ...)`.
-        NegationShape::Elements => apply_to_elements(ctx, pos, value, negate_value),
-        // Convert `-(-expression)` into `expression`.
-        NegationShape::Prefix(OperatorKind::Minus, operand) => {
-            Some(ctx.pool.clone_expression_at(operand, pos))
-        }
-        NegationShape::Prefix(_, _) | NegationShape::Other => None,
-        // Convert `-array[N](literal, ...)` into `array[N](-literal, ...)`.
-        NegationShape::Array(arguments) => {
-            if !is_compile_time_constant(&ctx.pool, value) {
-                return None;
-            }
-            let negated = negate_operands(ctx, pos, &arguments);
-            Some(build_array(ctx, pos, value_ty, negated))
-        }
-        // Convert `-matrix(literal)` into `matrix(-literal)`.
-        NegationShape::Diagonal(argument) => {
-            if !is_compile_time_constant(&ctx.pool, value) {
-                return None;
-            }
-            let simplified = simplify_negation(ctx, pos, argument)?;
-            Some(build_diagonal_matrix(ctx, pos, value_ty, simplified))
-        }
-    }
-}
-
-/// `negate_operands`: the negation of each element, folded where possible.
-// Port of: src/sksl/ir/SkSLPrefixExpression.cpp#L122-L137 (chrome/m156)
-fn negate_operands(ctx: &mut Context, pos: Position, operands: &[ExprId]) -> Vec<ExprId> {
-    let mut replacement = Vec::with_capacity(operands.len());
-    for &expr in operands {
-        // The logic below is very similar to `negate_operand`, but with different ownership rules.
-        if let Some(simplified) = simplify_negation(ctx, pos, expr) {
-            replacement.push(simplified);
-        } else {
-            let copy = ctx.pool.clone_expression(expr);
-            replacement.push(build_prefix_node(
-                ctx,
-                pos,
-                OperatorKind::Minus.into(),
-                copy,
-            ));
-        }
-    }
-    replacement
-}
-
 /// `short_circuit_boolean`: `left` is the Boolean literal.
 // Port of: src/sksl/SkSLConstantFolder.cpp#L72-L88 (chrome/m156)
 fn short_circuit_boolean(
@@ -1177,12 +499,18 @@ fn simplify_constant_equality(
 ) -> Option<ExprId> {
     if op.kind() == OperatorKind::EqEq || op.kind() == OperatorKind::Neq {
         let mut equality = op.kind() == OperatorKind::EqEq;
-        match compare_constant(&ctx.pool, left, right) {
+        match ctx
+            .pool
+            .expression(left)
+            .compare_constant(&ctx.pool, ctx.pool.expression(right))
+        {
             ComparisonResult::NotEqual => {
                 equality = !equality;
-                return Some(build_literal_bool(ctx, pos, equality));
+                return Some(Literal::make_bool_literal(&mut ctx.pool, pos, equality));
             }
-            ComparisonResult::Equal => return Some(build_literal_bool(ctx, pos, equality)),
+            ComparisonResult::Equal => {
+                return Some(Literal::make_bool_literal(&mut ctx.pool, pos, equality));
+            }
             ComparisonResult::Unknown => {}
         }
     }
@@ -1207,14 +535,20 @@ fn simplify_matrix_multiplication(
     let mut left_vals = [[0.0_f64; 4]; 4];
     for c in 0..dims.left_columns {
         for r in 0..dims.left_rows {
-            left_vals[c][r] = constant_value_at(&ctx.pool, left, (c * dims.left_rows) + r)?;
+            left_vals[c][r] = ctx
+                .pool
+                .expression(left)
+                .get_constant_value(&ctx.pool, (c * dims.left_rows) + r)?;
         }
     }
     // Fetch the right matrix.
     let mut right_vals = [[0.0_f64; 4]; 4];
     for c in 0..dims.right_columns {
         for r in 0..dims.right_rows {
-            right_vals[c][r] = constant_value_at(&ctx.pool, right, (c * dims.right_rows) + r)?;
+            right_vals[c][r] = ctx
+                .pool
+                .expression(right)
+                .get_constant_value(&ctx.pool, (c * dims.right_rows) + r)?;
         }
     }
 
@@ -1251,7 +585,7 @@ fn simplify_matrix_multiplication(
         i32::try_from(out_columns).unwrap_or(0),
         i32::try_from(out_rows).unwrap_or(0),
     );
-    Some(build_compound_from_constants(
+    Some(ConstructorCompound::make_from_constants(
         ctx,
         pos,
         result_type,
@@ -1367,8 +701,11 @@ fn simplify_componentwise(
 
     let mut args = vec![0.0_f64; num_slots];
     for (i, arg) in args.iter_mut().enumerate() {
-        let left_value = constant_value_at(&ctx.pool, left, i)?;
-        let right_value = constant_value_at(&ctx.pool, right, i)?;
+        let left_value = ctx.pool.expression(left).get_constant_value(&ctx.pool, i)?;
+        let right_value = ctx
+            .pool
+            .expression(right)
+            .get_constant_value(&ctx.pool, i)?;
         let value = fold_fn(left_value, right_value);
         // NaN passes both comparisons, as it does in the C++.
         if value < minimum_value || value > maximum_value {
@@ -1376,7 +713,9 @@ fn simplify_componentwise(
         }
         *arg = value;
     }
-    Some(build_compound_from_constants(ctx, pos, ty, &args))
+    Some(ConstructorCompound::make_from_constants(
+        ctx, pos, ty, &args,
+    ))
 }
 
 /// `fold_expression`: a literal of `result_type` holding `result`, if it fits the type.
@@ -1395,7 +734,7 @@ fn fold_expression(
         // The value is outside the range or is NaN (all if-checks fail); do not optimize.
         return None;
     }
-    Some(build_literal(ctx, pos, result, result_type))
+    Some(Literal::make(&mut ctx.pool, pos, result, result_type))
 }
 
 /// `fold_two_constants`: folds `left op right` when both are compile-time constants.
@@ -1651,11 +990,15 @@ fn simplify_arithmetic(
                     return Some(expr);
                 }
             }
-            if is_constant_value(&ctx.pool, right, 0.0) && !has_side_effects(&ctx.pool, left) {
+            if is_constant_value(&ctx.pool, right, 0.0)
+                && !analysis::has_side_effects(&ctx.pool, left)
+            {
                 // x * 0
                 return zero_expression(ctx, pos, result_type);
             }
-            if is_constant_value(&ctx.pool, left, 0.0) && !has_side_effects(&ctx.pool, right) {
+            if is_constant_value(&ctx.pool, left, 0.0)
+                && !analysis::has_side_effects(&ctx.pool, right)
+            {
                 // 0 * x
                 return zero_expression(ctx, pos, result_type);
             }
@@ -1699,7 +1042,7 @@ fn simplify_arithmetic(
                 // convert `x / 2` into `x * 0.5`
                 if let Some(reciprocal) = make_reciprocal_expression(ctx, right) {
                     let multiplicand = ctx.pool.clone_expression(left);
-                    return Some(build_binary(
+                    return Some(BinaryExpression::make(
                         ctx,
                         pos,
                         multiplicand,
@@ -1715,7 +1058,7 @@ fn simplify_arithmetic(
             if is_constant_splat(&ctx.pool, right, 0.0)
                 && let Some(var) = cast_expression(ctx, pos, left, result_type)
             {
-                update_variable_ref_kind(ctx, var, VariableRefKind::Read);
+                analysis::update_variable_ref_kind(&mut ctx.pool, var, VariableRefKind::Read, None);
                 return Some(var);
             }
         }
@@ -1725,7 +1068,7 @@ fn simplify_arithmetic(
             if is_constant_value(&ctx.pool, right, 1.0)
                 && let Some(var) = cast_expression(ctx, pos, left, result_type)
             {
-                update_variable_ref_kind(ctx, var, VariableRefKind::Read);
+                analysis::update_variable_ref_kind(&mut ctx.pool, var, VariableRefKind::Read, None);
                 return Some(var);
             }
         }
@@ -1735,12 +1078,12 @@ fn simplify_arithmetic(
             if is_constant_splat(&ctx.pool, right, 1.0)
                 && let Some(var) = cast_expression(ctx, pos, left, result_type)
             {
-                update_variable_ref_kind(ctx, var, VariableRefKind::Read);
+                analysis::update_variable_ref_kind(&mut ctx.pool, var, VariableRefKind::Read, None);
                 return Some(var);
             }
             if let Some(reciprocal) = make_reciprocal_expression(ctx, right) {
                 let multiplicand = ctx.pool.clone_expression(left);
-                return Some(build_binary(
+                return Some(BinaryExpression::make(
                     ctx,
                     pos,
                     multiplicand,

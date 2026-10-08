@@ -17,9 +17,8 @@ mod finalization_checks;
 mod loop_info;
 mod program_usage;
 mod program_visitor;
-mod returns_input_alpha;
 mod return_complexity;
-mod s9b_shims;
+mod returns_input_alpha;
 mod sample_usage;
 mod specialization;
 mod statement_queries;
@@ -45,9 +44,8 @@ pub use finalization_checks::do_finalization_checks;
 pub use loop_info::{LoopControlFlowInfo, get_loop_control_flow_info, get_loop_unroll_info};
 pub use program_usage::{ProgramUsage, VariableCounts, get_module_usage, get_usage};
 pub use program_visitor::{ProgramVisitor, walk_expression, walk_program_element, walk_statement};
-pub use returns_input_alpha::returns_input_alpha;
 pub use return_complexity::{ReturnComplexity, get_return_complexity};
-pub use s9b_shims::WriteCounts;
+pub use returns_input_alpha::returns_input_alpha;
 pub use sample_usage::{
     SampleUsage, SampleUsageKind, calls_color_transform_intrinsics, calls_sample_outside_main,
     get_sample_usage, references_builtin, references_frag_coords, references_sample_coords,

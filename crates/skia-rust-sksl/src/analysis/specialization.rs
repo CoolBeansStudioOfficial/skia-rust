@@ -8,7 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::s9b_shims::is_same_expression_tree;
+use super::expression_queries::is_same_expression_tree;
 use super::{ProgramVisitor, walk_expression};
 use crate::ir::{
     ElemId, ExprId, ExpressionKind, FnId, FunctionCall, IrPool, ProgramElementKind, VarId,
