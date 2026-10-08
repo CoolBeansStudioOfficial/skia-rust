@@ -683,6 +683,34 @@ module chain is in `module_loader.rs`.
   Both run only when `ProgramSettings::optimize` is set (`Compiler::optimize`). `Program` keeps no
   cached usage: `analysis::get_usage` computes it, and the transforms update a local copy.
 
+### 4.8 As implemented in S13
+
+The optimizer transforms are in `crates/skia-rust-sksl/src/transform/`, one file per Skia file
+(`eliminate_dead_*.rs`, `rename_private_symbols.rs`, …). Each takes `(ctx, elements, usage)`. The
+dead-code passes that Skia has for programs have an `_in_program` form over the owned and shared
+lists. Usage is an explicit `ProgramUsage` the caller holds, and the transforms update it.
+
+- **Program.** `Compiler::run_optimizer_passes` takes the element lists out of the program, computes
+  `get_usage`, lends the program to the context (`with_program`), runs the passes in Skia's order
+  (`EliminateUnreachableCode`, then the dead-function, dead-local and dead-global loops), and puts
+  the lists back. The inliner (S12) goes at the top of that function. Under `debug_assertions` it
+  also runs `CheckSymbolTableCorrectness` with the reporter swapped out, and asserts that it found
+  nothing. Programs keep their Nops: Skia runs `EliminateEmptyStatements` on modules only.
+- **Module.** `Compiler::optimize_module_before_minifying(kind, &mut ModuleParts, parent, shrink)`
+  installs the module's pool, configuration and symbols (`with_module_parts`), runs the module passes
+  in Skia's order, and asserts the usage. Its caller is the minifier (S24), so it is `dead_code`
+  allowed until then. `optimize_module_after_loading` is unchanged: its only work is the inliner.
+- **Slots.** Overwriting a statement is `replace_with_nop` or `pool.replace_statement`, and copying a
+  node into an existing slot is `move_statement_into`. Where a child must keep its id (the brace
+  pass), the parent's field is rewritten instead. A `VarDeclaration` node is never copied into another
+  id, because `Variable::declaring_element` names it.
+- **Checks.** `transform/tests.rs` has one test per pass on small snippets, and the Skia optimized
+  programs from `DeadStripFunctions`, `DeadGlobals` and `DeadIfStatement` (through `convert_program`).
+  `minified_goldens_match_the_module_optimizer` runs all 27 `folding`, `rte` and `mesh`
+  `.minified.sksl` goldens through the module path with shrinking on. The comparison applies the
+  minifier's literal and whitespace rules (`lexer_like`) to both texts, because S24 owns that lexer
+  pass. Without the lexer, the goldens are not checked byte for byte.
+
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |
