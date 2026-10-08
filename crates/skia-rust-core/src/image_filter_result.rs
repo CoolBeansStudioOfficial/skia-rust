@@ -32,6 +32,7 @@ use crate::canvas::{Canvas, SrcRectConstraint};
 use crate::clip_op::ClipOp;
 use crate::color::Color4f;
 use crate::color_filter::ColorFilter;
+use crate::color_filters;
 use crate::device::Device;
 use crate::image::Image;
 use crate::image_filter_types::{
@@ -588,10 +589,6 @@ impl FilterResult {
     // Port of: src/core/SkImageFilterTypes.cpp#L933-L1002 (chrome/m156)
     #[doc(alias = "applyColorFilter")]
     #[must_use]
-    /// # Panics
-    ///
-    /// If the result already has a color filter: composing two color filters
-    /// (`SkColorFilters::Compose`) is not ported yet.
     pub fn apply_color_filter(&self, ctx: &Context<'_>, color_filter: ColorFilter) -> FilterResult {
         if ctx.desired_output().is_empty() {
             return FilterResult::default();
@@ -641,13 +638,9 @@ impl FilterResult {
 
         let mut filtered = self.clone();
         filtered.layer_bounds = new_layer_bounds;
-        // `SkColorFilters::Compose(colorFilter, fColorFilter)`: the composed filter is ported with
-        // the color filters (`ColorFilter::composed`), which are not on main yet.
-        assert!(
-            self.color_filter.is_none(),
-            "composing color filters (SkColorFilters::Compose) is not ported yet"
-        );
-        filtered.color_filter = Some(color_filter);
+        // `SkColorFilters::Compose(colorFilter, fColorFilter)`.
+        filtered.color_filter =
+            color_filters::compose(Some(&color_filter), self.color_filter.clone());
         filtered
     }
 
@@ -887,8 +880,12 @@ impl FilterResult {
             } else {
                 paint.set_blender(blender.cloned());
             }
-            paint.set_shader(self.get_analyzed_shader_view(ctx, sampling, analysis));
-            device.draw_paint(&paint);
+            // `None` is the failure of `getAnalyzedShaderView`: nothing is drawn, rather than
+            // a solid-color paint over the whole layer.
+            if let Some(shader) = self.get_analyzed_shader_view(ctx, sampling, analysis) {
+                paint.set_shader(Some(shader));
+                device.draw_paint(&paint);
+            }
         } else {
             let mut paint = Paint::default();
             paint.set_blender(blender.cloned());
@@ -1008,13 +1005,12 @@ impl FilterResult {
     ) -> Option<Shader> {
         let image = self.image.as_deref()?;
         if analysis.contains(BoundsAnalysis::REQUIRES_DECAL_IN_LAYER_SPACE) {
-            // The C++ decomposes the transform (`decompose_transform`) and wraps the image shader in
-            // the `kDecal` known runtime effect (SkSL, Phase 3) with `decalBounds = preDecal
-            // .mapRect(imageBounds)`, then applies `postDecal` as a local matrix. That effect is not
-            // ported yet, so this case stops rather than rendering without the decal.
-            unimplemented!(
-                "kRequiresDecalInLayerSpace needs the kDecal known runtime effect (SkSL, Phase 3)"
-            );
+            // The C++ decomposes the transform (`decompose_transform`), wraps the image shader in
+            // the `kDecal` known runtime effect (`sk_decal`, SkSL, not ported) and applies
+            // `postDecal` as a local matrix. Without that effect there is no faithful shader, so
+            // this returns `None`, the same as `getAnalyzedShaderView` failing: the caller draws
+            // nothing. Documented deviation; no panic on valid input.
+            return None;
         }
         let mut pre_decal = self.transform.clone();
 

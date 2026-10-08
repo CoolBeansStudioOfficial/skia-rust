@@ -86,8 +86,8 @@ impl ImageFilterBase for ColorFilterImageFilter {
 
 /// `SkImageFilters::ColorFilter(cf, input, cropRect)`.
 ///
-/// The C++ composes `cf` with the color filter of `input` when `input` is a color filter node
-/// (`makeComposed`), which is not ported yet, so that case stops.
+/// When `input` is a color filter node, the two color filters are composed (`makeComposed`) and
+/// the new filter wraps the input's own input instead.
 // Port of: src/effects/imagefilters/SkColorFilterImageFilter.cpp#L86-L103 (chrome/m156)
 #[doc(alias = "ColorFilter")]
 #[must_use]
@@ -98,12 +98,17 @@ pub fn color_filter(
 ) -> Option<ImageFilter> {
     let mut cf = cf;
     let mut input = input;
-    if cf.is_some() {
-        let input_is_color_filter_node = input
+    if let Some(outer) = cf.take() {
+        let input_color_filter = input
             .as_ref()
-            .is_some_and(|f| f.as_base().on_is_color_filter_node().is_some());
-        if input_is_color_filter_node {
-            unimplemented!("composing color filters (makeComposed) is not ported yet");
+            .and_then(|f| f.as_base().on_is_color_filter_node());
+        match input_color_filter {
+            Some(inner) => {
+                // `cf->makeComposed(inputCF)`, then `input = input->getInput(0)`.
+                cf = Some(outer.composed(Some(inner)));
+                input = input.as_ref().and_then(|f| f.get_input(0).cloned());
+            }
+            None => cf = Some(outer),
         }
     }
     let mut filter = input.take();
