@@ -1964,10 +1964,6 @@ impl CanvasState {
     }
 
     // Port of: src/core/SkCanvas.cpp#L2265-L2363 (chrome/m156)
-    //
-    // TODO(Phase 3, image filters): a paint with an image filter draws the image through
-    // `skif::FilterResult` in Skia; image filters are not ported, so the filter is ignored (as
-    // for every other draw call, see `about_to_draw`).
     fn on_draw_image_rect2(
         &mut self,
         image: &Image,
@@ -1991,6 +1987,32 @@ impl CanvasState {
 
         // (`shouldDrawAsTiledImageRect` is false for the raster device, and so is
         // `useDrawCoverageMaskForMaskFilters`.)
+
+        // drawImageRect()'s behavior is modified by the presence of an image filter, a mask
+        // filter, a color filter, the paint's alpha, the paint's blender, and--when it's an
+        // alpha-only image--the paint's color or shader. When there's an image filter, the
+        // paint's blender is applied to the result of the image filter function, but every other
+        // aspect would influence the source image that's then rendered with src-over blending
+        // into a transparent temporary layer.
+        //
+        // However, FilterResult can apply the paint alpha and any color filter often without
+        // requiring a layer, and src-over blending onto a transparent dst is a no-op, so we can use
+        // the input image directly as the source for filtering.
+        if let Some(filter) = real_paint.image_filter()
+            && !image.is_alpha_only()
+            && real_paint.mask_filter().is_none()
+        {
+            self.draw_image_rect_through_filter(
+                image,
+                src,
+                dst,
+                &real_sampling,
+                &real_paint,
+                &filter,
+            );
+            return;
+        }
+
         if let Some(auto_layer) =
             self.about_to_draw(&real_paint, Some(dst), PredrawFlags::CHECK_FOR_OVERWRITE)
         {
@@ -2004,6 +2026,66 @@ impl CanvasState {
             );
             self.end_auto_layer(&auto_layer);
         }
+    }
+
+    /// The image filter branch of `onDrawImageRect2`: the image is the source of `filter`, which is
+    /// drawn into the top device with the paint's blender.
+    // Port of: src/core/SkCanvas.cpp#L2290-L2338 (chrome/m156)
+    fn draw_image_rect_through_filter(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        real_paint: &Paint,
+        filter: &ImageFilter,
+    ) {
+        let output_bounds = self.top_device().dev_clip_bounds();
+        let Some((mapping, src_bounds)) = get_layer_mapping_and_bounds(
+            std::slice::from_ref(filter),
+            self.top_device().state().local_to_device44(),
+            &output_bounds,
+            Some(dst),
+            1.0,
+        ) else {
+            return;
+        };
+        if !self.predraw_notify() {
+            return;
+        }
+
+        // Start out with an empty source image, to be replaced with the converted 'image', and a
+        // desired output equal to the calculated initial source layer bounds, which accounts for
+        // how the image filters will access 'image' (possibly different than just 'outputBounds').
+        let device = self.top_device_mut();
+        let color_type = image_filter_color_type(device.state().image_info().color_info());
+        let props = *device.state().surface_props();
+        let Some(backend) = device.create_image_filtering_backend(&props, color_type) else {
+            return;
+        };
+        let color_space = device.state().image_info().color_space();
+        let stats = Stats::default();
+        let ctx = Context::new(
+            backend,
+            mapping.clone(),
+            src_bounds,
+            FilterResult::default(),
+            color_space,
+            Some(&stats),
+        );
+
+        let source = FilterResult::make_from_image(&ctx, image, *src, *dst, *sampling);
+        // Apply effects that are normally processed on the draw *before* any layer/image filter.
+        let source = apply_alpha_and_colorfilter(&ctx, &source, real_paint);
+
+        // Evaluate the image filter, with a context pointing to the source created directly from
+        // 'image' (which will not require intermediate renderpasses when 'src' is integer aligned)
+        // and a desired output matching the device clip bounds.
+        let ctx = ctx
+            .with_new_desired_output(mapping.device_to_layer(&output_bounds))
+            .with_new_source(source);
+        let result = filter.as_base().filter_image(&ctx);
+        result.draw(&ctx, device, real_paint.blender().as_ref());
     }
 
     // Port of: src/core/SkCanvas.cpp#L1794-L1809 (chrome/m156)
