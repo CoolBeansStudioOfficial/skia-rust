@@ -49,6 +49,7 @@ pub mod descriptor;
 pub mod device;
 pub mod draw_procs;
 pub mod draw_types;
+pub mod drawable;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod effect_priv;
@@ -66,6 +67,7 @@ pub mod font_types;
 pub mod front_buffered_stream;
 pub mod gauss_filter;
 pub mod geometry;
+pub mod glyph;
 pub mod half;
 pub mod id_change_listener;
 pub mod image;
@@ -99,6 +101,7 @@ pub mod matrix_priv;
 pub mod matrix_utils;
 pub mod mipmap;
 pub mod mipmap_accessor;
+pub mod packed_glyph_id;
 pub mod paint;
 #[doc(hidden)]
 pub mod paint_priv;

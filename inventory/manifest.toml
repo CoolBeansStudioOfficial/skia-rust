@@ -42201,7 +42201,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L36-L63"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b727b5e2f9da24e62795c043bbdefd1f02ccdb1a41610df985864dc9e84324b4"
 
 [[test]]
@@ -42247,6 +42247,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L332-L375"
 module = "text"
 status = "todo"
+reason = "needs SkWriteBuffer/SkReadBuffer and picture flattening (not ported; docs/design/text.md T5 follow-up)"
 span_hash = "54c4131fe232d66df47f9691cf73b7825f49f7881645fe85c1a5dadb16e8baab"
 
 [[test]]
