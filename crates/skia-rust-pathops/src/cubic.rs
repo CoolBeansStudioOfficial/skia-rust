@@ -8,6 +8,7 @@
 
 use std::ops::{Index, IndexMut};
 
+use skia_rust_core::geometry::{CubicType, classify_cubic_with};
 use skia_rust_core::point::Point;
 use skia_rust_core::scalar::double_to_scalar;
 
@@ -19,7 +20,7 @@ use crate::types::{
     FLT_EPSILON_ORDERABLE_ERR, almost_bequal_ulps, almost_dequal_ulps, approximately_equal,
     approximately_equal_half, approximately_one_or_less, approximately_zero,
     approximately_zero_or_more, approximately_zero_when_compared_to, between, d_interp,
-    precisely_between, precisely_zero, std_max, std_min, zero_or_one,
+    precisely_between, precisely_zero, roughly_between, std_max, std_min, zero_or_one,
 };
 
 /// `SkDCubic::kPointCount`.
@@ -1043,6 +1044,87 @@ fn rotate(cubic: &DCubic, zero: usize, index: usize) -> Option<DCubic> {
         rot_path.pts[i].y = cubic.pts[i].y * dx - cubic.pts[i].x * dy;
     }
     Some(rot_path)
+}
+
+impl DCubic {
+    /// `static int SkDCubic::ComplexBreak(const SkPoint pointsPtr[4], SkScalar* t)`: the parameter
+    /// at which a cubic with a loop, serpentine or cusp is split, written to `t`. Returns how many
+    /// values were written (0 or 1 for a loop, up to three for the max-curvature search).
+    // Port of: src/pathops/SkPathOpsCubic.cpp#L255-L336 (chrome/m156)
+    #[doc(alias = "ComplexBreak")]
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)] // mirrors the SkScalar (float) stores of SkDCubic::ComplexBreak
+    pub fn complex_break(points: [Point; 4], t: &mut [f32; 3]) -> i32 {
+        let mut cubic = DCubic::default();
+        cubic.set(points);
+        if cubic.monotonic_in_x() && cubic.monotonic_in_y() {
+            return 0;
+        }
+        let mut tt = [0.0_f64; 2];
+        let mut ss = [0.0_f64; 2];
+        let cubic_type = classify_cubic_with(&points, Some(&mut tt), Some(&mut ss), None);
+        match cubic_type {
+            CubicType::Loop => {
+                let td = tt[0];
+                let te = tt[1];
+                let sd = ss[0];
+                let se = ss[1];
+                if roughly_between(0.0, td, sd) && roughly_between(0.0, te, se) {
+                    t[0] = ((td * se + te * sd) / (2.0 * sd * se)) as f32;
+                    return i32::from(t[0] > 0.0 && t[0] < 1.0);
+                }
+                // fall through if no t value found
+                Self::complex_break_inflections(&cubic, t)
+            }
+            CubicType::Serpentine | CubicType::LocalCusp | CubicType::CuspAtInfinity => {
+                Self::complex_break_inflections(&cubic, t)
+            }
+            _ => 0,
+        }
+    }
+
+    /// The `kSerpentine`/`kLocalCusp`/`kCuspAtInfinity` part of `ComplexBreak`, reached by the
+    /// fall-through from a loop that has no valid `t`.
+    // Port of: src/pathops/SkPathOpsCubic.cpp#L305-L332 (chrome/m156)
+    #[allow(clippy::cast_possible_truncation)] // mirrors the SkScalar (float) stores of ComplexBreak
+    fn complex_break_inflections(cubic: &DCubic, t: &mut [f32; 3]) -> i32 {
+        let mut inflection_ts = [0.0_f64; 2];
+        let inf_t_count = cubic.find_inflections(&mut inflection_ts);
+        let mut max_curvature = [0.0_f64; 3];
+        let roots = cubic.find_max_curvature(&mut max_curvature);
+        if inf_t_count == 2 {
+            for &root in max_curvature.iter().take(roots) {
+                if between(inflection_ts[0], root, inflection_ts[1]) {
+                    t[0] = root as f32;
+                    return i32::from(t[0] > 0.0 && t[0] < 1.0);
+                }
+            }
+            return 0;
+        }
+        let mut result_count: usize = 0;
+        // FIXME: constant found through experimentation -- maybe there's a better way....
+        let precision = cubic.calc_precision() * 2.0;
+        for &test_t in max_curvature.iter().take(roots) {
+            if 0.0 >= test_t || test_t >= 1.0 {
+                continue;
+            }
+            // don't call dxdyAtT since we want (0,0) results
+            let d_pt = DVector::new(
+                derivative_at_t(cubic.pts.map(|p| p.x), test_t),
+                derivative_at_t(cubic.pts.map(|p| p.y), test_t),
+            );
+            let d_pt_len = d_pt.length();
+            if d_pt_len < precision {
+                t[result_count] = test_t as f32;
+                result_count += 1;
+            }
+        }
+        if result_count == 0 && inf_t_count == 1 {
+            t[0] = inflection_ts[0] as f32;
+            result_count = usize::from(t[0] > 0.0 && t[0] < 1.0);
+        }
+        i32::try_from(result_count).unwrap_or(i32::MAX)
+    }
 }
 
 impl Index<usize> for DCubic {
