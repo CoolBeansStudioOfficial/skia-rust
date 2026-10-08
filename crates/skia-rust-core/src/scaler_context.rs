@@ -155,7 +155,7 @@ impl ScalerContextRec {
     }
 
     /// `ScalerContextRec::InternalGammaFromExternal`.
-    // Port of: src/core/SkScalerContext.h#L91-L93 (chrome/m156)
+    // Port of: src/core/SkScalerContext.h#L91-L94 (chrome/m156)
     #[must_use]
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // mirrors static_cast<uint8_t> in ported arithmetic
     pub fn internal_gamma_from_external(g: scalar) -> u8 {
@@ -170,7 +170,7 @@ impl ScalerContextRec {
     }
 
     /// `ScalerContextRec::InternalContrastFromExternal`.
-    // Port of: src/core/SkScalerContext.h#L98-L100 (chrome/m156)
+    // Port of: src/core/SkScalerContext.h#L98-L101 (chrome/m156)
     #[must_use]
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // mirrors static_cast<uint8_t> in ported arithmetic
     pub fn internal_contrast_from_external(c: scalar) -> u8 {
@@ -186,7 +186,7 @@ impl ScalerContextRec {
     }
 
     /// The device gamma, as the 2.6 fixed-point byte stored in the record.
-    // Port of: src/core/SkScalerContext.h#L103 (fDeviceGamma, chrome/m156)
+    // Port of: src/core/SkScalerContext.h#L83 (fDeviceGamma, chrome/m156)
     #[must_use]
     pub fn device_gamma(&self) -> u8 {
         self.device_gamma
@@ -200,14 +200,14 @@ impl ScalerContextRec {
     }
 
     /// The contrast, as the 0.8 fixed-point byte stored in the record.
-    // Port of: src/core/SkScalerContext.h#L110 (fContrast, chrome/m156)
+    // Port of: src/core/SkScalerContext.h#L85 (fContrast, chrome/m156)
     #[must_use]
     pub fn contrast(&self) -> u8 {
         self.contrast
     }
 
     /// `ScalerContextRec::getHinting`: the two hinting bits as a [`FontHinting`].
-    // Port of: src/core/SkScalerContext.h#L488-L492 (chrome/m156)
+    // Port of: src/core/SkScalerContext.h#L488-L493 (chrome/m156)
     #[must_use]
     pub fn hinting(&self) -> FontHinting {
         let hint = (self.flags.bits() & ScalerContextFlags::HINTING_MASK.bits()) >> HINTING_SHIFT;
