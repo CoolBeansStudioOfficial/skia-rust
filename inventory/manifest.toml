@@ -32362,7 +32362,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L275-L301"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2ba9f0bd776e05c47a4831d008c685e3fc075eb49e29db3e59a092f7e3f543a4"
 
 [[test]]
@@ -32371,7 +32371,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L303-L334"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3c0ee51e03d87107e231411a3be8ca57294894e4f7b39d7a68836d5cacf3ffb9"
 
 [[test]]
