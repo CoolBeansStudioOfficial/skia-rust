@@ -6,10 +6,11 @@
 //!
 //! Ported so far: `MatrixTransform`/`Offset`, `Merge`, `Compose`, `Crop`/`Empty`/`Tile`,
 //! `ColorFilter` (without the composition of two color filters), `Image` and `Blend` (blend
-//! modes and custom blenders; not the arithmetic blender). `Blur`, `Shader`, `Picture` and the
+//! modes and custom blenders; not the arithmetic blender) and `Blur`. `Shader`, `Picture` and the
 //! others are not ported yet.
 
 pub mod blend_filter;
+pub mod blur_filter;
 pub mod color_filter_filter;
 pub mod compose_filter;
 pub mod crop_filter;
@@ -18,6 +19,7 @@ pub mod matrix_transform_filter;
 pub mod merge_filter;
 
 pub use blend_filter::{blend, blend_with_blender};
+pub use blur_filter::blur;
 pub use color_filter_filter::color_filter;
 pub use compose_filter::compose;
 pub use crop_filter::{crop, empty, tile};
