@@ -161,7 +161,6 @@ pub mod path_ops_d_rect_test;
 #[cfg(test)]
 pub mod path_ops_d_vector_test;
 #[cfg(test)]
-pub mod path_ops_ext_test;
 pub mod path_ops_extended_test;
 #[cfg(test)]
 pub mod path_ops_fuzz763_test;
