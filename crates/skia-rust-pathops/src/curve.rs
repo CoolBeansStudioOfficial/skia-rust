@@ -7,6 +7,7 @@
 //! `nearPoint` query used when matching end points.
 
 use skia_rust_core::path::Verb;
+use skia_rust_core::point::Point;
 
 use crate::conic::DConic;
 use crate::cubic::DCubic;
@@ -14,6 +15,7 @@ use crate::intersections::Intersections;
 use crate::line::DLine;
 use crate::point::DPoint;
 use crate::quad::DQuad;
+use crate::rect::{Bounds, DRect};
 use crate::types::{almost_between_ulps, almost_equal_ulps_pin, pin_t, std_max, std_min};
 
 /// `SkDCurve`: one of the four curve kinds, as a Rust enum instead of a C++ union.
@@ -112,4 +114,83 @@ pub fn curve_near_point(curve: &DCurve, verb: Verb, xy: DPoint, opp: DPoint) -> 
         return -1.0;
     }
     pin_t(i.t(0, min_index as usize))
+}
+
+impl DCurve {
+    /// `void SkDCurve::setConicBounds(const SkPoint curve[3], SkScalar curveWeight, double s,
+    /// double e, SkPathOpsBounds* bounds)`. The sub-curve is the conic member of the union, so
+    /// the receiver must hold a conic.
+    // Port of: src/pathops/SkPathOpsCurve.cpp#L60-L68 (chrome/m156)
+    #[doc(alias = "setConicBounds")]
+    pub fn set_conic_bounds(
+        &self,
+        curve: [Point; 3],
+        curve_weight: f32,
+        t_start: f64,
+        t_end: f64,
+        bounds: &mut Bounds,
+    ) {
+        let DCurve::Conic(sub) = self else {
+            unreachable!("setConicBounds reads the conic member of an SkDCurve");
+        };
+        let mut d_curve = DConic::default();
+        d_curve.set(curve, curve_weight);
+        let mut d_rect = DRect::default();
+        d_rect.set_bounds_conic_sub(&d_curve, sub, t_start, t_end);
+        set_bounds_from_drect(&d_rect, bounds);
+    }
+
+    /// `void SkDCurve::setCubicBounds(const SkPoint curve[4], SkScalar, double s, double e,
+    /// SkPathOpsBounds* bounds)`: the cubic member of the union is the sub-curve.
+    // Port of: src/pathops/SkPathOpsCurve.cpp#L70-L78 (chrome/m156)
+    #[doc(alias = "setCubicBounds")]
+    pub fn set_cubic_bounds(
+        &self,
+        curve: [Point; 4],
+        _curve_weight: f32,
+        t_start: f64,
+        t_end: f64,
+        bounds: &mut Bounds,
+    ) {
+        let DCurve::Cubic(sub) = self else {
+            unreachable!("setCubicBounds reads the cubic member of an SkDCurve");
+        };
+        let mut d_curve = DCubic::default();
+        d_curve.set(curve);
+        let mut d_rect = DRect::default();
+        d_rect.set_bounds_cubic_sub(&d_curve, sub, t_start, t_end);
+        set_bounds_from_drect(&d_rect, bounds);
+    }
+
+    /// `void SkDCurve::setQuadBounds(const SkPoint curve[3], SkScalar, double s, double e,
+    /// SkPathOpsBounds* bounds)`: the quad member of the union is the sub-curve.
+    // Port of: src/pathops/SkPathOpsCurve.cpp#L80-L88 (chrome/m156)
+    #[doc(alias = "setQuadBounds")]
+    pub fn set_quad_bounds(
+        &self,
+        curve: [Point; 3],
+        _curve_weight: f32,
+        t_start: f64,
+        t_end: f64,
+        bounds: &mut Bounds,
+    ) {
+        let DCurve::Quad(sub) = self else {
+            unreachable!("setQuadBounds reads the quad member of an SkDCurve");
+        };
+        let mut d_curve = DQuad::default();
+        d_curve.set(curve);
+        let mut d_rect = DRect::default();
+        d_rect.set_bounds_quad_sub(&d_curve, sub, t_start, t_end);
+        set_bounds_from_drect(&d_rect, bounds);
+    }
+}
+
+/// `bounds->setLTRB(SkDoubleToScalar(dRect.fLeft), ...)`.
+// Port of: src/pathops/SkPathOpsCurve.cpp#L60-L88 (chrome/m156)
+#[allow(clippy::cast_possible_truncation)] // mirrors SkDoubleToScalar: a static_cast<float>
+fn set_bounds_from_drect(d_rect: &DRect, bounds: &mut Bounds) {
+    bounds.left = d_rect.left as f32;
+    bounds.top = d_rect.top as f32;
+    bounds.right = d_rect.right as f32;
+    bounds.bottom = d_rect.bottom as f32;
 }

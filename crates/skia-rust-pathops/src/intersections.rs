@@ -128,6 +128,30 @@ impl Intersections {
         (i32::from(self.is_coincident[0]) & (1 << index)) != 0
     }
 
+    /// `int debugCoincidentUsed() const`: the number of coincident intersections. Called only by
+    /// test code.
+    // Port of: src/pathops/SkPathOpsDebug.cpp#L2645-L2661 (chrome/m156)
+    #[doc(alias = "debugCoincidentUsed")]
+    #[must_use]
+    pub fn debug_coincident_used(&self) -> i32 {
+        if self.is_coincident[0] == 0 {
+            debug_assert_eq!(self.is_coincident[1], 0);
+            return 0;
+        }
+        let mut count = 0;
+        let mut count2 = 0;
+        for index in 0..usize::from(self.used) {
+            if (i32::from(self.is_coincident[0]) & (1 << index)) != 0 {
+                count += 1;
+            }
+            if (i32::from(self.is_coincident[1]) & (1 << index)) != 0 {
+                count2 += 1;
+            }
+        }
+        debug_assert_eq!(count, count2);
+        count
+    }
+
     /// `bool nearlySame(int index) const`.
     #[doc(alias = "nearlySame")]
     #[must_use]

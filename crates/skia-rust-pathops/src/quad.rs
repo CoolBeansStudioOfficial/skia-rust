@@ -528,6 +528,29 @@ impl DQuad {
     }
 }
 
+impl DQuad {
+    /// `SkDCubic SkDQuad::debugToCubic() const`: the cubic that traces this quad. Called only by
+    /// test code.
+    // Port of: src/pathops/SkPathOpsDebug.cpp#L685-L695 (chrome/m156)
+    #[doc(alias = "debugToCubic")]
+    #[must_use]
+    pub fn debug_to_cubic(&self) -> DCubic {
+        let mut cubic = DCubic::default();
+        cubic.pts[0] = self.pts[0];
+        cubic.pts[2] = self.pts[1];
+        cubic.pts[3] = self.pts[2];
+        cubic.pts[1] = DPoint::new(
+            (cubic.pts[0].x + cubic.pts[2].x * 2.0) / 3.0,
+            (cubic.pts[0].y + cubic.pts[2].y * 2.0) / 3.0,
+        );
+        cubic.pts[2] = DPoint::new(
+            (cubic.pts[3].x + cubic.pts[2].x * 2.0) / 3.0,
+            (cubic.pts[3].y + cubic.pts[2].y * 2.0) / 3.0,
+        );
+        cubic
+    }
+}
+
 impl Index<usize> for DQuad {
     type Output = DPoint;
     fn index(&self, n: usize) -> &DPoint {

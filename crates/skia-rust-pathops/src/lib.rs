@@ -18,4 +18,6 @@ pub mod quad;
 pub mod rect;
 pub mod reduce_order;
 pub mod t_curve;
+pub mod t_sect;
+pub mod t_span;
 pub mod types;
