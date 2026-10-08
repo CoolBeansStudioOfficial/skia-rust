@@ -25,7 +25,7 @@ use crate::rect::Rect;
 use crate::scalar::scalar;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
-// Port of: src/core/SkGlyph.h#L467 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L573 (chrome/m156)
 const MAX_GLYPH_WIDTH: u16 = 1 << 13;
 
 /// `sizeof(SkPictureBackedGlyphDrawable)` on 64-bit targets: the vtable pointer, the generation
@@ -96,7 +96,7 @@ pub struct GlyphRect {
 
 impl GlyphRect {
     /// `SkGlyphRect(left, top, right, bottom)`.
-    // Port of: src/core/SkGlyph.h#L256-L258 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L254-L255 (chrome/m156)
     #[must_use]
     pub fn new(left: scalar, top: scalar, right: scalar, bottom: scalar) -> Self {
         Self {
@@ -105,21 +105,21 @@ impl GlyphRect {
     }
 
     /// `SkGlyphRect::empty`: true if the width or the height is not positive.
-    // Port of: src/core/SkGlyph.h#L260-L262 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L256-L258 (chrome/m156)
     #[must_use]
     pub fn is_empty(&self) -> bool {
         -self.rect[0] >= self.rect[2] || -self.rect[1] >= self.rect[3]
     }
 
     /// `SkGlyphRect::rect`: the rectangle as an `SkRect`.
-    // Port of: src/core/SkGlyph.h#L264-L266 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L259-L261 (chrome/m156)
     #[must_use]
     pub fn rect(&self) -> Rect {
         Rect::from_ltrb(-self.rect[0], -self.rect[1], self.rect[2], self.rect[3])
     }
 
     /// `SkGlyphRect::offset(x, y)`.
-    // Port of: src/core/SkGlyph.h#L268-L270 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L262-L264 (chrome/m156)
     #[must_use]
     pub fn offset(&self, x: scalar, y: scalar) -> Self {
         let d = [-x, -y, x, y];
@@ -129,14 +129,14 @@ impl GlyphRect {
     }
 
     /// `SkGlyphRect::offset(pt)`.
-    // Port of: src/core/SkGlyph.h#L271-L273 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L265-L267 (chrome/m156)
     #[must_use]
     pub fn offset_point(&self, pt: Point) -> Self {
         self.offset(pt.x, pt.y)
     }
 
     /// `SkGlyphRect::scaleAndOffset`: `rect * scale + (-x, -y, x, y)`.
-    // Port of: src/core/SkGlyph.h#L274-L277 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L268-L271 (chrome/m156)
     #[must_use]
     pub fn scale_and_offset(&self, scale: scalar, offset: Point) -> Self {
         let (x, y) = (offset.x, offset.y);
@@ -147,7 +147,7 @@ impl GlyphRect {
     }
 
     /// `SkGlyphRect::inset(dx, dy)`: `rect - (dx, dy, dx, dy)`.
-    // Port of: src/core/SkGlyph.h#L278-L280 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L272-L274 (chrome/m156)
     #[must_use]
     pub fn inset(&self, dx: scalar, dy: scalar) -> Self {
         let d = [dx, dy, dx, dy];
@@ -157,21 +157,21 @@ impl GlyphRect {
     }
 
     /// `SkGlyphRect::leftTop`.
-    // Port of: src/core/SkGlyph.h#L281 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L275 (chrome/m156)
     #[must_use]
     pub fn left_top(&self) -> Point {
         Point::new(-self.rect[0], -self.rect[1])
     }
 
     /// `SkGlyphRect::rightBottom`.
-    // Port of: src/core/SkGlyph.h#L282 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L276 (chrome/m156)
     #[must_use]
     pub fn right_bottom(&self) -> Point {
         Point::new(self.rect[2], self.rect[3])
     }
 
     /// `SkGlyphRect::widthHeight`: `rightBottom + negLeftTop`.
-    // Port of: src/core/SkGlyph.h#L283 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L277 (chrome/m156)
     #[must_use]
     pub fn width_height(&self) -> Point {
         Point::new(self.rect[2] + self.rect[0], self.rect[3] + self.rect[1])
@@ -223,7 +223,7 @@ const ACTION_TOTAL_BITS: u32 = 12;
 ///
 /// The C++ bit-fields are packed into one `u64` in the same order (least significant first):
 /// `packedID` (20 bits), `index` (20), `isEmpty` (1), `format` (3), `actions` (12).
-// Port of: src/core/SkGlyph.h#L329-L408 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L329-L407 (chrome/m156)
 #[doc(alias = "SkGlyphDigest")]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct GlyphDigest {
@@ -236,7 +236,7 @@ pub struct GlyphDigest {
 
 impl GlyphDigest {
     /// `kSkSideTooBigForAtlas`: the largest side a glyph may have to go in the atlas.
-    // Port of: src/core/SkGlyph.h#L332 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L333 (chrome/m156)
     pub const SIDE_TOO_BIG_FOR_ATLAS: u16 = 256;
 
     const PACKED_ID_BITS: u32 = 20;
@@ -280,28 +280,28 @@ impl GlyphDigest {
     }
 
     /// `SkGlyphDigest::index`: the glyph's position in the strike's glyph list.
-    // Port of: src/core/SkGlyph.h#L334 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L338 (chrome/m156)
     #[must_use]
     pub fn index(&self) -> usize {
         ((self.bits >> Self::INDEX_SHIFT) & ((1 << Self::PACKED_ID_BITS) - 1)) as usize
     }
 
     /// `SkGlyphDigest::isEmpty`.
-    // Port of: src/core/SkGlyph.h#L335 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L339 (chrome/m156)
     #[must_use]
     pub fn is_empty(&self) -> bool {
         (self.bits >> Self::EMPTY_SHIFT) & 1 != 0
     }
 
     /// `SkGlyphDigest::isColor`: the format is ARGB32.
-    // Port of: src/core/SkGlyph.h#L336 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L340 (chrome/m156)
     #[must_use]
     pub fn is_color(&self) -> bool {
         self.mask_format() == MaskFormat::Argb32
     }
 
     /// `SkGlyphDigest::maskFormat`.
-    // Port of: src/core/SkGlyph.h#L337 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L341 (chrome/m156)
     #[must_use]
     pub fn mask_format(&self) -> MaskFormat {
         match (self.bits >> Self::FORMAT_SHIFT) & Self::FORMAT_MASK {
@@ -315,7 +315,7 @@ impl GlyphDigest {
     }
 
     /// `SkGlyphDigest::actionFor`: the action for `action_type`.
-    // Port of: src/core/SkGlyph.h#L338-L340 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L343-L345 (chrome/m156)
     #[must_use]
     pub fn action_for(&self, action_type: ActionType) -> GlyphAction {
         let actions = (self.bits >> Self::ACTIONS_SHIFT) & ((1 << ACTION_TOTAL_BITS) - 1);
@@ -330,7 +330,7 @@ impl GlyphDigest {
     /// `SkGlyphDigest::setAction` (private in C++): records the action for `action_type`, which
     /// must still be `Unset`. `setActionFor` (which also sets the strike's pending work) arrives
     /// with the strike.
-    // Port of: src/core/SkGlyph.h#L375-L382 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L386-L393 (chrome/m156)
     #[allow(dead_code)] // consumed by the scaler context, which arrives with T6
     pub(crate) fn set_action(&mut self, action_type: ActionType, action: GlyphAction) {
         assert_ne!(action, GlyphAction::Unset);
@@ -342,28 +342,28 @@ impl GlyphDigest {
     }
 
     /// `SkGlyphDigest::maxDimension`.
-    // Port of: src/core/SkGlyph.h#L341-L343 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L349-L351 (chrome/m156)
     #[must_use]
     pub fn max_dimension(&self) -> u16 {
         self.width.max(self.height)
     }
 
     /// `SkGlyphDigest::fitsInAtlasDirect`.
-    // Port of: src/core/SkGlyph.h#L344-L346 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L353-L355 (chrome/m156)
     #[must_use]
     pub fn fits_in_atlas_direct(&self) -> bool {
         self.max_dimension() <= Self::SIDE_TOO_BIG_FOR_ATLAS
     }
 
     /// `SkGlyphDigest::fitsInAtlasInterpolated`: two pixels smaller, for the filter border.
-    // Port of: src/core/SkGlyph.h#L347-L349 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L357-L360 (chrome/m156)
     #[must_use]
     pub fn fits_in_atlas_interpolated(&self) -> bool {
         self.max_dimension() <= Self::SIDE_TOO_BIG_FOR_ATLAS - 2
     }
 
     /// `SkGlyphDigest::bounds`.
-    // Port of: src/core/SkGlyph.h#L350-L352 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L362-L364 (chrome/m156)
     #[must_use]
     pub fn bounds(&self) -> GlyphRect {
         GlyphRect::new(
@@ -382,28 +382,28 @@ impl GlyphDigest {
     }
 
     /// `SkGlyphDigest::GetKey`: the packed id of a digest.
-    // Port of: src/core/SkGlyph.h#L362-L364 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L369-L371 (chrome/m156)
     #[must_use]
     pub fn key(&self) -> PackedGlyphId {
         PackedGlyphId::from_raw((self.bits & ((1 << Self::PACKED_ID_BITS) - 1)) as u32)
     }
 
     /// `SkGlyphDigest::Hash`.
-    // Port of: src/core/SkGlyph.h#L365-L367 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L372-L374 (chrome/m156)
     #[must_use]
     pub fn hash(packed_id: PackedGlyphId) -> u32 {
         cheap_mix(packed_id.value())
     }
 
     /// `SkGlyphDigest::ShouldGrow`.
-    // Port of: src/core/SkGlyph.h#L368-L370 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L375-L379 (chrome/m156)
     #[must_use]
     pub fn should_grow(count: i32, capacity: i32) -> bool {
         2 * count >= capacity
     }
 
     /// `SkGlyphDigest::ShouldShrink`.
-    // Port of: src/core/SkGlyph.h#L371-L373 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L380-L383 (chrome/m156)
     #[must_use]
     pub fn should_shrink(count: i32, capacity: i32) -> bool {
         6 * count <= capacity
@@ -429,7 +429,7 @@ struct DrawableData {
 /// The metric fields are `pub(crate)`: the scaler context fills them, as in C++. Images, paths
 /// and drawables are owned here instead of living in an arena; "has been called" is tracked the
 /// way C++ tracks it (`setImageHasBeenCalled` and friends).
-// Port of: src/core/SkGlyph.h#L422-L656 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L422-L654 (chrome/m156)
 #[doc(alias = "SkGlyph")]
 #[derive(Clone, Debug)]
 pub struct Glyph {
@@ -449,7 +449,7 @@ pub struct Glyph {
 
 impl Default for Glyph {
     /// `SkGlyph()`: the glyph with the impossible id and no metrics.
-    // Port of: src/core/SkGlyph.h#L434 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L426 (chrome/m156)
     fn default() -> Self {
         Self::new(PackedGlyphId::default())
     }
@@ -457,7 +457,7 @@ impl Default for Glyph {
 
 impl Glyph {
     /// `explicit SkGlyph(SkPackedGlyphID id)`: no metrics, no image, BW format.
-    // Port of: src/core/SkGlyph.h#L437 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L432 (chrome/m156)
     #[must_use]
     pub fn new(id: PackedGlyphId) -> Self {
         Self {
@@ -477,21 +477,21 @@ impl Glyph {
     }
 
     /// `SkGlyph::advanceX`.
-    // Port of: src/core/SkGlyph.h#L444 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L435 (chrome/m156)
     #[must_use]
     pub fn advance_x(&self) -> scalar {
         self.advance_x
     }
 
     /// `SkGlyph::advanceY`.
-    // Port of: src/core/SkGlyph.h#L445 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L436 (chrome/m156)
     #[must_use]
     pub fn advance_y(&self) -> scalar {
         self.advance_y
     }
 
     /// Sets the advances. The scaler context does this when it makes metrics.
-    // Port of: src/core/SkGlyph.h#L441-L442 (fAdvanceX, fAdvanceY, chrome/m156)
+    // Port of: src/core/SkGlyph.h#L640-L641 (fAdvanceX, fAdvanceY, chrome/m156)
     #[allow(dead_code)] // consumed by the scaler context, which arrives with T6
     pub(crate) fn set_advances(&mut self, x: scalar, y: scalar) {
         self.advance_x = x;
@@ -499,28 +499,28 @@ impl Glyph {
     }
 
     /// `SkGlyph::getGlyphID`.
-    // Port of: src/core/SkGlyph.h#L447 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L438 (chrome/m156)
     #[must_use]
     pub fn glyph_id(&self) -> GlyphId {
         self.id.glyph_id()
     }
 
     /// `SkGlyph::getPackedID`.
-    // Port of: src/core/SkGlyph.h#L448 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L439 (chrome/m156)
     #[must_use]
     pub fn packed_id(&self) -> PackedGlyphId {
         self.id
     }
 
     /// `SkGlyph::getSubXFixed`.
-    // Port of: src/core/SkGlyph.h#L449 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L440 (chrome/m156)
     #[must_use]
     pub fn sub_x_fixed(&self) -> crate::fixed::Fixed {
         self.id.sub_x_fixed()
     }
 
     /// `SkGlyph::getSubYFixed`.
-    // Port of: src/core/SkGlyph.h#L450 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L441 (chrome/m156)
     #[must_use]
     pub fn sub_y_fixed(&self) -> crate::fixed::Fixed {
         self.id.sub_y_fixed()
@@ -575,27 +575,27 @@ impl Glyph {
 
     /// `SkGlyph::setImageHasBeenCalled`: an empty glyph, a glyph with an image, or one too large
     /// for an image counts as done.
-    // Port of: src/core/SkGlyph.h#L471-L474 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L468-L471 (chrome/m156)
     #[must_use]
     pub fn set_image_has_been_called(&self) -> bool {
         self.is_empty() || self.image.is_some() || self.image_too_large()
     }
 
     /// `SkGlyph::image`: the mask bytes, or `None` for an empty or too-large glyph.
-    // Port of: src/core/SkGlyph.h#L475 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L474 (chrome/m156)
     #[must_use]
     pub fn image(&self) -> Option<&[u8]> {
         self.image.as_deref()
     }
 
     /// `SkGlyph::setImage(void*)`: installs an image the caller has produced.
-    // Port of: src/core/SkGlyph.h#L536 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L541 (chrome/m156)
     pub fn set_image(&mut self, image: Box<[u8]>) {
         self.image = Some(image);
     }
 
     /// `SkGlyph::setPathHasBeenCalled`.
-    // Port of: src/core/SkGlyph.h#L486 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L495 (chrome/m156)
     #[must_use]
     pub fn set_path_has_been_called(&self) -> bool {
         self.path_data.is_some()
@@ -639,7 +639,7 @@ impl Glyph {
     }
 
     /// `SkGlyph::setDrawableHasBeenCalled`.
-    // Port of: src/core/SkGlyph.h#L503 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L505 (chrome/m156)
     #[must_use]
     pub fn set_drawable_has_been_called(&self) -> bool {
         self.drawable_data.is_some()
@@ -664,42 +664,42 @@ impl Glyph {
     }
 
     /// `SkGlyph::isColor`: the format is ARGB32.
-    // Port of: src/core/SkGlyph.h#L503-L504 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L509 (chrome/m156)
     #[must_use]
     pub fn is_color(&self) -> bool {
         self.mask_format == MaskFormat::Argb32
     }
 
     /// `SkGlyph::maskFormat`.
-    // Port of: src/core/SkGlyph.h#L505 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L510 (chrome/m156)
     #[must_use]
     pub fn mask_format(&self) -> MaskFormat {
         self.mask_format
     }
 
     /// Sets the mask format. The scaler context chooses it.
-    // Port of: src/core/SkGlyph.h#L505 (fMaskFormat, chrome/m156)
+    // Port of: src/core/SkGlyph.h#L643 (fMaskFormat, chrome/m156)
     #[allow(dead_code)] // consumed by the scaler context, which arrives with T6
     pub(crate) fn set_mask_format(&mut self, format: MaskFormat) {
         self.mask_format = format;
     }
 
     /// `SkGlyph::maxDimension`.
-    // Port of: src/core/SkGlyph.h#L506 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L514 (chrome/m156)
     #[must_use]
     pub fn max_dimension(&self) -> u16 {
         self.width.max(self.height)
     }
 
     /// `SkGlyph::iRect`.
-    // Port of: src/core/SkGlyph.h#L507-L508 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L515 (chrome/m156)
     #[must_use]
     pub fn i_rect(&self) -> IPoint {
         IPoint::new(i32::from(self.left), i32::from(self.top))
     }
 
     /// `SkGlyph::glyphRect`.
-    // Port of: src/core/SkGlyph.h#L510-L512 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L517-L519 (chrome/m156)
     #[must_use]
     pub fn glyph_rect(&self) -> GlyphRect {
         GlyphRect::new(
@@ -711,49 +711,49 @@ impl Glyph {
     }
 
     /// `SkGlyph::left`.
-    // Port of: src/core/SkGlyph.h#L513 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L520 (chrome/m156)
     #[must_use]
     pub fn left(&self) -> i32 {
         i32::from(self.left)
     }
 
     /// `SkGlyph::top`.
-    // Port of: src/core/SkGlyph.h#L514 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L521 (chrome/m156)
     #[must_use]
     pub fn top(&self) -> i32 {
         i32::from(self.top)
     }
 
     /// `SkGlyph::width`.
-    // Port of: src/core/SkGlyph.h#L515 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L522 (chrome/m156)
     #[must_use]
     pub fn width(&self) -> u16 {
         self.width
     }
 
     /// `SkGlyph::height`.
-    // Port of: src/core/SkGlyph.h#L516 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L523 (chrome/m156)
     #[must_use]
     pub fn height(&self) -> u16 {
         self.height
     }
 
     /// `SkGlyph::isEmpty`: no area.
-    // Port of: src/core/SkGlyph.h#L517-L519 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L524-L526 (chrome/m156)
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.width == 0 || self.height == 0
     }
 
     /// `SkGlyph::imageTooLarge`.
-    // Port of: src/core/SkGlyph.h#L521 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L527 (chrome/m156)
     #[must_use]
     pub fn image_too_large(&self) -> bool {
         self.width >= MAX_GLYPH_WIDTH
     }
 
     /// `SkGlyph::extraBits`: the bits the scaler context stores in the glyph.
-    // Port of: src/core/SkGlyph.h#L522 (chrome/m156)
+    // Port of: src/core/SkGlyph.h#L529 (chrome/m156)
     #[must_use]
     pub fn extra_bits(&self) -> u16 {
         self.scaler_context_bits
@@ -783,7 +783,7 @@ fn format_alignment(format: MaskFormat) -> usize {
 
 /// `SkPictureBackedGlyphDrawable`: a drawable that replays a picture (the form color glyphs take
 /// when they are too large for an image).
-// Port of: src/core/SkGlyph.h#L409-L421 (chrome/m156)
+// Port of: src/core/SkGlyph.h#L409-L420 (chrome/m156)
 #[doc(alias = "SkPictureBackedGlyphDrawable")]
 #[derive(Debug)]
 pub struct PictureBackedGlyphDrawable {
