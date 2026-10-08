@@ -1562,11 +1562,11 @@ impl BitmapDevicePainter for Draw<'_> {
                         if clipper.is_done() {
                             continue;
                         }
-                        // Color masks are drawn as sprites (`drawSprite`), which is not ported.
-                        assert!(
-                            mask.format != MaskFormat::Argb32,
-                            "color glyph masks need Draw::drawSprite, which is not ported yet"
-                        );
+                        // TODO(text-T20): color masks are drawn with `Draw::drawSprite`, whose
+                        // fallback needs the image-shader paint. Until then they draw nothing.
+                        if mask.format == MaskFormat::Argb32 {
+                            continue;
+                        }
                         loop {
                             wrapper.blitter().blit_mask(&mask, clipper.rect());
                             clipper.next();
@@ -1596,10 +1596,10 @@ impl BitmapDevicePainter for Draw<'_> {
                                 None => continue,
                             }
                         };
-                        assert!(
-                            mask.format != MaskFormat::Argb32,
-                            "color glyph masks need Draw::drawSprite, which is not ported yet"
-                        );
+                        // TODO(text-T20): color masks need `Draw::drawSprite` (see above).
+                        if mask.format == MaskFormat::Argb32 {
+                            continue;
+                        }
                         wrapper.blitter().blit_mask(&mask, &bounds);
                     }
                 }
