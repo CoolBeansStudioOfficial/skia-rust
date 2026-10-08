@@ -16,6 +16,7 @@ pub mod draw_atlas;
 pub mod draw_vertices;
 pub mod edge;
 pub mod edge_builder;
+pub mod image_filter_backend;
 mod pixel_rows;
 pub mod raster_canvas;
 pub mod raster_clip;
