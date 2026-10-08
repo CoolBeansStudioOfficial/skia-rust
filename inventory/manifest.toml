@@ -28147,6 +28147,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L204-L238"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec, which is not ported"
 span_hash = "839d0c13dbae3e00041f56dd78b1798f0bc62ee9e57b32dd462df0874ad477da"
 
 [[test]]
@@ -28156,6 +28157,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L165-L202"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec, which is not ported"
 span_hash = "18f7138f83d8cd5ca139632507400c5d1d74e159c36de8c0691f98b7160a05fb"
 
 [[test]]
@@ -28165,6 +28167,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L240-L274"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec, which is not ported"
 span_hash = "3ee3115bacea2e18cd20b64f7e4b2d4edbf203d16e2605128a5d04d045ad2776"
 
 [[test]]
@@ -28183,6 +28186,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L135-L163"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec, which is not ported"
 span_hash = "b458f7b23b3ca3834a33aac69f6d8343658ad744154e4a8e29be5959065d6064"
 
 [[test]]
@@ -29578,6 +29582,7 @@ macro = "DEF_TEST"
 source = "tests/CodecExactReadTest.cpp#L53-L94"
 module = "codec"
 status = "todo"
+reason = "also decodes WBMP and BMP; needs the BMP decoder"
 span_hash = "488c453fae48481821efc8707ed3366808a3878b71a79f3087b23e8842b2ab71"
 
 [[test]]
@@ -29595,7 +29600,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L452-L474"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "dcba28ff6a99ef4e17643c1cb2e8ba4df9ad046ba3ce29ae5a431218f2bb0e2d"
 
 [[test]]
@@ -29605,6 +29610,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L476-L509"
 module = "codec"
 status = "todo"
+reason = "also covers WebP, JPEG, GIF, BMP and WBMP"
 span_hash = "59a690f215236cc0bfda12750f78cd4418ef1429822705af0d34cb4a9a73d3c1"
 
 [[test]]
@@ -29614,6 +29620,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
 status = "todo"
+reason = "the PNG cases are disabled in Skia (#if 0); the rest decode GIF"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -29668,6 +29675,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1898-L1932"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec and the JPEG decoder"
 span_hash = "95a721367a84ab72bef0a9d1eadabbf88b75c0a8b40a2a1da01c89b2c9bf6325"
 
 [[test]]
@@ -29677,6 +29685,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1934-L1951"
 module = "codec"
 status = "todo"
+reason = "needs the JPEG decoder"
 span_hash = "514f5398003f484247cadae8841b25367c47a708d64e04534d66bbf6b4ef9856"
 
 [[test]]
@@ -29695,6 +29704,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1245-L1248"
 module = "codec"
 status = "todo"
+reason = "covers JPEG as well as PNG"
 span_hash = "07bcd0dccac33ae39b4fe896931d9bde9856c73181dc5d374cf27cde7a699abe"
 
 [[test]]
@@ -29704,6 +29714,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L818-L847"
 module = "codec"
 status = "todo"
+reason = "covers JPEG and RAW as well as PNG"
 span_hash = "b8af011d0296dbf4a71e41480fb671673f98c8a13aac56c7089cc197cbe69350"
 
 [[test]]
@@ -29713,6 +29724,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L859-L886"
 module = "codec"
 status = "todo"
+reason = "covers many formats; the PNG cases alone are checked by the codec crate tests"
 span_hash = "7265355321ed7268d44cbb4b4dbdcfdf963406abebfbf1f91de79d6ec45694c5"
 
 [[test]]
@@ -29731,6 +29743,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1390-L1394"
 module = "codec"
 status = "todo"
+reason = "covers WebP and JPEG as well as PNG"
 span_hash = "d46ecd76c0bc53e3d14e95a92f0ec19a2fdb0743d44cffc36810f06b6904b6c4"
 
 [[test]]
@@ -29739,7 +29752,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1988-L1999"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "55aa8e30617769ddae429fa229d5ff73cb0cbefb50b7c0d772db4d61f5e34daa"
 
 [[test]]
@@ -29767,6 +29780,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1676-L1685"
 module = "codec"
 status = "todo"
+reason = "also needs the BMP and ICO decoders"
 span_hash = "e0acd5b91a049703a5056d8b27e0d1ae7c51c045f4dc6ecf8a99bafd464bcfed"
 
 [[test]]
@@ -29776,6 +29790,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1642-L1661"
 module = "codec"
 status = "todo"
+reason = "also needs the BMP, JPEG and GIF decoders"
 span_hash = "13996169337ad20fa6107ae03de3ceacba68d2556d931abbde772bf0fe97bb8a"
 
 [[test]]
@@ -29812,6 +29827,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1953-L1986"
 module = "codec"
 status = "todo"
+reason = "needs ToolUtils::GetResourceAsImage and drawImage onto a surface (lazy images, codecs C7)"
 span_hash = "79896a9abdfc4edc3fb32b63b4d7fbaae121c457df8ea0a9bc2da994859cf0ed"
 
 [[test]]
@@ -29938,6 +29954,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L753-L772"
 module = "codec"
 status = "todo"
+reason = "covers several formats (JPEG, WebP, BMP, ICO, GIF)"
 span_hash = "85f96953aad5dedcc5b663c34a82fd4241acfcd867b2a00d7e14f044fe98a8a7"
 
 [[test]]
@@ -29947,6 +29964,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2004-L2043"
 module = "codec"
 status = "todo"
+reason = "needs the JPEG decoder and getICCProfile"
 span_hash = "6da5c76d1a2f48a7812a21eb606b4a42f0997451e66460ea77eba8976970a27d"
 
 [[test]]
@@ -29956,6 +29974,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L774-L779"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec::MakeFromStream"
 span_hash = "33796e98d5fe8de9f793bf76c17d6e033bbc94b0e077a9916df5ff3b2c09ff0b"
 
 [[test]]
@@ -29965,6 +29984,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1885-L1896"
 module = "codec"
 status = "todo"
+reason = "needs the GIF decoder and GetResourceAsImage"
 span_hash = "17a56816ce56c394365e82cc9703f21f94b3786661f6423da7b5f3c4adfc297a"
 
 [[test]]
@@ -29974,6 +29994,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L638-L655"
 module = "codec"
 status = "todo"
+reason = "needs check(), which needs SkAndroidCodec and SkCodecImageGenerator (lazy images, codecs C7)"
 span_hash = "9f782bdbbb96b148028c1e8db515c9f81689e2406b1ac3a42cdf4760a8dec967"
 
 [[test]]
@@ -29983,6 +30004,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L900-L1046"
 module = "codec"
 status = "todo"
+reason = "writes its PNG with the libpng write path (codecs C16), not ported"
 span_hash = "895a9da5a7006c17fcacd9a84c0d8d6bac7019f7ed7feeaa150029df871dbc6b"
 
 [[test]]
@@ -30001,6 +30023,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L706-L717"
 module = "codec"
 status = "todo"
+reason = "needs SkCodec::getImage and SkImage::peekPixels (lazy images, codecs C7); the expectations are checked by crates/skia-rust-codec/tests/png_decode.rs"
 span_hash = "0f7287009cd7026e30d9960f3ab5622e522fd649cd9fc447df694496aba634d4"
 
 [[test]]
@@ -30010,6 +30033,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L719-L732"
 module = "codec"
 status = "todo"
+reason = "needs SkCodec::getImage and SkImage::peekPixels (lazy images, codecs C7); the expectations are checked by crates/skia-rust-codec/tests/png_decode.rs"
 span_hash = "2ecf31b1f7e5572d8fe2e261dd2d514f5a457a5b83d4721935c0c7efbac68bc5"
 
 [[test]]
@@ -30039,6 +30063,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1572-L1598"
 module = "codec"
 status = "todo"
+reason = "needs SkAndroidCodec, which is not ported"
 span_hash = "53fda6ec0202587058381328b67fd5261280ae469ee87e4842fea82f629b3872"
 
 [[test]]
@@ -30047,7 +30072,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1600-L1626"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9f82cf907cc0bf9806b9c2fd5006b237b812520314a7d77a8c04af8e8dad8184"
 
 [[test]]
@@ -30057,6 +30082,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1409-L1440"
 module = "codec"
 status = "todo"
+reason = "needs the GIF decoder"
 span_hash = "5a2560b9b4f002e2f52b606c822204032c58ba009fc2b002010fe76f9ff6fc86"
 
 [[test]]
@@ -30147,6 +30173,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2547-L2560"
 module = "codec"
 status = "todo"
+reason = "needs SkCodec::getImage (lazy images, codecs C7)"
 span_hash = "af792d2e6898903f395d41c6195802e536a006609d8f23703f17e85cd32855d7"
 
 [[test]]
@@ -30156,6 +30183,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2586-L2605"
 module = "codec"
 status = "todo"
+reason = "needs the Rust PNG encoder (codecs C-R) and HDR metadata (core, codecs C13)"
 span_hash = "b78936cd55f7e4a2baf1307a9ad804fe99af7efc8fc2c33b00a21f3bab78d40f"
 
 [[test]]
@@ -35480,6 +35508,7 @@ macro = "DEF_TEST"
 source = "tests/IndexedPngOverflowTest.cpp#L32-L40"
 module = "codec"
 status = "todo"
+reason = "draws onto an SkSurface::Raster canvas, and core has no surface yet"
 span_hash = "831f671f976e87477fe7664ed4f5f030454577776b530980c3d8db704c00deba"
 
 [[test]]
@@ -35506,7 +35535,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/InvalidIndexedPngTest.cpp#L30-L36"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "fc0d1c297df80f91d0b80e6e26a311caafc9b691347ca94a48618953a80cbe1f"
 
 [[test]]
@@ -39348,6 +39377,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L71-L117"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (core GainmapInfo, codecs C13) and SkAndroidCodec"
 span_hash = "9990007533dc22e86f9ed929b022d6d00c0edb4a41d07b3c7ea4598cf074ddfa"
 
 [[test]]
@@ -39357,6 +39387,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L140-L201"
 module = "codec"
 status = "todo"
+reason = "needs the PNG encoder (codecs C16) and gainmap metadata"
 span_hash = "625d8cfd9d3c2e242c7bfb239309808e613b882fc1cad899a5adaa2a3076f747"
 
 [[test]]
@@ -39366,6 +39397,7 @@ macro = "DEF_TEST"
 source = "tests/PngGainmapTest.cpp#L119-L138"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (core GainmapInfo, codecs C13) and SkAndroidCodec"
 span_hash = "cdcff9f6314664c0b9285b8dbbb13a2fbcb31785e4ec8b230066ae94a9c4debf"
 
 [[test]]

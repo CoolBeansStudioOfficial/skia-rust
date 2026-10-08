@@ -6,6 +6,8 @@
 // decoders, and is ported with them.
 
 use skia_rust_codec::{Codec, Result, decoders};
+use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::MemoryStream;
 
@@ -66,4 +68,46 @@ def_test!(Codec_wbmp_max_size, |r| {
     ];
     let codec = Codec::make_from_stream(MemoryStream::make_copy(&too_big_wbmp), decoders());
     reporter_assert!(r, codec.is_err());
+});
+
+// Port of: tests/CodecTest.cpp#L1600-L1626 (chrome/m156)
+def_test!(Codec_rowsDecoded, |r| {
+    let file = "images/plane_interlaced.png";
+    let data = skip_missing_resource!(get_resource_as_data(file), file);
+    // This is enough to read the header etc, but no rows.
+    let header_len = data.len().min(99);
+    let Ok(mut codec) =
+        Codec::make_from_stream(MemoryStream::make_copy(&data[..header_len]), decoders())
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info().with_color_type(ColorType::N32);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    let Ok(mut incremental) = codec.start_incremental_decode(&info, &mut pixels, row_bytes, None)
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    // The rows decoded are reported from zero, which is the value the C++ test checks for after
+    // an arbitrary starting value.
+    let (result, rows_decoded) = incremental.incremental_decode();
+    reporter_assert!(r, result == Result::IncompleteInput);
+    reporter_assert!(r, rows_decoded == 0);
+});
+
+// Port of: tests/CodecTest.cpp#L1988-L1999 (chrome/m156)
+def_test!(Codec_F16_noColorSpace, |r| {
+    let path = "images/color_wheel.png";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders()) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec
+        .info()
+        .with_color_type(ColorType::RGBAF16)
+        .with_color_space(None::<ColorSpace>);
+    test_info(r, &mut codec, &info, Result::Success);
 });

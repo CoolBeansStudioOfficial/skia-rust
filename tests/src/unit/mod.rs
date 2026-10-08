@@ -30,6 +30,8 @@ pub mod clip_stack_test;
 pub mod clipper_test;
 #[cfg(test)]
 #[cfg(test)]
+pub mod codec_partial_test;
+#[cfg(test)]
 pub mod codec_test;
 #[cfg(test)]
 pub mod color_filter_test;
@@ -93,6 +95,8 @@ pub mod image_new_shader_test;
 pub mod image_test;
 #[cfg(test)]
 pub mod inf_rect_test;
+#[cfg(test)]
+pub mod invalid_indexed_png_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]

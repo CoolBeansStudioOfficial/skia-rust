@@ -28,7 +28,7 @@ fn get_src_row_bytes(width: i32) -> usize {
 fn valid_color_type(dst: &ImageInfo) -> bool {
     match dst.color_type() {
         ColorType::RGBA8888 | ColorType::BGRA8888 | ColorType::Gray8 | ColorType::RGB565 => true,
-        ColorType::RGBAF16Norm => dst.color_space().is_some(),
+        ColorType::RGBAF16 => dst.color_space().is_some(),
         _ => false,
     }
 }

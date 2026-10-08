@@ -129,6 +129,15 @@ impl EncodedInfo {
         self
     }
 
+    /// Attaches a profile that has no encoded bytes, as `SkCodecs::ColorProfile::Make` does for a
+    /// profile built from a transfer function and primaries (PNG's gAMA and cHRM).
+    #[must_use]
+    pub fn with_generated_profile(mut self, profile: IccProfile) -> Self {
+        self.profile = Some(Arc::new(profile));
+        self.profile_data = None;
+        self
+    }
+
     // Port of: include/private/SkEncodedInfo.h#L193-L236 (VerifyColor; the asserts are
     // debug-only in Skia too)
     fn verify_color(color: Color, alpha: Alpha, bits_per_component: u8) {
@@ -140,7 +149,14 @@ impl EncodedInfo {
                 debug_assert_eq!(alpha, Alpha::Opaque);
                 debug_assert!(bits_per_component >= 8);
             }
-            Color::YUV | Color::InvertedCMYK | Color::YCCK | Color::Color565 => {
+            // A 565 hint comes from the sBIT chunk of a PNG, which can be 16 bits per component.
+            // Skia treats 565 exactly like RGB (SkSwizzler.cpp#L963-L967), and its VerifyColor
+            // assert is compiled out of release builds, so 16 bits are accepted here as well.
+            Color::Color565 => {
+                debug_assert_eq!(alpha, Alpha::Opaque);
+                debug_assert!(matches!(bits_per_component, 8 | 16));
+            }
+            Color::YUV | Color::InvertedCMYK | Color::YCCK => {
                 debug_assert_eq!(alpha, Alpha::Opaque);
                 debug_assert_eq!(bits_per_component, 8);
             }

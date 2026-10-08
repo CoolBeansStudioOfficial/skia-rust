@@ -1004,7 +1004,7 @@ impl Swizzler {
                     ColorType::RGBA8888 | ColorType::BGRA8888 => swizzle_bit_to_n32,
                     ColorType::RGB565 => swizzle_bit_to_565,
                     ColorType::Gray8 => swizzle_bit_to_grayscale,
-                    ColorType::RGBAF16Norm => swizzle_bit_to_f16,
+                    ColorType::RGBAF16 => swizzle_bit_to_f16,
                     _ => return None,
                 },
                 8 => match dst_ct {
@@ -1292,6 +1292,11 @@ impl Swizzler {
     #[must_use]
     pub fn fill_width(&self) -> i32 {
         self.allocated_width as i32
+    }
+    /// Port of `SkSwizzler::swizzleWidth` (`fSwizzleWidth`): the number of pixels a row produces.
+    #[must_use]
+    pub fn swizzle_width(&self) -> i32 {
+        self.swizzle_width as i32
     }
 
     /// Port of `SkSampler::setSampleX` (`SkSwizzler::onSetSampleX`). Returns the width after

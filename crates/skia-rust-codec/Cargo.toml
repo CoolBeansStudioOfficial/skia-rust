@@ -11,6 +11,7 @@ authors.workspace = true
 [dependencies]
 skia-rust-core.workspace = true
 skia-rust-skcms.workspace = true
+skia-rust-libpng.workspace = true
 
 [lints]
 workspace = true

@@ -3,8 +3,7 @@
 //!
 //! Usage: `cargo run -p skia-rust-libpng --example pngdump -- FILE...`
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use skia_rust_libpng::{
     PNG_HANDLE_CHUNK_ALWAYS, PNG_MAXIMUM_INFLATE_WINDOW, PngError, PngInfo, PngResult, PngStruct,
@@ -22,7 +21,7 @@ struct Shared {
 }
 
 /// Port of the callbacks `SkPngCodec` installs: `AllRowsCallback` or `InterlacedRowCallback`.
-struct Handler(Rc<RefCell<Shared>>);
+struct Handler(Arc<Mutex<Shared>>);
 
 impl ProgressiveHandler for Handler {
     fn info(&mut self, _png: &mut PngStruct, _info: &mut PngInfo) -> PngResult<()> {
@@ -36,7 +35,7 @@ impl ProgressiveHandler for Handler {
         row_num: u32,
         pass: i32,
     ) -> PngResult<()> {
-        let mut s = self.0.borrow_mut();
+        let mut s = self.0.lock().unwrap();
         if s.interlaced {
             if row_num as usize >= s.height {
                 return Ok(());
@@ -176,7 +175,7 @@ fn run(path: &str, data: &[u8], piece: usize) {
         "info: {} {} {} {} {} {}",
         info.width, info.height, info.bit_depth, info.color_type, rowbytes, info.channels
     );
-    let shared = Rc::new(RefCell::new(Shared {
+    let shared = Arc::new(Mutex::new(Shared {
         interlaced: passes > 1,
         height,
         rowbytes,
@@ -187,9 +186,9 @@ fn run(path: &str, data: &[u8], piece: usize) {
         },
         rows: 0,
     }));
-    png.set_progressive_read_fn(Some(Box::new(Handler(Rc::clone(&shared)))));
+    png.set_progressive_read_fn(Some(Box::new(Handler(Arc::clone(&shared)))));
     let ok = feed(&mut png, &mut info, data, idat, data.len(), piece);
-    let s = shared.borrow();
+    let s = shared.lock().unwrap();
     if s.interlaced {
         println!("interlace-hash: {:016x}", fnv_update(fnv_init(), &s.buf));
     }

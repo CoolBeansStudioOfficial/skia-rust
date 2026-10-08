@@ -66,7 +66,7 @@ const PNG_INTERLACE_LAST: u8 = 2;
 ///
 /// `row` is `None` for the empty rows of an interlaced pass (`png_push_have_row(NULL)`). An error
 /// returned from a callback stops the read and is returned to the caller, which is the longjmp.
-pub trait ProgressiveHandler {
+pub trait ProgressiveHandler: Send {
     /// Port of `info_fn`: called once the IDAT chunk is reached.
     fn info(&mut self, png: &mut PngStruct, info: &mut PngInfo) -> PngResult<()>;
     /// Port of `row_fn`: one decoded row, after the transforms.
@@ -83,7 +83,7 @@ pub trait ProgressiveHandler {
 
 /// Port of the `png_set_read_user_chunk_fn` callback. Returns `1` if the chunk was handled, `-1`
 /// on an error, and `0` to let libpng handle it as an unknown chunk.
-pub trait UserChunkReader {
+pub trait UserChunkReader: Send {
     /// Port of `user_chunk_fn(png_ptr, chunk)`. `name` is the four-byte chunk type.
     fn read_chunk(&mut self, name: &[u8; 4], data: &[u8]) -> i32;
 }

@@ -1,8 +1,7 @@
 //! Tests of the progressive read path on a tiny PNG generated for these tests: 2x2 RGB, 8 bits
 //! per channel, filter type 0. The expected rows are the stored pixel bytes, compared exactly.
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use skia_rust_libpng::{
     PNG_HANDLE_CHUNK_ALWAYS, PNG_MAXIMUM_INFLATE_WINDOW, PngError, PngInfo, PngResult, PngStruct,
@@ -27,7 +26,7 @@ const ROW1: [u8; 6] = [70, 80, 90, 100, 110, 120];
 type DeliveredRow = (u32, Vec<u8>);
 
 /// The rows delivered so far.
-type Rows = Rc<RefCell<Vec<DeliveredRow>>>;
+type Rows = Arc<Mutex<Vec<DeliveredRow>>>;
 
 /// Records every row the reader delivers, as the codec's row callback does.
 struct Collect(Rows);
@@ -45,7 +44,7 @@ impl ProgressiveHandler for Collect {
         _pass: i32,
     ) -> PngResult<()> {
         let row = row.expect("a non-interlaced image has no empty rows");
-        self.0.borrow_mut().push((row_num, row[..6].to_vec()));
+        self.0.lock().unwrap().push((row_num, row[..6].to_vec()));
         Ok(())
     }
 
@@ -76,15 +75,15 @@ fn decode(data: &[u8], piece: usize) -> (PngInfo, Vec<DeliveredRow>, Option<PngE
     if error.is_none() {
         png.read_update_info(&mut info)
             .expect("the header is valid");
-        let rows: Rows = Rc::new(RefCell::new(Vec::new()));
-        png.set_progressive_read_fn(Some(Box::new(Collect(Rc::clone(&rows)))));
+        let rows: Rows = Arc::new(Mutex::new(Vec::new()));
+        png.set_progressive_read_fn(Some(Box::new(Collect(Arc::clone(&rows)))));
         for part in data[idat..].chunks(piece) {
             if let Err(e) = png.process_data(&mut info, part) {
                 error = Some(e);
                 break;
             }
         }
-        let rows = rows.borrow().clone();
+        let rows = rows.lock().unwrap().clone();
         return (info, rows, error);
     }
     (info, Vec::new(), error)

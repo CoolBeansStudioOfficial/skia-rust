@@ -63,7 +63,7 @@ pub fn fill(info: &ImageInfo, dst: &mut [u8], row_bytes: usize, zero_init: ZeroI
         ColorType::RGBA8888 | ColorType::BGRA8888 => 4,
         ColorType::RGB565 => 2,
         ColorType::Gray8 => 1,
-        ColorType::RGBAF16Norm => 8,
+        ColorType::RGBAF16 => 8,
         _ => return,
     };
     let width = info.width() as usize;

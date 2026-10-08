@@ -151,7 +151,7 @@ pub fn select_xform_format(color_type: ColorType, for_color_table: bool) -> Opti
                 Some(PixelFormat::Bgr565)
             }
         }
-        ColorType::RGBAF16Norm => Some(PixelFormat::RgbaHhhh),
+        ColorType::RGBAF16 => Some(PixelFormat::RgbaHhhh),
         ColorType::RGBA1010102 => Some(PixelFormat::Rgba1010102),
         ColorType::BGR101010xXR => Some(PixelFormat::Bgr101010xXr),
         ColorType::Gray8 => Some(PixelFormat::G8),
