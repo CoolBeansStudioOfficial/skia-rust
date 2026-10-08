@@ -33,22 +33,26 @@ use crate::clip_op::ClipOp;
 use crate::color::Color4f;
 use crate::color_filter::ColorFilter;
 use crate::color_filters;
+use crate::color_space::ColorSpace;
 use crate::device::Device;
+use crate::floating_point::{float_ceil2int, ieee_float_divide};
 use crate::image::Image;
 use crate::image_filter_types::{
-    Context, ROUND_EPSILON, inverse_map_irect, irect_intersect_in_place, map_irect,
-    relevant_subset, round_out,
+    Context, ROUND_EPSILON, inverse_map_irect, inverse_map_rect_f, irect_intersect_in_place,
+    map_irect, map_size, relevant_subset, round_out, size_ceil,
 };
 use crate::m44::M44;
+use crate::math_priv::next_log2;
 use crate::matrix::Matrix;
 use crate::matrix::ScaleToFit;
 use crate::paint::Paint;
 use crate::picture::Picture;
-use crate::point::{IPoint, Vector};
+use crate::point::{IPoint, Point, Vector};
 use crate::rect::{Contains, IRect, Rect, rect_priv};
 use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::shader::Shader;
 use crate::size::ISize;
+use crate::size::Size;
 use crate::special_image::SpecialImage;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::tile_mode::TileMode;
@@ -1034,7 +1038,10 @@ impl FilterResult {
         if strict {
             ctx.mark_shader_based_tiling_required(effective_tile_mode);
         }
-        if let (Some(shader), Some(cf)) = (image_shader.take(), self.color_filter.as_ref()) {
+        // `if (imageShader && fColorFilter) imageShader = imageShader->makeWithColorFilter(...)`.
+        if let Some(cf) = self.color_filter.as_ref()
+            && let Some(shader) = image_shader.take()
+        {
             image_shader = Some(shader.with_color_filter(cf.clone()));
         }
         image_shader
@@ -1492,5 +1499,761 @@ fn compatible_sampling(
         true
     } else {
         false
+    }
+}
+
+/// `downscale_step_count`: the number of halving steps needed to scale by `net_scale_factor`.
+// Port of: src/core/SkImageFilterTypes.cpp#L1479-L1500 (chrome/m156)
+fn downscale_step_count(net_scale_factor: f32) -> i32 {
+    let ceil_steps = float_ceil2int(1.0f32 / net_scale_factor).max(0);
+    let mut steps = next_log2(u32::try_from(ceil_steps).unwrap_or(0));
+    // There are (steps-1) 1/2x steps and then one step that will be between 1/2-1x. If the final
+    // step is practically the identity scale, we can save a render pass and not incur too much
+    // sampling error by reducing the step count and using a final scale that's slightly less than
+    // 1/2.
+    if steps > 0 {
+        // For a multipass rescale, we allow for a lot of tolerance when deciding to collapse the
+        // final step. If there's only a single pass, we require the scale factor to be very close
+        // to the identity since it causes the step count to go to 0.
+        const K_MULTI_PASS_LIMIT: f32 = 0.9;
+        const K_NEAR_IDENTITY_LIMIT: f32 = 1.0 - ROUND_EPSILON;
+
+        let final_step_scale = net_scale_factor * ((1i32 << (steps - 1)) as f32);
+        let limit = if steps == 1 {
+            K_NEAR_IDENTITY_LIMIT
+        } else {
+            K_MULTI_PASS_LIMIT
+        };
+        if final_step_scale >= limit {
+            steps -= 1;
+        }
+    }
+    steps
+}
+
+/// `scale_about_center`: scales `src` by `(sx, sy)` about its center (on an axis that changes).
+// Port of: src/core/SkImageFilterTypes.cpp#L1502-L1507 (chrome/m156)
+fn scale_about_center(src: Rect, sx: f32, sy: f32) -> Rect {
+    let cx = if sx == 1.0 {
+        0.0
+    } else {
+        0.5 * src.left + 0.5 * src.right
+    };
+    let cy = if sy == 1.0 {
+        0.0
+    } else {
+        0.5 * src.top + 0.5 * src.bottom
+    };
+    Rect::new(
+        (src.left - cx) * sx,
+        (src.top - cy) * sy,
+        (src.right - cx) * sx,
+        (src.bottom - cy) * sy,
+    )
+}
+
+/// `draw_color_filtered_border`: fills the 1px border of `border` with the transparency-affecting
+/// color filter `color_filter`.
+// Port of: src/core/SkImageFilterTypes.cpp#L1509-L1531 (chrome/m156)
+fn draw_color_filtered_border(canvas: &Canvas, border: IRect, color_filter: ColorFilter) {
+    let mut cf_only = Paint::default();
+    cf_only.set_color4f(Color4f::new(0.0, 0.0, 0.0, 0.0), None);
+    cf_only.set_color_filter(Some(color_filter));
+    cf_only.set_blend_mode(BlendMode::Src);
+
+    // Top (with corners)
+    canvas.draw_irect(
+        IRect::new(border.left, border.top, border.right, border.top + 1),
+        &cf_only,
+    );
+    // Bottom (with corners)
+    canvas.draw_irect(
+        IRect::new(border.left, border.bottom - 1, border.right, border.bottom),
+        &cf_only,
+    );
+    // Left (no corners)
+    canvas.draw_irect(
+        IRect::new(
+            border.left,
+            border.top + 1,
+            border.left + 1,
+            border.bottom - 1,
+        ),
+        &cf_only,
+    );
+    // Right (no corners)
+    canvas.draw_irect(
+        IRect::new(
+            border.right - 1,
+            border.top + 1,
+            border.right,
+            border.bottom - 1,
+        ),
+        &cf_only,
+    );
+}
+
+/// `draw_tiled_border`: samples the edge and corner pixels of the source directly into the 1px
+/// padding of the destination, for the non-decal tile modes.
+// Port of: src/core/SkImageFilterTypes.cpp#L1533-L1616 (chrome/m156)
+#[allow(clippy::too_many_lines)] // mirrors draw_tiled_border
+fn draw_tiled_border(
+    canvas: &Canvas,
+    tile_mode: TileMode,
+    paint: &Paint,
+    src_to_dst: &Matrix,
+    mut src_border: Rect,
+    mut dst_border: Rect,
+) {
+    // Sample the border pixels directly, scaling only on an axis at a time for edges, and with
+    // no scaling for corners.
+    let draw_edge = |src: Rect, dst: Rect| {
+        canvas.save();
+        canvas.concat(&Matrix::rect_to_rect_or_identity(
+            src,
+            dst,
+            ScaleToFit::Fill,
+        ));
+        canvas.draw_rect(src, paint);
+        canvas.restore();
+    };
+    let draw_corner = |src: Point, dst: Point| {
+        draw_edge(
+            Rect::from_xywh(src.x, src.y, 1.0, 1.0),
+            Rect::from_xywh(dst.x, dst.y, 1.0, 1.0),
+        );
+    };
+
+    // 'dstBorder' includes the 1px padding that we are filling in. Inset to reconstruct the
+    // original sampled dst.
+    let mut dst_sample_bounds = dst_border;
+    dst_sample_bounds.inset((1.0, 1.0));
+
+    // Reconstruct the original source coordinate bounds
+    let src_sample_bounds =
+        inverse_map_rect_f(src_to_dst, &dst_sample_bounds).unwrap_or(dst_sample_bounds);
+
+    if tile_mode == TileMode::Mirror || tile_mode == TileMode::Repeat {
+        // Adjust 'srcBorder' to instead match the 1px rectangle centered over srcSampleBounds in
+        // order to calculate the average of the two outermost sampled pixels. Inset by an extra
+        // 1/2 so that the eventual sample coordinates average the outermost two rows/columns of
+        // src pixels.
+        src_border = dst_sample_bounds;
+        src_border.inset((0.5, 0.5));
+        src_border = inverse_map_rect_f(src_to_dst, &src_border).unwrap_or(src_border);
+        src_border.outset((0.5, 0.5));
+    }
+
+    // Invert the dst coordinates for repeat so that the left edge is mapped to the right edge of
+    // the output, etc.
+    if tile_mode == TileMode::Repeat {
+        dst_border = Rect::new(
+            dst_border.right - 1.0,
+            dst_border.bottom - 1.0,
+            dst_border.left + 1.0,
+            dst_border.top + 1.0,
+        );
+    }
+
+    // Edges (excluding corners)
+    draw_edge(
+        Rect::new(
+            src_border.left,
+            src_sample_bounds.top,
+            src_border.left + 1.0,
+            src_sample_bounds.bottom,
+        ),
+        Rect::new(
+            dst_border.left,
+            dst_sample_bounds.top,
+            dst_border.left + 1.0,
+            dst_sample_bounds.bottom,
+        ),
+    ); // Left
+    draw_edge(
+        Rect::new(
+            src_border.right - 1.0,
+            src_sample_bounds.top,
+            src_border.right,
+            src_sample_bounds.bottom,
+        ),
+        Rect::new(
+            dst_border.right - 1.0,
+            dst_sample_bounds.top,
+            dst_border.right,
+            dst_sample_bounds.bottom,
+        ),
+    ); // Right
+    draw_edge(
+        Rect::new(
+            src_sample_bounds.left,
+            src_border.top,
+            src_sample_bounds.right,
+            src_border.top + 1.0,
+        ),
+        Rect::new(
+            dst_sample_bounds.left,
+            dst_border.top,
+            dst_sample_bounds.right,
+            dst_border.top + 1.0,
+        ),
+    ); // Top
+    draw_edge(
+        Rect::new(
+            src_sample_bounds.left,
+            src_border.bottom - 1.0,
+            src_sample_bounds.right,
+            src_border.bottom,
+        ),
+        Rect::new(
+            dst_sample_bounds.left,
+            dst_border.bottom - 1.0,
+            dst_sample_bounds.right,
+            dst_border.bottom,
+        ),
+    ); // Bottom
+
+    // Corners (sampled directly to preserve their value since they can dominate the output of a
+    // clamped blur with a large radius).
+    draw_corner(
+        Point::new(src_border.left, src_border.top),
+        Point::new(dst_border.left, dst_border.top),
+    ); // TL
+    draw_corner(
+        Point::new(src_border.right - 1.0, src_border.top),
+        Point::new(dst_border.right - 1.0, dst_border.top),
+    ); // TR
+    draw_corner(
+        Point::new(src_border.right - 1.0, src_border.bottom - 1.0),
+        Point::new(dst_border.right - 1.0, dst_border.bottom - 1.0),
+    ); // BR
+    draw_corner(
+        Point::new(src_border.left, src_border.bottom - 1.0),
+        Point::new(dst_border.left, dst_border.bottom - 1.0),
+    ); // BL
+}
+
+impl FilterResult {
+    /// `FilterResult::rescale`: downscales the image by `scale` (in steps of 1/2, with a final
+    /// partial step), resolving its effects along the way. With `enforce_decal`, the result is
+    /// decal tiled.
+    // Port of: src/core/SkImageFilterTypes.cpp#L1617-L1816 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // mirrors FilterResult::rescale
+    #[must_use]
+    pub fn rescale(
+        &self,
+        ctx: &Context<'_>,
+        scale: Size,
+        enforce_decal: bool,
+        allow_overscaling: bool,
+    ) -> FilterResult {
+        let mut visible_layer_bounds = self.layer_bounds;
+        let Some(image) = self.image.as_deref() else {
+            return FilterResult::default();
+        };
+        if !irect_intersect_in_place(&mut visible_layer_bounds, &ctx.desired_output())
+            || scale.width <= 0.0
+            || scale.height <= 0.0
+        {
+            return FilterResult::default();
+        }
+
+        // NOTE: For the first pass, PixelSpace and LayerSpace are equivalent
+        let origin_opt = nearly_integer_translation(&self.transform);
+        let pixel_aligned = origin_opt.is_some();
+        let origin = origin_opt.unwrap_or(IPoint::new(0, 0));
+        let mut analysis = self.analyze_bounds(
+            &Matrix::new_identity(),
+            ctx.desired_output(),
+            BoundsScope::Rescale,
+        );
+
+        // If there's no actual scaling, and no other effects that have to be resolved for blur(),
+        // then just extract the necessary subset. Otherwise fall through and apply the effects
+        // with scale factor (possibly identity).
+        let can_defer_tiling = pixel_aligned
+            && !analysis.contains(BoundsAnalysis::REQUIRES_LAYER_CROP)
+            && !(enforce_decal && analysis.contains(BoundsAnalysis::HAS_LAYER_FILLING_EFFECT));
+
+        // To match legacy color space conversion logic, treat a null src as sRGB and a null dst as
+        // as the src CS.
+        let src_cs = image.color_info().color_space();
+        let dst_cs = ctx.color_space().cloned().or_else(|| src_cs.clone());
+        let has_effects_to_apply = !can_defer_tiling
+            || self.color_filter.is_some()
+            || image.color_info().color_type() != ctx.backend().color_type()
+            || !ColorSpace::equals(src_cs.as_ref(), dst_cs.as_ref());
+
+        let mut x_steps = downscale_step_count(scale.width);
+        let mut y_steps = downscale_step_count(scale.height);
+        if x_steps == 0 && y_steps == 0 && !has_effects_to_apply {
+            if analysis.contains(BoundsAnalysis::HAS_LAYER_FILLING_EFFECT) {
+                // At this point, the only effects that could be visible is a non-decal mode, so
+                // just return the image with adjusted layer bounds to match desired output.
+                let mut noop = self.clone();
+                noop.layer_bounds = visible_layer_bounds;
+                return noop;
+            }
+            // The visible layer bounds represents a tighter bounds than the image itself
+            return self.subset(origin, visible_layer_bounds, false);
+        }
+
+        let mut src_rect;
+        let tile_mode;
+        let mut cf_border = false;
+        let mut defer_periodic_tiling = false;
+        if can_defer_tiling && analysis.contains(BoundsAnalysis::HAS_LAYER_FILLING_EFFECT) {
+            // When we can defer tiling, and said tiling is visible, rescaling the original image
+            // uses smaller textures.
+            src_rect = IRect::from_xywh(origin.x, origin.y, image.width(), image.height());
+            if self.tile_mode == TileMode::Decal
+                && analysis.contains(BoundsAnalysis::HAS_LAYER_FILLING_EFFECT)
+            {
+                // Like in applyColorFilter() evaluate the transparent CF'ed border and clamp to it.
+                tile_mode = TileMode::Clamp;
+                cf_border = true;
+            } else {
+                tile_mode = self.tile_mode;
+                defer_periodic_tiling =
+                    tile_mode == TileMode::Repeat || tile_mode == TileMode::Mirror;
+            }
+        } else {
+            // Otherwise we either have to rescale the layer-bounds-sized image (!canDeferTiling)
+            // or the tiling isn't visible so the layer bounds represents a smaller effective
+            // image than the original image data.
+            src_rect = visible_layer_bounds;
+            tile_mode = TileMode::Decal;
+        }
+
+        src_rect = relevant_subset(src_rect, ctx.desired_output(), tile_mode);
+        // To avoid incurring error from rounding up the dimensions at every step, the logical size
+        // of the image is tracked in floats through the whole process; rounding to integers is
+        // only done to produce a conservative pixel buffer and clamp-tiling is used so that
+        // partially covered pixels are filled with the un-weighted color.
+        let mut step_bounds_f = Rect::from_irect(src_rect);
+        if step_bounds_f.is_empty() {
+            return FilterResult::default();
+        }
+        // stepPixelBounds holds integer pixel values (as floats) and includes any padded outsetting
+        // that was rendered by the previous step, while stepBoundsF does not have any padding.
+        let mut step_pixel_bounds = Rect::from_irect(src_rect);
+
+        // If we made it here, at least one iteration is required, even if xSteps and ySteps are 0.
+        let mut image_result = self.clone();
+        if !pixel_aligned && (x_steps > 0 || y_steps > 0) {
+            // If the source image has a deferred transform with a downscaling factor, we don't
+            // want to necessarily compose the first rescale step's transform with it because we
+            // will then be missing pixels in the bilinear filtering and create sampling artifacts
+            // during animations. NOTE: Force nextSteps counts to the max integer value when the
+            // accumulated scale factor is not finite, to force the input image to be resolved.
+            let net_scale = map_size(scale, &image_result.transform);
+            let next_x_steps = if net_scale.width.is_finite() {
+                downscale_step_count(net_scale.width)
+            } else {
+                i32::MAX
+            };
+            let next_y_steps = if net_scale.height.is_finite() {
+                downscale_step_count(net_scale.height)
+            } else {
+                i32::MAX
+            };
+            // We only need to resolve the deferred transform if the rescaling along an axis is not
+            // near identity (steps > 0). If it's near identity, there's no real difference in
+            // sampling between resolving here and deferring it to the first rescale iteration.
+            if (x_steps > 0 && next_x_steps > x_steps) || (y_steps > 0 && next_y_steps > y_steps) {
+                // Resolve the deferred transform. We don't just fold the deferred scale factor
+                // into the rescaling steps because, for better or worse, the deferred transform
+                // does not otherwise participate in progressive scaling so we should be consistent.
+                image_result = image_result.resolve(ctx, src_rect, false);
+                if !image_result.has_image() {
+                    // Early out if the resolve failed
+                    return FilterResult::default();
+                }
+                if !cf_border {
+                    // This sets the resolved image to match either kDecal or the deferred tile
+                    // mode.
+                    image_result.tile_mode = tile_mode;
+                } // else leave it as kDecal when cfBorder is true
+            }
+        }
+
+        let mut allow_overscaling = allow_overscaling;
+        if defer_periodic_tiling {
+            // The periodic tiling effect will be manually rendered into the lower resolution image
+            // so that clamp tiling can be used at each decimation.
+            image_result.tile_mode = TileMode::Clamp;
+        } else {
+            // When not deferring periodic tiling, it provides a better user behavior for animating
+            // sigma values and matrix scale factors to not overscale to the next factor of 1/2 and
+            // just scale the requisite amount between 1/2 and 1 for the final step.
+            allow_overscaling = false;
+        }
+
+        // For now, if we are deferring periodic tiling, we need to ensure that the low-res image
+        // bounds are pixel aligned. This is because the tiling is applied at the pixel level in
+        // SkImageShader, and we need the period of the low-res image to align with the original
+        // high-resolution period.
+        let final_scale_x = if x_steps > 0 {
+            if allow_overscaling {
+                1.0f32 / ((1i32 << x_steps) as f32)
+            } else {
+                scale.width
+            }
+        } else {
+            1.0
+        };
+        let final_scale_y = if y_steps > 0 {
+            if allow_overscaling {
+                1.0f32 / ((1i32 << y_steps) as f32)
+            } else {
+                scale.height
+            }
+        } else {
+            1.0
+        };
+
+        loop {
+            let mut sx = 1.0f32;
+            if x_steps > 0 {
+                sx = if x_steps > 1 {
+                    0.5
+                } else {
+                    (src_rect.width() as f32) * final_scale_x / step_bounds_f.width()
+                };
+                x_steps -= 1;
+            }
+
+            let mut sy = 1.0f32;
+            if y_steps > 0 {
+                sy = if y_steps > 1 {
+                    0.5
+                } else {
+                    (src_rect.height() as f32) * final_scale_y / step_bounds_f.height()
+                };
+                y_steps -= 1;
+            }
+
+            // Downscale relative to the center of the image, which better distributes any sort of
+            // sampling errors across the image (vs. emphasizing the bottom right edges).
+            let mut dst_bounds_f = scale_about_center(step_bounds_f, sx, sy);
+            let final_x_step = x_steps == 0 && sx != 1.0;
+            let final_y_step = y_steps == 0 && sy != 1.0;
+            if defer_periodic_tiling && (final_x_step || final_y_step) {
+                let dst_pixels = round_out(&dst_bounds_f);
+                dst_bounds_f = Rect::new(
+                    if final_x_step {
+                        dst_pixels.left as f32
+                    } else {
+                        dst_bounds_f.left
+                    },
+                    if final_y_step {
+                        dst_pixels.top as f32
+                    } else {
+                        dst_bounds_f.top
+                    },
+                    if final_x_step {
+                        dst_pixels.right as f32
+                    } else {
+                        dst_bounds_f.right
+                    },
+                    if final_y_step {
+                        dst_pixels.bottom as f32
+                    } else {
+                        dst_bounds_f.bottom
+                    },
+                );
+            }
+
+            // NOTE: Rounding out is overly conservative when dstBoundsF has an odd integer
+            // width/height but with coordinates at 1/2. In this case, we could create a pixel grid
+            // that has a fractional translation in the final FilterResult but that will best be
+            // done when FilterResult tracks floating bounds.
+            let dst_pixel_bounds = round_out(&dst_bounds_f);
+
+            let boundary;
+            let sample_bounds = dst_pixel_bounds;
+            let mut dst_pixel_bounds = dst_pixel_bounds;
+            if tile_mode == TileMode::Decal {
+                boundary = PixelBoundary::Transparent;
+            } else {
+                // This is roughly equivalent to using PixelBoundary::kInitialized, but keeps some
+                // of the later logic simpler.
+                boundary = PixelBoundary::Unknown;
+                dst_pixel_bounds = outset_irect(dst_pixel_bounds, 1, 1);
+            }
+
+            let mut surface = AutoSurface::new(ctx, dst_pixel_bounds, boundary, false, None);
+            if surface.has_canvas() {
+                let scale_xform =
+                    Matrix::rect_to_rect_or_identity(step_bounds_f, dst_bounds_f, ScaleToFit::Fill);
+
+                // Redo analysis with the actual scale transform and padded low res bounds. With the
+                // padding added to dstPixelBounds, intermediate steps should not require shader
+                // tiling. Unfortunately, when the last step requires a scale factor other than 1/2,
+                // shader based clamping may still be necessary with just a single pixel of padding.
+                analysis =
+                    image_result.analyze_bounds(&scale_xform, sample_bounds, BoundsScope::Rescale);
+
+                // Primary fill that will cover all of 'sampleBounds'
+                let mut paint = Paint::default();
+                if let Some(shader) =
+                    image_result.get_analyzed_shader_view(ctx, image_result.sampling(), analysis)
+                {
+                    paint.set_shader(Some(shader));
+                }
+                paint.set_blend_mode(BlendMode::Src);
+
+                let src_sampled =
+                    inverse_map_rect_f(&scale_xform, &Rect::from_irect(sample_bounds))
+                        .unwrap_or(Rect::from_irect(sample_bounds));
+
+                if let Some(canvas) = surface.canvas() {
+                    canvas.save();
+                    canvas.concat(&scale_xform);
+                    canvas.draw_rect(src_sampled, &paint);
+                    canvas.restore();
+
+                    if cf_border {
+                        // Fill in the border with the transparency-affecting color filter, which is
+                        // what the image shader's tile mode would have produced anyways but this
+                        // avoids triggering shader-based tiling.
+                        if let Some(cf) = self.color_filter.clone() {
+                            draw_color_filtered_border(canvas, dst_pixel_bounds, cf);
+                        }
+                        // Clamping logic will preserve its values on subsequent rescale steps.
+                        cf_border = false;
+                    } else if tile_mode != TileMode::Decal {
+                        // Draw the edges of the shader into the padded border, respecting the tile
+                        // mode
+                        draw_tiled_border(
+                            canvas,
+                            tile_mode,
+                            &paint,
+                            &scale_xform,
+                            step_pixel_bounds,
+                            Rect::from_irect(dst_pixel_bounds),
+                        );
+                    }
+                }
+            } else {
+                // Rescaling can't complete, no sense in downscaling non-existent data
+                return FilterResult::default();
+            }
+
+            image_result = surface.snap();
+            // If we are deferring periodic tiling, use kClamp on subsequent steps to preserve the
+            // border pixels. The original tile mode will be restored at the end.
+            image_result.tile_mode = if defer_periodic_tiling {
+                TileMode::Clamp
+            } else {
+                tile_mode
+            };
+
+            step_bounds_f = dst_bounds_f;
+            step_pixel_bounds = Rect::from_irect(dst_pixel_bounds);
+
+            if !(x_steps > 0 || y_steps > 0) {
+                break;
+            }
+        }
+
+        // Rebuild the downscaled image, including a transform back to the original layer-space
+        // resolution, restoring the layer bounds it should fill, and setting tile mode.
+        if defer_periodic_tiling {
+            // Inset the image to undo the manually added border of pixels, which will allow the
+            // result to have the kInitialized boundary state.
+            image_result = image_result.inset_by_pixel();
+        }
+        image_result.tile_mode = tile_mode;
+        let rect_to_rect = Matrix::rect_to_rect_or_identity(
+            step_bounds_f,
+            Rect::from_irect(src_rect),
+            ScaleToFit::Fill,
+        );
+        image_result.transform = Matrix::concat(&rect_to_rect, &image_result.transform);
+        image_result.layer_bounds = visible_layer_bounds;
+        image_result
+    }
+}
+
+impl Builder<'_, '_> {
+    /// `FilterResult::Builder::blur(sigma)`: blurs the single input with the backend's blur
+    /// engine, downscaling first for sigmas beyond the algorithm's maximum.
+    // Port of: src/core/SkImageFilterTypes.cpp#L2108-L2237 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // mirrors FilterResult::Builder::blur
+    #[must_use]
+    pub fn blur(&self, sigma: Size) -> FilterResult {
+        debug_assert_eq!(self.inputs.len(), 1);
+
+        let backend = self.context.backend();
+        let Some(blur_engine) = backend.blur_engine() else {
+            return FilterResult::default();
+        };
+        let Some(algorithm) = blur_engine.find_algorithm(sigma, backend.color_type()) else {
+            return FilterResult::default();
+        };
+
+        // TODO: De-duplicate this logic between SkBlurImageFilter, here, and skgpu::BlurUtils.
+        let radii = size_ceil(Size::new(3.0 * sigma.width, 3.0 * sigma.height));
+        let mut max_output = self.inputs[0].image.layer_bounds();
+        max_output.outset((radii.width, radii.height));
+
+        let mut output_bounds = self.output_bounds(Some(max_output));
+        if output_bounds.is_empty() {
+            return FilterResult::default();
+        }
+
+        // These are the source pixels that will be read from the input image, which can be
+        // calculated internally because the blur's access pattern is well defined (vs. needing it
+        // to be provided in Builder::add()).
+        let mut sample_bounds = output_bounds;
+        sample_bounds.outset((radii.width, radii.height));
+
+        let max_sigma = algorithm.max_sigma();
+        let sx = if sigma.width > max_sigma {
+            max_sigma / sigma.width
+        } else {
+            1.0
+        };
+        let sy = if sigma.height > max_sigma {
+            max_sigma / sigma.height
+        } else {
+            1.0
+        };
+        // For identity scale factors, this rescale() is a no-op when possible, but otherwise it
+        // will also handle resolving any color filters or transform similar to a resolve() except
+        // that it can defer the tile mode.
+        //
+        // Always allow overscaling for higher quality filtering, and because we can adjust the
+        // blur sigma applied to the low res image to account for any extra scale factor.
+        let low_res_image = self.inputs[0].image.rescale(
+            &self.context.with_new_desired_output(sample_bounds),
+            Size::new(sx, sy),
+            algorithm.supports_only_decal_tiling(),
+            true,
+        );
+        if !low_res_image.has_image() {
+            return FilterResult::default();
+        }
+        debug_assert!(
+            low_res_image.tile_mode() == TileMode::Decal || !algorithm.supports_only_decal_tiling()
+        );
+
+        // Map 'sigma' into the low-res image's pixel space to determine the low-res blur params to
+        // pass into the blur engine. This relies on rescale() producing an image with a
+        // scale+translate transform, so it's possible to derive the inverse scale factors directly.
+        // We also clamp to be <= maxSigma just in case floating point error made it slightly higher.
+        let inv_scale_x = ieee_float_divide(1.0, low_res_image.transform().rc(0, 0));
+        let inv_scale_y = ieee_float_divide(1.0, low_res_image.transform().rc(1, 1));
+        let low_res_sigma = Size::new(
+            (sigma.width * inv_scale_x).min(max_sigma),
+            (sigma.height * inv_scale_y).min(max_sigma),
+        );
+        let Some(low_res_image_ref) = low_res_image.ref_image() else {
+            return FilterResult::default();
+        };
+        let mut low_res_max_output =
+            IRect::from_wh(low_res_image_ref.width(), low_res_image_ref.height());
+
+        let mut src_relative_output;
+        if low_res_image.tile_mode() == TileMode::Repeat
+            || low_res_image.tile_mode() == TileMode::Mirror
+        {
+            // The periodic tiling was deferred when down-sampling; we can further defer it to after
+            // the blur. The low-res output is 1-to-1 with the low res image.
+            src_relative_output = low_res_max_output;
+        } else {
+            // For decal and clamp tiling, the blurred image stops being interesting outside the
+            // radii outset, so redo the max output analysis with the 'outputBounds' mapped into
+            // pixel space.
+            src_relative_output = inverse_map_irect(low_res_image.transform(), &output_bounds)
+                .unwrap_or(IRect::new_empty());
+
+            // NOTE: Since 'lowResMaxOutput' is based on the actual image and deferred tiling, this
+            // can be smaller than the pessimistic filling for a clamp-tiled blur.
+            low_res_max_output = low_res_max_output.with_outset((
+                size_ceil(Size::new(
+                    3.0 * low_res_sigma.width,
+                    3.0 * low_res_sigma.height,
+                ))
+                .width,
+                size_ceil(Size::new(
+                    3.0 * low_res_sigma.width,
+                    3.0 * low_res_sigma.height,
+                ))
+                .height,
+            ));
+            src_relative_output = relevant_subset(
+                low_res_max_output,
+                src_relative_output,
+                low_res_image.tile_mode(),
+            );
+
+            // Clamp won't return empty from relevantSubset() and a non-intersecting decal should
+            // have been caught earlier.
+            if src_relative_output.is_empty() {
+                return FilterResult::default();
+            }
+
+            // Include 1px of blur output so that it can be sampled during the upscale, which is
+            // needed to correctly seam large blurs across crop/raster tiles (crbug.com/1500021).
+            src_relative_output.outset((1, 1));
+        }
+
+        let mut blur_output_bounds = src_relative_output;
+        let mut tile_mode = low_res_image.tile_mode();
+        let mut blur_input = low_res_image_ref;
+        if !algorithm.supports_only_decal_tiling()
+            && low_res_image.can_clamp_to_transparent_boundary(BoundsAnalysis::SIMPLE)
+        {
+            // Have to manage this manually since the BlurEngine isn't aware of the known pixel
+            // padding.
+            blur_input = Arc::new(blur_input.make_pixel_outset());
+            // This offset() is intentional; `blurOutputBounds` already includes an outset from an
+            // earlier modification of `srcRelativeOutput`. This offset is to align the blur
+            // algorithm output bounds with the adjusted source image.
+            blur_output_bounds.offset((1, 1));
+            tile_mode = TileMode::Clamp;
+        }
+
+        let input_dims = IRect::from_wh(
+            blur_input.dimensions().width,
+            blur_input.dimensions().height,
+        );
+        let Some(blurred) = algorithm.blur(
+            low_res_sigma,
+            &blur_input,
+            input_dims,
+            tile_mode,
+            blur_output_bounds,
+        ) else {
+            // The blur output bounds may exceed max texture size even if the source image did not.
+            return FilterResult::default();
+        };
+
+        let mut result = FilterResult::new(Some(Arc::new(blurred)), src_relative_output.top_left());
+        if low_res_image.tile_mode() == TileMode::Clamp
+            || low_res_image.tile_mode() == TileMode::Decal
+        {
+            // Undo the outset padding that was added to srcRelativeOutput before invoking the blur
+            result = result.inset_by_pixel();
+        }
+
+        result.transform = Matrix::concat(low_res_image.transform(), &result.transform);
+        if low_res_image.tile_mode() == TileMode::Decal {
+            // Recalculate the output bounds based on the blur output; with rounding the final image
+            // may be slightly larger than the original, which would unnecessarily add cropping to
+            // the layer bounds. But so long as the `outputBounds` had been constrained by the
+            // input's own layer, that crop is unnecessary. The result is still restricted to the
+            // desired output bounds, which will induce clipping as needed for a rounded-out image.
+            let dims = result
+                .ref_image()
+                .map_or(ISize::new(0, 0), |img| img.dimensions());
+            let mapped = map_irect(&IRect::from_wh(dims.width, dims.height), &result.transform);
+            output_bounds = self.output_bounds(Some(mapped));
+        }
+        result.layer_bounds = output_bounds;
+        result.tile_mode = low_res_image.tile_mode();
+        result
     }
 }

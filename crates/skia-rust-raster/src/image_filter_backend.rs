@@ -66,6 +66,11 @@ impl Backend for RasterBackend {
     fn color_type(&self) -> ColorType {
         self.color_type
     }
+
+    // Port of: src/core/SkImageFilterTypes.cpp (RasterBackend::getBlurEngine) (chrome/m156)
+    fn blur_engine(&self) -> Option<&dyn skia_rust_core::blur_engine::BlurEngine> {
+        Some(crate::blur_engine::raster_blur_engine())
+    }
 }
 
 /// `MakeRasterBackend(surfaceProps, colorType)`.

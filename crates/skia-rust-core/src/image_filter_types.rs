@@ -250,6 +250,14 @@ impl Mapping {
         map_matrix(param, &self.param_to_layer.to_m33())
     }
 
+    /// `paramToLayer` of a size (`Mapping::map<SkSize>` with the parameter-to-layer 3x3).
+    // Port of: src/core/SkImageFilterTypes.cpp#L372-L386 (chrome/m156)
+    #[doc(alias = "paramToLayer")]
+    #[must_use]
+    pub fn param_to_layer_size(&self, param: Size) -> Size {
+        map_size(param, &self.param_to_layer.to_m33())
+    }
+
     /// `paramToLayer` of a point.
     #[doc(alias = "paramToLayer")]
     #[must_use]
@@ -579,6 +587,12 @@ pub trait Backend: Send + Sync {
     /// The color type of devices of this backend (`colorType`).
     #[doc(alias = "colorType")]
     fn color_type(&self) -> ColorType;
+
+    /// The blur engine of this backend (`getBlurEngine`); `None` if it has none.
+    #[doc(alias = "getBlurEngine")]
+    fn blur_engine(&self) -> Option<&dyn crate::blur_engine::BlurEngine> {
+        None
+    }
 }
 
 /// The context a filter is evaluated in (`skif::Context`).
