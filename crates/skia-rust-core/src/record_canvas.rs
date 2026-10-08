@@ -10,14 +10,18 @@
 //! [`CanvasHooks`] object appending to the record; [`RecordCanvas`] owns that canvas and derefs
 //! to it. The record is shared (`Rc<RefCell<Record>>`) between the hooks and the owner, as
 //! `SkRecord*` is in Skia. The `SkDrawableList` and the draws of record types that are not ported
-//! (images, text, vertices, ...) are not here.
+//! (text, vertices, ...) are not here. `onDrawImage2` is unreachable in Skia (`drawImage` goes
+//! through `drawImageRect`), so `DrawImage` is never recorded.
 
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::canvas::{Canvas, CanvasHooks, PointMode, SaveLayerRec, SaveLayerStrategy};
+use crate::canvas::{
+    Canvas, CanvasHooks, Lattice, PointMode, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
+};
 use crate::clip_op::ClipOp;
+use crate::image::Image;
 use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
@@ -27,12 +31,14 @@ use crate::point::Point;
 use crate::record::Record;
 use crate::records::{
     ClipOpAndAA, ClipPath, ClipRRect, ClipRect, ClipRegion, ClipShader, Concat44, DrawArc,
-    DrawDRRect, DrawOval, DrawPaint, DrawPath, DrawPicture, DrawPoints, DrawRRect, DrawRect,
-    DrawRegion, ResetClip, Restore, Save, SaveLayer, Scale, SetM44, Translate,
+    DrawDRRect, DrawImageLattice, DrawImageRect, DrawOval, DrawPaint, DrawPath, DrawPicture,
+    DrawPoints, DrawRRect, DrawRect, DrawRegion, ResetClip, Restore, Save, SaveLayer, Scale,
+    SetM44, Translate,
 };
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::region::Region;
 use crate::rrect::RRect;
+use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 
@@ -255,6 +261,63 @@ impl CanvasHooks for RecordHooks {
         self.append(DrawPath {
             paint: paint.clone(),
             path: path.clone(),
+        });
+        true
+    }
+
+    // Port of: src/core/SkRecordCanvas.cpp#L235-L243 (chrome/m156)
+    fn on_draw_image_rect2(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) -> bool {
+        self.append(DrawImageRect {
+            paint: paint.cloned(),
+            image: image.clone(),
+            src: *src,
+            dst: *dst,
+            sampling: *sampling,
+            constraint,
+        });
+        true
+    }
+
+    // Port of: src/core/SkRecordCanvas.cpp#L245-L265 (chrome/m156)
+    fn on_draw_image_lattice2(
+        &mut self,
+        image: &Image,
+        lattice: &Lattice<'_>,
+        dst: &Rect,
+        filter: FilterMode,
+        paint: Option<&Paint>,
+    ) -> bool {
+        let flag_count = if lattice.rect_types.is_some() {
+            (lattice.x_divs.len() + 1) * (lattice.y_divs.len() + 1)
+        } else {
+            0
+        };
+        // `this->copy(lattice.fRectTypes, flagCount)` and `copy(lattice.fColors, flagCount)`.
+        let flags = lattice
+            .rect_types
+            .map_or_else(Vec::new, |f| f[..flag_count].to_vec());
+        let colors = lattice
+            .colors
+            .map_or_else(Vec::new, |c| c[..flag_count].to_vec());
+        self.append(DrawImageLattice {
+            paint: paint.cloned(),
+            image: image.clone(),
+            x_divs: lattice.x_divs.to_vec(),
+            y_divs: lattice.y_divs.to_vec(),
+            flag_count,
+            flags,
+            colors,
+            src: lattice.bounds.expect("the lattice has bounds"), // SkASSERT(lattice.fBounds)
+            dst: *dst,
+            filter,
         });
         true
     }

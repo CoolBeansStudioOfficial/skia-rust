@@ -43,7 +43,7 @@ pub mod goldens;
 pub mod sink;
 pub mod tool_utils;
 
-use skia_rust_core::color::Color;
+use skia_rust_core::color::{Color, Color4f};
 use skia_rust_core::size::ISize;
 
 use crate::canvas::{BlendMode, Canvas, SurfaceProps};
@@ -71,6 +71,64 @@ pub enum DrawResult {
 /// `GM::kErrorMsg_DrawSkippedGpuOnly`.
 // Port of: gm/gm.h#L124-L125 (chrome/m156)
 pub const ERROR_MSG_DRAW_SKIPPED_GPU_ONLY: &str = "This test is for GPU configs only.";
+
+// Port of: gm/gm.cpp#L210-L219 (chrome/m156)
+fn mark(canvas: &Canvas, x: f32, y: f32, f: impl FnOnce()) {
+    let mut alpha = skia_rust_core::paint::Paint::default();
+    alpha.set_alpha(0x50);
+    canvas.save_layer(&skia_rust_core::canvas::SaveLayerRec::default().paint(&alpha));
+    canvas.translate((x, y));
+    canvas.scale((2.0, 2.0));
+    f();
+    canvas.restore();
+}
+
+/// Draws a green check mark at `(x, y)`: the GM checked its own result and it is good
+/// (`MarkGMGood`).
+// Port of: gm/gm.cpp#L221-L236 (chrome/m156)
+#[doc(alias = "MarkGMGood")]
+pub fn mark_gm_good(canvas: &Canvas, x: f32, y: f32) {
+    use skia_rust_core::paint::{Paint, Style};
+    mark(canvas, x, y, || {
+        // A green circle.
+        canvas.draw_circle(
+            (0.0, 0.0),
+            12.0,
+            &Paint::new(Color4f::from_color(Color::from_rgb(27, 158, 119)), None),
+        );
+
+        // Cut out a check mark.
+        let mut paint = Paint::new(skia_rust_core::color::colors::TRANSPARENT, None);
+        paint.set_blend_mode(BlendMode::Src);
+        paint.set_stroke_width(2.0);
+        paint.set_style(Style::Stroke);
+        canvas.draw_line((-6.0, 0.0), (-1.0, 5.0), &paint);
+        canvas.draw_line((-1.0, 5.0), (7.0, -5.0), &paint);
+    });
+}
+
+/// Draws a red cross at `(x, y)`: the GM checked its own result and it is bad (`MarkGMBad`).
+// Port of: gm/gm.cpp#L238-L253 (chrome/m156)
+#[doc(alias = "MarkGMBad")]
+pub fn mark_gm_bad(canvas: &Canvas, x: f32, y: f32) {
+    use skia_rust_core::paint::{Paint, Style};
+    mark(canvas, x, y, || {
+        // A red circle.
+        canvas.draw_circle(
+            (0.0, 0.0),
+            12.0,
+            &Paint::new(Color4f::from_color(Color::from_rgb(231, 41, 138)), None),
+        );
+
+        // Cut out an 'X'.
+        let mut paint = Paint::new(skia_rust_core::color::colors::TRANSPARENT, None);
+        paint.set_blend_mode(BlendMode::Src);
+        paint.set_stroke_width(2.0);
+        paint.set_style(Style::Stroke);
+        canvas.draw_line((-5.0, -5.0), (5.0, 5.0), &paint);
+        canvas.draw_line((5.0, -5.0), (-5.0, 5.0), &paint);
+    });
+}
 
 /// Port of the virtual interface of `skiagm::GM`: what a GM overrides.
 ///

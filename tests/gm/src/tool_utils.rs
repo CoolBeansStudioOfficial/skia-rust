@@ -5,14 +5,28 @@
 
 //! The parts of `ToolUtils` that GMs use.
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_data::{pixel16_to_color, pixel32_to_pixel16};
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::{SCALAR_PI, scalar_cos, scalar_sin};
+use skia_rust_core::shader::Shader;
+use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_raster::surface::Surface;
+use skia_rust_raster::surfaces;
 
 /// `ToolUtils::color_to_565`: rounds `color` to what a 565 surface would store.
 // Port of: tools/ToolUtils.cpp#L142-L151 (chrome/m156)
@@ -51,4 +65,63 @@ pub fn make_star(bounds: &Rect, num_pts: i32, step: i32) -> Path {
         bounds,
         None,
     ))
+}
+
+/// `ToolUtils::create_checkerboard_shader`: a repeating `2 * size` checkerboard of `c1` and `c2`.
+// Port of: tools/ToolUtils.cpp#L153-L160 (chrome/m156)
+#[must_use]
+pub fn create_checkerboard_shader(c1: Color, c2: Color, size: i32) -> Option<Shader> {
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(
+        &ImageInfo::new_s32((2 * size, 2 * size), AlphaType::Premul),
+        None,
+    );
+    bm.erase_color(c1);
+    bm.erase_area(IRect::new(0, 0, size, size), c2);
+    bm.erase_area(IRect::new(size, size, 2 * size, 2 * size), c2);
+    bm.to_shader(
+        (TileMode::Repeat, TileMode::Repeat),
+        SamplingOptions::default(),
+        None,
+    )
+}
+
+/// `ToolUtils::create_checkerboard_bitmap`: a `w` by `h` sRGB bitmap with a checkerboard of
+/// `c1` and `c2` squares of `check_size`.
+///
+/// # Panics
+/// If the pixels cannot be allocated.
+// Port of: tools/ToolUtils.cpp#L162-L169 (chrome/m156)
+#[must_use]
+pub fn create_checkerboard_bitmap(w: i32, h: i32, c1: Color, c2: Color, check_size: i32) -> Bitmap {
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_pixels_info(&ImageInfo::new_s32((w, h), AlphaType::Premul), None);
+    {
+        let canvas = Canvas::from_bitmap(&mut bitmap, None).expect("a canvas");
+        draw_checkerboard(&canvas, c1, c2, check_size);
+    }
+    bitmap
+}
+
+/// `ToolUtils::draw_checkerboard`: fills `canvas` with a checkerboard of `c1` and `c2` squares of
+/// `size`.
+// Port of: tools/ToolUtils.cpp#L177-L182 (chrome/m156)
+pub fn draw_checkerboard(canvas: &Canvas, c1: Color, c2: Color, size: i32) {
+    let mut paint = Paint::default();
+    paint.set_shader(create_checkerboard_shader(c1, c2, size));
+    paint.set_blend_mode(BlendMode::Src);
+    canvas.draw_paint(&paint);
+}
+
+/// `ToolUtils::makeSurface`: a surface compatible with `canvas`, or a raster one.
+// Port of: tools/ToolUtils.cpp#L504-L512 (chrome/m156)
+#[must_use]
+pub fn make_surface(
+    canvas: &Canvas,
+    info: &ImageInfo,
+    props: Option<&SurfaceProps>,
+) -> Option<Surface<'static>> {
+    canvas
+        .new_surface(info, props)
+        .or_else(|| surfaces::raster(info, None, props))
 }

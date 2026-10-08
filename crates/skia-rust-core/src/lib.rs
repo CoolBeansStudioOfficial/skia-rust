@@ -160,6 +160,7 @@ pub mod t_pin;
 pub mod t_sort;
 pub mod tessellation;
 pub mod tile_mode;
+pub mod tiled_image_utils;
 pub mod to;
 pub mod un_pre_multiply;
 pub mod utf;

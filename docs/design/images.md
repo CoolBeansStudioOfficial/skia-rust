@@ -64,6 +64,14 @@ path). Skia's `goto` flow is a `bool`. `Draw::draw_bitmap` picks the sprite blit
 `LatticeIter` and `SkDevice::drawImageLattice`; `kFixedColor` colors are read from the image as the
 GM does.
 
+### Recording
+
+`SkRecords::DrawImage`, `DrawImageRect` and `DrawImageLattice` hold the `Image` handle, so a
+recorded picture keeps its images alive (`Picture_BitmapLeak`). `RecordCanvas` overrides the
+`on_draw_image_rect2`/`on_draw_image_lattice2` hooks of `CanvasHooks`; `SkCanvas::onDrawImage2`
+is unreachable in Skia, so `DrawImage` exists only for playback and bounds.
+`SkSurface::draw` (`Surface::draw`) draws the image of the surface's bitmap.
+
 ### Not ported
 
 Image filters, GPU/lazy/encoded images, `SkImage::scalePixels`/`encodeToData`,

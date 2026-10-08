@@ -4,12 +4,11 @@
 // Port of: tests/SurfaceTest.cpp (chrome/m156)
 //
 // Not ported (the raster-only tests that need types skia-rust does not have yet):
-// * `SurfaceCopyOnWrite`: `drawString` (text, Phase 3).
-// * `SurfaceGetTexture`: GPU-only assertions.
+// * `SurfaceCopyOnWrite`: its last step is `drawString` (text, Phase 3).
 // * `surface_image_unity`: builds an `SkPixmap` over a one-byte address with a huge row-bytes,
 //   which a safe `Pixmap` cannot express.
 // * `Surface_null`: `SkSurfaces::Null` and `makeImageSnapshot() == nullptr`.
-// * `OverdrawSurface_Raster`: `SkOverdrawCanvas`/`SkOverdrawColorFilter` and `SkImage`.
+// * `OverdrawSurface_Raster`: `SkOverdrawCanvas`/`SkOverdrawColorFilter`.
 // The Ganesh/Graphite tests are excluded.
 
 #![cfg(test)]
@@ -182,6 +181,15 @@ fn test_writable_after_snapshot_release(surface: &mut Surface<'_>) {
 // Port of: tests/SurfaceTest.cpp#L579-L581 (chrome/m156)
 def_tier_test!(SurfaceWriteableAfterSnapshotRelease, |_reporter| {
     test_writable_after_snapshot_release(&mut create_surface(AlphaType::Premul, None));
+});
+
+// Port of: tests/SurfaceTest.cpp#L645-L651 (chrome/m156)
+def_tier_test!(SurfaceGetTexture, |reporter| {
+    let mut surface = create_surface(AlphaType::Premul, None);
+    let image = surface.image_snapshot().expect("a snapshot");
+    reporter_assert!(reporter, !image.as_base().is_texture_backed());
+    surface.notify_content_will_change(ContentChangeMode::Discard);
+    reporter_assert!(reporter, !image.as_base().is_texture_backed());
 });
 
 // Port of: tests/SurfaceTest.cpp#L714-L719 (chrome/m156)

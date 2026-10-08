@@ -8,11 +8,11 @@
 //!
 //! skia-rust: Skia's `drawablePicts`/`drawables` parameters (for `DrawDrawable`) are not here;
 //! `SkDrawable` is not ported. The draws of the record types that are not ported
-//! (`DrawImage`, `DrawTextBlob`, ...) have no arm.
+//! (`DrawTextBlob`, ...) have no arm.
 
 use crate::bbh_factory::{BBoxHierarchy, Metadata};
 use crate::blend_mode::BlendMode;
-use crate::canvas::{AutoCanvasRestore, Canvas, SaveLayerRec};
+use crate::canvas::{AutoCanvasRestore, Canvas, Lattice, SaveLayerRec};
 use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
@@ -20,6 +20,7 @@ use crate::picture::AbortCallback;
 use crate::record::Record;
 use crate::records::Command;
 use crate::rect::Rect;
+use crate::scalar::scalar;
 
 /// Draws a record into a canvas (`SkRecordDraw`).
 ///
@@ -92,6 +93,7 @@ impl<'a> Draw<'a> {
 
     /// Calls the canvas method for `command` (the `DRAW()` wrappers).
     // Port of: src/core/SkRecordDraw.cpp#L89-L176 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // one arm per record type, as the DRAW() list
     pub fn draw(&self, command: &Command) {
         let canvas = self.canvas;
         match command {
@@ -165,6 +167,43 @@ impl<'a> Draw<'a> {
             }
             Command::DrawDRRect(r) => {
                 canvas.draw_drrect(r.outer, r.inner, &r.paint);
+            }
+            Command::DrawImage(r) => {
+                canvas.draw_image_with_sampling_options(
+                    &r.image,
+                    (r.left, r.top),
+                    r.sampling,
+                    r.paint.as_ref(),
+                );
+            }
+            // Port of: src/core/SkRecordDraw.cpp#L141-L151 (chrome/m156)
+            Command::DrawImageLattice(r) => {
+                let lattice = Lattice {
+                    x_divs: &r.x_divs,
+                    y_divs: &r.y_divs,
+                    rect_types: if r.flag_count == 0 {
+                        None
+                    } else {
+                        Some(&r.flags)
+                    },
+                    colors: if r.flag_count == 0 || r.colors.is_empty() {
+                        None
+                    } else {
+                        Some(&r.colors)
+                    },
+                    bounds: Some(r.src),
+                };
+                canvas.draw_image_lattice(&r.image, &lattice, r.dst, r.filter, r.paint.as_ref());
+            }
+            Command::DrawImageRect(r) => {
+                canvas.draw_image_rect_nullable_paint(
+                    &r.image,
+                    &r.src,
+                    &r.dst,
+                    &r.sampling,
+                    r.paint.as_ref(),
+                    r.constraint,
+                );
             }
             Command::DrawOval(r) => {
                 canvas.draw_oval(r.oval, &r.paint);
@@ -502,6 +541,18 @@ impl<'r, 'o> FillBounds<'r, 'o> {
     fn bounds_of(&self, op: &Command) -> Bounds {
         match op {
             Command::DrawPaint(_) => self.cull_rect,
+            Command::DrawImage(op) => {
+                #[allow(clippy::cast_precision_loss)] // mirrors SkRect::MakeXYWH(int args)
+                let rect = Rect::from_xywh(
+                    op.left,
+                    op.top,
+                    op.image.width() as scalar,
+                    op.image.height() as scalar,
+                );
+                self.adjust_and_map(rect, op.paint.as_ref())
+            }
+            Command::DrawImageLattice(op) => self.adjust_and_map(op.dst, op.paint.as_ref()),
+            Command::DrawImageRect(op) => self.adjust_and_map(op.dst, op.paint.as_ref()),
             Command::NoOp(_) => Bounds::new_empty(), // NoOps don't draw.
 
             Command::DrawRect(op) => self.adjust_and_map(op.rect, Some(&op.paint)),

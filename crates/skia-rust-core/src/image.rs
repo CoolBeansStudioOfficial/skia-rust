@@ -40,7 +40,7 @@ use crate::tile_mode::TileMode;
 /// Properties an image made from another must have (`SkImage::RequiredProperties`).
 // Port of: include/core/SkImage.h#L101-L110 (chrome/m156)
 #[doc(alias = "SkImage::RequiredProperties")]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RequiredProperties {
     /// `fMipmapped`.
     pub mipmapped: bool,
@@ -73,6 +73,12 @@ impl Image {
     #[must_use]
     pub fn ptr_eq(&self, other: &Image) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// True if this handle is the only reference to the image (`SkRefCnt::unique`).
+    #[must_use]
+    pub fn is_unique(&self) -> bool {
+        Arc::strong_count(&self.0) == 1
     }
 
     /// Returns a pixmap over the pixels, if the image has direct access to them
