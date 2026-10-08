@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-codec"
+description = "Skia's codec layer (SkCodec and its decoders) for skia-rust"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-skcms.workspace = true
+
+[lints]
+workspace = true

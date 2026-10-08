@@ -30074,7 +30074,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1148-L1170"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "a11e3b4841082e35664370a2a12585040eeca51db57389c12d79d61c4d0a3057"
 
 [[test]]
@@ -30083,7 +30083,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1122-L1141"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "31cb3fc0f2b86f9146a4ded10e757b98dbd459c5a83c9d9512241fcd29cd9c80"
 
 [[test]]
@@ -35801,7 +35801,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MD5Test.cpp#L67-L71"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "28383c20c3ba4dc7d139a5e784c40ce44e30d51ba19f4cbe2d74624d391a56da"
 
 [[test]]

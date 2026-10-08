@@ -116,11 +116,6 @@ impl Md5 {
         } else {
             120 - buffer_index
         };
-        static PADDING: [u8; 64] = {
-            let mut p = [0u8; 64];
-            p[0] = 0x80;
-            p
-        };
         self.write_bytes(&PADDING[..padding_length]);
         self.write_bytes(&bits);
         let mut digest = Digest { data: [0; 16] };
@@ -139,6 +134,8 @@ impl WStream for Md5 {
         self.write_bytes(buffer)
     }
 
+    // Port of: SkMD5 as an SkWStream: bytesWritten() is SkToSizeT(byteCount)
+    #[allow(clippy::cast_possible_truncation)] // SkToSizeT: the count fits a size_t on 64-bit hosts
     fn bytes_written(&self) -> usize {
         self.byte_count as usize
     }
@@ -156,9 +153,18 @@ fn encode64(output: &mut [u8; 8], input: u64) {
     output.copy_from_slice(&input.to_le_bytes());
 }
 
+// The 64-byte PADDING of Skia's finish(): a 0x80 byte followed by zeros.
+const PADDING: [u8; 64] = {
+    let mut p = [0u8; 64];
+    p[0] = 0x80;
+    p
+};
+
+// Port of: src/core/SkMD5.cpp#L139-L141 (rotate_left: (x << n) | (x >> (32 - n)), for 0 < n < 32,
+// which is what `u32::rotate_left` computes)
 #[inline]
 fn rotate_left(x: u32, n: u32) -> u32 {
-    (x << n) | (x >> (32 - n))
+    x.rotate_left(n)
 }
 
 // The round functions F, G, H and I of Skia's struct F/G/H/I (SkMD5.cpp#L120-L136).
@@ -181,6 +187,7 @@ fn i(x: u32, y: u32, z: u32) -> u32 {
 
 // Port of: src/core/SkMD5.cpp#L143-L147 (operation)
 #[inline]
+#[allow(clippy::many_single_char_names, clippy::too_many_arguments)] // SkMD5's operation()
 fn op(func: fn(u32, u32, u32) -> u32, a: &mut u32, b: u32, c: u32, d: u32, x: u32, s: u32, t: u32) {
     *a = b.wrapping_add(rotate_left(
         a.wrapping_add(func(b, c, d))
@@ -191,11 +198,14 @@ fn op(func: fn(u32, u32, u32) -> u32, a: &mut u32, b: u32, c: u32, d: u32, x: u3
 }
 
 // Port of: src/core/SkMD5.cpp#L149-L232 (transform: the 64 steps in Skia's order)
+// The names a, b, c, d and x and the constants are written as in SkMD5.cpp, so they can be checked
+// line by line against it.
+#[allow(clippy::many_single_char_names, clippy::unreadable_literal)]
 fn transform(state: &mut [u32; 4], block: &[u8; 64]) {
     let (mut a, mut b, mut c, mut d) = (state[0], state[1], state[2], state[3]);
     let mut x = [0u32; 16];
-    for (word, chunk) in x.iter_mut().zip(block.chunks_exact(4)) {
-        *word = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+    for (word, chunk) in x.iter_mut().zip(block.as_chunks::<4>().0) {
+        *word = u32::from_le_bytes(*chunk);
     }
     op(f, &mut a, b, c, d, x[0], 7, 0xd76aa478);
     op(f, &mut d, a, b, c, x[1], 12, 0xe8c7b756);
