@@ -24358,8 +24358,8 @@ macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L291-L291"
 module = "effects"
 status = "todo"
-span_hash = "1c4ac1312be973f98b0c9cd22a9fe8348334b08102e4aaa647572810e7b70e8a"
 reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
+span_hash = "1c4ac1312be973f98b0c9cd22a9fe8348334b08102e4aaa647572810e7b70e8a"
 
 [[test]]
 id = 'gm/tablecolorfilter.cpp::ComposeColorFilterGM(gColors1, gModes1, "colorcomposefilter_alpha")'
@@ -24368,8 +24368,8 @@ macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L300-L300"
 module = "effects"
 status = "todo"
-span_hash = "50ea2d83408fc631074a50ce0dc82a09cf901c206ed0188b7aae660dda6d0c3d"
 reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
+span_hash = "50ea2d83408fc631074a50ce0dc82a09cf901c206ed0188b7aae660dda6d0c3d"
 
 [[test]]
 id = "gm/tablecolorfilter.cpp::TableColorFilterGM"
