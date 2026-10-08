@@ -15625,6 +15625,7 @@ macro = "DEF_GM"
 source = "gm/arithmode.cpp#L282-L282"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "b144fa1f0995da07cf1c14c44c7dc7e1fbd17d5bdc828024b33c462f534c5282"
 
 [[test]]
@@ -15634,6 +15635,7 @@ macro = "DEF_GM"
 source = "gm/arithmode.cpp#L173-L173"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "3511c19b1d61958fc14401bb7c66674646c9cb9768ace0526478674c9b5dfefb"
 
 [[test]]
@@ -18845,6 +18847,7 @@ macro = "DEF_GM"
 source = "gm/displacement.cpp#L169-L169"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "3cea9ce4cbedf9152aba5248b97a505e8bf5f27f1c5f0d550efd9f81a46659f5"
 
 [[test]]
@@ -21154,6 +21157,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersgraph.cpp#L161-L161"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "4138291453f67fa4ad9cedfb710c50b29ee9de4d6ec937db0dbb8374e10ca93f"
 
 [[test]]
@@ -21253,6 +21257,7 @@ macro = "DEF_GM"
 source = "gm/imagemagnifier.cpp#L220-L220"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "202df84445a939d5f8c47758c5e168af3b168b4186c94616e8e288a1496d30f3"
 
 [[test]]
@@ -21262,6 +21267,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imagemagnifier.cpp#L48-L56"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "66f3ba61f4a66aa15b5601eb9ab1cdef1659ed0164fcfce8196a76f23d8eb96e"
 
 [[test]]
@@ -21271,6 +21277,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imagemagnifier.cpp#L83-L97"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "4ee3963260e10404a50e9f1447762604a5a14b4a87e3a22498a96bbb02362ba1"
 
 [[test]]
@@ -21596,6 +21603,7 @@ macro = "DEF_GM"
 source = "gm/lighting.cpp#L189-L189"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "bef3c1bb2694cc55c7e3d097644b550d6e47022de1788f5e60a196c1697320bb"
 
 [[test]]
@@ -21808,6 +21816,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L180-L180"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "445561ccfc24b78843f45abbe77b9367da15f5954b4d137ec5ba89a58e869f10"
 
 [[test]]
@@ -21817,6 +21826,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L182-L182"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "7c8cadd25f684cf21d7e38182352529a8819d0de7f193a477963f099f698e03f"
 
 [[test]]
@@ -21826,6 +21836,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L179-L179"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "584b635b2f897be85b0bcff43e2cfe794c9e141c17c1f9f1bc0ccd90b3242179"
 
 [[test]]
@@ -21835,6 +21846,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L181-L181"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "cc361bd962233d9f8892a27906eb3ce2fa00cfa357f58443933ed454f18f4314"
 
 [[test]]
@@ -21844,6 +21856,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L183-L183"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "4635ba62ffd4c560db4f38011b1bf57e4d82c24a48f7e9cf7792803ce12ee0bf"
 
 [[test]]
@@ -21853,6 +21866,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L184-L184"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "e32d8bf8facfff5b0c6b6834020709e8254133668e5037588273669514331c63"
 
 [[test]]
@@ -22034,6 +22048,7 @@ macro = "DEF_GM"
 source = "gm/morphology.cpp#L97-L97"
 module = "raster"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "4ebff493183b230e7a167b544980d55c3ddb309022e9cf1fa79383dc07a38dc8"
 
 [[test]]
@@ -23162,6 +23177,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -23171,6 +23187,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
@@ -25224,6 +25241,7 @@ macro = "DEF_GM"
 source = "gm/xfermodeimagefilter.cpp#L206-L206"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "8940ef87363369dfb73906623a0f4aae285bc2e82a4e4756219ce4df34056e0c"
 
 [[test]]
@@ -34209,6 +34227,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2394-L2397"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "900c39f7fab6139408e45ca070667d863e913c461525ba27c8d73c67e673e51f"
 
 [[test]]
@@ -34256,6 +34275,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2551-L2569"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "866c2f3c4e999588cec9e36a98f8073fad587754bb1e2c7b5150c9a339f4d7dc"
 
 [[test]]
@@ -34265,6 +34285,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2400-L2433"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "cbd4832cc44c454fa6c2a643ec7c2cf31d692a1fb1eb385812468f1d55726ab6"
 
 [[test]]
@@ -34292,6 +34313,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L440-L542"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "01ec23a8d21ca70b514522e1a47040cff2804bc1d9770b7ea255d796512f3c1c"
 
 [[test]]
@@ -34329,6 +34351,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1674-L1733"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "05a58bf7805ec3677358dcfc7976e1ab2426f08cb6fcf20118d828bb933addfd"
 
 [[test]]
@@ -34394,6 +34417,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1002-L1022"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "35fda1396f93d3daa189b247d9ff020edc7fc23fe6a7799c59c81a03ab4c672b"
 
 [[test]]
@@ -34532,6 +34556,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1208-L1230"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "b20b6dd7ea1ef0ecb468e1502cf438782527da2c26925110f3cb47e17ecbb988"
 
 [[test]]
@@ -34541,6 +34566,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1293-L1295"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "5655a72790b6434093c01ec79243e90ce80d1e4b8a980fcc780ac273630b03a1"
 
 [[test]]
@@ -34560,6 +34586,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1232-L1260"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "fab5e304be776c8e24f052d9a0a3c8f3ac822bf09b7c131d91af9c716b729c92"
 
 [[test]]
@@ -34569,6 +34596,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1455-L1487"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "592fede77559a3fb22ef553c81150546571e3be0f8668175e08e2017245e83ce"
 
 [[test]]
@@ -34680,6 +34708,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2603-L2650"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "3c048f7ff72f6a12f4f0befcafb559a08760e8cca1e4557ab88aee1d65a57b35"
 
 [[test]]
@@ -34698,6 +34727,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L724-L726"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "8d7440e715fc6857c877b5af40d09493006dd887157e1ec4f90331d0e532ac99"
 
 [[test]]
@@ -41603,6 +41633,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L213-L217"
 module = "effects"
 status = "todo"
+reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
 span_hash = "e0f4fe37e83622e4f04f5b9a1bcec2124116d93cc5f6a9b157242608d59b857f"
 
 [[test]]
