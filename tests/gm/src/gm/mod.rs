@@ -80,7 +80,7 @@ pub mod dashcubics;
 pub mod dashing;
 pub mod distantclip;
 pub mod drawregion;
-pub mod dropshadow_pseudopersp;
+pub mod dropshadowimagefilter;
 pub mod drrect;
 pub mod drrect_small_inner;
 pub mod emptypath;

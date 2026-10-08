@@ -45,45 +45,53 @@ fn draw(
 }
 
 // Port of: gm/resizeimagefilter.cpp#L14-L53 (chrome/m156), onDraw
-crate::def_simple_gm_bg!(resizeimagefilter, canvas, 630, 100, Color::TRANSPARENT, {
-    canvas.clear(Color::BLACK);
-    let samplings = [
-        SamplingOptions::default(),
-        SamplingOptions::from(FilterMode::Linear),
-        SamplingOptions::new(FilterMode::Linear, MipmapMode::Linear),
-        SamplingOptions::from(CubicResampler::mitchell()),
-        SamplingOptions::from_aniso(16),
-    ];
-    let src_rect = Rect::from_wh(96.0, 96.0);
-    let device_size = Size::new(16.0, 16.0);
-    for sampling in samplings {
-        draw(canvas, src_rect, device_size, sampling, None);
-        canvas.translate((src_rect.width() + 10.0, 0.0));
-    }
+crate::def_simple_gm_bg_name!(
+    ResizeGM,
+    canvas,
+    630,
+    100,
+    Color::TRANSPARENT,
+    "resizeimagefilter",
     {
-        let mut surface = surfaces::raster_n32_premul((16, 16)).expect("a surface");
-        {
-            let surface_canvas = surface.canvas();
-            surface_canvas.clear(Color::new(0x0000_0000));
-            let mut paint = Paint::default();
-            paint.set_color(Color::new(0xFF00_FF00));
-            let mut oval_rect = Rect::from_wh(16.0, 16.0);
-            let inset = 2.0f32 / 3.0;
-            oval_rect.inset((inset, inset));
-            surface_canvas.draw_oval(oval_rect, &paint);
+        canvas.clear(Color::BLACK);
+        let samplings = [
+            SamplingOptions::default(),
+            SamplingOptions::from(FilterMode::Linear),
+            SamplingOptions::new(FilterMode::Linear, MipmapMode::Linear),
+            SamplingOptions::from(CubicResampler::mitchell()),
+            SamplingOptions::from_aniso(16),
+        ];
+        let src_rect = Rect::from_wh(96.0, 96.0);
+        let device_size = Size::new(16.0, 16.0);
+        for sampling in samplings {
+            draw(canvas, src_rect, device_size, sampling, None);
+            canvas.translate((src_rect.width() + 10.0, 0.0));
         }
-        let snapshot = surface.image_snapshot().expect("an image");
-        let in_rect = Rect::from_xywh(-4.0, -4.0, 20.0, 20.0);
-        let out_rect = Rect::from_xywh(-24.0, -24.0, 120.0, 120.0);
-        let source = image(
-            Some(snapshot),
-            in_rect,
-            out_rect,
-            SamplingOptions::from(CubicResampler {
-                b: 1.0 / 3.0,
-                c: 1.0 / 3.0,
-            }),
-        );
-        draw(canvas, src_rect, device_size, samplings[3], Some(source));
+        {
+            let mut surface = surfaces::raster_n32_premul((16, 16)).expect("a surface");
+            {
+                let surface_canvas = surface.canvas();
+                surface_canvas.clear(Color::new(0x0000_0000));
+                let mut paint = Paint::default();
+                paint.set_color(Color::new(0xFF00_FF00));
+                let mut oval_rect = Rect::from_wh(16.0, 16.0);
+                let inset = 2.0f32 / 3.0;
+                oval_rect.inset((inset, inset));
+                surface_canvas.draw_oval(oval_rect, &paint);
+            }
+            let snapshot = surface.image_snapshot().expect("an image");
+            let in_rect = Rect::from_xywh(-4.0, -4.0, 20.0, 20.0);
+            let out_rect = Rect::from_xywh(-24.0, -24.0, 120.0, 120.0);
+            let source = image(
+                Some(snapshot),
+                in_rect,
+                out_rect,
+                SamplingOptions::from(CubicResampler {
+                    b: 1.0 / 3.0,
+                    c: 1.0 / 3.0,
+                }),
+            );
+            draw(canvas, src_rect, device_size, samplings[3], Some(source));
+        }
     }
-});
+);
