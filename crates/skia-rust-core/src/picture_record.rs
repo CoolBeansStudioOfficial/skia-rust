@@ -59,6 +59,8 @@ struct PictureRecordState {
     paints: Vec<Paint>,
     /// `fPaths`: the distinct paths, in the order of their 1-based indices.
     paths: Vec<Path>,
+    /// `fTextBlobs`: the distinct text blobs, in the order of their 1-based indices.
+    text_blobs: Vec<TextBlob>,
     /// Set when the picture has a command that is not encoded yet.
     unsupported: bool,
 }
@@ -167,6 +169,23 @@ impl PictureRecordState {
     fn add_path(&mut self, path: &Path) {
         let index = self.add_path_to_heap(path);
         self.add_word(index);
+    }
+
+    /// Writes a text blob's 1-based index, adding the blob if it is new (`addTextBlob`). Blobs
+    /// are the same when they have the same unique id (`equals`).
+    // Port of: src/core/SkPictureRecord.cpp#L958-L961 (chrome/m156), addTextBlob, with
+    // find_or_append from src/core/SkPictureRecord.cpp#L847-L857 (chrome/m156)
+    fn add_text_blob(&mut self, blob: &TextBlob) {
+        let position = self
+            .text_blobs
+            .iter()
+            .position(|known| known.unique_id() == blob.unique_id())
+            .unwrap_or_else(|| {
+                self.text_blobs.push(blob.clone());
+                self.text_blobs.len() - 1
+            });
+        // follow the convention of recording a 1-based index
+        self.add_int(i32::try_from(position + 1).expect("SkToS32"));
     }
 
     /// Writes an offset placeholder that the restore will fill in, linked to the previous
@@ -524,15 +543,17 @@ impl CanvasHooks for PictureRecordHooks {
         true
     }
 
-    // Text blobs are not encoded yet (the text section of a picture is not ported).
-    fn on_draw_text_blob(
-        &mut self,
-        _blob: &TextBlob,
-        _x: scalar,
-        _y: scalar,
-        _paint: &Paint,
-    ) -> bool {
-        self.unsupported()
+    // Port of: src/core/SkPictureRecord.cpp#L594-L607 (chrome/m156), onDrawTextBlob
+    fn on_draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) -> bool {
+        self.with(|state| {
+            // op + paint index + blob index + x/y
+            state.add_draw(draw_type::DRAW_TEXT_BLOB, 3 * 4 + 2 * 4);
+            state.add_paint(paint);
+            state.add_text_blob(blob);
+            state.add_scalar(x);
+            state.add_scalar(y);
+        });
+        true
     }
 
     // Vertices are not encoded yet.
@@ -637,5 +658,6 @@ pub(crate) fn backport(picture: &Picture) -> Option<PictureData> {
         state.writer.into_bytes(),
         state.paints,
         state.paths,
+        state.text_blobs,
     ))
 }

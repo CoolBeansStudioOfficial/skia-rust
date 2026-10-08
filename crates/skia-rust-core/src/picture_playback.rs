@@ -29,6 +29,7 @@ use crate::picture_priv::{
 use crate::picture_recorder::PictureRecorder;
 use crate::point::Point;
 use crate::read_buffer::ReadBuffer;
+use crate::text_blob::TextBlob;
 use crate::tile_mode::TileMode;
 
 /// `SkPicturePlayback::draw` for the ops of `data`, which were written at `version`. Returns
@@ -90,6 +91,20 @@ fn get_path<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Option<&'
     let path = index.and_then(|i| data.paths().get(i - 1));
     if reader.validate(path.is_some()) {
         path
+    } else {
+        None
+    }
+}
+
+/// The text blob an op uses: its 1-based index in the blobs, which must be there
+/// (`getTextBlob`).
+// Port of: src/core/SkPictureData.h#L142-L144 (chrome/m156), getTextBlob
+fn get_text_blob<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Option<&'a TextBlob> {
+    let index = reader.read_int();
+    let index = usize::try_from(index).ok().filter(|&i| i >= 1);
+    let blob = index.and_then(|i| data.text_blobs().get(i - 1));
+    if reader.validate(blob.is_some()) {
+        blob
     } else {
         None
     }
@@ -221,6 +236,26 @@ fn handle_op(
 /// Reads the arguments of a draw op and draws with it into `canvas` (the draw part of
 /// `handleOp`). Returns false for an op that is invalid or not read yet.
 // Port of: src/core/SkPicturePlayback.cpp#L526-L596 (chrome/m156), the draw arms of handleOp
+/// `DRAW_TEXT_BLOB`: the paint, the blob, and the origin of the blob.
+// Port of: src/core/SkPicturePlayback.cpp#L633-L641 (chrome/m156), DRAW_TEXT_BLOB
+fn play_draw_text_blob(reader: &mut ReadBuffer<'_>, data: &PictureData, canvas: &Canvas) -> bool {
+    let Some(paint) = required_paint(reader, data) else {
+        return false;
+    };
+    let Some(blob) = get_text_blob(reader, data) else {
+        return false;
+    };
+    let x = reader.read_scalar();
+    let y = reader.read_scalar();
+    if !reader.is_valid() {
+        return false;
+    }
+    canvas.draw_text_blob(blob, (x, y), paint);
+    true
+}
+
+// One arm per draw op, as the switch of `SkPicturePlayback::playbackDrawOp` has.
+#[allow(clippy::too_many_lines)]
 fn handle_draw_op(
     reader: &mut ReadBuffer<'_>,
     op: u8,
@@ -325,6 +360,7 @@ fn handle_draw_op(
             canvas.draw_points(mode, &pts, paint);
             reader.is_valid()
         }
+        draw_type::DRAW_TEXT_BLOB => play_draw_text_blob(reader, data, canvas),
         _ => false,
     }
 }

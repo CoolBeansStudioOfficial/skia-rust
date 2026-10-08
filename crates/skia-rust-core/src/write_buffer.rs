@@ -12,9 +12,10 @@
 //! [`BinaryWriteBuffer`] (`writeInt`, `writeUInt`, `writeScalar`, `writeScalarArray`,
 //! `writeByteArray`, `writePad32`, `writeMatrix`, `writePath`, `writeTypeface` (the empty case),
 //! `writeFlattenable` for path effects and mask filters, `bytesWritten`, `writeToMemory`).
-//! Not ported: external storage (`SkWriter32(void*, size_t)`, `usingInitialStorage`), the
-//! `SkSerialProcs`, the factory and typeface sets (so a flattenable is always written by name),
-//! and every write that needs a type that is not ported yet (images, paints, regions, ...).
+//! The factory set (`setFactoryRecorder`) and the typeface set (`setTypefaceRecorder`) are
+//! ported: with a factory set, a flattenable is written as its index. Without one, it is written
+//! by name. Not ported: external storage (`SkWriter32(void*, size_t)`, `usingInitialStorage`),
+//! and every write that needs a type that is not ported yet (images, regions, ...).
 
 use crate::color::Color4f;
 use crate::mask_filter::MaskFilter;
@@ -207,6 +208,9 @@ pub struct BinaryWriteBuffer {
     serial_procs: SerialProcs,
     /// `fTFSet`: the typefaces written by index, in order of first use (`setTypefaceRecorder`).
     typeface_recorder: Option<Vec<Typeface>>,
+    /// `fFactorySet`: the factories written by index, in order of first use
+    /// (`setFactoryRecorder`). A factory is identified by its name.
+    factory_recorder: Option<Vec<String>>,
 }
 
 impl BinaryWriteBuffer {
@@ -240,6 +244,22 @@ impl BinaryWriteBuffer {
     #[doc(alias = "typefaceRecorder")]
     pub fn typeface_recorder(&self) -> Option<&[Typeface]> {
         self.typeface_recorder.as_deref()
+    }
+
+    /// `setFactoryRecorder`: from now on, a flattenable is written as its index in a set of
+    /// factories, which [`factory_recorder`](Self::factory_recorder) returns. The set starts empty.
+    // Port of: src/core/SkWriteBuffer.h (setFactoryRecorder, chrome/m156), with the set as a Vec
+    #[doc(alias = "setFactoryRecorder")]
+    pub fn set_factory_recorder(&mut self) {
+        self.factory_recorder = Some(Vec::new());
+    }
+
+    /// The factories of the recorder, by name, in index order (index 1 is the first). `None` if
+    /// no recorder is set.
+    #[must_use]
+    #[doc(alias = "factoryRecorder")]
+    pub fn factory_recorder(&self) -> Option<&[String]> {
+        self.factory_recorder.as_deref()
     }
 
     /// `writePoint`: the two scalars of a point (`SkBinaryWriteBuffer::writePoint`).
@@ -377,11 +397,24 @@ impl BinaryWriteBuffer {
             .copy_from_slice(&bytes);
     }
 
-    /// The shared body of `writeFlattenable`: the name (or its dictionary index), the size, and
-    /// what `flatten` writes.
-    // Port of: src/core/SkWriteBuffer.cpp#L283-L313 (chrome/m156), the name arm
+    /// The shared body of `writeFlattenable`: the factory index (when a factory recorder is set),
+    /// else the name (or its dictionary index), then the size, and what `flatten` writes.
+    // Port of: src/core/SkWriteBuffer.cpp#L265-L313 (chrome/m156)
     fn write_flattenable(&mut self, name: &str, flatten: impl FnOnce(&mut Self)) {
-        if let Some(position) = self.flattenable_dict.iter().position(|known| known == name) {
+        if let Some(factories) = self.factory_recorder.as_mut() {
+            // `fFactorySet->add(factory)`: the index is the position plus one, and a new factory
+            // is appended. The index is written as it is (it is not shifted).
+            let position = factories
+                .iter()
+                .position(|known| known == name)
+                .unwrap_or_else(|| {
+                    factories.push(name.to_owned());
+                    factories.len() - 1
+                });
+            let index = i32::try_from(position + 1).unwrap_or(i32::MAX);
+            self.writer.write32(index);
+        } else if let Some(position) = self.flattenable_dict.iter().position(|known| known == name)
+        {
             // The index is shifted left by 8, so its first byte is zero: this marks an index.
             let index = i32::try_from(position + 1).unwrap_or(i32::MAX);
             self.writer.write32(index << 8);

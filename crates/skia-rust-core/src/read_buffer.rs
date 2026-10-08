@@ -107,6 +107,9 @@ pub struct ReadBuffer<'a> {
     deserial_procs: DeserialProcs,
     /// `fTFArray`: the typefaces that index references name, in order (1 is the first).
     typeface_array: Vec<Typeface>,
+    /// `fFactoryArray`: the factories that an index references, by name, in order (1 is the
+    /// first). Empty when the flattenables are read by name.
+    factory_names: Vec<String>,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -134,6 +137,15 @@ impl<'a> ReadBuffer<'a> {
     #[doc(alias = "setTypefaceArray")]
     pub fn set_typeface_array(&mut self, typefaces: Vec<Typeface>) {
         self.typeface_array = typefaces;
+    }
+
+    /// `setFactoryArray(array, count)`: the factories that a flattenable's index refers to, by
+    /// their names, in order (index 1 is the first). An empty table means the flattenables are
+    /// read by name.
+    // Port of: src/core/SkReadBuffer.h#L180 (chrome/m156), setFactoryArray
+    #[doc(alias = "setFactoryArray")]
+    pub(crate) fn set_factory_names(&mut self, names: Vec<String>) {
+        self.factory_names = names;
     }
 
     /// `readPoint`: two scalars (`SkReadBuffer::readPoint`).
@@ -632,12 +644,31 @@ impl ReadBuffer<'_> {
         paint
     }
 
-    /// The name part of `readRawFlattenable`: a string (which is added to the dictionary) or the
-    /// dictionary index of an earlier one. `None` if the writer wrote nothing, or on an error.
-    // Port of: src/core/SkReadBuffer.cpp#L489-L512 (chrome/m156), the no-factory-array arm
+    /// The name part of `readRawFlattenable`: the factory index (when there is a factory table), a
+    /// string (which is added to the dictionary) or the dictionary index of an earlier one. `None`
+    /// if the writer wrote nothing, or on an error.
+    // Port of: src/core/SkReadBuffer.cpp#L470-L512 (chrome/m156)
     fn read_flattenable_name(&mut self) -> Option<String> {
         if !self.is_valid() {
             return None;
+        }
+        if !self.factory_names.is_empty() {
+            // The index of a factory, which is the position in the table plus one.
+            let index = self.read32();
+            if index == 0 || !self.is_valid() {
+                return None; // writer failed to give us the flattenable
+            }
+            if index < 0 {
+                self.validate(false);
+                return None;
+            }
+            let name = usize::try_from(index - 1)
+                .ok()
+                .and_then(|position| self.factory_names.get(position).cloned());
+            if !self.validate(name.is_some()) {
+                return None;
+            }
+            return name;
         }
         // If the first byte is non-zero, the flattenable is specified by a string. Otherwise it
         // is the index, shifted left by 8.

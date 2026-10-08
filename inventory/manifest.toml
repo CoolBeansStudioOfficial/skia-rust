@@ -35167,7 +35167,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L268-L297"
 module = "core"
 status = "todo"
-reason = "needs picture serialization (SkSerialProcs, SkPicture::serialize/MakeFromData)"
+reason = "needs images in pictures (the IMAGE section, writeImage/readImage) and SkSerialProcs::fImageProc, notes/picture-serialization.md"
 span_hash = "90f1ef1ed7d08f9f751fdbe36b511f0b38402fa258c1d3d5d71d087bcd5f01c7"
 
 [[test]]
@@ -38973,7 +38973,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L517-L529"
 module = "core"
 status = "todo"
-reason = "test_typeface needs SkFont/drawString and picture serialization (SkDynamicMemoryWStream); the other steps are ported"
+reason = "test_typeface now serializes (picture serialization part 2 and text blobs are in); still needs the sub-tests test_bad_bitmap, test_unbalanced_save_restores, test_peephole, test_clip_bound_opt, test_gen_id and test_cull_rect_reset ported into this DEF_TEST"
 span_hash = "7db5306c924057bb109fec7bad403e184cc6a5b545bda0376b301e65bca41712"
 
 [[test]]
@@ -41635,6 +41635,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L843-L1055"
 module = "core"
 status = "todo"
+reason = "picture parts need paints with shaders, color filters, image filters and blenders, regions, clip shaders, nested pictures and images in pictures, notes/picture-serialization.md"
 span_hash = "6d124b55ad7562cd056255f1a92b9991f33cf9ceef9b3857c36938a54c994820"
 
 [[test]]
@@ -41643,8 +41644,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
-status = "todo"
-reason = "needs text blobs in pictures: DRAW_TEXT_BLOB and the TEXTBLOB and typeface sections of SkPictureData are not ported yet (picture serialization part 1 has no text), docs/design/text.md §6, T16"
+status = "failing"
+reason = "NativeFontations only: the call without serial procs deserializes font data with builtin_decoders (only the empty typeface), so 5 pixel comparisons differ; the call with procs passes in both configs (ignored; see notes/picture-serialization.md)"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -42280,8 +42281,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L267-L330"
 module = "text"
-status = "todo"
-reason = "needs SkGlyph::flattenMetrics/flattenDrawable/MakeFromBuffer (glyph serialization, T5), not ported"
+status = "passing"
 span_hash = "c63f9dee1a4b577a6bee13d73dc911dac585fdcf19a2b42edf00c439a4035c2e"
 
 [[test]]
@@ -42308,8 +42308,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L332-L375"
 module = "text"
-status = "todo"
-reason = "needs SkWriteBuffer/SkReadBuffer and picture flattening (not ported; docs/design/text.md T5 follow-up)"
+status = "passing"
 span_hash = "54c4131fe232d66df47f9691cf73b7825f49f7881645fe85c1a5dadb16e8baab"
 
 [[test]]
@@ -42319,6 +42318,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
 status = "todo"
+reason = "needs shaders in a picture's paints (picture serialization part 2), notes/picture-serialization.md"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]
@@ -48916,8 +48916,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
-status = "todo"
-reason = "needs text blobs in pictures (DRAW_TEXT_BLOB and the TEXTBLOB section are not ported yet, see notes/picture-serialization.md), docs/design/text.md §6, T16, and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
+status = "passing"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]

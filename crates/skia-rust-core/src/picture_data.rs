@@ -10,10 +10,10 @@
 //! buffer of paints, paths and the other tables (`BUFFER_SIZE`), and the end (`EOF`). Each
 //! section but the end starts with its tag and, for most, a size.
 //!
-//! skia-rust: the factory section is always empty, as flattenables are written by name (the
-//! factory indices are not ported). The sections for text blobs, slugs, vertices, images,
-//! drawables and nested pictures are not written or read yet: a picture that has them is not
-//! serialized, and a stream that has them does not load.
+//! skia-rust: the factories are written by index, as in Skia, with their names in the factory
+//! section. The sections for slugs, vertices, images, drawables and nested pictures are not
+//! written or read yet: a picture that has them is not serialized, and a stream that has them
+//! does not load.
 
 use crate::flattenable::FlattenableRegistry;
 use crate::paint::Paint;
@@ -21,7 +21,8 @@ use crate::path::Path;
 use crate::read_buffer::ReadBuffer;
 use crate::rect::Rect;
 use crate::serial_procs::{DeserialProcs, SerialProcs};
-use crate::stream::{Stream, WStream};
+use crate::stream::{Stream, WStream, size_of_packed_uint};
+use crate::text_blob::{TextBlob, make_from_buffer};
 use crate::typeface::{SerializeBehavior, Typeface};
 use crate::write_buffer::BinaryWriteBuffer;
 
@@ -112,6 +113,25 @@ fn read_exact(stream: &mut dyn Stream, size: usize) -> Option<Vec<u8>> {
     Some(bytes)
 }
 
+/// Writes the factory section: its size, the count, and the name of each factory, with the
+/// length packed (`WriteFactories`).
+// Port of: src/core/SkPictureData.cpp#L84-L122 (chrome/m156), compute_chunk_size and WriteFactories
+fn write_factories(stream: &mut dyn WStream, names: &[String]) -> bool {
+    let size = 4 + names
+        .iter()
+        .map(|name| size_of_packed_uint(name.len()) + name.len())
+        .sum::<usize>();
+    if !write_tag_size(stream, FACTORY_TAG, size) {
+        return false;
+    }
+    if !stream.write32(u32::try_from(names.len()).expect("SkToU32")) {
+        return false;
+    }
+    names
+        .iter()
+        .all(|name| stream.write_packed_uint(name.len()) && stream.write(name.as_bytes()))
+}
+
 /// The data of a picture, as read from or written to a serialized picture (`SkPictureData`).
 // Port of: src/core/SkPictureData.h#L88-L185 (chrome/m156), the parts that are ported
 #[doc(alias = "SkPictureData")]
@@ -125,17 +145,28 @@ pub(crate) struct PictureData {
     paths: Vec<Path>,
     /// `fTFPlayback`: the typefaces that the buffer refers to by index, from 1.
     typefaces: Vec<Typeface>,
+    /// `fFactoryPlayback`: the names of the factories that the buffer refers to by index, from 1.
+    factories: Vec<String>,
+    /// `fTextBlobs`: the text blobs that the ops refer to by index, from 1.
+    text_blobs: Vec<TextBlob>,
 }
 
 impl PictureData {
     /// Data of an op stream and its tables.
     // Port of: src/core/SkPictureData.cpp#L44-L64 (chrome/m156), the constructor from a record
-    pub(crate) fn new(op_data: Vec<u8>, paints: Vec<Paint>, paths: Vec<Path>) -> PictureData {
+    pub(crate) fn new(
+        op_data: Vec<u8>,
+        paints: Vec<Paint>,
+        paths: Vec<Path>,
+        text_blobs: Vec<TextBlob>,
+    ) -> PictureData {
         PictureData {
             op_data: Some(op_data),
             paints,
             paths,
             typefaces: Vec::new(),
+            factories: Vec::new(),
+            text_blobs,
         }
     }
 
@@ -154,13 +185,20 @@ impl PictureData {
         &self.paths
     }
 
-    /// Writes the buffer of the tables: paints, then paths, then the (empty) slugs
-    /// (`flattenToBuffer`, with no text blobs, vertices or images). `None` if a paint has an
-    /// effect that is not written yet.
+    /// The text blobs the ops index (`fTextBlobs`).
+    pub(crate) fn text_blobs(&self) -> &[TextBlob] {
+        &self.text_blobs
+    }
+
+    /// Writes the buffer of the tables: paints, then paths, then text blobs, then the (empty)
+    /// slugs (`flattenToBuffer`, with no vertices or images). The buffer records the factories
+    /// and typefaces that it writes by index. `None` if a paint has an effect that is not written
+    /// yet.
     // Port of: src/core/SkPictureData.cpp#L151-L200 (chrome/m156), flattenToBuffer
     fn flatten_to_buffer(&self) -> Option<BinaryWriteBuffer> {
         let mut buffer = BinaryWriteBuffer::with_serial_procs(SerialProcs::default());
         buffer.set_typeface_recorder();
+        buffer.set_factory_recorder();
 
         if !self.paints.is_empty() {
             write_tag_size_to_buffer(&mut buffer, PAINT_BUFFER_TAG, self.paints.len());
@@ -177,6 +215,12 @@ impl PictureData {
                 buffer.write_path(path);
             }
         }
+        if !self.text_blobs.is_empty() {
+            write_tag_size_to_buffer(&mut buffer, TEXTBLOB_BUFFER_TAG, self.text_blobs.len());
+            for blob in &self.text_blobs {
+                blob.flatten(&mut buffer);
+            }
+        }
         // The slugs are always written, even when there are none.
         write_tag_size_to_buffer(&mut buffer, SLUG_BUFFER_TAG, 0);
         Some(buffer)
@@ -191,21 +235,27 @@ impl PictureData {
         let Some(op_data) = self.op_data() else {
             return false;
         };
+        // The buffer is made first: the factories and typefaces it indexes are written before it.
+        let Some(buffer) = self.flatten_to_buffer() else {
+            return false;
+        };
+
         // The op stream comes first.
         if !write_tag_size(stream, READER_TAG, op_data.len()) || !stream.write(op_data) {
             return false;
         }
 
-        // The factories: none, as the flattenables are written by name. The tag is still there.
-        if !write_tag_size(stream, FACTORY_TAG, 4) || !stream.write32(0) {
+        // The factories, by name, in the order that the buffer indexes them.
+        if !write_factories(stream, buffer.factory_recorder().unwrap_or(&[])) {
             return false;
         }
 
-        // The typefaces: the unique set, each as its custom bytes or as it serializes.
-        if !write_tag_size(stream, TYPEFACE_TAG, self.typefaces.len()) {
+        // The typefaces that the buffer indexes: each as its custom bytes or as it serializes.
+        let typefaces = buffer.typeface_recorder().unwrap_or(&[]);
+        if !write_tag_size(stream, TYPEFACE_TAG, typefaces.len()) {
             return false;
         }
-        for typeface in &self.typefaces {
+        for typeface in typefaces {
             let custom = procs
                 .typeface
                 .as_ref()
@@ -220,9 +270,6 @@ impl PictureData {
         }
 
         // The buffer of tables, which the size is written before.
-        let Some(buffer) = self.flatten_to_buffer() else {
-            return false;
-        };
         let mut bytes = vec![0; buffer.bytes_written()];
         buffer.write_to_memory(&mut bytes);
         if !write_tag_size(stream, BUFFER_SIZE_TAG, bytes.len()) || !stream.write(&bytes) {
@@ -277,13 +324,15 @@ impl PictureData {
                 self.op_data = Some(read_exact(stream, size)?);
             }
             FACTORY_TAG => {
-                // The names of the factories. They are read past, as the factory arm of
-                // `readFlattenable` (the indices) is not ported.
+                // The names of the factories, which the buffer's flattenables index.
                 let count = stream.read_u32()?;
+                let mut names = Vec::new();
                 for _ in 0..count {
                     let len = stream.read_packed_uint()?;
-                    read_exact(stream, len)?;
+                    let bytes = read_exact(stream, len)?;
+                    names.push(String::from_utf8_lossy(&bytes).into_owned());
                 }
+                self.factories = names;
             }
             TYPEFACE_TAG => {
                 for _ in 0..size {
@@ -310,6 +359,7 @@ impl PictureData {
                 let mut buffer = ReadBuffer::with_deserial_procs(&bytes, procs.clone());
                 buffer.set_version(version);
                 buffer.set_typeface_array(self.typefaces.clone());
+                buffer.set_factory_names(self.factories.clone());
                 while buffer.available() > 0 && buffer.is_valid() {
                     let tag = buffer.read_uint();
                     let size = buffer.read_uint();
@@ -362,8 +412,26 @@ impl PictureData {
                     }
                 }
             }
+            TEXTBLOB_BUFFER_TAG => {
+                // `new_array_from_buffer`: the array must be empty, and each blob must read.
+                let Ok(count) = usize::try_from(size) else {
+                    buffer.validate(false);
+                    return;
+                };
+                if !buffer.validate(self.text_blobs.is_empty()) {
+                    return;
+                }
+                for _ in 0..count {
+                    let Some(blob) = make_from_buffer(buffer) else {
+                        buffer.validate(false);
+                        self.text_blobs.clear();
+                        return;
+                    };
+                    self.text_blobs.push(blob);
+                }
+            }
             // The sections that are not ported: an empty one is fine, a full one is not.
-            TEXTBLOB_BUFFER_TAG | SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG | IMAGE_BUFFER_TAG => {
+            SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG | IMAGE_BUFFER_TAG => {
                 buffer.validate(size == 0);
             }
             _ => {

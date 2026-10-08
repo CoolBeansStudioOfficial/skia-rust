@@ -1161,7 +1161,7 @@ impl TextBlob {
     /// `SkTextBlobPriv::Flatten`: the bounds, then each run (its glyph count, positioning and
     /// extended flag, text size, offset, font and arrays), then a zero glyph count.
     // Port of: src/core/SkTextBlob.cpp#L663-L702 (chrome/m156)
-    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+    pub(crate) fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
         buffer.write_rect(&self.0.bounds);
         for run in &self.0.runs {
             buffer.write_int(count_i32(run.glyph_count()));
@@ -1190,7 +1190,7 @@ impl TextBlob {
 /// `SkTextBlobPriv::MakeFromBuffer`: reads the runs that `flatten` wrote. Each run's arrays are
 /// read and checked before its buffers are allocated, so a malformed stream gives `None`.
 // Port of: src/core/SkTextBlob.cpp#L703-L777 (chrome/m156)
-fn make_from_buffer(reader: &mut ReadBuffer<'_>) -> Option<TextBlob> {
+pub(crate) fn make_from_buffer(reader: &mut ReadBuffer<'_>) -> Option<TextBlob> {
     let bounds = reader.read_rect();
     let mut builder = TextBlobBuilder::new();
     loop {
