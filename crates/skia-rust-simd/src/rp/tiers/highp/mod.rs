@@ -42,6 +42,7 @@ mod blend;
 mod branch;
 mod color;
 mod geometry;
+mod image_sampling;
 mod memory;
 mod memory_wide;
 mod sampling;
@@ -52,8 +53,8 @@ mod sksl_trace;
 
 #[allow(clippy::wildcard_imports)] // the dispatch calls every stage by its op's name
 use self::{
-    basic::*, blend::*, branch::*, color::*, geometry::*, memory::*, memory_wide::*, sampling::*,
-    sksl_arith::*, sksl_masks::*, sksl_math::*, sksl_trace::*,
+    basic::*, blend::*, branch::*, color::*, geometry::*, image_sampling::*, memory::*,
+    memory_wide::*, sampling::*, sksl_arith::*, sksl_masks::*, sksl_math::*, sksl_trace::*,
 };
 
 /// Panics for a stage whose task has not ported it yet.

@@ -28,7 +28,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L1608-L1608 (chrome/m156)
-    fn fract(v: F) -> F {
+    pub(super) fn fract(v: F) -> F {
         v - floor_(v)
     }
 

@@ -28,6 +28,7 @@
 
 use core::cell::Cell;
 use core::fmt;
+use std::sync::Arc;
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L27-L33 (chrome/m156)
 /// `kMaxStride`: the largest number of pixels handled at a time (lowp `N` on Ml3/Ml4).
@@ -116,13 +117,57 @@ pub struct MemoryCtxInfo {
     pub store: bool,
 }
 
+/// The bytes a [`GatherCtx`] samples, borrowed from the caller or kept alive by a shared owner.
+///
+/// skia-rust: `GatherCtx::pixels` is a `const void*` in Skia. A borrowed slice cannot be put in
+/// an `ArenaAlloc` (arenas hold `'static` values), which is where a shader puts the contexts it
+/// appends, so a shader hands the context a shared owner of the bytes ([`PixelBytes`]: a pixel
+/// ref, a mipmap, ...) instead.
+#[derive(Clone, Debug)]
+pub enum GatherPixels<'a> {
+    /// Bytes borrowed for `'a`.
+    Slice(&'a [u8]),
+    /// Bytes kept alive by a shared owner.
+    Shared(Arc<dyn PixelBytes>),
+}
+
+impl GatherPixels<'_> {
+    /// The pixels, from the pixel at `(0, 0)`.
+    #[inline]
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        match self {
+            GatherPixels::Slice(bytes) => bytes,
+            GatherPixels::Shared(owner) => owner.bytes(),
+        }
+    }
+}
+
+impl<'a> From<&'a [u8]> for GatherPixels<'a> {
+    fn from(bytes: &'a [u8]) -> GatherPixels<'a> {
+        GatherPixels::Slice(bytes)
+    }
+}
+
+impl<'a> From<&'a Vec<u8>> for GatherPixels<'a> {
+    fn from(bytes: &'a Vec<u8>) -> GatherPixels<'a> {
+        GatherPixels::Slice(bytes)
+    }
+}
+
+/// A shared owner of the bytes of a [`GatherCtx`] (see [`GatherPixels::Shared`]).
+pub trait PixelBytes: Send + Sync + fmt::Debug {
+    /// The bytes, from the pixel at `(0, 0)` of the context.
+    fn bytes(&self) -> &[u8];
+}
+
 // Port of: src/core/SkRasterPipelineOpContexts.h#L71-L79 (chrome/m156)
 /// `GatherCtx`: read-only pixels sampled at arbitrary coordinates (never patched).
 #[doc(alias = "SkRasterPipelineContexts::GatherCtx")]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct GatherCtx<'a> {
     /// The pixels, from the pixel at `(0, 0)`.
-    pub pixels: &'a [u8],
+    pub pixels: GatherPixels<'a>,
     /// Row stride in pixels.
     pub stride: i32,
     pub width: f32,

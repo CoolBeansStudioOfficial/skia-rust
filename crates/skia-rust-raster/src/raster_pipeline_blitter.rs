@@ -16,7 +16,9 @@
 //!   mask plane (`fMaskPtr`, set by every `blitMask`), slots 2 and 3 the 3D mask's `mul` and `add`
 //!   planes (`fEmbossCtx`) and slot 4 the clip shader's alpha buffer (`fClipShaderBuffer`, owned
 //!   by the blitter instead of the arena; `fAlloc`, which only feeds `SkRasterPipeline`'s
-//!   constructor, is not kept). `fCurrentCoverage` is a `Cell<f32>` in the arena, which
+//!   constructor, is not kept), slot 5 the sprite source ([`SOURCE`]) and slot 6 the scratch
+//!   memory the shaders reserved in the arena (`SHADER_SCRATCH`, `ArenaAlloc::alloc_scratch`),
+//!   which the blitter owns. `fCurrentCoverage` is a `Cell<f32>` in the arena, which
 //!   `scale_1_float`/`lerp_1_float` read and `blit_anti_h` writes between runs.
 //! - **Lifetime.** The blitter does not live in the arena; it is a value that borrows the arena
 //!   and the destination pixels for `'a`.
@@ -37,7 +39,7 @@ use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::convert_pixels::convert_pixels;
-use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::effect_priv::{SHADER_SCRATCH, StageRec};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::mask::{Mask, MaskFormat};
 use skia_rust_core::matrix::Matrix;
@@ -132,6 +134,9 @@ pub struct RasterPipelineBlitter<'a> {
     /// The clip shader's alpha storage (`fClipShaderBuffer` and the `Storage` it points into);
     /// empty without a clip shader.
     clip_buffer: Vec<u8>,
+    /// The memory the shaders of the pipeline reserved in the arena (`ArenaAlloc::alloc_scratch`),
+    /// bound to `SHADER_SCRATCH`.
+    scratch: Vec<u8>,
     /// `fClipShaderBuffer != nullptr`.
     has_clip_shader: bool,
 
@@ -344,6 +349,7 @@ impl<'a> RasterPipelineBlitter<'a> {
             blend_pipeline: RasterPipeline::new(),
             blend_mode: None,
             clip_buffer: Vec::new(),
+            scratch: Vec::new(),
             has_clip_shader: false,
             can_direct_blit: can_direct_blit(paint),
             direct_blit_paint_color: paint.color4f(),
@@ -563,6 +569,9 @@ impl<'a> RasterPipelineBlitter<'a> {
             blitter.blend_mode = blender.as_base().as_blend_mode();
         }
 
+        // The memory the shaders reserved in the arena (blend shaders' stored colors).
+        blitter.scratch = vec![0; alloc.scratch_bytes()];
+
         Some(blitter)
     }
 
@@ -758,6 +767,9 @@ impl<'a> RasterPipelineBlitter<'a> {
         mem.bind(DST, MemView::write(dst_bytes).with_stride(stride));
         if self.has_clip_shader {
             mem.bind(CLIP, MemView::write(&mut self.clip_buffer));
+        }
+        if !self.scratch.is_empty() {
+            mem.bind(SHADER_SCRATCH, MemView::write(&mut self.scratch));
         }
         for (slot, view) in mask_planes {
             mem.bind(slot, view);

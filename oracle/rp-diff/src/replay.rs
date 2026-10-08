@@ -170,7 +170,7 @@ impl<'a> FromCtx<'a> for &'a GatherCtx<'a> {
                 height,
                 round_down_at_integer,
             } => Ok(leak(GatherCtx {
-                pixels: Vec::leak(pixels.clone()),
+                pixels: (&*Vec::leak(pixels.clone())).into(),
                 stride: *stride,
                 width: *width,
                 height: *height,

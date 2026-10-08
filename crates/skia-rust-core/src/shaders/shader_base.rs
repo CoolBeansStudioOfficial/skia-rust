@@ -15,8 +15,11 @@ use crate::color_space::ColorSpace;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
 use crate::effect_priv::StageRec;
+use crate::image::Image;
 use crate::matrix::Matrix;
 use crate::raster_pipeline::Stage;
+use crate::shader::Shader;
+use crate::tile_mode::TileMode;
 
 /// Accumulates matrices, starting with the CTM, when building up a raster pipeline by walking
 /// the shader tree (`SkShaders::MatrixRec`). It avoids adding a matrix multiply for each
@@ -352,6 +355,21 @@ pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
     /// (`onAsLuminanceColor`).
     #[doc(alias = "onAsLuminanceColor")]
     fn on_as_luminance_color(&self) -> Option<Color4f> {
+        None
+    }
+
+    /// If the shader is a local-matrix shader, the shader it wraps and its local matrix
+    /// (`makeAsALocalMatrixShader`; deprecated in Skia, still used by
+    /// `SkShader::makeWithLocalMatrix`).
+    #[doc(alias = "makeAsALocalMatrixShader")]
+    fn make_as_a_local_matrix_shader(&self) -> Option<(Shader, Matrix)> {
+        None
+    }
+
+    /// If the shader is an image shader (possibly under local matrices), its image, local matrix
+    /// and tile modes (`onIsAImage`).
+    #[doc(alias = "onIsAImage")]
+    fn on_is_a_image(&self) -> Option<(Image, Matrix, (TileMode, TileMode))> {
         None
     }
 

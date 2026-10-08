@@ -18,9 +18,9 @@
 //!   ([`OwnedCanvas`] hands them back on drop), as `docs/design/pixels.md` decided.
 //! * `peek_pixels` and `access_top_layer_pixels` return guards ([`PeekedPixels`],
 //!   [`TopLayerPixels`]) because a `Pixmap` cannot outlive the `RefCell` borrow.
-//! * Not ported (TODO Phase 3, each a no-op or a documented simplification here): images,
+//! * Not ported (TODO Phase 3, each a no-op or a documented simplification here):
 //!   text, vertices, patches, atlases, drawables, shadows, meshes, annotations,
-//!   edge-AA quads (`SkImage`, `SkFont`, `SkVertices`, ... are not ported); image filters on
+//!   edge-AA quads (`SkFont`, `SkVertices`, ... are not ported); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
 //!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
@@ -43,9 +43,12 @@ use crate::color::Color4f;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::{CreateInfo, Device, NoPixelsDevice, clip_shader};
+use crate::floating_point::is_finite_all;
+use crate::image::Image;
 use crate::image_filter::ImageFilter;
 use crate::image_filter_types::{Mapping, MatrixCapability, ROUND_EPSILON, round_out};
 use crate::image_info::ImageInfo;
+use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::matrix_priv::map_rect;
@@ -57,11 +60,19 @@ use crate::point::{IPoint, Point, Vector};
 use crate::rect::{Contains, IRect, Rect, RoundOut};
 use crate::region::Region;
 use crate::rrect::RRect;
+use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::tile_mode::TileMode;
+
+/// The lattice of [`Canvas::draw_image_lattice`] (`skia_safe::canvas::lattice`).
+pub mod lattice {
+    pub use crate::lattice_iter::{Lattice, RectType};
+}
+
+pub use lattice::Lattice;
 
 /// How [`Device::draw_points`](crate::device::Device::draw_points) interprets its points
 /// (`SkCanvas::PointMode`).
@@ -304,14 +315,16 @@ pub enum ContentChangeMode {
 /// The part of `SkSurface_Base` a canvas talks to: the generation ID that changes whenever the
 /// canvas is about to draw. Shared between a surface and its canvas.
 ///
-/// skia-rust: there is no cached image snapshot (`SkImage` is not ported), so `aboutToDraw` only
-/// dirties the generation ID and never copies on write (the `onCopyOnWrite` and
-/// `onRestoreBackingMutability` paths need `SkImage_Raster`).
+/// skia-rust: the cached image snapshot (`fCachedImage`) is dropped by `aboutToDraw`. Copy on
+/// write (`onCopyOnWrite`, `onRestoreBackingMutability`) is the pixel refs' job: a snapshot
+/// shares the surface's pixel ref and the surface's next write detaches onto a copy
+/// (`docs/design/pixels.md`).
 // Port of: src/image/SkSurface_Base.cpp#L55-L91 (chrome/m156)
 #[doc(alias = "SkSurface_Base")]
 #[derive(Debug, Default)]
 pub struct SurfaceBase {
     generation_id: Cell<u32>,
+    cached_image: RefCell<Option<Image>>,
 }
 
 impl SurfaceBase {
@@ -352,7 +365,21 @@ impl SurfaceBase {
     #[must_use]
     pub fn about_to_draw(&self, _mode: ContentChangeMode) -> bool {
         self.dirty_generation_id();
+        // regardless of copy-on-write, we must drop our cached image now, so that the next
+        // request will get our new contents.
+        self.cached_image.borrow_mut().take();
         true
+    }
+
+    /// The cached image snapshot, if there is one (`fCachedImage`).
+    #[must_use]
+    pub fn cached_image(&self) -> Option<Image> {
+        self.cached_image.borrow().clone()
+    }
+
+    /// Caches `image` as the snapshot of the surface until its next draw.
+    pub fn set_cached_image(&self, image: Image) {
+        *self.cached_image.borrow_mut() = Some(image);
     }
 
     /// `SkSurface::notifyContentWillChange`.
@@ -867,7 +894,7 @@ impl CanvasState {
             // Draw the prior device (src) into the new device (dst).
             let (before, _) = self.devices.split_at_mut(prior_idx + 1);
             let prior: &mut Box<dyn Device> = &mut before[prior_idx];
-            new_device.draw_device(&mut **prior, &backdrop_paint);
+            new_device.draw_device(&mut **prior, &SamplingOptions::default(), &backdrop_paint);
         }
 
         // fMCRec->newLayer(...)
@@ -924,8 +951,11 @@ impl CanvasState {
                 // NOTE: Layers with image filters are TODO(Phase 3); here the layer is always
                 // drawn through `drawDevice`.
                 debug_assert!(!layer.is_coverage && !layer.includes_padding);
-                self.top_device_mut()
-                    .draw_device(layer_device, &layer.paint);
+                self.top_device_mut().draw_device(
+                    layer_device,
+                    &SamplingOptions::default(),
+                    &layer.paint,
+                );
             }
         }
 
@@ -1535,6 +1565,216 @@ impl CanvasState {
         }
         self.on_draw_arc(oval, start, sweep, use_center, paint);
     }
+
+    // Port of: src/core/SkCanvas.cpp#L2379-L2390 (chrome/m156)
+    fn draw_image(
+        &mut self,
+        image: &Image,
+        x: scalar,
+        y: scalar,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+    ) {
+        #[allow(clippy::cast_precision_loss)] // mirrors SkIntToScalar
+        let (w, h) = (image.width() as scalar, image.height() as scalar);
+        self.draw_image_rect(
+            image,
+            &Rect::from_wh(w, h),
+            &Rect::from_xywh(x, y, w, h),
+            sampling,
+            paint,
+            SrcRectConstraint::Fast,
+        );
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2392-L2400 (chrome/m156)
+    fn draw_image_rect(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        if !fillable(dst) || !fillable(src) {
+            return;
+        }
+        self.on_draw_image_rect2(image, src, dst, sampling, paint, constraint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2402-L2406 (chrome/m156)
+    fn draw_image_rect_whole(
+        &mut self,
+        image: &Image,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+    ) {
+        #[allow(clippy::cast_precision_loss)] // mirrors SkRect::MakeIWH
+        let src = Rect::from_wh(image.width() as scalar, image.height() as scalar);
+        self.draw_image_rect(image, &src, dst, sampling, paint, SrcRectConstraint::Fast);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2265-L2363 (chrome/m156)
+    //
+    // TODO(Phase 3, image filters): a paint with an image filter draws the image through
+    // `skif::FilterResult` in Skia; image filters are not ported, so the filter is ignored (as
+    // for every other draw call, see `about_to_draw`).
+    fn on_draw_image_rect2(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        let real_paint = clean_paint_for_draw_image(paint);
+        let real_sampling = clean_sampling_for_constraint(sampling, constraint);
+
+        if self.internal_quick_reject(dst, &real_paint, None) {
+            return;
+        }
+
+        // (`shouldDrawAsTiledImageRect` is false for the raster device, and so is
+        // `useDrawCoverageMaskForMaskFilters`.)
+        if self.about_to_draw(&real_paint, Some(dst), PredrawFlags::CHECK_FOR_OVERWRITE) {
+            self.top_device_mut().draw_image_rect(
+                image,
+                Some(src),
+                dst,
+                &real_sampling,
+                &real_paint,
+                constraint,
+            );
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1794-L1809 (chrome/m156)
+    fn draw_image_nine(
+        &mut self,
+        image: &Image,
+        center: &IRect,
+        dst: &Rect,
+        filter: FilterMode,
+        paint: Option<&Paint>,
+    ) {
+        let xdivs = [center.left, center.right];
+        let ydivs = [center.top, center.bottom];
+
+        let lat = Lattice {
+            x_divs: &xdivs,
+            y_divs: &ydivs,
+            rect_types: None,
+            bounds: None,
+            colors: None,
+        };
+        self.draw_image_lattice(image, &lat, dst, filter, paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1811-L1832 (chrome/m156)
+    fn draw_image_lattice(
+        &mut self,
+        image: &Image,
+        lattice: &Lattice<'_>,
+        dst: &Rect,
+        filter: FilterMode,
+        paint: Option<&Paint>,
+    ) {
+        if dst.is_empty() {
+            return;
+        }
+
+        let mut lattice_plus_bounds = lattice.clone();
+        if lattice_plus_bounds.bounds.is_none() {
+            lattice_plus_bounds.bounds = Some(IRect::from_wh(image.width(), image.height()));
+        }
+
+        let lattice_paint = clean_paint_for_lattice(paint);
+        if LatticeIter::valid(image.width(), image.height(), &lattice_plus_bounds) {
+            self.on_draw_image_lattice2(image, &lattice_plus_bounds, dst, filter, &lattice_paint);
+        } else {
+            #[allow(clippy::cast_precision_loss)] // mirrors SkRect::MakeIWH
+            let src = Rect::from_wh(image.width() as scalar, image.height() as scalar);
+            self.draw_image_rect(
+                image,
+                &src,
+                dst,
+                &SamplingOptions::from(filter),
+                Some(&lattice_paint),
+                SrcRectConstraint::Strict,
+            );
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2365-L2377 (chrome/m156)
+    fn on_draw_image_lattice2(
+        &mut self,
+        image: &Image,
+        lattice: &Lattice<'_>,
+        dst: &Rect,
+        filter: FilterMode,
+        paint: &Paint,
+    ) {
+        let real_paint = clean_paint_for_draw_image(Some(paint));
+
+        if self.internal_quick_reject(dst, &real_paint, None) {
+            return;
+        }
+
+        if self.about_to_draw(&real_paint, Some(dst), PredrawFlags::NONE) {
+            self.top_device_mut()
+                .draw_image_lattice(image, lattice, dst, filter, &real_paint);
+        }
+    }
+}
+
+/// Returns true if the rect can be "filled": non-empty and finite (`fillable`).
+// Port of: src/core/SkCanvas.cpp#L1778-L1782 (chrome/m156)
+fn fillable(r: &Rect) -> bool {
+    let w = r.width();
+    let h = r.height();
+    is_finite_all(w, &[h]) && w > 0.0 && h > 0.0
+}
+
+// Port of: src/core/SkCanvas.cpp#L1784-L1792 (chrome/m156)
+fn clean_paint_for_lattice(paint: Option<&Paint>) -> Paint {
+    let mut cleaned = Paint::default();
+    if let Some(paint) = paint {
+        cleaned = paint.clone();
+        cleaned.set_mask_filter(None);
+        cleaned.set_anti_alias(false);
+    }
+    cleaned
+}
+
+/// Clean-up the paint to match the drawing semantics for drawImage et al. (skbug.com/40039059).
+// Port of: src/core/SkCanvas.cpp#L2226-L2234 (chrome/m156)
+fn clean_paint_for_draw_image(paint: Option<&Paint>) -> Paint {
+    let mut cleaned = Paint::default();
+    if let Some(paint) = paint {
+        cleaned = paint.clone();
+        cleaned.set_style(Style::Fill);
+        cleaned.set_path_effect(None);
+    }
+    cleaned
+}
+
+// Port of: src/core/SkCanvas.cpp#L2252-L2263 (chrome/m156)
+fn clean_sampling_for_constraint(
+    sampling: &SamplingOptions,
+    constraint: SrcRectConstraint,
+) -> SamplingOptions {
+    if constraint == SrcRectConstraint::Strict {
+        if sampling.mipmap != MipmapMode::None {
+            return SamplingOptions::from(sampling.filter);
+        }
+        if sampling.is_aniso() {
+            return SamplingOptions::from(FilterMode::Linear);
+        }
+    }
+    *sampling
 }
 
 /// Computes the layer's mapping and bounds for a layer with no image filters
@@ -2415,6 +2655,130 @@ impl Canvas {
 
         let _acmp = AutoCanvasMatrixPaint::new(self, matrix, paint, &picture.cull_rect());
         picture.playback(self);
+    }
+
+    /// Draws `image` with its top-left corner at `left_top` using the current clip, matrix and
+    /// `paint`, with nearest neighbor sampling (`drawImage`).
+    #[doc(alias = "drawImage")]
+    pub fn draw_image(
+        &self,
+        image: impl AsRef<Image>,
+        left_top: impl Into<Point>,
+        paint: Option<&Paint>,
+    ) -> &Self {
+        self.draw_image_with_sampling_options(image, left_top, SamplingOptions::default(), paint)
+    }
+
+    /// Draws `image` with its top-left corner at `left_top` with `sampling` (`drawImage`).
+    #[doc(alias = "drawImage")]
+    pub fn draw_image_with_sampling_options(
+        &self,
+        image: impl AsRef<Image>,
+        left_top: impl Into<Point>,
+        sampling: impl Into<SamplingOptions>,
+        paint: Option<&Paint>,
+    ) -> &Self {
+        let left_top = left_top.into();
+        self.state.borrow_mut().draw_image(
+            image.as_ref(),
+            left_top.x,
+            left_top.y,
+            &sampling.into(),
+            paint,
+        );
+        self
+    }
+
+    /// Draws the `src` rect of `image` (all of it if `None`) into `dst` with nearest neighbor
+    /// sampling (`drawImageRect`). The constraint applies only to `src`.
+    #[doc(alias = "drawImageRect")]
+    pub fn draw_image_rect(
+        &self,
+        image: impl AsRef<Image>,
+        src: Option<(&Rect, SrcRectConstraint)>,
+        dst: impl AsRef<Rect>,
+        paint: &Paint,
+    ) -> &Self {
+        self.draw_image_rect_with_sampling_options(
+            image,
+            src,
+            dst,
+            SamplingOptions::default(),
+            paint,
+        )
+    }
+
+    /// Draws the `src` rect of `image` (all of it if `None`) into `dst` with `sampling`
+    /// (`drawImageRect`).
+    #[doc(alias = "drawImageRect")]
+    pub fn draw_image_rect_with_sampling_options(
+        &self,
+        image: impl AsRef<Image>,
+        src: Option<(&Rect, SrcRectConstraint)>,
+        dst: impl AsRef<Rect>,
+        sampling: impl Into<SamplingOptions>,
+        paint: &Paint,
+    ) -> &Self {
+        let sampling = sampling.into();
+        let mut state = self.state.borrow_mut();
+        match src {
+            Some((src, constraint)) => state.draw_image_rect(
+                image.as_ref(),
+                src,
+                dst.as_ref(),
+                &sampling,
+                Some(paint),
+                constraint,
+            ),
+            None => {
+                state.draw_image_rect_whole(image.as_ref(), dst.as_ref(), &sampling, Some(paint));
+            }
+        }
+        drop(state);
+        self
+    }
+
+    /// Draws `image` stretched proportionally to fit into `dst`: the `center` rect of the image
+    /// is stretched, the corners are not scaled, and the other eight patches are stretched in
+    /// one direction (`drawImageNine`).
+    #[doc(alias = "drawImageNine")]
+    pub fn draw_image_nine(
+        &self,
+        image: impl AsRef<Image>,
+        center: impl AsRef<IRect>,
+        dst: impl AsRef<Rect>,
+        filter_mode: FilterMode,
+        paint: Option<&Paint>,
+    ) -> &Self {
+        self.state.borrow_mut().draw_image_nine(
+            image.as_ref(),
+            center.as_ref(),
+            dst.as_ref(),
+            filter_mode,
+            paint,
+        );
+        self
+    }
+
+    /// Draws `image` stretched proportionally to fit into `dst`, divided by `lattice` into a
+    /// rectangular grid (`drawImageLattice`).
+    #[doc(alias = "drawImageLattice")]
+    pub fn draw_image_lattice(
+        &self,
+        image: impl AsRef<Image>,
+        lattice: &Lattice<'_>,
+        dst: impl AsRef<Rect>,
+        filter: FilterMode,
+        paint: Option<&Paint>,
+    ) -> &Self {
+        self.state.borrow_mut().draw_image_lattice(
+            image.as_ref(),
+            lattice,
+            dst.as_ref(),
+            filter,
+            paint,
+        );
+        self
     }
 
     /// The device-level hook used by pictures and tests: runs `f` with the top device.

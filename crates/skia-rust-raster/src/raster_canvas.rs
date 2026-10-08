@@ -14,7 +14,7 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::bitmap_device::BitmapDevice;
-use crate::surface::surface_validate_raster_info;
+use crate::surface::{Surface, surface_validate_raster_info};
 
 /// The raster constructors of `Canvas`.
 pub trait RasterCanvas {
@@ -35,9 +35,30 @@ pub trait RasterCanvas {
         bitmap: &'lt mut Bitmap,
         props: Option<&SurfaceProps>,
     ) -> Option<OwnedCanvas<'lt>>;
+
+    /// A new raster surface compatible with this canvas, with the canvas's surface properties if
+    /// `props` is `None` (`SkCanvas::makeSurface`; `skia-safe`'s `new_surface`).
+    ///
+    /// skia-rust: a raster canvas's device makes raster surfaces (`SkBitmapDevice::makeSurface`).
+    fn new_surface(
+        &self,
+        info: &ImageInfo,
+        props: Option<&SurfaceProps>,
+    ) -> Option<Surface<'static>>;
 }
 
 impl RasterCanvas for Canvas {
+    // Port of: src/core/SkCanvas.cpp#L1047-L1052 and src/core/SkBitmapDevice.cpp#L615-L617
+    // (chrome/m156)
+    fn new_surface(
+        &self,
+        info: &ImageInfo,
+        props: Option<&SurfaceProps>,
+    ) -> Option<Surface<'static>> {
+        let canvas_props = self.base_props();
+        Surface::new_raster(info, None, Some(props.unwrap_or(&canvas_props)))
+    }
+
     // Port of: src/core/SkCanvas.cpp#L2939-L2953 (chrome/m156)
     fn from_raster_direct<'pixels>(
         info: &ImageInfo,

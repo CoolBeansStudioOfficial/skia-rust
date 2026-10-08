@@ -492,7 +492,7 @@ fn gathers_match_loads() {
             let image = (f.generate)(&mut rng, W * H);
             for round_down in [false, true] {
                 let ctx = GatherCtx {
-                    pixels: &image,
+                    pixels: (&image).into(),
                     stride: W as i32,
                     width: W as f32,
                     height: H as f32,
@@ -621,7 +621,7 @@ fn wide_stage_twins() {
                 let regs = random_bytes(&mut rng, &specials, 4 * 4 * n);
                 let image = random_bytes(&mut rng, &specials, 12 * f.bpp);
                 let ctx = GatherCtx {
-                    pixels: &image,
+                    pixels: (&image).into(),
                     stride: 4,
                     width: 4.0,
                     height: 3.0,

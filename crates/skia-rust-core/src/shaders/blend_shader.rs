@@ -5,19 +5,21 @@
 
 //! `SkBlendShader`: a shader that blends two shaders with a blend mode.
 //!
-//! Only what `SkClipStack` needs (`SkShaders::Blend(SkBlendMode, ...)`, [`ShaderBase::is_opaque`]
-//! and the shader accessors) is ported. Flattening is not ported (no `SkWriteBuffer`), nor the
-//! `SkBlender` overload (it needs runtime effects).
+//! Flattening is not ported (no `SkWriteBuffer`), nor the `SkBlender` overload (it needs runtime
+//! effects).
 //!
-//! skia-rust: [`append_stages`](ShaderBase::append_stages) is not ported. Skia's version stores the
-//! first shader's output in arena memory that the pipeline reads and writes at run time
-//! (`store_src`/`load_dst` on a context the shader allocates); here writable pipeline memory is
-//! named by a [`MemSlot`](crate::raster_pipeline::MemSlot) bound per run, and shaders have no way
-//! to reserve one yet. Until the first shader that needs it is ported (Phase 3), a blend shader
-//! draws nothing (its stages fail to append, like [`EmptyShader`](super::EmptyShader)'s).
+//! skia-rust: [`append_stages`](ShaderBase::append_stages) stores the first shader's output in
+//! memory that the pipeline reads and writes at run time (`store_src`/`load_dst`). Skia allocates
+//! it in the arena; here writable pipeline memory is named by a
+//! [`MemSlot`](crate::raster_pipeline::MemSlot) bound per run, so the shader reserves bytes of
+//! [`SHADER_SCRATCH`] with `ArenaAlloc::alloc_scratch` and whoever runs the pipeline binds the
+//! buffer.
 
 use crate::blend_mode::{BlendMode, BlendModeCoeff};
-use crate::effect_priv::StageRec;
+use crate::blend_mode_priv;
+use crate::effect_priv::{SHADER_SCRATCH, StageRec};
+use crate::raster_pipeline::contexts::MAX_STRIDE;
+use crate::raster_pipeline::{MemPtr, Stage};
 use crate::shader::Shader;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
 
@@ -59,6 +61,48 @@ impl BlendShader {
     }
 }
 
+/// Returns the output of `s0` (in scratch memory), and leaves the output of `s1` in `r,g,b,a`
+/// (`append_two_shaders`).
+// Port of: src/shaders/SkBlendShader.cpp#L75-L110 (chrome/m156)
+fn append_two_shaders(
+    rec: &mut StageRec<'_, '_>,
+    m_rec: &MatrixRec,
+    s0: &Shader,
+    s1: &Shader,
+) -> Option<MemPtr> {
+    // struct Storage { float fCoords[2 * kMaxStride]; float fRes0[4 * kMaxStride]; };
+    // (`make<Storage>()`: see `ArenaAlloc::alloc_scratch`.)
+    #[allow(clippy::cast_possible_truncation)] // a small constant
+    const COORDS_BYTES: u32 = 2 * MAX_STRIDE as u32 * 4;
+    #[allow(clippy::cast_possible_truncation)] // a small constant
+    const RES0_BYTES: u32 = 4 * MAX_STRIDE as u32 * 4;
+    let base = rec
+        .alloc
+        .alloc_scratch((COORDS_BYTES + RES0_BYTES) as usize);
+    let coords = MemPtr::new(SHADER_SCRATCH, base);
+    let res0 = MemPtr::new(SHADER_SCRATCH, base + COORDS_BYTES);
+
+    // Note we cannot simply apply mRec here and then unconditionally store the coordinates. When
+    // building for Android Framework it would interrupt the backwards local matrix
+    // concatenation if mRec had a pending local matrix and either of the children also had a
+    // local matrix. b/256873449
+    if m_rec.raster_pipeline_coords_are_seeded() {
+        rec.pipeline.append(Stage::StoreSrcRg(coords));
+    }
+    if !s0.as_base().append_stages(rec, m_rec) {
+        return None;
+    }
+    rec.pipeline.append(Stage::StoreSrc(res0));
+
+    if m_rec.raster_pipeline_coords_are_seeded() {
+        rec.pipeline.append(Stage::LoadSrcRg(coords));
+    }
+    if !s1.as_base().append_stages(rec, m_rec) {
+        return None;
+    }
+    Some(res0)
+}
+
 impl ShaderBase for BlendShader {
     // Port of: src/shaders/SkBlendShader.cpp#L51-L68 (chrome/m156)
     fn is_opaque(&self) -> bool {
@@ -84,8 +128,14 @@ impl ShaderBase for BlendShader {
         ShaderType::Blend
     }
 
-    // skia-rust: not ported, see the module docs.
-    fn append_stages(&self, _rec: &mut StageRec<'_, '_>, _m_rec: &MatrixRec) -> bool {
-        false
+    // Port of: src/shaders/SkBlendShader.cpp#L112-L123 (chrome/m156)
+    fn append_stages(&self, rec: &mut StageRec<'_, '_>, m_rec: &MatrixRec) -> bool {
+        let Some(res0) = append_two_shaders(rec, m_rec, &self.dst, &self.src) else {
+            return false;
+        };
+
+        rec.pipeline.append(Stage::LoadDst(res0));
+        blend_mode_priv::append_stages(self.mode, rec.pipeline);
+        true
     }
 }

@@ -36,11 +36,12 @@ mod basic;
 mod blend;
 mod color;
 mod geometry;
+mod image_sampling;
 mod memory;
 mod sampling;
 
 #[allow(clippy::wildcard_imports)] // the dispatch calls every stage by its op's name
-use self::{basic::*, blend::*, color::*, geometry::*, memory::*, sampling::*};
+use self::{basic::*, blend::*, color::*, geometry::*, image_sampling::*, memory::*, sampling::*};
 
 /// Panics for a stage whose task has not ported it yet.
 macro_rules! not_ported {

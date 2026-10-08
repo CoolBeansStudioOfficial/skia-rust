@@ -372,7 +372,7 @@ si! {
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L2922-L2924 (chrome/m156)
     /// `lerp(from, to, t)`: `mad(to - from, t, from)`.
-    fn lerp(from: F, to: F, t: F) -> F {
+    pub(super) fn lerp(from: F, to: F, t: F) -> F {
         mad(to - from, t, from)
     }
 

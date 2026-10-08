@@ -1,0 +1,270 @@
+// Copyright 2011 Google Inc.
+// Copyright 2026 The skia-rust Authors
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+// Port of: gm/bitmaprect.cpp (chrome/m156)
+//
+// `DrawBitmapRect2` (`bitmaprect_i`, `bitmaprect_s`) draws an image with a linear gradient
+// (`SkShaders::LinearGradient`); it is ported with the gradients.
+
+use crate::prelude::*;
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::{Canvas as CoreCanvas, SrcRectConstraint};
+use skia_rust_core::color::pre_multiply_color;
+use skia_rust_core::image::Image;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::rect::{IRect, Rect, RoundOut};
+use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::scalar::scalar;
+use skia_rust_raster::raster_canvas::RasterCanvas;
+
+// Port of: gm/bitmaprect.cpp#L98-L117 (chrome/m156)
+fn make_3x3_bitmap(bitmap: &mut Bitmap) {
+    const X_SIZE: i32 = 3;
+    const Y_SIZE: i32 = 3;
+
+    let texture_data: [[Color; Y_SIZE as usize]; X_SIZE as usize] = [
+        [Color::RED, Color::WHITE, Color::BLUE],
+        [Color::GREEN, Color::BLACK, Color::CYAN],
+        [Color::YELLOW, Color::GRAY, Color::MAGENTA],
+    ];
+
+    bitmap.alloc_pixels_info(
+        &ImageInfo::new_n32((X_SIZE, Y_SIZE), AlphaType::Opaque, None),
+        None,
+    );
+    let canvas = CoreCanvas::from_bitmap(bitmap, None).expect("a canvas on the bitmap");
+    let mut paint = Paint::default();
+
+    for y in 0..Y_SIZE {
+        for x in 0..X_SIZE {
+            paint.set_color(
+                texture_data[usize::try_from(x).expect("x")][usize::try_from(y).expect("y")],
+            );
+            canvas.draw_irect(IRect::from_xywh(x, y, 1, 1), &paint);
+        }
+    }
+}
+
+// This GM attempts to make visible any issues drawBitmapRect may have
+// with partial source rects. In this case the eight pixels on the border
+// should be half the width/height of the central pixel, i.e.:
+//                         __|____|__
+//                           |    |
+//                         __|____|__
+//                           |    |
+// Port of: gm/bitmaprect.cpp#L119-L152 (chrome/m156)
+struct DrawBitmapRect3Gm;
+
+impl GM for DrawBitmapRect3Gm {
+    fn name(&self) -> String {
+        "3x3bitmaprect".to_string()
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(640, 480)
+    }
+
+    fn bg_color(&self) -> Color {
+        Color::BLACK
+    }
+
+    fn on_draw(&mut self, canvas: &Canvas) {
+        let mut bitmap = Bitmap::new();
+        make_3x3_bitmap(&mut bitmap);
+
+        let src_r = Rect::new(0.5, 0.5, 2.5, 2.5);
+        let dst_r = Rect::new(100.0, 100.0, 300.0, 200.0);
+
+        canvas.draw_image_rect_with_sampling_options(
+            bitmap.as_image().expect("an image"),
+            Some((&src_r, SrcRectConstraint::Strict)),
+            dst_r,
+            SamplingOptions::default(),
+            &Paint::default(),
+        );
+    }
+}
+
+// Port of: gm/bitmaprect.cpp#L154-L172 (chrome/m156)
+fn make_big_bitmap() -> Option<Image> {
+    const G_X_SIZE: i32 = 4096;
+    const G_Y_SIZE: i32 = 4096;
+    const G_BORDER_WIDTH: i32 = 10;
+
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_n32_pixels((G_X_SIZE, G_Y_SIZE), None);
+    let border = pre_multiply_color(Color::new(0x88FF_FFFF));
+    let inside = pre_multiply_color(Color::new(0x88FF_0000));
+    {
+        let mut pixmap = bitmap.peek_pixels_mut().expect("pixels");
+        for y in 0..G_Y_SIZE {
+            for x in 0..G_X_SIZE {
+                if x <= G_BORDER_WIDTH
+                    || x >= G_X_SIZE - G_BORDER_WIDTH
+                    || y <= G_BORDER_WIDTH
+                    || y >= G_Y_SIZE - G_BORDER_WIDTH
+                {
+                    pixmap.set_addr32(x, y, border);
+                } else {
+                    pixmap.set_addr32(x, y, inside);
+                }
+            }
+        }
+    }
+    bitmap.set_immutable();
+    bitmap.as_image()
+}
+
+// This GM attempts to reveal any issues we may have when the GPU has to
+// break up a large texture in order to draw it. The XOR transfer mode will
+// create stripes in the image if there is imprecision in the destination
+// tile placement.
+// Port of: gm/bitmaprect.cpp#L174-L226 (chrome/m156)
+struct DrawBitmapRect4Gm {
+    use_irect: bool,
+    big_image: Option<Image>,
+}
+
+impl DrawBitmapRect4Gm {
+    fn new(use_irect: bool) -> DrawBitmapRect4Gm {
+        DrawBitmapRect4Gm {
+            use_irect,
+            big_image: None,
+        }
+    }
+}
+
+impl GM for DrawBitmapRect4Gm {
+    fn name(&self) -> String {
+        format!("bigbitmaprect_{}", if self.use_irect { "i" } else { "s" })
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(640, 480)
+    }
+
+    fn bg_color(&self) -> Color {
+        Color::new(0x8844_4444)
+    }
+
+    fn on_draw(&mut self, canvas: &Canvas) {
+        if self.big_image.is_none() {
+            self.big_image = make_big_bitmap();
+        }
+        let big_image = self.big_image.as_ref().expect("image");
+
+        let mut paint = Paint::default();
+        paint.set_alpha(128);
+        paint.set_blend_mode(BlendMode::Xor);
+        let sampling = SamplingOptions::default();
+
+        let src_r1 = Rect::new(0.0, 0.0, 4096.0, 2040.0);
+        let dst_r1 = Rect::new(10.1, 10.1, 629.9, 400.9);
+
+        let src_r2 = Rect::new(4085.0, 10.0, 4087.0, 12.0);
+        let dst_r2 = Rect::new(10.0, 410.0, 30.0, 430.0);
+
+        if self.use_irect {
+            canvas.draw_image_rect_with_sampling_options(
+                big_image,
+                Some((
+                    &Rect::from_irect(RoundOut::<IRect>::round_out(&src_r1)),
+                    SrcRectConstraint::Strict,
+                )),
+                dst_r1,
+                sampling,
+                &paint,
+            );
+            canvas.draw_image_rect_with_sampling_options(
+                big_image,
+                Some((
+                    &Rect::from_irect(RoundOut::<IRect>::round_out(&src_r2)),
+                    SrcRectConstraint::Strict,
+                )),
+                dst_r2,
+                sampling,
+                &paint,
+            );
+        } else {
+            canvas.draw_image_rect_with_sampling_options(
+                big_image,
+                Some((&src_r1, SrcRectConstraint::Strict)),
+                dst_r1,
+                sampling,
+                &paint,
+            );
+            canvas.draw_image_rect_with_sampling_options(
+                big_image,
+                Some((&src_r2, SrcRectConstraint::Strict)),
+                dst_r2,
+                sampling,
+                &paint,
+            );
+        }
+    }
+}
+
+// Port of: gm/bitmaprect.cpp#L228-L260 (chrome/m156)
+struct BitmapRectRoundingGm {
+    bm: Bitmap,
+}
+
+impl GM for BitmapRectRoundingGm {
+    fn name(&self) -> String {
+        "bitmaprect_rounding".to_string()
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(640, 480)
+    }
+
+    fn on_once_before_draw(&mut self) {
+        self.bm.alloc_n32_pixels((10, 10), None);
+        self.bm.erase_color(Color::BLUE);
+    }
+
+    // This choice of coordinates and matrix land the bottom edge of the clip (and bitmap dst)
+    // at exactly 1/2 pixel boundary. However, drawBitmapRect may lose precision along the way.
+    // If it does, we may see a red-line at the bottom, instead of the bitmap exactly matching
+    // the clip (in which case we should see all blue).
+    // The correct image should be all blue.
+    fn on_draw(&mut self, canvas: &Canvas) {
+        let mut paint = Paint::default();
+        paint.set_color(Color::RED);
+
+        let r = Rect::from_xywh(1.0, 1.0, 110.0, 114.0);
+        let s: scalar = 0.9;
+        canvas.scale((s, s));
+
+        // the drawRect shows the same problem as clipRect(r) followed by drawcolor(red)
+        canvas.draw_rect(r, &paint);
+        canvas.draw_image_rect_with_sampling_options(
+            self.bm.as_image().expect("an image"),
+            None,
+            r,
+            SamplingOptions::default(),
+            &Paint::default(),
+        );
+    }
+}
+
+// Port of: gm/bitmaprect.cpp#L262 (chrome/m156)
+crate::def_gm!(
+    BitmapRectRounding,
+    BitmapRectRoundingGm { bm: Bitmap::new() }
+);
+
+// Port of: gm/bitmaprect.cpp#L266 (chrome/m156)
+crate::def_gm!(DrawBitmapRect3_ = "DrawBitmapRect3()", DrawBitmapRect3Gm);
+
+// Port of: gm/bitmaprect.cpp#L267-L270 (chrome/m156)
+crate::def_gm!(
+    DrawBitmapRect4_false = "DrawBitmapRect4(false)",
+    DrawBitmapRect4Gm::new(false)
+);
+crate::def_gm!(
+    DrawBitmapRect4_true = "DrawBitmapRect4(true)",
+    DrawBitmapRect4Gm::new(true)
+);
