@@ -106,3 +106,72 @@ pub fn create_typeface_from_resource(
 ) -> Option<Typeface> {
     test_font_mgr().make_from_stream(resource, tt_index)
 }
+
+/// `ToolUtils::EmojiFontFormat`: the emoji test fonts a GM can draw with.
+// Port of: tools/fonts/FontToolUtils.h#L40-L46 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EmojiFontFormat {
+    /// `kCbdt`: embedded color bitmaps (`fonts/cbdt.ttf`).
+    Cbdt,
+    /// `kSbix`: Apple's bitmap format (`fonts/sbix.ttf`).
+    Sbix,
+    /// `kColrV0`: COLR version 0 (`fonts/colr.ttf`).
+    ColrV0,
+    /// `kTest`: the portable `Emoji` family (`TestSVGTypeface`).
+    Test,
+    /// `kSvg`: OpenType SVG (`fonts/SampleSVG.ttf`).
+    Svg,
+}
+
+/// `ToolUtils::EmojiTestSample`: an emoji typeface and the text to draw with it.
+// Port of: tools/fonts/FontToolUtils.h#L48-L51 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct EmojiTestSample {
+    /// `typeface`: `None` when the resource is missing (every resource is, in the portable
+    /// configuration).
+    pub typeface: Option<Typeface>,
+    /// `sampleText`.
+    pub sample_text: &'static str,
+}
+
+/// `ToolUtils::NameForFontFormat`.
+// Port of: tools/fonts/FontToolUtils.cpp#L166-L180 (chrome/m156)
+#[must_use]
+pub fn name_for_font_format(format: EmojiFontFormat) -> &'static str {
+    match format {
+        EmojiFontFormat::Cbdt => "cbdt",
+        EmojiFontFormat::Sbix => "sbix",
+        EmojiFontFormat::ColrV0 => "colrv0",
+        EmojiFontFormat::Test => "test",
+        EmojiFontFormat::Svg => "svg",
+    }
+}
+
+/// `ToolUtils::EmojiSample(format)` for the resource formats. Each is `CreateTypefaceFromResource`
+/// of a file under `fonts/`, which the portable manager cannot read, so the typeface is `None`
+/// exactly as in the goldens (docs/design/text.md §1.2). The GMs that draw with them skip.
+///
+/// # Panics
+///
+/// For [`EmojiFontFormat::Test`], which is `CreatePortableTypeface("Emoji")` and needs
+/// `TestSVGTypeface` (docs/design/text.md T20), not ported yet.
+// Port of: tools/fonts/FontToolUtils.cpp#L143-L165 (chrome/m156), the resource branches
+#[must_use]
+pub fn emoji_sample(format: EmojiFontFormat) -> EmojiTestSample {
+    let sample_text = "\u{1F600} \u{2662}";
+    match format {
+        EmojiFontFormat::Cbdt | EmojiFontFormat::Sbix | EmojiFontFormat::ColrV0 => {
+            EmojiTestSample {
+                typeface: create_typeface_from_resource(None, 0),
+                sample_text,
+            }
+        }
+        EmojiFontFormat::Svg => EmojiTestSample {
+            typeface: create_typeface_from_resource(None, 0),
+            sample_text: "abcdefghij",
+        },
+        EmojiFontFormat::Test => {
+            panic!("EmojiSample(Test) needs TestSVGTypeface, which is not ported yet (T20)")
+        }
+    }
+}
