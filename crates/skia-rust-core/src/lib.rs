@@ -125,6 +125,7 @@ pub mod r_tree;
 pub mod random;
 pub mod raster_pipeline;
 pub mod raster_pipeline_context_utils;
+pub mod read_buffer;
 #[doc(hidden)]
 pub mod read_pixels_rec;
 pub mod record;
@@ -139,6 +140,7 @@ pub mod region_path;
 pub mod rrect;
 pub mod safe32;
 pub mod safe_math;
+pub mod safe_range;
 pub mod scalar;
 pub mod scaler_context;
 pub mod sfnt;
@@ -169,5 +171,6 @@ pub mod typeface_cache;
 pub mod un_pre_multiply;
 pub mod utf;
 pub mod utils;
+pub mod write_buffer;
 #[doc(hidden)]
 pub mod write_pixels_rec;
