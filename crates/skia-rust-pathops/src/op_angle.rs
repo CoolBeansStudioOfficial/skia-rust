@@ -525,9 +525,7 @@ impl OpState {
         let lh_start = i32::from(self.angles[lh.0].sector_start);
         let lh_end = i32::from(self.angles[lh.0].sector_end);
         let rh_start = i32::from(self.angles[rh.0].sector_start);
-        let rh_end = i32::from(self.angles[rh.0].sector_end);
         let this_start = i32::from(self.angles[this.0].sector_start);
-        let this_end = i32::from(self.angles[this.0].sector_end);
         let lr_order: i32;
         if !lr_overlap {
             // no lh/rh sector overlap

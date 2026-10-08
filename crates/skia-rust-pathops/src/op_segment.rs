@@ -15,8 +15,9 @@ use skia_rust_core::path::Verb;
 use skia_rust_core::point::Point;
 
 use crate::op_angle::IncludeType;
+use crate::path_writer::PathWriter;
 use crate::op_curve::{
-    DCurveBuf, curve_d_intersect_ray, curve_d_point_at_t, curve_d_slope_at_t, curve_dd_point_at_t,
+    DCurveSweep,    DCurveBuf, curve_d_intersect_ray, curve_d_point_at_t, curve_d_slope_at_t, curve_dd_point_at_t,
     curve_dd_slope_at_t, curve_intersect_ray, curve_is_vertical, curve_point_at_t, verb_points,
 };
 use crate::op_span::Collapsed;
@@ -152,9 +153,9 @@ impl OpState {
     /// The `SkDCurve::setCubicBounds`/`setQuadBounds` step of `addCubic`/`addQuad`.
     // Port of: src/pathops/SkOpSegment.h#L37-L58 (chrome/m156)
     pub(crate) fn seg_set_poly_bounds(&mut self, seg: SegId) {
-        let (pts, weight, verb) = {
+        let (pts, verb) = {
             let s = &self.segments[seg.0];
-            (s.pts, s.weight, s.verb)
+            (s.pts, s.verb)
         };
         let mut curve = DCurveBuf::default();
         for (dst, src) in curve.pts.iter_mut().zip(pts) {
@@ -575,14 +576,14 @@ impl OpState {
         true
     }
 
-    /// `SkOpSegment::addCurveTo(start, end, path)`.
+    /// `SkOpSegment::addCurveTo(start, end, path)`: writes the curve from `start` to `end`.
     // Port of: src/pathops/SkOpSegment.cpp#L173-L202 (chrome/m156)
     pub(crate) fn seg_add_curve_to(
         &mut self,
         seg: SegId,
         start: SpanId,
         end: SpanId,
-        path: &mut crate::path_writer::PathWriter,
+        path: &mut PathWriter,
     ) -> bool {
         let span_start = self.span_starter(start, end);
         if self.span_already_added(span_start) {
@@ -590,48 +591,42 @@ impl OpState {
         }
         self.span_mark_added(span_start);
         let start_seg = self.span_segment(start);
-        let mut curve_part = crate::op_curve::DCurveSweep::default();
+        let mut curve_part = DCurveSweep::default();
         self.seg_sub_divide(start_seg, start, end, &mut curve_part.curve);
-        curve_part.set_curve_hull_sweep(self.segments[seg.0].verb);
-        let verb = if curve_part.is_curve {
-            self.segments[seg.0].verb
-        } else {
-            Verb::Line
-        };
-        path.deferred_move(self.ptt_pt_of_span(start));
+        let seg_verb = self.segments[seg.0].verb;
+        curve_part.set_curve_hull_sweep(seg_verb);
+        let verb = if curve_part.is_curve { seg_verb } else { Verb::Line };
+        let start_ptt = self.span_ptt(start);
+        let end_ptt = self.span_ptt(end);
+        path.deferred_move(self, start_ptt);
         match verb {
             Verb::Line => {
-                if !path.deferred_line(self.ptt_pt_of_span(end)) {
+                if !path.deferred_line(self, end_ptt) {
                     return false;
                 }
             }
             Verb::Quad => {
-                path.quad_to(curve_part.curve.pts[1].as_sk_point(), self.ptt_pt_of_span(end));
+                path.quad_to(self, curve_part.curve.pts[1].as_sk_point(), end_ptt);
             }
             Verb::Conic => {
                 path.conic_to(
+                    self,
                     curve_part.curve.pts[1].as_sk_point(),
-                    self.ptt_pt_of_span(end),
+                    end_ptt,
                     curve_part.curve.weight,
                 );
             }
             Verb::Cubic => {
                 path.cubic_to(
+                    self,
                     curve_part.curve.pts[1].as_sk_point(),
                     curve_part.curve.pts[2].as_sk_point(),
-                    self.ptt_pt_of_span(end),
+                    end_ptt,
                 );
             }
             _ => {}
         }
         true
-    }
-
-    /// The point of a span's point record (`SkOpSpanBase::ptT()->fPt`), as `addCurveTo` passes it
-    /// to the path writer.
-    #[must_use]
-    fn ptt_pt_of_span(&self, span: SpanId) -> Point {
-        self.ptts[self.span_ptt(span).0].pt
     }
 
     /// `SkOpSegment::subDivide(start, end, edge)`: the sub-curve from `start` to `end`.
@@ -817,7 +812,6 @@ impl OpState {
     // Port of: src/pathops/SkOpSegment.cpp#L421-L489 (chrome/m156)
     pub(crate) fn seg_compute_sum(
         &mut self,
-        seg: SegId,
         start: SpanId,
         end: SpanId,
         include_type: IncludeType,
@@ -1623,7 +1617,7 @@ impl OpState {
         } else {
             self.span_prev(*next_start).expect("span has prev")
         };
-        let calc_winding = self.seg_compute_sum(seg, start, end_near, IncludeType::BinaryOpp);
+        let calc_winding = self.seg_compute_sum(start, end_near, IncludeType::BinaryOpp);
         let sortable = calc_winding != SK_NAN32;
         if !sortable {
             *unsortable = true;
@@ -1735,7 +1729,7 @@ impl OpState {
         } else {
             self.span_prev(*next_start).expect("span has prev")
         };
-        let calc_winding = self.seg_compute_sum(seg, start, end_near, IncludeType::UnaryWinding);
+        let calc_winding = self.seg_compute_sum(start, end_near, IncludeType::UnaryWinding);
         if calc_winding == SK_NAN32 {
             *unsortable = true;
             let s = self.span_starter(start, end);
@@ -2520,7 +2514,10 @@ impl OpState {
 }
 
 /// `SK_NaN32`.
-pub(crate) const SK_NAN32: i32 = i32::MIN + 1;
+/// `SK_NaN32`: `INT32_MIN`. Skia uses it as "not sortable"; it equals `SK_MinS32` only by
+/// coincidence of the bit pattern, not by definition.
+// Port of: include/private/SkMath.h#L23 (chrome/m156)
+pub(crate) const SK_NAN32: i32 = i32::MIN;
 
 /// `SkPointPriv::DistanceToSqd(a, b)`: the squared distance in `double` after subtraction in
 /// `float`, as Skia computes it.

@@ -76,8 +76,9 @@ pub enum OpPhase {
 // Port of: src/pathops/SkPathOpsTypes.h#L47 (chrome/m156)
 pub(crate) const MAX_WINDING_TRIES: i32 = 10;
 
-/// `SK_MinS32`: the "not yet computed" value of winding sums.
-pub(crate) const SK_MIN_S32: i32 = i32::MIN;
+/// `SK_MinS32` (`-SK_MaxS32`): the "not yet computed" value of winding sums.
+// Port of: include/private/SkMath.h#L22 (chrome/m156)
+pub(crate) const SK_MIN_S32: i32 = i32::MIN + 1;
 
 /// `SkOpGlobalState` together with the arenas of its op graph, and the fields of the
 /// `SkOpCoincidence` that the operation owns.
