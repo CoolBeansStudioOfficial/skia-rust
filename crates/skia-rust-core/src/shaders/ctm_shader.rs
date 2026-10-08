@@ -15,11 +15,9 @@ use crate::effect_priv::StageRec;
 use crate::matrix::Matrix;
 use crate::shader::Shader;
 use crate::shaders::color_filter_shader::ColorFilterShader;
-use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
+use crate::shaders::shader_base::{GradientInfo, GradientType, MatrixRec, ShaderBase, ShaderType};
 
 /// A shader drawn with a fixed CTM (`SkCTMShader`).
-///
-/// skia-rust: `asGradient` is not ported (gradients are Phase 3).
 // Port of: src/shaders/SkLocalMatrixShader.h#L65-L97 (chrome/m156)
 #[doc(alias = "SkCTMShader")]
 #[derive(Clone, Debug)]
@@ -50,6 +48,15 @@ impl ShaderBase for CtmShader {
 
     fn shader_type(&self) -> ShaderType {
         ShaderType::CTM
+    }
+
+    // Port of: src/shaders/SkLocalMatrixShader.cpp#L79-L82 (chrome/m156)
+    fn as_gradient(
+        &self,
+        info: Option<&mut GradientInfo<'_>>,
+        local_matrix: Option<&mut Matrix>,
+    ) -> GradientType {
+        self.proxy_shader.as_base().as_gradient(info, local_matrix)
     }
 
     // Port of: src/shaders/SkLocalMatrixShader.cpp#L84-L86 (chrome/m156)

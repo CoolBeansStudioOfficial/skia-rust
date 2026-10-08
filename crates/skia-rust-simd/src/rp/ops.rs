@@ -139,8 +139,8 @@ macro_rules! rp_op_table {
             mirror_x_1                          MirrorX1                        []                                  n  gg B5;
             repeat_x_1                          RepeatX1                        []                                  n  gg B5;
             clamp_x_and_y                       ClampXAndY                      [&'a CoordClampCtx]                 n  gg B5;
-            evenly_spaced_gradient              EvenlySpacedGradient            [&'a GradientCtx<'a>]               n  gp P3;
-            gradient                            Gradient                        [&'a GradientCtx<'a>]               n  gp P3;
+            evenly_spaced_gradient              EvenlySpacedGradient            [&'a GradientCtx]                   n  gp P3;
+            gradient                            Gradient                        [&'a GradientCtx]                   n  gp P3;
             evenly_spaced_2_stop_gradient       EvenlySpaced2StopGradient       [&'a EvenlySpaced2StopGradientCtx]  n  gp P3;
             xy_to_unit_angle                    XyToUnitAngle                   []                                  n  gg P3;
             xy_to_radius                        XyToRadius                      []                                  n  gg P3;

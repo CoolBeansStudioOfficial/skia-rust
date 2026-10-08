@@ -493,7 +493,7 @@ unsupported!(
     &'a TraceVarCtx<'a>,
     &'a TraceScopeCtx<'a>,
     &'a TraceLineCtx<'a>,
-    &'a GradientCtx<'a>,
+    &'a GradientCtx,
     &'a PerlinNoiseCtx<'a>,
     &'a EvenlySpaced2StopGradientCtx,
     &'a Cell<[u32; MAX_STRIDE_HIGHP]>,

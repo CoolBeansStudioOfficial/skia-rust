@@ -7,15 +7,16 @@
 //! `SkLocalMatrixShader`: a shader that draws another shader with a matrix concatenated to its
 //! local space.
 //!
-//! skia-rust: `asGradient` is not ported (gradients are a parallel task); flattening is not
-//! ported (no `SkWriteBuffer`).
+//! skia-rust: flattening is not ported (no `SkWriteBuffer`).
 
 use crate::color::Color4f;
 use crate::effect_priv::StageRec;
 use crate::image::Image;
 use crate::matrix::Matrix;
 use crate::shader::Shader;
-use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType, concat_local_matrices};
+use crate::shaders::shader_base::{
+    GradientInfo, GradientType, MatrixRec, ShaderBase, ShaderType, concat_local_matrices,
+};
 use crate::tile_mode::TileMode;
 
 /// A shader drawn with a local matrix (`SkLocalMatrixShader`).
@@ -62,6 +63,27 @@ impl ShaderBase for LocalMatrixShader {
     // Port of: src/shaders/SkLocalMatrixShader.cpp#L18-L20 (chrome/m156)
     fn is_constant(&self) -> Option<Color4f> {
         self.wrapped_shader.as_base().is_constant()
+    }
+
+    // Port of: src/shaders/SkLocalMatrixShader.cpp#L22-L31 (chrome/m156)
+    fn as_gradient(
+        &self,
+        info: Option<&mut GradientInfo<'_>>,
+        local_matrix: Option<&mut Matrix>,
+    ) -> GradientType {
+        match local_matrix {
+            None => self.wrapped_shader.as_base().as_gradient(info, None),
+            Some(local_matrix) => {
+                let gradient_type = self
+                    .wrapped_shader
+                    .as_base()
+                    .as_gradient(info, Some(&mut *local_matrix));
+                if gradient_type != GradientType::None {
+                    *local_matrix = concat_local_matrices(&self.local_matrix, local_matrix);
+                }
+                gradient_type
+            }
+        }
     }
 
     fn shader_type(&self) -> ShaderType {

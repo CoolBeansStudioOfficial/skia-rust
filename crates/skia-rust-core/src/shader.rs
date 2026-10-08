@@ -24,8 +24,8 @@ use crate::shaders::shader_base::ShaderBase;
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`Shader::ptr_eq`]).
 ///
-/// skia-rust: `isAImage`, `makeWithLocalMatrix` and `makeWithWorkingColorSpace` need shaders that
-/// are not ported yet (image, local-matrix and working-color-space shaders, Phase 3).
+/// skia-rust: `isAImage` and `makeWithWorkingColorSpace` need shaders that are not ported yet
+/// (image and working-color-space shaders, Phase 3).
 // Port of: include/core/SkShader.h#L36-L96 (chrome/m156)
 #[doc(alias = "SkShader")]
 #[derive(Clone)]

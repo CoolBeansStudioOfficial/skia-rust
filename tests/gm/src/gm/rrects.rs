@@ -4,10 +4,14 @@
 // Port of: gm/rrects.cpp (chrome/m156)
 
 use crate::prelude::*;
+use skia_rust_core::color::colors;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Join, Paint, Style};
-use skia_rust_core::point::Vector;
+use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 
 const K_IMAGE_WIDTH: i32 = 640;
 const K_IMAGE_HEIGHT: i32 = 480;
@@ -25,12 +29,13 @@ const K_NUM_RRECTS: usize = K_NUM_SIMPLE_CASES + K_NUM_COMPLEX_CASES + 1 /* extr
 enum Type {
     BwDraw,
     AaDraw,
+    BwClip,
+    AaClip,
 }
 
 // Port of: gm/rrects.cpp#L41-L225 (chrome/m156)
 //
-// skia-rust: the `kBW_Clip_Type` / `kAA_Clip_Type` variants (they need a linear gradient shader)
-// and `kEffect_Type` (GPU only) are not ported yet; see the manifest entries.
+// skia-rust: `kEffect_Type` (GPU only) is not ported; see the manifest entry.
 struct RRectGM {
     type_: Type,
     rrects: [RRect; K_NUM_RRECTS],
@@ -86,6 +91,8 @@ impl GM for RRectGM {
         match self.type_ {
             Type::BwDraw => name.push_str("_draw_bw"),
             Type::AaDraw => name.push_str("_draw_aa"),
+            Type::BwClip => name.push_str("_clip_bw"),
+            Type::AaClip => name.push_str("_clip_aa"),
         }
         name
     }
@@ -111,6 +118,20 @@ impl GM for RRectGM {
             paint.set_anti_alias(true);
         }
 
+        if self.type_ == Type::BwClip || self.type_ == Type::AaClip {
+            // Add a gradient to the paint to ensure local coords are respected.
+            let pts = [Point::new(0.0, 0.0), Point::new(1.5, 1.0)];
+            let colors = [colors::BLACK, colors::YELLOW];
+            paint.set_shader(shaders::linear_gradient(
+                (pts[0], pts[1]),
+                &Gradient::new(
+                    Colors::new(&colors, None, TileMode::Clamp, None),
+                    Interpolation::default(),
+                ),
+                None,
+            ));
+        }
+
         let mut y = 1;
         // lastEdgeType is 0 for the draw types: a single pass
         let mut x = 1;
@@ -127,7 +148,16 @@ impl GM for RRectGM {
                 );
                 canvas.translate((-0.14 * rrect.rect().width(), -0.14 * rrect.rect().height()));
             }
-            canvas.draw_rrect(rrect, &paint);
+            if self.type_ == Type::BwClip || self.type_ == Type::AaClip {
+                let aa_clip = Type::AaClip == self.type_;
+                canvas.clip_rrect(rrect, None, aa_clip);
+                canvas.set_matrix(
+                    &Matrix::scale((K_IMAGE_WIDTH as f32, K_IMAGE_HEIGHT as f32)).into(),
+                );
+                canvas.draw_rect(Rect::from_wh(1.0, 1.0), &paint);
+            } else {
+                canvas.draw_rrect(rrect, &paint);
+            }
 
             canvas.restore();
             x += K_TILE_X;
@@ -207,6 +237,14 @@ fn g_radii() -> [[Vector; 4]; K_NUM_COMPLEX_CASES] {
 }
 
 // Port of: gm/rrects.cpp#L292-L296 (chrome/m156)
+crate::def_gm!(
+    RRectGM_kAA_Clip_Type = "RRectGM(RRectGM::kAA_Clip_Type)",
+    RRectGM::new(Type::AaClip)
+);
+crate::def_gm!(
+    RRectGM_kBW_Clip_Type = "RRectGM(RRectGM::kBW_Clip_Type)",
+    RRectGM::new(Type::BwClip)
+);
 crate::def_gm!(
     RRectGM_kAA_Draw_Type = "RRectGM(RRectGM::kAA_Draw_Type)",
     RRectGM::new(Type::AaDraw)
