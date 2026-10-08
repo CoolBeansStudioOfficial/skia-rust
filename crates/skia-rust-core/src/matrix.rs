@@ -1126,6 +1126,26 @@ impl Matrix {
         true
     }
 
+    /// Sets the matrix to the transform of an `RSXform` (`SkMatrix::setRSXform`).
+    // Port of: src/core/SkMatrix.cpp#L425-L439 (chrome/m156)
+    #[doc(alias = "setRSXform")]
+    pub fn set_rsxform(&mut self, xform: &RSXform) -> &mut Self {
+        self.mat[M_SCALE_X] = xform.s_cos;
+        self.mat[M_SKEW_X] = -xform.s_sin;
+        self.mat[M_TRANS_X] = xform.tx;
+
+        self.mat[M_SKEW_Y] = xform.s_sin;
+        self.mat[M_SCALE_Y] = xform.s_cos;
+        self.mat[M_TRANS_Y] = xform.ty;
+
+        self.mat[M_PERSP_0] = 0.0;
+        self.mat[M_PERSP_1] = 0.0;
+        self.mat[M_PERSP_2] = 1.0;
+
+        self.set_type_mask(UNKNOWN_MASK | ONLY_PERSPECTIVE_VALID_MASK);
+        self
+    }
+
     // ---- rotate ----------------------------------------------------------------------------
 
     /// Sets the matrix to rotate by the given sine and cosine about `pivot` (the origin when
