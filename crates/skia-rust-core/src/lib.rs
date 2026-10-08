@@ -71,6 +71,7 @@ pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod mask;
 pub mod mask_filter;
+pub mod mask_gamma;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
