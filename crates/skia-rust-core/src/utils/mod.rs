@@ -2,3 +2,4 @@
 
 pub mod parse;
 pub mod parse_path;
+pub mod patch_utils;

@@ -19,8 +19,8 @@
 //! * `peek_pixels` and `access_top_layer_pixels` return guards ([`PeekedPixels`],
 //!   [`TopLayerPixels`]) because a `Pixmap` cannot outlive the `RefCell` borrow.
 //! * Not ported (TODO Phase 3, each a no-op or a documented simplification here):
-//!   text, vertices, patches, atlases, drawables, shadows, meshes, annotations,
-//!   edge-AA quads (`SkFont`, `SkVertices`, ... are not ported); image filters on
+//!   text, drawables, shadows, meshes, annotations,
+//!   edge-AA quads (`SkFont`, ... are not ported); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
 //!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
@@ -37,9 +37,10 @@ use crate::alpha_type::AlphaType;
 use crate::arc::Arc;
 use crate::bitmap::Bitmap;
 use crate::blend_mode::BlendMode;
+use crate::blender::Blender;
 use crate::canvas_priv::{AutoCanvasMatrixPaint, MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF};
 use crate::clip_op::ClipOp;
-use crate::color::Color4f;
+use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::{CreateInfo, Device, NoPixelsDevice, clip_shader};
@@ -60,12 +61,15 @@ use crate::point::{IPoint, Point, Vector};
 use crate::rect::{Contains, IRect, Rect, RoundOut};
 use crate::region::Region;
 use crate::rrect::RRect;
+use crate::rsxform::RSXform;
 use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::tile_mode::TileMode;
+use crate::utils::patch_utils;
+use crate::vertices::{VertexMode, Vertices};
 
 /// The lattice of [`Canvas::draw_image_lattice`] (`skia_safe::canvas::lattice`).
 pub mod lattice {
@@ -287,6 +291,41 @@ pub trait CanvasHooks {
     }
     /// `onDrawPath`.
     fn on_draw_path(&mut self, _path: &Path, _paint: &Paint) -> bool {
+        false
+    }
+    /// `onDrawVerticesObject`.
+    fn on_draw_vertices_object(
+        &mut self,
+        _vertices: &Vertices,
+        _mode: BlendMode,
+        _paint: &Paint,
+    ) -> bool {
+        false
+    }
+    /// `onDrawPatch`.
+    fn on_draw_patch(
+        &mut self,
+        _cubics: &[Point; patch_utils::NUM_CTRL_PTS],
+        _colors: Option<&[Color; patch_utils::NUM_CORNERS]>,
+        _tex_coords: Option<&[Point; patch_utils::NUM_CORNERS]>,
+        _mode: BlendMode,
+        _paint: &Paint,
+    ) -> bool {
+        false
+    }
+    /// `onDrawAtlas2`, with the atlas as the shader `atlas->makeShader(sampling)` makes (see
+    /// [`Canvas::draw_atlas`]); `None` when that shader is null.
+    #[allow(clippy::too_many_arguments)] // mirrors onDrawAtlas2
+    fn on_draw_atlas2(
+        &mut self,
+        _atlas_shader: Option<&Shader>,
+        _xform: &[RSXform],
+        _tex: &[Rect],
+        _colors: &[Color],
+        _mode: BlendMode,
+        _cull: Option<&Rect>,
+        _paint: Option<&Paint>,
+    ) -> bool {
         false
     }
     /// `onDrawPicture`.
@@ -1415,6 +1454,162 @@ impl CanvasState {
 
         if self.about_to_draw(&stroke_paint, bounds_ptr, PredrawFlags::NONE) {
             self.top_device_mut().draw_points(mode, pts, &stroke_paint);
+        }
+    }
+
+    /// `drawVertices` fills triangles and ignores mask filter and path effect, so canonicalize
+    /// the paint before checking quick reject.
+    // Port of: src/core/SkCanvas.cpp#L2236-L2243 (chrome/m156)
+    fn clean_paint_for_draw_vertices(paint: &Paint) -> Paint {
+        let mut paint = paint.clone();
+        paint.set_style(Style::Fill);
+        paint.set_mask_filter(None);
+        paint.set_path_effect(None);
+        paint
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1745-L1762 (chrome/m156)
+    fn draw_vertices(&mut self, vertices: &Vertices, mode: BlendMode, paint: &Paint) {
+        // We expect fans to be converted to triangles when building or deserializing SkVertices.
+        debug_assert_ne!(vertices.mode(), VertexMode::TriangleFan);
+
+        self.on_draw_vertices_object(vertices, mode, paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2596-L2609 (chrome/m156)
+    fn on_draw_vertices_object(&mut self, vertices: &Vertices, bmode: BlendMode, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_vertices_object(vertices, bmode, paint)
+        {
+            return;
+        }
+        let simple_paint = Self::clean_paint_for_draw_vertices(paint);
+
+        let bounds = vertices.bounds();
+        if self.internal_quick_reject(bounds, &simple_paint, None) {
+            return;
+        }
+
+        if self.about_to_draw(&simple_paint, Some(bounds), PredrawFlags::NONE) {
+            self.top_device_mut().draw_vertices(
+                vertices,
+                Blender::mode(bmode),
+                &simple_paint,
+                false,
+            );
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2630-L2653 (chrome/m156)
+    fn on_draw_patch(
+        &mut self,
+        cubics: &[Point; patch_utils::NUM_CTRL_PTS],
+        colors: Option<&[Color; patch_utils::NUM_CORNERS]>,
+        tex_coords: Option<&[Point; patch_utils::NUM_CORNERS]>,
+        bmode: BlendMode,
+        paint: &Paint,
+    ) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_patch(cubics, colors, tex_coords, bmode, paint)
+        {
+            return;
+        }
+        let Some(bounds) = Rect::bounds(cubics) else {
+            return; // we don't draw if the bounds are not finite
+        };
+
+        // drawPatch has the same behavior restrictions as drawVertices
+        let simple_paint = Self::clean_paint_for_draw_vertices(paint);
+
+        // Since a patch is always within the convex hull of the control points, we discard it
+        // when its bounding rectangle is completely outside the current clip.
+        if self.internal_quick_reject(&bounds, &simple_paint, None) {
+            return;
+        }
+
+        if self.about_to_draw(&simple_paint, Some(&bounds), PredrawFlags::NONE) {
+            self.top_device_mut().draw_patch(
+                cubics,
+                colors,
+                tex_coords,
+                Blender::mode(bmode),
+                &simple_paint,
+            );
+        }
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1835-L1850 and #L2687-L2708 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // mirrors drawAtlas/onDrawAtlas2
+    fn draw_atlas_with_shader(
+        &mut self,
+        atlas_shader: Option<&Shader>,
+        xform: &[RSXform],
+        tex: &[Rect],
+        colors: &[Color],
+        bmode: BlendMode,
+        cull: Option<&Rect>,
+        paint: Option<&Paint>,
+    ) {
+        let mut count = xform.len().min(tex.len());
+        if !colors.is_empty() {
+            count = count.min(colors.len());
+        }
+        if count == 0 {
+            return;
+        }
+
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_atlas2(
+                atlas_shader,
+                &xform[..count],
+                &tex[..count],
+                if colors.is_empty() {
+                    colors
+                } else {
+                    &colors[..count]
+                },
+                bmode,
+                cull,
+                paint,
+            )
+        {
+            return;
+        }
+
+        // drawAtlas is a combination of drawVertices and drawImage...
+        // (`clean_paint_for_drawImage`)
+        let mut image_paint = Paint::default();
+        if let Some(paint) = paint {
+            image_paint = paint.clone();
+            image_paint.set_style(Style::Fill);
+            image_paint.set_path_effect(None);
+        }
+        let mut real_paint = Self::clean_paint_for_draw_vertices(&image_paint);
+        real_paint.set_shader(atlas_shader.cloned());
+
+        if let Some(cull) = cull
+            && self.internal_quick_reject(cull, &real_paint, None)
+        {
+            return;
+        }
+
+        // drawAtlas should not have mask filters on its paint, so we don't need to worry about
+        // converting its "drawImage" behavior into the paint to work with the auto-mask-filter
+        // system.
+        debug_assert!(real_paint.mask_filter().is_none());
+        if self.about_to_draw(&real_paint, None, PredrawFlags::NONE) {
+            let colors = if colors.is_empty() {
+                colors
+            } else {
+                &colors[..count]
+            };
+            self.top_device_mut().draw_atlas(
+                &xform[..count],
+                &tex[..count],
+                colors,
+                Blender::mode(bmode),
+                &real_paint,
+            );
         }
     }
 
@@ -2636,6 +2831,116 @@ impl Canvas {
         } else {
             self.draw_rect(rect, paint)
         }
+    }
+
+    /// Draws `vertices` (`drawVertices`). `mode` combines the vertex colors, if any, with the
+    /// paint's shader if it has one, or the opaque paint color if not; it is ignored if there
+    /// are no colors. The paint's style, mask filter and path effect are ignored.
+    #[doc(alias = "drawVertices")]
+    pub fn draw_vertices(&self, vertices: &Vertices, mode: BlendMode, paint: &Paint) -> &Self {
+        self.state.borrow_mut().draw_vertices(vertices, mode, paint);
+        self
+    }
+
+    /// Draws a Coons patch: the interpolation of four cubics with shared corners, associating a
+    /// color, and optionally a texture [`Point`], with each corner (`drawPatch`).
+    ///
+    /// `cubics` starts at the top-left corner, in clockwise order, sharing every fourth point.
+    /// `colors` are in top-left, top-right, bottom-right, bottom-left order. If the paint has a
+    /// shader, `tex_coords` maps it as a texture to the corners in the same order (if `None`,
+    /// the shader is mapped using the positions derived from `cubics`). `mode` is ignored if
+    /// `colors` is `None`; otherwise it combines them with the shader or the opaque paint
+    /// color.
+    #[doc(alias = "drawPatch")]
+    pub fn draw_patch<'a>(
+        &self,
+        cubics: &[Point; patch_utils::NUM_CTRL_PTS],
+        colors: impl Into<Option<&'a [Color; patch_utils::NUM_CORNERS]>>,
+        tex_coords: Option<&[Point; patch_utils::NUM_CORNERS]>,
+        mode: BlendMode,
+        paint: &Paint,
+    ) -> &Self {
+        self.state
+            .borrow_mut()
+            .on_draw_patch(cubics, colors.into(), tex_coords, mode, paint);
+        self
+    }
+
+    /// Draws the `tex` rectangles of an atlas, each mapped by the matching `xform` and, if
+    /// `colors` is not empty, blended with its color using `mode` (`drawAtlas`). `atlas_shader`
+    /// is the atlas as a shader (Skia's `atlas->makeShader(sampling)`); [`Canvas::draw_atlas`]
+    /// makes it from an [`Image`].
+    ///
+    /// skia-rust: this is an extra entry point beside `skia-safe`'s `draw_atlas`, for atlases
+    /// given as a shader (the color-shader tests use it). `cull_rect` are the bounds of the
+    /// transformed sprites (may be `None`), and `paint` supplies the color filter, alpha,
+    /// blender and so on (may be `None`).
+    #[doc(alias = "drawAtlas")]
+    #[allow(clippy::too_many_arguments)] // mirrors drawAtlas
+    pub fn draw_atlas_with_shader<'a>(
+        &self,
+        atlas_shader: &Shader,
+        xform: &[RSXform],
+        tex: &[Rect],
+        colors: impl Into<Option<&'a [Color]>>,
+        mode: BlendMode,
+        cull_rect: impl Into<Option<Rect>>,
+        paint: impl Into<Option<&'a Paint>>,
+    ) {
+        let colors = colors.into().unwrap_or(&[]);
+        let cull_rect = cull_rect.into();
+        self.state.borrow_mut().draw_atlas_with_shader(
+            Some(atlas_shader),
+            xform,
+            tex,
+            colors,
+            mode,
+            cull_rect.as_ref(),
+            paint.into(),
+        );
+    }
+
+    /// Draws the `tex` rectangles of the atlas `atlas`, each mapped by the matching `xform` and,
+    /// if `colors` is not empty, blended with its color using `mode` (`drawAtlas`). The atlas is
+    /// sampled as `atlas->makeShader(sampling)` makes it (clamped tiles, no local matrix).
+    /// `cull_rect` are the bounds of the transformed sprites (may be `None`), and `paint`
+    /// supplies the color filter, alpha, blender and so on (may be `None`).
+    #[doc(alias = "drawAtlas")]
+    #[allow(clippy::too_many_arguments)] // mirrors drawAtlas
+    pub fn draw_atlas<'a>(
+        &self,
+        atlas: &Image,
+        xform: &[RSXform],
+        tex: &[Rect],
+        colors: impl Into<Option<&'a [Color]>>,
+        mode: BlendMode,
+        sampling: impl Into<SamplingOptions>,
+        cull_rect: impl Into<Option<Rect>>,
+        paint: impl Into<Option<&'a Paint>>,
+    ) {
+        let colors = colors.into().unwrap_or(&[]);
+        let cull_rect = cull_rect.into();
+        // `SkCanvas::drawAtlas` builds the shader in `onDrawAtlas2`, after the sprite count check,
+        // so an empty draw never makes one.
+        let count = xform.len().min(tex.len());
+        let count = if colors.is_empty() {
+            count
+        } else {
+            count.min(colors.len())
+        };
+        if count == 0 {
+            return;
+        }
+        let atlas_shader = atlas.to_shader((TileMode::Clamp, TileMode::Clamp), sampling, None);
+        self.state.borrow_mut().draw_atlas_with_shader(
+            atlas_shader.as_ref(),
+            xform,
+            tex,
+            colors,
+            mode,
+            cull_rect.as_ref(),
+            paint.into(),
+        );
     }
 
     /// Draws a path (`drawPath`).

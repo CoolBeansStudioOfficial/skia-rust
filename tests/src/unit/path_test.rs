@@ -8,10 +8,13 @@
 // Not ported yet (manifest stays `todo`): DEF_TESTs that need SkCanvas / SkSurface / SkPaint,
 // the stroker (`skpathutils::FillPathWithPaint`), SkRegion::setPath or PathOps:
 //   Paths (draws through SkSurface; also SkRegion::setPath, SkStrokeRec, the stroker),
-//   PathBigCubic, HugeGeometry, ClipPath_nonfinite, skbug_6450, triangle_onehalf, triangle_big,
+//   PathBigCubic, HugeGeometry, ClipPath_nonfinite, skbug_6450,
 //   path_walk_simple_edges_1154864, path_walk_edges_concave_large_dx (SkSurface / SkCanvas).
 
-use crate::{Reporter, def_test, reporter_assert};
+use crate::{Reporter, def_test, def_tier_test, reporter_assert};
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::geometry::{Conic, eval_cubic_at, eval_quad_at, eval_quad_at_pos_tangent};
@@ -32,6 +35,8 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::scalar::{SCALAR_INFINITY, Scalar, scalar, scalar_sqrt};
 use skia_rust_core::utils::parse_path;
+use skia_rust_core::vertices::{VertexMode, Vertices};
+use skia_rust_raster::surfaces;
 
 // Port of: tests/PathTest.cpp#L4126-L4137 (chrome/m156)
 fn test_contains_pt(reporter: &mut Reporter, bu: &PathBuilder, pt: Point, expected_contains: bool) {
@@ -655,6 +660,53 @@ fn path_is_rect_body(reporter: &mut Reporter) {
 
 def_test!(Path_isRect, |reporter| {
     path_is_rect_body(reporter);
+});
+
+// Port of: tests/PathTest.cpp#L5161-L5172 (chrome/m156)
+fn draw_triangle(canvas: &Canvas, pts: &[Point; 3]) {
+    // draw in different ways, looking for an assert
+
+    {
+        let path = Path::polygon(pts, false, None, None);
+        canvas.draw_path(&path, &Paint::default());
+    }
+
+    let colors = [Color::BLACK, Color::BLACK, Color::BLACK];
+    let v = Vertices::new_copy(VertexMode::Triangles, pts, None, Some(&colors), None);
+    canvas.draw_vertices(
+        &v.expect("three vertices"),
+        BlendMode::SrcOver,
+        &Paint::default(),
+    );
+}
+
+// Port of: tests/PathTest.cpp#L5174-L5183 (chrome/m156)
+def_tier_test!(triangle_onehalf, |_reporter| {
+    let mut surface = surfaces::raster_n32_premul((100, 100)).expect("a 100x100 surface");
+
+    let pts = [
+        Point::new(0.499_069_24, 9.632_952),
+        Point::new(0.499_402_37, 7.882_076),
+        Point::new(10.236_327, 0.499_999_97),
+    ];
+    draw_triangle(surface.canvas(), &pts);
+});
+
+// Port of: tests/PathTest.cpp#L5185-L5199 (chrome/m156)
+def_tier_test!(triangle_big, |_reporter| {
+    let mut surface = surfaces::raster_n32_premul((4, 4304)).expect("a 4x4304 surface");
+
+    // The first two points, when sent through our fixed-point SkEdge, can walk negative beyond
+    // -0.5 due to accumulated += error of the slope. We have since make the bounds calculation
+    // be conservative, so we invoke clipping if we get in this situation.
+    // This test was added to demonstrate the need for this conservative bounds calc.
+    // (found by a fuzzer)
+    let pts = [
+        Point::new(0.327_190_52, -114.945_15),
+        Point::new(-0.5, 1.000_038_7),
+        Point::new(0.666_425_8, 4_304.261_7),
+    ];
+    draw_triangle(surface.canvas(), &pts);
 });
 
 // Port of: tests/PathTest.cpp#L5201-L5211 (chrome/m156)

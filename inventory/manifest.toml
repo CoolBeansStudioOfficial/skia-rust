@@ -18847,6 +18847,7 @@ macro = "DEF_GM"
 source = "gm/drawatlas.cpp#L130-L130"
 module = "raster"
 status = "todo"
+reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3)"
 span_hash = "1030d2635462e3bc21464a97b08cfa6d80a658a48143a33ddd9b3ebdbda80687"
 
 [[test]]
@@ -18856,6 +18857,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L237-L261"
 module = "raster"
 status = "todo"
+reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
 span_hash = "fe211e3e56666d46f022244ce48b0201c4e785585e7704c31d52ffeb9e7e5aea"
 
 [[test]]
@@ -18865,6 +18867,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
 status = "todo"
+reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -18874,6 +18877,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L323-L359"
 module = "raster"
 status = "todo"
+reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3); also drawVertices with an image shader"
 span_hash = "fc731956a2b02dc15b8829794375bbb402b983c4ed525f6ecec667b4b5954baa"
 
 [[test]]
@@ -18883,6 +18887,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L227-L234"
 module = "text"
 status = "todo"
+reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
 span_hash = "af07527d631d96df9e50527e3299640dc2fda6f6d477884ff7c214228fbb4f16"
 
 [[test]]
@@ -18892,6 +18897,7 @@ macro = "DEF_GM"
 source = "gm/drawatlascolor.cpp#L158-L158"
 module = "raster"
 status = "todo"
+reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3); also needs text (SkFont, SkTextBlob, fonts; Phase 4)"
 span_hash = "dd543afbca4e4bb20fde0b472b2dec2a3da77b82dcb459ad91d8ef06505130a4"
 
 [[test]]
@@ -22249,6 +22255,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L179-L184"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "d1fb9d8df2147024ca7d607e81c522fb827083b7c7d9531d2941359894e2f140"
 
 [[test]]
@@ -22257,7 +22264,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L187-L207"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4b3d8c939088ed3495e50f135c780cfd5e6ee6c723f54571c41054901f881efb"
 
 [[test]]
@@ -22267,6 +22274,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L164-L169"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
 span_hash = "f7eaf52667d67f81907d2777881d236c2fe1f6fef286fd35047d06e955b257ac"
 
 [[test]]
@@ -22276,6 +22284,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L170-L178"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
 span_hash = "2a358762507a1497dafd5c77acf95ea64898c57904b8fd95a72fe5966198081e"
 
 [[test]]
@@ -22285,6 +22294,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L158-L163"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "0f01e113501adc87d960539078f903c641372f9d9a33aca141f6804d464175fb"
 
 [[test]]
@@ -24896,6 +24906,7 @@ macro = "DEF_GM"
 source = "gm/vertices.cpp#L207-L207"
 module = "effects"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "4d8869c55c1eb6620ad0f14f2460a0de7ea469ffde7a302af3f2bac26e920276"
 
 [[test]]
@@ -24905,6 +24916,7 @@ macro = "DEF_GM"
 source = "gm/vertices.cpp#L206-L206"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "6491a43f0f8761c4e0b21855acb74f443bc9997132cb2c9144ff9e5de81bebbd"
 
 [[test]]
@@ -24914,6 +24926,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/vertices.cpp#L332-L352"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
 span_hash = "dc5f0a12aba2a9cba230e1f14647c8f1e8b10ac6eceb5caeb53c69f3f2ed6e43"
 
 [[test]]
@@ -24923,6 +24936,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/vertices.cpp#L287-L291"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "a3baaca4c12141e5822159073a24f516e992525a6626259c435f203059c5da12"
 
 [[test]]
@@ -24932,6 +24946,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/vertices.cpp#L356-L371"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
 span_hash = "5e9769152b7192470e6e2feedcfed93135ced3847a3ff70c782ea306ae56fe27"
 
 [[test]]
@@ -24941,6 +24956,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/vertices.cpp#L295-L330"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3) (ToolUtils::create_checkerboard_shader)"
 span_hash = "ca8e4a04b28fdf53fb18fb4c71de182ace1662452e40bbac4fb578a926a1a3b7"
 
 [[test]]
@@ -24950,6 +24966,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/vertices.cpp#L263-L284"
 module = "raster"
 status = "todo"
+reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
 span_hash = "f700f459a3b29821424ed571fc0bed8e3446da15be3f12bc5c30438666324f26"
 
 [[test]]
@@ -38689,7 +38706,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5185-L5199"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "abffa1755b573350d69fc97a1775a39cee683a8add50ffaf45ee5e8b3ebd0f64"
 
 [[test]]
@@ -38698,7 +38715,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5174-L5183"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5d65515ef578d884169277e3cb37f7e05ef6b42941148561f2dbcc88cbb72093"
 
 [[test]]
@@ -49257,8 +49274,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L86-L147"
 module = "core"
-status = "todo"
-reason = "needs SkVertices (not ported yet); Draw::drawVertices/drawAtlas are left for it"
+status = "passing"
 span_hash = "a5299b684c84e23485a36e600f08610f88fcc9659a4132ea4d9249b345fe5bfe"
 
 [[test]]
@@ -49267,8 +49283,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L155-L174"
 module = "core"
-status = "todo"
-reason = "needs SkVertices and Canvas (D6)"
+status = "passing"
 span_hash = "fd3b3d5044848229b2c287514f1415bc69c979611379f638a6ad71d4e2e9bae6"
 
 [[test]]
@@ -49277,8 +49292,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VerticesTest.cpp#L176-L213"
 module = "core"
-status = "todo"
-reason = "needs SkVertices (not ported yet)"
+status = "passing"
 span_hash = "f1efe3656e6eeabf87e00bceb6ec1bbce897de8b8f67aa1d1c2e981af88d1b09"
 
 [[test]]

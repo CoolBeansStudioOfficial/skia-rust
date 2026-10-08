@@ -14,10 +14,12 @@
 //! * `skcpu::Draw`'s methods are `const` but draw into `fDst`'s pixels through blitters; the
 //!   Rust methods take `&mut self` because the blitter holds the `&mut` pixels. `Draw draw(*this)`
 //!   (a copy that changes `fCTM`) is [`Draw::reborrow`] plus a field assignment.
-//! * Not ported yet (they need vertices, text or mask filters, ported in D7 and Phase 3):
+//! * `drawVertices`/`drawFixedVertices` and `drawAtlas` are in [`crate::draw_vertices`] and
+//!   [`crate::draw_atlas`] (`SkDraw_vertices.cpp`, `SkDraw_atlas.cpp`).
+//! * Not ported yet (they need text or mask filters, ported in D7 and Phase 3):
 //!   `drawSprite`, `drawBitmapAsMask`,
-//!   `drawGlyphRunList`/`paintMasks` (text), `drawVertices`/`drawFixedVertices` and `drawAtlas`
-//!   (`SkVertices`), and the mask filter branches of `drawDevPath`/`drawRRectNinePatch`
+//!   `drawGlyphRunList`/`paintMasks` (text), and the mask filter branches of
+//!   `drawDevPath`/`drawRRectNinePatch`
 //!   (`SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect`). Where a mask filter would have
 //!   drawn, the geometry is drawn unfiltered. See the "As implemented in D5" design note.
 //! * `BitmapDevicePainter`, the interface text and bitmaps are painted through, is not ported

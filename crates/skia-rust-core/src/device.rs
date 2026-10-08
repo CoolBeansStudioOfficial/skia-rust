@@ -13,7 +13,7 @@
 //! skia-rust: `SkDevice` is a trait ([`Device`]) over a [`DeviceState`] each implementation
 //! embeds (`state`/`state_mut`). `SkDevice` is internal to Skia (`skia-safe` does not expose it),
 //! so the names are mechanical. Everything that needs types ported later stays out of the trait
-//! until its task adds it, each with a default body like Skia's: images, vertices, atlases,
+//! until its task adds it, each with a default body like Skia's: images,
 //! meshes, text, drawables, shadows, special images, layers' `makeSurface` and `drawDevice`
 //! (tasks D6/D7 and Phase 3, listed in `docs/design/raster-pipeline.md` "As implemented in
 //! D5"). `SkRefCnt` is not modelled: a canvas owns its devices.
@@ -21,6 +21,7 @@
 use crate::alpha_type::AlphaType;
 use crate::arc::{Arc, create_draw_arc_path};
 use crate::bitmap::Bitmap;
+use crate::blender::Blender;
 use crate::canvas::{PointMode, SrcRectConstraint};
 use crate::clip_op::ClipOp;
 use crate::color::Color;
@@ -36,18 +37,33 @@ use crate::matrix_priv::{is_scale_translate_as_m33, map_rect};
 use crate::paint::{Paint, Style};
 use crate::path::Path;
 use crate::path_builder::PathBuilder;
-use crate::path_types::PathFillType;
+use crate::path_types::{PathDirection, PathFillType};
 use crate::pixmap::Pixmap;
-use crate::point::IPoint;
+use crate::point::{IPoint, Point};
 use crate::rect::{IRect, Rect, RoundOut, rect_priv};
 use crate::region::{Iterator as RegionIterator, Region};
 use crate::rrect::RRect;
+use crate::rsxform::RSXform;
 use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
 use crate::special_image::SpecialImage;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
+use crate::utils::patch_utils;
+use crate::vertices::{Builder, BuilderFlags, VertexMode, Vertices};
+
+/// The two triangles of a quad, as 6 points (`quad_to_tris`).
+// Port of: src/core/SkDevice.cpp#L193-L205 (chrome/m156)
+fn quad_to_tris(tris: &mut [Point], quad: &[Point; 4]) {
+    tris[0] = quad[0];
+    tris[1] = quad[1];
+    tris[2] = quad[2];
+
+    tris[3] = quad[0];
+    tris[4] = quad[2];
+    tris[5] = quad[3];
+}
 
 /// What [`Device::create_device`] is asked to make (`SkDevice::CreateInfo`).
 ///
@@ -464,6 +480,89 @@ pub trait Device {
         let is_fill_no_path_effect = Style::Fill == paint.style() && paint.path_effect().is_none();
         let path = create_draw_arc_path(arc, is_fill_no_path_effect);
         self.draw_path(&path, paint);
+    }
+
+    /// Draws triangles from `vertices` with `blender` combining the vertex colors with the
+    /// paint's shader (or its opaque color); `blender` is ignored if there are no vertex colors
+    /// (`drawVertices`). If `skip_color_xform` is true, then the implementation should assume
+    /// that the provided vertex colors are already in the destination color space.
+    #[doc(alias = "drawVertices")]
+    fn draw_vertices(
+        &mut self,
+        vertices: &Vertices,
+        blender: Blender,
+        paint: &Paint,
+        skip_color_xform: bool,
+    );
+
+    /// Draws a Coons patch (`drawPatch`). The default makes vertices and calls
+    /// [`draw_vertices`](Self::draw_vertices).
+    // Port of: src/core/SkDevice.cpp#L154-L163 (chrome/m156)
+    #[doc(alias = "drawPatch")]
+    fn draw_patch(
+        &mut self,
+        cubics: &[Point; patch_utils::NUM_CTRL_PTS],
+        colors: Option<&[Color; patch_utils::NUM_CORNERS]>,
+        tex_coords: Option<&[Point; patch_utils::NUM_CORNERS]>,
+        blender: Blender,
+        paint: &Paint,
+    ) {
+        let lod = patch_utils::get_level_of_detail(cubics, self.state().local_to_device());
+        let color_space = self.state().image_info().color_space();
+        let vertices = patch_utils::make_vertices(
+            cubics,
+            colors,
+            tex_coords,
+            lod.width,
+            lod.height,
+            color_space.as_ref(),
+        );
+        if let Some(vertices) = vertices {
+            self.draw_vertices(&vertices, blender, paint, false);
+        }
+    }
+
+    /// Draws the `tex` rectangles of the atlas shader of `paint`, each transformed by the
+    /// matching `xform` and (if `colors` is not empty) blended with its color
+    /// (`drawAtlas`). The default makes vertices and calls
+    /// [`draw_vertices`](Self::draw_vertices).
+    // Port of: src/core/SkDevice.cpp#L207-L237 (chrome/m156)
+    #[doc(alias = "drawAtlas")]
+    fn draw_atlas(
+        &mut self,
+        xform: &[RSXform],
+        tex: &[Rect],
+        colors: &[Color],
+        blender: Blender,
+        paint: &Paint,
+    ) {
+        let quad_count = xform.len();
+        let tri_count = quad_count << 1;
+        let vertex_count = tri_count * 3;
+        let mut flags = BuilderFlags::HAS_TEX_COORDS;
+        if !colors.is_empty() {
+            flags |= BuilderFlags::HAS_COLORS;
+        }
+        let mut builder = Builder::new(VertexMode::Triangles, vertex_count, 0, flags);
+
+        for (i, (xform, tex)) in xform.iter().zip(tex).enumerate() {
+            let tmp = xform.to_quad((tex.width(), tex.height()));
+            quad_to_tris(&mut builder.positions()[6 * i..6 * i + 6], &tmp);
+
+            let tex_quad = tex.to_quad(PathDirection::CW);
+            if let Some(v_tex) = builder.tex_coords() {
+                quad_to_tris(&mut v_tex[6 * i..6 * i + 6], &tex_quad);
+            }
+
+            if !colors.is_empty()
+                && let Some(v_col) = builder.colors()
+            {
+                v_col[6 * i..6 * i + 6].fill(colors[i]);
+            }
+        }
+        if let Some(vertices) = builder.detach() {
+            self.draw_vertices(&vertices, blender, paint, false);
+        }
     }
 
     /// Whether `SkCanvas` should simulate mask filters with a layer and `drawCoverageMask`
@@ -975,6 +1074,7 @@ impl Device for NoPixelsDevice {
     fn draw_oval(&mut self, _oval: &Rect, _paint: &Paint) {}
     fn draw_rrect(&mut self, _rr: &RRect, _paint: &Paint) {}
     fn draw_path(&mut self, _path: &Path, _paint: &Paint) {}
+    fn draw_vertices(&mut self, _: &Vertices, _: Blender, _: &Paint, _: bool) {}
 }
 
 /// Sets a device's local-to-device transform for the lifetime of the guard

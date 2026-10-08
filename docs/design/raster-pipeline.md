@@ -2188,6 +2188,60 @@ record, records, record_canvas, record_draw, record_opts, record_pattern, canvas
   `RecordTestUtils.h`'s helpers in `unit::record_test_utils` (`assert_type`, `count_instances_of_type`).
   There is no oracle for the recording layer; playback correctness is the D5/D6 draws under it.
 
+**As implemented for vertices, patches and atlases** (`skia_rust_core::{vertices, vert_state, rsxform,
+utils::patch_utils, shaders::{tri_color_shader, transform_shader, blend_shader}}`,
+`skia_rust_raster::{draw_vertices, draw_atlas}`; completes the `drawVertices`/`drawAtlas` part of D5 and
+the vertices part of D6):
+
+- **Files.** `SkVertices.{h,cpp}` + `SkVerticesPriv.h` is `vertices` (`Vertices` as an `Arc` over `Vec`s,
+  `Builder`, `BuilderFlags`, `VertexMode`, and `vertices_priv`); `SkVertState` is `vert_state`;
+  `SkRSXform` is `rsxform` (+ `Matrix::set_rsxform`); `SkPatchUtils` is `utils::patch_utils`
+  (forward-differencing `FwDCubicEvaluator`, `GetLevelOfDetail`, `MakeVertices` with the colors
+  converted through `convert_pixels` as Skia does); `SkDraw_vertices.cpp` and `SkDraw_atlas.cpp` are the
+  two `impl Draw` files `draw_vertices` and `draw_atlas`; `SkTriColorShader` and `SkTransformShader`
+  are shaders in core. `Device` gained `draw_vertices` (required, as the pure virtual), `draw_patch` and
+  `draw_atlas` (Skia's default bodies, which build vertices); `BitmapDevice` implements `draw_vertices`
+  and `draw_atlas` with `BDDraw`. `Canvas` has `draw_vertices`, `draw_patch` and
+  `draw_atlas_with_shader` (the body of `onDrawAtlas2` after `atlas->makeShader(sampling)`) and
+  `draw_atlas(&Image, ..)`, which makes that shader with `Image::to_shader` and calls it, with the `CanvasHooks` entries a recording
+  canvas needs (`on_draw_vertices_object`, `on_draw_patch`, `on_draw_atlas2`).
+- **Pipeline contexts are immutable, Skia's are not.** Skia builds the shader tree and the blitter once
+  per `drawVertices` and mutates `SkTriColorShader::fM43/fM33`, `SkTransformShader::fMatrixStorage` (and
+  in `drawAtlas` the `uniform_color_dst` context) between triangles, because the pipeline points at
+  them. A `Stage` holds `&'a [f32; N]`, so each triangle (each atlas sprite) builds its own shaders,
+  pipeline and `RasterPipelineBlitter` with its own arena instead. The stage list, the contexts' values
+  and the order of the arithmetic are the same, so the pixels are too; the cost is a blitter per
+  triangle (the pipeline compiles lazily per blit kind). Skia makes the blitter before the loop and
+  draws nothing if it fails: the port does a dry run of the same construction first.
+- **Scratch memory for shaders.** `SkBlendShader::appendStages` (needed by every vertices draw that
+  blends colors with a shader or the paint color, and by `Blend` shaders in general) stores the
+  first child's output in arena memory the pipeline writes at run time. Stages name writable memory
+  by `MemSlot`, bound per run, so the shader reserves bytes with `ArenaAlloc::alloc_scratch` and the
+  `RasterPipelineBlitter` binds a zeroed buffer of `scratch_bytes()` to `SHADER_SCRATCH` (the
+  image port, `docs/design/images.md`, made the same mechanism; this branch carries the same code).
+  `MemPtr`s are not tail-patched, as in Skia.
+- **Blenders.** `SkShaders::Blend(sk_sp<SkBlender>, ..)` for a blender that is not a blend mode builds a
+  runtime effect (not ported): `shaders::blend_blender` returns `None` and the vertices draw nothing,
+  where Skia would draw. Blend-mode blenders are the only ones `SkCanvas::drawVertices(mode)` makes.
+- **Exactness evidence.** `patch_alpha_test` (`gm/patch.cpp`: `drawPatch` with per-vertex colors and
+  `kDst` against `drawPath`) matches the oracle goldens on every config and tier: it covers the patch
+  vertices, `convert_colors`, `SkTriColorShader`, `fill_triangle` and the pipeline for it. Every other
+  `drawVertices`/`drawPatch`/`drawAtlas` GM needs a gradient or image shader (`vertices*`,
+  `patch_primitive/_alpha/_image*`, `draw-atlas*`, `compare_atlas_vertices`) and stays `todo`.
+  The blend-shader, transform-shader and atlas paths are checked by `draw_vertices_tests.rs` against
+  pictures made by an independent route (a rect with `shaders::blend(mode, color, color)` for every
+  blend mode of the list, texture coordinates and collapsed ones, the atlas transforms, alpha, the
+  perspective CTM, `skipColorXform`) on all five tiers, on an F16 destination so that both sides run
+  highp (the color-shader pictures would otherwise be lowp, which rounds differently from the highp
+  `matrix_4x3` of the vertices). The ported `Vertices_clipping`, `Vertices_invalid` and the PathTest
+  `triangle_onehalf`/`triangle_big` draw triangles at the edges of `FillTriangle`'s ranges (huge, and
+  nearly degenerate).
+- **Serialization.** `SkVerticesPriv::encode`/`Decode` (for `VerticesTest::Vertices`) run on the subset of
+  `SkWriter32`/`SkBinaryWriteBuffer`/`SkReadBuffer`/`SkSafeRange` they use (`write_buffer`, `read_buffer`,
+  `safe_range`); the rest of the buffers, which need paths, paints, flattenables and so on, is for the
+  serialization of pictures.
+- **Not ported.** `SkCanvas::drawAtlas(const SkImage*, ..)`, `drawMesh`.
+
 ### Wave E — GM sweep and benches (Sonnet, wide fan-out)
 
 After D6, agents take GM files in feature groups (rects/rrects/ovals; fills and fill types;

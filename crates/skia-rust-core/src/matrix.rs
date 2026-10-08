@@ -18,7 +18,6 @@
 //! # Not ported yet
 //! * `SkMatrix::mapRect` for matrices with perspective needs `SkPathBuilder::transform` and
 //!   `SkPathPriv::PerspectiveClip` (`SkPath`, `SkEdgeClipper`); [`Matrix::map_rect`] panics there.
-//! * `SkMatrix::setRSXform` needs `SkRSXform`.
 //! * `SkMatrix::dump` needs `SkString` / `SkDebugf`.
 //! * `SkTreatAsSprite` needs `SkSamplingOptions`.
 
@@ -29,6 +28,7 @@ use crate::path_builder::PathBuilder;
 use crate::point::{Point, Vector};
 use crate::point3::Point3;
 use crate::rect::Rect;
+use crate::rsxform::RSXform;
 use crate::scalar::{
     SCALAR_MAX, SCALAR_NEARLY_ZERO, Scalar, degrees_to_radians, double_to_scalar, scalar,
     scalar_abs, scalar_cos_snap_to_zero, scalar_invert, scalar_sin_snap_to_zero, scalar_sqrt,
@@ -889,6 +889,26 @@ impl Matrix {
     pub fn set_9(&mut self, buffer: &[scalar; 9]) -> &mut Self {
         self.mat = *buffer;
         self.set_type_mask(UNKNOWN_MASK);
+        self
+    }
+
+    /// Sets the matrix to the transform of an [`RSXform`] (`SkMatrix::setRSXform`).
+    // Port of: src/core/SkMatrix.cpp#L425-L439 (chrome/m156)
+    #[doc(alias = "setRSXform")]
+    pub fn set_rsxform(&mut self, xform: &RSXform) -> &mut Self {
+        self.mat[M_SCALE_X] = xform.scos;
+        self.mat[M_SKEW_X] = -xform.ssin;
+        self.mat[M_TRANS_X] = xform.tx;
+
+        self.mat[M_SKEW_Y] = xform.ssin;
+        self.mat[M_SCALE_Y] = xform.scos;
+        self.mat[M_TRANS_Y] = xform.ty;
+
+        self.mat[M_PERSP_0] = 0.0;
+        self.mat[M_PERSP_1] = 0.0;
+        self.mat[M_PERSP_2] = 1.0;
+
+        self.set_type_mask(UNKNOWN_MASK | ONLY_PERSPECTIVE_VALID_MASK);
         self
     }
 
