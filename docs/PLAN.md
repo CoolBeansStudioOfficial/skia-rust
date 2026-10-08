@@ -40,7 +40,7 @@ A faithful Rust port of [Skia](https://skia.org) in safe, idiomatic Rust, with a
 | GPU reference environments | Vulkan/lavapipe and D3D12/WARP gate merges; real hardware (RTX 4070 SUPER) is report-only |
 | Text | Fontations (`skrifa`, pinned to Skia's exact versions). The m156 goldens were rendered with Skia's portable test fonts (`--nativeFonts false`, no Fontations); see `docs/design/text.md` |
 | Shaping / Unicode | HarfRust + ICU4X |
-| SkSL | Full port of Skia's SkSL compiler, including the WGSL and Raster Pipeline code generators |
+| SkSL | Full port of Skia's SkSL compiler, including the WGSL, pipeline-stage and Raster Pipeline code generators; built-in modules compiled from Skia's embedded module text; crate below core (`docs/design/sksl.md`) |
 | Codecs | Faithful Rust ports of the decode paths of the libraries Skia wraps (libjpeg-turbo, libwebp, Wuffs GIF, libpng / Rust `png` as Skia configures it), incl. JPEG gainmaps. Scope = codecs enabled in Skia's default GN build at the pin; others (AVIF, JPEG XL, RAW) excluded with reason until revisited |
 | Goldens | Generated on the local server (Windows, Ryzen 7 7800X3D, RTX 4070 SUPER) and **published** as release artifacts |
 | CI platforms | Windows x64, Linux x64, macOS arm64, Linux aarch64, wasm32 |
@@ -65,13 +65,15 @@ skia-rust/
 ├─ crates/
 │  ├─ skia-rust/              # facade: re-exports, feature flags
 │  ├─ skia-rust-simd/         # the ONLY crate allowed to use `unsafe`; SkVx equivalent + per-tier kernels
+│  ├─ skia-rust-base/         # Skia's src/base-level math (floating point, safe math, matrix invert, half, checksum)
+│  ├─ skia-rust-sksl/         # SkSL front end, IR, optimizer; RP + pipeline-stage + WGSL code generators
+│  │                          #   (below core; RuntimeEffect lives in core: docs/design/sksl.md §2)
 │  ├─ skia-rust-core/         # scalars, Point/Rect/RRect, Matrix/M44, Path/PathBuilder, Color, ImageInfo,
 │  │                          #   Pixmap/Bitmap/Image, Paint, Canvas, clip stack, Picture, Surface
 │  ├─ skia-rust-raster/       # scan conversion (non-AA, supersampled, analytic AA), blitters,
 │  │                          #   Raster Pipeline (highp/lowp), stroker, dashing
 │  ├─ skia-rust-skcms/        # skcms port (color management)
 │  ├─ skia-rust-effects/      # shaders, gradients, color/mask/image filters, path effects, blenders
-│  ├─ skia-rust-sksl/         # SkSL front end, IR, optimizer; RP + WGSL code generators
 │  ├─ skia-rust-pathops/      # boolean path ops
 │  ├─ skia-rust-text/         # typeface backends: Fontations (skrifa), custom typefaces, remote glyph cache
 │  │                          #   (Font/Typeface/strikes/TextBlob engine is in core: docs/design/text.md §3)
@@ -95,10 +97,10 @@ skia-rust/
 └─ docs/                      # PLAN.md, PORTING.md, API_MAPPING.md, UNSAFE.md, EXCLUSIONS.md
 ```
 
-**Layering** (enforced by crate dependencies): `simd` → `core` → `skcms` / `raster` → `effects` / `sksl` / `pathops` → `text` / `codec` → `gpu` → `shaper` / `unicode` → `paragraph` / `svg` / `skottie` / `pdf` → facade. No crate may depend on a crate above it.
+**Layering** (enforced by crate dependencies): `simd` → `base` → `sksl` → `core` → `skcms` / `raster` → `effects` / `pathops` → `text` / `codec` → `gpu` → `shaper` / `unicode` → `paragraph` / `svg` / `skottie` / `pdf` → facade. No crate may depend on a crate above it.
 
 ### 3.2 Facade features
-`default = ["raster", "effects", "pathops", "codec", "text"]`; opt-in: `gpu`, `sksl` (pulled in by `gpu` / runtime effects), `paragraph`, `svg`, `skottie`, `pdf`.
+`default = ["raster", "effects", "pathops", "codec", "text"]` (SkSL and runtime effects are always built: core depends on them, as Skia's CPU build does); opt-in: `gpu` (turns on `skia-rust-sksl/wgsl`), `paragraph`, `svg`, `skottie`, `pdf`.
 
 ### 3.3 API conventions (detailed in `docs/PORTING.md` §3 and `docs/API_MAPPING.md`)
 - **Reference API: rust-skia's `skia-safe`** (pinned in `inventory/api-reference.toml`). skia-rust matches its type names, method names, signatures and module paths, so users can switch with minimal edits. The points below apply where `skia-safe` has no equivalent or exposes FFI plumbing.

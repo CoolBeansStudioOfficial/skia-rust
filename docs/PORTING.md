@@ -24,6 +24,7 @@ If a test still fails after 2 full attempts, follow §10 (escalation). Never wea
 | `src/opts/*`, per-CPU kernels | `skia_rust_simd` |
 | `modules/skcms` | `skia-rust-skcms` crate |
 | `src/effects`, `src/shaders` | `skia-rust-effects` (Phase 3) |
+| `src/sksl` (compiler, RP and WGSL back ends) | `skia-rust-sksl` (`docs/design/sksl.md`); `SkRuntimeEffect` and the runtime shader/color filter/blender stay in core |
 | `src/pathops` | `skia-rust-pathops` (Phase 4) |
 
 - Module names are the snake-cased file name without `Sk` (`SkRRect` → `rrect`, `SkM44` → `m44`, `SkPathBuilder` → `path_builder`).
