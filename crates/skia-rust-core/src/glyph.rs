@@ -21,10 +21,12 @@ use crate::packed_glyph_id::PackedGlyphId;
 use crate::path::Path;
 use crate::picture::Picture;
 use crate::point::{IPoint, Point};
+use crate::read_buffer::ReadBuffer;
 use crate::rect::IRect;
 use crate::rect::Rect;
 use crate::scalar::{scalar, scalar_floor_to_int};
 use crate::scaler_context::AxisAlignment;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
 // Port of: src/core/SkGlyph.h#L573 (chrome/m156)
@@ -823,6 +825,185 @@ impl Glyph {
     #[must_use]
     pub fn extra_bits(&self) -> u16 {
         self.scaler_context_bits
+    }
+
+    /// Sets the metrics the way `SkGlyphTestPeer::SetGlyph1`/`SetGlyph2` do in
+    /// `tests/SkGlyphTest.cpp`, which write the private fields directly. Test-only.
+    // Port of: tests/SkGlyphTest.cpp#L65-L92 (SkGlyphTestPeer, chrome/m156)
+    #[doc(hidden)]
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ peer, which sets each field
+    pub fn set_metrics_for_testing(
+        &mut self,
+        advance: Point,
+        left: i16,
+        top: i16,
+        width: u16,
+        height: u16,
+        format: MaskFormat,
+    ) {
+        self.advance_x = advance.x;
+        self.advance_y = advance.y;
+        self.left = left;
+        self.top = top;
+        self.width = width;
+        self.height = height;
+        self.mask_format = format;
+    }
+}
+
+/// The mask format with the given `uint8_t` value (`SkMask::Format`), or `None` past the last
+/// one.
+// Port of: src/core/SkMask.h#L26-L37 (chrome/m156)
+fn mask_format_from_u8(format: u8) -> Option<MaskFormat> {
+    match format {
+        0 => Some(MaskFormat::BW),
+        1 => Some(MaskFormat::A8),
+        2 => Some(MaskFormat::ThreeD),
+        3 => Some(MaskFormat::Argb32),
+        4 => Some(MaskFormat::Lcd16),
+        5 => Some(MaskFormat::Sdf),
+        _ => None,
+    }
+}
+
+// Port of: src/core/SkGlyph.cpp#L103-L125 (buffer flattening, chrome/m156)
+impl Glyph {
+    /// `SkGlyph::MakeFromBuffer`: reads the metrics that [`flatten_metrics`](Self::flatten_metrics)
+    /// wrote. Returns `None`, and leaves the buffer invalid, if the mask format is not valid.
+    #[doc(alias = "MakeFromBuffer")]
+    #[must_use]
+    pub fn make_from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Glyph> {
+        debug_assert!(buffer.is_valid());
+        let packed_id = PackedGlyphId::from_raw(buffer.read_uint());
+        let advance = buffer.read_point();
+        let dimensions = buffer.read_uint();
+        let left_top = buffer.read_uint();
+        // `SkTo<SkMask::Format>`: the enum has a `uint8_t` underlying type, so the word is cut to
+        // its low byte before the validity check.
+        #[allow(clippy::cast_possible_truncation)] // mirrors the C++ conversion to uint8_t
+        let format_byte = buffer.read_uint() as u8;
+        let format = mask_format_from_u8(format_byte);
+        if !buffer.validate(MaskFormat::is_valid_format(format_byte)) {
+            return None;
+        }
+        let format = format?;
+
+        let mut glyph = Glyph::new(packed_id);
+        glyph.advance_x = advance.x;
+        glyph.advance_y = advance.y;
+        // The 16-bit fields are taken from the words as the C++ does (the casts keep the low
+        // bits, and a negative `left` or `top` comes back through two's complement).
+        #[allow(clippy::cast_possible_truncation)] // the words hold 16-bit fields
+        {
+            glyph.width = (dimensions >> 16) as u16;
+            glyph.height = (dimensions & 0xffff) as u16;
+            glyph.left = (left_top >> 16) as i16;
+            glyph.top = (left_top & 0xffff) as i16;
+        }
+        glyph.mask_format = format;
+        Some(glyph)
+    }
+
+    /// `SkGlyph::flattenMetrics`: writes the id, advances, bounds and format of the glyph.
+    // Port of: src/core/SkGlyph.cpp#L340-L351 (chrome/m156)
+    #[doc(alias = "flattenMetrics")]
+    pub fn flatten_metrics(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_uint(self.id.value());
+        buffer.write_point(Point::new(self.advance_x, self.advance_y));
+        buffer.write_uint((u32::from(self.width) << 16) | u32::from(self.height));
+        // Negative `left` and `top` are written as their 16-bit two's complement, so they do not
+        // sign-extend into the other half of the word.
+        #[allow(clippy::cast_sign_loss)] // the 16-bit pattern of a signed field, as in C++
+        let left = u32::from(self.left as u16);
+        #[allow(clippy::cast_sign_loss)] // the 16-bit pattern of a signed field, as in C++
+        let top = u32::from(self.top as u16);
+        buffer.write_uint((left << 16) | top);
+        buffer.write_uint(self.mask_format as u32);
+    }
+
+    /// `SkGlyph::flattenImage`: writes the mask bytes, unless the glyph is empty or too big for
+    /// an atlas.
+    // Port of: src/core/SkGlyph.cpp#L353-L360 (chrome/m156)
+    #[doc(alias = "flattenImage")]
+    pub fn flatten_image(&self, buffer: &mut BinaryWriteBuffer) {
+        debug_assert!(self.set_image_has_been_called());
+        // If the glyph is empty or too big, then no image data is sent.
+        if let Some(image) = self
+            .image()
+            .filter(|_| !self.is_empty() && GlyphDigest::fits_in_atlas(self))
+        {
+            buffer.write_byte_array(image);
+        }
+    }
+
+    /// `SkGlyph::addImageFromBuffer`: reads the mask bytes that
+    /// [`flatten_image`](Self::flatten_image) wrote and installs them. Returns the number of
+    /// bytes of memory the image adds (0 if none was read).
+    // Port of: src/core/SkGlyph.cpp#L362-L380 (chrome/m156)
+    #[doc(alias = "addImageFromBuffer")]
+    pub fn add_image_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> usize {
+        debug_assert!(buffer.is_valid());
+        // If the glyph is empty or too big, then no image data is received.
+        if self.is_empty() || !GlyphDigest::fits_in_atlas(self) {
+            return 0;
+        }
+        let image_size = self.image_size();
+        let mut image = vec![0u8; image_size].into_boxed_slice();
+        buffer.read_byte_array(&mut image);
+        if buffer.is_valid() {
+            debug_assert!(!self.set_image_has_been_called());
+            self.set_image(image);
+            return image_size;
+        }
+        0
+    }
+
+    /// `SkGlyph::flattenPath`: writes whether there is a path and, if so, its flags and the path.
+    // Port of: src/core/SkGlyph.cpp#L382-L392 (chrome/m156)
+    #[doc(alias = "flattenPath")]
+    pub fn flatten_path(&self, buffer: &mut BinaryWriteBuffer) {
+        debug_assert!(self.set_path_has_been_called());
+        let path = self.path();
+        buffer.write_bool(path.is_some());
+        if let Some(path) = path {
+            buffer.write_bool(self.path_is_hairline());
+            buffer.write_bool(self.path_is_modified());
+            buffer.write_path(path);
+        }
+    }
+
+    /// `SkGlyph::addPathFromBuffer`: reads the path that [`flatten_path`](Self::flatten_path)
+    /// wrote and records it. Returns the number of bytes of memory the path adds.
+    // Port of: src/core/SkGlyph.cpp#L394-L421 (chrome/m156)
+    #[doc(alias = "addPathFromBuffer")]
+    pub fn add_path_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> usize {
+        debug_assert!(buffer.is_valid());
+        let mut memory_increase = 0;
+        let has_path = buffer.read_bool();
+        // Check if the buffer is invalid, so as to not make a logical decision on invalid data.
+        if !buffer.is_valid() {
+            return 0;
+        }
+        if has_path {
+            let path_is_hairline = buffer.read_bool();
+            let path_is_modified = buffer.read_bool();
+            if let Some(path) = buffer.read_path() {
+                if !matches!(
+                    self.mask_format,
+                    MaskFormat::BW | MaskFormat::A8 | MaskFormat::Lcd16
+                ) {
+                    buffer.validate(false);
+                    return 0;
+                }
+                let bytes = path.approximate_bytes_used();
+                if self.set_path(Some(path), path_is_hairline, path_is_modified) {
+                    memory_increase += bytes;
+                }
+            }
+        } else {
+            self.set_path(None, false, false);
+        }
+        memory_increase
     }
 }
 
