@@ -30675,7 +30675,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L29-L35"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d55431f6fa19959ce44c7933d2d945e2561e562b715d33de41a8baceeadbf7ae"
 
 [[test]]
@@ -30684,7 +30684,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L127-L138"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3bd7f073dd5bd00f88b49190cbf45afde96f0e32ae97fcdeaa5cd86ce2dd4ce9"
 
 [[test]]
@@ -30693,7 +30693,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L109-L125"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e1b0d22c56d7facef75a640b94fa7bd2f6549718c8770e22acb41a9a189be6b5"
 
 [[test]]
@@ -30703,6 +30703,7 @@ macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L140-L221"
 module = "text"
 status = "todo"
+reason = "needs SkWriteBuffer/SkReadBuffer (not ported yet; docs/design/text.md T9 owns the buffer port)"
 span_hash = "24e694e3f994cff56e6ff0cf437b462fb6e0f7fabb192692b677fcaf02b56291"
 
 [[test]]
@@ -30711,7 +30712,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L95-L107"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "556d2e308e2ccfa8c87020f0b974901ce040565e903c8c07685465399c029e37"
 
 [[test]]
@@ -30720,7 +30721,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L84-L93"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "388484f64def3637c3d235ed247afa492e63eca2da9cfcbe691df9fc3f70cce8"
 
 [[test]]
@@ -30729,7 +30730,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L66-L82"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f9681da4b072c02435021d6801f540ac48e82260c5fa7c014dfb2a7de92ba6e7"
 
 [[test]]
@@ -30738,7 +30739,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L37-L49"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6ae2f52be4da76ae07edf434b40fbcc07cff06e26774d4eb816dcd945b96370d"
 
 [[test]]
@@ -30747,7 +30748,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L51-L64"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ffee74236f1e0f44295a5f75f40ddc60a628098c6b2b5463785e290ac954a746"
 
 [[test]]
