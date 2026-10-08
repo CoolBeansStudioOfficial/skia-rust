@@ -729,6 +729,21 @@ impl<'a> Codec<'a> {
         if count <= 0 || self.base.curr_scanline + count > height {
             return 0;
         }
+        // Not in Skia's `getScanlines`, which trusts its caller: a row stride shorter than one row,
+        // or a destination too small for `count` rows, would panic on slice indexing below. Zero
+        // lines decoded is the only failure value this signature can carry, so report that.
+        let min_row_bytes = self.base.dst_info.min_row_bytes();
+        let Ok(count_usize) = usize::try_from(count) else {
+            return 0;
+        };
+        if row_bytes < min_row_bytes
+            || (count_usize - 1)
+                .checked_mul(row_bytes)
+                .and_then(|n| n.checked_add(min_row_bytes))
+                .is_none_or(|needed| dst.len() < needed)
+        {
+            return 0;
+        }
 
         let lines_decoded = self
             .imp

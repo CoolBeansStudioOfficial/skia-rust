@@ -7,14 +7,17 @@
 //!
 //! What is ported so far: the base (`SkCodec`) for still images, scanline decoding, the sampler
 //! (`SkSampler`, its fill and sample-Y state), and the swizzler (`SkSwizzler`, every row routine
-//! and `Make`/`MakeSimple`/`setSampleX`), plus the WBMP decoder. The mask swizzler, the BMP, PNG,
-//! ICO and JPEG decoders, the Android and sampled codecs, and the animation, incremental and
+//! and `Make`/`MakeSimple`/`setSampleX`), the mask swizzler, and the PNG, BMP and WBMP decoders.
+//! The ICO and JPEG decoders, the Android and sampled codecs, and the animation, incremental and
 //! lazy-image parts follow in later waves (`docs/design/codecs.md`).
 
+pub mod bmp;
 pub mod codec;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
+mod mask_swizzler;
+mod masks;
 pub mod png_codec;
 mod png_codec_base;
 pub mod png_composite_chunk_reader;
