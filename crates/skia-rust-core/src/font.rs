@@ -10,6 +10,8 @@
 use crate::font_metrics::FontMetrics;
 use crate::font_priv::{count_text_elements, scale_font_metrics};
 use crate::font_types::{FontHinting, GlyphId, TextEncoding};
+use crate::glyph_intercepts::glyph_run_intercepts;
+use crate::glyph_run::GlyphRun;
 use crate::matrix::Matrix;
 use crate::paint::{Paint, Style};
 use crate::path::Path;
@@ -508,6 +510,13 @@ impl Font {
         (width, bounds)
     }
 
+    /// `SkFont::getWidths`: the advance of each glyph (`getWidthsBounds` without the bounds).
+    // Port of: src/core/SkFont.cpp#L240-L243 (chrome/m156)
+    #[doc(alias = "getWidths")]
+    pub fn get_widths(&self, glyph_ids: &[GlyphId], widths: &mut [scalar]) {
+        self.get_widths_bounds(glyph_ids, widths, &mut [], None);
+    }
+
     /// `SkFont::getWidthsBounds`: the advance and bounds of each glyph. An empty `widths` or
     /// `bounds` is not written.
     // Port of: src/core/SkFont.cpp#L245-L266 (chrome/m156)
@@ -561,6 +570,37 @@ impl Font {
             *xposition = loc;
             loc += glyph.advance_x() * scale;
         }
+    }
+
+    /// `SkFont::getIntercepts`: the x intervals, as pairs `[start, end]`, where the band between
+    /// `top` and `bottom` crosses the outlines of the glyphs placed at `positions`. `paint` gives
+    /// the stroke and path effect. Empty if there are no glyphs.
+    // Port of: src/core/SkTextBlob.cpp#L956-L974 (chrome/m156)
+    #[doc(alias = "getIntercepts")]
+    #[must_use]
+    pub fn get_intercepts<'a>(
+        &self,
+        glyphs: &[GlyphId],
+        positions: &[Point],
+        (top, bottom): (scalar, scalar),
+        paint: impl Into<Option<&'a Paint>>,
+    ) -> Vec<scalar> {
+        let count = glyphs.len().min(positions.len());
+        if count == 0 {
+            return Vec::new();
+        }
+        let paint = paint.into().cloned().unwrap_or_default();
+        let run = GlyphRun::new(
+            self.clone(),
+            positions[..count].to_vec(),
+            glyphs[..count].to_vec(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        );
+        let mut intervals = Vec::new();
+        glyph_run_intercepts(&run, &paint, [top, bottom], &mut intervals);
+        intervals
     }
 
     /// `SkFont::getPaths`: calls `f` with each glyph's path and the matrix that scales it to this
