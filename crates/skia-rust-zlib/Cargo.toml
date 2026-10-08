@@ -1,0 +1,14 @@
+[package]
+name = "skia-rust-zlib"
+description = "Port of the inflate half of Chromium's zlib (zlib@646b7f56), used by skia-rust's codecs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "Zlib"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true
