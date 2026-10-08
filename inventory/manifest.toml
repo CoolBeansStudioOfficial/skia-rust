@@ -31754,6 +31754,7 @@ macro = "DEF_TEST"
 source = "tests/FontHostStreamTest.cpp#L72-L157"
 module = "text"
 status = "todo"
+reason = "needs canvas text drawing (T13/T14) and SkTypeface::MakeDeserialize with the decoder table"
 span_hash = "173fc6f90562640f67cfd3b6575b1f55ea3fb88a4c3b7c9d5ba2fc75aa61c409"
 
 [[test]]
@@ -31762,7 +31763,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontHostTest.cpp#L293-L298"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1f7e81c0bf11c83bb8b24729d470a47672c76a2ae9c9fcafba61d5a8a3d1db42"
 
 [[test]]
@@ -31852,6 +31853,7 @@ macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L264-L270"
 module = "text"
 status = "todo"
+reason = "needs SkFontMgr_New_FontConfig, the FontConfig backend (out of scope, docs/design/text.md §2.3)"
 span_hash = "10a05dae170b8df1a540ba7f9784a52a3be0258775e8f2aee86c2a6cb51c7f5d"
 
 [[test]]
@@ -31890,7 +31892,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L75-L102"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "96753869dd08ceca424bf484a4232b95a1f8b8e604efff257c9116a22da125da"
 
 [[test]]
@@ -31899,7 +31901,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L41-L68"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e23b9bbce76695ad7508efd66067398a641b1cf7bf2c531d598209ba93aab744"
 
 [[test]]
@@ -31908,7 +31910,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L104-L212"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9e27259c3f4ad4e49aa553c624ea8ed501a5dbd84c04cdcdaa7b7562e5fb303a"
 
 [[test]]
@@ -31917,7 +31919,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L214-L218"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "217033c2392799559a56df81251d8672e821304758796f57803b8d8a2924d932"
 
 [[test]]
@@ -31926,7 +31928,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L858-L867"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "cab8d0210ca1529386798ef44d117473fabb17bde714ec2a0f537d2ea012845d"
 
 [[test]]
@@ -31935,7 +31937,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L220-L242"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "543124f6c367447c4f32df175b5ce34961ed6d773c7cc74eab213a81f09b88cc"
 
 [[test]]
@@ -31944,7 +31946,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L244-L856"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "057e13b2a4b35e3b773432e98be50f7bd0d79948510be3a7c492df6dac78c979"
 
 [[test]]
@@ -31954,6 +31956,7 @@ macro = "DEF_TEST"
 source = "tests/FontNamesTest.cpp#L243-L246"
 module = "text"
 status = "todo"
+reason = "needs SkOTTableName::Iterator (src/sfnt/SkOTTable_name.{h,cpp}), not ported yet"
 span_hash = "4952e0621cdd6b1d02b64a7654e7167cee40eb8a4db3af2fa9263af609add1bd"
 
 [[test]]
@@ -41645,6 +41648,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
 status = "todo"
+reason = "needs picture typeface serialization (T16)"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -41654,6 +41658,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L680-L683"
 module = "text"
 status = "todo"
+reason = "needs ToolUtils::SampleUserTypeface (T17)"
 span_hash = "76ee71b1321b5235db7914e139e18af18f8e9420ceb36fb6a19dc6bd9fe80730"
 
 [[test]]
@@ -41663,6 +41668,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L685-L720"
 module = "text"
 status = "todo"
+reason = "needs SkTypeface::MakeDeserialize with a sanitizer and the decoder table"
 span_hash = "399fad9724915821ddde413e29726ac17d5a938f6c429f7cece4a8b00094a869"
 
 [[test]]
@@ -41672,6 +41678,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L750-L783"
 module = "text"
 status = "todo"
+reason = "needs SkTypeface::MakeDeserialize with a sanitizer and the decoder table"
 span_hash = "3e4ac39537133f6e0cb073bf83e12a02b5053fafa827a7393a864f85fd41752c"
 
 [[test]]
@@ -41690,6 +41697,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1166-L1188"
 module = "text"
 status = "todo"
+reason = "needs TextBlob (T15a)"
 span_hash = "13f8a192b2643d2e12bbc583b232ef8568e74d3bcb6231a56fac89cfabb2cce5"
 
 [[test]]
@@ -49269,6 +49277,7 @@ macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L784-L798"
 module = "text"
 status = "todo"
+reason = "needs SkCustomTypefaceBuilder (src/utils/SkCustomTypeface.cpp, T17)"
 span_hash = "aac4be6e72364bf85f05f13454fe5596753671d6fdeaf58b7ee9534f11061ab3"
 
 [[test]]
@@ -49286,7 +49295,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L760-L782"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "980b438d6c98edf66ac71ce598bc937afc42de5497c1ba315c99c6cbeab33c0b"
 
 [[test]]
@@ -49304,7 +49313,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L333-L462"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "53724532f8fa39638e9ff7f1a359efb4cfa65de3e2f0d33e90673ce3ddb71e45"
 
 [[test]]
@@ -49313,7 +49322,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L516-L653"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "36869ed091c64de8084db693834fa399d2c62f24ef9ff5a8b52e9ba3f5d7005f"
 
 [[test]]
@@ -49331,7 +49340,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L131-L159"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "bec05c8d3886a2ab87578fa1ae567ddaf993eb037b9ad7320a3c6e080b1c0f5c"
 
 [[test]]
@@ -49340,7 +49349,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L266-L292"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1367e87fe196856efc80dc40c4f20c7c53bc7cae02dcb7c5a28bc1bb219b22aa"
 
 [[test]]
@@ -49349,7 +49358,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L250-L264"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2bca4d423dc856fb23f7adf72b38901b86f02a67330811b23333d44428cd5910"
 
 [[test]]
@@ -49358,7 +49367,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L294-L307"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7881781a7af706ee50806fcbe94e4e6fdefb37fdf3a72bab43b83ba54456b7ce"
 
 [[test]]
@@ -49367,7 +49376,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L110-L125"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "44c2f5877d52ab94cec9924156b3cc4e08bfc03f9cd707abf0ce35186662b932"
 
 [[test]]
@@ -49376,7 +49385,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L161-L248"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c7ff1dba34beea3727efd659cca03103b2e1098f39151f7b845fc589df2a4155"
 
 [[test]]
@@ -49385,7 +49394,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L464-L500"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4a7eef3f677044326a695d1b106de160733c44f64b44194c0d21f8aa827d792a"
 
 [[test]]
@@ -49395,6 +49404,7 @@ macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L717-L755"
 module = "text"
 status = "todo"
+reason = "needs ToolUtils::EmojiSample(kTest) (TestSVGTypeface, T20)"
 span_hash = "700ee7e8d34ea7a3e6fea13ae26d228684cba29da97a05bbb30e840f493e684f"
 
 [[test]]
@@ -49403,7 +49413,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L710-L715"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f41ea4f17147feb42c55c6ec05b515687ac1d9632b23b12f9fd871f72159c00a"
 
 [[test]]

@@ -243,6 +243,28 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
     fn on_get_glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
         dst.fill(0);
     }
+
+    /// `SkTypeface::onIsSyntheticBold`: false, unless a backend fake-bolds the typeface.
+    // Port of: src/core/SkTypeface.cpp#L509 (chrome/m156)
+    #[doc(alias = "onIsSyntheticBold")]
+    fn on_is_synthetic_bold(&self) -> bool {
+        false
+    }
+
+    /// `SkTypeface::onIsSyntheticOblique`: false, unless a backend fake-obliques the typeface.
+    // Port of: src/core/SkTypeface.cpp#L510 (chrome/m156)
+    #[doc(alias = "onIsSyntheticOblique")]
+    fn on_is_synthetic_oblique(&self) -> bool {
+        false
+    }
+
+    /// `SkTypeface::onGetResourceName`: the resource the typeface was loaded from, if the
+    /// backend knows one. The default is none (C++ returns 0 and sets nothing).
+    // Port of: src/core/SkTypeface.cpp#L479-L481 (chrome/m156)
+    #[doc(alias = "onGetResourceName")]
+    fn on_get_resource_name(&self) -> Option<String> {
+        None
+    }
 }
 
 /// A typeface handle (`sk_sp<SkTypeface>`). Cloning it shares the typeface.
@@ -387,6 +409,31 @@ impl Typeface {
         *self.font_style().weight() >= *Weight::SEMI_BOLD
     }
 
+    /// `SkTypeface::isSyntheticBold`: true if the typeface is internally being fake bolded.
+    // Port of: src/core/SkTypeface.cpp#L507 (chrome/m156)
+    #[doc(alias = "isSyntheticBold")]
+    #[must_use]
+    pub fn is_synthetic_bold(&self) -> bool {
+        self.0.on_is_synthetic_bold()
+    }
+
+    /// `SkTypeface::isSyntheticOblique`: true if the typeface is internally being fake obliqued.
+    // Port of: src/core/SkTypeface.cpp#L508 (chrome/m156)
+    #[doc(alias = "isSyntheticOblique")]
+    #[must_use]
+    pub fn is_synthetic_oblique(&self) -> bool {
+        self.0.on_is_synthetic_oblique()
+    }
+
+    /// `SkTypeface::getResourceName`: the resource the typeface was loaded from, or `None` (C++
+    /// returns 0 and leaves the string alone).
+    // Port of: src/core/SkTypeface.cpp#L475-L477 (chrome/m156)
+    #[doc(alias = "getResourceName")]
+    #[must_use]
+    pub fn get_resource_name(&self) -> Option<String> {
+        self.0.on_get_resource_name()
+    }
+
     /// `SkTypeface::isItalic`: the slant is not upright.
     // Port of: src/core/SkTypeface.cpp#L495-L497 (chrome/m156)
     #[doc(alias = "isItalic")]
@@ -510,6 +557,18 @@ impl Typeface {
     pub fn get_table_size(&self, tag: FourByteTag) -> Option<usize> {
         let size = self.0.on_get_table_data(tag, 0, usize::MAX, &mut []);
         (size != 0).then_some(size)
+    }
+
+    /// `SkTypeface::copyTableData(tag)`: a copy of the table, or `None` when it is missing.
+    // Port of: src/core/SkTypeface.cpp#L319-L331 (chrome/m156)
+    #[doc(alias = "copyTableData")]
+    #[must_use]
+    pub fn copy_table_data(&self, tag: FourByteTag) -> Option<Data> {
+        let size = self.get_table_size(tag)?;
+        let mut bytes = vec![0; size];
+        // `(void)this->getTableData(...)`: the size was just read, so the copy is complete.
+        let _ = self.get_table_data(tag, 0, size, Some(&mut bytes));
+        Some(Data::new_from_vec(bytes))
     }
 
     /// `SkTypeface::getTableData(tag, offset, length, data)`: copies at most `length` bytes of
