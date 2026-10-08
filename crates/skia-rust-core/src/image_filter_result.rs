@@ -1348,7 +1348,7 @@ fn intersect_copy(a: IRect, b: IRect) -> Option<IRect> {
 }
 
 /// `SkIRect::outset(dx, dy)`.
-fn outset_irect(r: IRect, dx: i32, dy: i32) -> IRect {
+pub(crate) fn outset_irect(r: IRect, dx: i32, dy: i32) -> IRect {
     r.with_outset((dx, dy))
 }
 

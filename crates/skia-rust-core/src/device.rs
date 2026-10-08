@@ -29,6 +29,7 @@ use crate::color_priv::{alpha_255_to_256, alpha_mul};
 use crate::color_type::ColorType;
 use crate::floating_point::float_round2int;
 use crate::image::Image;
+use crate::image_filter_types::Backend;
 use crate::image_info::ImageInfo;
 use crate::lattice_iter::{Lattice, LatticeIter};
 use crate::m44::M44;
@@ -565,6 +566,22 @@ pub trait Device {
         }
     }
 
+    /// The backend that image filters evaluated over this device use (`createImageFilteringBackend`).
+    ///
+    /// Skia's default is its raster backend (`skif::MakeRasterBackend`), which lives in
+    /// `skia-rust-raster` next to `BitmapDevice`. This default is `None`: the filter is then not
+    /// evaluated, which is observably the same for the devices that do not override it (they
+    /// draw nothing). Pixel devices override it.
+    // Port of: src/core/SkDevice.cpp#L322-L325 (chrome/m156)
+    #[doc(alias = "createImageFilteringBackend")]
+    fn create_image_filtering_backend(
+        &self,
+        _surface_props: &SurfaceProps,
+        _color_type: ColorType,
+    ) -> Option<std::sync::Arc<dyn Backend>> {
+        None
+    }
+
     /// Whether `SkCanvas` should simulate mask filters with a layer and `drawCoverageMask`
     /// (`useDrawCoverageMaskForMaskFilters`; false for the raster device).
     #[doc(alias = "useDrawCoverageMaskForMaskFilters")]
@@ -654,6 +671,13 @@ pub trait Device {
         _paint: &Paint,
         _constraint: SrcRectConstraint,
     ) {
+    }
+
+    /// A special image of `subset` scaled to `dst_dims` (`snapSpecialScaled`); `None` by default.
+    // Port of: src/core/SkDevice.cpp#L314-L317 (chrome/m156)
+    #[doc(alias = "snapSpecialScaled")]
+    fn snap_special_scaled(&mut self, _subset: &IRect, _dst_dims: ISize) -> Option<SpecialImage> {
+        None
     }
 
     /// A special image of the `bounds` of the device's pixels, copied if `force_copy`
