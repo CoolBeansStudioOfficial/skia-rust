@@ -108,6 +108,7 @@ pub mod patch;
 pub mod patheffects;
 pub mod pathfill;
 pub mod pathinterior;
+pub mod pathreverse;
 pub mod persptext;
 pub mod plus;
 pub mod points;
