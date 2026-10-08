@@ -303,6 +303,17 @@ pub trait CanvasHooks {
     fn on_draw_path(&mut self, _path: &Path, _paint: &Paint) -> bool {
         false
     }
+    /// `onDrawTextBlob`: `SkRecordCanvas` records the blob by reference instead of drawing it.
+    // Port of: src/core/SkCanvas.h (onDrawTextBlob, chrome/m156), overridden by SkRecordCanvas
+    fn on_draw_text_blob(
+        &mut self,
+        _blob: &TextBlob,
+        _x: scalar,
+        _y: scalar,
+        _paint: &Paint,
+    ) -> bool {
+        false
+    }
     /// `onDrawVerticesObject`.
     fn on_draw_vertices_object(
         &mut self,
@@ -1891,6 +1902,19 @@ impl CanvasState {
                 .draw_drrect(outer, inner, auto_layer.paint());
             self.end_auto_layer(&auto_layer);
         }
+    }
+
+    /// `onDrawTextBlob`: the hook may record the blob; otherwise its glyph runs are drawn.
+    // Port of: src/core/SkCanvas.cpp#L2436-L2441 (chrome/m156), onDrawTextBlob
+    fn draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_text_blob(blob, x, y, paint)
+        {
+            return;
+        }
+        let mut builder = GlyphRunBuilder::new();
+        let list = builder.blob_to_glyph_run_list(blob, Point::new(x, y));
+        self.draw_glyph_run_list(&list, paint);
     }
 
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
@@ -3784,9 +3808,9 @@ impl Canvas {
         if total_glyph_count > max_glyph_count {
             return self;
         }
-        let mut builder = GlyphRunBuilder::new();
-        let list = builder.blob_to_glyph_run_list(blob, origin);
-        self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+        self.state
+            .borrow_mut()
+            .draw_text_blob(blob, origin.x, origin.y, paint);
         self
     }
 
