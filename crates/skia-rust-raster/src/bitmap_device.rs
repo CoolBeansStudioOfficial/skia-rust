@@ -11,9 +11,8 @@
 //! * The device owns its bitmap (`SkBitmapDevice` keeps a copy sharing the pixels, which the
 //!   copy-on-write pixel refs of `docs/design/pixels.md` rule out); read it with
 //!   [`BitmapDevice::bitmap`] or take it back with [`BitmapDevice::into_bitmap`].
-//! * Not ported yet (they need vertices, meshes, text or mask filters, ported in D7 and
-//!   Phase 3): `drawVertices`, `drawMesh`, `drawAtlas`,
-//!   `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawCoverageMask`,
+//! * Not ported yet (they need meshes, text or mask filters, ported in D7 and
+//!   Phase 3): `drawMesh`, `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawCoverageMask`,
 //!   `drawBlurredRRect`, `makeSurface` and the `SkRasterHandleAllocator`
 //!   (`fRasterHandle`), nor the `skcpu::Recorder`. [`Device::clip_shader`]'s `makeWithCTM` /
 //!   `makeInvertAlpha` wrappers need shader machinery of Phase 3; [`Device::on_clip_shader`]
@@ -21,8 +20,10 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
+use skia_rust_core::color::Color;
 use skia_rust_core::device::{CreateInfo, Device, DeviceState};
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -36,11 +37,13 @@ use skia_rust_core::point::{IPoint, Point};
 use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::region::Region;
 use skia_rust_core::rrect::RRect;
+use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::vertices::Vertices;
 use std::sync::Arc;
 
 use crate::draw::Draw;
@@ -711,6 +714,29 @@ impl Device for BitmapDevice {
         // Call ourself, in case the subclass wanted to share this setup code
         // but handle the drawRect code themselves.
         Device::draw_rect(self, &dst_rect, &paint_with_shader);
+    }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L547-L557 (chrome/m156)
+    fn draw_vertices(
+        &mut self,
+        vertices: &Vertices,
+        blender: Blender,
+        paint: &Paint,
+        skip_color_xform: bool,
+    ) {
+        self.bd_draw(|draw| draw.draw_vertices(vertices, &blender, paint, skip_color_xform));
+    }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L563-L569 (chrome/m156)
+    fn draw_atlas(
+        &mut self,
+        xform: &[RSXform],
+        tex: &[Rect],
+        colors: &[Color],
+        blender: Blender,
+        paint: &Paint,
+    ) {
+        self.bd_draw(|draw| draw.draw_atlas(xform, tex, colors, &blender, paint));
     }
 
     // Port of: src/core/SkBitmapDevice.cpp#L573-L593 (chrome/m156)

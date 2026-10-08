@@ -203,4 +203,6 @@ pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
 #[cfg(test)]
+pub mod vertices_test;
+#[cfg(test)]
 pub mod write_pixels_test;

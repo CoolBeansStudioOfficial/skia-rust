@@ -73,6 +73,7 @@ pub mod mirrortile;
 pub mod nearesthalfpixelimage;
 pub mod nested;
 pub mod ninepatchstretch;
+pub mod patch;
 pub mod patheffects;
 pub mod pathfill;
 pub mod pathinterior;

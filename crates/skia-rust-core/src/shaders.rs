@@ -16,9 +16,12 @@ pub mod empty_shader;
 pub mod image_shader;
 pub mod local_matrix_shader;
 pub mod shader_base;
+pub mod transform_shader;
+pub mod tri_color_shader;
 
 use crate::alpha_type::AlphaType;
 use crate::blend_mode::BlendMode;
+use crate::blender::Blender;
 use crate::color::{Color, Color4f};
 use crate::color_space::ColorSpace;
 use crate::color_space_priv::srgb_singleton;
@@ -37,6 +40,8 @@ pub use shader_base::{
     ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, MatrixRec, OPAQUE_ALPHA_FLAG, ShaderBase,
     ShaderContext, ShaderType,
 };
+pub use transform_shader::TransformShader;
+pub use tri_color_shader::TriColorShader;
 
 /// A shader that draws nothing (`SkShaders::Empty`).
 // Port of: src/shaders/SkEmptyShader.cpp#L20 (chrome/m156)
@@ -59,6 +64,19 @@ pub fn blend(mode: BlendMode, dst: Shader, src: Shader) -> Shader {
         BlendMode::Src => src,
         _ => Shader::from_base(BlendShader::new(mode, dst, src)),
     }
+}
+
+/// A shader of `src` blended over `dst` with `blender` (`SkShaders::Blend(sk_sp<SkBlender>, dst,
+/// src)`). A blender that is a blend mode makes the shader of [`blend`]; any other blender needs
+/// a runtime effect, which is not ported, so there is no shader (`None`).
+// Port of: src/shaders/SkBlendShader.cpp#L136-L156 (chrome/m156)
+#[doc(alias = "Blend")]
+#[must_use]
+pub fn blend_blender(blender: &Blender, dst: Shader, src: Shader) -> Option<Shader> {
+    blender
+        .as_base()
+        .as_blend_mode()
+        .map(|mode| blend(mode, dst, src))
 }
 
 /// A shader of a single sRGB color (`SkShaders::Color(SkColor)`).

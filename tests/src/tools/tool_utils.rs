@@ -7,6 +7,8 @@
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::point::IPoint;
 
 /// `ToolUtils::colortype_name`.
 // Port of: tools/ToolUtils.cpp#L62-L95 (chrome/m156)
@@ -74,4 +76,50 @@ pub fn copy_to(dst: &mut Bitmap, dst_color_type: ColorType, src: &Bitmap) -> boo
 
     dst.swap(&mut tmp_dst);
     true
+}
+
+/// `ToolUtils::PixelIter`: visits the locations of the pixels of a pixmap, row by row.
+///
+/// skia-rust: Skia's `next` returns the pixel's address and its location; the Rust version
+/// returns the location, and the test reads the pixel from the pixmap it keeps.
+// Port of: tools/ToolUtils.h#L267-L298 (chrome/m156)
+#[derive(Debug)]
+pub struct PixelIter {
+    width: i32,
+    height: i32,
+    loc: IPoint,
+    done: bool,
+}
+
+impl PixelIter {
+    /// `PixelIter(SkSurface*)` / `reset(pm)`: starts before the first pixel of `pm`. A pixmap
+    /// without pixels has no locations.
+    #[must_use]
+    pub fn new(pm: &Pixmap<'_>) -> PixelIter {
+        PixelIter {
+            width: pm.width(),
+            height: pm.height(),
+            loc: IPoint::new(-1, 0),
+            done: pm.addr().is_none(),
+        }
+    }
+
+    /// The location of the next pixel, or `None` when there are no more (`next`).
+    // Port of: tools/ToolUtils.h#L281-L297 (chrome/m156)
+    #[allow(clippy::should_implement_trait)] // mirrors PixelIter::next, which takes no Iterator
+    pub fn next(&mut self) -> Option<IPoint> {
+        if self.done {
+            return None;
+        }
+        self.loc.x += 1;
+        if self.loc.x >= self.width {
+            self.loc.x = 0;
+            self.loc.y += 1;
+            if self.loc.y >= self.height {
+                self.done = true;
+                return None;
+            }
+        }
+        Some(self.loc)
+    }
 }

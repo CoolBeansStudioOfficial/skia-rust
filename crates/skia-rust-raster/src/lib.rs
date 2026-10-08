@@ -12,6 +12,8 @@ pub mod blitter_choose;
 pub mod blitter_dump;
 pub mod core_blitters;
 pub mod draw;
+pub mod draw_atlas;
+pub mod draw_vertices;
 pub mod edge;
 pub mod edge_builder;
 mod pixel_rows;
@@ -42,6 +44,8 @@ mod blitters_tests;
 mod canvas_tests;
 #[cfg(test)]
 mod draw_tests;
+#[cfg(test)]
+mod draw_vertices_tests;
 #[cfg(test)]
 mod legacy_blitters_tests;
 #[cfg(test)]
