@@ -11,11 +11,13 @@
 use std::sync::Arc;
 
 use crate::analysis::{
-    check_program_structure, do_finalization_checks, get_usage, validate_indexing_for_es2,
+    ProgramUsage, check_program_structure, do_finalization_checks, get_module_parts_usage,
+    get_usage, validate_indexing_for_es2,
 };
 use crate::context::Context;
 use crate::error_reporter::{ErrorReporter, ErrorSink};
 use crate::flavor::Flavor;
+use crate::inliner::Inliner;
 use crate::ir::{ElemId, IrPool, Program, ProgramInterface, SymTabId, SymbolTable};
 use crate::module_loader::ModuleLoader;
 use crate::modules::{Module, ModuleType};
@@ -273,23 +275,61 @@ impl Compiler {
         parent: &Arc<Module>,
         should_inline: bool,
     ) -> Option<Arc<Module>> {
-        let parts = self.compile_module_parts(kind, module_type, source, parent)?;
-        if should_inline && !self.optimize_module_after_loading(kind, &parts) {
+        let mut parts = self.compile_module_parts(kind, module_type, source, parent)?;
+        if should_inline && !self.optimize_module_after_loading(kind, &mut parts, parent) {
             return None;
         }
         Some(parts.freeze(parent.clone()))
     }
 
     /// `optimizeModuleAfterLoading`: the inlining that Skia runs on a module after loading it.
-    /// The inliner (S12) lands here. Until then a module is loaded as parsed.
+    /// `parent` is the module that `module` inherits from.
     // Port of: src/sksl/SkSLCompiler.cpp#L315-L339 (chrome/m156)
     pub(crate) fn optimize_module_after_loading(
         &mut self,
-        _kind: ProgramKind,
-        _module: &ModuleParts,
+        kind: ProgramKind,
+        module: &mut ModuleParts,
+        parent: &Arc<Module>,
     ) -> bool {
-        // S12: `Inliner::analyze` over `module.elements`, while the error count is zero.
+        debug_assert_eq!(self.error_count(), 0);
+
+        // Create a temporary program configuration with default settings
+        // (`AutoProgramConfig`), and lend the module's pool to the context.
+        let config = ProgramConfig::new(module.module_type, kind, ProgramSettings::default());
+        let saved_config = self.context.config.replace(config);
+        std::mem::swap(&mut self.context.pool, &mut module.pool);
+
+        let mut usage = get_module_parts_usage(&self.context.pool, &module.elements, parent);
+
+        // Perform inline-candidate analysis and inline any functions deemed suitable.
+        let mut inliner = Inliner::new();
+        while self.error_count() == 0 {
+            if !self.run_inliner(&mut inliner, &module.elements, module.symbols, &mut usage) {
+                break;
+            }
+        }
+
+        std::mem::swap(&mut self.context.pool, &mut module.pool);
+        self.context.config = saved_config;
         self.error_count() == 0
+    }
+
+    /// `runInliner(inliner, elements, symbols, usage)`: the program's symbol table was taken out
+    /// of the context when the program was bundled, but the inliner creates IR objects which may
+    /// expect the context to hold a valid symbol table.
+    // Port of: src/sksl/SkSLCompiler.cpp#L392-L408 (chrome/m156)
+    fn run_inliner(
+        &mut self,
+        inliner: &mut Inliner,
+        elements: &[ElemId],
+        symbols: SymTabId,
+        usage: &mut ProgramUsage,
+    ) -> bool {
+        debug_assert!(self.context.symbol_table.is_none());
+        self.context.symbol_table = Some(symbols);
+        let result = inliner.analyze(&mut self.context, elements, symbols, usage);
+        self.context.symbol_table = None;
+        result
     }
 
     /// `convertProgram(kind, programSource, settings)`: parses `source` as a program of `kind`
@@ -382,21 +422,33 @@ impl Compiler {
 
     /// `optimize(program)`: the optimizer. Skia runs the inliner, then `EliminateUnreachableCode`,
     /// `EliminateDeadFunctions`, `EliminateDeadLocalVariables` and `EliminateDeadGlobalVariables`
-    /// (`SkSLCompiler.cpp#L341-L381`). Those passes land in S12 and S13, at the call point below;
-    /// until then an optimized program is returned as finalized.
+    /// (`SkSLCompiler.cpp#L341-L381`). The dead-code transforms (S13) land at the call point in
+    /// `run_optimizer_passes`.
     // Port of: src/sksl/SkSLCompiler.cpp#L341-L381 (chrome/m156)
     fn optimize(&mut self, program: &mut Program) -> bool {
         // The optimizer only needs to run when it is enabled.
         if !program.config.settings.optimize {
             return true;
         }
-        Self::run_optimizer_passes(program);
+        self.run_optimizer_passes(program);
         self.error_count() == 0
     }
 
-    /// The optimizer passes of `Compiler::optimize`, in Skia's order. S12 (the inliner) and S13
-    /// (the dead-code transforms) fill this in.
-    fn run_optimizer_passes(_program: &mut Program) {}
+    /// The optimizer passes of `Compiler::optimize`, in Skia's order. S13 (the dead-code
+    /// transforms) fills in what follows the inliner.
+    fn run_optimizer_passes(&mut self, program: &mut Program) {
+        // Run the inliner only once; it is expensive! Multiple passes can occasionally shake out
+        // more wins, but it's diminishing returns.
+        let mut inliner = Inliner::new();
+        let mut usage = get_usage(program);
+        let elements = program.owned_elements.clone();
+        let symbols = program.symbols;
+        // The program's symbol table was taken out of the context when the program was bundled;
+        // `with_program` puts it back for the duration of the call, as `runInliner` does.
+        self.context.with_program(program, |ctx| {
+            inliner.analyze(ctx, &elements, symbols, &mut usage);
+        });
+    }
 }
 
 /// The parts of a module before it is frozen: the pool and symbols built while it was parsed.

@@ -54548,8 +54548,7 @@ id = "tests/sksl/errors/ArrayInlinedIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/ArrayInlinedIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
-reason = "needs the inliner (S12): its error is reported while inlining"
+status = "passing"
 span_hash = "80d5ff2c1334d71e6f3c2e955f5e5d8e4794d0b3881ffc189f7ca148598dc386"
 
 [[test]]
@@ -55656,8 +55655,7 @@ id = "tests/sksl/errors/MatrixInlinedIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/MatrixInlinedIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
-reason = "needs the inliner (S12): its error is reported while inlining"
+status = "passing"
 span_hash = "43e913a9e4390905f3434f0d8f0bf2d0d3d4871113704b1814c73badfe2aa104"
 
 [[test]]
@@ -56283,8 +56281,7 @@ id = "tests/sksl/errors/OverflowInlinedLiteral.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/OverflowInlinedLiteral.glsl"
 module = "sksl"
-status = "todo"
-reason = "needs the inliner (S12): its error is reported while inlining"
+status = "passing"
 span_hash = "79803565e9d2f2d9bf7e51cb9d67b6c83ccf66f1245a42288fb8b0c5a7ed05ff"
 
 [[test]]
@@ -57270,8 +57267,7 @@ id = "tests/sksl/errors/VectorInlinedIndexOutOfRange.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/VectorInlinedIndexOutOfRange.glsl"
 module = "sksl"
-status = "todo"
-reason = "needs the inliner (S12): its error is reported while inlining"
+status = "passing"
 span_hash = "a6407d33b705ce6789e1288e25cd8e4194877410c97df87db1e9b31ccdde8f90"
 
 [[test]]

@@ -23,6 +23,7 @@ pub mod context;
 pub mod defines;
 pub mod error_reporter;
 pub mod flavor;
+pub mod inliner;
 pub mod intrinsic_list;
 pub mod ir;
 pub mod lexer;

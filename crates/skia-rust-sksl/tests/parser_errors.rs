@@ -8,9 +8,8 @@
 //! [`Compiler::convert_program`] and [`ModuleLoader`] (the compiler driver, `docs/design/sksl.md`
 //! §4.6–§4.7).
 //!
-//! Cases whose errors come from the inliner (S12) cannot match yet. They are listed in
-//! `DEFERRED_TO_INLINER`: the test checks that the compiler accepts them (reports no error), so
-//! their errors can only come from the inliner.
+//! The four goldens whose errors come from the inliner (`*InlinedIndexOutOfRange`,
+//! `OverflowInlinedLiteral`) are compared like the rest.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -64,16 +63,6 @@ fn kind_for_extension(ext: &str) -> ProgramKind {
         other => panic!("unknown extension {other}"),
     }
 }
-
-/// Goldens whose errors come from the inliner (`Inliner::analyze` reports them while it
-/// constant-folds an inlined index or literal), which is task S12. The compiler must accept each
-/// of these until then.
-const DEFERRED_TO_INLINER: &[&str] = &[
-    "ArrayInlinedIndexOutOfRange",
-    "MatrixInlinedIndexOutOfRange",
-    "VectorInlinedIndexOutOfRange",
-    "OverflowInlinedLiteral",
-];
 
 /// Goldens whose error comes from a GLSL code generator, not the front end: `samplerExternalOES`
 /// needs `ShaderCaps::fExternalTextureSupport`, which only `SkSLGLSLCodeGenerator.cpp#L1612`
@@ -141,9 +130,7 @@ fn error_goldens_match() {
             failures.push(format!("{name}: the compiler panicked"));
             continue;
         };
-        if DEFERRED_TO_INLINER.contains(&name.as_str())
-            || GLSL_GENERATOR_ERRORS.contains(&name.as_str())
-        {
+        if GLSL_GENERATOR_ERRORS.contains(&name.as_str()) {
             if !compiled.accepted {
                 failures.push(format!(
                     "{name}: deferred to a later phase, but the compiler reported:\n{}",

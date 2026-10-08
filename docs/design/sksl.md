@@ -683,6 +683,24 @@ module chain is in `module_loader.rs`.
   Both run only when `ProgramSettings::optimize` is set (`Compiler::optimize`). `Program` keeps no
   cached usage: `analysis::get_usage` computes it, and the transforms update a local copy.
 
+### 4.8 As implemented in S12
+
+`inliner.rs` ports `SkSLInliner.{h,cpp}` as `Inliner { mangler, inlined_statement_counter }`, with the
+`Context` passed to each method (`analyze(ctx, elements, symbols, usage)`).
+
+- Candidates are slot ids (`InlineCandidate`: symbol table, parent/enclosing `StmtId`, the call's
+  `ExprId`). The wrap step is `relocate_statement(enclosing)`, push the moved id into the unscoped
+  body, `move_statement_into(enclosing, body)`; the fix-up table maps the slot to the moved id.
+  A call is replaced with `move_expression_into(slot, replacement)`.
+- C++ argument evaluation order is taken as Clang's, left to right; it is visible through the
+  mangler's counter (`IfStatement`: test, then true, then false).
+- `Transform::AddConstToVarModifiers` is `transform::add_const_to_var_modifiers` (needed by
+  `inlineStatement`).
+- `Compiler::optimize_module_after_loading` lends the module's unfrozen pool and a default
+  `ProgramConfig` (Skia's `AutoProgramConfig`) to the context and loops the inliner until it makes
+  no change; usage comes from `analysis::get_module_parts_usage`. `Compiler::run_optimizer_passes`
+  runs the inliner once through `Context::with_program`; S13's passes follow it.
+
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |

@@ -223,7 +223,7 @@ fn compile_and_shrink(
         );
     };
     assert!(
-        compiler.optimize_module_after_loading(kind, &parts),
+        compiler.optimize_module_after_loading(kind, &mut parts, parent),
         "Unable to optimize module {}",
         module_type.name()
     );
