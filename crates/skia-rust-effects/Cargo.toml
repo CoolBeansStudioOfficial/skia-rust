@@ -11,6 +11,8 @@ publish = false
 
 [dependencies]
 skia-rust-core.workspace = true
+# `SkRegion::setPath` (used by the 2D path effects) lives in the raster crate.
+skia-rust-raster.workspace = true
 
 [lints]
 workspace = true
