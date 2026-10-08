@@ -15,8 +15,13 @@
 //! allocate again (`SkArenaAllocWithReset`).
 
 use core::any::Any;
-use core::cell::{Cell, OnceCell};
+use core::cell::{Cell, OnceCell, RefCell};
 use core::fmt;
+
+use skia_rust_simd::rp::MemPtr;
+use skia_rust_sksl::codegen::rp::SlotAlloc;
+
+use crate::effect_priv::SHADER_SCRATCH;
 
 /// Slots in a [`TypedArena`]'s first chunk; each further chunk doubles.
 const FIRST_CHUNK: usize = 8;
@@ -165,6 +170,8 @@ impl<T: 'static> ErasedArena for TypedArena<T> {
 pub struct ArenaAlloc {
     arenas: TypedArena<Box<dyn ErasedArena>>,
     scratch_bytes: Cell<usize>,
+    /// The initial contents of the scratch memory, from its start (the rest starts as zero).
+    scratch_init: RefCell<Vec<u8>>,
 }
 
 impl fmt::Debug for ArenaAlloc {
@@ -182,6 +189,7 @@ impl ArenaAlloc {
         ArenaAlloc {
             arenas: TypedArena::new(),
             scratch_bytes: Cell::new(0),
+            scratch_init: RefCell::new(Vec::new()),
         }
     }
 
@@ -227,6 +235,48 @@ impl ArenaAlloc {
         u32::try_from(offset).expect("scratch memory offsets fit in a u32")
     }
 
+    /// `makeBytesAlignedTo(bytes, align)` for scratch memory whose first `init.len()` bytes start
+    /// as `init` (the rest start as zero): reserves `bytes` at an offset that is a multiple of
+    /// `align` (relative to the start of the scratch buffer), and returns that offset.
+    ///
+    /// skia-rust: this is the initial-contents variant `SkSL` needs for its immutable slots, which
+    /// Skia writes while it builds the stages. [`scratch_buffer`](Self::scratch_buffer) gives the
+    /// bytes to bind.
+    ///
+    /// # Panics
+    /// If `init` is longer than `bytes`, `align` is zero, or the scratch memory outgrows a `u32`
+    /// offset.
+    pub fn alloc_scratch_init(&self, bytes: usize, align: usize, init: &[u8]) -> u32 {
+        assert!(
+            init.len() <= bytes,
+            "the initial contents exceed the allocation"
+        );
+        assert!(align > 0, "alignment must be positive");
+        let offset = self.scratch_bytes.get().div_ceil(align) * align;
+        self.scratch_bytes.set(offset + bytes);
+        if !init.is_empty() {
+            let end = offset + init.len();
+            let mut image = self.scratch_init.borrow_mut();
+            if image.len() < end {
+                image.resize(end, 0);
+            }
+            image[offset..end].copy_from_slice(init);
+        }
+        u32::try_from(offset).expect("scratch memory offsets fit in a u32")
+    }
+
+    /// The bytes of scratch memory reserved with [`alloc_scratch`](Self::alloc_scratch) and
+    /// [`alloc_scratch_init`](Self::alloc_scratch_init), zeroed except for their initial
+    /// contents: what the code that binds [`SHADER_SCRATCH`](crate::effect_priv::SHADER_SCRATCH)
+    /// passes to `MemView::write`.
+    #[must_use]
+    pub fn scratch_buffer(&self) -> Vec<u8> {
+        let mut buffer = vec![0_u8; self.scratch_bytes.get()];
+        let image = self.scratch_init.borrow();
+        buffer[..image.len()].copy_from_slice(&image);
+        buffer
+    }
+
     /// The bytes of scratch memory reserved with [`alloc_scratch`](Self::alloc_scratch).
     #[must_use]
     pub fn scratch_bytes(&self) -> usize {
@@ -242,6 +292,7 @@ impl ArenaAlloc {
     /// `SkArenaAllocWithReset::reset()`: drops every value, keeping the storage for reuse.
     pub fn reset(&mut self) {
         self.scratch_bytes.set(0);
+        self.scratch_init.get_mut().clear();
         let mut chunk = self.arenas.first.get_mut().map(|c| &mut **c);
         while let Some(c) = chunk {
             for slot in &mut c.slots {
@@ -251,6 +302,21 @@ impl ArenaAlloc {
             }
             chunk = c.next.get_mut().map(|n| &mut **n);
         }
+    }
+}
+
+// Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp#L1697-L1819 (chrome/m156)
+// (the arena calls `appendStages` makes; the trait is `skia_rust_sksl`'s, see its docs)
+impl<'a> SlotAlloc<'a> for ArenaAlloc {
+    fn make<T: Copy + 'static>(&'a self, v: T) -> &'a T {
+        ArenaAlloc::make(self, v)
+    }
+
+    fn alloc_scratch_init(&'a self, bytes: usize, align: usize, init: &[u8]) -> MemPtr {
+        MemPtr::new(
+            SHADER_SCRATCH,
+            ArenaAlloc::alloc_scratch_init(self, bytes, align, init),
+        )
     }
 }
 
@@ -309,5 +375,28 @@ mod tests {
             }
         }
         assert_eq!(drops.get(), 20);
+    }
+
+    #[test]
+    fn scratch_init_is_aligned_copied_and_reset() {
+        let mut alloc = ArenaAlloc::new();
+        // The first reservation starts at 0 and carries its initial contents.
+        assert_eq!(alloc.alloc_scratch_init(8, 16, &[1, 2, 3]), 0);
+        // The next one is aligned past the 8 bytes already reserved.
+        assert_eq!(alloc.alloc_scratch_init(4, 16, &[9, 9, 9, 9]), 16);
+        // A plain reservation adds zeros.
+        assert_eq!(alloc.alloc_scratch(2), 20);
+        assert_eq!(alloc.scratch_bytes(), 22);
+
+        let buffer = alloc.scratch_buffer();
+        assert_eq!(buffer.len(), 22);
+        assert_eq!(&buffer[..3], &[1, 2, 3]);
+        assert!(buffer[3..16].iter().all(|&b| b == 0));
+        assert_eq!(&buffer[16..20], &[9, 9, 9, 9]);
+        assert_eq!(&buffer[20..], &[0, 0]);
+
+        alloc.reset();
+        assert_eq!(alloc.scratch_bytes(), 0);
+        assert_eq!(alloc.scratch_buffer().len(), 0);
     }
 }

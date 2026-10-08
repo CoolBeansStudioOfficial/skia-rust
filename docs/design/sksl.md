@@ -761,8 +761,8 @@ external dependency: S14 ports it 1:1. `Program` holds the instructions, slot co
 `make_stages` returns `Vec<ProgramStage<'a>>` (`Stage<'a>` or one of `Label(i32)`,
 `InvokeShader(i32)`, `InvokeColorFilter(i32)`, `InvokeBlender(i32)`, `ToLinearSrgb(MemPtr)`,
 `FromLinearSrgb(MemPtr)`, `StackRewind`), exactly Skia's `TArray<Stage>`. Contexts are the typed
-simd contexts. Offsets are bytes from the slab's `MemPtr`. Uniform data is `&'a [i32]` (borrowed
-from the arena, already color-space-transformed by `UniformsAsSpan`). Pointer packing
+simd contexts. Offsets are bytes from the slab's `MemPtr`. Uniform data lives in the slab too (the
+uniform block, §6.5), so the uniform contexts hold `MemPtr`s like the others. Pointer packing
 (`SkRPCtxUtils::Pack`) is not observable with typed contexts and is not ported.
 
 Slot memory: `allocateSlotData` (`SkSLRasterPipelineBuilder.cpp#L1675-L1695`) becomes
@@ -814,6 +814,40 @@ the same slot regions Skia derives from pointers (values `v`, temp stack `$`, im
 (`tools/sksltrace/SkSLTraceUtils.cpp`, test tooling built on `SkJSONWriter` and
 `modules/jsonreader`), `DebugTracePlayer` and the `TraceHook` implementation come in S23. The `TraceHook` trait in simd stays where it is; sksl implements it
 (`&self` methods, so the recording hook uses a `Mutex<Vec<_>>`).
+
+### 6.5 As implemented in S15
+
+`crates/skia-rust-sksl/src/codegen/rp/append.rs` ports `Program::allocateSlotData` and
+`Program::appendStages`. `make_stages` (S14, `program.rs`) is unchanged and still returns its own
+`Stage { op, ctx: StageCtx }` list; `appendStages` lowers each entry to a simd `Stage<'a>`.
+
+- **Traits.** `StageSink<'a>` (`append`, `append_stack_rewind`, `num_stages`, and two additions:
+  `replace_stage`, because a branch's target is known only after its label is placed, and
+  `set_lane_count`), `SlotAlloc<'a>` (`make`, `alloc_scratch_init`) and `Callbacks<'a, P>`, taken
+  as `Option<&mut dyn Callbacks<'a, P>>`. Core implements `StageSink` for `RasterPipeline<'a>` and
+  `SlotAlloc` for `ArenaAlloc`.
+- **Lane count and R8.** The stages use `selection().tier.highp_stride()` at append time. The
+  pipeline records it (`RasterPipeline::lane_count`), and `run`/`compile` debug-assert that the
+  tier matches.
+- **The slab.** One `alloc_scratch_init` reserves values, temp stacks, immutable slots and the
+  uniform block, in that order, with the immutable values and the uniform bit patterns written in
+  its initial image. `ArenaAlloc::scratch_buffer` gives the bytes that the code binding
+  `SHADER_SCRATCH` passes to `MemView::write` (the blitter, and the default `on_filter_color4f`).
+  Uniform offsets (`Addr::Uniform`) become slab offsets, so the uniform copies read scalars from
+  slot memory, as Skia's `const int32_t*` sources do.
+- **Contexts are `'static`.** The simd contexts `UniformCtx` and `CopyIndirectUniformCtx` hold
+  `src: MemPtr` (not `&[i32]`), so they can be allocated in the arena like every other context and
+  `Stage` stays two words (`stages_are_small`). The rp-diff replayer binds each uniform stage's
+  values to its own slot (`UNIFORM_SLOT_BASE + stage index`). Two ported `SkRasterPipelineTest`
+  cases (`CopyUniforms`, `CopyFromIndirectUniformUnmasked`) bind their uniform arrays as memory
+  slots, as Skia's pointer does; their assertions are unchanged.
+- **Trace ops are rejected.** `appendStages` returns `false` before appending anything when the
+  program has a trace op. Their contexts hold a `&dyn TraceHook`, and S23 provides the hook.
+- **Tests.** `raster_pipeline/sksl_tests.rs` builds programs with the builder and runs them on every
+  tier (`oracle_selection`): constants and n-way arithmetic, immutable and uniform data, a forward
+  jump, a stack-top branch whose target is patched in, a child invocation through `Callbacks`, the
+  rejected trace op, and a lane-count mismatch (should panic). The rp-diff uniform cases still
+  match their committed expectations.
 
 ## 7. RuntimeEffect integration (core)
 
