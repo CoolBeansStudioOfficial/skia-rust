@@ -16841,7 +16841,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L237-L237"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "73f091c708bcd39031e74f0f0fbbe7f984409dc399fc752c1d5a6bdf1433e006"
 
 [[test]]
@@ -16850,7 +16850,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L236-L236"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "72f2d67106ba862d8b1e59d91fbdac9b22ce8f1f756729e4fbe25ee2615e7bf1"
 
 [[test]]
@@ -16859,7 +16859,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L238-L238"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "623ccaea5fc807c1deb489f91d0fe2c9d55709a9f8dc2cd726769cc8ff3cf426"
 
 [[test]]
@@ -16868,7 +16868,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L240-L240"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ea695a27fc8501b6d59707cb0680e452379cdf63f60888533dd4a84e151b689d"
 
 [[test]]
@@ -17048,7 +17048,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L249-L249"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "51f282a9762a6aec64db704194e66d0fb4532687ddf490d4c3cd35b2b354eeb7"
 
 [[test]]
@@ -17057,7 +17057,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L252-L252"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8a98957f8a53489172ba4bc281ea384831c19e0f8fe355acc5d79854a3a76c5e"
 
 [[test]]
@@ -17066,7 +17066,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L253-L253"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1cd62c1fcc2522b3f6cdbab1a2fbaa14d4b7629ec07f5ee85032fac1487cb38b"
 
 [[test]]
@@ -17075,7 +17075,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L251-L251"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e83e782f552065233bc89664435fde7e47dc14224cc018dd91463d63f6a33d8d"
 
 [[test]]
@@ -17084,7 +17084,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L254-L254"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2c54ce6c0948aeb99fbcbe80c49e9e768445f32bf93fe42159b83ea0e1c05fbc"
 
 [[test]]
@@ -17093,7 +17093,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L275-L275"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c0ed9c208914c65779d9ae53a9a31531ef71488bfd45a9bf97b0a079de2eab58"
 
 [[test]]
@@ -17102,7 +17102,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L276-L276"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9426c9fc3140b56bad960fc89beb93764a029af62a3f6f96fd2a413403c42c38"
 
 [[test]]
@@ -17228,7 +17228,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L255-L255"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6c782ebf254bebe359c12846e67f0452f55c8c7c83091d958366449f7953cd41"
 
 [[test]]
@@ -17237,7 +17237,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L277-L277"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "abc9fad92887b061cb27be865dd348f8b16b16d8eee1ef04e32682032d98e61d"
 
 [[test]]
@@ -17246,7 +17246,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L280-L280"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2a5753ff0f4546fdb78775e67dafdb17a548289fe106cb2feccf45d6ea3f5e28"
 
 [[test]]
@@ -17255,7 +17255,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L281-L281"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6601f5660299f880d015e7ee6c91fddaab49a2e0ad1ad7bc0bd3981692b3d911"
 
 [[test]]
@@ -17264,7 +17264,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L283-L283"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "74fce02e3ce771f67c2432f78ddf85ec61a8dc9772c7f4163c98c1cd5adc233c"
 
 [[test]]
@@ -17273,7 +17273,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L284-L284"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ba8c45b3f81ab14ebfc994338c90af66664ac20dacc7b415d3ece48d0942909d"
 
 [[test]]
@@ -17282,7 +17282,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L282-L282"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1d66a8a1f4b6d6445ed68b23c78931668df4cb3c4e48d8fbd33cc5231f714643"
 
 [[test]]
@@ -17291,7 +17291,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L285-L285"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "431a73f3c06a8d9def205dc8493f226559f310d62bbbf082f74db86f8cf84a00"
 
 [[test]]
@@ -17300,7 +17300,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L321-L321"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "845954505e1f47c10c227fe06c848fcefc8bb23ec351f08328d3a5f66a7a81d7"
 
 [[test]]
@@ -17327,7 +17327,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L286-L286"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "79c969c4479a55d73fc5cbbd16bc9cc6230d203455a03680f5fc24fa1359e154"
 
 [[test]]
@@ -17363,7 +17363,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L289-L289"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ec0659bff5f377ee624b03e51d23572a43a216d49300daf1466828fdcc21733f"
 
 [[test]]
@@ -17399,7 +17399,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L293-L293"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "dc42a39cf5e0ff2774010c0cb67c41fb391bd7594b1b9f63ca17aeb6883e879d"
 
 [[test]]
@@ -17408,7 +17408,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L297-L297"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5fffb4adcad7f8aa1ee5c221a28c5bc07441d24e3b65bf46dec02a068c126470"
 
 [[test]]
@@ -17426,7 +17426,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L298-L298"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "03330dd34fa14dc2a41d98963af1bbd9a5e926d7453910a87ef36d52b6e0340b"
 
 [[test]]
@@ -17435,7 +17435,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L319-L319"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "747a19c3b5489638145ea434a1f611bf3511f13f381491ab7f88042b46215934"
 
 [[test]]
@@ -17444,7 +17444,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L320-L320"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "11df5ce597461b580519c605480a1faabbc13e13dc21b87563a2d4278b0ec1f5"
 
 [[test]]
@@ -17453,7 +17453,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L301-L301"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fe8d340cb6afd0e1a2e6265f00f9bf3e6ad4493e9c29f8ece66df32c23014d99"
 
 [[test]]
@@ -17462,7 +17462,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L302-L302"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3c883c6ce5f01ac12b1bad59f56e6ed466800ec20eabe06556df3d7866e1bf06"
 
 [[test]]
@@ -17525,7 +17525,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L300-L300"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d9a949886f8731abf228985d5b5d0ce1efa115a51dc6cfcbedf12d0bb37cae96"
 
 [[test]]
@@ -17534,7 +17534,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L303-L303"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "514880dd9284a67510784bbf0c63fd65f5baacc60e1b27c8136c738bc2ca64ca"
 
 [[test]]
@@ -17561,7 +17561,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L316-L316"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a4129edceb0611b4784bcdf6a67ed6281a65ee61adf5a6ecf6919bdb594aaba5"
 
 [[test]]
@@ -23418,7 +23418,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L231-L231"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "eb06d88b342d9bdf39364a5e8d29516855c60ac5a00306a2c86189cb3ef7218e"
 
 [[test]]
@@ -23427,7 +23427,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L237-L237"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "984024eddafa08f0890c65fa2ebefc96bc1416a79a8f27c38809d73120ffc2b9"
 
 [[test]]
@@ -23436,7 +23436,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L234-L234"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0ea351896e05711d50886de365fc7ff926997e88452d8e0dd263ecfd21f0b4de"
 
 [[test]]
@@ -23445,7 +23445,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L240-L240"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0f00d813b882c30979f88b7394a4baa074ad2769834d6b84ca523650e7b9f169"
 
 [[test]]
@@ -23463,7 +23463,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L233-L233"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0f8c68ab60a18e86aef1b07e48ce5e38503b8f38f8630957a9e6d66f4e9235a"
 
 [[test]]
@@ -23472,7 +23472,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L239-L239"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fc222b31e31bfd0748a7c56107dacfa929b757c1ce97e220790773f29224f80c"
 
 [[test]]
@@ -23481,7 +23481,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L236-L236"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "df6b924e285548bfb87f62f0ec8500749541c0ddcc96d69ecf5e318d7ef2c384"
 
 [[test]]
@@ -23490,7 +23490,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L242-L242"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1b712e958ba7ecb7e4d6b54c86d1cd75c16c4e2e247e7d57fa8cd22e7e5c570a"
 
 [[test]]
@@ -23508,7 +23508,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L232-L232"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4d111f2859a6f27d21a4922b666b9142d7298ff75eb8233d6545513dbec31685"
 
 [[test]]
@@ -23517,7 +23517,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L238-L238"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c204205dc0a553c5597759c2a41d3b8291a22f9d0f469b48cf909083fda680ff"
 
 [[test]]
@@ -23526,7 +23526,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L235-L235"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "508a786a114dec045b0be9406d3b891da38b860d5398c0bde0b72bb1aaf2abdd"
 
 [[test]]
@@ -23535,7 +23535,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L241-L241"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "88180c175f5b9a294f25b199df105f05262262608c755b91def6344ab009dca0"
 
 [[test]]
