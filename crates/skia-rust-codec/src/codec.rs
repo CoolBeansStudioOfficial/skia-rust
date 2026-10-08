@@ -809,7 +809,8 @@ impl<'a> Codec<'a> {
         // or a destination too small for `count` rows, would panic on slice indexing below. Zero
         // lines decoded is the only failure value this signature can carry, so report that.
         // A sampled decode writes rows of the sampler's width, which is narrower than the native
-        // destination, so the check uses the width the sampler fills.
+        // destination, so the check uses the width the sampler fills. The stride only separates
+        // rows, so a single line (`count == 1`) takes any `row_bytes`, as Skia's does.
         let row_width = match self.imp.on_get_sampler(&self.base, false) {
             Some(sampler) => sampler.fill_width(),
             None => self.base.dst_info.width(),
@@ -818,7 +819,7 @@ impl<'a> Codec<'a> {
         let Ok(count_usize) = usize::try_from(count) else {
             return 0;
         };
-        if row_bytes < min_row_bytes
+        if (count_usize > 1 && row_bytes < min_row_bytes)
             || (count_usize - 1)
                 .checked_mul(row_bytes)
                 .and_then(|n| n.checked_add(min_row_bytes))

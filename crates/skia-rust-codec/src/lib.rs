@@ -5,11 +5,14 @@
 
 //! Skia's codec layer: the [`Codec`] base, its decoders, and the helpers they share.
 //!
-//! What is ported so far: the base (`SkCodec`) for still images, scanline decoding, the sampler
-//! (`SkSampler`, its fill and sample-Y state), and the swizzler (`SkSwizzler`, every row routine
-//! and `Make`/`MakeSimple`/`setSampleX`), the mask swizzler, and the PNG, BMP and WBMP decoders.
-//! The ICO and JPEG decoders, the Android and sampled codecs, and the animation, incremental and
-//! lazy-image parts follow in later waves (`docs/design/codecs.md`).
+//! What is ported so far: the base (`SkCodec`) for still images, scanline and incremental
+//! decoding, the sampler (`SkSampler`, its fill and sample-Y state), and the swizzler
+//! (`SkSwizzler`, every row routine and `Make`/`MakeSimple`/`setSampleX`), the mask swizzler, and
+//! the PNG, BMP, ICO and WBMP decoders. The Android codec (`SkAndroidCodec`) and the sampled codec
+//! (`SkSampledCodec`) are ported, and so are the lazy images: `SkImageGenerator`,
+//! `SkCodecImageGenerator` and the deferred images made from encoded data. The JPEG, WebP and GIF
+//! decoders, the animation parts, `SkCodec::getImage` and the PNG encoder follow in later waves
+//! (`docs/design/codecs.md`).
 
 pub mod android_codec;
 mod android_codec_adapter;

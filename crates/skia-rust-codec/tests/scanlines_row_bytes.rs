@@ -19,8 +19,10 @@ fn get_scanlines_rejects_short_row_bytes_and_dst() {
     assert_eq!(codec.start_scanline_decode(&info, None), Result::Success);
 
     let mut dst = vec![0u8; 2 * row_bytes];
-    // A stride shorter than one row must not reach the decoder.
-    assert_eq!(codec.get_scanlines(&mut dst, 1, row_bytes - 1), 0);
+    // A stride shorter than one row must not reach the decoder when it separates rows. A single
+    // line never uses the stride (Skia's `getScanlines` only steps by it between rows), so that
+    // case decodes the one row, as in Skia.
+    assert_eq!(codec.get_scanlines(&mut dst, 2, row_bytes - 1), 0);
     // A destination too small for `count` rows must not reach the decoder.
     assert_eq!(
         codec.get_scanlines(&mut dst[..row_bytes - 1], 1, row_bytes),
@@ -29,7 +31,8 @@ fn get_scanlines_rejects_short_row_bytes_and_dst() {
     // A negative count is also a zero-line result, as in Skia.
     assert_eq!(codec.get_scanlines(&mut dst, -1, row_bytes), 0);
 
-    // With valid arguments the decode proceeds, one row at a time.
-    assert_eq!(codec.get_scanlines(&mut dst, 1, row_bytes), 1);
+    // With valid arguments the decode proceeds, one row at a time. A single line decodes even
+    // with a stride shorter than a row, as in Skia (the stride is not used for one line).
+    assert_eq!(codec.get_scanlines(&mut dst, 1, row_bytes - 1), 1);
     assert_eq!(codec.get_scanlines(&mut dst, 1, row_bytes), 1);
 }
