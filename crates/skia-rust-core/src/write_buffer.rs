@@ -62,7 +62,8 @@ impl Writer32 {
     /// Writes a scalar as its bit pattern in one word (`writeScalar`).
     // Port of: src/core/SkWriter32.h#L122-L124 (chrome/m156)
     pub fn write_scalar(&mut self, value: f32) {
-        self.reserve(size_of::<f32>()).copy_from_slice(&value.to_ne_bytes());
+        self.reserve(size_of::<f32>())
+            .copy_from_slice(&value.to_ne_bytes());
     }
 
     /// Reserves `size` bytes, which need not be a multiple of 4: the remaining space (if any) is

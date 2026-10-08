@@ -70,6 +70,7 @@ pub mod front_buffered_stream;
 pub mod gauss_filter;
 pub mod geometry;
 pub mod glyph;
+pub mod graphics;
 pub mod half;
 pub mod id_change_listener;
 pub mod image;
@@ -175,6 +176,12 @@ pub mod special_image;
 pub mod stream;
 #[doc(hidden)]
 pub mod stream_priv;
+#[doc(hidden)]
+pub mod strike;
+#[doc(hidden)]
+pub mod strike_cache;
+#[doc(hidden)]
+pub mod strike_spec;
 pub mod string;
 #[doc(hidden)]
 pub mod string_utils;

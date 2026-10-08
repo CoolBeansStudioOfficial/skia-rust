@@ -42,7 +42,7 @@ const FIXED_POINT_SUB_PIXEL_POS_BITS: u32 = FIXED_POINT_BINARY_POINT_POS - SUB_P
 /// The default value is `kImpossibleID`, which no glyph has.
 // Port of: src/core/SkGlyph.h#L46-L213 (chrome/m156)
 #[doc(alias = "SkPackedGlyphID")]
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PackedGlyphId {
     id: u32,
 }

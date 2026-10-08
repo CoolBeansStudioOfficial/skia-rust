@@ -32044,6 +32044,7 @@ macro = "DEF_TEST"
 source = "tests/FontTest.cpp#L74-L116"
 module = "text"
 status = "todo"
+reason = "needs T17 custom typeface (SampleUserTypeface) and typeface serialization (T16)"
 span_hash = "4862e87eb273b206502f89e780f3a32644a0f6394027f4e06a82e613abdc00fb"
 
 [[test]]
@@ -36902,6 +36903,7 @@ macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L208-L244"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface (ToolUtils::DefaultFont)"
 span_hash = "b16c2eb134ce6f0f128e4895e95b4e2d8d048185ad9d69668965dad29fff177a"
 
 [[test]]
@@ -36965,6 +36967,7 @@ macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L149-L160"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface (ToolUtils::DefaultFont)"
 span_hash = "6a99824825463a8ad4924f7abf6a12c3d8e1836c2b936a633841e11751fa16fc"
 
 [[test]]
@@ -42240,6 +42243,7 @@ macro = "DEF_TEST"
 source = "tests/SkFontMetricsPrivTest.cpp#L22-L51"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface (CreateTestTypeface)"
 span_hash = "0f7d86a4726e2462c894396f393db381c4991c2750721732021d1ae56c2ddbe9"
 
 [[test]]
@@ -43873,7 +43877,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1403-L1412"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b563962d55f08c2cf624c7c26ed5daf83e9cfe5eb1f15c7b9c4b2b5906facc13"
 
 [[test]]
@@ -47270,6 +47274,7 @@ macro = "DEF_TEST"
 source = "tests/SkStrikeCacheTest.cpp#L23-L63"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface (CreatePortableTypeface)"
 span_hash = "261c28a3ade67fc0c1ec8de601aa9d0b90c16b727bdd716a772e67b2f3cd09fc"
 
 [[test]]
@@ -47279,6 +47284,7 @@ macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L109-L175"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface (CreatePortableTypeface)"
 span_hash = "f5d05cda730c39f1c16f2a9cce764a78bb1e640f5878028f21f80337b7241ba9"
 
 [[test]]
@@ -47288,6 +47294,7 @@ macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L200-L295"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface and remote strike flattening (T23)"
 span_hash = "d14dc33247823ab02f49c3095708c1e3c19cf4d6ada2eac09802a1dad829dde1"
 
 [[test]]
@@ -47798,6 +47805,7 @@ macro = "DEF_TEST"
 source = "tests/StrikeForGPUTest.cpp#L27-L61"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface and strike promise flattening (T23)"
 span_hash = "2f1bd011453b797e9412e8b8324c69942e1d1d114a9e6ffd03132376d426c35d"
 
 [[test]]

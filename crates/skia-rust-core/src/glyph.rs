@@ -20,10 +20,11 @@ use crate::mask::MaskFormat;
 use crate::packed_glyph_id::PackedGlyphId;
 use crate::path::Path;
 use crate::picture::Picture;
-use crate::point::Point;
+use crate::point::{IPoint, Point};
 use crate::rect::IRect;
 use crate::rect::Rect;
 use crate::scalar::scalar;
+use crate::scaler_context::AxisAlignment;
 
 /// `SkGlyph::kMaxGlyphWidth`: glyphs at least this wide have no image in the atlas.
 // Port of: src/core/SkGlyph.h#L573 (chrome/m156)
@@ -332,7 +333,6 @@ impl GlyphDigest {
     /// must still be `Unset`. `setActionFor` (which also sets the strike's pending work) arrives
     /// with the strike.
     // Port of: src/core/SkGlyph.h#L386-L393 (chrome/m156)
-    #[allow(dead_code)] // consumed by the scaler context, which arrives with T6
     pub(crate) fn set_action(&mut self, action_type: ActionType, action: GlyphAction) {
         assert_ne!(action, GlyphAction::Unset);
         assert_eq!(self.action_for(action_type), GlyphAction::Unset);
@@ -715,6 +715,18 @@ impl Glyph {
         )
     }
 
+    /// `SkGlyph::rect`: the glyph's bounds as a rectangle, from its left, top, width and height.
+    // Port of: src/core/SkGlyph.h#L516 (chrome/m156)
+    #[must_use]
+    pub fn rect(&self) -> Rect {
+        Rect::from_ltrb(
+            f32::from(self.left),
+            f32::from(self.top),
+            f32::from(self.left) + f32::from(self.width),
+            f32::from(self.top) + f32::from(self.height),
+        )
+    }
+
     /// `SkGlyph::glyphRect`.
     // Port of: src/core/SkGlyph.h#L517-L519 (chrome/m156)
     #[must_use]
@@ -833,5 +845,81 @@ impl DrawableBase for PictureBackedGlyphDrawable {
     // Port of: src/core/SkGlyph.cpp#L98-L100 (chrome/m156)
     fn on_draw(&self, canvas: &Canvas) {
         canvas.draw_picture(&self.picture, None, None);
+    }
+}
+
+/// How a glyph's position is rounded for a strike (`SkGlyphPositionRoundingSpec`): the half
+/// sample frequency that the painter adds before flooring, and the masks that drop the
+/// position field the strike ignores.
+// Port of: src/core/SkGlyph.h#L231-L240 (chrome/m156)
+#[doc(alias = "SkGlyphPositionRoundingSpec")]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct GlyphPositionRoundingSpec {
+    /// `halfAxisSampleFreq`.
+    pub half_axis_sample_freq: Point,
+    /// `ignorePositionMask`.
+    pub ignore_position_mask: IPoint,
+    /// `ignorePositionFieldMask`.
+    pub ignore_position_field_mask: IPoint,
+}
+
+impl GlyphPositionRoundingSpec {
+    /// `SkGlyphPositionRoundingSpec(bool isSubpixel, SkAxisAlignment axisAlignment)`.
+    // Port of: src/core/SkGlyph.cpp#L728-L732 (chrome/m156)
+    #[must_use]
+    pub fn new(is_subpixel: bool, axis_alignment: AxisAlignment) -> Self {
+        Self {
+            half_axis_sample_freq: Self::half_axis_sample_freq(is_subpixel, axis_alignment),
+            ignore_position_mask: Self::ignore_position_mask(is_subpixel, axis_alignment),
+            ignore_position_field_mask: Self::ignore_position_field_mask(
+                is_subpixel,
+                axis_alignment,
+            ),
+        }
+    }
+
+    /// `SkGlyphPositionRoundingSpec::HalfAxisSampleFreq`.
+    // Port of: src/core/SkGlyph.cpp#L695-L712 (chrome/m156)
+    #[must_use]
+    pub fn half_axis_sample_freq(is_subpixel: bool, axis_alignment: AxisAlignment) -> Point {
+        if !is_subpixel {
+            return Point::new(0.5, 0.5);
+        }
+        match axis_alignment {
+            AxisAlignment::X => Point::new(PackedGlyphId::SUBPIXEL_ROUND, 0.5),
+            AxisAlignment::Y => Point::new(0.5, PackedGlyphId::SUBPIXEL_ROUND),
+            AxisAlignment::None => {
+                Point::new(PackedGlyphId::SUBPIXEL_ROUND, PackedGlyphId::SUBPIXEL_ROUND)
+            }
+        }
+    }
+
+    /// `SkGlyphPositionRoundingSpec::IgnorePositionMask`: all bits set on the ignored axes.
+    // Port of: src/core/SkGlyph.cpp#L714-L718 (chrome/m156)
+    #[must_use]
+    pub fn ignore_position_mask(is_subpixel: bool, axis_alignment: AxisAlignment) -> IPoint {
+        let x = if !is_subpixel || axis_alignment == AxisAlignment::Y {
+            0
+        } else {
+            !0
+        };
+        let y = if !is_subpixel || axis_alignment == AxisAlignment::X {
+            0
+        } else {
+            !0
+        };
+        IPoint::new(x, y)
+    }
+
+    /// `SkGlyphPositionRoundingSpec::IgnorePositionFieldMask`: the ignore mask restricted to the
+    /// packed id's x and y fields.
+    // Port of: src/core/SkGlyph.cpp#L720-L726 (chrome/m156)
+    #[must_use]
+    pub fn ignore_position_field_mask(is_subpixel: bool, axis_alignment: AxisAlignment) -> IPoint {
+        let ignore_mask = Self::ignore_position_mask(is_subpixel, axis_alignment);
+        IPoint::new(
+            ignore_mask.x & PackedGlyphId::XY_FIELD_MASK.x,
+            ignore_mask.y & PackedGlyphId::XY_FIELD_MASK.y,
+        )
     }
 }
