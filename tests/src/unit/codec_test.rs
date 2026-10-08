@@ -959,10 +959,34 @@ def_test!(Codec_png_plte_trns, |r| {
     // Alpha in `tRNS` chunk is: 64 (i.e. 25% or 0x40)
     //
     // After alpha premultiplication by 25% we should get: R=25, G=38, B=50.
-    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::RGBA8888, AlphaType::Unpremul, [100, 150, 200, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::BGRA8888, AlphaType::Unpremul, [200, 150, 100, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::RGBA8888, AlphaType::Premul, [25, 38, 50, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns.png", ColorType::BGRA8888, AlphaType::Premul, [50, 38, 25, 64]);
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns.png",
+        ColorType::RGBA8888,
+        AlphaType::Unpremul,
+        [100, 150, 200, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns.png",
+        ColorType::BGRA8888,
+        AlphaType::Unpremul,
+        [200, 150, 100, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns.png",
+        ColorType::RGBA8888,
+        AlphaType::Premul,
+        [25, 38, 50, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns.png",
+        ColorType::BGRA8888,
+        AlphaType::Premul,
+        [50, 38, 25, 64],
+    );
 });
 
 // Port of: tests/CodecTest.cpp#L719-L732 (Codec_png_plte_trns_gama)
@@ -973,10 +997,34 @@ def_test!(Codec_png_plte_trns_gama, |r| {
     // After `gAMA` transformation we should get: R=161, G=197, B=227.
     //
     // After alpha premultiplication by 25% we should get: R=40, G=49, B=57.
-    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::RGBA8888, AlphaType::Unpremul, [161, 197, 227, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::BGRA8888, AlphaType::Unpremul, [227, 197, 161, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::RGBA8888, AlphaType::Premul, [40, 49, 57, 64]);
-    verify_first_four_decoded_bytes(r, "plte_trns_gama.png", ColorType::BGRA8888, AlphaType::Premul, [57, 49, 40, 64]);
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns_gama.png",
+        ColorType::RGBA8888,
+        AlphaType::Unpremul,
+        [161, 197, 227, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns_gama.png",
+        ColorType::BGRA8888,
+        AlphaType::Unpremul,
+        [227, 197, 161, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns_gama.png",
+        ColorType::RGBA8888,
+        AlphaType::Premul,
+        [40, 49, 57, 64],
+    );
+    verify_first_four_decoded_bytes(
+        r,
+        "plte_trns_gama.png",
+        ColorType::BGRA8888,
+        AlphaType::Premul,
+        [57, 49, 40, 64],
+    );
 });
 
 // Port of: tests/CodecTest.cpp#L2262-L2283 (chrome/m156)

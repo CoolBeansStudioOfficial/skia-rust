@@ -23243,7 +23243,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/repeated_bitmap.cpp#L53-L56"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "06abcd1ffbca3b2032936e419fd70b0c1023ae45573fca3e604055385ff8c6f0"
 
 [[test]]
@@ -30017,8 +30017,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L706-L717"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported); the PNG decode itself is ported"
+status = "passing"
 span_hash = "0f7287009cd7026e30d9960f3ab5622e522fd649cd9fc447df694496aba634d4"
 
 [[test]]
@@ -30027,8 +30026,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L719-L732"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported); the PNG decode itself is ported"
+status = "passing"
 span_hash = "2ecf31b1f7e5572d8fe2e261dd2d514f5a457a5b83d4721935c0c7efbac68bc5"
 
 [[test]]
@@ -30167,7 +30165,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2547-L2560"
 module = "codec"
 status = "todo"
-reason = "needs SkCodec::getImage (not ported)"
+reason = "getImage is ported; skia-rust-skcms transform returns false for the PNG 16-bit BE source to RGBA_F16 with the source profile as destination (prep_for_destination), so the SkAssertResult in applyColorXform fails"
 span_hash = "af792d2e6898903f395d41c6195802e536a006609d8f23703f17e85cd32855d7"
 
 [[test]]
@@ -35334,7 +35332,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1360-L1397"
 module = "skcms"
 status = "todo"
-reason = "needs SkColorSpace::MakeRGB with the named gamuts (kDisplayP3, kAdobeRGB), which are not ported; the 1x1.png decode is ported"
+reason = "MakeRGB named gamuts and makeColorSpace exist; the converted Display P3 and Adobe RGB pixels are 3 off in R and B (test allows 2); suspect the raster-pipeline colour xform, not the gamut matrices (which match skia)"
 span_hash = "c69695c1cbc1e1b9b88b48e183848864729adf333cf7c650d1d136275f55a981"
 
 [[test]]

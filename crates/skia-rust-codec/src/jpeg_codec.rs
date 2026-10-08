@@ -172,7 +172,7 @@ fn out_color_space(
     encoded: JColorSpace,
 ) -> Option<JColorSpace> {
     let mut out = match color_type {
-        ColorType::RGBA8888 => JColorSpace::ExtRgba,
+        ColorType::RGBA8888 | ColorType::RGBAF16 | ColorType::BGR101010xXR => JColorSpace::ExtRgba,
         ColorType::BGRA8888 => {
             if needs_color_xform {
                 // Colour xforms take RGBA input.
@@ -198,7 +198,6 @@ fn out_color_space(
                 JColorSpace::Grayscale
             }
         }
-        ColorType::RGBAF16 | ColorType::BGR101010xXR => JColorSpace::ExtRgba,
         _ => return None,
     };
     // libjpeg-turbo does not convert CMYK to RGBA, so the swizzler (or the colour xform) does.
@@ -227,6 +226,11 @@ fn needs_swizzler_from_cmyk(out: JColorSpace, profile: Option<&IccProfile>, xfor
     }
     let has_cmyk_color_space = profile.is_some_and(|p| data_space(p) == DataSpace::Cmyk);
     !has_cmyk_color_space || !xform
+}
+
+/// Whether `rows` decoded rows fall short of `height`.
+fn rows_short(rows: i32, height: usize) -> bool {
+    usize::try_from(rows).unwrap_or(0) < height
 }
 
 /// Reads one scanline into `buf`, or nothing when libjpeg has no more rows. A libjpeg error is
@@ -258,19 +262,19 @@ fn read_rows(
 
     for y in 0..count {
         let offset = y * row_bytes;
-        let decoded = if swizzler.is_some() {
+        let read = if swizzler.is_some() {
             read_one_row(decoder, &mut swizzle_src)
         } else if xform {
             read_one_row(decoder, &mut xform_src)
         } else {
             read_one_row(decoder, &mut dst[offset..offset + out_row_len])
         };
-        let Some(lines) = decoded else {
+        let Some(lines) = read else {
             *rows_decoded = 0;
             return Result::InvalidInput;
         };
         if lines == 0 {
-            *rows_decoded = y as i32;
+            *rows_decoded = i32::try_from(y).unwrap_or(i32::MAX);
             return Result::Success;
         }
 
@@ -286,7 +290,7 @@ fn read_rows(
             base.apply_color_xform(&mut dst[offset..], &xform_src, out_row_len / 4);
         }
     }
-    *rows_decoded = count as i32;
+    *rows_decoded = i32::try_from(count).unwrap_or(i32::MAX);
     Result::Success
 }
 
@@ -346,7 +350,7 @@ impl JpegCodec {
             None
         };
 
-        let height = info.height() as usize;
+        let height = usize::try_from(info.height()).unwrap_or(0);
         let mut rows = 0;
         if decoder.progressive_mode {
             // Port of the progressive branch: consume the input, then decode the last complete scan.
@@ -387,7 +391,7 @@ impl JpegCodec {
             if read_result != Result::Success {
                 return Result::InvalidInput;
             }
-            if (rows as usize) < height {
+            if rows_short(rows, height) {
                 *rows_decoded = rows;
                 return Result::IncompleteInput;
             }
@@ -412,7 +416,7 @@ impl JpegCodec {
             out_len,
             &mut rows,
         );
-        if (rows as usize) < height {
+        if rows_short(rows, height) {
             *rows_decoded = rows;
             return Result::IncompleteInput;
         }
@@ -483,7 +487,7 @@ fn read_all(stream: &mut dyn Stream) -> Vec<u8> {
     out
 }
 
-/// The APPn marker payloads that decide the codec's colour, read from the header. Saved by
+/// The `APPn` marker payloads that decide the codec's colour, read from the header. Saved by
 /// `jpeg_save_markers` before `jpeg_read_header`.
 struct Header {
     width: i32,
@@ -575,6 +579,10 @@ fn read_icc_profile(markers: &[SavedMarker]) -> Option<Vec<u8>> {
 
 /// Port of `SkJpegCodec::MakeFromStream`: reads the header and the ICC profile, and builds the
 /// codec.
+///
+/// # Errors
+/// The header's result: `IncompleteInput` for a truncated header, `InvalidInput` for a file that
+/// is not a JPEG or has no image.
 // Port of: src/codec/SkJpegCodec.cpp#L86-L150 (MakeFromStream)
 pub fn make_from_stream<'a>(
     mut stream: Box<dyn Stream + Send + 'a>,
@@ -593,17 +601,17 @@ pub fn make_from_stream<'a>(
 
     // An ICC profile whose data space does not match the JPEG's colour is dropped.
     let mut info = EncodedInfo::make(header.width, header.height, color, Alpha::Opaque, 8);
-    if let Some(bytes) = read_icc_profile(&header.markers) {
-        if let Some(profile) = skia_rust_skcms::parse(&bytes) {
-            let space = data_space(&profile);
-            let matches = match header.jpeg_color_space {
-                JColorSpace::Cmyk | JColorSpace::Ycck => space == DataSpace::Cmyk,
-                JColorSpace::Grayscale => space == DataSpace::Gray || space == DataSpace::Rgb,
-                _ => space == DataSpace::Rgb,
-            };
-            if matches {
-                info = info.with_profile(Arc::from(bytes), profile);
-            }
+    let icc = read_icc_profile(&header.markers)
+        .and_then(|bytes| skia_rust_skcms::parse(&bytes).map(|profile| (bytes, profile)));
+    if let Some((bytes, profile)) = icc {
+        let space = data_space(&profile);
+        let matches = match header.jpeg_color_space {
+            JColorSpace::Cmyk | JColorSpace::Ycck => space == DataSpace::Cmyk,
+            JColorSpace::Grayscale => space == DataSpace::Gray || space == DataSpace::Rgb,
+            _ => space == DataSpace::Rgb,
+        };
+        if matches {
+            info = info.with_profile(Arc::from(bytes), profile);
         }
     }
 

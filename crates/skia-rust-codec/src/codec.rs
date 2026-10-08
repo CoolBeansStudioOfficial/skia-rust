@@ -687,17 +687,14 @@ impl<'a> Codec<'a> {
         info: impl Into<Option<ImageInfo>>,
         options: impl Into<Option<&'o Options>>,
     ) -> std::result::Result<skia_rust_core::image::Image, Result> {
-        let info = match info.into() {
-            Some(info) => info,
-            None => {
-                let info = self.info();
-                if self.origin().swaps_width_height() {
-                    info.with_wh(info.height(), info.width())
-                } else {
-                    info
-                }
+        let info = info.into().unwrap_or_else(|| {
+            let info = self.info();
+            if self.origin().swaps_width_height() {
+                info.with_wh(info.height(), info.width())
+            } else {
+                info
             }
-        };
+        });
         let default_options = Options::default();
         let options = options.into().unwrap_or(&default_options);
 
@@ -706,7 +703,8 @@ impl<'a> Codec<'a> {
         let origin = self.origin();
         let mut result = Result::InternalError;
         {
-            let Some(mut pixmap) = skia_rust_core::pixmap::Pixmap::new(&info, &mut storage, row_bytes)
+            let Some(mut pixmap) =
+                skia_rust_core::pixmap::Pixmap::new(&info, &mut storage, row_bytes)
             else {
                 return Err(Result::InternalError);
             };

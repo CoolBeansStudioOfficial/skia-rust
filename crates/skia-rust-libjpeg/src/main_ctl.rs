@@ -157,7 +157,7 @@ impl Decompress {
     }
 
     /// `set_wraparound_pointers`: the context rows at the top and bottom of the rolling buffer.
-    fn set_wraparound_pointers(&mut self) {
+    pub(crate) fn set_wraparound_pointers(&mut self) {
         let m = self.min_dct_scaled_size as usize;
         for ci in 0..self.num_components as usize {
             let c = self.comp_info[ci];

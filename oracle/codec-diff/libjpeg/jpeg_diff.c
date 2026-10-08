@@ -1,6 +1,6 @@
 /*
  * Differential harness for skia-rust-libjpeg: drives libjpeg-turbo 3.1.0 (the C library, built
- * with clang, no SIMD, JPEG_LIB_VERSION 80) through the calls Skia's SkJpegCodec makes, and prints
+ * with clang, no SIMD, JPEG_LIB_VERSION 62 as in Skia's jconfig.h) through the calls Skia's SkJpegCodec makes, and prints
  * one line per case:
  *
  *   <file>|<case>|<status>|<rows>|<fnv1a-64 of the output bytes>

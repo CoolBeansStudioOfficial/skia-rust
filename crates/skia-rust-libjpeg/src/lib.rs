@@ -14,24 +14,26 @@
 //!
 //! Output is the same as libjpeg-turbo's C code built for x64 without SIMD (the goldens' build).
 //! The IDCT, upsampling and colour conversion are the C integer arithmetic, with `JLONG` as
-//! 32 bits. The differential harness in `oracle/codec-diff` checks the output against the C
-//! library, byte for byte.
+//! 32 bits. The differential harness in `oracle/codec-diff/libjpeg` (built from the pinned commit
+//! by its `build.sh`) checks the whole-image output, the `jpeg_crop_scanline` and
+//! `jpeg_skip_scanlines` results, and the inverse DCTs against the C library, byte for byte.
 //!
 //! Ported: sequential and progressive Huffman input, the 1/8 .. 8/8 scaled decode (IDCTs 1..16,
 //! so chroma can be scaled through the IDCT), fancy upsampling, the colour conversions including
 //! RGB565 with `JDITHER_NONE`, the buffered-image API (`jpeg_start_output`, `jpeg_consume_input`,
-//! `jpeg_finish_output`) and block smoothing.
+//! `jpeg_finish_output`), block smoothing, `jpeg_crop_scanline` ([`Decompress::crop_scanline`])
+//! and `jpeg_skip_scanlines` ([`Decompress::skip_scanlines`]), with the context-row state of the
+//! main controller and the upsampler re-initialisation.
 //!
 //! Not ported: lossless and 12/16-bit precision, arithmetic coding (`jdarith.c`; no resource
-//! uses it), `jpeg_crop_scanline` and `jpeg_skip_scanlines` (both need the main controller's
-//! context-row state machine and the upsampler re-initialisation, which are not ported yet),
-//! merged upsampling (`jdmerge.c`, which Skia never selects because fancy upsampling is on),
+//! uses it), merged upsampling (`jdmerge.c`, which Skia never selects because fancy upsampling is on),
 //! colour quantization, RGB565 with ordered dithering, and the DCT methods IFAST and FLOAT.
 //! Each case returns [`Error::NotImplemented`] or [`Error::ArithNotImplemented`] rather than
 //! decoding differently.
 //!
 //! The crate is `unsafe`-free.
 
+mod apistd;
 mod coef;
 mod coef_buf;
 mod color;

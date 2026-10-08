@@ -422,6 +422,672 @@ fn report() -> String {
     s
 }
 
+/// One step of a partial-decoding case (`pop` in partial_diff.c).
+#[derive(Clone, Copy)]
+enum Pop {
+    /// `jpeg_skip_scanlines(n)`; the returned count is hashed.
+    Skip(u32),
+    /// `jpeg_read_scanlines` one row at a time, up to `n` rows (0: to the end).
+    Read(u32),
+}
+
+/// One partial-decoding case (`pcase` in partial_diff.c).
+#[derive(Clone, Copy)]
+struct PCase {
+    name: &'static str,
+    scale_num: u32,
+    out_cs: ColorSpace,
+    /// Crop start and width, in sixteenths of `output_width` (`crop_w == 0`: no crop).
+    crop_x: u32,
+    crop_w: u32,
+    ops: &'static [Pop],
+}
+
+const R0: &[Pop] = &[Pop::Read(0)];
+
+/// The partial cases, in the order of `PCASES` in partial_diff.c.
+const PCASES: &[PCase] = &[
+    PCase {
+        name: "skip1/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Skip(1), Pop::Read(0)],
+    },
+    PCase {
+        name: "skip3/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Skip(3), Pop::Read(0)],
+    },
+    PCase {
+        name: "skip7/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Skip(7), Pop::Read(0)],
+    },
+    PCase {
+        name: "skip16/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Skip(16), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipfar/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Skip(1000), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipadj/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(1), Pop::Skip(8), Pop::Read(0)],
+    },
+    PCase {
+        name: "skiprep/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Skip(2),
+            Pop::Skip(2),
+            Pop::Skip(2),
+            Pop::Skip(2),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmid/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmulti/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "crop-left/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 8,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-right/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 8,
+        crop_w: 8,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-tiny/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 15,
+        crop_w: 1,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-clamp/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 12,
+        crop_w: 9,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-full/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 16,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-skip/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: &[Pop::Skip(3), Pop::Read(0)],
+    },
+    PCase {
+        name: "crop-skipmid/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: &[Pop::Read(1), Pop::Skip(4), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s1",
+        scale_num: 1,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s2",
+        scale_num: 2,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s3",
+        scale_num: 3,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s4",
+        scale_num: 4,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s5",
+        scale_num: 5,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s6",
+        scale_num: 6,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmid/s7",
+        scale_num: 7,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+    PCase {
+        name: "skipmulti/s1",
+        scale_num: 1,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s2",
+        scale_num: 2,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s3",
+        scale_num: 3,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s4",
+        scale_num: 4,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s5",
+        scale_num: 5,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s6",
+        scale_num: 6,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "skipmulti/s7",
+        scale_num: 7,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[
+            Pop::Read(3),
+            Pop::Skip(1),
+            Pop::Read(2),
+            Pop::Skip(9),
+            Pop::Read(0),
+        ],
+    },
+    PCase {
+        name: "crop-mid/s1",
+        scale_num: 1,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s2",
+        scale_num: 2,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s3",
+        scale_num: 3,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s4",
+        scale_num: 4,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s5",
+        scale_num: 5,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s6",
+        scale_num: 6,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-mid/s7",
+        scale_num: 7,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s1",
+        scale_num: 1,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s2",
+        scale_num: 2,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s3",
+        scale_num: 3,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s4",
+        scale_num: 4,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s5",
+        scale_num: 5,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s6",
+        scale_num: 6,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-odd/s7",
+        scale_num: 7,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 3,
+        crop_w: 7,
+        ops: R0,
+    },
+    PCase {
+        name: "crop-skip/s1",
+        scale_num: 1,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: &[Pop::Skip(3), Pop::Read(0)],
+    },
+    PCase {
+        name: "crop-skip/s4",
+        scale_num: 4,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: &[Pop::Skip(3), Pop::Read(0)],
+    },
+    PCase {
+        name: "crop-skip/s6",
+        scale_num: 6,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 5,
+        crop_w: 6,
+        ops: &[Pop::Skip(3), Pop::Read(0)],
+    },
+    PCase {
+        name: "gray-crop-skip/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::Grayscale,
+        crop_x: 3,
+        crop_w: 7,
+        ops: &[Pop::Read(1), Pop::Skip(4), Pop::Read(0)],
+    },
+    PCase {
+        name: "cmyk-skip/s8",
+        scale_num: 8,
+        out_cs: ColorSpace::ExtRgba,
+        crop_x: 0,
+        crop_w: 0,
+        ops: &[Pop::Read(2), Pop::Skip(5), Pop::Read(0)],
+    },
+];
+
+/// Mirrors `run_partial` in partial_diff.c: the crop, then the operations in order.
+fn run_partial(data: &[u8], case: &PCase) -> Outcome {
+    let mut hs = Hasher::new(false);
+    let fail = |hs: &Hasher, status: &'static str| Outcome {
+        status,
+        rows: 0,
+        hash: hs.h,
+        dump: None,
+    };
+    let mut d = Decompress::new(Box::new(MemSource {
+        data: data.to_vec(),
+    }));
+    match d.read_header(true) {
+        Err(_) => return fail(&hs, "err"),
+        Ok(HeaderResult::Suspended) => return fail(&hs, "suspended"),
+        Ok(_) => {}
+    }
+    if d.arith_code {
+        return fail(&hs, "skip");
+    }
+    d.scale_num = case.scale_num;
+    d.scale_denom = 8;
+    d.out_color_space = case.out_cs;
+    // SkJpegCodec.cpp: CMYK and YCCK sources are decoded to CMYK, and Skia's swizzler converts them.
+    if matches!(d.jpeg_color_space, ColorSpace::Cmyk | ColorSpace::Ycck) {
+        d.out_color_space = ColorSpace::Cmyk;
+    }
+    if d.progressive_mode {
+        // SkJpegCodec.cpp#L508-L540: keep consuming input until it stops, then output the last
+        // complete scan.
+        d.buffered_image = true;
+        if d.start_decompress().is_err() {
+            return fail(&hs, "err");
+        }
+        let mut last_scan = 0i32;
+        while !d.input_complete() {
+            match d.consume_input() {
+                Err(_) => return fail(&hs, "err"),
+                Ok(ConsumeResult::Suspended) => break,
+                Ok(ConsumeResult::ScanCompleted) => last_scan = d.input_scan_number,
+                Ok(_) => {}
+            }
+        }
+        if last_scan == 0 {
+            return fail(&hs, "suspended");
+        }
+        if d.start_output(last_scan).is_err() {
+            return fail(&hs, "err");
+        }
+    } else {
+        match d.start_decompress() {
+            Err(_) => return fail(&hs, "err"),
+            Ok(false) => return fail(&hs, "suspended"),
+            Ok(true) => {}
+        }
+    }
+    if case.crop_w != 0 {
+        let w_full = d.output_width;
+        let mut x = w_full * case.crop_x / 16;
+        let mut w = w_full * case.crop_w / 16;
+        if w == 0 {
+            w = 1;
+        }
+        if x + w > w_full {
+            w = w_full - x;
+        }
+        if d.crop_scanline(&mut x, &mut w).is_err() {
+            return fail(&hs, "err");
+        }
+    }
+    let rowbytes = d.output_width as usize * d.output_components as usize;
+    let mut row = vec![0u8; rowbytes];
+    let mut total_rows: u32 = 0;
+    for op in case.ops {
+        match *op {
+            Pop::Skip(n) => match d.skip_scanlines(n) {
+                Err(_) => return fail(&hs, "err"),
+                Ok(got) => hs.bytes(&got.to_le_bytes()),
+            },
+            Pop::Read(n) => {
+                let want = if n == 0 { d.output_height } else { n };
+                for _ in 0..want {
+                    if d.output_scanline() >= d.output_height() {
+                        break;
+                    }
+                    let got = {
+                        let mut rows: [&mut [u8]; 1] = [row.as_mut_slice()];
+                        match d.read_scanlines(&mut rows) {
+                            Err(_) => return fail(&hs, "err"),
+                            Ok(g) => g,
+                        }
+                    };
+                    if got == 0 {
+                        break;
+                    }
+                    hs.bytes(&row);
+                    total_rows += got as u32;
+                }
+            }
+        }
+    }
+    let status = if d.output_scanline() == d.output_height() {
+        if d.progressive_mode {
+            // The return value is ignored, as in the C harness.
+            let _ = d.finish_output();
+        }
+        match d.finish_decompress() {
+            Err(_) => "err",
+            Ok(_) => "ok",
+        }
+    } else {
+        "partial"
+    };
+    Outcome {
+        status,
+        rows: total_rows,
+        hash: hs.h,
+        dump: None,
+    }
+}
+
+/// Produces the partial-decoding report, in the same order as `partial_diff.c`.
+fn partial_report() -> String {
+    let mut s = String::new();
+    for (name, path) in jpeg_files() {
+        let data =
+            std::fs::read(&path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
+        for case in PCASES {
+            let o = run_partial(&data, case);
+            let _ = writeln!(
+                s,
+                "{name}|{}|{}|{}|{:016x}",
+                case.name, o.status, o.rows, o.hash
+            );
+        }
+    }
+    s
+}
+
+#[test]
+fn matches_libjpeg_partial_oracle() {
+    let got = partial_report();
+    if std::env::var_os("JPEG_DIFF_WRITE").is_some() {
+        let expected_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/expected/partial.txt");
+        std::fs::write(&expected_path, &got).expect("write expected");
+        return;
+    }
+    let expected_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/expected/partial.txt");
+    let expected = std::fs::read_to_string(&expected_path)
+        .unwrap_or_else(|e| panic!("cannot read {}: {e}", expected_path.display()));
+    let mut diffs = Vec::new();
+    for (i, (g, e)) in got.lines().zip(expected.lines()).enumerate() {
+        if g != e {
+            diffs.push(format!("line {}: port `{g}` vs C `{e}`", i + 1));
+        }
+    }
+    if got.lines().count() != expected.lines().count() {
+        diffs.push(format!(
+            "line count: port {} vs C {}",
+            got.lines().count(),
+            expected.lines().count()
+        ));
+    }
+    assert!(
+        diffs.is_empty(),
+        "{} differing lines, first:\n{}",
+        diffs.len(),
+        diffs
+            .iter()
+            .take(20)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+}
+
 #[test]
 fn matches_libjpeg_oracle() {
     let got = report();
