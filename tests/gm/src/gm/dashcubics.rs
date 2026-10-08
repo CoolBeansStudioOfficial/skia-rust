@@ -24,10 +24,13 @@
 )]
 
 use crate::prelude::*;
-use skia_rust_core::paint::{Join, Paint};
+use skia_rust_core::paint::{Cap, Join, Paint};
 use skia_rust_core::path::Path;
+use skia_rust_core::scalar::{scalar, scalar_floor_to_scalar};
 use skia_rust_core::utils::parse_path;
+use skia_rust_core::utils::parse_path::from_svg;
 use skia_rust_effects::dash_path_effect;
+use skia_rust_effects::trim_path_effect::{self, Mode};
 
 // Inspired by http://code.google.com/p/chromium/issues/detail?id=112145
 // Port of: gm/dashcubics.cpp#L28-L45 (chrome/m156)
@@ -80,3 +83,123 @@ crate::def_simple_gm!(dashcubics, canvas, 865, 750, {
         }
     }
 });
+
+// skia-rust (TrimGM): `onAnimate` is not ported, because the `GM` trait has no animate hook. `fOffset` is
+// set only by `onAnimate`, and at animation time zero it is `0`, so the `fOffset` branch of
+// `onDraw` is never taken here and `offset` stays `0`.
+// Port of: gm/dashcubics.cpp#L76-L176 (chrome/m156), TrimGM
+struct TrimGm {
+    paths: Vec<Path>,
+    offset: scalar,
+}
+
+impl TrimGm {
+    fn new() -> Self {
+        Self {
+            paths: Vec::new(),
+            offset: 0.0,
+        }
+    }
+}
+
+impl GM for TrimGm {
+    // Port of: gm/dashcubics.cpp#L80-L103 (chrome/m156), onOnceBeforeDraw
+    fn on_once_before_draw(&mut self) {
+        // The C++ string literals are adjacent, so they concatenate without separators.
+        self.paths.push(
+            from_svg(concat!(
+                "M   0,100 C  10, 50 190, 50 200,100",
+                "M 200,100 C 210,150 390,150 400,100",
+                "M 400,100 C 390, 50 210, 50 200,100",
+                "M 200,100 C 190,150  10,150   0,100",
+            ))
+            .expect("SkAssertResult"),
+        );
+        self.paths.push(
+            from_svg(concat!(
+                "M   0, 75 L 200, 75",
+                "M 200, 91 L 200, 91",
+                "M 200,108 L 200,108",
+                "M 200,125 L 400,125",
+            ))
+            .expect("SkAssertResult"),
+        );
+        self.paths.push(
+            from_svg(concat!(
+                "M   0,100 L  50, 50",
+                "M  50, 50 L 150,150",
+                "M 150,150 L 250, 50",
+                "M 250, 50 L 350,150",
+                "M 350,150 L 400,100",
+            ))
+            .expect("SkAssertResult"),
+        );
+    }
+
+    // Port of: gm/dashcubics.cpp#L106-L106 (chrome/m156), getName
+    fn name(&self) -> String {
+        "trimpatheffect".to_owned()
+    }
+
+    // Port of: gm/dashcubics.cpp#L108-L108 (chrome/m156), getISize
+    fn size(&mut self) -> ISize {
+        ISize::new(1400, 1000)
+    }
+
+    // Port of: gm/dashcubics.cpp#L110-L163 (chrome/m156), onDraw
+    fn on_draw(&mut self, canvas: &Canvas) {
+        const K_CELL_SIZE: (scalar, scalar) = (440.0, 150.0);
+        const K_OFFSETS: [[scalar; 2]; 6] = [
+            [-0.33, -0.66],
+            [0.0, 1.0],
+            [0.0, 0.25],
+            [0.25, 0.75],
+            [0.75, 1.0],
+            [1.0, 0.75],
+        ];
+
+        let mut hairline_paint = Paint::default();
+        hairline_paint.set_anti_alias(true);
+        hairline_paint.set_stroke(true);
+        hairline_paint.set_stroke_cap(Cap::Round);
+        hairline_paint.set_stroke_width(2.0);
+
+        let mut normal_paint = hairline_paint.clone();
+        normal_paint.set_stroke_width(10.0);
+        normal_paint.set_color(Color::new(0x8000_ff00));
+
+        let mut inverted_paint = normal_paint.clone();
+        inverted_paint.set_color(Color::new(0x80ff_0000));
+
+        for offset in K_OFFSETS {
+            let mut start = offset[0] + self.offset;
+            let mut stop = offset[1] + self.offset;
+            let mut normal_mode = Mode::Normal;
+            let mut inverted_mode = Mode::Inverted;
+            if self.offset != 0.0 {
+                start -= scalar_floor_to_scalar(start);
+                stop -= scalar_floor_to_scalar(stop);
+                if start > stop {
+                    std::mem::swap(&mut start, &mut stop);
+                    std::mem::swap(&mut normal_mode, &mut inverted_mode);
+                }
+            }
+            normal_paint.set_path_effect(trim_path_effect::new(start, stop, normal_mode));
+            inverted_paint.set_path_effect(trim_path_effect::new(start, stop, inverted_mode));
+            {
+                canvas.save();
+                for path in &self.paths {
+                    canvas.draw_path(path, &normal_paint);
+                    canvas.draw_path(path, &inverted_paint);
+                    canvas.draw_path(path, &hairline_paint);
+                    canvas.translate((K_CELL_SIZE.0, 0.0));
+                }
+                canvas.restore();
+            }
+            canvas.translate((0.0, K_CELL_SIZE.1));
+        }
+    }
+}
+
+// Port of: gm/dashcubics.cpp#L177-L177 (chrome/m156)
+crate::def_gm!(TrimGM_ = "TrimGM", TrimGm::new());

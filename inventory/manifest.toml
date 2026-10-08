@@ -18618,8 +18618,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dashcubics.cpp#L177-L177"
 module = "effects"
-status = "todo"
-reason = "needs SkTrimPathEffect (not ported)"
+status = "passing"
 span_hash = "241127d93885eeeb015df0296dc98bf85a86d1cce9d3c361c74248d44a30c8da"
 
 [[test]]
@@ -22361,7 +22360,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/patheffects.cpp#L297-L297"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "20ac54947c372714abc0cbe91bcfd0dc1f7af16c79a73f609712af01c817d894"
 
 [[test]]
@@ -22370,7 +22369,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/patheffects.cpp#L173-L173"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "182d92b86a0b7543325c1d07ac1307fd79f7405394ca3d08a80afee550dac887"
 
 [[test]]

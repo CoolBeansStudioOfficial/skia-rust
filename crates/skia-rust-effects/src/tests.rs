@@ -71,3 +71,60 @@ fn sum_and_compose_filter() {
     assert_eq!(builder.snapshot().count_points(), 12);
     assert!(PathEffect::compose(dash.clone(), dash).compute_fast_bounds(None));
 }
+
+// Trimming returns the requested span of a line: the first half, and (inverted) the complement
+// of the second half, which is the first half again.
+#[test]
+fn trim_keeps_the_requested_span() {
+    let path = Path::line((0.0, 0.0), (100.0, 0.0));
+    let first_half = crate::trim_path_effect::new(0.0, 0.5, None).unwrap();
+    let (builder, _) = first_half
+        .filter_path(&path, &stroke_rec(1.0), None)
+        .unwrap();
+    assert_eq!(builder.snapshot().bounds(), &Rect::new(0.0, 0.0, 50.0, 0.0));
+
+    let inverted =
+        crate::trim_path_effect::new(0.5, 1.0, crate::trim_path_effect::Mode::Inverted).unwrap();
+    let (builder, _) = inverted.filter_path(&path, &stroke_rec(1.0), None).unwrap();
+    assert_eq!(builder.snapshot().bounds(), &Rect::new(0.0, 0.0, 50.0, 0.0));
+}
+
+// Without deviation, the discrete effect moves no point off the line.
+#[test]
+fn discrete_without_deviation_stays_on_the_path() {
+    let path = Path::line((0.0, 0.0), (100.0, 0.0));
+    let effect = crate::discrete_path_effect::new(10.0, 0.0, None).unwrap();
+    let (builder, _) = effect.filter_path(&path, &stroke_rec(1.0), None).unwrap();
+    assert_eq!(
+        builder.snapshot().bounds(),
+        &Rect::new(0.0, 0.0, 100.0, 0.0)
+    );
+}
+
+// Translate stamps the path once per advance: stamps at 0, 10, ..., 90 on a 100-long line.
+#[test]
+fn path_1d_translate_stamps_at_each_advance() {
+    let stamp = Path::line((0.0, 0.0), (2.0, 0.0));
+    let effect = crate::path_1d_path_effect::new(
+        &stamp,
+        10.0,
+        0.0,
+        crate::path_1d_path_effect::Style::Translate,
+    )
+    .unwrap();
+    let path = Path::line((0.0, 0.0), (100.0, 0.0));
+    let (builder, rec) = effect.filter_path(&path, &stroke_rec(1.0), None).unwrap();
+    assert!(rec.is_fill_style());
+    assert_eq!(builder.snapshot().bounds(), &Rect::new(0.0, 0.0, 92.0, 0.0));
+}
+
+#[test]
+fn invalid_discrete_and_trim_are_rejected() {
+    assert!(crate::discrete_path_effect::new(0.0, 1.0, None).is_none());
+    assert!(crate::discrete_path_effect::new(scalar::NAN, 1.0, None).is_none());
+    assert!(crate::trim_path_effect::new(0.0, 1.0, None).is_none());
+    assert!(
+        crate::trim_path_effect::new(0.5, 0.5, crate::trim_path_effect::Mode::Inverted).is_none()
+    );
+    assert!(crate::trim_path_effect::new(scalar::NAN, 0.5, None).is_none());
+}
