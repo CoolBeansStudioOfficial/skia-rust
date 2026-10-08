@@ -64,12 +64,14 @@ pub fn run_gm_verify(root: &Path) -> Result<BTreeMap<String, Verdict>> {
     std::fs::create_dir_all(&report_dir)?;
     let report_path = report_dir.join("gm-verify.json");
     let _ = std::fs::remove_file(&report_path);
-    // The dev profile, like `cargo test`, so the two share one build.
+    // The release profile: rendering every GM on every tier in a debug build takes hours, and GM
+    // output is identical in both profiles (the `test-release` CI jobs check that).
     let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned()))
         .current_dir(root)
         .args([
             "run",
             "-q",
+            "--release",
             "-p",
             "skia-rust-gm",
             "--bin",
