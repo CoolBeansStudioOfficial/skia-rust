@@ -114,6 +114,7 @@ pub use variable_reference::{VariableRefKind, VariableReference};
 
 #[cfg(test)]
 mod constructor_tests;
+#[cfg(test)]
 mod s7b_tests;
 #[cfg(test)]
 mod semantics_tests;
