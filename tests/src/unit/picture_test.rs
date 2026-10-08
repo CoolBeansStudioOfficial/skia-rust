@@ -4,11 +4,8 @@
 // Port of: tests/PictureTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// - `Picture`: its `test_typeface` needs `SkFont`, `drawString` and picture serialization
-//   (`SkDynamicMemoryWStream`); the rest of its steps are covered by the other tests of the file.
-// - `Picture_preserveCullRect`, `Picture_empty_serial`: need picture serialization
-//   (`SkPicture::serialize`, `MakeFromStream`, `MakeFromData`; `SkPictureData` is out of scope
-//   for D7).
+// - `Picture`: its `test_typeface` needs `SkFont` and `drawString`; the rest of its steps are
+//   covered by the other tests of the file.
 // - `Picture_nested_draw_drawable`, `Picture_recursion_limit`: need `SkDrawable` (not ported).
 // `ClipCountingCanvas` is not used by any test of the file and is not ported.
 
@@ -29,6 +26,7 @@ use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rect::rect_priv::make_largest;
 use skia_rust_core::scalar::scalar_ceil_to_int;
+use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream};
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use std::cell::Cell;
 use std::ops::Deref;
@@ -362,6 +360,50 @@ def_test!(Picture_UpdatedCull_2, |r| {
     canvas.draw_rect(Rect::from_wh(10.0, 40.0), &Paint::default());
     let pic = recorder.finish_recording_as_picture(None).unwrap();
     reporter_assert!(r, pic.cull_rect() == make_largest());
+});
+
+// Port of: tests/PictureTest.cpp#L701-L721 (chrome/m156)
+def_test!(
+    #[allow(clippy::float_cmp)] // the C++ compares the scalars with ==
+    Picture_preserveCullRect,
+    |r| {
+        let mut recorder = PictureRecorder::new();
+        let canvas = recorder.begin_recording(Rect::new(1.0, 2.0, 3.0, 4.0), false);
+        canvas.clear(Color::CYAN);
+
+        let picture = recorder.finish_recording_as_picture(None).unwrap();
+        let mut wstream = DynamicMemoryWStream::new();
+        // default SkSerialProcs here and SkDeserialProcs below are fine because we don't
+        // have any image or typeface data to serialize.
+        picture.serialize_into(&mut wstream, None);
+
+        let mut rstream = MemoryStream::from_data(Some(wstream.detach_as_data()));
+        let deserialized_picture = Picture::from_stream(&mut rstream, None);
+
+        reporter_assert!(r, deserialized_picture.is_some());
+        let cull = deserialized_picture.unwrap().cull_rect();
+        reporter_assert!(r, cull.left == 1.0);
+        reporter_assert!(r, cull.top == 2.0);
+        reporter_assert!(r, cull.right == 3.0);
+        reporter_assert!(r, cull.bottom == 4.0);
+    }
+);
+
+// Port of: tests/PictureTest.cpp#L782-L794 (chrome/m156)
+def_test!(Picture_empty_serial, |reporter| {
+    let mut rec = PictureRecorder::new();
+    rec.begin_recording(Rect::new(0.0, 0.0, 10.0, 10.0), false);
+    let pic = rec.finish_recording_as_picture(None);
+    reporter_assert!(reporter, pic.is_some());
+    let pic = pic.unwrap();
+
+    // explicitly testing the default SkSerialProcs here and SkDeserialProcs below.
+    let data = pic.serialize(None);
+    reporter_assert!(reporter, data.is_some());
+    let data = data.unwrap();
+
+    let pic2 = Picture::from_data(data.as_bytes(), None);
+    reporter_assert!(reporter, pic2.is_some());
 });
 
 // Port of: tests/PictureTest.cpp#L758-L780 (chrome/m156)

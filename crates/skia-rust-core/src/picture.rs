@@ -9,8 +9,10 @@
 //! cull rect, which is used as a bounding box hint. To limit picture bounds, use a canvas clip
 //! when recording or drawing the picture.
 //!
-//! skia-rust: serialization (`serialize`, `MakeFromStream`, `MakeFromData`, `SkPictureData`) and
-//! `makeShader` (the picture shader is Phase 3) are not ported, and a picture holds no drawable
+//! Serialization (`serialize`, `from_data`, `from_stream`) covers the pictures of paints, paths
+//! and draw ops that are ported; the sections that are not (text, images, nested pictures) are
+//! listed in `notes/picture-serialization.md`.
+//! `makeShader` (the picture shader is Phase 3) is not ported, and a picture holds no drawable
 //! snapshots (`SkDrawable` is not ported).
 
 use std::fmt;
@@ -19,10 +21,17 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::bbh_factory::BBoxHierarchy;
 use crate::canvas::Canvas;
-use crate::picture_priv;
+use crate::data::Data;
+use crate::flattenable::FlattenableRegistry;
+use crate::picture_data::{PictInfo, PictureData};
+use crate::picture_playback::forward_port;
+use crate::picture_priv::{self, CURRENT_VERSION};
+use crate::picture_record;
 use crate::record::Record;
 use crate::record_draw::record_draw;
 use crate::rect::{Contains, Rect};
+use crate::serial_procs::{DeserialProcs, SerialProcs};
+use crate::stream::{DynamicMemoryWStream, MemoryStream, Stream, WStream};
 
 /// May be passed to [`Picture::playback_with_callback`] to stop it before all drawing commands
 /// have been processed (`SkPicture::AbortCallback`).
@@ -37,6 +46,11 @@ pub trait AbortCallback {
     /// Provides an override that can stop playback (`abort`). Returns true to stop playback.
     fn abort(&mut self) -> bool;
 }
+
+/// The byte after the header of a serialized picture that says what the data is: the picture
+/// data (`kPictureData_TrailingStreamByteAfterPictInfo`).
+// Port of: src/core/SkPicture.cpp#L41-L45 (chrome/m156)
+const PICTURE_DATA_TRAILING_BYTE: u8 = 1;
 
 /* This handles generating unique IDs */
 // Port of: src/core/SkPicture.cpp#L47-L54 (chrome/m156)
@@ -211,8 +225,208 @@ impl Picture {
         bytes
     }
 
+    /// Serializes the picture to a blob of bytes, which [`from_data`](Self::from_data) reads back.
+    /// `procs` decides how the typefaces are written; `None` is the default (`serialize`).
+    ///
+    /// Returns `None` if the picture has a command that is not serialized yet.
+    // Port of: src/core/SkPicture.cpp#L267-L271 (chrome/m156), serialize(SkSerialProcs*)
+    #[must_use]
+    pub fn serialize(&self, procs: Option<&SerialProcs>) -> Option<Data> {
+        let mut stream = DynamicMemoryWStream::new();
+        self.serialize_into(&mut stream, procs)
+            .then(|| stream.detach_as_data())
+    }
+
+    /// Serializes the picture to `stream` (`serialize(SkWStream*)`). Returns false, writing
+    /// nothing, if the picture has a command that is not serialized yet.
+    // Port of: src/core/SkPicture.cpp#L301-L330 (chrome/m156), the private serialize
+    pub fn serialize_into(&self, stream: &mut dyn WStream, procs: Option<&SerialProcs>) -> bool {
+        let procs = procs.cloned().unwrap_or_default();
+        let Some(data) = picture_record::backport(self) else {
+            return false;
+        };
+        // The data is made first, so a failure leaves the stream without a partial picture.
+        let mut body = DynamicMemoryWStream::new();
+        if !data.serialize(&mut body, &procs) {
+            return false;
+        }
+        let body = body.detach_as_data();
+        let info = PictInfo::new(self.cull_rect(), CURRENT_VERSION);
+        info.write_to(stream)
+            && stream.write8(PICTURE_DATA_TRAILING_BYTE)
+            && stream.write(body.as_bytes())
+    }
+
+    /// Reads a picture from bytes that [`serialize`](Self::serialize) wrote, with the default
+    /// flattenables (`MakeFromData`). Path effects and mask filters need a registry, see
+    /// [`from_data_with_registry`](Self::from_data_with_registry).
+    // Port of: src/core/SkPicture.cpp#L166-L173 (chrome/m156), MakeFromData
+    #[doc(alias = "MakeFromData")]
+    #[must_use]
+    pub fn from_data(data: &[u8], procs: Option<&DeserialProcs>) -> Option<Picture> {
+        Self::from_data_with_registry(data, procs, &FlattenableRegistry::EMPTY)
+    }
+
+    /// Like [`from_data`](Self::from_data), reading the path effects and mask filters with
+    /// `registry`.
+    #[must_use]
+    pub fn from_data_with_registry(
+        data: &[u8],
+        procs: Option<&DeserialProcs>,
+        registry: &FlattenableRegistry,
+    ) -> Option<Picture> {
+        let mut stream = MemoryStream::from_data(Some(Data::new_copy(data)));
+        Self::make_from_stream_priv(&mut stream, procs, registry)
+    }
+
+    /// Reads a picture from a stream that [`serialize_into`](Self::serialize_into) wrote, with the
+    /// default flattenables (`MakeFromStream`).
+    // Port of: src/core/SkPicture.cpp#L162-L164 (chrome/m156), MakeFromStream
+    #[doc(alias = "MakeFromStream")]
+    #[must_use]
+    pub fn from_stream(stream: &mut dyn Stream, procs: Option<&DeserialProcs>) -> Option<Picture> {
+        Self::make_from_stream_priv(stream, procs, &FlattenableRegistry::EMPTY)
+    }
+
+    /// `MakeFromStreamPriv`: reads the header, then the data that follows it. A picture whose
+    /// data is a custom format needs a picture procedure, which is not ported.
+    // Port of: src/core/SkPicture.cpp#L183-L226 (chrome/m156), MakeFromStreamPriv
+    fn make_from_stream_priv(
+        stream: &mut dyn Stream,
+        procs: Option<&DeserialProcs>,
+        registry: &FlattenableRegistry,
+    ) -> Option<Picture> {
+        let info = PictInfo::read_from(stream)?;
+        if !info.is_valid() {
+            return None;
+        }
+        let procs = procs.cloned().unwrap_or_default();
+        match stream.read_u8()? {
+            PICTURE_DATA_TRAILING_BYTE => {
+                let data = PictureData::parse_stream(stream, info.version, &procs, registry)?;
+                forward_port(&info, &data)
+            }
+            // The custom format (and the failure marker) has no reader here.
+            _ => None,
+        }
+    }
+
     /// The commands of the picture, `None` for a placeholder.
     pub(crate) fn record(&self) -> Option<&Arc<Record>> {
         self.inner.record.as_ref()
+    }
+}
+
+#[cfg(test)]
+mod serial_tests {
+    use super::*;
+    use crate::canvas::{PointMode, SaveLayerRec};
+    use crate::clip_op::ClipOp;
+    use crate::color::Color4f;
+    use crate::matrix::Matrix;
+    use crate::paint::{Paint, Style};
+    use crate::path_builder::PathBuilder;
+    use crate::picture_recorder::PictureRecorder;
+    use crate::point::Point;
+    use crate::rrect::RRect;
+
+    /// A tag as Skia writes it: its four characters, read as a big-endian word, in native order.
+    fn push_tag(bytes: &mut Vec<u8>, tag: [u8; 4], size: u32) {
+        bytes.extend_from_slice(&u32::from_be_bytes(tag).to_ne_bytes());
+        bytes.extend_from_slice(&size.to_ne_bytes());
+    }
+
+    // An empty picture is the header, then the sections that SkPictureData::serialize writes
+    // with no ops: the empty op stream, no factories, no typefaces, and a buffer that holds
+    // only the (empty) slugs.
+    #[test]
+    fn empty_picture_bytes_follow_the_sections() {
+        let mut recorder = PictureRecorder::new();
+        recorder.begin_recording(Rect::new(0.0, 0.0, 10.0, 10.0), false);
+        let picture = recorder.finish_recording_as_picture(None).unwrap();
+        let data = picture.serialize(None).unwrap();
+
+        let mut expected = Vec::new();
+        expected.extend_from_slice(b"skiapict");
+        expected.extend_from_slice(&110u32.to_ne_bytes());
+        // A recording with no commands is `SkPicturePriv::MakeEmptyPicture`, whose cull is empty
+        // whatever the recording's bounds were.
+        for edge in [0.0f32, 0.0, 0.0, 0.0] {
+            expected.extend_from_slice(&edge.to_ne_bytes());
+        }
+        expected.push(1); // the picture data follows the header
+        push_tag(&mut expected, *b"read", 0); // the op stream, which is empty
+        push_tag(&mut expected, *b"fact", 4); // the factories
+        expected.extend_from_slice(&0u32.to_ne_bytes());
+        push_tag(&mut expected, *b"tpfc", 0); // the typefaces
+        push_tag(&mut expected, *b"aray", 8); // the buffer of tables, 8 bytes
+        push_tag(&mut expected, *b"slug", 0); // no slugs
+        expected.extend_from_slice(&u32::from_be_bytes(*b"eof ").to_ne_bytes());
+
+        assert_eq!(data.as_bytes(), expected.as_slice());
+    }
+
+    // Serializing a picture, reading it back and serializing it again gives the same bytes.
+    #[test]
+    fn mixed_ops_round_trip_to_the_same_bytes() {
+        let mut recorder = PictureRecorder::new();
+        let canvas = recorder.begin_recording(Rect::new(0.0, 0.0, 200.0, 200.0), false);
+
+        let mut stroke = Paint::new(Color4f::new(1.0, 0.0, 0.0, 1.0), None);
+        stroke
+            .set_style(Style::Stroke)
+            .set_stroke_width(3.0)
+            .set_anti_alias(true);
+        let fill = Paint::default();
+
+        let mut builder = PathBuilder::new();
+        builder
+            .move_to((0.0, 0.0))
+            .line_to((50.0, 0.0))
+            .line_to((25.0, 40.0))
+            .close();
+        let path = builder.detach();
+
+        canvas.save();
+        canvas.translate((10.0, 20.0));
+        canvas.clip_rect(Rect::new(0.0, 0.0, 100.0, 100.0), ClipOp::Intersect, true);
+        canvas.draw_rect(Rect::new(1.0, 1.0, 50.0, 50.0), &stroke);
+        canvas.draw_oval(Rect::new(2.0, 2.0, 60.0, 30.0), &fill);
+        canvas.draw_arc(Rect::new(0.0, 0.0, 40.0, 40.0), 0.0, 90.0, true, &stroke);
+        let outer = RRect::new_rect_xy(Rect::new(0.0, 0.0, 80.0, 80.0), 8.0, 8.0);
+        let inner = RRect::new_rect_xy(Rect::new(10.0, 10.0, 70.0, 70.0), 4.0, 4.0);
+        canvas.draw_rrect(outer, &fill);
+        canvas.draw_drrect(outer, inner, &stroke);
+        canvas.draw_path(&path, &stroke);
+        canvas.draw_path(&path, &fill); // the same path, so one entry in the table
+        canvas.draw_points(
+            PointMode::Lines,
+            &[Point::new(0.0, 0.0), Point::new(9.0, 9.0)],
+            &stroke,
+        );
+        canvas.clip_path(&path, ClipOp::Intersect, false);
+        canvas.clip_rrect(outer, ClipOp::Difference, true);
+        canvas.save_layer(
+            &SaveLayerRec::default()
+                .bounds(&Rect::new(0.0, 0.0, 50.0, 50.0))
+                .paint(&stroke),
+        );
+        canvas.draw_paint(&fill);
+        canvas.restore();
+        canvas.concat(&Matrix::scale((2.0, 2.0)));
+        canvas.reset_clip();
+        canvas.restore();
+        let picture = recorder.finish_recording_as_picture(None).unwrap();
+
+        let first = picture.serialize(None).unwrap();
+        let read_back = Picture::from_data(first.as_bytes(), None).unwrap();
+        let second = read_back.serialize(None).unwrap();
+        assert_eq!(first.as_bytes(), second.as_bytes());
+    }
+
+    #[test]
+    fn bytes_that_are_not_a_picture_do_not_load() {
+        assert!(Picture::from_data(b"not a picture at all, sorry!", None).is_none());
+        assert!(Picture::from_data(&[], None).is_none());
     }
 }

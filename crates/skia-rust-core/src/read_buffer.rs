@@ -15,20 +15,79 @@
 //! skia-rust: `SkReadBuffer` requires its memory to be 4-byte aligned because it reads words in
 //! place; here the words are read from the bytes of a slice, so only the offsets are checked.
 
+use crate::blend_mode::BlendMode;
+use crate::color::Color4f;
+use crate::color_space_priv::srgb_singleton;
 use crate::flattenable::FlattenableRegistry;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
+use crate::paint::{Cap, Join, Paint, Style};
 use crate::path::Path;
 use crate::path_effect::PathEffect;
+use crate::picture_priv::VERSION_SK_BLENDER_IN_SK_PAINT;
 use crate::point::Point;
 use crate::rect::Rect;
+use crate::rrect::RRect;
 use crate::serial_procs::DeserialProcs;
 use crate::stream::MemoryStream;
 use crate::typeface::Typeface;
+use crate::write_buffer::{CUSTOM_BLEND_MODE_SENTINEL, FLAT_HAS_EFFECTS};
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
 fn align4(x: usize) -> usize {
     x.wrapping_add(3) & !3
+}
+
+/// Unpacks the word that `pack_v68` made (`unpack_v68`): the anti-alias, dither, blend mode, cap,
+/// join and style go into `paint`, and the flat flags are returned. `safe` is cleared if a field
+/// is out of range (`SkSafeRange`).
+// Port of: src/core/SkPaintPriv.cpp#L234-L256 (chrome/m156)
+fn unpack_v68(paint: &mut Paint, packed: u32, safe: &mut bool) -> u8 {
+    paint.set_anti_alias(packed & 1 != 0);
+    paint.set_dither(packed & 2 != 0);
+    let mode = (packed >> 8) & 0xFF;
+    if mode != u32::from(CUSTOM_BLEND_MODE_SENTINEL) {
+        // The sentinel stands for a custom blender, which is read with the effects.
+        match i32::try_from(mode).ok().and_then(BlendMode::from_i32) {
+            Some(blend_mode) => {
+                paint.set_blend_mode(blend_mode);
+            }
+            None => *safe = false,
+        }
+    }
+    let cap = match (packed >> 16) & 0x3 {
+        0 => Cap::Butt,
+        1 => Cap::Round,
+        2 => Cap::Square,
+        _ => {
+            *safe = false;
+            Cap::Butt
+        }
+    };
+    paint.set_stroke_cap(cap);
+    let join = match (packed >> 18) & 0x3 {
+        0 => Join::Miter,
+        1 => Join::Round,
+        2 => Join::Bevel,
+        _ => {
+            *safe = false;
+            Join::Miter
+        }
+    };
+    paint.set_stroke_join(join);
+    let style = match (packed >> 20) & 0x3 {
+        0 => Style::Fill,
+        1 => Style::Stroke,
+        2 => Style::StrokeAndFill,
+        _ => {
+            *safe = false;
+            Style::Fill
+        }
+    };
+    paint.set_style(style);
+    // The old filter quality bits (22..24) are skipped.
+    // The flat flags are the top byte.
+    u8::try_from(packed >> 24).unwrap_or(0)
 }
 
 /// Reads primitives from a memory block of 4-byte words (`SkReadBuffer`). Reading past the end,
@@ -476,6 +535,101 @@ impl ReadBuffer<'_> {
             return None;
         };
         self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// The current position in bytes (`SkReadBuffer::offset`).
+    #[must_use]
+    pub fn offset(&self) -> usize {
+        self.curr
+    }
+
+    /// Reads a color (`readColor4f`): four scalars, or all zeros if the buffer cannot give them.
+    // Port of: src/core/SkReadBuffer.cpp#L169-L173 (chrome/m156)
+    #[doc(alias = "readColor4f")]
+    pub fn read_color4f(&mut self) -> Color4f {
+        let r = self.read_scalar();
+        let g = self.read_scalar();
+        let b = self.read_scalar();
+        let a = self.read_scalar();
+        if self.is_valid() {
+            Color4f { r, g, b, a }
+        } else {
+            Color4f {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                a: 0.0,
+            }
+        }
+    }
+
+    /// Reads a round rectangle (`readRRect`): its bounds and radii, [`RRect::SIZE_IN_MEMORY`]
+    /// bytes. Invalidates the buffer, and returns the default, if there are not that many bytes.
+    // Port of: src/core/SkReadBuffer.cpp#L245-L254 (chrome/m156)
+    #[doc(alias = "readRRect")]
+    pub fn read_rrect(&mut self) -> RRect {
+        let Some(bytes) = self.skip(RRect::SIZE_IN_MEMORY) else {
+            return RRect::default();
+        };
+        let mut rrect = RRect::default();
+        rrect.read_from_memory(bytes);
+        rrect
+    }
+
+    /// Reads a flattenable that is not ported yet, which can only be null here: the writer
+    /// wrote a zero word. Otherwise the buffer is invalidated. Returns whether it is still valid.
+    fn read_null_flattenable(&mut self) -> bool {
+        let word = self.read32();
+        self.validate(word == 0)
+    }
+
+    /// Reads a paint (`readPaint`, `SkPaintPriv::Unflatten`). The paint is reset if the buffer is
+    /// invalid afterwards. The path effect and mask filter are read with `registry`; a shader,
+    /// color filter, image filter or custom blender must be null, as they are not read yet.
+    // Port of: src/core/SkPaintPriv.cpp#L289-L331 (chrome/m156), with the arms of the
+    // flattenables that are ported (path effect, mask filter); the others must be null
+    #[doc(alias = "readPaint")]
+    pub fn read_paint(&mut self, registry: &FlattenableRegistry) -> Paint {
+        let mut paint = Paint::default();
+
+        let stroke_width = self.read_scalar();
+        paint.set_stroke_width(stroke_width);
+        let stroke_miter = self.read_scalar();
+        paint.set_stroke_miter(stroke_miter);
+        let color = self.read_color4f();
+        paint.set_color4f(color, srgb_singleton());
+
+        let mut safe = true;
+        let packed = self.read_uint();
+        let flat_flags = unpack_v68(&mut paint, packed, &mut safe);
+
+        if flat_flags & FLAT_HAS_EFFECTS != 0 {
+            let path_effect;
+            let mask_filter;
+            if self.is_version_lt(VERSION_SK_BLENDER_IN_SK_PAINT) {
+                // This paint predates the introduction of user blend functions (via SkBlender).
+                path_effect = self.read_path_effect(registry);
+                self.read_null_flattenable(); // shader
+                mask_filter = self.read_mask_filter(registry);
+                self.read_null_flattenable(); // color filter
+                self.read32(); // drawLooper, now deprecated
+                self.read_null_flattenable(); // image filter
+            } else {
+                path_effect = self.read_path_effect(registry);
+                self.read_null_flattenable(); // shader
+                mask_filter = self.read_mask_filter(registry);
+                self.read_null_flattenable(); // color filter
+                self.read_null_flattenable(); // image filter
+                self.read_null_flattenable(); // blender
+            }
+            paint.set_path_effect(path_effect);
+            paint.set_mask_filter(mask_filter);
+        }
+
+        if !self.validate(safe) {
+            paint.reset();
+        }
+        paint
     }
 
     /// The name part of `readRawFlattenable`: a string (which is added to the dictionary) or the

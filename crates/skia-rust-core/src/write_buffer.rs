@@ -16,18 +16,48 @@
 //! `SkSerialProcs`, the factory and typeface sets (so a flattenable is always written by name),
 //! and every write that needs a type that is not ported yet (images, paints, regions, ...).
 
+use crate::color::Color4f;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
+use crate::paint::Paint;
 use crate::path::Path;
 use crate::path_effect::PathEffect;
 use crate::point::Point;
 use crate::rect::Rect;
+use crate::rrect::RRect;
 use crate::serial_procs::SerialProcs;
 use crate::typeface::Typeface;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`).
 fn align4(x: usize) -> usize {
     (x + 3) & !3
+}
+
+/// The flat flag saying a paint has effects that follow the packed word (`kHasEffects_FlatFlag`).
+// Port of: src/core/SkPaintPriv.cpp#L190 (chrome/m156)
+pub(crate) const FLAT_HAS_EFFECTS: u8 = 0x2;
+
+/// The blend mode value that stands for a custom blender in the packed word
+/// (`CUSTOM_BLEND_MODE_SENTINEL`).
+// Port of: src/core/SkPaintPriv.cpp#L205 (chrome/m156)
+pub(crate) const CUSTOM_BLEND_MODE_SENTINEL: u8 = 0xFF;
+
+/// Packs the anti-alias, dither, blend mode, caps, joins, style and the flat flags into one word
+/// (`pack_v68`). The bits of the old filter quality are zero.
+// Port of: src/core/SkPaintPriv.cpp#L217-L232 (chrome/m156)
+fn pack_v68(paint: &Paint, flat_flags: u8) -> u32 {
+    let mode = paint
+        .as_blend_mode()
+        .map_or(u32::from(CUSTOM_BLEND_MODE_SENTINEL), |bm| bm as u32);
+    let mut packed = 0u32;
+    packed |= ((u32::from(paint.is_dither()) << 1) | u32::from(paint.is_anti_alias())) & 0xFF;
+    packed |= (mode & 0xFF) << 8;
+    packed |= (paint.stroke_cap() as u32 & 0x3) << 16;
+    packed |= (paint.stroke_join() as u32 & 0x3) << 18;
+    packed |= (paint.style() as u32 & 0x3) << 20;
+    // The old filter quality bits (22..24) are zero.
+    packed |= u32::from(flat_flags) << 24;
+    packed
 }
 
 /// A growing buffer of 4-byte words (`SkWriter32`).
@@ -67,6 +97,13 @@ impl Writer32 {
     // Port of: src/core/SkWriter32.h#L118-L120 (chrome/m156)
     pub fn write32(&mut self, value: i32) {
         self.reserve(size_of::<i32>())
+            .copy_from_slice(&value.to_ne_bytes());
+    }
+
+    /// Writes an unsigned 32 bit integer (`write32` of a `uint32_t`).
+    // Port of: src/core/SkWriter32.h#L118-L120 (chrome/m156), the unsigned use
+    pub fn write_u32(&mut self, value: u32) {
+        self.reserve(size_of::<u32>())
             .copy_from_slice(&value.to_ne_bytes());
     }
 
@@ -125,6 +162,25 @@ impl Writer32 {
     // Port of: src/core/SkWriter32.h#L94-L98 (chrome/m156)
     pub fn overwrite32(&mut self, offset: usize, value: u32) {
         self.data[offset..offset + size_of::<u32>()].copy_from_slice(&value.to_ne_bytes());
+    }
+
+    /// Reads the word at `offset` (`readTAt<uint32_t>`).
+    ///
+    /// # Panics
+    /// If the word is not within the bytes written.
+    // Port of: src/core/SkWriter32.h#L84-L88 (chrome/m156)
+    #[must_use]
+    pub fn read32_at(&self, offset: usize) -> u32 {
+        let bytes: [u8; 4] = self.data[offset..offset + size_of::<u32>()]
+            .try_into()
+            .expect("four bytes");
+        u32::from_ne_bytes(bytes)
+    }
+
+    /// The bytes written, taking the writer (`snapshotAsData`, without the copy).
+    #[must_use]
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.data
     }
 
     /// Copies the bytes written into `dst`, which must be at least as large (`flatten`).
@@ -254,6 +310,71 @@ impl BinaryWriteBuffer {
                 self.write_flattenable(base.type_name(), |buffer| base.flatten(buffer));
             }
         }
+    }
+
+    /// Writes a paint (`writePaint`): the stroke width and miter, the color, and the packed flags,
+    /// then the effects if the paint has any (`SkPaintPriv::Flatten`).
+    ///
+    /// Returns false, writing nothing, if the paint has a shader, color filter, image filter or
+    /// custom blender: those are not written yet (their flattenables are not ported).
+    // Port of: src/core/SkPaintPriv.cpp#L261-L287 (chrome/m156), with the effect arms of the
+    // flattenables that are ported (path effect, mask filter); the others are written as null
+    #[doc(alias = "writePaint")]
+    pub fn write_paint(&mut self, paint: &Paint) -> bool {
+        if paint.shader().is_some()
+            || paint.color_filter().is_some()
+            || paint.image_filter().is_some()
+        {
+            return false;
+        }
+        let path_effect = paint.path_effect();
+        let mask_filter = paint.mask_filter();
+        // The paint takes the simple form when it has no effects. A blend mode is not an effect
+        // (a paint with one has a blender, which `asBlendMode` sees through).
+        let has_effects =
+            path_effect.is_some() || mask_filter.is_some() || paint.as_blend_mode().is_none();
+        // A blender is written with the effects, and only a null one is written so far.
+        if has_effects && paint.blender().is_some() {
+            return false;
+        }
+        let flat_flags = if has_effects { FLAT_HAS_EFFECTS } else { 0 };
+
+        self.write_scalar(paint.stroke_width());
+        self.write_scalar(paint.stroke_miter());
+        self.write_color4f(paint.color4f());
+        self.write_uint(pack_v68(paint, flat_flags));
+
+        if has_effects {
+            self.write_path_effect(path_effect.as_ref());
+            // The shader, color filter, image filter and blender are null.
+            self.writer.write32(0);
+            self.write_mask_filter(mask_filter.as_ref());
+            self.writer.write32(0);
+            self.writer.write32(0);
+            self.writer.write32(0);
+        }
+        true
+    }
+
+    /// Writes a color as its four scalars (`writeColor4f`).
+    // Port of: src/core/src/core/SkWriteBuffer.cpp#L92-L94 (chrome/m156), writeColor4f
+    #[doc(alias = "writeColor4f")]
+    pub fn write_color4f(&mut self, color: Color4f) {
+        self.write_scalar(color.r);
+        self.write_scalar(color.g);
+        self.write_scalar(color.b);
+        self.write_scalar(color.a);
+    }
+
+    /// Writes the bounds and radii of a round rectangle, without its type (`writeRRect`).
+    // Port of: src/core/SkWriter32.h#L142-L144 (chrome/m156)
+    #[doc(alias = "writeRRect")]
+    pub fn write_rrect(&mut self, rrect: &RRect) {
+        let mut bytes = Vec::new();
+        rrect.write_to_memory(&mut bytes);
+        self.writer
+            .reserve(RRect::SIZE_IN_MEMORY)
+            .copy_from_slice(&bytes);
     }
 
     /// The shared body of `writeFlattenable`: the name (or its dictionary index), the size, and

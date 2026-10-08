@@ -39054,8 +39054,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L782-L794"
 module = "core"
-status = "todo"
-reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromData), out of scope for D7"
+status = "passing"
 span_hash = "a03bb349654ecca26d01082ca891a7ca445b585219f6645c1abae886c25378de"
 
 [[test]]
@@ -39101,8 +39100,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L701-L721"
 module = "core"
-status = "todo"
-reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromStream), out of scope for D7"
+status = "passing"
 span_hash = "a4f9e5fdd0df7e6913debf78fe48049d52f36ea1c0f5af366f1dc15fbaf7d9af"
 
 [[test]]
@@ -41646,7 +41644,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
 status = "todo"
-reason = "needs picture serialization (SkPicture::serialize/MakeFromData, SkPictureData typeface set), not ported (docs/design/text.md §6, T16)"
+reason = "needs text blobs in pictures: DRAW_TEXT_BLOB and the TEXTBLOB and typeface sections of SkPictureData are not ported yet (picture serialization part 1 has no text), docs/design/text.md §6, T16"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -48919,7 +48917,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
 status = "todo"
-reason = "needs picture serialization (SkPicture::serialize/MakeFromData), not ported (docs/design/text.md §6, T16), and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
+reason = "needs text blobs in pictures (DRAW_TEXT_BLOB and the TEXTBLOB section are not ported yet, see notes/picture-serialization.md), docs/design/text.md §6, T16, and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]
