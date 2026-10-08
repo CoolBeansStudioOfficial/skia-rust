@@ -12,7 +12,7 @@
 
 #![cfg(test)]
 
-use crate::{def_test, reporter_assert};
+use crate::{def_font_test, def_test, reporter_assert};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::font_types::FontHinting;
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
@@ -80,62 +80,54 @@ def_test!(Paint_dither, |reporter| {
 });
 
 // Port of: tests/PaintTest.cpp#L149-L160 (chrome/m156)
-def_test!(
-    #[ignore = "portable configuration only: the NativeFontations run needs T19b (docs/design/text.md §8)"]
-    Paint_regression_measureText,
-    |reporter| {
-        let mut font = default_portable_font();
-        font.set_size(12.0);
+def_font_test!(Paint_regression_measureText, |reporter| {
+    let mut font = default_portable_font();
+    font.set_size(12.0);
 
-        // C++ resets an out-parameter rect to NaN first and checks that measureText overwrites it;
-        // `measure_text` returns its bounds, so only the empty-text assertion is left.
-        let (_width, r) = font.measure_text(b"", TextEncoding::UTF8, None);
-        reporter_assert!(reporter, r.is_empty());
-    }
-);
+    // C++ resets an out-parameter rect to NaN first and checks that measureText overwrites it;
+    // `measure_text` returns its bounds, so only the empty-text assertion is left.
+    let (_width, r) = font.measure_text(b"", TextEncoding::UTF8, None);
+    reporter_assert!(reporter, r.is_empty());
+});
 
 // Port of: tests/PaintTest.cpp#L208-L244 (chrome/m156)
-def_test!(
-    #[ignore = "portable configuration only: the NativeFontations run needs T19b (docs/design/text.md §8)"]
-    Font_getpos,
-    |reporter| {
-        let mut font = default_portable_font();
-        let text = b"Hamburgefons!@#!#23425,./;'[]";
-        let count = font.count_text(text, TextEncoding::UTF8);
-        let mut glyphs: Vec<GlyphId> = vec![0; count];
-        let _ = font.text_to_glyphs(text, TextEncoding::UTF8, &mut glyphs);
+def_font_test!(Font_getpos, |reporter| {
+    let mut font = default_portable_font();
+    let text = b"Hamburgefons!@#!#23425,./;'[]";
+    let count = font.count_text(text, TextEncoding::UTF8);
+    let mut glyphs: Vec<GlyphId> = vec![0; count];
+    let _ = font.text_to_glyphs(text, TextEncoding::UTF8, &mut glyphs);
 
-        let mut widths: Vec<scalar> = vec![0.0; count];
-        let mut xpos: Vec<scalar> = vec![0.0; count];
-        let mut pos: Vec<Point> = vec![Point::new(0.0, 0.0); count];
+    let mut widths: Vec<scalar> = vec![0.0; count];
+    let mut xpos: Vec<scalar> = vec![0.0; count];
+    let mut pos: Vec<Point> = vec![Point::new(0.0, 0.0); count];
 
-        for subpix in [false, true] {
-            font.set_subpixel(subpix);
-            for hint in [
-                FontHinting::None,
-                FontHinting::Slight,
-                FontHinting::Normal,
-                FontHinting::Full,
-            ] {
-                font.set_hinting(hint);
-                for size in [1.0_f32, 12.0, 100.0] {
-                    font.set_size(size);
+    for subpix in [false, true] {
+        font.set_subpixel(subpix);
+        for hint in [
+            FontHinting::None,
+            FontHinting::Slight,
+            FontHinting::Normal,
+            FontHinting::Full,
+        ] {
+            font.set_hinting(hint);
+            for size in [1.0_f32, 12.0, 100.0] {
+                font.set_size(size);
 
-                    font.get_widths_bounds(&glyphs, &mut widths, &mut [], None);
-                    font.get_x_pos(&glyphs, &mut xpos, 10.0);
-                    font.get_pos(&glyphs, &mut pos, Point::new(10.0, 20.0));
+                font.get_widths_bounds(&glyphs, &mut widths, &mut [], None);
+                font.get_x_pos(&glyphs, &mut xpos, 10.0);
+                font.get_pos(&glyphs, &mut pos, Point::new(10.0, 20.0));
 
-                    let nearly_eq = |a: scalar, b: scalar| (a - b).abs() < 0.000_001_f32;
+                let nearly_eq = |a: scalar, b: scalar| (a - b).abs() < 0.000_001_f32;
 
-                    let mut x: scalar = 10.0;
-                    for i in 0..count {
-                        reporter_assert!(reporter, nearly_eq(x, xpos[i]));
-                        reporter_assert!(reporter, nearly_eq(x, pos[i].x));
-                        reporter_assert!(reporter, nearly_eq(20.0, pos[i].y));
-                        x += widths[i];
-                    }
+                let mut x: scalar = 10.0;
+                for i in 0..count {
+                    reporter_assert!(reporter, nearly_eq(x, xpos[i]));
+                    reporter_assert!(reporter, nearly_eq(x, pos[i].x));
+                    reporter_assert!(reporter, nearly_eq(20.0, pos[i].y));
+                    x += widths[i];
                 }
             }
         }
     }
-);
+});

@@ -14,7 +14,7 @@ use skia_rust_core::typeface_cache::TypefaceCache;
 use skia_rust_tools::font_tool_utils::{create_test_typeface, default_typeface};
 use skia_rust_tools::fonts::test_empty_typeface::TestEmptyTypeface;
 
-use crate::{Reporter, def_test, errorf, reporter_assert};
+use crate::{Reporter, def_font_test, def_test, errorf, reporter_assert};
 
 /// `count_proc` and `count`: the number of typefaces the cache holds, counted with a search that
 /// never matches.
@@ -96,19 +96,15 @@ fn typeface_equal(a: Option<&Typeface>, b: Option<&Typeface>) -> bool {
 }
 
 // Port of: tests/TypefaceTest.cpp#L502-L514 (chrome/m156)
-def_test!(
-    #[ignore = "portable configuration only: the NativeFontations run needs T19b (docs/design/text.md §8)"]
-    Typeface,
-    |reporter| {
-        let t1 = create_test_typeface(None, FontStyle::default());
-        let t2 = default_typeface();
+def_font_test!(Typeface, |reporter| {
+    let t1 = create_test_typeface(None, FontStyle::default());
+    let t2 = default_typeface();
 
-        reporter_assert!(reporter, typeface_equal(Some(&t1), Some(&t2)));
-        reporter_assert!(reporter, typeface_equal(None, None));
+    reporter_assert!(reporter, typeface_equal(Some(&t1), Some(&t2)));
+    reporter_assert!(reporter, typeface_equal(None, None));
 
-        reporter_assert!(reporter, !typeface_equal(None, Some(&t1)));
-        reporter_assert!(reporter, !typeface_equal(None, Some(&t2)));
-        reporter_assert!(reporter, !typeface_equal(Some(&t1), None));
-        reporter_assert!(reporter, !typeface_equal(Some(&t2), None));
-    }
-);
+    reporter_assert!(reporter, !typeface_equal(None, Some(&t1)));
+    reporter_assert!(reporter, !typeface_equal(None, Some(&t2)));
+    reporter_assert!(reporter, !typeface_equal(Some(&t1), None));
+    reporter_assert!(reporter, !typeface_equal(Some(&t2), None));
+});

@@ -6,9 +6,10 @@
 
 //! `ToolUtils`' font helpers: the typefaces and fonts that the tests and GMs draw with.
 //!
-//! The portable configuration is the only one: GMs always use it, and unit tests will run it
-//! beside the native-Fontations configuration once T19b lands (docs/design/text.md §8).
+//! GMs always use the portable configuration. Unit tests that make typefaces from the test
+//! manager run under both configurations ([`FontConfig`]; docs/design/text.md §8).
 
+use std::cell::Cell;
 use std::sync::OnceLock;
 
 use skia_rust_core::font::Font;
@@ -63,13 +64,54 @@ pub fn default_portable_font() -> Font {
     Font::from_size(default_portable_typeface(), DEFAULT_TEXT_SIZE)
 }
 
-/// `ToolUtils::TestFontMgr()` in the portable configuration (`--nativeFonts false`, the GM
-/// oracle's configuration): the portable manager.
-// Port of: tools/fonts/FontToolUtils.cpp#L274-L283 (chrome/m156), the nativeFonts=false branch
+/// The font configurations a unit test can run under (docs/design/text.md §8). GMs always run
+/// under [`FontConfig::Portable`], the GM oracle's configuration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FontConfig {
+    /// `--nativeFonts false`: the portable test manager.
+    Portable,
+    /// `--fontations`: the test manager is the empty Fontations manager, as in Skia's
+    /// `NativeFonts_Fontations` bots.
+    NativeFontations,
+}
+
+thread_local! {
+    /// The configuration of the test running on this thread (set by [`with_font_config`]).
+    static FONT_CONFIG: Cell<FontConfig> = const { Cell::new(FontConfig::Portable) };
+}
+
+/// The configuration that [`test_font_mgr`] uses on this thread.
+#[must_use]
+pub fn font_config() -> FontConfig {
+    FONT_CONFIG.with(Cell::get)
+}
+
+/// Runs `body` with `config` as the configuration of this thread, then restores the previous
+/// one (also when `body` panics).
+pub fn with_font_config<R>(config: FontConfig, body: impl FnOnce() -> R) -> R {
+    struct Restore(FontConfig);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            FONT_CONFIG.with(|c| c.set(self.0));
+        }
+    }
+    let _restore = Restore(FONT_CONFIG.with(|c| c.replace(config)));
+    body()
+}
+
+/// `ToolUtils::TestFontMgr()`: the portable manager (`--nativeFonts false`, the GM oracle's
+/// configuration), or in [`FontConfig::NativeFontations`] the empty Fontations manager.
+// Port of: tools/fonts/FontToolUtils.cpp#L274-L283 (chrome/m156), the nativeFonts=false branch,
+// and the Fontations branch of the NativeFonts_Fontations bots
 #[doc(alias = "TestFontMgr")]
 #[must_use]
 pub fn test_font_mgr() -> FontMgr {
-    portable_font_mgr().clone()
+    match font_config() {
+        FontConfig::Portable => portable_font_mgr().clone(),
+        FontConfig::NativeFontations => {
+            skia_rust_text::ports::fontations::font_mgr::new_fontations_empty()
+        }
+    }
 }
 
 /// `ToolUtils::CreateTestTypeface(name, style)`: a typeface from the test manager, or the
