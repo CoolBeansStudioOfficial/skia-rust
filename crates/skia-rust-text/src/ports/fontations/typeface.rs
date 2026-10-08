@@ -39,7 +39,10 @@ use super::base::{
     table_tags, units_per_em_or_zero, variation_position,
 };
 use super::colr::resolve_palette;
+use super::hinting::{BridgeGlyphStyles, get_bridge_glyph_styles};
 use super::names;
+use super::scaler_context::{FontationsScalerContext, FontationsSource};
+use skia_rust_raster::glyph_image::GLYPH_PATH_RASTERIZER;
 
 /// `SkTypefaces::Fontations::FactoryId` (`'fnta'`): the descriptor tag of these typefaces.
 // Port of: src/ports/SkTypeface_fontations_factory.h#L14 (chrome/m156)
@@ -64,10 +67,15 @@ pub struct TypefaceFontations {
     font_data: Data,
     /// `fTtcIndex`: the font index within the data (the low 16 bits of the collection index).
     ttc_index: u32,
-    /// `fMappingIndex`: the character map.
-    mapping_index: BridgeMappingIndex,
-    /// `fBridgeNormalizedCoords`: the normalized and user variation coordinates.
-    normalized_coords: BridgeNormalizedCoords,
+    /// `fMappingIndex`: the character map. Shared with the scaler contexts.
+    mapping_index: Arc<BridgeMappingIndex>,
+    /// `fBridgeNormalizedCoords`: the normalized and user variation coordinates. Shared with the
+    /// scaler contexts.
+    normalized_coords: Arc<BridgeNormalizedCoords>,
+    /// `fGlyphStyles`: the autohinter styles, computed when first needed. Shared with the scaler
+    /// contexts. C++ also keeps `fOutlines` here. Outlines borrow the font bytes, so the scaler
+    /// contexts read them from the data for each draw instead (see `scaler_context`).
+    glyph_styles: Arc<BridgeGlyphStyles>,
     /// `fPalette`: the resolved palette, `0xAARRGGBB` per entry.
     palette: Vec<u32>,
     /// `fGlyphMasksMayNeedCurrentColor`, computed once (`SkOnce`).
@@ -78,6 +86,17 @@ impl TypefaceFontations {
     /// The parsed font, over this typeface's data.
     fn font_ref(&self) -> BridgeFontRef<'_> {
         make_font_ref(self.font_data.as_bytes(), self.ttc_index)
+    }
+
+    /// The state a scaler context reads from this typeface (C++ takes references to it).
+    fn scaler_source(&self) -> FontationsSource {
+        FontationsSource {
+            font_data: self.font_data.clone(),
+            ttc_index: self.ttc_index,
+            mapping_index: Arc::clone(&self.mapping_index),
+            normalized_coords: Arc::clone(&self.normalized_coords),
+            glyph_styles: Arc::clone(&self.glyph_styles),
+        }
     }
 
     /// `getTableSize`: the size of a table, 0 if it is missing.
@@ -130,8 +149,9 @@ pub fn make_from_data(data: Data, args: &FontArguments<'_, '_>) -> Option<Typefa
         style,
         font_data: data,
         ttc_index,
-        mapping_index,
-        normalized_coords,
+        mapping_index: Arc::new(mapping_index),
+        normalized_coords: Arc::new(normalized_coords),
+        glyph_styles: Arc::new(get_bridge_glyph_styles()),
         palette,
         glyph_masks_may_need_current_color: OnceLock::new(),
     })))
@@ -196,7 +216,7 @@ fn palette_base_index(index: i32) -> u16 {
 
 /// `isLCD`: the glyph masks are LCD.
 // Port of: src/ports/SkTypeface_fontations.cpp#L300 (chrome/m156)
-fn is_lcd(rec: &ScalerContextRec) -> bool {
+pub(crate) fn is_lcd(rec: &ScalerContextRec) -> bool {
     rec.mask_format == MaskFormat::Lcd16
 }
 
@@ -383,23 +403,19 @@ impl TypefaceBase for TypefaceFontations {
         this
     }
 
-    /// `SkTypeface_Fontations::onCreateScalerContext`: the outline scaler context. It is the
-    /// outline half of the typeface (T19b, docs/design/text.md §9), which is not ported yet.
-    ///
-    /// # Panics
-    ///
-    /// Always, until T19b: a glyph cannot be drawn from a Fontations typeface before then.
-    // Port of: src/ports/SkTypeface_fontations.cpp#L1043-L1046 (chrome/m156), T19b
+    /// `SkTypeface_Fontations::onCreateScalerContext`: the outline scaler context, over the
+    /// glyph mask seam of `skia_rust_raster`. COLR and bitmap glyphs wait for T21 and T22.
+    // Port of: src/ports/SkTypeface_fontations.cpp#L1043-L1046 (chrome/m156)
     fn on_create_scaler_context(
         &self,
-        _this: Typeface,
-        _effects: &ScalerContextEffects,
-        _desc: &Descriptor,
+        this: Typeface,
+        effects: &ScalerContextEffects,
+        desc: &Descriptor,
     ) -> ScalerContext {
-        unimplemented!(
-            "the Fontations scaler context is T19b (docs/design/text.md §9); \
-             a Fontations typeface cannot draw glyphs yet"
-        )
+        let source = self.scaler_source();
+        ScalerContext::new(this, effects, desc, &GLYPH_PATH_RASTERIZER, |base| {
+            Box::new(FontationsScalerContext::new(source, base))
+        })
     }
 
     /// `SkTypeface_Fontations::onFilterRec`: fake bold becomes a stroke, LCD-specific full
