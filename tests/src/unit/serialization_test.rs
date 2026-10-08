@@ -10,10 +10,14 @@ use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_descriptor::{FactoryId, FontDescriptor};
 use skia_rust_core::font_mgr::TypefaceDecoder;
 use skia_rust_core::font_types::set_four_byte_tag;
+use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream, StreamAsset};
+use skia_rust_core::text_blob::TextBlobBuilder;
 use skia_rust_core::typeface::{SerializeBehavior, Typeface};
 use skia_rust_effects::dash_path_effect;
-use skia_rust_tools::font_tool_utils::{default_typeface, test_font_mgr, with_typeface_decoders};
+use skia_rust_tools::font_tool_utils::{
+    default_font, default_typeface, test_font_mgr, with_typeface_decoders,
+};
 
 use crate::{def_font_test, def_test, errorf, reporter_assert};
 
@@ -130,4 +134,31 @@ def_font_test!(Serialization_Typeface_Sanitizer_Spy, |reporter| {
         reporter,
         spy_data.as_deref() == Some(&b"sanitized_bytes\0"[..])
     );
+});
+
+// Port of: tests/SerializationTest.cpp#L1166-L1188 (chrome/m156), WriteBuffer_external_memory_textblob
+def_test!(WriteBuffer_external_memory_textblob, |reporter| {
+    let font = default_font();
+
+    let mut builder = TextBlobBuilder::new();
+    let glyph_count = 5;
+    // allocRun() allocates only the glyph buffer.
+    let run = builder.alloc_run(&font, glyph_count, 1.2, 2.3, None);
+    run.fill(0);
+    let Some(blob) = builder.make() else {
+        errorf!(reporter, "the blob has a run");
+        return;
+    };
+    let procs = SerialProcs::default();
+
+    // SkAlign4 of the serialized size.
+    let blob_size = (blob.serialize(&procs).size() + 3) & !3;
+    reporter_assert!(reporter, blob_size > 4);
+
+    // Too small external storage: nothing is written.
+    let mut storage = vec![0u8; blob_size - 4];
+    reporter_assert!(reporter, blob.serialize_into(&procs, &mut storage) == 0);
+
+    let mut storage = vec![0u8; blob_size];
+    reporter_assert!(reporter, blob.serialize_into(&procs, &mut storage) != 0);
 });

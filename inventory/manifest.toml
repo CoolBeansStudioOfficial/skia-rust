@@ -23909,7 +23909,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_5321.cpp#L21-L47"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "716ff76282b0e3f31251a4c410b015da8ae92881e855b1cd6554399600909036"
 
 [[test]]
@@ -23927,7 +23927,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_8955.cpp#L15-L29"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a65207ed07aa5bd1717c9def2ebd8b36e734c249a162a97e273a4523f7b6b213"
 
 [[test]]
@@ -24637,7 +24637,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobtransforms.cpp#L175-L175"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d75f1a0bb0db1008881ba7325e857d238e010f8970f2e6b8998c4e1cc4fb1758"
 
 [[test]]
@@ -41631,8 +41631,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1166-L1188"
 module = "text"
-status = "todo"
-reason = "needs TextBlob (T15a)"
+status = "passing"
 span_hash = "13f8a192b2643d2e12bbc583b232ef8568e74d3bcb6231a56fac89cfabb2cce5"
 
 [[test]]
@@ -48920,8 +48919,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L440-L471"
 module = "text"
-status = "todo"
-reason = "needs SkTextBlob serialization (T15b)"
+status = "passing"
 span_hash = "6ea32fb8cd6b644cb5cd8580c0a8476a1e4031b59c2235195b0669787aa7ebd9"
 
 [[test]]
