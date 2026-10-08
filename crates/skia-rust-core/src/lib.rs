@@ -46,6 +46,7 @@ pub mod cubic_map;
 pub mod cubics;
 pub mod data;
 pub mod data_table;
+pub mod descriptor;
 pub mod device;
 pub mod draw_procs;
 pub mod draw_types;
@@ -159,6 +160,7 @@ pub mod sampling_options;
 #[doc(hidden)]
 pub mod sampling_priv;
 pub mod scalar;
+pub mod scaler_context;
 pub mod shader;
 pub mod shaders;
 pub mod size;
