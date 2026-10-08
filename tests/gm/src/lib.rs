@@ -41,6 +41,7 @@ pub mod diff;
 pub mod gm;
 pub mod goldens;
 pub mod sink;
+pub mod tool_utils;
 
 use skia_rust_core::color::Color;
 use skia_rust_core::size::ISize;
