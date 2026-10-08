@@ -42272,8 +42272,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L88-L129"
 module = "text"
-status = "todo"
-reason = "needs SkGlyph::flattenMetrics/MakeFromBuffer (glyph serialization, T5), not ported"
+status = "passing"
 span_hash = "e7d3e7b234b769636e26f98fe0a5d9013df5d1b9fc30848e2ad9e55f5480f4d7"
 
 [[test]]
@@ -42292,8 +42291,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L131-L194"
 module = "text"
-status = "todo"
-reason = "needs SkGlyph::flattenMetrics/flattenImage/MakeFromBuffer (glyph serialization, T5), not ported"
+status = "passing"
 span_hash = "832e0c82f3f83445b17ec26998b09e96ee16535145eb78cee986660ce927f614"
 
 [[test]]
@@ -42302,8 +42300,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L196-L265"
 module = "text"
-status = "todo"
-reason = "needs SkGlyph::flattenMetrics/flattenPath/MakeFromBuffer (glyph serialization, T5), not ported"
+status = "passing"
 span_hash = "6a616eb05f585325ae2d22f7a4c77d008234f3cb5cf90cca1bfd3627f2f13295"
 
 [[test]]

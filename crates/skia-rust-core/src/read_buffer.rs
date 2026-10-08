@@ -224,6 +224,17 @@ impl<'a> ReadBuffer<'a> {
         u32::from_ne_bytes(self.read_int().to_ne_bytes())
     }
 
+    /// Reads a boolean, which must be stored as 0 or 1: any other value makes the buffer invalid
+    /// (`readBool`).
+    // Port of: src/core/SkReadBuffer.cpp#L91-L96 (chrome/m156)
+    #[doc(alias = "readBool")]
+    pub fn read_bool(&mut self) -> bool {
+        let value = self.read_uint();
+        // Boolean value should be either 0 or 1
+        self.validate(value & !1 == 0);
+        value != 0
+    }
+
     /// Reads an `i32` (`read32`).
     // Port of: src/core/SkReadBuffer.cpp#L126-L128 (chrome/m156)
     pub fn read32(&mut self) -> i32 {

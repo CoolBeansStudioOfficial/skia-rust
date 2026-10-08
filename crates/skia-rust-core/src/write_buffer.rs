@@ -332,6 +332,13 @@ impl BinaryWriteBuffer {
         self.writer.write32(i32::from_ne_bytes(value.to_ne_bytes()));
     }
 
+    /// Writes a boolean as a 32 bit word, 0 or 1 (`writeBool`).
+    // Port of: src/core/SkWriteBuffer.cpp#L53-L55 (chrome/m156)
+    #[doc(alias = "writeBool")]
+    pub fn write_bool(&mut self, value: bool) {
+        self.writer.write32(i32::from(value));
+    }
+
     /// Writes a scalar (`writeScalar`).
     // Port of: src/core/SkWriteBuffer.cpp#L57-L59 (chrome/m156)
     #[doc(alias = "writeScalar")]
