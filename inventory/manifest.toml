@@ -34511,7 +34511,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1131-L1133"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "90e079f422719566585a9f9097209d540b26fe141702a30ea666a6ad18cecb70"
 
 [[test]]
@@ -34576,7 +34576,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1090-L1109"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "037d557d3fcfd85f1344343d6222c86f2d454105ab089e050961e676aef9a7b7"
 
 [[test]]
@@ -34650,7 +34650,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2271-L2294"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b6e25a68c32a037abeff0bd8840754dc0c80d2b3c7f461d7dfae4c615d099ee3"
 
 [[test]]
@@ -34659,7 +34659,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2296-L2324"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bff083eed45945564283eb0ed081bf89acdb904764773a0644159f0d8a17f742"
 
 [[test]]
