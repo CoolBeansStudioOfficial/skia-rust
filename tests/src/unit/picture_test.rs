@@ -4,9 +4,8 @@
 // Port of: tests/PictureTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// - `Picture`, `Picture_EmptyBitmap`, `Canvas_EmptyBitmap`, `DontOptimizeSaveLayerDrawDrawRestore`,
-//   `Picture_BitmapLeak`: need `SkImage` (`SkBitmap::asImage`, `drawImage`, `drawImageRect`;
-//   images, Phase 3). `Picture` also needs `SkDynamicMemoryWStream` serialization and `SkFont`.
+// - `Picture`: its `test_typeface` needs `SkFont`, `drawString` and picture serialization
+//   (`SkDynamicMemoryWStream`); the rest of its steps are covered by the other tests of the file.
 // - `Picture_preserveCullRect`, `Picture_empty_serial`: need picture serialization
 //   (`SkPicture::serialize`, `MakeFromStream`, `MakeFromData`; `SkPictureData` is out of scope
 //   for D7).
@@ -15,12 +14,15 @@
 
 #![cfg(test)]
 
-use crate::{Reporter, def_test, reporter_assert};
+use crate::{Reporter, def_test, def_tier_test, reporter_assert};
 use skia_rust_core::bbh_factory::{BBHFactory, BBoxHierarchy, RTreeFactory};
 use skia_rust_core::bitmap::Bitmap;
-use skia_rust_core::canvas::{Canvas, CanvasHooks, SaveLayerRec, SaveLayerStrategy};
+use skia_rust_core::canvas::{
+    Canvas, CanvasHooks, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
+};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
@@ -583,4 +585,160 @@ def_test!(Picture_nested_op_count, |r| {
     check(&make_pic(10, Some(&leaf1)), 10, 10);
     // 10 DrawPicture ops recorded, each holding 10 ops: 10 shallow; 10 * (1 + 10) = 110 nested.
     check(&make_pic(10, Some(&leaf10)), 10, 110);
+});
+
+// Port of: tests/PictureTest.cpp#L48-L54 (chrome/m156)
+fn make_bm(bm: &mut Bitmap, w: i32, h: i32, color: Color, immutable: bool) {
+    bm.alloc_n32_pixels((w, h), None);
+    bm.erase_color(color);
+    if immutable {
+        bm.set_immutable();
+    }
+}
+
+// Port of: tests/PictureTest.cpp#L535-L548 (chrome/m156)
+fn draw_bitmaps(bitmap: &Bitmap, canvas: &Canvas) {
+    let rect = Rect::new(5.0, 5.0, 8.0, 8.0);
+    // (`drawImage(nullptr, ...)` returns without drawing.)
+    let Some(img) = bitmap.as_image() else {
+        return;
+    };
+
+    // Don't care what these record, as long as they're legal.
+    canvas.draw_image(&img, (0.0, 0.0), None);
+    canvas.draw_image_rect(
+        &img,
+        Some((&rect, SrcRectConstraint::Strict)),
+        rect,
+        &Paint::default(),
+    );
+    canvas.draw_image(&img, (1.0, 1.0), None); // drawSprite
+}
+
+// Port of: tests/PictureTest.cpp#L542-L547 (chrome/m156)
+fn test_draw_bitmaps(canvas: &Canvas) {
+    let mut empty = Bitmap::new();
+    draw_bitmaps(&empty, canvas);
+    let _ = empty.set_info(&ImageInfo::new_n32_premul((10, 10), None), 0);
+    draw_bitmaps(&empty, canvas);
+}
+
+// Port of: tests/PictureTest.cpp#L549-L553 (chrome/m156)
+def_tier_test!(Picture_EmptyBitmap, |_r| {
+    let mut recorder = PictureRecorder::new();
+    test_draw_bitmaps(recorder.begin_recording(Rect::from_wh(10.0, 10.0), false));
+    let _picture = recorder.finish_recording_as_picture(None);
+});
+
+// Port of: tests/PictureTest.cpp#L555-L561 (chrome/m156)
+def_tier_test!(Canvas_EmptyBitmap, |_r| {
+    let mut dst = Bitmap::new();
+    dst.alloc_n32_pixels((10, 10), None);
+    let canvas = Canvas::from_bitmap(&mut dst, None).expect("a canvas");
+
+    test_draw_bitmaps(&canvas);
+});
+
+// Port of: tests/PictureTest.cpp#L563-L608 (chrome/m156)
+def_tier_test!(DontOptimizeSaveLayerDrawDrawRestore, |reporter| {
+    // This test is from crbug.com/344987.
+    // The commands are:
+    //   saveLayer with paint that modifies alpha
+    //     drawBitmapRect
+    //     drawBitmapRect
+    //   restore
+    // The bug was that this structure was modified so that:
+    //  - The saveLayer and restore were eliminated
+    //  - The alpha was only applied to the first drawBitmapRectToRect
+
+    // This test draws blue and red squares inside a 50% transparent
+    // layer.  Both colours should show up muted.
+    // When the bug is present, the red square (the second bitmap)
+    // shows upwith full opacity.
+
+    let mut blue_bm = Bitmap::new();
+    make_bm(
+        &mut blue_bm,
+        100,
+        100,
+        Color::from_argb(255, 0, 0, 255),
+        true,
+    );
+    let mut red_bm = Bitmap::new();
+    make_bm(
+        &mut red_bm,
+        100,
+        100,
+        Color::from_argb(255, 255, 0, 0),
+        true,
+    );
+    let mut semi_transparent = Paint::default();
+    semi_transparent.set_alpha(0x80);
+
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+    canvas.draw_color(Color::new(0), None);
+
+    canvas.save_layer(&SaveLayerRec::default().paint(&semi_transparent));
+    canvas.draw_image(blue_bm.as_image().expect("an image"), (25.0, 25.0), None);
+    canvas.draw_image(red_bm.as_image().expect("an image"), (50.0, 50.0), None);
+    canvas.restore();
+
+    let picture = recorder
+        .finish_recording_as_picture(None)
+        .expect("a picture");
+
+    // Now replay the picture back on another canvas
+    // and check a couple of its pixels.
+    let mut replay_bm = Bitmap::new();
+    make_bm(&mut replay_bm, 100, 100, Color::BLACK, false);
+    {
+        let replay_canvas = Canvas::from_bitmap(&mut replay_bm, None).expect("a canvas");
+        picture.playback(&replay_canvas);
+    }
+
+    // With the bug present, at (55, 55) we would get a fully opaque red
+    // intead of a dark red.
+    reporter_assert!(
+        reporter,
+        replay_bm.get_color((30, 30)) == Color::new(0xff00_0080)
+    );
+    reporter_assert!(
+        reporter,
+        replay_bm.get_color((55, 55)) == Color::new(0xff80_0000)
+    );
+});
+
+// Port of: tests/PictureTest.cpp#L656-L684 (chrome/m156)
+def_test!(Picture_BitmapLeak, |r| {
+    let mut mut_bm = Bitmap::new();
+    let mut immut = Bitmap::new();
+    mut_bm.alloc_n32_pixels((300, 200), None);
+    immut.alloc_n32_pixels((300, 200), None);
+    immut.set_immutable();
+    debug_assert!(!mut_bm.is_immutable());
+    debug_assert!(immut.is_immutable());
+
+    // No one can hold a ref on our pixels yet.
+    reporter_assert!(r, mut_bm.pixel_ref_is_unique());
+    reporter_assert!(r, immut.pixel_ref_is_unique());
+
+    let pic = {
+        // we want the recorder to go out of scope before our subsequent checks, so we
+        // place it inside local braces.
+        let mut rec = PictureRecorder::new();
+        let canvas = rec.begin_recording(Rect::from_wh(1920.0, 1200.0), false);
+        canvas.draw_image(mut_bm.as_image().expect("an image"), (0.0, 0.0), None);
+        canvas.draw_image(immut.as_image().expect("an image"), (800.0, 600.0), None);
+        rec.finish_recording_as_picture(None)
+    };
+
+    // The picture shares the immutable pixels but copies the mutable ones.
+    reporter_assert!(r, mut_bm.pixel_ref_is_unique());
+    reporter_assert!(r, !immut.pixel_ref_is_unique());
+
+    // When the picture goes away, it's just our bitmaps holding the refs.
+    drop(pic);
+    reporter_assert!(r, mut_bm.pixel_ref_is_unique());
+    reporter_assert!(r, immut.pixel_ref_is_unique());
 });

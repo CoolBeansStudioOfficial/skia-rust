@@ -298,6 +298,29 @@ pub trait CanvasHooks {
     ) -> bool {
         false
     }
+    /// `onDrawImageRect2` (`SkCanvas::onDrawImage2` is unreachable in Skia and has no hook).
+    fn on_draw_image_rect2(
+        &mut self,
+        _image: &Image,
+        _src: &Rect,
+        _dst: &Rect,
+        _sampling: &SamplingOptions,
+        _paint: Option<&Paint>,
+        _constraint: SrcRectConstraint,
+    ) -> bool {
+        false
+    }
+    /// `onDrawImageLattice2`.
+    fn on_draw_image_lattice2(
+        &mut self,
+        _image: &Image,
+        _lattice: &Lattice<'_>,
+        _dst: &Rect,
+        _filter: FilterMode,
+        _paint: Option<&Paint>,
+    ) -> bool {
+        false
+    }
 }
 
 /// Whether the content of a surface is about to be discarded or kept
@@ -1630,6 +1653,11 @@ impl CanvasState {
         paint: Option<&Paint>,
         constraint: SrcRectConstraint,
     ) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_image_rect2(image, src, dst, sampling, paint, constraint)
+        {
+            return;
+        }
         let real_paint = clean_paint_for_draw_image(paint);
         let real_sampling = clean_sampling_for_constraint(sampling, constraint);
 
@@ -1717,6 +1745,11 @@ impl CanvasState {
         filter: FilterMode,
         paint: &Paint,
     ) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_image_lattice2(image, lattice, dst, filter, Some(paint))
+        {
+            return;
+        }
         let real_paint = clean_paint_for_draw_image(Some(paint));
 
         if self.internal_quick_reject(dst, &real_paint, None) {
@@ -2779,6 +2812,21 @@ impl Canvas {
             paint,
         );
         self
+    }
+
+    /// `drawImageRect` with a nullable paint, as the record replays it (`SkRecords::Draw`).
+    pub(crate) fn draw_image_rect_nullable_paint(
+        &self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        self.state
+            .borrow_mut()
+            .draw_image_rect(image, src, dst, sampling, paint, constraint);
     }
 
     /// The device-level hook used by pictures and tests: runs `f` with the top device.

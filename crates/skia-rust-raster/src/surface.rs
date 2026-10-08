@@ -31,9 +31,11 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_raster::CopyPixelsMode;
 use skia_rust_core::images;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
-use skia_rust_core::point::IPoint;
+use skia_rust_core::point::{IPoint, Point};
 use skia_rust_core::rect::{Contains, IRect};
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::bitmap_device::BitmapDevice;
@@ -260,6 +262,24 @@ impl<'a> Surface<'a> {
             self.image_snapshot()
         } else {
             self.new_image_snapshot(Some(&bounds))
+        }
+    }
+
+    /// Draws the surface's pixels into `canvas` with the top-left corner at `offset`
+    /// (`SkSurface::draw`, `SkSurface_Raster::onDraw`): the image of a mutable bitmap, so a copy
+    /// of the current pixels.
+    // Port of: src/image/SkSurface.cpp#L120-L123 and src/image/SkSurface_Raster.cpp#L107-L110
+    // (chrome/m156)
+    pub fn draw(
+        &mut self,
+        canvas: &Canvas,
+        offset: impl Into<Point>,
+        sampling: impl Into<SamplingOptions>,
+        paint: Option<&Paint>,
+    ) {
+        let image = self.canvas.with_root_bitmap(|bm| bm.as_image()).flatten();
+        if let Some(image) = image {
+            canvas.draw_image_with_sampling_options(image, offset, sampling, paint);
         }
     }
 

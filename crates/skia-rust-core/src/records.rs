@@ -9,15 +9,17 @@
 //! is what the record holds (Skia keeps a type tag next to a pointer; the enum is the tag).
 //!
 //! skia-rust: only the calls of the features that are ported have a record type. Missing are
-//! `SaveBehind`, `DrawBehind`, `DrawDrawable`, `DrawImage`, `DrawImageLattice`, `DrawImageRect`,
+//! `SaveBehind`, `DrawBehind`, `DrawDrawable`,
 //! `DrawPatch`, `DrawTextBlob`, `DrawSlug`, `DrawAtlas`, `DrawVertices`, `DrawMesh`,
 //! `DrawShadowRec`, `DrawAnnotation`, `DrawEdgeAAQuad` and `DrawEdgeAAImageSet`, whose types
-//! (`SkImage`, `SkDrawable`, `SkTextBlob`, ...) are not ported. `SkTypedMatrix` is a plain
+//! (`SkDrawable`, `SkTextBlob`, ...) are not ported. `SkTypedMatrix` is a plain
 //! [`Matrix`] (it only precomputes the matrix type for thread safety, and a `Matrix` is
 //! immutable data here). `Optional<T>` is `Option<T>` and `PODArray<T>` a `Vec<T>`.
 
-use crate::canvas::{PointMode, SaveLayerFlags};
+use crate::canvas::{PointMode, SaveLayerFlags, SrcRectConstraint, lattice::RectType};
 use crate::clip_op::ClipOp;
+use crate::color::Color;
+use crate::image::Image;
 use crate::image_filter::ImageFilter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
@@ -25,9 +27,10 @@ use crate::paint::Paint;
 use crate::path::Path;
 use crate::picture::Picture;
 use crate::point::Point;
-use crate::rect::Rect;
+use crate::rect::{IRect, Rect};
 use crate::region::Region;
 use crate::rrect::RRect;
+use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::tile_mode::TileMode;
@@ -240,6 +243,46 @@ pub struct DrawDRRect {
     pub inner: RRect,
 }
 
+/// `SkRecords::DrawImage`.
+// Port of: src/core/SkRecords.h#L256-L261 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct DrawImage {
+    pub paint: Option<Paint>,
+    pub image: Image,
+    pub left: scalar,
+    pub top: scalar,
+    pub sampling: SamplingOptions,
+}
+
+/// `SkRecords::DrawImageLattice` (`xCount`, `yCount` and `flagCount` are the lengths of the
+/// arrays; `flags` and `colors` are empty when `flagCount` is 0 or the lattice had none).
+// Port of: src/core/SkRecords.h#L262-L274 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct DrawImageLattice {
+    pub paint: Option<Paint>,
+    pub image: Image,
+    pub x_divs: Vec<i32>,
+    pub y_divs: Vec<i32>,
+    pub flag_count: usize,
+    pub flags: Vec<RectType>,
+    pub colors: Vec<Color>,
+    pub src: IRect,
+    pub dst: Rect,
+    pub filter: FilterMode,
+}
+
+/// `SkRecords::DrawImageRect`.
+// Port of: src/core/SkRecords.h#L275-L282 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct DrawImageRect {
+    pub paint: Option<Paint>,
+    pub image: Image,
+    pub src: Rect,
+    pub dst: Rect,
+    pub sampling: SamplingOptions,
+    pub constraint: SrcRectConstraint,
+}
+
 /// `SkRecords::DrawOval`.
 #[derive(Clone, Debug, Default)]
 pub struct DrawOval {
@@ -399,6 +442,9 @@ record_types! {
     ClipShader => 0,
     ResetClip => 0,
     DrawArc => DRAW_WITH_PAINT,
+    DrawImage => DRAW_WITH_PAINT | tags::HAS_IMAGE,
+    DrawImageLattice => DRAW_WITH_PAINT | tags::HAS_IMAGE,
+    DrawImageRect => DRAW_WITH_PAINT | tags::HAS_IMAGE,
     DrawDRRect => DRAW_WITH_PAINT,
     DrawOval => DRAW_WITH_PAINT,
     DrawPaint => DRAW_WITH_PAINT,
@@ -417,6 +463,9 @@ impl Command {
         match self {
             Command::SaveLayer(r) => r.paint.as_mut(),
             Command::DrawArc(r) => Some(&mut r.paint),
+            Command::DrawImage(r) => r.paint.as_mut(),
+            Command::DrawImageLattice(r) => r.paint.as_mut(),
+            Command::DrawImageRect(r) => r.paint.as_mut(),
             Command::DrawDRRect(r) => Some(&mut r.paint),
             Command::DrawOval(r) => Some(&mut r.paint),
             Command::DrawPaint(r) => Some(&mut r.paint),

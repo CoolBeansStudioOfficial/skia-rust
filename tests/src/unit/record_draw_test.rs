@@ -8,8 +8,6 @@
 //   `SkImageFilters::DropShadow` (image filters, Phase 3).
 // - `RecordDraw_EmptySaveLayerWithBackdropFilterAffectsCullRect`: needs `SkImageFilters::Blur`
 //   (image filters, Phase 3).
-// - `RecordDraw_drawImage`: needs `SkImage` (a surface snapshot) and an `SkCanvas` subclass
-//   over a size (images, Phase 3).
 // Excluded (manifest): `RecordDraw_BasicBounds` and `RecordDraw_SaveLayerBoundsAffectsClipBounds`
 // are inside `#if 0` in Skia ("This would be nice, but we can't get it right today").
 
@@ -17,7 +15,9 @@
 
 use super::record_test_utils::{assert_type, count_instances_of_type};
 use crate::{def_test, reporter_assert};
+use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
@@ -27,6 +27,7 @@ use skia_rust_core::record_canvas::{RecordCanvas, SharedRecord};
 use skia_rust_core::record_draw::record_draw;
 use skia_rust_core::records::{ClipRect, DrawPaint, DrawRect, Restore, Save, Scale, SetM44};
 use skia_rust_core::rect::Rect;
+use skia_rust_raster::surfaces;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -159,4 +160,15 @@ def_test!(RecordDraw_SetMatrixClobber, |r| {
         r,
         set_matrix.is_some_and(|s| s.matrix == M44::from(&expected))
     );
+});
+
+// Port of: tests/RecordDrawTest.cpp#L283-L303 (chrome/m156)
+def_test!(RecordDraw_drawImage, |_r| {
+    // (`SkCanvasMock` only adds two flags that the test never reads, so it is a plain canvas.)
+    let mut surface =
+        surfaces::raster(&ImageInfo::new_n32_premul((10, 10), None), None, None).expect("surface");
+    surface.canvas().clear(Color::GREEN);
+    let _image = surface.image_snapshot();
+
+    let _canvas = Canvas::new_no_pixels((10, 10), None);
 });

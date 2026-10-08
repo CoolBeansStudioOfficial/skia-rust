@@ -11,7 +11,8 @@
 //! (`load, <SkColorSpaceXformSteps stages>, store`) on the current CPU tier.
 //!
 //! skia-rust: the C++ converts in place when `srcPixels == dstPixels`. A `&mut [u8]` and a
-//! `&[u8]` cannot alias, so that case does not exist here.
+//! `&[u8]` cannot alias, so that case is [`convert_pixels_in_place`]: it makes the checks of the
+//! C++ for it and converts from a copy of the pixels.
 
 use crate::arena_alloc::ArenaAlloc;
 use crate::color_data::packed4444_to_a32;
@@ -362,6 +363,44 @@ pub fn convert_pixels(
         dst_info, dst_pixels, dst_stride, src_info, src_pixels, src_stride, &steps,
     );
     true
+}
+
+/// [`convert_pixels`] with `srcPixels == dstPixels`: converts `pixels` (rows `src_rb` bytes apart,
+/// as `src_info`) to `dst_info` (rows `dst_rb` bytes apart) in place. Returns false if the pixel
+/// widths differ ("In-place conversions are not supported for different pixel widths") or
+/// [`convert_pixels`] would.
+// Port of: src/core/SkConvertPixels.cpp#L264-L292 (chrome/m156)
+#[doc(alias = "SkConvertPixels")]
+#[must_use]
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+// mirrors (int)(srcRB / srcInfo.bytesPerPixel())
+#[allow(clippy::cast_sign_loss)] // mirrors (size_t)srcStride
+pub fn convert_pixels_in_place(
+    dst_info: &ImageInfo,
+    dst_rb: usize,
+    src_info: &ImageInfo,
+    src_rb: usize,
+    pixels: &mut [u8],
+) -> bool {
+    let (src_bpp, dst_bpp) = (src_info.bytes_per_pixel(), dst_info.bytes_per_pixel());
+    if src_bpp == 0 || dst_bpp == 0 {
+        return false;
+    }
+    let src_stride = (src_rb / src_bpp) as i32;
+    let dst_stride = (dst_rb / dst_bpp) as i32;
+    if (src_stride as usize).wrapping_mul(src_bpp) != src_rb
+        || (dst_stride as usize).wrapping_mul(dst_bpp) != dst_rb
+    {
+        return false;
+    }
+
+    if src_bpp != dst_bpp {
+        // In-place conversions are not supported for different pixel widths.
+        return false;
+    }
+
+    let src = pixels.to_vec();
+    convert_pixels(dst_info, pixels, dst_rb, src_info, &src, src_rb)
 }
 
 #[cfg(test)]

@@ -33,6 +33,8 @@ pub mod color_space_test;
 #[cfg(test)]
 pub mod color_test;
 #[cfg(test)]
+pub mod convert_pixels_test;
+#[cfg(test)]
 pub mod core_blitters_test;
 #[cfg(test)]
 pub mod cubic_map_test;
@@ -43,9 +45,13 @@ pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
 #[cfg(test)]
+pub mod draw_bitmap_rect_test;
+#[cfg(test)]
 pub mod draw_path_test;
 #[cfg(test)]
 pub mod edge_test;
+#[cfg(test)]
+pub mod extended_sk_color_type_tests;
 #[cfg(test)]
 pub mod f16_stages_test;
 #[cfg(test)]
@@ -67,7 +73,13 @@ pub mod icc_test;
 #[cfg(test)]
 pub mod image_bitmap_test;
 #[cfg(test)]
+pub mod image_from565_bitmap;
+#[cfg(test)]
+pub mod image_is_opaque_test;
+#[cfg(test)]
 pub mod image_new_shader_test;
+#[cfg(test)]
+pub mod image_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
@@ -82,6 +94,8 @@ pub mod matrix_test;
 pub mod memset_test;
 #[cfg(test)]
 pub mod meta_data_test;
+#[cfg(test)]
+pub mod mip_map_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
 #[cfg(test)]
@@ -127,6 +141,8 @@ pub mod premul_alpha_round_trip_test;
 #[cfg(test)]
 pub mod quad_roots_test;
 #[cfg(test)]
+pub mod quick_reject_test;
+#[cfg(test)]
 pub mod r_rect_in_path_test;
 #[cfg(test)]
 pub mod r_tree_test;
@@ -157,11 +173,15 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod shader_test;
+#[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
+#[cfg(test)]
+pub mod sk_image_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
 #[cfg(test)]

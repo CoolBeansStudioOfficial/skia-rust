@@ -15522,7 +15522,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/anisotropic.cpp#L278-L278"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "59f3d03462813d995b820c2effe2b6182531a89621048d71a50c16dc74f19e64"
 
 [[test]]
@@ -15531,7 +15531,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/anisotropic.cpp#L169-L169"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "6bef1e9d502a138cb66a2f905dceb9626292e6988e422e96c994bbe5dcb6ea7c"
 
 [[test]]
@@ -15540,7 +15540,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/anisotropic.cpp#L167-L167"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4da04465bb462c631f8fa410e0a98a406a897ff5f065e2ded3ddd17ce8b6840d"
 
 [[test]]
@@ -15549,7 +15549,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/anisotropic.cpp#L168-L168"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b07fb83246b04462e269edd4c3fbddbf1b391b568e7c0d188ef84fc77c4a385e"
 
 [[test]]
@@ -15812,7 +15812,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/badpaint.cpp#L66-L66"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "6fc5d4137d9679af3cc775d876c4bfe1ee7d4ed25eeefa874e159aa682ac17ed"
 
 [[test]]
@@ -15866,7 +15866,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bicubic.cpp#L15-L55"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4618217dc91462b68ea59b7d75fd64db47ed268f34da27411d99138c262e3f0a"
 
 [[test]]
@@ -15984,6 +15984,7 @@ macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L114-L114"
 module = "effects"
 status = "todo"
+reason = "draws its labels with drawString (text not ported)"
 span_hash = "4a54a347805cb06f730a513d432ca1b641b0529564ec49481cd55f1e95f63600"
 
 [[test]]
@@ -15992,7 +15993,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapfilters.cpp#L160-L160"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c7dbe88fb208b3e253e1c7b5bb0df55cc5b83c3bc70765cfbe1ae6fc809bffcf"
 
 [[test]]
@@ -16119,7 +16120,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/bitmaptiled.cpp#L84-L86"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "90591bf5f0511bbb5c5b95c06b458e874f1acdd2dd161c45f80ea5a551cbc7d3"
 
 [[test]]
@@ -16138,7 +16139,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/bitmaptiled.cpp#L87-L89"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "fec184eeca886e64736dd196d34db59c558ec1fd06efb87d5c4945f155efe453"
 
 [[test]]
@@ -16507,7 +16508,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bug6783.cpp#L35-L55"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7559ef4f65215f60e62aa429ee21b7ffbc046c177a2ff6d107251b87d40b6fce"
 
 [[test]]
@@ -16706,7 +16707,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L123-L123"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c43d3154b5888a4728e620d984aeff95de5c4ba745384d97250219a4343608b6"
 
 [[test]]
@@ -16715,7 +16716,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L127-L127"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "11543add0a299ef26d7b1febe656e2bf1c8144291ad13190bc8ac179757aee4b"
 
 [[test]]
@@ -16724,7 +16725,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L122-L122"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ba4dcbf7982d03c0413ffe8b951e55df839d0ac98ac6f06f725ec96009083ffa"
 
 [[test]]
@@ -16733,7 +16734,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L126-L126"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "45112759de3a85ff82c6ed182d8132f65c70a7fbecdd4d693ef2be09726c5358"
 
 [[test]]
@@ -16742,7 +16743,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L121-L121"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0266500d4e720362f60efe70b7e0ee3480aea5f7f6bacd4efac05dc994d4f5df"
 
 [[test]]
@@ -16751,7 +16752,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clippedbitmapshaders.cpp#L125-L125"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "32572fe8217135181cbbfc755ab8ef7776d003118fc28b9283be83195b08d3b8"
 
 [[test]]
@@ -18497,7 +18498,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/croppedrects.cpp#L120-L120"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "0b21512b1bef0a795c8d4007cb99f38fc7d47d3ec536a16ff4a88a377001c69e"
 
 [[test]]
@@ -19232,7 +19233,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/fatpathfill.cpp#L56-L75"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "13de5abdc50cf7ae2af0560bc6ed22334f746207ab0204aca96af61e36bcebc6"
 
 [[test]]
@@ -19277,7 +19278,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filterbug.cpp#L109-L109"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f105c5267d61b6189265d09488d40fedf89a910b20db0e6b405f627e125d9f17"
 
 [[test]]
@@ -19847,7 +19848,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L136-L136"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "be611dad42c57a92ad62739922f0dd7ef147dc2f3bbc56de571728bee48b97ab"
 
 [[test]]
@@ -19856,7 +19857,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L143-L143"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "471d6e2457bd2fc8479acde24cbed0c1a4be4d5a83aac5678b802c9c597c7060"
 
 [[test]]
@@ -19865,7 +19866,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L139-L139"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4866bb1d03e7a19539b4420ca995feb439a6e89fb8256a4f3133257fdb71fff3"
 
 [[test]]
@@ -19874,7 +19875,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L146-L146"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e252f27441f77a8b2b47a5ebef99ea34b14abf5d0137dd21f4b942f7550eed20"
 
 [[test]]
@@ -19883,7 +19884,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L138-L138"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "13f68bc48084601c0c78f5a53c638863ad782a32511285d28fe156bc48f5487d"
 
 [[test]]
@@ -19892,7 +19893,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L145-L145"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2f3a15cabe2caf78833073440e45ab19fd628a6edb63656a420be4250fd098e1"
 
 [[test]]
@@ -19901,7 +19902,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L141-L141"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "24e81becbfea4479bde56ae02eb765658729b260d574d2a87a8c39b1d5c738f5"
 
 [[test]]
@@ -19910,7 +19911,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L148-L148"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "0737ceab145e9fb3464ce0264f8393cc236446c946d3f98560367e4c71343d50"
 
 [[test]]
@@ -19919,7 +19920,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L137-L137"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "21d65e9877df17a65fdd49d1e937dc4f128fef3567f2bc73104a6657e71ce18d"
 
 [[test]]
@@ -19928,7 +19929,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L144-L144"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "08b1ab8ca97394874d8cc6beb13e949733b4b306842c1b0e2b29ea2878af4fcc"
 
 [[test]]
@@ -19937,7 +19938,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L140-L140"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7279110ecea469e0d2eb73e9bc2aa3a1731b09f581c3fb253c87c820c095c5e7"
 
 [[test]]
@@ -19946,7 +19947,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/giantbitmap.cpp#L147-L147"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "16daab338f081fcf2f6b38f2b365012aac6235871917e1696c1aae665d853d7e"
 
 [[test]]
@@ -20755,7 +20756,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/hugepath.cpp#L72-L76"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d7c3488de732d59e4ab8c26a97e1378ce6ac8bec939b5258569cb1ff4d228971"
 
 [[test]]
@@ -20764,7 +20765,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/hugepath.cpp#L78-L82"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "3bf9af274d62107409f0279223c5695d98dfa6af8a8efb8b57d109db8c247723"
 
 [[test]]
@@ -20773,7 +20774,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/hugepath.cpp#L17-L36"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e12bdba9fc338a54294deeb4a8a3ec4cfd09e9d55e019d677bc53680daa01cea"
 
 [[test]]
@@ -20882,6 +20883,7 @@ macro = "DEF_GM"
 source = "gm/image_shader.cpp#L168-L168"
 module = "effects"
 status = "todo"
+reason = "draws picture, encoded and texture images: not ported"
 span_hash = "87752d8778cea41be42db95db4d069f91b723ecc2b45db97d62f6a794869ebc6"
 
 [[test]]
@@ -20890,7 +20892,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L180-L218"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "319b1dc8acf10dae3bfbf15c0fdb6b83b5dab66fba724a42b8b1cdd77ca99ab0"
 
 [[test]]
@@ -20900,6 +20902,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L254-L271"
 module = "effects"
 status = "todo"
+reason = "decodes images/gainmap_gcontainer_only.jpg (codecs not ported)"
 span_hash = "f534d90c924f1f1987ead04682632c9d7c40be6e7501da8cc004c4d22958452a"
 
 [[test]]
@@ -20909,6 +20912,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L221-L252"
 module = "text"
 status = "todo"
+reason = "needs SkCanvas::getSurface (canvas to surface link): not ported"
 span_hash = "03ad64e8492ba90105fad40541a6408d6c0d1f7fa8ac3fc84e4e8e1f3edc8e1b"
 
 [[test]]
@@ -21260,6 +21264,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagemasksubset.cpp#L96-L114"
 module = "effects"
 status = "todo"
+reason = "its third maker needs SkImages::DeferredFromGenerator (SkImageGenerator, lazy images): not ported"
 span_hash = "d0a004b20d2d57273739a62945bceb673d55a05def23780a3da3cf59b747387f"
 
 [[test]]
@@ -21910,7 +21915,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/mipmap.cpp#L38-L60"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "fb94f00e88ba17331a5d35536fb55e9d6e69ff9b11e2530abaea2ae799a1aa49"
 
 [[test]]
@@ -21919,7 +21924,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/mipmap.cpp#L150-L158"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "34ce5032abd22124f73f9f890d9a3d5f54db2d6317053e53070b248d478018f6"
 
 [[test]]
@@ -21928,7 +21933,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/mipmap.cpp#L101-L109"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "ff77d72c55333891d0ef220d8e4a6094a947590acfb5d32a854b8500db7e8fdc"
 
 [[test]]
@@ -21937,7 +21942,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/mirrortile.cpp#L23-L87"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "93b138c531c8d7ae6a734dd73235f66688bfe071e885828d062f5edae763fafe"
 
 [[test]]
@@ -21982,7 +21987,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/nearesthalfpixelimage.cpp#L22-L118"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4f6f6984a85cd0bd28b407243727c852f5f2605aa459c0eb56763d11827c1994"
 
 [[test]]
@@ -23813,7 +23818,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_4868.cpp#L15-L26"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7d1187f0415d285987299f78fa58f28797ac42c588e7c1d4be0c3064202de234"
 
 [[test]]
@@ -23858,7 +23863,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_9819.cpp#L16-L55"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "018c407f13d989a883d0f4578f3631fb3f2b7408820f02ec346f501520f24356"
 
 [[test]]
@@ -24041,7 +24046,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/strokerect_anisotropic.cpp#L76-L76"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5110550ce38dd4c77d59ddb2a6f227437f7af9f1a08b245e663d4a9b4c6b6ea6"
 
 [[test]]
@@ -24231,7 +24236,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/surface.cpp#L213-L213"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "dde1e19eac688bfae133f3fce9ccfcd6bc76c996cf01084552c33a52031f1326"
 
 [[test]]
@@ -24303,7 +24308,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/surface.cpp#L379-L418"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2bf2b2b33f4c90f7702fe141229afbb3182c6a0774caa3c77db2f97100572e76"
 
 [[test]]
@@ -24367,7 +24372,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tallstretchedbitmaps.cpp#L114-L114"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c1fbbb9174523b61b7af18514421fee02668cb227c7225fb9e8563c4fefb19d5"
 
 [[test]]
@@ -24737,7 +24742,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tinybitmap.cpp#L39-L39"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d38e94a9a209e4fdf92052cc20ba6708be48c4be13de93951d984ed0d1b1ff32"
 
 [[test]]
@@ -24836,7 +24841,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/unpremul.cpp#L20-L77"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "02733129e5dbbb30e9a597bc84c4aefac5aa3e393aaa3b569f8104d88bfcc22d"
 
 [[test]]
@@ -28755,7 +28760,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L204-L298"
 module = "core"
 status = "todo"
-reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState), SkImage and PNG encode: not ported"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState) and PNG encode: not ported"
 span_hash = "8e2ed5d7d6bf160427e047ea21ef7b5af34130338931fab3b06dd7f84f465e90"
 
 [[test]]
@@ -28765,7 +28770,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasStateTest.cpp#L125-L200"
 module = "core"
 status = "todo"
-reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState), SkImage and PNG encode: not ported"
+reason = "needs SkCanvasStateUtils (CaptureCanvasState/MakeFromCanvasState) and PNG encode: not ported"
 span_hash = "91a53d0aebe949a0729c192958aa762da9070dc4254e6224e6a3d81efc232f4c"
 
 [[test]]
@@ -28871,7 +28876,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L408-L414"
 module = "core"
 status = "todo"
-reason = "steps need SkPictureRecorder/drawPicture, SkVertices and image shaders (SkBitmap::makeShader): not ported"
+reason = "one step draws SkVertices (drawVertices): not ported"
 span_hash = "41b9a745bd6cee61998f968f3125d234fa20257ce860a6c2cd5a9bb2ffa8dd0f"
 
 [[test]]
@@ -30074,8 +30079,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ConvertPixelsTest.cpp#L19-L54"
 module = "core"
-status = "todo"
-reason = "needs SkSurface::makeImageSnapshot and SkImage::readPixels (Phase 3); the raster Surface itself is ported (D6)"
+status = "passing"
 span_hash = "5a6e236c3a6c5830a6911819d2b181e2009087d22554d1e03f2d4975e7a6d1bd"
 
 [[test]]
@@ -30716,7 +30720,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawBitmapRectTest.cpp#L250-L271"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aa8e02953f7292005e56e697ea591027faa722e3deeec4b983299887246baab0"
 
 [[test]]
@@ -31100,7 +31104,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExtendedSkColorTypeTests.cpp#L355-L358"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7e834b858c42394720ea99a42b0418431bd71a59e21d4388fac24c404fde954a"
 
 [[test]]
@@ -34684,7 +34688,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFrom565Bitmap.cpp#L17-L23"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d2995ae8673b33f865b66cca9dc2f01a625071f9dfc8bf6d0164961d213994fa"
 
 [[test]]
@@ -34720,7 +34724,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageIsOpaqueTest.cpp#L38-L46"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9d70bebf41b47f928a84d28590866f1e98f674d65cca7ec2de8573d41f6f7d8"
 
 [[test]]
@@ -34740,6 +34744,7 @@ macro = "DEF_TEST"
 source = "tests/ImageIsOpaqueTest.cpp#L76-L101"
 module = "core"
 status = "todo"
+reason = "decodes png/jpg resources and makes a lazy picture image (DeferredFromPicture): not ported"
 span_hash = "c04bd1a7bf5cc122cc0508e4e3be456a77cf40796d5eacbe95128af955212083"
 
 [[test]]
@@ -34806,7 +34811,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L717-L727"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fa7c678163a91946735a036a769f669a4164dc24b0ddb9037ce4646868b3ce89"
 
 [[test]]
@@ -34816,6 +34821,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L707-L715"
 module = "core"
 status = "todo"
+reason = "its last assertion needs SkImages::DeferredFromGenerator (SkImageGenerator, lazy images): not ported"
 span_hash = "ac9f181c3df1013815928f641c8a56d644b78172af25dac7e9077fd81de43114"
 
 [[test]]
@@ -34825,6 +34831,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
 status = "todo"
+reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -34854,6 +34861,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L853-L868"
 module = "core"
 status = "todo"
+reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
 span_hash = "dc5eb71bc1e630f40cfee1a4495f722e78aa31ada17a4c3b5e86210af5e58df0"
 
 [[test]]
@@ -34873,6 +34881,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L899-L914"
 module = "core"
 status = "todo"
+reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
 span_hash = "a5d92dfd786abb78d84edf4474dac23f089e27a116e1a48ecba7c7b804e5a8ff"
 
 [[test]]
@@ -34892,6 +34901,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L789-L804"
 module = "core"
 status = "todo"
+reason = "its last case is create_codec_image (SkPngEncoder + DeferredFromEncodedData; codecs not ported)"
 span_hash = "110916350685e063207ed53d7767c69fc8ebc2cf258a42fa4de60e5e32db5e28"
 
 [[test]]
@@ -34911,6 +34921,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1505-L1520"
 module = "core"
 status = "todo"
+reason = "needs SkImage::scalePixels and an encoded image (SkPngEncoder, DeferredFromEncodedData)"
 span_hash = "89a3e10417db669347142fe7447ed1c098f7b55ed27c04f53306430c8baf83ed"
 
 [[test]]
@@ -34930,6 +34941,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1328-L1358"
 module = "skcms"
 status = "todo"
+reason = "decodes jpg/webp resources and makes a lazy picture image (SkImages::DeferredFromPicture): not ported"
 span_hash = "48a997718ee221de779a86620d2b3f2f14a8e043a18bffe08cb35514a9ba5a3e"
 
 [[test]]
@@ -34938,7 +34950,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L235-L265"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ade918cbbc586cbb45da2c6d4e2639e325f5062d00ce3ed87d2bf9f77d201e9c"
 
 [[test]]
@@ -34947,7 +34959,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L302-L332"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "91e9ad97b86ab991191a036061f9e8f3ef0c583c5e985a4fdc15ca89afad1549"
 
 [[test]]
@@ -34957,6 +34969,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L268-L297"
 module = "core"
 status = "todo"
+reason = "needs picture serialization (SkSerialProcs, SkPicture::serialize/MakeFromData)"
 span_hash = "90f1ef1ed7d08f9f751fdbe36b511f0b38402fa258c1d3d5d71d087bcd5f01c7"
 
 [[test]]
@@ -34966,6 +34979,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1360-L1397"
 module = "skcms"
 status = "todo"
+reason = "decodes images/1x1.png for its last case (codecs not ported)"
 span_hash = "c69695c1cbc1e1b9b88b48e183848864729adf333cf7c650d1d136275f55a981"
 
 [[test]]
@@ -34975,6 +34989,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1543-L1564"
 module = "core"
 status = "todo"
+reason = "decodes images/mandrill_32.png (codecs not ported)"
 span_hash = "8e99d63ff0220c59a7607076a06120b75f7f58e6ea6424268c4a24c7e1939c87"
 
 [[test]]
@@ -35053,7 +35068,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1671-L1685"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8cb9f335b489ae786d391358721f0a419f57006ef8e70f0f7b14e3f88e8c509e"
 
 [[test]]
@@ -35063,6 +35078,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1457-L1470"
 module = "codec"
 status = "todo"
+reason = "decodes images/mandrill_32.png (codecs and SkImageGenerators not ported)"
 span_hash = "b8f8c35d212d59e92be07dd064b0fc5fcc69888bf9629c9bfef31dabf18a95d8"
 
 [[test]]
@@ -35071,7 +35087,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L345-L373"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "672bbeef702c561daed7d67721acdec47b712b55d0ef71eb4945d7096b8e802a"
 
 [[test]]
@@ -35081,6 +35097,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1427-L1440"
 module = "codec"
 status = "todo"
+reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
 span_hash = "5200bd7f320a895cd3633b69853a22794ae4425907a9d0fc52304d68e1335506"
 
 [[test]]
@@ -35089,7 +35106,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1442-L1455"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0b3077161f9b22304e301949cb2e2ea83fbeec72c1bcbb43cf38d336bdfe09f1"
 
 [[test]]
@@ -35099,6 +35116,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
 status = "todo"
+reason = "decodes images/mandrill_128.png and needs SkPngEncoder (codecs not ported)"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
@@ -36052,7 +36070,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L35-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a00622998d33d2c03399653716ee08b24c52347f9632b6b74660e35bf54e5010"
 
 [[test]]
@@ -36061,7 +36079,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L140-L181"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a9ed248a63892d4b3882ac8f44e989d6e7e51e049abcfbff281e21c69f92c5b1"
 
 [[test]]
@@ -36070,7 +36088,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L190-L229"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "687edcdaf89ef319b9366322c2c73513ae8ab74dde7a8b0b781245a689b55a32"
 
 [[test]]
@@ -36079,7 +36097,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L111-L132"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ca794990bdf3b1acf2b96efda8735a79965aa8863af6ed3079ed9242962e4846"
 
 [[test]]
@@ -36088,7 +36106,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L231-L236"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7554c5455117c321308652ab5554ef8c29a1fc2561c551537399865c4cfeed96"
 
 [[test]]
@@ -36098,6 +36116,7 @@ macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L248-L264"
 module = "core"
 status = "todo"
+reason = "decodes images/mandrill_128.png and needs SkMipmapBuilder: not ported"
 span_hash = "0fa4bc3a068847fb584e6a059387860916a0fb4cd2b19e8c254fe6ccd3d6eace"
 
 [[test]]
@@ -36107,6 +36126,7 @@ macro = "DEF_TEST"
 source = "tests/MipMapTest.cpp#L268-L288"
 module = "core"
 status = "todo"
+reason = "decodes images/mandrill_128.png and needs SkMipmapBuilder: not ported"
 span_hash = "254c087a3a9708a1e4d9e0d4a77ed28e02eb4847c6956ad2d40665d3f6adfcce"
 
 [[test]]
@@ -38723,8 +38743,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L555-L561"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): drawImage/drawImageRect of a bitmap"
+status = "passing"
 span_hash = "65c8288875b8c22899d4c41b43925b0d49c86291340585a16acd5d6435a6e60a"
 
 [[test]]
@@ -38733,8 +38752,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L563-L608"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): drawImage of bitmaps"
+status = "passing"
 span_hash = "2d9b11d8bf9cecc157afa965a61f7a1f34b46cdf7b053d6542620a09587b1bfd"
 
 [[test]]
@@ -38744,7 +38762,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L517-L529"
 module = "core"
 status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3) (test_bad_bitmap) and SkFont/serialization (test_typeface)"
+reason = "test_typeface needs SkFont/drawString and picture serialization (SkDynamicMemoryWStream); the other steps are ported"
 span_hash = "7db5306c924057bb109fec7bad403e184cc6a5b545bda0376b301e65bca41712"
 
 [[test]]
@@ -38762,8 +38780,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L656-L687"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): drawImage of bitmaps"
+status = "passing"
 span_hash = "87be58656c5ff78f257be42a54b0a6f427937cb38a5fc779cc3fdc0b91ef7e98"
 
 [[test]]
@@ -38772,8 +38789,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L549-L553"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): drawImage/drawImageRect of a bitmap"
+status = "passing"
 span_hash = "9b6b616bd0d2bda43a5040b7fd0b7a539b806eaa65ec7ae9110218ee98b3f63b"
 
 [[test]]
@@ -39345,8 +39361,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuickRejectTest.cpp#L102-L106"
 module = "core"
-status = "todo"
-reason = "needs SkImage (not ported): test_drawBitmap uses SkBitmap::asImage and SkCanvas::drawImage; Canvas/Surface are available"
+status = "passing"
 span_hash = "d86c41a5ff5f77d273eee6d3aab7315befb9e5406714a628ed8e7b1db4be055c"
 
 [[test]]
@@ -39356,7 +39371,7 @@ macro = "DEF_TEST"
 source = "tests/QuickRejectTest.cpp#L111-L129"
 module = "core"
 status = "todo"
-reason = "needs SkImageFilters::DistantLitDiffuse (lighting image filters, Phase 3); Canvas is available"
+reason = "needs SkImageFilters::DistantLitDiffuse (lighting image filters, Phase 3)"
 span_hash = "44dec2acedb8b6afbee41c2f55392f6cf44e5ab7ff5e6b3a6cff720e31bd2ae9"
 
 [[test]]
@@ -39851,8 +39866,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ReadPixelsTest.cpp#L397-L401"
 module = "core"
-status = "todo"
-reason = "needs SkImage and SkCanvas::drawImage (fill_src_canvas draws bitmap.asImage() with kSrc); the readPixels half is checked in skia-rust-raster canvas_tests.rs"
+status = "passing"
 span_hash = "5523a175565d3ce2b8f889fd15561559c817b75d191e24bfb26c0ccafe6d4583"
 
 [[test]]
@@ -39870,8 +39884,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ReadPixelsTest.cpp#L500-L539"
 module = "core"
-status = "todo"
-reason = "needs SkImages::RasterFromPixmap / SkImage::readPixels (Phase 3)"
+status = "passing"
 span_hash = "3caf9db1b245f11bb30261f9b8ff9ba52310ab80e156fd3d5199e2727adc66b0"
 
 [[test]]
@@ -40136,8 +40149,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L283-L303"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): snapshots a surface into an image"
+status = "passing"
 span_hash = "75cc1015551fcdfab8a6b48f4fcd3416c883085b4141e4220e4836784f471b98"
 
 [[test]]
@@ -40329,8 +40341,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecorderTest.cpp#L81-L120"
 module = "core"
-status = "todo"
-reason = "needs SkImage (images are not ported; Phase 3): snapshots a surface and calls drawImage/drawImageRect"
+status = "passing"
 span_hash = "c73b360f363327517863aca17a547e4ee4267eff284bff7ec77f4d8d7e6f818d"
 
 [[test]]
@@ -41332,6 +41343,7 @@ macro = "DEF_TEST"
 source = "tests/SamplingTest.cpp#L26-L64"
 module = "core"
 status = "todo"
+reason = "decodes png/jpg resources (codecs not ported)"
 span_hash = "4e5a5dc99955fc5aaad915d458dae3b30891a5262657589d1de43ae2222c4f14"
 
 [[test]]
@@ -41514,6 +41526,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderOpacityTest.cpp#L120-L125"
 module = "effects"
 status = "todo"
+reason = "test_gradient needs SkShaders::LinearGradient (gradients not ported)"
 span_hash = "05464f0bdeb2a9cc18814bf38d380a89c8deabd88c4787200fb39e0d1b2cc32f"
 
 [[test]]
@@ -41523,6 +41536,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderTest.cpp#L93-L106"
 module = "effects"
 status = "todo"
+reason = "needs SkShaders::MakeFractalNoise (perlin noise shader): not ported"
 span_hash = "e46e57e234cee27164c13d14867bdb66713712b442e00b40988f195e147eede8"
 
 [[test]]
@@ -41559,7 +41573,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderTest.cpp#L75-L90"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e774f9ca3e888a4f4a08ecdb5ce265fae2af738431c273331113e2743025147c"
 
 [[test]]
@@ -42261,7 +42275,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkImageTest.cpp#L27-L58"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f70d1b506c573a5ab806093e80e8b3fbe24dfa2c1ef7fe688dd521e03b05c32c"
 
 [[test]]
@@ -42270,7 +42284,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkImageTest.cpp#L62-L66"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "de285cb7c9e570c1904ac3a57f6c7d40409fe7b7c427ae19c708b0efc78add48"
 
 [[test]]
@@ -47895,7 +47909,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1304-L1307"
 module = "core"
 status = "todo"
-reason = "needs SkOverdrawCanvas, SkOverdrawColorFilter and SkImage::asLegacyBitmap (Phase 3)"
+reason = "needs SkOverdrawCanvas and SkOverdrawColorFilter: not ported"
 span_hash = "d52b42e066459557348cd642608266d67da889dcc2cfc9ada57b736dac94cb7d"
 
 [[test]]
@@ -48014,7 +48028,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L554-L556"
 module = "core"
 status = "todo"
-reason = "needs makeImageSnapshot, snapshot copy-on-write, drawImage/drawImageRect and drawString (SkImage, text; Phase 3)"
+reason = "its last step is drawString (text, Phase 3); the image steps are ported"
 span_hash = "7112720fd9af09c080ddcedd34e62386a330358e0726289effd63cc3651372bb"
 
 [[test]]
@@ -48052,8 +48066,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L645-L651"
 module = "text"
-status = "todo"
-reason = "needs SkSurface::makeImageSnapshot and SkImage_Base::isTextureBacked (Phase 3)"
+status = "passing"
 span_hash = "21d0dff1493d28a9fd9b1aef01ff375c7637f989789e07909748f21ccb3dfd0c"
 
 [[test]]
@@ -48140,7 +48153,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1320-L1330"
 module = "core"
 status = "todo"
-reason = "needs SkSurfaces::Null and the makeImageSnapshot() == nullptr assertion (SkImage, Phase 3)"
+reason = "needs SkSurfaces::Null (SkNullSurface): not ported"
 span_hash = "f9849cb9ceed7786cb68017615ac050040226f866c14fdd45fcb9b2f1b56d3a4"
 
 [[test]]
@@ -48160,7 +48173,7 @@ macro = "DEF_TEST"
 source = "tests/SurfaceTest.cpp#L1334-L1370"
 module = "core"
 status = "todo"
-reason = "needs makeImageSnapshot and SkImages::RasterFromPixmap (SkImage, Phase 3)"
+reason = "builds an SkPixmap over a one-byte address with a huge rowBytes, which a safe Pixmap cannot express"
 span_hash = "bd5fc5b391074d003e702294123bb066e8452d51a379045d12202eafa55b08d0"
 
 [[test]]

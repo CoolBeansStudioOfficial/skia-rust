@@ -794,6 +794,14 @@ impl Bitmap {
         self.pixel_ref.clone()
     }
 
+    /// True if the bitmap holds the only reference to its [`PixelRef`] (`pixelRef()->unique()`).
+    ///
+    /// skia-rust: [`Bitmap::pixel_ref`] returns a counted handle, so asking it would count itself.
+    #[must_use]
+    pub fn pixel_ref_is_unique(&self) -> bool {
+        self.pixel_ref.as_ref().is_some_and(PixelRef::is_unique)
+    }
+
     /// Returns the origin of the pixels within the [`PixelRef`]. The bitmap bounds are a subset
     /// of the [`PixelRef`] bounds. Multiple [`Bitmap`]s can share the same [`PixelRef`], where
     /// each has different bounds.
