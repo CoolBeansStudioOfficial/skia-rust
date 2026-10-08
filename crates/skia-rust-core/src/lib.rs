@@ -60,6 +60,7 @@ pub mod id_change_listener;
 pub mod image;
 pub mod image_base;
 pub mod image_filter;
+pub mod image_filter_result;
 pub mod image_filter_types;
 pub mod image_info;
 #[doc(hidden)]
