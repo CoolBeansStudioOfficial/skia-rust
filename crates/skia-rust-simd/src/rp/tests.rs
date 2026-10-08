@@ -1045,17 +1045,21 @@ fn model_backends_match_on_every_host() {
 
 /// The contexts of the B6a stages that are not plain values, for a highp stride of `n`.
 struct SkslCtxs {
-    uniform: UniformCtx<'static>,
+    uniform: UniformCtx,
     from_indirect: CopyIndirectCtx,
-    from_indirect_uniform: CopyIndirectUniformCtx<'static>,
+    from_indirect_uniform: CopyIndirectUniformCtx,
     to_indirect: CopyIndirectCtx,
     swizzle_to_indirect: SwizzleCopyIndirectCtx,
     shuffle: ShuffleCtx,
     swizzle_copy: SwizzleCopyCtx,
 }
 
-/// Uniform data of `SkslCtxs`.
+/// Uniform values of the B6a tests: the `CaseOp` expectation reads one of them. The uniform copies
+/// read their words from the read-only data instead (`SKSL_UNIFORMS_AT`, random in the twin tests).
 static SKSL_UNIFORMS: [i32; 8] = [0x7fbf_ffff, -1, 0, 1, 0x1234_5678, -77, i32::MIN, i32::MAX];
+
+/// Byte offset in the read-only data (slot 0) of the uniform words the uniform copies read.
+const SKSL_UNIFORMS_AT: u32 = 1024;
 
 /// Read-only data (slot 0), the initial `SkSL` slots (slot 3) and the registers (slot 1) of the
 /// B6a twin tests.
@@ -1071,7 +1075,7 @@ impl SkslCtxs {
         SkslCtxs {
             uniform: UniformCtx {
                 dst: slots(5 * sb),
-                src: &SKSL_UNIFORMS[..4],
+                src: data(SKSL_UNIFORMS_AT),
             },
             from_indirect: CopyIndirectCtx {
                 dst: slots(20 * sb),
@@ -1082,7 +1086,7 @@ impl SkslCtxs {
             },
             from_indirect_uniform: CopyIndirectUniformCtx {
                 dst: slots(20 * sb),
-                src: &SKSL_UNIFORMS,
+                src: data(SKSL_UNIFORMS_AT),
                 indirect_offset: data(0),
                 indirect_limit: 4,
                 slots: 3,

@@ -6,11 +6,13 @@
 //! The Raster Pipeline back end: the [`builder::Builder`] that assembles instructions, the
 //! [`program::Program`] it finishes and lowers to stages, and the [`dumper`] that prints them.
 
+pub mod append;
 pub mod builder;
 pub mod dumper;
 pub mod ops;
 pub mod program;
 
+pub use append::{Callbacks, SlotAlloc, StageSink};
 pub use builder::{Builder, Instruction, NA, Slot, SlotRange};
 pub use ops::{BuilderOp, ProgramOp};
 pub use program::{Addr, Program, Stage, StageCtx};

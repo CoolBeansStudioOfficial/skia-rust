@@ -2909,20 +2909,28 @@ def_test!(
                 iota(&mut dst_values, 0, 5 * n, 0);
                 let mut src = [0; 5];
                 iota(&mut src, 0, 5, K_LAST_SIGNALING_NAN);
+                // Skia's `src` is a pointer to the uniforms: they are read from slot memory.
+                let src_ints = Ints::new(&src);
                 let mut dst = Ints::new(&dst_values);
                 let offsets_ints = Ints::from_u32(offsets);
 
                 // Run `copy_from_indirect_unmasked` over our data.
                 let ctx = CopyIndirectUniformCtx {
-                    dst: slot(1),
-                    src: &src,
+                    dst: slot(2),
+                    src: slot(1),
                     indirect_offset: slot(0),
                     indirect_limit: u32::try_from(5 - copy_size).unwrap(),
                     slots: u32::try_from(copy_size).unwrap(),
                 };
                 let mut p = RasterPipeline::new();
                 p.append(Stage::CopyFromIndirectUniformUnmasked(&ctx));
-                p.run(0, 0, n, 1, &mut bind(&[&offsets_ints], &mut [&mut dst]));
+                p.run(
+                    0,
+                    0,
+                    n,
+                    1,
+                    &mut bind(&[&offsets_ints, &src_ints], &mut [&mut dst]),
+                );
                 let dst = dst.get();
 
                 // If the offset plus copy-size would overflow the source data, the results don't
@@ -3387,7 +3395,7 @@ def_test!(SkRasterPipeline_CopySlotsUnmasked, |reporter| {
 });
 
 /// The `copy_[n_]uniform[s]` stage with `count` uniforms.
-fn copy_uniforms_stage<'a>(count: usize, ctx: &'a UniformCtx<'a>) -> Stage<'a> {
+fn copy_uniforms_stage(count: usize, ctx: &UniformCtx) -> Stage<'_> {
     match count {
         1 => Stage::CopyUniform(ctx),
         2 => Stage::Copy2Uniforms(ctx),
@@ -3406,18 +3414,20 @@ def_test!(SkRasterPipeline_CopyUniforms, |reporter| {
         let mut slot_values = vec![0; 5 * MAX_STRIDE_HIGHP];
         iota(&mut slot_values, 0, 5 * n, 1);
         let mut slots = Ints::new(&slot_values);
-        // Initialize the uniform buffer to various NaNs
+        // Initialize the uniform buffer to various NaNs (read from slot memory: Skia's `src` is a
+        // pointer to it)
         let mut uniforms = [0; 5];
         iota(&mut uniforms, 0, 5, K_LAST_SIGNALING_NAN);
+        let uniforms_ints = Ints::new(&uniforms);
 
         // Run `copy_n_uniforms` over our data.
         let ctx = UniformCtx {
-            dst: slot(0),
-            src: &uniforms,
+            dst: slot(1),
+            src: slot(0),
         };
         let mut p = RasterPipeline::new();
         p.append(copy_uniforms_stage(num_slots_affected, &ctx));
-        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        p.run(0, 0, 1, 1, &mut bind(&[&uniforms_ints], &mut [&mut slots]));
         let slots = slots.get();
 
         // Verify that our uniforms have been broadcast into each slot.

@@ -408,12 +408,14 @@ pub struct ConstantCtx {
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L217-L220 (chrome/m156)
-/// `UniformCtx`.
+/// `UniformCtx`. `src` is Skia's `const int32_t*`: the first of the uniform words, which live in
+/// slot memory (the `SkSL` builder's uniform block is copied there by `appendStages`), so the
+/// context borrows nothing and can live in an arena.
 #[doc(alias = "SkRasterPipelineContexts::UniformCtx")]
-#[derive(Clone, Copy, Debug)]
-pub struct UniformCtx<'a> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UniformCtx {
     pub dst: MemPtr,
-    pub src: &'a [i32],
+    pub src: MemPtr,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L222-L225 (chrome/m156)
@@ -495,12 +497,12 @@ pub struct CopyIndirectCtx {
 }
 
 /// `CopyIndirectCtx` as used by `copy_from_indirect_uniform_unmasked` (the source is uniform
-/// data).
+/// data: `src` is the first of its scalar words, in slot memory, as for [`UniformCtx`]).
 #[doc(alias = "SkRasterPipelineContexts::CopyIndirectCtx")]
-#[derive(Clone, Copy, Debug)]
-pub struct CopyIndirectUniformCtx<'a> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CopyIndirectUniformCtx {
     pub dst: MemPtr,
-    pub src: &'a [i32],
+    pub src: MemPtr,
     pub indirect_offset: MemPtr,
     pub indirect_limit: u32,
     pub slots: u32,

@@ -12,8 +12,8 @@
 //! value slots, the temp stacks and the immutable slots, so `OffsetFromBase` is the same
 //! subtraction `Skia` does. The contexts `Skia` packs into `void*` are [`StageCtx`] variants.
 //!
-//! Not in this module yet: `Program::appendStages`, the bridge to the simd pipeline and the
-//! callbacks (task S15). `Skia`'s `SkOpts::raster_pipeline_highp_stride` is the `lanes` argument.
+//! `Program::appendStages`, the bridge to the simd pipeline, is in [`super::append`]. `Skia`'s
+//! `SkOpts::raster_pipeline_highp_stride` is the `lanes` argument of [`Program::slot_data`].
 
 // Port of: src/sksl/codegen/SkSLRasterPipelineBuilder.cpp#L1399-L1640 (chrome/m156)
 

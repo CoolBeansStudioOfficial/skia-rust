@@ -41,6 +41,7 @@ use crate::image_info_priv::color_type_is_normalized;
 use crate::matrix::{Matrix, TypeMask};
 use skia_rust_simd::rp::{MemoryCtxInfo, Program, ProgramDesc, add_memory_context};
 use skia_rust_skcms::TfType;
+use skia_rust_sksl::codegen::rp::StageSink;
 
 pub use skia_rust_simd::rp::contexts::{self, TransferFunction, UniformColorCtx};
 pub use skia_rust_simd::rp::{MemPtr, MemSlot, MemView, MemoryBindings, MemoryCtx, Op, Stage};
@@ -105,6 +106,9 @@ pub struct RasterPipeline<'a> {
     has_rewind: bool,
     /// `gForceHighPrecisionRasterPipeline` (a global in Skia, set by tests).
     force_high_precision: bool,
+    /// The highp lane count the stages' byte offsets were computed for, when an `SkSL` program
+    /// was appended (design `sksl.md` R8): the pipeline must run on a tier with that stride.
+    lane_count: Option<usize>,
 }
 
 // Port of: src/core/SkRasterPipeline.cpp#L36-L47 (chrome/m156)
@@ -117,6 +121,7 @@ impl<'a> RasterPipeline<'a> {
             memory_ctx_infos: Vec::new(),
             has_rewind: false,
             force_high_precision: false,
+            lane_count: None,
         }
     }
 
@@ -126,6 +131,7 @@ impl<'a> RasterPipeline<'a> {
         self.has_rewind = false;
         self.stages.clear();
         self.memory_ctx_infos.clear();
+        self.lane_count = None;
     }
 
     /// Forces highp pipelines (Skia's `gForceHighPrecisionRasterPipeline`).
@@ -178,6 +184,9 @@ impl<'a> RasterPipeline<'a> {
         // Create a rewind context if `src` has one already, but we don't.
         if src.has_rewind {
             self.has_rewind = true;
+        }
+        if src.lane_count.is_some() {
+            self.lane_count = src.lane_count;
         }
         self.stages.extend_from_slice(&src.stages);
         for info in &src.memory_ctx_infos {
@@ -664,8 +673,24 @@ impl<'a> RasterPipeline<'a> {
         if self.empty() {
             return;
         }
-        self.desc()
-            .run(skia_rust_simd::selection(), x, y, w, h, mem);
+        let selection = skia_rust_simd::selection();
+        self.debug_check_lane_count(selection.tier);
+        self.desc().run(selection, x, y, w, h, mem);
+    }
+
+    /// Checks that the stages' byte offsets (see [`lane_count`](Self::lane_count)) match `tier`.
+    fn debug_check_lane_count(&self, tier: skia_rust_simd::Tier) {
+        debug_assert!(
+            self.lane_count.is_none_or(|n| n == tier.highp_stride()),
+            "the SkSL stages were built for {:?} lanes, the pipeline runs on {tier:?}",
+            self.lane_count,
+        );
+    }
+
+    /// The highp lane count the `SkSL` stages in this pipeline were built for, if any.
+    #[must_use]
+    pub fn lane_count(&self) -> Option<usize> {
+        self.lane_count
     }
 
     // Port of: src/core/SkRasterPipeline.cpp#L772-L797 (chrome/m156)
@@ -673,9 +698,12 @@ impl<'a> RasterPipeline<'a> {
     /// scratch buffers, whose lanes past the tail keep their bytes between runs.
     #[must_use]
     pub fn compile(&self) -> CompiledPipeline<'a> {
+        let selection = skia_rust_simd::selection();
+        if !self.empty() {
+            self.debug_check_lane_count(selection.tier);
+        }
         CompiledPipeline {
-            program: (!self.empty())
-                .then(|| Program::build(&self.desc(), skia_rust_simd::selection())),
+            program: (!self.empty()).then(|| Program::build(&self.desc(), selection)),
         }
     }
 
@@ -683,6 +711,29 @@ impl<'a> RasterPipeline<'a> {
     #[must_use]
     pub fn memory_ctx_infos(&self) -> &[MemoryCtxInfo] {
         &self.memory_ctx_infos
+    }
+}
+
+// The `SkSL` builder appends through this trait (`skia_rust_sksl::codegen::rp::Program::append_stages`).
+impl<'a> StageSink<'a> for RasterPipeline<'a> {
+    fn append(&mut self, stage: Stage<'a>) {
+        RasterPipeline::append(self, stage);
+    }
+
+    fn append_stack_rewind(&mut self) {
+        RasterPipeline::append_stack_rewind(self);
+    }
+
+    fn num_stages(&self) -> usize {
+        self.stages.len()
+    }
+
+    fn replace_stage(&mut self, index: usize, stage: Stage<'a>) {
+        self.stages[index] = stage;
+    }
+
+    fn set_lane_count(&mut self, lanes: usize) {
+        self.lane_count = Some(lanes);
     }
 }
 
@@ -737,3 +788,6 @@ mod tests;
 
 #[cfg(test)]
 mod d2_tests;
+
+#[cfg(test)]
+mod sksl_tests;
