@@ -521,6 +521,7 @@ dependencies = [
 name = "skia-rust-effects"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
  "skia-rust-core",
  "skia-rust-raster",
 ]

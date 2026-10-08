@@ -36,17 +36,17 @@ use super::{
 use crate::tier::{Backend, Estimates, Selection, Tier};
 
 /// The SIMD tiers.
-const SIMD: [Tier; 5] = [Tier::Sse2, Tier::Sse41, Tier::Ml3, Tier::Ml4, Tier::Neon];
+pub(super) const SIMD: [Tier; 5] = [Tier::Sse2, Tier::Sse41, Tier::Ml3, Tier::Ml4, Tier::Neon];
 
 /// Bytes of four registers of the widest tier.
-const REGS_BYTES: usize = 4 * 4 * 16;
+pub(super) const REGS_BYTES: usize = 4 * 4 * 16;
 
-const IN0: MemPtr = MemPtr::new(MemSlot(0), 0);
-const OUT0: MemPtr = MemPtr::new(MemSlot(1), 0);
+pub(super) const IN0: MemPtr = MemPtr::new(MemSlot(0), 0);
+pub(super) const OUT0: MemPtr = MemPtr::new(MemSlot(1), 0);
 
 /// The models of `t` this host can run (`Model(Host)` needs the host's estimate instructions
 /// and is not run under Miri).
-fn models(t: Tier) -> Vec<Selection> {
+pub(super) fn models(t: Tier) -> Vec<Selection> {
     let sources = if t == Tier::Neon {
         [Estimates::Host, Estimates::Arm]
     } else {
@@ -62,7 +62,7 @@ fn models(t: Tier) -> Vec<Selection> {
 }
 
 /// Every selection this host can run.
-fn selections() -> Vec<Selection> {
+pub(super) fn selections() -> Vec<Selection> {
     let mut v = vec![Selection::native(Tier::Scalar)];
     for t in SIMD {
         if !cfg!(miri) && t.is_native() {
@@ -86,7 +86,7 @@ fn twin_sets() -> Vec<(Selection, Vec<Selection>)> {
 
 /// Runs `LoadSrc, stages, StoreSrc` over `w` pixels at `(0, 0)` and returns whether the program
 /// is lowp and the stored bytes.
-fn run(
+pub(super) fn run(
     stages: &[Stage<'_>],
     sel: Selection,
     force_highp: bool,
@@ -107,12 +107,12 @@ fn run(
 }
 
 /// Floats as bytes.
-fn f32_bytes(v: &[f32]) -> Vec<u8> {
+pub(super) fn f32_bytes(v: &[f32]) -> Vec<u8> {
     v.iter().flat_map(|f| f.to_ne_bytes()).collect()
 }
 
 /// Bytes as floats.
-fn floats(b: &[u8]) -> Vec<f32> {
+pub(super) fn floats(b: &[u8]) -> Vec<f32> {
     b.as_chunks::<4>()
         .0
         .iter()
@@ -121,7 +121,7 @@ fn floats(b: &[u8]) -> Vec<f32> {
 }
 
 /// Bytes as 32-bit words.
-fn words(b: &[u8]) -> Vec<u32> {
+pub(super) fn words(b: &[u8]) -> Vec<u32> {
     b.as_chunks::<4>()
         .0
         .iter()
@@ -130,7 +130,7 @@ fn words(b: &[u8]) -> Vec<u32> {
 }
 
 /// Bytes as 16-bit words.
-fn halves(b: &[u8]) -> Vec<u16> {
+pub(super) fn halves(b: &[u8]) -> Vec<u16> {
     b.as_chunks::<2>()
         .0
         .iter()
@@ -140,13 +140,13 @@ fn halves(b: &[u8]) -> Vec<u16> {
 
 /// A highp register file: `r` and `g` (`n` lanes each, cycling through the given values), then
 /// `b` and `a`.
-fn cycled(vals: &[f32], n: usize) -> Vec<f32> {
+pub(super) fn cycled(vals: &[f32], n: usize) -> Vec<f32> {
     (0..n).map(|i| vals[i % vals.len()]).collect()
 }
 
 /// Runs `stages` as a highp program on `sel` over `n` lanes with `r`, `g` (cycled) and constant
 /// `b`, `a`; returns `(r, g, b, a)`.
-fn highp4(
+pub(super) fn highp4(
     stages: &[Stage<'_>],
     sel: Selection,
     r: &[f32],
@@ -173,7 +173,7 @@ fn highp4(
 
 /// Runs `stages` as a lowp program on `sel` (which must have a lowp tier) over `n` lanes with
 /// `x`, `y` cycled; returns `(x, y)`, or `None` on Scalar.
-fn lowp2(
+pub(super) fn lowp2(
     stages: &[Stage<'_>],
     sel: Selection,
     x: &[f32],
@@ -188,7 +188,7 @@ fn lowp2(
 }
 
 /// Asserts `got[i] == want[i % want.len()]` bit for bit.
-fn assert_lanes(what: &str, sel: Selection, got: &[f32], want: &[f32]) {
+pub(super) fn assert_lanes(what: &str, sel: Selection, got: &[f32], want: &[f32]) {
     for (i, g) in got.iter().enumerate() {
         let w = want[i % want.len()];
         assert_eq!(

@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: include/core/SkShader.h (namespace SkShaders), src/shaders/SkColorShader.cpp,
 // src/shaders/SkBlendShader.cpp (Blend),
-// src/shaders/SkEmptyShader.cpp
+// src/shaders/SkEmptyShader.cpp, src/shaders/SkLocalMatrixShader.cpp
 
 //! `SkShaders`: the shader factories, and the shader implementations of `src/shaders` that
 //! core needs (the shader base, color and empty shaders).
@@ -37,8 +37,8 @@ pub use empty_shader::EmptyShader;
 pub use image_shader::ImageShader;
 pub use local_matrix_shader::LocalMatrixShader;
 pub use shader_base::{
-    ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, MatrixRec, OPAQUE_ALPHA_FLAG, ShaderBase,
-    ShaderContext, ShaderType,
+    ContextRec, ENABLE_LEGACY_SHADER_CONTEXT, GradientInfo, GradientType, MatrixRec,
+    OPAQUE_ALPHA_FLAG, ShaderBase, ShaderContext, ShaderType,
 };
 pub use transform_shader::TransformShader;
 pub use tri_color_shader::TriColorShader;

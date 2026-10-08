@@ -17,7 +17,9 @@ use crate::color_type::ColorType;
 use crate::effect_priv::StageRec;
 use crate::image::Image;
 use crate::matrix::Matrix;
+use crate::point::Point;
 use crate::raster_pipeline::Stage;
+use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::tile_mode::TileMode;
 
@@ -314,6 +316,57 @@ pub enum ShaderType {
     WorkingColorSpace,
 }
 
+/// The kinds of gradients (`SkShaderBase::GradientType`, from `SK_ALL_GRADIENTS`).
+// Port of: src/shaders/SkShaderBase.h#L179-L212 (chrome/m156)
+#[doc(alias = "SkShaderBase::GradientType")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum GradientType {
+    /// `kNone`: the shader is not a gradient.
+    None,
+    /// `kConical`.
+    Conical,
+    /// `kLinear`.
+    Linear,
+    /// `kRadial`.
+    Radial,
+    /// `kSweep`.
+    Sweep,
+}
+
+/// What [`ShaderBase::as_gradient`] reports about a gradient (`SkShaderBase::GradientInfo`).
+///
+/// `color_count` is both an input and an output: on input it says how many entries of `colors`
+/// and `color_offsets` (if present) can be used; afterwards it is the number of color-offset
+/// pairs in the gradient. If there is insufficient space, `colors` and `color_offsets` are not
+/// altered. The meaning of `point` and `radius` depends on the gradient:
+///
+/// - Linear: `point[0]` and `point[1]` are the end-points of the gradient.
+/// - Radial: `point[0]` and `radius[0]` are the center and radius.
+/// - Conical: `point[0]`, `radius[0]` and `point[1]`, `radius[1]` are the center and radius of
+///   the 1st and 2nd circle.
+/// - Sweep: `point[0]` is the center of the sweep; `point[1].x` is the scale, `.y` the bias.
+///
+/// skia-rust: Skia's `fColors`/`fColorOffsets` pointers are optional slices.
+// Port of: src/shaders/SkShaderBase.h#L243-L251 (chrome/m156)
+#[doc(alias = "SkShaderBase::GradientInfo")]
+#[derive(Debug, Default)]
+pub struct GradientInfo<'a> {
+    /// `fColorCount`.
+    pub color_count: usize,
+    /// `fColors`: the colors in the gradient.
+    pub colors: Option<&'a mut [Color4f]>,
+    /// `fColorOffsets`: the unit offset for color transitions.
+    pub color_offsets: Option<&'a mut [scalar]>,
+    /// `fPoint`.
+    pub point: [Point; 2],
+    /// `fRadius`.
+    pub radius: [scalar; 2],
+    /// `fTileMode`.
+    pub tile_mode: TileMode,
+    /// `fPremulInterp`.
+    pub premul_interp: bool,
+}
+
 /// The virtual interface of a shader (`SkShaderBase`, with `SkShader::isOpaque`).
 ///
 /// Implementations are wrapped in a [`Shader`](crate::shader::Shader) with
@@ -324,9 +377,8 @@ pub enum ShaderType {
 ///
 /// skia-rust: the legacy shader context is [`ShaderContext`] and
 /// [`on_make_context`](Self::on_make_context); `SK_ENABLE_LEGACY_SHADERCONTEXT` is not defined in
-/// the oracle builds ([`ENABLE_LEGACY_SHADER_CONTEXT`]), so no shader makes one. `asGradient`
-/// (gradients are Phase 3), `onIsAImage`, `asRuntimeEffect`, `makeAsALocalMatrixShader`
-/// (deprecated) and the flattening hooks are not ported yet.
+/// the oracle builds ([`ENABLE_LEGACY_SHADER_CONTEXT`]), so no shader makes one.
+/// `asRuntimeEffect` and the flattening hooks are not ported yet.
 // Port of: src/shaders/SkShaderBase.h#L185-L411 (chrome/m156)
 #[doc(alias = "SkShaderBase")]
 pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
@@ -358,9 +410,22 @@ pub trait ShaderBase: Any + fmt::Debug + Send + Sync {
         None
     }
 
-    /// If the shader is a local-matrix shader, the shader it wraps and its local matrix
-    /// (`makeAsALocalMatrixShader`; deprecated in Skia, still used by
-    /// `SkShader::makeWithLocalMatrix`).
+    /// If the shader can be represented as a gradient, the matching [`GradientType`] (else
+    /// [`GradientType::None`]), filling in `info` and `local_matrix` (the shader's local matrix,
+    /// the identity for a bare gradient) when they are given (`asGradient`).
+    // Port of: src/shaders/SkShaderBase.h#L256-L259 (chrome/m156)
+    #[doc(alias = "asGradient")]
+    fn as_gradient(
+        &self,
+        _info: Option<&mut GradientInfo<'_>>,
+        _local_matrix: Option<&mut Matrix>,
+    ) -> GradientType {
+        GradientType::None
+    }
+
+    /// If this shader is a local-matrix shader, the shader it wraps and its local matrix
+    /// (`makeAsALocalMatrixShader`).
+    // Port of: src/shaders/SkShaderBase.h#L352-L354 (chrome/m156)
     #[doc(alias = "makeAsALocalMatrixShader")]
     fn make_as_a_local_matrix_shader(&self) -> Option<(Shader, Matrix)> {
         None

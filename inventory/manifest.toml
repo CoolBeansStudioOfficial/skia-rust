@@ -15414,7 +15414,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/alphagradients.cpp#L88-L88"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a5e754b57ef68acd80b7b44b2ff7eb76eac1023eb86a1c9049353aadc7a2655f"
 
 [[test]]
@@ -15423,7 +15423,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/analytic_gradients.cpp#L182-L182"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b23f1b1f02c86269580093435bb83e7abbff9494b4467b00be2730c46749f3c2"
 
 [[test]]
@@ -19277,7 +19277,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fillrect_gradient.cpp#L141-L141"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "09065478bd0017ebffb43eec382783149c939ecd81ce8908f89d8be76d5a39fd"
 
 [[test]]
@@ -20106,7 +20106,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradient_dirty_laundry.cpp#L133-L133"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "631bc8eb567ba42fbdf28524c01752c3d437df82919bd3d3c6b99e2b0f3101fa"
 
 [[test]]
@@ -20115,7 +20115,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradient_matrix.cpp#L114-L122"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "21a617a8008120f35bb6f13dae0605aaddb85b36b14cf0fc2fa0b2b944e49d81"
 
 [[test]]
@@ -20124,7 +20124,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L378-L378"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "25c47c445125fe74554b3b126f548ccc2aa00e1753eaf1abb7f0cb786cafd102"
 
 [[test]]
@@ -20133,7 +20133,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L377-L377"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3d7784c59abc15380125dfddb1daf57adf7306fa4d4df4035a069774567e8878"
 
 [[test]]
@@ -20142,7 +20142,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L309-L309"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e90daa7b52c02200e5adc4b428611ecfad5f22d74a33ee8eb72790f36507ff65"
 
 [[test]]
@@ -20151,7 +20151,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L308-L308"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "122ed5d8ce49f2530898378832080865d0330eab3bf9fabdd7b1a1f676d77dd9"
 
 [[test]]
@@ -20160,7 +20160,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L179-L179"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a2c23599e4e02dd42f8bd02604b8893f2da29a6ef8acc4d239e5f849690abfec"
 
 [[test]]
@@ -20169,7 +20169,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L178-L178"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ec884a4a5649e4d5205680b10a8f382d1c5986af43baa5b1ad287373b788ef00"
 
 [[test]]
@@ -20178,7 +20178,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L230-L230"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "875d0c238684c1ae9df99e81a9ca0a5c05b71a89719d388583140a99430f2a1e"
 
 [[test]]
@@ -20187,7 +20187,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L229-L229"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8c0a561c16338704cd843919de767d2124ea871e373e4df5f53f8cc752de2d89"
 
 [[test]]
@@ -20196,7 +20196,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L259-L259"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "4bfc93c6c6c11f92c01edfda2ab91535e734e183d0a141b16a1d5e59451b5b81"
 
 [[test]]
@@ -20205,7 +20205,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L258-L258"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b7add5772799584fd305297b7202c016c9803e842adeef76b6535c3d63bbe838"
 
 [[test]]
@@ -20215,6 +20215,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1303-L1303"
 module = "effects"
 status = "todo"
+reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
 span_hash = "a58d7daee49f13073daf26724bc18398841f3b32b374a95b8c3bbdac07a96fcb"
 
 [[test]]
@@ -20224,6 +20225,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1304-L1304"
 module = "effects"
 status = "todo"
+reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
 span_hash = "1e6d3d748f6e536355358ce451c470d42dae4b9f4a13c7283295337dba6018bb"
 
 [[test]]
@@ -20233,6 +20235,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1301-L1301"
 module = "effects"
 status = "todo"
+reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
 span_hash = "6d71ae5d4d34fde93f35e1819cae887ccad9f0ae1c62cfa4504401c5730a21c9"
 
 [[test]]
@@ -20241,7 +20244,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L601-L601"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "14d62ca6372b0c79bbdfbea73c4beed3e7c9ff924a3a8aeda4dfa23e7d7bc0e1"
 
 [[test]]
@@ -20250,7 +20253,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L600-L600"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8ee2669f53ad0e7e6413ebf814afd8c22bcd492c55983f09efab3f68db99fa3e"
 
 [[test]]
@@ -20259,7 +20262,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L647-L647"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c9135d11d63934a17b817d538f33d058634d3ffd3bf0aef4774f5170f58535ae"
 
 [[test]]
@@ -20269,6 +20272,7 @@ macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1302-L1302"
 module = "effects"
 status = "todo"
+reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
 span_hash = "e82c6dda38865aa820cb871077b2da82ab5f373b241f70f5b0612e19e16aceba"
 
 [[test]]
@@ -20277,7 +20281,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L470-L470"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3523af88382e6b62a33648f7ac89619f71b1477835351b4cfa0e9948ee629a09"
 
 [[test]]
@@ -20286,7 +20290,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L469-L469"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "dc53f42774e635e7b2c5d2573f35a9246463f19ca5ec6dfeca60f1b402a5381c"
 
 [[test]]
@@ -20295,7 +20299,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L508-L508"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "33dfcf63c2b0fec300abe603674420c4bfe65229312a8531a544b2aee95d405a"
 
 [[test]]
@@ -20304,7 +20308,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L507-L507"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "061a32e0a038d2f055e05774f008c312363765b3b97dc4abd948a5973d57afc8"
 
 [[test]]
@@ -20313,7 +20317,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L546-L546"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "39b6a8e1c2c2fa5e83628220f6e68647f84d3df3cc03ba1324047c4174c80bb2"
 
 [[test]]
@@ -20322,7 +20326,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L545-L545"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "fb18c273f6002134be6d38c38d78a2ea05d0bb6ed7957f574ca588c4e1084c06"
 
 [[test]]
@@ -20331,7 +20335,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients.cpp#L410-L410"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "82485f7e1afd7327f83f90d427070acc4237d78021da35f707eaeb9167aa74b4"
 
 [[test]]
@@ -20341,6 +20345,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L810-L893"
 module = "effects"
 status = "todo"
+reason = "needs SkPictureShader (picture recording), not ported yet"
 span_hash = "e17d72e72a90cfca48a93abdb1e4693a40adda431bcdbb0d84c142c659823005"
 
 [[test]]
@@ -20349,7 +20354,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L792-L794"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "03db7d1ecc874989f0e417e43aefdfdde0d58f6fa4d678a06d98f2b6197cb38e"
 
 [[test]]
@@ -20358,7 +20363,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L764-L766"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "36b6aa41857d2b460e7ae3df25c312a550281e52a1c5a0125c943cb289af71a0"
 
 [[test]]
@@ -20367,7 +20372,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L1152-L1181"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "826deedcfd231e1886d7d13564ba47b82083fe83f3852553fa729e669b82987d"
 
 [[test]]
@@ -20377,6 +20382,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L997-L1039"
 module = "effects"
 status = "todo"
+reason = "draws labels with SkFont/text, not ported yet"
 span_hash = "e576a604483efc078a2b535564fa1f44026afdd0d3020f91bba1083d7edce823"
 
 [[test]]
@@ -20385,7 +20391,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1123-L1150"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "f6930ef04649efc309de9c445d98d000f157246911b6a58fe703bac549d5fcca"
 
 [[test]]
@@ -20394,7 +20401,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1100-L1121"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
 span_hash = "f0231eb2e6bbd23bc2a97636f56407221c7f79b1cfed6161ba51c02651324206"
 
 [[test]]
@@ -20403,7 +20411,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L691-L741"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e48de5d00eca46c819837e48ae819c00e0d6cade5115b91d01f659a58f54cf67"
 
 [[test]]
@@ -20413,6 +20421,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1041-L1098"
 module = "effects"
 status = "todo"
+reason = "draws labels with SkFont/text, not ported yet"
 span_hash = "6e3f0dac25c9c0067eddc0643629e49368e6f632f5c30e2aded1924e91b4e244"
 
 [[test]]
@@ -20421,7 +20430,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L949-L994"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "9c8bd6edd2e1d06035364305afd8f71938454b3e788c45dded69b6a5066798b9"
 
 [[test]]
@@ -20430,7 +20439,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L933-L946"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b102988b36ac52cd53ef6eb49b2f2333f2ca1d651df4473e93a6fd1fae3d9252"
 
 [[test]]
@@ -20439,7 +20448,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L329-L343"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "14cf3b40299432afec1f247d7f9fb2fb8e2a411db5594cc0a5138dd7189410a6"
 
 [[test]]
@@ -20448,7 +20457,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L895-L931"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6184fc24501361295fc0781f3536da7b59225740c061323e140cd5cd87ca7abd"
 
 [[test]]
@@ -20457,7 +20466,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L403-L403"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bfb3d593e08596b90364991e03313eba0fdde73bcf4d62d5bdaa3ed69774c8f5"
 
 [[test]]
@@ -20466,7 +20475,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L391-L391"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "aa620881f7ca5371fcdce37679471b1ccbe7f45c7b5e41482a04286eba8203fd"
 
 [[test]]
@@ -20475,7 +20484,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L399-L399"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c3bb5b3d76113b50c92250c59b10424bf8fe30e59393832d2eb0a8396581a0e0"
 
 [[test]]
@@ -20484,7 +20493,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L395-L395"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "4930cdce76e439be85efc30aa406582972bc0943a59ba14f5f3217f0bee57777"
 
 [[test]]
@@ -20493,7 +20502,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L401-L401"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d9b3ade95baaf3e84a8a971d3aa57a2d3be13560043f1ae9629a5cc8414db5cb"
 
 [[test]]
@@ -20502,7 +20511,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L389-L389"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "02a3a5fcb3a4fc820727b1509bcd55923f72784dff8ada39a4be2c97413cca82"
 
 [[test]]
@@ -20511,7 +20520,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L397-L397"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d0fe9a3689a14141dcd6b96a02d5f64b8f6a2fee1b34c8c767cb39eca20d5b91"
 
 [[test]]
@@ -20520,7 +20529,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L393-L393"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3501c6a30061d0659632332699df6b54d6ca87d3ed05154e3c1a121e8fb85de0"
 
 [[test]]
@@ -20529,7 +20538,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L402-L402"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6fbfdbf727cc85af77021f1a3d6f20ce75b27ed00298101943234840a1bb43c3"
 
 [[test]]
@@ -20538,7 +20547,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L390-L390"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d943fdbcba70b7c671486ff3e6c6f0e0929552a3b21d4962c5bce6823adb3f4a"
 
 [[test]]
@@ -20547,7 +20556,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L398-L398"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e1806a036da156c2708b910c1f1411b03e91efdcbaaf6d203c87dc52ce2615b1"
 
 [[test]]
@@ -20556,7 +20565,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_2pt_conical.cpp#L394-L394"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c53abc87877023440535ddff95a580b27a3a5510a8510095ce0db7f957d33e43"
 
 [[test]]
@@ -20574,7 +20583,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_no_texture.cpp#L319-L319"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5afc0a76d8e2760b74cd099d4546d3d35fd5af2e37908c73d16088f2f29e13ce"
 
 [[test]]
@@ -20583,7 +20592,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_no_texture.cpp#L318-L318"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "479626777ba0ce4509fac5d3527c961b8dc5dc3eaaf5e6be16f1b55cd6f4c3f8"
 
 [[test]]
@@ -20592,7 +20601,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_no_texture.cpp#L317-L317"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "223d2b3333241287c41d81f91c04e833db4e1363026e8d95c711ab92a230ac43"
 
 [[test]]
@@ -20601,7 +20610,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_no_texture.cpp#L316-L316"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "697147d8ac7484bfb9196f699176169ea85dbb5f0634f1ad1a3343d94b0e798a"
 
 [[test]]
@@ -20710,7 +20719,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hardstop_gradients.cpp#L171-L171"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2c06860d9c5a774bf6d64e327f4b393ed0f0227364841b8d65ecc5bf9c3aa6ae"
 
 [[test]]
@@ -20719,7 +20728,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/hardstop_gradients_many.cpp#L83-L83"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "af98f37ed4888d2f300caaa4b4757b039ae7b1efbc577055bdd3958b6ea94028"
 
 [[test]]
@@ -22170,7 +22179,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/ovals.cpp#L306-L306"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1d33cde86f1a490ff012c875cd699a93fde34a72b5d30333dcdfb5f7aebbab31"
 
 [[test]]
@@ -22888,7 +22897,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/radial_gradient_precision.cpp#L20-L28"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "01d15f66cdd08b0f8a4954856427a069e4c77a14a2e67623148b568b9315845e"
 
 [[test]]
@@ -23005,7 +23014,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/roundrects.cpp#L380-L380"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a5b07a152113b9c4f189cafaaa6d3dfbf6d305dfa8ed1a0fbc3be98d13aefd81"
 
 [[test]]
@@ -23042,7 +23051,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrects.cpp#L294-L294"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "824b116d0526549f72071f34982ce7169c0fe1bf4088ef16c187bd1b30aa01be"
 
 [[test]]
@@ -23060,7 +23069,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rrects.cpp#L295-L295"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2c98f458c999fbdef28289b896944d22f239999912ff641ac98ae01690d7602f"
 
 [[test]]
@@ -23666,7 +23675,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L81-L81"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d7b7d281488ea06239f2f5afe8455d9a0b8e7517016a76406f44253bc1190210"
 
 [[test]]
@@ -23675,7 +23684,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L86-L86"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "499788f1e940d1d4dd9c16bf0d915fb48d5d8e2801352bf6d758c09e10386aeb"
 
 [[test]]
@@ -23684,7 +23693,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L79-L79"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f05a067629123428666d8c2bad743d845862d014289e13fcfac91f0453a87b5b"
 
 [[test]]
@@ -23693,7 +23702,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L84-L84"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "5ecdd7c2f6748452975f3c21d5713188c30bda9a10a179e81fc9d94a6f6ab853"
 
 [[test]]
@@ -23702,7 +23711,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L80-L80"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a2af33843f3c9d07882bbbbe3a79978ee19100fc9fc0ea193237f8e3404229b8"
 
 [[test]]
@@ -23711,7 +23720,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L85-L85"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "4f29be44e1bf86a29a9459ffe7386922c6e90c069244b65516bb1055fab553f0"
 
 [[test]]
@@ -23720,7 +23729,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L82-L82"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "4cfc05af6d98596c9c7c96a867dd938511e10d89cd144a793019adf01483634c"
 
 [[test]]
@@ -23729,7 +23738,7 @@ kind = "gm"
 macro = "M"
 source = "gm/shallowgradient.cpp#L87-L87"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7f6a982d9e68be88bdce151118491d17843b8fb90a9c94c4e187a8f01bbf1fd5"
 
 [[test]]
@@ -24421,7 +24430,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/testgradient.cpp#L73-L73"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "91dee7851664c9b5b8098a3f28b08f7fa079cf6b15a67766b543eb333eea4b4e"
 
 [[test]]
@@ -33800,7 +33809,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GradientTest.cpp#L709-L724"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "96f90b47f690ad22a024304d4c95405a37a16d99f88d5cda9a991126cdd1bb99"
 
 [[test]]

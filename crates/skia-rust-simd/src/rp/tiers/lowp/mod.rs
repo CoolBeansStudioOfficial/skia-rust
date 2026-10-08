@@ -43,20 +43,6 @@ mod sampling;
 #[allow(clippy::wildcard_imports)] // the dispatch calls every stage by its op's name
 use self::{basic::*, blend::*, color::*, geometry::*, image_sampling::*, memory::*, sampling::*};
 
-/// Panics for a stage whose task has not ported it yet.
-macro_rules! not_ported {
-    ($name:literal, $task:literal) => {
-        unimplemented!(concat!(
-            "raster pipeline stage `",
-            $name,
-            "` (lowp) is not ported yet (task ",
-            $task,
-            ")"
-        ))
-    };
-}
-use not_ported;
-
 /// The eight registers every lowp stage receives (Skia's `U16 r, g, b, a, dr, dg, db, da`).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Regs {

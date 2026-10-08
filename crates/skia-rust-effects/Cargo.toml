@@ -1,6 +1,6 @@
 [package]
 name = "skia-rust-effects"
-description = "Effects of skia-rust: path effects (dashing, corner), and later shaders and filters"
+description = "Effects of skia-rust: path effects (dashing, corner), gradient shaders, and later filters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,6 +10,7 @@ authors.workspace = true
 publish = false
 
 [dependencies]
+bitflags.workspace = true
 skia-rust-core.workspace = true
 # `SkRegion::setPath` (used by the 2D path effects) lives in the raster crate.
 skia-rust-raster.workspace = true

@@ -50,6 +50,8 @@ mod tests_color;
 #[cfg(test)]
 mod tests_geometry;
 #[cfg(test)]
+mod tests_gradient;
+#[cfg(test)]
 mod tests_memory;
 #[cfg(test)]
 mod tests_sksl;

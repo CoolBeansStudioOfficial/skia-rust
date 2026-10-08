@@ -306,13 +306,18 @@ pub const RGBA_CHANNELS: usize = 4;
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L175-L180 (chrome/m156)
 /// `GradientCtx`.
+///
+/// skia-rust: the factor, bias and `t` tables are owned (Skia points them into one arena
+/// allocation), so the context is `'static` and can live in `skia_rust_core`'s `ArenaAlloc` like
+/// the other contexts the shaders allocate. Each table has at least `max(stop_count + 1, 8)`
+/// entries (the AVX2 gather of Skia's `gradient_lookup` reads eight).
 #[doc(alias = "SkRasterPipelineContexts::GradientCtx")]
-#[derive(Clone, Copy, Debug)]
-pub struct GradientCtx<'a> {
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct GradientCtx {
     pub stop_count: usize,
-    pub factors: [&'a [f32]; RGBA_CHANNELS],
-    pub biases: [&'a [f32]; RGBA_CHANNELS],
-    pub ts: &'a [f32],
+    pub factors: [Vec<f32>; RGBA_CHANNELS],
+    pub biases: [Vec<f32>; RGBA_CHANNELS],
+    pub ts: Vec<f32>,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L182-L185 (chrome/m156)
