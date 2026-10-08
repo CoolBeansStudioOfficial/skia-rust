@@ -25,6 +25,7 @@ mod field_access;
 mod field_symbol;
 mod function_call;
 mod function_declaration;
+mod function_definition;
 mod ids;
 mod index_expression;
 mod layout;
