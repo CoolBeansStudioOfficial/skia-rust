@@ -1765,7 +1765,6 @@ impl CanvasState {
         }
     }
 
-    // Port of: src/core/SkCanvas.cpp#L2205-L2223 (chrome/m156)
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
     fn draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
         let bounds = list.source_bounds_with_origin();
@@ -1779,6 +1778,7 @@ impl CanvasState {
         }
     }
 
+    // Port of: src/core/SkCanvas.cpp#L2205-L2223 (chrome/m156)
     fn draw_path(&mut self, path: &Path, paint: &Paint) {
         if let Some(hooks) = self.hooks.as_mut()
             && hooks.on_draw_path(path, paint)
@@ -2981,6 +2981,7 @@ impl Canvas {
             cull_rect.as_ref(),
             paint.into(),
         );
+    }
 
     /// Draws the text `text` in `encoding`, starting at `origin`, with `font` and `paint`
     /// (`drawSimpleText`). Empty text draws nothing.

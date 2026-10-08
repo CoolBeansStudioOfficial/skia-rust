@@ -45,7 +45,7 @@ fn dashes_a_horizontal_line() {
     let dash = new(&[2.0, 2.0], 0.0).unwrap();
     let path = Path::line((0.0, 0.0), (10.0, 0.0));
     let (builder, rec) = dash
-        .filter_path(&path, &stroke_rec(1.0), None, Matrix::i())
+        .filter_path_with_matrix(&path, &stroke_rec(1.0), None, Matrix::i())
         .unwrap();
     // The special line fast path strokes the dashes itself.
     assert!(rec.is_fill_style());
@@ -70,7 +70,7 @@ fn sum_and_compose_filter() {
     let sum = PathEffect::sum(dash.clone(), dash.clone());
     let path = Path::line((0.0, 0.0), (10.0, 0.0));
     let (builder, _) = sum
-        .filter_path(&path, &stroke_rec(1.0), None, Matrix::i())
+        .filter_path_with_matrix(&path, &stroke_rec(1.0), None, Matrix::i())
         .unwrap();
     // The first dash turns the shared rec into a fill, so the second one does not apply.
     assert_eq!(builder.snapshot().count_points(), 12);

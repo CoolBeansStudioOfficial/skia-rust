@@ -220,12 +220,25 @@ impl PathEffect {
     ///
     /// The effect can treat the stroke-rec as input only, or it can choose to change it as well
     /// (width, join, style). If this returns `Some`, the caller applies (as needed) the
-    /// resulting stroke-rec to the path and then draws. `ctm` is the current transformation
-    /// matrix (`SkMatrix::I()` for the 3-argument C++ overload).
-    // Port of: src/core/SkPathEffect.cpp#L31-L40 (chrome/m156), the 5-argument overload
+    /// resulting stroke-rec to the path and then draws. This is the matrix-free form, with the
+    /// identity as the CTM.
+    // Port of: src/core/SkPathEffect.cpp#L31-L40 (chrome/m156), the 3-argument overload
     #[doc(alias = "filterPath")]
     #[must_use]
     pub fn filter_path<'a>(
+        &self,
+        src: &Path,
+        stroke_rec: &StrokeRec,
+        cull_rect: impl Into<Option<&'a Rect>>,
+    ) -> Option<(PathBuilder, StrokeRec)> {
+        self.filter_path_with_matrix(src, stroke_rec, cull_rect, Matrix::i())
+    }
+
+    /// [`PathEffect::filter_path`] with the current transformation matrix `ctm`.
+    // Port of: src/core/SkPathEffect.cpp#L31-L40 (chrome/m156), the 5-argument overload
+    #[doc(alias = "filterPath")]
+    #[must_use]
+    pub fn filter_path_with_matrix<'a>(
         &self,
         src: &Path,
         stroke_rec: &StrokeRec,

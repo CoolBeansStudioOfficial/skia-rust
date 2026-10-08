@@ -831,7 +831,7 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
         let origin = list.origin();
         for (i, (glyph_id, pos)) in run.source().enumerate() {
             let scale_rotate = run.scaled_rotations()[i];
-            let rsxform = RSXform::new(scale_rotate.x, scale_rotate.y, pos.x, pos.y);
+            let rsxform = RSXform::new(scale_rotate.x, scale_rotate.y, (pos.x, pos.y));
             let mut glyph_to_local = Matrix::default();
             glyph_to_local
                 .set_rsxform(&rsxform)
