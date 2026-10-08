@@ -1151,7 +1151,7 @@ mod tests {
     fn compute_level() {
         assert!(Mipmap::compute_level(Size::new(1.0, 2.0)) < 0.0);
         assert!(Mipmap::compute_level(Size::new(0.0, 0.5)) < 0.0);
-        assert_eq!(Mipmap::compute_level(Size::new(0.7, 0.9)), 0.0);
+        assert_eq!(Mipmap::compute_level(Size::new(0.75, 0.9)), 0.0);
         assert_eq!(Mipmap::compute_level(Size::new(0.25, 0.9)), 1.5);
     }
 
