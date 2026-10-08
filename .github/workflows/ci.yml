@@ -39,6 +39,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # Resource-backed tests read Skia's resources/ (tests/src/resources.rs); without the
+      # checkout they skip silently, so fetch the same pinned Skia checkout as `inventory`.
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: third_party/skia
+          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+      - run: cargo xtask skia fetch
       - run: cargo test --workspace
 
   # Exactness is defined on optimized builds (#34, #69): the debug job above can miss
@@ -55,6 +63,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Cache Skia checkout
+        uses: actions/cache@v4
+        with:
+          path: third_party/skia
+          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+      - run: cargo xtask skia fetch
       - run: cargo test --release --workspace
 
   wasm:
