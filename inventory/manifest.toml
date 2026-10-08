@@ -18600,7 +18600,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/daa.cpp#L23-L122"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a8e2389dbb3a0344ccbc1c0e0376566a076c57dd73d8be3e0be9fb5a8ba4e113"
 
 [[test]]
