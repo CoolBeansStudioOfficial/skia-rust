@@ -10,6 +10,7 @@ mod skia;
 mod sksl;
 mod verify;
 mod verify_gms;
+mod verify_sksl;
 
 use std::path::{Path, PathBuf};
 
