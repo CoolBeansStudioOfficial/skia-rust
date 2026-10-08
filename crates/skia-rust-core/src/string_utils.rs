@@ -25,6 +25,11 @@ pub enum ScalarAsStringType {
 /// Rust's float formatting is correctly rounded, as are the C libraries Skia is tested with, so
 /// the digits match; this reproduces `%g`'s choice between fixed and exponential notation and its
 /// trailing-zero removal.
+///
+/// # Panics
+///
+/// Never panics for finite or non-finite input: the exponent always follows the `e` that
+/// `{:e}` formatting writes.
 #[must_use]
 pub fn format_g(v: f64, precision: usize) -> String {
     if v.is_nan() {
