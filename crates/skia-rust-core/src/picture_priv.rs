@@ -47,6 +47,10 @@ pub(crate) const VERSION_MULTIPLE_FILTERS_ON_SAVE_LAYER: u32 = 104;
 // Port of: src/core/SkPicturePriv.h#L173 (chrome/m156)
 pub(crate) const VERSION_SAVE_LAYER_BACKDROP_TILE_MODE: u32 = 106;
 
+/// The version where sampling options gained anisotropic filtering (`kAnisotropicFilter`).
+// Port of: src/core/SkPicturePriv.h#L183 (chrome/m156)
+pub(crate) const VERSION_ANISOTROPIC_FILTER: u32 = 92;
+
 /// Makes a picture from its parts (`MakePicture`). A `None` record makes a placeholder.
 // Port of: src/core/SkPicture.cpp#L355-L368 (chrome/m156)
 #[doc(alias = "MakePicture")]

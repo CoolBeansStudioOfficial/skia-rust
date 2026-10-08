@@ -4,8 +4,8 @@
 // Port of: tests/PictureTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// - `Picture`: its `test_typeface` needs `SkFont` and `drawString`; the rest of its steps are
-//   covered by the other tests of the file.
+// - `Picture`: the `drawImage(nullptr, 0, 0)` call in `test_bad_bitmap` has no Rust spelling
+//   (see that function); the entry stays `todo` for it.
 // - `Picture_nested_draw_drawable`, `Picture_recursion_limit`: need `SkDrawable` (not ported).
 // `ClipCountingCanvas` is not used by any test of the file and is not ported.
 
@@ -19,15 +19,21 @@ use skia_rust_core::canvas::{
 };
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
+use skia_rust_core::font::Font;
+use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::path::Path;
+use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rect::rect_priv::make_largest;
 use skia_rust_core::scalar::scalar_ceil_to_int;
 use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream};
 use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_tools::font_tool_utils::create_test_typeface;
 use std::cell::Cell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -783,4 +789,285 @@ def_test!(Picture_BitmapLeak, |r| {
     drop(pic);
     reporter_assert!(r, mut_bm.pixel_ref_is_unique());
     reporter_assert!(r, immut.pixel_ref_is_unique());
+});
+
+// Port of: tests/PictureTest.cpp#L79-L97 (chrome/m156)
+fn rand_op(canvas: &Canvas, rand: &mut Random) {
+    let paint = Paint::default();
+    let rect = Rect::from_wh(50.0, 50.0);
+
+    let unit = rand.next_u_scalar1();
+    // `unit` is promoted to double for the comparisons with the double literals of the C++.
+    let unit = f64::from(unit);
+    if unit <= 0.3 {
+        canvas.save();
+    } else if unit <= 0.6 {
+        canvas.restore();
+    } else if unit <= 0.9 {
+        canvas.clip_rect(rect, None, None);
+    } else {
+        canvas.draw_paint(&paint);
+    }
+}
+
+// Port of: tests/PictureTest.cpp#L99-L104 (chrome/m156)
+fn set_canvas_to_save_count_4(canvas: &Canvas) {
+    canvas.restore_to_count(1);
+    canvas.save();
+    canvas.save();
+    canvas.save();
+}
+
+// Port of: tests/PictureTest.cpp#L263-L322 (chrome/m156)
+fn test_unbalanced_save_restores(reporter: &mut Reporter) {
+    let test_canvas = Canvas::new_no_pixels((100, 100), None).unwrap();
+    set_canvas_to_save_count_4(&test_canvas);
+
+    reporter_assert!(reporter, 4 == test_canvas.save_count());
+
+    let paint = Paint::default();
+    let rect = Rect::new(-10_000_000.0, -10_000_000.0, 10_000_000.0, 10_000_000.0);
+
+    let mut recorder = PictureRecorder::new();
+
+    {
+        // Create picture with 2 unbalanced saves
+        let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+        canvas.save();
+        canvas.translate((10.0, 10.0));
+        canvas.draw_rect(rect, &paint);
+        canvas.save();
+        canvas.translate((10.0, 10.0));
+        canvas.draw_rect(rect, &paint);
+        let extra_save_picture = recorder.finish_recording_as_picture(None).unwrap();
+
+        test_canvas.draw_picture(&extra_save_picture, None, None);
+        reporter_assert!(reporter, 4 == test_canvas.save_count());
+    }
+
+    set_canvas_to_save_count_4(&test_canvas);
+
+    {
+        // Create picture with 2 unbalanced restores
+        let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+        canvas.save();
+        canvas.translate((10.0, 10.0));
+        canvas.draw_rect(rect, &paint);
+        canvas.save();
+        canvas.translate((10.0, 10.0));
+        canvas.draw_rect(rect, &paint);
+        canvas.restore();
+        canvas.restore();
+        canvas.restore();
+        canvas.restore();
+        let extra_restore_picture = recorder.finish_recording_as_picture(None).unwrap();
+
+        test_canvas.draw_picture(&extra_restore_picture, None, None);
+        reporter_assert!(reporter, 4 == test_canvas.save_count());
+    }
+
+    set_canvas_to_save_count_4(&test_canvas);
+
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+        canvas.translate((10.0, 10.0));
+        canvas.draw_rect(rect, &paint);
+        let no_save_picture = recorder.finish_recording_as_picture(None).unwrap();
+
+        test_canvas.draw_picture(&no_save_picture, None, None);
+        reporter_assert!(reporter, 4 == test_canvas.save_count());
+        reporter_assert!(reporter, test_canvas.total_matrix().is_identity());
+    }
+}
+
+// Port of: tests/PictureTest.cpp#L324-L355 (chrome/m156)
+fn test_peephole() {
+    let mut rand = Random::default();
+
+    let mut recorder = PictureRecorder::new();
+
+    for _ in 0..100 {
+        let rand2 = rand.clone(); // remember the seed
+
+        let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+
+        for _ in 0..1000 {
+            rand_op(canvas, &mut rand);
+        }
+        let _picture = recorder.finish_recording_as_picture(None);
+
+        rand = rand2;
+    }
+
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+        let rect = Rect::from_wh(50.0, 50.0);
+
+        for _ in 0..100 {
+            canvas.save();
+        }
+        while canvas.save_count() > 1 {
+            canvas.clip_rect(rect, None, None);
+            canvas.restore();
+        }
+        let _picture = recorder.finish_recording_as_picture(None);
+    }
+}
+
+// Port of: tests/PictureTest.cpp#L374-L428 (chrome/m156)
+fn test_clip_bound_opt(reporter: &mut Reporter) {
+    // Test for crbug.com/229011
+    let rect1 = Rect::new(4.0, 4.0, 6.0, 6.0);
+    let rect2 = Rect::new(7.0, 7.0, 8.0, 8.0);
+    let rect3 = Rect::new(6.0, 6.0, 7.0, 7.0);
+
+    let inv_path = Path::oval(rect1, None).make_fill_type(PathFillType::InverseEvenOdd);
+    let path = Path::oval(rect2, None);
+    let path2 = Path::oval(rect3, None);
+    let mut recorder = PictureRecorder::new();
+
+    // Testing conservative-raster-clip that is enabled by PictureRecord
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(10.0, 10.0), false);
+        canvas.clip_path(&inv_path, None, None);
+        let clip_bounds = canvas.device_clip_bounds().unwrap_or_default();
+        reporter_assert!(reporter, 0 == clip_bounds.left);
+        reporter_assert!(reporter, 0 == clip_bounds.top);
+        reporter_assert!(reporter, 10 == clip_bounds.bottom);
+        reporter_assert!(reporter, 10 == clip_bounds.right);
+    }
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(10.0, 10.0), false);
+        canvas.clip_path(&path, None, None);
+        canvas.clip_path(&inv_path, None, None);
+        let clip_bounds = canvas.device_clip_bounds().unwrap_or_default();
+        reporter_assert!(reporter, 7 == clip_bounds.left);
+        reporter_assert!(reporter, 7 == clip_bounds.top);
+        reporter_assert!(reporter, 8 == clip_bounds.bottom);
+        reporter_assert!(reporter, 8 == clip_bounds.right);
+    }
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(10.0, 10.0), false);
+        canvas.clip_path(&path, ClipOp::Difference, None);
+        let clip_bounds = canvas.device_clip_bounds().unwrap_or_default();
+        reporter_assert!(reporter, 0 == clip_bounds.left);
+        reporter_assert!(reporter, 0 == clip_bounds.top);
+        reporter_assert!(reporter, 10 == clip_bounds.bottom);
+        reporter_assert!(reporter, 10 == clip_bounds.right);
+    }
+    {
+        let canvas = recorder.begin_recording(Rect::from_wh(10.0, 10.0), false);
+        canvas.clip_path(&path, ClipOp::Intersect, None);
+        canvas.clip_path(&path2, ClipOp::Difference, None);
+        let clip_bounds = canvas.device_clip_bounds().unwrap_or_default();
+        reporter_assert!(reporter, 7 == clip_bounds.left);
+        reporter_assert!(reporter, 7 == clip_bounds.top);
+        reporter_assert!(reporter, 8 == clip_bounds.bottom);
+        reporter_assert!(reporter, 8 == clip_bounds.right);
+    }
+}
+
+// Port of: tests/PictureTest.cpp#L430-L457 (chrome/m156)
+#[allow(clippy::float_cmp)] // the C++ compares the scalars with ==
+fn test_cull_rect_reset(reporter: &mut Reporter) {
+    let mut recorder = PictureRecorder::new();
+    let mut bounds = Rect::from_wh(10.0, 10.0);
+    let canvas = recorder.begin_recording_with_factory(bounds, Some(&RTreeFactory));
+    bounds = Rect::from_wh(100.0, 100.0);
+    let paint = Paint::default();
+    canvas.draw_rect(bounds, &paint);
+    canvas.draw_rect(bounds, &paint);
+    let p = recorder.finish_recording_as_picture(Some(&bounds));
+    reporter_assert!(reporter, p.is_some());
+    let p = p.unwrap();
+
+    let final_cull_rect = p.cull_rect();
+    reporter_assert!(reporter, 0.0 == final_cull_rect.left);
+    reporter_assert!(reporter, 0.0 == final_cull_rect.top);
+    reporter_assert!(reporter, 100.0 == final_cull_rect.bottom);
+    reporter_assert!(reporter, 100.0 == final_cull_rect.right);
+}
+
+// Port of: tests/PictureTest.cpp#L488-L505 (chrome/m156)
+fn test_gen_id(reporter: &mut Reporter) {
+    let mut recorder = PictureRecorder::new();
+    recorder.begin_recording(Rect::from_wh(0.0, 0.0), false);
+    let empty = recorder.finish_recording_as_picture(None).unwrap();
+
+    // Empty pictures should still have a valid ID
+    reporter_assert!(reporter, empty.unique_id() != 0);
+
+    let canvas = recorder.begin_recording(Rect::from_wh(1.0, 1.0), false);
+    canvas.draw_color(Color::WHITE, None);
+    let has_data = recorder.finish_recording_as_picture(None).unwrap();
+    // picture should have a non-zero id after recording
+    reporter_assert!(reporter, has_data.unique_id() != 0);
+
+    // both pictures should have different ids
+    reporter_assert!(reporter, has_data.unique_id() != empty.unique_id());
+}
+
+// Port of: tests/PictureTest.cpp#L357-L372 (chrome/m156)
+fn test_bad_bitmap(reporter: &mut Reporter) {
+    // missing pixels should return null for image
+    let mut bm = Bitmap::new();
+    let _ = bm.set_info(&ImageInfo::new_n32_premul((100, 100), None), None);
+    let img = bm.as_image();
+    reporter_assert!(reporter, img.is_none());
+
+    // make sure we don't crash on a null image
+    // `recordingCanvas->drawImage(nullptr, 0, 0)` has no call here: `Canvas::draw_image` takes
+    // an image, and skia-safe's `draw_image` has the same signature, so a null image cannot be
+    // passed. The rest of the test is ported.
+    let mut recorder = PictureRecorder::new();
+    recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+    let picture = recorder.finish_recording_as_picture(None).unwrap();
+
+    let canvas = Canvas::new_empty();
+    canvas.draw_picture(&picture, None, None);
+}
+
+// Port of: tests/PictureTest.cpp#L36-L46 (chrome/m156), test_deleting_empty_picture (SK_DEBUG)
+fn test_deleting_empty_picture() {
+    let mut recorder = PictureRecorder::new();
+    // Creates an SkPictureRecord
+    recorder.begin_recording(Rect::from_wh(0.0, 0.0), false);
+    // Turns that into an SkPicture
+    let picture = recorder.finish_recording_as_picture(None);
+    drop(picture);
+    // Ceates a new SkPictureRecord
+    recorder.begin_recording(Rect::from_wh(0.0, 0.0), false);
+}
+
+// Port of: tests/PictureTest.cpp#L48-L55 (chrome/m156), test_serializing_empty_picture (SK_DEBUG)
+fn test_serializing_empty_picture() {
+    let mut recorder = PictureRecorder::new();
+    recorder.begin_recording(Rect::from_wh(0.0, 0.0), false);
+    let picture = recorder.finish_recording_as_picture(None).unwrap();
+    let _ = picture.serialize(None);
+}
+
+// Port of: tests/PictureTest.cpp#L507-L515 (chrome/m156)
+fn test_typeface(_reporter: &mut Reporter) {
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_wh(10.0, 10.0), false);
+    let typeface = create_test_typeface(Some("Arial"), FontStyle::italic());
+    let font = Font::from_size(typeface, 12.0);
+    canvas.draw_str("Q", (0.0, 10.0), &font, &Paint::default());
+    let picture = recorder.finish_recording_as_picture(None).unwrap();
+    let _ = picture.serialize(None); // default SkSerialProcs
+}
+
+// Port of: tests/PictureTest.cpp#L517-L529 (chrome/m156)
+def_test!(Picture, |reporter| {
+    test_typeface(reporter);
+    // `#ifdef SK_DEBUG` in C++; these tests run in debug builds only.
+    test_deleting_empty_picture();
+    test_serializing_empty_picture();
+    test_bad_bitmap(reporter);
+    test_unbalanced_save_restores(reporter);
+    test_peephole();
+    test_clip_bound_opt(reporter);
+    test_gen_id(reporter);
+    test_cull_rect_reset(reporter);
 });

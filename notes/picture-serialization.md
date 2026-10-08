@@ -98,6 +98,55 @@ portable configuration cannot load these files at all (every case skips). Fixing
 font factories in the default decoders (a text-module decision), so the test is `#[ignore]`d with a
 reason.
 
+## Part 3 (this batch)
+
+- Images in pictures: `IMAGE` section (`SkBinaryWriteBuffer::writeImage` / `SkReadBuffer::readImage`
+  without mipmaps), `DRAW_IMAGE_RECT2` (op 73) recorded from `on_draw_image_rect2` and played back,
+  `SerialProcs::image` / `DeserialProcs::image` and `image_data`, `Writer32::write_sampling` and
+  `ReadBuffer::read_sampling`. `Image_Serialize_Encoding_Failure` flipped to `passing`.
+- Deviations: an image with mipmap levels is refused by the writer (nothing is written); an image
+  has no encoded data here, so without a serial image proc it is written as an empty byte array (Skia
+  would use `refEncodedData`). An image that cannot be read becomes a transparent 1x1 raster image
+  instead of Skia's lazy empty image (same op count, draws nothing with source-over).
+- `tests/tests/image_in_picture.rs`: our own round trip (raw pixels as the serialized bytes) draws the
+  same pixels as the direct draw.
+- `PictureTest::Picture`: all sub-tests are ported (`test_bad_bitmap`, `test_unbalanced_save_restores`,
+  `test_peephole`, `test_clip_bound_opt`, `test_gen_id`, `test_cull_rect_reset`, `test_typeface`, the
+  SK_DEBUG empty picture tests) and pass. It stays `todo`: `drawImage(nullptr, 0, 0)` has no Rust
+  spelling (the same signature as skia-safe). Flipping it needs an API decision.
+- `SkPictureBackedGlyphDrawable_RejectsAnyShadersThatNeedSkSL` is blocked on SkRuntimeEffect (no SkSL
+  port); its reason is updated.
+
+### Step 1 (not done): typeface deserialization without procs
+
+`Typeface::make_deserialize(stream, None, None)` cannot reach the Fontations decoder: Skia's static
+decoder list (`SkTypeface.cpp` `decoders()`, filled by `SK_TYPEFACE_FACTORY_FONTATIONS`) has no Rust
+equivalent here. The options checked:
+
+- A compile-time table in `skia-rust-core` cannot name the text crate's `make_from_stream` (text
+  depends on core, and core must not depend on text or on skrifa).
+- `inventory` (already used by the GM crate) is life-before-main registration. `docs/design/text.md`
+  §5.2 rejects that, and on wasm32 `inventory` needs a `__wasm_call_ctors` hook; CI builds core for
+  wasm32.
+- A process-wide `OnceLock` set by the text crate is global state, and nothing calls it on its own.
+
+So `Serialization_PictureTypeface` stays `failing`/ignored. The design note's Q3 trigger ("a ported test
+deserializes with a null manager and expects a non-portable typeface back") is now met. This needs a
+decision: e.g. make the default decoder list a parameter of `make_deserialize` taken from a
+`FontMgr` the caller passes, or move the Fontations factory table up into the facade crate that
+depends on both.
+
+### Step 2 (not done): paint shaders, color filters, image filters, blenders
+
+Not started. Core has shaders and color filters but none of them has a `flatten` (no SkShader or
+SkColorFilter flattenables, no factories), and the image filters are not ported. Each needs its
+flatten/unflatten arm with the exact bytes. The `Serialization` picture parts depend on this.
+
+### Steps 3 and 4 (not done)
+
+Nested pictures, drawables, regions, clip shaders, vertices, patches, atlases, annotations, shadows,
+and the corrupt-data partial-picture behaviour are not started.
+
 ## Remaining targets (manifest)
 
 - `tests/PictureTest.cpp::Picture`: `test_typeface` now serializes; the other sub-tests of the
@@ -108,7 +157,7 @@ reason.
 - `tests/SkGlyphTest.cpp::SkPictureBackedGlyphDrawable_RejectsAnyShadersThatNeedSkSL`: needs
   shaders in a picture's paints.
 
-## Next steps
+## Next steps (superseded by Part 3 above; kept for history)
 
 1. Paints with shaders, color filters, image filters and blenders (`SkPaintPriv::Flatten` arms,
    with their factories), and the save layer backdrop and filters.

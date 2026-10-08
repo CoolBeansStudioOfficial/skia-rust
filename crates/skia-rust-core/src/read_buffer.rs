@@ -15,23 +15,50 @@
 //! skia-rust: `SkReadBuffer` requires its memory to be 4-byte aligned because it reads words in
 //! place; here the words are read from the bytes of a slice, so only the offsets are checked.
 
+use crate::alpha_type::AlphaType;
+use crate::bitmap::Bitmap;
 use crate::blend_mode::BlendMode;
+use crate::color::Color;
 use crate::color::Color4f;
 use crate::color_space_priv::srgb_singleton;
+use crate::data::Data;
 use crate::flattenable::FlattenableRegistry;
+use crate::image::{Image, RequiredProperties};
+use crate::images;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
 use crate::paint::{Cap, Join, Paint, Style};
 use crate::path::Path;
 use crate::path_effect::PathEffect;
-use crate::picture_priv::VERSION_SK_BLENDER_IN_SK_PAINT;
+use crate::picture_priv::{VERSION_ANISOTROPIC_FILTER, VERSION_SK_BLENDER_IN_SK_PAINT};
 use crate::point::Point;
-use crate::rect::Rect;
+use crate::rect::{IRect, Rect};
 use crate::rrect::RRect;
+use crate::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use crate::serial_procs::DeserialProcs;
 use crate::stream::MemoryStream;
 use crate::typeface::Typeface;
 use crate::write_buffer::{CUSTOM_BLEND_MODE_SENTINEL, FLAT_HAS_EFFECTS};
+
+/// The image flags of `SkWriteBufferImageFlags`: the subset rect, the mipmaps, and unpremultiplied.
+// Port of: src/core/SkWriteBuffer.h#L167-L174 (chrome/m156)
+const IMAGE_FLAG_HAS_SUBSET: u32 = 1 << 8;
+const IMAGE_FLAG_HAS_MIPMAP: u32 = 1 << 9;
+const IMAGE_FLAG_UNPREMUL: u32 = 1 << 10;
+
+/// `SkReadBuffer::MakeEmptyImage(1, 1)`: the image that stands for an image that could not be
+/// read. Skia's is a lazy image whose generator fails, which draws nothing; this is a transparent
+/// 1x1 raster image. It draws nothing with source-over, and it is recorded like any image, so
+/// a picture that has it keeps its op count. (Blend modes that keep the destination where the
+/// source is transparent draw differently.)
+// Port of: src/core/SkReadBuffer.cpp#L40-L49 (chrome/m156), MakeEmptyImage
+fn make_empty_image() -> Image {
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_n32_pixels((1, 1), None);
+    bitmap.erase_color(Color::TRANSPARENT);
+    // A 1x1 bitmap with pixels always makes an image.
+    images::raster_from_bitmap(&bitmap).expect("a 1x1 raster image")
+}
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
 fn align4(x: usize) -> usize {
@@ -404,6 +431,121 @@ impl<'a> ReadBuffer<'a> {
 }
 
 impl ReadBuffer<'_> {
+    /// `readByteArrayAsData`: the bytes written by `writeByteArray`, as data. `None`, and the
+    /// buffer is invalid, if the bytes are not all there.
+    // Port of: src/core/SkReadBuffer.cpp#L325-L336 (chrome/m156)
+    #[doc(alias = "readByteArrayAsData")]
+    pub fn read_byte_array_as_data(&mut self) -> Option<Data> {
+        let num_bytes = usize::try_from(self.get_array_count()).unwrap_or(usize::MAX);
+        if !self.validate(self.is_available(num_bytes)) {
+            return None;
+        }
+        let mut bytes = vec![0; num_bytes];
+        if !self.read_byte_array(&mut bytes) {
+            return None;
+        }
+        Some(Data::new_from_vec(bytes))
+    }
+
+    /// `readIRect`: the left, top, right and bottom words.
+    // Port of: src/core/SkReadBuffer.cpp#L220-L225 (chrome/m156), readIRect
+    #[doc(alias = "readIRect")]
+    pub fn read_irect(&mut self) -> IRect {
+        let left = self.read_int();
+        let top = self.read_int();
+        let right = self.read_int();
+        let bottom = self.read_int();
+        IRect {
+            left,
+            top,
+            right,
+            bottom,
+        }
+    }
+
+    /// `readSampling`: the sampling that `write_sampling` wrote. A zero anisotropy is followed by
+    /// the cubic flag and its coefficients, or by the filter and mipmap modes.
+    // Port of: src/core/SkReadBuffer.cpp#L227-L243 (chrome/m156)
+    #[doc(alias = "readSampling")]
+    pub fn read_sampling(&mut self) -> SamplingOptions {
+        if !self.is_version_lt(VERSION_ANISOTROPIC_FILTER) {
+            let max_aniso = self.read_int();
+            if max_aniso != 0 {
+                return SamplingOptions::from_aniso(max_aniso);
+            }
+        }
+        if self.read_bool() {
+            let b = self.read_scalar();
+            let c = self.read_scalar();
+            // `SkSamplingOptions({B, C})`: the cubic filter, with the default filter and mipmap.
+            SamplingOptions {
+                use_cubic: true,
+                cubic: CubicResampler { b, c },
+                ..SamplingOptions::default()
+            }
+        } else {
+            let filter = match self.read32_le(FilterMode::Linear as u32) {
+                1 => FilterMode::Linear,
+                _ => FilterMode::Nearest,
+            };
+            let mipmap = match self.read32_le(MipmapMode::Linear as u32) {
+                1 => MipmapMode::Nearest,
+                2 => MipmapMode::Linear,
+                _ => MipmapMode::None,
+            };
+            SamplingOptions::new(filter, mipmap)
+        }
+    }
+
+    /// `deserialize_image`: the image that the data makes, by the image data procedure, else by
+    /// the image procedure. `None` if the buffer has neither, or the procedure fails.
+    // Port of: src/core/SkReadBuffer.cpp#L346-L355 (chrome/m156)
+    fn deserialize_image(&self, data: Data, alpha: Option<AlphaType>) -> Option<Image> {
+        if let Some(read) = &self.deserial_procs.image_data {
+            return read(data, alpha);
+        }
+        let read = self.deserial_procs.image.as_ref()?;
+        read(data.as_bytes(), alpha)
+    }
+
+    /// `readImage`: the flags, the image's bytes (made into an image by the procedures), and the
+    /// subset rect when the flags have one. An image that the procedures cannot make is the empty
+    /// image of [`make_empty_image`], and the picture still loads. `None` (and the buffer is
+    /// invalid) for a corrupt stream. Mipmap levels are not read yet, so an image that has them is
+    /// treated as corrupt.
+    // Port of: src/core/SkReadBuffer.cpp#L404-L435 (chrome/m156), readImage, without the mipmaps
+    // (`add_mipmaps`)
+    #[doc(alias = "readImage")]
+    pub fn read_image(&mut self) -> Option<Image> {
+        let flags = self.read_uint();
+        let alpha = if flags & IMAGE_FLAG_UNPREMUL != 0 {
+            Some(AlphaType::Unpremul)
+        } else {
+            None
+        };
+        let Some(data) = self.read_byte_array_as_data() else {
+            self.validate(false);
+            return None;
+        };
+        let mut image = self.deserialize_image(data, alpha);
+
+        // This flag is not written by new pictures anymore.
+        if flags & IMAGE_FLAG_HAS_SUBSET != 0 {
+            let subset = self.read_irect();
+            if let Some(img) = image.take() {
+                image = img.make_subset(subset, RequiredProperties::default());
+            }
+        }
+
+        if flags & IMAGE_FLAG_HAS_MIPMAP != 0 {
+            // The mipmap levels are not read yet (`add_mipmaps`).
+            let _ = self.read_byte_array_as_data();
+            self.validate(false);
+            return None;
+        }
+        Some(image.unwrap_or_else(make_empty_image))
+    }
+
     /// `getArrayCount`: the count at the current position, which is not consumed. Returns 0 (and
     /// makes the buffer invalid) if there is no word left.
     // Port of: src/core/SkReadBuffer.cpp#L338-L344 (chrome/m156)

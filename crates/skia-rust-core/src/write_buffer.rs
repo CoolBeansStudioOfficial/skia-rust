@@ -15,9 +15,13 @@
 //! The factory set (`setFactoryRecorder`) and the typeface set (`setTypefaceRecorder`) are
 //! ported: with a factory set, a flattenable is written as its index. Without one, it is written
 //! by name. Not ported: external storage (`SkWriter32(void*, size_t)`, `usingInitialStorage`),
-//! and every write that needs a type that is not ported yet (images, regions, ...).
+//! and every write that needs a type that is not ported yet (regions, ...). Images are written
+//! with their bytes from the image procedure (no encoded data is kept by an image yet), and an
+//! image with mipmap levels is not written.
 
+use crate::alpha_type::AlphaType;
 use crate::color::Color4f;
+use crate::image::Image;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
@@ -26,8 +30,13 @@ use crate::path_effect::PathEffect;
 use crate::point::Point;
 use crate::rect::Rect;
 use crate::rrect::RRect;
+use crate::sampling_options::SamplingOptions;
 use crate::serial_procs::SerialProcs;
 use crate::typeface::Typeface;
+
+/// The image flags of `SkWriteBufferImageFlags`: unpremultiplied, and the mipmaps follow.
+// Port of: src/core/SkWriteBuffer.h#L167-L174 (chrome/m156)
+const IMAGE_FLAG_UNPREMUL: u32 = 1 << 10;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`).
 fn align4(x: usize) -> usize {
@@ -157,6 +166,24 @@ impl Writer32 {
         let size = path.write_to_memory(None);
         let reserved = self.reserve(size);
         let _ = path.write_to_memory(Some(reserved));
+    }
+
+    /// `SkWriter32::writeSampling`: the anisotropy; then, unless it is set, whether the filter is
+    /// cubic, and the cubic coefficients or the filter and mipmap modes.
+    // Port of: src/core/SkWriter32.cpp#L24-L36 (chrome/m156)
+    #[doc(alias = "writeSampling")]
+    pub fn write_sampling(&mut self, sampling: &SamplingOptions) {
+        self.write32(sampling.max_aniso);
+        if !sampling.is_aniso() {
+            self.write32(i32::from(sampling.use_cubic));
+            if sampling.use_cubic {
+                self.write_scalar(sampling.cubic.b);
+                self.write_scalar(sampling.cubic.c);
+            } else {
+                self.write32(sampling.filter as i32);
+                self.write32(sampling.mipmap as i32);
+            }
+        }
     }
 
     /// Overwrites the word at `offset` (`overwriteTAt`).
@@ -303,6 +330,43 @@ impl BinaryWriteBuffer {
     #[doc(alias = "writePath")]
     pub fn write_path(&mut self, path: &Path) {
         self.writer.write_path(path);
+    }
+
+    /// `writeSampling`: the sampling options (`SkBinaryWriteBuffer::writeSampling`).
+    // Port of: src/core/SkWriteBuffer.cpp#L135-L137 (chrome/m156), writeSampling
+    #[doc(alias = "writeSampling")]
+    pub fn write_sampling(&mut self, sampling: &SamplingOptions) {
+        self.writer.write_sampling(sampling);
+    }
+
+    /// Writes an image (`SkBinaryWriteBuffer::writeImage`): the flags, then the bytes that the
+    /// image procedure makes of it, or an empty byte array when there is none (the image keeps no
+    /// encoded data here, so `refEncodedData` never supplies them). The mipmap levels are not
+    /// written yet: an image that has them is refused, and nothing is written.
+    // Port of: src/core/SkWriteBuffer.cpp#L204-L221 (chrome/m156), writeImage, without the
+    // mipmap levels (`serialize_mipmap`)
+    #[doc(alias = "writeImage")]
+    pub fn write_image(&mut self, image: &Image) -> bool {
+        if image.has_mipmaps() {
+            return false;
+        }
+        let flags = if image.alpha_type() == AlphaType::Unpremul {
+            IMAGE_FLAG_UNPREMUL
+        } else {
+            0
+        };
+        self.write_uint(flags);
+        // `serialize_image`: the procedure's data, or none (`writeDataAsByteArray(nullptr)`).
+        let data = self
+            .serial_procs
+            .image
+            .as_ref()
+            .and_then(|serialize| serialize(image));
+        match data {
+            Some(data) => self.write_byte_array(data.as_bytes()),
+            None => self.writer.write32(0),
+        }
+        true
     }
 
     /// Writes a path effect (`writeFlattenable(effect)`): `0` for none, otherwise its name (or

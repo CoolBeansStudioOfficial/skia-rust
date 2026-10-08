@@ -458,9 +458,11 @@ def_font_test!(
 
         let serial_procs = SerialProcs {
             typeface: Some(serialize_typeface_proc()),
+            ..Default::default()
         };
         let deserial_procs = DeserialProcs {
             typeface: Some(deserialize_typeface_proc()),
+            ..Default::default()
         };
         test_picture_typeface_serialization(reporter, Some(&serial_procs), Some(&deserial_procs));
     }

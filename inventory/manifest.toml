@@ -35166,8 +35166,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L268-L297"
 module = "core"
-status = "todo"
-reason = "needs images in pictures (the IMAGE section, writeImage/readImage) and SkSerialProcs::fImageProc, notes/picture-serialization.md"
+status = "passing"
 span_hash = "90f1ef1ed7d08f9f751fdbe36b511f0b38402fa258c1d3d5d71d087bcd5f01c7"
 
 [[test]]
@@ -38973,7 +38972,7 @@ macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L517-L529"
 module = "core"
 status = "todo"
-reason = "test_typeface now serializes (picture serialization part 2 and text blobs are in); still needs the sub-tests test_bad_bitmap, test_unbalanced_save_restores, test_peephole, test_clip_bound_opt, test_gen_id and test_cull_rect_reset ported into this DEF_TEST"
+reason = "all sub-tests are ported and pass; the one step left is test_bad_bitmap's drawImage(nullptr, 0, 0): Canvas::draw_image takes a non-null image (skia-safe has the same signature), so the call has no Rust spelling. Needs an API decision (an Option image parameter) before this can flip; notes/picture-serialization.md"
 span_hash = "7db5306c924057bb109fec7bad403e184cc6a5b545bda0376b301e65bca41712"
 
 [[test]]
@@ -41635,7 +41634,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L843-L1055"
 module = "core"
 status = "todo"
-reason = "picture parts need paints with shaders, color filters, image filters and blenders, regions, clip shaders, nested pictures and images in pictures, notes/picture-serialization.md"
+reason = "picture parts need paints with shaders, color filters, image filters and blenders (SkColorFilters::Table, SkImageFilters::Blend/Image, not ported), regions, clip shaders, nested pictures and annotations, notes/picture-serialization.md"
 span_hash = "6d124b55ad7562cd056255f1a92b9991f33cf9ceef9b3857c36938a54c994820"
 
 [[test]]
@@ -41645,7 +41644,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
 status = "failing"
-reason = "NativeFontations only: the call without serial procs deserializes font data with builtin_decoders (only the empty typeface), so 5 pixel comparisons differ; the call with procs passes in both configs (ignored; see notes/picture-serialization.md)"
+reason = "NativeFontations only: the call without serial procs deserializes font data with builtin_decoders (only the empty typeface), so 5 pixel comparisons differ. Skia finds the Fontations decoder in its static list; docs/design/text.md Q3 (no static registry, a null manager cannot reach text-crate decoders) is now the blocker, and needs a design decision (notes/picture-serialization.md). The call with procs passes in both configs (ignored)"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -42318,7 +42317,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
 status = "todo"
-reason = "needs shaders in a picture's paints (picture serialization part 2), notes/picture-serialization.md"
+reason = "builds its drawables with SkRuntimeEffect (MakeForShader/ColorFilter/Blender and SkRuntimeEffectBuilder), and SkSL is not ported (phase 3); the picture part is only the sub-picture and the SkSL rejection, notes/picture-serialization.md"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]

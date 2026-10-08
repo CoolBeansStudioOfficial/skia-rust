@@ -61,8 +61,21 @@ struct PictureRecordState {
     paths: Vec<Path>,
     /// `fTextBlobs`: the distinct text blobs, in the order of their 1-based indices.
     text_blobs: Vec<TextBlob>,
+    /// `fImages`: the distinct images, in the order of their 0-based indices.
+    images: Vec<Image>,
     /// Set when the picture has a command that is not encoded yet.
     unsupported: bool,
+}
+
+/// The flat size of sampling options (`SkSamplingPriv::FlatSize`): the anisotropy, and, unless
+/// it is set, the cubic flag and its two scalars, or the filter and mipmap modes.
+// Port of: src/core/SkSamplingPriv.h#L39-L45 (chrome/m156), FlatSize
+fn sampling_flat_size(sampling: &SamplingOptions) -> usize {
+    let mut size = size_of::<u32>();
+    if !sampling.is_aniso() {
+        size += 3 * size_of::<u32>();
+    }
+    size
 }
 
 /// The word of an unsigned count or index, as `SkToU32` gives it.
@@ -186,6 +199,52 @@ impl PictureRecordState {
             });
         // follow the convention of recording a 1-based index
         self.add_int(i32::try_from(position + 1).expect("SkToS32"));
+    }
+
+    /// Writes an image's 0-based index, adding the image if it is new (`addImage`). Images are
+    /// the same when they are the same object (`find_or_append`).
+    // Port of: src/core/SkPictureRecord.cpp#L863-L866 (chrome/m156), addImage, with find_or_append
+    // from src/core/SkPictureRecord.cpp#L847-L857 (chrome/m156)
+    fn add_image(&mut self, image: &Image) {
+        let position = self
+            .images
+            .iter()
+            .position(|known| known.ptr_eq(image))
+            .unwrap_or_else(|| {
+                self.images.push(image.clone());
+                self.images.len() - 1
+            });
+        // images are written 0-based, unlike paths and text blobs
+        self.add_int(i32::try_from(position).expect("SkToS32"));
+    }
+
+    /// Writes the sampling options (`addSampling`).
+    // Port of: src/core/SkPictureRecord.h#L220-L222 (chrome/m156), addSampling
+    fn add_sampling(&mut self, sampling: &SamplingOptions) {
+        self.writer.write_sampling(sampling);
+    }
+
+    /// Records an image drawn into a rect: the paint, the image, the source and destination
+    /// rects, the sampling, and the constraint.
+    // Port of: src/core/SkPictureRecord.cpp#L562-L577 (chrome/m156), onDrawImageRect2
+    fn record_image_rect_op(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        // id + paint_index + image_index + constraint
+        let size = 3 * size_of::<u32>() + 2 * 16 + sampling_flat_size(sampling) + size_of::<u32>();
+        self.add_draw(draw_type::DRAW_IMAGE_RECT2, size);
+        self.add_paint_ptr(paint);
+        self.add_image(image);
+        self.add_rect(src);
+        self.add_rect(dst);
+        self.add_sampling(sampling);
+        self.add_int(constraint as i32);
     }
 
     /// Writes an offset placeholder that the restore will fill in, linked to the previous
@@ -602,17 +661,20 @@ impl CanvasHooks for PictureRecordHooks {
         self.unsupported()
     }
 
-    // Images are not encoded yet (the image section is not ported).
+    // Port of: src/core/SkPictureRecord.cpp#L562-L577 (chrome/m156), onDrawImageRect2
     fn on_draw_image_rect2(
         &mut self,
-        _image: &Image,
-        _src: &Rect,
-        _dst: &Rect,
-        _sampling: &SamplingOptions,
-        _paint: Option<&Paint>,
-        _constraint: SrcRectConstraint,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
     ) -> bool {
-        self.unsupported()
+        self.with(|state| {
+            state.record_image_rect_op(image, src, dst, sampling, paint, constraint);
+        });
+        true
     }
 
     // Lattices are not encoded yet.
@@ -659,5 +721,6 @@ pub(crate) fn backport(picture: &Picture) -> Option<PictureData> {
         state.paints,
         state.paths,
         state.text_blobs,
+        state.images,
     ))
 }

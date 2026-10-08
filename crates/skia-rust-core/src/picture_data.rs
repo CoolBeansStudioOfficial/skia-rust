@@ -11,11 +11,12 @@
 //! section but the end starts with its tag and, for most, a size.
 //!
 //! skia-rust: the factories are written by index, as in Skia, with their names in the factory
-//! section. The sections for slugs, vertices, images, drawables and nested pictures are not
-//! written or read yet: a picture that has them is not serialized, and a stream that has them
-//! does not load.
+//! section. The images are written with the image procedure of the serial procs. The sections
+//! for slugs, vertices, drawables and nested pictures are not written or read yet: a picture
+//! that has them is not serialized, and a stream that has them does not load.
 
 use crate::flattenable::FlattenableRegistry;
+use crate::image::Image;
 use crate::paint::Paint;
 use crate::path::Path;
 use crate::read_buffer::ReadBuffer;
@@ -147,8 +148,12 @@ pub(crate) struct PictureData {
     typefaces: Vec<Typeface>,
     /// `fFactoryPlayback`: the names of the factories that the buffer refers to by index, from 1.
     factories: Vec<String>,
-    /// `fTextBlobs`: the text blobs that the ops refer to by index, from 1.
+    /// `fTextBlobs`: the text blobs that the ops refer to by index, from 0 (images are 0-based,
+    /// as in Skia).
     text_blobs: Vec<TextBlob>,
+    /// `fImages`: the images that the ops refer to by index, from 0. An image that could not be
+    /// read is the empty image of the read buffer (see `read_buffer::read_image`).
+    images: Vec<Image>,
 }
 
 impl PictureData {
@@ -159,6 +164,7 @@ impl PictureData {
         paints: Vec<Paint>,
         paths: Vec<Path>,
         text_blobs: Vec<TextBlob>,
+        images: Vec<Image>,
     ) -> PictureData {
         PictureData {
             op_data: Some(op_data),
@@ -167,6 +173,7 @@ impl PictureData {
             typefaces: Vec::new(),
             factories: Vec::new(),
             text_blobs,
+            images,
         }
     }
 
@@ -190,13 +197,24 @@ impl PictureData {
         &self.text_blobs
     }
 
+    /// The images the ops index (`fImages`).
+    pub(crate) fn images(&self) -> &[Image] {
+        &self.images
+    }
+
     /// Writes the buffer of the tables: paints, then paths, then text blobs, then the (empty)
-    /// slugs (`flattenToBuffer`, with no vertices or images). The buffer records the factories
-    /// and typefaces that it writes by index. `None` if a paint has an effect that is not written
-    /// yet.
+    /// slugs, then the images (`flattenToBuffer`, with no vertices). The buffer records the
+    /// factories and typefaces that it writes by index, and writes the images with the image
+    /// procedure of `procs` (the typeface procedure is not used by the buffer, as in Skia's
+    /// `skip_typeface_proc`). `None` if a paint has an effect that is not written yet, or an image
+    /// cannot be written.
     // Port of: src/core/SkPictureData.cpp#L151-L200 (chrome/m156), flattenToBuffer
-    fn flatten_to_buffer(&self) -> Option<BinaryWriteBuffer> {
-        let mut buffer = BinaryWriteBuffer::with_serial_procs(SerialProcs::default());
+    fn flatten_to_buffer(&self, procs: &SerialProcs) -> Option<BinaryWriteBuffer> {
+        let buffer_procs = SerialProcs {
+            typeface: None,
+            image: procs.image.clone(),
+        };
+        let mut buffer = BinaryWriteBuffer::with_serial_procs(buffer_procs);
         buffer.set_typeface_recorder();
         buffer.set_factory_recorder();
 
@@ -223,6 +241,14 @@ impl PictureData {
         }
         // The slugs are always written, even when there are none.
         write_tag_size_to_buffer(&mut buffer, SLUG_BUFFER_TAG, 0);
+        if !self.images.is_empty() {
+            write_tag_size_to_buffer(&mut buffer, IMAGE_BUFFER_TAG, self.images.len());
+            for image in &self.images {
+                if !buffer.write_image(image) {
+                    return None;
+                }
+            }
+        }
         Some(buffer)
     }
 
@@ -236,7 +262,7 @@ impl PictureData {
             return false;
         };
         // The buffer is made first: the factories and typefaces it indexes are written before it.
-        let Some(buffer) = self.flatten_to_buffer() else {
+        let Some(buffer) = self.flatten_to_buffer(procs) else {
             return false;
         };
 
@@ -430,8 +456,26 @@ impl PictureData {
                     self.text_blobs.push(blob);
                 }
             }
+            IMAGE_BUFFER_TAG => {
+                // `new_array_from_buffer`: the array must be empty, and each image must read.
+                let Ok(count) = usize::try_from(size) else {
+                    buffer.validate(false);
+                    return;
+                };
+                if !buffer.validate(self.images.is_empty()) {
+                    return;
+                }
+                for _ in 0..count {
+                    let Some(image) = buffer.read_image() else {
+                        buffer.validate(false);
+                        self.images.clear();
+                        return;
+                    };
+                    self.images.push(image);
+                }
+            }
             // The sections that are not ported: an empty one is fine, a full one is not.
-            SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG | IMAGE_BUFFER_TAG => {
+            SLUG_BUFFER_TAG | VERTICES_BUFFER_TAG => {
                 buffer.validate(size == 0);
             }
             _ => {

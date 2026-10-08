@@ -662,6 +662,7 @@ def_font_test!(TextBlob_serialize, |reporter| {
     let array: SerializedTypefaces = Arc::new(Mutex::new(Vec::new()));
     let serialize_procs = SerialProcs {
         typeface: Some(serialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let data = blob0.serialize(&serialize_procs);
     let array_len = array.lock().map_or(0, |a| a.len());
@@ -682,6 +683,7 @@ def_font_test!(TextBlob_serialize, |reporter| {
     );
     let deserialize_procs = DeserialProcs {
         typeface: Some(deserialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let Some(blob1) = TextBlob::deserialize(data.as_bytes(), &deserialize_procs) else {
         errorf!(reporter, "the serialized blob deserializes");
@@ -798,6 +800,7 @@ def_test!(SkCanvas_drawTextBlob_b513820666, |reporter| {
     let array: SerializedTypefaces = Arc::new(Mutex::new(Vec::new()));
     let serialize_procs = SerialProcs {
         typeface: Some(serialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let Some(data) = picture.serialize(Some(&serialize_procs)) else {
         errorf!(reporter, "the picture serializes");
@@ -806,6 +809,7 @@ def_test!(SkCanvas_drawTextBlob_b513820666, |reporter| {
 
     let deserialize_procs = DeserialProcs {
         typeface: Some(deserialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let new_picture = Picture::from_data(data.as_bytes(), Some(&deserialize_procs));
 

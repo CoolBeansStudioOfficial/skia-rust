@@ -14,8 +14,9 @@
 //! unreadable, and so does any invalid op. Skia would return the part it read; here the
 //! picture is `None`.
 
-use crate::canvas::{Canvas, PointMode, SaveLayerFlags, SaveLayerRec};
+use crate::canvas::{Canvas, PointMode, SaveLayerFlags, SaveLayerRec, SrcRectConstraint};
 use crate::clip_op::ClipOp;
+use crate::image::Image;
 use crate::m44::M44;
 use crate::paint::Paint;
 use crate::path::Path;
@@ -105,6 +106,36 @@ fn get_text_blob<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Opti
     let blob = index.and_then(|i| data.text_blobs().get(i - 1));
     if reader.validate(blob.is_some()) {
         blob
+    } else {
+        None
+    }
+}
+
+/// The paint an op may use: its 1-based index in the paints, or none for index 0 (`optionalPaint`).
+/// An index that is not there makes the reader invalid.
+// Port of: src/core/SkPictureData.cpp#L608-L615 (chrome/m156), optionalPaint
+fn optional_paint<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Option<&'a Paint> {
+    let index = reader.read_int();
+    if index == 0 {
+        return None;
+    }
+    let paint = usize::try_from(index)
+        .ok()
+        .filter(|&i| i >= 1)
+        .and_then(|i| data.paints().get(i - 1));
+    reader.validate(paint.is_some());
+    paint
+}
+
+/// The image an op uses: its 0-based index in the images, which must be there (`getImage`).
+// Port of: src/core/SkPictureData.h#L115-L119 (chrome/m156), getImage
+fn get_image<'a>(reader: &mut ReadBuffer<'_>, data: &'a PictureData) -> Option<&'a Image> {
+    let index = reader.read_int();
+    let image = usize::try_from(index)
+        .ok()
+        .and_then(|i| data.images().get(i));
+    if reader.validate(image.is_some()) {
+        image
     } else {
         None
     }
@@ -238,6 +269,36 @@ fn handle_op(
 // Port of: src/core/SkPicturePlayback.cpp#L526-L596 (chrome/m156), the draw arms of handleOp
 /// `DRAW_TEXT_BLOB`: the paint, the blob, and the origin of the blob.
 // Port of: src/core/SkPicturePlayback.cpp#L633-L641 (chrome/m156), DRAW_TEXT_BLOB
+/// Plays an image drawn into a rect (`DRAW_IMAGE_RECT2`): the paint (none means the default one),
+/// the image, the source and destination rects, the sampling and the constraint.
+// Port of: src/core/SkPicturePlayback.cpp#L507-L517 (chrome/m156), DRAW_IMAGE_RECT2
+fn play_draw_image_rect2(reader: &mut ReadBuffer<'_>, data: &PictureData, canvas: &Canvas) -> bool {
+    let paint = optional_paint(reader, data);
+    let Some(image) = get_image(reader, data) else {
+        return false;
+    };
+    let src = reader.read_rect();
+    let dst = reader.read_rect();
+    let sampling = reader.read_sampling();
+    // `read32LE(kFast_SrcRectConstraint)`
+    let constraint = match reader.read32_le(SrcRectConstraint::Fast as u32) {
+        0 => SrcRectConstraint::Strict,
+        _ => SrcRectConstraint::Fast,
+    };
+    if !reader.is_valid() {
+        return false;
+    }
+    let default_paint = Paint::default();
+    canvas.draw_image_rect_with_sampling_options(
+        image,
+        Some((&src, constraint)),
+        dst,
+        sampling,
+        paint.unwrap_or(&default_paint),
+    );
+    true
+}
+
 fn play_draw_text_blob(reader: &mut ReadBuffer<'_>, data: &PictureData, canvas: &Canvas) -> bool {
     let Some(paint) = required_paint(reader, data) else {
         return false;
@@ -361,6 +422,7 @@ fn handle_draw_op(
             reader.is_valid()
         }
         draw_type::DRAW_TEXT_BLOB => play_draw_text_blob(reader, data, canvas),
+        draw_type::DRAW_IMAGE_RECT2 => play_draw_image_rect2(reader, data, canvas),
         _ => false,
     }
 }

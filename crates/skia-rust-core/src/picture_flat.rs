@@ -42,6 +42,8 @@ pub(crate) mod draw_type {
     pub const DRAW_POINTS: u8 = 16;
     /// `DRAW_TEXT_BLOB`.
     pub const DRAW_TEXT_BLOB: u8 = 45;
+    /// `DRAW_IMAGE_RECT2`.
+    pub const DRAW_IMAGE_RECT2: u8 = 73;
     /// `DRAW_RECT`.
     pub const DRAW_RECT: u8 = 21;
     /// `DRAW_RRECT`.
