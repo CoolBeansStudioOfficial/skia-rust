@@ -6,6 +6,7 @@ members = [
     "crates/skia-rust-skcms",
     "crates/skia-rust-zlib",
     "crates/skia-rust-libpng",
+    "crates/skia-rust-wuffs",
     "crates/skia-rust-codec",
     "crates/skia-rust-core",
     "crates/skia-rust-raster",

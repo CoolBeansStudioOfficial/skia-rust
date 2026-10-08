@@ -610,6 +610,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-wuffs"
+version = "0.156.0"
+
+[[package]]
 name = "skia-rust-zlib"
 version = "0.156.0"
 
