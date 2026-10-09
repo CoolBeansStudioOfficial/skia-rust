@@ -36,7 +36,7 @@ use skia_rust_gpu::graphite::draw_types::{
 use skia_rust_gpu::graphite::draw_writer::{DrawPassCommandList, DrawWriter, Vertices};
 use skia_rust_gpu::graphite::geom::edge_aa_quad::{EdgeAAQuad, Flags as AAFlags};
 use skia_rust_gpu::graphite::geom::geometry::Geometry;
-use skia_rust_gpu::graphite::geom::non_msaa_clip::AnalyticClip;
+use skia_rust_gpu::graphite::geom::non_msaa_clip::NonMSAAClip;
 use skia_rust_gpu::graphite::geom::rect::Rect;
 use skia_rust_gpu::graphite::geom::shape::Shape;
 use skia_rust_gpu::graphite::geom::transform::Transform;
@@ -217,7 +217,7 @@ fn params_for(geometry: Geometry, bounds: SkRect, scissor: IRect) -> DrawParams 
         Rect::from_sk_rect(&bounds),
         Rect::from_sk_rect(&bounds),
         scissor,
-        AnalyticClip::default(),
+        NonMSAAClip::default(),
         false,
     );
     // Painter's depth 1: `depthAsFloat()` is then `1 - 1/65535`.
@@ -662,7 +662,7 @@ fn stroked_params(geometry: Geometry, bounds: SkRect, stroke: StrokeStyle) -> Dr
             right: 100,
             bottom: 100,
         },
-        AnalyticClip::default(),
+        NonMSAAClip::default(),
         false,
     );
     DrawParams::new(

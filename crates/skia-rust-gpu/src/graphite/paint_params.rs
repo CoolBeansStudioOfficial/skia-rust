@@ -18,10 +18,9 @@
 //!   Here a `PaintParams` owns clones of them (`Shader`, `Blender` and `ColorFilter` are cheap
 //!   reference-counted handles), so no lifetime has to be threaded through the params.
 //! - `SimpleImage` owns its image and local matrix, for the same reason.
-//! - `NonMSAAClip` (G10b, `ClipStack`) is not ported; its analytic half is
-//!   [`AnalyticClip`]. [`ShadingParams`] takes `Option<&AnalyticClip>` where Skia takes the
-//!   `NonMSAAClip`, and a non-empty analytic clip is keyed as an error block
-//!   (`AddAnalyticClip` is G10b). The atlas half is not representable yet.
+//! - [`ShadingParams`] takes `Option<&NonMSAAClip>` where Skia takes a `const NonMSAAClip&`
+//!   (`None` is the empty clip). The clip is keyed by `add_analytic_clip`; the atlas half of the
+//!   clip is only ever non-empty once the clip atlas (G12a) exists.
 //! - `AddToKey(const SimpleImage&)` needs `add_image_to_key`, the image-shader block builder that
 //!   `key_helpers::add_to_key_shader` does not dispatch yet; a `SimpleImage` is keyed as an error
 //!   block until then (see [`add_simple_image_to_key`]).
@@ -57,15 +56,15 @@ use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
 use crate::graphite::context_utils::can_use_hardware_blending;
 use crate::graphite::draw_types::DstUsage;
-use crate::graphite::geom::non_msaa_clip::AnalyticClip;
+use crate::graphite::geom::non_msaa_clip::NonMSAAClip;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::key_helpers::{
     AlphaOnlyPaintColorBlock, RGBPaintColorBlock, SolidColorShaderBlock, add_dither_block,
     add_to_key_shader,
 };
 use crate::graphite::key_helpers_ii::{
-    MeshShaderBlock, add_blend_mode, add_fixed_blend_mode, add_primitive_color, add_to_key_blender,
-    add_to_key_color_filter, blend, compose,
+    MeshShaderBlock, add_analytic_clip, add_blend_mode, add_fixed_blend_mode, add_primitive_color,
+    add_to_key_blender, add_to_key_color_filter, blend, compose,
 };
 #[cfg(debug_assertions)]
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
@@ -489,14 +488,14 @@ fn get_dst_usage(
     paint: &PaintParams,
     renderer_coverage: Coverage,
     clip_shader: Option<&Shader>,
-    analytic_clip: Option<&AnalyticClip>,
+    non_msaa_clip: Option<&NonMSAAClip>,
 ) -> DstUsage {
     let mut dst_usage = DstUsage::DEPENDS_ON_DST;
     if paint.final_blender().is_some() {
         dst_usage |= DstUsage::DST_READ_REQUIRED;
     } else {
         let has_analytic_clip =
-            clip_shader.is_some() || analytic_clip.is_some_and(|clip| !clip.is_empty());
+            clip_shader.is_some() || non_msaa_clip.is_some_and(|clip| !clip.is_empty());
         let mut effective_coverage = renderer_coverage;
         if effective_coverage == Coverage::None && has_analytic_clip {
             effective_coverage = Coverage::SingleChannel;
@@ -539,8 +538,7 @@ fn get_dst_usage(
 #[derive(Debug)]
 pub struct ShadingParams<'a> {
     paint: &'a PaintParams,
-    // The analytic half of `NonMSAAClip` (see the module docs).
-    analytic_clip: Option<&'a AnalyticClip>,
+    non_msaa_clip: Option<&'a NonMSAAClip>,
     clip_shader: Option<&'a Shader>,
 
     // Base (incomplete) dst usage that will be augmented by opacity analysis calculated in
@@ -556,13 +554,13 @@ pub struct ShadingParams<'a> {
 
 impl<'a> ShadingParams<'a> {
     /// The shading state of `paint` with the clip and coverage of a draw into `target_format`.
-    /// Does not copy `paint`, `analytic_clip` or `clip_shader`: they must outlive the params.
+    /// Does not copy `paint`, `non_msaa_clip` or `clip_shader`: they must outlive the params.
     // Port of: src/gpu/graphite/PaintParams.cpp#L245-L258 (chrome/m156)
     #[must_use]
     pub fn new(
         caps: &dyn Caps,
         paint: &'a PaintParams,
-        analytic_clip: Option<&'a AnalyticClip>,
+        non_msaa_clip: Option<&'a NonMSAAClip>,
         clip_shader: Option<&'a Shader>,
         coverage: Coverage,
         target_format: TextureFormat,
@@ -573,11 +571,11 @@ impl<'a> ShadingParams<'a> {
             paint,
             coverage,
             clip_shader,
-            analytic_clip,
+            non_msaa_clip,
         );
         Self {
             paint,
-            analytic_clip,
+            non_msaa_clip,
             clip_shader,
             dst_usage,
             coverage,
@@ -593,9 +591,9 @@ impl<'a> ShadingParams<'a> {
         self.dst_usage.contains(DstUsage::DST_READ_REQUIRED)
     }
 
-    /// Whether the non-MSAA analytic clip is non-empty (the `!isEmpty()` of `NonMSAAClip`).
+    /// Whether the non-MSAA clip is non-empty (the `!isEmpty()` of `NonMSAAClip`).
     fn has_analytic_clip(&self) -> bool {
-        self.analytic_clip.is_some_and(|clip| !clip.is_empty())
+        self.non_msaa_clip.is_some_and(|clip| !clip.is_empty())
     }
 
     /// Adds the paint's color (its shader, image or color) to the key. Returns whether the result
@@ -775,11 +773,17 @@ impl<'a> ShadingParams<'a> {
                     key_context,
                     /* addBlendToKey= */
                     || add_fixed_blend_mode(key_context, BlendMode::Modulate),
-                    /* addSrcToKey= */ || add_analytic_clip_to_key(key_context),
+                    /* addSrcToKey= */
+                    || {
+                        add_analytic_clip(
+                            key_context,
+                            self.non_msaa_clip.expect("a non-empty clip"),
+                        );
+                    },
                     /* addDstToKey= */ || add_to_key_shader(key_context, Some(clip_shader)),
                 );
             } else {
-                add_analytic_clip_to_key(key_context);
+                add_analytic_clip(key_context, self.non_msaa_clip.expect("a non-empty clip"));
             }
         } else {
             // Since there's no analytic clip, the clipping root node can be the clip shader
@@ -936,7 +940,7 @@ impl<'a> ShadingParams<'a> {
                 self.paint,
                 Coverage::None,
                 self.clip_shader,
-                self.analytic_clip,
+                self.non_msaa_clip,
             );
             // This checks is_opaque in addition to !paint_depends_on_dst to handle the case where
             // src-over + opaque wasn't converted to src for *this* pipeline but remains
@@ -1052,17 +1056,6 @@ impl<'a> ShadingParams<'a> {
 /// structure is kept with an error block.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L2688-L2702 (chrome/m156)
 fn add_simple_image_to_key(key_context: &KeyContext<'_>, _simple_image: &SimpleImage) {
-    key_context
-        .paint_params_key_builder()
-        .borrow_mut()
-        .add_error_block();
-}
-
-/// The analytic half of the non-MSAA clip as the clipping root node. Its block
-/// (`AddAnalyticClip`, the `NonMSAAClip` data and the atlas texture) is G10b's `ClipStack`, which
-/// is not ported; until then the structure is kept with an error block.
-// Port of: src/gpu/graphite/KeyHelpers.cpp (chrome/m156), `AddAnalyticClip`
-fn add_analytic_clip_to_key(key_context: &KeyContext<'_>) {
     key_context
         .paint_params_key_builder()
         .borrow_mut()

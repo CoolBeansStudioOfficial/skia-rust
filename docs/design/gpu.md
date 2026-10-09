@@ -544,6 +544,18 @@ with the full texts in the release, as in `rp-diff`.
   noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
   `PaintParamsKeyTest` (2) the Precompile API (G14).
 
+**Status after G10b** (`port/gpu-g10b`): `graphite::clip_stack::ClipStack` is the whole of
+`ClipStack.cpp` (element tree, `SaveRecord`s, combine/simplify, `visitClipStackForDraw`,
+`updateClipStateForDraw`, `recordDeferredClipDraws`, analytic clips, depth-only clip draws for both
+draw lists). The device calls back through `ClipDrawHooks`. `NonMSAAClip` (`AnalyticClip` +
+`AtlasClip`) is in `geom::non_msaa_clip`, and `ShadingParams` keys it with `AddAnalyticClip`
+(`key_helpers_ii::add_analytic_clip`, including the atlas block and its texture binding). The one
+seam is the clip atlas: `ClipAtlasManager` (G12a) is a trait that `visit_clip_stack_for_draw` calls
+exactly as the C++ does; the device passes `None`, so every non-analytic element is a depth-only
+clip draw until G12a. W2's clip paints and `ClipStackTest`-style checks are headless tests in
+`tests/clip_stack.rs`; Skia has no Graphite `ClipStack` unit test in m156 (the `GrClipStackTest`
+entries are Ganesh's `GrClipStack`).
+
 An identity local matrix is not elided anywhere in Skia: the gradient factories end with
 `makeWithLocalMatrix(lm ? *lm : SkMatrix::I())` and `SkShader::makeWithLocalMatrix` always wraps,
 and Graphite's key code for `SkLocalMatrixShader` folds the gradient's unit-space matrix into that

@@ -20,7 +20,8 @@
 //! - `TableColorFilterBlock` and `SkTableColorFilter`: the table is a cached proxy of the filter's
 //!   bitmap (`RecorderPriv::create_cached_proxy`) bound through the gatherer. Without a recorder,
 //!   or if the table cannot be created, the input color passes through (`kPriorOutput`).
-//! - `AddAnalyticClip` and the `NonMSAAClip` data: `NonMSAAClip` is G10b's `ClipStack`.
+//! - `AddAnalyticClip` (G10b) is at the end of this file; the `SK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER`
+//!   variant (`NonMSAAClipBlock`) is not built.
 //! - `AddDitherBlock` is in `KeyHelpers` I (`key_helpers::add_dither_block`), with the dither
 //!   shader, since it binds the cached dither LUT.
 //! - `SolidColorShaderBlock` is `KeyHelpers` I (G5b), which delegates to `solid_color_shader_add_block`
@@ -69,9 +70,11 @@ use skia_rust_skcms::{TfType, TransferFunction};
 
 use crate::gpu::blend::{get_porter_duff_blend_constants, get_reduced_blend_mode_info};
 use crate::graphite::built_in_code_snippet_id::{BuiltInCodeSnippetID, FIXED_BLEND_ID_OFFSET};
+use crate::graphite::geom::non_msaa_clip::{AnalyticClip, AtlasClip, NonMSAAClip};
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::resource_types::SamplerDesc;
+use skia_rust_core::rect::Rect as SkRect;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::table_color_filter::TableColorFilter;
 use skia_rust_core::tile_mode::TileMode;
@@ -1536,5 +1539,113 @@ pub fn add_to_key_color_filter(key_context: &KeyContext<'_>, filter: Option<&Col
             base.downcast_ref::<WorkingFormatColorFilter>()
                 .expect("a WorkingFormat filter is a WorkingFormatColorFilter"),
         ),
+    }
+}
+
+// ==================================================================
+// Analytic and atlas clips
+// ==================================================================
+
+// `kIntersectEncode` and `kDifferenceEncode`.
+const INTERSECT_ENCODE: [f32; 4] = [1.0, 1.0, -1.0, 1.0];
+const DIFFERENCE_ENCODE: [f32; 4] = [-1.0, 1.0, 1.0, 1.0];
+
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L1374-L1386 (chrome/m156), `add_analytic_clip_data`
+fn add_analytic_clip_data(scope: &mut ScopedUniformWriter<'_>, clip: &AnalyticClip) {
+    scope
+        .uniforms()
+        .write_vec([clip.xform[0], clip.xform[1], clip.xform[2], clip.xform[3]]);
+    scope.uniforms().write_rect(&clip.bounds);
+
+    let mut radii_with_inverse = [
+        clip.radii[0] + 1.0,
+        clip.radii[1] + 1.0,
+        clip.radii[2] + 1.0,
+        clip.radii[3] + 1.0,
+    ];
+
+    // See sk_analytic_clip comment in SkSL module file.
+    let encode = if clip.inverted {
+        INTERSECT_ENCODE
+    } else {
+        DIFFERENCE_ENCODE
+    };
+    for (r, e) in radii_with_inverse.iter_mut().zip(encode) {
+        *r *= e;
+    }
+    scope.uniforms().write_vec(radii_with_inverse);
+}
+
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L1388-L1406 (chrome/m156), `add_atlas_clip_data`
+#[allow(clippy::cast_precision_loss)] // mask and atlas sizes are small integers
+fn add_atlas_clip_data(scope: &mut ScopedUniformWriter<'_>, atlas_clip: &AtlasClip) {
+    let atlas_texture = atlas_clip
+        .atlas_texture
+        .as_ref()
+        .expect("an atlas clip has a texture");
+
+    let mask_size = atlas_clip.mask_bounds.size();
+    let mut tex_mask_bounds = SkRect::from_xywh(
+        atlas_clip.out_pos.x as f32,
+        atlas_clip.out_pos.y as f32,
+        mask_size.width as f32,
+        mask_size.height as f32,
+    );
+    // Outset bounds to capture some of the padding (necessary for inverse clip)
+    tex_mask_bounds.outset((0.5, 0.5));
+    let tex_coord_offset = [
+        (atlas_clip.out_pos.x - atlas_clip.mask_bounds.left) as f32,
+        (atlas_clip.out_pos.y - atlas_clip.mask_bounds.top) as f32,
+    ];
+
+    scope.uniforms().write_rect(&tex_mask_bounds);
+    scope.uniforms().write_vec(tex_coord_offset);
+    scope.uniforms().write_vec([
+        1.0 / atlas_texture.dimensions().width as f32,
+        1.0 / atlas_texture.dimensions().height as f32,
+    ]);
+}
+
+/// Adds either just the `AnalyticClip` or the `AnalyticAndAtlasClip` block, depending on the
+/// state of the clip.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L1408-L1433 (chrome/m156)
+#[doc(alias = "AddAnalyticClip")]
+pub fn add_analytic_clip(key_context: &KeyContext<'_>, clip: &NonMSAAClip) {
+    debug_assert!(!clip.is_empty());
+
+    let atlas_texture = clip.atlas_clip.atlas_texture.clone();
+    if let Some(atlas_texture) = atlas_texture {
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::AnalyticAndAtlasClip);
+        add_analytic_clip_data(&mut scope, &clip.analytic_clip);
+        add_atlas_clip_data(&mut scope, &clip.atlas_clip);
+
+        key_context
+            .paint_params_key_builder()
+            .borrow_mut()
+            .begin_block(BuiltInCodeSnippetID::AnalyticAndAtlasClip);
+        let info = key_context
+            .caps()
+            .get_immutable_sampler_info(atlas_texture.texture_info());
+        let sampler_desc = SamplerDesc::new_with_tile_modes(
+            &SamplingOptions::from(FilterMode::Nearest),
+            (TileMode::Clamp, TileMode::Clamp),
+            info,
+        );
+        scope.add_texture(Some(atlas_texture), sampler_desc);
+
+        key_context
+            .paint_params_key_builder()
+            .borrow_mut()
+            .end_block();
+        drop(scope);
+    } else {
+        let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::AnalyticClip);
+        add_analytic_clip_data(&mut scope, &clip.analytic_clip);
+        drop(scope);
+        key_context
+            .paint_params_key_builder()
+            .borrow_mut()
+            .add_block(BuiltInCodeSnippetID::AnalyticClip);
     }
 }

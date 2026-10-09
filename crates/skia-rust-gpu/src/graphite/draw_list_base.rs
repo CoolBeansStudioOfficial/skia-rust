@@ -538,6 +538,29 @@ pub enum DrawListBase {
     Layer(DrawListLayer),
 }
 
+/// `step->writeUniformsAndTextures(params, gatherer)`, inside the declaration of the step's
+/// uniforms that every C++ implementation makes itself
+/// (`SkDEBUGCODE(gatherer->checkRewind()); SkDEBUGCODE(UniformExpectationsValidator uev(gatherer,
+/// this->uniforms()))`), so the uniform manager validates what the step writes.
+// Port of: src/gpu/graphite/render/TessellateWedgesRenderStep.cpp#L212-L218 (chrome/m156), and
+// the other steps' `writeUniformsAndTextures()`
+pub(crate) fn write_step_uniforms_and_textures(
+    step: &dyn RenderStep,
+    params: &crate::graphite::draw_params::DrawParams,
+    gatherer: &mut PipelineDataGatherer,
+) {
+    #[cfg(debug_assertions)]
+    {
+        gatherer.check_rewind();
+        gatherer
+            .uniform_manager()
+            .set_expected_uniforms(step.base().uniforms(), /* is_substruct= */ false);
+    }
+    step.write_uniforms_and_textures(params, gatherer);
+    #[cfg(debug_assertions)]
+    gatherer.uniform_manager().done_with_expected_uniforms();
+}
+
 impl DrawListBase {
     fn state(&self) -> &DrawListBaseState {
         match self {
@@ -649,6 +672,32 @@ impl DrawListBase {
     #[must_use]
     pub fn load_op(&self) -> LoadOp {
         self.state().load_op
+    }
+
+    /// The paint order of the layer `id` (`Layer::fOrder`); `None` for the sort-based
+    /// `DrawList`, which has no layers.
+    #[must_use]
+    pub fn layer_order(
+        &self,
+        id: LayerId,
+    ) -> Option<crate::graphite::draw_order::CompressedPaintersOrder> {
+        match self {
+            DrawListBase::List(_) => None,
+            DrawListBase::Layer(list) => Some(list.layer_order(id)),
+        }
+    }
+
+    /// Updates a recorded depth-only clip draw (`DrawListLayer` only; a no-op for `DrawList`).
+    pub fn update_clip_draw(
+        &mut self,
+        id: DrawParamsId,
+        order: crate::graphite::draw_order::DrawOrder,
+        draw_bounds: Rect,
+        scissor: skia_rust_core::rect::IRect,
+    ) {
+        if let DrawListBase::Layer(list) = self {
+            list.update_clip_draw(id, order, draw_bounds, scissor);
+        }
     }
 
     /// The `DrawParams` of a recorded draw, if the list keeps them (`DrawListLayer`).

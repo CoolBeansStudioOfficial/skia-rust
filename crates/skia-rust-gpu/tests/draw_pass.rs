@@ -564,7 +564,7 @@ fn a_flood_fill_of_an_opaque_color_is_a_clear() {
 }
 
 #[test]
-fn a_device_rect_clip_sets_the_scissor() {
+fn a_device_rect_clip_is_applied_to_the_geometry() {
     for (name, context) in contexts(false) {
         let recorder = context.make_recorder(None);
         let mut device = make_device(&recorder, 64);
@@ -585,11 +585,10 @@ fn a_device_rect_clip_sets_the_scissor() {
         let [pass] = &snapped.passes[..] else {
             panic!("{name}: one pass");
         };
-        assert_eq!(
-            pass.scissors(),
-            [IRect::from_wh(64, 64), IRect::new(8, 8, 24, 24)],
-            "{name}"
-        );
+        // The clip is applied to the draw's geometry (the rect is intersected with the clip), so
+        // the draw stays inside the snapped scissor of the clip (4, 4, 28, 28) and needs no
+        // scissor of its own.
+        assert_eq!(pass.scissors(), [IRect::from_wh(64, 64)], "{name}");
         assert_eq!(pass.drawn(), 1, "{name}");
 
         // A draw outside the clip records nothing.

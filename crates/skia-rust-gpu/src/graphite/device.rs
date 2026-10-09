@@ -19,8 +19,9 @@
 //!
 //! # What is not here yet
 //!
-//! - `ClipStack` is G10b: the device calls it through the [`ClipStack`] seam, with
-//!   [`BasicClipStack`] behind it (wide open and pixel-aligned rectangle clips only).
+//! - `ClipStack` (G10b) is the device's clip; the clip atlas it can hand draws (`ClipAtlasManager`)
+//!   is G12a, so the device passes none and every clip element that is not analytic is a
+//!   depth-only clip draw.
 //! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
 //!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawSpecial()`, `snapSpecial()`,
 //!   `drawCoverageMask()`, `drawBlurredRRect()` and the image filtering backend (G10c), and
@@ -64,7 +65,7 @@ use crate::gpu::backing_fit::{BackingFit, get_approx_size};
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Renderable};
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::clip_stack::{
-    BasicClipStack, ClipDrawHooks, ClipStack, ClipState, ElementList, PixelSnapping,
+    ClipDrawHooks, ClipStack, ClipState, ElementList, PixelSnapping,
 };
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::draw_list_base::MAX_RENDER_STEPS;
@@ -410,7 +411,7 @@ pub struct DeviceCore {
     last_task: Option<TaskRef>,
 
     // `None` only while a call into the clip stack lends the core to it as its `ClipDrawHooks`.
-    clip: Option<Box<dyn ClipStack>>,
+    clip: Option<ClipStack>,
 
     // TODO (thomsmit): remove these when layering is added
     // Tracks accumulated intersections for ordering dependent use of the color and depth
@@ -705,6 +706,16 @@ impl Device {
         self.core.borrow().dc.pending_render_steps()
     }
 
+    /// Reads the device's clip stack, for tests that check the element tree.
+    pub fn testing_only_with_clip_stack<R>(&self, f: impl FnOnce(&ClipStack) -> R) -> R {
+        f(self.core.borrow().clip())
+    }
+
+    /// Reads the device's `DrawContext`, for tests that check the pending draws.
+    pub fn testing_only_with_draw_context<R>(&self, f: impl FnOnce(&DrawContext) -> R) -> R {
+        f(&self.core.borrow().dc)
+    }
+
     /// `drawEdgeAAQuad(rect, clip, aaFlags, color, mode)`.
     // Port of: src/gpu/graphite/Device.cpp#L1419-L1433 (chrome/m156)
     #[doc(alias = "drawEdgeAAQuad")]
@@ -773,7 +784,7 @@ impl DeviceCore {
             recorder,
             dc,
             last_task: None,
-            clip: Some(Box::new(BasicClipStack::new(width, height))),
+            clip: Some(ClipStack::new(width, height)),
             color_depth_bounds_manager: Rc::new(RefCell::new(HybridBoundsManager::new(
                 dimensions,
                 GRID_CELL_SIZE,
@@ -811,14 +822,14 @@ impl DeviceCore {
         self.recorder.upgrade().map(Recorder::from_inner)
     }
 
-    fn clip(&self) -> &dyn ClipStack {
-        &**self.clip.as_ref().expect("the clip stack is not lent out")
+    fn clip(&self) -> &ClipStack {
+        self.clip.as_ref().expect("the clip stack is not lent out")
     }
 
     // Calls `f` with the clip stack and the core as its hooks.
-    fn with_clip<R>(&mut self, f: impl FnOnce(&mut dyn ClipStack, &mut DeviceCore) -> R) -> R {
+    fn with_clip<R>(&mut self, f: impl FnOnce(&mut ClipStack, &mut DeviceCore) -> R) -> R {
         let mut clip = self.clip.take().expect("the clip stack is not lent out");
-        let result = f(&mut *clip, self);
+        let result = f(&mut clip, self);
         self.clip = Some(clip);
         result
     }
@@ -1081,7 +1092,7 @@ impl DeviceCore {
     ) -> bool {
         // Must also account for the elements in the clip stack that might need to be recorded.
         num_new_render_steps +=
-            self.clip().elements().len() * crate::graphite::renderer::MAX_RENDER_STEPS;
+            self.clip().max_deferred_clip_draws() * crate::graphite::renderer::MAX_RENDER_STEPS;
         // Need flush if we don't have room to record into the current list.
         (MAX_RENDER_STEPS - self.dc.pending_render_steps()) < num_new_render_steps
             // Need flush if this draw needs to copy the dst surface for reading.
@@ -1104,8 +1115,11 @@ impl DeviceCore {
         if ty == ClipState::WideOpen || ty == ClipState::Empty {
             false
         } else if ty == ClipState::DeviceRect {
-            let elements = self.clip().elements();
-            let rect = &elements[0];
+            let rect = self
+                .clip()
+                .elements()
+                .next()
+                .expect("a device-rect clip has an element");
             debug_assert!(
                 rect.shape.is_rect() && rect.local_to_device.type_() == TransformType::Identity
             );
@@ -2136,6 +2150,8 @@ impl DeviceCore {
             &mut geometry,
             style,
             &mut clip_elements,
+            // (The clip atlas is G12a: without it the remaining elements are depth-only draws.)
+            None,
         );
         if clip.is_clipped_out() {
             // Clipped out, so don't record anything.
@@ -2707,6 +2723,26 @@ impl ClipDrawHooks for DeviceCore {
 
     fn update_next_depth_for_clipping(&mut self, depth: PaintersDepth) {
         self.update_next_depth_for_clipping_impl(depth);
+    }
+
+    fn use_draw_list_layer(&self) -> bool {
+        self.recorder()
+            .is_some_and(|recorder| recorder.priv_().caps().use_draw_list_layer())
+    }
+
+    fn update_clip_draw(
+        &mut self,
+        params: DrawParamsId,
+        order: DrawOrder,
+        draw_bounds: Rect,
+        scissor: IRect,
+    ) {
+        self.dc
+            .update_clip_draw(params, order, draw_bounds, scissor);
+    }
+
+    fn layer_order(&self, layer: LayerId) -> Option<CompressedPaintersOrder> {
+        self.dc.layer_order(layer)
     }
 }
 
