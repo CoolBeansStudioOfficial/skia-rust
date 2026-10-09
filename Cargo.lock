@@ -1121,8 +1121,37 @@ checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
 name = "skia-rust"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-pathops",
+]
+
+[[package]]
+name = "skia-rust-bench"
+version = "0.156.0"
+dependencies = [
+ "inventory",
+ "serde_json",
+ "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-pathops",
+ "skia-rust-raster",
+ "skia-rust-simd",
+ "skia-rust-skcms",
+ "skia-rust-tools",
+]
+
+[[package]]
+name = "skia-rust-codec"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+ "skia-rust-libjpeg",
+ "skia-rust-libpng",
+ "skia-rust-libwebp",
+ "skia-rust-raster",
+ "skia-rust-skcms",
+ "skia-rust-wuffs",
 ]
 
 [[package]]
@@ -1132,6 +1161,7 @@ dependencies = [
  "bitflags",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-sksl",
 ]
 
 [[package]]
@@ -1152,6 +1182,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-raster",
@@ -1170,6 +1201,21 @@ dependencies = [
  "skia-rust-simd",
  "wgpu",
 ]
+
+[[package]]
+name = "skia-rust-libjpeg"
+version = "0.156.0"
+
+[[package]]
+name = "skia-rust-libpng"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-zlib",
+]
+
+[[package]]
+name = "skia-rust-libwebp"
+version = "0.156.0"
 
 [[package]]
 name = "skia-rust-pathops"
@@ -1206,9 +1252,18 @@ name = "skia-rust-skcms"
 version = "0.156.0"
 
 [[package]]
+name = "skia-rust-sksl"
+version = "0.156.0"
+dependencies = [
+ "bitflags",
+ "skia-rust-simd",
+]
+
+[[package]]
 name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-gpu",
@@ -1216,6 +1271,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-sksl",
  "skia-rust-text",
  "skia-rust-tools",
 ]
@@ -1239,6 +1295,14 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-text",
 ]
+
+[[package]]
+name = "skia-rust-wuffs"
+version = "0.156.0"
+
+[[package]]
+name = "skia-rust-zlib"
+version = "0.156.0"
 
 [[package]]
 name = "skrifa"
