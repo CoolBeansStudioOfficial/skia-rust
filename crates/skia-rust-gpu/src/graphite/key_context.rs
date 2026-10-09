@@ -15,12 +15,14 @@
 //!   C++; here they are `&RefCell`s.
 //! - `KeyContext` holds the local matrix by value, so `KeyContextWithLocalMatrix` (which keeps
 //!   the concatenated matrix in its own storage) is [`KeyContext::with_local_matrix`].
-//! - `DrawContext` (G10a) is not ported yet. The context keeps the one thing it reads from it,
-//!   the format of the target's texture (`targetFormat()`), and the recorder constructor takes
-//!   that format where Skia takes the `DrawContext*`.
+//! - The context keeps the one thing it reads from the `DrawContext`, the format of the target's
+//!   texture (`targetFormat()`). [`KeyContext::new_with_draw_context`] is the constructor that
+//!   takes the `DrawContext` (as Skia's does); [`KeyContext::new_with_recorder`] takes the format
+//!   for callers that have no `DrawContext`.
 //! - `PaintParams::Color4fPrepForDst` lives in [`crate::graphite::paint_params`].
 
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use bitflags::bitflags;
@@ -36,12 +38,14 @@ use skia_rust_core::runtime_effect::RuntimeEffect;
 use skia_rust_core::runtime_effect_priv;
 
 use crate::graphite::caps::Caps;
+use crate::graphite::draw_context::DrawContext;
 use crate::graphite::paint_params::color4f_prep_for_dst;
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
+use crate::graphite::storage_context::StorageContext;
 use crate::graphite::texture_format::TextureFormat;
 
 bitflags! {
@@ -87,6 +91,9 @@ pub struct KeyContext<'a> {
     // Fields which will not change over the course of building a paint key
     caps: Arc<dyn Caps>,
     recorder: Option<&'a Recorder>,
+    // `fDC->storageContext()`: where large gradients write their stops. `None` without a
+    // `DrawContext` (the `fDC` of Skia is null there).
+    storage_context: Option<Rc<RefCell<StorageContext>>>,
     target_format: Option<TextureFormat>,
     paint_params_key_builder: &'a RefCell<PaintParamsKeyBuilder>,
     pipeline_data_gatherer: &'a RefCell<PipelineDataGatherer>,
@@ -133,6 +140,7 @@ impl<'a> KeyContext<'a> {
         Self {
             caps,
             recorder: None,
+            storage_context: None,
             target_format: None,
             paint_params_key_builder,
             pipeline_data_gatherer,
@@ -169,6 +177,7 @@ impl<'a> KeyContext<'a> {
         let mut context = Self {
             caps: priv_.caps().clone(),
             recorder: Some(recorder),
+            storage_context: None,
             target_format: Some(target_format),
             paint_params_key_builder,
             pipeline_data_gatherer,
@@ -186,6 +195,53 @@ impl<'a> KeyContext<'a> {
             .premul();
         context.paint_color.a = paint_color.a;
         context
+    }
+
+    /// Constructor for the `ExtractPaintData` code path of a draw (i.e., with a `Recorder` and
+    /// the `DrawContext` the draw is recorded into).
+    // Port of: src/gpu/graphite/KeyContext.cpp#L33-L56 (chrome/m156)
+    #[must_use]
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ constructor
+    #[allow(clippy::missing_panics_doc)] // the panics are SkASSERT-style invariants of the C++
+    pub fn new_with_draw_context(
+        recorder: &'a Recorder,
+        draw_context: &DrawContext,
+        paint_params_key_builder: &'a RefCell<PaintParamsKeyBuilder>,
+        pipeline_data_gatherer: &'a RefCell<PipelineDataGatherer>,
+        local2dev: &M44,
+        clip_draw_bounds: &Rect,
+        dst_color_info: &ColorInfo,
+        initial_flags: KeyGenFlags,
+        paint_color: &Color4f,
+    ) -> Self {
+        // `targetFormat()` is `fDC->target().proxy()->format()`.
+        let target_format = draw_context
+            .target()
+            .proxy()
+            .expect("a DrawContext has a target")
+            .format();
+        let mut context = Self::new_with_recorder(
+            recorder,
+            target_format,
+            paint_params_key_builder,
+            pipeline_data_gatherer,
+            local2dev,
+            clip_draw_bounds,
+            dst_color_info,
+            initial_flags,
+            paint_color,
+        );
+        context.storage_context = Some(draw_context.storage_context().clone());
+        context
+    }
+
+    /// `drawContext()->storageContext()`: the storage context of the `DrawContext` the key is
+    /// made for, if there is one.
+    // Port of: src/gpu/graphite/KeyContext.h (drawContext) (chrome/m156)
+    #[doc(alias = "storageContext")]
+    #[must_use]
+    pub fn storage_context(&self) -> Option<&Rc<RefCell<StorageContext>>> {
+        self.storage_context.as_ref()
     }
 
     /// `KeyContext(const KeyContext&, xtraFlags)`: a copy with `xtra_flags` added to its flags.
@@ -208,6 +264,7 @@ impl<'a> KeyContext<'a> {
         let mut context = KeyContext {
             caps: self.caps.clone(),
             recorder: self.recorder,
+            storage_context: self.storage_context.clone(),
             target_format: self.target_format,
             paint_params_key_builder,
             pipeline_data_gatherer,

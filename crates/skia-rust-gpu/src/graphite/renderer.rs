@@ -158,7 +158,10 @@ impl Renderer {
 }
 
 // Port of: src/gpu/graphite/Renderer.h#L226-L228 (chrome/m156), `fDepthStencilFlags |=`
-fn or_depth_stencil_flags(a: DepthStencilFlags, b: DepthStencilFlags) -> DepthStencilFlags {
+pub(crate) fn or_depth_stencil_flags(
+    a: DepthStencilFlags,
+    b: DepthStencilFlags,
+) -> DepthStencilFlags {
     let bits = |f: DepthStencilFlags| match f {
         DepthStencilFlags::None => 0_u8,
         DepthStencilFlags::Depth => 1,
@@ -175,7 +178,7 @@ fn or_depth_stencil_flags(a: DepthStencilFlags, b: DepthStencilFlags) -> DepthSt
 
 // Port of: src/gpu/graphite/DrawTypes.h (DepthStencilSettings), the `depthStencilFlags()` of
 // RenderStep: stencil if the stencil test is on, depth if depth testing or writing is on.
-fn depth_stencil_flags_of(
+pub(crate) fn depth_stencil_flags_of(
     settings: &crate::graphite::draw_types::DepthStencilSettings,
 ) -> DepthStencilFlags {
     let stencil = if settings.stencil_test_enabled {

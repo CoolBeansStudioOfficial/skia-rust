@@ -13,15 +13,21 @@
 //! runtime-effect dictionary and the `ThreadSafeResourceProvider` come with G9b, G6 and G11b;
 //! `createGraphicsPipeline` comes with `GraphicsPipeline` (G11b).
 
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::graphite::buffer::Buffer;
+use crate::graphite::buffer_manager::{StaticBufferHost, StaticBufferManager, StaticFinishResult};
 use crate::graphite::caps::Caps;
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::recorder::RecorderSharedContext;
+use crate::graphite::renderer_provider::RendererProvider;
+use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::Layout;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
+use crate::graphite::task::TaskRef;
+use crate::graphite::upload_buffer_manager::UploadBufferManager;
 use crate::graphite::wgpu::async_wait::create_checked;
 use crate::graphite::wgpu::caps::{
     COMBINED_UNIFORM_INDEX, CapsProfile, INTRINSIC_UNIFORM_BUFFER_INDEX, STORAGE_BUFFER_INDEX,
@@ -79,6 +85,42 @@ pub struct WgpuSharedContext {
 
     uniform_buffers_bind_group_layouts: [wgpu::BindGroupLayout; 4],
     single_texture_sampler_bind_group_layout: wgpu::BindGroupLayout,
+
+    // `fRendererProvider`: made on first use. `SharedContext::setRendererProvider()` fills it in
+    // Skia when the context finishes its initialization (G9b), which also uploads the static
+    // vertex and index data of the renderers; until then the static buffers are not uploaded.
+    renderer_provider: OnceLock<RendererProvider>,
+    // The copy tasks that fill the renderers' static buffers and the static buffers themselves
+    // (`GlobalCache::addStaticResource()`): the `Context` hands the tasks to its queue manager
+    // when it is finished initializing (G9b), which is the first submission that has them.
+    static_buffer_tasks: Mutex<Vec<TaskRef>>,
+    static_buffers: Mutex<Vec<ResourceRef<Buffer>>>,
+}
+
+// The `Context` side of `StaticBufferManager::finalize()` until G9b: the copy tasks wait in the
+// shared context, and the static buffers stay alive with it.
+struct StaticBuffers<'a> {
+    tasks: &'a Mutex<Vec<TaskRef>>,
+    buffers: &'a Mutex<Vec<ResourceRef<Buffer>>>,
+}
+
+impl StaticBufferHost for StaticBuffers<'_> {
+    fn add_upload_buffer_manager_refs(&mut self, _upload_manager: &mut UploadBufferManager) {}
+
+    fn add_task(&mut self, task: &TaskRef, _is_protected: Protected) -> bool {
+        self.tasks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(task.clone());
+        true
+    }
+
+    fn add_static_resource(&mut self, buffer: ResourceRef<Buffer>) {
+        self.buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(buffer);
+    }
 }
 
 // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L21-L40 (chrome/m156)
@@ -150,6 +192,9 @@ impl WgpuSharedContext {
             noop_fragment,
             uniform_buffers_bind_group_layouts,
             single_texture_sampler_bind_group_layout,
+            renderer_provider: OnceLock::new(),
+            static_buffer_tasks: Mutex::new(Vec::new()),
+            static_buffers: Mutex::new(Vec::new()),
         }))
     }
 
@@ -222,6 +267,20 @@ impl WgpuSharedContext {
         if self.has_tick {
             self.tick();
         }
+    }
+
+    /// The copy tasks that fill the renderers' static buffers (`QueueManager::addTask()` in
+    /// `Context::finishInitialization`), taken out of the shared context. Empty until the renderer
+    /// provider exists, and after the tasks have been taken.
+    #[must_use]
+    pub fn take_static_buffer_tasks(&self) -> Vec<TaskRef> {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        std::mem::take(
+            &mut *self
+                .static_buffer_tasks
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
     }
 
     /// `getUniformBuffersBindGroupLayout()`: the layout of the uniform buffers bind group for
@@ -355,6 +414,27 @@ impl RecorderSharedContext for WgpuSharedContext {
 
     fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
         &self.shader_dictionary
+    }
+
+    // Port of: src/gpu/graphite/SharedContext.cpp (rendererProvider), RendererProvider.cpp#L87
+    fn renderer_provider(&self) -> &RendererProvider {
+        self.renderer_provider.get_or_init(|| {
+            let resource_provider = Arc::new(Mutex::new(self.make_resource_provider(0, 0)));
+            let mut buffer_manager = StaticBufferManager::new(resource_provider, &*self.caps);
+            let renderer_provider = RendererProvider::new(
+                self.caps
+                    .resource_binding_requirements()
+                    .uniform_buffer_layout,
+                self.caps.shader_caps().infinity_support,
+                &mut buffer_manager,
+            );
+            let result = buffer_manager.finalize(&mut StaticBuffers {
+                tasks: &self.static_buffer_tasks,
+                buffers: &self.static_buffers,
+            });
+            debug_assert_ne!(result, StaticFinishResult::Failure);
+            renderer_provider
+        })
     }
 
     // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L89-L98 (chrome/m156)

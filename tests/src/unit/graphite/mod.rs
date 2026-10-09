@@ -11,6 +11,7 @@ pub mod pipeline_data_cache_test;
 pub mod rect_test;
 pub mod rt_effect_test;
 pub mod shape_test;
+pub mod storage_context_test;
 pub mod swizzle_test;
 pub mod texture_format_test;
 pub mod texture_proxy_test;

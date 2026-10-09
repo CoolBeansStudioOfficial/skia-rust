@@ -1,8 +1,8 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Checks the offsets and sizes of `StorageContext` against the expectations of
-// tests/graphite/StorageContextTest.cpp. The 1:1 test needs `DrawContext::Make` (G10a), so these
-// checks are this crate's own: they run the same arithmetic on the noop device without it.
+// tests/graphite/StorageContextTest.cpp. The 1:1 port is tests/src/unit/graphite/
+// storage_context_test.rs; these checks are this crate's own and also check the dependency count.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -71,7 +71,7 @@ fn storage_context_offsets_and_sizes() {
     assert_eq!(ctx.running_lcm(), 16);
 
     let mut dependencies = 0;
-    let result = ctx.finalize(&recorder, &mut |_| dependencies += 1);
+    let result = ctx.finalize(&recorder.priv_(), &mut |_| dependencies += 1);
     assert!(result.is_some());
     match result {
         Some(StorageContextResult::Buffer(bind)) => {
@@ -115,7 +115,7 @@ fn storage_context_append_vertices_offsets() {
     assert_eq!(v_offset, expected_v_offset);
 
     let mut dependencies = 0;
-    let result = ctx.finalize(&recorder, &mut |_| dependencies += 1);
+    let result = ctx.finalize(&recorder.priv_(), &mut |_| dependencies += 1);
     if let Some(StorageContextResult::Buffer(bind)) = result {
         assert_eq!(bind.size, 96);
         assert_eq!(bind.size % 48, 0);

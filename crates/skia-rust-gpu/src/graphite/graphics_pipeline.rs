@@ -12,10 +12,24 @@
 use std::any::Any;
 use std::fmt::Debug;
 
+use crate::graphite::draw_types::PipelineStageFlags;
+
 /// A graphics pipeline, as far as the task graph is concerned.
 // Port of: src/gpu/graphite/GraphicsPipeline.h (chrome/m156)
 #[doc(alias = "skgpu::graphite::GraphicsPipeline")]
 pub trait GraphicsPipeline: Send + Sync + Debug {
     /// For downcasting to the concrete pipeline.
     fn as_any(&self) -> &dyn Any;
+
+    /// `storageBufferStages()`: the shader stages that read a storage buffer.
+    fn storage_buffer_stages(&self) -> PipelineStageFlags {
+        PipelineStageFlags::NONE
+    }
+
+    /// `getLabel()`.
+    #[doc(alias = "getLabel")]
+    #[allow(clippy::unnecessary_literal_bound)] // implementors may return a borrowed label
+    fn label(&self) -> &str {
+        ""
+    }
 }

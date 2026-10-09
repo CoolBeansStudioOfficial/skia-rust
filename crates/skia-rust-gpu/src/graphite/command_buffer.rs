@@ -40,6 +40,31 @@ pub struct BufferTextureCopyData {
     pub mip_level: u32,
 }
 
+/// Specifies a scissor, which can only be subsequently queried given a translation and clip which
+/// are assumed to be applied to all commands in the render pass in which the scissor is set.
+// Port of: src/gpu/graphite/CommandTypes.h#L28-L42 (chrome/m156)
+#[doc(alias = "skgpu::graphite::Scissor")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Scissor {
+    rect: IRect,
+}
+
+impl Scissor {
+    /// `Scissor(rect)`.
+    #[must_use]
+    pub const fn new(rect: IRect) -> Self {
+        Self { rect }
+    }
+
+    /// `getRect(replayTranslation, replayClip)`.
+    #[doc(alias = "getRect")]
+    #[must_use]
+    pub fn get_rect(&self, replay_translation: IPoint, replay_clip: IRect) -> IRect {
+        let rect = self.rect.with_offset(replay_translation);
+        IRect::intersect(&rect, &replay_clip).unwrap_or_else(IRect::new_empty)
+    }
+}
+
 /// The `CommandBuffer` calls made by tasks and managers.
 ///
 /// Buffers and textures that Skia passes as `const T*` (not owned by the task) are passed as

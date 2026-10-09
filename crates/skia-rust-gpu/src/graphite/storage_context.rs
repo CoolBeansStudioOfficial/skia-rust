@@ -6,9 +6,9 @@
 //! `StorageContext`: the per-recording CPU copy of gradient data and appended vertices, written
 //! into one storage buffer (or, without storage-buffer support, a fallback RGBA32F texture).
 //!
-//! `finalize()` takes the texture path's `DrawContext::recordDependency` as a closure: the
-//! `DrawContext` is G10a and does not exist yet. The closure receives the upload task, which the
-//! caller records exactly where `recordDependency` would have put it.
+//! `finalize()` takes the texture path's `DrawContext::recordDependency` as a closure, and the
+//! recorder as its `RecorderPriv` (a device holds the recorder weakly). The closure receives the
+//! upload task, which `DrawContext` records with its `recordDependency`.
 
 // The size_t, int and uint32_t casts below mirror the C++ arithmetic of StorageContext.cpp, whose
 // offsets and sizes are checked against the limits before each cast.
@@ -31,7 +31,7 @@ use skia_rust_effects::gradient_base_shader::GradientBaseShader;
 use crate::gpu::gpu_types::Budgeted;
 use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::buffer_manager::buffer_aligner;
-use crate::graphite::recorder::Recorder;
+use crate::graphite::recorder::RecorderPriv;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::upload_task::{MipLevel, UploadInstance, UploadSource, UploadTask};
 use crate::graphite::texture_format::{TextureFormat, read_swizzle_for_color_type};
@@ -147,12 +147,23 @@ impl StorageContext {
         num_stops: i32,
         shader: &GradientBaseShader,
     ) -> (Option<&mut [f32]>, i32) {
+        self.allocate_gradient_data_for(num_stops, std::ptr::from_ref(shader) as usize)
+    }
+
+    /// [`allocate_gradient_data`](Self::allocate_gradient_data) for a shader known by its address
+    /// (`shader_key`), which is what the key code that no longer holds the shader has.
+    #[doc(alias = "allocateGradientData")]
+    pub fn allocate_gradient_data_for(
+        &mut self,
+        num_stops: i32,
+        shader_key: usize,
+    ) -> (Option<&mut [f32]>, i32) {
         debug_assert!(!self.is_finalized());
         if num_stops > MAX_GRADIENT_STOPS {
             return (None, -1);
         }
 
-        let key = std::ptr::from_ref(shader) as usize;
+        let key = shader_key;
         if let Some(&existing_local_offset) =
             self.gradient_cache.local_gradient_offset_cache.get(&key)
         {
@@ -277,7 +288,7 @@ impl StorageContext {
     // Port of: src/gpu/graphite/StorageContext.cpp#L166-L183 (chrome/m156)
     pub fn finalize(
         &mut self,
-        recorder: &Recorder,
+        recorder: &RecorderPriv<'_>,
         record_dependency: &mut dyn FnMut(TaskRef),
     ) -> Option<StorageContextResult> {
         debug_assert!(self.is_finalized());
@@ -333,8 +344,9 @@ impl StorageContext {
 
     /// `finalizeStorageBuffer(recorder)`.
     // Port of: src/gpu/graphite/StorageContext.cpp#L185-L211 (chrome/m156)
-    fn finalize_storage_buffer(&self, recorder: &Recorder) -> Option<BindBufferInfo> {
-        let priv_ = recorder.priv_();
+    #[allow(clippy::trivially_copy_pass_by_ref)] // mirrors the C++ `Recorder*` parameter
+    fn finalize_storage_buffer(&self, recorder: &RecorderPriv<'_>) -> Option<BindBufferInfo> {
+        let priv_ = recorder;
         let buffer_mgr = priv_.draw_buffer_manager();
 
         let total_bytes = self.gradient_cache.gradient_data_size + self.vertex_data.len();
@@ -358,9 +370,10 @@ impl StorageContext {
 
     /// `finalizeTexture(recorder, drawContext)`.
     // Port of: src/gpu/graphite/StorageContext.cpp#L213-L285 (chrome/m156)
+    #[allow(clippy::trivially_copy_pass_by_ref)] // mirrors the C++ `Recorder*` parameter
     fn finalize_texture(
         &self,
-        recorder: &Recorder,
+        recorder: &RecorderPriv<'_>,
         record_dependency: &mut dyn FnMut(TaskRef),
     ) -> Option<Arc<TextureProxy>> {
         let grad_size = self.gradient_cache.gradient_data_size;
@@ -389,7 +402,7 @@ impl StorageContext {
             upload_buffer[grad_size..grad_size + vert_size].copy_from_slice(&self.vertex_data);
         }
 
-        let priv_ = recorder.priv_();
+        let priv_ = recorder;
         let caps = priv_.caps();
         let texture_info =
             caps.get_default_readable_texture_info(TEXTURE_FORMAT, priv_.is_protected());

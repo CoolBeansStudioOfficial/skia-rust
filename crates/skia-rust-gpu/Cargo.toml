@@ -15,6 +15,7 @@ skia-rust-effects.workspace = true
 skia-rust-simd.workspace = true
 skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-skcms.workspace = true
+skia-rust-raster.workspace = true
 bitflags.workspace = true
 
 # wgpu backend (docs/design/gpu.md §4.1). Native targets get every backend wgpu enables by

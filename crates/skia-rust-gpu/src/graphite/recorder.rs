@@ -41,9 +41,13 @@ use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
 use crate::graphite::context_priv::SharedResourceProvider;
+use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::graphite_types::InsertFinishInfo;
+use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
+use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::recording::{LazyProxyData, Recording};
+use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResourceManager};
@@ -115,6 +119,18 @@ pub trait RecorderSharedContext: Send + Sync + std::fmt::Debug {
     /// `makeResourceProvider()`: a resource provider with its own resource cache.
     #[doc(alias = "makeResourceProvider")]
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider;
+
+    /// `rendererProvider()`: the renderers draws are recorded with. They are shared by the
+    /// context and all its recorders (`SharedContext::rendererProvider()`).
+    #[doc(alias = "rendererProvider")]
+    fn renderer_provider(&self) -> &RendererProvider;
+
+    /// `pipelineManager()`: the pipeline manager draw passes create their pipelines with.
+    /// `None` until `PipelineManager` is ported (G9b); draw passes then cannot create pipelines.
+    #[doc(alias = "pipelineManager")]
+    fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
+        None
+    }
 }
 
 /// What the recorder calls on the devices that draw through it (`Device`, ported with G10a,
@@ -159,6 +175,22 @@ fn next_id() -> u32 {
 /// `SK_InvalidGenID`.
 const SK_INVALID_GEN_ID: u32 = 0;
 
+/// `Recorder::kMaxKeyAndDataBuilders`.
+// Port of: include/gpu/graphite/Recorder.h#L252 (chrome/m156)
+const MAX_KEY_AND_DATA_BUILDERS: usize = 2;
+
+/// The scratch state a draw collects its paint key and data in (`KeyAndDataBuilder`, a
+/// `std::pair<PipelineDataGatherer, PaintParamsKeyBuilder>`). Both are in `RefCell`s because the
+/// `KeyContext` that walks a paint holds them by shared reference, as it holds pointers in C++.
+// Port of: include/gpu/graphite/Recorder.h (KeyAndDataBuilder) (chrome/m156)
+#[derive(Debug)]
+pub struct KeyAndDataBuilder {
+    /// `first`.
+    pub gatherer: RefCell<PipelineDataGatherer>,
+    /// `second`.
+    pub builder: RefCell<PaintParamsKeyBuilder>,
+}
+
 /// The recorder's state; devices hold a `Weak` to it.
 #[doc(alias = "skgpu::graphite::Recorder")]
 pub struct RecorderInner {
@@ -189,6 +221,8 @@ pub struct RecorderInner {
     target_proxy_data: RefCell<Option<LazyProxyData>>,
 
     is_flushing_tracked_devices: Cell<bool>,
+
+    key_and_data_builders: RefCell<Vec<KeyAndDataBuilder>>,
 }
 
 impl std::fmt::Debug for RecorderInner {
@@ -270,6 +304,7 @@ impl Recorder {
                 finished_procs: RefCell::new(Vec::new()),
                 target_proxy_data: RefCell::new(None),
                 is_flushing_tracked_devices: Cell::new(false),
+                key_and_data_builders: RefCell::new(Vec::new()),
             }),
         }
     }
@@ -278,6 +313,13 @@ impl Recorder {
     #[must_use]
     pub fn downgrade(&self) -> Weak<RecorderInner> {
         Rc::downgrade(&self.inner)
+    }
+
+    /// A handle on the recorder a device upgraded its `Weak<RecorderInner>` to. Dropping the
+    /// handle only drops that reference: it does not end the recorder.
+    #[must_use]
+    pub fn from_inner(inner: Rc<RecorderInner>) -> Self {
+        Self { inner }
     }
 
     /// `priv()`.
@@ -398,7 +440,15 @@ impl Recorder {
         }
 
         // The atlas provider would invalidate its atlases if recordings need not be ordered
-        // (G12a), and the KeyAndDataBuilders would shrink their capacity (G5a).
+        // (G12a).
+
+        // For each KeyAndDataBuilder owned by the Recorder, check if the high watermark of data
+        // usage over the lifetime snap is less than half of allocated capacity. If so, shrink the
+        // capacity.
+        for key_db in inner.key_and_data_builders.borrow().iter() {
+            key_db.gatherer.borrow_mut().try_shrink_capacity();
+            key_db.builder.borrow_mut().try_shrink_capacity();
+        }
 
         result
     }
@@ -629,7 +679,12 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // flushed.
             if let Some(device) = recorder.tracked_device(index) {
-                device.borrow_mut().flush_pending_work();
+                // A device that is borrowed is the one that triggered this flush from inside its
+                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies).
+                // It flushes itself.
+                if let Ok(mut device) = device.try_borrow_mut() {
+                    device.flush_pending_work();
+                }
             }
             index += 1;
         }
@@ -648,7 +703,7 @@ impl RecorderPriv<'_> {
             // has abandoned its recorder leaves the list.
             let remove = device
                 .as_ref()
-                .is_none_or(|device| !device.borrow().has_recorder());
+                .is_none_or(|device| device.try_borrow().is_ok_and(|d| !d.has_recorder()));
             if remove {
                 if let Some(device) = &device {
                     device.borrow_mut().abandon_recorder(); // Keep ~Device() happy
@@ -679,7 +734,11 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // snapped.
             if let Some(device) = self.recorder.tracked_device(index) {
-                let has_pending_reads = device.borrow().has_pending_reads(dependency);
+                // A device that is borrowed is the one that triggered this flush from inside its
+                // own operation: it does not read its own target.
+                let has_pending_reads = device
+                    .try_borrow()
+                    .is_ok_and(|device| device.has_pending_reads(dependency));
                 if has_pending_reads {
                     device.borrow_mut().flush_pending_work();
                 }
@@ -702,6 +761,66 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn caps(&self) -> &Arc<dyn Caps> {
         &self.recorder.caps
+    }
+
+    /// `registerDevice(device)`.
+    #[doc(alias = "registerDevice")]
+    pub fn register_device(&self, device: TrackedDeviceRef) {
+        self.recorder.register_device(device);
+    }
+
+    /// `deregisterDevice(device)`.
+    #[doc(alias = "deregisterDevice")]
+    pub fn deregister_device(&self, device: &TrackedDeviceRef) {
+        self.recorder.deregister_device(device);
+    }
+
+    /// `popOrCreateKeyAndDataBuilder()`.
+    // Port of: src/gpu/graphite/Recorder.cpp#L700-L715 (chrome/m156)
+    #[doc(alias = "popOrCreateKeyAndDataBuilder")]
+    #[must_use]
+    pub fn pop_or_create_key_and_data_builder(&self) -> KeyAndDataBuilder {
+        if let Some(key_db) = self.recorder.key_and_data_builders.borrow_mut().pop() {
+            return key_db;
+        }
+
+        let use_storage_buffers = self.caps().storage_buffer_support();
+        let binding_req = self.caps().resource_binding_requirements();
+        let gatherer_layout = if use_storage_buffers {
+            binding_req.storage_buffer_layout
+        } else {
+            binding_req.uniform_buffer_layout
+        };
+
+        KeyAndDataBuilder {
+            gatherer: RefCell::new(PipelineDataGatherer::new(gatherer_layout)),
+            builder: RefCell::new(PaintParamsKeyBuilder::new(self.shader_code_dictionary())),
+        }
+    }
+
+    /// `pushKeyAndDataBuilder(keyDB)`.
+    // Port of: src/gpu/graphite/Recorder.cpp#L717-L725 (chrome/m156)
+    #[doc(alias = "pushKeyAndDataBuilder")]
+    pub fn push_key_and_data_builder(&self, key_db: KeyAndDataBuilder) {
+        let mut builders = self.recorder.key_and_data_builders.borrow_mut();
+        if builders.len() < MAX_KEY_AND_DATA_BUILDERS {
+            builders.push(key_db);
+        }
+        // If no empty slot was found, the "keyDB" goes out of scope here.
+    }
+
+    /// `rendererProvider()`.
+    #[doc(alias = "rendererProvider")]
+    #[must_use]
+    pub fn renderer_provider(&self) -> &RendererProvider {
+        self.recorder.shared_context.renderer_provider()
+    }
+
+    /// `sharedContext()->pipelineManager()`.
+    #[doc(alias = "pipelineManager")]
+    #[must_use]
+    pub fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
+        self.recorder.shared_context.pipeline_manager()
     }
 
     /// `resourceProvider()`.
