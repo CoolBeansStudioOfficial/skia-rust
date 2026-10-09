@@ -45,7 +45,7 @@ use skia_rust_core::image::{Image, RequiredProperties};
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::mesh::Mesh;
+use skia_rust_core::mesh::{self, Mesh, mesh_priv};
 use skia_rust_core::paint::{Cap, Paint, Style as PaintStyle};
 use skia_rust_core::path::Path;
 use skia_rust_core::pixmap::Pixmap;
@@ -1325,6 +1325,70 @@ impl DeviceCore {
         );
     }
 
+    // Port of: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156)
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: &Blender, paint: &Paint) {
+        if !mesh.is_valid() {
+            return;
+        }
+        let Some(spec) = mesh.spec() else {
+            return;
+        };
+
+        // The caller could modify its CPU buffers after the draw, so the draw copies the data it
+        // reads: the vertices from the vertex offset and the indices from the index offset.
+        let vertex_size = mesh.vertex_count() * spec.stride();
+        let vertex_offset = mesh.vertex_offset();
+        let vertex_bytes = mesh
+            .vertex_buffer()
+            .expect("a valid mesh has a vertex buffer")
+            .with_data(|data| data[vertex_offset..vertex_offset + vertex_size].to_vec());
+        let vb = mesh::meshes::make_vertex_buffer(Some(&vertex_bytes), vertex_size);
+        let uniforms = mesh.uniforms().cloned();
+
+        let result = if let Some(ib) = mesh.index_buffer() {
+            let index_size = mesh.index_count() * std::mem::size_of::<u16>();
+            let index_offset = mesh.index_offset();
+            let index_bytes =
+                ib.with_data(|data| data[index_offset..index_offset + index_size].to_vec());
+            let ib = mesh::meshes::make_index_buffer(Some(&index_bytes), index_size);
+            Mesh::make_indexed(
+                Some(spec.clone()),
+                mesh.mode(),
+                Some(vb),
+                mesh.vertex_count(),
+                0,
+                Some(ib),
+                mesh.index_count(),
+                0,
+                uniforms,
+                mesh.children(),
+                mesh.bounds(),
+            )
+        } else {
+            Mesh::make(
+                Some(spec.clone()),
+                mesh.mode(),
+                Some(vb),
+                mesh.vertex_count(),
+                0,
+                uniforms,
+                mesh.children(),
+                mesh.bounds(),
+            )
+        };
+        let draw_mesh = result.mesh;
+
+        // A null blender is only used for the primitive color if the mesh has colors.
+        let primitive_blender = mesh_priv::has_colors(spec).then_some(blender);
+        let transform = self.local_to_device_transform();
+        self.draw_geometry(
+            &transform,
+            Geometry::Mesh(draw_mesh),
+            &PaintParams::new(paint, primitive_blender, false, false).make_with_mesh(mesh),
+            &default_fill_style(),
+        );
+    }
+
     // Port of: src/gpu/graphite/Device.cpp#L1072-L1098 (chrome/m156)
     fn draw_image_lattice_patch(&mut self, patch_dst: &SkRect, color: Color, paint: &Paint) {
         // Use non-AA quads to match Ganesh and Raster backends behavior of drawImageLattice.
@@ -1961,6 +2025,7 @@ impl DeviceCore {
             Geometry::Vertices(vertices) => {
                 return Some(renderers.vertices(vertices.has_colors(), vertices.has_tex_coords()));
             }
+            Geometry::Mesh(_) => return Some(renderers.mesh()),
             Geometry::EdgeAAQuad(quad) => {
                 debug_assert!(style.is_fill_style());
                 // handled by specialized system, simplified from rects and round rects
@@ -3077,10 +3142,8 @@ impl CoreDevice for Device {
             .draw_vertices(vertices, &blender, paint, skip_color_xform);
     }
 
-    // Port of: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156)
-    fn draw_mesh(&mut self, _mesh: &Mesh, _blender: Blender, _paint: &Paint) {
-        // `MeshRenderStep` and `Geometry::Mesh` come with the mesh port (G7a leftovers).
-        skia_log_w!("Device::drawMesh needs MeshRenderStep; the mesh is not drawn.");
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
+        self.sync().draw_mesh(mesh, &blender, paint);
     }
 
     // Port of: src/gpu/graphite/Device.cpp#L1100-L1132 (chrome/m156)

@@ -13,7 +13,13 @@
 
 #![cfg(not(target_arch = "wasm32"))]
 
+use std::sync::Arc;
+
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blender::Blender;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
+use skia_rust_core::rect::Rect;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::{Paint, Style};
@@ -27,7 +33,9 @@ use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped};
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::device::Device;
-use skia_rust_gpu::graphite::graphite_types::{InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu};
+use skia_rust_gpu::graphite::graphite_types::{
+    InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
+};
 use skia_rust_gpu::graphite::resource_types::LoadOp;
 use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
 
@@ -98,6 +106,18 @@ fn star() -> Path {
 /// Draws `draws` into a cleared `SIZE` x `SIZE` N32 target and returns its pixels as `(RGBA
 /// bytes, row bytes)`.
 fn render(context: &mut WgpuContext, draws: &[(Path, Paint)]) -> (Vec<u8>, usize) {
+    render_with(context, |device| {
+        for (path, paint) in draws {
+            device.draw_path(path, paint);
+        }
+    })
+}
+
+/// Records what `draw` draws into a cleared target, runs it and reads the target back.
+fn render_with(
+    context: &mut WgpuContext,
+    draw: impl FnOnce(&mut Device),
+) -> (Vec<u8>, usize) {
     let recorder = context.make_recorder(None);
     let image_info = ImageInfo::new_n32_premul((SIZE, SIZE), None);
     let mut device = Device::make_with_info(
@@ -113,9 +133,7 @@ fn render(context: &mut WgpuContext, draws: &[(Path, Paint)]) -> (Vec<u8>, usize
         false,
     )
     .expect("a device");
-    for (path, paint) in draws {
-        device.draw_path(path, paint);
-    }
+    draw(&mut device);
     let target = device.target();
     device.flush_pending_work();
 
@@ -259,4 +277,108 @@ fn a_hairline_draws_a_thin_line_on_the_outline() {
         });
     assert!(drawn, "the hairline is on the edge");
     assert_eq!(pixel(&pixels, 64, 64), CLEAR);
+}
+
+/// A mesh specification whose fragment shader returns the local coordinates and no color, so the
+/// paint's color is drawn.
+fn mesh_spec() -> Arc<MeshSpecification> {
+    let attributes = [Attribute {
+        ty: AttributeType::Float2,
+        offset: 0,
+        name: String::from("pos"),
+    }];
+    let result = MeshSpecification::make(
+        &attributes,
+        8,
+        &[],
+        "Varyings main(const Attributes a) { Varyings v; v.position = a.pos; return v; }",
+        "float2 main(const Varyings v) { return v.position; }",
+    );
+    result.specification.expect(&result.error)
+}
+
+/// A mesh of `points`, drawn as triangles, through `indices` if there are some.
+fn mesh_of(points: &[(f32, f32)], indices: Option<&[u16]>) -> Mesh {
+    let bytes: Vec<u8> = points
+        .iter()
+        .flat_map(|(x, y)| x.to_ne_bytes().into_iter().chain(y.to_ne_bytes()))
+        .collect();
+    let vb = meshes::make_vertex_buffer(Some(&bytes), bytes.len());
+    let bounds = Rect::from_ltrb(0.0, 0.0, SIZE as f32, SIZE as f32);
+    let result = match indices {
+        None => Mesh::make(
+            Some(mesh_spec()),
+            Mode::Triangles,
+            Some(vb),
+            points.len(),
+            0,
+            None,
+            &[],
+            bounds,
+        ),
+        Some(indices) => {
+            let index_bytes: Vec<u8> = indices.iter().flat_map(|i| i.to_ne_bytes()).collect();
+            let ib = meshes::make_index_buffer(Some(&index_bytes), index_bytes.len());
+            Mesh::make_indexed(
+                Some(mesh_spec()),
+                Mode::Triangles,
+                Some(vb),
+                points.len(),
+                0,
+                Some(ib),
+                indices.len(),
+                0,
+                None,
+                &[],
+                bounds,
+            )
+        }
+    };
+    assert!(result.error.is_empty(), "{}", result.error);
+    result.mesh
+}
+
+// A mesh fills its triangles with the paint's color.
+// Covers: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh`
+#[test]
+#[ignore = "needs a real adapter in CI (lavapipe job)"]
+fn a_mesh_fills_its_triangle() {
+    let Some(mut context) = real_context() else {
+        return;
+    };
+    let mesh = mesh_of(&[(10.0, 10.0), (118.0, 10.0), (10.0, 118.0)], None);
+    let pixels = render_with(&mut context, |device| {
+        device.draw_mesh(
+            &mesh,
+            Blender::mode(BlendMode::SrcOver),
+            &paint(Style::Fill, 0.0),
+        );
+    });
+    assert_eq!(pixel(&pixels, 20, 20), RED);
+    assert_eq!(pixel(&pixels, 100, 100), CLEAR);
+}
+
+// An indexed mesh draws the triangles its index buffer names.
+// Covers: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh` with an index buffer
+#[test]
+#[ignore = "needs a real adapter in CI (lavapipe job)"]
+fn an_indexed_mesh_fills_the_triangles_of_its_indices() {
+    let Some(mut context) = real_context() else {
+        return;
+    };
+    // Two triangles sharing the edge from (60, 10) to (10, 118).
+    let mesh = mesh_of(
+        &[(10.0, 10.0), (60.0, 10.0), (10.0, 118.0), (118.0, 118.0)],
+        Some(&[0, 1, 2, 1, 2, 3]),
+    );
+    let pixels = render_with(&mut context, |device| {
+        device.draw_mesh(
+            &mesh,
+            Blender::mode(BlendMode::SrcOver),
+            &paint(Style::Fill, 0.0),
+        );
+    });
+    assert_eq!(pixel(&pixels, 30, 30), RED);
+    assert_eq!(pixel(&pixels, 100, 100), RED);
+    assert_eq!(pixel(&pixels, 120, 20), CLEAR);
 }

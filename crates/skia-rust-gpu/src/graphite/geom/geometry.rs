@@ -5,12 +5,13 @@
 
 //! [`Geometry`]: what a draw covers, as seen by the `RenderStep`s.
 //!
-//! Only the variants whose payload types are ported are here: `Empty`, `Shape`, `EdgeAAQuad` and
-//! `Vertices`. The other variants of Skia's `Geometry` (`SubRun`, `Mesh`, `CoverageMaskShape`,
+//! Only the variants whose payload types are ported are here: `Empty`, `Shape`, `EdgeAAQuad`,
+//! `Vertices` and `Mesh`. The other variants of Skia's `Geometry` (`SubRun`, `CoverageMaskShape`,
 //! `AnalyticBlur`, `AnalyticRRectBlur`, and the sparse-strip `WideTiles` and `EndCaps`) wait for
-//! their payload types (`SkMesh`, G2, G7c, G10 and G17). Their `bounds()` cases are not written
-//! here, so no draw can carry them yet.
+//! their payload types (G2, G7c, G10 and G17). Their `bounds()` cases are not written here, so no
+//! draw can carry them yet.
 
+use skia_rust_core::mesh::Mesh;
 use skia_rust_core::vertices::Vertices;
 
 use crate::graphite::geom::edge_aa_quad::EdgeAAQuad;
@@ -31,6 +32,8 @@ pub enum Geometry {
     EdgeAAQuad(EdgeAAQuad),
     /// `Type::kVertices`.
     Vertices(Vertices),
+    /// `Type::kMesh`.
+    Mesh(Mesh),
 }
 
 impl Geometry {
@@ -61,6 +64,26 @@ impl Geometry {
         }
     }
 
+    /// `isMesh()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L164 (chrome/m156)
+    #[must_use]
+    pub const fn is_mesh(&self) -> bool {
+        matches!(self, Self::Mesh(_))
+    }
+
+    /// `mesh()`. Skia asserts that the type is `kMesh`.
+    ///
+    /// # Panics
+    /// If the geometry is not a mesh draw.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L207 (chrome/m156)
+    #[must_use]
+    pub fn mesh(&self) -> &Mesh {
+        match self {
+            Self::Mesh(mesh) => mesh,
+            _ => panic!("Geometry::mesh() called on a non-mesh geometry"),
+        }
+    }
+
     /// `isEdgeAAQuad()`.
     // Port of: src/gpu/graphite/geom/Geometry.h#L103 (chrome/m156)
     #[must_use]
@@ -75,7 +98,7 @@ impl Geometry {
         match self {
             Self::Empty => true,
             Self::Shape(shape) => shape.is_empty() && !shape.inverted(),
-            Self::EdgeAAQuad(_) | Self::Vertices(_) => false,
+            Self::EdgeAAQuad(_) | Self::Vertices(_) | Self::Mesh(_) => false,
         }
     }
 
@@ -114,6 +137,7 @@ impl Geometry {
             Self::Shape(shape) => shape.bounds(),
             Self::EdgeAAQuad(quad) => quad.bounds(),
             Self::Vertices(vertices) => Rect::from_sk_rect(vertices.bounds()),
+            Self::Mesh(mesh) => Rect::from_sk_rect(&mesh.bounds()),
         }
     }
 }
