@@ -18837,8 +18837,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174354.cpp#L39-L49"
 module = "raster"
-status = "failing"
-reason = "f16 config only mismatches on every tier (8888 and 565 match); see notes/gm_crbug_1174354_cpp_crbug_1174354.md"
+status = "passing"
 span_hash = "179ad8dbe38ee32beca6d556d3fbe2994b0c6bfe34742ea7f11939866b9b1e81"
 
 [[test]]
@@ -24737,8 +24736,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/spritebitmap.cpp#L97-L97"
 module = "raster"
-status = "failing"
-reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"
+status = "passing"
 span_hash = "907a8f7914cd40dd9a0070ea4387b62faa9c7fb14d65ddcb4403c3e06e8f41b4"
 
 [[test]]

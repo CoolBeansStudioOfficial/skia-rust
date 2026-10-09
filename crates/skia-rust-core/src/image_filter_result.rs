@@ -4,11 +4,8 @@
 // Ported from Skia: src/core/SkImageFilterTypes.h (`FilterResult`, `FilterResult::Builder`),
 // src/core/SkImageFilterTypes.cpp
 //
-// skia-rust: `FilterResult::rescale` and `FilterResult::Builder::blur` belong to the blur image
-// filter, which is ported with `SkBlurEngine`; they are not here yet. `FilterResult::Builder::eval`
-// takes the shader function as a closure, as the C++ template does. The decal-in-layer-space
-// branch of `getAnalyzedShaderView` needs the `kDecal` known runtime effect (SkSL, Phase 3), so it
-// is documented where it is skipped.
+// skia-rust: `FilterResult::Builder::eval` takes the shader function as a closure, as the C++
+// template does.
 
 #![allow(
     // The float casts and exact float comparisons mirror the C++ arithmetic of the Skia source
@@ -38,9 +35,10 @@ use crate::device::Device;
 use crate::floating_point::{float_ceil2int, ieee_float_divide};
 use crate::image::Image;
 use crate::image_filter_types::{
-    Context, ROUND_EPSILON, inverse_map_irect, inverse_map_rect_f, irect_intersect_in_place,
-    map_irect, map_size, relevant_subset, round_out, size_ceil,
+    Context, ROUND_EPSILON, decompose_transform, inverse_map_irect, inverse_map_rect_f,
+    irect_intersect_in_place, map_irect, map_size, relevant_subset, round_out, size_ceil,
 };
+use crate::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use crate::m44::M44;
 use crate::math_priv::next_log2;
 use crate::matrix::Matrix;
@@ -49,6 +47,7 @@ use crate::paint::Paint;
 use crate::picture::Picture;
 use crate::point::{IPoint, Point, Vector};
 use crate::rect::{Contains, IRect, Rect, rect_priv};
+use crate::runtime_effect::RuntimeEffectBuilder;
 use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::shader::Shader;
 use crate::size::ISize;
@@ -1008,15 +1007,19 @@ impl FilterResult {
         analysis: BoundsAnalysis,
     ) -> Option<Shader> {
         let image = self.image.as_deref()?;
-        if analysis.contains(BoundsAnalysis::REQUIRES_DECAL_IN_LAYER_SPACE) {
-            // The C++ decomposes the transform (`decompose_transform`), wraps the image shader in
-            // the `kDecal` known runtime effect (`sk_decal`, SkSL, not ported) and applies
-            // `postDecal` as a local matrix. Without that effect there is no faithful shader, so
-            // this returns `None`, the same as `getAnalyzedShaderView` failing: the caller draws
-            // nothing. Documented deviation; no panic on valid input.
-            return None;
-        }
-        let mut pre_decal = self.transform.clone();
+        let local_matrix = &self.transform;
+        let image_bounds = Rect::from(IRect::from_size(image.dimensions()));
+        // We need to apply the decal in a coordinate space that matches the resolution of the
+        // layer space. If the transform preserves rectangles, map the image bounds by the
+        // transform so we can apply it before we evaluate the shader. Otherwise decompose the
+        // transform into a non-scaling post-decal transform and a scaling pre-decal transform.
+        let (post_decal, mut pre_decal) = if local_matrix.rect_stays_rect()
+            || !analysis.contains(BoundsAnalysis::REQUIRES_DECAL_IN_LAYER_SPACE)
+        {
+            (Matrix::new_identity(), local_matrix.clone())
+        } else {
+            decompose_transform(local_matrix, image_bounds.center())
+        };
 
         let mut effective_tile_mode = self.tile_mode;
         let decal_clamp_to_transparent = self.can_clamp_to_transparent_boundary(analysis);
@@ -1037,6 +1040,39 @@ impl FilterResult {
         }
         if strict {
             ctx.mark_shader_based_tiling_required(effective_tile_mode);
+        }
+
+        if analysis.contains(BoundsAnalysis::REQUIRES_DECAL_IN_LAYER_SPACE) {
+            debug_assert_eq!(self.tile_mode, TileMode::Decal);
+            // The decal is applied by the `kDecal` known runtime effect, with the image shader
+            // as its `image` child (null if there is none).
+            let decal_effect = get_known_runtime_effect(StableKey::Decal)?;
+            let mut builder = RuntimeEffectBuilder::new(decal_effect.clone());
+            {
+                let mut child = builder.child("image");
+                match image_shader.take() {
+                    Some(shader) => {
+                        child.assign(shader);
+                    }
+                    None => {
+                        child.assign_null();
+                    }
+                }
+            }
+            let decal_bounds = pre_decal.map_rect(image_bounds).0;
+            builder.uniform("decalBounds").set_f32(&[
+                decal_bounds.left,
+                decal_bounds.top,
+                decal_bounds.right,
+                decal_bounds.bottom,
+            ]);
+            image_shader = builder.make_shader(None::<&Matrix>);
+        }
+
+        if analysis.contains(BoundsAnalysis::REQUIRES_DECAL_IN_LAYER_SPACE)
+            && let Some(shader) = image_shader.take()
+        {
+            image_shader = Some(shader.with_local_matrix(&post_decal));
         }
         // `if (imageShader && fColorFilter) imageShader = imageShader->makeWithColorFilter(...)`.
         if let Some(cf) = self.color_filter.as_ref()
