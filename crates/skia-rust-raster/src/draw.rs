@@ -18,10 +18,10 @@
 //!   [`crate::draw_atlas`] (`SkDraw_vertices.cpp`, `SkDraw_atlas.cpp`).
 //! * The mask filter branches of `drawDevPath`/`drawRRectNinePatch` call
 //!   `SkMaskFilterBase::filterPath`/`filterRects`/`filterRRect` ([`crate::mask_filter_base`]).
-//! * Not ported yet (they need text): `drawSprite`, `drawBitmapAsMask`,
-//!   `drawGlyphRunList`/`paintMasks`. See the "As implemented in D5" design note.
-//! * `BitmapDevicePainter`, the interface text and bitmaps are painted through, is not ported
-//!   with them.
+//! * `drawGlyphRunList` and `paintMasks` are here, with [`BitmapDevicePainter`] (the interface
+//!   text is painted through, `SkDraw_text.cpp`).
+//! * Not ported yet: `drawSprite` and `drawBitmapAsMask`. See the "As implemented in D5" design
+//!   note.
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -35,10 +35,13 @@ use skia_rust_core::device::Device;
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
+use skia_rust_core::glyph::Glyph;
+use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
+use skia_rust_core::m44::M44;
 use skia_rust_core::mask::{CreateMode, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{FilterReturn, MaskFilter};
 use skia_rust_core::matrix::Matrix;
@@ -55,6 +58,7 @@ use skia_rust_core::path_utils::fill_path_with_paint;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point, Vector};
 use skia_rust_core::rect::{IRect, Rect, RoundOut, rect_priv};
+use skia_rust_core::region::Cliperator;
 use skia_rust_core::rrect::{RRect, Type as RRectType};
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::{SCALAR_HALF, SCALAR_SQRT2, Scalar, scalar};
@@ -68,6 +72,7 @@ use crate::auto_blitter_choose::auto_blitter_choose;
 use crate::blitter::Blitter;
 use crate::blitter_a8::choose_a8_blitter;
 use crate::blitter_choose::choose;
+use crate::glyph_run_painter::{BitmapDevicePainter, GlyphRunListPainter};
 use crate::mask_filter_base::{filter_path, filter_rects, filter_rrect};
 use crate::raster_clip::{AAClipBlitterWrapper, RasterClip};
 use crate::scan::{
@@ -1511,6 +1516,134 @@ fn draw_into_mask(mask: &mut MaskBuilder, raw: &PathRaw<'_>, style: InitStyle) {
         InitStyle::Hairline => anti_hair_path(&raw, &clip, &mut *blitter),
         InitStyle::Fill => anti_fill_path_clip(&raw, &clip, &mut *blitter),
     }
+}
+
+impl Draw<'_> {
+    /// `skcpu::Draw::drawGlyphRunList`: draws `list` with `painter`, unless the clip is empty.
+    /// The canvas of C++ is not passed: glyph paths draw on this draw, see [`BitmapDevicePainter`].
+    // Port of: src/core/SkDraw_text.cpp#L125-L134 (chrome/m156)
+    #[doc(alias = "drawGlyphRunList")]
+    pub fn draw_glyph_run_list(
+        &mut self,
+        painter: &GlyphRunListPainter,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+    ) {
+        self.validate();
+        if self.rc.is_empty() {
+            return;
+        }
+        let ctm = self.ctm;
+        painter.draw_for_bitmap_device(self, list, paint, ctm);
+    }
+}
+
+/// `skcpu::Draw` as the glyph painter sees it: masks through `paintMasks` and paths through the
+/// draw itself.
+impl BitmapDevicePainter for Draw<'_> {
+    // Port of: src/core/SkDraw_text.cpp#L53-L123 (chrome/m156), Draw::paintMasks
+    fn paint_masks(&mut self, accepted: &[(&Glyph, Point)], paint: &Paint) {
+        let rc = self.rc;
+        let use_region = rc.is_bw() && !rc.is_rect();
+        auto_blitter_choose(
+            self,
+            None,
+            paint,
+            &Rect::default(),
+            DrawCoverage::No,
+            |blitter| {
+                let mut wrapper = AAClipBlitterWrapper::new(rc, blitter);
+                if use_region {
+                    for (glyph, pos) in accepted {
+                        if !check_glyph_position(*pos) {
+                            continue;
+                        }
+                        let mask = glyph.mask_at(*pos);
+                        let mut clipper = Cliperator::new(rc.bw_rgn(), mask.bounds);
+                        if clipper.is_done() {
+                            continue;
+                        }
+                        // TODO(text-T20): color masks are drawn with `Draw::drawSprite`, whose
+                        // fallback needs the image-shader paint. Until then they draw nothing.
+                        if mask.format == MaskFormat::Argb32 {
+                            continue;
+                        }
+                        loop {
+                            wrapper.blitter().blit_mask(&mask, clipper.rect());
+                            clipper.next();
+                            if clipper.is_done() {
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    let clip_bounds = if rc.is_bw() {
+                        *rc.bw_rgn().bounds()
+                    } else {
+                        *rc.aa_rgn().bounds()
+                    };
+                    for (glyph, pos) in accepted {
+                        if !check_glyph_position(*pos) {
+                            continue;
+                        }
+                        let mask = glyph.mask_at(*pos);
+                        // this extra test is worth it, assuming that most of the time it succeeds
+                        // since we can avoid writing to storage
+                        let bounds = if clip_bounds.contains_no_empty_check(&mask.bounds) {
+                            mask.bounds
+                        } else {
+                            match IRect::intersect(&mask.bounds, &clip_bounds) {
+                                Some(bounds) => bounds,
+                                None => continue,
+                            }
+                        };
+                        // TODO(text-T20): color masks need `Draw::drawSprite` (see above).
+                        if mask.format == MaskFormat::Argb32 {
+                            continue;
+                        }
+                        wrapper.blitter().blit_mask(&mask, &bounds);
+                    }
+                }
+            },
+        );
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
+    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
+        // canvas->concat(m): the canvas matrix is an SkM44, so CTM * m is composed in 4x4 (float
+        // order of SkM44::setConcat), and the device takes its 3x3 part (`asM33`).
+        let ctm = M44::concat(&M44::from(self.ctm.clone()), &M44::from(matrix.clone())).to_m33();
+        let mut draw = self.reborrow();
+        draw.ctm = &ctm;
+        draw.draw_path(path, paint, None);
+    }
+
+    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint) {
+        self.draw_path(path, paint, None);
+    }
+}
+
+/// `SkDraw_text.cpp`'s `check_glyph_position`: glyphs whose position would straddle the int range
+/// are not drawn. Written so that NaN is rejected.
+// Port of: src/core/SkDraw_text.cpp#L28-L36 (chrome/m156)
+// The negated comparisons are the point: a NaN fails them, as in C++.
+#[allow(
+    clippy::neg_cmp_op_on_partial_ord,
+    clippy::cast_precision_loss // (float)int, as in C++
+)]
+fn check_glyph_position(position: Point) -> bool {
+    // Comparisons written a little weirdly so that NaN coordinates are treated safely.
+    let gt = |a: f32, b: i32| !(a <= b as f32);
+    let lt = |a: f32, b: i32| !(a >= b as f32);
+    !(gt(
+        position.x,
+        i32::MAX - (i32::from(i16::MAX) + i32::from(u16::MAX)),
+    ) || lt(position.x, i32::MIN - i32::from(i16::MIN))
+        || gt(
+            position.y,
+            i32::MAX - (i32::from(i16::MAX) + i32::from(u16::MAX)),
+        )
+        || lt(position.y, i32::MIN - i32::from(i16::MIN)))
 }
 
 /// Creates a mask from a device-space path and the mask filter that will filter it, to size the

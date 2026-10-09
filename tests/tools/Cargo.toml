@@ -1,0 +1,18 @@
+[package]
+name = "skia-rust-tools"
+description = "Ports of Skia's tools/ helpers for tests and GMs: the portable test fonts and font tool utils (test-only)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
+skia-rust-text.workspace = true
+
+[lints]
+workspace = true
