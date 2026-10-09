@@ -213,6 +213,7 @@ pub mod perlinnoise;
 pub mod perspimages;
 pub mod persptext;
 pub mod picture;
+pub mod pictureimagegenerator;
 pub mod plus;
 pub mod points;
 pub mod poly2poly;
