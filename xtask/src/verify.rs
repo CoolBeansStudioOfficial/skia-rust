@@ -150,7 +150,9 @@ pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) 
         }
     }
     for (path, outcome) in results {
-        if path.starts_with("tests::") {
+        // Only `unit::` and `modules::` hold 1:1 Skia ports; anything else in the crate
+        // (`tests::`, the self-tests of the ported tools under `tools::`) has no manifest entry.
+        if !(path.starts_with("unit::") || path.starts_with("modules::")) {
             continue;
         }
         let Some((id, status)) = by_path.get(path) else {

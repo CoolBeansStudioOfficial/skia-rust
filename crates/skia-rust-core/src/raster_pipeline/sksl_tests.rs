@@ -278,6 +278,8 @@ fn trace_ops_without_a_debug_trace_are_not_appended() {
     );
 }
 
+// The lane-count check is a `debug_assert!`; release builds fail later, on an out-of-range slot.
+#[cfg(debug_assertions)]
 #[test]
 #[should_panic(expected = "were built for")]
 fn a_pipeline_cannot_run_on_a_different_lane_count() {

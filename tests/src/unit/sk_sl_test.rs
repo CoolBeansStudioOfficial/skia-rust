@@ -176,6 +176,12 @@ const K_UNIFORM_DATA: [UniformData; 13] = [
 /// `load_source`: the shader's source, or `None` (after reporting) if it cannot be loaded.
 // Port of: tests/SkSLTest.cpp#L233-L242 (chrome/m156)
 fn load_source(r: &mut Reporter, test_file: &str, permutation_suffix: &str) -> Option<Vec<u8>> {
+    if crate::resources::resource_dir().is_none() {
+        // CI test jobs run without `third_party/skia`: skip rather than fail (the manifest job,
+        // which has the Skia checkout, runs these for real).
+        eprintln!("todo: skipping {test_file}, Skia resource directory not found");
+        return None;
+    }
     let resource_path = format!("sksl/{test_file}");
     let Some(shader_data) = get_resource_as_data(&resource_path) else {
         errorf!(

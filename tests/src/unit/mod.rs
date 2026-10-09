@@ -323,9 +323,13 @@ pub mod sk_runtime_effect_test;
 #[cfg(test)]
 pub mod sk_sl_debug_trace_player_test;
 pub mod sk_sl_debug_trace_test;
+#[cfg(test)]
+pub mod sk_sl_memory_layout_test;
 pub mod sk_sl_pipeline_stage_testbed;
 #[cfg(test)]
 pub mod sk_sl_test;
+#[cfg(test)]
+pub mod sk_sl_type_test;
 #[cfg(test)]
 pub mod sk_sles2_conformance_test;
 #[cfg(test)]
@@ -338,10 +342,6 @@ pub mod sk_strike_test;
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
-#[cfg(test)]
-pub mod sksl_memory_layout_test;
-#[cfg(test)]
-pub mod sksl_type_test;
 #[cfg(test)]
 pub mod src_over_test;
 #[cfg(test)]
