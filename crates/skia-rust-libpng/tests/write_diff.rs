@@ -14,11 +14,10 @@
 #![allow(clippy::cast_lossless)] // C's implicit widening
 #![allow(clippy::too_many_lines)] // one function per C case loop
 
-use std::cell::RefCell;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use skia_rust_libpng::error::PngResult;
 use skia_rust_libpng::{
@@ -160,10 +159,10 @@ fn encode(
     let seed = (w as i32 * 131 + h as i32 * 17 + i32::from(filters)) as u32;
     let pixels = gen_pixels(rowbytes_src * h, seed);
 
-    let sink: Rc<RefCell<Vec<u8>>> = Rc::new(RefCell::new(Vec::new()));
-    let writer = Rc::clone(&sink);
+    let sink: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
+    let writer = Arc::clone(&sink);
     let mut png = PngStruct::new_write(Box::new(move |data: &[u8]| {
-        writer.borrow_mut().extend_from_slice(data);
+        writer.lock().expect("the sink").extend_from_slice(data);
         true
     }));
     let mut info = PngInfo::default();
@@ -244,7 +243,7 @@ fn encode(
     // onFinishEncoding
     png.write_end(&info)?;
     drop(png);
-    let bytes = sink.borrow().clone();
+    let bytes = sink.lock().expect("the sink").clone();
     Ok(bytes)
 }
 
