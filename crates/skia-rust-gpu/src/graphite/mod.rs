@@ -19,6 +19,7 @@ pub mod graphics_pipeline;
 pub mod graphite_resource_key;
 pub mod graphite_types;
 pub mod key_context;
+pub mod key_helpers;
 pub mod paint_params_key;
 pub mod pipeline_data;
 pub mod proxy_cache;

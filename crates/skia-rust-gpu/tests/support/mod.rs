@@ -257,6 +257,11 @@ impl Caps for MockCaps {
         self.storage_buffer_support
     }
 
+    fn clamp_to_border_support(&self) -> bool {
+        // The mock backend samples with clamp-to-border, so no decal substitution happens.
+        true
+    }
+
     fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
         self.immutable_sampler_string.clone()
     }

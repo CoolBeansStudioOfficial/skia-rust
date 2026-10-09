@@ -122,6 +122,19 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "storageBufferSupport")]
     fn storage_buffer_support(&self) -> bool;
 
+    /// `clampToBorderSupport()`: whether the backend can sample with clamp-to-border tiling.
+    // Port of: src/gpu/graphite/Caps.h#L302 (chrome/m156)
+    #[doc(alias = "clampToBorderSupport")]
+    fn clamp_to_border_support(&self) -> bool;
+
+    /// `getImmutableSamplerInfo(const TextureInfo&)`. Backends can override this to return
+    /// sampler conversion info; by default there is no immutable sampler.
+    // Port of: src/gpu/graphite/Caps.h#L225-L227 (chrome/m156)
+    #[doc(alias = "getImmutableSamplerInfo")]
+    fn get_immutable_sampler_info(&self, _info: &TextureInfo) -> ImmutableSamplerInfo {
+        ImmutableSamplerInfo::default()
+    }
+
     /// `toString(const ImmutableSamplerInfo&)`: a description of the immutable sampler for
     /// `PaintParamsKey::toString`. Empty by default, and for backends without YCbCr samplers.
     // Port of: src/gpu/graphite/Caps.h#L230 (chrome/m156)

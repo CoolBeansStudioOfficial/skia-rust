@@ -1990,6 +1990,10 @@ impl Caps for WgpuCaps {
         WgpuCaps::storage_buffer_support(self)
     }
 
+    fn clamp_to_border_support(&self) -> bool {
+        WgpuCaps::clamp_to_border_support(self)
+    }
+
     fn max_texture_size(&self) -> i32 {
         WgpuCaps::max_texture_size(self)
     }
