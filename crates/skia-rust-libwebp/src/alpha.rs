@@ -21,7 +21,6 @@
     clippy::similar_names
 )]
 
-use crate::io::Status;
 use crate::vp8l::{self, Vp8lDecoder};
 
 /// Port of `ALPHA_HEADER_LEN`.
@@ -255,12 +254,6 @@ impl AlphaDecoder {
     #[must_use]
     pub fn plane(&self) -> &[u8] {
         &self.output.output
-    }
-
-    /// The status of the lossless alpha decoder, for error reporting (`vp8l_dec->status_`).
-    #[must_use]
-    pub fn status(&self) -> Status {
-        self.vp8l.as_ref().map_or(Status::Ok, |(d, _)| d.status)
     }
 }
 

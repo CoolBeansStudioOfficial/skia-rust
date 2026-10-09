@@ -3,13 +3,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the COPYING file. Port by The skia-rust Authors.
 
-//! Port of the still-image path of libwebp's `src/dec/webp_dec.c` (`ParseHeadersInternal`,
-//! `DecodeInto`) and of `WebPGetFeatures` for a single frame.
+//! Port of the still-image path of libwebp's `src/dec/webp_dec.c`: `ParseHeadersInternal` and its
+//! helpers (`ParseRIFF`, `ParseVP8X`, `ParseOptionalChunks`, `ParseVP8Header`), `GetFeatures`,
+//! `WebPParseHeaders`, and the parts of `WebPDecode` and `DecodeInto` that read the headers.
 //!
 //! Handled: the RIFF container with an optional `VP8X` header, `ALPH` for lossy frames, and the
 //! `VP8 ` (lossy) and `VP8L` (lossless) image chunks, as well as bare VP8 and VP8L bitstreams.
-//! Animation (`ANIM`/`ANMF`) needs the demuxer, which is not ported yet; those files return
-//! [`Status::UnsupportedFeature`].
+//! Animation (`ANIM`/`ANMF`) needs the demuxer, which is not ported yet; a file whose `VP8X`
+//! header sets the animation flag gets [`Status::UnsupportedFeature`] from the decode path, as
+//! in libwebp.
+
+// Module-level clippy allows. Each one mirrors the C source of this module.
+// clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss: the header
+// fields are little-endian integers of 8, 24 and 32 bits, read with the widths of the C `GetLE*`
+// helpers, and the sizes are converted between `uint32_t` and `size_t` as in the C code.
+// clippy::struct_excessive_bools: `ParseState` holds the flag locals of `ParseHeadersInternal`.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::struct_excessive_bools
+)]
 
 use crate::alpha;
 use crate::io::{Io, Status};
@@ -18,117 +32,349 @@ use crate::output;
 use crate::vp8_dec::{self, Crop};
 use crate::vp8l;
 
-/// Port of `WebPGetFeatures` for one image: the size and whether the image has alpha.
+/// Port of `RIFF_HEADER_SIZE`.
+const RIFF_HEADER_SIZE: usize = 12;
+/// Port of `CHUNK_HEADER_SIZE`.
+const CHUNK_HEADER_SIZE: usize = 8;
+/// Port of `TAG_SIZE`.
+const TAG_SIZE: usize = 4;
+/// Port of `VP8X_CHUNK_SIZE`.
+const VP8X_CHUNK_SIZE: usize = 10;
+/// Port of `MAX_CHUNK_PAYLOAD` (`~0U - CHUNK_HEADER_SIZE - 1`, an unsigned 32-bit value).
+const MAX_CHUNK_PAYLOAD: u32 = !0u32 - CHUNK_HEADER_SIZE as u32 - 1;
+/// Port of `MAX_IMAGE_AREA`.
+const MAX_IMAGE_AREA: u64 = 1u64 << 32;
+/// Port of `ANIMATION_FLAG` (`webp/mux_types.h`).
+const ANIMATION_FLAG: u32 = 0x0000_0002;
+/// Port of `ALPHA_FLAG` (`webp/mux_types.h`).
+const ALPHA_FLAG: u32 = 0x0000_0010;
+/// Port of `VP8_FRAME_HEADER_SIZE`.
+const VP8_FRAME_HEADER_SIZE: usize = vp8_dec::VP8_FRAME_HEADER_SIZE;
+/// Port of `VP8L_FRAME_HEADER_SIZE`.
+const VP8L_FRAME_HEADER_SIZE: usize = vp8l::VP8L_FRAME_HEADER_SIZE;
+
+/// Port of `WebPBitstreamFeatures`: the size and flags of one image.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "WebPBitstreamFeatures")]
 pub struct Features {
     pub width: i32,
     pub height: i32,
     pub has_alpha: bool,
+    pub has_animation: bool,
     pub is_lossless: bool,
 }
 
-/// The image chunks of a file: `(alpha_payload, image_kind, image_payload)`.
-struct Chunks<'a> {
-    alpha: Option<&'a [u8]>,
-    image: Option<(bool, &'a [u8])>, // (is_lossless, payload)
-    vp8x_alpha: bool,
-    animated: bool,
+/// The fields of `WebPHeaderStructure` that the still-image decoder reads.
+#[derive(Debug)]
+struct Headers<'a> {
+    /// Offset of the bitstream (after its chunk header) from the start of the input.
+    offset: usize,
+    /// The `ALPH` payload, if any.
+    alpha_data: Option<&'a [u8]>,
+    /// The bitstream chunk size (`compressed_size`).
+    compressed_size: usize,
+    is_lossless: bool,
 }
 
-/// Reads the chunks of a RIFF/WEBP file, or interprets the data as a bare bitstream.
-fn parse_chunks(data: &[u8]) -> Result<Chunks<'_>, Status> {
-    let mut out = Chunks {
-        alpha: None,
-        image: None,
-        vp8x_alpha: false,
-        animated: false,
-    };
-    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {
-        // Parsing is bounded by the RIFF size, and stops after the image chunk (libwebp ignores
-        // whatever follows, such as trailing metadata or padding).
-        let riff_size = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
-        let riff_end = riff_size.saturating_add(8).min(data.len());
-        let mut pos = 12usize;
-        while pos + 8 <= riff_end {
-            if out.image.is_some() {
-                break;
-            }
-            let fourcc = &data[pos..pos + 4];
-            let size =
-                u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]])
-                    as usize;
-            let start = pos + 8;
-            let end = start.checked_add(size).ok_or(Status::BitstreamError)?;
-            if end > riff_end {
-                return Err(Status::NotEnoughData);
-            }
-            let payload = &data[start..end];
-            match fourcc {
-                b"VP8X" => {
-                    if payload.len() < 10 {
-                        return Err(Status::BitstreamError);
-                    }
-                    out.vp8x_alpha = payload[0] & 0x10 != 0;
-                    out.animated = payload[0] & 0x02 != 0;
-                }
-                b"ALPH" => out.alpha = Some(payload),
-                b"VP8 " => {
-                    if out.image.is_none() {
-                        out.image = Some((false, payload));
-                    }
-                }
-                b"VP8L" => {
-                    if out.image.is_none() {
-                        out.image = Some((true, payload));
-                    }
-                }
-                b"ANIM" | b"ANMF" => out.animated = true,
-                _ => {}
-            }
-            pos = end + (size & 1);
+/// The working state of `ParseHeadersInternal`, gathered as the C function's locals.
+#[derive(Default)]
+struct ParseState<'a> {
+    found_riff: bool,
+    riff_size: usize,
+    found_vp8x: bool,
+    has_alpha: bool,
+    has_animation: bool,
+    image_width: i32,
+    image_height: i32,
+    alpha_data: Option<&'a [u8]>,
+    compressed_size: usize,
+    is_lossless: bool,
+    offset: usize,
+}
+
+/// Port of `GetLE16`-style little-endian reads of the header fields.
+fn get_le24(d: &[u8]) -> u32 {
+    u32::from(d[0]) | (u32::from(d[1]) << 8) | (u32::from(d[2]) << 16)
+}
+
+/// Port of `GetLE32`.
+fn get_le32(d: &[u8]) -> u32 {
+    u32::from_le_bytes([d[0], d[1], d[2], d[3]])
+}
+
+/// Port of `ParseRIFF`. Advances `data` past the RIFF header and returns the RIFF size (zero when
+/// there is no RIFF container).
+fn parse_riff(data: &mut &[u8], have_all_data: bool) -> Result<usize, Status> {
+    if data.len() >= RIFF_HEADER_SIZE && &data[..TAG_SIZE] == b"RIFF" {
+        if &data[8..8 + TAG_SIZE] != b"WEBP" {
+            return Err(Status::BitstreamError); // Wrong image file signature.
         }
-    } else if data.len() >= 5 && vp8l::check_signature(data) {
-        out.image = Some((true, data));
+        let size = get_le32(&data[TAG_SIZE..]);
+        // Check that we have at least one chunk (i.e "WEBP" + "VP8?nnnn").
+        if size < (TAG_SIZE + CHUNK_HEADER_SIZE) as u32 {
+            return Err(Status::BitstreamError);
+        }
+        if size > MAX_CHUNK_PAYLOAD {
+            return Err(Status::BitstreamError);
+        }
+        if have_all_data && (size as usize > data.len() - CHUNK_HEADER_SIZE) {
+            return Err(Status::NotEnoughData); // Truncated bitstream.
+        }
+        // We have a RIFF container. Skip it.
+        *data = &data[RIFF_HEADER_SIZE..];
+        return Ok(size as usize);
+    }
+    Ok(0)
+}
+
+/// Port of `ParseVP8X`. Returns `(flags, canvas_width, canvas_height)` when a `VP8X` chunk is
+/// present, and advances `data` past it.
+fn parse_vp8x(data: &mut &[u8]) -> Result<Option<(u32, i32, i32)>, Status> {
+    let vp8x_size = CHUNK_HEADER_SIZE + VP8X_CHUNK_SIZE;
+    if data.len() < CHUNK_HEADER_SIZE {
+        return Err(Status::NotEnoughData); // Insufficient data.
+    }
+    if &data[..TAG_SIZE] != b"VP8X" {
+        return Ok(None);
+    }
+    let chunk_size = get_le32(&data[TAG_SIZE..]);
+    if chunk_size != VP8X_CHUNK_SIZE as u32 {
+        return Err(Status::BitstreamError); // Wrong chunk size.
+    }
+    // Verify if enough data is available to validate the VP8X chunk.
+    if data.len() < vp8x_size {
+        return Err(Status::NotEnoughData);
+    }
+    let flags = get_le32(&data[CHUNK_HEADER_SIZE..]);
+    let width = 1 + get_le24(&data[12..]) as i32;
+    let height = 1 + get_le24(&data[15..]) as i32;
+    if u64::from(width as u32) * u64::from(height as u32) >= MAX_IMAGE_AREA {
+        return Err(Status::BitstreamError); // image is too large
+    }
+    // Skip over VP8X header bytes.
+    *data = &data[vp8x_size..];
+    Ok(Some((flags, width, height)))
+}
+
+/// Port of `ParseOptionalChunks`. Skips the chunks before the image bitstream and returns the
+/// `ALPH` payload if one was seen. On success `data` starts at the `VP8 `/`VP8L` chunk.
+fn parse_optional_chunks<'a>(
+    data: &mut &'a [u8],
+    riff_size: usize,
+) -> Result<Option<&'a [u8]>, Status> {
+    // "WEBP" + "VP8Xnnnn" + data.
+    let mut total_size: u32 = (TAG_SIZE + CHUNK_HEADER_SIZE + VP8X_CHUNK_SIZE) as u32;
+    let mut buf: &'a [u8] = data;
+    let mut alpha_data = None;
+    loop {
+        *data = buf;
+        if buf.len() < CHUNK_HEADER_SIZE {
+            return Err(Status::NotEnoughData); // Insufficient data.
+        }
+        let chunk_size = get_le32(&buf[TAG_SIZE..]);
+        if chunk_size > MAX_CHUNK_PAYLOAD {
+            return Err(Status::BitstreamError); // Not a valid chunk size.
+        }
+        // For odd-sized chunk-payload, there's one byte padding at the end.
+        let disk_chunk_size = (CHUNK_HEADER_SIZE as u32)
+            .wrapping_add(chunk_size)
+            .wrapping_add(1)
+            & !1u32;
+        total_size = total_size.wrapping_add(disk_chunk_size);
+        // Check that total bytes skipped so far does not exceed riff_size.
+        if riff_size > 0 && (total_size as usize > riff_size) {
+            return Err(Status::BitstreamError); // Not a valid chunk size.
+        }
+        // Start of a (possibly incomplete) VP8/VP8L chunk implies that we have parsed all the
+        // optional chunks. This check must occur before the insufficient-data check below, to
+        // allow incomplete VP8/VP8L chunks.
+        if &buf[..TAG_SIZE] == b"VP8 " || &buf[..TAG_SIZE] == b"VP8L" {
+            return Ok(alpha_data);
+        }
+        if (buf.len() as u64) < u64::from(disk_chunk_size) {
+            return Err(Status::NotEnoughData); // Insufficient data.
+        }
+        if &buf[..TAG_SIZE] == b"ALPH" {
+            // A valid ALPH header.
+            alpha_data = Some(&buf[CHUNK_HEADER_SIZE..CHUNK_HEADER_SIZE + chunk_size as usize]);
+        }
+        // We have a full and valid chunk; skip it.
+        buf = &buf[disk_chunk_size as usize..];
+    }
+}
+
+/// Port of `ParseVP8Header`. Returns `(chunk_size, is_lossless)` and advances `data` past the
+/// `VP8 `/`VP8L` chunk header.
+fn parse_vp8_header(
+    data: &mut &[u8],
+    have_all_data: bool,
+    riff_size: usize,
+) -> Result<(usize, bool), Status> {
+    let is_vp8 = data.len() >= TAG_SIZE && &data[..TAG_SIZE] == b"VP8 ";
+    let is_vp8l = data.len() >= TAG_SIZE && &data[..TAG_SIZE] == b"VP8L";
+    let minimal_size = TAG_SIZE + CHUNK_HEADER_SIZE; // "WEBP" + "VP8 nnnn" OR "WEBP" + "VP8Lnnnn"
+    if data.len() < CHUNK_HEADER_SIZE {
+        return Err(Status::NotEnoughData); // Insufficient data.
+    }
+    if is_vp8 || is_vp8l {
+        // Bitstream contains VP8/VP8L header.
+        let size = get_le32(&data[TAG_SIZE..]) as usize;
+        if riff_size >= minimal_size && size > riff_size - minimal_size {
+            return Err(Status::BitstreamError); // Inconsistent size information.
+        }
+        if have_all_data && (size > data.len() - CHUNK_HEADER_SIZE) {
+            return Err(Status::NotEnoughData); // Truncated bitstream.
+        }
+        // Skip over CHUNK_HEADER_SIZE bytes from VP8/VP8L Header.
+        *data = &data[CHUNK_HEADER_SIZE..];
+        Ok((size, is_vp8l))
     } else {
-        out.image = Some((false, data));
+        // Raw VP8/VP8L bitstream (no header).
+        Ok((data.len(), vp8l::check_signature(data)))
     }
-    if out.animated {
-        return Err(Status::UnsupportedFeature);
+}
+
+/// Port of `ParseHeadersInternal`. `want_headers` is `headers != NULL` in the C code: it selects
+/// the features-only path, which returns the canvas size for a `VP8X` file whose image data is
+/// not complete yet.
+fn parse_headers_steps<'a>(
+    data: &'a [u8],
+    have_all_data: bool,
+    want_headers: bool,
+    st: &mut ParseState<'a>,
+) -> Result<(), Status> {
+    if data.len() < RIFF_HEADER_SIZE {
+        return Err(Status::NotEnoughData);
     }
-    if out.image.is_none() {
+    let mut rest = data;
+    // Skip over RIFF header.
+    st.riff_size = parse_riff(&mut rest, have_all_data)?;
+    st.found_riff = st.riff_size > 0;
+
+    // Skip over VP8X.
+    let vp8x = parse_vp8x(&mut rest)?;
+    let (flags, canvas_width, canvas_height) = vp8x.unwrap_or((0, 0, 0));
+    st.found_vp8x = vp8x.is_some();
+    if !st.found_riff && st.found_vp8x {
+        // Note: This restriction may be removed in the future, if it becomes necessary to send
+        // VP8X chunk to the decoder.
         return Err(Status::BitstreamError);
     }
-    Ok(out)
+    let animation_present = flags & ANIMATION_FLAG != 0;
+    st.has_alpha = flags & ALPHA_FLAG != 0;
+    st.has_animation = animation_present;
+    st.image_width = canvas_width;
+    st.image_height = canvas_height;
+    if st.found_vp8x && animation_present && !want_headers {
+        // Just return features from VP8X header.
+        return Ok(());
+    }
+
+    if rest.len() < TAG_SIZE {
+        return Err(Status::NotEnoughData);
+    }
+
+    // Skip over optional chunks if data started with "RIFF + VP8X" or "ALPH".
+    if (st.found_riff && st.found_vp8x)
+        || (!st.found_riff && !st.found_vp8x && &rest[..TAG_SIZE] == b"ALPH")
+    {
+        st.alpha_data = parse_optional_chunks(&mut rest, st.riff_size)?;
+    }
+
+    // Skip over VP8/VP8L header.
+    let (compressed_size, is_lossless) = parse_vp8_header(&mut rest, have_all_data, st.riff_size)?;
+    st.compressed_size = compressed_size;
+    st.is_lossless = is_lossless;
+    if compressed_size > MAX_CHUNK_PAYLOAD as usize {
+        return Err(Status::BitstreamError);
+    }
+
+    if is_lossless {
+        if rest.len() < VP8L_FRAME_HEADER_SIZE {
+            return Err(Status::NotEnoughData);
+        }
+        // Validates raw VP8L data.
+        let (w, h, alpha) = vp8l::get_info(rest).ok_or(Status::BitstreamError)?;
+        st.image_width = w;
+        st.image_height = h;
+        st.has_alpha = alpha;
+    } else {
+        if rest.len() < VP8_FRAME_HEADER_SIZE {
+            return Err(Status::NotEnoughData);
+        }
+        // Validates raw VP8 data.
+        let (w, h) = vp8_dec::get_info(rest, compressed_size).ok_or(Status::BitstreamError)?;
+        st.image_width = w;
+        st.image_height = h;
+    }
+    // Validates image size coherency.
+    if st.found_vp8x && (canvas_width != st.image_width || canvas_height != st.image_height) {
+        return Err(Status::BitstreamError);
+    }
+    st.offset = data.len() - rest.len();
+    Ok(())
 }
 
-/// Port of `WebPGetFeatures` for a single-frame file.
+/// Port of `ParseHeadersInternal` including its `ReturnWidthHeight` exit: a `VP8X` file whose
+/// data is incomplete still reports its canvas size to the features call.
+fn parse_headers_internal<'a>(
+    data: &'a [u8],
+    have_all_data: bool,
+    want_headers: bool,
+    st: &mut ParseState<'a>,
+) -> Result<(), Status> {
+    let status = parse_headers_steps(data, have_all_data, want_headers, st);
+    let status = match status {
+        Err(Status::NotEnoughData) if st.found_vp8x && !want_headers => Ok(()),
+        other => other,
+    };
+    if status.is_ok() {
+        // If the data did not contain a VP8X/VP8L chunk the only definitive way to set this is
+        // by looking for alpha data (from an ALPH chunk).
+        st.has_alpha |= st.alpha_data.is_some();
+    }
+    status
+}
+
+/// Port of `GetFeatures`.
+fn features_of(data: &[u8]) -> Result<Features, Status> {
+    let mut st = ParseState::default();
+    parse_headers_internal(data, false, false, &mut st)?;
+    Ok(Features {
+        width: st.image_width,
+        height: st.image_height,
+        has_alpha: st.has_alpha,
+        has_animation: st.has_animation,
+        is_lossless: st.is_lossless,
+    })
+}
+
+/// Port of `WebPParseHeaders`: fills in the bitstream headers with `have_all_data` set, and
+/// reports animation as unsupported.
+fn parse_headers(data: &[u8]) -> Result<Headers<'_>, Status> {
+    let mut st = ParseState::default();
+    let status = parse_headers_internal(data, true, true, &mut st);
+    match status {
+        Ok(()) | Err(Status::NotEnoughData) if st.has_animation => Err(Status::UnsupportedFeature),
+        Ok(()) => Ok(Headers {
+            offset: st.offset,
+            alpha_data: st.alpha_data,
+            compressed_size: st.compressed_size,
+            is_lossless: st.is_lossless,
+        }),
+        Err(s) => Err(s),
+    }
+}
+
+/// Port of `WebPGetFeatures` for one image: the size, the flags, and whether it is lossless.
 ///
 /// # Errors
 ///
-/// Returns `BitstreamError` when the container or the image header does not parse.
+/// Returns `NotEnoughData` for a truncated file that the features call cannot size, and
+/// `BitstreamError` when the container or the image header does not parse.
 #[doc(alias = "WebPGetFeatures")]
 pub fn get_features(data: &[u8]) -> Result<Features, Status> {
-    let chunks = parse_chunks(data)?;
-    let (is_lossless, payload) = chunks.image.ok_or(Status::BitstreamError)?;
-    if is_lossless {
-        let (width, height, has_alpha) = vp8l::get_info(payload).ok_or(Status::BitstreamError)?;
-        Ok(Features {
-            width,
-            height,
-            has_alpha,
-            is_lossless,
-        })
-    } else {
-        let (width, height) =
-            vp8_dec::get_info(payload, payload.len()).ok_or(Status::BitstreamError)?;
-        Ok(Features {
-            width,
-            height,
-            has_alpha: chunks.alpha.is_some() || chunks.vp8x_alpha,
-            is_lossless,
-        })
-    }
+    features_of(data)
 }
 
 /// Decodes a still WebP image into `out` in colour space `mode` (`WebPDecode` with default
@@ -136,7 +382,8 @@ pub fn get_features(data: &[u8]) -> Result<Features, Status> {
 ///
 /// # Errors
 ///
-/// Returns the `Status` of the first parse or decode failure.
+/// Returns the `Status` of the first parse or decode failure. As in `WebPDecode`, a truncated
+/// file reports `BitstreamError` rather than `NotEnoughData` when the features step fails.
 #[doc(alias = "WebPDecode")]
 pub fn decode(
     data: &[u8],
@@ -144,15 +391,22 @@ pub fn decode(
     out: &mut [u8],
     out_stride: usize,
 ) -> Result<(i32, i32), Status> {
-    let chunks = parse_chunks(data)?;
-    let (is_lossless, payload) = chunks.image.ok_or(Status::BitstreamError)?;
-    if is_lossless {
-        return crate::decode_vp8l(payload, mode, out, out_stride);
+    // Port of the GetFeatures step of WebPDecode: NOT_ENOUGH_DATA is not valid here.
+    match features_of(data) {
+        Ok(_) => {}
+        Err(Status::NotEnoughData) => return Err(Status::BitstreamError),
+        Err(s) => return Err(s),
+    }
+    // Port of the WebPParseHeaders step of DecodeInto (have_all_data = 1).
+    let headers = parse_headers(data)?;
+    let rest = &data[headers.offset..];
+    if headers.is_lossless {
+        return crate::decode_vp8l(rest, mode, out, out_stride);
     }
     let (width, height) =
-        vp8_dec::get_info(payload, payload.len()).ok_or(Status::BitstreamError)?;
+        vp8_dec::get_info(rest, headers.compressed_size).ok_or(Status::BitstreamError)?;
     let planes = vp8_dec::decode(
-        payload,
+        rest,
         Crop {
             left: 0,
             top: 0,
@@ -160,13 +414,15 @@ pub fn decode(
             bottom: height,
         },
     )?;
-    let alpha_plane = match chunks.alpha {
+    let alpha_plane = match headers.alpha_data {
         None => None,
         Some(alph) => {
             let mut dec = alpha::alpha_init(alph, width, height, (0, width, 0, height))
                 .ok_or(Status::BitstreamError)?;
+            // FinishRow reports any alpha failure as BITSTREAM_ERROR, whatever the alpha decoder
+            // recorded (VP8DecompressAlphaRows returns NULL, and VP8SetError overrides the status).
             if !alpha::alpha_decode(&mut dec, 0, height) {
-                return Err(dec.status());
+                return Err(Status::BitstreamError);
             }
             Some(dec.plane().to_vec())
         }

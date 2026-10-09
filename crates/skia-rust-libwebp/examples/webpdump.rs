@@ -59,16 +59,19 @@ fn main() {
         };
         for (name, mode, bpp) in MODES {
             // Size first (WebPGetFeatures), then decode into a tightly packed buffer.
-            let (w, h) = match get_features(&data) {
-                Ok(f) => (f.width, f.height),
-                Err(s) => {
-                    println!(
-                        "{base} {name} status={} w=0 h=0 fnv=0000000000000000",
-                        status_code(s)
-                    );
-                    continue;
-                }
+            let Ok(features) = get_features(&data) else {
+                // WebPDecode fails in its GetFeatures step with the same status; the empty
+                // buffer is never written.
+                let s = decode_webp(&data, mode, &mut [], 0)
+                    .err()
+                    .unwrap_or(Status::BitstreamError);
+                println!(
+                    "{base} {name} status={} w=0 h=0 fnv=0000000000000000",
+                    status_code(s)
+                );
+                continue;
             };
+            let (w, h) = (features.width, features.height);
             let stride = w as usize * bpp;
             let mut out = vec![0u8; stride * h as usize];
             match decode_webp(&data, mode, &mut out, stride) {

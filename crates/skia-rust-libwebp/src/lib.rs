@@ -48,8 +48,8 @@ pub fn vp8l_get_info(data: &[u8]) -> Option<(i32, i32, bool)> {
     vp8l::get_info(data)
 }
 
-/// Decodes a bare VP8L bitstream (a `VP8L` chunk payload) into `out` in colour space `mode`,
-/// `out_stride` bytes per row. Returns the image size.
+/// Decodes a bare VP8L bitstream (the bytes from a `VP8L` chunk payload to the end of the input)
+/// into `out` in colour space `mode`, `out_stride` bytes per row. Returns the image size.
 ///
 /// This is the one-shot path (`WebPDecode` for a lossless image). Incremental decoding uses the
 /// same decoder, fed one update at a time.
