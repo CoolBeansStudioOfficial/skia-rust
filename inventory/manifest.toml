@@ -20448,8 +20448,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1123-L1150"
 module = "effects"
-status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+status = "passing"
 span_hash = "f6930ef04649efc309de9c445d98d000f157246911b6a58fe703bac549d5fcca"
 
 [[test]]
@@ -20458,8 +20457,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1100-L1121"
 module = "effects"
-status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+status = "passing"
 span_hash = "f0231eb2e6bbd23bc2a97636f56407221c7f79b1cfed6161ba51c02651324206"
 
 [[test]]
@@ -23704,8 +23702,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L230-L232"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "e998c0e03a2a4dc6709478caa6737aab22e29492cfce76d4a6ce541f10334c7c"
 
 [[test]]
@@ -23714,8 +23711,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L266-L337"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (8888/565 and f16 scalar+sse2 match; f16 ml3/ml4 tiers differ by sparse single-pixel specks, root cause not isolated)"
+status = "passing"
 span_hash = "2fd7e9399e932a48eab1a9e934616353f6ea4098f7cef863e17a16ade298f391"
 
 [[test]]
@@ -23733,8 +23729,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L238-L240"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "6b6329a0627983f383fcf90eead9edaf707c56adf2efbe88146395be0ad87a46"
 
 [[test]]
@@ -23743,8 +23738,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L234-L236"
 module = "raster"
-status = "failing"
-reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave tessellation ported; residual per-pixel mismatch on all tiers, not yet isolated)"
+status = "passing"
 span_hash = "e1fd7a221e94f4fc7217cdecda0638f1699ff6414b1b06d2fa1ab1a5058627da"
 
 [[test]]

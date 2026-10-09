@@ -1323,7 +1323,6 @@ crate::def_simple_gm!(gradients_interesting, canvas, 640, 1300, {
 
 // Port of: gm/gradients.cpp#L1100-L1124 (chrome/m156)
 crate::def_simple_gm_bg!(
-    #[ignore = "see notes/gm-gradients.cpp-OKLCH-libm.md"]
     gradients_color_space_tilemode,
     canvas,
     360,
@@ -1366,7 +1365,6 @@ crate::def_simple_gm_bg!(
 
 // Port of: gm/gradients.cpp#L1126-L1163 (chrome/m156)
 crate::def_simple_gm_bg!(
-    #[ignore = "see notes/gm-gradients.cpp-OKLCH-libm.md"]
     gradients_color_space_many_stops,
     canvas,
     500,

@@ -17,6 +17,8 @@
     clippy::similar_names, // sNumer/tNumer etc. keep the C++ names
     clippy::many_single_char_names, // p0/p1/v0/v1 keep the C++ names for auditing the port
 )]
+use std::collections::HashMap;
+
 use bitflags::bitflags;
 
 use crate::blend_mode::BlendMode;
@@ -35,8 +37,10 @@ use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
 use crate::paint::{Paint, Style};
 use crate::path::Path;
+use crate::path_types::{PathFillType, PathVerb};
 use crate::point::{Point, Vector};
 use crate::point3::Point3;
+use crate::random::Random;
 use crate::rect::Rect;
 use crate::scalar::{SCALAR_NEARLY_ZERO, scalar};
 use crate::shadow_tessellator::{make_ambient, make_spot};
@@ -245,7 +249,7 @@ struct ShadowMesh {
     translate: Vector,
 }
 
-/// `AmbientVerticesFactory::makeVertices` and the uncached ambient path.
+/// `AmbientVerticesFactory::makeVertices`: the ambient mesh of `path` in a canonical place.
 // Port of: src/utils/SkShadowUtils.cpp#L58-L76 (chrome/m156)
 fn make_ambient_mesh(
     path: &Path,
@@ -278,7 +282,7 @@ enum OccluderType {
     DirectionalTransparent,
 }
 
-/// `SpotVerticesFactory::makeVertices` and the uncached spot path.
+/// `SpotVerticesFactory::makeVertices`: the spot mesh of `path`.
 // Port of: src/utils/SkShadowUtils.cpp#L117-L165 (chrome/m156)
 #[allow(clippy::too_many_arguments)] // carries the SpotVerticesFactory fields
 fn make_spot_mesh(
@@ -344,6 +348,342 @@ fn make_spot_mesh(
     }
 }
 
+/// Factory for an ambient shadow mesh with particular shadow properties
+/// (`AmbientVerticesFactory`).
+// Port of: src/utils/SkShadowUtils.cpp#L55-L77 (chrome/m156)
+#[derive(Clone, Copy, Debug)]
+struct AmbientVerticesFactory {
+    /// NaN so that `is_compatible` fails until initialized.
+    occluder_height: scalar,
+    transparent: bool,
+    offset: Vector,
+}
+
+impl Default for AmbientVerticesFactory {
+    fn default() -> Self {
+        AmbientVerticesFactory {
+            occluder_height: scalar::NAN,
+            transparent: false,
+            offset: Vector::new(0.0, 0.0),
+        }
+    }
+}
+
+/// Factory for a spot shadow mesh with particular shadow properties (`SpotVerticesFactory`).
+// Port of: src/utils/SkShadowUtils.cpp#L79-L166 (chrome/m156)
+#[derive(Clone, Copy, Debug)]
+struct SpotVerticesFactory {
+    offset: Vector,
+    local_center: Point,
+    /// NaN so that `is_compatible` fails until initialized.
+    occluder_height: scalar,
+    dev_light_pos: Point3,
+    light_radius: scalar,
+    occluder_type: OccluderType,
+}
+
+impl Default for SpotVerticesFactory {
+    fn default() -> Self {
+        SpotVerticesFactory {
+            offset: Vector::new(0.0, 0.0),
+            local_center: Point::new(0.0, 0.0),
+            occluder_height: scalar::NAN,
+            dev_light_pos: Point3::new(0.0, 0.0, 0.0),
+            light_radius: 0.0,
+            occluder_type: OccluderType::PointTransparent,
+        }
+    }
+}
+
+/// A mesh factory whose meshes are cached per path (the template argument of Skia's
+/// `draw_shadow` and `CachedTessellations`).
+trait VerticesFactory: Copy + Default {
+    /// `isCompatible(that, translate)`: whether a mesh made by `self` serves a request for
+    /// `that`, and if so the translation to draw it with.
+    fn is_compatible(&self, that: &Self) -> Option<Vector>;
+    /// `makeVertices`.
+    fn make_vertices(&self, path: &Path, ctm: &Matrix) -> ShadowMesh;
+    /// The tessellation set of this factory kind.
+    fn set(t: &CachedTessellations) -> &TessellationSet<Self>;
+    /// The tessellation set of this factory kind, for adding to.
+    fn set_mut(t: &mut CachedTessellations) -> &mut TessellationSet<Self>;
+}
+
+impl VerticesFactory for AmbientVerticesFactory {
+    // Port of: src/utils/SkShadowUtils.cpp#L61-L68 (chrome/m156)
+    #[allow(clippy::float_cmp)] // SkScalar equality, with NaN never compatible
+    fn is_compatible(&self, that: &Self) -> Option<Vector> {
+        if self.occluder_height != that.occluder_height || self.transparent != that.transparent {
+            return None;
+        }
+        Some(that.offset)
+    }
+
+    // Port of: src/utils/SkShadowUtils.cpp#L70-L82 (chrome/m156)
+    fn make_vertices(&self, path: &Path, ctm: &Matrix) -> ShadowMesh {
+        make_ambient_mesh(
+            path,
+            ctm,
+            self.occluder_height,
+            self.transparent,
+            self.offset,
+        )
+    }
+
+    fn set(t: &CachedTessellations) -> &TessellationSet<Self> {
+        &t.ambient_set
+    }
+
+    fn set_mut(t: &mut CachedTessellations) -> &mut TessellationSet<Self> {
+        &mut t.ambient_set
+    }
+}
+
+impl VerticesFactory for SpotVerticesFactory {
+    // Port of: src/utils/SkShadowUtils.cpp#L103-L132 (chrome/m156)
+    #[allow(clippy::float_cmp)] // SkScalar equality, with NaN never compatible
+    fn is_compatible(&self, that: &Self) -> Option<Vector> {
+        if self.occluder_height != that.occluder_height
+            || self.dev_light_pos.z != that.dev_light_pos.z
+            || self.light_radius != that.light_radius
+            || self.occluder_type != that.occluder_type
+        {
+            return None;
+        }
+        match self.occluder_type {
+            OccluderType::PointTransparent | OccluderType::PointOpaqueNoUmbra => {
+                // 'this' and 'that' will either both have no umbra removed or both have all the
+                // umbra removed.
+                Some(that.offset)
+            }
+            OccluderType::PointOpaquePartialUmbra => {
+                // In this case we partially remove the umbra differently for 'this' and 'that'
+                // if the offsets don't match.
+                if self.offset == that.offset {
+                    Some(Vector::new(0.0, 0.0))
+                } else {
+                    None
+                }
+            }
+            OccluderType::Directional | OccluderType::DirectionalTransparent => {
+                Some(that.offset - self.offset)
+            }
+        }
+    }
+
+    fn make_vertices(&self, path: &Path, ctm: &Matrix) -> ShadowMesh {
+        make_spot_mesh(
+            path,
+            ctm,
+            self.occluder_height,
+            self.dev_light_pos,
+            self.light_radius,
+            self.local_center,
+            self.occluder_type,
+            self.offset,
+        )
+    }
+
+    fn set(t: &CachedTessellations) -> &TessellationSet<Self> {
+        &t.spot_set
+    }
+
+    fn set_mut(t: &mut CachedTessellations) -> &mut TessellationSet<Self> {
+        &mut t.spot_set
+    }
+}
+
+/// One cached mesh with the factory and matrix it was made for (`Set::Entry`).
+#[derive(Clone, Debug)]
+struct TessellationEntry<F> {
+    factory: F,
+    vertices: Option<Vertices>,
+    matrix: Matrix,
+}
+
+/// Up to four meshes of one factory kind (`CachedTessellations::Set`).
+// Port of: src/utils/SkShadowUtils.cpp#L184-L254 (chrome/m156)
+#[derive(Clone, Debug)]
+struct TessellationSet<F> {
+    entries: [TessellationEntry<F>; 4],
+    count: usize,
+    random: Random,
+}
+
+impl<F: VerticesFactory> Default for TessellationSet<F> {
+    fn default() -> Self {
+        TessellationSet {
+            entries: std::array::from_fn(|_| TessellationEntry {
+                factory: F::default(),
+                vertices: None,
+                matrix: Matrix::new_identity(),
+            }),
+            count: 0,
+            random: Random::default(),
+        }
+    }
+}
+
+impl<F: VerticesFactory> TessellationSet<F> {
+    // Port of: src/utils/SkShadowUtils.cpp#L190-L212 (chrome/m156)
+    #[allow(clippy::float_cmp)] // SkScalar equality
+    fn find(&self, factory: &F, matrix: &Matrix) -> Option<(Vertices, Vector)> {
+        for e in &self.entries {
+            let Some(translate) = e.factory.is_compatible(factory) else {
+                continue;
+            };
+            let m = &e.matrix;
+            if matrix.has_perspective() || m.has_perspective() {
+                if matrix != m {
+                    continue;
+                }
+            } else if matrix.scale_x() != m.scale_x()
+                || matrix.skew_x() != m.skew_x()
+                || matrix.scale_y() != m.scale_y()
+                || matrix.skew_y() != m.skew_y()
+            {
+                continue;
+            }
+            return e.vertices.clone().map(|v| (v, translate));
+        }
+        None
+    }
+
+    // Port of: src/utils/SkShadowUtils.cpp#L214-L233 (chrome/m156)
+    fn add(&mut self, path: &Path, factory: &F, matrix: &Matrix) -> Option<(Vertices, Vector)> {
+        let mesh = factory.make_vertices(path, matrix);
+        let vertices = mesh.vertices?;
+        let i = if self.count < self.entries.len() {
+            self.count += 1;
+            self.count - 1
+        } else {
+            self.random.next_u_less_than(self.entries.len() as u32) as usize
+        };
+        self.entries[i] = TessellationEntry {
+            factory: *factory,
+            vertices: Some(vertices.clone()),
+            matrix: matrix.clone(),
+        };
+        Some((vertices, mesh.translate))
+    }
+}
+
+/// The meshes cached for one path (`CachedTessellations`).
+// Port of: src/utils/SkShadowUtils.cpp#L168-L260 (chrome/m156)
+#[derive(Clone, Debug, Default)]
+struct CachedTessellations {
+    ambient_set: TessellationSet<AmbientVerticesFactory>,
+    spot_set: TessellationSet<SpotVerticesFactory>,
+}
+
+/// The key of a path's meshes: the geometry for a small path, else its generation ID
+/// (`GrStyledShape::writeUnstyledKey`).
+// Port of: src/gpu/ganesh/geometry/GrStyledShape.cpp#L103-L253 (chrome/m156)
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum ShadowPathKey {
+    Data {
+        fill_type: PathFillType,
+        verbs: Vec<PathVerb>,
+        points: Vec<[u32; 2]>,
+        weights: Vec<u32>,
+    },
+    GenerationId(u64),
+}
+
+impl ShadowPathKey {
+    /// `GrStyledShape::kMaxKeyFromDataVerbCnt`.
+    const MAX_KEY_FROM_DATA_VERB_COUNT: usize = 10;
+
+    /// The key of `path`, or `None` if its meshes are not cached (volatile paths).
+    fn new(path: &Path) -> Option<ShadowPathKey> {
+        if path.is_volatile() {
+            return None;
+        }
+        if path.count_verbs() > Self::MAX_KEY_FROM_DATA_VERB_COUNT {
+            return Some(ShadowPathKey::GenerationId(path.generation_id()));
+        }
+        Some(ShadowPathKey::Data {
+            fill_type: path.fill_type(),
+            verbs: path.verbs().to_vec(),
+            points: path
+                .points()
+                .iter()
+                .map(|p| [p.x.to_bits(), p.y.to_bits()])
+                .collect(),
+            weights: path.conic_weights().iter().map(|w| w.to_bits()).collect(),
+        })
+    }
+}
+
+/// The meshes of the shadows drawn on a canvas, per path (the shadow records of
+/// `SkResourceCache`).
+///
+/// skia-rust: Skia keeps these in the process-wide resource cache; they live in the canvas here
+/// (no global mutable state). The cache matters for the pixels: a directional spot shadow of a
+/// path drawn again with the same matrix is the cached mesh translated, not a new tessellation.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ShadowCache {
+    records: HashMap<ShadowPathKey, CachedTessellations>,
+}
+
+impl ShadowCache {
+    /// The mesh for `factory` and the translation to draw it with: from the cache if a
+    /// compatible one is there, otherwise tessellated and added (the key part of `draw_shadow`).
+    // Port of: src/utils/SkShadowUtils.cpp#L330-L385 (chrome/m156)
+    fn find_or_add<F: VerticesFactory>(
+        &mut self,
+        key: &ShadowPathKey,
+        factory: &F,
+        path: &Path,
+        view_matrix: &Matrix,
+    ) -> Option<(Vertices, Vector)> {
+        // `SkResourceCache::Find` removes the record when the visitor does not find a suitable
+        // mesh; it is added again once the new mesh is made.
+        let mut tessellations = match self.records.remove(key) {
+            Some(t) => {
+                if let Some(found) = F::set(&t).find(factory, view_matrix) {
+                    self.records.insert(key.clone(), t);
+                    return Some(found);
+                }
+                t
+            }
+            None => CachedTessellations::default(),
+        };
+        let added = F::set_mut(&mut tessellations).add(path, factory, view_matrix)?;
+        self.records.insert(key.clone(), tessellations);
+        Some(added)
+    }
+}
+
+/// `draw_shadow(factory, drawProc, path, color)`: draws the mesh of `factory` for `path`, from
+/// the canvas's cache when it has a compatible one. False if there is no mesh.
+// Port of: src/utils/SkShadowUtils.cpp#L330-L412 (chrome/m156)
+fn draw_cached_shadow<F: VerticesFactory>(
+    canvas: &Canvas,
+    factory: &F,
+    path: &Path,
+    view_matrix: &Matrix,
+    color: Color,
+) -> bool {
+    let found = if let Some(key) = ShadowPathKey::new(path) {
+        canvas.with_shadow_cache(|cache| cache.find_or_add(&key, factory, path, view_matrix))
+    } else {
+        let mesh = factory.make_vertices(path, view_matrix);
+        mesh.vertices.map(|v| (v, mesh.translate))
+    };
+    let Some((vertices, translate)) = found else {
+        return false;
+    };
+    draw_mesh(
+        canvas,
+        &vertices,
+        color,
+        translate,
+        view_matrix.has_perspective(),
+    );
+    true
+}
+
 /// `SkDevice::drawShadow` for the raster device: draws the ambient and spot shadows of `rec` on
 /// `canvas`, with meshes where the tessellator succeeds and blurs otherwise.
 // Port of: src/utils/SkShadowUtils.cpp#L715-L905 (SkDevice::drawShadow, chrome/m156)
@@ -394,13 +734,12 @@ pub(crate) fn private_draw_shadow_rec(canvas: &Canvas, path: &Path, rec: &DrawSh
             } else {
                 Vector::new(view_matrix.translate_x(), view_matrix.translate_y())
             };
-            let mesh = make_ambient_mesh(path, &view_matrix, z_plane_params.z, transparent, offset);
-            success = draw_mesh_shadow(
-                canvas,
-                mesh,
-                rec.ambient_color,
-                view_matrix.has_perspective(),
-            );
+            let factory = AmbientVerticesFactory {
+                occluder_height: z_plane_params.z,
+                transparent,
+                offset,
+            };
+            success = draw_cached_shadow(canvas, &factory, path, &view_matrix, rec.ambient_color);
         }
 
         // All else has failed, draw with blur
@@ -512,17 +851,15 @@ pub(crate) fn private_draw_shadow_rec(canvas: &Canvas, path: &Path, rec: &DrawSh
             occluder_height_factor_offset.x += view_matrix.translate_x();
             occluder_height_factor_offset.y += view_matrix.translate_y();
 
-            let mesh = make_spot_mesh(
-                path,
-                &view_matrix,
-                z_plane_params.z,
+            let factory = SpotVerticesFactory {
+                offset: occluder_height_factor_offset,
+                local_center,
+                occluder_height: z_plane_params.z,
                 dev_light_pos,
                 light_radius,
-                local_center,
                 occluder_type,
-                occluder_height_factor_offset,
-            );
-            success = draw_mesh_shadow(canvas, mesh, rec.spot_color, view_matrix.has_perspective());
+            };
+            success = draw_cached_shadow(canvas, &factory, path, &view_matrix, rec.spot_color);
         }
 
         // All else has failed, draw with blur
@@ -551,22 +888,6 @@ pub(crate) fn private_draw_shadow_rec(canvas: &Canvas, path: &Path, rec: &DrawSh
         }
         restore_device_transform(canvas, prev);
     }
-}
-
-/// Draws `mesh` with its translation applied to the device transform, and reports success.
-/// `None` vertices count as failure, so the caller falls back to blur.
-// Port of: src/utils/SkShadowUtils.cpp#L747-L778 (drawVertsProc, chrome/m156)
-fn draw_mesh_shadow(
-    canvas: &Canvas,
-    mesh: ShadowMesh,
-    color: Color,
-    has_perspective: bool,
-) -> bool {
-    let Some(vertices) = mesh.vertices else {
-        return false;
-    };
-    draw_mesh(canvas, &vertices, color, mesh.translate, has_perspective);
-    true
 }
 
 /// `drawVertsProc` and the gaussian-filtered vertex draw: runs the vertex color through the

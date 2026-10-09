@@ -104,7 +104,7 @@ fn calc_t_div(cubic: &DCubic, precision: f64, start: f64) -> f64 {
     let dy = p[3].y - 3.0 * (p[2].y - p[1].y) - p[0].y;
     let dist = (dx * dx + dy * dy).sqrt();
     let t_div3 = precision / (adjust * dist);
-    let mut t = t_div3.cbrt();
+    let mut t = skia_rust_core::libm::cbrt(t_div3);
     if start > 0.0 {
         t = start + (1.0 - start) * t;
     }

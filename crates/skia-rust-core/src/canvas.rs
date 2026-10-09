@@ -556,6 +556,8 @@ struct CanvasState {
     surface: Option<Rc<SurfaceBase>>,
     /// The subclass hooks (see [`CanvasHooks`]).
     hooks: Option<Box<dyn CanvasHooks>>,
+    /// The meshes of the shadows drawn so far (`SkResourceCache`'s shadow records).
+    shadow_cache: crate::shadow_utils::ShadowCache,
 }
 
 impl std::fmt::Debug for CanvasState {
@@ -631,6 +633,7 @@ impl CanvasState {
             clip_restriction_save_count: -1,
             surface: None,
             hooks: None,
+            shadow_cache: crate::shadow_utils::ShadowCache::default(),
         };
         state.quick_reject_bounds = state.compute_device_clip_bounds(true);
         state
@@ -4029,6 +4032,15 @@ impl Canvas {
     pub fn with_top_device<R>(&self, f: impl FnOnce(&mut dyn Device) -> R) -> R {
         let mut s = self.state.borrow_mut();
         f(s.top_device_mut())
+    }
+
+    /// Runs `f` on the shadow mesh cache of this canvas (`SkShadowUtils` cache records).
+    pub(crate) fn with_shadow_cache<R>(
+        &self,
+        f: impl FnOnce(&mut crate::shadow_utils::ShadowCache) -> R,
+    ) -> R {
+        let mut s = self.state.borrow_mut();
+        f(&mut s.shadow_cache)
     }
 }
 

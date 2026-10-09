@@ -270,7 +270,7 @@ pub fn calc_num_radial_segments_per_radian(approx_dev_stroke_radius: f32) -> f32
     let cos_theta = 1.0 - (1.0 / K_PRECISION) / approx_dev_stroke_radius;
     // std::max(cosTheta, -1.f)
     let clamped = if cos_theta < -1.0 { -1.0 } else { cos_theta };
-    0.5 / clamped.acos()
+    0.5 / skia_rust_core::libm::acosf(clamped)
 }
 
 // This value only protects us against getting stuck in infinite recursion due to fp32 precision

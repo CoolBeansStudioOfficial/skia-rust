@@ -291,7 +291,10 @@ fn check_cubic_log2(r: &mut Reporter, pts: &[Point]) {
     let id = identity();
     let f = std_max(1.0, wangs_formula_cubic_reference_impl(K_PRECISION, pts));
     let f_log2 = cubic_log2(K_PRECISION, pts, &id);
-    reporter_assert!(r, scalar_ceil_to_int(f.log2()) == f_log2);
+    reporter_assert!(
+        r,
+        scalar_ceil_to_int(skia_rust_core::libm::log2f(f)) == f_log2
+    );
     let c = std_max(1.0, cubic(K_PRECISION, pts, &id));
     reporter_assert!(r, nearly_equal(c / f, 1.0, 1.0 / 128.0));
 }
@@ -304,7 +307,10 @@ fn check_quadratic_log2(r: &mut Reporter, pts: &[Point]) {
         wangs_formula_quadratic_reference_impl(K_PRECISION, pts),
     );
     let f_log2 = quadratic_log2(K_PRECISION, pts, &id);
-    reporter_assert!(r, scalar_ceil_to_int(f.log2()) == f_log2);
+    reporter_assert!(
+        r,
+        scalar_ceil_to_int(skia_rust_core::libm::log2f(f)) == f_log2
+    );
     let q = std_max(1.0, quadratic(K_PRECISION, pts, &id));
     reporter_assert!(r, nearly_equal(q / f, 1.0, 1.0 / 128.0));
 }
@@ -328,7 +334,10 @@ def_test!(wangs_formula_log2, |r| {
             let x = ldexp(1.0, level * 2) / k;
             setup_cubic_length_term(level << 1, &mut pts, x - epsilon);
             let mut reference_value = wangs_formula_cubic_reference_impl(K_PRECISION, &pts);
-            reporter_assert!(r, reference_value.log2().ceil() == int_to_float(level));
+            reporter_assert!(
+                r,
+                skia_rust_core::libm::log2f(reference_value).ceil() == int_to_float(level)
+            );
             let mut c = cubic(K_PRECISION, &pts, &id);
             reporter_assert!(
                 r,
@@ -337,7 +346,10 @@ def_test!(wangs_formula_log2, |r| {
             reporter_assert!(r, cubic_log2(K_PRECISION, &pts, &id) == level);
             setup_cubic_length_term(level << 1, &mut pts, x + epsilon);
             reference_value = wangs_formula_cubic_reference_impl(K_PRECISION, &pts);
-            reporter_assert!(r, reference_value.log2().ceil() == int_to_float(level + 1));
+            reporter_assert!(
+                r,
+                skia_rust_core::libm::log2f(reference_value).ceil() == int_to_float(level + 1)
+            );
             c = cubic(K_PRECISION, &pts, &id);
             reporter_assert!(
                 r,
@@ -353,7 +365,10 @@ def_test!(wangs_formula_log2, |r| {
             let x = ldexp(1.0, level * 2) / k;
             setup_quadratic_length_term(level << 1, &mut pts, x - epsilon);
             let mut reference_value = wangs_formula_quadratic_reference_impl(K_PRECISION, &pts);
-            reporter_assert!(r, reference_value.log2().ceil() == int_to_float(level));
+            reporter_assert!(
+                r,
+                skia_rust_core::libm::log2f(reference_value).ceil() == int_to_float(level)
+            );
             let mut q = quadratic(K_PRECISION, &pts, &id);
             reporter_assert!(
                 r,
@@ -362,7 +377,10 @@ def_test!(wangs_formula_log2, |r| {
             reporter_assert!(r, quadratic_log2(K_PRECISION, &pts, &id) == level);
             setup_quadratic_length_term(level << 1, &mut pts, x + epsilon);
             reference_value = wangs_formula_quadratic_reference_impl(K_PRECISION, &pts);
-            reporter_assert!(r, reference_value.log2().ceil() == int_to_float(level + 1));
+            reporter_assert!(
+                r,
+                skia_rust_core::libm::log2f(reference_value).ceil() == int_to_float(level + 1)
+            );
             q = quadratic(K_PRECISION, &pts, &id);
             reporter_assert!(
                 r,
@@ -482,7 +500,10 @@ def_test!(wangs_formula_worst_case_cubic, |r| {
             wangs_formula::worst_case_cubic_log2(K_PRECISION, bbox.width(), bbox.height());
         let actual = wangs_formula_cubic_reference_impl(K_PRECISION, pts);
         reporter_assert!(r, worst >= actual);
-        reporter_assert!(r, std_max(1.0, worst).log2().ceil() as i32 == worst_log2);
+        reporter_assert!(
+            r,
+            skia_rust_core::libm::log2f(std_max(1.0, worst)).ceil() as i32 == worst_log2
+        );
     }
 
     let mut rand = Random::default();

@@ -87,7 +87,7 @@ fn make_unnormalized_half_kernel(half_kernel: &mut [f32], sigma: f32) -> f32 {
     // Compute half kernel values at half pixel steps out from the center.
     let mut t = 0.5f32;
     for slot in half_kernel.iter_mut() {
-        let value = (t * t * b).exp();
+        let value = skia_rust_core::libm::expf(t * t * b);
         tot += value;
         *slot = value;
         t += 1.0f32;

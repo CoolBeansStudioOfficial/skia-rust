@@ -78,8 +78,8 @@ fn calculate_bessel_factors(sigma: f64, gauss: &mut [f64; GAUSS_ARRAY_MAX]) -> u
     // The following formula for calculating the Gaussian kernel is from
     // "Scale-Space for Discrete Signals" by Tony Lindeberg.
     // gauss(n; var) = besselI_n(var) / (e^var)
-    // skia-rust: libm (`f64::exp`)
-    let d = var.exp();
+    // `std::exp(double)`: the UCRT-exact `libm::exp`
+    let d = crate::libm::exp(var);
     let mut b = [0.0f64; GAUSS_ARRAY_MAX];
     b[0] = bessel_i_0(var);
     b[1] = bessel_i_1(var);

@@ -74,8 +74,8 @@ impl GM for DrawGlyphsGm {
         for (xform, pos) in self.xforms.iter_mut().zip(&self.positions) {
             let length_to_glyph = pos.x - first.x;
             let angle = SCALAR_PI * (self.length - length_to_glyph) / self.length;
-            let cos = angle.cos();
-            let sin = angle.sin();
+            let cos = skia_rust_core::libm::cosf(angle);
+            let sin = skia_rust_core::libm::sinf(angle);
             *xform = RSXform::new(sin, cos, (self.radius * cos, -self.radius * sin));
         }
     }
