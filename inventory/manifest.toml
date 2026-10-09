@@ -15570,6 +15570,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/annotated_text.cpp#L38-L53"
 module = "text"
 status = "todo"
+reason = "needs SkCanvas::drawAnnotation / SkAnnotateRectWithURL (annotations are not ported)"
 span_hash = "5e76b934fce5941e1feef6e78eca1638a662e0d0f457096816a44d522db27794"
 
 [[test]]
@@ -17939,6 +17940,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L399-L399"
 module = "text"
 status = "todo"
+reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
 span_hash = "bbb72d95f72929758e32f0911781dc9e353a09bd1438a357a8d4b1e76e638c2c"
 
 [[test]]
@@ -17948,6 +17950,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L398-L398"
 module = "text"
 status = "todo"
+reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
 span_hash = "81c4eaa0b54ada746e43522a55015a4dbf0d560393f827019c9be3d016f1a284"
 
 [[test]]
@@ -17957,6 +17960,7 @@ macro = "DEF_GM"
 source = "gm/compressed_textures.cpp#L397-L397"
 module = "text"
 status = "todo"
+reason = "GPU-only: onGpuSetup builds the compressed GPU images and needs a GPU context; no raster outcome to match yet"
 span_hash = "362f81acea649d7105a087872b35eecfe9002b3845bfccbb4d4591ce5af60096"
 
 [[test]]
@@ -18820,6 +18824,7 @@ macro = "DEF_GM"
 source = "gm/dftext.cpp#L271-L271"
 module = "text"
 status = "todo"
+reason = "not ported yet (distance-field text on a raster surface, default EmojiSample for the emoji line)"
 span_hash = "e5c13723507bc213e6d0d840ef4c0a0c84c2ecd5577c8dc45343083e562336fc"
 
 [[test]]
@@ -18829,6 +18834,7 @@ macro = "DEF_GM"
 source = "gm/dftext_blob_persp.cpp#L160-L160"
 module = "text"
 status = "todo"
+reason = "not ported yet (perspective text blobs drawn with setMatrix on a raster canvas)"
 span_hash = "f60f77fbb2ac044acc031e6221f600420f32553455dbf8c98a08fdefc0f5b9cc"
 
 [[test]]
@@ -20929,7 +20935,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/image.cpp#L374-L504"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "82674190051e7cbc2441bb62d8cb45faa148325c959366e3a8b6d8d7fb69d2a0"
 
 [[test]]
@@ -24390,6 +24396,7 @@ macro = "DEF_GM"
 source = "gm/surface.cpp#L170-L170"
 module = "text"
 status = "todo"
+reason = "not ported yet: surface.rs has no SurfacePropsGM (test_draw with text and gradients)"
 span_hash = "54b4394be45f96ff10a15149f8616c2e2715dbd99b95efad49070c163b7f3c71"
 
 [[test]]

@@ -119,6 +119,7 @@ pub mod hardstop_gradients;
 pub mod hardstop_gradients_many;
 pub mod hittestpath;
 pub mod hugepath;
+pub mod image;
 pub mod image_shader;
 pub mod imagefiltersbase;
 pub mod imagefiltersunpremul;
