@@ -538,10 +538,8 @@ pub enum DrawListBase {
     Layer(DrawListLayer),
 }
 
-/// `step->writeUniformsAndTextures(params, gatherer)`, inside the declaration of the step's
-/// uniforms that every C++ implementation makes itself
-/// (`SkDEBUGCODE(gatherer->checkRewind()); SkDEBUGCODE(UniformExpectationsValidator uev(gatherer,
-/// this->uniforms()))`), so the uniform manager validates what the step writes.
+/// `step->writeUniformsAndTextures(params, gatherer)`. Each step declares and validates its own
+/// uniforms (`UniformExpectationsValidator uev(gatherer, this->uniforms())`), as in C++.
 // Port of: src/gpu/graphite/render/TessellateWedgesRenderStep.cpp#L212-L218 (chrome/m156), and
 // the other steps' `writeUniformsAndTextures()`
 pub(crate) fn write_step_uniforms_and_textures(
@@ -549,16 +547,7 @@ pub(crate) fn write_step_uniforms_and_textures(
     params: &crate::graphite::draw_params::DrawParams,
     gatherer: &mut PipelineDataGatherer,
 ) {
-    #[cfg(debug_assertions)]
-    {
-        gatherer.check_rewind();
-        gatherer
-            .uniform_manager()
-            .set_expected_uniforms(step.base().uniforms(), /* is_substruct= */ false);
-    }
     step.write_uniforms_and_textures(params, gatherer);
-    #[cfg(debug_assertions)]
-    gatherer.uniform_manager().done_with_expected_uniforms();
 }
 
 impl DrawListBase {
