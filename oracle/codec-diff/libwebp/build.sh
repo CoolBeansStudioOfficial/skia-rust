@@ -36,3 +36,6 @@ for f in $FILES; do
 done
 clang $CFLAGS -c "$HERE/webpdump.c" -o "$OBJ/webpdump.o"
 clang -o "$OUT" "$OBJ/webpdump.o" $OBJS
+# The option-variant driver (cropping, scaling, bypass, nofancy) links the same objects.
+clang $CFLAGS -c "$HERE/webpopts.c" -o "$OBJ/webpopts.o"
+clang -o "$(dirname "$OUT")/webpopts" "$OBJ/webpopts.o" $OBJS

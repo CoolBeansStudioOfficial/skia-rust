@@ -29,7 +29,9 @@ use crate::alpha;
 use crate::io::{Io, Status};
 use crate::lossless::CspMode;
 use crate::output;
+use crate::rescaler;
 use crate::vp8_dec::{self, Crop};
+use crate::vp8_tables_small::K_FILTER_EXTRA_ROWS;
 use crate::vp8l;
 
 /// Port of `RIFF_HEADER_SIZE`.
@@ -377,6 +379,136 @@ pub fn get_features(data: &[u8]) -> Result<Features, Status> {
     features_of(data)
 }
 
+/// The `WebPDecoderOptions` fields Skia sets, with `WebPInitDecoderConfig`'s defaults (no crop,
+/// no scale, fancy upsampling on, filtering on).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[doc(alias = "WebPDecoderOptions")]
+pub struct DecodeOptions {
+    /// `use_cropping` with `(crop_left, crop_top, crop_width, crop_height)`.
+    pub crop: Option<(i32, i32, i32, i32)>,
+    /// `use_scaling` with `(scaled_width, scaled_height)`; a zero side is derived from the other.
+    pub scale: Option<(i32, i32)>,
+    /// `bypass_filtering`: skip the in-loop filter.
+    pub bypass_filtering: bool,
+    /// `no_fancy_upsampling`.
+    pub no_fancy_upsampling: bool,
+}
+
+/// Port of `WebPCheckCropDimensions`.
+#[must_use]
+fn check_crop_dimensions(
+    image_width: i32,
+    image_height: i32,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+) -> bool {
+    !(x < 0
+        || y < 0
+        || w <= 0
+        || h <= 0
+        || x >= image_width
+        || w > image_width
+        || w > image_width - x
+        || y >= image_height
+        || h > image_height
+        || h > image_height - y)
+}
+
+/// The window and output parameters that `WebPIoInitFromOptions` computes from the options.
+#[derive(Debug, Clone, Copy)]
+struct IoParams {
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+    use_scaling: bool,
+    scaled_width: i32,
+    scaled_height: i32,
+    bypass_filtering: bool,
+    fancy_upsampling: bool,
+}
+
+impl IoParams {
+    /// The output size: the crop window, or its scaled size (`WebPAllocateDecBuffer`).
+    fn output_size(&self) -> (i32, i32) {
+        if self.use_scaling {
+            (self.scaled_width, self.scaled_height)
+        } else {
+            (self.w, self.h)
+        }
+    }
+}
+
+/// The checks of `CheckDecBuffer`/`AllocateBuffer` that apply to an external RGB buffer of
+/// `out_w` x `out_h` pixels with `out_stride` bytes per row.
+fn check_output(
+    mode: CspMode,
+    out: &[u8],
+    out_stride: usize,
+    out_w: i32,
+    out_h: i32,
+) -> Result<(), Status> {
+    let bpp = output::bytes_per_pixel(mode).ok_or(Status::InvalidParam)?;
+    if out_w <= 0
+        || out_h <= 0
+        || out_stride < out_w as usize * bpp
+        || out.len() < out_stride * (out_h as usize - 1) + out_w as usize * bpp
+    {
+        return Err(Status::InvalidParam);
+    }
+    Ok(())
+}
+
+/// Port of `WebPIoInitFromOptions` (window, scaling, filter and upsampler parts) for a
+/// `width` x `height` image. `snap_crop` is true for YUV sources (lossy), whose crop origin is
+/// rounded down to even coordinates; RGB sources (lossless) keep it.
+fn io_params(
+    width: i32,
+    height: i32,
+    options: &DecodeOptions,
+    snap_crop: bool,
+) -> Result<IoParams, Status> {
+    let (mut x, mut y, mut w, mut h) = (0, 0, width, height);
+    if let Some((cl, ct, cw, ch)) = options.crop {
+        w = cw;
+        h = ch;
+        x = cl;
+        y = ct;
+        if snap_crop {
+            x &= !1;
+            y &= !1;
+        }
+        if !check_crop_dimensions(width, height, x, y, w, h) {
+            return Err(Status::InvalidParam); // out of frame boundary error
+        }
+    }
+    let (mut scaled_width, mut scaled_height) = (w, h);
+    let use_scaling = options.scale.is_some();
+    if let Some((sw, sh)) = options.scale {
+        scaled_width = sw;
+        scaled_height = sh;
+        if !rescaler::get_scaled_dimensions(w, h, &mut scaled_width, &mut scaled_height) {
+            return Err(Status::InvalidParam);
+        }
+    }
+    // Disable the filter for large downscaling ratios; the fancy upsampler is off when scaling.
+    let bypass_filtering = options.bypass_filtering
+        || (use_scaling && scaled_width < width * 3 / 4 && scaled_height < height * 3 / 4);
+    Ok(IoParams {
+        x,
+        y,
+        w,
+        h,
+        use_scaling,
+        scaled_width,
+        scaled_height,
+        bypass_filtering,
+        fancy_upsampling: !options.no_fancy_upsampling && !use_scaling,
+    })
+}
+
 /// Decodes a still WebP image into `out` in colour space `mode` (`WebPDecode` with default
 /// options: full frame, no scaling, fancy upsampling). Returns the image size.
 ///
@@ -391,6 +523,23 @@ pub fn decode(
     out: &mut [u8],
     out_stride: usize,
 ) -> Result<(i32, i32), Status> {
+    decode_with_options(data, mode, out, out_stride, &DecodeOptions::default())
+}
+
+/// Decodes a still WebP image with `WebPDecode` and the given options. Returns the size of the
+/// output: the crop window, or its scaled size.
+///
+/// # Errors
+///
+/// Returns the `Status` of the first parse, option or decode failure, as `WebPDecode` does.
+#[doc(alias = "WebPDecode")]
+pub fn decode_with_options(
+    data: &[u8],
+    mode: CspMode,
+    out: &mut [u8],
+    out_stride: usize,
+    options: &DecodeOptions,
+) -> Result<(i32, i32), Status> {
     // Port of the GetFeatures step of WebPDecode: NOT_ENOUGH_DATA is not valid here.
     match features_of(data) {
         Ok(_) => {}
@@ -401,24 +550,30 @@ pub fn decode(
     let headers = parse_headers(data)?;
     let rest = &data[headers.offset..];
     if headers.is_lossless {
-        return crate::decode_vp8l(rest, mode, out, out_stride);
+        // RGB output: the crop origin is not snapped (WebPIoInitFromOptions with MODE_BGRA).
+        let (width, height, _) = vp8l::get_info(rest).ok_or(Status::BitstreamError)?;
+        let p = io_params(width, height, options, false)?;
+        let (out_w, out_h) = p.output_size();
+        check_output(mode, out, out_stride, out_w, out_h)?;
+        let scale = p.use_scaling.then_some((p.scaled_width, p.scaled_height));
+        return crate::decode_vp8l_window(rest, mode, out, out_stride, (p.x, p.y, p.w, p.h), scale);
     }
     let (width, height) =
         vp8_dec::get_info(rest, headers.compressed_size).ok_or(Status::BitstreamError)?;
-    let planes = vp8_dec::decode(
-        rest,
-        Crop {
-            left: 0,
-            top: 0,
-            right: width,
-            bottom: height,
-        },
-    )?;
+    let p = io_params(width, height, options, true)?;
+    let crop = Crop {
+        left: p.x,
+        top: p.y,
+        right: p.x + p.w,
+        bottom: p.y + p.h,
+    };
+    let planes = vp8_dec::decode_with_bypass(rest, crop, p.bypass_filtering)?;
     let alpha_plane = match headers.alpha_data {
         None => None,
         Some(alph) => {
-            let mut dec = alpha::alpha_init(alph, width, height, (0, width, 0, height))
-                .ok_or(Status::BitstreamError)?;
+            let window = (crop.left, crop.right, crop.top, crop.bottom);
+            let mut dec =
+                alpha::alpha_init(alph, width, height, window).ok_or(Status::BitstreamError)?;
             // FinishRow reports any alpha failure as BITSTREAM_ERROR, whatever the alpha decoder
             // recorded (VP8DecompressAlphaRows returns NULL, and VP8SetError overrides the status).
             if !alpha::alpha_decode(&mut dec, 0, height) {
@@ -427,16 +582,27 @@ pub fn decode(
             Some(dec.plane().to_vec())
         }
     };
+    let (out_w, out_h) = p.output_size();
+    check_output(mode, out, out_stride, out_w, out_h)?;
     let mut io = Io::new(out, out_stride, mode, width, height);
-    let crop = Crop {
-        left: 0,
-        top: 0,
-        right: width,
-        bottom: height,
-    };
-    let mb_h = planes.mb_h;
-    if !output::emit_frame(&planes, alpha_plane.as_deref(), &mut io, crop, mb_h) {
+    io.use_cropping = options.crop.is_some();
+    io.crop_left = p.x;
+    io.crop_top = p.y;
+    io.crop_right = p.x + p.w;
+    io.crop_bottom = p.y + p.h;
+    io.mb_w = p.w;
+    io.mb_h = p.h;
+    io.use_scaling = p.use_scaling;
+    io.scaled_width = p.scaled_width;
+    io.scaled_height = p.scaled_height;
+    io.fancy_upsampling = p.fancy_upsampling;
+    io.bypass_filtering = p.bypass_filtering;
+    // The batch count of FinishRow is dec->br_mb_y_: the macroblock rows decoded up to the crop
+    // bottom, with the loop filter's extra rows.
+    let extra = K_FILTER_EXTRA_ROWS[usize::from(planes.filter_type)];
+    let br_mb_y = (((crop.bottom + 15 + extra) >> 4) as usize).min(planes.mb_h);
+    if !output::emit_frame(&planes, alpha_plane.as_deref(), &mut io, crop, br_mb_y) {
         return Err(Status::UnsupportedFeature);
     }
-    Ok((width, height))
+    Ok((out_w, out_h))
 }

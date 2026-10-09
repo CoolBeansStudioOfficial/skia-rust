@@ -38,6 +38,7 @@
 )]
 
 use crate::alpha::AlphaOutput;
+use crate::alpha_processing;
 use crate::bit_reader::VP8LBitReader;
 use crate::huffman::{
     self, HUFFMAN_PACKED_TABLE_SIZE, HUFFMAN_TABLE_BITS, HUFFMAN_TABLE_MASK, HuffmanCode,
@@ -232,6 +233,10 @@ pub(crate) struct Vp8lDecoder {
     pub last_row: i32,
     pub last_pixel: i32,
     pub last_out_row: i32,
+    /// `dec->rescaler`: the rescaler of a scaled image (`AllocateAndInitRescaler`).
+    pub rescaler: Option<crate::rescaler::Rescaler>,
+    /// The rescaler's output row, `scaled_width * 4` bytes (`rescaler->dst`, the scaled BGRA).
+    pub scaled_row: Vec<u8>,
     pub hdr: Metadata,
     pub next_transform: usize,
     pub transforms: [Transform; 4],
@@ -1167,8 +1172,12 @@ impl Vp8lDecoder {
             let mut in_off = self.argb_cache;
             if set_crop_window(io, self.last_row, row, &mut in_off) {
                 if io.use_scaling {
-                    // Rescaling is not ported yet (see the crate documentation).
-                    set_error(self, Status::UnsupportedFeature);
+                    if io::is_rgb_mode(io.colorspace) {
+                        self.emit_rescaled_rows(pix, in_off, io);
+                    } else {
+                        // YUV output is not ported; Skia never asks for it.
+                        set_error(self, Status::UnsupportedFeature);
+                    }
                 } else if io::is_rgb_mode(io.colorspace) {
                     // EmitRows: one converted row per input row.
                     let in_stride = io.width as usize;
@@ -1191,6 +1200,59 @@ impl Vp8lDecoder {
         }
         // Update 'last_row'.
         self.last_row = row;
+    }
+
+    /// Port of `EmitRescaledRowsRGBA` with `Export` (`vp8l_dec.c`): premultiplies the rows of
+    /// the crop window, rescales them, and converts each output row to `io.colorspace`.
+    ///
+    /// The C code premultiplies each batch of rows just before importing it. The rows are
+    /// premultiplied here in one pass, which gives the same values, and the rescaler sees them
+    /// in the same order.
+    fn emit_rescaled_rows(&mut self, pix: &[u32], in_off: usize, io: &mut Io<'_>) {
+        let mb_w = io.mb_w as usize;
+        let mb_h = io.mb_h as usize;
+        let in_stride = io.width as usize;
+        let colorspace = io.colorspace;
+        let out_stride = io.out_stride;
+        let row_stride = mb_w * 4;
+        // The premultiplied rows as bytes, little-endian: the memory layout the C rescaler reads.
+        let mut bytes = vec![0u8; row_stride * mb_h];
+        for i in 0..mb_h {
+            let start = in_off + i * in_stride;
+            let mut row: Vec<u32> = pix[start..start + mb_w].to_vec();
+            alpha_processing::mult_argb_row(&mut row, false);
+            for (x, px) in row.iter().enumerate() {
+                let o = i * row_stride + x * 4;
+                bytes[o..o + 4].copy_from_slice(&px.to_le_bytes());
+            }
+        }
+        let Some(mut rescaler) = self.rescaler.take() else {
+            set_error(self, Status::OutOfMemory);
+            return;
+        };
+        let mut num_lines_in = 0usize;
+        let mut num_lines_out = 0usize;
+        while num_lines_in < mb_h {
+            let lines_left = (mb_h - num_lines_in) as i32;
+            let lines_imported =
+                rescaler.import(lines_left, &bytes[num_lines_in * row_stride..], row_stride);
+            num_lines_in += lines_imported as usize;
+            // Export: each output row is un-premultiplied and converted to the colour space.
+            while rescaler.has_pending_output() {
+                rescaler.export_row(&mut self.scaled_row);
+                let mut src: Vec<u32> = self
+                    .scaled_row
+                    .chunks_exact(4)
+                    .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                    .collect();
+                alpha_processing::mult_argb_row(&mut src, true);
+                let row_out = (self.last_out_row as usize + num_lines_out) * out_stride;
+                lossless::convert_from_bgra(&src, colorspace, &mut io.out[row_out..]);
+                num_lines_out += 1;
+            }
+        }
+        self.rescaler = Some(rescaler);
+        self.last_out_row += num_lines_out as i32;
     }
 
     /// Port of `ExtractAlphaRows`: stores the green plane of the decoded rows as alpha.
@@ -1395,6 +1457,21 @@ pub(crate) fn decode_image(dec: &mut Vp8lDecoder, data: &[u8], io: &mut Io<'_>) 
         let cache_pixels = final_width * NUM_ARGB_CACHE_ROWS as usize;
         dec.pixels = vec![0u32; num_pixels + cache_top_pixels + cache_pixels];
         dec.argb_cache = num_pixels + cache_top_pixels;
+        if io.use_scaling {
+            // AllocateAndInitRescaler: 4 channels (BGRA bytes) over the cropped window.
+            let Some(rescaler) = crate::rescaler::rescaler_init(
+                io.mb_w,
+                io.mb_h,
+                io.scaled_width,
+                io.scaled_height,
+                4,
+            ) else {
+                set_error(dec, Status::OutOfMemory);
+                return false;
+            };
+            dec.rescaler = Some(rescaler);
+            dec.scaled_row = vec![0u8; io.scaled_width as usize * 4];
+        }
         if dec.incremental
             && dec.hdr.color_cache_size > 0
             && dec.hdr.saved_color_cache.colors.is_empty()
@@ -1407,7 +1484,8 @@ pub(crate) fn decode_image(dec: &mut Vp8lDecoder, data: &[u8], io: &mut Io<'_>) 
     let (w, h, crop_bottom) = (dec.width, dec.height, io.crop_bottom);
     let ok = dec.decode_image_data(data, &mut pix, w, h, crop_bottom, &mut Sink::Argb(io));
     dec.pixels = pix;
-    if !ok {
+    // Errors raised while emitting rows (`process_rows`) stop the decode, as in VP8LDecodeImage.
+    if !ok || !matches!(dec.status, Status::Ok | Status::Suspended) {
         return false;
     }
     io.last_y = dec.last_out_row;

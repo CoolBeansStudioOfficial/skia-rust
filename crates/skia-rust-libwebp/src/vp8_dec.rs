@@ -1121,7 +1121,26 @@ impl Decoder {
 /// Returns the `Status` recorded when the frame header or a partition fails to parse.
 #[doc(alias = "VP8Decode")]
 pub fn decode(buf: &[u8], crop: Crop) -> Result<Planes, Status> {
+    decode_with_bypass(buf, crop, false)
+}
+
+/// `VP8Decode` with `io->bypass_filtering` as `bypass_filtering`: when set, `VP8EnterCritical`
+/// turns the loop filter off (`dec->filter_type_ = 0`) before any row is decoded.
+///
+/// # Errors
+///
+/// Returns the `Status` recorded when the frame header or a partition fails to parse.
+#[doc(alias = "VP8EnterCritical")]
+pub fn decode_with_bypass(
+    buf: &[u8],
+    crop: Crop,
+    bypass_filtering: bool,
+) -> Result<Planes, Status> {
     let mut dec = Decoder::new(buf)?;
+    if bypass_filtering {
+        dec.filter_type = 0;
+        dec.planes.filter_type = 0;
+    }
     let filter_type = dec.filter_type;
     let extra_pixels = K_FILTER_EXTRA_ROWS[usize::from(filter_type)];
     let (tl_mb_x, tl_mb_y) = if filter_type == 2 {

@@ -68,6 +68,9 @@ pub fn is_premultiplied_mode(mode: CspMode) -> bool {
 /// Port of `VP8Io` together with the decode parameters that `WebPIoInitFromOptions` and the
 /// output buffer provide. The output is the caller's memory (`WebPRGBABuffer`): `out` starts at
 /// the first pixel of the image and rows are `out_stride` bytes apart.
+// clippy::struct_excessive_bools: the flags are the C struct's `use_cropping`, `use_scaling`,
+// `fancy_upsampling` and `bypass_filtering` fields of `VP8Io`.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 #[doc(alias = "VP8Io")]
 pub struct Io<'a> {
@@ -81,9 +84,14 @@ pub struct Io<'a> {
     pub crop_left: i32,
     pub crop_right: i32,
     pub crop_bottom: i32,
+    pub use_cropping: bool,
     pub use_scaling: bool,
     pub scaled_width: i32,
     pub scaled_height: i32,
+    /// `io->fancy_upsampling`: the fancy upsampler (off when scaling, as in `WebPIoInitFromOptions`).
+    pub fancy_upsampling: bool,
+    /// `io->bypass_filtering`: the loop filter is disabled (see `vp8_dec::decode_with_bypass`).
+    pub bypass_filtering: bool,
     pub colorspace: CspMode,
     pub out: &'a mut [u8],
     pub out_stride: usize,
@@ -111,9 +119,12 @@ impl<'a> Io<'a> {
             crop_left: 0,
             crop_right: width,
             crop_bottom: height,
+            use_cropping: false,
             use_scaling: false,
             scaled_width: width,
             scaled_height: height,
+            fancy_upsampling: true,
+            bypass_filtering: false,
             colorspace,
             out,
             out_stride,

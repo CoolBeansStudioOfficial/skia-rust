@@ -5,7 +5,8 @@
 
 //! Port of the C kernels of libwebp `src/dsp/alpha_processing.c` used by the decoder: the
 //! premultiplication of RGBA-8888 and RGBA-4444 rows (`WebPApplyAlphaMultiply`,
-//! `WebPApplyAlphaMultiply4444`).
+//! `WebPApplyAlphaMultiply4444`), and the ARGB row premultiplication of the lossless rescaler
+//! (`WebPMultARGBRow_C`).
 
 // Module-level clippy allows. Each one mirrors the C source of this module.
 // clippy::cast_possible_truncation: C integer conversions (int, uint8_t, uint16_t, uint32_t, size_t) are written as `as` casts of the same width and sign as in the C source.
@@ -62,4 +63,50 @@ pub fn apply_alpha_multiply4444(
 #[doc(alias = "WebPApplyAlphaMultiply4444")]
 pub fn apply_alpha_multiply_16b(rgba4444: &mut [u8], w: usize, h: usize, stride: usize) {
     apply_alpha_multiply4444(rgba4444, w, h, stride, 1);
+}
+
+/// Port of `MFIX` and `HALF` (`alpha_processing.c`): 24-bit fixed-point premultiplication.
+const MFIX: u32 = 24;
+const HALF: u32 = (1u32 << MFIX) >> 1;
+/// Port of `KINV_255`: `(1 << MFIX) / 255`.
+const KINV_255: u32 = (1u32 << MFIX) / 255;
+
+/// Port of `Mult` (`alpha_processing.c`). The product wraps as the C `uint32_t` arithmetic does.
+#[inline]
+fn mult(x: u8, mult: u32) -> u32 {
+    (u32::from(x).wrapping_mul(mult).wrapping_add(HALF)) >> MFIX
+}
+
+/// Port of `GetScale` in its default configuration (`USE_TABLES_FOR_ALPHA_MULT == 0`).
+#[inline]
+fn get_scale(a: u32, inverse: bool) -> u32 {
+    if inverse {
+        (255u32 << MFIX) / a
+    } else {
+        a.wrapping_mul(KINV_255)
+    }
+}
+
+/// Port of `WebPMultARGBRow_C`: premultiplies (or, with `inverse`, un-premultiplies) one row of
+/// ARGB pixels in place.
+#[doc(alias = "WebPMultARGBRow")]
+pub fn mult_argb_row(ptr: &mut [u32], inverse: bool) {
+    for p in ptr.iter_mut() {
+        let argb = *p;
+        if argb < 0xff00_0000 {
+            // alpha < 255
+            if argb <= 0x00ff_ffff {
+                // alpha == 0
+                *p = 0;
+            } else {
+                let alpha = (argb >> 24) & 0xff;
+                let scale = get_scale(alpha, inverse);
+                let mut out = argb & 0xff00_0000;
+                out |= mult(argb as u8, scale);
+                out |= mult((argb >> 8) as u8, scale) << 8;
+                out |= mult((argb >> 16) as u8, scale) << 16;
+                *p = out;
+            }
+        }
+    }
 }

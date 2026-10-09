@@ -32,7 +32,7 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 }
 
 /// The `VP8StatusCode` numbering of `webp/decode.h`.
-fn status_code(s: Status) -> i32 {
+pub fn status_code(s: Status) -> i32 {
     match s {
         Status::Ok => 0,
         Status::OutOfMemory => 1,

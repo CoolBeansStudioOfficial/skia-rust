@@ -30,6 +30,7 @@ pub mod huffman;
 pub mod io;
 pub mod lossless;
 mod output;
+pub mod rescaler;
 pub mod vp8_dec;
 mod vp8_dsp;
 mod vp8_tables;
@@ -39,13 +40,66 @@ pub mod webp_dec;
 
 pub use io::Status;
 pub use lossless::CspMode;
-pub use webp_dec::{Features, decode as decode_webp, get_features};
+pub use webp_dec::{
+    DecodeOptions, Features, decode as decode_webp, decode_with_options, get_features,
+};
 
 /// Port of `WebPGetFeatures` for a bare VP8L bitstream: `(width, height, has_alpha)`.
 #[doc(alias = "WebPGetFeatures")]
 #[must_use]
 pub fn vp8l_get_info(data: &[u8]) -> Option<(i32, i32, bool)> {
     vp8l::get_info(data)
+}
+
+/// Decodes a bare VP8L bitstream into the crop window `(left, top, width, height)` of the image,
+/// scaled to `scale` when it is given (`WebPDecode` with `WebPDecoderOptions`).
+///
+/// # Errors
+///
+/// Returns the `Status` the C decoder would report.
+pub(crate) fn decode_vp8l_window(
+    data: &[u8],
+    mode: CspMode,
+    out: &mut [u8],
+    out_stride: usize,
+    crop: (i32, i32, i32, i32),
+    scale: Option<(i32, i32)>,
+) -> Result<(i32, i32), Status> {
+    let Some((width, height, _has_alpha)) = vp8l::get_info(data) else {
+        return Err(Status::BitstreamError);
+    };
+    let mut io = io::Io::new(out, out_stride, mode, width, height);
+    io.use_cropping = true;
+    io.crop_left = crop.0;
+    io.crop_top = crop.1;
+    io.crop_right = crop.0 + crop.2;
+    io.crop_bottom = crop.1 + crop.3;
+    io.mb_w = crop.2;
+    io.mb_h = crop.3;
+    if let Some((sw, sh)) = scale {
+        io.use_scaling = true;
+        io.scaled_width = sw;
+        io.scaled_height = sh;
+    }
+    let mut dec = vp8l::Vp8lDecoder::new();
+    if !vp8l::decode_header(&mut dec, data, &mut io) {
+        return Err(if dec.status == Status::Ok {
+            Status::BitstreamError
+        } else {
+            dec.status
+        });
+    }
+    if !vp8l::decode_image(&mut dec, data, &mut io) {
+        return Err(if dec.status == Status::Ok {
+            Status::BitstreamError
+        } else {
+            dec.status
+        });
+    }
+    Ok(match scale {
+        Some(s) => s,
+        None => (crop.2, crop.3),
+    })
 }
 
 /// Decodes a bare VP8L bitstream (the bytes from a `VP8L` chunk payload to the end of the input)

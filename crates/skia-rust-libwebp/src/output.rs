@@ -36,6 +36,7 @@
 
 use crate::io::{Io, is_alpha_mode, is_premultiplied_mode};
 use crate::lossless::{CspMode, apply_alpha_multiply};
+use crate::rescaler::rescaler_init;
 use crate::vp8_dec::{Crop, Planes};
 use crate::vp8_tables_small::K_FILTER_EXTRA_ROWS;
 
@@ -80,7 +81,7 @@ fn yuv_to_b(y: i32, u: i32) -> i32 {
 }
 
 /// Bytes per pixel of the colour spaces the fancy upsampler writes, or `None` if unsupported.
-fn bytes_per_pixel(cs: CspMode) -> Option<usize> {
+pub(crate) fn bytes_per_pixel(cs: CspMode) -> Option<usize> {
     match cs {
         CspMode::Rgba
         | CspMode::Bgra
@@ -443,6 +444,9 @@ pub fn emit_frame(
     if bytes_per_pixel(io.colorspace).is_none() {
         return false;
     }
+    if io.use_scaling {
+        return emit_rescaled_frame(planes, alpha, io);
+    }
     let _ = crop;
     let extra_y_rows = K_FILTER_EXTRA_ROWS[usize::from(planes.filter_type)] as usize;
     let mut st = FancyState::default();
@@ -474,13 +478,153 @@ pub fn emit_frame(
             io.mb_y = (y_start - io.crop_top as usize) as i32;
             io.mb_w = io.crop_right - io.crop_left;
             io.mb_h = (y_end - y_start) as i32;
-            emit_fancy_rgb(&mut st, planes, io, y_row, uv_row);
+            // CustomSetup: EmitFancyRGB when fancy upsampling is on, EmitSampledRGB otherwise.
+            if io.fancy_upsampling {
+                emit_fancy_rgb(&mut st, planes, io, y_row, uv_row);
+            } else {
+                emit_sampled_rgb(io, planes, y_row, uv_row);
+            }
             // CustomSetup installs EmitAlphaRGB only for the colour spaces with an alpha channel.
             if let Some(a) = alpha.filter(|_| is_alpha_mode(io.colorspace)) {
-                emit_alpha_rgb(io, a, a_row, planes.width as usize, true);
+                emit_alpha_rgb(io, a, a_row, planes.width as usize, io.fancy_upsampling);
             }
             io.last_y += io.mb_h;
         }
     }
+    true
+}
+
+/// Port of `EmitSampledRGB` (`io_dec.c`) with `WebPSamplerProcessPlane`: each chroma sample
+/// covers two luma columns and rows `y_row`/`uv_row` of the batch.
+fn emit_sampled_rgb(io: &mut Io<'_>, planes: &Planes, y_row: usize, uv_row: usize) {
+    let cs = io.colorspace;
+    let Some(bpp) = bytes_per_pixel(cs) else {
+        return;
+    };
+    let mb_w = io.mb_w as usize;
+    let mb_h = io.mb_h as usize;
+    let crop_left = io.crop_left as usize;
+    let uv_col = crop_left / 2;
+    let stride = io.out_stride;
+    let base = io.mb_y as usize * stride;
+    for j in 0..mb_h {
+        let yr = y_row + j;
+        let ur = uv_row + (j >> 1);
+        for x in 0..mb_w {
+            let y = planes.y[yr * planes.y_stride + crop_left + x];
+            let u = planes.u[ur * planes.uv_stride + uv_col + (x >> 1)];
+            let v = planes.v[ur * planes.uv_stride + uv_col + (x >> 1)];
+            let o = base + j * stride + x * bpp;
+            yuv_pixel(cs, y, u, v, &mut io.out[o..o + bpp]);
+        }
+    }
+}
+
+/// Port of `EmitRescaledRGB` with `ExportRGB` and `EmitRescaledAlphaRGB`/`ExportAlpha`
+/// (`io_dec.c`), for the RGB colour spaces with `io->use_scaling`.
+///
+/// The C code feeds the rescalers one macroblock batch at a time. Each rescaler's state changes
+/// only through its own import and export calls, in the same order whatever the batch size, so
+/// the whole cropped frame is fed as one batch here. The output is the same.
+fn emit_rescaled_frame(planes: &Planes, alpha: Option<&[u8]>, io: &mut Io<'_>) -> bool {
+    let cs = io.colorspace;
+    let Some(bpp) = bytes_per_pixel(cs) else {
+        return false;
+    };
+    let mb_w = io.mb_w;
+    let mb_h = io.mb_h;
+    let uv_in_w = (mb_w + 1) >> 1;
+    let uv_in_h = (mb_h + 1) >> 1;
+    let out_w = io.scaled_width;
+    let out_h = io.scaled_height;
+    let (Some(mut sy), Some(mut su), Some(mut sv)) = (
+        rescaler_init(mb_w, mb_h, out_w, out_h, 1),
+        rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1),
+        rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1),
+    ) else {
+        return false;
+    };
+    let crop_top = io.crop_top as usize;
+    let crop_left = io.crop_left as usize;
+    let ys = planes.y_stride;
+    let uvs = planes.uv_stride;
+    let y_src = &planes.y[crop_top * ys + crop_left..];
+    let u_src = &planes.u[(crop_top / 2) * uvs + crop_left / 2..];
+    let v_src = &planes.v[(crop_top / 2) * uvs + crop_left / 2..];
+    let out_w_us = out_w as usize;
+    let mut ty = vec![0u8; out_w_us];
+    let mut tu = vec![0u8; out_w_us];
+    let mut tv = vec![0u8; out_w_us];
+    let stride = io.out_stride;
+
+    // EmitRescaledRGB
+    let mut j: i32 = 0;
+    let mut uv_j: i32 = 0;
+    let mut num_lines_out: usize = 0;
+    while j < mb_h {
+        let y_lines_in = sy.import(mb_h - j, &y_src[j as usize * ys..], ys);
+        j += y_lines_in;
+        if su.needed_lines(uv_in_h - uv_j) > 0 {
+            let u_lines_in = su.import(uv_in_h - uv_j, &u_src[uv_j as usize * uvs..], uvs);
+            let _v_lines_in = sv.import(uv_in_h - uv_j, &v_src[uv_j as usize * uvs..], uvs);
+            uv_j += u_lines_in;
+        }
+        // ExportRGB: U and V can be one line off from Y, hence the double test.
+        let before = num_lines_out;
+        while sy.has_pending_output() && su.has_pending_output() {
+            sy.export_row(&mut ty);
+            su.export_row(&mut tu);
+            sv.export_row(&mut tv);
+            let row = num_lines_out * stride;
+            for x in 0..out_w_us {
+                let o = row + x * bpp;
+                yuv_pixel(cs, ty[x], tu[x], tv[x], &mut io.out[o..o + bpp]);
+            }
+            num_lines_out += 1;
+        }
+        if y_lines_in == 0 && num_lines_out == before {
+            // The C loop would spin here; the rescalers always make progress on valid input.
+            break;
+        }
+    }
+
+    // EmitRescaledAlphaRGB with ExportAlpha, for the colour spaces with transparency.
+    if let (Some(a), true) = (alpha, is_alpha_mode(cs)) {
+        let Some(mut sa) = rescaler_init(mb_w, mb_h, out_w, out_h, 1) else {
+            return false;
+        };
+        let aw = planes.width as usize;
+        let a_src = &a[crop_top * aw + crop_left..];
+        let alpha_first = matches!(cs, CspMode::Argb | CspMode::ArgbPremultiplied);
+        let dst_off = if alpha_first { 0 } else { 3 };
+        let mut ta = vec![0u8; out_w_us];
+        let mut non_opaque = false;
+        let mut n = 0usize;
+        while !sa.output_done() {
+            if !sa.input_done() {
+                let start = sa.src_y as usize;
+                sa.import(mb_h - sa.src_y, &a_src[start * aw..], aw);
+            }
+            while sa.has_pending_output() {
+                sa.export_row(&mut ta);
+                let row = n * stride + dst_off;
+                for (x, &av) in ta.iter().enumerate() {
+                    io.out[row + 4 * x] = av;
+                    non_opaque |= av != 0xff;
+                }
+                n += 1;
+            }
+        }
+        if non_opaque && is_premultiplied_mode(cs) {
+            apply_alpha_multiply(
+                &mut io.out[..],
+                alpha_first,
+                out_w_us,
+                num_lines_out,
+                stride,
+            );
+        }
+    }
+    io.last_y = num_lines_out as i32;
     true
 }
