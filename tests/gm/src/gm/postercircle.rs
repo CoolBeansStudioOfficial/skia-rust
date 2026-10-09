@@ -209,8 +209,4 @@ impl GM for PosterCircleGm {
 }
 
 // Port of: gm/postercircle.cpp#L152-L152 (chrome/m156), DEF_GM(return new PosterCircleGM();)
-crate::def_gm!(
-    #[ignore = "see notes/gm_postercircle_cpp_PosterCircleGM.md"]
-    PosterCircleGM_ = "PosterCircleGM()",
-    PosterCircleGm::new()
-);
+crate::def_gm!(PosterCircleGM_ = "PosterCircleGM()", PosterCircleGm::new());

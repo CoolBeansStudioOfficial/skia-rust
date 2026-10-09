@@ -18216,7 +18216,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174354.cpp#L39-L49"
 module = "raster"
 status = "failing"
-reason = "f16 config only mismatches on every tier (8888 and 565 match); see notes/gm_crbug_1174354_cpp_crbug_1174354.md"
+reason = "f16 only: the backdrop Blur on an F16 layer has no CPU algorithm yet (SkShaderBlurAlgorithm needs SkSL runtime effects, not landed); see notes/gm_crbug_1174354_cpp_crbug_1174354.md"
 span_hash = "179ad8dbe38ee32beca6d556d3fbe2994b0c6bfe34742ea7f11939866b9b1e81"
 
 [[test]]
@@ -20484,8 +20484,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1123-L1150"
 module = "effects"
-status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+status = "passing"
 span_hash = "f6930ef04649efc309de9c445d98d000f157246911b6a58fe703bac549d5fcca"
 
 [[test]]
@@ -20494,8 +20493,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1100-L1121"
 module = "effects"
-status = "failing"
-reason = "ported; oracle (Windows UCRT) cbrtf/atan2f differ by ~1 ulp from the host libm in OKLCH conversion, see notes/gm-gradients.cpp-OKLCH-libm.md"
+status = "passing"
 span_hash = "f0231eb2e6bbd23bc2a97636f56407221c7f79b1cfed6161ba51c02651324206"
 
 [[test]]
@@ -22993,8 +22991,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/postercircle.cpp#L152-L152"
 module = "raster"
-status = "failing"
-reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_postercircle_cpp_PosterCircleGM.md"
+status = "passing"
 span_hash = "3ab1d2908d8a9bd94e2c42c5534e2ecfc31db3433868a0a134de6b8bfe29a57a"
 
 [[test]]
@@ -24119,7 +24116,7 @@ macro = "DEF_GM"
 source = "gm/spritebitmap.cpp#L97-L97"
 module = "raster"
 status = "failing"
-reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"
+reason = "f16 only: Blur image filter on an F16 layer has no CPU algorithm yet (SkShaderBlurAlgorithm needs SkSL runtime effects, not landed); see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"
 span_hash = "907a8f7914cd40dd9a0070ea4387b62faa9c7fb14d65ddcb4403c3e06e8f41b4"
 
 [[test]]

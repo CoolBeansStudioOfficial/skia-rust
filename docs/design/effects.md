@@ -51,9 +51,7 @@ are the C++ ones.
 
 `Color4fXformer::new` is `SkColor4fXformer` 1:1: convert to the intermediate space with
 `convert_pixels` (RGBA F32, unpremul), then Lab/LCH/OKLab/OKLCH/HSL/HWB conversion, powerless-hue
-stop splitting, hue method adjustment, premul. `std::cbrtf` and `atan2f` are the host's (`f32::cbrt`,
-`f32::atan2`); the Windows oracle's CRT differs from them by about 1 ulp, which shows in the OKLCH GMs
-(see `notes/gm-gradients.cpp-OKLCH-libm.md`).
+stop splitting, hue method adjustment, premul. `std::cbrtf` and `atan2f` are `skia_rust_core::libm::{cbrtf, atan2f}` (UCRT-exact, `docs/design/math.md`).
 
 ### Not ported
 

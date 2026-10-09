@@ -915,9 +915,8 @@ fn xyzd50_to_lab(xyz: PMColor4f, _hue_is_powerless: &mut bool) -> PMColor4f {
     let mut f = [0.0f32; 3];
     for i in 0..3 {
         let v = xyz_a[i] / D50[i];
-        // skia-rust: libm (`cbrtf`)
         f[i] = if v > E {
-            v.cbrt()
+            skia_rust_core::libm::cbrtf(v)
         } else {
             (K * v + 16.0) / 116.0
         };
@@ -938,8 +937,7 @@ fn xyzd50_to_lab(xyz: PMColor4f, _hue_is_powerless: &mut bool) -> PMColor4f {
 #[allow(clippy::items_after_statements)] // keeps Skia's local constant where it is declared
 fn xyzd50_to_hcl(xyz: PMColor4f, hue_is_powerless: &mut bool) -> PMColor4f {
     let lab = xyzd50_to_lab(xyz, hue_is_powerless);
-    // skia-rust: libm (`atan2f`)
-    let hue = float_radians_to_degrees(lab.b.atan2(lab.g));
+    let hue = float_radians_to_degrees(skia_rust_core::libm::atan2f(lab.b, lab.g));
     let chroma = (lab.g * lab.g + lab.b * lab.b).sqrt();
     // The LCH math produces small-ish (but not tiny) chroma values for achromatic colors:
     const MAX_CHROMA_FOR_POWERLESS_HUE: f32 = 1e-2;
@@ -961,10 +959,9 @@ fn lin_srgb_to_oklab(rgb: PMColor4f, _hue_is_powerless: &mut bool) -> PMColor4f 
     let mut l = 0.4122214708f32 * rgb.r + 0.5363325363f32 * rgb.g + 0.0514459929f32 * rgb.b;
     let mut m = 0.2119034982f32 * rgb.r + 0.6806995451f32 * rgb.g + 0.1073969566f32 * rgb.b;
     let mut s = 0.0883024619f32 * rgb.r + 0.2817188376f32 * rgb.g + 0.6299787005f32 * rgb.b;
-    // skia-rust: libm (`cbrtf`)
-    l = l.cbrt();
-    m = m.cbrt();
-    s = s.cbrt();
+    l = skia_rust_core::libm::cbrtf(l);
+    m = skia_rust_core::libm::cbrtf(m);
+    s = skia_rust_core::libm::cbrtf(s);
     PMColor4f {
         r: 0.2104542553f32 * l + 0.7936177850f32 * m - 0.0040720468f32 * s,
         g: 1.9779984951f32 * l - 2.4285922050f32 * m + 0.4505937099f32 * s,
@@ -980,8 +977,7 @@ fn lin_srgb_to_oklab(rgb: PMColor4f, _hue_is_powerless: &mut bool) -> PMColor4f 
 #[allow(clippy::items_after_statements)] // keeps Skia's local constant where it is declared
 fn lin_srgb_to_okhcl(rgb: PMColor4f, hue_is_powerless: &mut bool) -> PMColor4f {
     let ok_lab = lin_srgb_to_oklab(rgb, hue_is_powerless);
-    // skia-rust: libm (`atan2f`)
-    let hue = float_radians_to_degrees(ok_lab.b.atan2(ok_lab.g));
+    let hue = float_radians_to_degrees(skia_rust_core::libm::atan2f(ok_lab.b, ok_lab.g));
     let chroma = (ok_lab.g * ok_lab.g + ok_lab.b * ok_lab.b).sqrt();
     // The OKLCH math produces very small chroma values for achromatic colors:
     const MAX_CHROMA_FOR_POWERLESS_HUE: f32 = 1e-6;

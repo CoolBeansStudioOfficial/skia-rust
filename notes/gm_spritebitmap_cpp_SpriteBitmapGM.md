@@ -1,28 +1,29 @@
 # gm/spritebitmap.cpp::SpriteBitmapGM
 
-Status: `failing` (ported, registered, `#[ignore]`d).
+Status: `failing` (ported, registered, `#[ignore]`d). `8888` and `565` match on every tier; `f16`
+mismatches on every tier.
 
-## What was tried
+## Root cause (confirmed)
 
-1. Faithful port (`tests/gm/src/gm/spritebitmap.rs`): an N32 bitmap (100x100, blue with a red
-   anti-aliased circle) drawn four times with `drawImage` at (10, 10), (10, 130), (10, 250),
-   (10, 370) and a shifted 20 px gap, with and without a clip and an 8-sigma blur image filter.
+Not an N32-image-onto-F16 problem. The unfiltered draws (rows 1 and 3) are bit-identical to the
+goldens in `f16`; every differing pixel (29,480) lies in the blurred draws (rows 2 and 4, plus the
+blur halo above them). Ours leaves those draws without the blur.
 
-## Results (gm-verify --no-diffs --match SpriteBitmapGM)
+`RasterBlurEngine::find_algorithm` (`crates/skia-rust-raster/src/blur_engine.rs`) only has the A8 and
+8888 algorithms and returns `None` for every other color type, so `FilterResult::Builder::blur`
+returns an empty result. Skia's `RasterBlurEngine::findAlgorithm` (`src/core/SkBlurEngine.cpp#L1284-L1302`)
+returns `RasterShaderBlurAlgorithm` (`SkShaderBlurAlgorithm`, `#L1536-L1740`) for those: a 1D/2D
+Gaussian drawn as a runtime-effect shader (`SkKnownRuntimeEffects` `k2DBlurBase`/`kLinearBlur1DBase`)
+into an `SkBitmapDevice` of the input's color type. An F16 layer takes that path.
 
-- `8888` and `565`: match on every oracle tier.
-- `f16`: mismatches on every oracle tier (scalar, sse2 and the rest). Example: ours
-  `97b59dff...` vs golden `3c091d15...` (sse2).
+## What blocks it
 
-## Hypothesis
+`SkShaderBlurAlgorithm` needs `SkRuntimeEffect`/`SkRuntimeShaderBuilder`, `SkKnownRuntimeEffects` and
+the SkSL -> raster pipeline code generator. None of that is on this branch's base (it lives on
+`origin/port/sksl-*`/`port/sksl-all`, unmerged). Re-test this GM once SkSL runtime effects are
+landed and the shader blur algorithm is ported (`SkShaderBlurAlgorithm::{blur, evalBlur1D, evalBlur2D,
+renderBlur}`, `Compute{1D,2D}Blur*`, `GetLinearBlur1DEffect`, `GetBlur2DEffect`) into
+`RasterBlurEngine`.
 
-The same f16-only mismatch shows up in `gm/postercircle.cpp::PosterCircleGM()`, which also draws
-N32 images (surface snapshots) onto the F16 surface. The common factor is an N32 image drawn onto
-an F16 raster surface (the source conversion or the sampling stage of the f16 pipeline), not the
-blur or the clip. Only one of the two has been tried; that is not enough to confirm it.
-
-## Next step
-
-Needs a fresh oracle run: `cargo xtask oracle rp-dump <tier> spritebitmap` for the f16 config,
-compared with our raster-pipeline stages for `drawImage` of an N32 bitmap onto an F16 canvas.
-The Windows oracle host no longer exists, so this cannot be done on the current hosts.
+Same cause as `gm/crbug_1174354.cpp::crbug_1174354`. (`gm/postercircle.cpp::PosterCircleGM()` looked
+related but is a different bug: host libm `sinf`/`cosf`, fixed by `skia_rust_core::libm`.)

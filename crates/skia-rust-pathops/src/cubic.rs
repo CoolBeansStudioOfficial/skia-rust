@@ -482,20 +482,23 @@ impl DCubic {
         if r2_minus_q3 < 0.0 {
             // we have 3 real roots
             // the divide/root can, due to finite precisions, be slightly outside of -1...1
-            // skia-rust: libm (acos and cos are not guaranteed to match across libms)
-            let theta = std_max(-1.0, std_min(r_val / q3.sqrt(), 1.0)).acos();
+            let theta = skia_rust_core::libm::acos(std_max(-1.0, std_min(r_val / q3.sqrt(), 1.0)));
             let neg2_root_q = -2.0 * q.sqrt();
 
-            let r = neg2_root_q * (theta / 3.0).cos() - adiv3;
+            let r = neg2_root_q * skia_rust_core::libm::cos(theta / 3.0) - adiv3;
             s[count] = r;
             count += 1;
 
-            let r = neg2_root_q * ((theta + 2.0 * std::f64::consts::PI) / 3.0).cos() - adiv3;
+            let r = neg2_root_q
+                * skia_rust_core::libm::cos((theta + 2.0 * std::f64::consts::PI) / 3.0)
+                - adiv3;
             if !almost_dequal_ulps(s[0], r) {
                 s[count] = r;
                 count += 1;
             }
-            let r = neg2_root_q * ((theta - 2.0 * std::f64::consts::PI) / 3.0).cos() - adiv3;
+            let r = neg2_root_q
+                * skia_rust_core::libm::cos((theta - 2.0 * std::f64::consts::PI) / 3.0)
+                - adiv3;
             if !almost_dequal_ulps(s[0], r) && (count == 1 || !almost_dequal_ulps(s[1], r)) {
                 s[count] = r;
                 count += 1;
@@ -504,7 +507,7 @@ impl DCubic {
             // we have 1 real root
             let sqrt_r2_minus_q3 = r2_minus_q3.sqrt();
             let mut big_a = r_val.abs() + sqrt_r2_minus_q3;
-            big_a = big_a.cbrt(); // cube root; skia-rust: libm
+            big_a = skia_rust_core::libm::cbrt(big_a); // cube root
             if r_val > 0.0 {
                 big_a = -big_a;
             }

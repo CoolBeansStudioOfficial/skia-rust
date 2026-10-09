@@ -726,7 +726,7 @@ fn compute_1d_blur_kernel(sigma: f32, radius: i32, kernel: &mut [f32]) {
         let mut x_term = count_i32(x) as f32 - radius as f32;
         x_term = x_term * x_term * sigma_x_denom;
         // The height is 1 (radius 0), so yTerm is 0.
-        let term = (-x_term).exp();
+        let term = skia_rust_core::libm::expf(-x_term);
         // Note that the constant term (1/(sqrt(2*pi*sigma^2)) of the Gaussian is dropped here,
         // since we renormalize the kernel below.
         *weight = term;

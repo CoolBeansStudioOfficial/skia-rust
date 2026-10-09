@@ -163,10 +163,13 @@ pub fn new_gamma_table(gamma: scalar) -> [u8; 256] {
     let mut x: f32 = 0.0;
     for t in &mut table {
         // float ee = powf(x, g) * 255;
-        // skia-rust: libm (`f32::powf`)
         #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)] // pinned to 0..=255
         {
-            *t = t_pin(float_round2int(x.powf(g) * 255.0), 0, 255) as u8;
+            *t = t_pin(
+                float_round2int(skia_rust_core::libm::powf(x, g) * 255.0),
+                0,
+                255,
+            ) as u8;
         }
         x += dx;
     }

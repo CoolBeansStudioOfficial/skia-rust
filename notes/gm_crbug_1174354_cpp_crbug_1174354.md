@@ -1,20 +1,21 @@
 # gm/crbug_1174354.cpp::crbug_1174354
 
-Ported 1:1 in `tests/gm/src/gm/crbug_1174354.rs` (saveLayer with bounds, sweep gradient in
-`kMirror` tile mode, `SaveLayerRec::fBackdrop` with a clamped `Blur` crop filter). Registered and
-`#[ignore]`d.
+Ported 1:1 in `tests/gm/src/gm/crbug_1174354.rs`. Registered and `#[ignore]`d. `8888` and `565`
+match on every tier; `f16` mismatches on every tier.
 
-Result with `gm-verify`: the `8888` and `565` configs match on every tier. The `f16` config
-mismatches on every tier (scalar, sse2, sse41, ml3, ml4), with one hash per config: ours
-`cb9c59d4…`, golden `99e82b73…`.
+## Root cause (confirmed)
 
-Attempts:
-1. Ported as above. Verified the neighbouring pieces in isolation: `crbug_1313579` (backdrop with a
-   clamped blur, all configs including `f16`) and `gradients::*` (sweep gradients, `f16` included)
-   pass. So the `f16` problem is in the combination used here, not in either piece alone.
+The differing pixels are exactly the four 50x50 blur boxes (4 x 2,500 px); everything outside them
+matches. Inside, ours shows the unblurred sweep gradient (e.g. `(0, 1.0, 0.0004)`) where the golden
+has the blurred mix (e.g. `(0.0001, 0.825, 0.175)`): the backdrop `Blur` image filter produced no
+output on the F16 layer.
 
-Hypothesis: the `saveLayer` with explicit `bounds` (`outsetRect`, outset 10px from the source rect)
-combined with a backdrop filter reads or clips the `f16` layer differently from Skia's
-`SkCanvas::internalSaveLayer` in the `f16` path. Not confirmed. The next step is
-`cargo xtask oracle rp-dump` for `f16` on this GM, which needs an oracle host, so it is not
-possible in the current environment.
+`RasterBlurEngine::find_algorithm` returns `None` for any color type other than A8/8888, so
+`FilterResult::Builder::blur` returns an empty result (see
+`crates/skia-rust-raster/src/blur_engine.rs`). Skia uses `RasterShaderBlurAlgorithm`
+(`SkShaderBlurAlgorithm`, `src/core/SkBlurEngine.cpp#L1274-L1282`, `#L1536-L1740`), a runtime-effect
+shader blur, for those color types. That needs SkSL runtime effects, which are not landed (they live on
+`origin/port/sksl-*`).
+
+Blocked until SkSL runtime effects land and `SkShaderBlurAlgorithm` is ported; then drop the
+`#[ignore]` and re-run `gm-verify`. Same cause as `gm/spritebitmap.cpp::SpriteBitmapGM`.

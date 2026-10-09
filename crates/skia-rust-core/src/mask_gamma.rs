@@ -56,11 +56,11 @@ struct GammaColorSpaceLuminance;
 
 impl ColorSpaceLuminance for GammaColorSpaceLuminance {
     fn to_luma(&self, gamma: scalar, luminance: scalar) -> scalar {
-        luminance.powf(gamma)
+        crate::libm::powf(luminance, gamma)
     }
 
     fn from_luma(&self, gamma: scalar, luma: scalar) -> scalar {
-        luma.powf(SCALAR_1 / gamma)
+        crate::libm::powf(luma, SCALAR_1 / gamma)
     }
 }
 
@@ -74,7 +74,7 @@ impl ColorSpaceLuminance for SrgbColorSpaceLuminance {
         if luminance <= 0.04045_f32 {
             return luminance / 12.92_f32;
         }
-        ((luminance + 0.055_f32) / 1.055_f32).powf(2.4_f32)
+        crate::libm::powf((luminance + 0.055_f32) / 1.055_f32, 2.4_f32)
     }
 
     #[allow(clippy::wrong_self_convention)] // mirrors SkColorSpaceLuminance::fromLuma
@@ -82,7 +82,7 @@ impl ColorSpaceLuminance for SrgbColorSpaceLuminance {
         if luma <= 0.003_130_8_f32 {
             return luma * 12.92_f32;
         }
-        1.055_f32 * luma.powf(SCALAR_1 / 2.4_f32) - 0.055_f32
+        1.055_f32 * crate::libm::powf(luma, SCALAR_1 / 2.4_f32) - 0.055_f32
     }
 }
 
