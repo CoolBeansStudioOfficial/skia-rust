@@ -5,6 +5,8 @@
 
 //! [`Uniform`]: the description of one uniform (name, type and array count).
 
+use std::borrow::Cow;
+
 use crate::sksl_type_shared::SkSLType;
 
 /// The array count of a uniform that is not an array (`Uniform::kNonArray`).
@@ -18,9 +20,11 @@ pub const K_NON_ARRAY: i32 = 0;
 /// fields, because the packing only saves memory in Skia's per-effect uniform tables.
 // Port of: src/gpu/graphite/Uniform.h#L17-L72 (chrome/m156)
 #[doc(alias = "skgpu::graphite::Uniform")]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Uniform {
-    name: &'static str,
+    // Skia points at constant strings or at copies in the dictionary's arena (runtime effect
+    // uniforms); here the copy is owned by the uniform.
+    name: Cow<'static, str>,
     ty: SkSLType,
     is_paint_color: bool,
     count: i32,
@@ -39,6 +43,23 @@ impl Uniform {
     #[must_use]
     pub const fn new_array(name: &'static str, ty: SkSLType, count: i32) -> Self {
         Self::with_flags(name, ty, count, false)
+    }
+
+    /// A uniform whose name is not a constant, e.g. a runtime effect's (`Uniform(name, type)`,
+    /// where Skia copies the name into an arena first).
+    ///
+    /// # Panics
+    /// If `ty` can't be a uniform's type or `count` is negative.
+    #[must_use]
+    pub fn new_owned(name: String, ty: SkSLType, count: i32) -> Self {
+        assert!(ty.can_be_uniform_value());
+        assert!(count >= 0);
+        Self {
+            name: Cow::Owned(name),
+            ty,
+            is_paint_color: false,
+            count,
+        }
     }
 
     /// The paint color uniform. It is treated specially: it is added to the uniform block once,
@@ -60,7 +81,7 @@ impl Uniform {
         assert!(ty.can_be_uniform_value());
         assert!(count >= 0);
         Self {
-            name,
+            name: Cow::Borrowed(name),
             ty,
             is_paint_color,
             count,
@@ -70,8 +91,8 @@ impl Uniform {
     /// The constant string name to use in the generated `SkSL`.
     // Port of: src/gpu/graphite/Uniform.h#L37 (chrome/m156)
     #[must_use]
-    pub const fn name(&self) -> &'static str {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// The type of the uniform.

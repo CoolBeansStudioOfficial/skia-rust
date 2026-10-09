@@ -1986,6 +1986,10 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
+    fn storage_buffer_support(&self) -> bool {
+        WgpuCaps::storage_buffer_support(self)
+    }
+
     fn max_texture_size(&self) -> i32 {
         WgpuCaps::max_texture_size(self)
     }

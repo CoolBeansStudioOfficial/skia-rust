@@ -930,7 +930,7 @@ impl UniformManager {
             debug_assert!(self.struct_base_alignment > 0);
         }
 
-        let expected = self.expect.expected_uniforms[self.expect.expected_uniform_index];
+        let expected = &self.expect.expected_uniforms[self.expect.expected_uniform_index];
         self.expect.expected_uniform_index += 1;
         // Not all types are supported as uniforms or supported by UniformManager.
         debug_assert!(expected.ty().can_be_uniform_value());

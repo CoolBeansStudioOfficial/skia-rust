@@ -17,7 +17,7 @@ use skia_rust_core::size::ISize;
 use crate::gpu::gpu_types::Protected;
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::AttachmentDesc;
-use crate::graphite::resource_types::Discardable;
+use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo};
 use crate::graphite::texture_format::TextureFormat;
 use crate::graphite::texture_info::TextureInfo;
 
@@ -117,4 +117,16 @@ pub trait Caps: Send + Sync + Debug {
     /// `isRenderableWithMSRTSS()`.
     #[doc(alias = "isRenderableWithMSRTSS")]
     fn is_renderable_with_msrtss(&self, info: &TextureInfo) -> bool;
+
+    /// `storageBufferSupport()`.
+    #[doc(alias = "storageBufferSupport")]
+    fn storage_buffer_support(&self) -> bool;
+
+    /// `toString(const ImmutableSamplerInfo&)`: a description of the immutable sampler for
+    /// `PaintParamsKey::toString`. Empty by default, and for backends without YCbCr samplers.
+    // Port of: src/gpu/graphite/Caps.h#L230 (chrome/m156)
+    #[doc(alias = "toString")]
+    fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
+        String::new()
+    }
 }

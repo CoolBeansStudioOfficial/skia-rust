@@ -30,8 +30,9 @@ use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
 use skia_rust_gpu::graphite::resource_types::{
-    AccessPattern, BufferType, Discardable, Ownership, ResourceType,
+    AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
+use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use skia_rust_gpu::graphite::task::compute_task::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
@@ -160,6 +161,9 @@ pub struct MockCaps {
     pub storage_alignment: usize,
     pub transfer_alignment: usize,
     pub attachment_size_policy: AttachmentSizePolicy,
+    pub storage_buffer_support: bool,
+    /// What `toString(ImmutableSamplerInfo)` returns.
+    pub immutable_sampler_string: String,
 }
 
 impl Default for MockCaps {
@@ -171,6 +175,8 @@ impl Default for MockCaps {
             storage_alignment: 16,
             transfer_alignment: 4,
             attachment_size_policy: AttachmentSizePolicy::Exact,
+            storage_buffer_support: false,
+            immutable_sampler_string: String::new(),
         }
     }
 }
@@ -246,6 +252,14 @@ impl Caps for MockCaps {
     fn is_renderable_with_msrtss(&self, _info: &TextureInfo) -> bool {
         false
     }
+
+    fn storage_buffer_support(&self) -> bool {
+        self.storage_buffer_support
+    }
+
+    fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
+        self.immutable_sampler_string.clone()
+    }
 }
 
 /// Counts what the mock resource provider back end created.
@@ -318,6 +332,7 @@ impl ResourceProviderBackend for MockResourceBackend {
 pub struct MockSharedContext {
     pub caps: Arc<MockCaps>,
     pub counts: BackendCounts,
+    pub shader_dictionary: ShaderCodeDictionary,
 }
 
 impl MockSharedContext {
@@ -325,6 +340,7 @@ impl MockSharedContext {
         Arc::new(Self {
             caps: Arc::new(caps),
             counts: BackendCounts::default(),
+            shader_dictionary: ShaderCodeDictionary::new(Layout::Std140, &[]),
         })
     }
 }
@@ -340,6 +356,10 @@ impl RecorderSharedContext for MockSharedContext {
 
     fn is_protected(&self) -> Protected {
         Protected::No
+    }
+
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        &self.shader_dictionary
     }
 
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {

@@ -45,6 +45,7 @@ use crate::graphite::recording::{LazyProxyData, Recording};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResourceManager};
+use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
 use crate::graphite::task::upload_task::{UploadList, UploadTask};
@@ -103,6 +104,10 @@ pub trait RecorderSharedContext: Send + Sync + std::fmt::Debug {
     /// `isProtected()`.
     #[doc(alias = "isProtected")]
     fn is_protected(&self) -> Protected;
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary;
 
     /// `makeResourceProvider()`: a resource provider with its own resource cache.
     #[doc(alias = "makeResourceProvider")]
@@ -701,6 +706,13 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn resource_provider(&self) -> &SharedResourceProvider {
         &self.recorder.resource_provider
+    }
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    #[must_use]
+    pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        self.recorder.shared_context.shader_code_dictionary()
     }
 
     /// `runtimeEffectDictionary()`.

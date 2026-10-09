@@ -105,7 +105,38 @@ pub fn get_name(effect: &RuntimeEffect) -> &str {
 #[doc(alias = "StableKey")]
 #[must_use]
 pub fn stable_key(effect: &RuntimeEffect) -> u32 {
-    effect.0.stable_key
+    effect
+        .0
+        .stable_key
+        .load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// `SkRuntimeEffectPriv::SetStableKey`: assigns the stable key of an effect that a Graphite
+/// context registers as a user-defined known runtime effect. (Skia casts away the `const`; the
+/// key is atomic here.)
+// Port of: src/core/SkRuntimeEffectPriv.h#L97-L102 (chrome/m156)
+#[doc(alias = "SetStableKey")]
+pub fn set_stable_key(effect: &RuntimeEffect, stable_key: u32) {
+    effect
+        .0
+        .stable_key
+        .store(stable_key, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// `SkRuntimeEffectPriv::Program`: runs `f` on the effect's compiled program.
+///
+/// Skia returns a reference to `fBaseProgram`; here the program sits behind a lock (the raster
+/// pipeline compile may swap it), so the caller works inside a closure. `f` must not call back
+/// into this function for the same effect.
+// Port of: src/core/SkRuntimeEffectPriv.h#L114-L116 (chrome/m156)
+#[doc(alias = "Program")]
+pub fn with_program<R>(effect: &RuntimeEffect, f: impl FnOnce(&Program) -> R) -> R {
+    let program = effect
+        .0
+        .base_program
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    f(&program)
 }
 
 /// `SkRuntimeEffectPriv::UsesSampleCoords`.
