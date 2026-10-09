@@ -100,6 +100,12 @@ impl Reporter {
         std::env::var_os("SKIA_RUST_TEST_VERBOSE").is_some()
     }
 
+    /// The context prefixed to every failure (`skiatest::ReporterContext`).
+    #[must_use]
+    pub fn context(&self) -> Option<&str> {
+        self.context.as_deref()
+    }
+
     /// Failures recorded so far.
     #[must_use]
     pub fn failures(&self) -> &[Failure] {
@@ -145,6 +151,36 @@ macro_rules! def_test {
             // the body. Without it the failures recorded so far would never reach `finish()`.
             let run = |$reporter: &mut $crate::Reporter| $body;
             run(&mut reporter);
+            reporter.finish();
+        }
+    };
+}
+
+/// Port of `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS(name, reporter, context, ...)`: runs the body
+/// once per context of [`tools::graphite_test_context::all_contexts`], with the context's name
+/// prefixed to each failure.
+///
+/// ```ignore
+/// def_graphite_test_for_all_contexts!(BackendTextureTest, |reporter, context| {
+///     reporter_assert!(reporter, context.backend() == BackendApi::Dawn);
+/// });
+/// ```
+#[macro_export]
+macro_rules! def_graphite_test_for_all_contexts {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            for (context_name, context) in $crate::tools::graphite_test_context::all_contexts() {
+                reporter.set_context(Some(context_name));
+                // A closure, as in `def_test!`: an early `return` ends this context only.
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &context);
+            }
+            reporter.set_context(None);
             reporter.finish();
         }
     };

@@ -50251,7 +50251,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L34-L86"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "376a145d9cf94112b8b96ddf800c1960aff4e925af3c64d140a66deaeab9cf0e"
 
 [[test]]
@@ -50261,6 +50261,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L136-L316"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
 span_hash = "f6fd396359b3b5c2b041d88b4793701ae6b457d820e617f8cfea3862cdb3b2bc"
 
 [[test]]
@@ -50270,6 +50271,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L89-L133"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite surfaces (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
 span_hash = "5ff63d68fa32663a3e6018888fe2d89e0007404ea37e4698dc4a1dd45d90bb14"
 
 [[test]]
@@ -51778,7 +51780,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFormatTest.cpp#L1393-L1397"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "743f91c0b3dd647b7c5e35e4d900a985681bfdc94c04fb12bce43b50110cb0ea"
 
 [[test]]

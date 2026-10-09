@@ -31,9 +31,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
+use skia_rust_core::size::ISize;
+
 use crate::gpu::gpu_types::{BackendApi, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::token::TokenTracker;
+use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
 use crate::graphite::context_priv::SharedResourceProvider;
@@ -45,6 +48,7 @@ use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResour
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
 use crate::graphite::task::upload_task::{UploadList, UploadTask};
+use crate::graphite::texture_info::TextureInfo;
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
 
@@ -396,6 +400,40 @@ impl Recorder {
     #[must_use]
     pub fn max_texture_size(&self) -> i32 {
         self.inner.caps.max_texture_size()
+    }
+
+    /// `createBackendTexture()`: creates a texture the client owns, or an invalid one if `info`
+    /// is invalid or of another backend, or the texture cannot be created.
+    // Port of: src/gpu/graphite/Recorder.cpp#L364-L373 (chrome/m156)
+    #[doc(alias = "createBackendTexture")]
+    #[must_use]
+    pub fn create_backend_texture(
+        &mut self,
+        dimensions: ISize,
+        info: &TextureInfo,
+    ) -> BackendTexture {
+        if !info.is_valid() || info.backend() != self.backend() {
+            return BackendTexture::new();
+        }
+        self.inner
+            .resource_provider
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .create_backend_texture(dimensions, info)
+    }
+
+    /// `deleteBackendTexture()`.
+    // Port of: src/gpu/graphite/Recorder.cpp#L523-L531 (chrome/m156)
+    #[doc(alias = "deleteBackendTexture")]
+    pub fn delete_backend_texture(&mut self, texture: &BackendTexture) {
+        if !texture.is_valid() || texture.backend() != self.backend() {
+            return;
+        }
+        self.inner
+            .resource_provider
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .delete_backend_texture(texture);
     }
 
     /// `addFinishInfo()`: the finished proc is called when the next `Recording` snapped by this

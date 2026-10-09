@@ -14,11 +14,13 @@
 
 use std::sync::{Arc, Mutex};
 
-use crate::gpu::gpu_types::BackendApi;
+use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::caps::Caps;
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
+use crate::graphite::wgpu::caps::WgpuCaps;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
 
 /// The wgpu `Context` as far as it exists before the submission side (G9b, G11c) is ported.
@@ -68,6 +70,13 @@ impl WgpuContext {
         BackendApi::Dawn
     }
 
+    /// `priv().caps()` as the concrete wgpu caps.
+    #[doc(alias = "caps")]
+    #[must_use]
+    pub fn wgpu_caps(&self) -> &WgpuCaps {
+        self.shared_context.caps()
+    }
+
     /// The options the context was created with.
     #[must_use]
     pub fn options(&self) -> &ContextOptions {
@@ -78,6 +87,27 @@ impl WgpuContext {
     #[must_use]
     pub fn shared_context(&self) -> &Arc<WgpuSharedContext> {
         &self.shared_context
+    }
+
+    /// `supportsProtectedContent()`.
+    // Port of: src/gpu/graphite/Context.cpp#L1001-L1003 (chrome/m156)
+    #[doc(alias = "supportsProtectedContent")]
+    #[must_use]
+    pub fn supports_protected_content(&self) -> bool {
+        self.shared_context.is_protected() == Protected::Yes
+    }
+
+    /// `deleteBackendTexture()`: deleting is safe from the context or any recorder.
+    // Port of: src/gpu/graphite/Context.cpp#L928-L935 (chrome/m156)
+    #[doc(alias = "deleteBackendTexture")]
+    pub fn delete_backend_texture(&self, texture: &BackendTexture) {
+        if !texture.is_valid() || texture.backend() != self.backend() {
+            return;
+        }
+        self.resource_provider
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .delete_backend_texture(texture);
     }
 
     /// `makeRecorder()`.

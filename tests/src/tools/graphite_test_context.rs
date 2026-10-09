@@ -1,0 +1,44 @@
+// Copyright 2026 The skia-rust Authors
+// Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+// Port of: tools/graphite/ContextFactory.cpp, tools/graphite/GraphiteTestContext.h (chrome/m156),
+//          adapted to wgpu's noop backend
+
+//! The Graphite contexts that `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on.
+//!
+//! Skia runs such a test once per context type the build supports (Dawn on D3D12, Dawn on
+//! Vulkan, Metal, …), each on a real device. The port runs it on wgpu's noop device, which
+//! creates resources but renders nothing (`docs/design/gpu.md` §7), once per capability profile:
+//! the device's own capabilities, the capabilities Dawn reported on D3D12, and those Dawn reported
+//! on Vulkan restricted to what wgpu can express (`CapsProfile::wgpu_restricted`). Tests that
+//! read pixels cannot be ported on top of this.
+#![cfg(not(target_arch = "wasm32"))]
+
+use skia_rust_gpu::graphite::context_options::ContextOptions;
+use skia_rust_gpu::graphite::wgpu::{
+    CapsProfile, WgpuContext, WgpuSharedContext, make_context, noop_backend_context,
+};
+
+/// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
+///
+/// # Panics
+/// If the noop backend cannot create a device.
+#[must_use]
+pub fn all_contexts() -> Vec<(String, WgpuContext)> {
+    let options = ContextOptions::default();
+    let mut contexts = vec![(
+        "wgpu-noop".to_owned(),
+        make_context(&noop_backend_context(), &options).expect("a context on the noop device"),
+    )];
+    // What Dawn reported on D3D12 (with its Dawn-only features), and what Dawn on Vulkan reports
+    // that wgpu can express.
+    for profile in [
+        CapsProfile::dawn_d3d12(),
+        CapsProfile::dawn_vulkan().wgpu_restricted(),
+    ] {
+        let shared_context =
+            WgpuSharedContext::make_with_profile(&noop_backend_context(), &profile, &options)
+                .expect("a shared context on the noop device");
+        contexts.push((profile.name, WgpuContext::new(shared_context, &options)));
+    }
+    contexts
+}
