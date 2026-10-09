@@ -19,8 +19,8 @@
 //! - [`demux`]: the demuxer (`WebPDemux`, `WebPDemuxPartial`, frame and chunk iterators).
 //! - [`rescaler`]: the rescaler behind scaled output, used by the lossy and lossless decoders.
 //!
-//! The incremental decoder (`idec_dec.c`) is not ported yet; see the design note
-//! `docs/design/codecs.md` §2 and §3.
+//! The incremental decoder ([`idec`], `idec_dec.c`) covers the lossy and unscaled outputs; the
+//! lossless and scaled incremental paths are still to come (see `docs/design/codecs.md`).
 //!
 //! The crate is `unsafe`-free and depends on nothing but `std`. Where libwebp has SSE2/SSE4.1
 //! kernels, the port follows the C path; the differential harness in `oracle/codec-diff/libwebp`
@@ -31,6 +31,7 @@ pub mod alpha_processing;
 mod bit_reader;
 pub mod demux;
 pub mod huffman;
+pub mod idec;
 pub mod io;
 pub mod lossless;
 mod output;
@@ -42,6 +43,7 @@ mod vp8_tables_small;
 pub mod vp8l;
 pub mod webp_dec;
 
+pub use idec::{DecodedRgb, IDecoder};
 pub use io::Status;
 pub use lossless::CspMode;
 pub use webp_dec::{

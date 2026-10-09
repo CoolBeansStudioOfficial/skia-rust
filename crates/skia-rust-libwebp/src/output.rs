@@ -276,16 +276,21 @@ struct FancyState {
 /// `y_row` and `uv_row` are the absolute plane rows of the batch's first row (`io->y`, `io->u`
 /// after the crop adjustment). The columns start at `io.crop_left` (and half of it for chroma).
 /// The output rows start at `io.mb_y` within `io.out`.
+// clippy::too_many_lines: this is `EmitFancyRGB` in one function, as in io_dec.c, so the line
+// structure of the C (the first row, the pairs, the held-back row) stays easy to check.
+#[allow(clippy::too_many_lines)]
 fn emit_fancy_rgb(
     st: &mut FancyState,
     planes: &Planes,
     io: &mut Io<'_>,
     y_row: usize,
     uv_row: usize,
-) {
+) -> i32 {
     let cs = io.colorspace;
     let mb_w = io.mb_w as usize;
     let mb_h = io.mb_h as usize;
+    // "a priori guess": the batch's rows, corrected below for the row held back.
+    let mut num_lines_out = mb_h as i32;
     let uv_w = (mb_w + 1) / 2;
     let ys = planes.y_stride;
     let uvs = planes.uv_stride;
@@ -339,6 +344,7 @@ fn emit_fancy_rgb(
             },
             mb_w,
         );
+        num_lines_out += 1;
     }
     while y + 2 < y_end {
         let top_uv = cur_uv;
@@ -368,6 +374,8 @@ fn emit_fancy_rgb(
         st.tmp_y.copy_from_slice(&py[cur_y..cur_y + mb_w]);
         st.tmp_u.copy_from_slice(&pu[cur_uv..cur_uv + uv_w]);
         st.tmp_v.copy_from_slice(&pv[cur_uv..cur_uv + uv_w]);
+        // The fancy upsampler leaves a row unfinished behind (except for the very last row).
+        num_lines_out -= 1;
     } else if y_end & 1 == 0 {
         upsample_line_pair(
             cs,
@@ -385,6 +393,7 @@ fn emit_fancy_rgb(
             mb_w,
         );
     }
+    num_lines_out
 }
 
 /// Port of `EmitAlphaRGB` for one batch: copies the alpha rows into the alpha byte of the RGBA
@@ -448,22 +457,59 @@ pub fn emit_frame(
         return emit_rescaled_frame(planes, alpha, io);
     }
     let _ = crop;
-    let extra_y_rows = K_FILTER_EXTRA_ROWS[usize::from(planes.filter_type)] as usize;
-    let mut st = FancyState::default();
+    let mut emitter = Emitter::default();
     for mb_y in 0..br_mb_y {
-        let is_first_row = mb_y == 0;
         let is_last_row = mb_y + 1 >= br_mb_y;
-        let mut y_start = 16 * mb_y;
-        let mut y_end = 16 * (mb_y + 1);
-        if !is_first_row {
-            y_start -= extra_y_rows;
-        }
-        if !is_last_row {
-            y_end -= extra_y_rows;
-        }
-        if y_end > io.crop_bottom as usize {
-            y_end = io.crop_bottom as usize; // make sure we don't overflow on last row.
-        }
+        emitter.emit_batch(planes, alpha, io, mb_y, is_last_row);
+    }
+    true
+}
+
+/// Port of `FinishRow`'s batch rows (`frame_dec.c`): the rows `[y_start, y_end)` of macroblock row
+/// `mb_y` that go to `io->put`, before the crop adjustment. The loop filter's extra rows are held
+/// back from every batch but the last, and `y_end` is clipped to the crop bottom.
+#[must_use]
+pub(crate) fn batch_rows(
+    mb_y: usize,
+    is_last_row: bool,
+    extra_y_rows: usize,
+    crop_bottom: usize,
+) -> (usize, usize) {
+    let mut y_start = 16 * mb_y;
+    let mut y_end = 16 * (mb_y + 1);
+    if mb_y != 0 {
+        y_start -= extra_y_rows;
+    }
+    if !is_last_row {
+        y_end -= extra_y_rows;
+    }
+    if y_end > crop_bottom {
+        y_end = crop_bottom; // make sure we don't overflow on last row.
+    }
+    (y_start, y_end)
+}
+
+/// The output state of one frame: the `io_dec.c` emitters with the fancy upsampler's samples of the
+/// previous batch. Batches must come in row order.
+#[derive(Debug, Default)]
+pub(crate) struct Emitter {
+    st: FancyState,
+}
+
+impl Emitter {
+    /// `FinishRow`'s `io->put` for macroblock row `mb_y`: writes its batch of rows, the alpha rows
+    /// with it, and advances `io->last_y`.
+    pub(crate) fn emit_batch(
+        &mut self,
+        planes: &Planes,
+        alpha: Option<&[u8]>,
+        io: &mut Io<'_>,
+        mb_y: usize,
+        is_last_row: bool,
+    ) {
+        let extra_y_rows = K_FILTER_EXTRA_ROWS[usize::from(planes.filter_type)] as usize;
+        let (mut y_start, y_end) =
+            batch_rows(mb_y, is_last_row, extra_y_rows, io.crop_bottom as usize);
         let mut y_row = y_start;
         let mut uv_row = y_start / 2;
         let mut a_row = y_start;
@@ -479,35 +525,36 @@ pub fn emit_frame(
             io.mb_w = io.crop_right - io.crop_left;
             io.mb_h = (y_end - y_start) as i32;
             // CustomSetup: EmitFancyRGB when fancy upsampling is on, EmitSampledRGB otherwise.
-            if io.fancy_upsampling {
-                emit_fancy_rgb(&mut st, planes, io, y_row, uv_row);
+            let num_lines_out = if io.fancy_upsampling {
+                emit_fancy_rgb(&mut self.st, planes, io, y_row, uv_row)
             } else {
-                emit_sampled_rgb(io, planes, y_row, uv_row);
-            }
+                emit_sampled_rgb(io, planes, y_row, uv_row)
+            };
             // CustomSetup installs EmitAlphaRGB only for the colour spaces with an alpha channel.
             if let Some(a) = alpha.filter(|_| is_alpha_mode(io.colorspace)) {
                 emit_alpha_rgb(io, a, a_row, planes.width as usize, io.fancy_upsampling);
             }
-            io.last_y += io.mb_h;
+            // CustomPut: `p->last_y += num_lines_out`, the rows the emitter actually wrote.
+            io.last_y += num_lines_out;
         }
     }
-    true
 }
 
 /// Port of `EmitSampledRGB` (`io_dec.c`) with `WebPSamplerProcessPlane`: each chroma sample
 /// covers two luma columns and rows `y_row`/`uv_row` of the batch.
-fn emit_sampled_rgb(io: &mut Io<'_>, planes: &Planes, y_row: usize, uv_row: usize) {
+fn emit_sampled_rgb(io: &mut Io<'_>, planes: &Planes, y_row: usize, uv_row: usize) -> i32 {
     let cs = io.colorspace;
+    let mb_h = io.mb_h;
     let Some(bpp) = bytes_per_pixel(cs) else {
-        return;
+        return 0;
     };
     let mb_w = io.mb_w as usize;
-    let mb_h = io.mb_h as usize;
+    let mb_h_us = mb_h as usize;
     let crop_left = io.crop_left as usize;
     let uv_col = crop_left / 2;
     let stride = io.out_stride;
     let base = io.mb_y as usize * stride;
-    for j in 0..mb_h {
+    for j in 0..mb_h_us {
         let yr = y_row + j;
         let ur = uv_row + (j >> 1);
         for x in 0..mb_w {
@@ -518,6 +565,8 @@ fn emit_sampled_rgb(io: &mut Io<'_>, planes: &Planes, y_row: usize, uv_row: usiz
             yuv_pixel(cs, y, u, v, &mut io.out[o..o + bpp]);
         }
     }
+    // EmitSampledRGB returns io->mb_h.
+    mb_h
 }
 
 /// Port of `EmitRescaledRGB` with `ExportRGB` and `EmitRescaledAlphaRGB`/`ExportAlpha`

@@ -456,7 +456,7 @@ struct Decoder {
 
 impl Decoder {
     /// `VP8GetHeaders` (the key-frame part) and the setup of `VP8InitFrame`.
-    fn new(buf: &[u8]) -> Result<Self, Status> {
+    fn new(buf: &[u8], incremental: bool) -> Result<Self, Status> {
         if buf.len() < 4 {
             return Err(Status::NotEnoughData);
         }
@@ -540,7 +540,13 @@ impl Decoder {
         }
         parts.push(VP8BitReader::new(buf, part_start, size_left));
         if part_start >= buf_end {
-            return Err(Status::NotEnoughData);
+            // ParsePartitions: the last partition is not there yet, which is SUSPENDED for an
+            // incremental decoder and NOT_ENOUGH_DATA otherwise.
+            return Err(if incremental {
+                Status::Suspended
+            } else {
+                Status::NotEnoughData
+            });
         }
 
         // VP8ParseQuant
@@ -1136,7 +1142,7 @@ pub fn decode_with_bypass(
     crop: Crop,
     bypass_filtering: bool,
 ) -> Result<Planes, Status> {
-    let mut dec = Decoder::new(buf)?;
+    let mut dec = Decoder::new(buf, false)?;
     if bypass_filtering {
         dec.filter_type = 0;
         dec.planes.filter_type = 0;
@@ -1183,4 +1189,172 @@ pub fn decode_with_bypass(
         }
     }
     Ok(dec.planes)
+}
+
+/// Port of `MAX_MB_SIZE` (`idec_dec.c`): the data a single-partition frame may still hold when a
+/// macroblock fails to decode.
+const MAX_MB_SIZE: usize = 4096;
+
+/// Receives each macroblock row once it is reconstructed and filtered: the output half of
+/// `FinishRow` (`frame_dec.c`).
+pub(crate) trait RowSink {
+    /// `planes` holds the rows decoded so far. `is_last_row` is `mb_y >= br_mb_y - 1`.
+    fn finish_row(&mut self, planes: &Planes, mb_y: usize, is_last_row: bool)
+    -> Result<(), Status>;
+}
+
+/// Port of `MBContext` (`idec_dec.c`): the macroblock contexts and the token reader, saved before a
+/// macroblock and restored when its decoding is suspended.
+struct MbContext {
+    left: MbCtx,
+    info: MbCtx,
+    token: VP8BitReader,
+}
+
+/// The resumable VP8 frame of `idec_dec.c` (`DecodeRemaining`). The state is the position in the
+/// macroblock grid, the partitions (extended as data arrives) and the memory-buffer start, all
+/// relative to the VP8 frame data.
+#[derive(Debug)]
+pub(crate) struct Vp8Stream {
+    dec: Decoder,
+    /// `idec->mem_.start_` relative to the frame: the first byte the decoder still needs.
+    mem_start: usize,
+    mb_x: usize,
+    mb_y: usize,
+    /// `idec->last_mb_y_`: the row whose intra modes were parsed last.
+    last_mb_y: Option<usize>,
+    tl_mb_x: usize,
+    tl_mb_y: usize,
+    br_mb_x: usize,
+    br_mb_y: usize,
+}
+
+impl Vp8Stream {
+    /// `VP8GetHeaders`, `CopyParts0Data` and `VP8EnterCritical` on the frame data `buf`, which
+    /// starts at the VP8 frame header and may hold only a prefix of the frame. Returns `Suspended`
+    /// when partition data is still missing.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `Status` of a header or partition that fails to parse.
+    pub(crate) fn new(
+        buf: &[u8],
+        configure: impl FnOnce(i32, i32) -> Result<(Crop, bool), Status>,
+    ) -> Result<Self, Status> {
+        let mut dec = Decoder::new(buf, true)?;
+        // The window and filter setting of the caller (WebPIoInitFromOptions), with the output
+        // buffer allocation, which follows VP8GetHeaders in DecodePartition0.
+        let (crop, bypass_filtering) = configure(dec.planes.width, dec.planes.height)?;
+        // CopyParts0Data: the memory buffer starts at the partition 0 bytes not loaded yet.
+        let mem_start = dec.br.remaining();
+        if mem_start == 0 {
+            return Err(Status::BitstreamError); // can't have zero-size partition #0
+        }
+        if bypass_filtering {
+            dec.filter_type = 0;
+            dec.planes.filter_type = 0;
+        }
+        // VP8EnterCritical: the macroblock window of the crop with its filter margin.
+        let filter_type = dec.filter_type;
+        let extra_pixels = K_FILTER_EXTRA_ROWS[usize::from(filter_type)];
+        let (tl_mb_x, tl_mb_y) = if filter_type == 2 {
+            (0i32, 0i32)
+        } else {
+            (
+                ((crop.left - extra_pixels) >> 4).max(0),
+                ((crop.top - extra_pixels) >> 4).max(0),
+            )
+        };
+        let br_mb_y = ((crop.bottom + 15 + extra_pixels) >> 4).min(dec.mb_h as i32);
+        let br_mb_x = ((crop.right + 15 + extra_pixels) >> 4).min(dec.mb_w as i32);
+        Ok(Self {
+            dec,
+            mem_start,
+            mb_x: 0,
+            mb_y: 0,
+            last_mb_y: None,
+            tl_mb_x: tl_mb_x as usize,
+            tl_mb_y: tl_mb_y as usize,
+            br_mb_x: br_mb_x as usize,
+            br_mb_y: br_mb_y as usize,
+        })
+    }
+
+    /// The decoded size of the frame (`io->width`, `io->height`).
+    #[must_use]
+    pub(crate) fn size(&self) -> (i32, i32) {
+        (self.dec.planes.width, self.dec.planes.height)
+    }
+
+    /// `DecodeRemaining` on `buf`, the frame data available so far. Runs the macroblock rows
+    /// from where the last call stopped. Returns `Ok(true)` when the last row is done and
+    /// `Ok(false)` when a partition ran out of data (`VP8_STATUS_SUSPENDED`).
+    ///
+    /// # Errors
+    ///
+    /// Returns `BitstreamError` for a macroblock or intra-mode row that cannot be decoded, and the
+    /// `Status` of the row sink.
+    pub(crate) fn decode_rows(
+        &mut self,
+        buf: &[u8],
+        sink: &mut impl RowSink,
+    ) -> Result<bool, Status> {
+        // DoRemap: the last partition runs to the end of the data available.
+        let last = self.dec.num_parts_minus_one;
+        self.dec.parts[last].set_end(buf.len());
+        let filter_type = self.dec.filter_type;
+        while self.mb_y < self.dec.mb_h {
+            let mb_y = self.mb_y;
+            if self.last_mb_y != Some(mb_y) {
+                // VP8ParseIntraModeRow
+                for mb_x in 0..self.dec.mb_w {
+                    self.dec.parse_intra_mode(buf, mb_x);
+                }
+                if self.dec.br.eof() {
+                    return Err(Status::BitstreamError);
+                }
+                self.last_mb_y = Some(mb_y);
+            }
+            while self.mb_x < self.dec.mb_w {
+                let mb_x = self.mb_x;
+                let token = mb_y & self.dec.num_parts_minus_one;
+                let saved = MbContext {
+                    left: self.dec.mb_info[0],
+                    info: self.dec.mb_info[mb_x + 1],
+                    token: self.dec.parts[token].clone(),
+                };
+                if !self.dec.decode_mb(buf, token, mb_x, mb_y) {
+                    // We shouldn't fail when MAX_MB_SIZE data was available.
+                    if self.dec.num_parts_minus_one == 0 && buf.len() - self.mem_start > MAX_MB_SIZE
+                    {
+                        return Err(Status::BitstreamError);
+                    }
+                    // RestoreContext, and wait for more data.
+                    self.dec.mb_info[0] = saved.left;
+                    self.dec.mb_info[mb_x + 1] = saved.info;
+                    self.dec.parts[token] = saved.token;
+                    return Ok(false);
+                }
+                // Release the buffer only if there is only one partition.
+                if self.dec.num_parts_minus_one == 0 {
+                    self.mem_start = self.dec.parts[0].pos();
+                }
+                self.mb_x += 1;
+            }
+            // VP8InitScanline, then ReconstructRow and FinishRow.
+            self.mb_x = 0;
+            self.dec.mb_info[0] = MbCtx::default();
+            self.dec.intra_l = [B_DC_PRED; 4];
+            self.dec.reconstruct_row(buf, mb_y);
+            let filter_row = filter_type > 0 && mb_y >= self.tl_mb_y && mb_y <= self.br_mb_y;
+            if filter_row {
+                for mb_x in self.tl_mb_x..self.br_mb_x {
+                    self.dec.do_filter(mb_x, mb_y);
+                }
+            }
+            sink.finish_row(&self.dec.planes, mb_y, mb_y + 1 >= self.br_mb_y)?;
+            self.mb_y += 1;
+        }
+        Ok(true)
+    }
 }

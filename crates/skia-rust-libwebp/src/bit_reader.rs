@@ -74,6 +74,26 @@ impl VP8BitReader {
         br
     }
 
+    /// `VP8BitReader::buf_`: the index of the next byte the reader loads. The incremental decoder
+    /// records it as the memory buffer's start (`token_br->buf_ - mem->buf_`).
+    #[must_use]
+    pub fn pos(&self) -> usize {
+        self.buf
+    }
+
+    /// `buf_end_ - buf_`: the bytes of the partition not yet loaded (`CopyParts0Data`).
+    #[must_use]
+    pub fn remaining(&self) -> usize {
+        self.buf_end - self.buf
+    }
+
+    /// Port of `VP8BitReaderSetBuffer(br, br->buf_, end - br->buf_)`: extends the partition to
+    /// `end`, the data available so far (`DoRemap` for the last partition).
+    #[doc(alias = "VP8BitReaderSetBuffer")]
+    pub fn set_end(&mut self, end: usize) {
+        self.set_buffer(self.buf, end - self.buf);
+    }
+
     /// Port of `VP8BitReaderSetBuffer`.
     #[doc(alias = "VP8BitReaderSetBuffer")]
     fn set_buffer(&mut self, start: usize, size: usize) {

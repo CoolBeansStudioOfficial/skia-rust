@@ -68,14 +68,14 @@ pub struct Features {
 
 /// The fields of `WebPHeaderStructure` that the still-image decoder reads.
 #[derive(Debug)]
-struct Headers<'a> {
+pub(crate) struct Headers<'a> {
     /// Offset of the bitstream (after its chunk header) from the start of the input.
-    offset: usize,
+    pub(crate) offset: usize,
     /// The `ALPH` payload, if any.
-    alpha_data: Option<&'a [u8]>,
+    pub(crate) alpha_data: Option<&'a [u8]>,
     /// The bitstream chunk size (`compressed_size`).
-    compressed_size: usize,
-    is_lossless: bool,
+    pub(crate) compressed_size: usize,
+    pub(crate) is_lossless: bool,
 }
 
 /// The working state of `ParseHeadersInternal`, gathered as the C function's locals.
@@ -88,10 +88,10 @@ struct ParseState<'a> {
     has_animation: bool,
     image_width: i32,
     image_height: i32,
-    alpha_data: Option<&'a [u8]>,
-    compressed_size: usize,
-    is_lossless: bool,
-    offset: usize,
+    pub(crate) alpha_data: Option<&'a [u8]>,
+    pub(crate) compressed_size: usize,
+    pub(crate) is_lossless: bool,
+    pub(crate) offset: usize,
 }
 
 /// Port of `GetLE16`-style little-endian reads of the header fields.
@@ -354,8 +354,18 @@ fn features_of(data: &[u8]) -> Result<Features, Status> {
 /// Port of `WebPParseHeaders`: fills in the bitstream headers with `have_all_data` set, and
 /// reports animation as unsupported.
 fn parse_headers(data: &[u8]) -> Result<Headers<'_>, Status> {
+    parse_headers_with(data, true)
+}
+
+/// `WebPParseHeaders` with `have_all_data` cleared, as `DecodeWebPHeaders` (`idec_dec.c`) calls
+/// it on the data available so far. `NotEnoughData` means the VP8/VP8L chunk header is missing.
+pub(crate) fn parse_headers_partial(data: &[u8]) -> Result<Headers<'_>, Status> {
+    parse_headers_with(data, false)
+}
+
+fn parse_headers_with(data: &[u8], have_all_data: bool) -> Result<Headers<'_>, Status> {
     let mut st = ParseState::default();
-    let status = parse_headers_internal(data, true, true, &mut st);
+    let status = parse_headers_internal(data, have_all_data, true, &mut st);
     match status {
         Ok(()) | Err(Status::NotEnoughData) if st.has_animation => Err(Status::UnsupportedFeature),
         Ok(()) => Ok(Headers {
@@ -418,21 +428,21 @@ fn check_crop_dimensions(
 
 /// The window and output parameters that `WebPIoInitFromOptions` computes from the options.
 #[derive(Debug, Clone, Copy)]
-struct IoParams {
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-    use_scaling: bool,
-    scaled_width: i32,
-    scaled_height: i32,
-    bypass_filtering: bool,
-    fancy_upsampling: bool,
+pub(crate) struct IoParams {
+    pub(crate) x: i32,
+    pub(crate) y: i32,
+    pub(crate) w: i32,
+    pub(crate) h: i32,
+    pub(crate) use_scaling: bool,
+    pub(crate) scaled_width: i32,
+    pub(crate) scaled_height: i32,
+    pub(crate) bypass_filtering: bool,
+    pub(crate) fancy_upsampling: bool,
 }
 
 impl IoParams {
     /// The output size: the crop window, or its scaled size (`WebPAllocateDecBuffer`).
-    fn output_size(&self) -> (i32, i32) {
+    pub(crate) fn output_size(&self) -> (i32, i32) {
         if self.use_scaling {
             (self.scaled_width, self.scaled_height)
         } else {
@@ -443,7 +453,7 @@ impl IoParams {
 
 /// The checks of `CheckDecBuffer`/`AllocateBuffer` that apply to an external RGB buffer of
 /// `out_w` x `out_h` pixels with `out_stride` bytes per row.
-fn check_output(
+pub(crate) fn check_output(
     mode: CspMode,
     out: &[u8],
     out_stride: usize,
@@ -464,7 +474,7 @@ fn check_output(
 /// Port of `WebPIoInitFromOptions` (window, scaling, filter and upsampler parts) for a
 /// `width` x `height` image. `snap_crop` is true for YUV sources (lossy), whose crop origin is
 /// rounded down to even coordinates; RGB sources (lossless) keep it.
-fn io_params(
+pub(crate) fn io_params(
     width: i32,
     height: i32,
     options: &DecodeOptions,
