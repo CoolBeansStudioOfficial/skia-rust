@@ -21817,7 +21817,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/manypathatlases.cpp#L95-L95"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "40003956e17647a24576371fb8fa9363ceabe96dbaa1c3164beab655e810b132"
 
 [[test]]
@@ -21826,7 +21826,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/manypathatlases.cpp#L96-L96"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "de74b6dd841171722dcd922fd078b9b1ec441905ea7fed3bc4da585149081c77"
 
 [[test]]
@@ -21835,8 +21835,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/manypaths.cpp#L116-L116"
 module = "raster"
-status = "todo"
-reason = "ported locally and matches, but 10000 AA ovals take ~7 min in debug test builds; needs a release-only or faster harness path"
+status = "passing"
 span_hash = "466ab272c266462b1e41554828161078489bd08b6419cc34497548793f5ea0fd"
 
 [[test]]
@@ -22925,7 +22924,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/postercircle.cpp#L152-L152"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_postercircle_cpp_PosterCircleGM.md"
 span_hash = "3ab1d2908d8a9bd94e2c42c5534e2ecfc31db3433868a0a134de6b8bfe29a57a"
 
 [[test]]
@@ -23115,7 +23115,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/rrectclipdrawpaint.cpp#L22-L63"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "aab30fb895908155ab09c918ecd49f102d48751be187e62a87cb82655f4cefde"
 
 [[test]]
@@ -23912,7 +23912,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/skbug1719.cpp#L27-L75"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "09b789ff9908e19a63f9504c0ce6b2b2128305f728f5f99e50101095faef0c60"
 
 [[test]]
@@ -23921,7 +23921,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/skbug_12212.cpp#L22-L49"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2c5307dcb2ab806db945221d4ef4303e7f51780dad58fe4e11d61020b8d3ce09"
 
 [[test]]
@@ -23975,7 +23975,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_9319.cpp#L17-L41"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c0b96e111c4843efb822a1c11b923881f23c93c86958b97a2d64764841c5145c"
 
 [[test]]
@@ -24047,7 +24047,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/srcmode.cpp#L142-L142"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "408f52b9e83725e363e7140623f510ff92d294d56e4f86d302fa7323561d0f39"
 
 [[test]]
@@ -24074,7 +24074,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/stringart.cpp#L87-L87"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "668fa19d66f2fb4cc5582b9a1b824ddcdcc16f756b59caf8866d6d74be4e0f31"
 
 [[test]]
@@ -24876,7 +24876,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/transparency.cpp#L73-L82"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4f1c76c1d566af11c0d8113619284b91e96ba415cab7cbe75a042da21707379c"
 
 [[test]]
