@@ -53,7 +53,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4363-L4368 (chrome/m156)
-    pub(super) fn trace_line(ctx: &TraceLineCtx<'_>, p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn trace_line(ctx: &TraceLineCtx, p: &mut Regs, e: &mut Params<'_, '_>) {
         let trace_mask = load_trace_mask(e, ctx.trace_mask);
         if any(execution_mask(p) & trace_mask) {
             ctx.trace_hook.line(ctx.line_number);
@@ -61,7 +61,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4394-L4418 (chrome/m156)
-    pub(super) fn trace_var(ctx: &TraceVarCtx<'_>, p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn trace_var(ctx: &TraceVarCtx, p: &mut Regs, e: &mut Params<'_, '_>) {
         let trace_mask = load_trace_mask(e, ctx.trace_mask);
         let mask = execution_mask(p) & trace_mask;
         if any(mask) {
@@ -100,7 +100,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4370-L4375 (chrome/m156)
-    pub(super) fn trace_enter(ctx: &TraceFuncCtx<'_>, p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn trace_enter(ctx: &TraceFuncCtx, p: &mut Regs, e: &mut Params<'_, '_>) {
         let trace_mask = load_trace_mask(e, ctx.trace_mask);
         if any(execution_mask(p) & trace_mask) {
             ctx.trace_hook.enter(ctx.func_idx);
@@ -108,7 +108,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4377-L4382 (chrome/m156)
-    pub(super) fn trace_exit(ctx: &TraceFuncCtx<'_>, p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn trace_exit(ctx: &TraceFuncCtx, p: &mut Regs, e: &mut Params<'_, '_>) {
         let trace_mask = load_trace_mask(e, ctx.trace_mask);
         if any(execution_mask(p) & trace_mask) {
             ctx.trace_hook.exit(ctx.func_idx);
@@ -116,7 +116,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4384-L4392 (chrome/m156)
-    pub(super) fn trace_scope(ctx: &TraceScopeCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn trace_scope(ctx: &TraceScopeCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         // Note that trace_scope intentionally does not incorporate the execution mask. Otherwise,
         // the scopes would become unbalanced if the execution mask changed in the middle of a
         // block. The caller is responsible for providing a combined trace- and execution-mask.

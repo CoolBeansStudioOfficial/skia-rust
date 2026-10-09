@@ -28,6 +28,7 @@
 )]
 
 use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 use skia_rust_core::arena_alloc::ArenaAlloc;
 use skia_rust_core::raster_pipeline::{
@@ -368,7 +369,7 @@ fn filled(registers: &[i32], n: usize, size: usize) -> Vec<u8> {
 /// `TestTraceHook`.
 struct TestTraceHook {
     /// `fBuffer`.
-    buffer: RefCell<Vec<i32>>,
+    buffer: Mutex<Vec<i32>>,
     /// The call kinds that record their arguments: `v`ar, `l`ine, `e`nter, e`x`it, `s`cope.
     records: &'static str,
 }
@@ -376,13 +377,13 @@ struct TestTraceHook {
 impl TestTraceHook {
     fn new(records: &'static str) -> TestTraceHook {
         TestTraceHook {
-            buffer: RefCell::new(Vec::new()),
+            buffer: Mutex::new(Vec::new()),
             records,
         }
     }
 
     fn push(&self, kind: char, values: &[i32]) {
-        let mut buffer = self.buffer.borrow_mut();
+        let mut buffer = self.buffer.lock().unwrap();
         if self.records.contains(kind) {
             buffer.extend_from_slice(values);
         } else {
@@ -439,10 +440,10 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     let k_data777 = MemPtr::new(MemSlot(7), 0);
     let k_data999 = MemPtr::new(MemSlot(8), 0);
 
-    let trace = TestTraceHook::new("v");
+    let trace = Arc::new(TestTraceHook::new("v"));
     let k_trace_var1 = TraceVarCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 2,
         num_slots: 1,
         data: k_data333,
@@ -451,7 +452,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var2 = TraceVarCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 4,
         num_slots: 1,
         data: k_data555,
@@ -460,7 +461,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var3 = TraceVarCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 5,
         num_slots: 1,
         data: k_data666,
@@ -469,7 +470,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var4 = TraceVarCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 6,
         num_slots: 2,
         data: k_data777,
@@ -478,7 +479,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var5 = TraceVarCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 8,
         num_slots: 2,
         data: k_data999,
@@ -487,7 +488,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var6 = TraceVarCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 9,
         num_slots: 1,
         data: k_data999,
@@ -496,7 +497,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
     };
     let k_trace_var7 = TraceVarCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         slot_idx: 9,
         num_slots: 1,
         data: k_data999,
@@ -534,7 +535,7 @@ def_test!(SkRasterPipeline_TraceVar, |r| {
 
     reporter_assert!(
         r,
-        *trace.buffer.borrow() == vec![4, 555, 6, 777, 7, 707, 9, 999, 10, 909]
+        *trace.buffer.lock().unwrap() == vec![4, 555, 6, 777, 7, 707, 9, 999, 10, 909]
     );
 });
 
@@ -544,30 +545,30 @@ def_test!(SkRasterPipeline_TraceLine, |r| {
 
     let (mask_on, mask_off) = mask_arrays(n);
 
-    let trace = TestTraceHook::new("l");
+    let trace = Arc::new(TestTraceHook::new("l"));
     let k_trace_line1 = TraceLineCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         line_number: 123,
     };
     let k_trace_line2 = TraceLineCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         line_number: 456,
     };
     let k_trace_line3 = TraceLineCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         line_number: 567,
     };
     let k_trace_line4 = TraceLineCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         line_number: 678,
     };
     let k_trace_line5 = TraceLineCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         line_number: 789,
     };
 
@@ -588,7 +589,7 @@ def_test!(SkRasterPipeline_TraceLine, |r| {
         .with(MemSlot(1), MemView::read(&mask_off));
     p.run(0, 0, n, 1, &mut mem);
 
-    reporter_assert!(r, *trace.buffer.borrow() == vec![123, 789]);
+    reporter_assert!(r, *trace.buffer.lock().unwrap() == vec![123, 789]);
 });
 
 // Port of: tests/SkRasterPipelineTest.cpp#L1044-L1094 (chrome/m156)
@@ -597,35 +598,35 @@ def_test!(SkRasterPipeline_TraceEnterExit, |r| {
 
     let (mask_on, mask_off) = mask_arrays(n);
 
-    let trace = TestTraceHook::new("ex");
+    let trace = Arc::new(TestTraceHook::new("ex"));
     let k_trace_func1 = TraceFuncCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 99,
     };
     let k_trace_func2 = TraceFuncCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 12,
     };
     let k_trace_func3 = TraceFuncCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 34,
     };
     let k_trace_func4 = TraceFuncCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 56,
     };
     let k_trace_func5 = TraceFuncCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 78,
     };
     let k_trace_func6 = TraceFuncCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         func_idx: 90,
     };
 
@@ -645,7 +646,7 @@ def_test!(SkRasterPipeline_TraceEnterExit, |r| {
         .with(MemSlot(1), MemView::read(&mask_off));
     p.run(0, 0, n, 1, &mut mem);
 
-    reporter_assert!(r, *trace.buffer.borrow() == vec![12, 1, 56, 0]);
+    reporter_assert!(r, *trace.buffer.lock().unwrap() == vec![12, 1, 56, 0]);
 });
 
 // Port of: tests/SkRasterPipelineTest.cpp#L1096-L1138 (chrome/m156)
@@ -654,30 +655,30 @@ def_test!(SkRasterPipeline_TraceScope, |r| {
 
     let (mask_on, mask_off) = mask_arrays(n);
 
-    let trace = TestTraceHook::new("s");
+    let trace = Arc::new(TestTraceHook::new("s"));
     let k_trace_scope1 = TraceScopeCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         delta: 1,
     };
     let k_trace_scope2 = TraceScopeCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         delta: -2,
     };
     let k_trace_scope3 = TraceScopeCtx {
         trace_mask: K_MASK_OFF,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         delta: 3,
     };
     let k_trace_scope4 = TraceScopeCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         delta: 4,
     };
     let k_trace_scope5 = TraceScopeCtx {
         trace_mask: K_MASK_ON,
-        trace_hook: &trace,
+        trace_hook: trace.clone(),
         delta: -5,
     };
 
@@ -696,7 +697,7 @@ def_test!(SkRasterPipeline_TraceScope, |r| {
         .with(MemSlot(1), MemView::read(&mask_off));
     p.run(0, 0, n, 1, &mut mem);
 
-    reporter_assert!(r, *trace.buffer.borrow() == vec![1, 4, -5]);
+    reporter_assert!(r, *trace.buffer.lock().unwrap() == vec![1, 4, -5]);
 });
 
 // Port of: tests/SkRasterPipelineTest.cpp#L23-L46 (chrome/m156)
@@ -2909,20 +2910,28 @@ def_test!(
                 iota(&mut dst_values, 0, 5 * n, 0);
                 let mut src = [0; 5];
                 iota(&mut src, 0, 5, K_LAST_SIGNALING_NAN);
+                // Skia's `src` is a pointer to the uniforms: they are read from slot memory.
+                let src_ints = Ints::new(&src);
                 let mut dst = Ints::new(&dst_values);
                 let offsets_ints = Ints::from_u32(offsets);
 
                 // Run `copy_from_indirect_unmasked` over our data.
                 let ctx = CopyIndirectUniformCtx {
-                    dst: slot(1),
-                    src: &src,
+                    dst: slot(2),
+                    src: slot(1),
                     indirect_offset: slot(0),
                     indirect_limit: u32::try_from(5 - copy_size).unwrap(),
                     slots: u32::try_from(copy_size).unwrap(),
                 };
                 let mut p = RasterPipeline::new();
                 p.append(Stage::CopyFromIndirectUniformUnmasked(&ctx));
-                p.run(0, 0, n, 1, &mut bind(&[&offsets_ints], &mut [&mut dst]));
+                p.run(
+                    0,
+                    0,
+                    n,
+                    1,
+                    &mut bind(&[&offsets_ints, &src_ints], &mut [&mut dst]),
+                );
                 let dst = dst.get();
 
                 // If the offset plus copy-size would overflow the source data, the results don't
@@ -3387,7 +3396,7 @@ def_test!(SkRasterPipeline_CopySlotsUnmasked, |reporter| {
 });
 
 /// The `copy_[n_]uniform[s]` stage with `count` uniforms.
-fn copy_uniforms_stage<'a>(count: usize, ctx: &'a UniformCtx<'a>) -> Stage<'a> {
+fn copy_uniforms_stage(count: usize, ctx: &UniformCtx) -> Stage<'_> {
     match count {
         1 => Stage::CopyUniform(ctx),
         2 => Stage::Copy2Uniforms(ctx),
@@ -3406,18 +3415,20 @@ def_test!(SkRasterPipeline_CopyUniforms, |reporter| {
         let mut slot_values = vec![0; 5 * MAX_STRIDE_HIGHP];
         iota(&mut slot_values, 0, 5 * n, 1);
         let mut slots = Ints::new(&slot_values);
-        // Initialize the uniform buffer to various NaNs
+        // Initialize the uniform buffer to various NaNs (read from slot memory: Skia's `src` is a
+        // pointer to it)
         let mut uniforms = [0; 5];
         iota(&mut uniforms, 0, 5, K_LAST_SIGNALING_NAN);
+        let uniforms_ints = Ints::new(&uniforms);
 
         // Run `copy_n_uniforms` over our data.
         let ctx = UniformCtx {
-            dst: slot(0),
-            src: &uniforms,
+            dst: slot(1),
+            src: slot(0),
         };
         let mut p = RasterPipeline::new();
         p.append(copy_uniforms_stage(num_slots_affected, &ctx));
-        p.run(0, 0, 1, 1, &mut bind(&[], &mut [&mut slots]));
+        p.run(0, 0, 1, 1, &mut bind(&[&uniforms_ints], &mut [&mut slots]));
         let slots = slots.get();
 
         // Verify that our uniforms have been broadcast into each slot.

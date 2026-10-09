@@ -250,6 +250,10 @@ skia-rust-codec     → core, raster, skcms, simd, the five above
 skia-rust (facade)  → codec behind feature "codec" (default, PLAN §3.2)
 ```
 
+- **Wuffs is Apache-2.0, not BSD.** Its LICENSE at `e3f919cc` is the Apache License 2.0, so
+  `skia-rust-wuffs` is an Apache-2.0 crate (`license = "Apache-2.0"`), carries the upstream
+  notice in its file headers, and has its licence text and attribution in `NOTICE`. Its port
+  is a derivative work, so it must not be relabelled BSD-3-Clause.
 - **Why separate crates.** Each library has its own licence (`deny.toml` must allow `IJG` and
   `libpng-2.0`, added in C0). Each is 3–15k lines, so splitting gives parallel compilation and
   lets agents work in parallel without touching the same `lib.rs`. None of them knows about

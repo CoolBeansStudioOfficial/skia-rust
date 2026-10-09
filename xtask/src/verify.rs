@@ -130,6 +130,9 @@ pub struct Report {
     pub regressions: Vec<String>,
     /// Entries whose test passes but which aren't marked `passing` (id, old status).
     pub newly_passing: Vec<(String, String)>,
+    /// Benchmarks whose smoke run passes but which render and have no output check, so they are
+    /// `ported`, not `passing` (id, old status).
+    pub newly_ported: Vec<(String, String)>,
     /// Entries marked excluded whose test exists anyway.
     pub excluded_but_ported: Vec<String>,
     /// Entries whose test exists but fails (id), for `--update`.
@@ -150,7 +153,9 @@ pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) 
         }
     }
     for (path, outcome) in results {
-        if path.starts_with("tests::") {
+        // Only `unit::` and `modules::` hold 1:1 Skia ports; anything else in the crate
+        // (`tests::`, the self-tests of the ported tools under `tools::`) has no manifest entry.
+        if !(path.starts_with("unit::") || path.starts_with("modules::")) {
             continue;
         }
         let Some((id, status)) = by_path.get(path) else {
@@ -199,9 +204,23 @@ pub fn finish(report: &Report, update: bool, what: &str) -> Result<()> {
         };
         println!("{verb} {id} ({old})");
     }
+    for (id, old) in &report.newly_ported {
+        let verb = if update {
+            "now ported"
+        } else {
+            "runs clean but is marked"
+        };
+        println!("{verb} {id} ({old})");
+    }
     let hard = report.unknown.len() + report.excluded_but_ported.len() + report.regressions.len();
     if hard > 0 {
         bail!("{hard} problem(s) between ported {what}s and the manifest");
+    }
+    if !update && !report.newly_ported.is_empty() {
+        bail!(
+            "{} ported {what}(s) not marked ported; run `cargo xtask inventory verify --update`",
+            report.newly_ported.len()
+        );
     }
     if !update && !report.newly_passing.is_empty() {
         bail!(

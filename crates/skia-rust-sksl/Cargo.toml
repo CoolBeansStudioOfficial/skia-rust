@@ -1,0 +1,21 @@
+[package]
+name = "skia-rust-sksl"
+description = "SkSL compiler of skia-rust: the Raster Pipeline builder and dumper (more stages to come)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+bitflags.workspace = true
+skia-rust-simd.workspace = true
+
+[features]
+# The WGSL code generator (`codegen::wgsl`, S26). `skia-rust-gpu` turns it on later.
+wgsl = []
+
+[lints]
+workspace = true

@@ -24,7 +24,7 @@ use crate::color_space::ColorSpace;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_type::ColorType;
 use crate::compose_color_filter::ComposeColorFilter;
-use crate::effect_priv::StageRec;
+use crate::effect_priv::{SHADER_SCRATCH, StageRec};
 use crate::raster_pipeline::{MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage};
 use crate::rect::Rect;
 use crate::write_buffer::BinaryWriteBuffer;
@@ -97,6 +97,7 @@ pub trait ColorFilterBase: Any + fmt::Debug + Send + Sync {
     #[doc(alias = "onFilterColor4f")]
     fn on_filter_color4f(&self, color: &PMColor4f, dst_cs: Option<&ColorSpace>) -> PMColor4f {
         let alloc = ArenaAlloc::new();
+        // (the stages may reserve shader scratch memory: see `SHADER_SCRATCH`)
         let mut pipeline = RasterPipeline::new();
         pipeline.append_constant_color(&alloc, &color.as_array());
         // (SkSurfaceProps props{}; default OK; colorFilters don't render text)
@@ -115,8 +116,12 @@ pub trait ColorFilterBase: Any + fmt::Debug + Send + Sync {
         if self.append_stages(&mut rec, color.a == 1.0) {
             pipeline.append(Stage::StoreF32(dst));
             let mut storage = color_to_bytes([0.0; 4]);
+            let mut scratch = alloc.scratch_buffer();
             let mut mem = MemoryBindings::new();
             mem.bind(dst.slot, MemView::write(&mut storage));
+            if !scratch.is_empty() {
+                mem.bind(SHADER_SCRATCH, MemView::write(&mut scratch));
+            }
             pipeline.run(0, 0, 1, 1, &mut mem);
             let [r, g, b, a] = color_from_bytes(&storage);
             return PMColor4f::new(r, g, b, a);

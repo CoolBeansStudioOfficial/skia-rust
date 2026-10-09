@@ -17,6 +17,13 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 
+/// The `index`th `int32_t` of `bytes` (a pointer's memory, as `Params::ptr` gives it): the scalar
+/// words of uniform and immutable data, which are not vector slots.
+fn scalar_i32(bytes: &[u8], index: usize) -> i32 {
+    let at = 4 * index;
+    i32::from_ne_bytes(bytes[at..at + 4].try_into().expect("four bytes"))
+}
+
 /// Bytes of one `F`/`I32` register (`N` 32-bit lanes): the stride of `SkSL` slots.
 const F_BYTES: usize = 4 * N;
 
@@ -257,30 +264,33 @@ si! {
 
     /// Splats `K` uniforms into `K` consecutive slots at `ctx.dst` (`copy_uniform` and its
     /// variants).
-    fn copy_n_uniforms<const K: usize>(ctx: &UniformCtx<'_>, e: &mut Params<'_, '_>) {
+    fn copy_n_uniforms<const K: usize>(ctx: &UniformCtx, e: &mut Params<'_, '_>) {
+        // The uniform words are scalars in slot memory (`const int32_t* src`), read first so the
+        // destination can borrow the memory mutably.
+        let src: [i32; K] = core::array::from_fn(|k| scalar_i32(e.ptr(ctx.src), k));
         let dst = &mut e.ptr_mut(ctx.dst)[..K * F_BYTES];
-        for k in 0..K {
-            store_i32(I32::splat(ctx.src[k]), dst, k * F_BYTES);
+        for (k, &value) in src.iter().enumerate() {
+            store_i32(I32::splat(value), dst, k * F_BYTES);
         }
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4420-L4424 (chrome/m156)
-    pub(super) fn copy_uniform(ctx: &UniformCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn copy_uniform(ctx: &UniformCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         copy_n_uniforms::<1>(ctx, e);
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4425-L4430 (chrome/m156)
-    pub(super) fn copy_2_uniforms(ctx: &UniformCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn copy_2_uniforms(ctx: &UniformCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         copy_n_uniforms::<2>(ctx, e);
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4431-L4437 (chrome/m156)
-    pub(super) fn copy_3_uniforms(ctx: &UniformCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn copy_3_uniforms(ctx: &UniformCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         copy_n_uniforms::<3>(ctx, e);
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4438-L4445 (chrome/m156)
-    pub(super) fn copy_4_uniforms(ctx: &UniformCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn copy_4_uniforms(ctx: &UniformCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         copy_n_uniforms::<4>(ctx, e);
     }
 
@@ -359,7 +369,7 @@ si! {
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L4653-L4668 (chrome/m156)
-    pub(super) fn copy_from_indirect_uniform_unmasked(ctx: &CopyIndirectUniformCtx<'_>, _p: &mut Regs, e: &mut Params<'_, '_>) {
+    pub(super) fn copy_from_indirect_uniform_unmasked(ctx: &CopyIndirectUniformCtx, _p: &mut Regs, e: &mut Params<'_, '_>) {
         // Clamp the indirect offsets to stay within the limit.
         let offsets = min_u(load_u32(e.ptr(ctx.indirect_offset), 0), U32::splat(ctx.indirect_limit));
 
@@ -367,7 +377,7 @@ si! {
         for k in 0..ctx.slots as usize {
             let mut v = I32::splat(0);
             for i in 0..N {
-                v[i] = ctx.src[k + offsets[i] as usize];
+                v[i] = scalar_i32(e.ptr(ctx.src), k + offsets[i] as usize);
             }
             store_i32(v, e.ptr_mut(ctx.dst), k * F_BYTES);
         }

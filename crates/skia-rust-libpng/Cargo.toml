@@ -1,0 +1,15 @@
+[package]
+name = "skia-rust-libpng"
+description = "Port of the libpng 1.6.56 read path that Skia's PNG codec uses, used by skia-rust's codecs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "libpng-2.0"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+skia-rust-zlib = { workspace = true }
+
+[lints]
+workspace = true

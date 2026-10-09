@@ -1,0 +1,26 @@
+[package]
+name = "skia-rust-bench"
+description = "1:1 ports of Skia's benchmarks (bench/*.cpp), the Benchmark trait and a port of nanobench's CPU path (docs/design/bench.md)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
+skia-rust-effects.workspace = true
+# Production dispatch only: no `testing`, `models` or `emulated-estimates` features here, so
+# `cargo build --release -p skia-rust-bench --bin nanobench` times the code users get
+# (docs/design/bench.md §4). A workspace-wide build unifies features; build with `-p` for perf.
+skia-rust-simd.workspace = true
+# Static benchmark registry: the Rust counterpart of Skia's `sk_tools::Registry` behind `DEF_BENCH`.
+inventory = "0.3.24"
+# nanobench's `--outResultsFile` JSON.
+serde_json = "1.0.151"
+
+[lints]
+workspace = true
