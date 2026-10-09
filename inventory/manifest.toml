@@ -24007,8 +24007,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/runtimeshader.cpp#L430-L430"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "a89852aff05d18e5612ef3f0bc7f888ab4d5a735182f756c0fb538b5f131db75"
 
 [[test]]
@@ -24017,8 +24016,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/runtimeshader.cpp#L349-L349"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "bfed2d554b728cc69a204b1b98cd25d155e279cde3baf349611e4533cf9a9fb5"
 
 [[test]]
@@ -24054,8 +24052,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/runtimeshader.cpp#L190-L190"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "0267096d17ebb9705b791bddb418615c6a8f3293720853d5ebca663b5da1ca0b"
 
 [[test]]
@@ -24064,8 +24061,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/runtimeshader.cpp#L267-L267"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "88d6a9bb4b920c27f9fa923e7c5b08c79dbd5b3851d50c3371788a084fac46af"
 
 [[test]]
@@ -24110,8 +24106,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeshader.cpp#L862-L907"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "1a26fc0a0149fa9328cd18dc1f34c28c4c9092453b030f726a1719e8f5f03b8c"
 
 [[test]]
