@@ -358,7 +358,7 @@ unsupported_ctx!(
     &'a Conical2PtCtx,
     &'a MipmapCtx,
     &'a GradientCtx,
-    &'a PerlinNoiseCtx<'a>,
+    &'a PerlinNoiseCtx,
     &'a EvenlySpaced2StopGradientCtx,
     &'a Cell<[u32; MAX_STRIDE_HIGHP]>,
     &'a CallbackCtx<'a>,
