@@ -16,8 +16,8 @@
 //! Skia's `VertexWriter` `Conditional`, `Skip`, `ArrayDesc`, `RepeatDesc`, `VertexColor` and
 //! quad helpers are kept, implemented through the [`BufferWrite`] trait.
 //!
-//! The `convert` method of `TextureUploadWriter` needs `graphite::TextureFormatXferFn` and is
-//! not ported yet (G8).
+//! `TextureUploadWriter::convert` runs a `graphite::TextureFormatXferFn` (defined with it, as in
+//! Skia).
 
 use std::marker::PhantomData;
 
@@ -523,8 +523,7 @@ impl<'a> IndexWriter<'a> {
     }
 }
 
-/// Writes texture upload data (`TextureUploadWriter`). The Graphite-only `convert` is not
-/// ported yet (it needs `TextureFormatXferFn`).
+/// Writes texture upload data (`TextureUploadWriter`).
 // Port of: src/gpu/BufferWriter.h#L480-L530 (chrome/m156)
 #[doc(alias = "skgpu::TextureUploadWriter")]
 #[derive(Debug, Default)]
@@ -588,6 +587,25 @@ impl<'a> TextureUploadWriter<'a> {
         // SkAssertResult: the conversion must succeed.
         let converted = convert_pixels(dst_info, dst, dst_row_bytes, src_info, src, src_row_bytes);
         debug_assert!(converted);
+    }
+
+    /// `convert()`: runs the transfer function `dst` over a `width` x `height` block of `src`,
+    /// writing to the buffer at `offset` (rows `dst_row_bytes` apart). Does not advance the
+    /// writer.
+    // Port of: src/gpu/graphite/TextureFormatXferFn.cpp#L993-L999 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+    pub fn convert(
+        &mut self,
+        offset: usize,
+        width: usize,
+        height: usize,
+        src: &[u8],
+        src_row_bytes: usize,
+        dst: &crate::graphite::texture_format_xfer_fn::TextureFormatXferFn,
+        dst_row_bytes: usize,
+    ) {
+        let dst_ptr = self.0.region_mut(offset, dst_row_bytes * height);
+        dst.run(width, height, src, src_row_bytes, dst_ptr, dst_row_bytes);
     }
 
     /// Writes RGB rows from `RGBx` source rows (4 bytes per pixel, 3 kept).

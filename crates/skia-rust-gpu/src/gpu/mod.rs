@@ -5,6 +5,7 @@ pub mod blend_formula;
 pub mod blur_utils;
 pub mod buffer_writer;
 pub mod dither_utils;
+pub mod gpu_types;
 pub mod gradient_bitmap;
 pub mod key_builder;
 pub mod rectanizer;
