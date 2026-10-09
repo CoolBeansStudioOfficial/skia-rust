@@ -27,5 +27,9 @@ wgpu = { workspace = true, features = ["std", "parking_lot", "wgsl", "dx12", "me
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { workspace = true, features = ["std", "wgsl", "webgpu", "fragile-send-sync-non-atomic-wasm"] }
 
+[dev-dependencies]
+# Validates every generated WGSL shader (docs/design/gpu.md §6.3, W4).
+naga = { workspace = true, features = ["wgsl-in"] }
+
 [lints]
 workspace = true

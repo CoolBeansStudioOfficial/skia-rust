@@ -8,6 +8,8 @@
 //! `Caps`, resource provider back end, shared context, command buffer and context.
 #![allow(dead_code)] // each test file uses a different part
 
+pub mod wgsl_corpus;
+
 use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};

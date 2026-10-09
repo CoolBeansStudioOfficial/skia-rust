@@ -30,6 +30,7 @@
 //! - The `SkASSERT` that compares the builder with `lookup(origPaint)` in `optimizeForOpacity` is
 //!   not reproduced, since `PaintParamsKeyBuilder` has no `==`.
 
+#[cfg(debug_assertions)]
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -66,7 +67,10 @@ use crate::graphite::key_helpers_ii::{
     MeshShaderBlock, add_blend_mode, add_fixed_blend_mode, add_primitive_color, add_to_key_blender,
     add_to_key_color_filter, blend, compose,
 };
-use crate::graphite::paint_params_key::{PaintParamsKeyBuilder, RootBlockType};
+#[cfg(debug_assertions)]
+use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
+use crate::graphite::paint_params_key::RootBlockType;
+#[cfg(debug_assertions)]
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::render_step::Coverage;
 use crate::graphite::texture_format::TextureFormat;
@@ -809,6 +813,7 @@ impl<'a> ShadingParams<'a> {
             .paint_params_key_builder()
             .borrow_mut()
             .add_root_block_header(RootBlockType::SrcColor);
+        #[cfg_attr(not(debug_assertions), allow(unused_mut))] // only the debug asserts reassign it
         let mut is_opaque = self.handle_dithering(key_context);
 
         // Root Node 1 is the final blender
@@ -868,7 +873,10 @@ impl<'a> ShadingParams<'a> {
             paint_depends_on_dst = final_blend_mode != BlendMode::Src;
             // Reset is_opaque to false if we aren't src-over to ensure later assert logic is
             // narrow.
-            is_opaque &= final_blend_mode == BlendMode::SrcOver;
+            #[cfg(debug_assertions)] // only the debug-only asserts below read it
+            {
+                is_opaque &= final_blend_mode == BlendMode::SrcOver;
+            }
 
             if !dst_usage.contains(DstUsage::DST_READ_REQUIRED)
                 || (final_blend_mode == BlendMode::Src && optimize_src_blend)
@@ -921,22 +929,24 @@ impl<'a> ShadingParams<'a> {
         // If kDstOnlyUsedByRenderer is set, the paint shouldn't depend on the dst and the dst
         // usage when the Renderer has Coverage::kNone should equal kNone.
         #[cfg(debug_assertions)]
-        let dst_usage_no_coverage = get_dst_usage(
-            key_context.caps(),
-            format,
-            self.paint,
-            Coverage::None,
-            self.clip_shader,
-            self.analytic_clip,
-        );
-        // This checks is_opaque in addition to !paint_depends_on_dst to handle the case where
-        // src-over + opaque wasn't converted to src for *this* pipeline but remains
-        // kDstOnlyUsedByRenderer for a possible inner fill.
-        debug_assert!(
-            !dst_usage.contains(DstUsage::DST_ONLY_USED_BY_RENDERER)
-                || ((is_opaque || !paint_depends_on_dst)
-                    && dst_usage_no_coverage == DstUsage::NONE)
-        );
+        {
+            let dst_usage_no_coverage = get_dst_usage(
+                key_context.caps(),
+                format,
+                self.paint,
+                Coverage::None,
+                self.clip_shader,
+                self.analytic_clip,
+            );
+            // This checks is_opaque in addition to !paint_depends_on_dst to handle the case where
+            // src-over + opaque wasn't converted to src for *this* pipeline but remains
+            // kDstOnlyUsedByRenderer for a possible inner fill.
+            debug_assert!(
+                !dst_usage.contains(DstUsage::DST_ONLY_USED_BY_RENDERER)
+                    || ((is_opaque || !paint_depends_on_dst)
+                        && dst_usage_no_coverage == DstUsage::NONE)
+            );
+        }
 
         let paint_id = key_context
             .dict()

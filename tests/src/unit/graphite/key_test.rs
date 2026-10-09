@@ -4,6 +4,8 @@
 // Port of: tests/graphite/KeyTest.cpp (chrome/m156)
 
 #![cfg(test)]
+// Mirrors the C++ test, which names its keys `keyA`, `keyB` and `keyC`.
+#![allow(clippy::similar_names)]
 
 use skia_rust_core::blend_mode::{BlendMode, BlendModeCoeff};
 use skia_rust_core::color::PMColor4f;

@@ -60,6 +60,10 @@ use crate::graphite::uniform_manager::UniformOffsetCalculator;
 use crate::graphite::unique_paint_params_id::UniquePaintParamsID;
 use crate::sksl_type_shared::SkSLType;
 
+/// `kFixedVaryings`: the varyings the key layer reserves (the SSBO index and the local coords).
+// Port of: src/gpu/graphite/ShaderInfo.cpp#L972 (chrome/m156)
+const FIXED_VARYINGS: i32 = 2;
+
 /// `MeshRenderStep::kMeshVaryingMangleSuffix`.
 // Port of: src/gpu/graphite/render/MeshRenderStep.h#L27 (chrome/m156)
 pub const MESH_VARYING_MANGLE_SUFFIX: &str = "_SkMeshSpecificationUniform";
@@ -374,6 +378,7 @@ fn emit_intrinsic_constants(binding_reqs: &ResourceBindingRequirements) -> Strin
 }
 
 // Port of: src/gpu/graphite/ShaderInfo.cpp#L222-L255 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // mirrors the C++ signature
 fn emit_combined_uniforms(
     set: i32,
     buffer_id: i32,
@@ -505,8 +510,14 @@ fn emit_step_storage_buffer(
     )
 }
 
+/// The component names of a texel (`kSwizzles`).
+const SWIZZLES: [&str; 4] = ["x", "y", "z", "w"];
+
 /// `EmitStorageFallbackTexture(bindingReqs, step)`: the `SkSL` that reads a step's storage
 /// uniforms from a texture when the device has no storage buffers.
+///
+/// # Panics
+/// If a storage uniform's offset is negative, which the layout calculator does not produce.
 // Port of: src/gpu/graphite/ShaderInfo.cpp#L340-L453 (chrome/m156)
 #[doc(alias = "EmitStorageFallbackTexture")]
 #[must_use]
@@ -525,7 +536,6 @@ pub fn emit_storage_fallback_texture(
         let _ = writeln!(fields, "    {} {};", a.ty().as_str(), a.name());
     }
 
-    const SWIZZLES: [&str; 4] = ["x", "y", "z", "w"];
     let mut field_assignments = String::new();
 
     // Force Std430 rules to match the struct layout defined by RenderStep.
@@ -1017,6 +1027,7 @@ fn blend_table(mode: BlendMode) -> BlendInfo {
 /// The state computed by the constructor of `ShaderInfo::SharedGeneratorData` that both shader
 /// stages read.
 // Port of: src/gpu/graphite/ShaderInfo.cpp#L955-L1076 (chrome/m156)
+#[allow(clippy::struct_excessive_bools)] // mirrors the C++ struct's flags
 struct SharedGeneratorData<'a> {
     /// The shader tree decompressed into explicit root nodes.
     roots_info: &'a RootNodesInfo,
@@ -1024,7 +1035,7 @@ struct SharedGeneratorData<'a> {
     /// The expressions lifted from the shader tree.
     lifted_expr: Vec<LiftedExpression<'a>>,
 
-    /// The base SkSL preamble (uniforms, varyings) shared by both stages.
+    /// The base `SkSL` preamble (uniforms, varyings) shared by both stages.
     shared_preamble: String,
 
     // Shared calculated properties
@@ -1042,6 +1053,7 @@ struct SharedGeneratorData<'a> {
 
 impl<'a> SharedGeneratorData<'a> {
     // Port of: src/gpu/graphite/ShaderInfo.cpp#L955-L1076 (chrome/m156)
+    #[allow(clippy::similar_names)] // the `Vs` and `Fs` flags, as in Skia
     fn new(
         caps: &dyn Caps,
         step: &dyn RenderStep,
@@ -1127,10 +1139,8 @@ impl<'a> SharedGeneratorData<'a> {
                 || (has_step_uniforms && step.uses_uniforms_in_fragment_sksl()));
 
         // Append SSBO Index to preamble if required
-        if use_uniform_storage_buffer {
-            if let Some(index) = uniform_ssbo_index {
-                let _ = writeln!(shared_preamble, "uint {index};");
-            }
+        if let (true, Some(index)) = (use_uniform_storage_buffer, uniform_ssbo_index) {
+            let _ = writeln!(shared_preamble, "uint {index};");
         }
 
         Self {
@@ -1289,7 +1299,6 @@ impl ShaderInfo {
             let key = PaintParamsKey::new(&key_data);
             debug_assert!(key.is_valid());
 
-            const FIXED_VARYINGS: i32 = 2;
             let available_varyings = caps.max_varyings()
                 - FIXED_VARYINGS
                 - i32::try_from(step.varyings().len()).expect("a few varyings");
@@ -1347,12 +1356,12 @@ impl ShaderInfo {
         result.storage_buffer_stages |= step.storage_buffer_stages();
 
         result.generate_vertex_sksl(caps, step, &shared_data);
-        result.vs_label = step.name().to_owned();
+        step.name().clone_into(&mut result.vs_label);
         if shared_data.needs_local_coords {
             result.vs_label.push_str(" (w/ local coords)");
         }
 
-        result.fs_label = step.name().to_owned();
+        step.name().clone_into(&mut result.fs_label);
         result.fs_label.push_str(" + ");
         result.fs_label.push_str(&paint_label);
         if rp_desc.write_swizzle != Swizzle::rgba()
@@ -1532,6 +1541,7 @@ impl ShaderInfo {
     ///   generators are overridden to not use a static function.
     // Port of: src/gpu/graphite/ShaderInfo.cpp#L1177-L1523 (chrome/m156)
     #[allow(clippy::too_many_arguments, clippy::too_many_lines)] // mirrors the C++ function
+    #[allow(clippy::if_not_else)] // keeps the order of the C++ branches
     fn generate_fragment_sksl(
         &mut self,
         caps: &dyn Caps,
@@ -1544,6 +1554,7 @@ impl ShaderInfo {
         shared_data: &SharedGeneratorData<'_>,
     ) {
         let roots_info = shared_data.roots_info;
+        let _ = dict; // only the debug-only validation below reads it
 
         #[cfg(debug_assertions)]
         {
@@ -1610,8 +1621,8 @@ impl ShaderInfo {
         // Initialize the final blend mode to the final snippet's blend mode. It may be changed
         // based upon whether or not we can use hardware blending.
         let mut final_blend_mode: Option<BlendMode> = None;
-        if final_blend_root_snippet_id < BUILT_IN_CODE_SNIPPET_ID_COUNT
-            && final_blend_root_snippet_id >= FIXED_BLEND_ID_OFFSET
+        if (FIXED_BLEND_ID_OFFSET..BUILT_IN_CODE_SNIPPET_ID_COUNT)
+            .contains(&final_blend_root_snippet_id)
         {
             final_blend_mode =
                 BlendMode::from_i32(final_blend_root_snippet_id - FIXED_BLEND_ID_OFFSET);
@@ -1709,7 +1720,7 @@ impl ShaderInfo {
             let paint_texture_count = binding;
             if step.has_textures() {
                 fs_preamble += &step.textures_and_samplers_sksl(binding_reqs, &mut binding);
-                if let Some(out_descs) = out_descs.as_deref_mut() {
+                if let Some(out_descs) = out_descs.as_mut() {
                     // Determine how many render step samplers were used by comparing the binding
                     // value against paintTextureCount, taking into account the binding
                     // requirements. We assume and do not anticipate the render steps to use
@@ -1734,7 +1745,7 @@ impl ShaderInfo {
                 fs_preamble += " sampler2D dstSampler;";
                 // Add default SamplerDesc for the intrinsic dstSampler to stay consistent with
                 // `fNumFragmentTexturesAndSamplers`.
-                if let Some(out_descs) = out_descs.as_deref_mut() {
+                if let Some(out_descs) = out_descs {
                     out_descs.push(SamplerDesc::default());
                 }
             }
@@ -1780,10 +1791,9 @@ impl ShaderInfo {
         // is true. If the PaintParamsKey violates that structure, this will produce SkSL compile
         // errors.
         let mut args = ShaderSnippetArgs::default_args();
-        args.frag_coord = step
-            .fragment_color_sksl_local_coords_variable()
+        step.fragment_color_sksl_local_coords_variable()
             .unwrap_or("localCoordsVar") // the varying added in emit_varyings()
-            .to_owned();
+            .clone_into(&mut args.frag_coord);
         // TODO(b/349997190): The paint root node should not depend on any prior stage's output,
         // but it can happen with how SkEmptyShader is currently mapped to `sk_passthrough`. In
         // this case it requires that prior stage color to be transparent black. When SkEmptyShader
@@ -1951,7 +1961,7 @@ impl ShaderInfo {
         }
         main_body += "}\n";
 
-        debug_assert!(self.fragment_sksl.is_empty());
+        debug_assert_eq!(self.fragment_sksl, "");
         let mut fragment_sksl = String::with_capacity(
             shared_data.shared_preamble.len() + fs_preamble.len() + main_body.len() + 2,
         );
@@ -1964,6 +1974,7 @@ impl ShaderInfo {
     }
 
     // Port of: src/gpu/graphite/ShaderInfo.cpp#L1525-L1651 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // mirrors the C++ function
     fn generate_vertex_sksl(
         &mut self,
         caps: &dyn Caps,
@@ -2101,7 +2112,7 @@ impl ShaderInfo {
 
         main_body += "}"; // End main()
 
-        debug_assert!(self.vertex_sksl.is_empty());
+        debug_assert_eq!(self.vertex_sksl, "");
         let mut vertex_sksl = String::with_capacity(
             shared_data.shared_preamble.len() + vs_preamble.len() + main_body.len() + 2,
         );
