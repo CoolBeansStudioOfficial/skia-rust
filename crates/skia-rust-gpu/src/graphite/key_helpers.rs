@@ -44,6 +44,7 @@ use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::raster_pipeline::contexts::PerlinNoiseShaderType;
 use skia_rust_core::rect::{Contains, Rect, RoundOut};
+use skia_rust_core::runtime_effect_priv;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::SCALAR_NEARLY_ZERO;
 use skia_rust_core::shader::Shader;
@@ -55,6 +56,7 @@ use skia_rust_core::shaders::ctm_shader::CtmShader;
 use skia_rust_core::shaders::empty_shader::EmptyShader;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_core::shaders::local_matrix_shader::LocalMatrixShader;
+use skia_rust_core::shaders::runtime_shader::RuntimeShader;
 use skia_rust_core::shaders::shader_base::{GradientType, ShaderBase, ShaderType};
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::tile_mode::TileMode;
@@ -75,8 +77,9 @@ use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::key_helpers_ii::{
-    ColorSpaceTransformBlock, ColorSpaceTransformData, ScopedUniformWriter, add_blend_mode,
-    add_to_key_color_filter, blend, compose, solid_color_shader_add_block,
+    ColorSpaceTransformBlock, ColorSpaceTransformData, RuntimeEffectBlock, RuntimeEffectShaderData,
+    ScopedUniformWriter, add_blend_mode, add_children_to_key, add_to_key_color_filter, blend,
+    compose, solid_color_shader_add_block,
 };
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::recorder::RecorderPriv;
@@ -1790,6 +1793,33 @@ fn add_perlin_noise_shader_to_key(key_context: &KeyContext<'_>, shader: &PerlinN
     PerlinNoiseShaderBlock::add_block(key_context, &perlin_data);
 }
 
+/// `add_to_key(SkRuntimeShader*)`: a runtime effect's uniforms (transformed to the dst color
+/// space) and its children, between the runtime effect's begin and end blocks. A runtime effect
+/// that cannot be keyed becomes its no-op stand-in.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2415-L2434 (chrome/m156)
+fn add_runtime_shader_to_key(key_context: &KeyContext<'_>, shader: &RuntimeShader) {
+    let effect = shader.effect();
+    let dst_cs = key_context.dst_color_info().color_space_ref();
+    let uniforms = runtime_effect_priv::transform_uniforms(
+        effect.uniforms(),
+        &shader.uniform_data(dst_cs),
+        dst_cs,
+    );
+
+    let shader_data = RuntimeEffectShaderData {
+        effect: effect.clone(),
+        uniforms: Some(uniforms),
+    };
+    if !RuntimeEffectBlock::begin_block(key_context, &shader_data) {
+        RuntimeEffectBlock::add_no_op_effect(key_context, effect);
+        return;
+    }
+
+    add_children_to_key(key_context, shader.children(), effect);
+
+    builder(key_context).end_block();
+}
+
 /// Adds the implementation of `shader` to `key_context`'s key (`AddToKey(SkShader)`). A `None`
 /// shader is a programming error: a fixed transparent solid color keeps the key's structure.
 ///
@@ -1831,6 +1861,10 @@ pub fn add_to_key_shader(key_context: &KeyContext<'_>, shader: Option<&Shader>) 
         ShaderType::GradientBase => add_gradient_base_shader_to_key(key_context, base),
         ShaderType::PerlinNoise => match downcast_shader::<PerlinNoiseShader>(base) {
             Some(s) => add_perlin_noise_shader_to_key(key_context, s),
+            None => builder(key_context).add_error_block(),
+        },
+        ShaderType::Runtime => match downcast_shader::<RuntimeShader>(base) {
+            Some(s) => add_runtime_shader_to_key(key_context, s),
             None => builder(key_context).add_error_block(),
         },
         ShaderType::Blend => match downcast_shader::<BlendShader>(base) {

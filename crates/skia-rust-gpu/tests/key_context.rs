@@ -21,7 +21,8 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::RuntimeEffect;
 use skia_rust_gpu::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use skia_rust_gpu::graphite::caps::Caps;
-use skia_rust_gpu::graphite::key_context::{KeyContext, KeyGenFlags, color4f_prep_for_dst};
+use skia_rust_gpu::graphite::key_context::{KeyContext, KeyGenFlags};
+use skia_rust_gpu::graphite::paint_params::color4f_prep_for_dst;
 use skia_rust_gpu::graphite::paint_params_key::{
     PaintParamsKey, PaintParamsKeyBuilder, RootBlockType,
 };

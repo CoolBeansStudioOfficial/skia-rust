@@ -18,6 +18,7 @@ use skia_rust_core::size::ISize;
 use crate::gpu::gpu_types::{Mipmapped, Protected, Renderable};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::AttachmentDesc;
+use crate::graphite::resource_types::DstReadStrategy;
 use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo};
 use crate::graphite::texture_format::TextureFormat;
 use crate::graphite::texture_info::TextureInfo;
@@ -153,4 +154,16 @@ pub trait Caps: Send + Sync + Debug {
     fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
         String::new()
     }
+
+    /// `getDstReadStrategy()`: how a draw obtains the dst color when it needs it.
+    #[doc(alias = "getDstReadStrategy")]
+    fn get_dst_read_strategy(&self) -> DstReadStrategy;
+
+    /// `supportsHardwareAdvancedBlending()`: whether `blendEquationSupport()` is above basic.
+    #[doc(alias = "supportsHardwareAdvancedBlending")]
+    fn supports_hardware_advanced_blending(&self) -> bool;
+
+    /// `shaderCaps()->fDualSourceBlendingSupport`.
+    #[doc(alias = "fDualSourceBlendingSupport")]
+    fn dual_source_blending_support(&self) -> bool;
 }

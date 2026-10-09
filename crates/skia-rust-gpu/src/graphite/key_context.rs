@@ -18,8 +18,7 @@
 //! - `DrawContext` (G10a) is not ported yet. The context keeps the one thing it reads from it,
 //!   the format of the target's texture (`targetFormat()`), and the recorder constructor takes
 //!   that format where Skia takes the `DrawContext*`.
-//! - `PaintParams::Color4fPrepForDst` (G5d) is [`color4f_prep_for_dst`] here until
-//!   `PaintParams` is ported.
+//! - `PaintParams::Color4fPrepForDst` lives in [`crate::graphite::paint_params`].
 
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -28,7 +27,6 @@ use bitflags::bitflags;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color::{Color4f, PMColor4f};
 use skia_rust_core::color_data::PM_COLOR4F_BLACK;
-use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
 use skia_rust_core::image_info::ColorInfo;
 use skia_rust_core::m44::M44;
@@ -38,6 +36,7 @@ use skia_rust_core::runtime_effect::RuntimeEffect;
 use skia_rust_core::runtime_effect_priv;
 
 use crate::graphite::caps::Caps;
+use crate::graphite::paint_params::color4f_prep_for_dst;
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::recorder::Recorder;
@@ -73,27 +72,6 @@ bitflags! {
         /// (`kPreferFixedSrcBlend`).
         const PREFER_FIXED_SRC_BLEND = 0x8;
     }
-}
-
-/// Transforms `src_color` from sRGB to the destination's color space, leaving it unpremultiplied
-/// (`PaintParams::Color4fPrepForDst`).
-// Port of: src/gpu/graphite/PaintParams.cpp#L215-L223 (chrome/m156)
-#[doc(alias = "Color4fPrepForDst")]
-#[must_use]
-pub fn color4f_prep_for_dst(src_color: Color4f, dst_color_info: &ColorInfo) -> Color4f {
-    // xform from sRGB to the destination colorspace
-    let steps = ColorSpaceXformSteps::new(
-        Some(srgb_singleton()),
-        AlphaType::Unpremul,
-        dst_color_info.color_space_ref(),
-        AlphaType::Unpremul,
-    );
-
-    let mut result = src_color;
-    let mut vec = result.as_array();
-    steps.apply(&mut vec);
-    result = Color4f::new(vec[0], vec[1], vec[2], vec[3]);
-    result
 }
 
 /// Runtime effects always disable paint-color colorization of alpha-only image shaders.
@@ -211,6 +189,44 @@ impl<'a> KeyContext<'a> {
     }
 
     /// `KeyContext(const KeyContext&, xtraFlags)`: a copy with `xtra_flags` added to its flags.
+    /// The context of the opaque paint that `ShadingParams::validateOpacityOptimization` keys: the
+    /// same caps, dictionaries, target and dst, writing to `builder` and `gatherer`, with
+    /// `paint_color` converted as the recorder constructor does.
+    // Port of: src/gpu/graphite/PaintParams.cpp#L652-L698 (chrome/m156), the `opaqueContext`
+    // construction, which uses the recorder constructor of KeyContext.cpp#L33-L56
+    #[cfg(debug_assertions)]
+    #[must_use]
+    pub(crate) fn with_new_key_storage<'b>(
+        &self,
+        paint_params_key_builder: &'b RefCell<PaintParamsKeyBuilder>,
+        pipeline_data_gatherer: &'b RefCell<PipelineDataGatherer>,
+        paint_color: &Color4f,
+    ) -> KeyContext<'b>
+    where
+        'a: 'b,
+    {
+        let mut context = KeyContext {
+            caps: self.caps.clone(),
+            recorder: self.recorder,
+            target_format: self.target_format,
+            paint_params_key_builder,
+            pipeline_data_gatherer,
+            dictionary: self.dictionary.clone(),
+            rt_effect_dict: self.rt_effect_dict.clone(),
+            local2dev: self.local2dev,
+            clip_draw_bounds: self.clip_draw_bounds,
+            local_matrix: None,
+            dst_color_info: self.dst_color_info.clone(),
+            paint_color: PM_COLOR4F_BLACK,
+            key_gen_flags: self.key_gen_flags,
+        };
+        context.paint_color = color4f_prep_for_dst(*paint_color, &context.dst_color_info)
+            .to_opaque()
+            .premul();
+        context.paint_color.a = paint_color.a;
+        context
+    }
+
     // Port of: src/gpu/graphite/KeyContext.cpp#L58-L72 (chrome/m156)
     #[must_use]
     pub fn with_extra_flags(&self, xtra_flags: KeyGenFlags) -> Self {

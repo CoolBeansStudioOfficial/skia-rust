@@ -1986,6 +1986,20 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        WgpuCaps::get_dst_read_strategy(self)
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        // `fBlendEqSupport` keeps its `kBasic` default (`Caps.h`); the WebGPU backend never raises
+        // it, so advanced blend modes always use shader blending.
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        self.shader_caps.dual_source_blending_support
+    }
+
     fn storage_buffer_support(&self) -> bool {
         WgpuCaps::storage_buffer_support(self)
     }

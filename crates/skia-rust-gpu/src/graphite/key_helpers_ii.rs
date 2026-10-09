@@ -1071,7 +1071,7 @@ impl RuntimeEffectBlock {
 /// `add_children_to_key`: the children of a runtime effect (shader, color filter or blender),
 /// each keyed in its own context, with a no-op standing in for a missing child.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L1617-L1659 (chrome/m156)
-fn add_children_to_key(
+pub(crate) fn add_children_to_key(
     key_context: &KeyContext<'_>,
     children: &[ChildPtr],
     effect: &RuntimeEffect,

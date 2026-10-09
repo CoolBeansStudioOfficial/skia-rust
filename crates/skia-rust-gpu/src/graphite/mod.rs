@@ -21,6 +21,7 @@ pub mod graphite_types;
 pub mod key_context;
 pub mod key_helpers;
 pub mod key_helpers_ii;
+pub mod paint_params;
 pub mod paint_params_key;
 pub mod pipeline_data;
 pub mod proxy_cache;

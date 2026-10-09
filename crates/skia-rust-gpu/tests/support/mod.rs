@@ -29,6 +29,7 @@ use skia_rust_gpu::graphite::recorder::{Recorder, RecorderOptions, RecorderShare
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
+use skia_rust_gpu::graphite::resource_types::DstReadStrategy;
 use skia_rust_gpu::graphite::resource_types::{
     AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
@@ -184,6 +185,18 @@ impl Default for MockCaps {
 impl Caps for MockCaps {
     fn max_texture_size(&self) -> i32 {
         4096
+    }
+
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        DstReadStrategy::TextureCopy
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        false
     }
 
     fn require_ordered_recordings(&self) -> bool {
