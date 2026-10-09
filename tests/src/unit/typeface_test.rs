@@ -121,6 +121,7 @@ fn typeface_style_test(reporter: &mut Reporter, weight: u16, width: u16, data: &
 
 // Port of: tests/TypefaceTest.cpp#L110-L125 (chrome/m156)
 def_font_test!(TypefaceStyle, |reporter| {
+    crate::skip_without_resources!();
     let Some(data) = get_resource_as_data("fonts/Em.ttf") else {
         errorf!(reporter, "Cannot load resource");
         return;
@@ -152,6 +153,7 @@ struct TestCase {
 
 // Port of: tests/TypefaceTest.cpp#L131-L159 (chrome/m156)
 def_font_test!(TypefaceGlyphToUnicode, |reporter| {
+    crate::skip_without_resources!();
     let Some(stream) = resource_stream("fonts/Em.ttf") else {
         errorf!(reporter, "Cannot load resource");
         return;
@@ -190,6 +192,7 @@ def_font_test!(TypefaceGlyphToUnicode, |reporter| {
 
 // Port of: tests/TypefaceTest.cpp#L161-L248 (chrome/m156)
 def_font_test!(TypefaceStyleVariable, |reporter| {
+    crate::skip_without_resources!();
     let fm = test_font_mgr();
 
     let Some(stream) = resource_stream("fonts/Variable.ttf") else {
@@ -397,6 +400,7 @@ fn typeface_axes_test(
 
 // Port of: tests/TypefaceTest.cpp#L333-L462 (chrome/m156)
 def_font_test!(TypefaceAxes, |reporter| {
+    crate::skip_without_resources!();
     let fm = test_font_mgr();
     let wght = set_four_byte_tag(b'w', b'g', b'h', b't');
     let wdth = set_four_byte_tag(b'w', b'd', b't', b'h');
@@ -482,6 +486,7 @@ def_font_test!(
     #[allow(clippy::float_cmp)]
     TypefaceVariationIndex,
     |reporter| {
+        crate::skip_without_resources!();
         // The C++ compares the float with `==`; 0.5 is exact in both.
         let Some(distortable) = resource_stream("fonts/Distortable.ttf") else {
             errorf!(reporter, "distortable");
@@ -606,6 +611,7 @@ fn typeface_axes_parameters_test(
 
 // Port of: tests/TypefaceTest.cpp#L516-L653 (chrome/m156)
 def_font_test!(TypefaceAxesParameters, |reporter| {
+    crate::skip_without_resources!();
     let fm = test_font_mgr();
 
     // Two axis OpenType variable font.
