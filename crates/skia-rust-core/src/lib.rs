@@ -59,6 +59,7 @@ pub mod effect_priv;
 pub mod encoded_image_format;
 pub mod encoded_origin;
 pub mod endian;
+pub mod executor;
 pub mod fdot6;
 pub mod fixed;
 pub mod flattenable;
