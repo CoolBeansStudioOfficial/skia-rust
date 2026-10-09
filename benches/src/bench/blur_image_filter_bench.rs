@@ -88,15 +88,12 @@ struct BlurImageFilterBench {
 
 impl BlurImageFilterBench {
     // Port of: bench/BlurImageFilterBench.cpp#L51-L64 (chrome/m156)
-    fn new(
-        sigma_x: scalar,
-        sigma_y: scalar,
-        small: bool,
-        cropped: bool,
-        expanded: bool,
-    ) -> Self {
+    fn new(sigma_x: scalar, sigma_y: scalar, small: bool, cropped: bool, expanded: bool) -> Self {
         // SkASSERT(!fIsExpanded || fIsCropped);
-        assert!(!expanded || cropped, "never want expansion without cropping");
+        assert!(
+            !expanded || cropped,
+            "never want expansion without cropping"
+        );
         Self {
             // fName.printf("blur_image_filter_%s%s%s_%.2f_%.2f", ...)
             name: format!(
@@ -213,42 +210,50 @@ def_bench!(
 );
 // Port of: bench/BlurImageFilterBench.cpp#L130-L130 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_05 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, false, false)",
+    blur_image_filter_bench_05 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L131-L131 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_06 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, false, false)",
+    blur_image_filter_bench_06 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L132-L132 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_07 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, false, false)",
+    blur_image_filter_bench_07 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L133-L133 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_08 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, false, false)",
+    blur_image_filter_bench_08 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L134-L134 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_09 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, false, false)",
+    blur_image_filter_bench_09 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L135-L135 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_10 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, false, false)",
+    blur_image_filter_bench_10 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L136-L136 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_11 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, false, false)",
+    blur_image_filter_bench_11 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L137-L137 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_12 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, false, false)",
+    blur_image_filter_bench_12 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, false, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, false, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L139-L139 (chrome/m156)
@@ -273,42 +278,50 @@ def_bench!(
 );
 // Port of: bench/BlurImageFilterBench.cpp#L143-L143 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_17 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, false)",
+    blur_image_filter_bench_17 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L144-L144 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_18 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, false)",
+    blur_image_filter_bench_18 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L145-L145 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_19 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, false)",
+    blur_image_filter_bench_19 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L146-L146 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_20 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, false)",
+    blur_image_filter_bench_20 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L147-L147 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_21 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, false)",
+    blur_image_filter_bench_21 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L148-L148 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_22 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, false)",
+    blur_image_filter_bench_22 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L149-L149 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_23 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, false)",
+    blur_image_filter_bench_23 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L150-L150 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_24 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, false)",
+    blur_image_filter_bench_24 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, false)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, false)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L152-L152 (chrome/m156)
@@ -333,41 +346,49 @@ def_bench!(
 );
 // Port of: bench/BlurImageFilterBench.cpp#L156-L156 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_29 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, true)",
+    blur_image_filter_bench_29 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, true, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L157-L157 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_30 = "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, true)",
+    blur_image_filter_bench_30 =
+        "BlurImageFilterBench(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_MINI, BLUR_SIGMA_MINI, false, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L158-L158 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_31 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, true)",
+    blur_image_filter_bench_31 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, true, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L159-L159 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_32 = "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, true)",
+    blur_image_filter_bench_32 =
+        "BlurImageFilterBench(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_SMALL, BLUR_SIGMA_SMALL, false, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L160-L160 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_33 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, true)",
+    blur_image_filter_bench_33 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, true, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L161-L161 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_34 = "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, true)",
+    blur_image_filter_bench_34 =
+        "BlurImageFilterBench(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_LARGE, BLUR_SIGMA_LARGE, false, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L162-L162 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_35 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, true)",
+    blur_image_filter_bench_35 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, true, true, true)
 );
 // Port of: bench/BlurImageFilterBench.cpp#L163-L163 (chrome/m156)
 def_bench!(
-    blur_image_filter_bench_36 = "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, true)",
+    blur_image_filter_bench_36 =
+        "BlurImageFilterBench(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, true)",
     BlurImageFilterBench::new(BLUR_SIGMA_HUGE, BLUR_SIGMA_HUGE, false, true, true)
 );
