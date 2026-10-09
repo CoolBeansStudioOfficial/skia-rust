@@ -277,6 +277,8 @@ mod tests {
         static PURGED: RefCell<Vec<(u32, u32)>> = const { RefCell::new(Vec::new()) };
     }
 
+    // The purge callback takes its key by reference, as Skia's does, whatever the key's size.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn record_purge(context: &mut u32, key: &u32, value: &mut u32) {
         *context += 1;
         PURGED.with(|p| p.borrow_mut().push((*key, *value)));

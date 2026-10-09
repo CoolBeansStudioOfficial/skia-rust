@@ -58,6 +58,8 @@ pub trait GraphicsPipeline: Send + Sync + Debug {
 
     /// `fromPrecompile()`.
     #[doc(alias = "fromPrecompile")]
+    // The name mirrors Skia's `fromPrecompile()`, which is a query, not a conversion.
+    #[allow(clippy::wrong_self_convention)]
     fn from_precompile(&self) -> bool {
         self.base().from_precompile()
     }

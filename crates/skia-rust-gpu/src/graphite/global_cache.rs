@@ -704,7 +704,8 @@ mod tests {
         let cache = GlobalCache::new();
         // Fill past the limit with precompiled pipelines that are never used; the oldest are
         // evicted and counted as purged-unused.
-        let total = GLOBAL_GRAPHICS_PIPELINE_CACHE_SIZE_LIMIT as u32 + 3;
+        let limit = u32::try_from(GLOBAL_GRAPHICS_PIPELINE_CACHE_SIZE_LIMIT).expect("fits in u32");
+        let total = limit + 3;
         for n in 0..total {
             cache.add_graphics_pipeline(&key(n), FakePipeline::arc("pre", n, true));
         }
@@ -747,8 +748,8 @@ mod tests {
 
     #[test]
     fn callbacks_see_found_and_added_pipelines() {
-        let seen: Arc<StdMutex<Vec<(PipelineCacheOp, String, u32, bool)>>> =
-            Arc::new(StdMutex::new(Vec::new()));
+        type SeenLog = Vec<(PipelineCacheOp, String, u32, bool)>;
+        let seen: Arc<StdMutex<SeenLog>> = Arc::new(StdMutex::new(Vec::new()));
         let sink = Arc::clone(&seen);
         let caching: Arc<PipelineCachingCallbackFn> = Arc::new(
             move |op: PipelineCacheOp, label: &str, hash: u32, pre: bool, key: Option<&Data>| {

@@ -361,7 +361,7 @@ mod tests {
         let group = TaskGroup::new(pool.clone());
         for n in 0..5 {
             let w = work(n);
-            group.add(move || w(), 0);
+            group.add(w, 0);
         }
         group.wait();
         assert!(group.done());
@@ -393,7 +393,7 @@ mod tests {
         let (log, work) = recorder();
         let group = TaskGroup::new(Arc::new(pool));
         let w = work(7);
-        group.add(move || w(), 9);
+        group.add(w, 9);
         group.wait();
         assert_eq!(*log.lock().unwrap(), vec![7]);
     }
