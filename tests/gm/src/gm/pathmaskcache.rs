@@ -105,4 +105,4 @@ impl GM for PathMaskCacheGm {
 }
 
 // Port of: gm/pathmaskcache.cpp#L84 (chrome/m156)
-crate::def_gm!(PathMaskCache, PathMaskCacheGm);
+crate::def_gm!(PathMaskCache_ = "PathMaskCache()", PathMaskCacheGm);

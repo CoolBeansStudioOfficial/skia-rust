@@ -1345,3 +1345,178 @@ crate::def_simple_gm_can_fail!(alpha_image_shader_rt, canvas, error_msg, 350, 50
 
     DrawResult::Ok
 });
+
+// Port of: gm/runtimeshader.cpp#L440-L590 (chrome/m156), ClipSuperRRect
+struct ClipSuperRRectGm {
+    base: RuntimeShaderGm,
+    power: f32,
+}
+
+impl ClipSuperRRectGm {
+    // Port of: gm/runtimeshader.cpp#L444-L460 (chrome/m156), the constructor
+    fn new(name: &'static str, power: f32) -> Self {
+        ClipSuperRRectGm {
+            base: RuntimeShaderGm::new(
+                name,
+                ISize::new(500, 500),
+                r"
+        uniform float power_minus1;
+        uniform float2 stretch_factor;
+        uniform float2x2 derivatives;
+        half4 main(float2 xy) {
+            xy = max(abs(xy) + stretch_factor, 0);
+            float2 exp_minus1 = pow(xy, power_minus1.xx);  // If power == 3.5: xy * xy * sqrt(xy)
+            float f = dot(exp_minus1, xy) - 1;  // f = x^n + y^n - 1
+            float2 grad = exp_minus1 * derivatives;
+            float fwidth = abs(grad.x) + abs(grad.y) + 1e-12;  // 1e-12 to avoid a divide by zero.
+            return half4(saturate(.5 - f/fwidth)); // Approx coverage by riding the gradient to f=0.
+        }
+    ",
+                0,
+            ),
+            power,
+        }
+    }
+
+    // Port of: gm/runtimeshader.cpp#L462-L527 (chrome/m156), drawSuperRRect
+    #[allow(clippy::float_cmp)] // mirrors `fPower == 2` in the C++
+    #[allow(clippy::many_single_char_names)] // the C++ names: a, b, c and d are the matrix entries
+    fn draw_super_rrect(
+        &self,
+        canvas: &Canvas,
+        super_rrect: Rect,
+        rad_x: f32,
+        rad_y: f32,
+        color: Color,
+    ) {
+        let mut paint = Paint::default();
+        paint.set_color(color);
+        if self.power == 2.0 {
+            // Draw a normal round rect for the sake of testing.
+            let rrect = skia_rust_core::rrect::RRect::new_rect_xy(super_rrect, rad_x, rad_y);
+            paint.set_anti_alias(true);
+            canvas.draw_rrect(rrect, &paint);
+            return;
+        }
+        let mut builder = self.base.builder();
+        builder.uniform("power_minus1").set_f32(&[self.power - 1.0]);
+        // Size the corners such that the "apex" of our "super" rounded corner is in the same
+        // location that the apex of a circular rounded corner would be with the given radii. We
+        // define the apex as the point on the rounded corner that is 45 degrees between the
+        // horizontal and vertical edges.
+        let scale = (1.0 - skia_rust_core::scalar::SCALAR_ROOT_2_OVER_2)
+            / (1.0 - (-1.0 / self.power).exp2());
+        let mut corner_width = rad_x * scale;
+        let mut corner_height = rad_y * scale;
+        corner_width = corner_width.min(super_rrect.width() * 0.5);
+        corner_height = corner_height.min(super_rrect.height() * 0.5);
+        // The stretch factor controls how long the flat edge should be between rounded corners.
+        builder.uniform("stretch_factor").set_f32(&[
+            1.0 - super_rrect.width() * 0.5 / corner_width,
+            1.0 - super_rrect.height() * 0.5 / corner_height,
+        ]);
+        // Calculate a 2x2 "derivatives" matrix that the shader will use to find the gradient.
+        //
+        //     f = s^n + t^n - 1   [s,t are "super" rounded corner coords in normalized 0..1 space]
+        //
+        //     gradient = [df/dx  df/dy] = [ns^(n-1)  nt^(n-1)] * |ds/dx  ds/dy|
+        //                                                        |dt/dx  dt/dy|
+        //
+        //              = [s^(n-1)  t^(n-1)] * |n  0| * |ds/dx  ds/dy|
+        //                                     |0  n|   |dt/dx  dt/dy|
+        //
+        //              = [s^(n-1)  t^(n-1)] * |2n/cornerWidth   0| * mat2x2(canvasMatrix)^-1
+        //                                     |0  2n/cornerHeight|
+        //
+        //              = [s^(n-1)  t^(n-1)] * "derivatives"
+        //
+        let m = canvas.total_matrix();
+        let (a, b, c, d) = (m.scale_x(), m.skew_x(), m.skew_y(), m.scale_y());
+        let determinant = a * d - b * c;
+        let dx = self.power / (corner_width * determinant);
+        let dy = self.power / (corner_height * determinant);
+        builder
+            .uniform("derivatives")
+            .set_f32(&[d * dx, -c * dy, -b * dx, a * dy]);
+        // This matrix will be inverted by the effect system, giving a matrix that converts local
+        // coordinates to (almost) coner coordinates. To get the rest of the way to the nearest
+        // corner's space, the shader will have to take the absolute value, add the stretch_factor,
+        // then clamp above zero.
+        let mut corner_to_local = Matrix::new_identity();
+        corner_to_local.set_scale_translate(
+            (corner_width, corner_height),
+            (super_rrect.center_x(), super_rrect.center_y()),
+        );
+        if let Some(clip) = builder.make_shader(Some(&corner_to_local)) {
+            canvas.clip_shader(clip, None);
+        }
+        // Bloat the outer edges of the rect we will draw so it contains all the antialiased pixels.
+        // Bloat by a full pixel instead of half in case Skia is in a mode that draws this rect with
+        // unexpected AA of its own.
+        let inverse_det = 1.0 / determinant.abs();
+        let bloat_x = (d.abs() + c.abs()) * inverse_det;
+        let bloat_y = (b.abs() + a.abs()) * inverse_det;
+        let mut outset = super_rrect;
+        outset.outset((bloat_x, bloat_y));
+        canvas.draw_rect(outset, &paint);
+    }
+}
+
+impl GM for ClipSuperRRectGm {
+    fn name(&self) -> String {
+        self.base.name.to_string()
+    }
+
+    fn size(&mut self) -> ISize {
+        self.base.size
+    }
+
+    fn on_once_before_draw(&mut self) {
+        self.base.on_once_before_draw();
+    }
+
+    // Port of: gm/runtimeshader.cpp#L500-L586 (chrome/m156), onDraw
+    fn on_draw(&mut self, canvas: &Canvas) {
+        let mut rand = Random::new(2);
+        let info = canvas.image_info();
+        canvas.save();
+        canvas.translate((
+            crate::tool_utils::int_to_scalar(info.width()) / 2.0,
+            crate::tool_utils::int_to_scalar(info.height()) / 2.0,
+        ));
+        let entries: [(f32, Rect, f32, f32); 8] = [
+            (21.0, Rect::new(-5.0, 25.0, 170.0, 125.0), 50.0, 30.0),
+            (94.0, Rect::new(95.0, 75.0, 220.0, 175.0), 30.0, 30.0),
+            (132.0, Rect::new(0.0, 75.0, 150.0, 175.0), 40.0, 30.0),
+            (282.0, Rect::new(15.0, -20.0, 115.0, 80.0), 20.0, 20.0),
+            (0.0, Rect::new(140.0, -50.0, 230.0, 60.0), 25.0, 25.0),
+            (-35.0, Rect::new(160.0, -60.0, 220.0, 30.0), 18.0, 18.0),
+            (65.0, Rect::new(220.0, -120.0, 280.0, -30.0), 18.0, 18.0),
+            (265.0, Rect::new(150.0, -129.0, 230.0, 31.0), 24.0, 39.0),
+        ];
+        for (angle, rect, rad_x, rad_y) in entries {
+            canvas.save();
+            canvas.rotate(angle, None);
+            self.draw_super_rrect(
+                canvas,
+                rect,
+                rad_x,
+                rad_y,
+                Color::from(rand.next_u() | 0xff80_8080),
+            );
+            canvas.restore();
+        }
+        canvas.restore();
+    }
+}
+
+// Port of: gm/runtimeshader.cpp#L588 (chrome/m156), DEF_GM(return new ClipSuperRRect("clip_super_rrect_pow2", 2);)
+crate::def_gm!(
+    ClipSuperRRect_pow2 = "ClipSuperRRect(\"clip_super_rrect_pow2\", 2)",
+    ClipSuperRRectGm::new("clip_super_rrect_pow2", 2.0)
+);
+// Port of: gm/runtimeshader.cpp#L590 (chrome/m156), DEF_GM(return new ClipSuperRRect("clip_super_rrect_pow3.5", 3.5);)
+crate::def_gm!(
+    ClipSuperRRect_pow3_5 = "ClipSuperRRect(\"clip_super_rrect_pow3.5\", 3.5)",
+    ClipSuperRRectGm::new("clip_super_rrect_pow3.5", 3.5)
+);
