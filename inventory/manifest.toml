@@ -21390,7 +21390,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagesource2.cpp#L111-L111"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "80699f8cef75a025b0d97c2ad49dc021c6202e3bdc3c8f31e07cbf0cc686c3a1"
 
 [[test]]
@@ -21417,7 +21417,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagesource2.cpp#L107-L107"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a3bcd0fa7cf9a132d3edbf1b05a4eb51a0ba55606e7cf386b884624c30d8b9d5"
 
 [[test]]
@@ -21426,7 +21426,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/internal_links.cpp#L73-L73"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b9e10886b3e1bb5dea9680dd64b95bf786010f43b5b6a49df6e77b30365d249f"
 
 [[test]]
@@ -21453,7 +21453,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/inversepaths.cpp#L77-L135"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "827f8ee58532c99d9705f24bf21b10f2dc3ce40b58f07c1a50ae78a2440bbe8a"
 
 [[test]]
@@ -21579,7 +21579,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lazytiling.cpp#L276-L276"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "9b9f08cbad4ee3c0b8b2f39dfba6acbe0c917d80ffdd33e4da4db64091b99ebd"
 
 [[test]]
@@ -21588,7 +21588,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lazytiling.cpp#L275-L275"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "6fbaadcb98269594e8ddb5d9a0fe19c818ad58660ff24d267bf049864ffd39ea"
 
 [[test]]
@@ -21606,7 +21606,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdoverlap.cpp#L97-L97"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "69741603615151cf2e15377bd2e5a22b5995c40782a342fbbc287b52fa7278a6"
 
 [[test]]
