@@ -43,13 +43,16 @@ pub struct TextChunk {
     pub compression: TextCompression,
     pub key: Vec<u8>,
     pub text: Vec<u8>,
+    /// Port of the `PNG_TEXT_COMPRESSION_*_WR` marks that `png_write_info` sets: the chunk has
+    /// been written, so `png_write_end` does not write it again.
+    pub(crate) written: bool,
 }
 
 impl PngStruct {
     /// Port of `png_set_IHDR` (pngset.c#L288-L316). The header is checked first (`png_check_IHDR`).
     #[doc(alias = "png_set_IHDR")]
     #[allow(clippy::too_many_arguments)] // mirrors png_set_IHDR's parameter list
-    pub(crate) fn set_ihdr(
+    pub fn set_ihdr(
         &mut self,
         info: &mut PngInfo,
         width: u32,
@@ -114,7 +117,7 @@ impl PngStruct {
 
     /// Port of `png_set_sBIT` (pngset.c#L552-L560).
     #[doc(alias = "png_set_sBIT")]
-    pub(crate) fn set_sbit(&mut self, info: &mut PngInfo, sb: PngColor8) {
+    pub fn set_sbit(&mut self, info: &mut PngInfo, sb: PngColor8) {
         info.sig_bit = sb;
         info.valid |= info::SBIT;
     }
@@ -131,7 +134,7 @@ impl PngStruct {
 
     /// Port of `png_set_sRGB` (pngset.c#L562-L569).
     #[doc(alias = "png_set_sRGB")]
-    pub(crate) fn set_srgb(&mut self, info: &mut PngInfo, intent: u8) {
+    pub fn set_srgb(&mut self, info: &mut PngInfo, intent: u8) {
         info.srgb_intent = intent;
         info.valid |= info::SRGB;
     }
@@ -259,6 +262,7 @@ impl PngStruct {
             compression,
             key: key.to_vec(),
             text: text.to_vec(),
+            written: false,
         });
         let _ = info;
     }
@@ -286,6 +290,64 @@ impl PngStruct {
                 TextCompression::None
             },
         );
+    }
+
+    /// Port of `png_set_text` (pngset.c#L1450-L1462) for the `tEXt` and `zTXt` types: stores one
+    /// text chunk, to be written by `png_write_info` or `png_write_end`.
+    #[doc(alias = "png_set_text")]
+    pub fn set_text(
+        &mut self,
+        info: &mut PngInfo,
+        key: &[u8],
+        text: &[u8],
+        compression: TextCompression,
+    ) {
+        self.set_text_2(info, key, text, compression);
+    }
+
+    /// Port of `png_set_iCCP` (pngset.c#L872-L925): stores the profile and its name. The profile
+    /// is checked when it is written.
+    #[doc(alias = "png_set_iCCP")]
+    pub fn set_iccp(
+        &mut self,
+        info: &mut PngInfo,
+        name: &str,
+        compression_type: u8,
+        profile: &[u8],
+    ) {
+        name.clone_into(&mut info.iccp_name);
+        info.iccp_compression = compression_type;
+        info.iccp_profile = profile.to_vec();
+        info.valid |= info::ICCP;
+    }
+
+    /// Port of `png_set_unknown_chunks` (pngset.c#L1380-L1470) for a write struct: appends the
+    /// chunks. A location of zero takes the current `mode` bits, as libpng does for a write struct,
+    /// and the location is then reduced to its top-most bit. A location that is still zero is an
+    /// error.
+    #[doc(alias = "png_set_unknown_chunks")]
+    pub fn set_unknown_chunks(
+        &mut self,
+        info: &mut PngInfo,
+        unknowns: &[crate::structs::UnknownChunk],
+    ) -> PngResult<()> {
+        for u in unknowns {
+            let mut location = u32::from(u.location) & (0x01 | 0x02 | 0x08);
+            if location == 0 {
+                location = self.mode & (0x01 | 0x02 | 0x08);
+            }
+            if location == 0 {
+                return Err(self.error("invalid location in png_set_unknown_chunks"));
+            }
+            // Reduce the location to the top-most set bit.
+            location = 1 << location.ilog2();
+            info.unknown_chunks.push(crate::structs::UnknownChunk {
+                name: u.name,
+                data: u.data.clone(),
+                location: location as u8,
+            });
+        }
+        Ok(())
     }
 
     /// Port of `png_set_read_user_chunk_fn` (pngset.c#L1117-L1125): the application's reader for

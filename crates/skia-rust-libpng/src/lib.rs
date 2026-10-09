@@ -33,6 +33,9 @@ mod rtran;
 mod rutil;
 mod set;
 mod structs;
+mod write;
+mod wtran;
+mod wutil;
 
 pub use error::{PngError, PngResult};
 pub use get::{
@@ -46,6 +49,7 @@ pub use png::{
 };
 pub use set::{TextChunk, TextCompression};
 pub use structs::{PngColor, PngColor8, PngColor16, PngInfo, PngStruct, UnknownChunk, info};
+pub use write::PngWriteFn;
 
 /// Port of `PNG_LIBPNG_VER_STRING` (png.h): the library version this port follows.
 pub const PNG_LIBPNG_VER_STRING: &str = "1.6.56";
