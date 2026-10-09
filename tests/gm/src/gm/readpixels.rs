@@ -2,6 +2,8 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/readpixels.cpp (chrome/m156)
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
+#![allow(clippy::cast_sign_loss)] // mirrors the C++ size_t row byte counts of small images
 //
 // Not ported: `ReadPixelsCodecGM` (its canvas needs a colour space, which the GM harness does not
 // give it) and `ReadPixelsPictureGM` (SkImages::DeferredFromPicture is not on main yet).

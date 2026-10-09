@@ -2,6 +2,8 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/vertices.cpp (chrome/m156)
+#![allow(clippy::many_single_char_names)]
+// skbug_13047 mirrors the C++ names w and h
 //
 // Only `VerticesGM(1)`, `vertices_batching`, `vertices_collapsed`, `vertices_perspective` and
 // `vertices_strip` and `skbug_13047` are ported here. `VerticesGM(1 / kShaderSize)` is not in the

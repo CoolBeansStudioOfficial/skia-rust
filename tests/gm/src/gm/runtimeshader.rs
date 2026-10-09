@@ -329,10 +329,10 @@ fn make_threshold(size: ISize) -> Shader {
         layer_paint.set_image_filter(blur_filter::blur(sigma, sigma, TileMode::Decal, None, None));
         canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
 
-        let mut rand = Random::default();
+        let mut random = Random::default();
         for _ in 0..25 {
-            let x = rand.next_f() * size.width as f32;
-            let y = rand.next_f() * size.height as f32;
+            let x = random.next_f() * size.width as f32;
+            let y = random.next_f() * size.height as f32;
             canvas.save();
             canvas.translate((x, y));
             canvas.draw_circle((0.0, 0.0), rad, &paint);
@@ -560,7 +560,7 @@ impl CubeImages {
     // Port of: gm/runtimeshader.cpp#L281-L286 (chrome/m156), onOnceBeforeDraw (image loads)
     fn load() -> Self {
         let load = |path: &str| {
-            crate::tool_utils::get_resource_as_image(path).expect(path.to_string().as_str())
+            crate::tool_utils::get_resource_as_image(path).unwrap_or_else(|| panic!("{path}"))
         };
         CubeImages {
             mandrill: load("images/mandrill_256.png"),

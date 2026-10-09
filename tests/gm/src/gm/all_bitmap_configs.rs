@@ -2,6 +2,12 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/all_bitmap_configs.cpp (chrome/m156)
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::similar_names
+)] // mirrors the C++ byte, int and float conversions of the GM
 
 use crate::tool_utils::{copy_to, draw_checkerboard, get_resource_as_bitmap};
 use skia_rust_core::alpha_type::AlphaType;

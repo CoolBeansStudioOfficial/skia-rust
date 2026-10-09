@@ -2,6 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/bitmapimage.cpp (chrome/m156)
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
 
 use crate::prelude::*;
 use crate::tool_utils::get_resource_as_data;

@@ -2,6 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/colorwheel.cpp (chrome/m156)
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
 
 use crate::tool_utils::{draw_checkerboard, get_resource_as_data, get_resource_as_image};
 use skia_rust_core::alpha_type::AlphaType;

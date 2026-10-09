@@ -2,6 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/perspimages.cpp (chrome/m156)
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ int-to-scalar conversions of small sizes (exact in f32)
 
 use crate::GM;
 use crate::tool_utils::get_resource_as_image;
@@ -37,9 +38,9 @@ struct PerspImagesGm {
 
 #[derive(Clone, Copy)]
 enum DrawType {
-    DrawImage,
-    DrawImageRectStrict,
-    DrawImageRectFast,
+    Image,
+    RectStrict,
+    RectFast,
 }
 
 impl GM for PerspImagesGm {
@@ -82,11 +83,7 @@ impl GM for PerspImagesGm {
         }
         canvas.translate((-bounds.left() + 10.0, -bounds.top() + 10.0));
         canvas.save();
-        for draw_type in [
-            DrawType::DrawImage,
-            DrawType::DrawImageRectStrict,
-            DrawType::DrawImageRectFast,
-        ] {
+        for draw_type in [DrawType::Image, DrawType::RectStrict, DrawType::RectFast] {
             for m in &matrices {
                 for aa in [false, true] {
                     paint.set_anti_alias(aa);
@@ -107,7 +104,7 @@ impl GM for PerspImagesGm {
                                 Rect::from_ltrb(w / 4.0, h / 4.0, 3.0 * w / 4.0, 3.0 * h / 4.0);
                             let dst = Rect::from_ltrb(0.0, 0.0, 3.0 / 4.0 * w, 3.0 / 4.0 * h);
                             match draw_type {
-                                DrawType::DrawImage => {
+                                DrawType::Image => {
                                     canvas.draw_image_with_sampling_options(
                                         img,
                                         (0.0, 0.0),
@@ -115,7 +112,7 @@ impl GM for PerspImagesGm {
                                         Some(&paint),
                                     );
                                 }
-                                DrawType::DrawImageRectStrict => {
+                                DrawType::RectStrict => {
                                     canvas.draw_image_rect_with_sampling_options(
                                         img,
                                         Some((&src, SrcRectConstraint::Strict)),
@@ -124,7 +121,7 @@ impl GM for PerspImagesGm {
                                         &paint,
                                     );
                                 }
-                                DrawType::DrawImageRectFast => {
+                                DrawType::RectFast => {
                                     canvas.draw_image_rect_with_sampling_options(
                                         img,
                                         Some((&src, SrcRectConstraint::Fast)),

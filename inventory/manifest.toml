@@ -16251,7 +16251,7 @@ macro = "DEF_GM"
 source = "gm/arithmode.cpp#L282-L282"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "b144fa1f0995da07cf1c14c44c7dc7e1fbd17d5bdc828024b33c462f534c5282"
 
 [[test]]
@@ -21655,7 +21655,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L254-L271"
 module = "effects"
 status = "todo"
-reason = "decodes images/gainmap_gcontainer_only.jpg (codecs not ported)"
+reason = "not yet ported (SkSL sweep): decodes images/gainmap_gcontainer_only.jpg, the codec crate is on main; needs a port pass"
 span_hash = "f534d90c924f1f1987ead04682632c9d7c40be6e7501da8cc004c4d22958452a"
 
 [[test]]
@@ -21857,7 +21857,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersgraph.cpp#L161-L161"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "4138291453f67fa4ad9cedfb710c50b29ee9de4d6ec937db0dbb8374e10ca93f"
 
 [[test]]
@@ -22143,7 +22143,7 @@ macro = "DEF_GM"
 source = "gm/kawase_blur_rt.cpp#L196-L196"
 module = "effects"
 status = "todo"
-reason = "loads images (codecs are not ported)"
+reason = "not yet ported (SkSL sweep): the old \"codecs not ported\" blocker is stale, the codec crate is on main; needs a port pass"
 span_hash = "5e43a9b229b6aa1a54ce6ea8556cefb0085c2bc2229c4b59ab5ab9c4f0ce75d9"
 
 [[test]]
@@ -22306,7 +22306,7 @@ macro = "DEF_GM"
 source = "gm/lighting.cpp#L189-L189"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "bef3c1bb2694cc55c7e3d097644b550d6e47022de1788f5e60a196c1697320bb"
 
 [[test]]
@@ -22516,7 +22516,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L180-L180"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "445561ccfc24b78843f45abbe77b9367da15f5954b4d137ec5ba89a58e869f10"
 
 [[test]]
@@ -22526,7 +22526,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L182-L182"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "7c8cadd25f684cf21d7e38182352529a8819d0de7f193a477963f099f698e03f"
 
 [[test]]
@@ -22536,7 +22536,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L179-L179"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "584b635b2f897be85b0bcff43e2cfe794c9e141c17c1f9f1bc0ccd90b3242179"
 
 [[test]]
@@ -22546,7 +22546,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L181-L181"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "cc361bd962233d9f8892a27906eb3ce2fa00cfa357f58443933ed454f18f4314"
 
 [[test]]
@@ -22556,7 +22556,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L183-L183"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "4635ba62ffd4c560db4f38011b1bf57e4d82c24a48f7e9cf7792803ce12ee0bf"
 
 [[test]]
@@ -22566,7 +22566,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L184-L184"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "e32d8bf8facfff5b0c6b6834020709e8254133668e5037588273669514331c63"
 
 [[test]]
@@ -22621,7 +22621,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1489-L1489"
 module = "effects"
 status = "todo"
-reason = "needs image decoding (images/mandrill_128.png, images/color_wheel.png), and the port has no image codec yet; drawMesh is a no-op on the CPU, so the golden is the background"
+reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
 span_hash = "42fdc3ca01c8ff2d332994d29a30e6f438669bdc1ed5c3ee9b8acb6583abb559"
 
 [[test]]
@@ -22631,7 +22631,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1486-L1486"
 module = "effects"
 status = "todo"
-reason = "needs image decoding (images/mandrill_128.png, images/color_wheel.png), and the port has no image codec yet; drawMesh is a no-op on the CPU, so the golden is the background"
+reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
 span_hash = "0dbf92c43c97a7ae359a2634e4203a3fd805b41db5d80efbe82384501fb7d95b"
 
 [[test]]
@@ -22641,7 +22641,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1487-L1487"
 module = "effects"
 status = "todo"
-reason = "needs image decoding (images/mandrill_128.png, images/color_wheel.png), and the port has no image codec yet; drawMesh is a no-op on the CPU, so the golden is the background"
+reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
 span_hash = "357397b67bf8e3a95db34c1a3d6f2d94558503054ccd37c4247fca1fddbdbe52"
 
 [[test]]
@@ -22651,7 +22651,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1488-L1488"
 module = "effects"
 status = "todo"
-reason = "needs image decoding (images/mandrill_128.png, images/color_wheel.png), and the port has no image codec yet; drawMesh is a no-op on the CPU, so the golden is the background"
+reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
 span_hash = "22c4ef3f6f7e5c9a12b8a4b19c7820b2f18ce89b24967a85dedc065353ac1a21"
 
 [[test]]
@@ -22754,7 +22754,7 @@ macro = "DEF_GM"
 source = "gm/morphology.cpp#L97-L97"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "4ebff493183b230e7a167b544980d55c3ddb309022e9cf1fa79383dc07a38dc8"
 
 [[test]]
@@ -23885,7 +23885,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -23895,7 +23895,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
@@ -24138,7 +24138,7 @@ macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
 status = "todo"
-reason = "needs codec-backed images (make_codec_image); skia-rust has no image codec"
+reason = "needs make_codec_image (codec-backed image via PNG encode/decode: SkPngEncoder is not on main)"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
@@ -25968,7 +25968,7 @@ macro = "DEF_GM"
 source = "gm/xfermodeimagefilter.cpp#L206-L206"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters factories that are not on main (MatrixConvolution, Lighting, Displacement, Dilate/Erode, Magnifier, Arithmetic, runtime image filters); the SkSL known runtime effects they use are on main"
 span_hash = "8940ef87363369dfb73906623a0f4aae285bc2e82a4e4756219ce4df34056e0c"
 
 [[test]]
