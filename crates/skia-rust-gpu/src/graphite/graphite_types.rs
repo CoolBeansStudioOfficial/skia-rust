@@ -1,12 +1,17 @@
 // Copyright 2021 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: include/gpu/graphite/GraphiteTypes.h (the resource-related enums so far)
+// Ported from Skia: include/gpu/graphite/GraphiteTypes.h (the resource-related enums and the
+//                   submission types)
 
-//! Public Graphite enums (`include/gpu/graphite/GraphiteTypes.h`). Only the ones the resource
-//! model and the recorder need are ported so far; the submission types come with the context.
+//! Public Graphite enums and structs (`include/gpu/graphite/GraphiteTypes.h`): the resource-related
+//! enums, and the submission types `Context::insert_recording` and `Context::submit` take.
+
+use skia_rust_core::point::IPoint;
+use skia_rust_core::rect::IRect;
 
 use crate::gpu::gpu_types::{CallbackResult, GpuStats, GpuStatsFlags};
+use crate::graphite::recording::Recording;
 
 /// Is a lazy proxy fulfilled once or on every insertion.
 // Port of: include/gpu/graphite/GraphiteTypes.h#L216-L219 (chrome/m156)
@@ -142,6 +147,178 @@ impl std::fmt::Debug for InsertFinishInfo {
                 &self.finished_with_stats_proc.is_some(),
             )
             .field("gpu_stats_flags", &self.gpu_stats_flags)
+            .finish()
+    }
+}
+
+/// The result of `Context::insert_recording`.
+///
+/// Skia's `InsertStatus` also carries a message. The message only feeds the log in Skia, so it
+/// is not ported; the log lines are emitted where the status is produced.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L38-L84 (chrome/m156)
+#[doc(alias = "skgpu::graphite::InsertStatus")]
+#[doc(alias = "InsertStatus::V")]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum InsertStatus {
+    /// Everything successfully added to the underlying command buffer.
+    #[doc(alias = "kSuccess")]
+    #[default]
+    Success,
+    /// The recording or the insert info is invalid; no command buffer changes.
+    #[doc(alias = "kInvalidRecording")]
+    InvalidRecording,
+    /// Promise image instantiation failed; no command buffer changes.
+    #[doc(alias = "kPromiseImageInstantiationFailed")]
+    PromiseImageInstantiationFailed,
+    /// Internal failure; the command buffer is partially modified and its state is unknown.
+    #[doc(alias = "kAddCommandsFailed")]
+    AddCommandsFailed,
+    /// Internal failure while compiling shader pipelines; the state is unrecoverable.
+    #[doc(alias = "kAsyncShaderCompilesFailed")]
+    AsyncShaderCompilesFailed,
+    /// The recording is out of order (`RecorderOptions::require_ordered_recordings`).
+    #[doc(alias = "kOutOfOrderRecording")]
+    OutOfOrderRecording,
+}
+
+impl InsertStatus {
+    /// `operator bool()`: only [`InsertStatus::Success`] is true.
+    // Port of: include/gpu/graphite/GraphiteTypes.h#L63-L66 (chrome/m156)
+    #[must_use]
+    pub fn is_success(self) -> bool {
+        self == Self::Success
+    }
+}
+
+/// Whether a submission waits for the GPU to finish (`Context::submit`).
+// Port of: include/gpu/graphite/GraphiteTypes.h#L178-L182 (chrome/m156)
+#[doc(alias = "skgpu::graphite::SyncToCpu")]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum SyncToCpu {
+    /// Wait for the submitted work to finish.
+    #[doc(alias = "kYes")]
+    Yes,
+    /// Do not wait.
+    #[doc(alias = "kNo")]
+    #[default]
+    No,
+}
+
+/// Whether a submission marks the end of a frame.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L184-L186 (chrome/m156)
+#[doc(alias = "skgpu::graphite::MarkFrameBoundary")]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum MarkFrameBoundary {
+    /// The submission marks a frame boundary with `SubmitInfo::frame_id`.
+    #[doc(alias = "kYes")]
+    Yes,
+    /// No frame boundary.
+    #[doc(alias = "kNo")]
+    #[default]
+    No,
+}
+
+/// Options for `Context::submit`.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L188-L210 (chrome/m156)
+#[doc(alias = "skgpu::graphite::SubmitInfo")]
+#[derive(Default)]
+pub struct SubmitInfo {
+    /// `fSync`.
+    pub sync: SyncToCpu,
+    /// `fMarkBoundary`.
+    pub mark_boundary: MarkFrameBoundary,
+    /// `fFrameID`.
+    pub frame_id: u64,
+    /// `fFinishedProc` (its context is captured by the closure): called when all GPU work
+    /// submitted by this call has completed.
+    pub finished_proc: Option<GpuFinishedProc>,
+}
+
+impl SubmitInfo {
+    /// `SubmitInfo(sync)`.
+    #[must_use]
+    pub fn new(sync: SyncToCpu) -> Self {
+        Self {
+            sync,
+            ..Self::default()
+        }
+    }
+
+    /// `SubmitInfo(sync, frameID)`: marks a frame boundary.
+    #[must_use]
+    pub fn with_frame_id(sync: SyncToCpu, frame_id: u64) -> Self {
+        Self {
+            sync,
+            mark_boundary: MarkFrameBoundary::Yes,
+            frame_id,
+            finished_proc: None,
+        }
+    }
+}
+
+impl std::fmt::Debug for SubmitInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SubmitInfo")
+            .field("sync", &self.sync)
+            .field("mark_boundary", &self.mark_boundary)
+            .field("frame_id", &self.frame_id)
+            .field("finished_proc", &self.finished_proc.is_some())
+            .finish()
+    }
+}
+
+/// The arguments of `Context::insert_recording`.
+///
+/// Skia passes the `Recording` by pointer and the caller keeps owning it. Here the recording is
+/// moved in (`Option` because Skia's default is `nullptr`, which fails with
+/// [`InsertStatus::InvalidRecording`]). Skia's `fTargetSurface`, `fTargetTextureState` and the
+/// backend semaphores are not ported: the target surface comes with `Surface` (G10d), and wgpu has
+/// no semaphores.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L125-L163 (chrome/m156)
+#[doc(alias = "skgpu::graphite::InsertRecordingInfo")]
+#[derive(Default)]
+pub struct InsertRecordingInfo {
+    /// `fRecording`.
+    pub recording: Option<Recording>,
+    /// `fTargetTranslation`.
+    pub target_translation: IPoint,
+    /// `fTargetClip`.
+    pub target_clip: IRect,
+    /// `fGpuStatsFlags`.
+    pub gpu_stats_flags: GpuStatsFlags,
+    /// `fFinishedProc`.
+    pub finished_proc: Option<GpuFinishedProc>,
+    /// `fFinishedWithStatsProc`.
+    pub finished_with_stats_proc: Option<GpuFinishedWithStatsProc>,
+    /// `fSimulatedStatus`: for unit tests, the status `insert_recording` fails with at the first
+    /// point where that status would be produced.
+    pub simulated_status: InsertStatus,
+}
+
+impl InsertRecordingInfo {
+    /// `InsertRecordingInfo` with `recording` set and every other field at its default.
+    #[must_use]
+    pub fn new(recording: Recording) -> Self {
+        Self {
+            recording: Some(recording),
+            ..Self::default()
+        }
+    }
+}
+
+impl std::fmt::Debug for InsertRecordingInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InsertRecordingInfo")
+            .field("recording", &self.recording.is_some())
+            .field("target_translation", &self.target_translation)
+            .field("target_clip", &self.target_clip)
+            .field("gpu_stats_flags", &self.gpu_stats_flags)
+            .field("finished_proc", &self.finished_proc.is_some())
+            .field(
+                "finished_with_stats_proc",
+                &self.finished_with_stats_proc.is_some(),
+            )
+            .field("simulated_status", &self.simulated_status)
             .finish()
     }
 }
