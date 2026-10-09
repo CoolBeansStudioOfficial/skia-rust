@@ -18,16 +18,16 @@ use std::sync::Arc;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::color::Color4f;
-use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
-use skia_rust_core::rect::Rect;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped};
@@ -89,9 +89,9 @@ fn hexagon(fill_type: PathFillType) -> Path {
 /// A five-pointed star, which is not convex.
 fn star() -> Path {
     let mut builder = PathBuilder::new();
-    for i in 0..10 {
+    for i in 0..10_u16 {
         let radius = if i % 2 == 0 { 50.0_f32 } else { 20.0 };
-        let angle = std::f32::consts::PI / 5.0 * i as f32 - std::f32::consts::FRAC_PI_2;
+        let angle = std::f32::consts::PI / 5.0 * f32::from(i) - std::f32::consts::FRAC_PI_2;
         let p = Point::new(64.0 + radius * angle.cos(), 64.0 + radius * angle.sin());
         if i == 0 {
             builder.move_to(p);
@@ -114,10 +114,7 @@ fn render(context: &mut WgpuContext, draws: &[(Path, Paint)]) -> (Vec<u8>, usize
 }
 
 /// Records what `draw` draws into a cleared target, runs it and reads the target back.
-fn render_with(
-    context: &mut WgpuContext,
-    draw: impl FnOnce(&mut Device),
-) -> (Vec<u8>, usize) {
+fn render_with(context: &mut WgpuContext, draw: impl FnOnce(&mut Device)) -> (Vec<u8>, usize) {
     let recorder = context.make_recorder(None);
     let image_info = ImageInfo::new_n32_premul((SIZE, SIZE), None);
     let mut device = Device::make_with_info(
@@ -304,7 +301,7 @@ fn mesh_of(points: &[(f32, f32)], indices: Option<&[u16]>) -> Mesh {
         .flat_map(|(x, y)| x.to_ne_bytes().into_iter().chain(y.to_ne_bytes()))
         .collect();
     let vb = meshes::make_vertex_buffer(Some(&bytes), bytes.len());
-    let bounds = Rect::from_ltrb(0.0, 0.0, SIZE as f32, SIZE as f32);
+    let bounds = Rect::from_ltrb(0.0, 0.0, 128.0, 128.0);
     let result = match indices {
         None => Mesh::make(
             Some(mesh_spec()),
