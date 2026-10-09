@@ -21,13 +21,13 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::rect::{IRect, Rect as SkRect};
+use skia_rust_core::size::ISize;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, CallbackResult, Mipmapped};
-use skia_rust_core::size::ISize;
 use skia_rust_gpu::graphite::async_read::PixelTransferResult;
-use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
+use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::device::Device;
 use skia_rust_gpu::graphite::graphite_types::{
     InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
@@ -140,8 +140,14 @@ fn a_rect_draws_its_color_and_only_there() {
         return;
     };
     let rects = [
-        (SkRect::new(4.0, 4.0, 20.0, 12.0).into(), solid(1.0, 0.0, 0.0)),
-        (SkRect::new(8.0, 16.0, 28.0, 28.0).into(), solid(0.0, 0.0, 1.0)),
+        (
+            SkRect::new(4.0, 4.0, 20.0, 12.0).into(),
+            solid(1.0, 0.0, 0.0),
+        ),
+        (
+            SkRect::new(8.0, 16.0, 28.0, 28.0).into(),
+            solid(0.0, 0.0, 1.0),
+        ),
     ];
     let (pixels, row_bytes) = render(&mut context, &rects).expect("the pixels");
     for y in 0..SIZE as usize {
@@ -153,7 +159,11 @@ fn a_rect_draws_its_color_and_only_there() {
             } else {
                 [0, 0, 0, 0]
             };
-            assert_eq!(pixel(&pixels, row_bytes, x, y), expected, "pixel ({x}, {y})");
+            assert_eq!(
+                pixel(&pixels, row_bytes, x, y),
+                expected,
+                "pixel ({x}, {y})"
+            );
         }
     }
 }
@@ -166,7 +176,11 @@ fn a_path_is_drawn_with_msaa_and_resolved() {
     // A triangle: stencil-and-cover in an MSAA render pass, resolved into the target by the
     // emulated resolve (wgpu has no load-from-resolve).
     let mut builder = PathBuilder::new();
-    builder.move_to((4.0, 4.0)).line_to((28.0, 4.0)).line_to((16.0, 28.0)).close();
+    builder
+        .move_to((4.0, 4.0))
+        .line_to((28.0, 4.0))
+        .line_to((16.0, 28.0))
+        .close();
     let shapes = [(Shape::Path(builder.detach()), solid(1.0, 0.0, 0.0))];
     let (pixels, row_bytes) = render(&mut context, &shapes).expect("the pixels");
     // Well inside, well outside, and on the antialiased edge (partial coverage).

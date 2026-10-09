@@ -21,9 +21,16 @@
 //!   §1.3), so a render pass with a resolve texture takes Graphite's emulation path: the MSAA
 //!   attachment is loaded from the resolve texture with a draw, and resolved after the pass with
 //!   another. A discarded load clears, and a discarded store discards.
+//! - wgpu validates `set_immediates` against the bound pipeline, so the intrinsic constants of a
+//!   pass are set after every pipeline bind rather than once at the start of the pass.
 //! - Stats queries (timestamps) are not ported.
 //!
 //! [`on_add_render_pass`]: CommandBufferBackend::on_add_render_pass
+
+// These mirror the long functions of DawnCommandBuffer.cpp.
+#![allow(clippy::too_many_lines)]
+// The narrowing casts mirror the C++ conversions of `size_t` and `int` into wgpu's `u32` fields.
+#![allow(clippy::cast_possible_truncation)]
 
 use std::num::NonZeroU64;
 use std::sync::{Arc, MutexGuard, PoisonError};
@@ -68,7 +75,7 @@ use crate::graphite::wgpu::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::graphite::wgpu::resource_provider::{
     WgpuResourceProvider, find_or_create_intrinsic_bind_buffer_info, wgpu_backend,
 };
-use crate::graphite::wgpu::sampler::as_wgpu_sampler;
+use crate::graphite::wgpu::sampler::{WgpuSampler, as_wgpu_sampler};
 use crate::graphite::wgpu::shared_context::WgpuSharedContext;
 use crate::graphite::wgpu::texture::{WgpuTexture, as_wgpu_texture};
 use crate::graphite::wgpu::texture_info::WgpuTextureInfoData;
@@ -101,6 +108,44 @@ pub fn new_wgpu_command_buffer(
     }
     Some(command_buffer)
 }
+
+/// A resource of a bind group being made.
+enum Owned {
+    Buffer(wgpu::Buffer, u64, Option<NonZeroU64>),
+    View(wgpu::TextureView),
+    Sampler(wgpu::Sampler),
+}
+
+/// The bind group entries for `owned` resources.
+fn bind_entries(owned: &[(u32, Owned)]) -> Vec<wgpu::BindGroupEntry<'_>> {
+    owned
+        .iter()
+        .map(|(binding, resource)| wgpu::BindGroupEntry {
+            binding: *binding,
+            resource: match resource {
+                Owned::Buffer(buffer, offset, size) => {
+                    wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer,
+                        offset: *offset,
+                        size: *size,
+                    })
+                }
+                Owned::View(view) => wgpu::BindingResource::TextureView(view),
+                Owned::Sampler(sampler) => wgpu::BindingResource::Sampler(sampler),
+            },
+        })
+        .collect()
+}
+
+/// We expect to have up to 3 uniforms in the uniform buffers bind group.
+const MAX_UNIFORMS_IN_GROUP: usize = 3;
+
+/// The binding indices of the uniforms in the group, in `fBoundUniforms` order.
+const BINDING_INDICES: [u32; MAX_UNIFORMS_IN_GROUP] = [
+    INTRINSIC_UNIFORM_BUFFER_INDEX,
+    COMBINED_UNIFORM_INDEX,
+    STORAGE_BUFFER_INDEX,
+];
 
 /// The state of a render pass being recorded that Dawn keeps in members of the command buffer.
 struct PassState<'a> {
@@ -199,6 +244,25 @@ fn texture_aspect(texture: &Texture) -> wgpu::TextureAspect {
 /// The wgpu half of `texture`, if it is a wgpu texture.
 fn texture_of(texture: &Texture) -> Option<&WgpuTexture> {
     as_wgpu_texture(texture)
+}
+
+/// The trace id of a buffer (0 if it is not a wgpu buffer).
+#[cfg(feature = "trace")]
+fn buffer_id(buffer: &Buffer) -> u64 {
+    as_wgpu_buffer(buffer).map_or(0, WgpuBuffer::trace_id)
+}
+
+/// The trace id of a texture (0 if it is not a wgpu texture).
+#[cfg(feature = "trace")]
+fn texture_id(texture: &Texture) -> u64 {
+    texture_of(texture).map_or(0, WgpuTexture::trace_id)
+}
+
+/// A bound buffer range as the trace names it: `buffer:offset:size`.
+#[cfg(feature = "trace")]
+fn range_name(info: &BindBufferInfo) -> String {
+    let id = info.buffer.as_ref().map_or(0, |buffer| buffer_id(buffer));
+    format!("{id}:{}:{}", info.offset, info.size)
 }
 
 /// `static_cast<const DawnBuffer*>(buffer)->dawnBuffer()`.
@@ -319,6 +383,14 @@ impl WgpuCommandBufferBackend {
         }
 
         Self::set_viewport(&mut pass, call.viewport);
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("set_viewport")
+                .i("x", call.viewport.left)
+                .i("y", call.viewport.top)
+                .i("width", call.viewport.width())
+                .i("height", call.viewport.height())
+        );
 
         let mut success = true;
         for draw_pass in call.draw_passes.iter_mut() {
@@ -330,6 +402,10 @@ impl WgpuCommandBufferBackend {
 
         // endRenderPass(): the pass ends when it is dropped.
         drop(pass);
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("end_render_pass")
+        );
         let resolved = self.resolve_step(encoder, resolve_step_emulation_info, pass_state.provider);
         success && resolved
     }
@@ -342,6 +418,10 @@ impl WgpuCommandBufferBackend {
         tracker: &mut dyn ResourceTracker,
     ) -> bool {
         let device = self.shared_context.device();
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("begin_compute_pass")
+        );
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
         for group in dispatch_groups.iter_mut() {
             group.add_resource_refs(tracker);
@@ -356,17 +436,17 @@ impl WgpuCommandBufferBackend {
                 };
                 // bindComputePipeline()
                 pass.set_pipeline(pipeline.compute_pipeline());
+                trace!(
+                    self.shared_context,
+                    crate::graphite::wgpu::trace::Record::new("set_compute_pipeline")
+                        .u("index", dispatch.pipeline_index)
+                );
 
                 // bindDispatchResources(): bind all pipeline resources to a single new bind
                 // group at index 0.
                 // NOTE: Caching the bind groups here might be beneficial based on the layout and
                 // the bound resources (though it's questionable how often a bind group will end
                 // up getting reused since the bound objects change often).
-                enum Owned {
-                    Buffer(wgpu::Buffer, u64, Option<NonZeroU64>),
-                    View(wgpu::TextureView),
-                    Sampler(wgpu::Sampler),
-                }
                 let mut owned = Vec::with_capacity(dispatch.bindings.len());
                 for binding in &dispatch.bindings {
                     let resource = match &binding.resource {
@@ -405,33 +485,46 @@ impl WgpuCommandBufferBackend {
                     };
                     owned.push((binding.index, resource));
                 }
-                let entries: Vec<wgpu::BindGroupEntry<'_>> = owned
-                    .iter()
-                    .map(|(index, resource)| wgpu::BindGroupEntry {
-                        binding: *index,
-                        resource: match resource {
-                            Owned::Buffer(buffer, offset, size) => {
-                                wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                                    buffer,
-                                    offset: *offset,
-                                    size: *size,
-                                })
-                            }
-                            Owned::View(view) => wgpu::BindingResource::TextureView(view),
-                            Owned::Sampler(sampler) => wgpu::BindingResource::Sampler(sampler),
-                        },
-                    })
-                    .collect();
+                let entries = bind_entries(&owned);
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
                     layout: pipeline.group_layout(),
                     entries: &entries,
                 });
                 pass.set_bind_group(0, &bind_group, &[]);
+                trace!(
+                    self.shared_context,
+                    crate::graphite::wgpu::trace::Record::new("set_bind_group")
+                        .u("group", 0_u32)
+                        .strings(
+                            "bindings",
+                            dispatch
+                                .bindings
+                                .iter()
+                                .map(|binding| match &binding.resource {
+                                    BindingResource::Buffer(info) => {
+                                        format!("{}:buffer:{}", binding.index, range_name(info))
+                                    }
+                                    BindingResource::Texture(index) => {
+                                        format!("{}:texture:{}", binding.index, index.0)
+                                    }
+                                    BindingResource::Sampler(index) => {
+                                        format!("{}:sampler:{}", binding.index, index.0)
+                                    }
+                                })
+                        )
+                );
 
                 match &dispatch.global_size_or_indirect {
                     GlobalSizeOrIndirect::Size(size) => {
                         // dispatchWorkgroups()
+                        trace!(
+                            self.shared_context,
+                            crate::graphite::wgpu::trace::Record::new("dispatch_workgroups")
+                                .u("x", size.width)
+                                .u("y", size.height)
+                                .u("z", size.depth)
+                        );
                         pass.dispatch_workgroups(size.width, size.height, size.depth);
                     }
                     GlobalSizeOrIndirect::Indirect(indirect) => {
@@ -441,6 +534,13 @@ impl WgpuCommandBufferBackend {
                             skia_log_e!("An indirect dispatch has no buffer");
                             return false;
                         };
+                        trace!(
+                            self.shared_context,
+                            crate::graphite::wgpu::trace::Record::new(
+                                "dispatch_workgroups_indirect"
+                            )
+                            .s("range", range_name(indirect))
+                        );
                         pass.dispatch_workgroups_indirect(&buffer, u64::from(indirect.offset));
                     }
                 }
@@ -448,6 +548,10 @@ impl WgpuCommandBufferBackend {
         }
         // endComputePass(): the pass ends when it is dropped.
         drop(pass);
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("end_compute_pass")
+        );
         true
     }
 
@@ -542,7 +646,7 @@ impl WgpuCommandBufferBackend {
                 drop(view);
             } else {
                 // wgpu has no partial resolve rects: the resolve covers the whole attachment.
-                debug_assert!(call.resolve_offset == IPoint::default());
+                debug_assert_eq!(call.resolve_offset, IPoint::default());
                 resolve_view = Some(view);
             }
             // TODO: If the color resolve texture is read-only we can use a private (vs.
@@ -663,10 +767,32 @@ impl WgpuCommandBufferBackend {
             occlusion_query_set: None,
             multiview_mask: None,
         };
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("begin_render_pass")
+                .u("color", texture_id(color_texture))
+                .u(
+                    "resolve",
+                    call.resolve_texture
+                        .map_or(0, |texture| texture_id(texture))
+                )
+                .u(
+                    "depth_stencil",
+                    call.depth_stencil_texture
+                        .map_or(0, |texture| texture_id(texture))
+                )
+                .s("color_load", format!("{color_load:?}"))
+                .s("color_store", format!("{color_store:?}"))
+                .u(
+                    "emulated_resolve",
+                    u32::from(emulate_load_store_resolve_texture)
+                )
+        );
         let mut pass = encoder.begin_render_pass(&descriptor);
 
         if let Some((desc, src_view, src_offset, dst_bounds)) = blit_after_load
             && !Self::do_blit_with_draw(
+                &self.shared_context,
                 self.shared_context.device(),
                 provider,
                 &mut pass,
@@ -690,6 +816,7 @@ impl WgpuCommandBufferBackend {
     // Port of: src/gpu/graphite/dawn/DawnCommandBuffer.cpp#L585-L605 (chrome/m156)
     #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
     fn do_blit_with_draw(
+        shared_context: &WgpuSharedContext,
         device: &wgpu::Device,
         provider: &mut WgpuResourceProvider,
         render_encoder: &mut wgpu::RenderPass<'_>,
@@ -712,6 +839,17 @@ impl WgpuCommandBufferBackend {
             src_texture_view,
             src_offset,
             dst_bounds,
+        );
+        trace!(
+            shared_context,
+            crate::graphite::wgpu::trace::Record::new("blit_with_draw")
+                .u("src_sample_count", src_sample_count as u32)
+                .i("src_x", src_offset.x)
+                .i("src_y", src_offset.y)
+                .i("dst_left", dst_bounds.left)
+                .i("dst_top", dst_bounds.top)
+                .i("dst_right", dst_bounds.right)
+                .i("dst_bottom", dst_bounds.bottom)
         );
 
         true
@@ -760,6 +898,7 @@ impl WgpuCommandBufferBackend {
         });
 
         Self::do_blit_with_draw(
+            &self.shared_context,
             self.shared_context.device(),
             provider,
             &mut render_pass_encoder,
@@ -811,11 +950,25 @@ impl WgpuCommandBufferBackend {
                         b: f64::from(blend_constants[2]),
                         a: f64::from(blend_constants[3]),
                     });
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("set_blend_constant")
+                            .f("r", blend_constants[0])
+                            .f("g", blend_constants[1])
+                            .f("b", blend_constants[2])
+                            .f("a", blend_constants[3])
+                    );
                 }
                 DrawPassCommand::BindUniformBuffer { info, slot } => {
                     self.bind_uniform_buffer(info, *slot);
                 }
                 DrawPassCommand::BindStaticDataBuffer { static_data } => {
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("set_vertex_buffer")
+                            .u("slot", 0_u32)
+                            .s("range", range_name(static_data))
+                    );
                     Self::bind_input_buffer(
                         pass,
                         static_data,
@@ -823,6 +976,12 @@ impl WgpuCommandBufferBackend {
                     );
                 }
                 DrawPassCommand::BindAppendDataBuffer { append_data } => {
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("set_vertex_buffer")
+                            .u("slot", 1_u32)
+                            .s("range", range_name(append_data))
+                    );
                     Self::bind_input_buffer(
                         pass,
                         append_data,
@@ -830,6 +989,11 @@ impl WgpuCommandBufferBackend {
                     );
                 }
                 DrawPassCommand::BindIndexBuffer { indices } => {
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("set_index_buffer")
+                            .s("range", range_name(indices))
+                    );
                     Self::bind_index_buffer(pass, indices);
                 }
                 DrawPassCommand::BindIndirectBuffer { indirect } => {
@@ -846,6 +1010,21 @@ impl WgpuCommandBufferBackend {
                     }
                 }
                 DrawPassCommand::SetScissor { scissor } => {
+                    #[cfg(feature = "trace")]
+                    {
+                        let rect = scissor.get_rect(
+                            pass_state.state.replay_translation,
+                            pass_state.state.render_area_bounds,
+                        );
+                        trace!(
+                            self.shared_context,
+                            crate::graphite::wgpu::trace::Record::new("set_scissor_rect")
+                                .i("x", rect.left)
+                                .i("y", rect.top)
+                                .i("width", rect.width())
+                                .i("height", rect.height())
+                        );
+                    }
                     Self::set_scissor(pass, pass_state.state, scissor);
                 }
                 DrawPassCommand::Draw {
@@ -854,6 +1033,12 @@ impl WgpuCommandBufferBackend {
                     vertex_count,
                 } => {
                     self.sync_before_draw(pass, pass_state, *primitive);
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw")
+                            .u("vertex_count", *vertex_count)
+                            .u("first_vertex", *base_vertex)
+                    );
                     pass.draw(*base_vertex..*base_vertex + *vertex_count, 0..1);
                 }
                 DrawPassCommand::DrawIndexed {
@@ -863,6 +1048,13 @@ impl WgpuCommandBufferBackend {
                     base_vertex,
                 } => {
                     self.sync_before_draw(pass, pass_state, *primitive);
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw_indexed")
+                            .u("index_count", *index_count)
+                            .u("first_index", *base_index)
+                            .i("base_vertex", base_vertex.cast_signed())
+                    );
                     pass.draw_indexed(
                         *base_index..*base_index + *index_count,
                         base_vertex.cast_signed(),
@@ -877,6 +1069,14 @@ impl WgpuCommandBufferBackend {
                     instance_count,
                 } => {
                     self.sync_before_draw(pass, pass_state, *primitive);
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw")
+                            .u("vertex_count", *vertex_count)
+                            .u("instance_count", *instance_count)
+                            .u("first_vertex", *base_vertex)
+                            .u("first_instance", *base_instance)
+                    );
                     pass.draw(
                         *base_vertex..*base_vertex + *vertex_count,
                         *base_instance..*base_instance + *instance_count,
@@ -891,6 +1091,15 @@ impl WgpuCommandBufferBackend {
                     instance_count,
                 } => {
                     self.sync_before_draw(pass, pass_state, *primitive);
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw_indexed")
+                            .u("index_count", *index_count)
+                            .u("instance_count", *instance_count)
+                            .u("first_index", *base_index)
+                            .i("base_vertex", base_vertex.cast_signed())
+                            .u("first_instance", *base_instance)
+                    );
                     pass.draw_indexed(
                         *base_index..*base_index + *index_count,
                         base_vertex.cast_signed(),
@@ -903,6 +1112,11 @@ impl WgpuCommandBufferBackend {
                         skia_log_e!("An indirect draw has no indirect buffer");
                         return false;
                     };
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw_indirect")
+                            .u("offset", *offset)
+                    );
                     pass.draw_indirect(buffer, *offset);
                 }
                 DrawPassCommand::DrawIndexedIndirect { primitive } => {
@@ -911,6 +1125,11 @@ impl WgpuCommandBufferBackend {
                         skia_log_e!("An indirect draw has no indirect buffer");
                         return false;
                     };
+                    trace!(
+                        self.shared_context,
+                        crate::graphite::wgpu::trace::Record::new("draw_indexed_indirect")
+                            .u("offset", *offset)
+                    );
                     pass.draw_indexed_indirect(buffer, *offset);
                 }
                 DrawPassCommand::AddBarrier { .. } => {
@@ -951,8 +1170,20 @@ impl WgpuCommandBufferBackend {
             return false;
         };
         pass.set_pipeline(wgpu_pipeline.render_pipeline());
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("set_pipeline")
+                .s("label", graphics_pipeline.label())
+        );
         if let Some(immediates) = &pass_state.immediates {
             Self::update_intrinsic_uniforms_as_push_constant(pass, immediates);
+            trace!(
+                self.shared_context,
+                crate::graphite::wgpu::trace::Record::new("set_immediates").u(
+                    "hash",
+                    crate::graphite::wgpu::trace::hash_bytes(immediates.data())
+                )
+            );
         }
         pass_state.active_pipeline = Some(Arc::clone(graphics_pipeline));
         self.bound_uniform_buffers_dirty = true;
@@ -1090,10 +1321,6 @@ impl WgpuCommandBufferBackend {
             };
             bind_group
         } else {
-            enum Owned {
-                Sampler(wgpu::Sampler),
-                View(wgpu::TextureView),
-            }
             let mut owned: Vec<(u32, Owned)> = Vec::with_capacity(2 * num_textures_and_samplers);
 
             for (i, (proxy, sampler_desc)) in textures.iter().zip(samplers).enumerate() {
@@ -1108,7 +1335,8 @@ impl WgpuCommandBufferBackend {
                 let Some(sampler) = self.get_sampler(*sampler_desc) else {
                     return false;
                 };
-                let Some(wgpu_sampler) = as_wgpu_sampler(&sampler).and_then(|s| s.wgpu_sampler())
+                let Some(wgpu_sampler) =
+                    as_wgpu_sampler(&sampler).and_then(WgpuSampler::wgpu_sampler)
                 else {
                     return false;
                 };
@@ -1132,7 +1360,8 @@ impl WgpuCommandBufferBackend {
                     skia_log_e!("A dst copy pipeline is bound without a dst copy");
                     return false;
                 };
-                let Some(sampler) = as_wgpu_sampler(dst_sampler).and_then(|s| s.wgpu_sampler())
+                let Some(sampler) =
+                    as_wgpu_sampler(dst_sampler).and_then(WgpuSampler::wgpu_sampler)
                 else {
                     return false;
                 };
@@ -1144,22 +1373,27 @@ impl WgpuCommandBufferBackend {
                 owned.push((2 * n - 1, Owned::View(view)));
             }
 
-            let entries: Vec<wgpu::BindGroupEntry<'_>> = owned
-                .iter()
-                .map(|(binding, resource)| wgpu::BindGroupEntry {
-                    binding: *binding,
-                    resource: match resource {
-                        Owned::Sampler(sampler) => wgpu::BindingResource::Sampler(sampler),
-                        Owned::View(view) => wgpu::BindingResource::TextureView(view),
-                    },
-                })
-                .collect();
+            let entries = bind_entries(&owned);
             pass_state
                 .provider
                 .create_bind_group(&entries, &group_layout)
         };
 
         pass.set_bind_group(TEXTURE_BIND_GROUP_INDEX, &bind_group, &[]);
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("set_bind_group")
+                .u("group", TEXTURE_BIND_GROUP_INDEX)
+                .strings(
+                    "textures",
+                    textures.iter().map(|proxy| {
+                        proxy.ref_texture().map_or(String::from("0"), |texture| {
+                            texture_id(&texture).to_string()
+                        })
+                    })
+                )
+                .strings("samplers", samplers.iter().map(|desc| format!("{desc:?}")))
+        );
         true
     }
 
@@ -1181,8 +1415,6 @@ impl WgpuCommandBufferBackend {
             .resource_binding_requirements()
             .use_push_constants_for_intrinsic_constants;
 
-        // We expect to have up to 3 uniforms in this bind group.
-        const MAX_UNIFORMS_IN_GROUP: usize = 3;
         // Until/unless uniform bind group structure gets reorganized, this should be equivalent
         // to the size of our bound uniform array.
         debug_assert_eq!(MAX_UNIFORMS_IN_GROUP, self.bound_uniforms.len());
@@ -1205,11 +1437,6 @@ impl WgpuCommandBufferBackend {
                 !use_push_constants,            // intrinsic uniforms
                 active.has_combined_uniforms(), // paint AND renderstep uniforms!
                 active.uses_storage_buffer(),   // storage SSBO
-            ];
-            const BINDING_INDICES: [u32; MAX_UNIFORMS_IN_GROUP] = [
-                INTRINSIC_UNIFORM_BUFFER_INDEX,
-                COMBINED_UNIFORM_INDEX,
-                STORAGE_BUFFER_INDEX,
             ];
 
             // The buffers of the entries: the bound ones, or the null buffer.
@@ -1264,6 +1491,16 @@ impl WgpuCommandBufferBackend {
             UNIFORM_BUFFER_BIND_GROUP_INDEX,
             &bind_group,
             &dynamic_offsets,
+        );
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("set_bind_group")
+                .u("group", UNIFORM_BUFFER_BIND_GROUP_INDEX)
+                .strings("buffers", self.bound_uniforms.iter().map(range_name))
+                .list(
+                    "dynamic_offsets",
+                    dynamic_offsets.iter().map(|offset| u64::from(*offset))
+                )
         );
     }
 
@@ -1417,6 +1654,15 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
             return false;
         };
 
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("copy_buffer_to_buffer")
+                .u("src", buffer_id(src_buffer))
+                .u("src_offset", src_offset as u64)
+                .u("dst", buffer_id(dst_buffer))
+                .u("dst_offset", dst_offset as u64)
+                .u("size", size as u64)
+        );
         encoder.copy_buffer_to_buffer(
             &wgpu_buffer_src,
             src_offset as u64,
@@ -1471,6 +1717,18 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
             height: src_rect.height() as u32,
             depth_or_array_layers: 1,
         };
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("copy_texture_to_buffer")
+                .u("texture", texture_id(texture))
+                .i("x", src_rect.left)
+                .i("y", src_rect.top)
+                .u("width", copy_size.width)
+                .u("height", copy_size.height)
+                .u("buffer", buffer_id(buffer))
+                .u("buffer_offset", buffer_offset as u64)
+                .u("buffer_row_bytes", buffer_row_bytes as u64)
+        );
         encoder.copy_texture_to_buffer(src, dst, copy_size);
 
         true
@@ -1519,6 +1777,19 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
                 height: data.rect.height() as u32,
                 depth_or_array_layers: 1,
             };
+            trace!(
+                self.shared_context,
+                crate::graphite::wgpu::trace::Record::new("copy_buffer_to_texture")
+                    .u("buffer", buffer_id(buffer))
+                    .u("buffer_offset", data.buffer_offset as u64)
+                    .u("buffer_row_bytes", data.buffer_row_bytes as u64)
+                    .u("texture", texture_id(texture))
+                    .u("mip_level", data.mip_level)
+                    .i("x", data.rect.left)
+                    .i("y", data.rect.top)
+                    .u("width", copy_size.width)
+                    .u("height", copy_size.height)
+            );
             encoder.copy_buffer_to_texture(src, dst, copy_size);
         }
 
@@ -1572,6 +1843,19 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
             depth_or_array_layers: 1,
         };
 
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("copy_texture_to_texture")
+                .u("src", texture_id(src))
+                .i("src_x", src_rect.left)
+                .i("src_y", src_rect.top)
+                .u("dst", texture_id(dst))
+                .i("dst_x", dst_point.x)
+                .i("dst_y", dst_point.y)
+                .i("mip_level", mip_level)
+                .u("width", copy_size.width)
+                .u("height", copy_size.height)
+        );
         encoder.copy_texture_to_texture(src_args, dst_args, copy_size);
 
         true
@@ -1594,6 +1878,13 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
         let Some(encoder) = self.command_encoder.as_mut() else {
             return false;
         };
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("clear_buffer")
+                .u("buffer", buffer_id(buffer))
+                .u("offset", offset as u64)
+                .u("size", size as u64)
+        );
         encoder.clear_buffer(&wgpu_buffer, offset as u64, Some(size as u64));
 
         true

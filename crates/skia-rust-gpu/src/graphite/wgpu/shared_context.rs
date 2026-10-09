@@ -121,6 +121,9 @@ pub struct WgpuSharedContext {
     static_upload_buffers: Mutex<Vec<ResourceRef<Buffer>>>,
     // Whether the renderers' static buffers could not be made (`StaticFinishResult::Failure`).
     static_buffers_failed: AtomicBool,
+    // Where the command trace goes (`graphite::wgpu::trace`).
+    #[cfg(feature = "trace")]
+    trace_sink: Mutex<Option<Box<dyn crate::graphite::wgpu::trace::TraceSink>>>,
 }
 
 // The `Context` side of `StaticBufferManager::finalize()`: the copy tasks and their transfer
@@ -241,6 +244,8 @@ impl WgpuSharedContext {
             static_buffer_tasks: Mutex::new(Vec::new()),
             static_upload_buffers: Mutex::new(Vec::new()),
             static_buffers_failed: AtomicBool::new(false),
+            #[cfg(feature = "trace")]
+            trace_sink: Mutex::new(None),
         });
         // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L74-L76 (chrome/m156): the
         // thread-safe provider wraps a resource provider made by the shared context itself, so it
@@ -361,6 +366,52 @@ impl WgpuSharedContext {
     pub fn static_buffers_failed(&self) -> bool {
         let _ = RecorderSharedContext::renderer_provider(self);
         self.static_buffers_failed.load(Ordering::Acquire)
+    }
+
+    /// Sets where the command trace goes (`None` stops tracing).
+    #[cfg(feature = "trace")]
+    pub fn set_trace_sink(&self, sink: Option<Box<dyn crate::graphite::wgpu::trace::TraceSink>>) {
+        *self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = sink;
+    }
+
+    /// Records `build()` in the trace, if there is a sink.
+    #[cfg(feature = "trace")]
+    pub fn trace(&self, build: impl FnOnce() -> crate::graphite::wgpu::trace::Record) {
+        let mut sink = self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(sink) = sink.as_mut() {
+            sink.record(&build());
+        }
+    }
+
+    /// Records `build(hash)` in the trace, where `hash` names `bytes`, which go to the sink as a
+    /// blob first. Does nothing without a sink.
+    #[cfg(feature = "trace")]
+    pub fn trace_with_blob(
+        &self,
+        bytes: &[u8],
+        build: impl FnOnce(u64) -> crate::graphite::wgpu::trace::Record,
+    ) {
+        let mut sink = self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(sink) = sink.as_mut() {
+            let hash = crate::graphite::wgpu::trace::hash_bytes(bytes);
+            sink.blob(hash, bytes);
+            sink.record(&build(hash));
+        }
+    }
+
+    /// A weak reference to the shared context, for objects that trace after it is gone.
+    #[cfg(feature = "trace")]
+    pub(crate) fn downgrade(&self) -> Weak<WgpuSharedContext> {
+        self.this.clone()
     }
 
     /// `getUniformBuffersBindGroupLayout()`: the layout of the uniform buffers bind group for
@@ -532,7 +583,7 @@ impl RecorderSharedContext for WgpuSharedContext {
             .upgrade()
             .expect("the shared context is alive while it makes resource providers");
         ResourceProvider::new(
-            Box::new(WgpuResourceProvider::new(shared_context)),
+            Box::new(WgpuResourceProvider::new(&shared_context)),
             recorder_id,
             resource_budget,
         )

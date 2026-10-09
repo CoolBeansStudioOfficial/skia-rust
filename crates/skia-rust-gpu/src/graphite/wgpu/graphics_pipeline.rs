@@ -712,6 +712,39 @@ impl WgpuGraphicsPipeline {
         // being detected later at insertRecording().
         let (group_layouts, render_pipeline) = created?;
 
+        trace!(
+            shared_context,
+            crate::graphite::wgpu::trace::Record::new("create_pipeline")
+                .s("label", shader_info.pipeline_label())
+                .u("key", pipeline_key.hash())
+                .u(
+                    "vertex_wgsl_hash",
+                    crate::graphite::wgpu::trace::hash_bytes(shaders.vertex_wgsl.as_bytes())
+                )
+                .u(
+                    "fragment_wgsl_hash",
+                    shaders.fragment_wgsl.as_ref().map_or(0, |fs| {
+                        crate::graphite::wgpu::trace::hash_bytes(fs.as_bytes())
+                    })
+                )
+        );
+        #[cfg(feature = "trace")]
+        {
+            // The WGSL goes to the sink as blobs, as the oracle's `pipelines/` dump has it.
+            shared_context.trace_with_blob(shaders.vertex_wgsl.as_bytes(), |hash| {
+                crate::graphite::wgpu::trace::Record::new("wgsl")
+                    .u("hash", hash)
+                    .s("stage", "vertex")
+            });
+            if let Some(fs) = &shaders.fragment_wgsl {
+                shared_context.trace_with_blob(fs.as_bytes(), |hash| {
+                    crate::graphite::wgpu::trace::Record::new("wgsl")
+                        .u("hash", hash)
+                        .s("stage", "fragment")
+                });
+            }
+        }
+
         let mut pipeline_info = PipelineInfo::from_shader_info(shader_info);
         pipeline_info
             .native_vertex_shader

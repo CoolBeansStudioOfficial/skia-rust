@@ -21,6 +21,18 @@
 //! but renders nothing, which is what the unit tests run on. On `wasm32` it is wgpu's WebGPU
 //! backend with `fragile-send-sync-non-atomic-wasm`: build-only.
 
+/// Emits a trace record on `$shared` (a `WgpuSharedContext`) when the `trace` feature is on:
+/// `$record` is only evaluated if a sink is set. Without the feature it expands to nothing, and
+/// `$record` is not compiled.
+macro_rules! trace {
+    ($shared:expr, $record:expr) => {
+        #[cfg(feature = "trace")]
+        $shared.trace(|| $record);
+        #[cfg(not(feature = "trace"))]
+        let _ = &$shared;
+    };
+}
+
 pub mod async_wait;
 pub mod backend_texture;
 pub mod buffer;
@@ -38,6 +50,8 @@ pub mod sampler;
 pub mod shared_context;
 pub mod texture;
 pub mod texture_info;
+#[cfg(feature = "trace")]
+pub mod trace;
 
 pub use backend_texture::backend_textures;
 pub use caps::{CapsProfile, DeviceFeatures, WgpuCaps};

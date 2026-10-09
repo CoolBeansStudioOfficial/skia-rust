@@ -32,5 +32,10 @@ wgpu = { workspace = true, features = ["std", "wgsl", "webgpu", "fragile-send-sy
 # Validates every generated WGSL shader (docs/design/gpu.md §6.3, W4).
 naga = { workspace = true, features = ["wgsl-in"] }
 
+[features]
+# Emits the command trace of docs/design/gpu.md §3.2 (`graphite::wgpu::trace`): every resource,
+# pipeline, pass, command, copy and submission the wgpu backend records.
+trace = []
+
 [lints]
 workspace = true

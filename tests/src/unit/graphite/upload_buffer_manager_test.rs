@@ -62,8 +62,9 @@ def_graphite_test_for_all_contexts!(UploadBufferManagerTest, |reporter, context|
     // Test a large write, which should get its own dedicated buffer.
     let lg_buffer_info = {
         let mut manager = buffer_manager.borrow_mut();
-        let (mut lg_writer, lg_buffer_info) =
-            manager.get_texture_upload_writer((64 << 10) + 1, 1).unwrap();
+        let (mut lg_writer, lg_buffer_info) = manager
+            .get_texture_upload_writer((64 << 10) + 1, 1)
+            .unwrap();
         lg_writer.write(
             /* offset= */ 0, &src, /* src_row_bytes= */ 4, /* dst_row_bytes= */ 2,
             /* trim_row_bytes= */ 2, /* row_count= */ 2,

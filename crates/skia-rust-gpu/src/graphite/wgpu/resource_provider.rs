@@ -263,6 +263,17 @@ impl IntrinsicConstantsManager {
                 u64::from(new_offset),
                 intrinsic_values.data(),
             );
+            #[cfg(feature = "trace")]
+            shared_context.trace_with_blob(intrinsic_values.data(), |hash| {
+                crate::graphite::wgpu::trace::Record::new("write_buffer")
+                    .u(
+                        "buffer",
+                        as_wgpu_buffer(&current.buffer).map_or(0, WgpuBuffer::trace_id),
+                    )
+                    .u("offset", new_offset)
+                    .u("size", intrinsic_values.size() as u64)
+                    .u("hash", hash)
+            });
         }
 
         // Track the intrinsic values in the buffer.
@@ -427,11 +438,11 @@ pub struct WgpuResourceProvider {
 impl WgpuResourceProvider {
     /// `DawnResourceProvider(sharedContext, …)`.
     #[must_use]
-    pub fn new(shared_context: Arc<WgpuSharedContext>) -> Self {
+    pub fn new(shared_context: &Arc<WgpuSharedContext>) -> Self {
         Self {
             // Weak: the shared context owns the thread-safe resource provider (and, through its
             // renderer provider, others), so a strong reference here would be a cycle.
-            shared_context: Arc::downgrade(&shared_context),
+            shared_context: Arc::downgrade(shared_context),
             blit_with_draw_pipelines: HashMap::new(),
             null_buffer: None,
             null_texture_view: None,

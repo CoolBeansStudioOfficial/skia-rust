@@ -69,6 +69,10 @@ impl QueueManagerBackend for WgpuQueueManagerBackend {
         };
 
         self.shared_context.queue().submit([wgpu_command_buffer]);
+        trace!(
+            self.shared_context,
+            crate::graphite::wgpu::trace::Record::new("submit")
+        );
 
         // `DawnWorkSubmissionWithFuture`: the future of `OnSubmittedWorkDone`, which is done
         // when the flag is set by the callback that `Device::poll` runs.

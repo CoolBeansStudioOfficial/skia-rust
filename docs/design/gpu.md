@@ -289,6 +289,20 @@ Our wgpu backend emits the same records from the same places (the port of `DawnC
 friends), behind a test-only `trace` feature. `xtask gpu-trace diff <gm>` prints the first
 differing record with its context, like `rp-diff`.
 
+**Status (G11c).** The `trace` cargo feature of `skia-rust-gpu` emits the records
+(`graphite::wgpu::trace`: `Record`, `TraceSink`, `JsonLinesSink`, `MemorySink`;
+`WgpuSharedContext::set_trace_sink`). A record is an operation name with ordered fields, written as
+one JSON object per line, and byte payloads (mapped buffer flushes, queue writes, WGSL, read-back
+bytes) go to the sink once per FNV-1a hash as blobs. Resources are named by the trace id their
+creation record (`create_buffer`, `create_texture`) carries; the pass records are
+`begin_render_pass`, `set_pipeline`, `set_bind_group`, `set_vertex_buffer`, `set_index_buffer`,
+`set_scissor_rect`, `set_viewport`, `set_immediates`, `set_blend_constant`, `draw`,
+`draw_indexed`, `draw_indirect`, `draw_indexed_indirect`, `blit_with_draw` (the emulated MSAA
+load and resolve), `end_render_pass`, and the compute and copy equivalents, then `submit`. Not yet
+traced: sampler creation and the final readback of a surface (`map_read` records the bytes of any
+mapped read buffer). The oracle side of the format is not written, so there is no `gpu-trace
+diff` yet.
+
 Committed artifacts stay small: per-tier hash lists (`oracle/gpu/expected/<tier>/<gm>.txt`, one
 line per record hash), as `rp-diff/expected` does. Full traces and shader texts go into the
 `goldens-m156` release as `gpu-trace-<tier>.tar`, downloaded on mismatch.
@@ -567,6 +581,15 @@ nothing to fix.
 | Headless recorder | DrawList sort, DrawPass command building, renderer choice, ClipStack element decisions, uniform/vertex bytes, pipeline sets (W2), the CPU half of the command trace | `CapsProfile` + a recorder without a wgpu device; compared with G0b traces |
 | wgpu `noop` adapter (`Backends::NOOP`, `wgpu-types backend.rs#L27-L39`) | resource cache, proxy cache, texture proxies, recorder/recording lifecycle, keys, precompile, storage context, texture fallback; any test that creates resources and never reads pixels | a real `Context` on the noop backend. Each port says in its PR whether the test reads pixels. About 115 candidates by file (§9) |
 | Real adapter | anything that reads pixels (`ReadWritePixelsGraphiteTest`, `ImageOriginTest`, `MultisampleTest`, `ComputeTest`, `AtlasTests`, …) and all GPU GMs | lavapipe (Linux), WARP (Windows), Metal (macOS) |
+
+The real-adapter tests are written against `adapter_backend_context` (software adapters first)
+and skip, saying so, when the machine has none; setting `SKIA_RUST_REQUIRE_ADAPTER` makes a missing
+adapter an error, for the GPU CI jobs. In the cloud container lavapipe is `mesa-vulkan-drivers`
+(`apt-get install mesa-vulkan-drivers`; Mesa 25.2 here, llvmpipe on LLVM 20.1). The first pixels
+tests (`tests/wgpu_first_pixels.rs`) run there: cleared and rect-filled targets read back exactly,
+and a path drawn through the MSAA render pass whose resolve is emulated (wgpu has no
+load-from-resolve), read back with `WgpuContext::read_pixels` (`asyncReadTexture` /
+`transferPixels` / `finalizeAsyncReadPixels`).
 
 ---
 

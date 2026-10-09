@@ -17,13 +17,13 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
 use crate::gpu::sk_log::{skia_log_e, skia_log_w};
-use crate::graphite::backend_texture::BackendTexture;
-use crate::graphite::buffer::Buffer;
-use crate::graphite::caps::Caps;
 use crate::graphite::async_read::{
     AsyncReadParams, AsyncReadResult, PixelTransferResult, SharedClientMappedBufferManager,
     lock_manager,
 };
+use crate::graphite::backend_texture::BackendTexture;
+use crate::graphite::buffer::Buffer;
+use crate::graphite::caps::Caps;
 use crate::graphite::client_mapped_buffer_manager::{ClientMappedBufferManager, ContextId};
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
@@ -40,12 +40,12 @@ use crate::graphite::texture_format::texture_format_bytes_per_block;
 use crate::graphite::texture_format_xfer_fn::TextureFormatXferFn;
 use crate::graphite::texture_info::texture_info_priv;
 use crate::graphite::texture_proxy_view::TextureProxyView;
-use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
-use skia_rust_core::image_info::{ColorInfo, ImageInfo};
-use skia_rust_core::rect::{Contains, IRect};
 use crate::graphite::wgpu::caps::WgpuCaps;
 use crate::graphite::wgpu::queue_manager::WgpuQueueManagerBackend;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
+use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
+use skia_rust_core::image_info::{ColorInfo, ImageInfo};
+use skia_rust_core::rect::{Contains, IRect};
 
 /// The wgpu `Context`: the shared context, the resource provider and the queue manager.
 // Port of: include/gpu/graphite/Context.h#L45-L74 (chrome/m156)
@@ -137,9 +137,7 @@ impl WgpuContext {
             queue_manager,
             options: options.clone(),
             context_id,
-            mapped_buffer_manager: Arc::new(Mutex::new(ClientMappedBufferManager::new(
-                context_id,
-            ))),
+            mapped_buffer_manager: Arc::new(Mutex::new(ClientMappedBufferManager::new(context_id))),
         }
     }
 
@@ -364,6 +362,9 @@ impl WgpuContext {
     }
 }
 
+/// Where `read_pixels` gets its result: `Some` once the callback ran, with the pixels if it read.
+type ReadSlot = Arc<Mutex<Option<Option<(Vec<u8>, usize)>>>>;
+
 /// `Context::readPixels` and its machinery, as far as it is reachable without images and
 /// surfaces (G10d): reading a texture proxy view back.
 impl WgpuContext {
@@ -475,7 +476,8 @@ impl WgpuContext {
                 callback(None);
                 return;
             };
-            if self.insert_recording(InsertRecordingInfo::new(&mut recording)) != InsertStatus::Success
+            if self.insert_recording(InsertRecordingInfo::new(&mut recording))
+                != InsertStatus::Success
             {
                 callback(None);
                 return;
@@ -506,7 +508,12 @@ impl WgpuContext {
                     break;
                 };
                 if let Some(read) = &mut result
-                    && !read.add_transfer_result(r, r.size, r.row_bytes, &mut lock_manager(&manager))
+                    && !read.add_transfer_result(
+                        r,
+                        r.size,
+                        r.row_bytes,
+                        &mut lock_manager(&manager),
+                    )
                 {
                     result = None;
                 }
@@ -522,11 +529,10 @@ impl WgpuContext {
         // If addFinishInfo() fails, it invokes the finish callback automatically, which handles
         // all the required clean up for us, just log an error message. The buffers will never be
         // mapped and thus don't need an unmap.
-        if !self.queue_manager.add_finish_info(
-            info,
-            &self.resource_provider,
-            &buffers_to_async_map,
-        ) {
+        if !self
+            .queue_manager
+            .add_finish_info(info, &self.resource_provider, &buffers_to_async_map)
+        {
             skia_log_e!("Failed to register finish callbacks for asyncReadPixels.");
         }
     }
@@ -536,6 +542,7 @@ impl WgpuContext {
     /// manager. The result has no transfer buffer if the transfer cannot be set up.
     // Port of: src/gpu/graphite/Context.cpp#L816-L910 (chrome/m156)
     #[doc(alias = "transferPixels")]
+    #[allow(clippy::too_many_lines)] // mirrors the C++ function
     pub fn transfer_pixels(
         &mut self,
         recorder: Option<&mut Recorder>,
@@ -571,10 +578,9 @@ impl WgpuContext {
             return none;
         };
         let row_bytes = Caps::get_aligned_texture_data_row_bytes(&*caps, unaligned_row_bytes, bpp);
-        let Some(size) = row_bytes
-            .checked_mul(height)
-            .and_then(|size| size.checked_next_multiple_of(caps.required_transfer_buffer_alignment()))
-        else {
+        let Some(size) = row_bytes.checked_mul(height).and_then(|size| {
+            size.checked_next_multiple_of(caps.required_transfer_buffer_alignment())
+        }) else {
             return none;
         };
         if row_bytes == 0 || size == 0 {
@@ -688,7 +694,7 @@ impl WgpuContext {
         src_rect: IRect,
         dst_image_info: &ImageInfo,
     ) -> Option<(Vec<u8>, usize)> {
-        let slot: Arc<Mutex<Option<Option<(Vec<u8>, usize)>>>> = Arc::new(Mutex::new(None));
+        let slot: ReadSlot = Arc::new(Mutex::new(None));
         let signal = Arc::clone(&slot);
         let params = AsyncReadParams {
             src: src.clone(),
