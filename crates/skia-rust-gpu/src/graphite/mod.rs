@@ -42,6 +42,7 @@ pub mod sampler;
 pub mod scratch_resource_manager;
 pub mod shader_code_dictionary;
 pub mod shader_info;
+pub mod storage_context;
 pub mod task;
 pub mod texture;
 pub mod texture_format;

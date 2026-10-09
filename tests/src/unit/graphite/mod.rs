@@ -2,6 +2,7 @@
 
 pub mod backend_texture_test;
 pub mod bounds_manager_test;
+pub mod buffer_manager_test;
 pub mod cache_budget_test;
 pub mod graphite_resource_cache_test;
 pub mod intersection_tree_test;

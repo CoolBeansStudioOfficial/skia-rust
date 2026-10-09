@@ -284,6 +284,14 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, mipmapped)
     }
 
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        _is_protected: Protected,
+    ) -> TextureInfo {
+        texture_info(format, SampleCount::One, Mipmapped::No)
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }

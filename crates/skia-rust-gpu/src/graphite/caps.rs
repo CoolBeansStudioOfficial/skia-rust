@@ -198,6 +198,14 @@ pub trait Caps: Send + Sync + Debug {
         renderable: Renderable,
     ) -> TextureInfo;
 
+    /// `getDefaultReadableTextureInfo()`.
+    #[doc(alias = "getDefaultReadableTextureInfo")]
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        is_protected: Protected,
+    ) -> TextureInfo;
+
     /// `getDefaultAttachmentTextureInfo()`.
     #[doc(alias = "getDefaultAttachmentTextureInfo")]
     fn get_default_attachment_texture_info(

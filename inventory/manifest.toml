@@ -50860,8 +50860,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/BufferManagerTest.cpp#L29-L71"
 module = "gpu"
-status = "todo"
-reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
+status = "passing"
 span_hash = "b819e0edf03f7fac7b8fdaeca8ba75e170443c52a4aa2ddfa336e378b8ea6a84"
 
 [[test]]
@@ -50870,8 +50869,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/BufferManagerTest.cpp#L73-L112"
 module = "gpu"
-status = "todo"
-reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
+status = "passing"
 span_hash = "b671524fea9652843b61b73e8ff29355596d4bdcded663ba2d8b5ee219f8c687"
 
 [[test]]
@@ -51817,6 +51815,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PersistentPipelineStorageTest.cpp#L85-L116"
 module = "gpu"
 status = "todo"
+reason = "needs a Vulkan context type (the wgpu noop device is not one) and render-target surfaces (G10d)"
 span_hash = "7af26e57545c180ab328dc9e5712c8a78d369083026ec0683f263f3947d67b4f"
 
 [[test]]
@@ -51826,6 +51825,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L185-L201"
 module = "gpu"
 status = "todo"
+reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
 span_hash = "3f665a1eece38d8ea118f6efa2006f343e2a2023c010a463246ab338b5566712"
 
 [[test]]
@@ -51835,6 +51835,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L224-L240"
 module = "gpu"
 status = "todo"
+reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
 span_hash = "33d03447c4bb3448abaac0a4df29f3c928c60d05eff4879a5a81d3ae5a0bb1e8"
 
 [[test]]
@@ -51844,6 +51845,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L204-L220"
 module = "gpu"
 status = "todo"
+reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
 span_hash = "53cc55cd7f8e6cbd77377032bc5fcb0b672a8426776e6614395aafe64b3b5372"
 
 [[test]]
@@ -51853,6 +51855,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L243-L259"
 module = "gpu"
 status = "todo"
+reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
 span_hash = "d28c4abb980619eedcfdaa542fbdaf9feee73d8399e2369a0253546b95d1440b"
 
 [[test]]
@@ -51862,6 +51865,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L340-L371"
 module = "gpu"
 status = "todo"
+reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
 span_hash = "28e0d79b7882cdd4a7d4e4d0e80ec0fcd2ee6f6d47748b49a5047937a77f879a"
 
 [[test]]
@@ -52015,7 +52019,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L151-L170"
 module = "gpu"
 status = "todo"
-reason = "needs Context::insertRecording and InsertStatus (G9b)"
+reason = "needs Context::insertRecording and InsertStatus (G9b); the queue manager's command buffer is the wgpu half (G11c)"
 span_hash = "4a2b234c2ef3b8d834c46ff93eb300a6e8e551f23c771d56835bd8ac8dd4804a"
 
 [[test]]
@@ -52035,7 +52039,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L107-L147"
 module = "gpu"
 status = "todo"
-reason = "needs Context::insertRecording (G9b, G11); recording ids are checked in crates/skia-rust-gpu/tests/recorder.rs"
+reason = "needs Context::insertRecording with a command buffer for accepted recordings (G9b, G11c); recording ids are checked in crates/skia-rust-gpu/tests/recorder.rs"
 span_hash = "fb693d398a00a4cd9afa47ef20c3014790c18a1b8a152e12718f448b6d3484b7"
 
 [[test]]
@@ -52172,6 +52176,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L50-L123"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "6fd1b013398bb137e1e9e38ca8b622c4c6171dfb0cb41ab3e2a0330f8bfd4341"
 
 [[test]]
@@ -52181,6 +52186,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L187-L258"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "6970001e5c603594ba605f4b1178fb08eb1e779022674993c3f8ba6a2e200ba8"
 
 [[test]]
@@ -52190,6 +52196,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L647-L690"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "eece4b073caef4d50c090f884437c5aca064d883aa52fcf2d673c85b1f647c21"
 
 [[test]]
@@ -52199,6 +52206,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L347-L445"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "06158f072ef07119080bdf167cd04e7372439563742792bd810032ebec5e524a"
 
 [[test]]
@@ -52208,6 +52216,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L533-L645"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "5aafff4a4f624c11d8c0dc08624b825782f734545677307aec63292c3be07cd8"
 
 [[test]]
@@ -52217,6 +52226,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L260-L345"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "92cc6744a5b6b39bac4a05d28524d5a0983c767c9b4ee1ec3d9d965fa05d2f3e"
 
 [[test]]
@@ -52226,6 +52236,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L125-L185"
 module = "gpu"
 status = "todo"
+reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
 span_hash = "2be786eeaf72cf71d88c1108f889e953726ceeee853b0bd8229853cda194e772"
 
 [[test]]
@@ -52244,7 +52255,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L80-L99"
 module = "gpu"
 status = "todo"
-reason = "needs Context::submit (G9b, G11)"
+reason = "needs Context::submit (G9b) and wgpu queue submission (G11c)"
 span_hash = "c86c82138da2753b9e4013eaddd151282feecc17faf3b620f50189bf6e5c59a0"
 
 [[test]]
@@ -52716,7 +52727,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/UploadBufferManagerTest.cpp#L19-L126"
 module = "gpu"
 status = "todo"
-reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
+reason = "reads mapped bytes back through Buffer::map(), which hands out the staging block once (crates/skia-rust-gpu/src/graphite/buffer.rs); needs a read-back accessor on the wgpu buffer (G11c) and a Context (G9b)"
 span_hash = "fbe551fd2a5ff461b6c593e07b0ed2b9ad6ecd21c59ef212dfa95c5f779a92fc"
 
 [[test]]

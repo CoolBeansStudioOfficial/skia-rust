@@ -1969,6 +1969,15 @@ impl Caps for WgpuCaps {
         self.get_default_sampled_texture_info(color_type, mipmapped, is_protected, renderable)
     }
 
+    // Port of: src/gpu/graphite/Caps.cpp#L340-L351 (chrome/m156)
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        is_protected: Protected,
+    ) -> TextureInfo {
+        WgpuCaps::get_default_readable_texture_info(self, format, is_protected)
+    }
+
     // Port of: src/gpu/graphite/Caps.cpp#L295-L308 (chrome/m156)
     fn get_default_attachment_texture_info(
         &self,
