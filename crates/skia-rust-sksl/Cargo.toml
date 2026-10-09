@@ -13,5 +13,9 @@ publish = false
 bitflags.workspace = true
 skia-rust-simd.workspace = true
 
+[features]
+# The WGSL code generator (`codegen::wgsl`, S26). `skia-rust-gpu` turns it on later.
+wgsl = []
+
 [lints]
 workspace = true

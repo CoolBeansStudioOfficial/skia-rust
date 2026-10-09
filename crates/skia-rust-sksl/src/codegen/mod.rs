@@ -8,3 +8,6 @@
 
 pub mod pipeline_stage;
 pub mod rp;
+
+#[cfg(feature = "wgsl")]
+pub mod wgsl;

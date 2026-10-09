@@ -14,7 +14,7 @@ skia-rust-core.workspace = true
 skia-rust-raster.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-skcms.workspace = true
-skia-rust-sksl.workspace = true
+skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-simd = { workspace = true, features = ["testing", "models"] }
 
 [lints]
