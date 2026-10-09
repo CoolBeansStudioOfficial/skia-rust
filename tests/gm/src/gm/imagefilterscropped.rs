@@ -10,8 +10,8 @@ use crate::prelude::*;
 use crate::tool_utils::int_to_scalar;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::color_filters;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::color_filters;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::font::Font;
 use skia_rust_core::image::Image;
@@ -22,9 +22,7 @@ use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::utils::text_utils::{self, Align};
-use skia_rust_effects::image_filters::{
-    blur, color_filter, erode, merge, offset,
-};
+use skia_rust_effects::image_filters::{blur, color_filter, erode, merge, offset};
 use skia_rust_raster::surfaces;
 use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
@@ -192,4 +190,7 @@ impl GM for ImageFiltersCroppedGm {
 }
 
 // Port of: gm/imagefilterscropped.cpp#L182 (chrome/m156), DEF_GM( return new ImageFiltersCroppedGM; )
-crate::def_gm!(ImageFiltersCroppedGM, ImageFiltersCroppedGm { checkerboard: None });
+crate::def_gm!(
+    ImageFiltersCroppedGM,
+    ImageFiltersCroppedGm { checkerboard: None }
+);

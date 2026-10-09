@@ -16,11 +16,11 @@
 use crate::prelude::*;
 use crate::tool_utils::{get_resource_as_image, make_surface};
 use skia_rust_core::alpha_type::AlphaType;
-use skia_rust_core::color_type::ColorType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
 use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_matrix::ColorMatrix;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::image_info::ImageInfo;
@@ -47,7 +47,7 @@ fn do_draw(canvas: &Canvas, mode: BlendMode, imf: Option<ImageFilter>) {
     let r1 = Rect::new(60.0, 10.0, 160.0, 210.0);
     paint.set_color(Color::RED);
     canvas.draw_oval(r0, &paint);
-    paint.set_color(Color::from(0x660000FF));
+    paint.set_color(Color::from(0x6600_00FF));
     paint.set_image_filter(imf);
     paint.set_blend_mode(mode);
     canvas.draw_oval(r1, &paint);
@@ -88,13 +88,7 @@ crate::def_simple_gm!(fast_slow_blurimagefilter, canvas, 620, 260, {
     let mut sigma: f32 = 8.0;
     while sigma <= 128.0 {
         let mut paint = Paint::default();
-        paint.set_image_filter(blur(
-            sigma,
-            sigma,
-            TileMode::Decal,
-            None,
-            None,
-        ));
+        paint.set_image_filter(blur(sigma, sigma, TileMode::Decal, None, None));
         canvas.save();
         // we outset the clip by 1, to fall out of the fast-case in drawImage
         // i.e. the clip is larger than the image
@@ -133,7 +127,7 @@ fn draw_set(canvas: &Canvas, filters: &[Option<ImageFilter>]) {
         let rr = RRect::new_rect_xy(moved, 20.0, 20.0);
         canvas.clip_rrect(rr, None, true);
         let bounds = rr.bounds();
-        let mut rec = SaveLayerRec::default().bounds(&bounds);
+        let mut rec = SaveLayerRec::default().bounds(bounds);
         if let Some(filter) = filter {
             rec = rec.backdrop(filter);
         }
@@ -212,4 +206,7 @@ impl GM for SaveLayerWithBackdropGm {
 }
 
 // Port of: gm/imagefilters.cpp#L131 (chrome/m156), DEF_GM(return new SaveLayerWithBackdropGM();)
-crate::def_gm!(SaveLayerWithBackdropGM_ = "SaveLayerWithBackdropGM()", SaveLayerWithBackdropGm);
+crate::def_gm!(
+    SaveLayerWithBackdropGM_ = "SaveLayerWithBackdropGM()",
+    SaveLayerWithBackdropGm
+);

@@ -21976,6 +21976,7 @@ macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L427-L427"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkImages::MakeWithFilter, which skia-rust does not have."
 span_hash = "391894f16e3bf66ec56c480d45b3d93eceb42bca1a86a3e3c478f3e3c4ff5e68"
 
 [[test]]
@@ -21985,6 +21986,7 @@ macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L430-L430"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkImages::MakeWithFilter, which skia-rust does not have."
 span_hash = "da0dd7df1e5dd2972a41da22d8296facaf0a989ec98fe8e4e145fcce0e1850bc"
 
 [[test]]
@@ -21993,7 +21995,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L428-L428"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "da0ac6c793d24bd27b773ccf29102d5997d7b4ab62005b06b4a29d3fa3a4d6b9"
 
 [[test]]
@@ -22002,7 +22004,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L431-L431"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ddaa26ad207292cd60224bf02ed0beaf5629ca6aee0a284ec72ab8498545e52f"
 
 [[test]]
@@ -22321,6 +22323,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/localmatriximagefilter.cpp#L51-L83"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkImageFilter::makeWithLocalMatrix, which skia-rust does not have."
 span_hash = "31e409e50200bca2a868d2991a93690b70ed94ab6d469ec4f125784243279ce4"
 
 [[test]]
@@ -22329,7 +22332,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/localmatriximageshader.cpp#L35-L67"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "eb524eb5fd7ad626f84c1fa32ed7bf2d6ed9b40530ebc3791730c2628b2c5685"
 
 [[test]]
@@ -22338,7 +22341,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/localmatriximageshader.cpp#L69-L79"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "db3f34f1aff9f4c592c9b87952f93decb5be5c7ddf6d0acb9661b1c17716995f"
 
 [[test]]
@@ -22347,7 +22350,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/localmatrixshader.cpp#L270-L270"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "140aba9d03e7fc445eb6de0742025f862931485d355e6c07bccac2ce2b505e95"
 
 [[test]]
@@ -22356,7 +22359,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/localmatrixshader.cpp#L50-L121"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d1e04c358ea6e80f60a7db5ed9dfc345c59e9e1a1a494610d995da94c526e949"
 
 [[test]]
@@ -22366,6 +22369,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/localmatrixshader.cpp#L123-L211"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkImage::scalePixels, which skia-rust does not have."
 span_hash = "574d3601311fb31c6f1d8160ff34c32019b90c2bdae58c4ca4d5501781eb7012"
 
 [[test]]
@@ -22384,8 +22388,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lumafilter.cpp#L166-L166"
 module = "effects"
-status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+status = "passing"
 span_hash = "895b2194cce9eb7052a94e3c2cf7964f2c9b33320c621cf9073137c739bd2b5f"
 
 [[test]]
@@ -22815,7 +22818,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/offsetimagefilter.cpp#L98-L98"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d2ce300e75418d7a39ce8748709ec973e245b5accbf46efa57b2eb14f9d28b88"
 
 [[test]]
@@ -22824,7 +22827,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/offsetimagefilter.cpp#L205-L205"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "46199d695c224803a4157c7add942a75b4dba8d32bb1a6cf0a9b0b200696f6d6"
 
 [[test]]
@@ -23357,7 +23360,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perspshaders.cpp#L182-L182"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "9eedde58f60182c3b784247ab8901ee7ceb285ff529f5c51283315d422757bda"
 
 [[test]]
@@ -23366,7 +23369,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perspshaders.cpp#L181-L181"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f44cb0743727e60a5340c8c4081f47efdc134321eb9fe9bc6452d4a6d21e01f2"
 
 [[test]]
@@ -23375,7 +23378,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/perspshaders.cpp#L210-L233"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a24e638fe00d07132e3151d3113941fc364ab8b1d30dc2aba2aad07588c77d59"
 
 [[test]]

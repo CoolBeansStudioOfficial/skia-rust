@@ -24,7 +24,7 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_effects::image_filters::shader_filter::Dither;
 use skia_rust_effects::image_filters::{
-    blur, displacement_map, dilate, drop_shadow, erode, image_sampled, matrix_transform, offset,
+    blur, dilate, displacement_map, drop_shadow, erode, image_sampled, matrix_transform, offset,
     point_lit_diffuse, shader as shader_filter, spot_lit_diffuse,
 };
 use skia_rust_effects::perlin_noise_shader::shaders::fractal_noise;
@@ -95,7 +95,10 @@ impl GM for ImageFiltersScaledGm {
         else {
             return;
         };
-        let gradient = image_sampled(Some(gradient_circle), SamplingOptions::from(FilterMode::Linear));
+        let gradient = image_sampled(
+            Some(gradient_circle),
+            SamplingOptions::from(FilterMode::Linear),
+        );
         let checkerboard_filter = image_sampled(
             Some(checkerboard),
             SamplingOptions::from(FilterMode::Linear),
@@ -133,11 +136,7 @@ impl GM for ImageFiltersScaledGm {
             erode((1.0, 1.0), checkerboard_filter, None),
             offset((32.0, 0.0), None, None),
             matrix_transform(&resize_matrix, SamplingOptions::default(), None),
-            shader_filter(
-                fractal_noise((0.1, 0.05), 1, 0.0, None),
-                Dither::No,
-                None,
-            ),
+            shader_filter(fractal_noise((0.1, 0.05), 1, 0.0, None), Dither::No, None),
             point_lit_diffuse(point_location, white, surface_scale, kd, None, None),
             spot_lit_diffuse(
                 spot_location,
@@ -177,11 +176,7 @@ impl GM for ImageFiltersScaledGm {
                 } else if i == 6 {
                     canvas.scale((scalar_invert(RESIZE_FACTOR), scalar_invert(RESIZE_FACTOR)));
                 }
-                canvas.draw_circle(
-                    (r.center_x(), r.center_y()),
-                    r.width() * 2.0 / 5.0,
-                    &paint,
-                );
+                canvas.draw_circle((r.center_x(), r.center_y()), r.width() * 2.0 / 5.0, &paint);
                 canvas.restore();
                 canvas.translate((r.width() * sx + margin, 0.0));
             }

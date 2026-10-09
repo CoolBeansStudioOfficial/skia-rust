@@ -94,7 +94,10 @@ impl GM for ImageFiltersTransformedGm {
         else {
             return;
         };
-        let gradient = image_sampled(Some(gradient_circle), SamplingOptions::from(FilterMode::Linear));
+        let gradient = image_sampled(
+            Some(gradient_circle),
+            SamplingOptions::from(FilterMode::Linear),
+        );
         let checkerboard_filter = image_sampled(
             Some(checkerboard),
             SamplingOptions::from(FilterMode::Linear),
@@ -139,10 +142,7 @@ impl GM for ImageFiltersTransformedGm {
                     canvas.skew((0.5, 0.2));
                 }
                 canvas.translate((-size * 0.5, -size * 0.5));
-                canvas.draw_oval(
-                    Rect::from_xywh(0.0, size * 0.1, size, size * 0.6),
-                    &paint,
-                );
+                canvas.draw_oval(Rect::from_xywh(0.0, size * 0.1, size, size * 0.6), &paint);
                 canvas.restore();
                 canvas.translate((size + margin, 0.0));
             }
@@ -219,11 +219,7 @@ impl ImageFilterComposedTransformGm {
     fn make_direct_filter(matrix: &Matrix, image: &Image) -> Option<ImageFilter> {
         let v = (image.width() as f32 / 2.0, image.height() as f32 / 2.0);
         let filter = offset((-v.0, -v.1), None, None);
-        let filter = matrix_transform(
-            matrix,
-            SamplingOptions::from(FilterMode::Linear),
-            filter,
-        );
+        let filter = matrix_transform(matrix, SamplingOptions::from(FilterMode::Linear), filter);
         offset((v.0, v.1), filter, None)
     }
 

@@ -5,7 +5,8 @@
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(clippy::cast_precision_loss)]
-
+// GM ports mirror the C++ GM body, which is long by nature.
+#![allow(clippy::too_many_lines)]
 use crate::prelude::*;
 use crate::tool_utils::int_to_scalar;
 use skia_rust_core::alpha_type::AlphaType;
@@ -105,7 +106,8 @@ crate::def_simple_gm!(imagefilterscropexpand, canvas, 730, 650, {
     let gradient_circle = make_gradient_circle(64, 64);
     let checkerboard = make_checkerboard().expect("a checkerboard image");
 
-    let gradient_circle_source = image_sampled(gradient_circle, SamplingOptions::from(FilterMode::Linear));
+    let gradient_circle_source =
+        image_sampled(gradient_circle, SamplingOptions::from(FilterMode::Linear));
     let noop_cropped = offset((0.0, 0.0), None, Some(Rect::from(crop_rect)));
     // This color matrix saturates the green component but only partly increases the opacity.
     // For the opaque checkerboard, the opacity boost doesn't matter but it does impact the

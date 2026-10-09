@@ -23,11 +23,11 @@ use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::scalar_invert;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_effects::image_filters::shader_filter::Dither;
 use skia_rust_effects::image_filters::{
     blur, dilate, displacement_map, drop_shadow, erode, image_sampled, matrix_transform, offset,
     point_lit_diffuse, shader as shader_filter,
 };
-use skia_rust_effects::image_filters::shader_filter::Dither;
 use skia_rust_effects::perlin_noise_shader::shaders::fractal_noise;
 
 const RESIZE_FACTOR_X: f32 = 2.0;
@@ -75,7 +75,10 @@ fn draw_clipped_filter(
     if i == 5 {
         canvas.translate((int_to_scalar(16), int_to_scalar(-32)));
     } else if i == 6 {
-        canvas.scale((scalar_invert(RESIZE_FACTOR_X), scalar_invert(RESIZE_FACTOR_Y)));
+        canvas.scale((
+            scalar_invert(RESIZE_FACTOR_X),
+            scalar_invert(RESIZE_FACTOR_Y),
+        ));
     }
     canvas.draw_circle(
         (prim_bounds.center_x(), prim_bounds.center_y()),
@@ -124,7 +127,10 @@ impl GM for ImageFiltersClippedGm {
         else {
             return;
         };
-        let gradient = image_sampled(Some(gradient_circle), SamplingOptions::from(FilterMode::Linear));
+        let gradient = image_sampled(
+            Some(gradient_circle),
+            SamplingOptions::from(FilterMode::Linear),
+        );
         let checkerboard_filter = image_sampled(
             Some(checkerboard.clone()),
             SamplingOptions::from(FilterMode::Linear),
@@ -187,10 +193,7 @@ impl GM for ImageFiltersClippedGm {
         }
         canvas.restore();
         let rect_filter = shader_filter(
-            Some(
-                fractal_noise((0.1, 0.05), 1, 0.0, None)
-                    .expect("a fractal noise shader"),
-            ),
+            Some(fractal_noise((0.1, 0.05), 1, 0.0, None).expect("a fractal noise shader")),
             Dither::No,
             None,
         );
@@ -209,4 +212,10 @@ impl GM for ImageFiltersClippedGm {
 }
 
 // Port of: gm/imagefiltersclipped.cpp#L118 (chrome/m156)
-crate::def_gm!(ImageFiltersClippedGM, ImageFiltersClippedGm { checkerboard: None, gradient_circle: None });
+crate::def_gm!(
+    ImageFiltersClippedGM,
+    ImageFiltersClippedGm {
+        checkerboard: None,
+        gradient_circle: None
+    }
+);

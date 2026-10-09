@@ -3,18 +3,20 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/imagefiltersgraph.cpp (chrome/m156)
 
+// GM ports mirror the C++ GM body, which is long by nature.
+#![allow(clippy::too_many_lines)]
 use crate::prelude::*;
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color::Color4f;
+use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::image::Image;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters::{
-    arithmetic, blend, blur, color_filter, dilate, erode, image_sampled, matrix_convolution,
-    merge, offset,
+    arithmetic, blend, blur, color_filter, dilate, erode, image_sampled, matrix_convolution, merge,
+    offset,
 };
 use skia_rust_tools::font_tool_utils::create_string_bitmap;
 
@@ -22,7 +24,12 @@ use skia_rust_tools::font_tool_utils::create_string_bitmap;
 fn draw_clipped_image(canvas: &Canvas, image: &Image, paint: &Paint) {
     canvas.save();
     canvas.clip_irect(image.bounds(), None);
-    canvas.draw_image_with_sampling_options(image, (0.0, 0.0), SamplingOptions::default(), Some(paint));
+    canvas.draw_image_with_sampling_options(
+        image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(paint),
+    );
     canvas.restore();
 }
 
@@ -52,7 +59,10 @@ impl GM for ImageFiltersGraphGm {
             return;
         };
         {
-            let bitmap_source = image_sampled(Some(image.clone()), SamplingOptions::from(FilterMode::Linear));
+            let bitmap_source = image_sampled(
+                Some(image.clone()),
+                SamplingOptions::from(FilterMode::Linear),
+            );
             let cf = color_filters::blend(Color4f::from(Color::RED), None, BlendMode::SrcIn);
             let blur_filter = blur(4.0, 4.0, TileMode::Decal, bitmap_source, None);
             let erode_filter = erode((4.0, 4.0), blur_filter.clone(), None);
@@ -66,10 +76,8 @@ impl GM for ImageFiltersGraphGm {
         {
             let morph = dilate((5.0, 5.0), None, None);
             let matrix: [f32; 20] = [
-                1.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.5, 0.0,
+                1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.5, 0.0,
             ];
             let matrix_filter = color_filters::matrix_row_major(&matrix, Clamp::Yes);
             let color_morph = color_filter(matrix_filter, morph, None);
@@ -80,10 +88,8 @@ impl GM for ImageFiltersGraphGm {
         }
         {
             let matrix: [f32; 20] = [
-                1.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.5, 0.0,
+                1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.5, 0.0,
             ];
             let matrix_cf = color_filters::matrix_row_major(&matrix, Clamp::Yes);
             let matrix_filter = color_filter(matrix_cf, None, None);
@@ -106,12 +112,7 @@ impl GM for ImageFiltersGraphGm {
             let blur_filter = blur(10.0, 10.0, TileMode::Decal, None, None);
             let crop_rect = Rect::from(IRect::from_xywh(0, 0, 95, 100));
             let mut paint = Paint::default();
-            paint.set_image_filter(blend(
-                BlendMode::SrcIn,
-                blur_filter,
-                None,
-                Some(crop_rect),
-            ));
+            paint.set_image_filter(blend(BlendMode::SrcIn, blur_filter, None, Some(crop_rect)));
             draw_clipped_image(canvas, &image, &paint);
             canvas.translate((100.0, 0.0));
         }

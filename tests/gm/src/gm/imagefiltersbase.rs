@@ -70,11 +70,7 @@ fn draw_path(canvas: &Canvas, _image: &Image, r: Rect, imf: Option<ImageFilter>)
     paint.set_color(Color::MAGENTA);
     paint.set_image_filter(imf);
     paint.set_anti_alias(true);
-    canvas.draw_circle(
-        (r.center_x(), r.center_y()),
-        r.width() * 2.0 / 5.0,
-        &paint,
-    );
+    canvas.draw_circle((r.center_x(), r.center_y()), r.width() * 2.0 / 5.0, &paint);
 }
 
 // Port of: gm/imagefiltersbase.cpp#L52-L59 (chrome/m156), draw_text
