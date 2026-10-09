@@ -1251,6 +1251,9 @@ dependencies = [
 [[package]]
 name = "skia-rust-skcms"
 version = "0.156.0"
+dependencies = [
+ "skia-rust-simd",
+]
 
 [[package]]
 name = "skia-rust-sksl"
