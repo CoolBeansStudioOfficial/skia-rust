@@ -6,9 +6,11 @@
 //! Custom mesh GMs. On the CPU, `SkBitmapDevice::drawMesh` draws nothing, so these GMs show what
 //! they draw around their meshes: the clear color, or the picture they record.
 //!
-//! Not ported: `MeshWithShadersGM` (four GMs), whose shaders decode `images/mandrill_128.png` and
-//! `images/color_wheel.png`, and `custommesh_cs_uniforms`, which is GPU-only (its body runs only
-//! with a recording context, so the raster sink skips it).
+//! `MeshWithShadersGM` (four GMs) draws with image shaders, a colour filter and a blender; the CPU
+//! `drawMesh` draws nothing, so they show their clear background.
+//!
+//! Not ported: `custommesh_cs_uniforms`, which is GPU-only (its body runs only with a recording
+//! context, so the raster sink skips it).
 
 use std::sync::Arc;
 
@@ -16,6 +18,8 @@ use crate::prelude::*;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blender::Blender;
+use skia_rust_core::color_filter::ColorFilter;
+use skia_rust_core::color_filters;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
@@ -31,8 +35,9 @@ use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::ChildPtr;
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::shaders;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::interpolation::ColorSpace as GradientColorSpace;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
@@ -1414,3 +1419,348 @@ impl GM for PictureMeshGm {
     }
 }
 crate::def_gm!(PictureMesh_ = "PictureMesh()", PictureMeshGm::new());
+
+/// `MeshWithShadersGM::Type`.
+// Port of: gm/mesh.cpp#L1219-L1224 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MeshWithShadersType {
+    Image,
+    PaintColor,
+    PaintImage,
+    Effects,
+}
+
+/// `MeshWithShadersGM::Vertex`: `{ float pos[2]; float uv[2]; }`.
+// Port of: gm/mesh.cpp#L1385-L1388 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ShaderVertex {
+    pos: [f32; 2],
+    uv: [f32; 2],
+}
+
+impl ShaderVertex {
+    /// `sizeof(Vertex)`.
+    const STRIDE: usize = 16;
+
+    /// The vertex bytes as the GM's `memcpy` lays them out.
+    fn to_bytes(self) -> Vec<u8> {
+        f32_bytes(&[self.pos[0], self.pos[1], self.uv[0], self.uv[1]])
+    }
+}
+
+// Port of: gm/mesh.cpp#L1218-L1484 (chrome/m156), class MeshWithShadersGM
+struct MeshWithShadersGm {
+    kind: MeshWithShadersType,
+    verts: Vec<ShaderVertex>,
+    indices: Vec<u16>,
+    spec: Option<Arc<MeshSpecification>>,
+    shader1: Option<Shader>,
+    shader2: Option<Shader>,
+    paint_shader: Option<Shader>,
+    color_filter: Option<ColorFilter>,
+    blender: Option<Blender>,
+    vb: Option<Arc<VertexBuffer>>,
+    ib: Option<Arc<IndexBuffer>>,
+}
+
+impl MeshWithShadersGm {
+    /// `kRect`.
+    // Port of: gm/mesh.cpp#L1378-L1378 (chrome/m156)
+    const RECT: Rect = Rect::from_ltrb(20.0, 20.0, 300.0, 300.0);
+    /// `kUV`.
+    // Port of: gm/mesh.cpp#L1379-L1379 (chrome/m156)
+    const UV: Rect = Rect::from_ltrb(0.0, 0.0, 128.0, 128.0);
+    /// `kMeshSize`.
+    // Port of: gm/mesh.cpp#L1380-L1380 (chrome/m156)
+    const MESH_SIZE: usize = 16;
+    /// `kRippleSize`.
+    // Port of: gm/mesh.cpp#L1381-L1381 (chrome/m156)
+    const RIPPLE_SIZE: f32 = 6.0;
+
+    // Port of: gm/mesh.cpp#L1227-L1248 (chrome/m156), MeshWithShadersGM(Type)
+    fn new(kind: MeshWithShadersType) -> Self {
+        let mut gm = Self {
+            kind,
+            verts: Vec::new(),
+            indices: Vec::new(),
+            spec: None,
+            shader1: None,
+            shader2: None,
+            paint_shader: None,
+            color_filter: None,
+            blender: None,
+            vb: None,
+            ib: None,
+        };
+        // Create a grid of evenly spaced points for our mesh
+        gm.animate_at(0.0);
+
+        // Create an index buffer of triangles over our point mesh.
+        for y in 0..Self::MESH_SIZE - 1 {
+            for x in 0..Self::MESH_SIZE - 1 {
+                let tl = u16::try_from(y * Self::MESH_SIZE + x).expect("small mesh");
+                let tr = u16::try_from(y * Self::MESH_SIZE + x + 1).expect("small mesh");
+                let bl = u16::try_from((y + 1) * Self::MESH_SIZE + x).expect("small mesh");
+                let br = u16::try_from((y + 1) * Self::MESH_SIZE + x + 1).expect("small mesh");
+
+                gm.indices.extend_from_slice(&[tl, tr, bl]);
+                gm.indices.extend_from_slice(&[br, bl, tr]);
+            }
+        }
+        gm
+    }
+
+    /// `ensureBuffers()`: makes the CPU buffers that do not exist yet.
+    // Port of: gm/mesh.cpp#L1447-L1455 (chrome/m156), ensureBuffers
+    fn ensure_buffers(&mut self) {
+        if self.vb.is_none() {
+            let bytes: Vec<u8> = self.verts.iter().flat_map(|v| v.to_bytes()).collect();
+            self.vb = Some(make_vertex_buffer(Some(&bytes), bytes.len()));
+        }
+        if self.ib.is_none() {
+            let bytes = u16_bytes(&self.indices);
+            self.ib = Some(make_index_buffer(Some(&bytes), bytes.len()));
+        }
+    }
+
+    // Port of: gm/mesh.cpp#L1251-L1262 (chrome/m156), onOnceBeforeDraw (the specification)
+    fn make_spec(&mut self) {
+        let attributes = [
+            Attribute {
+                ty: AttributeType::Float2,
+                offset: 0,
+                name: "position".to_owned(),
+            },
+            Attribute {
+                ty: AttributeType::Float2,
+                offset: 8,
+                name: "uv".to_owned(),
+            },
+        ];
+        let varyings = [Varying {
+            ty: VaryingType::Float2,
+            name: "uv".to_owned(),
+        }];
+        let vs = r"
+                    Varyings main(const in Attributes attributes) {
+                        Varyings varyings;
+                        varyings.uv       = attributes.uv;
+                        varyings.position = attributes.position;
+                        return varyings;
+                    }
+            ";
+        let fs = r"
+                    uniform shader myShader1;
+                    uniform shader myShader2;
+                    uniform colorFilter myColorFilter;
+                    uniform blender myBlend;
+
+                    float2 main(const in Varyings varyings, out half4 color) {
+                        half4 color1 = myShader1.eval(varyings.uv);
+                        half4 color2 = myShader2.eval(varyings.uv);
+
+                        // Apply a inverse color filter to the first image.
+                        color1 = myColorFilter.eval(color1);
+
+                        // Fade in the second image horizontally, leveraging the UVs.
+                        color2 *= varyings.uv.x / 128.0;
+
+                        // Combine the two images by using a blender (set to dst-over).
+                        color = myBlend.eval(color1, color2);
+
+                        return varyings.uv;
+                    }
+            ";
+        self.spec = make_spec(
+            &attributes,
+            ShaderVertex::STRIDE,
+            &varyings,
+            vs,
+            fs,
+            // The five-argument `SkMeshSpecification::Make` uses the sRGB colour space.
+            Some(ColorSpace::new_srgb()),
+            AlphaType::Premul,
+        );
+    }
+
+    /// `GetResourceAsImage(name)->makeShader(SkSamplingOptions(SkFilterMode::kLinear))`.
+    fn resource_shader(name: &str) -> Shader {
+        crate::tool_utils::get_resource_as_image(name)
+            .expect(name)
+            .to_shader(None, SamplingOptions::from(FilterMode::Linear), None)
+            .expect("a linear image shader")
+    }
+
+    /// `onAnimate(nanos)`: the grid of vertices for the time `nanos`.
+    // Port of: gm/mesh.cpp#L1288-L1322 (chrome/m156), onAnimate
+    // The loops index `x_off` by `y` and `y_off` by `x`, as the C++ does.
+    #[allow(clippy::needless_range_loop, clippy::cast_possible_truncation)] // mirrors the double-to-float stores of the vertices
+    fn animate_at(&mut self, nanos: f64) {
+        // `periodic` goes from zero to 2π every four seconds, then wraps around.
+        let mut periodic = nanos / 4_000_000_000.;
+        periodic -= periodic.floor();
+        periodic *= 2.0 * std::f64::consts::PI;
+
+        let mut x_off = [0.0_f64; Self::MESH_SIZE];
+        let mut y_off = [0.0_f64; Self::MESH_SIZE];
+        for index in 0..Self::MESH_SIZE {
+            x_off[index] = periodic.sin() * f64::from(Self::RIPPLE_SIZE);
+            y_off[index] = (periodic + 10.0).sin() * f64::from(Self::RIPPLE_SIZE);
+            periodic += 0.8;
+        }
+
+        self.verts.clear();
+        for y in 0..Self::MESH_SIZE {
+            let yf = index_f32(y) / index_f32(Self::MESH_SIZE - 1); // yf = 0 .. 1
+            for x in 0..Self::MESH_SIZE {
+                let xf = index_f32(x) / index_f32(Self::MESH_SIZE - 1); // xf = 0 .. 1
+
+                // `kRect.left() + xf * kRect.width() + xOff[y]`: float sums, then a double sum
+                // that is stored as a float.
+                let pos0 =
+                    (f64::from(Self::RECT.left() + xf * Self::RECT.width()) + x_off[y]) as f32;
+                let pos1 =
+                    (f64::from(Self::RECT.top() + yf * Self::RECT.height()) + y_off[x]) as f32;
+                let uv0 = Self::UV.left() + xf * Self::UV.width();
+                let uv1 = Self::UV.top() + yf * Self::UV.height();
+                self.verts.push(ShaderVertex {
+                    pos: [pos0, pos1],
+                    uv: [uv0, uv1],
+                });
+            }
+        }
+    }
+}
+
+impl GM for MeshWithShadersGm {
+    // Port of: gm/mesh.cpp#L1349-L1360 (chrome/m156), getName
+    fn name(&self) -> String {
+        match self.kind {
+            MeshWithShadersType::Image => "mesh_with_image",
+            MeshWithShadersType::Effects => "mesh_with_effects",
+            MeshWithShadersType::PaintColor => "mesh_with_paint_color",
+            MeshWithShadersType::PaintImage => "mesh_with_paint_image",
+        }
+        .to_string()
+    }
+
+    // Port of: gm/mesh.cpp#L1266-L1266 (chrome/m156), getISize
+    fn size(&mut self) -> ISize {
+        ISize::new(320, 320)
+    }
+
+    // Port of: gm/mesh.cpp#L1251-L1347 (chrome/m156), onOnceBeforeDraw
+    fn on_once_before_draw(&mut self) {
+        self.make_spec();
+
+        match self.kind {
+            MeshWithShadersType::Image => {
+                self.shader1 = Some(Self::resource_shader("images/mandrill_128.png"));
+                self.shader2 = None;
+                self.color_filter = None;
+                self.blender = None;
+                self.paint_shader = None;
+            }
+            MeshWithShadersType::Effects => {
+                // uint8_t inverseTable[256]: inverseTable[index] = 255 - index
+                let mut inverse_table = [0_u8; 256];
+                for (index, entry) in inverse_table.iter_mut().enumerate() {
+                    *entry = 255 - u8::try_from(index).expect("index < 256");
+                }
+
+                self.shader1 = Some(Self::resource_shader("images/mandrill_128.png"));
+                self.shader2 = Some(Self::resource_shader("images/color_wheel.png"));
+                self.color_filter = color_filters::table_argb(
+                    None,
+                    Some(&inverse_table),
+                    Some(&inverse_table),
+                    Some(&inverse_table),
+                );
+                self.blender = Some(Blender::mode(BlendMode::DstOver));
+                self.paint_shader = None;
+            }
+            MeshWithShadersType::PaintColor => {
+                self.shader1 = None;
+                self.shader2 = Some(Self::resource_shader("images/mandrill_128.png"));
+                self.color_filter = None;
+                self.blender = Some(Blender::mode(BlendMode::Dst));
+                self.paint_shader = Some(shaders::color(Color::GREEN));
+            }
+            MeshWithShadersType::PaintImage => {
+                self.shader1 = Some(Self::resource_shader("images/color_wheel.png"));
+                self.shader2 = None;
+                self.color_filter = None;
+                self.blender = None;
+                self.paint_shader = Some(Self::resource_shader("images/mandrill_128.png"));
+            }
+        }
+    }
+
+    // Port of: gm/mesh.cpp#L1362-L1369 (chrome/m156), onGpuSetup (raster: no context, so only the
+    // buffers are made)
+    fn on_gpu_setup(&mut self, _canvas: &Canvas, _error_msg: &mut String) -> DrawResult {
+        self.ensure_buffers();
+        DrawResult::Ok
+    }
+
+    // Port of: gm/mesh.cpp#L1427-L1446 (chrome/m156), onDraw
+    fn on_draw_with_error(&mut self, canvas: &Canvas, error_msg: &mut String) -> DrawResult {
+        let children = [
+            self.shader1.clone().map_or(ChildPtr::Empty, ChildPtr::from),
+            self.shader2.clone().map_or(ChildPtr::Empty, ChildPtr::from),
+            self.color_filter
+                .clone()
+                .map_or(ChildPtr::Empty, ChildPtr::from),
+            self.blender.clone().map_or(ChildPtr::Empty, ChildPtr::from),
+        ];
+
+        self.ensure_buffers();
+        let (Some(vb), Some(ib)) = (self.vb.clone(), self.ib.clone()) else {
+            return DrawResult::Fail;
+        };
+        let vertex_bytes: Vec<u8> = self.verts.iter().flat_map(|v| v.to_bytes()).collect();
+        vb.update(&vertex_bytes, 0);
+
+        let result = Mesh::make_indexed(
+            self.spec.clone(),
+            Mode::Triangles,
+            Some(vb),
+            self.verts.len(),
+            0,
+            Some(ib),
+            self.indices.len(),
+            0,
+            None,
+            &children,
+            Self::RECT.with_outset((Self::RIPPLE_SIZE, Self::RIPPLE_SIZE)),
+        );
+        if !result.mesh.is_valid() {
+            *error_msg = format!("Mesh creation failed: {}", result.error);
+            return DrawResult::Fail;
+        }
+
+        let mut paint = Paint::default();
+        paint.set_shader(self.paint_shader.clone());
+        canvas.draw_mesh(&result.mesh, Blender::mode(BlendMode::DstOver), &paint);
+
+        DrawResult::Ok
+    }
+}
+
+// Port of: gm/mesh.cpp#L1486-L1489 (chrome/m156), DEF_GM(return new MeshWithShadersGM(...))
+crate::def_gm!(
+    MeshWithImage = "MeshWithShadersGM(MeshWithShadersGM::Type::kMeshWithImage)",
+    MeshWithShadersGm::new(MeshWithShadersType::Image)
+);
+crate::def_gm!(
+    MeshWithPaintColor = "MeshWithShadersGM(MeshWithShadersGM::Type::kMeshWithPaintColor)",
+    MeshWithShadersGm::new(MeshWithShadersType::PaintColor)
+);
+crate::def_gm!(
+    MeshWithPaintImage = "MeshWithShadersGM(MeshWithShadersGM::Type::kMeshWithPaintImage)",
+    MeshWithShadersGm::new(MeshWithShadersType::PaintImage)
+);
+crate::def_gm!(
+    MeshWithEffects = "MeshWithShadersGM(MeshWithShadersGM::Type::kMeshWithEffects)",
+    MeshWithShadersGm::new(MeshWithShadersType::Effects)
+);

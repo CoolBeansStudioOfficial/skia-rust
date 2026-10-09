@@ -21,6 +21,7 @@ use crate::canvas::{
     Canvas, CanvasHooks, Lattice, PointMode, SaveLayerRec, SaveLayerStrategy, SrcRectConstraint,
 };
 use crate::clip_op::ClipOp;
+use crate::glyph_run::GlyphRunList;
 use crate::image::Image;
 use crate::m44::M44;
 use crate::matrix::Matrix;
@@ -263,6 +264,16 @@ impl CanvasHooks for RecordHooks {
             paint: paint.clone(),
             path: path.clone(),
         });
+        true
+    }
+
+    // Port of: src/core/SkRecordCanvas.cpp#L277-L285 (chrome/m156), onDrawGlyphRunList
+    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) -> bool {
+        // (the list's own blob is not kept, so one is made from its runs)
+        if let Some(blob) = list.make_blob() {
+            let origin = list.origin();
+            self.on_draw_text_blob(&blob, origin.x, origin.y, paint);
+        }
         true
     }
 

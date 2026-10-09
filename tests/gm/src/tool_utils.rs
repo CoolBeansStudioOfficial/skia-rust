@@ -229,3 +229,33 @@ pub fn get_resource_as_bitmap(path: &str) -> Option<skia_rust_core::bitmap::Bitm
 pub fn make_texture_image(_canvas: &Canvas, orig: Option<Image>) -> Option<Image> {
     orig
 }
+
+pub fn copy_to(
+    dst: &mut Bitmap,
+    dst_color_type: skia_rust_core::color_type::ColorType,
+    src: &Bitmap,
+) -> bool {
+    let Some(src_pm) = src.peek_pixels() else {
+        return false;
+    };
+
+    let mut tmp_dst = Bitmap::new();
+    let dst_info = src_pm.info().with_color_type(dst_color_type);
+    if !tmp_dst.set_info(&dst_info, None) {
+        return false;
+    }
+
+    if !tmp_dst.try_alloc_pixels() {
+        return false;
+    }
+
+    let Some(mut dst_pm) = tmp_dst.peek_pixels_mut() else {
+        return false;
+    };
+    if !src_pm.read_pixels_to_pixmap(&mut dst_pm, (0, 0)) {
+        return false;
+    }
+
+    dst.swap(&mut tmp_dst);
+    true
+}

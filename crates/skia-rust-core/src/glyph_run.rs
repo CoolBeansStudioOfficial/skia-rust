@@ -27,7 +27,7 @@ use crate::rsxform::RSXform;
 use crate::scalar::scalar;
 use crate::scaler_context::ScalerContextBuildFlags;
 use crate::strike_spec::{BulkGlyphMetrics, StrikeSpec};
-use crate::text_blob::{GlyphPositioning, TextBlob};
+use crate::text_blob::{GlyphPositioning, TextBlob, TextBlobBuilder};
 
 /// One run of glyphs with one font: the glyph ids, their positions and, for `RSXform` runs, the
 /// scale-rotation of each glyph (`sktext::GlyphRun`).
@@ -176,6 +176,45 @@ impl<'a> GlyphRunList<'a> {
     #[must_use]
     pub fn run_count(&self) -> usize {
         self.runs.len()
+    }
+
+    /// `makeBlob`: a text blob with the runs of this list, one blob run per glyph run.
+    // Port of: src/text/GlyphRun.cpp#L87-L115 (chrome/m156)
+    #[doc(alias = "makeBlob")]
+    #[must_use]
+    pub fn make_blob(&self) -> Option<TextBlob> {
+        let mut builder = TextBlobBuilder::new();
+        for run in self.runs() {
+            if run.scaled_rotations().is_empty() {
+                if run.text().is_empty() {
+                    let (glyphs, points) = builder.alloc_run_pos(run.font(), run.run_size(), None);
+                    points.copy_from_slice(run.positions());
+                    glyphs.copy_from_slice(run.glyph_ids());
+                } else {
+                    let (glyphs, points, text, clusters) = builder.alloc_run_text_pos(
+                        run.font(),
+                        run.run_size(),
+                        run.text().len(),
+                        None,
+                    );
+                    points.copy_from_slice(run.positions());
+                    text.copy_from_slice(run.text());
+                    clusters.copy_from_slice(run.clusters());
+                    glyphs.copy_from_slice(run.glyph_ids());
+                }
+            } else {
+                let (glyphs, xforms) = builder.alloc_run_rsxform(run.font(), run.run_size());
+                for (xform, (pos, sr)) in xforms
+                    .iter_mut()
+                    .zip(run.positions().iter().zip(run.scaled_rotations()))
+                {
+                    // SkRSXform::Make(sr.x(), sr.y(), pos.x(), pos.y())
+                    *xform = RSXform::new(sr.x, sr.y, *pos);
+                }
+                glyphs.copy_from_slice(run.glyph_ids());
+            }
+        }
+        builder.make()
     }
 
     /// The runs, in order (`begin()`/`end()`).

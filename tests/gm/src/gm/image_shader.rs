@@ -4,7 +4,7 @@
 // Port of: gm/image_shader.cpp (chrome/m156)
 //
 // Not ported: `ImageShaderGM` (picture, encoded and texture images), `textureimage_and_shader`
-// (`SkCanvas::getSurface`), `imageshader_tinyscale` (decodes a jpg resource).
+// (`SkCanvas::getSurface`).
 
 use crate::prelude::*;
 use crate::tool_utils;
@@ -72,4 +72,26 @@ crate::def_simple_gm!(drawimage_sampling, canvas, 500, 500, {
             canvas.translate((0.0, dst.height() + 8.0));
         }
     }
+});
+
+// Port of: gm/image_shader.cpp#L254-L271 (chrome/m156)
+crate::def_simple_gm!(imageshader_tinyscale, canvas, 1000, 1000, {
+    // A small scale amplifies the sampling coords in image space.
+    const K_SCALE: f32 = 0.01;
+
+    // 128x128px image with red/black/green/blue quadrants.
+    let img = tool_utils::get_resource_as_image("images/gainmap_gcontainer_only.jpg")
+        .expect("images/gainmap_gcontainer_only.jpg");
+
+    let m = Matrix::translate((500.0, 500.0)) * Matrix::scale((K_SCALE, K_SCALE));
+
+    // In clamp mode we should see no repeating patterns, just the viewport filled
+    // with four-colored quadrants.
+    let mut p = Paint::default();
+    p.set_shader(img.to_shader(
+        (TileMode::Clamp, TileMode::Clamp),
+        SamplingOptions::new(FilterMode::Linear, MipmapMode::None),
+        &m,
+    ));
+    canvas.draw_paint(&p);
 });

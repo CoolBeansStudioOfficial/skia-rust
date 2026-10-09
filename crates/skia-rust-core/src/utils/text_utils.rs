@@ -2,8 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/utils/SkTextUtils.cpp and include/utils/SkTextUtils.h (chrome/m156).
-// `SkTextUtils::GetPath` is not ported yet (it needs `SkPathBuilder::addPath` on glyph paths,
-// T15b with `ToolUtils::get_text_path`).
+// `SkTextUtils::GetPath` is ported (`get_path`) on the glyph outlines of `SkFont::getPaths`.
 
 //! `SkTextUtils`: draws a string aligned to its origin, as a text blob.
 
@@ -11,6 +10,9 @@ use crate::canvas::Canvas;
 use crate::font::Font;
 use crate::font_types::TextEncoding;
 use crate::paint::Paint;
+use crate::path::Path;
+use crate::path_builder::PathBuilder;
+use crate::point::Point;
 use crate::scalar::scalar;
 use crate::text_blob::TextBlob;
 
@@ -78,4 +80,34 @@ pub fn draw_string(
         paint,
         align,
     );
+}
+
+/// `SkTextUtils::GetPath`: the outline of `text` drawn at `(x, y)` with `font`. The glyph outlines
+/// are appended in order, each moved to its glyph position; glyphs without an outline (spaces)
+/// add nothing.
+// Port of: src/utils/SkTextUtils.cpp#L39-L60 (chrome/m156)
+#[doc(alias = "GetPath")]
+#[must_use]
+pub fn get_path(text: &[u8], encoding: TextEncoding, x: scalar, y: scalar, font: &Font) -> Path {
+    // SkAutoToGlyphs: the glyphs of the text.
+    let count = font.count_text(text, encoding);
+    let mut glyphs = vec![0; count];
+    let count = font.text_to_glyphs(text, encoding, &mut glyphs);
+    glyphs.truncate(count);
+
+    // font.getPos(ag.glyphs(), pos, {x, y})
+    let mut pos = vec![Point::default(); glyphs.len()];
+    font.get_pos(&glyphs, &mut pos, Point::new(x, y));
+
+    let mut dst = PathBuilder::new();
+    let mut index = 0;
+    font.get_paths(&glyphs, |src, mx| {
+        if let Some(src) = src {
+            let mut m = mx.clone();
+            m.post_translate((pos[index].x, pos[index].y));
+            dst.add_path_with_transform(src, &m, None);
+        }
+        index += 1;
+    });
+    dst.detach()
 }

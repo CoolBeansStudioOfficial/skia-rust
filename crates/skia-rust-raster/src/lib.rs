@@ -20,6 +20,7 @@ pub mod edge_builder;
 pub mod glyph_image;
 pub mod glyph_run_painter;
 pub mod image_filter_backend;
+pub mod image_picture;
 pub mod mask_filter_base;
 mod pixel_rows;
 pub mod pixmap_draw;

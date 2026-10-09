@@ -30,7 +30,9 @@ use skia_rust_core::shaders::color_shader::{
 };
 use skia_rust_core::shaders::empty_shader::create_proc as empty_shader;
 use skia_rust_core::shaders::local_matrix_shader::create_proc as local_matrix_shader;
+use skia_rust_core::shaders::working_color_space_shader::create_proc as working_color_space_shader;
 use skia_rust_core::table_color_filter::table_create_proc;
+use skia_rust_core::working_format_color_filter::create_proc as working_format_color_filter;
 
 use crate::corner_path_effect::create_proc as corner_path_effect;
 use crate::dash_impl::create_proc as dash_impl;
@@ -78,6 +80,7 @@ const SHADERS: &[(&str, ShaderFactory)] = &[
     ("SkLocalMatrixShader", local_matrix_shader),
     ("SkShader_Blend", blend_shader),
     ("SkColorFilterShader", color_filter_shader),
+    ("SkWorkingColorSpaceShader", working_color_space_shader),
 ];
 
 /// The color filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are
@@ -88,6 +91,7 @@ const COLOR_FILTERS: &[(&str, ColorFilterFactory)] = &[
     ("SkComposeColorFilter", color_filter_compose),
     ("SkModeColorFilter", blend_create_proc),
     ("ColorSpaceXformColorFilter", color_space_xform_create_proc),
+    ("SkWorkingFormatColorFilter", working_format_color_filter),
     // The legacy name of the gamma-only color space filters.
     ("SkSRGBGammaColorFilter", legacy_gamma_only_create_proc),
     ("SkTable_ColorFilter", table_create_proc),

@@ -18,11 +18,13 @@
 
 use crate::prelude::*;
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::color_filters;
+use skia_rust_core::vertices::{VertexMode, Vertices};
 
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 
-use skia_rust_core::color::colors;
+use skia_rust_core::color::{Color, Color4f, colors};
 use skia_rust_core::font::Font;
 use skia_rust_core::font_priv::get_font_bounds;
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
@@ -317,5 +319,69 @@ crate::def_simple_gm!(drawTextRSXform, canvas, 430, 860, {
     for st in do_stroke {
         draw_text_path(canvas, st);
         canvas.translate((0.0, 860.0));
+    }
+});
+
+// Port of: gm/drawatlas.cpp#L304-L310 (chrome/m156), make_vertices
+fn make_vertices(image: &Image, r: Rect, color: Color) -> Vertices {
+    let _ = image;
+    let pos = r.to_quad(None);
+    let colors = [color, color, color, color];
+    Vertices::new_copy(
+        VertexMode::TriangleFan,
+        &pos,
+        Some(&pos),
+        Some(&colors),
+        None,
+    )
+    .expect("a triangle fan")
+}
+
+// Port of: gm/drawatlas.cpp#L323-L359 (chrome/m156), DEF_SIMPLE_GM(compare_atlas_vertices)
+crate::def_simple_gm!(compare_atlas_vertices, canvas, 560, 585, {
+    let tex = Rect::from_wh(128.0, 128.0);
+    let xform = RSXform::new(1.0, 0.0, (0.0, 0.0));
+    let color = Color::new(0x8844_88CC);
+
+    let image = crate::tool_utils::get_resource_as_image("images/mandrill_128.png")
+        .expect("images/mandrill_128.png");
+    let verts = make_vertices(&image, tex, color);
+    let filters = [
+        None,
+        color_filters::blend(
+            Color4f::from_color(Color::new(0xFF00_FF88)),
+            None,
+            BlendMode::Modulate,
+        ),
+    ];
+    let modes = [BlendMode::SrcOver, BlendMode::Plus];
+
+    canvas.translate((10.0, 10.0));
+    let mut paint = Paint::default();
+    for mode in modes {
+        for alpha in [1.0_f32, 0.5] {
+            paint.set_alpha_f(alpha);
+            canvas.save();
+            for cf in &filters {
+                paint.set_color_filter(cf.clone());
+                canvas.draw_atlas(
+                    &image,
+                    &[xform],
+                    &[tex],
+                    Some(&[color][..]),
+                    mode,
+                    SamplingOptions::default(),
+                    Some(tex),
+                    &paint,
+                );
+                canvas.translate((128.0, 0.0));
+                paint.set_shader(image.to_shader(None, SamplingOptions::default(), None));
+                canvas.draw_vertices(&verts, mode, &paint);
+                paint.set_shader(None);
+                canvas.translate((145.0, 0.0));
+            }
+            canvas.restore();
+            canvas.translate((0.0, 145.0));
+        }
     }
 });
