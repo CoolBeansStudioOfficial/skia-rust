@@ -86,9 +86,9 @@ impl Benchmark for HardStopGradientBenchScaleNumHardStops {
             positions[k] = val / n as scalar;
             k += 1;
         }
-        for i in k..n {
+        for (i, position) in positions.iter_mut().enumerate().skip(k) {
             // positions[i] = i / (N - 1.0f);
-            positions[i] = i as scalar / (n as scalar - 1.0);
+            *position = i as scalar / (n as scalar - 1.0);
         }
         let shader = gradient_shader::linear(
             (points[0], points[1]),

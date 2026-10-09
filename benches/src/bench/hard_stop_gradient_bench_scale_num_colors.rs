@@ -75,10 +75,9 @@ impl Benchmark for HardStopGradientBenchScaleNumColors {
             .collect();
         // Create a hard stop: the first two positions are both 0.
         let mut positions = vec![0.0; self.color_count];
-        for i in 2..self.color_count {
+        for (i, position) in positions.iter_mut().enumerate().skip(2) {
             // Evenly spaced afterwards: i / (fColorCount - 1.0f)
-            let value = i as scalar / (self.color_count as scalar - 1.0);
-            positions[i] = value;
+            *position = i as scalar / (self.color_count as scalar - 1.0);
         }
         let shader = gradient_shader::linear(
             (points[0], points[1]),
@@ -103,106 +102,127 @@ impl Benchmark for HardStopGradientBenchScaleNumColors {
 
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L101-L101 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_3 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 3)",
+    hard_stop_scale_num_colors_clamp_3 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 3)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 3)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L102-L102 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_4 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 4)",
+    hard_stop_scale_num_colors_clamp_4 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 4)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 4)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L103-L103 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_5 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 5)",
+    hard_stop_scale_num_colors_clamp_5 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 5)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 5)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L104-L104 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_10 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 10)",
+    hard_stop_scale_num_colors_clamp_10 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 10)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 10)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L105-L105 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_25 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 25)",
+    hard_stop_scale_num_colors_clamp_25 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 25)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 25)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L106-L106 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_50 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 50)",
+    hard_stop_scale_num_colors_clamp_50 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 50)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 50)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L107-L107 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_clamp_100 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 100)",
+    hard_stop_scale_num_colors_clamp_100 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kClamp, 100)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Clamp, 100)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L110-L110 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_3 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 3)",
+    hard_stop_scale_num_colors_repeat_3 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 3)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 3)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L111-L111 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_4 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 4)",
+    hard_stop_scale_num_colors_repeat_4 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 4)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 4)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L112-L112 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_5 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 5)",
+    hard_stop_scale_num_colors_repeat_5 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 5)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 5)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L113-L113 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_10 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 10)",
+    hard_stop_scale_num_colors_repeat_10 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 10)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 10)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L114-L114 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_25 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 25)",
+    hard_stop_scale_num_colors_repeat_25 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 25)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 25)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L115-L115 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_50 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 50)",
+    hard_stop_scale_num_colors_repeat_50 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 50)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 50)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L116-L116 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_repeat_100 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 100)",
+    hard_stop_scale_num_colors_repeat_100 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kRepeat, 100)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Repeat, 100)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L119-L119 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_3 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 3)",
+    hard_stop_scale_num_colors_mirror_3 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 3)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 3)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L120-L120 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_4 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 4)",
+    hard_stop_scale_num_colors_mirror_4 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 4)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 4)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L121-L121 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_5 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 5)",
+    hard_stop_scale_num_colors_mirror_5 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 5)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 5)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L122-L122 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_10 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 10)",
+    hard_stop_scale_num_colors_mirror_10 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 10)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 10)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L123-L123 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_25 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 25)",
+    hard_stop_scale_num_colors_mirror_25 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 25)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 25)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L124-L124 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_50 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 50)",
+    hard_stop_scale_num_colors_mirror_50 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 50)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 50)
 );
 // Port of: bench/HardStopGradientBench_ScaleNumColors.cpp#L125-L125 (chrome/m156)
 def_bench!(
-    hard_stop_scale_num_colors_mirror_100 = "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 100)",
+    hard_stop_scale_num_colors_mirror_100 =
+        "HardStopGradientBench_ScaleNumColors(SkTileMode::kMirror, 100)",
     HardStopGradientBenchScaleNumColors::new(TileMode::Mirror, 100)
 );

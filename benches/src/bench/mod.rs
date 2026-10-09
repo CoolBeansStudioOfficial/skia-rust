@@ -5,8 +5,11 @@
 
 pub mod alternating_color_pattern_bench;
 pub mod bezier_bench;
+pub mod blur_bench;
+pub mod blur_rects_bench;
 pub mod canvas_save_restore_bench;
 pub mod clear_bench;
+pub mod color_filter_bench;
 pub mod color_priv_bench;
 pub mod control_bench;
 pub mod cubic_map_bench;
@@ -15,10 +18,11 @@ pub mod find_cubic_convex_180_chops_bench;
 pub mod fs_rect_bench;
 pub mod geometry_bench;
 pub mod gradient_bench;
+pub mod hairline_path_bench;
 pub mod hard_stop_gradient_bench_scale_num_colors;
 pub mod hard_stop_gradient_bench_scale_num_hard_stops;
 pub mod hard_stop_gradient_bench_special_hard_stops;
-pub mod hairline_path_bench;
+pub mod image_filter_collapse;
 pub mod interp_bench;
 pub mod line_bench;
 pub mod math_bench;

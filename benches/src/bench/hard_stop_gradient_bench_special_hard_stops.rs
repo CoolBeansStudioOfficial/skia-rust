@@ -165,26 +165,31 @@ def_bench!(
 );
 // Port of: bench/HardStopGradientBench_SpecialHardStops.cpp#L122-L122 (chrome/m156)
 def_bench!(
-    hard_stop_special_100_centered = "HardStopGradientBench_SpecialHardStops(100, 100, Kind::kCentered)",
+    hard_stop_special_100_centered =
+        "HardStopGradientBench_SpecialHardStops(100, 100, Kind::kCentered)",
     HardStopGradientBenchSpecialHardStops::new(100, 100, Kind::Centered)
 );
 // Port of: bench/HardStopGradientBench_SpecialHardStops.cpp#L123-L123 (chrome/m156)
 def_bench!(
-    hard_stop_special_200_centered = "HardStopGradientBench_SpecialHardStops(200, 200, Kind::kCentered)",
+    hard_stop_special_200_centered =
+        "HardStopGradientBench_SpecialHardStops(200, 200, Kind::kCentered)",
     HardStopGradientBenchSpecialHardStops::new(200, 200, Kind::Centered)
 );
 // Port of: bench/HardStopGradientBench_SpecialHardStops.cpp#L124-L124 (chrome/m156)
 def_bench!(
-    hard_stop_special_300_centered = "HardStopGradientBench_SpecialHardStops(300, 300, Kind::kCentered)",
+    hard_stop_special_300_centered =
+        "HardStopGradientBench_SpecialHardStops(300, 300, Kind::kCentered)",
     HardStopGradientBenchSpecialHardStops::new(300, 300, Kind::Centered)
 );
 // Port of: bench/HardStopGradientBench_SpecialHardStops.cpp#L125-L125 (chrome/m156)
 def_bench!(
-    hard_stop_special_400_centered = "HardStopGradientBench_SpecialHardStops(400, 400, Kind::kCentered)",
+    hard_stop_special_400_centered =
+        "HardStopGradientBench_SpecialHardStops(400, 400, Kind::kCentered)",
     HardStopGradientBenchSpecialHardStops::new(400, 400, Kind::Centered)
 );
 // Port of: bench/HardStopGradientBench_SpecialHardStops.cpp#L126-L126 (chrome/m156)
 def_bench!(
-    hard_stop_special_500_centered = "HardStopGradientBench_SpecialHardStops(500, 500, Kind::kCentered)",
+    hard_stop_special_500_centered =
+        "HardStopGradientBench_SpecialHardStops(500, 500, Kind::kCentered)",
     HardStopGradientBenchSpecialHardStops::new(500, 500, Kind::Centered)
 );

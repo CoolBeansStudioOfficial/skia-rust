@@ -329,7 +329,12 @@ pub(crate) fn tilemode_name(tm: TileMode) -> &'static str {
 
 /// `MakeShader(gradType, data, tm, scale)`: from (0, 0) to (kSize, kSize).
 // Port of: bench/GradientBench.cpp#L246-L255 (chrome/m156)
-fn make_shader(grad_type: GradType, data: &GradData, tm: TileMode, scale: scalar) -> Option<Shader> {
+fn make_shader(
+    grad_type: GradType,
+    data: &GradData,
+    tm: TileMode,
+    scale: scalar,
+) -> Option<Shader> {
     let size = int_to_scalar(GRADIENT_SIZE);
     let pts = [Point::new(0.0, 0.0), Point::new(size, size)];
     grad_type.make(pts, data, tm, scale)
@@ -352,7 +357,7 @@ impl GradientBench {
     // Port of: bench/GradientBench.cpp#L181-L202 (chrome/m156)
     fn new(
         grad_type: GradType,
-        data: GradData,
+        data: &GradData,
         tm: TileMode,
         geom_type: GeomType,
         scale: scalar,
@@ -373,7 +378,7 @@ impl GradientBench {
         // this->setupPaint(&fPaint): the default turns anti-aliasing on.
         let mut paint = Paint::default();
         paint.set_anti_alias(true);
-        paint.set_shader(make_shader(grad_type, &data, tm, scale));
+        paint.set_shader(make_shader(grad_type, data, tm, scale));
         Self {
             name,
             paint,
@@ -383,7 +388,7 @@ impl GradientBench {
 
     /// `GradientBench(GradType, GradData, bool dither)`: clamp tiling, optional dithering.
     // Port of: bench/GradientBench.cpp#L204-L220 (chrome/m156)
-    fn new_dither(grad_type: GradType, data: GradData, dither: bool) -> Self {
+    fn new_dither(grad_type: GradType, data: &GradData, dither: bool) -> Self {
         // fName.printf("gradient_%s_%s", gGrads[gradType].fName, tmname) with tmname "clamp"
         let mut name = format!("gradient_{}_clamp", grad_type.name());
         name.push_str(data.name);
@@ -392,7 +397,7 @@ impl GradientBench {
         }
         let mut paint = Paint::default();
         paint.set_anti_alias(true);
-        paint.set_shader(make_shader(grad_type, &data, TileMode::Clamp, 1.0));
+        paint.set_shader(make_shader(grad_type, data, TileMode::Clamp, 1.0));
         paint.set_dither(dither);
         Self {
             name,
@@ -493,195 +498,397 @@ impl Benchmark for Gradient2Bench {
 // Port of: bench/GradientBench.cpp#L263-L263 (chrome/m156)
 def_bench!(
     gradient_bench_linear_0 = "GradientBench(kLinear_GradType, gGradData[0])",
-    GradientBench::new(GradType::Linear, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L264-L264 (chrome/m156)
 def_bench!(
     gradient_bench_linear_1 = "GradientBench(kLinear_GradType, gGradData[1])",
-    GradientBench::new(GradType::Linear, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L265-L265 (chrome/m156)
 def_bench!(
     gradient_bench_linear_2 = "GradientBench(kLinear_GradType, gGradData[2])",
-    GradientBench::new(GradType::Linear, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L266-L266 (chrome/m156)
 def_bench!(
     gradient_bench_linear_4 = "GradientBench(kLinear_GradType, gGradData[4])",
-    GradientBench::new(GradType::Linear, g_grad_data(4), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(4),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L267-L267 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_0_repeat = "GradientBench(kLinear_GradType, gGradData[0], SkTileMode::kRepeat)",
-    GradientBench::new(GradType::Linear, g_grad_data(0), TileMode::Repeat, GeomType::Rect, 1.0)
+    gradient_bench_linear_0_repeat =
+        "GradientBench(kLinear_GradType, gGradData[0], SkTileMode::kRepeat)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(0),
+        TileMode::Repeat,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L268-L268 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_1_repeat = "GradientBench(kLinear_GradType, gGradData[1], SkTileMode::kRepeat)",
-    GradientBench::new(GradType::Linear, g_grad_data(1), TileMode::Repeat, GeomType::Rect, 1.0)
+    gradient_bench_linear_1_repeat =
+        "GradientBench(kLinear_GradType, gGradData[1], SkTileMode::kRepeat)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(1),
+        TileMode::Repeat,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L269-L269 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_2_repeat = "GradientBench(kLinear_GradType, gGradData[2], SkTileMode::kRepeat)",
-    GradientBench::new(GradType::Linear, g_grad_data(2), TileMode::Repeat, GeomType::Rect, 1.0)
+    gradient_bench_linear_2_repeat =
+        "GradientBench(kLinear_GradType, gGradData[2], SkTileMode::kRepeat)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(2),
+        TileMode::Repeat,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L270-L270 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_0_mirror = "GradientBench(kLinear_GradType, gGradData[0], SkTileMode::kMirror)",
-    GradientBench::new(GradType::Linear, g_grad_data(0), TileMode::Mirror, GeomType::Rect, 1.0)
+    gradient_bench_linear_0_mirror =
+        "GradientBench(kLinear_GradType, gGradData[0], SkTileMode::kMirror)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(0),
+        TileMode::Mirror,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L271-L271 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_1_mirror = "GradientBench(kLinear_GradType, gGradData[1], SkTileMode::kMirror)",
-    GradientBench::new(GradType::Linear, g_grad_data(1), TileMode::Mirror, GeomType::Rect, 1.0)
+    gradient_bench_linear_1_mirror =
+        "GradientBench(kLinear_GradType, gGradData[1], SkTileMode::kMirror)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(1),
+        TileMode::Mirror,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L272-L272 (chrome/m156)
 def_bench!(
-    gradient_bench_linear_2_mirror = "GradientBench(kLinear_GradType, gGradData[2], SkTileMode::kMirror)",
-    GradientBench::new(GradType::Linear, g_grad_data(2), TileMode::Mirror, GeomType::Rect, 1.0)
+    gradient_bench_linear_2_mirror =
+        "GradientBench(kLinear_GradType, gGradData[2], SkTileMode::kMirror)",
+    GradientBench::new(
+        GradType::Linear,
+        &g_grad_data(2),
+        TileMode::Mirror,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L274-L274 (chrome/m156)
 def_bench!(
     gradient_bench_radial_0 = "GradientBench(kRadial_GradType, gGradData[0])",
-    GradientBench::new(GradType::Radial, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L275-L275 (chrome/m156)
 def_bench!(
     gradient_bench_radial_1 = "GradientBench(kRadial_GradType, gGradData[1])",
-    GradientBench::new(GradType::Radial, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L276-L276 (chrome/m156)
 def_bench!(
     gradient_bench_radial_2 = "GradientBench(kRadial_GradType, gGradData[2])",
-    GradientBench::new(GradType::Radial, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L279-L279 (chrome/m156)
 def_bench!(
-    gradient_bench_radial_0_half = "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kClamp, kRect_GeomType, 0.5f)",
-    GradientBench::new(GradType::Radial, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 0.5)
+    gradient_bench_radial_0_half =
+        "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kClamp, kRect_GeomType, 0.5f)",
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        0.5
+    )
 );
 // Port of: bench/GradientBench.cpp#L283-L283 (chrome/m156)
 def_bench!(
-    gradient_bench_radial_0_oval = "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kClamp, kOval_GeomType)",
-    GradientBench::new(GradType::Radial, g_grad_data(0), TileMode::Clamp, GeomType::Oval, 1.0)
+    gradient_bench_radial_0_oval =
+        "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kClamp, kOval_GeomType)",
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Oval,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L285-L285 (chrome/m156)
 def_bench!(
-    gradient_bench_radial_0_mirror = "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kMirror)",
-    GradientBench::new(GradType::Radial, g_grad_data(0), TileMode::Mirror, GeomType::Rect, 1.0)
+    gradient_bench_radial_0_mirror =
+        "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kMirror)",
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(0),
+        TileMode::Mirror,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L286-L286 (chrome/m156)
 def_bench!(
-    gradient_bench_radial_0_repeat = "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kRepeat)",
-    GradientBench::new(GradType::Radial, g_grad_data(0), TileMode::Repeat, GeomType::Rect, 1.0)
+    gradient_bench_radial_0_repeat =
+        "GradientBench(kRadial_GradType, gGradData[0], SkTileMode::kRepeat)",
+    GradientBench::new(
+        GradType::Radial,
+        &g_grad_data(0),
+        TileMode::Repeat,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L287-L287 (chrome/m156)
 def_bench!(
     gradient_bench_sweep = "GradientBench(kSweep_GradType)",
-    GradientBench::new(GradType::Sweep, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Sweep,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L288-L288 (chrome/m156)
 def_bench!(
     gradient_bench_sweep_1 = "GradientBench(kSweep_GradType, gGradData[1])",
-    GradientBench::new(GradType::Sweep, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Sweep,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L289-L289 (chrome/m156)
 def_bench!(
     gradient_bench_sweep_2 = "GradientBench(kSweep_GradType, gGradData[2])",
-    GradientBench::new(GradType::Sweep, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Sweep,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L290-L290 (chrome/m156)
 def_bench!(
     gradient_bench_conical = "GradientBench(kConical_GradType)",
-    GradientBench::new(GradType::Conical, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Conical,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L291-L291 (chrome/m156)
 def_bench!(
     gradient_bench_conical_1 = "GradientBench(kConical_GradType, gGradData[1])",
-    GradientBench::new(GradType::Conical, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Conical,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L292-L292 (chrome/m156)
 def_bench!(
     gradient_bench_conical_2 = "GradientBench(kConical_GradType, gGradData[2])",
-    GradientBench::new(GradType::Conical, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::Conical,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L293-L293 (chrome/m156)
 def_bench!(
     gradient_bench_conical_zero = "GradientBench(kConicalZero_GradType)",
-    GradientBench::new(GradType::ConicalZero, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalZero,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L294-L294 (chrome/m156)
 def_bench!(
     gradient_bench_conical_zero_1 = "GradientBench(kConicalZero_GradType, gGradData[1])",
-    GradientBench::new(GradType::ConicalZero, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalZero,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L295-L295 (chrome/m156)
 def_bench!(
     gradient_bench_conical_zero_2 = "GradientBench(kConicalZero_GradType, gGradData[2])",
-    GradientBench::new(GradType::ConicalZero, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalZero,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L296-L296 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out = "GradientBench(kConicalOut_GradType)",
-    GradientBench::new(GradType::ConicalOut, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOut,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L297-L297 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out_1 = "GradientBench(kConicalOut_GradType, gGradData[1])",
-    GradientBench::new(GradType::ConicalOut, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOut,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L298-L298 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out_2 = "GradientBench(kConicalOut_GradType, gGradData[2])",
-    GradientBench::new(GradType::ConicalOut, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOut,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L299-L299 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out_zero = "GradientBench(kConicalOutZero_GradType)",
-    GradientBench::new(GradType::ConicalOutZero, g_grad_data(0), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOutZero,
+        &g_grad_data(0),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L300-L300 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out_zero_1 = "GradientBench(kConicalOutZero_GradType, gGradData[1])",
-    GradientBench::new(GradType::ConicalOutZero, g_grad_data(1), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOutZero,
+        &g_grad_data(1),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Port of: bench/GradientBench.cpp#L301-L301 (chrome/m156)
 def_bench!(
     gradient_bench_conical_out_zero_2 = "GradientBench(kConicalOutZero_GradType, gGradData[2])",
-    GradientBench::new(GradType::ConicalOutZero, g_grad_data(2), TileMode::Clamp, GeomType::Rect, 1.0)
+    GradientBench::new(
+        GradType::ConicalOutZero,
+        &g_grad_data(2),
+        TileMode::Clamp,
+        GeomType::Rect,
+        1.0
+    )
 );
 // Dithering: Port of: bench/GradientBench.cpp#L304-L311 (chrome/m156)
 def_bench!(
     gradient_bench_linear_3_dither = "GradientBench(kLinear_GradType, gGradData[3], true)",
-    GradientBench::new_dither(GradType::Linear, g_grad_data(3), true)
+    GradientBench::new_dither(GradType::Linear, &g_grad_data(3), true)
 );
 def_bench!(
     gradient_bench_linear_3_no_dither = "GradientBench(kLinear_GradType, gGradData[3], false)",
-    GradientBench::new_dither(GradType::Linear, g_grad_data(3), false)
+    GradientBench::new_dither(GradType::Linear, &g_grad_data(3), false)
 );
 def_bench!(
     gradient_bench_radial_3_dither = "GradientBench(kRadial_GradType, gGradData[3], true)",
-    GradientBench::new_dither(GradType::Radial, g_grad_data(3), true)
+    GradientBench::new_dither(GradType::Radial, &g_grad_data(3), true)
 );
 def_bench!(
     gradient_bench_radial_3_no_dither = "GradientBench(kRadial_GradType, gGradData[3], false)",
-    GradientBench::new_dither(GradType::Radial, g_grad_data(3), false)
+    GradientBench::new_dither(GradType::Radial, &g_grad_data(3), false)
 );
 def_bench!(
     gradient_bench_sweep_3_dither = "GradientBench(kSweep_GradType, gGradData[3], true)",
-    GradientBench::new_dither(GradType::Sweep, g_grad_data(3), true)
+    GradientBench::new_dither(GradType::Sweep, &g_grad_data(3), true)
 );
 def_bench!(
     gradient_bench_sweep_3_no_dither = "GradientBench(kSweep_GradType, gGradData[3], false)",
-    GradientBench::new_dither(GradType::Sweep, g_grad_data(3), false)
+    GradientBench::new_dither(GradType::Sweep, &g_grad_data(3), false)
 );
 def_bench!(
     gradient_bench_conical_3_dither = "GradientBench(kConical_GradType, gGradData[3], true)",
-    GradientBench::new_dither(GradType::Conical, g_grad_data(3), true)
+    GradientBench::new_dither(GradType::Conical, &g_grad_data(3), true)
 );
 def_bench!(
     gradient_bench_conical_3_no_dither = "GradientBench(kConical_GradType, gGradData[3], false)",
-    GradientBench::new_dither(GradType::Conical, g_grad_data(3), false)
+    GradientBench::new_dither(GradType::Conical, &g_grad_data(3), false)
 );
 // Port of: bench/GradientBench.cpp#L356-L356 (chrome/m156)
 def_bench!(

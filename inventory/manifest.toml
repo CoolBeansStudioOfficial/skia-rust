@@ -603,7 +603,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L104-L104"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "fb44f8c1d543791285dd9da4bbb6103faa714076e5ea92919a9d8ea4d2abb3c5"
 
 [[test]]
@@ -612,7 +612,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L92-L92"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "640736913db38a39c6a6b7a81cb5a35db669622074cb9af173e07770600a5be8"
 
 [[test]]
@@ -621,7 +621,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L89-L89"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "1a49fd28d6d8b0ee9f642aecae59ef8054ed030531929ff92f982d90ba735d92"
 
 [[test]]
@@ -630,7 +630,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L91-L91"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "40382c07573d9a806df176a2aacfc3b43f4312d3401c9b8e1fab4fea97fa85fe"
 
 [[test]]
@@ -639,7 +639,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L90-L90"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "da180d2aca6d937bb34dd990a6dbdfbd791859616056a2326784016e6ff45db2"
 
 [[test]]
@@ -648,7 +648,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L82-L82"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d19d25cf8e931d8089ea8ea2f34467e859bd5a7d07747b43ee2e30147abbc198"
 
 [[test]]
@@ -657,7 +657,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L79-L79"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "400be4df5e2f1a9a0259b871abf1315b497efae19a5700b9980225021f0645a9"
 
 [[test]]
@@ -666,7 +666,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L81-L81"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ccd546f8c582ca0ab292dedb755731c2011fd2c9044b6df8baa152832be3ed08"
 
 [[test]]
@@ -675,7 +675,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L80-L80"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6159672fdb8d240d573737858df9a253e1273917ea2d6eb7c7100536a93e200c"
 
 [[test]]
@@ -684,7 +684,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L102-L102"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8ca4e50b58aacbaedf82c26065a00635654105b1aa5eee7ee3ebd11a063f77cf"
 
 [[test]]
@@ -693,7 +693,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L99-L99"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "84d9223ae6aca42f1621d5b0825cf2dea735dbb98ee3a9d55c5efed3ccac630b"
 
 [[test]]
@@ -702,7 +702,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L101-L101"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c69fd93052d2eae5576044667db4f95ab6e49f76d985989f004353b48d06c570"
 
 [[test]]
@@ -711,7 +711,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L100-L100"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "21f4b1d9ffa550e85f29193a0c5df78b49d4e8377ba8f89adca8c42740e4548b"
 
 [[test]]
@@ -720,7 +720,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L97-L97"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9bf692a11d05695221e9b4d9f9a9aa66afe19c60f939606a04585c26ad627477"
 
 [[test]]
@@ -729,7 +729,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L94-L94"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9d665fd9e6168d0e9e016f117a40b2089115802fd7250703381d62fe27047347"
 
 [[test]]
@@ -738,7 +738,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L96-L96"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "009d6310fb85e70a985daec9d05d11b07a309c53265f99e38cb88f5a819fcc15"
 
 [[test]]
@@ -747,7 +747,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L95-L95"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "bb9fa2a385ab815bf5e435f131eded2ff009037596585ddcfb0c60824d11ba7e"
 
 [[test]]
@@ -756,7 +756,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L87-L87"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2f8d5ba7ddd6ef5dff29eb7002ac3c3a3e7d2f770a3266ec306e0b311a888631"
 
 [[test]]
@@ -765,7 +765,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L84-L84"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "0195d78a22484aa2a62e26408532d880847e0c9285971a311d85e81f64210355"
 
 [[test]]
@@ -774,7 +774,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L86-L86"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "002c71f495a0994ba472ff285b6006525977abbc91cb7c791981423af0d78a30"
 
 [[test]]
@@ -783,7 +783,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurBench.cpp#L85-L85"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "1f36762ceda222923f49b328f2d3626929b74733867ba935a06b1468e7a21526"
 
 [[test]]
@@ -1440,7 +1440,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectsBench.cpp#L78-L80"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4bdfbdd5d01744391e440d4305c8be526a16cb5a9a1f2a94bce212f4802b230e"
 
 [[test]]
@@ -1449,7 +1449,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectsBench.cpp#L81-L83"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e40b24f42568724610e62aeba4fab03ff09b339cfb892351ed906639e73979aa"
 
 [[test]]
@@ -1854,7 +1854,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L267-L267"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bf6ae1089a15451fe9d043d72859a2165ae7abdb0dfb3c681df4af8e4a5ca3c9"
 
 [[test]]
@@ -1872,7 +1872,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L129-L129"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "21a80080abcb6488dd33217bf50f6079ebbaf23cd782e7114158e294536e5242"
 
 [[test]]
@@ -1881,7 +1881,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L130-L130"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "51293dec09805400066ee466fbc6b2949abf8fde170d9dd5f6af854526422db4"
 
 [[test]]
@@ -1890,7 +1890,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L128-L128"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8c7145c27a98759038b1a83117f05a0a06eb0cdd655e64f696b0f55f0d9dccf7"
 
 [[test]]
@@ -5429,7 +5429,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ImageFilterCollapse.cpp#L134-L134"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2e1177e949ae932eb5ca4271f0e6d554b9462ad9bcd744593ae2726e9f373bc9"
 
 [[test]]
@@ -5438,7 +5438,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ImageFilterCollapse.cpp#L133-L133"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "71af83b2640aebf336171b62e36a69ca452bcb8f3bc26e76b16c739759ef8f21"
 
 [[test]]
