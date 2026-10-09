@@ -9,6 +9,7 @@ mod publish;
 mod rp_diff;
 mod skia;
 mod verify;
+mod verify_benches;
 mod verify_gms;
 
 use std::path::{Path, PathBuf};

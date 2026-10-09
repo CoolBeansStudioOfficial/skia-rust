@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::cpp;
 use crate::skia::{self, Pin};
-use crate::{verify, verify_gms};
+use crate::{verify, verify_benches, verify_gms};
 
 const MANIFEST: &str = "inventory/manifest.toml";
 
@@ -164,7 +164,17 @@ pub fn module_path(root: &Path, id: &str) -> Result<()> {
         .iter()
         .find(|e| e.id == id)
         .with_context(|| format!("no manifest entry `{id}`"))?;
-    ensure!(entry.kind == Kind::Unit, "`{id}` is not a unit test");
+    if entry.kind == Kind::Bench {
+        // The registry key and the name literal `def_bench!` takes (docs/design/bench.md §2.3).
+        let (key, name) =
+            verify_benches::describe(id).with_context(|| format!("can't map `{id}`"))?;
+        println!("{key}\n{name:?}");
+        return Ok(());
+    }
+    ensure!(
+        entry.kind == Kind::Unit,
+        "`{id}` is not a unit test or bench"
+    );
     let path = verify::module_path(id).with_context(|| format!("can't map `{id}`"))?;
     println!("{path}");
     Ok(())
@@ -183,17 +193,20 @@ pub fn verify(root: &Path, update: bool) -> Result<()> {
     };
     let unit_entries = entries(Kind::Unit);
     let gm_entries = entries(Kind::Gm);
+    let bench_entries = entries(Kind::Bench);
     let unit = verify::check(&unit_entries, &verify::run_ported_tests(root)?);
     let gms = verify_gms::check(&gm_entries, &verify_gms::run_gm_verify(root)?);
+    let benches = verify_benches::check(&bench_entries, &verify_benches::run_bench_verify(root)?);
     if update {
-        for report in [&unit, &gms] {
+        for report in [&unit, &gms, &benches] {
             apply_update(&mut m, report);
         }
         write_manifest(root, &m)?;
     }
     let unit_result = verify::finish(&unit, update, "unit test");
     let gm_result = verify::finish(&gms, update, "GM");
-    unit_result.and(gm_result)
+    let bench_result = verify::finish(&benches, update, "bench");
+    unit_result.and(gm_result).and(bench_result)
 }
 
 /// Marks newly passing entries `passing` and failing ported ones `failing`.
@@ -202,11 +215,16 @@ fn apply_update(m: &mut Manifest, report: &verify::Report) {
         if report.newly_passing.iter().any(|(id, _)| *id == e.id) {
             e.status = Status::Passing;
             e.reason.clear();
+        } else if report.newly_ported.iter().any(|(id, _)| *id == e.id) {
+            e.status = Status::Ported;
+            e.reason.clear();
         } else if report.failing.contains(&e.id) && e.status != Status::Failing {
             e.status = Status::Failing;
             if e.reason.is_empty() {
                 let reason = if e.kind == Kind::Gm {
                     "ported GM does not match the goldens"
+                } else if e.kind == Kind::Bench {
+                    "ported bench fails its smoke run"
                 } else {
                     "ported test fails"
                 };

@@ -3582,7 +3582,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/FSRectBench.cpp#L63-L63"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4a572d1e1984edf82e411b5ea32fc6a47872dde25fa6bbf74820efce7a70d358"
 
 [[test]]
@@ -5706,7 +5706,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MathBench.cpp#L359-L359"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d33dd8531ed9ee304355caafc97665d7013ccecde961dd6c45a3f94c0d1803c9"
 
 [[test]]
@@ -5724,7 +5724,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MathBench.cpp#L434-L434"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b554c3d075067298ee2d297838da6a7a4c9d941b6bb338150d5fe46519b13dd8"
 
 [[test]]
@@ -5733,7 +5733,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MathBench.cpp#L435-L435"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "41738ea8483612f789fe10ee3a338f189f81e406f9eda41406276aef205e7ccc"
 
 [[test]]
@@ -5787,7 +5787,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MathBench.cpp#L357-L357"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "95341dcbdf95864ba49954005ddefbfc13cae862da2173dd83215d092e3ccd20"
 
 [[test]]
@@ -5814,7 +5814,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MathBench.cpp#L358-L358"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e25bc123be873d472aff102d92a1f2ca0921e6721cc6caca37b0669a18956cb3"
 
 [[test]]

@@ -9,6 +9,7 @@ members = [
     "crates/skia-rust-effects",
     "crates/skia-rust-pathops",
     "crates/skia-rust-text",
+    "benches",
     "tests",
     "tests/gm",
     "tests/tools",
