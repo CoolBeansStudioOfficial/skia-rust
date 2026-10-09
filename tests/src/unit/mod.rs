@@ -106,6 +106,8 @@ pub mod gif_test;
 #[cfg(test)]
 pub mod gradient_test;
 #[cfg(test)]
+pub mod graphite;
+#[cfg(test)]
 pub mod hsv_round_trip_test;
 #[cfg(test)]
 pub mod icc_test;

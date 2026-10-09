@@ -39,13 +39,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      # Resource-backed tests read Skia's resources/ (tests/src/resources.rs); without the
-      # checkout they skip silently, so fetch the same pinned Skia checkout as `inventory`.
+      # Unit tests read Skia's `resources/` (fonts, images, SkSL shaders); without the pinned
+      # checkout they would skip instead of running.
+      - run: git config --global core.longpaths true
       - name: Cache Skia checkout
         uses: actions/cache@v4
         with:
           path: third_party/skia
-          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+          key: skia-${{ runner.os }}-${{ hashFiles('inventory/skia-pin.toml') }}
       - run: cargo xtask skia fetch
       - run: cargo test --workspace
 
@@ -63,11 +64,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # Unit tests read Skia's `resources/` (fonts, images, SkSL shaders); without the pinned
+      # checkout they would skip instead of running.
+      - run: git config --global core.longpaths true
       - name: Cache Skia checkout
         uses: actions/cache@v4
         with:
           path: third_party/skia
-          key: skia-${{ hashFiles('inventory/skia-pin.toml') }}
+          key: skia-${{ runner.os }}-${{ hashFiles('inventory/skia-pin.toml') }}
       - run: cargo xtask skia fetch
       - run: cargo test --release --workspace
 
