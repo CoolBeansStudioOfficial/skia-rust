@@ -4,6 +4,7 @@
 // Port of: gm/batchedconvexpaths.cpp (chrome/m156)
 
 use crate::prelude::*;
+use skia_rust_core::libm;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::scalar::SCALAR_PI;
@@ -36,18 +37,21 @@ impl GM for BatchedConvexPathsGM {
                 const K2PI: f32 = SCALAR_PI * 2.0;
                 let last = j + 2.0 == np;
                 builder.cubic_to(
-                    ((j / np * K2PI).cos(), (j / np * K2PI).sin()),
-                    (((j + 1.0) / np * K2PI).cos(), ((j + 1.0) / np * K2PI).sin()),
+                    (libm::cosf(j / np * K2PI), libm::sinf(j / np * K2PI)),
+                    (
+                        libm::cosf((j + 1.0) / np * K2PI),
+                        libm::sinf((j + 1.0) / np * K2PI),
+                    ),
                     (
                         if last {
                             1.0
                         } else {
-                            ((j + 2.0) / np * K2PI).cos()
+                            libm::cosf((j + 2.0) / np * K2PI)
                         },
                         if last {
                             0.0
                         } else {
-                            ((j + 2.0) / np * K2PI).sin()
+                            libm::sinf((j + 2.0) / np * K2PI)
                         },
                     ),
                 );

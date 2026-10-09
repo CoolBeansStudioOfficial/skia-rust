@@ -8,6 +8,7 @@
 use skia_rust_core::floating_point::{
     double_nearly_zero, doubles_nearly_equal_ulps, float_midpoint, is_finite,
 };
+use skia_rust_core::libm;
 
 use crate::{def_test, reporter_assert};
 
@@ -193,7 +194,7 @@ def_test!(FMA, |reporter| {
     #[allow(clippy::float_cmp)] // exact comparison, as in the C++ test
     {
         reporter_assert!(reporter, x == 0.);
-        reporter_assert!(reporter, y == -(-62f64).exp2());
+        reporter_assert!(reporter, y == -libm::exp2(-62.0));
     }
 });
 
