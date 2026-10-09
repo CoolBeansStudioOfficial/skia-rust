@@ -21596,8 +21596,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_pict.cpp#L440-L440"
 module = "raster"
-status = "todo"
-reason = "needs SkImageCacherator and image generators, which are not ported"
+status = "passing"
 span_hash = "c6587fc07dae9b16e4fae845800df309d307d351e819a769de73f863800ee676"
 
 [[test]]
@@ -21606,8 +21605,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_pict.cpp#L441-L441"
 module = "raster"
-status = "todo"
-reason = "needs SkImageCacherator and image generators, which are not ported"
+status = "passing"
 span_hash = "ed903631bbbab7386a5e305cd841f09155baca5dacef2bb9d24fbe2e75fff3ef"
 
 [[test]]
