@@ -248,10 +248,15 @@ fn a_hairline_draws_a_thin_line_on_the_outline() {
         &mut context,
         &[(hexagon(PathFillType::Winding), paint(Style::Stroke, 0.0))],
     );
-    // The top-left edge runs from (64, 20) to (24, 42); its midpoint is (44, 31).
+    // The top-left edge runs from (64, 20) to (24, 42); its midpoint is (44, 31). A hairline is
+    // antialiased (its coverage is analytic in the stroke shaders), so the pixels on the line are
+    // partly covered red rather than RED.
     let drawn = (43..=45)
         .flat_map(|x| (30..=32).map(move |y| (x, y)))
-        .any(|(x, y)| pixel(&pixels, x, y) == RED);
+        .any(|(x, y)| {
+            let [r, _, _, a] = pixel(&pixels, x, y);
+            a > 0 && r == a
+        });
     assert!(drawn, "the hairline is on the edge");
     assert_eq!(pixel(&pixels, 64, 64), CLEAR);
 }
