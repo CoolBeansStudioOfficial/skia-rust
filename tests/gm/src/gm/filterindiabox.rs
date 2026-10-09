@@ -148,4 +148,7 @@ impl GM for FilterIndiaBoxGm {
     }
 }
 
-crate::def_gm!(FilterIndiaBoxGM, FilterIndiaBoxGm::new());
+crate::def_gm!(
+    FilterIndiaBoxGM_ = "FilterIndiaBoxGM()",
+    FilterIndiaBoxGm::new()
+);
