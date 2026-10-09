@@ -1294,6 +1294,28 @@ pub mod mesh_priv {
         spec.hash
     }
 
+    /// `SkMeshSpecificationPriv::GetColorType(spec) == kFloat4`: whether the fragment shader
+    /// returns a `float4` color, which needs a conversion to `half4`.
+    // Port of: src/core/SkMeshPriv.h (SkMeshSpecificationPriv::GetColorType) (chrome/m156)
+    #[must_use]
+    pub fn color_type_is_float4(spec: &MeshSpecification) -> bool {
+        spec.color_type == ColorType::Float4
+    }
+
+    /// `SkMeshSpecificationPriv::AttrTypeByteSize`: the size in bytes of an attribute's CPU
+    /// format.
+    // Port of: src/core/SkMeshPriv.h#L54-L64 (chrome/m156)
+    #[must_use]
+    pub fn attr_type_byte_size(ty: super::AttributeType) -> usize {
+        use super::AttributeType;
+        match ty {
+            AttributeType::UByte4Unorm | AttributeType::Float => 4,
+            AttributeType::Float2 => 4 * 2,
+            AttributeType::Float3 => 4 * 3,
+            AttributeType::Float4 => 4 * 4,
+        }
+    }
+
     /// `SkMeshSpecificationPriv::HasColors`: whether the fragment shader returns a color.
     #[must_use]
     pub fn has_colors(spec: &MeshSpecification) -> bool {
@@ -1374,6 +1396,14 @@ impl VertexBuffer {
     pub fn update(&self, data: &[u8], offset: usize) -> bool {
         cpu_update(&self.data, data, offset)
     }
+
+    /// `SkMeshPriv::CpuVertexBuffer::peek()`: calls `f` with the bytes of the buffer, borrowed
+    /// for the duration of the call.
+    // Port of: src/core/SkMeshPriv.h (CpuVertexBuffer::peek) (chrome/m156)
+    pub fn with_data<R>(&self, f: impl FnOnce(&[u8]) -> R) -> R {
+        let data = self.data.lock().unwrap_or_else(PoisonError::into_inner);
+        f(&data)
+    }
 }
 
 impl IndexBuffer {
@@ -1388,6 +1418,14 @@ impl IndexBuffer {
     // Port of: src/core/SkMesh.cpp#L874-L879 (chrome/m156)
     pub fn update(&self, data: &[u8], offset: usize) -> bool {
         cpu_update(&self.data, data, offset)
+    }
+
+    /// `SkMeshPriv::CpuIndexBuffer::peek()`: calls `f` with the bytes of the buffer, borrowed for
+    /// the duration of the call.
+    // Port of: src/core/SkMeshPriv.h (CpuIndexBuffer::peek) (chrome/m156)
+    pub fn with_data<R>(&self, f: impl FnOnce(&[u8]) -> R) -> R {
+        let data = self.data.lock().unwrap_or_else(PoisonError::into_inner);
+        f(&data)
     }
 }
 
