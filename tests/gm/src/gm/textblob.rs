@@ -190,7 +190,7 @@ impl GM for TextBlobGm {
 
 // Port of: gm/textblob.cpp#L175 (chrome/m156), DEF_GM(return new TextBlobGM("hamburgefons");)
 crate::def_gm!(
-    TextBlobGM,
+    TextBlobGM_hamburgefons = "TextBlobGM(\"hamburgefons\")",
     TextBlobGm {
         text: "hamburgefons",
         glyphs: Vec::new(),

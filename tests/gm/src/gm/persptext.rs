@@ -109,7 +109,13 @@ impl GM for PerspTextGm {
 }
 
 // Port of: gm/persptext.cpp#L118 (chrome/m156), DEF_GM(return new PerspTextGM(true);)
-crate::def_gm!(PerspTextGM_minimal, PerspTextGm { minimal: true });
+crate::def_gm!(
+    PerspTextGM_true = "PerspTextGM(true)",
+    PerspTextGm { minimal: true }
+);
 
 // Port of: gm/persptext.cpp#L119 (chrome/m156), DEF_GM(return new PerspTextGM(false);)
-crate::def_gm!(PerspTextGM_full, PerspTextGm { minimal: false });
+crate::def_gm!(
+    PerspTextGM_false = "PerspTextGM(false)",
+    PerspTextGm { minimal: false }
+);

@@ -166,4 +166,4 @@ impl GM for UserFontGm {
 }
 
 // Port of: gm/userfont.cpp#L107 (chrome/m156), DEF_GM
-crate::def_gm!(UserFont, UserFontGm { tf: None });
+crate::def_gm!(UserFontGM, UserFontGm { tf: None });

@@ -155,11 +155,11 @@ impl GM for TextBlobMixedSizesGm {
 
 // Port of: gm/textblobmixedsizes.cpp#L133-L146 (chrome/m156), DEF_GM(TextBlobMixedSizes(false))
 crate::def_gm!(
-    TextBlobMixedSizesGM = "textblobmixedsizes",
+    TextBlobMixedSizes_false = "TextBlobMixedSizes(false)",
     TextBlobMixedSizesGm::new(false)
 );
 // Port of: gm/textblobmixedsizes.cpp#L133-L146 (chrome/m156), DEF_GM(TextBlobMixedSizes(true))
 crate::def_gm!(
-    TextBlobMixedSizesDftGM = "textblobmixedsizes_df",
+    TextBlobMixedSizes_true = "TextBlobMixedSizes(true)",
     TextBlobMixedSizesGm::new(true)
 );
