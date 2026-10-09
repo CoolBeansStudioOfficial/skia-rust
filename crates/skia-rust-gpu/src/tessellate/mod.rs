@@ -13,7 +13,11 @@ pub mod linear_tolerances;
 pub mod middle_out_polygon_triangulator;
 // Port of: src/gpu/tessellate/MidpointContourParser.h (chrome/m156)
 pub mod midpoint_contour_parser;
-// Port of: src/gpu/tessellate/Tessellation.h (chrome/m156)
+// Port of: src/gpu/tessellate/PatchWriter.h (chrome/m156)
+pub mod patch_writer;
+// Port of: src/gpu/tessellate/StrokeIterator.h (chrome/m156)
+pub mod stroke_iterator;
+// Port of: src/gpu/tessellate/Tessellation.h and Tessellation.cpp (chrome/m156)
 pub mod tessellation;
 // Port of: src/gpu/tessellate/WangsFormula.h (chrome/m156)
 pub mod wangs_formula;

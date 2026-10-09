@@ -239,6 +239,8 @@ pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
 #[cfg(test)]
+pub mod pre_chop_path_curves_test;
+#[cfg(test)]
 pub mod premul_alpha_round_trip_test;
 #[cfg(test)]
 pub mod quad_roots_test;

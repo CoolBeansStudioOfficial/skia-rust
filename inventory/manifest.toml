@@ -3646,6 +3646,7 @@ macro = "DEF_BENCH"
 source = "bench/FindCubicConvex180ChopsBench.cpp#L37-L38"
 module = "skcms"
 status = "todo"
+reason = "no bench harness in the repo yet (PLAN.md benches/ is not created); port with the harness"
 span_hash = "18a33341bdc785e6d891b9f0b16c6d4e143510dfcf5a1b8061ace26116d29c92"
 
 [[test]]
@@ -3655,6 +3656,7 @@ macro = "DEF_BENCH"
 source = "bench/FindCubicConvex180ChopsBench.cpp#L39-L40"
 module = "skcms"
 status = "todo"
+reason = "no bench harness in the repo yet (PLAN.md benches/ is not created); port with the harness"
 span_hash = "772f54cac31616cad2dbe00a6856fee19a8f005f7dc2bb67b9973e48331f2e0c"
 
 [[test]]
@@ -39167,7 +39169,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PreChopPathCurvesTest.cpp#L16-L45"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e73adcb2e6c92bc7375fba5d1c1505a28479aae58d6d483630b55a8a38e1b5da"
 
 [[test]]

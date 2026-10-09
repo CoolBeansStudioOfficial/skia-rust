@@ -6,12 +6,27 @@
 //! Shared constants and helpers of path tessellation: the precision and segment limits, the
 //! patch attribute layout, and the stroke parameters that go into each patch.
 //!
-//! `PreChopPathCurves` and `FindCubicConvex180Chops` (`Tessellation.cpp`) are not ported yet.
+//! The `Tessellation.cpp` helpers (`PreChopPathCurves`, `FindCubicConvex180Chops`) live here too.
+//! `FindCubicConvex180Chops` is ported once in `skia_rust_core::tessellation` (where the CPU tests
+//! use it) and re-exported below, so there is a single copy of the arithmetic.
 
 use bitflags::bitflags;
+use skia_rust_core::geometry::{Conic, chop_cubic_at_half, chop_quad_at_half};
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Join;
+use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::path_priv::iterate;
+use skia_rust_core::path_types::{PathFillType, PathVerb};
 use skia_rust_core::point::Point;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::stroke_rec::StrokeRec;
+
+use crate::tessellate::cull_test::CullTest;
+use crate::tessellate::wangs_formula::{self, VectorXform};
+
+// Port of: src/gpu/tessellate/Tessellation.cpp#L207-L348 (chrome/m156), `FindCubicConvex180Chops`.
+pub use skia_rust_core::tessellation::find_cubic_convex_180_chops;
 
 /// Don't allow linearized segments to be off by more than 1/4th of a pixel from the true curve.
 // Port of: src/gpu/tessellate/Tessellation.h#L26-L27 (chrome/m156), `kPrecision`.
@@ -256,4 +271,231 @@ pub fn calc_num_radial_segments_per_radian(approx_dev_stroke_radius: f32) -> f32
     // std::max(cosTheta, -1.f)
     let clamped = if cos_theta < -1.0 { -1.0 } else { cos_theta };
     0.5 / clamped.acos()
+}
+
+// This value only protects us against getting stuck in infinite recursion due to fp32 precision
+// issues. Mathematically, every curve should reduce to manageable visible sections in O(log N)
+// chops, where N is the the magnitude of its control points.
+//
+// But, to define a protective upper bound, a cubic can enter or exit the viewport as many as 6
+// times. So we may need to refine the curve (via binary search chopping at T=.5) up to 6 times.
+//
+// Furthermore, chopping a cubic at T=.5 may only reduce its length by 1/8 (.5^3), so we may require
+// up to 6 chops in order to reduce the length by half.
+// Port of: src/gpu/tessellate/Tessellation.cpp#L38-L47 (chrome/m156), `kMaxChopsPerCurve`.
+const K_MAX_CHOPS_PER_CURVE: i32 = 128 * 6 * 6;
+
+// Writes a new path, chopping as necessary so no verbs require more segments than
+// kMaxTessellationSegmentsPerCurve. Curves completely outside the viewport are flattened into
+// lines.
+// Port of: src/gpu/tessellate/Tessellation.cpp#L49-L143 (chrome/m156), `PathChopper`.
+struct PathChopper {
+    tessellation_precision: f32,
+    cull_test: CullTest,
+    vector_xform: VectorXform,
+    builder: PathBuilder,
+    // Used for stack-based recursion (instead of using the runtime stack). The C++ `STArray`s
+    // become `Vec`s; the inline capacity is only an allocation detail.
+    point_stack: Vec<Point>,
+    weight_stack: Vec<f32>,
+}
+
+#[allow(clippy::if_not_else)] // the branch order mirrors the C++: cull first, then chop or emit
+impl PathChopper {
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L51-L56 (chrome/m156), `PathChopper::PathChopper`.
+    fn new(tessellation_precision: f32, matrix: &Matrix, viewport: &Rect) -> Self {
+        let mut builder = PathBuilder::new();
+        builder.set_is_volatile(true);
+        Self {
+            tessellation_precision,
+            cull_test: CullTest::new(viewport, matrix),
+            vector_xform: VectorXform::from(matrix),
+            builder,
+            point_stack: Vec::new(),
+            weight_stack: Vec::new(),
+        }
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L58-L62 (chrome/m156), `PathChopper::detachPath`.
+    fn detach_path(&mut self, ft: PathFillType) -> Path {
+        self.builder.set_fill_type(ft);
+        self.builder.detach()
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L64-L66 (chrome/m156), `PathChopper::moveTo`.
+    fn move_to(&mut self, p: Point) {
+        self.builder.move_to(p);
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L67 (chrome/m156), `PathChopper::lineTo`.
+    fn line_to(&mut self, p: &[Point]) {
+        self.builder.line_to(p[1]);
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L68 (chrome/m156), `PathChopper::close`.
+    fn close(&mut self) {
+        self.builder.close();
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L70-L96 (chrome/m156), `PathChopper::quadTo`.
+    fn quad_to(&mut self, quad: &[Point]) {
+        debug_assert_eq!(self.point_stack.len(), 0);
+        // Use a heap stack to recursively chop the quad into manageable, on-screen segments.
+        self.point_stack.extend_from_slice(&quad[..3]);
+        let mut num_chops = 0;
+        while !self.point_stack.is_empty() {
+            let n = self.point_stack.len();
+            let p = [
+                self.point_stack[n - 3],
+                self.point_stack[n - 2],
+                self.point_stack[n - 1],
+            ];
+            if !self.cull_test.are_visible3(&p) {
+                self.builder.line_to(p[2]);
+            } else {
+                let n4 = wangs_formula::quadratic_p4(
+                    self.tessellation_precision,
+                    &p,
+                    &self.vector_xform,
+                );
+                if n4 > K_MAX_SEGMENTS_PER_CURVE_P4 && num_chops < K_MAX_CHOPS_PER_CURVE {
+                    let mut chops = [Point::default(); 5];
+                    chop_quad_at_half(&p, &mut chops);
+                    self.point_stack.truncate(n - 3);
+                    self.point_stack.extend_from_slice(&chops[2..5]);
+                    self.point_stack.extend_from_slice(&chops[0..3]);
+                    num_chops += 1;
+                    continue;
+                }
+                self.builder.quad_to(p[1], p[2]);
+            }
+            self.point_stack.truncate(n - 3);
+        }
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L98-L134 (chrome/m156), `PathChopper::conicTo`.
+    fn conic_to(&mut self, conic: &[Point], weight: f32) {
+        debug_assert_eq!(self.point_stack.len(), 0);
+        debug_assert_eq!(self.weight_stack.len(), 0);
+        // Use a heap stack to recursively chop the conic into manageable, on-screen segments.
+        self.point_stack.extend_from_slice(&conic[..3]);
+        self.weight_stack.push(weight);
+        let mut num_chops = 0;
+        while !self.point_stack.is_empty() {
+            let n = self.point_stack.len();
+            let p = [
+                self.point_stack[n - 3],
+                self.point_stack[n - 2],
+                self.point_stack[n - 1],
+            ];
+            let w = *self
+                .weight_stack
+                .last()
+                .expect("the weight stack is in step with the point stack");
+            if !self.cull_test.are_visible3(&p) {
+                self.builder.line_to(p[2]);
+            } else {
+                let n2 =
+                    wangs_formula::conic_p2(self.tessellation_precision, &p, w, &self.vector_xform);
+                if n2 > K_MAX_SEGMENTS_PER_CURVE_P2 && num_chops < K_MAX_CHOPS_PER_CURVE {
+                    let mut chops = [Conic::default(); 2];
+                    if !Conic::new(p[0], p[1], p[2], w).chop_at(0.5, &mut chops) {
+                        let line = [p[0], p[2]];
+                        self.line_to(&line);
+                        // The C++ `continue`s here without popping, so this mirrors it exactly.
+                        continue;
+                    }
+                    self.point_stack.truncate(n - 3);
+                    self.weight_stack.pop();
+                    self.point_stack.extend_from_slice(&chops[1].pts);
+                    self.weight_stack.push(chops[1].w);
+                    self.point_stack.extend_from_slice(&chops[0].pts);
+                    self.weight_stack.push(chops[0].w);
+                    num_chops += 1;
+                    continue;
+                }
+                self.builder.conic_to(p[1], p[2], w);
+            }
+            self.point_stack.truncate(n - 3);
+            self.weight_stack.pop();
+        }
+        debug_assert_eq!(self.weight_stack.len(), 0);
+    }
+
+    // Port of: src/gpu/tessellate/Tessellation.cpp#L136-L163 (chrome/m156), `PathChopper::cubicTo`.
+    fn cubic_to(&mut self, cubic: &[Point]) {
+        debug_assert_eq!(self.point_stack.len(), 0);
+        // Use a heap stack to recursively chop the cubic into manageable, on-screen segments.
+        self.point_stack.extend_from_slice(&cubic[..4]);
+        let mut num_chops = 0;
+        while !self.point_stack.is_empty() {
+            let n = self.point_stack.len();
+            let p = [
+                self.point_stack[n - 4],
+                self.point_stack[n - 3],
+                self.point_stack[n - 2],
+                self.point_stack[n - 1],
+            ];
+            if !self.cull_test.are_visible4(&p) {
+                self.builder.line_to(p[3]);
+            } else {
+                let n4 =
+                    wangs_formula::cubic_p4(self.tessellation_precision, &p, &self.vector_xform);
+                if n4 > K_MAX_SEGMENTS_PER_CURVE_P4 && num_chops < K_MAX_CHOPS_PER_CURVE {
+                    let mut chops = [Point::default(); 7];
+                    chop_cubic_at_half(&p, &mut chops);
+                    self.point_stack.truncate(n - 4);
+                    self.point_stack.extend_from_slice(&chops[3..7]);
+                    self.point_stack.extend_from_slice(&chops[0..4]);
+                    num_chops += 1;
+                    continue;
+                }
+                self.builder.cubic_to(p[1], p[2], p[3]);
+            }
+            self.point_stack.truncate(n - 4);
+        }
+    }
+}
+
+/// Returns a path whose curves are chopped so that each verb needs at most
+/// `K_MAX_SEGMENTS_PER_CURVE` segments, and curves fully outside `viewport` are flattened to lines.
+///
+/// # Panics
+///
+/// In debug builds, panics if `viewport` is too large for `tessellation_precision` (see
+/// [`wangs_formula::worst_case_cubic`]).
+/// The fill type of `path` is preserved.
+// Port of: src/gpu/tessellate/Tessellation.cpp#L165-L193 (chrome/m156), `PreChopPathCurves`.
+#[doc(alias = "PreChopPathCurves")]
+#[must_use]
+pub fn pre_chop_path_curves(
+    tessellation_precision: f32,
+    path: &Path,
+    matrix: &Matrix,
+    viewport: &Rect,
+) -> Path {
+    // If the viewport is exceptionally large, we could end up blowing out memory with an unbounded
+    // number of of chops. Therefore, we require that the viewport is manageable enough that a fully
+    // contained curve can be tessellated in kMaxTessellationSegmentsPerCurve or fewer. (Any larger
+    // and that amount of pixels wouldn't fit in memory anyway.)
+    debug_assert!(
+        wangs_formula::worst_case_cubic(
+            tessellation_precision,
+            viewport.width(),
+            viewport.height()
+        ) <= K_MAX_SEGMENTS_PER_CURVE
+    );
+    let mut chopper = PathChopper::new(tessellation_precision, matrix, viewport);
+    for (verb, p, w) in iterate(path) {
+        match verb {
+            PathVerb::Move => chopper.move_to(p[0]),
+            PathVerb::Line => chopper.line_to(p),
+            PathVerb::Quad => chopper.quad_to(p),
+            PathVerb::Conic => chopper.conic_to(p, w.expect("conic verbs carry a weight")),
+            PathVerb::Cubic => chopper.cubic_to(p),
+            PathVerb::Close => chopper.close(),
+        }
+    }
+    // Must preserve the input path's fill type (see crbug.com/1472747)
+    chopper.detach_path(path.fill_type())
 }
