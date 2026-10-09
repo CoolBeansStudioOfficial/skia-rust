@@ -519,7 +519,7 @@ unsupported!(
     &'a TraceScopeCtx,
     &'a TraceLineCtx,
     &'a GradientCtx,
-    &'a PerlinNoiseCtx<'a>,
+    &'a PerlinNoiseCtx,
     &'a EvenlySpaced2StopGradientCtx,
     &'a Cell<[u32; MAX_STRIDE_HIGHP]>,
     &'a CallbackCtx<'a>,

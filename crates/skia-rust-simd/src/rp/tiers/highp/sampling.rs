@@ -103,8 +103,156 @@ si! {
         p.r = -p.r;
     }
 
-    pub(super) fn perlin_noise(_ctx: &PerlinNoiseCtx<'_>, _p: &mut Regs, _e: &mut Params<'_, '_>) {
-        not_ported!("perlin_noise", "P3")
+    /// `compute_perlin_vector`: the dot product of `(x, y)` with the gradient stored for each
+    /// lane's lattice index `ix` (a `uint32` of two `uint16`s: `sampleLo` is the first, as on
+    /// little-endian targets, which every Skia tier we port is).
+    // Port of: src/opts/SkRasterPipeline_opts.h#L4048-L4065 (chrome/m156)
+    fn compute_perlin_vector(noise: &[u16], channel: usize, ix: U32, x: F, y: F) -> F {
+        let lo: F = ix.map(|i| f32::from(noise[2 * (channel + i as usize)]));
+        let hi: F = ix.map(|i| f32::from(noise[2 * (channel + i as usize) + 1]));
+
+        // Convert 32-bit sample value into two floats in the [-1..1] range.
+        let scale = F::splat(2.0f32 / 65535.0f32);
+        let vec_x = mad(lo, scale, F::splat(-1.0f32));
+        let vec_y = mad(hi, scale, F::splat(-1.0f32));
+
+        // Return the dot of the sample and the passed-in vector.
+        mad(vec_x, x, vec_y * y)
+    }
+
+    /// The stitching wrap of `floorVal`/`ceilVal`: `stitch` when `v >= stitch`, else `+0.0`
+    /// (`sk_bit_cast<F>(cond_to_mask(v >= stitch) & sk_bit_cast<I32>(stitch))`).
+    fn stitch_wrap(v: F, stitch: F) -> F {
+        let mask: I32 = cond_to_mask(v.ge_mask(stitch).bit_cast());
+        let stitch_bits: I32 = stitch.bit_cast();
+        let bits: I32 = mask & stitch_bits;
+        bits.bit_cast()
+    }
+
+    /// `clamp_01_`: `min(max(0.0f, v), 1.0f)` (the `color` module's helper is private to it).
+    fn clamp_unit(v: F) -> F {
+        min_f(max_f(F::splat(0.0), v), F::splat(1.0))
+    }
+
+    /// `(U32)(iround(v)) & 0xFF`: a lattice index.
+    fn lattice_index(v: F) -> U32 {
+        let i: U32 = iround(v).bit_cast();
+        i & 0xFF
+    }
+
+    // Port of: src/opts/SkRasterPipeline_opts.h#L4067-L4158 (chrome/m156)
+    pub(super) fn perlin_noise(ctx: &PerlinNoiseCtx, p: &mut Regs, _e: &mut Params<'_, '_>) {
+        let mut noise_vec_x = (p.r + F::splat(0.5)) * F::splat(ctx.base_frequency_x);
+        let mut noise_vec_y = (p.g + F::splat(0.5)) * F::splat(ctx.base_frequency_y);
+        let zero = F::splat(0.0);
+        // The accumulated `r, g, b, a`.
+        let mut acc = [zero; 4];
+        let mut stitch_data_x = F::splat(ctx.stitch_data_in_x);
+        let mut stitch_data_y = F::splat(ctx.stitch_data_in_y);
+        let mut ratio = F::splat(1.0);
+        let noise = &ctx.noise_data[..];
+        let lattice = &ctx.lattice_selector;
+
+        for _octave in 0..ctx.num_octaves {
+            // Calculate noise coordinates. (Roughly $noise_helper in Graphite)
+            let mut floor_val_x = floor_(noise_vec_x);
+            let mut floor_val_y = floor_(noise_vec_y);
+            let mut ceil_val_x = floor_val_x + F::splat(1.0);
+            let mut ceil_val_y = floor_val_y + F::splat(1.0);
+            let fract_val_x = noise_vec_x - floor_val_x;
+            let fract_val_y = noise_vec_y - floor_val_y;
+
+            if ctx.stitching {
+                // If we are stitching, wrap the coordinates to the stitch position.
+                floor_val_x -= stitch_wrap(floor_val_x, stitch_data_x);
+                floor_val_y -= stitch_wrap(floor_val_y, stitch_data_y);
+                ceil_val_x -= stitch_wrap(ceil_val_x, stitch_data_x);
+                ceil_val_y -= stitch_wrap(ceil_val_y, stitch_data_y);
+            }
+
+            let lattice_idx_x = lattice_gather(lattice, lattice_index(floor_val_x));
+            let lattice_idx_y = lattice_gather(lattice, lattice_index(ceil_val_x));
+
+            let b00 = lattice_index(lattice_idx_x + floor_val_y);
+            let b10 = lattice_index(lattice_idx_y + floor_val_y);
+            let b01 = lattice_index(lattice_idx_x + ceil_val_y);
+            let b11 = lattice_index(lattice_idx_y + ceil_val_y);
+
+            // Calculate noise colors. (Roughly $noise_function in Graphite)
+            // Apply Hermite interpolation to the fractional value.
+            let smooth_x = fract_val_x * fract_val_x * (F::splat(3.0) - F::splat(2.0) * fract_val_x);
+            let smooth_y = fract_val_y * fract_val_y * (F::splat(3.0) - F::splat(2.0) * fract_val_y);
+
+            let mut color = [zero; 4];
+            for (channel, c) in color.iter_mut().enumerate() {
+                // Each channel is 256 `uint32`s (512 `uint16`s) further on.
+                let base = channel * 256;
+                let left = compute_perlin_vector(noise, base, b00, fract_val_x, fract_val_y);
+                let right = compute_perlin_vector(
+                    noise,
+                    base,
+                    b10,
+                    fract_val_x - F::splat(1.0),
+                    fract_val_y,
+                );
+                let upper = lerp(left, right, smooth_x);
+
+                let left = compute_perlin_vector(
+                    noise,
+                    base,
+                    b01,
+                    fract_val_x,
+                    fract_val_y - F::splat(1.0),
+                );
+                let right = compute_perlin_vector(
+                    noise,
+                    base,
+                    b11,
+                    fract_val_x - F::splat(1.0),
+                    fract_val_y - F::splat(1.0),
+                );
+                let lower = lerp(left, right, smooth_x);
+
+                *c = lerp(upper, lower, smooth_y);
+            }
+
+            if ctx.noise_type != PerlinNoiseShaderType::FractalNoise {
+                // For kTurbulence the result is: abs(noise[-1,1])
+                for c in &mut color {
+                    *c = abs_f(*c);
+                }
+            }
+
+            for (acc_c, color_c) in acc.iter_mut().zip(color) {
+                *acc_c = mad(color_c, ratio, *acc_c);
+            }
+
+            // Scale inputs for the next round.
+            noise_vec_x *= F::splat(2.0);
+            noise_vec_y *= F::splat(2.0);
+            stitch_data_x *= F::splat(2.0);
+            stitch_data_y *= F::splat(2.0);
+            ratio *= F::splat(0.5);
+        }
+
+        if ctx.noise_type == PerlinNoiseShaderType::FractalNoise {
+            // For kFractalNoise the result is: noise[-1,1] * 0.5 + 0.5
+            for acc_c in &mut acc {
+                *acc_c = mad(*acc_c, F::splat(0.5), F::splat(0.5));
+            }
+        }
+
+        // Premultiply by the unclamped alpha, then clamp alpha.
+        let alpha = acc[3];
+        p.r = clamp_unit(acc[0]) * alpha;
+        p.g = clamp_unit(acc[1]) * alpha;
+        p.b = clamp_unit(acc[2]) * alpha;
+        p.a = clamp_unit(alpha);
+    }
+
+    /// `expand(gather(ctx->latticeSelector, ix))` converted to float.
+    fn lattice_gather(table: &[u8; 256], ix: U32) -> F {
+        ix.map(|i| f32::from(table[i as usize]))
     }
 
     // Port of: src/opts/SkRasterPipeline_opts.h#L3864-L3867 (chrome/m156)

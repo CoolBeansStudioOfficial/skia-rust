@@ -57,20 +57,6 @@ use self::{
     memory_wide::*, sampling::*, sksl_arith::*, sksl_masks::*, sksl_math::*, sksl_trace::*,
 };
 
-/// Panics for a stage whose task has not ported it yet.
-macro_rules! not_ported {
-    ($name:literal, $task:literal) => {
-        unimplemented!(concat!(
-            "raster pipeline stage `",
-            $name,
-            "` (highp) is not ported yet (task ",
-            $task,
-            ")"
-        ))
-    };
-}
-use not_ported;
-
 /// The eight registers every highp stage receives (Skia's `F r, g, b, a, dr, dg, db, da`).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Regs {

@@ -30,6 +30,7 @@ use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::scalar::{int_to_scalar, scalar, scalar_ceil_to_int, scalar_exp, scalar_sqrt};
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_effects::emboss_mask_filter::{self, Light};
+use skia_rust_effects::perlin_noise_shader::shaders as perlin_shaders;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
@@ -459,4 +460,23 @@ def_test!(zero_blur, |_reporter| {
     let mut paint = Paint::default();
     paint.set_mask_filter(MaskFilter::blur(BlurStyle::Outer, 3.0, None));
     let _offset = bitmap.extract_alpha(&mut alpha, &paint);
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// Port of: tests/BlurTest.cpp#L514-L525 (chrome/m156)
+def_test!(EmbossPerlinCrash, |_reporter| {
+    let mut p = Paint::default();
+
+    let light = Light {
+        direction: [1.0, 1.0, 1.0],
+        pad: 0,
+        ambient: 127,
+        specular: 127,
+    };
+    p.set_mask_filter(emboss_mask_filter::new(1.0, &light).expect("an emboss mask filter"));
+    p.set_shader(perlin_shaders::fractal_noise((1.0, 1.0), 2, 0.0, None));
+
+    let mut surface = surfaces::raster_n32_premul((100, 100)).expect("surface");
+    surface.canvas().draw_paint(&p);
 });

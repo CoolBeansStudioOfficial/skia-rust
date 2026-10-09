@@ -26,6 +26,7 @@ pub mod luma_color_filter;
 pub mod overdraw_color_filter;
 pub mod path_1d_path_effect;
 pub mod path_2d_path_effect;
+pub mod perlin_noise_shader;
 pub mod radial_gradient;
 pub mod sweep_gradient;
 pub mod table_mask_filter;
