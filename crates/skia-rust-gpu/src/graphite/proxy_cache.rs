@@ -14,9 +14,11 @@
 //! recorder has one proxy cache, so the port's listener posts straight into this cache's inbox
 //! (held weakly), with no process-wide state.
 //!
-//! The entry points that upload a bitmap or render an image need a `Recorder`
-//! (`MakeBitmapProxyView`, `Image::notifyInUse`), which is not ported yet; they will be built on
-//! [`ProxyCache::find_or_create_cache_entry`].
+//! `RecorderPriv::CreateCachedProxy` (bitmap tables such as the dither look-up table) is
+//! [`crate::graphite::recorder::RecorderPriv::create_cached_proxy`], built on
+//! [`ProxyCache::find_cache_entry`] and [`ProxyCache::insert_cache_entry`]. The image entry point
+//! `findOrCreateCachedProxy(recorder, key, GPUGeneratorFn)` needs `Image::notifyInUse`, which is
+//! not ported yet (G10d).
 
 use std::sync::{Arc, Mutex, Weak};
 
@@ -127,15 +129,8 @@ impl ProxyCache {
         label: &str,
         create_entry: impl FnOnce(&str) -> Option<(Arc<TextureProxy>, Option<Arc<IdChangeListener>>)>,
     ) -> Option<Arc<TextureProxy>> {
-        self.process_invalid_key_msgs();
-
-        if let Some(cached) = self.cache.find(key) {
-            cached.proxy.with_texture(|texture| {
-                if let Some(texture) = texture {
-                    texture.base().update_access_time();
-                }
-            });
-            return Some(Arc::clone(&cached.proxy));
+        if let Some(proxy) = self.find_cache_entry(key) {
+            return Some(proxy);
         }
 
         let final_label = if label.is_empty() {
@@ -145,14 +140,37 @@ impl ProxyCache {
         };
         let (proxy, listener) = create_entry(final_label)?;
         // Success, add it to the cache
-        self.cache.set(
-            key.clone(),
-            CacheEntry {
-                proxy: Arc::clone(&proxy),
-                listener,
-            },
-        );
+        self.insert_cache_entry(key, Arc::clone(&proxy), listener);
         Some(proxy)
+    }
+
+    /// The first half of `findOrCreateCacheEntry()`: the cached proxy for `key`, refreshing its
+    /// texture's access time, if there is one. Callers that must create a proxy with the
+    /// resource provider, which the cache lives in, look up here and then call
+    /// [`Self::insert_cache_entry`].
+    // Port of: src/gpu/graphite/ProxyCache.h#L60-L69 (chrome/m156), the cache-hit half
+    pub fn find_cache_entry(&mut self, key: &UniqueKey) -> Option<Arc<TextureProxy>> {
+        self.process_invalid_key_msgs();
+
+        let cached = self.cache.find(key)?;
+        cached.proxy.with_texture(|texture| {
+            if let Some(texture) = texture {
+                texture.base().update_access_time();
+            }
+        });
+        Some(Arc::clone(&cached.proxy))
+    }
+
+    /// Caches `proxy` for `key` with its invalidation `listener` (the cache-miss half of
+    /// `findOrCreateCacheEntry()`).
+    // Port of: src/gpu/graphite/ProxyCache.cpp#L90-L94 (chrome/m156)
+    pub fn insert_cache_entry(
+        &mut self,
+        key: &UniqueKey,
+        proxy: Arc<TextureProxy>,
+        listener: Option<Arc<IdChangeListener>>,
+    ) {
+        self.cache.set(key.clone(), CacheEntry { proxy, listener });
     }
 
     /// `make_unique_key_invalidation_listener(key, recorderID)`: a listener that invalidates the

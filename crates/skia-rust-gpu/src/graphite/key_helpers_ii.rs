@@ -17,13 +17,12 @@
 //!
 //! - `AddToKey(SkShader*)` is `KeyHelpers` I (G5b, `key_helpers::add_to_key_shader`). Runtime effect
 //!   children and mesh children that are shaders go through it via `add_child_shader_to_key`.
-//! - `TableColorFilterBlock` and `SkTableColorFilter`: Skia creates the table's texture with
-//!   `RecorderPriv::CreateCachedProxy` and binds it through the texture half of
-//!   `PipelineDataGatherer`, neither of which is ported (G8/G9a and the texture half of G3). The
-//!   table arm of [`add_to_key_color_filter`] panics until then.
+//! - `TableColorFilterBlock` and `SkTableColorFilter`: the table is a cached proxy of the filter's
+//!   bitmap (`RecorderPriv::create_cached_proxy`) bound through the gatherer. Without a recorder,
+//!   or if the table cannot be created, the input color passes through (`kPriorOutput`).
 //! - `AddAnalyticClip` and the `NonMSAAClip` data: `NonMSAAClip` is G10b's `ClipStack`.
-//! - `AddDitherBlock`: needs `CreateCachedProxy` for the dither LUT (`KeyHelpers` I, with the
-//!   dither shader).
+//! - `AddDitherBlock` is in `KeyHelpers` I (`key_helpers::add_dither_block`), with the dither
+//!   shader, since it binds the cached dither LUT.
 //! - `SolidColorShaderBlock` is `KeyHelpers` I (G5b), which delegates to `solid_color_shader_add_block`
 //!   here: one definition serves both.
 //! - `ScopedUniformWriter` is defined once, here, and `KeyHelpers` I uses it too.
@@ -72,6 +71,14 @@ use crate::gpu::blend::{get_porter_duff_blend_constants, get_reduced_blend_mode_
 use crate::graphite::built_in_code_snippet_id::{BuiltInCodeSnippetID, FIXED_BLEND_ID_OFFSET};
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::pipeline_data::PipelineDataGatherer;
+use crate::graphite::resource_types::SamplerDesc;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
+use skia_rust_core::table_color_filter::TableColorFilter;
+use skia_rust_core::tile_mode::TileMode;
+
+use crate::gpu::sk_log::skia_log_w;
+use crate::graphite::recorder::RecorderPriv;
+use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::uniform::Uniform;
 use crate::graphite::uniform_manager::UniformManager;
 
@@ -108,6 +115,13 @@ impl<'a> ScopedUniformWriter<'a> {
     /// The uniform manager the snippet's uniforms are written through.
     pub(crate) fn uniforms(&mut self) -> &mut UniformManager {
         self.gatherer.uniform_manager()
+    }
+
+    /// Binds a sampled texture through the same gatherer (`pipelineDataGatherer()->add`).
+    // Port of: src/gpu/graphite/PipelineData.h#L411-L413 (chrome/m156), used inside the uniform
+    // scopes of the texture-binding blocks
+    pub(crate) fn add_texture(&mut self, proxy: Option<Arc<TextureProxy>>, sampler: SamplerDesc) {
+        self.gatherer.add(proxy, sampler);
     }
 }
 
@@ -1296,6 +1310,28 @@ fn add_gaussian_color_filter_to_key(key_context: &KeyContext<'_>) {
         .add_block(BuiltInCodeSnippetID::GaussianColorFilter);
 }
 
+/// `add_to_key(SkTableColorFilter*)`: the table is a cached proxy of the filter's bitmap. Without
+/// one (no recorder, or the texture cannot be created), the input color passes through.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L1777-L1794 (chrome/m156)
+fn add_table_color_filter_to_key(key_context: &KeyContext<'_>, filter: &TableColorFilter) {
+    let proxy = RecorderPriv::create_cached_proxy(
+        key_context.recorder(),
+        filter.table().bitmap(),
+        "TableColorFilterTexture",
+    );
+    let Some(proxy) = proxy else {
+        skia_log_w!("Couldn't create TableColorFilter's table");
+        // Return the input color as-is.
+        key_context
+            .paint_params_key_builder()
+            .borrow_mut()
+            .add_block(BuiltInCodeSnippetID::PriorOutput);
+        return;
+    };
+
+    TableColorFilterBlock::add_block(key_context, &TableColorFilterData::new(Some(proxy)));
+}
+
 /// `add_to_key(SkMatrixColorFilter*)`.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L1749-L1757 (chrome/m156)
 fn add_matrix_color_filter_to_key(key_context: &KeyContext<'_>, filter: &MatrixColorFilter) {
@@ -1390,12 +1426,57 @@ fn add_working_format_color_filter_to_key(
     );
 }
 
+/// The data of a table color filter block (`TableColorFilterBlock::TableColorFilterData`).
+// Port of: src/gpu/graphite/KeyHelpers.h#L286-L296 (chrome/m156)
+#[doc(alias = "TableColorFilterBlock::TableColorFilterData")]
+#[derive(Clone, Debug)]
+pub struct TableColorFilterData {
+    /// `fTextureProxy`: the 256x1 table. `None` only on the pre-compile path.
+    pub texture_proxy: Option<Arc<TextureProxy>>,
+}
+
+impl TableColorFilterData {
+    /// Wraps the table's proxy (`TableColorFilterData(sk_sp<TextureProxy>)`).
+    // Port of: src/gpu/graphite/KeyHelpers.h#L291 (chrome/m156)
+    #[must_use]
+    pub fn new(texture_proxy: Option<Arc<TextureProxy>>) -> Self {
+        Self { texture_proxy }
+    }
+}
+
+/// Adds the table color filter block (`TableColorFilterBlock`).
+// Port of: src/gpu/graphite/KeyHelpers.h#L296 (chrome/m156)
+#[derive(Debug)]
+pub struct TableColorFilterBlock;
+
+impl TableColorFilterBlock {
+    /// `TableColorFilterBlock::AddBlock`: binds the table with nearest sampling and clamping.
+    // Port of: src/gpu/graphite/KeyHelpers.cpp#L1022-L1029 (chrome/m156)
+    #[doc(alias = "AddBlock")]
+    pub fn add_block(key_context: &KeyContext<'_>, data: &TableColorFilterData) {
+        debug_assert!(data.texture_proxy.is_some() || key_context.recorder().is_none());
+
+        // The uniform scope has no uniforms of its own, but it still binds the table texture.
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::TableColorFilter);
+        scope.add_texture(
+            data.texture_proxy.clone(),
+            SamplerDesc::new(&SamplingOptions::from(FilterMode::Nearest), TileMode::Clamp),
+        );
+        drop(scope);
+
+        key_context
+            .paint_params_key_builder()
+            .borrow_mut()
+            .add_block(BuiltInCodeSnippetID::TableColorFilter);
+    }
+}
+
 /// `AddToKey(const KeyContext&, const SkColorFilter*)`: the color filter's blocks, or a
 /// pass-through with an assertion for a missing filter.
 ///
 /// # Panics
-/// On a color filter type whose key is not ported yet: [`ColorFilterType::Table`] (see the module
-/// docs). Also if a filter's type tag does not match its concrete type.
+/// If a filter's type tag does not match its concrete type.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L1838-L1861 (chrome/m156)
 #[doc(alias = "AddToKey")]
 pub fn add_to_key_color_filter(key_context: &KeyContext<'_>, filter: Option<&ColorFilter>) {
@@ -1445,9 +1526,10 @@ pub fn add_to_key_color_filter(key_context: &KeyContext<'_>, filter: Option<&Col
             base.downcast_ref::<RuntimeColorFilter>()
                 .expect("a Runtime filter is a RuntimeColorFilter"),
         ),
-        ColorFilterType::Table => unimplemented!(
-            "TableColorFilter needs RecorderPriv::CreateCachedProxy and the texture half of \
-             PipelineDataGatherer (G8/G9a, G3); it is not on this branch"
+        ColorFilterType::Table => add_table_color_filter_to_key(
+            key_context,
+            base.downcast_ref::<TableColorFilter>()
+                .expect("a Table filter is a TableColorFilter"),
         ),
         ColorFilterType::WorkingFormat => add_working_format_color_filter_to_key(
             key_context,

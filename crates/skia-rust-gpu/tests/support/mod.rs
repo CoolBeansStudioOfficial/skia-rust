@@ -245,6 +245,22 @@ impl Caps for MockCaps {
         texture_info(desc.format, desc.sample_count, Mipmapped::No)
     }
 
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+        mipmapped: Mipmapped,
+        _is_protected: Protected,
+        _renderable: skia_rust_gpu::gpu::gpu_types::Renderable,
+    ) -> TextureInfo {
+        // The mock back end samples the formats of the color types the tests use.
+        let format = match color_type {
+            skia_rust_core::color_type::ColorType::Alpha8 => TextureFormat::A8,
+            skia_rust_core::color_type::ColorType::RGBAF16 => TextureFormat::RGBA16F,
+            _ => TextureFormat::RGBA8,
+        };
+        texture_info(format, SampleCount::One, mipmapped)
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }

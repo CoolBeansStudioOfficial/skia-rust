@@ -121,11 +121,8 @@ impl Fixture {
 
     /// The uniform bytes gathered so far for a shading draw.
     fn uniform_bytes(&self) -> Vec<u8> {
-        self.gatherer
-            .borrow_mut()
-            .end_combined_uniforms(true)
-            .data()
-            .to_vec()
+        let (uniforms, _textures) = self.gatherer.borrow_mut().end_combined_data(true);
+        uniforms.data().to_vec()
     }
 }
 

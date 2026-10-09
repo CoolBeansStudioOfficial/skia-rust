@@ -6,11 +6,19 @@
 //! `SkColorTable`: four 256-entry byte tables (alpha, red, green, blue), used by the table color
 //! filters.
 //!
-//! skia-rust: Skia stores the tables in an A8 bitmap (`fTable`) and serializes them. Here they
-//! are four arrays shared behind an `Arc`; flattening is not ported.
+//! The tables are also kept as Skia's 256x4 A8 bitmap (`fTable`), which is what the Graphite
+//! table color filter uploads and caches by pixel identity. The bitmap is built once, when the
+//! table is made, so every use of the same table shares its pixel ref.
+//!
+//! skia-rust: Skia's `flatten` writes the bitmap's pixels; here the four arrays are kept behind an
+//! `Arc` and flattened from them.
 
 use std::sync::Arc;
 
+use crate::alpha_type::AlphaType;
+use crate::bitmap::Bitmap;
+use crate::color_type::ColorType;
+use crate::image_info::ImageInfo;
 use crate::read_buffer::ReadBuffer;
 use crate::write_buffer::BinaryWriteBuffer;
 
@@ -19,11 +27,13 @@ use crate::write_buffer::BinaryWriteBuffer;
 struct Tables([[u8; 256]; 4]);
 
 /// A shared table of four 256-entry byte maps, one per channel (`SkColorTable`).
-// Port of: include/core/SkColorTable.h#L19-L55 (chrome/m156)
+// Port of: include/core/SkColorTable.h#L19-L59 (chrome/m156)
 #[doc(alias = "SkColorTable")]
 #[derive(Clone, Debug)]
 pub struct ColorTable {
     tables: Arc<Tables>,
+    /// `fTable`: the 256x4 A8 bitmap, row 0 alpha, row 1 red, row 2 green, row 3 blue. Immutable.
+    bitmap: Arc<Bitmap>,
 }
 
 /// The identity map, `table[i] = i`, used for missing channels in [`ColorTable::make_argb`].
@@ -35,15 +45,41 @@ fn identity_table() -> [u8; 256] {
     table
 }
 
+/// Builds the 256x4 A8 bitmap of `tables` (`SkColorTable::Make`'s `fTable`), then makes it
+/// immutable.
+// Port of: src/core/SkColorTable.cpp#L14-L39 (chrome/m156), the bitmap fill
+fn make_table_bitmap(tables: &Tables) -> Bitmap {
+    let mut table = Bitmap::new();
+    table.alloc_pixels_info(
+        &ImageInfo::new((256, 4), ColorType::Alpha8, AlphaType::Premul, None),
+        None,
+    );
+    for (row, map) in tables.0.iter().enumerate() {
+        for (x, &value) in map.iter().enumerate() {
+            let x = i32::try_from(x).expect("x < 256");
+            let y = i32::try_from(row).expect("row < 4");
+            table.set_addr8(x, y, value);
+        }
+    }
+    table.set_immutable();
+    table
+}
+
 impl ColorTable {
+    fn from_tables(tables: Tables) -> ColorTable {
+        let bitmap = make_table_bitmap(&tables);
+        ColorTable {
+            tables: Arc::new(tables),
+            bitmap: Arc::new(bitmap),
+        }
+    }
+
     /// The table that maps each channel of a color through `table` (`SkColorTable::Make(table)`).
     // Port of: include/core/SkColorTable.h#L29-L33 (chrome/m156)
     #[doc(alias = "Make")]
     #[must_use]
     pub fn make(table: &[u8; 256]) -> ColorTable {
-        ColorTable {
-            tables: Arc::new(Tables([*table; 4])),
-        }
+        Self::from_tables(Tables([*table; 4]))
     }
 
     /// The table with one map per channel; `None` channels are the identity. Returns `None` when
@@ -62,14 +98,20 @@ impl ColorTable {
         }
         let identity = identity_table();
         let pick = |t: Option<&[u8; 256]>| *t.unwrap_or(&identity);
-        Some(ColorTable {
-            tables: Arc::new(Tables([
-                pick(table_a),
-                pick(table_r),
-                pick(table_g),
-                pick(table_b),
-            ])),
-        })
+        Some(Self::from_tables(Tables([
+            pick(table_a),
+            pick(table_r),
+            pick(table_g),
+            pick(table_b),
+        ])))
+    }
+
+    /// The 256x4 A8 bitmap of the four maps (`SkColorTable::bitmap`). Its pixel ref is shared by
+    /// every copy of this table.
+    // Port of: include/core/SkColorTable.h#L57 (chrome/m156)
+    #[must_use]
+    pub fn bitmap(&self) -> &Bitmap {
+        &self.bitmap
     }
 
     /// `SkColorTable::flatten`: the four maps as one 1024-byte array, alpha first.
@@ -132,6 +174,7 @@ impl ColorTable {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::size::ISize;
 
     #[test]
     fn identity_channels_map_to_themselves() {
@@ -144,5 +187,23 @@ mod tests {
         assert_eq!(t.alpha_table(), &inverted);
         assert_eq!(t.red_table()[7], 7);
         assert_eq!(t.blue_table()[255], 255);
+    }
+
+    #[test]
+    fn bitmap_holds_the_four_rows() {
+        let mut inverted = [0_u8; 256];
+        for (i, e) in inverted.iter_mut().enumerate() {
+            *e = u8::try_from(255 - i).expect("255 - i < 256");
+        }
+        let t = ColorTable::make_argb(Some(&inverted), None, None, None).unwrap();
+        let bm = t.bitmap();
+        assert_eq!(bm.dimensions(), ISize::new(256, 4));
+        assert!(bm.is_immutable());
+        assert_eq!(bm.get_addr8(0, 0), 255);
+        assert_eq!(bm.get_addr8(7, 1), 7);
+        assert_eq!(bm.get_addr8(255, 3), 255);
+        // Clones share the bitmap, and so its pixel ref.
+        let copy = t.clone();
+        assert!(std::ptr::eq(copy.bitmap(), t.bitmap()));
     }
 }

@@ -683,6 +683,15 @@ impl UniformManager {
         self.storage.is_empty()
     }
 
+    /// The bytes written so far, without aligning them (`fStorage`). The debug check
+    /// `PipelineDataGatherer::checkEquivalent` compares these.
+    // Port of: src/gpu/graphite/UniformManager.h#L300 (chrome/m156), `fStorage` (debug access)
+    #[cfg(debug_assertions)]
+    #[must_use]
+    pub fn storage(&self) -> &[u8] {
+        &self.storage
+    }
+
     /// Declares the uniforms the next writes must match (`setExpectedUniforms`).
     // Port of: src/gpu/graphite/UniformManager.cpp#L282-L294 (chrome/m156)
     #[cfg(debug_assertions)]

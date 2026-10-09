@@ -33,6 +33,21 @@ impl CtmShader {
     pub fn new(proxy_shader: Shader, ctm: Matrix) -> CtmShader {
         CtmShader { proxy_shader, ctm }
     }
+
+    /// The shader drawn with the CTM (`proxyShader()`).
+    // Port of: src/shaders/SkLocalMatrixShader.h#L77 (chrome/m156)
+    #[doc(alias = "proxyShader")]
+    #[must_use]
+    pub fn proxy_shader(&self) -> &Shader {
+        &self.proxy_shader
+    }
+
+    /// The matrix the shader was made with (`ctm()`).
+    // Port of: src/shaders/SkLocalMatrixShader.h#L78 (chrome/m156)
+    #[must_use]
+    pub fn ctm(&self) -> &Matrix {
+        &self.ctm
+    }
 }
 
 impl ShaderBase for CtmShader {

@@ -12,7 +12,11 @@
 
 use std::sync::OnceLock;
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::effect_priv::StageRec;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::raster_pipeline::Stage;
@@ -92,6 +96,62 @@ struct PaintingData {
     noise: [u16; NOISE_LEN],
     base_frequency: Point,
     stitch_data_init: StitchData,
+}
+
+/// The tables of a perlin noise shader as the GPU binds them (`PaintingData` after
+/// `generateBitmaps()`).
+#[derive(Clone, Debug)]
+pub struct PerlinNoiseTables {
+    /// `fBaseFrequency`.
+    pub base_frequency: Point,
+    /// `fStitchDataInit`: the stitch wrap sizes, as the shader's tile size.
+    pub stitch_data_init: ISize,
+    /// `fPermutationsBitmap`: the lattice selector, an A8 256x1 bitmap. Immutable.
+    pub permutations: Bitmap,
+    /// `fNoiseBitmap`: the gradient table, an RGBA8888 premul 256x4 bitmap. Immutable.
+    pub noise: Bitmap,
+}
+
+impl PaintingData {
+    /// `generateBitmaps()`: installs the lattice selector as an A8 256x1 bitmap and the gradient
+    /// table as a 256x4 RGBA8888 bitmap, both immutable. The table's `u16`s are stored little
+    /// endian, the byte order Skia's host layout has on every target this port runs on.
+    // Port of: src/shaders/SkPerlinNoiseShaderImpl.h#L77-L84 (chrome/m156)
+    fn generate_bitmaps(&self) -> PerlinNoiseTables {
+        let permutations_info = ImageInfo::new(
+            (BLOCK_SIZE_I32, 1),
+            ColorType::Alpha8,
+            AlphaType::Premul,
+            None,
+        );
+        let mut permutations = Bitmap::new();
+        let installed = permutations.install_pixels(
+            &permutations_info,
+            self.lattice_selector.to_vec(),
+            permutations_info.min_row_bytes(),
+        );
+        debug_assert!(installed);
+        permutations.set_immutable();
+
+        let noise_info = ImageInfo::new(
+            (BLOCK_SIZE_I32, 4),
+            ColorType::RGBA8888,
+            AlphaType::Premul,
+            None,
+        );
+        let noise_bytes: Vec<u8> = self.noise.iter().flat_map(|v| v.to_le_bytes()).collect();
+        let mut noise = Bitmap::new();
+        let installed = noise.install_pixels(&noise_info, noise_bytes, noise_info.min_row_bytes());
+        debug_assert!(installed);
+        noise.set_immutable();
+
+        PerlinNoiseTables {
+            base_frequency: self.base_frequency,
+            stitch_data_init: ISize::new(self.stitch_data_init.width, self.stitch_data_init.height),
+            permutations,
+            noise,
+        }
+    }
 }
 
 impl PaintingData {
@@ -289,6 +349,17 @@ impl PerlinNoiseShader {
     #[must_use]
     pub fn tile_size(&self) -> ISize {
         self.tile_size
+    }
+
+    /// The tables a Graphite key binds: `getPaintingData()` followed by `generateBitmaps()`. The
+    /// bitmaps are made fresh for each call, as Skia's are.
+    // Port of: src/gpu/graphite/KeyHelpers.cpp#L2312-L2326 (chrome/m156), the `getPaintingData()`
+    // and `generateBitmaps()` calls of `add_to_key(SkPerlinNoiseShader)`
+    #[doc(alias = "getPaintingData")]
+    #[doc(alias = "generateBitmaps")]
+    #[must_use]
+    pub fn painting_tables(&self) -> PerlinNoiseTables {
+        self.painting_data().generate_bitmaps()
     }
 
     // Port of: src/shaders/SkPerlinNoiseShaderImpl.cpp#L83-L107 (chrome/m156) (painting data)

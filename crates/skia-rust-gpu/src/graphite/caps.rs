@@ -12,9 +12,10 @@
 
 use std::fmt::Debug;
 
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::size::ISize;
 
-use crate::gpu::gpu_types::Protected;
+use crate::gpu::gpu_types::{Mipmapped, Protected, Renderable};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::AttachmentDesc;
 use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo};
@@ -100,6 +101,16 @@ pub trait Caps: Send + Sync + Debug {
     /// `getDepthStencilFormat()`.
     #[doc(alias = "getDepthStencilFormat")]
     fn get_depth_stencil_format(&self, flags: DepthStencilFlags) -> TextureFormat;
+
+    /// `getDefaultSampledTextureInfo()`.
+    #[doc(alias = "getDefaultSampledTextureInfo")]
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: ColorType,
+        mipmapped: Mipmapped,
+        is_protected: Protected,
+        renderable: Renderable,
+    ) -> TextureInfo;
 
     /// `getDefaultAttachmentTextureInfo()`.
     #[doc(alias = "getDefaultAttachmentTextureInfo")]
