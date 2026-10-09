@@ -33,6 +33,10 @@ pub(crate) mod flag {
     pub const BENIGN_ERRORS_WARN: u32 = 0x0010_0000;
     pub const APP_WARNINGS_WARN: u32 = 0x0020_0000;
     pub const CRC_ANCILLARY_MASK: u32 = CRC_ANCILLARY_USE | CRC_ANCILLARY_NOWARN;
+    /// Port of `PNG_FLAG_ZLIB_CUSTOM_STRATEGY` (pngstruct.h): the application chose the strategy.
+    pub const ZLIB_CUSTOM_STRATEGY: u32 = 0x0001;
+    /// Port of `PNG_FLAG_FILLER_AFTER` (pngpriv.h): the write filler is the last channel.
+    pub const FILLER_AFTER: u32 = 0x0080;
 }
 
 /// Port of `PNG_HAVE_*`, `PNG_AFTER_IDAT` and `PNG_IS_READ_STRUCT` (pngpriv.h).
@@ -46,6 +50,10 @@ pub(crate) mod mode {
     pub const HAVE_PNG_SIGNATURE: u32 = 0x1000;
     pub const HAVE_CHUNK_AFTER_IDAT: u32 = 0x2000;
     pub const IS_READ_STRUCT: u32 = 0x8000;
+    /// Port of `PNG_WROTE_tIME`, `PNG_WROTE_INFO_BEFORE_PLTE` and `PNG_WROTE_eXIf` (pngpriv.h).
+    pub const WROTE_TIME: u32 = 0x200;
+    pub const WROTE_INFO_BEFORE_PLTE: u32 = 0x400;
+    pub const WROTE_EXIF: u32 = 0x4000;
 }
 
 /// Port of `PNG_INFO_*` (png.h): the `valid` bits of `png_info`.
@@ -279,6 +287,9 @@ pub struct PngStruct {
 
     /// Warnings libpng would have sent to the application's warning function, in order.
     pub warnings: Vec<String>,
+
+    /// The write side (`png_struct` fields the write path uses). Empty for a read struct.
+    pub(crate) w: crate::write::WriteState,
 }
 
 impl std::fmt::Debug for PngStruct {

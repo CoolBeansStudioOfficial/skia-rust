@@ -31729,7 +31729,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L465-L506"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "053e42fdc20c3c4e7a4a2c07189371826c3929750f88129b842bfa78c51fa217"
 
 [[test]]
@@ -31783,7 +31783,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L300-L321"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "8309ee74cf1ef944bffc210dbb21ffd6aab15c8e905e1fa9299c09897c3526a3"
 
 [[test]]
@@ -35941,8 +35941,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1427-L1440"
 module = "codec"
-status = "todo"
-reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
+status = "passing"
 span_hash = "5200bd7f320a895cd3633b69853a22794ae4425907a9d0fc52304d68e1335506"
 
 [[test]]
