@@ -215,9 +215,9 @@ fn show_bounds(
 // Port of: gm/imagemakewithfilter.cpp#L182-L188 (chrome/m156), Strategy
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Strategy {
-    /// Uses MakeWithFilter, passing in subset and clip directly.
+    /// Uses `MakeWithFilter`, passing in subset and clip directly.
     MakeWithFilter,
-    /// Uses saveLayer after clipRect() to filter on the restore (i.e. reference image).
+    /// Uses `saveLayer` after `clipRect()` to filter on the restore (i.e. reference image).
     SaveLayer,
 }
 

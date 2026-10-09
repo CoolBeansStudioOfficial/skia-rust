@@ -97,7 +97,7 @@ impl ImageFilterBase for LocalMatrixImageFilter {
         // child, and map the result by the local matrix.
         let (local_bounds, _) = self.inv_local_matrix.map_rect(src);
         let child_bounds = match self.get_input(0) {
-            Some(input) => input.compute_fast_bounds(&local_bounds),
+            Some(input) => input.compute_fast_bounds(local_bounds),
             None => local_bounds,
         };
         self.local_matrix.map_rect(child_bounds).0

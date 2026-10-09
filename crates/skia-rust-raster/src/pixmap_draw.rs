@@ -121,10 +121,10 @@ impl ImageScalePixels for Image {
         }
 
         // Note: By calling the pixmap scaler, we never cache the final result.
-        if let Some(bm) = self.get_ro_pixels() {
-            if let Some(pmap) = bm.peek_pixels() {
-                return scale_pixels(&pmap, dst, sampling);
-            }
+        if let Some(bm) = self.get_ro_pixels()
+            && let Some(pmap) = bm.peek_pixels()
+        {
+            return scale_pixels(&pmap, dst, sampling);
         }
         false
     }
