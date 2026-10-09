@@ -171,6 +171,7 @@ pub mod imagesource2;
 pub mod internal_links;
 pub mod inverseclip;
 pub mod inversepaths;
+pub mod kawase_blur_rt;
 pub mod labyrinth;
 pub mod largeclippedpath;
 pub mod largeglyphblur;

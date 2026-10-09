@@ -21654,8 +21654,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L254-L271"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): decodes images/gainmap_gcontainer_only.jpg, the codec crate is on main; needs a port pass"
+status = "passing"
 span_hash = "f534d90c924f1f1987ead04682632c9d7c40be6e7501da8cc004c4d22958452a"
 
 [[test]]
@@ -22142,8 +22141,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/kawase_blur_rt.cpp#L196-L196"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): the old \"codecs not ported\" blocker is stale, the codec crate is on main; needs a port pass"
+status = "passing"
 span_hash = "5e43a9b229b6aa1a54ce6ea8556cefb0085c2bc2229c4b59ab5ab9c4f0ce75d9"
 
 [[test]]
@@ -22620,8 +22618,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mesh.cpp#L1489-L1489"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
+status = "passing"
 span_hash = "42fdc3ca01c8ff2d332994d29a30e6f438669bdc1ed5c3ee9b8acb6583abb559"
 
 [[test]]
@@ -22630,8 +22627,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mesh.cpp#L1486-L1486"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
+status = "passing"
 span_hash = "0dbf92c43c97a7ae359a2634e4203a3fd805b41db5d80efbe82384501fb7d95b"
 
 [[test]]
@@ -22640,8 +22636,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mesh.cpp#L1487-L1487"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
+status = "passing"
 span_hash = "357397b67bf8e3a95db34c1a3d6f2d94558503054ccd37c4247fca1fddbdbe52"
 
 [[test]]
@@ -22650,8 +22645,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mesh.cpp#L1488-L1488"
 module = "effects"
-status = "todo"
-reason = "not yet ported (SkSL sweep): the image decode blocker is stale (codec crate on main); MeshWithShadersGM needs a port pass; drawMesh is a no-op on the CPU"
+status = "passing"
 span_hash = "22c4ef3f6f7e5c9a12b8a4b19c7820b2f18ce89b24967a85dedc065353ac1a21"
 
 [[test]]
