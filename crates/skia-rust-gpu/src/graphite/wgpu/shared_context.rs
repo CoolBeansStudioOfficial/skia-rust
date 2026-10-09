@@ -22,12 +22,17 @@ use crate::graphite::recorder::RecorderSharedContext;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::Layout;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
+use crate::graphite::shared_context::SharedContext;
+use crate::graphite::thread_safe_resource_provider::THREADED_SAFE_RESOURCE_BUDGET;
 use crate::graphite::wgpu::async_wait::create_checked;
 use crate::graphite::wgpu::caps::{
     COMBINED_UNIFORM_INDEX, CapsProfile, INTRINSIC_UNIFORM_BUFFER_INDEX, STORAGE_BUFFER_INDEX,
     WgpuCaps,
 };
 use crate::graphite::wgpu::resource_provider::WgpuResourceProvider;
+
+/// `SK_InvalidGenID`: the recorder id of a resource provider no recorder owns.
+const INVALID_GEN_ID: u32 = 0;
 
 /// `DawnBackendContext`: the wgpu objects the client creates and passes into
 /// [`make_shared_context`](WgpuSharedContext::make) / [`make_context`](super::make_context).
@@ -72,7 +77,9 @@ pub struct WgpuSharedContext {
     queue: wgpu::Queue,
     has_tick: bool,
     caps: Arc<WgpuCaps>,
-    shader_dictionary: ShaderCodeDictionary,
+    /// The backend-neutral half (`SharedContext`): caps, shader dictionary, renderer provider and
+    /// the thread-safe resource provider.
+    base: SharedContext,
     // A noop fragment shader, it is used to workaround a Dawn validation error (Dawn doesn't
     // allow a pipeline with a color attachment but without a fragment shader).
     noop_fragment: wgpu::ShaderModule,
@@ -140,17 +147,26 @@ impl WgpuSharedContext {
         let single_texture_sampler_bind_group_layout =
             create_single_texture_sampler_bind_group_layout(&backend_context.device, &caps);
 
-        Some(Arc::new_cyclic(|this| Self {
+        let base = SharedContext::new(caps.clone(), BackendApi::Dawn, shader_dictionary);
+        let shared = Arc::new_cyclic(|this| Self {
             this: this.clone(),
             device: backend_context.device.clone(),
             queue: backend_context.queue.clone(),
             has_tick: backend_context.has_tick,
             caps,
-            shader_dictionary,
+            base,
             noop_fragment,
             uniform_buffers_bind_group_layouts,
             single_texture_sampler_bind_group_layout,
-        }))
+        });
+        // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L74-L76 (chrome/m156): the
+        // thread-safe provider wraps a resource provider made by the shared context itself, so it
+        // is set once the shared context exists.
+        shared.base.set_thread_safe_resource_provider(shared.make_resource_provider(
+            INVALID_GEN_ID,
+            THREADED_SAFE_RESOURCE_BUDGET,
+        ));
+        Some(shared)
     }
 
     /// `dawnCaps()` / `caps()`.
@@ -164,7 +180,13 @@ impl WgpuSharedContext {
     #[doc(alias = "shaderCodeDictionary")]
     #[must_use]
     pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
-        &self.shader_dictionary
+        self.base.shader_code_dictionary()
+    }
+
+    /// The backend-neutral half of the shared context.
+    #[must_use]
+    pub fn base(&self) -> &SharedContext {
+        &self.base
     }
 
     /// `device()`.
@@ -341,7 +363,7 @@ fn create_single_texture_sampler_bind_group_layout(
 
 impl RecorderSharedContext for WgpuSharedContext {
     fn caps(&self) -> Arc<dyn Caps> {
-        self.caps.clone()
+        self.base.caps_arc().clone()
     }
 
     fn backend(&self) -> BackendApi {
@@ -354,7 +376,7 @@ impl RecorderSharedContext for WgpuSharedContext {
     }
 
     fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
-        &self.shader_dictionary
+        self.base.shader_code_dictionary()
     }
 
     // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L89-L98 (chrome/m156)
