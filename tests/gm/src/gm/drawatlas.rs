@@ -141,18 +141,11 @@ fn draw_text_path(canvas: &Canvas, do_stroke: bool) {
 }
 
 // Port of: gm/drawatlas.cpp#L227-L235 (chrome/m156), drawTextRSXform
-crate::def_simple_gm!(
-    #[ignore = "see notes/gm-drawatlas.cpp-drawTextRSXform.md"]
-    drawTextRSXform,
-    canvas,
-    430,
-    860,
-    {
-        canvas.scale((0.5, 0.5));
-        let do_stroke = [false, true];
-        for st in do_stroke {
-            draw_text_path(canvas, st);
-            canvas.translate((0.0, 860.0));
-        }
+crate::def_simple_gm!(drawTextRSXform, canvas, 430, 860, {
+    canvas.scale((0.5, 0.5));
+    let do_stroke = [false, true];
+    for st in do_stroke {
+        draw_text_path(canvas, st);
+        canvas.translate((0.0, 860.0));
     }
-);
+});

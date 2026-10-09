@@ -151,8 +151,4 @@ fn make_shader(lm: &Matrix, outer_lm: &Matrix) -> Option<Shader> {
 }
 
 // Port of: gm/rsxtext.cpp#L81 (chrome/m156)
-crate::def_gm!(
-    #[ignore = "see notes/gm-rsxtext.cpp-RSXShaderGM.md"]
-    RSXShaderGM,
-    RsxShaderGm::new()
-);
+crate::def_gm!(RSXShaderGM, RsxShaderGm::new());
