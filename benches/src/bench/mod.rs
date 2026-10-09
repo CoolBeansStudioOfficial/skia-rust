@@ -6,6 +6,7 @@
 pub mod alternating_color_pattern_bench;
 pub mod bezier_bench;
 pub mod blur_bench;
+pub mod blur_image_filter_bench;
 pub mod blur_rects_bench;
 pub mod canvas_save_restore_bench;
 pub mod clear_bench;

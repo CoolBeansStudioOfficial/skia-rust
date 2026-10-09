@@ -792,7 +792,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L128-L128"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2d545f2c0284f87328c8ae3d2a5668ac5d697ee4cc530dfd304222084dcb8927"
 
 [[test]]
@@ -801,7 +801,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L141-L141"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "3b477f3eaef9894db072583bc6e04bb7793ee16ad093686a04e928a4e4adf8d5"
 
 [[test]]
@@ -810,7 +810,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L154-L154"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "84d890593992df0ed97104d8dbbd4fc0199af773fadb2ae524fbaa55da730068"
 
 [[test]]
@@ -819,7 +819,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L129-L129"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d8877a0ec57186a0e77f3b2da25cd6967d21f7dd99bf2a8e7516eb4deabd969a"
 
 [[test]]
@@ -828,7 +828,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L142-L142"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e1bbe58fdf70a02685fae7e380edcaf9b074e8fa9fe13fd6d27c465f44c0c5dd"
 
 [[test]]
@@ -837,7 +837,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L155-L155"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a7786ec632c172875ba76567b71775c75076035c61e8959e90b01958635c0eaf"
 
 [[test]]
@@ -846,7 +846,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L137-L137"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2060601185690e15c059d5e7aa90079502ac52c97b69e0987337e3872590cdda"
 
 [[test]]
@@ -855,7 +855,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L150-L150"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "74dbcd42f7dae27e5fc47a3570b636fddb1ab4878c2163daab324ec4a2310aad"
 
 [[test]]
@@ -864,7 +864,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L163-L163"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "3b785f96eb8889fb2d92cb04f7c3fb45a52fc8fecc873d836ca4d01e0d139818"
 
 [[test]]
@@ -873,7 +873,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L136-L136"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b0af0e1bcd442490a82ba8e99026b01ed769cafc8e1d1311bde8766756467fe2"
 
 [[test]]
@@ -882,7 +882,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L149-L149"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "02e02fcf585abbac8711616ee1904ae6aff0a272aee2c45b40df24b132b47865"
 
 [[test]]
@@ -891,7 +891,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L162-L162"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6b840d06d0b2b824034a4e5c81f96ab76b7c3cb91b4066a5339ce8d768b5c82d"
 
 [[test]]
@@ -900,7 +900,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L126-L126"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c50205d55be0d2f3db682668ac0e4310a816b64be4807b24b7c1327549b0b0f4"
 
 [[test]]
@@ -909,7 +909,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L139-L139"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a2d152ca39afe3c1f7805fadab8a80080979475d655bf1b8243e6d024642b7d7"
 
 [[test]]
@@ -918,7 +918,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L152-L152"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "69bd4a6a61dfc35216ab7ed5339d064f9e583bfd0fd39888e509313343062f7c"
 
 [[test]]
@@ -927,7 +927,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L135-L135"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "3774844329c8af5b44df009ac887702b88ebeb69d80620aa1c827b0cc6a2d55a"
 
 [[test]]
@@ -936,7 +936,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L148-L148"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "62f6906fc0fb97b39163b144df5739701f64dafa4f0715db62df50cd41615af5"
 
 [[test]]
@@ -945,7 +945,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L161-L161"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "77f3e2f147c6b9e496a0f3e7a46ada63e54f9e7a37f0cfd2da666ee995873771"
 
 [[test]]
@@ -954,7 +954,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L134-L134"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "dd1966fc8eb5b40d15d1eb6fe510ac9f9b6416fed7ef49e04e56ae5595fcf7a1"
 
 [[test]]
@@ -963,7 +963,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L147-L147"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6917abef8b835fab56ef2c95b50c001d5c4f7822f07dd80d9b4a545ed8336371"
 
 [[test]]
@@ -972,7 +972,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L160-L160"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "f9554eccc0cac57b7f9edbaa1d0571d040c916c2fbffa513ccd80fb5654e0118"
 
 [[test]]
@@ -981,7 +981,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L131-L131"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "72f0134b2b0b2490b7da576f17abfdfe6936fe071cb5a6b08b9b36dff750256b"
 
 [[test]]
@@ -990,7 +990,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L144-L144"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "99b6c6de9d5a483b6c1aa1b0306e2bf48eec91f0fa306abd8225dcbf53e55aa8"
 
 [[test]]
@@ -999,7 +999,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L157-L157"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "87703354646047cdaf9f5209b04cef89a674736594b993d752393615c18e33f3"
 
 [[test]]
@@ -1008,7 +1008,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L130-L130"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6a955419ed4635c4b4cb89e77501727290af5fe6cbace81fd10f6feceed46da1"
 
 [[test]]
@@ -1017,7 +1017,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L143-L143"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e77159a7c212c8ee7878b48a1601a8bebb95085a163417ddfbf1f75d7d4ffb8a"
 
 [[test]]
@@ -1026,7 +1026,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L156-L156"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "cf3aed8c8dc8244920045b95d54fd20da4bbccd4efa16b3bd738a817a27ca4c1"
 
 [[test]]
@@ -1035,7 +1035,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L127-L127"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "cd45afb20f171876b914dea7f69b245488d3cffff46f92e540baf807bcb55cc6"
 
 [[test]]
@@ -1044,7 +1044,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L140-L140"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4e593326d05b6075643746c93acd23142a79471d8334846f73ab9da2439676b6"
 
 [[test]]
@@ -1053,7 +1053,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L153-L153"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e07231dd358c60732138ca9720864940b1da962457c4dc999842983513ebfae6"
 
 [[test]]
@@ -1062,7 +1062,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L133-L133"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "7db58fe182e8042d4cb0e2803f518720778fc53026f965c8131ef5434c23af89"
 
 [[test]]
@@ -1071,7 +1071,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L146-L146"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6cce0ce98eb9276f5489227db0d1c9b9c17e13eaca095d55417aaafb25ba631b"
 
 [[test]]
@@ -1080,7 +1080,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L159-L159"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "431b93b4a5f57b6767546c2ec15b9e9605c329ef8bbb16da3a1e2b3ed87680a6"
 
 [[test]]
@@ -1089,7 +1089,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L132-L132"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "55a3d0bd622721181240f81653d7aa3480eb1815ec3cf4bf5fac0e40be65bfa2"
 
 [[test]]
@@ -1098,7 +1098,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L145-L145"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "02182b84b0a37a30a92e5fa83fabe39a8f09e1b54d743d6b4ee4a6c35454c597"
 
 [[test]]
@@ -1107,7 +1107,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurImageFilterBench.cpp#L158-L158"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9bcd12cc4decf570cce5a77c513fb6189b3e9b7595438d2d1ba9edd5fe23d150"
 
 [[test]]
