@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::command_buffer::{CommandBuffer, ResourceTracker};
+use crate::graphite::compute::compute_step::WorkgroupSize;
 use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::context_priv::ContextPriv;
 use crate::graphite::resource::Resource;
@@ -23,19 +24,6 @@ use crate::graphite::sampler::Sampler;
 use crate::graphite::scratch_resource_manager::ScratchResourceManager;
 use crate::graphite::task::{ReplayTargetData, Status, Task, TaskRef};
 use crate::graphite::texture::Texture;
-
-/// `WorkgroupSize`: the number of workgroups to dispatch.
-// Port of: src/gpu/graphite/compute/ComputeTypes.h#L21-L28 (chrome/m156)
-#[doc(alias = "skgpu::graphite::WorkgroupSize")]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct WorkgroupSize {
-    /// `fWidth`.
-    pub width: u32,
-    /// `fHeight`.
-    pub height: u32,
-    /// `fDepth`.
-    pub depth: u32,
-}
 
 /// `TextureIndex`: an index into the group's textures.
 // Port of: src/gpu/graphite/compute/DispatchGroup.h#L33 (chrome/m156)

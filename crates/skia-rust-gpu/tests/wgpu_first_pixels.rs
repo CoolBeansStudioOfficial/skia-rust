@@ -26,13 +26,27 @@ use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, CallbackResult, Mipmapped};
 use skia_rust_gpu::graphite::async_read::PixelTransferResult;
+use skia_rust_gpu::graphite::buffer::{BindBufferInfo, Buffer};
+use skia_rust_gpu::graphite::command_buffer::ResourceTracker;
+use skia_rust_gpu::graphite::compute::compute_step::{
+    ComputeStep, ComputeStepBase, DataFlow, NativeShaderFormat, NativeShaderSource, ResourceDesc,
+    ResourcePolicy, ResourceType, WorkgroupSize,
+};
+use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
+use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::device::Device;
 use skia_rust_gpu::graphite::graphite_types::{
     InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
+use skia_rust_gpu::graphite::resource::ResourceRef;
+use skia_rust_gpu::graphite::resource_provider::ResourceProvider;
 use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, LoadOp};
+use skia_rust_gpu::graphite::task::TaskRef;
+use skia_rust_gpu::graphite::task::compute_task::{
+    BindingResource, ComputeTask, Dispatch, DispatchGroup, GlobalSizeOrIndirect, ResourceBinding,
+};
 use skia_rust_gpu::graphite::task::copy_task::CopyBufferToBufferTask;
 use skia_rust_gpu::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
 use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
@@ -267,5 +281,177 @@ fn a_buffer_copy_is_read_back_through_the_async_map() {
     assert!(finished.load(Ordering::Acquire));
 
     let expected: Vec<u8> = (0..64u8).collect();
+    assert_eq!(read.lock().unwrap().as_deref(), Some(&expected[..]));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Compute
+// ---------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+struct DoubleStep {
+    base: ComputeStepBase,
+}
+
+impl ComputeStep for DoubleStep {
+    fn base(&self) -> &ComputeStepBase {
+        &self.base
+    }
+
+    fn native_shader_source(&self, format: NativeShaderFormat) -> NativeShaderSource<'_> {
+        assert_eq!(format, NativeShaderFormat::Wgsl);
+        NativeShaderSource {
+            source: "\
+@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+@compute @workgroup_size(8, 1, 1)
+fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
+    data[id.x] = data[id.x] * 2u + 1u;
+}
+",
+            entry_point: "cs_main".to_owned(),
+        }
+    }
+}
+
+/// One dispatch of the pipeline over a storage buffer.
+#[derive(Debug)]
+struct DoubleGroup {
+    pipeline: Arc<dyn ComputePipeline>,
+    buffer: ResourceRef<Buffer>,
+    dispatches: Vec<Dispatch>,
+}
+
+impl DispatchGroup for DoubleGroup {
+    fn snap_child_task(&mut self) -> Option<TaskRef> {
+        None
+    }
+
+    fn prepare_resources(&mut self, _resource_provider: &mut ResourceProvider) -> bool {
+        true
+    }
+
+    fn add_resource_refs(&mut self, tracker: &mut dyn ResourceTracker) {
+        tracker.track_resource(self.buffer.to_any());
+    }
+
+    fn dispatches(&self) -> &[Dispatch] {
+        &self.dispatches
+    }
+
+    fn pipeline(&self, _index: u32) -> Option<Arc<dyn ComputePipeline>> {
+        Some(self.pipeline.clone())
+    }
+}
+
+#[test]
+#[allow(clippy::too_many_lines)] // one scenario: upload, dispatch, copy back, read
+fn a_compute_pass_dispatches_over_a_storage_buffer() {
+    let Some(mut context) = real_context() else {
+        return;
+    };
+    let step: Arc<dyn ComputeStep> = Arc::new(DoubleStep {
+        base: ComputeStepBase::new(
+            "Double",
+            WorkgroupSize::new(8, 1, 1),
+            &[ResourceDesc::with_slot(
+                ResourceType::StorageBuffer,
+                DataFlow::Shared,
+                ResourcePolicy::None,
+                0,
+            )],
+            &[],
+            true,
+        ),
+    });
+    let pipeline = context
+        .shared_context()
+        .find_or_create_compute_pipeline(&ComputePipelineDesc::new(step))
+        .expect("a compute pipeline");
+
+    let mut recorder = context.make_recorder(None);
+    let (upload, storage, readback) = {
+        let mut provider = ContextPriv::resource_provider(&context).lock().unwrap();
+        let mut make = |size, ty, access, label| {
+            provider
+                .find_or_create_non_shareable_buffer(size, ty, access, label)
+                .unwrap()
+        };
+        (
+            make(
+                32,
+                BufferType::XferCpuToGpu,
+                AccessPattern::HostVisible,
+                "Upload",
+            ),
+            make(32, BufferType::Storage, AccessPattern::GpuOnly, "Storage"),
+            make(
+                32,
+                BufferType::XferGpuToCpu,
+                AccessPattern::HostVisible,
+                "Readback",
+            ),
+        )
+    };
+    let mut data = upload.map().expect("the upload buffer is mapped");
+    for (i, word) in data.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+        *word = u32::try_from(i).unwrap().to_le_bytes();
+    }
+    upload.unmap_with(&data);
+
+    let group = DoubleGroup {
+        pipeline,
+        buffer: storage.clone(),
+        dispatches: vec![Dispatch {
+            pipeline_index: 0,
+            bindings: vec![ResourceBinding {
+                index: 0,
+                resource: BindingResource::Buffer(BindBufferInfo::new(&storage, 0, 32)),
+            }],
+            global_size_or_indirect: GlobalSizeOrIndirect::Size(WorkgroupSize::new(1, 1, 1)),
+        }],
+    };
+    recorder.priv_().add(CopyBufferToBufferTask::make(
+        upload.as_arc(),
+        0,
+        storage.clone(),
+        0,
+        32,
+    ));
+    recorder
+        .priv_()
+        .add(ComputeTask::make(vec![Box::new(group)]));
+    recorder.priv_().add(CopyBufferToBufferTask::make(
+        storage.as_arc(),
+        0,
+        readback.clone(),
+        0,
+        32,
+    ));
+    recorder
+        .priv_()
+        .add(SynchronizeToCpuTask::make(readback.clone()));
+    let mut recording = recorder.snap().expect("a recording");
+    assert_eq!(
+        context.insert_recording(InsertRecordingInfo::new(&mut recording)),
+        InsertStatus::Success
+    );
+
+    let read: Arc<Mutex<Option<Vec<u8>>>> = Arc::new(Mutex::new(None));
+    let slot = read.clone();
+    context.finalize_async_read_pixels(
+        None,
+        vec![PixelTransferResult {
+            transfer_buffer: Some(readback),
+            size: ISize::new(32, 1),
+            row_bytes: 32,
+            pixel_converter: None,
+        }],
+        Box::new(move |result| {
+            *slot.lock().unwrap() = Some(result.expect("the read succeeded").data(0).to_vec());
+        }),
+    );
+    assert!(context.submit(SubmitInfo::new(SyncToCpu::Yes)));
+
+    let expected: Vec<u8> = (0..8u32).flat_map(|i| (i * 2 + 1).to_le_bytes()).collect();
     assert_eq!(read.lock().unwrap().as_deref(), Some(&expected[..]));
 }
