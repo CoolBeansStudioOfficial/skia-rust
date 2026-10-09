@@ -21933,6 +21933,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L338-L338"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "668ba4fbaba7b09a2b9206e0f718d07487874fca9d380f35badcbeaa7308e0d4"
 
 [[test]]
@@ -21942,6 +21943,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L667-L667"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "6d6c709376a54b7675189afe01f457b9d3c2959d997704735ef663d11304e3ff"
 
 [[test]]
@@ -21951,6 +21953,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L881-L881"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "eac7a2771cef05a9cf379f6bda573723e2fd0d2b6c31dcc0b527ce38c7243ebc"
 
 [[test]]
@@ -21996,6 +21999,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1026-L1026"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "45d39586921367b9df812e66fbeb2603214a8e292a0cad52efc820d1a4198de4"
 
 [[test]]
@@ -22005,6 +22009,7 @@ macro = "DEF_GM"
 source = "gm/mesh.cpp#L1216-L1216"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "ec6430c9ba121e5ae1386970050b77c3e383b69d643473d3f3e2a7e9d972b9de"
 
 [[test]]
@@ -22014,6 +22019,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/mesh.cpp#L1491-L1616"
 module = "raster"
 status = "todo"
+reason = "needs SkMesh / SkMeshSpecification (SkSL-based mesh shaders); not ported"
 span_hash = "c45a484b16658c08344d67f3025474840623ce5724d9c8a88f65cdcd21c2167c"
 
 [[test]]
@@ -22187,6 +22193,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L155-L155"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "10a55e87d769e5418ac52871813381fe961da27a5d96f9687a7f59b8f38ecc4a"
 
 [[test]]
@@ -22196,6 +22203,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L156-L156"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "7d40926ac7bc6ef530353fb6b2f5a1a45756122d65d075279ebdd7365b427e8b"
 
 [[test]]
@@ -22205,6 +22213,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L157-L157"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "5b33e9fadf6984eecafe528ce27e87f997191374e1dee2451d55612619039109"
 
 [[test]]
@@ -22214,6 +22223,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L158-L158"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "fe60fe1e26ca46851744359a6fcfeca13cf71ead2ed53bbf0751abe917aa96fe"
 
 [[test]]
@@ -22223,6 +22233,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L159-L159"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "03af8bc8b1af4bb340714e4e987ff851b043daf24b52073789dd76cbf5d3600c"
 
 [[test]]
@@ -22232,6 +22243,7 @@ macro = "MAKE_GM"
 source = "gm/orientation.cpp#L160-L160"
 module = "raster"
 status = "todo"
+reason = "needs JPEG decoding with EXIF orientation (images/orientation/*.jpg); skia-rust has no image codec"
 span_hash = "700246f5216dc2530ab785401a6dcc30391696aea92fdd160849da7aebab147d"
 
 [[test]]
@@ -22259,6 +22271,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L33-L59"
 module = "raster"
 status = "todo"
+reason = "needs SkOverdrawCanvas and SkOverdrawColorFilter; not ported"
 span_hash = "16b0ee844c3b6ff17820cc99e9e7c8902bf0899deb06cd480c1119c29edac37e"
 
 [[test]]
@@ -22296,6 +22309,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/p3.cpp#L116-L339"
 module = "raster"
 status = "todo"
+reason = "not ported: its Display P3 colour path is the one that mismatches in p3_ovals (see notes/gm_p3_cpp_p3_ovals.md)"
 span_hash = "08e64e76499e3149a7c3c4fbf90ddcf88970005a7ae90421fa0cb91e11bbbdb9"
 
 [[test]]
@@ -22304,7 +22318,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/p3.cpp#L341-L409"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "8888 and 565 mismatch on every tier (Display P3 colour path not confirmed as the cause); needs an oracle rp-dump, see notes/gm_p3_cpp_p3_ovals.md"
 span_hash = "ea5046c1734cb7fce92e646e2cfe84b92bd6626e8999917d929fb2f76fc43012"
 
 [[test]]
@@ -22662,6 +22677,7 @@ macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L286-L286"
 module = "raster"
 status = "todo"
+reason = "needs SkPerlinNoiseShader (SkShaders::MakeFractalNoise / MakeTurbulence); not in skia-rust's public API"
 span_hash = "6cc73a33d569e8f1144852fcb1ceff88e6acef1124e8e6fab1d33dd561333ca8"
 
 [[test]]
@@ -22671,6 +22687,7 @@ macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L289-L289"
 module = "raster"
 status = "todo"
+reason = "needs SkPerlinNoiseShader (SkShaders::MakeFractalNoise / MakeTurbulence); not in skia-rust's public API"
 span_hash = "4258830c65f556f440558dd8d288f6a587a35536f6dae19e18ec55ee2d357262"
 
 [[test]]
@@ -22680,6 +22697,7 @@ macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L287-L287"
 module = "raster"
 status = "todo"
+reason = "needs SkPerlinNoiseShader (SkShaders::MakeFractalNoise / MakeTurbulence); not in skia-rust's public API"
 span_hash = "4ea8abf4665b7055b66a75768cd7eef026bb13a71d4cf2303d85f2ff7a72ee23"
 
 [[test]]
@@ -22689,6 +22707,7 @@ macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L288-L288"
 module = "raster"
 status = "todo"
+reason = "needs SkPerlinNoiseShader (SkShaders::MakeFractalNoise / MakeTurbulence); not in skia-rust's public API"
 span_hash = "632292ec2ab279596cd1527329dfa8ebbd9177f4c666e399f24d587a4145f1d8"
 
 [[test]]
@@ -22698,6 +22717,7 @@ macro = "DEF_GM"
 source = "gm/perspimages.cpp#L143-L143"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "00eab6e68ce06a0f980d7adff20ecf04c26abc3b5ff4961e7040e4bead7ea247"
 
 [[test]]
@@ -22997,6 +23017,7 @@ macro = "DEF_GM"
 source = "gm/readpixels.cpp#L189-L189"
 module = "raster"
 status = "todo"
+reason = "needs image decoding (images/google_chrome.ico, randPixels.png) for the raster image; skia-rust has no image codec"
 span_hash = "4dd00057ff1d1b5ae27df2e2e5536218e50ad3c242998345b474700e39bc4485"
 
 [[test]]
@@ -23051,6 +23072,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/repeated_bitmap.cpp#L48-L51"
 module = "raster"
 status = "todo"
+reason = "needs images/randPixels.png and color_wheel.jpg decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "18d2ab8f6548c585dd5abb8a0ce1193e04cff70da542908dbc61e0d5ef345649"
 
 [[test]]
@@ -23205,6 +23227,7 @@ macro = "DEF_GM"
 source = "gm/runtimefunctions.cpp#L63-L63"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "5a561f068ebf174414ca4026a1cc592e1c8f4ecb2a1b7efe40811196805f10d5"
 
 [[test]]
@@ -23234,6 +23257,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L267-L318"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "dd098ded396b100e48be8e2f458eb32b103383ae81576ff9f9c91bfe800865c6"
 
 [[test]]
@@ -23253,6 +23277,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L238-L264"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "eab99248a8d97aabd7eaeab47f7d2d7f5219f70165478f55757e292a7472d5fa"
 
 [[test]]
@@ -23262,6 +23287,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L382-L415"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "b087a0d1ab68e8b8e4e25a8ee958680b73af987bc97a275d4e636ff03e39c8ec"
 
 [[test]]
@@ -23271,6 +23297,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L516-L561"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "6441ea4bd56b1873738d8f7febdb922a517acf54516f7e2d52bdfb8d28638b16"
 
 [[test]]
@@ -23280,6 +23307,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L603-L639"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "98b4f8d5e1c960bab8308c8bd893583ae43f848302c2e0a5bc507e0702738311"
 
 [[test]]
@@ -23289,6 +23317,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeintrinsics.cpp#L165-L195"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) runtime shaders; not ported"
 span_hash = "d358f02dcbd27389839c19338e2192d07d4c4cfafe8f82c7bdf6e8e07f965f95"
 
 [[test]]
@@ -23461,6 +23490,7 @@ macro = "DEF_GM"
 source = "gm/samplerstress.cpp#L147-L147"
 module = "raster"
 status = "todo"
+reason = "needs codec-backed images (make_codec_image); skia-rust has no image codec"
 span_hash = "b4a3cbd751c646cb375131c9fb1a10777e1fc2d25ea27f28aeeb991303414621"
 
 [[test]]
@@ -23708,6 +23738,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L230-L232"
 module = "raster"
 status = "todo"
+reason = "needs SkShadowUtils::DrawShadow (shadow utils); not ported"
 span_hash = "e998c0e03a2a4dc6709478caa6737aab22e29492cfce76d4a6ce541f10334c7c"
 
 [[test]]
@@ -23717,6 +23748,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L266-L337"
 module = "raster"
 status = "todo"
+reason = "needs SkShadowUtils::DrawShadow (shadow utils); not ported"
 span_hash = "2fd7e9399e932a48eab1a9e934616353f6ea4098f7cef863e17a16ade298f391"
 
 [[test]]
@@ -23735,6 +23767,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L238-L240"
 module = "raster"
 status = "todo"
+reason = "needs SkShadowUtils::DrawShadow (shadow utils); not ported"
 span_hash = "6b6329a0627983f383fcf90eead9edaf707c56adf2efbe88146395be0ad87a46"
 
 [[test]]
@@ -23744,6 +23777,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L234-L236"
 module = "raster"
 status = "todo"
+reason = "needs SkShadowUtils::DrawShadow (shadow utils); not ported"
 span_hash = "e1fd7a221e94f4fc7217cdecda0638f1699ff6414b1b06d2fa1ab1a5058627da"
 
 [[test]]
@@ -23870,6 +23904,7 @@ macro = "DEF_GM"
 source = "gm/showmiplevels.cpp#L102-L102"
 module = "raster"
 status = "todo"
+reason = "needs images/ship.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "cf89aad7116d8ce9dd041b348436499dee92cf9ee0537df21ae411a7107d45ea"
 
 [[test]]
@@ -23878,7 +23913,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/simpleaaclip.cpp#L210-L210"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e9fbb2b462ce43b0d5cf63c8b62b0910f98a5467a68f37af35579d95015c5505"
 
 [[test]]
@@ -23887,7 +23922,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/simpleaaclip.cpp#L209-L209"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e47fd21cdc6920ffea15af39d11a15fe7bcf4c4751e8f421dc033b3dedd10597"
 
 [[test]]
@@ -23896,7 +23931,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/simpleaaclip.cpp#L208-L208"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "422f95a2d83b680f51e0eb2fea9c378a1b1b1901431cd62b9302db38eab0f91b"
 
 [[test]]
@@ -23997,6 +24032,7 @@ macro = "DEF_GM"
 source = "gm/slug.cpp#L123-L123"
 module = "raster"
 status = "todo"
+reason = "needs sktext::gpu::Slug (GPU text path); not ported"
 span_hash = "dbc9c8e7e45919910b30bd7be29ba7a056f78a97691f402d66e9cc4a7c5c4625"
 
 [[test]]
@@ -25088,6 +25124,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L167-L168"
 module = "raster"
 status = "todo"
+reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
 span_hash = "616eda1fdcb5a30e150eec589f08e172dc1176aa947a22d260ce7d305a5d8fe1"
 
 [[test]]
@@ -25097,6 +25134,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L169-L170"
 module = "raster"
 status = "todo"
+reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
 span_hash = "39371c0e14bd3675f1f81cad92e168a7005b366bfdd01a57c52150c479f97d7e"
 
 [[test]]
@@ -25106,6 +25144,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L163-L164"
 module = "raster"
 status = "todo"
+reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
 span_hash = "413261afa1c9df7dc8d93c4f920014999b441cc58c2ad47571b7ef8458d988cc"
 
 [[test]]
@@ -25115,6 +25154,7 @@ macro = "DEF_GM"
 source = "gm/verylargebitmap.cpp#L165-L166"
 module = "raster"
 status = "todo"
+reason = "needs SkTiledImageUtils (manual tiling) and SkImages::DeferredFromPicture; the raster variants are also very large (up to 66560x150 and 5120x5120 N32 bitmaps); not ported"
 span_hash = "b6e1b132a3ce795b894c5778e472ef59f408aa782083e64f3f9c61484efe9dd3"
 
 [[test]]
@@ -25124,6 +25164,7 @@ macro = "DEF_GM"
 source = "gm/video_decoder.cpp#L60-L60"
 module = "raster"
 status = "todo"
+reason = "needs a video decoder (VideoDecoderGM); skia-rust has no video codec"
 span_hash = "4990b99c785e308006750ef35f3f4e4480b05d3e71aa74536c5ddf3515bd8644"
 
 [[test]]
@@ -25259,6 +25300,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/workingspace.cpp#L97-L186"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) and working-colour-space shaders and filters (SkWorkingColorSpaceShader); not ported"
 span_hash = "9f6a3096a29e57ca8178b5c0b12ce1a96eabaccf327bcdcab0b8c28cece1d7d5"
 
 [[test]]
@@ -25268,6 +25310,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/workingspace.cpp#L196-L266"
 module = "raster"
 status = "todo"
+reason = "needs SkRuntimeEffect (SkSL) and working-colour-space shaders and filters (SkWorkingColorSpaceShader); not ported"
 span_hash = "50aba2cc0de1e78e33cac92aee73e8f38e66cdecf2eb73cd1cae5881b8c853ad"
 
 [[test]]
