@@ -103,8 +103,4 @@ impl GM for SpriteBitmapGm {
 
 // Port of: gm/spritebitmap.cpp#L71-L71 (chrome/m156), DEF_GM( return new SpriteBitmapGM; )
 
-crate::def_gm!(
-    #[ignore = "see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"]
-    SpriteBitmapGM,
-    SpriteBitmapGm
-);
+crate::def_gm!(SpriteBitmapGM, SpriteBitmapGm);
