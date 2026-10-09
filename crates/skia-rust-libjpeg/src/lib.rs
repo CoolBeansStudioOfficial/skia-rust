@@ -3,7 +3,9 @@
 // Use of this source code is governed by the IJG, BSD-3-Clause and zlib licences in the LICENSE file.
 //
 //! A port of the 8-bit decompressor of libjpeg-turbo 3.1.0 (`libjpeg_turbo@e14cbfaa`), the
-//! subset that Skia's JPEG codec calls, used by skia-rust's codecs.
+//! subset that Skia's JPEG codec calls, used by skia-rust's codecs. The compressor that Skia's JPEG
+//! encoder calls is in [`Compress`] (the `compress` module); its differential check is
+//! `tests/encode_diff.rs`.
 //!
 //! Skia decodes with `jpeg_read_header`, `jpeg_calc_output_dimensions` (with `scale_num` and
 //! `scale_denom` for sampling), `jpeg_start_decompress`, `jpeg_read_scanlines`,

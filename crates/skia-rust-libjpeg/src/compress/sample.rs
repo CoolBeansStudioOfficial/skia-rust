@@ -2,8 +2,10 @@
 // `expand_right_edge`, `fullsize_downsample`, `h2v1_downsample`, `h2v2_downsample`,
 // `int_downsample`, the input-smoothing variants `h2v2_smooth_downsample` and
 // `fullsize_smooth_downsample`, and `_jinit_downsampler`'s choice between them. The bottom padding
-// of `jcprepct.c` (`expand_bottom_edge`, on the input rows and on the downsampled rows) is applied
-// here as index clamping and as the copy of the last downsampled row.
+// of `jcprepct.c` is applied here as index clamping on the input rows. Without smoothing, the
+// downsampled rows past the last input group repeat the last computed row (`pre_process_data`'s
+// `expand_bottom_edge`). With smoothing, the context-row controller computes them from the padded
+// input instead, so every row is computed.
 //
 // Copyright (C) 1991-1996, Thomas G. Lane. Modified 2009-2011 by D. R. Commander.
 // Copyright (C) 2025 The skia-rust Authors.
