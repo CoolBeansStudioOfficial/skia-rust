@@ -21,6 +21,8 @@ pub mod canvas_test;
 #[cfg(test)]
 pub mod capped_hairlines_test;
 #[cfg(test)]
+pub mod char_to_glyph_cache;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
@@ -51,9 +53,13 @@ pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
 #[cfg(test)]
+pub mod descriptor_test;
+#[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
 pub mod draw_path_test;
+#[cfg(test)]
+pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]
@@ -68,6 +74,15 @@ pub mod find_cubic_convex180_chops_test;
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+pub mod font_host_stream_test;
+#[cfg(test)]
+pub mod font_host_test;
+#[cfg(test)]
+pub mod font_mgr_test;
+pub mod font_names_test;
+pub mod font_scanner_fontations_test;
+pub mod font_test;
+pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
 #[cfg(test)]
@@ -81,6 +96,7 @@ pub mod hsv_round_trip_test;
 pub mod icc_test;
 #[cfg(test)]
 pub mod image_bitmap_test;
+pub mod image_filter_test;
 #[cfg(test)]
 pub mod image_from565_bitmap;
 #[cfg(test)]
@@ -123,11 +139,100 @@ pub mod path_data_test;
 #[cfg(test)]
 pub mod path_measure_test;
 #[cfg(test)]
+pub mod path_ops_as_winding_test;
+#[cfg(test)]
+pub mod path_ops_battles;
+pub mod path_ops_bounds_test;
+pub mod path_ops_build_use_test;
+pub mod path_ops_builder_conic_test;
+pub mod path_ops_builder_test;
+#[cfg(test)]
+pub mod path_ops_chalkboard_test;
+#[cfg(test)]
+pub mod path_ops_conic_intersection_test;
+#[cfg(test)]
+pub mod path_ops_conic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_conic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_conic_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_intersection_test;
+#[cfg(test)]
 pub mod path_ops_cubic_intersection_test_data;
+#[cfg(test)]
+pub mod path_ops_cubic_line_intersection_ideas;
+#[cfg(test)]
+pub mod path_ops_cubic_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_quad_intersection_test;
+#[cfg(test)]
+pub mod path_ops_cubic_reduce_order_test;
+#[cfg(test)]
+pub mod path_ops_d_cubic_test;
+#[cfg(test)]
+pub mod path_ops_d_line_test;
+#[cfg(test)]
+pub mod path_ops_d_point_test;
+#[cfg(test)]
+pub mod path_ops_d_rect_test;
+#[cfg(test)]
+pub mod path_ops_d_vector_test;
+#[cfg(test)]
+pub mod path_ops_extended_test;
+#[cfg(test)]
+pub mod path_ops_fuzz763_test;
+#[cfg(test)]
+pub mod path_ops_inverse_test;
+#[cfg(test)]
+pub mod path_ops_issue3651;
+pub mod path_ops_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_line_parameteters_test;
+#[cfg(test)]
+pub mod path_ops_op_circle_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_cubic_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_loop_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_rect_threaded_test;
+#[cfg(test)]
+pub mod path_ops_op_test;
+#[cfg(test)]
+pub mod path_ops_quad_intersection_test;
 #[cfg(test)]
 pub mod path_ops_quad_intersection_test_data;
 #[cfg(test)]
+pub mod path_ops_quad_line_intersection_test;
+#[cfg(test)]
+pub mod path_ops_quad_line_intersection_threaded_test;
+#[cfg(test)]
+pub mod path_ops_quad_reduce_order_test;
+#[cfg(test)]
+pub mod path_ops_simplify_degenerate_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_fail_test;
+#[cfg(test)]
+pub mod path_ops_simplify_quad_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_quadralaterals_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_rect_threaded_test;
+#[cfg(test)]
+pub mod path_ops_simplify_test;
+#[cfg(test)]
+pub mod path_ops_simplify_triangles_threaded_test;
+#[cfg(test)]
+pub mod path_ops_skp_test;
 pub mod path_ops_test_common;
+#[cfg(test)]
+pub mod path_ops_three_way_test;
+#[cfg(test)]
+pub mod path_ops_tiger_test;
+pub mod path_ops_tight_bounds_test;
+#[cfg(test)]
+pub mod path_ops_types_test;
 #[cfg(test)]
 pub mod path_raw_shapes_test;
 #[cfg(test)]
@@ -189,6 +294,8 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod serialization_test;
+#[cfg(test)]
 pub mod shader_test;
 #[cfg(test)]
 pub mod size_test;
@@ -197,7 +304,11 @@ pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
+pub mod sk_font_metrics_priv_test;
+#[cfg(test)]
 pub mod sk_gauss_filter_test;
+#[cfg(test)]
+pub mod sk_glyph_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
@@ -218,6 +329,12 @@ pub mod sk_sles2_conformance_test;
 #[cfg(test)]
 pub mod sk_slwgsl_testbed;
 #[cfg(test)]
+pub mod sk_remote_glyph_cache_test;
+#[cfg(test)]
+pub mod sk_strike_cache_test;
+#[cfg(test)]
+pub mod sk_strike_test;
+#[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
@@ -235,6 +352,9 @@ pub mod stroke_test;
 pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
+pub mod text_blob_test;
+#[cfg(test)]
+pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
 #[cfg(test)]

@@ -9,6 +9,7 @@
 //! skia-rust: flattening (`CreateProc`, `flatten`) is not ported.
 
 use skia_rust_core::fixed::{Fixed, fixed_to_scalar};
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
@@ -16,9 +17,11 @@ use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::{PathEffect, PathEffectBase};
 use skia_rust_core::path_measure::PathMeasure;
 use skia_rust_core::point::{Point, Vector, point_priv};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{SCALAR_NEARLY_ZERO, scalar, scalar_abs, scalar_round_to_int};
 use skia_rust_core::stroke_rec::StrokeRec;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 /// Utility that implements pseudo random 32-bit numbers with a fast linear equation. Unlike
 /// `rand()`, it holds its own seed, so that several instances can be used without side effects
@@ -88,7 +91,31 @@ struct DiscretePathEffectImpl {
     seed_assist: u32,
 }
 
+/// `SkDiscretePathEffect::CreateProc`: the segment length, the perturbation and the seed.
+// Port of: src/effects/SkDiscretePathEffect.cpp#L153-L158 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let seg_length = buffer.read_scalar();
+    let perterb = buffer.read_scalar();
+    let seed = buffer.read_uint();
+    new(seg_length, perterb, seed)
+}
+
 impl PathEffectBase for DiscretePathEffectImpl {
+    // Port of: src/effects/SkDiscretePathEffect.cpp#L167 (chrome/m156)
+    fn type_name(&self) -> &'static str {
+        "SkDiscretePathEffect"
+    }
+
+    // Port of: src/effects/SkDiscretePathEffect.cpp#L160-L164 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.seg_length);
+        buffer.write_scalar(self.perterb);
+        buffer.write_uint(self.seed_assist);
+    }
+
     // Port of: src/effects/SkDiscretePathEffect.cpp#L85-L127 (chrome/m156)
     #[allow(clippy::cast_precision_loss)] // mirrors the C++ `int` -> `SkScalar` conversion
     fn on_filter_path(

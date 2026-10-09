@@ -12,6 +12,7 @@ pub mod blend_mode_blender;
 #[doc(hidden)]
 pub mod blend_mode_priv;
 pub mod blender;
+pub mod blur_engine;
 pub mod blur_mask;
 pub mod blur_mask_filter_impl;
 pub mod blur_types;
@@ -46,25 +47,46 @@ pub mod cubic_map;
 pub mod cubics;
 pub mod data;
 pub mod data_table;
+pub mod descriptor;
 pub mod device;
 pub mod draw_procs;
 pub mod draw_types;
+pub mod drawable;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod effect_priv;
 pub mod endian;
 pub mod fdot6;
 pub mod fixed;
+pub mod flattenable;
 pub mod float_bits;
 pub mod floating_point;
+pub mod font;
+pub mod font_arguments;
+pub mod font_descriptor;
+pub mod font_metrics;
+#[doc(hidden)]
+pub mod font_metrics_priv;
+pub mod font_mgr;
+pub mod font_parameters;
+#[doc(hidden)]
+pub mod font_priv;
+pub mod font_stream;
+pub mod font_style;
+pub mod font_types;
 pub mod front_buffered_stream;
 pub mod gauss_filter;
 pub mod geometry;
+pub mod glyph;
+mod glyph_intercepts;
+pub mod glyph_run;
+pub mod graphics;
 pub mod half;
 pub mod id_change_listener;
 pub mod image;
 pub mod image_base;
 pub mod image_filter;
+pub mod image_filter_result;
 pub mod image_filter_types;
 pub mod image_info;
 #[doc(hidden)]
@@ -81,6 +103,7 @@ pub mod malloc_pixel_ref;
 pub mod mask;
 pub mod mask_blur_filter;
 pub mod mask_filter;
+pub mod mask_gamma;
 pub mod math;
 #[doc(hidden)]
 pub mod math_priv;
@@ -94,6 +117,7 @@ pub mod matrix_utils;
 pub mod mesh;
 pub mod mipmap;
 pub mod mipmap_accessor;
+pub mod packed_glyph_id;
 pub mod paint;
 #[doc(hidden)]
 pub mod paint_priv;
@@ -160,13 +184,23 @@ pub mod sampling_options;
 #[doc(hidden)]
 pub mod sampling_priv;
 pub mod scalar;
+pub mod scaler_context;
+pub mod serial_procs;
+pub mod sfnt;
 pub mod shader;
 pub mod shaders;
 pub mod size;
+pub mod slug;
 pub mod special_image;
 pub mod stream;
 #[doc(hidden)]
 pub mod stream_priv;
+#[doc(hidden)]
+pub mod strike;
+#[doc(hidden)]
+pub mod strike_cache;
+#[doc(hidden)]
+pub mod strike_spec;
 pub mod string;
 #[doc(hidden)]
 pub mod string_utils;
@@ -181,9 +215,12 @@ pub mod t_pin;
 pub mod t_sort;
 pub mod table_color_filter;
 pub mod tessellation;
+pub mod text_blob;
 pub mod tile_mode;
 pub mod tiled_image_utils;
 pub mod to;
+pub mod typeface;
+pub mod typeface_cache;
 pub mod un_pre_multiply;
 pub mod utf;
 pub mod utils;

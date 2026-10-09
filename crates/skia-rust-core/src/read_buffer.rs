@@ -5,14 +5,26 @@
 
 //! `SkReadBuffer`: deserialization of what `SkBinaryWriteBuffer` wrote.
 //!
-//! Only what `SkVerticesPriv::Decode` needs is ported: the cursor (`skip`, `available`,
-//! `isValid`, `validate`), the version check, `readInt`/`readUInt`/`read32`, `readPad32`,
-//! `readByteArray` and `skipByteArray`. Not ported: the deserial procs, the flattenable,
-//! typeface and image readers, the recursion limit, and every read of a type that is not
-//! ported yet (paths, paints, matrices, ...).
+//! Ported: the cursor (`skip`, `available`, `isValid`, `validate`), the version check,
+//! `readInt`/`readUInt`/`read32`/`read32LE`/`readScalar`, `readPad32`, `readByteArray`,
+//! `skipByteArray`, `readScalarArray`, `readString`, `readMatrix`, `readPath`, the flattenable
+//! readers for path effects and mask filters, and the empty case of `readTypeface`. Not ported:
+//! the deserial procs, the factory array, typeface-table and image readers, the recursion limit,
+//! and every read of a type that is not ported yet (paints, ...).
 //!
 //! skia-rust: `SkReadBuffer` requires its memory to be 4-byte aligned because it reads words in
 //! place; here the words are read from the bytes of a slice, so only the offsets are checked.
+
+use crate::flattenable::FlattenableRegistry;
+use crate::mask_filter::MaskFilter;
+use crate::matrix::Matrix;
+use crate::path::Path;
+use crate::path_effect::PathEffect;
+use crate::point::Point;
+use crate::rect::Rect;
+use crate::serial_procs::DeserialProcs;
+use crate::stream::MemoryStream;
+use crate::typeface::Typeface;
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
 fn align4(x: usize) -> usize {
@@ -30,6 +42,12 @@ pub struct ReadBuffer<'a> {
     curr: usize,
     version: u32,
     error: bool,
+    /// The names read so far (`fFlattenableDict`); the index of a name is its position plus one.
+    flattenable_names: Vec<String>,
+    /// `fProcs`: how the typefaces (and later the images) are read back.
+    deserial_procs: DeserialProcs,
+    /// `fTFArray`: the typefaces that index references name, in order (1 is the first).
+    typeface_array: Vec<Typeface>,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -40,6 +58,58 @@ impl<'a> ReadBuffer<'a> {
         let mut buffer = ReadBuffer::default();
         buffer.set_memory(data);
         buffer
+    }
+
+    /// `SkReadBuffer(data, size)` followed by `setDeserialProcs(procs)`: a buffer that reads
+    /// the typefaces of `data` with `procs`.
+    // Port of: src/core/SkReadBuffer.h (setDeserialProcs, chrome/m156)
+    #[must_use]
+    pub fn with_deserial_procs(data: &'a [u8], deserial_procs: DeserialProcs) -> ReadBuffer<'a> {
+        let mut buffer = ReadBuffer::new(data);
+        buffer.deserial_procs = deserial_procs;
+        buffer
+    }
+
+    /// `setTypefaceArray(array, count)`: the typefaces that the index arm of a typeface refers to.
+    // Port of: src/core/SkReadBuffer.h (setTypefaceArray, chrome/m156)
+    #[doc(alias = "setTypefaceArray")]
+    pub fn set_typeface_array(&mut self, typefaces: Vec<Typeface>) {
+        self.typeface_array = typefaces;
+    }
+
+    /// `readPoint`: two scalars (`SkReadBuffer::readPoint`).
+    // Port of: src/core/SkReadBuffer.cpp#L175-L178 (chrome/m156)
+    #[doc(alias = "readPoint")]
+    pub fn read_point(&mut self) -> Point {
+        let x = self.read_scalar();
+        let y = self.read_scalar();
+        Point::new(x, y)
+    }
+
+    /// `readRect`: four scalars. A short read gives the empty rectangle.
+    // Port of: src/core/SkReadBuffer.cpp#L213-L217 (chrome/m156)
+    #[doc(alias = "readRect")]
+    pub fn read_rect(&mut self) -> Rect {
+        let left = self.read_scalar();
+        let top = self.read_scalar();
+        let right = self.read_scalar();
+        let bottom = self.read_scalar();
+        if self.is_valid() {
+            Rect {
+                left,
+                top,
+                right,
+                bottom,
+            }
+        } else {
+            // `rect->setEmpty()`
+            Rect {
+                left: 0.0,
+                top: 0.0,
+                right: 0.0,
+                bottom: 0.0,
+            }
+        }
     }
 
     /// Makes the buffer read `data` (`setMemory`).
@@ -154,10 +224,70 @@ impl<'a> ReadBuffer<'a> {
         u32::from_ne_bytes(self.read_int().to_ne_bytes())
     }
 
+    /// Reads a boolean, which must be stored as 0 or 1: any other value makes the buffer invalid
+    /// (`readBool`).
+    // Port of: src/core/SkReadBuffer.cpp#L91-L96 (chrome/m156)
+    #[doc(alias = "readBool")]
+    pub fn read_bool(&mut self) -> bool {
+        let value = self.read_uint();
+        // Boolean value should be either 0 or 1
+        self.validate(value & !1 == 0);
+        value != 0
+    }
+
     /// Reads an `i32` (`read32`).
     // Port of: src/core/SkReadBuffer.cpp#L126-L128 (chrome/m156)
     pub fn read32(&mut self) -> i32 {
         self.read_int()
+    }
+
+    /// Reads a scalar stored as its bit pattern (`readScalar`). Returns 0 if the buffer is
+    /// invalid.
+    // Port of: src/core/SkReadBuffer.cpp#L112-L120 (chrome/m156)
+    #[doc(alias = "readScalar")]
+    pub fn read_scalar(&mut self) -> f32 {
+        const INC: usize = size_of::<f32>();
+        if !self.validate(self.curr.is_multiple_of(4) && self.is_available(INC)) {
+            return 0.0;
+        }
+        let bytes = &self.data[self.curr..self.curr + INC];
+        let value = f32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+        self.curr += INC;
+        value
+    }
+
+    /// Reads a typeface reference (`readTypeface`). The index arm is invalid: the buffer has no
+    /// typeface table yet (it arrives with picture serialization, T16). The custom arm reads the
+    /// bytes and hands them to the deserial proc; without bytes or a proc the buffer is invalid.
+    // Port of: src/core/SkReadBuffer.cpp#L443-L466 (chrome/m156), the `fTFCount == 0` index arm
+    // and the custom arm
+    #[doc(alias = "readTypeface")]
+    pub fn read_typeface(&mut self) -> Option<Typeface> {
+        // 0 -- return null (empty font); >0 -- index; <0 -- custom: negative size in bytes.
+        let index = self.read_int();
+        if index == 0 {
+            return None;
+        }
+        if index > 0 {
+            // The index names a typeface of the array, 1-based.
+            let typeface = usize::try_from(index)
+                .ok()
+                .and_then(|i| self.typeface_array.get(i - 1).cloned());
+            if typeface.is_none() {
+                self.validate(false);
+            }
+            return typeface;
+        }
+        let size = usize::try_from(index.unsigned_abs()).unwrap_or(usize::MAX);
+        let bytes = self.skip(size);
+        let read = self.deserial_procs.typeface.clone();
+        let (Some(bytes), Some(read)) = (bytes, read) else {
+            self.validate(false);
+            return None;
+        };
+        // C++ reads the bytes through an `SkMemoryStream` over them; the stream owns a copy here.
+        let mut stream = MemoryStream::make_copy(bytes);
+        read(&mut *stream)
     }
 
     /// Reads `buffer.len()` bytes, skipping the padding up to a multiple of 4 (`readPad32`).
@@ -199,6 +329,214 @@ impl<'a> ReadBuffer<'a> {
             0
         };
         (buf, size)
+    }
+}
+
+impl ReadBuffer<'_> {
+    /// `getArrayCount`: the count at the current position, which is not consumed. Returns 0 (and
+    /// makes the buffer invalid) if there is no word left.
+    // Port of: src/core/SkReadBuffer.cpp#L338-L344 (chrome/m156)
+    #[doc(alias = "getArrayCount")]
+    pub fn get_array_count(&mut self) -> u32 {
+        const INC: usize = size_of::<u32>();
+        if !self.validate(self.curr.is_multiple_of(4) && self.is_available(INC)) {
+            return 0;
+        }
+        u32::from_ne_bytes([
+            self.data[self.curr],
+            self.data[self.curr + 1],
+            self.data[self.curr + 2],
+            self.data[self.curr + 3],
+        ])
+    }
+
+    /// `validateCanReadN<T>`: whether `n` elements of `element_size` bytes are left to read.
+    // Port of: src/core/SkReadBuffer.h#L214-L216 (chrome/m156)
+    #[doc(alias = "validateCanReadN")]
+    pub fn validate_can_read_n(&mut self, n: usize, element_size: usize) -> bool {
+        self.validate(n <= self.available() / element_size)
+    }
+
+    /// Reads a 32-bit value that must not exceed `max`, or 0 (`read32LE`).
+    // Port of: src/core/SkReadBuffer.h#L102-L108 (chrome/m156)
+    #[doc(alias = "read32LE")]
+    pub fn read32_le(&mut self, max: u32) -> u32 {
+        let value = self.read_uint();
+        if !self.validate(value <= max) {
+            return 0;
+        }
+        value
+    }
+
+    /// Reads the scalars of an array whose count must be `values.len()` (`readScalarArray`).
+    // Port of: src/core/SkReadBuffer.cpp#L312-L314 (chrome/m156)
+    #[doc(alias = "readScalarArray")]
+    pub fn read_scalar_array(&mut self, values: &mut [f32]) -> bool {
+        let count = self.read_uint();
+        if !self.validate(usize::try_from(count).ok() == Some(values.len())) {
+            return false;
+        }
+        let Some(src) = self.skip(size_of_val(values)) else {
+            return false;
+        };
+        let (chunks, _) = src.as_chunks::<{ size_of::<f32>() }>();
+        for (value, chunk) in values.iter_mut().zip(chunks) {
+            *value = f32::from_ne_bytes(*chunk);
+        }
+        true
+    }
+
+    /// Reads a string written by `writeString`: its length, its bytes and a terminating zero
+    /// (`readString`). Returns `None` (and makes the buffer invalid) if it is malformed.
+    // Port of: src/core/SkReadBuffer.cpp#L148-L158 (chrome/m156)
+    #[doc(alias = "readString")]
+    pub fn read_string(&mut self) -> Option<String> {
+        let len = usize::try_from(self.read_uint()).ok()?;
+        let bytes = self.skip(len.checked_add(1)?)?;
+        if !self.validate(bytes[len] == 0) {
+            return None;
+        }
+        let Ok(value) = std::str::from_utf8(&bytes[..len]) else {
+            self.validate(false);
+            return None;
+        };
+        Some(value.to_owned())
+    }
+
+    /// Reads a matrix written by `writeMatrix`: 9 scalars. The matrix is the identity if the
+    /// buffer is invalid (`readMatrix`).
+    // Port of: src/core/SkReadBuffer.cpp#L195-L205 (chrome/m156)
+    #[doc(alias = "readMatrix")]
+    pub fn read_matrix(&mut self) -> Matrix {
+        const SIZE: usize = 9 * size_of::<f32>();
+        let mut matrix = Matrix::new_identity();
+        let mut size = 0;
+        if self.is_valid() {
+            // `SkMatrix::readFromMemory` reads nothing if fewer than 36 bytes are left.
+            if self.is_available(SIZE) {
+                let mut values = [0.0; 9];
+                for (i, value) in values.iter_mut().enumerate() {
+                    let at = self.curr + i * size_of::<f32>();
+                    *value = f32::from_ne_bytes([
+                        self.data[at],
+                        self.data[at + 1],
+                        self.data[at + 2],
+                        self.data[at + 3],
+                    ]);
+                }
+                matrix.set_9(&values);
+                size = SIZE;
+            }
+            self.validate(size != 0);
+        }
+        if !self.is_valid() {
+            matrix = Matrix::new_identity();
+        }
+        let _ = self.skip(size);
+        matrix
+    }
+
+    /// Reads a path written by `writePath`, and moves past it whether or not it is valid
+    /// (`readPath`).
+    // Port of: src/core/SkReadBuffer.cpp#L267-L283 (chrome/m156)
+    #[doc(alias = "readPath")]
+    pub fn read_path(&mut self) -> Option<Path> {
+        if !self.is_valid() {
+            return None;
+        }
+        let (path, size) = Path::read_from_memory(&self.data[self.curr..]);
+        // The path format is 4-byte aligned, and the path must have been read.
+        self.validate(align4(size) == size && path.is_some());
+        let _ = self.skip(size);
+        path
+    }
+
+    /// Reads a path effect written by `writeFlattenable` (`readPathEffect`). `registry` maps the
+    /// names to their factories.
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), with the factory table passed
+    // in (see `flattenable`)
+    #[doc(alias = "readPathEffect")]
+    pub fn read_path_effect(&mut self, registry: &FlattenableRegistry) -> Option<PathEffect> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.path_effect_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a mask filter written by `writeFlattenable` (`readMaskFilter`).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), with the factory table passed
+    // in (see `flattenable`)
+    #[doc(alias = "readMaskFilter")]
+    pub fn read_mask_filter(&mut self, registry: &FlattenableRegistry) -> Option<MaskFilter> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.mask_filter_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// The name part of `readRawFlattenable`: a string (which is added to the dictionary) or the
+    /// dictionary index of an earlier one. `None` if the writer wrote nothing, or on an error.
+    // Port of: src/core/SkReadBuffer.cpp#L489-L512 (chrome/m156), the no-factory-array arm
+    fn read_flattenable_name(&mut self) -> Option<String> {
+        if !self.is_valid() {
+            return None;
+        }
+        // If the first byte is non-zero, the flattenable is specified by a string. Otherwise it
+        // is the index, shifted left by 8.
+        if self.peek_byte() != 0 {
+            let name = self.read_string()?;
+            self.flattenable_names.push(name.clone());
+            Some(name)
+        } else {
+            let index = self.read_uint() >> 8;
+            if index == 0 {
+                return None; // writer failed to give us the flattenable
+            }
+            let name = usize::try_from(index)
+                .ok()
+                .and_then(|index| self.flattenable_names.get(index - 1).cloned());
+            if !self.validate(name.is_some()) {
+                return None;
+            }
+            name
+        }
+    }
+
+    /// The body part of `readRawFlattenable`: the recorded size, then what the factory reads,
+    /// which must be exactly that size.
+    // Port of: src/core/SkReadBuffer.cpp#L515-L536 (chrome/m156)
+    fn read_flattenable_body<T>(
+        &mut self,
+        factory: impl FnOnce(&mut Self) -> Option<T>,
+    ) -> Option<T> {
+        let size_recorded = self.read_uint();
+        let offset = self.curr;
+        let obj = factory(self);
+        let size_read = self.curr - offset;
+        if usize::try_from(size_recorded).ok() != Some(size_read) {
+            self.validate(false);
+            return None;
+        }
+        if !self.is_valid() {
+            return None;
+        }
+        obj
+    }
+
+    /// The first byte at the current position, without consuming it (`peekByte`). Returns 0,
+    /// and makes the buffer invalid, if there is no byte left.
+    // Port of: src/core/SkReadBuffer.cpp#L130-L136 (chrome/m156)
+    #[doc(alias = "peekByte")]
+    fn peek_byte(&mut self) -> u8 {
+        if self.available() == 0 {
+            self.validate(false);
+            return 0;
+        }
+        self.data[self.curr]
     }
 }
 
@@ -259,6 +597,30 @@ mod tests {
 
         // A size that is not a multiple of 4.
         assert!(!ReadBuffer::new(&[0, 0, 0]).is_valid());
+    }
+
+    #[test]
+    fn scalars_and_empty_typefaces_round_trip() {
+        let mut w = BinaryWriteBuffer::new();
+        w.write_scalar(1.5);
+        w.write_typeface(None);
+        w.write_scalar(-0.25);
+        let data = bytes(&w);
+        assert_eq!(data.len(), 12);
+
+        let mut r = ReadBuffer::new(&data);
+        assert_eq!(r.read_scalar(), 1.5);
+        assert!(r.read_typeface().is_none());
+        assert_eq!(r.read_scalar(), -0.25);
+        assert!(r.is_valid());
+
+        // A non-zero typeface index has no table to refer to.
+        let mut w = BinaryWriteBuffer::new();
+        w.write_int(3);
+        let data = bytes(&w);
+        let mut r = ReadBuffer::new(&data);
+        assert!(r.read_typeface().is_none());
+        assert!(!r.is_valid());
     }
 
     #[test]

@@ -4,3 +4,5 @@
 //! behind feature flags. See `docs/PLAN.md` for the project plan.
 
 pub use skia_rust_core as core;
+pub use skia_rust_pathops as pathops;
+pub use skia_rust_pathops::PathOpsExt;

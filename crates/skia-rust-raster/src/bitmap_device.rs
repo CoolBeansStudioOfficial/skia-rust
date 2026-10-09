@@ -26,6 +26,7 @@ use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
 use skia_rust_core::device::{CreateInfo, Device, DeviceState};
+use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
@@ -49,6 +50,7 @@ use skia_rust_core::vertices::Vertices;
 use std::sync::Arc;
 
 use crate::draw::Draw;
+use crate::glyph_run_painter::GlyphRunListPainter;
 use crate::raster_clip::RasterClip;
 use crate::raster_clip_stack::RasterClipStack;
 use skia_rust_core::color_type::ColorType;
@@ -497,6 +499,18 @@ fn can_apply_dst_matrix_as_ctm(m: &Matrix, paint: &Paint) -> bool {
 }
 
 impl Device for BitmapDevice {
+    // Port of: src/core/SkDevice.cpp#L322-L325 (chrome/m156)
+    fn create_image_filtering_backend(
+        &self,
+        surface_props: &SurfaceProps,
+        color_type: ColorType,
+    ) -> Option<Arc<dyn skia_rust_core::image_filter_types::Backend>> {
+        Some(crate::image_filter_backend::make_raster_backend(
+            *surface_props,
+            color_type,
+        ))
+    }
+
     fn state(&self) -> &DeviceState {
         &self.state
     }
@@ -817,6 +831,19 @@ impl Device for BitmapDevice {
     }
 
     // Port of: src/core/SkBitmapDevice.cpp#L351-L360 (chrome/m156)
+    // Port of: src/core/SkBitmapDevice.cpp#L540-L545 (chrome/m156)
+    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
+        debug_assert!(!list.has_rsxform());
+        let image_info = self.state.image_info();
+        let color_space = image_info.color_space();
+        let painter = GlyphRunListPainter::new(
+            *self.state.surface_props(),
+            image_info.color_type(),
+            color_space.as_ref(),
+        );
+        self.loop_tiler(None, |draw| draw.draw_glyph_run_list(&painter, list, paint));
+    }
+
     fn draw_path(&mut self, path: &Path, paint: &Paint) {
         let mut bounds = None;
         if DrawTiler::needs_tiling_for(self.state.width(), self.state.height())

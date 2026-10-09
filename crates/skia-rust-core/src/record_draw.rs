@@ -17,6 +17,7 @@ use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::paint::Paint;
 use crate::picture::AbortCallback;
+use crate::point::Point;
 use crate::record::Record;
 use crate::records::Command;
 use crate::rect::Rect;
@@ -228,6 +229,9 @@ impl<'a> Draw<'a> {
             }
             Command::DrawRegion(r) => {
                 canvas.draw_region(&r.region, &r.paint);
+            }
+            Command::DrawTextBlob(r) => {
+                canvas.draw_text_blob(&r.blob, (r.x, r.y), &r.paint);
             }
         }
     }
@@ -559,6 +563,11 @@ impl<'r, 'o> FillBounds<'r, 'o> {
             Command::DrawRegion(op) => {
                 let rect = Rect::from_irect(op.region.bounds());
                 self.adjust_and_map(rect, Some(&op.paint))
+            }
+            Command::DrawTextBlob(op) => {
+                // `op.blob->bounds()` offset by the origin, then the paint's adjustments.
+                let dst = op.blob.bounds().with_offset(Point::new(op.x, op.y));
+                self.adjust_and_map(dst, Some(&op.paint))
             }
             Command::DrawOval(op) => self.adjust_and_map(op.oval, Some(&op.paint)),
             // Tighter arc bounds?

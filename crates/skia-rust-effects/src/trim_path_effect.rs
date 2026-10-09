@@ -9,16 +9,19 @@
 //!
 //! skia-rust: flattening (`CreateProc`, `flatten`) is not ported.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::{PathEffect, PathEffectBase};
 use skia_rust_core::path_measure::PathMeasure;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::stroke_rec::StrokeRec;
 use skia_rust_core::t_pin::t_pin;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 /// Whether to return the trimmed subset or the complement (`SkTrimPathEffect::Mode`).
 #[doc(alias = "SkTrimPathEffect::Mode")]
@@ -80,7 +83,35 @@ struct TrimPE {
     mode: Mode,
 }
 
+/// `SkTrimPE::CreateProc`: the start, the stop, and the mode in bit 0.
+// Port of: src/effects/SkTrimPathEffect.cpp#L123-L130 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let start = buffer.read_scalar();
+    let stop = buffer.read_scalar();
+    let mode = if buffer.read_uint() & 1 == 1 {
+        Mode::Inverted
+    } else {
+        Mode::Normal
+    };
+    new(start, stop, mode)
+}
+
 impl PathEffectBase for TrimPE {
+    // Port of: src/effects/SkTrimPE.h#L24 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkTrimPE"
+    }
+
+    // Port of: src/effects/SkTrimPathEffect.cpp#L117-L121 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.start_t);
+        buffer.write_scalar(self.stop_t);
+        buffer.write_uint(self.mode as u32);
+    }
+
     // Port of: src/effects/SkTrimPathEffect.cpp#L61-L109 (chrome/m156), SkTrimPE::onFilterPath
     fn on_filter_path(
         &self,

@@ -8,6 +8,7 @@
 //!
 //! skia-rust: flattening (`CreateProc`, `flatten`) is not ported.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::path::{Iter, Path};
@@ -15,9 +16,11 @@ use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_effect::{PathEffect, PathEffectBase};
 use skia_rust_core::path_types::PathVerb;
 use skia_rust_core::point::{Point, Vector};
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{SCALAR_HALF, scalar};
 use skia_rust_core::stroke_rec::StrokeRec;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 // Port of: src/effects/SkCornerPathEffect.cpp#L26-L37 (chrome/m156)
 fn compute_step(a: Point, b: Point, radius: scalar, step: &mut Vector) -> bool {
@@ -39,7 +42,26 @@ struct CornerPathEffectImpl {
     radius: scalar,
 }
 
+/// `SkCornerPathEffect::CreateProc`: the radius.
+// Port of: src/effects/SkCornerPathEffect.cpp#L159-L161 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    new(buffer.read_scalar())
+}
+
 impl PathEffectBase for CornerPathEffectImpl {
+    // Port of: src/effects/SkCornerPathEffect.cpp#L168 (chrome/m156)
+    fn type_name(&self) -> &'static str {
+        "SkCornerPathEffect"
+    }
+
+    // Port of: src/effects/SkCornerPathEffect.cpp#L163-L165 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.radius);
+    }
+
     // Port of: src/effects/SkCornerPathEffect.cpp#L46-L151 (chrome/m156)
     #[allow(clippy::too_many_lines)] // one function in C++
     fn on_filter_path(

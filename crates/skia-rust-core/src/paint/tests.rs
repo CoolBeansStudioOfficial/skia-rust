@@ -6,6 +6,7 @@
 use super::*;
 use crate::color::colors;
 use crate::color_filter::tests::TestFilter;
+use crate::rect::IRect;
 use crate::shaders;
 
 /// A test mask filter outsetting by 3.
@@ -23,14 +24,47 @@ impl crate::mask_filter::MaskFilterBase for Outset3 {
 /// A test image filter: doubles the bounds' right/bottom; `unbounded` affects transparent black.
 #[derive(Debug)]
 struct TestImageFilter {
+    common: crate::image_filter::ImageFilterCommon,
     unbounded: bool,
 }
+impl TestImageFilter {
+    fn new(unbounded: bool) -> Self {
+        TestImageFilter {
+            common: crate::image_filter::ImageFilterCommon::new(Vec::new(), None),
+            unbounded,
+        }
+    }
+}
 impl crate::image_filter::ImageFilterBase for TestImageFilter {
+    fn common(&self) -> &crate::image_filter::ImageFilterCommon {
+        &self.common
+    }
+    fn on_affects_transparent_black(&self) -> bool {
+        self.unbounded
+    }
+    fn on_filter_image(
+        &self,
+        _context: &crate::image_filter_types::Context<'_>,
+    ) -> crate::image_filter_result::FilterResult {
+        crate::image_filter_result::FilterResult::default()
+    }
+    fn on_get_input_layer_bounds(
+        &self,
+        _mapping: &crate::image_filter_types::Mapping,
+        desired_output: IRect,
+        _content_bounds: Option<IRect>,
+    ) -> IRect {
+        desired_output
+    }
+    fn on_get_output_layer_bounds(
+        &self,
+        _mapping: &crate::image_filter_types::Mapping,
+        _content_bounds: Option<IRect>,
+    ) -> Option<IRect> {
+        None
+    }
     fn compute_fast_bounds(&self, b: &Rect) -> Rect {
         Rect::new(b.left, b.top, b.right * 2.0, b.bottom * 2.0)
-    }
-    fn affects_transparent_black(&self) -> bool {
-        self.unbounded
     }
 }
 
@@ -238,7 +272,7 @@ fn nothing_to_draw() {
 
     // Any image filter may change alpha.
     p.set_color_filter(None);
-    p.set_image_filter(ImageFilter::from_base(TestImageFilter { unbounded: false }));
+    p.set_image_filter(ImageFilter::from_base(TestImageFilter::new(false)));
     assert!(!p.nothing_to_draw());
 }
 
@@ -266,7 +300,7 @@ fn fast_bounds() {
     p.set_stroke_join(Join::Miter);
     p.set_path_effect(PathEffect::from_base(TestPathEffect { bounded: true }));
     p.set_mask_filter(MaskFilter::from_base(Outset3));
-    p.set_image_filter(ImageFilter::from_base(TestImageFilter { unbounded: false }));
+    p.set_image_filter(ImageFilter::from_base(TestImageFilter::new(false)));
     assert!(p.can_compute_fast_bounds());
     // Fill: no stroke outset (1 + 0 + 3).
     let e = r.with_outset((4.0, 4.0));
@@ -275,7 +309,7 @@ fn fast_bounds() {
         Rect::new(e.left, e.top, e.right * 2.0, e.bottom * 2.0)
     );
 
-    p.set_image_filter(ImageFilter::from_base(TestImageFilter { unbounded: true }));
+    p.set_image_filter(ImageFilter::from_base(TestImageFilter::new(true)));
     assert!(!p.can_compute_fast_bounds());
     p.set_image_filter(None);
     p.set_path_effect(PathEffect::from_base(TestPathEffect { bounded: false }));

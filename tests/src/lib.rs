@@ -142,10 +142,10 @@ macro_rules! def_test {
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            {
-                let $reporter: &mut $crate::Reporter = &mut reporter;
-                $body
-            }
+            // The body runs as a closure, so an early `return` (after a failed assertion) ends only
+            // the body. Without it the failures recorded so far would never reach `finish()`.
+            let run = |$reporter: &mut $crate::Reporter| $body;
+            run(&mut reporter);
             reporter.finish();
         }
     };
@@ -179,10 +179,38 @@ macro_rules! def_tier_test {
                 let _guard = ::skia_rust_simd::testing::force_tier(sel)
                     .expect("tier_selections() returns checked selections");
                 reporter.set_context(Some(sel.to_string()));
-                {
+                // A closure, as in `def_test!`: an early `return` ends this tier only.
+                let run = |$reporter: &mut $crate::Reporter| $body;
+                run(&mut reporter);
+            }
+            reporter.set_context(None);
+            reporter.finish();
+        }
+    };
+}
+
+/// [`def_test!`] for a test that makes typefaces from `ToolUtils::TestFontMgr()` (directly, or
+/// through `CreateTypefaceFromResource`): runs the body under each [`FontConfig`], the portable
+/// configuration and the native Fontations one, as Skia's default and `NativeFonts_Fontations`
+/// bots do. A test passes only if both runs pass, so a skipped branch cannot pass hollowly
+/// (docs/design/text.md §8). Each failure is prefixed with its configuration.
+#[macro_export]
+macro_rules! def_font_test {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            for config in [
+                ::skia_rust_tools::font_tool_utils::FontConfig::Portable,
+                ::skia_rust_tools::font_tool_utils::FontConfig::NativeFontations,
+            ] {
+                reporter.set_context(Some(format!("{config:?}")));
+                ::skia_rust_tools::font_tool_utils::with_font_config(config, || {
                     let $reporter: &mut $crate::Reporter = &mut reporter;
                     $body
-                }
+                });
             }
             reporter.set_context(None);
             reporter.finish();

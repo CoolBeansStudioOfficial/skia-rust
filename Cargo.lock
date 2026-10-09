@@ -89,6 +89,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytemuck"
+version = "1.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a1f896587b6f2c069c73d2f0913e2d590c3990285cd2f0b6aa02b786b4c679c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "cc"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -226,6 +246,15 @@ dependencies = [
  "crc32fast",
  "miniz_oxide 0.9.1",
  "zlib-rs",
+]
+
+[[package]]
+name = "font-types"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81bf886368962a7d8456f136073ed33ed1b0770c690d2063731bb6a776e99f33"
+dependencies = [
+ "bytemuck",
 ]
 
 [[package]]
@@ -383,6 +412,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
+name = "read-fonts"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e47cf772000d7aea67a6ea51de8a21b77674aaa538f3b523d89ae6514bf45bb4"
+dependencies = [
+ "bytemuck",
+ "font-types",
+]
+
+[[package]]
 name = "regex"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -506,6 +545,7 @@ name = "skia-rust"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
+ "skia-rust-pathops",
 ]
 
 [[package]]
@@ -515,7 +555,6 @@ dependencies = [
  "bitflags",
  "skia-rust-simd",
  "skia-rust-skcms",
- "skia-rust-sksl",
 ]
 
 [[package]]
@@ -540,7 +579,16 @@ dependencies = [
  "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-simd",
+ "skia-rust-text",
+ "skia-rust-tools",
  "zstd",
+]
+
+[[package]]
+name = "skia-rust-pathops"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
 ]
 
 [[package]]
@@ -571,23 +619,47 @@ name = "skia-rust-skcms"
 version = "0.156.0"
 
 [[package]]
-name = "skia-rust-sksl"
-version = "0.156.0"
-dependencies = [
- "bitflags",
- "skia-rust-simd",
-]
-
-[[package]]
 name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
- "skia-rust-sksl",
+ "skia-rust-text",
+ "skia-rust-tools",
+]
+
+[[package]]
+name = "skia-rust-text"
+version = "0.156.0"
+dependencies = [
+ "font-types",
+ "read-fonts",
+ "skia-rust-core",
+ "skia-rust-raster",
+ "skrifa",
+]
+
+[[package]]
+name = "skia-rust-tools"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+ "skia-rust-raster",
+ "skia-rust-text",
+]
+
+[[package]]
+name = "skrifa"
+version = "0.43.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cbe997d0f2480442d727488fbe2150779114cbe480ecdbadef58b33e0318ffb"
+dependencies = [
+ "bytemuck",
+ "read-fonts",
 ]
 
 [[package]]
