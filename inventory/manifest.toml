@@ -19830,7 +19830,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode.cpp#L60-L60"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2598ad4b806a96069d9958a9bd91c6783bd37adc8b0c21ea3cf703138bbaaf58"
 
 [[test]]
@@ -19839,7 +19839,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/encode.cpp#L66-L86"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "fd70b861151777cef380dcb9990a8c25cdbc64cf664d235d147f3903bda7140a"
 
 [[test]]
@@ -19848,7 +19849,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_alpha_jpeg.cpp#L107-L107"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "86351259e9038cb854ac57c93383c680fa73dcd27e9106578f094356b1bafaaa"
 
 [[test]]
@@ -19884,7 +19885,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L158-L158"
 module = "codec"
-status = "todo"
+status = "failing"
+reason = "mismatch on every config; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kJPEG.md"
 span_hash = "32379a251c0de003983602c57953717dfd65a59b7af18def9f28bd29dc8ec526"
 
 [[test]]
@@ -19893,7 +19895,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L156-L156"
 module = "codec"
-status = "todo"
+status = "failing"
+reason = "a few RGB565 pixels differ from the golden; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kPNG.md"
 span_hash = "326e490e92eb0daad17dfdc20a58fc7ab225e5a4ec904eb705cadacb867389b4"
 
 [[test]]
@@ -19903,6 +19906,7 @@ macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L157-L157"
 module = "codec"
 status = "todo"
+reason = "needs the WebP encoder (SkWebpEncoder), not ported"
 span_hash = "264bec9587041a19a2420f8c893831fd714f9187232960821caabdb71f4c4d4c"
 
 [[test]]
@@ -22147,7 +22151,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/jpg_color_cube.cpp#L70-L70"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "a26a63283a652289e2e5f27eac11c09c9a7d69743dcf9aec4b8104d2a6de8d3d"
 
 [[test]]
@@ -31776,7 +31780,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L126-L129"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "bb1caddb380cfa754a649ad96b9816312273821b6620f54189438f31e0d7bca6"
 
 [[test]]
@@ -31786,6 +31790,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L682-L713"
 module = "codec"
 status = "todo"
+reason = "needs the WebP encoder (SkWebpEncoder), not ported"
 span_hash = "fb71069dbe7830f5087c5b2662e2fd0336686cded8ac7fd19f8d04340b3e0174"
 
 [[test]]
@@ -31794,7 +31799,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L323-L358"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "5eaa4533c7d559cdf600a4edc46820fd8b3675a3943516493c9a6062830506ce"
 
 [[test]]
@@ -31803,7 +31808,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L360-L395"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b08db81300bcb4466fdb3d9ab01f3cd0bd4208c7f5c224d425afa8c96a84414c"
 
 [[test]]

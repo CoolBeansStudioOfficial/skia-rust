@@ -24,6 +24,10 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::stream::MemoryStream;
 
+use skia_rust_codec::encode::jpeg_encoder::{self, AlphaOption, Downsample};
+use skia_rust_raster::surfaces;
+use std::sync::{Arc, Mutex};
+
 use crate::resources::{get_resource_as_data, get_resource_as_image};
 use crate::{def_test, reporter_assert};
 
@@ -326,3 +330,222 @@ def_test!(
         );
     }
 );
+
+/// The formats of EncodeTest.cpp's `encode` and `make` helpers (`SkEncodedImageFormat::kJPEG` and
+/// `kPNG`; the WebP case is not ported).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TestFormat {
+    Jpeg,
+    Png,
+}
+
+/// Port of `encode(SkEncodedImageFormat, const SkPixmap&)` (EncodeTest.cpp#L26-L34), with the
+/// default options.
+fn encode_format(format: TestFormat, src: &skia_rust_core::pixmap::Pixmap<'_>) -> Option<Data> {
+    match format {
+        TestFormat::Jpeg => jpeg_encoder::encode_pixmap(src, &jpeg_encoder::Options::default()),
+        TestFormat::Png => png_encoder::encode_pixmap(src, &Options::default()),
+    }
+}
+
+/// The encoder `make(SkEncodedImageFormat, SkWStream*, const SkPixmap&)` returns.
+enum AnyEncoder<'a> {
+    Jpeg(Box<jpeg_encoder::JpegEncoder<'a>>),
+    Png(Box<png_encoder::PngEncoder<'a>>),
+}
+
+impl AnyEncoder<'_> {
+    fn encode_rows(&mut self, num_rows: i32) -> bool {
+        match self {
+            AnyEncoder::Jpeg(e) => e.encode_rows(num_rows),
+            AnyEncoder::Png(e) => e.encode_rows(num_rows),
+        }
+    }
+}
+
+/// Port of `make(SkEncodedImageFormat, SkWStream*, const SkPixmap&)` (EncodeTest.cpp#L36-L44),
+/// with the output going to `out`.
+fn make_encoder(
+    format: TestFormat,
+    out: Arc<Mutex<Vec<u8>>>,
+    src: skia_rust_core::pixmap::Pixmap<'_>,
+) -> Option<AnyEncoder<'_>> {
+    match format {
+        TestFormat::Jpeg => jpeg_encoder::make(out, src, &jpeg_encoder::Options::default())
+            .map(|e| AnyEncoder::Jpeg(Box::new(e))),
+        TestFormat::Png => {
+            png_encoder::make(out, src, &Options::default()).map(|e| AnyEncoder::Png(Box::new(e)))
+        }
+    }
+}
+
+/// A read-only view of the same pixels, for an encoder that takes its source by value.
+fn pixmap_view<'a>(
+    src: &'a skia_rust_core::pixmap::Pixmap<'_>,
+) -> Option<skia_rust_core::pixmap::Pixmap<'a>> {
+    skia_rust_core::pixmap::Pixmap::new_readonly(src.info(), src.addr()?, src.row_bytes())
+}
+
+/// Port of `test_encode(skiatest::Reporter*, SkEncodedImageFormat)` (EncodeTest.cpp#L46-L84): one
+/// shot, row by row, three rows at a time, and all rows at once must give the same bytes.
+fn test_encode(reporter: &mut crate::Reporter, format: TestFormat) {
+    let Some(image) = get_resource_as_image("images/mandrill_128.png") else {
+        return;
+    };
+    let Some(bitmap) = image.as_legacy_bitmap() else {
+        return;
+    };
+    let Some(src) = bitmap.peek_pixels() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+
+    let Some(data0) = encode_format(format, &src) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let height = src.info().height();
+
+    let out1 = Arc::new(Mutex::new(Vec::new()));
+    if let Some(mut encoder1) =
+        pixmap_view(&src).and_then(|v| make_encoder(format, Arc::clone(&out1), v))
+    {
+        for _ in 0..height {
+            reporter_assert!(reporter, encoder1.encode_rows(1));
+        }
+    } else {
+        reporter_assert!(reporter, false);
+    }
+
+    let out2 = Arc::new(Mutex::new(Vec::new()));
+    if let Some(mut encoder2) =
+        pixmap_view(&src).and_then(|v| make_encoder(format, Arc::clone(&out2), v))
+    {
+        let mut i = 0;
+        while i < height {
+            reporter_assert!(reporter, encoder2.encode_rows(3));
+            i += 3;
+        }
+    } else {
+        reporter_assert!(reporter, false);
+    }
+
+    let out3 = Arc::new(Mutex::new(Vec::new()));
+    if let Some(mut encoder3) =
+        pixmap_view(&src).and_then(|v| make_encoder(format, Arc::clone(&out3), v))
+    {
+        reporter_assert!(reporter, encoder3.encode_rows(200));
+    } else {
+        reporter_assert!(reporter, false);
+    }
+
+    let want = data0.as_bytes();
+    reporter_assert!(reporter, out1.lock().is_ok_and(|v| v.as_slice() == want));
+    reporter_assert!(reporter, out2.lock().is_ok_and(|v| v.as_slice() == want));
+    reporter_assert!(reporter, out3.lock().is_ok_and(|v| v.as_slice() == want));
+}
+
+// Port of: tests/EncodeTest.cpp#L126-L129 (chrome/m156)
+def_test!(Encode, |reporter| {
+    test_encode(reporter, TestFormat::Jpeg);
+    test_encode(reporter, TestFormat::Png);
+});
+
+// Port of: tests/EncodeTest.cpp#L323-L358 (chrome/m156)
+def_test!(Encode_JPG, |reporter| {
+    let Some(image) = get_resource_as_image("images/mandrill_128.png") else {
+        return;
+    };
+    let formats = [
+        ColorType::RGBA8888,
+        ColorType::BGRA8888,
+        ColorType::RGB565,
+        ColorType::ARGB4444,
+        ColorType::Gray8,
+        ColorType::RGBAF16,
+    ];
+    for ct in formats {
+        for at in [AlphaType::Premul, AlphaType::Unpremul, AlphaType::Opaque] {
+            let info = ImageInfo::new((image.width(), image.height()), ct, at, None);
+            let Some(mut surface) = surfaces::raster(&info, None, None) else {
+                reporter_assert!(reporter, false);
+                continue;
+            };
+            surface.canvas().draw_image(&image, (0, 0), None);
+
+            let mut bm = Bitmap::new();
+            bm.alloc_pixels_info(&info, None);
+            let Some(snapshot) = surface.image_snapshot() else {
+                reporter_assert!(reporter, false);
+                continue;
+            };
+            let Some(mut pm) = bm.peek_pixels_mut() else {
+                reporter_assert!(reporter, false);
+                continue;
+            };
+            if !snapshot.read_pixels_to_pixmap(&mut pm, (0, 0)) {
+                // "failed to readPixels!"
+                reporter_assert!(reporter, false);
+                continue;
+            }
+            let Some(src) = bm.peek_pixels() else {
+                reporter_assert!(reporter, false);
+                continue;
+            };
+            for alpha_option in [AlphaOption::Ignore, AlphaOption::BlendOnBlack] {
+                let opts = jpeg_encoder::Options {
+                    alpha_option,
+                    ..jpeg_encoder::Options::default()
+                };
+                if jpeg_encoder::encode_pixmap(&src, &opts).is_none() {
+                    reporter_assert!(
+                        reporter,
+                        ct == ColorType::ARGB4444 && alpha_option == AlphaOption::BlendOnBlack
+                    );
+                }
+            }
+        }
+    }
+});
+
+// Port of: tests/EncodeTest.cpp#L360-L395 (chrome/m156)
+def_test!(Encode_JpegDownsample, |reporter| {
+    let Some(image) = get_resource_as_image("images/mandrill_128.png") else {
+        return;
+    };
+    let Some(bitmap) = image.as_legacy_bitmap() else {
+        return;
+    };
+    let Some(src) = bitmap.peek_pixels() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+
+    let mut options = jpeg_encoder::Options::default();
+    let data0 = jpeg_encoder::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data0.is_some());
+
+    options.downsample = Downsample::Horizontal;
+    let data1 = jpeg_encoder::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data1.is_some());
+
+    options.downsample = Downsample::No;
+    let data2 = jpeg_encoder::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data2.is_some());
+
+    let (Some(data0), Some(data1), Some(data2)) = (data0, data1, data2) else {
+        return;
+    };
+    reporter_assert!(reporter, data0.as_bytes().len() < data1.as_bytes().len());
+    reporter_assert!(reporter, data1.as_bytes().len() < data2.as_bytes().len());
+
+    let decode = |data: Data| {
+        deferred_from_encoded_data(Some(data), None).and_then(|img| img.as_legacy_bitmap())
+    };
+    let (Some(bm0), Some(bm1), Some(bm2)) = (decode(data0), decode(data1), decode(data2)) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm1, 60));
+    reporter_assert!(reporter, almost_equals_bitmap(&bm1, &bm2, 60));
+});
