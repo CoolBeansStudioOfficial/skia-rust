@@ -21829,7 +21829,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterscropexpand.cpp#L39-L105"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "732238c24c167d416d1c4dc06b6dd1684b70c8d18eb8d4b56033531e497b500e"
 
 [[test]]
@@ -21838,7 +21838,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefilterscropped.cpp#L182-L182"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f1e479e112efdebdab5f986f3cb1a219e476386c9b23c6690985bb0c8ae9bb10"
 
 [[test]]
@@ -21847,8 +21847,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersgraph.cpp#L161-L161"
 module = "effects"
-status = "todo"
-reason = "needs the morphology (Dilate, Erode) and matrix convolution image filters, which are not ported yet"
+status = "passing"
 span_hash = "4138291453f67fa4ad9cedfb710c50b29ee9de4d6ec937db0dbb8374e10ca93f"
 
 [[test]]
@@ -21857,8 +21856,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersscaled.cpp#L164-L164"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::PointLitDiffuse/SpotLitDiffuse (the lighting filters are not ported)"
+status = "passing"
 span_hash = "785fd8ae5a11a2992fbcbb8a90df56c034d024f36a406b792dfebb824eeb2426"
 
 [[test]]
@@ -21867,7 +21865,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersstroked.cpp#L108-L108"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f2540ef52e4e8501e2aeb119e757738f5d3c56126348b1be2282fc76b659e6f0"
 
 [[test]]
@@ -21876,7 +21874,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefilterstransformed.cpp#L315-L315"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2a1517d8743c243a6d785158b7b6a45099223190c7737351969e7f03cc9df658"
 
 [[test]]
@@ -21886,6 +21884,7 @@ macro = "DEF_GM"
 source = "gm/imagefilterstransformed.cpp#L221-L221"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkImageFilter::makeWithLocalMatrix, which skia-rust does not have."
 span_hash = "0d7262feb119e0baae0186c3b970f07526b849b318a1a00652c13070b19f1c66"
 
 [[test]]
@@ -21894,7 +21893,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefilterstransformed.cpp#L131-L131"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ff27243a6c20712844f2290a6fe7474bc1d811bb19949122f6ed9ee147241b08"
 
 [[test]]
@@ -21904,6 +21903,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterstransformed.cpp#L318-L363"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkCanvas::concat(SkM44), which skia-rust does not have."
 span_hash = "a2ce37f21d7f73a67469fbf45c00970de152a09f523d6b38a3cd49da871b2974"
 
 [[test]]
@@ -21912,7 +21912,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterstransformed.cpp#L136-L171"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "05c3c2b2370297785005d1e16ec0087454a29c30e05c378c66d107017dbee0fa"
 
 [[test]]
