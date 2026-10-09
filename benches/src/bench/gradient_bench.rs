@@ -318,7 +318,7 @@ impl GeomType {
 
 /// `ToolUtils::tilemode_name(mode)`.
 // Port of: tools/ToolUtils.cpp#L132-L140 (chrome/m156)
-fn tilemode_name(tm: TileMode) -> &'static str {
+pub(crate) fn tilemode_name(tm: TileMode) -> &'static str {
     match tm {
         TileMode::Clamp => "clamp",
         TileMode::Repeat => "repeat",

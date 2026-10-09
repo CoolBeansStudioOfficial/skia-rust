@@ -4880,7 +4880,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L104-L104"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "5f72575747a1e5ad6ccc65c7c1cfc2457695dc44a31a37fd1626875412746a63"
 
 [[test]]
@@ -4889,7 +4889,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L107-L107"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9b6cdbb5f470a2e2b76baf7639181c2d2322d4a8d7fe7f527f0e72dd40d56b6a"
 
 [[test]]
@@ -4898,7 +4898,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L105-L105"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ad9cb9e14fb717afbe60fc372777f77f67c79851b456055b5bb572239f7a546e"
 
 [[test]]
@@ -4907,7 +4907,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L101-L101"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "08b3ba8d4e39156cb4725d618ab617661c060445929dc67dc7f1b1b67e825359"
 
 [[test]]
@@ -4916,7 +4916,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L102-L102"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8cd241bca3ac2c99543a3ff08af5fee6fec93bc3815b98c4e61df718869ff116"
 
 [[test]]
@@ -4925,7 +4925,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L103-L103"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2f9f9b249bc78d4395490511c78e7b3c202f0e7696581488478e554de33a81d8"
 
 [[test]]
@@ -4934,7 +4934,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L106-L106"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d2b8bc470eb1bf0790d127f7e3028796717f4b49e6067092380563f92c668eaa"
 
 [[test]]
@@ -4943,7 +4943,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L122-L122"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "bad4f90bd6e7024f942ebaf4289d20c87e31ed34f498882894deef9426606549"
 
 [[test]]
@@ -4952,7 +4952,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L125-L125"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "390eb3b5681dc5d773c3552c1f07e84ce11b8b06b4aa676fc1d2a3284f6ba10b"
 
 [[test]]
@@ -4961,7 +4961,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L123-L123"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "37358c682d7b80485a482ebe65c938fa02ae72f84ec9de951af8e761eaa0cdf5"
 
 [[test]]
@@ -4970,7 +4970,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L119-L119"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "066e9500bd2123048480b750a76bcc11767f3f03dadcf5c011a55fc06fe2e5b6"
 
 [[test]]
@@ -4979,7 +4979,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L120-L120"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b4a045db1486d497b19c9ac9159d545ee4b719af99fdfcb846aae7bd69863fc9"
 
 [[test]]
@@ -4988,7 +4988,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L121-L121"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "59ad0acf0e76c10577fa4deec1a0524a28c23055c630042d2c1685b5a658a247"
 
 [[test]]
@@ -4997,7 +4997,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L124-L124"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4aface5d1512be92e3bef67b552df9d0c3702275e95f838ee25d667018563030"
 
 [[test]]
@@ -5006,7 +5006,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L113-L113"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9940390b837b902f65b018b1140592ec5769825d143306db0d5a93b3c1894561"
 
 [[test]]
@@ -5015,7 +5015,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L116-L116"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b92ab07b5c6cf88835f7895aa57542ecd1dbc444b442f62956dd63445125ec91"
 
 [[test]]
@@ -5024,7 +5024,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L114-L114"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d151e6c0bb9abc1e4576aa334df6bd68ea7e7875e525c385e090e209986e909d"
 
 [[test]]
@@ -5033,7 +5033,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L110-L110"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "0992806ef0a4e6fa14acd8c93fadc0288e6ed2526fecc3783e791ab4faa51bf0"
 
 [[test]]
@@ -5042,7 +5042,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L111-L111"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "07ccfcea8a5c7e636dd8d0ae52d957418e366c1d26cb5643dc3a625b9f4dafd1"
 
 [[test]]
@@ -5051,7 +5051,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L112-L112"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b9746f9249974db160fd61b99df027e193e447879197a5e4e0eaa35180c74e59"
 
 [[test]]
@@ -5060,7 +5060,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumColors.cpp#L115-L115"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e15e90bddf386cc22b7aea6fd9c54bb436695c23c757cfcd49af80527e48a8a6"
 
 [[test]]
@@ -5069,7 +5069,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L102-L102"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "73d443d54344d6806b82ee1a2123d04582e3701e41a9412bd8707c1bada0f3ae"
 
 [[test]]
@@ -5078,7 +5078,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L103-L103"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "aefbf25302dbca42c02d5c9e59f36a0e26d3f93c2fc5f0d3a309e60838cbc683"
 
 [[test]]
@@ -5087,7 +5087,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L104-L104"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2e16ce6ea1f38cf148dfc2e7bd112435d1cea93d24a1f778995ee0444e95fbd7"
 
 [[test]]
@@ -5096,7 +5096,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L114-L114"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8c5ee8c9f10883020222a20335157f5ab27d6cc0d36057f2a861a78d1d82e00f"
 
 [[test]]
@@ -5105,7 +5105,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L115-L115"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "68b5fb141ebc9a5235887a21627a9f894fccfba3ad8708cd328efbc8cf17b296"
 
 [[test]]
@@ -5114,7 +5114,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L116-L116"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "97dcfffffc0ca0e0a97adc06446e5f09de51acac0f53ce28f9fb6770af91d7ef"
 
 [[test]]
@@ -5123,7 +5123,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L106-L106"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a5c759f5746476b4b34b1cb94bb3aa87b7381c88fed9470df9f1aa253343d3ab"
 
 [[test]]
@@ -5132,7 +5132,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L108-L108"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a214f62d8ea4cde73c7f537e329409a0d7423f71b36a317068d084ec0be62b83"
 
 [[test]]
@@ -5141,7 +5141,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L107-L107"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "91e1d05cfbe336f8257fa5ce8bcec6054c8599520b472895ba2f1e4701115e8c"
 
 [[test]]
@@ -5150,7 +5150,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L110-L110"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2911b7accedf0370cc78614a53c870fec54d88074f88cf27d9fc70a8e9c8bdd7"
 
 [[test]]
@@ -5159,7 +5159,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L111-L111"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8e2e65bee832273b1fd5a3951e4a5a95e5064bb367abe80b01d97d2c042de9c7"
 
 [[test]]
@@ -5168,7 +5168,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_ScaleNumHardStops.cpp#L112-L112"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "f29182d1d140a3a94e2308a0bdc5e1385924c65a9dc22a5443963d5903cec933"
 
 [[test]]
@@ -5177,7 +5177,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L110-L110"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "bf543d993e20c11a9d512d48e2e0f5b7c57699ad472898fa8307c6256e084e74"
 
 [[test]]
@@ -5186,7 +5186,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L116-L116"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "639523f33feeea08449061688dbfba5bf9556df13bc459e500cfa7a60b404558"
 
 [[test]]
@@ -5195,7 +5195,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L122-L122"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "300ca3235fe392ce7437feb8cd1002283da4b7be2ef6529a93d1a4fde7b83167"
 
 [[test]]
@@ -5204,7 +5204,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L111-L111"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "359b80115852d0086d27568add2c5f4ae7769781f855aefc0be264d85a16c783"
 
 [[test]]
@@ -5213,7 +5213,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L117-L117"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "09e3ea491a796430707ff7acccaaae40739d22bfdefcb610b1f081f442104f0c"
 
 [[test]]
@@ -5222,7 +5222,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L123-L123"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "221fec3fd48482e87c017618ff15ea342526c99c367b25df8eb0281240a7a85a"
 
 [[test]]
@@ -5231,7 +5231,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L112-L112"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8849a7768eb32189e7a7beb45c3138422edbdc98141e6f6f93b46c0d0eb20f91"
 
 [[test]]
@@ -5240,7 +5240,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L118-L118"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "19316161589d9860781973e7a968080f84817266288ad0dd3d0c7efaedd677ce"
 
 [[test]]
@@ -5249,7 +5249,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L124-L124"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e83ea131942a5ab1641598775cf02ae490b251cf9235298d616681390d4b8c39"
 
 [[test]]
@@ -5258,7 +5258,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L113-L113"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2ac62d05020139087f7d04831b1b3603e35401813a1115f7f5a337a6a6fd6607"
 
 [[test]]
@@ -5267,7 +5267,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L119-L119"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2fca82d6bff83ff293b4f434b6539b60dd22ba6b44f48eee5047b3624bac00e7"
 
 [[test]]
@@ -5276,7 +5276,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L125-L125"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "652fa736f7ae11fa162f0a6dadce284dfd627e1c1a7402e8f8230b66698276e9"
 
 [[test]]
@@ -5285,7 +5285,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L114-L114"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "7fe5cc064b5a45a386fe7b29fcc5d056614d07332eb0f3c679e514f0ae0772ef"
 
 [[test]]
@@ -5294,7 +5294,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L120-L120"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a9bb83799d882bed07277edcb508b6fbde4206c1b29da3f8fa387795bd44c577"
 
 [[test]]
@@ -5303,7 +5303,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HardStopGradientBench_SpecialHardStops.cpp#L126-L126"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "cfa4c7329202bd2ba7ab7f394dee157a3f133b139fc146e144c2e87031d3519f"
 
 [[test]]
