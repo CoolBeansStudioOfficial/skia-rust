@@ -13,6 +13,7 @@ use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_data::{pixel16_to_color, pixel32_to_pixel16};
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -178,4 +179,61 @@ pub fn make_surface(
     canvas
         .new_surface(info, props)
         .or_else(|| surfaces::raster(info, None, props))
+}
+
+/// Port of `ToolUtils::DecodeDataToBitmap` (default colour space): the bitmap of the image
+/// generator's natural info, or `None` if the data does not decode.
+// Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
+#[must_use]
+fn decode_data_to_bitmap(data: Vec<u8>) -> Option<Bitmap> {
+    let mut generator = skia_rust_codec::image_generator_from_encoded::make_from_encoded(
+        Some(Data::new_from_vec(data)),
+        None,
+    )?;
+    let info: ImageInfo = generator.info().with_color_space(None);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    if !generator.get_pixels(&info, &mut pixels, row_bytes) {
+        return None;
+    }
+    let mut bm = Bitmap::new();
+    bm.install_pixels(&info, pixels, row_bytes).then_some(bm)
+}
+
+/// Port of `ToolUtils::GetResourceAsBitmap`: the decoded bitmap of the resource at `path`, or
+/// `None` if it cannot be read or decoded.
+// Port of: tools/DecodeUtils.h#L23-L25 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_bitmap(path: &str) -> Option<Bitmap> {
+    decode_data_to_bitmap(get_resource_as_data(path)?)
+}
+
+/// Port of `ToolUtils::copy_to`: copies `src` into `dst` as `dst_color_type`, leaving `dst`
+/// unchanged and returning `false` if any step fails.
+// Port of: tools/ToolUtils.cpp#L395-L422 (chrome/m156)
+#[must_use]
+pub fn copy_to(dst: &mut Bitmap, dst_color_type: ColorType, src: &Bitmap) -> bool {
+    let Some(src_pm) = src.peek_pixels() else {
+        return false;
+    };
+
+    let mut tmp_dst = Bitmap::new();
+    let dst_info = src_pm.info().with_color_type(dst_color_type);
+    if !tmp_dst.set_info(&dst_info, None) {
+        return false;
+    }
+
+    if !tmp_dst.try_alloc_pixels() {
+        return false;
+    }
+
+    let Some(mut dst_pm) = tmp_dst.peek_pixels_mut() else {
+        return false;
+    };
+    if !src_pm.read_pixels_to_pixmap(&mut dst_pm, (0, 0)) {
+        return false;
+    }
+
+    dst.swap(&mut tmp_dst);
+    true
 }

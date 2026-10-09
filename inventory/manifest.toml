@@ -16019,8 +16019,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L95-L125"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "excluded"
+reason = "compiled out unless SK_SUPPORT_LEGACY_ALPHA_BITMAP_AS_COVERAGE, which the oracle build does not define (#if defined in gm/alpha_image.cpp)"
 span_hash = "17ff052baa0dcc32cb70d3be57fd4cadbdce28dbfafc239d59f7b7bb2fe39c47"
 
 [[test]]
@@ -16650,8 +16650,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmapimage.cpp#L81-L81"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_512_q075.jpg (ToolUtils::GetResourceAsImage; the port has no JPEG decoder)"
+status = "passing"
 span_hash = "1a472572d72d61adece8c62bf19e509569d9e03afa0429e57d15f0771be49dd4"
 
 [[test]]
@@ -17682,8 +17681,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L44-L53"
 module = "raster"
-status = "todo"
-reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "e7cb719f3d3ea4ec9c1e731082938e1cae83eb2a1667fedb44033242e13166d4"
 
 [[test]]
@@ -17692,8 +17690,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L72-L98"
 module = "raster"
-status = "todo"
-reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "815aa526bfb889b61bd5dc59ec758cdf4c6bbb47a9b4a11da747508a1a8147f7"
 
 [[test]]
@@ -17702,8 +17699,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L55-L67"
 module = "raster"
-status = "todo"
-reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "5ac6340756f439f07cf44a0aff2ebb9af4e891534e2675c27551f2eaee1bae16"
 
 [[test]]
@@ -18738,8 +18734,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/copy_to_4444.cpp#L47-L47"
 module = "raster"
-status = "todo"
-reason = "needs images/dog.jpg (ToolUtils::GetResourceAsBitmap; the port has no JPEG decoder)"
+status = "passing"
 span_hash = "bf1aa9bd6c2b988ab71d4d547ff7034675e4ced265059dcc5c982c69a7f953bc"
 
 [[test]]
@@ -18748,8 +18743,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/copy_to_4444.cpp#L51-L74"
 module = "raster"
-status = "todo"
-reason = "needs images/dog.jpg (ToolUtils::GetResourceAsBitmap; the port has no JPEG decoder)"
+status = "passing"
 span_hash = "7ba7d92a43275f5bd466803021e42c574e4f85b7dfc3a01464f127b861993977"
 
 [[test]]
@@ -21494,8 +21488,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/hsl.cpp#L210-L262"
 module = "raster"
-status = "todo"
-reason = "needs images/ducky.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "a580e4164a49b79cdf45109d3705d07deb1f151ef99de6449e2741960ed36ba2"
 
 [[test]]
@@ -21504,8 +21497,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/hsl.cpp#L157-L196"
 module = "raster"
-status = "todo"
-reason = "needs images/ducky.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "ec72bea3ea041c8c1e7a34564b6df493bfb5f0acbbf4d5c50c58ab8156c9994a"
 
 [[test]]
