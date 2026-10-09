@@ -11,6 +11,7 @@ mod skia;
 mod sksl;
 mod sksl_lexer;
 mod verify;
+mod verify_benches;
 mod verify_gms;
 mod verify_sksl;
 
