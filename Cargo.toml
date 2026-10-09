@@ -78,6 +78,14 @@ missing_safety_doc = "deny"
 # Ported Skia arithmetic intentionally mirrors C++ casts and float comparisons.
 # Allowed per-item with a comment, never workspace-wide.
 
+# `cargo test` builds use the test profile. Level 1 keeps every debug check (debug assertions,
+# overflow checks, which the debug CI jobs exist for) while cutting the unoptimized run time of
+# the raster/GPU suites by an order of magnitude. Rust never contracts or reassociates float
+# arithmetic at any opt level, so results are unchanged; exactness is still pinned by the
+# release jobs (#34, #69).
+[profile.test]
+opt-level = 1
+
 [profile.release]
 debug = 1
 

@@ -22,6 +22,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 
+use skia_rust_core::math_priv::next_pow2;
 use skia_rust_core::t_dp_queue::TDPQueue;
 use skia_rust_core::t_sort::t_q_sort;
 
@@ -178,6 +179,8 @@ pub struct ResourceCache {
 
     return_queue: Arc<ReturnQueue>,
     count: usize,
+    // `static SkRandom gRandom` in `validate()`, held per cache (no global mutable state).
+    validate_random: std::sync::Mutex<skia_rust_core::random::Random>,
 }
 
 impl std::fmt::Debug for ResourceCache {
@@ -231,6 +234,7 @@ impl ResourceCache {
             use_token: 0,
             return_queue: Arc::new(ReturnQueue::new()),
             count: 0,
+            validate_random: std::sync::Mutex::new(skia_rust_core::random::Random::default()),
         }
     }
 
@@ -976,10 +980,24 @@ impl ResourceCache {
     }
 
     // Port of: src/gpu/graphite/ResourceCache.cpp#L806-L924 (chrome/m156)
-    // skia-rust: Skia validates a random sample once the cache holds more than 15 resources; this
-    // validates every time (debug builds only).
     fn validate(&self) {
         if !cfg!(debug_assertions) {
+            return;
+        }
+        // Reduce the frequency of validations for large resource counts.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+        // mirrors `int fCount`
+        let mask = (next_pow2(self.count as i32 + 1) >> 5) - 1;
+        #[allow(clippy::cast_sign_loss)] // mirrors the C++ int → uint32_t promotion in `&`
+        if !mask != 0
+            && (self
+                .validate_random
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .next_u()
+                & mask as u32)
+                != 0
+        {
             return;
         }
 
