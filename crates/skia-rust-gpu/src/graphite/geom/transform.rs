@@ -446,6 +446,8 @@ impl Transform {
     #[must_use]
     // The exact comparisons with 0 and 1 are the C++ classification of matrix types.
     #[allow(clippy::float_cmp)]
+    // One function as in the C++ constructor, so it keeps its length for line-by-line review.
+    #[allow(clippy::too_many_lines)]
     pub fn new(m: M44) -> Self {
         let k_no_perspective = V4::new(0.0, 0.0, 0.0, 1.0);
         let k_no_z = V4::new(0.0, 0.0, 1.0, 0.0);
