@@ -49,6 +49,8 @@ pub mod cubic_map_test;
 #[cfg(test)]
 pub mod cubic_roots_test;
 #[cfg(test)]
+pub mod cull_test_test;
+#[cfg(test)]
 pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
@@ -252,6 +254,8 @@ pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
 #[cfg(test)]
+pub mod pre_chop_path_curves_test;
+#[cfg(test)]
 pub mod premul_alpha_round_trip_test;
 #[cfg(test)]
 pub mod quad_roots_test;
@@ -336,5 +340,7 @@ pub mod text_blob_test;
 pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
+#[cfg(test)]
+pub mod wangs_formula_test;
 #[cfg(test)]
 pub mod write_pixels_test;
