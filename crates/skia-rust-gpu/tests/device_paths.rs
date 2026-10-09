@@ -17,22 +17,23 @@ use std::sync::Arc;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::color::Color4f;
-use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
-use skia_rust_core::rect::Rect;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::{IPoint, Point};
 use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::Rect;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped};
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::device::Device;
 use skia_rust_gpu::graphite::draw_pass::DrawPassCommand;
+use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use skia_rust_gpu::graphite::recorder::{Recorder, RecorderSharedContext};
 use skia_rust_gpu::graphite::render_step::RenderStepID;
 use skia_rust_gpu::graphite::renderer::Renderer;
@@ -128,7 +129,7 @@ fn snap(device: &mut Device) -> Vec<Pass> {
                     steps: pass
                         .pipeline_descs()
                         .iter()
-                        .map(|desc| desc.render_step_id())
+                        .map(GraphicsPipelineDesc::render_step_id)
                         .collect(),
                     ops: pass.ops(),
                 });
@@ -201,10 +202,10 @@ fn hexagon(fill_type: PathFillType) -> Path {
 /// A five-pointed star, which is not convex.
 fn star(fill_type: PathFillType) -> Path {
     let mut builder = PathBuilder::new_with_fill_type(fill_type);
-    for i in 0..10 {
+    for i in 0..10_u16 {
         let radius = if i % 2 == 0 { 50.0_f32 } else { 20.0 };
         // Only the angle of each vertex matters: five spikes, the odd ones inside.
-        let angle = std::f32::consts::PI / 5.0 * i as f32 - std::f32::consts::FRAC_PI_2;
+        let angle = std::f32::consts::PI / 5.0 * f32::from(i) - std::f32::consts::FRAC_PI_2;
         let p = Point::new(64.0 + radius * angle.cos(), 64.0 + radius * angle.sin());
         if i == 0 {
             builder.move_to(p);
@@ -389,7 +390,7 @@ fn mesh_of(points: &[(f32, f32)], indices: Option<&[u16]>) -> Mesh {
         .flat_map(|(x, y)| x.to_ne_bytes().into_iter().chain(y.to_ne_bytes()))
         .collect();
     let vb = meshes::make_vertex_buffer(Some(&bytes), bytes.len());
-    let bounds = Rect::from_ltrb(0.0, 0.0, SIZE as f32, SIZE as f32);
+    let bounds = Rect::from_ltrb(0.0, 0.0, 128.0, 128.0);
     let result = match indices {
         None => Mesh::make(
             Some(mesh_spec()),

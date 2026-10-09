@@ -13,6 +13,8 @@ use skia_rust_core::runtime_effect_priv::transform_uniforms;
 use skia_rust_core::vert_state::VertState;
 use skia_rust_core::vertices::VertexMode;
 
+use std::fmt::Write as _;
+
 use crate::graphite::attribute::Attribute;
 use crate::graphite::draw_params::DrawParams;
 use crate::graphite::draw_types::{PrimitiveType, VertexAttribType};
@@ -120,13 +122,14 @@ impl RenderStep for MeshRenderStep {
         // between an attribute and varying.
         let mut attrs = String::from("Attributes attributes;\n");
         for attr in spec.attributes() {
-            attrs += &format!("attributes.{} = {};\n", attr.name, attr.name);
+            let _ = writeln!(attrs, "attributes.{} = {};", attr.name, attr.name);
         }
 
         let mut varying_assignments = String::new();
         for v in spec.varyings() {
-            varying_assignments += &format!(
-                "{}{} = varyings.{};\n",
+            let _ = writeln!(
+                varying_assignments,
+                "{}{} = varyings.{};",
                 v.name, MESH_VARYING_MANGLE_SUFFIX, v.name
             );
         }
@@ -147,8 +150,9 @@ impl RenderStep for MeshRenderStep {
         // `ShaderInfo::generateFragmentSkSL` following the same varying name mangling.
         let mut s = String::from("Varyings varyings;\n");
         for v in spec.varyings() {
-            s += &format!(
-                "varyings.{} = {}{};\n",
+            let _ = writeln!(
+                s,
+                "varyings.{} = {}{};",
                 v.name, v.name, MESH_VARYING_MANGLE_SUFFIX
             );
         }
@@ -157,7 +161,7 @@ impl RenderStep for MeshRenderStep {
         let mut out_color_name = "primitiveColor";
         if needs_color_conversion {
             out_color_name = "primitiveColorFloat4";
-            s += &format!("float4 {out_color_name};\n");
+            let _ = writeln!(s, "float4 {out_color_name};");
         }
 
         // Check if the mesh FS should have a primitive color output parameter.
@@ -168,9 +172,9 @@ impl RenderStep for MeshRenderStep {
             format!("{MESH_FS_MAIN_NAME}(varyings)")
         };
 
-        s += &format!("float2 {MESH_FS_LOCAL_COORDS_NAME} = {method_call};\n");
+        let _ = writeln!(s, "float2 {MESH_FS_LOCAL_COORDS_NAME} = {method_call};");
         if needs_color_conversion {
-            s += &format!("primitiveColor = half4({out_color_name});\n");
+            let _ = writeln!(s, "primitiveColor = half4({out_color_name});");
         }
         s
     }
@@ -199,10 +203,9 @@ impl RenderStep for MeshRenderStep {
             // The indices are read from the index buffer's bytes, two per `u16`.
             let indices: Option<Vec<u16>> = mesh.index_buffer().map(|ib| {
                 ib.with_data(|index_bytes| {
-                    index_bytes[index_offset..index_offset + index_count * 2]
-                        .chunks_exact(2)
-                        .map(|c| u16::from_ne_bytes([c[0], c[1]]))
-                        .collect()
+                    let (chunks, _) =
+                        index_bytes[index_offset..index_offset + index_count * 2].as_chunks::<2>();
+                    chunks.iter().map(|c| u16::from_ne_bytes(*c)).collect()
                 })
             });
 
