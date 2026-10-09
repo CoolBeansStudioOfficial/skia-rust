@@ -23,6 +23,7 @@ pub mod codec_animation;
 mod codec_image_generator;
 mod codec_priv;
 pub mod codecs;
+pub mod encode;
 pub mod encoded_info;
 pub mod exif;
 pub mod frame_holder;

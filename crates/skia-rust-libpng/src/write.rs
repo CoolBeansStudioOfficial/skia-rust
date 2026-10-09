@@ -47,7 +47,7 @@ pub(crate) const PNG_ALL_FILTERS: u8 = 0xf8;
 
 /// The output callback of a write struct: receives each piece of the PNG stream and returns
 /// `false` to fail the write (libpng's `png_rw_ptr` with the error turned into a result).
-pub type PngWriteFn = Box<dyn FnMut(&[u8]) -> bool>;
+pub type PngWriteFn = Box<dyn FnMut(&[u8]) -> bool + Send>;
 
 /// The write-side state of `png_struct` (pngstruct.h, the fields the write path reads and
 /// writes). The shared fields (`width`, `height`, `bit_depth`, `color_type`, `channels`,
