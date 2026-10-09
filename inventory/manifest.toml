@@ -51776,7 +51776,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/SwizzleTest.cpp#L14-L58"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "a7ac91d12608e74ead719154e5fd3d9d54b0bdb3fff1e377b602b0fba1c2bd31"
 
 [[test]]
