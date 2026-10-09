@@ -291,6 +291,8 @@ pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
 #[cfg(test)]
+pub mod poly_utils_test;
+#[cfg(test)]
 pub mod pre_chop_path_curves_test;
 #[cfg(test)]
 pub mod premul_alpha_round_trip_test;
@@ -338,6 +340,7 @@ pub mod scalar_test;
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
+pub mod shadow_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
