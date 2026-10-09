@@ -19,12 +19,15 @@ use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 use skia_rust_gpu::gpu::gpu_types::{BackendApi, GpuStats, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
+use skia_rust_gpu::gpu::resource_key::{UniqueKey, UniqueKeyBuilder};
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
 use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
+use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
+use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use skia_rust_gpu::graphite::graphite_resource_key::{
     GraphiteResourceKey, GraphiteResourceKeyBuilder,
 };
@@ -408,6 +411,33 @@ impl Caps for MockCaps {
 
     fn is_storage(&self, _info: &TextureInfo) -> bool {
         false
+    }
+
+    fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        _render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        let mut key = UniqueKey::new();
+        {
+            let mut builder =
+                UniqueKeyBuilder::new(&mut key, UniqueKey::generate_domain(), 2, Some("Mock"));
+            builder[0] = pipeline_desc.render_step_id() as u32;
+            builder[1] = pipeline_desc.paint_params_id().as_uint();
+            builder.finish();
+        }
+        key
+    }
+
+    fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        let mut key = UniqueKey::new();
+        {
+            let mut builder =
+                UniqueKeyBuilder::new(&mut key, UniqueKey::generate_domain(), 1, Some("Mock"));
+            builder[0] = pipeline_desc.unique_id();
+            builder.finish();
+        }
+        key
     }
 }
 

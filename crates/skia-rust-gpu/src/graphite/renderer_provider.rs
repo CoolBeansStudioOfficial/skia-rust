@@ -33,7 +33,7 @@ use crate::graphite::render::tessellate_curves_render_step::TessellateCurvesRend
 use crate::graphite::render::tessellate_strokes_render_step::TessellateStrokesRenderStep;
 use crate::graphite::render::tessellate_wedges_render_step::TessellateWedgesRenderStep;
 use crate::graphite::render::vertices_render_step::VerticesRenderStep;
-use crate::graphite::render_step::{RenderStep, RenderStepID};
+use crate::graphite::render_step::{NUM_RENDER_STEPS, RenderStep, RenderStepID};
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::Layout;
 
@@ -65,6 +65,8 @@ pub struct RendererProvider {
     cover_fill: Arc<dyn RenderStep>,
     /// The inverse cover step of the stencil-then-cover renderers (`coverInverse`).
     cover_inverse: Arc<dyn RenderStep>,
+    /// `fRenderSteps`: the steps of all the renderers, indexed by `RenderStepID`.
+    render_steps: [Option<Arc<dyn RenderStep>>; NUM_RENDER_STEPS],
 }
 
 impl RendererProvider {
@@ -159,7 +161,7 @@ impl RendererProvider {
             },
         ];
 
-        Self {
+        let mut provider = Self {
             analytic_rrect,
             vertices,
             per_edge_aa_quad,
@@ -171,7 +173,42 @@ impl RendererProvider {
             tessellated_strokes,
             cover_fill,
             cover_inverse,
+            render_steps: std::array::from_fn(|_| None),
+        };
+        provider.collect_render_steps();
+        provider
+    }
+
+    /// Fills `fRenderSteps`: every step of every renderer by its id (`assumeOwnership`).
+    fn collect_render_steps(&mut self) {
+        let all_renderers = [
+            &self.analytic_rrect,
+            &self.per_edge_aa_quad,
+            &self.non_aa_bounds_fill,
+            &self.circular_arc,
+            &self.convex_tessellated_wedges,
+        ]
+        .into_iter()
+        .chain(&self.vertices)
+        .chain(&self.stencil_tessellated_curves)
+        .chain(&self.stencil_tessellated_wedges)
+        .chain(&self.tessellated_strokes);
+        for step in all_renderers
+            .flat_map(|renderer| renderer.steps().iter())
+            .chain([&self.cover_fill, &self.cover_inverse])
+        {
+            // Renderers share some steps (the cover steps), which are the same object.
+            self.render_steps[step.render_step_id() as usize]
+                .get_or_insert_with(|| Arc::clone(step));
         }
+    }
+
+    /// `lookup(renderStepID)`: the step with the given id, or `None` for an invalid id and for the
+    /// steps that are not ported yet (Skia always has one).
+    // Port of: src/gpu/graphite/RendererProvider.h#L160-L162 (chrome/m156)
+    #[must_use]
+    pub fn lookup(&self, render_step_id: RenderStepID) -> Option<&Arc<dyn RenderStep>> {
+        self.render_steps[render_step_id as usize].as_ref()
     }
 
     /// `fAnalyticRRect`.

@@ -13,7 +13,7 @@
 //! `findOrCreateShareableTexture`, is a function of the owner.
 //!
 //! Not ported yet: the `IntrinsicConstantsManager` (it tracks the buffers it hands out on a
-//! `DawnCommandBuffer`, G11c) and `createComputePipeline` (G11b).
+//! `DawnCommandBuffer`, G11c). `createComputePipeline` is [`WgpuSharedContext::create_compute_pipeline`].
 
 use std::any::Any;
 use std::collections::HashMap;

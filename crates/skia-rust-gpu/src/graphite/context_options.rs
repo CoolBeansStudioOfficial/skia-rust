@@ -5,17 +5,19 @@
 
 //! `ContextOptions`: the options a Graphite `Context` is created with.
 //!
-//! Only the options the caps and the resource layer read are ported (G11a). The callbacks
-//! (`fPipelineCachingCallback`, `fPipelineCallback`), the executor, the persistent pipeline
-//! storage, the shader error handler, the user-defined runtime effects and `fOptionsPriv` come
-//! with the `Context` and `PipelineManager` (G9b, G6), whose types they name.
+//! Only the options the caps, the resource layer and the pipeline layer read are ported. The
+//! callbacks (`fPipelineCachingCallback`, `fPipelineCallback`), the executor and the shader error
+//! handler are here; the persistent pipeline storage, the user-defined runtime effects and
+//! `fOptionsPriv` come with the code that needs their types (G14, G6).
 
 use std::fmt;
 use std::sync::Arc;
 
 use skia_rust_core::data::Data;
+use skia_rust_core::executor::Executor;
 use skia_rust_core::size::ISize;
 
+use crate::gpu::shader_error_handler::ShaderErrorHandler;
 use crate::graphite::graphite_types::SampleCount;
 
 /// `ContextOptions::kDefaultContextBudget`.
@@ -110,6 +112,12 @@ pub struct ContextOptions {
     /// `fPipelineCallback` (deprecated): called for added pipelines whose key is serializable.
     /// Ignored when `pipeline_caching_callback` is set.
     pub pipeline_callback: Option<Callback<PipelineCallbackFn>>,
+    /// `fExecutor`: if set, pipeline compilation (`PipelineManager`) runs on it, in two work
+    /// lists (in-line compiles first, precompiles second). Without one, pipelines compile in-line.
+    pub executor: Option<Callback<dyn Executor>>,
+    /// `fShaderErrorHandler`: where shader compilation errors are reported. The default handler
+    /// prints the error and asserts in debug builds.
+    pub shader_error_handler: Option<Callback<dyn ShaderErrorHandler>>,
 }
 
 impl Default for ContextOptions {
@@ -140,6 +148,8 @@ impl Default for ContextOptions {
             avoid_depth_mode: false,
             pipeline_caching_callback: None,
             pipeline_callback: None,
+            executor: None,
+            shader_error_handler: None,
         }
     }
 }

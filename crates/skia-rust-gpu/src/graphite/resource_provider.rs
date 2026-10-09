@@ -12,8 +12,8 @@
 //! the trait is the seam until that back end exists).
 //!
 //! Buffers, samplers, wrapped textures and backend textures are ported. Compute pipelines are
-//! not yet (`ComputePipeline`, G11b); the shared find-or-create flow
-//! ([`ResourceProvider::find_or_create_keyed`]) is what their entry point will use.
+//! found or created by [`crate::graphite::shared_context::SharedContext::find_or_create_compute_pipeline`] (G11b); the shared flow
+//! ([`ResourceProvider::find_or_create_keyed`]) serves the resource kinds.
 
 use std::sync::LazyLock;
 

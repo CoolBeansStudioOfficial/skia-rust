@@ -25,13 +25,12 @@
 //!
 //! # What is not ported yet
 //!
-//! `makeGraphicsPipelineKey`, `extractGraphicsDescs` and `makeComputePipelineKey` need
-//! `GraphicsPipelineDesc`, `UniquePaintParamsID` and `ComputePipelineDesc` (G5/G7/G11b);
-//! `getImmutableSamplerInfo` and `toString(ImmutableSamplerInfo)` are YCbCr-only and wgpu has no
-//! YCbCr samplers. [`ShaderCaps`] is `SkSL::ShaderCaps`, re-exported with the other
+//! `extractGraphicsDescs` is the inverse of `makeGraphicsPipelineKey`; it serves the persistent
+//! pipeline storage (G14). `getImmutableSamplerInfo` and `toString(ImmutableSamplerInfo)` are
+//! YCbCr-only and wgpu has no YCbCr samplers. [`ShaderCaps`] is `SkSL::ShaderCaps`, re-exported with the other
 //! backend-neutral half of `Caps` from [`crate::graphite::caps`].
 
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use bitflags::bitflags;
 use skia_rust_core::color_type::ColorType;
@@ -39,9 +38,13 @@ use skia_rust_core::size::ISize;
 use skia_rust_core::texture_compression_type::TextureCompressionType;
 
 use crate::gpu::gpu_types::{BackendApi, GpuStatsFlags, Mipmapped, Protected, Renderable};
+use crate::gpu::resource_key::{UniqueKey, UniqueKeyBuilder, UniqueKeyDomain};
+use crate::gpu::shader_error_handler::{DefaultShaderErrorHandler, ShaderErrorHandler};
 use crate::graphite::caps::{AttachmentSizePolicy, Caps, default_shader_caps};
 pub use crate::graphite::caps::{ResourceBindingRequirements, ShaderCaps};
-use crate::graphite::context_options::ContextOptions;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
+use crate::graphite::context_options::{Callback, ContextOptions};
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
@@ -510,6 +513,10 @@ pub struct WgpuCaps {
     allow_scoped_error_checks: bool,
     supports_command_buffer_timestamps: bool,
     supports_half_precision: bool,
+
+    /// `Caps::fShaderErrorHandler`: `ContextOptions::fShaderErrorHandler`, or the default
+    /// handler.
+    shader_error_handler: Callback<dyn ShaderErrorHandler>,
 }
 
 impl WgpuCaps {
@@ -568,6 +575,11 @@ impl WgpuCaps {
             allow_scoped_error_checks: true,
             supports_command_buffer_timestamps: false,
             supports_half_precision: false,
+            // Port of: src/gpu/graphite/Caps.cpp#L50-L54 (chrome/m156)
+            shader_error_handler: options
+                .shader_error_handler
+                .clone()
+                .unwrap_or_else(|| Callback(Arc::new(DefaultShaderErrorHandler))),
         };
         caps.init_caps(options);
         caps.init_shader_caps();
@@ -854,6 +866,14 @@ impl WgpuCaps {
     }
 
     // ---- DawnCaps.h accessors ----------------------------------------------------------------
+
+    /// `shaderErrorHandler()`: where shader compilation errors are reported.
+    // Port of: src/gpu/graphite/Caps.h#L413 (chrome/m156)
+    #[doc(alias = "shaderErrorHandler")]
+    #[must_use]
+    pub fn shader_error_handler(&self) -> &dyn ShaderErrorHandler {
+        &*self.shader_error_handler.0
+    }
 
     /// `supportsHalfPrecision()`.
     #[doc(alias = "supportsHalfPrecision")]
@@ -1844,6 +1864,81 @@ impl WgpuCaps {
             | (samples_to_key(depth_stencil.sample_count) << DEPTH_STENCIL_NUM_SAMPLES_OFFSET)
             | load_resolve_attachment_key
     }
+
+    /// `makeGraphicsPipelineKey()`: four words, the render step id, the paint id, the render pass
+    /// description's key and the write swizzle's key.
+    // Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L547-L568 (chrome/m156)
+    #[doc(alias = "makeGraphicsPipelineKey")]
+    #[must_use]
+    pub fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        let mut pipeline_key = UniqueKey::new();
+        {
+            // 4 uint32_t's (render step id, paint id, uint32 RenderPassDesc, uint16 write swizzle
+            // key)
+            let mut builder = UniqueKeyBuilder::new(
+                &mut pipeline_key,
+                get_pipeline_domain(),
+                GRAPHICS_PIPELINE_KEY_DATA32_COUNT,
+                Some("DawnGraphicsPipeline"),
+            );
+            // Add GraphicsPipelineDesc key.
+            builder[0] = pipeline_desc.render_step_id() as u32;
+            builder[1] = pipeline_desc.paint_params_id().as_uint();
+
+            // Add RenderPassDesc key and write swizzle (which is separate from the
+            // RenderPassDescKey because it is applied in the program writing to the target, and
+            // is not actually part of the underlying GPU render pass config).
+            builder[2] = self.get_render_pass_desc_key_for_pipeline(render_pass_desc, false);
+            builder[3] = u32::from(render_pass_desc.write_swizzle.as_key());
+            builder.finish();
+        }
+        pipeline_key
+    }
+
+    /// `makeComputePipelineKey()`: one word, the compute step's unique id.
+    // Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L633-L649 (chrome/m156)
+    #[doc(alias = "makeComputePipelineKey")]
+    #[must_use]
+    pub fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        static COMPUTE_PIPELINE_DOMAIN: LazyLock<UniqueKeyDomain> =
+            LazyLock::new(UniqueKey::generate_domain);
+
+        let mut pipeline_key = UniqueKey::new();
+        {
+            // The key is made up of a single uint32_t corresponding to the compute step ID.
+            let mut builder = UniqueKeyBuilder::new(
+                &mut pipeline_key,
+                *COMPUTE_PIPELINE_DOMAIN,
+                1,
+                Some("ComputePipeline"),
+            );
+            builder[0] = pipeline_desc.compute_step().unique_id();
+
+            // TODO(b/240615224): The local work group size should factor into the key here since
+            // it is specified in the shader text on Dawn/SPIR-V. This is not a problem right now
+            // since ComputeSteps don't vary their workgroup size dynamically.
+
+            builder.finish();
+        }
+        pipeline_key
+    }
+}
+
+/// `kDawnGraphicsPipelineKeyData32Count`.
+// Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L545 (chrome/m156)
+const GRAPHICS_PIPELINE_KEY_DATA32_COUNT: u16 = 4;
+
+/// `get_pipeline_domain()`: the key domain of the graphics pipelines.
+// Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L38-L43 (chrome/m156)
+#[must_use]
+pub fn get_pipeline_domain() -> UniqueKeyDomain {
+    static GRAPHICS_PIPELINE_DOMAIN: LazyLock<UniqueKeyDomain> =
+        LazyLock::new(UniqueKey::generate_domain);
+    *GRAPHICS_PIPELINE_DOMAIN
 }
 
 /// `kDefaultSampledUsage`: Graphite by default requires copy-src and copy-dst for sampled
@@ -1876,6 +1971,18 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
+    fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        WgpuCaps::make_graphics_pipeline_key(self, pipeline_desc, render_pass_desc)
+    }
+
+    fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        WgpuCaps::make_compute_pipeline_key(self, pipeline_desc)
+    }
+
     fn get_dst_read_strategy(&self) -> DstReadStrategy {
         WgpuCaps::get_dst_read_strategy(self)
     }

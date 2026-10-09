@@ -9,9 +9,10 @@
 //! type is the backend half and the seam stays, as it is also what the neutral code's tests
 //! mock.
 //!
-//! This module is G11a. Still to come (see `docs/design/gpu.md` §9): `GraphicsPipeline`,
-//! `ComputePipeline` and the shader-module helper (G11b), and `CommandBuffer` and `QueueManager`
-//! (G11c).
+//! G11a is the context, caps, resources and format tables; G11b is the graphics and compute
+//! pipelines ([`graphics_pipeline`], [`compute_pipeline`]), the shader-module helper
+//! ([`graphite_utils::compile_wgsl_shader_module`]) and the error checker ([`error_checker`]).
+//! Still to come (see `docs/design/gpu.md` §9): the `CommandBuffer` and `QueueManager` (G11c).
 //!
 //! # Platforms
 //!
@@ -25,7 +26,10 @@ pub mod backend_texture;
 pub mod buffer;
 pub mod caps;
 pub mod command_buffer;
+pub mod compute_pipeline;
 pub mod context;
+pub mod error_checker;
+pub mod graphics_pipeline;
 pub mod graphite_utils;
 pub mod pipeline_shaders;
 pub mod queue_manager;

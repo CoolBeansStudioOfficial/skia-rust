@@ -5,15 +5,22 @@
 
 //! `DawnGraphiteUtils`: the format tables of the wgpu back end.
 //!
-//! Not ported here: `ContextFactory::MakeDawn` (it is [`super::make_context`]),
-//! `DawnCompileWGSLShaderModule` (it needs `SkSL::NativeShader` and `ShaderErrorHandler`; it comes
-//! with `GraphicsPipeline`, G11b) and the YCbCr-descriptor helpers (`DawnDescriptor*`): wgpu has no
-//! `YCbCrVkDescriptor`, multiplanar formats or external formats, so those paths do not exist.
+//! Also here: [`compile_wgsl_shader_module`] (`DawnCompileWGSLShaderModule`).
+//!
+//! Not ported here: `ContextFactory::MakeDawn` (it is [`super::make_context`]) and the
+//! YCbCr-descriptor helpers (`DawnDescriptor*`): wgpu has no `YCbCrVkDescriptor`, multiplanar
+//! formats or external formats, so those paths do not exist.
+
+use std::fmt::Write as _;
 
 use bitflags::bitflags;
 
+use crate::gpu::shader_error_handler::ShaderErrorHandler;
 use crate::graphite::texture_format::TextureFormat;
+use crate::graphite::wgpu::async_wait::block_on;
 use crate::graphite::wgpu::caps::DeviceFeatures;
+use crate::graphite::wgpu::error_checker::{ErrorChecker, ErrorType};
+use crate::graphite::wgpu::shared_context::WgpuSharedContext;
 
 bitflags! {
     /// Helper bit mask for the columns of the "Texture Format Capabilities" tables in
@@ -487,6 +494,87 @@ pub fn texture_format_to_wgpu_format(format: TextureFormat) -> Option<wgpu::Text
         TextureFormat::D32F_S8 => W::Depth32FloatStencil8,
         _ => return None,
     })
+}
+
+/// `check_shader_module`: walks the module's compilation messages and, if there is a hard error,
+/// reports all of them to `error_handler`. Returns whether the module compiled.
+///
+/// Dawn's `GetCompilationInfo` is a future; wgpu's resolves at once on native. In the browser
+/// (`allow_scoped_error_checks` is off) a blocked thread cannot run the future, so the check is
+/// skipped, like Skia's for an old Emscripten.
+// Port of: src/gpu/graphite/dawn/DawnGraphiteUtils.cpp#L422-L495 (chrome/m156)
+fn check_shader_module(
+    module: &wgpu::ShaderModule,
+    shader_text: &str,
+    error_handler: &dyn ShaderErrorHandler,
+) -> bool {
+    let info = block_on(module.get_compilation_info());
+
+    // Walk the message list and check for hard errors.
+    let success = !info
+        .messages
+        .iter()
+        .any(|entry| entry.message_type == wgpu::CompilationMessageType::Error);
+
+    // If we found a hard error, report the compilation messages to the error handler.
+    if !success {
+        let mut errors = String::new();
+        for entry in &info.messages {
+            let (line, pos) = entry
+                .location
+                .map_or((0, 0), |l| (l.line_number, l.line_position));
+            let _ = writeln!(errors, "line {line}:{pos} {}", entry.message);
+        }
+        error_handler.compile_error(shader_text, &errors, /* shader_was_cached= */ false);
+    }
+    success
+}
+
+/// `DawnCompileWGSLShaderModule(sharedContext, label, wgsl, &module, errorHandler)`: creates a
+/// shader module from WGSL, which wgpu compiles with naga. Returns `None`, after reporting the
+/// errors to `error_handler`, if it does not compile.
+///
+/// Dawn returns an invalid module and the compilation info says why. wgpu raises the validation
+/// error through the device, so the creation runs in error scopes (when the caps allow them), and
+/// an error the scopes caught, but the compilation info did not explain, is reported with the
+/// text the scopes logged.
+// Port of: src/gpu/graphite/dawn/DawnGraphiteUtils.cpp#L497-L518 (chrome/m156)
+#[doc(alias = "DawnCompileWGSLShaderModule")]
+#[must_use]
+pub fn compile_wgsl_shader_module(
+    shared_context: &WgpuSharedContext,
+    label: &str,
+    wgsl: &str,
+    error_handler: &dyn ShaderErrorHandler,
+) -> Option<wgpu::ShaderModule> {
+    let caps = shared_context.caps();
+    let device = shared_context.device();
+    let descriptor = wgpu::ShaderModuleDescriptor {
+        label: caps.set_backend_labels().then_some(label),
+        source: wgpu::ShaderSource::Wgsl(wgsl.into()),
+    };
+
+    if !caps.allow_scoped_error_checks() {
+        // The browser: nothing can wait for the errors, so the module is trusted.
+        return Some(device.create_shader_module(descriptor));
+    }
+
+    let mut checker = ErrorChecker::new(device);
+    let module = device.create_shader_module(descriptor);
+    let scope_error = checker.pop_error_scopes();
+
+    if !check_shader_module(&module, wgsl, error_handler) {
+        return None;
+    }
+    if scope_error != ErrorType::NO_ERROR {
+        error_handler.compile_error(
+            wgsl,
+            &format!("the shader module failed in an error scope: {scope_error:?}\n"),
+            /* shader_was_cached= */ false,
+        );
+        return None;
+    }
+    Some(module)
 }
 
 #[cfg(test)]

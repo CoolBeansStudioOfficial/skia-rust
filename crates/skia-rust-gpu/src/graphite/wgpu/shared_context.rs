@@ -9,18 +9,28 @@
 //!
 //! This is the concrete `SharedContext` (`docs/design/gpu.md` §4.1): the backend-neutral base's
 //! members that exist so far are [`WgpuSharedContext::caps`] and the recorder-facing
-//! [`RecorderSharedContext`] interface. The global cache, the pipeline manager, the executor, the
-//! runtime-effect dictionary and the `ThreadSafeResourceProvider` come with G9b, G6 and G11b;
-//! `createGraphicsPipeline` comes with `GraphicsPipeline` (G11b).
+//! [`RecorderSharedContext`] interface. The base also has the global cache and the pipeline
+//! manager (with the executor of the context options); `createGraphicsPipeline` and
+//! `createComputePipeline` are here, and [`WgpuSharedContext`] is the
+//! [`PipelineCreationContext`] the pipeline manager's tasks compile against.
 
 use std::sync::{Arc, Weak};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::gpu::resource_key::UniqueKey;
 use crate::graphite::caps::Caps;
+use crate::graphite::compute_pipeline::ComputePipeline;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::context_options::ContextOptions;
+use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
+use crate::graphite::graphics_pipeline_handle::GraphicsPipelineHandle;
+use crate::graphite::pipeline_manager::PipelineCreationContext;
 use crate::graphite::recorder::RecorderSharedContext;
+use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::Layout;
+use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::shared_context::SharedContext;
 use crate::graphite::thread_safe_resource_provider::THREADED_SAFE_RESOURCE_BUDGET;
@@ -29,6 +39,8 @@ use crate::graphite::wgpu::caps::{
     COMBINED_UNIFORM_INDEX, CapsProfile, INTRINSIC_UNIFORM_BUFFER_INDEX, STORAGE_BUFFER_INDEX,
     WgpuCaps,
 };
+use crate::graphite::wgpu::compute_pipeline::WgpuComputePipeline;
+use crate::graphite::wgpu::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::graphite::wgpu::resource_provider::WgpuResourceProvider;
 
 /// `SK_InvalidGenID`: the recorder id of a resource provider no recorder owns.
@@ -147,7 +159,12 @@ impl WgpuSharedContext {
         let single_texture_sampler_bind_group_layout =
             create_single_texture_sampler_bind_group_layout(&backend_context.device, &caps);
 
-        let base = SharedContext::new(caps.clone(), BackendApi::Dawn, shader_dictionary);
+        let base = SharedContext::new(
+            caps.clone(),
+            BackendApi::Dawn,
+            shader_dictionary,
+            options.executor.as_ref().map(|executor| executor.0.clone()),
+        );
         let shared = Arc::new_cyclic(|this| Self {
             this: this.clone(),
             device: backend_context.device.clone(),
@@ -389,5 +406,122 @@ impl RecorderSharedContext for WgpuSharedContext {
             recorder_id,
             resource_budget,
         )
+    }
+}
+
+impl WgpuSharedContext {
+    /// `createGraphicsPipeline(runtimeDict, pipelineKey, pipelineDesc, renderPassDesc, flags,
+    /// compilationID)`: the backend half of `findOrCreateGraphicsPipeline`.
+    // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L194-L212 (chrome/m156)
+    #[doc(alias = "createGraphicsPipeline")]
+    #[must_use]
+    pub fn create_graphics_pipeline(
+        &self,
+        runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
+        pipeline_key: &UniqueKey,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+        compilation_id: u32,
+    ) -> Option<Arc<WgpuGraphicsPipeline>> {
+        WgpuGraphicsPipeline::make(
+            self,
+            runtime_dict,
+            pipeline_key,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+            compilation_id,
+        )
+    }
+
+    /// `createComputePipeline(desc)` (`DawnResourceProvider::createComputePipeline`).
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L544-L547 (chrome/m156)
+    #[doc(alias = "createComputePipeline")]
+    #[must_use]
+    pub fn create_compute_pipeline(
+        &self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<WgpuComputePipeline>> {
+        WgpuComputePipeline::make(self, pipeline_desc)
+    }
+
+    /// `ResourceProvider::findOrCreateComputePipeline(pipelineDesc)`: the compute pipeline of the
+    /// step, from the global cache or created and added to it.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L44-L60 (chrome/m156)
+    #[doc(alias = "findOrCreateComputePipeline")]
+    #[must_use]
+    pub fn find_or_create_compute_pipeline(
+        &self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        let pipeline_key = self.caps.make_compute_pipeline_key(pipeline_desc);
+        self.base
+            .find_or_create_compute_pipeline(&pipeline_key, || {
+                self.create_compute_pipeline(pipeline_desc)
+                    .map(|pipeline| pipeline as Arc<dyn ComputePipeline>)
+            })
+    }
+
+    /// `pipelineManager()->createHandle(this, runtimeDict, pipelineDesc, renderPassDesc, flags)`:
+    /// finds the pipeline or queues its compilation (see [`PipelineManager`]).
+    ///
+    /// [`PipelineManager`]: crate::graphite::pipeline_manager::PipelineManager
+    #[doc(alias = "createHandle")]
+    #[must_use]
+    pub fn create_pipeline_handle(
+        self: &Arc<Self>,
+        runtime_dict: Option<Arc<RuntimeEffectDictionary>>,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+    ) -> GraphicsPipelineHandle {
+        let this: Arc<dyn PipelineCreationContext> = self.clone();
+        self.base.pipeline_manager().create_handle(
+            &this,
+            runtime_dict,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+        )
+    }
+
+    /// `pipelineManager()->resolveHandle(handle)`.
+    #[doc(alias = "resolveHandle")]
+    #[must_use]
+    pub fn resolve_pipeline_handle(
+        &self,
+        handle: &GraphicsPipelineHandle,
+    ) -> Option<Arc<dyn GraphicsPipeline>> {
+        self.base.pipeline_manager().resolve_handle(handle)
+    }
+}
+
+impl PipelineCreationContext for WgpuSharedContext {
+    fn shared_context(&self) -> &SharedContext {
+        &self.base
+    }
+
+    // Port of: src/gpu/graphite/SharedContext.cpp#L73-L125 (chrome/m156)
+    fn find_or_create_graphics_pipeline(
+        &self,
+        runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
+        pipeline_key: &UniqueKey,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+    ) -> Option<Arc<dyn GraphicsPipeline>> {
+        self.base
+            .find_or_create_graphics_pipeline(pipeline_key, flags, |compilation_id| {
+                self.create_graphics_pipeline(
+                    runtime_dict,
+                    pipeline_key,
+                    pipeline_desc,
+                    render_pass_desc,
+                    flags,
+                    compilation_id,
+                )
+                .map(|pipeline| pipeline as Arc<dyn GraphicsPipeline>)
+            })
     }
 }

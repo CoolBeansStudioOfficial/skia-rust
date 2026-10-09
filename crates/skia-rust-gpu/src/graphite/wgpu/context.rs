@@ -54,6 +54,15 @@ pub struct WgpuContext {
     mapped_buffer_manager: ClientMappedBufferManager,
 }
 
+impl Drop for WgpuContext {
+    /// `Context::~Context()` shuts the pipeline manager down: the compilation tasks it queued
+    /// hold the shared context weakly, and are waited for here while it is certainly alive.
+    // Port of: src/gpu/graphite/Context.cpp#L156-L172 (chrome/m156)
+    fn drop(&mut self) {
+        self.shared_context.base().pipeline_manager().shut_down();
+    }
+}
+
 /// The part of a [`WgpuContext`] that the queue manager reads (`Context*` in Skia): the caps and
 /// the context's resource provider. Borrowed from the context's other fields, so the queue manager
 /// can be used at the same time.

@@ -52866,6 +52866,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "04418895cc364843e4729b7dc120d01fa600e79738742d4dcfbe5a7fe410af43"
 
 [[test]]
@@ -52875,6 +52876,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "2bc88ec6fa815b8d40ca462ad6c915a63613272070a02825492946207ad27a57"
 
 [[test]]
@@ -52884,6 +52886,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "204099448c35f5f10d2031184aafba107a1e85f207cb2d60d149965ae28c6bb2"
 
 [[test]]
@@ -52893,6 +52896,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "248429179577202f2e94987f8b9a63ba5a767f3159d34a3f70892685ac4c99ad"
 
 [[test]]
@@ -52902,6 +52906,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L124-L135"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "f33cebb0b0cc56164f95db1a76e98c6223d6cd9db0ba478131a3ecab769ca570"
 
 [[test]]
@@ -52911,6 +52916,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L137-L148"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "169b5714c6c79e2f0acd12cb7665635a18f8b42c3be7fa1152d8f358c21d6a54"
 
 [[test]]
@@ -52920,6 +52926,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L152-L163"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "1a62cea2888d6c856c2c06ef3f825179b5a233a5b40d78c88dd6b4bfc0e96083"
 
 [[test]]
@@ -52929,6 +52936,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L165-L176"
 module = "gpu"
 status = "todo"
+reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "a7333e03fcb38181275a65ea6510afc620df267dfb58a43cfd47e427a127de27"
 
 [[test]]

@@ -7,9 +7,11 @@
 //! provider and the thread-safe resource provider. The wgpu half
 //! ([`crate::graphite::wgpu::WgpuSharedContext`]) embeds it.
 //!
-//! `GlobalCache` joins this struct in G9b step 1; `PipelineManager` joins it in step 3.
+//! It also owns the `GlobalCache` and the `PipelineManager`.
 
 use std::sync::{Arc, OnceLock};
+
+use skia_rust_core::executor::Executor;
 
 use crate::gpu::gpu_types::{BackendApi, StdSteadyClockTimePoint};
 use crate::gpu::resource_key::UniqueKey;
@@ -18,6 +20,7 @@ use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::context_options::PipelineCacheOp;
 use crate::graphite::global_cache::GlobalCache;
 use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
+use crate::graphite::pipeline_manager::PipelineManager;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
@@ -45,6 +48,8 @@ pub struct SharedContext {
     thread_safe_resource_provider: OnceLock<ThreadSafeResourceProvider>,
     /// `fGlobalCache`: the pipelines, the dynamic samplers and the static resources.
     global_cache: GlobalCache,
+    /// `fPipelineManager`: compiles the graphics pipelines, on the executor if there is one.
+    pipeline_manager: PipelineManager,
 }
 
 impl SharedContext {
@@ -56,6 +61,7 @@ impl SharedContext {
         caps: Arc<dyn Caps>,
         backend: BackendApi,
         shader_dictionary: ShaderCodeDictionary,
+        executor: Option<Arc<dyn Executor>>,
     ) -> Self {
         Self {
             caps,
@@ -64,7 +70,16 @@ impl SharedContext {
             renderer_provider: OnceLock::new(),
             thread_safe_resource_provider: OnceLock::new(),
             global_cache: GlobalCache::new(),
+            pipeline_manager: PipelineManager::new(executor),
         }
+    }
+
+    /// `pipelineManager()`.
+    // Port of: src/gpu/graphite/SharedContext.h#L112 (chrome/m156)
+    #[doc(alias = "pipelineManager")]
+    #[must_use]
+    pub fn pipeline_manager(&self) -> &PipelineManager {
+        &self.pipeline_manager
     }
 
     /// `globalCache()`.

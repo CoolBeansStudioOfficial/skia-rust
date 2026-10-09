@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of the flow of: src/gpu/graphite/SharedContext.cpp#L73-L125 and
 // src/gpu/graphite/ResourceProvider.cpp#L44-L60 (chrome/m156). The backend's pipeline creation is
-// a closure here, since the wgpu pipeline is G11b.
+// a closure here (the wgpu pipeline is `tests/wgpu_pipelines.rs`).
 
 use std::any::Any;
 use std::sync::atomic::{AtomicU32, Ordering};
