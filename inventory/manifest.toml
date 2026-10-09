@@ -3742,7 +3742,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L389-L389"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4734423ab64a1d0dc2a22bc231179d9649f4f4938f3ce3a02c04f844c0e34f16"
 
 [[test]]
@@ -3751,7 +3751,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L390-L390"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "870bf4c5ae5de16a1f77b5889ef3d7ae616c57394b7f26685d5a247bf5f61e0a"
 
 [[test]]
@@ -3760,7 +3760,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L391-L391"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6993f31521a1b9e472c8f44040bd51613f4ab2af412a52fcaf509d090076526b"
 
 [[test]]
@@ -3769,7 +3769,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L388-L388"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "bbb053faf90f512aa399f02bc72b2eb621bc07dfa28bea999aea29734812358b"
 
 [[test]]
@@ -3778,7 +3778,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L387-L387"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "764061ac2e7f9575ef55bbd2dc22748f36b27ff02b23d5684ab30460f9526325"
 
 [[test]]
@@ -3787,7 +3787,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L328-L329"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "239e9aa20c81e3ef148ea43d15639b0b53f5bb761d155fa2b0ec5bd02428bbe8"
 
 [[test]]
@@ -3796,7 +3796,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L324-L324"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5a9275f62ba86d821ecf396678033fa89ebb96d31b8f7fb74289603f44d7539a"
 
 [[test]]
@@ -3805,7 +3805,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L318-L318"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f50389b3635af3c912bd39c3dae73c9a127670865752861b6bb3e3f73e6ffdea"
 
 [[test]]
@@ -3814,7 +3814,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L321-L321"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5b77dcf2fcf726acc30d6ab7d927c93fe162839a19e57eda410b475611344097"
 
 [[test]]
@@ -3823,7 +3823,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L315-L315"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0c30619031e540a0fd04667dbbbda0094de3a1154a50f71511afaff1fde7c566"
 
 [[test]]
@@ -3832,7 +3832,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L322-L322"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6e635b917d263a30b1b4136c6b7e340ce68461e5c0f5102e6338b59fdbae2917"
 
 [[test]]
@@ -3841,7 +3841,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L327-L327"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "94f43ac6d6268243d5f952627949fdbabcf61a6672c9a9eac1cc7dbfd52f12ea"
 
 [[test]]
@@ -3850,7 +3850,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L323-L323"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "54caf629d1b30eb79aeda29467ca1d2462ef36bad2b3f6a503ecf324844f458b"
 
 [[test]]
@@ -3859,7 +3859,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L316-L316"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6e65be579e5af0e795ac4e4b39bb32f769ea630c71d0157fe601b33de4179835"
 
 [[test]]
@@ -3868,7 +3868,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GameBench.cpp#L317-L317"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "505d5a806479c4893009b8914976e9ba2cdd94dc323f52e8c59a098221ed33a7"
 
 [[test]]

@@ -20,6 +20,7 @@ pub mod dash_bench;
 pub mod draw_bitmap_aa_bench;
 pub mod find_cubic_convex_180_chops_bench;
 pub mod fs_rect_bench;
+pub mod game_bench;
 pub mod geometry_bench;
 pub mod gradient_bench;
 pub mod hairline_path_bench;
