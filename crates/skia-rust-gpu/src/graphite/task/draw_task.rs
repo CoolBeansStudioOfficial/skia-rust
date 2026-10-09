@@ -81,6 +81,12 @@ impl DrawTask {
         self.child_tasks.add(task);
     }
 
+    /// The child tasks (`fChildTasks`).
+    #[must_use]
+    pub fn child_tasks(&self) -> &TaskList {
+        &self.child_tasks
+    }
+
     /// `hasTasks()`.
     #[doc(alias = "hasTasks")]
     #[must_use]

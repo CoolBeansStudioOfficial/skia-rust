@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, OnceLock, PoisonError, Weak};
 
 use crate::gpu::resource_key::UniqueKey;
 use crate::graphite::graphics_pipeline::GraphicsPipeline;
-use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
+use crate::graphite::graphics_pipeline_desc::{GraphicsPipelineDesc, PipelineCreation};
 use crate::graphite::pipeline_manager::PipelineCreationContext;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
@@ -136,5 +136,21 @@ impl PipelineCreationTask {
             .shared_context
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = None;
+    }
+}
+
+impl PipelineCreation for PipelineCreationTask {
+    /// `GraphicsPipelineHandle::pipelineOrNull()` for a task: the pipeline once the task has
+    /// completed. It does not wait; `PipelineManager::resolve_handle` does.
+    // Port of: src/gpu/graphite/PipelineManager.cpp#L36-L48 (chrome/m156)
+    fn pipeline(&self) -> Option<Arc<dyn GraphicsPipeline>> {
+        if !self.completed.load(Ordering::Acquire) {
+            return None;
+        }
+        self.pipeline.get().cloned().flatten()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }

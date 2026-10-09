@@ -21,6 +21,7 @@ use skia_rust_gpu::gpu::gpu_types::{BackendApi, GpuStats, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
 use skia_rust_gpu::gpu::resource_key::{UniqueKey, UniqueKeyBuilder};
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
+use skia_rust_gpu::graphite::buffer_manager::StaticBufferManager;
 use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
@@ -34,6 +35,7 @@ use skia_rust_gpu::graphite::graphite_resource_key::{
 use skia_rust_gpu::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use skia_rust_gpu::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
+use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
 use skia_rust_gpu::graphite::resource_types::DstReadStrategy;
@@ -295,6 +297,18 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, Mipmapped::No)
     }
 
+    fn get_texture_info_for_sampled_copy(
+        &self,
+        info: &TextureInfo,
+        mipmapped: Mipmapped,
+    ) -> TextureInfo {
+        texture_info(
+            texture_info_priv::view_format(info),
+            SampleCount::One,
+            mipmapped,
+        )
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }
@@ -512,14 +526,23 @@ pub struct MockSharedContext {
     pub caps: Arc<MockCaps>,
     pub counts: BackendCounts,
     pub shader_dictionary: ShaderCodeDictionary,
+    pub renderer_provider: RendererProvider,
 }
 
 impl MockSharedContext {
     pub fn new(caps: MockCaps) -> Arc<Self> {
+        let (resource_provider, _) = shared_provider();
+        let mut buffer_manager = StaticBufferManager::new(resource_provider, &caps);
+        let renderer_provider = RendererProvider::new(
+            Layout::Std140,
+            caps.shader_caps().infinity_support,
+            &mut buffer_manager,
+        );
         Arc::new(Self {
             caps: Arc::new(caps),
             counts: BackendCounts::default(),
             shader_dictionary: ShaderCodeDictionary::new(Layout::Std140, &[]),
+            renderer_provider,
         })
     }
 }
@@ -539,6 +562,10 @@ impl RecorderSharedContext for MockSharedContext {
 
     fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
         &self.shader_dictionary
+    }
+
+    fn renderer_provider(&self) -> &RendererProvider {
+        &self.renderer_provider
     }
 
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {

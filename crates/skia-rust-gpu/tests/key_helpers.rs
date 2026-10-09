@@ -15,6 +15,21 @@
 
 mod support;
 
+// The shader the `GradientData` is made for (only its identity matters to the storage path).
+fn a_gradient_shader() -> LinearGradient {
+    let colors = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+    ];
+    LinearGradient::new(
+        &[Point::new(0.0, 0.0), Point::new(1.0, 0.0)],
+        &Gradient::new(
+            Colors::new(&colors, None, TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+    )
+}
+
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -33,7 +48,8 @@ use skia_rust_core::shaders::local_matrix_shader::LocalMatrixShader;
 use skia_rust_core::shaders::shader_base::GradientType;
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_effects::gradient::Interpolation;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation};
+use skia_rust_effects::linear_gradient::LinearGradient;
 use skia_rust_gpu::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use skia_rust_gpu::graphite::caps::Caps;
 use skia_rust_gpu::graphite::key_context::KeyContext;
@@ -170,6 +186,7 @@ fn linear_gradient_with_two_stops_pads_to_four() {
             a: 0.25,
         },
     ];
+    let shader = a_gradient_shader();
     let grad = GradientData::new(
         GradientType::Linear,
         Point::new(0.0, 0.0),
@@ -182,6 +199,7 @@ fn linear_gradient_with_two_stops_pads_to_four() {
         2,
         &colors,
         None,
+        shader.base(),
         None,
         false,
         Interpolation::default(),
@@ -217,6 +235,7 @@ fn linear_gradient_with_five_stops_uses_eight_slots() {
         })
         .collect();
     let offsets = [0.0, 0.25, 0.5, 0.75, 1.0];
+    let shader = a_gradient_shader();
     let grad = GradientData::new(
         GradientType::Linear,
         Point::new(0.0, 0.0),
@@ -229,6 +248,7 @@ fn linear_gradient_with_five_stops_uses_eight_slots() {
         5,
         &colors,
         Some(&offsets),
+        shader.base(),
         None,
         false,
         Interpolation::default(),

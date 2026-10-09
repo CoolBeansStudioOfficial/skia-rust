@@ -42,13 +42,14 @@ use skia_rust_gpu::graphite::graphics_pipeline::{
     GraphicsPipeline, GraphicsPipelineBase, PipelineCreationFlags,
 };
 use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
-use skia_rust_gpu::graphite::graphics_pipeline_handle::GraphicsPipelineHandle;
+use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineHandle;
 use skia_rust_gpu::graphite::graphite_types::SampleCount;
 use skia_rust_gpu::graphite::key_context::KeyContext;
 use skia_rust_gpu::graphite::paint_params::{PaintParams, ShadingParams};
 use skia_rust_gpu::graphite::paint_params_key::PaintParamsKeyBuilder;
 use skia_rust_gpu::graphite::pipeline_data::PipelineDataGatherer;
 use skia_rust_gpu::graphite::pipeline_manager::PipelineCreationContext;
+use skia_rust_gpu::graphite::recorder::RecorderSharedContext;
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::render_step::{RenderStep, RenderStepID};
 use skia_rust_gpu::graphite::resource_types::{DstReadStrategy, Layout, LoadOp, StoreOp};
@@ -69,7 +70,7 @@ use skia_rust_gpu::graphite::wgpu::{
     CapsProfile, DeviceFeatures, WgpuCaps, WgpuSharedContext, make_context,
     noop_backend_context_with_features,
 };
-use support::wgsl_corpus::{all_steps, corpus_paints, render_pass_desc, renderer_provider};
+use support::wgsl_corpus::{all_steps, corpus_paints, render_pass_desc};
 
 /// The Dawn Vulkan profile without `ShaderF16`: the shaders are f32, as on the D3D12 tier.
 ///
@@ -164,11 +165,7 @@ fn shared_context(profile: &CapsProfile, options: &ContextOptions) -> Arc<WgpuSh
         ..wgpu::Limits::default()
     };
     let backend_context = noop_backend_context_with_features(features, limits).unwrap();
-    let shared = WgpuSharedContext::make_with_profile(&backend_context, profile, options).unwrap();
-    shared
-        .base()
-        .set_renderer_provider(renderer_provider(shared.caps()));
-    shared
+    WgpuSharedContext::make_with_profile(&backend_context, profile, options).unwrap()
 }
 
 fn options_with(handler: &Arc<Recorded>, executor: Option<Arc<dyn Executor>>) -> ContextOptions {
@@ -288,7 +285,7 @@ fn wgpu_pipeline(pipeline: &Arc<dyn GraphicsPipeline>) -> &WgpuGraphicsPipeline 
 }
 
 fn step_named(name: &str, shared: &WgpuSharedContext) -> Arc<dyn RenderStep> {
-    let provider = shared.base().renderer_provider().unwrap();
+    let provider = RecorderSharedContext::renderer_provider(shared);
     all_steps(provider)
         .into_iter()
         .find(|(n, _)| n == name)
@@ -424,7 +421,7 @@ fn check_corpus_slice(profile: &CapsProfile, msaa: bool) -> usize {
     let handler = Arc::new(Recorded::default());
     let shared = shared_context(profile, &options_with(&handler, None));
     let caps = shared.caps().clone();
-    let provider = shared.base().renderer_provider().unwrap();
+    let provider = RecorderSharedContext::renderer_provider(&*shared);
     let steps = all_steps(provider);
     let paints = slice_paints(caps.storage_buffer_support());
     let mut created = 0;
@@ -867,6 +864,31 @@ fn without_an_executor_the_manager_compiles_in_line() {
 }
 
 #[test]
+fn the_recorder_side_factory_creates_and_resolves_handles() {
+    // The `PipelineHandleFactory` a `DrawPass` gets from `RecorderSharedContext::pipeline_manager`.
+    let handler = Arc::new(Recorded::default());
+    let shared = shared_context(&vulkan(), &options_with(&handler, None));
+    let factory = RecorderSharedContext::pipeline_manager(&*shared).expect("a factory");
+    let (desc, rp_desc, dict) = solid_desc(&shared, "analytic_rrect[0]");
+
+    let handle = factory.create_handle(Some(&dict), &desc, &rp_desc, PipelineCreationFlags::NONE);
+
+    let pipeline = factory.resolve_handle(&handle).expect("compiled");
+    assert!(same_pipeline(
+        &pipeline,
+        &handle.pipeline_or_null().unwrap()
+    ));
+    assert_eq!(
+        shared
+            .base()
+            .pipeline_manager()
+            .get_stats()
+            .num_tasks_created,
+        1
+    );
+}
+
+#[test]
 fn a_failed_compilation_resolves_to_no_pipeline() {
     let handler = Arc::new(Recorded::default());
     let shared = shared_context(&vulkan(), &options_with(&handler, None));
@@ -1066,9 +1088,6 @@ fn dropping_the_context_waits_for_the_queued_tasks() {
     let options = options_with(&handler, Some(executor.clone()));
     let context = make_context(&noop_with_immediates(&vulkan()), &options).expect("a context");
     let shared = Arc::clone(context.shared_context());
-    shared
-        .base()
-        .set_renderer_provider(renderer_provider(shared.caps()));
     let (desc, rp_desc, dict) = solid_desc(&shared, "circular_arc[0]");
     let handle =
         shared.create_pipeline_handle(Some(dict), &desc, &rp_desc, PipelineCreationFlags::NONE);

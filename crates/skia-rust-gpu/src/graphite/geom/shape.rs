@@ -75,6 +75,11 @@ impl Default for Shape {
 }
 
 impl Shape {
+    /// `kDefaultPixelTolerance`: any difference (in pixels) under this is perceptibly equivalent.
+    /// (1.f - 0.001f) / 255.f, rounded down.
+    // Port of: src/gpu/graphite/geom/Shape.h#L44 (chrome/m156)
+    pub const DEFAULT_PIXEL_TOLERANCE: f32 = 0.0039;
+
     /// `Shape::Shape(p0, p1)`: a line segment.
     // Port of: src/gpu/graphite/geom/Shape.h#L51 (chrome/m156)
     #[must_use]

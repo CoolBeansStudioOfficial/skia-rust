@@ -84,6 +84,7 @@ use crate::graphite::key_helpers_ii::{
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::recorder::RecorderPriv;
 use crate::graphite::resource_types::{ImmutableSamplerInfo, SamplerDesc};
+use crate::graphite::storage_context::StorageContext;
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::uniform_manager::UniformManager;
 
@@ -223,6 +224,14 @@ pub struct GradientData {
     /// `fColorsAndOffsetsProxy`. Set by the caller for stop counts above the inline limit when
     /// storage buffers are not used.
     pub colors_and_offsets_proxy: Option<Arc<TextureProxy>>,
+    /// `fSrcColors`: the stops, kept for stop counts above the inline limit when storage buffers
+    /// are used, to be copied into the storage buffer.
+    pub src_colors: Vec<PMColor4f>,
+    /// `fSrcOffsets`: the offsets of `src_colors` (`None` for evenly spaced stops).
+    pub src_offsets: Option<Vec<f32>>,
+    /// `fSrcShader`: the address of the gradient shader, which identifies its data in the
+    /// `StorageContext`.
+    pub src_shader: usize,
     /// `fInterpolation`.
     pub interpolation: Interpolation,
 }
@@ -259,6 +268,9 @@ impl GradientData {
             }; 8],
             offsets: [[0.0; 4]; 2],
             colors_and_offsets_proxy: None,
+            src_colors: Vec::new(),
+            src_offsets: None,
+            src_shader: 0,
             interpolation: Interpolation::default(),
         }
     }
@@ -281,6 +293,7 @@ impl GradientData {
         num_stops: usize,
         colors: &[PMColor4f],
         offsets: Option<&[f32]>,
+        shader: &GradientBaseShader,
         colors_and_offsets_proxy: Option<Arc<TextureProxy>>,
         use_storage_buffer: bool,
         interpolation: Interpolation,
@@ -303,6 +316,17 @@ impl GradientData {
             }; 8],
             offsets: [[0.0; 4]; 2],
             colors_and_offsets_proxy: None,
+            src_colors: if num_stops > Self::NUM_INTERNAL_STORAGE_STOPS && use_storage_buffer {
+                colors[..num_stops].to_vec()
+            } else {
+                Vec::new()
+            },
+            src_offsets: if num_stops > Self::NUM_INTERNAL_STORAGE_STOPS && use_storage_buffer {
+                offsets.map(|offsets| offsets[..num_stops].to_vec())
+            } else {
+                None
+            },
+            src_shader: std::ptr::from_ref(shader) as usize,
             interpolation,
         };
 
@@ -344,6 +368,49 @@ impl GradientData {
     }
 }
 
+/// Writes the color and offset data directly in the gatherer gradient buffer and returns the
+/// offset the data begins at in the buffer.
+///
+/// Returns a negative offset to signal failure, in which case the paint key must be poisoned
+/// to drop the draw.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L297-L321 (chrome/m156)
+#[allow(clippy::cast_precision_loss)] // the stop index and count are small integers
+fn write_color_and_offset_bufdata(
+    storage_context: &mut StorageContext,
+    num_stops: usize,
+    colors: &[PMColor4f],
+    offsets: Option<&[f32]>,
+    shader_key: usize,
+) -> i32 {
+    let (dst_data, buffer_offset) = storage_context.allocate_gradient_data_for(
+        i32::try_from(num_stops).expect("gradient stop count fits an int"),
+        shader_key,
+    );
+    if let Some(dst_data) = dst_data {
+        debug_assert!(buffer_offset >= 0);
+        // Data doesn't already exist so we need to write it. Writes all offset data, then color
+        // data. This way when binary searching through the offsets, there is better cache
+        // locality.
+        let mut color_idx = num_stops;
+        for i in 0..num_stops {
+            let offset = match offsets {
+                Some(offsets) => offsets[i],
+                None => (i as f32) / ((num_stops - 1) as f32),
+            };
+            debug_assert!((0.0..=1.0).contains(&offset));
+
+            dst_data[i] = offset;
+            dst_data[color_idx] = colors[i].r;
+            dst_data[color_idx + 1] = colors[i].g;
+            dst_data[color_idx + 2] = colors[i].b;
+            dst_data[color_idx + 3] = colors[i].a;
+            color_idx += 4;
+        }
+    }
+
+    buffer_offset
+}
+
 /// Adds the gradient blocks (`GradientShaderBlocks`).
 // Port of: src/gpu/graphite/KeyHelpers.h#L108-L110 (chrome/m156)
 #[derive(Debug)]
@@ -356,24 +423,39 @@ impl GradientShaderBlocks {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L394-L465 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>, grad_data: &GradientData) {
-        // The buffer offset is only non-zero on the storage-buffer path, which is not ported.
-        let buffer_offset = 0;
+        // The buffer offset is only non-zero on the storage-buffer path.
+        let mut buffer_offset = 0;
         if grad_data.num_stops > GradientData::NUM_INTERNAL_STORAGE_STOPS
             && key_context.recorder().is_some()
         {
+            let has_storage;
             if grad_data.use_storage_buffer {
-                // `write_color_and_offset_bufdata` needs the draw context's `StorageContext`,
-                // which is not ported yet.
-                builder(key_context).add_error_block();
-                return;
+                debug_assert!(key_context.storage_context().is_some());
+                if let Some(storage_context) = key_context.storage_context() {
+                    buffer_offset = write_color_and_offset_bufdata(
+                        &mut storage_context.borrow_mut(),
+                        grad_data.num_stops,
+                        &grad_data.src_colors,
+                        grad_data.src_offsets.as_deref(),
+                        grad_data.src_shader,
+                    );
+                    has_storage = buffer_offset >= 0;
+                } else {
+                    has_storage = false;
+                }
+            } else {
+                // The color-and-offset texture is bound with nearest filtering and clamped
+                // tiling.
+                key_context.pipeline_data_gatherer().borrow_mut().add(
+                    grad_data.colors_and_offsets_proxy.clone(),
+                    SamplerDesc::new(&SamplingOptions::from(FilterMode::Nearest), TileMode::Clamp),
+                );
+                has_storage = grad_data.colors_and_offsets_proxy.is_some();
             }
-            // The color-and-offset texture is bound with nearest filtering and clamped tiling.
-            key_context.pipeline_data_gatherer().borrow_mut().add(
-                grad_data.colors_and_offsets_proxy.clone(),
-                SamplerDesc::new(&SamplingOptions::from(FilterMode::Nearest), TileMode::Clamp),
-            );
-            if grad_data.colors_and_offsets_proxy.is_none() {
+
+            if !has_storage {
                 builder(key_context).add_error_block();
+                skia_log_w!("Couldn't upload large gradient color stop data");
                 return;
             }
         }
@@ -1630,6 +1712,7 @@ fn add_gradient_to_key(
         color_count,
         colors,
         positions,
+        shader,
         proxy,
         grad_uses_storage,
         *shader.interpolation(),

@@ -199,6 +199,17 @@ pub enum BarrierType {
     ReadDstFromInput,
 }
 
+/// The uniform buffer slots a draw binds (`UniformSlot`).
+// Port of: src/gpu/graphite/DrawTypes.h#L134-L139 (chrome/m156)
+#[doc(alias = "skgpu::graphite::UniformSlot")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum UniformSlot {
+    /// `kCombinedUniforms`: slot for paints and render step uniforms.
+    CombinedUniforms,
+    /// `kStorage`: storage buffer slot.
+    Storage,
+}
+
 bitflags! {
     /// `RenderStateFlags`: which kind of vertex and instance data a pipeline state appends.
     // Port of: src/gpu/graphite/DrawTypes.h#L194-L201 (chrome/m156)

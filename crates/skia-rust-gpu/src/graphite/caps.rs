@@ -209,6 +209,15 @@ pub trait Caps: Send + Sync + Debug {
         is_protected: Protected,
     ) -> TextureInfo;
 
+    /// `getTextureInfoForSampledCopy()`: the info of a texture that a copy of `info`'s texture is
+    /// made into so that it can be sampled.
+    #[doc(alias = "getTextureInfoForSampledCopy")]
+    fn get_texture_info_for_sampled_copy(
+        &self,
+        info: &TextureInfo,
+        mipmapped: Mipmapped,
+    ) -> TextureInfo;
+
     /// `getDefaultAttachmentTextureInfo()`.
     #[doc(alias = "getDefaultAttachmentTextureInfo")]
     fn get_default_attachment_texture_info(

@@ -47,6 +47,7 @@ use crate::graphite::graphics_pipeline::{
     GraphicsPipeline, GraphicsPipelineBase, PipelineCreationFlags, PipelineInfo,
 };
 use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
+use crate::graphite::recorder::RecorderSharedContext;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::render_step::RenderStep;
 use crate::graphite::resource_types::SamplerDesc;
@@ -554,10 +555,8 @@ impl WgpuGraphicsPipeline {
         let device = shared_context.device();
         let error_handler = caps.shader_error_handler();
 
-        let Some(step) = shared_context
-            .base()
-            .renderer_provider()
-            .and_then(|provider| provider.lookup(pipeline_desc.render_step_id()))
+        let Some(step) = RecorderSharedContext::renderer_provider(shared_context)
+            .lookup(pipeline_desc.render_step_id())
         else {
             skia_log_e!(
                 "No render step {:?} to make a pipeline from",

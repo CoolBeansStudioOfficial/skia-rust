@@ -52028,7 +52028,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L21-L104"
 module = "gpu"
 status = "todo"
-reason = "needs Device::Make (G10a) and a Graphite Context (G9b, G11); the recorder side is ported with mock devices in crates/skia-rust-gpu/tests/recorder.rs"
+reason = "Device::Make exists (G10a) but the test asserts the recorder keeps an unreferenced Device alive (unique(), deviceIsRegistered(dev4Ptr) after the last ref drops, flushTrackedDevices deleting it); the Rust Device is a handle onto a core the recorder tracks weakly, so there is no such state; covered by crates/skia-rust-gpu/tests/draw_pass.rs"
 span_hash = "ea8bf9f42b4fb745e575e860152adef992c25b9df5935f01e44b5885356e98b3"
 
 [[test]]
@@ -52173,8 +52173,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L50-L123"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "6fd1b013398bb137e1e9e38ca8b622c4c6171dfb0cb41ab3e2a0330f8bfd4341"
 
 [[test]]
@@ -52183,8 +52182,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L187-L258"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "6970001e5c603594ba605f4b1178fb08eb1e779022674993c3f8ba6a2e200ba8"
 
 [[test]]
@@ -52193,8 +52191,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L647-L690"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "eece4b073caef4d50c090f884437c5aca064d883aa52fcf2d673c85b1f647c21"
 
 [[test]]
@@ -52203,8 +52200,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L347-L445"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "06158f072ef07119080bdf167cd04e7372439563742792bd810032ebec5e524a"
 
 [[test]]
@@ -52213,8 +52209,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L533-L645"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "5aafff4a4f624c11d8c0dc08624b825782f734545677307aec63292c3be07cd8"
 
 [[test]]
@@ -52223,8 +52218,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L260-L345"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "92cc6744a5b6b39bac4a05d28524d5a0983c767c9b4ee1ec3d9d965fa05d2f3e"
 
 [[test]]
@@ -52233,8 +52227,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L125-L185"
 module = "gpu"
-status = "todo"
-reason = "needs DrawContext::Make and recordDependency (G10a) for make_draw_context; the StorageContext arithmetic is checked in crates/skia-rust-gpu/tests/storage_context.rs"
+status = "passing"
 span_hash = "2be786eeaf72cf71d88c1108f889e953726ceeee853b0bd8229853cda194e772"
 
 [[test]]
@@ -52243,7 +52236,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/StorageContextTest.cpp#L447-L531"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "3eb784cafe49fcb1d82ad5151f954c11288f9cbbee783f1478c1654ad1b4cb1b"
 
 [[test]]

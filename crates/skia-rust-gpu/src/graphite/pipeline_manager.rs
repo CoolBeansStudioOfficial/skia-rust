@@ -28,7 +28,7 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, Weak};
 
 use skia_rust_core::executor::{Executor, TaskGroup};
 
@@ -36,7 +36,8 @@ use crate::gpu::resource_key::UniqueKey;
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
 use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
-use crate::graphite::graphics_pipeline_handle::GraphicsPipelineHandle;
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineHandle;
+use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::pipeline_creation_task::PipelineCreationTask;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
@@ -182,7 +183,7 @@ impl PipelineManager {
         if let Some(pipeline) =
             global_cache.find_graphics_pipeline(&pipeline_key, pipeline_creation_flags, None)
         {
-            return GraphicsPipelineHandle::from_pipeline(pipeline);
+            return GraphicsPipelineHandle::from_pipeline(Some(pipeline));
         }
 
         // Although 'findGraphicsPipeline' didn't find a GraphicsPipeline, there could be a race.
@@ -222,7 +223,7 @@ impl PipelineManager {
 
     /// `InlineCompile(task)`: returns true if compilation occurred; false otherwise.
     // Port of: src/gpu/graphite/PipelineManager.cpp#L145-L195 (chrome/m156)
-    fn inline_compile(task: &Arc<PipelineCreationTask>) -> bool {
+    fn inline_compile(task: &PipelineCreationTask) -> bool {
         // Since there might be threaded contention to execute the compilation for the same
         // task (e.g., if a low priority compile got duplicated as a high priority compile
         // or an immediate compile was required), we check the 'fStarted' atomic so only
@@ -304,9 +305,6 @@ impl PipelineManager {
 
     /// `resolveHandle(handle)`: the handle's pipeline, waiting for its compilation if needed;
     /// `None` if the compilation failed.
-    ///
-    /// # Panics
-    /// If the handle holds neither a pipeline nor a task, which handles never do.
     // Port of: src/gpu/graphite/PipelineManager.cpp#L224-L238 (chrome/m156)
     #[doc(alias = "resolveHandle")]
     #[must_use]
@@ -314,15 +312,14 @@ impl PipelineManager {
         &self,
         handle: &GraphicsPipelineHandle,
     ) -> Option<Arc<dyn GraphicsPipeline>> {
-        if let Some(pipeline) = handle.held_pipeline() {
-            return Some(Arc::clone(pipeline));
-        }
-
-        // Since 'fTaskOrPipeline' doesn't hold a pipeline the pipeline must not have existed when
-        // the handle was created so a compilation task must've been created to compile it
-        let task = handle
-            .task()
-            .expect("a handle holds either a pipeline or a task");
+        // A handle holds either a pipeline (or none, if creating it failed), or the task that
+        // creates it.
+        let Some(task) = handle.task() else {
+            return handle.pipeline_or_null();
+        };
+        let Some(task) = task.as_any().downcast_ref::<PipelineCreationTask>() else {
+            return handle.pipeline_or_null();
+        };
 
         // For the non-threaded PipelineManager, the GraphicsPipeline will have been compiled
         // in-line so will already have been completed.
@@ -432,7 +429,7 @@ impl PipelineManager {
 
     /// `potentiallyWaitOn(task)`.
     // Port of: src/gpu/graphite/PipelineManager.cpp#L340-L354 (chrome/m156)
-    fn potentially_wait_on(&self, task: &Arc<PipelineCreationTask>) {
+    fn potentially_wait_on(&self, task: &PipelineCreationTask) {
         // If we can preempt some thread that is scheduled to compile this Pipeline, do so rather
         // than waiting.
         if Self::inline_compile(task) {
@@ -459,5 +456,64 @@ impl Drop for PipelineManager {
     // `Context` shut the manager down; here the drop does it if nobody did.
     fn drop(&mut self) {
         self.shut_down();
+    }
+}
+
+/// The [`PipelineHandleFactory`] a draw pass is given: `sharedContext->pipelineManager()` of a
+/// shared context. It holds the context weakly, like the creation tasks do; once the context is
+/// gone every handle is one of a pipeline that failed to compile.
+#[derive(Clone)]
+pub struct SharedContextPipelineFactory {
+    shared_context: Weak<dyn PipelineCreationContext>,
+}
+
+impl std::fmt::Debug for SharedContextPipelineFactory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SharedContextPipelineFactory")
+            .finish_non_exhaustive()
+    }
+}
+
+impl SharedContextPipelineFactory {
+    /// The factory of `shared_context`'s pipeline manager.
+    #[must_use]
+    pub fn new(shared_context: &Arc<dyn PipelineCreationContext>) -> Self {
+        Self {
+            shared_context: Arc::downgrade(shared_context),
+        }
+    }
+}
+
+impl PipelineHandleFactory for SharedContextPipelineFactory {
+    fn create_handle(
+        &self,
+        runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+    ) -> GraphicsPipelineHandle {
+        let Some(shared_context) = self.shared_context.upgrade() else {
+            return GraphicsPipelineHandle::from_pipeline(None);
+        };
+        shared_context
+            .shared_context()
+            .pipeline_manager()
+            .create_handle(
+                &shared_context,
+                runtime_dict.map(Arc::clone),
+                pipeline_desc,
+                render_pass_desc,
+                flags,
+            )
+    }
+
+    fn resolve_handle(&self, handle: &GraphicsPipelineHandle) -> Option<Arc<dyn GraphicsPipeline>> {
+        match self.shared_context.upgrade() {
+            Some(shared_context) => shared_context
+                .shared_context()
+                .pipeline_manager()
+                .resolve_handle(handle),
+            None => handle.pipeline_or_null(),
+        }
     }
 }
