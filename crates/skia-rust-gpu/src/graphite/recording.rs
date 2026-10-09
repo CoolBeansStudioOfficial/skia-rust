@@ -67,7 +67,7 @@ impl LazyProxyData {
         // dimensions of that surface are known already.
         let target_proxy = if texture_info.mipmapped() == Mipmapped::Yes {
             TextureProxy::make_lazy(
-                caps.max_texture_size(),
+                caps,
                 dimensions,
                 texture_info,
                 Budgeted::No,

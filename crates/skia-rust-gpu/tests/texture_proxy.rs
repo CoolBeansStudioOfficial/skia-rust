@@ -7,6 +7,8 @@
 //! backend. Skia's own tests need a GPU context (caps, backend textures, a recorder), so they are
 //! not the 1:1 manifest ports; the scenarios and assertions below follow them.
 
+mod support;
+
 use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -30,6 +32,7 @@ use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
 use skia_rust_gpu::graphite::texture_format::TextureFormat;
 use skia_rust_gpu::graphite::texture_info::{TextureInfo, TextureInfoData, texture_info_priv};
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
+use support::MockCaps;
 
 #[derive(Debug, Clone, PartialEq)]
 struct MockTextureInfo {
@@ -155,7 +158,6 @@ fn wrapped_texture(dimensions: ISize) -> ResourceRef<Texture> {
     )
 }
 
-const MAX: i32 = 4096;
 
 type Slot = Arc<Mutex<Option<ResourceRef<Texture>>>>;
 
@@ -193,7 +195,7 @@ fn graphite_texture_proxy_test() {
 
     // Invalid parameters.
     let texture_proxy = TextureProxy::make(
-        MAX,
+        &MockCaps::default(),
         &mut resource_provider,
         invalid_size,
         &texture_info,
@@ -202,7 +204,7 @@ fn graphite_texture_proxy_test() {
     );
     assert!(texture_proxy.is_none());
     let texture_proxy = TextureProxy::make(
-        MAX,
+        &MockCaps::default(),
         &mut resource_provider,
         valid_size,
         &TextureInfo::new(),
@@ -213,7 +215,7 @@ fn graphite_texture_proxy_test() {
 
     // Non-budgeted, non-lazy TextureProxy is instantiated on return
     let texture_proxy = TextureProxy::make(
-        MAX,
+        &MockCaps::default(),
         &mut resource_provider,
         valid_size,
         &texture_info,
@@ -229,7 +231,7 @@ fn graphite_texture_proxy_test() {
 
     // Budgeted, non-lazy TextureProxy, successful instantiation later on
     let texture_proxy = TextureProxy::make(
-        MAX,
+        &MockCaps::default(),
         &mut resource_provider,
         valid_size,
         &texture_info,
@@ -255,7 +257,7 @@ fn graphite_texture_proxy_test() {
 
     // Lazy, non-volatile TextureProxy, unsuccessful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        MAX,
+        &MockCaps::default(),
         valid_size,
         &texture_info,
         Budgeted::No,
@@ -273,7 +275,7 @@ fn graphite_texture_proxy_test() {
 
     // Lazy, non-volatile TextureProxy, successful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        MAX,
+        &MockCaps::default(),
         valid_size,
         &texture_info,
         Budgeted::No,
@@ -288,7 +290,7 @@ fn graphite_texture_proxy_test() {
 
     // Lazy, volatile TextureProxy, unsuccessful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        MAX,
+        &MockCaps::default(),
         valid_size,
         &texture_info,
         Budgeted::No,
@@ -306,7 +308,7 @@ fn graphite_texture_proxy_test() {
 
     // Lazy, volatile TextureProxy, successful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        MAX,
+        &MockCaps::default(),
         valid_size,
         &texture_info,
         Budgeted::No,
@@ -352,7 +354,7 @@ fn graphite_texture_proxy_test() {
 
     // InstantiateIfNotLazy tests.
     let texture_proxy = TextureProxy::make(
-        MAX,
+        &MockCaps::default(),
         &mut resource_provider,
         valid_size,
         &texture_info,
@@ -365,7 +367,7 @@ fn graphite_texture_proxy_test() {
     assert!(instantiate_success);
 
     let texture_proxy = TextureProxy::make_lazy(
-        MAX,
+        &MockCaps::default(),
         valid_size,
         &texture_info,
         Budgeted::No,

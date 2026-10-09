@@ -100,7 +100,7 @@ pub fn make_bitmap_proxy_view(
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         TextureProxy::make(
-            caps.max_texture_size(),
+            &*caps,
             &mut provider,
             bitmap.dimensions(),
             &texture_info,
