@@ -24,12 +24,16 @@
 )]
 
 use crate::prelude::*;
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::color::Color;
 use skia_rust_core::paint::{Cap, Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::{SCALAR_PI, degrees_to_radians, scalar_cos, scalar_sin};
+use skia_rust_raster::raster_canvas::RasterCanvas;
 
 // Port of: gm/hairlines.cpp#L28-L186 (chrome/m156)
 #[derive(Default)]
@@ -274,6 +278,60 @@ fn draw_squarehair_tests(canvas: &Canvas, paint: &Paint) {
     path.line_to((110.0, 10.0));
     canvas.draw_path(&path.detach(), &paint);
 }
+
+// Port of: gm/hairlines.cpp#L240-L281 (chrome/m156)
+crate::def_simple_gm_can_fail!(squarehair_diffs, canvas, error_msg, 600, 720, {
+    let aliases = [false, true];
+    let widths: [f32; 3] = [0.0, 1.0, 1.001];
+    // Draws each of the three caps in a different color so we can overlay the three channels
+    // and zoom in to see the differences in the cap algorithms.
+    let caps = [Cap::Butt, Cap::Square, Cap::Round];
+    let colors = [
+        Color::new(0xFFFF0000),
+        Color::new(0xFF00FF00),
+        Color::new(0xFF0000FF),
+    ];
+    for alias in aliases {
+        for width in widths {
+            let mut backdrop = Paint::default();
+            backdrop.set_color(Color::BLACK);
+            backdrop.set_style(Style::Fill);
+            canvas.draw_rect(Rect::from_ltrb(120.0, 0.0, 600.0, 100.0), &backdrop);
+            for i in 0..3 {
+                let Some(mut surface) =
+                    canvas.new_surface(&canvas.image_info().with_wh(120, 25), None)
+                else {
+                    *error_msg = String::from("Could not make subsurface");
+                    return DrawResult::Skip;
+                };
+                let mut paint = Paint::default();
+                paint.set_anti_alias(alias);
+                paint.set_stroke_width(width);
+                paint.set_stroke_cap(caps[i]);
+                paint.set_color(colors[i]);
+                draw_squarehair_tests(surface.canvas(), &paint);
+                let img = surface.image_snapshot().expect("a snapshot");
+                canvas.draw_image(&img, (0.0, (30 * i) as f32), None);
+                {
+                    canvas.save();
+                    canvas.scale((4.0, 4.0));
+                    let mut plus = Paint::default();
+                    plus.set_blend_mode(BlendMode::Plus);
+                    canvas.draw_image_with_sampling_options(
+                        &img,
+                        (30.0, 0.0),
+                        SamplingOptions::default(),
+                        Some(&plus),
+                    );
+                    canvas.restore();
+                }
+            }
+            canvas.translate((0.0, 120.0));
+        }
+        canvas.translate((0.0, 20.0));
+    }
+    DrawResult::Ok
+});
 
 // Port of: gm/hairlines.cpp#L217-L238 (chrome/m156)
 crate::def_simple_gm!(squarehair, canvas, 240, 360, {

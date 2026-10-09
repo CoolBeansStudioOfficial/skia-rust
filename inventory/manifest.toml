@@ -15262,7 +15262,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/aaclip.cpp#L223-L223"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "012b88a3a6e35eb6cb1fded2fea0a8dcc2234b9c97f0ebcdb068d0487fbc0359"
 
 [[test]]
@@ -15271,7 +15271,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L77-L97"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a5a44302ce2ef2019cb9053f2080d3473c63656bda13373a837577f63411b85b"
 
 [[test]]
@@ -15281,6 +15281,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L135-L156"
 module = "raster"
 status = "todo"
+reason = "Mac-only: the GM is compiled only under SK_BUILD_FOR_MAC and needs CoreGraphics (SkCreateCGImageRefWithColorspace, SkMakeImageFromCGImage); not built on Linux"
 span_hash = "8b64f11f2af01a35226bdc31952790d5bc7f5f7a739bd9655d0fe00b9915b5cd"
 
 [[test]]
@@ -15308,7 +15309,7 @@ macro = "DEF_GM"
 source = "gm/aaxfermodes.cpp#L283-L283"
 module = "raster"
 status = "todo"
-reason = "not ported: the GM itself (gm/aaxfermodes.cpp) is not in tests/gm; it also needs ToolUtils::DefaultPortableTypeface, which is not ported (ToolUtils::draw_checkerboard is now in tests/gm/src/tool_utils.rs)"
+reason = "needs ToolUtils::draw_checkerboard, which is not ported"
 span_hash = "1f1216ba1e8f19bcc85739ddea202fc0844bc99ac45e594e9ba293dc85c72b79"
 
 [[test]]
@@ -15372,6 +15373,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L131-L171"
 module = "raster"
 status = "todo"
+reason = "needs images/color_wheel.png (ToolUtils::GetResourceAsBitmap; the port has no image decoder) and ToolUtils::draw_checkerboard (not ported)"
 span_hash = "12a2a1e19bbaee9d12c9a3b32f910a0850f647ae320f2aebd635eeceaf884e5d"
 
 [[test]]
@@ -15381,6 +15383,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L241-L264"
 module = "raster"
 status = "todo"
+reason = "needs ToolUtils::draw_checkerboard, which is not ported"
 span_hash = "019f1e12a04175fe756efdf689830864c1225f73e6a3b62cd0d12f15df5ea27d"
 
 [[test]]
@@ -15390,6 +15393,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L190-L195"
 module = "raster"
 status = "todo"
+reason = "needs ToolUtils::draw_checkerboard, which is not ported"
 span_hash = "f34e5e9c7fbc20de273340a99ff6faab7ad59409dffcfdb69c2f02b4140b6583"
 
 [[test]]
@@ -15399,6 +15403,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L95-L125"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "17ff052baa0dcc32cb70d3be57fd4cadbdce28dbfafc239d59f7b7bb2fe39c47"
 
 [[test]]
@@ -15408,6 +15413,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L45-L62"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "393d742ae0218a48550198e13585f06d31ecc39dba08e60d1daa9ea337aa45cb"
 
 [[test]]
@@ -15417,6 +15423,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/alpha_image.cpp#L66-L88"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "5d50b94dc07a707df4f263fff975060238680d3eb4242216b9c964216c3cfdf0"
 
 [[test]]
@@ -15588,7 +15595,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/arcto.cpp#L67-L127"
 module = "raster"
 status = "todo"
-reason = "ported but unregistered until trig is host-independent: matches on Linux and Windows, not on macOS (notes/gm_arcto_cpp_arcto.md)"
+reason = "host-dependent libm: matches the goldens on Linux and Windows but mismatches on macOS arm64; not registered, see notes/gm_arcto_cpp_arcto.md"
 span_hash = "d66533a0a4696b80eef84fb6553f938ced3c1d0332a8eae32b3e13a51a71d9c6"
 
 [[test]]
@@ -15636,7 +15643,7 @@ macro = "DEF_GM"
 source = "gm/arithmode.cpp#L173-L173"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::Arithmetic, which is not ported"
 span_hash = "3511c19b1d61958fc14401bb7c66674646c9cb9768ace0526478674c9b5dfefb"
 
 [[test]]
@@ -15646,6 +15653,7 @@ macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L771-L771"
 module = "raster"
 status = "todo"
+reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
 span_hash = "c92a3a6925413b25b011751846fdf85cf77b6adf7d82ecfcc5cdf8d9f6e965ab"
 
 [[test]]
@@ -15655,6 +15663,7 @@ macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L676-L676"
 module = "raster"
 status = "todo"
+reason = "GPU-only: relies on asyncRescaleAndReadPixels readback, which is not ported"
 span_hash = "465a4037c5bee5b7922a5a72155a57a6313aa493558380d0605741780a166d98"
 
 [[test]]
@@ -15745,6 +15754,7 @@ macro = "DEF_GM"
 source = "gm/attributes.cpp#L304-L304"
 module = "raster"
 status = "todo"
+reason = "GPU-only (Ganesh/skgpu APIs) and uses SkSL shaders, which are not ported"
 span_hash = "60e49b36dd729eddc0f5d4c9cc6132e091146c0b5ec648e440e0a71dbea278d2"
 
 [[test]]
@@ -15763,6 +15773,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L89-L104"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
 span_hash = "ebc5e7743a8a99c31525a3a299cb158d06f2b9160313d565d89cf34f1cdf81d8"
 
 [[test]]
@@ -15772,6 +15783,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/backdrop.cpp#L114-L128"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvasPriv::ScaledBackdropLayer (scaled backdrop layers), which is not ported"
 span_hash = "ff2f0521355f396b363e3e74fa075390f649f56697417178667e30ce0b419632"
 
 [[test]]
@@ -15844,6 +15856,7 @@ macro = "DEF_GM"
 source = "gm/bc1_transparency.cpp#L222-L222"
 module = "raster"
 status = "todo"
+reason = "GPU-only: compressed BC1 textures through GrDirectContext"
 span_hash = "db66baec1345669f9335fe49920228afa446d492aa565a6c99bc366667374476"
 
 [[test]]
@@ -15988,6 +16001,7 @@ macro = "DEF_GM"
 source = "gm/bitmapcopy.cpp#L157-L157"
 module = "raster"
 status = "todo"
+reason = "needs ToolUtils::copy_to (bitmap colour-type conversion to 565/4444), which is not ported"
 span_hash = "40180e4c46fc4e3515c6ca19d78404dbf957a2b8281e4a6b62987cb4ec0c3db6"
 
 [[test]]
@@ -16016,6 +16030,7 @@ macro = "DEF_GM"
 source = "gm/bitmapimage.cpp#L81-L81"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_512_q075.jpg (ToolUtils::GetResourceAsImage; the port has no JPEG decoder)"
 span_hash = "1a472572d72d61adece8c62bf19e509569d9e03afa0429e57d15f0771be49dd4"
 
 [[test]]
@@ -16051,7 +16066,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmaprect.cpp#L290-L290"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c39ded19e97c0b23902a5df5cda09deb94578897f4e08b6364e56a3ded2b7f97"
 
 [[test]]
@@ -16060,7 +16075,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmaprect.cpp#L291-L291"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "813405ab1c1529680b5c7ffdb65d7b3c428b1c70173ca2c7a4c9a60beea0911a"
 
 [[test]]
@@ -16161,7 +16176,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L356-L358"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "26a025f77262f2e85c0a4146ab1133d15e3b5482ad0be23d391104732ccbee52"
 
 [[test]]
@@ -16170,7 +16185,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L359-L361"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "68b3694a3a3aff2980d0a8daf60d02130497efca38306d3a8fba614ea592b737"
 
 [[test]]
@@ -16179,7 +16194,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L349-L351"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b3f42e87e9db8979bc6dbe9af206e192bc0ee3c25ca1caf9f277f8bb5d345fd7"
 
 [[test]]
@@ -16188,7 +16203,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L352-L354"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1a5c67190b28eb3bf72f2662a96b8549bdb457021cbbcd97cac8a8391c7fc5b9"
 
 [[test]]
@@ -16197,7 +16212,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L342-L344"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1ad4cbcd60ea7787dd561077b1446a088282a04e18822f3d172706ace63f3eba"
 
 [[test]]
@@ -16206,7 +16221,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bleed.cpp#L345-L347"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4cb229f8bd9aba7d95b1dde49ad032406358a29ca6d9740bed0af9d5be699f91"
 
 [[test]]
@@ -16215,7 +16230,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bleed.cpp#L391-L420"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "63269d5a08e281e38943fd6243c6b4e0114adba3ef28ef6e16414832f4a2b85c"
 
 [[test]]
@@ -16526,6 +16541,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/bug6643.cpp#L20-L39"
 module = "raster"
 status = "todo"
+reason = "needs SkPicture::makeShader (picture shaders), which is not ported"
 span_hash = "0329d80fcad52ec42f37d8fd969c0161ccd56249758eab275a8ea9e03e7876e2"
 
 [[test]]
@@ -16679,7 +16695,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clip_error.cpp#L89-L89"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a3d7bfe24154d501a48a4f21c816d8216998c65a5a77904901e462a8953d9fa1"
 
 [[test]]
@@ -16797,6 +16813,7 @@ macro = "DEF_GM"
 source = "gm/clockwise.cpp#L338-L338"
 module = "raster"
 status = "todo"
+reason = "GPU-only (Ganesh/skgpu APIs) and uses experimental edge-AA quads, which are not ported"
 span_hash = "4eefdb40bb0d781659244efe71cd66144268e7d3a66c334ca6dfea400ad44862"
 
 [[test]]
@@ -16805,7 +16822,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L144-L146"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "3ff9e2cdb970777e1022d9d60ba169c7b08c695860bf4a79a87cc35f18b03d41"
 
 [[test]]
@@ -16814,7 +16831,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L148-L150"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "271b99e26e9479d0855ead8e1e5d9e382c1bb5b6a974fda2e09056a7902a2960"
 
 [[test]]
@@ -16823,7 +16840,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L152-L154"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f660bc85388cc4a0a9c12d816094634b09c2fa888d428dab896c272d44180036"
 
 [[test]]
@@ -16850,7 +16867,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/color4f.cpp#L72-L93"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "cb3759f557eb6a6d9b51d72c522b93a278e5d6c347135ee4ac6ddbb4754f24b2"
 
 [[test]]
@@ -17015,8 +17032,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colormatrix.cpp#L139-L139"
 module = "raster"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "300416a2bc7d12c1d013822d8a7c6233b9278792419d8f2b1728cc2d37b7f3fc"
 
 [[test]]
@@ -17044,6 +17060,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L44-L53"
 module = "raster"
 status = "todo"
+reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "e7cb719f3d3ea4ec9c1e731082938e1cae83eb2a1667fedb44033242e13166d4"
 
 [[test]]
@@ -17053,6 +17070,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L72-L98"
 module = "raster"
 status = "todo"
+reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "815aa526bfb889b61bd5dc59ec758cdf4c6bbb47a9b4a11da747508a1a8147f7"
 
 [[test]]
@@ -17062,6 +17080,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/colorwheel.cpp#L55-L67"
 module = "raster"
 status = "todo"
+reason = "needs images/color_wheel.png/.jpg (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "5ac6340756f439f07cf44a0aff2ebb9af4e891534e2675c27551f2eaee1bae16"
 
 [[test]]
@@ -17601,7 +17620,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L207-L207"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a467976626c153214e864b12773aaa85a74cd2b51e50b09fcc22077c733dc9bb"
 
 [[test]]
@@ -17610,7 +17629,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L208-L208"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7bd6b96fe95f6e293ac0e53b7918fa24addda161d8a910627102ab4e164072b0"
 
 [[test]]
@@ -17619,7 +17638,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L209-L209"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a34e77b2835304c498aa5b984e3e98f45e7a178c5575d9c5f9bccba37f9a83cc"
 
 [[test]]
@@ -17628,7 +17647,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L210-L210"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "ab92b14abf5cfb26095e781357376088c605b44910e230cba6b786ffbd28755e"
 
 [[test]]
@@ -17637,7 +17656,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L211-L211"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b9389dfe17731b583eac0c14317230bdd04e46ce05e047a93baa8889533c38dc"
 
 [[test]]
@@ -17646,7 +17665,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L212-L212"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "528bed65370e9c3842ccd7424e8480e22ce6596b0fa8540db13fcd8fce3b540e"
 
 [[test]]
@@ -17655,7 +17674,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L213-L213"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "405c559d810181bdc95769ada1aec6f105643d875b91ec8efef9d4f93eebf639"
 
 [[test]]
@@ -17664,7 +17683,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip.cpp#L214-L214"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c0625c78a798f077904ff0a750624f14ddd3dbda722d37aab01d4b20b822101f"
 
 [[test]]
@@ -17892,6 +17911,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1058-L1058"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "fae3db955f229be6796214532c2512ebc8ae2eaa6799bfc72641ddbfab34b755"
 
 [[test]]
@@ -17901,6 +17921,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1057-L1057"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "e75ded231f0017cd051ae44855371912fd55f30b9fca5e1f8e774ee3392c6fd2"
 
 [[test]]
@@ -17919,6 +17940,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1060-L1060"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "e3c6f4ceb0fc30242793ca02a4d9ec886a7aa21225a11c2a558445463bfb8bd6"
 
 [[test]]
@@ -18018,6 +18040,7 @@ macro = "DEF_GM"
 source = "gm/constcolorprocessor.cpp#L216-L216"
 module = "raster"
 status = "todo"
+reason = "GPU-only: GPU fragment processors (GrDirectContext and skgpu APIs)"
 span_hash = "a92b49014a31c7cb802e666feea856ad60b1ebbb7299a1a942466ea88d868277"
 
 [[test]]
@@ -18027,6 +18050,7 @@ macro = "DEF_GM"
 source = "gm/constcolorprocessor.cpp#L217-L217"
 module = "raster"
 status = "todo"
+reason = "GPU-only: GPU fragment processors (GrDirectContext and skgpu APIs)"
 span_hash = "88706503b31e258fc06bbd886114517583b30f101647fb59ec8ca3654a477bfd"
 
 [[test]]
@@ -18062,7 +18086,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/convexpolyclip.cpp#L305-L305"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "90e10ddb40dd2bf1ecb9727e6259f922e072be30854142b15b4975f0d5e55a37"
 
 [[test]]
@@ -18090,6 +18114,7 @@ macro = "DEF_GM"
 source = "gm/copy_to_4444.cpp#L47-L47"
 module = "raster"
 status = "todo"
+reason = "needs images/dog.jpg (ToolUtils::GetResourceAsBitmap; the port has no JPEG decoder)"
 span_hash = "bf1aa9bd6c2b988ab71d4d547ff7034675e4ced265059dcc5c982c69a7f953bc"
 
 [[test]]
@@ -18099,6 +18124,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/copy_to_4444.cpp#L51-L74"
 module = "raster"
 status = "todo"
+reason = "needs images/dog.jpg (ToolUtils::GetResourceAsBitmap; the port has no JPEG decoder)"
 span_hash = "7ba7d92a43275f5bd466803021e42c574e4f85b7dfc3a01464f127b861993977"
 
 [[test]]
@@ -18116,7 +18142,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1073670.cpp#L16-L28"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5fc014ebf1cf740278f106136695794324ca9dd208427e61da1a8f1323c0f99c"
 
 [[test]]
@@ -18152,7 +18178,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1156804.cpp#L32-L40"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b135aacd70e3537060d02a26b67092e681c1acd2ab22a2687b8669754ea0bcf5"
 
 [[test]]
@@ -18162,7 +18188,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1162942.cpp#L24-L59"
 module = "raster"
 status = "todo"
-reason = "needs experimental_DrawEdgeAAQuad (not ported)"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "3219ede128c8532b1e6a4d199b18297d94db580d9c6b64e2d1a23fdbc9ae8e1d"
 
 [[test]]
@@ -18172,7 +18198,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1167277.cpp#L17-L41"
 module = "raster"
 status = "todo"
-reason = "needs experimental_DrawEdgeAAQuad (not ported)"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "5048e1f8374db90b79d4d5744c7e6e6c15db896554f2f866f29a09f1ebc6c059"
 
 [[test]]
@@ -18182,7 +18208,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174186.cpp#L18-L43"
 module = "raster"
 status = "todo"
-reason = "needs experimental_DrawEdgeAAQuad (not ported)"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "6e933eb1e1a6cb7851df7c09af5cee3802cfdec9398bef539710fba056dd610c"
 
 [[test]]
@@ -18191,7 +18217,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174354.cpp#L39-L49"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "f16 config only mismatches on every tier (8888 and 565 match); see notes/gm_crbug_1174354_cpp_crbug_1174354.md"
 span_hash = "179ad8dbe38ee32beca6d556d3fbe2994b0c6bfe34742ea7f11939866b9b1e81"
 
 [[test]]
@@ -18201,7 +18228,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1177833.cpp#L16-L98"
 module = "raster"
 status = "todo"
-reason = "needs experimental_DrawEdgeAAQuad (not ported)"
+reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
 span_hash = "c3689a8bea523e47e04fd2e87429727d8285428f1c400364b2a3c5bf4da68546"
 
 [[test]]
@@ -18219,7 +18246,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1313579.cpp#L20-L38"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "730ab303c26e066a5fb1bd4096943db67ee3202dbd5a64ebed478ebafad4f7aa"
 
 [[test]]
@@ -18229,6 +18256,7 @@ macro = "DEF_GM"
 source = "gm/crbug_224618.cpp#L116-L116"
 module = "raster"
 status = "todo"
+reason = "not ported in this sweep: 3-D SkM44 transforms and animation timing; no missing API identified yet"
 span_hash = "aa2d7d994189dc45687a003f564c69cc6a2245e9ea55d6e124b11cfe74e8366f"
 
 [[test]]
@@ -18238,6 +18266,7 @@ macro = "DEF_GM"
 source = "gm/crbug_478659067.cpp#L117-L117"
 module = "raster"
 status = "todo"
+reason = "Graphite-only: uses a Graphite Recorder and RenderTarget surface, which are not ported"
 span_hash = "918bb777c0d78815ce5da63bfc1c2e9b8a8f7b8b76ba16ee710c2f0881b4273c"
 
 [[test]]
@@ -18247,7 +18276,7 @@ macro = "DEF_GM"
 source = "gm/crbug_531782512.cpp#L67-L67"
 module = "raster"
 status = "todo"
-reason = "Graphite only: raster returns kSkip, so there is no golden"
+reason = "Graphite-only: returns DrawResult::kSkip unless built with SK_GRAPHITE, so there is no golden"
 span_hash = "4115d94af376fb32291de724839b695370570c6966f997ea1fe4bd6188a36a79"
 
 [[test]]
@@ -18310,7 +18339,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_899512.cpp#L19-L28"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "79efa76da78de1f894833d3a133d68ecbc5b948315b089e253ddd8979c5f3a78"
 
 [[test]]
@@ -18320,6 +18349,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_905548.cpp#L20-L41"
 module = "raster"
 status = "todo"
+reason = "needs SkImageFilters::Erode and SkImageFilters::Arithmetic, which are not ported"
 span_hash = "83c5df95bb7fbe23a7cdc96c1fbe3f6517debb9d1f1406f1a91bd3b71352503c"
 
 [[test]]
@@ -18347,6 +18377,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_918512.cpp#L14-L33"
 module = "raster"
 status = "todo"
+reason = "needs SkLumaColorFilter (an SkSL colour filter), which is not ported"
 span_hash = "ef212df1c20bdaa122a8f0047dd66adb3118b4c45c1288e6ba4cc3c994331003"
 
 [[test]]
@@ -18355,7 +18386,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_938592.cpp#L23-L49"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "003603c43bbd78b179b16e41dd2b5e24b149342c70dc05b6128e45da58bc718d"
 
 [[test]]
@@ -18809,6 +18840,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/destcolor.cpp#L17-L32"
 module = "raster"
 status = "todo"
+reason = "needs an SkRuntimeEffect blender (SkSL) and images/mandrill_512.png"
 span_hash = "a00f1a801cb48dba93dedc341019b21e5a9183dfb41b3ac8471596ea989a198b"
 
 [[test]]
@@ -18836,6 +18868,7 @@ macro = "DEF_GM"
 source = "gm/discard.cpp#L109-L109"
 module = "raster"
 status = "todo"
+reason = "GPU-only: GrDirectContext and skgpu discard APIs"
 span_hash = "d89b34dc6fda3617d5c01d5da665a4ab80dc4a509cc7d470b999cd0dc2dc216c"
 
 [[test]]
@@ -18845,7 +18878,7 @@ macro = "DEF_GM"
 source = "gm/displacement.cpp#L169-L169"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs ToolUtils::CreateStringImage and create_checkerboard_image (tools helpers), which are not ported"
 span_hash = "3cea9ce4cbedf9152aba5248b97a505e8bf5f27f1c5f0d550efd9f81a46659f5"
 
 [[test]]
@@ -18864,6 +18897,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/draw_bitmap_rect_skbug4374.cpp#L19-L30"
 module = "raster"
 status = "todo"
+reason = "needs images/randPixels.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "a84e6a20186e90873c1fc5a8a2b06d7c8280d020960fe95651002c6d33459c21"
 
 [[test]]
@@ -18873,7 +18907,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawable.cpp#L39-L52"
 module = "raster"
 status = "todo"
-reason = "needs SkDrawable (not ported)"
+reason = "needs SkCanvas::drawDrawable, which is not ported"
 span_hash = "d2447b3cbe180175fd3fe3565dc0eea935af656c9cc172539bd92869ce78b566"
 
 [[test]]
@@ -18882,8 +18916,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawatlas.cpp#L130-L130"
 module = "raster"
-status = "todo"
-reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3)"
+status = "passing"
 span_hash = "1030d2635462e3bc21464a97b08cfa6d80a658a48143a33ddd9b3ebdbda80687"
 
 [[test]]
@@ -18892,8 +18925,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L237-L261"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
+status = "passing"
 span_hash = "fe211e3e56666d46f022244ce48b0201c4e785585e7704c31d52ffeb9e7e5aea"
 
 [[test]]
@@ -18903,7 +18935,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L264-L302"
 module = "raster"
 status = "todo"
-reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
+reason = "needs fonts/Distortable.ttf as a resource stream (GetResourceAsStream), which is not ported"
 span_hash = "3713bba18f7836b70cbec27269bbdb4751da8f35ad7313bac51371539eb38710"
 
 [[test]]
@@ -18913,7 +18945,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L323-L359"
 module = "raster"
 status = "todo"
-reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3); also drawVertices with an image shader"
+reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "fc731956a2b02dc15b8829794375bbb402b983c4ed525f6ecec667b4b5954baa"
 
 [[test]]
@@ -18932,8 +18964,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawatlascolor.cpp#L158-L158"
 module = "raster"
-status = "todo"
-reason = "drawAtlas is ported (Draw::draw_atlas, Canvas::draw_atlas_with_shader); the GM needs SkImage (atlas surface snapshot / image shader, Phase 3); also needs text (SkFont, SkTextBlob, fonts; Phase 4)"
+status = "passing"
 span_hash = "dd543afbca4e4bb20fde0b472b2dec2a3da77b82dcb459ad91d8ef06505130a4"
 
 [[test]]
@@ -18942,7 +18973,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L266-L266"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "29ae7966dd3c60b75212f2b4e8d3a0d2f88cc2330a4a720f33f5ff7067a08704"
 
 [[test]]
@@ -18951,7 +18982,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L267-L267"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7d4d146a5a83f8a9a161026dcbf12ed5a1795ce83d0b1ebe5a17a06c9f8c5d74"
 
 [[test]]
@@ -18960,7 +18991,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L268-L268"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "be0c83266ed989bcaa29dad3e9aca54a2e1b8ef82daed0fded953010d6ddcea5"
 
 [[test]]
@@ -18969,7 +19000,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L269-L269"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "06557818149edfcc34ffc5e723b293d664069e301e5c2f0f6b32addf124d8b85"
 
 [[test]]
@@ -18988,6 +19019,7 @@ macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L364-L364"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
 span_hash = "b4f694e898ccca69039be2dc8a7e871c29ba50db8d066bebe37171b39090203a"
 
 [[test]]
@@ -18997,6 +19029,7 @@ macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L362-L362"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
 span_hash = "6943fbac3fe6a1f320856cc6ac9d861b13bf59eb68920af24a24b50ac1af8280"
 
 [[test]]
@@ -19006,6 +19039,7 @@ macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L363-L363"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
 span_hash = "77d41b0f516dea9a1f62ba02176e9a847101fd0158afcd6fb0d5154ff06f3fb1"
 
 [[test]]
@@ -19014,7 +19048,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawlines_with_local_matrix.cpp#L13-L49"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7e49edb155f9e8900715d3e5a7fe5d51f8b09ef051505dfcb6251cacb9715baa"
 
 [[test]]
@@ -19023,7 +19057,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawminibitmaprect.cpp#L153-L153"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "3f74c362599f3a123f065270e1d6538c4c689d580693e3d8694ee7e044d5a856"
 
 [[test]]
@@ -19032,7 +19066,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawminibitmaprect.cpp#L152-L152"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2d19893d8d96d306ca6705c863b11babe59de0c085755c30e9a2d92b748ba5dd"
 
 [[test]]
@@ -19042,6 +19076,7 @@ macro = "DEF_GM"
 source = "gm/drawquadset.cpp#L257-L257"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, and it is GPU-oriented; neither is ported"
 span_hash = "f988364ff2e8db4ec9c03f9c1a6cb6791a66981f0a81d331fea2ff55bfd7222e"
 
 [[test]]
@@ -19059,7 +19094,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawregionmodes.cpp#L85-L85"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b08c3ef31db9e59797d780fe2626ddf7040ca6831b2a9463ae80e6c314dbce98"
 
 [[test]]
@@ -19104,7 +19139,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dstreadshuffle.cpp#L202-L202"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d3b69495a83f9803b7c95b5359a65c28aa0925e6a0dc6cec50ff5d3a35f644ed"
 
 [[test]]
@@ -19122,7 +19157,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emboss.cpp#L91-L91"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "every config mismatches; the text (drawn after the emboss mask filter is still set) is black, golden is plain blue/green; see notes/gm_emboss_cpp_EmbossGM.md"
 span_hash = "b7bc2c7826b80ed3e7a88e3ca03c9daf6a827c2c5f7b799f44fc450494981622"
 
 [[test]]
@@ -19141,7 +19177,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L326-L345"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "457dab2f42ab9bf7e1689d6ebbd052f1d0286cf64e39c9c121a5956322c7e8d7"
 
 [[test]]
@@ -19150,7 +19186,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emptypath.cpp#L120-L120"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "34ef43ff3b1ccc73302aa05bbdaa592b324840114620a4ac802a10da0f75a36a"
 
 [[test]]
@@ -19259,6 +19295,7 @@ macro = "DEF_GM"
 source = "gm/exoticformats.cpp#L445-L445"
 module = "raster"
 status = "todo"
+reason = "needs KTX/DDS compressed-texture loaders (images/flower-etc1.ktx, flower-bc1.dds) and GPU compressed textures"
 span_hash = "a11c0535cef18f434357791a18b19799686aa4f3abb65929dba2c3abb3303e7a"
 
 [[test]]
@@ -19312,7 +19349,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filltypespersp.cpp#L128-L128"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5475550c74026f91f4f0e75197c8ce4bae9ca4e940d3ed81ed8414085eb9daf4"
 
 [[test]]
@@ -19349,6 +19386,7 @@ macro = "DEF_GM"
 source = "gm/flippity.cpp#L316-L316"
 module = "raster"
 status = "todo"
+reason = "GPU-only: GrDirectContext and GrRecordingContext"
 span_hash = "6e01f2940ca656a4b6e9cfbc6a0d69f81574c8842fa270d71cdb73ad81e01273"
 
 [[test]]
@@ -20705,6 +20743,7 @@ macro = "DEF_GM"
 source = "gm/graphite_replay.cpp#L158-L158"
 module = "raster"
 status = "todo"
+reason = "Graphite-only: Graphite recorder and replay APIs, which are not ported"
 span_hash = "1bfa191b7228a1672e4700bcb2426c46396c4a551582b0ec344cd3bf98d7aca3"
 
 [[test]]
@@ -20714,6 +20753,7 @@ macro = "DEF_GM"
 source = "gm/graphitestart.cpp#L372-L372"
 module = "raster"
 status = "todo"
+reason = "Graphite-only: Graphite recorder and context APIs, which are not ported"
 span_hash = "6107244cd73eb3d7eb297fea04ff01c9cd9f24a10f77dceb03b41597f77ab444"
 
 [[test]]
@@ -20758,8 +20798,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/hairlines.cpp#L243-L289"
 module = "raster"
-status = "todo"
-reason = "needs makeSurface/images and kPlus image draws"
+status = "passing"
 span_hash = "526c56603af5ae691e1662b82ce1b934c1fa02f4642b26f09a59536c9d490808"
 
 [[test]]
@@ -20805,6 +20844,7 @@ macro = "DEF_GM"
 source = "gm/hello_bazel_world.cpp#L60-L60"
 module = "raster"
 status = "todo"
+reason = "GM::isBazelOnly() is true: only the Bazel build runs it, so there is no golden"
 span_hash = "da2f9e3c07fd030d054dd811c08f9de4b4dc4d508993afab9cfb0660ba5f3952"
 
 [[test]]
@@ -20833,6 +20873,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/hsl.cpp#L210-L262"
 module = "raster"
 status = "todo"
+reason = "needs images/ducky.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "a580e4164a49b79cdf45109d3705d07deb1f151ef99de6449e2741960ed36ba2"
 
 [[test]]
@@ -20842,6 +20883,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/hsl.cpp#L157-L196"
 module = "raster"
 status = "todo"
+reason = "needs images/ducky.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
 span_hash = "ec72bea3ea041c8c1e7a34564b6df493bfb5f0acbbf4d5c50c58ab8156c9994a"
 
 [[test]]
@@ -20878,6 +20920,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L212-L212"
 module = "raster"
 status = "todo"
+reason = "GPU/Graphite paths (MakeTextureImage on a GPU canvas, RenderTarget surfaces), which are not ported"
 span_hash = "246b87db8067ee22a4118aec63d6211898bce5250f9bbddea03f471520c7cd91"
 
 [[test]]
@@ -20887,6 +20930,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
 status = "todo"
+reason = "needs SkCodecs::DeferredImage (no codec port) and the GPU/Graphite variants"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -20896,6 +20940,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
 status = "todo"
+reason = "needs SkCodecs::DeferredImage (no codec port) and the GPU/Graphite variants"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -20905,6 +20950,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
 status = "todo"
+reason = "needs SkImage::makeScaled, which has no public API in this port"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
@@ -20914,6 +20960,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/image.cpp#L596-L613"
 module = "raster"
 status = "todo"
+reason = "needs SkImage serialization (serial_deserial), which is not ported"
 span_hash = "7d90f328e5486d76530aa64bb558c8ade550fee472a4a957f854e06da4ca5d28"
 
 [[test]]
@@ -20932,6 +20979,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L518-L536"
 module = "raster"
 status = "todo"
+reason = "needs SkCodecs::DeferredImage (no codec port)"
 span_hash = "5269b85352a2f7e8608fc0f087a040fb003ab35e7b75bed42ef9641cc1a9728c"
 
 [[test]]
@@ -20941,6 +20989,7 @@ macro = "DEF_GM"
 source = "gm/image_pict.cpp#L440-L440"
 module = "raster"
 status = "todo"
+reason = "needs SkImageCacherator and image generators, which are not ported"
 span_hash = "c6587fc07dae9b16e4fae845800df309d307d351e819a769de73f863800ee676"
 
 [[test]]
@@ -20950,6 +20999,7 @@ macro = "DEF_GM"
 source = "gm/image_pict.cpp#L441-L441"
 module = "raster"
 status = "todo"
+reason = "needs SkImageCacherator and image generators, which are not ported"
 span_hash = "ed903631bbbab7386a5e305cd841f09155baca5dacef2bb9d24fbe2e75fff3ef"
 
 [[test]]
@@ -20968,6 +21018,7 @@ macro = "DEF_GM"
 source = "gm/image_pict.cpp#L133-L133"
 module = "raster"
 status = "todo"
+reason = "GPU-only: GrTextureGenerator and GrExternalTextureGenerator"
 span_hash = "fabbdb1bf277d8cc4b4c7bb1eab69714608bcffa49c5f1aa29edd99b7fc7dc88"
 
 [[test]]
@@ -21080,6 +21131,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/imagedither.cpp#L28-L82"
 module = "raster"
 status = "todo"
+reason = "needs an SkRuntimeEffect (SkSL) blender, which is not ported"
 span_hash = "d3196891c134c2e5aee6e3fb6f9c7631ad7dc7af56673f7c0fd191843e4cbfe9"
 
 [[test]]
@@ -21297,7 +21349,7 @@ macro = "DEF_GM"
 source = "gm/imagemagnifier.cpp#L220-L220"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::Magnifier, which is not ported"
 span_hash = "202df84445a939d5f8c47758c5e168af3b168b4186c94616e8e288a1496d30f3"
 
 [[test]]
@@ -21307,7 +21359,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imagemagnifier.cpp#L48-L56"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::Magnifier, which is not ported"
 span_hash = "66f3ba61f4a66aa15b5601eb9ab1cdef1659ed0164fcfce8196a76f23d8eb96e"
 
 [[test]]
@@ -21317,7 +21369,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imagemagnifier.cpp#L83-L97"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::Magnifier, which is not ported"
 span_hash = "4ee3963260e10404a50e9f1447762604a5a14b4a87e3a22498a96bbb02362ba1"
 
 [[test]]
@@ -21372,7 +21424,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imageresizetiled.cpp#L29-L61"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1fca9dce203255e5111afc8d27b4814821cd7b7fbd24a18581bbf153ac898e8e"
 
 [[test]]
@@ -21382,6 +21434,7 @@ macro = "DEF_GM"
 source = "gm/imagesource.cpp#L97-L97"
 module = "raster"
 status = "todo"
+reason = "needs ToolUtils::CreateStringImage (tools helper), which is not ported"
 span_hash = "4b893556eafec526bc79056a884d1b9e6a92b7d8de893e9032457437a5c966bb"
 
 [[test]]
