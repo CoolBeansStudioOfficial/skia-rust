@@ -21,6 +21,7 @@
 
 use std::fmt;
 
+pub mod codec_priv;
 pub mod resources;
 pub mod tmp_dir;
 pub mod tools;

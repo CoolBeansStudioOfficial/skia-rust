@@ -12,7 +12,9 @@ use crate::bitmap::Bitmap;
 use crate::data::Data;
 use crate::image::Image;
 use crate::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
+use crate::image_generator::ImageGenerator;
 use crate::image_info::ImageInfo;
+use crate::image_lazy::{ImageLazy, SharedGenerator, Validator};
 use crate::image_raster::{CopyPixelsMode, ImageRaster};
 use crate::pixmap::Pixmap;
 
@@ -134,4 +136,20 @@ pub fn raster_from_data(
 
     ImageRaster::from_data(info, data, row_bytes, None, NEED_NEW_IMAGE_UNIQUE_ID)
         .map(Image::from_base)
+}
+
+/// Creates a lazy [`Image`] whose pixels are made by `generator` when they are needed
+/// (`DeferredFromGenerator`). Returns `None` if there is no generator or it has an empty info.
+///
+/// Codec generators are made by `skia_rust_codec` (`images::deferred_from_encoded_data`,
+/// `codecs::deferred_image`).
+// Port of: src/image/SkImage_Lazy.cpp#L326-L332 (chrome/m156)
+#[doc(alias = "DeferredFromGenerator")]
+#[must_use]
+pub fn deferred_from_generator(generator: Option<Box<dyn ImageGenerator>>) -> Option<Image> {
+    let validator = Validator::new(SharedGenerator::make(generator), None, None);
+    if !validator.is_valid() {
+        return None;
+    }
+    ImageLazy::from_validator(validator).map(Image::from_base)
 }

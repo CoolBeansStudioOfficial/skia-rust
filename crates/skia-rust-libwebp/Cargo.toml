@@ -1,0 +1,14 @@
+[package]
+name = "skia-rust-libwebp"
+description = "Port of the libwebp 1.4.0 decoder (VP8, VP8L, ALPH, demux, incremental decode) that Skia's WebP codec uses, used by skia-rust's codecs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "BSD-3-Clause"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

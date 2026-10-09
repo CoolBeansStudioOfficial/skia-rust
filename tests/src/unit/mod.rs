@@ -3,7 +3,11 @@
 #[cfg(test)]
 pub mod aa_clip_test;
 #[cfg(test)]
+pub mod android_codec_test;
+#[cfg(test)]
 pub mod as_a_dash_test;
+#[cfg(test)]
+pub mod bad_ico_test;
 #[cfg(test)]
 pub mod bitmap_copy_test;
 #[cfg(test)]
@@ -30,6 +34,15 @@ pub mod clip_cubic_test;
 pub mod clip_stack_test;
 #[cfg(test)]
 pub mod clipper_test;
+#[cfg(test)]
+pub mod codec_anim_test;
+#[cfg(test)]
+#[cfg(test)]
+pub mod codec_exact_read_test;
+#[cfg(test)]
+pub mod codec_partial_test;
+#[cfg(test)]
+pub mod codec_test;
 #[cfg(test)]
 pub mod color_filter_test;
 #[cfg(test)]
@@ -64,6 +77,7 @@ pub mod draw_path_test;
 pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
+pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
 #[cfg(test)]
@@ -90,6 +104,8 @@ pub mod front_buffered_stream_test;
 #[cfg(test)]
 pub mod geometry_test;
 #[cfg(test)]
+pub mod gif_test;
+#[cfg(test)]
 pub mod gradient_test;
 #[cfg(test)]
 pub mod graphite;
@@ -111,6 +127,8 @@ pub mod image_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
+pub mod invalid_indexed_png_test;
+#[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
@@ -118,6 +136,8 @@ pub mod malloc_pixel_ref_test;
 pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
+#[cfg(test)]
+pub mod md5_test;
 #[cfg(test)]
 pub mod memset_test;
 #[cfg(test)]
@@ -340,6 +360,7 @@ pub mod text_blob_test;
 pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
+pub mod webp_test;
 #[cfg(test)]
 pub mod wangs_formula_test;
 #[cfg(test)]

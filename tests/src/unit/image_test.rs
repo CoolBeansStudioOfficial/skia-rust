@@ -8,31 +8,62 @@
 //   `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: every one of them
 //   makes `create_codec_image()` or encodes a PNG (`SkPngEncoder`, `DeferredFromEncodedData`),
 //   which is not ported.
-// * `image_from_encoded_alphatype_override`, `Image_ColorSpace`, `Image_makeColorSpace`,
-//   `Image_nonfinite_dst`: decode image resources (png, jpg, webp) or make a lazy picture image
-//   (`DeferredFromPicture`).
+// * `Image_ColorSpace`, `Image_nonfinite_dst`: decode image resources
+//   (png, jpg, webp) or make a lazy picture image (`DeferredFromPicture`), and the last two need
+//   `ToolUtils::PixelIter`/`any_image_will_do` helpers that are not ported yet.
 // * `Image_Serialize_Encoding_Failure`: picture serialization (`SkSerialProcs`).
-// * `ImageEmpty`: ends with `SkImages::DeferredFromGenerator` (`SkImageGenerator`, lazy images).
 // The Ganesh tests are excluded.
 
 #![cfg(test)]
 
+use skia_rust_codec::image_generator_from_encoded::make_from_encoded;
+use skia_rust_codec::images::deferred_from_encoded_data;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_priv::pack_argb32;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
+use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
+use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_raster::CopyPixelsMode;
 use skia_rust_core::images;
 use skia_rust_core::m44::M44;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_test, def_tier_test, reporter_assert};
+use crate::resources::{get_resource_as_data, get_resource_as_image};
+use crate::{Reporter, def_test, def_tier_test, reporter_assert, skip_missing_resource};
+
+// Port of: tests/ImageTest.cpp#L702-L705 (chrome/m156)
+struct EmptyGenerator {
+    info: ImageInfo,
+    unique_id: u32,
+}
+
+impl EmptyGenerator {
+    fn new() -> Self {
+        EmptyGenerator {
+            info: ImageInfo::new_n32_premul((0, 0), None),
+            unique_id: generator_unique_id(NEED_NEW_IMAGE_UNIQUE_ID),
+        }
+    }
+}
+
+impl ImageGenerator for EmptyGenerator {
+    fn info(&self) -> &ImageInfo {
+        &self.info
+    }
+
+    fn unique_id(&self) -> u32 {
+        self.unique_id
+    }
+}
 
 // Port of: tests/ImageTest.cpp#L235-L266 (chrome/m156)
 def_tier_test!(Image_MakeFromRasterBitmap, |reporter| {
@@ -342,5 +373,138 @@ def_test!(image_cubicresampler, |reporter| {
         reporter,
         &ImageShader::cubic_resampler_matrix(0.0, 1.0 / 2.0),
         &g_centripetal_catmul_rom,
+    );
+});
+
+// Port of: tests/ImageTest.cpp#L1360-L1397 (chrome/m156)
+def_test!(Image_makeColorSpace, |reporter| {
+    use skia_rust_core::color_data::swizzle_rgba_to_pm_color;
+    use skia_rust_core::color_priv::{get_packed_b32, get_packed_g32, get_packed_r32};
+    use skia_rust_core::color_space::{named_gamut, named_transfer_fn};
+    use skia_rust_core::image::RequiredProperties;
+    use skia_rust_skcms::TransferFunction;
+
+    let p3 = ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::DISPLAY_P3)
+        .expect("MakeRGB(kSRGB, kDisplayP3)");
+    let fn_ = TransferFunction {
+        g: 1.8,
+        a: 1.0,
+        b: 0.0,
+        c: 0.0,
+        d: 0.0,
+        e: 0.0,
+        f: 0.0,
+    };
+    let adobe_gamut =
+        ColorSpace::new_rgb(&fn_, &named_gamut::ADOBE_RGB).expect("MakeRGB(fn, AdobeRGB)");
+
+    let mut srgb_bitmap = Bitmap::new();
+    let pixel = swizzle_rgba_to_pm_color(0xFF60_4020);
+    let installed = srgb_bitmap.install_pixels(
+        &ImageInfo::new_s32((1, 1), AlphaType::Opaque),
+        pixel.to_ne_bytes().to_vec(),
+        4,
+    );
+    reporter_assert!(reporter, installed);
+    srgb_bitmap.set_immutable();
+    let srgb_image = srgb_bitmap.as_image().expect("asImage");
+
+    let p3_image = srgb_image
+        .make_color_space(p3.clone(), RequiredProperties::default())
+        .expect("makeColorSpace(p3)");
+    let p3_bitmap = p3_image.as_legacy_bitmap();
+    reporter_assert!(reporter, p3_bitmap.is_some());
+    let Some(p3_bitmap) = p3_bitmap else {
+        return;
+    };
+
+    let almost_equal = |a: u32, b: u32| a.abs_diff(b) <= 2;
+
+    let px = p3_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x28, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x40, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x5E, get_packed_b32(px)));
+
+    let adobe_image = srgb_image
+        .make_color_space(adobe_gamut, RequiredProperties::default())
+        .expect("makeColorSpace(adobe)");
+    let adobe_bitmap = adobe_image.as_legacy_bitmap();
+    reporter_assert!(reporter, adobe_bitmap.is_some());
+    let Some(adobe_bitmap) = adobe_bitmap else {
+        return;
+    };
+    let px = adobe_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x21, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x31, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x4C, get_packed_b32(px)));
+
+    let Some(srgb_image) = get_resource_as_image("images/1x1.png") else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let p3_image = srgb_image
+        .make_color_space(p3, RequiredProperties::default())
+        .expect("makeColorSpace(p3)");
+    let p3_bitmap = p3_image.as_legacy_bitmap();
+    reporter_assert!(reporter, p3_bitmap.is_some());
+    let Some(p3_bitmap) = p3_bitmap else {
+        return;
+    };
+    let px = p3_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x8B, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x82, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x77, get_packed_b32(px)));
+});
+
+// Port of: tests/ImageTest.cpp#L707-L715 (chrome/m156)
+def_test!(ImageEmpty, |reporter| {
+    let info = ImageInfo::new_n32_premul((0, 0), None);
+    // skia-rust: the nullptr pixels of the C++ are an empty slice (and an empty Data).
+    let mut no_pixels: [u8; 0] = [];
+    let pmap = Pixmap::new(&info, &mut no_pixels, 0).expect("pixmap");
+    reporter_assert!(reporter, images::raster_from_pixmap_copy(&pmap).is_none());
+    reporter_assert!(
+        reporter,
+        images::raster_from_data(&info, Data::new_empty(), 0).is_none()
+    );
+    reporter_assert!(reporter, images::raster_from_pixmap(&pmap, || {}).is_none());
+    reporter_assert!(
+        reporter,
+        images::deferred_from_generator(Some(Box::new(EmptyGenerator::new()))).is_none()
+    );
+});
+
+// Port of: tests/ImageTest.cpp#L1457-L1470 (chrome/m156)
+def_test!(image_from_encoded_alphatype_override, |reporter| {
+    let path = "images/mandrill_32.png";
+    let data = Data::new_from_vec(skip_missing_resource!(get_resource_as_data(path), path));
+
+    // Ensure that we can decode the image when we specifically request premul or unpremul, but
+    // not when we request kOpaque
+    reporter_assert!(
+        reporter,
+        deferred_from_encoded_data(Some(data.clone()), Some(AlphaType::Premul)).is_some()
+    );
+    reporter_assert!(
+        reporter,
+        deferred_from_encoded_data(Some(data.clone()), Some(AlphaType::Unpremul)).is_some()
+    );
+    reporter_assert!(
+        reporter,
+        deferred_from_encoded_data(Some(data.clone()), Some(AlphaType::Opaque)).is_none()
+    );
+
+    // Same tests as above, but using SkImageGenerators::MakeFromEncoded
+    reporter_assert!(
+        reporter,
+        make_from_encoded(Some(data.clone()), Some(AlphaType::Premul)).is_some()
+    );
+    reporter_assert!(
+        reporter,
+        make_from_encoded(Some(data.clone()), Some(AlphaType::Unpremul)).is_some()
+    );
+    reporter_assert!(
+        reporter,
+        make_from_encoded(Some(data), Some(AlphaType::Opaque)).is_none()
     );
 });

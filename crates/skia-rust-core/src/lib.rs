@@ -54,6 +54,8 @@ pub mod drawable;
 #[doc(hidden)]
 pub mod edge_clipper;
 pub mod effect_priv;
+pub mod encoded_image_format;
+pub mod encoded_origin;
 pub mod endian;
 pub mod fdot6;
 pub mod fixed;
@@ -87,9 +89,11 @@ pub mod image_base;
 pub mod image_filter;
 pub mod image_filter_result;
 pub mod image_filter_types;
+pub mod image_generator;
 pub mod image_info;
 #[doc(hidden)]
 pub mod image_info_priv;
+pub mod image_lazy;
 pub mod image_raster;
 pub mod images;
 #[doc(hidden)]
@@ -112,6 +116,7 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod md5;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod packed_glyph_id;

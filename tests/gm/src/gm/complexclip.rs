@@ -253,3 +253,30 @@ crate::def_gm!(
     ComplexClipGM_true_true_true = "ComplexClipGM(true, true, true)",
     ComplexClipGm::new(true, true, true)
 );
+
+// Port of: gm/complexclip.cpp#L254-L268 (chrome/m156)
+crate::def_simple_gm!(clip_shader_layer, canvas, 430, 320, {
+    let img = crate::tool_utils::get_resource_as_image("images/yellow_rose.png")
+        .expect("images/yellow_rose.png (set SKIA_RESOURCES)");
+    let sh = img
+        .to_shader(
+            None,
+            skia_rust_core::sampling_options::SamplingOptions::default(),
+            None,
+        )
+        .expect("shader");
+
+    let r = Rect::from_wh(
+        crate::tool_utils::int_to_scalar(img.width()),
+        crate::tool_utils::int_to_scalar(img.height()),
+    );
+
+    canvas.translate((10.0, 10.0));
+    // now add the cool clip
+    canvas.clip_rect(r, None, None);
+    canvas.clip_shader(sh, None);
+    // now draw a layer with the same image, and watch it get restored w/ the clip
+    canvas.save_layer(&SaveLayerRec::default().bounds(&r));
+    canvas.draw_color(Color::new(0xFFFF_0000), None);
+    canvas.restore();
+});
