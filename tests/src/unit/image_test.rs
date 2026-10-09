@@ -8,7 +8,7 @@
 //   `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: every one of them
 //   makes `create_codec_image()` or encodes a PNG (`SkPngEncoder`, `DeferredFromEncodedData`),
 //   which is not ported.
-// * `Image_ColorSpace`, `Image_makeColorSpace`, `Image_nonfinite_dst`: decode image resources
+// * `Image_ColorSpace`, `Image_nonfinite_dst`: decode image resources
 //   (png, jpg, webp) or make a lazy picture image (`DeferredFromPicture`), and the last two need
 //   `ToolUtils::PixelIter`/`any_image_will_do` helpers that are not ported yet.
 // * `Image_Serialize_Encoding_Failure`: picture serialization (`SkSerialProcs`).
@@ -23,6 +23,7 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_priv::pack_argb32;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
@@ -36,7 +37,7 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_raster::surfaces;
 
-use crate::resources::get_resource_as_data;
+use crate::resources::{get_resource_as_data, get_resource_as_image};
 use crate::{Reporter, def_test, def_tier_test, reporter_assert, skip_missing_resource};
 
 // Port of: tests/ImageTest.cpp#L702-L705 (chrome/m156)
@@ -373,6 +374,86 @@ def_test!(image_cubicresampler, |reporter| {
         &ImageShader::cubic_resampler_matrix(0.0, 1.0 / 2.0),
         &g_centripetal_catmul_rom,
     );
+});
+
+// Port of: tests/ImageTest.cpp#L1360-L1397 (chrome/m156)
+def_test!(Image_makeColorSpace, |reporter| {
+    use skia_rust_core::color_data::swizzle_rgba_to_pm_color;
+    use skia_rust_core::color_priv::{get_packed_b32, get_packed_g32, get_packed_r32};
+    use skia_rust_core::color_space::{named_gamut, named_transfer_fn};
+    use skia_rust_core::image::RequiredProperties;
+    use skia_rust_skcms::TransferFunction;
+
+    let p3 = ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::DISPLAY_P3)
+        .expect("MakeRGB(kSRGB, kDisplayP3)");
+    let fn_ = TransferFunction {
+        g: 1.8,
+        a: 1.0,
+        b: 0.0,
+        c: 0.0,
+        d: 0.0,
+        e: 0.0,
+        f: 0.0,
+    };
+    let adobe_gamut =
+        ColorSpace::new_rgb(&fn_, &named_gamut::ADOBE_RGB).expect("MakeRGB(fn, AdobeRGB)");
+
+    let mut srgb_bitmap = Bitmap::new();
+    let pixel = swizzle_rgba_to_pm_color(0xFF60_4020);
+    let installed = srgb_bitmap.install_pixels(
+        &ImageInfo::new_s32((1, 1), AlphaType::Opaque),
+        pixel.to_ne_bytes().to_vec(),
+        4,
+    );
+    reporter_assert!(reporter, installed);
+    srgb_bitmap.set_immutable();
+    let srgb_image = srgb_bitmap.as_image().expect("asImage");
+
+    let p3_image = srgb_image
+        .make_color_space(p3.clone(), RequiredProperties::default())
+        .expect("makeColorSpace(p3)");
+    let p3_bitmap = p3_image.as_legacy_bitmap();
+    reporter_assert!(reporter, p3_bitmap.is_some());
+    let Some(p3_bitmap) = p3_bitmap else {
+        return;
+    };
+
+    let almost_equal = |a: u32, b: u32| a.abs_diff(b) <= 2;
+
+    let px = p3_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x28, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x40, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x5E, get_packed_b32(px)));
+
+    let adobe_image = srgb_image
+        .make_color_space(adobe_gamut, RequiredProperties::default())
+        .expect("makeColorSpace(adobe)");
+    let adobe_bitmap = adobe_image.as_legacy_bitmap();
+    reporter_assert!(reporter, adobe_bitmap.is_some());
+    let Some(adobe_bitmap) = adobe_bitmap else {
+        return;
+    };
+    let px = adobe_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x21, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x31, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x4C, get_packed_b32(px)));
+
+    let Some(srgb_image) = get_resource_as_image("images/1x1.png") else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let p3_image = srgb_image
+        .make_color_space(p3, RequiredProperties::default())
+        .expect("makeColorSpace(p3)");
+    let p3_bitmap = p3_image.as_legacy_bitmap();
+    reporter_assert!(reporter, p3_bitmap.is_some());
+    let Some(p3_bitmap) = p3_bitmap else {
+        return;
+    };
+    let px = p3_bitmap.get_addr32(0, 0);
+    reporter_assert!(reporter, almost_equal(0x8B, get_packed_r32(px)));
+    reporter_assert!(reporter, almost_equal(0x82, get_packed_g32(px)));
+    reporter_assert!(reporter, almost_equal(0x77, get_packed_b32(px)));
 });
 
 // Port of: tests/ImageTest.cpp#L707-L715 (chrome/m156)

@@ -18,6 +18,10 @@ unchanged in crates/skia-rust-wuffs/LICENSE. skia-rust-wuffs is a modified versi
 (a Rust port of its GIF decoder, LZW and base modules); each of its source files carries the
 upstream notice and states that it is modified, as Apache-2.0 section 4 requires.
 
+The libjpeg-turbo pin is the commit `e14cbfaa85529d47f9f55b0f104a579c1061f9ad` of
+`chromium/deps/libjpeg_turbo` that `third_party/skia/DEPS` names for m156. The C oracle
+for `skia-rust-libjpeg` is built from that commit by `oracle/codec-diff/libjpeg/build.sh`.
+
 A row whose crate is not yet in the workspace is a planned port (docs/design/codecs.md
 §3); its licence file is added with the crate. The Rust-backed codecs Skia can use
 (png, zune-jpeg, jpeg-encoder) are dependencies, not ports, and are listed in Cargo.lock.

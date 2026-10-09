@@ -3,7 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/repeated_bitmap.cpp (chrome/m156)
 //
-// `repeated_bitmap_jpg` (color_wheel.jpg) is not ported: JPEG decoding is not ported yet.
 
 use skia_rust_core::image::Image;
 use skia_rust_core::paint::Paint;
@@ -59,5 +58,11 @@ fn draw_rotated_image(
 // Port of: gm/repeated_bitmap.cpp#L48-L51 (chrome/m156)
 crate::def_simple_gm_can_fail!(repeated_bitmap, canvas, error_msg, 576, 576, {
     let image = get_resource_as_image("images/randPixels.png");
+    draw_rotated_image(canvas, image.as_ref(), error_msg)
+});
+
+// Port of: gm/repeated_bitmap.cpp#L53-L56 (chrome/m156)
+crate::def_simple_gm_can_fail!(repeated_bitmap_jpg, canvas, error_msg, 576, 576, {
+    let image = get_resource_as_image("images/color_wheel.jpg");
     draw_rotated_image(canvas, image.as_ref(), error_msg)
 });

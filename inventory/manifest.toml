@@ -20921,7 +20921,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/grayscalejpg.cpp#L20-L29"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1f5137e134caeb21ac5fa099fb411bf89262ed6046f6ad3fbb7a95a5c9744d50"
 
 [[test]]
@@ -22373,7 +22373,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L155-L155"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "10a55e87d769e5418ac52871813381fe961da27a5d96f9687a7f59b8f38ecc4a"
 
 [[test]]
@@ -22382,7 +22382,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L156-L156"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7d40926ac7bc6ef530353fb6b2f5a1a45756122d65d075279ebdd7365b427e8b"
 
 [[test]]
@@ -22391,7 +22391,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L157-L157"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5b33e9fadf6984eecafe528ce27e87f997191374e1dee2451d55612619039109"
 
 [[test]]
@@ -22400,7 +22400,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L158-L158"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "fe60fe1e26ca46851744359a6fcfeca13cf71ead2ed53bbf0751abe917aa96fe"
 
 [[test]]
@@ -22409,7 +22409,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L159-L159"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "03af8bc8b1af4bb340714e4e987ff851b043daf24b52073789dd76cbf5d3600c"
 
 [[test]]
@@ -22418,7 +22418,7 @@ kind = "gm"
 macro = "MAKE_GM"
 source = "gm/orientation.cpp#L160-L160"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "700246f5216dc2530ab785401a6dcc30391696aea92fdd160849da7aebab147d"
 
 [[test]]
@@ -22427,7 +22427,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/orientation.cpp#L163-L182"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b2cef504b90ba7b01123ba071c33c56cb37567fb8cf88f13659c6bf8214d7c75"
 
 [[test]]
@@ -23248,7 +23248,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/repeated_bitmap.cpp#L53-L56"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "06abcd1ffbca3b2032936e419fd70b0c1023ae45573fca3e604055385ff8c6f0"
 
 [[test]]
@@ -29676,8 +29676,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1898-L1932"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG decoder"
+status = "passing"
 span_hash = "95a721367a84ab72bef0a9d1eadabbf88b75c0a8b40a2a1da01c89b2c9bf6325"
 
 [[test]]
@@ -29686,8 +29685,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1934-L1951"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG decoder"
+status = "passing"
 span_hash = "514f5398003f484247cadae8841b25367c47a708d64e04534d66bbf6b4ef9856"
 
 [[test]]
@@ -29705,8 +29703,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1245-L1248"
 module = "codec"
-status = "todo"
-reason = "covers JPEG as well as PNG"
+status = "passing"
 span_hash = "07bcd0dccac33ae39b4fe896931d9bde9856c73181dc5d374cf27cde7a699abe"
 
 [[test]]
@@ -29725,8 +29722,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L859-L886"
 module = "codec"
-status = "todo"
-reason = "needs the GIF, ICO, JPEG and WebP decoders: the test asserts those files are rejected, which the missing decoders would also do"
+status = "passing"
 span_hash = "7265355321ed7268d44cbb4b4dbdcfdf963406abebfbf1f91de79d6ec45694c5"
 
 [[test]]
@@ -29744,8 +29740,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1390-L1394"
 module = "codec"
-status = "todo"
-reason = "covers WebP and JPEG as well as PNG"
+status = "passing"
 span_hash = "d46ecd76c0bc53e3d14e95a92f0ec19a2fdb0743d44cffc36810f06b6904b6c4"
 
 [[test]]
@@ -29901,7 +29896,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2194-L2225"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "909b9b3bec8bcf03df10e484dc7c2c32ce4a55aa6bd2e11be7a27102b257abcf"
 
 [[test]]
@@ -29910,7 +29905,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2244-L2260"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "39f081e2f1a0439da930884f3d157439ac41eb7523747876c9b343c216d881f5"
 
 [[test]]
@@ -29919,7 +29914,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2227-L2242"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "cb6d7405edff82fbb28bef520a24631a3a5e262a79cd9983c9b2b31cf4f7b010"
 
 [[test]]
@@ -29928,7 +29923,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1172-L1220"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "26ebb1b31dff6b251811ac96c5c1a46e4605a6422f1730cdcf066e017df523ce"
 
 [[test]]
@@ -29937,7 +29932,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L628-L636"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "868cc0592ed320431b798fbe1cfdfa8a19a2f6a33e2c75bf5f71d3b56b017c3d"
 
 [[test]]
@@ -30023,8 +30018,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L706-L717"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported); the PNG decode itself is ported"
+status = "passing"
 span_hash = "0f7287009cd7026e30d9960f3ab5622e522fd649cd9fc447df694496aba634d4"
 
 [[test]]
@@ -30033,8 +30027,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L719-L732"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported); the PNG decode itself is ported"
+status = "passing"
 span_hash = "2ecf31b1f7e5572d8fe2e261dd2d514f5a457a5b83d4721935c0c7efbac68bc5"
 
 [[test]]
@@ -30172,8 +30165,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2547-L2560"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported)"
+status = "passing"
 span_hash = "af792d2e6898903f395d41c6195802e536a006609d8f23703f17e85cd32855d7"
 
 [[test]]
@@ -31373,7 +31365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L24-L40"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "699dfa3d10e79c1ea5ad52bef65294daea6ce679cca670e9c0aa4480b6d1addc"
 
 [[test]]
@@ -31382,7 +31374,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L65-L72"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "c713243bfedbf10ee552251201c11ccfe4e9f0486a19c9990577fa4eb47f3f28"
 
 [[test]]
@@ -31391,7 +31383,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L74-L81"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "4bf9bfbc840da211c628b86e684c9e9f4b269d61f181421e97ff602f51fa1d97"
 
 [[test]]
@@ -31400,7 +31392,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L85-L191"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ecfa63d1f97d6dbe3e6db3737c913015cbec7bb23c676f1c2b4e98115762085b"
 
 [[test]]
@@ -31409,7 +31401,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L193-L219"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2dc539aca28dcfbb552501b22e385ee851bd0a7fc6e09794f45eaef9bb3e5fe7"
 
 [[test]]
@@ -35339,8 +35331,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1360-L1397"
 module = "skcms"
-status = "todo"
-reason = "needs SkColorSpace::MakeRGB with the named gamuts (kDisplayP3, kAdobeRGB), which are not ported; the 1x1.png decode is ported"
+status = "passing"
 span_hash = "c69695c1cbc1e1b9b88b48e183848864729adf333cf7c650d1d136275f55a981"
 
 [[test]]

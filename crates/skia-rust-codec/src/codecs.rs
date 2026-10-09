@@ -23,6 +23,7 @@ use crate::bmp::{is_bmp, make_from_stream as make_bmp_from_stream};
 use crate::codec::{Codec, Result};
 use crate::codec_image_generator::CodecImageGenerator;
 use crate::ico_codec::{self, is_ico};
+use crate::jpeg_codec::{self, is_jpeg};
 use crate::png_codec::{self, is_png_format};
 use crate::wbmp::{WbmpCodec, is_wbmp};
 use crate::webp_codec::{self, is_webp};
@@ -49,13 +50,18 @@ impl std::fmt::Debug for Decoder {
     }
 }
 
-static DECODERS: [Decoder; 6] = [
+// Skia's order: PNG, JPEG, WebP, GIF, ICO, BMP, WBMP (SkCodec.cpp get_decoders_for_editing).
+static DECODERS: [Decoder; 7] = [
     Decoder {
         id: "png",
         is_format: is_png_format,
         make_from_stream: png_codec::make_from_stream,
     },
-    // Skia's order: PNG, JPEG, WebP, GIF, ICO, BMP, WBMP (JPEG is not ported yet).
+    Decoder {
+        id: "jpeg",
+        is_format: is_jpeg,
+        make_from_stream: jpeg_codec::make_from_stream,
+    },
     Decoder {
         id: "webp",
         is_format: is_webp,

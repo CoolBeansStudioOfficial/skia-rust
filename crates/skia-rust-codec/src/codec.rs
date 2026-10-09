@@ -164,6 +164,11 @@ pub struct CodecBase<'a> {
     curr_scanline: i32,
     xform_time: XformTime,
     dst_profile: Option<IccProfile>,
+    /// Whether the destination profile is the source profile itself (`fDstProfile ==
+    /// fEncodedInfo.profile()` in C++). skcms skips the colour conversion when both profiles are
+    /// the same object, which pointer identity decides, so the transform gets one reference for
+    /// both.
+    dst_is_src_profile: bool,
     dst_xform_format: Option<PixelFormat>,
     dst_xform_alpha_format: AlphaFormat,
 }
@@ -272,16 +277,23 @@ impl<'a> CodecBase<'a> {
         else {
             return;
         };
+        let src_profile = self.encoded_info.profile();
+        // A destination that is the source profile is the same object, as in C++.
+        let dst_profile = if self.dst_is_src_profile {
+            src_profile
+        } else {
+            self.dst_profile.as_ref()
+        };
         // Port of: SkAssertResult(skcms_Transform(...)) (src/codec/SkCodec.cpp#L895-L897)
         let transformed = skia_rust_skcms::transform(
             src,
             src_format,
             AlphaFormat::Unpremul,
-            self.encoded_info.profile(),
+            src_profile,
             dst,
             dst_format,
             self.dst_xform_alpha_format,
-            self.dst_profile.as_ref(),
+            dst_profile,
             count,
         );
         debug_assert!(transformed);
@@ -306,15 +318,15 @@ impl<'a> CodecBase<'a> {
                 ColorType::RGBAF16 | ColorType::RGBA1010102 | ColorType::BGR101010xXR
             ) {
                 needs_color_xform = true;
-                self.dst_profile = Some(match dst_info.color_space() {
-                    Some(cs) => cs.to_profile(),
-                    // Use the source profile when there is one, else sRGB.
-                    None => self
-                        .encoded_info
-                        .profile()
-                        .cloned()
-                        .unwrap_or_else(|| srgb_profile().clone()),
-                });
+                if let Some(cs) = dst_info.color_space() {
+                    self.dst_profile = Some(cs.to_profile());
+                    self.dst_is_src_profile = false;
+                } else {
+                    // Use the source profile to avoid conversion (or sRGB when there is none). The
+                    // transform gets the source profile by reference, as C++ passes the same pointer.
+                    self.dst_profile = None;
+                    self.dst_is_src_profile = true;
+                }
             } else if let Some(cs) = dst_info.color_space() {
                 let dst_profile = cs.to_profile();
                 let src_profile = self
@@ -325,6 +337,7 @@ impl<'a> CodecBase<'a> {
                     needs_color_xform = true;
                 }
                 self.dst_profile = Some(dst_profile);
+                self.dst_is_src_profile = false;
             }
         }
 
@@ -699,6 +712,7 @@ impl<'a> Codec<'a> {
                 curr_scanline: -1,
                 xform_time: XformTime::No,
                 dst_profile: None,
+                dst_is_src_profile: false,
                 dst_xform_format: None,
                 dst_xform_alpha_format: AlphaFormat::Unpremul,
             },
@@ -896,6 +910,71 @@ impl<'a> Codec<'a> {
             );
         }
         result
+    }
+
+    /// Port of `SkCodec::getImage(info, options)`: decodes the image into a new raster image,
+    /// rotated upright when the codec's origin says so. Without `info`, the codec's own info is
+    /// used, with width and height swapped for a rotated origin, as the C++ `getImage()` overload
+    /// does. The decode memory budget is not ported.
+    ///
+    /// # Errors
+    /// The decode result, if the pixels could not be decoded (`IncompleteInput` and
+    /// `ErrorInInput` still produce an image in Skia, and so here they return `Ok`).
+    // Port of: src/codec/SkCodec.cpp#L566-L615 (getImage, both overloads; chrome/m156)
+    #[doc(alias = "getImage")]
+    pub fn get_image<'o>(
+        &mut self,
+        info: impl Into<Option<ImageInfo>>,
+        options: impl Into<Option<&'o Options>>,
+    ) -> std::result::Result<skia_rust_core::image::Image, Result> {
+        let info = info.into().unwrap_or_else(|| {
+            let info = self.info();
+            if self.origin().swaps_width_height() {
+                info.with_wh(info.height(), info.width())
+            } else {
+                info
+            }
+        });
+        let default_options = Options::default();
+        let options = options.into().unwrap_or(&default_options);
+
+        let row_bytes = info.min_row_bytes();
+        let mut storage = vec![0u8; info.compute_byte_size(row_bytes)];
+        let origin = self.origin();
+        let mut result = Result::InternalError;
+        {
+            let Some(mut pixmap) =
+                skia_rust_core::pixmap::Pixmap::new(&info, &mut storage, row_bytes)
+            else {
+                return Err(Result::InternalError);
+            };
+            let decoded = crate::codec_image_generator::orient_decode(
+                &mut pixmap,
+                origin,
+                |pm: &mut skia_rust_core::pixmap::Pixmap<'_>| {
+                    let pm_info = pm.info().clone();
+                    let pm_row_bytes = pm.row_bytes();
+                    let Some(dst) = pm.writable_addr() else {
+                        return false;
+                    };
+                    result = self.get_pixels(&pm_info, dst, pm_row_bytes, Some(options));
+                    matches!(
+                        result,
+                        Result::Success | Result::IncompleteInput | Result::ErrorInInput
+                    )
+                },
+            );
+            if !decoded {
+                return Err(result);
+            }
+        }
+
+        let mut bitmap = skia_rust_core::bitmap::Bitmap::new();
+        if !bitmap.install_pixels(&info, storage, row_bytes) {
+            return Err(Result::InternalError);
+        }
+        bitmap.set_immutable();
+        skia_rust_core::images::raster_from_bitmap(&bitmap).ok_or(Result::InternalError)
     }
 
     /// Port of `SkCodec::handleFrameIndex`, without the `getPixelsFn` callback that
