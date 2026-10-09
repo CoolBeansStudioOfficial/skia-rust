@@ -21840,8 +21840,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefiltersclipped.cpp#L167-L186"
 module = "effects"
-status = "failing"
-reason = "gm-verify mismatch on every tier: the blur(kMirror) + crop draw is blank in skia-rust and blurred in the golden; see notes/gm_imagefiltersclipped_cpp_imagefilter_convolve_subset.md"
+status = "passing"
 span_hash = "11e392796590eb9b9b479c9b0a7d022ce564ba57df16ed1d99dcbde39c49b57d"
 
 [[test]]
@@ -22524,8 +22523,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L180-L180"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "445561ccfc24b78843f45abbe77b9367da15f5954b4d137ec5ba89a58e869f10"
 
 [[test]]
@@ -22534,8 +22532,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L182-L182"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "7c8cadd25f684cf21d7e38182352529a8819d0de7f193a477963f099f698e03f"
 
 [[test]]
@@ -22544,8 +22541,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L179-L179"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "584b635b2f897be85b0bcff43e2cfe794c9e141c17c1f9f1bc0ccd90b3242179"
 
 [[test]]
@@ -22554,8 +22550,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L181-L181"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "cc361bd962233d9f8892a27906eb3ce2fa00cfa357f58443933ed454f18f4314"
 
 [[test]]
@@ -22564,8 +22559,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L183-L183"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "4635ba62ffd4c560db4f38011b1bf57e4d82c24a48f7e9cf7792803ce12ee0bf"
 
 [[test]]
@@ -22574,8 +22568,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L184-L184"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "e32d8bf8facfff5b0c6b6834020709e8254133668e5037588273669514331c63"
 
 [[test]]
@@ -22762,8 +22755,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/morphology.cpp#L97-L97"
 module = "raster"
-status = "todo"
-reason = "ported and registered in tests/gm/src/gm/morphology.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
+status = "passing"
 span_hash = "4ebff493183b230e7a167b544980d55c3ddb309022e9cf1fa79383dc07a38dc8"
 
 [[test]]
