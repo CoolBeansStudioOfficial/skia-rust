@@ -2,3 +2,7 @@
 
 pub mod draw_order;
 pub mod geom;
+pub mod pipeline_data;
+pub mod resource_types;
+pub mod uniform;
+pub mod uniform_manager;

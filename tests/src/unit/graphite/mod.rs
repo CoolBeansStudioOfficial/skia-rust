@@ -6,3 +6,5 @@ pub mod rect_test;
 pub mod shape_test;
 pub mod swizzle_test;
 pub mod transform_test;
+pub mod uniform_manager_test;
+pub mod uniform_offset_calculator_test;
