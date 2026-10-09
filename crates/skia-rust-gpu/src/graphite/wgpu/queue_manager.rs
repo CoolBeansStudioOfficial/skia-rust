@@ -18,23 +18,23 @@ use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::gpu_work_submission::{GpuWorkSubmission, GpuWorkSubmissionBackend};
 use crate::graphite::graphite_types::SubmitInfo;
 use crate::graphite::queue_manager::QueueManagerBackend;
-use crate::graphite::wgpu::command_buffer::new_wgpu_command_buffer;
+use crate::graphite::wgpu::command_buffer::{WgpuCommandBuffer, new_wgpu_command_buffer};
+use crate::graphite::wgpu::shared_context::WgpuSharedContext;
 
-/// The wgpu queue manager backend: wraps the device and queue of the context.
+/// The wgpu queue manager backend: wraps the shared context (the device and queue) of the context.
 // Port of: src/gpu/graphite/dawn/DawnQueueManager.h#L20-L40 (chrome/m156)
 #[doc(alias = "skgpu::graphite::DawnQueueManager")]
 #[derive(Debug)]
 pub struct WgpuQueueManagerBackend {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    shared_context: Arc<WgpuSharedContext>,
 }
 
 impl WgpuQueueManagerBackend {
     /// `DawnQueueManager(queue, sharedContext)`.
     // Port of: src/gpu/graphite/dawn/DawnQueueManager.cpp (constructor, chrome/m156)
     #[must_use]
-    pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Self {
-        Self { device, queue }
+    pub fn new(shared_context: Arc<WgpuSharedContext>) -> Self {
+        Self { shared_context }
     }
 }
 
@@ -45,31 +45,42 @@ impl QueueManagerBackend for WgpuQueueManagerBackend {
         resource_provider: &SharedResourceProvider,
         protected: Protected,
     ) -> Option<Box<dyn CommandBuffer>> {
-        Some(Box::new(new_wgpu_command_buffer(
+        new_wgpu_command_buffer(
             protected,
             resource_provider.clone(),
-        )))
+            Arc::clone(&self.shared_context),
+        )
+        .map(|command_buffer| Box::new(command_buffer) as Box<dyn CommandBuffer>)
     }
 
     // Port of: src/gpu/graphite/dawn/DawnQueueManager.cpp#L116-L135 (chrome/m156)
     fn on_submit_to_gpu(
         &mut self,
-        command_buffer: Box<dyn CommandBuffer>,
+        mut command_buffer: Box<dyn CommandBuffer>,
         _submit_info: &SubmitInfo,
     ) -> Option<GpuWorkSubmission> {
-        // Every recording hook of the wgpu command buffer reports failure until G11c, so the
-        // command buffer holds no commands and the wgpu queue has nothing to submit. The
-        // submission is still a fence: it completes when the queue has done all earlier work.
-        self.queue.submit(std::iter::empty());
+        let wgpu_command_buffer = command_buffer
+            .as_any_mut()
+            .and_then(|any| any.downcast_mut::<WgpuCommandBuffer>())
+            .and_then(|command_buffer| command_buffer.backend_mut().finish_encoding());
+        let Some(wgpu_command_buffer) = wgpu_command_buffer else {
+            command_buffer.call_finished_procs(/* success= */ false);
+            return None;
+        };
+
+        self.shared_context.queue().submit([wgpu_command_buffer]);
+
+        // `DawnWorkSubmissionWithFuture`: the future of `OnSubmittedWorkDone`, which is done
+        // when the flag is set by the callback that `Device::poll` runs.
         let done = Arc::new(AtomicBool::new(false));
         let signal = done.clone();
-        self.queue.on_submitted_work_done(move || {
+        self.shared_context.queue().on_submitted_work_done(move || {
             signal.store(true, Ordering::Release);
         });
         Some(GpuWorkSubmission::new(
             command_buffer,
             Box::new(WgpuGpuWorkSubmissionBackend {
-                device: self.device.clone(),
+                device: self.shared_context.device().clone(),
                 done,
             }),
         ))
@@ -78,7 +89,7 @@ impl QueueManagerBackend for WgpuQueueManagerBackend {
     // Port of: src/gpu/graphite/dawn/DawnQueueManager.cpp (tick, chrome/m156)
     fn tick(&self) {
         // `Poll` never fails in a way a caller could act on: a lost device fails the next call.
-        let _ = self.device.poll(wgpu::PollType::Poll);
+        let _ = self.shared_context.device().poll(wgpu::PollType::Poll);
     }
 }
 

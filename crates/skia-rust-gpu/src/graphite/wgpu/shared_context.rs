@@ -14,16 +14,20 @@
 //! `createComputePipeline` are here, and [`WgpuSharedContext`] is the
 //! [`PipelineCreationContext`] the pipeline manager's tasks compile against.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
 use crate::gpu::resource_key::UniqueKey;
 use crate::graphite::buffer::Buffer;
-use crate::graphite::buffer_manager::{StaticBufferHost, StaticBufferManager, StaticFinishResult};
+use crate::graphite::buffer_manager::{
+    StaticBufferHost, StaticBufferManager, StaticFinishResult, StaticVertexCopyRanges,
+};
 use crate::graphite::caps::Caps;
 use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::context_options::ContextOptions;
+use crate::graphite::global_cache::GlobalCache;
 use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
 use crate::graphite::graphics_pipeline_desc::{
     GraphicsPipelineDesc, GraphicsPipelineHandle, PipelineHandleFactory,
@@ -32,7 +36,7 @@ use crate::graphite::pipeline_manager::{PipelineCreationContext, SharedContextPi
 use crate::graphite::recorder::RecorderSharedContext;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::renderer_provider::RendererProvider;
-use crate::graphite::resource::ResourceRef;
+use crate::graphite::resource::{Resource, ResourceRef};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::Layout;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
@@ -106,26 +110,35 @@ pub struct WgpuSharedContext {
     uniform_buffers_bind_group_layouts: [wgpu::BindGroupLayout; 4],
     single_texture_sampler_bind_group_layout: wgpu::BindGroupLayout,
 
-    // `fRendererProvider`: made on first use. `SharedContext::setRendererProvider()` fills it in
-    // Skia when the context finishes its initialization (G9b), which also uploads the static
-    // vertex and index data of the renderers; until then the static buffers are not uploaded.
+    // `fRendererProvider`: made on first use (by the first recorder, or by the context when it
+    // finishes its initialization), which also makes the renderers' static vertex and index
+    // buffers. `SharedContext::setRendererProvider()` is not used: this is the one provider.
     renderer_provider: OnceLock<RendererProvider>,
-    // The copy tasks that fill the renderers' static buffers and the static buffers themselves
-    // (`GlobalCache::addStaticResource()`): the `Context` hands the tasks to its queue manager
-    // when it is finished initializing (G9b), which is the first submission that has them.
+    // The copy tasks that fill the renderers' static buffers and the transfer buffers they read
+    // (`UploadBufferManager::transferToCommandBuffer`): the `Context` hands both to its queue
+    // manager when it finishes its initialization, which is the first submission that has them.
     static_buffer_tasks: Mutex<Vec<TaskRef>>,
-    static_buffers: Mutex<Vec<ResourceRef<Buffer>>>,
+    static_upload_buffers: Mutex<Vec<ResourceRef<Buffer>>>,
+    // Whether the renderers' static buffers could not be made (`StaticFinishResult::Failure`).
+    static_buffers_failed: AtomicBool,
 }
 
-// The `Context` side of `StaticBufferManager::finalize()` until G9b: the copy tasks wait in the
-// shared context, and the static buffers stay alive with it.
+// The `Context` side of `StaticBufferManager::finalize()`: the copy tasks and their transfer
+// buffers wait in the shared context for the context's queue manager, and the final static
+// buffers go to the global cache.
 struct StaticBuffers<'a> {
     tasks: &'a Mutex<Vec<TaskRef>>,
-    buffers: &'a Mutex<Vec<ResourceRef<Buffer>>>,
+    upload_buffers: &'a Mutex<Vec<ResourceRef<Buffer>>>,
+    global_cache: &'a GlobalCache,
 }
 
 impl StaticBufferHost for StaticBuffers<'_> {
-    fn add_upload_buffer_manager_refs(&mut self, _upload_manager: &mut UploadBufferManager) {}
+    fn add_upload_buffer_manager_refs(&mut self, upload_manager: &mut UploadBufferManager) {
+        self.upload_buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .extend(upload_manager.take_buffers());
+    }
 
     fn add_task(&mut self, task: &TaskRef, _is_protected: Protected) -> bool {
         self.tasks
@@ -136,10 +149,16 @@ impl StaticBufferHost for StaticBuffers<'_> {
     }
 
     fn add_static_resource(&mut self, buffer: ResourceRef<Buffer>) {
-        self.buffers
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(buffer);
+        self.global_cache.add_static_resource(buffer.into_any());
+    }
+
+    fn testing_only_set_static_vertex_info(
+        &mut self,
+        ranges: Vec<StaticVertexCopyRanges>,
+        buffer: Option<Arc<Resource<Buffer>>>,
+    ) {
+        self.global_cache
+            .testing_only_set_static_vertex_info(ranges, buffer);
     }
 }
 
@@ -220,7 +239,8 @@ impl WgpuSharedContext {
             single_texture_sampler_bind_group_layout,
             renderer_provider: OnceLock::new(),
             static_buffer_tasks: Mutex::new(Vec::new()),
-            static_buffers: Mutex::new(Vec::new()),
+            static_upload_buffers: Mutex::new(Vec::new()),
+            static_buffers_failed: AtomicBool::new(false),
         });
         // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L74-L76 (chrome/m156): the
         // thread-safe provider wraps a resource provider made by the shared context itself, so it
@@ -309,8 +329,8 @@ impl WgpuSharedContext {
     }
 
     /// The copy tasks that fill the renderers' static buffers (`QueueManager::addTask()` in
-    /// `Context::finishInitialization`), taken out of the shared context. Empty until the renderer
-    /// provider exists, and after the tasks have been taken.
+    /// `Context::finishInitialization`), taken out of the shared context. Makes the renderer
+    /// provider if it does not exist yet. Empty after the tasks have been taken.
     #[must_use]
     pub fn take_static_buffer_tasks(&self) -> Vec<TaskRef> {
         let _ = RecorderSharedContext::renderer_provider(self);
@@ -320,6 +340,27 @@ impl WgpuSharedContext {
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner),
         )
+    }
+
+    /// The transfer buffers the static buffer tasks read, which the command buffer holding the
+    /// tasks must keep alive (`addUploadBufferManagerRefs`), taken out of the shared context.
+    #[must_use]
+    pub fn take_static_upload_buffers(&self) -> Vec<ResourceRef<Buffer>> {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        std::mem::take(
+            &mut *self
+                .static_upload_buffers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
+    }
+
+    /// Whether the renderers' static buffers could not be created, in which case any renderer
+    /// that uses them would draw incorrectly and the context must not be used.
+    #[must_use]
+    pub fn static_buffers_failed(&self) -> bool {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        self.static_buffers_failed.load(Ordering::Acquire)
     }
 
     /// `getUniformBuffersBindGroupLayout()`: the layout of the uniform buffers bind group for
@@ -474,9 +515,12 @@ impl RecorderSharedContext for WgpuSharedContext {
             );
             let result = buffer_manager.finalize(&mut StaticBuffers {
                 tasks: &self.static_buffer_tasks,
-                buffers: &self.static_buffers,
+                upload_buffers: &self.static_upload_buffers,
+                global_cache: self.base.global_cache(),
             });
-            debug_assert_ne!(result, StaticFinishResult::Failure);
+            if result == StaticFinishResult::Failure {
+                self.static_buffers_failed.store(true, Ordering::Release);
+            }
             renderer_provider
         })
     }

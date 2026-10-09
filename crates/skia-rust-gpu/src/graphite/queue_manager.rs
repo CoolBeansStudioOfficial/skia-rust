@@ -564,6 +564,24 @@ impl QueueManager {
     }
 }
 
+impl QueueManager {
+    /// Hands resources to the current (non-protected) command buffer, which keeps them alive
+    /// until its GPU work finishes (`addUploadBufferManagerRefs` for buffers that were already
+    /// taken from their upload manager).
+    pub fn add_resource_refs(
+        &mut self,
+        resources: Vec<crate::graphite::resource::AnyResourceRef>,
+        resource_provider: &SharedResourceProvider,
+    ) {
+        self.setup_command_buffer(resource_provider, Protected::No);
+        if let Some(command_buffer) = self.current_command_buffer.as_deref_mut() {
+            for resource in resources {
+                command_buffer.track_resource(resource);
+            }
+        }
+    }
+}
+
 impl Drop for QueueManager {
     // Port of: src/gpu/graphite/QueueManager.cpp#L41-L49 (chrome/m156)
     fn drop(&mut self) {

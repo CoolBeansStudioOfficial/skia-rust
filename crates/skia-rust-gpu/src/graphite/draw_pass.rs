@@ -27,7 +27,7 @@ use skia_rust_core::rect::IRect;
 
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::buffer::BindBufferInfo;
-use crate::graphite::command_buffer::{CommandBuffer, Scissor};
+use crate::graphite::command_buffer::{ResourceTracker, Scissor};
 use crate::graphite::draw_types::{BarrierType, PipelineStageFlags, PrimitiveType, UniformSlot};
 use crate::graphite::draw_writer::DrawPassCommandList;
 use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
@@ -597,7 +597,7 @@ impl DrawPass {
     // Port of: src/gpu/graphite/DrawPass.cpp#L92-L125 (chrome/m156)
     #[doc(alias = "addResourceRefs")]
     #[must_use]
-    pub fn add_resource_refs(&mut self, command_buffer: &mut dyn CommandBuffer) -> bool {
+    pub fn add_resource_refs(&mut self, command_buffer: &mut dyn ResourceTracker) -> bool {
         debug_assert_eq!(self.pipeline_handles.len(), self.pipeline_draw_areas.len());
         self.pipelines.clear();
         for handle in &self.pipeline_handles {
@@ -692,7 +692,7 @@ impl DrawPassTrait for DrawPass {
         self.clear_color
     }
 
-    fn add_resource_refs(&mut self, command_buffer: &mut dyn CommandBuffer) -> bool {
+    fn add_resource_refs(&mut self, command_buffer: &mut dyn ResourceTracker) -> bool {
         DrawPass::add_resource_refs(self, command_buffer)
     }
 

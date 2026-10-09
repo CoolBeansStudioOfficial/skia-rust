@@ -18,22 +18,14 @@ use std::sync::{Arc, Mutex, PoisonError};
 use crate::gpu::gpu_types::{BackendApi, Protected};
 use crate::gpu::sk_log::{skia_log_e, skia_log_w};
 use crate::graphite::backend_texture::BackendTexture;
-use crate::graphite::buffer::Buffer;
-use crate::graphite::buffer_manager::{
-    StaticBufferHost, StaticBufferManager, StaticFinishResult, StaticVertexCopyRanges,
-};
 use crate::graphite::caps::Caps;
 use crate::graphite::client_mapped_buffer_manager::{ClientMappedBufferManager, ContextId};
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
-use crate::graphite::global_cache::GlobalCache;
 use crate::graphite::graphite_types::{InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu};
 use crate::graphite::queue_manager::QueueManager;
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
-use crate::graphite::renderer_provider::RendererProvider;
-use crate::graphite::resource::{Resource, ResourceRef};
-use crate::graphite::task::TaskRef;
-use crate::graphite::upload_buffer_manager::UploadBufferManager;
+use crate::graphite::resource::ResourceRef;
 use crate::graphite::wgpu::caps::WgpuCaps;
 use crate::graphite::wgpu::queue_manager::WgpuQueueManagerBackend;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
@@ -94,9 +86,11 @@ pub fn make_context(
     options: &ContextOptions,
 ) -> Option<WgpuContext> {
     let shared_context = WgpuSharedContext::make(backend_context, options)?;
-    // `Context::finishInitialization()` is not called yet: its static-buffer copies need copy
-    // recording on the wgpu command buffer (G11c), so calling it here would fail on every device.
-    Some(WgpuContext::new(shared_context, options))
+    let mut context = WgpuContext::new(shared_context, options);
+    if !context.finish_initialization() {
+        return None;
+    }
+    Some(context)
 }
 
 impl WgpuContext {
@@ -112,10 +106,7 @@ impl WgpuContext {
         let queue_manager = QueueManager::new(
             shared_context.is_protected(),
             shared_context.caps().allow_cpu_sync(),
-            Box::new(WgpuQueueManagerBackend::new(
-                shared_context.device().clone(),
-                shared_context.queue().clone(),
-            )),
+            Box::new(WgpuQueueManagerBackend::new(Arc::clone(&shared_context))),
         );
         // Port of: src/gpu/graphite/Context.cpp#L145-L147 (chrome/m156)
         shared_context.base().global_cache().set_pipeline_callback(
@@ -139,9 +130,10 @@ impl WgpuContext {
         self.context_id
     }
 
-    /// `finishInitialization()`: creates the dynamic samplers, the static buffers (submitting
-    /// their copies when there are any) and the renderer provider. Returns `false` if any of them
-    /// fails, in which case the context must not be used.
+    /// `finishInitialization()`: creates the dynamic samplers, makes the shared context's
+    /// renderer provider (the one provider: recorders reach it through the shared context too)
+    /// with its static buffers, and submits the copies that fill them. Returns `false` if any of
+    /// them fails, in which case the context must not be used.
     // Port of: src/gpu/graphite/Context.cpp#L185-L210 (chrome/m156)
     #[doc(alias = "finishInitialization")]
     #[must_use]
@@ -162,38 +154,46 @@ impl WgpuContext {
             }
         }
 
-        let mut buffer_manager = StaticBufferManager::new(self.resource_provider.clone(), &**caps);
-        let renderers = RendererProvider::new(
-            caps.resource_binding_requirements().uniform_buffer_layout,
-            caps.shader_caps().infinity_support,
-            &mut buffer_manager,
-        );
-
-        let result = {
-            let mut host = FinishInitializationHost {
-                queue_manager: &mut self.queue_manager,
-                context: ContextPrivView {
-                    shared_context: &shared,
-                    resource_provider: &self.resource_provider,
-                },
-                global_cache: base.global_cache(),
-            };
-            buffer_manager.finalize(&mut host)
-        };
-        match result {
-            // If something went wrong filling out the static vertex buffers, any Renderer that
-            // would use it will draw incorrectly, so it is better to fail the Context creation.
-            StaticFinishResult::Failure => return false,
-            StaticFinishResult::Success => {
-                if !self.queue_manager.submit_to_gpu(SubmitInfo::default()) {
-                    skia_log_w!("Failed to submit initial command buffer for Context creation.\n");
-                    return false;
-                }
-            }
-            // No static buffers were needed, so there is nothing to submit.
-            StaticFinishResult::NoWork => {}
+        // `RendererProvider`'s constructor fills the static buffer manager, and the shared
+        // context's lazy provider finalizes it: the copy tasks and the transfer buffers they
+        // read are collected there (`StaticBufferManager::finalize()`'s `QueueManager` calls).
+        let tasks = shared.take_static_buffer_tasks();
+        let upload_buffers = shared.take_static_upload_buffers();
+        // If something went wrong filling out the static vertex buffers, any Renderer that
+        // would use it will draw incorrectly, so it is better to fail the Context creation.
+        if shared.static_buffers_failed() {
+            return false;
         }
-        base.set_renderer_provider(renderers);
+        if tasks.is_empty() {
+            // No static buffers were needed, so there is nothing to submit.
+            return true;
+        }
+
+        // `queueManager->addUploadBufferManagerRefs(...)`.
+        self.queue_manager.add_resource_refs(
+            upload_buffers
+                .into_iter()
+                .map(ResourceRef::into_any)
+                .collect(),
+            &self.resource_provider,
+        );
+        let mut context = ContextPrivView {
+            shared_context: &shared,
+            resource_provider: &self.resource_provider,
+        };
+        for task in &tasks {
+            let mut task = task.lock();
+            if !self
+                .queue_manager
+                .add_task(&mut task, &mut context, Protected::No)
+            {
+                return false;
+            }
+        }
+        if !self.queue_manager.submit_to_gpu(SubmitInfo::default()) {
+            skia_log_w!("Failed to submit initial command buffer for Context creation.\n");
+            return false;
+        }
         true
     }
 
@@ -352,46 +352,6 @@ impl ContextPriv for WgpuContext {
 
     fn resource_provider(&self) -> &SharedResourceProvider {
         &self.resource_provider
-    }
-}
-
-/// What `StaticBufferManager::finalize()` needs from the `Context` (its resource provider and
-/// `ContextPriv`), its `QueueManager` and its `GlobalCache`.
-// Port of: src/gpu/graphite/Context.cpp#L193-L197 (the `Context*` and `QueueManager*` arguments
-// of `StaticBufferManager::finalize`, chrome/m156)
-struct FinishInitializationHost<'a> {
-    queue_manager: &'a mut QueueManager,
-    context: ContextPrivView<'a>,
-    global_cache: &'a GlobalCache,
-}
-
-impl StaticBufferHost for FinishInitializationHost<'_> {
-    // Port of: src/gpu/graphite/QueueManager.cpp#L384-L392 (called from BufferManager.cpp#L697)
-    fn add_upload_buffer_manager_refs(&mut self, upload_manager: &mut UploadBufferManager) {
-        self.queue_manager
-            .add_upload_buffer_manager_refs(upload_manager, self.context.resource_provider);
-    }
-
-    // Port of: src/gpu/graphite/QueueManager.cpp#L247-L267 (`addTask`, with `Protected::kNo`)
-    fn add_task(&mut self, task: &TaskRef, is_protected: Protected) -> bool {
-        let mut task = task.lock();
-        self.queue_manager
-            .add_task(&mut task, &mut self.context, is_protected)
-    }
-
-    // Port of: src/gpu/graphite/GlobalCache.cpp#L519-L522 (`addStaticResource`)
-    fn add_static_resource(&mut self, buffer: ResourceRef<Buffer>) {
-        self.global_cache.add_static_resource(buffer.into_any());
-    }
-
-    // Port of: src/gpu/graphite/GlobalCache.cpp#L553-L558 (`testingOnly_SetStaticVertexInfo`)
-    fn testing_only_set_static_vertex_info(
-        &mut self,
-        ranges: Vec<StaticVertexCopyRanges>,
-        buffer: Option<Arc<Resource<Buffer>>>,
-    ) {
-        self.global_cache
-            .testing_only_set_static_vertex_info(ranges, buffer);
     }
 }
 

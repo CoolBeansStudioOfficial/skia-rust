@@ -72,6 +72,23 @@ impl Scissor {
     }
 }
 
+/// The part of a command buffer that keeps resources alive until its GPU work finishes
+/// (`CommandBuffer::trackResource`). It is split from [`CommandBuffer`] so a backend hook, which
+/// runs inside the command buffer, can track resources through the neutral half.
+// Port of: src/gpu/graphite/CommandBuffer.h#L60-L63 (chrome/m156)
+pub trait ResourceTracker {
+    /// `trackResource()`: keeps `resource` alive (with a command buffer ref) until the GPU
+    /// work finishes.
+    #[doc(alias = "trackResource")]
+    fn track_resource(&mut self, resource: AnyResourceRef);
+}
+
+impl ResourceTracker for Vec<CommandBufferRef> {
+    fn track_resource(&mut self, resource: AnyResourceRef) {
+        self.push(resource.ref_command_buffer());
+    }
+}
+
 /// The `CommandBuffer` calls made by tasks and managers.
 ///
 /// Buffers and textures that Skia passes as `const T*` (not owned by the task) are passed as
@@ -111,12 +128,12 @@ pub trait CommandBuffer {
         dst_read_bounds: IRect,
         resolve_offset: IPoint,
         viewport_dims: ISize,
-        draw_passes: &[Box<dyn DrawPass>],
+        draw_passes: &mut [Box<dyn DrawPass>],
     ) -> bool;
 
     /// `addComputePass()`.
     #[doc(alias = "addComputePass")]
-    fn add_compute_pass(&mut self, dispatches: &[Box<dyn DispatchGroup>]) -> bool;
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool;
 
     /// `copyBufferToBuffer()`.
     #[doc(alias = "copyBufferToBuffer")]
@@ -196,6 +213,12 @@ pub trait CommandBuffer {
     /// `buffersToAsyncMapOnSubmit()`.
     #[doc(alias = "buffersToAsyncMapOnSubmit")]
     fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>];
+
+    /// For downcasting to the concrete command buffer (a backend's queue manager needs its own
+    /// type back to submit it). `None` for command buffers that cannot be downcast.
+    fn as_any_mut(&mut self) -> Option<&mut dyn std::any::Any> {
+        None
+    }
 }
 
 /// `SkIRect::intersect(r)`: intersects `r` into `rect` and returns true, or returns false and
@@ -253,8 +276,8 @@ pub struct RenderPassCall<'a> {
     pub resolve_offset: IPoint,
     /// `viewport`: the replay translation applied to `viewportDims` (not intersected).
     pub viewport: IRect,
-    /// `drawPasses`.
-    pub draw_passes: &'a [Box<dyn DrawPass>],
+    /// `drawPasses`. Mutable because `DrawPass::addResourceRefs` resolves the pass's pipelines.
+    pub draw_passes: &'a mut [Box<dyn DrawPass>],
 }
 
 /// The hooks the backend half of a command buffer implements (the `on*` virtuals of
@@ -278,11 +301,20 @@ pub trait CommandBufferBackend {
 
     /// `onAddRenderPass()`.
     #[doc(alias = "onAddRenderPass")]
-    fn on_add_render_pass(&mut self, state: &ReplayState, call: &RenderPassCall<'_>) -> bool;
+    fn on_add_render_pass(
+        &mut self,
+        state: &ReplayState,
+        call: &mut RenderPassCall<'_>,
+        tracker: &mut dyn ResourceTracker,
+    ) -> bool;
 
     /// `onAddComputePass()`.
     #[doc(alias = "onAddComputePass")]
-    fn on_add_compute_pass(&mut self, dispatch_groups: &[Box<dyn DispatchGroup>]) -> bool;
+    fn on_add_compute_pass(
+        &mut self,
+        dispatch_groups: &mut [Box<dyn DispatchGroup>],
+        tracker: &mut dyn ResourceTracker,
+    ) -> bool;
 
     /// `onCopyBufferToBuffer()`.
     #[doc(alias = "onCopyBufferToBuffer")]
@@ -464,7 +496,11 @@ impl<B: CommandBufferBackend> CommandBufferCore<B> {
     }
 }
 
-impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
+impl<B: CommandBufferBackend + 'static> CommandBuffer for CommandBufferCore<B> {
+    fn as_any_mut(&mut self) -> Option<&mut dyn std::any::Any> {
+        Some(self)
+    }
+
     fn is_protected(&self) -> Protected {
         CommandBufferCore::is_protected(self)
     }
@@ -534,10 +570,10 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         mut dst_read_bounds: IRect,
         resolve_offset: IPoint,
         viewport_dims: ISize,
-        draw_passes: &[Box<dyn DrawPass>],
+        draw_passes: &mut [Box<dyn DrawPass>],
     ) -> bool {
         self.state.render_area_bounds = IRect::new_empty();
-        for draw_pass in draw_passes {
+        for draw_pass in draw_passes.iter() {
             join_in_place(&mut self.state.render_area_bounds, &draw_pass.bounds());
         }
         if render_pass_desc.color_attachment.load_op == LoadOp::Clear {
@@ -600,7 +636,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         // just defines a linear transform, which we don't want to change just because a portion
         // of it maps to a region that gets clipped.
         let viewport = IRect::from_pt_size(self.state.replay_translation, viewport_dims);
-        let call = RenderPassCall {
+        let mut call = RenderPassCall {
             render_pass_desc,
             color_texture: &color_texture,
             resolve_texture: resolve_texture.as_ref(),
@@ -609,7 +645,11 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
             viewport,
             draw_passes,
         };
-        if !self.backend.on_add_render_pass(&self.state, &call) {
+        if !self.backend.on_add_render_pass(
+            &self.state,
+            &mut call,
+            &mut self.command_buffer_resources,
+        ) {
             return false;
         }
         self.track_resource(color_texture.into_any());
@@ -628,8 +668,11 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
     }
 
     // Port of: src/gpu/graphite/CommandBuffer.cpp#L188-L198 (chrome/m156)
-    fn add_compute_pass(&mut self, dispatch_groups: &[Box<dyn DispatchGroup>]) -> bool {
-        if !self.backend.on_add_compute_pass(dispatch_groups) {
+    fn add_compute_pass(&mut self, dispatch_groups: &mut [Box<dyn DispatchGroup>]) -> bool {
+        if !self
+            .backend
+            .on_add_compute_pass(dispatch_groups, &mut self.command_buffer_resources)
+        {
             return false;
         }
         self.has_work = true;

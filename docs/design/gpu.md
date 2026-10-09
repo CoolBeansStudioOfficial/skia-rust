@@ -162,7 +162,7 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 |---|---|---|---|---|
 | Shader compiler | Tint → HLSL → **FXC** (no DXC: `dawn@e03f1d59:CMakeLists.txt#L164` `DAWN_USE_BUILT_DXC OFF`, so `UseDXC` is force-set false, `PhysicalDeviceD3D12.cpp#L655-L672`) | Tint → SPIR-V → driver | — | naga → HLSL → FXC or DXC; naga → SPIR-V |
 | FXC flags | `OPTIMIZATION_LEVEL0` (`fxc_optimizations` off), `PACK_MATRIX_ROW_MAJOR`, `IEEE_STRICTNESS` (`RenderPipelineD3D12.cpp#L343-L366`, `#L386-L391`) | — | — | `ENABLE_STRICTNESS` only, default O1 (`dx12/shader_compilation.rs#L232-L240`); not configurable |
-| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC) |
+| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC); **off by default in our caps** (below) |
 | Storage buffers | yes (`DawnCaps.cpp#L358-L363`) | **no** (Vulkan excluded there) | SSBO vs UBO paint/step data; different WGSL | yes |
 | Immediates | `maxImmediateSize` = 64 (`Constants.h#L58`) | 64 (`PhysicalDeviceVk.cpp#L974`) | intrinsics via `var<immediate>` (`DawnCaps.cpp#L343-L344`) | `IMMEDIATES` |
 | Dual-source blending | yes (`PhysicalDeviceD3D12.cpp#L161`) | yes | blend formulas with `@blend_src` | `DUAL_SOURCE_BLENDING` |
@@ -173,6 +173,13 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 | `depth24plus-stencil8` | **`D32_FLOAT_S8X24`** (`d3d/UtilsD3D.cpp#L338-L341`) | `D24_UNORM_S8` if supported | painter's depth precision | `D24_UNORM_S8_UINT` (`auxil/dxgi/conv.rs#L67`) |
 | MSAA | 4×, `SampleDesc.Quality = 0` | 4× | — | 4×, `Quality = 0` |
 | Robustness | disabled by toggle | disabled | — | naga bounds checks on (turning them off is `unsafe`) |
+
+`WgpuCaps` never reports `ShaderF16` for a real device (`CapsProfile::from_device`; opt in with
+`from_device_with_f16`), even where the adapter has it. wgpu 30 rejects the `half4` fragment
+outputs Graphite's f16 WGSL writes for an `Rgba8Unorm` target (Dawn accepts them), and the D3D12
+goldens were rendered without f16, so all-f32 WGSL matches the gating tier. The Dawn Vulkan
+oracle profile keeps `SHADER_F16`, and `a_half_precision_fragment_output_is_a_creation_failure_on_wgpu`
+pins the wgpu failure.
 
 Two consequences:
 

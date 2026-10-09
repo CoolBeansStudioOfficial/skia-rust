@@ -26,9 +26,8 @@ fn dynamic_desc(
 
 #[test]
 fn dynamic_samplers_cover_every_mode_and_skip_decal_without_clamp_to_border() {
-    let mut context = make_context(&noop_backend_context(), &ContextOptions::default())
+    let context = make_context(&noop_backend_context(), &ContextOptions::default())
         .expect("a context on the noop device");
-    let _ = context.finish_initialization();
 
     let global_cache = context.shared_context().base().global_cache();
     let clamp_to_border = context.shared_context().caps().clamp_to_border_support();

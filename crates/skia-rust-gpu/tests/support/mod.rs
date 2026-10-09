@@ -736,7 +736,7 @@ impl CommandBuffer for MockCommandBuffer {
         _dst_read_bounds: IRect,
         resolve_offset: IPoint,
         viewport_dims: ISize,
-        draw_passes: &[Box<dyn DrawPass>],
+        draw_passes: &mut [Box<dyn DrawPass>],
     ) -> bool {
         self.calls.push(Call::RenderPass {
             has_resolve: resolve_texture.is_some(),
@@ -749,7 +749,7 @@ impl CommandBuffer for MockCommandBuffer {
         !self.fail
     }
 
-    fn add_compute_pass(&mut self, dispatches: &[Box<dyn DispatchGroup>]) -> bool {
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool {
         self.calls.push(Call::ComputePass(dispatches.len()));
         !self.fail
     }

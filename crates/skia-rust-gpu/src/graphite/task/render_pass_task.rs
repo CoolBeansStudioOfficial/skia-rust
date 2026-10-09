@@ -20,7 +20,7 @@ use crate::gpu::backing_fit::get_approx_size;
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::caps::{AttachmentSizePolicy, Caps};
-use crate::graphite::command_buffer::CommandBuffer;
+use crate::graphite::command_buffer::{CommandBuffer, ResourceTracker};
 use crate::graphite::context_priv::ContextPriv;
 use crate::graphite::draw_pass::DrawPassCommand;
 use crate::graphite::draw_types::PipelineStageFlags;
@@ -108,7 +108,7 @@ pub trait DrawPass: Send + Debug {
     /// `addResourceRefs()`: resolves the pipeline handles and tracks the pass's resources on
     /// `command_buffer`. False if a pipeline could not be created, which drops the pass.
     #[doc(alias = "addResourceRefs")]
-    fn add_resource_refs(&mut self, _command_buffer: &mut dyn CommandBuffer) -> bool {
+    fn add_resource_refs(&mut self, _tracker: &mut dyn ResourceTracker) -> bool {
         true
     }
 }
@@ -461,7 +461,7 @@ impl RenderPassTask {
             self.dst_read_bounds,
             resolve_offset,
             self.target.dimensions(),
-            &self.draw_passes,
+            &mut self.draw_passes,
         ) {
             Status::Success
         } else {

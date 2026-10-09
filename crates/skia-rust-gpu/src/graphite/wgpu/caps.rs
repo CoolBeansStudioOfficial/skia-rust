@@ -197,8 +197,27 @@ pub struct CapsProfile {
 impl CapsProfile {
     /// The facts of a real wgpu device. `has_tick` is whether the device can be polled
     /// (everywhere except the browser).
+    ///
+    /// `ShaderF16` is left out even when the device has it: Graphite's f16 WGSL writes a `half4`
+    /// fragment output, which wgpu 30 rejects for an `Rgba8Unorm` target (Dawn accepts it), and
+    /// the D3D12 goldens were rendered without f16 (Skia builds Dawn without DXC,
+    /// `docs/design/gpu.md` §1.3), so all-f32 WGSL matches the gating tier. Use
+    /// [`from_device_with_f16`](Self::from_device_with_f16) to opt in.
     #[must_use]
     pub fn from_device(device: &wgpu::Device, has_tick: bool) -> Self {
+        Self::from_device_with_f16(device, has_tick, false)
+    }
+
+    /// [`from_device`](Self::from_device), with `ShaderF16` reported when `allow_shader_f16` is
+    /// true and the device has the feature. Pipelines made with it fail on wgpu 30 (see
+    /// [`from_device`](Self::from_device)): it is for tests of the f16 layouts, and for a wgpu
+    /// that accepts f16 fragment outputs.
+    #[must_use]
+    pub fn from_device_with_f16(
+        device: &wgpu::Device,
+        has_tick: bool,
+        allow_shader_f16: bool,
+    ) -> Self {
         let info = device.adapter_info();
         let wgpu_features = device.features();
         let limits = device.limits();
@@ -210,7 +229,7 @@ impl CapsProfile {
             }
         };
         set(
-            wgpu_features.contains(wgpu::Features::SHADER_F16),
+            allow_shader_f16 && wgpu_features.contains(wgpu::Features::SHADER_F16),
             DeviceFeatures::SHADER_F16,
         );
         set(

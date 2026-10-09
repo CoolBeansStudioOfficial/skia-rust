@@ -219,14 +219,26 @@ impl UploadBufferManager {
     // Port of: src/gpu/graphite/UploadBufferManager.cpp#L121-L132 (chrome/m156)
     #[doc(alias = "transferToCommandBuffer")]
     pub fn transfer_to_command_buffer(&mut self, command_buffer: &mut dyn CommandBuffer) {
+        for buffer in self.take_buffers() {
+            command_buffer.track_resource(buffer.into_any());
+        }
+    }
+
+    /// Finalizes all buffers (commits their staging blocks to the GPU buffers) and hands them
+    /// to the caller, who must keep them alive until the GPU work that reads them finishes. It is
+    /// `transferToCommandBuffer()` for a caller that has no command buffer yet.
+    #[must_use]
+    pub fn take_buffers(&mut self) -> Vec<ResourceRef<Buffer>> {
+        let mut buffers = Vec::with_capacity(self.used_buffers.len() + 1);
         for (buffer, data) in self.used_buffers.drain(..) {
             buffer.unmap_with(&data);
-            command_buffer.track_resource(buffer.into_any());
+            buffers.push(buffer);
         }
         if let Some(buffer) = self.reused_buffer.take() {
             let data = std::mem::take(&mut self.reused_data);
             buffer.unmap_with(&data);
-            command_buffer.track_resource(buffer.into_any());
+            buffers.push(buffer);
         }
+        buffers
     }
 }
