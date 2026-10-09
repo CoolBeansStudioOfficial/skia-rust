@@ -15,13 +15,14 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color;
 use skia_rust_core::size::ISize;
 use skia_rust_gpu::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected};
+use skia_rust_gpu::graphite::buffer::Buffer;
 use skia_rust_gpu::graphite::graphite_resource_key::{
     GraphiteResourceKey, GraphiteResourceKeyBuilder,
 };
 use skia_rust_gpu::graphite::graphite_types::{SampleCount, Volatile};
 use skia_rust_gpu::graphite::resource::ResourceRef;
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
-use skia_rust_gpu::graphite::resource_types::{Ownership, ResourceType};
+use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, Ownership, ResourceType};
 use skia_rust_gpu::graphite::scratch_resource_manager::{
     ProxyReadCountMap, ScratchResourceManager,
 };
@@ -109,6 +110,16 @@ impl ResourceProviderBackend for MockBackend {
             label,
             Box::new(MockTexture),
         ))
+    }
+
+    fn create_buffer(
+        &mut self,
+        _size: usize,
+        _ty: BufferType,
+        _access_pattern: AccessPattern,
+        _label: &str,
+    ) -> Option<ResourceRef<Buffer>> {
+        None
     }
 }
 

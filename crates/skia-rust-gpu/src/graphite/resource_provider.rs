@@ -11,10 +11,11 @@
 //! wgpu back end implements (`docs/design/gpu.md` §4.1: each base/backend pair becomes one struct;
 //! the trait is the seam until that back end exists).
 //!
-//! Buffers, samplers and compute pipelines are not ported yet. Their keys
-//! ([`ResourceProvider::buffer_key`], [`ResourceProvider::sampler_key`]) and the shared
-//! find-or-create flow ([`ResourceProvider::find_or_create_keyed`]) are, so the typed entry points
-//! are thin wrappers once the resource types exist. `createBackendTexture` /
+//! Buffers are ported (`findOrCreateNonShareableBuffer`, `findOrCreateScratchBuffer`).
+//! Samplers and compute pipelines are not ported yet. Their keys
+//! ([`ResourceProvider::sampler_key`]) and the shared find-or-create flow
+//! ([`ResourceProvider::find_or_create_keyed`]) are, so the typed entry points are thin wrappers
+//! once the resource types exist. `createBackendTexture` /
 //! `deleteBackendTexture` / `createWrappedTexture` need `BackendTexture` (the wgpu back end).
 
 use std::sync::LazyLock;
@@ -22,6 +23,7 @@ use std::sync::LazyLock;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{Budgeted, StdSteadyClockTimePoint};
+use crate::graphite::buffer::Buffer;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::resource::{ResourceObject, ResourceRef};
@@ -53,6 +55,15 @@ pub trait ResourceProviderBackend: Send {
         info: &TextureInfo,
         label: &str,
     ) -> Option<ResourceRef<Texture>>;
+
+    /// `createBuffer()`.
+    fn create_buffer(
+        &mut self,
+        size: usize,
+        ty: BufferType,
+        access_pattern: AccessPattern,
+        label: &str,
+    ) -> Option<ResourceRef<Buffer>>;
 
     /// `onFreeGpuResources()`.
     fn on_free_gpu_resources(&mut self) {}
@@ -276,6 +287,64 @@ impl ResourceProvider {
             }
         }
         key
+    }
+
+    /// `findOrCreateNonShareableBuffer()`.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L158-L164 (chrome/m156)
+    #[doc(alias = "findOrCreateNonShareableBuffer")]
+    pub fn find_or_create_non_shareable_buffer(
+        &mut self,
+        size: usize,
+        ty: BufferType,
+        access_pattern: AccessPattern,
+        label: &str,
+    ) -> Option<ResourceRef<Buffer>> {
+        self.find_or_create_buffer(size, ty, access_pattern, label, Shareable::No, None)
+    }
+
+    /// `findOrCreateScratchBuffer()`: scratch buffers must be GPU only.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L166-L177 (chrome/m156)
+    #[doc(alias = "findOrCreateScratchBuffer")]
+    pub fn find_or_create_scratch_buffer(
+        &mut self,
+        size: usize,
+        ty: BufferType,
+        access: AccessPattern,
+        label: &str,
+        unavailable: &ScratchResourceSet,
+    ) -> Option<ResourceRef<Buffer>> {
+        // Scratch buffers must be GPU only, mapped access makes it too difficult to scope their
+        // reads and writes within the actual command buffer execution.
+        debug_assert!(access != AccessPattern::HostVisible);
+        self.find_or_create_buffer(
+            size,
+            ty,
+            access,
+            label,
+            Shareable::Scratch,
+            Some(unavailable),
+        )
+    }
+
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L179-L226 (chrome/m156)
+    fn find_or_create_buffer(
+        &mut self,
+        size: usize,
+        ty: BufferType,
+        access_pattern: AccessPattern,
+        label: &str,
+        shareable: Shareable,
+        unavailable: Option<&ScratchResourceSet>,
+    ) -> Option<ResourceRef<Buffer>> {
+        let key = Self::buffer_key(size, ty, access_pattern);
+        self.find_or_create_keyed(
+            &key,
+            Budgeted::Yes,
+            shareable,
+            label,
+            unavailable,
+            |backend| backend.create_buffer(size, ty, access_pattern, label),
+        )
     }
 
     /// `proxyCache()`.

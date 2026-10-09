@@ -831,6 +831,23 @@ impl<T: ResourceObject> ResourceRef<T> {
     pub(crate) fn erased(&self) -> Arc<dyn AnyResource> {
         self.resource.clone()
     }
+
+    /// The shared allocation, without adding a usage ref: Skia's non-owning `const T*` (for
+    /// example `BindBufferInfo::fBuffer`). Holding it keeps the memory alive but does not
+    /// count as a usage, command buffer or cache ref.
+    #[must_use]
+    pub fn as_arc(&self) -> &Arc<Resource<T>> {
+        &self.resource
+    }
+
+    /// `sk_ref_sp(resource)`: a handle owning a new usage ref on a resource that still has one.
+    #[must_use]
+    pub fn from_arc(resource: &Arc<Resource<T>>) -> Self {
+        resource.base.add_ref(RefType::Usage, true);
+        Self {
+            resource: resource.clone(),
+        }
+    }
 }
 
 impl<T: ResourceObject> Clone for ResourceRef<T> {

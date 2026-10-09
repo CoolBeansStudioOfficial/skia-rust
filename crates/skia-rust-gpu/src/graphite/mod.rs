@@ -1,11 +1,14 @@
 //! Ports of `src/gpu/graphite/*`, one module per file pair.
 
+pub mod buffer;
+pub mod caps;
 pub mod draw_order;
 pub mod geom;
 pub mod graphite_resource_key;
 pub mod graphite_types;
 pub mod pipeline_data;
 pub mod proxy_cache;
+pub mod render_pass_desc;
 pub mod resource;
 pub mod resource_cache;
 pub mod resource_provider;
