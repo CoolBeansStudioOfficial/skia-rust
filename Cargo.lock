@@ -586,6 +586,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-gpu"
+version = "0.156.0"
+dependencies = [
+ "bitflags",
+ "skia-rust-core",
+ "skia-rust-simd",
+]
+
+[[package]]
 name = "skia-rust-pathops"
 version = "0.156.0"
 dependencies = [
@@ -633,6 +642,7 @@ version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-gpu",
  "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-simd",
