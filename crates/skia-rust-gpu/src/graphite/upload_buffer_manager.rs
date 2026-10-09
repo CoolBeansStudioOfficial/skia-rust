@@ -19,7 +19,7 @@ use crate::graphite::caps::Caps;
 use crate::graphite::command_buffer::CommandBuffer;
 use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::recording::Recording;
-use crate::graphite::resource::ResourceRef;
+use crate::graphite::resource::{Resource, ResourceRef};
 use crate::graphite::resource_types::{AccessPattern, BufferType};
 
 const REUSED_BUFFER_SIZE: usize = 64 << 10; // 64 KB
@@ -189,6 +189,24 @@ impl UploadBufferManager {
         let start = binding.offset as usize;
         let len = data.len().min(staged.len() - start);
         staged[start..start + len].copy_from_slice(&data[..len]);
+    }
+
+    /// The mapped memory of `buffer`, which this manager still holds mapped: what
+    /// `Buffer::map()` returns for a buffer that is already mapped (the same pointer), which the
+    /// port's `Buffer::map()` hands out only once, to this manager. `None` if the manager does
+    /// not hold the buffer (it was transferred to a recording or command buffer, which commit
+    /// the bytes to the GPU buffer).
+    #[must_use]
+    pub fn mapped_data(&self, buffer: &std::sync::Arc<Resource<Buffer>>) -> Option<&[u8]> {
+        if let Some(reused) = &self.reused_buffer
+            && std::sync::Arc::ptr_eq(reused.as_arc(), buffer)
+        {
+            return Some(&self.reused_data);
+        }
+        self.used_buffers
+            .iter()
+            .find(|(used, _)| std::sync::Arc::ptr_eq(used.as_arc(), buffer))
+            .map(|(_, data)| &data[..])
     }
 
     fn lock_provider(

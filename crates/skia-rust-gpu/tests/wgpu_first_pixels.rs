@@ -18,6 +18,8 @@ use skia_rust_core::color::Color4f;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::rect::{IRect, Rect as SkRect};
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
@@ -60,9 +62,21 @@ fn solid(r: f32, g: f32, b: f32) -> Paint {
 
 const SIZE: i32 = 32;
 
-/// Draws `rects` into a cleared `SIZE` x `SIZE` N32 target and returns its pixels as `(RGBA
+/// A thing to draw.
+enum Shape {
+    Rect(SkRect),
+    Path(Path),
+}
+
+impl From<SkRect> for Shape {
+    fn from(rect: SkRect) -> Self {
+        Shape::Rect(rect)
+    }
+}
+
+/// Draws `shapes` into a cleared `SIZE` x `SIZE` N32 target and returns its pixels as `(RGBA
 /// bytes, row bytes)`.
-fn render(context: &mut WgpuContext, rects: &[(SkRect, Paint)]) -> Option<(Vec<u8>, usize)> {
+fn render(context: &mut WgpuContext, shapes: &[(Shape, Paint)]) -> Option<(Vec<u8>, usize)> {
     let mut recorder = context.make_recorder(None);
     let image_info = ImageInfo::new_n32_premul((SIZE, SIZE), None);
     let mut device = Device::make_with_info(
@@ -78,8 +92,11 @@ fn render(context: &mut WgpuContext, rects: &[(SkRect, Paint)]) -> Option<(Vec<u
         false,
     )
     .expect("a device");
-    for (rect, paint) in rects {
-        device.draw_rect(rect, paint);
+    for (shape, paint) in shapes {
+        match shape {
+            Shape::Rect(rect) => device.draw_rect(rect, paint),
+            Shape::Path(path) => device.draw_path(path, paint),
+        }
     }
     let target = device.target();
     device.flush_pending_work();
@@ -123,8 +140,8 @@ fn a_rect_draws_its_color_and_only_there() {
         return;
     };
     let rects = [
-        (SkRect::new(4.0, 4.0, 20.0, 12.0), solid(1.0, 0.0, 0.0)),
-        (SkRect::new(8.0, 16.0, 28.0, 28.0), solid(0.0, 0.0, 1.0)),
+        (SkRect::new(4.0, 4.0, 20.0, 12.0).into(), solid(1.0, 0.0, 0.0)),
+        (SkRect::new(8.0, 16.0, 28.0, 28.0).into(), solid(0.0, 0.0, 1.0)),
     ];
     let (pixels, row_bytes) = render(&mut context, &rects).expect("the pixels");
     for y in 0..SIZE as usize {
@@ -139,6 +156,25 @@ fn a_rect_draws_its_color_and_only_there() {
             assert_eq!(pixel(&pixels, row_bytes, x, y), expected, "pixel ({x}, {y})");
         }
     }
+}
+
+#[test]
+fn a_path_is_drawn_with_msaa_and_resolved() {
+    let Some(mut context) = real_context() else {
+        return;
+    };
+    // A triangle: stencil-and-cover in an MSAA render pass, resolved into the target by the
+    // emulated resolve (wgpu has no load-from-resolve).
+    let mut builder = PathBuilder::new();
+    builder.move_to((4.0, 4.0)).line_to((28.0, 4.0)).line_to((16.0, 28.0)).close();
+    let shapes = [(Shape::Path(builder.detach()), solid(1.0, 0.0, 0.0))];
+    let (pixels, row_bytes) = render(&mut context, &shapes).expect("the pixels");
+    // Well inside, well outside, and on the antialiased edge (partial coverage).
+    assert_eq!(pixel(&pixels, row_bytes, 16, 10), [255, 0, 0, 255]);
+    assert_eq!(pixel(&pixels, row_bytes, 2, 30), [0, 0, 0, 0]);
+    assert_eq!(pixel(&pixels, row_bytes, 29, 2), [0, 0, 0, 0]);
+    let edge = pixel(&pixels, row_bytes, 10, 16);
+    assert!(edge[3] > 0 && edge[3] < 255, "{edge:?}");
 }
 
 #[test]

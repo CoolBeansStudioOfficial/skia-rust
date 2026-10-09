@@ -51247,7 +51247,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L96-L283"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images and surfaces (G10d) and Context::insertRecording/submit (G9b, G11c)"
+reason = "needs Graphite images and surfaces (G10d); Context::insertRecording/submit run on the wgpu command buffer since G11c"
 span_hash = "3bf20d364c46e8662b7a693c254bdb73bf572db7382f7d6d356ddee4a8109119"
 
 [[test]]
@@ -51825,7 +51825,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L185-L201"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
+reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
 span_hash = "3f665a1eece38d8ea118f6efa2006f343e2a2023c010a463246ab338b5566712"
 
 [[test]]
@@ -51835,7 +51835,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L224-L240"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
+reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
 span_hash = "33d03447c4bb3448abaac0a4df29f3c928c60d05eff4879a5a81d3ae5a0bb1e8"
 
 [[test]]
@@ -51845,7 +51845,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L204-L220"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
+reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
 span_hash = "53cc55cd7f8e6cbd77377032bc5fcb0b672a8426776e6614395aafe64b3b5372"
 
 [[test]]
@@ -51855,7 +51855,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L243-L259"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
+reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
 span_hash = "d28c4abb980619eedcfdaa542fbdaf9feee73d8399e2369a0253546b95d1440b"
 
 [[test]]
@@ -51865,7 +51865,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L340-L371"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces and draws (G10a, G10d), Context::insertRecording and submit (G9b, G11c), and PrecompileContext (G14) for the Precompile variants"
+reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
 span_hash = "28e0d79b7882cdd4a7d4e4d0e80ec0fcd2ee6f6d47748b49a5047937a77f879a"
 
 [[test]]
@@ -52255,7 +52255,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L36-L78"
 module = "gpu"
 status = "todo"
-reason = "needs a command buffer with work (draws, G10a/G10d) and the wgpu command buffer hooks (G11c)"
+reason = "needs Graphite surfaces (G10d); draws, the wgpu command buffer and Context::submit exist since G10a/G11c"
 span_hash = "a0badbbf3ca856364d9bf157ea37cf2c3bf7e0ec89207bc5a0965ce3690609ec"
 
 [[test]]
@@ -52716,8 +52716,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/UploadBufferManagerTest.cpp#L19-L126"
 module = "gpu"
-status = "todo"
-reason = "reads mapped bytes back through Buffer::map(), which hands out the staging block once (crates/skia-rust-gpu/src/graphite/buffer.rs); needs a read-back accessor on the wgpu buffer (G11c) and a Context (G9b)"
+status = "passing"
 span_hash = "fbe551fd2a5ff461b6c593e07b0ed2b9ad6ecd21c59ef212dfa95c5f779a92fc"
 
 [[test]]
@@ -52859,7 +52858,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "04418895cc364843e4729b7dc120d01fa600e79738742d4dcfbe5a7fe410af43"
 
 [[test]]
@@ -52869,7 +52868,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "2bc88ec6fa815b8d40ca462ad6c915a63613272070a02825492946207ad27a57"
 
 [[test]]
@@ -52879,7 +52878,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "204099448c35f5f10d2031184aafba107a1e85f207cb2d60d149965ae28c6bb2"
 
 [[test]]
@@ -52889,7 +52888,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "248429179577202f2e94987f8b9a63ba5a767f3159d34a3f70892685ac4c99ad"
 
 [[test]]
@@ -52899,7 +52898,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L124-L135"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "f33cebb0b0cc56164f95db1a76e98c6223d6cd9db0ba478131a3ecab769ca570"
 
 [[test]]
@@ -52909,7 +52908,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L137-L148"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "169b5714c6c79e2f0acd12cb7665635a18f8b42c3be7fa1152d8f358c21d6a54"
 
 [[test]]
@@ -52919,7 +52918,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L152-L163"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "1a62cea2888d6c856c2c06ef3f825179b5a233a5b40d78c88dd6b4bfc0e96083"
 
 [[test]]
@@ -52929,7 +52928,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L165-L176"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14), render-target surfaces and draws (G10a, G10d) and Context::insertRecording (G11c); the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
 span_hash = "a7333e03fcb38181275a65ea6510afc620df267dfb58a43cfd47e427a127de27"
 
 [[test]]
