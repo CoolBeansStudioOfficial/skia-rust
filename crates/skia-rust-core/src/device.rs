@@ -21,10 +21,11 @@
 use crate::alpha_type::AlphaType;
 use crate::arc::{Arc, create_draw_arc_path};
 use crate::bitmap::Bitmap;
+use crate::blend_mode::BlendMode;
 use crate::blender::Blender;
-use crate::canvas::{PointMode, SrcRectConstraint};
+use crate::canvas::{ImageSetEntry, PointMode, QuadAAFlags, SrcRectConstraint};
 use crate::clip_op::ClipOp;
-use crate::color::Color;
+use crate::color::{Color, Color4f};
 use crate::color_priv::{alpha_255_to_256, alpha_mul};
 use crate::color_type::ColorType;
 use crate::floating_point::float_round2int;
@@ -622,6 +623,90 @@ pub trait Device {
         paint: &Paint,
         constraint: SrcRectConstraint,
     );
+
+    /// Draws a solid-color quad, `rect` clipped by `clip` if it is `Some`, with each edge
+    /// anti-aliased per `aa_flags` (`drawEdgeAAQuad`). The default draws `rect` (or the clip
+    /// polygon) with a solid paint, anti-aliased only when all four edges are.
+    // Port of: src/core/SkDevice.cpp#L239-L252 (chrome/m156)
+    #[doc(alias = "drawEdgeAAQuad")]
+    fn draw_edge_aa_quad(
+        &mut self,
+        rect: &Rect,
+        clip: Option<&[Point; 4]>,
+        aa_flags: QuadAAFlags,
+        color: Color4f,
+        mode: BlendMode,
+    ) {
+        let mut paint = Paint::default();
+        paint.set_color4f(color, None);
+        paint.set_blend_mode(mode);
+        paint.set_anti_alias(aa_flags == QuadAAFlags::ALL);
+
+        if let Some(clip) = clip {
+            // Draw the clip directly as a quad since it's a filled color with no local coords
+            self.draw_path(&Path::polygon(clip, true, None, None), &paint);
+        } else {
+            self.draw_rect(rect, &paint);
+        }
+    }
+
+    /// Draws the entries of an image set (`drawEdgeAAImageSet`). The default draws each entry
+    /// with `draw_image_rect`, anti-aliased only when all of its edges are, and applies its clip
+    /// with `clip_path`. `dst_clips` and `preview_matrices` are empty for C++'s null arrays.
+    // Port of: src/core/SkDevice.cpp#L254-L294 (chrome/m156)
+    #[doc(alias = "drawEdgeAAImageSet")]
+    fn draw_edge_aa_image_set(
+        &mut self,
+        images: &[ImageSetEntry],
+        dst_clips: &[Point],
+        preview_matrices: &[Matrix],
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        constraint: SrcRectConstraint,
+    ) {
+        debug_assert_eq!(paint.style(), Style::Fill);
+        debug_assert!(paint.path_effect().is_none());
+
+        let mut entry_paint = paint.clone();
+        let base_local_to_device = *self.state().local_to_device44();
+        let mut clip_index = 0;
+        for image in images {
+            // TODO: Handle per-edge AA. Right now this mirrors the SkiaRenderer component of
+            // Chrome which turns off antialiasing unless all four edges should be antialiased.
+            // This avoids seaming in tiled composited layers.
+            entry_paint.set_anti_alias(image.aa_flags == QuadAAFlags::ALL);
+            entry_paint.set_alpha_f(paint.alpha_f() * image.alpha);
+
+            if let Some(i) = image.matrix_index {
+                let m = M44::concat(&base_local_to_device, &M44::from(&preview_matrices[i]));
+                self.state_mut().set_local_to_device(&m);
+            }
+
+            if image.has_clip {
+                // Since drawImageRect requires a srcRect, the dst clip is implemented as a true
+                // clip
+                self.push_clip_stack();
+                let clip_path =
+                    Path::polygon(&dst_clips[clip_index..clip_index + 4], true, None, None);
+                self.clip_path(&clip_path, ClipOp::Intersect, entry_paint.is_anti_alias());
+                clip_index += 4;
+            }
+            self.draw_image_rect(
+                &image.image,
+                Some(&image.src_rect),
+                &image.dst_rect,
+                sampling,
+                &entry_paint,
+                constraint,
+            );
+            if image.has_clip {
+                self.pop_clip_stack();
+            }
+            if image.matrix_index.is_some() {
+                self.state_mut().set_local_to_device(&base_local_to_device);
+            }
+        }
+    }
 
     /// Draws `image` divided by `lattice` into patches, stretched to fit `dst`
     /// (`drawImageLattice`).
