@@ -12,7 +12,7 @@
 //! G11a is the context, caps, resources and format tables; G11b is the graphics and compute
 //! pipelines ([`graphics_pipeline`], [`compute_pipeline`]), the shader-module helper
 //! ([`graphite_utils::compile_wgsl_shader_module`]) and the error checker ([`error_checker`]).
-//! Still to come (see `docs/design/gpu.md` §9): the `CommandBuffer` and `QueueManager` (G11c).
+//! G11c is the `CommandBuffer` ([`command_buffer`]) and `QueueManager` ([`queue_manager`]), and [`adapter_backend_context`] for the tests that read pixels.
 //!
 //! # Platforms
 //!
@@ -46,6 +46,10 @@ pub use shared_context::{WgpuBackendContext, WgpuSharedContext};
 pub use texture_info::{WgpuTextureInfo, texture_infos};
 
 #[cfg(not(target_arch = "wasm32"))]
+mod adapter;
+#[cfg(not(target_arch = "wasm32"))]
 mod noop;
+#[cfg(not(target_arch = "wasm32"))]
+pub use adapter::adapter_backend_context;
 #[cfg(not(target_arch = "wasm32"))]
 pub use noop::{noop_backend_context, noop_backend_context_with_features};

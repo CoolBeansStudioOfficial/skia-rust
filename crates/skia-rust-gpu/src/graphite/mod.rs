@@ -1,5 +1,6 @@
 //! Ports of `src/gpu/graphite/*`, one module per file pair.
 
+pub mod async_read;
 pub mod attribute;
 pub mod backend_texture;
 pub mod buffer;

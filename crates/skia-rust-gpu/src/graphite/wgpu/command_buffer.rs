@@ -112,6 +112,8 @@ struct PassState<'a> {
     active_pipeline: Option<Arc<dyn GraphicsPipeline>>,
     /// `fCurrentIndirectBuffer` and `fCurrentIndirectBufferOffset`.
     current_indirect: Option<(wgpu::Buffer, u64)>,
+    /// The intrinsic constants, when they are passed as immediate data.
+    immediates: Option<UniformDataBlock>,
 }
 
 impl PassState<'_> {
@@ -305,14 +307,15 @@ impl WgpuCommandBufferBackend {
             provider,
             active_pipeline: None,
             current_indirect: None,
+            immediates: None,
         };
 
         // If push constant is supported, update the intrinsic constants after starting a render
-        // pass.
-        if use_push_constant
-            && !Self::update_intrinsic_uniforms_as_push_constant(&mut pass, &uniform_data)
-        {
-            return false;
+        // pass. wgpu validates the immediate data against the pipeline layout, so it can only be
+        // set once a pipeline is bound: it is set after every pipeline bind instead
+        // (`bind_graphics_pipeline()`).
+        if use_push_constant {
+            pass_state.immediates = Some(uniform_data);
         }
 
         Self::set_viewport(&mut pass, call.viewport);
@@ -948,6 +951,9 @@ impl WgpuCommandBufferBackend {
             return false;
         };
         pass.set_pipeline(wgpu_pipeline.render_pipeline());
+        if let Some(immediates) = &pass_state.immediates {
+            Self::update_intrinsic_uniforms_as_push_constant(pass, immediates);
+        }
         pass_state.active_pipeline = Some(Arc::clone(graphics_pipeline));
         self.bound_uniform_buffers_dirty = true;
 
@@ -1307,10 +1313,9 @@ impl WgpuCommandBufferBackend {
     fn update_intrinsic_uniforms_as_push_constant(
         pass: &mut wgpu::RenderPass<'_>,
         uniform_data: &UniformDataBlock,
-    ) -> bool {
+    ) {
         debug_assert!(uniform_data.size() <= INTRINSIC_UNIFORM_SIZE as usize);
         pass.set_immediates(0, uniform_data.data());
-        true
     }
 
     /// `setViewport()`.

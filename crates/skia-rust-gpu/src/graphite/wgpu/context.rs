@@ -18,14 +18,31 @@ use std::sync::{Arc, Mutex, PoisonError};
 use crate::gpu::gpu_types::{BackendApi, Protected};
 use crate::gpu::sk_log::{skia_log_e, skia_log_w};
 use crate::graphite::backend_texture::BackendTexture;
+use crate::graphite::buffer::Buffer;
 use crate::graphite::caps::Caps;
+use crate::graphite::async_read::{
+    AsyncReadParams, AsyncReadResult, PixelTransferResult, SharedClientMappedBufferManager,
+    lock_manager,
+};
 use crate::graphite::client_mapped_buffer_manager::{ClientMappedBufferManager, ContextId};
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
-use crate::graphite::graphite_types::{InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu};
+use crate::graphite::graphite_types::{
+    InsertFinishInfo, InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
+};
 use crate::graphite::queue_manager::QueueManager;
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use crate::graphite::resource::ResourceRef;
+use crate::graphite::resource_types::{AccessPattern, BufferType};
+use crate::graphite::task::copy_task::CopyTextureToBufferTask;
+use crate::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
+use crate::graphite::texture_format::texture_format_bytes_per_block;
+use crate::graphite::texture_format_xfer_fn::TextureFormatXferFn;
+use crate::graphite::texture_info::texture_info_priv;
+use crate::graphite::texture_proxy_view::TextureProxyView;
+use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
+use skia_rust_core::image_info::{ColorInfo, ImageInfo};
+use skia_rust_core::rect::{Contains, IRect};
 use crate::graphite::wgpu::caps::WgpuCaps;
 use crate::graphite::wgpu::queue_manager::WgpuQueueManagerBackend;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
@@ -43,7 +60,7 @@ pub struct WgpuContext {
     /// `fContextID`.
     context_id: ContextId,
     /// `fMappedBufferManager`: buffers handed to clients while still mapped.
-    mapped_buffer_manager: ClientMappedBufferManager,
+    mapped_buffer_manager: SharedClientMappedBufferManager,
 }
 
 impl Drop for WgpuContext {
@@ -120,7 +137,9 @@ impl WgpuContext {
             queue_manager,
             options: options.clone(),
             context_id,
-            mapped_buffer_manager: ClientMappedBufferManager::new(context_id),
+            mapped_buffer_manager: Arc::new(Mutex::new(ClientMappedBufferManager::new(
+                context_id,
+            ))),
         }
     }
 
@@ -246,7 +265,7 @@ impl WgpuContext {
     // Port of: src/gpu/graphite/Context.cpp#L912-L922 (chrome/m156)
     pub fn check_for_finished_work(&mut self, sync: SyncToCpu) {
         self.queue_manager.check_for_finished_work(sync);
-        self.mapped_buffer_manager.process();
+        lock_manager(&self.mapped_buffer_manager).process();
         // Process the return queue periodically to make sure it doesn't get too big.
         self.resource_provider
             .lock()
@@ -345,6 +364,363 @@ impl WgpuContext {
     }
 }
 
+/// `Context::readPixels` and its machinery, as far as it is reachable without images and
+/// surfaces (G10d): reading a texture proxy view back.
+impl WgpuContext {
+    /// `asyncReadPixels(recorder, params)`: reads back the region of `params.src`, calling
+    /// `params.callback` with the pixels converted to `params.dst_image_info`, or with `None`
+    /// if the read failed.
+    ///
+    /// The conversions the GPU would do when the source is not copyable or needs a transfer
+    /// function (`CopyAsDraw`) are done on the CPU by the transfer's converter; a source that is
+    /// not copyable fails (a draw into a copyable texture needs images, G10d).
+    // Port of: src/gpu/graphite/Context.cpp#L413-L520 (chrome/m156)
+    #[doc(alias = "asyncReadPixels")]
+    pub fn async_read_pixels(&mut self, recorder: Option<Recorder>, params: AsyncReadParams) {
+        debug_assert_eq!(
+            params.src_rect.width(),
+            params.dst_image_info.dimensions().width
+        );
+        debug_assert_eq!(
+            params.src_rect.height(),
+            params.dst_image_info.dimensions().height
+        );
+        // All paths to here are already validated.
+        debug_assert!(params.validate());
+
+        let caps = Arc::clone(self.shared_context.caps());
+        let view = &params.src;
+        let Some(proxy) = view.proxy() else {
+            return params.fail();
+        };
+        let tex_info = proxy.texture_info();
+        let format = texture_info_priv::view_format(tex_info);
+        let cs_steps = ColorSpaceXformSteps::new(
+            params.src_color_info.color_space_ref(),
+            params.src_color_info.alpha_type(),
+            params.dst_image_info.color_info().color_space_ref(),
+            params.dst_image_info.color_info().alpha_type(),
+        );
+        let Some(xfer_fn) = TextureFormatXferFn::make_gpu_to_cpu(
+            format,
+            view.swizzle(),
+            &cs_steps,
+            params.dst_image_info.color_type(),
+        ) else {
+            return params.fail();
+        };
+
+        if !Caps::is_copyable_src(&*caps, tex_info) {
+            // `CopyAsDraw()` into a copyable texture needs images (G10d).
+            skia_log_w!("AsyncRead failed because copy-as-drawing into a readable format failed");
+            return params.fail();
+        }
+
+        self.async_read_texture(recorder, params, &xfer_fn);
+    }
+
+    /// `asyncReadTexture(recorder, params, xferFn)`.
+    // Port of: src/gpu/graphite/Context.cpp#L484-L520 (chrome/m156)
+    #[doc(alias = "asyncReadTexture")]
+    pub fn async_read_texture(
+        &mut self,
+        mut recorder: Option<Recorder>,
+        params: AsyncReadParams,
+        xfer_fn: &TextureFormatXferFn,
+    ) {
+        debug_assert_eq!(
+            params.src_rect.width(),
+            params.dst_image_info.dimensions().width
+        );
+        debug_assert_eq!(
+            params.src_rect.height(),
+            params.dst_image_info.dimensions().height
+        );
+
+        // We can get here directly from surface or testing-only read pixels, so re-validate
+        if !params.validate() {
+            return params.fail();
+        }
+
+        let transfer_result = self.transfer_pixels(
+            recorder.as_mut(),
+            &params.src,
+            params.dst_image_info.color_info(),
+            params.src_rect,
+            xfer_fn,
+        );
+
+        if transfer_result.transfer_buffer.is_none() {
+            // TODO: try to do a synchronous readPixels instead
+            return params.fail();
+        }
+
+        self.finalize_async_read_pixels(recorder, vec![transfer_result], params.callback);
+    }
+
+    /// `finalizeAsyncReadPixels(recorder, transferResults, callback)`.
+    // Port of: src/gpu/graphite/Context.cpp#L732-L810 (chrome/m156)
+    #[doc(alias = "finalizeAsyncReadPixels")]
+    pub fn finalize_async_read_pixels(
+        &mut self,
+        recorder: Option<Recorder>,
+        transfer_results: Vec<PixelTransferResult>,
+        callback: crate::graphite::async_read::ReadPixelsCallback,
+    ) {
+        // If the async readback work required a Recorder, insert the recording with all of the
+        // accumulated work (which includes any copies). Otherwise, for pure copy readbacks,
+        // transferPixels() already added the tasks directly to the QueueManager.
+        if let Some(mut recorder) = recorder {
+            let Some(mut recording) = recorder.snap() else {
+                callback(None);
+                return;
+            };
+            if self.insert_recording(InsertRecordingInfo::new(&mut recording)) != InsertStatus::Success
+            {
+                callback(None);
+                return;
+            }
+        }
+
+        // Set up the finish context and add the transfer commands to the queue.
+        let buffers_to_async_map: Vec<ResourceRef<Buffer>> =
+            if self.shared_context.caps().buffer_maps_are_async() {
+                transfer_results
+                    .iter()
+                    .filter_map(|result| result.transfer_buffer.clone())
+                    .collect()
+            } else {
+                Vec::new()
+            };
+        let manager = Arc::clone(&self.mapped_buffer_manager);
+        let info = InsertFinishInfo::new(Box::new(move |status| {
+            use crate::gpu::gpu_types::CallbackResult;
+            let (owner_id, sender) = {
+                let manager = lock_manager(&manager);
+                (manager.owner_id(), manager.sender())
+            };
+            let mut result =
+                (status == CallbackResult::Success).then(|| AsyncReadResult::new(owner_id, sender));
+            for r in &transfer_results {
+                let Some(buffer) = &r.transfer_buffer else {
+                    break;
+                };
+                if let Some(read) = &mut result
+                    && !read.add_transfer_result(r, r.size, r.row_bytes, &mut lock_manager(&manager))
+                {
+                    result = None;
+                }
+                // If we didn't get this buffer into the mapped buffer manager then make sure it
+                // gets unmapped if it has a pending or completed async map.
+                if result.is_none() && buffer.is_unmappable() {
+                    buffer.unmap();
+                }
+            }
+            callback(result);
+        }));
+
+        // If addFinishInfo() fails, it invokes the finish callback automatically, which handles
+        // all the required clean up for us, just log an error message. The buffers will never be
+        // mapped and thus don't need an unmap.
+        if !self.queue_manager.add_finish_info(
+            info,
+            &self.resource_provider,
+            &buffers_to_async_map,
+        ) {
+            skia_log_e!("Failed to register finish callbacks for asyncReadPixels.");
+        }
+    }
+
+    /// `transferPixels(recorder, srcView, dstColorInfo, srcRect, cpuXferFn)`: copies the region
+    /// to a transfer buffer, with the work added to `recorder` or, without one, to the queue
+    /// manager. The result has no transfer buffer if the transfer cannot be set up.
+    // Port of: src/gpu/graphite/Context.cpp#L816-L910 (chrome/m156)
+    #[doc(alias = "transferPixels")]
+    pub fn transfer_pixels(
+        &mut self,
+        recorder: Option<&mut Recorder>,
+        src_view: &TextureProxyView,
+        dst_color_info: &ColorInfo,
+        src_rect: IRect,
+        cpu_xfer_fn: &TextureFormatXferFn,
+    ) -> PixelTransferResult {
+        debug_assert!(IRect::from_size(src_view.dimensions()).contains(&src_rect));
+        let none = PixelTransferResult::default();
+
+        let caps = Arc::clone(self.shared_context.caps());
+        let Some(proxy) = src_view.proxy() else {
+            return none;
+        };
+        if !Caps::is_copyable_src(&*caps, proxy.texture_info()) {
+            return none;
+        }
+
+        let tex_info = proxy.texture_info();
+        let format = texture_info_priv::view_format(tex_info);
+
+        let Ok(bpp) = usize::try_from(texture_format_bytes_per_block(format)) else {
+            return none;
+        };
+        let Ok(width) = usize::try_from(src_rect.width()) else {
+            return none;
+        };
+        let Ok(height) = usize::try_from(src_rect.height()) else {
+            return none;
+        };
+        let Some(unaligned_row_bytes) = bpp.checked_mul(width) else {
+            return none;
+        };
+        let row_bytes = Caps::get_aligned_texture_data_row_bytes(&*caps, unaligned_row_bytes, bpp);
+        let Some(size) = row_bytes
+            .checked_mul(height)
+            .and_then(|size| size.checked_next_multiple_of(caps.required_transfer_buffer_alignment()))
+        else {
+            return none;
+        };
+        if row_bytes == 0 || size == 0 {
+            return none;
+        }
+        let buffer = self
+            .resource_provider
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .find_or_create_non_shareable_buffer(
+                size,
+                BufferType::XferGpuToCpu,
+                AccessPattern::HostVisible,
+                "TransferToCpu",
+            );
+        let Some(buffer) = buffer else {
+            return none;
+        };
+
+        let flip_y = src_view.origin() == crate::gpu::gpu_types::Origin::BottomLeft;
+        let mut copy_rect = src_rect;
+        if flip_y {
+            let h = src_view.dimensions().height;
+            copy_rect = IRect::from_ltrb(
+                src_rect.left,
+                h - src_rect.bottom,
+                src_rect.right,
+                h - src_rect.top,
+            );
+        }
+
+        // Set up copy task. Since we always use a new buffer the offset can be 0 and we don't
+        // need to worry about aligning it to the required transfer buffer alignment.
+        let copy_task = CopyTextureToBufferTask::make(
+            src_view.ref_proxy(),
+            copy_rect,
+            buffer.clone(),
+            /* buffer_offset= */ 0,
+            row_bytes,
+        );
+        let sync_task = SynchronizeToCpuTask::make(buffer.clone());
+        let Some(copy_task) = copy_task else {
+            return none;
+        };
+        match recorder {
+            None => {
+                // `addTasksDirectly`
+                let is_protected = self.shared_context.is_protected();
+                let mut context = ContextPrivView {
+                    shared_context: &self.shared_context,
+                    resource_provider: &self.resource_provider,
+                };
+                for task in [&copy_task, &sync_task] {
+                    let mut task = task.lock();
+                    if !self
+                        .queue_manager
+                        .add_task(&mut task, &mut context, is_protected)
+                    {
+                        return none;
+                    }
+                }
+            }
+            Some(recorder) => {
+                // Add the tasks to the Recorder instead of the QueueManager if that's been
+                // required for collecting tasks to prepare the copied textures.
+                recorder.priv_().add(copy_task);
+                recorder.priv_().add(sync_task);
+            }
+        }
+
+        let mut result = PixelTransferResult {
+            transfer_buffer: Some(buffer),
+            size: src_rect.size(),
+            row_bytes: 0,
+            pixel_converter: None,
+        };
+        if cpu_xfer_fn.is_identity() && !flip_y {
+            result.row_bytes = row_bytes;
+        } else {
+            let dst_info = ImageInfo::from_color_info(src_rect.size(), dst_color_info.clone());
+            let dst_row_bytes = dst_info.min_row_bytes();
+            result.row_bytes = dst_row_bytes;
+            let cpu_xfer_fn = cpu_xfer_fn.clone();
+            let dst_width = width;
+            let dst_height = height;
+            // TODO(b/553467540): do flipping in TextureFormatXferFn::run
+            result.pixel_converter = Some(Arc::new(move |dst: &mut [u8], src: &[u8]| {
+                if flip_y {
+                    for y in 0..dst_height {
+                        let src_row = &src[(dst_height - 1 - y) * row_bytes..];
+                        let dst_row = &mut dst[y * dst_row_bytes..];
+                        cpu_xfer_fn.run(dst_width, 1, src_row, row_bytes, dst_row, dst_row_bytes);
+                    }
+                } else {
+                    cpu_xfer_fn.run(dst_width, dst_height, src, row_bytes, dst, dst_row_bytes);
+                }
+            }));
+        }
+
+        result
+    }
+
+    /// Reads back a region of `src` and waits for it: the testing helper the C++ tests write
+    /// around `asyncReadPixels` (submit with `SyncToCpu::kYes`, then wait for the callback).
+    /// Returns the pixels in `dst_image_info`'s format with `(pixels, row_bytes)`, or `None` if
+    /// the read failed.
+    pub fn read_pixels(
+        &mut self,
+        src: &TextureProxyView,
+        src_color_info: &ColorInfo,
+        src_rect: IRect,
+        dst_image_info: &ImageInfo,
+    ) -> Option<(Vec<u8>, usize)> {
+        let slot: Arc<Mutex<Option<Option<(Vec<u8>, usize)>>>> = Arc::new(Mutex::new(None));
+        let signal = Arc::clone(&slot);
+        let params = AsyncReadParams {
+            src: src.clone(),
+            src_color_info: src_color_info.clone(),
+            src_rect,
+            dst_image_info: dst_image_info.clone(),
+            callback: Box::new(move |result| {
+                let pixels = result.map(|result| (result.data(0).to_vec(), result.row_bytes(0)));
+                *signal.lock().unwrap_or_else(PoisonError::into_inner) = Some(pixels);
+            }),
+        };
+        if !params.validate() {
+            return None;
+        }
+        self.async_read_pixels(None, params);
+        let _ = self.submit(SubmitInfo::new(SyncToCpu::Yes));
+        // A failed read has called the callback already; a successful one calls it when the
+        // submission is retired (waited for above).
+        let mut tries = 0;
+        loop {
+            if let Some(pixels) = slot.lock().unwrap_or_else(PoisonError::into_inner).take() {
+                return pixels;
+            }
+            self.check_for_finished_work(SyncToCpu::Yes);
+            tries += 1;
+            if tries > 1000 {
+                return None;
+            }
+        }
+    }
+}
+
 impl ContextPriv for WgpuContext {
     fn caps(&self) -> &dyn Caps {
         &**self.shared_context.caps()
@@ -369,6 +745,9 @@ mod tests {
         assert_ne!(first.context_id(), second.context_id());
 
         first.check_for_finished_work(SyncToCpu::No);
-        assert_eq!(first.mapped_buffer_manager.num_client_held_buffers(), 0);
+        assert_eq!(
+            lock_manager(&first.mapped_buffer_manager).num_client_held_buffers(),
+            0
+        );
     }
 }
