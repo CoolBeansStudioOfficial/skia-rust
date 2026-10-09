@@ -41,14 +41,19 @@ use crate::blender::Blender;
 use crate::canvas_priv::{AutoCanvasMatrixPaint, MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF};
 use crate::clip_op::ClipOp;
 use crate::color::{Color, Color4f};
+use crate::color_filters;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::{CreateInfo, Device, NoPixelsDevice, clip_shader};
 use crate::floating_point::is_finite_all;
 use crate::image::Image;
 use crate::image_filter::ImageFilter;
-use crate::image_filter_types::{Mapping, MatrixCapability, ROUND_EPSILON, round_out};
-use crate::image_info::ImageInfo;
+use crate::image_filter_result::FilterResult;
+use crate::image_filter_types::{
+    Context, Mapping, MatrixCapability, Stats, inverse_map_irect, map_irect, relevant_subset,
+    round_out,
+};
+use crate::image_info::{ColorInfo, ImageInfo};
 use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
@@ -457,6 +462,8 @@ impl SurfaceBase {
 #[derive(Debug)]
 struct Layer {
     paint: Paint,
+    /// The image filters applied when the layer is restored (`fImageFilters`).
+    filters: Vec<ImageFilter>,
     is_coverage: bool,
     discard: bool,
     includes_padding: bool,
@@ -623,25 +630,33 @@ impl CanvasState {
         self.predraw_notify_overwrite(false)
     }
 
-    /// `aboutToDraw`: notifies the surface and returns whether to draw. (The
-    /// `AutoLayerForImageFilter` that would wrap the paint in a layer for an image filter is a
-    /// TODO(Phase 3); the mask filter layer is skipped because the raster device does not use
-    /// `drawCoverageMask`.)
+    /// `aboutToDraw`: notifies the surface and returns the auto layer that the draw uses (its
+    /// paint carries the image filter's layers), or `None` if the draw must not happen. The draw
+    /// must end with [`Self::end_auto_layer`].
     // Port of: src/core/SkCanvas.cpp#L258-L277 (chrome/m156)
     fn about_to_draw(
         &mut self,
         paint: &Paint,
         raw_bounds: Option<&Rect>,
         flags: PredrawFlags,
-    ) -> bool {
+    ) -> Option<AutoLayerForImageFilter> {
         if flags.has(PredrawFlags::CHECK_FOR_OVERWRITE) {
             if !self.predraw_notify_with(raw_bounds, Some(paint), flags) {
-                return false;
+                return None;
             }
         } else if !self.predraw_notify() {
-            return false;
+            return None;
         }
-        true
+        Some(AutoLayerForImageFilter::new(self, paint, raw_bounds))
+    }
+
+    /// The end of an `AutoLayerForImageFilter` (its destructor): restores the layers it added.
+    // Port of: src/core/SkCanvasPriv.cpp#L331-L337 (chrome/m156)
+    fn end_auto_layer(&mut self, layer: &AutoLayerForImageFilter) {
+        for _ in 0..layer.temp_layers_for_filters {
+            self.save_count -= 1;
+            self.internal_restore();
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L369-L371 (chrome/m156)
@@ -800,9 +815,12 @@ impl CanvasState {
         // MatrixTransform bilerp also smoothed cropped edges. See skbug.com/40042614
         restore_paint.set_anti_alias(true);
 
-        // TODO(Phase 3, image filters): `paintFilter`/`rec.fFilters` are not supported, so
-        // `filters` is always empty.
-        let filters_empty = true;
+        // `paintFilter`: the paint's image filter, taken before `restore_paint` lost it.
+        let filters: Vec<ImageFilter> = rec
+            .paint
+            .and_then(Paint::image_filter)
+            .into_iter()
+            .collect();
         let cf = restore_paint.color_filter();
         let blender = restore_paint.blender();
 
@@ -813,7 +831,7 @@ impl CanvasState {
         // A regular filter applied to a layer initialized with prior contents is somewhat
         // analogous to a backdrop filter so they are treated the same.
         filters_prior_device |= rec.flags.contains(SaveLayerFlags::INIT_WITH_PREVIOUS)
-            && (!filters_empty
+            && (!filters.is_empty()
                 || cf.is_some()
                 || blender.is_some()
                 || restore_paint.alpha_f() < 1.0);
@@ -821,7 +839,7 @@ impl CanvasState {
         // unbounded during restore(). `internalDrawDeviceWithFilter` automatically applies these
         // effects. When there's no image filter, SkDevice::drawDevice is used, which does not
         // apply effects beyond the layer's image so we mark `trivialRestore` as false too.
-        let draw_device_must_fill_clip = filters_empty
+        let draw_device_must_fill_clip = filters.is_empty()
             && (cf
                 .as_ref()
                 .is_some_and(|cf| cf.as_base().affects_transparent_black())
@@ -845,9 +863,11 @@ impl CanvasState {
         }
 
         let mapping_and_bounds = get_layer_mapping_and_bounds(
+            &filters,
             &prior_local_to_device44,
             &output_bounds,
             content_bounds.as_ref(),
+            1.0,
         );
 
         let Some((new_layer_mapping, layer_bounds)) = mapping_and_bounds else {
@@ -858,14 +878,57 @@ impl CanvasState {
             return;
         };
 
-        let padded_layer = false;
+        let mut layer_bounds = layer_bounds;
         if layer_bounds.is_empty() {
             // The image filter graph does not require any input, so we don't need to actually
-            // render a new layer for the source image. (Only reachable with filters.)
+            // render a new layer for the source image. In this case it still has an output that
+            // we need to render, but do so now since there is no new layer pushed on the stack and
+            // the paired restore() will be a no-op.
+            if !filters.is_empty() && !self.devices[prior_idx].is_no_pixels_device() {
+                let mut filter_color_info = self.devices[prior_idx]
+                    .state()
+                    .image_info()
+                    .color_info()
+                    .clone();
+                if let Some(cs) = rec.color_space {
+                    filter_color_info = filter_color_info.with_color_space(cs.clone());
+                }
+                let ctm = self.mc_rec().matrix;
+                internal_draw_device_with_filter(
+                    &ctm,
+                    None,
+                    &mut *self.devices[prior_idx],
+                    &filters,
+                    &restore_paint,
+                    DeviceCompatibleWithFilter::Unknown,
+                    &filter_color_info,
+                    1.0,
+                    TileMode::Clamp,
+                    false,
+                );
+            }
+
+            // Regardless of if we drew the "restored" image filter or not, mark the layer as empty
+            // until the restore() since we don't care about any of its content.
             self.abort_layer();
             return;
         }
-        // TODO(b/329700315): padding is only added with filters.
+
+        // Add a buffer of padding so that image filtering can avoid accessing uninitialized data
+        // and switch from shader-decal'ing to clamping. The outset is kept only when it was not
+        // saturated, so the transparent pixels can be preserved.
+        let mut padded_layer = false;
+        if !filters.is_empty() {
+            let padded_layer_bounds = layer_bounds.with_outset((1, 1));
+            if padded_layer_bounds.left < layer_bounds.left
+                && padded_layer_bounds.top < layer_bounds.top
+                && padded_layer_bounds.right > layer_bounds.right
+                && padded_layer_bounds.bottom > layer_bounds.bottom
+            {
+                layer_bounds = padded_layer_bounds;
+                padded_layer = true;
+            }
+        }
 
         let new_device: Option<Box<dyn Device>> = if strategy == SaveLayerStrategy::FullLayer {
             debug_assert!(!layer_bounds.is_empty());
@@ -948,15 +1011,36 @@ impl CanvasState {
         );
 
         if init_backdrop {
-            // TODO(Phase 3, image filters): backdrop filters; a plain `kInitWithPrevious` layer
-            // is the prior device drawn into the new one with no filter (the devices differ by
-            // an integer translation, so they are always compatible).
             debug_assert!(!coverage_only);
+            // The new device was constructed to be compatible with 'filter', not necessarily
+            // 'rec.fBackdrop', so allow the draw to transform the prior device contents if
+            // necessary to evaluate the backdrop filter. If no filters are involved, then the
+            // devices differ by integer translations and are always compatible.
+            // (skia-rust: the experimental backdrop scale is not ported; it is always 1.)
             let backdrop_paint = Paint::default();
+            let backdrop_filters: Vec<ImageFilter> = rec.backdrop.cloned().into_iter().collect();
+            let compat = if !filters.is_empty() || rec.backdrop.is_some() {
+                DeviceCompatibleWithFilter::Unknown
+            } else {
+                DeviceCompatibleWithFilter::Yes
+            };
+            let color_info = new_device.state().image_info().color_info().clone();
+            let ctm = self.mc_rec().matrix;
             // Draw the prior device (src) into the new device (dst).
             let (before, _) = self.devices.split_at_mut(prior_idx + 1);
             let prior: &mut Box<dyn Device> = &mut before[prior_idx];
-            new_device.draw_device(&mut **prior, &SamplingOptions::default(), &backdrop_paint);
+            internal_draw_device_with_filter(
+                &ctm,
+                Some(&mut **prior),
+                &mut *new_device,
+                &backdrop_filters,
+                &backdrop_paint,
+                compat,
+                &color_info,
+                1.0,
+                rec.backdrop_tile_mode,
+                false,
+            );
         }
 
         // fMCRec->newLayer(...)
@@ -965,6 +1049,7 @@ impl CanvasState {
         let rec_mut = self.mc_rec_mut();
         rec_mut.layer = Some(Layer {
             paint: restore_paint,
+            filters,
             is_coverage: coverage_only,
             discard: false,
             includes_padding: padded_layer,
@@ -1010,14 +1095,35 @@ impl CanvasState {
             // Don't go through AutoLayerForImageFilter since device draws are so closely tied to
             // internalSaveLayer and internalRestore.
             if self.predraw_notify() {
-                // NOTE: Layers with image filters are TODO(Phase 3); here the layer is always
-                // drawn through `drawDevice`.
-                debug_assert!(!layer.is_coverage && !layer.includes_padding);
-                self.top_device_mut().draw_device(
-                    layer_device,
-                    &SamplingOptions::default(),
-                    &layer.paint,
-                );
+                if layer.filters.is_empty() {
+                    // NOTE: We don't just call internalDrawDeviceWithFilter with a null filter
+                    // because we want to take advantage of overridden drawDevice functions.
+                    debug_assert!(!layer.is_coverage && !layer.includes_padding);
+                    self.top_device_mut().draw_device(
+                        layer_device,
+                        &SamplingOptions::default(),
+                        &layer.paint,
+                    );
+                } else {
+                    let compat = if layer.includes_padding {
+                        DeviceCompatibleWithFilter::YesWithPadding
+                    } else {
+                        DeviceCompatibleWithFilter::Yes
+                    };
+                    let color_info = layer_device.state().image_info().color_info().clone();
+                    internal_draw_device_with_filter(
+                        &matrix,
+                        Some(layer_device),
+                        self.top_device_mut(),
+                        &layer.filters,
+                        &layer.paint,
+                        compat,
+                        &color_info,
+                        1.0,
+                        TileMode::Decal,
+                        layer.is_coverage,
+                    );
+                }
             }
         }
 
@@ -1415,8 +1521,10 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, None, PredrawFlags::CHECK_FOR_OVERWRITE) {
-            self.top_device_mut().draw_paint(paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, None, PredrawFlags::CHECK_FOR_OVERWRITE)
+        {
+            self.top_device_mut().draw_paint(auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1452,8 +1560,11 @@ impl CanvasState {
             bounds_ptr = Some(&bounds_storage);
         }
 
-        if self.about_to_draw(&stroke_paint, bounds_ptr, PredrawFlags::NONE) {
-            self.top_device_mut().draw_points(mode, pts, &stroke_paint);
+        if let Some(auto_layer) = self.about_to_draw(&stroke_paint, bounds_ptr, PredrawFlags::NONE)
+        {
+            self.top_device_mut()
+                .draw_points(mode, pts, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1490,13 +1601,16 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(&simple_paint, Some(bounds), PredrawFlags::NONE) {
+        if let Some(auto_layer) =
+            self.about_to_draw(&simple_paint, Some(bounds), PredrawFlags::NONE)
+        {
             self.top_device_mut().draw_vertices(
                 vertices,
                 Blender::mode(bmode),
-                &simple_paint,
+                auto_layer.paint(),
                 false,
             );
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1527,14 +1641,17 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(&simple_paint, Some(&bounds), PredrawFlags::NONE) {
+        if let Some(auto_layer) =
+            self.about_to_draw(&simple_paint, Some(&bounds), PredrawFlags::NONE)
+        {
             self.top_device_mut().draw_patch(
                 cubics,
                 colors,
                 tex_coords,
                 Blender::mode(bmode),
-                &simple_paint,
+                auto_layer.paint(),
             );
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1597,7 +1714,7 @@ impl CanvasState {
         // converting its "drawImage" behavior into the paint to work with the auto-mask-filter
         // system.
         debug_assert!(real_paint.mask_filter().is_none());
-        if self.about_to_draw(&real_paint, None, PredrawFlags::NONE) {
+        if let Some(auto_layer) = self.about_to_draw(&real_paint, None, PredrawFlags::NONE) {
             let colors = if colors.is_empty() {
                 colors
             } else {
@@ -1608,8 +1725,9 @@ impl CanvasState {
                 &tex[..count],
                 colors,
                 Blender::mode(bmode),
-                &real_paint,
+                auto_layer.paint(),
             );
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1626,8 +1744,11 @@ impl CanvasState {
         }
 
         // (canAttemptBlurredRRectDraw is always None for the raster device.)
-        if self.about_to_draw(paint, Some(r), PredrawFlags::CHECK_FOR_OVERWRITE) {
-            self.top_device_mut().draw_rect(r, paint);
+        if let Some(auto_layer) =
+            self.about_to_draw(paint, Some(r), PredrawFlags::CHECK_FOR_OVERWRITE)
+        {
+            self.top_device_mut().draw_rect(r, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1643,8 +1764,10 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
-            self.top_device_mut().draw_region(region, paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
+            self.top_device_mut()
+                .draw_region(region, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1660,8 +1783,9 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
-            self.top_device_mut().draw_oval(oval, paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
+            self.top_device_mut().draw_oval(oval, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1684,11 +1808,12 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
             self.top_device_mut().draw_arc(
                 &Arc::new(*oval, start_angle, sweep_angle, use_center),
-                paint,
+                auto_layer.paint(),
             );
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1716,8 +1841,9 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
-            self.top_device_mut().draw_rrect(rrect, paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
+            self.top_device_mut().draw_rrect(rrect, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1733,8 +1859,10 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
-            self.top_device_mut().draw_drrect(outer, inner, paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
+            self.top_device_mut()
+                .draw_drrect(outer, inner, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1764,8 +1892,9 @@ impl CanvasState {
         } else {
             Some(&path_bounds)
         };
-        if self.about_to_draw(paint, b, PredrawFlags::NONE) {
-            self.top_device_mut().draw_path(path, paint);
+        if let Some(auto_layer) = self.about_to_draw(paint, b, PredrawFlags::NONE) {
+            self.top_device_mut().draw_path(path, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
@@ -1835,10 +1964,6 @@ impl CanvasState {
     }
 
     // Port of: src/core/SkCanvas.cpp#L2265-L2363 (chrome/m156)
-    //
-    // TODO(Phase 3, image filters): a paint with an image filter draws the image through
-    // `skif::FilterResult` in Skia; image filters are not ported, so the filter is ignored (as
-    // for every other draw call, see `about_to_draw`).
     fn on_draw_image_rect2(
         &mut self,
         image: &Image,
@@ -1862,16 +1987,105 @@ impl CanvasState {
 
         // (`shouldDrawAsTiledImageRect` is false for the raster device, and so is
         // `useDrawCoverageMaskForMaskFilters`.)
-        if self.about_to_draw(&real_paint, Some(dst), PredrawFlags::CHECK_FOR_OVERWRITE) {
+
+        // drawImageRect()'s behavior is modified by the presence of an image filter, a mask
+        // filter, a color filter, the paint's alpha, the paint's blender, and--when it's an
+        // alpha-only image--the paint's color or shader. When there's an image filter, the
+        // paint's blender is applied to the result of the image filter function, but every other
+        // aspect would influence the source image that's then rendered with src-over blending
+        // into a transparent temporary layer.
+        //
+        // However, FilterResult can apply the paint alpha and any color filter often without
+        // requiring a layer, and src-over blending onto a transparent dst is a no-op, so we can use
+        // the input image directly as the source for filtering.
+        if let Some(filter) = real_paint.image_filter()
+            && !image.is_alpha_only()
+            && real_paint.mask_filter().is_none()
+        {
+            self.draw_image_rect_through_filter(
+                image,
+                src,
+                dst,
+                &real_sampling,
+                &real_paint,
+                &filter,
+            );
+            return;
+        }
+
+        if let Some(auto_layer) =
+            self.about_to_draw(&real_paint, Some(dst), PredrawFlags::CHECK_FOR_OVERWRITE)
+        {
             self.top_device_mut().draw_image_rect(
                 image,
                 Some(src),
                 dst,
                 &real_sampling,
-                &real_paint,
+                auto_layer.paint(),
                 constraint,
             );
+            self.end_auto_layer(&auto_layer);
         }
+    }
+
+    /// The image filter branch of `onDrawImageRect2`: the image is the source of `filter`, which is
+    /// drawn into the top device with the paint's blender.
+    // Port of: src/core/SkCanvas.cpp#L2290-L2338 (chrome/m156)
+    fn draw_image_rect_through_filter(
+        &mut self,
+        image: &Image,
+        src: &Rect,
+        dst: &Rect,
+        sampling: &SamplingOptions,
+        real_paint: &Paint,
+        filter: &ImageFilter,
+    ) {
+        let output_bounds = self.top_device().dev_clip_bounds();
+        let Some((mapping, src_bounds)) = get_layer_mapping_and_bounds(
+            std::slice::from_ref(filter),
+            self.top_device().state().local_to_device44(),
+            &output_bounds,
+            Some(dst),
+            1.0,
+        ) else {
+            return;
+        };
+        if !self.predraw_notify() {
+            return;
+        }
+
+        // Start out with an empty source image, to be replaced with the converted 'image', and a
+        // desired output equal to the calculated initial source layer bounds, which accounts for
+        // how the image filters will access 'image' (possibly different than just 'outputBounds').
+        let device = self.top_device_mut();
+        let color_type = image_filter_color_type(device.state().image_info().color_info());
+        let props = *device.state().surface_props();
+        let Some(backend) = device.create_image_filtering_backend(&props, color_type) else {
+            return;
+        };
+        let color_space = device.state().image_info().color_space();
+        let stats = Stats::default();
+        let ctx = Context::new(
+            backend,
+            mapping.clone(),
+            src_bounds,
+            FilterResult::default(),
+            color_space,
+            Some(&stats),
+        );
+
+        let source = FilterResult::make_from_image(&ctx, image, *src, *dst, *sampling);
+        // Apply effects that are normally processed on the draw *before* any layer/image filter.
+        let source = apply_alpha_and_colorfilter(&ctx, &source, real_paint);
+
+        // Evaluate the image filter, with a context pointing to the source created directly from
+        // 'image' (which will not require intermediate renderpasses when 'src' is integer aligned)
+        // and a desired output matching the device clip bounds.
+        let ctx = ctx
+            .with_new_desired_output(mapping.device_to_layer(&output_bounds))
+            .with_new_source(source);
+        let result = filter.as_base().filter_image(&ctx);
+        result.draw(&ctx, device, real_paint.blender().as_ref());
     }
 
     // Port of: src/core/SkCanvas.cpp#L1794-L1809 (chrome/m156)
@@ -1951,9 +2165,15 @@ impl CanvasState {
             return;
         }
 
-        if self.about_to_draw(&real_paint, Some(dst), PredrawFlags::NONE) {
-            self.top_device_mut()
-                .draw_image_lattice(image, lattice, dst, filter, &real_paint);
+        if let Some(auto_layer) = self.about_to_draw(&real_paint, Some(dst), PredrawFlags::NONE) {
+            self.top_device_mut().draw_image_lattice(
+                image,
+                lattice,
+                dst,
+                filter,
+                auto_layer.paint(),
+            );
+            self.end_auto_layer(&auto_layer);
         }
     }
 }
@@ -2005,16 +2225,37 @@ fn clean_sampling_for_constraint(
     *sampling
 }
 
-/// Computes the layer's mapping and bounds for a layer with no image filters
-/// (`get_layer_mapping_and_bounds` with an empty filter span). `None` if the layer should be
-/// skipped.
-// Port of: src/core/SkCanvas.cpp#L569-L666 (chrome/m156)
 const MIN_DIM_THRESHOLD: i32 = 2048;
 
+/// `IRect::join` as `SkIRect::join`: a no-op for an empty `r`, a copy when `dst` is empty.
+// Port of: include/core/SkRect.h (SkIRect::join) (chrome/m156)
+fn irect_join(dst: &mut IRect, r: &IRect) {
+    if r.is_empty() {
+        return;
+    }
+    if dst.is_empty() {
+        *dst = *r;
+        return;
+    }
+    dst.left = dst.left.min(r.left);
+    dst.top = dst.top.min(r.top);
+    dst.right = dst.right.max(r.right);
+    dst.bottom = dst.bottom.max(r.bottom);
+}
+
+/// Computes the layer's mapping and bounds for a new layer that will be the source input of
+/// `filters` before being drawn into the device with `local_to_dst`. An empty `filters` is the
+/// identity. `None` if the layer should be skipped; an empty layer rect means the filters need no
+/// input.
+// Port of: src/core/SkCanvas.cpp#L569-L666 (chrome/m156)
+#[allow(clippy::too_many_lines)] // mirrors get_layer_mapping_and_bounds
+#[allow(clippy::float_cmp)] // mirrors `scaleFactor != 1.f` in SkCanvas.cpp
 fn get_layer_mapping_and_bounds(
+    filters: &[ImageFilter],
     local_to_dst: &M44,
     target_output: &IRect,
     content_bounds: Option<&Rect>,
+    scale_factor: scalar,
 ) -> Option<(Mapping, IRect)> {
     if !local_to_dst.is_finite() || local_to_dst.invert().is_none() {
         return None;
@@ -2040,8 +2281,18 @@ fn get_layer_mapping_and_bounds(
     // Determine initial mapping and a reasonable maximum dimension to prevent layer-to-device
     // transforms with perspective and skew from triggering excessive buffer allocations.
     let mut mapping = Mapping::new();
-    let capability = MatrixCapability::Complex; // no filters
+    let mut capability = MatrixCapability::Complex;
+    for filter in filters {
+        capability = capability.min(filter.ctm_capability());
+    }
     if !mapping.decompose_ctm(local_to_dst, capability, center) {
+        return None;
+    }
+    // Push scale factor into layer matrix and device matrix (net no change, but the layer will
+    // have its resolution adjusted in comparison to the final device).
+    if scale_factor != 1.0
+        && !mapping.adjust_layer_space(&M44::scale(scale_factor, scale_factor, 1.0))
+    {
         return None;
     }
 
@@ -2052,7 +2303,7 @@ fn get_layer_mapping_and_bounds(
     // transforms to use more relative resolution than a larger layer).
     let w64 = i64::from(target_output.right) - i64::from(target_output.left);
     let h64 = i64::from(target_output.bottom) - i64::from(target_output.top);
-    let max_layer_dim = crate::safe32::pin_to_s32(2 * w64.max(h64)).max(MIN_DIM_THRESHOLD);
+    let mut max_layer_dim = crate::safe32::pin_to_s32(2 * w64.max(h64)).max(MIN_DIM_THRESHOLD);
 
     let mut base_layer_bounds = mapping.device_to_layer(target_output);
     if let Some(content_bounds) = content_bounds {
@@ -2066,11 +2317,42 @@ fn get_layer_mapping_and_bounds(
         }
     }
 
-    // No filters:
-    if base_layer_bounds.is_empty() {
-        return None;
+    let mut layer_bounds;
+    if filters.is_empty() {
+        if base_layer_bounds.is_empty() {
+            return None;
+        }
+        layer_bounds = base_layer_bounds;
+    } else {
+        // `LayerSpace<SkIRect>::Union` over the filters' input bounds.
+        layer_bounds = IRect::new_empty();
+        for (i, filter) in filters.iter().enumerate() {
+            let bounds = filter.as_base().get_input_bounds(
+                &mapping,
+                *target_output,
+                content_bounds.copied(),
+            );
+            if i == 0 {
+                layer_bounds = bounds;
+            } else {
+                irect_join(&mut layer_bounds, &bounds);
+            }
+        }
+        // When a filter is involved, the layer size may be larger than the default maxLayerDim
+        // due to required inputs for filters (e.g. a displacement map with a large radius).
+        if layer_bounds.width() > max_layer_dim || layer_bounds.height() > max_layer_dim {
+            let ideal_mapping = Mapping::from_layer_matrix(mapping.layer_matrix());
+            for filter in filters {
+                let ideal_layer_bounds = filter.as_base().get_input_bounds(
+                    &ideal_mapping,
+                    *target_output,
+                    content_bounds.copied(),
+                );
+                max_layer_dim =
+                    max_layer_dim.max(ideal_layer_bounds.width().max(ideal_layer_bounds.height()));
+            }
+        }
     }
-    let mut layer_bounds = base_layer_bounds;
 
     if layer_bounds.width() > max_layer_dim || layer_bounds.height() > max_layer_dim {
         let new_layer_bounds = IRect::from_wh(
@@ -2087,8 +2369,378 @@ fn get_layer_mapping_and_bounds(
         layer_bounds = new_layer_bounds;
     }
 
-    let _ = ROUND_EPSILON;
     Some((mapping, layer_bounds))
+}
+
+/// Whether a layer's device is compatible with the filter that is drawn from it
+/// (`SkCanvas::DeviceCompatibleWithFilter`).
+// Port of: src/core/SkCanvas.cpp#L677-L680 (chrome/m156)
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum DeviceCompatibleWithFilter {
+    /// The filters need a transform and a new device.
+    Unknown,
+    /// The source device is compatible with the filter, which can be applied directly.
+    Yes,
+    /// Like `Yes`, and the source has one pixel of padding added when the layer was made.
+    YesWithPadding,
+}
+
+/// `apply_alpha_and_colorfilter`: the effects that apply to layers besides the image filter that
+/// made the image: transparency and color filters.
+// Port of: src/core/SkCanvas.cpp#L682-L695 (chrome/m156)
+fn apply_alpha_and_colorfilter(
+    ctx: &Context<'_>,
+    image: &FilterResult,
+    paint: &Paint,
+) -> FilterResult {
+    let mut result = image.clone();
+    if paint.alpha_f() < 1.0 {
+        let color4f = paint.color4f();
+        if let Some(cf) = color_filters::blend(color4f, None, BlendMode::DstIn) {
+            result = result.apply_color_filter(ctx, cf);
+        }
+    }
+    if let Some(cf) = paint.color_filter() {
+        result = result.apply_color_filter(ctx, cf);
+    }
+    result
+}
+
+/// `internalDrawDeviceWithFilter`: draws `src` (the layer, or the prior device for a backdrop)
+/// through `filters` into `dst`. `ctm` is the matrix of the current save record, `src` is `None`
+/// when the filters need no input image.
+// Port of: src/core/SkCanvas.cpp#L699-L816 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // mirrors internalDrawDeviceWithFilter
+#[allow(clippy::too_many_lines)] // mirrors internalDrawDeviceWithFilter
+#[allow(clippy::if_not_else)] // keeps the branch order of internalDrawDeviceWithFilter
+fn internal_draw_device_with_filter(
+    ctm: &M44,
+    src: Option<&mut dyn Device>,
+    dst: &mut dyn Device,
+    filters: &[ImageFilter],
+    paint: &Paint,
+    compat: DeviceCompatibleWithFilter,
+    filter_color_info: &ColorInfo,
+    scale_factor: scalar,
+    src_tile_mode: TileMode,
+    src_is_coverage_layer: bool,
+) {
+    let filter_color_space = filter_color_info.color_space();
+    let filter_color_type = if src_is_coverage_layer {
+        ColorType::Alpha8
+    } else {
+        image_filter_color_type(filter_color_info)
+    };
+
+    // 'filter' sees the src device's buffer as the implicit input image, and processes the image
+    // in this device space (referred to as the "layer" space). However, the filter parameters
+    // need to respect the current matrix, which is not necessarily the local matrix that was set
+    // on 'src' (e.g. because we've popped src off the stack already).
+    let local_to_src = match src.as_deref() {
+        Some(src) => M44::concat(src.state().global_to_device(), ctm),
+        None => M44::new_identity(),
+    };
+    let src_dims = src.as_deref().map_or(ISize::new(0, 0), |src| {
+        src.state().image_info().dimensions()
+    });
+    let src_full = IRect::from_wh(src_dims.width, src_dims.height);
+
+    // Whether or not we need to make a transformed tmp image from 'src', and what that transform
+    // is.
+    let mut src_to_layer = Matrix::new_identity();
+
+    let output_bounds = dst.dev_clip_bounds();
+    let mapping;
+    let mut required_input;
+    if compat != DeviceCompatibleWithFilter::Unknown {
+        // Just use the relative transform from src to dst and the src's whole image, since
+        // internalSaveLayer should have already determined what was necessary. We explicitly
+        // construct the inverse (dst->src) to avoid the case where src's and dst's coord
+        // transforms were individually invertible by SkM44::invert() but their product is
+        // considered not invertible by SkMatrix::invert(). When this happens the matrices are
+        // already poorly conditioned so getRelativeTransform() gives us something reasonable.
+        let Some(src_dev) = src.as_deref() else {
+            return;
+        };
+        mapping = Mapping::from_parts(
+            &src_dev.state().relative_transform(dst.state()),
+            &dst.state().relative_transform(src_dev.state()),
+            &local_to_src,
+        );
+        required_input = src_full;
+    } else {
+        // Compute the image filter mapping by decomposing the local->device matrix of dst and
+        // re-determining the required input.
+        let Some((m, input)) = get_layer_mapping_and_bounds(
+            filters,
+            dst.state().local_to_device44(),
+            &output_bounds,
+            None,
+            scale_factor.clamp(0.0, 1.0),
+        ) else {
+            return;
+        };
+        mapping = m;
+        required_input = input;
+        if src.is_some() {
+            if !required_input.is_empty() {
+                // The above mapping transforms from local to dst's device space, where the layer
+                // space represents the intermediate buffer. Now we need to determine the transform
+                // from src to intermediate to prepare the input to the filter.
+                let Some(src_to_local) = local_to_src.invert() else {
+                    return;
+                };
+                src_to_layer = M44::concat(mapping.layer_matrix(), &src_to_local).to_m33();
+            }
+            // Else no input is needed which can happen if a backdrop filter that doesn't use src
+        } else {
+            // Trust the caller that no input was required, but keep the calculated mapping
+            required_input = IRect::new_empty();
+        }
+    }
+
+    // Start out with an empty source image, to be replaced with the snapped 'src' device.
+    let backend_props = match src.as_deref() {
+        Some(src_dev) => *src_dev.state().surface_props(),
+        None => *dst.state().surface_props(),
+    };
+    let Some(backend) = dst.create_image_filtering_backend(&backend_props, filter_color_type)
+    else {
+        // No image filtering backend for this device (see `Device::create_image_filtering_backend`).
+        return;
+    };
+    let stats = Stats::default();
+    let mut ctx = Context::new(
+        backend,
+        mapping.clone(),
+        required_input,
+        FilterResult::default(),
+        filter_color_space.clone(),
+        Some(&stats),
+    );
+
+    let mut source = FilterResult::default();
+    if let Some(src_dev) = src
+        && !required_input.is_empty()
+    {
+        let Some(src_subset) = inverse_map_irect(&src_to_layer, &required_input) else {
+            return;
+        };
+
+        // Include the layer in the offscreen count
+        ctx.mark_new_surface();
+
+        let avail_src = relevant_subset(src_full, src_subset, src_tile_mode);
+
+        if src_to_layer.is_scale_translate() {
+            // Apply the srcToLayer transformation directly while snapping an image from the src
+            // device. Calculate the subset of requiredInput that corresponds to srcSubset that was
+            // restricted to the actual src dimensions.
+            let required_subset = map_irect(&avail_src, &src_to_layer);
+            if required_subset.width() == avail_src.width()
+                && required_subset.height() == avail_src.height()
+            {
+                // Unlike snapSpecialScaled(), snapSpecial() can avoid a copy when the underlying
+                // representation permits it.
+                source = FilterResult::new(
+                    src_dev
+                        .snap_special(&avail_src, false)
+                        .map(std::sync::Arc::new),
+                    required_subset.top_left(),
+                );
+            } else {
+                debug_assert_eq!(compat, DeviceCompatibleWithFilter::Unknown);
+                source = FilterResult::new(
+                    src_dev
+                        .snap_special_scaled(
+                            &avail_src,
+                            ISize::new(required_subset.width(), required_subset.height()),
+                        )
+                        .map(std::sync::Arc::new),
+                    required_subset.top_left(),
+                );
+                ctx.mark_new_surface();
+            }
+        }
+
+        if compat == DeviceCompatibleWithFilter::YesWithPadding {
+            // Padding was added to the source image when the 'src' device was created, so inset
+            // to allow bounds tracking to skip shader-based tiling when possible.
+            debug_assert_ne!(filters.len(), 0);
+            source = source.inset_for_save_layer();
+        } else if compat == DeviceCompatibleWithFilter::Yes {
+            // Do nothing, leave `source` as-is; FilterResult will automatically augment the image
+            // sampling as needed to be visually equivalent to the more optimal kYesWithPadding
+            // case
+        } else if source.has_image() {
+            // A backdrop filter that succeeded in snapSpecial() or snapSpecialScaled(), but since
+            // the 'src' device wasn't prepared with 'requiredInput' in mind, add clamping.
+            let layer_bounds = source.layer_bounds();
+            source = source.apply_crop(&ctx, layer_bounds, src_tile_mode);
+        } else if !required_input.is_empty() {
+            // Otherwise snapSpecialScaled() failed or the transform was complex, so snap the source
+            // image at its original resolution and then apply srcToLayer to map to the effective
+            // layer coordinate space.
+            source = FilterResult::new(
+                src_dev
+                    .snap_special(&avail_src, false)
+                    .map(std::sync::Arc::new),
+                avail_src.top_left(),
+            );
+            // We adjust the desired output of the applyCrop() because ctx was original set to
+            // fulfill 'requiredInput', which is valid *after* we apply srcToLayer. Use the original
+            // 'srcSubset' for the desired output so that the tilemode applied to the available
+            // subset is not discarded as a no-op.
+            let layer_bounds = source.layer_bounds();
+            let crop_ctx = ctx.with_new_desired_output(src_subset);
+            source = source
+                .apply_crop(&crop_ctx, layer_bounds, src_tile_mode)
+                .apply_transform(
+                    &ctx,
+                    &src_to_layer,
+                    SamplingOptions::from(FilterMode::Linear),
+                );
+        }
+    } // else leave 'source' as the empty image
+
+    // Evaluate the image filter, with a context pointing to the source snapped from 'src' and
+    // possibly transformed into the intermediate layer coordinate space.
+    ctx = ctx
+        .with_new_desired_output(mapping.device_to_layer(&output_bounds))
+        .with_new_source(source.clone());
+
+    // Here, we allow a single-element list with a null entry, to simplify the loop:
+    let filters_or_null: Vec<Option<&ImageFilter>> = if filters.is_empty() {
+        vec![None]
+    } else {
+        filters.iter().map(Some).collect()
+    };
+
+    for filter in filters_or_null {
+        let result = match filter {
+            Some(filter) => filter.as_base().filter_image(&ctx),
+            None => source.clone(),
+        };
+
+        if src_is_coverage_layer {
+            // Coverage layers are only made for mask filters, which skia-rust does not draw through
+            // `drawCoverageMask` (no device uses it), so this path is not reachable.
+            debug_assert!(dst.use_draw_coverage_mask_for_mask_filters());
+        } else {
+            let result = apply_alpha_and_colorfilter(&ctx, &result, paint);
+            result.draw(&ctx, dst, paint.blender().as_ref());
+        }
+    }
+
+    // `stats.reportStats()` only prints in debug builds of Skia; skia-rust reports nothing.
+}
+
+/// `AutoLayerForImageFilter`: the temporary layers that apply a paint's image filter (and its
+/// blender) to a draw, plus the paint the draw itself uses. Layers are restored with
+/// `CanvasState::end_auto_layer`.
+// Port of: src/core/SkCanvasPriv.h#L129-L168 (chrome/m156)
+#[derive(Debug)]
+struct AutoLayerForImageFilter {
+    paint: Paint,
+    temp_layers_for_filters: i32,
+}
+
+impl AutoLayerForImageFilter {
+    /// The paint the draw should use (`paint()`).
+    fn paint(&self) -> &Paint {
+        &self.paint
+    }
+}
+
+/// Attempts to convert an image filter to its equivalent color filter, which if possible, modifies
+/// the paint to compose the image filter's color filter into the paint's color filter slot.
+/// Returns true if the paint has been modified. Requires the paint to have an image filter.
+// Port of: src/core/SkCanvasPriv.cpp#L264-L300 (chrome/m156)
+fn image_to_color_filter(paint: &mut Paint) -> bool {
+    // An image filter logically runs after any mask filter and the src-over blending against the
+    // layer's transparent black initial content. Moving the image filter (as a color filter) into
+    // the color filter slot causes it to run before the mask filter or blending.
+    if paint.mask_filter().is_some() {
+        return false;
+    }
+    let Some(image_filter) = paint.image_filter() else {
+        return false;
+    };
+    let Some(mut img_cf) = image_filter.as_a_color_filter() else {
+        return false;
+    };
+    if let Some(paint_cf) = paint.color_filter() {
+        // The paint has both a colorfilter(paintCF) and an imagefilter-that-is-a-colorfilter(imgCF)
+        // and we need to combine them into a single colorfilter.
+        img_cf = img_cf.composed(Some(paint_cf));
+    }
+    paint.set_color_filter(Some(img_cf));
+    paint.set_image_filter(None);
+    true
+}
+
+impl AutoLayerForImageFilter {
+    /// Builds the layers for a draw with `paint` over `raw_bounds` (the constructor of
+    /// `AutoLayerForImageFilter`).
+    ///
+    /// The mask filter layer is never added: it needs `drawCoverageMask`, which no device in
+    /// skia-rust uses (`useDrawCoverageMaskForMaskFilters` is false everywhere), so `SkCanvas`
+    /// always takes the `skipMaskFilterLayer` path.
+    // Port of: src/core/SkCanvasPriv.cpp#L302-L329 (chrome/m156)
+    fn new(canvas: &mut CanvasState, paint: &Paint, raw_bounds: Option<&Rect>) -> Self {
+        let mut layer = AutoLayerForImageFilter {
+            paint: paint.clone(),
+            temp_layers_for_filters: 0,
+        };
+        if layer.paint.image_filter().is_some() && !image_to_color_filter(&mut layer.paint) {
+            layer.add_image_filter_layer(canvas, raw_bounds);
+        }
+        layer
+    }
+
+    // Port of: src/core/SkCanvasPriv.cpp#L366-L382 (chrome/m156)
+    fn add_image_filter_layer(&mut self, canvas: &mut CanvasState, draw_bounds: Option<&Rect>) {
+        // The restore paint for an image filter layer simply takes the image filter and blending
+        // off the original paint. The blending is applied post image filter because otherwise
+        // it'd be applied with the new layer's transparent dst and not be very interesting.
+        let mut restore_paint = Paint::default();
+        restore_paint.set_image_filter(self.paint.image_filter());
+        restore_paint.set_blender(self.paint.blender());
+
+        // Remove the restorePaint fields from our "working" paint, leaving all other shading and
+        // geometry effects to be rendered into the layer.
+        self.paint.set_image_filter(None);
+        self.paint.set_blend_mode(BlendMode::SrcOver);
+
+        self.add_layer(canvas, &restore_paint, draw_bounds, false);
+    }
+
+    // Port of: src/core/SkCanvasPriv.cpp#L384-L402 (chrome/m156)
+    fn add_layer(
+        &mut self,
+        canvas: &mut CanvasState,
+        restore_paint: &Paint,
+        draw_bounds: Option<&Rect>,
+        coverage_only: bool,
+    ) {
+        // The content bounds will include all paint outsets except for those that have been
+        // extracted into 'restorePaint' or a previously added layer.
+        let content_bounds = match draw_bounds {
+            Some(draw_bounds) if self.paint.can_compute_fast_bounds() => {
+                Some(self.paint.compute_fast_bounds(draw_bounds))
+            }
+            _ => None,
+        };
+
+        canvas.save_count += 1;
+        let rec = SaveLayerRec {
+            bounds: content_bounds.as_ref(),
+            paint: Some(restore_paint),
+            ..SaveLayerRec::default()
+        };
+        canvas.internal_save_layer(&rec, coverage_only, SaveLayerStrategy::FullLayer);
+        self.temp_layers_for_filters += 1;
+    }
 }
 
 /// A canvas (`SkCanvas`). See the module documentation.
