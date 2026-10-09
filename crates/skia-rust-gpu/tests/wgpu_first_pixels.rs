@@ -88,11 +88,17 @@ impl From<SkRect> for Shape {
     }
 }
 
-/// Draws `shapes` into a cleared `SIZE` x `SIZE` N32 target and returns its pixels as `(RGBA
+/// Draws `shapes` into a cleared `SIZE` x `SIZE` `RGBA_8888` target (not N32, whose byte order is
+/// BGRA on some hosts) and returns its pixels as `(RGBA
 /// bytes, row bytes)`.
 fn render(context: &mut WgpuContext, shapes: &[(Shape, Paint)]) -> Option<(Vec<u8>, usize)> {
     let mut recorder = context.make_recorder(None);
-    let image_info = ImageInfo::new_n32_premul((SIZE, SIZE), None);
+    let image_info = ImageInfo::new(
+        (SIZE, SIZE),
+        skia_rust_core::color_type::ColorType::RGBA8888,
+        skia_rust_core::alpha_type::AlphaType::Premul,
+        None,
+    );
     let mut device = Device::make_with_info(
         Some(&recorder),
         &image_info,
