@@ -19,6 +19,9 @@ pub enum Status {
     BitstreamError,
     UnsupportedFeature,
     Suspended,
+    /// `VP8_STATUS_USER_ABORT`: the row output failed (`DecodeRemaining` reports a failed
+    /// `VP8ProcessRow` this way, which includes an alpha failure inside `FinishRow`).
+    UserAbort,
     NotEnoughData,
 }
 

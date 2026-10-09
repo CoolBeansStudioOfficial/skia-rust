@@ -19,7 +19,7 @@ mod common;
 use std::fmt::Write as _;
 use std::path::Path;
 
-use common::{MODES, line, oracle_dir};
+use common::{CHUNKS, MODES, idec_lines, line, oracle_dir};
 
 /// Corrupted variants per corpus file (`CORRUPTIONS` in `mutate.py`).
 const CORRUPTIONS: usize = 2;
@@ -59,11 +59,9 @@ fn variants(name: &str, data: &[u8], index: usize) -> Vec<(String, Vec<u8>)> {
     out
 }
 
-#[test]
-fn mutated_variants_match_c_reference() {
-    let dir = oracle_dir();
-    let expected = std::fs::read_to_string(dir.join("expected_mutated.txt"))
-        .expect("read expected_mutated.txt");
+/// Every variant of the corpus, in the order of `expected_mutated.txt`: the corpus files sorted by
+/// name, each with its own variants. The `usize` is the file's index, which seeds its corruptions.
+fn corpus_variants(dir: &Path) -> Vec<(String, Vec<u8>)> {
     let mut names: Vec<String> = std::fs::read_dir(dir.join("corpus"))
         .expect("read corpus dir")
         .map(|e| {
@@ -75,14 +73,41 @@ fn mutated_variants_match_c_reference() {
         .filter(|n| Path::new(n).extension().is_some_and(|e| e == "webp"))
         .collect();
     names.sort();
-    let mut actual = String::new();
+    let mut out = Vec::new();
     for (index, file) in names.iter().enumerate() {
         let data = std::fs::read(dir.join("corpus").join(file)).expect("read corpus file");
         let base = file.strip_suffix(".webp").expect("corpus file is a .webp");
-        for (vname, vdata) in variants(base, &data, index) {
-            for (name, mode, bpp) in MODES {
-                writeln!(actual, "{}", line(&vname, name, mode, bpp, &vdata))
-                    .expect("write to String");
+        out.extend(variants(base, &data, index));
+    }
+    out
+}
+
+#[test]
+fn mutated_variants_match_c_reference() {
+    let dir = oracle_dir();
+    let expected = std::fs::read_to_string(dir.join("expected_mutated.txt"))
+        .expect("read expected_mutated.txt");
+    let mut actual = String::new();
+    for (vname, vdata) in corpus_variants(&dir) {
+        for (name, mode, bpp) in MODES {
+            writeln!(actual, "{}", line(&vname, name, mode, bpp, &vdata)).expect("write to String");
+        }
+    }
+    assert_eq!(actual, expected);
+}
+
+/// The incremental replay of the variants (`expected_mutated_idec.txt`, from `webpidec` on the
+/// files `mutate.py` writes): every variant, every RGB mode, every chunk size.
+#[test]
+fn mutated_variants_incremental_match_c_reference() {
+    let dir = oracle_dir();
+    let expected = std::fs::read_to_string(dir.join("expected_mutated_idec.txt"))
+        .expect("read expected_mutated_idec.txt");
+    let mut actual = String::new();
+    for (vname, vdata) in corpus_variants(&dir) {
+        for (name, mode, bpp) in MODES {
+            for chunk in CHUNKS {
+                actual.push_str(&idec_lines(&vname, &vdata, name, mode, bpp, chunk));
             }
         }
     }

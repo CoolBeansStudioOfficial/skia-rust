@@ -46,6 +46,7 @@ fn status_code(s: Status) -> i32 {
         Status::BitstreamError => 3,
         Status::UnsupportedFeature => 4,
         Status::Suspended => 5,
+        Status::UserAbort => 6,
         Status::NotEnoughData => 7,
     }
 }

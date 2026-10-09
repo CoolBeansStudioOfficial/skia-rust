@@ -22,6 +22,7 @@ use crate::io::{Io, Status};
 use crate::output::{Emitter, batch_rows, bytes_per_pixel};
 use crate::vp8_dec::{self, Crop, Planes, RowSink, Vp8Stream};
 use crate::vp8_tables_small::K_FILTER_EXTRA_ROWS;
+use crate::vp8l;
 use crate::webp_dec::{self, DecodeOptions, IoParams};
 
 /// `VP8_FRAME_HEADER_SIZE`: the bytes a VP8 frame header needs before `DecodeVP8FrameHeader`.
@@ -71,6 +72,8 @@ pub struct DecodedRgb<'a> {
 #[doc(alias = "WebPIDecoder")]
 pub struct IDecoder {
     state: DecState,
+    /// `idec->dec_ != NULL`: the VP8 or VP8L decoder exists (the headers were read).
+    has_decoder: bool,
     mode: CspMode,
     options: DecodeOptions,
     /// `idec->mem_.start_`: the first byte of the bitstream still needed.
@@ -87,6 +90,10 @@ pub struct IDecoder {
     /// The window and scaling of `WebPIoInitFromOptions`, from the image size.
     io_params: Option<IoParams>,
     stream: Option<Vp8Stream>,
+    /// The lossless decoder (`VP8LDecoder`), once its header is read.
+    vp8l: Option<vp8l::Vp8lDecoder>,
+    /// `io->width` and `io->height`: the decoded image size.
+    image_size: (i32, i32),
     emitter: Emitter,
     /// The output buffer (`WebPAllocateDecBuffer`), allocated once partition 0 is read.
     output: Vec<u8>,
@@ -108,6 +115,7 @@ impl IDecoder {
         bytes_per_pixel(mode)?;
         Some(Self {
             state: DecState::WebpHeader,
+            has_decoder: false,
             mode,
             options,
             start: 0,
@@ -125,6 +133,8 @@ impl IDecoder {
             out_width: 0,
             out_height: 0,
             last_y: 0,
+            vp8l: None,
+            image_size: (0, 0),
         })
     }
 
@@ -141,13 +151,24 @@ impl IDecoder {
         self.i_decode(data)
     }
 
-    /// Port of `WebPIDecGetRGB`: the output buffer and the rows written. `None` until the output
-    /// is allocated.
+    /// Port of `WebPIDecGetRGB`. `None` before the headers are read (`GetOutputBuffer` returns
+    /// NULL without touching `last_y`). Past that point `last_y` is reported even when the output
+    /// is not allocated yet (the lossless header is still being read): then `pixels` is empty,
+    /// which is `WebPIDecGetRGB` returning NULL.
     #[doc(alias = "WebPIDecGetRGB")]
     #[must_use]
     pub fn rgb(&self) -> Option<DecodedRgb<'_>> {
-        if self.state <= DecState::Vp8Parts0 || !self.output_allocated {
+        if !self.has_decoder || self.state <= DecState::Vp8Parts0 {
             return None;
+        }
+        if !self.output_allocated {
+            return Some(DecodedRgb {
+                pixels: &[],
+                stride: 0,
+                width: 0,
+                height: 0,
+                last_y: self.last_y,
+            });
         }
         Some(DecodedRgb {
             pixels: &self.output,
@@ -196,6 +217,7 @@ impl IDecoder {
             Err(Status::NotEnoughData) => return Status::Suspended,
             Err(s) => return self.error(s),
         };
+        self.has_decoder = true;
         self.chunk_size = headers.compressed_size;
         self.is_lossless = headers.is_lossless;
         // ChangeState(idec, STATE_..._HEADER, headers.offset): the memory starts at the bitstream.
@@ -267,6 +289,7 @@ impl IDecoder {
         self.output = vec![0; self.out_stride * to_usize(out_h)];
         self.output_allocated = true;
         self.io_params = Some(p);
+        self.image_size = stream.size();
         self.stream = Some(stream);
         self.state = DecState::Vp8Data;
         Status::Ok
@@ -324,14 +347,90 @@ impl IDecoder {
         }
     }
 
-    /// Lossless headers. Not ported yet (see the module note).
-    fn decode_vp8l_header(&mut self, _data: &[u8]) -> Status {
-        self.error(Status::UnsupportedFeature)
+    /// Port of `DecodeVP8LHeader`: reads the lossless header once enough of the bitstream is in,
+    /// then allocates the output.
+    fn decode_vp8l_header(&mut self, data: &[u8]) -> Status {
+        let frame = &data[self.start..];
+        let curr_size = frame.len();
+        // Wait until there's enough data for decoding the header.
+        if curr_size < (self.chunk_size >> 3) {
+            return Status::Suspended;
+        }
+        let mut dec = vp8l::Vp8lDecoder::new();
+        // VP8LDecodeHeader only reads the size and the headers, so it needs no output yet.
+        let mut no_output: [u8; 0] = [];
+        let mut io = Io::new(&mut no_output, 0, self.mode, 0, 0);
+        if !vp8l::decode_header(&mut dec, frame, &mut io) {
+            if dec.status == Status::BitstreamError && curr_size < self.chunk_size {
+                dec.status = Status::Suspended;
+            }
+            return match dec.status {
+                Status::Suspended | Status::NotEnoughData => Status::Suspended,
+                s => self.error(s),
+            };
+        }
+        let (width, height) = (io.width, io.height);
+        // ErrorStatusLossless does not apply past the header: the output is allocated here.
+        let p = match webp_dec::io_params(width, height, &self.options, false) {
+            Ok(p) => p,
+            Err(s) => return self.error(s),
+        };
+        let (out_w, out_h) = p.output_size();
+        let Some(bpp) = bytes_per_pixel(self.mode) else {
+            return self.error(Status::InvalidParam);
+        };
+        self.out_stride = to_usize(out_w) * bpp;
+        self.out_width = out_w;
+        self.out_height = out_h;
+        self.output = vec![0; self.out_stride * to_usize(out_h)];
+        self.output_allocated = true;
+        self.image_size = (width, height);
+        self.io_params = Some(p);
+        self.vp8l = Some(dec);
+        self.state = DecState::Vp8lData;
+        Status::Ok
     }
 
-    /// Lossless data. Not ported yet (see the module note).
-    fn decode_vp8l_data(&mut self, _data: &[u8]) -> Status {
-        self.error(Status::UnsupportedFeature)
+    /// Port of `DecodeVP8LData`: decodes the image rows, incrementally while the bitstream is
+    /// still arriving.
+    fn decode_vp8l_data(&mut self, data: &[u8]) -> Status {
+        let frame = &data[self.start..];
+        let curr_size = frame.len();
+        let (Some(p), Some(dec)) = (self.io_params, self.vp8l.as_mut()) else {
+            return self.error(Status::BitstreamError);
+        };
+        // Switch to incremental decoding if we don't have all the bytes available.
+        dec.incremental = curr_size < self.chunk_size;
+        let (width, height) = self.image_size;
+        let mut io = Io::new(&mut self.output, self.out_stride, self.mode, width, height);
+        io.use_cropping = self.options.crop.is_some();
+        io.crop_left = p.x;
+        io.crop_top = p.y;
+        io.crop_right = p.x + p.w;
+        io.crop_bottom = p.y + p.h;
+        io.mb_w = p.w;
+        io.mb_h = p.h;
+        io.use_scaling = p.use_scaling;
+        io.scaled_width = p.scaled_width;
+        io.scaled_height = p.scaled_height;
+        io.fancy_upsampling = p.fancy_upsampling;
+        io.bypass_filtering = p.bypass_filtering;
+        io.last_y = self.last_y;
+        let ok = vp8l::decode_image(dec, frame, &mut io);
+        self.last_y = io.last_y;
+        let status = dec.status;
+        if !ok {
+            return match status {
+                Status::Suspended | Status::NotEnoughData => Status::Suspended,
+                s => self.error(s),
+            };
+        }
+        if status == Status::Suspended {
+            return Status::Suspended;
+        }
+        // FinishDecoding
+        self.state = DecState::Done;
+        Status::Ok
     }
 }
 
@@ -361,12 +460,14 @@ impl RowSink for LossySink<'_> {
                 if self.alpha.is_none() {
                     *self.alpha = Some(
                         alpha::alpha_init(alph, planes.width, planes.height, self.window)
-                            .ok_or(Status::BitstreamError)?,
+                            .ok_or(Status::UserAbort)?,
                     );
                 }
                 let dec = self.alpha.as_mut().ok_or(Status::BitstreamError)?;
                 if !alpha::alpha_decode(dec, to_i32(y_start), to_i32(y_end - y_start)) {
-                    return Err(Status::BitstreamError); // "Could not decode alpha data."
+                    // FinishRow sets "Could not decode alpha data." (BITSTREAM_ERROR), but the
+                    // VP8ProcessRow failure that it causes is reported as USER_ABORT.
+                    return Err(Status::UserAbort);
                 }
             }
             alpha_rows = self.alpha.as_ref().map(AlphaDecoder::plane);
