@@ -295,6 +295,7 @@ pub mod scalar_test;
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
+pub mod shadow_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]

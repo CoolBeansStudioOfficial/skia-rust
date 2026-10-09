@@ -157,6 +157,7 @@ pub mod rrects;
 pub mod scaledemoji;
 pub mod scaledrects;
 pub mod scaledstrokes;
+pub mod shadowutils;
 pub mod shallowgradient;
 pub mod shapes;
 pub mod sharedcorners;

@@ -23707,7 +23707,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L230-L232"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave polygon helpers not ported; blur fallback differs)"
 span_hash = "e998c0e03a2a4dc6709478caa6737aab22e29492cfce76d4a6ce541f10334c7c"
 
 [[test]]
@@ -23716,7 +23717,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L266-L337"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (convex only; mismatch on all tiers, cause not isolated without golden images)"
 span_hash = "2fd7e9399e932a48eab1a9e934616353f6ea4098f7cef863e17a16ade298f391"
 
 [[test]]
@@ -23725,7 +23727,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L245-L264"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "85e80e7f9edd47ffc68977f71ab34783a14ece5f058316dbe32aaf2e67bbb6c3"
 
 [[test]]
@@ -23734,7 +23736,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L238-L240"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave polygon helpers not ported; blur fallback differs)"
 span_hash = "6b6329a0627983f383fcf90eead9edaf707c56adf2efbe88146395be0ad87a46"
 
 [[test]]
@@ -23743,7 +23746,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadowutils.cpp#L234-L236"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "see notes/gm_shadowutils_cpp-shadow_utils.md (concave polygon helpers not ported; blur fallback differs)"
 span_hash = "e1fd7a221e94f4fc7217cdecda0638f1699ff6414b1b06d2fa1ab1a5058627da"
 
 [[test]]
@@ -41798,7 +41802,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShadowTest.cpp#L213-L222"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c388bb3327000fcab4886f8d4a43ccd12191b96ab271e37173fc5a3c3b80f466"
 
 [[test]]
@@ -41807,7 +41811,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShadowTest.cpp#L72-L139"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "09a03a9517625d72151489a8d2d6ce52cfb42303ed45cd8ca91631ada2446677"
 
 [[test]]
