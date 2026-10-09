@@ -34,6 +34,7 @@ use crate::lattice_iter::{Lattice, LatticeIter};
 use crate::m44::M44;
 use crate::matrix::{Matrix, TypeMask};
 use crate::matrix_priv::{is_scale_translate_as_m33, map_rect};
+use crate::mesh::Mesh;
 use crate::paint::{Paint, Style};
 use crate::path::Path;
 use crate::path_builder::PathBuilder;
@@ -494,6 +495,12 @@ pub trait Device {
         paint: &Paint,
         skip_color_xform: bool,
     );
+
+    /// Draws a custom mesh (`drawMesh`). The blender combines the mesh's output with the
+    /// destination; the canvas makes it [`Blender::mode`]`(kModulate)` when none is given.
+    // Port of: src/core/SkDevice.h#L387 (chrome/m156)
+    #[doc(alias = "drawMesh")]
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint);
 
     /// Draws a Coons patch (`drawPatch`). The default makes vertices and calls
     /// [`draw_vertices`](Self::draw_vertices).
@@ -1075,6 +1082,7 @@ impl Device for NoPixelsDevice {
     fn draw_rrect(&mut self, _rr: &RRect, _paint: &Paint) {}
     fn draw_path(&mut self, _path: &Path, _paint: &Paint) {}
     fn draw_vertices(&mut self, _: &Vertices, _: Blender, _: &Paint, _: bool) {}
+    fn draw_mesh(&mut self, _: &Mesh, _: Blender, _: &Paint) {}
 }
 
 /// Sets a device's local-to-device transform for the lifetime of the guard

@@ -102,6 +102,7 @@ pub mod matrix_test;
 #[cfg(test)]
 pub mod memset_test;
 #[cfg(test)]
+pub mod mesh_test;
 pub mod meta_data_test;
 #[cfg(test)]
 pub mod mip_map_test;

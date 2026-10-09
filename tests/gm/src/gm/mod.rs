@@ -107,6 +107,7 @@ pub mod lattice;
 pub mod luminosity;
 pub mod mandoline;
 pub mod manypaths;
+pub mod mesh;
 pub mod mipmap;
 pub mod mirrortile;
 pub mod nearesthalfpixelimage;

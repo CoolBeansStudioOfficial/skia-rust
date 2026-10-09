@@ -91,6 +91,7 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod mesh;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod paint;

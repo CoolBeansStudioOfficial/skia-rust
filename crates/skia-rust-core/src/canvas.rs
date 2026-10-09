@@ -53,6 +53,7 @@ use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
 use crate::matrix_priv::map_rect;
+use crate::mesh::Mesh;
 use crate::paint::{Paint, Style};
 use crate::path::Path;
 use crate::picture::Picture;
@@ -1500,6 +1501,21 @@ impl CanvasState {
         }
     }
 
+    // Port of: src/core/SkCanvas.cpp#L1764-L1770 (chrome/m156), with the default blender of
+    // `SkCanvas::drawMesh` applied by the caller.
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: Option<Blender>, paint: &Paint) {
+        let blender = blender.unwrap_or_else(|| Blender::mode(BlendMode::Modulate));
+        self.on_draw_mesh(mesh, blender, paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2607-L2617 (chrome/m156)
+    fn on_draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
+        let simple_paint = Self::clean_paint_for_draw_vertices(paint);
+        if self.about_to_draw(&simple_paint, None, PredrawFlags::NONE) {
+            self.top_device_mut().draw_mesh(mesh, blender, paint);
+        }
+    }
+
     // Port of: src/core/SkCanvas.cpp#L2630-L2653 (chrome/m156)
     fn on_draw_patch(
         &mut self,
@@ -2839,6 +2855,22 @@ impl Canvas {
     #[doc(alias = "drawVertices")]
     pub fn draw_vertices(&self, vertices: &Vertices, mode: BlendMode, paint: &Paint) -> &Self {
         self.state.borrow_mut().draw_vertices(vertices, mode, paint);
+        self
+    }
+
+    /// Draws a custom mesh (`drawMesh`) with a blender, which defaults to modulate when `None`.
+    /// Only the GPU devices draw meshes: the raster device draws nothing, as in this version of
+    /// Skia.
+    #[doc(alias = "drawMesh")]
+    pub fn draw_mesh(
+        &self,
+        mesh: &Mesh,
+        blender: impl Into<Option<Blender>>,
+        paint: &Paint,
+    ) -> &Self {
+        self.state
+            .borrow_mut()
+            .draw_mesh(mesh, blender.into(), paint);
         self
     }
 

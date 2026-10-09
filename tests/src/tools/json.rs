@@ -320,7 +320,10 @@ impl Parser<'_> {
 
     fn number(&mut self) -> Option<JsonValue> {
         let start = self.pos;
-        while matches!(self.peek(), Some(b'-' | b'+' | b'.' | b'e' | b'E' | b'0'..=b'9')) {
+        while matches!(
+            self.peek(),
+            Some(b'-' | b'+' | b'.' | b'e' | b'E' | b'0'..=b'9')
+        ) {
             self.pos += 1;
         }
         let text = std::str::from_utf8(&self.text[start..self.pos]).ok()?;

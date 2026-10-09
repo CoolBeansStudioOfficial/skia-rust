@@ -11,8 +11,9 @@
 //! * The device owns its bitmap (`SkBitmapDevice` keeps a copy sharing the pixels, which the
 //!   copy-on-write pixel refs of `docs/design/pixels.md` rule out); read it with
 //!   [`BitmapDevice::bitmap`] or take it back with [`BitmapDevice::into_bitmap`].
-//! * Not ported yet (they need meshes, text or mask filters, ported in D7 and
-//!   Phase 3): `drawMesh`, `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawCoverageMask`,
+//! * `drawMesh` is ported as a no-op, as in Skia (meshes are not drawn on the CPU).
+//! * Not ported yet (they need text or mask filters, ported in D7 and
+//!   Phase 3): `onDrawGlyphRunList` and its `GlyphRunListPainter`, `drawCoverageMask`,
 //!   `drawBlurredRRect`, `makeSurface` and the `SkRasterHandleAllocator`
 //!   (`fRasterHandle`), nor the `skcpu::Recorder`. [`Device::clip_shader`]'s `makeWithCTM` /
 //!   `makeInvertAlpha` wrappers need shader machinery of Phase 3; [`Device::on_clip_shader`]
@@ -29,6 +30,7 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_raster::{CopyPixelsMode, ImageRaster};
 use skia_rust_core::matrix::{Matrix, TypeMask};
+use skia_rust_core::mesh::Mesh;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
@@ -726,6 +728,11 @@ impl Device for BitmapDevice {
     ) {
         self.bd_draw(|draw| draw.draw_vertices(vertices, &blender, paint, skip_color_xform));
     }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L559-L561 (chrome/m156)
+    // Meshes are not drawn on the CPU in this version of Skia (the TODO there), so this draws
+    // nothing.
+    fn draw_mesh(&mut self, _mesh: &Mesh, _blender: Blender, _paint: &Paint) {}
 
     // Port of: src/core/SkBitmapDevice.cpp#L563-L569 (chrome/m156)
     fn draw_atlas(

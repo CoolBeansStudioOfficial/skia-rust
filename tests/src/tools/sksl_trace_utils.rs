@@ -7,7 +7,9 @@
 
 use std::sync::Arc;
 
-use skia_rust_sksl::tracing::{DebugTracePriv, FunctionDebugInfo, SlotDebugInfo, TraceInfo, TraceOp};
+use skia_rust_sksl::tracing::{
+    DebugTracePriv, FunctionDebugInfo, SlotDebugInfo, TraceInfo, TraceOp,
+};
 
 use super::json::{self, JsonValue, JsonWriter};
 
@@ -64,7 +66,11 @@ pub fn write_trace(src: &DebugTracePriv) -> String {
         json.append_s32(None, trace.op.as_raw());
 
         // Skip trailing zeros in the data (since most ops only use one value).
-        let data_len = trace.data.iter().rposition(|&v| v != 0).map_or(0, |i| i + 1);
+        let data_len = trace
+            .data
+            .iter()
+            .rposition(|&v| v != 0)
+            .map_or(0, |i| i + 1);
         for value in &trace.data[..data_len] {
             json.append_s32(None, *value);
         }
@@ -82,6 +88,13 @@ pub fn write_trace(src: &DebugTracePriv) -> String {
 /// Trace ops whose raw value is not a `TraceOp` enumerator fail the read: the C++ code stores
 /// the value in the enum regardless, which a Rust enum cannot do.
 // Port of: tools/sksltrace/SkSLTraceUtils.cpp#L94-L211 (chrome/m156)
+// The JSON numbers are doubles, as in `skjson`, and the C++ code converts each one to its field's
+// type with a C-style cast; the `as` casts below do the same conversion.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "mirrors the C++ conversions from the JSON double to each field's type"
+)]
 #[must_use]
 pub fn read_trace(text: &[u8]) -> Option<Arc<DebugTracePriv>> {
     let root = json::parse(text)?;
@@ -157,7 +170,9 @@ pub fn read_trace(text: &[u8]) -> Option<Arc<DebugTracePriv>> {
         }
         trace_info.push(TraceInfo { op, data });
     }
-    *dst.trace_info.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = trace_info;
+    *dst.trace_info
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = trace_info;
 
     Some(Arc::new(dst))
 }
