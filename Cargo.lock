@@ -555,6 +555,7 @@ dependencies = [
  "bitflags",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-sksl",
 ]
 
 [[package]]
@@ -619,6 +620,14 @@ name = "skia-rust-skcms"
 version = "0.156.0"
 
 [[package]]
+name = "skia-rust-sksl"
+version = "0.156.0"
+dependencies = [
+ "bitflags",
+ "skia-rust-simd",
+]
+
+[[package]]
 name = "skia-rust-tests"
 version = "0.156.0"
 dependencies = [
@@ -628,6 +637,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-sksl",
  "skia-rust-text",
  "skia-rust-tools",
 ]

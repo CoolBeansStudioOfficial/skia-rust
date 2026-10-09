@@ -317,6 +317,8 @@ pub mod sk_path_range_iter_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
+#[cfg(test)]
+pub mod sk_remote_glyph_cache_test;
 pub mod sk_runtime_effect_test;
 #[cfg(test)]
 pub mod sk_sl_debug_trace_player_test;
@@ -328,8 +330,6 @@ pub mod sk_sl_test;
 pub mod sk_sles2_conformance_test;
 #[cfg(test)]
 pub mod sk_slwgsl_testbed;
-#[cfg(test)]
-pub mod sk_remote_glyph_cache_test;
 #[cfg(test)]
 pub mod sk_strike_cache_test;
 #[cfg(test)]
