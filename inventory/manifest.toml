@@ -15989,8 +15989,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L131-L171"
 module = "raster"
-status = "todo"
-reason = "needs images/color_wheel.png (ToolUtils::GetResourceAsBitmap; the port has no image decoder) and ToolUtils::draw_checkerboard (not ported)"
+status = "passing"
 span_hash = "12a2a1e19bbaee9d12c9a3b32f910a0850f647ae320f2aebd635eeceaf884e5d"
 
 [[test]]
@@ -15999,8 +15998,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L241-L264"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::draw_checkerboard, which is not ported"
+status = "passing"
 span_hash = "019f1e12a04175fe756efdf689830864c1225f73e6a3b62cd0d12f15df5ea27d"
 
 [[test]]
@@ -16009,8 +16007,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/all_bitmap_configs.cpp#L190-L195"
 module = "raster"
-status = "todo"
-reason = "needs ToolUtils::draw_checkerboard, which is not ported"
+status = "passing"
 span_hash = "f34e5e9c7fbc20de273340a99ff6faab7ad59409dffcfdb69c2f02b4140b6583"
 
 [[test]]
@@ -19560,8 +19557,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L323-L359"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png (ToolUtils::GetResourceAsImage; the port has no image decoder)"
+status = "passing"
 span_hash = "fc731956a2b02dc15b8829794375bbb402b983c4ed525f6ecec667b4b5954baa"
 
 [[test]]
@@ -24181,8 +24177,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L53-L65"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_256.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "8a053ee34e99a487d31698a80d1af52208f83e145226de1479dde6eaf145b02c"
 
 [[test]]
@@ -24191,8 +24186,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L233-L260"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "failing"
+reason = "ported; mismatches all 45 checks (saveLayer alpha around drawAtlas/drawVertices/drawPoints/drawImageSet in a picture). See notes/gm_savelayer_cpp_skbug_14554.md"
 span_hash = "2e322f406f759aa71fa1d0e96f175ce5617792b64a48344173331aa18007a136"
 
 [[test]]
@@ -25516,8 +25511,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/tilemodes.cpp#L280-L339"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "186b9b255650e59bfbe2667120b9b86355fb936e70eb23b5326a5fe5b3e776b4"
 
 [[test]]
@@ -25743,8 +25737,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/vertices.cpp#L332-L352"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "dc5f0a12aba2a9cba230e1f14647c8f1e8b10ac6eceb5caeb53c69f3f2ed6e43"
 
 [[test]]

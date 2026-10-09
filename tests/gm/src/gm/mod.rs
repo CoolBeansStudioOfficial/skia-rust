@@ -9,6 +9,7 @@ pub mod aaa;
 pub mod aaclip;
 pub mod aarectmodes;
 pub mod addarc;
+pub mod all_bitmap_configs;
 pub mod alpha_image;
 pub mod alphagradients;
 pub mod analytic_gradients;

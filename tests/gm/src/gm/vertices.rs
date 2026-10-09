@@ -4,8 +4,8 @@
 // Port of: gm/vertices.cpp (chrome/m156)
 //
 // Only `VerticesGM(1)`, `vertices_batching`, `vertices_collapsed`, `vertices_perspective` and
-// `vertices_strip` are ported here. `skbug_13047` decodes mandrill_128.png, which skia-rust cannot
-// decode yet, and `VerticesGM(1 / kShaderSize)` is not in the manifest's raster list.
+// `vertices_strip` and `skbug_13047` are ported here. `VerticesGM(1 / kShaderSize)` is not in the
+// manifest's raster list.
 
 // The int/float mixing and index casts mirror the C++ arithmetic of the GM.
 #![allow(
@@ -25,6 +25,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders as core_shaders;
@@ -420,4 +421,44 @@ crate::def_simple_gm_bg!(vertices_collapsed, canvas, 50, 50, Color::WHITE, {
     paint.set_shader(shader);
 
     canvas.draw_vertices(&v, BlendMode::Dst, &paint);
+});
+
+// Port of: gm/vertices.cpp#L332-L352 (chrome/m156), DEF_SIMPLE_GM(skbug_13047)
+crate::def_simple_gm!(skbug_13047, canvas, 200, 200, {
+    let image = crate::tool_utils::get_resource_as_image("images/mandrill_128.png")
+        .expect("images/mandrill_128.png");
+
+    let w = image.width() as f32;
+    let h = image.height() as f32;
+
+    let verts = [
+        Point::new(0.0, 0.0),
+        Point::new(200.0, 0.0),
+        Point::new(200.0, 200.0),
+        Point::new(0.0, 200.0),
+    ];
+    let texs = [
+        Point::new(0.0, 0.0),
+        Point::new(w, 0.0),
+        Point::new(w, h),
+        Point::new(0.0, h),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 2, 3, 0];
+
+    let v = Vertices::new_copy(
+        VertexMode::Triangles,
+        &verts,
+        Some(&texs),
+        None,
+        Some(&indices),
+    )
+    .expect("a triangle list");
+
+    let m = Matrix::scale((2.0, 2.0)); // ignored in CPU ???
+    let s = image.to_shader(None, SamplingOptions::from(FilterMode::Linear), &m);
+
+    let mut p = Paint::default();
+    p.set_shader(s);
+
+    canvas.draw_vertices(&v, BlendMode::Modulate, &p);
 });
