@@ -25,8 +25,9 @@
 //! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
 //!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawSpecial()`, `snapSpecial()`,
 //!   `drawCoverageMask()`, `drawBlurredRRect()` and the image filtering backend (G10c), and
-//!   everything that needs `Image_Graphite`/`Surface_Graphite` (`makeSurface()`,
-//!   `drawAsTiledImageRect()`, `notifyInUse()`'s image links, G10d).
+//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`) and the image
+//!   links of `notifyInUse()` (`Image_Graphite` does not own the device: see `image_graphite`).
+//!   `makeSurface()`, `makeImageCopy()` and the non-copyable `onWritePixels()` fallback are ported.
 //! - Sparse strips (Q5, G17) and `GPU_TEST_UTILS` readPixels.
 
 use std::cell::RefCell;
@@ -34,12 +35,13 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::{Color, Color4f};
 use skia_rust_core::device::{CreateInfo, Device as CoreDevice, DeviceState};
-use skia_rust_core::image::Image;
+use skia_rust_core::image::{Image, RequiredProperties};
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
@@ -52,7 +54,7 @@ use skia_rust_core::rect::{Contains, IRect, Rect as SkRect, rect_priv};
 use skia_rust_core::region::Region;
 use skia_rust_core::rrect::{RRect, rrect_priv};
 use skia_rust_core::rsxform::RSXform;
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
@@ -83,12 +85,15 @@ use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::shape::Shape;
 use crate::graphite::geom::transform::{Transform, Type as TransformType};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
+use crate::graphite::image_factories::texture_from_image;
+use crate::graphite::image_graphite::Image as GraphiteImage;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::paint_params::{PaintParams, ShadingParams, SimpleImage};
 use crate::graphite::recorder::{Recorder, RecorderInner, RecorderPriv, TrackedDevice};
 use crate::graphite::render_step::Coverage;
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::{DstReadStrategy, LoadOp};
+use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::upload_task::{MipLevel, UploadSource};
 use crate::graphite::texture_proxy::TextureProxy;
@@ -820,6 +825,58 @@ impl DeviceCore {
     // The recorder, or `None` once it has been abandoned or dropped.
     fn recorder(&self) -> Option<Recorder> {
         self.recorder.upgrade().map(Recorder::from_inner)
+    }
+
+    /// `Device::makeSurface(ii, props)`: a render target of the recorder, with `props`.
+    // Port of: src/gpu/graphite/Device.cpp#L695-L697 (chrome/m156)
+    #[doc(alias = "makeSurface")]
+    #[must_use]
+    pub fn make_surface(&self, info: &ImageInfo, props: &SurfaceProps) -> Option<Surface> {
+        let recorder = self.recorder()?;
+        Surface::render_target(&recorder, info, Mipmapped::No, Some(props), "")
+    }
+
+    /// `Device::makeImageCopy(subset, budgeted, mipmapped, backingFit)`: the pending draws are
+    /// flushed to the root task list, then `subset` is copied from the target.
+    // Port of: src/gpu/graphite/Device.cpp#L698-L721 (chrome/m156)
+    #[doc(alias = "makeImageCopy")]
+    #[must_use]
+    pub fn make_image_copy(
+        &mut self,
+        subset: IRect,
+        budgeted: Budgeted,
+        mipmapped: Mipmapped,
+        backing_fit: BackingFit,
+    ) -> Option<Image> {
+        let recorder = self.recorder()?;
+        // Although we have our own DrawContext here, we pass a nullptr to both flushPendingWork and
+        // Image::Copy so that tasks end up on the root task list.
+        self.flush_pending_work(None);
+        let label = {
+            let target_label = self.dc.target().proxy()?.label();
+            if target_label.is_empty() {
+                "CopyDeviceTexture".to_owned()
+            } else {
+                format!("{target_label}_DeviceCopy")
+            }
+        };
+        GraphiteImage::copy(
+            &recorder,
+            None,
+            self.dc.target(),
+            self.dc.color_info(),
+            subset,
+            budgeted,
+            mipmapped,
+            backing_fit,
+            &label,
+        )
+    }
+
+    /// `Device::resetStorageCache()`'s body: the storage context drops its cached storage.
+    // Port of: src/gpu/graphite/Device.cpp (`resetStorageCache`, chrome/m156)
+    pub fn reset_storage_cache(&self) {
+        self.dc.storage_context().borrow_mut().reset_cache();
     }
 
     fn clip(&self) -> &ClipStack {
@@ -2378,6 +2435,19 @@ impl DeviceCore {
             }
         }
 
+        // The inner fill's opaque paint is found before the gatherer is borrowed below: the debug
+        // validation in `optimize_for_opacity` borrows the gatherer of the key context again.
+        let inner_fill_opaque_id = if style_type == StrokeStyleKind::Fill
+            && dst_usage.contains(DstUsage::DST_ONLY_USED_BY_RENDERER)
+            && renderer.use_non_aa_inner_fill()
+            && !avoid_depth_mode
+            && !get_inner_bounds(&geometry, local_to_device).is_empty_negative_or_nan()
+        {
+            Some(shading.optimize_for_opacity(&key_context, paint_id))
+        } else {
+            None
+        };
+
         let gatherer = &mut *key_db.gatherer.borrow_mut();
         if style_type != StrokeStyleKind::Fill {
             debug_assert!(geometry.is_shape());
@@ -2429,7 +2499,8 @@ impl DeviceCore {
                 // but we do want to sort the inner fill to maximize overdraw reduction
                 order_without_coverage.reverse_depth_as_stencil();
 
-                let opaque_id = shading.optimize_for_opacity(&key_context, paint_id);
+                let opaque_id = inner_fill_opaque_id
+                    .expect("the inner fill's opaque paint is found for the same draw");
                 self.dc.record_draw(
                     rp.renderer_provider().non_aa_bounds_fill(),
                     local_to_device,
@@ -2653,10 +2724,30 @@ impl DeviceCore {
 
         let target = self.dc.target().ref_proxy().expect("a device has a target");
         if !rp.caps().is_copyable_dst(target.texture_info()) {
-            // The fallback draws a texture made from `src` (`SkImages::TextureFromImage`,
-            // G10d).
-            skia_log_w!("Device::onWritePixels to a non-copyable target needs Image (G10d).");
-            return false;
+            // The target cannot be copied into: draw a texture made from `src` instead.
+            let Some(raster) = skia_rust_core::images::raster_from_pixmap_copy(src) else {
+                return false;
+            };
+            let Some(image) =
+                texture_from_image(&recorder, &raster, RequiredProperties { mipmapped: false })
+            else {
+                return false;
+            };
+            let mut paint = Paint::default();
+            paint.set_blend_mode(BlendMode::Src);
+            // The destination is the pixel rect at `(x, y)`, as `SkRect::MakeXYWH` takes it.
+            #[allow(clippy::cast_precision_loss)] // pixel coordinates are far below 2^24
+            let dst_rect =
+                SkRect::from_xywh(x as f32, y as f32, src.width() as f32, src.height() as f32);
+            self.draw_image_rect(
+                &image,
+                None,
+                &dst_rect,
+                &SamplingOptions::from(FilterMode::Nearest),
+                &paint,
+                SrcRectConstraint::Fast,
+            );
+            return true;
         }
 
         debug_assert_eq!(self.dc.target().origin(), Origin::TopLeft);

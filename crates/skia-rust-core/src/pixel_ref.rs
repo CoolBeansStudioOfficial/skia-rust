@@ -33,7 +33,7 @@ use crate::size::ISize;
 pub type ReleaseProc = Box<dyn FnOnce(Vec<u8>) + Send>;
 
 // Port of: src/core/SkPixelRef.cpp#L22-L31 (chrome/m156)
-pub(crate) fn next_image_id() -> u32 {
+pub fn next_image_id() -> u32 {
     // We never set the low bit.... see PixelRef::gen_id_is_unique().
     static NEXT_ID: AtomicU32 = AtomicU32::new(2);
 

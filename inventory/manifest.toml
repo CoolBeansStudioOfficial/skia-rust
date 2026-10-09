@@ -50888,7 +50888,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L102-L130"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs ImageProvider::findOrCreate and Image_Graphite (SkImages::RasterFromBitmap on a Graphite recorder), which are not ported (G10)"
+reason = "blocked: needs the ImageProvider of ToolUtils::CreateTestingRecorderOptions (a caching test provider, not ported)"
 span_hash = "4233167d7c332ccba6bd7c33960ff3f5a4b293c41317f422da20179bbcf1e148"
 
 [[test]]
@@ -50898,7 +50898,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L56-L98"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs ImageProvider::findOrCreate, Image_Graphite and SkImages::DeferredFromPicture, which are not ported (G10)"
+reason = "blocked: needs the testing ImageProvider (ToolUtils::CreateTestingRecorderOptions) and SkImages::DeferredFromPicture (SkImage_Picture, not in core)"
 span_hash = "bca31076d1e11de7bfbd509765d6edbc31aea02691660dce3347307c95c4d88a"
 
 [[test]]
@@ -51099,6 +51099,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/DeviceTest.cpp#L21-L82"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "469645b7af5b913d87de0d7c2181687b740dee0e4968e7f6a373d3af35bcf7a0"
 
 [[test]]
@@ -51401,6 +51402,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L287-L301"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c); the picture-backed case needs SkImage_Picture (DeferredFromPicture), not in core"
 span_hash = "769f3e7d94554ba63ed59ba896a629b8d95037eff9cbe11e101d7777d31b1c4c"
 
 [[test]]
@@ -51410,6 +51412,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L329-L344"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "bd9f1a9d54213f9bba32845d6b0bab0bfa2ad67c4b26384293a63fb3468763ba"
 
 [[test]]
@@ -51419,6 +51422,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L475-L536"
 module = "gpu"
 status = "todo"
+reason = "blocked: the picture-backed case needs SkImage_Picture (SkImages::DeferredFromPicture), which core does not port"
 span_hash = "a5c4a7389f25af94e92395d22b44dd741d08b7852119962d9547f4b95278bfc3"
 
 [[test]]
@@ -51428,6 +51432,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L348-L437"
 module = "gpu"
 status = "todo"
+reason = "blocked: the picture-backed case needs SkImage_Picture (SkImages::DeferredFromPicture), which core does not port; the other cases are ported (ImageFactories, makeSubset)"
 span_hash = "0349669b93166727ce607075c137f4d961961a627a2d52fba8f89c293777b83c"
 
 [[test]]
@@ -51437,6 +51442,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageShaderTest.cpp#L88-L107"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "415598ad6c884921724399623b38f1c1220b43e71a8cb424525f93545f04a88c"
 
 [[test]]
@@ -51446,6 +51452,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c); it also wraps backend textures (G11a)"
 span_hash = "70d48fa524bfc7e47f591b1d5ccc68650033055447b6dfd4809162c11f7e24ed"
 
 [[test]]
@@ -51454,7 +51461,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/InnerFillTest.cpp#L26-L123"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "91478c20a1aeabb8b71a84cedc935232955bdfa9fbbc25141687e0f768b83b3e"
 
 [[test]]
@@ -51463,7 +51470,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/InnerFillTest.cpp#L125-L291"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "de9f5858059b0a03a1a3e191a824b49a139cf1fd17521ea0048974e06f48e0db"
 
 [[test]]
@@ -51527,6 +51534,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/MutableImagesTest.cpp#L505-L526"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "2c80076ae3b11aaa4ecbe4a33d563a5561df0215577c229fcc07f07a5681354e"
 
 [[test]]
@@ -52059,6 +52067,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L109-L129"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "a2b9febf3e1618650f93e8c31661cde87b33a63b9d4a331a262f7e733f3af6d2"
 
 [[test]]
@@ -52068,6 +52077,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L132-L156"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "b64020236433e3b6c6ae78125351ceef5e95bc5447397bbefbf6196c6646a91e"
 
 [[test]]
@@ -52077,6 +52087,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L222-L270"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "7266c50c44b90afadf316748051344c4dafc53c54daf04cb3601c21190859571"
 
 [[test]]
@@ -52086,6 +52097,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L335-L442"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "de77450f83271214b64fdd92d0115aadea7e77c87f833eedfb24aa97ca0157ef"
 
 [[test]]
@@ -52095,6 +52107,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L444-L470"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "41b77eb21da5e4cf060fd81064d8962e34d19c6480987300bfde365b0c2dee3c"
 
 [[test]]
@@ -52104,6 +52117,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L273-L300"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "4ff470d6cdc4f7337f119aa83665dab16acea5da6d64cc8080fa1097d1200bc0"
 
 [[test]]
@@ -52113,6 +52127,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L473-L488"
 module = "gpu"
 status = "todo"
+reason = "blocked: Recorder::makeDeferredCanvas is not ported (and Context::insertRecording, G11c)"
 span_hash = "1353d545d5b18899346b1b0c5efdd5b930764ab844c3e1f8e097e2184c29160a"
 
 [[test]]
@@ -52122,6 +52137,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L492-L503"
 module = "gpu"
 status = "todo"
+reason = "blocked: Context::insertRecording with a target surface (G11c)"
 span_hash = "59952babf4a5f09fee39dfd43e376060d75a7a026ebae4fa8e5f79f7fdd5e4d9"
 
 [[test]]
@@ -52131,6 +52147,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L159-L187"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "1d21115c4a5bea955715d8c61da74b71ed2a9f0ad984e18f0c80676d522e12cd"
 
 [[test]]
@@ -52140,6 +52157,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L190-L219"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "d1774591cb1a1759252700dd615682c183300972e0113e4c9bd1e0bc1f96e677"
 
 [[test]]
@@ -52149,6 +52167,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L303-L333"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "2943ede640374e442c6cd7cc5f46e3e05f43ed08b05529d1627cbee690165dfd"
 
 [[test]]
@@ -52276,7 +52295,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L95-L208"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "76c3ad97e6c27ef05b44e10229be50cdf301afa7e4283e2abcd099d56e5bee4c"
 
 [[test]]
@@ -52285,7 +52304,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L211-L263"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "f181a0f65eaa6dcfbcd7688cc0cb5a7950a203884211e58304231eeffb1b3d19"
 
 [[test]]
@@ -52294,7 +52313,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L294-L401"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "03977b7500e977e2653529e8e546ab19db35623d0b2ee98eef5dfd67e7fde128"
 
 [[test]]
@@ -52304,6 +52323,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L502-L567"
 module = "gpu"
 status = "todo"
+reason = "blocked: draws and reads back the result through insertRecording (G11c)"
 span_hash = "4aea09b4c0c3f8cc5731d90a5ad6d68ca8246f9273b095c21e58038881c1bb93"
 
 [[test]]
@@ -52312,7 +52332,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L63-L92"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "64d606284b93306492b88eed48da1d1d7ec31e61c0009c7ec947b91e6261b1bc"
 
 [[test]]
@@ -52321,7 +52341,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L463-L499"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "3913ca91bd5781190218a9f1b10f73837860b025d2877c6464d73d3b1d842c70"
 
 [[test]]
@@ -52330,7 +52350,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L405-L460"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "ee7463c3939b9ece3d263b2bfdae2bd55e7d10196c32bbfaaaa80e1381d2750f"
 
 [[test]]
@@ -52339,7 +52359,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L266-L291"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "fe2393c2bbf7bb43ee699be04caae35e1ca8a310f1ce19303f36d154b2f9ae60"
 
 [[test]]
@@ -52778,6 +52798,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/crbug_513836996.cpp#L26-L89"
 module = "gpu"
 status = "todo"
+reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
 span_hash = "8168143c638c6ba2f67b404db2e501e4c13bf0914c35ecb178647c92c3096624"
 
 [[test]]
