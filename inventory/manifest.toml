@@ -15262,7 +15262,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/aaclip.cpp#L223-L223"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "012b88a3a6e35eb6cb1fded2fea0a8dcc2234b9c97f0ebcdb068d0487fbc0359"
 
 [[test]]
@@ -15271,7 +15271,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L77-L97"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a5a44302ce2ef2019cb9053f2080d3473c63656bda13373a837577f63411b85b"
 
 [[test]]
@@ -15281,6 +15281,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/aaclip.cpp#L135-L156"
 module = "raster"
 status = "todo"
+reason = "Mac-only: the GM is compiled only under SK_BUILD_FOR_MAC and needs CoreGraphics (SkCreateCGImageRefWithColorspace, SkMakeImageFromCGImage); not built on Linux"
 span_hash = "8b64f11f2af01a35226bdc31952790d5bc7f5f7a739bd9655d0fe00b9915b5cd"
 
 [[test]]
@@ -16805,7 +16806,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L144-L146"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "3ff9e2cdb970777e1022d9d60ba169c7b08c695860bf4a79a87cc35f18b03d41"
 
 [[test]]
@@ -16814,7 +16815,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L148-L150"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "271b99e26e9479d0855ead8e1e5d9e382c1bb5b6a974fda2e09056a7902a2960"
 
 [[test]]
@@ -16823,7 +16824,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/closedcappedhairlines.cpp#L152-L154"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "f660bc85388cc4a0a9c12d816094634b09c2fa888d428dab896c272d44180036"
 
 [[test]]
@@ -18116,7 +18117,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1073670.cpp#L16-L28"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5fc014ebf1cf740278f106136695794324ca9dd208427e61da1a8f1323c0f99c"
 
 [[test]]
@@ -18152,7 +18153,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1156804.cpp#L32-L40"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b135aacd70e3537060d02a26b67092e681c1acd2ab22a2687b8669754ea0bcf5"
 
 [[test]]
@@ -18191,7 +18192,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174354.cpp#L39-L49"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "f16 config only mismatches on every tier (8888 and 565 match); see notes/gm_crbug_1174354_cpp_crbug_1174354.md"
 span_hash = "179ad8dbe38ee32beca6d556d3fbe2994b0c6bfe34742ea7f11939866b9b1e81"
 
 [[test]]
@@ -18219,7 +18221,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1313579.cpp#L20-L38"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "730ab303c26e066a5fb1bd4096943db67ee3202dbd5a64ebed478ebafad4f7aa"
 
 [[test]]
@@ -18310,7 +18312,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_899512.cpp#L19-L28"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "79efa76da78de1f894833d3a133d68ecbc5b948315b089e253ddd8979c5f3a78"
 
 [[test]]
@@ -18355,7 +18357,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_938592.cpp#L23-L49"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "003603c43bbd78b179b16e41dd2b5e24b149342c70dc05b6128e45da58bc718d"
 
 [[test]]
