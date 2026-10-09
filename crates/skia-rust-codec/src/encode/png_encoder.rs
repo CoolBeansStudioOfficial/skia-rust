@@ -17,8 +17,6 @@ use skia_rust_core::data::Data;
 use skia_rust_core::image::Image;
 use skia_rust_core::pixmap::Pixmap;
 
-use crate::encode::png_encoder_impl::make;
-
 bitflags! {
     /// Port of `SkPngEncoder::FilterFlag` (SkPngEncoder.h#L31-L39): the filters the encoder may use.
     #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -122,4 +120,36 @@ pub fn encode_image(img: &Image, options: &Options) -> Option<Data> {
     let bitmap = img.as_legacy_bitmap()?;
     let pixmap = bitmap.peek_pixels()?;
     encode_pixmap(&pixmap, options)
+}
+
+/// The streaming PNG encoder of `SkPngEncoder::Make`: an `SkEncoder` that takes the rows of its
+/// source through [`PngEncoder::encode_rows`].
+pub struct PngEncoder<'a>(crate::encode::png_encoder_impl::PngEncoderImpl<'a>);
+
+impl std::fmt::Debug for PngEncoder<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PngEncoder").finish_non_exhaustive()
+    }
+}
+
+impl PngEncoder<'_> {
+    /// Port of `SkEncoder::encodeRows`: encodes up to `num_rows` further rows, and finishes the
+    /// file after the last row.
+    #[doc(alias = "encodeRows")]
+    pub fn encode_rows(&mut self, num_rows: i32) -> bool {
+        self.0.encode_rows(num_rows)
+    }
+}
+
+/// Port of `SkPngEncoder::Make` (SkPngEncoderImpl.cpp#L462-L490): the streaming encoder for `src`,
+/// with the file going to `out`.
+// Port of: src/encode/SkPngEncoderImpl.cpp#L462-L490 (chrome/m156)
+#[doc(alias = "SkPngEncoder::Make")]
+#[must_use]
+pub fn make<'a>(
+    out: Arc<Mutex<Vec<u8>>>,
+    src: Pixmap<'a>,
+    options: &Options,
+) -> Option<PngEncoder<'a>> {
+    crate::encode::png_encoder_impl::make(out, src, options).map(PngEncoder)
 }
