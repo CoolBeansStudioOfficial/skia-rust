@@ -4,3 +4,5 @@
 //! No GPU API is linked yet: Graphite on wgpu comes after this layer.
 
 pub mod gpu;
+pub mod graphite;
+pub mod sksl_type_shared;
