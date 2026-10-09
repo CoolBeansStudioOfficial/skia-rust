@@ -556,8 +556,11 @@ dependencies = [
  "serde_json",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-simd",
+ "skia-rust-skcms",
+ "skia-rust-text",
  "skia-rust-tools",
 ]
 
