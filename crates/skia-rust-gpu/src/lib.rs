@@ -6,3 +6,4 @@
 pub mod gpu;
 pub mod graphite;
 pub mod sksl_type_shared;
+pub mod tessellate;
