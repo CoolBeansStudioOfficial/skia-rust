@@ -8,10 +8,8 @@
 // steps the tessellating renderers will share. Still missing, each with its step's port:
 // - the path renderer strategy (`IsSupported`, the strategy choice in the constructor) needs
 //   `Caps` (`requestedPathRendererStrategy`, `avoidMSAA`, `minPathSizeForMSAA`), which is G10;
-// - `fAnalyticRRect` needs `AnalyticRRectRenderStep` (G7a, not yet ported);
 // - `fCoverageMask` needs `CoverageMaskRenderStep` (needs `CoverageMaskShape`, G2);
-// - `fVertices[*]` needs `VerticesRenderStep`, and `fMesh` needs `MeshRenderStep` (SkMesh,
-//   not ported);
+// - `fMesh` needs `MeshRenderStep`, whose payload is `SkMesh` (not ported);
 // - the tessellation renderers, the bitmap and SDF text renderers, the blur renderers and the
 //   sparse-strip renderers need G7b, G7c and G17.
 
@@ -19,12 +17,14 @@ use std::sync::Arc;
 
 use crate::graphite::buffer_manager::StaticBufferManager;
 use crate::graphite::draw_types::DrawTypeFlags;
+use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use crate::graphite::render::common_depth_stencil_settings::{
     DIRECT_DEPTH_LESS_PASS, INVERSE_COVER_PASS, REGULAR_COVER_PASS,
 };
 use crate::graphite::render::cover_bounds_render_step::CoverBoundsRenderStep;
 use crate::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
+use crate::graphite::render::vertices_render_step::VerticesRenderStep;
 use crate::graphite::render_step::{RenderStep, RenderStepID};
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::Layout;
@@ -35,6 +35,10 @@ use crate::graphite::resource_types::Layout;
 #[doc(alias = "skgpu::graphite::RendererProvider")]
 #[derive(Debug)]
 pub struct RendererProvider {
+    /// `fAnalyticRRect`.
+    analytic_rrect: Renderer,
+    /// `fVertices[2 * hasColor + hasTexCoords]`.
+    vertices: [Renderer; 4],
     /// `fPerEdgeAAQuad`.
     per_edge_aa_quad: Renderer,
     /// `fNonAABoundsFill`.
@@ -52,6 +56,16 @@ impl RendererProvider {
     // Port of: src/gpu/graphite/RendererProvider.cpp#L87 (chrome/m156), the ported initializers
     #[must_use]
     pub fn new(layout: Layout, buffer_manager: &mut StaticBufferManager) -> Self {
+        let analytic_rrect = single_step(
+            Arc::new(AnalyticRRectRenderStep::new(layout, buffer_manager)),
+            DrawTypeFlags::ANALYTIC_RRECT,
+        );
+        let vertices = [
+            vertices_renderer(layout, false, false),
+            vertices_renderer(layout, false, true),
+            vertices_renderer(layout, true, false),
+            vertices_renderer(layout, true, true),
+        ];
         let per_edge_aa_quad = single_step(
             Arc::new(PerEdgeAAQuadRenderStep::new(layout, buffer_manager)),
             DrawTypeFlags::PER_EDGE_AA_QUAD,
@@ -69,6 +83,8 @@ impl RendererProvider {
             DrawTypeFlags::CIRCULAR_ARC,
         );
         Self {
+            analytic_rrect,
+            vertices,
             per_edge_aa_quad,
             non_aa_bounds_fill,
             circular_arc,
@@ -83,6 +99,20 @@ impl RendererProvider {
                 INVERSE_COVER_PASS,
             )),
         }
+    }
+
+    /// `fAnalyticRRect`.
+    // Port of: src/gpu/graphite/RendererProvider.h (fAnalyticRRect)
+    #[must_use]
+    pub const fn analytic_rrect(&self) -> &Renderer {
+        &self.analytic_rrect
+    }
+
+    /// `fVertices[2 * hasColor + hasTexCoords]`.
+    // Port of: src/gpu/graphite/RendererProvider.h (fVertices)
+    #[must_use]
+    pub const fn vertices(&self, has_color: bool, has_tex_coords: bool) -> &Renderer {
+        &self.vertices[2 * (has_color as usize) + (has_tex_coords as usize)]
     }
 
     /// `fPerEdgeAAQuad`.
@@ -119,6 +149,20 @@ impl RendererProvider {
     pub fn cover_inverse(&self) -> &Arc<dyn RenderStep> {
         &self.cover_inverse
     }
+}
+
+/// One `VerticesRenderStep` variant as its renderer (`fVertices[2 * hasColor + hasTexCoords]`).
+// Port of: src/gpu/graphite/RendererProvider.cpp#L192-L202 (chrome/m156)
+fn vertices_renderer(layout: Layout, has_color: bool, has_tex_coords: bool) -> Renderer {
+    // DropShadows is added to the color-only variant, which Android uses for drop shadows.
+    let mut draw_types = DrawTypeFlags::DRAW_VERTICES;
+    if has_color && !has_tex_coords {
+        draw_types |= DrawTypeFlags::DROP_SHADOWS;
+    }
+    single_step(
+        Arc::new(VerticesRenderStep::new(layout, has_color, has_tex_coords)),
+        draw_types,
+    )
 }
 
 /// `initFromStep`: a renderer made of one step, named `SingleStep[<step name>]`. Single-step

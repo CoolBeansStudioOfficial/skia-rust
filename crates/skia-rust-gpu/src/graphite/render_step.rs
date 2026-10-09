@@ -462,6 +462,13 @@ pub trait RenderStep: Send + Sync + Debug {
         ""
     }
 
+    /// `fragmentColorSkSL(...)`: writes the primitive color into `half4 primitiveColor`. Only
+    /// defined when the step emits a primitive color.
+    // Port of: src/gpu/graphite/Renderer.h#L174 (chrome/m156)
+    fn fragment_color_sksl(&self) -> String {
+        String::new()
+    }
+
     /// `appendDataStride(params)`. Steps whose stride depends on the draw override this.
     // Port of: src/gpu/graphite/Renderer.h#L113 (chrome/m156)
     fn append_data_stride(&self, _params: &DrawParams) -> usize {

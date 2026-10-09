@@ -200,7 +200,8 @@ impl PerEdgeAAQuadRenderStep {
 
 /// `is_clockwise(quad)`: whether the quad's vertices are already clockwise.
 // Port of: src/gpu/graphite/render/PerEdgeAAQuadRenderStep.cpp#L100-L119 (chrome/m156)
-fn is_clockwise(quad: &EdgeAAQuad) -> bool {
+// Shared with `AnalyticRRectRenderStep`, which has its own identical copy in Skia.
+pub(crate) fn is_clockwise(quad: &EdgeAAQuad) -> bool {
     if quad.is_rect() {
         return true; // By construction, these are always locally clockwise.
     }

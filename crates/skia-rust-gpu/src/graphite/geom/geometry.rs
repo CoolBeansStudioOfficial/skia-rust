@@ -5,11 +5,13 @@
 
 //! [`Geometry`]: what a draw covers, as seen by the `RenderStep`s.
 //!
-//! Only the variants whose payload types are ported are here: `Empty`, `Shape` and `EdgeAAQuad`.
-//! The other variants of Skia's `Geometry` (`SubRun`, `Vertices`, `Mesh`, `CoverageMaskShape`,
+//! Only the variants whose payload types are ported are here: `Empty`, `Shape`, `EdgeAAQuad` and
+//! `Vertices`. The other variants of Skia's `Geometry` (`SubRun`, `Mesh`, `CoverageMaskShape`,
 //! `AnalyticBlur`, `AnalyticRRectBlur`, and the sparse-strip `WideTiles` and `EndCaps`) wait for
-//! their payload types (G2, G7c, G10 and G17). Their `bounds()` cases are not written here, so
-//! no draw can carry them yet.
+//! their payload types (`SkMesh`, G2, G7c, G10 and G17). Their `bounds()` cases are not written
+//! here, so no draw can carry them yet.
+
+use skia_rust_core::vertices::Vertices;
 
 use crate::graphite::geom::edge_aa_quad::EdgeAAQuad;
 use crate::graphite::geom::rect::Rect;
@@ -27,6 +29,8 @@ pub enum Geometry {
     Shape(Shape),
     /// `Type::kEdgeAAQuad`.
     EdgeAAQuad(EdgeAAQuad),
+    /// `Type::kVertices`.
+    Vertices(Vertices),
 }
 
 impl Geometry {
@@ -35,6 +39,26 @@ impl Geometry {
     #[must_use]
     pub const fn is_shape(&self) -> bool {
         matches!(self, Self::Shape(_))
+    }
+
+    /// `isVertices()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L100 (chrome/m156)
+    #[must_use]
+    pub const fn is_vertices(&self) -> bool {
+        matches!(self, Self::Vertices(_))
+    }
+
+    /// `vertices()`. Skia asserts that the type is `kVertices`.
+    ///
+    /// # Panics
+    /// If the geometry is not a vertices draw.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L119 (chrome/m156)
+    #[must_use]
+    pub fn vertices(&self) -> &Vertices {
+        match self {
+            Self::Vertices(vertices) => vertices,
+            _ => panic!("Geometry::vertices() called on a non-vertices geometry"),
+        }
     }
 
     /// `isEdgeAAQuad()`.
@@ -51,7 +75,7 @@ impl Geometry {
         match self {
             Self::Empty => true,
             Self::Shape(shape) => shape.is_empty() && !shape.inverted(),
-            Self::EdgeAAQuad(_) => false,
+            Self::EdgeAAQuad(_) | Self::Vertices(_) => false,
         }
     }
 
@@ -89,6 +113,7 @@ impl Geometry {
             Self::Empty => Rect::new(0.0, 0.0, 0.0, 0.0),
             Self::Shape(shape) => shape.bounds(),
             Self::EdgeAAQuad(quad) => quad.bounds(),
+            Self::Vertices(vertices) => Rect::from_sk_rect(vertices.bounds()),
         }
     }
 }

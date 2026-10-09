@@ -13,16 +13,20 @@
 mod support;
 
 use skia_rust_core::arc::Arc;
+use skia_rust_core::color::Color;
 use skia_rust_core::m44::M44;
+use skia_rust_core::paint::{Cap, Join};
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::{IRect, Rect as SkRect};
+use skia_rust_core::rrect::RRect;
+use skia_rust_core::vertices::{VertexMode, Vertices as SkVertices};
 use skia_rust_gpu::gpu::gpu_types::Protected;
 use skia_rust_gpu::graphite::buffer::{BindBufferInfo, Buffer};
 use skia_rust_gpu::graphite::buffer_manager::{
     StaticBufferHost, StaticBufferManager, StaticFinishResult,
 };
 use skia_rust_gpu::graphite::draw_order::{DrawOrder, PaintersDepth};
-use skia_rust_gpu::graphite::draw_params::{Clip, DrawParams};
+use skia_rust_gpu::graphite::draw_params::{Clip, DrawParams, StrokeStyle};
 use skia_rust_gpu::graphite::draw_types::{
     BarrierType, DrawTypeFlags, PrimitiveType, RenderStateFlags,
 };
@@ -34,10 +38,12 @@ use skia_rust_gpu::graphite::geom::rect::Rect;
 use skia_rust_gpu::graphite::geom::shape::Shape;
 use skia_rust_gpu::graphite::geom::transform::Transform;
 use skia_rust_gpu::graphite::graphite_types::DepthStencilFlags;
+use skia_rust_gpu::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use skia_rust_gpu::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use skia_rust_gpu::graphite::render::common_depth_stencil_settings::REGULAR_COVER_PASS;
 use skia_rust_gpu::graphite::render::cover_bounds_render_step::CoverBoundsRenderStep;
 use skia_rust_gpu::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
+use skia_rust_gpu::graphite::render::vertices_render_step::VerticesRenderStep;
 use skia_rust_gpu::graphite::render_step::{Coverage, RenderStep, RenderStepID};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::resource::ResourceRef;
@@ -617,5 +623,443 @@ fn renderer_provider_names_draw_types_and_depth_stencil_flags() {
             .base()
             .depth_stencil_settings()
             .depth_test_enabled
+    );
+
+    let rrect = provider.analytic_rrect();
+    assert_eq!(rrect.name(), "SingleStep[AnalyticRRectRenderStep]");
+    assert_eq!(rrect.draw_types(), DrawTypeFlags::ANALYTIC_RRECT);
+    assert_eq!(rrect.coverage(), Coverage::SingleChannel);
+}
+
+/// The `DrawParams` of a stroked draw with an identity transform.
+fn stroked_params(geometry: Geometry, bounds: SkRect, stroke: StrokeStyle) -> DrawParams {
+    let clip = Clip::new(
+        Rect::from_sk_rect(&bounds),
+        Rect::from_sk_rect(&bounds),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+        AnalyticClip::default(),
+        false,
+    );
+    DrawParams::new(
+        Transform::new(M44::new_identity()),
+        geometry,
+        &clip,
+        DrawOrder::new(PaintersDepth::first().next()),
+        Some(&stroke),
+        BarrierType::None,
+    )
+}
+
+/// The instance of an `AnalyticRRectRenderStep` draw: 108 bytes, as the attribute list gives.
+const ANALYTIC_RRECT_STRIDE: usize = 108;
+
+#[test]
+fn analytic_rrect_fill_rect_instance_bytes() {
+    let rect = SkRect {
+        left: 10.0,
+        top: 20.0,
+        right: 30.0,
+        bottom: 40.0,
+    };
+    let params = params_for(
+        Geometry::Shape(Shape::from_rect(Rect::from_sk_rect(&rect))),
+        rect,
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
+    finalize(&mut manager);
+    // The identity transform has an AA radius of 1 (1 / min scale). A 20 x 20 rect does not reach
+    // its opposite insets (2 * 1 = 2), so the center weight stays solid (1).
+    // xRadiiOrFlags = [-1, -1, -1, -1] (all edges AA); radiiOrQuadXs = [L, R, R, L];
+    // ltrbOrQuadYs = [T, T, B, B]; center = [cx, cy, centerWeight, aaRadius].
+    let depth = 1.0_f32 - 1.0_f32 / 65535.0_f32;
+    let mut expected = f32_bytes(&[-1.0, -1.0, -1.0, -1.0]);
+    expected.extend(f32_bytes(&[10.0, 30.0, 30.0, 10.0]));
+    expected.extend(f32_bytes(&[20.0, 20.0, 40.0, 40.0]));
+    expected.extend(f32_bytes(&[20.0, 30.0, 1.0, 1.0]));
+    expected.extend(f32_bytes(&[depth]));
+    expected.extend(u32_bytes(&[5]));
+    expected.extend(f32_bytes(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]));
+    let (calls, bytes) = record_instances(
+        &step,
+        &params,
+        5,
+        ANALYTIC_RRECT_STRIDE,
+        ANALYTIC_RRECT_STRIDE,
+    );
+    assert_eq!(bytes, expected);
+    assert!(calls.contains(&Call::DrawIndexedInstanced {
+        primitive: PrimitiveType::TriangleStrip,
+        base_index: 0,
+        index_count: 69,
+        base_vertex: 0,
+        base_instance: 0,
+        instance_count: 1,
+    }));
+}
+
+#[test]
+fn analytic_rrect_clockwise_quad_matches_the_rect_encoding() {
+    // A clockwise quad with every edge AA is the same shape as the rect above, and encodes the
+    // same instance bytes.
+    let quad = EdgeAAQuad::from_rect(Rect::new(10.0, 20.0, 30.0, 40.0), AAFlags::ALL);
+    let params = params_for(
+        Geometry::EdgeAAQuad(quad),
+        SkRect {
+            left: 10.0,
+            top: 20.0,
+            right: 30.0,
+            bottom: 40.0,
+        },
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
+    finalize(&mut manager);
+    let depth = 1.0_f32 - 1.0_f32 / 65535.0_f32;
+    let mut expected = f32_bytes(&[-1.0, -1.0, -1.0, -1.0]);
+    expected.extend(f32_bytes(&[10.0, 30.0, 30.0, 10.0]));
+    expected.extend(f32_bytes(&[20.0, 20.0, 40.0, 40.0]));
+    // quad_center: dot(xs, 0.25) = 20, dot(ys, 0.25) = 30.
+    expected.extend(f32_bytes(&[20.0, 30.0, 1.0, 1.0]));
+    expected.extend(f32_bytes(&[depth]));
+    expected.extend(u32_bytes(&[0]));
+    expected.extend(f32_bytes(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]));
+    let (_, bytes) = record_instances(
+        &step,
+        &params,
+        0,
+        ANALYTIC_RRECT_STRIDE,
+        ANALYTIC_RRECT_STRIDE,
+    );
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn analytic_rrect_stroked_rect_instance_bytes() {
+    let rect = SkRect {
+        left: 10.0,
+        top: 20.0,
+        right: 30.0,
+        bottom: 40.0,
+    };
+    // A 4-wide miter stroke: half width 2, miter limit 4.
+    let stroke = StrokeStyle::new(4.0, 4.0, Join::Miter, Cap::Butt);
+    let params = stroked_params(
+        Geometry::Shape(Shape::from_rect(Rect::from_sk_rect(&rect))),
+        rect,
+        stroke,
+    );
+    let mut manager = static_manager();
+    let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
+    finalize(&mut manager);
+    // The inner gap is 20 - 4 = 16 > 0, so the center weight is the stroke interior (0), and the
+    // inset is the stroke radius (2). The join is the miter rule: the limit (4) is not below
+    // sqrt 2 and the shape is not empty, so the join style is 1. The radii are zero.
+    // xRadiiOrFlags = [-2, lineFlag = 0, strokeRadius = 2, join = 1]. The inset does not reach the
+    // opposite sides (2 * (2 + 1) = 6 < 20), so the AA radius stays 1.
+    let depth = 1.0_f32 - 1.0_f32 / 65535.0_f32;
+    let mut expected = f32_bytes(&[-2.0, 0.0, 2.0, 1.0]);
+    expected.extend(f32_bytes(&[0.0, 0.0, 0.0, 0.0]));
+    expected.extend(f32_bytes(&[10.0, 20.0, 30.0, 40.0]));
+    expected.extend(f32_bytes(&[20.0, 30.0, 0.0, 1.0]));
+    expected.extend(f32_bytes(&[depth]));
+    expected.extend(u32_bytes(&[2]));
+    expected.extend(f32_bytes(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]));
+    let (_, bytes) = record_instances(
+        &step,
+        &params,
+        2,
+        ANALYTIC_RRECT_STRIDE,
+        ANALYTIC_RRECT_STRIDE,
+    );
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn analytic_rrect_rounded_rect_instance_bytes() {
+    let rect = SkRect {
+        left: 0.0,
+        top: 0.0,
+        right: 20.0,
+        bottom: 20.0,
+    };
+    let round = RRect::new_rect_xy(rect, 5.0, 5.0);
+    let params = params_for(
+        Geometry::Shape(Shape::from_rrect(round)),
+        rect,
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
+    finalize(&mut manager);
+    // A filled rounded rect: the X radii, then the Y radii, then the bounds. The radii are 5 at
+    // every corner, and the insets (2) do not reach the opposite curves (20 - 5 = 15).
+    let depth = 1.0_f32 - 1.0_f32 / 65535.0_f32;
+    let mut expected = f32_bytes(&[5.0, 5.0, 5.0, 5.0]);
+    expected.extend(f32_bytes(&[5.0, 5.0, 5.0, 5.0]));
+    expected.extend(f32_bytes(&[0.0, 0.0, 20.0, 20.0]));
+    expected.extend(f32_bytes(&[10.0, 10.0, 1.0, 1.0]));
+    expected.extend(f32_bytes(&[depth]));
+    expected.extend(u32_bytes(&[1]));
+    expected.extend(f32_bytes(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]));
+    let (_, bytes) = record_instances(
+        &step,
+        &params,
+        1,
+        ANALYTIC_RRECT_STRIDE,
+        ANALYTIC_RRECT_STRIDE,
+    );
+    assert_eq!(bytes, expected);
+}
+
+/// Records the vertices a step appends with `APPEND_VERTICES`, and returns the calls and the bytes
+/// of the appended block, including the padding that the draw adds to a multiple of four.
+fn record_vertices(
+    step: &dyn RenderStep,
+    params: &DrawParams,
+    ssbo_index: u32,
+    vertex_stride: usize,
+    byte_count: usize,
+) -> (Vec<Call>, Vec<u8>) {
+    let (mut recorder, _shared) = make_recorder(MockCaps::default());
+    let binding;
+    let calls;
+    {
+        let priv_ = recorder.priv_();
+        let manager = priv_.draw_buffer_manager();
+        let mut list = RecordingList::default();
+        {
+            let mut writer = DrawWriter::new(&mut list, manager);
+            writer.new_pipeline_state(
+                step.base().primitive_type(),
+                step.base().static_data_stride(),
+                vertex_stride,
+                RenderStateFlags::APPEND_VERTICES,
+                BarrierType::None,
+            );
+            step.write_vertices(&mut writer, params, ssbo_index);
+            writer.flush();
+        }
+        calls = list.0;
+        binding = calls
+            .iter()
+            .find_map(|c| match c {
+                Call::BindAppend(b) => Some(b.clone()),
+                _ => None,
+            })
+            .expect("the vertex draw binds its append buffer");
+    }
+    let buffer = binding.buffer.clone().unwrap();
+    let _recording = recorder.snap().unwrap();
+    let bytes = committed_bytes(&buffer).unwrap();
+    let start = binding.offset as usize;
+    (calls, bytes[start..start + byte_count].to_vec())
+}
+
+/// The `DrawParams` of a `SkVertices` draw with an identity transform.
+fn vertices_params(vertices: SkVertices) -> DrawParams {
+    let bounds = SkRect {
+        left: 0.0,
+        top: 0.0,
+        right: 10.0,
+        bottom: 10.0,
+    };
+    params_for(
+        Geometry::Vertices(vertices),
+        bounds,
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    )
+}
+
+#[test]
+fn vertices_position_only_triangle_bytes() {
+    let positions = [
+        Point::new(0.0, 0.0),
+        Point::new(10.0, 0.0),
+        Point::new(0.0, 10.0),
+    ];
+    let vertices = SkVertices::new_copy(VertexMode::Triangles, &positions, None, None, None)
+        .expect("a valid triangle list");
+    let params = vertices_params(vertices);
+    let step = VerticesRenderStep::new(Layout::Std140, false, false);
+    // Position and ssboIndex: 12 bytes per vertex. Three vertices are drawn, and the fourth
+    // (the padding to a multiple of four) is zero.
+    let mut expected = f32_bytes(&[0.0, 0.0]);
+    expected.extend(u32_bytes(&[7]));
+    expected.extend(f32_bytes(&[10.0, 0.0]));
+    expected.extend(u32_bytes(&[7]));
+    expected.extend(f32_bytes(&[0.0, 10.0]));
+    expected.extend(u32_bytes(&[7]));
+    expected.extend([0_u8; 12]);
+    let (calls, bytes) = record_vertices(&step, &params, 7, 12, 48);
+    assert_eq!(bytes, expected);
+    assert!(calls.contains(&Call::Draw {
+        primitive: PrimitiveType::Triangles,
+        base_vertex: 0,
+        vertex_count: 3,
+    }));
+}
+
+#[test]
+fn vertices_color_and_tex_coords_strip_bytes() {
+    let positions = [
+        Point::new(0.0, 0.0),
+        Point::new(10.0, 0.0),
+        Point::new(0.0, 10.0),
+    ];
+    let colors = [
+        Color::new(0xFFFF_0000),
+        Color::new(0x8000_FF00),
+        Color::new(0x4000_0000),
+    ];
+    let tex_coords = [
+        Point::new(0.0, 0.0),
+        Point::new(1.0, 0.0),
+        Point::new(0.0, 1.0),
+    ];
+    let vertices = SkVertices::new_copy(
+        VertexMode::Triangles,
+        &positions,
+        Some(&tex_coords[..]),
+        Some(&colors[..]),
+        None,
+    )
+    .expect("a valid triangle list");
+    let params = vertices_params(vertices);
+    let step = VerticesRenderStep::new(Layout::Std140, true, true);
+    // position (8), vertColor as the SkColor's four bytes (4), texCoords (8), ssboIndex (4).
+    let mut expected = Vec::new();
+    for (i, (p, t)) in positions.iter().zip(tex_coords.iter()).enumerate() {
+        expected.extend(f32_bytes(&[p.x, p.y]));
+        expected.extend(u32_bytes(&[u32::from(colors[i])]));
+        expected.extend(f32_bytes(&[t.x, t.y]));
+        expected.extend(u32_bytes(&[9]));
+    }
+    expected.extend([0_u8; 24]); // The padding vertex.
+    let (calls, bytes) = record_vertices(&step, &params, 9, 24, 96);
+    assert_eq!(bytes, expected);
+    assert!(calls.contains(&Call::Draw {
+        primitive: PrimitiveType::Triangles,
+        base_vertex: 0,
+        vertex_count: 3,
+    }));
+}
+
+#[test]
+fn vertices_indexed_triangles_are_expanded_in_index_order() {
+    let positions = [
+        Point::new(0.0, 0.0),
+        Point::new(10.0, 0.0),
+        Point::new(0.0, 10.0),
+        Point::new(10.0, 10.0),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 2, 1, 3];
+    let vertices = SkVertices::new_copy(
+        VertexMode::Triangles,
+        &positions,
+        None,
+        None,
+        Some(&indices[..]),
+    )
+    .expect("a valid indexed triangle list");
+    let params = vertices_params(vertices);
+    let step = VerticesRenderStep::new(Layout::Std140, false, false);
+    // The triangles visit the positions in index order: p0 p1 p2 p2 p1 p3. Six vertices are
+    // drawn, and two padding vertices follow.
+    let order = [0_usize, 1, 2, 2, 1, 3];
+    let mut expected = Vec::new();
+    for &v in &order {
+        expected.extend(f32_bytes(&[positions[v].x, positions[v].y]));
+        expected.extend(u32_bytes(&[3]));
+    }
+    expected.extend([0_u8; 24]);
+    let (calls, bytes) = record_vertices(&step, &params, 3, 12, 96);
+    assert_eq!(bytes, expected);
+    assert!(calls.contains(&Call::Draw {
+        primitive: PrimitiveType::Triangles,
+        base_vertex: 0,
+        vertex_count: 6,
+    }));
+}
+
+#[test]
+fn renderer_provider_vertices_variants() {
+    let mut manager = static_manager();
+    let provider = RendererProvider::new(Layout::Std140, &mut manager);
+    assert_eq!(
+        provider.vertices(false, false).name(),
+        "SingleStep[VerticesRenderStep[Pos]]"
+    );
+    assert_eq!(
+        provider.vertices(true, true).name(),
+        "SingleStep[VerticesRenderStep[PosColorTexCoords]]"
+    );
+    // Color without texture coordinates is also the drop-shadow variant.
+    assert_eq!(
+        provider.vertices(true, false).draw_types(),
+        DrawTypeFlags::DRAW_VERTICES | DrawTypeFlags::DROP_SHADOWS
+    );
+    assert_eq!(provider.vertices(true, true).coverage(), Coverage::None);
+    assert!(
+        provider
+            .vertices(true, true)
+            .step(0)
+            .emits_primitive_color()
+    );
+}
+
+#[test]
+fn analytic_rrect_sksl_text_is_byte_identical() {
+    let mut manager = static_manager();
+    let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
+    assert_eq!(
+        step.vertex_sksl(),
+        concat!(
+            "float4 devPosition = analytic_rrect_vertex_fn(",
+            "cornerID, position, normal, normalScale, centerWeight, ",
+            "xRadiiOrFlags, radiiOrQuadXs, ltrbOrQuadYs, center, depth, ",
+            "float3x3(mat0, mat1, mat2), ",
+            "jacobian, edgeDistances, xRadii, yRadii, strokeParams, perPixelControl, ",
+            "stepLocalCoords);\n"
+        )
+    );
+    assert_eq!(
+        step.fragment_coverage_sksl(),
+        concat!(
+            "outputCoverage = analytic_rrect_coverage_fn(sk_FragCoord, ",
+            "jacobian, ",
+            "edgeDistances, ",
+            "xRadii, ",
+            "yRadii, ",
+            "strokeParams, ",
+            "perPixelControl);"
+        )
     );
 }
