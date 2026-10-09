@@ -16,8 +16,11 @@
 //! - [`alpha`]: the `ALPH` chunk (raw or lossless) and its spatial unfilters.
 //! - [`lossless`]: the predictor, colour and colour-index transforms and the output conversions.
 //!
-//! The lossy VP8 decoder, the incremental decoder and the demuxer are being ported in the same
-//! way; see the design note `docs/design/codecs.md` §2 and §3.
+//! - [`demux`]: the demuxer (`WebPDemux`, `WebPDemuxPartial`, frame and chunk iterators).
+//! - [`rescaler`]: the rescaler behind scaled output, used by the lossy and lossless decoders.
+//!
+//! The incremental decoder (`idec_dec.c`) is not ported yet; see the design note
+//! `docs/design/codecs.md` §2 and §3.
 //!
 //! The crate is `unsafe`-free and depends on nothing but `std`. Where libwebp has SSE2/SSE4.1
 //! kernels, the port follows the C path; the differential harness in `oracle/codec-diff/libwebp`
@@ -26,6 +29,7 @@
 pub mod alpha;
 pub mod alpha_processing;
 mod bit_reader;
+pub mod demux;
 pub mod huffman;
 pub mod io;
 pub mod lossless;

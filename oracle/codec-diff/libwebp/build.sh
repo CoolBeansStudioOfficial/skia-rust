@@ -39,3 +39,6 @@ clang -o "$OUT" "$OBJ/webpdump.o" $OBJS
 # The option-variant driver (cropping, scaling, bypass, nofancy) links the same objects.
 clang $CFLAGS -c "$HERE/webpopts.c" -o "$OBJ/webpopts.o"
 clang -o "$(dirname "$OUT")/webpopts" "$OBJ/webpopts.o" $OBJS
+# The demuxer driver (WebPDemux and WebPDemuxPartial, frames and metadata chunks).
+clang $CFLAGS -c "$HERE/webpdemux.c" -o "$OBJ/webpdemux.o"
+clang -o "$(dirname "$OUT")/webpdemux" "$OBJ/webpdemux.o" $OBJS
