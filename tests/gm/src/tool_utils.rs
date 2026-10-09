@@ -221,3 +221,11 @@ pub fn decode_data_to_bitmap(data: Vec<u8>) -> Option<skia_rust_core::bitmap::Bi
 pub fn get_resource_as_bitmap(path: &str) -> Option<skia_rust_core::bitmap::Bitmap> {
     decode_data_to_bitmap(get_resource_as_data(path)?)
 }
+
+/// `ToolUtils::MakeTextureImage` (tools/GpuToolUtils.h) on a raster canvas: there is no recording
+/// context or recorder, so the image is returned as it is.
+// Port of: tools/GpuToolUtils.h#L32-L62 (chrome/m156)
+#[must_use]
+pub fn make_texture_image(_canvas: &Canvas, orig: Option<Image>) -> Option<Image> {
+    orig
+}

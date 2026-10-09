@@ -18465,7 +18465,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/composeshader.cpp#L121-L121"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "675ae21bfa9919b4bf16ad8832fd048d78c8435769574928885accd7858fcf2f"
 
 [[test]]
@@ -18474,7 +18474,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/composeshader.cpp#L250-L250"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "3d499e7adcf21caff5db4e3b9d395bce71970702f01adf998cc9031881663d08"
 
 [[test]]
@@ -18483,7 +18483,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/composeshader.cpp#L251-L251"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "4562f20e7797b980b7cd1c1150b0edbab97792610c34e888cd0d0a40e16df210"
 
 [[test]]
@@ -18492,7 +18492,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/composeshader.cpp#L78-L78"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "885d8c721067c814dfb02753a1730279b0a981a10d95b2171c8631594043b83d"
 
 [[test]]
@@ -18501,7 +18501,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composeshader.cpp#L253-L286"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7f319a9ce96ea6713dedf6d7b26b23a1343fd36aee062d48b8821b853ac7ac37"
 
 [[test]]
@@ -18510,7 +18510,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/composeshader.cpp#L355-L377"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "f35abd711978f1fb88b142b637c359c17494c5ef9f243e37cf245e87dc2b32e0"
 
 [[test]]
@@ -20917,8 +20917,7 @@ kind = "gm"
 macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1303-L1303"
 module = "effects"
-status = "todo"
-reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
+status = "passing"
 span_hash = "a58d7daee49f13073daf26724bc18398841f3b32b374a95b8c3bbdac07a96fcb"
 
 [[test]]
@@ -20927,8 +20926,7 @@ kind = "gm"
 macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1304-L1304"
 module = "effects"
-status = "todo"
-reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
+status = "passing"
 span_hash = "1e6d3d748f6e536355358ce451c470d42dae4b9f4a13c7283295337dba6018bb"
 
 [[test]]
@@ -20937,8 +20935,8 @@ kind = "gm"
 macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1301-L1301"
 module = "effects"
-status = "todo"
-reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
+status = "failing"
+reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (Lab/LCH stop conversions); see notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
 span_hash = "6d71ae5d4d34fde93f35e1819cae887ccad9f0ae1c62cfa4504401c5730a21c9"
 
 [[test]]
@@ -20974,8 +20972,8 @@ kind = "gm"
 macro = "DEF_POWERLESS_HUE_GM"
 source = "gm/gradients.cpp#L1302-L1302"
 module = "effects"
-status = "todo"
-reason = "draws a checkerboard via ToolUtils::draw_checkerboard (bitmap shader), not ported yet"
+status = "failing"
+reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (OKLab/OKLCH stop conversions), 8 of 136950 pixels off by one unit on 565; see notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
 span_hash = "e82c6dda38865aa820cb871077b2da82ab5f373b241f70f5b0612e19e16aceba"
 
 [[test]]
@@ -21084,8 +21082,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L997-L1039"
 module = "effects"
-status = "todo"
-reason = "draws labels with SkFont/text, not ported yet"
+status = "failing"
+reason = "Mismatch from host libm cbrtf vs the oracle's UCRT (Lab, OKLab, LCH and OKLCH stop conversions): the same signature as gradients_color_space_many_stops (565 off by one unit in 31 of 250000 pixels). See notes/gm-gradients.cpp-OKLCH-libm.md. Ignored."
 span_hash = "e576a604483efc078a2b535564fa1f44026afdd0d3020f91bba1083d7edce823"
 
 [[test]]
@@ -21123,8 +21121,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gradients.cpp#L1041-L1098"
 module = "effects"
-status = "todo"
-reason = "draws labels with SkFont/text, not ported yet"
+status = "passing"
 span_hash = "6e3f0dac25c9c0067eddc0643629e49368e6f632f5c30e2aded1924e91b4e244"
 
 [[test]]
@@ -21277,7 +21274,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradients_degenerate.cpp#L161-L161"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d3356a8886ba07eaa938b49563e84b8c0308f62093cde24473083c03395c04bf"
 
 [[test]]

@@ -45,3 +45,18 @@ Run `cargo xtask oracle` on the oracle host with a harness that prints `cbrtf`/`
 conversions (l, m, s of red, green, blue, yellow) and compare with `f32::cbrt`; then port the oracle's
 implementation into `gradient_base_shader.rs` (`xyzd50_to_lab`, `lin_srgb_to_oklab`, hue). The Lab/LCH
 interpolation spaces call the same functions.
+
+## Also affected: `gradients_color_space`, `LCH`, `OKLCH` (effects sweep)
+
+The same host-libm signature appears in the other GMs that convert stops through `cbrtf` (Lab, LCH, OKLab,
+OKLCH). Measured on the `cpu-x64-scalar` tier against the goldens:
+
+- `gradients_color_space_many_stops` (same stops, measured for this note): 565 differs in 31 of 250,000
+  pixels; the largest difference is 2048, one unit of the top bit of the red field.
+- `OKLCH` (`gradients_powerless_hue`, the 415x330 GM): 565 differs in 8 of 136,950 pixels by one unit; f16 differs in 7,418
+  of 547,800 elements, at most 63 f16 ulps.
+- `LCH` fails the same way; `HSL`, `HWB` and `gradients_hue_method` (no cbrt) pass on every tier.
+
+These are marked `failing` with `#[ignore]` in `tests/gm/src/gm/gradients.rs`. Not fixable without the oracle's
+`cbrtf`.
+
