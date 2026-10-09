@@ -958,6 +958,38 @@ impl Glyph {
         0
     }
 
+    /// `SkGlyph::flattenDrawable`: writes the drawable as a picture, or an empty array for a glyph
+    /// with no area or no drawable.
+    // Port of: src/core/SkGlyph.cpp#L424-L433 (chrome/m156)
+    #[doc(alias = "flattenDrawable")]
+    pub fn flatten_drawable(&self, buffer: &mut BinaryWriteBuffer) {
+        debug_assert!(self.set_drawable_has_been_called());
+        let drawable = if self.is_empty() {
+            None
+        } else {
+            self.drawable()
+        };
+        PictureBackedGlyphDrawable::flatten_drawable(buffer, drawable);
+    }
+
+    /// `SkGlyph::addDrawableFromBuffer`: reads the drawable that
+    /// [`flatten_drawable`](Self::flatten_drawable) wrote and records it. Returns the number of
+    /// bytes of memory the drawable adds.
+    // Port of: src/core/SkGlyph.cpp#L435-L448 (chrome/m156)
+    #[doc(alias = "addDrawableFromBuffer")]
+    pub fn add_drawable_from_buffer(&mut self, buffer: &mut ReadBuffer<'_>) -> usize {
+        debug_assert!(buffer.is_valid());
+        let drawable = PictureBackedGlyphDrawable::from_buffer(buffer);
+        if !buffer.is_valid() {
+            return 0;
+        }
+        if self.set_drawable(drawable) {
+            self.drawable().map_or(0, Drawable::approximate_bytes_used)
+        } else {
+            0
+        }
+    }
+
     /// `SkGlyph::flattenPath`: writes whether there is a path and, if so, its flags and the path.
     // Port of: src/core/SkGlyph.cpp#L382-L392 (chrome/m156)
     #[doc(alias = "flattenPath")]
@@ -1043,6 +1075,48 @@ impl PictureBackedGlyphDrawable {
     #[must_use]
     pub fn into_drawable(picture: Picture) -> Drawable {
         Drawable::new(std::sync::Arc::new(Self { picture }))
+    }
+
+    /// `SkPictureBackedGlyphDrawable::MakeFromBuffer`: the drawable of the picture that the buffer
+    /// holds. `None` for an empty drawable (which is written as an empty byte array), and for an
+    /// invalid buffer or picture, which also invalidates the buffer.
+    // Port of: src/core/SkGlyph.cpp#L38-L65 (chrome/m156), MakeFromBuffer
+    #[must_use]
+    pub fn from_buffer(buffer: &mut ReadBuffer<'_>) -> Option<Drawable> {
+        let (data, size) = buffer.skip_byte_array();
+        // Return nullptr if invalid or there an empty drawable, which is represented by nullptr.
+        if !buffer.is_valid() || size == 0 {
+            return None;
+        }
+        let Some(data) = data else {
+            buffer.validate(false);
+            return None;
+        };
+        let picture = Picture::from_data(data, None);
+        if !buffer.validate(picture.is_some()) {
+            return None;
+        }
+        picture.map(Self::into_drawable)
+    }
+
+    /// `SkPictureBackedGlyphDrawable::FlattenDrawable`: writes the picture snapshot of `drawable`
+    /// as a byte array. An empty array is written when there is no drawable, when its picture is
+    /// empty, or when the picture is too big for 32 bits.
+    // Port of: src/core/SkGlyph.cpp#L67-L84 (chrome/m156), FlattenDrawable
+    pub fn flatten_drawable(buffer: &mut BinaryWriteBuffer, drawable: Option<&Drawable>) {
+        // The drawable's picture is serialized with the default procs, as the glyph has no
+        // images, typefaces or pictures of its own.
+        let data = drawable
+            .and_then(Drawable::make_picture_snapshot)
+            .and_then(|picture| picture.serialize(None));
+        match data {
+            Some(data) if !data.as_bytes().is_empty() && u32::try_from(data.size()).is_ok() => {
+                buffer.write_byte_array(data.as_bytes());
+            }
+            // If the picture is too big, or there is no picture, then drop by sending an empty
+            // byte array.
+            _ => buffer.write_byte_array(&[]),
+        }
     }
 }
 

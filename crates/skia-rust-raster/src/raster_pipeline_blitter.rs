@@ -569,8 +569,9 @@ impl<'a> RasterPipelineBlitter<'a> {
             blitter.blend_mode = blender.as_base().as_blend_mode();
         }
 
-        // The memory the shaders reserved in the arena (blend shaders' stored colors).
-        blitter.scratch = vec![0; alloc.scratch_bytes()];
+        // The memory the shaders reserved in the arena (blend shaders' stored colors, `SkSL`
+        // slots), with the initial contents they recorded.
+        blitter.scratch = alloc.scratch_buffer();
 
         Some(blitter)
     }

@@ -15,20 +15,110 @@
 //! skia-rust: `SkReadBuffer` requires its memory to be 4-byte aligned because it reads words in
 //! place; here the words are read from the bytes of a slice, so only the offsets are checked.
 
+use crate::alpha_type::AlphaType;
+use crate::bitmap::Bitmap;
+use crate::blend_mode::BlendMode;
+use crate::blender::Blender;
+use crate::color::Color;
+use crate::color::Color4f;
+use crate::color_filter::ColorFilter;
+use crate::color_space_priv::srgb_singleton;
+use crate::data::Data;
 use crate::flattenable::FlattenableRegistry;
+use crate::image::{Image, RequiredProperties};
+use crate::images;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
+use crate::paint::{Cap, Join, Paint, Style};
 use crate::path::Path;
 use crate::path_effect::PathEffect;
+use crate::picture_priv::{VERSION_ANISOTROPIC_FILTER, VERSION_SK_BLENDER_IN_SK_PAINT};
 use crate::point::Point;
-use crate::rect::Rect;
+use crate::rect::{IRect, Rect};
+use crate::region::Region;
+use crate::rrect::RRect;
+use crate::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use crate::serial_procs::DeserialProcs;
+use crate::shader::Shader;
 use crate::stream::MemoryStream;
 use crate::typeface::Typeface;
+use crate::write_buffer::{CUSTOM_BLEND_MODE_SENTINEL, FLAT_HAS_EFFECTS};
+
+/// The image flags of `SkWriteBufferImageFlags`: the subset rect, the mipmaps, and unpremultiplied.
+// Port of: src/core/SkWriteBuffer.h#L167-L174 (chrome/m156)
+const IMAGE_FLAG_HAS_SUBSET: u32 = 1 << 8;
+const IMAGE_FLAG_HAS_MIPMAP: u32 = 1 << 9;
+const IMAGE_FLAG_UNPREMUL: u32 = 1 << 10;
+
+/// `SkReadBuffer::MakeEmptyImage(1, 1)`: the image that stands for an image that could not be
+/// read. Skia's is a lazy image whose generator fails, which draws nothing; this is a transparent
+/// 1x1 raster image. It draws nothing with source-over, and it is recorded like any image, so
+/// a picture that has it keeps its op count. (Blend modes that keep the destination where the
+/// source is transparent draw differently.)
+// Port of: src/core/SkReadBuffer.cpp#L40-L49 (chrome/m156), MakeEmptyImage
+fn make_empty_image() -> Image {
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_n32_pixels((1, 1), None);
+    bitmap.erase_color(Color::TRANSPARENT);
+    // A 1x1 bitmap with pixels always makes an image.
+    images::raster_from_bitmap(&bitmap).expect("a 1x1 raster image")
+}
 
 /// Rounds `x` up to a multiple of 4 (`SkAlign4`), wrapping like the unsigned arithmetic of C++.
 fn align4(x: usize) -> usize {
     x.wrapping_add(3) & !3
+}
+
+/// Unpacks the word that `pack_v68` made (`unpack_v68`): the anti-alias, dither, blend mode, cap,
+/// join and style go into `paint`, and the flat flags are returned. `safe` is cleared if a field
+/// is out of range (`SkSafeRange`).
+// Port of: src/core/SkPaintPriv.cpp#L234-L256 (chrome/m156)
+fn unpack_v68(paint: &mut Paint, packed: u32, safe: &mut bool) -> u8 {
+    paint.set_anti_alias(packed & 1 != 0);
+    paint.set_dither(packed & 2 != 0);
+    let mode = (packed >> 8) & 0xFF;
+    if mode != u32::from(CUSTOM_BLEND_MODE_SENTINEL) {
+        // The sentinel stands for a custom blender, which is read with the effects.
+        match i32::try_from(mode).ok().and_then(BlendMode::from_i32) {
+            Some(blend_mode) => {
+                paint.set_blend_mode(blend_mode);
+            }
+            None => *safe = false,
+        }
+    }
+    let cap = match (packed >> 16) & 0x3 {
+        0 => Cap::Butt,
+        1 => Cap::Round,
+        2 => Cap::Square,
+        _ => {
+            *safe = false;
+            Cap::Butt
+        }
+    };
+    paint.set_stroke_cap(cap);
+    let join = match (packed >> 18) & 0x3 {
+        0 => Join::Miter,
+        1 => Join::Round,
+        2 => Join::Bevel,
+        _ => {
+            *safe = false;
+            Join::Miter
+        }
+    };
+    paint.set_stroke_join(join);
+    let style = match (packed >> 20) & 0x3 {
+        0 => Style::Fill,
+        1 => Style::Stroke,
+        2 => Style::StrokeAndFill,
+        _ => {
+            *safe = false;
+            Style::Fill
+        }
+    };
+    paint.set_style(style);
+    // The old filter quality bits (22..24) are skipped.
+    // The flat flags are the top byte.
+    u8::try_from(packed >> 24).unwrap_or(0)
 }
 
 /// Reads primitives from a memory block of 4-byte words (`SkReadBuffer`). Reading past the end,
@@ -48,6 +138,9 @@ pub struct ReadBuffer<'a> {
     deserial_procs: DeserialProcs,
     /// `fTFArray`: the typefaces that index references name, in order (1 is the first).
     typeface_array: Vec<Typeface>,
+    /// `fFactoryArray`: the factories that an index references, by name, in order (1 is the
+    /// first). Empty when the flattenables are read by name.
+    factory_names: Vec<String>,
 }
 
 impl<'a> ReadBuffer<'a> {
@@ -75,6 +168,15 @@ impl<'a> ReadBuffer<'a> {
     #[doc(alias = "setTypefaceArray")]
     pub fn set_typeface_array(&mut self, typefaces: Vec<Typeface>) {
         self.typeface_array = typefaces;
+    }
+
+    /// `setFactoryArray(array, count)`: the factories that a flattenable's index refers to, by
+    /// their names, in order (index 1 is the first). An empty table means the flattenables are
+    /// read by name.
+    // Port of: src/core/SkReadBuffer.h#L180 (chrome/m156), setFactoryArray
+    #[doc(alias = "setFactoryArray")]
+    pub(crate) fn set_factory_names(&mut self, names: Vec<String>) {
+        self.factory_names = names;
     }
 
     /// `readPoint`: two scalars (`SkReadBuffer::readPoint`).
@@ -333,6 +435,121 @@ impl<'a> ReadBuffer<'a> {
 }
 
 impl ReadBuffer<'_> {
+    /// `readByteArrayAsData`: the bytes written by `writeByteArray`, as data. `None`, and the
+    /// buffer is invalid, if the bytes are not all there.
+    // Port of: src/core/SkReadBuffer.cpp#L325-L336 (chrome/m156)
+    #[doc(alias = "readByteArrayAsData")]
+    pub fn read_byte_array_as_data(&mut self) -> Option<Data> {
+        let num_bytes = usize::try_from(self.get_array_count()).unwrap_or(usize::MAX);
+        if !self.validate(self.is_available(num_bytes)) {
+            return None;
+        }
+        let mut bytes = vec![0; num_bytes];
+        if !self.read_byte_array(&mut bytes) {
+            return None;
+        }
+        Some(Data::new_from_vec(bytes))
+    }
+
+    /// `readIRect`: the left, top, right and bottom words.
+    // Port of: src/core/SkReadBuffer.cpp#L220-L225 (chrome/m156), readIRect
+    #[doc(alias = "readIRect")]
+    pub fn read_irect(&mut self) -> IRect {
+        let left = self.read_int();
+        let top = self.read_int();
+        let right = self.read_int();
+        let bottom = self.read_int();
+        IRect {
+            left,
+            top,
+            right,
+            bottom,
+        }
+    }
+
+    /// `readSampling`: the sampling that `write_sampling` wrote. A zero anisotropy is followed by
+    /// the cubic flag and its coefficients, or by the filter and mipmap modes.
+    // Port of: src/core/SkReadBuffer.cpp#L227-L243 (chrome/m156)
+    #[doc(alias = "readSampling")]
+    pub fn read_sampling(&mut self) -> SamplingOptions {
+        if !self.is_version_lt(VERSION_ANISOTROPIC_FILTER) {
+            let max_aniso = self.read_int();
+            if max_aniso != 0 {
+                return SamplingOptions::from_aniso(max_aniso);
+            }
+        }
+        if self.read_bool() {
+            let b = self.read_scalar();
+            let c = self.read_scalar();
+            // `SkSamplingOptions({B, C})`: the cubic filter, with the default filter and mipmap.
+            SamplingOptions {
+                use_cubic: true,
+                cubic: CubicResampler { b, c },
+                ..SamplingOptions::default()
+            }
+        } else {
+            let filter = match self.read32_le(FilterMode::Linear as u32) {
+                1 => FilterMode::Linear,
+                _ => FilterMode::Nearest,
+            };
+            let mipmap = match self.read32_le(MipmapMode::Linear as u32) {
+                1 => MipmapMode::Nearest,
+                2 => MipmapMode::Linear,
+                _ => MipmapMode::None,
+            };
+            SamplingOptions::new(filter, mipmap)
+        }
+    }
+
+    /// `deserialize_image`: the image that the data makes, by the image data procedure, else by
+    /// the image procedure. `None` if the buffer has neither, or the procedure fails.
+    // Port of: src/core/SkReadBuffer.cpp#L346-L355 (chrome/m156)
+    fn deserialize_image(&self, data: Data, alpha: Option<AlphaType>) -> Option<Image> {
+        if let Some(read) = &self.deserial_procs.image_data {
+            return read(data, alpha);
+        }
+        let read = self.deserial_procs.image.as_ref()?;
+        read(data.as_bytes(), alpha)
+    }
+
+    /// `readImage`: the flags, the image's bytes (made into an image by the procedures), and the
+    /// subset rect when the flags have one. An image that the procedures cannot make is the empty
+    /// image of [`make_empty_image`], and the picture still loads. `None` (and the buffer is
+    /// invalid) for a corrupt stream. Mipmap levels are not read yet, so an image that has them is
+    /// treated as corrupt.
+    // Port of: src/core/SkReadBuffer.cpp#L404-L435 (chrome/m156), readImage, without the mipmaps
+    // (`add_mipmaps`)
+    #[doc(alias = "readImage")]
+    pub fn read_image(&mut self) -> Option<Image> {
+        let flags = self.read_uint();
+        let alpha = if flags & IMAGE_FLAG_UNPREMUL != 0 {
+            Some(AlphaType::Unpremul)
+        } else {
+            None
+        };
+        let Some(data) = self.read_byte_array_as_data() else {
+            self.validate(false);
+            return None;
+        };
+        let mut image = self.deserialize_image(data, alpha);
+
+        // This flag is not written by new pictures anymore.
+        if flags & IMAGE_FLAG_HAS_SUBSET != 0 {
+            let subset = self.read_irect();
+            if let Some(img) = image.take() {
+                image = img.make_subset(subset, RequiredProperties::default());
+            }
+        }
+
+        if flags & IMAGE_FLAG_HAS_MIPMAP != 0 {
+            // The mipmap levels are not read yet (`add_mipmaps`).
+            let _ = self.read_byte_array_as_data();
+            self.validate(false);
+            return None;
+        }
+        Some(image.unwrap_or_else(make_empty_image))
+    }
+
     /// `getArrayCount`: the count at the current position, which is not consumed. Returns 0 (and
     /// makes the buffer invalid) if there is no word left.
     // Port of: src/core/SkReadBuffer.cpp#L338-L344 (chrome/m156)
@@ -436,6 +653,24 @@ impl ReadBuffer<'_> {
         matrix
     }
 
+    /// Reads a region written by `writeRegion`, and moves past it (`readRegion`). `None` if the
+    /// region is not valid, as the buffer then is not either: a region has a non-zero, 4-byte
+    /// aligned size.
+    // Port of: src/core/SkReadBuffer.cpp#L256-L265 (chrome/m156), readRegion
+    #[doc(alias = "readRegion")]
+    pub fn read_region(&mut self) -> Option<Region> {
+        let mut region = Region::new();
+        let size = if self.is_valid() {
+            region.read_from_memory(&self.data[self.curr..])
+        } else {
+            0
+        };
+        // The region is valid only with a non-zero size that is a multiple of 4.
+        let valid = self.validate(align4(size) == size && size != 0);
+        let _ = self.skip(size);
+        valid.then_some(region)
+    }
+
     /// Reads a path written by `writePath`, and moves past it whether or not it is valid
     /// (`readPath`).
     // Port of: src/core/SkReadBuffer.cpp#L267-L283 (chrome/m156)
@@ -478,12 +713,164 @@ impl ReadBuffer<'_> {
         self.read_flattenable_body(|buffer| factory(buffer, registry))
     }
 
-    /// The name part of `readRawFlattenable`: a string (which is added to the dictionary) or the
-    /// dictionary index of an earlier one. `None` if the writer wrote nothing, or on an error.
-    // Port of: src/core/SkReadBuffer.cpp#L489-L512 (chrome/m156), the no-factory-array arm
+    /// The current position in bytes (`SkReadBuffer::offset`).
+    #[must_use]
+    pub fn offset(&self) -> usize {
+        self.curr
+    }
+
+    /// Reads a color (`readColor4f`): four scalars, or all zeros if the buffer cannot give them.
+    // Port of: src/core/SkReadBuffer.cpp#L169-L173 (chrome/m156)
+    #[doc(alias = "readColor4f")]
+    pub fn read_color4f(&mut self) -> Color4f {
+        let r = self.read_scalar();
+        let g = self.read_scalar();
+        let b = self.read_scalar();
+        let a = self.read_scalar();
+        if self.is_valid() {
+            Color4f { r, g, b, a }
+        } else {
+            Color4f {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                a: 0.0,
+            }
+        }
+    }
+
+    /// Reads a round rectangle (`readRRect`): its bounds and radii, [`RRect::SIZE_IN_MEMORY`]
+    /// bytes. Invalidates the buffer, and returns the default, if there are not that many bytes.
+    // Port of: src/core/SkReadBuffer.cpp#L245-L254 (chrome/m156)
+    #[doc(alias = "readRRect")]
+    pub fn read_rrect(&mut self) -> RRect {
+        let Some(bytes) = self.skip(RRect::SIZE_IN_MEMORY) else {
+            return RRect::default();
+        };
+        let mut rrect = RRect::default();
+        rrect.read_from_memory(bytes);
+        rrect
+    }
+
+    /// Reads a flattenable that is not ported yet, which can only be null here: the writer
+    /// wrote a zero word. Otherwise the buffer is invalidated. Returns whether it is still valid.
+    fn read_null_flattenable(&mut self) -> bool {
+        let word = self.read32();
+        self.validate(word == 0)
+    }
+
+    /// Reads a shader written by `writeFlattenable` (`readShader`). `registry` maps the names to
+    /// their factories. A null shader is `None`, as is an error (see the buffer's validity).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readShader`
+    #[doc(alias = "readShader")]
+    pub fn read_shader(&mut self, registry: &FlattenableRegistry) -> Option<Shader> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.shader_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a color filter written by `writeFlattenable` (`readColorFilter`).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readColorFilter`
+    #[doc(alias = "readColorFilter")]
+    pub fn read_color_filter(&mut self, registry: &FlattenableRegistry) -> Option<ColorFilter> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.color_filter_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a blender written by `writeFlattenable` (`readBlender`).
+    // Port of: src/core/SkReadBuffer.cpp#L538-L546 (chrome/m156), `readBlender`
+    #[doc(alias = "readBlender")]
+    pub fn read_blender(&mut self, registry: &FlattenableRegistry) -> Option<Blender> {
+        let name = self.read_flattenable_name()?;
+        let Some(factory) = registry.blender_factory(&name) else {
+            self.validate(false);
+            return None;
+        };
+        self.read_flattenable_body(|buffer| factory(buffer, registry))
+    }
+
+    /// Reads a paint (`readPaint`, `SkPaintPriv::Unflatten`). The paint is reset if the buffer is
+    /// invalid afterwards. The shader, path effect, mask filter, color filter and blender are read
+    /// with `registry`; an image filter must be null, as it is not read yet.
+    // Port of: src/core/SkPaintPriv.cpp#L289-L331 (chrome/m156), with the arms of the
+    // flattenables that are ported; the image filter must be null
+    #[doc(alias = "readPaint")]
+    pub fn read_paint(&mut self, registry: &FlattenableRegistry) -> Paint {
+        let mut paint = Paint::default();
+
+        let stroke_width = self.read_scalar();
+        paint.set_stroke_width(stroke_width);
+        let stroke_miter = self.read_scalar();
+        paint.set_stroke_miter(stroke_miter);
+        let color = self.read_color4f();
+        paint.set_color4f(color, srgb_singleton());
+
+        let mut safe = true;
+        let packed = self.read_uint();
+        let flat_flags = unpack_v68(&mut paint, packed, &mut safe);
+
+        if flat_flags & FLAT_HAS_EFFECTS != 0 {
+            // This paint predates the introduction of user blend functions (via SkBlender) when
+            // its version is older; it has no blender, and a draw looper (now deprecated) after
+            // the color filter.
+            let predates_blender = self.is_version_lt(VERSION_SK_BLENDER_IN_SK_PAINT);
+            let path_effect = self.read_path_effect(registry);
+            let shader = self.read_shader(registry);
+            let mask_filter = self.read_mask_filter(registry);
+            let color_filter = self.read_color_filter(registry);
+            let blender = if predates_blender {
+                self.read32(); // drawLooper, now deprecated
+                self.read_null_flattenable(); // image filter
+                None
+            } else {
+                self.read_null_flattenable(); // image filter
+                self.read_blender(registry)
+            };
+            paint.set_path_effect(path_effect);
+            paint.set_shader(shader);
+            paint.set_mask_filter(mask_filter);
+            paint.set_color_filter(color_filter);
+            paint.set_blender(blender);
+        }
+
+        if !self.validate(safe) {
+            paint.reset();
+        }
+        paint
+    }
+
+    /// The name part of `readRawFlattenable`: the factory index (when there is a factory table), a
+    /// string (which is added to the dictionary) or the dictionary index of an earlier one. `None`
+    /// if the writer wrote nothing, or on an error.
+    // Port of: src/core/SkReadBuffer.cpp#L470-L512 (chrome/m156)
     fn read_flattenable_name(&mut self) -> Option<String> {
         if !self.is_valid() {
             return None;
+        }
+        if !self.factory_names.is_empty() {
+            // The index of a factory, which is the position in the table plus one.
+            let index = self.read32();
+            if index == 0 || !self.is_valid() {
+                return None; // writer failed to give us the flattenable
+            }
+            if index < 0 {
+                self.validate(false);
+                return None;
+            }
+            let name = usize::try_from(index - 1)
+                .ok()
+                .and_then(|position| self.factory_names.get(position).cloned());
+            if !self.validate(name.is_some()) {
+                return None;
+            }
+            return name;
         }
         // If the first byte is non-zero, the flattenable is specified by a string. Otherwise it
         // is the index, shifted left by 8.

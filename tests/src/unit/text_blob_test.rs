@@ -2,10 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/TextBlobTest.cpp (chrome/m156)
-//
-// Not ported yet:
-// - `SkCanvas_drawTextBlob_b513820666`: it records and replays a picture with typeface procs
-//   (T16) and draws through a drawable typeface (T17).
 
 #![cfg(test)]
 // The assertions compare floats exactly, as the C++ `REPORTER_ASSERT`s do, and cast small test
@@ -21,16 +17,22 @@
 
 use std::sync::{Arc, Mutex};
 
+use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
+use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::font::{Edging, Font};
 use skia_rust_core::font_style::FontStyle;
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::path::Path;
+use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::scalar::{scalar, scalar_round_to_int};
 use skia_rust_core::serial_procs::{
     DeserialProcs, SerialProcs, TypefaceDeserializer, TypefaceSerializer,
@@ -39,6 +41,7 @@ use skia_rust_core::stream::Stream;
 use skia_rust_core::text_blob::{GlyphPositioning, TextBlob, TextBlobBuilder};
 use skia_rust_core::typeface::Typeface;
 use skia_rust_raster::surfaces;
+use skia_rust_text::utils::custom_typeface::CustomTypefaceBuilder;
 use skia_rust_tools::font_tool_utils::{
     create_portable_typeface, create_test_typeface, default_font,
 };
@@ -659,6 +662,7 @@ def_font_test!(TextBlob_serialize, |reporter| {
     let array: SerializedTypefaces = Arc::new(Mutex::new(Vec::new()));
     let serialize_procs = SerialProcs {
         typeface: Some(serialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let data = blob0.serialize(&serialize_procs);
     let array_len = array.lock().map_or(0, |a| a.len());
@@ -679,6 +683,7 @@ def_font_test!(TextBlob_serialize, |reporter| {
     );
     let deserialize_procs = DeserialProcs {
         typeface: Some(deserialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
     };
     let Some(blob1) = TextBlob::deserialize(data.as_bytes(), &deserialize_procs) else {
         errorf!(reporter, "the serialized blob deserializes");
@@ -689,5 +694,133 @@ def_font_test!(TextBlob_serialize, |reporter| {
     let img1 = render(&blob1);
     if let (Some(img0), Some(img1)) = (img0, img1) {
         reporter_assert!(reporter, equal_pixels(&img0, &img1));
+    }
+});
+
+/// `make_path_typeface()`: a typeface whose only glyph is a path.
+// Port of: tests/TextBlobTest.cpp#L549-L553 (chrome/m156), make_path_typeface
+fn make_path_typeface() -> Option<Typeface> {
+    let mut builder = CustomTypefaceBuilder::new();
+    builder.set_glyph(0, 0.0, &Path::rect(Rect::new(0.0, -1.0, 1.0, 0.0), None));
+    builder.detach()
+}
+
+/// `make_drawable_typeface(drawable)`: a typeface whose only glyph is a drawable.
+// Port of: tests/TextBlobTest.cpp#L555-L559 (chrome/m156), make_drawable_typeface
+fn make_drawable_typeface(drawable: Drawable) -> Option<Typeface> {
+    let mut builder = CustomTypefaceBuilder::new();
+    builder.set_glyph_drawable(0, 0.0, drawable, Rect::new(0.0, -1.0, 1.0, 0.0));
+    builder.detach()
+}
+
+/// `make_inner_blob(tf)`: 64 runs of one glyph, each at a different text size.
+// Port of: tests/TextBlobTest.cpp#L561-L570 (chrome/m156), make_inner_blob
+fn make_inner_blob(tf: &Typeface) -> Option<TextBlob> {
+    let mut builder = TextBlobBuilder::new();
+    for i in 0..64 {
+        #[allow(clippy::cast_precision_loss)] // mirrors `static_cast<float>(i)`
+        let font = Font::new(tf.clone(), i as scalar, 1.0, 0.0);
+        let (glyphs, points) = builder.alloc_run_pos(&font, 1, None);
+        glyphs[0] = 0;
+        points[0] = Point::new(0.0, 0.0);
+    }
+    builder.make()
+}
+
+/// `make_outer_blob(drawable_tf, path_tf)`: a run of the drawable glyph at a size above 256, and
+/// a run of the path glyph with rsxforms.
+// Port of: tests/TextBlobTest.cpp#L572-L589 (chrome/m156), make_outer_blob
+fn make_outer_blob(drawable_tf: Typeface, path_tf: &Typeface) -> Option<TextBlob> {
+    let mut builder = TextBlobBuilder::new();
+    // The font size must be >256 in order to trigger SubRunContainer::MakeInAlloc and have this
+    // SkDrawable drawn rather than the SkPath
+    let font0 = Font::new(drawable_tf, 257.0, 1.0, 0.0);
+    {
+        let (glyphs, points) = builder.alloc_run_pos(&font0, 1, None);
+        glyphs[0] = 0;
+        points[0] = Point::new(0.0, 0.0);
+    }
+    let font1 = Font::new(path_tf.clone(), 1.0, 1.0, 0.0);
+    {
+        let (glyphs, xforms) = builder.alloc_run_rsxform(&font1, 1);
+        glyphs[0] = 0;
+        xforms[0] = RSXform::new(1.0, 0.0, (0.0, 0.0));
+    }
+    builder.make()
+}
+
+/// `ReentrantDrawable`: draws a text blob from its `onDraw`.
+// Port of: tests/TextBlobTest.cpp#L591-L604 (chrome/m156), ReentrantDrawable
+#[derive(Debug)]
+struct ReentrantDrawable {
+    inner: TextBlob,
+}
+
+impl DrawableBase for ReentrantDrawable {
+    // Port of: tests/TextBlobTest.cpp#L596 (chrome/m156), onGetBounds
+    fn on_get_bounds(&self) -> Rect {
+        Rect::new(0.0, -1.0, 1.0, 0.0)
+    }
+
+    // Port of: tests/TextBlobTest.cpp#L597-L600 (chrome/m156), onDraw
+    fn on_draw(&self, canvas: &Canvas) {
+        canvas.draw_text_blob(&self.inner, (0.0, 0.0), &Paint::default());
+    }
+}
+
+// Port of: tests/TextBlobTest.cpp#L615-L649 (chrome/m156), SkCanvas_drawTextBlob_b513820666
+def_test!(SkCanvas_drawTextBlob_b513820666, |reporter| {
+    let Some(path_tf) = make_path_typeface() else {
+        errorf!(reporter, "the path typeface");
+        return;
+    };
+    let Some(inner) = make_inner_blob(&path_tf) else {
+        errorf!(reporter, "the inner blob");
+        return;
+    };
+    let drawable = Drawable::new(Arc::new(ReentrantDrawable { inner }));
+    let Some(drawable_tf) = make_drawable_typeface(drawable) else {
+        errorf!(reporter, "the drawable typeface");
+        return;
+    };
+    let Some(outer) = make_outer_blob(drawable_tf, &path_tf) else {
+        errorf!(reporter, "the outer blob");
+        return;
+    };
+    let bounds = Rect::new(0.0, 0.0, 1024.0, 1024.0);
+    let mut recorder = PictureRecorder::new();
+    let recording_canvas = recorder.begin_recording(bounds, false);
+    let paint = Paint::default();
+    recording_canvas.draw_text_blob(&outer, (100.0, 500.0), &paint);
+    let Some(picture) = recorder.finish_recording_as_picture(None) else {
+        errorf!(reporter, "the picture");
+        return;
+    };
+
+    let array: SerializedTypefaces = Arc::new(Mutex::new(Vec::new()));
+    let serialize_procs = SerialProcs {
+        typeface: Some(serialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
+    };
+    let Some(data) = picture.serialize(Some(&serialize_procs)) else {
+        errorf!(reporter, "the picture serializes");
+        return;
+    };
+
+    let deserialize_procs = DeserialProcs {
+        typeface: Some(deserialize_typeface_proc(Arc::clone(&array))),
+        ..Default::default()
+    };
+    let new_picture = Picture::from_data(data.as_bytes(), Some(&deserialize_procs));
+
+    let info = ImageInfo::new_n32_premul((1024, 1024), None);
+    let Some(mut surface) = surfaces::raster(&info, None, None) else {
+        errorf!(reporter, "the surface");
+        return;
+    };
+    let canvas = surface.canvas();
+    // `drawPicture(nullptr)` draws nothing.
+    if let Some(new_picture) = new_picture {
+        canvas.draw_picture(&new_picture, None, None);
     }
 });

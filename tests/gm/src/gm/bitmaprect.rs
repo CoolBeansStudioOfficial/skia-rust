@@ -14,6 +14,7 @@ use skia_rust_core::color::pre_multiply_color;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
+use skia_rust_core::point::Point;
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::scalar::scalar;
@@ -256,8 +257,99 @@ crate::def_gm!(
     BitmapRectRoundingGm { bm: Bitmap::new() }
 );
 
+// Port of: gm/bitmaprect.cpp#L35-L46 (chrome/m156)
+fn make_image_2() -> Option<Image> {
+    let mut surf =
+        skia_rust_raster::surfaces::raster(&ImageInfo::new_n32_premul((64, 64), None), None, None)?;
+    let tmp_canvas = surf.canvas();
+    tmp_canvas.draw_color(Color::RED, None);
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    let pts = [Point::new(0.0, 0.0), Point::new(64.0, 64.0)];
+    let colors = [
+        skia_rust_core::color::Color4f::new(1.0, 1.0, 1.0, 1.0),
+        skia_rust_core::color::Color4f::new(0.0, 0.0, 1.0, 1.0),
+    ];
+    paint.set_shader(skia_rust_effects::gradient::shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &skia_rust_effects::gradient::Gradient::new(
+            skia_rust_effects::gradient::Colors::new(
+                &colors,
+                None,
+                skia_rust_core::tile_mode::TileMode::Clamp,
+                None,
+            ),
+            skia_rust_effects::gradient::Interpolation::default(),
+        ),
+        None,
+    ));
+    tmp_canvas.draw_circle((32.0, 32.0), 32.0, &paint);
+    // `ToolUtils::MakeTextureImage` is the identity on a raster canvas.
+    surf.image_snapshot()
+}
+
+// Port of: gm/bitmaprect.cpp#L47-L106 (chrome/m156)
+struct DrawBitmapRect2Gm {
+    use_irect: bool,
+}
+
+impl GM for DrawBitmapRect2Gm {
+    fn name(&self) -> String {
+        format!("bitmaprect_{}", if self.use_irect { "i" } else { "s" })
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(640, 480)
+    }
+
+    fn on_draw(&mut self, canvas: &Canvas) {
+        canvas.draw_color(Color::new(0xFFCC_CCCC), None);
+
+        let src = [
+            IRect::from_ltrb(0, 0, 32, 32),
+            IRect::from_ltrb(0, 0, 80, 80),
+            IRect::from_ltrb(32, 32, 96, 96),
+            IRect::from_ltrb(-32, -32, 32, 32),
+        ];
+
+        let mut paint = Paint::default();
+        paint.set_style(skia_rust_core::paint::Style::Stroke);
+        let sampling = SamplingOptions::default();
+
+        let image = make_image_2().expect("an image");
+        let dst_r = Rect::from_ltrb(0.0, 200.0, 128.0, 380.0);
+        canvas.translate((16.0, 40.0));
+        for s in src {
+            // `srcR.set(src[i])` (use_irect false) and `SkRect::Make(src[i])` (use_irect true)
+            // are the same rect, so `use_irect` only changes the GM's name.
+            let src_r = Rect::from_irect(s);
+            canvas.draw_image_with_sampling_options(&image, (0.0, 0.0), sampling, Some(&paint));
+            canvas.draw_image_rect_with_sampling_options(
+                &image,
+                Some((&src_r, SrcRectConstraint::Strict)),
+                dst_r,
+                sampling,
+                &paint,
+            );
+            canvas.draw_rect(dst_r, &paint);
+            canvas.draw_rect(src_r, &paint);
+            canvas.translate((160.0, 0.0));
+        }
+    }
+}
+
 // Port of: gm/bitmaprect.cpp#L266 (chrome/m156)
 crate::def_gm!(DrawBitmapRect3_ = "DrawBitmapRect3()", DrawBitmapRect3Gm);
+
+// Port of: gm/bitmaprect.cpp#L290-L291 (chrome/m156)
+crate::def_gm!(
+    DrawBitmapRect2_false = "DrawBitmapRect2(false)",
+    DrawBitmapRect2Gm { use_irect: false }
+);
+crate::def_gm!(
+    DrawBitmapRect2_true = "DrawBitmapRect2(true)",
+    DrawBitmapRect2Gm { use_irect: true }
+);
 
 // Port of: gm/bitmaprect.cpp#L267-L270 (chrome/m156)
 crate::def_gm!(

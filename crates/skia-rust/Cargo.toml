@@ -12,6 +12,12 @@ publish = false # until core + CPU raster reach 100% (docs/PLAN.md §9.3)
 [dependencies]
 skia-rust-core.workspace = true
 skia-rust-pathops.workspace = true
+skia-rust-codec = { workspace = true, optional = true }
+
+[features]
+default = ["codec"]
+# The codec layer and its lazy-image factories (PLAN §3.2).
+codec = ["dep:skia-rust-codec"]
 
 [lints]
 workspace = true

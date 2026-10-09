@@ -14,6 +14,8 @@ use std::sync::Arc;
 
 use crate::canvas::Canvas;
 use crate::matrix::Matrix;
+use crate::picture::Picture;
+use crate::picture_recorder::PictureRecorder;
 use crate::point::Vector;
 use crate::rect::Rect;
 use crate::scalar::scalar;
@@ -76,6 +78,19 @@ impl Drawable {
     #[must_use]
     pub fn bounds(&self) -> Rect {
         self.0.on_get_bounds()
+    }
+
+    /// `SkDrawable::makePictureSnapshot`: the drawable recorded into a picture whose cull rect is
+    /// its bounds. `None` if the recording fails.
+    // Port of: src/core/SkDrawable.cpp#L60-L62 (chrome/m156), and onMakePictureSnapshot
+    // (src/core/SkDrawable.cpp#L88-L98 (chrome/m156))
+    #[doc(alias = "makePictureSnapshot")]
+    #[must_use]
+    pub fn make_picture_snapshot(&self) -> Option<Picture> {
+        let mut recorder = PictureRecorder::new();
+        let canvas = recorder.begin_recording(self.bounds(), false);
+        self.draw(canvas, None);
+        recorder.finish_recording_as_picture(None)
     }
 
     /// `SkDrawable::approximateBytesUsed`.

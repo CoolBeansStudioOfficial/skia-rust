@@ -1,0 +1,14 @@
+[package]
+name = "skia-rust-libjpeg"
+description = "Port of the libjpeg-turbo 3.1.0 8-bit decompressor that Skia's JPEG codec uses, used by skia-rust's codecs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "IJG AND BSD-3-Clause AND Zlib"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

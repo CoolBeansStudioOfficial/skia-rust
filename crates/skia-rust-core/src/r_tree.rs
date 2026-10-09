@@ -89,6 +89,56 @@ impl RTree {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
+    /// Bulk-loads `bounds_array` (`SkRTree::insert(const SkRect[], int N)`); empty rectangles are
+    /// skipped but keep their index.
+    // Port of: src/core/SkRTree.cpp#L14-L34 (chrome/m156)
+    pub fn insert(&self, bounds_array: &[Rect]) {
+        let mut state = self.lock();
+        debug_assert_eq!(0, state.count);
+
+        let mut branches: Vec<Branch> = Vec::with_capacity(bounds_array.len());
+
+        for (i, bounds) in bounds_array.iter().enumerate() {
+            if bounds.is_empty() {
+                continue;
+            }
+
+            branches.push(Branch {
+                child: i,
+                bounds: *bounds,
+            });
+        }
+
+        state.count = branches.len();
+        if state.count != 0 {
+            if 1 == state.count {
+                state.nodes.reserve_exact(1);
+                let n = state.allocate_node_at_level(0);
+                state.nodes[n].num_children = 1;
+                state.nodes[n].children[0] = branches[0];
+                state.root = Branch {
+                    child: n,
+                    bounds: branches[0].bounds,
+                };
+            } else {
+                let needed = RTreeState::count_nodes(state.count);
+                state.nodes.reserve_exact(needed);
+                let root = state.bulk_load(&mut branches, 0);
+                state.root = root;
+            }
+        }
+    }
+
+    /// Appends to `results` the indices of the rectangles intersecting `query`
+    /// (`SkRTree::search(const SkRect&, std::vector<int>*)`).
+    // Port of: src/core/SkRTree.cpp#L134-L140 (chrome/m156)
+    pub fn search(&self, query: &Rect, results: &mut Vec<usize>) {
+        let state = self.lock();
+        if state.count > 0 && Rect::intersects2(state.root.bounds, query) {
+            state.search_node(state.root.child, query, results);
+        }
+    }
+
     /// Returns the depth of the tree structure (`getDepth`).
     #[doc(alias = "getDepth")]
     #[must_use]
@@ -237,50 +287,12 @@ impl RTreeState {
 }
 
 impl BBoxHierarchy for RTree {
-    // Port of: src/core/SkRTree.cpp#L14-L34 (chrome/m156)
-    fn insert(&self, bounds_array: &[Rect]) {
-        let mut state = self.lock();
-        debug_assert_eq!(0, state.count);
-
-        let mut branches: Vec<Branch> = Vec::with_capacity(bounds_array.len());
-
-        for (i, bounds) in bounds_array.iter().enumerate() {
-            if bounds.is_empty() {
-                continue;
-            }
-
-            branches.push(Branch {
-                child: i,
-                bounds: *bounds,
-            });
-        }
-
-        state.count = branches.len();
-        if state.count != 0 {
-            if 1 == state.count {
-                state.nodes.reserve_exact(1);
-                let n = state.allocate_node_at_level(0);
-                state.nodes[n].num_children = 1;
-                state.nodes[n].children[0] = branches[0];
-                state.root = Branch {
-                    child: n,
-                    bounds: branches[0].bounds,
-                };
-            } else {
-                let needed = RTreeState::count_nodes(state.count);
-                state.nodes.reserve_exact(needed);
-                let root = state.bulk_load(&mut branches, 0);
-                state.root = root;
-            }
-        }
+    fn insert(&self, rects: &[Rect]) {
+        RTree::insert(self, rects);
     }
 
-    // Port of: src/core/SkRTree.cpp#L134-L140 (chrome/m156)
     fn search(&self, query: &Rect, results: &mut Vec<usize>) {
-        let state = self.lock();
-        if state.count > 0 && Rect::intersects2(state.root.bounds, query) {
-            state.search_node(state.root.child, query, results);
-        }
+        RTree::search(self, query, results);
     }
 
     // Port of: src/core/SkRTree.cpp#L164-L170 (chrome/m156)

@@ -329,13 +329,413 @@ pub struct IrPool {
   `SkSLCheckSymbolTableCorrectness` beyond `debug_assert!`s, and `SK_ENABLE_OPTIMIZE_SIZE`
   branches, because the oracle did not define it.
 
+### 4.3 As implemented in S5
+
+S5 landed the IR core in `crates/skia-rust-sksl`. This section is the contract for S6–S13:
+where each Skia class lives, how to allocate and rewrite nodes, and the rules that keep the
+layered pools sound. Where it differs from §4.1/§4.2, this section wins.
+
+#### File map
+
+| Skia | Rust | S5 has | Later tasks add |
+|---|---|---|---|
+| `ir/SkSLIRNode.h`, `SkSLExpression.*`, `SkSLStatement.h`, `SkSLProgramElement.h` | `ir/expression.rs`, `ir/statement.rs`, `ir/program_element.rs` | node structs, `*Kind` enums, `description`, `isIncomplete`, `isEmpty`, `asAnyConstructor` | `compareConstant`/`getConstantValue`/`supportsConstantValues` as `Expression` methods dispatching on the kind (S7a, S8) |
+| `ir/SkSLBinaryExpression` | `ir/binary_expression.rs` | data, `description` | `convert`, `make`, `CheckRef`, `isAssignmentIntoVariable` (S7b) |
+| `ir/SkSLConstructor*` (10 files) | `ir/constructor.rs` (the 9 payload structs + `any_constructor_description`) | data, `description` | `Constructor::Convert` as `constructor::convert`, each class's `convert`/`make` in a new file per Skia class (`ir/constructor_compound.rs`, …) with `impl ConstructorCompound` (S7a) |
+| `SkSLEmptyExpression.h`, `SkSLFunctionReference.h`, `SkSLMethodReference.h`, `SkSLPoison.h`, `SkSLTypeReference.*` | `ir/simple_expressions.rs` | data, `description` | `make`/`convert`, `TypeReference::VerifyType` (S7b) |
+| `SkSLPrefixExpression.*`, `SkSLPostfixExpression.*` | `ir/prefix_postfix.rs` | data, `description` | `convert`/`make` in `ir/prefix_expression.rs`, `ir/postfix_expression.rs` (S7b) |
+| `SkSLFieldAccess`, `SkSLIndexExpression`, `SkSLSwizzle`, `SkSLTernaryExpression`, `SkSLVariableReference`, `SkSLSetting`, `SkSLLiteral`, `SkSLChildCall`, `SkSLFunctionCall` | `ir/<snake_name>.rs` | data, `description` (+ `Swizzle::mask_string`/`is_identity`, `CapsFlag` names, `Literal` accessors) | `convert`/`make` in the same file (S7a: literal; S7b: the others; S7c: calls) |
+| `SkSLBlock` | `ir/block.rs` | data, `isEmpty`, `description` | `make`, `make_block`, `make_compound_statement` (S7d) |
+| `SkSLBreakStatement.h`, `SkSLContinueStatement.h`, `SkSLDiscardStatement.*`, `SkSLNop.h`, `SkSLReturnStatement.h` | `ir/simple_statements.rs` | data, `description` | `DiscardStatement::convert` (S7d) |
+| `SkSLDoStatement`, `SkSLExpressionStatement`, `SkSLForStatement`, `SkSLIfStatement`, `SkSLSwitchStatement`, `SkSLSwitchCase` | `ir/control_statements.rs` | data, `description`, `LoopUnrollInfo`, `SwitchStatement::cases` | `convert`/`make` in a new file per class (`ir/for_statement.rs`, …) (S7d) |
+| `SkSLVarDeclarations` | `ir/var_declarations.rs` | `VarDeclaration`, `GlobalVarDeclaration`, `description` | `ErrorCheck`, `convert`, `make` (S7d) |
+| `SkSLExtension.h`, `SkSLFunctionDefinition.h`, `SkSLFunctionPrototype.h`, `SkSLInterfaceBlock.*`, `SkSLModifiersDeclaration.h`, `SkSLStructDefinition.*` | `ir/program_element.rs` | data, `description` | `convert`/`make` in a new file per class (S7c: function definition; S7d: the rest) |
+| `SkSLType` | `ir/types.rs` | `Type` (all subclasses as `TypeClass`), `TypeRef` with every virtual accessor (`componentType`, `columns`, `slotType`, `isAllowedInES2`, …), `Field`, `StructType::new`, `CoercionCost`, `getArrayName` | `coercionCost`, `toCompound`, `applyQualifiers`, `coerceExpression`, `checkForOutOfRangeLiteral`, `checkIfUsableInArray`, `convertArraySize`, `isAllowedInES2(context)`, `Type::clone`, the checked `MakeArrayType`/`MakeStructType` (S6) |
+| `SkSLBuiltinTypes` | `builtin_types.rs` | the table and the `TypeId` constants | — |
+| `SkSLSymbol`, `SkSLSymbolTable` | `ir/symbol.rs`, `ir/symbol_table.rs` | `SymbolKind`; name/position/type/description by `SymbolId`; table storage, `find` (`IrPool::find_symbol`), `findBuiltinSymbol`, `isType`, `isBuiltinType`, `injectWithoutOwnership` (`inject_symbol`) | `add`/`addWithoutOwnership` (with errors), `renameSymbol`, `removeSymbol`, `moveSymbolTo`, `insertNewParent`, `addArrayDimension`, `instantiateSymbolRef`, `wouldShadowSymbolsFrom` (S6); `Symbol::instantiate` (S7b) |
+| `SkSLVariable`, `SkSLFieldSymbol.h`, `SkSLFunctionDeclaration` | `ir/variable.rs`, `ir/field_symbol.rs`, `ir/function_declaration.rs` | data, declaration links, `description`; `FunctionDeclaration` has no constructor yet (tests use the struct literal) | `Variable::convert`/`make`/`MakeScratchVariable` (S6); the `FunctionDeclaration` constructor (main-parameter rules), `convert`, `mangledName`, `matches`, `determineFinalTypes` (S7c) |
+| `SkSLLayout`, `SkSLModifierFlags`, `SkSLModifiers.h` | `ir/layout.rs`, `ir/modifier_flags.rs` | `LayoutFlags`/`ModifierFlags` (bitflags), `Layout`, `Modifiers`, both `description`s | `checkPermittedLayout`, `checkPermittedFlags` (S6) |
+| `SkSLProgram`, `SkSLModule.h` | `ir/program.rs`, `modules.rs` (`Module`; `ModuleType` gained `Program` and `Unknown`) | `Program` (`elements`, `getFunction`, `description`), `ProgramInterface`, `UniformInfo` | `usage` (S9a), construction (S11) |
+| `SkSLContext`, `SkSLErrorReporter`, `SkSLCompiler.cpp#L441-L537` | `context.rs`, `error_reporter.rs`, `compiler.rs` | all of it | `Compiler`'s module loading, `convert_program`, `optimize`, `finalize` (S11, S13) |
+| `SkSLMangler`, `SkSLProgramSettings.h`, `SkSLProgramKind.h`, `SkSLDefines.h`, `SkSLIntrinsicList` | `mangler.rs`, `program_settings.rs`, `defines.rs`, `intrinsic_list.rs` | all of it | — |
+| `analysis/SkSLProgramVisitor.h`, `transform/SkSLProgramWriter.h` | `analysis/program_visitor.rs`, `transform/program_writer.rs` | the traits and Skia's default recursion | the analyses (S9a/b) and transforms (S11, S13) next to them |
+
+#### Pools, ids and layering
+
+- Ids: `ExprId`, `StmtId`, `ElemId`, `TypeId`, `VarId`, `FnId`, `FieldId` (anonymous interface
+  block fields), `SymTabId`, all `Copy`. `SymbolId` is the enum Skia's `Symbol*` becomes:
+  `Type(TypeId) | Variable(VarId) | FunctionDeclaration(FnId) | Field(FieldId)`. Skia's
+  `SymbolKind::kExternal` has no node at m156 and is not represented.
+- Symbols are not one arena: each kind has its own (`pool.variable(id)`, `pool.function(id)`,
+  `pool.type_node(id)`, `pool.field_symbol(id)`), so typed ids need no runtime kind checks.
+- Every arena has the same API: `pool.expression(id)` (resolves through the parent chain),
+  `pool.expression_mut(id)` (local nodes only; **panics on a frozen parent's id**),
+  `pool.add_expression(node) -> ExprId`, `pool.next_expression_id()`,
+  `pool.is_local_expression(id)`. Likewise `statement`, `element`, `variable`, `function`,
+  `field_symbol`, `symbol_table`, and `type_mut`/`add_type`.
+- **Built-in types** are a `static` table below every pool; their ids are the constants in
+  `builtin_types.rs`, in `BuiltinTypes`' constructor order. Naming rule: Skia's field minus the
+  `f`, in SCREAMING_SNAKE (`fFloat2x2` → `TypeId::FLOAT2X2`, `fUInt` → `UINT`, `fIVec2` →
+  `IVEC2`, `fGenHType` → `GEN_HTYPE`, `fSkCaps` → `SK_CAPS`, `fTexture2D_sample` →
+  `TEXTURE2D_SAMPLE`); the one clash is `fAtomic_uint` → `ATOMIC_UINT_ALIAS`. Every constant
+  has `#[doc(alias = "fName")]`.
+- **Layering.** `IrPool::new()` is a root pool (used for `sksl_shared` and in tests).
+  `IrPool::extend(parent: Arc<IrPool>)` layers a new pool on a frozen one; `pool.freeze()`
+  gives the `Arc`. S11: compile a module into `IrPool::extend(parent_module.pool.clone())`
+  (root for the first), freeze it into `Module { parent, pool, symbols, elements, module_type }`,
+  and compile programs into `IrPool::extend(module.pool.clone())`. A program's symbol table
+  is a local `SymbolTable` whose `parent` is the module's table id and which has
+  `at_module_boundary` set.
+- **Frozen means immutable.** Shared IR never changes after its module loads. Every Skia
+  mutation we checked touches only the node being created (`setNextOverload` on the new
+  declaration, `setDefinition` on program functions, `setVarDeclaration` on the new variable).
+  If a port hits the "frozen parent pool" panic, the C++ is mutating shared state: stop and
+  look, do not work around it.
+- **One owner per id.** A node id appears in exactly one parent slot. Skia's `std::move` of a
+  `unique_ptr` into a new parent is "copy the id into the new parent and stop using the old
+  parent". Never put the same `ExprId` into two parents; clone instead. Replaced and abandoned
+  nodes stay in the pool, unreachable (as Skia's `Pool` keeps freed nodes until the program
+  dies).
+- **Rewriting a slot.** Skia's `std::unique_ptr<Expression>& slot` is the id. `slot = newNode`
+  is `pool.replace_expression(slot, node)`; `slot = std::move(child)` (child of the node in
+  `slot`) is `pool.move_expression_into(slot, child)`; wrapping a slot's node in a new parent
+  (the inliner's `block->children().push_back(std::move(*stmt)); *stmt = std::move(block)`) is
+  `let moved = pool.relocate_statement(slot); /* build block with children [.., moved] */
+  pool.replace_statement(slot, block)`. Ids held across a rewrite keep naming the same slot,
+  which is what the inliner's `std::unique_ptr<Statement>*` candidates rely on.
+- **Nullable slots** are `Option<…>` (`ForStatement::{initializer, test, next}`,
+  `IfStatement::if_false`, `ReturnStatement::expression`, `VarDeclaration::value`). Arrays
+  (`ExpressionArray`, `StatementArray`) are `Vec<ExprId>`/`Vec<StmtId>` with no null entries:
+  Skia only nulls entries of arrays it is about to discard.
+- `FunctionCall::stable_pointer` is the id the call was first allocated at: take
+  `pool.next_expression_id()` right before `add_expression`. `clone` copies it, as Skia does.
+- Skia's back-pointers become ids: `Variable::declaring_element`
+  (`DeclaringElement::VarDeclaration(StmtId) | GlobalVarDeclaration(ElemId)`),
+  `Variable::interface_block`, `FunctionDeclaration::{definition, next_overload}`. Skia's
+  `detachDead*` destructor hooks have no equivalent (nothing is destroyed).
+
+#### Nodes and how to write `Convert`/`Make`
+
+- Node = `Expression { position, ty, kind }`, `Statement { position, kind }`,
+  `ProgramElement { position, kind }`. `kind` is `ExpressionKind::Binary(BinaryExpression)`,
+  `StatementKind::For(ForStatement)`, `ProgramElementKind::GlobalVar(GlobalVarDeclaration)`, …
+  in Skia's `Kind` order; leaf classes are unit structs (`Poison`, `Nop`, `BreakStatement`, …).
+  Payload fields are `pub` and named after Skia's accessors in snake case (`if_true`,
+  `field_index`, `stable_pointer`; `type()` is `ty`, `MethodReference::self()` is `self_`).
+- A Skia factory is an associated function of the payload struct:
+  `impl BinaryExpression { pub fn convert(ctx: &mut Context, pos: Position, left: ExprId, op:
+  Operator, right: ExprId) -> Option<ExprId>; pub fn make(ctx: &mut Context, …) -> ExprId }`.
+  Map the C++ types as: `std::unique_ptr<Expression>` (owned) → `ExprId`; `nullptr` result →
+  `None`; `ExpressionArray` → `Vec<ExprId>`; `const Type&`/`const Type*` → `TypeId`;
+  `const Variable*` → `VarId`; `const FunctionDeclaration*` → `FnId`; `SymbolTable*` →
+  `SymTabId`; `const Context&` → `&mut Context` (errors and allocation go through it). To
+  build a node: `ctx.pool.add_expression(Expression::new(pos, ty, ExpressionKind::…))`.
+- **Borrowing.** A `&Expression` borrowed from `ctx.pool` cannot live across a call that takes
+  `&mut Context`. Copy what you need first (ids are `Copy`; clone a payload if needed), or
+  borrow fields separately: `ctx.pool` and `ctx.errors` are disjoint, so
+  `let e = ctx.pool.expression(id); ctx.errors.error(e.position, "…")` compiles. Functions that
+  need the context therefore take ids, not node references (`Expression::is_incomplete(ctx,
+  id)` is the model).
+- **Types.** `ctx.pool.ty(id)` returns a `TypeRef`, which derefs to `Type` (`name`,
+  `abbreviated_name`, `type_kind`, `class`) and answers every virtual query, following aliases
+  exactly as Skia's overrides do. Pointer comparisons (`&type == fContext.fTypes.fFloat.get()`)
+  become `ty == TypeId::FLOAT`; `type.matches(other)` becomes `pool.ty(a).matches(b)`. Keep
+  Skia's quirks: `numberKind()` of a vector or matrix is `Nonnumeric` (so
+  `pool.ty(TypeId::FLOAT4).is_float()` is false; use `component_type()`). Array and struct
+  types are built with `Type::new_array_type` / `Type::new_struct_type(StructType::new(…))`
+  and allocated with `ctx.pool.add_type`; S6's `MakeArrayType`/`MakeStructType`/
+  `addArrayDimension` wrap them with Skia's checks.
+- **Errors.** `ctx.errors.error(pos, &msg)`, with the message copied character for character.
+  Messages that contain `<POISON>` are dropped by the reporter, as in Skia.
+
+#### `description()` and `clone()`
+
+- `pool.expression_description(id)`, `pool.expression_description_with(id, precedence)`,
+  `pool.statement_description(id)`, `pool.element_description(id)`,
+  `pool.symbol_description(symbol)`, `pool.ty(id).description()`, `Program::description()`.
+  Every node's printer is ported from its Skia override, quirks included (`StructDefinition`
+  prints `struct S {  float x; };`, an `InterfaceBlock` glues its layout to its modifiers).
+- Literal floats print through `skstd::to_string_f32` because `SKSL_FLOAT` is `float` at m156
+  (`SkSLDefines.h#L21`; §5 said `double` and is corrected). Constant folding follows each
+  fold's own C++ types.
+- Verified by `ir/tests.rs`: hand-built IR reproduces `folding/ArraySizeFolding`,
+  `folding/TernaryFolding` and `runtime/ChildEffectSimple` `.minified.sksl` exactly (after the
+  minifier's whitespace stripping), the `for` loop of `runtime/ArrayIndexing`, and the function
+  descriptions quoted in `errors/Ossfuzz38140` and the intrinsic-redefinition errors.
+  `compiler.rs` reproduces the error text of `errors/Ossfuzz38140`, `ForLoopOverflow`,
+  `IllegalRecursionSimple` and `Ossfuzz44561` byte for byte.
+- `pool.clone_expression(id)` / `clone_expression_at(id, pos)` / `clone_expression_array`:
+  deep copy into the calling pool (also of nodes that live in a parent, which is how the inliner
+  copies module code into a program). Skia has no `Statement::clone`; the inliner (S12) builds
+  its statement copies itself with `add_statement`, reading module nodes freely.
+
+#### Context, errors and compiler
+
+- `Context { config: Option<ProgramConfig>, errors: ErrorReporter, module: Option<Arc<Module>>,
+  symbol_table: Option<SymTabId>, pool: IrPool }`. `ctx.config()` unwraps the config.
+  `Compiler` owns the context. A finished `Program` owns its pool; passes that run on a program
+  use `ctx.with_program(&mut program, |ctx| …)`, which lends the program's pool, config and
+  symbol table to the context and takes them back.
+- `ErrorReporter` is one struct with an `ErrorSink` enum instead of Skia's subclasses:
+  `Compiler { error_text }` (formats with `compiler::handle_error`), `Forwarding { errors }` (the
+  parser checkpoint's reporter), `NoOp`, `TestingOnlyAbort`. The parser's
+  `context.setErrorReporter(&fErrorReporter)` is `let old =
+  ctx.set_error_reporter(ErrorReporter::forwarding())`, and restoring is
+  `let forwarding = ctx.set_error_reporter(old)` followed by forwarding its errors (S10).
+  The compiler's source text is `ctx.errors.set_source(Arc<str>)`.
+- `Compiler::error_text(show_count)` (and `error_text_bytes` for exact bytes),
+  `write_error_count`, `reset_errors`, `error_count`, `Compiler::POISON_TAG`.
+
+#### Visitors and writers
+
+- `ProgramVisitor` methods take `(&mut self, pool: &IrPool, id)`. Override a method and call
+  `walk_expression`/`walk_statement`/`walk_program_element` for Skia's `INHERITED::visitX`.
+  `visit(&program)` visits shared elements first, then owned ones.
+- `ProgramWriter` methods take `(&mut self, ctx: &mut Context, id)`; the walkers copy the child
+  ids out before recursing, so overrides may rewrite through `ctx.pool`. Override
+  `visit_expression_ptr`/`visit_statement_ptr` to replace a child (Skia's `unique_ptr&`
+  overloads) and rewrite with `replace_expression`/`move_expression_into`. Writers only run on
+  a program's owned elements; shared elements are frozen.
+
+#### Notes for the next tasks
+
+- **S6** ports into `ir/types.rs` (as `impl TypeRef` or `impl Type` methods taking ids and
+  `&mut Context`), `ir/symbol_table.rs` (as `IrPool`/`Context` methods taking a `SymTabId`:
+  `add` needs the context for its duplicate-symbol error, so it is
+  `fn add_symbol(ctx: &mut Context, table: SymTabId, symbol: SymbolId)`), `ir/layout.rs`,
+  `ir/modifier_flags.rs` and `ir/variable.rs`, and creates `util.rs` (`ShaderCaps`,
+  `ShaderCapsFactory`) and `memory_layout.rs`. `toCompound(context, columns, rows)` returns a
+  built-in `TypeId` picked by `match` on the component's id, mirroring Skia's switch.
+  `SymbolTable`'s `std::collections::HashMap` is fine: Skia only iterates it in the unported
+  `CheckSymbolTableCorrectness`.
+- **S7a–d** follow the file map and the `convert`/`make` conventions above. A `Make` that
+  returns one of its arguments unchanged returns that `ExprId` (after setting its position
+  with `ctx.pool.expression_mut(id).position = pos` where Skia does `expr->fPosition = pos`).
+  `Symbol::instantiate` becomes `fn instantiate(ctx: &mut Context, symbol: SymbolId, pos:
+  Position) -> Option<ExprId>` in `ir/symbol.rs`.
+- **S9a** keys `ProgramUsage` by `VarId`/`FnId`. Use `std` maps only where Skia never iterates
+  in an order-visible way; otherwise `thash` (§5, R2).
+- **S11** builds the module chain as described under "Layering", sets
+  `ctx.errors.set_source`, and moves the finished pool into `Program`.
+- **S12** keeps its candidates as `StmtId`/`ExprId` slots and uses the relocate/replace idioms;
+  `Mangler::unique_name(base, &ctx.pool, symbol_table)` matches Skia's counter and truncation.
+
+### 4.4 As implemented in S6
+
+S6 landed the type, symbol, declaration, layout and memory rules in `crates/skia-rust-sksl`. The
+conventions of §4.3 hold, plus these:
+
+- **Methods that report errors take `&mut Context`** and sit on `TypeId`: `apply_qualifiers`,
+  `clone_in`, `check_if_usable_in_array`, `check_for_out_of_range_literal_value`,
+  `convert_array_size_value`. Pure queries sit on `TypeRef`: `coercion_cost`, `can_coerce_to`,
+  `to_compound`, `is_allowed_in_es2_for`. The checked factories are `Type::make_array_type` and
+  `Type::make_struct_type`.
+- **Symbol-table operations are free functions** in `ir/symbol_table.rs`, re-exported from `ir`:
+  `add_symbol(ctx, table, symbol)` (reports duplicates, returns nothing), `rename_symbol`,
+  `remove_symbol`, `move_symbol_to`, `insert_new_parent`, `add_array_dimension` (returns the
+  `TypeId`), `would_shadow_symbols_from`. Ownership is the pool's, so `add` and
+  `addWithoutOwnership` are one function, and `removeSymbol` returns nothing.
+- `Variable::convert(ctx, …) -> VarId` validates and allocates; `Variable::make(pool, …) -> VarId`
+  allocates. `Layout::check_permitted_layout`, `ModifierFlags::check_permitted_flags`,
+  `Operator::determine_binary_type(ctx, left, right) -> Option<BinaryTypes>` and
+  `Operator::is_matrix_multiply(pool, …)` are in place.
+- `util::ShaderCaps` (its GLSL-only fields are not ported), `ShaderCapsFactory::{standalone,
+  default_caps}` (cached in `OnceLock`s), and `memory_layout::MemoryLayout` with
+  `Standard::{Std140, Std430, Metal, WgslUniformBase, …}`.
+- `Compiler::FRAGCOLOR_NAME` joins `POISON_TAG` in `compiler.rs`.
+
+**Deferred, as of S6.** These needed the S7a constructors, the S7b operators or the S8 constant
+folder. The first two are done (see below). The other two are still open:
+
+- `Variable::MakeScratchVariable`: needs `VarDeclaration::Make` (S7d).
+- `type_to_sksltype`: belongs with the runtime-effect uniform types (S18).
+
+**File ownership for the parallel tasks.** Each file has one owner, except the shared hot spots,
+which are listed separately.
+
+| Task | Owns |
+|---|---|
+| S7a | `ir/constructor*.rs`, `ir/literal.rs`, and a `coerce_expression` addition to `ir/types.rs` |
+| S7b | `ir/binary_expression.rs`, `ir/prefix_postfix.rs`, `ir/ternary_expression.rs`, `ir/index_expression.rs`, `ir/swizzle.rs`, `ir/field_access.rs`, `ir/variable_reference.rs`, `ir/setting.rs`, `ir/simple_expressions.rs`, `ir/child_call.rs`, `Symbol::instantiate` in `ir/symbol.rs`, `instantiate_symbol_ref` in `ir/symbol_table.rs` |
+| S7c | `ir/function_call.rs`, `ir/function_declaration.rs`, `intrinsic_list.rs`, the function-definition part of `ir/program_element.rs` |
+| S7d | `ir/block.rs`, `ir/control_statements.rs`, `ir/simple_statements.rs`, `ir/var_declarations.rs`, the other element kinds of `ir/program_element.rs`, and new per-class files |
+| S8 | `constant_folder.rs` (new) |
+
+Shared hot spots: `ir/mod.rs` (module lines and re-exports; S7a–d all add some), and
+`ir/program_element.rs` (S7c and S7d both edit it). Agree on one edit order, or rebase the second
+PR onto the first. `compiler.rs` belongs to S11.
+
+### 4.5 As integrated in S5–S9 (`port/sksl-5`)
+
+The S7a, S7b, S7c, S8, S9a and S9b branches are merged into one tree, and the stand-ins those
+tasks left for each other are gone. Every call goes to the function that owns it:
+
+- **Deferred from S6, now done.** `Type::coerce_expression` (`types.rs`),
+  `check_for_out_of_range_literal`, `convert_array_size` (`types.rs`, with
+  `constant_folder::get_constant_int`), and `SymbolTable::instantiate_symbol_ref` (`Symbol::instantiate`).
+- **S7b.** `ir/constant_folder_stub.rs` and `ir/s7b_shims.rs` are deleted. The operators call the
+  S7a `make`s, `Type::coerce_expression`, `constant_folder::{simplify, get_constant_value_for_variable}`
+  and `analysis::{is_assignable, update_variable_ref_kind}`. The folding of `-x`, `!b` and `~x`
+  (`SkSLPrefixExpression.cpp`) is complete in `ir/prefix_postfix.rs`.
+- **S8.** The private node builders and constant-value helpers are gone. The folder uses
+  `Literal::make*`, `ConstructorSplat/DiagonalMatrix/Array/Compound::make` (and
+  `make_from_constants`), `BinaryExpression::make*`, `PrefixExpression::make`,
+  `Expression::{get_constant_value, compare_constant, supports_constant_values}` and the S9a
+  analyses.
+- **S7a.** `ir/constructor.rs` has no stand-ins. Its constant-value methods are the ones S8 uses.
+  Skia m156 overrides `getConstantValue`/`supportsConstantValues` only in `Literal` and the
+  constructors (`SkSLLiteral.h`, `SkSLConstructor*.h`); `IndexExpression`, `PrefixExpression` and
+  `FunctionCall` have no override, so they stay on the default (no constant value).
+- **S9b.** `analysis/s9b_shims.rs` is deleted. `WriteCounts` is `ProgramUsage` (`get_variable(v).write`),
+  the constant-expression visitor with loop indices is `expression_queries::is_constant_expression_with_loop_indices`,
+  and `is_same_expression_tree`, `statement_writes_to_variable` and `BinaryExpression::make` are the
+  S9a and S7b functions. `SymbolTableStackBuilder` has one definition (S9a); its method is `finish`.
+  `SafeMath`, `saturating_add_size` and `double_saturate2int` moved to `base_helpers.rs`, and
+  `forward_errors` to `error_reporter.rs`.
+- **S7c.** No `pending()` path is left. `Constructor::Convert` is `constructor::convert`, argument
+  coercion and out-parameter reference kinds are real, `eval()` becomes `ChildCall::make`, and
+  the sk_Position fixup is built with the `IRHelpers` members it uses (local to
+  `ir/function_definition.rs`). `ExpressionStatement::make` is ported in `ir/control_statements.rs`
+  for the fixup. Intrinsic folding (`SkSLFunctionCall.cpp`, the `Intrinsics` namespace and
+  `optimize_intrinsic_call`) is `ir/function_call_intrinsics.rs`.
+- **S9a.** `analysis/returns_opaque_color.rs` ports `ReturnsNonOpaqueColorVisitor`.
+- **Tree-shape optimizations** (S7b's deferred list): the ternary `fOptimize` rewrites
+  (`ir/ternary_expression.rs`), constant array and matrix index extraction in
+  `IndexExpression::Make`, `optimize_constructor_swizzle` in `Swizzle::Make`, struct-constructor
+  field extraction in `FieldAccess::Make`, and constructor-cast folding (S7a's
+  `ConstructorScalarCast::make`).
+- **Copies of skia-rust-base helpers** that the sksl crate needs (it does not depend on
+  skia-rust-core): `base_helpers.rs` (`SafeMath`, `ieee_double_divide`, half floats, `is_finite_array`)
+  and `matrix_invert.rs` (the 2x2, 3x3 and 4x4 inverses). Both go away when skia-rust-base lands.
+- `intrinsic_list.rs` gained `not`, which Skia's `SKSL_INTRINSIC_LIST` has (106 entries).
+
+### 4.6 As implemented in S10
+
+`crates/skia-rust-sksl/src/parser.rs` ports `SkSLParser.{h,cpp}` (m156) function by function.
+
+- **API.** `Parser::new(&mut Context, ProgramSettings, ProgramKind, &[u8])` borrows the context
+  (Skia's `Compiler&`) and the source bytes. The context needs `config`, a current `symbol_table`
+  (the module's or program's global table, created with `mark_module_boundary`), and the error
+  reporter with `set_source`/`set_source_bytes`. The source is bytes because Skia's strings are
+  (fuzzer inputs need not be UTF-8); `ErrorReporter::source` is now `Arc<[u8]>`.
+- **Driver hooks for S11.** Skia's two entry points end in compiler code, so they stop at the parse:
+  `Parser::program_inheriting_from(self) -> Option<Vec<ElemId>>` (`None` when errors were
+  reported; S11 does `Compiler::releaseProgram`: build the `Program`, then `finalize` and
+  `optimize`) and `Parser::module_inheriting_from(self) -> Vec<ElemId>` (S11 wraps the elements,
+  the global symbol table and the parent in a `Module`). `initializeContext`/`cleanupContext` and
+  `FinalizeSettings` are S11's: `tests/parser_errors.rs` has a small version of each (root symbol
+  table, the module chain compiled with this parser from the original module texts,
+  `allow_narrowing_conversions` for runtime effects) that S11 can lift.
+- **Mechanics.** `AutoDepth` is `auto_depth(|this| ..)` plus `increase_depth()` (the depth is
+  restored when the closure returns, as the destructor does); `AutoSymbolTable` is
+  `with_symbol_table(enable, |this, table| ..)`; `Checkpoint` swaps in `ErrorReporter::forwarding()`
+  and `accept`/`rewind` restore the old reporter (forwarding the collected errors on accept). The
+  function body block adopts the function's table (`block(false, Some(table))`). The binary
+  precedence levels share `binary_level`/`binary_level_ops`, which are Skia's loops.
+- **Tests.** `tests/parser_errors.rs` runs the 333 `resources/sksl/errors` inputs against their
+  `tests/sksl/errors/*.glsl` goldens byte for byte, and the 38 `runtime_errors` inputs with
+  `SkSLErrorTest`'s rule (every expected message appears, in order). Cases whose messages come
+  from `finalize`, the inliner or `SkRuntimeEffect` validation are listed in
+  `DEFERRED_TO_FINALIZATION`/`DEFERRED_RUNTIME_ERRORS`; the test checks that the parser accepted
+  them, and S11 should delete those lists as it ports the phases. One golden quotes a non-UTF-8
+  source byte (`Ossfuzz519154489`); its messages are `&str`, so that case compares after lossy
+  conversion. The data is vendored under `tests/data` (`-text` in `.gitattributes`, since some
+  inputs hold CR bytes).
+- **Fixes in shared code that the parser exposed.** `string::stoi` returns an `SKSL_INT` (an
+  `i64`: `4294967295` stays positive), `string::stod_float` parses straight to `f32`
+  (`SKSL_FLOAT`), `Literal::make_int_literal` has no range assert (Skia's context overload
+  has none), and `slotCount` arithmetic wraps like `size_t`. The `Finalizer` and
+  `Type::checkForOutOfRangeLiteral` no longer ask an unsized array for its slot count, and the
+  compound-constructor check no longer asks a non-vector argument for its columns.
+
+### 4.7 As implemented in S11
+
+The driver is in `compiler.rs` (`Compiler`, with a `Flavor` chosen at construction), and the
+module chain is in `module_loader.rs`.
+
+- **Driver.** `finalize_settings` (`FinalizeSettings`, without Skia's static overrides),
+  `initialize_context`/`cleanup_context`, `module_for_program_kind`, `compile_module` (and
+  `compile_module_parts`, which the loader uses so it can add the public aliases before the pool
+  is frozen), `convert_program` (the parse, then `release_program`), `finalize` and `optimize`.
+  `finalize` runs the three `FindAndDeclareBuiltin*` transforms (`transform/find_and_declare.rs`),
+  then `do_finalization_checks`, the strict-ES2 indexing check and `check_program_structure`, in
+  Skia's order, inside `Context::with_program`.
+- **Modules.** `ModuleLoader::for_flavor` gives one loader per flavour. Each module (root, shared,
+  gpu, frag, vert, compute, public, rt_shader) is a `OnceLock`, compiled from its flavour's text.
+  `compile_and_shrink` drops the function prototypes and adds the public type aliases to
+  `sksl_public` (`addPublicTypeAliases`). `Module` keeps its source text.
+- **Bytes end to end.** `ErrorReporter::error_bytes`, `Parser::error_bytes` and `Program::source`
+  are bytes, so `Ossfuzz519154489` (a message quoting byte `0xFF`) compares exactly.
+  `ErrorReporter::error(&str)` stays for the messages that are text.
+- **skslc.** `tests/src/tools/skslc.rs` compiles with `Flavor::Standalone`. A program that fails
+  to compile gives `### Compilation failed:` and the error text, which is the golden. A program
+  that compiles needs a code generator, so it returns `NotPorted`. The golden runner reads inputs
+  as bytes.
+- **Deferred.** `tests/parser_errors.rs` compiles every `errors/*.glsl` input and compares the
+  bytes. Four goldens (`ArrayInlinedIndexOutOfRange`, `MatrixInlinedIndexOutOfRange`,
+  `VectorInlinedIndexOutOfRange`, `OverflowInlinedLiteral`) come from the inliner (S12): the test
+  requires that the front end accepts them. `SamplerExternalOES` comes from the GLSL generator
+  (`ShaderCaps::fExternalTextureSupport`, R7): excluded in the manifest.
+- **Hooks for S12 and S13.** `Compiler::optimize_module_after_loading` runs the module inliner
+  after the module is parsed and outside its context window (Skia's `AutoProgramConfig` set-up
+  belongs in S12). `Compiler::run_optimizer_passes` is the program optimizer: S12's inliner, then
+  S13's `EliminateUnreachableCode` and the dead-function and dead-variable passes, in Skia's order.
+  Both run only when `ProgramSettings::optimize` is set (`Compiler::optimize`). `Program` keeps no
+  cached usage: `analysis::get_usage` computes it, and the transforms update a local copy.
+
+### 4.8 As implemented in S12
+
+`inliner.rs` ports `SkSLInliner.{h,cpp}` as `Inliner { mangler, inlined_statement_counter }`, with the
+`Context` passed to each method (`analyze(ctx, elements, symbols, usage)`).
+
+- Candidates are slot ids (`InlineCandidate`: symbol table, parent/enclosing `StmtId`, the call's
+  `ExprId`). The wrap step is `relocate_statement(enclosing)`, push the moved id into the unscoped
+  body, `move_statement_into(enclosing, body)`; the fix-up table maps the slot to the moved id.
+  A call is replaced with `move_expression_into(slot, replacement)`.
+- C++ argument evaluation order is taken as Clang's, left to right; it is visible through the
+  mangler's counter (`IfStatement`: test, then true, then false).
+- `Transform::AddConstToVarModifiers` is `transform::add_const_to_var_modifiers` (needed by
+  `inlineStatement`).
+- `Compiler::optimize_module_after_loading` lends the module's unfrozen pool and a default
+  `ProgramConfig` (Skia's `AutoProgramConfig`) to the context and loops the inliner until it makes
+  no change; usage comes from `analysis::get_module_parts_usage`. `Compiler::run_optimizer_passes`
+  runs the inliner once through `Context::with_program`; S13's passes follow it.
+### 4.9 As implemented in S13
+
+The optimizer transforms are in `crates/skia-rust-sksl/src/transform/`, one file per Skia file
+(`eliminate_dead_*.rs`, `rename_private_symbols.rs`, …). Each takes `(ctx, elements, usage)`. The
+dead-code passes that Skia has for programs have an `_in_program` form over the owned and shared
+lists. Usage is an explicit `ProgramUsage` the caller holds, and the transforms update it.
+
+- **Program.** `Compiler::run_optimizer_passes` takes the element lists out of the program, computes
+  `get_usage`, lends the program to the context (`with_program`), runs the passes in Skia's order
+  (`EliminateUnreachableCode`, then the dead-function, dead-local and dead-global loops), and puts
+  the lists back. The inliner (S12) goes at the top of that function. Under `debug_assertions` it
+  also runs `CheckSymbolTableCorrectness` with the reporter swapped out, and asserts that it found
+  nothing. Programs keep their Nops: Skia runs `EliminateEmptyStatements` on modules only.
+- **Module.** `Compiler::optimize_module_before_minifying(kind, &mut ModuleParts, parent, shrink)`
+  installs the module's pool, configuration and symbols (`with_module_parts`), runs the module passes
+  in Skia's order, and asserts the usage. Its caller is the minifier (S24, `tests/src/tools/
+  sksl_minify.rs`). `optimize_module_after_loading` is unchanged: its only work is the inliner.
+- **Slots.** Overwriting a statement is `replace_with_nop` or `pool.replace_statement`, and copying a
+  node into an existing slot is `move_statement_into`. Where a child must keep its id (the brace
+  pass), the parent's field is rewritten instead. A `VarDeclaration` that moves to another id
+  (`relocate_statement`, `move_statement_into`) takes its variable's `declaring_element` with it,
+  because Skia's pointer names the moved object (`IrPool::retarget_declaration`). The hoisting
+  transform and the inliner's enclosing-statement move both rely on this.
+- **Checks.** `transform/tests.rs` has one test per pass on small snippets, and the Skia optimized
+  programs from `DeadStripFunctions`, `DeadGlobals` and `DeadIfStatement` (through `convert_program`).
+  The module path with shrinking on is checked byte for byte by the `.minified.sksl` goldens
+  (`sksl-golden-verify`, through S24's `tests/src/tools/sksl_minify.rs`), which replaced the
+  normalized comparison this section used to describe.
+>
 ## 5. Exactness requirements
 
 | Area | Requirement | Where it shows |
 |---|---|---|
 | Error text | `handleError` formatting (`error: ` + line + `: ` + msg, echo with the 100-char window and `...`, carets over `[start, end)` clamped to the line, `Position` length capped at 255), `errorText()`/`writeErrorCount()` (`N error` / `N errors`), the order in which errors are reported (conversion order, then finalization). Positions are byte offsets; the line is the count of `\n` | `errors/*.glsl` (338), 106 + 7 + 7 failure goldens, `SkSLErrorTest`, `SkRuntimeEffectTest` (`errorText` substrings) |
 | Literals | `skstd::to_string(float/double)` = iostream `%g` with precision 7, then 9/17 if the value does not round-trip, then append `.0` when there is no `.`/`e` (`SkSLString.cpp#L23-L56`). Port the `%g` algorithm: Rust has no `%g`, so build it from Rust's correctly rounded `{:.*e}`. `SkSL::stod` = `istream >> double` (correctly rounded; `str::parse::<f64>`), `stoi` = `strtoull(base 0)`, so `010` is octal, plus `u` suffix and `≤ 0xFFFFFFFF` | every generator's output, `.skrp` `0x3F800000 (1.0)` |
-| Constant folding | `SKSL_FLOAT` is `double`. Folds happen in `f64` with Skia's range checks and then cast. Intrinsic folds call `std::sin`/`pow`/… in double (`SkSLFunctionCall.cpp`): use the host `f64` functions with `// skia-rust: libm` (R4) | `.skrp`, `.wgsl`, `.minified.sksl` |
+| Constant folding | Literals hold a `double`; `SKSL_FLOAT` (what `Literal::floatValue()` returns) is `float` (corrected in S5, §4.3). Each fold uses the C++ types of its own code, with Skia's range checks and casts. Intrinsic folds call `std::sin`/`pow`/… in double (`SkSLFunctionCall.cpp`): use the host `f64` functions with `// skia-rust: libm` (R4) | `.skrp`, `.wgsl`, `.minified.sksl` |
 | Optimizer | Pass order and repeat loops exactly as `optimize`/`finalize`/`optimizeModuleAfterLoading`/`optimizeModuleBeforeMinifying` (`SkSLCompiler.cpp#L253-L440`), `FinalizeSettings` (`#L89-L125`), the `getRPProgram` re-compile with `kDefaultInlineThreshold` (`SkRuntimeEffect.cpp#L218-L284`) | all outputs |
 | Inliner / names | Candidate discovery order, `Mangler` counters (`_0_x`, `_1_y`, per inliner), `fInlinedStatementCounter`, `RenamePrivateSymbols`' naming sequence | `.skrp` slot names, WGSL, minified |
 | Hash iteration | `findPreexistingImmutableData` iterates `THashSet<Slot>` (`SkSLRasterPipelineCodeGenerator.cpp#L2735-L2780`), and the first match decides which immutable slots are reused. Port `SkTHashTable` (open addressing, `SkGoodHash` = `SkChecksum::Mix` for 4-byte keys, growth policy, slot-order iteration) as `skia_rust_sksl::thash`. Every other Skia hash map in the ported code is lookup-only or sorted before output (WGSL's field polyfills, `#L1470-L1484`); `std` maps are fine there, and each one that iterates needs a comment that says so | `.skrp` immutable ranges (`i3..4`) |
@@ -360,8 +760,8 @@ external dependency: S14 ports it 1:1. `Program` holds the instructions, slot co
 `make_stages` returns `Vec<ProgramStage<'a>>` (`Stage<'a>` or one of `Label(i32)`,
 `InvokeShader(i32)`, `InvokeColorFilter(i32)`, `InvokeBlender(i32)`, `ToLinearSrgb(MemPtr)`,
 `FromLinearSrgb(MemPtr)`, `StackRewind`), exactly Skia's `TArray<Stage>`. Contexts are the typed
-simd contexts. Offsets are bytes from the slab's `MemPtr`. Uniform data is `&'a [i32]` (borrowed
-from the arena, already color-space-transformed by `UniformsAsSpan`). Pointer packing
+simd contexts. Offsets are bytes from the slab's `MemPtr`. Uniform data lives in the slab too (the
+uniform block, §6.5), so the uniform contexts hold `MemPtr`s like the others. Pointer packing
 (`SkRPCtxUtils::Pack`) is not observable with typed contexts and is not ported.
 
 Slot memory: `allocateSlotData` (`SkSLRasterPipelineBuilder.cpp#L1675-L1695`) becomes
@@ -413,6 +813,190 @@ the same slot regions Skia derives from pointers (values `v`, temp stack `$`, im
 (`tools/sksltrace/SkSLTraceUtils.cpp`, test tooling built on `SkJSONWriter` and
 `modules/jsonreader`), `DebugTracePlayer` and the `TraceHook` implementation come in S23. The `TraceHook` trait in simd stays where it is; sksl implements it
 (`&self` methods, so the recording hook uses a `Mutex<Vec<_>>`).
+
+### 6.5 As implemented in S15
+
+`crates/skia-rust-sksl/src/codegen/rp/append.rs` ports `Program::allocateSlotData` and
+`Program::appendStages`. `make_stages` (S14, `program.rs`) is unchanged and still returns its own
+`Stage { op, ctx: StageCtx }` list; `appendStages` lowers each entry to a simd `Stage<'a>`.
+
+- **Traits.** `StageSink<'a>` (`append`, `append_stack_rewind`, `num_stages`, and two additions:
+  `replace_stage`, because a branch's target is known only after its label is placed, and
+  `set_lane_count`), `SlotAlloc<'a>` (`make`, `alloc_scratch_init`) and `Callbacks<'a, P>`, taken
+  as `Option<&mut dyn Callbacks<'a, P>>`. Core implements `StageSink` for `RasterPipeline<'a>` and
+  `SlotAlloc` for `ArenaAlloc`.
+- **Lane count and R8.** The stages use `selection().tier.highp_stride()` at append time. The
+  pipeline records it (`RasterPipeline::lane_count`), and `run`/`compile` debug-assert that the
+  tier matches.
+- **The slab.** One `alloc_scratch_init` reserves values, temp stacks, immutable slots and the
+  uniform block, in that order, with the immutable values and the uniform bit patterns written in
+  its initial image. `ArenaAlloc::scratch_buffer` gives the bytes that the code binding
+  `SHADER_SCRATCH` passes to `MemView::write` (the blitter, and the default `on_filter_color4f`).
+  Uniform offsets (`Addr::Uniform`) become slab offsets, so the uniform copies read scalars from
+  slot memory, as Skia's `const int32_t*` sources do.
+- **Contexts are `'static`.** The simd contexts `UniformCtx` and `CopyIndirectUniformCtx` hold
+  `src: MemPtr` (not `&[i32]`), so they can be allocated in the arena like every other context and
+  `Stage` stays two words (`stages_are_small`). The rp-diff replayer binds each uniform stage's
+  values to its own slot (`UNIFORM_SLOT_BASE + stage index`). Two ported `SkRasterPipelineTest`
+  cases (`CopyUniforms`, `CopyFromIndirectUniformUnmasked`) bind their uniform arrays as memory
+  slots, as Skia's pointer does; their assertions are unchanged.
+- **Trace ops are rejected.** `appendStages` returns `false` before appending anything when the
+  program has a trace op. Their contexts hold a `&dyn TraceHook`, and S23 provides the hook.
+- **Tests.** `raster_pipeline/sksl_tests.rs` builds programs with the builder and runs them on every
+  tier (`oracle_selection`): constants and n-way arithmetic, immutable and uniform data, a forward
+  jump, a stack-top branch whose target is patched in, a child invocation through `Callbacks`, the
+  rejected trace op, and a lane-count mismatch (should panic). The rp-diff uniform cases still
+  match their committed expectations.
+
+### 6.6 As implemented in S17
+
+`crates/skia-rust-sksl/src/codegen/rp/generator/` ports `SkSLRasterPipelineCodeGenerator.cpp`
+function by function; the entry point is `make_raster_pipeline_program(&mut Program, ElemId /* the
+definition of main */, Option<DebugTracePriv>, write_trace_ops) -> Option<rp::Program>`.
+
+- **Files.** `mod.rs` (`Generator`, `SlotManager`, stacks, `writeProgram`, `finish`),
+  `statements.rs` (`writeFunction`, `writeGlobals`, every `write*Statement`, immutable data),
+  `expressions.rs` (every `push*Expression`, typed ops, structured comparisons),
+  `intrinsics.rs` (the three `pushIntrinsic(IntrinsicKind, …)` tables and the `TypedOps` ones),
+  `lvalue.rs` (the `LValue` variants and `makeLValue`).
+- **Destructors are calls.** Skia's `AutoStack`, `AutoContinueMask`, `AutoLoopTarget` and
+  `LValue` destructors emit instructions or recycle stack ids, and the order is visible in the dump
+  (stack ids, `discard_stack`). `AutoStack` is a `Stack` id with `recycle_stack`
+  (`drop_auto_stack`) where the C++ scope ends; an `LValue` is a node of an arena named by
+  `LvId`, and `free_lvalue` runs the destructor chain (`ScratchLValue` and `DynamicIndexLValue`
+  discard their dedicated stacks, then recycle them, then free their parents). Locals die in
+  reverse declaration order, a `TArray` of lvalues front to back. An `UnownedLValueSlice` is a slice
+  node that does not own its parent.
+- **`unsupported()` is `Err(Unsupported)`.** It aborts the whole generation, so cleanup on error
+  paths is skipped. The non-fatal `false` results (`writeImmutableVarDeclaration`,
+  `pushImmutableData`, `getImmutableValueForExpression`) stay `bool`.
+- **Temporaries.** Skia's on-stack `Literal{Position{}, v, &type}` temporaries are pool nodes
+  (`make_literal`), built with the exact `double` value (no rounding through `Literal::Make`).
+- **Slot numbering.** Slots are created at the same calls as in C++ (`getVariableSlots` on first use),
+  so evaluation order of C++ arguments is Clang's, left to right. Immutable-slot reuse iterates a
+  `thash::THashSet<Slot>` as Skia does. `double` to `int`/`uint` conversions for immutable bits follow
+  x86 (`INT_MIN` out of range; 64-bit truncation, then the low half, for `uint`).
+- **Debug info.** The slot managers own `SlotDebugInfo` while generating and move it into the
+  `DebugTracePriv` that `finish` wraps in the program (`fSlotInfo`, `fUniformInfo`). `DebugTracePriv`
+  gained `source` (`setSource`) and `trace_coord`. `SlotDebugInfo` still lacks `numberKind`,
+  `groupIndex` and `fnReturnValue`, which only the trace player and JSON writer read (S23).
+- **Trace ops** are emitted (`shouldWriteTraceOps`) and dumped; `append_stages` still rejects them.
+- **Dump configuration.** `Program::dump_with(count, non_tail_rewinds)`. `skslc` is
+  `SKSL_STANDALONE`, so its goldens have `stack_rewind`; `dump` is the library build.
+- **`append_stages` order.** The slab size check (`allocateSlotData`) now runs before `make_stages`,
+  as in Skia, so a program with too many slots returns `false` instead of overflowing an offset.
+- **Tests.** `skslc` writes `.skrp` for every program that compiles (`tests/src/tools/skslc.rs`;
+  `tests/src/bin/skslc.rs` is its command line). All 365 `.skrp` goldens match byte for byte, 106 of
+  them `### Compilation failed` (85 front end, 21 `code is not supported`). The 9
+  `RasterPipelineCodeGeneratorTest` cases and the 69 `SkSLTest` entries without the `CPU` flag
+  (`_RP` and `_Clone`) are ported (`tests/src/unit/raster_pipeline_code_generator_test.rs`,
+  `sk_sl_test.rs`). The 183 `CPU` entries need `RuntimeEffect` (S18) for `_CPU`; they are added with S18 (§6.7).
+
+### 6.7 As implemented in S18
+
+`skia_rust_core::{runtime_effect, runtime_effect_priv, shaders::runtime_shader, capabilities}`.
+
+- **`RuntimeEffect`** is an `Arc` handle (`runtime_effect.rs`). `make_for_{shader,color_filter,
+  blender}(sksl, Option<&Options>) -> Result<RuntimeEffect, String>` run `MakeFromSource` and
+  `MakeInternal` as written (kind checks, the `#version 100` rule for color filters, the
+  `Analysis::*` flags, uniform and child reflection, elided sample coords, the options hash).
+  `Options` has skia-safe's two public fields; `allowPrivateAccess`, `fStableKey` and
+  `maxVersionAllowed` are `pub(crate)` and set through `runtime_effect_priv::{allow_private_access,
+  es3_options, set_stable_key_on_options}`, as Skia's `friend class SkRuntimeEffectPriv`.
+  `make_settings` is `MakeSettings`. `Uniform`, `Child`, `ChildType`, `uniform::{Type, Flags}` have
+  accessors (skia-safe's names); `ChildPtr` is an enum with an extra `Empty` variant for Skia's null
+  child (`ty()` is therefore an `Option`; a null shader samples transparent black, a null color
+  filter passes its input, a null blender is `srcover`).
+- **`getRPProgram`** (`RuntimeEffect::rp_program`, crate-private) is a `OnceLock<Option<rp::Program>>`.
+  The generator needs `&mut Program` (it allocates literals in the pool), so the effect keeps its base
+  program under a `Mutex`; the optimized copy is recompiled from the source exactly as in Skia, and
+  the unoptimized case generates from the base program. Debug traces are S23.
+- **`RuntimeShader`** (`ShaderBase`, `ShaderType::Runtime`): `append_stages` is
+  `SkRuntimeShader.cpp#L95-L123`: `CanDraw` (ES2 raster caps), `MatrixRec::apply`,
+  `uniforms_as_span` (the `layout(color)` uniforms transformed from sRGB to the destination space with
+  `TransformUniforms`), then `Program::append_stages` with `RuntimeEffectRpCallbacks`
+  (`Callbacks`, S15). `uniforms_as_span` returns a `Vec<f32>` (no arena copy is needed: `append_stages`
+  copies the values into its slab). `make_deferred_shader` takes an `Arc<dyn Fn(&UniformsCallbackContext)
+  -> Data>`.
+- **Builders.** `RuntimeEffectBuilder` (= `RuntimeShaderBuilder`): `uniform(name)`/`child(name)` return
+  `BuilderUniform`/`BuilderChild` (`set_f32`, `set_i32`, `set_matrix`, `assign`, `assign_null`; a
+  missing variable or a wrong size returns `false` where Skia aborts in debug builds),
+  `set_uniform_float/int` (skia-safe) and `make_shader`. `make_color_filter`/`make_blender` come with S19.
+- **`Capabilities`** (`SkCapabilities`) only carries the `SkSL` version (`raster_backend()` is 100).
+- **Tests.** The 183 `CPU`-flagged `SkSLTest` entries run `_CPU` first (`MakeForShader`, a 2x2 raster
+  surface, optimized and unoptimized, every pixel green), then `_RP` and `_Clone`;
+  `SkRuntimeEffectTest` ports the factory, reflection, shader, builder and opacity tests (22 of 46; the
+  rest need color filters and blenders, S19, tracing, S23, or Ganesh/Graphite); `SkSLES2ConformanceTest`
+  passes vacuously, as the conformance shaders are not part of Skia's repository. GMs: `runtimeshader`
+  (`SimpleRT`, `SpiralRT`, `LinearGradientRT`, `child_sampling_rt`, `deferred_shader_rt`,
+  `paint_alpha_normals_rt`, `raw_image_shader_normals_rt`, `lit_shader_linear_rt`) and
+  `runtimefunctions` match the goldens on every checkable tier. The other `runtimeshader` GMs need
+  image decoding or runtime color filters, `runtimeintrinsics` draws labels with text, and `destcolor`
+  and `image_dither` make runtime blenders.
+
+### 6.8 As implemented in S19 and S20
+
+- **Color filters and blenders.** `skia_rust_core::{runtime_color_filter, runtime_blender}` port
+  `SkRuntimeColorFilter` and `SkRuntimeBlender`: the same `appendStages` body (`CanDraw`, the RP
+  program, `UniformsAsSpan`, `RuntimeEffectRPCallbacks` with an identity `MatrixRec` marked CTM-applied),
+  `onIsAlphaUnchanged` and the type. `RuntimeEffect::make_color_filter` / `make_blender` are
+  `makeColorFilter` / `makeBlender`; `RuntimeEffectBuilder` gains `make_color_filter` and `make_blender`,
+  and `RuntimeColorFilterBuilder` / `RuntimeBlendBuilder` are aliases of it (as in m156, where all three
+  names are one class). The paint and blitter paths already call `Blender::as_base().append_stages`.
+- **Known runtime effects.** `skia_rust_core::known_runtime_effects` ports `SkKnownRuntimeEffects`:
+  `StableKey` (the discriminants of Skia; `1DBlurBase` and `2DBlurBase` are constants, since a Rust
+  enum cannot repeat a discriminant), the SkSL of all 31 keys, and `get_known_runtime_effect` with one
+  `OnceLock` per key (`Option`: `Invalid` is `None`, as Skia's `nullptr`). The blur and matrix
+  convolution sources are built with `format!` from the same pieces as the C++.
+- **Clients.** `color_filters::lerp` (`SkColorFilters::Lerp`), `skia_rust_effects::{luma_color_filter,
+  overdraw_color_filter, high_contrast_filter, blenders}` (`SkLumaColorFilter`, `SkOverdrawColorFilter`,
+  `SkHighContrastFilter`, `SkBlenders::Arithmetic`), and `shaders::blend_blender` (`SkShaders::Blend`
+  with a non-mode blender, which is the `Blend` known effect). `SkHighContrastFilter` needs
+  `SkColorFilterPriv::WithWorkingFormat`, ported as `skia_rust_core::working_format_color_filter`
+  (`SkWorkingFormatColorFilter`; flattening is not ported).
+- **`InvertStyle` is a newtype.** `SkHighContrastConfig::InvertStyle` is an `enum class` that `isValid`
+  checks for out-of-range values, which a Rust enum cannot hold without `unsafe`.
+- **Not done.** `SkImageFilters::Blend`/`Image` (so `arithmode_blender` and `composeCFIF`) and the text
+  labels of `lumafilter`, `highcontrastfilter` and `arithmode` need the image filters and text. The
+  image-based GMs (`destcolor`, `ColorCubeColorFilterRT`, `AlternateLuma`, `RuntimeColorFilterGM`) need
+  codecs. `runtimecolorfilter_vertices_atlas_and_patch` was not attempted.
+
+### 6.9 As implemented in S26
+
+`skia_rust_sksl::codegen::wgsl` (crate feature `wgsl`; `skia-rust-tests` turns it on) ports
+`SkSLWGSLCodeGenerator.cpp` function by function. The public entry points are
+`to_wgsl(ctx, program, caps, PrettyPrint, IncludeSyntheticCode, Option<ValidateWgslProc>) ->
+Option<String>` (`ToWGSL`) and `to_wgsl_native` (the `NativeShader*` overload).
+
+- **Files.** `mod.rs` (the generator, `generateCode`, functions, entry point, pipeline IO structs,
+  global variables), `statements.rs` (every `write*Statement`, the `for` capture buffers, the switch
+  emulation), `expressions.rs` (`assembleExpression` and the per-kind assemblers, `AutoConstEvalWorkaround`,
+  lvalues), `intrinsics.rs` (`assembleIntrinsicCall`, the `inverse` and `outerProduct` polyfills),
+  `uniforms.rs` (interface blocks, the std140 field polyfills, the synthetic `_GlobalUniforms` block),
+  `lvalue.rs`, `deps.rs` (`FunctionDependencyResolver`), `types.rs` (type names, reserved words,
+  builtins).
+- **Context.** The program's pool is lent to the `Context` for the run (`Context::with_program`),
+  because the generator edits the IR in three places, as Skia does: the `!` of a `do`-`while` test,
+  `Setting::toLiteral`, and `InterfaceBlock::Convert` for the non-block uniforms. Program usage is
+  `analysis::get_usage` (computed once, before the run), element order is `Program::elements`.
+- **Output stream.** Skia swaps `fOut` (`AutoOutputStream`, which also zeroes the indentation). Here
+  `out` is the current `String`; the header and the `for`-loop capture buffers are swapped in and out the
+  same way, and `fAtLineStart` is not saved, as in C++.
+- **Field polyfills** are keyed by (struct type, field index) instead of `const Field*`; the map is
+  iterated only through a sort by replacement name.
+- **No `// fallthrough`.** The goldens come from a non-`SK_DEBUG` build, so the emulated-switch
+  comment is not written.
+- **Tint (R6).** naga was tried as the validator over all 420 outputs: it rejects 10 programs (the two
+  `isinf`/`isnan` goldens, but also `TextureIntrinsics`, `PixelLocalStorage`, `LastFragColor` and six
+  others for naga's own limits). That is not "exactly these two", so `IsInf.wgsl` and `IsNan.wgsl` stay
+  `todo` (`needs-tint-validation`) and naga is not a dependency. `skslc` passes no validator.
+- **Stale goldens.** `compute/AtomicDeclarations.wgsl` and `compute/AtomicOperationsOverArrayAndStruct.wgsl`
+  are named by no `gni` list (`UNLISTED_WGSL_INPUTS`), so Skia never regenerates them. They predate
+  `enable f16;`, the `@align(16)` array polyfill and statement-position intrinsic calls, so the pinned
+  generator cannot produce them: `todo` with that reason.
+- **Tests.** 414 of the 420 `.wgsl` goldens flip to `passing` (416 match, 2 of them already via the
+  front-end error path); `SkSLWGSLTestbed` is ported (`tests/src/unit/sk_slwgsl_testbed.rs`);
+  `crates/skia-rust-sksl/tests/wgsl.rs` pins the entry points.
 
 ## 7. RuntimeEffect integration (core)
 

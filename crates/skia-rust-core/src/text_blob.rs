@@ -340,6 +340,25 @@ impl TextBlob {
         builder.make()
     }
 
+    /// `SkTextBlob::MakeFromRSXformGlyphs(glyphs, xform, font)`: a blob of `glyphs`, each placed
+    /// by its `RSXform`, or `None` when there are no glyphs or too few transforms. Same as
+    /// [`from_rsxform`](Self::from_rsxform) with [`TextEncoding::GlyphId`], since the glyph count
+    /// of a glyph-id text is its length.
+    // Port of: include/core/SkTextBlob.h#L173-L176 (chrome/m156)
+    #[doc(alias = "MakeFromRSXformGlyphs")]
+    #[must_use]
+    pub fn from_rsxform_glyphs(glyphs: &[GlyphId], xform: &[RSXform], font: &Font) -> Option<Self> {
+        let count = glyphs.len();
+        if count == 0 || xform.len() < count {
+            return None;
+        }
+        let mut builder = TextBlobBuilder::new();
+        let (run_glyphs, xforms) = builder.alloc_run_rsxform(font, count);
+        run_glyphs.copy_from_slice(glyphs);
+        xforms.copy_from_slice(&xform[..count]);
+        builder.make()
+    }
+
     /// The x intervals where the horizontal band `bounds` (its top and bottom y) crosses the
     /// outlines of the glyphs, as pairs `[start, end]`. `RSXform` runs are ignored. `paint` gives
     /// the stroke and path effect that change the outlines (`getIntercepts`).
@@ -1161,7 +1180,7 @@ impl TextBlob {
     /// `SkTextBlobPriv::Flatten`: the bounds, then each run (its glyph count, positioning and
     /// extended flag, text size, offset, font and arrays), then a zero glyph count.
     // Port of: src/core/SkTextBlob.cpp#L663-L702 (chrome/m156)
-    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+    pub(crate) fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
         buffer.write_rect(&self.0.bounds);
         for run in &self.0.runs {
             buffer.write_int(count_i32(run.glyph_count()));
@@ -1190,7 +1209,7 @@ impl TextBlob {
 /// `SkTextBlobPriv::MakeFromBuffer`: reads the runs that `flatten` wrote. Each run's arrays are
 /// read and checked before its buffers are allocated, so a malformed stream gives `None`.
 // Port of: src/core/SkTextBlob.cpp#L703-L777 (chrome/m156)
-fn make_from_buffer(reader: &mut ReadBuffer<'_>) -> Option<TextBlob> {
+pub(crate) fn make_from_buffer(reader: &mut ReadBuffer<'_>) -> Option<TextBlob> {
     let bounds = reader.read_rect();
     let mut builder = TextBlobBuilder::new();
     loop {

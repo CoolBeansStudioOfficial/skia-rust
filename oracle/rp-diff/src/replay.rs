@@ -189,6 +189,31 @@ thread_local! {
     /// The `DecalTileCtx`s of the case being built, by [`Ctx::Decal`] id (`decal_*` and
     /// `check_decal_mask` stages share one).
     static DECALS: RefCell<HashMap<u32, &'static DecalTileCtx>> = RefCell::new(HashMap::new());
+    /// The index of the stage being built: its uniform values are bound to [`uniform_slot`].
+    static STAGE_INDEX: Cell<u16> = const { Cell::new(0) };
+}
+
+/// The first memory slot of a stage's uniform values. Case buffers use the slots below it.
+const UNIFORM_SLOT_BASE: u16 = 0xF000;
+
+/// The memory slot holding the uniform values of stage `index` (bound by [`run_case`]).
+fn uniform_slot(index: u16) -> MemSlot {
+    MemSlot(UNIFORM_SLOT_BASE + index)
+}
+
+/// The uniform words of the stage being built, which are read from slot memory (as Skia's
+/// `const int32_t* src`).
+fn uniform_ptr() -> MemPtr {
+    MemPtr::new(uniform_slot(STAGE_INDEX.with(Cell::get)), 0)
+}
+
+/// The uniform values a stage's context carries, if any.
+fn uniform_values(ctx: &Ctx) -> Option<&[i32]> {
+    match ctx {
+        Ctx::SkslUniform { values, .. } => Some(values.as_slice()),
+        Ctx::SkslIndirect { uniform, .. } if !uniform.is_empty() => Some(uniform.as_slice()),
+        _ => None,
+    }
 }
 
 /// Bytes of one `SkSL` slot on the tier being built.
@@ -363,12 +388,12 @@ impl<'a> FromCtx<'a> for &'a SwizzleCopyIndirectCtx {
     }
 }
 
-impl<'a> FromCtx<'a> for &'a CopyIndirectUniformCtx<'a> {
+impl<'a> FromCtx<'a> for &'a CopyIndirectUniformCtx {
     fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
-        let (c, _, uniform) = copy_indirect(ctx)?;
+        let (c, _, _) = copy_indirect(ctx)?;
         Ok(leak(CopyIndirectUniformCtx {
             dst: c.dst,
-            src: Vec::leak(uniform),
+            src: uniform_ptr(),
             indirect_offset: c.indirect_offset,
             indirect_limit: c.indirect_limit,
             slots: c.slots,
@@ -376,12 +401,12 @@ impl<'a> FromCtx<'a> for &'a CopyIndirectUniformCtx<'a> {
     }
 }
 
-impl<'a> FromCtx<'a> for &'a UniformCtx<'a> {
+impl<'a> FromCtx<'a> for &'a UniformCtx {
     fn from_ctx(ctx: &Ctx) -> Result<Self, String> {
         match ctx {
-            Ctx::SkslUniform { buf, dst, values } => Ok(leak(UniformCtx {
+            Ctx::SkslUniform { buf, dst, .. } => Ok(leak(UniformCtx {
                 dst: sksl_ptr(*buf, *dst),
-                src: Vec::leak(values.clone()),
+                src: uniform_ptr(),
             })),
             other => Err(wrong("UniformCtx", other)),
         }
@@ -489,12 +514,12 @@ unsupported!(
     &'a SamplerCtx,
     &'a Conical2PtCtx,
     &'a MipmapCtx,
-    &'a TraceFuncCtx<'a>,
-    &'a TraceVarCtx<'a>,
-    &'a TraceScopeCtx<'a>,
-    &'a TraceLineCtx<'a>,
+    &'a TraceFuncCtx,
+    &'a TraceVarCtx,
+    &'a TraceScopeCtx,
+    &'a TraceLineCtx,
     &'a GradientCtx,
-    &'a PerlinNoiseCtx<'a>,
+    &'a PerlinNoiseCtx,
     &'a EvenlySpaced2StopGradientCtx,
     &'a Cell<[u32; MAX_STRIDE_HIGHP]>,
     &'a CallbackCtx<'a>,
@@ -539,6 +564,7 @@ pub fn build_stages(specs: &[StageSpec], tier: Tier) -> Result<Vec<Stage<'static
         .iter()
         .enumerate()
         .map(|(i, s)| {
+            STAGE_INDEX.with(|c| c.set(u16::try_from(i).expect("fewer than 65536 stages")));
             build_stage(s.op, &s.ctx).map_err(|e| format!("stage {i} ({}): {e}", s.op.name()))
         })
         .collect()
@@ -554,6 +580,19 @@ pub fn build_stages(specs: &[StageSpec], tier: Tier) -> Result<Vec<Stage<'static
 /// If the case has more than 65536 buffers.
 pub fn run_case(case: &Case, stages: &[Stage<'_>], sel: Selection) -> Result<Vec<u8>, String> {
     let mut bufs: Vec<Vec<u8>> = case.buffers.iter().map(|b| b.bytes.clone()).collect();
+    // Each stage's uniform values, as the words its uniform context reads (see `uniform_ptr`).
+    let uniforms: Vec<(MemSlot, Vec<u8>)> = case
+        .stages
+        .iter()
+        .enumerate()
+        .filter_map(|(i, s)| {
+            let index = u16::try_from(i).expect("fewer than 65536 stages");
+            uniform_values(&s.ctx).map(|values| {
+                let bytes = values.iter().flat_map(|v| v.to_ne_bytes()).collect();
+                (uniform_slot(index), bytes)
+            })
+        })
+        .collect();
     let result = catch_unwind(AssertUnwindSafe(|| {
         let mut mem = MemoryBindings::new();
         for (i, (bytes, b)) in bufs.iter_mut().zip(&case.buffers).enumerate() {
@@ -564,6 +603,9 @@ pub fn run_case(case: &Case, stages: &[Stage<'_>], sel: Selection) -> Result<Vec
                     .with_stride(b.stride)
                     .with_origin(b.origin),
             );
+        }
+        for (slot, bytes) in &uniforms {
+            mem.bind(*slot, MemView::read(bytes));
         }
         if case.compiled {
             let mut program = Program::new(stages, sel, case.force_highp);

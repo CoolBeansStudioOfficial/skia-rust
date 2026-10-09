@@ -16,7 +16,7 @@ use crate::floating_point::ieee_float_divide;
 use crate::font_types::FontHinting;
 use crate::glyph_run::GlyphRun;
 use crate::paint::{Paint, Style};
-use crate::path::Path;
+use crate::path::{Iter, Path};
 use crate::path_types::PathVerb;
 use crate::point::Point;
 use crate::scalar::scalar;
@@ -48,7 +48,10 @@ fn calculate_path_gap(top_offset: scalar, bottom_offset: scalar, path: &Path) ->
         }
     };
 
-    for rec in path.iter() {
+    // SkPath::Iter(path, false) turns a close into a line back to the start of the contour (when
+    // the contour is open), unlike SkPathIter.
+    let mut iter = Iter::new(path, false);
+    while let Some(rec) = iter.next_rec() {
         let pts = rec.points();
         match rec.verb() {
             // A move or a close adds no gap.

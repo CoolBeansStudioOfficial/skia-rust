@@ -5,12 +5,16 @@
 
 //! The parts of `ToolUtils` that GMs use.
 
+use std::path::PathBuf;
+
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::{Color, pre_multiply_color};
 use skia_rust_core::color_data::{pixel16_to_color, pixel32_to_pixel16};
+use skia_rust_core::data::Data;
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
@@ -27,6 +31,56 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
+
+/// `(float)v` for a GM coordinate or size: the small integers GMs use are exact in a float.
+// mirrors the implicit int-to-float conversions of the C++ GM code
+#[allow(clippy::cast_precision_loss)]
+#[must_use]
+pub fn int_to_scalar(v: i32) -> f32 {
+    v as f32
+}
+
+/// Port of `GetResourcePath`: the directory of Skia's `resources` (the `SKIA_RESOURCES`
+/// environment variable, else this workspace's pinned Skia checkout), if it exists. The same
+/// lookup as `tests/src/resources.rs`, which this crate cannot depend on.
+// Port of: tools/Resources.cpp#L23-L25 (chrome/m156)
+#[must_use]
+pub fn resource_dir() -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Some(dir) = std::env::var_os("SKIA_RESOURCES") {
+        candidates.push(PathBuf::from(dir));
+    }
+    candidates.push(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("third_party")
+            .join("skia")
+            .join("resources"),
+    );
+    candidates.into_iter().find(|dir| dir.is_dir())
+}
+
+/// Port of `GetResourceAsData`: the contents of the resource at `path` (relative to Skia's
+/// `resources` directory, using `/` separators), or `None` if it cannot be read.
+// Port of: tools/Resources.cpp#L42-L50 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_data(path: &str) -> Option<Vec<u8>> {
+    let mut full = resource_dir()?;
+    for component in path.split('/') {
+        full.push(component);
+    }
+    std::fs::read(full).ok()
+}
+
+/// Port of `ToolUtils::GetResourceAsImage`: a lazy image of the encoded resource at `path`
+/// (`SkImages::DeferredFromEncodedData(GetResourceAsData(path))`).
+// Port of: tools/DecodeUtils.h#L31-L33 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_image(path: &str) -> Option<Image> {
+    let data = get_resource_as_data(path)?;
+    skia_rust_codec::images::deferred_from_encoded_data(Some(Data::new_from_vec(data)), None)
+}
 
 /// `ToolUtils::color_to_565`: rounds `color` to what a 565 surface would store.
 // Port of: tools/ToolUtils.cpp#L142-L151 (chrome/m156)

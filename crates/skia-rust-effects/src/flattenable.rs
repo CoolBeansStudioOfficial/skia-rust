@@ -12,9 +12,25 @@
 //! for effects whose `getTypeName` differs (for example `SkPath1DPathEffectImpl`), so a read of
 //! those effects fails as it does in C++.
 
+use skia_rust_core::blend_mode_blender::create_proc as blend_mode_blender;
 use skia_rust_core::blur_mask_filter_impl::blur_create_proc;
-use skia_rust_core::flattenable::{FlattenableRegistry, MaskFilterFactory, PathEffectFactory};
+use skia_rust_core::color_filters::{blend_create_proc, legacy_gamma_only_create_proc};
+use skia_rust_core::color_space_xform_color_filter::color_space_xform_create_proc;
+use skia_rust_core::compose_color_filter::compose_create_proc as color_filter_compose;
+use skia_rust_core::flattenable::{
+    BlenderFactory, ColorFilterFactory, FlattenableRegistry, MaskFilterFactory, PathEffectFactory,
+    ShaderFactory,
+};
+use skia_rust_core::matrix_color_filter::matrix_create_proc;
 use skia_rust_core::path_effect::{compose_create_proc, sum_create_proc};
+use skia_rust_core::shaders::blend_shader::create_proc as blend_shader;
+use skia_rust_core::shaders::color_filter_shader::create_proc as color_filter_shader;
+use skia_rust_core::shaders::color_shader::{
+    create_proc as color_shader, legacy_color4_create_proc,
+};
+use skia_rust_core::shaders::empty_shader::create_proc as empty_shader;
+use skia_rust_core::shaders::local_matrix_shader::create_proc as local_matrix_shader;
+use skia_rust_core::table_color_filter::table_create_proc;
 
 use crate::corner_path_effect::create_proc as corner_path_effect;
 use crate::dash_impl::create_proc as dash_impl;
@@ -52,10 +68,42 @@ const MASK_FILTERS: &[(&str, MaskFilterFactory)] = &[
     ("SkTableMF", table_mask_filter),
 ];
 
-/// The flattenables of the effects, for `ReadBuffer::read_path_effect` and
-/// `ReadBuffer::read_mask_filter`.
+/// The shaders registered by Skia, by name (`SkFlattenable::Register`), the ones that are ported.
+// Port of: src/ports/SkGlobalInitialization_default.cpp#L36-L46 (chrome/m156)
+const SHADERS: &[(&str, ShaderFactory)] = &[
+    ("SkColorShader", color_shader),
+    // The legacy name of the color shader with a color space.
+    ("SkColorShader4", legacy_color4_create_proc),
+    ("SkEmptyShader", empty_shader),
+    ("SkLocalMatrixShader", local_matrix_shader),
+    ("SkShader_Blend", blend_shader),
+    ("SkColorFilterShader", color_filter_shader),
+];
+
+/// The color filters registered by Skia, by name (`SkFlattenable::Register`), the ones that are
+/// ported.
+// Port of: src/ports/SkGlobalInitialization_default.cpp#L51-L56 (chrome/m156)
+const COLOR_FILTERS: &[(&str, ColorFilterFactory)] = &[
+    ("SkColorFilter_Matrix", matrix_create_proc),
+    ("SkComposeColorFilter", color_filter_compose),
+    ("SkModeColorFilter", blend_create_proc),
+    ("ColorSpaceXformColorFilter", color_space_xform_create_proc),
+    // The legacy name of the gamma-only color space filters.
+    ("SkSRGBGammaColorFilter", legacy_gamma_only_create_proc),
+    ("SkTable_ColorFilter", table_create_proc),
+];
+
+/// The blenders registered by Skia, by name (`SkFlattenable::Register`), the ones that are ported.
+// Port of: src/ports/SkGlobalInitialization_default.cpp#L59-L60 (chrome/m156)
+const BLENDERS: &[(&str, BlenderFactory)] = &[("SkBlendModeBlender", blend_mode_blender)];
+
+/// The flattenables of the effects, for `ReadBuffer::read_path_effect`, `read_mask_filter`,
+/// `read_shader`, `read_color_filter` and `read_blender`.
 #[doc(alias = "SkFlattenable::Register")]
 pub const REGISTRY: FlattenableRegistry = FlattenableRegistry {
     path_effects: PATH_EFFECTS,
     mask_filters: MASK_FILTERS,
+    shaders: SHADERS,
+    color_filters: COLOR_FILTERS,
+    blenders: BLENDERS,
 };

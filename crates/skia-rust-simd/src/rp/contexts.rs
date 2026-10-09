@@ -232,9 +232,12 @@ pub enum PerlinNoiseShaderType {
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L117-L125 (chrome/m156)
 /// `PerlinNoiseCtx`.
+///
+/// skia-rust: the lattice selector and noise tables are owned (Skia points into the shader's
+/// painting data), so the context is `'static` and lives in `ArenaAlloc` like the others.
 #[doc(alias = "SkRasterPipelineContexts::PerlinNoiseCtx")]
 #[derive(Clone, Copy, Debug)]
-pub struct PerlinNoiseCtx<'a> {
+pub struct PerlinNoiseCtx {
     pub noise_type: PerlinNoiseShaderType,
     pub base_frequency_x: f32,
     pub base_frequency_y: f32,
@@ -243,9 +246,9 @@ pub struct PerlinNoiseCtx<'a> {
     pub stitching: bool,
     pub num_octaves: i32,
     /// `[256 values]`.
-    pub lattice_selector: &'a [u8; 256],
-    /// `[4 channels][256 elements][vector of 2]`.
-    pub noise_data: &'a [u16; 4 * 256 * 2],
+    pub lattice_selector: [u8; 256],
+    /// `[4 channels][256 elements][vector of 2]`, flattened.
+    pub noise_data: [u16; 4 * 256 * 2],
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L128-L144 (chrome/m156)
@@ -408,12 +411,14 @@ pub struct ConstantCtx {
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L217-L220 (chrome/m156)
-/// `UniformCtx`.
+/// `UniformCtx`. `src` is Skia's `const int32_t*`: the first of the uniform words, which live in
+/// slot memory (the `SkSL` builder's uniform block is copied there by `appendStages`), so the
+/// context borrows nothing and can live in an arena.
 #[doc(alias = "SkRasterPipelineContexts::UniformCtx")]
-#[derive(Clone, Copy, Debug)]
-pub struct UniformCtx<'a> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UniformCtx {
     pub dst: MemPtr,
-    pub src: &'a [i32],
+    pub src: MemPtr,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L222-L225 (chrome/m156)
@@ -495,12 +500,12 @@ pub struct CopyIndirectCtx {
 }
 
 /// `CopyIndirectCtx` as used by `copy_from_indirect_uniform_unmasked` (the source is uniform
-/// data).
+/// data: `src` is the first of its scalar words, in slot memory, as for [`UniformCtx`]).
 #[doc(alias = "SkRasterPipelineContexts::CopyIndirectCtx")]
-#[derive(Clone, Copy, Debug)]
-pub struct CopyIndirectUniformCtx<'a> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CopyIndirectUniformCtx {
     pub dst: MemPtr,
-    pub src: &'a [i32],
+    pub src: MemPtr,
     pub indirect_offset: MemPtr,
     pub indirect_limit: u32,
     pub slots: u32,
@@ -566,41 +571,45 @@ pub trait TraceHook {
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L288-L292 (chrome/m156)
 /// `TraceFuncCtx`.
+///
+/// skia-rust: the trace hook is an `Arc` rather than the `SkSL::TraceHook*` of Skia. A context is
+/// arena-allocated (`'static`), and its hook is owned by the program that appended it, so sharing
+/// the handle keeps the context free of a lifetime without unsafe code.
 #[doc(alias = "SkRasterPipelineContexts::TraceFuncCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceFuncCtx<'a> {
+#[derive(Clone)]
+pub struct TraceFuncCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub func_idx: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L294-L298 (chrome/m156)
 /// `TraceScopeCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceScopeCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceScopeCtx<'a> {
+#[derive(Clone)]
+pub struct TraceScopeCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub delta: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L300-L304 (chrome/m156)
 /// `TraceLineCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceLineCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceLineCtx<'a> {
+#[derive(Clone)]
+pub struct TraceLineCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub line_number: i32,
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L306-L313 (chrome/m156)
 /// `TraceVarCtx`.
 #[doc(alias = "SkRasterPipelineContexts::TraceVarCtx")]
-#[derive(Clone, Copy)]
-pub struct TraceVarCtx<'a> {
+#[derive(Clone)]
+pub struct TraceVarCtx {
     pub trace_mask: MemPtr,
-    pub trace_hook: &'a dyn TraceHook,
+    pub trace_hook: Arc<dyn TraceHook>,
     pub slot_idx: i32,
     pub num_slots: i32,
     pub data: MemPtr,
@@ -612,7 +621,7 @@ pub struct TraceVarCtx<'a> {
 
 macro_rules! debug_trace_ctx {
     ($($name:ident),*) => {$(
-        impl fmt::Debug for $name<'_> {
+        impl fmt::Debug for $name {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_struct(stringify!($name))
                     .field("trace_mask", &self.trace_mask)

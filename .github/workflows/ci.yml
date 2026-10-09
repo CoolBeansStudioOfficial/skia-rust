@@ -86,8 +86,9 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       # skia-rust-gm is host tooling (files, curl, tar, zstd-sys); it checks the wasm code path on the
-      # host as the Scalar tier.
-      - run: cargo build --target wasm32-unknown-unknown --workspace --exclude xtask --exclude skia-rust-gm
+      # host as the Scalar tier. skia-rust-bench is host tooling too (the nanobench runner and
+      # bench-verify binaries, std::time, files).
+      - run: cargo build --target wasm32-unknown-unknown --workspace --exclude xtask --exclude skia-rust-gm --exclude skia-rust-bench
 
   miri:
     runs-on: ubuntu-latest
@@ -113,5 +114,7 @@ jobs:
       - run: cargo xtask skia fetch
       - run: cargo xtask inventory sync
       - run: git diff --exit-code inventory/manifest.toml
+      - name: Embedded SkSL modules match the pinned Skia tree
+        run: cargo xtask sksl sync-modules --check
       - name: Ported tests agree with the manifest (no regressions, no unmarked passes)
         run: cargo xtask inventory verify
