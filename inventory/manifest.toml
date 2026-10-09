@@ -19885,8 +19885,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L158-L158"
 module = "codec"
-status = "failing"
-reason = "RGBA_F16 premul decode of color_wheel.png is one half step off (blue 0x3b88 vs golden 0x3b87); only the row-4 cells differ; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kJPEG.md"
+status = "passing"
 span_hash = "32379a251c0de003983602c57953717dfd65a59b7af18def9f28bd29dc8ec526"
 
 [[test]]
@@ -19895,8 +19894,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L156-L156"
 module = "codec"
-status = "failing"
-reason = "RGBA_F16 premul decode of color_wheel.png is one half step off (blue 0x3b88 vs golden 0x3b87); differs in the 565, 8888 and f16 surfaces, row-4 cells only; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kPNG.md"
+status = "passing"
 span_hash = "326e490e92eb0daad17dfdc20a58fc7ab225e5a4ec904eb705cadacb867389b4"
 
 [[test]]
