@@ -10,9 +10,9 @@
 //!
 //! skia-rust: only the calls of the features that are ported have a record type. Missing are
 //! `SaveBehind`, `DrawBehind`, `DrawDrawable`,
-//! `DrawPatch`, `DrawTextBlob`, `DrawSlug`, `DrawAtlas`, `DrawVertices`, `DrawMesh`,
+//! `DrawPatch`, `DrawSlug`, `DrawAtlas`, `DrawVertices`, `DrawMesh`,
 //! `DrawShadowRec`, `DrawAnnotation`, `DrawEdgeAAQuad` and `DrawEdgeAAImageSet`, whose types
-//! (`SkDrawable`, `SkTextBlob`, ...) are not ported. `SkTypedMatrix` is a plain
+//! (`SkDrawable`, `SkSlug`, ...) are not ported. `SkTypedMatrix` is a plain
 //! [`Matrix`] (it only precomputes the matrix type for thread safety, and a `Matrix` is
 //! immutable data here). `Optional<T>` is `Option<T>` and `PODArray<T>` a `Vec<T>`.
 
@@ -33,6 +33,7 @@ use crate::rrect::RRect;
 use crate::sampling_options::{FilterMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
+use crate::text_blob::TextBlob;
 use crate::tile_mode::TileMode;
 
 /// Draw tags (`SkRecords::Tags`).
@@ -319,6 +320,15 @@ pub struct DrawPoints {
     pub pts: Vec<Point>,
 }
 
+/// `SkRecords::DrawTextBlob`: the blob is kept by reference, as C++ keeps its `sk_sp`.
+#[derive(Clone, Debug)]
+pub struct DrawTextBlob {
+    pub paint: Paint,
+    pub blob: TextBlob,
+    pub x: scalar,
+    pub y: scalar,
+}
+
 /// `SkRecords::DrawRRect`.
 #[derive(Clone, Debug, Default)]
 pub struct DrawRRect {
@@ -454,6 +464,7 @@ record_types! {
     DrawRRect => DRAW_WITH_PAINT,
     DrawRect => DRAW_WITH_PAINT,
     DrawRegion => DRAW_WITH_PAINT,
+    DrawTextBlob => DRAW_WITH_PAINT | tags::HAS_TEXT,
 }
 
 impl Command {
@@ -475,6 +486,7 @@ impl Command {
             Command::DrawRRect(r) => Some(&mut r.paint),
             Command::DrawRect(r) => Some(&mut r.paint),
             Command::DrawRegion(r) => Some(&mut r.paint),
+            Command::DrawTextBlob(r) => Some(&mut r.paint),
             _ => None,
         }
     }

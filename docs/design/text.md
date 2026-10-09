@@ -88,7 +88,7 @@ from `inventory/manifest.toml` at `6d79587`; golden facts are from `hashes-m156.
 
 | How the GM gets its typeface | In the goldens | Our tooling must return |
 |---|---|---|
-| `DefaultPortableTypeface/Font`, `CreatePortableTypeface`, `DefaultTypeface`, `DefaultFont`, `CreateTestTypeface` | `TestTypeface` (path glyphs from `test_font_*.inc`; serif Normal is the default) | the same `TestTypeface` |
+| `DefaultPortableTypeface/Font`, `CreatePortableTypeface`, `DefaultTypeface`, `DefaultFont`, `CreateTestTypeface` | `TestTypeface` (path glyphs from `test_font_*.inc`; sans-serif Normal is the default: `gDefaultFontIndex = 4` selects `gSubFonts[4]`, `{ "sans-serif", "Normal", ... }`, `tools/fonts/test_font_index.inc#L74`, `#L96`) | the same `TestTypeface` |
 | `CreateTypefaceFromResource`, `TestFontMgr()->makeFromStream/makeFromData` | `nullptr` (`TestFontMgr.cpp#L142-L154`) | `None` |
 | `SkFont()` / `setTypeface(nullptr)` | `SkTypeface::MakeEmpty()` (`src/core/SkFont.cpp#L60-L62`, `#L92-L95`): draws nothing, measures 0 | the empty typeface |
 | `EmojiSample(Cbdt/Sbix/ColrV0/Svg)` | null (resources), so the GM returns `kSkip` (`gm/coloremoji.cpp#L115-L118`, `gm/scaledemoji.cpp#L57-L60`) | `None`, GM skips |

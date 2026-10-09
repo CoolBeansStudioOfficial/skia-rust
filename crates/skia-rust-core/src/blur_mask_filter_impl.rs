@@ -7,21 +7,25 @@
 //!
 //! skia-rust: the nine-patch masks are not cached (`SkMaskCache`/`SkResourceCache`), and the
 //! small masks are drawn through a [`MaskRasterizer`] (see [`crate::mask_filter`]). `asImageFilter`
-//! (which needs the blur image filter) and flattening are not ported yet.
+//! (which needs the blur image filter) is not ported yet. Flattening is ported
+//! ([`blur_create_proc`]).
 
 use crate::align::align4;
 use crate::blur_mask::BlurMask;
 use crate::blur_types::BlurStyle;
+use crate::flattenable::FlattenableRegistry;
 use crate::m44::V2;
 use crate::mask::{AllocType, CreateMode, Mask, MaskBuilder, MaskFormat};
 use crate::mask_filter::{
-    BlurRec, FilterReturn, MaskFilterBase, MaskFilterType, MaskRasterizer, NinePatch,
+    BlurRec, FilterReturn, MaskFilter, MaskFilterBase, MaskFilterType, MaskRasterizer, NinePatch,
 };
 use crate::matrix::Matrix;
 use crate::point::IPoint;
+use crate::read_buffer::ReadBuffer;
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::rrect::{Corner, RRect, Type as RRectType};
 use crate::scalar::{int_to_scalar, scalar, scalar_ceil_to_int};
+use crate::write_buffer::BinaryWriteBuffer;
 
 // Port of: src/core/SkBlurMaskFilterImpl.cpp#L49 (chrome/m156)
 const MAX_BLUR_DEVICE_SIGMA: scalar = 128.0;
@@ -190,10 +194,42 @@ fn make_patch(mut mask: MaskBuilder, outer_rect: IRect, center: IPoint) -> NineP
     }
 }
 
+/// `SkBlurMaskFilterImpl::CreateProc`: the sigma, the style, and the flags, of which only the low
+/// bit is read (it stores `ignoreCTM`).
+// Port of: src/core/SkBlurMaskFilterImpl.cpp#L603-L611 (chrome/m156)
+#[doc(alias = "SkBlurMaskFilterImpl::CreateProc")]
+pub fn blur_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<MaskFilter> {
+    // kLastEnum_SkBlurStyle is kInner_SkBlurStyle.
+    const LAST_BLUR_STYLE: u32 = 3;
+    let sigma = buffer.read_scalar();
+    let style = buffer.read32_le(LAST_BLUR_STYLE);
+    // Historically only 2 bits were recorded.
+    let flags = buffer.read32_le(0x3);
+    let respect_ctm = (flags & 1) == 0;
+    let style = BlurStyle::from_i32(i32::try_from(style).ok()?)?;
+    MaskFilter::blur(style, sigma, respect_ctm)
+}
+
 impl MaskFilterBase for BlurMaskFilterImpl {
     // Port of: src/core/SkBlurMaskFilterImpl.cpp#L60-L62 (chrome/m156)
     fn format(&self) -> MaskFormat {
         MaskFormat::A8
+    }
+
+    // Port of: src/core/SkBlurMaskFilterImpl.h#L73 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkBlurMaskFilterImpl"
+    }
+
+    // Port of: src/core/SkBlurMaskFilterImpl.cpp#L613-L617 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.sigma);
+        buffer.write_uint(self.blur_style as u32);
+        // Historically the ignoreCTM flag is recorded.
+        buffer.write_uint(u32::from(!self.respect_ctm));
     }
 
     // Port of: src/core/SkBlurMaskFilterImpl.cpp#L134-L141 (chrome/m156)

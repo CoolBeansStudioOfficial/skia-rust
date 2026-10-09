@@ -25,6 +25,8 @@ pub mod canvas_test;
 #[cfg(test)]
 pub mod capped_hairlines_test;
 #[cfg(test)]
+pub mod char_to_glyph_cache;
+#[cfg(test)]
 pub mod checksum_test;
 #[cfg(test)]
 pub mod clip_cubic_test;
@@ -64,9 +66,13 @@ pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;
 #[cfg(test)]
+pub mod descriptor_test;
+#[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
 pub mod draw_path_test;
+#[cfg(test)]
+pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
 pub mod exif_test;
@@ -82,6 +88,15 @@ pub mod find_cubic_convex180_chops_test;
 pub mod float16_test;
 #[cfg(test)]
 pub mod floating_point_test;
+pub mod font_host_stream_test;
+#[cfg(test)]
+pub mod font_host_test;
+#[cfg(test)]
+pub mod font_mgr_test;
+pub mod font_names_test;
+pub mod font_scanner_fontations_test;
+pub mod font_test;
+pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
 #[cfg(test)]
@@ -291,6 +306,8 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod serialization_test;
+#[cfg(test)]
 pub mod shader_test;
 #[cfg(test)]
 pub mod size_test;
@@ -299,7 +316,11 @@ pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
+pub mod sk_font_metrics_priv_test;
+#[cfg(test)]
 pub mod sk_gauss_filter_test;
+#[cfg(test)]
+pub mod sk_glyph_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
@@ -308,6 +329,12 @@ pub mod sk_path_range_iter_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
+#[cfg(test)]
+pub mod sk_remote_glyph_cache_test;
+#[cfg(test)]
+pub mod sk_strike_cache_test;
+#[cfg(test)]
+pub mod sk_strike_test;
 #[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
@@ -322,6 +349,9 @@ pub mod stroke_test;
 pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
+pub mod text_blob_test;
+#[cfg(test)]
+pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
 pub mod webp_test;

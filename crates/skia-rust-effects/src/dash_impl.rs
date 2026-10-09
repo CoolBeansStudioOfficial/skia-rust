@@ -5,18 +5,21 @@
 
 //! `SkDashImpl`: the dash path effect.
 
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::is_finite;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Cap, Join};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
-use skia_rust_core::path_effect::{DashInfo, PathEffectBase, PointData, PointFlags};
+use skia_rust_core::path_effect::{DashInfo, PathEffect, PathEffectBase, PointData, PointFlags};
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::{
     SCALAR_1, Scalar, scalar, scalar_floor_to_int, scalar_invert, scalar_is_int, scalar_mod,
 };
 use skia_rust_core::stroke_rec::StrokeRec;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 use crate::dash_path::{
     MAX_DASH_COUNT, StrokeRecApplication, calc_dash_parameters, internal_filter,
@@ -175,7 +178,37 @@ fn cull_line(
     true
 }
 
+/// `SkDashImpl::CreateProc`: the phase, then the intervals, which are validated as a dash.
+// Port of: src/effects/SkDashPathEffect.cpp#L379-L389 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<PathEffect> {
+    let phase = buffer.read_scalar();
+    let count = usize::try_from(buffer.get_array_count()).ok()?;
+    // Don't allocate gigantic buffers if there's not data for them.
+    if !buffer.validate_can_read_n(count, size_of::<f32>()) {
+        return None;
+    }
+    let mut intervals = vec![0.0; count];
+    if !buffer.read_scalar_array(&mut intervals) {
+        return None;
+    }
+    crate::dash_path_effect::new(&intervals, phase)
+}
+
 impl PathEffectBase for DashImpl {
+    // Port of: src/effects/SkDashPathEffect.cpp#L379 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkDashImpl"
+    }
+
+    // Port of: src/effects/SkDashPathEffect.cpp#L374-L377 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar(self.phase);
+        buffer.write_scalar_array(&self.intervals);
+    }
+
     // Port of: src/effects/SkDashPathEffect.cpp#L49-L54 (chrome/m156)
     fn on_filter_path(
         &self,
