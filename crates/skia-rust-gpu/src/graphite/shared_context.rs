@@ -12,8 +12,12 @@
 use std::sync::{Arc, OnceLock};
 
 use crate::gpu::gpu_types::{BackendApi, StdSteadyClockTimePoint};
+use crate::gpu::resource_key::UniqueKey;
 use crate::graphite::caps::Caps;
+use crate::graphite::compute_pipeline::ComputePipeline;
+use crate::graphite::context_options::PipelineCacheOp;
 use crate::graphite::global_cache::GlobalCache;
+use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
@@ -192,5 +196,61 @@ impl SharedContext {
         if let Some(provider) = self.thread_safe_resource_provider.get() {
             provider.force_process_returned_resources();
         }
+    }
+
+    /// `findOrCreateGraphicsPipeline(runtimeDict, pipelineKey, pipelineDesc, renderPassDesc, flags)`
+    /// over the global cache. A miss calls `create` with the compilation ID the cache assigned; the
+    /// backend's pipeline creation (`createGraphicsPipeline`, G11b) is that closure. A pipeline it
+    /// creates is added to the cache, which may return a pipeline another thread added first.
+    ///
+    /// The `kAddingPipeline` callback runs with no serialized key: `PipelineDescToData`
+    /// (`SerializationUtils`, G14) is not ported, so the deprecated `PipelineCallback` never runs.
+    // Port of: src/gpu/graphite/SharedContext.cpp#L73-L125 (chrome/m156)
+    #[doc(alias = "findOrCreateGraphicsPipeline")]
+    pub fn find_or_create_graphics_pipeline(
+        &self,
+        pipeline_key: &UniqueKey,
+        flags: PipelineCreationFlags,
+        create: impl FnOnce(u32) -> Option<Arc<dyn GraphicsPipeline>>,
+    ) -> Option<Arc<dyn GraphicsPipeline>> {
+        let mut compilation_id = 0;
+        if let Some(pipeline) =
+            self.global_cache
+                .find_graphics_pipeline(pipeline_key, flags, Some(&mut compilation_id))
+        {
+            return Some(pipeline);
+        }
+        // Pipelines are shared across Recorders, so two threads can create equivalent pipelines.
+        // The global cache returns the first one in, and this thread's copy is discarded.
+        let pipeline = create(compilation_id)?;
+        let (pipeline, added_to_cache) = self
+            .global_cache
+            .add_graphics_pipeline(pipeline_key, pipeline);
+        if added_to_cache && self.global_cache.has_pipeline_callback() {
+            self.global_cache.invoke_pipeline_callback(
+                PipelineCacheOp::AddingPipeline,
+                &*pipeline,
+                None,
+            );
+        }
+        Some(pipeline)
+    }
+
+    /// `findOrCreateComputePipeline(key)` over the global cache: a miss calls `create`, and the
+    /// pipeline it returns is added unless another thread added one first. Skia keeps this on the
+    /// `ResourceProvider`, which needs the `ComputeStep` (G13) to build the descriptor; the
+    /// cache half is the same, so it is here.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L44-L60 (chrome/m156), the cache half
+    #[doc(alias = "findOrCreateComputePipeline")]
+    pub fn find_or_create_compute_pipeline(
+        &self,
+        key: &UniqueKey,
+        create: impl FnOnce() -> Option<Arc<dyn ComputePipeline>>,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        if let Some(pipeline) = self.global_cache.find_compute_pipeline(key) {
+            return Some(pipeline);
+        }
+        let pipeline = create()?;
+        Some(self.global_cache.add_compute_pipeline(key, pipeline))
     }
 }
