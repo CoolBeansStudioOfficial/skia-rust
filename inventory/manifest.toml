@@ -16680,7 +16680,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/clip_error.cpp#L89-L89"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a3d7bfe24154d501a48a4f21c816d8216998c65a5a77904901e462a8953d9fa1"
 
 [[test]]
@@ -16851,7 +16851,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/color4f.cpp#L72-L93"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "cb3759f557eb6a6d9b51d72c522b93a278e5d6c347135ee4ac6ddbb4754f24b2"
 
 [[test]]
@@ -17016,8 +17016,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colormatrix.cpp#L139-L139"
 module = "raster"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "300416a2bc7d12c1d013822d8a7c6233b9278792419d8f2b1728cc2d37b7f3fc"
 
 [[test]]
@@ -18063,7 +18062,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/convexpolyclip.cpp#L305-L305"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "90e10ddb40dd2bf1ecb9727e6259f922e072be30854142b15b4975f0d5e55a37"
 
 [[test]]
@@ -19016,7 +19015,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawlines_with_local_matrix.cpp#L13-L49"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7e49edb155f9e8900715d3e5a7fe5d51f8b09ef051505dfcb6251cacb9715baa"
 
 [[test]]
@@ -19061,7 +19060,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawregionmodes.cpp#L85-L85"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b08c3ef31db9e59797d780fe2626ddf7040ca6831b2a9463ae80e6c314dbce98"
 
 [[test]]
@@ -19152,7 +19151,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emptypath.cpp#L120-L120"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "34ef43ff3b1ccc73302aa05bbdaa592b324840114620a4ac802a10da0f75a36a"
 
 [[test]]
@@ -19314,7 +19313,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filltypespersp.cpp#L128-L128"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "5475550c74026f91f4f0e75197c8ce4bae9ca4e940d3ed81ed8414085eb9daf4"
 
 [[test]]
@@ -21374,7 +21373,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imageresizetiled.cpp#L29-L61"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "1fca9dce203255e5111afc8d27b4814821cd7b7fbd24a18581bbf153ac898e8e"
 
 [[test]]
