@@ -26,6 +26,13 @@ const PREFERRED_FEATURES: wgpu::Features = wgpu::Features::DUAL_SOURCE_BLENDING
     .union(wgpu::Features::BGRA8UNORM_STORAGE)
     .union(wgpu::Features::TEXTURE_FORMAT_16BIT_NORM);
 
+/// [`adapter_backend_context`] over every backend the build has (for callers that do not depend
+/// on wgpu themselves).
+#[must_use]
+pub fn any_adapter_backend_context() -> Option<(WgpuBackendContext, wgpu::AdapterInfo)> {
+    adapter_backend_context(wgpu::Backends::all())
+}
+
 /// A device on a real (not noop) adapter of `backends`, with the adapter's full limits and the
 /// preferred features it has, or `None` if there is no such adapter or it cannot make a device.
 /// Software adapters are preferred. The adapter's info is returned with the context.

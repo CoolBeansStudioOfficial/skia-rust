@@ -603,6 +603,14 @@ and a path drawn through the MSAA render pass whose resolve is emulated (wgpu ha
 load-from-resolve), read back with `WgpuContext::read_pixels` (`asyncReadTexture` /
 `transferPixels` / `finalizeAsyncReadPixels`).
 
+Surfaces and images read back through the context: `WgpuContext::read_surface_pixels` is
+`Device::onReadPixels` (snap, insert, `ContextPriv::readPixels`), `read_image_pixels` the same for
+an image, and `asyncReadPixels` draws a source that is not copyable, is bottom-left or needs a
+transfer function into a copyable texture (`CopyAsDraw`) first. Ported tests that read pixels use
+`def_graphite_adapter_test!` (tests/src/lib.rs): they are `#[ignore]`d, so CI cannot count them as
+passing, and their entries stay `todo` ("needs a real adapter in CI (lavapipe job)") until a GPU
+job runs `--ignored`. Run them locally with `cargo test -p skia-rust-tests --lib -- --ignored`.
+
 ---
 
 ## 8. CI strategy

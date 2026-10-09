@@ -15,7 +15,8 @@
 
 use std::sync::{Arc, Mutex, PoisonError};
 
-use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::gpu::backing_fit::BackingFit;
+use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Origin, Protected};
 use crate::gpu::sk_log::{skia_log_e, skia_log_w};
 use crate::graphite::async_read::{
     AsyncReadParams, AsyncReadResult, PixelTransferResult, SharedClientMappedBufferManager,
@@ -30,21 +31,26 @@ use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use crate::graphite::graphite_types::{
     InsertFinishInfo, InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
+use crate::graphite::image_graphite::Image;
 use crate::graphite::queue_manager::QueueManager;
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_types::{AccessPattern, BufferType};
+use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::copy_task::CopyTextureToBufferTask;
 use crate::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
 use crate::graphite::texture_format::texture_format_bytes_per_block;
 use crate::graphite::texture_format_xfer_fn::TextureFormatXferFn;
 use crate::graphite::texture_info::texture_info_priv;
 use crate::graphite::texture_proxy_view::TextureProxyView;
+use crate::graphite::texture_utils::{as_view, copy_as_draw};
 use crate::graphite::wgpu::caps::WgpuCaps;
 use crate::graphite::wgpu::queue_manager::WgpuQueueManagerBackend;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
+use skia_rust_core::image::Image as CoreImage;
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
+use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{Contains, IRect};
 
 /// The wgpu `Context`: the shared context, the resource provider and the queue manager.
@@ -368,16 +374,33 @@ type ReadSlot = Arc<Mutex<Option<Option<(Vec<u8>, usize)>>>>;
 /// `Context::readPixels` and its machinery, as far as it is reachable without images and
 /// surfaces (G10d): reading a texture proxy view back.
 impl WgpuContext {
+    /// `makeInternalRecorder()`: a short-lived recorder that shares the context's resource
+    /// provider and does not require ordered recordings.
+    // Port of: src/gpu/graphite/Context.cpp#L239-L253 (chrome/m156)
+    #[doc(alias = "makeInternalRecorder")]
+    #[must_use]
+    pub fn make_internal_recorder(&self) -> Recorder {
+        let options = RecorderOptions {
+            require_ordered_recordings: Some(false),
+            ..RecorderOptions::default()
+        };
+        Recorder::new(
+            self.shared_context.clone(),
+            &options,
+            Some(Arc::clone(&self.resource_provider)),
+        )
+    }
+
     /// `asyncReadPixels(recorder, params)`: reads back the region of `params.src`, calling
     /// `params.callback` with the pixels converted to `params.dst_image_info`, or with `None`
     /// if the read failed.
     ///
-    /// The conversions the GPU would do when the source is not copyable or needs a transfer
-    /// function (`CopyAsDraw`) are done on the CPU by the transfer's converter; a source that is
-    /// not copyable fails (a draw into a copyable texture needs images, G10d).
-    // Port of: src/gpu/graphite/Context.cpp#L413-L520 (chrome/m156)
+    /// A source that is not copyable, is bottom-left, or needs a transfer function is first drawn
+    /// into a copyable texture (`CopyAsDraw`); when that draw is only optional and cannot be made,
+    /// the conversion is done on the CPU by the transfer's converter.
+    // Port of: src/gpu/graphite/Context.cpp#L413-L482 (chrome/m156)
     #[doc(alias = "asyncReadPixels")]
-    pub fn async_read_pixels(&mut self, recorder: Option<Recorder>, params: AsyncReadParams) {
+    pub fn async_read_pixels(&mut self, mut recorder: Option<Recorder>, params: AsyncReadParams) {
         debug_assert_eq!(
             params.src_rect.width(),
             params.dst_image_info.dimensions().width
@@ -390,34 +413,85 @@ impl WgpuContext {
         debug_assert!(params.validate());
 
         let caps = Arc::clone(self.shared_context.caps());
-        let view = &params.src;
-        let Some(proxy) = view.proxy() else {
-            return params.fail();
-        };
-        let tex_info = proxy.texture_info();
-        let format = texture_info_priv::view_format(tex_info);
-        let cs_steps = ColorSpaceXformSteps::new(
-            params.src_color_info.color_space_ref(),
-            params.src_color_info.alpha_type(),
-            params.dst_image_info.color_info().color_space_ref(),
-            params.dst_image_info.color_info().alpha_type(),
-        );
-        let Some(xfer_fn) = TextureFormatXferFn::make_gpu_to_cpu(
-            format,
-            view.swizzle(),
-            &cs_steps,
-            params.dst_image_info.color_type(),
-        ) else {
-            return params.fail();
-        };
+        let mut view = params.src.clone();
+        let mut src_color_info = params.src_color_info.clone();
+        let dst_color_info = params.dst_image_info.color_info().clone();
+        let mut src_rect = params.src_rect;
 
-        if !Caps::is_copyable_src(&*caps, tex_info) {
-            // `CopyAsDraw()` into a copyable texture needs images (G10d).
-            skia_log_w!("AsyncRead failed because copy-as-drawing into a readable format failed");
-            return params.fail();
+        let make_xfer_fn = |view: &TextureProxyView, src_color_info: &ColorInfo| {
+            let proxy = view.proxy()?;
+            let format = texture_info_priv::view_format(proxy.texture_info());
+            let cs_steps = ColorSpaceXformSteps::new(
+                src_color_info.color_space_ref(),
+                src_color_info.alpha_type(),
+                dst_color_info.color_space_ref(),
+                dst_color_info.alpha_type(),
+            );
+            TextureFormatXferFn::make_gpu_to_cpu(
+                format,
+                view.swizzle(),
+                &cs_steps,
+                dst_color_info.color_type(),
+            )
+        };
+        let mut xfer_fn = make_xfer_fn(&view, &src_color_info);
+
+        let has_view = view.proxy().is_some();
+        let require_conversion = view
+            .proxy()
+            .is_none_or(|proxy| !Caps::is_copyable_src(&*caps, proxy.texture_info()));
+        // Flip if the image is bottom left, and try the GPU conversion if the transfer function is
+        // not identity.
+        let try_gpu_conversion = has_view
+            && (view.origin() == Origin::BottomLeft
+                || xfer_fn.as_ref().is_some_and(|xfer| !xfer.is_identity()));
+
+        if require_conversion || try_gpu_conversion {
+            let recorder = recorder.get_or_insert_with(|| self.make_internal_recorder());
+            let src_image = Image::new(view.clone(), &src_color_info).into_core();
+            let converted = copy_as_draw(
+                recorder,
+                None,
+                &src_image,
+                src_rect,
+                &dst_color_info,
+                Budgeted::Yes,
+                Mipmapped::No,
+                BackingFit::Approx,
+                "AsyncReadPixelsConversionTexture",
+            );
+            if let Some(converted) = converted {
+                view = as_view(Some(&converted));
+                src_color_info = converted.image_info().color_info().clone();
+                src_rect = IRect::from_size(src_rect.size());
+
+                // The GPU draw converted the pixels to the converted image's color info (target
+                // color space and alpha type). The backing texture format may not natively match
+                // the destination's channel ordering, so query a transfer function for the
+                // remaining format and swizzle conversion.
+                xfer_fn = make_xfer_fn(&view, &src_color_info);
+            } else if require_conversion {
+                skia_log_w!(
+                    "AsyncRead failed because copy-as-drawing into a readable format failed"
+                );
+                return params.fail();
+            }
+            // else it couldn't be rendered so apply the GPU-optional conversions on the CPU
+            // instead
         }
 
-        self.async_read_texture(recorder, params, &xfer_fn);
+        let Some(xfer_fn) = xfer_fn else {
+            return params.fail();
+        };
+
+        let new_params = AsyncReadParams {
+            src: view,
+            src_color_info,
+            src_rect,
+            dst_image_info: params.dst_image_info,
+            callback: params.callback,
+        };
+        self.async_read_texture(recorder, new_params, &xfer_fn);
     }
 
     /// `asyncReadTexture(recorder, params, xferFn)`.
@@ -687,6 +761,11 @@ impl WgpuContext {
     /// around `asyncReadPixels` (submit with `SyncToCpu::kYes`, then wait for the callback).
     /// Returns the pixels in `dst_image_info`'s format with `(pixels, row_bytes)`, or `None` if
     /// the read failed.
+    ///
+    /// This is the body of `ContextPriv::readPixels` up to the copy into the caller's pixmap:
+    /// a texturable source goes through `asyncReadPixels` (so GPU conversions are attempted), a
+    /// source that is only copyable is read directly with the conversion done on the CPU.
+    // Port of: src/gpu/graphite/Context.cpp#L1046-L1115 (chrome/m156)
     pub fn read_pixels(
         &mut self,
         src: &TextureProxyView,
@@ -706,10 +785,37 @@ impl WgpuContext {
                 *signal.lock().unwrap_or_else(PoisonError::into_inner) = Some(pixels);
             }),
         };
-        if !params.validate() {
+
+        let caps = Arc::clone(self.shared_context.caps());
+        let tex_info = src.proxy()?.texture_info();
+        if Caps::is_texturable(&*caps, tex_info, false) {
+            // Since this is a synchronous testing-only API, callers should have flushed any
+            // pending work that modifies this texture proxy already.
+            if params.validate() {
+                self.async_read_pixels(None, params);
+            } else {
+                params.fail();
+            }
+        } else if Caps::is_copyable_src(&*caps, tex_info) {
+            let format = texture_info_priv::view_format(tex_info);
+            let dst_color_info = dst_image_info.color_info();
+            let cs_steps = ColorSpaceXformSteps::new(
+                src_color_info.color_space_ref(),
+                src_color_info.alpha_type(),
+                dst_color_info.color_space_ref(),
+                dst_color_info.alpha_type(),
+            );
+            let xfer_fn = TextureFormatXferFn::make_gpu_to_cpu(
+                format,
+                src.swizzle(),
+                &cs_steps,
+                dst_color_info.color_type(),
+            )?;
+            self.async_read_texture(None, params, &xfer_fn);
+        } else {
             return None;
         }
-        self.async_read_pixels(None, params);
+
         let _ = self.submit(SubmitInfo::new(SyncToCpu::Yes));
         // A failed read has called the callback already; a successful one calls it when the
         // submission is retired (waited for above).
@@ -724,6 +830,86 @@ impl WgpuContext {
                 return None;
             }
         }
+    }
+
+    /// `ContextPriv::readPixels(pm, srcView, srcImageInfo, srcX, srcY)`: reads the region of
+    /// `src_view` at `(src_x, src_y)` the size of `dst` into `dst`.
+    // Port of: src/gpu/graphite/Context.cpp#L1046-L1115 (chrome/m156)
+    #[doc(alias = "readPixels")]
+    pub fn read_pixels_into(
+        &mut self,
+        dst: &mut Pixmap<'_>,
+        src_view: &TextureProxyView,
+        src_image_info: &ImageInfo,
+        src_x: i32,
+        src_y: i32,
+    ) -> bool {
+        let rect = IRect::from_xywh(src_x, src_y, dst.width(), dst.height());
+        let Some((pixels, row_bytes)) =
+            self.read_pixels(src_view, src_image_info.color_info(), rect, dst.info())
+        else {
+            return false;
+        };
+        let min_row_bytes = dst.info().min_row_bytes();
+        let dst_row_bytes = dst.row_bytes();
+        let height = usize::try_from(dst.height()).unwrap_or(0);
+        let Some(out) = dst.writable_addr() else {
+            return false;
+        };
+        // SkRectMemcpy
+        for y in 0..height {
+            out[y * dst_row_bytes..y * dst_row_bytes + min_row_bytes]
+                .copy_from_slice(&pixels[y * row_bytes..y * row_bytes + min_row_bytes]);
+        }
+        true
+    }
+
+    /// `Device::onReadPixels` for a surface made by one of this context's recorders: snaps the
+    /// recorder, inserts the recording, and reads the surface's target back into `dst`
+    /// (`Surface::readPixels` in the `GPU_TEST_UTILS` build).
+    ///
+    /// Skia's device finds the context through its recorder; here the context is the caller.
+    // Port of: src/gpu/graphite/Device.cpp#L726-L749 (chrome/m156)
+    #[doc(alias = "onReadPixels")]
+    pub fn read_surface_pixels(
+        &mut self,
+        surface: &Surface,
+        dst: &mut Pixmap<'_>,
+        src_x: i32,
+        src_y: i32,
+    ) -> bool {
+        let Some(mut recorder) = surface.recorder() else {
+            return false;
+        };
+        // Add all previous commands generated to the command buffer. If the client snaps later
+        // they'll only get post-read commands in their Recording, but since they're doing a
+        // readPixels in the middle that shouldn't be unexpected.
+        let Some(mut recording) = recorder.snap() else {
+            return false;
+        };
+        if self.insert_recording(InsertRecordingInfo::new(&mut recording)) != InsertStatus::Success
+        {
+            return false;
+        }
+        self.read_pixels_into(dst, surface.target(), surface.image_info(), src_x, src_y)
+    }
+
+    /// `Image::readPixels` for a Graphite image (a testing helper): the pixels of the region at
+    /// `(src_x, src_y)` the size of `dst`, read with `ContextPriv::readPixels`. Any pending work
+    /// that draws to the image's texture must have been flushed and inserted.
+    #[doc(alias = "readPixels")]
+    pub fn read_image_pixels(
+        &mut self,
+        image: &CoreImage,
+        dst: &mut Pixmap<'_>,
+        src_x: i32,
+        src_y: i32,
+    ) -> bool {
+        let view = as_view(Some(image));
+        if view.proxy().is_none() {
+            return false;
+        }
+        self.read_pixels_into(dst, &view, image.image_info(), src_x, src_y)
     }
 }
 

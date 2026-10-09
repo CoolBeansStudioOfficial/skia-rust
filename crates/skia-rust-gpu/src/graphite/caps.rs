@@ -146,6 +146,14 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "bufferMapsAreAsync")]
     fn buffer_maps_are_async(&self) -> bool;
 
+    /// `supportsHostImageCopy()`: only `VulkanCaps` sets it (with `VK_EXT_host_image_copy`), so
+    /// it is `false` for the Dawn-style backends this port has.
+    // Port of: src/gpu/graphite/Caps.h#L411 (chrome/m156)
+    #[doc(alias = "supportsHostImageCopy")]
+    fn supports_host_image_copy(&self) -> bool {
+        false
+    }
+
     /// `requiredUniformBufferAlignment()`: a power of two.
     #[doc(alias = "requiredUniformBufferAlignment")]
     fn required_uniform_buffer_alignment(&self) -> usize;

@@ -21,9 +21,6 @@
 //! - [`ShadingParams`] takes `Option<&NonMSAAClip>` where Skia takes a `const NonMSAAClip&`
 //!   (`None` is the empty clip). The clip is keyed by `add_analytic_clip`; the atlas half of the
 //!   clip is only ever non-empty once the clip atlas (G12a) exists.
-//! - `AddToKey(const SimpleImage&)` needs `add_image_to_key`, the image-shader block builder that
-//!   `key_helpers::add_to_key_shader` does not dispatch yet; a `SimpleImage` is keyed as an error
-//!   block until then (see [`add_simple_image_to_key`]).
 //! - `PaintParams::notifyImagesInUse` is not in the pinned Skia (m156): there is no such method to
 //!   port, so the paint-to-key path has no image-usage notification.
 //! - The `SkASSERT` that compares the builder with `lookup(origPaint)` in `optimizeForOpacity` is
@@ -60,7 +57,7 @@ use crate::graphite::geom::non_msaa_clip::NonMSAAClip;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::key_helpers::{
     AlphaOnlyPaintColorBlock, RGBPaintColorBlock, SolidColorShaderBlock, add_dither_block,
-    add_to_key_shader,
+    add_simple_image_to_key, add_to_key_shader,
 };
 use crate::graphite::key_helpers_ii::{
     MeshShaderBlock, add_analytic_clip, add_blend_mode, add_fixed_blend_mode, add_primitive_color,
@@ -1049,15 +1046,4 @@ impl<'a> ShadingParams<'a> {
             .check_equivalent(&key_context.pipeline_data_gatherer().borrow());
         actual_opaque_id
     }
-}
-
-/// `AddToKey(const SimpleImage&)`: the image shader of an image override. Its block (an image
-/// shader with a local matrix) needs `add_image_to_key`, which is not ported; until then the
-/// structure is kept with an error block.
-// Port of: src/gpu/graphite/KeyHelpers.cpp#L2688-L2702 (chrome/m156)
-fn add_simple_image_to_key(key_context: &KeyContext<'_>, _simple_image: &SimpleImage) {
-    key_context
-        .paint_params_key_builder()
-        .borrow_mut()
-        .add_error_block();
 }

@@ -2050,6 +2050,33 @@ fn add_image_to_key(
     );
 }
 
+/// `AddToKey(PaintParams::SimpleImage)`: an image shader on a paint is always a local matrix
+/// shader composed with an image shader; this makes the same call sequence with the decomposed
+/// objects.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2686-L2701 (chrome/m156)
+#[doc(alias = "AddToKey")]
+pub fn add_simple_image_to_key(
+    key_context: &KeyContext<'_>,
+    simple_image: &crate::graphite::paint_params::SimpleImage,
+) {
+    add_local_matrix_to_key(
+        key_context,
+        simple_image.local_matrix.as_ref().unwrap_or(Matrix::i()),
+        &get_image_origin_matrix(&simple_image.image),
+        |child_ctx| {
+            add_image_to_key(
+                child_ctx,
+                &simple_image.image,
+                simple_image.subset,
+                simple_image.sampling_options,
+                TileMode::Clamp,
+                TileMode::Clamp,
+                /* is_raw= */ false,
+            );
+        },
+    );
+}
+
 /// `AddToKey(SkImageShader)`: the image shader's fields go to `add_image_to_key`.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L2232-L2236 (chrome/m156)
 fn add_image_shader_to_key(key_context: &KeyContext<'_>, shader: &ImageShader) {

@@ -51099,7 +51099,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/DeviceTest.cpp#L21-L82"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "469645b7af5b913d87de0d7c2181687b740dee0e4968e7f6a373d3af35bcf7a0"
 
 [[test]]
@@ -51247,8 +51247,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L96-L283"
 module = "gpu"
-status = "todo"
-reason = "needs Graphite images and surfaces (G10d); Context::insertRecording/submit run on the wgpu command buffer since G11c"
+status = "passing"
 span_hash = "3bf20d364c46e8662b7a693c254bdb73bf572db7382f7d6d356ddee4a8109119"
 
 [[test]]
@@ -51402,7 +51401,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L287-L301"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c); the picture-backed case needs SkImage_Picture (DeferredFromPicture), not in core"
+reason = "blocked: the test images include picture-backed images (SkImages::DeferredFromPicture, SkPicture not ported) and makeColorSpace(recorder); the readback tests also need a real adapter in CI (lavapipe job)"
 span_hash = "769f3e7d94554ba63ed59ba896a629b8d95037eff9cbe11e101d7777d31b1c4c"
 
 [[test]]
@@ -51412,7 +51411,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L329-L344"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: the test images include picture-backed images (SkImages::DeferredFromPicture, SkPicture not ported) and makeColorSpace(recorder); the readback tests also need a real adapter in CI (lavapipe job)"
 span_hash = "bd9f1a9d54213f9bba32845d6b0bab0bfa2ad67c4b26384293a63fb3468763ba"
 
 [[test]]
@@ -51442,7 +51441,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageShaderTest.cpp#L88-L107"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "415598ad6c884921724399623b38f1c1220b43e71a8cb424525f93545f04a88c"
 
 [[test]]
@@ -51516,6 +51515,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/MultisampleTest.cpp#L92-L160"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "c608179d4ef3f0e02c48902f53e117da77d4e7e1011fb1976f02b6e1e816e456"
 
 [[test]]
@@ -51525,6 +51525,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/MultisampleTest.cpp#L26-L86"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "8afbdcd7d2f376f0bb342c72053eb8bea203210275f2b279f19959f2bbb04715"
 
 [[test]]
@@ -51534,7 +51535,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/MutableImagesTest.cpp#L505-L526"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs a real adapter in CI (lavapipe job) and the mutable-image recording replays (Recording targets, backend textures); not ported yet"
 span_hash = "2c80076ae3b11aaa4ecbe4a33d563a5561df0215577c229fcc07f07a5681354e"
 
 [[test]]
@@ -52009,6 +52010,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs Context::asyncRescaleAndReadPixels (RescaleImage, not ported) on Image and Surface, and a real adapter in CI (lavapipe job)"
 span_hash = "26e9b48f9bfc7306afb4a9e0703cded74a6fd3382ffd71a690224ce2a4370a1c"
 
 [[test]]
@@ -52018,6 +52020,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs Context::asyncRescaleAndReadPixels (RescaleImage, not ported) on Image and Surface, and a real adapter in CI (lavapipe job)"
 span_hash = "e0d9bfd0cb3e1a96a52445d291210c63dd40a0934fadee247cdd9447090d8fb8"
 
 [[test]]
@@ -52065,7 +52068,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L109-L129"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "a2b9febf3e1618650f93e8c31661cde87b33a63b9d4a331a262f7e733f3af6d2"
 
 [[test]]
@@ -52075,7 +52078,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L132-L156"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "b64020236433e3b6c6ae78125351ceef5e95bc5447397bbefbf6196c6646a91e"
 
 [[test]]
@@ -52085,7 +52088,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L222-L270"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "7266c50c44b90afadf316748051344c4dafc53c54daf04cb3601c21190859571"
 
 [[test]]
@@ -52095,7 +52098,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L335-L442"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "de77450f83271214b64fdd92d0115aadea7e77c87f833eedfb24aa97ca0157ef"
 
 [[test]]
@@ -52105,7 +52108,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L444-L470"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "41b77eb21da5e4cf060fd81064d8962e34d19c6480987300bfde365b0c2dee3c"
 
 [[test]]
@@ -52115,7 +52118,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L273-L300"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "4ff470d6cdc4f7337f119aa83665dab16acea5da6d64cc8080fa1097d1200bc0"
 
 [[test]]
@@ -52125,7 +52128,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L473-L488"
 module = "gpu"
 status = "todo"
-reason = "blocked: Recorder::makeDeferredCanvas is not ported (and Context::insertRecording, G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "1353d545d5b18899346b1b0c5efdd5b930764ab844c3e1f8e097e2184c29160a"
 
 [[test]]
@@ -52135,7 +52138,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L492-L503"
 module = "gpu"
 status = "todo"
-reason = "blocked: Context::insertRecording with a target surface (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "59952babf4a5f09fee39dfd43e376060d75a7a026ebae4fa8e5f79f7fdd5e4d9"
 
 [[test]]
@@ -52145,7 +52148,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L159-L187"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "1d21115c4a5bea955715d8c61da74b71ed2a9f0ad984e18f0c80676d522e12cd"
 
 [[test]]
@@ -52155,7 +52158,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L190-L219"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "d1774591cb1a1759252700dd615682c183300972e0113e4c9bd1e0bc1f96e677"
 
 [[test]]
@@ -52165,7 +52168,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L303-L333"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
 span_hash = "2943ede640374e442c6cd7cc5f46e3e05f43ed08b05529d1627cbee690165dfd"
 
 [[test]]
@@ -52273,8 +52276,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L36-L78"
 module = "gpu"
-status = "todo"
-reason = "needs Graphite surfaces (G10d); draws, the wgpu command buffer and Context::submit exist since G10a/G11c"
+status = "passing"
 span_hash = "a0badbbf3ca856364d9bf157ea37cf2c3bf7e0ec89207bc5a0965ce3690609ec"
 
 [[test]]
@@ -52319,8 +52321,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L502-L567"
 module = "gpu"
-status = "todo"
-reason = "blocked: draws and reads back the result through insertRecording (G11c)"
+status = "failing"
+reason = "naga rejects a storage buffer pointer as a function argument (docs/design/gpu.md 6.3), so the multi-stop gradient pipelines fail validation on every context; test is #[ignore]d"
 span_hash = "4aea09b4c0c3f8cc5731d90a5ad6d68ca8246f9273b095c21e58038881c1bb93"
 
 [[test]]
@@ -52746,6 +52748,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L204-L332"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); not ported yet: reads draw and static vertex buffers back through async buffer maps"
 span_hash = "63bccaf83ce8e4b9d2e6bc058b0b5fff3636bf374f130bdfb46cac43e00e882a"
 
 [[test]]
@@ -52755,6 +52758,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L133-L202"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); not ported yet: reads draw and static vertex buffers back through async buffer maps"
 span_hash = "5fd20f7e7ab840f4a62acbf6525107645b553e11aa2d48b95c80d883205fa8b6"
 
 [[test]]
@@ -52794,7 +52798,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/crbug_513836996.cpp#L26-L89"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c)"
+reason = "blocked: Canvas::experimental_DrawEdgeAAImageSet is not ported on skia_rust_core::Canvas (only Device::draw_edge_aa_image_set exists); then needs a real adapter in CI (lavapipe job)"
 span_hash = "8168143c638c6ba2f67b404db2e501e4c13bf0914c35ecb178647c92c3096624"
 
 [[test]]

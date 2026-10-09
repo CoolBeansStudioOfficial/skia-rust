@@ -823,7 +823,7 @@ impl DeviceCore {
     }
 
     // The recorder, or `None` once it has been abandoned or dropped.
-    fn recorder(&self) -> Option<Recorder> {
+    pub(crate) fn recorder(&self) -> Option<Recorder> {
         self.recorder.upgrade().map(Recorder::from_inner)
     }
 

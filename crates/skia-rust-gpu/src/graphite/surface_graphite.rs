@@ -299,6 +299,12 @@ impl Surface {
         self.device.borrow().reset_storage_cache();
     }
 
+    /// The recorder of the surface's device, or `None` once it has been abandoned or dropped.
+    #[must_use]
+    pub fn recorder(&self) -> Option<Recorder> {
+        self.device.borrow().recorder()
+    }
+
     /// `Surface::onNewSurface(ii)`: `Device::makeSurface(ii, props)`.
     // Port of: src/gpu/graphite/Surface_Graphite.cpp#L58-L60 (chrome/m156)
     #[doc(alias = "onNewSurface")]

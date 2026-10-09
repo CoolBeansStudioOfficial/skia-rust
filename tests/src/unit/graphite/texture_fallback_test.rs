@@ -2,21 +2,33 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/graphite/TextureFallbackTest.cpp (chrome/m156), the tests that inspect the SkSL
-// `EmitStorageFallbackTexture` writes. `TextureFallbackMultiStopGradientsDrawTest` draws to a
-// surface and reads the result back (G11c), so it is not ported here.
+// `EmitStorageFallbackTexture` writes, and `TextureFallbackMultiStopGradientsDrawTest` (it draws
+// and submits without reading back, but is `#[ignore]`d: naga rejects the gradient shaders).
 
 #![cfg(test)]
 // Mirrors the C++ tests, which declare constants and similarly named bindings inline.
 #![allow(
+    clippy::cast_precision_loss,
     clippy::items_after_statements,
     clippy::similar_names,
     clippy::too_many_lines
 )]
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::color::Color4f;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::point::Point;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
 use skia_rust_gpu::graphite::caps::{Caps, ResourceBindingRequirements};
 use skia_rust_gpu::graphite::draw_params::DrawParams;
 use skia_rust_gpu::graphite::draw_types::{DepthStencilSettings, PrimitiveType};
 use skia_rust_gpu::graphite::draw_writer::DrawWriter;
+use skia_rust_gpu::graphite::graphite_types::{InsertRecordingInfo, SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::paint_params_key::RootNodesInfo;
 use skia_rust_gpu::graphite::pipeline_data::PipelineDataGatherer;
 use skia_rust_gpu::graphite::render_step::{
@@ -25,6 +37,7 @@ use skia_rust_gpu::graphite::render_step::{
 use skia_rust_gpu::graphite::resource_types::Layout;
 use skia_rust_gpu::graphite::shader_info::emit_storage_fallback_texture;
 use skia_rust_gpu::graphite::storage_context::StorageContext;
+use skia_rust_gpu::graphite::surface_graphite::Surface;
 use skia_rust_gpu::graphite::uniform::Uniform;
 use skia_rust_gpu::sksl_type_shared::SkSLType;
 
@@ -510,5 +523,94 @@ def_graphite_test_for_all_contexts!(
             sksl.contains("int linearIdx12 = index * 13 + 12;")
         );
         reporter_assert!(reporter, !sksl.contains("int linearIdx13"));
+    }
+);
+
+// 8. End-to-end Draw Test with Multi-Stop (> 8 stops) Gradients
+// Port of: tests/graphite/TextureFallbackTest.cpp#L502-L567 (chrome/m156)
+def_graphite_test_for_all_contexts!(
+    #[ignore = "naga rejects a storage buffer pointer as a function argument (docs/design/gpu.md 6.3): the gradient pipelines fail validation"]
+    TextureFallbackMultiStopGradientsDrawTest,
+    |reporter, context| {
+        let mut recorder = context.make_recorder(None);
+        let ii = ImageInfo::new((100, 100), ColorType::RGBA8888, AlphaType::Premul, None);
+        let surface = Surface::render_target(&recorder, &ii, Mipmapped::No, None, "");
+        reporter_assert!(reporter, surface.is_some());
+        let Some(surface) = surface else {
+            return;
+        };
+        let canvas = surface.canvas();
+
+        const K_NUM_STOPS: usize = 12;
+        let mut colors = [Color4f::new(0.0, 0.0, 0.0, 0.0); K_NUM_STOPS];
+        let mut pos = [0.0_f32; K_NUM_STOPS];
+        for i in 0..K_NUM_STOPS {
+            let t = i as f32 / (K_NUM_STOPS - 1) as f32;
+            colors[i] = Color4f::new(t, 1.0 - t, 0.5, 1.0);
+            pos[i] = t;
+        }
+
+        let pts = [Point::new(0.0, 0.0), Point::new(100.0, 100.0)];
+        let gradient = |tile_mode| {
+            Gradient::new(
+                Colors::new(&colors, Some(&pos), tile_mode, None),
+                Interpolation::default(),
+            )
+        };
+
+        // 1. Linear gradient (> 8 stops)
+        {
+            let mut paint = Paint::default();
+            paint.set_shader(gradient_shaders::linear_gradient(
+                (pts[0], pts[1]),
+                &gradient(TileMode::Clamp),
+                None,
+            ));
+            canvas.draw_rect(Rect::new(0.0, 0.0, 50.0, 50.0), &paint);
+        }
+
+        // 2. Radial gradient (> 8 stops)
+        {
+            let mut paint = Paint::default();
+            paint.set_shader(gradient_shaders::radial_gradient(
+                (Point::new(50.0, 50.0), 50.0),
+                &gradient(TileMode::Repeat),
+                None,
+            ));
+            canvas.draw_rect(Rect::new(50.0, 0.0, 100.0, 50.0), &paint);
+        }
+
+        // 3. Sweep gradient (> 8 stops)
+        {
+            let mut paint = Paint::default();
+            paint.set_shader(gradient_shaders::sweep_gradient(
+                Point::new(50.0, 50.0),
+                (0.0, 360.0),
+                &gradient(TileMode::Mirror),
+                None,
+            ));
+            canvas.draw_rect(Rect::new(0.0, 50.0, 50.0, 100.0), &paint);
+        }
+
+        // 4. Conical gradient (> 8 stops)
+        {
+            let mut paint = Paint::default();
+            paint.set_shader(gradient_shaders::two_point_conical_gradient(
+                (pts[0], 10.0),
+                (pts[1], 50.0),
+                &gradient(TileMode::Clamp),
+                None,
+            ));
+            canvas.draw_rect(Rect::new(50.0, 50.0, 100.0, 100.0), &paint);
+        }
+
+        let recording = recorder.snap();
+        reporter_assert!(reporter, recording.is_some());
+        let Some(mut recording) = recording else {
+            return;
+        };
+
+        let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
+        let _ = context.submit(SubmitInfo::new(SyncToCpu::Yes));
     }
 );
