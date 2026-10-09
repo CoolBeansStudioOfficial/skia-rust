@@ -358,6 +358,15 @@ link to the half it comes from. Real polymorphism inside Graphite stays a trait 
 `PathAtlas` (enum: Raster, plus Compute for completeness, not built), `DrawListBase` (enum:
 `DrawList`, `DrawListLayer`).
 
+*One exception, `Caps` (done in G6).* `graphite::caps::Caps` stays a trait: it is `Caps.h`'s
+public interface, and the key layer, the shader generators and the recorder run against
+profile-driven and fake caps in tests with no device. The data types `Caps.h` declares
+(`ResourceBindingRequirements`, `AttachmentSizePolicy`, `SkSL::ShaderCaps` with
+`default_shader_caps()` for `setDefaultShaderCaps`) live beside it, and `graphite::wgpu::WgpuCaps`
+is `DawnCaps` plus the base class's state, so every function still has one `// Port of:` link.
+Code that takes caps takes `&dyn Caps` (`TextureProxy::make(caps, …)` replaced the
+`max_texture_size` parameter).
+
 ### 4.2 Seams into core
 
 - `graphite::Device` implements core's `Device` trait (`crates/skia-rust-core/src/device.rs`). The
