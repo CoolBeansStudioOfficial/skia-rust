@@ -365,8 +365,7 @@ impl ColorSpaceXformSteps {
             let y = self.src_ootf[0] * rgba[0]
                 + self.src_ootf[1] * rgba[1]
                 + self.src_ootf[2] * rgba[2];
-            // skia-rust: libm (std::pow on floats is powf)
-            let y_to_gamma_minus_1 = y.powf(self.src_ootf[3]);
+            let y_to_gamma_minus_1 = crate::libm::powf(y, self.src_ootf[3]);
             rgba[0] *= y_to_gamma_minus_1;
             rgba[1] *= y_to_gamma_minus_1;
             rgba[2] *= y_to_gamma_minus_1;
@@ -383,8 +382,7 @@ impl ColorSpaceXformSteps {
             let y = self.dst_ootf[0] * rgba[0]
                 + self.dst_ootf[1] * rgba[1]
                 + self.dst_ootf[2] * rgba[2];
-            // skia-rust: libm (std::pow on floats is powf)
-            let y_to_gamma_minus_1 = y.powf(self.dst_ootf[3]);
+            let y_to_gamma_minus_1 = crate::libm::powf(y, self.dst_ootf[3]);
             rgba[0] *= y_to_gamma_minus_1;
             rgba[1] *= y_to_gamma_minus_1;
             rgba[2] *= y_to_gamma_minus_1;

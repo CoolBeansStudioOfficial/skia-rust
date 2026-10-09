@@ -170,8 +170,7 @@ fn srgb_to_linear(x: f32) -> f32 {
     if x <= 0.04045f32 {
         x * (1.0f32 / 12.92f32)
     } else {
-        // skia-rust: libm (std::pow on floats is powf)
-        (x * (1.0f32 / 1.055f32) + (0.055f32 / 1.055f32)).powf(2.4f32)
+        crate::libm::powf(x * (1.0f32 / 1.055f32) + (0.055f32 / 1.055f32), 2.4f32)
     }
 }
 

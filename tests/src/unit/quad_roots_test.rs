@@ -9,6 +9,7 @@
 #![cfg(test)]
 
 use skia_rust_core::floating_point::is_finite_all;
+use skia_rust_core::libm;
 use skia_rust_core::quads;
 
 use crate::{def_test, reporter_assert};
@@ -189,7 +190,7 @@ def_test!(
             (test - actual).abs() <= error_factor * max
         };
 
-        let p2 = |a: f64| a.exp2();
+        let p2 = libm::exp2;
 
         let cases = [
             // no real solutions

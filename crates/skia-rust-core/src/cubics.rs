@@ -10,6 +10,7 @@ use crate::floating_point::{
     DOUBLE_PI, double_nearly_zero, doubles_nearly_equal_ulps, ieee_double_divide, is_finite,
     is_finite_all,
 };
+use crate::libm;
 use crate::quads;
 use crate::t_pin::t_pin;
 
@@ -105,20 +106,19 @@ pub fn roots_real(a: f64, b: f64, c: f64, d: f64, solution: &mut [f64; 3]) -> us
     if r2_minus_q3 < 0.0 {
         // we have 3 real roots
         // the divide/root can, due to finite precisions, be slightly outside of -1...1
-        // skia-rust: libm (acos, cos, cbrt)
-        let theta = t_pin(r_ / q3.sqrt(), -1.0, 1.0).acos();
+        let theta = libm::acos(t_pin(r_ / q3.sqrt(), -1.0, 1.0));
         let neg2_root_q = -2.0 * q.sqrt();
 
-        let mut r = neg2_root_q * (theta / 3.0).cos() - adiv3;
+        let mut r = neg2_root_q * libm::cos(theta / 3.0) - adiv3;
         solution[n] = r;
         n += 1;
 
-        r = neg2_root_q * ((theta + 2.0 * DOUBLE_PI) / 3.0).cos() - adiv3;
+        r = neg2_root_q * libm::cos((theta + 2.0 * DOUBLE_PI) / 3.0) - adiv3;
         if !nearly_equal(solution[0], r) {
             solution[n] = r;
             n += 1;
         }
-        r = neg2_root_q * ((theta - 2.0 * DOUBLE_PI) / 3.0).cos() - adiv3;
+        r = neg2_root_q * libm::cos((theta - 2.0 * DOUBLE_PI) / 3.0) - adiv3;
         if !nearly_equal(solution[0], r) && (n == 1 || !nearly_equal(solution[1], r)) {
             solution[n] = r;
             n += 1;
@@ -127,7 +127,7 @@ pub fn roots_real(a: f64, b: f64, c: f64, d: f64, solution: &mut [f64; 3]) -> us
         // we have 1 real root
         let sqrt_r2_minus_q3 = r2_minus_q3.sqrt();
         a = r_.abs() + sqrt_r2_minus_q3;
-        a = a.cbrt(); // cube root
+        a = libm::cbrt(a); // cube root
         if r_ > 0.0 {
             a = -a;
         }

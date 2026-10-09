@@ -94,6 +94,7 @@ pub mod image_raster;
 pub mod images;
 #[doc(hidden)]
 pub mod lattice_iter;
+pub mod libm;
 #[doc(hidden)]
 pub mod line_clipper;
 pub mod m44;

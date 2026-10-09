@@ -4,6 +4,7 @@
 // Port of: gm/crbug_1041204.cpp (chrome/m156)
 
 use crate::prelude::*;
+use skia_rust_core::libm;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
@@ -33,7 +34,8 @@ fn draw(canvas: &Canvas) {
     // (The original transform would have completely filled the screen with solid blue, so the bug
     // manifested as an improper discard on occasion. With the new scale factor, the bug manifests
     // as either an improper fullscreen clear or an improper discard, instead).
-    let extra_zoom: f32 = (-2.3f32).exp();
+    // `exp(-2.3f)` is the float overload (`expf`) in MSVC's <cmath>.
+    let extra_zoom: f32 = libm::expf(-2.3f32);
     canvas.scale((extra_zoom, extra_zoom));
     canvas.scale((2.0, 2.0));
     canvas.concat(&matrix());

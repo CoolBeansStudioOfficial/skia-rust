@@ -27,6 +27,7 @@ use crate::prelude::*;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color::colors;
 use skia_rust_core::font::Font;
+use skia_rust_core::libm;
 use skia_rust_core::matrix::{Matrix, ScaleToFit};
 use skia_rust_core::paint::{Cap, Join, Paint};
 use skia_rust_core::path::Path;
@@ -621,55 +622,46 @@ impl GM for Dashing5Gm {
 }
 
 // Port of: gm/dashing.cpp#L473-L505 (chrome/m156)
-crate::def_simple_gm!(
-    #[ignore = "see notes/gm_dashing_cpp_longpathdash.md"]
-    longpathdash,
-    canvas,
-    612,
-    612,
-    {
-        let mut lines = PathBuilder::new();
-        let mut x: i32 = 32;
-        while x < 256 {
-            let mut a: f32 = 0.0;
-            while a < 3.141592f32 * 2.0 {
-                #[allow(clippy::cast_precision_loss)] // int to SkScalar
-                let xf = x as f32;
-                // skia-rust: libm. `sin` and `cos` here are the double-precision libm functions.
-                let pts = [
-                    Point::new(
-                        256.0 + (f64::from(a).sin() as f32) * xf,
-                        256.0 + (f64::from(a).cos() as f32) * xf,
-                    ),
-                    Point::new(
-                        256.0 + ((f64::from(a) + 3.141592 / 3.0).sin() as f32) * (xf + 64.0),
-                        256.0 + ((f64::from(a) + 3.141592 / 3.0).cos() as f32) * (xf + 64.0),
-                    ),
-                ];
-                lines.move_to(pts[0]);
-                let mut i: f32 = 0.0;
-                while i < 1.0 {
-                    lines.line_to((
-                        pts[0].x * (1.0 - i) + pts[1].x * i,
-                        pts[0].y * (1.0 - i) + pts[1].y * i,
-                    ));
-                    i += 0.05;
-                }
-                a += 0.03141592;
+crate::def_simple_gm!(longpathdash, canvas, 612, 612, {
+    let mut lines = PathBuilder::new();
+    let mut x: i32 = 32;
+    while x < 256 {
+        let mut a: f32 = 0.0;
+        while a < 3.141592f32 * 2.0 {
+            #[allow(clippy::cast_precision_loss)] // int to SkScalar
+            let xf = x as f32;
+            // `sin(a)` with a float `a` is the float overload (`sinf`) in MSVC's <cmath>, which
+            // the oracle builds against; `sin(a + 3.141592 / 3)` is the double function.
+            let pts = [
+                Point::new(256.0 + libm::sinf(a) * xf, 256.0 + libm::cosf(a) * xf),
+                Point::new(
+                    256.0 + (libm::sin(f64::from(a) + 3.141592 / 3.0) as f32) * (xf + 64.0),
+                    256.0 + (libm::cos(f64::from(a) + 3.141592 / 3.0) as f32) * (xf + 64.0),
+                ),
+            ];
+            lines.move_to(pts[0]);
+            let mut i: f32 = 0.0;
+            while i < 1.0 {
+                lines.line_to((
+                    pts[0].x * (1.0 - i) + pts[1].x * i,
+                    pts[0].y * (1.0 - i) + pts[1].y * i,
+                ));
+                i += 0.05;
             }
-            x += 16;
+            a += 0.03141592;
         }
-        let mut p = Paint::default();
-        p.set_anti_alias(true);
-        p.set_stroke(true);
-        p.set_stroke_width(1.0);
-        let intervals = [1.0, 1.0];
-        p.set_path_effect(dash_path_effect::new(&intervals, 0.0));
-
-        canvas.translate((50.0, 50.0));
-        canvas.draw_path(&lines.detach(), &p);
+        x += 16;
     }
-);
+    let mut p = Paint::default();
+    p.set_anti_alias(true);
+    p.set_stroke(true);
+    p.set_stroke_width(1.0);
+    let intervals = [1.0, 1.0];
+    p.set_path_effect(dash_path_effect::new(&intervals, 0.0));
+
+    canvas.translate((50.0, 50.0));
+    canvas.draw_path(&lines.detach(), &p);
+});
 
 // Port of: gm/dashing.cpp#L507-L517 (chrome/m156)
 crate::def_simple_gm!(longlinedash, canvas, 512, 512, {
