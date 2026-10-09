@@ -94,6 +94,146 @@ impl Swizzle {
             }
         }
     }
+
+    // Port of: src/gpu/Swizzle.h#L80-L81 (chrome/m156)
+    /// `RGBA()`: equivalent to `"rgba"`.
+    #[must_use]
+    #[doc(alias = "RGBA")]
+    pub const fn rgba() -> Swizzle {
+        Swizzle::new("rgba")
+    }
+
+    // Port of: src/gpu/Swizzle.h#L76 (chrome/m156)
+    /// `BGRA()`: equivalent to `"bgra"`.
+    #[must_use]
+    #[doc(alias = "BGRA")]
+    pub const fn bgra() -> Swizzle {
+        Swizzle::new("bgra")
+    }
+
+    // Port of: src/gpu/Swizzle.h#L77 (chrome/m156)
+    /// `RRRA()`: equivalent to `"rrra"`.
+    #[must_use]
+    #[doc(alias = "RRRA")]
+    pub const fn rrra() -> Swizzle {
+        Swizzle::new("rrra")
+    }
+
+    // Port of: src/gpu/Swizzle.h#L78 (chrome/m156)
+    /// `RGB1()`: equivalent to `"rgb1"`.
+    #[must_use]
+    #[doc(alias = "RGB1")]
+    pub const fn rgb1() -> Swizzle {
+        Swizzle::new("rgb1")
+    }
+
+    // Port of: src/gpu/Swizzle.h#L38 (chrome/m156)
+    /// `Concat(a, b)`: the swizzle that applies `b` to the output of `a`.
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)] // mirrors the uint16_t key (`u32::from` is not const)
+    #[doc(alias = "Concat")]
+    pub const fn concat(a: &Swizzle, b: &Swizzle) -> Swizzle {
+        let mut key: u32 = 0;
+        let mut i: u32 = 0;
+        while i < 4 {
+            let mut idx = ((b.key as u32) >> (4 * i)) & 0xf;
+            if idx != c_to_i('0') && idx != c_to_i('1') {
+                // Get the index value stored in a at location idx.
+                idx = ((a.key as u32) >> (4 * idx)) & 0xf;
+            }
+            key |= idx << (4 * i);
+            i += 1;
+        }
+        Swizzle { key: key as u16 }
+    }
+
+    // Port of: src/gpu/Swizzle.h#L53-L55 (chrome/m156)
+    /// `selectChannelInR(i)`: moves the component in index `i` to index 0 and sets all other
+    /// channels to 0, i.e. `s[i]000`.
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)] // mirrors the static_cast<uint16_t>
+    #[doc(alias = "selectChannelInR")]
+    pub const fn select_channel_in_r(&self, i: usize) -> Swizzle {
+        Swizzle {
+            key: (self.channel_index(i)
+                | (c_to_i('0') << 4)
+                | (c_to_i('0') << 8)
+                | (c_to_i('0') << 12)) as u16,
+        }
+    }
+
+    // Port of: src/gpu/Swizzle.h#L57-L61 (chrome/m156)
+    /// `invert()`: as close to an inverse of this swizzle as possible. If the swizzle is
+    /// one-to-one, the inverse is exact. Repeated channel values map to the earliest encountered
+    /// channel. Channels not present use their default value (0 for RGB and 1 for A).
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)] // mirrors the uint16_t key (`u32::from` is not const)
+    pub const fn invert(&self) -> Swizzle {
+        // Our starting value will be "0001", but with a blank mask so everything can be
+        // overridden by a swizzle component reference.
+        let mut key: u32 = Swizzle::new("0001").as_key() as u32;
+        let mut mask: u32 = 0;
+        let mut i: u32 = 0;
+        while i < 4 {
+            // This swizzle maps the sampled channel 'idx' to the final channel 'i'.
+            let idx = ((self.key as u32) >> (4 * i)) & 0xf;
+            // The inverse is to store 'i' at 'idx' in key, if 'idx' is r,g,b,a (in [0,3]).
+            if idx <= 3 {
+                // Set the 4 bits of the idx channel, unless idx has already been written to
+                // (blocked by mask).
+                let channel_mask = (0xf << (4 * idx)) & !mask;
+                key = (key & !channel_mask) | ((i << (4 * idx)) & channel_mask);
+                mask |= 0xf << (4 * idx); // update mask to block future writes
+            } else {
+                // Push the '0' or '1' constant value into channel i if it hasn't been set yet,
+                // which preserves non-default constant values. We don't update the mask so future
+                // channel references could still overwrite it with an actual swizzle.
+                let channel_mask = (0xf << (4 * i)) & !mask;
+                key = (key & !channel_mask) | ((idx << (4 * i)) & channel_mask);
+            }
+            i += 1;
+        }
+        Swizzle { key: key as u16 }
+    }
+
+    // Port of: src/gpu/Swizzle.h#L67-L71 (chrome/m156)
+    /// `applyTo(color)`: applies this swizzle to the input color.
+    #[must_use]
+    #[doc(alias = "applyTo")]
+    pub fn apply_to(&self, color: [f32; 4]) -> [f32; 4] {
+        let mut key = u32::from(self.key);
+        // Index of the input color that should be mapped to output r.
+        let out_r = component_index_to_float(color, (key & 15) as usize);
+        key >>= 4;
+        let out_g = component_index_to_float(color, (key & 15) as usize);
+        key >>= 4;
+        let out_b = component_index_to_float(color, (key & 15) as usize);
+        key >>= 4;
+        let out_a = component_index_to_float(color, (key & 15) as usize);
+        [out_r, out_g, out_b, out_a]
+    }
+
+    // Port of: src/gpu/Swizzle.h#L118-L120 (chrome/m156)
+    /// The index of channel `i` (`fKey` nibble `i`).
+    #[allow(clippy::cast_lossless)] // u32::from is not const, and this fn must be const
+    const fn channel_index(self, i: usize) -> u32 {
+        assert!(i < 4);
+        ((self.key >> (4 * i)) & 0xf) as u32 // u32::from is not const
+    }
+}
+
+// Port of: src/gpu/Swizzle.h#L126-L138 (chrome/m156)
+fn component_index_to_float(color: [f32; 4], idx: usize) -> f32 {
+    if idx <= 3 {
+        return color[idx];
+    }
+    if idx == c_to_i('1') as usize {
+        return 1.0;
+    }
+    if idx == c_to_i('0') as usize {
+        return 0.0;
+    }
+    unreachable!("invalid swizzle component index {idx}")
 }
 
 // Port of: src/gpu/Swizzle.h#L140-L151 (chrome/m156)
