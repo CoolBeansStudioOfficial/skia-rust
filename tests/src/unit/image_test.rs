@@ -11,7 +11,6 @@
 // * `Image_ColorSpace`, `Image_nonfinite_dst`: decode image resources
 //   (png, jpg, webp) or make a lazy picture image (`DeferredFromPicture`), and the last two need
 //   `ToolUtils::PixelIter`/`any_image_will_do` helpers that are not ported yet.
-// * `Image_Serialize_Encoding_Failure`: picture serialization (`SkSerialProcs`).
 // The Ganesh tests are excluded.
 
 #![cfg(test)]
@@ -27,15 +26,21 @@ use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_raster::CopyPixelsMode;
 use skia_rust_core::images;
 use skia_rust_core::m44::M44;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_raster::surfaces;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
 use crate::{Reporter, def_test, def_tier_test, reporter_assert, skip_missing_resource};
@@ -507,4 +512,47 @@ def_test!(image_from_encoded_alphatype_override, |reporter| {
         reporter,
         make_from_encoded(Some(data), Some(AlphaType::Opaque)).is_none()
     );
+});
+
+// Port of: tests/ImageTest.cpp#L268-L297 (chrome/m156)
+def_test!(Image_Serialize_Encoding_Failure, |reporter| {
+    let mut surface = surfaces::raster_n32_premul((100, 100)).expect("a surface");
+    surface.canvas().clear(Color::GREEN);
+    let image = surface.image_snapshot();
+    reporter_assert!(reporter, image.is_some());
+    let image = image.expect("an image");
+
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_wh(100.0, 100.0), false);
+    canvas.draw_image(&image, (0.0, 0.0), None);
+    let picture = recorder.finish_recording_as_picture(None);
+    reporter_assert!(reporter, picture.is_some());
+    let picture = picture.expect("a picture");
+    reporter_assert!(reporter, picture.approximate_op_count() > 0);
+
+    // The image procedure is called, and it returns empty data (`SkData::MakeEmpty()`).
+    let was_called = Arc::new(AtomicBool::new(false));
+    let procs = SerialProcs {
+        image: Some({
+            let was_called = Arc::clone(&was_called);
+            Arc::new(move |_image: &Image| {
+                was_called.store(true, Ordering::Relaxed);
+                Some(Data::new_empty())
+            })
+        }),
+        ..SerialProcs::default()
+    };
+
+    reporter_assert!(reporter, !was_called.load(Ordering::Relaxed));
+    let data = picture.serialize(Some(&procs));
+    reporter_assert!(reporter, was_called.load(Ordering::Relaxed));
+    reporter_assert!(reporter, data.as_ref().is_some_and(|data| data.size() > 0));
+    let Some(data) = data else {
+        return;
+    };
+
+    let deserialized = Picture::from_data(data.as_bytes(), None);
+    reporter_assert!(reporter, deserialized.is_some());
+    let deserialized = deserialized.expect("a picture");
+    reporter_assert!(reporter, deserialized.approximate_op_count() > 0);
 });

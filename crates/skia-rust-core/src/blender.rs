@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use crate::blend_mode::{BlendMode, BlendModeCoeff};
 use crate::effect_priv::StageRec;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// The kinds of blenders (`SkBlenderBase::BlenderType`, from `SK_ALL_BLENDERS`).
 // Port of: src/core/SkBlenderBase.h#L30-L32 (chrome/m156)
@@ -51,6 +52,16 @@ pub trait BlenderBase: Any + fmt::Debug + Send + Sync {
     /// The kind of blender (`type`).
     #[doc(alias = "type")]
     fn blender_type(&self) -> BlenderType;
+
+    /// The name the blender is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks a blender that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the parameters of the blender (`flatten`). Writes nothing by default.
+    fn flatten(&self, _buffer: &mut BinaryWriteBuffer) {}
 }
 
 impl dyn BlenderBase {

@@ -11,6 +11,9 @@
 
 use std::sync::Arc;
 
+use crate::read_buffer::ReadBuffer;
+use crate::write_buffer::BinaryWriteBuffer;
+
 /// The four 256-entry tables of an `SkColorTable`, in Skia's row order: alpha, red, green, blue.
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct Tables([[u8; 256]; 4]);
@@ -67,6 +70,34 @@ impl ColorTable {
                 pick(table_b),
             ])),
         })
+    }
+
+    /// `SkColorTable::flatten`: the four maps as one 1024-byte array, alpha first.
+    // Port of: src/core/SkColorTable.cpp#L41-L43 (chrome/m156)
+    pub(crate) fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        let mut bytes = [0_u8; 4 * 256];
+        for (i, table) in self.tables.0.iter().enumerate() {
+            bytes[i * 256..(i + 1) * 256].copy_from_slice(table);
+        }
+        buffer.write_byte_array(&bytes);
+    }
+
+    /// `SkColorTable::Deserialize`: reads the 1024 bytes that [`flatten`](Self::flatten) wrote.
+    // Port of: src/core/SkColorTable.cpp#L45-L51 (chrome/m156)
+    pub(crate) fn deserialize(buffer: &mut ReadBuffer<'_>) -> Option<ColorTable> {
+        let mut argb = [0_u8; 4 * 256];
+        if !buffer.read_byte_array(&mut argb) {
+            return None;
+        }
+        let (a, rest) = argb.split_at(256);
+        let (r, rest) = rest.split_at(256);
+        let (g, b) = rest.split_at(256);
+        ColorTable::make_argb(
+            Some(a.try_into().ok()?),
+            Some(r.try_into().ok()?),
+            Some(g.try_into().ok()?),
+            Some(b.try_into().ok()?),
+        )
     }
 
     /// The alpha map (`alphaTable`).

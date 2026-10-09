@@ -18,10 +18,14 @@
 use crate::blend_mode::{BlendMode, BlendModeCoeff};
 use crate::blend_mode_priv;
 use crate::effect_priv::{SHADER_SCRATCH, StageRec};
+use crate::flattenable::FlattenableRegistry;
 use crate::raster_pipeline::contexts::MAX_STRIDE;
 use crate::raster_pipeline::{MemPtr, Stage};
+use crate::read_buffer::ReadBuffer;
 use crate::shader::Shader;
 use crate::shaders::shader_base::{MatrixRec, ShaderBase, ShaderType};
+use crate::write_buffer::BinaryWriteBuffer;
+use crate::write_buffer::CUSTOM_BLEND_MODE_SENTINEL;
 
 /// A shader of `src` blended over `dst` with a blend mode (`SkBlendShader`). Create one with
 /// [`shaders::blend`](crate::shaders::blend).
@@ -104,6 +108,18 @@ fn append_two_shaders(
 }
 
 impl ShaderBase for BlendShader {
+    // Port of: src/shaders/SkBlendShader.cpp#L161 (chrome/m156), the `SkShader_Blend` registration
+    fn type_name(&self) -> &'static str {
+        "SkShader_Blend"
+    }
+
+    // Port of: src/shaders/SkBlendShader.cpp#L70-L74 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_shader(Some(&self.dst));
+        buffer.write_shader(Some(&self.src));
+        buffer.write_int(self.mode as i32);
+    }
+
     // Port of: src/shaders/SkBlendShader.cpp#L51-L68 (chrome/m156)
     fn is_opaque(&self) -> bool {
         let Some((src_coeff, dst_coeff)) = self.mode.as_coeff() else {
@@ -138,4 +154,27 @@ impl ShaderBase for BlendShader {
         blend_mode_priv::append_stages(self.mode, rec.pipeline);
         true
     }
+}
+
+/// `SkBlendShader::CreateProc`: the destination and source shaders, then the mode. The custom
+/// mode (`kCustom_SkBlendMode`) is followed by a blender, which `shaders::blend_blender` takes; a
+/// blender that is not a blend mode gives no shader.
+// Port of: src/shaders/SkBlendShader.cpp#L29-L49 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(buffer: &mut ReadBuffer<'_>, registry: &FlattenableRegistry) -> Option<Shader> {
+    let dst = buffer.read_shader(registry);
+    let src = buffer.read_shader(registry);
+    let (dst, src) = (dst?, src?);
+
+    let mode = buffer.read_uint();
+    if mode == u32::from(CUSTOM_BLEND_MODE_SENTINEL) {
+        let blender = buffer.read_blender(registry)?;
+        return crate::shaders::blend_blender(&blender, dst, src);
+    }
+    let mode = i32::try_from(mode).ok().and_then(BlendMode::from_i32);
+    if !buffer.validate(mode.is_some()) {
+        return None;
+    }
+    mode.map(|mode| crate::shaders::blend(mode, dst, src))
 }

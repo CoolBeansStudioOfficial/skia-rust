@@ -27,6 +27,7 @@ use crate::compose_color_filter::ComposeColorFilter;
 use crate::effect_priv::{SHADER_SCRATCH, StageRec};
 use crate::raster_pipeline::{MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage};
 use crate::rect::Rect;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// The kinds of color filters (`SkColorFilterBase::Type`, from `SK_ALL_COLOR_FILTERS`).
 // Port of: src/effects/colorfilters/SkColorFilterBase.h#L43-L50 (chrome/m156)
@@ -77,6 +78,16 @@ pub trait ColorFilterBase: Any + fmt::Debug + Send + Sync {
     /// The kind of filter (`type`).
     #[doc(alias = "type")]
     fn color_filter_type(&self) -> ColorFilterType;
+
+    /// The name the filter is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks a filter that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the parameters of the filter (`flatten`). Writes nothing by default.
+    fn flatten(&self, _buffer: &mut BinaryWriteBuffer) {}
 
     /// Filters one premultiplied color in the destination color space (`onFilterColor4f`).
     ///

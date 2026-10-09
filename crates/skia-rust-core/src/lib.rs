@@ -150,7 +150,11 @@ pub mod path_types;
 pub mod path_utils;
 pub mod picture;
 #[doc(hidden)]
+pub(crate) mod picture_data;
+pub(crate) mod picture_flat;
+pub(crate) mod picture_playback;
 pub mod picture_priv;
+pub(crate) mod picture_record;
 pub mod picture_recorder;
 pub mod pixel_ref;
 #[doc(hidden)]

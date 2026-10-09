@@ -26,11 +26,15 @@ use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::color_table::ColorTable;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
-use crate::known_runtime_effects::{StableKey, get_known_runtime_effect};
+use crate::flattenable::FlattenableRegistry;
+use crate::known_runtime_effects::{get_known_runtime_effect, StableKey};
 use crate::matrix_color_filter::{Domain, make_matrix};
+use crate::picture_priv::VERSION_BLEND_4F_COLOR_FILTER;
 use crate::raster_pipeline::Stage;
+use crate::read_buffer::ReadBuffer;
 use crate::runtime_effect::ChildPtr;
 use crate::table_color_filter::TableColorFilter;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// Whether a matrix filter clamps all its channels or only alpha (`SkColorFilters::Clamp`).
 /// The default is [`Clamp::Yes`].
@@ -83,6 +87,64 @@ impl ColorFilterBase for BlendModeColorFilter {
     // Port of: src/effects/colorfilters/SkBlendModeColorFilter.cpp#L28-L33 (chrome/m156)
     fn on_as_a_color_mode(&self) -> Option<(Color, BlendMode)> {
         Some((self.color.to_color(), self.mode))
+    }
+
+    // Port of: src/effects/colorfilters/SkBlendModeColorFilter.cpp#L132 (chrome/m156),
+    // SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkModeColorFilter"
+    }
+
+    // Port of: src/effects/colorfilters/SkBlendModeColorFilter.cpp#L51-L54 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_color4f(self.color);
+        buffer.write_uint(self.mode as u32);
+    }
+}
+
+/// `SkBlendModeColorFilter::CreateProc`: a blend filter from its color and mode. A color written
+/// before `kBlend4fColorFilter` is 8-bit sRGB; a mode that is not a blend mode leaves the buffer
+/// invalid.
+// Port of: src/effects/colorfilters/SkBlendModeColorFilter.cpp#L56-L67 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn blend_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<ColorFilter> {
+    let color = if buffer.is_version_lt(VERSION_BLEND_4F_COLOR_FILTER) {
+        // Color is 8-bit, sRGB
+        Color4f::from_color(Color::new(buffer.read32().cast_unsigned()))
+    } else {
+        // Color is 32-bit, sRGB
+        buffer.read_color4f()
+    };
+    let mode = buffer.read_uint();
+    let Some(mode) = i32::try_from(mode).ok().and_then(BlendMode::from_i32) else {
+        buffer.validate(false);
+        return None;
+    };
+    blend(color, None, mode)
+}
+
+/// `SkColorFilters::LinearToSRGBGamma`/`SRGBToLinearGamma` as the legacy gamma-only flattenable
+/// (`SkColorSpaceXformColorFilter::LegacyGammaOnlyCreateProc`): a direction of 0 is linear to sRGB,
+/// 1 is sRGB to linear, and anything else leaves the buffer invalid.
+// Port of: src/effects/colorfilters/SkColorSpaceXformColorFilter.cpp#L56-L65 (chrome/m156)
+#[doc(alias = "LegacyGammaOnlyCreateProc")]
+#[must_use]
+pub fn legacy_gamma_only_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<ColorFilter> {
+    let dir = buffer.read_uint();
+    if !buffer.validate(dir <= 1) {
+        return None;
+    }
+    if dir == 0 {
+        Some(linear_to_srgb_gamma())
+    } else {
+        Some(srgb_to_linear_gamma())
     }
 }
 

@@ -9,6 +9,9 @@
 
 use crate::color_filter::{ColorFilter, ColorFilterBase, ColorFilterType};
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
+use crate::read_buffer::ReadBuffer;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// The filter `outer(inner(color))` (`SkComposeColorFilter`).
 // Port of: src/effects/colorfilters/SkComposeColorFilter.h#L19-L46 (chrome/m156)
@@ -41,6 +44,18 @@ impl ComposeColorFilter {
 }
 
 impl ColorFilterBase for ComposeColorFilter {
+    // Port of: src/effects/colorfilters/SkComposeColorFilter.cpp#L56 (chrome/m156),
+    // SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkComposeColorFilter"
+    }
+
+    // Port of: src/effects/colorfilters/SkComposeColorFilter.cpp#L37-L40 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_color_filter(Some(&self.outer));
+        buffer.write_color_filter(Some(&self.inner));
+    }
+
     // Port of: src/effects/colorfilters/SkComposeColorFilter.cpp#L24-L27 (chrome/m156)
     fn on_is_alpha_unchanged(&self) -> bool {
         // Can only claim alpha-unchanged support if both our proxies do.
@@ -59,5 +74,22 @@ impl ColorFilterBase for ComposeColorFilter {
 
     fn color_filter_type(&self) -> ColorFilterType {
         ColorFilterType::Compose
+    }
+}
+
+/// `SkComposeColorFilter::CreateProc`: the outer and inner filters, composed as `makeComposed`
+/// does (an absent outer filter gives the inner one).
+// Port of: src/effects/colorfilters/SkComposeColorFilter.cpp#L42-L46 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn compose_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ColorFilter> {
+    let outer = buffer.read_color_filter(registry);
+    let inner = buffer.read_color_filter(registry);
+    match outer {
+        Some(outer) => Some(outer.composed(inner)),
+        None => inner,
     }
 }

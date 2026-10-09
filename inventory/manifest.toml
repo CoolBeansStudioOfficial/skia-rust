@@ -30344,8 +30344,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorFilterTest.cpp#L64-L118"
 module = "effects"
-status = "todo"
-reason = "needs flattening round trip (reincarnate_colorfilter): SkFlattenable serialization not ported"
+status = "passing"
 span_hash = "f2d36bdfae124843ba4125414a2b4e04c614ff0ca13cf1c6a79fbe9b4be25637"
 
 [[test]]
@@ -35519,8 +35518,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L268-L297"
 module = "core"
-status = "todo"
-reason = "needs picture serialization (SkSerialProcs, SkPicture::serialize/MakeFromData)"
+status = "passing"
 span_hash = "90f1ef1ed7d08f9f751fdbe36b511f0b38402fa258c1d3d5d71d087bcd5f01c7"
 
 [[test]]
@@ -39349,8 +39347,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L517-L529"
 module = "core"
-status = "todo"
-reason = "test_typeface needs SkFont/drawString and picture serialization (SkDynamicMemoryWStream); the other steps are ported"
+status = "passing"
 span_hash = "7db5306c924057bb109fec7bad403e184cc6a5b545bda0376b301e65bca41712"
 
 [[test]]
@@ -39431,8 +39428,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L782-L794"
 module = "core"
-status = "todo"
-reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromData), out of scope for D7"
+status = "passing"
 span_hash = "a03bb349654ecca26d01082ca891a7ca445b585219f6645c1abae886c25378de"
 
 [[test]]
@@ -39478,8 +39474,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureTest.cpp#L701-L721"
 module = "core"
-status = "todo"
-reason = "needs picture serialization (SkPictureData, SkPicture::serialize/MakeFromStream), out of scope for D7"
+status = "passing"
 span_hash = "a4f9e5fdd0df7e6913debf78fe48049d52f36ea1c0f5af366f1dc15fbaf7d9af"
 
 [[test]]
@@ -42043,6 +42038,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L843-L1055"
 module = "core"
 status = "todo"
+reason = "picture parts still need image filters (SkImageFilters::Blend/Image, not ported) in paints and save layers, clip shaders, nested pictures, drawables and annotations (Canvas::draw_annotation is not ported); shaders, color filters, blenders and regions are encoded now, notes/picture-serialization.md"
 span_hash = "6d124b55ad7562cd056255f1a92b9991f33cf9ceef9b3857c36938a54c994820"
 
 [[test]]
@@ -42051,8 +42047,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
-status = "todo"
-reason = "needs picture serialization (SkPicture::serialize/MakeFromData, SkPictureData typeface set), not ported (docs/design/text.md §6, T16)"
+status = "passing"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -42704,8 +42699,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L267-L330"
 module = "text"
-status = "todo"
-reason = "needs SkGlyph::flattenMetrics/flattenDrawable/MakeFromBuffer (glyph serialization, T5), not ported"
+status = "passing"
 span_hash = "c63f9dee1a4b577a6bee13d73dc911dac585fdcf19a2b42edf00c439a4035c2e"
 
 [[test]]
@@ -42732,8 +42726,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L332-L375"
 module = "text"
-status = "todo"
-reason = "needs SkWriteBuffer/SkReadBuffer and picture flattening (not ported; docs/design/text.md T5 follow-up)"
+status = "passing"
 span_hash = "54c4131fe232d66df47f9691cf73b7825f49f7881645fe85c1a5dadb16e8baab"
 
 [[test]]
@@ -42743,6 +42736,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
 module = "text"
 status = "todo"
+reason = "builds its drawables with SkRuntimeEffect (MakeForShader/ColorFilter/Blender and SkRuntimeEffectBuilder), and SkSL is not ported (phase 3); the picture part is only the sub-picture and the SkSL rejection, notes/picture-serialization.md"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
 [[test]]
@@ -49438,8 +49432,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
-status = "todo"
-reason = "needs picture serialization (SkPicture::serialize/MakeFromData), not ported (docs/design/text.md §6, T16), and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
+status = "passing"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]
