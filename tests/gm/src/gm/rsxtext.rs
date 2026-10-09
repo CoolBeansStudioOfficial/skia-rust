@@ -14,8 +14,8 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rsxform::RSXform;
-use skia_rust_core::scalar::int_to_scalar;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
+use skia_rust_core::scalar::int_to_scalar;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::text_blob::{TextBlob, TextBlobBuilder};
 use skia_rust_core::tile_mode::TileMode;
@@ -133,7 +133,12 @@ fn make_shader(lm: &Matrix, outer_lm: &Matrix) -> Option<Shader> {
     surface.canvas().draw_paint(&p);
     p.set_color(Color::from(0xff00_8000_u32));
     surface.canvas().draw_rect(
-        Rect::from_ltrb(0.0, 0.0, int_to_scalar(TILE_W) * 0.9, int_to_scalar(TILE_H) * 0.9),
+        Rect::from_ltrb(
+            0.0,
+            0.0,
+            int_to_scalar(TILE_W) * 0.9,
+            int_to_scalar(TILE_H) * 0.9,
+        ),
         &p,
     );
     let image: Image = surface.image_snapshot().expect("a snapshot");
@@ -146,8 +151,4 @@ fn make_shader(lm: &Matrix, outer_lm: &Matrix) -> Option<Shader> {
 }
 
 // Port of: gm/rsxtext.cpp#L81 (chrome/m156)
-crate::def_gm!(
-    #[ignore = "see notes/gm-rsxtext.cpp-RSXShaderGM.md"]
-    RSXShaderGM,
-    RsxShaderGm::new()
-);
+crate::def_gm!(RSXShaderGM, RsxShaderGm::new());

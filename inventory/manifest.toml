@@ -18930,8 +18930,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L227-L234"
 module = "text"
-status = "failing"
-reason = "text drawn with a mirrored gradient shader vanishes (glyph shapes match without the shader); see notes/gm-drawatlas.cpp-drawTextRSXform.md"
+status = "passing"
 span_hash = "af07527d631d96df9e50527e3299640dc2fda6f6d477884ff7c214228fbb4f16"
 
 [[test]]
@@ -23193,8 +23192,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rsxtext.cpp#L108-L108"
 module = "text"
-status = "failing"
-reason = "RSX text glyph pixels mismatch on all tiers (shader grids match); see notes/gm-rsxtext.cpp-RSXShaderGM.md"
+status = "passing"
 span_hash = "f392891e497a50dddbcb741c4533bffef1c8073af3591fda3dd7e86c875b0d60"
 
 [[test]]
