@@ -13,6 +13,7 @@ pub mod resource_types;
 pub mod scratch_resource_manager;
 pub mod texture;
 pub mod texture_format;
+pub mod texture_format_xfer_fn;
 pub mod texture_info;
 pub mod texture_proxy;
 pub mod texture_proxy_view;
