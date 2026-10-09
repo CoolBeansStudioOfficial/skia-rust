@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 
 use bitflags::bitflags;
 use skia_rust_core::data::Data;
+use skia_rust_core::image::Image;
 use skia_rust_core::pixmap::Pixmap;
 
 use crate::encode::png_encoder_impl::make;
@@ -108,4 +109,17 @@ pub fn encode<W: io::Write>(pixmap: &Pixmap<'_>, writer: &mut W, options: &Optio
 #[must_use]
 pub fn encode_pixmap(src: &Pixmap<'_>, options: &Options) -> Option<Data> {
     encode_to_vec(src, options).map(|bytes| Data::new_copy(&bytes))
+}
+
+/// Returns the PNG bytes of an image, or `None` if its pixels cannot be read or the encoding fails.
+///
+/// Port of `SkPngEncoder::Encode(GrDirectContext*, const SkImage*, const Options&)` for raster
+/// images: the pixels come from the image's legacy bitmap (`getROPixels`), with no GPU context.
+// Port of: src/encode/SkPngEncoderImpl.cpp#L506-L518 (chrome/m156)
+#[doc(alias = "SkPngEncoder::Encode")]
+#[must_use]
+pub fn encode_image(img: &Image, options: &Options) -> Option<Data> {
+    let bitmap = img.as_legacy_bitmap()?;
+    let pixmap = bitmap.peek_pixels()?;
+    encode_pixmap(&pixmap, options)
 }

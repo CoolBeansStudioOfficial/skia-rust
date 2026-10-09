@@ -4,7 +4,7 @@
 // Port of: tests/ImageTest.cpp (chrome/m156)
 //
 // Not ported (what the Rust port does not have, or cannot express):
-// * `ImageEncode`, `image_roundtrip_encode`, `image_subset_encode_skbug_7752`,
+// * `ImageEncode`, `image_subset_encode_skbug_7752`,
 //   `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: every one of them
 //   makes `create_codec_image()` or encodes a PNG (`SkPngEncoder`, `DeferredFromEncodedData`),
 //   which is not ported.
@@ -555,4 +555,38 @@ def_test!(Image_Serialize_Encoding_Failure, |reporter| {
     reporter_assert!(reporter, deserialized.is_some());
     let deserialized = deserialized.expect("a picture");
     reporter_assert!(reporter, deserialized.approximate_op_count() > 0);
+});
+
+// Port of: tests/ImageTest.cpp#L1427-L1440 (chrome/m156)
+def_test!(image_roundtrip_encode, |reporter| {
+    let mut bm0 = Bitmap::new();
+    make_all_premul(&mut bm0);
+
+    let Some(img0) = bm0.as_image() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(data) = skia_rust_codec::encode::png_encoder::encode_image(
+        &img0,
+        &skia_rust_codec::encode::png_encoder::Options::default(),
+    ) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(img1) = deferred_from_encoded_data(Some(data), None) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+
+    let mut bm1 = Bitmap::new();
+    bm1.alloc_pixels_info(
+        &ImageInfo::new_n32((256, 256), AlphaType::Premul, None),
+        None,
+    );
+    let Some(mut pm) = bm1.peek_pixels_mut() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(reporter, img1.read_pixels_to_pixmap(&mut pm, (0, 0)));
+    reporter_assert!(reporter, equal(&bm0, &bm1));
 });
