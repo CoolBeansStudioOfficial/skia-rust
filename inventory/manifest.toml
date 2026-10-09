@@ -18988,8 +18988,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_918512.cpp#L14-L33"
 module = "raster"
-status = "todo"
-reason = "needs SkLumaColorFilter (an SkSL colour filter), which is not ported"
+status = "passing"
 span_hash = "ef212df1c20bdaa122a8f0047dd66adb3118b4c45c1288e6ba4cc3c994331003"
 
 [[test]]
@@ -19451,8 +19450,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/destcolor.cpp#L17-L32"
 module = "raster"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "a00f1a801cb48dba93dedc341019b21e5a9183dfb41b3ac8471596ea989a198b"
 
 [[test]]
@@ -22389,8 +22387,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/lumafilter.cpp#L168-L198"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "73a163a8626ce07bc9bf40245ce53266c1464740d1045b84f4f62b174dd77836"
 
 [[test]]
