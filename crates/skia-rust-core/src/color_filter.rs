@@ -27,6 +27,7 @@ use crate::compose_color_filter::ComposeColorFilter;
 use crate::effect_priv::{SHADER_SCRATCH, StageRec};
 use crate::raster_pipeline::{MemSlot, MemView, MemoryBindings, MemoryCtx, RasterPipeline, Stage};
 use crate::rect::Rect;
+use crate::working_format_color_filter::with_working_format;
 use crate::write_buffer::BinaryWriteBuffer;
 
 /// The kinds of color filters (`SkColorFilterBase::Type`, from `SK_ALL_COLOR_FILTERS`).
@@ -178,7 +179,6 @@ fn filter_color4f(
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`ColorFilter::ptr_eq`]).
 ///
-/// skia-rust: `makeWithWorkingColorSpace` needs `SkWorkingFormatColorFilter`, which is not ported.
 // Port of: include/core/SkColorFilter.h#L35-L80 (chrome/m156)
 #[doc(alias = "SkColorFilter")]
 #[derive(Clone)]
@@ -196,6 +196,18 @@ impl ColorFilter {
     #[must_use]
     pub fn as_base(&self) -> &dyn ColorFilterBase {
         &*self.0
+    }
+
+    /// A filter that runs this filter in the working color space `color_space`
+    /// (`makeWithWorkingColorSpace`).
+    // Port of: src/core/SkColorFilter.cpp#L54-L67 (chrome/m156)
+    #[doc(alias = "makeWithWorkingColorSpace")]
+    #[must_use]
+    pub fn with_working_color_space(&self, color_space: impl Into<ColorSpace>) -> Option<Self> {
+        let color_space = color_space.into();
+        let tf = color_space.transfer_fn();
+        let to_xyz = color_space.to_xyzd50();
+        with_working_format(Some(self.clone()), Some(&tf), Some(&to_xyz), None)
     }
 
     /// True if `self` and `other` are the same filter (Skia's `sk_sp` comparison).

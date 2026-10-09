@@ -394,6 +394,12 @@ pub trait CanvasHooks {
     fn on_draw_path(&mut self, _path: &Path, _paint: &Paint) -> bool {
         false
     }
+    /// `onDrawGlyphRunList`: `SkRecordCanvas` records the list as a text blob instead of drawing
+    /// it.
+    // Port of: src/core/SkCanvas.h (onDrawGlyphRunList, chrome/m156), overridden by SkRecordCanvas
+    fn on_draw_glyph_run_list(&mut self, _list: &GlyphRunList<'_>, _paint: &Paint) -> bool {
+        false
+    }
     /// `onDrawTextBlob`: `SkRecordCanvas` records the blob by reference instead of drawing it.
     // Port of: src/core/SkCanvas.h (onDrawTextBlob, chrome/m156), overridden by SkRecordCanvas
     fn on_draw_text_blob(
@@ -2026,6 +2032,11 @@ impl CanvasState {
 
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
     fn draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_glyph_run_list(list, paint)
+        {
+            return;
+        }
         let bounds = list.source_bounds_with_origin();
         if self.internal_quick_reject(&bounds, paint, None) {
             return;

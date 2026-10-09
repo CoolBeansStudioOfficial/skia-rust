@@ -23439,8 +23439,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureimagegenerator.cpp#L214-L214"
 module = "raster"
-status = "failing"
-reason = "glyph output differs on every tier (text path / gradient); see notes/pictureimagegenerator.md"
+status = "passing"
 span_hash = "1def44aed9035fb600bf7a2a94465690d9e9a0c5d0fca8c939217fbd1bba63c7"
 
 [[test]]
@@ -25938,8 +25937,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/workingspace.cpp#L97-L186"
 module = "raster"
-status = "todo"
-reason = "needs SkWorkingColorSpaceShader (src/shaders/SkWorkingColorSpaceShader.cpp), SkColorSpace::makeColorSpin/makeLinearGamma and makeWithWorkingColorSpace for shaders and colour filters; not ported"
+status = "passing"
 span_hash = "9f6a3096a29e57ca8178b5c0b12ce1a96eabaccf327bcdcab0b8c28cece1d7d5"
 
 [[test]]
@@ -25948,8 +25946,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/workingspace.cpp#L196-L266"
 module = "raster"
-status = "todo"
-reason = "needs SkWorkingColorSpaceShader (src/shaders/SkWorkingColorSpaceShader.cpp), SkColorSpace::makeColorSpin/makeLinearGamma and makeWithWorkingColorSpace for shaders and colour filters; not ported"
+status = "passing"
 span_hash = "50aba2cc0de1e78e33cac92aee73e8f38e66cdecf2eb73cd1cae5881b8c853ad"
 
 [[test]]
@@ -30724,8 +30721,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ColorFilterTest.cpp#L120-L153"
 module = "effects"
-status = "todo"
-reason = "needs SkWorkingFormatColorFilter (makeWithWorkingColorSpace), not ported"
+status = "passing"
 span_hash = "1026a45e4ef9a0d697611089c7d114be4896202ff21d254fdab0e1d5fd7e62d6"
 
 [[test]]

@@ -13,8 +13,10 @@ use core::fmt;
 use std::sync::Arc;
 
 use crate::color_filter::ColorFilter;
+use crate::color_space::ColorSpace;
 use crate::shaders::color_filter_shader::ColorFilterShader;
 use crate::shaders::shader_base::ShaderBase;
+use crate::shaders::working_color_space_shader::WorkingColorSpaceShader;
 
 /// A shared shader (`sk_sp<SkShader>`): a cheaply clonable handle to a [`ShaderBase`].
 ///
@@ -24,8 +26,7 @@ use crate::shaders::shader_base::ShaderBase;
 ///
 /// Equality is identity, as Skia compares `sk_sp`s ([`Shader::ptr_eq`]).
 ///
-/// skia-rust: `isAImage` and `makeWithWorkingColorSpace` need shaders that are not ported yet
-/// (image and working-color-space shaders, Phase 3).
+/// skia-rust: `isAImage` needs the image shader's kind, which is not exposed yet.
 // Port of: include/core/SkShader.h#L36-L96 (chrome/m156)
 #[doc(alias = "SkShader")]
 #[derive(Clone)]
@@ -60,6 +61,20 @@ impl Shader {
     #[must_use]
     pub fn with_color_filter(&self, color_filter: impl Into<ColorFilter>) -> Shader {
         ColorFilterShader::make(self.clone(), 1.0, Some(color_filter.into()))
+    }
+
+    /// A shader that runs this shader in the working color space `input_cs` (converting from the
+    /// destination), whose output is in `output_cs` (`makeWithWorkingColorSpace`). A `None`
+    /// `input_cs` is the destination space; a `None` `output_cs` is the input space.
+    // Port of: src/shaders/SkShader.cpp#L47-L51 (chrome/m156)
+    #[doc(alias = "makeWithWorkingColorSpace")]
+    #[must_use]
+    pub fn with_working_color_space(
+        &self,
+        input_cs: impl Into<Option<ColorSpace>>,
+        output_cs: impl Into<Option<ColorSpace>>,
+    ) -> Shader {
+        WorkingColorSpaceShader::make(self.clone(), input_cs.into(), output_cs.into(), false)
     }
 
     /// True if `self` and `other` are the same shader (Skia's `sk_sp` comparison).

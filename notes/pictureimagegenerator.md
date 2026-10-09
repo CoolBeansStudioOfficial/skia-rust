@@ -1,11 +1,14 @@
 # pictureimagegenerator (PictureGeneratorGM)
 
-Status: failing. Every config of every tier mismatches (8888, 565, f16).
+Status: passing (45/45 checks match on every tier and config).
 
-Diff (golden | ours | magenta) shows the vector logo shapes match, but the SKIA glyphs differ
-everywhere the text is drawn (both the GetPath outlines and the drawSimpleText call with the
-gradient shader). Ported: SkTextUtils::GetPath (core utils/text_utils.rs get_path), PictureImageGenerator
-and make_from_picture (skia-rust-raster image_picture.rs), draw_vector_logo.
+Root cause (fixed): text drawn with `SkCanvas::drawSimpleText` while recording a picture was lost.
+`SkRecordCanvas::onDrawGlyphRunList` (src/core/SkRecordCanvas.cpp) turns the glyph run list into a
+text blob (`GlyphRunList::makeBlob`, src/text/GlyphRun.cpp) and records it as a DrawTextBlob. The
+Rust canvas had no such override, so the run list went to the record device and nothing was
+recorded. The logo shapes (paths) were recorded and matched, which is why only the SKIA glyphs
+differed. Fix: `CanvasHooks::on_draw_glyph_run_list` (checked first in `draw_glyph_run_list`),
+`RecordCanvas` override, and `GlyphRunList::make_blob` in skia-rust-core `glyph_run.rs`.
 
-Hypotheses to check next: glyph outline offset/scale in get_path (compare with a SkFont::getPath dump),
-subpixel/embolden flags on the portable font, and the SkColorConverter / gradient colour conversion.
+Glyph outline extraction (`SkTextUtils::GetPath`, `SkFont::getPaths`/`setupForAsPaths`) was
+checked against the C++ and matched; it was not the cause.

@@ -7,7 +7,6 @@
 //! `SkWorkingFormatColorFilter`: runs a child color filter in a working color space, converting
 //! from the destination color space and back.
 //!
-//! skia-rust: flattening is not ported.
 
 use core::fmt;
 
@@ -20,6 +19,9 @@ use crate::color_filter::{ColorFilter, ColorFilterBase, ColorFilterType};
 use crate::color_space::ColorSpace;
 use crate::color_space_xform_steps::ColorSpaceXformSteps;
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
+use crate::read_buffer::ReadBuffer;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// `SkWorkingFormatCalculator`: the working format (transfer function, gamut and alpha type),
 /// where each part either is fixed or follows the destination color space.
@@ -234,6 +236,36 @@ impl ColorFilterBase for WorkingFormatColorFilter {
     fn color_filter_type(&self) -> ColorFilterType {
         ColorFilterType::WorkingFormat
     }
+
+    // Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.cpp (chrome/m156),
+    // SK_REGISTER_FLATTENABLE
+    fn type_name(&self) -> &'static str {
+        "SkWorkingFormatColorFilter"
+    }
+
+    // Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.cpp#L168-L173 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_color_filter(Some(&self.child));
+        // `SkWorkingFormatCalculator::flatten`: the three "use the destination" flags, then each
+        // fixed part.
+        let calc = &self.calc;
+        buffer.write_bool(calc.use_dst_tf);
+        buffer.write_bool(calc.use_dst_gamut);
+        buffer.write_bool(calc.use_dst_at);
+        if !calc.use_dst_tf {
+            let tf = calc.tf;
+            buffer.write_scalar_array(&[tf.g, tf.a, tf.b, tf.c, tf.d, tf.e, tf.f]);
+        }
+        if !calc.use_dst_gamut {
+            let m = calc.gamut.vals;
+            buffer.write_scalar_array(&[
+                m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2],
+            ]);
+        }
+        if !calc.use_dst_at {
+            buffer.write_int(calc.at as i32);
+        }
+    }
 }
 
 /// `SkColorFilterPriv::WithWorkingFormat`: `child` run in the working format, or `None` for a
@@ -251,4 +283,63 @@ pub fn with_working_format(
     Some(ColorFilter::from_base(WorkingFormatColorFilter::new(
         child, tf, gamut, at,
     )))
+}
+
+/// `SkWorkingFormatColorFilter::CreateProc`: the child filter, the three "use the destination"
+/// flags, then whichever of the transfer function, gamut and alpha type are fixed.
+// Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.cpp#L175-L199 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    registry: &FlattenableRegistry,
+) -> Option<ColorFilter> {
+    let child = buffer.read_color_filter(registry);
+    let use_dst_tf = buffer.read_bool();
+    let use_dst_gamut = buffer.read_bool();
+    let use_dst_at = buffer.read_bool();
+
+    let mut tf = TransferFunction::default();
+    let mut gamut = Matrix3x3::default();
+    let mut at = AlphaType::Unknown;
+
+    if !use_dst_tf {
+        let mut v = [0.0f32; 7];
+        buffer.read_scalar_array(&mut v);
+        tf = TransferFunction {
+            g: v[0],
+            a: v[1],
+            b: v[2],
+            c: v[3],
+            d: v[4],
+            e: v[5],
+            f: v[6],
+        };
+    }
+    if !use_dst_gamut {
+        let mut v = [0.0f32; 9];
+        buffer.read_scalar_array(&mut v);
+        gamut.vals = [[v[0], v[1], v[2]], [v[3], v[4], v[5]], [v[6], v[7], v[8]]];
+    }
+    if !use_dst_at {
+        at = alpha_type_from_u32(buffer.read32_le(AlphaType::LAST_ENUM as u32));
+    }
+
+    with_working_format(
+        child,
+        (!use_dst_tf).then_some(&tf),
+        (!use_dst_gamut).then_some(&gamut),
+        (!use_dst_at).then_some(&at),
+    )
+}
+
+/// The alpha type with the value `value`, an enum value read from a buffer that was already
+/// checked to be at most `kLastEnum_SkAlphaType`.
+fn alpha_type_from_u32(value: u32) -> AlphaType {
+    match value {
+        1 => AlphaType::Opaque,
+        2 => AlphaType::Premul,
+        3 => AlphaType::Unpremul,
+        _ => AlphaType::Unknown,
+    }
 }

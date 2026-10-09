@@ -302,6 +302,7 @@ pub mod userfont;
 pub mod variedtext;
 pub mod vertices;
 pub mod widebuttcaps;
+pub mod workingspace;
 pub mod xfermodes;
 pub mod xfermodes2;
 pub mod xfermodes3;

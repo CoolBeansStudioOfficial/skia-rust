@@ -349,7 +349,6 @@ impl GM for PictureGeneratorGm {
 
 // Port of: gm/pictureimagegenerator.cpp#L214 (chrome/m156), DEF_GM(return new PictureGeneratorGM;)
 crate::def_gm!(
-    #[ignore = "see notes/pictureimagegenerator.md"]
     PictureGeneratorGM = "PictureGeneratorGM",
     PictureGeneratorGm { picture: None }
 );
