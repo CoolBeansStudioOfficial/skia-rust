@@ -57131,8 +57131,7 @@ id = "tests/sksl/errors/SamplerExternalOES.glsl"
 kind = "sksl-golden"
 source = "tests/sksl/errors/SamplerExternalOES.glsl"
 module = "sksl"
-status = "excluded"
-reason = "GLSL-only caps: the GLSL generator checks fExternalTextureSupport (docs/design/sksl.md R7)"
+status = "passing"
 span_hash = "d030e901019b35194c7ef6d84ca61a437dfc91079ffc8b06d4466627d8d9d709"
 
 [[test]]
