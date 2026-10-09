@@ -11,6 +11,7 @@ use crate::gpu::buffer_writer::VertexWriter;
 use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::draw_writer::{DrawWriter, DynamicInstances, VertexCountProxy};
 use crate::tessellate::linear_tolerances::LinearTolerances;
+use crate::tessellate::patch_writer::PatchAllocator;
 
 /// A fixed-count patch variant: how many vertices one instance of the template draws, given the
 /// accumulated tolerances (the static `FixedCountVariant::VertexCount` of the C++ template).
@@ -99,5 +100,13 @@ impl<'w, 'a, V: FixedCountVariant> DynamicInstancesPatchAllocator<'w, 'a, V> {
     // Port of: src/gpu/graphite/render/DynamicInstancesPatchAllocator.h#L38-L40 (chrome/m156)
     pub fn append(&mut self, tolerances: &LinearTolerances) -> VertexWriter<'_> {
         self.instances.append(tolerances, 1)
+    }
+}
+
+impl<V: FixedCountVariant> PatchAllocator for DynamicInstancesPatchAllocator<'_, '_, V> {
+    // `PatchWriter` always has space in a dynamic-instance buffer, so this never returns `None`.
+    // Port of: src/gpu/tessellate/PatchWriter.h#L213-L220 (chrome/m156), `PatchAllocator::append`
+    fn append(&mut self, tolerances: &LinearTolerances) -> Option<VertexWriter<'_>> {
+        Some(DynamicInstancesPatchAllocator::append(self, tolerances))
     }
 }

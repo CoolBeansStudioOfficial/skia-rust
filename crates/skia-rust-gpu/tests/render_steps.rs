@@ -16,6 +16,9 @@ use skia_rust_core::arc::Arc;
 use skia_rust_core::color::Color;
 use skia_rust_core::m44::M44;
 use skia_rust_core::paint::{Cap, Join};
+use skia_rust_core::path::Path;
+use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::{IRect, Rect as SkRect};
 use skia_rust_core::rrect::RRect;
@@ -40,11 +43,17 @@ use skia_rust_gpu::graphite::geom::transform::Transform;
 use skia_rust_gpu::graphite::graphite_types::DepthStencilFlags;
 use skia_rust_gpu::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use skia_rust_gpu::graphite::render::circular_arc_render_step::CircularArcRenderStep;
-use skia_rust_gpu::graphite::render::common_depth_stencil_settings::REGULAR_COVER_PASS;
+use skia_rust_gpu::graphite::render::common_depth_stencil_settings::{
+    DIRECT_DEPTH_LESS_PASS, REGULAR_COVER_PASS,
+};
 use skia_rust_gpu::graphite::render::cover_bounds_render_step::CoverBoundsRenderStep;
+use skia_rust_gpu::graphite::render::middle_out_fan_render_step::MiddleOutFanRenderStep;
 use skia_rust_gpu::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
+use skia_rust_gpu::graphite::render::tessellate_curves_render_step::TessellateCurvesRenderStep;
+use skia_rust_gpu::graphite::render::tessellate_strokes_render_step::TessellateStrokesRenderStep;
+use skia_rust_gpu::graphite::render::tessellate_wedges_render_step::TessellateWedgesRenderStep;
 use skia_rust_gpu::graphite::render::vertices_render_step::VerticesRenderStep;
-use skia_rust_gpu::graphite::render_step::{Coverage, RenderStep, RenderStepID};
+use skia_rust_gpu::graphite::render_step::{Coverage, RenderStep, RenderStepFlags, RenderStepID};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::resource::ResourceRef;
 use skia_rust_gpu::graphite::resource_types::Layout;
@@ -231,6 +240,16 @@ fn record_instances(
     instance_stride: usize,
     byte_count: usize,
 ) -> (Vec<Call>, Vec<u8>) {
+    // The tessellation steps append dynamic instances, whose count the tolerances decide.
+    let append_flags = if step
+        .base()
+        .flags()
+        .contains(RenderStepFlags::APPEND_DYNAMIC_INSTANCES)
+    {
+        RenderStateFlags::APPEND_DYNAMIC_INSTANCES
+    } else {
+        RenderStateFlags::APPEND_INSTANCES
+    };
     let (mut recorder, _shared) = make_recorder(MockCaps::default());
     let binding;
     let calls;
@@ -244,7 +263,7 @@ fn record_instances(
                 step.base().primitive_type(),
                 step.base().static_data_stride(),
                 instance_stride,
-                RenderStateFlags::APPEND_INSTANCES,
+                append_flags,
                 BarrierType::None,
             );
             step.write_vertices(&mut writer, params, ssbo_index);
@@ -587,7 +606,7 @@ fn render_step_sksl_text_is_byte_identical() {
 #[test]
 fn renderer_provider_names_draw_types_and_depth_stencil_flags() {
     let mut manager = static_manager();
-    let provider = RendererProvider::new(Layout::Std140, &mut manager);
+    let provider = RendererProvider::new(Layout::Std140, true, &mut manager);
 
     let quad = provider.per_edge_aa_quad();
     assert_eq!(quad.name(), "SingleStep[PerEdgeAAQuadRenderStep]");
@@ -1012,7 +1031,7 @@ fn vertices_indexed_triangles_are_expanded_in_index_order() {
 #[test]
 fn renderer_provider_vertices_variants() {
     let mut manager = static_manager();
-    let provider = RendererProvider::new(Layout::Std140, &mut manager);
+    let provider = RendererProvider::new(Layout::Std140, true, &mut manager);
     assert_eq!(
         provider.vertices(false, false).name(),
         "SingleStep[VerticesRenderStep[Pos]]"
@@ -1061,5 +1080,442 @@ fn analytic_rrect_sksl_text_is_byte_identical() {
             "strokeParams, ",
             "perPixelControl);"
         )
+    );
+}
+
+// ---- Tessellation render steps (G7b). ----
+//
+// The SkSL pieces below are the string literals of each step's `vertexSkSL` in the C++, in
+// order (extracted mechanically from `third_party/skia/src/gpu/graphite/render/*.cpp`); the `%s`
+// of each `printf` is the curve-type expression, which the test fills in.
+
+/// The `depthAsFloat()` of `params_for` (painter's depth 1).
+fn tess_depth() -> f32 {
+    1.0_f32 - 1.0_f32 / 65535.0_f32
+}
+
+/// The curve-type expression of `vertexSkSL` for a step with and without infinity support.
+const CURVE_TYPE_INF: &str = "curve_type_using_inf_support(p23)";
+const CURVE_TYPE_EXPLICIT: &str = "curveType";
+
+#[test]
+fn tessellate_sksl_text_is_byte_identical() {
+    // TessellateCurvesRenderStep.cpp#L118-L130: the `%s` is the curve type.
+    for (infinity, curve_type) in [(true, CURVE_TYPE_INF), (false, CURVE_TYPE_EXPLICIT)] {
+        let mut manager = static_manager();
+        let curves = TessellateCurvesRenderStep::new(Layout::Std140, true, infinity, &mut manager);
+        let expected = [
+            "float2x2 vectorXform = float2x2(localToDevice[0].xy, localToDevice[1].xy);\n",
+            "float2 localCoord = tessellate_filled_curve(",
+            "vectorXform, resolveLevel_and_idx.x, resolveLevel_and_idx.y, p01, p23, ",
+            curve_type,
+            ");\n",
+            "float4 devPosition = localToDevice * float4(localCoord, 0.0, 1.0);\n",
+            "devPosition.z = depth;\n",
+            "stepLocalCoords = localCoord;\n",
+        ]
+        .concat();
+        assert_eq!(curves.vertex_sksl(), expected);
+    }
+
+    // TessellateWedgesRenderStep.cpp#L122-L140: the `%s` is the curve type.
+    for (infinity, curve_type) in [(true, CURVE_TYPE_INF), (false, CURVE_TYPE_EXPLICIT)] {
+        let mut manager = static_manager();
+        let wedges = TessellateWedgesRenderStep::new(
+            Layout::Std140,
+            RenderStepID::TessellateWedges_Convex,
+            infinity,
+            DIRECT_DEPTH_LESS_PASS,
+            &mut manager,
+        );
+        let expected = [
+            "float2 localCoord;\n",
+            "if (resolveLevel_and_idx.x < 0) {\n",
+            "localCoord = fanPointAttrib;\n",
+            "} else {\n",
+            "float2x2 vectorXform = float2x2(localToDevice[0].xy, localToDevice[1].xy);\n",
+            "localCoord = tessellate_filled_curve(",
+            "vectorXform, resolveLevel_and_idx.x, resolveLevel_and_idx.y, p01, p23, ",
+            curve_type,
+            ");\n",
+            "}\n",
+            "float4 devPosition = localToDevice * float4(localCoord, 0.0, 1.0);\n",
+            "devPosition.z = depth;\n",
+            "stepLocalCoords = localCoord;\n",
+        ]
+        .concat();
+        assert_eq!(wedges.vertex_sksl(), expected);
+    }
+
+    // TessellateStrokesRenderStep.cpp#L113-L124: the `%s` is the curve type, for fill and inverse.
+    for inverse in [false, true] {
+        for (infinity, curve_type) in [(true, CURVE_TYPE_INF), (false, CURVE_TYPE_EXPLICIT)] {
+            let strokes = TessellateStrokesRenderStep::new(Layout::Std140, infinity, inverse);
+            let expected = [
+                "float edgeID = float(sk_VertexID >> 1);\n",
+                "if ((sk_VertexID & 1) != 0) {",
+                "edgeID = -edgeID;",
+                "}\n",
+                "float2x2 affine = float2x2(affineMatrix.xy, affineMatrix.zw);\n",
+                "float4 devAndLocalCoords = tessellate_stroked_curve(",
+                "edgeID, 16383, affine, translate, maxScale, p01, p23, prevPoint,",
+                "stroke, ",
+                curve_type,
+                ");\n",
+                "float4 devPosition = float4(devAndLocalCoords.xy, depth, 1.0);\n",
+                "stepLocalCoords = devAndLocalCoords.zw;\n",
+            ]
+            .concat();
+            assert_eq!(strokes.vertex_sksl(), expected);
+        }
+    }
+
+    // MiddleOutFanRenderStep.cpp#L47-L52.
+    let fan = MiddleOutFanRenderStep::new(Layout::Std140, true);
+    assert_eq!(
+        fan.vertex_sksl(),
+        concat!(
+            "float4 devPosition = localToDevice * float4(position, 0.0, 1.0);\n",
+            "devPosition.z = depth;\n",
+            "stepLocalCoords = position;\n",
+        )
+    );
+}
+
+/// The closed square (0,0), (100,0), (100,100), (0,100): convex, with midpoint (50, 50).
+fn square_path() -> Path {
+    let mut builder = PathBuilder::new();
+    builder
+        .move_to(Point::new(0.0, 0.0))
+        .line_to(Point::new(100.0, 0.0))
+        .line_to(Point::new(100.0, 100.0))
+        .line_to(Point::new(0.0, 100.0))
+        .close();
+    builder.detach()
+}
+
+/// The bounds and scissor of the tessellation tests' draws.
+fn tess_bounds() -> SkRect {
+    SkRect {
+        left: 0.0,
+        top: 0.0,
+        right: 100.0,
+        bottom: 100.0,
+    }
+}
+
+#[test]
+fn middle_out_fan_convex_square_vertex_bytes() {
+    // The middle-out triangulation of the square, traced through MiddleOutPolygonTriangulator
+    // (five verbs, so the stack starts with (0, 0)): [(0,0), (100,0), (100,100)] is popped by the
+    // second line, then [(100,100), (0,100), (0,0)] by the close.
+    let params = params_for(
+        Geometry::Shape(Shape::from_path(square_path())),
+        tess_bounds(),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let step = MiddleOutFanRenderStep::new(Layout::Std140, false);
+    let depth = tess_depth();
+    let triangles = [
+        [(0.0_f32, 0.0_f32), (100.0, 0.0), (100.0, 100.0)],
+        [(100.0, 100.0), (0.0, 100.0), (0.0, 0.0)],
+    ];
+    // Position, depth and ssboIndex: 16 bytes per vertex.
+    let mut expected = Vec::new();
+    for triangle in triangles {
+        for (x, y) in triangle {
+            expected.extend(f32_bytes(&[x, y, depth]));
+            expected.extend(u32_bytes(&[3]));
+        }
+    }
+    let (calls, bytes) = record_vertices(&step, &params, 3, 16, 96);
+    assert_eq!(bytes, expected);
+    assert!(calls.contains(&Call::Draw {
+        primitive: PrimitiveType::Triangles,
+        base_vertex: 0,
+        vertex_count: 6,
+    }));
+}
+
+#[test]
+fn tessellate_curves_cubic_patch_bytes() {
+    // No chop and no discard: the control points, the depth and the ssboIndex. Infinity support
+    // needs no curve-type attribute, so the stride is 32 + 4 + 4.
+    let cubic = [
+        Point::new(0.0, 0.0),
+        Point::new(0.0, 100.0),
+        Point::new(100.0, 100.0),
+        Point::new(100.0, 0.0),
+    ];
+    let mut builder = PathBuilder::new();
+    builder
+        .move_to(cubic[0])
+        .cubic_to(cubic[1], cubic[2], cubic[3]);
+    let params = params_for(
+        Geometry::Shape(Shape::from_path(builder.detach())),
+        tess_bounds(),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = TessellateCurvesRenderStep::new(Layout::Std140, false, true, &mut manager);
+    finalize(&mut manager);
+    let mut expected = f32_bytes(&[0.0, 0.0, 0.0, 100.0, 100.0, 100.0, 100.0, 0.0]);
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[5]));
+    let (_calls, bytes) = record_instances(&step, &params, 5, 40, 40);
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn tessellate_curves_quad_patch_bytes() {
+    // writeQuadPatch: the quad becomes the cubic (p0, mix(p0 | p2, p1, 2/3), p2), where
+    // mix(a, b, T) = (b - a) * T + a in each lane (PatchWriter.h#L706 and #L732).
+    let (p0, p1, p2) = (
+        (0.0_f32, 0.0_f32),
+        (50.0_f32, 100.0_f32),
+        (100.0_f32, 0.0_f32),
+    );
+    let t = 2.0_f32 / 3.0_f32;
+    let cp1 = [(p1.0 - p0.0) * t + p0.0, (p1.1 - p0.1) * t + p0.1];
+    let cp2 = [(p1.0 - p2.0) * t + p2.0, (p1.1 - p2.1) * t + p2.1];
+    let mut builder = PathBuilder::new();
+    builder
+        .move_to(Point::new(p0.0, p0.1))
+        .quad_to(Point::new(p1.0, p1.1), Point::new(p2.0, p2.1));
+    let params = params_for(
+        Geometry::Shape(Shape::from_path(builder.detach())),
+        tess_bounds(),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = TessellateCurvesRenderStep::new(Layout::Std140, false, true, &mut manager);
+    finalize(&mut manager);
+    let mut expected = f32_bytes(&[p0.0, p0.1, cp1[0], cp1[1], cp2[0], cp2[1], p2.0, p2.1]);
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[5]));
+    let (_calls, bytes) = record_instances(&step, &params, 5, 40, 40);
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn tessellate_curves_conic_patch_bytes() {
+    // writeConicPatch: p0, p1, p2 and {w, +inf} as the last control point. With infinity support
+    // the +inf in p23.w is the conic signal, so no curve-type attribute is written.
+    let mut builder = PathBuilder::new();
+    builder.move_to(Point::new(0.0, 0.0)).conic_to(
+        Point::new(50.0, 100.0),
+        Point::new(100.0, 0.0),
+        0.5,
+    );
+    let params = params_for(
+        Geometry::Shape(Shape::from_path(builder.detach())),
+        tess_bounds(),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = TessellateCurvesRenderStep::new(Layout::Std140, false, true, &mut manager);
+    finalize(&mut manager);
+    let mut expected = f32_bytes(&[0.0, 0.0, 50.0, 100.0, 100.0, 0.0, 0.5, f32::INFINITY]);
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[5]));
+    let (_calls, bytes) = record_instances(&step, &params, 5, 40, 40);
+    assert_eq!(bytes, expected);
+}
+
+/// The control points of a line written by `PatchWriter::writeLine` for wedges, which is the
+/// cubic (p0, (p1 - p0) / 3 + p0, (p0 - p1) / 3 + p1, p1) (PatchWriter.h#L577-L600).
+fn wedge_line_cubic(a: (f32, f32), b: (f32, f32)) -> [f32; 8] {
+    let third = 1.0_f32 / 3.0_f32;
+    [
+        a.0,
+        a.1,
+        (b.0 - a.0) * third + a.0,
+        (b.1 - a.1) * third + a.1,
+        (a.0 - b.0) * third + b.0,
+        (a.1 - b.1) * third + b.1,
+        b.0,
+        b.1,
+    ]
+}
+
+#[test]
+fn tessellate_wedges_convex_square_patch_bytes() {
+    // Four line patches, each with the fan point at the contour midpoint (50, 50): the three
+    // lines of the path and the closing line from (0, 100) back to the start (0, 0).
+    let params = params_for(
+        Geometry::Shape(Shape::from_path(square_path())),
+        tess_bounds(),
+        IRect {
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+        },
+    );
+    let mut manager = static_manager();
+    let step = TessellateWedgesRenderStep::new(
+        Layout::Std140,
+        RenderStepID::TessellateWedges_Convex,
+        true,
+        DIRECT_DEPTH_LESS_PASS,
+        &mut manager,
+    );
+    finalize(&mut manager);
+    let corners = [
+        (0.0_f32, 0.0_f32),
+        (100.0, 0.0),
+        (100.0, 100.0),
+        (0.0, 100.0),
+    ];
+    let edges = [
+        (corners[0], corners[1]),
+        (corners[1], corners[2]),
+        (corners[2], corners[3]),
+        (corners[3], corners[0]),
+    ];
+    let mut expected = Vec::new();
+    for (a, b) in edges {
+        expected.extend(f32_bytes(&wedge_line_cubic(a, b)));
+        expected.extend(f32_bytes(&[50.0, 50.0, tess_depth()]));
+        expected.extend(u32_bytes(&[3]));
+    }
+    // Patch: 32 bytes of control points, the fan point (8), depth (4) and ssboIndex (4).
+    let (_calls, bytes) = record_instances(&step, &params, 3, 48, 4 * 48);
+    assert_eq!(bytes, expected);
+}
+
+/// The open polyline (0,0), (100,0), (100,100) stroked with half width 5 and a miter join of
+/// limit 4. The stroke attributes are the join control point, then (radius, joinLimit).
+fn open_polyline_stroke_params(cap: Cap) -> DrawParams {
+    let mut builder = PathBuilder::new();
+    builder
+        .move_to(Point::new(0.0, 0.0))
+        .line_to(Point::new(100.0, 0.0))
+        .line_to(Point::new(100.0, 100.0));
+    let stroke = StrokeStyle::new(10.0, 4.0, Join::Miter, cap);
+    stroked_params(
+        Geometry::Shape(Shape::from_path(builder.detach())),
+        tess_bounds(),
+        stroke,
+    )
+}
+
+#[test]
+fn tessellate_strokes_open_polyline_butt_cap_patch_bytes() {
+    // Two line patches. The first is deferred until the join is known, so it is written last,
+    // with its join control point set to the contour's first point (the butt cap needs no more).
+    // The second is written directly, with the join of the first line's incoming tangent (0, 0).
+    // Each patch: four control points, the join (8), the stroke params (radius 5, joinLimit 4),
+    // depth and ssboIndex: 56 bytes.
+    let params = open_polyline_stroke_params(Cap::Butt);
+    // The strokes use no static buffers, so there is nothing to finalize.
+    let step = TessellateStrokesRenderStep::new(Layout::Std140, true, false);
+    let stroke = [5.0_f32, 4.0_f32];
+    let mut expected = f32_bytes(&[100.0, 0.0, 100.0, 0.0, 100.0, 100.0, 100.0, 100.0]);
+    expected.extend(f32_bytes(&[0.0, 0.0]));
+    expected.extend(f32_bytes(&stroke));
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[3]));
+    expected.extend(f32_bytes(&[0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 100.0, 0.0]));
+    expected.extend(f32_bytes(&[0.0, 0.0]));
+    expected.extend(f32_bytes(&stroke));
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[3]));
+    let (_calls, bytes) = record_instances(&step, &params, 3, 56, 112);
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn tessellate_strokes_open_polyline_round_cap_patch_bytes() {
+    // With a round cap, the end of the contour adds a circle at the last control point and one at
+    // the first (before the deferred first patch, which keeps the first point as its join).
+    // A circle is a cubic with four copies of its point, and that point as its join.
+    let params = open_polyline_stroke_params(Cap::Round);
+    let step = TessellateStrokesRenderStep::new(Layout::Std140, true, false);
+    let stroke = [5.0_f32, 4.0_f32];
+    let circle = |p: [f32; 2]| {
+        let mut bytes = f32_bytes(&[p[0], p[1], p[0], p[1], p[0], p[1], p[0], p[1]]);
+        bytes.extend(f32_bytes(&p));
+        bytes.extend(f32_bytes(&stroke));
+        bytes.extend(f32_bytes(&[tess_depth()]));
+        bytes.extend(u32_bytes(&[3]));
+        bytes
+    };
+    let mut expected = f32_bytes(&[100.0, 0.0, 100.0, 0.0, 100.0, 100.0, 100.0, 100.0]);
+    expected.extend(f32_bytes(&[0.0, 0.0]));
+    expected.extend(f32_bytes(&stroke));
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[3]));
+    expected.extend(circle([100.0, 100.0]));
+    expected.extend(circle([0.0, 0.0]));
+    expected.extend(f32_bytes(&[0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 100.0, 0.0]));
+    expected.extend(f32_bytes(&[0.0, 0.0]));
+    expected.extend(f32_bytes(&stroke));
+    expected.extend(f32_bytes(&[tess_depth()]));
+    expected.extend(u32_bytes(&[3]));
+    let (_calls, bytes) = record_instances(&step, &params, 3, 56, 224);
+    assert_eq!(bytes, expected);
+}
+
+#[test]
+fn renderer_provider_tessellated_renderers_names() {
+    let mut manager = static_manager();
+    let provider = RendererProvider::new(Layout::Std140, true, &mut manager);
+    assert_eq!(
+        provider.convex_tessellated_wedges().name(),
+        "SingleStep[TessellateWedgesRenderStep[Convex]]"
+    );
+    // Each stencil renderer is named by its fill type, in `PathFillType` order.
+    assert_eq!(
+        provider
+            .stencil_tessellated_curves_and_tris(PathFillType::Winding)
+            .name(),
+        "StencilTessellatedCurvesAndTris[winding]"
+    );
+    assert_eq!(
+        provider
+            .stencil_tessellated_curves_and_tris(PathFillType::EvenOdd)
+            .name(),
+        "StencilTessellatedCurvesAndTris[evenodd]"
+    );
+    assert_eq!(
+        provider
+            .stencil_tessellated_wedges(PathFillType::InverseWinding)
+            .name(),
+        "StencilTessellatedWedges[inverse-winding]"
+    );
+    assert_eq!(
+        provider
+            .stencil_tessellated_wedges(PathFillType::InverseEvenOdd)
+            .name(),
+        "StencilTessellatedWedges[inverse-evenodd]"
+    );
+    assert_eq!(
+        provider.tessellated_strokes(false).name(),
+        "SingleStep[TessellateStrokesRenderStep[Fill]]"
+    );
+    assert_eq!(
+        provider.tessellated_strokes(true).name(),
+        "TessellatedStrokesInverseFill"
     );
 }
