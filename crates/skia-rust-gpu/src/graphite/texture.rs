@@ -19,6 +19,7 @@ use crate::gpu::gpu_types::{Mipmapped, Protected};
 use crate::graphite::graphite_types::SampleCount;
 use crate::graphite::resource::{Resource, ResourceObject, ResourceRef, synchronize_backend_label};
 use crate::graphite::resource_types::Ownership;
+use crate::graphite::task::upload_task::UploadSource;
 use crate::graphite::texture_info::TextureInfo;
 use crate::graphite::texture_utils::compute_size;
 
@@ -35,6 +36,14 @@ pub trait TextureBackend: Send + Sync + fmt::Debug + 'static {
     /// `canUploadOnHost()`.
     fn can_upload_on_host(&self) -> bool {
         false
+    }
+    /// `uploadDataOnHost()`: uploads `source` to the texture directly, without a command
+    /// buffer. Only called if [`can_upload_on_host`](Self::can_upload_on_host) is true.
+    ///
+    /// # Panics
+    /// By default, as Skia aborts with "Not implemented".
+    fn upload_data_on_host(&self, _source: &UploadSource<'_>) -> bool {
+        panic!("Not implemented");
     }
     /// For downcasting to the concrete backend texture.
     fn as_any(&self) -> &dyn Any;
@@ -139,6 +148,13 @@ impl Texture {
     #[must_use]
     pub fn can_upload_on_host(&self) -> bool {
         self.backend.can_upload_on_host()
+    }
+
+    /// `uploadDataOnHost()`.
+    // Port of: src/gpu/graphite/Texture.cpp#L49-L51 (chrome/m156)
+    #[doc(alias = "uploadDataOnHost")]
+    pub fn upload_data_on_host(&self, source: &UploadSource<'_>) -> bool {
+        self.backend.upload_data_on_host(source)
     }
 
     /// The backend half.

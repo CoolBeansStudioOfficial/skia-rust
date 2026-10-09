@@ -165,7 +165,7 @@ impl Buffer {
     #[must_use]
     pub fn map(&self) -> Option<MappedData> {
         debug_assert!(self.is_unmappable() || !self.backend.buffer_maps_are_async());
-        debug_assert!(self.is_protected == Protected::No);
+        debug_assert_eq!(self.is_protected, Protected::No);
         if self.is_mapped() {
             // The staging block is held by whoever mapped the buffer first.
             return None;
@@ -181,7 +181,7 @@ impl Buffer {
     #[doc(alias = "asyncMap")]
     pub fn async_map(&self, finished: Option<MapFinishedProc>) {
         debug_assert!(self.backend.buffer_maps_are_async());
-        debug_assert!(self.is_protected == Protected::No);
+        debug_assert_eq!(self.is_protected, Protected::No);
         self.backend.on_async_map(finished);
     }
 

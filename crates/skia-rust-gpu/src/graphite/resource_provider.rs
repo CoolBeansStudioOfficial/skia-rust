@@ -315,7 +315,7 @@ impl ResourceProvider {
     ) -> Option<ResourceRef<Buffer>> {
         // Scratch buffers must be GPU only, mapped access makes it too difficult to scope their
         // reads and writes within the actual command buffer execution.
-        debug_assert!(access != AccessPattern::HostVisible);
+        debug_assert_ne!(access, AccessPattern::HostVisible);
         self.find_or_create_buffer(
             size,
             ty,

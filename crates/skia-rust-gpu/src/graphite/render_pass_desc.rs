@@ -106,7 +106,7 @@ pub struct RenderPassDesc {
     pub color_resolve_attachment: AttachmentDesc,
     /// `fDepthStencilAttachment`.
     pub depth_stencil_attachment: AttachmentDesc,
-    /// The write swizzle is applied in shader, so affects SkSL code generation, but is
+    /// The write swizzle is applied in shader, so affects `SkSL` code generation, but is
     /// determined by the desired color type semantics and target format combination of the
     /// render pass.
     pub write_swizzle: Swizzle,
@@ -169,7 +169,7 @@ impl RenderPassDesc {
     ) -> RenderPassDesc {
         // It doesn't make sense to have a storeOp for our main target not be store. Why are we
         // doing this DrawPass then
-        debug_assert!(store_op == StoreOp::Store);
+        debug_assert_eq!(store_op, StoreOp::Store);
 
         let mut desc = RenderPassDesc {
             clear_color,
@@ -234,7 +234,10 @@ impl RenderPassDesc {
         } else {
             // The target will be the color attachment and skip configuring the resolve
             // attachment.
-            debug_assert!(desc.color_resolve_attachment.format == TextureFormat::Unsupported);
+            debug_assert_eq!(
+                desc.color_resolve_attachment.format,
+                TextureFormat::Unsupported
+            );
             desc.color_attachment = AttachmentDesc {
                 format: color_format,
                 load_op,
@@ -251,7 +254,7 @@ impl RenderPassDesc {
                 depth_stencil_flags = DepthStencilFlags::DepthStencil;
             }
             let ds_format = caps.get_depth_stencil_format(depth_stencil_flags);
-            debug_assert!(ds_format != TextureFormat::Unsupported);
+            debug_assert_ne!(ds_format, TextureFormat::Unsupported);
 
             // Depth and stencil values are currently always cleared and don't need to persist.
             // The sample count should always match render pass.
@@ -262,7 +265,10 @@ impl RenderPassDesc {
                 sample_count: desc.sample_count,
             };
         } else {
-            debug_assert!(desc.depth_stencil_attachment.format == TextureFormat::Unsupported);
+            debug_assert_eq!(
+                desc.depth_stencil_attachment.format,
+                TextureFormat::Unsupported
+            );
         }
 
         desc
@@ -297,7 +303,7 @@ impl RenderPassDesc {
     pub fn to_pipeline_label(&self) -> String {
         // Given current policies, these assumptions should hold and mean the conciseness in the
         // label is still unambiguous.
-        debug_assert!(self.color_attachment.format != TextureFormat::Unsupported);
+        debug_assert_ne!(self.color_attachment.format, TextureFormat::Unsupported);
         debug_assert!(
             self.color_resolve_attachment.format == TextureFormat::Unsupported
                 || self.color_resolve_attachment.format == self.color_attachment.format

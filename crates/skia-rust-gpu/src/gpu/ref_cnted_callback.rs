@@ -13,6 +13,9 @@ use std::sync::{Arc, Mutex};
 
 use crate::gpu::gpu_types::{CallbackResult, GpuStats};
 
+/// The `ResultCallbackWithStats` closure.
+type ResultWithStatsProc = Box<dyn FnOnce(CallbackResult, &GpuStats) + Send>;
+
 /// One of the four callback signatures `AutoCallback` accepts.
 // Port of: src/gpu/RefCntedCallback.h#L24-L27 (chrome/m156)
 pub enum CallbackProc {
@@ -23,7 +26,7 @@ pub enum CallbackProc {
     /// `ResultCallback`: `void (*)(Context, CallbackResult)`.
     Result(Box<dyn FnOnce(CallbackResult) + Send>),
     /// `ResultCallbackWithStats`: `void (*)(Context, CallbackResult, const GpuStats&)`.
-    ResultWithStats(Box<dyn FnOnce(CallbackResult, &GpuStats) + Send>),
+    ResultWithStats(ResultWithStatsProc),
 }
 
 impl std::fmt::Debug for CallbackProc {
