@@ -30,6 +30,7 @@
 pub mod bench;
 pub mod nanobench;
 pub mod smoke;
+pub mod tool_utils;
 
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::paint::Paint;

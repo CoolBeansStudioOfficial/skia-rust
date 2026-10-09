@@ -2341,6 +2341,7 @@ macro = "DEF_BENCH"
 source = "bench/CoverageBench.cpp#L78-L78"
 module = "core"
 status = "todo"
+reason = "drives skcpu::Draw (SkDraw internals: drawPath and drawPathCoverage) directly; not ported"
 span_hash = "2413f7e6265174a392491a04fe365efe59863bd6100c73969449aa87385d3a83"
 
 [[test]]
@@ -2350,6 +2351,7 @@ macro = "DEF_BENCH"
 source = "bench/CoverageBench.cpp#L79-L79"
 module = "core"
 status = "todo"
+reason = "drives skcpu::Draw (SkDraw internals: drawPath and drawPathCoverage) directly; not ported"
 span_hash = "321844a93ccb57366c6e0f1e629c1bbe4df8e5a7b5a0f6f658aa950e4940ddd2"
 
 [[test]]
@@ -8315,6 +8317,7 @@ macro = "DEF_BENCH"
 source = "bench/PerlinNoiseBench.cpp#L57-L57"
 module = "core"
 status = "todo"
+reason = "SkShaders::MakeFractalNoise is not in skia-rust-effects"
 span_hash = "aede536884b0d52d0ddf2010d6bb39af221da408e20958af9e12c8e8649df0a2"
 
 [[test]]
@@ -8780,7 +8783,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PremulAndUnpremulAlphaOpsBench.cpp#L66-L66"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ad5f3985adcd2b6c60fc570060193d3568e10efe56ee849159f616db79aa2f1e"
 
 [[test]]
@@ -8789,7 +8792,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PremulAndUnpremulAlphaOpsBench.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c909f614bee0a8777cc32c5b27eeb228a26b4ff025aa9fc19fe11d8274ee2027"
 
 [[test]]
@@ -10761,6 +10764,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L37-L37"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "42bf2af08cd53f1142c0aab3438dcd340defdc630c9e9ac0b3e372a34124df5e"
 
 [[test]]
@@ -10770,6 +10774,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L36-L36"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "b7d84b2c97d45c7a3358bc6d749e2e333c57a9b634e66e1fe9b4e1d8432a450d"
 
 [[test]]
@@ -10779,6 +10784,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L35-L35"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "ffe422b1801420582e53ebecf8d4c6a8e9c10ea7e845e21516bc3d40f6e9f663"
 
 [[test]]
@@ -10788,6 +10794,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L39-L39"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "2c38cbdf92b154984e45b1b4e33911a6af43a72502db3665f03d12dec4dfc326"
 
 [[test]]
@@ -10797,6 +10804,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L38-L38"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "b9903d65c3c1f44ee298da4684ae4bb1ea310e9fc5b35ddd113aa9cc14960ad0"
 
 [[test]]
@@ -10806,6 +10814,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L41-L41"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "d4267cb78cd41912804b3549694270e1d7b64df9d0b3b81e41d3b7f3d03ce20c"
 
 [[test]]
@@ -10815,6 +10824,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L42-L42"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "47a6355f5e7b9db4e903998cdbebe18a50e1b7c0385db5c0547279a2429d6d49"
 
 [[test]]
@@ -10824,6 +10834,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L40-L40"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "a087e8e961f6cd3e907785c1c08bbeb5bfa7ed3f2fdd91a53932f90158c77193"
 
 [[test]]
@@ -10833,6 +10844,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L44-L44"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "d151a1996380b3fa3eb011f743285e641a9e8dacf10589cc07943768182c1452"
 
 [[test]]
@@ -10842,6 +10854,7 @@ macro = "DEF_BENCH"
 source = "bench/SwizzleBench.cpp#L43-L43"
 module = "core"
 status = "todo"
+reason = "SkOpts swizzle kernels other than RGBA_to_rgbA, RGBA_to_bgrA and RGBA_to_BGRA are not in skia-rust-simd"
 span_hash = "774e31a81d0fc3119c3382be505506641bdedf982767271b40d2088a3470dc75"
 
 [[test]]
@@ -11327,7 +11340,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L67-L67"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "34e341b95b8fd61d3c034bf89eb08dfbc69311e88fa85df8fb1354dc22e3d162"
 
 [[test]]
@@ -11336,7 +11349,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "cf2f669335dccc30b2a44f164c9fb59f479d05d2b270db7559c3ed79895127f4"
 
 [[test]]
@@ -11345,7 +11358,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L68-L68"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "61befd50610b41322e885be47185a5f460907008f1125e1ba48fcd9130331e28"
 
 [[test]]
@@ -11354,7 +11367,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L66-L66"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "fbd0ee56e7a42665a5bf793c7be6ef04b8bb0d389f0cda81dc1d045bb0c46701"
 
 [[test]]
@@ -11363,7 +11376,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L62-L62"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "d2c5c266e5c5f4aa91755c3ed546e2d2cdb06b8ba81903d08c8675dcf0886e04"
 
 [[test]]
@@ -11372,7 +11385,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L60-L60"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d0195ce53f25f2e4c7e33ade7462a0dc43364ce2200603c51b7b102cff7f9ae8"
 
 [[test]]
@@ -11381,7 +11394,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L63-L63"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "b09b62c1e3c98a141c5eaba6d61e44d68b023958472002be22f528b0ad4004ff"
 
 [[test]]
@@ -11390,7 +11403,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/WritePixelsBench.cpp#L61-L61"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "277e09dfeea6cd64e7c5652b50de730b05dcee733f6fec1c43ae378f8a66e80a"
 
 [[test]]
