@@ -262,7 +262,11 @@ impl DrawList {
                 },
             ));
 
-            step.write_uniforms_and_textures(&draw.draw_params, gatherer);
+            crate::graphite::draw_list_base::write_step_uniforms_and_textures(
+                &**step,
+                &draw.draw_params,
+                gatherer,
+            );
 
             let (combined_uniforms, combined_textures) =
                 gatherer.end_combined_data(performs_shading);

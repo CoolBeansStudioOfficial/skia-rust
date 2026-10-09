@@ -34,7 +34,7 @@ use std::time::Duration;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::size::ISize;
 
-use crate::gpu::gpu_types::{BackendApi, Protected, StdSteadyClockTimePoint};
+use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::token::TokenTracker;
 use crate::graphite::backend_texture::BackendTexture;
@@ -262,7 +262,8 @@ impl Recorder {
             .require_ordered_recordings
             .unwrap_or_else(|| caps.require_ordered_recordings());
 
-        // fClientImageProvider (G10d) is not ported.
+        // fClientImageProvider is not ported: a client's ImageProvider is not an option of the
+        // Copy-only RecorderOptions. Graphite uses the DefaultImageProvider (image_provider).
         let resource_provider = match context_resource_provider {
             Some(resource_provider) => resource_provider,
             None => Arc::new(std::sync::Mutex::new(
@@ -883,7 +884,9 @@ impl RecorderPriv<'_> {
         }
 
         // Cache miss: create the proxy and upload the bitmap into it.
-        let proxy = make_bitmap_proxy_view(recorder, &shared, bitmap, label)?.ref_proxy()?;
+        let proxy =
+            make_bitmap_proxy_view(recorder, bitmap, None, Mipmapped::No, Budgeted::Yes, label)?
+                .ref_proxy()?;
 
         // The bitmap may be held by more than just this call, so add a listener that removes the
         // entry when the pixels go away.

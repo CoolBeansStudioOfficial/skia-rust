@@ -90,6 +90,19 @@ impl DrawListLayer {
         &self.draw_params[id.0 as usize]
     }
 
+    /// Updates the order, draw bounds and scissor of the depth-only clip draw `id` (the writes
+    /// `ClipStack::RawElement::drawClip()` makes through its `fCaptureParams`).
+    // Port of: src/gpu/graphite/ClipStack.cpp#L614-L617 (chrome/m156)
+    pub fn update_clip_draw(
+        &mut self,
+        id: DrawParamsId,
+        order: crate::graphite::draw_order::DrawOrder,
+        draw_bounds: crate::graphite::geom::rect::Rect,
+        scissor: skia_rust_core::rect::IRect,
+    ) {
+        self.draw_params[id.0 as usize].update_clip_draw(order, draw_bounds, scissor);
+    }
+
     /// The paint order of the layer `id`.
     #[must_use]
     pub fn layer_order(&self, id: LayerId) -> CompressedPaintersOrder {
@@ -414,7 +427,8 @@ impl DrawListLayer {
                 },
             ));
 
-            step.write_uniforms_and_textures(
+            crate::graphite::draw_list_base::write_step_uniforms_and_textures(
+                &**step,
                 &self.draw_params[draw_params_id.0 as usize],
                 gatherer,
             );

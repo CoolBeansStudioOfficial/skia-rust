@@ -602,6 +602,27 @@ impl DrawContext {
         &self.storage_context
     }
 
+    /// The paint order of the pending layer `id`, if the draws are layered.
+    #[must_use]
+    pub fn layer_order(
+        &self,
+        id: LayerId,
+    ) -> Option<crate::graphite::draw_order::CompressedPaintersOrder> {
+        self.pending_draws.layer_order(id)
+    }
+
+    /// Updates the order, draw bounds and scissor of a recorded depth-only clip draw.
+    pub fn update_clip_draw(
+        &mut self,
+        id: DrawParamsId,
+        order: crate::graphite::draw_order::DrawOrder,
+        draw_bounds: crate::graphite::geom::rect::Rect,
+        scissor: skia_rust_core::rect::IRect,
+    ) {
+        self.pending_draws
+            .update_clip_draw(id, order, draw_bounds, scissor);
+    }
+
     /// The pending draws, for tests.
     #[must_use]
     pub fn pending_draws(&self) -> &DrawListBase {
