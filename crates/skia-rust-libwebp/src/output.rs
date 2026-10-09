@@ -36,7 +36,7 @@
 
 use crate::io::{Io, is_alpha_mode, is_premultiplied_mode};
 use crate::lossless::{CspMode, apply_alpha_multiply};
-use crate::rescaler::rescaler_init;
+use crate::rescaler::{Rescaler, rescaler_init};
 use crate::vp8_dec::{Crop, Planes};
 use crate::vp8_tables_small::K_FILTER_EXTRA_ROWS;
 
@@ -453,14 +453,13 @@ pub fn emit_frame(
     if bytes_per_pixel(io.colorspace).is_none() {
         return false;
     }
-    if io.use_scaling {
-        return emit_rescaled_frame(planes, alpha, io);
-    }
     let _ = crop;
     let mut emitter = Emitter::default();
     for mb_y in 0..br_mb_y {
         let is_last_row = mb_y + 1 >= br_mb_y;
-        emitter.emit_batch(planes, alpha, io, mb_y, is_last_row);
+        if !emitter.emit_batch(planes, alpha, io, mb_y, is_last_row) {
+            return false;
+        }
     }
     true
 }
@@ -490,15 +489,63 @@ pub(crate) fn batch_rows(
 }
 
 /// The output state of one frame: the `io_dec.c` emitters with the fancy upsampler's samples of the
-/// previous batch. Batches must come in row order.
+/// previous batch, and the rescalers of a scaled frame. Batches must come in row order.
 #[derive(Debug, Default)]
 pub(crate) struct Emitter {
     st: FancyState,
+    /// `WebPDecParams::scaler_*`: made by the first batch of a scaled frame (`CustomSetup`).
+    scale: Option<RescaleState>,
+}
+
+/// The rescalers of `InitRGBRescaler` (`io_dec.c`) and the rows they export.
+#[derive(Debug)]
+struct RescaleState {
+    scaler_y: Rescaler,
+    scaler_u: Rescaler,
+    scaler_v: Rescaler,
+    scaler_a: Option<Rescaler>,
+    /// The exported rows of each scaler (`scaler->dst`), `scaled_width` bytes each.
+    ty: Vec<u8>,
+    tu: Vec<u8>,
+    tv: Vec<u8>,
+    ta: Vec<u8>,
+}
+
+impl RescaleState {
+    /// `InitRGBRescaler` for the crop window of `io`, scaled to `io.scaled_width` x
+    /// `io.scaled_height`. `has_alpha` is `WebPIsAlphaMode` of the colour space.
+    fn new(io: &Io<'_>, has_alpha: bool) -> Option<Self> {
+        let mb_w = io.crop_right - io.crop_left;
+        let mb_h = io.crop_bottom - io.crop_top;
+        let uv_in_w = (mb_w + 1) >> 1;
+        let uv_in_h = (mb_h + 1) >> 1;
+        let out_w = io.scaled_width;
+        let out_h = io.scaled_height;
+        let scaler_y = rescaler_init(mb_w, mb_h, out_w, out_h, 1)?;
+        let scaler_u = rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1)?;
+        let scaler_v = rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1)?;
+        let scaler_a = if has_alpha {
+            Some(rescaler_init(mb_w, mb_h, out_w, out_h, 1)?)
+        } else {
+            None
+        };
+        let n = out_w as usize;
+        Some(Self {
+            scaler_y,
+            scaler_u,
+            scaler_v,
+            scaler_a,
+            ty: vec![0; n],
+            tu: vec![0; n],
+            tv: vec![0; n],
+            ta: vec![0; n],
+        })
+    }
 }
 
 impl Emitter {
     /// `FinishRow`'s `io->put` for macroblock row `mb_y`: writes its batch of rows, the alpha rows
-    /// with it, and advances `io->last_y`.
+    /// with it, and advances `io->last_y`. Returns `false` if the scaled output cannot be set up.
     pub(crate) fn emit_batch(
         &mut self,
         planes: &Planes,
@@ -506,7 +553,7 @@ impl Emitter {
         io: &mut Io<'_>,
         mb_y: usize,
         is_last_row: bool,
-    ) {
+    ) -> bool {
         let extra_y_rows = K_FILTER_EXTRA_ROWS[usize::from(planes.filter_type)] as usize;
         let (mut y_start, y_end) =
             batch_rows(mb_y, is_last_row, extra_y_rows, io.crop_bottom as usize);
@@ -524,6 +571,27 @@ impl Emitter {
             io.mb_y = (y_start - io.crop_top as usize) as i32;
             io.mb_w = io.crop_right - io.crop_left;
             io.mb_h = (y_end - y_start) as i32;
+            let alpha = alpha.filter(|_| is_alpha_mode(io.colorspace));
+            if io.use_scaling {
+                // CustomSetup's InitRGBRescaler, once per frame.
+                if self.scale.is_none() {
+                    let has_alpha = is_alpha_mode(io.colorspace);
+                    let Some(made) = RescaleState::new(io, has_alpha) else {
+                        return false;
+                    };
+                    self.scale = Some(made);
+                }
+                let Some(scale) = self.scale.as_mut() else {
+                    return false;
+                };
+                let num_lines_out = emit_rescaled_rgb(scale, planes, io, y_row, uv_row);
+                // CustomPut: EmitRescaledAlphaRGB, for the rows just written.
+                if let Some(a) = alpha {
+                    emit_rescaled_alpha(scale, a, planes.width as usize, io, num_lines_out);
+                }
+                io.last_y += num_lines_out as i32;
+                return true;
+            }
             // CustomSetup: EmitFancyRGB when fancy upsampling is on, EmitSampledRGB otherwise.
             let num_lines_out = if io.fancy_upsampling {
                 emit_fancy_rgb(&mut self.st, planes, io, y_row, uv_row)
@@ -531,12 +599,13 @@ impl Emitter {
                 emit_sampled_rgb(io, planes, y_row, uv_row)
             };
             // CustomSetup installs EmitAlphaRGB only for the colour spaces with an alpha channel.
-            if let Some(a) = alpha.filter(|_| is_alpha_mode(io.colorspace)) {
+            if let Some(a) = alpha {
                 emit_alpha_rgb(io, a, a_row, planes.width as usize, io.fancy_upsampling);
             }
             // CustomPut: `p->last_y += num_lines_out`, the rows the emitter actually wrote.
             io.last_y += num_lines_out;
         }
+        true
     }
 }
 
@@ -570,64 +639,63 @@ fn emit_sampled_rgb(io: &mut Io<'_>, planes: &Planes, y_row: usize, uv_row: usiz
 }
 
 /// Port of `EmitRescaledRGB` with `ExportRGB` and `EmitRescaledAlphaRGB`/`ExportAlpha`
-/// (`io_dec.c`), for the RGB colour spaces with `io->use_scaling`.
-///
-/// The C code feeds the rescalers one macroblock batch at a time. Each rescaler's state changes
-/// only through its own import and export calls, in the same order whatever the batch size, so
-/// the whole cropped frame is fed as one batch here. The output is the same.
-fn emit_rescaled_frame(planes: &Planes, alpha: Option<&[u8]>, io: &mut Io<'_>) -> bool {
+/// (`io_dec.c`), for one batch of a scaled frame. The rescalers (`InitRGBRescaler`) are made once
+/// per frame and keep their state from batch to batch, as the decoder's `WebPDecParams` does.
+// Port of: src/dec/io_dec.c#L384-L408 and #L410-L470 (libwebp 1.4.0, 845d5476)
+fn emit_rescaled_rgb(
+    scale: &mut RescaleState,
+    planes: &Planes,
+    io: &mut Io<'_>,
+    y_row: usize,
+    uv_row: usize,
+) -> usize {
     let cs = io.colorspace;
-    let Some(bpp) = bytes_per_pixel(cs) else {
-        return false;
-    };
-    let mb_w = io.mb_w;
+    let bpp = bytes_per_pixel(cs).unwrap_or(0);
     let mb_h = io.mb_h;
-    let uv_in_w = (mb_w + 1) >> 1;
-    let uv_in_h = (mb_h + 1) >> 1;
-    let out_w = io.scaled_width;
-    let out_h = io.scaled_height;
-    let (Some(mut sy), Some(mut su), Some(mut sv)) = (
-        rescaler_init(mb_w, mb_h, out_w, out_h, 1),
-        rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1),
-        rescaler_init(uv_in_w, uv_in_h, out_w, out_h, 1),
-    ) else {
-        return false;
-    };
-    let crop_top = io.crop_top as usize;
+    let uv_mb_h = (mb_h + 1) >> 1;
     let crop_left = io.crop_left as usize;
     let ys = planes.y_stride;
     let uvs = planes.uv_stride;
-    let y_src = &planes.y[crop_top * ys + crop_left..];
-    let u_src = &planes.u[(crop_top / 2) * uvs + crop_left / 2..];
-    let v_src = &planes.v[(crop_top / 2) * uvs + crop_left / 2..];
-    let out_w_us = out_w as usize;
-    let mut ty = vec![0u8; out_w_us];
-    let mut tu = vec![0u8; out_w_us];
-    let mut tv = vec![0u8; out_w_us];
+    let y_src = &planes.y[y_row * ys + crop_left..];
+    let u_src = &planes.u[uv_row * uvs + crop_left / 2..];
+    let v_src = &planes.v[uv_row * uvs + crop_left / 2..];
     let stride = io.out_stride;
-
-    // EmitRescaledRGB
+    let out_w = scale.ty.len();
     let mut j: i32 = 0;
     let mut uv_j: i32 = 0;
     let mut num_lines_out: usize = 0;
     while j < mb_h {
-        let y_lines_in = sy.import(mb_h - j, &y_src[j as usize * ys..], ys);
+        let y_lines_in = scale
+            .scaler_y
+            .import(mb_h - j, &y_src[j as usize * ys..], ys);
         j += y_lines_in;
-        if su.needed_lines(uv_in_h - uv_j) > 0 {
-            let u_lines_in = su.import(uv_in_h - uv_j, &u_src[uv_j as usize * uvs..], uvs);
-            let _v_lines_in = sv.import(uv_in_h - uv_j, &v_src[uv_j as usize * uvs..], uvs);
+        if scale.scaler_u.needed_lines(uv_mb_h - uv_j) > 0 {
+            let u_lines_in =
+                scale
+                    .scaler_u
+                    .import(uv_mb_h - uv_j, &u_src[uv_j as usize * uvs..], uvs);
+            let _v_lines_in =
+                scale
+                    .scaler_v
+                    .import(uv_mb_h - uv_j, &v_src[uv_j as usize * uvs..], uvs);
             uv_j += u_lines_in;
         }
         // ExportRGB: U and V can be one line off from Y, hence the double test.
         let before = num_lines_out;
-        while sy.has_pending_output() && su.has_pending_output() {
-            sy.export_row(&mut ty);
-            su.export_row(&mut tu);
-            sv.export_row(&mut tv);
-            let row = num_lines_out * stride;
-            for x in 0..out_w_us {
+        while scale.scaler_y.has_pending_output() && scale.scaler_u.has_pending_output() {
+            scale.scaler_y.export_row(&mut scale.ty);
+            scale.scaler_u.export_row(&mut scale.tu);
+            scale.scaler_v.export_row(&mut scale.tv);
+            let row = (io.last_y as usize + num_lines_out) * stride;
+            for x in 0..out_w {
                 let o = row + x * bpp;
-                yuv_pixel(cs, ty[x], tu[x], tv[x], &mut io.out[o..o + bpp]);
+                yuv_pixel(
+                    cs,
+                    scale.ty[x],
+                    scale.tu[x],
+                    scale.tv[x],
+                    &mut io.out[o..o + bpp],
+                );
             }
             num_lines_out += 1;
         }
@@ -636,44 +704,66 @@ fn emit_rescaled_frame(planes: &Planes, alpha: Option<&[u8]>, io: &mut Io<'_>) -
             break;
         }
     }
+    num_lines_out
+}
 
-    // EmitRescaledAlphaRGB with ExportAlpha, for the colour spaces with transparency.
-    if let (Some(a), true) = (alpha, is_alpha_mode(cs)) {
-        let Some(mut sa) = rescaler_init(mb_w, mb_h, out_w, out_h, 1) else {
-            return false;
-        };
-        let aw = planes.width as usize;
-        let a_src = &a[crop_top * aw + crop_left..];
-        let alpha_first = matches!(cs, CspMode::Argb | CspMode::ArgbPremultiplied);
-        let dst_off = if alpha_first { 0 } else { 3 };
-        let mut ta = vec![0u8; out_w_us];
-        let mut non_opaque = false;
-        let mut n = 0usize;
-        while !sa.output_done() {
-            if !sa.input_done() {
-                let start = sa.src_y as usize;
-                sa.import(mb_h - sa.src_y, &a_src[start * aw..], aw);
-            }
-            while sa.has_pending_output() {
-                sa.export_row(&mut ta);
-                let row = n * stride + dst_off;
-                for (x, &av) in ta.iter().enumerate() {
-                    io.out[row + 4 * x] = av;
-                    non_opaque |= av != 0xff;
-                }
-                n += 1;
-            }
+/// Port of `EmitRescaledAlphaRGB` with `ExportAlpha` (`io_dec.c`): rescales the batch's alpha rows
+/// and writes the `expected` output rows that `EmitRescaledRGB` just produced, starting at
+/// `io.last_y`. `alpha` is the frame's alpha plane, `width` bytes per row.
+// Port of: src/dec/io_dec.c#L410-L435 and #L472-L486 (libwebp 1.4.0, 845d5476)
+fn emit_rescaled_alpha(
+    scale: &mut RescaleState,
+    alpha: &[u8],
+    width: usize,
+    io: &mut Io<'_>,
+    expected: usize,
+) {
+    let Some(sa) = scale.scaler_a.as_mut() else {
+        return;
+    };
+    let cs = io.colorspace;
+    let alpha_first = matches!(cs, CspMode::Argb | CspMode::ArgbPremultiplied);
+    let is_premult = is_premultiplied_mode(cs);
+    let stride = io.out_stride;
+    let crop_left = io.crop_left as usize;
+    let crop_top = io.crop_top;
+    let out_w = scale.ta.len();
+    let dst_off = if alpha_first { 0 } else { 3 };
+    let mut lines_left = expected;
+    let y_end = io.last_y as usize + expected;
+    while lines_left > 0 {
+        // io->a + (src_y - mb_y) * width: the absolute row crop_top + src_y, in the crop's columns.
+        let count = io.mb_h + io.mb_y - sa.src_y;
+        if count > 0 {
+            let abs_row = (crop_top + sa.src_y) as usize;
+            sa.import(count, &alpha[abs_row * width + crop_left..], width);
         }
-        if non_opaque && is_premultiplied_mode(cs) {
+        // ExportAlpha(p, y_end - lines_left, lines_left)
+        let y_pos = y_end - lines_left;
+        let mut num_lines_out = 0usize;
+        let mut non_opaque = false;
+        while sa.has_pending_output() && num_lines_out < lines_left {
+            sa.export_row(&mut scale.ta);
+            let row = (y_pos + num_lines_out) * stride + dst_off;
+            for (x, &av) in scale.ta.iter().enumerate() {
+                io.out[row + 4 * x] = av;
+                non_opaque |= av != 0xff;
+            }
+            num_lines_out += 1;
+        }
+        if is_premult && non_opaque {
             apply_alpha_multiply(
-                &mut io.out[..],
+                &mut io.out[y_pos * stride..],
                 alpha_first,
-                out_w_us,
+                out_w,
                 num_lines_out,
                 stride,
             );
         }
+        if num_lines_out == 0 && count <= 0 {
+            // The C loop would spin here; the rescalers always make progress on valid input.
+            break;
+        }
+        lines_left -= num_lines_out;
     }
-    io.last_y = num_lines_out as i32;
-    true
 }

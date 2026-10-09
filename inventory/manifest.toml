@@ -29521,7 +29521,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L583-L585"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "5b3722399fbeec64e04f83119eafa54583da6f2fbac7214004d10679a897a0ab"
 
 [[test]]
@@ -29548,7 +29548,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L50-L68"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2bc2de9f063cfa9fde511a8918a31032f5e979148d30c3a51a023087eee41a12"
 
 [[test]]
@@ -30118,7 +30118,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L599-L603"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2b9cfae9e3311e72ea08fd05d79bb6bb3ca7b8a61d93b9f7681419866ed8a79c"
 
 [[test]]
@@ -30127,7 +30127,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2521-L2545"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "6769ab8853fc0286a2264d1d6706456357a6f981733eb445e84dd4cabb4da84c"
 
 [[test]]
@@ -30136,7 +30136,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1096-L1116"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7ade5dfbbd9806d3455957a8349c45e8f1e6376825129272bdf963850d9a0a78"
 
 [[test]]
@@ -30145,7 +30145,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1840-L1859"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9db6e6e174402ae0dac52c544286f2ac010845bd2110b02eb67fe1970ed38c45"
 
 [[test]]
@@ -50310,7 +50310,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WebpTest.cpp#L18-L64"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "a79c480a0aa2c7a7b42d8f72e2e5a76888f6e8365f6dd39906a0c7ff50c02a72"
 
 [[test]]

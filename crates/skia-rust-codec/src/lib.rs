@@ -37,6 +37,7 @@ mod sampled_codec;
 pub mod sampler;
 pub mod swizzler;
 pub mod wbmp;
+pub mod webp_codec;
 pub mod wuffs_codec;
 
 pub use codec::{

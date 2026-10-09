@@ -11,7 +11,7 @@
 #![allow(clippy::cast_precision_loss, clippy::cast_sign_loss)]
 
 use skia_rust_codec::android_codec::AndroidCodec;
-use skia_rust_codec::codec::{Options, Result};
+use skia_rust_codec::codec::{NO_FRAME, Options, Result};
 use skia_rust_codec::{Codec, decoders};
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::stream::MemoryStream;
@@ -107,4 +107,35 @@ def_test!(Codec_trunc, |_reporter| {
 // Port of: tests/CodecAnimTest.cpp#L587-L589 (AndroidCodec_animated_gif)
 def_test!(AndroidCodec_animated_gif, |r| {
     test_animated_android_codec(r, "images/required.gif");
+});
+
+// Port of: tests/CodecAnimTest.cpp#L583-L585 (AndroidCodec_animated)
+def_test!(AndroidCodec_animated, |r| {
+    test_animated_android_codec(r, "images/required.webp");
+});
+
+// Port of: tests/CodecAnimTest.cpp#L50-L69 (Codec_565): a frame decoded to RGB_565 with no prior
+// frame, which is blended over the background of the frame before it.
+def_test!(Codec_565, |r| {
+    let path = "images/blendBG.webp";
+    let Some(data) = get_resource_as_data(path) else {
+        return;
+    };
+    let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders()) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec
+        .info()
+        .with_color_type(skia_rust_core::color_type::ColorType::RGB565);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+
+    let options = Options {
+        frame_index: 1,
+        prior_frame: NO_FRAME,
+        ..Options::default()
+    };
+    let result = codec.get_pixels(&info, &mut pixels, row_bytes, Some(&options));
+    reporter_assert!(r, result == Result::Success);
 });

@@ -9,9 +9,9 @@
 //!
 //! Handled: the RIFF container with an optional `VP8X` header, `ALPH` for lossy frames, and the
 //! `VP8 ` (lossy) and `VP8L` (lossless) image chunks, as well as bare VP8 and VP8L bitstreams.
-//! Animation (`ANIM`/`ANMF`) needs the demuxer, which is not ported yet; a file whose `VP8X`
-//! header sets the animation flag gets [`Status::UnsupportedFeature`] from the decode path, as
-//! in libwebp.
+//! Animation (`ANIM`/`ANMF`) is decoded frame by frame through the demuxer ([`crate::demux`]); a
+//! file whose `VP8X` header sets the animation flag gets [`Status::UnsupportedFeature`] from this
+//! still-image decode path, as in libwebp.
 
 // Module-level clippy allows. Each one mirrors the C source of this module.
 // clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss: the header

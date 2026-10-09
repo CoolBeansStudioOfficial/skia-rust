@@ -42,3 +42,6 @@ clang -o "$(dirname "$OUT")/webpopts" "$OBJ/webpopts.o" $OBJS
 # The demuxer driver (WebPDemux and WebPDemuxPartial, frames and metadata chunks).
 clang $CFLAGS -c "$HERE/webpdemux.c" -o "$OBJ/webpdemux.o"
 clang -o "$(dirname "$OUT")/webpdemux" "$OBJ/webpdemux.o" $OBJS
+# The incremental driver (WebPIUpdate over growing prefixes, with `-v` for the option variants).
+clang $CFLAGS -c "$HERE/webpidec.c" -o "$OBJ/webpidec.o"
+clang -o "$(dirname "$OUT")/webpidec" "$OBJ/webpidec.o" $OBJS

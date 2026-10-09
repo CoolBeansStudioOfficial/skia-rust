@@ -10,41 +10,11 @@ mod common;
 
 use std::fmt::Write as _;
 
-use common::{MODES, oracle_dir, status_code};
-use skia_rust_libwebp::{
-    CspMode, DecodeOptions, Status, decode_with_options, get_features, rescaler,
-};
+use common::{MODES, oracle_dir, parse_variant, status_code};
+use skia_rust_libwebp::{CspMode, Status, decode_with_options, get_features, rescaler};
 
 /// The modes `webpopts.c` decodes into, by name, with their bytes per pixel.
 const OPTION_MODES: [&str; 6] = ["RGBA", "BGRA", "rgbA", "bgrA", "RGB", "RGB565"];
-
-/// Parses a variant string written by `webpopts.c`: `none`, `crop=L,T,W,H`, `scale=W,H`,
-/// `bypass`, `nofancy`, joined by `+`.
-fn parse_variant(variant: &str) -> DecodeOptions {
-    let mut opts = DecodeOptions::default();
-    for part in variant.split('+') {
-        match part {
-            "none" => {}
-            "nofancy" => opts.no_fancy_upsampling = true,
-            "bypass" => opts.bypass_filtering = true,
-            _ => {
-                if let Some(v) = part.strip_prefix("crop=") {
-                    let n: Vec<i32> = v.split(',').map(|x| x.parse().expect("crop int")).collect();
-                    opts.crop = Some((n[0], n[1], n[2], n[3]));
-                } else if let Some(v) = part.strip_prefix("scale=") {
-                    let n: Vec<i32> = v
-                        .split(',')
-                        .map(|x| x.parse().expect("scale int"))
-                        .collect();
-                    opts.scale = Some((n[0], n[1]));
-                } else {
-                    panic!("unknown variant part {part}");
-                }
-            }
-        }
-    }
-    opts
-}
 
 /// One line of `webpopts` output for `data` decoded with `variant` into `mode`.
 fn option_line(

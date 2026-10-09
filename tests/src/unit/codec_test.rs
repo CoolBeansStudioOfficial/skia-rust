@@ -1348,3 +1348,155 @@ def_test!(Codec_gif_can_preserve_original_data, |r| {
     reporter_assert!(r, encoded_data.size() == data.len());
     reporter_assert!(r, encoded_data.as_bytes() == data.as_slice());
 });
+
+/// `LimitedPeekingMemStream`: a stream whose `peek` returns at most `limit` bytes, and whose `read`
+/// and `rewind` are the memory stream's.
+// Port of: tests/CodecTest.cpp#L1051-L1075 (LimitedPeekingMemStream)
+struct LimitedPeekingStream {
+    inner: Box<MemoryStream>,
+    limit: usize,
+}
+
+impl LimitedPeekingStream {
+    fn new(data: &[u8], limit: usize) -> Self {
+        Self {
+            inner: MemoryStream::make_copy(data),
+            limit,
+        }
+    }
+}
+
+impl Stream for LimitedPeekingStream {
+    fn read(&mut self, buffer: &mut [u8]) -> usize {
+        self.inner.read(buffer)
+    }
+
+    fn peek(&mut self, buffer: &mut [u8]) -> usize {
+        let n = buffer.len().min(self.limit);
+        self.inner.peek(&mut buffer[..n])
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.inner.is_at_end()
+    }
+
+    fn rewind(&mut self) -> bool {
+        self.inner.rewind()
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L599-L603 (chrome/m156)
+def_test!(Codec_webp, |r| {
+    check(
+        r,
+        "images/baby_tux.webp",
+        ISize::new(386, 395),
+        Support {
+            subset: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+    check(
+        r,
+        "images/color_wheel.webp",
+        ISize::new(128, 128),
+        Support {
+            subset: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+    check(
+        r,
+        "images/yellow_rose.webp",
+        ISize::new(400, 301),
+        Support {
+            subset: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+});
+
+// Port of: tests/CodecTest.cpp#L1096-L1116 (chrome/m156)
+def_test!(Codec_webp_peek, |r| {
+    let path = "images/baby_tux.webp";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // The limit is less than webp needs to peek or read.
+    let Ok(mut codec) =
+        codecs::make_codec_from_stream(Box::new(LimitedPeekingStream::new(&data, 25)))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    test_info(r, &mut codec, &info, Result::Success, None);
+
+    // Similarly, a stream which does not peek should still succeed.
+    let Ok(mut codec) =
+        codecs::make_codec_from_stream(Box::new(LimitedPeekingStream::new(&data, 0)))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    test_info(r, &mut codec, &info, Result::Success, None);
+});
+
+// Port of: tests/CodecTest.cpp#L1840-L1859 (chrome/m156)
+def_test!(Codec_webp_rowsDecoded, |r| {
+    let path = "images/baby_tux.webp";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // Truncate this file so that the header is available but no rows can be decoded. This should
+    // create a codec but fail to decode.
+    let truncated_size = 5000;
+    let Ok(mut codec) =
+        codecs::make_codec_from_stream(MemoryStream::make_copy(&data[..truncated_size]))
+    else {
+        errorf!(
+            r,
+            "Failed to create a codec for {} truncated to only {} bytes",
+            path,
+            truncated_size
+        );
+        return;
+    };
+    let info = codec.info();
+    test_info(r, &mut codec, &info, Result::InvalidInput, None);
+});
+
+// Port of: tests/CodecTest.cpp#L2521-L2545 (chrome/m156)
+def_test!(Codec_webp_animated_image_rewind, |r| {
+    // stoplight.webp is an animated image.
+    let path = "images/stoplight.webp";
+    let Some(data) = get_resource_as_data(path) else {
+        errorf!(r, "Could not create data for: {}", path);
+        return;
+    };
+    let Ok(mut codec) = codecs::make_codec_from_stream(Box::new(NonseekableStream::new(&data)))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    let mut bm = Pixels::alloc(&info);
+    let options = Options {
+        frame_index: 0,
+        ..Options::default()
+    };
+    let res = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, Some(&options));
+    reporter_assert!(r, res == Result::Success);
+
+    // For a non-rewindable stream, reading the next frame from an animated image should still
+    // succeed.
+    let options = Options {
+        prior_frame: 0,
+        frame_index: 1,
+        ..Options::default()
+    };
+    let res = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, Some(&options));
+    reporter_assert!(r, res == Result::Success);
+});

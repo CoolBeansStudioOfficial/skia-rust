@@ -18,7 +18,8 @@ use skia_rust_core::data::Data;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::rect::{Contains, IRect};
+use skia_rust_core::matrix::{Matrix, ScaleToFit};
+use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::Stream;
 use skia_rust_skcms::{
@@ -590,10 +591,11 @@ fn frame_at(imp: &dyn CodecImpl, index: i32) -> Option<Frame> {
 }
 
 /// Port of `zero_rect`: clears the part of `dst` that `prev_rect` covers, to transparent black,
-/// for a frame of a `kRestoreBGColor` required frame. Scaled frames are not supported (the
-/// rectangle mapping of the C++ is not ported), so a `src_dimensions` other than the destination's
-/// reports failure.
-// Port of: src/codec/SkCodec.cpp#L356-L382 (chrome/m156), for unscaled frames
+/// for a frame of a `kRestoreBGColor` required frame. When the destination is scaled, the rectangle
+/// is mapped to the destination with `Rect2Rect`, as in the C++.
+// Port of: src/codec/SkCodec.cpp#L356-L382 (chrome/m156)
+// `SkRect::Make` takes scalars, so the frame sizes are converted to `f32` as the C++ does.
+#[allow(clippy::cast_precision_loss)]
 fn zero_rect(
     info: &ImageInfo,
     dst: &mut [u8],
@@ -602,8 +604,19 @@ fn zero_rect(
     prev_rect: IRect,
 ) -> bool {
     let dimensions = info.dimensions();
+    let mut prev_rect = prev_rect;
     if dimensions != src_dimensions {
-        return false;
+        // The rectangle of the previous frame, scaled to the destination, rounded out.
+        let src = Rect::from_wh(src_dimensions.width as f32, src_dimensions.height as f32);
+        let dst_rect = Rect::from_wh(dimensions.width as f32, dimensions.height as f32);
+        let Some(map) = Matrix::rect_2_rect(src, dst_rect, ScaleToFit::Fill) else {
+            return false;
+        };
+        let (as_rect, mapped) = map.map_rect(Rect::from_irect(prev_rect));
+        if !mapped {
+            return false;
+        }
+        prev_rect = as_rect.round_out();
     }
 
     let left = prev_rect.left().max(0);
@@ -611,7 +624,7 @@ fn zero_rect(
     let right = prev_rect.right().min(dimensions.width);
     let bottom = prev_rect.bottom().min(dimensions.height);
     if left >= right || top >= bottom {
-        // Nothing to zero.
+        // Nothing to zero, due to scaling or bad frame rect.
         return true;
     }
     let rect = IRect::from_ltrb(left, top, right, bottom);

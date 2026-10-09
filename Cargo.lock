@@ -516,6 +516,7 @@ version = "0.156.0"
 dependencies = [
  "skia-rust-core",
  "skia-rust-libpng",
+ "skia-rust-libwebp",
  "skia-rust-raster",
  "skia-rust-skcms",
  "skia-rust-wuffs",

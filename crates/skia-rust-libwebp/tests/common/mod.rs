@@ -108,9 +108,36 @@ fn output_hash(idec: &IDecoder, bpp: usize) -> u64 {
     }
 }
 
+/// Parses a variant string written by `webpopts.c` and `webpidec.c`: `none`, `crop=L,T,W,H`,
+/// `scale=W,H`, `bypass`, `nofancy`, joined by `+`.
+pub fn parse_variant(variant: &str) -> DecodeOptions {
+    let mut opts = DecodeOptions::default();
+    for part in variant.split('+') {
+        match part {
+            "none" => {}
+            "nofancy" => opts.no_fancy_upsampling = true,
+            "bypass" => opts.bypass_filtering = true,
+            _ => {
+                if let Some(v) = part.strip_prefix("crop=") {
+                    let n: Vec<i32> = v.split(',').map(|x| x.parse().expect("crop int")).collect();
+                    opts.crop = Some((n[0], n[1], n[2], n[3]));
+                } else if let Some(v) = part.strip_prefix("scale=") {
+                    let n: Vec<i32> = v
+                        .split(',')
+                        .map(|x| x.parse().expect("scale int"))
+                        .collect();
+                    opts.scale = Some((n[0], n[1]));
+                } else {
+                    panic!("unknown variant part {part}");
+                }
+            }
+        }
+    }
+    opts
+}
+
 /// The lines `webpidec.c` prints for `data` fed to `IDecoder::update` as a growing prefix in
-/// steps of `chunk` bytes, in output mode `mode`. A line is printed when the status, the last row
-/// or the output buffer's availability changes, and once more at the end.
+/// steps of `chunk` bytes, in output mode `mode`, with the default options.
 pub fn idec_lines(
     base: &str,
     data: &[u8],
@@ -119,11 +146,30 @@ pub fn idec_lines(
     bpp: usize,
     chunk: usize,
 ) -> String {
+    idec_lines_with(base, None, data, name, mode, bpp, chunk)
+}
+
+/// [`idec_lines`] with the decoder options of `variant` (`webpidec -v`): the variant is printed
+/// after the basename, as the C driver does.
+pub fn idec_lines_with(
+    base: &str,
+    variant: Option<&str>,
+    data: &[u8],
+    name: &str,
+    mode: CspMode,
+    bpp: usize,
+    chunk: usize,
+) -> String {
+    let prefix = match variant {
+        Some(v) => format!("{base} {v}"),
+        None => base.to_owned(),
+    };
+    let opts = variant.map(parse_variant).unwrap_or_default();
     let mut out = String::new();
-    let Some(mut idec) = IDecoder::new(mode, DecodeOptions::default()) else {
+    let Some(mut idec) = IDecoder::new(mode, opts) else {
         writeln!(
             out,
-            "{base} {name} chunk={chunk} fed=0 status=invalid last_y=-1 fnv=0000000000000000"
+            "{prefix} {name} chunk={chunk} fed=0 status=invalid last_y=-1 fnv=0000000000000000"
         )
         .expect("write to String");
         return out;
@@ -149,7 +195,7 @@ pub fn idec_lines(
             let fnv = output_hash(&idec, bpp);
             writeln!(
                 out,
-                "{base} {name} chunk={chunk} fed={fed} status={code} last_y={ly} fnv={fnv:016x}"
+                "{prefix} {name} chunk={chunk} fed={fed} status={code} last_y={ly} fnv={fnv:016x}"
             )
             .expect("write to String");
             last_status = code;
@@ -164,7 +210,7 @@ pub fn idec_lines(
     let fnv = output_hash(&idec, bpp);
     writeln!(
         out,
-        "{base} {name} chunk={chunk} end fed={fed} status={} last_y={ly} fnv={fnv:016x}",
+        "{prefix} {name} chunk={chunk} end fed={fed} status={} last_y={ly} fnv={fnv:016x}",
         status_code(status)
     )
     .expect("write to String");

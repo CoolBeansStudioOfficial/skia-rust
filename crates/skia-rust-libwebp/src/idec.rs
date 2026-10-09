@@ -12,11 +12,9 @@
 //! partitions extended to the new data), and the rows emitted so far. A call returns
 //! `Status::Suspended` when the data runs out and `Status::Ok` when the image is complete.
 //!
-//! Lossless and lossy images are decoded incrementally, with the default options (full frame,
-//! fancy upsampling) and the replay in `tests/idec.rs` checks them against the C reference. Not
-//! ported yet: scaled output for lossy frames. `EmitRescaledRGB` works on whole frames in
-//! `output.rs`, so a lossy scaled decode reports `UnsupportedFeature`. Cropping goes through the
-//! same window code as `WebPDecode` but has no incremental replay yet.
+//! Lossless and lossy images are decoded incrementally with the crop window and the scaled output
+//! (`EmitRescaledRGB` keeps its rescalers between the batches of `FinishRow`). The replays in
+//! `tests/idec.rs` and `tests/idec_options.rs` check them against the C reference.
 
 use crate::CspMode;
 use crate::alpha::{self, AlphaDecoder};
@@ -304,10 +302,6 @@ impl IDecoder {
         let Some(p) = self.io_params else {
             return self.error(Status::BitstreamError);
         };
-        if p.use_scaling {
-            // The rescaler works on whole frames (see the module note).
-            return self.error(Status::UnsupportedFeature);
-        }
         let Some(stream) = self.stream.as_mut() else {
             return self.error(Status::BitstreamError);
         };
@@ -325,7 +319,9 @@ impl IDecoder {
         io.crop_bottom = p.y + p.h;
         io.mb_w = p.w;
         io.mb_h = p.h;
-        io.use_scaling = false;
+        io.use_scaling = p.use_scaling;
+        io.scaled_width = p.scaled_width;
+        io.scaled_height = p.scaled_height;
         io.fancy_upsampling = p.fancy_upsampling;
         io.bypass_filtering = p.bypass_filtering;
         io.last_y = self.last_y;
@@ -474,8 +470,14 @@ impl RowSink for LossySink<'_> {
             }
             alpha_rows = self.alpha.as_ref().map(AlphaDecoder::plane);
         }
-        self.emitter
-            .emit_batch(planes, alpha_rows, &mut self.io, mb_y, is_last_row);
-        Ok(())
+        if self
+            .emitter
+            .emit_batch(planes, alpha_rows, &mut self.io, mb_y, is_last_row)
+        {
+            Ok(())
+        } else {
+            // EmitRescaledRGB's setup failed: CustomSetup returns 0, reported as USER_ABORT.
+            Err(Status::UserAbort)
+        }
     }
 }

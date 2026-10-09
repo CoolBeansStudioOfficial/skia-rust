@@ -19,8 +19,8 @@
 //! - [`demux`]: the demuxer (`WebPDemux`, `WebPDemuxPartial`, frame and chunk iterators).
 //! - [`rescaler`]: the rescaler behind scaled output, used by the lossy and lossless decoders.
 //!
-//! The incremental decoder ([`idec`], `idec_dec.c`) decodes lossy and lossless images with the
-//! default options; lossy scaled output is still to come (see `docs/design/codecs.md`).
+//! The incremental decoder ([`idec`], `idec_dec.c`) decodes lossy and lossless images, with the
+//! cropping and scaling options that `SkWebpCodec` sets (see `docs/design/codecs.md`).
 //!
 //! The crate is `unsafe`-free and depends on nothing but `std`. Where libwebp has SSE2/SSE4.1
 //! kernels, the port follows the C path; the differential harness in `oracle/codec-diff/libwebp`
