@@ -2,12 +2,19 @@
 
 Status: failing (registered with `#[ignore]`).
 
-Attempts: one full run of `gm-verify`, with the PNG variant's diff as the reference.
+## Where the mismatch is
 
-Observed: all 90 cell and config comparisons mismatch, and every cell draws an image. The JPEG
-encoder is verified byte-exact against libjpeg-turbo (`tests/expected/encode.txt`), and the same
-decode path that feeds this GM also feeds `encode-srgb-png`, which differs only in a few RGB565
-pixels. The cause is therefore most likely the source decode (`color_wheel.jpg` through
-`SkCodec::getPixels` to each colour type), compounded by the JPEG encode/decode of the result.
+It is not every config. The 8888 surface (scalar tier) differs in 1332 pixels, with a maximum
+channel difference of 3 (767 pixels by 1, 543 by 2, 22 by 3). Only two grid cells differ, both in
+row 4 (y 512..639), columns 0 and 1: cells (0,4) with 725 pixels and (1,4) with 607. Row 4 is the
+`RGBAF16` premultiplied row, the same cell as `encode-srgb-png`.
 
-Next step: fix the `encode-srgb-png` mismatch first (see its note). Then re-check this GM.
+So the JPEG GM has the same root cause as the PNG GM: the RGBA_F16 premultiplied decode of
+`images/color_wheel.png` gives blue 0x3b88 where the golden has 0x3b87. The JPEG encoder is not
+involved in the mismatch: it is verified against libjpeg-turbo, and the other rows, which go
+through the same encoder, match. The whole-image hash differs in every config only because those
+two cells are part of every surface.
+
+Details of the first divergent value, the experiments already run (none kept), and the next
+step are in `notes/gm_encode_srgb_cpp_EncodeSRGBGM_kPNG.md`. Fixing that decode should fix this GM
+too. The next attempt must then re-check this GM (`--match EncodeSRGBGM`) before un-ignoring.
