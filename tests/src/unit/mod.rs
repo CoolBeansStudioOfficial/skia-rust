@@ -119,6 +119,8 @@ pub mod math_test;
 #[cfg(test)]
 pub mod matrix_test;
 #[cfg(test)]
+pub mod md5_test;
+#[cfg(test)]
 pub mod memset_test;
 #[cfg(test)]
 pub mod meta_data_test;
@@ -253,6 +255,8 @@ pub mod pixels_rec_test;
 pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
+#[cfg(test)]
+pub mod poly_utils_test;
 #[cfg(test)]
 pub mod pre_chop_path_curves_test;
 #[cfg(test)]

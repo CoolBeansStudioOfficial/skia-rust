@@ -112,6 +112,7 @@ pub mod matrix_invert;
 pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
+pub mod md5;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod packed_glyph_id;
