@@ -10,6 +10,8 @@ pub mod geometry_bench;
 pub mod interp_bench;
 pub mod math_bench;
 pub mod matrix44_bench;
+pub mod matrix_bench;
+pub mod path_iter_bench;
 pub mod quick_reject_bench;
 pub mod region_bench;
 pub mod region_contain_bench;
