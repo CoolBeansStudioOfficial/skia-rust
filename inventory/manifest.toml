@@ -21163,6 +21163,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersclipped.cpp#L164-L164"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Dilate/Erode/DisplacementMap/Offset/MatrixConvolution/PointLitDiffuse, not ported (the Perlin shader filter is)"
 span_hash = "a00a2dae96a1869693e5236712c6bf1a57904c6be9d74fdccdddd2533408734f"
 
 [[test]]
@@ -21209,6 +21210,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersscaled.cpp#L164-L164"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilters::Dilate/Erode/DisplacementMap/Offset/PointLitDiffuse/SpotLitDiffuse, not ported (the Perlin shader filter is)"
 span_hash = "785fd8ae5a11a2992fbcbb8a90df56c034d024f36a406b792dfebb824eeb2426"
 
 [[test]]
@@ -22665,7 +22667,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L286-L286"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "6cc73a33d569e8f1144852fcb1ceff88e6acef1124e8e6fab1d33dd561333ca8"
 
 [[test]]
@@ -22674,7 +22676,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L289-L289"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4258830c65f556f440558dd8d288f6a587a35536f6dae19e18ec55ee2d357262"
 
 [[test]]
@@ -22683,7 +22685,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L287-L287"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4ea8abf4665b7055b66a75768cd7eef026bb13a71d4cf2303d85f2ff7a72ee23"
 
 [[test]]
@@ -22692,7 +22694,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perlinnoise.cpp#L288-L288"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "632292ec2ab279596cd1527329dfa8ebbd9177f4c666e399f24d587a4145f1d8"
 
 [[test]]
@@ -28775,8 +28777,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L514-L525"
 module = "effects"
-status = "todo"
-reason = "needs SkShaders::MakeFractalNoise (Perlin noise shader), not ported yet"
+status = "passing"
 span_hash = "4fd9ddd0ff1cad7ea7617b06e2a3bd55bb8044f21a4f4948b77d76f00d955e32"
 
 [[test]]
@@ -41751,8 +41752,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderTest.cpp#L93-L106"
 module = "effects"
-status = "todo"
-reason = "needs SkShaders::MakeFractalNoise (perlin noise shader): not ported"
+status = "passing"
 span_hash = "e46e57e234cee27164c13d14867bdb66713712b442e00b40988f195e147eede8"
 
 [[test]]

@@ -140,6 +140,7 @@ pub mod patheffects;
 pub mod pathfill;
 pub mod pathinterior;
 pub mod pathreverse;
+pub mod perlinnoise;
 pub mod persptext;
 pub mod picture;
 pub mod plus;

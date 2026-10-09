@@ -4,16 +4,25 @@
 // Port of: tests/ShaderTest.cpp (chrome/m156)
 //
 // Not ported yet:
-// * `ComposeShaderSingle`: `SkShaders::MakeFractalNoise` (perlin noise shader).
 // * `ShaderTestNestedBlendsCpu`, `ShaderTestNestedBlendsGraphite`: `SkRuntimeEffect`.
 
 #![cfg(test)]
 
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::point::Vector;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
+use skia_rust_core::shaders;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::perlin_noise_shader::shaders as perlin_shaders;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 
 use crate::{Reporter, def_test, reporter_assert};
 
@@ -62,4 +71,20 @@ def_test!(Shader_isAImage, |reporter| {
 
     check_isaimage(reporter, &shader0, W, H, tmx, tmy, &local_m);
     check_isaimage(reporter, &shader1, W, H, tmx, tmy, &local_m);
+});
+
+// Port of: tests/ShaderTest.cpp#L93-L106 (chrome/m156)
+def_test!(ComposeShaderSingle, |_reporter| {
+    // Make sure things are ok with just a single leg.
+    let mut src_bitmap = Bitmap::new();
+    src_bitmap.alloc_n32_pixels((10, 10), None);
+    src_bitmap.erase_color(Color::RED);
+    let canvas = Canvas::from_bitmap(&mut src_bitmap, None).expect("canvas");
+    let mut p = Paint::default();
+    let noise = perlin_shaders::fractal_noise((1.0, 1.0), 2, 0.0, None).expect("a shader");
+    p.set_shader(shaders::blend(BlendMode::Clear, shaders::empty(), noise));
+    let mut rr = RRect::new();
+    let rd = [Vector::new(0.0, 0.0); 4];
+    rr.set_rect_radii(Rect::new(0.0, 0.0, 0.0, 0.0), &rd);
+    canvas.draw_rrect(rr, &p);
 });

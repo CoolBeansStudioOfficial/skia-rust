@@ -232,9 +232,12 @@ pub enum PerlinNoiseShaderType {
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L117-L125 (chrome/m156)
 /// `PerlinNoiseCtx`.
+///
+/// skia-rust: the lattice selector and noise tables are owned (Skia points into the shader's
+/// painting data), so the context is `'static` and lives in `ArenaAlloc` like the others.
 #[doc(alias = "SkRasterPipelineContexts::PerlinNoiseCtx")]
 #[derive(Clone, Copy, Debug)]
-pub struct PerlinNoiseCtx<'a> {
+pub struct PerlinNoiseCtx {
     pub noise_type: PerlinNoiseShaderType,
     pub base_frequency_x: f32,
     pub base_frequency_y: f32,
@@ -243,9 +246,9 @@ pub struct PerlinNoiseCtx<'a> {
     pub stitching: bool,
     pub num_octaves: i32,
     /// `[256 values]`.
-    pub lattice_selector: &'a [u8; 256],
-    /// `[4 channels][256 elements][vector of 2]`.
-    pub noise_data: &'a [u16; 4 * 256 * 2],
+    pub lattice_selector: [u8; 256],
+    /// `[4 channels][256 elements][vector of 2]`, flattened.
+    pub noise_data: [u16; 4 * 256 * 2],
 }
 
 // Port of: src/core/SkRasterPipelineOpContexts.h#L128-L144 (chrome/m156)

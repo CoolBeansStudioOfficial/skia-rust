@@ -267,7 +267,7 @@ macro_rules! rp_op_table {
             bicubic_p1y                         BicubicP1y                      [&'a SamplerCtx]                    n  hi P3;
             bicubic_p3y                         BicubicP3y                      [&'a SamplerCtx]                    n  hi P3;
             accumulate                          Accumulate                      [&'a SamplerCtx]                    n  hi P3;
-            perlin_noise                        PerlinNoise                     [&'a PerlinNoiseCtx<'a>]            n  hi P3;
+            perlin_noise                        PerlinNoise                     [&'a PerlinNoiseCtx]                n  hi P3;
             mipmap_linear_init                  MipmapLinearInit                [&'a MipmapCtx]                     n  hi P3;
             mipmap_linear_update                MipmapLinearUpdate              [&'a MipmapCtx]                     n  hi P3;
             mipmap_linear_finish                MipmapLinearFinish              [&'a MipmapCtx]                     n  hi P3;
