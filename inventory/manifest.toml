@@ -21737,7 +21737,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefilters.cpp#L200-L200"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a8c8bb9f5a46ba86ec89e2a779c6fd2cdf576ca45df65f66a45e59a39000f302"
 
 [[test]]
@@ -21746,7 +21746,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L107-L129"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "5eb824fbd2860621241bc8c6c8bdb06a9546c9355da3e4e4bf28125f7bfce7c6"
 
 [[test]]
@@ -21756,6 +21756,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L206-L288"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkShaderMaskFilter (SkShaderMaskFilter::Make), which skia-rust does not have."
 span_hash = "2f3d523c6942e03197fd2caec6d9221ca1902ce3daa6642e8d9a5cd5c6cfbc93"
 
 [[test]]
@@ -21764,7 +21765,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L75-L94"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "ea096cb8930899366e50e8ab537f4e4ade481012b09dd4e7b746071913c05b58"
 
 [[test]]
@@ -21774,6 +21775,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L290-L332"
 module = "effects"
 status = "todo"
+reason = "Not ported: it needs SkCanvasPriv::ScaledBackdropLayer and SkCanvas::FilterSpan, which skia-rust does not have."
 span_hash = "e80d8f4eb0f2cc31a21237713adbd056c1b6e2cb39306b77324528582d518e17"
 
 [[test]]
@@ -21782,7 +21784,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersbase.cpp#L225-L225"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6c4540511dc9af20848f779e9e06b6b3807e89825b9c7aa067bb39a8854f077a"
 
 [[test]]
@@ -21809,8 +21811,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersclipped.cpp#L164-L164"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
+status = "passing"
 span_hash = "a00a2dae96a1869693e5236712c6bf1a57904c6be9d74fdccdddd2533408734f"
 
 [[test]]

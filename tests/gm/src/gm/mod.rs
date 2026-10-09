@@ -182,6 +182,7 @@ pub mod imageblurclampmode;
 pub mod imageblurrepeatmode;
 pub mod imageblurtiled;
 pub mod imagedither;
+pub mod imagefilters;
 pub mod imagefiltersbase;
 pub mod imagefiltersclipped;
 pub mod imagefiltersunpremul;
