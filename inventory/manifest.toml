@@ -21540,7 +21540,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L369-L369"
 module = "raster"
 status = "todo"
-reason = "needs SkCodecs::DeferredImage (no codec port) and the GPU/Graphite variants"
+reason = "needs SkImages::DeferredFromPicture, a PNG encoder (SkPngEncoder) for make_codec, and SkPixmap::scalePixels for show_scaled_pixels; none on main"
 span_hash = "aa20d177008cda2664b23d80ad5967dc81d8bce23e9f02371e8ca5ae6de7f87d"
 
 [[test]]
@@ -21550,7 +21550,7 @@ macro = "DEF_GM"
 source = "gm/image.cpp#L370-L370"
 module = "raster"
 status = "todo"
-reason = "needs SkCodecs::DeferredImage (no codec port) and the GPU/Graphite variants"
+reason = "needs SkImages::DeferredFromPicture, a PNG encoder (SkPngEncoder) for make_codec, and SkPixmap::scalePixels for show_scaled_pixels; none on main"
 span_hash = "15cc182d8f1a021d04c45e057f5dec612e3d62b51129409ab7b7ed9a9920e029"
 
 [[test]]
@@ -21589,7 +21589,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L518-L536"
 module = "raster"
 status = "todo"
-reason = "needs SkCodecs::DeferredImage (no codec port)"
+reason = "needs SkPixmap::scalePixels (pixmap.rs: not ported; it draws through an image shader)"
 span_hash = "5269b85352a2f7e8608fc0f087a040fb003ab35e7b75bed42ef9641cc1a9728c"
 
 [[test]]
@@ -23049,8 +23049,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L164-L169"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "f7eaf52667d67f81907d2777881d236c2fe1f6fef286fd35047d06e955b257ac"
 
 [[test]]
@@ -23059,8 +23058,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L170-L178"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "2a358762507a1497dafd5c77acf95ea64898c57904b8fd95a72fe5966198081e"
 
 [[test]]
@@ -23370,8 +23368,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/perspimages.cpp#L143-L143"
 module = "raster"
-status = "todo"
-reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+status = "passing"
 span_hash = "00eab6e68ce06a0f980d7adff20ecf04c26abc3b5ff4961e7040e4bead7ea247"
 
 [[test]]
@@ -23662,6 +23659,7 @@ macro = "DEF_GM"
 source = "gm/readpixels.cpp#L251-L251"
 module = "codec"
 status = "todo"
+reason = "onDraw returns kSkip unless the canvas has a colour space (the GM harness canvas has none); needs a colour-space canvas in the harness"
 span_hash = "690aaa8bcf5db1c548ac07c6de57c6d5c42f99fc28e03418f1edefe0c777cfa4"
 
 [[test]]
@@ -23670,8 +23668,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/readpixels.cpp#L189-L189"
 module = "raster"
-status = "todo"
-reason = "needs image decoding (images/google_chrome.ico, randPixels.png) for the raster image; skia-rust has no image codec"
+status = "failing"
+reason = "ported; mismatches all 45 checks, first divergence in the RGBA_F16 source cells (ICO decode to F16 or read_pixels gamut transform). See notes/gm_readpixels_cpp_ReadPixelsGM.md"
 span_hash = "4dd00057ff1d1b5ae27df2e2e5536218e50ad3c242998345b474700e39bc4485"
 
 [[test]]
@@ -23681,6 +23679,7 @@ macro = "DEF_GM"
 source = "gm/readpixels.cpp#L313-L313"
 module = "raster"
 status = "todo"
+reason = "needs SkImages::DeferredFromPicture (picture-backed images), not on main"
 span_hash = "66322f3c680a8c4da234e1dad752303b398293d8c517d864efaaa99471bfa164"
 
 [[test]]
@@ -24566,7 +24565,7 @@ macro = "DEF_GM"
 source = "gm/showmiplevels.cpp#L102-L102"
 module = "raster"
 status = "todo"
-reason = "needs images/ship.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
+reason = "needs SkMipmapBuilder / SkImage::makeWithMips (mip levels attached to an image), not ported"
 span_hash = "cf89aad7116d8ce9dd041b348436499dee92cf9ee0537df21ae411a7107d45ea"
 
 [[test]]
