@@ -55,7 +55,7 @@ impl Benchmark for FindCubicConvex180ChopsBench {
 
 // Port of: bench/FindCubicConvex180ChopsBench.cpp#L37-L38 (chrome/m156)
 def_bench!(
-    find_cubic_convex_180_chops_bench_inflect1 =
+    find_cubic_convex180_chops_bench_inflect1 =
         "FindCubicConvex180ChopsBench({{{0,0}, {100,0}, {50,100}, {100,100}}}, \"_inflect1\")",
     FindCubicConvex180ChopsBench::new(
         [
@@ -70,7 +70,7 @@ def_bench!(
 
 // Port of: bench/FindCubicConvex180ChopsBench.cpp#L39-L40 (chrome/m156)
 def_bench!(
-    find_cubic_convex_180_chops_bench_loop =
+    find_cubic_convex180_chops_bench_loop =
         "FindCubicConvex180ChopsBench({{{0,0}, {50,0}, {100,50}, {100,100}}}, \"_loop\")",
     FindCubicConvex180ChopsBench::new(
         [

@@ -10,7 +10,7 @@ pub mod color_priv_bench;
 pub mod control_bench;
 pub mod cubic_map_bench;
 pub mod dash_bench;
-pub mod find_cubic_convex_180_chops_bench;
+pub mod find_cubic_convex180_chops_bench;
 pub mod fs_rect_bench;
 pub mod geometry_bench;
 pub mod interp_bench;
