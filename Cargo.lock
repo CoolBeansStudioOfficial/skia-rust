@@ -1196,6 +1196,7 @@ dependencies = [
  "bitflags",
  "skia-rust-core",
  "skia-rust-simd",
+ "skia-rust-skcms",
  "skia-rust-sksl",
  "wgpu",
 ]
