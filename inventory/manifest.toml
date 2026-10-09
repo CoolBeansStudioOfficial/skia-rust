@@ -4376,7 +4376,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L356-L356"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "784d15060c3ecac5c3af2aba5c2238d9098eae60fe591227944ccafcb64e7676"
 
 [[test]]
@@ -4385,7 +4385,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L357-L357"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9e7516fd8983c14cea3080823335c3c8653d0ba2d6aa62799a3c36a0f1f5cece"
 
 [[test]]
@@ -4394,7 +4394,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L299-L299"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "94fb07debd6eb30e2a2b6946e9fc78132ea72e4bca7499e0f976ad870551262f"
 
 [[test]]
@@ -4403,7 +4403,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L300-L300"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a4d6720f93ad40e42553c85a8927ba6841e336fd36c1ca0ae100afe316698b83"
 
 [[test]]
@@ -4412,7 +4412,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L301-L301"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "0050db5ca60460caccbec9bff81ba20624be59ed2fff85f8df0ab55554a770eb"
 
 [[test]]
@@ -4421,7 +4421,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L296-L296"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "efeb93fcd35e1e54a9034aa057fcdd85508e5c65afa4946b291b543fde6dec29"
 
 [[test]]
@@ -4430,7 +4430,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L297-L297"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c9759e962b5a5762f046192d1dad345bd1b6b6d2ab9709bfc6e93454f7f97b45"
 
 [[test]]
@@ -4439,7 +4439,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L298-L298"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e32c2781986c9f88ad9f00b15d3f600a33176a82733825c733e697a584197cb9"
 
 [[test]]
@@ -4448,7 +4448,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L293-L293"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "db47d5e0189bd4f9c4bd4cc237dc9a3bb1ade5612a06664d5aa4a58f3e2f8380"
 
 [[test]]
@@ -4457,7 +4457,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L294-L294"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "3396ceae8bce5d3735b2abe6ba2f983ef21ade03134633b426c869fc3a5494b9"
 
 [[test]]
@@ -4466,7 +4466,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L295-L295"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "70bd9c05a7b48b4e47650202ef1a8e963fffbddb4e2e2640c8068c06cbe49c00"
 
 [[test]]
@@ -4475,7 +4475,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L290-L290"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a9a2d88be75f1c336168731dbc755ec1fddd9f057a859c6e728a87aa031c3a58"
 
 [[test]]
@@ -4484,7 +4484,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L291-L291"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "7be494b4c886e56dc63de59527a98739ac9125c448b804ce7726116766e56d8b"
 
 [[test]]
@@ -4493,7 +4493,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L292-L292"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "33cd982d40836590fb3f60a2a7b02054374a2d1a9c9e604e6ecd973f7a997c5b"
 
 [[test]]
@@ -4502,7 +4502,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L311-L311"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b4c97cbdd812ca2367ee09339eaeaba7a5c99569b9207f3161d961f47f55bed2"
 
 [[test]]
@@ -4511,7 +4511,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L310-L310"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "7a20a0ecf005b1595faede054c9a6f11024b7ffdbf6d2fbdd886afd73f1cdeaa"
 
 [[test]]
@@ -4520,7 +4520,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L263-L263"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "0dbdfc14fbc484813f1660aa39dbc8dd076c93cef49ceed27a879a2c0d78b1e3"
 
 [[test]]
@@ -4529,7 +4529,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L270-L270"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4bb2188e0a46e3384c735af9d910c38c4bd83423a7180b8cf56b817b18194565"
 
 [[test]]
@@ -4538,7 +4538,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L267-L267"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d9b07f3dff6de85af2028f36738e80a664316602ec95efdfe15c94483900c95b"
 
 [[test]]
@@ -4547,7 +4547,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L264-L264"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "0f51e96eae6d91001d2032dd842cb9d0a432a3dcecacec50913af573dabc5b19"
 
 [[test]]
@@ -4556,7 +4556,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L271-L271"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "78cb1b3829e412f602fc6f2725066987e7066861a821b68d07d5178a298036d0"
 
 [[test]]
@@ -4565,7 +4565,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L268-L268"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "84c09312fc0f2a5591d5bc0d4261a85e72f31d3eae5d8d72afebdf2817e3ea5c"
 
 [[test]]
@@ -4574,7 +4574,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L265-L265"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "70da042649e02c9f55c6a732f975a68c9e2669127d70e81d07ad49b2f6d67fd2"
 
 [[test]]
@@ -4583,7 +4583,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L272-L272"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4ad20e122d17268870e5a34954d867f28903e877a82ff290a7f2607f2d7446d1"
 
 [[test]]
@@ -4592,7 +4592,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L269-L269"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6466e69b8766368d67bfa0a13d46a501d5262468959c6943e2b20111540a980f"
 
 [[test]]
@@ -4601,7 +4601,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L305-L305"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c9edf5fa3bf8bcb3af07989b3542f7c2a40b3ef8918cbaa01bacb99edc95833b"
 
 [[test]]
@@ -4610,7 +4610,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L304-L304"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "3881b1085b2e84ba1ee094557915aa814a2606191274ca156431b69f918c776f"
 
 [[test]]
@@ -4619,7 +4619,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L266-L266"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ef0ec683f217d379cec35120f8134df85be458e82e8e599c1699f5e12c0d19c3"
 
 [[test]]
@@ -4628,7 +4628,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L274-L274"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9eb00b557c76f3d207ec4c058967b0f22c3ce0f3f250919e7e6150225c1b878d"
 
 [[test]]
@@ -4637,7 +4637,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L283-L283"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "97ce4942626efed631c9e838b0903e52599928ca23b5e2065b2867e97d5fc12e"
 
 [[test]]
@@ -4646,7 +4646,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L279-L279"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b61db242a85cf595e001ad51634aca9fcc69e9e82bd97cb163629fcf2adbc669"
 
 [[test]]
@@ -4655,7 +4655,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L285-L285"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "f10c8054935fdc63888a38a1b9d4e6175d29488f6f73296b24bbc6f8e7555490"
 
 [[test]]
@@ -4664,7 +4664,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L286-L286"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a89593bac303ce6b0e57edee7d428c3a18f5460376404559109a33f450789d15"
 
 [[test]]
@@ -4673,7 +4673,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L275-L275"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "f825911a7c9b3069d0ffa6806f20865b6714d38c3571849dd83dbbc5859c3f37"
 
 [[test]]
@@ -4682,7 +4682,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L276-L276"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9d95c2ab32225ba00829da2f2949e6afe3b5ae157026d9c2dfbe9fc2f92c3d21"
 
 [[test]]
@@ -4691,7 +4691,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L307-L307"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e6046379b82d6b9f3e4ae57816197811fad68f03d80037d79693a92eea3c75c1"
 
 [[test]]
@@ -4700,7 +4700,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L306-L306"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "91319dd7b0d921821dc8d504a3a174376b9c5ee2c9f67fe91667fc06a5d5d250"
 
 [[test]]
@@ -4709,7 +4709,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L287-L287"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "58075b9bb749811ce495f5ef5339f6c9a96678013748d079d2ed445a571f6e02"
 
 [[test]]
@@ -4718,7 +4718,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L288-L288"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d4961bfb2c509bb37b3b6bbea593ac9fc5b53b53a64d296080e781d9306513a5"
 
 [[test]]
@@ -4727,7 +4727,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L289-L289"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "5682392751c13121a8ee8ecce9b1c5eb4386305b0d3e23007137ccbd8a25e0ad"
 
 [[test]]
@@ -4736,7 +4736,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L309-L309"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9b9d3277d9ea721fd29a3aaae3ea1e0359bb3e2d6fe3cc1c3e407f22c3b11970"
 
 [[test]]
@@ -4745,7 +4745,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GradientBench.cpp#L308-L308"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "416f466e36acc973a6dac6fdaf1bd3be43a9347db179a7e61935d13737200f5f"
 
 [[test]]
