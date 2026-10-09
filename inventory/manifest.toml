@@ -16444,7 +16444,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurtextsmallradii.cpp#L18-L34"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "bdbaa1397b19170dc4b3fb5c2b6f7b91cc2d7a14dda5c38558d5092bc87cec9b"
 
 [[test]]
@@ -21534,7 +21534,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/largeglyphblur.cpp#L26-L44"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2d02975b692671d76eb41087c49af5c9032c08ce18580c93064247fc13ecd8fb"
 
 [[test]]
@@ -22268,6 +22268,7 @@ macro = "DEF_SIMPLE_GM_BG"
 source = "gm/overdrawcanvas.cpp#L93-L98"
 module = "text"
 status = "todo"
+reason = "needs SkOverdrawCanvas / SkOverdrawColorFilter (not ported)"
 span_hash = "8bdae51cfab52ddf0fa1ad9dda66300afc5d1358c898ec3838ffde9942b033b6"
 
 [[test]]
@@ -23178,7 +23179,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rsxtext.cpp#L108-L108"
 module = "text"
-status = "todo"
+status = "failing"
+reason = "RSX text glyph pixels mismatch on all tiers (shader grids match); see notes/gm-rsxtext.cpp-RSXShaderGM.md"
 span_hash = "f392891e497a50dddbcb741c4533bffef1c8073af3591fda3dd7e86c875b0d60"
 
 [[test]]
@@ -24631,7 +24633,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobgeometrychange.cpp#L77-L77"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "cfcee39b6a3d6b8d8647e9eb8aa79e4ec8cd4e4dea8d0c8a91154d5c36c4b751"
 
 [[test]]
@@ -24667,7 +24669,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobshader.cpp#L119-L119"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5a9c4782e81bdd85a4ca6a32b56f64ab3d53b3b73145a73c8562bb31cdbc1280"
 
 [[test]]
