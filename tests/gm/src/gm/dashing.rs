@@ -26,8 +26,9 @@
 use crate::prelude::*;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color::colors;
+use skia_rust_core::font::Font;
 use skia_rust_core::matrix::{Matrix, ScaleToFit};
-use skia_rust_core::paint::{Cap, Paint};
+use skia_rust_core::paint::{Cap, Join, Paint};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
@@ -37,6 +38,7 @@ use skia_rust_core::scalar::{
     SCALAR_HALF, SCALAR_PI, SCALAR_ROOT_2_OVER_2, scalar_abs, scalar_cos, scalar_sin,
 };
 use skia_rust_effects::dash_path_effect;
+use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
 // `ToolUtils::color_to_565`.
 // Port of: tools/ToolUtils.cpp#L142-L151 (chrome/m156)
@@ -853,6 +855,24 @@ crate::def_gm!(Dashing2GM, Dashing2Gm);
 crate::def_gm!(Dashing3GM, Dashing3Gm);
 crate::def_gm!(Dashing4GM, Dashing4Gm);
 crate::def_gm!(Dashing5GM_true = "Dashing5GM(true)", Dashing5Gm::new(true));
+
+// Port of: gm/dashing.cpp#L569-L584 (chrome/m156), DEF_SIMPLE_GM(dashtextcaps)
+crate::def_simple_gm!(dashtextcaps, canvas, 512, 512, {
+    let mut p = Paint::default();
+    p.set_anti_alias(true);
+    p.set_stroke(true);
+    p.set_stroke_width(10.0);
+    p.set_stroke_cap(Cap::Round);
+    p.set_stroke_join(Join::Round);
+    p.set_argb(0xff, 0xbb, 0x00, 0x00);
+
+    let font = Font::from_size(default_portable_typeface(), 100.0);
+
+    let intervals = [12.0, 12.0];
+    p.set_path_effect(dash_path_effect::new(&intervals, 0.0));
+    canvas.draw_str("Sausages", (10.0, 90.0), &font, &p);
+    canvas.draw_line((8.0, 120.0), (456.0, 120.0), &p);
+});
 crate::def_gm!(
     Dashing5GM_false = "Dashing5GM(false)",
     Dashing5Gm::new(false)

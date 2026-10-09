@@ -46,6 +46,9 @@ use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::device::{CreateInfo, Device, NoPixelsDevice, clip_shader};
 use crate::floating_point::is_finite_all;
+use crate::font::Font;
+use crate::font_types::{GlyphId, TextEncoding};
+use crate::glyph_run::{GlyphRun, GlyphRunBuilder, GlyphRunList};
 use crate::image::Image;
 use crate::image_filter::ImageFilter;
 use crate::image_filter_result::FilterResult;
@@ -71,7 +74,9 @@ use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
 use crate::size::ISize;
+use crate::slug::Slug;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
+use crate::text_blob::TextBlob;
 use crate::tile_mode::TileMode;
 use crate::utils::patch_utils;
 use crate::vertices::{VertexMode, Vertices};
@@ -298,6 +303,17 @@ pub trait CanvasHooks {
     fn on_draw_path(&mut self, _path: &Path, _paint: &Paint) -> bool {
         false
     }
+    /// `onDrawTextBlob`: `SkRecordCanvas` records the blob by reference instead of drawing it.
+    // Port of: src/core/SkCanvas.h (onDrawTextBlob, chrome/m156), overridden by SkRecordCanvas
+    fn on_draw_text_blob(
+        &mut self,
+        _blob: &TextBlob,
+        _x: scalar,
+        _y: scalar,
+        _paint: &Paint,
+    ) -> bool {
+        false
+    }
     /// `onDrawVerticesObject`.
     fn on_draw_vertices_object(
         &mut self,
@@ -488,6 +504,28 @@ impl MCRec {
             deferred_save_count: 0,
             layer: None,
         }
+    }
+}
+
+/// Where glyphs are drawn: at points, or with `RSXform`s (the `positions` of `drawGlyphs`).
+#[doc(alias = "SkCanvas::drawGlyphs")]
+#[derive(Clone, Copy, Debug)]
+pub enum GlyphPositions<'a> {
+    /// One point per glyph.
+    Points(&'a [Point]),
+    /// One rotation-scale transform per glyph.
+    RSXforms(&'a [RSXform]),
+}
+
+impl<'a> From<&'a [Point]> for GlyphPositions<'a> {
+    fn from(points: &'a [Point]) -> Self {
+        GlyphPositions::Points(points)
+    }
+}
+
+impl<'a> From<&'a [RSXform]> for GlyphPositions<'a> {
+    fn from(xforms: &'a [RSXform]) -> Self {
+        GlyphPositions::RSXforms(xforms)
     }
 }
 
@@ -1862,6 +1900,34 @@ impl CanvasState {
         if let Some(auto_layer) = self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
             self.top_device_mut()
                 .draw_drrect(outer, inner, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
+        }
+    }
+
+    /// `onDrawTextBlob`: the hook may record the blob; otherwise its glyph runs are drawn.
+    // Port of: src/core/SkCanvas.cpp#L2436-L2441 (chrome/m156), onDrawTextBlob
+    fn draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) {
+        if let Some(hooks) = self.hooks.as_mut()
+            && hooks.on_draw_text_blob(blob, x, y, paint)
+        {
+            return;
+        }
+        let mut builder = GlyphRunBuilder::new();
+        let list = builder.blob_to_glyph_run_list(blob, Point::new(x, y));
+        self.draw_glyph_run_list(&list, paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
+    fn draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
+        let bounds = list.source_bounds_with_origin();
+        if self.internal_quick_reject(&bounds, paint, None) {
+            return;
+        }
+        // Text attempts to apply any mask filter internally, so this draw does not need the
+        // mask filter auto-layer (`kSkipMaskFilterAutoLayer`). The mask filter layer is never
+        // added in this port (see `AutoLayerForImageFilter::new`), so the flag is implicit.
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
+            crate::device::draw_glyph_run_list(self.top_device_mut(), list, auto_layer.paint());
             self.end_auto_layer(&auto_layer);
         }
     }
@@ -3593,6 +3659,179 @@ impl Canvas {
             cull_rect.as_ref(),
             paint.into(),
         );
+    }
+
+    /// Draws the text `text` in `encoding`, starting at `origin`, with `font` and `paint`
+    /// (`drawSimpleText`). Empty text draws nothing.
+    // Port of: src/core/SkCanvas.cpp#L2501-L2514 (chrome/m156)
+    #[doc(alias = "drawSimpleText")]
+    pub fn draw_simple_text(
+        &self,
+        text: impl AsRef<[u8]>,
+        encoding: TextEncoding,
+        origin: impl Into<Point>,
+        font: &Font,
+        paint: &Paint,
+    ) -> &Self {
+        let text = text.as_ref();
+        if !text.is_empty() {
+            let mut builder = GlyphRunBuilder::new();
+            let list = builder.text_to_glyph_run_list(font, paint, text, origin.into(), encoding);
+            if !list.is_empty() {
+                self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+            }
+        }
+        self
+    }
+
+    /// Draws the UTF-8 string `text`, starting at `origin`, with `font` and `paint` (`drawString`
+    /// in skia-safe's `draw_str`). Typeface fallback is not done.
+    // Port of: src/core/SkCanvas.cpp#L2501-L2514 (chrome/m156), the kUTF8 call of drawString
+    #[doc(alias = "drawString")]
+    #[doc(alias = "drawSimpleText")]
+    pub fn draw_str(
+        &self,
+        text: impl AsRef<str>,
+        origin: impl Into<Point>,
+        font: &Font,
+        paint: &Paint,
+    ) -> &Self {
+        self.draw_simple_text(
+            text.as_ref().as_bytes(),
+            TextEncoding::UTF8,
+            origin,
+            font,
+            paint,
+        )
+    }
+
+    /// Draws `glyphs` at `positions` (relative to `origin`), with the UTF-8 `utf8_text` and the
+    /// `clusters` that map glyphs to it (`drawGlyphs`).
+    ///
+    /// # Panics
+    ///
+    /// If `positions` or `clusters` does not have one entry per glyph.
+    // Port of: src/core/SkCanvas.cpp#L2516-L2533 (chrome/m156)
+    #[doc(alias = "drawGlyphs")]
+    #[allow(clippy::too_many_arguments)] // mirrors SkCanvas::drawGlyphs, which takes as many
+    pub fn draw_glyphs_utf8(
+        &self,
+        glyphs: &[GlyphId],
+        positions: &[Point],
+        clusters: &[u32],
+        utf8_text: impl AsRef<str>,
+        origin: impl Into<Point>,
+        font: &Font,
+        paint: &Paint,
+    ) {
+        if glyphs.is_empty() {
+            return;
+        }
+        assert_eq!(positions.len(), glyphs.len());
+        assert_eq!(clusters.len(), glyphs.len());
+        let run = GlyphRun::new(
+            font.clone(),
+            positions.to_vec(),
+            glyphs.to_vec(),
+            utf8_text.as_ref().as_bytes().to_vec(),
+            clusters.to_vec(),
+            Vec::new(),
+        );
+        self.draw_glyph_run(run, origin.into(), paint);
+    }
+
+    /// Draws `glyphs` at `positions`, either points or `RSXform`s, relative to `origin` (the two
+    /// `drawGlyphs` and `drawGlyphsRSXform` overloads).
+    ///
+    /// # Panics
+    ///
+    /// If the positions do not have one entry per glyph.
+    // Port of: src/core/SkCanvas.cpp#L2535-L2552 (chrome/m156), and #L2554-L2572 for RSXforms
+    #[doc(alias = "drawGlyphs")]
+    #[doc(alias = "drawGlyphsRSXform")]
+    pub fn draw_glyphs_at<'a>(
+        &self,
+        glyphs: &[GlyphId],
+        positions: impl Into<GlyphPositions<'a>>,
+        origin: impl Into<Point>,
+        font: &Font,
+        paint: &Paint,
+    ) {
+        let count = glyphs.len();
+        if count == 0 {
+            return;
+        }
+        let run = match positions.into() {
+            GlyphPositions::Points(points) => {
+                assert_eq!(points.len(), count);
+                GlyphRun::new(
+                    font.clone(),
+                    points.to_vec(),
+                    glyphs.to_vec(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                )
+            }
+            GlyphPositions::RSXforms(xforms) => {
+                assert_eq!(xforms.len(), count);
+                let (positions, scaled_rotations) = GlyphRunBuilder::convert_rsxform(xforms);
+                GlyphRun::new(
+                    font.clone(),
+                    positions,
+                    glyphs.to_vec(),
+                    Vec::new(),
+                    Vec::new(),
+                    scaled_rotations,
+                )
+            }
+        };
+        self.draw_glyph_run(run, origin.into(), paint);
+    }
+
+    /// Draws the text blob `blob` with its origin at `origin`, painted with `paint`
+    /// (`drawTextBlob`).
+    // Port of: src/core/SkCanvas.cpp#L2574-L2594 (chrome/m156), and onDrawTextBlob#L2436-L2441
+    #[doc(alias = "drawTextBlob")]
+    pub fn draw_text_blob(
+        &self,
+        blob: &TextBlob,
+        origin: impl Into<Point>,
+        paint: &Paint,
+    ) -> &Self {
+        let origin = origin.into();
+        if !blob.bounds().with_offset(origin).is_finite() {
+            return self;
+        }
+        // Overflow if more than 2^21 glyphs, stopping a buffer overflow later in the stack.
+        // See chromium:1080481.
+        let max_glyph_count: usize = 1 << 21;
+        let total_glyph_count: usize = blob.iter().map(|run| run.glyph_count()).sum();
+        if total_glyph_count > max_glyph_count {
+            return self;
+        }
+        self.state
+            .borrow_mut()
+            .draw_text_blob(blob, origin.x, origin.y, paint);
+        self
+    }
+
+    /// Draws a slug (`drawSlug`). A null slug draws nothing; a [`Slug`] is never made on the CPU.
+    // Port of: src/core/SkCanvas.cpp#L2481-L2486 (chrome/m156)
+    #[doc(alias = "drawSlug")]
+    pub fn draw_slug(&self, slug: Option<&Slug>, _paint: &Paint) -> &Self {
+        if let Some(slug) = slug {
+            match *slug {}
+        }
+        self
+    }
+
+    /// Makes a one-run list of `run` at `origin` and draws it: the tail every `drawGlyphs` overload shares.
+    // Port of: src/core/SkCanvas.cpp#L2516-L2552 (chrome/m156), the shared tail of drawGlyphs
+    fn draw_glyph_run(&self, run: GlyphRun, origin: Point, paint: &Paint) {
+        let builder = GlyphRunBuilder::new();
+        let list = builder.make_glyph_run_list(run, paint, origin);
+        self.state.borrow_mut().draw_glyph_run_list(&list, paint);
     }
 
     /// Draws a path (`drawPath`).

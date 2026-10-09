@@ -1,0 +1,20 @@
+[package]
+name = "skia-rust-text"
+description = "Typeface backends of skia-rust: the Fontations (skrifa) typeface, font scanner and empty font manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
+font-types.workspace = true
+read-fonts.workspace = true
+skrifa.workspace = true
+
+[lints]
+workspace = true

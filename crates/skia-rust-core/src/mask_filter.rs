@@ -15,7 +15,9 @@
 //! * `SkResourceCache* cache` parameters (`filterRectsToNine`, `filterRRectToNine`) are not
 //!   ported: the cache only memoizes the nine-patch masks, so results are identical without it.
 //! * `asImageFilter` is not ported yet (it needs the blur image filter, Phase 3).
-//! * Flattening (`flatten`/`CreateProc`/`Deserialize`) is not ported (no `SkFlattenable` yet).
+//! * Flattening is the `type_name` and `flatten` methods of [`MaskFilterBase`], read back through
+//!   [`FlattenableRegistry`](crate::flattenable::FlattenableRegistry); `Deserialize` is not
+//!   ported.
 //! * `filterRectsToNine`/`filterRRectToNine` draw small masks with `skcpu::Draw`, which lives in
 //!   the raster crate. They take a [`MaskRasterizer`], the part of `skcpu::Draw` they use, which
 //!   the raster crate implements.
@@ -26,12 +28,16 @@ use std::sync::Arc;
 
 use crate::blur_mask_filter_impl::BlurMaskFilterImpl;
 use crate::blur_types::BlurStyle;
+use crate::data::Data;
+use crate::flattenable::FlattenableRegistry;
 use crate::mask::{Mask, MaskBuilder, MaskFormat};
 use crate::matrix::Matrix;
 use crate::point::IPoint;
+use crate::read_buffer::ReadBuffer;
 use crate::rect::{IRect, Rect, RoundOut};
 use crate::rrect::RRect;
 use crate::scalar::scalar;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// What kind of mask filter a [`MaskFilterBase`] is (`SkMaskFilterBase::Type`).
 // Port of: src/core/SkMaskFilterBase.h#L63-L69 (chrome/m156)
@@ -162,6 +168,16 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
     #[doc(alias = "type")]
     fn filter_type(&self) -> MaskFilterType;
 
+    /// The name the filter is flattened under (`getTypeName`), which the registry maps back to
+    /// its factory. The empty name, the default, marks a filter that cannot be flattened.
+    #[doc(alias = "getTypeName")]
+    fn type_name(&self) -> &'static str {
+        ""
+    }
+
+    /// Writes the parameters of the filter (`flatten`). Writes nothing by default.
+    fn flatten(&self, _buffer: &mut BinaryWriteBuffer) {}
+
     /// If this filter can be represented by a [`BlurRec`], returns it (`asABlur`).
     // Port of: src/core/SkMaskFilterBase.cpp#L47-L49 (chrome/m156)
     #[doc(alias = "asABlur")]
@@ -237,6 +253,38 @@ impl MaskFilter {
     #[must_use]
     pub fn ptr_eq(&self, other: &MaskFilter) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// The flattened filter, as `SkFlattenable::serialize` makes it: its name, then its body.
+    // Port of: src/core/SkFlattenable.cpp#L127-L139 (chrome/m156)
+    #[must_use]
+    pub fn serialize(&self) -> Data {
+        let mut writer = BinaryWriteBuffer::new();
+        writer.write_mask_filter(Some(self));
+        writer.snapshot_as_data()
+    }
+
+    /// Writes the flattened filter into `memory`, and returns its size, or 0 if it does not fit
+    /// (the `serialize(void*, size_t)` overload).
+    // Port of: src/core/SkFlattenable.cpp#L141-L150 (chrome/m156)
+    pub fn serialize_into(&self, memory: &mut [u8]) -> usize {
+        let mut writer = BinaryWriteBuffer::new();
+        writer.write_mask_filter(Some(self));
+        let size = writer.bytes_written();
+        if size > memory.len() {
+            return 0;
+        }
+        writer.write_to_memory(&mut memory[..size]);
+        size
+    }
+
+    /// Reads back a filter written by [`MaskFilter::serialize`], with the factories of
+    /// `registry` (`SkFlattenable::Deserialize`).
+    // Port of: src/core/SkFlattenable.cpp#L152-L159 (chrome/m156)
+    #[doc(alias = "Deserialize")]
+    #[must_use]
+    pub fn deserialize(data: &[u8], registry: &FlattenableRegistry) -> Option<MaskFilter> {
+        ReadBuffer::new(data).read_mask_filter(registry)
     }
 
     /// Creates a blur mask filter.

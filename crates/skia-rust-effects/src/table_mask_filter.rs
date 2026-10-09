@@ -10,13 +10,16 @@
 
 use skia_rust_core::align::align4;
 use skia_rust_core::fixed::{Fixed, fixed_round_to_int};
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::floating_point::float_round2int;
 use skia_rust_core::mask::{AllocType, Mask, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{MaskFilter, MaskFilterBase, MaskFilterType};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::IPoint;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::t_pin::t_pin;
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 
 // Port of: src/effects/SkTableMaskFilter.cpp#L33-L62 (chrome/m156)
 #[derive(Clone, Debug)]
@@ -31,7 +34,30 @@ impl TableMaskFilterImpl {
     }
 }
 
+/// `SkTableMaskFilterImpl::CreateProc`: the 256-entry table.
+// Port of: src/effects/SkTableMaskFilter.cpp#L134-L140 (chrome/m156)
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<MaskFilter> {
+    let mut table = [0u8; 256];
+    if !buffer.read_byte_array(&mut table) {
+        return None;
+    }
+    Some(new(&table))
+}
+
 impl MaskFilterBase for TableMaskFilterImpl {
+    // Port of: src/effects/SkTableMaskFilter.cpp#L53 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkTableMaskFilterImpl"
+    }
+
+    // Port of: src/effects/SkTableMaskFilter.cpp#L130-L132 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_byte_array(&self.table);
+    }
+
     // Port of: src/effects/SkTableMaskFilter.cpp#L70-L116 (chrome/m156)
     fn filter_mask(
         &self,

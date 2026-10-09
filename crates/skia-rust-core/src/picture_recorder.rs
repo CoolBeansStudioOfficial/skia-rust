@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use crate::bbh_factory::{BBHFactory, BBoxHierarchy, Metadata, RTreeFactory};
 use crate::canvas::Canvas;
+use crate::drawable::{Drawable, DrawableBase};
 use crate::picture::Picture;
 use crate::picture_priv;
 use crate::record::Record;
@@ -137,6 +138,22 @@ impl PictureRecorder {
         Some(self.finish_recording())
     }
 
+    /// `finishRecordingAsDrawable`: the recording as a drawable, whose bounds are the cull rect
+    /// and which draws the recorded calls. Returns `None` if recording was not active.
+    // Port of: src/core/SkPictureRecorder.cpp#L119-L136 (chrome/m156), finishRecordingAsDrawable.
+    // The recorded drawable draws the picture (`SkRecordDraw` of the record; the picture's
+    // drawable list is empty here, as no drawable is recorded into a picture yet).
+    #[doc(alias = "finishRecordingAsDrawable")]
+    pub fn finish_recording_as_drawable(&mut self) -> Option<Drawable> {
+        self.recording_canvas()?;
+        let bounds = self.cull_rect;
+        let picture = self.finish_recording();
+        Some(Drawable::new(Arc::new(RecordedDrawable {
+            picture,
+            bounds,
+        })))
+    }
+
     fn finish_recording(&mut self) -> Picture {
         self.actively_recording = false;
         self.recorder.restore_to_count(1); // If we were missing any restores, add them now.
@@ -194,5 +211,27 @@ impl PictureRecorder {
             None, /*bbh*/
             None, /*callback*/
         );
+    }
+}
+
+/// `SkRecordedDrawable`: a recording that draws as a drawable, within its cull rect.
+// Port of: src/core/SkRecordedDrawable.{h,cpp} (chrome/m156)
+#[derive(Debug)]
+struct RecordedDrawable {
+    picture: Picture,
+    bounds: Rect,
+}
+
+impl DrawableBase for RecordedDrawable {
+    /// `onGetBounds`: the cull rect.
+    // Port of: src/core/SkRecordedDrawable.h#L40 (chrome/m156)
+    fn on_get_bounds(&self) -> Rect {
+        self.bounds
+    }
+
+    /// `onDraw`: the recorded calls, drawn onto the canvas.
+    // Port of: src/core/SkRecordedDrawable.cpp#L36-L44 (chrome/m156)
+    fn on_draw(&self, canvas: &Canvas) {
+        canvas.draw_picture(&self.picture, None, None);
     }
 }

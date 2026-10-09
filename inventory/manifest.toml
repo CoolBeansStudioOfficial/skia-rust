@@ -15310,6 +15310,7 @@ macro = "DEF_GM"
 source = "gm/aaxfermodes.cpp#L283-L283"
 module = "raster"
 status = "todo"
+reason = "not ported: the GM itself (gm/aaxfermodes.cpp) is not in tests/gm; it also needs ToolUtils::DefaultPortableTypeface, which is not ported (ToolUtils::draw_checkerboard is now in tests/gm/src/tool_utils.rs)"
 span_hash = "1f1216ba1e8f19bcc85739ddea202fc0844bc99ac45e594e9ba293dc85c72b79"
 
 [[test]]
@@ -15961,7 +15962,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bigtext.cpp#L61-L61"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e8540f505d36f634bd099e1748e05aaa47dc64b29f1285988dbd3e6fcf1b1d9f"
 
 [[test]]
@@ -15970,7 +15971,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bigtext.cpp#L66-L80"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c8e502a2ed7f4b92aaeceac867bb7a2caf9ea9e69408fad511a21ddc635c20a3"
 
 [[test]]
@@ -16869,7 +16870,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L237-L237"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "73f091c708bcd39031e74f0f0fbbe7f984409dc399fc752c1d5a6bdf1433e006"
 
 [[test]]
@@ -16878,7 +16879,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L236-L236"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "72f2d67106ba862d8b1e59d91fbdac9b22ce8f1f756729e4fbe25ee2615e7bf1"
 
 [[test]]
@@ -16887,7 +16888,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L238-L238"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "623ccaea5fc807c1deb489f91d0fe2c9d55709a9f8dc2cd726769cc8ff3cf426"
 
 [[test]]
@@ -16895,8 +16896,8 @@ id = "gm/coloremoji.cpp::ColorEmojiGM(ToolUtils::EmojiFontFormat::Svg)"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L240-L240"
-module = "svg"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "ea695a27fc8501b6d59707cb0680e452379cdf63f60888533dd4a84e151b689d"
 
 [[test]]
@@ -16940,7 +16941,7 @@ id = "gm/coloremoji_blendmodes.cpp::ColorEmojiBlendModesGM(ToolUtils::EmojiFontF
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L185-L185"
-module = "svg"
+module = "text"
 status = "todo"
 span_hash = "9c7e14fb62424de4b7a55aa59f405d030a704130f0fdaa4eff48eef3a27cbb4c"
 
@@ -17070,7 +17071,7 @@ id = 'gm/colrv1.cpp::F(C(clipbox), 0.0f, 0.0f, {{"CLIO"_t, 200.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L250-L250"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "6443727928e1d5838667a6bad0f1a39ceb9bb1ca0b6ac8051e698d31b333d5c4"
 
@@ -17079,8 +17080,8 @@ id = "gm/colrv1.cpp::F(C(clipbox), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L249-L249"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "51f282a9762a6aec64db704194e66d0fb4532687ddf490d4c3cd35b2b354eeb7"
 
 [[test]]
@@ -17088,8 +17089,8 @@ id = "gm/colrv1.cpp::F(C(composite_mode), -0.5f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L252-L252"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "8a98957f8a53489172ba4bc281ea384831c19e0f8fe355acc5d79854a3a76c5e"
 
 [[test]]
@@ -17097,8 +17098,8 @@ id = "gm/colrv1.cpp::F(C(composite_mode), -0.5f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L253-L253"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "1cd62c1fcc2522b3f6cdbab1a2fbaa14d4b7629ec07f5ee85032fac1487cb38b"
 
 [[test]]
@@ -17106,8 +17107,8 @@ id = "gm/colrv1.cpp::F(C(composite_mode), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L251-L251"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "e83e782f552065233bc89664435fde7e47dc14224cc018dd91463d63f6a33d8d"
 
 [[test]]
@@ -17115,8 +17116,8 @@ id = "gm/colrv1.cpp::F(C(composite_mode), 0.0f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L254-L254"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "2c54ce6c0948aeb99fbcbe80c49e9e768445f32bf93fe42159b83ea0e1c05fbc"
 
 [[test]]
@@ -17124,8 +17125,8 @@ id = "gm/colrv1.cpp::F(C(extend_mode), -0.5f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L275-L275"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "c0ed9c208914c65779d9ae53a9a31531ef71488bfd45a9bf97b0a079de2eab58"
 
 [[test]]
@@ -17133,8 +17134,8 @@ id = "gm/colrv1.cpp::F(C(extend_mode), -0.5f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L276-L276"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "9426c9fc3140b56bad960fc89beb93764a029af62a3f6f96fd2a413403c42c38"
 
 [[test]]
@@ -17142,7 +17143,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL1"_t, -0.25f}, {"COL3"_
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L256-L256"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "a5bc564da2ffcea118b9389dd15fb6a746069dc29f902e92db9032e78c9352bb"
 
@@ -17151,7 +17152,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL1"_t, -1.5f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L261-L261"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "00d42add0e4ed380fcf78e5330408377fb1aa711ddc38cd6d42ef4b8f585c904"
 
@@ -17160,7 +17161,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL1"_t, 0.5f}, {"COL3"_t,
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L257-L257"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "d906bc045e570414c383a11fdc14429727a1cdb535a789c6c4c098cddc7b26da"
 
@@ -17169,7 +17170,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL2"_t, -0.3f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L278-L278"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "647c00eed6e862e5c2922acbe7a9a806a3bc85e63e7daa76a3cdf13136c00147"
 
@@ -17178,7 +17179,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL3"_t, 0.5f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L258-L258"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "d74a6d4ceb06962ebe4f004477f498906375856bcb9ebe56d0ce5ac89ba1bcb4"
 
@@ -17187,7 +17188,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL3"_t, 1.f}, {"COL2"_t, 
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L273-L273"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "8f93b6d8b8b6e90d0dfa9b0537d0ce2c0c5b103e695371d5e8a46706f63ed488"
 
@@ -17196,7 +17197,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"COL3"_t, 1.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L259-L259"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "18ae43b188ac348b625a4d9c1998adda3ff3b738dbf29f6dbd00046641952c68"
 
@@ -17205,7 +17206,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRR0"_t, -200.f}, {"GRR1"_
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L263-L263"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "5c5dbfcc586c244f99eaef5742fb8ecfdad6f20504efef47e750500fe7e56b02"
 
@@ -17214,7 +17215,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRR0"_t, -50.f}, {"COL3"_t
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L269-L269"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "5b79ff737058775c42a6e8228cef369680e7d2f1ee9052ee67685fec1edddae3"
 
@@ -17223,7 +17224,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRR0"_t, -50.f}, {"COL3"_t
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L271-L271"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "c50b1086ad33ccc6627510ef44ea1387caab5aa62f2f0a1a45c90dbb40163cae"
 
@@ -17232,7 +17233,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRR0"_t, 430.f}, {"GRR1"_t
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L279-L279"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "529146aa2af33852ba7098e7a04f94a3b5f61232b3426597ee9429e02790ed16"
 
@@ -17241,7 +17242,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRX0"_t, -1000.f}, {"GRX1"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L265-L265"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "692dce9f35785ba9a37cf104552705b75ecc6d1abca4a9d495593283218a280e"
 
@@ -17250,7 +17251,7 @@ id = 'gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {{"GRX0"_t, 1000.f}, {"GRX1"_
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L267-L267"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "79f7124bd74774dd78b7060c27845e8bd7985b95c235eee0d53a787c8f11725b"
 
@@ -17259,8 +17260,8 @@ id = "gm/colrv1.cpp::F(C(extend_mode), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L255-L255"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "6c782ebf254bebe359c12846e67f0452f55c8c7c83091d958366449f7953cd41"
 
 [[test]]
@@ -17268,8 +17269,8 @@ id = "gm/colrv1.cpp::F(C(extend_mode), 0.0f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L277-L277"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "abc9fad92887b061cb27be865dd348f8b16b16d8eee1ef04e32682032d98e61d"
 
 [[test]]
@@ -17277,8 +17278,8 @@ id = "gm/colrv1.cpp::F(C(foreground_color), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L280-L280"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "2a5753ff0f4546fdb78775e67dafdb17a548289fe106cb2feccf45d6ea3f5e28"
 
 [[test]]
@@ -17286,8 +17287,8 @@ id = "gm/colrv1.cpp::F(C(gradient_p2_skewed), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L281-L281"
-module = "effects"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "6601f5660299f880d015e7ee6c91fddaab49a2e0ad1ad7bc0bd3981692b3d911"
 
 [[test]]
@@ -17295,8 +17296,8 @@ id = "gm/colrv1.cpp::F(C(gradient_stops_repeat), -0.5f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L283-L283"
-module = "effects"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "74fce02e3ce771f67c2432f78ddf85ec61a8dc9772c7f4163c98c1cd5adc233c"
 
 [[test]]
@@ -17304,8 +17305,8 @@ id = "gm/colrv1.cpp::F(C(gradient_stops_repeat), -0.5f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L284-L284"
-module = "effects"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "ba8c45b3f81ab14ebfc994338c90af66664ac20dacc7b415d3ece48d0942909d"
 
 [[test]]
@@ -17313,8 +17314,8 @@ id = "gm/colrv1.cpp::F(C(gradient_stops_repeat), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L282-L282"
-module = "effects"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "1d66a8a1f4b6d6445ed68b23c78931668df4cb3c4e48d8fbd33cc5231f714643"
 
 [[test]]
@@ -17322,8 +17323,8 @@ id = "gm/colrv1.cpp::F(C(gradient_stops_repeat), 0.0f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L285-L285"
-module = "effects"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "431a73f3c06a8d9def205dc8493f226559f310d62bbbf082f74db86f8cf84a00"
 
 [[test]]
@@ -17332,7 +17333,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L321-L321"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "845954505e1f47c10c227fe06c848fcefc8bb23ec351f08328d3a5f66a7a81d7"
 
 [[test]]
@@ -17340,7 +17341,7 @@ id = 'gm/colrv1.cpp::F(C(paint_rotate), 0.0f, 0.0f, {{"ROTA"_t, 40.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L287-L287"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "2d1f7e576fd372a2f5faa67bd6bf655fc15ba28bdcf38d3a6056a80223007645"
 
@@ -17349,7 +17350,7 @@ id = 'gm/colrv1.cpp::F(C(paint_rotate), 0.0f, 0.0f, {{"ROTX"_t, -250.f}, {"ROTY"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L288-L288"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "8e827c4201412e5524fc044f9d25266da0fb552a686898e5a18ab47a7b2ca048"
 
@@ -17358,8 +17359,8 @@ id = "gm/colrv1.cpp::F(C(paint_rotate), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L286-L286"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "79c969c4479a55d73fc5cbbd16bc9cc6230d203455a03680f5fc24fa1359e154"
 
 [[test]]
@@ -17367,7 +17368,7 @@ id = 'gm/colrv1.cpp::F(C(paint_scale), 0.0f, 0.0f, {{"SCOX"_t, 200.f}, {"SCOY"_t
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L290-L290"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "a72cf85f482895933d965af5e24ed42e2ec6c3954330f0b97e7517f38441fc01"
 
@@ -17376,7 +17377,7 @@ id = 'gm/colrv1.cpp::F(C(paint_scale), 0.0f, 0.0f, {{"SCSX"_t, -1.f}, {"SCOY"_t,
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L292-L292"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "8f3213216555cf847f3ab5ae9bd7106fc067e056ca4549c59956ca3bd0b5a907"
 
@@ -17385,7 +17386,7 @@ id = 'gm/colrv1.cpp::F(C(paint_scale), 0.0f, 0.0f, {{"SCSX"_t, 0.25f}, {"SCOY"_t
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L291-L291"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "d9a732698423b15008c0f2ea28218dd4e459426f94db8c084f63d8944e0cc78d"
 
@@ -17394,8 +17395,8 @@ id = "gm/colrv1.cpp::F(C(paint_scale), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L289-L289"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "ec0659bff5f377ee624b03e51d23572a43a216d49300daf1466828fdcc21733f"
 
 [[test]]
@@ -17403,7 +17404,7 @@ id = 'gm/colrv1.cpp::F(C(paint_skew), 0.0f, 0.0f, {{"SKCX"_t, 200.f},{"SKCY"_t, 
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L296-L296"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "5fc77c2cefee49d9dfa299f38948aca89ed8e8e7162813dda55268780975e04f"
 
@@ -17412,7 +17413,7 @@ id = 'gm/colrv1.cpp::F(C(paint_skew), 0.0f, 0.0f, {{"SKXA"_t, 20.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L294-L294"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "043ded106dbdeddd8cd88ed5ff7e87e4f387aaf766b7ac6a7da3dff6be480c38"
 
@@ -17421,7 +17422,7 @@ id = 'gm/colrv1.cpp::F(C(paint_skew), 0.0f, 0.0f, {{"SKYA"_t, 20.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L295-L295"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "46daedee89ca114f7cc780e77327d91d25a3b6ad33e6bf0c40a582fb86c9c8a3"
 
@@ -17430,8 +17431,8 @@ id = "gm/colrv1.cpp::F(C(paint_skew), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L293-L293"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "dc42a39cf5e0ff2774010c0cb67c41fb391bd7594b1b9f63ca17aeb6883e879d"
 
 [[test]]
@@ -17439,8 +17440,8 @@ id = "gm/colrv1.cpp::F(C(paint_transform), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L297-L297"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "5fffb4adcad7f8aa1ee5c221a28c5bc07441d24e3b65bf46dec02a068c126470"
 
 [[test]]
@@ -17448,7 +17449,7 @@ id = 'gm/colrv1.cpp::F(C(paint_translate), 0.0f, 0.0f, {{"TLDX"_t, 100.f}, {"TLD
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L299-L299"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "c3ce6c05bafa71bb82cf3d71d05d5616ec29ed91f905e2e2bd1aa357d5f3f8e0"
 
@@ -17457,8 +17458,8 @@ id = "gm/colrv1.cpp::F(C(paint_translate), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L298-L298"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "03330dd34fa14dc2a41d98963af1bbd9a5e926d7453910a87ef36d52b6e0340b"
 
 [[test]]
@@ -17467,7 +17468,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L319-L319"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "747a19c3b5489638145ea434a1f611bf3511f13f381491ab7f88042b46215934"
 
 [[test]]
@@ -17475,8 +17476,8 @@ id = "gm/colrv1.cpp::F(C(sweep_coincident), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L320-L320"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "11df5ce597461b580519c605480a1faabbc13e13dc21b87563a2d4278b0ec1f5"
 
 [[test]]
@@ -17484,8 +17485,8 @@ id = "gm/colrv1.cpp::F(C(sweep_varsweep), -0.5f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L301-L301"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "fe8d340cb6afd0e1a2e6265f00f9bf3e6ad4493e9c29f8ece66df32c23014d99"
 
 [[test]]
@@ -17493,8 +17494,8 @@ id = "gm/colrv1.cpp::F(C(sweep_varsweep), -0.5f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L302-L302"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "3c883c6ce5f01ac12b1bad59f56e6ed466800ec20eabe06556df3d7866e1bf06"
 
 [[test]]
@@ -17502,7 +17503,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWC1"_t, -0.25f}, {"SWC
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L309-L315"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "02ab58fad42509db05c8a92d62ae8e1c591755566f940b21d9d7a8d12a55f153"
 
@@ -17511,7 +17512,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWPE"_t, -45.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L307-L307"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "fb8e1db3f6d89b8193de01f410826be25b64c9e67a8e0e0a3a322aee65e39fbe"
 
@@ -17520,7 +17521,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWPE"_t, -90.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L306-L306"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "5dce4dd7384abfd19fe0b6dbe762c2b40ccb03fd0fe9332a9268dd6e17af522d"
 
@@ -17529,7 +17530,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWPS"_t, -45.f},{"SWPE"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L308-L308"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "7467789fc78d64b8ae006d80294e9bf65a19d63908335560d5b7b3779d128b6f"
 
@@ -17538,7 +17539,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWPS"_t, 0.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L304-L304"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "312e43ea1b825d58e549f8a1cf09c71d5f4571d6431d702915d84249f56cf692"
 
@@ -17547,7 +17548,7 @@ id = 'gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {{"SWPS"_t, 90.f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L305-L305"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "f051890dda080bd9f7451935f46d74d4ed9b4f19a8b8e3342e7ac6f9d02655e3"
 
@@ -17556,8 +17557,8 @@ id = "gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L300-L300"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "d9a949886f8731abf228985d5b5d0ce1efa115a51dc6cfcbedf12d0bb37cae96"
 
 [[test]]
@@ -17565,8 +17566,8 @@ id = "gm/colrv1.cpp::F(C(sweep_varsweep), 0.0f, 20.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L303-L303"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "514880dd9284a67510784bbf0c63fd65f5baacc60e1b27c8136c738bc2ca64ca"
 
 [[test]]
@@ -17574,7 +17575,7 @@ id = 'gm/colrv1.cpp::F(C(variable_alpha), 0.0f, 0.0f, {{"APH1"_t, -0.7f}})'
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L317-L317"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "b398bf977189b0f61726ae862085dd9cfec43d109f7454fbec67b20cffe6dec5"
 
@@ -17583,7 +17584,7 @@ id = 'gm/colrv1.cpp::F(C(variable_alpha), 0.0f, 0.0f, {{"APH2"_t, -0.7f}, {"APH3
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L318-L318"
-module = "raster"
+module = "text"
 status = "todo"
 span_hash = "7f76ebe2adad660f0ce9916f527a876130fa3502693d94e309896e050421949c"
 
@@ -17592,8 +17593,8 @@ id = "gm/colrv1.cpp::F(C(variable_alpha), 0.0f, 0.0f, {})"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/colrv1.cpp#L316-L316"
-module = "raster"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "a4129edceb0611b4784bcdf6a67ed6281a65ee61adf5a6ecf6919bdb594aaba5"
 
 [[test]]
@@ -17773,7 +17774,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip3.cpp#L139-L139"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "c032da0fe017116dcb111edb0c662a599dcb5a9ee1bdcdf77559ae1c045df7f8"
 
 [[test]]
@@ -17782,7 +17783,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/complexclip3.cpp#L137-L137"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "885db0171c37569dadefbb33b8b63e5ec6c98d1cd8c9756a10c434e4e5985fda"
 
 [[test]]
@@ -18573,8 +18574,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/cubicpaths.cpp#L544-L544"
 module = "skcms"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "15b7211964d56eb5a357704054b6bdb989423e638fd990007e64d79375d08b42"
 
 [[test]]
@@ -18583,8 +18583,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/cubicpaths.cpp#L542-L542"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "047ad45479ddc3bfc965691fb22fa2dee9ded81afab217238f9749b823ba629b"
 
 [[test]]
@@ -18621,7 +18620,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/daa.cpp#L23-L122"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a8e2389dbb3a0344ccbc1c0e0376566a076c57dd73d8be3e0be9fb5a8ba4e113"
 
 [[test]]
@@ -18747,8 +18746,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/dashing.cpp#L569-L584"
 module = "text"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "994b0e2e69cccb65de311678c5827fe986c70a8b2f262d158e057dba0fb076cd"
 
 [[test]]
@@ -18803,7 +18801,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/degeneratesegments.cpp#L372-L372"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7bbef330dee7538036e06bfe1a61ffc957f6f7d09f6445df144c6ecaada51684"
 
 [[test]]
@@ -18982,7 +18980,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawglyphs.cpp#L85-L85"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "41bc11d94f04a8e22e6f97f52ac02ccb7f8ba3ac16100b8808ca60f63a072c3a"
 
 [[test]]
@@ -19362,6 +19360,7 @@ macro = "DEF_GM"
 source = "gm/fontations.cpp#L190-L194"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "67c726b51cd47e91a27bb785121eeb26ebee401cd75c34a9076d62e2a452c938"
 
 [[test]]
@@ -19371,6 +19370,7 @@ macro = "DEF_GM"
 source = "gm/fontations.cpp#L186-L189"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "e628f73739bd0d44bb173a4f6125b77e773122cf0cf79d94c2863ef92498c11d"
 
 [[test]]
@@ -19380,6 +19380,7 @@ macro = "DEF_GM"
 source = "gm/fontations.cpp#L185-L185"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "d4446a135b1300dc8202d72d62f1637ad9a8fb741cef2668b4bc1d84f9634b36"
 
 [[test]]
@@ -19389,6 +19390,7 @@ macro = "DEF_GM"
 source = "gm/fontations_cbdt.cpp#L84-L84"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "54e18e2f460d837245b4ba8dd1438f2b8952f9d437092f3a95f10f06934a9b91"
 
 [[test]]
@@ -19398,6 +19400,7 @@ macro = "DEF_GM"
 source = "gm/fontations_ebdt.cpp#L83-L83"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "2dd804f03c316a97760d0f5e550bfbd80a3546dedc17e67938d3437284167a36"
 
 [[test]]
@@ -19407,6 +19410,7 @@ macro = "DEF_GM"
 source = "gm/fontations_ebdt.cpp#L146-L146"
 module = "text"
 status = "todo"
+reason = "needs-oracle: no golden (oracle built with skia_use_fontations=false)"
 span_hash = "a02baa84de047f3085b50a890274f461162505ca5844e44e91b4b5bc1240d13b"
 
 [[test]]
@@ -19415,7 +19419,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L317-L326"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "7e55a5ebc731a915ae3833bf0f6f9ce8b4c5139ca46f0c072e5ed0d800a375ac"
 
 [[test]]
@@ -19424,7 +19429,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L340-L350"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "f56fac5e7d9b8a7754f26e12a2553ffd7a80c15a7ce9439882ee1b78b3f652fc"
 
 [[test]]
@@ -19433,7 +19439,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L328-L338"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "1e7346e061296ff60024e05d8965901d67e1805177ef6862e45bdb452b9884cc"
 
 [[test]]
@@ -19442,7 +19449,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L352-L361"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "7da34fa8c7f0b5807ffa49728bd03f91e2f1dd415a5cf0e4739a7db5ec615134"
 
 [[test]]
@@ -19451,7 +19459,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L375-L385"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "0951b4f7410d83778b5c73c5cc8e93a1059d6f78acb6b8e56f8649433e001638"
 
 [[test]]
@@ -19460,7 +19469,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L363-L373"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "7d17f3611b029e09c63b29cb5ee5e44c36494c5ef5c6ddda1efd9d5882a26536"
 
 [[test]]
@@ -19469,7 +19479,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L516-L519"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "5757f9d44a6254181493efe1c8e18aa78742ca6c785ce0fff068ce8fe697da10"
 
 [[test]]
@@ -19478,7 +19489,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L421-L424"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "2bd27d6bf46fe3f4a3dc9b0f5fd6e9076bd7ae17164edce503a9760a4dcc1147"
 
 [[test]]
@@ -19487,7 +19499,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L387-L390"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "8342c9e8fb1de8927c1025ab7bc696c9f8d888009a96e7aaa3581e9299551015"
 
 [[test]]
@@ -19496,7 +19509,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L398-L402"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "e148714c0898761b78785d8ba60f615506d70ecb14a802c1b6199386f57ee265"
 
 [[test]]
@@ -19505,7 +19519,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L392-L396"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "c44a7bab08a101d93696f13c0dbd2cd6d61e80f9b1ee885814b1118f386041ed"
 
 [[test]]
@@ -19514,7 +19529,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L521-L524"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "0cad18d2ed2eb10ecc1140b29f037c4d1e32f50da7b4f14630ec9285bbf8adc8"
 
 [[test]]
@@ -19523,7 +19539,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L481-L484"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "e7d5eb3dfd494a693427485b6ad1beca874f4f109cce0e474d631e7d91d737ea"
 
 [[test]]
@@ -19532,7 +19549,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L476-L479"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "d83850506b26151bf5276ddba42758bcb90539196ad686a8a6a6710acae18af5"
 
 [[test]]
@@ -19541,7 +19559,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L531-L534"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "6ba990d698cf185df6adb011c1491fa61ac38ba54c5c88e6bffc6c4579a4551a"
 
 [[test]]
@@ -19550,7 +19569,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L436-L439"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "3b29893b4fe2ba959e70413948cc28d398fb475112add60ee98ef0cdf4f5bc3f"
 
 [[test]]
@@ -19559,7 +19579,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L441-L444"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b72fddd57f6337011d43362b8075ac53d097dc1a47b5cde3a8b92b6f7c7ac0ae"
 
 [[test]]
@@ -19568,7 +19589,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L506-L509"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "a896fd29119cc6a8c36aea046f525e3545570e6acb22a5fd60c5c1f4ee332a5b"
 
 [[test]]
@@ -19577,7 +19599,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L426-L429"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "12c83fae738d047caaeebdae662f353dc621b6cec7a3b7bb02b76682fffa8837"
 
 [[test]]
@@ -19586,7 +19609,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L491-L494"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "e9a783508b487d9b53076310904299042525e04643e8802eb5749dc4ff5de1ef"
 
 [[test]]
@@ -19595,7 +19619,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L461-L464"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "cb5fc52e35476719d17a6fbcc6ec4041e3a9f3142bebc592a78665644cff993b"
 
 [[test]]
@@ -19604,7 +19629,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L446-L449"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "58542a196bdda2f3ee382542be31726294bd62ce258150fd50b017e24d3f8fe6"
 
 [[test]]
@@ -19613,7 +19639,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L486-L489"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "e648f8c852a7ba0d623a76e96c4e0acceecd9661b505d36816516e83903ff990"
 
 [[test]]
@@ -19622,7 +19649,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L511-L514"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b13050e7ec9f35fa93b9336b2a24da09b8de3fba56174d3f8a0e24590dfad774"
 
 [[test]]
@@ -19631,7 +19659,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L501-L504"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "a4d52bb1c00635e9863ce5abf62af6f4cd23c1e565ad44ccd25848415af40248"
 
 [[test]]
@@ -19640,7 +19669,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L456-L459"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b2bc25111f73ff86a4d2b6dab78cb63df7d9c128b9d026a7d6358c82cb95e381"
 
 [[test]]
@@ -19649,7 +19679,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L496-L499"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "a2d2b9071774f3890a1e4697ea83c370353b347413332716a90f98cba14fe5f6"
 
 [[test]]
@@ -19658,7 +19689,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L451-L454"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "616a78a5356c9a2682de8e7357b08a2b022b84b5b98a11fd71c7ff3c987835e3"
 
 [[test]]
@@ -19667,7 +19699,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L471-L474"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b2bb4662876ca1c91f462bc763fc32db500d11694fdb84d7963cd9a5f29e49d0"
 
 [[test]]
@@ -19676,7 +19709,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L466-L469"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "6ff46ed8474fb33e7725c3369b528c7924d3d276ec3eae4cc7adc2f08609a4fa"
 
 [[test]]
@@ -19685,7 +19719,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L431-L434"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "3e79f843675cb00349a80bda69837d073a247360a67af778d7c12d71571abdcd"
 
 [[test]]
@@ -19694,7 +19729,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L526-L529"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "ffb7c0e004734ac3b18ca74d128bec3360a83148bbbdccbd9f61b8f5446afa05"
 
 [[test]]
@@ -19703,7 +19739,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L404-L407"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "a60ade726268e8cc1f1d12557556ac9726232b76c041bbf68f1497e1684be28e"
 
 [[test]]
@@ -19712,7 +19749,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L415-L419"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "a41d1699445d9124f650f71cfb4816143e58c770318a490e98f1911e26cf147e"
 
 [[test]]
@@ -19721,7 +19759,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontations_ft_compare.cpp#L409-L413"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "911cfab51c25826c0870ce4c6735c36cbb55b711600549d31f07386a8d02de01"
 
 [[test]]
@@ -19811,7 +19850,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontscaler.cpp#L82-L82"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ade3c0580fa8f1675b449b61d50ad4ae46edb3cbfc6e981557faa32e09e65bdf"
 
 [[test]]
@@ -19820,7 +19859,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontscalerdistortable.cpp#L186-L186"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d6c728dc7df0914d4f232724d50e77831375e6b6f5b9013f16036e88e7f3ffd9"
 
 [[test]]
@@ -19886,7 +19925,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/getpostextpath.cpp#L36-L71"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7886384c64bc59557d66fa5b8541478dbf02893c3bfdd6408be1add315e9e453"
 
 [[test]]
@@ -20003,7 +20042,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L150-L152"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "766c17a8ee59b3b5d53e25c81bbf296eec7c24fb9ee5667b3c5d16df4a96cfe9"
 
 [[test]]
@@ -20012,7 +20051,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L162-L164"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ffb7bb0ba5d3598156423d9d62fc2e5dc4b54e25e4ffb8f44abed01c102dcc29"
 
 [[test]]
@@ -20021,7 +20060,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L156-L158"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9014738cb78364994d6a3b2929ea8b2f050f6e3a2354d64cdf3ea76c6b0ff21a"
 
 [[test]]
@@ -20030,7 +20069,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L153-L155"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5382083f0b5a365260e48e0fd15ebe471fcb90866cfbc5ca88713f3a7875eaad"
 
 [[test]]
@@ -20039,7 +20078,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L165-L167"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e9daa4ebe2c9f12551c1a652712640caf84feaee57fa00e7aec2fe235bfeaa4"
 
 [[test]]
@@ -20048,7 +20087,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/glyph_pos.cpp#L159-L161"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e9eb632b86dbabd5cd28b27b0898eacfff3a3351dda0f5f5020aedc74630a1a5"
 
 [[test]]
@@ -21578,7 +21617,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L138-L138"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0b0e153c9b2e5a5c58a6e81adfab06516c505bccb2d45a69dea7657e08171d08"
 
 [[test]]
@@ -21587,7 +21626,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L139-L139"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e0623d2b0e4d20c0d7c3c2a319a34f6d883ed7efbd0785a31f8eb6b0c1e2f053"
 
 [[test]]
@@ -21596,7 +21635,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdtext.cpp#L140-L140"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fb97bde9af7bc24719c3baf751a14507e0eacd7bb94c3ac5686e757a2f7105ad"
 
 [[test]]
@@ -21615,8 +21654,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/linepaths.cpp#L151-L153"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "2a17e7adbcd5137bb814f152b13595f9e5763732141397a21d8f91b4f7019325"
 
 [[test]]
@@ -21625,8 +21663,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/linepaths.cpp#L148-L150"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "de582ea9d10419413fd86aeb594575fab4c57b2468906bb380b2ea4de3830632"
 
 [[test]]
@@ -21719,6 +21756,7 @@ macro = "DEF_GM"
 source = "gm/mac_aa_explorer.cpp#L137-L137"
 module = "text"
 status = "todo"
+reason = "compiled only under SK_BUILD_FOR_MAC, which the oracle build is not: no golden"
 span_hash = "875e75581673631c490a07a010c47071c2cf4eda9cccbc8c87e4725e220a7b38"
 
 [[test]]
@@ -21727,7 +21765,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/mac_aa_explorer.cpp#L141-L189"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "72825dd3015fa8d350c921647b8d265f1fde54189cc6038b1f589f0405911082"
 
 [[test]]
@@ -22591,7 +22629,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG_NAME"
 source = "gm/pathreverse.cpp#L75-L97"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4c5672d89bab16a15f8d4761bc54ed5611a02aa22a30d4a2628fcac5b7a7dfc8"
 
 [[test]]
@@ -22699,7 +22737,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/persptext.cpp#L124-L124"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4a0b209fa35a7857c25cd76c77044beaa0dc10d9862661c594a337f4eb0de966"
 
 [[test]]
@@ -22708,7 +22746,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/persptext.cpp#L123-L123"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "22c19c1b7f1ad8c0dbba1948130d95b82308eeb2652e050170a999f62eed4a90"
 
 [[test]]
@@ -22844,7 +22882,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/poly2poly.cpp#L124-L124"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d127f36e100a9d4192888c8fe736ad58acf09cb20d2898bdb1bfe4e28e57546b"
 
 [[test]]
@@ -22916,8 +22954,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/quadpaths.cpp#L289-L289"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "08d509ab6136059f36e5e4e297204cab30b8a106609047e05fdd8dcd4abecb37"
 
 [[test]]
@@ -22926,8 +22963,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/quadpaths.cpp#L287-L287"
 module = "raster"
-status = "todo"
-reason = "needs text (SkFont, drawString)"
+status = "passing"
 span_hash = "90f1e4e99fef3459d831870df726233b494c196dffa1d2e93cba8e336d0b18ac"
 
 [[test]]
@@ -23472,7 +23508,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L231-L231"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "eb06d88b342d9bdf39364a5e8d29516855c60ac5a00306a2c86189cb3ef7218e"
 
 [[test]]
@@ -23481,7 +23517,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L237-L237"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "984024eddafa08f0890c65fa2ebefc96bc1416a79a8f27c38809d73120ffc2b9"
 
 [[test]]
@@ -23490,7 +23526,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L234-L234"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0ea351896e05711d50886de365fc7ff926997e88452d8e0dd263ecfd21f0b4de"
 
 [[test]]
@@ -23498,8 +23534,8 @@ id = "gm/scaledemoji.cpp::ScaledEmojiGM(ToolUtils::EmojiFontFormat::Svg)"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L240-L240"
-module = "svg"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "0f00d813b882c30979f88b7394a4baa074ad2769834d6b84ca523650e7b9f169"
 
 [[test]]
@@ -23517,7 +23553,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L233-L233"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0f8c68ab60a18e86aef1b07e48ce5e38503b8f38f8630957a9e6d66f4e9235a"
 
 [[test]]
@@ -23526,7 +23562,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L239-L239"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fc222b31e31bfd0748a7c56107dacfa929b757c1ce97e220790773f29224f80c"
 
 [[test]]
@@ -23535,7 +23571,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L236-L236"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "df6b924e285548bfb87f62f0ec8500749541c0ddcc96d69ecf5e318d7ef2c384"
 
 [[test]]
@@ -23543,8 +23579,8 @@ id = "gm/scaledemoji.cpp::ScaledEmojiPerspectiveGM(ToolUtils::EmojiFontFormat::S
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L242-L242"
-module = "svg"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "1b712e958ba7ecb7e4d6b54c86d1cd75c16c4e2e247e7d57fa8cd22e7e5c570a"
 
 [[test]]
@@ -23562,7 +23598,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L232-L232"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4d111f2859a6f27d21a4922b666b9142d7298ff75eb8233d6545513dbec31685"
 
 [[test]]
@@ -23571,7 +23607,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L238-L238"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c204205dc0a553c5597759c2a41d3b8291a22f9d0f469b48cf909083fda680ff"
 
 [[test]]
@@ -23580,7 +23616,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L235-L235"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "508a786a114dec045b0be9406d3b891da38b860d5398c0bde0b72bb1aaf2abdd"
 
 [[test]]
@@ -23588,8 +23624,8 @@ id = "gm/scaledemoji.cpp::ScaledEmojiPosGM(ToolUtils::EmojiFontFormat::Svg)"
 kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L241-L241"
-module = "svg"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "88180c175f5b9a294f25b199df105f05262262608c755b91def6344ab009dca0"
 
 [[test]]
@@ -23914,7 +23950,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_5321.cpp#L21-L47"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "716ff76282b0e3f31251a4c410b015da8ae92881e855b1cd6554399600909036"
 
 [[test]]
@@ -23932,7 +23968,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_8955.cpp#L15-L29"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "a65207ed07aa5bd1717c9def2ebd8b36e734c249a162a97e273a4523f7b6b213"
 
 [[test]]
@@ -24296,7 +24332,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/stroketext.cpp#L88-L100"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "87c5c54c68dd99f788548233017c96410a275f87cf3ce62b05b5c046c972d567"
 
 [[test]]
@@ -24305,7 +24341,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/stroketext.cpp#L102-L172"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1b024bae951fdb6e83d97d4d5c5f294b70ab5932e321d98e188c62e695060845"
 
 [[test]]
@@ -24552,7 +24588,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/text_scale_skew.cpp#L38-L40"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "81087bd560cfcdcd2bf3d073f47ed08578ab566094913e6e18b82ca573452be9"
 
 [[test]]
@@ -24561,7 +24597,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/text_scale_skew.cpp#L43-L47"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2b01dd9b8c656a0ce30affbe57301473122d35eef1a794eab170d953540c5565"
 
 [[test]]
@@ -24570,7 +24606,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblob.cpp#L200-L200"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a180af333018b1ce3c37cdfba2bad896b71c9adf4dc75041cfe9e31454c63407"
 
 [[test]]
@@ -24579,7 +24615,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobblockreordering.cpp#L98-L98"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f37c48362c22fe5c2b03762c3c7382ffb79bd83e67206d5f119e331f699720f8"
 
 [[test]]
@@ -24588,7 +24624,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobcolortrans.cpp#L108-L108"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e583bd3b6aa68500fab610665bf02b92857102bac9d405dcf44c414799e0ff6a"
 
 [[test]]
@@ -24606,7 +24642,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobmixedsizes.cpp#L219-L219"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8c30f16feddf39d61ac8224dbb46235e08ca2058fad1edee0753862ee4901529"
 
 [[test]]
@@ -24615,7 +24651,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobmixedsizes.cpp#L220-L220"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8c0030897e3677a7bea2f2d6ca6332589ed69e1d2cb56aab7c6c4ac0c81e54ae"
 
 [[test]]
@@ -24642,7 +24678,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobtransforms.cpp#L175-L175"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d75f1a0bb0db1008881ba7325e857d238e010f8970f2e6b8998c4e1cc4fb1758"
 
 [[test]]
@@ -24651,7 +24687,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/textblobuseaftergpufree.cpp#L71-L71"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c4639411a9e9db6f05bf4e4d8402dae582b5f60f3d41cab86d287a00df747465"
 
 [[test]]
@@ -24660,7 +24696,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/texteffects.cpp#L115-L153"
 module = "text"
-status = "todo"
+status = "failing"
+reason = "see notes/gm-texteffects-fancyblobunderline.md (small descender differences in serif rows; all tiers)"
 span_hash = "5f0a39f59efe27494e90975b63982da12016114a151b7480de8b6e7cb9d0b031"
 
 [[test]]
@@ -24669,7 +24706,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/texteffects.cpp#L243-L265"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ec322a10bd4e349a7737e5af2f3c904d99743147ef9b6f1765ae47809217786d"
 
 [[test]]
@@ -24940,7 +24977,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/userfont.cpp#L145-L145"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9975db25746adc7218f92620065c8f4b26f1eecda5b24f86633e26313247801e"
 
 [[test]]
@@ -24949,7 +24986,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L168-L168"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "462544cc1f8e70690bb06b28f4c176575e2a0e8b7fe87c22f5d518ce53102798"
 
 [[test]]
@@ -24958,7 +24995,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L170-L170"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a3cd862b0e853cd57ba4b90a52a59fba2cec9df347bd6d65568e5209d5df440b"
 
 [[test]]
@@ -24967,7 +25004,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L169-L169"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "51e77facc051d39a917655d69200576a248326a695120533cbe743c9793966f9"
 
 [[test]]
@@ -24976,7 +25013,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/variedtext.cpp#L171-L171"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "351136493974ea19251816208f7fddc081daeb962f7fdc8cf3ec378705bee267"
 
 [[test]]
@@ -29157,7 +29194,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CharToGlyphCache.cpp#L30-L57"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ed66ccdd6deadb2feb331077f85966f03b52bcc2ff88dbedaa3bfa018a61344f"
 
 [[test]]
@@ -30675,8 +30712,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_empty"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L29-L35"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "d55431f6fa19959ce44c7933d2d945e2561e562b715d33de41a8baceeadbf7ae"
 
 [[test]]
@@ -30684,8 +30721,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_entry_over_end"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L127-L138"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "3bd7f073dd5bd00f88b49190cbf45afde96f0e32ae97fcdeaa5cd86ce2dd4ce9"
 
 [[test]]
@@ -30693,8 +30730,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_entry_too_big"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L109-L125"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "e1b0d22c56d7facef75a640b94fa7bd2f6549718c8770e22acb41a9a189be6b5"
 
 [[test]]
@@ -30702,8 +30739,9 @@ id = "tests/DescriptorTest.cpp::Descriptor_flatten_unflatten"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L140-L221"
-module = "core"
+module = "text"
 status = "todo"
+reason = "needs SkWriteBuffer/SkReadBuffer (not ported yet; docs/design/text.md T9 owns the buffer port)"
 span_hash = "24e694e3f994cff56e6ff0cf437b462fb6e0f7fabb192692b677fcaf02b56291"
 
 [[test]]
@@ -30711,8 +30749,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_invalid_length"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L95-L107"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "556d2e308e2ccfa8c87020f0b974901ce040565e903c8c07685465399c029e37"
 
 [[test]]
@@ -30720,8 +30758,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_invalid_rec_size"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L84-L93"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "388484f64def3637c3d235ed247afa492e63eca2da9cfcbe691df9fc3f70cce8"
 
 [[test]]
@@ -30729,8 +30767,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_valid_more_tags"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L66-L82"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "f9681da4b072c02435021d6801f540ac48e82260c5fa7c014dfb2a7de92ba6e7"
 
 [[test]]
@@ -30738,8 +30776,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_valid_simple"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L37-L49"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "6ae2f52be4da76ae07edf434b40fbcc07cff06e26774d4eb816dcd945b96370d"
 
 [[test]]
@@ -30747,8 +30785,8 @@ id = "tests/DescriptorTest.cpp::Descriptor_valid_simple_extra_space"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DescriptorTest.cpp#L51-L64"
-module = "core"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "ffee74236f1e0f44295a5f75f40ddc60a628098c6b2b5463785e290ac954a746"
 
 [[test]]
@@ -30871,7 +30909,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L71-L113"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ea8d60471e15bacc3893be0fda07de8da14db7c783e97dd3e8ce755fbc6e7bd1"
 
 [[test]]
@@ -30880,7 +30918,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L173-L186"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "06346eb0b374423df2377a7cae8b62c246fbcc7cf3fc60f235e1285a29e5aa17"
 
 [[test]]
@@ -30889,7 +30927,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L117-L132"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e5be064383096abb81d7693bd4f16d2a253588737c8e9a384e6fdd2983362aa"
 
 [[test]]
@@ -30898,7 +30936,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DrawTextTest.cpp#L136-L169"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "80004528d61443a495cde070264de4958ee49c5a7449e9a97f1e468c85a4adff"
 
 [[test]]
@@ -31244,7 +31282,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FCITest.cpp#L175-L189"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "5d6f4db53c85aa283de62cf1c7dc928f2c4ffea05ac49d2f7587c8dc33befab8"
 
 [[test]]
@@ -31253,7 +31292,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FCITest.cpp#L61-L153"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "665377d10962f83581797a2285446d8d69bced8ec00e511e7f8f6578d36da36a"
 
 [[test]]
@@ -31262,7 +31302,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FCITest.cpp#L155-L173"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "4de4fb4e38639277e3e592862a93c997c14358bcd5fd2a262157bfdf3ea27573"
 
 [[test]]
@@ -31271,7 +31312,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FCITest.cpp#L191-L215"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "4d607644162dc19d10c7990c5676735b9ef184a5178f2238980c4852eed2b745"
 
 [[test]]
@@ -31714,7 +31756,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontHostStreamTest.cpp#L72-L157"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "173fc6f90562640f67cfd3b6575b1f55ea3fb88a4c3b7c9d5ba2fc75aa61c409"
 
 [[test]]
@@ -31723,7 +31765,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontHostTest.cpp#L293-L298"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1f7e81c0bf11c83bb8b24729d470a47672c76a2ae9c9fcafba61d5a8a3d1db42"
 
 [[test]]
@@ -31732,7 +31774,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L353-L373"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "35480bc04819058601ce2931fe8f228541e0e81e68db0ea1fbc522e5475e8735"
 
 [[test]]
@@ -31741,7 +31784,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L215-L273"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "ba3802e015c6b9185872bad90eca7871a4eb9424d1b13d5404d50ca38602d4ee"
 
 [[test]]
@@ -31750,7 +31794,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L330-L351"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "2cb5781b1a0a5f1cbf07808ff24cc8d2b547eaba00f0552d8b1d5bce2a5ccb13"
 
 [[test]]
@@ -31759,7 +31804,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L275-L305"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "ce882cd78c9f95b83033b21be0aa72a0659c3982d4b8df61393f7905283cada5"
 
 [[test]]
@@ -31768,7 +31814,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L307-L328"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "2064f7d6b6c830763a8ffc307cb74451de71ac0faec6a5ee79d9538534324d9c"
 
 [[test]]
@@ -31777,7 +31824,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L466-L491"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "9e4dacca4d33929541acad1056f32693ffd4c3c7598084f932b3e5129500d819"
 
 [[test]]
@@ -31786,7 +31834,8 @@ kind = "unit"
 macro = "DEF_TEST_SCANNERS"
 source = "tests/FontMgrAndroidParserTest.cpp#L389-L464"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "da6c5ed1450f55164293947ed3c0eb6ee104560bf4956d0f8cc99bbd7ac1ee7c"
 
 [[test]]
@@ -31795,7 +31844,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L137-L200"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "72f58e73c458191f76ee6ee8ca39f2741b6aba0aa795fdbae1d9ac8e9afc5556"
 
 [[test]]
@@ -31804,7 +31854,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L264-L270"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FontConfig) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "10a05dae170b8df1a540ba7f9784a52a3be0258775e8f2aee86c2a6cb51c7f5d"
 
 [[test]]
@@ -31813,7 +31864,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L254-L260"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "7ca720122f011067aaef4851b5a4222bf698caa26075b1794b913fc24eef8182"
 
 [[test]]
@@ -31832,7 +31884,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrFontConfigTest.cpp#L330-L510"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "5a445007cf1d6fa683a0a57870ba2417bb9b1aef158a2aaed24acab03e6d9125"
 
 [[test]]
@@ -31841,7 +31894,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L75-L102"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "96753869dd08ceca424bf484a4232b95a1f8b8e604efff257c9116a22da125da"
 
 [[test]]
@@ -31850,7 +31903,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L41-L68"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e23b9bbce76695ad7508efd66067398a641b1cf7bf2c531d598209ba93aab744"
 
 [[test]]
@@ -31859,7 +31912,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L104-L212"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9e27259c3f4ad4e49aa553c624ea8ed501a5dbd84c04cdcdaa7b7562e5fb303a"
 
 [[test]]
@@ -31868,7 +31921,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L214-L218"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "217033c2392799559a56df81251d8672e821304758796f57803b8d8a2924d932"
 
 [[test]]
@@ -31877,7 +31930,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L858-L867"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "cab8d0210ca1529386798ef44d117473fabb17bde714ec2a0f537d2ea012845d"
 
 [[test]]
@@ -31886,7 +31939,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L220-L242"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "543124f6c367447c4f32df175b5ce34961ed6d773c7cc74eab213a81f09b88cc"
 
 [[test]]
@@ -31895,7 +31948,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontMgrTest.cpp#L244-L856"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "057e13b2a4b35e3b773432e98be50f7bd0d79948510be3a7c492df6dac78c979"
 
 [[test]]
@@ -31904,7 +31957,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontNamesTest.cpp#L243-L246"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4952e0621cdd6b1d02b64a7654e7167cee40eb8a4db3af2fa9263af609add1bd"
 
 [[test]]
@@ -31913,7 +31966,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L25-L27"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "01fa9fe2501e71ef2ac53d8fd471f763016fc83cc55f28f9cb4f3142893746fb"
 
 [[test]]
@@ -31922,7 +31975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L17-L19"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1e89f7e4948a711b81b9b731b59a36d4fb744b56344b21b7a11727c0c22ea642"
 
 [[test]]
@@ -31931,7 +31984,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L21-L23"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "94eebe37638d9285bcc5ea6914ccd6545fe76fb95b55cd43fbf60e7433b1676a"
 
 [[test]]
@@ -31940,7 +31993,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FontationsTest.cpp#L13-L15"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0da4fa9f077c921cba3dd3d548227bcd2fa44a98480f8c215faa928b519fde8"
 
 [[test]]
@@ -31949,7 +32002,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FreeTypeTest.cpp#L27-L29"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "bba2f2e5caad251c87e7a4f9de780fc4d1a816eff4509e272a81580bf743c713"
 
 [[test]]
@@ -31958,7 +32012,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FreeTypeTest.cpp#L15-L17"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "21508c14444d9844c411dad82e2a0cbf25356df1c4106ed027aed8d5f0922b12"
 
 [[test]]
@@ -31967,7 +32022,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FreeTypeTest.cpp#L19-L21"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "2e84edf5cde01d604e96b2f9fd3dcf3b486cb991a60d6727e99b088aded9ac99"
 
 [[test]]
@@ -31976,7 +32032,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontScanner_FreeTypeTest.cpp#L23-L25"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "45fd60ba68d8c9a17fbe812b78054e8416c81960592bd5f5be7daafbc2c411f1"
 
 [[test]]
@@ -31985,7 +32042,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontTest.cpp#L74-L116"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4862e87eb273b206502f89e780f3a32644a0f6394027f4e06a82e613abdc00fb"
 
 [[test]]
@@ -31994,7 +32051,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L188-L197"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "98dd70ffed947a3f4208667b5da2e467629d18d195d2978f6dadb624dc8dfde7"
 
 [[test]]
@@ -32003,7 +32061,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L284-L286"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "7f433e851ff1d47afb75d7edbca2c64f56a3bb67594a84240a92c8cf1b162caa"
 
 [[test]]
@@ -32012,7 +32071,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L208-L210"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "bfb97daa70e3111a0139bfb8dd3ca89eef0bd032603f67d6a1c19a6e8ac40b73"
 
 [[test]]
@@ -32021,7 +32081,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L199-L201"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "4f7735ba525b6cef5a33a23da456c3772b8ad3c5ea986497b69521ab5d1733ab"
 
 [[test]]
@@ -32030,7 +32091,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L288-L290"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "06d57175c3e4f90f3d21199e6b442e5ed07b3783afc7696a3a593dfdb63213fe"
 
 [[test]]
@@ -32039,7 +32101,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L256-L258"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "e2b96436db8a8306b53020ad81366a7d7514952e4f4789d395bf9fb5fb3e4bf6"
 
 [[test]]
@@ -32048,7 +32111,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L252-L254"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b1a06a5618d6f03c34fb4f7fc7277fa2ba3827de2f1ad1a0c0b2fc7183d73124"
 
 [[test]]
@@ -32057,7 +32121,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L296-L298"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "d9135ae053c13d3e9479946ee74ce5694c45a9a0991a1230637b479aceb490e2"
 
 [[test]]
@@ -32066,7 +32131,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L220-L222"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "175f1c409c2b557fc0312e4929f3dc49fa2ab2ebebf912bf794a75217584e174"
 
 [[test]]
@@ -32075,7 +32141,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L224-L226"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "93a5e50320b323e08a94ccfa566e5b095c291c8c2e1d4594096d807e168fed17"
 
 [[test]]
@@ -32084,7 +32151,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L276-L278"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "0ec02aa39ee5fd6f57719e1b4b05707e032a29a58c177e336c78253830f8ff8a"
 
 [[test]]
@@ -32093,7 +32161,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L212-L214"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "f27cd1291202d32e2d81431b8dd566c7039bf7f5a5ca351ab962f1c143a3d6a0"
 
 [[test]]
@@ -32102,7 +32171,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L264-L266"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "6033c0360c76b3651a3316c538bef4e1e776d0fc54ac6c1b07be32d657fbd598"
 
 [[test]]
@@ -32111,7 +32181,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L240-L242"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "8f6422def04918b5df1ff51d0af5e5cd168d17d9237cf8ed63f19c6c325df640"
 
 [[test]]
@@ -32120,7 +32191,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L228-L230"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "f2578ee7239007e68a281895d1285a2a2e4ba764c7976dbed7d8d54ba74f249e"
 
 [[test]]
@@ -32129,7 +32201,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L260-L262"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "04413e70fabb81981966a64cc41d7111afc3a891d1d0ffc74652c7297075c702"
 
 [[test]]
@@ -32138,7 +32211,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L280-L282"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "9cdd111fe19e78089bc1023be819120f3a9ada98b8709b9554145267678b8699"
 
 [[test]]
@@ -32147,7 +32221,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L272-L274"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "3447a40dac5693279fec0ed228f73ae90483cf116763cb153184780724ec0d98"
 
 [[test]]
@@ -32156,7 +32231,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L236-L238"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b348286bbee8295e8d2fbef39682fae12aeb718cc4e75dfe11ba13e2fc704589"
 
 [[test]]
@@ -32165,7 +32241,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L268-L270"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "d712a518458e70515dfe8209e614b66ab9afae44f13f1a141522ee2b2788fb1c"
 
 [[test]]
@@ -32174,7 +32251,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L232-L234"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "97c0a9c2c7b131c2cda63e4135bbc445364614bfb89383ecc06a6b5875db5294"
 
 [[test]]
@@ -32183,7 +32261,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L248-L250"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "3ce4ad467f4c9c4ee12eed7c0f041e1e3c250e72875874936f04fa67d94f379b"
 
 [[test]]
@@ -32192,7 +32271,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L244-L246"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "0bf91a47b2e32c38a6dc7d1b2aebae7222d04280ffa18cef7c3c04394e67ca56"
 
 [[test]]
@@ -32201,7 +32281,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L216-L218"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "b36f362f36347e841a62fa863b3fb6bc781309d24bf93e271e8eeba2f1a43e4c"
 
 [[test]]
@@ -32210,7 +32291,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L292-L294"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "ed830c89b938d334cb21d0d9588fd6ac7fc9c5c1250051de774d167d83dbeb3a"
 
 [[test]]
@@ -32219,7 +32301,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsFtCompTest.cpp#L203-L206"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "9698304d9976e8c7bdc27cadfb3edcc08b3ea029676645ddffbbe6faa8d32241"
 
 [[test]]
@@ -32228,7 +32311,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L116-L122"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ca8e7fc69b0336d48ef6955c8661024c21a7d76c48cfdd20511b1a9c093bfdc7"
 
 [[test]]
@@ -32237,7 +32320,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L87-L94"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d3f40348a02ee2434e9140a53c460c8bc5f12623001cb26897223fcbfb7080c1"
 
 [[test]]
@@ -32246,7 +32329,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L80-L85"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9726d2f540200a89f9aaafa0a9538bd16722599af5ccf724139d0058459afddb"
 
 [[test]]
@@ -32255,7 +32338,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L102-L106"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4db5d006f583c095457a303128633cf6217e2ab46d808ec31bba559c604f27ed"
 
 [[test]]
@@ -32264,7 +32347,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L108-L114"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1e9d3c95d501c109933c6804ccf3cf0fc1240d0f228f939fbaa2d9cbe553a2fa"
 
 [[test]]
@@ -32273,7 +32356,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L96-L100"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8ad8f92505cc726667e2bf973bf0590915cc6ac114369966d3b8a61dc9aff0e9"
 
 [[test]]
@@ -32282,7 +32365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L275-L301"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2ba9f0bd776e05c47a4831d008c685e3fc075eb49e29db3e59a092f7e3f543a4"
 
 [[test]]
@@ -32291,7 +32374,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L303-L334"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3c0ee51e03d87107e231411a3be8ca57294894e4f7b39d7a68836d5cacf3ffb9"
 
 [[test]]
@@ -32300,7 +32383,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L124-L183"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2b613ea76e17c62a88e8ce25025f3c7f1a53bc596aec58fa64af4a727e3c102f"
 
 [[test]]
@@ -32309,7 +32392,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L185-L200"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "12222ba77a35d123317eb3a0fce8e05bd321c6c011220f3636ab6859945901e9"
 
 [[test]]
@@ -32318,7 +32401,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L245-L261"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0e418c040d5eca0172f5e3ad3e74391a989e33581341d16606bdd479d516c4a8"
 
 [[test]]
@@ -32327,7 +32410,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L263-L273"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "156a8971d6b0e0d2e26c229d5f8b28aba2cc9d1a87de24b98afdc8968fbf70d1"
 
 [[test]]
@@ -32336,7 +32419,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/FontationsTest.cpp#L202-L243"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "8fa87d8e29d9731da2603545cd35dc0fc8059598ae225eee86bbc282275463b1"
 
 [[test]]
@@ -36817,7 +36900,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L208-L244"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b16c2eb134ce6f0f128e4895e95b4e2d8d048185ad9d69668965dad29fff177a"
 
 [[test]]
@@ -36880,7 +36963,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L149-L160"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6a99824825463a8ad4924f7abf6a12c3d8e1836c2b936a633841e11751fa16fc"
 
 [[test]]
@@ -41565,6 +41648,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L577-L585"
 module = "text"
 status = "todo"
+reason = "needs picture serialization (SkPicture::serialize/MakeFromData, SkPictureData typeface set), not ported (docs/design/text.md §6, T16)"
 span_hash = "59d56f0bce41747562c63b2d13acb8ecd4041a98694f2d7294012f29e260a897"
 
 [[test]]
@@ -41573,7 +41657,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L680-L683"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "76ee71b1321b5235db7914e139e18af18f8e9420ceb36fb6a19dc6bd9fe80730"
 
 [[test]]
@@ -41582,7 +41666,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L685-L720"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "399fad9724915821ddde413e29726ac17d5a938f6c429f7cece4a8b00094a869"
 
 [[test]]
@@ -41591,7 +41675,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L750-L783"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3e4ac39537133f6e0cb073bf83e12a02b5053fafa827a7393a864f85fd41752c"
 
 [[test]]
@@ -41600,7 +41684,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1190-L1204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7998cea25710af3b30bacbb2925008290f7ab5c5dc88eb583b7d831ef8f0a166"
 
 [[test]]
@@ -41609,7 +41693,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1166-L1188"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "13f8a192b2643d2e12bbc583b232ef8568e74d3bcb6231a56fac89cfabb2cce5"
 
 [[test]]
@@ -42155,7 +42239,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkFontMetricsPrivTest.cpp#L22-L51"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0f7d86a4726e2462c894396f393db381c4991c2750721732021d1ae56c2ddbe9"
 
 [[test]]
@@ -42182,7 +42266,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L36-L63"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b727b5e2f9da24e62795c043bbdefd1f02ccdb1a41610df985864dc9e84324b4"
 
 [[test]]
@@ -42191,7 +42275,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L88-L129"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e7d3e7b234b769636e26f98fe0a5d9013df5d1b9fc30848e2ad9e55f5480f4d7"
 
 [[test]]
@@ -42201,6 +42285,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L267-L330"
 module = "text"
 status = "todo"
+reason = "needs SkGlyph::flattenMetrics/flattenDrawable/MakeFromBuffer (glyph serialization, T5), not ported"
 span_hash = "c63f9dee1a4b577a6bee13d73dc911dac585fdcf19a2b42edf00c439a4035c2e"
 
 [[test]]
@@ -42209,7 +42294,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L131-L194"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "832e0c82f3f83445b17ec26998b09e96ee16535145eb78cee986660ce927f614"
 
 [[test]]
@@ -42218,7 +42303,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L196-L265"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6a616eb05f585325ae2d22f7a4c77d008234f3cb5cf90cca1bfd3627f2f13295"
 
 [[test]]
@@ -42228,6 +42313,7 @@ macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L332-L375"
 module = "text"
 status = "todo"
+reason = "needs SkWriteBuffer/SkReadBuffer and picture flattening (not ported; docs/design/text.md T5 follow-up)"
 span_hash = "54c4131fe232d66df47f9691cf73b7825f49f7881645fe85c1a5dadb16e8baab"
 
 [[test]]
@@ -42235,7 +42321,7 @@ id = "tests/SkGlyphTest.cpp::SkPictureBackedGlyphDrawable_RejectsAnyShadersThatN
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkGlyphTest.cpp#L465-L498"
-module = "sksl"
+module = "text"
 status = "todo"
 span_hash = "c4da3936b011501e75a2e716fecf8a7a69f74d245d9063f44c8205b10abd5da1"
 
@@ -43788,7 +43874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkRemoteGlyphCacheTest.cpp#L1403-L1412"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b563962d55f08c2cf624c7c26ed5daf83e9cfe5eb1f15c7b9c4b2b5906facc13"
 
 [[test]]
@@ -47184,7 +47270,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStrikeCacheTest.cpp#L23-L63"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "261c28a3ade67fc0c1ec8de601aa9d0b90c16b727bdd716a772e67b2f3cd09fc"
 
 [[test]]
@@ -47193,7 +47279,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L109-L175"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f5d05cda730c39f1c16f2a9cce764a78bb1e640f5878028f21f80337b7241ba9"
 
 [[test]]
@@ -47203,6 +47289,7 @@ macro = "DEF_TEST"
 source = "tests/SkStrikeTest.cpp#L200-L295"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface and remote strike flattening (T23)"
 span_hash = "d14dc33247823ab02f49c3095708c1e3c19cf4d6ada2eac09802a1dad829dde1"
 
 [[test]]
@@ -47713,6 +47800,7 @@ macro = "DEF_TEST"
 source = "tests/StrikeForGPUTest.cpp#L27-L61"
 module = "text"
 status = "todo"
+reason = "needs T10 portable typeface and strike promise flattening (T23)"
 span_hash = "2f1bd011453b797e9412e8b8324c69942e1d1d114a9e6ffd03132376d426c35d"
 
 [[test]]
@@ -48833,6 +48921,7 @@ macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L621-L649"
 module = "text"
 status = "todo"
+reason = "needs picture serialization (SkPicture::serialize/MakeFromData), not ported (docs/design/text.md §6, T16), and a drawable typeface (SkCustomTypefaceBuilder, T17). Text in pictures itself is covered by tests/tests/text_in_picture.rs"
 span_hash = "296e151468fec146d64073b3d7d0f264d21de943236b52447cea5a6e5c29884a"
 
 [[test]]
@@ -48841,7 +48930,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L473-L485"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c200a8aafe737f4ffe4e755c673123629f693c45e272128768aaa30ea2f525b1"
 
 [[test]]
@@ -48850,7 +48939,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L335-L338"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5420930367a1584d5f3d92301d172e94ed171c0047448c51412a3735bde68009"
 
 [[test]]
@@ -48859,7 +48948,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L344-L377"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "229145255d0e10627abe197326b63268bf812e01335d1f012f0e58f7ee1a539f"
 
 [[test]]
@@ -48868,7 +48957,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L519-L547"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "aaf0aa50b281bd1479b7f302c4615122e4114bd24ac47b7711638eb5185bfe4a"
 
 [[test]]
@@ -48877,7 +48966,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L487-L517"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "93155586395a6d01260b8ac681d90431844399f3fbf9e5d84b56f5dab561fef8"
 
 [[test]]
@@ -48886,7 +48975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L340-L342"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3c1a1dcabb321a39100a212b44e91746f284941b6394f0fcea5118cb0262a7fa"
 
 [[test]]
@@ -48895,7 +48984,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TextBlobTest.cpp#L440-L471"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "6ea32fb8cd6b644cb5cd8580c0a8476a1e4031b59c2235195b0669787aa7ebd9"
 
 [[test]]
@@ -49173,7 +49262,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceMacTest.cpp#L31-L192"
 module = "text"
-status = "todo"
+status = "excluded"
+reason = "platform font backend (FreeType/FontConfig/Android/CoreText) out of scope; skia-rust ships Fontations only (docs/design/text.md §2.3)"
 span_hash = "71ce255958c23bcc725437a77891fcbdb6d34789da40a9080d9029926d9d2e59"
 
 [[test]]
@@ -49182,7 +49272,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L784-L798"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "aac4be6e72364bf85f05f13454fe5596753671d6fdeaf58b7ee9534f11061ab3"
 
 [[test]]
@@ -49191,7 +49281,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L309-L331"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7f6467aad0a5766c094be33c86484afe81d7317291be0b441659997e33b339ea"
 
 [[test]]
@@ -49200,7 +49290,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L760-L782"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "980b438d6c98edf66ac71ce598bc937afc42de5497c1ba315c99c6cbeab33c0b"
 
 [[test]]
@@ -49209,7 +49299,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L502-L514"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4cc1e6eab4ee4583fae41330c732aed42445e9662419054622568f7682c29865"
 
 [[test]]
@@ -49218,7 +49308,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L333-L462"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "53724532f8fa39638e9ff7f1a359efb4cfa65de3e2f0d33e90673ce3ddb71e45"
 
 [[test]]
@@ -49227,7 +49317,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L516-L653"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "36869ed091c64de8084db693834fa399d2c62f24ef9ff5a8b52e9ba3f5d7005f"
 
 [[test]]
@@ -49236,7 +49326,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L667-L686"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b0932da8a5221b0c96ed96c0dc59fec7e6ec026e1fbf97c814b3545cd6891dd0"
 
 [[test]]
@@ -49244,8 +49334,8 @@ id = "tests/TypefaceTest.cpp::TypefaceGlyphToUnicode"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L131-L159"
-module = "codec"
-status = "todo"
+module = "text"
+status = "passing"
 span_hash = "bec05c8d3886a2ab87578fa1ae567ddaf993eb037b9ad7320a3c6e080b1c0f5c"
 
 [[test]]
@@ -49254,7 +49344,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L266-L292"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1367e87fe196856efc80dc40c4f20c7c53bc7cae02dcb7c5a28bc1bb219b22aa"
 
 [[test]]
@@ -49263,7 +49353,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L250-L264"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2bca4d423dc856fb23f7adf72b38901b86f02a67330811b23333d44428cd5910"
 
 [[test]]
@@ -49272,7 +49362,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L294-L307"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "7881781a7af706ee50806fcbe94e4e6fdefb37fdf3a72bab43b83ba54456b7ce"
 
 [[test]]
@@ -49281,7 +49371,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L110-L125"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "44c2f5877d52ab94cec9924156b3cc4e08bfc03f9cd707abf0ce35186662b932"
 
 [[test]]
@@ -49290,7 +49380,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L161-L248"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c7ff1dba34beea3727efd659cca03103b2e1098f39151f7b845fc589df2a4155"
 
 [[test]]
@@ -49299,7 +49389,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L464-L500"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4a7eef3f677044326a695d1b106de160733c44f64b44194c0d21f8aa827d792a"
 
 [[test]]
@@ -49309,6 +49399,7 @@ macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L717-L755"
 module = "text"
 status = "todo"
+reason = "needs ToolUtils::EmojiSample(kTest) (TestSVGTypeface, T20)"
 span_hash = "700ee7e8d34ea7a3e6fea13ae26d228684cba29da97a05bbb30e840f493e684f"
 
 [[test]]
@@ -49317,7 +49408,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L710-L715"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f41ea4f17147feb42c55c6ec05b515687ac1d9632b23b12f9fd871f72159c00a"
 
 [[test]]

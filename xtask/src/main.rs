@@ -2,6 +2,7 @@
 
 mod cpp;
 mod cpu_probe;
+mod gen_test_fonts;
 mod inventory;
 mod oracle;
 mod publish;
@@ -39,6 +40,9 @@ enum Command {
         #[command(subcommand)]
         command: OracleCommand,
     },
+    /// Generate the portable test font data (`tests/tools/src/fonts/test_font_data`) from
+    /// Skia's `tools/fonts/test_font_*.inc` (needs `cargo xtask skia fetch`).
+    GenTestFonts,
     /// Print this host's CPU tiers and `rcp`/`rsqrt` estimate fingerprints
     /// (`docs/design/raster-pipeline.md` §1.4, §4.6).
     CpuProbe {
@@ -249,6 +253,7 @@ fn main() -> Result<()> {
             OracleCommand::Compare { tier, dir } => oracle::compare(&root, &tier, &dir),
             OracleCommand::Publish { dry_run } => publish::publish(&root, dry_run),
         },
+        Command::GenTestFonts => gen_test_fonts::run(&root),
         Command::CpuProbe { dump_tables } => cpu_probe::probe(dump_tables.as_deref()),
     }
 }
