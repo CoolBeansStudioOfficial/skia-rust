@@ -18532,8 +18532,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1058-L1058"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "fae3db955f229be6796214532c2512ebc8ae2eaa6799bfc72641ddbfab34b755"
 
 [[test]]
@@ -18542,8 +18541,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1057-L1057"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "e75ded231f0017cd051ae44855371912fd55f30b9fca5e1f8e774ee3392c6fd2"
 
 [[test]]
@@ -18553,6 +18551,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1061-L1061"
 module = "effects"
 status = "todo"
+reason = "needs TextureSetRenderer with color, image and mask filter paints (effects); not ported"
 span_hash = "a4a296604e5ae628158a09de482008e91ff1c1cad67625110dd9f06b6b402e12"
 
 [[test]]
@@ -18562,7 +18561,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1060-L1060"
 module = "raster"
 status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+reason = "needs the YUV texture-set renderer (JPEG decoded to YUV planes) and TextureSetRenderer batching; not ported"
 span_hash = "e3c6f4ceb0fc30242793ca02a4d9ec886a7aa21225a11c2a558445463bfb8bd6"
 
 [[test]]
@@ -18572,6 +18571,7 @@ macro = "DEF_GM"
 source = "gm/compositor_quads.cpp#L1059-L1059"
 module = "effects"
 status = "todo"
+reason = "needs TextureSetRenderer with shader paints (effects); not ported"
 span_hash = "9dca3a98ae0a2421a79916683e05a3bdf84662cf6859cfd9520dfea7a2751787"
 
 [[test]]
@@ -18812,8 +18812,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1162942.cpp#L24-L59"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "3219ede128c8532b1e6a4d199b18297d94db580d9c6b64e2d1a23fdbc9ae8e1d"
 
 [[test]]
@@ -18822,8 +18821,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1167277.cpp#L17-L41"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "5048e1f8374db90b79d4d5744c7e6e6c15db896554f2f866f29a09f1ebc6c059"
 
 [[test]]
@@ -18832,8 +18830,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1174186.cpp#L18-L43"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "6e933eb1e1a6cb7851df7c09af5cee3802cfdec9398bef539710fba056dd610c"
 
 [[test]]
@@ -18852,8 +18849,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/crbug_1177833.cpp#L16-L98"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAQuad (edge-AA quads), which is not ported"
+status = "passing"
 span_hash = "c3689a8bea523e47e04fd2e87429727d8285428f1c400364b2a3c5bf4da68546"
 
 [[test]]
@@ -19643,8 +19639,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L364-L364"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
+status = "passing"
 span_hash = "b4f694e898ccca69039be2dc8a7e871c29ba50db8d066bebe37171b39090203a"
 
 [[test]]
@@ -19653,8 +19648,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L362-L362"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
+status = "passing"
 span_hash = "6943fbac3fe6a1f320856cc6ac9d861b13bf59eb68920af24a24b50ac1af8280"
 
 [[test]]
@@ -19663,8 +19657,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawimageset.cpp#L363-L363"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, which is not ported"
+status = "passing"
 span_hash = "77d41b0f516dea9a1f62ba02176e9a847101fd0158afcd6fb0d5154ff06f3fb1"
 
 [[test]]
@@ -19700,8 +19693,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawquadset.cpp#L257-L257"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvas::experimental_DrawEdgeAAImageSet, and it is GPU-oriented; neither is ported"
+status = "passing"
 span_hash = "f988364ff2e8db4ec9c03f9c1a6cb6791a66981f0a81d331fea2ff55bfd7222e"
 
 [[test]]
