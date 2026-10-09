@@ -19,8 +19,8 @@
 //! * `peek_pixels` and `access_top_layer_pixels` return guards ([`PeekedPixels`],
 //!   [`TopLayerPixels`]) because a `Pixmap` cannot outlive the `RefCell` borrow.
 //! * Not ported (TODO Phase 3, each a no-op or a documented simplification here):
-//!   text, drawables, shadows, meshes, annotations,
-//!   edge-AA quads (`SkFont`, ... are not ported); image filters on
+//!   text, drawables, shadows, meshes, annotations (`SkFont`, ... are not ported; the edge-AA
+//!   quad and image-set draws are, see [`Canvas::experimental_draw_edge_aa_quad`]); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
 //!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
@@ -74,6 +74,7 @@ use crate::rsxform::RSXform;
 use crate::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use crate::scalar::scalar;
 use crate::shader::Shader;
+use crate::shaders::ImageShader;
 use crate::size::ISize;
 use crate::slug::Slug;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
@@ -116,6 +117,95 @@ pub enum SrcRectConstraint {
     /// Sampling may bleed outside the source rect (`kFast_SrcRectConstraint`).
     #[default]
     Fast = 1,
+}
+
+bitflags::bitflags! {
+    /// Which edges of a quad are anti-aliased by [`Canvas::experimental_draw_edge_aa_quad`]
+    /// (`SkCanvas::QuadAAFlags`). Values outside the four edge bits are kept, as in C++, through
+    /// [`QuadAAFlags::from_bits_retain`].
+    // Port of: include/core/SkCanvas.h#L1713-L1721 (chrome/m156)
+    #[doc(alias = "SkCanvas::QuadAAFlags")]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+    pub struct QuadAAFlags: u32 {
+        /// `kLeft_QuadAAFlag`.
+        const LEFT = 0b0001;
+        /// `kTop_QuadAAFlag`.
+        const TOP = 0b0010;
+        /// `kRight_QuadAAFlag`.
+        const RIGHT = 0b0100;
+        /// `kBottom_QuadAAFlag`.
+        const BOTTOM = 0b1000;
+        /// `kNone_QuadAAFlags`.
+        const NONE = 0b0000;
+        /// `kAll_QuadAAFlags`.
+        const ALL = 0b1111;
+    }
+}
+
+/// One entry of an image set drawn by [`Canvas::experimental_draw_edge_aa_image_set`]
+/// (`SkCanvas::ImageSetEntry`).
+///
+/// skia-rust: the C++ default constructor (with a null image) is not ported: an entry always
+/// has its image. `fMatrixIndex < 0` is `matrix_index: None`.
+// Port of: include/core/SkCanvas.h#L1724-L1743 (chrome/m156)
+#[doc(alias = "SkCanvas::ImageSetEntry")]
+#[derive(Clone, Debug)]
+pub struct ImageSetEntry {
+    /// The image drawn by this entry (`fImage`).
+    pub image: Image,
+    /// The source rect of `image`, mapped to `dst_rect` like drawImageRect (`fSrcRect`).
+    pub src_rect: Rect,
+    /// The destination rect (`fDstRect`).
+    pub dst_rect: Rect,
+    /// The index into the pre-view matrices, or `None` for the identity (`fMatrixIndex`).
+    pub matrix_index: Option<usize>,
+    /// The alpha multiplied into the paint's alpha (`fAlpha`).
+    pub alpha: f32,
+    /// The edges to anti-alias (`fAAFlags`).
+    pub aa_flags: QuadAAFlags,
+    /// Whether the next four points of the dst clips are this entry's clip quad (`fHasClip`).
+    pub has_clip: bool,
+}
+
+impl ImageSetEntry {
+    /// An entry with every field given (`ImageSetEntry(image, srcRect, dstRect, matrixIndex,
+    /// alpha, aaFlags, hasClip)`).
+    // Port of: src/core/SkCanvas.cpp#L2918-L2927 (chrome/m156)
+    #[must_use]
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ constructor
+    pub fn new(
+        image: Image,
+        src_rect: Rect,
+        dst_rect: Rect,
+        matrix_index: Option<usize>,
+        alpha: f32,
+        aa_flags: QuadAAFlags,
+        has_clip: bool,
+    ) -> Self {
+        Self {
+            image,
+            src_rect,
+            dst_rect,
+            matrix_index,
+            alpha,
+            aa_flags,
+            has_clip,
+        }
+    }
+
+    /// An entry without a pre-view matrix or clip (`ImageSetEntry(image, srcRect, dstRect,
+    /// alpha, aaFlags)`).
+    // Port of: src/core/SkCanvas.cpp#L2929-L2935 (chrome/m156)
+    #[must_use]
+    pub fn new_simple(
+        image: Image,
+        src_rect: Rect,
+        dst_rect: Rect,
+        alpha: f32,
+        aa_flags: QuadAAFlags,
+    ) -> Self {
+        Self::new(image, src_rect, dst_rect, None, alpha, aa_flags, false)
+    }
 }
 
 bitflags::bitflags! {
@@ -2046,6 +2136,208 @@ impl CanvasState {
         self.draw_image_rect(image, &src, dst, sampling, paint, SrcRectConstraint::Fast);
     }
 
+    /// `SkCanvas::experimental_DrawEdgeAAImageSet`: routes a single filtered rect to
+    /// `drawImageRect`, and otherwise draws the set with `onDrawEdgeAAImageSet2`.
+    // Port of: src/core/SkCanvas.cpp#L1881-L1910 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+    fn experimental_draw_edge_aa_image_set(
+        &mut self,
+        image_set: &[ImageSetEntry],
+        dst_clips: &[Point],
+        preview_matrices: &[Matrix],
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        // Route single, rectangular quads to drawImageRect() to take advantage of image filter
+        // optimizations that avoid a layer.
+        if let Some(paint) = paint
+            && (paint.image_filter().is_some() || paint.mask_filter().is_some())
+            && image_set.len() == 1
+        {
+            let entry = &image_set[0];
+            // If the preViewMatrix is skipped or a positive-scale + translate matrix, we can apply
+            // it to the entry's dstRect w/o changing output behavior.
+            let can_map_dst_rect = entry.matrix_index.is_none_or(|i| {
+                let m = &preview_matrices[i];
+                m.is_scale_translate() && m.scale_x() > 0.0 && m.scale_y() > 0.0
+            });
+            if !entry.has_clip && can_map_dst_rect {
+                let mut dst = entry.dst_rect;
+                if let Some(i) = entry.matrix_index {
+                    dst = preview_matrices[i].map_rect(dst).0;
+                }
+                self.draw_image_rect(
+                    &entry.image,
+                    &entry.src_rect,
+                    &dst,
+                    sampling,
+                    Some(paint),
+                    constraint,
+                );
+                return;
+            }
+            // Else the entry is doing more than can be represented by drawImageRect
+        }
+        // Else no filter, or many entries that should be filtered together
+        self.on_draw_edge_aa_image_set2(
+            image_set,
+            dst_clips,
+            preview_matrices,
+            sampling,
+            paint,
+            constraint,
+        );
+    }
+
+    /// `SkCanvas::onDrawEdgeAAQuad`: a solid-color quad, drawn by the top device.
+    // Port of: src/core/SkCanvas.cpp#L2718-L2731 (chrome/m156)
+    fn on_draw_edge_aa_quad(
+        &mut self,
+        r: &Rect,
+        clip: Option<&[Point; 4]>,
+        edge_aa: QuadAAFlags,
+        color: Color4f,
+        mode: BlendMode,
+    ) {
+        debug_assert!(r.is_sorted());
+
+        let mut paint = Paint::default();
+        paint.set_color4f(color, None);
+        paint.set_blend_mode(mode);
+        if self.internal_quick_reject(r, &paint, None) {
+            return;
+        }
+
+        if self.predraw_notify() {
+            self.top_device_mut()
+                .draw_edge_aa_quad(r, clip, edge_aa, color, mode);
+        }
+    }
+
+    /// `SkCanvas::onDrawEdgeAAImageSet2`: draws an image set with the top device, or, for a
+    /// mask filter on a device that draws coverage masks, one quad per entry.
+    // Port of: src/core/SkCanvas.cpp#L2733-L2819 (chrome/m156)
+    fn on_draw_edge_aa_image_set2(
+        &mut self,
+        image_set: &[ImageSetEntry],
+        dst_clips: &[Point],
+        preview_matrices: &[Matrix],
+        sampling: &SamplingOptions,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) {
+        let count = image_set.len();
+        if count == 0 {
+            // Nothing to draw
+            return;
+        }
+
+        let real_paint = clean_paint_for_draw_image(paint);
+        let real_sampling = clean_sampling_for_constraint(sampling, constraint);
+
+        // We could calculate the set's dstRect union to always check quickReject(), but we can't
+        // reject individual entries and Chromium's occlusion culling already makes it likely that
+        // at least one entry will be visible. So, we only calculate the draw bounds when it's
+        // trivial (count == 1), or we need it for the autolooper (since it greatly improves image
+        // filter perf).
+        let needs_auto_layer =
+            real_paint.image_filter().is_some() || real_paint.mask_filter().is_some();
+        let set_bounds_valid = count == 1 || needs_auto_layer;
+        let mut set_bounds = image_set[0].dst_rect;
+        if let Some(i) = image_set[0].matrix_index {
+            // Account for the per-entry transform that is applied prior to the CTM when drawing
+            set_bounds = preview_matrices[i].map_rect(set_bounds).0;
+        }
+        if needs_auto_layer {
+            for entry in &image_set[1..] {
+                let mut entry_bounds = entry.dst_rect;
+                if let Some(i) = entry.matrix_index {
+                    entry_bounds = preview_matrices[i].map_rect(entry_bounds).0;
+                }
+                set_bounds.join_possibly_empty_rect(entry_bounds);
+            }
+        }
+
+        // If we happen to have the draw bounds, though, might as well check quickReject().
+        if set_bounds_valid && self.internal_quick_reject(&set_bounds, &real_paint, None) {
+            return;
+        }
+
+        if real_paint.mask_filter().is_some()
+            && self.top_device().use_draw_coverage_mask_for_mask_filters()
+        {
+            // Route mask-filtered drawEdgeAAImageSets to drawEdgeAAQuad() or drawImageRect() to
+            // use the auto-layer for mask filters, which require all shading to be encoded in the
+            // paint.
+            let mut dst_clip_index = 0;
+            for entry in image_set {
+                let mut image_paint = real_paint.clone();
+                let (draw_dst_rect, shader) = ImageShader::make_for_draw_rect(
+                    &entry.image,
+                    &image_paint,
+                    sampling,
+                    entry.src_rect,
+                    entry.dst_rect,
+                    constraint == SrcRectConstraint::Strict,
+                );
+                if draw_dst_rect.is_empty() || shader.is_none() {
+                    return;
+                }
+                image_paint.set_shader(shader);
+                if let Some(layer) =
+                    self.about_to_draw(&image_paint, Some(&draw_dst_rect), PredrawFlags::NONE)
+                {
+                    // Since we can't call mapRect to apply any preview matrix and drawEdgeAAQuad
+                    // doesn't take an optional matrix, we can modify the local-to-device matrix
+                    // of the layers top device.
+                    if let Some(i) = entry.matrix_index {
+                        let device = self.top_device_mut();
+                        let m = M44::concat(
+                            device.state().local_to_device44(),
+                            &M44::from(&preview_matrices[i]),
+                        );
+                        device.state_mut().set_local_to_device(&m);
+                    }
+
+                    // Call drawEdgeAAImageSet on each image one at a time, to correctly paint the
+                    // image.
+                    let clip = entry.has_clip.then(|| quad_at(dst_clips, dst_clip_index));
+                    self.top_device_mut().draw_edge_aa_quad(
+                        &draw_dst_rect,
+                        clip,
+                        entry.aa_flags,
+                        layer.paint().color4f(),
+                        BlendMode::SrcOver,
+                    );
+                    self.end_auto_layer(&layer);
+                }
+                dst_clip_index += 4 * usize::from(entry.has_clip);
+            }
+            return;
+        }
+
+        if let Some(layer) = self.about_to_draw(
+            &real_paint,
+            if set_bounds_valid {
+                Some(&set_bounds)
+            } else {
+                None
+            },
+            PredrawFlags::NONE,
+        ) {
+            self.top_device_mut().draw_edge_aa_image_set(
+                image_set,
+                dst_clips,
+                preview_matrices,
+                &real_sampling,
+                layer.paint(),
+                constraint,
+            );
+            self.end_auto_layer(&layer);
+        }
+    }
+
     // Port of: src/core/SkCanvas.cpp#L2265-L2363 (chrome/m156)
     fn on_draw_image_rect2(
         &mut self,
@@ -2290,6 +2582,15 @@ fn clean_paint_for_draw_image(paint: Option<&Paint>) -> Paint {
         cleaned.set_path_effect(None);
     }
     cleaned
+}
+
+/// The four points of a clip quad starting at `start` in a dst-clip array (`dstClips + i`).
+///
+/// skia-rust: an out-of-range quad is a panic here, where C++ would read past the array.
+fn quad_at(dst_clips: &[Point], start: usize) -> &[Point; 4] {
+    dst_clips[start..start + 4]
+        .try_into()
+        .expect("a dst clip quad has four points")
 }
 
 // Port of: src/core/SkCanvas.cpp#L2252-L2263 (chrome/m156)
@@ -3997,6 +4298,59 @@ impl Canvas {
             }
         }
         drop(state);
+        self
+    }
+
+    /// Draws a solid-color rect whose edges are anti-aliased independently, clipped by `clip` if
+    /// it is `Some` (`experimental_DrawEdgeAAQuad`). `clip` is ordered top-left, top-right,
+    /// bottom-right, bottom-left, and must lie inside `rect`. Only solid colors are drawn, so no
+    /// full paint is taken.
+    // Port of: src/core/SkCanvas.cpp#L1873-L1879 (chrome/m156)
+    #[doc(alias = "experimental_DrawEdgeAAQuad")]
+    pub fn experimental_draw_edge_aa_quad(
+        &self,
+        rect: impl AsRef<Rect>,
+        clip: Option<&[Point; 4]>,
+        aa_flags: QuadAAFlags,
+        color: impl Into<Color4f>,
+        mode: BlendMode,
+    ) -> &Self {
+        // Make sure the rect is sorted before passing it along
+        self.state.borrow_mut().on_draw_edge_aa_quad(
+            &rect.as_ref().sorted(),
+            clip,
+            aa_flags,
+            color.into(),
+            mode,
+        );
+        self
+    }
+
+    /// Draws the entries of `image_set` (`experimental_DrawEdgeAAImageSet`): each is drawn like
+    /// drawImageRect with its own anti-aliased edges, optional clip quad (the next four points of
+    /// `dst_clips` when `has_clip`) and pre-view matrix (`preview_matrices`). Empty slices stand
+    /// for C++'s null arrays. An optional `paint` applies to each entry, as for drawImageRect.
+    // Port of: src/core/SkCanvas.cpp#L1881-L1910 (chrome/m156)
+    #[doc(alias = "experimental_DrawEdgeAAImageSet")]
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+    pub fn experimental_draw_edge_aa_image_set(
+        &self,
+        image_set: &[ImageSetEntry],
+        dst_clips: &[Point],
+        preview_matrices: &[Matrix],
+        sampling: impl Into<SamplingOptions>,
+        paint: Option<&Paint>,
+        constraint: SrcRectConstraint,
+    ) -> &Self {
+        let sampling = sampling.into();
+        self.state.borrow_mut().experimental_draw_edge_aa_image_set(
+            image_set,
+            dst_clips,
+            preview_matrices,
+            &sampling,
+            paint,
+            constraint,
+        );
         self
     }
 

@@ -4,7 +4,9 @@
 // Ported from Skia: include/gpu/graphite/GraphiteTypes.h (the resource-related enums so far)
 
 //! Public Graphite enums (`include/gpu/graphite/GraphiteTypes.h`). Only the ones the resource
-//! model needs are ported so far; the recording/submission types come with the context.
+//! model and the recorder need are ported so far; the submission types come with the context.
+
+use crate::gpu::gpu_types::{CallbackResult, GpuStats, GpuStatsFlags};
 
 /// Is a lazy proxy fulfilled once or on every insertion.
 // Port of: include/gpu/graphite/GraphiteTypes.h#L216-L219 (chrome/m156)
@@ -81,5 +83,65 @@ pub const fn to_sample_count(sample_count: u32) -> SampleCount {
         SampleCount::Two
     } else {
         SampleCount::One
+    }
+}
+
+/// The finished proc called when a `Recording` has finished executing on the GPU: with
+/// `CallbackResult::Success` if the work completed, `Failed` in all other cases.
+///
+/// Skia's `GpuFinishedProc` + `GpuFinishedContext` pair is a closure that owns its context.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L31-L32 (chrome/m156)
+pub type GpuFinishedProc = Box<dyn FnOnce(CallbackResult) + Send>;
+
+/// `GpuFinishedWithStatsProc`.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L34-L36 (chrome/m156)
+pub type GpuFinishedWithStatsProc = Box<dyn FnOnce(CallbackResult, &GpuStats) + Send>;
+
+/// Provides a finished proc and the stats it wants, to be called when the work in a
+/// `Recording` (or everything recorded before an `insertRecording()`) finishes. If the
+/// `Recording` is never inserted, or an error happens, the proc is called with
+/// `CallbackResult::Failed`.
+// Port of: include/gpu/graphite/GraphiteTypes.h#L163-L173 (chrome/m156)
+#[doc(alias = "skgpu::graphite::InsertFinishInfo")]
+#[derive(Default)]
+pub struct InsertFinishInfo {
+    /// `fFinishedProc`.
+    pub finished_proc: Option<GpuFinishedProc>,
+    /// `fFinishedWithStatsProc`.
+    pub finished_with_stats_proc: Option<GpuFinishedWithStatsProc>,
+    /// `fGpuStatsFlags`.
+    pub gpu_stats_flags: GpuStatsFlags,
+}
+
+impl InsertFinishInfo {
+    /// `InsertFinishInfo(context, proc)`.
+    #[must_use]
+    pub fn new(finished_proc: GpuFinishedProc) -> Self {
+        Self {
+            finished_proc: Some(finished_proc),
+            ..Self::default()
+        }
+    }
+
+    /// `InsertFinishInfo(context, withStatsProc)`.
+    #[must_use]
+    pub fn with_stats(finished_with_stats_proc: GpuFinishedWithStatsProc) -> Self {
+        Self {
+            finished_with_stats_proc: Some(finished_with_stats_proc),
+            ..Self::default()
+        }
+    }
+}
+
+impl std::fmt::Debug for InsertFinishInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InsertFinishInfo")
+            .field("finished_proc", &self.finished_proc.is_some())
+            .field(
+                "finished_with_stats_proc",
+                &self.finished_with_stats_proc.is_some(),
+            )
+            .field("gpu_stats_flags", &self.gpu_stats_flags)
+            .finish()
     }
 }

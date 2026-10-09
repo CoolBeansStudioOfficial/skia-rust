@@ -72,6 +72,32 @@ pub enum CallbackResult {
     Success = 1,
 }
 
+bitflags::bitflags! {
+    /// Which GPU statistics a submission should collect.
+    // Port of: include/gpu/GpuTypes.h#L83-L87 (chrome/m156)
+    #[doc(alias = "skgpu::GpuStatsFlags")]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+    pub struct GpuStatsFlags: u32 {
+        /// The GPU time the work took.
+        #[doc(alias = "kElapsedTime")]
+        const ELAPSED_TIME = 0b01;
+        /// The number of samples that passed the occlusion test.
+        #[doc(alias = "kOcclusionPassSamples")]
+        const OCCLUSION_PASS_SAMPLES = 0b10;
+    }
+}
+
+/// GPU statistics reported to finished procs.
+// Port of: include/gpu/GpuTypes.h#L90-L93 (chrome/m156)
+#[doc(alias = "skgpu::GpuStats")]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GpuStats {
+    /// `elapsedTime`.
+    pub elapsed_time: u64,
+    /// `numOcclusionPassSamples`.
+    pub num_occlusion_pass_samples: u64,
+}
+
 /// Is the texture mipmapped or not.
 // Port of: include/gpu/GpuTypes.h#L39-L42 (chrome/m156)
 #[doc(alias = "skgpu::Mipmapped")]

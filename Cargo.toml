@@ -51,6 +51,9 @@ skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-tools = { path = "tests/tools", version = "0.156.0" }
 skia-rust-gpu = { path = "crates/skia-rust-gpu", version = "0.156.0" }
 bitflags = "2"
+# wgpu backend of Graphite (docs/design/gpu.md §4.1, R7): pinned exactly, bumps are their own PRs.
+# `default-features = false`: each target picks its backends in crates/skia-rust-gpu/Cargo.toml.
+wgpu = { version = "=30.0.1", default-features = false }
 # Fontations backend: the exact versions Skia m156 pins (src/ports/fontations/Cargo.toml,
 # MODULE.bazel.lock). skrifa 0.43.2 requires read-fonts ^0.40.1, so all three are pinned with `=`
 # (docs/design/text.md §2.2). Bumped only with a Skia milestone bump.
