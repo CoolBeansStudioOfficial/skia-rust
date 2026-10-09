@@ -55,7 +55,7 @@ for bits in 12 16; do
     OBJS="$OBJS $OUT/b$bits-$s.o"
   done
 done
-for prog in jpeg_diff partial_diff; do
+for prog in jpeg_diff partial_diff encode_diff; do
   $CLANG -O2 -ffp-contract=off -std=gnu99 -w -DNO_GETENV -DNO_PUTENV -DTURBO_FOR_WINDOWS \
     -DC_ARITH_CODING_SUPPORTED=1 -DD_ARITH_CODING_SUPPORTED=1 -DUSE_CLZ_INTRINSIC \
     -I"$OUT/src" -o "$OUT/$prog" "$HERE/$prog.c" $OBJS
@@ -71,4 +71,7 @@ $CLANG -O2 -ffp-contract=off -std=gnu99 -w -DNO_GETENV -DNO_PUTENV -DTURBO_FOR_W
 "$OUT/idct_check" > "$OUT/idct.txt"
 echo "wrote $OUT/libjpeg.txt ($(wc -l < "$OUT/libjpeg.txt") lines)"
 echo "wrote $OUT/partial.txt ($(wc -l < "$OUT/partial.txt") lines)"
+# expected/encode.txt: the compressor cases (encode_diff.c), which take no resources.
+"$OUT/encode_diff" > "$OUT/encode.txt"
 echo "wrote $OUT/idct.txt ($(wc -l < "$OUT/idct.txt") lines)"
+echo "wrote $OUT/encode.txt ($(wc -l < "$OUT/encode.txt") lines)"
