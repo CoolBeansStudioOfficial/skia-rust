@@ -19228,8 +19228,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/cubicpaths.cpp#L543-L543"
 module = "effects"
-status = "todo"
-reason = "needs a bitmap shader and text"
+status = "passing"
 span_hash = "7f3483a015433bcbfc4ba792c19c4d5a317c1467f6c4abf96de91a354165f2be"
 
 [[test]]
@@ -19907,7 +19906,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/fadefilter.cpp#L20-L29"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a84592a7bc813a2c4ac748786f9a27a3d5669aacf4a7e1fdaa3bf88f6fd31bd5"
 
 [[test]]
@@ -22256,7 +22255,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/lcdblendmodes.cpp#L153-L153"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "29b0b2683986f7675da1e17a2fbf5c44ae0658023db2c42b8a5ee42204c5f5bf"
 
 [[test]]
@@ -23234,7 +23233,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pathmaskcache.cpp#L127-L127"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0de6e62cf6c2e5e1e81237b9d2b9175265ec6a37c84f03986733f8a659765a3b"
 
 [[test]]
@@ -24358,7 +24357,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/shadermaskfilter.cpp#L51-L64"
 module = "effects"
 status = "todo"
-reason = "needs SkShaderMaskFilter, gradients and pictures, Phase 3"
+reason = "Not ported: SkShaderMaskFilter (SkShaderMaskFilter::Make). skia-rust-core has the MaskFilterType::Shader variant but no shader mask filter."
 span_hash = "c9e00906a380119a8f00736ffcb4b2202ae4cde68a174385a8505a5a48d7b5e3"
 
 [[test]]
@@ -24724,7 +24723,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/spritebitmap.cpp#L107-L123"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b2b35f52d1b50aec592b3d70b80273709aa46eb10522facd001c51afa4431885"
 
 [[test]]
@@ -24967,8 +24966,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/strokes.cpp#L556-L582"
 module = "effects"
-status = "todo"
-reason = "compiled out in the C++ source (#ifdef PDF_IS_FIXED_SO_THIS_DOESNT_BREAK_IT)"
+status = "excluded"
+reason = "Compiled out: the registration is inside #ifdef PDF_IS_FIXED_SO_THIS_DOESNT_BREAK_IT (gm/strokes.cpp#L555), which is never defined."
 span_hash = "253e799828047f12b7dc1b2c05698bf746a1871983e8ddb35d8c9d0d44374a1f"
 
 [[test]]
