@@ -151,7 +151,7 @@ impl Decompress {
     ) -> Result<Option<ConsumeResult>> {
         let last_mcu_col = self.mcus_per_row.wrapping_sub(1);
         let last_imcu_row = self.total_imcu_rows.wrapping_sub(1);
-        let range_limit = std::rc::Rc::clone(&self.range_limit);
+        let range_limit = std::sync::Arc::clone(&self.range_limit);
         self.decompress_onepass_inner(out, &range_limit, last_mcu_col, last_imcu_row)
     }
 

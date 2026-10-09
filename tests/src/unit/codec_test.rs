@@ -1194,6 +1194,203 @@ def_test!(Codec_reusePng, |r| {
     reporter_assert!(r, result == Result::Success);
 });
 
+// Port of: tests/CodecTest.cpp#L628-L636 (chrome/m156)
+def_test!(Codec_jpg, |r| {
+    check(
+        r,
+        "images/CMYK.jpg",
+        ISize::new(642, 516),
+        Support {
+            scanline: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+    check(
+        r,
+        "images/color_wheel.jpg",
+        ISize::new(128, 128),
+        Support {
+            scanline: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+    // grayscale.jpg is too small to test incomplete
+    check(
+        r,
+        "images/grayscale.jpg",
+        ISize::new(128, 128),
+        Support {
+            scanline: true,
+            ..Support::default()
+        },
+    );
+    check(
+        r,
+        "images/mandrill_512_q075.jpg",
+        ISize::new(512, 512),
+        Support {
+            scanline: true,
+            incomplete: true,
+            ..Support::default()
+        },
+    );
+    // randPixels.jpg is too small to test incomplete
+    check(
+        r,
+        "images/randPixels.jpg",
+        ISize::new(8, 8),
+        Support {
+            scanline: true,
+            ..Support::default()
+        },
+    );
+});
+
+// Port of: tests/CodecTest.cpp#L1172-L1220 (chrome/m156)
+def_test!(Codec_jpeg_rewind, |r| {
+    let path = "images/mandrill_512_q075.jpg";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    let half = &data[..data.len() / 2];
+    let Some(mut codec) = AndroidCodec::make_from_stream(MemoryStream::make_copy(half)) else {
+        errorf!(r, "Unable to create codec '{}'.", path);
+        return;
+    };
+
+    let info = codec.info();
+    let width = info.width();
+    let height = info.height();
+    let row_bytes = 4 * usize::try_from(width).unwrap_or(0);
+    let mut pixels = vec![0u8; row_bytes * usize::try_from(height).unwrap_or(0)];
+
+    // Perform a sampled decode.
+    let mut opts = AndroidOptions {
+        sample_size: 12,
+        ..AndroidOptions::default()
+    };
+    let sampled_info = info.with_wh(width / 12, height / 12);
+    let result = codec.get_android_pixels(&sampled_info, &mut pixels, row_bytes, Some(&opts));
+    reporter_assert!(r, result == Result::IncompleteInput);
+
+    // Rewind the codec and perform a full image decode.
+    let result = codec.get_android_pixels(&info, &mut pixels, row_bytes, None);
+    reporter_assert!(r, result == Result::IncompleteInput);
+
+    // Now perform a subset decode.
+    {
+        opts.sample_size = 1;
+        let subset = IRect::from_wh(100, 100);
+        opts.base.subset = Some(subset);
+        let result =
+            codec.get_android_pixels(&info.with_wh(100, 100), &mut pixels, row_bytes, Some(&opts));
+        // Though we only have half the data, it is enough to decode this subset.
+        reporter_assert!(r, result == Result::Success);
+    }
+
+    // Perform another full image decode. This would read the old subset if the codec depended on
+    // its old state (both SkJpegCodec::readRows and SkCodec::fillIncompleteImage used to).
+    opts.base.subset = None;
+    let result = codec.get_android_pixels(&info, &mut pixels, row_bytes, Some(&opts));
+    reporter_assert!(r, result == Result::IncompleteInput);
+});
+
+// Port of: tests/CodecTest.cpp#L2194-L2225 (chrome/m156)
+def_test!(Codec_jpeg_can_return_data_from_original_stream, |r| {
+    let path = "images/dog.jpg";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let expected_bytes = data.len();
+
+    let Ok(codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let Some(image) = codecs::deferred_image(Some(codec), Some(AlphaType::Unpremul)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, image.width() == 180, "width {} != 180", image.width());
+    reporter_assert!(r, image.height() == 180, "height {} != 180", image.height());
+    reporter_assert!(
+        r,
+        image.alpha_type() == AlphaType::Unpremul,
+        "AlphaType is wrong {:?}",
+        image.alpha_type()
+    );
+
+    // The whole point of DeferredFromCodec is that it allows the client to hold onto the original
+    // image data for later.
+    let Some(encoded) = image.ref_encoded_data() else {
+        reporter_assert!(r, false);
+        return;
+    };
+    // The returned data should be the same as what went in.
+    reporter_assert!(r, encoded.size() == expected_bytes);
+    reporter_assert!(r, skia_rust_codec::jpeg_codec::is_jpeg(encoded.as_bytes()));
+});
+
+// Port of: tests/CodecTest.cpp#L2227-L2242 (chrome/m156)
+def_test!(Codec_jpeg_decode_progressive_truncated_stream, |r| {
+    let path = "images/progressive_kitten_missing_eof.jpg";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders()) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    let result = codec.get_pixels(&info, &mut pixels, row_bytes, None);
+    reporter_assert!(r, result == Result::Success);
+});
+
+// Port of: tests/CodecTest.cpp#L2244-L2260 (chrome/m156)
+def_test!(Codec_jpeg_decode_progressive_stream_incomplete, |r| {
+    let path = "images/progressive_kitten_missing_eof.jpg";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // SkCodec::MakeFromData(SkData::MakeFromStream(stream, 1 * length / 10))
+    let truncated = &data[..data.len() / 10];
+    let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(truncated), decoders())
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    let result = codec.get_pixels(&info, &mut pixels, row_bytes, None);
+    reporter_assert!(r, result == Result::IncompleteInput);
+});
+
+// Port of: tests/CodecTest.cpp#L2547-L2560 (chrome/m156)
+def_test!(LibpngCodec_f16_trc_tables, |r| {
+    let path = "images/f16-trc-tables.png";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders()) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let info = codec.info();
+    reporter_assert!(r, info.color_space().is_some());
+
+    // Decoding to F16 without color space conversion.
+    let dst_info = info
+        .with_color_type(ColorType::RGBAF16)
+        .with_color_space(None::<ColorSpace>);
+    // This should not crash.
+    let image = codec.get_image(dst_info.clone(), None);
+    reporter_assert!(r, image.is_ok());
+    // `getImage` returns the decode result only in C++ (`kSuccess` is asserted there). Its
+    // pixels come from `getPixels` with the same info, so that result is what is asserted here.
+    let row_bytes = dst_info.min_row_bytes();
+    let mut pixels = vec![0u8; dst_info.compute_byte_size(row_bytes)];
+    let result = codec.get_pixels(&dst_info, &mut pixels, row_bytes, None);
+    reporter_assert!(r, result == Result::Success);
+});
+
 // Port of: tests/CodecTest.cpp#L1953-L1986 (chrome/m156)
 def_test!(Codec_crbug807324, |r| {
     // Port of `GetResourcePath().isEmpty()`: without Skia's resources there is nothing to test.

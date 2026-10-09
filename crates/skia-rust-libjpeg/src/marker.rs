@@ -592,10 +592,12 @@ impl Decompress {
         if let Some(c) = completed {
             self.marker_list.push(c);
         }
+        // Process the marker if interesting. Any other marker is only traced by libjpeg
+        // (`TRACEMS2(JTRC_MISC_MARKER)`), and is not an error.
         match self.unread_marker {
             M_APP0 => self.examine_app0(&data, data_len, length),
             M_APP14 => self.examine_app14(&data, data_len),
-            m => return Err(Error::UnknownMarker(m)),
+            _ => {}
         }
         self.input_sync(&l);
         if length > 0 {

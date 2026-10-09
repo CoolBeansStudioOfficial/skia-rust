@@ -47,7 +47,7 @@
     clippy::unused_self
 )]
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::Decompress;
 use crate::error::{Error, Result};
@@ -142,11 +142,11 @@ impl Decompress {
                 if self.ah == 0 {
                     // DC refinement needs no table.
                     let tbl = self.comp_info[compptr].dc_tbl_no as usize;
-                    self.huff.dc_derived[tbl] = Some(Rc::new(self.make_derived(true, tbl)?));
+                    self.huff.dc_derived[tbl] = Some(Arc::new(self.make_derived(true, tbl)?));
                 }
             } else {
                 let tbl = self.comp_info[compptr].ac_tbl_no as usize;
-                self.huff.ac_derived[tbl] = Some(Rc::new(self.make_derived(false, tbl)?));
+                self.huff.ac_derived[tbl] = Some(Arc::new(self.make_derived(false, tbl)?));
             }
             self.huff.saved.last_dc_val[ci] = 0;
         }
@@ -316,7 +316,7 @@ impl Decompress {
     }
 
     /// The AC table of a single-component AC scan (`entropy->ac_derived_tbl`).
-    fn ac_table_of_scan(&self) -> Result<Rc<crate::huff::DTbl>> {
+    fn ac_table_of_scan(&self) -> Result<Arc<crate::huff::DTbl>> {
         let compptr = self.cur_comp_info[0].ok_or(Error::Internal("scan component"))?;
         let tbl_no = self.comp_info[compptr].ac_tbl_no as usize;
         self.huff.ac_derived[tbl_no]

@@ -257,7 +257,7 @@ impl Decompress {
             }
         }
         let last_imcu_row = self.total_imcu_rows.wrapping_sub(1);
-        let range_limit = std::rc::Rc::clone(&self.range_limit);
+        let range_limit = std::sync::Arc::clone(&self.range_limit);
         for ci in 0..self.num_components as usize {
             let compptr = self.comp_info[ci];
             if !compptr.component_needed {
@@ -308,7 +308,7 @@ impl Decompress {
                 return Ok(None);
             }
         }
-        let range_limit = std::rc::Rc::clone(&self.range_limit);
+        let range_limit = std::sync::Arc::clone(&self.range_limit);
         for ci in 0..self.num_components as usize {
             let compptr = self.comp_info[ci];
             if !compptr.component_needed {

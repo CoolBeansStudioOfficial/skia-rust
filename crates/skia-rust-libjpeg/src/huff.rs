@@ -46,7 +46,7 @@
     clippy::unused_self
 )]
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::Decompress;
 use crate::error::{Error, Result};
@@ -98,10 +98,10 @@ pub(crate) struct HuffDecoder {
     pub(crate) bitstate: BitPerm,
     pub(crate) saved: Savable,
     pub(crate) restarts_to_go: u32,
-    pub(crate) dc_derived: [Option<Rc<DTbl>>; NUM_HUFF_TBLS],
-    pub(crate) ac_derived: [Option<Rc<DTbl>>; NUM_HUFF_TBLS],
-    pub(crate) dc_cur_tbls: [Option<Rc<DTbl>>; D_MAX_BLOCKS_IN_MCU],
-    pub(crate) ac_cur_tbls: [Option<Rc<DTbl>>; D_MAX_BLOCKS_IN_MCU],
+    pub(crate) dc_derived: [Option<Arc<DTbl>>; NUM_HUFF_TBLS],
+    pub(crate) ac_derived: [Option<Arc<DTbl>>; NUM_HUFF_TBLS],
+    pub(crate) dc_cur_tbls: [Option<Arc<DTbl>>; D_MAX_BLOCKS_IN_MCU],
+    pub(crate) ac_cur_tbls: [Option<Arc<DTbl>>; D_MAX_BLOCKS_IN_MCU],
     pub(crate) dc_needed: [bool; D_MAX_BLOCKS_IN_MCU],
     pub(crate) ac_needed: [bool; D_MAX_BLOCKS_IN_MCU],
     /// Which progressive decoder the scan selected (`start_pass_phuff_decoder`).
@@ -787,8 +787,8 @@ impl Decompress {
             let compptr = self.cur_comp_info[ci].ok_or(Error::Internal("cur_comp_info"))?;
             let dctbl = self.comp_info[compptr].dc_tbl_no as usize;
             let actbl = self.comp_info[compptr].ac_tbl_no as usize;
-            self.huff.dc_derived[dctbl] = Some(Rc::new(self.make_derived(true, dctbl)?));
-            self.huff.ac_derived[actbl] = Some(Rc::new(self.make_derived(false, actbl)?));
+            self.huff.dc_derived[dctbl] = Some(Arc::new(self.make_derived(true, dctbl)?));
+            self.huff.ac_derived[actbl] = Some(Arc::new(self.make_derived(false, actbl)?));
             self.huff.saved.last_dc_val[ci] = 0;
         }
         for blkn in 0..self.blocks_in_mcu as usize {

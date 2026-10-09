@@ -47,7 +47,7 @@
     clippy::unused_self
 )]
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::coef::CoefState;
 use crate::coef_buf::{CompCoefs, SAVED_COEFS};
@@ -252,7 +252,7 @@ pub struct Decompress {
     /// `insufficient_data` (entropy decoder flag).
     pub(crate) insufficient_data: bool,
     /// `sample_range_limit`.
-    pub(crate) range_limit: Rc<RangeLimit>,
+    pub(crate) range_limit: Arc<RangeLimit>,
     /// Marker reader state.
     pub(crate) marker: MarkerReader,
     /// Input controller state.
@@ -355,7 +355,7 @@ impl Decompress {
             srcbuf: SrcBuf::default(),
             unread_marker: 0,
             insufficient_data: false,
-            range_limit: Rc::new(RangeLimit::new()),
+            range_limit: Arc::new(RangeLimit::new()),
             marker: MarkerReader::default(),
             inputctl: InputState::default(),
             master: MasterState::default(),

@@ -33,7 +33,7 @@ impl SrcBuf {
 
 /// A libjpeg input source. Skia's `SkJpegSourceMgr` implements this for memory-backed and
 /// buffered streams; the differential harness implements it for chunked input.
-pub trait JpegSource {
+pub trait JpegSource: Send {
     /// `init_source`: called once when the decoder starts reading. Sets the initial buffer.
     fn init_source(&mut self, buf: &mut SrcBuf);
 

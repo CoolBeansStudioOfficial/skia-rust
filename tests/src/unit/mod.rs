@@ -67,6 +67,7 @@ pub mod draw_bitmap_rect_test;
 pub mod draw_path_test;
 #[cfg(test)]
 pub mod edge_test;
+pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
 #[cfg(test)]

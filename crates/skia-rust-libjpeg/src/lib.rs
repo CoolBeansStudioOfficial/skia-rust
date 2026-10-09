@@ -57,4 +57,11 @@ pub use decompress::{DctMethod, Decompress, DitherMode, HeaderResult};
 pub use error::{Error, Result};
 pub use marker::{ConsumeResult, SavedMarker};
 pub use source::{JpegSource, SrcBuf};
+
+// A decompressor owns its source and all of its state, so it can move between threads. The
+// codec layer keeps one alive across calls, which requires `Send`.
+const _: () = {
+    const fn assert_send<T: Send>() {}
+    assert_send::<decompress::Decompress>();
+};
 pub use tables::{ColorSpace, CompInfo, JHuffTbl, JQuantTbl};

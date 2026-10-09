@@ -22,6 +22,7 @@ mod codec_image_generator;
 mod codec_priv;
 pub mod codecs;
 pub mod encoded_info;
+pub mod exif;
 pub mod ico_codec;
 pub mod image_generator_from_encoded;
 pub mod images;
@@ -34,6 +35,7 @@ pub mod png_composite_chunk_reader;
 mod sampled_codec;
 pub mod sampler;
 pub mod swizzler;
+pub mod tiff_utility;
 pub mod wbmp;
 
 pub use codec::{
