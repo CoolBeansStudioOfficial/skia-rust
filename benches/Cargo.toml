@@ -13,6 +13,8 @@ publish = false
 skia-rust-core.workspace = true
 skia-rust-raster.workspace = true
 skia-rust-effects.workspace = true
+# ToolUtils (default fonts) and SkRandom-based helpers, as for GMs (docs/design/bench.md §2.2).
+skia-rust-tools.workspace = true
 # Production dispatch only: no `testing`, `models` or `emulated-estimates` features here, so
 # `cargo build --release -p skia-rust-bench --bin nanobench` times the code users get
 # (docs/design/bench.md §4). A workspace-wide build unifies features; build with `-p` for perf.
