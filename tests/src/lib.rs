@@ -25,6 +25,7 @@ pub mod codec_priv;
 pub mod resources;
 pub mod tmp_dir;
 pub mod tools;
+#[cfg(test)]
 pub mod unit;
 
 /// One recorded failure: where it happened, the failed condition and the message.

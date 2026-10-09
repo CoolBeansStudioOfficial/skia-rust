@@ -20,6 +20,7 @@ pub mod buffer;
 pub mod canvas;
 #[doc(hidden)]
 pub mod canvas_priv;
+pub mod capabilities;
 pub mod checksum;
 pub mod clip_op;
 pub mod clip_stack;
@@ -96,6 +97,7 @@ pub mod image_info_priv;
 pub mod image_lazy;
 pub mod image_raster;
 pub mod images;
+pub mod known_runtime_effects;
 #[doc(hidden)]
 pub mod lattice_iter;
 #[doc(hidden)]
@@ -117,6 +119,7 @@ pub mod matrix_priv;
 #[doc(hidden)]
 pub mod matrix_utils;
 pub mod md5;
+pub mod mesh;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod packed_glyph_id;
@@ -174,6 +177,11 @@ pub mod region;
 pub mod region_path;
 pub mod rrect;
 pub mod rsxform;
+pub mod runtime_blender;
+pub mod runtime_color_filter;
+pub mod runtime_effect;
+#[doc(hidden)]
+pub mod runtime_effect_priv;
 pub mod safe32;
 pub mod safe_math;
 pub mod safe_range;
@@ -223,6 +231,7 @@ pub mod utf;
 pub mod utils;
 pub mod vert_state;
 pub mod vertices;
+pub mod working_format_color_filter;
 pub mod write_buffer;
 #[doc(hidden)]
 pub mod write_pixels_rec;

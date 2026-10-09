@@ -5,6 +5,7 @@
 //! `skia_rust_core::{mask_filter, blur_mask_filter_impl}`, the `SkShader` base in
 //! `skia_rust_core::shader`.
 
+pub mod blenders;
 pub mod conical_gradient;
 pub mod corner_path_effect;
 pub mod dash_impl;
@@ -17,9 +18,12 @@ pub mod flattenable;
 pub mod gradient;
 pub mod gradient_base_shader;
 pub mod gradient_shader;
+pub mod high_contrast_filter;
 pub mod image_filters;
 pub mod line_2d_path_effect;
 pub mod linear_gradient;
+pub mod luma_color_filter;
+pub mod overdraw_color_filter;
 pub mod path_1d_path_effect;
 pub mod path_2d_path_effect;
 pub mod radial_gradient;

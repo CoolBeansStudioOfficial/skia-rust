@@ -11,8 +11,12 @@ publish = false
 
 [dependencies]
 skia-rust-simd.workspace = true
+skia-rust-sksl.workspace = true
 bitflags.workspace = true
 skia-rust-skcms.workspace = true
+
+[dev-dependencies]
+skia-rust-simd = { workspace = true, features = ["testing", "models"] }
 
 [lints]
 workspace = true

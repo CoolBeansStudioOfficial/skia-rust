@@ -113,5 +113,7 @@ jobs:
       - run: cargo xtask skia fetch
       - run: cargo xtask inventory sync
       - run: git diff --exit-code inventory/manifest.toml
+      - name: Embedded SkSL modules match the pinned Skia tree
+        run: cargo xtask sksl sync-modules --check
       - name: Ported tests agree with the manifest (no regressions, no unmarked passes)
         run: cargo xtask inventory verify

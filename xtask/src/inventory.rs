@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::cpp;
 use crate::skia::{self, Pin};
-use crate::{verify, verify_gms};
+use crate::{verify, verify_gms, verify_sksl};
 
 const MANIFEST: &str = "inventory/manifest.toml";
 
@@ -22,6 +22,9 @@ const SCAN_DIRS: &[&str] = &["tests", "gm", "bench", "fuzz", "modules"];
 /// `SkSL` code generators skia-rust ports. Expected outputs for any other
 /// generator are excluded.
 const SKSL_PORTED_EXTENSIONS: &[&str] = &["wgsl", "skrp", "sksl", "stage"];
+
+/// `tests/sksl/errors/*.glsl` are error-text goldens, scanned as in scope.
+const SKSL_ERROR_TEXT_DIR: &str = "tests/sksl/errors/";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Manifest {
@@ -183,17 +186,23 @@ pub fn verify(root: &Path, update: bool) -> Result<()> {
     };
     let unit_entries = entries(Kind::Unit);
     let gm_entries = entries(Kind::Gm);
+    let golden_entries = entries(Kind::SkslGolden);
     let unit = verify::check(&unit_entries, &verify::run_ported_tests(root)?);
     let gms = verify_gms::check(&gm_entries, &verify_gms::run_gm_verify(root)?);
+    let goldens = match verify_sksl::run_sksl_golden_verify(root)? {
+        Some(results) => verify_sksl::check(&golden_entries, &results),
+        None => verify::Report::default(),
+    };
     if update {
-        for report in [&unit, &gms] {
+        for report in [&unit, &gms, &goldens] {
             apply_update(&mut m, report);
         }
         write_manifest(root, &m)?;
     }
     let unit_result = verify::finish(&unit, update, "unit test");
     let gm_result = verify::finish(&gms, update, "GM");
-    unit_result.and(gm_result)
+    let golden_result = verify::finish(&goldens, update, "SkSL golden");
+    unit_result.and(gm_result).and(golden_result)
 }
 
 /// Marks newly passing entries `passing` and failing ported ones `failing`.
@@ -205,10 +214,10 @@ fn apply_update(m: &mut Manifest, report: &verify::Report) {
         } else if report.failing.contains(&e.id) && e.status != Status::Failing {
             e.status = Status::Failing;
             if e.reason.is_empty() {
-                let reason = if e.kind == Kind::Gm {
-                    "ported GM does not match the goldens"
-                } else {
-                    "ported test fails"
+                let reason = match e.kind {
+                    Kind::Gm => "ported GM does not match the goldens",
+                    Kind::SkslGolden => "compiled output does not match the golden",
+                    _ => "ported test fails",
                 };
                 reason.clone_into(&mut e.reason);
             }
@@ -368,7 +377,10 @@ fn scan_sksl_goldens(skia: &Path, out: &mut Vec<Entry>) -> Result<()> {
             .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("");
-        let (status, reason) = if SKSL_PORTED_EXTENSIONS.contains(&ext) {
+        // Error goldens are compiled with `--glsl` but fail in the front end, before any
+        // GLSL generator runs (`gn/sksl_tests.gni#L1059-L1061`), so they are in scope.
+        let is_error_text = ext == "glsl" && rel.starts_with(SKSL_ERROR_TEXT_DIR);
+        let (status, reason) = if SKSL_PORTED_EXTENSIONS.contains(&ext) || is_error_text {
             (Status::Todo, String::new())
         } else {
             (

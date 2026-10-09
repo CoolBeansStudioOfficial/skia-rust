@@ -373,10 +373,10 @@ macro_rules! rp_op_table {
             log_float                           LogFloat                        [MemPtr]                            n  hi B6c;
             log2_float                          Log2Float                       [MemPtr]                            n  hi B6c;
             refract_4_floats                    Refract4Floats                  [MemPtr]                            n  hi B6b;
-            copy_uniform                        CopyUniform                     [&'a UniformCtx<'a>]                n  hi B6a;
-            copy_2_uniforms                     Copy2Uniforms                   [&'a UniformCtx<'a>]                n  hi B6a;
-            copy_3_uniforms                     Copy3Uniforms                   [&'a UniformCtx<'a>]                n  hi B6a;
-            copy_4_uniforms                     Copy4Uniforms                   [&'a UniformCtx<'a>]                n  hi B6a;
+            copy_uniform                        CopyUniform                     [&'a UniformCtx]                n  hi B6a;
+            copy_2_uniforms                     Copy2Uniforms                   [&'a UniformCtx]                n  hi B6a;
+            copy_3_uniforms                     Copy3Uniforms                   [&'a UniformCtx]                n  hi B6a;
+            copy_4_uniforms                     Copy4Uniforms                   [&'a UniformCtx]                n  hi B6a;
             copy_constant                       CopyConstant                    [ConstantCtx]                       n  hi B6a;
             splat_2_constants                   Splat2Constants                 [ConstantCtx]                       n  hi B6a;
             splat_3_constants                   Splat3Constants                 [ConstantCtx]                       n  hi B6a;
@@ -386,7 +386,7 @@ macro_rules! rp_op_table {
             copy_3_slots_masked                 Copy3SlotsMasked                [BinaryOpCtx]                       n  hi B6a;
             copy_4_slots_masked                 Copy4SlotsMasked                [BinaryOpCtx]                       n  hi B6a;
             copy_from_indirect_unmasked         CopyFromIndirectUnmasked        [&'a CopyIndirectCtx]               n  hi B6a;
-            copy_from_indirect_uniform_unmasked CopyFromIndirectUniformUnmasked [&'a CopyIndirectUniformCtx<'a>]    n  hi B6a;
+            copy_from_indirect_uniform_unmasked CopyFromIndirectUniformUnmasked [&'a CopyIndirectUniformCtx]    n  hi B6a;
             copy_to_indirect_masked             CopyToIndirectMasked            [&'a CopyIndirectCtx]               n  hi B6a;
             swizzle_copy_to_indirect_masked     SwizzleCopyToIndirectMasked     [&'a SwizzleCopyIndirectCtx]        n  hi B6a;
             copy_slot_unmasked                  CopySlotUnmasked                [BinaryOpCtx]                       n  hi B6a;
@@ -569,11 +569,11 @@ macro_rules! rp_op_table {
             cmpne_2_ints                        Cmpne2Ints                      [MemPtr]                            n  hi B6b;
             cmpne_3_ints                        Cmpne3Ints                      [MemPtr]                            n  hi B6b;
             cmpne_4_ints                        Cmpne4Ints                      [MemPtr]                            n  hi B6b;
-            trace_line                          TraceLine                       [&'a TraceLineCtx<'a>]              n  hi B6d;
-            trace_var                           TraceVar                        [&'a TraceVarCtx<'a>]               n  hi B6d;
-            trace_enter                         TraceEnter                      [&'a TraceFuncCtx<'a>]              n  hi B6d;
-            trace_exit                          TraceExit                       [&'a TraceFuncCtx<'a>]              n  hi B6d;
-            trace_scope                         TraceScope                      [&'a TraceScopeCtx<'a>]             n  hi B6d;
+            trace_line                          TraceLine                       [&'a TraceLineCtx]              n  hi B6d;
+            trace_var                           TraceVar                        [&'a TraceVarCtx]               n  hi B6d;
+            trace_enter                         TraceEnter                      [&'a TraceFuncCtx]              n  hi B6d;
+            trace_exit                          TraceExit                       [&'a TraceFuncCtx]              n  hi B6d;
+            trace_scope                         TraceScope                      [&'a TraceScopeCtx]             n  hi B6d;
         }
     };
 }

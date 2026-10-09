@@ -8,8 +8,11 @@ mod oracle;
 mod publish;
 mod rp_diff;
 mod skia;
+mod sksl;
+mod sksl_lexer;
 mod verify;
 mod verify_gms;
+mod verify_sksl;
 
 use std::path::{Path, PathBuf};
 
@@ -34,6 +37,11 @@ enum Command {
     Inventory {
         #[command(subcommand)]
         command: InventoryCommand,
+    },
+    /// Maintain the `SkSL` port's embedded data (`docs/design/sksl.md`).
+    Sksl {
+        #[command(subcommand)]
+        command: SkslCommand,
     },
     /// Build and run the Skia oracle (see `oracle/README.md`).
     Oracle {
@@ -162,6 +170,20 @@ enum SkiaCommand {
 }
 
 #[derive(Subcommand)]
+enum SkslCommand {
+    /// Copy the built-in `SkSL` modules (original and minified) from `third_party/skia` into
+    /// `crates/skia-rust-sksl/src/modules`.
+    SyncModules {
+        /// Compare the crate's copies with the pinned tree instead of writing them.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Transcribe the lexer's DFA tables and token kinds from `SkSLLexer.{h,cpp}` into
+    /// `crates/skia-rust-sksl/src/lexer`.
+    GenLexer,
+}
+
+#[derive(Subcommand)]
 enum InventoryCommand {
     /// Re-scan the pinned Skia tree and update the manifest, preserving hand-edited fields.
     Sync {
@@ -190,6 +212,10 @@ fn main() -> Result<()> {
         Command::Skia {
             command: SkiaCommand::Fetch,
         } => skia::fetch(&root),
+        Command::Sksl { command } => match command {
+            SkslCommand::SyncModules { check } => sksl::sync_modules(&root, check),
+            SkslCommand::GenLexer => sksl_lexer::gen_lexer(&root),
+        },
         Command::Inventory { command } => match command {
             InventoryCommand::Sync { allow_pin_mismatch } => {
                 inventory::sync(&root, allow_pin_mismatch)
