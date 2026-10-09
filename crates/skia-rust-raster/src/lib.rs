@@ -22,6 +22,7 @@ pub mod glyph_run_painter;
 pub mod image_filter_backend;
 pub mod mask_filter_base;
 mod pixel_rows;
+pub mod pixmap_draw;
 pub mod raster_canvas;
 pub mod raster_clip;
 pub mod raster_clip_stack;

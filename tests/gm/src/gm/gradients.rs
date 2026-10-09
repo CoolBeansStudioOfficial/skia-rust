@@ -20,7 +20,9 @@
 use crate::prelude::*;
 use skia_rust_core::canvas::AutoCanvasRestore;
 use skia_rust_core::color::colors;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::floating_point::float_midpoint;
+use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::point::Point;
@@ -30,6 +32,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::interpolation::{ColorSpace as InterpColorSpace, InPremul};
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_tools::font_tool_utils::default_portable_font;
 
 const G_COLORS: [Color4f; 5] = [
     colors::RED,
@@ -1455,3 +1458,370 @@ crate::def_simple_gm!(gradients_alpha_many_stops, canvas, 100, 100, {
     ));
     canvas.draw_paint(&paint);
 });
+
+// Port of: gm/gradients.cpp#L997-L1039 (chrome/m156), gradients_color_space
+crate::def_simple_gm_bg!(
+    #[ignore = "see notes/gm-gradients.cpp-OKLCH-libm.md"]
+    gradients_color_space,
+    canvas,
+    265,
+    355,
+    Color::GRAY,
+    {
+        use skia_rust_effects::gradient::interpolation::ColorSpace as CS;
+        let configs: [(CS, &str); 14] = [
+            (CS::SRGB, "sRGB"),
+            (CS::SRGBLinear, "Linear"),
+            (CS::Lab, "Lab"),
+            (CS::OKLab, "OKLab"),
+            (CS::OKLabGamutMap, "OKLabGamutMap"),
+            (CS::LCH, "LCH"),
+            (CS::OKLCH, "OKLCH"),
+            (CS::OKLCHGamutMap, "OKLCHGamutMap"),
+            (CS::HSL, "HSL"),
+            (CS::HWB, "HWB"),
+            (CS::A98RGB, "a98RGB"),
+            (CS::ProphotoRGB, "ProPhotoRGB"),
+            (CS::DisplayP3, "DisplayP3"),
+            (CS::Rec2020, "Rec2020"),
+        ];
+        let pts = [Point::new(0.0, 0.0), Point::new(200.0, 0.0)];
+        let colors = [Color4f::from(Color::BLUE), Color4f::from(Color::YELLOW)];
+        let label_paint = Paint::default();
+        let mut p = Paint::default();
+        let font = default_portable_font();
+        canvas.translate((5.0, 5.0));
+        for (color_space, label) in configs {
+            let interpolation = Interpolation {
+                color_space,
+                ..Interpolation::default()
+            };
+            let g = Gradient::new(
+                Colors::new(&colors, None, TileMode::Clamp, ColorSpace::new_srgb()),
+                interpolation,
+            );
+            p.set_shader(gradient_shaders::linear_gradient(
+                (pts[0], pts[1]),
+                &g,
+                None,
+            ));
+            canvas.draw_rect(Rect::new(0.0, 0.0, 200.0, 20.0), &p);
+            canvas.draw_simple_text(
+                label.as_bytes(),
+                TextEncoding::UTF8,
+                (210.0, 15.0),
+                &font,
+                &label_paint,
+            );
+            canvas.translate((0.0, 25.0));
+        }
+    }
+);
+
+// Port of: gm/gradients.cpp#L1041-L1098 (chrome/m156), gradients_hue_method
+crate::def_simple_gm_bg!(gradients_hue_method, canvas, 285, 155, Color::GRAY, {
+    use skia_rust_effects::gradient::interpolation::HueMethod as HM;
+    let configs: [(HM, &str); 4] = [
+        (HM::Shorter, "Shorter"),
+        (HM::Longer, "Longer"),
+        (HM::Increasing, "Increasing"),
+        (HM::Decreasing, "Decreasing"),
+    ];
+    let pts = [Point::new(0.0, 0.0), Point::new(200.0, 0.0)];
+    let mut colors = [
+        Color4f::from(Color::RED),
+        Color4f::from(Color::GREEN),
+        Color4f::from(Color::RED),
+        Color4f::from(Color::RED),
+    ];
+    let label_paint = Paint::default();
+    let mut p = Paint::default();
+    let mut interpolation = Interpolation {
+        color_space: skia_rust_effects::gradient::interpolation::ColorSpace::HSL,
+        ..Interpolation::default()
+    };
+    canvas.translate((5.0, 5.0));
+    let font = default_portable_font();
+    for (hue_method, label) in configs {
+        interpolation.hue_method = hue_method;
+        let g = Gradient::new(
+            Colors::new(&colors, None, TileMode::Clamp, ColorSpace::new_srgb()),
+            interpolation,
+        );
+        p.set_shader(gradient_shaders::linear_gradient(
+            (pts[0], pts[1]),
+            &g,
+            None,
+        ));
+        canvas.draw_rect(Rect::new(0.0, 0.0, 200.0, 20.0), &p);
+        canvas.draw_simple_text(
+            label.as_bytes(),
+            TextEncoding::UTF8,
+            (210.0, 15.0),
+            &font,
+            &label_paint,
+        );
+        canvas.translate((0.0, 25.0));
+    }
+    // Test a bug (skbug.com/40044215) with how gradient shaders handle explicit positions.
+    // If there are no explicit positions at 0 or 1, those are automatically added, with copies of
+    // the first/last color. When using kLonger, this can produce extra gradient that should
+    // actually be solid. This gradient *should* be:
+    //   |- solid red -|- red to green, the long way -|- solid green -|
+    interpolation.hue_method = HM::Longer;
+    let middle_pos = [0.3_f32, 0.7];
+    let g = Gradient::new(
+        Colors::new(
+            &colors[..2],
+            Some(&middle_pos),
+            TileMode::Clamp,
+            ColorSpace::new_srgb(),
+        ),
+        interpolation,
+    );
+    p.set_shader(gradient_shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &g,
+        None,
+    ));
+    canvas.draw_rect(Rect::new(0.0, 0.0, 200.0, 20.0), &p);
+    canvas.translate((0.0, 25.0));
+    // However... if the user explicitly includes those duplicate color stops in kLonger mode,
+    // we expect the gradient to do a full rotation in those regions:
+    //  |- full circle, red to red -|- red to green -|- full circle, green to green -|
+    colors[0] = Color4f::from(Color::RED);
+    colors[1] = Color4f::from(Color::RED);
+    colors[2] = Color4f::from(Color::GREEN);
+    colors[3] = Color4f::from(Color::GREEN);
+    let all_pos = [0.0_f32, 0.3, 0.7, 1.0];
+    let g = Gradient::new(
+        Colors::new(
+            &colors,
+            Some(&all_pos),
+            TileMode::Clamp,
+            ColorSpace::new_srgb(),
+        ),
+        interpolation,
+    );
+    p.set_shader(gradient_shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &g,
+        None,
+    ));
+    canvas.draw_rect(Rect::new(0.0, 0.0, 200.0, 20.0), &p);
+    canvas.translate((0.0, 25.0));
+});
+
+// Port of: gm/gradients.cpp#L1190-L1296 (chrome/m156), draw_powerless_hue_gradients
+#[allow(clippy::too_many_lines)] // mirrors the long C++ draw_powerless_hue_gradients body
+fn draw_powerless_hue_gradients(
+    canvas: &Canvas,
+    color_space: skia_rust_effects::gradient::interpolation::ColorSpace,
+) {
+    use skia_rust_effects::gradient::interpolation::{HueMethod, InPremul};
+    let rgba = |r: f32, g: f32, b: f32, a: f32| Color4f::new(r, g, b, a);
+    let white = Color4f::from(Color::WHITE);
+    let black = Color4f::from(Color::BLACK);
+    let blue = Color4f::from(Color::BLUE);
+    let red = Color4f::from(Color::RED);
+    let transparent = rgba(0.0, 0.0, 0.0, 0.0);
+
+    // ToolUtils::draw_checkerboard(canvas): 0xFF999999, 0xFF666666, check size 8
+    crate::tool_utils::draw_checkerboard(
+        canvas,
+        Color::from(0xFF99_9999),
+        Color::from(0xFF66_6666),
+        8,
+    );
+
+    let next_row = |canvas: &Canvas| {
+        canvas.restore();
+        canvas.translate((0.0, 25.0));
+        canvas.save();
+    };
+    // gradient(colors, pos, inPremul): one column of the table
+    let gradient = |canvas: &Canvas, colors: &[Color4f], pos: Option<&[f32]>, in_premul: bool| {
+        let mut paint = Paint::default();
+        let pts = [Point::new(0.0, 0.0), Point::new(200.0, 0.0)];
+        let interpolation = Interpolation {
+            color_space,
+            in_premul: if in_premul {
+                InPremul::Yes
+            } else {
+                InPremul::No
+            },
+            ..Interpolation::default()
+        };
+        paint.set_shader(gradient_shaders::linear_gradient(
+            (pts[0], pts[1]),
+            &Gradient::new(
+                Colors::new(colors, pos, TileMode::Clamp, None),
+                interpolation,
+            ),
+            None,
+        ));
+        canvas.draw_rect(Rect::new(0.0, 0.0, 200.0, 20.0), &paint);
+        canvas.translate((205.0, 0.0)); // next column
+    };
+
+    canvas.translate((5.0, 5.0));
+    canvas.save();
+    // For each test case, the first gradient (first column) has an under-specified result due to a
+    // powerless component after conversion to LCH. The second gradient (second column) "hints" the
+    // correct result, by slightly tinting the otherwise powerless color.
+    gradient(canvas, &[white, blue], None, false);
+    gradient(canvas, &[rgba(0.99, 0.99, 1.00, 1.0), blue], None, false); // white, with blue hue
+    next_row(canvas);
+    gradient(canvas, &[black, blue], None, false);
+    gradient(canvas, &[rgba(0.00, 0.00, 0.01, 1.0), blue], None, false); // black, with blue hue
+    next_row(canvas);
+    // Transparent cases are done in both premul and unpremul interpolation:
+    gradient(canvas, &[transparent, blue], None, false);
+    gradient(canvas, &[rgba(0.00, 0.00, 0.01, 0.0), blue], None, false);
+    next_row(canvas);
+    gradient(canvas, &[transparent, blue], None, true);
+    gradient(canvas, &[rgba(0.00, 0.00, 0.01, 0.0), blue], None, true);
+    next_row(canvas);
+    gradient(canvas, &[rgba(1.00, 1.00, 1.00, 0.0), blue], None, false);
+    gradient(canvas, &[rgba(0.99, 0.99, 1.00, 0.0), blue], None, false);
+    next_row(canvas);
+    gradient(canvas, &[rgba(1.00, 1.00, 1.00, 0.0), blue], None, true);
+    gradient(canvas, &[rgba(0.99, 0.99, 1.00, 0.0), blue], None, true);
+    next_row(canvas);
+    // Now we test three-stop gradients, where the middle stop needs to be "split" to handle the
+    // different hues on either side. Again, the second column explicitly injects those to produce
+    // a reference result. See: https://github.com/w3c/csswg-drafts/issues/9295
+    gradient(canvas, &[red, white, blue], None, false);
+    gradient(
+        canvas,
+        &[
+            red,
+            rgba(1.00, 0.99, 0.99, 1.0),
+            rgba(0.99, 0.99, 1.00, 1.0),
+            blue,
+        ],
+        Some(&[0.0, 0.5, 0.5, 1.0]),
+        false,
+    );
+    next_row(canvas);
+    gradient(canvas, &[red, black, blue], None, false);
+    gradient(
+        canvas,
+        &[
+            red,
+            rgba(0.01, 0.00, 0.00, 1.0),
+            rgba(0.00, 0.00, 0.01, 1.0),
+            blue,
+        ],
+        Some(&[0.0, 0.5, 0.5, 1.0]),
+        false,
+    );
+    next_row(canvas);
+    gradient(canvas, &[red, transparent, blue], None, false);
+    gradient(
+        canvas,
+        &[
+            red,
+            rgba(0.01, 0.00, 0.00, 0.0),
+            rgba(0.00, 0.00, 0.01, 0.0),
+            blue,
+        ],
+        Some(&[0.0, 0.5, 0.5, 1.0]),
+        false,
+    );
+    next_row(canvas);
+    // Now do a few black-white tests, to ensure that the hue propagation works correctly, even
+    // when there isn't any hue in the adjacent stops.
+    let black_white_gradient = |canvas: &Canvas, hue_method: HueMethod| {
+        let mut paint = Paint::default();
+        let pts = [Point::new(0.0, 0.0), Point::new(405.0, 0.0)];
+        let interpolation = Interpolation {
+            color_space,
+            hue_method,
+            ..Interpolation::default()
+        };
+        let colors = [
+            white,
+            Color4f::new(0.5, 0.5, 0.5, 1.0), // kGray
+            white,
+            Color4f::new(0.25, 0.25, 0.25, 1.0), // kDkGray
+            white,
+            black,
+        ];
+        paint.set_shader(gradient_shaders::linear_gradient(
+            (pts[0], pts[1]),
+            &Gradient::new(
+                Colors::new(&colors, None, TileMode::Clamp, None),
+                interpolation,
+            ),
+            None,
+        ));
+        canvas.draw_rect(Rect::new(0.0, 0.0, 405.0, 20.0), &paint);
+        next_row(canvas);
+    };
+    black_white_gradient(canvas, HueMethod::Shorter);
+    black_white_gradient(canvas, HueMethod::Increasing);
+    black_white_gradient(canvas, HueMethod::Decreasing);
+    black_white_gradient(canvas, HueMethod::Longer);
+}
+
+// Port of: gm/gradients.cpp#L1295-L1304 (chrome/m156), DEF_POWERLESS_HUE_GM(LCH), (OKLCH),
+// (HSL), (HWB)
+crate::def_simple_gm_bg_name!(
+    #[ignore = "see notes/gm-gradients.cpp-OKLCH-libm.md"]
+    LCH,
+    canvas,
+    415,
+    330,
+    Color::WHITE,
+    "gradients_powerless_hue_LCH",
+    {
+        draw_powerless_hue_gradients(
+            canvas,
+            skia_rust_effects::gradient::interpolation::ColorSpace::LCH,
+        );
+    }
+);
+crate::def_simple_gm_bg_name!(
+    #[ignore = "see notes/gm-gradients.cpp-OKLCH-libm.md"]
+    OKLCH,
+    canvas,
+    415,
+    330,
+    Color::WHITE,
+    "gradients_powerless_hue_OKLCH",
+    {
+        draw_powerless_hue_gradients(
+            canvas,
+            skia_rust_effects::gradient::interpolation::ColorSpace::OKLCH,
+        );
+    }
+);
+crate::def_simple_gm_bg_name!(
+    HSL,
+    canvas,
+    415,
+    330,
+    Color::WHITE,
+    "gradients_powerless_hue_HSL",
+    {
+        draw_powerless_hue_gradients(
+            canvas,
+            skia_rust_effects::gradient::interpolation::ColorSpace::HSL,
+        );
+    }
+);
+crate::def_simple_gm_bg_name!(
+    HWB,
+    canvas,
+    415,
+    330,
+    Color::WHITE,
+    "gradients_powerless_hue_HWB",
+    {
+        draw_powerless_hue_gradients(
+            canvas,
+            skia_rust_effects::gradient::interpolation::ColorSpace::HWB,
+        );
+    }
+);

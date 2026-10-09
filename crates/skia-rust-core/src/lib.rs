@@ -105,6 +105,7 @@ pub mod known_runtime_effects;
 pub mod lattice_iter;
 #[doc(hidden)]
 pub mod line_clipper;
+pub mod local_matrix_image_filter;
 pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod mask;

@@ -5,8 +5,8 @@
 
 //! `SkImages`: the raster image factories (`skia_safe::images`).
 //!
-//! skia-rust: `RasterFromCompressedTextureData` (needs `SkDecompress`), `MakeWithFilter` (image
-//! filters, Phase 3) and the lazy and GPU factories are not ported.
+//! skia-rust: `RasterFromCompressedTextureData` (needs `SkDecompress`) and the lazy and GPU factories
+//! are not ported. `MakeWithFilter` is `skia_rust_raster::image_filter_backend::make_with_filter`.
 
 use crate::bitmap::Bitmap;
 use crate::data::Data;

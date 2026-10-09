@@ -19,7 +19,8 @@
 //! aligned for `u16`, `u32` or `u64`), so they return the pixel value (little-endian layout, as
 //! Skia assumes) and the `set_addr*` methods write one.
 //!
-//! Not ported: `scalePixels` (it draws through an image shader, Phase 3) and
+//! `scalePixels` is `skia_rust_raster::pixmap_draw::scale_pixels` (it draws through an image
+//! shader). Not ported:
 //! `reset(const SkMask&)`.
 
 use crate::alpha_type::AlphaType;
