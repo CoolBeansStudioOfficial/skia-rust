@@ -3,6 +3,9 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/pathfill.cpp (chrome/m156)
 
+// The C++ float literals (e.g. 4.16666651f) are rounded to f32 here, as they are in the C++.
+#![allow(clippy::excessive_precision, clippy::unreadable_literal)]
+
 use crate::prelude::*;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
@@ -810,4 +813,55 @@ crate::def_simple_gm!(path_skbug_11886, canvas, 256, 256, {
     let mut paint = Paint::default();
     paint.set_anti_alias(true);
     canvas.draw_path(&path, &paint);
+});
+
+// Port of: gm/pathfill.cpp#L639-L678 (chrome/m156), DEF_SIMPLE_GM(path_stroke_clip_crbug1070835)
+crate::def_simple_gm!(path_stroke_clip_crbug1070835, canvas, 25, 50, {
+    let orig = canvas;
+    let mut surf =
+        skia_rust_raster::surfaces::raster_n32_premul((25, 25)).expect("a raster surface");
+
+    {
+        let canvas = surf.canvas();
+
+        let mut p = Paint::default();
+        p.set_color(Color::RED);
+        p.set_anti_alias(true);
+        p.set_style(Style::Stroke);
+        p.set_stroke_width(2.0);
+
+        canvas.scale((4.16666651_f32 / 2.0, 4.16666651_f32 / 2.0));
+
+        let pts: [Point; 13] = [
+            Point::new(11.0, 12.0),
+            Point::new(11.0, 18.0751324),
+            Point::new(6.07513189, 23.0),
+            Point::new(-4.80825292E-7, 23.0),
+            Point::new(-6.07513332, 23.0),
+            Point::new(-11.0, 18.0751324),
+            Point::new(-11.0, 11.999999),
+            Point::new(-10.999999, 5.92486763),
+            Point::new(-6.07513189, 1.0),
+            Point::new(1.31173692E-7, 1.0),
+            Point::new(6.07513141, 1.0),
+            Point::new(10.9999981, 5.92486572),
+            Point::new(11.0, 11.9999971),
+        ];
+        let path = PathBuilder::new()
+            .move_to(pts[0])
+            .cubic_to(pts[1], pts[2], pts[3])
+            .cubic_to(pts[4], pts[5], pts[6])
+            .cubic_to(pts[7], pts[8], pts[9])
+            .cubic_to(pts[10], pts[11], pts[12])
+            .detach();
+
+        canvas.draw_path(&path, &p);
+    }
+
+    surf.draw(
+        orig,
+        (0.0, 0.0),
+        skia_rust_core::sampling_options::SamplingOptions::default(),
+        None,
+    );
 });
