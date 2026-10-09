@@ -1476,7 +1476,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CanvasSaveRestoreBench.cpp#L48-L48"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9a0d1cccd8a9647e9e9c7a614bb3fb9c25c221f55948009feba31cc3a175f2fb"
 
 [[test]]
@@ -1485,7 +1485,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CanvasSaveRestoreBench.cpp#L47-L47"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "92e731ecd429f08c947471db6c7104087b37651bbcb75b637bf787e9fb142aa8"
 
 [[test]]
@@ -1494,7 +1494,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CanvasSaveRestoreBench.cpp#L49-L49"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3bcaced6672cb781f17f6d859c485083185e5f0b1159ab05b540437381120cfc"
 
 [[test]]
@@ -1503,7 +1503,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CanvasSaveRestoreBench.cpp#L46-L46"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b9a89b893cd423ffa3447ed6428bc349b68c55146250ee8ae738f313579c4b31"
 
 [[test]]
@@ -1548,7 +1548,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClearBench.cpp#L106-L106"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "452f069bf838813b1b034f752a7a7c7eb5cf3a44b19b3f4cd98b28f3883da498"
 
 [[test]]
@@ -1557,7 +1557,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClearBench.cpp#L104-L104"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e68f86189014ee92443855762a46a5dd66c850f39d00f681b25cb6da26f84407"
 
 [[test]]
@@ -1566,7 +1566,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClearBench.cpp#L105-L105"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "be53e21087bfc1bdfede60a699b32080492b6fcb79eddfa71a62c4e774a7eef5"
 
 [[test]]
@@ -2439,7 +2439,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L449-L449"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "71158c40777d4391d50aa55e6c09146062e51d8e440094e30248919f4f539df1"
 
 [[test]]
@@ -2448,7 +2448,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L450-L450"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d99cd15eba85e9ee2899108934d83dd37f3428cc4e2ae8d88f8715302b54f66e"
 
 [[test]]
@@ -2457,7 +2457,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L451-L451"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d838642a97615ec9269c09e18ffd377e2f7116f27ddbec2b632c5e11e2f92599"
 
 [[test]]
@@ -2466,7 +2466,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L452-L452"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "be111a54880106f572b9d595820fb2be23c910b847f29a72a17e04496e75742c"
 
 [[test]]
@@ -2475,7 +2475,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L486-L486"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ea1c886945093c5cef31572294123d0f531bd21dbaf121cc9b7c1e7af6bd3b2a"
 
 [[test]]
@@ -2484,7 +2484,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L485-L485"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6e1054752d5c637a9e94bfe13b3aca5449d99a1c6fdb6eb9ceca49e7f7ec5e05"
 
 [[test]]
@@ -2493,7 +2493,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L488-L488"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "6f9a096da5038ad5bc294de5238755ce34743348c5b1b33527f0198734c7ebf2"
 
 [[test]]
@@ -2502,7 +2502,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L487-L487"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "68c3a04fd3961358255c2058891173c19440b17d3ad65720ffe05106569cbda9"
 
 [[test]]
@@ -2511,7 +2511,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L456-L456"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "fb46bad57907b149c3ce52ce724220fde1d50ebcf2d058e07d5af3732fb6394d"
 
 [[test]]
@@ -2520,7 +2520,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L459-L459"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "1728639a67a8527d7b467f31480ec83e79bc19a9dafd4fffa473b78e1fce83a9"
 
 [[test]]
@@ -2529,7 +2529,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L458-L458"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e0682bd82c0d3c580f1cdbad26130ae4c3bde7ead20dc81a12cdf411e4e8fa12"
 
 [[test]]
@@ -2538,7 +2538,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L461-L461"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "fc83b77412bf8d56fd397bfb4535e7f007ec156842d04462d25f9de1815c276a"
 
 [[test]]
@@ -2547,7 +2547,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L457-L457"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "06092402841d11a6fcf2229e8b51f079f849d719d779fb9bc2271151befc8167"
 
 [[test]]
@@ -2556,7 +2556,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L460-L460"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c11badc523bccdb7cda7c04661a7c334a0a012af1ecf3a38b29ac04d9dcc2199"
 
 [[test]]
@@ -2565,7 +2565,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L463-L463"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "a94fe2bdd20af09ae34af4d8de26051724dbe6c580371c15af862c466906e67b"
 
 [[test]]
@@ -2574,7 +2574,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L464-L464"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "2492c0ac4289cb900794dde21667757f3e0d041a8c8c3d23dd0b2c9bac1a7520"
 
 [[test]]
@@ -2583,7 +2583,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L465-L465"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d7b79d22cc9b43058cb275768e8599ee03329cc1e5038fdf5ac8e6e969be93f3"
 
 [[test]]
@@ -2592,7 +2592,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L466-L466"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e36379d96c21712917602544e4a60fdeb22f64ec68cdd40f7683ce0774585062"
 
 [[test]]
@@ -2601,7 +2601,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L467-L467"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ba8a38c0657bcb9ab72d808793ae3a30b32e6109f4fdf7469744be4f4c5a5505"
 
 [[test]]
@@ -2610,7 +2610,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L468-L468"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "eb91cc89aafb90ace464c20c6d97af960b1248b88ac9d710c3705c9f4b22e6f1"
 
 [[test]]
@@ -2619,7 +2619,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L476-L476"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4e63720cc1029b8ad48d60a757610f315b1c80799eb3f876d25ab81c2928cd8d"
 
 [[test]]
@@ -2628,7 +2628,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L483-L483"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b1325ae2d2f8866571d4d6f26aa62c94481d5226bb408f0779fc93dffc118a8d"
 
 [[test]]
@@ -2637,7 +2637,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L474-L474"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4bfd0394c7dc4f07a52cadc7514c3192ca723f5a953f3c7e4342bf93eb54c8c3"
 
 [[test]]
@@ -2646,7 +2646,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L481-L481"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8638db0dbb3342b71682d8efa68afbdef12724413d5d25b82efb48aa965be805"
 
 [[test]]
@@ -2655,7 +2655,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L475-L475"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "17f6188d71c63fa31f94a74742d543dd054d5588e1865a16894037131fc1c344"
 
 [[test]]
@@ -2664,7 +2664,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L482-L482"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e71d7d7e2be63b197806209bea86ca85784d1ed0a4c5a2f712e72d283918a2e4"
 
 [[test]]
@@ -2673,7 +2673,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L455-L455"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c312cce453aa799a848b5923cf473170b554393616bf267feb34482ee5e8fa81"
 
 [[test]]
@@ -2682,7 +2682,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L453-L453"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "b90e46fe62200ed77b925498a53c5852c662a6d34549c6a4a11283307b42031f"
 
 [[test]]
@@ -2691,7 +2691,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DashBench.cpp#L454-L454"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "4072c5e372ff1ec86029a93710744e02f4313716dbc00c76028cbac8d753172b"
 
 [[test]]
@@ -5663,7 +5663,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/LineBench.cpp#L63-L63"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c372a1846122c91a5064d84fb9b43235f8b384443b7b6184c49fb68c32465e85"
 
 [[test]]
@@ -5672,7 +5672,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/LineBench.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9816fff4d6b0460567261956f7eb73ed03955b5f5fd4b2cfa4dfc25e5ce21e94"
 
 [[test]]
@@ -5681,7 +5681,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/LineBench.cpp#L64-L64"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3f9b9f680dc5596c4c48163aa8f3073476a72f8d84b6988b5c4b7cf39f9da6b8"
 
 [[test]]
@@ -5690,7 +5690,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/LineBench.cpp#L67-L67"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "56de3ce84fc6793fd13bd55ccf1db90bea464629706916633c97847849be864d"
 
 [[test]]
@@ -5699,7 +5699,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/LineBench.cpp#L66-L66"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2a05e410b18a5ad523a4b37b8b4a4d608f37337e8be27eba5bcac2b08aa82aa2"
 
 [[test]]

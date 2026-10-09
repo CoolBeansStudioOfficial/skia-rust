@@ -555,6 +555,7 @@ dependencies = [
  "inventory",
  "serde_json",
  "skia-rust-core",
+ "skia-rust-effects",
  "skia-rust-raster",
  "skia-rust-simd",
 ]
