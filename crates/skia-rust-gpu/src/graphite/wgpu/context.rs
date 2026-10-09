@@ -23,6 +23,7 @@ use crate::graphite::buffer_manager::{
     StaticBufferHost, StaticBufferManager, StaticFinishResult, StaticVertexCopyRanges,
 };
 use crate::graphite::caps::Caps;
+use crate::graphite::client_mapped_buffer_manager::{ClientMappedBufferManager, ContextId};
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use crate::graphite::global_cache::GlobalCache;
@@ -47,6 +48,10 @@ pub struct WgpuContext {
     /// `fQueueManager`.
     queue_manager: QueueManager,
     options: ContextOptions,
+    /// `fContextID`.
+    context_id: ContextId,
+    /// `fMappedBufferManager`: buffers handed to clients while still mapped.
+    mapped_buffer_manager: ClientMappedBufferManager,
 }
 
 /// The part of a [`WgpuContext`] that the queue manager reads (`Context*` in Skia): the caps and
@@ -108,12 +113,21 @@ impl WgpuContext {
             options.pipeline_caching_callback.clone(),
             options.pipeline_callback.clone(),
         );
+        let context_id = ContextId::next();
         Self {
             shared_context,
             resource_provider,
             queue_manager,
             options: options.clone(),
+            context_id,
+            mapped_buffer_manager: ClientMappedBufferManager::new(context_id),
         }
+    }
+
+    /// `contextID()`.
+    #[must_use]
+    pub fn context_id(&self) -> ContextId {
+        self.context_id
     }
 
     /// `finishInitialization()`: creates the dynamic samplers, the static buffers (submitting
@@ -223,6 +237,7 @@ impl WgpuContext {
     // Port of: src/gpu/graphite/Context.cpp#L912-L922 (chrome/m156)
     pub fn check_for_finished_work(&mut self, sync: SyncToCpu) {
         self.queue_manager.check_for_finished_work(sync);
+        self.mapped_buffer_manager.process();
         // Process the return queue periodically to make sure it doesn't get too big.
         self.resource_provider
             .lock()
@@ -368,5 +383,23 @@ impl StaticBufferHost for FinishInitializationHost<'_> {
     ) {
         self.global_cache
             .testing_only_set_static_vertex_info(ranges, buffer);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graphite::wgpu::noop_backend_context;
+
+    #[test]
+    fn contexts_get_distinct_valid_ids_and_finished_work_is_checked() {
+        let options = ContextOptions::default();
+        let mut first = make_context(&noop_backend_context(), &options).unwrap();
+        let second = make_context(&noop_backend_context(), &options).unwrap();
+        assert!(first.context_id().is_valid());
+        assert_ne!(first.context_id(), second.context_id());
+
+        first.check_for_finished_work(SyncToCpu::No);
+        assert_eq!(first.mapped_buffer_manager.num_client_held_buffers(), 0);
     }
 }
