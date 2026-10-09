@@ -1260,8 +1260,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L211-L211"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "21d69b901aa5efde67fdd5ef8d1714ac819e3caf61dfd095bf2c66fbcd80be12"
 
 [[test]]
@@ -1270,8 +1270,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L220-L220"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "ae53217d05c41756046a2b249be5571233de46b50eb8260c4157d3e71efa1047"
 
 [[test]]
@@ -1280,8 +1280,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L221-L221"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "6f7408eb4081dbfbcab058355c61edc32cee931edf30cd58ea5ec24df457945a"
 
 [[test]]
@@ -1290,8 +1290,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L222-L222"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "2013f9cd2ec9023834cd548c71ce77b0afbb90a9cb9c50a02e76be60c3e6f779"
 
 [[test]]
@@ -1300,8 +1300,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L223-L223"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "eac97fdcb680e0b154b52978aab334cdccb51f73740f7f7017635b25dfbbf911"
 
 [[test]]
@@ -1310,8 +1310,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L224-L224"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "93c2817a659c6df7d5b1f9927c5a0fb09c5c39dcfc4fc10ec95d51a93c674f0e"
 
 [[test]]
@@ -1320,8 +1320,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L225-L225"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "760816ac2069df152dadc73fac0c58b5dd096d7a64477d764801b1fe77a7b80f"
 
 [[test]]
@@ -1330,8 +1330,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L226-L226"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "c285bc8a70dd2ad27088b017f53d3a176218dcb6e11ba3c519069f79f2985d75"
 
 [[test]]
@@ -1340,8 +1340,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L227-L227"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "da6610dbe5ba3831882da1abfce6481f6698868d50ba10fb47cac314ca5e9a02"
 
 [[test]]
@@ -1350,8 +1350,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L228-L228"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "0f15d2af8ff02be409c608ee0e8f1f25f47ef665a231cd0f0bd9195ffb2dabd5"
 
 [[test]]
@@ -1360,8 +1360,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L229-L229"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "954b7451a95ee38991cf32f83e6d70b5685da9961cbf960c01228fe418706cf8"
 
 [[test]]
@@ -1370,8 +1370,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L212-L212"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "050069e411e3b8b8e30a06a2c5bf7b82ee86e158eba422f4e1219d16c9d82478"
 
 [[test]]
@@ -1380,8 +1380,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L230-L230"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "4b5df032ccf129e7df57298b1d5d7b2d89ba6ec71c74ebb5913a56c3750173d9"
 
 [[test]]
@@ -1390,8 +1390,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L213-L213"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "6c76f14f74622141a18445aeb862003a8612b61b825a05b8c84e75368cf0ceec"
 
 [[test]]
@@ -1400,8 +1400,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L214-L214"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "0021fdfc56f5b5695e3c135c3b7e5fd52cb921945476796a121590537a4d5c7e"
 
 [[test]]
@@ -1410,8 +1410,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L215-L215"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "83b5245d0fc7691e424763e67201d21d6dd4ae086c4434e3feda5c306272855c"
 
 [[test]]
@@ -1420,8 +1420,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L216-L216"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "58564e11c764dd2ec3e1b95ce220cebdd2d2519aeb49972578f6c597dd6695b3"
 
 [[test]]
@@ -1430,8 +1430,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L217-L217"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "68e8d912eeaaac7acefbae1b112648261fc3e572bb07f3de3cf8565861caa8da"
 
 [[test]]
@@ -1440,8 +1440,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L218-L218"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "092e893a80b63b5c4dd640bbc2dfa9dd638e08c75167ef0f03eaad271c6ad020"
 
 [[test]]
@@ -1450,8 +1450,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BlurRectBench.cpp#L219-L219"
 module = "effects"
-status = "todo"
-reason = "inside #if 0 in bench/BlurRectBench.cpp (disabled upstream: gaussian ground truth too slow); no registration"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "2d5ece4c83918e66ab42b05469af619d3c11857de7676b8100df492bccb7b530"
 
 [[test]]
@@ -3241,6 +3241,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L168-L168"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "04fcdb015dfbaf445075b2b9870b5e8ad5d5b376c8234bc5e476c3e7909da1fb"
 
 [[test]]
@@ -3250,6 +3251,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L165-L165"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "2457b84885e8e1d9c270746354aafcfd6e512289ed49e10fe548a9f338401631"
 
 [[test]]
@@ -3259,6 +3261,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L169-L169"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "6445270eb9cc526504d1fda2d4970400754f4813c1f8a3f9ad95a4b33321a652"
 
 [[test]]
@@ -3268,6 +3271,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L166-L166"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "b7cb79bd337b5b17995f129e95c08345d48d9ab1eac1e699957045dd257f26b4"
 
 [[test]]
@@ -3277,6 +3281,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L167-L167"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "0cf0905082578081a3d744b07d97029d1750def80547e4160fb1b335670d2c81"
 
 [[test]]
@@ -3286,6 +3291,7 @@ macro = "DEF_BENCH"
 source = "bench/DisplacementBench.cpp#L164-L164"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "26244bb3f0435d91d8929df94874e6447c358582c1c6e4d43663ba7ae46eb525"
 
 [[test]]
@@ -3294,7 +3300,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L58-L58"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9b87eb129d7c756f5e2bfbcc1f6c2ad062f6dc299a1424a6ed89d51df29c2aff"
 
 [[test]]
@@ -3303,7 +3309,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L60-L60"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3bf08d03b126e9d4c1db9ef7114d2dc448d715a65f8cfafb86c2da27a0f6c201"
 
 [[test]]
@@ -3312,7 +3318,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L62-L62"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "40099f594491abcd768c3e8bbd4dd2bd789fe4cadad850a6104a1427afb501e6"
 
 [[test]]
@@ -3321,7 +3327,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L71-L71"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c0fa312e90f8a3e2373dee562059060a6cc58a62cff2b62692fb8b47a1ca28a2"
 
 [[test]]
@@ -3330,7 +3336,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L73-L73"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7ff34f748d791d386099ff3a2dade74daade282acb19f2f6b02ee61abb1b71ff"
 
 [[test]]
@@ -3339,7 +3345,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L75-L75"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8515f6c8753b196e4cd13f1842352711acdc076394688386cc52b545f211646d"
 
 [[test]]
@@ -3348,7 +3354,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L64-L69"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "1a1c1ebf8d2fa7e121006f055038551747bdc5722a651478360490158b43f63a"
 
 [[test]]
@@ -3357,7 +3363,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DrawBitmapAABench.cpp#L77-L82"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "bf29619bbb9d4071a8672a9a282027a8638da768113b99cadae6a31472af38bd"
 
 [[test]]
@@ -3628,6 +3634,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L59-L59"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "239bd364dcb5c2730fe113a37cc05f6600c74e5aaf54f6626a0f45778afd7c19"
 
 [[test]]
@@ -3637,6 +3644,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L60-L60"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "e7d439eeab40bb48bf39eb0fe117da66361605364b796d2c804549b37af697a9"
 
 [[test]]
@@ -3646,6 +3654,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L61-L61"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "aa485386586c51a92a87df118d731c44cc2fb9b012e8e47a24406db1c6f31c19"
 
 [[test]]
@@ -3655,6 +3664,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L63-L63"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "d1da65c96fc88d9461299919206bf00a96b589424c2c5034bc807d980804f119"
 
 [[test]]
@@ -3664,6 +3674,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L64-L64"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "296a756f88c8cf413ea5b17eaba87cea7545f733bf56150dc4f83f2925795358"
 
 [[test]]
@@ -3673,6 +3684,7 @@ macro = "DEF_BENCH"
 source = "bench/FilteringBench.cpp#L65-L65"
 module = "effects"
 status = "todo"
+reason = "reads images/ship.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "c372b9388389f279d1503f74be2a3c0440cc931854dc7720eaf7b5a76178be1c"
 
 [[test]]
@@ -5348,7 +5360,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ImageBench.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6f443049feb97806b924b6744fec4bb90cdc2882f9488d6722cecb652b7caff3"
 
 [[test]]
@@ -5358,6 +5370,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBench.cpp#L77-L77"
 module = "core"
 status = "todo"
+reason = "needs SkResourceCache (src/core/SkResourceCache.h), not ported"
 span_hash = "5a552e345d2db87b643bbfbc8bc817d4caa4f1720a0bfbd4858b40a71ef29e2b"
 
 [[test]]
@@ -5483,7 +5496,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ImageFilterDAGBench.cpp#L183-L183"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "e24b046eaf0f3e53bf36325b29434adb2748e4c30c0c9a0c0b1ba80773f1a900"
 
 [[test]]
@@ -5493,6 +5506,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageFilterDAGBench.cpp#L185-L185"
 module = "effects"
 status = "todo"
+reason = "SkImageFilters::DisplacementMap is not in skia-rust-effects"
 span_hash = "443450ef44cd1726bbbb2de1f008c5de0177e91002d937ee53aaafcdac8b4d11"
 
 [[test]]
@@ -5501,7 +5515,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ImageFilterDAGBench.cpp#L186-L186"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "d3c40f56075985bcb1a917dff2ae3745c63f9d446483ecb703d35298d3eb2d1d"
 
 [[test]]
@@ -5511,6 +5525,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageFilterDAGBench.cpp#L184-L184"
 module = "effects"
 status = "todo"
+reason = "reads images/mandrill_512.png (ToolUtils::GetResourceAsImage); no PNG codec or resource images in the port"
 span_hash = "5e0d040347dc3cf7b5170506212734dffffbc1dd41b0f32db59a32a13181bace"
 
 [[test]]
@@ -5592,6 +5607,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L215-L215"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "8677f400c273c3bc8a97d0f04f74d3cf7a55ea196e250aa6f2827fa3bebab10a"
 
 [[test]]
@@ -5601,6 +5617,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L214-L214"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "066991407bb32a36e81a5e65b1af5ee81646b1a11d37bf3adef4ad6cbd47f4b1"
 
 [[test]]
@@ -5610,6 +5627,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L221-L221"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "3ef1d2d120b1eab3fc633b68008cfbe8a33172e8d443a74e53444a48391b650f"
 
 [[test]]
@@ -5619,6 +5637,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L220-L220"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "6f6c137f2e60211782fc0ef67675c826833831abe27cdeee61f24c274cdaa89b"
 
 [[test]]
@@ -5628,6 +5647,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L213-L213"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "4bee4192e5846fb72f66634f0ed2e2183f63a30f6b74c0553d9cfbcba0a68f6e"
 
 [[test]]
@@ -5637,6 +5657,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L212-L212"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "531bb0985749f4f013b264bf9a59c66b66ee03e021c89973838d946bb1c0f46d"
 
 [[test]]
@@ -5646,6 +5667,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L219-L219"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "7032bfb6af225725c0dceca6c40b2956a4c3ed3bd2dde51b7271dce974e3e6fa"
 
 [[test]]
@@ -5655,6 +5677,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L218-L218"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "cda7c3cdcaafc2735d5007dde35ccb3addfbb660a4937646d505483de78fac9a"
 
 [[test]]
@@ -5664,6 +5687,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L217-L217"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "e6570fea0e1fc01714e1eebe7c54c018563d20a6038d3ddd37d3290ca39c5253"
 
 [[test]]
@@ -5673,6 +5697,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L216-L216"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "31df9ea73342cb616aeabafc5ca69b34a2818c8bfd7c6c4c712e376ab490b47b"
 
 [[test]]
@@ -5682,6 +5707,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L223-L223"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "8e9eca5dfdf9f663028633b1e9369e1acb562dc4d4f4ec565e9e529a332da49d"
 
 [[test]]
@@ -5691,6 +5717,7 @@ macro = "DEF_BENCH"
 source = "bench/LightingBench.cpp#L222-L222"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::DistantLit/PointLit/SpotLit are not in skia-rust-effects"
 span_hash = "6f69dbda045f39c6e020f36f830a79474d9c3f6e91ef58e0c16961cdd9adf391"
 
 [[test]]
@@ -6223,6 +6250,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L77-L77"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "3af8d054c99cd58444b468cbcf3f0babfe3ee07535fb8a3edd41b5cf6bae9fef"
 
 [[test]]
@@ -6232,6 +6260,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L81-L81"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "9cd7d40d81fcabd80a1802b3a09e56d22aa817c29b2961d9ee248f5509ed1b7d"
 
 [[test]]
@@ -6241,6 +6270,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L80-L80"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "1ece8a489849adc4043329611cc9512734b909331606969d66076b9494cb89cc"
 
 [[test]]
@@ -6250,6 +6280,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L79-L79"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "c0749272cdce78fd8779106c080176d1033119f8ccacc0112155a0d6ec3ac00d"
 
 [[test]]
@@ -6259,6 +6290,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L78-L78"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "2a1aa6f6babee15a57afd2f8b38289f71f4a9653deb39b1a8caebd9937233ba4"
 
 [[test]]
@@ -6268,6 +6300,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L83-L83"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "c59cde0f60dd98fbd2496273637769c0b3f8d83837bb60faffcb1f32f96daa90"
 
 [[test]]
@@ -6277,6 +6310,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L87-L87"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "5e163e21bebec0e5155715afc323ebd0151aa8e70697166dfbd82c4f40ee7d07"
 
 [[test]]
@@ -6286,6 +6320,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L86-L86"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "a3156f8105ec2defa38562686bb82252507ba48df51eba532aa6173e81e0d902"
 
 [[test]]
@@ -6295,6 +6330,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L85-L85"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "cf99aa49a2f95b5f6677f4b6e1b6a23a025d2ff4ed4e8f141952ab8d4e1212c8"
 
 [[test]]
@@ -6304,6 +6340,7 @@ macro = "DEF_BENCH"
 source = "bench/MatrixConvolutionBench.cpp#L84-L84"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::MatrixConvolution is not in skia-rust-effects"
 span_hash = "646dd72646613e8437081cf30c18a7e02349ae506db8a335de7a26a904d12abf"
 
 [[test]]
@@ -6666,6 +6703,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L94-L94"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "4e67cab14281d8acf76932d0d37006abbe0ec90ef2487d461060a949d224a95a"
 
 [[test]]
@@ -6675,6 +6713,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L89-L89"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "33db0dbf83bea4836e8a44ae5d588d974f9dd792e5868b50e759048b465b1a01"
 
 [[test]]
@@ -6684,6 +6723,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L88-L88"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "cba053f45178f13d8dcea949eb082b87bcfcfc3a158ca43fa7269da819f05a82"
 
 [[test]]
@@ -6693,6 +6733,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L92-L92"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "6a994bc484e0e326eb891fe595c1035ac1e405892d48a50159b23916351e5008"
 
 [[test]]
@@ -6702,6 +6743,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L91-L91"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "c38d93aaa51c7419a9639cd3cd874ee1bad02b0377912169c3e012d7fc210797"
 
 [[test]]
@@ -6711,6 +6753,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L86-L86"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "292464dd507fadb4a81625bffb9523482368c3c3abccced74f409b78a3c12fd9"
 
 [[test]]
@@ -6720,6 +6763,7 @@ macro = "DEF_BENCH"
 source = "bench/MorphologyBench.cpp#L85-L85"
 module = "core"
 status = "todo"
+reason = "SkImageFilters::Dilate/Erode are not in skia-rust-effects"
 span_hash = "af1c13c84ebccb53326217d9957abba6e0621214c192a459f8c105445736e9d0"
 
 [[test]]
@@ -7520,8 +7564,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathBench.cpp#L1226-L1226"
 module = "core"
-status = "todo"
-reason = "registration is commented out in Skia (PathBench.cpp: optimized away); not registered"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "c6b95ad0579ca30ecc80878cad9da289a312b07a54eb8fb1fa799de7c5c90da3"
 
 [[test]]
@@ -7530,8 +7574,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathBench.cpp#L1227-L1227"
 module = "core"
-status = "todo"
-reason = "registration is commented out in Skia (PathBench.cpp: optimized away); not registered"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "f020452ed718ec6ac73712040d0d9a7c17660aa60cb2cd49071ca840fe33aa3c"
 
 [[test]]
@@ -7585,8 +7629,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathBench.cpp#L1228-L1228"
 module = "core"
-status = "todo"
-reason = "registration is commented out in Skia (PathBench.cpp: optimized away); not registered"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "99f13c3c3a2387038caf531fbf67732b64a57910a096c230db9d32b3798977be"
 
 [[test]]
@@ -7595,8 +7639,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathBench.cpp#L1229-L1229"
 module = "core"
-status = "todo"
-reason = "registration is commented out in Skia (PathBench.cpp: optimized away); not registered"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "ba061ae4d5decc30c3bd04b57d5192365b0032046d401de3e08efc9d6cb14063"
 
 [[test]]
@@ -8279,7 +8323,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L175-L175"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "015d29a96b10573d4bde682654b4dd3d45ca301bc1461ec577bb7a64915f176b"
 
 [[test]]
@@ -8288,7 +8332,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L176-L176"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "321b46334d7ff7928ef0e8a11db778c3d831319405a755104f99a7fedd7f2c72"
 
 [[test]]
@@ -8297,7 +8341,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L177-L177"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e63f4cc25203f7bb53737e59d317925aa75dd1d4534a1519f675ee9be9837b62"
 
 [[test]]
@@ -8306,7 +8350,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L178-L178"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d7707e2a6cac7e6f224ebdea32d9d260369081c3fa4856ec11e619a11bc5f15f"
 
 [[test]]
@@ -8315,7 +8359,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L179-L179"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7b0c79c40dfb5c14b471b6e0dba6e13949b8d89dab6d948ea598f9144c51d3e8"
 
 [[test]]
@@ -8324,7 +8368,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L180-L180"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "93b09263f93fca4b6c3adcd9ebc4f9a71ab7271d708be6d5971c2b0c7a3c8297"
 
 [[test]]
@@ -8333,7 +8377,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L181-L181"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "95277bced6703c1084d7b503ce44a52991cbb9c42565ac2170c078ed7ede2365"
 
 [[test]]
@@ -8342,7 +8386,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L182-L182"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ba8490c259d16cef9289f6663a6a1132327f1a8fe9f4b3176157ff6744befbc7"
 
 [[test]]
@@ -8351,7 +8395,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L183-L183"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e423742989a15cd8da3d9d19e34ef9d86bf8eaccef502af70b1e0b73052a59dd"
 
 [[test]]
@@ -8360,7 +8404,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L165-L165"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6fe57d87efcbd95411503f0a0e3a652bebfdec3afd70fdfac401544be1ccd8cd"
 
 [[test]]
@@ -8369,7 +8413,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L166-L166"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "65c8bfdc432932c7301a730f026f76fec57ef458ea4118a46c79fba78b070aea"
 
 [[test]]
@@ -8378,7 +8422,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L167-L167"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a697ee9f854e40275fd0b25541d50139b5f6b77227ae30bef9b48adb1e10bd11"
 
 [[test]]
@@ -8387,7 +8431,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L168-L168"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "97251994cd72b5a9cad62be7124db9a74cadeb6209ee9ba01371e5ea46554a22"
 
 [[test]]
@@ -8396,7 +8440,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L169-L169"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6c8bbfd8a3390833522dce897d5cfde432d998b0eb083423b4d4a3bcb0afa013"
 
 [[test]]
@@ -8405,7 +8449,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L170-L170"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d1edf6d5303cf4cd2f4888b68953682d93d8f5b77b2b5e8117bfbcade722d448"
 
 [[test]]
@@ -8414,7 +8458,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L171-L171"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "51e86f038b72443f75995107362790f921520a067a915c8dc611849109b26b52"
 
 [[test]]
@@ -8423,7 +8467,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L172-L172"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5ef100a90e09cd4ebce30c4263f0905b4db0e577e37bd24957a47a412f5b26be"
 
 [[test]]
@@ -8432,7 +8476,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureNestingBench.cpp#L173-L173"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8b2888d43d30f9c4d9277cfee74b2acc07a5caa8307a313e5a0b7d541f4224d4"
 
 [[test]]
@@ -8441,7 +8485,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PictureOverheadBench.cpp#L43-L43"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2381ecf7d827630e76fc956408cdd38b792a745160a8de35f04b42f87219c339"
 
 [[test]]
@@ -8450,7 +8494,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PicturePlaybackBench.cpp#L97-L97"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "650529912c7c17c707bcb8f1eb20afc872eb5ce86df1e85723a1bff4994bcc15"
 
 [[test]]
@@ -8459,7 +8503,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PicturePlaybackBench.cpp#L98-L98"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "42d32f77f4570cfa13b8e62770ad0c4cad62a729f1f22ad0223711b35d910e37"
 
 [[test]]
@@ -8468,7 +8512,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PicturePlaybackBench.cpp#L99-L99"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b25068344ba2acba6fa867fba6a1efe6385e6ade0d578ec65f5a840458503c33"
 
 [[test]]
@@ -8477,7 +8521,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PicturePlaybackBench.cpp#L100-L100"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e3b73a9db735a394c405f0dd0d1e8c1c8b8296d56c4784bd2400a20f0eae761c"
 
 [[test]]
@@ -9581,7 +9625,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RepeatTileBench.cpp#L81-L81"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "59d98d697480a3677c3e696b859f48c5c47ecc9a2bf8dd768a6e7f41d42ae6aa"
 
 [[test]]
@@ -9590,7 +9634,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RepeatTileBench.cpp#L82-L82"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "84ad0ed95e01e4caa927ffabad4884be6836fda62a58725c81ee58250b398675"
 
 [[test]]
@@ -9599,7 +9643,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RepeatTileBench.cpp#L83-L83"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e68f2915a3f95a3a11b6c44b2fa1d68c73eef480a67b06f4431111ce1455020f"
 
 [[test]]
@@ -9690,6 +9734,7 @@ macro = "DEF_BENCH"
 source = "bench/ShadowBench.cpp#L100-L100"
 module = "core"
 status = "todo"
+reason = "SkShadowUtils (SkDrawShadowRec, SkShadowFlags) is not ported"
 span_hash = "1a0d19828bdb5e0bcfaa075ea1136f224b018a5348e0ea456dc3da791acb2c78"
 
 [[test]]
@@ -9699,6 +9744,7 @@ macro = "DEF_BENCH"
 source = "bench/ShadowBench.cpp#L101-L101"
 module = "core"
 status = "todo"
+reason = "SkShadowUtils (SkDrawShadowRec, SkShadowFlags) is not ported"
 span_hash = "5087bec5112dffb8def31ed2b9d2945701863c0edb83c02050840cd479c92b01"
 
 [[test]]
@@ -9708,6 +9754,7 @@ macro = "DEF_BENCH"
 source = "bench/ShadowBench.cpp#L102-L102"
 module = "core"
 status = "todo"
+reason = "SkShadowUtils (SkDrawShadowRec, SkShadowFlags) is not ported"
 span_hash = "daa0d472b972678adc5054b87a496a0ebaef7aeae120a7e7731205dad06dcf90"
 
 [[test]]
@@ -9717,6 +9764,7 @@ macro = "DEF_BENCH"
 source = "bench/ShadowBench.cpp#L103-L103"
 module = "core"
 status = "todo"
+reason = "SkShadowUtils (SkDrawShadowRec, SkShadowFlags) is not ported"
 span_hash = "49cb3381d058ead4ebcf3849ab5052989b980acecdd577f87f75e2c2ae0dac4d"
 
 [[test]]
@@ -10031,8 +10079,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L258-L258"
 module = "core"
-status = "todo"
-reason = "compiled out in Skia (ENABLE_COMMAND_LINE_SHAPES_BENCH is 0); the flag-driven constructor is not ported"
+status = "excluded"
+reason = "compiled out in Skia (#if 0)"
 span_hash = "25a3a7023b96dccf4fa48ae4c263900afb767ce017b1021638bc9f2bee348d93"
 
 [[test]]
@@ -10937,7 +10985,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L129-L129"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "30395084cf276be940c1255c5d7203922a85981ecf86525d827d00ebd2ba6d94"
 
 [[test]]
@@ -10946,7 +10994,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L137-L137"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a87c6d089710db6a87a0ca933f728f44a7ae202d2782c65006d9dcb744a1198c"
 
 [[test]]
@@ -10955,7 +11003,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L134-L134"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "490c76bb8b421b44220b623136862569ab4e18bc19c06328f5300a46e6c60715"
 
 [[test]]
@@ -10964,7 +11012,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L142-L142"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "feb52382b1b776c7ba156038eb01920711232e715489e02a92da34bb4613521c"
 
 [[test]]
@@ -10973,7 +11021,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L132-L132"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ad86b9d4a5e130e038273b64545da49ac6b1c758d52e5f4372039780bcee7601"
 
 [[test]]
@@ -10982,7 +11030,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileBench.cpp#L140-L140"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3df732ddbbb28f23de925b75b9e72a4f37733c0a56be6902245b88ee748a66a1"
 
 [[test]]
@@ -10991,7 +11039,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileImageFilterBench.cpp#L68-L68"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "36fe258406d28952bf42ffa93f0e0a1adb60ed2b049728469d3e662434df88f8"
 
 [[test]]
@@ -11000,7 +11048,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileImageFilterBench.cpp#L69-L69"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ca46f6949e19e58680c8b2705b1407e6ebe4c0885ab8b8e416e4a36c87fb1b0d"
 
 [[test]]
@@ -11009,7 +11057,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TileImageFilterBench.cpp#L70-L70"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "9ad150a2fc495efb3012a74af4f86ebb8b16d1e336a25386fa2b71cd732da0e2"
 
 [[test]]
