@@ -21773,6 +21773,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/make_raster_image.cpp#L15-L19"
 module = "raster"
 status = "todo"
+reason = "needs images/color_wheel.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "58a11454119f85273c396905e4686a988e8cad6187e5cef3a8b3b38c6c1206f8"
 
 [[test]]
@@ -23471,6 +23472,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L128-L147"
 module = "raster"
 status = "todo"
+reason = "needs SkCanvasPriv::SaveBehind/DrawBehind (save-behind layer), not ported"
 span_hash = "992202a95cfbe6949be743488fff10a336ba5fd51d9e2515d4d147f4e5e404a4"
 
 [[test]]
@@ -23479,7 +23481,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L151-L175"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2e85259922b1e2c867148fdff5993a0a6429883e7ec4ff69220b785de38436b7"
 
 [[test]]
@@ -23489,6 +23491,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L53-L65"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_256.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "8a053ee34e99a487d31698a80d1af52208f83e145226de1479dde6eaf145b02c"
 
 [[test]]
@@ -23498,6 +23501,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L233-L260"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "2e322f406f759aa71fa1d0e96f175ce5617792b64a48344173331aa18007a136"
 
 [[test]]
@@ -23930,7 +23934,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_257.cpp#L86-L143"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "b2f6db14d17ce4a7b2a8d26ef7872f1ad22b74cf5f5f67f387e311fa81f1b6ea"
 
 [[test]]
@@ -23958,6 +23962,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/skbug_8664.cpp#L18-L65"
 module = "raster"
 status = "todo"
+reason = "needs images/mandrill_512.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "4a41f9f8345d6280791516226897a860b1fa10e0eaf0d7fe7d05a7ec5b0d55ec"
 
 [[test]]
@@ -24029,7 +24034,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/spritebitmap.cpp#L97-L97"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "f16 config mismatches on every tier (565 and 8888 match); needs an oracle rp-dump to locate the divergence; see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"
 span_hash = "907a8f7914cd40dd9a0070ea4387b62faa9c7fb14d65ddcb4403c3e06e8f41b4"
 
 [[test]]
@@ -25289,7 +25295,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/xfermodes.cpp#L300-L300"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "62de01a37b992b9e374896112329a51170cd4951cc3282f28ac23884e41d91a7"
 
 [[test]]
@@ -25298,7 +25304,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/xfermodes2.cpp#L156-L156"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "bbdf1d40acaaf7be0198ac2193b49ff78f1b67e06f0c61f04360e2ad3a0c26aa"
 
 [[test]]
@@ -25307,7 +25313,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/xfermodes2.cpp#L157-L157"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "4a5f25ebede1dc360c60de5d85dff7c0ea4114aed3ef387515aedd6f05dab318"
 
 [[test]]
@@ -25316,7 +25322,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/xfermodes3.cpp#L229-L229"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "e477b08a6f4eb73335a833b78a79f8fc18760de31e1b5c18ec9cdb776bd75dbe"
 
 [[test]]
