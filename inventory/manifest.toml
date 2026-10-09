@@ -17469,7 +17469,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/color4f.cpp#L131-L166"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8ac0418453fe6e998eb57f7ce543a0222fb0d09ee38852b32e6de4e3c81fb67e"
 
 [[test]]
@@ -17487,7 +17487,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/color4f.cpp#L97-L129"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c29ad3e943e8cf5b914c1161f23847fbe29e07c177296128a8de5feb4397a36a"
 
 [[test]]
@@ -17588,8 +17588,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colorfilteralpha8.cpp#L51-L51"
 module = "effects"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "914ee812c94b6ef4aa702fef608d239e6765e445af8c0da2a3c2d71ef5af53cf"
 
 [[test]]
@@ -17625,8 +17624,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colorfilters.cpp#L84-L84"
 module = "effects"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "ed51de5d2c5745e6f19f9586f4059bab8ebd542c729d61ddfb8fc59691a12b5c"
 
 [[test]]
@@ -17635,8 +17633,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/colorfilters.cpp#L183-L183"
 module = "effects"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "999922a287d95dae75e9de808020cbbd41b245af6d860325906ca45a420b4b40"
 
 [[test]]
@@ -18719,7 +18716,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/coordclampshader.cpp#L19-L87"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "11188c1cfc14a651d76c34fcdd47667138b7b56e7df8e5e55f1eb56bb2d46ba6"
 
 [[test]]
@@ -19810,7 +19807,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emptyshader.cpp#L98-L98"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d03753c2ba88e48c3ff17d7aaec1081f8e1e162ccb9a034bb4662df32bbd3689"
 
 [[test]]
@@ -21464,8 +21461,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/highcontrastfilter.cpp#L155-L155"
 module = "effects"
-status = "todo"
-reason = "draws labels with text (SkFont, drawSimpleText: not ported)"
+status = "passing"
 span_hash = "b25f94e0c659efbe603156987fe8dac3c1fa4c6c788a5748dca1836f298b9a4f"
 
 [[test]]
@@ -22728,7 +22724,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mixercolorfilter.cpp#L132-L132"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d0161c2e87acc871c0b42fb6b45a9bd9a3dd3fb77bd187fc5b052ee8bbce73cd"
 
 [[test]]
@@ -22737,8 +22733,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/modecolorfilters.cpp#L166-L166"
 module = "effects"
-status = "todo"
-reason = "needs gradient shaders (SkShaders::*Gradient, not ported); the color filters themselves are ported"
+status = "passing"
 span_hash = "7be129162b57edb92f9790ed2b29e5fc57980f93518da55fb6136a9d0a5a7cce"
 
 [[test]]
@@ -24747,7 +24742,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/srgb.cpp#L16-L44"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2d4b88bd8505dc17d69a2aff03a3c11fe767f7ebad4da490a082a2e2531e6f06"
 
 [[test]]
@@ -24774,7 +24769,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/stroke_rect_shader.cpp#L28-L73"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c46d83c5d494e4023e2c40ab9be5d6b7e2ae05a76a151f47f0629c00be70375e"
 
 [[test]]
@@ -25036,7 +25031,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/subsetshader.cpp#L21-L47"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "95bade19b424df078a23edcb7af2d2ce805d99785e2842db9467edcdb44b94e3"
 
 [[test]]
@@ -25146,8 +25141,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L291-L291"
 module = "effects"
-status = "todo"
-reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
+status = "passing"
 span_hash = "1c4ac1312be973f98b0c9cd22a9fe8348334b08102e4aaa647572810e7b70e8a"
 
 [[test]]
@@ -25156,8 +25150,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L300-L300"
 module = "effects"
-status = "todo"
-reason = "needs gradient shaders and SkImage/drawImage (not ported); the color filters themselves are ported"
+status = "passing"
 span_hash = "50ea2d83408fc631074a50ce0dc82a09cf901c206ed0188b7aae660dda6d0c3d"
 
 [[test]]
@@ -25166,8 +25159,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/tablecolorfilter.cpp#L209-L209"
 module = "effects"
-status = "todo"
-reason = "needs SkImage/drawImage and gradient shaders (not ported); the color filter itself is ported"
+status = "passing"
 span_hash = "68b5bd024e8b875ed3fe356874e8e23a6e0cf44d7f09c2d297e1a5bf447ba51c"
 
 [[test]]

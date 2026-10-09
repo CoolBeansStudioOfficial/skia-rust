@@ -193,3 +193,31 @@ pub fn make_surface(
         .new_surface(info, props)
         .or_else(|| surfaces::raster(info, None, props))
 }
+
+/// Port of `ToolUtils::DecodeDataToBitmap` (tools/DecodeUtils.cpp): decodes `data` with the image
+/// generator's natural info and the default colour space, or `None` if it cannot be decoded.
+// Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
+#[must_use]
+pub fn decode_data_to_bitmap(data: Vec<u8>) -> Option<skia_rust_core::bitmap::Bitmap> {
+    use skia_rust_core::bitmap::Bitmap;
+    use skia_rust_core::image_info::ImageInfo;
+    let mut generator = skia_rust_codec::image_generator_from_encoded::make_from_encoded(
+        Some(Data::new_from_vec(data)),
+        None,
+    )?;
+    let info: ImageInfo = generator.info().with_color_space(None);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    if !generator.get_pixels(&info, &mut pixels, row_bytes) {
+        return None;
+    }
+    let mut bm = Bitmap::new();
+    bm.install_pixels(&info, pixels, row_bytes).then_some(bm)
+}
+
+/// Port of `ToolUtils::GetResourceAsBitmap`: the decoded bitmap of the resource at `path`.
+// Port of: tools/DecodeUtils.h#L23-L25 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_bitmap(path: &str) -> Option<skia_rust_core::bitmap::Bitmap> {
+    decode_data_to_bitmap(get_resource_as_data(path)?)
+}
