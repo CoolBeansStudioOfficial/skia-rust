@@ -145,6 +145,7 @@ pub mod picture;
 pub mod plus;
 pub mod points;
 pub mod poly2poly;
+pub mod polygonoffset;
 pub mod polygons;
 pub mod preservefillrule;
 pub mod quadpaths;

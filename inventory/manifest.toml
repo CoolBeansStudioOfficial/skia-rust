@@ -22891,7 +22891,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/polygonoffset.cpp#L615-L615"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "290193ac0caf6ce2e7f496a3a39d3bf7561ac55d9b490e9e5865a00d6d9392f8"
 
 [[test]]
@@ -22900,7 +22900,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/polygonoffset.cpp#L614-L614"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "ba4bb60be368a0095afd85ba5a1b12ad98a2cfd8b9d47cacb7b24e468a3a3f18"
 
 [[test]]
@@ -35670,7 +35670,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MD5Test.cpp#L67-L71"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "28383c20c3ba4dc7d139a5e784c40ce44e30d51ba19f4cbe2d74624d391a56da"
 
 [[test]]
@@ -39247,7 +39247,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PolyUtilsTest.cpp#L17-L421"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ef2717a1cf3803935c67c00a3b94cb797749c603a425e255209513b442a0d7de"
 
 [[test]]
