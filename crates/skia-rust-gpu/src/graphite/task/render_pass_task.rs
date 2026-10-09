@@ -18,15 +18,19 @@ use skia_rust_core::size::ISize;
 
 use crate::gpu::backing_fit::get_approx_size;
 use crate::gpu::sk_log::skia_log_w;
+use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::caps::{AttachmentSizePolicy, Caps};
-use crate::graphite::command_buffer::CommandBuffer;
+use crate::graphite::command_buffer::{CommandBuffer, ResourceTracker};
 use crate::graphite::context_priv::ContextPriv;
+use crate::graphite::draw_pass::DrawPassCommand;
+use crate::graphite::draw_types::PipelineStageFlags;
 use crate::graphite::graphics_pipeline::GraphicsPipeline;
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_types::SampleCount;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
-use crate::graphite::resource_types::{Discardable, LoadOp};
+use crate::graphite::resource_types::{Discardable, LoadOp, StoreOp};
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::ScratchResourceManager;
 use crate::graphite::task::{ReplayTargetData, Status, Task, TaskRef};
@@ -61,6 +65,52 @@ pub trait DrawPass: Send + Debug {
     /// `storageFallbackTexture()`.
     #[doc(alias = "storageFallbackTexture")]
     fn storage_fallback_texture(&self) -> Option<&Arc<TextureProxy>>;
+
+    /// `target()`.
+    fn target(&self) -> Option<&Arc<TextureProxy>> {
+        None
+    }
+
+    /// `commands()`: the draw commands, in order.
+    fn commands(&self) -> &[DrawPassCommand] {
+        &[]
+    }
+
+    /// `storageBufferInfo()`: the `StorageContext` buffer of the pass, if any.
+    #[doc(alias = "storageBufferInfo")]
+    fn storage_buffer_info(&self) -> Option<&BindBufferInfo> {
+        None
+    }
+
+    /// `storageBufferStages()`: valid after `addResourceRefs()`.
+    #[doc(alias = "storageBufferStages")]
+    fn storage_buffer_stages(&self) -> PipelineStageFlags {
+        PipelineStageFlags::NONE
+    }
+
+    /// `ops()`.
+    fn ops(&self) -> (LoadOp, StoreOp) {
+        (LoadOp::Load, StoreOp::Store)
+    }
+
+    /// `clearColor()`.
+    #[doc(alias = "clearColor")]
+    fn clear_color(&self) -> [f32; 4] {
+        [0.0; 4]
+    }
+
+    /// The pipeline descriptions the commands' `BindGraphicsPipeline` index, before
+    /// `prepareResources()` turns them into handles (`fPipelineDescs`).
+    fn pipeline_descs(&self) -> &[GraphicsPipelineDesc] {
+        &[]
+    }
+
+    /// `addResourceRefs()`: resolves the pipeline handles and tracks the pass's resources on
+    /// `command_buffer`. False if a pipeline could not be created, which drops the pass.
+    #[doc(alias = "addResourceRefs")]
+    fn add_resource_refs(&mut self, _tracker: &mut dyn ResourceTracker) -> bool {
+        true
+    }
 }
 
 // Get the required MSAA size for the render pass.
@@ -192,6 +242,12 @@ impl RenderPassTask {
             })
             .into_ref(),
         )
+    }
+
+    /// The draw passes of the task (`fDrawPasses`).
+    #[must_use]
+    pub fn draw_passes(&self) -> &[Box<dyn DrawPass>] {
+        &self.draw_passes
     }
 
     /// `prepareResources()`.
@@ -405,7 +461,7 @@ impl RenderPassTask {
             self.dst_read_bounds,
             resolve_offset,
             self.target.dimensions(),
-            &self.draw_passes,
+            &mut self.draw_passes,
         ) {
             Status::Success
         } else {

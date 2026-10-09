@@ -5,14 +5,14 @@
 
 //! Helpers shared by the shader generators and the pipeline code: the intrinsic uniforms, the
 //! hardware-blending decision, sampler layouts and pipeline labels.
-//!
-//! `BuildComputeSkSL` is not ported: it needs `ComputeStep` (the compute wave, G13).
 
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::rect::IRect;
 
 use crate::gpu::blend_formula::{get_blend_formula, get_lcd_blend_formula};
+use crate::gpu::gpu_types::BackendApi;
 use crate::graphite::caps::{Caps, ResourceBindingRequirements};
+use crate::graphite::compute::compute_step::{ComputeStep, ResourceType};
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::render_step::{Coverage, RenderStep};
 use crate::graphite::resource_types::DstReadStrategy;
@@ -200,4 +200,108 @@ pub fn get_pipeline_label(
     // the shader portion will be "(empty)" for depth-only draws
     label.push_str(&dict.id_to_string(caps, paint_id));
     label
+}
+
+/// `BuildComputeSkSL(caps, step, backend)`: the complete `SkSL` program of a compute step, with the
+/// resource declarations (bindings assigned in the step's resource order) in front of its body.
+// Port of: src/gpu/graphite/ContextUtils.cpp#L159-L235 (chrome/m156)
+#[doc(alias = "BuildComputeSkSL")]
+#[must_use]
+pub fn build_compute_sksl(caps: &dyn Caps, step: &dyn ComputeStep, backend: BackendApi) -> String {
+    use std::fmt::Write as _;
+
+    let local_size = step.local_dispatch_size();
+    let mut sksl = format!(
+        "layout(local_size_x={}, local_size_y={}, local_size_z={}) in;\n",
+        local_size.width, local_size.height, local_size.depth
+    );
+
+    let binding_reqs = caps.resource_binding_requirements();
+    let textures_use_distinct_idx_ranges =
+        binding_reqs.compute_uses_distinct_idx_ranges_for_textures;
+    let mut index = 0;
+    // NOTE: SkSL Metal codegen always assigns the same binding index to a texture and its sampler.
+    let mut tex_idx = 0;
+    // `index++` / `texIdx++` of the C++: the binding of the next texture, from the range the
+    // caps say textures use.
+    let next_texture_binding = |index: &mut i32, tex_idx: &mut i32| {
+        let counter = if textures_use_distinct_idx_ranges {
+            tex_idx
+        } else {
+            index
+        };
+        *counter += 1;
+        *counter - 1
+    };
+    for r in step.resources() {
+        match r.ty {
+            ResourceType::UniformBuffer => {
+                let _ = write!(sksl, "layout(binding={index}) uniform ");
+                index += 1;
+                sksl.push_str(r.sksl);
+            }
+            ResourceType::StorageBuffer | ResourceType::IndirectBuffer => {
+                let _ = write!(sksl, "layout(binding={index}) buffer ");
+                index += 1;
+                sksl.push_str(r.sksl);
+            }
+            ResourceType::ReadOnlyStorageBuffer => {
+                let _ = write!(sksl, "layout(binding={index}) readonly buffer ");
+                index += 1;
+                sksl.push_str(r.sksl);
+            }
+            ResourceType::WriteOnlyStorageTexture => {
+                let binding = next_texture_binding(&mut index, &mut tex_idx);
+                let _ = write!(
+                    sksl,
+                    "layout(binding={binding}, rgba8) writeonly texture2D "
+                );
+                sksl.push_str(r.sksl);
+            }
+            ResourceType::ReadOnlyTexture => {
+                let binding = next_texture_binding(&mut index, &mut tex_idx);
+                let _ = write!(sksl, "layout(binding={binding}) readonly texture2D ");
+                sksl.push_str(r.sksl);
+            }
+            ResourceType::SampledTexture => {
+                // The following SkSL expects specific backends to have certain resource binding
+                // requirements. Before appending the SkSL, assert that these assumptions hold
+                // true.
+                if backend == BackendApi::Metal {
+                    // Metal is expected to use combined texture/samplers.
+                    debug_assert!(!binding_reqs.separate_texture_and_sampler_binding);
+                    let binding = next_texture_binding(&mut index, &mut tex_idx);
+                    let _ = write!(sksl, "layout(metal, binding={binding}) ");
+                } else if backend == BackendApi::Dawn {
+                    // Dawn is expected to use separate texture/samplers and not use distinct
+                    // index ranges for texture resources.
+                    debug_assert!(
+                        binding_reqs.separate_texture_and_sampler_binding
+                            && !textures_use_distinct_idx_ranges
+                    );
+                    let _ = write!(
+                        sksl,
+                        "layout(webgpu, sampler={index}, texture={}) ",
+                        index + 1
+                    );
+                    index += 2;
+                } else {
+                    // This SkSL depends upon the assumption that we are using combined texture/
+                    // samplers and that we are not using separate resource indices for textures.
+                    debug_assert!(
+                        !binding_reqs.separate_texture_and_sampler_binding
+                            && !textures_use_distinct_idx_ranges
+                    );
+                    let _ = write!(sksl, "layout(binding={index}) ");
+                    index += 1;
+                }
+                sksl.push_str("sampler2D ");
+                sksl.push_str(r.sksl);
+            }
+        }
+        sksl.push_str(";\n");
+    }
+
+    sksl.push_str(&step.compute_sksl());
+    sksl
 }

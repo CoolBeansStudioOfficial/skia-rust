@@ -207,8 +207,15 @@ impl RenderStep for VerticesRenderStep {
     ) {
         // Vertices are transformed on the GPU. The depth is a uniform, so the same depth is not
         // copied for each vertex.
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
         let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
         uniforms.write_m44(params.transform().matrix());
         uniforms.write_f32(params.order().depth_as_float());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }

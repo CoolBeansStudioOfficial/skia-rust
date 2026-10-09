@@ -60,6 +60,7 @@ pub mod effect_priv;
 pub mod encoded_image_format;
 pub mod encoded_origin;
 pub mod endian;
+pub mod executor;
 pub mod fdot6;
 pub mod fixed;
 pub mod flattenable;
@@ -106,6 +107,8 @@ pub mod lattice_iter;
 #[doc(hidden)]
 pub mod line_clipper;
 pub mod local_matrix_image_filter;
+#[doc(hidden)]
+pub mod lru_cache;
 pub mod m44;
 pub mod malloc_pixel_ref;
 pub mod mask;

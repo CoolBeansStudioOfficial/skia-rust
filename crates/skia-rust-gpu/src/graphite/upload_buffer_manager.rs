@@ -19,7 +19,7 @@ use crate::graphite::caps::Caps;
 use crate::graphite::command_buffer::CommandBuffer;
 use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::recording::Recording;
-use crate::graphite::resource::ResourceRef;
+use crate::graphite::resource::{Resource, ResourceRef};
 use crate::graphite::resource_types::{AccessPattern, BufferType};
 
 const REUSED_BUFFER_SIZE: usize = 64 << 10; // 64 KB
@@ -191,6 +191,24 @@ impl UploadBufferManager {
         staged[start..start + len].copy_from_slice(&data[..len]);
     }
 
+    /// The mapped memory of `buffer`, which this manager still holds mapped: what
+    /// `Buffer::map()` returns for a buffer that is already mapped (the same pointer), which the
+    /// port's `Buffer::map()` hands out only once, to this manager. `None` if the manager does
+    /// not hold the buffer (it was transferred to a recording or command buffer, which commit
+    /// the bytes to the GPU buffer).
+    #[must_use]
+    pub fn mapped_data(&self, buffer: &std::sync::Arc<Resource<Buffer>>) -> Option<&[u8]> {
+        if let Some(reused) = &self.reused_buffer
+            && std::sync::Arc::ptr_eq(reused.as_arc(), buffer)
+        {
+            return Some(&self.reused_data);
+        }
+        self.used_buffers
+            .iter()
+            .find(|(used, _)| std::sync::Arc::ptr_eq(used.as_arc(), buffer))
+            .map(|(_, data)| &data[..])
+    }
+
     fn lock_provider(
         &self,
     ) -> std::sync::MutexGuard<'_, crate::graphite::resource_provider::ResourceProvider> {
@@ -219,14 +237,26 @@ impl UploadBufferManager {
     // Port of: src/gpu/graphite/UploadBufferManager.cpp#L121-L132 (chrome/m156)
     #[doc(alias = "transferToCommandBuffer")]
     pub fn transfer_to_command_buffer(&mut self, command_buffer: &mut dyn CommandBuffer) {
+        for buffer in self.take_buffers() {
+            command_buffer.track_resource(buffer.into_any());
+        }
+    }
+
+    /// Finalizes all buffers (commits their staging blocks to the GPU buffers) and hands them
+    /// to the caller, who must keep them alive until the GPU work that reads them finishes. It is
+    /// `transferToCommandBuffer()` for a caller that has no command buffer yet.
+    #[must_use]
+    pub fn take_buffers(&mut self) -> Vec<ResourceRef<Buffer>> {
+        let mut buffers = Vec::with_capacity(self.used_buffers.len() + 1);
         for (buffer, data) in self.used_buffers.drain(..) {
             buffer.unmap_with(&data);
-            command_buffer.track_resource(buffer.into_any());
+            buffers.push(buffer);
         }
         if let Some(buffer) = self.reused_buffer.take() {
             let data = std::mem::take(&mut self.reused_data);
             buffer.unmap_with(&data);
-            command_buffer.track_resource(buffer.into_any());
+            buffers.push(buffer);
         }
+        buffers
     }
 }

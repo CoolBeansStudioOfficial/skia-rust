@@ -10,14 +10,12 @@
 //! `TextureDataCache` (de-duplicated bindings and the unique proxies they reference) and the
 //! gatherer's `add` / `endCombinedData` / `rewindForRenderStep`. Textures are `(proxy, sampler)`
 //! pairs; a proxy is `None` only on the pre-compile path.
-//!
-//! Not ported yet: the uniform cache's entries lack Skia's `BindBufferInfo` (`fBufferBinding`),
-//! which comes with the buffer manager.
 
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 
+use crate::graphite::buffer::BindBufferInfo;
 use crate::graphite::resource_types::{Layout, SamplerDesc};
 use crate::graphite::texture_proxy::TextureProxy;
 #[cfg(debug_assertions)]
@@ -191,14 +189,14 @@ impl<K: Eq + Hash, V> DenseBiMap<K, V> {
 }
 
 /// The uniform data of one draw, and where it lives once uploaded (`UniformDataCache::Entry`).
-///
-/// Skia's entry also has `fBufferBinding`, the buffer and offset the data was uploaded to. It
-/// comes with the buffer manager and is not here yet.
 // Port of: src/gpu/graphite/PipelineData.h#L241-L250 (chrome/m156)
 #[doc(alias = "UniformDataCache::Entry")]
 #[derive(Clone, Debug)]
 pub struct UniformDataCacheEntry {
     cpu_data: UniformDataBlock,
+    // `fBufferBinding`: the buffer and offset the data was uploaded to; empty until the draw
+    // pass writes the data.
+    buffer_binding: BindBufferInfo,
 }
 
 impl UniformDataCacheEntry {
@@ -208,12 +206,28 @@ impl UniformDataCacheEntry {
     pub fn cpu_data(&self) -> &UniformDataBlock {
         &self.cpu_data
     }
+
+    /// Where the data was uploaded to (`fBufferBinding`).
+    // Port of: src/gpu/graphite/PipelineData.h#L244 (chrome/m156)
+    #[must_use]
+    pub fn buffer_binding(&self) -> &BindBufferInfo {
+        &self.buffer_binding
+    }
+
+    /// Records where the data was uploaded to (`fBufferBinding = ...`).
+    // Port of: src/gpu/graphite/PipelineData.h#L244 (chrome/m156)
+    pub fn set_buffer_binding(&mut self, binding: BindBufferInfo) {
+        self.buffer_binding = binding;
+    }
 }
 
 impl From<UniformDataBlock> for UniformDataCacheEntry {
     // Port of: src/gpu/graphite/PipelineData.h#L248 (chrome/m156), `Entry(UniformDataBlock)`
     fn from(cpu_data: UniformDataBlock) -> Self {
-        Self { cpu_data }
+        Self {
+            cpu_data,
+            buffer_binding: BindBufferInfo::default(),
+        }
     }
 }
 

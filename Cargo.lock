@@ -1200,6 +1200,7 @@ dependencies = [
  "naga",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-sksl",

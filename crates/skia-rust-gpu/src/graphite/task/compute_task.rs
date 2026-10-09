@@ -12,17 +12,105 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::graphite::command_buffer::CommandBuffer;
+use crate::graphite::buffer::BindBufferInfo;
+use crate::graphite::command_buffer::{CommandBuffer, ResourceTracker};
+use crate::graphite::compute::compute_step::WorkgroupSize;
+use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::context_priv::ContextPriv;
+use crate::graphite::resource::Resource;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
+use crate::graphite::sampler::Sampler;
 use crate::graphite::scratch_resource_manager::ScratchResourceManager;
 use crate::graphite::task::{ReplayTargetData, Status, Task, TaskRef};
+use crate::graphite::texture::Texture;
 
-/// The members of `DispatchGroup` that `ComputeTask` uses (G13 ports the class).
+/// `TextureIndex`: an index into the group's textures.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L33 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TextureIndex(pub u32);
+
+/// `SamplerIndex`: an index into the group's samplers.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L34 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SamplerIndex(pub u32);
+
+/// `ResourceBinding::fResource`.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L36-L41 (chrome/m156)
+#[derive(Clone, Debug)]
+pub enum BindingResource {
+    /// A range of a buffer.
+    Buffer(BindBufferInfo),
+    /// A texture of the group.
+    Texture(TextureIndex),
+    /// A sampler of the group.
+    Sampler(SamplerIndex),
+}
+
+/// `ResourceBinding`.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L36-L41 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct ResourceBinding {
+    /// `fIndex`: the binding index in the group's bind group.
+    pub index: u32,
+    /// `fResource`.
+    pub resource: BindingResource,
+}
+
+/// `Dispatch::fGlobalSizeOrIndirect`.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L43-L47 (chrome/m156)
+#[derive(Clone, Debug)]
+pub enum GlobalSizeOrIndirect {
+    /// The number of workgroups.
+    Size(WorkgroupSize),
+    /// A buffer holding the number of workgroups.
+    Indirect(BindBufferInfo),
+}
+
+/// `DispatchGroup::Dispatch`.
+// Port of: src/gpu/graphite/compute/DispatchGroup.h#L43-L49 (chrome/m156)
+#[derive(Clone, Debug)]
+pub struct Dispatch {
+    /// `fPipelineIndex`.
+    pub pipeline_index: u32,
+    /// `fBindings`.
+    pub bindings: Vec<ResourceBinding>,
+    /// `fGlobalSizeOrIndirect`.
+    pub global_size_or_indirect: GlobalSizeOrIndirect,
+}
+
+/// The members of `DispatchGroup` that `ComputeTask` and the command buffer use (G13 ports the
+/// class). The members the command buffer reads have defaults for a group with no dispatches.
 // Port of: src/gpu/graphite/compute/DispatchGroup.h (chrome/m156)
 #[doc(alias = "skgpu::graphite::DispatchGroup")]
 pub trait DispatchGroup: Send + Debug {
+    /// `addResourceRefs()`: tracks the group's pipelines, textures, samplers and buffers.
+    #[doc(alias = "addResourceRefs")]
+    fn add_resource_refs(&mut self, _tracker: &mut dyn ResourceTracker) {}
+
+    /// `dispatches()`.
+    fn dispatches(&self) -> &[Dispatch] {
+        &[]
+    }
+
+    /// `getPipeline(index)`.
+    #[doc(alias = "getPipeline")]
+    fn pipeline(&self, _index: u32) -> Option<Arc<dyn ComputePipeline>> {
+        None
+    }
+
+    /// `getTexture(index)`.
+    #[doc(alias = "getTexture")]
+    fn texture(&self, _index: u32) -> Option<Arc<Resource<Texture>>> {
+        None
+    }
+
+    /// `getSampler(index)`.
+    #[doc(alias = "getSampler")]
+    fn sampler(&self, _index: u32) -> Option<Arc<Resource<Sampler>>> {
+        None
+    }
+
     /// `snapChildTask()`: the task that must execute before this group, if any.
     #[doc(alias = "snapChildTask")]
     fn snap_child_task(&mut self) -> Option<TaskRef>;
@@ -122,7 +210,7 @@ impl ComputeTask {
             if let Some(child) = &self.child_tasks[i] {
                 if current_span_size > 0
                     && !command_buffer.add_compute_pass(
-                        &self.dispatch_groups
+                        &mut self.dispatch_groups
                             [current_span_start..current_span_start + current_span_size],
                     )
                 {
@@ -148,7 +236,8 @@ impl ComputeTask {
 
         if current_span_size == 0
             || command_buffer.add_compute_pass(
-                &self.dispatch_groups[current_span_start..current_span_start + current_span_size],
+                &mut self.dispatch_groups
+                    [current_span_start..current_span_start + current_span_size],
             )
         {
             Status::Success

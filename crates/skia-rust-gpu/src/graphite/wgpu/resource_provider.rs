@@ -12,13 +12,15 @@
 //! [`wgpu_backend`]; `findOrCreateDiscardableMSAALoadTexture`, which calls the base class's
 //! `findOrCreateShareableTexture`, is a function of the owner.
 //!
-//! Not ported yet: the `IntrinsicConstantsManager` (it tracks the buffers it hands out on a
-//! `DawnCommandBuffer`, G11c) and `createComputePipeline` (G11b).
+//! The `IntrinsicConstantsManager` (the intrinsic uniforms of a render pass, for devices without
+//! immediates) is [`IntrinsicConstantsManager`], reached with
+//! [`find_or_create_intrinsic_bind_buffer_info`]. `createComputePipeline` is
+//! [`WgpuSharedContext::create_compute_pipeline`].
 
 use std::any::Any;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::num::NonZeroU64;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
@@ -27,8 +29,11 @@ use skia_rust_core::size::ISize;
 use crate::gpu::gpu_types::{BackendApi, StdSteadyClockTimePoint};
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer::{BindBufferInfo, Buffer};
+use crate::graphite::caps::Caps;
+use crate::graphite::command_buffer::ResourceTracker;
 use crate::graphite::graphite_resource_key::GraphiteResourceKey;
 use crate::graphite::graphite_types::SampleCount;
+use crate::graphite::pipeline_data::UniformDataBlock;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::resource::{AnyResource, Resource, ResourceRef};
 use crate::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
@@ -53,6 +58,235 @@ const BUFFER_BINDING_SIZE_ALIGNMENT: u64 = 16;
 
 /// `DawnResourceProvider::kNumUniformEntries`.
 pub const NUM_UNIFORM_ENTRIES: usize = 3;
+
+/// Wraps a wgpu buffer, and tracks the intrinsic blocks residing in this buffer.
+// Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L111-L149 (chrome/m156)
+#[derive(Debug)]
+struct IntrinsicBuffer {
+    /// `fCachedIntrinsicValues`: where each block of intrinsic values is stored.
+    cached_intrinsic_values: HashMap<UniformDataBlock, u32>,
+    /// `fDawnBuffer`.
+    buffer: ResourceRef<Buffer>,
+    /// `fLastAccess`.
+    last_access: StdSteadyClockTimePoint,
+}
+
+impl IntrinsicBuffer {
+    /// `kNumSlots`.
+    const NUM_SLOTS: usize = 8;
+
+    fn new(buffer: ResourceRef<Buffer>) -> Self {
+        Self {
+            cached_intrinsic_values: HashMap::new(),
+            buffer,
+            last_access: StdSteadyClockTimePoint::now(),
+        }
+    }
+
+    /// `findIntrinsic()`: the offset of `intrinsic_values` in the buffer, if it is there.
+    fn find_intrinsic(&self, intrinsic_values: &UniformDataBlock) -> Option<u32> {
+        self.cached_intrinsic_values.get(intrinsic_values).copied()
+    }
+
+    /// `slotsUsed()`.
+    fn slots_used(&self) -> usize {
+        self.cached_intrinsic_values.len()
+    }
+}
+
+/// Since Dawn does not currently provide push constants, this helper class manages rotating
+/// through buffers and writing each new occurrence of a set of intrinsic uniforms into the
+/// current buffer.
+// Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L151-L226 (chrome/m156)
+#[derive(Debug, Default)]
+pub struct IntrinsicConstantsManager {
+    /// All cached intrinsic buffers, in LRU order (`fIntrinsicBuffersLRU`, head first).
+    intrinsic_buffers_lru: VecDeque<IntrinsicBuffer>,
+    /// `fCurrentBuffer`: the buffer being filled up, as the unique id of its resource.
+    current_buffer: Option<crate::graphite::resource::ResourceUniqueId>,
+    /// Intrinsic buffers which have been bumped out of the LRU (`fPendingIntrinsicBuffers`).
+    /// Cleared when the command buffer is finished.
+    pending_intrinsic_buffers: Vec<IntrinsicBuffer>,
+}
+
+impl IntrinsicConstantsManager {
+    /// The max number of intrinsic buffers to keep around in the cache (`kMaxNumBuffers`).
+    const MAX_NUM_BUFFERS: usize = 16;
+
+    /// `purgeResourcesNotUsedSince()`.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L175-L185 (chrome/m156)
+    fn purge_resources_not_used_since(
+        &mut self,
+        purge_time: StdSteadyClockTimePoint,
+        quit_purging_time: Option<StdSteadyClockTimePoint>,
+    ) {
+        let current = self.current_buffer;
+        let buffer_should_be_purged = |buffer: &IntrinsicBuffer| {
+            // We always keep the current buffer as it is likely to be used again soon. If we
+            // surpass quitPurgingTime, further buffers should not be purged.
+            quit_purging_time.is_none_or(|quit| StdSteadyClockTimePoint::now() < quit)
+                && Some(buffer.buffer.base().unique_id()) != current
+                && buffer.last_access < purge_time
+        };
+        self.purge_buffers_until_done_or_false(buffer_should_be_purged);
+    }
+
+    /// `releasePendingIntrinsicBuffers()`.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L187-L199 (chrome/m156)
+    fn release_pending_intrinsic_buffers(&mut self) {
+        self.pending_intrinsic_buffers.clear();
+    }
+
+    /// `freeGpuResources()`.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L201-L204 (chrome/m156)
+    fn free_gpu_resources(&mut self) {
+        self.purge_resources_not_used_since(StdSteadyClockTimePoint::now(), None);
+    }
+
+    /// Traverse the intrinsic buffers, purging all the purgeable LRU buffers until either all of
+    /// them are purged or until `pred` returns false.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L312-L329 (chrome/m156)
+    fn purge_buffers_until_done_or_false(&mut self, pred: impl Fn(&IntrinsicBuffer) -> bool) {
+        let index = 0;
+        while index < self.intrinsic_buffers_lru.len() {
+            if pred(&self.intrinsic_buffers_lru[index]) {
+                self.intrinsic_buffers_lru.remove(index);
+            } else {
+                // If `pred` returns false, we stop the process of purging buffers.
+                return;
+            }
+        }
+    }
+
+    /// `add()`: finds or creates a bind buffer info for the given intrinsic values used in the
+    /// given command buffer (`tracker`).
+    ///
+    /// The values are written with `WriteBuffer`, which is not allowed while a render pass is
+    /// being recorded: call this before beginning the pass.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L228-L310 (chrome/m156)
+    fn add(
+        &mut self,
+        provider: &mut ResourceProvider,
+        shared_context: &WgpuSharedContext,
+        tracker: &mut dyn ResourceTracker,
+        intrinsic_values: &UniformDataBlock,
+    ) -> BindBufferInfo {
+        // Find the buffer that contains the given intrinsic values.
+        let found = self
+            .intrinsic_buffers_lru
+            .iter()
+            .enumerate()
+            .find_map(|(index, buffer)| {
+                buffer
+                    .find_intrinsic(intrinsic_values)
+                    .map(|offset| (index, offset))
+            });
+        // If we found the buffer, we can return the bind buffer info directly.
+        if let Some((index, offset)) = found {
+            // Move the buffer to the head of the LRU list.
+            if let Some(mut buffer) = self.intrinsic_buffers_lru.remove(index) {
+                // Track the wgpu buffer's usage by the command buffer.
+                tracker.track_resource(buffer.buffer.to_any());
+                buffer.last_access = StdSteadyClockTimePoint::now();
+                let info = BindBufferInfo::new(
+                    &buffer.buffer,
+                    offset,
+                    u32::try_from(intrinsic_values.size()).expect("intrinsic uniforms are small"),
+                );
+                self.intrinsic_buffers_lru.push_front(buffer);
+                return info;
+            }
+        }
+
+        // TODO: https://b.corp.google.com/issues/259267703
+        // Make updating intrinsic constants faster. Metal has setVertexBytes method to quickly
+        // send intrinsic constants to vertex shader without any buffer. But Dawn doesn't have
+        // similar capability. So we have to use WriteBuffer(), and this method is not allowed to
+        // be called when there is an active render pass.
+        let caps = shared_context.caps();
+        let size = u32::try_from(intrinsic_values.size()).expect("intrinsic uniforms are small");
+        let stride = size.next_multiple_of(
+            u32::try_from(Caps::required_uniform_buffer_alignment(&**caps))
+                .expect("the uniform alignment fits in 32 bits"),
+        );
+        // In any one of the following cases, we need to create a new buffer:
+        //     (1) There is no current buffer.
+        //     (2) The current buffer is full.
+        let current_is_full = match self.current_buffer {
+            None => true,
+            Some(id) => self
+                .intrinsic_buffers_lru
+                .iter()
+                .find(|buffer| buffer.buffer.base().unique_id() == id)
+                .is_none_or(|buffer| buffer.slots_used() == IntrinsicBuffer::NUM_SLOTS),
+        };
+        if current_is_full {
+            // We can just replace the current buffer; any prior buffer was already tracked in the
+            // LRU list and the intrinsic constants were written directly to the wgpu queue.
+            let Some(buffer) = WgpuResourceProvider::find_or_create_wgpu_buffer(
+                provider,
+                stride as usize * IntrinsicBuffer::NUM_SLOTS,
+                BufferType::Uniform,
+                AccessPattern::GpuOnly,
+                "IntrinsicConstantBuffer",
+            ) else {
+                // If we failed to create a GPU buffer to hold the intrinsic uniforms, we will
+                // fail the Recording being inserted, so return an empty bind info.
+                return BindBufferInfo::default();
+            };
+
+            self.current_buffer = Some(buffer.base().unique_id());
+            self.intrinsic_buffers_lru
+                .push_front(IntrinsicBuffer::new(buffer));
+            // If we have too many buffers, remove the least used one.
+            if self.intrinsic_buffers_lru.len() > Self::MAX_NUM_BUFFERS
+                && let Some(tail) = self.intrinsic_buffers_lru.pop_back()
+            {
+                self.pending_intrinsic_buffers.push(tail);
+            }
+        }
+
+        let current_id = self.current_buffer.expect("a current buffer exists");
+        let Some(current) = self
+            .intrinsic_buffers_lru
+            .iter_mut()
+            .find(|buffer| buffer.buffer.base().unique_id() == current_id)
+        else {
+            return BindBufferInfo::default();
+        };
+        debug_assert!(current.slots_used() < IntrinsicBuffer::NUM_SLOTS);
+        let new_offset = u32::try_from(current.slots_used()).expect("a few slots") * stride;
+        if let Some(wgpu_buffer) = as_wgpu_buffer(&current.buffer).and_then(WgpuBuffer::wgpu_buffer)
+        {
+            shared_context.queue().write_buffer(
+                &wgpu_buffer,
+                u64::from(new_offset),
+                intrinsic_values.data(),
+            );
+            #[cfg(feature = "trace")]
+            shared_context.trace_with_blob(intrinsic_values.data(), |hash| {
+                crate::graphite::wgpu::trace::Record::new("write_buffer")
+                    .u(
+                        "buffer",
+                        as_wgpu_buffer(&current.buffer).map_or(0, WgpuBuffer::trace_id),
+                    )
+                    .u("offset", new_offset)
+                    .u("size", intrinsic_values.size() as u64)
+                    .u("hash", hash)
+            });
+        }
+
+        // Track the intrinsic values in the buffer.
+        current
+            .cached_intrinsic_values
+            .insert(intrinsic_values.clone(), new_offset);
+
+        tracker.track_resource(current.buffer.to_any());
+        current.last_access = StdSteadyClockTimePoint::now();
+
+        BindBufferInfo::new(&current.buffer, new_offset, size)
+    }
+}
 
 /// The source of the blit-with-draw shader. `%u` is the source's sample count.
 // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L402-L442 (chrome/m156)
@@ -193,29 +427,52 @@ impl BlitWithDrawEncoder {
 #[doc(alias = "DawnResourceProvider")]
 #[derive(Debug)]
 pub struct WgpuResourceProvider {
-    shared_context: Arc<WgpuSharedContext>,
+    shared_context: Weak<WgpuSharedContext>,
     blit_with_draw_pipelines: HashMap<u32, wgpu::RenderPipeline>,
     null_buffer: Option<wgpu::Buffer>,
     null_texture_view: Option<wgpu::TextureView>,
+    /// `fIntrinsicConstantsManager`.
+    intrinsic_constants: IntrinsicConstantsManager,
 }
 
 impl WgpuResourceProvider {
     /// `DawnResourceProvider(sharedContext, …)`.
     #[must_use]
-    pub fn new(shared_context: Arc<WgpuSharedContext>) -> Self {
+    pub fn new(shared_context: &Arc<WgpuSharedContext>) -> Self {
         Self {
-            shared_context,
+            // Weak: the shared context owns the thread-safe resource provider (and, through its
+            // renderer provider, others), so a strong reference here would be a cycle.
+            shared_context: Arc::downgrade(shared_context),
             blit_with_draw_pipelines: HashMap::new(),
             null_buffer: None,
             null_texture_view: None,
+            intrinsic_constants: IntrinsicConstantsManager::default(),
         }
+    }
+
+    /// `releasePendingIntrinsicBuffers()`.
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L747-L749 (chrome/m156)
+    #[doc(alias = "releasePendingIntrinsicBuffers")]
+    pub fn release_pending_intrinsic_buffers(&mut self) {
+        self.intrinsic_constants.release_pending_intrinsic_buffers();
     }
 
     /// `dawnSharedContext()`.
     #[doc(alias = "dawnSharedContext")]
     #[must_use]
-    pub fn shared_context(&self) -> &Arc<WgpuSharedContext> {
-        &self.shared_context
+    ///
+    /// # Panics
+    /// If the shared context is gone: it owns the resource providers, so they are not used after
+    /// it is dropped.
+    pub fn shared_context(&self) -> Arc<WgpuSharedContext> {
+        self.shared()
+    }
+
+    /// The shared context (upgraded from the weak reference).
+    fn shared(&self) -> Arc<WgpuSharedContext> {
+        self.shared_context
+            .upgrade()
+            .expect("the shared context outlives its resource providers")
     }
 
     /// `findOrCreateBlitWithDrawEncoder()`.
@@ -234,7 +491,7 @@ impl WgpuResourceProvider {
         ));
         let src_is_msaa = src_sample_count > SampleCount::One;
         let pipeline_key = self
-            .shared_context
+            .shared()
             .caps()
             .get_render_pass_desc_key_for_pipeline(render_pass_desc, src_is_msaa);
 
@@ -244,7 +501,7 @@ impl WgpuResourceProvider {
             // (x, y) in one single 32 bits instance index value.
             let source = BLIT_SHADER_SRC.replace("%u", &(src_sample_count as u32).to_string());
             let shader_module =
-                self.shared_context
+                self.shared()
                     .device()
                     .create_shader_module(wgpu::ShaderModuleDescriptor {
                         label: None,
@@ -335,13 +592,9 @@ impl WgpuResourceProvider {
         };
 
         create_checked(
-            self.shared_context.device(),
-            self.shared_context.caps().allow_scoped_error_checks(),
-            || {
-                self.shared_context
-                    .device()
-                    .create_render_pipeline(&descriptor)
-            },
+            self.shared().device(),
+            self.shared().caps().allow_scoped_error_checks(),
+            || self.shared().device().create_render_pipeline(&descriptor),
         )
     }
 
@@ -364,7 +617,7 @@ impl WgpuResourceProvider {
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L609-L624 (chrome/m156)
     #[doc(alias = "getOrCreateNullBuffer")]
     pub fn get_or_create_null_buffer(&mut self) -> &wgpu::Buffer {
-        let shared_context = &self.shared_context;
+        let shared_context = &self.shared();
         self.null_buffer.get_or_insert_with(|| {
             shared_context
                 .device()
@@ -386,7 +639,7 @@ impl WgpuResourceProvider {
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L626-L645 (chrome/m156)
     #[doc(alias = "getOrCreateNullTextureView")]
     pub fn get_or_create_null_texture_view(&mut self) -> &wgpu::TextureView {
-        let shared_context = &self.shared_context;
+        let shared_context = &self.shared();
         self.null_texture_view.get_or_insert_with(|| {
             let null_texture = shared_context
                 .device()
@@ -420,7 +673,7 @@ impl WgpuResourceProvider {
         entries: &[wgpu::BindGroupEntry<'_>],
         layout: &wgpu::BindGroupLayout,
     ) -> wgpu::BindGroup {
-        self.shared_context
+        self.shared()
             .device()
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
@@ -443,7 +696,7 @@ impl WgpuResourceProvider {
         // We should only hit the single-uniform case if push constant usage is supported for
         // intrinsic constants.
         debug_assert!(
-            self.shared_context
+            self.shared()
                 .caps()
                 .resource_binding_requirements()
                 .use_push_constants_for_intrinsic_constants
@@ -489,7 +742,7 @@ impl WgpuResourceProvider {
 
         let bind_group = self.create_bind_group(
             &entries,
-            self.shared_context
+            self.shared()
                 .get_uniform_buffers_bind_group_layout(wgpu::ShaderStages::empty()),
         );
         wgpu_buffer.add_cached_single_buffer_bind_group(bind_group.clone(), binding_size);
@@ -535,12 +788,40 @@ impl WgpuResourceProvider {
         ];
         let bind_group = self.create_bind_group(
             &entries,
-            self.shared_context
-                .get_single_texture_sampler_bind_group_layout(),
+            self.shared().get_single_texture_sampler_bind_group_layout(),
         );
         wgpu_texture.add_cached_single_texture_bind_group(bind_group.clone(), sampler_id);
         Some(bind_group)
     }
+}
+
+/// `findOrCreateIntrinsicBindBufferInfo()`: the range of an intrinsic constants buffer that holds
+/// `intrinsic_values`, which `tracker` (the command buffer using it) keeps alive. An empty
+/// [`BindBufferInfo`] if the buffer could not be made.
+///
+/// # Panics
+/// If `provider` is not a wgpu resource provider.
+// Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L743-L745 (chrome/m156)
+#[doc(alias = "findOrCreateIntrinsicBindBufferInfo")]
+pub fn find_or_create_intrinsic_bind_buffer_info(
+    provider: &mut ResourceProvider,
+    tracker: &mut dyn ResourceTracker,
+    intrinsic_values: &UniformDataBlock,
+) -> BindBufferInfo {
+    // The manager creates its buffers with the provider it lives in, so it is taken out for the
+    // call.
+    let (shared_context, mut manager) = {
+        let backend = wgpu_backend(provider).expect("a wgpu resource provider");
+        (
+            backend.shared(),
+            std::mem::take(&mut backend.intrinsic_constants),
+        )
+    };
+    let info = manager.add(provider, &shared_context, tracker, intrinsic_values);
+    wgpu_backend(provider)
+        .expect("a wgpu resource provider")
+        .intrinsic_constants = manager;
+    info
 }
 
 /// `findOrCreateDiscardableMSAALoadTexture()`: a single-sampled, sampleable texture to load an
@@ -584,7 +865,7 @@ pub fn wgpu_backend(provider: &mut ResourceProvider) -> Option<&mut WgpuResource
 
 impl ResourceProviderBackend for WgpuResourceProvider {
     fn max_texture_size(&self) -> i32 {
-        self.shared_context.caps().max_texture_size()
+        self.shared().caps().max_texture_size()
     }
 
     fn build_key_for_texture(
@@ -594,7 +875,7 @@ impl ResourceProviderBackend for WgpuResourceProvider {
         ty: ResourceType,
         key: &mut GraphiteResourceKey,
     ) {
-        self.shared_context
+        self.shared()
             .caps()
             .build_key_for_texture(dimensions, info, ty, key);
     }
@@ -606,7 +887,7 @@ impl ResourceProviderBackend for WgpuResourceProvider {
         info: &TextureInfo,
         label: &str,
     ) -> Option<ResourceRef<Texture>> {
-        WgpuTexture::make(&self.shared_context, dimensions, info, label)
+        WgpuTexture::make(&self.shared(), dimensions, info, label)
     }
 
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L593-L598 (chrome/m156)
@@ -617,12 +898,12 @@ impl ResourceProviderBackend for WgpuResourceProvider {
         access_pattern: AccessPattern,
         label: &str,
     ) -> Option<ResourceRef<Buffer>> {
-        WgpuBuffer::make(&self.shared_context, size, ty, access_pattern, label)
+        WgpuBuffer::make(&self.shared(), size, ty, access_pattern, label)
     }
 
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L550-L554 (chrome/m156)
     fn create_sampler(&mut self, sampler_desc: &SamplerDesc) -> Option<ResourceRef<Sampler>> {
-        WgpuSampler::make(&self.shared_context, *sampler_desc)
+        WgpuSampler::make(&self.shared(), *sampler_desc)
     }
 
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L497-L522 (chrome/m156)
@@ -636,7 +917,7 @@ impl ResourceProviderBackend for WgpuResourceProvider {
         debug_assert!(wgpu_texture.is_none() || wgpu_texture_view.is_none());
         if let Some(wgpu_texture) = wgpu_texture {
             WgpuTexture::make_wrapped(
-                &self.shared_context,
+                &self.shared(),
                 texture.dimensions(),
                 &texture.info(),
                 wgpu_texture,
@@ -655,7 +936,7 @@ impl ResourceProviderBackend for WgpuResourceProvider {
         dimensions: ISize,
         info: &TextureInfo,
     ) -> BackendTexture {
-        match WgpuTexture::make_wgpu_texture(&self.shared_context, dimensions, info, "") {
+        match WgpuTexture::make_wgpu_texture(&self.shared(), dimensions, info, "") {
             Some(texture) => backend_textures::make_wgpu(&texture),
             None => BackendTexture::new(),
         }
@@ -680,16 +961,17 @@ impl ResourceProviderBackend for WgpuResourceProvider {
 
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L730-L734 (chrome/m156)
     fn on_free_gpu_resources(&mut self) {
-        // The IntrinsicConstantsManager's buffers are freed here (G11c).
+        self.intrinsic_constants.free_gpu_resources();
     }
 
     // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L736-L741 (chrome/m156)
     fn on_purge_resources_not_used_since(
         &mut self,
-        _purge_time: StdSteadyClockTimePoint,
-        _quit_purging_time: Option<StdSteadyClockTimePoint>,
+        purge_time: StdSteadyClockTimePoint,
+        quit_purging_time: Option<StdSteadyClockTimePoint>,
     ) {
-        // The IntrinsicConstantsManager's buffers are purged here (G11c).
+        self.intrinsic_constants
+            .purge_resources_not_used_since(purge_time, quit_purging_time);
     }
 
     fn as_any_mut(&mut self) -> Option<&mut dyn Any> {

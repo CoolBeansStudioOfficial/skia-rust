@@ -2,17 +2,27 @@
 
 pub mod backend_texture_test;
 pub mod bounds_manager_test;
+pub mod buffer_manager_test;
 pub mod cache_budget_test;
+pub mod device_test;
 pub mod graphite_resource_cache_test;
+pub mod image_shader_test;
+pub mod inner_fill_test;
 pub mod intersection_tree_test;
 pub mod key_test;
+pub mod multisample_test;
 pub mod pipeline_data_cache_test;
+pub mod recorder_test;
 pub mod rect_test;
 pub mod rt_effect_test;
 pub mod shape_test;
+pub mod storage_context_test;
+pub mod submit_with_finish_proc_test;
 pub mod swizzle_test;
+pub mod texture_fallback_test;
 pub mod texture_format_test;
 pub mod texture_proxy_test;
 pub mod transform_test;
 pub mod uniform_manager_test;
 pub mod uniform_offset_calculator_test;
+pub mod upload_buffer_manager_test;

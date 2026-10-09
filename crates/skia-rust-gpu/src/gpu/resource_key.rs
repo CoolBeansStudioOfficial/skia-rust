@@ -391,6 +391,13 @@ impl PartialEq for UniqueKey {
 
 impl Eq for UniqueKey {}
 
+impl std::hash::Hash for UniqueKey {
+    // Port of: src/gpu/graphite/GlobalCache.h#L121-L123 (`KeyHash`, chrome/m156)
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u32(self.key.hash());
+    }
+}
+
 /// `UniqueKey::Builder`.
 // Port of: src/gpu/ResourceKey.h#L213-L224 (chrome/m156)
 #[doc(alias = "skgpu::UniqueKey::Builder")]
