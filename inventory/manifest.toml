@@ -25072,8 +25072,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/texteffects.cpp#L115-L153"
 module = "text"
-status = "failing"
-reason = "see notes/gm-texteffects-fancyblobunderline.md (small descender differences in serif rows; all tiers)"
+status = "passing"
 span_hash = "5f0a39f59efe27494e90975b63982da12016114a151b7480de8b6e7cb9d0b031"
 
 [[test]]
