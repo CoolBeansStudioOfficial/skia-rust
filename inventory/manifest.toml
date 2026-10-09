@@ -1729,6 +1729,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L189-L190"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "fbd052c2b2a79727ba1bd7fd78e25fc7be1ee5825724967361ee010e14540f0b"
 
 [[test]]
@@ -1738,6 +1739,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L191-L192"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "3a5c16233d2eb608d73a7517de6e28340ed11ff931a048316063b4c9d8e7d29e"
 
 [[test]]
@@ -1747,6 +1749,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L201-L204"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "49a7b27a1ce746623abd8a7cf1ef12cb4c1da4a2ca0e3170ed980fe77c7b4bd5"
 
 [[test]]
@@ -1756,6 +1759,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L222-L224"
 module = "effects"
 status = "todo"
+reason = "blocked: draws images/mandrill_256.png (no PNG codec or resource loader yet), and the colour filter (Lerp, HighContrast, Overdraw or Gaussian) is not ported"
 span_hash = "bb10cbd36a4cb34bbef8876bca34f8860063081c7c3def32bc70d123406faa65"
 
 [[test]]
@@ -1765,6 +1769,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L211-L215"
 module = "effects"
 status = "todo"
+reason = "blocked: draws images/mandrill_256.png (no PNG codec or resource loader yet), and the colour filter (Lerp, HighContrast, Overdraw or Gaussian) is not ported"
 span_hash = "6d5eacba2f27b8ace3cee0c5054ba9dfd43d7aefd676b32b0b322753a5f135a4"
 
 [[test]]
@@ -1774,6 +1779,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L205-L209"
 module = "effects"
 status = "todo"
+reason = "blocked: draws images/mandrill_256.png (no PNG codec or resource loader yet), and the colour filter (Lerp, HighContrast, Overdraw or Gaussian) is not ported"
 span_hash = "9cce9a7583318837026c3367a7c652be76fb60ebb9a7138afd25df63aa695a2e"
 
 [[test]]
@@ -1783,6 +1789,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L193-L194"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "963cf483220f67da346a73ee653ac06d74279acf3437ac8ba65f8ba70a51a689"
 
 [[test]]
@@ -1792,6 +1799,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L199-L200"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "e79851aea42853936bc7d92552cf221f9a1424572bba472bfd90a398af96b308"
 
 [[test]]
@@ -1801,6 +1809,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L197-L198"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "6de22fb11d05efaee35cc3dc4f5e66d8354dc06f157850517c27fb47ca78c718"
 
 [[test]]
@@ -1810,6 +1819,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L232-L236"
 module = "sksl"
 status = "todo"
+reason = "blocked: builds an SkRuntimeEffect from SkSL, and SkSL is not ported (docs/design/sksl.md)"
 span_hash = "69372da70506fa426fdc1636dd5e64fca4132e983061f38e637ee7171f77bfc4"
 
 [[test]]
@@ -1819,6 +1829,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L187-L188"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "b2e92843d3aac5ec92927136d391317ee1d0b2bc60e2c2f6900e1b47015591c4"
 
 [[test]]
@@ -1828,6 +1839,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L216-L221"
 module = "effects"
 status = "todo"
+reason = "blocked: draws images/mandrill_256.png (no PNG codec or resource loader yet), and the colour filter (Lerp, HighContrast, Overdraw or Gaussian) is not ported"
 span_hash = "6b1b66389d2042687ae119bf87ae8bba8692bbff9f92245c28c51bccc6c9e2c6"
 
 [[test]]
@@ -1837,6 +1849,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L227-L231"
 module = "sksl"
 status = "todo"
+reason = "blocked: builds an SkRuntimeEffect from SkSL, and SkSL is not ported (docs/design/sksl.md)"
 span_hash = "b46316afc8ba53f2d2295688a7ef32bce4d5014dabdc9589d0789a8f2b392f0f"
 
 [[test]]
@@ -1846,6 +1859,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L195-L196"
 module = "effects"
 status = "todo"
+reason = "blocked: the bench draws images/mandrill_256.png, and the port has no PNG codec or resource loader yet (docs/design/codecs.md)"
 span_hash = "dcda48fcdd2db9aab39edb697ce0690da8ccb5e320e8fa2db9e82b8db1b92de1"
 
 [[test]]
@@ -1864,6 +1878,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L268-L268"
 module = "effects"
 status = "todo"
+reason = "blocked: builds an SkRuntimeEffect from SkSL, and SkSL is not ported (docs/design/sksl.md)"
 span_hash = "c994ad6cda7b181afb91ae4300685635dc8f87c76c4a41ac6133d9130e86e7e9"
 
 [[test]]
@@ -1900,6 +1915,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorFilterBench.cpp#L131-L131"
 module = "effects"
 status = "todo"
+reason = "blocked: builds an SkRuntimeEffect from SkSL, and SkSL is not ported (docs/design/sksl.md)"
 span_hash = "c911b63ce8c3eef7a2d839e4d0d25c81dbe8e7cbb931d727cb25fd6edc8d69bd"
 
 [[test]]
@@ -6520,6 +6536,7 @@ macro = "DEF_BENCH"
 source = "bench/MergeBench.cpp#L94-L94"
 module = "core"
 status = "todo"
+reason = "blocked: draws text with ToolUtils::DefaultFont (the portable test typeface), which the bench harness does not load yet"
 span_hash = "fd15b4d98a264a18ac345861356d839b4b6893fba75f22a2bb1ba17b9a444e6a"
 
 [[test]]
@@ -6529,6 +6546,7 @@ macro = "DEF_BENCH"
 source = "bench/MergeBench.cpp#L93-L93"
 module = "core"
 status = "todo"
+reason = "blocked: draws text with ToolUtils::DefaultFont (the portable test typeface), which the bench harness does not load yet"
 span_hash = "1d6cb7a1f030d71c68fa05e13e239cccb664ae0afdfa06cc584b6cdbaf84fbed"
 
 [[test]]
