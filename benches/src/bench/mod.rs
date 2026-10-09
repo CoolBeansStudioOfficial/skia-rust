@@ -21,6 +21,7 @@ pub mod math_bench;
 pub mod matrix44_bench;
 pub mod matrix_bench;
 pub mod memset_bench;
+pub mod path_bench;
 pub mod path_iter_bench;
 pub mod quick_reject_bench;
 pub mod r_tree_bench;
