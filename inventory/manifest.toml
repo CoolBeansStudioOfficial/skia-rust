@@ -23748,8 +23748,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rippleshadergm.cpp#L129-L129"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "d56f6112c7a71bef615385c01abe2e8069e9901b18a47fd1b74be2ea9c29aad3"
 
 [[test]]
@@ -23858,8 +23857,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/runtimecolorfilter.cpp#L126-L126"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "8e8627738874523abcefc94d78520141df815827e5de346de36680b9782a0092"
 
 [[test]]
@@ -23868,7 +23866,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimecolorfilter.cpp#L128-L214"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "042eb725443f0424d1503df9d3f484ac99821a85aaa61f8619477863a32f85b6"
 
 [[test]]
