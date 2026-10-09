@@ -1,8 +1,8 @@
 // Copyright 2018 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/effects/imagefilters/SkBlendImageFilter.cpp (the blender variant; the
-// arithmetic variant needs `SkBlenders::Arithmetic`, which is not ported yet)
+// Ported from Skia: src/effects/imagefilters/SkBlendImageFilter.cpp (the blender and the
+// arithmetic variants)
 
 //! `SkBlendImageFilter`: blends its background and foreground inputs with a blender.
 
@@ -18,6 +18,7 @@ use skia_rust_core::rect::{IRect, Rect, rect_priv};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
 
+use crate::blenders;
 use crate::image_filters::crop_filter::{crop, empty};
 
 /// Index of the background input (`kBackground`).
@@ -32,6 +33,10 @@ const FOREGROUND: usize = 1;
 pub struct BlendImageFilter {
     common: ImageFilterCommon,
     blender: Blender,
+    /// The `k1..k4` of the arithmetic variant (`fArithmeticCoefficients`). Normally runtime
+    /// blenders are pessimistic about the bounds they affect; the coefficients let the bounds be
+    /// reasoned about.
+    arithmetic_coefficients: Option<[f32; 4]>,
 }
 
 impl BlendImageFilter {
@@ -74,19 +79,49 @@ impl BlendImageFilter {
         shaders::blend_blender(&self.blender, bg?, fg?)
     }
 
-    /// The `(transparentOutsideFG, transparentOutsideBG)` of a blend mode (`SkBlendMode_AsCoeff`).
-    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L244-L252 (chrome/m156)
+    /// The `(transparentOutsideFG, transparentOutsideBG)` of the blend, or `None` when the output
+    /// is unbounded: a blend mode (`SkBlendMode_AsCoeff`), or the arithmetic coefficients.
+    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L271-L300 (chrome/m156)
     fn transparent_outside(&self) -> Option<(bool, bool)> {
-        self.blend_mode().map(|bm| match bm.as_coeff() {
-            Some((src, dst)) => (
-                matches!(
-                    dst,
-                    BlendModeCoeff::Zero | BlendModeCoeff::SA | BlendModeCoeff::SC
+        if let Some(bm) = self.blend_mode() {
+            // NOTE: advanced blends use src-over for their alpha channel, which should produce the
+            // union of FG and BG. That is the outcome if both flags stay false.
+            return Some(match bm.as_coeff() {
+                Some((src, dst)) => (
+                    matches!(
+                        dst,
+                        BlendModeCoeff::Zero | BlendModeCoeff::SA | BlendModeCoeff::SC
+                    ),
+                    matches!(src, BlendModeCoeff::Zero | BlendModeCoeff::DA),
                 ),
-                matches!(src, BlendModeCoeff::Zero | BlendModeCoeff::DA),
-            ),
-            None => (false, false),
-        })
+                None => (false, false),
+            });
+        }
+        // A non-arithmetic runtime blender is pessimistically unbounded.
+        let k = self.arithmetic_coefficients?;
+        // The arithmetic equation produces non-transparent black everywhere.
+        if k[3] != 0.0 {
+            return None;
+        }
+        // Given k[1] == k[2] == 0 implies k[0] != 0, if only one of k[1] or k[2] is non-zero then
+        // only that bounds has non-transparent content.
+        Some((k[2] == 0.0, k[1] == 0.0))
+    }
+
+    /// The `(transparentOutsideFG, transparentOutsideBG)` used by `computeFastBounds`. Unlike
+    /// [`Self::transparent_outside`], it does not count `SC` as `SA` for the foreground.
+    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L319-L352 (chrome/m156)
+    fn fast_bounds_transparent_outside(&self) -> Option<(bool, bool)> {
+        if let Some(bm) = self.blend_mode() {
+            return Some(match bm.as_coeff() {
+                Some((src, dst)) => (
+                    matches!(dst, BlendModeCoeff::Zero | BlendModeCoeff::SA),
+                    matches!(src, BlendModeCoeff::Zero | BlendModeCoeff::DA),
+                ),
+                None => (false, false),
+            });
+        }
+        self.transparent_outside()
     }
 }
 
@@ -100,9 +135,13 @@ impl ImageFilterBase for BlendImageFilter {
         MatrixCapability::Complex
     }
 
-    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L37-L41 (chrome/m156)
+    // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L36-L41 (chrome/m156)
     fn on_affects_transparent_black(&self) -> bool {
-        self.blend_mode().is_none()
+        // An arbitrary runtime blender, or an arithmetic runtime blender with k3 != 0, affects
+        // transparent black.
+        #[allow(clippy::float_cmp)] // mirrors the C++ `[3] != 0.f` test
+        let arithmetic_affects = self.arithmetic_coefficients.is_none_or(|k| k[3] != 0.0);
+        self.blend_mode().is_none() && arithmetic_affects
     }
 
     // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L223-L247 (chrome/m156)
@@ -202,7 +241,8 @@ impl ImageFilterBase for BlendImageFilter {
 
     // Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L319-L353 (chrome/m156)
     fn compute_fast_bounds(&self, bounds: &Rect) -> Rect {
-        let Some((transparent_outside_fg, transparent_outside_bg)) = self.transparent_outside()
+        let Some((transparent_outside_fg, transparent_outside_bg)) =
+            self.fast_bounds_transparent_outside()
         else {
             return rect_priv::make_large_s32();
         };
@@ -236,6 +276,7 @@ fn make_blend(
     background: Option<ImageFilter>,
     foreground: Option<ImageFilter>,
     crop_rect: Option<Rect>,
+    coefficients: Option<[f32; 4]>,
 ) -> Option<ImageFilter> {
     let blender = blender.unwrap_or_else(|| Blender::mode(BlendMode::SrcOver));
     let cropped = |filter: Option<ImageFilter>| match crop_rect {
@@ -254,6 +295,7 @@ fn make_blend(
     let filter = ImageFilter::from_base(BlendImageFilter {
         common: ImageFilterCommon::new(vec![background, foreground], None),
         blender,
+        arithmetic_coefficients: coefficients,
     });
     cropped(Some(filter))
 }
@@ -268,7 +310,13 @@ pub fn blend(
     foreground: Option<ImageFilter>,
     crop_rect: Option<Rect>,
 ) -> Option<ImageFilter> {
-    make_blend(Some(Blender::mode(mode)), background, foreground, crop_rect)
+    make_blend(
+        Some(Blender::mode(mode)),
+        background,
+        foreground,
+        crop_rect,
+        None,
+    )
 }
 
 /// `SkImageFilters::Blend(blender, background, foreground, cropRect)`.
@@ -281,5 +329,33 @@ pub fn blend_with_blender(
     foreground: Option<ImageFilter>,
     crop_rect: Option<Rect>,
 ) -> Option<ImageFilter> {
-    make_blend(Some(blender), background, foreground, crop_rect)
+    make_blend(Some(blender), background, foreground, crop_rect, None)
+}
+
+/// `SkImageFilters::Arithmetic(k1, k2, k3, k4, enforcePMColor, background, foreground, cropRect)`:
+/// the blend `k1*FG*BG + k2*FG + k3*BG + k4`, clamped to `[0, 1]`.
+///
+/// Returns `None` if the arithmetic blender cannot be made.
+// Port of: src/effects/imagefilters/SkBlendImageFilter.cpp#L152-L172 (chrome/m156)
+#[doc(alias = "Arithmetic")]
+#[must_use]
+#[allow(clippy::too_many_arguments)] // mirrors SkImageFilters::Arithmetic's signature
+pub fn arithmetic(
+    k1: f32,
+    k2: f32,
+    k3: f32,
+    k4: f32,
+    enforce_pm_color: bool,
+    background: Option<ImageFilter>,
+    foreground: Option<ImageFilter>,
+    crop_rect: Option<Rect>,
+) -> Option<ImageFilter> {
+    let blender = blenders::arithmetic(k1, k2, k3, k4, enforce_pm_color)?;
+    make_blend(
+        Some(blender),
+        background,
+        foreground,
+        crop_rect,
+        Some([k1, k2, k3, k4]),
+    )
 }
