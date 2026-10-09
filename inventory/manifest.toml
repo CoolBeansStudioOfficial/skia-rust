@@ -47086,7 +47086,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkSLWGSLTestbed.cpp#L39-L47"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1fb60486ddff3ff626f6f3dcf935a28840f7c0d5c7e7acd2c431f4f6d835838a"
 
 [[test]]
@@ -52557,7 +52557,7 @@ id = "tests/sksl/blend/BlendClear.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendClear.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8dd9b2f3248c7291cd1eab126312a8cd4e1e6a1479459c2d8e5c08e961e5d257"
 
 [[test]]
@@ -52610,7 +52610,7 @@ id = "tests/sksl/blend/BlendColor.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendColor.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eb4bb399f9f57023c99ea4374386203566b9d4f84a2ca53803ee49c08428db06"
 
 [[test]]
@@ -52654,7 +52654,7 @@ id = "tests/sksl/blend/BlendColorBurn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendColorBurn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ab9e7c1da8308e62639a2cfd348122881ba80e0e6fadd42d5779b0b7de51b262"
 
 [[test]]
@@ -52707,7 +52707,7 @@ id = "tests/sksl/blend/BlendColorDodge.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendColorDodge.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8eb71832fc3ad4840b50375070fcec7b92586a44be249bdcb8c854f6e5a2fbb3"
 
 [[test]]
@@ -52769,7 +52769,7 @@ id = "tests/sksl/blend/BlendDarken.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDarken.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f64457e50cc214bc53dc26a38b7c2dbcf466a71eec016b14ac084dbe409edfd5"
 
 [[test]]
@@ -52822,7 +52822,7 @@ id = "tests/sksl/blend/BlendDifference.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDifference.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1b25caee64f846d033ffe84c18566c81890fb90222dcbc8084ff647240568e18"
 
 [[test]]
@@ -52875,7 +52875,7 @@ id = "tests/sksl/blend/BlendDst.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDst.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d5decf1a37a066782fec1a4544ec74a3a38c6573436953c01c383e4a07f485e9"
 
 [[test]]
@@ -52919,7 +52919,7 @@ id = "tests/sksl/blend/BlendDstAtop.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDstAtop.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ad2f0a7d1c4ae5391f077bbb1f99867f46cb3319c15e6ed5e35ffc5afea976cb"
 
 [[test]]
@@ -52972,7 +52972,7 @@ id = "tests/sksl/blend/BlendDstIn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDstIn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c1f3410891680859880a1f69de4db5e4bf15ec9f8d6ca92402cebb1ff083bdfc"
 
 [[test]]
@@ -53025,7 +53025,7 @@ id = "tests/sksl/blend/BlendDstOut.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDstOut.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a93efa65185808d34367b151fc55ef744cd2b2a67b0a2bfca7046130ac5a641f"
 
 [[test]]
@@ -53078,7 +53078,7 @@ id = "tests/sksl/blend/BlendDstOver.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendDstOver.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "900c4c2adcad617ead371c3ea2e3f1930024418973083a3d05b7b2851dc654e1"
 
 [[test]]
@@ -53140,7 +53140,7 @@ id = "tests/sksl/blend/BlendExclusion.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendExclusion.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "58e3862922470b7a0edcef7ad612cc985ae6865e9212184e4316718d6b6af89f"
 
 [[test]]
@@ -53193,7 +53193,7 @@ id = "tests/sksl/blend/BlendHardLight.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendHardLight.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b9daa06045d8b3816d8e3902ff59a118490117a601f337efcba65e1f5192335"
 
 [[test]]
@@ -53246,7 +53246,7 @@ id = "tests/sksl/blend/BlendHue.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendHue.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0b136d128a6537d12761f778c01a7d2dc49ce67512fd364240c355d7af5f7f93"
 
 [[test]]
@@ -53299,7 +53299,7 @@ id = "tests/sksl/blend/BlendLighten.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendLighten.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "902198ff11669987b6011eae816430c98d47e7ce1330bc26117ebd3a5107e5d5"
 
 [[test]]
@@ -53352,7 +53352,7 @@ id = "tests/sksl/blend/BlendLuminosity.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendLuminosity.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f1d103f691de239b8ab300ba82adf065de0ca40d0d4b4ea3553fe024a7ff24ae"
 
 [[test]]
@@ -53405,7 +53405,7 @@ id = "tests/sksl/blend/BlendModulate.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendModulate.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2282b1d1d15ccafbc037c03b2ec892fcb788df9f21aab7db52ada264d001c77e"
 
 [[test]]
@@ -53458,7 +53458,7 @@ id = "tests/sksl/blend/BlendMultiply.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendMultiply.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ca4657f041eb6ce13c6aed7f84ee94b3f594fb16cde12e2566409216535b1d9e"
 
 [[test]]
@@ -53511,7 +53511,7 @@ id = "tests/sksl/blend/BlendOverlay.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendOverlay.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "de998f24fa617ca34520185ffba92a1aa0258cb39f55dfd3b203ef721a3224c1"
 
 [[test]]
@@ -53564,7 +53564,7 @@ id = "tests/sksl/blend/BlendPlus.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendPlus.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3f8f2743e5a4a3bf082a034b017b8c59bf87742208031ab57d3c2ff322162399"
 
 [[test]]
@@ -53617,7 +53617,7 @@ id = "tests/sksl/blend/BlendSaturation.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSaturation.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "caea8a678ba7ccf9997387ef262b2e1b1d3cb7767301eab596c4b4a370a86e2b"
 
 [[test]]
@@ -53670,7 +53670,7 @@ id = "tests/sksl/blend/BlendScreen.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendScreen.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ff8fa6e86bf031eb2ba7a17fa341e3644505e79ba455807803b32b03ae5b7ccc"
 
 [[test]]
@@ -53723,7 +53723,7 @@ id = "tests/sksl/blend/BlendSoftLight.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSoftLight.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e619f78b011bb44a0c3b3ef591de07b955a325e28f34bd38abce5df2f680122c"
 
 [[test]]
@@ -53776,7 +53776,7 @@ id = "tests/sksl/blend/BlendSrc.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSrc.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "91e70673f6f07ff16335c810ec98085d5767f1a6cab641c07e131a54b05b3fc3"
 
 [[test]]
@@ -53820,7 +53820,7 @@ id = "tests/sksl/blend/BlendSrcAtop.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSrcAtop.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ad2f0a7d1c4ae5391f077bbb1f99867f46cb3319c15e6ed5e35ffc5afea976cb"
 
 [[test]]
@@ -53873,7 +53873,7 @@ id = "tests/sksl/blend/BlendSrcIn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSrcIn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ede9be8cc65fd388ab3f245f2bb97fad5a6ef277f88330e32720ae57f2a9f122"
 
 [[test]]
@@ -53926,7 +53926,7 @@ id = "tests/sksl/blend/BlendSrcOut.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSrcOut.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2a438b45ff9eac1bb12011bdebcb4c3a3a57bd47dcb3db6dcd4c362a87023031"
 
 [[test]]
@@ -53979,7 +53979,7 @@ id = "tests/sksl/blend/BlendSrcOver.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendSrcOver.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6d8b06deac0c9a39605c91b2674228577394330c577b75e1f9a63bb939c14cf6"
 
 [[test]]
@@ -54041,7 +54041,7 @@ id = "tests/sksl/blend/BlendXor.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/blend/BlendXor.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b7a18c0b31357717b1ef0690c0204ad7fc15e1db6dbd405963f32a3865cd31f9"
 
 [[test]]
@@ -54076,7 +54076,7 @@ id = "tests/sksl/compute/ArrayAdd.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/ArrayAdd.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a684c54b90ed2058cbbe54ec7992a481bfe51e1c4d17ff0a6074b102791e1aa0"
 
 [[test]]
@@ -54103,6 +54103,7 @@ kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicDeclarations.wgsl"
 module = "sksl"
 status = "todo"
+reason = "stale golden: no gn/sksl_tests.gni list names this input, so Skia never regenerates it; it predates f16 (`enable f16;`), the `@align(16)` array polyfill and the statement-position intrinsic calls of the pinned generator"
 span_hash = "c60414d8276eb3b4efc757dfe73a7f325ff3d0fb8f74065fe5ec3b1c794b9989"
 
 [[test]]
@@ -54128,7 +54129,7 @@ id = "tests/sksl/compute/AtomicOperations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperations.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8410769f394be6b75d415edbc5eccac320ea657c229b3a3268f52261f70db417"
 
 [[test]]
@@ -54155,6 +54156,7 @@ kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 module = "sksl"
 status = "todo"
+reason = "stale golden: no gn/sksl_tests.gni list names this input, so Skia never regenerates it; it predates f16 (`enable f16;`) and the statement-position intrinsic calls of the pinned generator"
 span_hash = "e4ddea6cb00400f18fb2ee450e687687cdd5674ad13bb0ed7b2ddab9c7bc1763"
 
 [[test]]
@@ -54180,7 +54182,7 @@ id = "tests/sksl/compute/Barrier.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Barrier.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "366fa9b800de034f14b39cc28bb8ea1d035d4ea60fa7a99e452b3f4951b28678"
 
 [[test]]
@@ -54206,7 +54208,7 @@ id = "tests/sksl/compute/Buffers.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Buffers.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "92e02c814201459ccdce0f98e39a9daf7b4fe8c6d4448776ccff142b0ef75f06"
 
 [[test]]
@@ -54232,7 +54234,7 @@ id = "tests/sksl/compute/BuiltinStageInputs.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/BuiltinStageInputs.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "553443fd4aa152e6b7593013b9bcca9928400cb958bd6d2faaefdf07686d247b"
 
 [[test]]
@@ -54258,7 +54260,7 @@ id = "tests/sksl/compute/Desaturate.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Desaturate.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e6275f85733aa9fd35b2efd944cd34e47c45ef7660d53d04bb8cd8325748c024"
 
 [[test]]
@@ -54284,7 +54286,7 @@ id = "tests/sksl/compute/DesaturateFunction.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/DesaturateFunction.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b87afb7981349e2bed9714be3d0848481f3ac435c764bcd19a88e3e801c0f7a8"
 
 [[test]]
@@ -54310,7 +54312,7 @@ id = "tests/sksl/compute/DesaturateReadWrite.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/DesaturateReadWrite.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8696ef9f6ce894002e0183d242a6201c62d13d474ac2575baf82c72e9e3346e7"
 
 [[test]]
@@ -54336,7 +54338,7 @@ id = "tests/sksl/compute/MatrixMultiply.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/MatrixMultiply.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f130b69b23b7d9b49e5f2d044b151b97050231131f9016d13584580ebf693910"
 
 [[test]]
@@ -54362,7 +54364,7 @@ id = "tests/sksl/compute/ModuleStructInArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/ModuleStructInArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "756355a9d14288bfddd077463bd90ee0ad9a0c7c14bdaee58326c6ccf8d86e9b"
 
 [[test]]
@@ -54388,7 +54390,7 @@ id = "tests/sksl/compute/ModuleStructInExpression.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/ModuleStructInExpression.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "30ea642c6b2b1237a64f934974414a3f13a209dae5c140567781cafc1ef5cf42"
 
 [[test]]
@@ -54414,7 +54416,7 @@ id = "tests/sksl/compute/ModuleStructInInterfaceBlock.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/ModuleStructInInterfaceBlock.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eddf8c610b62074d5390328cce3c71af122b69eb25c0729b1f7ec3072a4c1b38"
 
 [[test]]
@@ -54440,7 +54442,7 @@ id = "tests/sksl/compute/ModuleStructInVariable.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/ModuleStructInVariable.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "47a953fe31df009fa670ab5098cc6df70a590daa0600008d2f73384ef05b79a9"
 
 [[test]]
@@ -54466,7 +54468,7 @@ id = "tests/sksl/compute/Raytrace.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Raytrace.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04214be289aa124932f6dcb6af36f58b1ff5bb3be00e1f325c219f0039830ccd"
 
 [[test]]
@@ -54492,7 +54494,7 @@ id = "tests/sksl/compute/Uniforms.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Uniforms.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a75188a9e101c46a21eb96701e0520d46d65a5bc87b464cc5715a6d2387f828f"
 
 [[test]]
@@ -54518,7 +54520,7 @@ id = "tests/sksl/compute/Workgroup.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/Workgroup.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "39a13027c81058526bda7fcd8e0a8968131c79bd54cdf4208e2381c406e0721c"
 
 [[test]]
@@ -57358,7 +57360,7 @@ id = "tests/sksl/folding/ArrayFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/ArrayFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0a4e3fdfe5b2e546c3ffa319e2899471ba2e8fd2356c70ff253db31c95e5da26"
 
 [[test]]
@@ -57391,7 +57393,7 @@ id = "tests/sksl/folding/ArraySizeFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/ArraySizeFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "df1ea4ada33b9e6a796b49438c3510a6da30882fe86f0664150b954b1d836840"
 
 [[test]]
@@ -57424,7 +57426,7 @@ id = "tests/sksl/folding/AssignmentOps.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/AssignmentOps.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e7d4698ad6ba322883d1ba9ca7733c95b75557013bd928e8ad241a1ebff90190"
 
 [[test]]
@@ -57457,7 +57459,7 @@ id = "tests/sksl/folding/BoolFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/BoolFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "89b010d8ed1ad627093d278d57f9f0cdc31d817db0e25251aa4122fbf973fcc6"
 
 [[test]]
@@ -57490,7 +57492,7 @@ id = "tests/sksl/folding/CastFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/CastFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2fc396627cf01845ce57ed81dbedbbbdf3d69d2978bb45d50d1fc433d4f6b848"
 
 [[test]]
@@ -57523,7 +57525,7 @@ id = "tests/sksl/folding/FloatFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/FloatFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d9c80025758983f8bec1fc16002d5d44ccf0c0a6615d966dbb47fa4268109607"
 
 [[test]]
@@ -57556,7 +57558,7 @@ id = "tests/sksl/folding/IntFoldingES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/IntFoldingES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "027d09db52521dbe1360e7c8cb0d854e325095ab510691bd848f439e7859996d"
 
 [[test]]
@@ -57581,7 +57583,7 @@ id = "tests/sksl/folding/IntFoldingES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/IntFoldingES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "77e0a81b4ae655c4fa279da320fb5d87bfe01ce7084714d6ca546d2350e4e098"
 
 [[test]]
@@ -57614,7 +57616,7 @@ id = "tests/sksl/folding/LogicalNot.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/LogicalNot.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9f5a3c539eb7e6da29b8973ce5f4e5100d7ed0dc15883528316b92e5e9954da9"
 
 [[test]]
@@ -57647,7 +57649,7 @@ id = "tests/sksl/folding/MatrixFoldingES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixFoldingES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "307ac5d56b8f659d343856483851d01630f7060763752f65efb3c156e2da64b2"
 
 [[test]]
@@ -57672,7 +57674,7 @@ id = "tests/sksl/folding/MatrixFoldingES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixFoldingES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "df99313be50217e9c931eb41c864024a28d74e2bf284886fcf8230417a78538f"
 
 [[test]]
@@ -57705,7 +57707,7 @@ id = "tests/sksl/folding/MatrixNoOpFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixNoOpFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "22357964872efe3eb7ffcc10e653967cdba67e41ef684998ea4fad4990d16402"
 
 [[test]]
@@ -57738,7 +57740,7 @@ id = "tests/sksl/folding/MatrixScalarNoOpFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixScalarNoOpFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "08062b605dfe3f21c818eea444eb8c90cc20dbcab562f962215597e8d88929a6"
 
 [[test]]
@@ -57771,7 +57773,7 @@ id = "tests/sksl/folding/MatrixVectorNoOpFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/MatrixVectorNoOpFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04dee1a85c60c35ec4f2a0ca1dcf3f97b855dd1bdae660399cbb68203b57a202"
 
 [[test]]
@@ -57804,7 +57806,7 @@ id = "tests/sksl/folding/Negation.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/Negation.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b9bcc455c913c5e50207cf0529c3442d4e2a5dd38c0516e5203bc396b4e7d0a6"
 
 [[test]]
@@ -57837,7 +57839,7 @@ id = "tests/sksl/folding/PreserveSideEffects.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/PreserveSideEffects.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fe31df1bbc1e3a683407d2411648a987ca3d41e4a27df2f4524cdc10270e0507"
 
 [[test]]
@@ -57870,7 +57872,7 @@ id = "tests/sksl/folding/SelfAssignment.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SelfAssignment.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "208df0623216cbd54a68e181214912d8c58ec7e1da4ad8efb470a1b4acb0d2b9"
 
 [[test]]
@@ -57903,7 +57905,7 @@ id = "tests/sksl/folding/ShortCircuitBoolFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/ShortCircuitBoolFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ab61b273ecaeb725e6ffd73f18aa32d5ad3b18d86a9e3d1b10afce8f717f5a8d"
 
 [[test]]
@@ -57936,7 +57938,7 @@ id = "tests/sksl/folding/StructFieldFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/StructFieldFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5fe155c67675c03f18a58421a8af02220362a28d75818909f9114feac1169d28"
 
 [[test]]
@@ -57969,7 +57971,7 @@ id = "tests/sksl/folding/StructFieldNoFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/StructFieldNoFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8fc9b5114b5bb74dca0501c248836263e559446d842ff3f5941cdd3918c43f99"
 
 [[test]]
@@ -58002,7 +58004,7 @@ id = "tests/sksl/folding/SwitchCaseFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SwitchCaseFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ace7119a279633b2ee068c75e0fe6f85ba8c8ba49417e656ad1e38520da2a921"
 
 [[test]]
@@ -58035,7 +58037,7 @@ id = "tests/sksl/folding/SwizzleFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/SwizzleFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "60db316b13379c3d7d0f4aad9fcf7b530ff958cd87501f1c740b871cf16e51bd"
 
 [[test]]
@@ -58068,7 +58070,7 @@ id = "tests/sksl/folding/TernaryFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/TernaryFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4a92124401edd058a208c1564c11b4a8090591a2fd9fe21059660715e9a0c3f8"
 
 [[test]]
@@ -58101,7 +58103,7 @@ id = "tests/sksl/folding/VectorScalarFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/VectorScalarFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "158b216ad89f86e2ddfc49f4d97e387adb9e99b768967fd88437b9bb44870d66"
 
 [[test]]
@@ -58134,7 +58136,7 @@ id = "tests/sksl/folding/VectorVectorFolding.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/folding/VectorVectorFolding.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8176b34ebca2bcc38548ea66bf628f21297da7550906462a4569e4554ce398f0"
 
 [[test]]
@@ -58744,7 +58746,7 @@ id = "tests/sksl/intrinsics/AbsFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/AbsFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e0a3eba83cc26b4bf9b8145ee198df0e794c6f5a71f5b2fdaf9eb248a29c65b"
 
 [[test]]
@@ -58796,7 +58798,7 @@ id = "tests/sksl/intrinsics/AbsInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/AbsInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "14aaf1ed9193abe946d4114a38343cb9071d51022f4a41c3b531995b59b7d4ee"
 
 [[test]]
@@ -58848,7 +58850,7 @@ id = "tests/sksl/intrinsics/Acos.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Acos.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1a4e3b22e47f80e99aeaa3bf20da971e839e62ba8d175c35f06e47d7c1e38b35"
 
 [[test]]
@@ -58900,7 +58902,7 @@ id = "tests/sksl/intrinsics/Acosh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Acosh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "145f95750a5ee9186c7a97855ab4e88b1d45059085a1e07edddf27657bafd1e4"
 
 [[test]]
@@ -58952,7 +58954,7 @@ id = "tests/sksl/intrinsics/All.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/All.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4a390275e96554c317c3bf32ebe4a035fc27ce0f66ceb8008264476d5892bf5c"
 
 [[test]]
@@ -59004,7 +59006,7 @@ id = "tests/sksl/intrinsics/Any.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Any.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8e6de25c802af4e0fd9becc573a6438e74c26f4391a6ea519425212e97037bc5"
 
 [[test]]
@@ -59056,7 +59058,7 @@ id = "tests/sksl/intrinsics/Asin.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Asin.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2aa39b076d081b3a3abb8fc69fabd103de6a89be9b607a2dc28fa77224eb0be1"
 
 [[test]]
@@ -59108,7 +59110,7 @@ id = "tests/sksl/intrinsics/Asinh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Asinh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "585ec1d69a53cc336045fa92ec9074c5dcd4b42ee7c7144e81b0def4830021b2"
 
 [[test]]
@@ -59160,7 +59162,7 @@ id = "tests/sksl/intrinsics/Atan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Atan.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d9ec47280f30c453af4cc6be03e1f02f71383e965a2d54de566fad9162fd8685"
 
 [[test]]
@@ -59212,7 +59214,7 @@ id = "tests/sksl/intrinsics/Atanh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Atanh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "18a3320f8a632b87697127849495c6d0ab573e2accacae53e009e8929d461440"
 
 [[test]]
@@ -59264,7 +59266,7 @@ id = "tests/sksl/intrinsics/BitCount.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/BitCount.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5894deb492f6e639b691bb37baffe61532937886d4f6a385a749c880981b93d2"
 
 [[test]]
@@ -59316,7 +59318,7 @@ id = "tests/sksl/intrinsics/Ceil.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Ceil.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2cc6d3d135ce25086c498858f5a1a9d05bfcde86197d85e16b175195aef75d42"
 
 [[test]]
@@ -59368,7 +59370,7 @@ id = "tests/sksl/intrinsics/ClampFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/ClampFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bef486e700cbbee7e32bd579055c5b5dcfd5217d2aad45e2d8f720aa7af156e1"
 
 [[test]]
@@ -59420,7 +59422,7 @@ id = "tests/sksl/intrinsics/ClampInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/ClampInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1dbb4247d1e69ef6130adfd38a5f9ab7261241f42b0bdf4786168d63d5a03df5"
 
 [[test]]
@@ -59472,7 +59474,7 @@ id = "tests/sksl/intrinsics/ClampUInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/ClampUInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "518a095a69c4f4e0a6d957c54ec975778dfe4f5c7a3dc68d84def6a419ab499d"
 
 [[test]]
@@ -59524,7 +59526,7 @@ id = "tests/sksl/intrinsics/Cos.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Cos.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6f731bef60b4ef4a6b2295825255bfccb610ef7fc13c3d9cb799b98a45ebc811"
 
 [[test]]
@@ -59576,7 +59578,7 @@ id = "tests/sksl/intrinsics/Cosh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Cosh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "160fc0e2ba705f7443725843db15245840ed8034d7ffe449dbc65f2a34e5eae0"
 
 [[test]]
@@ -59628,7 +59630,7 @@ id = "tests/sksl/intrinsics/Cross.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Cross.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9cc8e60b78945d3cff76b9fd3860b222cdf62c36052de8bacbea48e402887026"
 
 [[test]]
@@ -59680,7 +59682,7 @@ id = "tests/sksl/intrinsics/CrossNoInline.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/CrossNoInline.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "47161657b1c831f63333db6d2edf55954d1a537c1abba9baeada2721cf7c9f5d"
 
 [[test]]
@@ -59732,7 +59734,7 @@ id = "tests/sksl/intrinsics/DFdx.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/DFdx.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "23a99762af4e6b968742da2bad7158bc78c5b66355665728a75ada338f20080d"
 
 [[test]]
@@ -59784,7 +59786,7 @@ id = "tests/sksl/intrinsics/DFdy.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/DFdy.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "82895013dc991910653d3ddd4bcfb1d06776c08b1894ba41708cd1a5c789267f"
 
 [[test]]
@@ -59836,7 +59838,7 @@ id = "tests/sksl/intrinsics/DFdyNoRTFlip.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/DFdyNoRTFlip.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "82895013dc991910653d3ddd4bcfb1d06776c08b1894ba41708cd1a5c789267f"
 
 [[test]]
@@ -59888,7 +59890,7 @@ id = "tests/sksl/intrinsics/Degrees.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Degrees.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "512ced842b73c147502dd2e3285ae87a0d85e90a3d59507fdfb52595f3c7e36c"
 
 [[test]]
@@ -59940,7 +59942,7 @@ id = "tests/sksl/intrinsics/Determinant.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Determinant.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "824e1b75b3464f807486b5efbfdc71bd3d65f9b9195fa9e90d93904807ba89b3"
 
 [[test]]
@@ -59992,7 +59994,7 @@ id = "tests/sksl/intrinsics/Distance.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Distance.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e0f4530d757d2c506cd5d5221ae7c34413da23e9a7aa94f9042f074674b155f9"
 
 [[test]]
@@ -60044,7 +60046,7 @@ id = "tests/sksl/intrinsics/Dot.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Dot.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c8108a02b43b64791511ffc6e58ef0e01650d25e2334ed4bfad696b389f37cb3"
 
 [[test]]
@@ -60096,7 +60098,7 @@ id = "tests/sksl/intrinsics/Equal.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Equal.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4ec5ecaf13781e5e062d114431a8c9136127bcaa440f861c3217f4054ad5f94d"
 
 [[test]]
@@ -60148,7 +60150,7 @@ id = "tests/sksl/intrinsics/Exp.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Exp.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "06688fa5fb95acc3021e3879c3d9dbee14308e78b939ad083eb9a45d36a93071"
 
 [[test]]
@@ -60200,7 +60202,7 @@ id = "tests/sksl/intrinsics/Exp2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Exp2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b9d60f008b2e793d408537388f81c962f872565daf567c7e0a660567c520e03b"
 
 [[test]]
@@ -60252,7 +60254,7 @@ id = "tests/sksl/intrinsics/FaceForward.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FaceForward.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c589985aa9b84c571aef5d07a329e3edcc08efc24b81f0d61cc469b0260a717e"
 
 [[test]]
@@ -60304,7 +60306,7 @@ id = "tests/sksl/intrinsics/FindLSB.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FindLSB.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3fd7f12b6f46235d36e84572493adb83f088d5877cfee61903db79c7ca5f7d9f"
 
 [[test]]
@@ -60356,7 +60358,7 @@ id = "tests/sksl/intrinsics/FindMSB.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FindMSB.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e9657470919ac3dbceeac55cbb582c19b5ef3a4044934409763fbd95e6640cfd"
 
 [[test]]
@@ -60408,7 +60410,7 @@ id = "tests/sksl/intrinsics/FloatBitsToInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FloatBitsToInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4d0b410741c5d6416dfa78d20a4902a2762bb5ff7838611bf1acdf723ffdfb02"
 
 [[test]]
@@ -60460,7 +60462,7 @@ id = "tests/sksl/intrinsics/FloatBitsToUint.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/FloatBitsToUint.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5a1b57951596bdfced85d96a82e00c69695509f13abb1c93ed9168c294442124"
 
 [[test]]
@@ -60512,7 +60514,7 @@ id = "tests/sksl/intrinsics/Floor.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Floor.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c27a11bb2ea13b3d77b711cd6891dbbb1d4cc6a9af8a029333896c7c98850d48"
 
 [[test]]
@@ -60564,7 +60566,7 @@ id = "tests/sksl/intrinsics/Fma.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Fma.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a4db9d7f0330ba6d377eea6b7e8668e889bfa3c4dd83a526d1c3a8e06f99ebf7"
 
 [[test]]
@@ -60616,7 +60618,7 @@ id = "tests/sksl/intrinsics/Fract.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Fract.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ff06c34957a75535190753fa6969b343340a9e61999728b78959c818807ebc2b"
 
 [[test]]
@@ -60668,7 +60670,7 @@ id = "tests/sksl/intrinsics/Frexp.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Frexp.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "350fb37dd70d82856070f1570b644b568375007342bd43b2d78477d094bfb61d"
 
 [[test]]
@@ -60720,7 +60722,7 @@ id = "tests/sksl/intrinsics/Fwidth.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Fwidth.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1c94c6b96cfcf65139bd5fe0090032271271f03a4ff64cc7cf0a9d33c28978de"
 
 [[test]]
@@ -60772,7 +60774,7 @@ id = "tests/sksl/intrinsics/GreaterThan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/GreaterThan.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d51caf50e8cd748423c7ea5142608a2721be991324a4848e622809e035bb9d60"
 
 [[test]]
@@ -60824,7 +60826,7 @@ id = "tests/sksl/intrinsics/GreaterThanEqual.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/GreaterThanEqual.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eb6aa79d85a2968ad19207acf570639e1e2cef2f6118f6c078f17f690ed761c5"
 
 [[test]]
@@ -60876,7 +60878,7 @@ id = "tests/sksl/intrinsics/IntBitsToFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IntBitsToFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7d23432b259ba6d3a3c68ecb9c7c83d8d96b185db619686af42d3b028f872c77"
 
 [[test]]
@@ -60928,7 +60930,7 @@ id = "tests/sksl/intrinsics/Inverse.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Inverse.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b8f8b92b39a750e63f49bc1ce57f689c901e8d9849a93b0419d79ef16aab732d"
 
 [[test]]
@@ -60980,7 +60982,7 @@ id = "tests/sksl/intrinsics/Inversesqrt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Inversesqrt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a49bce9b0826464b94d93c2b6711391606772186f44b3980718f1ce16a6ee745"
 
 [[test]]
@@ -61033,6 +61035,7 @@ kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsInf.wgsl"
 module = "sksl"
 status = "todo"
+reason = "needs-tint-validation: the golden is Tint's rejection of `isinf` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
 span_hash = "e69a050ac40fae5106c7a112f06693b316dcfe8487f7d71a13c4f6a98e04c33d"
 
 [[test]]
@@ -61085,6 +61088,7 @@ kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsNan.wgsl"
 module = "sksl"
 status = "todo"
+reason = "needs-tint-validation: the golden is Tint's rejection of `isnan` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
 span_hash = "ebea7f542c6d5cf030135ff0b1d906a155660b903653a64c024d8ffbcf678682"
 
 [[test]]
@@ -61136,7 +61140,7 @@ id = "tests/sksl/intrinsics/Ldexp.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Ldexp.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "27a4d8d91ba40166384d5d33beeb42bc78f9396a90f8501adfd4c24842175b21"
 
 [[test]]
@@ -61188,7 +61192,7 @@ id = "tests/sksl/intrinsics/Length.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Length.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cff531530efc738b5af65baa37d8d7843fe1cf2b263d9f43dd47388c160b5b99"
 
 [[test]]
@@ -61240,7 +61244,7 @@ id = "tests/sksl/intrinsics/LessThan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/LessThan.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a7b9ad46a62228ccac2bfdecfea30e176ca6fecc79aa901c0e5a3dd46986d9a2"
 
 [[test]]
@@ -61292,7 +61296,7 @@ id = "tests/sksl/intrinsics/LessThanEqual.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/LessThanEqual.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8fb5e882d9074c3ba1e0d898a403c271206cc2354cba67c7c8c176efe5b72584"
 
 [[test]]
@@ -61344,7 +61348,7 @@ id = "tests/sksl/intrinsics/Log.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Log.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "12410ef4cb93e642e6d56282b6005656feb076983b30f5c88182f0fdac782cf8"
 
 [[test]]
@@ -61396,7 +61400,7 @@ id = "tests/sksl/intrinsics/Log2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Log2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "06cf43434f36d469d0336df5d69e28a96abd318ab952918e86c66da12d693058"
 
 [[test]]
@@ -61448,7 +61452,7 @@ id = "tests/sksl/intrinsics/MatrixCompMultES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MatrixCompMultES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1dc4d7639484fff1aae816a891458f4240b5d8dce8d220992dbbfea9464d836b"
 
 [[test]]
@@ -61500,7 +61504,7 @@ id = "tests/sksl/intrinsics/MatrixCompMultES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MatrixCompMultES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cf5375e134d80ceb11156a0cece5768ae9151827d1d6cef6202ec83167206bf8"
 
 [[test]]
@@ -61552,7 +61556,7 @@ id = "tests/sksl/intrinsics/MaxFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MaxFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d70e5bc8605fdd39e1370cbc5fa88576d7205b14016cefbc09eaafa31c8f7d03"
 
 [[test]]
@@ -61604,7 +61608,7 @@ id = "tests/sksl/intrinsics/MaxInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MaxInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9e9da5e11d821b09ad65008ba308ab6f4748ae2c6563cf4925b7c1ef8c2d5618"
 
 [[test]]
@@ -61656,7 +61660,7 @@ id = "tests/sksl/intrinsics/MaxUint.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MaxUint.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "339c3574e4caab4b8ab55f74d878cf0302f1085e2458116bcf67f6a696e40ca5"
 
 [[test]]
@@ -61708,7 +61712,7 @@ id = "tests/sksl/intrinsics/MinFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MinFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5fe59489d3fe14837a8c2a81fb79d4b356da5a16d328578f65b2be4144628ce4"
 
 [[test]]
@@ -61760,7 +61764,7 @@ id = "tests/sksl/intrinsics/MinInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MinInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "db57a84f7b9c7f1940e868e16e46e6b836c44f10e3f4d5a675532ca1391416f3"
 
 [[test]]
@@ -61812,7 +61816,7 @@ id = "tests/sksl/intrinsics/MinUint.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MinUint.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9b1226d242c965cc03295fe48c40cb7e127685196def5932d49dd797b0cc062f"
 
 [[test]]
@@ -61864,7 +61868,7 @@ id = "tests/sksl/intrinsics/MixBool.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MixBool.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eb0407fdef7bf133f95ac8de76e1e2bf9ef3fc531ec1d1138e5291be251042e4"
 
 [[test]]
@@ -61916,7 +61920,7 @@ id = "tests/sksl/intrinsics/MixFloatES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MixFloatES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "68b42ade7298e03f0000d81ddf27fc11833687fb1cfbcfc8fcc50c87daaaff8a"
 
 [[test]]
@@ -61968,7 +61972,7 @@ id = "tests/sksl/intrinsics/MixFloatES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/MixFloatES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bab829451a4310d66e42c8a6af47cdb5ae2495197d239e62fd741fa053133cb2"
 
 [[test]]
@@ -62020,7 +62024,7 @@ id = "tests/sksl/intrinsics/Mod.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Mod.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9f46c5c761755f91e692930c98fbfe3d5c5a6d759be082d47f9ce508ae1ad8aa"
 
 [[test]]
@@ -62072,7 +62076,7 @@ id = "tests/sksl/intrinsics/Modf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Modf.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3ed1e6106519f7eb8d84a2f75d829aa169c332201ec004683368c19da5c75894"
 
 [[test]]
@@ -62124,7 +62128,7 @@ id = "tests/sksl/intrinsics/Normalize.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Normalize.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7441e6172eceff291d2494b89b7ce91ec568c4876c7871be5a876b0457b040d9"
 
 [[test]]
@@ -62176,7 +62180,7 @@ id = "tests/sksl/intrinsics/Not.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Not.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "587fbae0676a8dbaf3232a411b3c007a8c686be0f9e37c5836b80a81a0138670"
 
 [[test]]
@@ -62228,7 +62232,7 @@ id = "tests/sksl/intrinsics/NotEqual.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/NotEqual.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1b03a6c1c038498ee8773d5b72bc2f9eb13f357ac685a5c37969dd6d491c5f34"
 
 [[test]]
@@ -62280,7 +62284,7 @@ id = "tests/sksl/intrinsics/OuterProduct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/OuterProduct.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b5fd7b42a527442fab698c82d898d14c123adeb7a50b965d895e166747632e2"
 
 [[test]]
@@ -62332,7 +62336,7 @@ id = "tests/sksl/intrinsics/Pack.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Pack.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b88e752d27dd3e27e2b44d8b2a41367dc8cde138bf82d6c416640644575f31a2"
 
 [[test]]
@@ -62384,7 +62388,7 @@ id = "tests/sksl/intrinsics/PackHalf2x16.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/PackHalf2x16.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d341af4111e10a037cf58f46262a6c5712983f2eb7ef2bea7cc49f5b4ec55884"
 
 [[test]]
@@ -62436,7 +62440,7 @@ id = "tests/sksl/intrinsics/PackSnorm2x16.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/PackSnorm2x16.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "75b6c7c66978d34a0653e2b95f5ebb497713c07732795de8a253c95afedb37f5"
 
 [[test]]
@@ -62488,7 +62492,7 @@ id = "tests/sksl/intrinsics/PackUnorm2x16.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/PackUnorm2x16.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "aaff00ebc1d9cba6bc8ebe38799229c4b51acdc85b77fb38f9b591a25a841c56"
 
 [[test]]
@@ -62540,7 +62544,7 @@ id = "tests/sksl/intrinsics/Pow.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Pow.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "68d0c304555f256f354f4bffb23f60815c6fea03dad784a4a8cb3d4c08e0aaf6"
 
 [[test]]
@@ -62592,7 +62596,7 @@ id = "tests/sksl/intrinsics/Radians.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Radians.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d493f7213721e133f4e8595c62b3f789e185d172bbe92fbefed1da38cec28983"
 
 [[test]]
@@ -62644,7 +62648,7 @@ id = "tests/sksl/intrinsics/Reflect.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Reflect.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e6147b4a8b7271c309ea6a0cc5e92cc5a84626e709b2c72678c1bb155c3957e"
 
 [[test]]
@@ -62696,7 +62700,7 @@ id = "tests/sksl/intrinsics/Refract.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Refract.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cc65f53fe26afe96da5bd9f477fe21410f92f1d4acfe5bca7ab1377cd2f7120e"
 
 [[test]]
@@ -62748,7 +62752,7 @@ id = "tests/sksl/intrinsics/Round.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Round.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4c116faad5e46d724ccea949808a01c996e5f5b6ecc7835b714369e1c3b667fe"
 
 [[test]]
@@ -62800,7 +62804,7 @@ id = "tests/sksl/intrinsics/RoundEven.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/RoundEven.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4c116faad5e46d724ccea949808a01c996e5f5b6ecc7835b714369e1c3b667fe"
 
 [[test]]
@@ -62852,7 +62856,7 @@ id = "tests/sksl/intrinsics/Sample.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Sample.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d8c4a7cd2b112f9772e6c596597dd575b56a52e4a94bbf2b01f5ec34ec01b4b3"
 
 [[test]]
@@ -62904,7 +62908,7 @@ id = "tests/sksl/intrinsics/SampleGrad.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SampleGrad.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ba809388fcf86f776c017dd7f730cd26f02a14bf56ec215f2c02bfccd2cbde0d"
 
 [[test]]
@@ -62956,7 +62960,7 @@ id = "tests/sksl/intrinsics/SampleLod.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SampleLod.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d762299a49b879bc24f735c2b90b4db6523968170f044c180dc0cff63b507529"
 
 [[test]]
@@ -63008,7 +63012,7 @@ id = "tests/sksl/intrinsics/Saturate.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Saturate.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "74b65adf61769c727e3d135831b7a3e21233ebf31d35bf601a7a2cbb6c01a02b"
 
 [[test]]
@@ -63060,7 +63064,7 @@ id = "tests/sksl/intrinsics/SignFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SignFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a4d27b958ad22d9f2dc513e570e491efcce72c8b59f3ea5f3613400f280d2b00"
 
 [[test]]
@@ -63112,7 +63116,7 @@ id = "tests/sksl/intrinsics/SignInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/SignInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "35e35d090f6cdde98c80ec918dbd3d44d45bceeeb9765a394ed93aca748785f5"
 
 [[test]]
@@ -63164,7 +63168,7 @@ id = "tests/sksl/intrinsics/Sin.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Sin.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2148843acea03a26aca063b98e682f89fcefd221238567b1b345461c11ed6464"
 
 [[test]]
@@ -63216,7 +63220,7 @@ id = "tests/sksl/intrinsics/Sinh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Sinh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "76bb8fdf9de011f6dffbe7ad7c4f818edb4ec71f7450be40940c030a6e2dbfe1"
 
 [[test]]
@@ -63268,7 +63272,7 @@ id = "tests/sksl/intrinsics/Smoothstep.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Smoothstep.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b96cd9d2e3d64a92065f1d638ab1dab091e7821a7268340bb621c9165b0357b8"
 
 [[test]]
@@ -63320,7 +63324,7 @@ id = "tests/sksl/intrinsics/Sqrt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Sqrt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5f77e6be5f44d6fb1072597694f7b1c31357f9556c1b4aa4f3e7baaf6df8e394"
 
 [[test]]
@@ -63372,7 +63376,7 @@ id = "tests/sksl/intrinsics/Step.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Step.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "05fa6f5e1bfdc941cc822749903cb0cdcf9440437d59c6d0b99a97eaeb70a870"
 
 [[test]]
@@ -63424,7 +63428,7 @@ id = "tests/sksl/intrinsics/Tan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Tan.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2f4cba6dc69d589e22e3766e8db28941163d3391272f90b5118a407f19048c91"
 
 [[test]]
@@ -63476,7 +63480,7 @@ id = "tests/sksl/intrinsics/Tanh.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Tanh.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cd466968dbf55dbfef29f6c349a0a1291afa7f0117f7fcecac8e4957e9978626"
 
 [[test]]
@@ -63528,7 +63532,7 @@ id = "tests/sksl/intrinsics/TextureReadImage.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadImage.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a65138bd93da9ed397d29085ef35e88ca3776122738604c63a1e3b00e196340f"
 
 [[test]]
@@ -63580,7 +63584,7 @@ id = "tests/sksl/intrinsics/TextureReadSampler.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadSampler.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bf6454a3394a1826bce8ec221d1d5d08d4b06586fb9848674b32489afee78235"
 
 [[test]]
@@ -63632,7 +63636,7 @@ id = "tests/sksl/intrinsics/TextureReadTexture.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureReadTexture.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a65138bd93da9ed397d29085ef35e88ca3776122738604c63a1e3b00e196340f"
 
 [[test]]
@@ -63684,7 +63688,7 @@ id = "tests/sksl/intrinsics/TextureSizeImage.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeImage.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cfbea0c0b38dc3e9deaee2224f9978c500964e47872e9a79bf8f74ef48b8eab6"
 
 [[test]]
@@ -63736,7 +63740,7 @@ id = "tests/sksl/intrinsics/TextureSizeSampler.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeSampler.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a7e1337ca62c643d46e3e65b8058dc720349e47835bf172daafa83fc5eba4a4b"
 
 [[test]]
@@ -63788,7 +63792,7 @@ id = "tests/sksl/intrinsics/TextureSizeTexture.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/TextureSizeTexture.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cfbea0c0b38dc3e9deaee2224f9978c500964e47872e9a79bf8f74ef48b8eab6"
 
 [[test]]
@@ -63840,7 +63844,7 @@ id = "tests/sksl/intrinsics/Transpose.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Transpose.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "532989a7f9c7f52a96df8123a18fbcd8519bd3156de01f351dbbcf3bde644df5"
 
 [[test]]
@@ -63892,7 +63896,7 @@ id = "tests/sksl/intrinsics/Trunc.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Trunc.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5ccf509549fa522f94cdfad70b75e8ea5e1346079491c6d3efdffe568448b156"
 
 [[test]]
@@ -63944,7 +63948,7 @@ id = "tests/sksl/intrinsics/UintBitsToFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/UintBitsToFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b883cb2f5ed0e2a275a1197bcaf1a0f60531852bc196d208c965e279154fc5c2"
 
 [[test]]
@@ -63996,7 +64000,7 @@ id = "tests/sksl/intrinsics/Unpack.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/Unpack.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "122ca6e2e59373fca647571706f93ccd4ff6f35cf375257a707233efc42e894c"
 
 [[test]]
@@ -64287,7 +64291,7 @@ id = "tests/sksl/realistic/GaussianBlur.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/realistic/GaussianBlur.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1f9fab940f1f974aca266671713ed13b526bf7275ccac18d0250a7e9ef745a4b"
 
 [[test]]
@@ -64775,7 +64779,7 @@ id = "tests/sksl/runtime/GLSLTypeNames.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNames.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7c5bab5eba1afac2a6a9e8de79ac2671694798c04d51f237e750c33ab03bfe72"
 
 [[test]]
@@ -64807,7 +64811,7 @@ id = "tests/sksl/runtime/GLSLTypeNamesES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GLSLTypeNamesES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f90cadd24d23c5953945fa2360555562a590fc067f1c730bb536f15726f68767"
 
 [[test]]
@@ -64839,7 +64843,7 @@ id = "tests/sksl/runtime/GlobalVariables.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/GlobalVariables.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5f17763db25a073799bf4f7f8039e727a9abc9c18857ac384c17d22420151139"
 
 [[test]]
@@ -64919,7 +64923,7 @@ id = "tests/sksl/runtime/LargeProgram_BlocklessLoops.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_BlocklessLoops.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "341ab4481317c79ef14e475684e807b8f0baeb88ea91f8fc967f195b9a8e59cb"
 
 [[test]]
@@ -64951,7 +64955,7 @@ id = "tests/sksl/runtime/LargeProgram_FlatLoop.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_FlatLoop.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a4ddf7e0dd93eecbb98209ad49f6150d8ef3017846fdc8ed414ca0d749a19776"
 
 [[test]]
@@ -64983,7 +64987,7 @@ id = "tests/sksl/runtime/LargeProgram_Functions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_Functions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "14e8a2097568d16d0ff61533ef8b0c0d50c5f43301fc6ec1e93a50cf3fec2fc5"
 
 [[test]]
@@ -65015,7 +65019,7 @@ id = "tests/sksl/runtime/LargeProgram_NestedLoops.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_NestedLoops.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d2a476cdc8c449caafadc5b8c7929d0894f07367f445656f65c1c11204e8d2d8"
 
 [[test]]
@@ -65047,7 +65051,7 @@ id = "tests/sksl/runtime/LargeProgram_SplitLoops.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_SplitLoops.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f1a196113e7cb167ab1b67861472e5a1b6401a4dfe9e0f1d65127f501f0beb18"
 
 [[test]]
@@ -65103,7 +65107,7 @@ id = "tests/sksl/runtime/LargeProgram_ZeroIterFor.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LargeProgram_ZeroIterFor.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a73372fc593c498336f96aa8db86898867242ab569b5ac592cae750dfe076f22"
 
 [[test]]
@@ -65135,7 +65139,7 @@ id = "tests/sksl/runtime/LoopFloat.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopFloat.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9a5489f0d26cf86c8af9d6f85171fe1346b2a961e281e4059424f895f195bbc3"
 
 [[test]]
@@ -65167,7 +65171,7 @@ id = "tests/sksl/runtime/LoopInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/LoopInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "77038d291b0f809f41d291d865de3ebfc1407b5af729428987b7ca5805fd4c70"
 
 [[test]]
@@ -65295,7 +65299,7 @@ id = "tests/sksl/runtime/QualifierOrder.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/QualifierOrder.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "159986314f1e0ce3c2044b9455234aa45883928d4038b109f4441e66def74035"
 
 [[test]]
@@ -65327,7 +65331,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Arrays.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Arrays.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7ea43bcb1b5a1b48524b17eaf32232e4be06a7705e09df103c1a41963d93e448"
 
 [[test]]
@@ -65359,7 +65363,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Structs.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Structs.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bab5382f72e809e1c4224de2592e87f51e5d97d7059ef305936d698594bf40f5"
 
 [[test]]
@@ -65391,7 +65395,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Types.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Types.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e2a42f7a3c0d551bb7a2c5987c95b2f816a9188e623bd9e6252f5d3b9224191"
 
 [[test]]
@@ -65423,7 +65427,7 @@ id = "tests/sksl/runtime/RecursiveComparison_Vectors.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/runtime/RecursiveComparison_Vectors.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "92893d53d40b72c28279686f757f1c5a742750844dc772a842cf74b6cc974fa7"
 
 [[test]]
@@ -65643,7 +65647,7 @@ id = "tests/sksl/shared/ArrayCast.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayCast.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb6ed46886497285132c18b2a5b20db47376c6efeb2b88a3112a2087ec5ca7f8"
 
 [[test]]
@@ -65695,7 +65699,7 @@ id = "tests/sksl/shared/ArrayComparison.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayComparison.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "07ed5ebfac03762587f810db44356393f181f304fb95deead97c694d124e3351"
 
 [[test]]
@@ -65747,7 +65751,7 @@ id = "tests/sksl/shared/ArrayConstructors.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayConstructors.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "248d91ea3ab0d90a22c36ff27c9b3b881085b7c3581886c60e7cc50fc0ac65e5"
 
 [[test]]
@@ -65799,7 +65803,7 @@ id = "tests/sksl/shared/ArrayFollowedByScalar.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayFollowedByScalar.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "904b6d23544994199f055511e4f1b891355c64aeed20729617bcc80bdd017cee"
 
 [[test]]
@@ -65851,7 +65855,7 @@ id = "tests/sksl/shared/ArrayIndexTypes.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayIndexTypes.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c454741c7226f250ee62cc29c72589573b2ad59952cde9bbb225fe2d5bbf03e5"
 
 [[test]]
@@ -65903,7 +65907,7 @@ id = "tests/sksl/shared/ArrayNarrowingConversions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayNarrowingConversions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "855196f8a5eddfa411433bf8f0fbda08a45b623e6fbc0262031d496fcfbaf4dd"
 
 [[test]]
@@ -65955,7 +65959,7 @@ id = "tests/sksl/shared/ArrayTypes.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayTypes.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "604bae3afd46c525cdac7468c63affe0dc0af8ca05a12800c04a2f4964184f59"
 
 [[test]]
@@ -66007,7 +66011,7 @@ id = "tests/sksl/shared/ArrayUnsizedParam.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ArrayUnsizedParam.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "061ec573b4f4a78ba9750ad7fc93ed7dcc78322d0fb9bd7661ca1e442c656482"
 
 [[test]]
@@ -66059,7 +66063,7 @@ id = "tests/sksl/shared/Assignment.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Assignment.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "30b5e7f5298124928090c14af8ac50dbe376f4314960b7bd9a4e2c353327d3e7"
 
 [[test]]
@@ -66111,7 +66115,7 @@ id = "tests/sksl/shared/Caps.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Caps.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "44852dae3d307d95dc8c52447c5a7dd70a6424503490d837f0ee60f10c626fa6"
 
 [[test]]
@@ -66163,7 +66167,7 @@ id = "tests/sksl/shared/CastsRoundTowardZero.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/CastsRoundTowardZero.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "424cd2afc798c1eb49c668a9ad44b2fd70ec7d5bb61d17db4f77862522d3175c"
 
 [[test]]
@@ -66215,7 +66219,7 @@ id = "tests/sksl/shared/Clockwise.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Clockwise.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "85815eebbd694f45c5f7fe745c083657b0592700dc4a9af7027f6286bd5621f9"
 
 [[test]]
@@ -66267,7 +66271,7 @@ id = "tests/sksl/shared/ClockwiseNoRTFlip.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ClockwiseNoRTFlip.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "85815eebbd694f45c5f7fe745c083657b0592700dc4a9af7027f6286bd5621f9"
 
 [[test]]
@@ -66319,7 +66323,7 @@ id = "tests/sksl/shared/CommaMixedTypes.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/CommaMixedTypes.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e335fe571f04f933e5b3f2d0cee843fb1f89e18fd8b0d0e822157275805766c3"
 
 [[test]]
@@ -66371,7 +66375,7 @@ id = "tests/sksl/shared/CommaSideEffects.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/CommaSideEffects.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e0e43417400564de0b58224410002f8ac77080a70d1be3f51c6fabf4b8ce8280"
 
 [[test]]
@@ -66423,7 +66427,7 @@ id = "tests/sksl/shared/CompileTimeConstantVariables.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/CompileTimeConstantVariables.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d97e86323656b8bfc2bc04563e678715d81760f5a6cc5a1950317d7763ba07aa"
 
 [[test]]
@@ -66475,7 +66479,7 @@ id = "tests/sksl/shared/ComplexDelete.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ComplexDelete.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "59179d570d32115b9f7cbb0ddff4d53610a68ad2651de4bfa37693ab8cd202e1"
 
 [[test]]
@@ -66527,7 +66531,7 @@ id = "tests/sksl/shared/ConstArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "90f89c5d6dbb92bc9260ca2b25206b7136d57b67c57b77e31272d93f4bead842"
 
 [[test]]
@@ -66579,7 +66583,7 @@ id = "tests/sksl/shared/ConstGlobal.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstGlobal.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eda7c996a32d4a4323cbeac4d6895a61f00226f622e949c10231406a3f48d454"
 
 [[test]]
@@ -66631,7 +66635,7 @@ id = "tests/sksl/shared/ConstVariableComparison.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstVariableComparison.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5685da27f850e704e6711ab24696cbef4dd7c8a8dc856b36062b83a0321d52e2"
 
 [[test]]
@@ -66683,7 +66687,7 @@ id = "tests/sksl/shared/ConstantCompositeAccessViaConstantIndex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstantCompositeAccessViaConstantIndex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "25f40c995e5d035879758d2a1807bc9a3331d4faa40f18200741feda156c0d14"
 
 [[test]]
@@ -66735,7 +66739,7 @@ id = "tests/sksl/shared/ConstantCompositeAccessViaDynamicIndex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstantCompositeAccessViaDynamicIndex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4dd98a842324f31bff15e96554a3c1d30b7d7358a37d4df189c73663c7414734"
 
 [[test]]
@@ -66787,7 +66791,7 @@ id = "tests/sksl/shared/ConstantIf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ConstantIf.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "afeac7ba30de5e6ad1b03c72c5b0249ad41550ac5e2449e58f45e07acc190df9"
 
 [[test]]
@@ -66839,7 +66843,7 @@ id = "tests/sksl/shared/Control.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Control.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4b4c16b92d9ba904a94dfe21a42914f2a4868ffa57fed758d76d9b96a0dfccff"
 
 [[test]]
@@ -66891,7 +66895,7 @@ id = "tests/sksl/shared/DeadDoWhileLoop.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadDoWhileLoop.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5eef40955100f7636083095e3319e76866fa96c42b129708a2ccbbba5b996b51"
 
 [[test]]
@@ -66943,7 +66947,7 @@ id = "tests/sksl/shared/DeadGlobals.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadGlobals.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "57a446b27f578a9d90dc23707d61cc5c6628f24acf0fedce4659405144085ef3"
 
 [[test]]
@@ -66995,7 +66999,7 @@ id = "tests/sksl/shared/DeadIfStatement.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadIfStatement.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e28a17e45f8808c4da236dad3ea4eedbc6d24f93cef8f4bee1f16918bd0dc4f9"
 
 [[test]]
@@ -67047,7 +67051,7 @@ id = "tests/sksl/shared/DeadLoopVariable.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadLoopVariable.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "11ba4d29f514b9d7e3c995f51979bc822f2a914172c1c5c7a9d2aa822ef92466"
 
 [[test]]
@@ -67099,7 +67103,7 @@ id = "tests/sksl/shared/DeadReturn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadReturn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9172f09ac34332831187ac53ce048cdb67e6ea8515430d5f30e846602c98613f"
 
 [[test]]
@@ -67151,7 +67155,7 @@ id = "tests/sksl/shared/DeadReturnES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadReturnES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a2085a96c232a75adf2772b6c9f2f4be763561bf53825d3a4f6c2f23bd0ad0c4"
 
 [[test]]
@@ -67203,7 +67207,7 @@ id = "tests/sksl/shared/DeadStripFunctions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DeadStripFunctions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0da992a361a30d4b26a8b115f2f639b2fa26e8acc379b6141c308148fccd798b"
 
 [[test]]
@@ -67255,7 +67259,7 @@ id = "tests/sksl/shared/DependentInitializers.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DependentInitializers.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "08dc83ba9329a6d5e1166ffc3b60e1b7d42206b59be60899a3297f4c170fc985"
 
 [[test]]
@@ -67272,7 +67276,7 @@ id = "tests/sksl/shared/Derivatives.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Derivatives.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0c3080f4900ecb46d49dfb2bd1b544133ad7ea5317b93c212c6a6653fb755d4a"
 
 [[test]]
@@ -67333,7 +67337,7 @@ id = "tests/sksl/shared/DerivativesUnused.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DerivativesUnused.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3939ec9d68ccf7917f687cc33520d796ba93f453172ea5d8584542154620b7e4"
 
 [[test]]
@@ -67385,7 +67389,7 @@ id = "tests/sksl/shared/Discard.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Discard.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3e80acc67117c0da3bdcaaa837f86ba962d3d4b71326b53595945308f8bd8333"
 
 [[test]]
@@ -67437,7 +67441,7 @@ id = "tests/sksl/shared/DoWhileControlFlow.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DoWhileControlFlow.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8b0c3b83dee539d1a7e47bd083970187768edf7ae024af01b6601d5799379b7d"
 
 [[test]]
@@ -67489,7 +67493,7 @@ id = "tests/sksl/shared/DoubleNegation.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/DoubleNegation.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2963098ca2e1e13c4b139747e4d0d2fac1746635d73cd35d8a1bb33be47f6fcb"
 
 [[test]]
@@ -67541,7 +67545,7 @@ id = "tests/sksl/shared/EmptyBlocksES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/EmptyBlocksES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "912cf971c9ce2230924abc30a560953b1455629a6586c6b867fd3e9ed1b6a22b"
 
 [[test]]
@@ -67593,7 +67597,7 @@ id = "tests/sksl/shared/EmptyBlocksES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/EmptyBlocksES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ce7d2f8ed29c51704af19a28726451bcaa734fcc3519e2c18ebc59c2983ffbe7"
 
 [[test]]
@@ -67645,7 +67649,7 @@ id = "tests/sksl/shared/ForLoopControlFlow.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ForLoopControlFlow.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a593dfa9b9054a88de0f98553215d9fb2c73c5ece6c29a0e7a86f454d306b4b7"
 
 [[test]]
@@ -67697,7 +67701,7 @@ id = "tests/sksl/shared/ForLoopMultipleInitES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ForLoopMultipleInitES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1d1524c13eb4ff7dc87d47fb727cb4173f4d8d67870c33b6007865eea0bc035a"
 
 [[test]]
@@ -67749,7 +67753,7 @@ id = "tests/sksl/shared/ForLoopShadowing.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ForLoopShadowing.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f8745b333b93cf7de0ead616c4f40e456b5747872e31377d390f0136c4b14582"
 
 [[test]]
@@ -67801,7 +67805,7 @@ id = "tests/sksl/shared/FragCoords.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FragCoords.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9717e1dee1523d1b1a04a4196af58e26d7adcdb93dc523f9486833302c2fbe3b"
 
 [[test]]
@@ -67853,7 +67857,7 @@ id = "tests/sksl/shared/FragCoordsNoRTFlip.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FragCoordsNoRTFlip.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9717e1dee1523d1b1a04a4196af58e26d7adcdb93dc523f9486833302c2fbe3b"
 
 [[test]]
@@ -67905,7 +67909,7 @@ id = "tests/sksl/shared/FunctionAnonymousParameters.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionAnonymousParameters.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "337dae2f9e3a04f890040e9fedcfc5d638952c2ce4aa05a399d3eb06026407c9"
 
 [[test]]
@@ -67957,7 +67961,7 @@ id = "tests/sksl/shared/FunctionArgTypeMatch.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionArgTypeMatch.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "95d81b67605af45a35ed14440a321354c2e1399806fc6b1e1478f6fed8bd589e"
 
 [[test]]
@@ -68009,7 +68013,7 @@ id = "tests/sksl/shared/FunctionParametersOfTextureAndSamplerType.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionParametersOfTextureAndSamplerType.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "aa2ad4bf1ac9a5cc34684d9bfb7c8a35c56e13f292c50c127f573ec3b0c9d383"
 
 [[test]]
@@ -68061,7 +68065,7 @@ id = "tests/sksl/shared/FunctionPrototype.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionPrototype.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "edbc835891b703f0f1069f04e1dad144907134edb91fa60fc3e71fa0add63037"
 
 [[test]]
@@ -68113,7 +68117,7 @@ id = "tests/sksl/shared/FunctionReturnTypeMatch.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/FunctionReturnTypeMatch.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fa68bfacfeca46f82034cf4be8fbec48c3a86ba58c444e158f58b559278e014f"
 
 [[test]]
@@ -68165,7 +68169,7 @@ id = "tests/sksl/shared/Functions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Functions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1eb5dcee06fa7869951fd24e20b9926348ca732dcd9848938ac7fddbbac92664"
 
 [[test]]
@@ -68217,7 +68221,7 @@ id = "tests/sksl/shared/GeometricIntrinsics.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/GeometricIntrinsics.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6ca5d4fad918795395548e85ba0a42ced58e263c230e59d3f1c48d61c8d1821b"
 
 [[test]]
@@ -68269,7 +68273,7 @@ id = "tests/sksl/shared/HelloWorld.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/HelloWorld.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "033bb531664a195252b0d2479bca2d94931691284195d749697f67ee96ade8e6"
 
 [[test]]
@@ -68321,7 +68325,7 @@ id = "tests/sksl/shared/Hex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Hex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eadae6ce1fe4dc145410efda859eeb687db11755f333bf6313ef8340be9a1e31"
 
 [[test]]
@@ -68373,7 +68377,7 @@ id = "tests/sksl/shared/HexUnsigned.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/HexUnsigned.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "de1c75268c2a2b71c99299e94642b7b206a3d6890c6f1c6f49b82055f20923ac"
 
 [[test]]
@@ -68425,7 +68429,7 @@ id = "tests/sksl/shared/IfStatement.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/IfStatement.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "eb1c2ca7c7f5cc5945a91e31b3f339fd2bb5668731efdeecf4c53f9c193aa5e4"
 
 [[test]]
@@ -68477,7 +68481,7 @@ id = "tests/sksl/shared/InoutParameters.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InoutParameters.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "80413f71dfb316bd18556b0c6f8ae8e996f44bf9577d050f1241906d21f10fa5"
 
 [[test]]
@@ -68529,7 +68533,7 @@ id = "tests/sksl/shared/InoutParamsAreDistinct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InoutParamsAreDistinct.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2e17f17858e1d96dc2b509ade32026135fa096f20fa989859796035a34b34857"
 
 [[test]]
@@ -68581,7 +68585,7 @@ id = "tests/sksl/shared/InstanceID.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InstanceID.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e4e646ba7225e4fc99a270e4778548fb1fa7bc923c30721eb723771547a24708"
 
 [[test]]
@@ -68633,7 +68637,7 @@ id = "tests/sksl/shared/InstanceIDInFunction.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InstanceIDInFunction.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f6e061f87a4bcbc64dba4704bcfd67783f4e7ed0ae8118b7a126f8a103e907f6"
 
 [[test]]
@@ -68685,7 +68689,7 @@ id = "tests/sksl/shared/IntegerDivisionES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/IntegerDivisionES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e7056d97608bb49cfb89aab18a0cc3cc086425a8e1ff8963dfe9cf9e3624751b"
 
 [[test]]
@@ -68737,7 +68741,7 @@ id = "tests/sksl/shared/InterfaceBlockBuffer.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockBuffer.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "892135444cc1f48ea3e66ef9e50810e5a95d6db785baaec1f989131d2eec8605"
 
 [[test]]
@@ -68789,7 +68793,7 @@ id = "tests/sksl/shared/InterfaceBlockInoutArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockInoutArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0e5936a13fa08463c0009c79eee8b7bb3abff3d36e7865207f5b72e20a5ade2a"
 
 [[test]]
@@ -68841,7 +68845,7 @@ id = "tests/sksl/shared/InterfaceBlockMultipleAnonymous.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockMultipleAnonymous.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7517cbe5808bdef8e19b87b7e85afc8f45522045651559d8a5bf3a3c9da15a15"
 
 [[test]]
@@ -68893,7 +68897,7 @@ id = "tests/sksl/shared/InterfaceBlockNamed.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockNamed.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "48452e79cd1992583bb048a2283f2fdde3a161bf9dd60dc976a88c8b2205a7f5"
 
 [[test]]
@@ -68945,7 +68949,7 @@ id = "tests/sksl/shared/InterfaceBlockNamedArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterfaceBlockNamedArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "246e704bd644e58130f0a2e3c238423c6a9480c8043cff12802915f178c6e99b"
 
 [[test]]
@@ -68997,7 +69001,7 @@ id = "tests/sksl/shared/InterpolantIn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterpolantIn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2167226eb9f001e50afe06f1f175e4a9ce4238ccc922cc1ada58df067ac6012f"
 
 [[test]]
@@ -69049,7 +69053,7 @@ id = "tests/sksl/shared/InterpolantOut.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/InterpolantOut.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "26388400c0012e01b9bbcf67bbd1f8fad8701396c6ca7f1d4fc79255240091ef"
 
 [[test]]
@@ -69101,7 +69105,7 @@ id = "tests/sksl/shared/LogicalAndShortCircuit.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/LogicalAndShortCircuit.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f663f2536a16d909e04598674b0cc29e9141ebc6b2109cf1495202b8fb10971f"
 
 [[test]]
@@ -69153,7 +69157,7 @@ id = "tests/sksl/shared/LogicalOrShortCircuit.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/LogicalOrShortCircuit.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f5bc56e7f4aa2186465740dc5c0058d7054e17ae4b47cee0ae5e8b84c75e96ba"
 
 [[test]]
@@ -69205,7 +69209,7 @@ id = "tests/sksl/shared/Matrices.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Matrices.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3b4a7948ace752fe89113b8b3d33c15e4e6122a8a3a3b1ef7096adee0550fceb"
 
 [[test]]
@@ -69257,7 +69261,7 @@ id = "tests/sksl/shared/MatricesNonsquare.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatricesNonsquare.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "569b3fbdab9389abd8a5da7ce79100436a8fb4964bcda036dadcf7f795c4c851"
 
 [[test]]
@@ -69309,7 +69313,7 @@ id = "tests/sksl/shared/MatrixConstructorsES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixConstructorsES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "02c4284bf2824109d61e8e973888c3033fc7e2d7491b540feba293b1f09c8db0"
 
 [[test]]
@@ -69361,7 +69365,7 @@ id = "tests/sksl/shared/MatrixConstructorsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixConstructorsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1ff280af529e06a93ed35a90060167ff43a82473959383e59a5c7814a1d4924b"
 
 [[test]]
@@ -69413,7 +69417,7 @@ id = "tests/sksl/shared/MatrixEquality.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixEquality.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "859d37e4ddae00d808668a87c90f48c8fb3134e26cd637c83c01437fbfcdd0a9"
 
 [[test]]
@@ -69465,7 +69469,7 @@ id = "tests/sksl/shared/MatrixIndexLookup.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixIndexLookup.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b3e6d93869c564877b25998d175ba7370c3c03031c0031b2b0a95e7b3f8534e7"
 
 [[test]]
@@ -69517,7 +69521,7 @@ id = "tests/sksl/shared/MatrixIndexStore.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixIndexStore.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3f7fc3da4d151345126988b6ffe6b9808ed5d0df92f2c2c0306236186ee1388b"
 
 [[test]]
@@ -69569,7 +69573,7 @@ id = "tests/sksl/shared/MatrixOpEqualsES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixOpEqualsES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5e020025f47ca815ceec4bc76f4f6d21ec554e07dda75055430f4570106f38bb"
 
 [[test]]
@@ -69621,7 +69625,7 @@ id = "tests/sksl/shared/MatrixOpEqualsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixOpEqualsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "91d0f88f6886a65f68f2afd5d0f23888f16e9a1704e2be6e6028624f785e948b"
 
 [[test]]
@@ -69673,7 +69677,7 @@ id = "tests/sksl/shared/MatrixScalarMath.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixScalarMath.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "aaa8c05c570d34f6cff08237b4dacec975c928cebcf1163955b452ef7b9176eb"
 
 [[test]]
@@ -69725,7 +69729,7 @@ id = "tests/sksl/shared/MatrixSwizzleStore.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixSwizzleStore.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dde68c75a6ad3bcb0b95d92e995d0430f8a73d5888c87a53214be35e8dbf990b"
 
 [[test]]
@@ -69777,7 +69781,7 @@ id = "tests/sksl/shared/MatrixToVectorCast.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MatrixToVectorCast.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f4c3843c909d003f25a8494d4d9aa8290dac715f8413d996ac8fd0315efca0a5"
 
 [[test]]
@@ -69829,7 +69833,7 @@ id = "tests/sksl/shared/MultipleAssignments.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/MultipleAssignments.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6ff96e60e3fa117c51b1da24d2d8b8aae8ca91211aa04ebf5124b9b058a44238"
 
 [[test]]
@@ -69881,7 +69885,7 @@ id = "tests/sksl/shared/NestedComparisonIntrinsics.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NestedComparisonIntrinsics.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3e869263d4d07fd147c8c6b42d3911e33ac460d919444636ba57b774e21f1e7c"
 
 [[test]]
@@ -69933,7 +69937,7 @@ id = "tests/sksl/shared/NoFragCoordsPos.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NoFragCoordsPos.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "84048212f12155961a3a689b00b39d3e3db02d180dc23a1c837a06946237e2d8"
 
 [[test]]
@@ -69985,7 +69989,7 @@ id = "tests/sksl/shared/NoFragCoordsPosRT.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NoFragCoordsPosRT.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0b008386170ae263b376ff44327b5d345d2f2b656b4e14882c60c002754e3ada"
 
 [[test]]
@@ -70037,7 +70041,7 @@ id = "tests/sksl/shared/NormalizationVert.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NormalizationVert.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e94373a57cd776b01c572a2a4baff6bd5e60bb9945965685f8087ed17ef9d1df"
 
 [[test]]
@@ -70089,7 +70093,7 @@ id = "tests/sksl/shared/NumberCasts.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NumberCasts.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6fda7de8688d1046f8aa223e6528b9371147201b9f2cbd4f2151b1b09dac81a9"
 
 [[test]]
@@ -70141,7 +70145,7 @@ id = "tests/sksl/shared/NumberConversions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/NumberConversions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e86d7123fbe14609835f839334aa359b5b88a9f7a3904c5d8ba245c30436af82"
 
 [[test]]
@@ -70193,7 +70197,7 @@ id = "tests/sksl/shared/Octal.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Octal.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "db70e755e9da944967a66921ccd44ac4591f07fab7aa477f9ef7f6e1412c0ae0"
 
 [[test]]
@@ -70245,7 +70249,7 @@ id = "tests/sksl/shared/Offset.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Offset.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "baf7fe364e71f07bbab34edf1d639cfff4ac5178869ef63be58131b0b7a164c4"
 
 [[test]]
@@ -70297,7 +70301,7 @@ id = "tests/sksl/shared/OperatorsES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OperatorsES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a2e2c36251c4f6ed5cf3a12aa32d23080b4fba2df61166e610eb48426ecac7d4"
 
 [[test]]
@@ -70349,7 +70353,7 @@ id = "tests/sksl/shared/OperatorsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OperatorsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9a541aacd2a88c5742ca7c79194c7f2ccb46fd3c651d61d306ad5b6fc24052ca"
 
 [[test]]
@@ -70366,7 +70370,7 @@ id = "tests/sksl/shared/Optimizations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Optimizations.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7f69ba82bfacd23caaa708262cb84fc9e09fc062f676f03a5ddb80e68bbb6cca"
 
 [[test]]
@@ -70427,7 +70431,7 @@ id = "tests/sksl/shared/Ossfuzz26167.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz26167.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e864a0f10621f8a7aa910533762ff7009734db9b9dc515d840446bf3fa86266f"
 
 [[test]]
@@ -70479,7 +70483,7 @@ id = "tests/sksl/shared/Ossfuzz26759.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz26759.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "85737555195ca65b43a6d6f456d14d686ee01df2e958220e5328cd1daffa90c7"
 
 [[test]]
@@ -70531,7 +70535,7 @@ id = "tests/sksl/shared/Ossfuzz28794.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz28794.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dbb35120c7b74b59f8198c6515298eb140e9bd94c83724bdc455d16100c724e0"
 
 [[test]]
@@ -70583,7 +70587,7 @@ id = "tests/sksl/shared/Ossfuzz28904.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz28904.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "34d34ad6cc842c0fbf6d98931c8ace46da65ff029b045095777929a4cc644972"
 
 [[test]]
@@ -70635,7 +70639,7 @@ id = "tests/sksl/shared/Ossfuzz29085.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz29085.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e864a0f10621f8a7aa910533762ff7009734db9b9dc515d840446bf3fa86266f"
 
 [[test]]
@@ -70687,7 +70691,7 @@ id = "tests/sksl/shared/Ossfuzz29494.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz29494.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "34d34ad6cc842c0fbf6d98931c8ace46da65ff029b045095777929a4cc644972"
 
 [[test]]
@@ -70739,7 +70743,7 @@ id = "tests/sksl/shared/Ossfuzz36770.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz36770.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ffc1938cf8a92559b117fc7c30f4ace712b245e927a5653df3a0f1c84577cfb6"
 
 [[test]]
@@ -70791,7 +70795,7 @@ id = "tests/sksl/shared/Ossfuzz36852.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz36852.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8e07bb36449da14af4c17e5f8b2824920ae1931d8052505ea84ee9002404a21f"
 
 [[test]]
@@ -70843,7 +70847,7 @@ id = "tests/sksl/shared/Ossfuzz37466.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz37466.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bb8ffd75b63d46aa21ef8271fd04ef2e31a7051722c2c3bec4838d1d47545e88"
 
 [[test]]
@@ -70895,7 +70899,7 @@ id = "tests/sksl/shared/Ossfuzz37677.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz37677.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "29b9a7dc7fa718e3d349bd964a63e30da584814be525e568d40380575d6e927b"
 
 [[test]]
@@ -70999,7 +71003,7 @@ id = "tests/sksl/shared/Ossfuzz41000.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz41000.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0d4f18d8dc3bae65d841fe569ccc1346aaddac98b2c18a880ddfc3c9bbff8c58"
 
 [[test]]
@@ -71103,7 +71107,7 @@ id = "tests/sksl/shared/Ossfuzz58483.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz58483.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "afdecb375c6e75f4b6f5e40a4fe61d9eee54ccb5f3911975899da975d9b62e51"
 
 [[test]]
@@ -71155,7 +71159,7 @@ id = "tests/sksl/shared/Ossfuzz60077.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz60077.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5acc8da6f167e93d9a87559a2368bc53858f518d33b072ad815d7c5611ca477c"
 
 [[test]]
@@ -71207,7 +71211,7 @@ id = "tests/sksl/shared/Ossfuzz63170.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Ossfuzz63170.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c397146409e3aa9fe8b59ba492b1a68e50e5ce6aa2ab47e6f86f9bf279cb141c"
 
 [[test]]
@@ -71259,7 +71263,7 @@ id = "tests/sksl/shared/OutParams.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OutParams.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ae4e4ba49bd4b8d674390299ecf6ef3da7af5c5920381dcbe7d33fe9062e7358"
 
 [[test]]
@@ -71311,7 +71315,7 @@ id = "tests/sksl/shared/OutParamsAreDistinct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OutParamsAreDistinct.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2a74ecd4e3d72ac83274eede192c0aea2e1fc4dcd6354832d616756ed72bd2f5"
 
 [[test]]
@@ -71363,7 +71367,7 @@ id = "tests/sksl/shared/OutParamsAreDistinctFromGlobal.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OutParamsAreDistinctFromGlobal.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2603d33b543e91ccac9b5f23e789614181e1d44b00f9096056555d123b9ffdb8"
 
 [[test]]
@@ -71415,7 +71419,7 @@ id = "tests/sksl/shared/OutParamsDoubleSwizzle.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OutParamsDoubleSwizzle.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9129753f88883f52dee4793b8b2c6fbf3d4ca53f1cd8ec10afcbcbbfd40ff665"
 
 [[test]]
@@ -71467,7 +71471,7 @@ id = "tests/sksl/shared/OutParamsFunctionCallInArgument.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/OutParamsFunctionCallInArgument.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "03eee0b56346ae550bf704c9bbafc5e542ee7f1a8c4bffc91b89f89e9ca3f0f2"
 
 [[test]]
@@ -71519,7 +71523,7 @@ id = "tests/sksl/shared/Overflow.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Overflow.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "33afd38485e4b5518e9c94550107afafe68cff274849f4afd1a7636bce7dcc57"
 
 [[test]]
@@ -71571,7 +71575,7 @@ id = "tests/sksl/shared/PostfixExpressions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/PostfixExpressions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "204befd15f72c81b31d131d76e294da9ca64cd5a9813c13a5f2831eaecb60d81"
 
 [[test]]
@@ -71623,7 +71627,7 @@ id = "tests/sksl/shared/PrefixExpressionsES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/PrefixExpressionsES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8639d170fc6fe6aecf3969b1e017d7dbe5cb9f7e9914cf69184c2c44640935c2"
 
 [[test]]
@@ -71675,7 +71679,7 @@ id = "tests/sksl/shared/PrefixExpressionsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/PrefixExpressionsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "68e55b57bda90a24160da251fc9dbda0d3ecd9768b3724e1dcc1e2a319e00e3a"
 
 [[test]]
@@ -71727,7 +71731,7 @@ id = "tests/sksl/shared/RectangleTexture.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/RectangleTexture.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f986b77daea9423526c7c4281d64825900810c099d154dbe3e7f95e8a4c13437"
 
 [[test]]
@@ -71779,7 +71783,7 @@ id = "tests/sksl/shared/ReservedInGLSLButAllowedInSkSL.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReservedInGLSLButAllowedInSkSL.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "851410ee01d168043870dcf00841f3d802535332bcfb5232f26b3754bd5ada87"
 
 [[test]]
@@ -71831,7 +71835,7 @@ id = "tests/sksl/shared/ResizeMatrix.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ResizeMatrix.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e63327743ec85765d2c4af1acc15e1c2c006e378bf98e0ef2a3fa4a0d0765209"
 
 [[test]]
@@ -71883,7 +71887,7 @@ id = "tests/sksl/shared/ResizeMatrixNonsquare.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ResizeMatrixNonsquare.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3bd808feb927dfb0d0c8327f15b827dc669bac0a4cc3043e1adce77bacc8e395"
 
 [[test]]
@@ -71935,7 +71939,7 @@ id = "tests/sksl/shared/ReturnBadTypeFromMain.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReturnBadTypeFromMain.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d1a5171655d9c0664316ec1e7fc2e3ca1a9963554a46478db8e8e6acc6b9d374"
 
 [[test]]
@@ -71987,7 +71991,7 @@ id = "tests/sksl/shared/ReturnColorFromMain.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReturnColorFromMain.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "03b05bc6f331d556f04e6a654a6770ba08497a79a04a3ea54cb942ce3eae73c1"
 
 [[test]]
@@ -72039,7 +72043,7 @@ id = "tests/sksl/shared/ReturnsValueOnEveryPathES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReturnsValueOnEveryPathES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "42723611a3caf8c1b1813bb2c56762e5af29201b4b2ab724f7d7535d4839c40e"
 
 [[test]]
@@ -72091,7 +72095,7 @@ id = "tests/sksl/shared/ReturnsValueOnEveryPathES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ReturnsValueOnEveryPathES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4321cc31a6083f5864c67ad78624db841d00a0a8faeacc29aea61198191dff38"
 
 [[test]]
@@ -72143,7 +72147,7 @@ id = "tests/sksl/shared/SampleLocations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SampleLocations.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f9915483ef69aff9705f1da7d6a35f5cf91cb1183b89227de6742c71133840fa"
 
 [[test]]
@@ -72195,7 +72199,7 @@ id = "tests/sksl/shared/SampleMask.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SampleMask.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0e94597e5e22cda13478f2d7ef46abfce820e96f04b7eb3ace8d2e642f630e02"
 
 [[test]]
@@ -72247,7 +72251,7 @@ id = "tests/sksl/shared/ScalarConversionConstructorsES2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ScalarConversionConstructorsES2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9614431a98c5731119fb17db9caab8b5dfd4060a42d5706e3ec773a4c40d753a"
 
 [[test]]
@@ -72299,7 +72303,7 @@ id = "tests/sksl/shared/ScalarConversionConstructorsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ScalarConversionConstructorsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ddfa3965767daa7ae4172c97a71aace7eeb85525729db464a6cf3e32847ac3d0"
 
 [[test]]
@@ -72351,7 +72355,7 @@ id = "tests/sksl/shared/ScopedSymbol.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/ScopedSymbol.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3311af5e3b27d882ac9f26d3427b07fead03ed2e42a1b6ec3c56a4e62a5c1df5"
 
 [[test]]
@@ -72403,7 +72407,7 @@ id = "tests/sksl/shared/StackingVectorCasts.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StackingVectorCasts.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e28a17e45f8808c4da236dad3ea4eedbc6d24f93cef8f4bee1f16918bd0dc4f9"
 
 [[test]]
@@ -72455,7 +72459,7 @@ id = "tests/sksl/shared/StaticSwitch.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitch.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6fe3e58431a715bb0b5b9d6ddb1c7f724b97500ede409bbf9c4abe77eac47b99"
 
 [[test]]
@@ -72507,7 +72511,7 @@ id = "tests/sksl/shared/StaticSwitchWithBreak.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithBreak.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a3e81a11acd0385832a62251fc64720265c11e94630f30c7adf7bff86ad6ddf4"
 
 [[test]]
@@ -72559,7 +72563,7 @@ id = "tests/sksl/shared/StaticSwitchWithBreakInsideBlock.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithBreakInsideBlock.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e21cb67bf74d07462133716956fcfe4e7068b290f8b37d75e35a5512885fc0aa"
 
 [[test]]
@@ -72611,7 +72615,7 @@ id = "tests/sksl/shared/StaticSwitchWithConditionalBreak.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithConditionalBreak.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "04fdba544c5cf05334a450c907f3c747fddfc227cb471492276af37a13c09d0d"
 
 [[test]]
@@ -72663,7 +72667,7 @@ id = "tests/sksl/shared/StaticSwitchWithConditionalBreakInsideBlock.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithConditionalBreakInsideBlock.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c2c2a7eec3a682cf5aeeb75205e29d9c00e910f85ab833e6c515c8a1af7b693c"
 
 [[test]]
@@ -72715,7 +72719,7 @@ id = "tests/sksl/shared/StaticSwitchWithFallthroughA.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithFallthroughA.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e4e2b88af20e83156b0c8ccc5f857953247e5148ff2e66eea3f175914e4f6120"
 
 [[test]]
@@ -72767,7 +72771,7 @@ id = "tests/sksl/shared/StaticSwitchWithFallthroughB.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithFallthroughB.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "8134050a18c8c8275cca3eac6c1a9731bf4a372285a31979c97967ac1a9aaa25"
 
 [[test]]
@@ -72819,7 +72823,7 @@ id = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreak.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreak.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "54f81ee8f90edf8f418bf65d7cef892329455a775d5ae3827f71deab5bd45274"
 
 [[test]]
@@ -72871,7 +72875,7 @@ id = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreakInsideBlock.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithStaticConditionalBreakInsideBlock.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ff611c4be1011b297bb1b364186466bf8084a9f05d67c23298b7b56bde02f93d"
 
 [[test]]
@@ -72923,7 +72927,7 @@ id = "tests/sksl/shared/StaticSwitchWithVarDecl.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StaticSwitchWithVarDecl.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5cac67868035e0201484e4af2f7e018ca42e30e059adb2ac72232dc02939051d"
 
 [[test]]
@@ -72975,7 +72979,7 @@ id = "tests/sksl/shared/StorageBuffer.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StorageBuffer.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "60a24b4cbd674a960ad2b46afe7f4b17fe5a16b81de02c868524426057f95d85"
 
 [[test]]
@@ -73027,7 +73031,7 @@ id = "tests/sksl/shared/StorageBufferVertex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StorageBufferVertex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6f30dcfaa4fd651120c1616a16ef164a0aa35e676ddbd7fc0580bda98ae145bd"
 
 [[test]]
@@ -73079,7 +73083,7 @@ id = "tests/sksl/shared/StructArrayFollowedByScalar.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructArrayFollowedByScalar.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cf6cf807c6610e00e826e3e8895c94050ee41f7ef12f367775d8ca40263e395f"
 
 [[test]]
@@ -73131,7 +73135,7 @@ id = "tests/sksl/shared/StructComparison.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructComparison.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "fd25ffc9eae709ae99abe7606ccbdab9bf41d9265432dc6b5d94ce276e33d7c4"
 
 [[test]]
@@ -73183,7 +73187,7 @@ id = "tests/sksl/shared/StructIndexLookup.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructIndexLookup.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bf227ca4c4e9960699f0e8d4d1f3d8c2ece4acc12382f53d3294dfa4b94697ea"
 
 [[test]]
@@ -73235,7 +73239,7 @@ id = "tests/sksl/shared/StructIndexStore.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructIndexStore.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "12f274a0e1e1b1badf91ba06afc561832c267e72f71c169cfb8c22cead446c84"
 
 [[test]]
@@ -73287,7 +73291,7 @@ id = "tests/sksl/shared/StructMaxDepth.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructMaxDepth.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "badbc5977547e1a65a8252a13607f0af830ca9e8892eb024dae92dfa891ac6ed"
 
 [[test]]
@@ -73339,7 +73343,7 @@ id = "tests/sksl/shared/Structs.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Structs.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "6c4dcafc3b7b60479065005428e60984051e87081eb559598ff6426ff8915f44"
 
 [[test]]
@@ -73391,7 +73395,7 @@ id = "tests/sksl/shared/StructsInFunctions.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/StructsInFunctions.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "78f9c3807ad4d0c22135a44fc549a91e9468f44b6e3a40c9065253a767d657d6"
 
 [[test]]
@@ -73417,7 +73421,7 @@ id = "tests/sksl/shared/Switch.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Switch.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "55973625f9e63f16dc81bac4d62a1bbee29ee5e90936110d43252d6692da0c3f"
 
 [[test]]
@@ -73443,7 +73447,7 @@ id = "tests/sksl/shared/SwitchDefaultOnly.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchDefaultOnly.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c4af9d37965ba7e158297fe85a5f979ba088419197274f109c0e9ba935bacd9f"
 
 [[test]]
@@ -73513,7 +73517,7 @@ id = "tests/sksl/shared/SwitchWithEarlyReturn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithEarlyReturn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cb62c55dbbed7eaa1135d46241324269eb4e34555d867ec1c43ae17b33627196"
 
 [[test]]
@@ -73539,7 +73543,7 @@ id = "tests/sksl/shared/SwitchWithFallthrough.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithFallthrough.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c158f566ea9c4729b40a0c952a6394e6712b6ed77c6eb6e3b8a5aeb77bf33191"
 
 [[test]]
@@ -73556,7 +73560,7 @@ id = "tests/sksl/shared/SwitchWithFallthroughAndVarDecls.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithFallthroughAndVarDecls.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ab9425962464837268b5870d113f46768aca85f9a5eae47b8cdc71c50d89039f"
 
 [[test]]
@@ -73582,7 +73586,7 @@ id = "tests/sksl/shared/SwitchWithFallthroughGroups.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithFallthroughGroups.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "f81a945085225fef0e5261eaf821f4fd6015ca19e09f9f483a07b2984c3d14ba"
 
 [[test]]
@@ -73626,7 +73630,7 @@ id = "tests/sksl/shared/SwitchWithLoops.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithLoops.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "73a45fea857322e219932b185cb8dd57928200e91688e994bd85707ac4070007"
 
 [[test]]
@@ -73643,7 +73647,7 @@ id = "tests/sksl/shared/SwitchWithLoopsES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwitchWithLoopsES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7fa2bae24a4c4aaadd677604a44a6fa56ca0236d7f02e3a349668a781ef5cdee"
 
 [[test]]
@@ -73713,7 +73717,7 @@ id = "tests/sksl/shared/SwizzleAsLValue.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleAsLValue.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "08e2e944effaeb70d6444b363474df1fe425447cf1ca214c0c55efa9a2942b13"
 
 [[test]]
@@ -73765,7 +73769,7 @@ id = "tests/sksl/shared/SwizzleAsLValueES3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleAsLValueES3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "288d0df2fd579bcc067cdde4abe4ae05e0e42f871e5368a516f337b83e98e125"
 
 [[test]]
@@ -73817,7 +73821,7 @@ id = "tests/sksl/shared/SwizzleBoolConstants.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleBoolConstants.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b0ca49ad0abc54ced6fc0ac5b11ce081464714e8b31360e3b0fbdbaea83f5196"
 
 [[test]]
@@ -73869,7 +73873,7 @@ id = "tests/sksl/shared/SwizzleByConstantIndex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleByConstantIndex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a82c2c9e2d54e612fc11079f65b98a4a9aaabd36ec98586cff917f8571f0dcc9"
 
 [[test]]
@@ -73921,7 +73925,7 @@ id = "tests/sksl/shared/SwizzleByIndex.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleByIndex.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ec082034e8b05c92f2c0e947dea474ead10c6226407b2513aa2f7ac185f86e2c"
 
 [[test]]
@@ -73973,7 +73977,7 @@ id = "tests/sksl/shared/SwizzleConstants.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleConstants.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "edd743a93dd9cc25df9bf06e6878739f91833eac226d5b093adcdfd927d75e0f"
 
 [[test]]
@@ -74025,7 +74029,7 @@ id = "tests/sksl/shared/SwizzleIndexLookup.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleIndexLookup.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "820d2fea8a3b78e932a4a93500d26366a893a5184a78afec6878788931ef6362"
 
 [[test]]
@@ -74077,7 +74081,7 @@ id = "tests/sksl/shared/SwizzleIndexStore.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleIndexStore.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "7b0ff1b753a1e311e4443c0b23db65dd4f032fbf6a7f6a24c8a5526a4f381280"
 
 [[test]]
@@ -74129,7 +74133,7 @@ id = "tests/sksl/shared/SwizzleLTRB.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleLTRB.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d9b4dfb61216cba08e8590dfbd95ef8395c02d0f8f5d5e48a94c2114da79190f"
 
 [[test]]
@@ -74181,7 +74185,7 @@ id = "tests/sksl/shared/SwizzleOpt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleOpt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "74f83151211c8005bab5bc9fdf5059406f71a3a10f331f23dde98de5321a9e03"
 
 [[test]]
@@ -74233,7 +74237,7 @@ id = "tests/sksl/shared/SwizzleScalar.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleScalar.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d6fa31c665ae8b8eae4bb0f97e6e2e8e2ceb426c95ba0b06c83a2f09984a77a3"
 
 [[test]]
@@ -74285,7 +74289,7 @@ id = "tests/sksl/shared/SwizzleScalarBool.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleScalarBool.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "39c2e2506800daf8deb291b51a654210a1fc3abbecf699e4a947841e235e09c3"
 
 [[test]]
@@ -74337,7 +74341,7 @@ id = "tests/sksl/shared/SwizzleScalarInt.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/SwizzleScalarInt.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "50b43ef357df898557f3a1e05f4b60544c23fc9eaff353903c7dcd46604df36d"
 
 [[test]]
@@ -74389,7 +74393,7 @@ id = "tests/sksl/shared/TemporaryIndexLookup.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TemporaryIndexLookup.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "11df817832c008a0576289efdca028c62205b3058af92a3cd2bb0f781d5715e8"
 
 [[test]]
@@ -74441,7 +74445,7 @@ id = "tests/sksl/shared/TernaryAsLValueEntirelyFoldable.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryAsLValueEntirelyFoldable.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e210421e3700118a5ac8990ed06ea35322523455363b52a815221ea9543d52ce"
 
 [[test]]
@@ -74493,7 +74497,7 @@ id = "tests/sksl/shared/TernaryAsLValueFoldableTest.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryAsLValueFoldableTest.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d1262d85ccfaaf19bb4bbd9e974a0e7fe364450420f09454af21c5dd49c73cfd"
 
 [[test]]
@@ -74545,7 +74549,7 @@ id = "tests/sksl/shared/TernaryComplexNesting.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryComplexNesting.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4d7e630df2f7791c84b7d87ffce11d79fd7b1aeb2bad61ac9e27d7c264c84cee"
 
 [[test]]
@@ -74597,7 +74601,7 @@ id = "tests/sksl/shared/TernaryExpression.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryExpression.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "622a9e9f3f10eeeb2bcb6aeaa24867f71a98bace4a6a7950180454f05d2af101"
 
 [[test]]
@@ -74649,7 +74653,7 @@ id = "tests/sksl/shared/TernaryNesting.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryNesting.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "43dbbfe2911b71a9f2abdc011cf0be3264b8ae54af79d4da141a7eaa220e2d9e"
 
 [[test]]
@@ -74701,7 +74705,7 @@ id = "tests/sksl/shared/TernaryOneZeroOptimization.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryOneZeroOptimization.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "abc5717f31fd3d0b1c5f70284e00fca66ba17203f18243037a2e9809c9c9a569"
 
 [[test]]
@@ -74753,7 +74757,7 @@ id = "tests/sksl/shared/TernarySideEffects.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernarySideEffects.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5efd41a8b86e99585451f753d0d2e546e7be5c6d485cbc944e22d5b76cd73d3c"
 
 [[test]]
@@ -74805,7 +74809,7 @@ id = "tests/sksl/shared/TernaryTrueFalseOptimization.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TernaryTrueFalseOptimization.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "400d3a267d48f259d9eacb24e89a1331814eb501a4e80e8b40ca2ffcc37811b2"
 
 [[test]]
@@ -74857,7 +74861,7 @@ id = "tests/sksl/shared/Texture2D.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/Texture2D.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "88e8e92fef6aba89618a6da0c8e9632fd0efc715d1e8cc05e62f733c10c5e01d"
 
 [[test]]
@@ -74909,7 +74913,7 @@ id = "tests/sksl/shared/TextureSharpen.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/TextureSharpen.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cff8c00c3d15a75fec81333a36ce7ba32e7711ac930b3a8194c94572a433ade2"
 
 [[test]]
@@ -74961,7 +74965,7 @@ id = "tests/sksl/shared/UnaryPositiveNegative.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UnaryPositiveNegative.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "99051bd451cfb8b2be2fb8b98d4d242b6c9f6dd4b8ec7db0145e777abaa19ba6"
 
 [[test]]
@@ -75013,7 +75017,7 @@ id = "tests/sksl/shared/UniformArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UniformArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "71753a1fc5384596ad6fc1134756b61d6da2e424428d19d78e2973cd93f14813"
 
 [[test]]
@@ -75065,7 +75069,7 @@ id = "tests/sksl/shared/UniformBuffers.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UniformBuffers.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a831f1f452b0d759ee5936e2fd71c595659631b9896b52fac3e601483fe7d067"
 
 [[test]]
@@ -75117,7 +75121,7 @@ id = "tests/sksl/shared/UniformMatrixArray.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UniformMatrixArray.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0d39839e7cd8650ecf9bc687ae3857def79819463776976cd446987625f27604"
 
 [[test]]
@@ -75169,7 +75173,7 @@ id = "tests/sksl/shared/UniformMatrixResize.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UniformMatrixResize.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a3ec283053d29cdd9709966c7e4df9c209f74db023246589fe652292acd0cba1"
 
 [[test]]
@@ -75221,7 +75225,7 @@ id = "tests/sksl/shared/UnusedVariables.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/UnusedVariables.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3b9cbd76749af1ccecd1c769cff2e8a84251e928f07c5d90a4b817bcb849f686"
 
 [[test]]
@@ -75273,7 +75277,7 @@ id = "tests/sksl/shared/VectorConstructors.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VectorConstructors.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "dd7ee22f55f3677f1dcf9ab9ec9778aaef32bc70b377ec635f3c5e636dcbc454"
 
 [[test]]
@@ -75325,7 +75329,7 @@ id = "tests/sksl/shared/VectorScalarMath.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VectorScalarMath.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "492954db47dbdc837788d1753a1a414510503874e9987d13c209f675e9e9bc5b"
 
 [[test]]
@@ -75377,7 +75381,7 @@ id = "tests/sksl/shared/VectorToMatrixCast.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VectorToMatrixCast.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a10f6aa9a51df444fcb010e346a873d1d7e0e9b063e1f1c8ba3d8f61f9cac932"
 
 [[test]]
@@ -75429,7 +75433,7 @@ id = "tests/sksl/shared/VertexID.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VertexID.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "772399d6e85c09594509334eb6c4fecceefd7403f94bc849f622a96b6053d080"
 
 [[test]]
@@ -75481,7 +75485,7 @@ id = "tests/sksl/shared/VertexIDInFunction.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/VertexIDInFunction.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "e7fc17262757f905db72e2ef172c0ae4c2d1a54df9f02acdaa78086d17f25e36"
 
 [[test]]
@@ -75533,7 +75537,7 @@ id = "tests/sksl/shared/WhileLoopControlFlow.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/shared/WhileLoopControlFlow.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4627a992bf229a6b41cda22fe1222ddac9f834b33762593fcb14740f99f7dc52"
 
 [[test]]
@@ -75567,7 +75571,7 @@ id = "tests/sksl/spirv/CombinedSamplerTypeDawnCompatMode.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/spirv/CombinedSamplerTypeDawnCompatMode.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "63a427d5314dcf4a823c385880465574d4ac142bc892f64c42d5e23f64437372"
 
 [[test]]
@@ -75602,7 +75606,7 @@ id = "tests/sksl/spirv/FunctionParametersOfTextureAndSamplerTypeDawnCompatMode.w
 kind = "sksl-golden"
 source = "tests/sksl/spirv/FunctionParametersOfTextureAndSamplerTypeDawnCompatMode.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9257885fb66af3840b916467b02f15e645e10cdcfe2ed03ca6d178fe000fcad5"
 
 [[test]]
@@ -75763,7 +75767,7 @@ id = "tests/sksl/wgsl/BuiltinFragmentStageIO.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/BuiltinFragmentStageIO.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "d588d5847c42c5f68d488b08d0c9e482cdeb901f31fa03878d11d75bcd02e0ad"
 
 [[test]]
@@ -75771,7 +75775,7 @@ id = "tests/sksl/wgsl/BuiltinVertexStageIO.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/BuiltinVertexStageIO.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2ea8eda6786132be6c11ccc7baba090fe4d29364597a7e40860377d503a6f3ff"
 
 [[test]]
@@ -75779,7 +75783,7 @@ id = "tests/sksl/wgsl/CastMat2x2ToMat3x3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastMat2x2ToMat3x3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ed56847b9591eed48854e873d13a8c634f2532a8e413f3959a54761fc435a804"
 
 [[test]]
@@ -75787,7 +75791,7 @@ id = "tests/sksl/wgsl/CastMat2x2ToVec4.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastMat2x2ToVec4.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "9551f603dbe7ee48f6bd4e396e70f393aa2e8848c13a8e79945a5e5308a2e302"
 
 [[test]]
@@ -75795,7 +75799,7 @@ id = "tests/sksl/wgsl/CastMat2x3ToMat4x4.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastMat2x3ToMat4x4.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "1ce52f31ae18015bd13e0d23f826df4d24d2f8b68f3e5c159c6519ce8386b82e"
 
 [[test]]
@@ -75803,7 +75807,7 @@ id = "tests/sksl/wgsl/CastMat4x4ToMat3x4.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastMat4x4ToMat3x4.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "49735179068a5750cc43bdbf8714a7b630b3a8a63756a3e6139500548e28e618"
 
 [[test]]
@@ -75811,7 +75815,7 @@ id = "tests/sksl/wgsl/CastMat4x4ToMat4x3.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastMat4x4ToMat4x3.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "01b2a710fa512abe20a28fc78e54ca5c8057b7083aa33c1d1a5a803fe8c55075"
 
 [[test]]
@@ -75819,7 +75823,7 @@ id = "tests/sksl/wgsl/CastVec4ToMat2x2.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/CastVec4ToMat2x2.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "bd9d63e37da89388f44dadf1d9239eeebea92dd39794217977b9e4e47cb0e8b9"
 
 [[test]]
@@ -75827,7 +75831,7 @@ id = "tests/sksl/wgsl/EntrypointIsWrittenLast.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/EntrypointIsWrittenLast.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cdb5d56f4fd15f36b6840d3de44fa9bc759fd26c4e0f8bf8f3fbc6a5d5b82531"
 
 [[test]]
@@ -75835,7 +75839,7 @@ id = "tests/sksl/wgsl/Equality.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/Equality.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "22d27b038b7e10cbd22c9d6c5959358e08a01e599c74610ac462ff5d019d9016"
 
 [[test]]
@@ -75843,7 +75847,7 @@ id = "tests/sksl/wgsl/ForLoopComplexCondAndNext.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/ForLoopComplexCondAndNext.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "55e35b9acfe618c440af9ddf66ef71212bb891f8bda0a84a2e55e4d73376a554"
 
 [[test]]
@@ -75851,7 +75855,7 @@ id = "tests/sksl/wgsl/FunctionCallDependencies.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/FunctionCallDependencies.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "a01a7beaba18d34e1e4bb1cff2f606005123a3ad5ad6839f6d2bc2ee25092e42"
 
 [[test]]
@@ -75859,7 +75863,7 @@ id = "tests/sksl/wgsl/GlobalUniforms.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/GlobalUniforms.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "97c693cd000ab07f2845eb02f610005a8e2805a482f42004ec813dbee53e442d"
 
 [[test]]
@@ -75867,7 +75871,7 @@ id = "tests/sksl/wgsl/IfStatement.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/IfStatement.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "cfe9356083221ec66ec1f799be59866f22333a680fdf9ca06571353110463eed"
 
 [[test]]
@@ -75875,7 +75879,7 @@ id = "tests/sksl/wgsl/IndexExpression.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/IndexExpression.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "2b474c11fe5d969351cff50836f0f7bcddffa24bb03fcc33384f72caaabdab30"
 
 [[test]]
@@ -75883,7 +75887,7 @@ id = "tests/sksl/wgsl/InterfaceBlockUniforms.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/InterfaceBlockUniforms.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "64ff07e218d00388c54a9297adba6308c2d50c68962b1a84d3df4f12be48989f"
 
 [[test]]
@@ -75891,7 +75895,7 @@ id = "tests/sksl/wgsl/MainDoesNotHaveFragCoordParameter.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/MainDoesNotHaveFragCoordParameter.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "07f338b82fbbff3059886b7e72220c20e9a1a93d284e9a49812f8e262db22851"
 
 [[test]]
@@ -75899,7 +75903,7 @@ id = "tests/sksl/wgsl/MainHasVoidReturn.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/MainHasVoidReturn.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "30d9002020dc71b09c49dedaaf919ba52d22626aedc39596aed0c2a0621c5a12"
 
 [[test]]
@@ -75907,7 +75911,7 @@ id = "tests/sksl/wgsl/MatrixConstructorDiagonal.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/MatrixConstructorDiagonal.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "280fbb608a0d58d936172ac0c7491a78364f40ecfa8092491a4f2792296f184a"
 
 [[test]]
@@ -75915,7 +75919,7 @@ id = "tests/sksl/wgsl/NoF16Support.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/NoF16Support.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4ab46a068fdc2436ae153a3dea897d588c1fffaeee238af8b33b8a090b31dd40"
 
 [[test]]
@@ -75923,7 +75927,7 @@ id = "tests/sksl/wgsl/OutParams.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/OutParams.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "924a653a530869e6220af2f4f5be81ff118680e3ede7a7162c1079d5b5106824"
 
 [[test]]
@@ -75931,7 +75935,7 @@ id = "tests/sksl/wgsl/PixelLocalStorage.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/PixelLocalStorage.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "4fa729f34b249281326ab45932efee4f33f5c915143d75db14da383b4bfcca31"
 
 [[test]]
@@ -75939,7 +75943,7 @@ id = "tests/sksl/wgsl/PolyfillIntrinsics.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/PolyfillIntrinsics.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "0c2b73e56ce3ce90fe443b5e97b7b4ac356b3ffe6393fa25d5a048d08b7c79d4"
 
 [[test]]
@@ -75947,7 +75951,7 @@ id = "tests/sksl/wgsl/Sample.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/Sample.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "3a1cb3d7f8528d056fe85785fd16490e8d9c31f6204a5f616c39782d57df5c0f"
 
 [[test]]
@@ -75955,7 +75959,7 @@ id = "tests/sksl/wgsl/SubpassInput.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/SubpassInput.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b66dc0895fa72b6153c3a473aba4c5fe5901f8e063572e78bf761a4f95f60c44"
 
 [[test]]
@@ -75963,7 +75967,7 @@ id = "tests/sksl/wgsl/TextureIntrinsics.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/TextureIntrinsics.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "95132ceab52a53395bd2707fec51a5581f9be6acdda16e4831a1ab5d7609b9c8"
 
 [[test]]
@@ -75971,7 +75975,7 @@ id = "tests/sksl/wgsl/UniformArrays.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/UniformArrays.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "c93f2a289cf1af42ea70a6169de73c0a75895b0fb8b240e708569d1eab5b6200"
 
 [[test]]
@@ -75979,7 +75983,7 @@ id = "tests/sksl/wgsl/UniformMatrices.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/UniformMatrices.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b90553dabce48aacd899068bb8df88cb21a344e72b6c9d148a3966e9c671c08c"
 
 [[test]]
@@ -75987,7 +75991,7 @@ id = "tests/sksl/wgsl/UserDefinedPipelineIO.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/UserDefinedPipelineIO.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "5fd8fefd8ded3211bdeb9daa2bd848c65a51e27b06ca564b5c598671c8d72b3f"
 
 [[test]]
@@ -75995,7 +75999,7 @@ id = "tests/sksl/wgsl/VertexPositionOutputIsAlwaysDeclared.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/VertexPositionOutputIsAlwaysDeclared.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b6dbb541d37b44ff7df6bf3db8f2f811c3e9918fa06a4e37e5a40203f18ba883"
 
 [[test]]
@@ -76003,7 +76007,7 @@ id = "tests/sksl/wgsl/WorkgroupSize.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/wgsl/WorkgroupSize.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "ab9e435037691f9a571233b2c93445061954b23cb05c1db9a4723b205b719091"
 
 [[test]]
@@ -76164,7 +76168,7 @@ id = "tests/sksl/workarounds/LastFragColor.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/workarounds/LastFragColor.wgsl"
 module = "sksl"
-status = "todo"
+status = "passing"
 span_hash = "b4e8dd1be5590287836bb368f41d1c33f167ca2b4e3b30235980944b7a4275b2"
 
 [[test]]

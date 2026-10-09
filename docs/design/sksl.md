@@ -962,6 +962,43 @@ definition of main */, Option<DebugTracePriv>, write_trace_ops) -> Option<rp::Pr
   image-based GMs (`destcolor`, `ColorCubeColorFilterRT`, `AlternateLuma`, `RuntimeColorFilterGM`) need
   codecs. `runtimecolorfilter_vertices_atlas_and_patch` was not attempted.
 
+### 6.9 As implemented in S26
+
+`skia_rust_sksl::codegen::wgsl` (crate feature `wgsl`; `skia-rust-tests` turns it on) ports
+`SkSLWGSLCodeGenerator.cpp` function by function. The public entry points are
+`to_wgsl(ctx, program, caps, PrettyPrint, IncludeSyntheticCode, Option<ValidateWgslProc>) ->
+Option<String>` (`ToWGSL`) and `to_wgsl_native` (the `NativeShader*` overload).
+
+- **Files.** `mod.rs` (the generator, `generateCode`, functions, entry point, pipeline IO structs,
+  global variables), `statements.rs` (every `write*Statement`, the `for` capture buffers, the switch
+  emulation), `expressions.rs` (`assembleExpression` and the per-kind assemblers, `AutoConstEvalWorkaround`,
+  lvalues), `intrinsics.rs` (`assembleIntrinsicCall`, the `inverse` and `outerProduct` polyfills),
+  `uniforms.rs` (interface blocks, the std140 field polyfills, the synthetic `_GlobalUniforms` block),
+  `lvalue.rs`, `deps.rs` (`FunctionDependencyResolver`), `types.rs` (type names, reserved words,
+  builtins).
+- **Context.** The program's pool is lent to the `Context` for the run (`Context::with_program`),
+  because the generator edits the IR in three places, as Skia does: the `!` of a `do`-`while` test,
+  `Setting::toLiteral`, and `InterfaceBlock::Convert` for the non-block uniforms. Program usage is
+  `analysis::get_usage` (computed once, before the run), element order is `Program::elements`.
+- **Output stream.** Skia swaps `fOut` (`AutoOutputStream`, which also zeroes the indentation). Here
+  `out` is the current `String`; the header and the `for`-loop capture buffers are swapped in and out the
+  same way, and `fAtLineStart` is not saved, as in C++.
+- **Field polyfills** are keyed by (struct type, field index) instead of `const Field*`; the map is
+  iterated only through a sort by replacement name.
+- **No `// fallthrough`.** The goldens come from a non-`SK_DEBUG` build, so the emulated-switch
+  comment is not written.
+- **Tint (R6).** naga was tried as the validator over all 420 outputs: it rejects 10 programs (the two
+  `isinf`/`isnan` goldens, but also `TextureIntrinsics`, `PixelLocalStorage`, `LastFragColor` and six
+  others for naga's own limits). That is not "exactly these two", so `IsInf.wgsl` and `IsNan.wgsl` stay
+  `todo` (`needs-tint-validation`) and naga is not a dependency. `skslc` passes no validator.
+- **Stale goldens.** `compute/AtomicDeclarations.wgsl` and `compute/AtomicOperationsOverArrayAndStruct.wgsl`
+  are named by no `gni` list (`UNLISTED_WGSL_INPUTS`), so Skia never regenerates them. They predate
+  `enable f16;`, the `@align(16)` array polyfill and statement-position intrinsic calls, so the pinned
+  generator cannot produce them: `todo` with that reason.
+- **Tests.** 414 of the 420 `.wgsl` goldens flip to `passing` (416 match, 2 of them already via the
+  front-end error path); `SkSLWGSLTestbed` is ported (`tests/src/unit/sk_slwgsl_testbed.rs`);
+  `crates/skia-rust-sksl/tests/wgsl.rs` pins the entry points.
+
 ## 7. RuntimeEffect integration (core)
 
 - **API**: skia-safe's `effects/runtime_effect.rs`: `RuntimeEffect::make_for_{shader, color_filter,

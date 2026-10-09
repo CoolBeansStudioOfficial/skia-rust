@@ -127,6 +127,30 @@ pub fn to_wgsl(
     result.then_some(output)
 }
 
+/// `ToWGSL(program, caps, NativeShader* out)` (and the `OutputStream` overload it calls): pretty
+/// printing only in debug builds (`SK_DEBUG`), no synthetic code and no validator.
+// Port of: src/sksl/codegen/SkSLWGSLCodeGenerator.cpp#L4967-L4985 (chrome/m156)
+#[doc(alias = "ToWGSL")]
+pub fn to_wgsl_native(
+    ctx: &mut Context,
+    program: &mut Program,
+    caps: &ShaderCaps,
+) -> Option<String> {
+    let default_print_opts = if cfg!(debug_assertions) {
+        PrettyPrint::Yes
+    } else {
+        PrettyPrint::No
+    };
+    to_wgsl(
+        ctx,
+        program,
+        caps,
+        default_print_opts,
+        IncludeSyntheticCode::No,
+        None,
+    )
+}
+
 /// `SkSL::WGSLCodeGenerator`.
 // Port of: src/sksl/codegen/SkSLWGSLCodeGenerator.cpp#L88-L463 (chrome/m156)
 #[allow(clippy::struct_excessive_bools)] // Mirrors the generator's independent state flags.

@@ -211,6 +211,8 @@ pub mod sk_sl_test;
 #[cfg(test)]
 pub mod sk_sles2_conformance_test;
 #[cfg(test)]
+pub mod sk_slwgsl_testbed;
+#[cfg(test)]
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
