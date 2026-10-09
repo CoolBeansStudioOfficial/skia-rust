@@ -4,3 +4,4 @@
 //! No GPU API is linked yet: Graphite on wgpu comes after this layer.
 
 pub mod gpu;
+pub mod tessellate;

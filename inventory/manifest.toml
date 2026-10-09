@@ -49823,7 +49823,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L492-L506"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b251658338dfe7c87aab61068293928a82b693407925b5d95c36cba9b859f40c"
 
 [[test]]
@@ -49832,7 +49832,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L509-L535"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "aeb0b775c09ef86a66a8493be62a542e58641976f0a88dad06b354ccdf8a3911"
 
 [[test]]
@@ -49841,7 +49841,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L430-L489"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ae6d6c57bff41ff17d3c145259a9046287b86d21c73bef576b996b93e2451e9e"
 
 [[test]]
@@ -49850,7 +49850,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L129-L288"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8a83c9af536137d9be0dea20467ccc6d5ade53d1117f1eb66cbddfbb1608d20d"
 
 [[test]]
@@ -49859,7 +49859,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L537-L587"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "55715f0500aa3cc0ba7d939502cc3b55d61074f8378ecfd28f9618c5a291fc60"
 
 [[test]]
@@ -49868,7 +49868,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L363-L411"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "817fff1e39e9e3a7d6b3cbe9c903013745af0bc02750cc89851320390c5b2d50"
 
 [[test]]
@@ -49877,7 +49877,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L415-L427"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ee649bc8fb5ca4d0cdb8613d32a9055ecf3834fc071daa876edcedef2c2bb961"
 
 [[test]]
@@ -49886,7 +49886,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L291-L323"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7c5d3322c989b2b346b3948e43784860b9f5cd6b46198b894fa768078ad8c976"
 
 [[test]]
@@ -49895,7 +49895,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WangsFormulaTest.cpp#L325-L360"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e4698aac32540392bc12db2f35e783f1566547ac5beb14d680041dbe947e19ab"
 
 [[test]]
