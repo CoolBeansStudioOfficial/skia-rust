@@ -142,6 +142,35 @@ pub trait CommandBuffer {
     /// `clearBuffer()`.
     #[doc(alias = "clearBuffer")]
     fn clear_buffer(&mut self, buffer: &Arc<Resource<Buffer>>, offset: usize, size: usize) -> bool;
+
+    /// `isProtected()`.
+    #[doc(alias = "isProtected")]
+    fn is_protected(&self) -> Protected;
+
+    /// `hasWork()`.
+    #[doc(alias = "hasWork")]
+    fn has_work(&self) -> bool;
+
+    /// `setNewCommandBufferResources()`: the backend's setup when the queue manager takes the
+    /// command buffer from its pool.
+    #[doc(alias = "setNewCommandBufferResources")]
+    fn set_new_command_buffer_resources(&mut self) -> bool;
+
+    /// `resetCommandBuffer()`.
+    #[doc(alias = "resetCommandBuffer")]
+    fn reset_command_buffer(&mut self);
+
+    /// `callFinishedProcs(success)`.
+    #[doc(alias = "callFinishedProcs")]
+    fn call_finished_procs(&mut self, success: bool);
+
+    /// `addBuffersToAsyncMapOnSubmit()`.
+    #[doc(alias = "addBuffersToAsyncMapOnSubmit")]
+    fn add_buffers_to_async_map_on_submit(&mut self, buffers: &[ResourceRef<Buffer>]);
+
+    /// `buffersToAsyncMapOnSubmit()`.
+    #[doc(alias = "buffersToAsyncMapOnSubmit")]
+    fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>];
 }
 
 /// `SkIRect::intersect(r)`: intersects `r` into `rect` and returns true, or returns false and
@@ -408,6 +437,34 @@ impl<B: CommandBufferBackend> CommandBufferCore<B> {
 }
 
 impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
+    fn is_protected(&self) -> Protected {
+        CommandBufferCore::is_protected(self)
+    }
+
+    fn has_work(&self) -> bool {
+        CommandBufferCore::has_work(self)
+    }
+
+    fn set_new_command_buffer_resources(&mut self) -> bool {
+        self.backend.set_new_command_buffer_resources()
+    }
+
+    fn reset_command_buffer(&mut self) {
+        CommandBufferCore::reset_command_buffer(self);
+    }
+
+    fn call_finished_procs(&mut self, success: bool) {
+        CommandBufferCore::call_finished_procs(self, success);
+    }
+
+    fn add_buffers_to_async_map_on_submit(&mut self, buffers: &[ResourceRef<Buffer>]) {
+        CommandBufferCore::add_buffers_to_async_map_on_submit(self, buffers);
+    }
+
+    fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>] {
+        CommandBufferCore::buffers_to_async_map_on_submit(self)
+    }
+
     // Port of: src/gpu/graphite/CommandBuffer.cpp#L58-L64 (chrome/m156)
     fn track_resource(&mut self, resource: AnyResourceRef) {
         self.command_buffer_resources

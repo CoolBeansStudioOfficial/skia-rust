@@ -18,4 +18,12 @@ use std::fmt::Debug;
 pub trait GraphicsPipeline: Send + Sync + Debug {
     /// For downcasting to the concrete pipeline.
     fn as_any(&self) -> &dyn Any;
+
+    /// `didAsyncCompilationFail()`: the failure message if compiling the pipeline on the
+    /// executor failed. Pipelines compiled synchronously never fail this way.
+    // Port of: src/gpu/graphite/GraphicsPipeline.h (didAsyncCompilationFail, chrome/m156)
+    #[doc(alias = "didAsyncCompilationFail")]
+    fn did_async_compilation_fail(&self) -> Option<String> {
+        None
+    }
 }

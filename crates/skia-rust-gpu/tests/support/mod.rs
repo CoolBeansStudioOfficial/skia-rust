@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex};
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
-use skia_rust_gpu::gpu::gpu_types::{BackendApi, Mipmapped, Protected};
+use skia_rust_gpu::gpu::gpu_types::{BackendApi, GpuStats, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
 use skia_rust_gpu::graphite::caps::{
@@ -609,6 +609,40 @@ pub struct MockCommandBuffer {
 }
 
 impl CommandBuffer for MockCommandBuffer {
+    fn is_protected(&self) -> Protected {
+        Protected::No
+    }
+
+    fn has_work(&self) -> bool {
+        self.calls.iter().any(|call| !matches!(call, Call::TrackResource | Call::FinishedProc))
+    }
+
+    fn set_new_command_buffer_resources(&mut self) -> bool {
+        true
+    }
+
+    fn reset_command_buffer(&mut self) {
+        self.tracked.clear();
+        self.finished_procs.clear();
+    }
+
+    fn call_finished_procs(&mut self, success: bool) {
+        for finished_proc in &self.finished_procs {
+            if success {
+                finished_proc.set_stats(&GpuStats::default());
+            } else {
+                finished_proc.set_failure_result();
+            }
+        }
+        self.finished_procs.clear();
+    }
+
+    fn add_buffers_to_async_map_on_submit(&mut self, _buffers: &[ResourceRef<Buffer>]) {}
+
+    fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>] {
+        &[]
+    }
+
     fn track_resource(&mut self, resource: AnyResourceRef) {
         self.calls.push(Call::TrackResource);
         self.tracked.push(resource);
