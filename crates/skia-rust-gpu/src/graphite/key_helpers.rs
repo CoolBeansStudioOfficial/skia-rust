@@ -8,7 +8,7 @@
 //! images, YUV images, coordinate clamping and normalization, dithering, perlin noise and local
 //! matrices, together with the uniform data each block gathers.
 //!
-//! Every block writes its uniforms inside a [`ScopedUniformWriter`], which opens the snippet's
+//! Every block writes its uniforms inside a `ScopedUniformWriter`, which opens the snippet's
 //! uniform struct (if it has one) and, in debug builds, checks the written uniforms against the
 //! snippet's declared uniform list. The packing goes through the [`UniformManager`] of the
 //! [`PipelineDataGatherer`], so the bytes follow the layout the gatherer was created with.
@@ -24,7 +24,7 @@
 //!   color filter, coord-clamp and CTM shaders. Those add an error block instead of their key.
 
 use std::any::Any;
-use std::cell::{RefCell, RefMut};
+use std::cell::RefMut;
 use std::sync::Arc;
 
 use skia_rust_core::alpha_type::AlphaType;
@@ -51,19 +51,11 @@ use skia_rust_effects::gradient::interpolation::ColorSpace as InterpolationColor
 use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
 use crate::graphite::key_context::KeyContext;
+use crate::graphite::key_helpers_ii::{ScopedUniformWriter, solid_color_shader_add_block};
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
-use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::resource_types::{ImmutableSamplerInfo, SamplerDesc};
-use crate::graphite::shader_code_dictionary::ShaderSnippet;
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::uniform_manager::UniformManager;
-
-/// The gatherer's uniform manager, borrowed for one write.
-fn uniforms<'a>(key_context: &KeyContext<'a>) -> RefMut<'a, UniformManager> {
-    RefMut::map(key_context.pipeline_data_gatherer().borrow_mut(), |g| {
-        g.uniform_manager()
-    })
-}
 
 /// The key builder, borrowed for one call.
 fn builder<'a>(key_context: &KeyContext<'a>) -> RefMut<'a, PaintParamsKeyBuilder> {
@@ -100,67 +92,6 @@ fn downcast_shader<T: 'static>(base: &dyn ShaderBase) -> Option<&T> {
     any.downcast_ref::<T>()
 }
 
-// Automatically calls beginStruct() with the required alignment and endStruct() when it is dropped.
-// Automatically registers uniform expectations in debug builds.
-// Port of: src/gpu/graphite/KeyHelpers.cpp#L93-L121 (chrome/m156), `ScopedUniformWriter`
-struct ScopedUniformWriter<'a> {
-    gatherer: &'a RefCell<PipelineDataGatherer>,
-    has_struct: bool,
-}
-
-impl<'a> ScopedUniformWriter<'a> {
-    // Port of: src/gpu/graphite/KeyHelpers.cpp#L93-L121 (chrome/m156), the constructors
-    fn new(key_context: &KeyContext<'a>, code_snippet_id: BuiltInCodeSnippetID) -> Self {
-        Self::from_snippet(
-            key_context.pipeline_data_gatherer(),
-            key_context.dict().get_entry_built_in(code_snippet_id),
-        )
-    }
-
-    // Port of: src/gpu/graphite/KeyHelpers.cpp#L93-L121 (chrome/m156), the snippet constructor
-    fn from_snippet(gatherer: &'a RefCell<PipelineDataGatherer>, snippet: &ShaderSnippet) -> Self {
-        let has_struct = snippet.uniform_struct_name.is_some();
-        // `UniformExpectationsValidator`, debug builds only.
-        #[cfg(debug_assertions)]
-        gatherer
-            .borrow_mut()
-            .uniform_manager()
-            .set_expected_uniforms(&snippet.uniforms, has_struct);
-        if has_struct {
-            gatherer
-                .borrow_mut()
-                .uniform_manager()
-                .begin_struct(snippet.required_alignment);
-        }
-        Self {
-            gatherer,
-            has_struct,
-        }
-    }
-}
-
-impl Drop for ScopedUniformWriter<'_> {
-    // Port of: src/gpu/graphite/KeyHelpers.cpp#L93-L121 (chrome/m156), the destructor
-    fn drop(&mut self) {
-        if self.has_struct {
-            self.gatherer.borrow_mut().uniform_manager().end_struct();
-        }
-        #[cfg(debug_assertions)]
-        self.gatherer
-            .borrow_mut()
-            .uniform_manager()
-            .done_with_expected_uniforms();
-    }
-}
-
-// Opens the scoped writer for `code_snippet_id`, as the C++ `BEGIN_WRITE_UNIFORMS` macro does.
-// Port of: src/gpu/graphite/KeyHelpers.cpp#L123-L124 (chrome/m156)
-macro_rules! begin_write_uniforms {
-    ($key_context:expr, $id:expr) => {
-        let _scope = ScopedUniformWriter::new($key_context, $id);
-    };
-}
-
 // ==================================================================
 // Solid and paint colors
 // ==================================================================
@@ -175,9 +106,7 @@ impl SolidColorShaderBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L126-L136 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>, premul_color: &PMColor4f) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::SolidColorShader);
-        uniforms(key_context).write_color(premul_color);
-        builder(key_context).add_block(BuiltInCodeSnippetID::SolidColorShader);
+        solid_color_shader_add_block(key_context, premul_color);
     }
 }
 
@@ -191,8 +120,10 @@ impl RGBPaintColorBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L142-L157 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::RGBPaintColor);
-        uniforms(key_context).write_paint_color(key_context.paint_color());
+        let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::RGBPaintColor);
+        scope
+            .uniforms()
+            .write_paint_color(key_context.paint_color());
         builder(key_context).add_block(BuiltInCodeSnippetID::RGBPaintColor);
     }
 }
@@ -208,8 +139,11 @@ impl AlphaOnlyPaintColorBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L159-L162 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::AlphaOnlyPaintColor);
-        uniforms(key_context).write_paint_color(key_context.paint_color());
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::AlphaOnlyPaintColor);
+        scope
+            .uniforms()
+            .write_paint_color(key_context.paint_color());
         builder(key_context).add_block(BuiltInCodeSnippetID::AlphaOnlyPaintColor);
     }
 }
@@ -527,9 +461,9 @@ fn add_linear_gradient_uniform_data(
     grad_data: &GradientData,
     buffer_offset: i32,
 ) {
-    begin_write_uniforms!(key_context, code_snippet_id);
-    add_gradient_preamble(grad_data, &mut uniforms(key_context));
-    add_gradient_postamble(grad_data, buffer_offset, &mut uniforms(key_context));
+    let mut scope = ScopedUniformWriter::new(key_context, code_snippet_id);
+    add_gradient_preamble(grad_data, scope.uniforms());
+    add_gradient_postamble(grad_data, buffer_offset, scope.uniforms());
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L233-L241 (chrome/m156)
@@ -539,9 +473,9 @@ fn add_radial_gradient_uniform_data(
     grad_data: &GradientData,
     buffer_offset: i32,
 ) {
-    begin_write_uniforms!(key_context, code_snippet_id);
-    add_gradient_preamble(grad_data, &mut uniforms(key_context));
-    add_gradient_postamble(grad_data, buffer_offset, &mut uniforms(key_context));
+    let mut scope = ScopedUniformWriter::new(key_context, code_snippet_id);
+    add_gradient_preamble(grad_data, scope.uniforms());
+    add_gradient_postamble(grad_data, buffer_offset, scope.uniforms());
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L243-L253 (chrome/m156)
@@ -551,11 +485,11 @@ fn add_sweep_gradient_uniform_data(
     grad_data: &GradientData,
     buffer_offset: i32,
 ) {
-    begin_write_uniforms!(key_context, code_snippet_id);
-    add_gradient_preamble(grad_data, &mut uniforms(key_context));
-    uniforms(key_context).write_f32(grad_data.bias);
-    uniforms(key_context).write_f32(grad_data.scale);
-    add_gradient_postamble(grad_data, buffer_offset, &mut uniforms(key_context));
+    let mut scope = ScopedUniformWriter::new(key_context, code_snippet_id);
+    add_gradient_preamble(grad_data, scope.uniforms());
+    scope.uniforms().write_f32(grad_data.bias);
+    scope.uniforms().write_f32(grad_data.scale);
+    add_gradient_postamble(grad_data, buffer_offset, scope.uniforms());
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L255-L288 (chrome/m156)
@@ -566,7 +500,7 @@ fn add_conical_gradient_uniform_data(
     grad_data: &GradientData,
     buffer_offset: i32,
 ) {
-    begin_write_uniforms!(key_context, code_snippet_id);
+    let mut scope = ScopedUniformWriter::new(key_context, code_snippet_id);
 
     let mut d_radius = grad_data.radii[1] - grad_data.radii[0];
     let is_radial = Point::distance(grad_data.points[1], grad_data.points[0]) < SCALAR_NEARLY_ZERO;
@@ -589,12 +523,12 @@ fn add_conical_gradient_uniform_data(
         }
     }
 
-    add_gradient_preamble(grad_data, &mut uniforms(key_context));
-    uniforms(key_context).write_f32(grad_data.radii[0]);
-    uniforms(key_context).write_f32(d_radius);
-    uniforms(key_context).write_f32(a);
-    uniforms(key_context).write_f32(inv_a);
-    add_gradient_postamble(grad_data, buffer_offset, &mut uniforms(key_context));
+    add_gradient_preamble(grad_data, scope.uniforms());
+    scope.uniforms().write_f32(grad_data.radii[0]);
+    scope.uniforms().write_f32(d_radius);
+    scope.uniforms().write_f32(a);
+    scope.uniforms().write_f32(inv_a);
+    add_gradient_postamble(grad_data, buffer_offset, scope.uniforms());
 }
 
 // ==================================================================
@@ -634,16 +568,22 @@ impl LocalMatrixShaderBlock {
             // Perspective local matrices are rare enough and add enough extra instructions that
             // it's worth specializing since it has to perform a per-pixel division.
             builder(key_context).begin_block(BuiltInCodeSnippetID::LocalMatrixShaderPersp);
-            begin_write_uniforms!(key_context, BuiltInCodeSnippetID::LocalMatrixShaderPersp);
-            uniforms(key_context).write_matrix(m);
+            let mut scope =
+                ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::LocalMatrixShaderPersp);
+            scope.uniforms().write_matrix(m);
         } else {
             // For an affine 2D transform, we only need to upload the upper 2x2 and XY translation.
             builder(key_context).begin_block(BuiltInCodeSnippetID::LocalMatrixShader);
 
-            begin_write_uniforms!(key_context, BuiltInCodeSnippetID::LocalMatrixShader);
+            let mut scope =
+                ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::LocalMatrixShader);
             // The upper 2x2 is expected to be in column major order, but SkMatrix is 3x3 row major.
-            uniforms(key_context).write_vec([m.scale_x(), m.skew_y(), m.skew_x(), m.scale_y()]);
-            uniforms(key_context).write_vec([m.translate_x(), m.translate_y()]);
+            scope
+                .uniforms()
+                .write_vec([m.scale_x(), m.skew_y(), m.skew_x(), m.scale_y()]);
+            scope
+                .uniforms()
+                .write_vec([m.translate_x(), m.translate_y()]);
         }
     }
 }
@@ -678,8 +618,11 @@ impl CoordNormalizeShaderBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L843-L857 (chrome/m156)
     #[doc(alias = "BeginBlock")]
     pub fn begin_block(key_context: &KeyContext<'_>, data: &CoordNormalizeData) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::CoordNormalizeShader);
-        uniforms(key_context).write_vec([data.inv_dimensions.width, data.inv_dimensions.height]);
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::CoordNormalizeShader);
+        scope
+            .uniforms()
+            .write_vec([data.inv_dimensions.width, data.inv_dimensions.height]);
         builder(key_context).begin_block(BuiltInCodeSnippetID::CoordNormalizeShader);
     }
 }
@@ -711,8 +654,9 @@ impl CoordClampShaderBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L871-L875 (chrome/m156)
     #[doc(alias = "BeginBlock")]
     pub fn begin_block(key_context: &KeyContext<'_>, clamp_data: &CoordClampData) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::CoordClampShader);
-        uniforms(key_context).write_rect(&clamp_data.subset);
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::CoordClampShader);
+        scope.uniforms().write_rect(&clamp_data.subset);
         builder(key_context).begin_block(BuiltInCodeSnippetID::CoordClampShader);
     }
 }
@@ -771,13 +715,15 @@ pub struct ImageShaderBlock;
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L496-L507 (chrome/m156)
 fn add_image_uniform_data(key_context: &KeyContext<'_>, img_data: &ImageData) {
     debug_assert!(!img_data.sampling.use_cubic);
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::ImageShader);
+    let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::ImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_rect(&img_data.subset);
-    uniforms(key_context).write_i32(img_data.tile_modes.0 as i32);
-    uniforms(key_context).write_i32(img_data.tile_modes.1 as i32);
-    uniforms(key_context).write_i32(img_data.sampling.filter as i32);
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope.uniforms().write_rect(&img_data.subset);
+    scope.uniforms().write_i32(img_data.tile_modes.0 as i32);
+    scope.uniforms().write_i32(img_data.tile_modes.1 as i32);
+    scope.uniforms().write_i32(img_data.sampling.filter as i32);
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L509-L529 (chrome/m156)
@@ -787,9 +733,11 @@ fn add_clamp_image_uniform_data(key_context: &KeyContext<'_>, img_data: &ImageDa
     const LINEAR_INSET: f32 = 0.5 + 0.000_01;
 
     debug_assert!(!img_data.sampling.use_cubic);
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::ImageShaderClamp);
+    let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::ImageShaderClamp);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
 
     // The subset should clamp texel coordinates to an inset subset to prevent sampling neighboring
     // texels when coords fall exactly at texel boundaries.
@@ -798,20 +746,24 @@ fn add_clamp_image_uniform_data(key_context: &KeyContext<'_>, img_data: &ImageDa
         subset_inset_clamp = subset_inset_clamp.round_out();
     }
     subset_inset_clamp.inset(Point::new(LINEAR_INSET, LINEAR_INSET));
-    uniforms(key_context).write_rect(&subset_inset_clamp);
+    scope.uniforms().write_rect(&subset_inset_clamp);
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L531-L544 (chrome/m156)
 fn add_cubic_image_uniform_data(key_context: &KeyContext<'_>, img_data: &ImageData) {
     debug_assert!(img_data.sampling.use_cubic);
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::CubicImageShader);
+    let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::CubicImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_rect(&img_data.subset);
-    uniforms(key_context).write_i32(img_data.tile_modes.0 as i32);
-    uniforms(key_context).write_i32(img_data.tile_modes.1 as i32);
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope.uniforms().write_rect(&img_data.subset);
+    scope.uniforms().write_i32(img_data.tile_modes.0 as i32);
+    scope.uniforms().write_i32(img_data.tile_modes.1 as i32);
     let cubic = &img_data.sampling.cubic;
-    uniforms(key_context).write_half_m44(&cubic_resampler_matrix(cubic.b, cubic.c));
+    scope
+        .uniforms()
+        .write_half_m44(&cubic_resampler_matrix(cubic.b, cubic.c));
 }
 
 /// `SkImageShader::CubicResamplerMatrix`.
@@ -969,44 +921,65 @@ pub struct YUVImageShaderBlock;
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L642-L662 (chrome/m156)
 fn add_yuv_image_uniform_data(key_context: &KeyContext<'_>, img_data: &YUVImageData) {
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::YUVImageShader);
+    let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::YUVImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size_uv));
-    uniforms(key_context).write_rect(&img_data.subset);
-    uniforms(key_context).write_vec([
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size_uv));
+    scope.uniforms().write_rect(&img_data.subset);
+    scope.uniforms().write_vec([
         img_data.linear_filter_uv_inset.x,
         img_data.linear_filter_uv_inset.y,
     ]);
-    uniforms(key_context).write_i32(img_data.tile_modes.0 as i32);
-    uniforms(key_context).write_i32(img_data.tile_modes.1 as i32);
-    uniforms(key_context).write_i32(img_data.sampling.filter as i32);
-    uniforms(key_context).write_i32(img_data.sampling_uv.filter as i32);
+    scope.uniforms().write_i32(img_data.tile_modes.0 as i32);
+    scope.uniforms().write_i32(img_data.tile_modes.1 as i32);
+    scope.uniforms().write_i32(img_data.sampling.filter as i32);
+    scope
+        .uniforms()
+        .write_i32(img_data.sampling_uv.filter as i32);
 
     for channel in img_data.channel_select {
-        uniforms(key_context).write_half_vec(channel);
+        scope.uniforms().write_half_vec(channel);
     }
-    uniforms(key_context).write_half_matrix(&img_data.yuv_to_rgb_matrix);
-    uniforms(key_context).write_half_vec(img_data.yuv_to_rgb_translate);
+    scope
+        .uniforms()
+        .write_half_matrix(&img_data.yuv_to_rgb_matrix);
+    scope
+        .uniforms()
+        .write_half_vec(img_data.yuv_to_rgb_translate);
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L664-L683 (chrome/m156)
 fn add_cubic_yuv_image_uniform_data(key_context: &KeyContext<'_>, img_data: &YUVImageData) {
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::CubicYUVImageShader);
+    let mut scope =
+        ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::CubicYUVImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size_uv));
-    uniforms(key_context).write_rect(&img_data.subset);
-    uniforms(key_context).write_i32(img_data.tile_modes.0 as i32);
-    uniforms(key_context).write_i32(img_data.tile_modes.1 as i32);
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size_uv));
+    scope.uniforms().write_rect(&img_data.subset);
+    scope.uniforms().write_i32(img_data.tile_modes.0 as i32);
+    scope.uniforms().write_i32(img_data.tile_modes.1 as i32);
     let cubic = &img_data.sampling.cubic;
-    uniforms(key_context).write_half_m44(&cubic_resampler_matrix(cubic.b, cubic.c));
+    scope
+        .uniforms()
+        .write_half_m44(&cubic_resampler_matrix(cubic.b, cubic.c));
 
     for channel in img_data.channel_select {
-        uniforms(key_context).write_half_vec(channel);
+        scope.uniforms().write_half_vec(channel);
     }
-    uniforms(key_context).write_half_matrix(&img_data.yuv_to_rgb_matrix);
-    uniforms(key_context).write_half_vec(img_data.yuv_to_rgb_translate);
+    scope
+        .uniforms()
+        .write_half_matrix(&img_data.yuv_to_rgb_matrix);
+    scope
+        .uniforms()
+        .write_half_vec(img_data.yuv_to_rgb_translate);
 }
 
 /// The sign-encoded linear-filter UV inset shared by the hardware-tiled YUV blocks.
@@ -1033,41 +1006,56 @@ fn hw_linear_filter_uv_inset(img_data: &YUVImageData) -> Point {
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L685-L716 (chrome/m156)
 fn add_hw_yuv_image_uniform_data(key_context: &KeyContext<'_>, img_data: &YUVImageData) {
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::HWYUVImageShader);
+    let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::HWYUVImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size_uv));
-    uniforms(key_context).write_rect(&img_data.subset);
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size_uv));
+    scope.uniforms().write_rect(&img_data.subset);
 
     let inset = hw_linear_filter_uv_inset(img_data);
-    uniforms(key_context).write_vec([inset.x, inset.y]);
+    scope.uniforms().write_vec([inset.x, inset.y]);
 
     for channel in img_data.channel_select {
-        uniforms(key_context).write_half_vec(channel);
+        scope.uniforms().write_half_vec(channel);
     }
-    uniforms(key_context).write_half_matrix(&img_data.yuv_to_rgb_matrix);
-    uniforms(key_context).write_half_vec(img_data.yuv_to_rgb_translate);
+    scope
+        .uniforms()
+        .write_half_matrix(&img_data.yuv_to_rgb_matrix);
+    scope
+        .uniforms()
+        .write_half_vec(img_data.yuv_to_rgb_translate);
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L718-L752 (chrome/m156)
 fn add_hw_yuv_no_swizzle_image_uniform_data(key_context: &KeyContext<'_>, img_data: &YUVImageData) {
-    begin_write_uniforms!(key_context, BuiltInCodeSnippetID::HWYUVNoSwizzleImageShader);
+    let mut scope =
+        ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::HWYUVNoSwizzleImageShader);
 
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size));
-    uniforms(key_context).write_vec(inverse_dimensions(img_data.img_size_uv));
-    uniforms(key_context).write_rect(&img_data.subset);
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size));
+    scope
+        .uniforms()
+        .write_vec(inverse_dimensions(img_data.img_size_uv));
+    scope.uniforms().write_rect(&img_data.subset);
 
     let inset = hw_linear_filter_uv_inset(img_data);
-    uniforms(key_context).write_vec([inset.x, inset.y]);
+    scope.uniforms().write_vec([inset.x, inset.y]);
 
-    uniforms(key_context).write_half_matrix(&img_data.yuv_to_rgb_matrix);
+    scope
+        .uniforms()
+        .write_half_matrix(&img_data.yuv_to_rgb_matrix);
     let translate_alpha = [
         img_data.yuv_to_rgb_translate[0],
         img_data.yuv_to_rgb_translate[1],
         img_data.yuv_to_rgb_translate[2],
         img_data.alpha_param,
     ];
-    uniforms(key_context).write_half_vec(translate_alpha);
+    scope.uniforms().write_half_vec(translate_alpha);
 }
 
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L769-L780 (chrome/m156)
@@ -1159,8 +1147,8 @@ impl DitherShaderBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L890-L898 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>, data: &DitherData) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::DitherShader);
-        uniforms(key_context).write_half(data.range);
+        let mut scope = ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::DitherShader);
+        scope.uniforms().write_half(data.range);
         builder(key_context).add_block(BuiltInCodeSnippetID::DitherShader);
     }
 }
@@ -1234,13 +1222,20 @@ impl PerlinNoiseShaderBlock {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L902-L928 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>, noise_data: &PerlinNoiseData) {
-        begin_write_uniforms!(key_context, BuiltInCodeSnippetID::PerlinNoiseShader);
+        let mut scope =
+            ScopedUniformWriter::new(key_context, BuiltInCodeSnippetID::PerlinNoiseShader);
 
-        uniforms(key_context).write_vec([noise_data.base_frequency.x, noise_data.base_frequency.y]);
-        uniforms(key_context).write_vec([noise_data.stitch_data.x, noise_data.stitch_data.y]);
-        uniforms(key_context).write_i32(noise_data.r#type as i32);
-        uniforms(key_context).write_i32(noise_data.num_octaves);
-        uniforms(key_context).write_i32(i32::from(noise_data.stitching()));
+        scope
+            .uniforms()
+            .write_vec([noise_data.base_frequency.x, noise_data.base_frequency.y]);
+        scope
+            .uniforms()
+            .write_vec([noise_data.stitch_data.x, noise_data.stitch_data.y]);
+        scope.uniforms().write_i32(noise_data.r#type as i32);
+        scope.uniforms().write_i32(noise_data.num_octaves);
+        scope
+            .uniforms()
+            .write_i32(i32::from(noise_data.stitching()));
 
         builder(key_context).add_block(BuiltInCodeSnippetID::PerlinNoiseShader);
     }

@@ -57,6 +57,22 @@ pub struct BlendModeColorFilter {
     mode: BlendMode,
 }
 
+impl BlendModeColorFilter {
+    /// The constant color the filter blends with (`color()`).
+    // Port of: src/effects/colorfilters/SkBlendModeColorFilter.h#L29 (chrome/m156)
+    #[must_use]
+    pub fn color(&self) -> Color4f {
+        self.color
+    }
+
+    /// The blend mode (`mode()`).
+    // Port of: src/effects/colorfilters/SkBlendModeColorFilter.h#L30 (chrome/m156)
+    #[must_use]
+    pub fn mode(&self) -> BlendMode {
+        self.mode
+    }
+}
+
 impl ColorFilterBase for BlendModeColorFilter {
     // Port of: src/effects/colorfilters/SkBlendModeColorFilter.cpp#L71-L79 (chrome/m156)
     fn append_stages(&self, rec: &mut StageRec<'_, '_>, _shader_is_opaque: bool) -> bool {
