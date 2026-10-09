@@ -50319,7 +50319,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/CacheBudgetTest.cpp#L20-L42"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "9901d491e5f539661a0bac88b45290773809b697541d768b1417849a6a56eac2"
 
 [[test]]
@@ -50686,6 +50686,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L96-L283"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images and surfaces (G10d) and Context::insertRecording/submit (G9b, G11c)"
 span_hash = "3bf20d364c46e8662b7a693c254bdb73bf572db7382f7d6d356ddee4a8109119"
 
 [[test]]
@@ -50694,7 +50695,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L320-L445"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "8d79b1f89fbda7bc8b3db1168de8b4c5b8646362d35d095ab53e979127083bff"
 
 [[test]]
@@ -50703,7 +50704,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L643-L730"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "6c015f451842d3e04fb50ff69ed675fd0f46794318259a7d73e83994dafde850"
 
 [[test]]
@@ -50712,7 +50713,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L552-L638"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "da79e6cec6bcc5f15de70aafdb4f58e15bb8ba67bdc603196bd496b49290b050"
 
 [[test]]
@@ -50721,7 +50722,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L734-L799"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "2e3019d7575c54c9af77383b1a53779cc23534d64ddeb91b7d37cd1ca739519e"
 
 [[test]]
@@ -50730,7 +50731,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L801-L897"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "5d787b42ddbb9b9348ab656c1a562642b0573cfd17d5b5da104f0d4505464444"
 
 [[test]]
@@ -50739,7 +50740,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L899-L989"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "11010d733756be2ccd5e1b629bef926ddfc8bc941fb08e1b233f20d5e11b496f"
 
 [[test]]
@@ -50748,7 +50749,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L447-L537"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "b59a9725ab2ca429f0885f9ba3f5b54d2f032f26b4742adc019cb784b8495701"
 
 [[test]]
@@ -51790,6 +51791,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L223-L278"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images/surfaces/promise images (G10d)"
 span_hash = "c436c8d191665d858069448e5e207bc8a702b624d62b61e170e269fc2dde7255"
 
 [[test]]
@@ -51798,7 +51800,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L27-L200"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "fef622d37e858d36261f0dd88ddb814646bece081f2f40341217d84857788c15"
 
 [[test]]
@@ -51808,6 +51810,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L202-L221"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images/surfaces/promise images (G10d)"
 span_hash = "353c152200fc7c0e62d0fff8d16693abf0781f5db92f25eb614acd3fced7c4bb"
 
 [[test]]

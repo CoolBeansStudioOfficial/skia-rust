@@ -186,6 +186,47 @@ macro_rules! def_graphite_test_for_all_contexts {
     };
 }
 
+/// Port of `DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS(name, filter, reporter, context,
+/// testContext, options, fn, condition, ...)` for the tests whose contexts are made with
+/// options: `|options| { … }` is the options-setting function (`fn`), the body runs once per
+/// context made with those options. The context filter and the condition are always true here.
+///
+/// ```ignore
+/// def_graphite_test_for_contexts_with_options!(
+///     CacheBudgetTest,
+///     |options| { options.gpu_budget_in_bytes = 1234567; },
+///     |reporter, context| { /* … */ }
+/// );
+/// ```
+#[macro_export]
+macro_rules! def_graphite_test_for_contexts_with_options {
+    ($(#[$attr:meta])* $name:ident, |$options:ident| $set_options:block,
+     |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut context_options = ::skia_rust_gpu::graphite::context_options::ContextOptions::default();
+            {
+                let $options = &mut context_options;
+                $set_options
+            }
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            for (context_name, context) in
+                $crate::tools::graphite_test_context::all_contexts_with_options(&context_options)
+            {
+                reporter.set_context(Some(context_name));
+                // A closure, as in `def_test!`: an early `return` ends this context only.
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &context);
+            }
+            reporter.set_context(None);
+            reporter.finish();
+        }
+    };
+}
+
 /// Every CPU tier (`Tier::ALL` order), as `skia_rust_simd::testing::oracle_selection` picks it:
 /// natively where the CPU has the tier's instructions and the oracle host's estimates, else by
 /// the tier's model (with the oracle host's `AmdZen4` estimates for the x86 tiers, the

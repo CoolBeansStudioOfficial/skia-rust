@@ -19,15 +19,21 @@ use skia_rust_gpu::graphite::wgpu::{
 };
 
 /// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
+#[must_use]
+pub fn all_contexts() -> Vec<(String, WgpuContext)> {
+    all_contexts_with_options(&ContextOptions::default())
+}
+
+/// [`all_contexts`] created with `options` (`DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS`'s
+/// options-setting function has been applied to them).
 ///
 /// # Panics
 /// If the noop backend cannot create a device.
 #[must_use]
-pub fn all_contexts() -> Vec<(String, WgpuContext)> {
-    let options = ContextOptions::default();
+pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuContext)> {
     let mut contexts = vec![(
         "wgpu-noop".to_owned(),
-        make_context(&noop_backend_context(), &options).expect("a context on the noop device"),
+        make_context(&noop_backend_context(), options).expect("a context on the noop device"),
     )];
     // What Dawn reported on D3D12 (with its Dawn-only features), and what Dawn on Vulkan reports
     // that wgpu can express.
@@ -36,9 +42,9 @@ pub fn all_contexts() -> Vec<(String, WgpuContext)> {
         CapsProfile::dawn_vulkan().wgpu_restricted(),
     ] {
         let shared_context =
-            WgpuSharedContext::make_with_profile(&noop_backend_context(), &profile, &options)
+            WgpuSharedContext::make_with_profile(&noop_backend_context(), &profile, options)
                 .expect("a shared context on the noop device");
-        contexts.push((profile.name, WgpuContext::new(shared_context, &options)));
+        contexts.push((profile.name, WgpuContext::new(shared_context, options)));
     }
     contexts
 }

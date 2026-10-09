@@ -89,6 +89,27 @@ impl WgpuContext {
         &self.shared_context
     }
 
+    /// `maxBudgetedBytes()`: the budget of the context's resource cache.
+    // Port of: src/gpu/graphite/Context.cpp#L974-L978 (chrome/m156)
+    #[doc(alias = "maxBudgetedBytes")]
+    #[must_use]
+    pub fn max_budgeted_bytes(&self) -> usize {
+        self.resource_provider
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get_resource_cache_limit()
+    }
+
+    /// `setMaxBudgetedBytes()`.
+    // Port of: src/gpu/graphite/Context.cpp#L980-L983 (chrome/m156)
+    #[doc(alias = "setMaxBudgetedBytes")]
+    pub fn set_max_budgeted_bytes(&self, bytes: usize) {
+        self.resource_provider
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .set_resource_cache_limit(bytes);
+    }
+
     /// `supportsProtectedContent()`.
     // Port of: src/gpu/graphite/Context.cpp#L1001-L1003 (chrome/m156)
     #[doc(alias = "supportsProtectedContent")]
