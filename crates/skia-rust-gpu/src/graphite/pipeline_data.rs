@@ -258,6 +258,13 @@ impl UniformDataCache {
     pub fn lookup_mut(&mut self, index: Index) -> &mut UniformDataCacheEntry {
         self.uniforms.lookup_mut(index)
     }
+
+    /// The number of distinct entries (`count`).
+    // Port of: src/gpu/graphite/PipelineData.h#L276 (chrome/m156)
+    #[must_use]
+    pub fn count(&self) -> usize {
+        self.uniforms.count()
+    }
 }
 
 /// One sampled texture of a draw: the proxy (`None` only on the pre-compile path) and the sampler

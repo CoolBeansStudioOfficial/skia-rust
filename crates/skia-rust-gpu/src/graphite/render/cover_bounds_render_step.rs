@@ -68,7 +68,7 @@ impl RenderStep for CoverBoundsRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/CoverBoundsRenderStep.cpp#L42-L49 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         // Returns the body of a vertex function, which must define a float4 devPosition variable
         // and must write to an already-defined float2 stepLocalCoords variable.
         "float4 devPosition = cover_bounds_vertex_fn(\

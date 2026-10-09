@@ -1,8 +1,7 @@
 // Copyright 2022 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/gpu/graphite/PaintParams.{h,cpp} (chrome/m156), with `CanUseHardwareBlending`
-// from src/gpu/graphite/ContextUtils.cpp#L44-L84 (G6 moves it to `ContextUtils`)
+// Ported from Skia: src/gpu/graphite/PaintParams.{h,cpp} (chrome/m156)
 
 //! [`PaintParams`] and [`ShadingParams`]: the shading state of an `SkPaint`, and its conversion to a
 //! `PaintParamsKey` (with the uniforms and textures it gathers) for a given draw.
@@ -53,9 +52,9 @@ use skia_rust_core::runtime_effect::ChildPtr;
 use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 
-use crate::gpu::blend_formula::{get_blend_formula, get_lcd_blend_formula};
 use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
+use crate::graphite::context_utils::can_use_hardware_blending;
 use crate::graphite::draw_types::DstUsage;
 use crate::graphite::geom::non_msaa_clip::AnalyticClip;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
@@ -70,8 +69,7 @@ use crate::graphite::key_helpers_ii::{
 use crate::graphite::paint_params_key::{PaintParamsKeyBuilder, RootBlockType};
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::render_step::Coverage;
-use crate::graphite::resource_types::DstReadStrategy;
-use crate::graphite::texture_format::{TextureFormat, texture_format_auto_clamps};
+use crate::graphite::texture_format::TextureFormat;
 use crate::graphite::unique_paint_params_id::UniquePaintParamsID;
 
 // Port of: src/gpu/graphite/PaintParams.cpp#L215-L223 (chrome/m156), `Color4fPrepForDst`
@@ -453,58 +451,6 @@ fn get_final_blend(blender: Option<&Blender>) -> FinalBlend {
         Some(mode) => (None, mode),
         None => (Some(blender.clone()), BlendMode::Src),
     }
-}
-
-/// Whether the blend mode `bm` with `coverage` can be done by the hardware blender of
-/// `target_format`, or needs a shader to read the dst (`CanUseHardwareBlending`).
-// Port of: src/gpu/graphite/ContextUtils.cpp#L44-L84 (chrome/m156)
-#[doc(alias = "CanUseHardwareBlending")]
-#[must_use]
-pub fn can_use_hardware_blending(
-    caps: &dyn Caps,
-    target_format: TextureFormat,
-    bm: BlendMode,
-    coverage: Coverage,
-) -> bool {
-    // Check for special cases that would prevent the usage of direct hardware blending and
-    // require us to fall back to using shader-based blending.
-    let has_coverage = coverage != Coverage::None;
-    let dst_is_fast = caps.get_dst_read_strategy() != DstReadStrategy::TextureCopy;
-    if
-    // Using LCD coverage (which must be applied after the blend equation) with any blend mode
-    // besides SkBlendMode::kSrcOver
-    // TODO(b/414597217): Add support to use dual-source blending with LCD coverage.
-    (coverage == Coverage::Lcd && bm != BlendMode::SrcOver)
-
-        // SkBlendMode::kPlus clamps its output to [0,1], e.g. clamp(D+S,0,1), which is then
-        // combined with coverage (f) for a final written value of:
-        //   (1-f)*D + f*clamp(D+S,0,1)
-        //
-        // This can be rewritten to min(D+f*S, D+f*(1-D)), which is not representable with *any*
-        // hardware blend configuration. However, when the target format clamps to [0,1], we can
-        // approximate the output as min(D+f*S, 1) with a slight degradation in AA quality.
-        //
-        // If access to D doesn't require a texture copy, prefer shader blending for the quality.
-        || (bm == BlendMode::Plus && (dst_is_fast || !texture_format_auto_clamps(target_format)))
-
-        // Using an advanced blend mode but the hardware does not support them
-        || (bm > BlendMode::LAST_COEFF_MODE && !caps.supports_hardware_advanced_blending())
-
-        // The blend formula requires dual-source blending, but it is not supported by hardware
-        || (bm <= BlendMode::LAST_COEFF_MODE
-            && (if coverage == Coverage::Lcd {
-                get_lcd_blend_formula(bm).has_secondary_output()
-            } else {
-                get_blend_formula(false, has_coverage, bm).has_secondary_output()
-            })
-            && !caps.dual_source_blending_support())
-    {
-        return false;
-    }
-
-    // In all other cases (which are more commonly encountered; e.g. using a simple blend mode),
-    // we can use direct HW blending.
-    true
 }
 
 /// Whether `should_dither` applies to `p` for a dst of color type `dst_ct`.

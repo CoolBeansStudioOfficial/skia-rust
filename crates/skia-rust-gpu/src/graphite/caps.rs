@@ -105,7 +105,6 @@ impl Default for ResourceBindingRequirements {
     }
 }
 
-
 /// `Caps::setDefaultShaderCaps()`: the `SkSL::ShaderCaps` every backend starts from.
 // Port of: src/gpu/graphite/Caps.cpp#L35-L44 (chrome/m156)
 #[doc(alias = "setDefaultShaderCaps")]

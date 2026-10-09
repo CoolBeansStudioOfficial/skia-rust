@@ -186,7 +186,7 @@ impl RenderStep for TessellateWedgesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/TessellateWedgesRenderStep.cpp#L122-L140 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         let curve_type = if self.infinity_support {
             "curve_type_using_inf_support(p23)"
         } else {

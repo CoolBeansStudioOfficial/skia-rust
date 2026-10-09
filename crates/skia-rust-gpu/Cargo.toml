@@ -13,7 +13,7 @@ publish = false
 skia-rust-core.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-simd.workspace = true
-skia-rust-sksl.workspace = true
+skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-skcms.workspace = true
 bitflags.workspace = true
 

@@ -177,7 +177,7 @@ impl RenderStep for TessellateCurvesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/TessellateCurvesRenderStep.cpp#L118-L130 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         // TODO (Skia): Approximate perspective scaling to match how PatchWriter is configured (or
         // provide explicit tessellation level in instance data instead of replicating work).
         let curve_type = if self.infinity_support {

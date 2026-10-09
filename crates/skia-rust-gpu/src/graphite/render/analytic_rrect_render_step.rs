@@ -385,7 +385,7 @@ impl RenderStep for AnalyticRRectRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/AnalyticRRectRenderStep.cpp#L374-L386 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         concat!(
             "float4 devPosition = analytic_rrect_vertex_fn(",
             "cornerID, position, normal, normalScale, centerWeight, ",

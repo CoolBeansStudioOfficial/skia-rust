@@ -39,8 +39,8 @@ use skia_rust_core::size::ISize;
 use skia_rust_core::texture_compression_type::TextureCompressionType;
 
 use crate::gpu::gpu_types::{BackendApi, GpuStatsFlags, Mipmapped, Protected, Renderable};
-pub use crate::graphite::caps::{ResourceBindingRequirements, ShaderCaps};
 use crate::graphite::caps::{AttachmentSizePolicy, Caps, default_shader_caps};
+pub use crate::graphite::caps::{ResourceBindingRequirements, ShaderCaps};
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};

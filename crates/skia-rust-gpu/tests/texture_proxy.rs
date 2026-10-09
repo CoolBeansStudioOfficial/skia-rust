@@ -158,7 +158,6 @@ fn wrapped_texture(dimensions: ISize) -> ResourceRef<Texture> {
     )
 }
 
-
 type Slot = Arc<Mutex<Option<ResourceRef<Texture>>>>;
 
 fn same_texture(a: Option<&ResourceRef<Texture>>, b: &ResourceRef<Texture>) -> bool {
