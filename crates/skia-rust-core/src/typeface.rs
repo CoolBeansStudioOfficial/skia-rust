@@ -237,6 +237,18 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
         0
     }
 
+    /// `SkTypeface::onGetKerningPairAdjustments`: whether the typeface has kerning. The default
+    /// is `false` (no kerning), as for `SkTypeface` itself and the test typefaces.
+    // Port of: src/core/SkTypeface.cpp#L540-L542 (chrome/m156)
+    #[doc(alias = "onGetKerningPairAdjustments")]
+    fn on_get_kerning_pair_adjustments(
+        &self,
+        _glyphs: &[GlyphId],
+        _adjustments: &mut [i32],
+    ) -> bool {
+        false
+    }
+
     /// `SkTypeface::onGetGlyphToUnicodeMap`: the unichar of each glyph. The default is all zeros,
     /// as for the empty typeface.
     // Port of: include/core/SkTypeface.h (onGetGlyphToUnicodeMap, chrome/m156)
@@ -748,6 +760,26 @@ impl Typeface {
     #[must_use]
     pub fn count_glyphs(&self) -> i32 {
         self.0.on_count_glyphs()
+    }
+
+    /// `SkTypeface::getKerningPairAdjustments`: the kerning between each pair of `glyphs`, into
+    /// `adjustments` (`glyphs.len() == adjustments.len() + 1` is expected; the shorter of the two
+    /// is used). Returns whether the typeface has kerning at all, also when either is empty.
+    // Port of: src/core/SkTypeface.cpp#L449-L460 (chrome/m156)
+    #[doc(alias = "getKerningPairAdjustments")]
+    pub fn get_kerning_pair_adjustments(
+        &self,
+        glyphs: &[GlyphId],
+        adjustments: &mut [i32],
+    ) -> bool {
+        // We need glyphs.len() == adjustments.len() + 1 unless either is emptyish, in which case
+        // the virtual is still called, just to get the boolean result.
+        if glyphs.len() <= 1 || adjustments.is_empty() {
+            return self.0.on_get_kerning_pair_adjustments(&[], &mut []);
+        }
+        let n = (glyphs.len() - 1).min(adjustments.len());
+        self.0
+            .on_get_kerning_pair_adjustments(&glyphs[..=n], &mut adjustments[..n])
     }
 
     /// `SkTypeface::getGlyphToUnicodeMap`: the unichar of each glyph, from the start of `dst`.

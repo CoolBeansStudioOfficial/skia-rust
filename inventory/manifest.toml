@@ -19786,6 +19786,7 @@ macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L421-L421"
 module = "text"
 status = "todo"
+reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
 span_hash = "239e2354257a78b085fb557cfb20e47a2c0a43405bbec3aec84ce795ba963b15"
 
 [[test]]
@@ -19795,6 +19796,7 @@ macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L422-L422"
 module = "text"
 status = "todo"
+reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
 span_hash = "0b8bb0448b554627361bf5ce88e34b2828aabc8a98455779df6f3e5cad8d6619"
 
 [[test]]
@@ -19804,6 +19806,7 @@ macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L420-L420"
 module = "text"
 status = "todo"
+reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
 span_hash = "c5bfc71e5da3f87e9d64cb8035206bfd6b62072a49187c9444d73bb338b18770"
 
 [[test]]
@@ -19813,6 +19816,7 @@ macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L418-L418"
 module = "text"
 status = "todo"
+reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
 span_hash = "cdd14bbe1977cc2726ea4b03ea0a9d58d492bcf906f26d0c0eabbdf1d202feaf"
 
 [[test]]
@@ -19822,6 +19826,7 @@ macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L419-L419"
 module = "text"
 status = "todo"
+reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
 span_hash = "c0ccc875c6b30aa95defbf120b3fc23ed45bf129c78e64a53f00bfc6e450d59d"
 
 [[test]]
@@ -19896,7 +19901,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gammatext.cpp#L164-L164"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "1573ad341f94fdad184e66c990fd227da93697f2115578f1d0397dfea56ef265"
 
 [[test]]
@@ -19905,7 +19910,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gammatext.cpp#L95-L95"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0d4f1c9e8dadf11bc4bb343d79ab24451b7caeee00e93dd71effe27b658ac9f1"
 
 [[test]]
@@ -19914,7 +19919,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/gammatext.cpp#L166-L185"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "dbde7cc24206bf7e5700464745d9b40caea3c9529651d64e0b7af03c38ca4426"
 
 [[test]]
@@ -20677,7 +20682,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradtext.cpp#L101-L101"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d711bbc3618e5ad5412a12980cf178c508825368f4ac342bed7300b44cd28f45"
 
 [[test]]
@@ -20686,7 +20691,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/gradtext.cpp#L102-L102"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "98ca6c11cb2dca20e1be3cf5703f0d844b67c66c96279f93ae6b5d50cc1de6ac"
 
 [[test]]
@@ -20695,7 +20700,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradtext.cpp#L104-L130"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f7f8776f6b4405f4659d389ef50a411646c41f9a7735cbc019c77bfa64c4b716"
 
 [[test]]
@@ -22059,6 +22064,7 @@ macro = "DEF_GM"
 source = "gm/mixedtextblobs.cpp#L168-L168"
 module = "text"
 status = "todo"
+reason = "PlanetTypeface() falls back to the Planet SVG family (TestSVGTypeface, T20, not ported)"
 span_hash = "77e1a1444265579e7529b5d780c6bc53a58d34d147d93bfaca7db412679f09ea"
 
 [[test]]
@@ -23698,7 +23704,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/shadertext3.cpp#L142-L142"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "772cc4d7178a787b9cd7a6ddf4e8a3ce9e271659f30f3254a652d9cbfe405692"
 
 [[test]]
@@ -24661,6 +24667,7 @@ macro = "DEF_GM"
 source = "gm/textblobrandomfont.cpp#L184-L184"
 module = "text"
 status = "todo"
+reason = "needs SkRandomTypeface (tools/fonts/RandomScalerContext, not ported) to build its blob"
 span_hash = "776042e03056c012e05ba439cb77657eeb20a3954def20d0fe79fc28ac511bbf"
 
 [[test]]
@@ -24914,7 +24921,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/typeface.cpp#L160-L160"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "88827d31a857fb7eb1322e973f14528496c82fdb40e78f347498fce25ba3cfed"
 
 [[test]]
@@ -24923,7 +24930,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/typeface.cpp#L161-L161"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "199484dae1e41c1c83311f902a0b856b71e29ead7b4d2806b8960dee6e9d5e55"
 
 [[test]]
@@ -24932,7 +24939,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/typeface.cpp#L408-L455"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "902412719c4b120ac1badf957b41500f625ead54fc94475ac3f0f0f2e9cfb4a1"
 
 [[test]]
@@ -24941,7 +24948,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/typeface.cpp#L370-L380"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ecc5ba0c625d31a23ea996a05aa8bd114f8b5c50170d0cb62d5948f495590326"
 
 [[test]]
@@ -24950,7 +24957,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/typeface.cpp#L385-L392"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f8539f1e1b5ba5c34f0b903ec55d886b56d6aad631bcd80a5f2760ec2472cab3"
 
 [[test]]
@@ -24959,7 +24966,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/typeface.cpp#L394-L401"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "0485c6533adbffd6e6e988524a31bae126af7adfe7432deee7300ad9283c1034"
 
 [[test]]
