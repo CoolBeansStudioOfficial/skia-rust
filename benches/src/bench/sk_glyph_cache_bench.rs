@@ -46,9 +46,9 @@ fn do_font_stuff(font: &mut Font) {
         // std::array<SkPackedGlyphID, 'z'> glyphs;
         let mut glyphs = [PackedGlyphId::default(); 'z' as usize];
         // for (int c = ' '; c < 'z'; c++) glyphs[c] = SkPackedGlyphID{font->unicharToGlyph(c)};
-        for c in usize::from(b' ')..usize::from(b'z') {
+        for (c, glyph) in glyphs.iter_mut().enumerate().skip(usize::from(b' ')) {
             let uni = Unichar::try_from(c).expect("ASCII");
-            glyphs[c] = PackedGlyphId::from_glyph_id(font.unichar_to_glyph(uni));
+            *glyph = PackedGlyphId::from_glyph_id(font.unichar_to_glyph(uni));
         }
         // constexpr size_t glyphCount = 'z' - ' ';
         // SkSpan<const SkPackedGlyphID> glyphIDs{&glyphs[SkTo<int>(' ')], glyphCount};

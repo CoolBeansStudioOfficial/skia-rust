@@ -3,15 +3,20 @@
 
 //! The ported benchmarks: one module per `bench/<File>.cpp` (`PathBench` → `path_bench`).
 
+pub mod aa_clip_bench;
 pub mod alternating_color_pattern_bench;
 pub mod bezier_bench;
+pub mod big_path_bench;
 pub mod blendmode_bench;
 pub mod blur_bench;
 pub mod blur_image_filter_bench;
 pub mod blur_rect_bench;
 pub mod blur_rects_bench;
 pub mod canvas_save_restore_bench;
+pub mod chart_bench;
+pub mod checksum_bench;
 pub mod clear_bench;
+pub mod clip_strategy_bench;
 pub mod cmap_bench;
 pub mod color_filter_bench;
 pub mod color_priv_bench;
@@ -40,6 +45,8 @@ pub mod math_bench;
 pub mod matrix44_bench;
 pub mod matrix_bench;
 pub mod memset_bench;
+pub mod mipmap_bench;
+pub mod patch_bench;
 pub mod path_bench;
 pub mod path_iter_bench;
 pub mod path_ops_bench;
@@ -59,6 +66,7 @@ pub mod rotated_rect_bench;
 pub mod shapes_bench;
 pub mod sk4f_bench;
 pub mod sk_glyph_cache_bench;
+pub mod sk_rp_bench;
 pub mod sort_bench;
 pub mod stream_bench;
 pub mod stroke_bench;
@@ -67,5 +75,6 @@ pub mod text_blob_bench;
 pub mod tile_bench;
 pub mod tile_image_filter_bench;
 pub mod typeface_bench;
+pub mod vert_bench;
 pub mod write_pixels_bench;
 pub mod writer_bench;

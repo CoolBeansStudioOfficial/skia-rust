@@ -78,6 +78,13 @@ impl Benchmark for PathTextBench {
     }
 
     // Port of: bench/PathTextBench.cpp#L52-L92 (chrome/m156)
+    // The casts mirror the C++ float and double arithmetic of the setup: `pow(float, int)` and
+    // `x` are computed in double and narrowed to float when they are stored or passed on.
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::too_many_lines
+    )]
     fn on_delayed_setup(&mut self) {
         // SkFont defaultFont = ToolUtils::DefaultFont();
         let default_font = default_font();

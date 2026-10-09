@@ -9,7 +9,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L248-L248"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5b053be54df39ae7573430252f6c86370b3bd0a333a3dc5a141b5f08bdc09ec9"
 
 [[test]]
@@ -18,7 +18,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L249-L249"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f9627024801b74dcdfc5e25a7cd66a4e0c5d1ed31fbadf375ca9c852b75d858d"
 
 [[test]]
@@ -27,7 +27,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L250-L250"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a3ebd933f09c51047d42af151f198b5ccdaa9fd831e01dfc71e2d8671f8b47f7"
 
 [[test]]
@@ -36,7 +36,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L251-L251"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9e8f592674c0050bbc83fb6b1523a953ecfc7fdf67f5fffa2a0663337192d141"
 
 [[test]]
@@ -45,7 +45,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L243-L243"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "08ea2fe8252e628eee4d5fba1a9a4b8660ee464e8c1ba0e7eafab2a3d8bc163d"
 
 [[test]]
@@ -54,7 +54,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L244-L244"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7144919cc16881bf2970c8f29cdf1cb0077c07b8bf367183d1f6cc00c7fcc2e4"
 
 [[test]]
@@ -63,7 +63,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L245-L245"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e9625b8ee6cb87386e5a9ae509cac865b6d7f4e749c772d1ba0c822ed08b4a98"
 
 [[test]]
@@ -72,7 +72,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L246-L246"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "232fbec9676520a67e637b32929c74faf5b62a9f1b6b97a936b41391380b72da"
 
 [[test]]
@@ -81,7 +81,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L247-L247"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "62ff15b86d4a52d13ae774a508f1ac98f0c1d56159564b1aef178adbb18393c3"
 
 [[test]]
@@ -90,7 +90,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L252-L252"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0d303c5f16a5d7544b333bffd0d8e50b7f91bdd8e1b9d865f922500c14adbeac"
 
 [[test]]
@@ -99,7 +99,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AAClipBench.cpp#L253-L253"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "dcac98612cc896b6731f2f88ef1c7f6ef4c438ae66c6f499830c487ba8ff28dc"
 
 [[test]]
@@ -243,7 +243,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L81-L81"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "30e6d9585b9b75ca900dcc36cdf56ae6f75ab88749f5bbb532f3be81a2670884"
 
 [[test]]
@@ -252,7 +252,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L85-L85"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "56d3c792fe9529cf39b6e82c8018606fe6da0feb73b2c11c1da20455d735a304"
 
 [[test]]
@@ -261,7 +261,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L82-L82"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "66efaf76b2533f462902ff9ff08d99058f7a91a9573dd1ec9553ebfc958ae80e"
 
 [[test]]
@@ -270,7 +270,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L86-L86"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9fe60bc1bcabda79d264f8e191009f160970b87ebf38e2a4423229eafd283859"
 
 [[test]]
@@ -279,7 +279,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L83-L83"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d21dce729c0fe551ab5b412931adbc0e62698ce77dd648ff7f244ab3270bdabf"
 
 [[test]]
@@ -288,7 +288,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/BigPathBench.cpp#L87-L87"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2a512f8c057e53dbdd2450b77628afbe7e5ae06a41ea022ed714b4880f2f9656"
 
 [[test]]
@@ -298,6 +298,7 @@ macro = "DEF_BENCH"
 source = "bench/BilerpBench.cpp#L55-L55"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::create_checkerboard_image (tools/ToolUtils.cpp), not ported"
 span_hash = "3fb13d7e0e6d8f0ab38089cd7c4a47020aa6cd75390ecad288c1b0b85a3794ec"
 
 [[test]]
@@ -307,6 +308,7 @@ macro = "DEF_BENCH"
 source = "bench/BilerpBench.cpp#L54-L54"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::create_checkerboard_image (tools/ToolUtils.cpp), not ported"
 span_hash = "b6431b7745474c612cd7fc87742e483b0b0bf78f0fc29ce9f73237be08def9a9"
 
 [[test]]
@@ -316,6 +318,7 @@ macro = "DEF_BENCH"
 source = "bench/BilerpBench.cpp#L53-L53"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::create_checkerboard_image (tools/ToolUtils.cpp), not ported"
 span_hash = "96fbdc576efa09268000d71bb9c8f3d12530b4ec25f43025c72cc93314419fb0"
 
 [[test]]
@@ -325,6 +328,7 @@ macro = "DEF_BENCH"
 source = "bench/BilerpBench.cpp#L52-L52"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::create_checkerboard_image (tools/ToolUtils.cpp), not ported"
 span_hash = "339e888545d54368afb9b663ee4f5387083bae7fdbf81a6e48158d11e8cd2957"
 
 [[test]]
@@ -334,6 +338,7 @@ macro = "DEF_BENCH"
 source = "bench/BilerpBench.cpp#L51-L51"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::create_checkerboard_image (tools/ToolUtils.cpp), not ported"
 span_hash = "df32267e33f1c05df0059fb1eea3f86eaefabfc6cf87ad00f763031d3a711f1e"
 
 [[test]]
@@ -1479,6 +1484,7 @@ macro = "ADD_BENCH_FAMILY"
 source = "bench/BulkRectBench.cpp#L286-L286"
 module = "core"
 status = "todo"
+reason = "ADD_BENCH_FAMILY: the batch and quad variants are Ganesh-only, and the image variants need ToolUtils::create_checkerboard_image (not ported)"
 span_hash = "2b5ff97ce6ae0fbf7e6cd1cc65f9b1df790d49b9344d6117f645fda83dc1ec24"
 
 [[test]]
@@ -1488,6 +1494,7 @@ macro = "ADD_BENCH_FAMILY"
 source = "bench/BulkRectBench.cpp#L287-L287"
 module = "core"
 status = "todo"
+reason = "ADD_BENCH_FAMILY: the batch and quad variants are Ganesh-only, and the image variants need ToolUtils::create_checkerboard_image (not ported)"
 span_hash = "d65a680d8823b19789ebab4a17bbe31ed59414165519e94af93a375188c287ad"
 
 [[test]]
@@ -1532,7 +1539,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ChartBench.cpp#L198-L198"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0354c9f461d251cc5010cb0c6711c19303731824843b326063dcaef0a3de7ff4"
 
 [[test]]
@@ -1541,7 +1548,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ChartBench.cpp#L197-L197"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4fba7a6380c8e4a1a783a4136c3f058330b002737fe39d9e7ebc71c12f93107f"
 
 [[test]]
@@ -1551,6 +1558,7 @@ macro = "DEF_BENCH"
 source = "bench/ChecksumBench.cpp#L84-L84"
 module = "core"
 status = "todo"
+reason = "needs SkMD5 (src/core/SkMD5), not ported"
 span_hash = "95fd48b6f696fbee8542b29b0451cf0d97fdf0da789b8255a2055f5a291ecc83"
 
 [[test]]
@@ -1559,7 +1567,7 @@ kind = "bench"
 macro = "DEF_CHECKSUM_BENCH"
 source = "bench/ChecksumBench.cpp#L96-L96"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7a90a77b9add61f7879a15b67d65830af3629da5a7dc7178878582bf4250c82f"
 
 [[test]]
@@ -1604,7 +1612,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L85-L85"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "80c3fd28598591aa20c818df2e6044b48914be17fac93aad88ea52eba565b4ef"
 
 [[test]]
@@ -1613,7 +1621,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L87-L87"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "1cda9d9380a2b5dc9475ae3b80a3d8826e94021a064937a1ce24adec27544c3f"
 
 [[test]]
@@ -1622,7 +1630,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L88-L88"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a8fd4a1c22b8e61a380afc1f62a07ff0f45be2071c96039678949327b63ff847"
 
 [[test]]
@@ -1631,7 +1639,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L86-L86"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0c6f2c73ca8ddae7b9493ae1dc5cd8ad93032a70bc60ff3e01727528fa651b82"
 
 [[test]]
@@ -1640,7 +1648,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L90-L90"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "ff03d127bf44b4de7eb803b909c9d07666df717406cb79021be5b36a487cd873"
 
 [[test]]
@@ -1649,7 +1657,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L92-L92"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8578b13fb66743f13147f4bf523c9d93eea15fac965c21e9335a6ab67fa27ca4"
 
 [[test]]
@@ -1658,7 +1666,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L93-L93"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "acb2bdc0f58fc72ae421bbd79308c9181751d04df289b868be56b239daa87099"
 
 [[test]]
@@ -1667,7 +1675,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ClipStrategyBench.cpp#L91-L91"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "31516d33081843a4bd8ab3ac3e09ccd9b6f37df3295b09c9e69086da1d3132db"
 
 [[test]]
@@ -1676,7 +1684,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L125-L125"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "a4965bf6b5331a6c7a578672502c702026e719dc13e936e2f29c593e04dbcfcc"
 
 [[test]]
@@ -1685,7 +1693,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L118-L118"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4c29dd9366442626fac4cc54e5a2c8ecae5bdd3d231128bd37c29c59c3c9ce35"
 
 [[test]]
@@ -1694,7 +1702,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L124-L124"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9c1a72bc67f600d38ec2e813f9cfece3e03df5fed23e72e210a73634c60ac877"
 
 [[test]]
@@ -1703,7 +1711,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L117-L117"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "f3ef82649ff9fadcb971c568d331715590f8595e98ef94b75d8ffe3df49e200f"
 
 [[test]]
@@ -1712,7 +1720,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L126-L126"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c397063c508c445a1ba7c6e664f9f81eec6996c41964a9ddaf8459bfb99645db"
 
 [[test]]
@@ -1721,7 +1729,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L119-L119"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "af0f495e2402e980d63539a317fe129c8995bce6753e8cbe4232d3dfda5b5d8b"
 
 [[test]]
@@ -1730,7 +1738,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L123-L123"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9c1c360891f5f85af8f8a7e608f6c85c44c7faf1d2dc117b228e9fa058d3793d"
 
 [[test]]
@@ -1739,7 +1747,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/CmapBench.cpp#L116-L116"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "44d6c8362cba47d83e8abd698c18d84504e97d57dcd4c97be8b1a244f51f4133"
 
 [[test]]
@@ -1981,6 +1989,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L206-L206"
 module = "skcms"
 status = "todo"
+reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
 span_hash = "1b6308836f3e49adb695d29ca6de2310c9ae6dac8ae817086667eea5df761e4a"
 
 [[test]]
@@ -1990,6 +1999,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L207-L207"
 module = "skcms"
 status = "todo"
+reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
 span_hash = "821c609a1a38c02791848e633d9c6a54f50ed8a4e45b0c0e31ec7db0d3b23be8"
 
 [[test]]
@@ -1999,6 +2009,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L208-L208"
 module = "skcms"
 status = "todo"
+reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
 span_hash = "0045cbccc7c43de213d74da10aace659e1bdd9e48787be057ff88669ede3c183"
 
 [[test]]
@@ -2007,7 +2018,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L209-L209"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "81993108cf6d5fb71d5affd0640f7cef12db467c99998b30233a380d9401e507"
 
 [[test]]
@@ -2016,7 +2027,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L210-L210"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "540044bdf560826d6ef5f6907535724357200b32ccceb1dde59ab762ef1884fe"
 
 [[test]]
@@ -2026,6 +2037,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L327-L327"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "5f8f0968348883cbeccb3edb33a01a8a8207e535f00e9ec70545253104179e26"
 
 [[test]]
@@ -2035,6 +2047,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L335-L335"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "ce9ef9951f25729de3cb372c9b0e3151f7f920e4969fd8eb9a432ff2f3b8b6d9"
 
 [[test]]
@@ -2044,6 +2057,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L331-L331"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "9ab90297b2a232d0c9455961232b7c58d7c2943b62d9341499a49e13d249f227"
 
 [[test]]
@@ -2053,6 +2067,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L340-L340"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "cc405f27f2182d6e0097d70aeab0043cfd8cb1d3211e437b599d730bad5b15a7"
 
 [[test]]
@@ -2062,6 +2077,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L348-L348"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "41843d6ae92ec9116aa15cf62038cecc8e59d50b4a93de7eaaebdbb0620bc780"
 
 [[test]]
@@ -2071,6 +2087,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L344-L344"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "d4ed858ee6623e2a115ceac3534a0602b81884d10dc1645ff22f7e73b281224d"
 
 [[test]]
@@ -2080,6 +2097,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L325-L325"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "59324c4b6789eb33446b42da0ac07eceebdb6444da5d551559fb3308c92d93a6"
 
 [[test]]
@@ -2089,6 +2107,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L333-L333"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "462825be3aaa4c36d3f58b2e094593d03e76627453ad8717ccd6bea0cae386aa"
 
 [[test]]
@@ -2098,6 +2117,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L329-L329"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "408bcc408ef84296e0997ef196492e06ad39689b9e240a717fb3b6f785c2b467"
 
 [[test]]
@@ -2107,6 +2127,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L338-L338"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "ad0d1e0240db93b1d4594bfa0c26665032ea6af0c1e4b47331f08b0cf7cfb5d5"
 
 [[test]]
@@ -2116,6 +2137,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L346-L346"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "b5ffbc713cc089bd8a1ce28d9036d390109a5f663a7b4693ef799c6a18426ca0"
 
 [[test]]
@@ -2125,6 +2147,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L342-L342"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "41a56226041954baaca2639764574a165c81ef0f9191fc50abdbe6bb1b033f8b"
 
 [[test]]
@@ -2134,6 +2157,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L351-L351"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "1831b190f318bc94b802a3be7f7c420c704cbfc889fa64ffec49fcbf6aea54cb"
 
 [[test]]
@@ -2143,6 +2167,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L366-L366"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "4d27de566776584cdb3363baf24dd272b9a28279cd8e15068ea22eee42092d0b"
 
 [[test]]
@@ -2152,6 +2177,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L361-L361"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "5a0f7db6ee2b3a162b498e960b80785553e856c10680ac0ddfa17875aa7be91b"
 
 [[test]]
@@ -2161,6 +2187,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L356-L356"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "e31c5c0fe8e49bbd8c8ad240497ca8b41f001094a6c22d39439d543646ee2d23"
 
 [[test]]
@@ -2170,6 +2197,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L352-L352"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "174d792fb493f10416f643bbce1e3b43e70d92cae6487909815580c5790fb4cf"
 
 [[test]]
@@ -2179,6 +2207,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L367-L367"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "9a768283e21ede2d13b9d8137ef7821036fc020550f149601999c0b610de3f2c"
 
 [[test]]
@@ -2188,6 +2217,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L362-L362"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "6696fd7377111ac836980744eaddc6dad666b898f2542436c593e9a26b8e3fa4"
 
 [[test]]
@@ -2197,6 +2227,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L357-L357"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "117805b5976ece72d8e20eeb6f15fa360ae4e007928c7aecca06bb2014ead10a"
 
 [[test]]
@@ -2206,6 +2237,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L354-L354"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "154616b683770ae3fd4e5d04a2f2c000b7b81507d47d2db24b47c9c98dad76dd"
 
 [[test]]
@@ -2215,6 +2247,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L369-L369"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "02302dbe9b16c68bc36571d8ad03408ba985ccb86a3a23f14bd780cea1fb7422"
 
 [[test]]
@@ -2224,6 +2257,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L364-L364"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "d8d9009a858e94f3572fc2caf5a87e65b4305efb2de4dd40a55fcb5555c7afa7"
 
 [[test]]
@@ -2233,6 +2267,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L359-L359"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "6941c8e9ae925226423264e5cafdf59e502d43732058fb66008772c077e09272"
 
 [[test]]
@@ -2242,6 +2277,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L353-L353"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "2a98d41b7f087f4ce312d600e3dca61682de2af46b543e9be285bfaf795a0276"
 
 [[test]]
@@ -2251,6 +2287,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L368-L368"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "6397d28e13953af038807ffe9f92f90699e89edac71931e1fa61b2e3657861b2"
 
 [[test]]
@@ -2260,6 +2297,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L363-L363"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "1a883449a16174e21e4cdcbbd4bf100b947c79b523d2839a7cde51325ecd8965"
 
 [[test]]
@@ -2269,6 +2307,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L358-L358"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "0dd70827034e451593bad1dd883f5ed33851ceb7604d8ee91aec2c6429016a5e"
 
 [[test]]
@@ -2278,6 +2317,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L326-L326"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "c5b3237eec88a04dd97d1e0f111c2adf60bc319596a8c5c0628c3fac66fc0f47"
 
 [[test]]
@@ -2287,6 +2327,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L334-L334"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "1e1617bdc03a76c8b9bb86c3bc3e39e59846e6679adfccf20425e43cf6123219"
 
 [[test]]
@@ -2296,6 +2337,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L330-L330"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "604132f5d8951d98ee809294424171ec947650c130d8fcfe263645bc445695c0"
 
 [[test]]
@@ -2305,6 +2347,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L339-L339"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "bb40e962974e11ae64f3e180948459249e22d90fd54728ea8780f07563b21cca"
 
 [[test]]
@@ -2314,6 +2357,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L347-L347"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "01de67e66a57fa19776a515a74aff9c06642850a566571d3b2aa897bfae4e2c8"
 
 [[test]]
@@ -2323,6 +2367,7 @@ macro = "DEF_BENCH"
 source = "bench/CompositingImagesBench.cpp#L343-L343"
 module = "core"
 status = "todo"
+reason = "kGanesh-only (GPU image compositing)"
 span_hash = "5e1b419553dcbfb399591bbc0be164a311e11ad37d63b28c8de1c56d3636c82c"
 
 [[test]]
@@ -2361,6 +2406,7 @@ macro = "DEF_BENCH"
 source = "bench/CreateBackendTextureBench.cpp#L68-L68"
 module = "text"
 status = "todo"
+reason = "GPU backend textures (Ganesh/Graphite); GPU backends are out of scope"
 span_hash = "a4c7c8c3f02f90175e7ace91f3551e9cd10704add25f95ef626f3296cf2920ec"
 
 [[test]]
@@ -2370,6 +2416,7 @@ macro = "DEF_BENCH"
 source = "bench/CreateBackendTextureBench.cpp#L69-L69"
 module = "text"
 status = "todo"
+reason = "GPU backend textures (Ganesh/Graphite); GPU backends are out of scope"
 span_hash = "e34bd2f8518bae4f247b5385df951a89516035f4cc2265833294dceab894250a"
 
 [[test]]
@@ -2469,6 +2516,7 @@ macro = "DEF_BENCH"
 source = "bench/DDLRecorderBench.cpp#L99-L99"
 module = "core"
 status = "todo"
+reason = "records DDLs on the Ganesh GPU backend, not ported"
 span_hash = "ec9911089b4c6c3465c2b115d64f34ad44dbfca89e41e0079b971ec3a06d34d6"
 
 [[test]]
@@ -2829,6 +2877,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L105-L106"
 module = "text"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "f2a671ac6f3153ae5b2607ef5d87b049e17884afd5179d94effe28a9409ae8a5"
 
 [[test]]
@@ -2838,6 +2887,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L107-L108"
 module = "effects"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "e44c54ce958ddfe26268ff49d7925416b990640f206bcfbc517ece9e3bdb9856"
 
 [[test]]
@@ -2847,6 +2897,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L112-L113"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "53680d107324f108729d834ecc7bd38b802d9d5e54c2a6f34d6a16b215ef1ce0"
 
 [[test]]
@@ -2856,6 +2907,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L148-L149"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "909e5f8fc409a269a8f4799795ba93f3eebb529509e9c4a967cc5dbef0b106ce"
 
 [[test]]
@@ -2865,6 +2917,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L114-L115"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "d536d63e0fc7117cdf4cea6f8913e0f8ee590f54ecb03f52cb69babd1d61b97b"
 
 [[test]]
@@ -2874,6 +2927,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L150-L151"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "774ec0dda52a2582a72e923240b5f512786b3133a3a5f08a2080ffe76be53715"
 
 [[test]]
@@ -2883,6 +2937,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L116-L117"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "7faf8967497e7f450e98cd47c754a4e63f0a727d42b9d51ac07a1a6a0a12c670"
 
 [[test]]
@@ -2892,6 +2947,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L152-L153"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "9b9404993af8924d831ba37b42a2ad235db29bc7b207a8a4d823ccc43f69ee1d"
 
 [[test]]
@@ -3009,6 +3065,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L109-L110"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "8098ba2eaed2e643026d4a5a787fa9a0bf3b8cf3c9902b94c439c85edba99f49"
 
 [[test]]
@@ -3117,6 +3174,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L175-L176"
 module = "text"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "88f620810c838d7ea9617cd0e74db99e87b713376c402e52abf8e4c8cdfc6017"
 
 [[test]]
@@ -3126,6 +3184,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L177-L178"
 module = "effects"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "3685069ab909f6720e190dd0182faf0b6a4c5d92aa9bcf0891f1f05d04773d1d"
 
 [[test]]
@@ -3135,6 +3194,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L181-L182"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "fa29aef55f3ebb525416f05623c4c12c8e11b6c93a3aafc4f6e46ae05c8ab1cb"
 
 [[test]]
@@ -3144,6 +3204,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L208-L209"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "30fd0f1383410d721ee95638def4a5b489d8c744b56ce22b160374e33ab4008d"
 
 [[test]]
@@ -3153,6 +3214,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L183-L184"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "de3eafb0af3128be31b47ade13687dee5f0206f3c95a0a5c798ce24ea17aabbe"
 
 [[test]]
@@ -3162,6 +3224,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L210-L211"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "f1444e75d9357a9bbfe04fb60801c1007ad79854a30cd4eb17ad259b945dac46"
 
 [[test]]
@@ -3171,6 +3234,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L185-L186"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "d562f7ce0a485cb41789e2c7050aa771ef0596e6585eaf8e0225552b3b66303a"
 
 [[test]]
@@ -3180,6 +3244,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L212-L213"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "92437dedb3ecdbcaeb190d2d2303e6cb03ea79b1cbb12a027ee59ddee92f4eca"
 
 [[test]]
@@ -3234,6 +3299,7 @@ macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L179-L180"
 module = "core"
 status = "todo"
+reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "59ad996d69bd81e2ccfae5f242f2d2d33e269f348d1ef950f49a2ccb8ed231b9"
 
 [[test]]
@@ -3715,7 +3781,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/FontCacheBench.cpp#L147-L147"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "8f87533c770a2d59c24e80376246761e101b2e4942cf26b6529af6d1377004b9"
 
 [[test]]
@@ -3724,7 +3790,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/FontCacheBench.cpp#L202-L202"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e163ed55333c9198eb516fc46df1a0ea6e603278a90e1306ab818a3bb1fa5697"
 
 [[test]]
@@ -3733,7 +3799,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/FontCacheBench.cpp#L201-L201"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2a261f53b9fca093a8af130c0172ec0eb3841e6ff4957252041ebe78190692eb"
 
 [[test]]
@@ -3977,6 +4043,7 @@ macro = "DEF_BENCH"
 source = "bench/GlyphQuadFillBench.cpp#L121-L121"
 module = "text"
 status = "todo"
+reason = "kGanesh-only (Ganesh text blob path); GPU backends are out of scope"
 span_hash = "b78542d461fb1cff88b337caadff3ca879b7c632714235bfbc7f7b7e6f2233b4"
 
 [[test]]
@@ -3985,7 +4052,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/GlyphRunRSXformBench.cpp#L71-L71"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "cb47d63ba959c5758630bd6e4a3bce1db1e3d109ee4687c535ad8f4c0c913d3f"
 
 [[test]]
@@ -3995,6 +4062,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L207-L207"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "3698a360819ddf162aaa39d0cd339216f01ef436ead749353e5bf631d146ed09"
 
 [[test]]
@@ -4004,6 +4072,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L208-L208"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "5282b1dbd231cace687d17db9c99b6bc5b39dd019edda8d387fd13927eb598a4"
 
 [[test]]
@@ -4013,6 +4082,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L210-L210"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "d52c16387e4e899c0273799e6db7ea866f277ae76bc9d13cb68768cb96ccdcde"
 
 [[test]]
@@ -4022,6 +4092,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L211-L211"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "b1e01ee72e59476009b99dc7e23d1fd2ea73ab89f75df4e0abd95a342bb820cd"
 
 [[test]]
@@ -4031,6 +4102,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L200-L200"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "88ccf4c296bcb81137730c098e839b928f3dfa83b07d63d72d4587c149f82afa"
 
 [[test]]
@@ -4040,6 +4112,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L202-L202"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "b550a02aea076c18037530e2101863444278b074603f31c9859feae21d258335"
 
 [[test]]
@@ -4049,6 +4122,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L201-L201"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "1d46cb66907acf217c01b9cf66d4ff9978d3b601fa4170dbd556a5940fb403c4"
 
 [[test]]
@@ -4058,6 +4132,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L203-L203"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "c2c57b7b68e55786cc4e2188bf0f1a768dd06c1b2153ac3535d79e9e43352a48"
 
 [[test]]
@@ -4067,6 +4142,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L205-L205"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "00bb3535ce68d9659c0f3b59b3477203b9ff933720e36e1cd89f00eeb198a5d3"
 
 [[test]]
@@ -4076,6 +4152,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L204-L204"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "908909de39a16af47767aa93527839372a4133057d75bfe02b92ada706cb41f9"
 
 [[test]]
@@ -4085,6 +4162,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L215-L215"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "3b3862c56513d5d3c50d99cb5039268ac6d6d006c714b7facc8a4309502f272d"
 
 [[test]]
@@ -4094,6 +4172,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L217-L217"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "129022fc07ffe05a0c8a8c4e435f608c351f599382f6db7b1b28d75f8c9af274"
 
 [[test]]
@@ -4103,6 +4182,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L216-L216"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "7b9e2bdc2d88eebdfbd8bef0ed95ff95ed4caab2a762b15f65ee187adc5b3919"
 
 [[test]]
@@ -4112,6 +4192,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L218-L218"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "30357bb45ea0f3f48d52c2c7b8669de5974b8b219e11c1d8dfe9e876a7dcf9c0"
 
 [[test]]
@@ -4121,6 +4202,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L220-L220"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "1c5886bf8010fb70280053f1d9b97bbd2db7117b1b214ad4c2d0dc5364d334db"
 
 [[test]]
@@ -4130,6 +4212,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L219-L219"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "1472ec9377afe68d4e7171481af01b386258da44e6dacdfc5cc070c8c2c9ddbc"
 
 [[test]]
@@ -4139,6 +4222,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L193-L193"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "9b8a6038635da720ec9421b7abf61d3ab487bc506035591f0795bced2cc28750"
 
 [[test]]
@@ -4148,6 +4232,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L195-L195"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "7ae9232a4b968da4525eeaeb5b98c7e0e1cccdec41a79de7e5a5325bf18ce0bf"
 
 [[test]]
@@ -4157,6 +4242,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L194-L194"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "7ec548d5f48274f7fae3013787aec87b381ac749a5f886875cdfc51805a31ebf"
 
 [[test]]
@@ -4166,6 +4252,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L196-L196"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "0c1e54a5490a8a753a85193ab140d2218861efc89f26e2d87e1b7736f6407d1f"
 
 [[test]]
@@ -4175,6 +4262,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L198-L198"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "78e60df163375770ef38e15060496e725f5b390f53b26690faa65f1c091181fa"
 
 [[test]]
@@ -4184,6 +4272,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMemoryPoolBench.cpp#L197-L197"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "8c7332cd4bbe761e8491a2d3a58e593f1d50944a7939772c883f9f6a8a1bdbdd"
 
 [[test]]
@@ -4193,6 +4282,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMipmapBench.cpp#L84-L84"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "87a077a1ab54be6f7b0225240f648e1dc904f9f0369cee80f040d290e0e9e3c0"
 
 [[test]]
@@ -4202,6 +4292,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMipmapBench.cpp#L86-L86"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "b2060fc69c056506ef848f7b468759bb9ef9964f7bc42d9e7e16418dda076b3c"
 
 [[test]]
@@ -4211,6 +4302,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMipmapBench.cpp#L85-L85"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "5a43b7f48852339c4eda6801118b70732dd8cdd13151de29d5392c40ba12c007"
 
 [[test]]
@@ -4220,6 +4312,7 @@ macro = "DEF_BENCH"
 source = "bench/GrMipmapBench.cpp#L87-L87"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "afd31e5950dbf66a9081d8ff4681af2dc45c53df81d993c2acf1e16a093508b9"
 
 [[test]]
@@ -4229,6 +4322,7 @@ macro = "DEF_BENCH"
 source = "bench/GrQuadBench.cpp#L75-L75"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "5c519693f80d744ea35de867a946edefb05774d48847ceb6474bff4a0afd185e"
 
 [[test]]
@@ -4238,6 +4332,7 @@ macro = "DEF_BENCH"
 source = "bench/GrQuadBench.cpp#L76-L76"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrQuad, GrMipmap), not ported"
 span_hash = "4b6ec9411d5b09cc394d67cb930a220a115f9f0eeadefab5f295f8cb721b5c95"
 
 [[test]]
@@ -4247,6 +4342,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L160-L160"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "d3bb5944456230835ce29d00b69e0f660b1b0ccf3a28d6d9cb209d83658e2477"
 
 [[test]]
@@ -4256,6 +4352,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L167-L167"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "52ac17f7ec0794b6a4f2e692dac086100b465a6a27879b302ecb226ba77d8ed8"
 
 [[test]]
@@ -4265,6 +4362,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L163-L163"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "ae3b4423e40d97b10257115cb411b2f3569a21b1062f76ff1b51d6d8f1adf44e"
 
 [[test]]
@@ -4274,6 +4372,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L168-L168"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "fff78e465e9a48bdf145d889eae47445101c559a9639eedd9516e642f3cae7e7"
 
 [[test]]
@@ -4283,6 +4382,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L164-L164"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "9d37b68255b414d4fb267839efdaf6b94215d26a8c02b7fe458b87c0e248d547"
 
 [[test]]
@@ -4292,6 +4392,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L165-L165"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "3305e37a74432a1af273f87d54b26bf34afc135e8e3d141fe8842838ad434adc"
 
 [[test]]
@@ -4301,6 +4402,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L166-L166"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "e151ee6a23cc583d09ef257bdf9853beb333b26d4a4645d8cca7cce872c3b396"
 
 [[test]]
@@ -4310,6 +4412,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L169-L169"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "f7665511ccbf2d07013a91402e454222ae94aa0824dcee08f3c8378ded7db107"
 
 [[test]]
@@ -4319,6 +4422,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L170-L170"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "9998fe68766c41a0d549f9b7fff4a32d69462cfacc1f3c66a0053abf97f93037"
 
 [[test]]
@@ -4328,6 +4432,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L171-L171"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "18166b83213ed5a9f0610f365a315a02d1104e5b2dcd9c15a1260bd94c4811cc"
 
 [[test]]
@@ -4337,6 +4442,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L174-L174"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "8f1931c70acb48d8ffcc0140c2a9823c570e411495fbf77ad7b6a6c80981450c"
 
 [[test]]
@@ -4346,6 +4452,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L180-L180"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "f845f81126bebec677009abec8f4046f0c2d417aea39baf5ac117f2cfad142c7"
 
 [[test]]
@@ -4355,6 +4462,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L176-L176"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "8742430251cca45681261c80ec14cd5e07f01b2282bd3f6d81f76ae65976aabe"
 
 [[test]]
@@ -4364,6 +4472,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L181-L181"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "886f470e5ce94f10642a55f32f5f9a97087fe020fca86e85d74fe6af45bd9787"
 
 [[test]]
@@ -4373,6 +4482,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L177-L177"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "97b07499ecf7cf24cbeab6ec3f57837a992eb7a0b3c93cb6e18d3b7c9b01bd57"
 
 [[test]]
@@ -4382,6 +4492,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L178-L178"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "45f404a68d940269de32414bae5d8842759f598c194a998e904129828e7be6ea"
 
 [[test]]
@@ -4391,6 +4502,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L179-L179"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "7fd63885eb28f9f1629f936e01642b89a8bbb169034a71dc1d1ddd7d05a5a0f4"
 
 [[test]]
@@ -4400,6 +4512,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L182-L182"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "1f814612471ade44ad070fadb86123ca170d51598f58ae7d62ec3e28ba7345c9"
 
 [[test]]
@@ -4409,6 +4522,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L183-L183"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "557fdc8ec1dc2eb3fa13e4f4e09c82dd2af0f7474f6d86eff1889defa6605160"
 
 [[test]]
@@ -4418,6 +4532,7 @@ macro = "DEF_BENCH"
 source = "bench/GrResourceCacheBench.cpp#L184-L184"
 module = "core"
 status = "todo"
+reason = "times Ganesh internals (GrResourceCache, GrMemoryPool), not ported"
 span_hash = "61a5ac07e8b128e7649a2b9e8ff162ad98ad2db8190364265e1fff63c0f48eed"
 
 [[test]]
@@ -5382,6 +5497,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L161-L161"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "6b388c82647f0c7b8ac614e4f45d057161807946108365f93fa626b2c9a95f4e"
 
 [[test]]
@@ -5391,6 +5507,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L169-L169"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "6ff7a7fbd49fe33e94b07642ef9a9f971b421b382209e7faf38d0e47cb12d441"
 
 [[test]]
@@ -5400,6 +5517,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L167-L167"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "024c0ab7ddc8950d3331aca984cffb863eb39cd60b25df23f62450b5b0ab27cf"
 
 [[test]]
@@ -5409,6 +5527,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L175-L175"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "3c00ce7166053b87337596b98c241efb83ba07edc9e226eb44e7020fbd73d045"
 
 [[test]]
@@ -5418,6 +5537,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L165-L165"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "b48ec3acb4613e4c153f3b5be51356f2bb9779c737aaec5878461b2326474af3"
 
 [[test]]
@@ -5427,6 +5547,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L173-L173"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "1be7e466b5bf7f432ad519ec73865def6fc8462238d834bb7376d7ac9bb14ce0"
 
 [[test]]
@@ -5436,6 +5557,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L163-L163"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "e05b05820b7ab1984d49da384e9283e025492fe08a94d39439ffb8312fe70aba"
 
 [[test]]
@@ -5445,6 +5567,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L171-L171"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "bf7ecc6c3ddce2611af2947619f0d63f840ddbca830eaa019c17b33a760f88ad"
 
 [[test]]
@@ -5454,6 +5577,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L270-L270"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "bda04a8f8b2ec951fec684e475cc602050de0dcc197aa7a1bdb5979e572e81c2"
 
 [[test]]
@@ -5463,6 +5587,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCacheBudgetBench.cpp#L269-L269"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh resource cache (GPU), not ported"
 span_hash = "182b52dcfb6e018e8e64bfa417e5296466934c5a7f2eb9bcc0e49c2608396f5f"
 
 [[test]]
@@ -5472,6 +5597,7 @@ macro = "DEF_BENCH"
 source = "bench/ImageCycleBench.cpp#L98-L98"
 module = "core"
 status = "todo"
+reason = "kGanesh-only"
 span_hash = "e199c4fec093198b86ccba23e401b4eb9d78e9421a4c4f50b64d047c4d608944"
 
 [[test]]
@@ -5582,6 +5708,7 @@ macro = "DEF_BENCH"
 source = "bench/JSONBench.cpp#L56-L56"
 module = "core"
 status = "todo"
+reason = "needs SkJSON and the rapidjson/pjson parsers, not ported"
 span_hash = "c2b6772502248b7722772254acf4c35ff5ff77d11f6f139a06b6e393f1bcf908"
 
 [[test]]
@@ -5591,6 +5718,7 @@ macro = "DEF_BENCH"
 source = "bench/JSONBench.cpp#L159-L159"
 module = "core"
 status = "todo"
+reason = "needs SkJSON and the rapidjson/pjson parsers, not ported"
 span_hash = "02ffa6b55f45381a265bda9d1eb39d458de93ea4106a15499ec8d84ba86868eb"
 
 [[test]]
@@ -5600,6 +5728,7 @@ macro = "DEF_BENCH"
 source = "bench/JSONBench.cpp#L106-L106"
 module = "core"
 status = "todo"
+reason = "needs SkJSON and the rapidjson/pjson parsers, not ported"
 span_hash = "cb96f4d69251d104e0619d3282fd214a0aed9ad44023b54a3bb13301f13d7b0b"
 
 [[test]]
@@ -6614,7 +6743,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L66-L66"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6033ea95ef68d860b9697d9949fb53b849b2777a5421649952ec6e20bf6e53b9"
 
 [[test]]
@@ -6623,7 +6752,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L68-L68"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f1bd943c8742683a66d08100a466556598b2dfe7f0f075a5fd5548247e0ab717"
 
 [[test]]
@@ -6632,7 +6761,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L67-L67"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a1fe3faf173d6f3b72c6d357bc93b2d70da71bafaa3d1d3a9449c0089be8ff7b"
 
 [[test]]
@@ -6641,7 +6770,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L65-L65"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "baf6a44332271285f68e6a73ead2c1414cd362ba84c5aa22793883b609d8628e"
 
 [[test]]
@@ -6650,7 +6779,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L57-L57"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7ad156314f018742ac46960a37d54934e8989efdf4e5d4222ca2067ed47e028e"
 
 [[test]]
@@ -6659,7 +6788,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L63-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fc2b67a5b2fcbb1b71daa0526101b216c35142bf244e9ef9c74f342ebeec1232"
 
 [[test]]
@@ -6668,7 +6797,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L59-L59"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b80922eaf68fd8aebbd6b0dd5ff11c3d13e2a402a61dd649f432ec4a30feddcb"
 
 [[test]]
@@ -6677,7 +6806,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L58-L58"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "43d6fa452e1238a69ad96f7df88f299b857b1a4aa0e80c77fee4e243456405da"
 
 [[test]]
@@ -6686,7 +6815,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L60-L60"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "55cde728860af75392280801b71bab8b7954e6c1c658e1c1a24db458215dad1d"
 
 [[test]]
@@ -6695,7 +6824,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/MipmapBench.cpp#L62-L62"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "69f460ceb7ef05714a8b2526f3a80aa5ae36a62ef1404a98fcdcc085703d6372"
 
 [[test]]
@@ -6775,6 +6904,7 @@ macro = "DEF_BENCH"
 source = "bench/MutexBench.cpp#L65-L65"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "a7e72e37dccc8ecc55e7b80464bb8ab7b31ff2855d7eed00918da31f0adc4efa"
 
 [[test]]
@@ -6784,6 +6914,7 @@ macro = "DEF_BENCH"
 source = "bench/MutexBench.cpp#L64-L64"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "89ed175715b9a92005ecb9910bc0020cb6898df4e30be0bb353520f2fc58bf95"
 
 [[test]]
@@ -6793,6 +6924,7 @@ macro = "DEF_BENCH"
 source = "bench/MutexBench.cpp#L66-L66"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "835ff6781adc683ec0f3530d9a4656e6afb66b11bf9c83692cd8384d16951a77"
 
 [[test]]
@@ -6802,6 +6934,7 @@ macro = "DEF_BENCH"
 source = "bench/MutexBench.cpp#L67-L67"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "a045df852b8bb92da6a05f3e9b3bfce8d3a65795e0e1758a370766a8767c842e"
 
 [[test]]
@@ -6919,6 +7052,7 @@ macro = "DEF_BENCH"
 source = "bench/ParagraphBench.cpp#L98-L98"
 module = "core"
 status = "todo"
+reason = "modules/skparagraph is not ported"
 span_hash = "c68a53f074bb9a99934ea6e9c626ac4d7f5f35510d6281edac6bfce79cb0ab60"
 
 [[test]]
@@ -6927,7 +7061,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L283-L284"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9d60945baff48a9c0e937f51f867780fcef5828c4f7e5af887c5c6f6d68eaccc"
 
 [[test]]
@@ -6936,7 +7070,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L279-L280"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4a500edcdfccb088af2627274123c4b029c3ad1035914d006a8bcf46217df575"
 
 [[test]]
@@ -6945,7 +7079,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L277-L278"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "46034d0aa772fabd3d744b13f97cf6bc7bd0ffe2dcf562e2296a9890fb5a374e"
 
 [[test]]
@@ -6954,7 +7088,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L281-L282"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "aeccb4012b91d977d2ce6433f1ea86a0904d264501cc3852c249a19c947a5d7e"
 
 [[test]]
@@ -6963,7 +7097,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L291-L292"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8969bf7db403b774d135bc3c2a5ac2e42b4f8077c4be2dc32a917519beb508f5"
 
 [[test]]
@@ -6972,7 +7106,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L287-L288"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d53ee92a6a7c202c0f561d1dca1316a3af62dbe7cff76231a6ea0eeade01e8f3"
 
 [[test]]
@@ -6981,7 +7115,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L289-L290"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "befdb50d3629c14586f41ec966d4a7041c96495891eae3646c9eafd690c775ce"
 
 [[test]]
@@ -6990,7 +7124,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L285-L286"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9c0b35d910056871e9ed2a6e0655094ad914d1a45f6053e5c162063537e058a9"
 
 [[test]]
@@ -6999,7 +7133,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L299-L300"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f096d744bad2bb579d891a6a71f9a05b9e568e939ae6d4644d21754285c95c82"
 
 [[test]]
@@ -7008,7 +7142,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L295-L296"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "1ce125eb630963bc349f775889281eb9d1becb5be44fc1158c35441b039e283d"
 
 [[test]]
@@ -7017,7 +7151,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L293-L294"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d93bebc4ef87fc52a9f4d814a397ac5534a6d6485d2f9142059a92230a21be45"
 
 [[test]]
@@ -7026,7 +7160,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L297-L298"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e4313e414a5b799648dbbad0bb15e4b116838430a6603ff81455b552f052bad4"
 
 [[test]]
@@ -7035,7 +7169,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L308-L309"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "df61c48fe657ebb8ef0dcacfed1dc82a9040e4e46a6772213236aaed154b994a"
 
 [[test]]
@@ -7044,7 +7178,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L304-L305"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "76ed8e998ddf0e2a33e71a634d07a2e0f74ef76544d767f05857f68c5c2953e2"
 
 [[test]]
@@ -7053,7 +7187,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L302-L303"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d61e3d8aa18cbb264efb3dacfb80d19c59bea1cd91648536053f2886ce3320fa"
 
 [[test]]
@@ -7062,7 +7196,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L306-L307"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8205c4fa07779867da99daf4b4c442284122c47db4079fcfd33949799a24fe4e"
 
 [[test]]
@@ -7071,7 +7205,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L316-L317"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5dbc41346b287516d2ee3aec82bd05004558789552c3df11500058ecdabbddf4"
 
 [[test]]
@@ -7080,7 +7214,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L312-L313"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "566ae20249a0b735082650cd721dbf8abe20aa270eadd195af1f28ef434346fa"
 
 [[test]]
@@ -7089,7 +7223,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L314-L315"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "967ba4e02d49a61c0faf16b2ae5d30e47abfbdbcb1e89fbabd16812107bd1fb1"
 
 [[test]]
@@ -7098,7 +7232,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L310-L311"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0971781b2d2600373e157b8fe8cd0a83fa67974d071e23a70ed16a9ea8c54a72"
 
 [[test]]
@@ -7107,7 +7241,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L324-L325"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "011174cc3541ba1ab1d3eb420f1f0fd761c045064118530aa705dfbf1ca6315c"
 
 [[test]]
@@ -7116,7 +7250,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L320-L321"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "cd6f0ee65918004cb8b617c6c6267ffcc28f0882429dbc86b0321bae1fc54171"
 
 [[test]]
@@ -7125,7 +7259,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L318-L319"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "cd052c0d2b5c1d905e5efa941e5256287b9e6d73f2fbed99f4f0b6463c4c37f2"
 
 [[test]]
@@ -7134,7 +7268,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L322-L323"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "585049b34cd0211c90b99cf87055c001a76b48cfa11943317c7b19b9b426ad9d"
 
 [[test]]
@@ -7143,7 +7277,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L242-L242"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "338bf77c01b9b95e2a245090bf6b072ad2c9137766679ea59838bf4e44d2804d"
 
 [[test]]
@@ -7152,7 +7286,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L240-L240"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "82e3bbd9c97a2068a1dde38ee0925ac805e8757f5df448dbf988926fcd209cd6"
 
 [[test]]
@@ -7161,7 +7295,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L239-L239"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "54cc62c5113e32a0aa39cd777395b58e6a955f3e1c39816254f5a27cf1ae4a32"
 
 [[test]]
@@ -7170,7 +7304,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L241-L241"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "cab2a51a0571f7f7f428ad69085748a7a639ca696b537f1d8eeeadfc52843e4f"
 
 [[test]]
@@ -7179,7 +7313,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L246-L246"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b3f382a67483533a871c0f0c9cc3db1b0deee474899aa099990c51f9e33cf30c"
 
 [[test]]
@@ -7188,7 +7322,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L244-L244"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e1f2af65e52412ca6cd42620ade4df3df9203112c3edd9bdc7404be7464829a8"
 
 [[test]]
@@ -7197,7 +7331,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L245-L245"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6c05718c49a2ccb92e4d7914532fb5a9f9108823f2b857ef71e6a23f815e086f"
 
 [[test]]
@@ -7206,7 +7340,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L243-L243"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f685f887e27087fb1c212e6d98a5ddd1091cdc9800ce900f55d05f92a202b416"
 
 [[test]]
@@ -7215,7 +7349,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L250-L250"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7aa304d33077d5872a6485703d67938a49e2b2e2f2680246084fea9e4ca6da55"
 
 [[test]]
@@ -7224,7 +7358,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L248-L248"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "76564211ae8ffc6840f4e1d8367de747e26ecfeb9c060e88f9ec79b9a2f657bf"
 
 [[test]]
@@ -7233,7 +7367,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L247-L247"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "30cc9a10266b65a17019d63cf02439c5d41063850abbb4be8ffe7c26b6f047da"
 
 [[test]]
@@ -7242,7 +7376,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L249-L249"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d4c705002bee31d9965101bfcb6b931ab0e6f287d755bc6c58853f2b3881aa7e"
 
 [[test]]
@@ -7251,7 +7385,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L361-L361"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a109ac8bb99ee9202879ae4cdb6507abe1baf2bb83e0c2f758efc6ec155f427a"
 
 [[test]]
@@ -7260,7 +7394,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L362-L362"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9a4db4abb923955fc4ea88855aadafb1e4916faf234bd2a230d34aca74d81295"
 
 [[test]]
@@ -7269,7 +7403,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L258-L259"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "100d4f1fbbc0590309bfeb9d0be92b1772c7c9c39b70efa9456d1ef3b5da1e0c"
 
 [[test]]
@@ -7278,7 +7412,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L254-L255"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a070990a87bd397842ae7b638f436f250f66e30e1b20fe8fd3a1ccc8077d4199"
 
 [[test]]
@@ -7287,7 +7421,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L252-L253"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "20b1ae795f2bb3fdf0814eb596683cb50d7851afdff2faf194975567aa5dab66"
 
 [[test]]
@@ -7296,7 +7430,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L256-L257"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3debe208858896935ec6a13ff918cefae0c2cce69c6ffbb679b57493acbbe351"
 
 [[test]]
@@ -7305,7 +7439,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L266-L267"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "57f342095d117207715e635b82b808bee9abe70072d907d76a05bc5c47560849"
 
 [[test]]
@@ -7314,7 +7448,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L262-L263"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2d70f2591c3d443d8c533a5a30462a0ec2cc47849e3bcc07692050850fe29568"
 
 [[test]]
@@ -7323,7 +7457,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L264-L265"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d7aa67bac63bd67c02f20c227ee671a2b5dbb3069d390f45aa0794229d77549f"
 
 [[test]]
@@ -7332,7 +7466,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L260-L261"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "53fe9c50f5a2b16d1d6091be8dba020993c8231b898a6b4c915343cc4c08c72a"
 
 [[test]]
@@ -7341,7 +7475,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L274-L275"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e53c8279369a39b95e9b9a64cf76f9a6ec8642c2af86d3fa967d06c245065225"
 
 [[test]]
@@ -7350,7 +7484,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L270-L271"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6b8f03f3e31e081a7597d4c0eb96a8065e78658a17b15987cff2a8b5c7e0b2fc"
 
 [[test]]
@@ -7359,7 +7493,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L268-L269"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3ba731af4392c89a9b94e19292fe45c4ccca9028b120d47be405c6af06f40eae"
 
 [[test]]
@@ -7368,7 +7502,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PatchBench.cpp#L272-L273"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8379c1087d525309063e703b10cd757c4df6bfd27d40226282b556e3b0362e22"
 
 [[test]]
@@ -8209,8 +8343,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L220-L220"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "64a37da2be68b2c68b3a4365b79d60d285c9ae812a542872f1a29fa1ade32818"
 
 [[test]]
@@ -8219,8 +8352,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L216-L216"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "42c48b9cecdd99c63cddbc5cfb63c63617634ccd54f8116bb20df928dbb1fae7"
 
 [[test]]
@@ -8229,8 +8361,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L218-L218"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "5ba5519064e026d9d5c0a886723c52a6cd76313ae9e7add714f49a8a6162afc4"
 
 [[test]]
@@ -8239,8 +8370,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L215-L215"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "3da26ef6d7b864deab75484393a9c774146291eabbe1cbe0787827bc79a817ac"
 
 [[test]]
@@ -8249,8 +8379,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L217-L217"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "b9ddda30e994eb51737e4b5ebc3db5f3d916da2fbe06d14c7973a8abe81b1822"
 
 [[test]]
@@ -8259,8 +8388,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L83-L83"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "1532cfb1095b9bb6877fe72e14ebc9058a3490e8c43d5a99006c8c376a4a386c"
 
 [[test]]
@@ -8269,8 +8397,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L82-L82"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "582217b7e29e84e561eb1f4d5154666f67b8412137ba3012ebc9334f2e257e2b"
 
 [[test]]
@@ -8279,8 +8406,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathOpsBench.cpp#L96-L96"
 module = "pathops"
-status = "todo"
-reason = "bench entry, not a unit test; not run by cargo test (benchmark slice)"
+status = "passing"
 span_hash = "81ff6ef830c6e4966e47954a070540682cd5b26887d890f59b6be208db4b1296"
 
 [[test]]
@@ -8289,7 +8415,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathTextBench.cpp#L117-L117"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "770d332803c2cd56858d7b06a23264ad21349714c5fbacb92d4cdc4d9f0a06d3"
 
 [[test]]
@@ -8298,7 +8424,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/PathTextBench.cpp#L118-L118"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "07239692880e1824d31c1ab66f92ebb649143533ff58c524bf11a2563e5e13ba"
 
 [[test]]
@@ -8308,6 +8434,7 @@ macro = "DEF_BENCH"
 source = "bench/PathTextBench.cpp#L119-L119"
 module = "text"
 status = "todo"
+reason = "the clipped variant needs ToolUtils::make_star (tools/ToolUtils.cpp), not ported"
 span_hash = "7abc483bd1942bb8b885530fd894e61c311b0a22f1b780f6427a1d646b59eafc"
 
 [[test]]
@@ -8899,7 +9026,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L141-L141"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6bbdd43bf759195eb6b38bddc6d546ed861b23521633768d4c25823a2be83f48"
 
 [[test]]
@@ -8908,7 +9035,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L143-L143"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c347ac258f3ab14043f76f02b5d6bba59dc364c19c68c0e4f919d0c1cec75b3b"
 
 [[test]]
@@ -8917,7 +9044,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L144-L144"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d94d6f11ac82bd5720630b2aa120287b340dbf4f233a031c73be8221b02450dd"
 
 [[test]]
@@ -8926,7 +9053,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L142-L142"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6b64aa9fd66f9176d01f95ba9e4a010070f5d5ec2e14f4ac541c6ee1ac38b30c"
 
 [[test]]
@@ -8936,6 +9063,7 @@ macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L101-L101"
 module = "core"
 status = "todo"
+reason = "SkPixmapUtils::Orient (codec include) is not ported"
 span_hash = "589b38b0ab3d7f77238d93f53e9d2ddd28ee0cf1eca790e8d8251498dae81dd3"
 
 [[test]]
@@ -8944,7 +9072,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L62-L62"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "5de2e5ad4e4d2a3e509f2c87745c627b0bf44e46d367637f1db042ae95faff80"
 
 [[test]]
@@ -8953,7 +9081,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L60-L60"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8b92006dc3f396523714f487c6d9bdca7e3975f6258eb8fa2b0b6ca7a782af15"
 
 [[test]]
@@ -8962,7 +9090,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L63-L63"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "f64c13bf96d353168f4a0a4b9fd7fe0c817880579e42a5f1793e035948e93694"
 
 [[test]]
@@ -8971,7 +9099,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L61-L61"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2b1a9c61a4a2bd5db8a9301f9e30576a3dd852ab680e0dce593a0e230130598f"
 
 [[test]]
@@ -8980,7 +9108,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L57-L57"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "c69e6ebfe0d26a4878561c73826f9c84e4f603754519244ab9424185d059c59a"
 
 [[test]]
@@ -8989,7 +9117,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L55-L55"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "6b7f2457921f16a1c2828f653fdf6479ffd9ee16eba1db194db20ae52090a300"
 
 [[test]]
@@ -8998,7 +9126,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L58-L58"
 module = "skcms"
-status = "todo"
+status = "ported"
 span_hash = "acba38d78a9390b9c73679dd9b307a582b92c2dfba780466b8ac8bd86370130f"
 
 [[test]]
@@ -9007,7 +9135,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ReadPixBench.cpp#L56-L56"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "21ae3822b1a682670f33ec5d7e20fbfc2bb5418c152535460ee27d39e0ff0435"
 
 [[test]]
@@ -9350,6 +9478,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L129-L130"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "fdabba30fe5aa7314c82672f79d96c241b30830638b2262682a44e09f8d59f0f"
 
 [[test]]
@@ -9359,6 +9488,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L127-L128"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "52a76e88749b5842de4eed411af21f6577f5bbcfb80d1ca4cfd6b7f2a7901eae"
 
 [[test]]
@@ -9368,6 +9498,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L131-L132"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "b9b3b8ad219dfc024711c8d7305f0d66ca8e725468b47e6c777fbc1032bae9bb"
 
 [[test]]
@@ -9377,6 +9508,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L135-L136"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "c15ee2fcedab5b1ace4a3f660113eb570f2eb7c1079b19be041f12494ab5b14a"
 
 [[test]]
@@ -9386,6 +9518,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L133-L134"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "b5ed36a7f4864db09801afa65831f89a3bb4281f86ad75fe5c9e3222aa8013cd"
 
 [[test]]
@@ -9395,6 +9528,7 @@ macro = "DEF_BENCH"
 source = "bench/RectanizerBench.cpp#L137-L138"
 module = "core"
 status = "todo"
+reason = "needs src/gpu RectanizerPow2 and RectanizerSkyline (atlas packers), not ported"
 span_hash = "e31317a700acf9b9c7541fd734779890b1443b48b2f7ba1f6df8dbf373019f6c"
 
 [[test]]
@@ -9404,6 +9538,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L193-L193"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "26316b0bbf79a56a4c3ba295cee1f646bbf833582c29f0cfe7be28a33fc827bd"
 
 [[test]]
@@ -9413,6 +9548,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L194-L194"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "8519633ed61fec73578e9bac0936c6f93d6c039720eff47fd0678fd27dab4076"
 
 [[test]]
@@ -9422,6 +9558,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L192-L192"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "029c669a86e1954071696fa6da28d3f3e21e987133c56c7fe19d6b5f356d88ee"
 
 [[test]]
@@ -9431,6 +9568,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L197-L197"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "9041e3e079813ace2c37d5089549d418ee7d21f554411695d1fe47fbf58f6389"
 
 [[test]]
@@ -9440,6 +9578,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L198-L198"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "06f38a0cf0f40696786d524861b0a52bdfd230508f34f49e5e4e4683bc6dd9e2"
 
 [[test]]
@@ -9449,6 +9588,7 @@ macro = "DEF_BENCH"
 source = "bench/RefCntBench.cpp#L196-L196"
 module = "core"
 status = "todo"
+reason = "times SkMutex/SkRefCnt, which the port replaces with std sync types and Arc (docs/design/bench.md Q8)"
 span_hash = "4777ee231faf49a74a2d42481daee28934fdd89eb8ee0b42c0148eeab7d830f4"
 
 [[test]]
@@ -9777,6 +9917,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L42-L42"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "cfbc642f74893da04ff97b36d6c9dca4956d68c8f44e722304ff62855f39f93d"
 
 [[test]]
@@ -9786,6 +9927,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L43-L43"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "e63fc2c745436cd22d7c97f31653182ed6be8b645f41be8579b1cac34b2ca236"
 
 [[test]]
@@ -9795,6 +9937,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L44-L44"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "f63166e743c13f4d2a8ac94caba15f0506f95d657ff7d7338741dcc6918ee96f"
 
 [[test]]
@@ -9804,6 +9947,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L45-L45"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "b5fb4d1e9b313bafe891f9e4014e1c66d697669ad384a294be349ce8766626c5"
 
 [[test]]
@@ -9813,6 +9957,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L46-L46"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "6e1e3ad66127a8f7176a5d1b04bc205ed46f69e8e04c1dfa6c96826384a88abf"
 
 [[test]]
@@ -9822,6 +9967,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L47-L47"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "c6ad38fc5cf2e2808f0f8831c06a243332ddc7679275669d5f734d1d5ee25826"
 
 [[test]]
@@ -9831,6 +9977,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L48-L48"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "81f8c48015834b2f1254da3a73eda5f07be0600b598aec4295ac78bb30707ca7"
 
 [[test]]
@@ -9840,6 +9987,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L49-L49"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "1ec47f8f9052b80478275dc9cd4bd092fa0b80f895dbf57f63969768fc71e156"
 
 [[test]]
@@ -9849,6 +9997,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L50-L50"
 module = "text"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "5623321dcc00c4d9095308e54a6025a48b850182d7b6b595414f439901efc811"
 
 [[test]]
@@ -9858,6 +10007,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L51-L51"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d0248ce8ab2e4d2d29c29e0d111314b8d1c2054431d2f51a35bff0c3cdf3d888"
 
 [[test]]
@@ -9867,6 +10017,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L52-L52"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "b733404542df228743ff57bec383b1d686c808c74dde00b3e732ebe780ca0b70"
 
 [[test]]
@@ -9876,6 +10027,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L53-L53"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "656cf31c664df524a2574e917d074ba1c46cecdc621e06c4147c3c0f58bb1b5c"
 
 [[test]]
@@ -9885,6 +10037,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L55-L55"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "af13e0f7626eb8fe9165b88d6f66fa3cd0eb265a3824e32e22a89a26f2aa6d6d"
 
 [[test]]
@@ -9894,6 +10047,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L56-L56"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "27c08e6337e1701ec41d2c52550376a79b9d158456a9dcc463c96d11e00628c0"
 
 [[test]]
@@ -9903,6 +10057,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L54-L54"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "dbe554a5a5783197861f806726a8573c6f58be3bf9236d941ec76eb9ac179c3d"
 
 [[test]]
@@ -9912,6 +10067,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L57-L57"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "f635a3992a0f8760eacc18137d8a5b50e10aa9c47a09614d877632c112920df7"
 
 [[test]]
@@ -9921,6 +10077,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L58-L58"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "ffa81cf62d44dbe1d266edde076cab638d23656651e4f8f788f8b6a99c81c4b2"
 
 [[test]]
@@ -9930,6 +10087,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L59-L59"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "14baf212f4383b9f253520706c07a66949debb95749302417aa8f87b79957541"
 
 [[test]]
@@ -9939,6 +10097,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L60-L60"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "75ded366a59fd3d582b2e42cf4dd3a25f1f62f2c69260a25876861b57c658ec5"
 
 [[test]]
@@ -9948,6 +10107,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L61-L61"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "30acea00d7f5edd4844c2d1ecc4d66ba4cd9e2cd970e658300420c823f9a4852"
 
 [[test]]
@@ -9957,6 +10117,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L62-L62"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "83a30e1d2851265c9d9cee2757fcf51e438fd218334f7c80e4f8b025e2f9f773"
 
 [[test]]
@@ -9966,6 +10127,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L63-L63"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "12dadfb956cd4f2d41078a25ac1cb222bdd7070bdb6da709afe5c03b238a3194"
 
 [[test]]
@@ -9975,6 +10137,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L64-L64"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "095cef25ddf400e39c9b0010c456d96ecff9408aad6c38fbba0401e7f7bc351d"
 
 [[test]]
@@ -9984,6 +10147,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L65-L65"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "8d2b64ef5447098bb229f3a4ab84b7756b21f1ab4d087b14605465fc5fcdbc82"
 
 [[test]]
@@ -9993,6 +10157,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L66-L66"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "1fcd9d6aaa19b26fbb35b4430995622127669acfa680e4e19580bc7509c70b00"
 
 [[test]]
@@ -10002,6 +10167,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L67-L67"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "0760f3ec91e44623cf697d320298dd7b7b52308b0aedbfa39b08fd0f33eec58d"
 
 [[test]]
@@ -10011,6 +10177,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L68-L68"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "5f0b89156baf653cfa9e0d6dd9774897bdf07c20626d6e4aed8343cfddf43b05"
 
 [[test]]
@@ -10020,6 +10187,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L69-L69"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "88ec61cec075417267017c1e3cd3d6b2fcd9eb9443f7209f933aa6337d48a95d"
 
 [[test]]
@@ -10029,6 +10197,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L70-L70"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d842b25f8f04f087c57b0c0d1d16d9b86f1c8662d6b6ef8248ad960df839e357"
 
 [[test]]
@@ -10038,6 +10207,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L71-L71"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "517ed22c11482d751354b58f199640e5dca38efc49f9f7724e1e7e210bbd72bc"
 
 [[test]]
@@ -10047,6 +10217,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L72-L72"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d324fe70ff89ef0895f644ad58cb65008b9ee4b304c39ef091b900c13aabb2fc"
 
 [[test]]
@@ -10056,6 +10227,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L73-L73"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "e55803e9083e1281757ca58ef725fa931a591ed96b521e4d48fb7a3306cae3e3"
 
 [[test]]
@@ -10065,6 +10237,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L74-L74"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "7c4cdb5fa4ec40d7872e6a25156d309ff7e55bb57ccd9f21687655ede5dcfd6e"
 
 [[test]]
@@ -10074,6 +10247,7 @@ macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L75-L75"
 module = "core"
 status = "todo"
+reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "9dfa9badf4fee2725eb29150dbd6b34eb10de01a85a84c17707b1b7510870975"
 
 [[test]]
@@ -10264,6 +10438,7 @@ macro = "DEF_BENCH"
 source = "bench/SkGlyphCacheBench.cpp#L267-L269"
 module = "text"
 status = "todo"
+reason = "SkStrikeServer/SkStrikeClient (remote glyph cache) and the diff canvas trace resource are not ported"
 span_hash = "0662f21ce44540387c9dac0872143cc129e43e60895ffa27858aa29d2daf93a0"
 
 [[test]]
@@ -10272,7 +10447,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkGlyphCacheBench.cpp#L127-L127"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ef58514b01a5f98f0045699e36d33dad6c9cc06d2ac06c95e7e131662149c893"
 
 [[test]]
@@ -10281,7 +10456,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkGlyphCacheBench.cpp#L128-L128"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5211fcfcb670611bd36c8cc6e4db232fd48383600c33790a1aeecac897c8bda5"
 
 [[test]]
@@ -10291,6 +10466,7 @@ macro = "DEF_BENCH"
 source = "bench/SkGlyphCacheBench.cpp#L129-L129"
 module = "text"
 status = "todo"
+reason = "runs its work on 16 SkTaskGroup threads; SkTaskGroup is not ported"
 span_hash = "b6d481896eba505343821a7307adac7a0e1758e056869820d72181e5091b3478"
 
 [[test]]
@@ -10300,6 +10476,7 @@ macro = "DEF_BENCH"
 source = "bench/SkGlyphCacheBench.cpp#L130-L130"
 module = "text"
 status = "todo"
+reason = "runs its work on 16 SkTaskGroup threads; SkTaskGroup is not ported"
 span_hash = "ae72bd4629a5d1dc7c80518f8b29c9a7ea5eaedc8fb0a9ad7e487b4650ad6607"
 
 [[test]]
@@ -10308,7 +10485,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L136-L136"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8c83ae0d9048cbffacffa8a999d2641bb35f74f40c9986e0d13ff860f519cf35"
 
 [[test]]
@@ -10317,7 +10494,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L137-L137"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e6654c8e25279b94eb9824e69e70a9d7b47673453388cc5d54b0161eb0994a44"
 
 [[test]]
@@ -10326,7 +10503,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L138-L138"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "edeb86ef7d0035370cd8e7067a6295bc802c8ef8da5b4d1250bbc80847ecacd0"
 
 [[test]]
@@ -10335,7 +10512,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L139-L139"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4a82fb5aaec63da11f027a074bd7d83b464f57e6084d96d4ae336def04dce868"
 
 [[test]]
@@ -10344,7 +10521,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L142-L142"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2f5780609768ac577068bced079f1f8b0663edf14845482016a3ca8cc6c2bfba"
 
 [[test]]
@@ -10353,7 +10530,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L141-L141"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2a9cabc3ec227a81e263a165ed4ff03813c62e06a34a6023b7ade91295dfe86e"
 
 [[test]]
@@ -10362,7 +10539,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SkRPBench.cpp#L143-L143"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "eaa5d0b39606ebc110605099f880c3f113f35d941cdc80c8782566db2d8ff6aa"
 
 [[test]]
@@ -10873,6 +11050,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L138-L148"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "0a0674a4e58592e0e88e5d644f8caa64f818dc03ddbc3be97840a53e4b3b9846"
 
 [[test]]
@@ -10882,6 +11060,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L150-L160"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "374f88287de2e3a7ea15db1d52c1330f56bd712e066cb73454be372a991c2c53"
 
 [[test]]
@@ -10891,6 +11070,7 @@ macro = "DEF_BENCH"
 source = "bench/TessellateBench.cpp#L381-L384"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "20ddf3d2af3c3bbf55f2c7150469ce8e3076859f72a46042b1a29f845ac034ee"
 
 [[test]]
@@ -10900,6 +11080,7 @@ macro = "DEF_BENCH"
 source = "bench/TessellateBench.cpp#L371-L374"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "707c6223196b56243aab76ff96b17d27bb41b58fd409e2639259f19d6fbbdd61"
 
 [[test]]
@@ -10909,6 +11090,7 @@ macro = "DEF_BENCH"
 source = "bench/TessellateBench.cpp#L376-L379"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "ed7f279a422d52f68ceae131fac912f5b7224236e592d947bab5a9366a382741"
 
 [[test]]
@@ -10918,6 +11100,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L226-L242"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "1325d5177f7a1a30cdb8cb8107be4ea0f4d0b6abda508a13c5f2961b3c7a2256"
 
 [[test]]
@@ -10927,6 +11110,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L218-L220"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "b96405d5e5f833e794b570110fcda14eea40f36f453272dc9852b033fffc1e3f"
 
 [[test]]
@@ -10936,6 +11120,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L222-L224"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "f284735d263bffa4fce15c44d6b9b6236d5d8c2679ed5ce0e6ab5e8f7018f788"
 
 [[test]]
@@ -10945,6 +11130,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L176-L178"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "76e6dfd5aa584c546f2fb9c7c878c8c1f3340969c48edba3080e06bcbfb08e27"
 
 [[test]]
@@ -10954,6 +11140,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L185-L188"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "14aa482dd039e7e80eb6c16a56557c1190295081e5f2d803cb0f560eb311eb70"
 
 [[test]]
@@ -10963,6 +11150,7 @@ macro = "DEF_PATH_TESS_BENCH"
 source = "bench/TessellateBench.cpp#L180-L183"
 module = "core"
 status = "todo"
+reason = "needs the Ganesh/Graphite tessellators (src/gpu), not ported"
 span_hash = "06de8ce757369aaac219d022ebeca8fd89db6c111025cec9eadf998f2fa435a6"
 
 [[test]]
@@ -10971,7 +11159,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TextBlobBench.cpp#L76-L76"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "37265ca2ffd2a4789d299441c63a83b6ba9a39c5ce2572f64b7b63ea34c64e1f"
 
 [[test]]
@@ -10980,7 +11168,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TextBlobBench.cpp#L92-L92"
 module = "text"
-status = "todo"
+status = "ported"
 span_hash = "dd30112418cc599bbe7350843413fbb98ed1299a6c1606a7c30970bf769bbd7c"
 
 [[test]]
@@ -10989,7 +11177,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TextBlobBench.cpp#L111-L111"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "d423cdefc5ecef51e38d577537964ef819fabb18ce41bcbc151eeb823afc8004"
 
 [[test]]
@@ -11080,6 +11268,7 @@ macro = "DEF_BENCH"
 source = "bench/TopoSortBench.cpp#L79-L79"
 module = "core"
 status = "todo"
+reason = "needs GrTopoSort (Ganesh internals), not ported"
 span_hash = "c7ca84ac53cfe6ac9332c8bb6dcab2101b431ead98aa447a1df1cec92086b987"
 
 [[test]]
@@ -11089,6 +11278,7 @@ macro = "DEF_BENCH"
 source = "bench/TriangulatorBench.cpp#L112-L112"
 module = "core"
 status = "todo"
+reason = "needs GrTriangulator (Ganesh internals), not ported"
 span_hash = "84a648eaa3e501512e3b7e5bfec64550567f5dcf872f183990fbbff7a95d5f39"
 
 [[test]]
@@ -11098,6 +11288,7 @@ macro = "DEF_BENCH"
 source = "bench/TriangulatorBench.cpp#L77-L77"
 module = "core"
 status = "todo"
+reason = "needs GrTriangulator (Ganesh internals), not ported"
 span_hash = "cee3ad673e51602ad5a58491a0286578c3af49d25f4af42c6e4f61d66c70edff"
 
 [[test]]
@@ -11107,6 +11298,7 @@ macro = "DEF_BENCH"
 source = "bench/TriangulatorBench.cpp#L93-L93"
 module = "core"
 status = "todo"
+reason = "needs GrTriangulator (Ganesh internals), not ported"
 span_hash = "4511ff70e58b88dfadbda88dc15466b0acd3fe2430e19160267ea4d68a55c2bb"
 
 [[test]]
@@ -11116,6 +11308,7 @@ macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L360-L360"
 module = "text"
 status = "todo"
+reason = "CreateTypefaceFromResource(fonts/Roboto-Regular.ttf) is None under the portable test font manager (docs/design/text.md §8), so there is no typeface to bench"
 span_hash = "5cf4bdee81602c40df1dd61428e3549ce782b47746b3896b9dc5598c4060b838"
 
 [[test]]
@@ -11124,7 +11317,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L314-L315"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e6e10b24a7271cb44e04bfc8a610773ffdef03ee1bacf3990582b5b09c42f6a0"
 
 [[test]]
@@ -11133,7 +11326,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L306-L307"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "b7da7baab7fd9d1e29dbcba912b6830fcefda09621596af651a6fddc475eba04"
 
 [[test]]
@@ -11142,7 +11335,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L312-L313"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "731b4a1d2f40be15aaaba6ab1c21c5d321bfb2fc20a8a330d096499625ee741b"
 
 [[test]]
@@ -11151,7 +11344,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L304-L305"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "5188bf3bbac2023c4de690e0a7524ceadecfb0fccee1915c7b7eb2415a3868e6"
 
 [[test]]
@@ -11160,7 +11353,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L316-L317"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "4eb8707b3b174f946ad8898c37257699c8dfc8ada086edd35955975358e3085f"
 
 [[test]]
@@ -11169,7 +11362,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/TypefaceBench.cpp#L308-L309"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2cde8165533cf29cb871ba83cc8a84d79ecb1304cc6afa04cb1bd03e1d6efd09"
 
 [[test]]
@@ -11178,7 +11371,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L239-L239"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "its DEF_BENCH is commented out in bench/VertBench.cpp (#L237-L238), so it is compiled out"
 span_hash = "6252f9befdeded522f974723be2b9248b792e0214612598bc2a3beaf78c04102"
 
 [[test]]
@@ -11188,6 +11382,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L243-L243"
 module = "core"
 status = "todo"
+reason = "drawAtlas samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "a8586fa6b7a8adb7cf0de6da48ed70dc32ec6b04142092c66d3762829e3bec32"
 
 [[test]]
@@ -11196,7 +11391,8 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L242-L242"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "its DEF_BENCH is commented out in bench/VertBench.cpp (#L237-L238), so it is compiled out"
 span_hash = "d26b4672ffd2a3c6198a81ff17f4f244713ad158f2cc25faa89aff010358b77c"
 
 [[test]]
@@ -11206,6 +11402,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L241-L241"
 module = "core"
 status = "todo"
+reason = "drawAtlas samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "cc9ed9fafe5cc0aba9df73cb7c9ec1a21e028e1d8ec9ed198b7c46a59daa99a5"
 
 [[test]]
@@ -11215,6 +11412,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L240-L240"
 module = "core"
 status = "todo"
+reason = "drawAtlas samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "c8a30a52591ab95de697f9abe2470ff7a907c340e7d68b82ce7842dc301456cb"
 
 [[test]]
@@ -11223,7 +11421,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L146-L146"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "1965d31a51718f98f35f7fce0752ce6808119a9af14097325911208db3b7057b"
 
 [[test]]
@@ -11233,6 +11431,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L151-L151"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "aac2a4a497d89101af4e30c0933978b62d98afbe892fa7c706cd9601b5352214"
 
 [[test]]
@@ -11242,6 +11441,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L150-L150"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "5aa81d5f050764a26b3e66e101a5e7690341d4a43cecf6231096f02e6e67234d"
 
 [[test]]
@@ -11250,7 +11450,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L149-L149"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4c4ed5325a122d01adcd9f6cb569ee575004ba34cbab90724ba51551690604d7"
 
 [[test]]
@@ -11260,6 +11460,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L148-L148"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "b3daa237630cf213308db5499a4365ee99a2be19750fd75066c3e0c253aff4b9"
 
 [[test]]
@@ -11269,6 +11470,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L145-L145"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "9cecf22980dc3ce729aa6eb9e7dd81e519812e5da73298f643742936321e040f"
 
 [[test]]
@@ -11278,6 +11480,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L144-L144"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "81915d300b005e8f16f40b6254e3f1b07d8f577fcf82aa8e9caa7d5b848dfa3f"
 
 [[test]]
@@ -11287,6 +11490,7 @@ macro = "DEF_BENCH"
 source = "bench/VertBench.cpp#L147-L147"
 module = "text"
 status = "todo"
+reason = "samples images/mandrill_256.png (ToolUtils::GetResourceAsImage); no PNG decoder in this tree (codec stack)"
 span_hash = "7a67e5c61db24bd053aef7f421d72bea40ffd2b4225caf5e4ac09b1a240c7309"
 
 [[test]]
@@ -11296,6 +11500,7 @@ macro = "DEF_BENCH"
 source = "bench/VertexColorSpaceBench.cpp#L359-L359"
 module = "skcms"
 status = "todo"
+reason = "Ganesh-only (GrGeometryProcessor)"
 span_hash = "f844267560cde70c1bc8563672d3a10b714ba37e12d95c308917c5fbae3ddcfe"
 
 [[test]]
@@ -11305,6 +11510,7 @@ macro = "DEF_BENCH"
 source = "bench/VertexColorSpaceBench.cpp#L360-L360"
 module = "skcms"
 status = "todo"
+reason = "Ganesh-only (GrGeometryProcessor)"
 span_hash = "77c899e9e0365c971e207a7541dee4e04e8a744f2945dc88734585e3205e2d9a"
 
 [[test]]
@@ -11314,6 +11520,7 @@ macro = "DEF_BENCH"
 source = "bench/VertexColorSpaceBench.cpp#L361-L361"
 module = "skcms"
 status = "todo"
+reason = "Ganesh-only (GrGeometryProcessor)"
 span_hash = "07da595e7c8f41dc7f9e644c458b3a26fb5261b9a49105f7259276e41125b79f"
 
 [[test]]
@@ -11323,6 +11530,7 @@ macro = "DEF_BENCH"
 source = "bench/VertexColorSpaceBench.cpp#L362-L362"
 module = "skcms"
 status = "todo"
+reason = "Ganesh-only (GrGeometryProcessor)"
 span_hash = "366b95cdea256ced4a2172060e5334858bde99128418e3811e9750ae534c7723"
 
 [[test]]
@@ -11422,6 +11630,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L191-L191"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "a94af59665b6104dba362e29978b0f61fd6e0dc0c50b7d68a64d72a2b1d843dc"
 
 [[test]]
@@ -11431,6 +11640,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L192-L192"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "3f0539c0bcd5dace66963f8095f430d8d6f626fcb4427834952fd8584b0d2909"
 
 [[test]]
@@ -11440,6 +11650,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L190-L190"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "0c8a3cd3c4156a74722c6d396ad10ba1428ed0877446bc457afeea8c5cdcd44b"
 
 [[test]]
@@ -11449,6 +11660,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L194-L194"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "1f73b198c2538a89f0c35ba23008890939ec5ffc8989b5db72b9b1aab10b5447"
 
 [[test]]
@@ -11458,6 +11670,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L193-L193"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "68a97c7ba4995f41bf8fbf04247fa5108b4bb40466b3fa10622b0216f017b132"
 
 [[test]]
@@ -11467,6 +11680,7 @@ macro = "DEF_BOUNDS_MANAGER_BENCH_SET"
 source = "bench/graphite/BoundsManagerBench.cpp#L189-L189"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "7b2083af35255b9555977a0ae58024988798d871156b50c28d8be86076791894"
 
 [[test]]
@@ -11476,6 +11690,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L183-L183"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "2645c85d0dd5a4bdca125bee4825a914ab92925c408ca745328764527325d4c8"
 
 [[test]]
@@ -11485,6 +11700,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L178-L178"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "b780ffc4c465a6eaf9a3dff7e8dd29e21a8635e22b69fbc8f5c1935e1cea3d38"
 
 [[test]]
@@ -11494,6 +11710,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L180-L180"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "8af30f5f2dd91f60f182643c087fa74448720646710b2792221175d7c1209254"
 
 [[test]]
@@ -11503,6 +11720,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L182-L182"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "a90f069adbdeb8bab0d613f5253133ba07d95528d5c63d06334d6434b870cba1"
 
 [[test]]
@@ -11512,6 +11730,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L179-L179"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "43f00a16f35469b66287b01dbff38681445a40c8d06bc3b7669e87a90c935374"
 
 [[test]]
@@ -11521,6 +11740,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/IntersectionTreeBench.cpp#L181-L181"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "61f5e031af1d44e4f9d2932207c313e9845962348119dfa0ddb6e66578efe494"
 
 [[test]]
@@ -11530,6 +11750,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L103-L106"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "01620e454dfff7f6f259af5b9a259f56a19e3ca2e6ac5c0df00cfa3fb80331e9"
 
 [[test]]
@@ -11539,6 +11760,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L107-L110"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "41cd63fadbc0ac4e6fe14b99f53153bf02c1fbea476202e755657de79ceb35c9"
 
 [[test]]
@@ -11548,6 +11770,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L90-L93"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "6256bc60348f7392d99873bb41539721af6f193d40430e41e4c4fe082b5605ee"
 
 [[test]]
@@ -11557,6 +11780,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L94-L97"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "078c7079b620a8e2ed8da1b1ccc032b15c2a8a5a514c9a5fc1aa4264d51523e5"
 
 [[test]]
@@ -11566,6 +11790,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L111-L114"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "87cff20496114918b44efe2ed3ccb03487ec53b06bc2dd8c65aa3ce66312f03d"
 
 [[test]]
@@ -11575,6 +11800,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/CoverageBench.cpp#L98-L101"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "17d33c7bb19cc0c0c26b4609ec9b8d93c7e75089bdef7d478874bc32865de936"
 
 [[test]]
@@ -11584,6 +11810,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L145-L146"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "767a54ef616fff699c474473dac62352bb5d3abff2ccf42aac1b423a9e84d432"
 
 [[test]]
@@ -11593,6 +11820,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L140-L141"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "e13d9e3f132a27c9c87303c9f48227e123660bf7b86f84c019f0cc4570b5220c"
 
 [[test]]
@@ -11602,6 +11830,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L147-L148"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "7faf544cb107318b46d998d67be7c1e0298ee7d8299bc31206f1fb051b1246bc"
 
 [[test]]
@@ -11611,6 +11840,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L142-L143"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "a35d412008b65e8fae8ecaf429c3c531bd6490bb96481a66563f57b2df7969b0"
 
 [[test]]
@@ -11620,6 +11850,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L149-L149"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "ba372df58f563af9952713ea551fd3f7a2b13891eebfc75af0e078cf6aab163e"
 
 [[test]]
@@ -11629,6 +11860,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/FlattenBench.cpp#L144-L144"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "a40bc50102e25189cd6204eb90bf0a7ab5ded897dfcc5e34a358a3daf46dbd57"
 
 [[test]]
@@ -11638,6 +11870,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/TilerBench.cpp#L66-L66"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "cdf0a46891e6a25e05589356c04495974c46f3aff69f44479d411fa4ed01853a"
 
 [[test]]
@@ -11647,6 +11880,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/TilerBench.cpp#L68-L68"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "31a5b59cf9157e815c71f045bd6266a613672b4d1ca00c3c744bb10697e388f9"
 
 [[test]]
@@ -11656,6 +11890,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/TilerBench.cpp#L67-L67"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "c7c4aae972aa40bc7620800c9e68f67f28e274d1a34dce1e334bbc4b608eefa1"
 
 [[test]]
@@ -11665,6 +11900,7 @@ macro = "DEF_BENCH"
 source = "bench/graphite/sparse_strips/TilerBench.cpp#L69-L69"
 module = "core"
 status = "todo"
+reason = "Graphite internals (bounds manager, sparse strips, intersection tree) are not ported"
 span_hash = "30190997e5580cfb1d3fa839d40ff3123607ab912df544ffabc9cf1f919951b1"
 
 [[test]]
