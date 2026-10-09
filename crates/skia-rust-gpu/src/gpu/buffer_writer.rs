@@ -386,6 +386,14 @@ impl<'a> VertexWriter<'a> {
         Self(BufferWriter::new(buf))
     }
 
+    /// `VertexWriter(BufferWriter&&)`: wraps a writer that has already been reserved, e.g. one
+    /// returned by a `BufferSubAllocator`.
+    // Port of: src/gpu/BufferWriter.h#L178-L183 (chrome/m156), the move constructor
+    #[must_use]
+    pub(crate) fn from_buffer_writer(writer: BufferWriter<'a>) -> Self {
+        Self(writer)
+    }
+
     /// `operator<<`: writes `value` and returns the writer for chaining.
     pub fn put<T: BufferWrite + ?Sized>(&mut self, value: &T) -> &mut Self {
         value.write_to(&mut self.0);

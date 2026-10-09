@@ -51157,7 +51157,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L34-L86"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "376a145d9cf94112b8b96ddf800c1960aff4e925af3c64d140a66deaeab9cf0e"
 
 [[test]]
@@ -51167,6 +51167,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L136-L316"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
 span_hash = "f6fd396359b3b5c2b041d88b4793701ae6b457d820e617f8cfea3862cdb3b2bc"
 
 [[test]]
@@ -51176,6 +51177,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L89-L133"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite surfaces (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
 span_hash = "5ff63d68fa32663a3e6018888fe2d89e0007404ea37e4698dc4a1dd45d90bb14"
 
 [[test]]
@@ -51204,6 +51206,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/BufferManagerTest.cpp#L29-L71"
 module = "gpu"
 status = "todo"
+reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
 span_hash = "b819e0edf03f7fac7b8fdaeca8ba75e170443c52a4aa2ddfa336e378b8ea6a84"
 
 [[test]]
@@ -51213,6 +51216,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/BufferManagerTest.cpp#L73-L112"
 module = "gpu"
 status = "todo"
+reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
 span_hash = "b671524fea9652843b61b73e8ff29355596d4bdcded663ba2d8b5ee219f8c687"
 
 [[test]]
@@ -51221,7 +51225,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/CacheBudgetTest.cpp#L20-L42"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "9901d491e5f539661a0bac88b45290773809b697541d768b1417849a6a56eac2"
 
 [[test]]
@@ -51484,7 +51488,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L23-L44"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "compiled out in Skia (#if 0, waiting for the CPU Context API)"
 span_hash = "fd470965095dcc67ff1a61f2074a13c34c14a6a6bbd101214918a3dc653b3705"
 
 [[test]]
@@ -51494,6 +51499,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L106-L124"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite surfaces and Canvas::baseRecorder (G10d)"
 span_hash = "b2b7272b46185581d429b6394c33a11afc76d848047fd1b1bbe8997c01e75d02"
 
 [[test]]
@@ -51503,6 +51509,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L47-L69"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images (G10d) and a Graphite Context (G9b, G11)"
 span_hash = "6ecce1972aa4749138f26806d851ce6f246ec35c1002bcbdcff305dd9c44a510"
 
 [[test]]
@@ -51512,6 +51519,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L71-L104"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images (G10d) and a Graphite Context (G9b, G11)"
 span_hash = "87801866277a961cee822bdfad5f7ed527424d93f46d8eba991a009f3eedd0b1"
 
 [[test]]
@@ -51584,6 +51592,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L96-L283"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images and surfaces (G10d) and Context::insertRecording/submit (G9b, G11c)"
 span_hash = "3bf20d364c46e8662b7a693c254bdb73bf572db7382f7d6d356ddee4a8109119"
 
 [[test]]
@@ -51592,7 +51601,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L320-L445"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "8d79b1f89fbda7bc8b3db1168de8b4c5b8646362d35d095ab53e979127083bff"
 
 [[test]]
@@ -51601,7 +51610,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L643-L730"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "6c015f451842d3e04fb50ff69ed675fd0f46794318259a7d73e83994dafde850"
 
 [[test]]
@@ -51610,7 +51619,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L552-L638"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "da79e6cec6bcc5f15de70aafdb4f58e15bb8ba67bdc603196bd496b49290b050"
 
 [[test]]
@@ -51619,7 +51628,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L734-L799"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "2e3019d7575c54c9af77383b1a53779cc23534d64ddeb91b7d37cd1ca739519e"
 
 [[test]]
@@ -51628,7 +51637,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L801-L897"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "5d787b42ddbb9b9348ab656c1a562642b0573cfd17d5b5da104f0d4505464444"
 
 [[test]]
@@ -51637,7 +51646,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L899-L989"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "11010d733756be2ccd5e1b629bef926ddfc8bc941fb08e1b233f20d5e11b496f"
 
 [[test]]
@@ -51646,7 +51655,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteResourceCacheTest.cpp#L447-L537"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "b59a9725ab2ca429f0885f9ba3f5b54d2f032f26b4742adc019cb784b8495701"
 
 [[test]]
@@ -52349,6 +52358,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L151-L170"
 module = "gpu"
 status = "todo"
+reason = "needs Context::insertRecording and InsertStatus (G9b)"
 span_hash = "4a2b234c2ef3b8d834c46ff93eb300a6e8e551f23c771d56835bd8ac8dd4804a"
 
 [[test]]
@@ -52358,6 +52368,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L21-L104"
 module = "gpu"
 status = "todo"
+reason = "needs Device::Make (G10a) and a Graphite Context (G9b, G11); the recorder side is ported with mock devices in crates/skia-rust-gpu/tests/recorder.rs"
 span_hash = "ea8bf9f42b4fb745e575e860152adef992c25b9df5935f01e44b5885356e98b3"
 
 [[test]]
@@ -52367,6 +52378,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L107-L147"
 module = "gpu"
 status = "todo"
+reason = "needs Context::insertRecording (G9b, G11); recording ids are checked in crates/skia-rust-gpu/tests/recorder.rs"
 span_hash = "fb693d398a00a4cd9afa47ef20c3014790c18a1b8a152e12718f448b6d3484b7"
 
 [[test]]
@@ -52376,6 +52388,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/RecordingOrderTest.cpp#L127-L132"
 module = "gpu"
 status = "todo"
+reason = "needs surfaces, text and readPixels on a Graphite Context (G10, G11)"
 span_hash = "7da47fa14cf85984748bbb534d1623ae8835d9c47e86ef35a376967926b5f9d2"
 
 [[test]]
@@ -52574,6 +52587,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L80-L99"
 module = "gpu"
 status = "todo"
+reason = "needs Context::submit (G9b, G11)"
 span_hash = "c86c82138da2753b9e4013eaddd151282feecc17faf3b620f50189bf6e5c59a0"
 
 [[test]]
@@ -52583,6 +52597,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L36-L78"
 module = "gpu"
 status = "todo"
+reason = "needs Context::submit and a surface (G9b, G10d, G11); the finish proc hand-off is checked in crates/skia-rust-gpu/tests/recorder.rs"
 span_hash = "a0badbbf3ca856364d9bf157ea37cf2c3bf7e0ec89207bc5a0965ce3690609ec"
 
 [[test]]
@@ -52672,7 +52687,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFormatTest.cpp#L1393-L1397"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "743f91c0b3dd647b7c5e35e4d900a985681bfdc94c04fb12bce43b50110cb0ea"
 
 [[test]]
@@ -52682,6 +52697,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L223-L278"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images/surfaces/promise images (G10d)"
 span_hash = "c436c8d191665d858069448e5e207bc8a702b624d62b61e170e269fc2dde7255"
 
 [[test]]
@@ -52690,7 +52706,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L27-L200"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "fef622d37e858d36261f0dd88ddb814646bece081f2f40341217d84857788c15"
 
 [[test]]
@@ -52700,6 +52716,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L202-L221"
 module = "gpu"
 status = "todo"
+reason = "needs Graphite images/surfaces/promise images (G10d)"
 span_hash = "353c152200fc7c0e62d0fff8d16693abf0781f5db92f25eb614acd3fced7c4bb"
 
 [[test]]
@@ -53042,6 +53059,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/UploadBufferManagerTest.cpp#L19-L126"
 module = "gpu"
 status = "todo"
+reason = "needs a Graphite Context (G9b, wgpu backend G11); the logic is ported against a mock backend in crates/skia-rust-gpu/tests/buffer_managers.rs"
 span_hash = "fbe551fd2a5ff461b6c593e07b0ed2b9ad6ecd21c59ef212dfa95c5f779a92fc"
 
 [[test]]

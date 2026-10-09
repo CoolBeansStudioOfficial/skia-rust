@@ -5,10 +5,23 @@
 
 //! `ToolUtils`: helpers shared by Skia's tests.
 
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
+
+/// `ToolUtils::alphatype_name`.
+// Port of: tools/ToolUtils.cpp#L52-L60 (chrome/m156)
+#[must_use]
+pub fn alphatype_name(at: AlphaType) -> &'static str {
+    match at {
+        AlphaType::Unknown => "Unknown",
+        AlphaType::Opaque => "Opaque",
+        AlphaType::Premul => "Premul",
+        AlphaType::Unpremul => "Unpremul",
+    }
+}
 
 /// `ToolUtils::colortype_name`.
 // Port of: tools/ToolUtils.cpp#L62-L95 (chrome/m156)
