@@ -175,12 +175,12 @@ macro_rules! def_graphite_test_for_all_contexts {
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            for (context_name, context) in $crate::tools::graphite_test_context::all_contexts() {
+            for (context_name, mut context) in $crate::tools::graphite_test_context::all_contexts() {
                 reporter.set_context(Some(context_name));
                 // A closure, as in `def_test!`: an early `return` ends this context only.
                 let run = |$reporter: &mut $crate::Reporter,
-                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &context);
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
             }
             reporter.set_context(None);
             reporter.finish();
@@ -214,14 +214,14 @@ macro_rules! def_graphite_test_for_contexts_with_options {
                 $set_options
             }
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            for (context_name, context) in
+            for (context_name, mut context) in
                 $crate::tools::graphite_test_context::all_contexts_with_options(&context_options)
             {
                 reporter.set_context(Some(context_name));
                 // A closure, as in `def_test!`: an early `return` ends this context only.
                 let run = |$reporter: &mut $crate::Reporter,
-                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &context);
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
             }
             reporter.set_context(None);
             reporter.finish();

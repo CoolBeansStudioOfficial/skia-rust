@@ -86,7 +86,10 @@ impl std::fmt::Debug for QueueManager {
         f.debug_struct("QueueManager")
             .field("shared_is_protected", &self.shared_is_protected)
             .field("allow_cpu_sync", &self.allow_cpu_sync)
-            .field("outstanding_submissions", &self.outstanding_submissions.len())
+            .field(
+                "outstanding_submissions",
+                &self.outstanding_submissions.len(),
+            )
             .finish_non_exhaustive()
     }
 }
@@ -110,7 +113,7 @@ fn simulated_failure(simulated: InsertStatus, status: InsertStatus) -> Result<()
 
 /// `instantiatePromiseImages` in `addRecording`: the lazy proxies are instantiated before we make
 /// any modification to the current command buffer, so a failure here leaves it untouched.
-// Port of: src/gpu/graphite/QueueManager.cpp#L146-L166 (chrome/m156)
+// Port of: src/gpu/graphite/QueueManager.cpp#L87-L245 (chrome/m156)
 fn instantiate_lazy_proxies(
     recording: &mut Recording,
     resource_provider: &SharedResourceProvider,
@@ -164,7 +167,7 @@ fn fail_insert(
 
 impl QueueManager {
     /// `QueueManager(sharedContext)`.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L30-L33 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L36-L39 (chrome/m156)
     #[must_use]
     pub fn new(
         shared_is_protected: Protected,
@@ -184,7 +187,7 @@ impl QueueManager {
     }
 
     /// `getAvailableCommandBufferList(isProtected)`.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L44-L48 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L51-L55 (chrome/m156)
     fn available_command_buffer_list(
         &mut self,
         is_protected: Protected,
@@ -197,7 +200,7 @@ impl QueueManager {
     }
 
     /// `setupCommandBuffer(resourceProvider, isProtected)`.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L50-L79 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L57-L85 (chrome/m156)
     fn setup_command_buffer(
         &mut self,
         resource_provider: &SharedResourceProvider,
@@ -223,20 +226,21 @@ impl QueueManager {
         }
 
         if self.current_command_buffer.is_none() {
-            self.current_command_buffer =
-                self.backend.get_new_command_buffer(resource_provider, is_protected);
+            self.current_command_buffer = self
+                .backend
+                .get_new_command_buffer(resource_provider, is_protected);
         }
         self.current_command_buffer.is_some()
     }
 
     /// `addRecording(info, context)`: adds the recording's commands to the current command
     /// buffer, and takes its finished procs.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L81-L212 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L87-L245 (chrome/m156)
     #[doc(alias = "addRecording")]
     #[must_use]
     pub fn add_recording(
         &mut self,
-        mut info: InsertRecordingInfo,
+        mut info: InsertRecordingInfo<'_>,
         context: &mut dyn ContextPriv,
     ) -> InsertStatus {
         // Configure the callback before validation so that failures are propagated to the finish
@@ -250,7 +254,7 @@ impl QueueManager {
         };
         let simulated = info.simulated_status;
 
-        let Some(mut recording) = info.recording.take() else {
+        let Some(recording) = info.recording.take() else {
             return fail_insert(
                 None,
                 callback.as_ref(),
@@ -259,7 +263,7 @@ impl QueueManager {
             );
         };
         match self.add_recording_commands(
-            &mut recording,
+            &mut *recording,
             info.target_translation,
             info.target_clip,
             simulated,
@@ -277,18 +281,15 @@ impl QueueManager {
                 debug_assert_eq!(simulated, InsertStatus::Success);
                 InsertStatus::Success
             }
-            Err((status, message)) => fail_insert(
-                Some(&mut recording),
-                callback.as_ref(),
-                status,
-                &message,
-            ),
+            Err((status, message)) => {
+                fail_insert(Some(recording), callback.as_ref(), status, &message)
+            }
         }
     }
 
     /// The checks and the work of `addRecording` between the callback and the success return.
     /// On failure, returns the status and the message to log.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L101-L186 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L87-L245 (chrome/m156)
     fn add_recording_commands(
         &mut self,
         recording: &mut Recording,
@@ -317,10 +318,13 @@ impl QueueManager {
                 "CommandBuffer creation failed",
             ));
         };
-        if recording
-            .priv_()
-            .add_commands(context, command_buffer, None, target_translation, target_clip)
-        {
+        if recording.priv_().add_commands(
+            context,
+            command_buffer,
+            None,
+            target_translation,
+            target_clip,
+        ) {
             simulated_failure(simulated, InsertStatus::AddCommandsFailed)?;
             simulated_failure(simulated, InsertStatus::AsyncShaderCompilesFailed)?;
             return Ok(());
@@ -331,16 +335,19 @@ impl QueueManager {
         // want to handle the failure differently than when any other GPU command failed. We will
         // only report the 1st pipeline creation's failure message.
         let mut failure_msg = None;
-        let valid_pipelines = recording.priv_().task_list().visit_pipelines(&mut |pipeline| {
-            let Some(pipeline) = pipeline else {
-                return true;
-            };
-            if let Some(failure) = pipeline.did_async_compilation_fail() {
-                failure_msg = Some(failure);
-                return false;
-            }
-            true
-        });
+        let valid_pipelines = recording
+            .priv_()
+            .task_list()
+            .visit_pipelines(&mut |pipeline| {
+                let Some(pipeline) = pipeline else {
+                    return true;
+                };
+                if let Some(failure) = pipeline.did_async_compilation_fail() {
+                    failure_msg = Some(failure);
+                    return false;
+                }
+                true
+            });
         // We are already definitely going to fail, it's just a matter of which status to return.
         if valid_pipelines {
             return Err(failure(
@@ -358,7 +365,7 @@ impl QueueManager {
     }
 
     /// The order and deferred-target checks at the start of `addRecording`.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L101-L144 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L87-L245 (chrome/m156)
     fn check_recording_order(
         &mut self,
         recording: &mut Recording,
@@ -394,7 +401,7 @@ impl QueueManager {
     }
 
     /// `addTask(task, context, isProtected)`: adds a task's commands outside of a recording.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L214-L229 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L247-L267 (chrome/m156)
     #[doc(alias = "addTask")]
     #[must_use]
     pub fn add_task(
@@ -422,7 +429,7 @@ impl QueueManager {
 
     /// `addFinishInfo(info, resourceProvider, buffersToAsyncMap)`: a finished proc with no
     /// recording (`Context::insertFinishInfo`).
-    // Port of: src/gpu/graphite/QueueManager.cpp#L231-L252 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L269-L291 (chrome/m156)
     #[doc(alias = "addFinishInfo")]
     #[must_use]
     pub fn add_finish_info(
@@ -451,7 +458,7 @@ impl QueueManager {
     }
 
     /// `submitToGpu(submitInfo)`: submits the current command buffer, if any.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L254-L290 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L293-L336 (chrome/m156)
     #[doc(alias = "submitToGpu")]
     #[must_use]
     pub fn submit_to_gpu(&mut self, mut submit_info: SubmitInfo) -> bool {
@@ -463,9 +470,11 @@ impl QueueManager {
         let Some(mut command_buffer) = self.current_command_buffer.take() else {
             // If a finish proc was provided, attach it to the most recent outstanding submission,
             // or let it fire immediately if the GPU is idle (when callback goes out of scope).
-            if let (Some(callback), Some(back)) = (callback, self.outstanding_submissions.back_mut()) {
-                    back.add_finished_proc(callback);
-                }
+            if let (Some(callback), Some(back)) =
+                (callback, self.outstanding_submissions.back_mut())
+            {
+                back.add_finished_proc(callback);
+            }
             // With no active command buffer the submit is a no-op and succeeds.
             return true;
         };
@@ -481,7 +490,7 @@ impl QueueManager {
     }
 
     /// `hasUnfinishedGpuWork()`.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L292-L292 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L338-L338 (chrome/m156)
     #[doc(alias = "hasUnfinishedGpuWork")]
     #[must_use]
     pub fn has_unfinished_gpu_work(&self) -> bool {
@@ -490,7 +499,7 @@ impl QueueManager {
 
     /// `hasPendingGPUWork()`: true if there is a current command buffer, even one without work
     /// (a recording can be inserted just to track its finished proc).
-    // Port of: src/gpu/graphite/QueueManager.cpp#L294-L300 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L340-L346 (chrome/m156)
     #[doc(alias = "hasPendingGPUWork")]
     #[must_use]
     pub fn has_pending_gpu_work(&self) -> bool {
@@ -499,7 +508,7 @@ impl QueueManager {
 
     /// `checkForFinishedWork(sync)`: retires the submissions the GPU has finished, in order. With
     /// [`SyncToCpu::Yes`] it first waits for the newest one.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L302-L329 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L348-L376 (chrome/m156)
     #[doc(alias = "checkForFinishedWork")]
     pub fn check_for_finished_work(&mut self, sync: SyncToCpu) {
         if sync == SyncToCpu::Yes {
@@ -531,7 +540,7 @@ impl QueueManager {
     }
 
     /// `returnCommandBuffer(commandBuffer)`: pools a command buffer for reuse.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L331-L335 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L378-L382 (chrome/m156)
     #[doc(alias = "returnCommandBuffer")]
     pub fn return_command_buffer(&mut self, command_buffer: Box<dyn CommandBuffer>) {
         let is_protected = command_buffer.is_protected();
@@ -541,7 +550,7 @@ impl QueueManager {
 
     /// `addUploadBufferManagerRefs(uploadManager, resourceProvider)`: hands the upload buffers
     /// to the current (non-protected) command buffer.
-    // Port of: src/gpu/graphite/QueueManager.cpp#L337-L343 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L384-L392 (chrome/m156)
     #[doc(alias = "addUploadBufferManagerRefs")]
     pub fn add_upload_buffer_manager_refs(
         &mut self,
@@ -556,7 +565,7 @@ impl QueueManager {
 }
 
 impl Drop for QueueManager {
-    // Port of: src/gpu/graphite/QueueManager.cpp#L36-L42 (chrome/m156)
+    // Port of: src/gpu/graphite/QueueManager.cpp#L41-L49 (chrome/m156)
     fn drop(&mut self) {
         if self.allow_cpu_sync {
             self.check_for_finished_work(SyncToCpu::Yes);

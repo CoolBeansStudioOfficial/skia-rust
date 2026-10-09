@@ -213,7 +213,7 @@ pub struct ReplayState {
 
 /// The arguments of a render pass, as the backend's `onAddRenderPass` receives them. The replay
 /// state comes separately as a [`ReplayState`].
-// Port of: src/gpu/graphite/CommandBuffer.cpp#L120-L128 (chrome/m156)
+// Port of: src/gpu/graphite/CommandBuffer.h (the addRenderPass arguments) (chrome/m156)
 #[derive(Debug)]
 pub struct RenderPassCall<'a> {
     /// `renderPassDesc`.
@@ -303,8 +303,11 @@ pub trait CommandBufferBackend {
 
     /// `onSynchronizeBufferToCpu(buffer, &didResultInWork)`.
     #[doc(alias = "onSynchronizeBufferToCpu")]
-    fn on_synchronize_buffer_to_cpu(&mut self, buffer: &Buffer, did_result_in_work: &mut bool)
-    -> bool;
+    fn on_synchronize_buffer_to_cpu(
+        &mut self,
+        buffer: &Buffer,
+        did_result_in_work: &mut bool,
+    ) -> bool;
 
     /// `onClearBuffer()`.
     #[doc(alias = "onClearBuffer")]
@@ -337,7 +340,7 @@ pub struct CommandBufferCore<B: CommandBufferBackend> {
 impl<B: CommandBufferBackend> CommandBufferCore<B> {
     /// `CommandBuffer(isProtected)`. `resource_provider` is the one the command buffer's
     /// neutral code uses for the dst-copy sampler.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L30-L30 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L37-L37 (chrome/m156)
     #[must_use]
     pub fn new(
         is_protected: Protected,
@@ -380,14 +383,14 @@ impl<B: CommandBufferBackend> CommandBufferCore<B> {
     }
 
     /// `releaseResources()`: drops the command buffer's tracked resource refs.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L40-L43 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L43-L47 (chrome/m156)
     #[doc(alias = "releaseResources")]
     fn release_resources(&mut self) {
         self.command_buffer_resources.clear();
     }
 
     /// `resetCommandBuffer()`.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L45-L56 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L49-L59 (chrome/m156)
     #[doc(alias = "resetCommandBuffer")]
     pub fn reset_command_buffer(&mut self) {
         // The dst copy texture and sampler are kept alive by the tracked resources, so reset these
@@ -401,7 +404,7 @@ impl<B: CommandBufferBackend> CommandBufferCore<B> {
 
     /// `callFinishedProcs(success)`: fails every finished proc, or hands the stats to those that
     /// want them, then forgets them.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L69-L84 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L83-L98 (chrome/m156)
     #[doc(alias = "callFinishedProcs")]
     pub fn call_finished_procs(&mut self, success: bool) {
         if success {
@@ -421,14 +424,14 @@ impl<B: CommandBufferBackend> CommandBufferCore<B> {
     }
 
     /// `addBuffersToAsyncMapOnSubmit()`.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L86-L92 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L100-L105 (chrome/m156)
     #[doc(alias = "addBuffersToAsyncMapOnSubmit")]
     pub fn add_buffers_to_async_map_on_submit(&mut self, buffers: &[ResourceRef<Buffer>]) {
         self.buffers_to_async_map.extend_from_slice(buffers);
     }
 
     /// `buffersToAsyncMapOnSubmit()`.
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L94-L96 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L107-L109 (chrome/m156)
     #[doc(alias = "buffersToAsyncMapOnSubmit")]
     #[must_use]
     pub fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>] {
@@ -465,18 +468,18 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         CommandBufferCore::buffers_to_async_map_on_submit(self)
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L58-L64 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L61-L64 (chrome/m156)
     fn track_resource(&mut self, resource: AnyResourceRef) {
         self.command_buffer_resources
             .push(resource.ref_command_buffer());
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L98-L100 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L79-L81 (chrome/m156)
     fn add_finished_proc(&mut self, finished_proc: Arc<RefCntedCallback>) {
         self.finished_procs.push(finished_proc);
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L300-L313 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L315-L330 (chrome/m156)
     fn set_replay_translation_and_clip(
         &mut self,
         translation: IPoint,
@@ -495,7 +498,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L102-L152 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L111-L186 (chrome/m156)
     fn add_render_pass(
         &mut self,
         render_pass_desc: &RenderPassDesc,
@@ -516,7 +519,9 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
             let target_bounds = self.state.render_target_bounds;
             join_in_place(&mut self.state.render_area_bounds, &target_bounds);
         }
-        self.state.render_area_bounds.offset(self.state.replay_translation);
+        self.state
+            .render_area_bounds
+            .offset(self.state.replay_translation);
         let target_bounds = self.state.render_target_bounds;
         if !intersect_in_place(&mut self.state.render_area_bounds, &target_bounds) {
             // The entire RenderPass is offscreen given the replay translation so skip adding the
@@ -597,7 +602,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L154-L162 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L188-L198 (chrome/m156)
     fn add_compute_pass(&mut self, dispatch_groups: &[Box<dyn DispatchGroup>]) -> bool {
         if !self.backend.on_add_compute_pass(dispatch_groups) {
             return false;
@@ -606,7 +611,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L164-L179 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L200-L218 (chrome/m156)
     fn copy_buffer_to_buffer(
         &mut self,
         src_buffer: &Arc<Resource<Buffer>>,
@@ -629,7 +634,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L181-L198 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L220-L239 (chrome/m156)
     fn copy_texture_to_buffer(
         &mut self,
         texture: ResourceRef<Texture>,
@@ -653,14 +658,17 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L200-L215 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L241-L259 (chrome/m156)
     fn copy_buffer_to_texture(
         &mut self,
         buffer: &Arc<Resource<Buffer>>,
         texture: ResourceRef<Texture>,
         copy_data: &[BufferTextureCopyData],
     ) -> bool {
-        if !self.backend.on_copy_buffer_to_texture(buffer, &texture, copy_data) {
+        if !self
+            .backend
+            .on_copy_buffer_to_texture(buffer, &texture, copy_data)
+        {
             return false;
         }
         self.track_resource(texture.into_any());
@@ -668,7 +676,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L217-L240 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L261-L284 (chrome/m156)
     fn copy_texture_to_texture(
         &mut self,
         src: ResourceRef<Texture>,
@@ -695,7 +703,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L242-L255 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L286-L300 (chrome/m156)
     fn synchronize_buffer_to_cpu(&mut self, buffer: ResourceRef<Buffer>) -> bool {
         let mut did_result_in_work = false;
         if !self
@@ -711,7 +719,7 @@ impl<B: CommandBufferBackend> CommandBuffer for CommandBufferCore<B> {
         true
     }
 
-    // Port of: src/gpu/graphite/CommandBuffer.cpp#L257-L266 (chrome/m156)
+    // Port of: src/gpu/graphite/CommandBuffer.cpp#L302-L313 (chrome/m156)
     fn clear_buffer(&mut self, buffer: &Arc<Resource<Buffer>>, offset: usize, size: usize) -> bool {
         if !self.backend.on_clear_buffer(buffer, offset, size) {
             return false;

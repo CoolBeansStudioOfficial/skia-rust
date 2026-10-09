@@ -162,10 +162,9 @@ impl WgpuSharedContext {
         // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L74-L76 (chrome/m156): the
         // thread-safe provider wraps a resource provider made by the shared context itself, so it
         // is set once the shared context exists.
-        shared.base.set_thread_safe_resource_provider(shared.make_resource_provider(
-            INVALID_GEN_ID,
-            THREADED_SAFE_RESOURCE_BUDGET,
-        ));
+        shared.base.set_thread_safe_resource_provider(
+            shared.make_resource_provider(INVALID_GEN_ID, THREADED_SAFE_RESOURCE_BUDGET),
+        );
         Some(shared)
     }
 

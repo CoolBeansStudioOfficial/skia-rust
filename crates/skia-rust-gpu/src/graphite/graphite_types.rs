@@ -269,17 +269,17 @@ impl std::fmt::Debug for SubmitInfo {
 
 /// The arguments of `Context::insert_recording`.
 ///
-/// Skia passes the `Recording` by pointer and the caller keeps owning it. Here the recording is
-/// moved in (`Option` because Skia's default is `nullptr`, which fails with
-/// [`InsertStatus::InvalidRecording`]). Skia's `fTargetSurface`, `fTargetTextureState` and the
-/// backend semaphores are not ported: the target surface comes with `Surface` (G10d), and wgpu has
-/// no semaphores.
+/// The recording is borrowed, as in Skia: the caller keeps owning it, and a failed insert leaves
+/// it reinsertable (`RecorderOrderingTest` inserts one again). `None` is Skia's default `nullptr`,
+/// which fails with [`InsertStatus::InvalidRecording`]. Skia's `fTargetSurface`,
+/// `fTargetTextureState` and the backend semaphores are not ported: the target surface comes with
+/// `Surface` (G10d), and wgpu has no semaphores.
 // Port of: include/gpu/graphite/GraphiteTypes.h#L125-L163 (chrome/m156)
 #[doc(alias = "skgpu::graphite::InsertRecordingInfo")]
 #[derive(Default)]
-pub struct InsertRecordingInfo {
+pub struct InsertRecordingInfo<'a> {
     /// `fRecording`.
-    pub recording: Option<Recording>,
+    pub recording: Option<&'a mut Recording>,
     /// `fTargetTranslation`.
     pub target_translation: IPoint,
     /// `fTargetClip`.
@@ -295,10 +295,10 @@ pub struct InsertRecordingInfo {
     pub simulated_status: InsertStatus,
 }
 
-impl InsertRecordingInfo {
+impl<'a> InsertRecordingInfo<'a> {
     /// `InsertRecordingInfo` with `recording` set and every other field at its default.
     #[must_use]
-    pub fn new(recording: Recording) -> Self {
+    pub fn new(recording: &'a mut Recording) -> Self {
         Self {
             recording: Some(recording),
             ..Self::default()
@@ -306,7 +306,7 @@ impl InsertRecordingInfo {
     }
 }
 
-impl std::fmt::Debug for InsertRecordingInfo {
+impl std::fmt::Debug for InsertRecordingInfo<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("InsertRecordingInfo")
             .field("recording", &self.recording.is_some())

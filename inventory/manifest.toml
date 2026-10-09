@@ -52018,8 +52018,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L151-L170"
 module = "gpu"
-status = "todo"
-reason = "needs Context::insertRecording and InsertStatus (G9b); the queue manager's command buffer is the wgpu half (G11c)"
+status = "passing"
 span_hash = "4a2b234c2ef3b8d834c46ff93eb300a6e8e551f23c771d56835bd8ac8dd4804a"
 
 [[test]]
@@ -52038,8 +52037,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecorderTest.cpp#L107-L147"
 module = "gpu"
-status = "todo"
-reason = "needs Context::insertRecording with a command buffer for accepted recordings (G9b, G11c); recording ids are checked in crates/skia-rust-gpu/tests/recorder.rs"
+status = "passing"
 span_hash = "fb693d398a00a4cd9afa47ef20c3014790c18a1b8a152e12718f448b6d3484b7"
 
 [[test]]
@@ -52254,8 +52252,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L80-L99"
 module = "gpu"
-status = "todo"
-reason = "needs Context::submit (G9b) and wgpu queue submission (G11c)"
+status = "passing"
 span_hash = "c86c82138da2753b9e4013eaddd151282feecc17faf3b620f50189bf6e5c59a0"
 
 [[test]]
@@ -52265,7 +52262,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/SubmitWithFinishProcTest.cpp#L36-L78"
 module = "gpu"
 status = "todo"
-reason = "needs Context::submit and a surface (G9b, G10d, G11); the finish proc hand-off is checked in crates/skia-rust-gpu/tests/recorder.rs"
+reason = "needs a command buffer with work (draws, G10a/G10d) and the wgpu command buffer hooks (G11c)"
 span_hash = "a0badbbf3ca856364d9bf157ea37cf2c3bf7e0ec89207bc5a0965ce3690609ec"
 
 [[test]]

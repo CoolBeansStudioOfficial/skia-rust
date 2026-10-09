@@ -614,7 +614,9 @@ impl CommandBuffer for MockCommandBuffer {
     }
 
     fn has_work(&self) -> bool {
-        self.calls.iter().any(|call| !matches!(call, Call::TrackResource | Call::FinishedProc))
+        self.calls
+            .iter()
+            .any(|call| !matches!(call, Call::TrackResource | Call::FinishedProc))
     }
 
     fn set_new_command_buffer_resources(&mut self) -> bool {

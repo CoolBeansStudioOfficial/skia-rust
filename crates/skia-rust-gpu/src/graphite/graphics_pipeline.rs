@@ -21,7 +21,7 @@ pub trait GraphicsPipeline: Send + Sync + Debug {
 
     /// `didAsyncCompilationFail()`: the failure message if compiling the pipeline on the
     /// executor failed. Pipelines compiled synchronously never fail this way.
-    // Port of: src/gpu/graphite/GraphicsPipeline.h (didAsyncCompilationFail, chrome/m156)
+    // Port of: src/gpu/graphite/GraphicsPipeline.h#L110-L110 (chrome/m156)
     #[doc(alias = "didAsyncCompilationFail")]
     fn did_async_compilation_fail(&self) -> Option<String> {
         None

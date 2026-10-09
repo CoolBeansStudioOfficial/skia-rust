@@ -6,31 +6,55 @@
 
 //! `ContextFactory::MakeDawn` on wgpu: [`make_context`].
 //!
-//! The full `Context` (`insertRecording`, `submit`, `readPixels`, the queue manager, the global
-//! cache and the pipeline manager) is G9b, and `DawnQueueManager` is G11c. [`WgpuContext`] is the
-//! part of it that exists now: it owns the shared context and the context's resource provider
-//! (`Context::fResourceProvider`) and makes recorders. G9b replaces it by the real `Context`;
-//! [`make_context`] keeps its name and arguments, and its result keeps the methods below.
+//! [`WgpuContext`] is Skia's `Context` on wgpu. It owns the shared context, the context's resource
+//! provider (`Context::fResourceProvider`) and the queue manager, and it makes recorders and
+//! inserts and submits recordings. Not yet here: the global cache and the pipeline manager (G9b
+//! steps 6 and 7; `finishInitialization` needs the global cache), `readPixels` and the async
+//! rescale-and-read (they need images and surfaces, G10d, and the readback copy, G11c).
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::gpu::sk_log::skia_log_e;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::caps::Caps;
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::context_priv::{ContextPriv, SharedResourceProvider};
+use crate::graphite::graphite_types::{InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu};
+use crate::graphite::queue_manager::QueueManager;
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use crate::graphite::wgpu::caps::WgpuCaps;
+use crate::graphite::wgpu::queue_manager::WgpuQueueManagerBackend;
 use crate::graphite::wgpu::shared_context::{WgpuBackendContext, WgpuSharedContext};
 
-/// The wgpu `Context` as far as it exists before the submission side (G9b, G11c) is ported.
+/// The wgpu `Context`: the shared context, the resource provider and the queue manager.
 // Port of: include/gpu/graphite/Context.h#L45-L74 (chrome/m156)
 #[doc(alias = "Context")]
 #[derive(Debug)]
 pub struct WgpuContext {
     shared_context: Arc<WgpuSharedContext>,
     resource_provider: SharedResourceProvider,
+    /// `fQueueManager`.
+    queue_manager: QueueManager,
     options: ContextOptions,
+}
+
+/// The part of a [`WgpuContext`] that the queue manager reads (`Context*` in Skia): the caps and
+/// the context's resource provider. Borrowed from the context's other fields, so the queue manager
+/// can be used at the same time.
+struct ContextPrivView<'a> {
+    shared_context: &'a WgpuSharedContext,
+    resource_provider: &'a SharedResourceProvider,
+}
+
+impl ContextPriv for ContextPrivView<'_> {
+    fn caps(&self) -> &dyn Caps {
+        &**self.shared_context.caps()
+    }
+
+    fn resource_provider(&self) -> &SharedResourceProvider {
+        self.resource_provider
+    }
 }
 
 /// `SK_InvalidGenID`: the recorder id of the context's own resource provider.
@@ -57,11 +81,88 @@ impl WgpuContext {
         let resource_provider = Arc::new(Mutex::new(
             shared_context.make_resource_provider(INVALID_GEN_ID, options.gpu_budget_in_bytes),
         ));
+        // `fQueueManager` is made by the backend's `ContextFactory`, which passes the queue
+        // manager to the context. The wgpu queue manager needs the device and the queue.
+        let queue_manager = QueueManager::new(
+            shared_context.is_protected(),
+            shared_context.caps().allow_cpu_sync(),
+            Box::new(WgpuQueueManagerBackend::new(
+                shared_context.device().clone(),
+                shared_context.queue().clone(),
+            )),
+        );
         Self {
             shared_context,
             resource_provider,
+            queue_manager,
             options: options.clone(),
         }
+    }
+
+    /// `insertRecording(info)`: adds a recording's commands to the current command buffer.
+    // Port of: src/gpu/graphite/Context.cpp#L255-L267 (chrome/m156)
+    #[doc(alias = "insertRecording")]
+    #[must_use]
+    pub fn insert_recording(&mut self, info: InsertRecordingInfo<'_>) -> InsertStatus {
+        let mut view = ContextPrivView {
+            shared_context: &self.shared_context,
+            resource_provider: &self.resource_provider,
+        };
+        self.queue_manager.add_recording(info, &mut view)
+    }
+
+    /// `submit(submitInfo)`: submits the current command buffer, then checks for finished work.
+    /// With [`SyncToCpu::Yes`] on a context that allows CPU sync, waits for the submission.
+    // Port of: src/gpu/graphite/Context.cpp#L269-L280 (chrome/m156)
+    #[must_use]
+    pub fn submit(&mut self, mut submit_info: SubmitInfo) -> bool {
+        if submit_info.sync == SyncToCpu::Yes && !self.shared_context.caps().allow_cpu_sync() {
+            skia_log_e!(
+                "SyncToCpu::kYes not supported with ContextOptions::fNeverYieldToWebGPU. The \
+                 parameter is ignored and no synchronization will occur."
+            );
+            submit_info.sync = SyncToCpu::No;
+        }
+        let sync = submit_info.sync;
+        let success = self.queue_manager.submit_to_gpu(submit_info);
+        self.check_for_finished_work(sync);
+        success
+    }
+
+    /// `hasUnfinishedGpuWork()`.
+    // Port of: src/gpu/graphite/Context.cpp#L282-L282 (chrome/m156)
+    #[must_use]
+    pub fn has_unfinished_gpu_work(&self) -> bool {
+        self.queue_manager.has_unfinished_gpu_work()
+    }
+
+    /// `hasPendingGPUWork()`.
+    // Port of: src/gpu/graphite/Context.cpp#L284-L284 (chrome/m156)
+    #[must_use]
+    pub fn has_pending_gpu_work(&self) -> bool {
+        self.queue_manager.has_pending_gpu_work()
+    }
+
+    /// `checkForFinishedWork(syncToCpu)`: retires finished submissions and returns the cached
+    /// resources that have been released.
+    // Port of: src/gpu/graphite/Context.cpp#L912-L922 (chrome/m156)
+    pub fn check_for_finished_work(&mut self, sync: SyncToCpu) {
+        self.queue_manager.check_for_finished_work(sync);
+        // Process the return queue periodically to make sure it doesn't get too big.
+        self.resource_provider
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .force_process_returned_resources();
+        self.shared_context
+            .base()
+            .force_process_returned_resources();
+    }
+
+    /// `checkAsyncWorkCompletion()`: polls the device and retires finished work, without waiting.
+    // Port of: src/gpu/graphite/Context.cpp#L924-L926 (chrome/m156)
+    #[doc(alias = "checkAsyncWorkCompletion")]
+    pub fn check_async_work_completion(&mut self) {
+        self.check_for_finished_work(SyncToCpu::No);
     }
 
     /// `backend()`.

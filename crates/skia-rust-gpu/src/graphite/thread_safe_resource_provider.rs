@@ -38,7 +38,7 @@ impl std::fmt::Debug for ThreadSafeResourceProvider {
 
 impl ThreadSafeResourceProvider {
     /// `ThreadSafeResourceProvider(resourceProvider)`.
-    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L14-L17 (chrome/m156)
+    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L15-L17 (chrome/m156)
     #[must_use]
     pub fn new(resource_provider: ResourceProvider) -> Self {
         Self {
@@ -62,13 +62,15 @@ impl ThreadSafeResourceProvider {
         &self,
         sampler_desc: &SamplerDesc,
     ) -> Option<ResourceRef<Sampler>> {
-        let sampler = self.lock().find_or_create_compatible_sampler(sampler_desc)?;
+        let sampler = self
+            .lock()
+            .find_or_create_compatible_sampler(sampler_desc)?;
         debug_assert_eq!(sampler.base().gpu_memory_size(), 0);
         Some(sampler)
     }
 
     /// `getResourceCacheLimit()`.
-    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L27-L31 (chrome/m156)
+    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L28-L31 (chrome/m156)
     #[doc(alias = "getResourceCacheLimit")]
     #[must_use]
     pub fn get_resource_cache_limit(&self) -> usize {
@@ -76,7 +78,7 @@ impl ThreadSafeResourceProvider {
     }
 
     /// `getResourceCacheCurrentBudgetedBytes()`.
-    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L33-L37 (chrome/m156)
+    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L33-L36 (chrome/m156)
     #[doc(alias = "getResourceCacheCurrentBudgetedBytes")]
     #[must_use]
     pub fn get_resource_cache_current_budgeted_bytes(&self) -> usize {
@@ -84,7 +86,7 @@ impl ThreadSafeResourceProvider {
     }
 
     /// `getResourceCacheCurrentPurgeableBytes()`.
-    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L39-L43 (chrome/m156)
+    // Port of: src/gpu/graphite/ThreadSafeResourceProvider.cpp#L38-L41 (chrome/m156)
     #[doc(alias = "getResourceCacheCurrentPurgeableBytes")]
     #[must_use]
     pub fn get_resource_cache_current_purgeable_bytes(&self) -> usize {
