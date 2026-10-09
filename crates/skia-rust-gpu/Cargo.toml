@@ -11,7 +11,10 @@ publish = false
 
 [dependencies]
 skia-rust-core.workspace = true
+skia-rust-effects.workspace = true
 skia-rust-simd.workspace = true
+skia-rust-sksl = { workspace = true, features = ["wgsl"] }
+skia-rust-skcms.workspace = true
 bitflags.workspace = true
 
 # wgpu backend (docs/design/gpu.md §4.1). Native targets get every backend wgpu enables by
@@ -23,6 +26,10 @@ wgpu = { workspace = true, features = ["std", "parking_lot", "wgsl", "dx12", "me
 # non-atomic fragile marker (`wasm32-unknown-unknown` has no threads). Build-only in CI.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { workspace = true, features = ["std", "wgsl", "webgpu", "fragile-send-sync-non-atomic-wasm"] }
+
+[dev-dependencies]
+# Validates every generated WGSL shader (docs/design/gpu.md §6.3, W4).
+naga = { workspace = true, features = ["wgsl-in"] }
 
 [lints]
 workspace = true

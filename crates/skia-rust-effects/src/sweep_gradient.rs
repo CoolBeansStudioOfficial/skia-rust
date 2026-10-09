@@ -44,6 +44,27 @@ impl SweepGradient {
         }
     }
 
+    /// The center (`center()`).
+    // Port of: src/shaders/gradients/SkSweepGradient.h#L26-L33 (chrome/m156), `center()`
+    #[must_use]
+    pub fn center(&self) -> Point {
+        self.center
+    }
+
+    /// The bias added to `t` (`tBias()`).
+    // Port of: src/shaders/gradients/SkSweepGradient.h#L26-L33 (chrome/m156), `tBias()`
+    #[must_use]
+    pub fn t_bias(&self) -> scalar {
+        self.t_bias
+    }
+
+    /// The scale applied to `t` (`tScale()`).
+    // Port of: src/shaders/gradients/SkSweepGradient.h#L26-L33 (chrome/m156), `tScale()`
+    #[must_use]
+    pub fn t_scale(&self) -> scalar {
+        self.t_scale
+    }
+
     /// The state shared by all gradients.
     #[must_use]
     pub fn base(&self) -> &GradientBaseShader {

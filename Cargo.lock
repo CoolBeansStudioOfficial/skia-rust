@@ -1197,8 +1197,12 @@ name = "skia-rust-gpu"
 version = "0.156.0"
 dependencies = [
  "bitflags",
+ "naga",
  "skia-rust-core",
+ "skia-rust-effects",
  "skia-rust-simd",
+ "skia-rust-skcms",
+ "skia-rust-sksl",
  "wgpu",
 ]
 

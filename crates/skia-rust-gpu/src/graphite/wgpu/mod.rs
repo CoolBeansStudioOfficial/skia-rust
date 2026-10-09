@@ -26,6 +26,7 @@ pub mod buffer;
 pub mod caps;
 pub mod context;
 pub mod graphite_utils;
+pub mod pipeline_shaders;
 pub mod resource_provider;
 pub mod sampler;
 pub mod shared_context;

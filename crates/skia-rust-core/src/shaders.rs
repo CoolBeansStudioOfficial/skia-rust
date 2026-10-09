@@ -11,6 +11,7 @@
 pub mod blend_shader;
 pub mod color_filter_shader;
 pub mod color_shader;
+pub mod coord_clamp_shader;
 pub mod ctm_shader;
 pub mod empty_shader;
 pub mod image_shader;
@@ -36,6 +37,7 @@ use crate::shader::Shader;
 pub use blend_shader::BlendShader;
 pub use color_filter_shader::ColorFilterShader;
 pub use color_shader::ColorShader;
+pub use coord_clamp_shader::CoordClampShader;
 pub use ctm_shader::CtmShader;
 pub use empty_shader::EmptyShader;
 pub use image_shader::ImageShader;

@@ -267,6 +267,8 @@ pub struct ModuleLoader {
     compute: OnceLock<Arc<Module>>,
     public: OnceLock<Arc<Module>>,
     private_rt_shader: OnceLock<Arc<Module>>,
+    graphite_fragment: OnceLock<Arc<Module>>,
+    graphite_vertex: OnceLock<Arc<Module>>,
 }
 
 static LIBRARY: ModuleLoader = ModuleLoader::new(Flavor::Library);
@@ -284,6 +286,8 @@ impl ModuleLoader {
             compute: OnceLock::new(),
             public: OnceLock::new(),
             private_rt_shader: OnceLock::new(),
+            graphite_fragment: OnceLock::new(),
+            graphite_vertex: OnceLock::new(),
         }
     }
 
@@ -417,6 +421,42 @@ impl ModuleLoader {
                     ProgramKind::Fragment,
                     ModuleType::SkslRtShader,
                     &self.public(),
+                    false,
+                )
+            })
+            .clone()
+    }
+
+    /// `loadGraphiteFragmentModule`: `[Frag]` plus Graphite's fragment helpers
+    /// (`sksl_graphite_frag`).
+    // Port of: src/sksl/SkSLModuleLoader.cpp#L309-L318 (chrome/m156)
+    #[must_use]
+    pub fn graphite_fragment(&self) -> Arc<Module> {
+        self.graphite_fragment
+            .get_or_init(|| {
+                compile_and_shrink(
+                    self.flavor,
+                    ProgramKind::GraphiteFragment,
+                    ModuleType::SkslGraphiteFrag,
+                    &self.fragment(),
+                    false,
+                )
+            })
+            .clone()
+    }
+
+    /// `loadGraphiteVertexModule`: `[Vert]` plus Graphite's vertex helpers
+    /// (`sksl_graphite_vert`).
+    // Port of: src/sksl/SkSLModuleLoader.cpp#L320-L329 (chrome/m156)
+    #[must_use]
+    pub fn graphite_vertex(&self) -> Arc<Module> {
+        self.graphite_vertex
+            .get_or_init(|| {
+                compile_and_shrink(
+                    self.flavor,
+                    ProgramKind::GraphiteVertex,
+                    ModuleType::SkslGraphiteVert,
+                    &self.vertex(),
                     false,
                 )
             })

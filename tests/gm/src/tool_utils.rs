@@ -157,6 +157,20 @@ pub fn create_checkerboard_bitmap(w: i32, h: i32, c1: Color, c2: Color, check_si
     bitmap
 }
 
+/// `ToolUtils::create_checkerboard_image`: a `w` by `h` premultiplied N32 snapshot of a
+/// checkerboard of `c1` and `c2` squares of `check_size`.
+///
+/// # Panics
+/// If the surface cannot be made.
+// Port of: tools/ToolUtils.cpp#L171-L175 (chrome/m156)
+#[must_use]
+pub fn create_checkerboard_image(w: i32, h: i32, c1: Color, c2: Color, check_size: i32) -> Image {
+    let info = ImageInfo::new_n32_premul((w, h), None);
+    let mut surf = surfaces::raster(&info, None, None).expect("a surface");
+    draw_checkerboard(surf.canvas(), c1, c2, check_size);
+    surf.image_snapshot().expect("a snapshot")
+}
+
 /// `ToolUtils::draw_checkerboard`: fills `canvas` with a checkerboard of `c1` and `c2` squares of
 /// `size`.
 // Port of: tools/ToolUtils.cpp#L177-L182 (chrome/m156)

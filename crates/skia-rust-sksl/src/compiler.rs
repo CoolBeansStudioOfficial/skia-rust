@@ -207,13 +207,12 @@ impl Compiler {
         context.pool = IrPool::default();
     }
 
-    /// `moduleForProgramKind(kind)`: the module a program of that kind is compiled against, or
-    /// `None` for the Graphite kinds, whose modules are not ported.
+    /// `moduleForProgramKind(kind)`: the module a program of that kind is compiled against.
     // Port of: src/sksl/SkSLCompiler.cpp#L44-L64 (chrome/m156)
     #[must_use]
-    pub fn module_for_program_kind(&self, kind: ProgramKind) -> Option<Arc<Module>> {
+    pub fn module_for_program_kind(&self, kind: ProgramKind) -> Arc<Module> {
         let loader = ModuleLoader::for_flavor(self.flavor);
-        Some(match kind {
+        match kind {
             ProgramKind::Fragment => loader.fragment(),
             ProgramKind::Vertex => loader.vertex(),
             ProgramKind::Compute => loader.compute(),
@@ -225,8 +224,9 @@ impl Compiler {
             | ProgramKind::RuntimeBlender
             | ProgramKind::MeshVertex
             | ProgramKind::MeshFragment => loader.public(),
-            ProgramKind::GraphiteFragment | ProgramKind::GraphiteVertex => return None,
-        })
+            ProgramKind::GraphiteFragment => loader.graphite_fragment(),
+            ProgramKind::GraphiteVertex => loader.graphite_vertex(),
+        }
     }
 
     /// `compileModule` without the post-load optimization: parses `source` as the module
@@ -352,7 +352,7 @@ impl Compiler {
         settings: ProgramSettings,
     ) -> Option<Program> {
         // Load the module used by this ProgramKind.
-        let module = self.module_for_program_kind(kind)?;
+        let module = self.module_for_program_kind(kind);
         let source: Arc<[u8]> = Arc::from(source);
         self.initialize_context(module, kind, settings, source.clone(), ModuleType::Program);
         // `Parser::programInheritingFrom` releases the program when parsing succeeded.

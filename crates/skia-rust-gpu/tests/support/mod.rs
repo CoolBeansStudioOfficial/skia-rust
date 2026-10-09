@@ -8,6 +8,8 @@
 //! `Caps`, resource provider back end, shared context, command buffer and context.
 #![allow(dead_code)] // each test file uses a different part
 
+pub mod wgsl_corpus;
+
 use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -18,7 +20,9 @@ use skia_rust_core::size::ISize;
 use skia_rust_gpu::gpu::gpu_types::{BackendApi, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
-use skia_rust_gpu::graphite::caps::{AttachmentSizePolicy, Caps};
+use skia_rust_gpu::graphite::caps::{
+    AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
+};
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use skia_rust_gpu::graphite::graphite_resource_key::{
@@ -29,9 +33,11 @@ use skia_rust_gpu::graphite::recorder::{Recorder, RecorderOptions, RecorderShare
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
+use skia_rust_gpu::graphite::resource_types::DstReadStrategy;
 use skia_rust_gpu::graphite::resource_types::{
-    AccessPattern, BufferType, Discardable, Ownership, ResourceType,
+    AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
+use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use skia_rust_gpu::graphite::task::compute_task::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
@@ -160,6 +166,13 @@ pub struct MockCaps {
     pub storage_alignment: usize,
     pub transfer_alignment: usize,
     pub attachment_size_policy: AttachmentSizePolicy,
+    pub storage_buffer_support: bool,
+    /// What `toString(ImmutableSamplerInfo)` returns.
+    pub immutable_sampler_string: String,
+    /// `shaderCaps()`.
+    pub shader_caps: ShaderCaps,
+    /// `resourceBindingRequirements()`.
+    pub resource_binding_requirements: ResourceBindingRequirements,
 }
 
 impl Default for MockCaps {
@@ -171,6 +184,10 @@ impl Default for MockCaps {
             storage_alignment: 16,
             transfer_alignment: 4,
             attachment_size_policy: AttachmentSizePolicy::Exact,
+            storage_buffer_support: false,
+            immutable_sampler_string: String::new(),
+            shader_caps: default_shader_caps(),
+            resource_binding_requirements: ResourceBindingRequirements::default(),
         }
     }
 }
@@ -178,6 +195,18 @@ impl Default for MockCaps {
 impl Caps for MockCaps {
     fn max_texture_size(&self) -> i32 {
         4096
+    }
+
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        DstReadStrategy::TextureCopy
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        false
     }
 
     fn require_ordered_recordings(&self) -> bool {
@@ -239,11 +268,137 @@ impl Caps for MockCaps {
         texture_info(desc.format, desc.sample_count, Mipmapped::No)
     }
 
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+        mipmapped: Mipmapped,
+        _is_protected: Protected,
+        _renderable: skia_rust_gpu::gpu::gpu_types::Renderable,
+    ) -> TextureInfo {
+        // The mock back end samples the formats of the color types the tests use.
+        let format = match color_type {
+            skia_rust_core::color_type::ColorType::Alpha8 => TextureFormat::A8,
+            skia_rust_core::color_type::ColorType::RGBAF16 => TextureFormat::RGBA16F,
+            _ => TextureFormat::RGBA8,
+        };
+        texture_info(format, SampleCount::One, mipmapped)
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }
 
     fn is_renderable_with_msrtss(&self, _info: &TextureInfo) -> bool {
+        false
+    }
+
+    fn storage_buffer_support(&self) -> bool {
+        self.storage_buffer_support
+    }
+
+    fn clamp_to_border_support(&self) -> bool {
+        // The mock backend samples with clamp-to-border, so no decal substitution happens.
+        true
+    }
+
+    fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
+        self.immutable_sampler_string.clone()
+    }
+
+    fn shader_caps(&self) -> &ShaderCaps {
+        &self.shader_caps
+    }
+
+    fn resource_binding_requirements(&self) -> &ResourceBindingRequirements {
+        &self.resource_binding_requirements
+    }
+
+    // The remaining queries keep the base `Caps` defaults (`Caps.h`).
+    fn max_varyings(&self) -> i32 {
+        0
+    }
+
+    fn ndc_y_axis_points_down(&self) -> bool {
+        false
+    }
+
+    fn protected_support(&self) -> bool {
+        false
+    }
+
+    fn semaphore_support(&self) -> bool {
+        false
+    }
+
+    fn allow_cpu_sync(&self) -> bool {
+        true
+    }
+
+    fn storage_buffer_support_for_compute(&self) -> bool {
+        false
+    }
+
+    fn compute_support(&self) -> bool {
+        false
+    }
+
+    fn avoid_msaa(&self) -> bool {
+        false
+    }
+
+    fn msaa_render_to_single_sampled_support(&self) -> bool {
+        false
+    }
+
+    fn use_draw_list_layer(&self) -> bool {
+        false
+    }
+
+    fn load_op_affects_msaa_pipelines(&self) -> bool {
+        false
+    }
+
+    fn max_path_atlas_texture_size(&self) -> i32 {
+        8192
+    }
+
+    fn allow_multiple_atlas_textures(&self) -> bool {
+        true
+    }
+
+    fn support_bilerp_from_glyph_atlas(&self) -> bool {
+        false
+    }
+
+    fn set_backend_labels(&self) -> bool {
+        false
+    }
+
+    fn is_sample_count_supported(&self, _format: TextureFormat, _count: SampleCount) -> bool {
+        true
+    }
+
+    fn is_texturable(&self, _info: &TextureInfo, _allow_msaa: bool) -> bool {
+        true
+    }
+
+    fn is_readable(&self, _info: &TextureInfo, _allow_msaa: bool) -> bool {
+        true
+    }
+
+    fn is_renderable(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_copyable_src(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_copyable_dst(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_storage(&self, _info: &TextureInfo) -> bool {
         false
     }
 }
@@ -318,6 +473,7 @@ impl ResourceProviderBackend for MockResourceBackend {
 pub struct MockSharedContext {
     pub caps: Arc<MockCaps>,
     pub counts: BackendCounts,
+    pub shader_dictionary: ShaderCodeDictionary,
 }
 
 impl MockSharedContext {
@@ -325,6 +481,7 @@ impl MockSharedContext {
         Arc::new(Self {
             caps: Arc::new(caps),
             counts: BackendCounts::default(),
+            shader_dictionary: ShaderCodeDictionary::new(Layout::Std140, &[]),
         })
     }
 }
@@ -340,6 +497,10 @@ impl RecorderSharedContext for MockSharedContext {
 
     fn is_protected(&self) -> Protected {
         Protected::No
+    }
+
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        &self.shader_dictionary
     }
 
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {

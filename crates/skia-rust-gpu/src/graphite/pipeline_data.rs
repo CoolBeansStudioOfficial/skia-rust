@@ -6,16 +6,20 @@
 //! Uniform data blocks, the de-duplicating uniform cache and the gatherer that collects a draw's
 //! uniforms (`PipelineData.h`).
 //!
-//! Not ported yet: `TextureDataBlock`, `TextureDataCache` and the texture half of
-//! `PipelineDataGatherer`. They hold `TextureProxy`s and `SamplerDesc`s, which come with the
-//! Graphite texture layer. The uniform cache's entries also lack Skia's `BindBufferInfo`
-//! (`fBufferBinding`), which comes with the buffer manager.
+//! The texture half is here too: `TextureDataBlock` (the sampled textures of a draw),
+//! `TextureDataCache` (de-duplicated bindings and the unique proxies they reference) and the
+//! gatherer's `add` / `endCombinedData` / `rewindForRenderStep`. Textures are `(proxy, sampler)`
+//! pairs; a proxy is `None` only on the pre-compile path.
+//!
+//! Not ported yet: the uniform cache's entries lack Skia's `BindBufferInfo` (`fBufferBinding`),
+//! which comes with the buffer manager.
 
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use crate::graphite::resource_types::Layout;
+use crate::graphite::resource_types::{Layout, SamplerDesc};
+use crate::graphite::texture_proxy::TextureProxy;
 #[cfg(debug_assertions)]
 use crate::graphite::uniform::Uniform;
 use crate::graphite::uniform_manager::UniformManager;
@@ -138,6 +142,13 @@ impl<K: Eq + Hash + Clone, V: From<K>> DenseBiMap<K, V> {
 }
 
 impl<K: Eq + Hash, V> DenseBiMap<K, V> {
+    /// The index of `data`, if it has been inserted (the `find` half of `insert`).
+    // Port of: src/gpu/graphite/PipelineData.h#L173-L175 (chrome/m156), `fDataToIndex.find`
+    #[must_use]
+    pub fn index_of(&self, data: &K) -> Option<Index> {
+        self.data_to_index.get(data).copied()
+    }
+
     /// The value at `index` (`lookup`).
     // Port of: src/gpu/graphite/PipelineData.h#L189 (chrome/m156)
     #[must_use]
@@ -247,16 +258,240 @@ impl UniformDataCache {
     pub fn lookup_mut(&mut self, index: Index) -> &mut UniformDataCacheEntry {
         self.uniforms.lookup_mut(index)
     }
+
+    /// The number of distinct entries (`count`).
+    // Port of: src/gpu/graphite/PipelineData.h#L276 (chrome/m156)
+    #[must_use]
+    pub fn count(&self) -> usize {
+        self.uniforms.count()
+    }
 }
 
-/// Collects the uniforms of a draw: the paint uniforms, then those of the render step, with the
-/// rewinding a render step needs to share the paint uniforms (`PipelineDataGatherer`).
+/// One sampled texture of a draw: the proxy (`None` only on the pre-compile path) and the sampler
+/// it is read with (`TextureDataBlock::SampledTexture`).
+// Port of: src/gpu/graphite/PipelineData.h#L98 (chrome/m156)
+pub type SampledTexture = (Option<Arc<TextureProxy>>, SamplerDesc);
+
+/// Compares two optional proxies by identity, as `sk_sp` equality does.
+fn same_proxy(a: Option<&Arc<TextureProxy>>, b: Option<&Arc<TextureProxy>>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+        _ => false,
+    }
+}
+
+/// The address of a proxy, or 0 for none (`reinterpret_cast<uintptr_t>(proxy.get())`).
+fn proxy_address(proxy: Option<&Arc<TextureProxy>>) -> usize {
+    proxy.map_or(0, |p| Arc::as_ptr(p) as usize)
+}
+
+/// The sampled textures a draw binds, as a shared immutable list (`TextureDataBlock`).
 ///
-/// The texture side of Skia's gatherer is not ported yet (see the module docs).
+/// Skia's block is a span into the gatherer's or an arena's storage. Here it shares its entries
+/// through an `Arc`, so the proxies stay alive for as long as the block does.
+// Port of: src/gpu/graphite/PipelineData.h#L96-L164 (chrome/m156)
+#[doc(alias = "skgpu::graphite::TextureDataBlock")]
+#[derive(Clone, Debug, Default)]
+pub struct TextureDataBlock {
+    textures: Arc<[SampledTexture]>,
+}
+
+impl TextureDataBlock {
+    /// A block holding one texture (`TextureDataBlock(const SampledTexture&)`).
+    // Port of: src/gpu/graphite/PipelineData.h#L110 (chrome/m156)
+    #[must_use]
+    pub fn from_texture(texture: SampledTexture) -> Self {
+        Self {
+            textures: Arc::from(vec![texture]),
+        }
+    }
+
+    /// The block made from `textures`, in order (`TextureDataBlock::Make`).
+    // Port of: src/gpu/graphite/PipelineData.h#L103-L106 (chrome/m156)
+    #[must_use]
+    pub fn make(textures: &[SampledTexture]) -> Self {
+        Self {
+            textures: Arc::from(textures),
+        }
+    }
+
+    /// Whether the block holds no textures (`empty`).
+    // Port of: src/gpu/graphite/PipelineData.h#L115 (chrome/m156)
+    #[must_use]
+    pub fn empty(&self) -> bool {
+        self.textures.is_empty()
+    }
+
+    /// The number of textures (`numTextures`).
+    // Port of: src/gpu/graphite/PipelineData.h#L117 (chrome/m156)
+    #[must_use]
+    pub fn num_textures(&self) -> usize {
+        self.textures.len()
+    }
+
+    /// The texture at `index` (`texture`).
+    // Port of: src/gpu/graphite/PipelineData.h#L118 (chrome/m156)
+    #[must_use]
+    pub fn texture(&self, index: usize) -> &SampledTexture {
+        &self.textures[index]
+    }
+
+    /// All textures, in binding order.
+    #[must_use]
+    pub fn textures(&self) -> &[SampledTexture] {
+        &self.textures
+    }
+}
+
+impl PartialEq for TextureDataBlock {
+    // Port of: src/gpu/graphite/PipelineData.h#L120-L135 (chrome/m156), `operator==`
+    fn eq(&self, other: &Self) -> bool {
+        if self.textures.len() != other.textures.len() {
+            return false;
+        }
+        if std::ptr::eq(self.textures.as_ptr(), other.textures.as_ptr()) {
+            return true; // shortcut for the same span
+        }
+        self.textures.iter().zip(other.textures.iter()).all(
+            |((tex, sampler), (other_tex, other_sampler))| {
+                same_proxy(tex.as_ref(), other_tex.as_ref()) && sampler == other_sampler
+            },
+        )
+    }
+}
+
+impl Eq for TextureDataBlock {}
+
+impl Hash for TextureDataBlock {
+    // Port of: src/gpu/graphite/PipelineData.h#L138-L155 (chrome/m156), `TextureDataBlock::Hash`
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // The proxies are hashed by address: a TextureDataCache lives for one recording, and its
+        // blocks hold refs on their proxies.
+        for (proxy, sampler) in self.textures.iter() {
+            sampler.hash(state);
+            proxy_address(proxy.as_ref()).hash(state);
+        }
+    }
+}
+
+/// A proxy keyed by its identity (`TextureProxyCache`'s key: `TextureProxy*` compared by address).
+#[derive(Clone, Debug)]
+struct ProxyIdentity(Arc<TextureProxy>);
+
+impl PartialEq for ProxyIdentity {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for ProxyIdentity {}
+
+impl Hash for ProxyIdentity {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Arc::as_ptr(&self.0).hash(state);
+    }
+}
+
+impl From<ProxyIdentity> for Arc<TextureProxy> {
+    fn from(identity: ProxyIdentity) -> Self {
+        identity.0
+    }
+}
+
+/// De-duplicates sets of texture bindings and collects the list of unique texture proxies that
+/// are referenced by all inserted bindings (`TextureDataCache`).
+// Port of: src/gpu/graphite/PipelineData.h#L281-L337 (chrome/m156)
+#[doc(alias = "skgpu::graphite::TextureDataCache")]
+#[derive(Debug, Default)]
+pub struct TextureDataCache {
+    textures: DenseBiMap<TextureDataBlock, TextureDataBlock>,
+    unique_textures: DenseBiMap<ProxyIdentity, Arc<TextureProxy>>,
+}
+
+impl TextureDataCache {
+    /// Creates an empty cache.
+    // Port of: src/gpu/graphite/PipelineData.h#L316 (chrome/m156), the default constructor
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Removes every binding and unique texture.
+    // Port of: src/gpu/graphite/PipelineData.h#L318 (chrome/m156)
+    pub fn reset(&mut self) {
+        self.textures.reset();
+        self.unique_textures.reset();
+    }
+
+    /// The index of `data_block`, inserting it on first sight. The first sight also records each
+    /// of its textures as unique to hand off to the `DrawPass` (`TextureCopier::persist`).
+    // Port of: src/gpu/graphite/PipelineData.h#L320 (chrome/m156), `insert`
+    pub fn insert(&mut self, data_block: TextureDataBlock) -> Index {
+        if let Some(index) = self.textures.index_of(&data_block) {
+            return index;
+        }
+        // Insert every referenced texture into the unique set to hand off to DrawPass.
+        for (proxy, _) in data_block.textures() {
+            if let Some(proxy) = proxy {
+                self.unique_textures.insert(ProxyIdentity(proxy.clone()));
+            }
+        }
+        self.textures.insert(data_block)
+    }
+
+    /// The binding at `index` (`lookup`).
+    // Port of: src/gpu/graphite/PipelineData.h#L322 (chrome/m156)
+    #[must_use]
+    pub fn lookup(&self, index: Index) -> TextureDataBlock {
+        self.textures.lookup(index).clone()
+    }
+
+    /// Whether `texture` is one of the unique textures (`hasTexture`).
+    // Port of: src/gpu/graphite/PipelineData.h#L324-L331 (chrome/m156)
+    #[must_use]
+    pub fn has_texture(&self, texture: &Arc<TextureProxy>) -> bool {
+        self.unique_textures
+            .contains(&ProxyIdentity(texture.clone()))
+    }
+
+    /// Takes the unique textures out, leaving the set empty (`detachTextures`).
+    // Port of: src/gpu/graphite/PipelineData.h#L333-L335 (chrome/m156)
+    #[must_use]
+    pub fn detach_textures(&mut self) -> Vec<Arc<TextureProxy>> {
+        self.unique_textures.detach()
+    }
+
+    /// All the bindings, in index order (`getBindings`).
+    // Port of: src/gpu/graphite/PipelineData.h#L337-L339 (chrome/m156)
+    #[must_use]
+    pub fn get_bindings(&self) -> &[TextureDataBlock] {
+        self.textures.get()
+    }
+
+    /// The number of distinct bindings (`bindingCount`).
+    // Port of: src/gpu/graphite/PipelineData.h#L343 (chrome/m156)
+    #[must_use]
+    pub fn binding_count(&self) -> usize {
+        self.textures.count()
+    }
+
+    /// The number of unique textures (`uniqueTextureCount`).
+    // Port of: src/gpu/graphite/PipelineData.h#L344 (chrome/m156)
+    #[must_use]
+    pub fn unique_texture_count(&self) -> usize {
+        self.unique_textures.count()
+    }
+}
+
+/// Collects the uniforms and textures of a draw: the paint data, then those of the render step,
+/// with the rewinding a render step needs to share the paint data (`PipelineDataGatherer`).
 // Port of: src/gpu/graphite/PipelineData.h#L352-L395 (chrome/m156)
 #[derive(Debug)]
 pub struct PipelineDataGatherer {
     uniform_manager: UniformManager,
+    textures: Vec<SampledTexture>,
+    paint_texture_count: usize,
 }
 
 impl PipelineDataGatherer {
@@ -266,20 +501,72 @@ impl PipelineDataGatherer {
     pub fn new(layout: Layout) -> Self {
         Self {
             uniform_manager: UniformManager::new(layout),
+            textures: Vec::new(),
+            paint_texture_count: 0,
         }
     }
 
-    /// Fully resets the uniforms (paint and render step) to the start of a draw.
-    // Port of: src/gpu/graphite/PipelineData.h#L358-L362 (chrome/m156), `resetForDraw`
+    /// Fully resets the uniforms (paint and render step) and the textures to the start of a draw.
+    // Port of: src/gpu/graphite/PipelineData.h#L358-L363 (chrome/m156), `resetForDraw`
     pub fn reset_for_draw(&mut self) {
         self.uniform_manager.reset();
+        self.textures.clear();
+        self.paint_texture_count = 0;
     }
 
-    /// Marks the end of the paint uniforms. A non-shading render step aligns its uniforms to
-    /// `required_alignment`; a shading one continues the paint uniforms unaligned.
+    /// Checks that the gatherer is back in its initial state (`checkReset`). Debug builds only.
+    // Port of: src/gpu/graphite/PipelineData.h#L368-L373 (chrome/m156)
+    #[cfg(debug_assertions)]
+    pub fn check_reset(&self) {
+        debug_assert!(self.textures.is_empty());
+        debug_assert!(self.uniform_manager.is_reset());
+        debug_assert_eq!(self.paint_texture_count, 0);
+    }
+
+    /// Checks that the textures are back at the end of the paint data (`checkRewind`).
+    // Port of: src/gpu/graphite/PipelineData.h#L375-L377 (chrome/m156)
+    #[cfg(debug_assertions)]
+    pub fn check_rewind(&self) {
+        debug_assert_eq!(self.textures.len(), self.paint_texture_count);
+    }
+
+    /// Checks that `other` collected the same data for the same key (`checkEquivalent`).
+    ///
+    /// The textures are not compared by identity: picture shaders and non-Graphite images can
+    /// make new proxies on a second `toKey()`, and as long as their properties and samplers
+    /// match, they are equivalent. Debug builds only.
+    // Port of: src/gpu/graphite/PipelineData.h#L379-L407 (chrome/m156)
+    #[cfg(debug_assertions)]
+    pub fn check_equivalent(&self, other: &PipelineDataGatherer) {
+        // We don't call finish() here because we don't want to modify any of the required
+        // alignment and offsets that UniformManager is tracking for being able to rewind and
+        // be combined with RenderStep data.
+        debug_assert_eq!(
+            self.uniform_manager.storage(),
+            other.uniform_manager.storage()
+        );
+
+        debug_assert_eq!(self.textures.len(), other.textures.len());
+        for ((tex, sampler), (o_tex, o_sampler)) in self.textures.iter().zip(&other.textures) {
+            match (tex, o_tex) {
+                (Some(tex), Some(o_tex)) => {
+                    debug_assert_eq!(tex.dimensions(), o_tex.dimensions());
+                    debug_assert_eq!(tex.texture_info(), o_tex.texture_info());
+                }
+                (None, None) => {}
+                _ => debug_assert!(false, "a texture is missing on one side"),
+            }
+            debug_assert_eq!(sampler, o_sampler);
+        }
+    }
+
+    /// If a renderstep performs shading, then alignment should occur on the combined
+    /// paint+renderstep, so no alignment is required and we simply mark the end of the paints. Else
+    /// we need to align whatever is currently stored to the renderstep's uniform alignment.
     // Port of: src/gpu/graphite/PipelineData.h#L382-L389 (chrome/m156), `markOffsetAndAlign`
     #[doc(alias = "markOffsetAndAlign")]
     pub fn mark_offset_and_align(&mut self, performs_shading: bool, required_alignment: i32) {
+        self.paint_texture_count = self.textures.len();
         self.uniform_manager.mark_offset();
         if !performs_shading {
             self.uniform_manager
@@ -289,21 +576,48 @@ impl PipelineDataGatherer {
 
     /// Rewinds to collect the data of another render step with the same paint data
     /// (`rewindForRenderStep`).
-    // Port of: src/gpu/graphite/PipelineData.h#L392 (chrome/m156)
+    // Port of: src/gpu/graphite/PipelineData.h#L392-L395 (chrome/m156)
     pub fn rewind_for_render_step(&mut self) {
+        self.textures.truncate(self.paint_texture_count);
         self.uniform_manager.rewind_to_mark();
     }
 
-    /// Returns the uniform data written since the last reset: the paint and render step data
-    /// when `performs_shading`, else only the render step data (`endCombinedData`'s uniform half).
+    /// Marks the end of extracting the uniforms and textures of a render step: the paint and
+    /// render step data when `performs_shading`, else only the render step data
+    /// (`endCombinedData`).
     // Port of: src/gpu/graphite/PipelineData.h#L397-L408 (chrome/m156), `endCombinedData`
     #[doc(alias = "endCombinedData")]
-    pub fn end_combined_uniforms(&mut self, performs_shading: bool) -> UniformDataBlock {
+    pub fn end_combined_data(
+        &mut self,
+        performs_shading: bool,
+    ) -> (UniformDataBlock, TextureDataBlock) {
         if performs_shading {
-            UniformDataBlock::wrap(&mut self.uniform_manager)
+            // Return paint AND renderstep uniforms written since the last resetForDraw.
+            (
+                UniformDataBlock::wrap(&mut self.uniform_manager),
+                TextureDataBlock::make(&self.textures),
+            )
         } else {
-            UniformDataBlock::wrap_non_shading(&mut self.uniform_manager)
+            // Return only the renderstep uniforms and textures.
+            (
+                UniformDataBlock::wrap_non_shading(&mut self.uniform_manager),
+                TextureDataBlock::make(&self.textures[self.paint_texture_count..]),
+            )
         }
+    }
+
+    /// Appends a sampled texture (`add`). A `None` proxy is only valid on the pre-compile path.
+    // Port of: src/gpu/graphite/PipelineData.h#L411-L413 (chrome/m156)
+    pub fn add(&mut self, proxy: Option<Arc<TextureProxy>>, sampler_desc: SamplerDesc) {
+        self.textures.push((proxy, sampler_desc));
+    }
+
+    /// Gives back capacity the uniforms no longer need.
+    // Port of: src/gpu/graphite/PipelineData.h#L415-L418 (chrome/m156), `tryShrinkCapacity`
+    pub fn try_shrink_capacity(&mut self) {
+        #[cfg(debug_assertions)]
+        self.check_reset();
+        self.uniform_manager.try_shrink_capacity();
     }
 
     /// The uniform manager that the draw's uniforms are written through.
@@ -311,12 +625,6 @@ impl PipelineDataGatherer {
     #[must_use]
     pub fn uniform_manager(&mut self) -> &mut UniformManager {
         &mut self.uniform_manager
-    }
-
-    /// Gives back capacity the uniforms no longer need.
-    // Port of: src/gpu/graphite/PipelineData.h#L412-L415 (chrome/m156), `tryShrinkCapacity`
-    pub fn try_shrink_capacity(&mut self) {
-        self.uniform_manager.try_shrink_capacity();
     }
 }
 

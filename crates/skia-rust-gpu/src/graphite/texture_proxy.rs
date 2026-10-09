@@ -9,9 +9,6 @@
 //! Proxies are shared (`sk_sp`) by images, devices and tasks, and images are `Send + Sync`, so a
 //! proxy is an `Arc<TextureProxy>` whose instantiation state sits behind a `Mutex`
 //! (`docs/design/gpu.md` §5.1).
-//!
-//! skia-rust: `Caps` is not ported yet, so the factories take `caps->maxTextureSize()` as
-//! `max_texture_size`.
 
 use std::fmt;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -19,6 +16,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Protected};
+use crate::graphite::caps::Caps;
 use crate::graphite::graphite_types::{SampleCount, Volatile};
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
@@ -66,14 +64,14 @@ impl fmt::Debug for TextureProxy {
 
 // Port of: src/gpu/graphite/TextureProxy.cpp#L162-L168 (chrome/m156)
 fn texture_info_and_size_are_valid(
+    caps: &dyn Caps,
     dimensions: ISize,
     texture_info: &TextureInfo,
-    max_texture_size: i32,
 ) -> bool {
     dimensions.width >= 1
         && dimensions.height >= 1
-        && dimensions.width <= max_texture_size
-        && dimensions.height <= max_texture_size
+        && dimensions.width <= caps.max_texture_size()
+        && dimensions.height <= caps.max_texture_size()
         && texture_info.is_valid()
 }
 
@@ -363,14 +361,14 @@ impl TextureProxy {
     // Port of: src/gpu/graphite/TextureProxy.cpp#L170-L189 (chrome/m156)
     #[must_use]
     pub fn make(
-        max_texture_size: i32,
+        caps: &dyn Caps,
         resource_provider: &mut ResourceProvider,
         dimensions: ISize,
         texture_info: &TextureInfo,
         budgeted: Budgeted,
         label: &str,
     ) -> Option<Arc<TextureProxy>> {
-        if !texture_info_and_size_are_valid(dimensions, texture_info, max_texture_size) {
+        if !texture_info_and_size_are_valid(caps, dimensions, texture_info) {
             return None;
         }
 
@@ -395,14 +393,14 @@ impl TextureProxy {
     #[doc(alias = "MakeLazy")]
     #[must_use]
     pub fn make_lazy(
-        max_texture_size: i32,
+        caps: &dyn Caps,
         dimensions: ISize,
         texture_info: &TextureInfo,
         budgeted: Budgeted,
         is_volatile: Volatile,
         callback: LazyInstantiateCallback,
     ) -> Option<Arc<TextureProxy>> {
-        if !texture_info_and_size_are_valid(dimensions, texture_info, max_texture_size) {
+        if !texture_info_and_size_are_valid(caps, dimensions, texture_info) {
             return None;
         }
 

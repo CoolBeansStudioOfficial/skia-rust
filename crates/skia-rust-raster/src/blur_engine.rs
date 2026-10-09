@@ -8,21 +8,33 @@
 //! approximation (32-bit pixels), a tent filter (for very large 32-bit sigmas) or the A8 box
 //! approximation (alpha-only images).
 //!
-//! Not ported: the shader-based algorithm (`SkShaderBlurAlgorithm`, `SkSL` runtime effects) that
-//! Skia uses for every other color type. `find_algorithm` returns `None` for those, so a blur of
-//! them produces no output.
+//! Every other color type (F16, ...) uses the shader blur (`SkShaderBlurAlgorithm`): one 2D
+//! kernel effect, or two 1D linear-sampled effects, drawn into a raster device.
 
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blur_engine::{BlurAlgorithm, BlurEngine, box_blur_window, sigma_to_radius};
+use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::device::Device;
 use skia_rust_core::floating_point::DOUBLE_PI;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::rect::IRect;
+use skia_rust_core::known_runtime_effects::{StableKey, maybe_get_known_runtime_effect};
+use skia_rust_core::m44::M44;
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::rect::{Contains, IRect, Rect};
+use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeEffectBuilder};
+use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::shader::Shader;
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_simd::vx::ScaledDividerU32;
+
+use crate::bitmap_device::BitmapDevice;
 
 /// One pass of a separable blur over values of `N` bytes (`Pass`). `blur_segment` consumes `n`
 /// values: a source value (`src`, with its stride) is optional, as is a destination (`dst`).
@@ -51,6 +63,13 @@ fn to_usize(v: i32) -> usize {
 #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)] // blur lines are small
 fn count_i32(n: usize) -> i32 {
     n as i32
+}
+
+/// `SkIntToScalar`: an integer coordinate or count as a float. Blur coordinates are small, so the
+/// conversion is exact.
+#[allow(clippy::cast_precision_loss)] // blur coordinates and offsets are far below 2^24
+fn scalar_from_i32(v: i32) -> f32 {
+    v as f32
 }
 
 /// Truncates a value in `0..=255` to a byte (the `uint8_t` conversion of Skia).
@@ -1078,11 +1097,582 @@ impl BlurAlgorithm for Raster8888BlurAlgorithm {
     }
 }
 
-/// `RasterBlurEngine`: the CPU blur engine. Non-8-bit color types have no algorithm here (their
-/// shader-based blur needs `SkSL`, which is not ported).
+// ---------------------------------------------------------------------------------------------
+// SkShaderBlurAlgorithm: the blur Skia runs for every color type other than A8 and 8888 (f16 and
+// the others). It evaluates a 2D kernel in one runtime-effect pass, or two 1D passes.
+// ---------------------------------------------------------------------------------------------
+
+/// `SkShaderBlurAlgorithm::kMaxSamples`.
+// Port of: src/core/SkBlurEngine.h#L199 (chrome/m156)
+const SHADER_BLUR_MAX_SAMPLES: usize = 28;
+/// `SkShaderBlurAlgorithm::kMaxLinearSigma`.
+// Port of: src/core/SkBlurEngine.h#L210 (chrome/m156)
+const SHADER_BLUR_MAX_LINEAR_SIGMA: f32 = 4.0;
+
+/// `SkShaderBlurAlgorithm::KernelWidth`.
+// Port of: src/core/SkBlurEngine.h#L150 (chrome/m156)
+const fn kernel_width(radius: i32) -> i32 {
+    2 * radius + 1
+}
+
+/// `SkShaderBlurAlgorithm::LinearKernelWidth`.
+// Port of: src/core/SkBlurEngine.h#L154 (chrome/m156)
+const fn linear_kernel_width(radius: i32) -> i32 {
+    radius + 1
+}
+
+/// `SkShaderBlurAlgorithm::Compute2DBlurKernel`: the normalized 2D kernel, row-major, of
+/// `KernelWidth(rx) * KernelWidth(ry)` weights. The rest of `kernel` is zeroed.
+// Port of: src/core/SkBlurEngine.cpp#L1324-L1371 (chrome/m156)
+fn compute_2d_blur_kernel(sigma: Size, radius: ISize, kernel: &mut [f32]) {
+    let width = to_usize(kernel_width(radius.width));
+    let height = to_usize(kernel_width(radius.height));
+    let kernel_size = width * height;
+
+    // And the definition of an identity blur should be sufficient that 2sigma^2 isn't near zero
+    // when there's a non-trivial radius.
+    let two_sigma_sqrd_x = 2.0f32 * sigma.width * sigma.width;
+    let two_sigma_sqrd_y = 2.0f32 * sigma.height * sigma.height;
+
+    // Setting the denominator to 1 when the radius is 0 automatically converts the remaining math
+    // to the 1D Gaussian distribution. When both radii are 0, it correctly computes a weight of 1.0
+    let denom_x = if radius.width > 0 {
+        1.0f32 / two_sigma_sqrd_x
+    } else {
+        1.0f32
+    };
+    let denom_y = if radius.height > 0 {
+        1.0f32 / two_sigma_sqrd_y
+    } else {
+        1.0f32
+    };
+
+    let mut sum = 0.0f32;
+    for x in 0..width {
+        // static_cast<float>(x - radius.width())
+        let mut x_term = scalar_from_i32(count_i32(x) - radius.width);
+        x_term = x_term * x_term * denom_x;
+        for y in 0..height {
+            let y_term = scalar_from_i32(count_i32(y) - radius.height);
+            let term = (-(x_term + y_term * y_term * denom_y)).exp();
+            // Note that the constant term (1/(sqrt(2*pi*sigma^2)) of the Gaussian is dropped here,
+            // since we renormalize the kernel below.
+            kernel[y * width + x] = term;
+            sum += term;
+        }
+    }
+    // Normalize the kernel
+    let scale = 1.0f32 / sum;
+    for weight in kernel.iter_mut().take(kernel_size) {
+        *weight *= scale;
+    }
+    // Zero remainder of the array
+    for weight in kernel.iter_mut().skip(kernel_size) {
+        *weight = 0.0;
+    }
+}
+
+/// `SkShaderBlurAlgorithm::Compute2DBlurOffsets`: the `(x, y)` offset of each kernel weight,
+/// padded to `kMaxSamples` by repeating the last valid offset.
+// Port of: src/core/SkBlurEngine.cpp#L1382-L1403 (chrome/m156)
+fn compute_2d_blur_offsets(radius: ISize, offsets: &mut [f32]) {
+    let kernel_area = to_usize(kernel_width(radius.width) * kernel_width(radius.height));
+
+    let mut i = 0usize;
+    for y in -radius.height..=radius.height {
+        for x in -radius.width..=radius.width {
+            offsets[2 * i] = scalar_from_i32(x);
+            offsets[2 * i + 1] = scalar_from_i32(y);
+            i += 1;
+        }
+    }
+    let last_valid_offset = 2 * (kernel_area - 1);
+    while i < SHADER_BLUR_MAX_SAMPLES {
+        offsets[2 * i] = offsets[last_valid_offset];
+        offsets[2 * i + 1] = offsets[last_valid_offset + 1];
+        i += 1;
+    }
+}
+
+/// `SkShaderBlurAlgorithm::Compute1DBlurLinearKernel`: the `kMaxSamples / 2` interleaved
+/// `(offset0, weight0, offset1, weight1)` entries of the linear-sampled 1D kernel, as flat floats.
+// Port of: src/core/SkBlurEngine.cpp#L1405-L1489 (chrome/m156)
+fn compute_1d_blur_linear_kernel(sigma: f32, radius: i32, offsets_and_kernel: &mut [f32]) {
+    // Given 2 adjacent gaussian points, they are blended as: Wi * Ci + Wj * Cj.
+    // The GPU will mix Ci and Cj as Ci * (1 - x) + Cj * x during sampling.
+    // Compute W', x such that W' * (Ci * (1 - x) + Cj * x) = Wi * Ci + Wj * Cj.
+    // Solving W' * x = Wj, W' * (1 - x) = Wi:
+    // W' = Wi + Wj
+    // x = Wj / (Wi + Wj)
+    let get_new_weight = |wi: f32, wj: f32| -> (f32, f32) { (wi + wj, wj / (wi + wj)) };
+
+    // Create a temporary standard kernel. The maximum blur radius that can be passed to this
+    // function is (kMaxBlurSamples-1), so make an array large enough to hold the full kernel width.
+    // kMaxKernelWidth = KernelWidth(kMaxSamples - 1) = 55.
+    let mut full_kernel = [0.0f32; 55];
+    compute_1d_blur_kernel(
+        sigma,
+        radius,
+        &mut full_kernel[..to_usize(kernel_width(radius))],
+    );
+
+    let mut kernel = [0.0f32; SHADER_BLUR_MAX_SAMPLES];
+    let mut offsets = [0.0f32; SHADER_BLUR_MAX_SAMPLES];
+    // Note that halfsize isn't just size / 2, but radius + 1. This is the size of the output array.
+    let half_size = linear_kernel_width(radius);
+    let half_radius = half_size / 2;
+    let mut low_index = half_radius - 1;
+
+    // Compute1DGaussianKernel produces a full 2N + 1 kernel. Since the kernel can be mirrored,
+    // compute only the upper half and mirror to the lower half.
+    let mut index = radius;
+    if radius & 1 != 0 {
+        // If N is odd, then use two samples.
+        // The centre texel gets sampled twice, so halve its influence for each sample.
+        let (weight, offset) = get_new_weight(
+            full_kernel[to_usize(index)] * 0.5,
+            full_kernel[to_usize(index + 1)],
+        );
+        kernel[to_usize(half_radius)] = weight;
+        offsets[to_usize(half_radius)] = offset;
+        kernel[to_usize(low_index)] = kernel[to_usize(half_radius)];
+        offsets[to_usize(low_index)] = -offsets[to_usize(half_radius)];
+        index += 1;
+        low_index -= 1;
+    } else {
+        // If N is even, then there are an even number of texels on either side of the centre
+        // texel. Sample the centre texel directly.
+        kernel[to_usize(half_radius)] = full_kernel[to_usize(index)];
+        offsets[to_usize(half_radius)] = 0.0;
+    }
+    index += 1;
+
+    // Every other pair gets one sample.
+    let mut i = half_radius + 1;
+    while i < half_size {
+        let (weight, offset) = get_new_weight(
+            full_kernel[to_usize(index)],
+            full_kernel[to_usize(index + 1)],
+        );
+        kernel[to_usize(i)] = weight;
+        offsets[to_usize(i)] = offset;
+        offsets[to_usize(i)] += scalar_from_i32(index - radius);
+
+        // Mirror to lower half.
+        kernel[to_usize(low_index)] = kernel[to_usize(i)];
+        offsets[to_usize(low_index)] = -offsets[to_usize(i)];
+
+        index += 2;
+        i += 1;
+        low_index -= 1;
+    }
+
+    // Zero out remaining values in the kernel
+    let half_size_usize = to_usize(half_size);
+    for weight in kernel.iter_mut().skip(half_size_usize) {
+        *weight = 0.0;
+    }
+    // But copy the last valid offset into the remaining offsets, to increase the chance that
+    // over-iteration in a fragment shader will have a cache hit.
+    let last_offset = offsets[half_size_usize - 1];
+    for offset in offsets.iter_mut().skip(half_size_usize) {
+        *offset = last_offset;
+    }
+
+    // Interleave into the output array to match the 1D SkSL effect
+    for i in 0..SHADER_BLUR_MAX_SAMPLES / 2 {
+        offsets_and_kernel[4 * i] = offsets[2 * i];
+        offsets_and_kernel[4 * i + 1] = kernel[2 * i];
+        offsets_and_kernel[4 * i + 2] = offsets[2 * i + 1];
+        offsets_and_kernel[4 * i + 3] = kernel[2 * i + 1];
+    }
+}
+
+/// `to_stablekey`: the key of the known blur effect batching `kernel_width` samples, so a kernel
+/// uses the smallest effect that fits it.
+// Port of: src/core/SkBlurEngine.cpp#L1491-L1526 (chrome/m156)
+fn to_stablekey(kernel_width: i32, base_key: u32) -> Option<u32> {
+    let batch = match kernel_width {
+        2..=4 => 0,
+        5..=8 => 1,
+        9..=12 => 2,
+        13..=16 => 3,
+        17..=20 => 4,
+        21..=28 => 5,
+        _ => return None,
+    };
+    Some(base_key + batch)
+}
+
+/// `SkShaderBlurAlgorithm::GetLinearBlur1DEffect`.
+// Port of: src/core/SkBlurEngine.cpp#L1528-L1532 (chrome/m156)
+fn get_linear_blur_1d_effect(radius: i32) -> Option<RuntimeEffect> {
+    let key = to_stablekey(
+        linear_kernel_width(radius),
+        StableKey::ONE_D_BLUR_BASE as u32,
+    )?;
+    maybe_get_known_runtime_effect(key)
+}
+
+/// `SkShaderBlurAlgorithm::GetBlur2DEffect`.
+// Port of: src/core/SkBlurEngine.cpp#L1534-L1539 (chrome/m156)
+fn get_blur_2d_effect(radii: ISize) -> Option<RuntimeEffect> {
+    let kernel_area = kernel_width(radii.width) * kernel_width(radii.height);
+    let key = to_stablekey(kernel_area, StableKey::TWO_D_BLUR_BASE as u32)?;
+    maybe_get_known_runtime_effect(key)
+}
+
+/// Sets the `child` of a blur effect: the shader, or a null child if there is none.
+fn assign_blur_child(builder: &mut RuntimeEffectBuilder, child: Option<Shader>) {
+    let mut slot = builder.child("child");
+    match child {
+        Some(shader) => {
+            slot.assign(shader);
+        }
+        None => {
+            slot.assign_null();
+        }
+    }
+}
+
+/// `SkShaderBlurAlgorithm::renderBlur`: draws the blur effect (already holding its uniforms) over
+/// `dst_rect` of a new raster device, sampling `input` through `src_rect` with `tile_mode`, and
+/// snaps the result. The fast interior is drawn with hardware tiling; the border with a strict
+/// shader.
+// Port of: src/core/SkBlurEngine.cpp#L1541-L1629 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // mirrors renderBlur
+fn render_blur(
+    builder: &mut RuntimeEffectBuilder,
+    filter: FilterMode,
+    radii: ISize,
+    input: &SpecialImage,
+    src_rect: IRect,
+    tile_mode: TileMode,
+    dst_rect: IRect,
+) -> Option<SpecialImage> {
+    let color_info = input.color_info();
+    let out_info = ImageInfo::new(
+        dst_rect.size(),
+        color_info.color_type(),
+        AlphaType::Premul,
+        color_info.color_space(),
+    );
+    // makeDevice: SkBitmapDevice::Create(imageInfo, SkSurfaceProps{}).
+    let mut device = BitmapDevice::create(&out_info, SurfaceProps::default())?;
+
+    let subset = IRect::from_size(dst_rect.size());
+    device.clip_rect(&Rect::from(subset), ClipOp::Intersect, false);
+    device.state_mut().set_local_to_device(&M44::translate(
+        -scalar_from_i32(dst_rect.left),
+        -scalar_from_i32(dst_rect.top),
+        0.0,
+    ));
+
+    // renderBlur() will either mix multiple fast and strict draws to cover dstRect, or will issue
+    // a single strict draw. While the SkShader object changes (really just strict mode), the rest
+    // of the SkPaint remains the same.
+    let mut paint = Paint::default();
+    paint.set_blend_mode(BlendMode::Src);
+
+    let sampling = SamplingOptions::new(filter, MipmapMode::None);
+    let safe_src_rect = src_rect.with_inset((radii.width, radii.height));
+    let mut fast_dst_rect = dst_rect;
+
+    // Only consider the safeSrcRect for shader-based tiling if the original srcRect is different
+    // from the backing store dimensions; when they match the full image we can use HW tiling.
+    if src_rect != IRect::from_size(input.backing_store_dimensions()) {
+        if let Some(intersection) = IRect::intersect(&fast_dst_rect, &safe_src_rect) {
+            fast_dst_rect = intersection;
+            // If the area of the non-clamping shader is small, it's better to just issue a single
+            // draw that performs shader tiling over the whole dst.
+            if fast_dst_rect != dst_rect
+                && fast_dst_rect.width() * fast_dst_rect.height() < 128 * 128
+            {
+                fast_dst_rect.set_empty();
+            }
+        } else {
+            fast_dst_rect.set_empty();
+        }
+    }
+
+    if !fast_dst_rect.is_empty() {
+        // Fill as much as possible without adding shader tiling logic to each blur sample,
+        // switching to clamp tiling if we aren't in this block due to HW tiling.
+        let untiled_src_rect = src_rect.with_inset((1, 1));
+        let fast_tile_mode = if untiled_src_rect.contains(fast_dst_rect) {
+            TileMode::Clamp
+        } else {
+            tile_mode
+        };
+        let child = input.as_shader(fast_tile_mode, sampling, &Matrix::new_identity(), false);
+        assign_blur_child(builder, child);
+        paint.set_shader(builder.make_shader(None::<&Matrix>));
+        device.draw_rect(&Rect::from(fast_dst_rect), &paint);
+    }
+
+    // Switch to a strict shader if there are remaining pixels to fill
+    if fast_dst_rect != dst_rect {
+        let subset_image = input.make_subset(&src_rect)?;
+        let child = subset_image.as_shader(
+            tile_mode,
+            sampling,
+            &Matrix::translate((
+                scalar_from_i32(src_rect.left),
+                scalar_from_i32(src_rect.top),
+            )),
+            true,
+        );
+        assign_blur_child(builder, child);
+        paint.set_shader(builder.make_shader(None::<&Matrix>));
+    }
+
+    if fast_dst_rect.is_empty() {
+        // Fill the entire dst with the strict shader
+        device.draw_rect(&Rect::from(dst_rect), &paint);
+    } else if fast_dst_rect != dst_rect {
+        // There will be up to four additional strict draws to fill in the border. The left and
+        // right sides will span the full height of the dst rect. The top and bottom will span
+        // the just the width of the fast interior. Strict border draws with zero width/height
+        // are skipped.
+        let borders = [
+            // Left, spanning full height
+            IRect::new(
+                dst_rect.left,
+                dst_rect.top,
+                fast_dst_rect.left,
+                dst_rect.bottom,
+            ),
+            // Right, spanning full height
+            IRect::new(
+                fast_dst_rect.right,
+                dst_rect.top,
+                dst_rect.right,
+                dst_rect.bottom,
+            ),
+            // Top, spanning inner width
+            IRect::new(
+                fast_dst_rect.left,
+                dst_rect.top,
+                fast_dst_rect.right,
+                fast_dst_rect.top,
+            ),
+            // Bottom, spanning inner width
+            IRect::new(
+                fast_dst_rect.left,
+                fast_dst_rect.bottom,
+                fast_dst_rect.right,
+                dst_rect.bottom,
+            ),
+        ];
+        for border in borders {
+            if !border.is_empty() {
+                device.draw_rect(&Rect::from(border), &paint);
+            }
+        }
+    }
+
+    device.set_immutable();
+    device.snap_special(&subset, false)
+}
+
+/// `SkShaderBlurAlgorithm::evalBlur2D`: one pass of the 2D kernel effect.
+// Port of: src/core/SkBlurEngine.cpp#L1631-L1649 (chrome/m156)
+fn eval_blur_2d(
+    sigma: Size,
+    radii: ISize,
+    input: &SpecialImage,
+    src_rect: IRect,
+    tile_mode: TileMode,
+    dst_rect: IRect,
+) -> Option<SpecialImage> {
+    let mut kernel = [0.0f32; SHADER_BLUR_MAX_SAMPLES];
+    let mut offsets = [0.0f32; 2 * SHADER_BLUR_MAX_SAMPLES];
+    compute_2d_blur_kernel(sigma, radii, &mut kernel);
+    compute_2d_blur_offsets(radii, &mut offsets);
+
+    let mut builder = RuntimeEffectBuilder::new(get_blur_2d_effect(radii)?);
+    builder.uniform("kernel").set_f32(&kernel);
+    builder.uniform("offsets").set_f32(&offsets);
+    // renderBlur() will configure the "child" shader as needed. The 2D blur effect only requires
+    // nearest-neighbor filtering.
+    render_blur(
+        &mut builder,
+        FilterMode::Nearest,
+        radii,
+        input,
+        src_rect,
+        tile_mode,
+        dst_rect,
+    )
+}
+
+/// `SkShaderBlurAlgorithm::evalBlur1D`: one pass of the linear-sampled 1D effect along `dir`.
+// Port of: src/core/SkBlurEngine.cpp#L1651-L1669 (chrome/m156)
+fn eval_blur_1d(
+    sigma: f32,
+    radius: i32,
+    dir: (f32, f32),
+    input: &SpecialImage,
+    src_rect: IRect,
+    tile_mode: TileMode,
+    dst_rect: IRect,
+) -> Option<SpecialImage> {
+    let mut offsets_and_kernel = [0.0f32; 2 * SHADER_BLUR_MAX_SAMPLES];
+    compute_1d_blur_linear_kernel(sigma, radius, &mut offsets_and_kernel);
+
+    let mut builder = RuntimeEffectBuilder::new(get_linear_blur_1d_effect(radius)?);
+    builder
+        .uniform("offsetsAndKernel")
+        .set_f32(&offsets_and_kernel);
+    builder.uniform("dir").set_f32(&[dir.0, dir.1]);
+    // renderBlur() will configure the "child" shader as needed. The 1D blur effect requires
+    // linear filtering. Reconstruct the appropriate "2D" radii inset value from 'dir'.
+    let radii = ISize::new(
+        if dir.0 == 0.0 { 0 } else { radius },
+        if dir.1 == 0.0 { 0 } else { radius },
+    );
+    render_blur(
+        &mut builder,
+        FilterMode::Linear,
+        radii,
+        input,
+        src_rect,
+        tile_mode,
+        dst_rect,
+    )
+}
+
+/// `SkShaderBlurAlgorithm::blur`: a single 2D pass when the kernel fits, else an X pass followed
+/// by a Y pass.
+// Port of: src/core/SkBlurEngine.cpp#L1671-L1746 (chrome/m156)
+fn shader_blur(
+    sigma: Size,
+    input: &SpecialImage,
+    src_rect: IRect,
+    tile_mode: TileMode,
+    dst_rect: IRect,
+) -> Option<SpecialImage> {
+    debug_assert!(
+        sigma.width <= SHADER_BLUR_MAX_LINEAR_SIGMA && sigma.height <= SHADER_BLUR_MAX_LINEAR_SIGMA
+    );
+
+    let radius_x = sigma_to_radius(sigma.width);
+    let radius_y = sigma_to_radius(sigma.height);
+    let kernel_area = kernel_width(radius_x) * kernel_width(radius_y);
+    if kernel_area <= 28 && radius_x > 0 && radius_y > 0 {
+        // Use a single-pass 2D kernel if it fits and isn't just 1D already
+        return eval_blur_2d(
+            sigma,
+            ISize::new(radius_x, radius_y),
+            input,
+            src_rect,
+            tile_mode,
+            dst_rect,
+        );
+    }
+
+    // Use two passes of a 1D kernel (one per axis).
+    let mut src = input.clone();
+    let mut intermediate_src_rect = src_rect;
+    let mut intermediate_dst_rect = dst_rect;
+    if radius_x > 0 {
+        if radius_y > 0 {
+            // May need to maintain extra rows above and below 'dstRect' for the follow-up pass.
+            if tile_mode == TileMode::Repeat || tile_mode == TileMode::Mirror {
+                // If the srcRect and dstRect are aligned, then we don't need extra rows since
+                // the periodic tiling on srcRect is the same for the intermediate. If they are
+                // not aligned, then outset by the Y radius.
+                let period = src_rect.height() * if tile_mode == TileMode::Mirror { 2 } else { 1 };
+                if period <= 0 {
+                    return None;
+                }
+                if (dst_rect.top - src_rect.top).abs() % period != 0
+                    || dst_rect.height() != src_rect.height()
+                {
+                    intermediate_dst_rect.outset((0, radius_y));
+                }
+            } else {
+                // For clamp and decal tiling, we outset by the Y radius up to what's available
+                // from the srcRect. Anything beyond that is identical to tiling the intermediate
+                // dst image directly.
+                intermediate_dst_rect.outset((0, radius_y));
+                intermediate_dst_rect.top = intermediate_dst_rect.top.max(src_rect.top);
+                intermediate_dst_rect.bottom = intermediate_dst_rect.bottom.min(src_rect.bottom);
+                if intermediate_dst_rect.top >= intermediate_dst_rect.bottom {
+                    return None;
+                }
+            }
+        }
+
+        src = eval_blur_1d(
+            sigma.width,
+            radius_x,
+            (1.0, 0.0),
+            &src,
+            src_rect,
+            tile_mode,
+            intermediate_dst_rect,
+        )?;
+        intermediate_src_rect = IRect::from_wh(src.width(), src.height());
+        intermediate_dst_rect =
+            dst_rect.with_offset((-intermediate_dst_rect.left, -intermediate_dst_rect.top));
+    }
+
+    if radius_y > 0 {
+        src = eval_blur_1d(
+            sigma.height,
+            radius_y,
+            (0.0, 1.0),
+            &src,
+            intermediate_src_rect,
+            tile_mode,
+            intermediate_dst_rect,
+        )?;
+    }
+
+    Some(src)
+}
+
+/// `RasterShaderBlurAlgorithm`: the shader blur, with raster bitmap devices.
+// Port of: src/core/SkBlurEngine.cpp#L1274-L1282 (chrome/m156)
+#[derive(Debug, Default)]
+pub struct RasterShaderBlurAlgorithm;
+
+impl BlurAlgorithm for RasterShaderBlurAlgorithm {
+    // Port of: src/core/SkBlurEngine.h#L210 (chrome/m156), kMaxLinearSigma
+    fn max_sigma(&self) -> f32 {
+        SHADER_BLUR_MAX_LINEAR_SIGMA
+    }
+
+    // Port of: src/core/SkBlurEngine.h#L177 (chrome/m156)
+    fn supports_only_decal_tiling(&self) -> bool {
+        false
+    }
+
+    fn blur(
+        &self,
+        sigma: Size,
+        input: &SpecialImage,
+        original_src_bounds: IRect,
+        tile_mode: TileMode,
+        original_dst_bounds: IRect,
+    ) -> Option<SpecialImage> {
+        shader_blur(
+            sigma,
+            input,
+            original_src_bounds,
+            tile_mode,
+            original_dst_bounds,
+        )
+    }
+}
+
+/// `RasterBlurEngine`: the CPU blur engine. A8 and 8888 images use the box and Gaussian passes;
+/// every other color type uses the shader blur.
 // Port of: src/core/SkBlurEngine.cpp#L1284-L1314 (chrome/m156)
 #[derive(Debug, Default)]
 pub struct RasterBlurEngine {
+    shader: RasterShaderBlurAlgorithm,
     a8: RasterA8BlurAlgorithm,
     rgba8: Raster8888BlurAlgorithm,
 }
@@ -1090,10 +1680,11 @@ pub struct RasterBlurEngine {
 impl BlurEngine for RasterBlurEngine {
     // Port of: src/core/SkBlurEngine.cpp#L1285-L1302 (chrome/m156)
     fn find_algorithm(&self, _sigma: Size, color_type: ColorType) -> Option<&dyn BlurAlgorithm> {
+        // The box blur doesn't actually care about channel order as long as it's 4 8-bit channels.
         match color_type {
             ColorType::Alpha8 => Some(&self.a8),
             ColorType::RGBA8888 | ColorType::BGRA8888 => Some(&self.rgba8),
-            _ => None,
+            _ => Some(&self.shader),
         }
     }
 }
@@ -1103,6 +1694,7 @@ impl BlurEngine for RasterBlurEngine {
 #[must_use]
 pub fn raster_blur_engine() -> &'static dyn BlurEngine {
     static ENGINE: RasterBlurEngine = RasterBlurEngine {
+        shader: RasterShaderBlurAlgorithm,
         a8: RasterA8BlurAlgorithm,
         rgba8: Raster8888BlurAlgorithm,
     };

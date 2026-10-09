@@ -120,7 +120,7 @@ impl RenderStep for VerticesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/VerticesRenderStep.cpp#L117-L144 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         match (self.has_color, self.has_tex_coords) {
             (true, true) => concat!(
                 "color = half4(vertColor.bgr * vertColor.a, vertColor.a);\n",
@@ -149,7 +149,10 @@ impl RenderStep for VerticesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/VerticesRenderStep.cpp#L146-L151 (chrome/m156)
-    fn fragment_color_sksl(&self) -> String {
+    fn fragment_color_sksl(
+        &self,
+        _roots: &crate::graphite::paint_params_key::RootNodesInfo,
+    ) -> String {
         if self.has_color {
             "primitiveColor = color;\n".to_owned()
         } else {
