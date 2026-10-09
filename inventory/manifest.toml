@@ -16066,8 +16066,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmaprect.cpp#L290-L290"
 module = "raster"
-status = "todo"
-reason = "not ported in this sweep; no missing API identified yet"
+status = "passing"
 span_hash = "c39ded19e97c0b23902a5df5cda09deb94578897f4e08b6364e56a3ded2b7f97"
 
 [[test]]
@@ -16076,8 +16075,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/bitmaprect.cpp#L291-L291"
 module = "raster"
-status = "todo"
-reason = "not ported in this sweep; no missing API identified yet"
+status = "passing"
 span_hash = "813405ab1c1529680b5c7ffdb65d7b3c428b1c70173ca2c7a4c9a60beea0911a"
 
 [[test]]
@@ -20952,7 +20950,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/image.cpp#L615-L644"
 module = "raster"
 status = "todo"
-reason = "not ported in this sweep: a 500x40000 raster source with makeScaled; no missing API identified yet"
+reason = "needs SkImage::makeScaled, which has no public API in this port"
 span_hash = "fd4a8cec806633fb20aed93717c8687109ec1d104e8b2781e5af78be420ebc04"
 
 [[test]]
