@@ -125,6 +125,7 @@ pub mod md5;
 pub mod mesh;
 pub mod mipmap;
 pub mod mipmap_accessor;
+pub mod mipmap_builder;
 pub mod packed_glyph_id;
 pub mod paint;
 #[doc(hidden)]

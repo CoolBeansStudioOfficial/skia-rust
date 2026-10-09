@@ -1617,8 +1617,10 @@ impl MeshWithShadersGm {
 
                 // `kRect.left() + xf * kRect.width() + xOff[y]`: float sums, then a double sum
                 // that is stored as a float.
-                let pos0 = (f64::from(Self::RECT.left() + xf * Self::RECT.width()) + x_off[y]) as f32;
-                let pos1 = (f64::from(Self::RECT.top() + yf * Self::RECT.height()) + y_off[x]) as f32;
+                let pos0 =
+                    (f64::from(Self::RECT.left() + xf * Self::RECT.width()) + x_off[y]) as f32;
+                let pos1 =
+                    (f64::from(Self::RECT.top() + yf * Self::RECT.height()) + y_off[x]) as f32;
                 let uv0 = Self::UV.left() + xf * Self::UV.width();
                 let uv1 = Self::UV.top() + yf * Self::UV.height();
                 self.verts.push(ShaderVertex {

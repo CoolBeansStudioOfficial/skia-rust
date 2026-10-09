@@ -83,7 +83,7 @@ crate::def_simple_gm!(imageshader_tinyscale, canvas, 1000, 1000, {
     let img = tool_utils::get_resource_as_image("images/gainmap_gcontainer_only.jpg")
         .expect("images/gainmap_gcontainer_only.jpg");
 
-    let m =Matrix::translate((500.0, 500.0)) * Matrix::scale((K_SCALE, K_SCALE));
+    let m = Matrix::translate((500.0, 500.0)) * Matrix::scale((K_SCALE, K_SCALE));
 
     // In clamp mode we should see no repeating patterns, just the viewport filled
     // with four-colored quadrants.

@@ -21625,8 +21625,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/image_pict.cpp#L133-L133"
 module = "raster"
-status = "todo"
-reason = "GPU-only: GrTextureGenerator and GrExternalTextureGenerator"
+status = "passing"
 span_hash = "fabbdb1bf277d8cc4b4c7bb1eab69714608bcffa49c5f1aa29edd99b7fc7dc88"
 
 [[test]]
@@ -23669,8 +23668,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/readpixels.cpp#L313-L313"
 module = "raster"
-status = "todo"
-reason = "needs SkImages::DeferredFromPicture (picture-backed images), not on main"
+status = "passing"
 span_hash = "66322f3c680a8c4da234e1dad752303b398293d8c517d864efaaa99471bfa164"
 
 [[test]]
@@ -24548,8 +24546,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/showmiplevels.cpp#L102-L102"
 module = "raster"
-status = "todo"
-reason = "needs SkMipmapBuilder / SkImage::makeWithMips (mip levels attached to an image), not ported"
+status = "passing"
 span_hash = "cf89aad7116d8ce9dd041b348436499dee92cf9ee0537df21ae411a7107d45ea"
 
 [[test]]
