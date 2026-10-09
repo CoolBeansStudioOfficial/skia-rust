@@ -11,7 +11,7 @@
 
 use std::any::Any;
 use std::fmt;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, OnceLock, RwLock};
 
 use crate::data::Data;
 use crate::descriptor::Descriptor;
@@ -606,10 +606,29 @@ impl Typeface {
         }
     }
 
+    /// `SkTypeface::Register(id, make)`: adds a decoder that [`Typeface::make_deserialize`] consults
+    /// for descriptors with `factory_id`. The list is process-wide and append-only, as Skia's is:
+    /// the first decoder with a matching id wins, and nothing can be removed.
+    // Port of: src/core/SkTypeface.cpp#L195-L199 (chrome/m156), `SkTypeface::Register`
+    #[doc(alias = "Register")]
+    pub fn register_decoder(
+        factory_id: FactoryId,
+        make_from_stream: fn(Box<dyn StreamAsset>, &FontArguments<'_, '_>) -> Option<Typeface>,
+    ) {
+        REGISTERED_DECODERS
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(TypefaceDecoder {
+                factory_id,
+                make_from_stream,
+            });
+    }
+
     /// `SkTypeface::MakeDeserialize`: reads a descriptor written by [`Typeface::serialize`] and
-    /// makes the typeface. There is no static registry (docs/design/text.md §5.2): the built-in
-    /// decoders of core come first, then the decoders that `last_resort_mgr` lists. A stream
-    /// without a decoder falls back to `last_resort_mgr` and then to the empty typeface.
+    /// makes the typeface. The decoders are core's built-in one, then those added by
+    /// [`Typeface::register_decoder`], then the ones `last_resort_mgr` lists (docs/design/text.md
+    /// §5.2 and Q3). A stream without a decoder falls back to `last_resort_mgr` and then to the
+    /// empty typeface.
     /// `sanitizer` may rewrite the font data first; returning `None` from it fails the read.
     // Port of: src/core/SkTypeface.cpp#L229-L270 (chrome/m156)
     #[doc(alias = "MakeDeserialize")]
@@ -626,6 +645,7 @@ impl Typeface {
                 last_resort_mgr.map_or_else(Vec::new, FontMgr::typeface_decoders);
             let decoder = builtin_decoders()
                 .into_iter()
+                .chain(registered_decoders())
                 .chain(manager_decoders)
                 .find(|decoder| decoder.factory_id == factory_id);
             if let Some(decoder) = decoder {
@@ -829,6 +849,24 @@ impl EmptyTypeface {
             core: TypefaceCore::new(FontStyle::default(), true),
         }
     }
+}
+
+/// The decoders added by [`Typeface::register_decoder`], in registration order (`SkTypeface`'s
+/// `decoders()` list after its static entries).
+///
+/// This is a deliberate exception to "no global mutable state" (CLAUDE.md): Skia's decoder list is
+/// process-wide and filled by `SkTypeface::Register`, and ported tests depend on that global
+/// registration, as they do on `StrikeCache::global()`. The list is append-only and read under a
+/// `RwLock`, so a read never observes a partly registered decoder.
+static REGISTERED_DECODERS: RwLock<Vec<TypefaceDecoder>> = RwLock::new(Vec::new());
+
+/// A snapshot of [`REGISTERED_DECODERS`]. A poisoned lock still yields its list: the list is only
+/// appended to, so a panic in another thread cannot leave it half written.
+fn registered_decoders() -> Vec<TypefaceDecoder> {
+    REGISTERED_DECODERS
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone()
 }
 
 /// The decoders that core knows without a manager: `SkTypeface.cpp`'s static list, which has the

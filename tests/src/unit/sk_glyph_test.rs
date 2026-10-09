@@ -6,10 +6,15 @@
 
 #![cfg(test)]
 
+use std::sync::Arc;
+
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::drawable::{Drawable, DrawableBase};
 use skia_rust_core::glyph::skglyph::{empty_rect, full_rect, rect_intersection, rect_union};
-use skia_rust_core::glyph::{Glyph, GlyphRect};
+use skia_rust_core::glyph::{Glyph, GlyphRect, PictureBackedGlyphDrawable};
 use skia_rust_core::mask::MaskFormat;
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::point::Point;
 use skia_rust_core::read_buffer::ReadBuffer;
@@ -289,4 +294,112 @@ def_test!(SkGlyph_SendWithPath, |reporter| {
             reporter_assert!(reporter, !dst_glyph.set_path_has_been_called());
         }
     }
+});
+
+/// A drawable that draws its bounds as a rectangle (`TestDrawable` in `SkGlyph_SendWithDrawable`).
+#[derive(Debug)]
+struct GlyphTestDrawable {
+    rect: Rect,
+}
+
+impl DrawableBase for GlyphTestDrawable {
+    fn on_get_bounds(&self) -> Rect {
+        self.rect
+    }
+
+    fn on_draw(&self, canvas: &Canvas) {
+        canvas.draw_rect(self.rect, &Paint::default());
+    }
+}
+
+// Port of: tests/SkGlyphTest.cpp#L267-L330 (chrome/m156), SkGlyph_SendWithDrawable
+def_test!(SkGlyph_SendWithDrawable, |reporter| {
+    let mut src_glyph = Glyph::new(PackedGlyphId::from_glyph_id(12));
+    set_glyph1(&mut src_glyph);
+
+    let src_drawable = Drawable::new(Arc::new(GlyphTestDrawable {
+        rect: src_glyph.rect(),
+    }));
+    src_glyph.set_drawable(Some(src_drawable.clone()));
+    reporter_assert!(reporter, src_glyph.set_drawable_has_been_called());
+
+    let mut write_buffer = BinaryWriteBuffer::new();
+    src_glyph.flatten_metrics(&mut write_buffer);
+    src_glyph.flatten_drawable(&mut write_buffer);
+
+    let data = write_buffer.snapshot_as_data();
+    let mut read_buffer = ReadBuffer::new(data.as_bytes());
+    let dst_glyph = Glyph::make_from_buffer(&mut read_buffer);
+    reporter_assert!(reporter, read_buffer.is_valid());
+    reporter_assert!(reporter, dst_glyph.is_some());
+    if let Some(mut dst_glyph) = dst_glyph {
+        reporter_assert!(
+            reporter,
+            src_glyph.advance_vector() == dst_glyph.advance_vector()
+        );
+        reporter_assert!(reporter, src_glyph.rect() == dst_glyph.rect());
+        reporter_assert!(reporter, src_glyph.mask_format() == dst_glyph.mask_format());
+
+        dst_glyph.add_drawable_from_buffer(&mut read_buffer);
+        reporter_assert!(reporter, read_buffer.is_valid());
+        reporter_assert!(reporter, dst_glyph.set_drawable_has_been_called());
+        if let Some(dst_drawable) = dst_glyph.drawable() {
+            reporter_assert!(reporter, dst_drawable.bounds() == src_drawable.bounds());
+        } else {
+            reporter_assert!(reporter, false, "the glyph has a drawable");
+        }
+    }
+
+    // Add good metrics, but mess up drawable data
+    let mut bad_write_buffer = BinaryWriteBuffer::new();
+    src_glyph.flatten_metrics(&mut bad_write_buffer);
+    bad_write_buffer.write_int(7);
+    bad_write_buffer.write_int(8);
+
+    let data = bad_write_buffer.snapshot_as_data();
+    let mut bad_read_buffer = ReadBuffer::new(data.as_bytes());
+    let dst_glyph = Glyph::make_from_buffer(&mut bad_read_buffer);
+    reporter_assert!(reporter, bad_read_buffer.is_valid()); // Reading glyph metrics is okay.
+    reporter_assert!(reporter, dst_glyph.is_some());
+    if let Some(mut dst_glyph) = dst_glyph {
+        reporter_assert!(
+            reporter,
+            src_glyph.advance_vector() == dst_glyph.advance_vector()
+        );
+        reporter_assert!(reporter, src_glyph.rect() == dst_glyph.rect());
+        reporter_assert!(reporter, src_glyph.mask_format() == dst_glyph.mask_format());
+
+        dst_glyph.add_drawable_from_buffer(&mut bad_read_buffer);
+        reporter_assert!(reporter, !bad_read_buffer.is_valid());
+        reporter_assert!(reporter, !dst_glyph.set_drawable_has_been_called());
+    }
+});
+
+// Port of: tests/SkGlyphTest.cpp#L332-L370 (chrome/m156), SkPictureBackedGlyphDrawable_Basic
+def_test!(SkPictureBackedGlyphDrawable_Basic, |reporter| {
+    let src_drawable = Drawable::new(Arc::new(GlyphTestDrawable {
+        rect: Rect::from_wh(10.0, 20.0),
+    }));
+    let mut write_buffer = BinaryWriteBuffer::new();
+    PictureBackedGlyphDrawable::flatten_drawable(&mut write_buffer, Some(&src_drawable));
+
+    let data = write_buffer.snapshot_as_data();
+    let mut read_buffer = ReadBuffer::new(data.as_bytes());
+    let dst_drawable = PictureBackedGlyphDrawable::from_buffer(&mut read_buffer);
+
+    reporter_assert!(reporter, read_buffer.is_valid());
+    reporter_assert!(reporter, dst_drawable.is_some());
+    if let Some(dst_drawable) = dst_drawable {
+        reporter_assert!(reporter, src_drawable.bounds() == dst_drawable.bounds());
+    }
+
+    let mut bad_write_buffer = BinaryWriteBuffer::new();
+    bad_write_buffer.write_int(7);
+    bad_write_buffer.write_int(8);
+
+    let data = bad_write_buffer.snapshot_as_data();
+    let mut bad_read_buffer = ReadBuffer::new(data.as_bytes());
+    let bad_drawable = PictureBackedGlyphDrawable::from_buffer(&mut bad_read_buffer);
+    reporter_assert!(reporter, bad_drawable.is_none());
+    reporter_assert!(reporter, !bad_read_buffer.is_valid());
 });

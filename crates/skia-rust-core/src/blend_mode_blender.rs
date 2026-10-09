@@ -11,6 +11,9 @@ use crate::blend_mode::BlendMode;
 use crate::blend_mode_priv;
 use crate::blender::{Blender, BlenderBase, BlenderType};
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
+use crate::read_buffer::ReadBuffer;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// The blender of a blend mode (`SkBlendModeBlender`).
 // Port of: src/core/SkBlendModeBlender.h#L21-L40 (chrome/m156)
@@ -48,6 +51,30 @@ impl BlenderBase for BlendModeBlender {
     fn blender_type(&self) -> BlenderType {
         BlenderType::BlendMode
     }
+
+    // Port of: src/core/SkBlendModeBlender.cpp#L74 (chrome/m156), SK_FLATTENABLE_HOOKS
+    fn type_name(&self) -> &'static str {
+        "SkBlendModeBlender"
+    }
+
+    // Port of: src/core/SkBlendModeBlender.cpp#L74-L76 (chrome/m156), `flatten`
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_int(self.mode as i32);
+    }
+}
+
+/// `SkBlendModeBlender::CreateProc`: reads the mode, and makes its shared blender. A mode that is
+/// not a blend mode leaves the buffer invalid (`read32LE(kLastMode)`).
+// Port of: src/core/SkBlendModeBlender.cpp#L69-L72 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<Blender> {
+    let mode = buffer.read32_le(BlendMode::LAST_MODE as u32);
+    let mode = BlendMode::from_i32(i32::try_from(mode).ok()?)?;
+    Some(Blender::mode(mode))
 }
 
 /// The shared blender of `mode` (`GetBlendModeSingleton`). (Skia returns a raw pointer; this

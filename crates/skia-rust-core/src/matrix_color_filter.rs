@@ -6,12 +6,16 @@
 //! `SkMatrixColorFilter`: a 5x4 matrix applied to the unpremultiplied RGBA color, or to its
 //! HSLA form. The factories are in [`color_filters`](crate::color_filters).
 
-use crate::color_filter::{ColorFilterBase, ColorFilterType};
-use crate::color_filters::Clamp;
+use crate::color_filter::{ColorFilter, ColorFilterBase, ColorFilterType};
+use crate::color_filters::{Clamp, hsla_matrix, matrix_row_major};
 use crate::effect_priv::StageRec;
+use crate::flattenable::FlattenableRegistry;
 use crate::floating_point::is_finite_array;
+use crate::picture_priv::VERSION_UNCLAMPED_MATRIX_COLOR_FILTER;
 use crate::raster_pipeline::Stage;
+use crate::read_buffer::ReadBuffer;
 use crate::scalar::Scalar;
+use crate::write_buffer::BinaryWriteBuffer;
 
 /// Whether the matrix works on RGBA or on HSLA (`SkMatrixColorFilter::Domain`).
 // Port of: src/effects/colorfilters/SkMatrixColorFilter.h#L23-L23 (chrome/m156)
@@ -79,6 +83,20 @@ fn is_alpha_unchanged(matrix: &[f32; 20]) -> bool {
 }
 
 impl ColorFilterBase for MatrixColorFilter {
+    // Port of: src/effects/colorfilters/SkMatrixColorFilter.cpp#L130 (chrome/m156),
+    // SkFlattenable::Register
+    fn type_name(&self) -> &'static str {
+        "SkColorFilter_Matrix"
+    }
+
+    // Port of: src/effects/colorfilters/SkMatrixColorFilter.cpp#L40-L47 (chrome/m156)
+    fn flatten(&self, buffer: &mut BinaryWriteBuffer) {
+        buffer.write_scalar_array(&self.matrix);
+        // RGBA flag
+        buffer.write_bool(self.domain == Domain::Rgba);
+        buffer.write_bool(self.clamp == Clamp::Yes);
+    }
+
     // Port of: src/effects/colorfilters/SkMatrixColorFilter.cpp#L70-L98 (chrome/m156)
     fn append_stages(&self, rec: &mut StageRec<'_, '_>, shader_is_opaque: bool) -> bool {
         let will_stay_opaque = shader_is_opaque && self.alpha_is_unchanged;
@@ -123,6 +141,35 @@ impl ColorFilterBase for MatrixColorFilter {
     // is not the RGBA matrix a caller would expect, so this is kept for parity only.
     fn on_as_a_color_matrix(&self) -> Option<[f32; 20]> {
         Some(self.matrix)
+    }
+}
+
+/// `SkMatrixColorFilter::CreateProc`: the matrix, its domain flag and (from
+/// `kUnclampedMatrixColorFilter`) its clamp flag. The clamp is ignored for HSLA filters.
+// Port of: src/effects/colorfilters/SkMatrixColorFilter.cpp#L49-L61 (chrome/m156)
+#[doc(alias = "CreateProc")]
+#[must_use]
+pub fn matrix_create_proc(
+    buffer: &mut ReadBuffer<'_>,
+    _registry: &FlattenableRegistry,
+) -> Option<ColorFilter> {
+    let mut matrix = [0.0_f32; 20];
+    if !buffer.read_scalar_array(&mut matrix) {
+        return None;
+    }
+    let is_rgba = buffer.read_bool();
+    // The clamp flag is not written before `kUnclampedMatrixColorFilter`, and is then Yes.
+    let clamp = if buffer.is_version_lt(VERSION_UNCLAMPED_MATRIX_COLOR_FILTER) || buffer.read_bool()
+    {
+        Clamp::Yes
+    } else {
+        Clamp::No
+    };
+    // clamp option is ignored for HSL-domain filters
+    if is_rgba {
+        matrix_row_major(&matrix, clamp)
+    } else {
+        hsla_matrix(&matrix)
     }
 }
 
