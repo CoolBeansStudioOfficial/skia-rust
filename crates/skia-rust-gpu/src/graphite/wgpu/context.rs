@@ -91,6 +91,11 @@ impl WgpuContext {
                 shared_context.queue().clone(),
             )),
         );
+        // Port of: src/gpu/graphite/Context.cpp#L145-L147 (chrome/m156)
+        shared_context.base().global_cache().set_pipeline_callback(
+            options.pipeline_caching_callback.clone(),
+            options.pipeline_callback.clone(),
+        );
         Self {
             shared_context,
             resource_provider,

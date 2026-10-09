@@ -7,12 +7,13 @@
 //! provider and the thread-safe resource provider. The wgpu half
 //! ([`crate::graphite::wgpu::WgpuSharedContext`]) embeds it.
 //!
-//! `GlobalCache` and `PipelineManager` join this struct with G9b steps 6 and 7.
+//! `GlobalCache` joins this struct in G9b step 1; `PipelineManager` joins it in step 3.
 
 use std::sync::{Arc, OnceLock};
 
 use crate::gpu::gpu_types::{BackendApi, StdSteadyClockTimePoint};
 use crate::graphite::caps::Caps;
+use crate::graphite::global_cache::GlobalCache;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
@@ -38,6 +39,8 @@ pub struct SharedContext {
     renderer_provider: OnceLock<RendererProvider>,
     /// `fThreadSafeResourceProvider`: set once by the backend constructor.
     thread_safe_resource_provider: OnceLock<ThreadSafeResourceProvider>,
+    /// `fGlobalCache`: the pipelines, the dynamic samplers and the static resources.
+    global_cache: GlobalCache,
 }
 
 impl SharedContext {
@@ -56,7 +59,15 @@ impl SharedContext {
             shader_dictionary,
             renderer_provider: OnceLock::new(),
             thread_safe_resource_provider: OnceLock::new(),
+            global_cache: GlobalCache::new(),
         }
+    }
+
+    /// `globalCache()`.
+    #[doc(alias = "globalCache")]
+    #[must_use]
+    pub fn global_cache(&self) -> &GlobalCache {
+        &self.global_cache
     }
 
     /// `caps()`.

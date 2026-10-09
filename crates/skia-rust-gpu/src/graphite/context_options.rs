@@ -10,12 +10,59 @@
 //! storage, the shader error handler, the user-defined runtime effects and `fOptionsPriv` come
 //! with the `Context` and `PipelineManager` (G9b, G6), whose types they name.
 
+use std::fmt;
+use std::sync::Arc;
+
+use skia_rust_core::data::Data;
 use skia_rust_core::size::ISize;
 
 use crate::graphite::graphite_types::SampleCount;
 
 /// `ContextOptions::kDefaultContextBudget`.
 pub const DEFAULT_CONTEXT_BUDGET: usize = 256 * (1 << 20);
+
+/// `ContextOptions::PipelineCacheOp`: why a pipeline callback runs.
+// Port of: include/gpu/graphite/ContextOptions.h#L152-L155 (chrome/m156)
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PipelineCacheOp {
+    /// `kAddingPipeline`: a pipeline was compiled and added to the cache.
+    AddingPipeline,
+    /// `kPipelineFound`: a cached pipeline was requested again.
+    PipelineFound,
+}
+
+/// `ContextOptions::PipelineCachingCallback`, as a closure. Skia passes a client `void*` context
+/// separately; the closure captures it instead. The arguments are the operation, the pipeline's
+/// label, its unique key hash, whether it came from precompilation, and the serialized key (only
+/// when the key is serializable).
+// Port of: include/gpu/graphite/ContextOptions.h#L157-L161 (chrome/m156)
+pub type PipelineCachingCallbackFn =
+    dyn Fn(PipelineCacheOp, &str, u32, bool, Option<&Data>) + Send + Sync;
+
+/// `ContextOptions::PipelineCallback` (deprecated), as a closure over the serialized key.
+// Port of: include/gpu/graphite/ContextOptions.h#L188 (chrome/m156)
+pub type PipelineCallbackFn = dyn Fn(&Data) + Send + Sync;
+
+/// A shared client callback, compared by identity.
+pub struct Callback<F: ?Sized>(pub Arc<F>);
+
+impl<F: ?Sized> Clone for Callback<F> {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
+impl<F: ?Sized> PartialEq for Callback<F> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<F: ?Sized> fmt::Debug for Callback<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Callback(..)")
+    }
+}
 
 /// Options for creating a Graphite `Context`.
 // Port of: include/gpu/graphite/ContextOptions.h#L34-L252 (chrome/m156)
@@ -57,6 +104,12 @@ pub struct ContextOptions {
     pub enable_capture: bool,
     /// `fAvoidDepthMode`.
     pub avoid_depth_mode: bool,
+    /// `fPipelineCachingCallback`: called when a pipeline is added to the cache and when a cached
+    /// pipeline is found. Preempts `pipeline_callback`.
+    pub pipeline_caching_callback: Option<Callback<PipelineCachingCallbackFn>>,
+    /// `fPipelineCallback` (deprecated): called for added pipelines whose key is serializable.
+    /// Ignored when `pipeline_caching_callback` is set.
+    pub pipeline_callback: Option<Callback<PipelineCallbackFn>>,
 }
 
 impl Default for ContextOptions {
@@ -85,6 +138,8 @@ impl Default for ContextOptions {
             use_draw_list_layer: false,
             enable_capture: false,
             avoid_depth_mode: false,
+            pipeline_caching_callback: None,
+            pipeline_callback: None,
         }
     }
 }
