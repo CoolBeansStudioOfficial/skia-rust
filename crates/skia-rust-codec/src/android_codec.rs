@@ -145,6 +145,13 @@ impl<'a> AndroidCodec<'a> {
         &self.codec
     }
 
+    /// The codec this wraps, for decoding with it directly (frames, `getPixels`). Skia's `codec()`
+    /// returns a mutable pointer, so the mutable accessor is the same object.
+    #[doc(alias = "codec")]
+    pub fn codec_mut(&mut self) -> &mut Codec<'a> {
+        &mut self.codec
+    }
+
     /// Port of `SkAndroidCodec::getSampledDimensions`: the size of the output for a sample size.
     /// The codec may round up or down to the size it decodes most efficiently. Never zero: a sample
     /// size larger than a dimension gives one.
@@ -309,7 +316,9 @@ impl<'a> AndroidCodec<'a> {
             }
         }
 
-        let frame_result = self.codec.handle_frame_index(request_info, &options.base);
+        let frame_result = self
+            .codec
+            .handle_frame_index(request_info, &mut [], 0, &options.base);
         if frame_result != Result::Success {
             return frame_result;
         }

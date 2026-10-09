@@ -12,6 +12,12 @@ its own licence file, and the upstream licence text is reproduced there unchange
 | libwebp 1.4.0 (845d5476)                                  | skia-rust-libwebp        | BSD-3-Clause  | crates/skia-rust-libwebp/LICENSE     |
 | Wuffs v0.3 (e3f919cc)                                     | skia-rust-wuffs          | Apache-2.0    | crates/skia-rust-wuffs/LICENSE       |
 
+Wuffs (crates/skia-rust-wuffs) is Apache-2.0, not BSD. Its upstream copyright notice is
+"Copyright 2017 The Wuffs Authors", and the Apache License, Version 2.0 text is reproduced
+unchanged in crates/skia-rust-wuffs/LICENSE. skia-rust-wuffs is a modified version of Wuffs
+(a Rust port of its GIF decoder, LZW and base modules); each of its source files carries the
+upstream notice and states that it is modified, as Apache-2.0 section 4 requires.
+
 A row whose crate is not yet in the workspace is a planned port (docs/design/codecs.md
 §3); its licence file is added with the crate. The Rust-backed codecs Skia can use
 (png, zune-jpeg, jpeg-encoder) are dependencies, not ports, and are listed in Cargo.lock.

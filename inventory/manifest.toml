@@ -15688,6 +15688,7 @@ macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L248-L248"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
 span_hash = "2f7ce0a62eb4ff8024755b208f3f1c7cb39e964f62886e4f4e3dee35338b2276"
 
 [[test]]
@@ -15697,6 +15698,7 @@ macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L247-L247"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
 span_hash = "86e4b5b4cb9022b0cb1ad273abdcf2a3e9e7fa334d8db7b2241ab1441916216c"
 
 [[test]]
@@ -15706,6 +15708,7 @@ macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L249-L249"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
 span_hash = "efc2992a8cec1fac5460227544973a094fd3aa2ee4642f3541340f744b9148a4"
 
 [[test]]
@@ -15714,7 +15717,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L177-L177"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ac9148e168b20ba1ec4cc31274f6df04850547ce89bcfa719b4d6306f0f7b639"
 
 [[test]]
@@ -15724,6 +15727,7 @@ macro = "DEF_GM"
 source = "gm/animated_image_orientation.cpp#L161-L164"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimatedImage (android utils, not ported)"
 span_hash = "de7847e2f877dc172dfa91b418cc1289d432ec38b766e3701f86295a6f9f68a3"
 
 [[test]]
@@ -15733,6 +15737,7 @@ macro = "DEF_GM"
 source = "gm/animated_image_orientation.cpp#L157-L160"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimatedImage (android utils, not ported)"
 span_hash = "89132fee98078108c12bee3818cf145ea34c210a8def912e80e6d2fa4990100c"
 
 [[test]]
@@ -19574,7 +19579,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filterindiabox.cpp#L89-L89"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "5b219bb8b1a0dd2cd11685b3f37781c467e772d0609fb22c581ff4819d9f4151"
 
 [[test]]
@@ -28174,7 +28179,7 @@ macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
 status = "todo"
-reason = "needs the JPEG, WebP and GIF decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
+reason = "needs the JPEG and WebP decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -29525,7 +29530,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L587-L589"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "eb0db0f7cb5c3cfb21b5c525c2b2f120c5b8e4fd76cbc04f1663a07ab25fed30"
 
 [[test]]
@@ -29561,7 +29566,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L36-L45"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2d2234af42e83c167bb5f70beac63b6aac1a5733eadd6dc0f70aa8528dec993a"
 
 [[test]]
@@ -29841,7 +29846,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L621-L626"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1959067ded3f86e20fd64256ff83a57a01315cfd4a3b2d704734ed8ff6849b5e"
 
 [[test]]
@@ -29850,7 +29855,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2163-L2192"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "0dd40edacae94f211c8de67e7cc5e320bc97b7d7eeedefac2dd34be66d159d9c"
 
 [[test]]
@@ -29859,7 +29864,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2063-L2094"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ecc101aa4f1babfbf54e29cab2ba3d1bad52ea195b86e8ad1631b0abc598e3fa"
 
 [[test]]
@@ -29868,7 +29873,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2096-L2137"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e2b24c33b55affb2e10734e907b0c01f3a888376691e1e83e570be7c7399918f"
 
 [[test]]
@@ -29878,6 +29883,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2139-L2161"
 module = "codec"
 status = "todo"
+reason = "needs SkCodec::getImage (not ported yet); the GIF decoder itself is ported"
 span_hash = "643e8e092078997c804740246efdf727489107dc5e5a1f6a62cef6dc145bf9c5"
 
 [[test]]
@@ -30186,7 +30192,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1557-L1568"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ca6e869e2409f95ba248b5c93c308523981bf2195c45c54b466a2bb832ee839c"
 
 [[test]]
@@ -32764,7 +32770,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L466-L536"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "971389ac2c98f3b504516d262dbf27c26d6a5dd68315fb51dbbda89e5127785b"
 
 [[test]]
@@ -32773,7 +32779,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L213-L257"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "47f2792b86e61853393a7098858c1bda42fb7c6e16ec05a5267fc2f3bd0f8305"
 
 [[test]]
@@ -32782,7 +32788,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L286-L296"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1adb6911ab1b3deb12b5eed9989f2efb222064b8ea5bbf6c23146a2b59bcb982"
 
 [[test]]
@@ -32791,7 +32797,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L323-L373"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "d7b35e17ab86839e5a06539d7c71dd6656d35b503749e8d1cc14d1e583a11cfb"
 
 [[test]]
@@ -32800,7 +32806,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L379-L416"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "c590c782efb5afc72728d78f58e922cdbd40679655c672acaa21b0b7815835ea"
 
 [[test]]
@@ -32809,7 +32815,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L418-L458"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "bc12600e6679700c1abe4c6a8f2984a9562236c12a32fe6971552f4362e67357"
 
 [[test]]
@@ -32818,7 +32824,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L545-L579"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ab8c5def9f82a65403ab8365f36567ccacc485241640312520e24d9e9806001c"
 
 [[test]]
@@ -32827,7 +32833,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L165-L211"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "a068a20649b736f2e5e206caf2496932a2710d4499cad7b8898568bd215966d3"
 
 [[test]]
@@ -32836,7 +32842,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GifTest.cpp#L261-L282"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "088831f005b21bf6eeeb3e358f4e6036612cf07a257ee323fe9d7c383671c74c"
 
 [[test]]

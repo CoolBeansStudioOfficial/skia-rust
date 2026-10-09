@@ -714,6 +714,40 @@ def_test!(Codec_ico, |r| {
     );
 });
 
+// Port of: tests/CodecTest.cpp#L621-L626 (chrome/m156)
+def_test!(Codec_gif, |r| {
+    check(
+        r,
+        "images/box.gif",
+        ISize::new(200, 55),
+        Support {
+            incomplete: true,
+            new_scanline: true,
+            ..Support::default()
+        },
+    );
+    check(
+        r,
+        "images/color_wheel.gif",
+        ISize::new(128, 128),
+        Support {
+            incomplete: true,
+            new_scanline: true,
+            ..Support::default()
+        },
+    );
+    // randPixels.gif is too small to test incomplete
+    check(
+        r,
+        "images/randPixels.gif",
+        ISize::new(8, 8),
+        Support {
+            new_scanline: true,
+            ..Support::default()
+        },
+    );
+});
+
 // Port of: tests/CodecTest.cpp#L638-L655 (chrome/m156)
 def_test!(Codec_png, |r| {
     let incomplete_and_new = Support {
@@ -1102,4 +1136,215 @@ def_test!(Codec_crbug807324, |r| {
             }
         }
     }
+});
+
+// A stream that is neither seekable nor has a length, over a copy of the data. Port of
+// tests/FakeStreams.h#L43-L57 (NonseekableStream): it reads, but cannot rewind or seek.
+struct NonseekableStream {
+    inner: Box<MemoryStream>,
+}
+
+impl NonseekableStream {
+    fn new(data: &[u8]) -> Self {
+        Self {
+            inner: MemoryStream::make_copy(data),
+        }
+    }
+}
+
+impl Stream for NonseekableStream {
+    fn read(&mut self, buffer: &mut [u8]) -> usize {
+        self.inner.read(buffer)
+    }
+
+    fn peek(&mut self, buffer: &mut [u8]) -> usize {
+        self.inner.peek(buffer)
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.inner.is_at_end()
+    }
+
+    fn rewind(&mut self) -> bool {
+        false
+    }
+
+    fn seek(&mut self, _position: usize) -> bool {
+        false
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L1443-L1487 (LimitedRewindingStream): a stream that can only rewind
+// while it has read no more than `limit` bytes. It does not report a position or a length.
+struct LimitedRewindingStream {
+    stream: Box<dyn Stream + Send>,
+    limit: usize,
+    position: usize,
+}
+
+impl Stream for LimitedRewindingStream {
+    fn read(&mut self, buffer: &mut [u8]) -> usize {
+        let bytes = self.stream.read(buffer);
+        self.position += bytes;
+        bytes
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.stream.is_at_end()
+    }
+
+    fn rewind(&mut self) -> bool {
+        if self.position <= self.limit && self.stream.rewind() {
+            self.position = 0;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L1531-L1555 (seek_and_decode): the first frame is decoded after the
+// frame count is read, so that the decode needs a rewind.
+fn seek_and_decode(reporter: &mut Reporter, file: &str, stream: Box<dyn Stream + Send>) {
+    let Ok(mut codec) = Codec::make_from_stream(stream, decoders()) else {
+        errorf!(reporter, "Failed to create codec for {},", file);
+        return;
+    };
+    // Trigger reading through the stream, so that decoding the first frame will require a rewind.
+    let _ = codec.get_frame_count();
+    let info = codec.info().with_color_type(ColorType::N32);
+    let mut bm = Pixels::alloc(&info);
+    let result = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, None);
+    if result != Result::Success {
+        errorf!(
+            reporter,
+            "Failed to decode {} with error {}",
+            file,
+            result.as_str()
+        );
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L1557-L1567 (Wuffs_seek_and_decode). Only the first stream is
+// tried: the FrontBufferedStream variant needs SK_ENABLE_ANDROID_UTILS, which is not built.
+def_test!(Wuffs_seek_and_decode, |r| {
+    let file = "images/flightAnim.gif";
+    let data = skip_missing_resource!(get_resource_as_data(file), file);
+    let stream = LimitedRewindingStream {
+        stream: MemoryStream::make_copy(&data),
+        limit: skia_rust_codec::codec::MIN_BUFFERED_BYTES_NEEDED,
+        position: 0,
+    };
+    seek_and_decode(r, file, Box::new(stream));
+});
+
+// Port of: tests/CodecTest.cpp#L2063-L2094 (Codec_gif_notseekable). A non-seekable stream decodes
+// the first frame the same as a seekable one.
+def_test!(Codec_gif_notseekable, |r| {
+    let path = "images/flightAnim.gif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // Verify that using a non-seekable stream works the same as a seekable one for decoding the
+    // first frame.
+    let good_digest = {
+        let Ok(mut codec) = skia_rust_codec::wuffs_codec::make_from_stream_with_policy(
+            MemoryStream::make_copy(&data),
+            skia_rust_codec::codec::SelectionPolicy::PreferAnimation,
+        ) else {
+            reporter_assert!(r, false);
+            return;
+        };
+        reporter_assert!(r, codec.get_frame_count() == 60);
+        let info = codec.info();
+        let mut bm = Pixels::alloc(&info);
+        let result = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, None);
+        reporter_assert!(r, result == Result::Success);
+        bm.md5()
+    };
+
+    let Ok(mut codec) = skia_rust_codec::wuffs_codec::make_from_stream_with_policy(
+        Box::new(NonseekableStream::new(&data)),
+        skia_rust_codec::codec::SelectionPolicy::PreferStillImage,
+    ) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, codec.get_frame_count() == 1);
+    let info = codec.info();
+    test_info(r, &mut codec, &info, Result::Success, Some(&good_digest));
+});
+
+// Port of: tests/CodecTest.cpp#L2096-L2137 (Codec_gif_notseekable2). A non-seekable stream decodes
+// a later frame the same as a seekable one, by copying the stream.
+def_test!(Codec_gif_notseekable2, |r| {
+    let path = "images/flightAnim.gif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // Verify that using a non-seekable stream works the same as a seekable one for decoding a
+    // later frame.
+    let options = Options {
+        frame_index: 5,
+        ..Options::default()
+    };
+    let good_digest = {
+        let Ok(mut codec) = skia_rust_codec::wuffs_codec::make_from_stream_with_policy(
+            MemoryStream::make_copy(&data),
+            skia_rust_codec::codec::SelectionPolicy::PreferAnimation,
+        ) else {
+            reporter_assert!(r, false);
+            return;
+        };
+        reporter_assert!(r, codec.get_frame_count() == 60);
+        let info = codec.info();
+        let mut bm = Pixels::alloc(&info);
+        let result = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, Some(&options));
+        reporter_assert!(r, result == Result::Success);
+        bm.md5()
+    };
+
+    // This should copy the non seekable stream.
+    let Ok(mut codec) = skia_rust_codec::wuffs_codec::make_from_stream_with_policy(
+        Box::new(NonseekableStream::new(&data)),
+        skia_rust_codec::codec::SelectionPolicy::PreferAnimation,
+    ) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, codec.get_frame_count() == 60);
+    let info = codec.info();
+    let mut bm = Pixels::alloc(&info);
+    let result = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, Some(&options));
+    reporter_assert!(r, result == Result::Success);
+    compare_to_good_digest(r, &good_digest, &bm);
+});
+
+// Port of: tests/CodecTest.cpp#L2163-L2185 (Codec_gif_can_preserve_original_data). A deferred image
+// made from a GIF keeps the encoded data it was made from.
+def_test!(Codec_gif_can_preserve_original_data, |r| {
+    let path = "images/flightAnim.gif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    let encoded = Data::new_copy(&data);
+    let Ok(codec) =
+        skia_rust_codec::wuffs_codec::make_from_stream(MemoryStream::make(Some(encoded)))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let Some(image) = codecs::deferred_image(Some(codec), Some(AlphaType::Premul)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, image.width() == 320);
+    reporter_assert!(r, image.height() == 240);
+    reporter_assert!(r, image.alpha_type() == AlphaType::Premul);
+
+    // The whole point of DeferredFromCodec is that it allows the client to hold onto the original
+    // image data for later. The returned data should be the same as what went in.
+    let Some(encoded_data) = image.ref_encoded_data() else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, encoded_data.size() == data.len());
+    reporter_assert!(r, encoded_data.as_bytes() == data.as_slice());
 });

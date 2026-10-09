@@ -33,6 +33,8 @@ pub mod clip_stack_test;
 #[cfg(test)]
 pub mod clipper_test;
 #[cfg(test)]
+pub mod codec_anim_test;
+#[cfg(test)]
 #[cfg(test)]
 pub mod codec_exact_read_test;
 #[cfg(test)]
@@ -83,6 +85,8 @@ pub mod floating_point_test;
 pub mod front_buffered_stream_test;
 #[cfg(test)]
 pub mod geometry_test;
+#[cfg(test)]
+pub mod gif_test;
 #[cfg(test)]
 pub mod gradient_test;
 #[cfg(test)]
