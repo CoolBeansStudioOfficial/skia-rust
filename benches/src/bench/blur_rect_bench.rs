@@ -58,10 +58,10 @@ impl<K: BlurRectKernel> BlurRectBench<K> {
     /// `setName` with the `%.2f` / `%d` formatting the subclass constructors share.
     // Port of: bench/BlurRectBench.cpp#L24-L49 (chrome/m156), the per-subclass name formatting
     fn new(kernel: K, prefix: &str, rad: scalar) -> Self {
-        let name = if scalar_fraction(rad) != 0.0 {
-            format!("{prefix}{rad:.2}")
-        } else {
+        let name = if scalar_fraction(rad) == 0.0 {
             format!("{prefix}{}", scalar_round_to_int(rad))
+        } else {
+            format!("{prefix}{rad:.2}")
         };
         Self {
             radius: rad,
@@ -109,16 +109,14 @@ struct DirectKernel;
 impl BlurRectKernel for DirectKernel {
     fn make_blurry_rect(&mut self, radius: scalar, r: &Rect) {
         let mut mask = MaskBuilder::default();
-        if !BlurMask::blur_rect(
+        let _ = BlurMask::blur_rect(
             BlurMask::convert_radius_to_sigma(radius),
             &mut mask,
             r,
             BlurStyle::Normal,
             None,
             CreateMode::ComputeBoundsAndRenderImage,
-        ) {
-            return;
-        }
+        );
         // SkMaskBuilder::FreeImage(mask.image()); dropping `mask` frees the image.
     }
 }
@@ -167,15 +165,13 @@ impl BlurRectKernel for BoxFilterKernel {
 
     fn make_blurry_rect(&mut self, radius: scalar, _r: &Rect) {
         let mut mask = MaskBuilder::default();
-        if !BlurMask::box_blur(
+        let _ = BlurMask::box_blur(
             &mut mask,
             &self.source.src_mask.as_mask(),
             BlurMask::convert_radius_to_sigma(radius),
             BlurStyle::Normal,
             None,
-        ) {
-            return;
-        }
+        );
         // SkMaskBuilder::FreeImage(mask.image()); dropping `mask` frees the image.
     }
 }
@@ -194,15 +190,13 @@ impl BlurRectKernel for GaussianKernel {
 
     fn make_blurry_rect(&mut self, radius: scalar, _r: &Rect) {
         let mut mask = MaskBuilder::default();
-        if !BlurMask::blur_ground_truth(
+        let _ = BlurMask::blur_ground_truth(
             BlurMask::convert_radius_to_sigma(radius),
             &mut mask,
             &self.source.src_mask.as_mask(),
             BlurStyle::Normal,
             None,
-        ) {
-            return;
-        }
+        );
         // SkMaskBuilder::FreeImage(mask.image()); dropping `mask` frees the image.
     }
 }

@@ -39,7 +39,7 @@ fn type_name(t: Type) -> &'static str {
     }
 }
 
-/// Benchmark that draws non-AA rects or AA text with an SkBlendMode.
+/// Benchmark that draws non-AA rects or AA text with an `SkBlendMode`.
 // Port of: bench/BlendmodeBench.cpp#L34-L84 (chrome/m156)
 struct XfermodeBench {
     blend_mode: BlendMode,
