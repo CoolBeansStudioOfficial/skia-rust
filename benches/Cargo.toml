@@ -14,7 +14,6 @@ skia-rust-core.workspace = true
 skia-rust-raster.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-skcms.workspace = true
-skia-rust-text.workspace = true
 skia-rust-pathops.workspace = true
 # ToolUtils (default fonts) and SkRandom-based helpers, as for GMs (docs/design/bench.md §2.2).
 skia-rust-tools.workspace = true

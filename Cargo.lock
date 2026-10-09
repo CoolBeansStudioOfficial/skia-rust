@@ -560,7 +560,6 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
- "skia-rust-text",
  "skia-rust-tools",
 ]
 
