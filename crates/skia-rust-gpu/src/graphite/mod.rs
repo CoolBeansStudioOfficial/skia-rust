@@ -10,6 +10,7 @@ pub mod client_mapped_buffer_manager;
 pub mod command_buffer;
 pub mod context_options;
 pub mod context_priv;
+pub mod context_utils;
 pub mod draw_order;
 pub mod draw_params;
 pub mod draw_types;

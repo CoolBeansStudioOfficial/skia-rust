@@ -63,7 +63,15 @@ fn proxy(
     info: &TextureInfo,
     name: &str,
 ) -> Arc<TextureProxy> {
-    TextureProxy::make(4096, rp, ISize::new(size, size), info, Budgeted::Yes, name).unwrap()
+    TextureProxy::make(
+        &MockCaps::default(),
+        rp,
+        ISize::new(size, size),
+        info,
+        Budgeted::Yes,
+        name,
+    )
+    .unwrap()
 }
 
 fn buffer(rp: &mut ResourceProvider, size: usize) -> ResourceRef<Buffer> {

@@ -322,7 +322,7 @@ fn snap_adds_root_uploads_and_prepares_resources() {
     // A root upload to a 2x2 texture.
     let provider = recorder.priv_().resource_provider().clone();
     let proxy = TextureProxy::make(
-        4096,
+        &MockCaps::default(),
         &mut provider.lock().unwrap(),
         ISize::new(2, 2),
         &rgba_info(),
@@ -362,7 +362,7 @@ fn snap_adds_root_uploads_and_prepares_resources() {
 
     // A draw task added after it.
     let target = TextureProxy::make(
-        4096,
+        &MockCaps::default(),
         &mut provider.lock().unwrap(),
         ISize::new(2, 2),
         &rgba_info(),
@@ -449,7 +449,7 @@ fn recording_instantiates_lazy_proxies_and_deferred_targets() {
     assert!(lazy_proxy.is_volatile());
 
     let surface_texture = TextureProxy::make(
-        4096,
+        &MockCaps::default(),
         &mut provider.lock().unwrap(),
         ISize::new(8, 8),
         &info,

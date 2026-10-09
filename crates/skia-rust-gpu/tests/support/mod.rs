@@ -8,6 +8,8 @@
 //! `Caps`, resource provider back end, shared context, command buffer and context.
 #![allow(dead_code)] // each test file uses a different part
 
+pub mod wgsl_corpus;
+
 use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -18,7 +20,9 @@ use skia_rust_core::size::ISize;
 use skia_rust_gpu::gpu::gpu_types::{BackendApi, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
-use skia_rust_gpu::graphite::caps::{AttachmentSizePolicy, Caps};
+use skia_rust_gpu::graphite::caps::{
+    AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
+};
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use skia_rust_gpu::graphite::graphite_resource_key::{
@@ -165,6 +169,10 @@ pub struct MockCaps {
     pub storage_buffer_support: bool,
     /// What `toString(ImmutableSamplerInfo)` returns.
     pub immutable_sampler_string: String,
+    /// `shaderCaps()`.
+    pub shader_caps: ShaderCaps,
+    /// `resourceBindingRequirements()`.
+    pub resource_binding_requirements: ResourceBindingRequirements,
 }
 
 impl Default for MockCaps {
@@ -178,6 +186,8 @@ impl Default for MockCaps {
             attachment_size_policy: AttachmentSizePolicy::Exact,
             storage_buffer_support: false,
             immutable_sampler_string: String::new(),
+            shader_caps: default_shader_caps(),
+            resource_binding_requirements: ResourceBindingRequirements::default(),
         }
     }
 }
@@ -293,6 +303,103 @@ impl Caps for MockCaps {
 
     fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
         self.immutable_sampler_string.clone()
+    }
+
+    fn shader_caps(&self) -> &ShaderCaps {
+        &self.shader_caps
+    }
+
+    fn resource_binding_requirements(&self) -> &ResourceBindingRequirements {
+        &self.resource_binding_requirements
+    }
+
+    // The remaining queries keep the base `Caps` defaults (`Caps.h`).
+    fn max_varyings(&self) -> i32 {
+        0
+    }
+
+    fn ndc_y_axis_points_down(&self) -> bool {
+        false
+    }
+
+    fn protected_support(&self) -> bool {
+        false
+    }
+
+    fn semaphore_support(&self) -> bool {
+        false
+    }
+
+    fn allow_cpu_sync(&self) -> bool {
+        true
+    }
+
+    fn storage_buffer_support_for_compute(&self) -> bool {
+        false
+    }
+
+    fn compute_support(&self) -> bool {
+        false
+    }
+
+    fn avoid_msaa(&self) -> bool {
+        false
+    }
+
+    fn msaa_render_to_single_sampled_support(&self) -> bool {
+        false
+    }
+
+    fn use_draw_list_layer(&self) -> bool {
+        false
+    }
+
+    fn load_op_affects_msaa_pipelines(&self) -> bool {
+        false
+    }
+
+    fn max_path_atlas_texture_size(&self) -> i32 {
+        8192
+    }
+
+    fn allow_multiple_atlas_textures(&self) -> bool {
+        true
+    }
+
+    fn support_bilerp_from_glyph_atlas(&self) -> bool {
+        false
+    }
+
+    fn set_backend_labels(&self) -> bool {
+        false
+    }
+
+    fn is_sample_count_supported(&self, _format: TextureFormat, _count: SampleCount) -> bool {
+        true
+    }
+
+    fn is_texturable(&self, _info: &TextureInfo, _allow_msaa: bool) -> bool {
+        true
+    }
+
+    fn is_readable(&self, _info: &TextureInfo, _allow_msaa: bool) -> bool {
+        true
+    }
+
+    fn is_renderable(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_copyable_src(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_copyable_dst(&self, _info: &TextureInfo) -> bool {
+        true
+    }
+
+    fn is_storage(&self, _info: &TextureInfo) -> bool {
+        false
     }
 }
 

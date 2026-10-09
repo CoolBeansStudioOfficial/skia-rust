@@ -411,3 +411,41 @@ fn runtime_shader_paint_routes_through_add_to_key_shader() {
     assert_eq!(fixture.key_string(), "RuntimeEffect SrcOver ");
     assert_eq!(fixture.uniform_bytes(), f32_bytes(&[0.5, 0.25, 1.0, 0.75]));
 }
+
+#[test]
+fn gradients_from_the_public_factories_keep_an_identity_local_matrix() {
+    // Skia does not elide an identity local matrix: `SkShaders::LinearGradient` ends with
+    // `s->makeWithLocalMatrix(lm ? *lm : SkMatrix::I())` (`SkLinearGradient.cpp#L106`, and the
+    // radial, sweep and conical factories alike), and `SkShader::makeWithLocalMatrix` always makes
+    // an `SkLocalMatrixShader` (`SkShader.cpp#L26-L41`). Graphite needs the wrapper: the key code
+    // of `SkLocalMatrixShader` folds the gradient's unit-space matrix into it (`get_gradient_matrix`
+    // in `KeyHelpers.cpp`). So a gradient made through the public API is keyed as a local matrix
+    // around the gradient, with or without a matrix.
+    let colors = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+    ];
+    let desc = Gradient::new(
+        Colors::new(&colors, None, TileMode::Clamp, None::<ColorSpace>),
+        Interpolation::default(),
+    );
+    let points = (Point::new(0.0, 0.0), Point::new(1.0, 0.0));
+    let identity = skia_rust_core::matrix::Matrix::new_identity();
+    for local_matrix in [None, Some(&identity)] {
+        let shader =
+            skia_rust_effects::gradient::shaders::linear_gradient(points, &desc, local_matrix)
+                .expect("a gradient");
+        let mut paint = Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None);
+        paint.set_shader(shader);
+        let params = PaintParams::new(&paint, None, false, false);
+        let fixture = Fixture::new();
+
+        let (id, _) = key_paint(&fixture, &params, Coverage::None).expect("a valid key");
+
+        assert!(id.is_valid());
+        assert_eq!(
+            fixture.key_string(),
+            "LocalMatrix[LinearGradient4+PreAlpha] SrcOver "
+        );
+    }
+}

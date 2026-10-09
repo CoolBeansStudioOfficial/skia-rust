@@ -51211,6 +51211,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L102-L130"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs ImageProvider::findOrCreate and Image_Graphite (SkImages::RasterFromBitmap on a Graphite recorder), which are not ported (G10)"
 span_hash = "4233167d7c332ccba6bd7c33960ff3f5a4b293c41317f422da20179bbcf1e148"
 
 [[test]]
@@ -51220,6 +51221,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L56-L98"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs ImageProvider::findOrCreate, Image_Graphite and SkImages::DeferredFromPicture, which are not ported (G10)"
 span_hash = "bca31076d1e11de7bfbd509765d6edbc31aea02691660dce3347307c95c4d88a"
 
 [[test]]
@@ -51802,7 +51804,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/KeyTest.cpp#L91-L105"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "7ea84cf66c6ea81d897af465adb05fbb42853728b7c1a84cac48fd92759ac743"
 
 [[test]]
@@ -51811,7 +51813,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/KeyTest.cpp#L59-L89"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "be9b3c210ba87f7a2089e9db55210f3452f02473e3df72e06a1b3670db1e77b6"
 
 [[test]]
@@ -51820,7 +51822,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/KeyTest.cpp#L107-L172"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "b57013b8a853dd9822365773f5b3c96b13f59732e7b4bdc92a5ee43276066d83"
 
 [[test]]
@@ -52189,7 +52191,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/PipelineDataCacheTest.cpp#L19-L307"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "69177631f4fe254409d0a7e6e4459910fb979d9a87942bd44484ac84a296c4c0"
 
 [[test]]
@@ -52279,7 +52281,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RTEffectTest.cpp#L115-L157"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "82eb59039dc4ce8e08a3a5ced447ba0a58ceec3c1f2264d8c5bc99f003c9d277"
 
 [[test]]
@@ -52288,7 +52290,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RTEffectTest.cpp#L44-L70"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "55e67cc21b1bbf30940b9dea3f2964046dff91cf3a55473b9a1dd78dc0ee53a9"
 
 [[test]]
@@ -52297,7 +52299,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RTEffectTest.cpp#L72-L113"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "3352f167567b1519293d2bbabc0ba70814a1c44a503b28e5aa1031c390dedded"
 
 [[test]]
@@ -52306,7 +52308,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RTEffectTest.cpp#L19-L42"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "961159905a444df5356d03bce765e20650834923c6d5c6bfd2d8abd2b665e34a"
 
 [[test]]
@@ -53157,6 +53159,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L599-L757"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs the Precompile API (PaintOptions, PrecompileShader/ColorFilter/Blender, UniqueKeyUtils, DrawContext), which is not ported (G14)"
 span_hash = "25e954f62aef6e170677ee4de39e6262be07fd5bd9c488b436329b4cd7608346"
 
 [[test]]
@@ -53166,6 +53169,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L510-L590"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs the Precompile API (PaintOptions, PrecompileShader/ColorFilter/Blender, UniqueKeyUtils, DrawContext), which is not ported (G14)"
 span_hash = "f0e8c8f3fc45d833731095f4653a3234ada145863b11620c8bf41c2c5ceeb329"
 
 [[test]]

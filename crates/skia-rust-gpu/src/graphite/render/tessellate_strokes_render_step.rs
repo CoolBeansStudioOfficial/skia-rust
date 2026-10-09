@@ -160,7 +160,7 @@ impl RenderStep for TessellateStrokesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/TessellateStrokesRenderStep.cpp#L113-L125 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         // TODO (Skia): Assumes vertex ID support for now, max edges must equal
         // skgpu::tess::FixedCountStrokes::kMaxEdges -> (2^14 - 1) -> 16383.
         let curve_type = if self.infinity_support {

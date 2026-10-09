@@ -358,6 +358,15 @@ link to the half it comes from. Real polymorphism inside Graphite stays a trait 
 `PathAtlas` (enum: Raster, plus Compute for completeness, not built), `DrawListBase` (enum:
 `DrawList`, `DrawListLayer`).
 
+*One exception, `Caps` (done in G6).* `graphite::caps::Caps` stays a trait: it is `Caps.h`'s
+public interface, and the key layer, the shader generators and the recorder run against
+profile-driven and fake caps in tests with no device. The data types `Caps.h` declares
+(`ResourceBindingRequirements`, `AttachmentSizePolicy`, `SkSL::ShaderCaps` with
+`default_shader_caps()` for `setDefaultShaderCaps`) live beside it, and `graphite::wgpu::WgpuCaps`
+is `DawnCaps` plus the base class's state, so every function still has one `// Port of:` link.
+Code that takes caps takes `&dyn Caps` (`TextureProxy::make(caps, …)` replaced the
+`max_texture_size` parameter).
+
 ### 4.2 Seams into core
 
 - `graphite::Device` implements core's `Device` trait (`crates/skia-rust-core/src/device.rs`). The
@@ -505,6 +514,41 @@ in `f64`). Matching it is a porting task with exact text feedback.
 "Byte-identical WGSL for all Skia shaders" is defined as W1 + W2 + W3 + W4 all green, for both
 oracle profiles. W2 and W3 hash files are committed under `crates/skia-rust-gpu/tests/data/wgsl/`
 with the full texts in the release, as in `rp-diff`.
+
+**Status after G6** (`port/gpu-g6`):
+
+- *Pipeline* (all of `ShaderInfo::Make` and the shader half of `DawnGraphicsPipeline::Make`):
+  `graphite::wgpu::pipeline_shaders::make_pipeline_shaders(caps, dict, rte_dict, rp_desc, step,
+  paint_id, error_handler)` builds the `SkSL` (`ShaderInfo`) and compiles it to WGSL
+  (`gpu::sksl_to_backend::sksl_to_wgsl`, the minified Graphite modules, `fSharpenTextures`,
+  `fForceNoRTFlip`, `fForceHighPrecision` as Dawn sets them). It needs a `WgpuCaps`, which
+  `CapsProfile` builds without a device.
+- W1: unchanged, 416 of 420 (the Graphite modules now load, which no `.wgsl` golden uses).
+- W2: `crates/skia-rust-gpu/tests/wgsl_pipelines.rs` runs a corpus (3 profiles, about 70 paints, every
+  `RenderStep` of the `RendererProvider`, RGBA8 and A8 targets: 2,545 pipelines by default,
+  `WGSL_FULL=1` for about 12,000) and checks that it is deterministic. `WGSL_DUMP_DIR` writes the
+  per-profile pipeline dumps (`name`, pipeline label, FNV-1a hashes of the four shaders) and
+  `WGSL_ORACLE_DIR` compares them with the oracle's. **Missing: the oracle dump** (the oracle host
+  is gone, so G0b cannot produce it) **and the headless recorder** (G10: `Device`, `DrawPass`,
+  `ClipStack`), which is what turns "a GM" into its triples of render pass, step and key. Missing
+  paints: image/YUV/picture shaders and clips (G10), perlin noise and mesh (their key blocks are
+  ported, the paints need `Device`).
+- W3: not started. `ChromePrecompileTest`, `AndroidPrecompileTest`, `CombinationBuilderTest` and
+  `PaintParamsKeyTest` need the Precompile API (G14: `PaintOptions`, `PrecompileShader` and the
+  rest, `UniqueKeyUtils`).
+- W4: done for everything W2 makes. naga accepts every shader except the ones that pass a pointer
+  to a storage buffer array as a function argument (the 12-stop gradients on a device with storage
+  buffers): that is WGSL's `unrestricted_pointer_parameters`, which Tint implements and naga does
+  not. The test names the error and requires that it is the only one.
+- W5: `KeyTest` (3), `PipelineDataCacheTest` (1) and `RTEffectTest` (4) are ported and pass on the
+  noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
+  `PaintParamsKeyTest` (2) the Precompile API (G14).
+
+An identity local matrix is not elided anywhere in Skia: the gradient factories end with
+`makeWithLocalMatrix(lm ? *lm : SkMatrix::I())` and `SkShader::makeWithLocalMatrix` always wraps,
+and Graphite's key code for `SkLocalMatrixShader` folds the gradient's unit-space matrix into that
+wrapper. The skia-rust gradients match (`LocalMatrix[LinearGradient4+PreAlpha]`), so there is
+nothing to fix.
 
 ---
 

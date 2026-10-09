@@ -13,10 +13,12 @@ use bitflags::bitflags;
 use skia_rust_core::rect::IRect;
 
 use crate::graphite::attribute::{Attribute, Varying};
+use crate::graphite::caps::ResourceBindingRequirements;
 use crate::graphite::draw_params::DrawParams;
 use crate::graphite::draw_types::{DepthStencilSettings, PipelineStageFlags, PrimitiveType};
 use crate::graphite::draw_writer::DrawWriter;
 use crate::graphite::geom::rect::Rect;
+use crate::graphite::paint_params_key::RootNodesInfo;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::resource_types::Layout;
 use crate::graphite::uniform::Uniform;
@@ -450,10 +452,21 @@ pub trait RenderStep: Send + Sync + Debug {
     // Port of: src/gpu/graphite/Renderer.h#L150-L151 (chrome/m156)
     fn write_uniforms_and_textures(&self, params: &DrawParams, gatherer: &mut PipelineDataGatherer);
 
-    /// `vertexSkSL(...)`: the body of the vertex function. It defines a `float4 devPosition` and
+    /// `vertexSkSL(roots)`: the body of the vertex function. It defines a `float4 devPosition` and
     /// writes the already-defined `float2 stepLocalCoords`.
-    // Port of: src/gpu/graphite/Renderer.h#L163 (chrome/m156)
-    fn vertex_sksl(&self) -> String;
+    // Port of: src/gpu/graphite/Renderer.h#L151 (chrome/m156)
+    fn vertex_sksl(&self, roots: &RootNodesInfo) -> String;
+
+    /// `texturesAndSamplersSkSL(bindingReqs, &nextBindingIndex)`: emits code to set up textures
+    /// and samplers. Only defined when [`has_textures`](Self::has_textures) is true.
+    // Port of: src/gpu/graphite/Renderer.h#L154-L157 (chrome/m156)
+    fn textures_and_samplers_sksl(
+        &self,
+        _binding_reqs: &ResourceBindingRequirements,
+        _next_binding_index: &mut i32,
+    ) -> String {
+        String::new()
+    }
 
     /// `fragmentCoverageSkSL()`: writes its coverage into `half4 outputCoverage`, splatted into
     /// all four channels. Only defined when the step has coverage.
@@ -462,11 +475,18 @@ pub trait RenderStep: Send + Sync + Debug {
         ""
     }
 
-    /// `fragmentColorSkSL(...)`: writes the primitive color into `half4 primitiveColor`. Only
+    /// `fragmentColorSkSL(roots)`: writes the primitive color into `half4 primitiveColor`. Only
     /// defined when the step emits a primitive color.
-    // Port of: src/gpu/graphite/Renderer.h#L174 (chrome/m156)
-    fn fragment_color_sksl(&self) -> String {
+    // Port of: src/gpu/graphite/Renderer.h#L168 (chrome/m156)
+    fn fragment_color_sksl(&self, _roots: &RootNodesInfo) -> String {
         String::new()
+    }
+
+    /// `fragmentColorSkSLLocalCoordsVariable()`: the name of the local coordinates variable to
+    /// use for shader sampling, if any.
+    // Port of: src/gpu/graphite/Renderer.h#L172 (chrome/m156)
+    fn fragment_color_sksl_local_coords_variable(&self) -> Option<&'static str> {
+        None
     }
 
     /// `appendDataStride(params)`. Steps whose stride depends on the draw override this.
@@ -601,6 +621,66 @@ pub trait RenderStep: Send + Sync + Debug {
         self.base().flags.contains(RenderStepFlags::APPEND_VERTICES)
     }
 
+    /// `vsUsesStorage()`.
+    // Port of: src/gpu/graphite/Renderer.h#L193 (chrome/m156)
+    fn vs_uses_storage(&self) -> bool {
+        self.base().flags.contains(RenderStepFlags::VS_USES_STORAGE)
+    }
+
+    /// `fsUsesStorage()`.
+    // Port of: src/gpu/graphite/Renderer.h#L194 (chrome/m156)
+    fn fs_uses_storage(&self) -> bool {
+        self.base().flags.contains(RenderStepFlags::FS_USES_STORAGE)
+    }
+
+    /// `storageBufferStages()`.
+    // Port of: src/gpu/graphite/Renderer.h#L195 (chrome/m156)
+    fn storage_buffer_stages(&self) -> PipelineStageFlags {
+        self.base().storage_buffer_stages()
+    }
+
+    /// `numUniforms()`.
+    // Port of: src/gpu/graphite/Renderer.h#L215 (chrome/m156)
+    fn num_uniforms(&self) -> usize {
+        self.base().uniforms().len()
+    }
+
+    /// `numStorageUniforms()`.
+    // Port of: src/gpu/graphite/Renderer.h#L219 (chrome/m156)
+    fn num_storage_uniforms(&self) -> usize {
+        self.base().storage_uniforms().len()
+    }
+
+    /// `uniforms()`.
+    // Port of: src/gpu/graphite/Renderer.h#L229 (chrome/m156)
+    fn uniforms(&self) -> &[Uniform] {
+        self.base().uniforms()
+    }
+
+    /// `staticAttributes()`.
+    // Port of: src/gpu/graphite/Renderer.h#L230 (chrome/m156)
+    fn static_attributes(&self) -> &[Attribute] {
+        self.base().static_attributes()
+    }
+
+    /// `appendAttributes()`.
+    // Port of: src/gpu/graphite/Renderer.h#L231 (chrome/m156)
+    fn append_attributes(&self) -> &[Attribute] {
+        self.base().append_attributes()
+    }
+
+    /// `storageUniforms()`.
+    // Port of: src/gpu/graphite/Renderer.h#L232 (chrome/m156)
+    fn storage_uniforms(&self) -> &[Uniform] {
+        self.base().storage_uniforms()
+    }
+
+    /// `varyings()`.
+    // Port of: src/gpu/graphite/Renderer.h#L233 (chrome/m156)
+    fn varyings(&self) -> &[Varying] {
+        self.base().varyings()
+    }
+
     /// `usesUniformsInFragmentSkSL()`: by default, steps use their uniforms for coverage or
     /// primitive colors.
     // Port of: src/gpu/graphite/Renderer.h#L101-L104 (chrome/m156)
@@ -608,6 +688,16 @@ pub trait RenderStep: Send + Sync + Debug {
         self.coverage() != Coverage::None || self.emits_primitive_color()
     }
 }
+
+/// `RenderStep::ssboIndexAttribute()`: name of an attribute containing both the render step and
+/// shading SSBO index, if used.
+// Port of: src/gpu/graphite/Renderer.h#L223 (chrome/m156)
+pub const SSBO_INDEX_ATTRIBUTE: &str = "ssboIndex";
+
+/// `RenderStep::ssboIndexVarying()`: name of a varying to pass the SSBO index to the fragment
+/// shader.
+// Port of: src/gpu/graphite/Renderer.h#L226 (chrome/m156)
+pub const SSBO_INDEX_VARYING: &str = "ssboIndexVar";
 
 /// `RenderStep::GetCoverage(flags)`.
 // Port of: src/gpu/graphite/Renderer.cpp#L93-L98 (chrome/m156)

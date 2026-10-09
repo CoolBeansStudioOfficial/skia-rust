@@ -13,7 +13,10 @@
 //! read pixels cannot be ported on top of this.
 #![cfg(not(target_arch = "wasm32"))]
 
+use skia_rust_gpu::graphite::buffer_manager::StaticBufferManager;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
+use skia_rust_gpu::graphite::context_priv::ContextPriv;
+use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
     CapsProfile, WgpuContext, WgpuSharedContext, make_context, noop_backend_context,
 };
@@ -47,4 +50,21 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
         contexts.push((profile.name, WgpuContext::new(shared_context, options)));
     }
     contexts
+}
+
+/// `context->priv().rendererProvider()`.
+///
+/// The port's `Context` does not own a `RendererProvider` yet (`Context::finishInitialization`,
+/// G10), so this makes one over the context's caps. The static buffers its steps write are not
+/// finalized, which a test that only reads the steps' shader code does not need.
+#[must_use]
+pub fn renderer_provider(context: &WgpuContext) -> RendererProvider {
+    let caps = ContextPriv::caps(context);
+    let mut static_buffer_manager =
+        StaticBufferManager::new(ContextPriv::resource_provider(context).clone(), caps);
+    RendererProvider::new(
+        caps.resource_binding_requirements().uniform_buffer_layout,
+        caps.shader_caps().infinity_support,
+        &mut static_buffer_manager,
+    )
 }
