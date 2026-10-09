@@ -8,9 +8,7 @@
 //! `SkPMColor`'s byte order follows Skia's default: `BGRA` on Windows (`SK_R32_SHIFT == 16`),
 //! `RGBA` elsewhere (`SK_R32_SHIFT == 0`).
 //!
-//! `SkColorConverter` is not ported yet.
-
-use crate::color::PMColor;
+use crate::color::{Color, Color4f, PMColor};
 use crate::math::{U8CPU, mul_div_255_round};
 use crate::scalar::scalar;
 use crate::t_pin::t_pin;
@@ -213,4 +211,32 @@ pub fn pm_src_over(src: PMColor, dst: PMColor) -> PMColor {
         | (ag & 0x0001_FF00).min(0x0000_FF00)
         | (rb & 0x01FF_0000).min(0x00FF_0000)
         | (ag & 0xFF00_0000)
+}
+
+/// Converts a list of [`Color`]s to float colors, once, at construction.
+///
+/// skia-rust addition: `colors4f` takes `&self` (Skia's accessor is non-const and returns a
+/// mutable span); the accessor does not change the values.
+// Port of: src/core/SkColorPriv.h#L162-L170 (chrome/m156)
+#[doc(alias = "SkColorConverter")]
+#[derive(Debug, Clone, PartialEq)]
+pub struct ColorConverter {
+    colors4f: Vec<Color4f>,
+}
+
+impl ColorConverter {
+    // Port of: src/core/SkColor.cpp#L177-L182 (chrome/m156)
+    #[doc(alias = "SkColorConverter")]
+    #[must_use]
+    pub fn new(src: &[Color]) -> Self {
+        Self {
+            colors4f: src.iter().map(|&c| Color4f::from_color(c)).collect(),
+        }
+    }
+
+    /// The converted colors (`colors4f`).
+    #[must_use]
+    pub fn colors4f(&self) -> &[Color4f] {
+        &self.colors4f
+    }
 }

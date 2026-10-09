@@ -27,7 +27,7 @@ use crate::color_table::ColorTable;
 use crate::data::Data;
 use crate::effect_priv::StageRec;
 use crate::flattenable::FlattenableRegistry;
-use crate::known_runtime_effects::{get_known_runtime_effect, StableKey};
+use crate::known_runtime_effects::{StableKey, get_known_runtime_effect};
 use crate::matrix_color_filter::{Domain, make_matrix};
 use crate::picture_priv::VERSION_BLEND_4F_COLOR_FILTER;
 use crate::raster_pipeline::Stage;

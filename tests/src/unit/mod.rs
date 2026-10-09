@@ -402,8 +402,8 @@ pub mod text_blob_test;
 pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
-pub mod webp_test;
 #[cfg(test)]
 pub mod wangs_formula_test;
+pub mod webp_test;
 #[cfg(test)]
 pub mod write_pixels_test;

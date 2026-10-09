@@ -19,3 +19,6 @@ Not yet known
   serif rows against the C++ values, following docs/PORTING.md §12 (rp-diff), before changing code.
 
 Attempts: none beyond the initial port. The GM is ignored so CI stays green until the cause is found.
+
+Update (port/gm-rsx-fix): the RSXform shader fix (make_post_inverse_lm in device.rs) did not change this
+GM; it is unrelated to RSX glyph runs and still mismatches on every tier.

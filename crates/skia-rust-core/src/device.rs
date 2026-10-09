@@ -843,8 +843,7 @@ pub fn draw_glyph_run_list(device: &mut dyn Device, list: &GlyphRunList<'_>, pai
 ///
 /// The canvas-level `concat` of C++ becomes a device transform change, which is the same for
 /// the raster device (its matrix is the canvas matrix). A shader in `paint` needs the
-/// local-matrix shader that `make_post_inverse_lm` builds, which is not ported: those glyphs
-/// are skipped (see the TODO in the body).
+/// local-matrix shader that `make_post_inverse_lm` builds.
 // Port of: src/core/SkDevice.cpp#L438-L479 (chrome/m156)
 #[doc(alias = "simplifyGlyphRunRSXFormAndRedraw")]
 pub fn simplify_glyph_run_rsxform_and_redraw(
@@ -869,13 +868,11 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
                 .post_translate(Point::new(origin.x, origin.y));
 
             // We want to rotate each glyph by the rsxform, but we don't want to rotate "space"
-            // (the shader that cares about the CTM), so C++ wraps the shader in the inverse of
-            // the glyph matrix. That wrapper is `make_post_inverse_lm`, a local-matrix shader,
-            // which is not ported yet. Until it is, such glyphs draw nothing.
-            // TODO(text-T14): port `make_post_inverse_lm` and draw these glyphs with it.
-            if paint.shader().is_some() {
-                continue;
-            }
+            // (i.e. the shader that cares about the ctm) so we have to undo our little ctm
+            // trick with a localmatrixshader so that the shader draws as if there was no
+            // change to the ctm.
+            let mut inverting_paint = paint.clone();
+            inverting_paint.set_shader(make_post_inverse_lm(paint.shader_ref(), &glyph_to_local));
             let sub_list = builder.make_glyph_run_list(
                 GlyphRun::new(
                     run.font().clone(),
@@ -893,9 +890,20 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
                 &M44::from(glyph_to_local),
             );
             let mut restore = DeviceTransformRestore::new(&mut *device, &local_to_device);
-            draw_glyph_run_list(restore.device(), &sub_list, paint);
+            draw_glyph_run_list(restore.device(), &sub_list, &inverting_paint);
         }
     }
+}
+
+/// `make_post_inverse_lm`: the shader drawn with the inverse of `lm` as its local matrix, or
+/// `None` when there is no shader or `lm` is not invertible.
+// Port of: src/core/SkDevice.cpp#L399-L422 (chrome/m156)
+fn make_post_inverse_lm(shader: Option<&Shader>, lm: &Matrix) -> Option<Shader> {
+    let inverse_lm = lm.invert();
+    let (Some(shader), Some(inverse_lm)) = (shader, inverse_lm) else {
+        return None;
+    };
+    Some(shader.with_local_matrix(&inverse_lm))
 }
 
 /// A device with no pixels, which only tracks the clip bounds (`SkNoPixelsDevice`).
