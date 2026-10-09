@@ -24,38 +24,39 @@ crate::def_simple_gm!(
     160,
     180,
     {
-    let Some(reference) = get_resource_as_image("images/filter_reference.png") else {
-        return;
-    };
-    let mut crop = Rect::from_irect(IRect::from_size(reference.dimensions()));
-    crop.inset((10.0, 10.0));
-    let draw_filtered_image = |filter: Option<skia_rust_core::image_filter::ImageFilter>| {
-        let mut paint = Paint::default();
-        paint.set_image_filter(filter);
-        canvas.draw_image(&reference, (0.0, 0.0), Some(&paint));
-        canvas.translate((0.0, reference.height() as f32));
-    };
+        let Some(reference) = get_resource_as_image("images/filter_reference.png") else {
+            return;
+        };
+        let mut crop = Rect::from_irect(IRect::from_size(reference.dimensions()));
+        crop.inset((10.0, 10.0));
+        let draw_filtered_image = |filter: Option<skia_rust_core::image_filter::ImageFilter>| {
+            let mut paint = Paint::default();
+            paint.set_image_filter(filter);
+            canvas.draw_image(&reference, (0.0, 0.0), Some(&paint));
+            canvas.translate((0.0, reference.height() as f32));
+        };
 
-    {
-        let kernel = [1.0_f32, 1.0, 1.0, 1.0, -7.0, 1.0, 1.0, 1.0, 1.0];
-        draw_filtered_image(image_filters::matrix_convolution(
-            (3, 3),
-            &kernel,
-            1.0,
-            0.3,
-            (1, 1),
-            TileMode::Clamp,
-            true,
+        {
+            let kernel = [1.0_f32, 1.0, 1.0, 1.0, -7.0, 1.0, 1.0, 1.0, 1.0];
+            draw_filtered_image(image_filters::matrix_convolution(
+                (3, 3),
+                &kernel,
+                1.0,
+                0.3,
+                (1, 1),
+                TileMode::Clamp,
+                true,
+                None,
+                Some(crop),
+            ));
+        }
+
+        draw_filtered_image(image_filters::blur(
+            10.0,
+            10.0,
+            TileMode::Mirror,
             None,
             Some(crop),
         ));
     }
-
-    draw_filtered_image(image_filters::blur(
-        10.0,
-        10.0,
-        TileMode::Mirror,
-        None,
-        Some(crop),
-    ));
-});
+);

@@ -8,6 +8,11 @@
 // The lighting, magnifier, arithmetic and runtime-image filters, the Graphite and Ganesh variants
 // and the image-filter-cache tests are not ported yet.
 
+// Only the tests whose filters are ported are here: the Offset, Merge, Blend (with the arithmetic
+// blender), Image, DropShadow, Lighting and Magnifier filters and the raster backend. The
+// morphology, displacement and matrix-convolution filters, the Graphite and Ganesh variants, the
+// blur-dependent bounds tests and the image-filter-cache tests are not ported yet.
+
 #![cfg(test)]
 
 use std::sync::Arc;
@@ -21,20 +26,20 @@ use skia_rust_core::color::{Color, Color4f, ColorChannel};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_filter::{ImageFilter, MapDirection};
 use skia_rust_core::image_filter_result::FilterResult;
-use skia_rust_core::image_filter_types::{Context, Mapping};
+use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::picture_recorder::PictureRecorder;
-use skia_rust_core::rect::{IRect, Rect, RoundOut};
+use skia_rust_core::rect::{IRect, Rect, RoundOut, rect_priv};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::shaders;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_effects::image_filters;
+use skia_rust_effects::image_filters::{self, Dither};
 use skia_rust_raster::image_filter_backend::make_raster_backend;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
@@ -690,3 +695,381 @@ def_tier_test!(
         let _ = reporter;
     }
 );
+
+/// `test_arithmetic_bounds(reporter, k1, k2, k3, k4, background, foreground, crop, expected)`.
+// Port of: tests/ImageFilterTest.cpp#L2330-L2342 (chrome/m156)
+fn test_arithmetic_bounds(
+    reporter: &mut crate::Reporter,
+    k: [f32; 4],
+    background: Option<ImageFilter>,
+    foreground: Option<ImageFilter>,
+    crop: Option<&IRect>,
+    expected: IRect,
+) {
+    let arithmetic = image_filters::arithmetic(
+        k[0],
+        k[1],
+        k[2],
+        k[3],
+        false,
+        background,
+        foreground,
+        crop.map(|rect| Rect::from_irect(*rect)),
+    )
+    .expect("an arithmetic filter");
+    // Use a very large input bounds so that the crop rects stored in 'background' and 'foreground'
+    // aren't restricted.
+    let src = rect_priv::make_i_large();
+    let bounds =
+        arithmetic.filter_bounds(&src, &Matrix::new_identity(), MapDirection::Forward, None);
+    reporter_assert!(reporter, expected == bounds);
+}
+
+/// `test_arithmetic_combinations(reporter, v)`.
+// Port of: tests/ImageFilterTest.cpp#L2344-L2391 (chrome/m156)
+#[allow(clippy::too_many_lines)] // mirrors the long C++ case table, one call per case
+fn test_arithmetic_combinations(reporter: &mut crate::Reporter, v: f32) {
+    let bg_rect = IRect::from_xywh(0, 0, 100, 100);
+    let fg_rect = IRect::from_xywh(50, 50, 100, 100);
+    let background = || image_filters::crop(&Rect::from_irect(bg_rect), TileMode::Decal, None);
+    let foreground = || image_filters::crop(&Rect::from_irect(fg_rect), TileMode::Decal, None);
+
+    let union_rect = IRect::join(&bg_rect, &fg_rect);
+    let mut intersection = bg_rect;
+    irect_intersect_in_place(&mut intersection, &fg_rect);
+
+    // Test with crop. When k4 is non-zero, the result is expected to be cropRect regardless of
+    // inputs because the filter affects the whole crop area. When there is no crop rect, it should
+    // report an effectively infinite output.
+    let inf = rect_priv::make_i_large();
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, 0.0, 0.0],
+        background(),
+        foreground(),
+        None,
+        IRect::new_empty(),
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, 0.0, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, v, 0.0],
+        background(),
+        foreground(),
+        None,
+        bg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, v, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, 0.0, 0.0],
+        background(),
+        foreground(),
+        None,
+        fg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, 0.0, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, v, 0.0],
+        background(),
+        foreground(),
+        None,
+        union_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, v, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, 0.0, 0.0],
+        background(),
+        foreground(),
+        None,
+        intersection,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, 0.0, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, v, 0.0],
+        background(),
+        foreground(),
+        None,
+        bg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, v, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, 0.0, 0.0],
+        background(),
+        foreground(),
+        None,
+        fg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, 0.0, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, v, 0.0],
+        background(),
+        foreground(),
+        None,
+        union_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, v, v],
+        background(),
+        foreground(),
+        None,
+        inf,
+    );
+
+    let crop_rect = IRect::from_xywh(-111, -222, 333, 444);
+    let crop = Some(&crop_rect);
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, 0.0, 0.0],
+        background(),
+        foreground(),
+        crop,
+        IRect::new_empty(),
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, 0.0, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, v, 0.0],
+        background(),
+        foreground(),
+        crop,
+        bg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, 0.0, v, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, 0.0, 0.0],
+        background(),
+        foreground(),
+        crop,
+        fg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, 0.0, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, v, 0.0],
+        background(),
+        foreground(),
+        crop,
+        union_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [0.0, v, v, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, 0.0, 0.0],
+        background(),
+        foreground(),
+        crop,
+        intersection,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, 0.0, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, v, 0.0],
+        background(),
+        foreground(),
+        crop,
+        bg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, 0.0, v, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, 0.0, 0.0],
+        background(),
+        foreground(),
+        crop,
+        fg_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, 0.0, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, v, 0.0],
+        background(),
+        foreground(),
+        crop,
+        union_rect,
+    );
+    test_arithmetic_bounds(
+        reporter,
+        [v, v, v, v],
+        background(),
+        foreground(),
+        crop,
+        crop_rect,
+    );
+}
+
+// Port of: tests/ImageFilterTest.cpp#L2394-L2398 (chrome/m156)
+def_tier_test!(ArithmeticImageFilterBounds, |reporter| {
+    // Test SkArithmeticImageFilter::filterBounds with different blending modes.
+    test_arithmetic_combinations(reporter, 1.0);
+    test_arithmetic_combinations(reporter, 0.5);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L2603-L2644 (chrome/m156)
+def_tier_test!(ImageFilter_UnboundedInputMagnifier_EdgeLeak, |reporter| {
+    // Create an image filter graph that starts with unbounded/infinite input
+    // (in this case a solid-color magenta shader) and ends with a magnifier
+    // with a lens bounds that will be larger than the layer we draw to.
+    let infinite_input =
+        image_filters::shader(Some(shaders::color(Color::MAGENTA)), Dither::No, None);
+    let magnifier = image_filters::magnifier(
+        &Rect::from_wh(100.0, 100.0),
+        2.5,
+        2.0,
+        SamplingOptions::new(FilterMode::Linear, MipmapMode::None),
+        infinite_input,
+        None,
+    );
+
+    let info = ImageInfo::new_n32_premul((120, 120), None);
+    let mut surf = surfaces::raster(&info, None, None).expect("a raster surface");
+    {
+        let canvas = surf.canvas();
+
+        canvas.clear(Color::BLACK);
+
+        canvas.clip_rect(Rect::from_wh(40.0, 100.0), None, None); // small enough that zoom center is not visible
+
+        let mut paint = Paint::default();
+        paint.set_image_filter(magnifier);
+        canvas.save_layer(&SaveLayerRec::default().paint(&paint));
+
+        // Contents are irrelevant given they will be overwritten by infiniteInput
+        canvas.clear(Color::GREEN);
+        canvas.restore();
+        canvas.restore();
+    }
+
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(&info, None);
+    {
+        let mut dst = bm.peek_pixels_mut().expect("allocated");
+        reporter_assert!(
+            reporter,
+            surf.read_pixels_to_pixmap(&mut dst, (0, 0)),
+            "Unable to read pixels"
+        );
+    }
+
+    // When the edge leaking bug manifested, the transparent black padding pixels around the
+    // reduced visible input would get sampled and fill in the right edge of the clipped zoom.
+    // This would appear as black in the final rendering instead of solid magenta.
+    let mut leaked = false;
+    for y in 10..90 {
+        for x in 35..40 {
+            let c = bm.get_color((x, y));
+            // Any pixel that is not solid magenta came from the padding.
+            if c != Color::MAGENTA {
+                leaked = true;
+                break;
+            }
+        }
+    }
+
+    reporter_assert!(reporter, !leaked, "Edge padding leaked by magnifier");
+});
