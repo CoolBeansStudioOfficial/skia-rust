@@ -16905,6 +16905,7 @@ macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L239-L239"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "48e8dbc53f707bb9689eef37f8523cde808d0fd65dfb1b6a7c89631e5c7ac91d"
 
 [[test]]
@@ -16913,7 +16914,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L183-L183"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "fd9b9aed0290bc71a9ce9da49136626db3e6205bd631838c157fe027cdc4a030"
 
 [[test]]
@@ -16922,7 +16923,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L181-L181"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "599282f8d19beec161b561f0f184f5bff10ef64a53bd0d0fae5a1d20996b8852"
 
 [[test]]
@@ -16931,7 +16932,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L182-L182"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "2e75e1cd5bbf12d0dbe0b65886339e857b96b63f5ee67d76f0c43a82fc780d46"
 
 [[test]]
@@ -16940,7 +16941,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L185-L185"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "9c7e14fb62424de4b7a55aa59f405d030a704130f0fdaa4eff48eef3a27cbb4c"
 
 [[test]]
@@ -16950,6 +16951,7 @@ macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L184-L184"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "2856bdad8b9554dd449258212601b5c921e4eb0c96f14bb82e9b30589671315e"
 
 [[test]]
@@ -18922,8 +18924,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/drawatlas.cpp#L227-L234"
 module = "text"
-status = "todo"
-reason = "needs text (SkFont, SkTextBlob, fonts; Phase 4)"
+status = "failing"
+reason = "text drawn with a mirrored gradient shader vanishes (glyph shapes match without the shader); see notes/gm-drawatlas.cpp-drawTextRSXform.md"
 span_hash = "af07527d631d96df9e50527e3299640dc2fda6f6d477884ff7c214228fbb4f16"
 
 [[test]]
@@ -19767,7 +19769,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontcache.cpp#L149-L149"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ca3075a5c5eb2d46973e3d9d0c4c0c533dfe9d40a4a15a634de78f3df652be3f"
 
 [[test]]
@@ -19776,7 +19778,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontcache.cpp#L148-L148"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ada664c11faf2cfc67898994d3693f6413e5e1f897281d2c3c3bfd06b35cfd94"
 
 [[test]]
@@ -19835,7 +19837,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontregen.cpp#L186-L186"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "c0fd8f524b4347d0969c147bb82c54b8364f7233674048d9f266a7cba6616b51"
 
 [[test]]
@@ -19844,7 +19846,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontregen.cpp#L143-L143"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "3db35e8b32acf151aea652a43e9bf7f7a5f8e54a210621bd55cbfc9b2d8fd0e8"
 
 [[test]]
@@ -21147,7 +21149,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersbase.cpp#L313-L313"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "74b3de65f988b6107d8f33f182a61929c03c3648f53806d003e32409e8a90700"
 
 [[test]]
@@ -21156,7 +21158,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefiltersbase.cpp#L303-L303"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "e3c20a5eea5775a371e0c61934fbd1e79ebca498c7f2ffb71ed9bf0bb21303cf"
 
 [[test]]
@@ -23040,7 +23042,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/rectangletexture.cpp#L258-L258"
 module = "text"
-status = "todo"
+status = "passing"
 span_hash = "ad45eb0f646a3acca1a5349366723ee8e08d43ea2d34f3bba59096e16daf9096"
 
 [[test]]
@@ -23551,6 +23553,7 @@ macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L243-L243"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "8d29721a5104d21bf28fa451ca4c442937c40c7330e235185ee654fb11d2fa00"
 
 [[test]]
@@ -23596,6 +23599,7 @@ macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
@@ -23641,6 +23645,7 @@ macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L244-L244"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "0e3bb17f46f8dd2c3ce29b0dc771ddedf50a1af4ce82e03e75fad8b770da9c8f"
 
 [[test]]
@@ -23650,6 +23655,7 @@ macro = "DEF_GM"
 source = "gm/scaledemoji_rendering.cpp#L114-L114"
 module = "text"
 status = "todo"
+reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
 span_hash = "3f1481afff68eb3b6cf60531b39a4792bddd60cbca90bb3616a9bb5e57349168"
 
 [[test]]

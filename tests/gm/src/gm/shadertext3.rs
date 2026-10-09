@@ -132,8 +132,6 @@ impl GM for ShaderText3Gm {
         // draw glyphs scaled up
         canvas.scale((2.0, 2.0));
 
-
-
         // position the baseline of the first run
         canvas.translate((0.0, 0.75 * int_to_scalar(K_POINT_SIZE)));
 

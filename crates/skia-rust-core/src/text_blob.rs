@@ -340,6 +340,25 @@ impl TextBlob {
         builder.make()
     }
 
+    /// `SkTextBlob::MakeFromRSXformGlyphs(glyphs, xform, font)`: a blob of `glyphs`, each placed
+    /// by its `RSXform`, or `None` when there are no glyphs or too few transforms. Same as
+    /// [`from_rsxform`](Self::from_rsxform) with [`TextEncoding::GlyphId`], since the glyph count
+    /// of a glyph-id text is its length.
+    // Port of: include/core/SkTextBlob.h#L173-L176 (chrome/m156)
+    #[doc(alias = "MakeFromRSXformGlyphs")]
+    #[must_use]
+    pub fn from_rsxform_glyphs(glyphs: &[GlyphId], xform: &[RSXform], font: &Font) -> Option<Self> {
+        let count = glyphs.len();
+        if count == 0 || xform.len() < count {
+            return None;
+        }
+        let mut builder = TextBlobBuilder::new();
+        let (run_glyphs, xforms) = builder.alloc_run_rsxform(font, count);
+        run_glyphs.copy_from_slice(glyphs);
+        xforms.copy_from_slice(&xform[..count]);
+        builder.make()
+    }
+
     /// The x intervals where the horizontal band `bounds` (its top and bottom y) crosses the
     /// outlines of the glyphs, as pairs `[start, end]`. `RSXform` runs are ignored. `paint` gives
     /// the stroke and path effect that change the outlines (`getIntercepts`).
