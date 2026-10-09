@@ -50195,7 +50195,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/graphite/BoundsManagerTest.cpp#L14-L48"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "ffd72cdd8fed6c7a962375c5b0264aeb6072f0ba0a03e9ae89f797f4d7d48958"
 
 [[test]]
@@ -50809,7 +50809,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/IntersectionTreeTest.cpp#L34-L74"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "84d986c7ab9b496a1f9a68c9416a1da289f911079061d43e1ca1cbc73d4ae302"
 
 [[test]]
@@ -51484,7 +51484,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/RectTest.cpp#L15-L119"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "dd5ed8b57cfe1099114e69aa3316c6e817575bd01cb1c3eae4760eabf8b930c5"
 
 [[test]]
@@ -51493,7 +51493,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/ShapeTest.cpp#L12-L16"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "791de34016f7929b8fab424119d4f9cffc0bd52e1dacb032fadf0fce9fceb9d2"
 
 [[test]]
@@ -51709,7 +51709,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/TransformTest.cpp#L12-L16"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "17ac9a2cc49019c0f9d1a489beed7f7f62d0fe24f850bbd0577e41acc5ced71c"
 
 [[test]]

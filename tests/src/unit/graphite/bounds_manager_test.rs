@@ -4,6 +4,8 @@
 // Port of: tests/graphite/BoundsManagerTest.cpp (chrome/m156)
 
 #![cfg(test)]
+// The grid coordinates are small integers converted to `float`, as the C++ `(x + 0.1f) * w` does.
+#![allow(clippy::cast_precision_loss)]
 
 use skia_rust_core::size::ISize;
 use skia_rust_gpu::graphite::draw_order::CompressedPaintersOrder;

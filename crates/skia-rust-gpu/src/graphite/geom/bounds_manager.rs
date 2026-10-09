@@ -10,6 +10,14 @@
 //! implementations; `HybridBoundsManager` picks between its brute-force and grid members with an
 //! enum, as the C++ `fCurrentManager` pointer does.
 
+// The grid math converts between `int` cell indices and `float`/`usize` exactly as the C++ does
+// (`(float)`, `(size_t)` casts); the values are in range by construction.
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap
+)]
+
 use skia_rust_core::scalar::scalar_ceil_to_int;
 use skia_rust_core::size::ISize;
 use skia_rust_simd::vx::{Float4, Int4};
@@ -225,23 +233,17 @@ impl GridBoundsManager {
     fn get_grid_coords(&self, bounds: Rect) -> Int4 {
         // Normalize bounds by 1/wh of device bounds, then scale up to number of cells per side.
         // fScaleXY includes both 1/wh and the grid dimension scaling, then clamp to [0, gridDim-1].
-        let scaled = bounds.ltrb() * Float4::new(
-            self.scale_x,
-            self.scale_y,
-            self.scale_x,
-            self.scale_y,
-        );
-        scaled
-            .cast::<i32>()
-            .pin(
-                Int4::splat(0),
-                Int4::new(
-                    self.grid_width - 1,
-                    self.grid_height - 1,
-                    self.grid_width - 1,
-                    self.grid_height - 1,
-                ),
-            )
+        let scaled =
+            bounds.ltrb() * Float4::new(self.scale_x, self.scale_y, self.scale_x, self.scale_y);
+        scaled.cast::<i32>().pin(
+            Int4::splat(0),
+            Int4::new(
+                self.grid_width - 1,
+                self.grid_height - 1,
+                self.grid_width - 1,
+                self.grid_height - 1,
+            ),
+        )
     }
 
     // Linear index of the cell at `(x, y)` in `nodes`.
@@ -372,7 +374,8 @@ impl HybridBoundsManager {
             return;
         }
         // Else we need to switch from the brute force manager to the grid manager
-        let (device_size, cell, max_grid) = (self.device_size, self.grid_cell_size, self.max_grid_size);
+        let (device_size, cell, max_grid) =
+            (self.device_size, self.grid_cell_size, self.max_grid_size);
         let grid = self
             .grid_manager
             .get_or_insert_with(|| GridBoundsManager::make_res(device_size, cell, max_grid));
@@ -423,7 +426,7 @@ impl BoundsManager for HybridBoundsManager {
             // to ensure we don't hold onto the grid in perpetuity if it's not needed.
             self.grid_manager = None;
             self.brute_force_manager.reset();
-            debug_assert!(self.current == CurrentManager::BruteForce);
+            debug_assert_eq!(self.current, CurrentManager::BruteForce);
         }
     }
 }

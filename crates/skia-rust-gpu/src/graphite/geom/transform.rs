@@ -5,9 +5,7 @@
 
 //! `skgpu::graphite::Transform`: an `SkM44` with its inverse and cached properties.
 
-use skia_rust_core::floating_point::{
-    FLOAT_INFINITY, ieee_float_divide, is_finite, is_finite_all,
-};
+use skia_rust_core::floating_point::{FLOAT_INFINITY, ieee_float_divide, is_finite, is_finite_all};
 use skia_rust_core::m44::{M44, V4};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::matrix_invert::invert_2x2_matrix;
@@ -24,6 +22,8 @@ fn scale_translate_rect(rect_vals: Float4, sx: f32, sy: f32, tx: f32, ty: f32) -
 }
 
 // Port of: src/gpu/graphite/geom/Transform.cpp#L33-L63 (chrome/m156)
+// The exact `== 0.0` test selects the anti-diagonal case, as in the C++.
+#[allow(clippy::float_cmp)]
 fn map_rect(ty: Type, m: &M44, r: &Rect) -> Rect {
     match ty {
         Type::Identity => *r,
@@ -44,11 +44,13 @@ fn map_rect(ty: Type, m: &M44, r: &Rect) -> Rect {
                 // Anti-diagonal matrix (90/270 rotation), so scale L+R by m10 and T+B by m01 and
                 // then swizzle so that the transformed values swap X and Y components and then
                 // sort
-                xformed = scale_translate_rect(xformed, m.rc(1, 0), m.rc(0, 1), m.rc(1, 3), m.rc(0, 3))
-                    .yxwz();
+                xformed =
+                    scale_translate_rect(xformed, m.rc(1, 0), m.rc(0, 1), m.rc(1, 3), m.rc(0, 3))
+                        .yxwz();
             } else {
                 // Mirror or 180 rotation, so X and/or Y edges may be flipped so just sort after.
-                xformed = scale_translate_rect(xformed, m.rc(0, 0), m.rc(1, 1), m.rc(0, 3), m.rc(1, 3));
+                xformed =
+                    scale_translate_rect(xformed, m.rc(0, 0), m.rc(1, 1), m.rc(0, 3), m.rc(1, 3));
             }
             let mut out = Rect::from_vals(xformed);
             out.sort();
@@ -80,6 +82,8 @@ fn map_points_m44(m: &M44, input: &[Float4], out: &mut [Float4]) {
 // Returns singular value decomposition of the 2x2 matrix [m00 m01] as {min, max}
 //                                                        [m10 m11]
 // Port of: src/gpu/graphite/geom/Transform.cpp#L78-L92 (chrome/m156)
+// The `0.5 * (a + b)` forms are kept as written in the C++: `f32::midpoint` rounds differently.
+#[allow(clippy::manual_midpoint)]
 fn compute_svd(m00: f32, m01: f32, m10: f32, m11: f32) -> (f32, f32) {
     // no-persp, these are the singular values of [m00,m01][m10,m11], which is just the upper 2x2
     // and equivalent to SkMatrix::getMinmaxScales().
@@ -90,21 +94,14 @@ fn compute_svd(m00: f32, m01: f32, m10: f32, m11: f32) -> (f32, f32) {
     let s2 = (e * e + 4.0 * f * f).sqrt();
 
     // s2 >= 0, so (s1 - s2) <= (s1 + s2) so this always returns {min, max}.
-    (
-        (0.5 * (s1 - s2)).sqrt(),
-        (0.5 * (s1 + s2)).sqrt(),
-    )
+    ((0.5 * (s1 - s2)).sqrt(), (0.5 * (s1 + s2)).sqrt())
 }
 
 // Port of: src/gpu/graphite/geom/Transform.cpp#L94-L102 (chrome/m156)
 fn sort_scale(sx: f32, sy: f32) -> (f32, f32) {
     let min = sx.abs();
     let max = sy.abs();
-    if min > max {
-        (max, min)
-    } else {
-        (min, max)
-    }
+    if min > max { (max, min) } else { (min, max) }
 }
 
 // `std::min(a, b)` is `(b < a) ? b : a`.
@@ -259,6 +256,8 @@ impl Transform {
     /// `scaleFactors(p)`: the `{min,max}` scale factor at the pre-transformed location `p`.
     // Port of: src/gpu/graphite/geom/Transform.cpp#L198-L248 (chrome/m156)
     #[must_use]
+    // The derivative names (dxdu, dfdv, ...) mirror the C++ derivation.
+    #[allow(clippy::similar_names)]
     pub fn scale_factors(&self, p: Float2) -> (f32, f32) {
         debug_assert!(self.valid());
         if self.ty < Type::Perspective {
@@ -302,10 +301,18 @@ impl Transform {
             self.min_scale_factor
         } else {
             // Calculate the minimum scale factor over the 4 corners of the bounding box
-            let tl = self.scale_factors(Float2::new(bounds.left(), bounds.top())).0;
-            let tr = self.scale_factors(Float2::new(bounds.right(), bounds.top())).0;
-            let br = self.scale_factors(Float2::new(bounds.right(), bounds.bot())).0;
-            let bl = self.scale_factors(Float2::new(bounds.left(), bounds.bot())).0;
+            let tl = self
+                .scale_factors(Float2::new(bounds.left(), bounds.top()))
+                .0;
+            let tr = self
+                .scale_factors(Float2::new(bounds.right(), bounds.top()))
+                .0;
+            let br = self
+                .scale_factors(Float2::new(bounds.right(), bounds.bot()))
+                .0;
+            let bl = self
+                .scale_factors(Float2::new(bounds.left(), bounds.bot()))
+                .0;
             std_min(std_min(tl, tr), std_min(br, bl))
         };
 
@@ -437,6 +444,8 @@ impl Transform {
     /// `Transform(const SkM44& m)`: computes the inverse and the type of `m`.
     // Port of: src/gpu/graphite/geom/Transform.cpp#L106-L196 (chrome/m156)
     #[must_use]
+    // The exact comparisons with 0 and 1 are the C++ classification of matrix types.
+    #[allow(clippy::float_cmp)]
     pub fn new(m: M44) -> Self {
         let k_no_perspective = V4::new(0.0, 0.0, 0.0, 1.0);
         let k_no_z = V4::new(0.0, 0.0, 1.0, 0.0);
@@ -503,10 +512,22 @@ impl Transform {
                     Type::RectStaysRect
                 };
                 t.inv_m = M44::new(
-                    ix, 0.0, 0.0, -ix * tx,
-                    0.0, iy, 0.0, -iy * ty,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0,
+                    ix,
+                    0.0,
+                    0.0,
+                    -ix * tx,
+                    0.0,
+                    iy,
+                    0.0,
+                    -iy * ty,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
                 );
                 (t.min_scale_factor, t.max_scale_factor) = sort_scale(sx, sy);
             }
@@ -521,10 +542,22 @@ impl Transform {
                 let iy = 1.0 / ky;
                 t.ty = Type::RectStaysRect;
                 t.inv_m = M44::new(
-                    0.0, iy, 0.0, -iy * ty,
-                    ix, 0.0, 0.0, -ix * tx,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0,
+                    0.0,
+                    iy,
+                    0.0,
+                    -iy * ty,
+                    ix,
+                    0.0,
+                    0.0,
+                    -ix * tx,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
                 );
                 (t.min_scale_factor, t.max_scale_factor) = sort_scale(kx, ky);
             }
@@ -538,10 +571,22 @@ impl Transform {
             } else {
                 t.ty = Type::Affine;
                 t.inv_m = M44::new(
-                    inv_upper[0], inv_upper[2], 0.0, -inv_upper[0] * tx - inv_upper[2] * ty,
-                    inv_upper[1], inv_upper[3], 0.0, -inv_upper[1] * tx - inv_upper[3] * ty,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0,
+                    inv_upper[0],
+                    inv_upper[2],
+                    0.0,
+                    -inv_upper[0] * tx - inv_upper[2] * ty,
+                    inv_upper[1],
+                    inv_upper[3],
+                    0.0,
+                    -inv_upper[1] * tx - inv_upper[3] * ty,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
                 );
                 (t.min_scale_factor, t.max_scale_factor) = compute_svd(sx, kx, ky, sy);
             }

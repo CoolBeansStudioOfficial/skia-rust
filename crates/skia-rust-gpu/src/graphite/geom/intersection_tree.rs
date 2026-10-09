@@ -10,6 +10,9 @@
 //! in lane-wise arrays. Every decision (split type, split coordinate, leaf layout, which lanes are
 //! read) follows the C++.
 
+// The `0.5f/kMaxRectsInList` and `int` to `float` conversions are the C++ arithmetic, exactly.
+#![allow(clippy::cast_precision_loss)]
+
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_simd::vx::Float4;
 
@@ -131,14 +134,13 @@ impl LeafNode {
     }
 
     // Port of: src/gpu/graphite/geom/IntersectionTree.cpp#L111-L118 (chrome/m156)
-    fn add_non_intersecting(self, rect: Rect) -> Box<Node> {
+    fn add_non_intersecting(mut self: Box<Self>, rect: Rect) -> Node {
         if self.num_rects == MAX_RECTS_IN_LIST {
             // The new rect doesn't fit. Split our rect list first and then add.
             return self.split().add_non_intersecting(rect);
         }
-        let mut this = self;
-        this.append_to_list(rect);
-        Box::new(Node::Leaf(this))
+        self.append_to_list(rect);
+        Node::Leaf(self)
     }
 
     // Port of: src/gpu/graphite/geom/IntersectionTree.cpp#L121-L131 (chrome/m156)
@@ -148,7 +150,7 @@ impl LeafNode {
         self.num_rects += 1;
         // [maxLeft, maxTop, -minRight, -minBot]
         self.splittable_bounds = self.splittable_bounds.max(rect.vals());
-        self.rect_vals_sum = self.rect_vals_sum + rect.vals(); // [sum(left), sum(top), ...]
+        self.rect_vals_sum += rect.vals(); // [sum(left), sum(top), ...]
         let v = rect.vals();
         self.lefts[i] = v[0];
         self.tops[i] = v[1];
@@ -169,7 +171,7 @@ impl LeafNode {
     // Splits this node with a new LeafNode, then returns a TreeNode that reuses our "this" pointer
     // along with the new node.
     // Port of: src/gpu/graphite/geom/IntersectionTree.cpp#L139-L194 (chrome/m156)
-    fn split(mut self) -> Box<Node> {
+    fn split(mut self: Box<Self>) -> Node {
         // This should only get called when our list is full.
         debug_assert_eq!(self.num_rects, MAX_RECTS_IN_LIST);
 
@@ -227,12 +229,12 @@ impl LeafNode {
         debug_assert!(0 < self.num_rects && self.num_rects < num_combined_rects);
         debug_assert!(0 < hi_node.num_rects && hi_node.num_rects < num_combined_rects);
 
-        Box::new(Node::Tree(TreeNode {
+        Node::Tree(TreeNode {
             split_type,
             split_coord,
             lo: Box::new(Node::Leaf(self)),
-            hi: Box::new(Node::Leaf(hi_node)),
-        }))
+            hi: Box::new(Node::Leaf(Box::new(hi_node))),
+        })
     }
 }
 
@@ -240,7 +242,8 @@ impl LeafNode {
 #[derive(Debug)]
 enum Node {
     Tree(TreeNode),
-    Leaf(LeafNode),
+    // Boxed so that the enum stays as small as a `TreeNode` (the leaf holds 1 KiB of lanes).
+    Leaf(Box<LeafNode>),
 }
 
 impl Node {
@@ -253,17 +256,20 @@ impl Node {
     }
 
     // Port of: src/gpu/graphite/geom/IntersectionTree.cpp#L38-L46 (chrome/m156) (virtual dispatch)
-    fn add_non_intersecting(self: Box<Self>, rect: Rect) -> Box<Node> {
-        match *self {
+    fn add_non_intersecting(self, rect: Rect) -> Node {
+        match self {
             Node::Leaf(leaf) => leaf.add_non_intersecting(rect),
             Node::Tree(mut tree) => {
                 if tree.get_lo_val(&rect) < tree.split_coord {
-                    tree.lo = tree.lo.add_non_intersecting(rect);
+                    // Move the child out of its box, add to it, and box the result again.
+                    let lo: Node = *tree.lo;
+                    tree.lo = Box::new(lo.add_non_intersecting(rect));
                 }
                 if tree.get_hi_val(&rect) > tree.split_coord {
-                    tree.hi = tree.hi.add_non_intersecting(rect);
+                    let hi: Node = *tree.hi;
+                    tree.hi = Box::new(hi.add_non_intersecting(rect));
                 }
-                Box::new(Node::Tree(tree))
+                Node::Tree(tree)
             }
         }
     }
@@ -286,7 +292,7 @@ impl IntersectionTree {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            root: Some(Box::new(Node::Leaf(LeafNode::new()))),
+            root: Some(Box::new(Node::Leaf(Box::new(LeafNode::new())))),
         }
     }
 
@@ -297,9 +303,13 @@ impl IntersectionTree {
             // Empty and undefined rects can simply pass without modifying the tree.
             return true;
         }
-        let root = self.root.take().expect("IntersectionTree always has a root");
+        // `root` is only `None` while it is taken here, so the fallback is never used.
+        let root = self
+            .root
+            .take()
+            .unwrap_or_else(|| Box::new(Node::Leaf(Box::new(LeafNode::new()))));
         if !root.intersects(rect) {
-            self.root = Some(root.add_non_intersecting(rect));
+            self.root = Some(Box::new((*root).add_non_intersecting(rect)));
             return true;
         }
         self.root = Some(root);

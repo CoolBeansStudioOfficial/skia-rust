@@ -199,7 +199,7 @@ impl DrawOrder {
     /// for use enforcing F2B order (since the compressed painter's order handles B2F).
     // Port of: src/gpu/graphite/DrawOrder.h#L144-L148 (chrome/m156)
     pub fn reverse_depth_as_stencil(&mut self) -> &mut Self {
-        debug_assert!(self.stencil_index == Self::K_UNASSIGNED); // can't have a real stencil index
+        debug_assert_eq!(self.stencil_index, Self::K_UNASSIGNED); // can't have a real stencil index
         self.stencil_index = DisjointStencilIndex::from_index(
             DisjointStencilIndex::last().bits() - self.depth.bits(),
         );
@@ -219,7 +219,7 @@ impl DrawOrder {
     /// Stencil usage should only be set once.
     // Port of: src/gpu/graphite/DrawOrder.h#L159-L164 (chrome/m156)
     pub fn depends_on_stencil(&mut self, disjoint_set: DisjointStencilIndex) -> &mut Self {
-        debug_assert!(self.stencil_index == Self::K_UNASSIGNED);
+        debug_assert_eq!(self.stencil_index, Self::K_UNASSIGNED);
         self.stencil_index = disjoint_set;
         self
     }

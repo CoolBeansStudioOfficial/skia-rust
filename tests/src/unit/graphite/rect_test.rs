@@ -4,6 +4,9 @@
 // Port of: tests/graphite/RectTest.cpp (chrome/m156)
 
 #![cfg(test)]
+// The assertions compare exact float values and keep the C++'s boolean structure, as the port
+// must (`CHECK((a == b) == (b == a))` and friends), so these lints are allowed for this file.
+#![allow(clippy::float_cmp, clippy::nonminimal_bool)]
 
 use skia_rust_core::rect::{Contains, IRect, Rect as SkRect, RoundOut};
 use skia_rust_gpu::graphite::geom::rect::Rect;
@@ -118,10 +121,7 @@ def_test!(skgpu_Rect, |r| {
                     );
                     let round_out: IRect = sk_rect2.round_out();
                     reporter_assert!(r, rect2.make_round_out() == SkRect::from_irect(round_out));
-                    reporter_assert!(
-                        r,
-                        rect2.make_inset(0.5) == sk_rect2.with_inset((0.5, 0.5))
-                    );
+                    reporter_assert!(r, rect2.make_inset(0.5) == sk_rect2.with_inset((0.5, 0.5)));
                     reporter_assert!(
                         r,
                         rect2.make_inset_vec(Float2::new(0.5, -0.25))
@@ -149,7 +149,8 @@ def_test!(skgpu_Rect, |r| {
 
                     reporter_assert!(
                         r,
-                        rect.intersects(rect2) == !rect.make_intersect(rect2).is_empty_negative_or_nan()
+                        rect.intersects(rect2)
+                            == !rect.make_intersect(rect2).is_empty_negative_or_nan()
                     );
                     reporter_assert!(r, rect.make_intersect(rect2) == rect2.make_intersect(rect));
                     if rect.intersects(rect2) {

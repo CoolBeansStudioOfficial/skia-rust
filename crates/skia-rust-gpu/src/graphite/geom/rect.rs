@@ -90,6 +90,8 @@ impl Rect {
     }
 
     /// `Rect(SkIRect)`.
+    // `cast<float>` of the int lanes, as in the C++.
+    #[allow(clippy::cast_precision_loss)]
     #[must_use]
     pub fn from_sk_irect(r: &IRect) -> Self {
         let v = Float4::new(
@@ -273,6 +275,8 @@ impl Rect {
     }
 
     /// `asSkIRect()`.
+    // `skvx::cast<int>` truncates toward zero, as `as` does for in-range lanes.
+    #[allow(clippy::cast_possible_truncation)]
     #[must_use]
     pub fn as_sk_irect(&self) -> IRect {
         let v = self.ltrb();
