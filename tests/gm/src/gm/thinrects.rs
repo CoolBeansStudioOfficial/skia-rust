@@ -163,3 +163,38 @@ crate::def_gm!(
     ThinRectsGM_true = "ThinRectsGM(true)",
     ThinRectsGM::new(true)
 );
+
+// Port of: gm/thinrects.cpp#L155-L177 (chrome/m156), DEF_SIMPLE_GM_CAN_FAIL(clipped_thinrect)
+crate::def_simple_gm_can_fail!(clipped_thinrect, canvas, error_msg, 256, 256, {
+    use skia_rust_raster::raster_canvas::RasterCanvas;
+
+    let Some(zoomed) = canvas.new_surface(&canvas.image_info().with_dimensions((10, 10)), None)
+    else {
+        error_msg.clear();
+        error_msg.push_str("makeSurface not supported");
+        return DrawResult::Skip;
+    };
+    let mut zoomed = zoomed;
+    let zoomed_canvas = zoomed.canvas();
+
+    let mut p = Paint::default();
+    p.set_color(Color::RED);
+    p.set_anti_alias(true);
+    p.set_style(skia_rust_core::paint::Style::Fill);
+    zoomed_canvas.save();
+    zoomed_canvas.clip_rect(Rect::from_xywh(0.0, 5.0, 256.0, 10.0), None, true);
+    zoomed_canvas.draw_rect(Rect::from_xywh(0.0, 0.0, 100.0, 5.5), &p);
+    zoomed_canvas.restore();
+
+    // Zoom-in. Should see one line of red representing zoomed in 1/2px coverage and *not*
+    // two lines of varying coverage from hairline rendering.
+    let img = zoomed.image_snapshot().expect("a snapshot");
+    canvas.draw_image_rect_with_sampling_options(
+        &img,
+        None::<(&Rect, skia_rust_core::canvas::SrcRectConstraint)>,
+        Rect::from_xywh(0.0, 10.0, 200.0, 200.0),
+        skia_rust_core::sampling_options::SamplingOptions::default(),
+        &Paint::default(),
+    );
+    DrawResult::Ok
+});

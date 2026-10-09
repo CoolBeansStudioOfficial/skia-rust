@@ -22358,8 +22358,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L179-L184"
 module = "raster"
-status = "todo"
-reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
+status = "passing"
 span_hash = "d1fb9d8df2147024ca7d607e81c522fb827083b7c7d9531d2941359894e2f140"
 
 [[test]]
@@ -22378,7 +22377,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L164-L169"
 module = "raster"
 status = "todo"
-reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
+reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "f7eaf52667d67f81907d2777881d236c2fe1f6fef286fd35047d06e955b257ac"
 
 [[test]]
@@ -22388,7 +22387,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L170-L178"
 module = "raster"
 status = "todo"
-reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs an image shader (SkImage/SkBitmap::makeShader or a resource image, Phase 3)"
+reason = "needs images/mandrill_128.png decoded by ToolUtils::GetResourceAsImage; skia-rust has no image codec"
 span_hash = "2a358762507a1497dafd5c77acf95ea64898c57904b8fd95a72fe5966198081e"
 
 [[test]]
@@ -22397,8 +22396,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/patch.cpp#L158-L163"
 module = "raster"
-status = "todo"
-reason = "drawVertices/drawPatch are ported (Draw::draw_vertices, Canvas::draw_vertices/draw_patch); the GM needs a gradient shader (SkShaders::LinearGradient, Phase 3)"
+status = "passing"
 span_hash = "0f01e113501adc87d960539078f903c641372f9d9a33aca141f6804d464175fb"
 
 [[test]]
@@ -24369,7 +24367,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/surface.cpp#L169-L169"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "0f84c3c42419445c596d8a5f1f4fa09125af178d83081814086d1ebef1764167"
 
 [[test]]
@@ -24743,8 +24741,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/thinrects.cpp#L155-L177"
 module = "raster"
-status = "todo"
-reason = "needs makeSurface and drawImageRect"
+status = "passing"
 span_hash = "46ffeb38399787fecac126acd427d28b90413869a8404c7aec86a5994ac06a5f"
 
 [[test]]
