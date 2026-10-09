@@ -21755,8 +21755,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L206-L288"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkShaderMaskFilter (SkShaderMaskFilter::Make), which skia-rust does not have."
+status = "passing"
 span_hash = "2f3d523c6942e03197fd2caec6d9221ca1902ce3daa6642e8d9a5cd5c6cfbc93"
 
 [[test]]
@@ -21775,7 +21774,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilters.cpp#L290-L332"
 module = "effects"
 status = "todo"
-reason = "Not ported: it needs SkCanvasPriv::ScaledBackdropLayer and SkCanvas::FilterSpan, which skia-rust does not have."
+reason = "Not ported: it saves a layer with a FilterSpan of two image filters (SkCanvas::FilterSpan / SaveLayerRec filters, applied in order by SkCanvas::internalSaveLayer), and it uses SkCanvasPriv::ScaledBackdropLayer. SaveLayerRec has no filters field, so a layer takes one image filter."
 span_hash = "e80d8f4eb0f2cc31a21237713adbd056c1b6e2cb39306b77324528582d518e17"
 
 [[test]]
@@ -21883,8 +21882,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagefilterstransformed.cpp#L221-L221"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkImageFilter::makeWithLocalMatrix, which skia-rust does not have."
+status = "passing"
 span_hash = "0d7262feb119e0baae0186c3b970f07526b849b318a1a00652c13070b19f1c66"
 
 [[test]]
@@ -21902,8 +21900,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefilterstransformed.cpp#L318-L363"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkCanvas::concat(SkM44), which skia-rust does not have."
+status = "failing"
+reason = "Ignored: perspective (m2) rows differ from the golden by 1 f16 ulp on 202 pixels, on every tier. Hypothesis: the 1-ulp error comes from cot = 1/tan(PI/6) via host libm tanf (glibc gives 0.5773503, correctly rounded is 0.57735026), which the oracle's UCRT may round differently. Not confirmed; stopped per the libm rule."
 span_hash = "a2ce37f21d7f73a67469fbf45c00970de152a09f523d6b38a3cd49da871b2974"
 
 [[test]]
@@ -21975,8 +21973,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L427-L427"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkImages::MakeWithFilter, which skia-rust does not have."
+status = "passing"
 span_hash = "391894f16e3bf66ec56c480d45b3d93eceb42bca1a86a3e3c478f3e3c4ff5e68"
 
 [[test]]
@@ -21985,8 +21982,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imagemakewithfilter.cpp#L430-L430"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkImages::MakeWithFilter, which skia-rust does not have."
+status = "passing"
 span_hash = "da0dd7df1e5dd2972a41da22d8296facaf0a989ec98fe8e4e145fcce0e1850bc"
 
 [[test]]
@@ -22322,8 +22318,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/localmatriximagefilter.cpp#L51-L83"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkImageFilter::makeWithLocalMatrix, which skia-rust does not have."
+status = "passing"
 span_hash = "31e409e50200bca2a868d2991a93690b70ed94ab6d469ec4f125784243279ce4"
 
 [[test]]
@@ -22368,8 +22363,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/localmatrixshader.cpp#L123-L211"
 module = "effects"
-status = "todo"
-reason = "Not ported: it needs SkImage::scalePixels, which skia-rust does not have."
+status = "passing"
 span_hash = "574d3601311fb31c6f1d8160ff34c32019b90c2bdae58c4ca4d5501781eb7012"
 
 [[test]]
@@ -22378,8 +22372,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/lumafilter.cpp#L168-L198"
 module = "effects"
-status = "todo"
-reason = "loads images (codecs are not ported)"
+status = "passing"
 span_hash = "73a163a8626ce07bc9bf40245ce53266c1464740d1045b84f4f62b174dd77836"
 
 [[test]]
@@ -24347,8 +24340,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/shadermaskfilter.cpp#L51-L64"
 module = "effects"
-status = "todo"
-reason = "Not ported: SkShaderMaskFilter (SkShaderMaskFilter::Make). skia-rust-core has the MaskFilterType::Shader variant but no shader mask filter."
+status = "passing"
 span_hash = "c9e00906a380119a8f00736ffcb4b2202ae4cde68a174385a8505a5a48d7b5e3"
 
 [[test]]
@@ -35290,6 +35282,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1915-L1936"
 module = "effects"
 status = "todo"
+reason = "Not ported as a 1:1 test: it checks that null filter, outSubset and offset give a null result, and SkImages::MakeWithFilter takes the filter by reference and returns outSubset and offset by value, so the null outSubset and offset cases cannot be expressed. The MakeWithFilter GMs are ported and pass (skia_rust_raster::image_filter_backend::make_with_filter)."
 span_hash = "a5935d880c36caeebf926377f5b5fbe6ef552acac4350b376b1bfc86f83fd38e"
 
 [[test]]
@@ -35808,7 +35801,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1505-L1520"
 module = "core"
 status = "todo"
-reason = "needs SkImage::scalePixels and an encoded image (SkPngEncoder, DeferredFromEncodedData)"
+reason = "Needs SkPngEncoder (the encoder is not ported) for the encoded-image half of the test; the raster half could run through skia_rust_raster::pixmap_draw::ImageScalePixels, but the test is one case and cannot be split."
 span_hash = "89a3e10417db669347142fe7447ed1c098f7b55ed27c04f53306430c8baf83ed"
 
 [[test]]

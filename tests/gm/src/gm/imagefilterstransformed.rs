@@ -3,9 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/imagefilterstransformed.cpp (chrome/m156)
 //
-// Not ported here: `imagefilter_transformed_image` (it needs `Canvas::concat(SkM44)`, which
-// skia-rust does not have) and `ImageFilterMatrixWLocalMatrix` (it needs
-// `SkImageFilter::makeWithLocalMatrix`, which skia-rust does not have).
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(clippy::cast_precision_loss)]
@@ -16,9 +13,11 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::{Color4f, ColorChannel};
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::font::Font;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::m44::{M44, V3};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
@@ -30,6 +29,7 @@ use skia_rust_effects::image_filters::{
     blend, blur, compose, dilate, displacement_map, drop_shadow, erode, image_sampled,
     matrix_transform, offset,
 };
+use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
 // Port of: gm/imagefilterstransformed.cpp#L30-L44 (chrome/m156), make_gradient_circle
 fn make_gradient_circle(width: i32, height: i32) -> Option<Image> {
@@ -308,4 +308,144 @@ impl GM for ImageFilterComposedTransformGm {
 crate::def_gm!(
     ImageFilterComposedTransform_ = "ImageFilterComposedTransform()",
     ImageFilterComposedTransformGm { image: None }
+);
+
+// Port of: gm/imagefilterstransformed.cpp#L318-L357 (chrome/m156), imagefilter_transformed_image
+crate::def_simple_gm!(
+    #[ignore = "perspective (m2) rows differ by 1 f16 ulp; see the manifest reason (host libm tanf)"]
+    imagefilter_transformed_image,
+    canvas,
+    256,
+    256,
+    {
+        let Some(image) = get_resource_as_image("images/color_wheel.png") else {
+            return;
+        };
+        let Some(image_filter) = image_sampled(
+            Some(image.clone()),
+            SamplingOptions::from(FilterMode::Linear),
+        ) else {
+            return;
+        };
+
+        let image_rect = Rect::from_wh(image.width() as f32, image.height() as f32);
+
+        let m1 = M44::concat(
+            &M44::translate(0.9 * image.width() as f32, 0.1 * image.height() as f32, 0.0),
+            &M44::scale(-0.8, 0.8, 1.0),
+        );
+
+        let m2 = {
+            let a = M44::rect_to_rect(Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0), image_rect);
+            let a = M44::concat(
+                &a,
+                &M44::perspective(0.01, 100.0, std::f32::consts::PI / 3.0),
+            );
+            let a = M44::concat(&a, &M44::translate(0.0, 0.0, -2.0));
+            let a = M44::concat(
+                &a,
+                &M44::rotate(V3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 6.0),
+            );
+            M44::concat(
+                &a,
+                &M44::rect_to_rect(image_rect, Rect::from_ltrb(-1.0, -1.0, 1.0, 1.0)),
+            )
+        };
+
+        let font = Font::from_size(default_portable_typeface(), 12.0);
+        canvas.draw_str(
+            "Columns should match",
+            (5.0, 15.0),
+            &font,
+            &Paint::default(),
+        );
+        canvas.translate((0.0, 10.0));
+
+        let sampling = SamplingOptions::from(FilterMode::Linear);
+        for m in [m1, m2] {
+            canvas.save();
+            for canvas_transform in [false, true] {
+                canvas.save();
+                canvas.clip_rect(image_rect, None, None);
+
+                let final_filter = if canvas_transform {
+                    canvas.concat_44(&m);
+                    Some(image_filter.clone())
+                } else {
+                    matrix_transform(&m.to_m33(), sampling, Some(image_filter.clone()))
+                };
+
+                let mut paint = Paint::default();
+                paint.set_image_filter(final_filter);
+                canvas.draw_paint(&paint);
+
+                canvas.restore();
+                canvas.translate((image.width() as f32, 0.0));
+            }
+            canvas.restore();
+
+            canvas.translate((0.0, image.height() as f32));
+        }
+    }
+);
+
+// Port of: gm/imagefilterstransformed.cpp#L173-L221 (chrome/m156), ImageFilterMatrixWLocalMatrix
+struct ImageFilterMatrixWLocalMatrixGm {
+    /// `fDegrees`: the initial value (the GM is drawn without animation).
+    degrees: f32,
+    image: Option<Image>,
+}
+
+impl GM for ImageFilterMatrixWLocalMatrixGm {
+    fn name(&self) -> String {
+        "imagefilter_matrix_localmatrix".to_string()
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(512, 512)
+    }
+
+    // Port of: gm/imagefilterstransformed.cpp#L199-L202 (chrome/m156), onOnceBeforeDraw
+    fn on_once_before_draw(&mut self) {
+        self.image = get_resource_as_image("images/mandrill_256.png");
+    }
+
+    // Port of: gm/imagefilterstransformed.cpp#L204-L219 (chrome/m156), onDraw
+    fn on_draw(&mut self, canvas: &Canvas) {
+        let Some(image) = self.image.clone() else {
+            return;
+        };
+        let mut local_matrix = Matrix::new_identity();
+        local_matrix.pre_translate((128.0, 128.0));
+        local_matrix.pre_scale((2.0, 2.0), None);
+
+        // This matrix applies a rotate around the center of the image (prior to the simulated
+        // hi-dpi 2x device scale).
+        let filter_matrix = Matrix::rotate_deg_pivot(self.degrees, (64.0, 64.0));
+
+        let filter = matrix_transform(
+            &filter_matrix,
+            SamplingOptions::from(FilterMode::Linear),
+            None,
+        )
+        .and_then(|f| f.with_local_matrix(&local_matrix));
+
+        let mut p = Paint::default();
+        p.set_image_filter(filter);
+        canvas.draw_image_with_sampling_options(
+            &image,
+            (128.0, 128.0),
+            SamplingOptions::default(),
+            Some(&p),
+        );
+    }
+}
+
+// Port of: gm/imagefilterstransformed.cpp#L221 (chrome/m156), DEF_GM(return new ImageFilterMatrixWLocalMatrix();)
+crate::def_gm!(
+    ImageFilterMatrixWLocalMatrix_ = "ImageFilterMatrixWLocalMatrix()",
+    ImageFilterMatrixWLocalMatrixGm {
+        degrees: 132.0,
+        image: None
+    }
 );

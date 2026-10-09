@@ -3,8 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/imagemakewithfilter.cpp (chrome/m156)
 //
-// Only the `Strategy::kSaveLayer` (reference) GMs are ported here. The `kMakeWithFilter` GMs
-// need `SkImages::MakeWithFilter`, which skia-rust does not have.
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(clippy::cast_precision_loss)]
@@ -33,6 +31,7 @@ use skia_rust_effects::image_filters::{
     image_sampled, matrix_convolution, matrix_transform, merge, offset, point_lit_diffuse,
     point_lit_specular, tile,
 };
+use skia_rust_raster::image_filter_backend::make_with_filter;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
 // Factories for creating image filters, with or without a crop rect.
@@ -211,15 +210,28 @@ fn show_bounds(
     }
 }
 
-// Port of: gm/imagemakewithfilter.cpp#L183-L199 (chrome/m156), ImageMakeWithFilterGM (kSaveLayer)
-struct ImageMakeWithFilterRefGm {
+/// `Strategy` of `ImageMakeWithFilterGM`: `SkImages::MakeWithFilter` (`kMakeWithFilter`), or the
+/// reference `saveLayer` with the filter (`kSaveLayer`).
+// Port of: gm/imagemakewithfilter.cpp#L182-L188 (chrome/m156), Strategy
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Strategy {
+    /// Uses MakeWithFilter, passing in subset and clip directly.
+    MakeWithFilter,
+    /// Uses saveLayer after clipRect() to filter on the restore (i.e. reference image).
+    SaveLayer,
+}
+
+// Port of: gm/imagemakewithfilter.cpp#L196-L200 (chrome/m156), ImageMakeWithFilterGM
+struct ImageMakeWithFilterGm {
+    strategy: Strategy,
     filter_with_crop_rect: bool,
     main_image: Option<Image>,
     aux_image: Option<Image>,
 }
 
-impl ImageMakeWithFilterRefGm {
-    // Port of: gm/imagemakewithfilter.cpp#L316-L345 (chrome/m156), drawImageWithFilter (kSaveLayer)
+impl ImageMakeWithFilterGm {
+    // Port of: gm/imagemakewithfilter.cpp#L316-L375 (chrome/m156), drawImageWithFilter
+    // Returns the rect the result was drawn into (`dstRect`), or `None` if nothing was drawn.
     fn draw_image_with_filter(
         &self,
         canvas: &Canvas,
@@ -228,9 +240,11 @@ impl ImageMakeWithFilterRefGm {
         filter_factory: FilterFactory,
         clip: IRect,
         subset: IRect,
-    ) {
+    ) -> Option<IRect> {
         // When creating the filter with a crop rect equal to the clip, we should expect to see no
-        // difference from a filter without a crop rect.
+        // difference from a filter without a crop rect. However, if the CTM isn't managed properly
+        // by MakeWithFilter, then the final result will be the incorrect intersection of the clip
+        // and the transformed crop rect.
         let crop = if self.filter_with_crop_rect {
             Some(Rect::from(clip))
         } else {
@@ -238,35 +252,56 @@ impl ImageMakeWithFilterRefGm {
         };
         let filter = filter_factory(Some(aux_image.clone()), crop);
 
-        // SkAutoCanvasRestore acr(canvas, true)
-        canvas.save();
-        // Clip before the saveLayer with the filter
-        canvas.clip_rect(Rect::from(clip), None, None);
-        // Put the image filter on the layer
-        let mut paint = Paint::default();
-        paint.set_image_filter(filter);
-        canvas.save_layer(&SaveLayerRec::default().paint(&paint));
-        // Draw the original subset of the image
-        let r = Rect::from(subset);
+        if self.strategy == Strategy::SaveLayer {
+            // SkAutoCanvasRestore acr(canvas, true)
+            canvas.save();
+            // Clip before the saveLayer with the filter
+            canvas.clip_rect(Rect::from(clip), None, None);
+            // Put the image filter on the layer
+            let mut paint = Paint::default();
+            paint.set_image_filter(filter);
+            canvas.save_layer(&SaveLayerRec::default().paint(&paint));
+            // Draw the original subset of the image
+            let r = Rect::from(subset);
+            canvas.draw_image_rect_with_sampling_options(
+                main_image,
+                Some((&r, SrcRectConstraint::Strict)),
+                r,
+                SamplingOptions::default(),
+                &Paint::default(),
+            );
+            canvas.restore();
+            canvas.restore();
+            return Some(subset);
+        }
+
+        // SkImages::MakeWithFilter(mainImage, filter.get(), subset, clip, &outSubset, &offset):
+        // a null filter gives a null result.
+        let filter = filter?;
+        let (result, out_subset, offset) = make_with_filter(main_image, &filter, subset, clip)?;
+
+        let dst_rect =
+            IRect::from_xywh(offset.x, offset.y, out_subset.width(), out_subset.height());
         canvas.draw_image_rect_with_sampling_options(
-            main_image,
-            Some((&r, SrcRectConstraint::Strict)),
-            r,
+            &result,
+            Some((&Rect::from(out_subset), SrcRectConstraint::Strict)),
+            Rect::from(dst_rect),
             SamplingOptions::default(),
             &Paint::default(),
         );
-        canvas.restore();
-        canvas.restore();
+        Some(dst_rect)
     }
 }
 
-impl GM for ImageMakeWithFilterRefGm {
+impl GM for ImageMakeWithFilterGm {
     fn name(&self) -> String {
         let mut name = String::from("imagemakewithfilter");
         if self.filter_with_crop_rect {
             name.push_str("_crop");
         }
-        name.push_str("_ref");
+        if self.strategy == Strategy::SaveLayer {
+            name.push_str("_ref");
+        }
         name
     }
 
@@ -302,7 +337,7 @@ impl GM for ImageMakeWithFilterRefGm {
         self.aux_image = surface.image_snapshot();
     }
 
-    // Port of: gm/imagemakewithfilter.cpp#L221-L300 (chrome/m156), onDraw (kSaveLayer path)
+    // Port of: gm/imagemakewithfilter.cpp#L221-L300 (chrome/m156), onDraw
     fn on_draw(&mut self, canvas: &Canvas) {
         let (Some(main_image), Some(aux_image)) = (self.main_image.clone(), self.aux_image.clone())
         else {
@@ -375,7 +410,7 @@ impl GM for ImageMakeWithFilterRefGm {
                     SamplingOptions::default(),
                     Some(&alpha),
                 );
-                self.draw_image_with_filter(
+                let dst_rect = self.draw_image_with_filter(
                     canvas,
                     &main_image,
                     &aux_image,
@@ -383,9 +418,15 @@ impl GM for ImageMakeWithFilterRefGm {
                     clip_bound,
                     subset,
                 );
-                // No output subset is displayed for kSaveLayer since that information isn't
-                // available.
-                show_bounds(canvas, Some(clip_bound), Some(subset), None);
+                // Draw outlines to highlight what was subset, what was cropped, and what was
+                // output. No output subset is displayed for kSaveLayer since that information
+                // isn't available.
+                let out_subset = if self.strategy == Strategy::MakeWithFilter {
+                    dst_rect
+                } else {
+                    None
+                };
+                show_bounds(canvas, Some(clip_bound), Some(subset), out_subset);
                 canvas.translate((dx, 0.0));
             }
             canvas.restore();
@@ -394,11 +435,34 @@ impl GM for ImageMakeWithFilterRefGm {
     }
 }
 
+// Port of: gm/imagemakewithfilter.cpp#L427 (chrome/m156), DEF_GM( return new ImageMakeWithFilterGM(Strategy::kMakeWithFilter); )
+crate::def_gm!(
+    ImageMakeWithFilterGM_ = "ImageMakeWithFilterGM(Strategy::kMakeWithFilter)",
+    ImageMakeWithFilterGm {
+        strategy: Strategy::MakeWithFilter,
+        filter_with_crop_rect: false,
+        main_image: None,
+        aux_image: None
+    }
+);
+
 // Port of: gm/imagemakewithfilter.cpp#L421 (chrome/m156), DEF_GM( return new ImageMakeWithFilterGM(Strategy::kSaveLayer); )
 crate::def_gm!(
-    ImageMakeWithFilterGM_ = "ImageMakeWithFilterGM(Strategy::kSaveLayer)",
-    ImageMakeWithFilterRefGm {
+    ImageMakeWithFilterGM_ref = "ImageMakeWithFilterGM(Strategy::kSaveLayer)",
+    ImageMakeWithFilterGm {
+        strategy: Strategy::SaveLayer,
         filter_with_crop_rect: false,
+        main_image: None,
+        aux_image: None
+    }
+);
+
+// Port of: gm/imagemakewithfilter.cpp#L430 (chrome/m156), DEF_GM( return new ImageMakeWithFilterGM(Strategy::kMakeWithFilter, true); )
+crate::def_gm!(
+    ImageMakeWithFilterGM_crop = "ImageMakeWithFilterGM(Strategy::kMakeWithFilter, true)",
+    ImageMakeWithFilterGm {
+        strategy: Strategy::MakeWithFilter,
+        filter_with_crop_rect: true,
         main_image: None,
         aux_image: None
     }
@@ -406,8 +470,9 @@ crate::def_gm!(
 
 // Port of: gm/imagemakewithfilter.cpp#L429 (chrome/m156), DEF_GM( return new ImageMakeWithFilterGM(Strategy::kSaveLayer, true); )
 crate::def_gm!(
-    ImageMakeWithFilterGM_crop = "ImageMakeWithFilterGM(Strategy::kSaveLayer, true)",
-    ImageMakeWithFilterRefGm {
+    ImageMakeWithFilterGM_crop_ref = "ImageMakeWithFilterGM(Strategy::kSaveLayer, true)",
+    ImageMakeWithFilterGm {
+        strategy: Strategy::SaveLayer,
         filter_with_crop_rect: true,
         main_image: None,
         aux_image: None

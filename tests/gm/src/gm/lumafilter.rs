@@ -7,17 +7,24 @@
 #![allow(clippy::cast_precision_loss)]
 
 use crate::prelude::*;
+use crate::tool_utils::get_resource_as_image;
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::SaveLayerRec;
 use skia_rust_core::color::Color4f;
 use skia_rust_core::color_filter::ColorFilter;
+use skia_rust_core::color_space::{named_gamut, named_transfer_fn};
+use skia_rust_core::data::Data;
 use skia_rust_core::font::Edging;
 use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::runtime_effect::RuntimeEffect;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::working_format_color_filter::with_working_format;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_effects::luma_color_filter;
 use skia_rust_tools::font_tool_utils::default_portable_font;
@@ -196,3 +203,47 @@ crate::def_gm!(
         gr2: None
     }
 );
+
+// Port of: gm/lumafilter.cpp#L168-L198 (chrome/m156), AlternateLuma
+crate::def_simple_gm!(AlternateLuma, canvas, 384, 128, {
+    let Some(img) = get_resource_as_image("images/mandrill_128.png") else {
+        return;
+    };
+
+    // Normal luma colorfilter on the left.
+    let mut paint = Paint::default();
+    paint.set_color_filter(luma_color_filter::make());
+    canvas.draw_image_with_sampling_options(
+        &img,
+        (0.0, 0.0),
+        SamplingOptions::from(FilterMode::Nearest),
+        Some(&paint),
+    );
+    canvas.translate((128.0, 0.0));
+
+    // Original image in the middle for reference.
+    canvas.draw_image(&img, (0.0, 0.0), None);
+    canvas.translate((128.0, 0.0));
+
+    // Here, RGB holds CIE XYZ. Splatting the G (Y) channel should result in (near) greyscale.
+    let effect = RuntimeEffect::make_for_color_filter(
+        "half4 main(half4 inColor) { return inColor.ggga; }",
+        None,
+    )
+    .expect("the ggga effect compiles");
+    let filter = effect.make_color_filter(Data::new_empty(), &[]);
+
+    let unpremul = AlphaType::Unpremul;
+    paint.set_color_filter(with_working_format(
+        filter,
+        Some(&named_transfer_fn::LINEAR),
+        Some(&named_gamut::XYZ),
+        Some(&unpremul),
+    ));
+    canvas.draw_image_with_sampling_options(
+        &img,
+        (0.0, 0.0),
+        SamplingOptions::from(FilterMode::Nearest),
+        Some(&paint),
+    );
+});

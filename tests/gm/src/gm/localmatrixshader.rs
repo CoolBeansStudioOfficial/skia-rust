@@ -3,26 +3,30 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/localmatrixshader.cpp (chrome/m156)
 //
-// Not ported here: `localmatrixshader_persp` (it needs `SkImage::scalePixels`, which skia-rust
-// does not have).
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(clippy::cast_precision_loss)]
 use crate::prelude::*;
 use crate::tool_utils::{get_resource_as_image, make_texture_image};
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::color::{Color, Color4f};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::images;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
+use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
 use skia_rust_core::shaders::ImageShader;
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_raster::pixmap_draw::ImageScalePixels;
 
 const K_SIZE: f32 = 50.0;
 
@@ -221,3 +225,128 @@ impl GM for LocalMatrixOrderGm {
 
 // Port of: gm/localmatrixshader.cpp#L270 (chrome/m156), DEF_GM(return new LocalMatrixOrder;)
 crate::def_gm!(LocalMatrixOrder, LocalMatrixOrderGm { shader: None });
+
+// Port of: gm/localmatrixshader.cpp#L123-L206 (chrome/m156), localmatrixshader_persp
+crate::def_simple_gm!(localmatrixshader_persp, canvas, 542, 266, {
+    let Some(mut image) = get_resource_as_image("images/yellow_rose.png") else {
+        return;
+    };
+
+    // Downsize the image to 128x128 with linear filtering (`scalePixels`).
+    {
+        let mut downsized = Bitmap::new();
+        downsized.alloc_pixels_info(&image.image_info().with_dimensions((128, 128)), None);
+        let Some(mut dst) = downsized.peek_pixels_mut() else {
+            return;
+        };
+        if !image.scale_pixels(&mut dst, &SamplingOptions::from(FilterMode::Linear)) {
+            return;
+        }
+        let Some(new_image) = images::raster_from_bitmap(&downsized) else {
+            return;
+        };
+        image = new_image;
+    }
+    let img_rect = Rect::from_wh(image.width() as f32, image.height() as f32);
+
+    // scale matrix
+    let scale = Matrix::scale((1.0 / 5.0, 1.0 / 5.0));
+
+    // perspective matrix
+    let src = img_rect.to_quad(None);
+    let w = image.width() as f32;
+    let h = image.height() as f32;
+    let dst = [
+        Point::new(0.0, 10.0),
+        Point::new(w + 28.0, -100.0),
+        Point::new(w - 28.0, h + 100.0),
+        Point::new(0.0, h - 10.0),
+    ];
+    let mut persp = Matrix::new_identity();
+    let ok = persp.set_poly_to_poly(&src, &dst);
+    debug_assert!(ok);
+
+    // combined persp * scale
+    let persp_scale = Matrix::concat(&persp, &scale);
+
+    let draw = |shader: Option<Shader>, apply_persp_to_ctm: bool| {
+        canvas.save();
+        canvas.clip_rect(img_rect, None, None);
+        if apply_persp_to_ctm {
+            canvas.concat(&persp);
+        }
+        let mut image_shader_paint = Paint::default();
+        image_shader_paint.set_shader(shader);
+        canvas.draw_paint(&image_shader_paint);
+        canvas.restore();
+
+        canvas.translate((10.0 + w, 0.0)); // advance
+    };
+
+    // SkImageShader
+    let image_shader = |local_matrix: Option<&Matrix>| {
+        ImageShader::make(
+            Some(image.clone()),
+            TileMode::Repeat,
+            TileMode::Repeat,
+            &SamplingOptions::default(),
+            local_matrix,
+            false,
+        )
+    };
+    canvas.save();
+    // 4 variants that all attempt to apply sample at persp * scale w/ an image shader
+    // 1. scale provided to SkImage::makeShader(...) but drawn with persp
+    draw(image_shader(Some(&scale)), true);
+
+    // 2. scale provided to SkImage::makeShader, then wrapped in persp makeWithLocalMatrix
+    // These post-concat, so it ends up as persp * scale.
+    draw(
+        image_shader(Some(&scale)).map(|s| s.with_local_matrix(&persp)),
+        false,
+    );
+
+    // 3. Providing pre-computed persp*scale to SkImage::makeShader()
+    draw(image_shader(Some(&persp_scale)), false);
+
+    // 4. Providing pre-computed persp*scale to makeWithLocalMatrix
+    draw(
+        image_shader(None).map(|s| s.with_local_matrix(&persp_scale)),
+        false,
+    );
+    canvas.restore();
+
+    canvas.translate((0.0, 10.0 + h)); // advance to next row
+
+    // SkGradientShader
+    let grad_colors = [
+        Color4f::from(Color::BLACK),
+        Color4f::new(0.0, 0.0, 0.0, 0.0),
+    ];
+    let grad = Gradient::new(
+        Colors::new(&grad_colors, None, TileMode::Repeat, None),
+        Interpolation::default(),
+    );
+    let center = img_rect.center();
+    let radius = img_rect.width() / 2.0;
+    let radial = |local_matrix: Option<&Matrix>| {
+        gradient_shaders::radial_gradient((center, radius), &grad, local_matrix)
+    };
+    canvas.save();
+    // 1. scale provided to Make, drawn with persp
+    let g1 = radial(Some(&scale));
+    draw(g1.clone(), true);
+
+    // 2. scale provided to Make, then wrapped with makeWithLocalMatrix (post-concat as before).
+    draw(g1.map(|s| s.with_local_matrix(&persp)), false);
+
+    // 3. Provide per-computed persp*scale to Make
+    draw(radial(Some(&persp_scale)), false);
+
+    // 4.  Providing pre-computed persp*scale to makeWithLocalMatrix
+    draw(
+        radial(None).map(|s| s.with_local_matrix(&persp_scale)),
+        false,
+    );
+    canvas.restore();
+});

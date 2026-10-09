@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/imagefilters.cpp (chrome/m156)
 //
-// Not ported here: `imagefilters_effect_order` (it needs SkShaderMaskFilter, which is not ported)
-// and `multiple_filters` (it needs SkCanvasPriv::ScaledBackdropLayer and SkCanvas::FilterSpan).
+// Not ported here: `multiple_filters` (it needs SkCanvasPriv::ScaledBackdropLayer and
+// SkCanvas::FilterSpan).
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(
@@ -18,6 +18,7 @@ use crate::tool_utils::{get_resource_as_image, make_surface};
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
+use skia_rust_core::color::Color4f;
 use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_matrix::ColorMatrix;
 use skia_rust_core::color_type::ColorType;
@@ -29,8 +30,18 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_effects::image_filters::{blur, color_filter, matrix_convolution, matrix_transform};
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_effects::high_contrast_filter::{
+    HighContrastConfig, HighContrastFilter, InvertStyle,
+};
+use skia_rust_effects::image_filters::shader_filter::Dither;
+use skia_rust_effects::image_filters::{
+    blend, blur, color_filter, compose, image_sampled, matrix_convolution, matrix_transform,
+    shader as shader_filter,
+};
+use skia_rust_effects::shader_mask_filter;
 
 // Port of: gm/imagefilters.cpp#L13-L30 (chrome/m156), do_draw
 fn do_draw(canvas: &Canvas, mode: BlendMode, imf: Option<ImageFilter>) {
@@ -210,3 +221,136 @@ crate::def_gm!(
     SaveLayerWithBackdropGM_ = "SaveLayerWithBackdropGM()",
     SaveLayerWithBackdropGm
 );
+
+// Port of: gm/imagefilters.cpp#L206-L288 (chrome/m156), imagefilters_effect_order
+crate::def_simple_gm!(imagefilters_effect_order, canvas, 512, 512, {
+    let Some(image) = get_resource_as_image("images/mandrill_256.png") else {
+        return;
+    };
+
+    let kernel_size = (3, 3);
+    let kernel_offset = (1, 1);
+    // A Laplacian edge detector, ie https://en.wikipedia.org/wiki/Kernel_(image_processing)
+    let kernel: [f32; 9] = [-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0];
+    let edge_detector = matrix_convolution(
+        kernel_size,
+        &kernel,
+        1.0,
+        0.0,
+        kernel_offset,
+        TileMode::Clamp,
+        false,
+        None,
+        None,
+    );
+    // This uses the high contrast filter because it resembles a pre-processing step you may
+    // perform prior to edge detection. The specifics of the high contrast algorithm don't matter
+    // for the GM.
+    let edge_amplify =
+        HighContrastFilter::make(&HighContrastConfig::new(false, InvertStyle::NO_INVERT, 0.5));
+
+    let mut test_cf_paint = Paint::default();
+    test_cf_paint.set_color_filter(edge_amplify.clone());
+    test_cf_paint.set_image_filter(edge_detector.clone());
+
+    // The expected result is color filter then image filter, so represent this explicitly in the
+    // image filter graph.
+    let mut expected_cf_paint = Paint::default();
+    expected_cf_paint.set_image_filter(compose(
+        edge_detector.clone(),
+        color_filter(edge_amplify, None, None),
+    ));
+
+    // Draw the image twice (expected on the left, test on the right that should match)
+    let crop = Rect::from_isize(image.dimensions());
+    canvas.save();
+    canvas.clip_rect(crop, None, None);
+    canvas.draw_image_with_sampling_options(
+        &image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(&expected_cf_paint),
+    );
+    canvas.restore();
+
+    canvas.save();
+    canvas.translate((image.width() as f32, 0.0));
+    canvas.clip_rect(crop, None, None);
+    canvas.draw_image_with_sampling_options(
+        &image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(&test_cf_paint),
+    );
+    canvas.restore();
+
+    // Now test mask filters. These should be run before the image filter, and thus have the same
+    // effect as multiplying by an alpha mask.
+
+    // This mask filter pokes a hole in the center of the image
+    let alphas = [
+        Color4f::from(Color::BLACK),
+        Color4f::from(Color::TRANSPARENT),
+    ];
+    let pos = [0.4_f32, 0.9];
+    let gradient = Gradient::new(
+        Colors::new(&alphas, Some(&pos), TileMode::Clamp, None),
+        Interpolation::default(),
+    );
+    let alpha_mask_shader: Option<Shader> =
+        gradient_shaders::radial_gradient(((128.0, 128.0), 128.0), &gradient, None);
+    let Some(alpha_mask_shader) = alpha_mask_shader else {
+        return;
+    };
+    let mask_filter = shader_mask_filter::new(alpha_mask_shader.clone());
+
+    // If edge detector sees the mask filter, it'll have alpha and then blend with the original
+    // image; otherwise the mask filter will apply late (incorrectly) and none of the original
+    // image will be visible.
+    let edge_blend = blend(
+        BlendMode::SrcOver,
+        image_sampled(
+            Some(image.clone()),
+            SamplingOptions::from(FilterMode::Nearest),
+        ),
+        edge_detector,
+        None,
+    );
+
+    let mut test_mask_paint = Paint::default();
+    test_mask_paint.set_mask_filter(Some(mask_filter));
+    test_mask_paint.set_image_filter(edge_blend.clone());
+
+    let mut expected_mask_paint = Paint::default();
+    expected_mask_paint.set_image_filter(compose(
+        edge_blend,
+        blend(
+            BlendMode::SrcIn,
+            shader_filter(Some(alpha_mask_shader), Dither::No, None),
+            None,
+            None,
+        ),
+    ));
+
+    canvas.save();
+    canvas.translate((0.0, image.height() as f32));
+    canvas.clip_rect(crop, None, None);
+    canvas.draw_image_with_sampling_options(
+        &image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(&expected_mask_paint),
+    );
+    canvas.restore();
+
+    canvas.save();
+    canvas.translate((image.width() as f32, image.height() as f32));
+    canvas.clip_rect(crop, None, None);
+    canvas.draw_image_with_sampling_options(
+        &image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(&test_mask_paint),
+    );
+    canvas.restore();
+});
