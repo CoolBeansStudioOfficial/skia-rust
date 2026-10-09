@@ -37,6 +37,7 @@ mod apistd;
 mod coef;
 mod coef_buf;
 mod color;
+mod compress;
 mod decompress;
 pub mod error;
 mod huff;
@@ -53,6 +54,7 @@ mod srcio;
 mod tables;
 mod upsample;
 
+pub use compress::{Compress, CompressDctMethod};
 pub use decompress::{DctMethod, Decompress, DitherMode, HeaderResult};
 pub use error::{Error, Result};
 pub use marker::{ConsumeResult, SavedMarker};
