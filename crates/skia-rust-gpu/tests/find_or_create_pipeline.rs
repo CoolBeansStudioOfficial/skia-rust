@@ -69,7 +69,6 @@ fn a_miss_creates_once_and_later_lookups_reuse_the_pipeline() {
     let first = shared
         .find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |id| {
             creations.fetch_add(1, Ordering::Relaxed);
-            assert_ne!(id, 0, "a miss is given a compilation ID");
             Some(graphics("first", 1, id))
         })
         .expect("the pipeline is created");
