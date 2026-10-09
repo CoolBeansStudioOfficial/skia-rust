@@ -14,6 +14,7 @@ use skia_rust_codec::android_codec::AndroidCodec;
 use skia_rust_codec::codec::{NO_FRAME, Options, Result};
 use skia_rust_codec::{Codec, decoders};
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::stream::MemoryStream;
 
 use crate::resources::get_resource_as_data;
@@ -138,4 +139,27 @@ def_test!(Codec_565, |r| {
     };
     let result = codec.get_pixels(&info, &mut pixels, row_bytes, Some(&options));
     reporter_assert!(r, result == Result::Success);
+});
+
+// Port of: tests/CodecAnimTest.cpp#L591-L607 (chrome/m156)
+def_test!(EncodedOriginToMatrixTest, |r| {
+    // SkAnimCodecPlayer relies on the fact that these matrices are invertible.
+    for origin in [
+        EncodedOrigin::TopLeft,
+        EncodedOrigin::TopRight,
+        EncodedOrigin::BottomRight,
+        EncodedOrigin::BottomLeft,
+        EncodedOrigin::LeftTop,
+        EncodedOrigin::RightTop,
+        EncodedOrigin::RightBottom,
+        EncodedOrigin::LeftBottom,
+    ] {
+        // Arbitrary output dimensions.
+        let matrix = origin.to_matrix(100, 80);
+        let inverse = matrix.invert();
+        reporter_assert!(r, inverse.is_some());
+        if let Some(inverse) = inverse {
+            reporter_assert!(r, origin.to_matrix_inverse(100, 80) == inverse);
+        }
+    }
 });

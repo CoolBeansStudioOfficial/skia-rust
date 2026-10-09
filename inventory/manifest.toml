@@ -19429,7 +19429,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/encode.cpp#L66-L86"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "disabled in Skia: the DEF_SIMPLE_GM is inside #if 0 (gm/encode.cpp)"
 span_hash = "fd70b861151777cef380dcb9990a8c25cdbc64cf664d235d147f3903bda7140a"
 
 [[test]]
@@ -29595,7 +29596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L591-L607"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7b3c44657f3d5020809b8c8565f5426c8a56b534a4c7572ba19a457b5c12f15a"
 
 [[test]]
@@ -31431,6 +31432,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif (the encoder half of SkExif, not ported)"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -31440,6 +31442,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif (the encoder half of SkExif, not ported)"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -31449,6 +31452,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif (the encoder half of SkExif, not ported)"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
@@ -31457,7 +31461,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L42-L63"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "63f340303eac4db96eb88adb22ca13f294bfee6c0561897c78f4d4f8dc239f12"
 
 [[test]]

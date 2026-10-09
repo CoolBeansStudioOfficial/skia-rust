@@ -3,14 +3,14 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 #![cfg(test)]
 
-// Port of: tests/ExifTest.cpp (chrome/m156), the cases for the JPEG orientation and the EXIF parser
-// (ExifOrientation, ExifOrientationInExif, ExifOrientationInSubIFD, ExifParse, ExifTruncate).
-// GetImageRespectsExif needs the WebP decoder, and ExifWrite* needs SkExif's WriteExif, which is
-// not ported.
+// Port of: tests/ExifTest.cpp (chrome/m156), the cases for the orientation and the EXIF parser
+// (ExifOrientation, GetImageRespectsExif, ExifOrientationInExif, ExifOrientationInSubIFD,
+// ExifParse, ExifTruncate). ExifWrite* needs SkExif's WriteExif, which is not ported.
 
 use skia_rust_codec::codecs;
 use skia_rust_codec::exif::{Metadata, parse};
 use skia_rust_core::encoded_origin::EncodedOrigin;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::MemoryStream;
 
 use crate::resources::get_resource_as_data;
@@ -39,6 +39,34 @@ def_test!(ExifOrientation, |r| {
     };
     let origin = codec.origin();
     reporter_assert!(r, origin == EncodedOrigin::TopLeft);
+});
+
+// Port of: tests/ExifTest.cpp#L42-L63 (chrome/m156)
+def_test!(GetImageRespectsExif, |r| {
+    let path = "images/orientation/6.webp";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let origin = codec.origin();
+    reporter_assert!(
+        r,
+        origin == EncodedOrigin::RightTop,
+        "Actual origin {:?}",
+        origin
+    );
+
+    let frame = match codec.get_image(None::<ImageInfo>, None::<&skia_rust_codec::codec::Options>) {
+        Ok(frame) => frame,
+        Err(result) => {
+            reporter_assert!(r, false, "Not success {:?}", result);
+            return;
+        }
+    };
+    let dims = frame.dimensions();
+    reporter_assert!(r, dims.width == 100, "width {} != 100", dims.width);
+    reporter_assert!(r, dims.height == 80, "height {} != 80", dims.height);
 });
 
 // Port of: tests/ExifTest.cpp#L65-L72 (chrome/m156)
