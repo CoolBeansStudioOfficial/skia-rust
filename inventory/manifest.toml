@@ -108,7 +108,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L187-L189"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "68562b30be3d51b4aae5f37760a0fb54862e6486caa9879c2452985d771a7ce7"
 
 [[test]]
@@ -117,7 +117,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L197-L199"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "02b83a22ee773b007b269c5e50ed9089cfa2b7a544dbbb873ae094ad7d35fb3f"
 
 [[test]]
@@ -126,7 +126,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L177-L179"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "9e940b1fd6f45796bad2782c86ba99f25ce1d496f573e2d4adb6bdb0238f9c59"
 
 [[test]]
@@ -135,7 +135,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L190-L192"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b5cbbc1d88f834c9095f0a8e9935c69899b3daf2a0e3f197adc92c23c3bd2c39"
 
 [[test]]
@@ -144,7 +144,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L200-L202"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a2cfae138f33d21a2e657e683173de1dcd52c2b129ad6b32006c634472a2da5d"
 
 [[test]]
@@ -153,7 +153,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L184-L186"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "69fa7a37e72312b89f30fb4ec771b2302c8037401f630e128fc7924e89a578ff"
 
 [[test]]
@@ -162,7 +162,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L194-L196"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d07c73d27098691ab758469ae73392eff874a471ac7132394ec86518a23dfea2"
 
 [[test]]
@@ -171,7 +171,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L180-L182"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "34f54a2c3f57d10967176783d48bf19430f9a3528a72d29640f145426b148fbd"
 
 [[test]]
@@ -180,7 +180,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/AlternatingColorPatternBench.cpp#L174-L176"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ed14b303fc8f0acd1bf7e445268817de6f82fe481fdeb7f4516f58de9c8e9f90"
 
 [[test]]
@@ -4754,7 +4754,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L243-L243"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ec94ccf8e6841dcb8289c6eb51f06f49abc8f1996300475e7b8cc62f22222630"
 
 [[test]]
@@ -4763,7 +4763,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L244-L244"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "676783fe613201efd678790391ab9186be46c84b7516bb76529e23a02fe4a765"
 
 [[test]]
@@ -4772,7 +4772,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L246-L246"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c01dc76a3072d27d2dd528a254ef144496d0c25aa0fb11c86390b091f2c137cc"
 
 [[test]]
@@ -4781,7 +4781,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L247-L247"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "824c6aaccf7aebc7bb9cc974fc0833009b09b61aa8bf6e6f885cc93b1fd6c1ae"
 
 [[test]]
@@ -4790,7 +4790,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L248-L248"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2f50e71821bf1e62fa83c1d776f2374ad457c96a85e5f58510a1ffc9bd52ed93"
 
 [[test]]
@@ -4799,7 +4799,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L249-L249"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0525adc3c8ad49603f9624baec1ad7dc6a521dc8c93fd6fb3d857fb49c682b3c"
 
 [[test]]
@@ -4808,7 +4808,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L230-L230"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3d3cb261e99713a9a38e82e24c53039df250c98abcb01b8332d5988f245c9ab7"
 
 [[test]]
@@ -4817,7 +4817,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L231-L231"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7df49f4ec771e97a42f82936d4fdf18e81fee58d05333ae94e26a16fe8e4fac3"
 
 [[test]]
@@ -4826,7 +4826,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L232-L232"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7f025e06fbf804e90cfbde7db3d3a27a0c93b8832ba6588f87c66fd913574b14"
 
 [[test]]
@@ -4835,7 +4835,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L233-L233"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f39fac841a3a25fc974b7b6c81738aadfa02003816bd762abbcc82fe003fa33c"
 
 [[test]]
@@ -4844,7 +4844,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L235-L235"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a8c59a49a09c0edca0383721a50b41f21f1955371f4a90911fc6390b3e447273"
 
 [[test]]
@@ -4853,7 +4853,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L236-L236"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e89d3e721c0f8e7a7b92327fde871a80f9129385e6cbfe3c56d1d9872f6d3990"
 
 [[test]]
@@ -4862,7 +4862,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L237-L237"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4df101f0bb4d0aefa1aa93ee9f9d2d1a93ca985363033ec13b2d7749e0357aac"
 
 [[test]]
@@ -4871,7 +4871,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/HairlinePathBench.cpp#L238-L238"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "cf24eab7fbaa43f22fb8f1abc6a28ad321753e836c089a6d7ecf26cae9c15970"
 
 [[test]]
@@ -8927,7 +8927,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L440-L442"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "c91053f54cb08fcfdd544bda4fee2520976d203cfcca428de53b546e43305914"
 
 [[test]]
@@ -8936,7 +8936,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L434-L436"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "cea9309988a1baeb887972c4bdc117373d965429146f45ea4d9ecc412536c85a"
 
 [[test]]
@@ -8945,7 +8945,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L437-L439"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "927c5d2a1871f61a2e6ff1d0f3352c468dcc32ba5dcc486ac3a4d58622e77730"
 
 [[test]]
@@ -8954,7 +8954,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L431-L433"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "1805e9407737ed5a6d567eab8b3c063022517d4d3f3f1f0b332b4196e51176b0"
 
 [[test]]
@@ -8963,7 +8963,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L409-L409"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "907dcd146a77bcce1c552a6a92f039baf0aa62eb33eac826928eab12b6535437"
 
 [[test]]
@@ -8972,7 +8972,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L410-L410"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "eb1e7b4c223d3e1966a19fa3ba50fac3f61c45071fabfc0ea6b3969f1126a915"
 
 [[test]]
@@ -8981,7 +8981,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L407-L407"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "697db445442be9835aa85b9fcb47797955505163b489d534939a201493a0d948"
 
 [[test]]
@@ -8990,7 +8990,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L408-L408"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "f5b2468664c015c355ea430365ffa6ca0abae9d69fd8c2647ba77d28d0cc775e"
 
 [[test]]
@@ -8999,7 +8999,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L421-L421"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b66c6352f5b662e746f7ca4643d66e8cc230f28065b74218cf37c5ab95422738"
 
 [[test]]
@@ -9008,7 +9008,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L427-L427"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "74ac39f03bce986a66ff873700de685a033a5d7d76281d0697a21ae8e6ee755d"
 
 [[test]]
@@ -9017,7 +9017,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L420-L420"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d0d208d03b7ce4d1e3cedb9936549e8da2dbe547cbf71273d6451070737c1aed"
 
 [[test]]
@@ -9026,7 +9026,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L426-L426"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4e6a9f019196275250dab3a8f19103e985c2f7995894f866076d6f1d82090746"
 
 [[test]]
@@ -9035,7 +9035,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L398-L398"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "8048bd043c936a265cea082d6a9258d7085e64af1f3520bb138fe95ca440cfe8"
 
 [[test]]
@@ -9044,7 +9044,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L400-L400"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "aeb9ebdb62303edecb85cf92d840a989ccde77955db056efdbaf9a4f7ad3372a"
 
 [[test]]
@@ -9053,7 +9053,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L399-L399"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a758bf4cca73c76d0d07b91cbd29c0310517d326e9e38a462f202cd435b1e412"
 
 [[test]]
@@ -9062,7 +9062,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L401-L401"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "d1b1911112831022e3a75169e1763ea813a2e58c9a045ec2fada4df0816552f6"
 
 [[test]]
@@ -9071,7 +9071,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L413-L413"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3c990d43c4ecf7a16f8ccb8c7e5a0ad17162a546b6519d0568377840e79f98cb"
 
 [[test]]
@@ -9080,7 +9080,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L412-L412"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "1e99305c3260aad32fd8012cc61ef4d0644b8ea96897fef3fa0f60f547623a20"
 
 [[test]]
@@ -9089,7 +9089,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L414-L414"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "86aea6b4a2e115360d5e3cab33702b7c5282b879fd988f885b2ccba5d57e6291"
 
 [[test]]
@@ -9098,7 +9098,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L402-L402"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "41ecde3558a111a4fb0e6babd4d2e0deb56d133ec07dfba3bd6f2846b0de72c1"
 
 [[test]]
@@ -9107,7 +9107,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L403-L403"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "70d1905a5ff054a4b1f8a881042a7db0405684027b47cc4a34771ba4329471a7"
 
 [[test]]
@@ -9116,7 +9116,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L404-L404"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "37880490a35c9066803004a5fd1fdfb7e24ced83cd69cfc128036d428092df4b"
 
 [[test]]
@@ -9125,7 +9125,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L405-L405"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "a6988516c75102ce9d23fc76961e2db717c0ee243fe9fe06ef62f4ba57a6328d"
 
 [[test]]
@@ -9134,7 +9134,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L393-L393"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2268fa7e2c391348be09486d4b002d32fe8a9fc7b257a751329e2184166f0119"
 
 [[test]]
@@ -9143,7 +9143,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L425-L425"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "46feb470ff2c1bb96da4a7666b8685ba7540c9f1e968160606afb0aac87460dc"
 
 [[test]]
@@ -9152,7 +9152,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L388-L388"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "50cd6e00ddee03aba1837bbfcc8debb92a2fd724c098279d1c19c954ae54c8c1"
 
 [[test]]
@@ -9161,7 +9161,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L424-L424"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "ee48e895a831a84862a4d876b68b474bd0820725e3d8687c09298c927c90b6d0"
 
 [[test]]
@@ -9170,7 +9170,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L394-L394"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "58e815ee0885c5933cc5e4cc505d370548f012ffbd37f8ed1db5f21ff6cdd70c"
 
 [[test]]
@@ -9179,7 +9179,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L389-L389"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b6afdf1f561c281925db5d4f2b5da1d5c79e13b11318481ac24de15f6ee4140a"
 
 [[test]]
@@ -9188,7 +9188,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L395-L395"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4d3f1d0b658a387b63912814853fa614ef479205b50c224351e3a985f5f429c8"
 
 [[test]]
@@ -9197,7 +9197,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L390-L390"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f3b388e33f35c36ece45a593584d3a7f5581352a13f86d98cf0d8cfa6babea27"
 
 [[test]]
@@ -9206,7 +9206,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L396-L396"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "7af31cf952722a20028c2c7e2d16e63bbbf86fd7d6ce1d9a57a2a7cb41fb9bcf"
 
 [[test]]
@@ -9215,7 +9215,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L391-L391"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c1bce28b6c987309f86cf5521540d0184e2e5f7cc974894bd759758f975e4817"
 
 [[test]]
@@ -9224,7 +9224,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L480-L480"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f4ad90ec2a3df9bbcfe51a7574f2dc30888132c99dcbdd94980c32599e7d25eb"
 
 [[test]]
@@ -9233,7 +9233,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L481-L481"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "362ff019006ffef2a2303be8c27ab079be42c0710ded9c3ef9223897bdbb792a"
 
 [[test]]
@@ -9242,7 +9242,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L416-L416"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e91656276973fc9d4fda86edba085c4fb496ac7c2d2103dca44ec6bd56b56eb3"
 
 [[test]]
@@ -9251,7 +9251,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/RectBench.cpp#L418-L418"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "e4b3548d02dc0ce94225a877b148f0824199f2e3549f9c711a428a90f70bec05"
 
 [[test]]
@@ -9566,7 +9566,7 @@ kind = "bench"
 macro = "DEF_FOR_AA_MODES"
 source = "bench/RotatedRectBench.cpp#L202-L202"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8599fb2d3db2408bca732b73287640a559a41f8a3bcf3728d9203994bf3628e4"
 
 [[test]]
@@ -9575,7 +9575,7 @@ kind = "bench"
 macro = "DEF_FOR_AA_MODES"
 source = "bench/RotatedRectBench.cpp#L201-L201"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "1173d3db9b0ac7b12e4ab0dfef820a0b07e17d35bbe7326db3b7dcfc29823b32"
 
 [[test]]
@@ -9584,7 +9584,7 @@ kind = "bench"
 macro = "DEF_FOR_AA_MODES"
 source = "bench/RotatedRectBench.cpp#L200-L200"
 module = "effects"
-status = "todo"
+status = "ported"
 span_hash = "8b022386a120cf6d1e78d0fc6de4d06fa631015144370307a5621cff171b306e"
 
 [[test]]
@@ -9593,7 +9593,7 @@ kind = "bench"
 macro = "DEF_FOR_PERSP_MODES"
 source = "bench/RotatedRectBench.cpp#L209-L209"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "14e6a3b7450d1e42db402ac0909d4778e70588b3b46d2bd07dc68402da71904d"
 
 [[test]]
@@ -9602,7 +9602,7 @@ kind = "bench"
 macro = "DEF_FOR_PERSP_MODES"
 source = "bench/RotatedRectBench.cpp#L208-L208"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c2383783ec1b6a9955f750116e99a361f7bf32a2009a4393bae0073d598c3b6b"
 
 [[test]]
@@ -9990,6 +9990,7 @@ macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L258-L258"
 module = "core"
 status = "todo"
+reason = "compiled out in Skia (ENABLE_COMMAND_LINE_SHAPES_BENCH is 0); the flag-driven constructor is not ported"
 span_hash = "25a3a7023b96dccf4fa48ae4c263900afb767ce017b1021638bc9f2bee348d93"
 
 [[test]]
@@ -9998,7 +9999,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L281-L282"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "3fcb3a7383111d558b4790710a86dcaec8c65542e0fbcecd07c09f7969ee7914"
 
 [[test]]
@@ -10007,7 +10008,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L269-L270"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "b2a8887de7d2c2e0ab3b0481bdfea28ed5257a6f505e0167f80a3a5de6f51a1f"
 
 [[test]]
@@ -10016,7 +10017,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L275-L276"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "819067f124c7032da991aaf448868f5236ba685aa17a13fa9eb0989d486c2c8a"
 
 [[test]]
@@ -10025,7 +10026,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L277-L278"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "339de251d647bfe5fad3aa14a12ad7b083e89a4d07aa6969faaad9fccbbefff8"
 
 [[test]]
@@ -10034,7 +10035,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L263-L264"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "4f3f91399edbee8707191f0610bb261ee9026b5791774452ec12d92ab9a34612"
 
 [[test]]
@@ -10043,7 +10044,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L265-L266"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "2e5d360a99c0b08377b307a5863d0ffa09e2e1c7fef16a14bf051d07c4baa59c"
 
 [[test]]
@@ -10052,7 +10053,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L279-L280"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5a648e81d1e02c1b6ade00082868356637667ee14d17abc525d92ecc3449c7e2"
 
 [[test]]
@@ -10061,7 +10062,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L267-L268"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "0c11ea0fa905a4901d8a81401f8113f9f14387ca1c52d9713b51395e2e9f9071"
 
 [[test]]
@@ -10070,7 +10071,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L292-L293"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "02f89266d9d7d9ce5bf05be4d7356c92d212867708bca5fb210a01e2c7940405"
 
 [[test]]
@@ -10079,7 +10080,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L288-L289"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5728bac3ca10b1698ce1e385b712a78897923363ad94d8afa3fd031d0be61c00"
 
 [[test]]
@@ -10088,7 +10089,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L273-L274"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "c533e3148c014acef4e212b61532c9d00bcaf5496a37ee55cb06c29fc30d41a6"
 
 [[test]]
@@ -10097,7 +10098,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L261-L262"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "f4074483bd3fb3d2ce153df1c2d0c14da4d6a536122cf88f250b286a5523d729"
 
 [[test]]
@@ -10106,7 +10107,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L290-L291"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "5192bc3d64db29027b502712687040956fac465fdb180601dc3b66ef24abb627"
 
 [[test]]
@@ -10115,7 +10116,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ShapesBench.cpp#L286-L287"
 module = "core"
-status = "todo"
+status = "ported"
 span_hash = "bd8c17c213e613c809171ec49bbdb4cfe004a3eb53c1a0e9a27ee97b2c7af226"
 
 [[test]]
@@ -10124,7 +10125,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/Sk4fBench.cpp#L59-L59"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9b63f3ade36a89ef7b5298399ebc2cd32694f2767f9bc144c99df7dce3f68d33"
 
 [[test]]
@@ -10133,7 +10134,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/Sk4fBench.cpp#L93-L93"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b8fd6b274b25e0903ca316c836ba91f03741ff1b7157fcd4734e99092ec613ab"
 
 [[test]]
@@ -10142,7 +10143,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/Sk4fBench.cpp#L43-L43"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "dccdd067b0af779f033c08c73f336b56ad3db914e40d87c9971840dae46ea62a"
 
 [[test]]
@@ -10151,7 +10152,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/Sk4fBench.cpp#L42-L42"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "14d4d66c9a1909761a643000f0fd7ce226579ef54dfee22daf04ea3654567861"
 
 [[test]]
@@ -10160,7 +10161,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/Sk4fBench.cpp#L41-L41"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3fb9cc71916ae0c2e8d46ba11706c7f8a22b7ac0f968e7907c44c1a92c57a9b1"
 
 [[test]]
@@ -10359,6 +10360,7 @@ macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L187-L187"
 module = "core"
 status = "todo"
+reason = "libc qsort has no safe Rust binding (FFI needs unsafe outside skia-rust-simd); not ported"
 span_hash = "8a1265073e9cd6b61d8c06a1380c4c0a2cadbb85649a1e943b8cd9014fa322fe"
 
 [[test]]
@@ -10368,6 +10370,7 @@ macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L182-L182"
 module = "core"
 status = "todo"
+reason = "libc qsort has no safe Rust binding (FFI needs unsafe outside skia-rust-simd); not ported"
 span_hash = "e051bfa243b24cbcf2c5f6be1fd63aad174a25de18fbc70225c2c349e1827a47"
 
 [[test]]
@@ -10377,6 +10380,7 @@ macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L172-L172"
 module = "core"
 status = "todo"
+reason = "libc qsort has no safe Rust binding (FFI needs unsafe outside skia-rust-simd); not ported"
 span_hash = "f42796a0c05b81d51c010e958f892e9a6b12b0a21b66a4ad03631873d72234bb"
 
 [[test]]
@@ -10386,6 +10390,7 @@ macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L177-L177"
 module = "core"
 status = "todo"
+reason = "libc qsort has no safe Rust binding (FFI needs unsafe outside skia-rust-simd); not ported"
 span_hash = "76d1ae262ba1b7f5af1026be3c3623349f0c161b99a55443bb249a32ae4c9955"
 
 [[test]]
@@ -10395,6 +10400,7 @@ macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L192-L192"
 module = "core"
 status = "todo"
+reason = "libc qsort has no safe Rust binding (FFI needs unsafe outside skia-rust-simd); not ported"
 span_hash = "54cf25a11bb6ebb7b27889dba02ff24fbfcc0047c6497397161398d328d49698"
 
 [[test]]
@@ -10403,7 +10409,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L186-L186"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a4566be7ee6e47ceb552ffd6cc07be146edb1cc0ddab4a7f3bfd8591f2919b6c"
 
 [[test]]
@@ -10412,7 +10418,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L181-L181"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "655a8167a5171a961265e727f08e3f99db24f9e7b881173a2007267f4dd5e291"
 
 [[test]]
@@ -10421,7 +10427,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L171-L171"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b7935aa924c2421ec7caad42912ea9499579bd1dd5544ba09f0b32f77b507620"
 
 [[test]]
@@ -10430,7 +10436,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L176-L176"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1ad16a209c7b29d7078d0606d958f99d77c68704c449cee0fe04e840a571ac16"
 
 [[test]]
@@ -10439,7 +10445,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L191-L191"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c6456b374f47d2d2b6662366f48271b3d766c70fb337784180d085a65d38c9c9"
 
 [[test]]
@@ -10448,7 +10454,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L185-L185"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "faa11984ebd13c53e5cf608a5dfdd48d6e08918ffb2f346d3bd667d15944f345"
 
 [[test]]
@@ -10457,7 +10463,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L180-L180"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b0f75fe98a33bebe38e36fa50ff8295dedd7654085239834f6089a8348b12dc3"
 
 [[test]]
@@ -10466,7 +10472,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L170-L170"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ddf28a76795cc603571ac27579c26d688747aef75ca8126d7cc192f241ea7548"
 
 [[test]]
@@ -10475,7 +10481,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L175-L175"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "28dea2f7c7aa2d84ba48bba86c85ebb2f2cedc838c09870e927ca0dd9c44c3c6"
 
 [[test]]
@@ -10484,7 +10490,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L190-L190"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e80420591f839d5146a09d7cd1c798bdbd4cfde1e63c2994bc63b4ce4839a378"
 
 [[test]]
@@ -10493,7 +10499,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L188-L188"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "80daf524eca1cb0e5f5f99eea45e3c1fd21d2e547df37043af8cf5f7782419f0"
 
 [[test]]
@@ -10502,7 +10508,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L183-L183"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2cedc08e17deb47562ca6261463bf6f07e4e0202c212b9b324ac9bfe9b7003ae"
 
 [[test]]
@@ -10511,7 +10517,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L173-L173"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "05f9a5c1066bd9f913f069b2a6a9aaa3f8f63809458f445527ea03ab5eecd4d5"
 
 [[test]]
@@ -10520,7 +10526,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L178-L178"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9eef6b56ac35aa8f7eb5c3b62569799100ce2787cf9083f188eedc96dea39777"
 
 [[test]]
@@ -10529,7 +10535,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/SortBench.cpp#L193-L193"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6362d52cb5919bdab18724af0b26e5a22a63670dd3e44354f1e050aba79d9435"
 
 [[test]]
@@ -10556,7 +10562,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L121-L121"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3f696a3c7f29a0d60ef2a2b70fe9cb0324d37eaf97911acd2b5dfb9333754987"
 
 [[test]]
@@ -10565,7 +10571,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L111-L111"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "acf55384b7d8275ed5be6fb86c4fff0e2c45183fc5e6cc56ce460306298b6935"
 
 [[test]]
@@ -10574,7 +10580,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L116-L116"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5deb2255a23d04c6e221b1eb61dad3d07ee4869d9be298cc3cd8a806007e43a9"
 
 [[test]]
@@ -10583,7 +10589,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L122-L122"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "10594b8a3d5adfd8afe5d7f7166508125cc0fb81b7798c36b753f233c6d96ffb"
 
 [[test]]
@@ -10592,7 +10598,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L112-L112"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c6beab66f3171d63978786a634129723b5d9878d5a1fd71b05c153e32fd15b74"
 
 [[test]]
@@ -10601,7 +10607,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L117-L117"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "97b884c53a5e5f1e1990470027e96ef07f20012571c7c2dbf55e6014487ec472"
 
 [[test]]
@@ -10610,7 +10616,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L119-L119"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5c5e0cec06ce200fe22511b75ec00daf1ed881e15ad66457606e5a0932d6d3e8"
 
 [[test]]
@@ -10619,7 +10625,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L109-L109"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0838139d34899999b340b5ae130db4efbefb5524f0c4b56870ce50b78b0bd8a7"
 
 [[test]]
@@ -10628,7 +10634,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L114-L114"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7aff1120371416b5c58478bb57424cf46f5e5b3e81fcf42fc93fee4b9749aab3"
 
 [[test]]
@@ -10637,7 +10643,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L120-L120"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3ea17442bc9f0a4ef6c38b0c8f100bb81e6e34be386d89394bfc51c03ea0d800"
 
 [[test]]
@@ -10646,7 +10652,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L110-L110"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "00fee65dcf6f3ef9256c49874ea31cdfa430e78c459c3cf3b505c788f1dcdca0"
 
 [[test]]
@@ -10655,7 +10661,7 @@ kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/StrokeBench.cpp#L115-L115"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "5d2bd31c300de1972029c34845cdc544eab844d8895af54cf49363bc8d3befac"
 
 [[test]]

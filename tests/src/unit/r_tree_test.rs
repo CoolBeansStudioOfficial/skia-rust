@@ -6,7 +6,6 @@
 #![cfg(test)]
 
 use crate::{Reporter, def_test, reporter_assert};
-use skia_rust_core::bbh_factory::BBoxHierarchy;
 use skia_rust_core::r_tree::RTree;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
