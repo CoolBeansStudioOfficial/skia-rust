@@ -5,9 +5,8 @@
 # The checkout is https://chromium.googlesource.com/chromium/src/third_party/zlib at 646b7f56 (the
 # `DEPS` pin of Skia m156), with its contrib/optimizations/insert_string.h. Sources are compiled
 # without SIMD (no ADLER32_SIMD/CRC32_SIMD defines), without chromeconf.h (the symbol prefixes do
-# not change output), and without gzip (NO_GZIP: the port has no
-# gzip framing, and zlib-format output does not depend on it). cpu_features.h is empty, since the
-# scalar build does not use it.
+# not change output), and without gzip (NO_GZIP: the port has no gzip framing, and zlib-format
+# output does not depend on it). cpu_features.h is empty, since the scalar build does not use it.
 set -eu
 SRC="$1"
 OUT="$2"
