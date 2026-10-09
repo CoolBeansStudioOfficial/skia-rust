@@ -1663,8 +1663,9 @@ impl CanvasState {
     // Port of: src/core/SkCanvas.cpp#L2607-L2617 (chrome/m156)
     fn on_draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
         let simple_paint = Self::clean_paint_for_draw_vertices(paint);
-        if self.about_to_draw(&simple_paint, None, PredrawFlags::NONE) {
+        if let Some(auto_layer) = self.about_to_draw(&simple_paint, None, PredrawFlags::NONE) {
             self.top_device_mut().draw_mesh(mesh, blender, paint);
+            self.end_auto_layer(&auto_layer);
         }
     }
 
