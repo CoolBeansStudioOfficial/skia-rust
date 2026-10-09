@@ -21834,7 +21834,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersclipped.cpp#L164-L164"
 module = "effects"
 status = "todo"
-reason = "needs SkImageFilters::Dilate/Erode/DisplacementMap/Offset/MatrixConvolution/PointLitDiffuse, not ported (the Perlin shader filter is)"
+reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
 span_hash = "a00a2dae96a1869693e5236712c6bf1a57904c6be9d74fdccdddd2533408734f"
 
 [[test]]
@@ -21843,7 +21843,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imagefiltersclipped.cpp#L167-L186"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "gm-verify mismatch on every tier: the blur(kMirror) + crop draw is blank in skia-rust and blurred in the golden; see notes/gm_imagefiltersclipped_cpp_imagefilter_convolve_subset.md"
 span_hash = "11e392796590eb9b9b479c9b0a7d022ce564ba57df16ed1d99dcbde39c49b57d"
 
 [[test]]
@@ -21881,7 +21882,7 @@ macro = "DEF_GM"
 source = "gm/imagefiltersscaled.cpp#L164-L164"
 module = "effects"
 status = "todo"
-reason = "needs SkImageFilters::Dilate/Erode/DisplacementMap/Offset/PointLitDiffuse/SpotLitDiffuse, not ported (the Perlin shader filter is)"
+reason = "needs SkImageFilters::PointLitDiffuse/SpotLitDiffuse (the lighting filters are not ported)"
 span_hash = "785fd8ae5a11a2992fbcbb8a90df56c034d024f36a406b792dfebb824eeb2426"
 
 [[test]]
@@ -22531,7 +22532,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L180-L180"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "445561ccfc24b78843f45abbe77b9367da15f5954b4d137ec5ba89a58e869f10"
 
 [[test]]
@@ -22541,7 +22542,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L182-L182"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "7c8cadd25f684cf21d7e38182352529a8819d0de7f193a477963f099f698e03f"
 
 [[test]]
@@ -22551,7 +22552,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L179-L179"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "584b635b2f897be85b0bcff43e2cfe794c9e141c17c1f9f1bc0ccd90b3242179"
 
 [[test]]
@@ -22561,7 +22562,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L181-L181"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "cc361bd962233d9f8892a27906eb3ce2fa00cfa357f58443933ed454f18f4314"
 
 [[test]]
@@ -22571,7 +22572,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L183-L183"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "4635ba62ffd4c560db4f38011b1bf57e4d82c24a48f7e9cf7792803ce12ee0bf"
 
 [[test]]
@@ -22581,7 +22582,7 @@ macro = "DEF_GM"
 source = "gm/matrixconvolution.cpp#L184-L184"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/matrixconvolution.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "e32d8bf8facfff5b0c6b6834020709e8254133668e5037588273669514331c63"
 
 [[test]]
@@ -22769,7 +22770,7 @@ macro = "DEF_GM"
 source = "gm/morphology.cpp#L97-L97"
 module = "raster"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "ported and registered in tests/gm/src/gm/morphology.rs; gm-verify was not completed on this host (the release build of skia-rust-gm and the debug render both exceed the sandbox time limit)"
 span_hash = "4ebff493183b230e7a167b544980d55c3ddb309022e9cf1fa79383dc07a38dc8"
 
 [[test]]
@@ -35100,7 +35101,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2551-L2569"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "the out-of-range SkColorChannel case cannot be expressed: ColorChannel is an enum; the infinite scale case is ported"
 span_hash = "866c2f3c4e999588cec9e36a98f8073fad587754bb1e2c7b5150c9a339f4d7dc"
 
 [[test]]
@@ -35109,8 +35110,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2400-L2433"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "cbd4832cc44c454fa6c2a643ec7c2cf31d692a1fb1eb385812468f1d55726ab6"
 
 [[test]]
@@ -35138,7 +35138,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L440-L542"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::SpotLitSpecular (the lighting filters are not ported)"
 span_hash = "01ec23a8d21ca70b514522e1a47040cff2804bc1d9770b7ea255d796512f3c1c"
 
 [[test]]
@@ -35176,7 +35176,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1674-L1733"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
 span_hash = "05a58bf7805ec3677358dcfc7976e1ab2426f08cb6fcf20118d828bb933addfd"
 
 [[test]]
@@ -35241,8 +35241,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1002-L1022"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "35fda1396f93d3daa189b247d9ff020edc7fc23fe6a7799c59c81a03ab4c672b"
 
 [[test]]
@@ -35380,8 +35379,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1208-L1230"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "b20b6dd7ea1ef0ecb468e1502cf438782527da2c26925110f3cb47e17ecbb988"
 
 [[test]]
@@ -35390,8 +35388,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1293-L1295"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "5655a72790b6434093c01ec79243e90ce80d1e4b8a980fcc780ac273630b03a1"
 
 [[test]]
@@ -35410,8 +35407,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1232-L1260"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "fab5e304be776c8e24f052d9a0a3c8f3ac822bf09b7c131d91af9c716b729c92"
 
 [[test]]
@@ -35421,7 +35417,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1455-L1487"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "the nullptr-kernel case cannot be expressed: MatrixConvolution takes &[f32], which cannot be null; the other cases are ported, but the test stays open until that case has a representation"
 span_hash = "592fede77559a3fb22ef553c81150546571e3be0f8668175e08e2017245e83ce"
 
 [[test]]
@@ -35533,7 +35529,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2603-L2650"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::Magnifier (the magnifier filter is not ported)"
 span_hash = "3c048f7ff72f6a12f4f0befcafb559a08760e8cca1e4557ab88aee1d65a57b35"
 
 [[test]]
@@ -35551,8 +35547,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L724-L726"
 module = "effects"
-status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+status = "passing"
 span_hash = "8d7440e715fc6857c877b5af40d09493006dd887157e1ec4f90331d0e532ac99"
 
 [[test]]

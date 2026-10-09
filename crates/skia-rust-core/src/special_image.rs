@@ -230,4 +230,13 @@ impl SpecialImage {
             None
         }
     }
+
+    /// If the special image is backed by a GPU texture, true (`isGaneshBacked`). A special image
+    /// here is always raster-backed (`SkSpecialImage`'s default), so this is always false.
+    // Port of: src/core/SkSpecialImage.h#L131-L132 (chrome/m156)
+    #[doc(alias = "isGaneshBacked")]
+    #[must_use]
+    pub fn is_ganesh_backed(&self) -> bool {
+        false
+    }
 }

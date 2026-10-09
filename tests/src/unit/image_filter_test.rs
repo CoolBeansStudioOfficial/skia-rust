@@ -3,10 +3,10 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/ImageFilterTest.cpp (chrome/m156)
 //
-// Only the tests whose filters are ported are here: the Offset, Merge, Blend, Image and
-// DropShadow filters and the raster backend. The morphology, lighting, displacement, picture,
-// shader, runtime and matrix-convolution filters, the Graphite and Ganesh variants, the
-// blur-dependent bounds tests and the image-filter-cache tests are not ported yet.
+// Only the tests whose filters are ported are here: the Offset, Merge, Blend, Image, DropShadow,
+// Morphology (Dilate/Erode), MatrixConvolution and DisplacementMap filters and the raster backend.
+// The lighting, magnifier, arithmetic and runtime-image filters, the Graphite and Ganesh variants
+// and the image-filter-cache tests are not ported yet.
 
 #![cfg(test)]
 
@@ -15,24 +15,28 @@ use std::sync::Arc;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::Canvas as CoreCanvas;
 use skia_rust_core::canvas::SaveLayerRec;
-use skia_rust_core::color::{Color, Color4f};
+use skia_rust_core::color::{Color, Color4f, ColorChannel};
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::image_filter::MapDirection;
+use skia_rust_core::image_filter::{ImageFilter, MapDirection};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping};
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::rect::{IRect, Rect, RoundOut};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::shaders;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
 use crate::{def_tier_test, reporter_assert};
@@ -326,6 +330,295 @@ def_tier_test!(PictureImageSourceBounds, |reporter| {
             .filter_bounds(&input, &scale, MapDirection::Reverse, Some(&input))
             .is_empty()
     );
+});
+
+/// `make_special_from_image` on the raster path: a special image of `subset` of `bitmap`.
+// Port of: tests/ImageFilterTest.cpp#L583-L590 (chrome/m156)
+fn make_special_from_bitmap(bitmap: &Bitmap, subset: IRect) -> Option<Arc<SpecialImage>> {
+    SpecialImage::make_from_raster(&subset, bitmap, &SurfaceProps::default()).map(Arc::new)
+}
+
+/// `special_image_to_bitmap`: the pixels of `src` as an N32 bitmap.
+// Port of: tests/ImageFilterTest.cpp#L568-L581 (chrome/m156)
+fn special_image_to_bitmap(src: &SpecialImage) -> Option<Bitmap> {
+    src.as_bitmap()
+}
+
+/// `make_drop_shadow(input)`: a blue shadow with a 100px offset and 10px sigma.
+// Port of: tests/ImageFilterTest.cpp#L952-L954 (chrome/m156)
+fn make_drop_shadow(input: Option<ImageFilter>) -> Option<ImageFilter> {
+    image_filters::drop_shadow(
+        (100.0, 100.0),
+        (10.0, 10.0),
+        Color4f::from(Color::BLUE),
+        None,
+        input,
+        None,
+    )
+}
+
+// Port of: tests/ImageFilterTest.cpp#L653-L723 (chrome/m156)
+def_tier_test!(
+    #[allow(clippy::similar_names)] // mirrors the C++ mirrorX / mirrorY names
+    MorphologyFilterRadiusWithMirrorCTM,
+    |reporter| {
+        // Check that SkMorphologyImageFilter maps the radius correctly when the
+        // CTM contains a mirroring transform.
+        const WIDTH: i32 = 32;
+        const HEIGHT: i32 = 32;
+        const RADIUS: f32 = 8.0;
+
+        let filter = image_filters::dilate((RADIUS, RADIUS), None, None).expect("a dilate filter");
+
+        let mut bitmap = Bitmap::new();
+        bitmap.alloc_n32_pixels((WIDTH, HEIGHT), None);
+        {
+            let canvas = CoreCanvas::from_bitmap(&mut bitmap, None).expect("a canvas");
+            canvas.clear(Color::TRANSPARENT);
+            let mut paint = Paint::default();
+            paint.set_color(Color::WHITE);
+            canvas.draw_rect(Rect::from_xywh(8.0, 8.0, 16.0, 16.0), &paint);
+        }
+        let img_src = make_special_from_bitmap(&bitmap, IRect::from_wh(WIDTH, HEIGHT));
+
+        let ctx = make_context_wh(32, 32, img_src);
+
+        let (normal_result, _offset) = filter.as_base().filter_image(&ctx).image_and_offset(&ctx);
+        reporter_assert!(reporter, normal_result.is_some());
+
+        let mut mirror_x = M44::translate(0.0, 32.0, 0.0);
+        mirror_x.pre_scale(1.0, -1.0);
+        let mirror_x_ctx = ctx.with_new_mapping(Mapping::from_layer_matrix(&mirror_x));
+
+        let (mirror_x_result, _offset) = filter
+            .as_base()
+            .filter_image(&mirror_x_ctx)
+            .image_and_offset(&ctx);
+        reporter_assert!(reporter, mirror_x_result.is_some());
+
+        let mut mirror_y = M44::translate(32.0, 0.0, 0.0);
+        mirror_y.pre_scale(-1.0, 1.0);
+        let mirror_y_ctx = ctx.with_new_mapping(Mapping::from_layer_matrix(&mirror_y));
+
+        let (mirror_y_result, _offset) = filter
+            .as_base()
+            .filter_image(&mirror_y_ctx)
+            .image_and_offset(&ctx);
+        reporter_assert!(reporter, mirror_y_result.is_some());
+
+        let normal_bm = normal_result.as_deref().and_then(special_image_to_bitmap);
+        let mirror_x_bm = mirror_x_result.as_deref().and_then(special_image_to_bitmap);
+        let mirror_y_bm = mirror_y_result.as_deref().and_then(special_image_to_bitmap);
+        reporter_assert!(reporter, normal_bm.is_some());
+        reporter_assert!(reporter, mirror_x_bm.is_some());
+        reporter_assert!(reporter, mirror_y_bm.is_some());
+        if let (Some(normal_bm), Some(mirror_x_bm), Some(mirror_y_bm)) =
+            (normal_bm, mirror_x_bm, mirror_y_bm)
+        {
+            // memcmp of each row: the rows must be identical, and the loop stops at the first
+            // difference.
+            let row = |bm: &Bitmap, y: i32| -> Vec<u32> {
+                (0..bm.width()).map(|x| bm.get_addr32(x, y)).collect()
+            };
+            for y in 0..normal_bm.height() {
+                let diffs = row(&normal_bm, y) != row(&mirror_x_bm, y);
+                reporter_assert!(reporter, !diffs);
+                if diffs {
+                    break;
+                }
+                let diffs = row(&normal_bm, y) != row(&mirror_y_bm, y);
+                reporter_assert!(reporter, !diffs);
+                if diffs {
+                    break;
+                }
+            }
+        }
+    }
+);
+
+// Port of: tests/ImageFilterTest.cpp#L1002-L1024 (chrome/m156)
+def_tier_test!(ImageFilterDilateThenBlurBounds, |reporter| {
+    let filter1 = image_filters::dilate((2.0, 2.0), None, None);
+    let filter2 = make_drop_shadow(filter1).expect("a drop shadow filter");
+
+    let content_bounds = IRect::from_xywh(0, 0, 100, 100);
+    // For output, the [0,0,100,100] source is outset by dilate radius (2px) to [-2,-2,102,102].
+    // This is then translated by 100px and outset by 30px for the drop shadow = [68,68,232,232].
+    // Finally this is joined with the original dilate result to get [-2,-2,232,232].
+    let expected_output_bounds = IRect::from_ltrb(-2, -2, 232, 232);
+    let output_bounds = filter2.filter_bounds(
+        &content_bounds,
+        &Matrix::new_identity(),
+        MapDirection::Forward,
+        None,
+    );
+    reporter_assert!(reporter, output_bounds == expected_output_bounds);
+
+    // For input, it should be able to restrict itself to the source content.
+    let input_bounds = filter2.filter_bounds(
+        &expected_output_bounds,
+        &Matrix::new_identity(),
+        MapDirection::Reverse,
+        Some(&content_bounds),
+    );
+    reporter_assert!(reporter, input_bounds == content_bounds);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L1208-L1230 (chrome/m156)
+def_tier_test!(ImageFilterMatrixConvolution, |reporter| {
+    let _ = reporter;
+    // Check that a 1x3 filter does not cause a spurious assert.
+    let kernel = [1.0_f32, 1.0, 1.0];
+    let filter = image_filters::matrix_convolution(
+        (1, 3),
+        &kernel,
+        1.0,
+        0.0,
+        (0, 0),
+        TileMode::Repeat,
+        false,
+        None,
+        None,
+    );
+
+    let (width, height) = (16, 16);
+    let mut surf = surfaces::raster(
+        &ImageInfo::new_n32_premul((width, height), None),
+        None,
+        None,
+    )
+    .expect("a raster surface");
+    let canvas = surf.canvas();
+    canvas.clear(Color::TRANSPARENT);
+
+    let mut paint = Paint::default();
+    paint.set_image_filter(filter);
+    let rect = Rect::from_irect(IRect::from_wh(width, height));
+    canvas.draw_rect(rect, &paint);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L1232-L1265 (chrome/m156)
+def_tier_test!(ImageFilterMatrixConvolutionBorder, |reporter| {
+    let _ = reporter;
+    // Check that a filter with borders outside the target bounds
+    // does not crash.
+    let kernel = [0.0_f32, 0.0, 0.0];
+    let filter = image_filters::matrix_convolution(
+        (3, 1),
+        &kernel,
+        1.0,
+        0.0,
+        (2, 0),
+        TileMode::Clamp,
+        true,
+        None,
+        None,
+    );
+
+    let (width, height) = (10, 10);
+    let mut surf = surfaces::raster(
+        &ImageInfo::new_n32_premul((width, height), None),
+        None,
+        None,
+    )
+    .expect("a raster surface");
+    let canvas = surf.canvas();
+    canvas.clear(Color::TRANSPARENT);
+
+    let mut filter_paint = Paint::default();
+    filter_paint.set_image_filter(filter);
+    let bounds = Rect::from_iwh(1, 10);
+    let rect = Rect::from_irect(IRect::from_wh(width, height));
+    let rect_paint = Paint::default();
+    canvas.save_layer(&SaveLayerRec::default().bounds(&bounds).paint(&filter_paint));
+    canvas.draw_rect(rect, &rect_paint);
+    canvas.restore();
+});
+
+// Port of: tests/ImageFilterTest.cpp#L1293-L1296 and #L1257-L1291 (chrome/m156)
+def_tier_test!(ImageFilterMatrixConvolutionBigKernel, |reporter| {
+    // Check that a kernel that is too big for the GPU still works
+    #[rustfmt::skip]
+    let identity_kernel = [
+        0.0_f32, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ];
+    let filter = image_filters::matrix_convolution(
+        (7, 7),
+        &identity_kernel,
+        1.0,
+        0.0,
+        (0, 0),
+        TileMode::Clamp,
+        true,
+        None,
+        None,
+    )
+    .expect("a matrix convolution filter");
+
+    let src_img = create_empty_special_image(100, Color::TRANSPARENT);
+    let ctx = make_context_wh(100, 100, src_img);
+    let (result_img, offset) = filter.as_base().filter_image(&ctx).image_and_offset(&ctx);
+    reporter_assert!(reporter, result_img.is_some());
+    // `SkToBool(rContext) == resultImg->isGaneshBacked()`: there is no Ganesh context here.
+    if let Some(result_img) = result_img {
+        reporter_assert!(reporter, !result_img.is_ganesh_backed());
+        reporter_assert!(
+            reporter,
+            result_img.width() == 100 && result_img.height() == 100
+        );
+    }
+    reporter_assert!(reporter, offset.x == 0 && offset.y == 0);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L2400-L2425 (chrome/m156)
+def_tier_test!(DisplacementMapBounds, |reporter| {
+    let flood_bounds = IRect::from_xywh(20, 30, 10, 10);
+    let flood = image_filters::shader(
+        Some(shaders::color(Color::GREEN)),
+        image_filters::Dither::No,
+        Some(Rect::from_irect(flood_bounds)),
+    );
+    let tiling_bounds = IRect::from_xywh(0, 0, 200, 100);
+    let tiling = image_filters::tile(
+        &Rect::from_irect(flood_bounds),
+        &Rect::from_irect(tiling_bounds),
+        flood,
+    );
+    let displace = image_filters::displacement_map(
+        (ColorChannel::R, ColorChannel::B),
+        20.0,
+        None,
+        tiling,
+        None,
+    )
+    .expect("a displacement map filter");
+
+    // The filter graph rooted at 'displace' uses the dynamic source image for the displacement
+    // component of ::DisplacementMap, modifying the color component produced by the ::Tile. The
+    // output of the tiling filter will be 'tilingBounds', regardless of its input, so 'floodBounds'
+    // has no effect on the output. Since 'tiling' doesn't reference any dynamic source image, it
+    // also will not affect the required input bounds.
+    let input = IRect::from_xywh(20, 30, 40, 50);
+
+    // 'input' is the desired output, which directly constrains the displacement component in this
+    // specific filter graph.
+    let actual_input =
+        displace.filter_bounds(&input, &Matrix::new_identity(), MapDirection::Reverse, None);
+    reporter_assert!(reporter, input == actual_input);
+
+    // 'input' is the content bounds, which don't affect output bounds because it's only referenced
+    // by the displacement component and not the color component.
+    let actual_output =
+        displace.filter_bounds(&input, &Matrix::new_identity(), MapDirection::Forward, None);
+    let mut expected_output = tiling_bounds;
+    expected_output.outset((10, 10));
+    reporter_assert!(reporter, expected_output == actual_output);
 });
 
 // Port of: tests/ImageFilterTest.cpp#L1345-L1375 (chrome/m156)
