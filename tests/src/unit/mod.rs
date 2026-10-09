@@ -47,6 +47,8 @@ pub mod cubic_map_test;
 #[cfg(test)]
 pub mod cubic_roots_test;
 #[cfg(test)]
+pub mod cull_test_test;
+#[cfg(test)]
 pub mod dash_path_effect_test;
 #[cfg(test)]
 pub mod data_ref_test;

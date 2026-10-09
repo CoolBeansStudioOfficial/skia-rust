@@ -41,7 +41,8 @@ fn cpp_min(a: f32, b: f32) -> f32 {
 
 /// `sqrtf(sqrtf(x))`.
 #[inline]
-fn root4(x: f32) -> f32 {
+#[must_use]
+pub fn root4(x: f32) -> f32 {
     x.sqrt().sqrt()
 }
 

@@ -30354,7 +30354,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CullTestTest.cpp#L35-L82"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b1ffc471a19f26463cff0fb4831cf3c59384f6569b4735b9d371cdeb37b21345"
 
 [[test]]
