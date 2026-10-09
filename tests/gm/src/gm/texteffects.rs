@@ -102,52 +102,45 @@ fn make_fancy_blob(font: &Font, text: &[u8]) -> Option<TextBlob> {
 }
 
 // Port of: gm/texteffects.cpp#L89-L123 (chrome/m156), the GM body of fancyblobunderline
-crate::def_simple_gm!(
-    #[ignore = "see notes/gm-texteffects-fancyblobunderline.md"]
-    fancyblobunderline,
-    canvas,
-    1480,
-    1380,
-    {
-        let mut paint = Paint::default();
-        paint.set_anti_alias(true);
+crate::def_simple_gm!(fancyblobunderline, canvas, 1480, 1380, {
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
 
-        let fam = ["sans-serif", "serif", "monospace"];
-        let test = b"aAjJgGyY_|{-(~[,]qQ}pP}zZ";
-        let blob_offset = Point::new(10.0, 80.0);
+    let fam = ["sans-serif", "serif", "monospace"];
+    let test = b"aAjJgGyY_|{-(~[,]qQ}pP}zZ";
+    let blob_offset = Point::new(10.0, 80.0);
 
-        for family in fam {
-            let mut text_size: scalar = 100.0;
-            while text_size > 10.0 {
-                let font = Font::from_size(
-                    create_portable_typeface(Some(family), FontStyle::default()),
-                    text_size,
-                );
-                let u_width = text_size / 15.0;
-                paint.set_stroke_width(u_width);
-                paint.set_style(Style::Fill);
+    for family in fam {
+        let mut text_size: scalar = 100.0;
+        while text_size > 10.0 {
+            let font = Font::from_size(
+                create_portable_typeface(Some(family), FontStyle::default()),
+                text_size,
+            );
+            let u_width = text_size / 15.0;
+            paint.set_stroke_width(u_width);
+            paint.set_style(Style::Fill);
 
-                if let Some(blob) = make_fancy_blob(&font, test) {
-                    canvas.draw_text_blob(&blob, blob_offset, &paint);
-                    let u_pos = u_width;
-                    let bounds = [u_pos - u_width / 2.0, u_pos + u_width / 2.0];
-                    let intercepts = blob.get_intercepts(bounds, Some(&paint));
-                    let blob_bounds = *blob.bounds();
-                    let start = blob_bounds.left;
-                    let end = blob_bounds.right;
-                    let underline =
-                        create_underline(&intercepts, start, end, u_pos, u_width, text_size)
-                            .make_offset((blob_offset.x, blob_offset.y));
-                    paint.set_style(Style::Stroke);
-                    canvas.draw_path(&underline, &paint);
-                }
-                canvas.translate((0.0, text_size * 1.3));
-                text_size -= 20.0;
+            if let Some(blob) = make_fancy_blob(&font, test) {
+                canvas.draw_text_blob(&blob, blob_offset, &paint);
+                let u_pos = u_width;
+                let bounds = [u_pos - u_width / 2.0, u_pos + u_width / 2.0];
+                let intercepts = blob.get_intercepts(bounds, Some(&paint));
+                let blob_bounds = *blob.bounds();
+                let start = blob_bounds.left;
+                let end = blob_bounds.right;
+                let underline =
+                    create_underline(&intercepts, start, end, u_pos, u_width, text_size)
+                        .make_offset((blob_offset.x, blob_offset.y));
+                paint.set_style(Style::Stroke);
+                canvas.draw_path(&underline, &paint);
             }
-            canvas.translate((0.0, 60.0));
+            canvas.translate((0.0, text_size * 1.3));
+            text_size -= 20.0;
         }
+        canvas.translate((0.0, 60.0));
     }
-);
+});
 
 // Port of: gm/texteffects.cpp#L126-L131 (chrome/m156), make_text
 fn glyph_bytes(glyphs: &[GlyphId]) -> Vec<u8> {
