@@ -141,10 +141,10 @@ macro_rules! def_test {
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            {
-                let $reporter: &mut $crate::Reporter = &mut reporter;
-                $body
-            }
+            // The body runs as a closure, so an early `return` (after a failed assertion) ends only
+            // the body. Without it the failures recorded so far would never reach `finish()`.
+            let run = |$reporter: &mut $crate::Reporter| $body;
+            run(&mut reporter);
             reporter.finish();
         }
     };
@@ -178,10 +178,9 @@ macro_rules! def_tier_test {
                 let _guard = ::skia_rust_simd::testing::force_tier(sel)
                     .expect("tier_selections() returns checked selections");
                 reporter.set_context(Some(sel.to_string()));
-                {
-                    let $reporter: &mut $crate::Reporter = &mut reporter;
-                    $body
-                }
+                // A closure, as in `def_test!`: an early `return` ends this tier only.
+                let run = |$reporter: &mut $crate::Reporter| $body;
+                run(&mut reporter);
             }
             reporter.set_context(None);
             reporter.finish();
