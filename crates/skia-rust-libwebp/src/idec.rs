@@ -12,9 +12,11 @@
 //! partitions extended to the new data), and the rows emitted so far. A call returns
 //! `Status::Suspended` when the data runs out and `Status::Ok` when the image is complete.
 //!
-//! Not ported yet: the VP8L (lossless) incremental path (`DecodeVP8LHeader`/`DecodeVP8LData`), and
-//! the scaled output (`EmitRescaledRGB` works on whole frames here). Both report
-//! `UnsupportedFeature` until they land, and the replay test covers the lossy, unscaled cases.
+//! Lossless and lossy images are decoded incrementally, with the default options (full frame,
+//! fancy upsampling) and the replay in `tests/idec.rs` checks them against the C reference. Not
+//! ported yet: scaled output for lossy frames. `EmitRescaledRGB` works on whole frames in
+//! `output.rs`, so a lossy scaled decode reports `UnsupportedFeature`. Cropping goes through the
+//! same window code as `WebPDecode` but has no incremental replay yet.
 
 use crate::CspMode;
 use crate::alpha::{self, AlphaDecoder};
