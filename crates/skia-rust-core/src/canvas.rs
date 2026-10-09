@@ -1924,9 +1924,11 @@ impl CanvasState {
             return;
         }
         // Text attempts to apply any mask filter internally, so this draw does not need the
-        // mask filter auto-layer (`kSkipMaskFilterAutoLayer`).
-        if self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
-            crate::device::draw_glyph_run_list(self.top_device_mut(), list, paint);
+        // mask filter auto-layer (`kSkipMaskFilterAutoLayer`). The mask filter layer is never
+        // added in this port (see `AutoLayerForImageFilter::new`), so the flag is implicit.
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
+            crate::device::draw_glyph_run_list(self.top_device_mut(), list, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
         }
     }
 
