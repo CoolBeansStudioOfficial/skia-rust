@@ -18943,7 +18943,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L266-L266"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "29ae7966dd3c60b75212f2b4e8d3a0d2f88cc2330a4a720f33f5ff7067a08704"
 
 [[test]]
@@ -18952,7 +18952,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L267-L267"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "7d4d146a5a83f8a9a161026dcbf12ed5a1795ce83d0b1ebe5a17a06c9f8c5d74"
 
 [[test]]
@@ -18961,7 +18961,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L268-L268"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "be0c83266ed989bcaa29dad3e9aca54a2e1b8ef82daed0fded953010d6ddcea5"
 
 [[test]]
@@ -18970,7 +18970,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawbitmaprect.cpp#L269-L269"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "06557818149edfcc34ffc5e723b293d664069e301e5c2f0f6b32addf124d8b85"
 
 [[test]]
@@ -19024,7 +19024,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawminibitmaprect.cpp#L153-L153"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "3f74c362599f3a123f065270e1d6538c4c689d580693e3d8694ee7e044d5a856"
 
 [[test]]
@@ -19033,7 +19033,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/drawminibitmaprect.cpp#L152-L152"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "2d19893d8d96d306ca6705c863b11babe59de0c085755c30e9a2d92b748ba5dd"
 
 [[test]]
@@ -19105,7 +19105,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/dstreadshuffle.cpp#L202-L202"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "d3b69495a83f9803b7c95b5359a65c28aa0925e6a0dc6cec50ff5d3a35f644ed"
 
 [[test]]
@@ -19123,7 +19123,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/emboss.cpp#L91-L91"
 module = "raster"
-status = "todo"
+status = "failing"
+reason = "every config mismatches; the text (drawn after the emboss mask filter is still set) is black, golden is plain blue/green; see notes/gm_emboss_cpp_EmbossGM.md"
 span_hash = "b7bc2c7826b80ed3e7a88e3ca03c9daf6a827c2c5f7b799f44fc450494981622"
 
 [[test]]
@@ -19142,7 +19143,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L326-L345"
 module = "raster"
-status = "todo"
+status = "passing"
 span_hash = "457dab2f42ab9bf7e1689d6ebbd052f1d0286cf64e39c9c121a5956322c7e8d7"
 
 [[test]]
@@ -20759,8 +20760,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/hairlines.cpp#L243-L289"
 module = "raster"
-status = "todo"
-reason = "needs makeSurface/images and kPlus image draws"
+status = "passing"
 span_hash = "526c56603af5ae691e1662b82ce1b934c1fa02f4642b26f09a59536c9d490808"
 
 [[test]]
