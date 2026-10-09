@@ -261,3 +261,18 @@ const fn i_to_c(idx: u32) -> char {
         _ => panic!("invalid swizzle index"),
     }
 }
+
+/// Swizzles the byte order of 32-bit pixels, swapping R and B (RGBA <-> BGRA): `SkSwapRB`
+/// from `include/core/SkSwizzle.h`, on the `RGBA_to_BGRA` kernel.
+///
+/// - `dest` destination pixels
+/// - `src` source pixels
+///
+/// # Panics
+/// If `dest` and `src` have different lengths.
+// Port of: src/core/SkSwizzle.cpp#L12-L14 (chrome/m156)
+#[doc(alias = "SkSwapRB")]
+pub fn swap_rb(dest: &mut [u32], src: &[u32]) {
+    assert_eq!(dest.len(), src.len());
+    skia_rust_simd::swizzle::rgba_to_bgra_words(dest, src);
+}

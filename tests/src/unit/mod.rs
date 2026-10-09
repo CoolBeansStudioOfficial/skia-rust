@@ -37,7 +37,6 @@ pub mod clipper_test;
 #[cfg(test)]
 pub mod codec_anim_test;
 #[cfg(test)]
-#[cfg(test)]
 pub mod codec_exact_read_test;
 #[cfg(test)]
 pub mod codec_partial_test;
@@ -77,6 +76,7 @@ pub mod draw_path_test;
 pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
+#[cfg(test)]
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
@@ -397,6 +397,8 @@ pub mod stroker_test;
 #[cfg(test)]
 pub mod surface_test;
 #[cfg(test)]
+pub mod swizzler_test;
+#[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
 pub mod typeface_test;
@@ -404,6 +406,7 @@ pub mod typeface_test;
 pub mod vertices_test;
 #[cfg(test)]
 pub mod wangs_formula_test;
+#[cfg(test)]
 pub mod webp_test;
 #[cfg(test)]
 pub mod write_pixels_test;

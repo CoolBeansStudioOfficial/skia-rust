@@ -48985,7 +48985,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L154-L161"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fe57a233f09edd896d1f48f16189cc4373ec6dd714d065d56a8820f1235e61e6"
 
 [[test]]
@@ -48994,7 +48994,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L187-L191"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f8304969f671089b2f2edeb4d63f911bd69458bb05fb56b6b4a553c29794df1e"
 
 [[test]]
@@ -49003,7 +49003,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L193-L197"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9f3f577ab03173cd86fae1299b6e38892871128d41d8a7d523701f49def133e1"
 
 [[test]]
@@ -49012,7 +49012,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L122-L152"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "70d390fce85e9b4ed00d9284333a564d35bba750e81ff3feeff7682f5725f871"
 
 [[test]]
@@ -49022,6 +49022,7 @@ macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L73-L120"
 module = "core"
 status = "todo"
+reason = "needs the codec's SkSampler::Fill (src/codec/SkSampler.cpp), which is not ported yet"
 span_hash = "326883b46293b49ff187a9f91d5e857fb4530b2cdb448802ae2712ef677cb821"
 
 [[test]]
@@ -49030,7 +49031,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L234-L247"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1eef347862809a75b8a20d996939033a2489b113471b24f024424aa7cc8fdf61"
 
 [[test]]
