@@ -506,4 +506,10 @@ impl ComplementRect {
             vals: -rect.vals.zwxy(),
         }
     }
+
+    /// `fVals`: `[right, bottom, -left, -top]`.
+    #[must_use]
+    pub fn vals(&self) -> Float4 {
+        self.vals
+    }
 }
