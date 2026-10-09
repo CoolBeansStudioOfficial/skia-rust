@@ -1989,7 +1989,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L206-L206"
 module = "skcms"
 status = "todo"
-reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
+reason = "needs the raster pipeline with SkColorSpaceXformSteps built once and run many times; its stages borrow an arena owned by the same bench, a self-referential layout that is not ported yet"
 span_hash = "1b6308836f3e49adb695d29ca6de2310c9ae6dac8ae817086667eea5df761e4a"
 
 [[test]]
@@ -1999,7 +1999,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L207-L207"
 module = "skcms"
 status = "todo"
-reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
+reason = "needs the raster pipeline with SkColorSpaceXformSteps built once and run many times; its stages borrow an arena owned by the same bench, a self-referential layout that is not ported yet"
 span_hash = "821c609a1a38c02791848e633d9c6a54f50ed8a4e45b0c0e31ec7db0d3b23be8"
 
 [[test]]
@@ -2009,7 +2009,7 @@ macro = "DEF_BENCH"
 source = "bench/ColorSpaceBench.cpp#L208-L208"
 module = "skcms"
 status = "todo"
-reason = "needs SkRasterPipeline with SkColorSpaceXformSteps; the pipeline borrows its arena, which is not ported yet"
+reason = "needs the raster pipeline with SkColorSpaceXformSteps built once and run many times; its stages borrow an arena owned by the same bench, a self-referential layout that is not ported yet"
 span_hash = "0045cbccc7c43de213d74da10aace659e1bdd9e48787be057ff88669ede3c183"
 
 [[test]]
