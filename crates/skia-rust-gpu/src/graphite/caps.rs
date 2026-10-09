@@ -12,12 +12,14 @@
 
 use std::fmt::Debug;
 
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::size::ISize;
 
-use crate::gpu::gpu_types::Protected;
+use crate::gpu::gpu_types::{Mipmapped, Protected, Renderable};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::AttachmentDesc;
-use crate::graphite::resource_types::Discardable;
+use crate::graphite::resource_types::DstReadStrategy;
+use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo};
 use crate::graphite::texture_format::TextureFormat;
 use crate::graphite::texture_info::TextureInfo;
 
@@ -101,6 +103,16 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "getDepthStencilFormat")]
     fn get_depth_stencil_format(&self, flags: DepthStencilFlags) -> TextureFormat;
 
+    /// `getDefaultSampledTextureInfo()`.
+    #[doc(alias = "getDefaultSampledTextureInfo")]
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: ColorType,
+        mipmapped: Mipmapped,
+        is_protected: Protected,
+        renderable: Renderable,
+    ) -> TextureInfo;
+
     /// `getDefaultAttachmentTextureInfo()`.
     #[doc(alias = "getDefaultAttachmentTextureInfo")]
     fn get_default_attachment_texture_info(
@@ -117,4 +129,41 @@ pub trait Caps: Send + Sync + Debug {
     /// `isRenderableWithMSRTSS()`.
     #[doc(alias = "isRenderableWithMSRTSS")]
     fn is_renderable_with_msrtss(&self, info: &TextureInfo) -> bool;
+
+    /// `storageBufferSupport()`.
+    #[doc(alias = "storageBufferSupport")]
+    fn storage_buffer_support(&self) -> bool;
+
+    /// `clampToBorderSupport()`: whether the backend can sample with clamp-to-border tiling.
+    // Port of: src/gpu/graphite/Caps.h#L302 (chrome/m156)
+    #[doc(alias = "clampToBorderSupport")]
+    fn clamp_to_border_support(&self) -> bool;
+
+    /// `getImmutableSamplerInfo(const TextureInfo&)`. Backends can override this to return
+    /// sampler conversion info; by default there is no immutable sampler.
+    // Port of: src/gpu/graphite/Caps.h#L225-L227 (chrome/m156)
+    #[doc(alias = "getImmutableSamplerInfo")]
+    fn get_immutable_sampler_info(&self, _info: &TextureInfo) -> ImmutableSamplerInfo {
+        ImmutableSamplerInfo::default()
+    }
+
+    /// `toString(const ImmutableSamplerInfo&)`: a description of the immutable sampler for
+    /// `PaintParamsKey::toString`. Empty by default, and for backends without YCbCr samplers.
+    // Port of: src/gpu/graphite/Caps.h#L230 (chrome/m156)
+    #[doc(alias = "toString")]
+    fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
+        String::new()
+    }
+
+    /// `getDstReadStrategy()`: how a draw obtains the dst color when it needs it.
+    #[doc(alias = "getDstReadStrategy")]
+    fn get_dst_read_strategy(&self) -> DstReadStrategy;
+
+    /// `supportsHardwareAdvancedBlending()`: whether `blendEquationSupport()` is above basic.
+    #[doc(alias = "supportsHardwareAdvancedBlending")]
+    fn supports_hardware_advanced_blending(&self) -> bool;
+
+    /// `shaderCaps()->fDualSourceBlendingSupport`.
+    #[doc(alias = "fDualSourceBlendingSupport")]
+    fn dual_source_blending_support(&self) -> bool;
 }

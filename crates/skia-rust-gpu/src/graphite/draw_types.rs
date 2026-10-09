@@ -219,6 +219,28 @@ bitflags! {
 }
 
 bitflags! {
+    /// `DstUsage`: how a pipeline depends on the prior values of the dst pixels.
+    // Port of: src/gpu/graphite/DrawTypes.h#L178-L192 (chrome/m156)
+    #[doc(alias = "skgpu::graphite::DstUsage")]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub struct DstUsage: u8 {
+        /// `kNone`: prior values of dst pixels have no effect on the final written color for any
+        /// use of the pipeline.
+        const NONE = 0b0000;
+        /// `kDependsOnDst`: prior values of dst pixels can affect the final written color.
+        const DEPENDS_ON_DST = 0b0001;
+        /// `kDstReadRequired`: the prior values must be available in the fragment shader.
+        const DST_READ_REQUIRED = 0b0010;
+        /// `kAdvancedBlend`: the final color uses an advanced blend function, which may need
+        /// barriers for hardware.
+        const ADVANCED_BLEND = 0b0100;
+        /// `kDstOnlyUsedByRenderer`: the only reason for `DEPENDS_ON_DST` is analytic coverage
+        /// from the renderer.
+        const DST_ONLY_USED_BY_RENDERER = 0b1000;
+    }
+}
+
+bitflags! {
     /// `PipelineStageFlags`: the shader stages that use a storage buffer.
     // Port of: src/gpu/graphite/DescriptorData.h#L37-L42 (chrome/m156)
     #[doc(alias = "skgpu::graphite::PipelineStageFlags")]

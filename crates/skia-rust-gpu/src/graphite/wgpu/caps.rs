@@ -1986,6 +1986,28 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        WgpuCaps::get_dst_read_strategy(self)
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        // `fBlendEqSupport` keeps its `kBasic` default (`Caps.h`); the WebGPU backend never raises
+        // it, so advanced blend modes always use shader blending.
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        self.shader_caps.dual_source_blending_support
+    }
+
+    fn storage_buffer_support(&self) -> bool {
+        WgpuCaps::storage_buffer_support(self)
+    }
+
+    fn clamp_to_border_support(&self) -> bool {
+        WgpuCaps::clamp_to_border_support(self)
+    }
+
     fn max_texture_size(&self) -> i32 {
         WgpuCaps::max_texture_size(self)
     }
@@ -2044,6 +2066,17 @@ impl Caps for WgpuCaps {
 
     fn get_depth_stencil_format(&self, flags: DepthStencilFlags) -> TextureFormat {
         WgpuCaps::get_depth_stencil_format(self, flags)
+    }
+
+    // Port of: src/gpu/graphite/Caps.cpp#L310-L338 (chrome/m156)
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: ColorType,
+        mipmapped: Mipmapped,
+        is_protected: Protected,
+        renderable: Renderable,
+    ) -> TextureInfo {
+        self.get_default_sampled_texture_info(color_type, mipmapped, is_protected, renderable)
     }
 
     // Port of: src/gpu/graphite/Caps.cpp#L295-L308 (chrome/m156)

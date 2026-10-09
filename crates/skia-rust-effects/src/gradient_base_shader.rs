@@ -9,12 +9,15 @@
 //!
 //! skia-rust: Skia's subclasses of `SkGradientBaseShader` hold one as a field
 //! ([`GradientBaseShader`]) and call its [`append_stages`](GradientBaseShader::append_stages)
-//! with their own `appendGradientStages` as a closure. Serialization (`flatten`, `unflatten`),
-//! the cached colors-and-offsets bitmap (a Graphite detail) and the GPU's
-//! `forceExplicitPositions` are not ported.
+//! with their own `appendGradientStages` as a closure. The cached colors-and-offsets bitmap is
+//! kept for the Graphite key ([`GradientBaseShader::cached_bitmap`]). Serialization (`flatten`,
+//! `unflatten`) and the GPU's `forceExplicitPositions` are not ported.
+
+use std::sync::OnceLock;
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::arena_alloc::ArenaAlloc;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::{Color4f, PMColor4f};
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_primaries, named_transfer_fn};
 use skia_rust_core::color_space_priv::srgb_singleton;
@@ -63,6 +66,9 @@ pub struct GradientBaseShader {
     first_stop_is_implicit: bool,
     last_stop_is_implicit: bool,
     colors_are_opaque: bool,
+    /// `fCachedBitmap`: the colors-and-offsets bitmap of a gradient with more stops than fit
+    /// inline, made once for the Graphite key (set through [`Self::set_cached_bitmap`]).
+    cached_bitmap: OnceLock<Bitmap>,
 }
 
 /// `kDegenerateThreshold`: the default `SkScalarNearlyZero` threshold of .0024 is too big and
@@ -220,7 +226,25 @@ impl GradientBaseShader {
             first_stop_is_implicit,
             last_stop_is_implicit,
             colors_are_opaque,
+            cached_bitmap: OnceLock::new(),
         }
+    }
+
+    /// The colors-and-offsets bitmap cached for the Graphite key, if one was set
+    /// (`cachedBitmap()`). Its pixel ref identifies the gradient's texture in the proxy cache.
+    // Port of: src/shaders/gradients/SkGradientBaseShader.h#L168-L169 (chrome/m156), `cachedBitmap`
+    #[doc(alias = "cachedBitmap")]
+    #[must_use]
+    pub fn cached_bitmap(&self) -> Option<&Bitmap> {
+        self.cached_bitmap.get()
+    }
+
+    /// Caches the colors-and-offsets bitmap (`setCachedBitmap`). The first bitmap set is kept:
+    /// the key code only sets one when none is cached.
+    // Port of: src/shaders/gradients/SkGradientBaseShader.h#L170-L171 (chrome/m156), `setCachedBitmap`
+    #[doc(alias = "setCachedBitmap")]
+    pub fn set_cached_bitmap(&self, bitmap: Bitmap) {
+        let _ = self.cached_bitmap.set(bitmap);
     }
 
     /// The matrix mapping the gradient's points to the unit space (`getGradientMatrix`).

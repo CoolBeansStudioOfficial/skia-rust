@@ -31,6 +31,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{BackendApi, Protected, StdSteadyClockTimePoint};
@@ -41,15 +42,18 @@ use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOption
 use crate::graphite::caps::Caps;
 use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::graphite_types::InsertFinishInfo;
+use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::recording::{LazyProxyData, Recording};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResourceManager};
+use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
 use crate::graphite::task::upload_task::{UploadList, UploadTask};
 use crate::graphite::texture_info::TextureInfo;
 use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_utils::make_bitmap_proxy_view;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
 
 /// `kDefaultRecorderBudget`: 256 MiB.
@@ -103,6 +107,10 @@ pub trait RecorderSharedContext: Send + Sync + std::fmt::Debug {
     /// `isProtected()`.
     #[doc(alias = "isProtected")]
     fn is_protected(&self) -> Protected;
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary;
 
     /// `makeResourceProvider()`: a resource provider with its own resource cache.
     #[doc(alias = "makeResourceProvider")]
@@ -703,6 +711,13 @@ impl RecorderPriv<'_> {
         &self.recorder.resource_provider
     }
 
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    #[must_use]
+    pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        self.recorder.shared_context.shader_code_dictionary()
+    }
+
     /// `runtimeEffectDictionary()`.
     #[doc(alias = "runtimeEffectDictionary")]
     #[must_use]
@@ -715,6 +730,63 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn is_protected(&self) -> Protected {
         self.recorder.shared_context.is_protected()
+    }
+
+    /// `RecorderPriv::CreateCachedProxy(recorder, bitmap, label)`: the texture of `bitmap`, cached
+    /// in the recorder's proxy cache by the bitmap's pixel identity. `None` without a recorder
+    /// (the pre-compile path), or if the texture cannot be created.
+    ///
+    /// The cache entry is invalidated when the bitmap's pixel ref is destroyed or changes, as long
+    /// as the bitmap is shared (otherwise nothing else can change its pixels).
+    // Port of: src/gpu/graphite/Recorder.cpp#L727-L736 (chrome/m156), with the bitmap generator of
+    // src/gpu/graphite/ProxyCache.cpp#L97-L140 (chrome/m156)
+    #[doc(alias = "CreateCachedProxy")]
+    pub fn create_cached_proxy(
+        recorder: Option<&Recorder>,
+        bitmap: &Bitmap,
+        label: &str,
+    ) -> Option<Arc<TextureProxy>> {
+        debug_assert!(!bitmap.is_null());
+        let recorder = recorder?;
+        let priv_ = recorder.priv_();
+
+        let key = ProxyCache::bitmap_key(bitmap);
+        let shared = Arc::clone(priv_.resource_provider());
+        // The provider's lock is held only while the cache is consulted: creating and uploading
+        // the proxy lock it again.
+        {
+            let mut provider = shared
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(cached) = provider.proxy_cache()?.find_cache_entry(&key) {
+                return Some(cached);
+            }
+        }
+
+        // Cache miss: create the proxy and upload the bitmap into it.
+        let proxy = make_bitmap_proxy_view(recorder, &shared, bitmap, label)?.ref_proxy()?;
+
+        // The bitmap may be held by more than just this call, so add a listener that removes the
+        // entry when the pixels go away.
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let listener = if bitmap.pixel_ref().is_some() && !bitmap.pixel_ref_is_unique() {
+            let listener = provider
+                .proxy_cache()?
+                .make_unique_key_invalidation_listener(&key);
+            if let Some(pixel_ref) = bitmap.pixel_ref() {
+                pixel_ref.add_gen_id_change_listener(Some(Arc::clone(&listener)));
+            }
+            Some(listener)
+        } else {
+            None
+        };
+
+        provider
+            .proxy_cache()?
+            .insert_cache_entry(&key, Arc::clone(&proxy), listener);
+        Some(proxy)
     }
 
     /// `rootUploadList()`.

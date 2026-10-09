@@ -683,6 +683,15 @@ impl UniformManager {
         self.storage.is_empty()
     }
 
+    /// The bytes written so far, without aligning them (`fStorage`). The debug check
+    /// `PipelineDataGatherer::checkEquivalent` compares these.
+    // Port of: src/gpu/graphite/UniformManager.h#L300 (chrome/m156), `fStorage` (debug access)
+    #[cfg(debug_assertions)]
+    #[must_use]
+    pub fn storage(&self) -> &[u8] {
+        &self.storage
+    }
+
     /// Declares the uniforms the next writes must match (`setExpectedUniforms`).
     // Port of: src/gpu/graphite/UniformManager.cpp#L282-L294 (chrome/m156)
     #[cfg(debug_assertions)]
@@ -930,7 +939,7 @@ impl UniformManager {
             debug_assert!(self.struct_base_alignment > 0);
         }
 
-        let expected = self.expect.expected_uniforms[self.expect.expected_uniform_index];
+        let expected = &self.expect.expected_uniforms[self.expect.expected_uniform_index];
         self.expect.expected_uniform_index += 1;
         // Not all types are supported as uniforms or supported by UniformManager.
         debug_assert!(expected.ty().can_be_uniform_value());

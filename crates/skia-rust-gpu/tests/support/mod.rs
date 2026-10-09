@@ -29,9 +29,11 @@ use skia_rust_gpu::graphite::recorder::{Recorder, RecorderOptions, RecorderShare
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
+use skia_rust_gpu::graphite::resource_types::DstReadStrategy;
 use skia_rust_gpu::graphite::resource_types::{
-    AccessPattern, BufferType, Discardable, Ownership, ResourceType,
+    AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
+use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use skia_rust_gpu::graphite::task::compute_task::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
@@ -160,6 +162,9 @@ pub struct MockCaps {
     pub storage_alignment: usize,
     pub transfer_alignment: usize,
     pub attachment_size_policy: AttachmentSizePolicy,
+    pub storage_buffer_support: bool,
+    /// What `toString(ImmutableSamplerInfo)` returns.
+    pub immutable_sampler_string: String,
 }
 
 impl Default for MockCaps {
@@ -171,6 +176,8 @@ impl Default for MockCaps {
             storage_alignment: 16,
             transfer_alignment: 4,
             attachment_size_policy: AttachmentSizePolicy::Exact,
+            storage_buffer_support: false,
+            immutable_sampler_string: String::new(),
         }
     }
 }
@@ -178,6 +185,18 @@ impl Default for MockCaps {
 impl Caps for MockCaps {
     fn max_texture_size(&self) -> i32 {
         4096
+    }
+
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        DstReadStrategy::TextureCopy
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        false
     }
 
     fn require_ordered_recordings(&self) -> bool {
@@ -239,12 +258,41 @@ impl Caps for MockCaps {
         texture_info(desc.format, desc.sample_count, Mipmapped::No)
     }
 
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+        mipmapped: Mipmapped,
+        _is_protected: Protected,
+        _renderable: skia_rust_gpu::gpu::gpu_types::Renderable,
+    ) -> TextureInfo {
+        // The mock back end samples the formats of the color types the tests use.
+        let format = match color_type {
+            skia_rust_core::color_type::ColorType::Alpha8 => TextureFormat::A8,
+            skia_rust_core::color_type::ColorType::RGBAF16 => TextureFormat::RGBA16F,
+            _ => TextureFormat::RGBA8,
+        };
+        texture_info(format, SampleCount::One, mipmapped)
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }
 
     fn is_renderable_with_msrtss(&self, _info: &TextureInfo) -> bool {
         false
+    }
+
+    fn storage_buffer_support(&self) -> bool {
+        self.storage_buffer_support
+    }
+
+    fn clamp_to_border_support(&self) -> bool {
+        // The mock backend samples with clamp-to-border, so no decal substitution happens.
+        true
+    }
+
+    fn immutable_sampler_info_to_string(&self, _info: &ImmutableSamplerInfo) -> String {
+        self.immutable_sampler_string.clone()
     }
 }
 
@@ -318,6 +366,7 @@ impl ResourceProviderBackend for MockResourceBackend {
 pub struct MockSharedContext {
     pub caps: Arc<MockCaps>,
     pub counts: BackendCounts,
+    pub shader_dictionary: ShaderCodeDictionary,
 }
 
 impl MockSharedContext {
@@ -325,6 +374,7 @@ impl MockSharedContext {
         Arc::new(Self {
             caps: Arc::new(caps),
             counts: BackendCounts::default(),
+            shader_dictionary: ShaderCodeDictionary::new(Layout::Std140, &[]),
         })
     }
 }
@@ -340,6 +390,10 @@ impl RecorderSharedContext for MockSharedContext {
 
     fn is_protected(&self) -> Protected {
         Protected::No
+    }
+
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        &self.shader_dictionary
     }
 
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {

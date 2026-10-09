@@ -50,6 +50,20 @@ impl RadialGradient {
         }
     }
 
+    /// The center (`center()`).
+    // Port of: src/shaders/gradients/SkRadialGradient.h#L27-L30 (chrome/m156), `center()`
+    #[must_use]
+    pub fn center(&self) -> Point {
+        self.center
+    }
+
+    /// The radius (`radius()`).
+    // Port of: src/shaders/gradients/SkRadialGradient.h#L27-L30 (chrome/m156), `radius()`
+    #[must_use]
+    pub fn radius(&self) -> scalar {
+        self.radius
+    }
+
     /// The state shared by all gradients.
     #[must_use]
     pub fn base(&self) -> &GradientBaseShader {

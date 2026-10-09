@@ -1134,11 +1134,8 @@ dependencies = [
  "serde_json",
  "skia-rust-core",
  "skia-rust-effects",
- "skia-rust-pathops",
  "skia-rust-raster",
  "skia-rust-simd",
- "skia-rust-skcms",
- "skia-rust-tools",
 ]
 
 [[package]]
@@ -1198,7 +1195,10 @@ version = "0.156.0"
 dependencies = [
  "bitflags",
  "skia-rust-core",
+ "skia-rust-effects",
  "skia-rust-simd",
+ "skia-rust-skcms",
+ "skia-rust-sksl",
  "wgpu",
 ]
 

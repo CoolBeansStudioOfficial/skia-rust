@@ -20,6 +20,8 @@ use crate::graphite::caps::Caps;
 use crate::graphite::context_options::ContextOptions;
 use crate::graphite::recorder::RecorderSharedContext;
 use crate::graphite::resource_provider::ResourceProvider;
+use crate::graphite::resource_types::Layout;
+use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::wgpu::async_wait::create_checked;
 use crate::graphite::wgpu::caps::{
     COMBINED_UNIFORM_INDEX, CapsProfile, INTRINSIC_UNIFORM_BUFFER_INDEX, STORAGE_BUFFER_INDEX,
@@ -70,6 +72,7 @@ pub struct WgpuSharedContext {
     queue: wgpu::Queue,
     has_tick: bool,
     caps: Arc<WgpuCaps>,
+    shader_dictionary: ShaderCodeDictionary,
     // A noop fragment shader, it is used to workaround a Dawn validation error (Dawn doesn't
     // allow a pipeline with a color attachment but without a fragment shader).
     noop_fragment: wgpu::ShaderModule,
@@ -90,6 +93,16 @@ fn create_noop_fragment(device: &wgpu::Device, scoped: bool) -> Option<wgpu::Sha
             ),
         })
     })
+}
+
+// Port of: src/gpu/graphite/SharedContext.cpp#L30-L33 (chrome/m156)
+fn get_binding_layout(caps: &WgpuCaps) -> Layout {
+    let reqs = caps.resource_binding_requirements();
+    if caps.storage_buffer_support() {
+        reqs.storage_buffer_layout
+    } else {
+        reqs.uniform_buffer_layout
+    }
 }
 
 impl WgpuSharedContext {
@@ -119,6 +132,9 @@ impl WgpuSharedContext {
         let noop_fragment =
             create_noop_fragment(&backend_context.device, caps.allow_scoped_error_checks())?;
 
+        // (The context options carry no user-defined known runtime effects yet.)
+        let shader_dictionary = ShaderCodeDictionary::new(get_binding_layout(&caps), &[]);
+
         let uniform_buffers_bind_group_layouts =
             create_uniform_buffers_bind_group_layouts(&backend_context.device, &caps);
         let single_texture_sampler_bind_group_layout =
@@ -130,6 +146,7 @@ impl WgpuSharedContext {
             queue: backend_context.queue.clone(),
             has_tick: backend_context.has_tick,
             caps,
+            shader_dictionary,
             noop_fragment,
             uniform_buffers_bind_group_layouts,
             single_texture_sampler_bind_group_layout,
@@ -141,6 +158,13 @@ impl WgpuSharedContext {
     #[must_use]
     pub fn caps(&self) -> &Arc<WgpuCaps> {
         &self.caps
+    }
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    #[must_use]
+    pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        &self.shader_dictionary
     }
 
     /// `device()`.
@@ -327,6 +351,10 @@ impl RecorderSharedContext for WgpuSharedContext {
     fn is_protected(&self) -> Protected {
         // Dawn doesn't support protected memory.
         Protected::No
+    }
+
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        &self.shader_dictionary
     }
 
     // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L89-L98 (chrome/m156)
