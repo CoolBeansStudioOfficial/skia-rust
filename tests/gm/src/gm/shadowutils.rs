@@ -322,17 +322,38 @@ fn draw_paths(canvas: &Canvas, mode: ShadowMode) {
     }
 }
 
-crate::def_simple_gm!(#[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"] shadow_utils, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::DebugColorNoOccluders);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::DebugColorNoOccluders);
+    }
+);
 
-crate::def_simple_gm!(#[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"] shadow_utils_occl, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::DebugColorOccluders);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils_occl,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::DebugColorOccluders);
+    }
+);
 
-crate::def_simple_gm!(#[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"] shadow_utils_gray, canvas, 800, 960, {
-    draw_paths(canvas, ShadowMode::Grayscale);
-});
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils_gray,
+    canvas,
+    800,
+    960,
+    {
+        draw_paths(canvas, ShadowMode::Grayscale);
+    }
+);
 
 // Port of: gm/shadowutils.cpp#L245-L264 (chrome/m156)
 crate::def_simple_gm!(shadow_utils_gaussian_colorfilter, canvas, 512, 256, {
@@ -363,99 +384,106 @@ crate::def_simple_gm!(shadow_utils_gaussian_colorfilter, canvas, 512, 256, {
 });
 
 // Port of: gm/shadowutils.cpp#L266-L337 (chrome/m156)
-crate::def_simple_gm!(#[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"] shadow_utils_directional, canvas, 256, 384, {
-    const K_LIGHT_R_DIR: f32 = 1.0;
-    const K_HEIGHT_DIR: f32 = 12.0;
-    let rrect = Path::rrect(
-        RRect::new_rect_xy(Rect::new(-25.0, -25.0, 25.0, 25.0), 10.0, 10.0),
-        None,
-    );
-    #[allow(clippy::excessive_precision)] // the C++ float literal, kept verbatim
-    let light_pos = Point3::new(-45.0, -45.0, 77.942_286_34);
-    let ambient_color = argb(0.02 * 255.0, 0, 0, 0);
-    let spot_color = argb(0.35 * 255.0, 0, 0, 0);
-
-    let mut paint = Paint::default();
-    paint.set_anti_alias(true);
-    paint.set_color(Color::WHITE);
-    paint.set_style(Style::Fill);
-
-    // translation
-    canvas.save();
-    canvas.translate((35.0, 35.0));
-    for _ in 0..3 {
-        sh::draw_shadow(
-            canvas,
-            &rrect,
-            Point3::new(0.0, 0.0, K_HEIGHT_DIR),
-            light_pos,
-            K_LIGHT_R_DIR,
-            ambient_color,
-            spot_color,
-            ShadowFlags::DIRECTIONAL_LIGHT,
+crate::def_simple_gm!(
+    #[ignore = "see notes/gm_shadowutils_cpp-shadow_utils.md"]
+    shadow_utils_directional,
+    canvas,
+    256,
+    384,
+    {
+        const K_LIGHT_R_DIR: f32 = 1.0;
+        const K_HEIGHT_DIR: f32 = 12.0;
+        let rrect = Path::rrect(
+            RRect::new_rect_xy(Rect::new(-25.0, -25.0, 25.0, 25.0), 10.0, 10.0),
+            None,
         );
-        canvas.draw_path(&rrect, &paint);
-        canvas.translate((80.0, 0.0));
-    }
-    canvas.restore();
+        #[allow(clippy::excessive_precision)] // the C++ float literal, kept verbatim
+        let light_pos = Point3::new(-45.0, -45.0, 77.942_286_34);
+        let ambient_color = argb(0.02 * 255.0, 0, 0, 0);
+        let spot_color = argb(0.35 * 255.0, 0, 0, 0);
 
-    // rotation
-    for i in 0..3 {
+        let mut paint = Paint::default();
+        paint.set_anti_alias(true);
+        paint.set_color(Color::WHITE);
+        paint.set_style(Style::Fill);
+
+        // translation
         canvas.save();
-        canvas.translate((35.0 + 80.0 * i as f32, 105.0));
-        canvas.rotate(20.0 * (i + 1) as f32, None);
-        sh::draw_shadow(
-            canvas,
-            &rrect,
-            Point3::new(0.0, 0.0, K_HEIGHT_DIR),
-            light_pos,
-            K_LIGHT_R_DIR,
-            ambient_color,
-            spot_color,
-            ShadowFlags::DIRECTIONAL_LIGHT,
-        );
-        canvas.draw_path(&rrect, &paint);
+        canvas.translate((35.0, 35.0));
+        for _ in 0..3 {
+            sh::draw_shadow(
+                canvas,
+                &rrect,
+                Point3::new(0.0, 0.0, K_HEIGHT_DIR),
+                light_pos,
+                K_LIGHT_R_DIR,
+                ambient_color,
+                spot_color,
+                ShadowFlags::DIRECTIONAL_LIGHT,
+            );
+            canvas.draw_path(&rrect, &paint);
+            canvas.translate((80.0, 0.0));
+        }
         canvas.restore();
-    }
 
-    // scale
-    for i in 0..3 {
-        canvas.save();
-        let scale_factor = 2.0f32.powi(-i);
-        canvas.translate((35.0 + 80.0 * i as f32, 185.0));
-        canvas.scale((scale_factor, scale_factor));
-        sh::draw_shadow(
-            canvas,
-            &rrect,
-            Point3::new(0.0, 0.0, K_HEIGHT_DIR),
-            light_pos,
-            K_LIGHT_R_DIR,
-            ambient_color,
-            spot_color,
-            ShadowFlags::DIRECTIONAL_LIGHT,
-        );
-        canvas.draw_path(&rrect, &paint);
-        canvas.restore();
-    }
+        // rotation
+        for i in 0..3 {
+            canvas.save();
+            canvas.translate((35.0 + 80.0 * i as f32, 105.0));
+            canvas.rotate(20.0 * (i + 1) as f32, None);
+            sh::draw_shadow(
+                canvas,
+                &rrect,
+                Point3::new(0.0, 0.0, K_HEIGHT_DIR),
+                light_pos,
+                K_LIGHT_R_DIR,
+                ambient_color,
+                spot_color,
+                ShadowFlags::DIRECTIONAL_LIGHT,
+            );
+            canvas.draw_path(&rrect, &paint);
+            canvas.restore();
+        }
 
-    // perspective
-    for i in 0..3 {
-        canvas.save();
-        let mut mat = Matrix::default();
-        mat.set_all(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.005, 1.005);
-        canvas.translate((35.0 + 80.0 * i as f32, 265.0));
-        canvas.concat(&mat);
-        sh::draw_shadow(
-            canvas,
-            &rrect,
-            Point3::new(0.0, 0.0, K_HEIGHT_DIR),
-            light_pos,
-            K_LIGHT_R_DIR,
-            ambient_color,
-            spot_color,
-            ShadowFlags::DIRECTIONAL_LIGHT,
-        );
-        canvas.draw_path(&rrect, &paint);
-        canvas.restore();
+        // scale
+        for i in 0..3 {
+            canvas.save();
+            let scale_factor = 2.0f32.powi(-i);
+            canvas.translate((35.0 + 80.0 * i as f32, 185.0));
+            canvas.scale((scale_factor, scale_factor));
+            sh::draw_shadow(
+                canvas,
+                &rrect,
+                Point3::new(0.0, 0.0, K_HEIGHT_DIR),
+                light_pos,
+                K_LIGHT_R_DIR,
+                ambient_color,
+                spot_color,
+                ShadowFlags::DIRECTIONAL_LIGHT,
+            );
+            canvas.draw_path(&rrect, &paint);
+            canvas.restore();
+        }
+
+        // perspective
+        for i in 0..3 {
+            canvas.save();
+            let mut mat = Matrix::default();
+            mat.set_all(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.005, 1.005);
+            canvas.translate((35.0 + 80.0 * i as f32, 265.0));
+            canvas.concat(&mat);
+            sh::draw_shadow(
+                canvas,
+                &rrect,
+                Point3::new(0.0, 0.0, K_HEIGHT_DIR),
+                light_pos,
+                K_LIGHT_R_DIR,
+                ambient_color,
+                spot_color,
+                ShadowFlags::DIRECTIONAL_LIGHT,
+            );
+            canvas.draw_path(&rrect, &paint);
+            canvas.restore();
+        }
     }
-});
+);

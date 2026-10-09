@@ -4,9 +4,7 @@
 // Ported from Skia: src/utils/SkShadowTessellator.{h,cpp} (chrome/m156)
 
 //! Shadow mesh generation (`SkShadowTessellator`): builds ambient and spot shadow triangles for
-//! a path. Convex paths are fully supported. Concave paths need `SkOffsetSimplePolygon`,
-//! `SkIsSimplePolygon` and `SkTriangulateSimplePolygon`, which are not ported yet, so for them
-//! the tessellator reports failure and the caller falls back to a blur.
+//! a path, for both convex and concave paths.
 
 // The index and count casts here mirror the C++ int indices of the Skia code this file ports;
 // every value stays inside the polygon or vertex count, which is bounded by u16::MAX for meshes.
@@ -27,10 +25,13 @@ use crate::matrix::Matrix;
 use crate::path::{Iter as PathIterSk, Path, Verb};
 use crate::point::{Point, Vector, point_priv};
 use crate::point3::Point3;
-use crate::poly_utils::{compute_radial_steps, inset_convex_polygon};
-use crate::rect::Rect;
+use crate::rect::{Rect, rect_priv};
 use crate::scalar::{
     SCALAR_NEARLY_ZERO, scalar, scalar_invert, scalar_round_to_scalar, scalar_sqrt,
+};
+use crate::utils::poly_utils::{
+    compute_radial_steps, inset_convex_polygon, is_simple_polygon, offset_simple_polygon,
+    triangulate_simple_polygon,
 };
 use crate::vertices::{VertexMode, Vertices};
 
@@ -277,18 +278,15 @@ impl BaseShadowTessellator {
                 // they aren't PMColors, but the interpolation algorithm is the same
                 umbra_color = Color::new(crate::color_data::pm_lerp(
                     u32::from(UMBRA_COLOR),
-                    u32::from(UMBRA_COLOR),
+                    u32::from(PENUMBRA_COLOR),
                     ratio as u32,
                 ));
                 inset = new_inset;
             }
             // generate inner ring
-            match inset_convex_polygon(&self.path_polygon, inset) {
-                Some(poly) => inset_polygon = poly,
-                None => {
-                    // not ideal, but in this case we'll inset using the centroid
-                    self.valid_umbra = false;
-                }
+            if !inset_convex_polygon(&self.path_polygon, inset, &mut inset_polygon) {
+                // not ideal, but in this case we'll inset using the centroid
+                self.valid_umbra = false;
             }
         }
         let umbra_polygon: Vec<Point> = if inset > SCALAR_NEARLY_ZERO {
@@ -799,13 +797,239 @@ impl BaseShadowTessellator {
         }
     }
 
-    /// `computeConcaveShadow`. Not ported yet (needs `SkOffsetSimplePolygon`): reports failure so
-    /// the caller falls back to a blur.
-    // Port of: src/utils/SkShadowTessellator.cpp#L461-L494 (chrome/m156) (not yet ported)
-    #[allow(clippy::unused_self)] // uses `self` once the concave path is ported
-    fn compute_concave_shadow(&mut self, _inset: scalar, _outset: scalar) -> bool {
-        false
+    /// `appendQuad`: two triangles sharing the diagonal `index1`-`index2`.
+    // Port of: src/utils/SkShadowTessellator.cpp#L897-L910 (chrome/m156)
+    fn append_quad(&mut self, index0: i32, index1: i32, index2: i32, index3: i32) {
+        self.indices.push(index0 as u16);
+        self.indices.push(index1 as u16);
+        self.indices.push(index2 as u16);
+
+        self.indices.push(index2 as u16);
+        self.indices.push(index1 as u16);
+        self.indices.push(index3 as u16);
     }
+
+    /// `computeConcaveShadow`: insets and outsets the simple path polygon with
+    /// `SkOffsetSimplePolygon` and stitches the two rings together. Returns false when the path
+    /// polygon is not simple or an offset fails, so the caller falls back to a blur.
+    // Port of: src/utils/SkShadowTessellator.cpp#L568-L605 (chrome/m156)
+    fn compute_concave_shadow(&mut self, mut inset: scalar, outset: scalar) -> bool {
+        if !is_simple_polygon(&self.path_polygon) {
+            return false;
+        }
+
+        // shouldn't inset more than the half bounds of the polygon
+        // std::min(a, b) returns b only when b < a; mirror that exactly (NaN included).
+        let half_bounds = std_min(
+            rect_priv::half_width(&self.path_bounds).abs(),
+            rect_priv::half_height(&self.path_bounds).abs(),
+        );
+        inset = std_min(inset, half_bounds);
+
+        // generate inner ring
+        let mut umbra_polygon: Vec<Point> = Vec::new();
+        let mut umbra_indices: Vec<i32> = Vec::with_capacity(self.path_polygon.len());
+        if !offset_simple_polygon(
+            &self.path_polygon,
+            &self.path_bounds,
+            inset,
+            &mut umbra_polygon,
+            Some(&mut umbra_indices),
+        ) {
+            // TODO in C++: figure out how to handle this case
+            return false;
+        }
+
+        // generate outer ring
+        let mut penumbra_polygon: Vec<Point> = Vec::with_capacity(umbra_polygon.len());
+        let mut penumbra_indices: Vec<i32> = Vec::with_capacity(umbra_polygon.len());
+        if !offset_simple_polygon(
+            &self.path_polygon,
+            &self.path_bounds,
+            -outset,
+            &mut penumbra_polygon,
+            Some(&mut penumbra_indices),
+        ) {
+            // TODO in C++: figure out how to handle this case
+            return false;
+        }
+
+        if umbra_polygon.is_empty() || penumbra_polygon.is_empty() {
+            return false;
+        }
+
+        // attach the rings together
+        self.stitch_concave_rings(
+            &umbra_polygon,
+            &mut umbra_indices,
+            &penumbra_polygon,
+            &mut penumbra_indices,
+        );
+
+        true
+    }
+
+    /// `stitchConcaveRings`: walks the penumbra and umbra rings in order of their polygon indices
+    /// and emits the triangles between them. The umbra ring is triangulated for transparent
+    /// shadows.
+    // Port of: src/utils/SkShadowTessellator.cpp#L607-L738 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // mirrors the length of stitchConcaveRings
+    fn stitch_concave_rings(
+        &mut self,
+        umbra_polygon: &[Point],
+        umbra_indices: &mut [i32],
+        penumbra_polygon: &[Point],
+        penumbra_indices: &mut [i32],
+    ) {
+        // TODO in C++: only create and fill indexMap when fTransparent is true?
+        let mut index_map = vec![0u16; umbra_polygon.len()];
+        let path_size = self.path_polygon.len() as i32;
+
+        // find minimum indices
+        let mut min_index = 0usize;
+        let mut min = penumbra_indices[0];
+        for (i, &index) in penumbra_indices.iter().enumerate().skip(1) {
+            if index < min {
+                min = index;
+                min_index = i;
+            }
+        }
+        let mut curr_penumbra = min_index;
+
+        min_index = 0;
+        min = umbra_indices[0];
+        for (i, &index) in umbra_indices.iter().enumerate().skip(1) {
+            if index < min {
+                min = index;
+                min_index = i;
+            }
+        }
+        let mut curr_umbra = min_index;
+
+        // now find a case where the indices are equal (there should be at least one)
+        let mut max_penumbra_index = path_size - 1;
+        let mut max_umbra_index = path_size - 1;
+        while penumbra_indices[curr_penumbra] != umbra_indices[curr_umbra] {
+            if penumbra_indices[curr_penumbra] < umbra_indices[curr_umbra] {
+                penumbra_indices[curr_penumbra] += path_size;
+                max_penumbra_index = penumbra_indices[curr_penumbra];
+                curr_penumbra = (curr_penumbra + 1) % penumbra_polygon.len();
+            } else {
+                umbra_indices[curr_umbra] += path_size;
+                max_umbra_index = umbra_indices[curr_umbra];
+                curr_umbra = (curr_umbra + 1) % umbra_polygon.len();
+            }
+        }
+
+        self.positions.push(penumbra_polygon[curr_penumbra]);
+        self.colors.push(PENUMBRA_COLOR);
+        let mut prev_penumbra_index: i32 = 0;
+        self.positions.push(umbra_polygon[curr_umbra]);
+        self.colors.push(UMBRA_COLOR);
+        self.prev_umbra_index = 1;
+        index_map[curr_umbra] = 1;
+
+        let mut next_penumbra = (curr_penumbra + 1) % penumbra_polygon.len();
+        let mut next_umbra = (curr_umbra + 1) % umbra_polygon.len();
+        while penumbra_indices[next_penumbra] <= max_penumbra_index
+            || umbra_indices[next_umbra] <= max_umbra_index
+        {
+            if umbra_indices[next_umbra] == penumbra_indices[next_penumbra] {
+                // advance both one step
+                self.positions.push(penumbra_polygon[next_penumbra]);
+                self.colors.push(PENUMBRA_COLOR);
+                let curr_penumbra_index = self.positions.len() as i32 - 1;
+
+                self.positions.push(umbra_polygon[next_umbra]);
+                self.colors.push(UMBRA_COLOR);
+                let curr_umbra_index = self.positions.len() as i32 - 1;
+                index_map[next_umbra] = curr_umbra_index as u16;
+
+                self.append_quad(
+                    prev_penumbra_index,
+                    curr_penumbra_index,
+                    self.prev_umbra_index,
+                    curr_umbra_index,
+                );
+
+                prev_penumbra_index = curr_penumbra_index;
+                penumbra_indices[curr_penumbra] += path_size;
+                curr_penumbra = next_penumbra;
+                next_penumbra = (curr_penumbra + 1) % penumbra_polygon.len();
+
+                self.prev_umbra_index = curr_umbra_index;
+                umbra_indices[curr_umbra] += path_size;
+                curr_umbra = next_umbra;
+                next_umbra = (curr_umbra + 1) % umbra_polygon.len();
+            }
+
+            while penumbra_indices[next_penumbra] < umbra_indices[next_umbra]
+                && penumbra_indices[next_penumbra] <= max_penumbra_index
+            {
+                // fill out penumbra arc
+                self.positions.push(penumbra_polygon[next_penumbra]);
+                self.colors.push(PENUMBRA_COLOR);
+                let curr_penumbra_index = self.positions.len() as i32 - 1;
+
+                self.append_triangle(
+                    prev_penumbra_index,
+                    curr_penumbra_index,
+                    self.prev_umbra_index,
+                );
+
+                prev_penumbra_index = curr_penumbra_index;
+                // this ensures the ordering when we wrap around
+                penumbra_indices[curr_penumbra] += path_size;
+                curr_penumbra = next_penumbra;
+                next_penumbra = (curr_penumbra + 1) % penumbra_polygon.len();
+            }
+
+            while umbra_indices[next_umbra] < penumbra_indices[next_penumbra]
+                && umbra_indices[next_umbra] <= max_umbra_index
+            {
+                // fill out umbra arc
+                self.positions.push(umbra_polygon[next_umbra]);
+                self.colors.push(UMBRA_COLOR);
+                let curr_umbra_index = self.positions.len() as i32 - 1;
+                index_map[next_umbra] = curr_umbra_index as u16;
+
+                self.append_triangle(self.prev_umbra_index, prev_penumbra_index, curr_umbra_index);
+
+                self.prev_umbra_index = curr_umbra_index;
+                // this ensures the ordering when we wrap around
+                umbra_indices[curr_umbra] += path_size;
+                curr_umbra = next_umbra;
+                next_umbra = (curr_umbra + 1) % umbra_polygon.len();
+            }
+        }
+        // finish up by advancing both one step
+        self.positions.push(penumbra_polygon[next_penumbra]);
+        self.colors.push(PENUMBRA_COLOR);
+        let curr_penumbra_index = self.positions.len() as i32 - 1;
+
+        self.positions.push(umbra_polygon[next_umbra]);
+        self.colors.push(UMBRA_COLOR);
+        let curr_umbra_index = self.positions.len() as i32 - 1;
+        index_map[next_umbra] = curr_umbra_index as u16;
+
+        self.append_quad(
+            prev_penumbra_index,
+            curr_penumbra_index,
+            self.prev_umbra_index,
+            curr_umbra_index,
+        );
+
+        if self.transparent {
+            triangulate_simple_polygon(umbra_polygon, &index_map, &mut self.indices);
+        }
+    }
+}
+
+/// `std::min(a, b)`: returns `b` only when `b < a`, otherwise `a` (so NaN in `a` is kept).
+// Port of: std::min as used in src/utils/SkShadowTessellator.cpp#L571-L572 (chrome/m156)
+#[inline]
+fn std_min(a: scalar, b: scalar) -> scalar {
+    if b < a { b } else { a }
 }
 
 /// `sanitize_point`: clamps the point to the nearest 16th of a pixel.

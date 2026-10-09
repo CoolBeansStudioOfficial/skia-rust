@@ -153,7 +153,6 @@ pub mod pixel_ref_priv;
 pub mod pixmap;
 pub mod point;
 pub mod point3;
-pub mod poly_utils;
 pub mod quads;
 pub mod r_tree;
 pub mod random;
