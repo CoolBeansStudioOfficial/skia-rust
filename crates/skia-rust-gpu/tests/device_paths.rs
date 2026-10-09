@@ -12,8 +12,13 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::collections::HashSet;
+use std::sync::Arc;
 
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blender::Blender;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::mesh::{Attribute, AttributeType, Mesh, MeshSpecification, Mode, meshes};
+use skia_rust_core::rect::Rect;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::{Paint, Style};
@@ -259,9 +264,8 @@ fn an_even_odd_path_fill_chooses_the_even_odd_stencil_wedges() {
         &passes,
         provider(&context).stencil_tessellated_wedges(PathFillType::EvenOdd),
     );
-    let winding = render_step_ids(
-        provider(&context).stencil_tessellated_wedges(PathFillType::Winding),
-    );
+    let winding =
+        render_step_ids(provider(&context).stencil_tessellated_wedges(PathFillType::Winding));
     // The cover step is shared by both rules; the tessellated wedges are not.
     assert!(
         !bound_steps(&passes).is_subset(&winding),
@@ -352,11 +356,104 @@ fn path_draws_share_one_render_pass_in_order() {
         .commands
         .iter()
         .filter_map(|c| match c {
-            DrawPassCommand::SetScissor { scissor } => Some(
-                scissor.get_rect(IPoint::new(0, 0), IRect::from_wh(i32::MAX, i32::MAX)),
-            ),
+            DrawPassCommand::SetScissor { scissor } => {
+                Some(scissor.get_rect(IPoint::new(0, 0), IRect::from_wh(i32::MAX, i32::MAX)))
+            }
             _ => None,
         })
         .collect();
     assert_eq!(scissors, [IRect::from_wh(SIZE, SIZE)]);
+}
+
+/// A mesh specification whose fragment shader returns the local coordinates and no color.
+fn mesh_spec() -> Arc<MeshSpecification> {
+    let attributes = [Attribute {
+        ty: AttributeType::Float2,
+        offset: 0,
+        name: String::from("pos"),
+    }];
+    let result = MeshSpecification::make(
+        &attributes,
+        8,
+        &[],
+        "Varyings main(const Attributes a) { Varyings v; v.position = a.pos; return v; }",
+        "float2 main(const Varyings v) { return v.position; }",
+    );
+    result.specification.expect(&result.error)
+}
+
+/// A mesh of `points`, drawn as triangles, through `indices` if there are some.
+fn mesh_of(points: &[(f32, f32)], indices: Option<&[u16]>) -> Mesh {
+    let bytes: Vec<u8> = points
+        .iter()
+        .flat_map(|(x, y)| x.to_ne_bytes().into_iter().chain(y.to_ne_bytes()))
+        .collect();
+    let vb = meshes::make_vertex_buffer(Some(&bytes), bytes.len());
+    let bounds = Rect::from_ltrb(0.0, 0.0, SIZE as f32, SIZE as f32);
+    let result = match indices {
+        None => Mesh::make(
+            Some(mesh_spec()),
+            Mode::Triangles,
+            Some(vb),
+            points.len(),
+            0,
+            None,
+            &[],
+            bounds,
+        ),
+        Some(indices) => {
+            let index_bytes: Vec<u8> = indices.iter().flat_map(|i| i.to_ne_bytes()).collect();
+            let ib = meshes::make_index_buffer(Some(&index_bytes), index_bytes.len());
+            Mesh::make_indexed(
+                Some(mesh_spec()),
+                Mode::Triangles,
+                Some(vb),
+                points.len(),
+                0,
+                Some(ib),
+                indices.len(),
+                0,
+                None,
+                &[],
+                bounds,
+            )
+        }
+    };
+    assert!(result.error.is_empty(), "{}", result.error);
+    result.mesh
+}
+
+// A mesh draw is one draw with the mesh renderer, the steps of `renderers->mesh()`.
+// Port of: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh`
+#[test]
+fn a_mesh_draw_chooses_the_mesh_renderer() {
+    let context = context();
+    let mesh = mesh_of(&[(10.0, 10.0), (118.0, 10.0), (10.0, 118.0)], None);
+    let passes = record(&context, |device| {
+        device.draw_mesh(
+            &mesh,
+            Blender::mode(BlendMode::SrcOver),
+            &paint(Style::Fill, 0.0),
+        );
+    });
+    assert_drawn_with(&passes, provider(&context).mesh());
+}
+
+// An indexed mesh is drawn with the same renderer as an unindexed one.
+// Covers: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh` with an index buffer
+#[test]
+fn an_indexed_mesh_draw_chooses_the_mesh_renderer() {
+    let context = context();
+    let mesh = mesh_of(
+        &[(10.0, 10.0), (60.0, 10.0), (10.0, 118.0), (118.0, 118.0)],
+        Some(&[0, 1, 2, 1, 2, 3]),
+    );
+    let passes = record(&context, |device| {
+        device.draw_mesh(
+            &mesh,
+            Blender::mode(BlendMode::SrcOver),
+            &paint(Style::Fill, 0.0),
+        );
+    });
+    assert_drawn_with(&passes, provider(&context).mesh());
 }
