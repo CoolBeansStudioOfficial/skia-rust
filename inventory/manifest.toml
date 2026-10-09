@@ -16876,8 +16876,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L152-L152"
 module = "effects"
-status = "todo"
-reason = "needs text (drawOverlay uses SkFont/drawString)"
+status = "passing"
 span_hash = "559d2476777f23f1dbe6885e210cd2dd8c2a62c3c0d7c3db0c091bda859e719e"
 
 [[test]]
@@ -16886,8 +16885,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L154-L154"
 module = "effects"
-status = "todo"
-reason = "needs text (drawOverlay uses SkFont/drawString)"
+status = "passing"
 span_hash = "a0edb34c71eae556e59938bbafbaaeef94c5cefe773d11abc84c68f951dae892"
 
 [[test]]
@@ -16896,8 +16894,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurignorexform.cpp#L153-L153"
 module = "effects"
-status = "todo"
-reason = "needs text (drawOverlay uses SkFont/drawString)"
+status = "passing"
 span_hash = "6b7008989c271903fa3260085e6f426168368b4149cb2d11230e1963ebd95e63"
 
 [[test]]
@@ -16906,7 +16903,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/blurimagevmask.cpp#L69-L86"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8619da009ac0ccba2dabe84f271c9d93802102c753b44fcd5665f65b54614234"
 
 [[test]]
@@ -16915,7 +16912,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurimagevmask.cpp#L29-L67"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "beff0561eb6ca33a93d1e2b4b3d07ab229ced04fc63fe1c5e9eec9a74396e062"
 
 [[test]]
@@ -16924,7 +16921,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/blurpositioning.cpp#L22-L44"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "61f69c3b070997cbf02b98dac344e263def92337d1b42ac4b64ed311840c46fc"
 
 [[test]]
@@ -16988,8 +16985,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/blurroundrect.cpp#L96-L96"
 module = "effects"
-status = "todo"
-reason = "needs the two point conical gradient shader, Phase 3"
+status = "passing"
 span_hash = "420bd33472cd656f1226027fc1bb20656fb461eb5809ba0394b7e224a28fa0c8"
 
 [[test]]
@@ -21669,7 +21665,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imageblur.cpp#L42-L44"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c8855486a78fcad24253333da43a379ef5ef584ab18323628a4d329fbb79315c"
 
 [[test]]
@@ -21678,7 +21674,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/imageblur.cpp#L45-L47"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "fb3582eb7bb85888a9ff6147f4948e9b1a97aee92267f258fef7135819935875"
 
 [[test]]
@@ -21687,7 +21683,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imageblur2.cpp#L28-L69"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "dda3ca536d9ac421a6eb0a36c10c803b5ee52c4f00d4187394e89e4769ccceaa"
 
 [[test]]
@@ -21696,8 +21692,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imageblurclampmode.cpp#L111-L111"
 module = "effects"
-status = "todo"
-reason = "GM port attempted: ours renders the blur panels, golden is blank in the middle column and every cell mismatches (diff in target/gm-diffs); needs a golden/GM-setup check (fresh oracle not available)"
+status = "passing"
 span_hash = "a22b0158759743f979bb4b00adc5cb3204f577922f4af6d67905ac739672c447"
 
 [[test]]
@@ -21706,7 +21701,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imageblurrepeatmode.cpp#L132-L132"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "146be3a4d9612589ddf16d01754789fabb05bb0930504172076298bb1e911237"
 
 [[test]]
@@ -21715,7 +21710,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/imageblurrepeatmode.cpp#L143-L186"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "dc8a1f4b50be9b4d745b36bcca85a6bd2057a73da2dcbc4c9a344cf6ae53d411"
 
 [[test]]
@@ -21724,7 +21719,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/imageblurtiled.cpp#L78-L78"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "bff53c497d6cf475ff8cb8b533bbd363daed013985efd7ef3cfed3cc8f0fb818"
 
 [[test]]
