@@ -1,10 +1,12 @@
 //! Ports of `src/gpu/graphite/*`, one module per file pair.
 
+pub mod backend_texture;
 pub mod buffer;
 pub mod buffer_manager;
 pub mod caps;
 pub mod client_mapped_buffer_manager;
 pub mod command_buffer;
+pub mod context_options;
 pub mod context_priv;
 pub mod draw_order;
 pub mod geom;
@@ -21,6 +23,7 @@ pub mod resource_cache;
 pub mod resource_provider;
 pub mod resource_types;
 pub mod runtime_effect_dictionary;
+pub mod sampler;
 pub mod scratch_resource_manager;
 pub mod task;
 pub mod texture;
@@ -33,3 +36,4 @@ pub mod texture_utils;
 pub mod uniform;
 pub mod uniform_manager;
 pub mod upload_buffer_manager;
+pub mod wgpu;

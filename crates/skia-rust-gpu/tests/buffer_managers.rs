@@ -12,6 +12,8 @@ mod support;
 
 use std::sync::Arc;
 
+use skia_rust_core::point::IPoint;
+use skia_rust_core::rect::IRect;
 use skia_rust_gpu::gpu::gpu_types::Protected;
 use skia_rust_gpu::graphite::buffer::{BindBufferInfo, Buffer};
 use skia_rust_gpu::graphite::buffer_manager::{
@@ -200,8 +202,8 @@ fn draw_buffer_manager_transfer_buffers_copy_through_upload_buffers() {
         &mut context,
         &mut command_buffer,
         None,
-        Default::default(),
-        Default::default(),
+        IPoint::default(),
+        IRect::default(),
     ));
     let buffer = binding.buffer.unwrap();
     assert!(command_buffer.calls.contains(&Call::CopyBufferToBuffer {
@@ -314,8 +316,8 @@ fn draw_buffer_manager_clear_list_becomes_a_task() {
         &mut context,
         &mut command_buffer,
         None,
-        Default::default(),
-        Default::default(),
+        IPoint::default(),
+        IRect::default(),
     ));
     assert!(command_buffer.calls.contains(&Call::ClearBuffer {
         offset: 0,
@@ -543,7 +545,7 @@ fn static_buffer_manager_reports_failures() {
     let caps = MockCaps::default();
     let mut manager = StaticBufferManager::new(provider, &caps);
     let binding = StaticBufferBinding::new();
-    drop(manager.get_index_writer(4, &binding).unwrap());
+    let _writer = manager.get_index_writer(4, &binding).unwrap();
     let mut host = MockHost {
         tasks: Vec::new(),
         static_buffers: Vec::new(),

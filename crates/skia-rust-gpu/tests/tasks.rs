@@ -145,7 +145,7 @@ fn synchronize_to_cpu_task_gives_its_buffer_to_the_command_buffer_once() {
     // The buffer was moved into the command buffer; a replay has nothing to give.
     let mut cb = MockCommandBuffer::default();
     assert_eq!(run_commands(&mut list, &mut cb), Status::Fail);
-    assert!(cb.calls.is_empty());
+    assert_eq!(cb.calls.len(), 0);
 }
 
 #[test]
@@ -362,19 +362,19 @@ fn upload_task_describes_the_copy_of_every_mip_level() {
     let mut um = UploadBufferManager::new(rp.clone(), &caps);
 
     let base = [1u8; 64];
-    let level1 = [2u8; 16];
-    let level2 = [3u8; 4];
+    let mip1_data = [2u8; 16];
+    let mip2_data = [3u8; 4];
     let levels = [
         MipLevel {
             pixels: Some(&base),
             row_bytes: 16,
         },
         MipLevel {
-            pixels: Some(&level1),
+            pixels: Some(&mip1_data),
             row_bytes: 8,
         },
         MipLevel {
-            pixels: Some(&level2),
+            pixels: Some(&mip2_data),
             row_bytes: 4,
         },
     ];
@@ -497,7 +497,7 @@ fn image_upload_context_discards_the_upload_after_the_first_replay() {
     assert_eq!(cb.calls.len(), 1);
     let mut cb = MockCommandBuffer::default();
     assert_eq!(run_commands(&mut tasks, &mut cb), Status::Discard);
-    assert!(cb.calls.is_empty());
+    assert_eq!(cb.calls.len(), 0);
 }
 
 #[derive(Debug)]
@@ -542,7 +542,7 @@ fn conditional_upload_context_skips_and_keeps_the_upload() {
 
     let mut cb = MockCommandBuffer::default();
     assert_eq!(run_commands(&mut tasks, &mut cb), Status::Success);
-    assert!(cb.calls.is_empty());
+    assert_eq!(cb.calls.len(), 0);
     *flag.lock().unwrap() = true;
     assert_eq!(run_commands(&mut tasks, &mut cb), Status::Success);
     assert_eq!(cb.calls.len(), 1);
@@ -619,7 +619,7 @@ fn upload_to_the_replay_target_is_translated_and_cropped() {
         ),
         Status::Success
     );
-    assert!(cb.calls.is_empty());
+    assert_eq!(cb.calls.len(), 0);
 
     // A translation that moves the copy off the texture skips it too.
     assert_eq!(
@@ -630,7 +630,7 @@ fn upload_to_the_replay_target_is_translated_and_cropped() {
         ),
         Status::Success
     );
-    assert!(cb.calls.is_empty());
+    assert_eq!(cb.calls.len(), 0);
 
     // Other targets get the copy unchanged.
     assert_eq!(
@@ -794,6 +794,7 @@ fn simple_desc() -> RenderPassDesc {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)] // one long scenario, as in the C++ test
 fn render_pass_task_records_a_render_pass() {
     let (mut rp, _) = provider();
     let target = proxy(&mut rp, 8, &rgba_info(), "target");

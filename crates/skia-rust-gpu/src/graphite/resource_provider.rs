@@ -11,26 +11,26 @@
 //! wgpu back end implements (`docs/design/gpu.md` §4.1: each base/backend pair becomes one struct;
 //! the trait is the seam until that back end exists).
 //!
-//! Buffers are ported (`findOrCreateNonShareableBuffer`, `findOrCreateScratchBuffer`).
-//! Samplers and compute pipelines are not ported yet. Their keys
-//! ([`ResourceProvider::sampler_key`]) and the shared find-or-create flow
-//! ([`ResourceProvider::find_or_create_keyed`]) are, so the typed entry points are thin wrappers
-//! once the resource types exist. `createBackendTexture` /
-//! `deleteBackendTexture` / `createWrappedTexture` need `BackendTexture` (the wgpu back end).
+//! Buffers, samplers, wrapped textures and backend textures are ported. Compute pipelines are
+//! not yet (`ComputePipeline`, G11b); the shared find-or-create flow
+//! ([`ResourceProvider::find_or_create_keyed`]) is what their entry point will use.
 
 use std::sync::LazyLock;
 
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{Budgeted, StdSteadyClockTimePoint};
+use crate::gpu::sk_log::skia_log_w;
+use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer::Buffer;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::resource::{ResourceObject, ResourceRef};
 use crate::graphite::resource_cache::{ResourceCache, ScratchResourceSet};
 use crate::graphite::resource_types::{
-    AccessPattern, BufferType, ResourceType, SamplerDesc, Shareable,
+    AccessPattern, BufferType, Ownership, ResourceType, SamplerDesc, Shareable,
 };
+use crate::graphite::sampler::Sampler;
 use crate::graphite::texture::Texture;
 use crate::graphite::texture_info::TextureInfo;
 
@@ -64,6 +64,38 @@ pub trait ResourceProviderBackend: Send {
         access_pattern: AccessPattern,
         label: &str,
     ) -> Option<ResourceRef<Buffer>>;
+
+    /// `createSampler()`.
+    fn create_sampler(&mut self, _sampler_desc: &SamplerDesc) -> Option<ResourceRef<Sampler>> {
+        None
+    }
+
+    /// `onCreateWrappedTexture()`.
+    fn on_create_wrapped_texture(
+        &mut self,
+        _texture: &BackendTexture,
+        _label: &str,
+    ) -> Option<ResourceRef<Texture>> {
+        None
+    }
+
+    /// `onCreateBackendTexture()`: an invalid texture if it cannot be created.
+    fn on_create_backend_texture(
+        &mut self,
+        _dimensions: ISize,
+        _info: &TextureInfo,
+    ) -> BackendTexture {
+        BackendTexture::new()
+    }
+
+    /// `onDeleteBackendTexture()`.
+    fn on_delete_backend_texture(&mut self, _texture: &BackendTexture) {}
+
+    /// For downcasting to the concrete backend provider, which has members the base class does
+    /// not (`DawnResourceProvider`'s bind group helpers, …). `None` by default.
+    fn as_any_mut(&mut self) -> Option<&mut dyn std::any::Any> {
+        None
+    }
 
     /// `onFreeGpuResources()`.
     fn on_free_gpu_resources(&mut self) {}
@@ -287,6 +319,76 @@ impl ResourceProvider {
             }
         }
         key
+    }
+
+    /// `createWrappedTexture()`: wraps the client's backend texture.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L118-L123 (chrome/m156)
+    #[doc(alias = "createWrappedTexture")]
+    pub fn create_wrapped_texture(
+        &mut self,
+        backend_texture: &BackendTexture,
+        label: &str,
+    ) -> Option<ResourceRef<Texture>> {
+        let texture = self
+            .backend
+            .on_create_wrapped_texture(backend_texture, label);
+        debug_assert!(
+            texture
+                .as_ref()
+                .is_none_or(|texture| texture.base().ownership() == Ownership::Wrapped)
+        );
+        texture
+    }
+
+    /// `findOrCreateCompatibleSampler()`.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L125-L156 (chrome/m156)
+    #[doc(alias = "findOrCreateCompatibleSampler")]
+    pub fn find_or_create_compatible_sampler(
+        &mut self,
+        sampler_desc: &SamplerDesc,
+    ) -> Option<ResourceRef<Sampler>> {
+        // The size of the returned span accurately captures the quantity of uint32s needed
+        // whether the sampler is immutable or not. Each backend will already have encoded any
+        // specific immutable sampler details into the SamplerDesc, so there is no need to
+        // delegate to Caps to create a specific key.
+        let key = Self::sampler_key(sampler_desc);
+        self.find_or_create_keyed(&key, Budgeted::Yes, Shareable::Yes, "", None, |backend| {
+            backend.create_sampler(sampler_desc)
+        })
+    }
+
+    /// `createBackendTexture()`: creates a texture the client owns, or an invalid one if the
+    /// dimensions are empty or too large or the backend cannot create it.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L212-L236 (chrome/m156)
+    #[doc(alias = "createBackendTexture")]
+    pub fn create_backend_texture(
+        &mut self,
+        dimensions: ISize,
+        info: &TextureInfo,
+    ) -> BackendTexture {
+        let max_texture_size = self.backend.max_texture_size();
+        if dimensions.width <= 0
+            || dimensions.height <= 0
+            || dimensions.width > max_texture_size
+            || dimensions.height > max_texture_size
+        {
+            skia_log_w!(
+                "Call to createBackendTexture has requested dimensions ({}, {}) larger than the \
+                 supported gpu max texture size: {}. Or the dimensions are empty.",
+                dimensions.width,
+                dimensions.height,
+                max_texture_size
+            );
+            return BackendTexture::new();
+        }
+        self.backend.on_create_backend_texture(dimensions, info)
+    }
+
+    /// `deleteBackendTexture()`.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L276-L284 (chrome/m156)
+    #[doc(alias = "deleteBackendTexture")]
+    pub fn delete_backend_texture(&mut self, texture: &BackendTexture) {
+        self.backend.on_delete_backend_texture(texture);
     }
 
     /// `findOrCreateNonShareableBuffer()`.

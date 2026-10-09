@@ -25,7 +25,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::gpu::gpu_types::{CallbackResult, Protected};
-use crate::graphite::resource::{Resource, ResourceObject, ResourceRef, synchronize_backend_label};
+use crate::graphite::resource::{
+    AnyResourceRef, Resource, ResourceObject, ResourceRef, synchronize_backend_label,
+};
 use crate::graphite::resource_types::Ownership;
 
 /// The CPU staging block of a mapped buffer: `size()` bytes that become the buffer's contents
@@ -79,6 +81,12 @@ pub trait BufferBackend: Send + Sync + fmt::Debug + 'static {
     /// `onUpdateGpuMemorySize()`.
     fn on_update_gpu_memory_size(&self, current: usize) -> usize {
         current
+    }
+
+    /// `prepareForReturnToCache()`: lets a buffer that is mappable for writing re-map itself
+    /// before it re-enters the cache. See [`ResourceObject::prepare_for_return_to_cache`].
+    fn prepare_for_return_to_cache(&self, _take_ref: &mut dyn FnMut() -> AnyResourceRef) -> bool {
+        false
     }
 
     /// For downcasting to the concrete backend buffer.
@@ -233,6 +241,10 @@ impl ResourceObject for Buffer {
 
     fn on_update_gpu_memory_size(&self, current: usize) -> usize {
         self.backend.on_update_gpu_memory_size(current)
+    }
+
+    fn prepare_for_return_to_cache(&self, take_ref: &mut dyn FnMut() -> AnyResourceRef) -> bool {
+        self.backend.prepare_for_return_to_cache(take_ref)
     }
 
     fn is_protected(&self) -> Protected {

@@ -41,7 +41,7 @@ struct MockDevice {
 }
 
 impl MockDevice {
-    fn new() -> Rc<RefCell<dyn TrackedDevice>> {
+    fn make() -> Rc<RefCell<dyn TrackedDevice>> {
         Rc::new(RefCell::new(MockDevice {
             recorder: Cell::new(true),
             flushes: Cell::new(0),
@@ -108,10 +108,10 @@ fn recorder_device_ptr_test() {
     let inner = recorder.downgrade();
 
     // Add multiple devices to later test different patterns of destruction.
-    let device1 = MockDevice::new();
-    let device2 = MockDevice::new();
-    let device3 = MockDevice::new();
-    let device4 = MockDevice::new();
+    let device1 = MockDevice::make();
+    let device2 = MockDevice::make();
+    let device3 = MockDevice::make();
+    let device4 = MockDevice::make();
     let w1 = register(&recorder, &device1);
     let w2 = register(&recorder, &device2);
     let w3 = register(&recorder, &device3);
