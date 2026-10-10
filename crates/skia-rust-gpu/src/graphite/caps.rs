@@ -209,6 +209,10 @@ pub trait Caps: Send + Sync + Debug {
         renderable: Renderable,
     ) -> TextureInfo;
 
+    /// `getDefaultStorageTextureInfo()`.
+    #[doc(alias = "getDefaultStorageTextureInfo")]
+    fn get_default_storage_texture_info(&self, color_type: ColorType) -> TextureInfo;
+
     /// `getDefaultReadableTextureInfo()`.
     #[doc(alias = "getDefaultReadableTextureInfo")]
     fn get_default_readable_texture_info(
