@@ -704,7 +704,29 @@ impl<'a> RecorderPriv<'a> {
     /// In debug builds if a flush is already in progress.
     // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
     #[doc(alias = "flushTrackedDevices")]
-    pub fn flush_tracked_devices(&self, _flush_source: &str) {
+    pub fn flush_tracked_devices(&self, flush_source: &str) {
+        (*self).flush_tracked_devices_with_current(flush_source, None);
+    }
+
+    /// `flushTrackedDevices()` called while `current` records a draw (an atlas draw of its device
+    /// needs the atlases flushed first). `current` is mutably borrowed for the draw, so it is
+    /// flushed through this reference, where C++ reaches it through the tracked list.
+    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
+    pub fn flush_tracked_devices_and_current(
+        &self,
+        flush_source: &str,
+        current: &mut dyn TrackedDevice,
+    ) {
+        (*self).flush_tracked_devices_with_current(flush_source, Some(current));
+    }
+
+    // The body of `flushTrackedDevices()`, with the device that is borrowed for the draw (if any).
+    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
+    fn flush_tracked_devices_with_current(
+        self,
+        _flush_source: &str,
+        mut current: Option<&mut dyn TrackedDevice>,
+    ) {
         let recorder = self.recorder;
         debug_assert!(!recorder.is_flushing_tracked_devices.get());
         recorder.is_flushing_tracked_devices.set(true);
@@ -715,12 +737,17 @@ impl<'a> RecorderPriv<'a> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // flushed.
             if let Some(device) = recorder.tracked_device(index) {
-                // A device that is borrowed is the one that triggered this flush from inside its
-                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies).
-                // It flushes itself.
                 if let Ok(mut device) = device.try_borrow_mut() {
                     device.flush_pending_work();
+                } else if let Some(current) = current.as_deref_mut()
+                    && current.is_cell(&device)
+                {
+                    // The device recording the draw flushes through the reference it lent.
+                    current.flush_pending_work();
                 }
+                // Any other borrowed device is the one that triggered this flush from inside its
+                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies), and
+                // it flushes itself.
             }
             index += 1;
         }
@@ -751,35 +778,6 @@ impl<'a> RecorderPriv<'a> {
             }
         }
 
-        recorder.is_flushing_tracked_devices.set(false);
-    }
-
-    /// `flushTrackedDevices()` called while `current` records a draw: the device that is borrowed
-    /// for the draw (it cannot be borrowed again) is flushed through `current`, where C++ reaches
-    /// it through the tracked list.
-    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
-    pub fn flush_tracked_devices_and_current(
-        &self,
-        flush_source: &str,
-        current: &mut dyn TrackedDevice,
-    ) {
-        let _ = flush_source;
-        let recorder = self.recorder;
-        debug_assert!(!recorder.is_flushing_tracked_devices.get());
-        recorder.is_flushing_tracked_devices.set(true);
-        let mut index = 0;
-        while index < recorder.tracked_device_count() {
-            if let Some(device) = recorder.tracked_device(index) {
-                if let Ok(mut device) = device.try_borrow_mut() {
-                    device.flush_pending_work();
-                } else if current.is_cell(&device) {
-                    current.flush_pending_work();
-                }
-            }
-            index += 1;
-        }
-        // Issue next upload flush token (see flush_tracked_devices).
-        let _ = recorder.token_tracker.borrow_mut().issue_flush_token();
         recorder.is_flushing_tracked_devices.set(false);
     }
 
