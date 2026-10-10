@@ -19906,7 +19906,7 @@ macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L157-L157"
 module = "codec"
 status = "todo"
-reason = "needs the lossy WebP encoder (the default SkWebpEncoder options are lossy; libwebp enc/ VP8 not ported)"
+reason = "needs the lossy WebP encoder for transparent pictures (ALPH: VP8L at method 3, not ported); the WebP variant is not registered"
 span_hash = "264bec9587041a19a2420f8c893831fd714f9187232960821caabdb71f4c4d4c"
 
 [[test]]
@@ -31845,8 +31845,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L561-L607"
 module = "codec"
-status = "todo"
-reason = "needs the lossy WebP encoder (libwebp enc/ VP8, not ported; the lossless encoder is ported)"
+status = "failing"
+reason = "needs the lossy WebP encoder for pictures with transparency (ALPH chunk: VP8L at method 3, not ported)"
 span_hash = "216cc5795a107d8d142eae88d2cfda8ebdf537827cb18603bcb7caf7ead8dbd6"
 
 [[test]]
@@ -31855,8 +31855,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L508-L559"
 module = "codec"
-status = "todo"
-reason = "needs the lossy WebP encoder (libwebp enc/ VP8, not ported; the lossless encoder is ported)"
+status = "passing"
 span_hash = "3207b0d70f9880658d2a87b67e7f48f864f3b4cfa324d56b452a169bdf623d39"
 
 [[test]]

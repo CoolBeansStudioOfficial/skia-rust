@@ -43,13 +43,16 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
+)]
 
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::too_many_lines)]
-
-use super::vp8_bit_writer::VP8BitWriter;
-use super::vp8_cost::{NUM_BANDS, NUM_CTX, NUM_PROBAS, VP8EncProba, VP8Residual};
-use super::vp8_cost::record_stats;
 use super::cost_tables::VP8_ENC_BANDS;
+use super::vp8_bit_writer::VP8BitWriter;
+use super::vp8_cost::record_stats;
+use super::vp8_cost::{NUM_BANDS, NUM_CTX, NUM_PROBAS, VP8EncProba, VP8Residual};
 
 /// Port of `FIXED_PROBA_BIT`: a token whose probability is a constant, not `probas[idx]`.
 const FIXED_PROBA_BIT: u16 = 1 << 14;
@@ -86,8 +89,7 @@ impl VP8TBuffer {
     /// Port of `AddToken`: records a token with probability `proba_idx`, and counts `bit` in the
     /// statistics `stats`. Returns `bit`.
     fn add_token(&mut self, bit: u32, proba_idx: u32, stats: &mut u32) -> u32 {
-        self.tokens
-            .push(((bit as u16) << 15) | (proba_idx as u16));
+        self.tokens.push(((bit as u16) << 15) | (proba_idx as u16));
         record_stats(bit as i32, stats);
         bit
     }
@@ -186,7 +188,9 @@ impl VP8TBuffer {
                 s = (usize::from(VP8_ENC_BANDS[n]), 2);
             }
             self.add_constant_token(u32::from(sign), 128);
-            if n == 16 || self.add_token_at(proba, ct, s, 0, u32::from(n as i32 <= last), base_id) == 0 {
+            if n == 16
+                || self.add_token_at(proba, ct, s, 0, u32::from(n as i32 <= last), base_id) == 0
+            {
                 return 1; // EOB
             }
         }

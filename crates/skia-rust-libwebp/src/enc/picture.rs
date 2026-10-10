@@ -42,7 +42,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -370,8 +369,8 @@ pub fn import_rgba(
     let r_ch = if swap_rb { 2 } else { 0 };
     let b_ch = if swap_rb { 0 } else { 2 };
     // CheckNonOpaque(a_ptr, width, height, step, rgb_stride), with a_ptr = NULL when !import_alpha.
-    let has_alpha = import_alpha
-        && (0..height).any(|row| has_alpha_32b(rgb, row * rgb_stride + 3, width));
+    let has_alpha =
+        import_alpha && (0..height).any(|row| has_alpha_32b(rgb, row * rgb_stride + 3, width));
     let mut pic = YuvPicture::alloc(width, height, has_alpha);
     let uv_width = (width + 1) >> 1;
     let y_stride = pic.y_stride();
@@ -400,16 +399,8 @@ pub fn import_rgba(
         let mut rows_have_alpha = pic.a.is_some();
         if let Some(a) = pic.a.as_mut() {
             // rows_have_alpha &= !WebPExtractAlpha(a_ptr, rgb_stride, width, 2, dst_a, a_stride)
-            let all_opaque = extract_alpha(
-                rgb,
-                row0 + 3,
-                rgb_stride,
-                width,
-                2,
-                a,
-                2 * y * width,
-                width,
-            );
+            let all_opaque =
+                extract_alpha(rgb, row0 + 3, rgb_stride, width, 2, a, 2 * y * width, width);
             rows_have_alpha &= !all_opaque;
         }
         // The alpha offsets are relative to the pixel of this row, as `a_ptr` in the C code.
@@ -439,16 +430,8 @@ pub fn import_rgba(
         let mut row_has_alpha = pic.a.is_some();
         if let Some(a) = pic.a.as_mut() {
             if row_has_alpha {
-                let all_opaque = extract_alpha(
-                    rgb,
-                    row0 + 3,
-                    0,
-                    width,
-                    1,
-                    a,
-                    (height - 1) * width,
-                    0,
-                );
+                let all_opaque =
+                    extract_alpha(rgb, row0 + 3, 0, width, 1, a, (height - 1) * width, 0);
                 row_has_alpha &= !all_opaque;
             }
         }
@@ -508,9 +491,30 @@ fn accumulate_pair(
                 )
             } else {
                 (
-                    linear_to_gamma_weighted_channel(rgb, base + r_ch, base + A_CH, a, 4, rgb_stride),
-                    linear_to_gamma_weighted_channel(rgb, base + G_CH, base + A_CH, a, 4, rgb_stride),
-                    linear_to_gamma_weighted_channel(rgb, base + b_ch, base + A_CH, a, 4, rgb_stride),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + r_ch,
+                        base + A_CH,
+                        a,
+                        4,
+                        rgb_stride,
+                    ),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + G_CH,
+                        base + A_CH,
+                        a,
+                        4,
+                        rgb_stride,
+                    ),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + b_ch,
+                        base + A_CH,
+                        a,
+                        4,
+                        rgb_stride,
+                    ),
                 )
             };
             dst[k] = r as u16;
@@ -537,9 +541,30 @@ fn accumulate_pair(
                 )
             } else {
                 (
-                    linear_to_gamma_weighted_channel(rgb, base + r_ch, base + A_CH, a, 0, rgb_stride),
-                    linear_to_gamma_weighted_channel(rgb, base + G_CH, base + A_CH, a, 0, rgb_stride),
-                    linear_to_gamma_weighted_channel(rgb, base + b_ch, base + A_CH, a, 0, rgb_stride),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + r_ch,
+                        base + A_CH,
+                        a,
+                        0,
+                        rgb_stride,
+                    ),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + G_CH,
+                        base + A_CH,
+                        a,
+                        0,
+                        rgb_stride,
+                    ),
+                    linear_to_gamma_weighted_channel(
+                        rgb,
+                        base + b_ch,
+                        base + A_CH,
+                        a,
+                        0,
+                        rgb_stride,
+                    ),
                 )
             };
             dst[k] = r as u16;

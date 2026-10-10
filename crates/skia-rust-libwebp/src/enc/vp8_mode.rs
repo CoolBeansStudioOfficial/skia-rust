@@ -38,7 +38,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -52,15 +51,15 @@
 )]
 
 use super::vp8_cost::{
-    VP8Residual, fixed_costs_i16, fixed_costs_i4, fixed_costs_uv, get_residual_cost,
-    init_residual, set_residual_coeffs,
+    VP8Residual, fixed_costs_i4, fixed_costs_i16, fixed_costs_uv, get_residual_cost, init_residual,
+    set_residual_coeffs,
 };
 use super::vp8_enc_dsp::{
-    BPS, I4_MODE_OFFSETS, I4TMP, I16_MODE_OFFSETS, UV_MODE_OFFSETS, VP8Matrix, copy16x8,
-    copy4x4, disto16x16, disto4x4, ftransform, ftransform2, ftransform_wht, intra4_preds,
-    itransform, quantize2_blocks, quantize_block, sse16x16, sse16x8, sse4x4, Edge,
+    BPS, Edge, I4_MODE_OFFSETS, I4TMP, I16_MODE_OFFSETS, UV_MODE_OFFSETS, VP8Matrix, copy4x4,
+    copy16x8, disto4x4, disto16x16, ftransform, ftransform_wht, ftransform2, intra4_preds,
+    itransform, quantize_block, quantize2_blocks, sse4x4, sse16x8, sse16x16,
 };
-use super::vp8_encoder::{U_OFF_ENC, VP8EncIterator, VP8Encoder, VP8_SCAN, Y_OFF_ENC};
+use super::vp8_encoder::{U_OFF_ENC, VP8_SCAN, VP8EncIterator, VP8Encoder, Y_OFF_ENC};
 use super::vp8_quant::WEIGHT_Y;
 
 /// Port of `MAX_COST`.
@@ -131,8 +130,6 @@ pub struct ModeScore {
     /// `derr[2][3]`: the DC diffusion errors of U and V.
     pub derr: [[i8; 3]; 2],
 }
-
-
 
 /// Port of `InitScore`.
 fn init_score(rd: &mut ModeScore) {
@@ -244,8 +241,10 @@ fn quantize_single(v: &mut i16, mtx: &VP8Matrix) -> i32 {
         vv = -vv;
     }
     if vv > mtx.zthresh[0] as i32 {
-        let q_v = (((vv as u32).wrapping_mul(u32::from(mtx.iq[0])).wrapping_add(mtx.bias[0])) >> 17)
-            as i32
+        let q_v = (((vv as u32)
+            .wrapping_mul(u32::from(mtx.iq[0]))
+            .wrapping_add(mtx.bias[0]))
+            >> 17) as i32
             * i32::from(mtx.q[0]);
         let err = vv - q_v;
         *v = (if sign { -q_v } else { q_v }) as i16;
@@ -272,11 +271,17 @@ fn correct_dc_values(
         let base = ch * 4; // c = &tmp[ch * 4]: c[k][0] is tmp[16 * (ch * 4 + k)]
         let c = |k: usize| 16 * (base + k);
         let v = |k: usize| i32::from(tmp[c(k)]);
-        tmp[c(0)] = (v(0) + ((C1 * i32::from(top[0]) + C2 * i32::from(left[0])) >> (DSHIFT - DSCALE))) as i16;
+        tmp[c(0)] = (v(0)
+            + ((C1 * i32::from(top[0]) + C2 * i32::from(left[0])) >> (DSHIFT - DSCALE)))
+            as i16;
         let err0 = quantize_single(&mut tmp[c(0)], mtx);
-        tmp[c(1)] = (i32::from(tmp[c(1)]) + ((C1 * i32::from(top[1]) + C2 * err0) >> (DSHIFT - DSCALE))) as i16;
+        tmp[c(1)] = (i32::from(tmp[c(1)])
+            + ((C1 * i32::from(top[1]) + C2 * err0) >> (DSHIFT - DSCALE)))
+            as i16;
         let err1 = quantize_single(&mut tmp[c(1)], mtx);
-        tmp[c(2)] = (i32::from(tmp[c(2)]) + ((C1 * err0 + C2 * i32::from(left[1])) >> (DSHIFT - DSCALE))) as i16;
+        tmp[c(2)] = (i32::from(tmp[c(2)])
+            + ((C1 * err0 + C2 * i32::from(left[1])) >> (DSHIFT - DSCALE)))
+            as i16;
         let err2 = quantize_single(&mut tmp[c(2)], mtx);
         tmp[c(3)] = (i32::from(tmp[c(3)]) + ((C1 * err1 + C2 * err2) >> (DSHIFT - DSCALE))) as i16;
         let err3 = quantize_single(&mut tmp[c(3)], mtx);
@@ -320,7 +325,11 @@ fn reconstruct_intra16(
     let mut tmp = [0i16; 256];
     let mut n = 0;
     while n < 16 {
-        ftransform2(&yuv[src + VP8_SCAN[n]..], &yuv[ref_off + VP8_SCAN[n]..], &mut tmp[16 * n..]);
+        ftransform2(
+            &yuv[src + VP8_SCAN[n]..],
+            &yuv[ref_off + VP8_SCAN[n]..],
+            &mut tmp[16 * n..],
+        );
         n += 2;
     }
     let mut dc_tmp = [0i16; 16];
@@ -331,7 +340,11 @@ fn reconstruct_intra16(
         tmp[16 * n] = 0;
         tmp[16 * (n + 1)] = 0;
         let ac = rd.y_ac_levels.as_flattened_mut();
-        nz |= quantize2_blocks(&mut tmp[16 * n..16 * n + 32], &mut ac[16 * n..16 * n + 32], &dqm.y1) << n;
+        nz |= quantize2_blocks(
+            &mut tmp[16 * n..16 * n + 32],
+            &mut ac[16 * n..16 * n + 32],
+            &dqm.y1,
+        ) << n;
         n += 2;
     }
     let mut out = [0i16; 256];
@@ -392,7 +405,11 @@ fn reconstruct_uv(
     let mut tmp = [0i16; 128];
     let mut n = 0;
     while n < 8 {
-        ftransform2(&yuv[src + VP8_SCAN_UV[n]..], &yuv[ref_off + VP8_SCAN_UV[n]..], &mut tmp[16 * n..]);
+        ftransform2(
+            &yuv[src + VP8_SCAN_UV[n]..],
+            &yuv[ref_off + VP8_SCAN_UV[n]..],
+            &mut tmp[16 * n..],
+        );
         n += 2;
     }
     if enc.top_derr.is_some() {
@@ -401,13 +418,22 @@ fn reconstruct_uv(
     let mut n = 0;
     while n < 8 {
         let uv = rd.uv_levels.as_flattened_mut();
-        nz |= quantize2_blocks(&mut tmp[16 * n..16 * n + 32], &mut uv[16 * n..16 * n + 32], &dqm.uv) << n;
+        nz |= quantize2_blocks(
+            &mut tmp[16 * n..16 * n + 32],
+            &mut uv[16 * n..16 * n + 32],
+            &dqm.uv,
+        ) << n;
         n += 2;
     }
     let mut n = 0;
     while n < 8 {
         let r = window(yuv, ref_off + VP8_SCAN_UV[n]);
-        itransform(&r, &tmp[16 * n..], &mut yuv[yuv_out + VP8_SCAN_UV[n]..], true);
+        itransform(
+            &r,
+            &tmp[16 * n..],
+            &mut yuv[yuv_out + VP8_SCAN_UV[n]..],
+            true,
+        );
         n += 2;
     }
     nz << 16
@@ -444,18 +470,34 @@ fn pick_best_intra16(enc: &mut VP8Encoder, it: &mut VP8EncIterator, rd: &mut Mod
     for mode in 0..4 {
         let tmp_dst = it.yuv_out2 + Y_OFF_ENC; // scratch buffer
         rd_cur.mode_i16 = mode as i32;
-        rd_cur.nz = reconstruct_intra16(enc, seg, it.yuv_in, it.yuv_p, &mut it.yuv, &mut rd_cur, tmp_dst, mode);
+        rd_cur.nz = reconstruct_intra16(
+            enc,
+            seg,
+            it.yuv_in,
+            it.yuv_p,
+            &mut it.yuv,
+            &mut rd_cur,
+            tmp_dst,
+            mode,
+        );
         let tmp_dst = it.yuv_out2 + Y_OFF_ENC;
         rd_cur.d = i64::from(sse16x16(&it.yuv[src..], &it.yuv[tmp_dst..]));
         rd_cur.sd = if tlambda != 0 {
-            i64::from(mult_8b(tlambda, disto16x16(&it.yuv[src..], &it.yuv[tmp_dst..], &WEIGHT_Y)))
+            i64::from(mult_8b(
+                tlambda,
+                disto16x16(&it.yuv[src..], &it.yuv[tmp_dst..], &WEIGHT_Y),
+            ))
         } else {
             0
         };
         rd_cur.h = i64::from(fixed_costs_i16(mode));
         rd_cur.r = i64::from(get_cost_luma16(enc, it, &rd_cur));
         if is_flat_src {
-            is_flat_src = is_flat(rd_cur.y_ac_levels.as_flattened(), K_NUM_BLOCKS, FLATNESS_LIMIT_I16);
+            is_flat_src = is_flat(
+                rd_cur.y_ac_levels.as_flattened(),
+                K_NUM_BLOCKS,
+                FLATNESS_LIMIT_I16,
+            );
             if is_flat_src {
                 rd_cur.d *= 2;
                 rd_cur.sd *= 2;
@@ -584,11 +626,22 @@ fn pick_best_intra4(enc: &mut VP8Encoder, it: &mut VP8EncIterator, rd: &mut Mode
         for mode in 0..10 {
             let mut rd_tmp = ModeScore::default();
             let mut tmp_levels = [0i16; 16];
-            rd_tmp.nz = reconstruct_intra4(enc, seg, it.yuv_p, &mut it.yuv, &mut tmp_levels, src, tmp_dst, mode)
-                << it.i4;
+            rd_tmp.nz = reconstruct_intra4(
+                enc,
+                seg,
+                it.yuv_p,
+                &mut it.yuv,
+                &mut tmp_levels,
+                src,
+                tmp_dst,
+                mode,
+            ) << it.i4;
             rd_tmp.d = i64::from(sse4x4(&it.yuv[src..], &it.yuv[tmp_dst..]));
             rd_tmp.sd = if tlambda != 0 {
-                i64::from(mult_8b(tlambda, disto4x4(&it.yuv[src..], &it.yuv[tmp_dst..], &WEIGHT_Y)))
+                i64::from(mult_8b(
+                    tlambda,
+                    disto4x4(&it.yuv[src..], &it.yuv[tmp_dst..], &WEIGHT_Y),
+                ))
             } else {
                 0
             };
@@ -666,12 +719,29 @@ fn pick_best_uv(enc: &mut VP8Encoder, it: &mut VP8EncIterator, rd: &mut ModeScor
     init_score(&mut rd_best);
     for mode in 0..4 {
         let mut rd_uv = ModeScore::default();
-        rd_uv.nz = reconstruct_uv(enc, it.x, it.left_derr, seg, it.yuv_in, it.yuv_p, &mut it.yuv, &mut rd_uv, tmp_dst, mode);
+        rd_uv.nz = reconstruct_uv(
+            enc,
+            it.x,
+            it.left_derr,
+            seg,
+            it.yuv_in,
+            it.yuv_p,
+            &mut it.yuv,
+            &mut rd_uv,
+            tmp_dst,
+            mode,
+        );
         rd_uv.d = i64::from(sse16x8(&it.yuv[src..], &it.yuv[tmp_dst..]));
         rd_uv.sd = 0; // not calling TDisto here: it tends to flatten areas.
         rd_uv.h = i64::from(fixed_costs_uv(mode));
         rd_uv.r = i64::from(get_cost_uv(enc, it, &rd_uv));
-        if mode > 0 && is_flat(rd_uv.uv_levels.as_flattened(), K_NUM_BLOCKS, FLATNESS_LIMIT_UV) {
+        if mode > 0
+            && is_flat(
+                rd_uv.uv_levels.as_flattened(),
+                K_NUM_BLOCKS,
+                FLATNESS_LIMIT_UV,
+            )
+        {
             rd_uv.r += i64::from(FLATNESS_PENALTY * K_NUM_BLOCKS as i32);
         }
         set_rd_score(lambda, &mut rd_uv);

@@ -34,7 +34,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -47,9 +46,11 @@
     clippy::too_many_lines
 )]
 
-use super::tables_quant::{K_AC_TABLE, K_AC_TABLE2, K_BIAS_MATRICES, K_DC_TABLE, K_FREQ_SHARPENING, K_WEIGHT_Y};
-use super::vp8_encoder::{NUM_MB_SEGMENTS, SegmentInfo, VP8Encoder};
+use super::tables_quant::{
+    K_AC_TABLE, K_AC_TABLE2, K_BIAS_MATRICES, K_DC_TABLE, K_FREQ_SHARPENING, K_WEIGHT_Y,
+};
 use super::vp8_enc_dsp::VP8Matrix;
+use super::vp8_encoder::{NUM_MB_SEGMENTS, SegmentInfo, VP8Encoder};
 use super::vp8_filter::filter_strength_from_delta;
 
 /// Port of `QFIX` (`vp8i_enc.h`).
@@ -109,7 +110,8 @@ fn expand_matrix(m: &mut VP8Matrix, ty: usize) -> i32 {
     for i in 0..16 {
         if ty == 0 {
             // we only use sharpening for AC luma coeffs
-            m.sharpen[i] = ((i32::from(K_FREQ_SHARPENING[i]) * i32::from(m.q[i])) >> SHARPEN_BITS) as u16;
+            m.sharpen[i] =
+                ((i32::from(K_FREQ_SHARPENING[i]) * i32::from(m.q[i])) >> SHARPEN_BITS) as u16;
         } else {
             m.sharpen[i] = 0;
         }
@@ -127,7 +129,11 @@ fn check_lambda_value(v: &mut i32) {
 
 /// Port of `SetupMatrices`: the quantizer matrices and the lambdas of each segment.
 fn setup_matrices(enc: &mut VP8Encoder) {
-    let tlambda_scale = if enc.method >= 4 { enc.config.sns_strength } else { 0 };
+    let tlambda_scale = if enc.method >= 4 {
+        enc.config.sns_strength
+    } else {
+        0
+    };
     let num_segments = enc.segment_hdr.num_segments as usize;
     for i in 0..num_segments {
         let (dq_y1_dc, dq_y2_dc, dq_y2_ac, dq_uv_dc, dq_uv_ac) = (
@@ -262,7 +268,8 @@ pub fn vp8_set_segment_params(enc: &mut VP8Encoder, quality: f32) {
     for i in num_segments..NUM_MB_SEGMENTS {
         enc.dqm[i].quant = enc.base_quant;
     }
-    let mut dq_uv_ac = (enc.uv_alpha - MID_ALPHA) * (MAX_DQ_UV - MIN_DQ_UV) / (MAX_ALPHA - MIN_ALPHA);
+    let mut dq_uv_ac =
+        (enc.uv_alpha - MID_ALPHA) * (MAX_DQ_UV - MIN_DQ_UV) / (MAX_ALPHA - MIN_ALPHA);
     dq_uv_ac = dq_uv_ac * sns / 100;
     dq_uv_ac = clip(dq_uv_ac, MIN_DQ_UV, MAX_DQ_UV);
     let mut dq_uv_dc = -4 * sns / 100;

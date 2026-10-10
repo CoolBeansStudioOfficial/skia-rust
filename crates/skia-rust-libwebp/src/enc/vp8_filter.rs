@@ -41,7 +41,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 
 use super::tables_quant::K_LEVELS_FROM_DELTA;

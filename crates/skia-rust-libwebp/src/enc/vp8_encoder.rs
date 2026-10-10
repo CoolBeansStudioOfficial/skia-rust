@@ -42,7 +42,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -54,10 +53,10 @@
     clippy::needless_range_loop
 )]
 
+use super::picture::YuvPicture;
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_cost::VP8EncProba;
 use super::vp8_enc_dsp::{BPS, Edge, VP8Matrix};
-use super::picture::YuvPicture;
 use super::vp8_token::VP8TBuffer;
 
 /// Port of `NUM_MB_SEGMENTS`.
@@ -710,9 +709,36 @@ impl VP8EncIterator {
         let yin = self.yuv_in;
         let ystride = pic.y_stride();
         let uvstride = pic.uv_stride();
-        Self::import_block(&mut self.yuv, yin + Y_OFF_ENC, &pic.y, ys, ystride, w, h, 16);
-        Self::import_block(&mut self.yuv, yin + U_OFF_ENC, &pic.u, us, uvstride, uv_w, uv_h, 8);
-        Self::import_block(&mut self.yuv, yin + V_OFF_ENC, &pic.v, us, uvstride, uv_w, uv_h, 8);
+        Self::import_block(
+            &mut self.yuv,
+            yin + Y_OFF_ENC,
+            &pic.y,
+            ys,
+            ystride,
+            w,
+            h,
+            16,
+        );
+        Self::import_block(
+            &mut self.yuv,
+            yin + U_OFF_ENC,
+            &pic.u,
+            us,
+            uvstride,
+            uv_w,
+            uv_h,
+            8,
+        );
+        Self::import_block(
+            &mut self.yuv,
+            yin + V_OFF_ENC,
+            &pic.v,
+            us,
+            uvstride,
+            uv_w,
+            uv_h,
+            8,
+        );
     }
 
     /// Port of `VP8IteratorImport(it, tmp_32)` with a scratch `tmp_32`: the left and top samples
@@ -811,7 +837,14 @@ impl VP8EncIterator {
 
 /// Port of `ImportLine`: `dst[i] = src[i * stride]` for `i < len`, then `dst[i] = dst[len - 1]`
 /// up to `total_len`.
-fn import_line(src: &[u8], src_off: usize, src_stride: usize, dst: &mut [u8], len: usize, total_len: usize) {
+fn import_line(
+    src: &[u8],
+    src_off: usize,
+    src_stride: usize,
+    dst: &mut [u8],
+    len: usize,
+    total_len: usize,
+) {
     let mut s = src_off;
     for i in 0..len {
         dst[i] = src[s];
@@ -822,8 +855,7 @@ fn import_line(src: &[u8], src_off: usize, src_stride: usize, dst: &mut [u8], le
     }
 }
 
-impl VP8EncIterator {
-}
+impl VP8EncIterator {}
 
 /// Index into `enc.y_top` of luma sample `i` (`0..20`) of macroblock column `x`: the top row of
 /// the macroblock, plus the top-right samples in the next column.
