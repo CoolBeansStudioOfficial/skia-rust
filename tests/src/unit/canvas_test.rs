@@ -275,6 +275,7 @@ def_tier_test!(Canvas_saveLayer_colorSpace, |reporter| {
 });
 
 // Port of: tests/CanvasTest.cpp#L150-L159 (chrome/m156)
+#[allow(clippy::cast_precision_loss)] // SkIntToScalar of a small size
 fn multi_canvas_driver(w: i32, h: i32, mut proc: impl FnMut(&Canvas)) {
     let mut recorder = PictureRecorder::new();
     proc(recorder.begin_recording(Rect::from_wh(w as f32, h as f32), false));
@@ -309,7 +310,7 @@ fn test_restriction(reporter: &mut Reporter, canvas: &Canvas) {
     reporter_assert!(reporter, canvas.device_clip_bounds() == Some(restriction_r));
 
     let clip_r = IRect::new(4, 4, 6, 6);
-    canvas.clip_rect(Rect::from_irect(&clip_r), ClipOp::Intersect, None);
+    canvas.clip_rect(Rect::from_irect(clip_r), ClipOp::Intersect, None);
     reporter_assert!(reporter, canvas.device_clip_bounds() == Some(clip_r));
 }
 

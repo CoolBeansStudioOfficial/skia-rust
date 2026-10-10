@@ -7,8 +7,8 @@
 //!
 //! The device writes a content stream. A paint becomes a graphic state, a color or a pattern
 //! resource, and the geometry becomes path operators; blend modes PDF does not have are done with
-//! form XObjects and soft masks. Layers, patterns and masks are devices of their own that are
-//! written as form XObjects.
+//! form `XObjects` and soft masks. Layers, patterns and masks are devices of their own that are
+//! written as form `XObjects`.
 //!
 //! skia-rust: `SkPDFDevice` is split in two. [`PdfDevice`] is the `SkDevice`: the device state,
 //! the clip stack (`SkClipStackDevice`) and a handle to the [`Content`], which has the rest of the
@@ -20,6 +20,8 @@
 //! Not ported yet, and waiting for the fonts (`modules.md` M26): drawing glyphs. A glyph run
 //! draws nothing (`PdfDevice::on_draw_glyph_run_list`), where Skia's `internalDrawGlyphRun`,
 //! `drawGlyphRunAsPath` and `GlyphPositioner` write the text, so the font resources stay empty.
+
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -234,7 +236,7 @@ impl MarkedContentManager {
         self.doc.with(|d| mark.accumulate(&mut d.struct_tree, p));
     }
 
-    /// `structParentsKey`: the key (index) into the ParentsTree. Valid if marks were made.
+    /// `structParentsKey`: the key (index) into the `ParentsTree`. Valid if marks were made.
     fn struct_parents_key(&self) -> PdfParentTreeKey {
         self.struct_parents_key
     }
@@ -251,6 +253,7 @@ impl MarkedContentManager {
 
 /// This function destroys the mask and either frees or takes the pixels.
 // Port of: src/pdf/SkPDFDevice.cpp#L182-L215 (mask_to_greyscale_image, chrome/m156)
+#[allow(clippy::needless_pass_by_value)] // the C++ destroys the mask
 fn mask_to_greyscale_image(mask: MaskBuilder, doc: &DocHandle) -> Option<Image> {
     let info = ImageInfo::new(
         (mask.bounds.width(), mask.bounds.height()),
@@ -326,7 +329,7 @@ fn clean_paint(src_paint: &Paint) -> Paint {
     }
     if paint.color_filter().is_some() {
         // We assume here that PDFs all draw in sRGB.
-        remove_color_filter(&mut paint, Some(&srgb_singleton()));
+        remove_color_filter(&mut paint, Some(srgb_singleton()));
     }
     debug_assert!(paint.color_filter().is_none());
     paint
@@ -362,7 +365,7 @@ fn is_integral(r: &Rect) -> bool {
     is_integer(r.left) && is_integer(r.top) && is_integer(r.right) && is_integer(r.bottom)
 }
 
-/// A draw in progress (`ScopedContentEntry`): the blend mode of the paint, the form XObject of
+/// A draw in progress (`ScopedContentEntry`): the blend mode of the paint, the form `XObject` of
 /// what was already drawn when the blend mode needs the destination, and the shape of the draw.
 // Port of: src/pdf/SkPDFDevice.cpp#L317-L406 (ScopedContentEntry, chrome/m156)
 #[derive(Debug)]
@@ -413,6 +416,7 @@ impl ScopedEntry {
 /// resources it uses, the graphic stack and the marked content.
 // Port of: src/pdf/SkPDFDevice.h#L110-L195 (chrome/m156)
 #[derive(Debug)]
+#[allow(clippy::struct_field_names)] // mirrors SkPDFDevice::fContent and fContentBuffer
 pub(crate) struct Content {
     doc: DocHandle,
     size: ISize,
@@ -806,7 +810,7 @@ impl Content {
         dst: PdfIndirectReference,
         shape: Option<&Path>,
     ) {
-        debug_assert!(blend_mode != BlendMode::Dst);
+        debug_assert_ne!(blend_mode, BlendMode::Dst);
         if treat_as_regular_pdf_blend_mode(blend_mode) {
             debug_assert!(!dst.is_valid());
             return;
@@ -978,7 +982,7 @@ impl Content {
         }
     }
 
-    /// `makeFormXObjectFromDevice(bbox, alpha)`: the content of the device as a form XObject; the
+    /// `makeFormXObjectFromDevice(bbox, alpha)`: the content of the device as a form `XObject`; the
     /// device is empty afterwards.
     // Port of: src/pdf/SkPDFDevice.cpp#L1263-L1288 (chrome/m156)
     pub(crate) fn make_form_x_object_from_device_bounds(
@@ -1054,17 +1058,17 @@ impl Content {
         shape: Option<&Path>,
     ) {
         self.begin_mark();
-        if self.mark_manager.has_active_mark() {
-            if let Some(shape) = shape {
-                // Destinations are in absolute coordinates.
-                let page_xform = self.page_xform(ctx);
-                // The shape already has localToDevice applied.
+        if self.mark_manager.has_active_mark()
+            && let Some(shape) = shape
+        {
+            // Destinations are in absolute coordinates.
+            let page_xform = self.page_xform(ctx);
+            // The shape already has localToDevice applied.
 
-                let shape_bounds = shape.compute_tight_bounds();
-                let shape_bounds = page_xform.map_rect(shape_bounds).0;
-                self.mark_manager
-                    .accumulate(Point::new(shape_bounds.left, shape_bounds.bottom)); // y-up
-            }
+            let shape_bounds = shape.compute_tight_bounds();
+            let shape_bounds = page_xform.map_rect(shape_bounds).0;
+            self.mark_manager
+                .accumulate(Point::new(shape_bounds.left, shape_bounds.bottom)); // y-up
         }
 
         debug_assert!(x_object.is_valid());
@@ -1362,6 +1366,7 @@ impl Content {
             self.mark_manager
                 .accumulate(Point::new(path_bounds.left, path_bounds.bottom)); // y-up
         }
+        #[allow(clippy::items_after_statements)] // mirrors the C++ function-local constant
         const TOLERANCE_SCALE: f32 = 0.0625; // smaller = better conics (circles).
         let matrix_scale = matrix.map_radius(1.0);
         let tolerance = if matrix_scale > 0.0 {
@@ -1491,22 +1496,22 @@ impl Content {
         // First, figure out the src->dst transform and subset the image if needed.
         let mut bounds = subset_image.bounds();
         let mut src_rect = src.copied().unwrap_or_else(|| Rect::from_irect(bounds));
-        let mut transform = Matrix::rect_to_rect_or_identity(&src_rect, dst, None);
+        let mut transform = Matrix::rect_to_rect_or_identity(src_rect, dst, None);
         let mut original_transform = transform.clone();
-        if let Some(src) = src {
-            if *src != Rect::from_irect(bounds) {
-                if !src_rect.intersect(Rect::from_irect(bounds)) {
-                    return;
-                }
-                bounds = src_rect.round_out();
-                transform.pre_translate((bounds.x() as f32, bounds.y() as f32));
-                if bounds != image_subset.image().expect("an image").bounds() {
-                    image_subset = image_subset.subset(&bounds);
-                    did_subset = true;
-                }
-                if !image_subset.is_valid() {
-                    return;
-                }
+        if let Some(src) = src
+            && *src != Rect::from_irect(bounds)
+        {
+            if !src_rect.intersect(Rect::from_irect(bounds)) {
+                return;
+            }
+            bounds = src_rect.round_out();
+            transform.pre_translate((bounds.x() as f32, bounds.y() as f32));
+            if bounds != image_subset.image().expect("an image").bounds() {
+                image_subset = image_subset.subset(&bounds);
+                did_subset = true;
+            }
+            if !image_subset.is_valid() {
+                return;
             }
         }
 
@@ -1774,7 +1779,7 @@ impl Content {
                     pdfimage = Some(made);
                 }
                 let pdfimage = pdfimage.expect("an image");
-                debug_assert!(pdfimage != PdfIndirectReference::default());
+                debug_assert_ne!(pdfimage, PdfIndirectReference::default());
                 self.draw_form_x_object(ctx, pdfimage, Some(&shape));
             }
         }
@@ -2139,18 +2144,14 @@ impl Device for PdfDevice {
     /// `drawVertices`: not implemented in Skia either.
     // Port of: src/pdf/SkPDFDevice.cpp#L1077-L1083 (chrome/m156)
     fn draw_vertices(&mut self, _: &Vertices, _: Blender, _: &Paint, _: bool) {
-        if self.has_empty_clip() {
-            return;
-        }
+        if self.has_empty_clip() {}
         // TODO: implement drawVertices
     }
 
     /// `drawMesh`: not implemented in Skia either.
     // Port of: src/pdf/SkPDFDevice.cpp#L1085-L1090 (chrome/m156)
     fn draw_mesh(&mut self, _: &Mesh, _: Blender, _: &Paint) {
-        if self.has_empty_clip() {
-            return;
-        }
+        if self.has_empty_clip() {}
         // TODO: implement drawMesh
     }
 

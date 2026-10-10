@@ -151,7 +151,7 @@ impl Hash for GradientKey {
 fn unit_to_points_matrix(pts: &[Point; 2]) -> Matrix {
     let mut vec = Point::new(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
     let mag = vec.length();
-    let inv = if mag != 0.0 { scalar_invert(mag) } else { 0.0 };
+    let inv = if mag == 0.0 { 0.0 } else { scalar_invert(mag) };
 
     vec.scale(inv);
     let mut matrix = Matrix::new_identity();
@@ -260,7 +260,7 @@ fn write_gradient_ranges(
     first: bool,
     result: &mut dyn WStream,
 ) {
-    debug_assert!(!range_ends.is_empty());
+    debug_assert_ne!(range_ends, []);
 
     let range_end_index = range_ends[range_ends.len() - 1];
     let range_end = info.color_offsets[range_end_index];
@@ -1074,13 +1074,13 @@ fn create_pattern_fill_content(gs_index: i32, pattern_index: i32, bounds: &Rect)
 
 // Port of: src/pdf/SkPDFGradientShader.cpp#L909-L917 (has_alpha, chrome/m156)
 fn key_has_alpha(key: &GradientKey) -> bool {
-    debug_assert!(key.gradient_type != GradientType::None);
+    debug_assert_ne!(key.gradient_type, GradientType::None);
     key.info.colors.iter().any(|c| !c.is_opaque())
 }
 
 // Port of: src/pdf/SkPDFGradientShader.cpp#L919-L927 (has_alpha, chrome/m156)
 fn shader_has_alpha(shader: &Shader, key: &GradientKey) -> bool {
-    debug_assert!(key.gradient_type != GradientType::None);
+    debug_assert_ne!(key.gradient_type, GradientType::None);
     if shader.is_opaque() {
         return false;
     }
@@ -1089,7 +1089,7 @@ fn shader_has_alpha(shader: &Shader, key: &GradientKey) -> bool {
 
 // Port of: src/pdf/SkPDFGradientShader.cpp#L953-L977 (create_smask_graphic_state, chrome/m156)
 fn create_smask_graphic_state(doc: &DocHandle, state: &GradientKey) -> PdfIndirectReference {
-    debug_assert!(state.gradient_type != GradientType::None);
+    debug_assert_ne!(state.gradient_type, GradientType::None);
     let mut info = state.info.clone();
     for color in &mut info.colors {
         let alpha = color.a;
@@ -1116,7 +1116,7 @@ fn create_smask_graphic_state(doc: &DocHandle, state: &GradientKey) -> PdfIndire
 
 // Port of: src/pdf/SkPDFGradientShader.cpp#L979-L1012 (make_alpha_function_shader, chrome/m156)
 fn make_alpha_function_shader(doc: &DocHandle, state: &GradientKey) -> PdfIndirectReference {
-    debug_assert!(state.gradient_type != GradientType::None);
+    debug_assert_ne!(state.gradient_type, GradientType::None);
     let mut opaque_info = state.info.clone();
     let keep_alpha = opaque_info.premul_interp;
     if !keep_alpha {
@@ -1158,7 +1158,7 @@ fn make_key(shader: &Shader, canvas_transform: &Matrix, bbox: &IRect) -> Gradien
     let base = shader.as_base();
     let mut probe = GradientInfo::default();
     let gradient_type = base.as_gradient(Some(&mut probe), None);
-    debug_assert!(GradientType::None != gradient_type);
+    debug_assert_ne!(GradientType::None, gradient_type);
     let color_count = probe.color_count;
     debug_assert!(color_count > 0);
     let mut colors = vec![Color4f::default(); color_count];
@@ -1180,7 +1180,9 @@ fn make_key(shader: &Shader, canvas_transform: &Matrix, bbox: &IRect) -> Gradien
     if premul_interp {
         let mut changed_by_premul = false;
         for c in &mut colors {
-            if c.a != 1.0 {
+            #[allow(clippy::float_cmp)] // exact comparison, as in Skia
+            let changed = c.a != 1.0;
+            if changed {
                 changed_by_premul = true;
             }
             let pm = c.premul();

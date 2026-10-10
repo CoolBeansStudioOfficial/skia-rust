@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: src/pdf/SkPDFFormXObject.{h,cpp} (chrome/m156)
 
-//! `SkPDFMakeFormXObject`: a form XObject, the PDF object a layer, a soft mask or a pattern cell
+//! `SkPDFMakeFormXObject`: a form `XObject`, the PDF object a layer, a soft mask or a pattern cell
 //! is drawn into.
 
 use skia_rust_core::matrix::Matrix;
@@ -12,7 +12,7 @@ use crate::document::DocHandle;
 use crate::types::{PdfArray, PdfDict, PdfIndirectReference, PdfParentTreeKey};
 use crate::utils::matrix_to_array;
 
-/// `SkPDFMakeFormXObject`: writes `content` as a transparency-group form XObject with the given
+/// `SkPDFMakeFormXObject`: writes `content` as a transparency-group form `XObject` with the given
 /// bounding box and resources.
 // Port of: src/pdf/SkPDFFormXObject.cpp#L17-L53 (chrome/m156)
 #[doc(alias = "SkPDFMakeFormXObject")]

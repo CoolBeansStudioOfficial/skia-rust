@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: src/pdf/SkPDFResourceDict.{h,cpp} (chrome/m156)
 
-//! The resource dictionary of a page or form XObject, and the names its entries are used by.
+//! The resource dictionary of a page or form `XObject`, and the names its entries are used by.
 
 use skia_rust_core::stream::WStream;
 

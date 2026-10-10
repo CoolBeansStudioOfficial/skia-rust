@@ -142,15 +142,15 @@ impl KeyedImage {
     #[must_use]
     pub fn subset(&self, subset: &IRect) -> KeyedImage {
         let mut img = KeyedImage::default();
-        if let Some(image) = &self.image {
-            if let Some(subset) = IRect::intersect(subset, &image.bounds()) {
-                img.image = image.make_subset(subset, RequiredProperties::default());
-                if img.image.is_some() {
-                    img.key = BitmapKey {
-                        subset: subset.with_offset(self.key.subset.top_left()),
-                        id: self.key.id,
-                    };
-                }
+        if let Some(image) = &self.image
+            && let Some(subset) = IRect::intersect(subset, &image.bounds())
+        {
+            img.image = image.make_subset(subset, RequiredProperties::default());
+            if img.image.is_some() {
+                img.key = BitmapKey {
+                    subset: subset.with_offset(self.key.subset.top_left()),
+                    id: self.key.id,
+                };
             }
         }
         img

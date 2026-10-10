@@ -11,6 +11,8 @@
 //! [`DeviceState`], so the base class is this struct, which the device embeds. Its methods take
 //! the `DeviceState` where Skia reads `this->localToDevice()` or the image info.
 
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
+
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::clip_stack::{
     B2TIter, BoundsType, ClipStack, DeviceSpaceType, Iter, IterStart,
@@ -133,8 +135,8 @@ impl ClipStackDevice {
     // Port of: src/core/SkClipStackDevice.cpp#L70-L81 (chrome/m156)
     #[must_use]
     pub fn is_clip_anti_aliased(&self) -> bool {
-        let mut iter = B2TIter::new(&self.clip_stack);
-        while let Some(element) = iter.next() {
+        let iter = B2TIter::new(&self.clip_stack);
+        for element in iter {
             if element.is_aa() {
                 return true;
             }
@@ -182,8 +184,8 @@ impl ClipStackDevice {
             bounds_rgn.set_rect(IRect::new(0, 0, state.width(), state.height()));
 
             *rgn = bounds_rgn.clone();
-            let mut iter = B2TIter::new(&self.clip_stack);
-            while let Some(elem) = iter.next() {
+            let iter = B2TIter::new(&self.clip_stack);
+            for elem in iter {
                 let tmp_path = elem.as_device_space_path();
                 let mut tmp_rgn = Region::new();
                 tmp_rgn.set_path(&tmp_path, &bounds_rgn);
