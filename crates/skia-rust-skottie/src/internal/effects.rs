@@ -12,8 +12,12 @@
 
 use std::rc::Rc;
 
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::picture::Picture;
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
+use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::{MaskShaderEffect, RenderNode};
 
 use crate::json::{ArrayValue, ObjectValue, Value};
@@ -29,6 +33,7 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
 mod cc_toner;
 mod color;
+mod displacement_map;
 mod convolution;
 mod corner_pin;
 mod filters;
@@ -70,6 +75,22 @@ pub(super) struct MaskInfo {
 // Port of: modules/skottie/src/effects/Effects.cpp#L207-L209 (chrome/m156) (`MaskShaderEffectBase::MaskShaderEffectBase`)
 pub(super) fn make_mask_shader_node(layer: Rc<dyn RenderNode>) -> Rc<MaskShaderEffect> {
     MaskShaderEffect::make(Some(layer), None).expect("the layer is not null")
+}
+
+/// Records the content of a node into a picture (`get_content_picture` of the displacement and
+/// bulge effects): the node is revalidated, and rendered into a recording of its bounds.
+// Port of: modules/skottie/src/effects/DisplacementMapEffect.cpp#L144-L153 (chrome/m156) (`get_content_picture`)
+pub(super) fn get_content_picture(
+    node: Option<&Rc<dyn RenderNode>>,
+    ic: Option<&mut InvalidationController>,
+    ctm: &Matrix,
+) -> Option<Picture> {
+    let node = node?;
+    let bounds = node.revalidate(ic, ctm);
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(bounds, false);
+    node.render(canvas, None);
+    recorder.finish_recording_as_picture(None)
 }
 
 /// Pushes a mask to its node (`MaskShaderEffectBase::onSync`).
@@ -138,6 +159,10 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         color::attach_brightness_contrast_effect,
     ),
     ("ADBE Corner Pin", corner_pin::attach_corner_pin_effect),
+    (
+        "ADBE Displacement Map",
+        displacement_map::attach_displacement_map_effect,
+    ),
     ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
