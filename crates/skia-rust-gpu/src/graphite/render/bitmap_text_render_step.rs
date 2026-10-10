@@ -7,6 +7,7 @@
 //! [`BitmapTextRenderStep`]: draws glyph masks (A8, LCD or color) from the text atlas, as a
 //! four-vertex triangle strip per glyph instance.
 
+use std::fmt::Write as _;
 use std::sync::Arc;
 
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
@@ -102,7 +103,7 @@ pub(crate) fn atlas_textures_and_samplers_sksl(
 
     for i in 0..NUM_TEXT_ATLAS_TEXTURES {
         result += &emit_sampler_layout(binding_reqs, next_binding_index);
-        result += &format!(" sampler2D {prefix}_{i};\n");
+        let _ = writeln!(result, " sampler2D {prefix}_{i};");
     }
 
     result
@@ -119,12 +120,12 @@ pub(crate) fn add_atlas_textures(
     let sampler = SamplerDesc::new(&SamplingOptions::from(filter), TileMode::Clamp);
     // write textures and samplers
     for proxy in proxies.iter().take(NUM_TEXT_ATLAS_TEXTURES) {
-        gatherer.add(Some(Arc::clone(proxy)), sampler.clone());
+        gatherer.add(Some(Arc::clone(proxy)), sampler);
     }
     // If the atlas has less than 4 active proxies we still need to set up samplers for the
     // shader.
     for _ in proxies.len()..NUM_TEXT_ATLAS_TEXTURES {
-        gatherer.add(Some(Arc::clone(&proxies[0])), sampler.clone());
+        gatherer.add(Some(Arc::clone(&proxies[0])), sampler);
     }
 }
 

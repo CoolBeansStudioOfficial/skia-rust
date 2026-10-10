@@ -39,7 +39,7 @@ const UNIFORMS: [Uniform; 4] = [
 
 const APPEND_ATTRS: [Attribute; 7] = TEXT_APPEND_ATTRS;
 
-/// The vertex SkSL of the distance field text steps.
+/// The vertex `SkSL` of the distance field text steps.
 // Port of: src/gpu/graphite/render/SDFTextRenderStep.cpp#L90-L106 (chrome/m156)
 pub(crate) const SDF_VERTEX_SKSL: &str = "texIndex = half(indexAndFlags.x);\
      float4 devPosition = text_vertex_fn(float2(sk_VertexID >> 1, sk_VertexID & 1), \

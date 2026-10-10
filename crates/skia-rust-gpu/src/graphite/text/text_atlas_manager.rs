@@ -150,6 +150,7 @@ fn expand_bits(
 /// # Panics
 /// If the glyph has no image, or there is no conversion from the glyph's format.
 // Port of: src/gpu/graphite/text/TextAtlasManager.cpp#L134-L228 (chrome/m156)
+#[allow(clippy::many_single_char_names)] // the C++ names
 fn get_packed_glyph_image(
     glyph: &SkGlyph,
     dst_row_bytes: usize,
@@ -281,7 +282,7 @@ impl TextAtlasManager {
     }
 
     /// `resolveMaskFormat(format)`: changes an expected 565 mask format to 8888 if 565 is not
-    /// supported (will happen when using Metal on Intel MacOS). The actual conversion of the data
+    /// supported (will happen when using Metal on Intel `MacOS`). The actual conversion of the data
     /// is handled in `get_packed_glyph_image`.
     // Port of: src/gpu/graphite/text/TextAtlasManager.cpp#L280-L294 (chrome/m156)
     fn resolve_mask_format(&self, format: MaskFormat) -> MaskFormat {
@@ -398,7 +399,7 @@ impl TextAtlasManager {
     }
 
     /// `addGlyphToAtlas(skGlyph, glyph)`: returns `Succeeded` if the glyph was successfully added
-    /// to the texture atlas, `TryAgain` if a RenderPassTask needs to be snapped before adding the
+    /// to the texture atlas, `TryAgain` if a `RenderPassTask` needs to be snapped before adding the
     /// glyph, and `Error` if it can't be added at all.
     ///
     /// # Panics
@@ -509,7 +510,7 @@ impl TextAtlasManager {
         true
     }
 
-    /// `addGlyphToBulkAndSetUseToken(updater, glyph, token)`: to ensure the DrawAtlas does not
+    /// `addGlyphToBulkAndSetUseToken(updater, glyph, token)`: to ensure the `DrawAtlas` does not
     /// evict the glyph mask from its texture backing store, the client must pass in the current
     /// draw token along with the glyph. A `BulkUsePlotUpdater` is used to manage bulk last use
     /// token updating in the atlas. For convenience, this function will also set the use token

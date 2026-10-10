@@ -13,7 +13,7 @@
 //! In these classes, the convention about matrices and origins is:
 //! * drawMatrix and drawOrigin - describes transformations for the current draw command.
 //! * positionMatrix - is equal to drawMatrix * [drawOrigin-as-translation-matrix]
-//! * initial Matrix - describes the combined initial matrix and origin the TextBlob was created
+//! * initial Matrix - describes the combined initial matrix and origin the `TextBlob` was created
 //!   with.
 
 use skia_rust_core::color::Color;

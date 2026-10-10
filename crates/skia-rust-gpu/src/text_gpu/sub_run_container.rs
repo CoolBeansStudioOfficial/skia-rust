@@ -421,6 +421,9 @@ pub struct PathOpSubmitter {
 
 impl PathOpSubmitter {
     /// `PathOpSubmitter::Make`.
+    ///
+    /// # Panics
+    /// If `accepted` is empty.
     // Port of: src/text/gpu/SubRunContainer.cpp#L267-L282 (chrome/m156)
     #[must_use]
     pub fn make(
@@ -429,7 +432,7 @@ impl PathOpSubmitter {
         strike_to_source_scale: scalar,
         strike_promise: StrikePromise,
     ) -> Self {
-        assert!(!accepted.is_empty());
+        assert_ne!(accepted.len(), 0);
         Self {
             ids: accepted.iter().map(|a| a.0).collect(),
             positions: accepted.iter().map(|a| a.1).collect(),
@@ -558,6 +561,9 @@ pub struct DrawableOpSubmitter {
 
 impl DrawableOpSubmitter {
     /// `DrawableOpSubmitter::Make`.
+    ///
+    /// # Panics
+    /// If `accepted` is empty.
     // Port of: src/text/gpu/SubRunContainer.cpp#L416-L424 (chrome/m156)
     #[must_use]
     pub fn make(
@@ -565,7 +571,7 @@ impl DrawableOpSubmitter {
         strike_to_source_scale: scalar,
         strike_promise: StrikePromise,
     ) -> Self {
-        assert!(!accepted.is_empty());
+        assert_ne!(accepted.len(), 0);
         Self {
             ids: accepted.iter().map(|a| a.0).collect(),
             positions: accepted.iter().map(|a| a.1).collect(),
@@ -905,6 +911,7 @@ fn make_sdft_strike_spec(
 
     // Check for dashing and adjust the intervals.
     if let Some(path_effect) = paint.path_effect() {
+        #[allow(clippy::collapsible_if)] // keeps the C++ nesting
         if let Some(info) = path_effect.as_a_dash() {
             debug_assert!(info.intervals.len() > 1);
             // Allocate the intervals.
