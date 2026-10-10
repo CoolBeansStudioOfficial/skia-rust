@@ -23601,8 +23601,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L205-L205"
 module = "effects"
-status = "failing"
-reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
+status = "passing"
 span_hash = "db76d71347c8892590bfa7b9d9ab0f4df4f2cfd428329ca7a36fb2b463ffb02e"
 
 [[test]]
@@ -23611,8 +23610,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L207-L207"
 module = "effects"
-status = "failing"
-reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
+status = "passing"
 span_hash = "217f121bd485057830d1141367817a99b11108b2c1802e32332417673b653f98"
 
 [[test]]
@@ -23621,8 +23619,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L206-L206"
 module = "effects"
-status = "failing"
-reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
+status = "passing"
 span_hash = "918f0190ff903e17d4ddc44d55c6b4f4165c11c0c90bed67fa3641cbccaaafce"
 
 [[test]]
@@ -23650,8 +23647,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshadercache.cpp#L96-L96"
 module = "effects"
-status = "failing"
-reason = "565 mismatch: 3 px of 1 LSB at circle AA edges; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
+status = "passing"
 span_hash = "6dbf4df69ab3b21ca535c4c43e74a3283213b1f5667432e890ad6d6f74b1bd91"
 
 [[test]]
@@ -23660,8 +23656,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshadertile.cpp#L161-L161"
 module = "effects"
-status = "failing"
-reason = "565 mismatch: 134 px of 1 LSB at AA edges; see notes/gm_pictureshadertile_cpp_PictureShaderTileGM.md"
+status = "passing"
 span_hash = "3f514a4e65b4ed698948ac44194cf0098c43fc50120b617659615dc1aec28455"
 
 [[test]]

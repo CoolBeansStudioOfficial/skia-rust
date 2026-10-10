@@ -33,7 +33,6 @@ use skia_rust_core::color_priv::{
     A32_MASK, A32_SHIFT, alpha_255_to_256, alpha_mul_q, get_packed_a32, get_packed_b32,
     get_packed_g32, get_packed_r32, pack_argb32,
 };
-use skia_rust_core::color_type::ColorType;
 use skia_rust_core::mask::{Mask, MaskFormat};
 use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;

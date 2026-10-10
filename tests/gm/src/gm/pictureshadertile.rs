@@ -192,8 +192,4 @@ impl GM for PictureShaderTileGm {
 }
 
 // Port of: gm/pictureshadertile.cpp#L161-L161 (chrome/m156), DEF_GM(return new PictureShaderTileGM;)
-crate::def_gm!(
-    #[ignore = "565 mismatch: see notes/gm_pictureshadertile_cpp_PictureShaderTileGM.md"]
-    PictureShaderTileGM,
-    PictureShaderTileGm::default()
-);
+crate::def_gm!(PictureShaderTileGM, PictureShaderTileGm::default());
