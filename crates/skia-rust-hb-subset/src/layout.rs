@@ -5,25 +5,20 @@
 //! `BASE` and `MATH` are not ported yet: every call reports `Unsupported` when the source font has
 //! the table.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 
 use crate::Res;
 use crate::bytes::tag;
 use crate::ot::View;
+use crate::gsubgpos::{Kind, TablePlan};
 use crate::plan::{Plan, unsupported};
 use crate::serialize::Serializer;
 
 /// The layout members of `hb_subset_plan_t` (hb-subset-plan-member-list.hh).
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub(crate) struct LayoutPlan {
-    pub gsub_lookups: HashMap<u32, u32>,
-    pub gsub_features: HashMap<u32, u32>,
-    pub gsub_features_w_duplicates: HashMap<u32, u32>,
-    pub gsub_langsys: HashMap<u32, BTreeSet<u32>>,
-    pub gpos_lookups: HashMap<u32, u32>,
-    pub gpos_features: HashMap<u32, u32>,
-    pub gpos_features_w_duplicates: HashMap<u32, u32>,
-    pub gpos_langsys: HashMap<u32, BTreeSet<u32>>,
+    pub gsub: TablePlan,
+    pub gpos: TablePlan,
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // a reference to a byte-string literal
@@ -33,10 +28,7 @@ fn has(plan: &Plan<'_>, t: &[u8; 4]) -> bool {
 
 /// Port of `layout_populate_gids_to_retain` (hb-subset-plan-layout.cc#L338-L368).
 pub(crate) fn populate_gids_to_retain(plan: &mut Plan<'_>) -> Res<()> {
-    if has(plan, b"GSUB") || has(plan, b"GPOS") {
-        return unsupported("GSUB/GPOS glyph closure");
-    }
-    Ok(())
+    crate::gsubgpos::populate_gids_to_retain(plan)
 }
 
 /// Port of `_math_closure` (hb-subset-plan.cc#L136-L146).
@@ -90,7 +82,9 @@ pub(crate) fn run_table(
 pub(crate) fn subset_table(plan: &mut Plan<'_>, t: u32) -> Option<Res<bool>> {
     match &t.to_be_bytes() {
         b"GDEF" => Some(run_table(plan, t, |plan, s, v| crate::gdef::subset(plan, s, v))),
-        b"GSUB" | b"GPOS" | b"BASE" | b"MATH" => Some(unsupported("layout tables")),
+        b"GSUB" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gsub))),
+        b"GPOS" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gpos))),
+        b"BASE" | b"MATH" => Some(unsupported("BASE/MATH")),
         _ => None,
     }
 }

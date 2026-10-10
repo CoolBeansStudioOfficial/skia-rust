@@ -243,7 +243,7 @@ impl<'a> ClosureCtx<'a> {
             // `closure_glyphs_recurse_func`
             let l = self.gsub.get_lookup(lookup_index);
             if lookup_may_have_non_1to1(l) {
-                set_add_range(covered_seq_indices, seq_index, end_index.wrapping_sub(1));
+                set_add_range(covered_seq_indices, seq_index, end_index);
             }
             self.lookup_dispatch(l);
         }
