@@ -25,6 +25,7 @@
 // The ported code keeps the single-letter names of the C++ (`d` for data, `s` for the serializer).
 #![allow(clippy::many_single_char_names)]
 
+mod base;
 mod bytes;
 mod cff;
 mod cmap;
