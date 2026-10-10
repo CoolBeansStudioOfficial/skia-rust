@@ -96,6 +96,8 @@ pub fn all_steps(provider: &RendererProvider) -> Vec<(String, Arc<dyn RenderStep
         ("per_edge_aa_quad".into(), provider.per_edge_aa_quad()),
         ("non_aa_bounds_fill".into(), provider.non_aa_bounds_fill()),
         ("circular_arc".into(), provider.circular_arc()),
+        ("analytic_blur".into(), provider.analytic_blur()),
+        ("analytic_rrect_blur".into(), provider.analytic_rrect_blur()),
         (
             "convex_tessellated_wedges".into(),
             provider.convex_tessellated_wedges(),

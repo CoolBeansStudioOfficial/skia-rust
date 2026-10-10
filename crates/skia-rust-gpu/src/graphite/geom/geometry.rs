@@ -6,16 +6,16 @@
 //! [`Geometry`]: what a draw covers, as seen by the `RenderStep`s.
 //!
 //! Only the variants whose payload types are ported are here: `Empty`, `Shape`, `EdgeAAQuad`,
-//! `Vertices`, `Mesh`, `CoverageMaskShape` and `SubRun`. The other variants of Skia's `Geometry`
-//! (`AnalyticBlur`, `AnalyticRRectBlur`, and the sparse-strip `WideTiles` and `EndCaps`) wait for
-//! their payload types (G10 and G17). Their `bounds()` cases are not written here, so no draw can
-//! carry them yet.
+//! `Vertices`, `Mesh`, `CoverageMaskShape`, `SubRun`, `AnalyticBlur` and `AnalyticRRectBlur`. The
+//! sparse-strip `WideTiles` and `EndCaps` wait for G17.
 
 use skia_rust_core::mesh::Mesh;
 use skia_rust_core::vertices::Vertices;
 
 use skia_rust_core::m44::M44;
 
+use crate::graphite::geom::analytic_blur_mask::AnalyticBlurMask;
+use crate::graphite::geom::analytic_rrect_blur_mask::AnalyticRRectBlurMask;
 use crate::graphite::geom::coverage_mask_shape::CoverageMaskShape;
 use crate::graphite::geom::edge_aa_quad::EdgeAAQuad;
 use crate::graphite::geom::rect::Rect;
@@ -42,6 +42,10 @@ pub enum Geometry {
     CoverageMaskShape(CoverageMaskShape),
     /// `Type::kSubRun`.
     SubRun(SubRunData),
+    /// `Type::kAnalyticBlur`.
+    AnalyticBlur(AnalyticBlurMask),
+    /// `Type::kAnalyticRRectBlur`.
+    AnalyticRRectBlur(AnalyticRRectBlurMask),
 }
 
 impl Geometry {
@@ -110,7 +114,9 @@ impl Geometry {
             | Self::Vertices(_)
             | Self::Mesh(_)
             | Self::CoverageMaskShape(_)
-            | Self::SubRun(_) => false,
+            | Self::SubRun(_)
+            | Self::AnalyticBlur(_)
+            | Self::AnalyticRRectBlur(_) => false,
         }
     }
 
@@ -157,6 +163,46 @@ impl Geometry {
         match self {
             Self::CoverageMaskShape(mask) => mask,
             _ => panic!("Geometry::coverage_mask_shape() called on a non-mask geometry"),
+        }
+    }
+
+    /// `isAnalyticBlur()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L168 (chrome/m156)
+    #[must_use]
+    pub const fn is_analytic_blur(&self) -> bool {
+        matches!(self, Self::AnalyticBlur(_))
+    }
+
+    /// `analyticBlurMask()`. Skia asserts that the type is `kAnalyticBlur`.
+    ///
+    /// # Panics
+    /// If the geometry is not an analytic blur.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L189 (chrome/m156)
+    #[must_use]
+    pub fn analytic_blur_mask(&self) -> &AnalyticBlurMask {
+        match self {
+            Self::AnalyticBlur(blur) => blur,
+            _ => panic!("Geometry::analytic_blur_mask() called on a non-blur geometry"),
+        }
+    }
+
+    /// `isAnalyticRRectBlur()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L169 (chrome/m156)
+    #[must_use]
+    pub const fn is_analytic_rrect_blur(&self) -> bool {
+        matches!(self, Self::AnalyticRRectBlur(_))
+    }
+
+    /// `analyticRRectBlurMask()`. Skia asserts that the type is `kAnalyticRRectBlur`.
+    ///
+    /// # Panics
+    /// If the geometry is not an analytic rrect blur.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L192 (chrome/m156)
+    #[must_use]
+    pub fn analytic_rrect_blur_mask(&self) -> &AnalyticRRectBlurMask {
+        match self {
+            Self::AnalyticRRectBlur(blur) => blur,
+            _ => panic!("Geometry::analytic_rrect_blur_mask() called on a non-rrect-blur geometry"),
         }
     }
 
@@ -210,6 +256,8 @@ impl Geometry {
             Self::Mesh(mesh) => Rect::from_sk_rect(&mesh.bounds()),
             Self::CoverageMaskShape(mask) => mask.bounds(),
             Self::SubRun(sub_run) => sub_run.bounds(),
+            Self::AnalyticBlur(blur) => *blur.draw_bounds(),
+            Self::AnalyticRRectBlur(blur) => blur.bounds(),
         }
     }
 }

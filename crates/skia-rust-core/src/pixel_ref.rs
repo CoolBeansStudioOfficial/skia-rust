@@ -18,7 +18,8 @@
 //!
 //! `SkPixelStorage` (the base class, tracking storage and content IDs for GPU proxies) is not
 //! ported; the only subclass that exists so far is `SkPixelRef`.
-//! `SkBitmapCache` is not ported, so `SkNotifyBitmapGenIDIsStale` is a no-op.
+//! The stale notifications of `SkNotifyBitmapGenIDIsStale` are not wired here: a pixel ref does
+//! not post its generation ID to the bitmap cache (`bitmap_cache`). Lazy images do, when dropped.
 
 use std::fmt;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, Ordering};
@@ -297,8 +298,8 @@ impl PixelRef {
         if self.gen_id_is_unique() {
             self.0.gen_id_change_listeners.changed();
             if self.0.added_to_cache.swap(false, Ordering::SeqCst) {
-                // SkNotifyBitmapGenIDIsStale(this->getGenerationID()): SkBitmapCache is not
-                // ported yet, so there is no cache to notify.
+                // SkNotifyBitmapGenIDIsStale(this->getGenerationID()) is not wired (see the
+                // module docs): the bitmap cache's entries for this ID are not purged here.
             }
         } else {
             // Listeners get at most one shot, so even though these weren't triggered or not,
@@ -341,7 +342,6 @@ impl PixelRef {
     /// Marks the pixel ref as immutable with the externally chosen generation ID `gen_id`.
     // Port of: src/core/SkPixelRef.cpp#L117-L126 (chrome/m156)
     #[doc(alias = "setImmutableWithID")]
-    #[allow(dead_code)] // used by SkBitmapCache, which is not ported yet
     pub(crate) fn set_immutable_with_id(&self, gen_id: u32) {
         // We are forcing the genID to match an external value. The caller must ensure that this
         // value does not conflict with other content.
@@ -398,7 +398,7 @@ impl Drop for Inner {
         if self.tagged_gen_id.load(Ordering::SeqCst) & 1 != 0 {
             self.gen_id_change_listeners.changed();
             if self.added_to_cache.swap(false, Ordering::SeqCst) {
-                // SkNotifyBitmapGenIDIsStale: SkBitmapCache is not ported yet.
+                // SkNotifyBitmapGenIDIsStale is not wired (see the module docs).
             }
         } else {
             self.gen_id_change_listeners.reset();
