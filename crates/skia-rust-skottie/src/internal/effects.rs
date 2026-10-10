@@ -31,6 +31,7 @@ use super::animator::{
 use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
+mod bulge;
 mod cc_toner;
 mod color;
 mod displacement_map;
@@ -160,6 +161,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         "ADBE Brightness & Contrast 2",
         color::attach_brightness_contrast_effect,
     ),
+    ("ADBE Bulge", bulge::attach_bulge_effect),
     ("ADBE Corner Pin", corner_pin::attach_corner_pin_effect),
     (
         "ADBE Displacement Map",
