@@ -5,6 +5,8 @@ pub mod aa_clip_test;
 #[cfg(test)]
 pub mod android_codec_test;
 #[cfg(test)]
+pub mod annotation_test;
+#[cfg(test)]
 pub mod as_a_dash_test;
 #[cfg(test)]
 pub mod bad_ico_test;
@@ -287,7 +289,21 @@ pub mod path_test;
 #[cfg(test)]
 pub mod pdf_deflate_w_stream_test;
 #[cfg(test)]
+pub mod pdf_document_test;
+#[cfg(test)]
+pub mod pdf_jpeg_embed_test;
+#[cfg(test)]
+pub mod pdf_metadata_attribute_test;
+#[cfg(test)]
+pub mod pdf_opaque_src_mode_to_src_over_test;
+#[cfg(test)]
 pub mod pdf_primitives_test;
+#[cfg(test)]
+pub mod pdf_tagged_link_test;
+#[cfg(test)]
+pub mod pdf_tagged_table_test;
+#[cfg(test)]
+pub mod pdf_tagged_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
 #[cfg(test)]
