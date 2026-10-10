@@ -20,7 +20,7 @@ use crate::tool_utils::{color_to_565, get_resource_as_image};
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::clip_op::ClipOp;
-use skia_rust_core::color::{Color, ColorChannel, pm_color_set_argb};
+use skia_rust_core::color::{Color, ColorChannel};
 use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_priv::premultiply_argb_inline;
 use skia_rust_core::color_type::ColorType;
@@ -753,8 +753,8 @@ fn create_yuv(planes: &PlaneData, yuv_format: YUVFormat, opaque: bool) -> Vec<Pl
                     let a = planes.a_full.get_u8(x, y);
                     // NOT premul!
                     // V and Y swapped to match RGBA layout
-                    let c = pm_color_set_argb(a, v, u, yv);
-                    yuva_full.set_u32(x, y, c);
+                    let c = Color::from_argb(a, v, u, yv);
+                    yuva_full.set_u32(x, y, u32::from(c));
                 }
             }
             result.push(yuva_full);
@@ -1083,7 +1083,7 @@ fn draw_col_label(canvas: &Canvas, x: i32, yuv_color_space: usize, opaque: bool)
 // Port of: gm/wacky_yuv_formats.cpp#L733-L760 (chrome/m156), `draw_row_label`
 fn draw_row_label(canvas: &Canvas, y: i32, yuv_format: usize) {
     const NAMES: [&str; NUM_YUV_FORMATS] = [
-        "P016", "P010", "P016F", "Y416", "Ayuv", "Y410", "NV12", "NV21", "I420", "YV12",
+        "P016", "P010", "P016F", "Y416", "AYUV", "Y410", "NV12", "NV21", "I420", "YV12",
     ];
     let paint = Paint::default();
     let mut font = Font::from_size(
@@ -1092,8 +1092,11 @@ fn draw_row_label(canvas: &Canvas, y: i32, yuv_format: usize) {
     );
     font.set_edging(Edging::Alias);
     let (_, text_rect) = font.measure_text(NAMES[yuv_format].as_bytes(), TextEncoding::UTF8, None);
-    let mut y = y as f32;
-    y += (TILE_WIDTH_HEIGHT / 2) as f32 + text_rect.height() / 2.0;
+    // `y` is an `int` in C++: `y += kTileWidthHeight/2 + textRect.height()/2` is computed in float
+    // and truncated back to int.
+    #[allow(clippy::cast_possible_truncation)]
+    let y = (y as f32 + ((TILE_WIDTH_HEIGHT / 2) as f32 + text_rect.height() / 2.0)) as i32;
+    let y = y as f32;
     canvas.draw_simple_text(
         NAMES[yuv_format],
         TextEncoding::UTF8,
@@ -1392,7 +1395,6 @@ crate::def_gm!(YUVSplitterGM, YuvSplitterGm { orig: None });
 // `useLimitedRange=false, useTargetColorSpace=false, useSubset=false, useCubicSampling=false` and
 // `Type::kFromGenerator`.
 crate::def_gm!(
-    #[ignore = "see notes/gm_wacky_yuv_formats_cpp_WackyYUVFormatsGM_imggen.md"]
     WackyYUVFormatsGMFromGenerator_ = "WackyYUVFormatsGM(/*useLimitedRange=*/false, /*useTargetColorSpace=*/false, /*useSubset=*/false, /*useCubicSampling=*/false, WackyYUVFormatsGM::Type::kFromGenerator)",
     WackyYuvFormatsGm {
         original: [None, None],
