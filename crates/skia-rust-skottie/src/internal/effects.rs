@@ -12,8 +12,9 @@
 
 use std::rc::Rc;
 
+use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
-use skia_rust_sksg::RenderNode;
+use skia_rust_sksg::{MaskShaderEffect, RenderNode};
 
 use crate::json::{ArrayValue, ObjectValue, Value};
 use crate::skottie::LoggerLevel;
@@ -31,10 +32,13 @@ mod color;
 mod convolution;
 mod corner_pin;
 mod filters;
+mod gradient_ramp;
+mod linear_wipe;
 mod runtime;
 mod shift_channels;
 mod styles;
 mod transform_effect;
+mod venetian_blinds;
 
 /// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
 // Port of: modules/skottie/src/SkottiePriv.h#L168-L181 (chrome/m156) (`attachDiscardableAdapter<T>`)
@@ -49,6 +53,29 @@ where
 {
     abuilder.attach_discardable_adapter(adapter);
     node as Rc<dyn RenderNode>
+}
+
+/// The mask of a mask-shader effect: its shader, and whether the layer is visible
+/// (`MaskShaderEffectBase::MaskInfo`).
+// Port of: modules/skottie/src/effects/Effects.h#L162-L165 (chrome/m156) (`MaskShaderEffectBase::MaskInfo`)
+pub(super) struct MaskInfo {
+    /// The mask shader, or `None` for no mask.
+    pub(super) shader: Option<Shader>,
+    /// False if the layer is fully hidden.
+    pub(super) visible: bool,
+}
+
+/// The mask-shader node that masks the layer: the `MaskShaderEffect` of the base class.
+// Port of: modules/skottie/src/effects/Effects.cpp#L207-L209 (chrome/m156) (`MaskShaderEffectBase::MaskShaderEffectBase`)
+pub(super) fn make_mask_shader_node(layer: Rc<dyn RenderNode>) -> Rc<MaskShaderEffect> {
+    MaskShaderEffect::make(Some(layer), None).expect("the layer is not null")
+}
+
+/// Pushes a mask to its node (`MaskShaderEffectBase::onSync`).
+// Port of: modules/skottie/src/effects/Effects.cpp#L211-L217 (chrome/m156) (`MaskShaderEffectBase::onSync`)
+pub(super) fn sync_mask_shader(node: &MaskShaderEffect, info: MaskInfo) {
+    node.set_visible(info.visible);
+    node.set_shader(info.shader);
 }
 
 /// The syntactic helper that binds the properties of an effect by index (`EffectBinder`).
@@ -117,11 +144,13 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
     ("ADBE Invert", color::attach_invert_effect),
+    ("ADBE Linear Wipe", linear_wipe::attach_linear_wipe_effect),
     (
         "ADBE Motion Blur",
         convolution::attach_directional_blur_effect,
     ),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
+    ("ADBE Ramp", gradient_ramp::attach_gradient_effect),
     ("ADBE Sharpen", convolution::attach_sharpen_effect),
     (
         "ADBE Shift Channels",
@@ -130,6 +159,10 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Threshold2", color::attach_threshold_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
+    (
+        "ADBE Venetian Blinds",
+        venetian_blinds::attach_venetian_blinds_effect,
+    ),
     ("CC Toner", cc_toner::attach_cc_toner_effect),
     ("SkSL Color Filter", runtime::attach_sksl_color_filter),
 ];
