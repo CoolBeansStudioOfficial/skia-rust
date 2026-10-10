@@ -196,6 +196,47 @@ macro_rules! def_graphite_adapter_test {
     };
 }
 
+/// [`def_graphite_adapter_test!`] for a test whose context is made with options
+/// (`DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS`'s options-setting function): `|options| { ... }`
+/// sets them on the defaults, and the body runs once on a real adapter made with them.
+///
+/// ```ignore
+/// def_graphite_adapter_test_with_options!(
+///     DirectMaskLimitTest_Graphite,
+///     |options| { options.min_distance_field_font_size = 384.0; },
+///     |reporter, context| { /* ... */ }
+/// );
+/// ```
+#[macro_export]
+macro_rules! def_graphite_adapter_test_with_options {
+    ($(#[$attr:meta])* $name:ident, |$options:ident| $set_options:block,
+     |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut context_options =
+                ::skia_rust_gpu::graphite::context_options::ContextOptions::default();
+            {
+                let $options = &mut context_options;
+                $set_options
+            }
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            if let Some((context_name, mut context)) =
+                $crate::tools::graphite_test_context::real_context_with_options(&context_options)
+            {
+                reporter.set_context(Some(context_name));
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
+                reporter.set_context(None);
+            }
+            reporter.finish();
+        }
+    };
+}
+
 /// Port of `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS(name, reporter, context, ...)`: runs the body
 /// once per context of [`tools::graphite_test_context::all_contexts`], with the context's name
 /// prefixed to each failure.
