@@ -11,7 +11,7 @@ use crate::Res;
 use crate::bytes::tag;
 use crate::gsubgpos::{Kind, TablePlan};
 use crate::ot::View;
-use crate::plan::{Plan, unsupported};
+use crate::plan::Plan;
 use crate::serialize::Serializer;
 
 /// The layout members of `hb_subset_plan_t` (hb-subset-plan-member-list.hh).
@@ -163,13 +163,16 @@ pub(crate) fn run_table(
     if !needed {
         return Ok(true);
     }
-    match out {
-        Some(bytes) => {
-            plan.add_table(t, bytes);
-            Ok(true)
-        }
-        None => unsupported("offset overflow (hb-repacker)"),
-    }
+    let bytes = match out {
+        Some(bytes) => bytes,
+        // `_repack`: `hb_resolve_overflows (c.object_graph (), tag)`
+        None => match crate::repacker::resolve_overflows(s.object_graph(), t) {
+            Some(bytes) => bytes,
+            None => return Err(crate::SubsetError::Failed),
+        },
+    };
+    plan.add_table(t, bytes);
+    Ok(true)
 }
 
 /// Port of `_hb_subset_table_layout` (hb-subset-table-layout.cc#L35-L50): `None` when the tag is
