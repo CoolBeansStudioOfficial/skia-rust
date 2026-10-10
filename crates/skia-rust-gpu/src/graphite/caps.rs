@@ -26,6 +26,7 @@ use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
+use crate::graphite::renderer_provider::PathRendererStrategy;
 use crate::graphite::resource_types::DstReadStrategy;
 use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo, Layout};
 use crate::graphite::texture_format::TextureFormat;
@@ -333,6 +334,22 @@ pub trait Caps: Send + Sync + Debug {
     // Port of: src/gpu/graphite/Caps.h#L124 (chrome/m156)
     #[doc(alias = "avoidMSAA")]
     fn avoid_msaa(&self) -> bool;
+
+    /// `minPathSizeForMSAA()`: paths no larger than this (in both dimensions) use the small path
+    /// atlas with `kTessellationAndSmallAtlas`. Zero disables it.
+    // Port of: src/gpu/graphite/Caps.h#L421 (chrome/m156)
+    #[doc(alias = "minPathSizeForMSAA")]
+    fn min_path_size_for_msaa(&self) -> f32 {
+        0.0
+    }
+
+    /// `requestedPathRendererStrategy()`: the strategy the context options request (a GPU test
+    /// utilities override), used when the strategy is supported.
+    // Port of: src/gpu/graphite/Caps.h#L107 (chrome/m156)
+    #[doc(alias = "requestedPathRendererStrategy")]
+    fn requested_path_renderer_strategy(&self) -> Option<PathRendererStrategy> {
+        None
+    }
 
     /// `msaaRenderToSingleSampledSupport()`.
     // Port of: src/gpu/graphite/Caps.h#L134 (chrome/m156)

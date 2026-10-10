@@ -557,7 +557,8 @@ impl RecorderSharedContext for WgpuSharedContext {
         self.renderer_provider.get_or_init(|| {
             let resource_provider = Arc::new(Mutex::new(self.make_resource_provider(0, 0)));
             let mut buffer_manager = StaticBufferManager::new(resource_provider, &*self.caps);
-            let renderer_provider = RendererProvider::new(
+            let renderer_provider = RendererProvider::new_for_caps(
+                &*self.caps,
                 self.caps
                     .resource_binding_requirements()
                     .uniform_buffer_layout,

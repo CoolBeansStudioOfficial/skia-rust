@@ -5,11 +5,12 @@
 //
 // PARTIAL. This is the subset of `RendererProvider` whose render steps are ported: the
 // single-step renderers for PerEdgeAAQuad, CircularArc, CoverBounds[NonAAFill] and the tessellating
-// renderers (convex wedges, stencil curves and wedges with the middle-out fan, and strokes). Still
-// missing, each with its step's port:
-// - the path renderer strategy (`IsSupported`, the strategy choice in the constructor) needs
-//   `Caps` (`requestedPathRendererStrategy`, `avoidMSAA`, `minPathSizeForMSAA`), which is G10;
-// - `fCoverageMask` needs `CoverageMaskRenderStep` (needs `CoverageMaskShape`, G2);
+// renderers (convex wedges, stencil curves and wedges with the middle-out fan, and strokes), and
+// the coverage mask renderer. The path renderer strategy is chosen from `Caps` as in the C++
+// constructor. Still missing, each with its step's port:
+// - the Vello compute strategies (`kComputeAnalyticAA`, `kComputeMSAA16`, `kComputeMSAA8`) are
+//   never supported: Skia builds them only with `SK_ENABLE_VELLO_SHADERS`, which is off here;
+// - the sparse-strip strategy (`kCPUSparseStripsMSAA8`, G17) is never supported;
 // - the bitmap and SDF text renderers, the blur renderers and the sparse-strip renderers need
 //   G7c and G17.
 
@@ -18,7 +19,9 @@ use std::sync::Arc;
 use skia_rust_core::path_types::PathFillType;
 
 use crate::graphite::buffer_manager::StaticBufferManager;
+use crate::graphite::caps::Caps;
 use crate::graphite::draw_types::DrawTypeFlags;
+use crate::graphite::render::coverage_mask_render_step::CoverageMaskRenderStep;
 use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use crate::graphite::render::common_depth_stencil_settings::{
@@ -37,12 +40,38 @@ use crate::graphite::render_step::{NUM_RENDER_STEPS, RenderStep, RenderStepID};
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::Layout;
 
+/// `PathRendererStrategy`: how paths are rendered by Graphite, chosen per context.
+// Port of: src/gpu/graphite/RendererProvider.h#L41-L70 (chrome/m156)
+#[doc(alias = "skgpu::graphite::PathRendererStrategy")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PathRendererStrategy {
+    /// `kTessellation`: tessellation and stencil-and-cover with MSAA.
+    Tessellation,
+    /// `kTessellationAndSmallAtlas`: tessellation, with small paths rasterized on the CPU into an
+    /// atlas (`minPathSizeForMSAA` > 0).
+    TessellationAndSmallAtlas,
+    /// `kRasterAtlas`: every path is rasterized on the CPU and packed into an atlas.
+    RasterAtlas,
+    /// `kComputeAnalyticAA` (Vello, not built here).
+    ComputeAnalyticAA,
+    /// `kComputeMSAA16` (Vello, not built here).
+    ComputeMSAA16,
+    /// `kComputeMSAA8` (Vello, not built here).
+    ComputeMSAA8,
+    /// `kCPUSparseStripsMSAA8` (sparse strips, G17).
+    CpuSparseStripsMsaa8,
+}
+
 /// The renderers of the steps ported so far, and the cover steps the tessellating renderers
 /// share (`RendererProvider`, partial).
 // Port of: src/gpu/graphite/RendererProvider.h (the members for the ported steps)
 #[doc(alias = "skgpu::graphite::RendererProvider")]
 #[derive(Debug)]
 pub struct RendererProvider {
+    /// `fStrategy`.
+    strategy: PathRendererStrategy,
+    /// `fCoverageMask`: the renderer of the coverage masks (path atlases and mask images).
+    coverage_mask: Renderer,
     /// `fAnalyticRRect`.
     analytic_rrect: Renderer,
     /// `fVertices[2 * hasColor + hasTexCoords]`.
@@ -78,6 +107,91 @@ impl RendererProvider {
     // Port of: src/gpu/graphite/RendererProvider.cpp#L87 (chrome/m156), the ported initializers
     #[must_use]
     pub fn new(
+        layout: Layout,
+        infinity_support: bool,
+        buffer_manager: &mut StaticBufferManager,
+    ) -> Self {
+        Self::new_with_strategy(
+            PathRendererStrategy::Tessellation,
+            layout,
+            infinity_support,
+            buffer_manager,
+        )
+    }
+
+    /// `RendererProvider(caps, bufferManager)`'s strategy choice: whether `strategy` can be used
+    /// with `caps`.
+    // Port of: src/gpu/graphite/RendererProvider.cpp#L45-L80 (chrome/m156)
+    #[must_use]
+    pub fn is_supported(strategy: PathRendererStrategy, caps: &dyn Caps) -> bool {
+        match strategy {
+            PathRendererStrategy::TessellationAndSmallAtlas => {
+                if caps.min_path_size_for_msaa() <= 0.0 {
+                    return false; // Disabled explicitly
+                }
+                // Must support kTessellation too
+                !caps.avoid_msaa()
+            }
+            // This strategy requires MSAA, which will use a supported MSAA count returned by
+            // Caps::getDefaultMSAASampleCount(target). When avoidMSAA() returns false, this should
+            // always be at least 4x on Graphite's supported devices.
+            PathRendererStrategy::Tessellation => !caps.avoid_msaa(),
+            // The raster path atlas is currently always supported.
+            PathRendererStrategy::RasterAtlas => true,
+            // The Vello compute strategies need `SK_ENABLE_VELLO_SHADERS`, which is off here.
+            PathRendererStrategy::ComputeAnalyticAA
+            | PathRendererStrategy::ComputeMSAA16
+            | PathRendererStrategy::ComputeMSAA8 => false,
+            // The sparse strips are not ported yet (G17).
+            PathRendererStrategy::CpuSparseStripsMsaa8 => false,
+        }
+    }
+
+    /// The strategy the constructor chooses from `caps`: the requested one if it is supported,
+    /// otherwise by preference (vello > tessellation [with atlas] > raster atlas).
+    // Port of: src/gpu/graphite/RendererProvider.cpp#L87-L109 (chrome/m156)
+    #[must_use]
+    pub fn choose_strategy(caps: &dyn Caps) -> PathRendererStrategy {
+        if let Some(requested) = caps.requested_path_renderer_strategy()
+            && Self::is_supported(requested, caps)
+        {
+            // Use the explicitly overridden strategy
+            return requested;
+        }
+        // By default, prefer vello > tessellation [w/ atlas] > raster atlas
+        if Self::is_supported(PathRendererStrategy::ComputeMSAA8, caps) {
+            PathRendererStrategy::ComputeMSAA8
+        } else if caps.avoid_msaa() {
+            PathRendererStrategy::RasterAtlas
+        } else if caps.min_path_size_for_msaa() > 0.0 {
+            PathRendererStrategy::TessellationAndSmallAtlas
+        } else {
+            PathRendererStrategy::Tessellation
+        }
+    }
+
+    /// `RendererProvider(caps, bufferManager)` with the strategy `choose_strategy(caps)` gives.
+    // Port of: src/gpu/graphite/RendererProvider.cpp#L87 (chrome/m156)
+    #[must_use]
+    pub fn new_for_caps(
+        caps: &dyn Caps,
+        layout: Layout,
+        infinity_support: bool,
+        buffer_manager: &mut StaticBufferManager,
+    ) -> Self {
+        Self::new_with_strategy(
+            Self::choose_strategy(caps),
+            layout,
+            infinity_support,
+            buffer_manager,
+        )
+    }
+
+    /// `RendererProvider(caps, bufferManager)` with `strategy` as the path renderer strategy.
+    // Port of: src/gpu/graphite/RendererProvider.cpp#L87-L140 (chrome/m156)
+    #[must_use]
+    pub fn new_with_strategy(
+        strategy: PathRendererStrategy,
         layout: Layout,
         infinity_support: bool,
         buffer_manager: &mut StaticBufferManager,
@@ -126,6 +240,13 @@ impl RendererProvider {
             DrawTypeFlags::DRAW_MESH,
         );
 
+        // The coverage mask renderer is always initialized: it is used for mask filters even when
+        // the path renderer strategy wouldn't use it to sample an atlas.
+        let coverage_mask = single_step(
+            Arc::new(CoverageMaskRenderStep::new(layout)),
+            DrawTypeFlags::NON_SIMPLE_SHAPE | DrawTypeFlags::INTERNAL_COVERAGE_MASK,
+        );
+
         // The tessellating path renderers that use stencil can share the cover steps.
         let cover_fill: Arc<dyn RenderStep> = Arc::new(CoverBoundsRenderStep::new(
             layout,
@@ -169,6 +290,8 @@ impl RendererProvider {
         ];
 
         let mut provider = Self {
+            strategy,
+            coverage_mask,
             analytic_rrect,
             vertices,
             per_edge_aa_quad,
@@ -190,6 +313,7 @@ impl RendererProvider {
     /// Fills `fRenderSteps`: every step of every renderer by its id (`assumeOwnership`).
     fn collect_render_steps(&mut self) {
         let all_renderers = [
+            &self.coverage_mask,
             &self.analytic_rrect,
             &self.per_edge_aa_quad,
             &self.non_aa_bounds_fill,
@@ -218,6 +342,20 @@ impl RendererProvider {
     #[must_use]
     pub fn lookup(&self, render_step_id: RenderStepID) -> Option<&Arc<dyn RenderStep>> {
         self.render_steps[render_step_id as usize].as_ref()
+    }
+
+    /// `pathRendererStrategy()`.
+    // Port of: src/gpu/graphite/RendererProvider.h#L92 (chrome/m156)
+    #[must_use]
+    pub const fn path_renderer_strategy(&self) -> PathRendererStrategy {
+        self.strategy
+    }
+
+    /// `coverageMask()`: the renderer of `CoverageMaskShape` draws.
+    // Port of: src/gpu/graphite/RendererProvider.h (coverageMask)
+    #[must_use]
+    pub const fn coverage_mask(&self) -> &Renderer {
+        &self.coverage_mask
     }
 
     /// `fAnalyticRRect`.

@@ -368,3 +368,76 @@ pub fn find_or_create_cached_proxy_from_image(
     }
     Some(proxy)
 }
+
+/// `ProxyCache::findOrCreateCachedProxy(recorder, key, context, BitmapGeneratorFn, label)`: the
+/// proxy cached for `key`, or the texture of the bitmap `generator` makes for it, uploaded with
+/// `MakeBitmapProxyView`. An empty bitmap, or a view that cannot be made, caches nothing. A bitmap
+/// whose pixels are shared (not unique) gets an invalidation listener, as in C++.
+///
+/// The provider is locked only to consult the cache and to insert the entry: the generator and the
+/// upload lock it again.
+// Port of: src/gpu/graphite/ProxyCache.cpp#L101-L140 (chrome/m156)
+#[doc(alias = "findOrCreateCachedProxy")]
+pub fn find_or_create_cached_proxy_from_bitmap(
+    recorder: &crate::graphite::recorder::Recorder,
+    key: &UniqueKey,
+    generator: impl FnOnce() -> Bitmap,
+    label: &str,
+) -> Option<Arc<TextureProxy>> {
+    let shared = Arc::clone(recorder.priv_().resource_provider());
+    {
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(cached) = provider
+            .proxy_cache()
+            .and_then(|cache| cache.find_cache_entry(key))
+        {
+            return Some(cached);
+        }
+    }
+
+    // Cache miss: make the bitmap and its texture without holding the provider's lock.
+    let bitmap = generator();
+    if bitmap.is_empty() {
+        return None;
+    }
+    let final_label = if label.is_empty() {
+        key.tag().unwrap_or("")
+    } else {
+        label
+    };
+    let view = crate::graphite::texture_utils::make_bitmap_proxy_view(
+        recorder,
+        &bitmap,
+        None,
+        crate::gpu::gpu_types::Mipmapped::No,
+        crate::gpu::gpu_types::Budgeted::Yes,
+        final_label,
+    )?;
+    let proxy = view.ref_proxy()?;
+
+    // Since if the bitmap is held by more than just this function call (e.g. it likely came from
+    // an existing SkBitmap), it's worth adding a listener to remove the entry automatically when
+    // no one holds on to it anymore.
+    let add_listener = !bitmap.pixel_ref_is_unique();
+    let listener = {
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = provider.proxy_cache()?;
+        let listener = add_listener.then(|| cache.make_unique_key_invalidation_listener(key));
+        if let (Some(listener), Some(pixel_ref)) = (&listener, bitmap.pixel_ref()) {
+            pixel_ref.add_gen_id_change_listener(Some(Arc::clone(listener)));
+        }
+        listener
+    };
+
+    let mut provider = shared
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    provider
+        .proxy_cache()?
+        .insert_cache_entry(key, Arc::clone(&proxy), listener);
+    Some(proxy)
+}
