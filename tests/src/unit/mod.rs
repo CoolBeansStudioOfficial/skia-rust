@@ -175,6 +175,8 @@ pub mod nonlinear_blending_test;
 #[cfg(test)]
 pub mod offset_simple_poly_test;
 #[cfg(test)]
+pub mod os_path_test;
+#[cfg(test)]
 pub mod paint_test;
 #[cfg(test)]
 pub mod parametric_stage_test;
@@ -433,6 +435,8 @@ pub mod test_test;
 pub mod text_blob_test;
 #[cfg(test)]
 pub mod typeface_test;
+#[cfg(test)]
+pub mod utils_test;
 #[cfg(test)]
 pub mod vertices_test;
 #[cfg(test)]
