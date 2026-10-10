@@ -8,9 +8,8 @@
 use std::collections::BTreeSet;
 
 use crate::bytes::tag;
-use crate::graph::{Graph, OverflowRecord};
+use crate::graph::{Graph, OverflowRecord, PackedObject};
 use crate::graph_gsubgpos::{Ctx, make_extension, split_subtables_if_needed};
-use crate::serialize::Link;
 
 const GPOS: u32 = tag(b"GPOS");
 const GSUB: u32 = tag(b"GSUB");
@@ -33,6 +32,7 @@ struct LookupSize {
 }
 
 /// `lookup_size_t::cmp`.
+#[allow(clippy::cast_precision_loss, clippy::float_cmp)] // mirrors the C++ doubles; the comparison is exact there too
 fn lookup_size_cmp(a: &LookupSize, b: &LookupSize) -> std::cmp::Ordering {
     let spb_a = f64::from(a.num_subtables) / a.size as f64;
     let spb_b = f64::from(b.num_subtables) / b.size as f64;
@@ -41,11 +41,7 @@ fn lookup_size_cmp(a: &LookupSize, b: &LookupSize) -> std::cmp::Ordering {
         b.lookup_index.wrapping_sub(a.lookup_index) as i32
     } else {
         let cmp = spb_b - spb_a;
-        if cmp < 0.0 {
-            -1
-        } else {
-            i32::from(cmp > 0.0)
-        }
+        if cmp < 0.0 { -1 } else { i32::from(cmp > 0.0) }
     };
     r.cmp(&0)
 }
@@ -58,7 +54,8 @@ fn promote_extensions_if_needed(c: &mut Ctx, g: &mut Graph) -> bool {
     let mut total_lookup_table_sizes: u32 = 0;
     let mut lookup_sizes: Vec<LookupSize> = Vec::new();
     for &lookup_index in &c.lookups {
-        total_lookup_table_sizes = total_lookup_table_sizes.wrapping_add(g.vertices[lookup_index as usize].table_size() as u32);
+        total_lookup_table_sizes = total_lookup_table_sizes
+            .wrapping_add(g.vertices[lookup_index as usize].table_size() as u32);
         let mut visited = BTreeSet::new();
         lookup_sizes.push(LookupSize {
             lookup_index,
@@ -88,12 +85,19 @@ fn promote_extensions_if_needed(c: &mut Ctx, g: &mut Graph) -> bool {
         if !layers_full {
             let lookup_size = g.vertices[p.lookup_index as usize].table_size();
             let mut visited = BTreeSet::new();
-            let subtables_size = g.find_subgraph_size(p.lookup_index, &mut visited, 1).wrapping_sub(lookup_size);
-            let remaining_size = p.size.wrapping_sub(subtables_size).wrapping_sub(lookup_size);
+            let subtables_size = g
+                .find_subgraph_size(p.lookup_index, &mut visited, 1)
+                .wrapping_sub(lookup_size);
+            let remaining_size = p
+                .size
+                .wrapping_sub(subtables_size)
+                .wrapping_sub(lookup_size);
 
             l3_l4_size = l3_l4_size.wrapping_add(subtables_size);
             l3_l4_size = l3_l4_size.wrapping_sub((p.num_subtables * 8) as usize);
-            l4_plus_size = l4_plus_size.wrapping_add(subtables_size).wrapping_add(remaining_size);
+            l4_plus_size = l4_plus_size
+                .wrapping_add(subtables_size)
+                .wrapping_add(remaining_size);
 
             if l2_l3_size < (1 << 16) && l3_l4_size < (1 << 16) && l4_plus_size < (1 << 16) {
                 continue;
@@ -152,7 +156,11 @@ fn try_isolating_subgraphs(overflows: &[OverflowRecord], g: &mut Graph) -> bool 
 }
 
 /// `_resolve_shared_overflow` (hb-repacker.hh#L250-L305).
-fn resolve_shared_overflow(overflows: &[OverflowRecord], overflow_index: usize, g: &mut Graph) -> bool {
+fn resolve_shared_overflow(
+    overflows: &[OverflowRecord],
+    overflow_index: usize,
+    g: &mut Graph,
+) -> bool {
     let r = overflows[overflow_index];
     let mut parents: BTreeSet<u32> = BTreeSet::new();
     parents.insert(r.parent);
@@ -178,28 +186,35 @@ fn resolve_shared_overflow(overflows: &[OverflowRecord], overflow_index: usize, 
 }
 
 /// `_process_overflows` (hb-repacker.hh#L307-L357).
-fn process_overflows(overflows: &[OverflowRecord], priority_bumped_parents: &mut BTreeSet<u32>, g: &mut Graph) -> bool {
+fn process_overflows(
+    overflows: &[OverflowRecord],
+    priority_bumped_parents: &mut BTreeSet<u32>,
+    g: &mut Graph,
+) -> bool {
     let mut resolution_attempted = false;
     for i in (0..overflows.len()).rev() {
         let r = overflows[i];
-        if g.vertices[r.child as usize].is_shared() {
-            if resolve_shared_overflow(overflows, i, g) {
-                return true;
-            }
+        if g.vertices[r.child as usize].is_shared() && resolve_shared_overflow(overflows, i, g) {
+            return true;
         }
-        if g.vertices[r.child as usize].is_leaf() && !priority_bumped_parents.contains(&r.parent) {
-            if g.raise_childrens_priority(r.parent) {
-                priority_bumped_parents.insert(r.parent);
-                resolution_attempted = true;
-            }
-            continue;
+        if g.vertices[r.child as usize].is_leaf()
+            && !priority_bumped_parents.contains(&r.parent)
+            && g.raise_childrens_priority(r.parent)
+        {
+            priority_bumped_parents.insert(r.parent);
+            resolution_attempted = true;
         }
     }
     resolution_attempted
 }
 
 /// `hb_resolve_graph_overflows` (hb-repacker.hh#L359-L451).
-fn resolve_graph_overflows(table_tag: u32, max_rounds: u32, always_recalculate_extensions: bool, g: &mut Graph) -> bool {
+fn resolve_graph_overflows(
+    table_tag: u32,
+    max_rounds: u32,
+    always_recalculate_extensions: bool,
+    g: &mut Graph,
+) -> bool {
     g.sort_shortest_distance();
     if g.in_error() {
         return false;
@@ -256,8 +271,10 @@ fn resolve_graph_overflows(table_tag: u32, max_rounds: u32, always_recalculate_e
 
 /// `hb_resolve_overflows` (hb-repacker.hh#L453-L482) with its default `max_rounds` of 32 and
 /// `recalculate_extensions` of false.
-#[allow(clippy::type_complexity)] // the shape `Serializer::object_graph` returns
-pub(crate) fn resolve_overflows(packed: Vec<Option<(Vec<u8>, Vec<Link>, Vec<Link>)>>, table_tag: u32) -> Option<Vec<u8>> {
+pub(crate) fn resolve_overflows(
+    packed: Vec<Option<PackedObject>>,
+    table_tag: u32,
+) -> Option<Vec<u8>> {
     let mut g = Graph::new(packed);
     if g.in_error() {
         return None;

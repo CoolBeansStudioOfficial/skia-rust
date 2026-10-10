@@ -45,7 +45,14 @@ impl Ctx {
         // `GSTAR::graph_to_gstar`
         let root = g.root_idx();
         let len = g.bytes(root).len();
-        let version_ok = len >= 10 && len >= 10 + if g.u16_at(root, 0) == 1 && g.u16_at(root, 2) >= 1 { 4 } else { 0 };
+        let version_ok = len >= 10
+            && len
+                >= 10
+                    + if g.u16_at(root, 0) == 1 && g.u16_at(root, 2) >= 1 {
+                        4
+                    } else {
+                        0
+                    };
         if !version_ok {
             return c;
         }
@@ -75,12 +82,12 @@ impl Ctx {
         }
         c
     }
+}
 
-    /// `create_node (size)`.
-    fn create_node(&self, g: &mut Graph, size: usize) -> u32 {
-        let obj = g.add_buffer(vec![0; size]);
-        g.new_node(obj)
-    }
+/// `create_node (size)`.
+fn create_node(g: &mut Graph, size: usize) -> u32 {
+    let obj = g.add_buffer(vec![0; size]);
+    g.new_node(obj)
 }
 
 // -------------------------------------------------------------------------------------------
@@ -142,26 +149,33 @@ pub(crate) fn make_extension(c: &mut Ctx, g: &mut Graph, this_index: u32) -> boo
 }
 
 /// `Lookup::create_extension_subtable`.
-fn create_extension_subtable(c: &Ctx, g: &mut Graph, subtable_index: u32, ty: u32) -> u32 {
-    let ext_index = c.create_node(g, 8);
+fn create_extension_subtable(g: &mut Graph, subtable_index: u32, ty: u32) -> u32 {
+    let ext_index = create_node(g, 8);
     if ext_index == NONE {
         return NONE;
     }
     // `extension->reset (type)`
     g.set_u16_at(ext_index, 0, 1);
     g.set_u16_at(ext_index, 2, ty);
-    g.vertices[ext_index as usize].real_links.push(GLink::new(4, subtable_index, 4));
+    g.vertices[ext_index as usize]
+        .real_links
+        .push(GLink::new(4, subtable_index, 4));
     ext_index
 }
 
 /// `Lookup::make_subtable_extension`.
-fn make_subtable_extension(c: &mut Ctx, g: &mut Graph, lookup_index: u32, subtable_index: u32) -> bool {
+fn make_subtable_extension(
+    c: &mut Ctx,
+    g: &mut Graph,
+    lookup_index: u32,
+    subtable_index: u32,
+) -> bool {
     let ty = g.u16_at(lookup_index, 0);
     let existing = c.subtable_to_extension.has(subtable_index);
     let ext_index = if let Some(e) = existing {
         e
     } else {
-        let e = create_extension_subtable(c, g, subtable_index, ty);
+        let e = create_extension_subtable(g, subtable_index, ty);
         c.subtable_to_extension.set(subtable_index, e);
         e
     };
@@ -230,8 +244,11 @@ pub(crate) fn split_subtables_if_needed(c: &mut Ctx, g: &mut Graph, this_index: 
             } else {
                 Some(Vec::new())
             };
-            let Some(new_sub_tables) = new_sub_tables else { return false };
-            c.split_subtables.insert(subtable_index, new_sub_tables.clone());
+            let Some(new_sub_tables) = new_sub_tables else {
+                return false;
+            };
+            c.split_subtables
+                .insert(subtable_index, new_sub_tables.clone());
             if !new_sub_tables.is_empty() {
                 all_new_subtables.push((i, new_sub_tables));
             }
@@ -244,7 +261,13 @@ pub(crate) fn split_subtables_if_needed(c: &mut Ctx, g: &mut Graph, this_index: 
 }
 
 /// `Lookup::add_sub_tables`.
-fn add_sub_tables(c: &mut Ctx, g: &mut Graph, this_index: u32, ty: u32, subtable_ids: &[(u32, Vec<u32>)]) -> bool {
+fn add_sub_tables(
+    c: &mut Ctx,
+    g: &mut Graph,
+    this_index: u32,
+    ty: u32,
+    subtable_ids: &[(u32, Vec<u32>)],
+) -> bool {
     let is_ext = is_extension(c, g, this_index);
     fix_existing_subtable_links(g, this_index, subtable_ids);
     let new_subtable_count: u32 = subtable_ids.iter().map(|p| p.1.len() as u32).sum();
@@ -260,18 +283,19 @@ fn add_sub_tables(c: &mut Ctx, g: &mut Graph, this_index: u32, ty: u32, subtable
     g.set_u16_at(this_index, 4, old_sub_len + new_subtable_count);
     let mut shift = 0u32;
     for (first, ids) in subtable_ids {
-        let mut offset_index = first + shift + 1;
+        let offset_index_start = first + shift + 1;
         shift += ids.len() as u32;
-        for &subtable_id in ids {
+        for (offset_index, &subtable_id) in (offset_index_start..).zip(ids.iter()) {
             let mut subtable_id = subtable_id;
             if is_ext {
-                let ext_id = create_extension_subtable(c, g, subtable_id, ty);
+                let ext_id = create_extension_subtable(g, subtable_id, ty);
                 g.vertices[subtable_id as usize].add_parent(ext_id, false);
                 subtable_id = ext_id;
             }
             let position = 6 + 2 * offset_index;
-            offset_index += 1;
-            g.vertices[this_index as usize].real_links.push(GLink::new(2, subtable_id, position));
+            g.vertices[this_index as usize]
+                .real_links
+                .push(GLink::new(2, subtable_id, position));
             g.vertices[subtable_id as usize].add_parent(this_index, false);
         }
     }
@@ -348,24 +372,41 @@ fn make_coverage(g: &mut Graph, glyphs: &[u32], dest_obj: u32, max_size: usize) 
     if s.peak() > max_size {
         return false;
     }
-    let Some(bytes) = s.end_serialize() else { return false };
+    let Some(bytes) = s.end_serialize() else {
+        return false;
+    };
     g.vertices[dest_obj as usize].obj = g.add_buffer(bytes);
     true
 }
 
 /// `Coverage::add_coverage`.
-fn add_coverage(g: &mut Graph, parent_id: u32, link_position: u32, glyphs: &[u32], max_size: usize) -> bool {
+fn add_coverage(
+    g: &mut Graph,
+    parent_id: u32,
+    link_position: u32,
+    glyphs: &[u32],
+    max_size: usize,
+) -> bool {
     let coverage_prime_id = g.new_node(crate::graph::Obj::default());
     if !make_coverage(g, glyphs, coverage_prime_id, max_size) {
         return false;
     }
-    g.vertices[parent_id as usize].real_links.push(GLink::new(2, coverage_prime_id, link_position));
+    g.vertices[parent_id as usize]
+        .real_links
+        .push(GLink::new(2, coverage_prime_id, link_position));
     g.vertices[coverage_prime_id as usize].add_parent(parent_id, false);
     true
 }
 
 /// `Coverage::clone_coverage`.
-fn clone_coverage(g: &mut Graph, coverage_id: u32, new_parent_id: u32, link_position: u32, start: u32, end: u32) -> bool {
+fn clone_coverage(
+    g: &mut Graph,
+    coverage_id: u32,
+    new_parent_id: u32,
+    link_position: u32,
+    start: u32,
+    end: u32,
+) -> bool {
     let coverage_size = g.bytes(coverage_id).len();
     if !coverage_sanitize(g, coverage_id) {
         return false;
@@ -376,7 +417,13 @@ fn clone_coverage(g: &mut Graph, coverage_id: u32, new_parent_id: u32, link_posi
         .filter(|&(_, i)| i >= start && i < end)
         .map(|p| p.0)
         .collect();
-    add_coverage(g, new_parent_id, link_position, &new_coverage, coverage_size)
+    add_coverage(
+        g,
+        new_parent_id,
+        link_position,
+        &new_coverage,
+        coverage_size,
+    )
 }
 
 /// `Coverage::filter_coverage`.
@@ -395,32 +442,54 @@ fn filter_coverage(g: &mut Graph, existing_coverage: u32, start: u32, end: u32) 
 }
 
 /// `ClassDef::make_class_def`.
-fn make_class_def(g: &mut Graph, glyph_and_class: &[(u32, u32)], dest_obj: u32, max_size: usize) -> bool {
+fn make_class_def(
+    g: &mut Graph,
+    glyph_and_class: &[(u32, u32)],
+    dest_obj: u32,
+    max_size: usize,
+) -> bool {
     let mut s = Serializer::new();
     s.start_serialize();
     classdef_serialize(&mut s, glyph_and_class);
     if s.peak() > max_size {
         return false;
     }
-    let Some(bytes) = s.end_serialize() else { return false };
+    let Some(bytes) = s.end_serialize() else {
+        return false;
+    };
     g.vertices[dest_obj as usize].obj = g.add_buffer(bytes);
     true
 }
 
 /// `ClassDef::add_class_def`.
-fn add_class_def(g: &mut Graph, parent_id: u32, link_position: u32, glyph_and_class: &[(u32, u32)], max_size: usize) -> bool {
+fn add_class_def(
+    g: &mut Graph,
+    parent_id: u32,
+    link_position: u32,
+    glyph_and_class: &[(u32, u32)],
+    max_size: usize,
+) -> bool {
     let class_def_prime_id = g.new_node(crate::graph::Obj::default());
     if !make_class_def(g, glyph_and_class, class_def_prime_id, max_size) {
         return false;
     }
-    g.vertices[parent_id as usize].real_links.push(GLink::new(2, class_def_prime_id, link_position));
+    g.vertices[parent_id as usize].real_links.push(GLink::new(
+        2,
+        class_def_prime_id,
+        link_position,
+    ));
     g.vertices[class_def_prime_id as usize].add_parent(parent_id, false);
     true
 }
 
 /// `graph.as_mutable_table<T> (parent, &offset)` for a table with the sanitizer: the index of
 /// the (possibly duplicated) child.
-fn as_mutable_index(g: &mut Graph, parent: u32, position: usize, sanitize: impl Fn(&Graph, u32) -> bool) -> Option<u32> {
+fn as_mutable_index(
+    g: &mut Graph,
+    parent: u32,
+    position: usize,
+    sanitize: impl Fn(&Graph, u32) -> bool,
+) -> Option<u32> {
     let index = g.mutable_index_for_offset(parent, position);
     if index == NONE || index as usize >= g.vertices.len() || !sanitize(g, index) {
         return None;
@@ -429,7 +498,12 @@ fn as_mutable_index(g: &mut Graph, parent: u32, position: usize, sanitize: impl 
 }
 
 /// `graph.as_table<T> (parent, &offset)`.
-fn as_index(g: &Graph, parent: u32, position: usize, sanitize: impl Fn(&Graph, u32) -> bool) -> Option<u32> {
+fn as_index(
+    g: &Graph,
+    parent: u32,
+    position: usize,
+    sanitize: impl Fn(&Graph, u32) -> bool,
+) -> Option<u32> {
     let index = g.index_for_offset(parent, position);
     if index == NONE || index as usize >= g.vertices.len() || !sanitize(g, index) {
         return None;
@@ -456,7 +530,11 @@ fn actuate_subtable_split(
     }
     for i in 0..split_points.len() {
         let start = split_points[i];
-        let end = if i < split_points.len() - 1 { split_points[i + 1] } else { split_context.original_count(g) };
+        let end = if i < split_points.len() - 1 {
+            split_points[i + 1]
+        } else {
+            split_context.original_count(g)
+        };
         let id = split_context.clone_range(c, g, start, end);
         if id == NONE {
             return None;
@@ -512,7 +590,8 @@ fn pair_pos1_split(c: &mut Ctx, g: &mut Graph, this_index: u32) -> Option<Vec<u3
     let mut split_points = Vec::new();
     for i in 0..g.u16_at(this_index, 8) {
         let pair_set_index = g.index_for_offset(this_index, 10 + 2 * i as usize);
-        let accumulated_delta = g.find_subgraph_size(pair_set_index, &mut visited, u32::MAX) as u32 + 2;
+        let accumulated_delta =
+            g.find_subgraph_size(pair_set_index, &mut visited, u32::MAX) as u32 + 2;
         partial_coverage_size += 2;
         accumulated += accumulated_delta;
         let total = accumulated + partial_coverage_size.min(coverage_size);
@@ -536,21 +615,30 @@ impl SplitContext for PairPos1Split {
         g.u16_at(self.this_index, 8)
     }
 
-    fn clone_range(&mut self, c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
+    fn clone_range(&mut self, _c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
         let this_index = self.this_index;
         let num_pair_sets = end - start;
         let prime_size = 10 + num_pair_sets as usize * 2;
-        let pair_pos_prime_id = c.create_node(g, prime_size);
+        let pair_pos_prime_id = create_node(g, prime_size);
         if pair_pos_prime_id == NONE {
             return NONE;
         }
-        let (format, vf0, vf1) = (g.u16_at(this_index, 0), g.u16_at(this_index, 4), g.u16_at(this_index, 6));
+        let (format, vf0, vf1) = (
+            g.u16_at(this_index, 0),
+            g.u16_at(this_index, 4),
+            g.u16_at(this_index, 6),
+        );
         g.set_u16_at(pair_pos_prime_id, 0, format);
         g.set_u16_at(pair_pos_prime_id, 4, vf0);
         g.set_u16_at(pair_pos_prime_id, 6, vf1);
         g.set_u16_at(pair_pos_prime_id, 8, num_pair_sets);
         for i in start..end {
-            g.move_child(this_index, 10 + 2 * i as usize, pair_pos_prime_id, 10 + 2 * (i - start) as usize);
+            g.move_child(
+                this_index,
+                10 + 2 * i as usize,
+                pair_pos_prime_id,
+                10 + 2 * (i - start) as usize,
+            );
         }
         let coverage_id = g.index_for_offset(this_index, 2);
         if !clone_coverage(g, coverage_id, pair_pos_prime_id, 2, start, end) {
@@ -567,7 +655,9 @@ impl SplitContext for PairPos1Split {
         }
         g.set_u16_at(this_index, 8, count);
         g.vertices[this_index as usize].obj.len -= (old_count - count) as usize * 2;
-        let Some(coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else { return false };
+        let Some(coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else {
+            return false;
+        };
         let coverage_size = g.bytes(coverage).len();
         let new_coverage: Vec<u32> = coverage_glyphs(g, coverage)
             .into_iter()
@@ -609,7 +699,8 @@ fn device_table_indices(vf: u32) -> Vec<u32> {
 
 /// `PairPosFormat2::get_class1_record_size`.
 fn pair2_class1_record_size(g: &Graph, idx: u32) -> usize {
-    g.u16_at(idx, 14) as usize * (value_format_size(g.u16_at(idx, 4)) + value_format_size(g.u16_at(idx, 6)))
+    g.u16_at(idx, 14) as usize
+        * (value_format_size(g.u16_at(idx, 4)) + value_format_size(g.u16_at(idx, 6)))
 }
 
 /// `class_def_size_estimator_t`.
@@ -659,8 +750,10 @@ impl ClassDefSizeEstimator {
     }
 
     fn coverage_size(&self) -> u32 {
-        let format1_size = Self::COVERAGE_BASE_SIZE + Self::BYTES_PER_GLYPH * self.included_glyphs.len() as u32;
-        let format2_size = Self::COVERAGE_BASE_SIZE + Self::BYTES_PER_RANGE * num_ranges(&self.included_glyphs);
+        let format1_size =
+            Self::COVERAGE_BASE_SIZE + Self::BYTES_PER_GLYPH * self.included_glyphs.len() as u32;
+        let format2_size =
+            Self::COVERAGE_BASE_SIZE + Self::BYTES_PER_RANGE * num_ranges(&self.included_glyphs);
         format1_size.min(format2_size)
     }
 
@@ -670,10 +763,13 @@ impl ClassDefSizeEstimator {
                 self.included_glyphs.extend(glyphs.iter().copied());
             }
             self.class_def_1_size = Self::CLASS_DEF_FORMAT1_BASE_SIZE;
-            if let (Some(&min), Some(&max)) = (self.included_glyphs.first(), self.included_glyphs.last()) {
+            if let (Some(&min), Some(&max)) =
+                (self.included_glyphs.first(), self.included_glyphs.last())
+            {
                 self.class_def_1_size += Self::BYTES_PER_GLYPH * (max - min + 1);
             }
-            self.class_def_2_size += Self::BYTES_PER_RANGE * self.num_ranges_per_class.get(&klass).copied().unwrap_or(0);
+            self.class_def_2_size +=
+                Self::BYTES_PER_RANGE * self.num_ranges_per_class.get(&klass).copied().unwrap_or(0);
             self.included_classes.insert(klass);
         }
         self.class_def_1_size.min(self.class_def_2_size)
@@ -711,14 +807,24 @@ fn pair_pos2_split(c: &mut Ctx, g: &mut Graph, this_index: u32) -> Option<Vec<u3
     let class_def_2_size = g.vertices[class_def_2_id as usize].table_size() as u32;
     // `get_coverage`, `get_class_def_1`: the `Null` objects when they do not sanitize.
     let coverage_id = g.index_for_offset(this_index, 2);
-    let coverage_glyphs_v: Vec<u32> =
-        if coverage_id != NONE && coverage_sanitize(g, coverage_id) { coverage_glyphs(g, coverage_id) } else { Vec::new() };
+    let coverage_glyphs_v: Vec<u32> = if coverage_id != NONE && coverage_sanitize(g, coverage_id) {
+        coverage_glyphs(g, coverage_id)
+    } else {
+        Vec::new()
+    };
     let class_def_1_id = g.index_for_offset(this_index, 8);
     let class_def_1_ok = class_def_1_id != NONE && class_def_sanitize(g, class_def_1_id);
     let get_class_1 = |g: &Graph, gid: u32| -> u32 {
-        if class_def_1_ok { ClassDef(View::new(g.bytes(class_def_1_id))).get_class(gid) } else { 0 }
+        if class_def_1_ok {
+            ClassDef(View::new(g.bytes(class_def_1_id))).get_class(gid)
+        } else {
+            0
+        }
     };
-    let gid_and_class: Vec<(u32, u32)> = coverage_glyphs_v.iter().map(|&gid| (gid, get_class_1(g, gid))).collect();
+    let gid_and_class: Vec<(u32, u32)> = coverage_glyphs_v
+        .iter()
+        .map(|&gid| (gid, get_class_1(g, gid)))
+        .collect();
     let mut estimator = ClassDefSizeEstimator::new(&gid_and_class);
     let class1_count = g.u16_at(this_index, 12);
     let class2_count = g.u16_at(this_index, 14);
@@ -729,30 +835,39 @@ fn pair_pos2_split(c: &mut Ctx, g: &mut Graph, this_index: u32) -> Option<Vec<u3
     let value_2_len = value_format_len(vf2);
     let total_value_len = value_1_len + value_2_len;
     let mut accumulated = base_size;
-    let mut coverage_size;
-    let mut class_def_1_size;
     let mut max_coverage_size = 4u32;
     let mut max_class_def_1_size = 4u32;
     let mut split_points = Vec::new();
     let device_tables = g.vertices[this_index as usize].position_to_index_map();
     let format1_device_table_indices = device_table_indices(vf1);
     let format2_device_table_indices = device_table_indices(vf2);
-    let has_device_tables = !format1_device_table_indices.is_empty() || !format2_device_table_indices.is_empty();
+    let has_device_tables =
+        !format1_device_table_indices.is_empty() || !format2_device_table_indices.is_empty();
     let mut visited = BTreeSet::new();
     for i in 0..class1_count {
         let mut accumulated_delta = class1_record_size;
-        class_def_1_size = estimator.add_class_def_size(i);
-        coverage_size = estimator.coverage_size();
+        let class_def_1_size = estimator.add_class_def_size(i);
+        let coverage_size = estimator.coverage_size();
         max_coverage_size = max_coverage_size.max(coverage_size);
         max_class_def_1_size = max_class_def_1_size.max(class_def_1_size);
         if has_device_tables {
             for j in 0..class2_count {
                 let value1_index = total_value_len * (class2_count * i + j);
                 let value2_index = value1_index + value_1_len;
-                accumulated_delta +=
-                    size_of_value_record_children(g, &device_tables, &format1_device_table_indices, value1_index, &mut visited);
-                accumulated_delta +=
-                    size_of_value_record_children(g, &device_tables, &format2_device_table_indices, value2_index, &mut visited);
+                accumulated_delta += size_of_value_record_children(
+                    g,
+                    &device_tables,
+                    &format1_device_table_indices,
+                    value1_index,
+                    &mut visited,
+                );
+                accumulated_delta += size_of_value_record_children(
+                    g,
+                    &device_tables,
+                    &format2_device_table_indices,
+                    value2_index,
+                    &mut visited,
+                );
             }
         }
         accumulated += accumulated_delta;
@@ -762,8 +877,8 @@ fn pair_pos2_split(c: &mut Ctx, g: &mut Graph, this_index: u32) -> Option<Vec<u3
             split_points.push(i);
             accumulated = base_size + accumulated_delta;
             estimator.reset();
-            class_def_1_size = estimator.add_class_def_size(i);
-            coverage_size = estimator.coverage_size();
+            // The sizes HarfBuzz assigns here are overwritten at the top of the next iteration.
+            estimator.add_class_def_size(i);
             visited.clear();
         }
     }
@@ -791,7 +906,9 @@ fn size_of_value_record_children(
     let mut size = 0;
     for &i in device_table_indices {
         let record_position = 16 + 2 * (value_record_index + i);
-        let Some(obj_idx) = device_tables.has(record_position) else { continue };
+        let Some(obj_idx) = device_tables.has(record_position) else {
+            continue;
+        };
         size += g.find_subgraph_size(obj_idx, visited, u32::MAX) as u32;
     }
     size
@@ -802,11 +919,11 @@ impl SplitContext for PairPos2Split {
         g.u16_at(self.this_index, 12)
     }
 
-    fn clone_range(&mut self, c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
+    fn clone_range(&mut self, _c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
         let this_index = self.this_index;
         let num_records = end - start;
         let prime_size = 16 + num_records as usize * self.class1_record_size as usize;
-        let pair_pos_prime_id = c.create_node(g, prime_size);
+        let pair_pos_prime_id = create_node(g, prime_size);
         if pair_pos_prime_id == NONE {
             return NONE;
         }
@@ -837,14 +954,28 @@ impl SplitContext for PairPos2Split {
             .map(|(gid, klass)| (gid, klass - start))
             .collect();
         let cov: Vec<u32> = klass_map.iter().map(|p| p.0).collect();
-        if !add_coverage(g, pair_pos_prime_id, 2, &cov, self.max_coverage_size as usize) {
+        if !add_coverage(
+            g,
+            pair_pos_prime_id,
+            2,
+            &cov,
+            self.max_coverage_size as usize,
+        ) {
             return NONE;
         }
-        if !add_class_def(g, pair_pos_prime_id, 8, &klass_map, self.max_class_def_size as usize) {
+        if !add_class_def(
+            g,
+            pair_pos_prime_id,
+            8,
+            &klass_map,
+            self.max_class_def_size as usize,
+        ) {
             return NONE;
         }
         let class_def_2_id = g.index_for_offset(this_index, 10);
-        g.vertices[pair_pos_prime_id as usize].real_links.push(GLink::new(2, class_def_2_id, 10));
+        g.vertices[pair_pos_prime_id as usize]
+            .real_links
+            .push(GLink::new(2, class_def_2_id, 10));
         g.vertices[class_def_2_id as usize].add_parent(pair_pos_prime_id, false);
         g.duplicate_for_parent(pair_pos_prime_id, class_def_2_id);
         pair_pos_prime_id
@@ -857,9 +988,14 @@ impl SplitContext for PairPos2Split {
             return true;
         }
         g.set_u16_at(this_index, 12, count);
-        g.vertices[this_index as usize].obj.len -= (old_count - count) as usize * self.class1_record_size as usize;
-        let Some(coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else { return false };
-        let Some(class_def_1) = as_mutable_index(g, this_index, 8, class_def_sanitize) else { return false };
+        g.vertices[this_index as usize].obj.len -=
+            (old_count - count) as usize * self.class1_record_size as usize;
+        let Some(coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else {
+            return false;
+        };
+        let Some(class_def_1) = as_mutable_index(g, this_index, 8, class_def_sanitize) else {
+            return false;
+        };
         let klass_map: Vec<(u32, u32)> = {
             let cd = ClassDef(View::new(g.bytes(class_def_1)));
             coverage_glyphs(g, coverage)
@@ -882,12 +1018,20 @@ impl PairPos2Split {
     fn clone_class1_records(&self, g: &mut Graph, pair_pos_prime_id: u32, start: u32, end: u32) {
         let crs = self.class1_record_size as usize;
         let num_records = (end - start) as usize;
-        let src: Vec<u8> = g.bytes(self.this_index).iter().skip(16 + start as usize * crs).take(num_records * crs).copied().collect();
+        let src: Vec<u8> = g
+            .bytes(self.this_index)
+            .iter()
+            .skip(16 + start as usize * crs)
+            .take(num_records * crs)
+            .copied()
+            .collect();
         {
             let dst = g.bytes_mut(pair_pos_prime_id);
             dst[16..16 + src.len()].copy_from_slice(&src);
         }
-        if self.format1_device_table_indices.is_empty() && self.format2_device_table_indices.is_empty() {
+        if self.format1_device_table_indices.is_empty()
+            && self.format2_device_table_indices.is_empty()
+        {
             return;
         }
         let class2_count = g.u16_at(self.this_index, 14);
@@ -897,8 +1041,20 @@ impl PairPos2Split {
                 let value2_index = value1_index + self.value1_record_len;
                 let new_value1_index = self.value_record_len * (class2_count * (i - start) + j);
                 let new_value2_index = new_value1_index + self.value1_record_len;
-                self.transfer_device_tables(g, pair_pos_prime_id, &self.format1_device_table_indices, value1_index, new_value1_index);
-                self.transfer_device_tables(g, pair_pos_prime_id, &self.format2_device_table_indices, value2_index, new_value2_index);
+                self.transfer_device_tables(
+                    g,
+                    pair_pos_prime_id,
+                    &self.format1_device_table_indices,
+                    value1_index,
+                    new_value1_index,
+                );
+                self.transfer_device_tables(
+                    g,
+                    pair_pos_prime_id,
+                    &self.format2_device_table_indices,
+                    value2_index,
+                    new_value2_index,
+                );
             }
         }
     }
@@ -982,9 +1138,17 @@ fn mark_base1_get_class_info(g: &Graph, this_index: u32) -> Vec<ClassInfo> {
         return Vec::new();
     }
     let mut class_to_info = vec![ClassInfo::default(); class_count];
-    let Some(mark_array) = as_index(g, this_index, 8, mark_array_ok) else { return Vec::new() };
+    let Some(mark_array) = as_index(g, this_index, 8, mark_array_ok) else {
+        return Vec::new();
+    };
     let mark_count = g.u16_at(mark_array, 0);
-    let record_class = |mark: u32| -> u32 { if mark < mark_count { g.u16_at(mark_array, 2 + 4 * mark as usize) } else { 0 } };
+    let record_class = |mark: u32| -> u32 {
+        if mark < mark_count {
+            g.u16_at(mark_array, 2 + 4 * mark as usize)
+        } else {
+            0
+        }
+    };
     for mark in 0..mark_count {
         let klass = record_class(mark);
         if klass as usize >= class_count {
@@ -998,13 +1162,17 @@ fn mark_base1_get_class_info(g: &Graph, this_index: u32) -> Vec<ClassInfo> {
         if klass as usize >= class_count {
             continue;
         }
-        class_to_info[klass as usize].child_indices.push(link.objidx);
+        class_to_info[klass as usize]
+            .child_indices
+            .push(link.objidx);
     }
     let base_array_id = g.index_for_offset(this_index, 10);
     for link in &g.vertices[base_array_id as usize].real_links {
         let index = (link.position.wrapping_sub(2)) / 2;
         let klass = index % class_count as u32;
-        class_to_info[klass as usize].child_indices.push(link.objidx);
+        class_to_info[klass as usize]
+            .child_indices
+            .push(link.objidx);
     }
     class_to_info
 }
@@ -1015,7 +1183,9 @@ fn mark_base1_split_subtables(c: &mut Ctx, g: &mut Graph, this_index: u32) -> Op
     let base_size = 12 + 2 + 2 + g.vertices[base_coverage_id as usize].table_size() as u32;
     let class_to_info = mark_base1_get_class_info(g, this_index);
     let class_count = g.u16_at(this_index, 6);
-    let Some(base_array) = as_index(g, this_index, 10, |g, i| anchor_matrix_ok(g, i, class_count)) else {
+    let Some(base_array) = as_index(g, this_index, 10, |g, i| {
+        anchor_matrix_ok(g, i, class_count)
+    }) else {
         return Some(Vec::new());
     };
     let base_count = g.u16_at(base_array, 0);
@@ -1053,9 +1223,9 @@ impl SplitContext for MarkBase1Split {
         g.u16_at(self.this_index, 6)
     }
 
-    fn clone_range(&mut self, c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
+    fn clone_range(&mut self, _c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
         let this_index = self.this_index;
-        let prime_id = c.create_node(g, 12);
+        let prime_id = create_node(g, 12);
         if prime_id == NONE {
             return NONE;
         }
@@ -1066,7 +1236,9 @@ impl SplitContext for MarkBase1Split {
         let base_coverage_id = g.index_for_offset(this_index, 4);
         g.add_link(4, prime_id, base_coverage_id);
         g.duplicate_for_parent(prime_id, base_coverage_id);
-        let Some(mark_coverage) = as_index(g, this_index, 2, coverage_sanitize) else { return 0 };
+        let Some(mark_coverage) = as_index(g, this_index, 2, coverage_sanitize) else {
+            return 0;
+        };
         let marks = self.marks_for(start, end);
         let new_coverage: Vec<u32> = coverage_glyphs(g, mark_coverage)
             .into_iter()
@@ -1077,12 +1249,18 @@ impl SplitContext for MarkBase1Split {
         if !add_coverage(g, prime_id, 2, &new_coverage, marks.len() * 2 + 4) {
             return NONE;
         }
-        let Some(mark_array) = as_index(g, this_index, 8, mark_array_ok) else { return NONE };
+        let Some(mark_array) = as_index(g, this_index, 8, mark_array_ok) else {
+            return NONE;
+        };
         let new_mark_array = mark_array_clone(g, mark_array, &self.mark_array_links, &marks, start);
         g.add_link(8, prime_id, new_mark_array);
         let class_count = g.u16_at(this_index, 6);
-        let Some(base_array) = as_index(g, this_index, 10, |g, i| anchor_matrix_ok(g, i, class_count)) else { return NONE };
-        let new_base_array = anchor_matrix_clone(c, g, base_array, start, end, class_count);
+        let Some(base_array) = as_index(g, this_index, 10, |g, i| {
+            anchor_matrix_ok(g, i, class_count)
+        }) else {
+            return NONE;
+        };
+        let new_base_array = anchor_matrix_clone(g, base_array, start, end, class_count);
         g.add_link(10, prime_id, new_base_array);
         prime_id
     }
@@ -1094,7 +1272,9 @@ impl SplitContext for MarkBase1Split {
             return true;
         }
         g.set_u16_at(this_index, 6, count);
-        let Some(mark_coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else { return false };
+        let Some(mark_coverage) = as_mutable_index(g, this_index, 2, coverage_sanitize) else {
+            return false;
+        };
         let marks = self.marks_for(0, count);
         let new_coverage: Vec<u32> = coverage_glyphs(g, mark_coverage)
             .into_iter()
@@ -1105,20 +1285,29 @@ impl SplitContext for MarkBase1Split {
         if !make_coverage(g, &new_coverage, mark_coverage, 4 + 2 * marks.len()) {
             return false;
         }
-        let Some(base_array) = as_mutable_index(g, this_index, 10, |g, i| anchor_matrix_ok(g, i, old_count)) else {
+        let Some(base_array) =
+            as_mutable_index(g, this_index, 10, |g, i| anchor_matrix_ok(g, i, old_count))
+        else {
             return false;
         };
         if !anchor_matrix_shrink(g, base_array, old_count, count) {
             return false;
         }
-        let Some(mark_array) = as_mutable_index(g, this_index, 8, mark_array_ok) else { return false };
+        let Some(mark_array) = as_mutable_index(g, this_index, 8, mark_array_ok) else {
+            return false;
+        };
         let _ = c;
         mark_array_shrink(g, &self.mark_array_links, mark_array, count)
     }
 }
 
 /// `AnchorMatrix::shrink`.
-fn anchor_matrix_shrink(g: &mut Graph, this_index: u32, old_class_count: u32, new_class_count: u32) -> bool {
+fn anchor_matrix_shrink(
+    g: &mut Graph,
+    this_index: u32,
+    old_class_count: u32,
+    new_class_count: u32,
+) -> bool {
     if new_class_count >= old_class_count {
         return false;
     }
@@ -1138,11 +1327,17 @@ fn anchor_matrix_shrink(g: &mut Graph, this_index: u32, old_class_count: u32, ne
 }
 
 /// `AnchorMatrix::clone`.
-fn anchor_matrix_clone(c: &Ctx, g: &mut Graph, this_index: u32, start: u32, end: u32, class_count: u32) -> u32 {
+fn anchor_matrix_clone(
+    g: &mut Graph,
+    this_index: u32,
+    start: u32,
+    end: u32,
+    class_count: u32,
+) -> u32 {
     let base_count = g.u16_at(this_index, 0);
     let new_class_count = end - start;
     let size = 2 + 2 * new_class_count as usize * base_count as usize;
-    let prime_id = c.create_node(g, size);
+    let prime_id = create_node(g, size);
     if prime_id == NONE {
         return NONE;
     }
@@ -1163,7 +1358,9 @@ fn anchor_matrix_clone(c: &Ctx, g: &mut Graph, this_index: u32, start: u32, end:
         let child_idx = link.objidx;
         g.add_link(2 + 2 * new_index, prime_id, child_idx);
         g.vertices[child_idx as usize].remove_parent(this_index);
-        g.vertices[this_index as usize].real_links.swap_remove(i as usize);
+        g.vertices[this_index as usize]
+            .real_links
+            .swap_remove(i as usize);
         num_links -= 1;
         // `i--` followed by the loop's `i++`
     }
@@ -1171,7 +1368,12 @@ fn anchor_matrix_clone(c: &Ctx, g: &mut Graph, this_index: u32, start: u32, end:
 }
 
 /// `MarkArray::shrink`.
-fn mark_array_shrink(g: &mut Graph, mark_array_links: &HbMap, this_index: u32, new_class_count: u32) -> bool {
+fn mark_array_shrink(
+    g: &mut Graph,
+    mark_array_links: &HbMap,
+    this_index: u32,
+    new_class_count: u32,
+) -> bool {
     let links = std::mem::take(&mut g.vertices[this_index as usize].real_links);
     for link in &links {
         g.vertices[link.objidx as usize].remove_parent(this_index);
@@ -1198,13 +1400,21 @@ fn mark_array_shrink(g: &mut Graph, mark_array_links: &HbMap, this_index: u32, n
 }
 
 /// `MarkArray::clone`.
-fn mark_array_clone(g: &mut Graph, this_index: u32, pos_to_index: &HbMap, marks: &BTreeSet<u32>, start_class: u32) -> u32 {
+fn mark_array_clone(
+    g: &mut Graph,
+    this_index: u32,
+    pos_to_index: &HbMap,
+    marks: &BTreeSet<u32>,
+    start_class: u32,
+) -> u32 {
     let size = 2 + 4 * marks.len();
     let obj = g.add_buffer(vec![0; size]);
     let prime_id = g.new_node(obj);
     g.set_u16_at(prime_id, 0, marks.len() as u32);
     for (i, &mark) in marks.iter().enumerate() {
-        let klass = g.u16_at(this_index, 2 + 4 * mark as usize).wrapping_sub(start_class);
+        let klass = g
+            .u16_at(this_index, 2 + 4 * mark as usize)
+            .wrapping_sub(start_class);
         g.set_u16_at(prime_id, 2 + 4 * i, klass);
         let offset_pos = 2 + 4 * mark + 2;
         if pos_to_index.contains(offset_pos) {
@@ -1246,7 +1456,9 @@ fn ligature_subst_split(c: &mut Ctx, g: &mut Graph, idx: u32) -> Option<Vec<u32>
 fn ligature_total_number(g: &Graph, this_index: u32) -> u32 {
     let mut total = 0;
     for i in 0..g.u16_at(this_index, 4) as usize {
-        let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else { return 0 };
+        let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else {
+            return 0;
+        };
         total += g.u16_at(liga_set, 0);
     }
     total
@@ -1254,10 +1466,12 @@ fn ligature_total_number(g: &Graph, this_index: u32) -> u32 {
 
 fn ligature_liga_counts(g: &Graph, this_index: u32) -> Vec<u32> {
     (0..g.u16_at(this_index, 4) as usize)
-        .map(|i| match as_index(g, this_index, 6 + 2 * i, ligature_set_ok) {
-            Some(liga_set) => g.u16_at(liga_set, 0),
-            None => 0,
-        })
+        .map(
+            |i| match as_index(g, this_index, 6 + 2 * i, ligature_set_ok) {
+                Some(liga_set) => g.u16_at(liga_set, 0),
+                None => 0,
+            },
+        )
         .collect()
 }
 
@@ -1285,7 +1499,9 @@ fn ligature_compute_split_points(g: &Graph, this_index: u32) -> Vec<u32> {
     for i in 0..g.u16_at(this_index, 4) as usize {
         accumulated += 2;
         accumulated += 2;
-        let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else { return Vec::new() };
+        let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else {
+            return Vec::new();
+        };
         let index_to_id = ligature_index_to_object_id(g, liga_set);
         for &liga_id in index_to_id.iter().take(g.u16_at(liga_set, 0) as usize) {
             if liga_id == NONE {
@@ -1321,7 +1537,14 @@ fn clear_virtual_links(g: &mut Graph, node_index: u32) {
 /// `add_virtual_link`.
 fn add_virtual_link(g: &mut Graph, from: u32, to: u32) {
     g.vertices[to as usize].add_parent(from, true);
-    g.vertices[from as usize].virtual_links.push(GLink { width: 0, is_signed: false, whence: crate::serialize::Whence::Head, bias: 0, position: 0, objidx: to });
+    g.vertices[from as usize].virtual_links.push(GLink {
+        width: 0,
+        is_signed: false,
+        whence: crate::serialize::Whence::Head,
+        bias: 0,
+        position: 0,
+        objidx: to,
+    });
 }
 
 /// `current_liga_set_bounds`.
@@ -1362,11 +1585,11 @@ impl SplitContext for LigaSplit {
         self.original_count
     }
 
-    fn clone_range(&mut self, c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
+    fn clone_range(&mut self, _c: &mut Ctx, g: &mut Graph, start: u32, end: u32) -> u32 {
         let this_index = self.this_index;
         let set_len = g.u16_at(this_index, 4);
         let prime_size = 6 + 2 * set_len as usize;
-        let liga_subst_prime_id = c.create_node(g, prime_size);
+        let liga_subst_prime_id = create_node(g, prime_size);
         if liga_subst_prime_id == NONE {
             return NONE;
         }
@@ -1375,7 +1598,9 @@ impl SplitContext for LigaSplit {
         g.set_u16_at(liga_subst_prime_id, 4, set_len);
         let coverage_id = g.index_for_offset(this_index, 2);
         let coverage_prime_id = g.duplicate(coverage_id);
-        g.vertices[liga_subst_prime_id as usize].real_links.push(GLink::new(2, coverage_prime_id, 2));
+        g.vertices[liga_subst_prime_id as usize]
+            .real_links
+            .push(GLink::new(2, coverage_prime_id, 2));
         g.vertices[coverage_prime_id as usize].add_parent(liga_subst_prime_id, false);
 
         let mut count = 0u32;
@@ -1390,7 +1615,9 @@ impl SplitContext for LigaSplit {
                 continue;
             }
             let liga_set_index = g.index_for_offset(this_index, 6 + 2 * i);
-            let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else { return NONE };
+            let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else {
+                return NONE;
+            };
             let liga_bounds = current_liga_set_bounds(g, liga_set_index);
             current_start = count.wrapping_add(liga_bounds.0).max(current_start);
             current_end = count.wrapping_add(liga_bounds.1).min(current_end);
@@ -1400,8 +1627,12 @@ impl SplitContext for LigaSplit {
                 if (i as u32) < liga_set_start {
                     liga_set_start = i as u32;
                 }
-                liga_set_prime_id =
-                    g.move_child(this_index, 6 + 2 * i, liga_subst_prime_id, 6 + 2 * liga_set_count as usize);
+                liga_set_prime_id = g.move_child(
+                    this_index,
+                    6 + 2 * i,
+                    liga_subst_prime_id,
+                    6 + 2 * liga_set_count as usize,
+                );
                 liga_set_count += 1;
                 compact_liga_set(g, liga_set);
             } else {
@@ -1410,18 +1641,28 @@ impl SplitContext for LigaSplit {
                 let liga_count = end_index - start_index;
                 // `new_liga_set`
                 let prime_size = 2 + liga_count as usize * 2;
-                let prime = c.create_node(g, prime_size);
+                let prime = create_node(g, prime_size);
                 if prime == NONE {
                     return NONE;
                 }
                 g.set_u16_at(prime, 0, liga_count);
                 liga_set_prime_id = prime;
-                g.move_children(liga_set_index, 2 + start_index * 2, 2 + end_index * 2, liga_set_prime_id, 2);
+                g.move_children(
+                    liga_set_index,
+                    2 + start_index * 2,
+                    2 + end_index * 2,
+                    liga_set_prime_id,
+                    2,
+                );
                 liga_set_end = i as u32;
                 if (i as u32) < liga_set_start {
                     liga_set_start = i as u32;
                 }
-                g.add_link(6 + 2 * liga_set_count, liga_subst_prime_id, liga_set_prime_id);
+                g.add_link(
+                    6 + 2 * liga_set_count,
+                    liga_subst_prime_id,
+                    liga_set_prime_id,
+                );
                 liga_set_count += 1;
             }
             clear_virtual_links(g, liga_set_prime_id);
@@ -1452,12 +1693,13 @@ impl SplitContext for LigaSplit {
         let mut retained_indices: BTreeSet<u32> = BTreeSet::new();
         let mut new_liga_set_count = 0u32;
         for (i, &num_ligas) in self.liga_counts.clone().iter().enumerate() {
-            let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else { return false };
+            let Some(liga_set) = as_index(g, this_index, 6 + 2 * i, ligature_set_ok) else {
+                return false;
+            };
             clear_virtual_links(g, liga_set);
             retained_indices.insert(liga_set);
             let index_to_id = ligature_index_to_object_id(g, liga_set);
-            for j in 0..g.u16_at(liga_set, 0) as usize {
-                let liga_index = index_to_id[j];
+            for &liga_index in index_to_id.iter().take(g.u16_at(liga_set, 0) as usize) {
                 if liga_index != NONE {
                     clear_virtual_links(g, liga_index);
                     retained_indices.insert(liga_index);
@@ -1481,7 +1723,10 @@ impl SplitContext for LigaSplit {
         }
         let coverage_size = g.bytes(coverage_idx).len();
         let coverage_obj = g.vertices[coverage_idx as usize].obj;
-        let coverage_glyphs_v = Coverage(View::new(&g.bufs[coverage_obj.buf][coverage_obj.head..coverage_obj.head + coverage_obj.len])).iter();
+        let coverage_glyphs_v = Coverage(View::new(
+            &g.bufs[coverage_obj.buf][coverage_obj.head..coverage_obj.head + coverage_obj.len],
+        ))
+        .iter();
         if g.vertices[coverage_idx as usize].is_shared() {
             coverage_idx = g.remap_child(this_index, coverage_idx);
             if coverage_idx == NONE {
