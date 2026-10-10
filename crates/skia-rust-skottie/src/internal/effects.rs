@@ -27,6 +27,7 @@ use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
 mod color;
+mod convolution;
 mod filters;
 mod runtime;
 mod styles;
@@ -112,7 +113,12 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
     ("ADBE Invert", color::attach_invert_effect),
+    (
+        "ADBE Motion Blur",
+        convolution::attach_directional_blur_effect,
+    ),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
+    ("ADBE Sharpen", convolution::attach_sharpen_effect),
     ("ADBE Threshold2", color::attach_threshold_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
