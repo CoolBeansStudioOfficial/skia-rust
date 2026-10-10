@@ -51796,6 +51796,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L397-L398"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "2eca21f01a50082412d9fd292be53c8860b3f3e8fd28218d1429dfa4108bbfe0"
 
 [[test]]
@@ -51805,6 +51806,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L455-L456"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "79197ddf913b0e108aa7b4b36a855262130e8e104cf10f842c0409da416072e5"
 
 [[test]]
@@ -51814,6 +51816,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L437-L438"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "11340bfeb171042fc6c0aee0df40929e2a18c10fc852e2e7cbde55230ec4e70b"
 
 [[test]]
@@ -51823,6 +51826,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L435-L436"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "57b37b2a8ae978e233e38ad5aa87dda6e21c60c5803c5a1523bf0be5ae73d0ae"
 
 [[test]]
@@ -51832,6 +51836,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L431-L432"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "47e2a055cd508f8bad15886ae04c3e35c61ff46a6b88b5f6344b51b87c2ac0a6"
 
 [[test]]
@@ -51841,6 +51846,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L443-L444"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "b5d2a6139583198d37833d3ca3a45850f9dea3e2fbd9ca219be8e238a3933084"
 
 [[test]]
@@ -51850,6 +51856,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L401-L402"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "398bccfda4fb9eda5542b4a659502731121ed13efcba90589b977dbc97bb023c"
 
 [[test]]
@@ -51859,6 +51866,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L417-L418"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "b2e8deae285a861dc6469479b4aaf651c8022f5b55fbed1a73b3acb99acaaed7"
 
 [[test]]
@@ -51868,6 +51876,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L409-L410"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "dcdd519a975663376ce43bacfb5efb954c1673796108a019ff73cd3016770386"
 
 [[test]]
@@ -51877,6 +51886,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L413-L414"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "b657046b4839d29d4722b7a8bb05361beb20c3971d196e94141b715eea969d9c"
 
 [[test]]
@@ -51886,6 +51896,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L405-L406"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "4e1a063b2530266d224a4e22e5286f3b7e5f96cb3d4c1af8e1a6fd9af3a24406"
 
 [[test]]
@@ -51895,6 +51906,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L445-L446"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "eec88fe9e2bdf155db372f1a839a6996a5a8c19858f44926b77b16cb4073180a"
 
 [[test]]
@@ -51904,6 +51916,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L439-L440"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "ac6f95256eebe1c1f637e2ce586c82f340d3fee0072feb80783b1d35716ee2ef"
 
 [[test]]
@@ -51913,6 +51926,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L451-L452"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "46d431378f9eeb90f9ddbba9c5408e038f824c7f3ff575a11096dfcbd543d29b"
 
 [[test]]
@@ -51922,6 +51936,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L433-L434"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "f969fdefda575c43ca4434b32946de34d4350214362b04bf0101736649d186d2"
 
 [[test]]
@@ -51931,6 +51946,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L457-L458"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "5f16fc22d864299d917b026075fb5757a1869293e678b2ec688ea384a5419bfd"
 
 [[test]]
@@ -51940,6 +51956,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L423-L424"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "3c4d35a91dbba3cb34f6685e9cb03f72296833f866260961dcf9937d5e1ab39a"
 
 [[test]]
@@ -51949,6 +51966,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L447-L448"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "cbcbd56671fa2ce868056dca120fcb2faca19ac2351e9650d3c0e690c9c8fd49"
 
 [[test]]
@@ -51958,6 +51976,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/NotifyInUseTest.cpp#L182-L222"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "a2dfe3c7152db7d0231134258ef1f39428ee7081b9507529f0342f0371a6c8de"
 
 [[test]]
@@ -51967,6 +51986,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/NotifyInUseTest.cpp#L103-L141"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "f677ab3100d525402c6857473f43eb4c2d32df5f5452b8a5114cc760cc1a1e0e"
 
 [[test]]
@@ -51976,6 +51996,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L429-L430"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "d893e28f8f7dc69a83ad80502758ea8f074e20148a2ef88a95ace17257c22071"
 
 [[test]]
@@ -51985,6 +52006,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L421-L422"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "12cdaa7090d99812acfecad5cbb193f1ea4f2f089ed67cbd46b43c1e41351226"
 
 [[test]]
@@ -51994,6 +52016,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L453-L454"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "8cec35055b172fc0c947e4c4aa0ab3b464199576bd32d4b6fb4da034c1e63d8f"
 
 [[test]]
@@ -52003,6 +52026,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L425-L426"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "9d5ecec5feeb5f75f72b1ffd5e9c400ac019744e2208832a34649882b016c7c1"
 
 [[test]]
@@ -52012,6 +52036,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L441-L442"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "e53d72424c9b9b0febc9572019bd274509230ede1199c8f77abeb24bdc092869"
 
 [[test]]
@@ -52021,6 +52046,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L399-L400"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "0a5c1f42f62fa50e2a7e246d1e80d6ce5c3623d7f9def6c90954ded5858c1738"
 
 [[test]]
@@ -52030,6 +52056,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L415-L416"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "aa66a96e88ef7277833cdecda2339ebcd858ab9d129cce2158757568324d09e9"
 
 [[test]]
@@ -52039,6 +52066,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L407-L408"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "c339bf25d3092051cca5f5ddb2d6b67e451c55d6c4aa95927551c1a0feb5a535"
 
 [[test]]
@@ -52048,6 +52076,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L411-L412"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "f54df62e11daf27a3afa5e5ef7b8bf6629a3041dd11d66abe82cb5441d703356"
 
 [[test]]
@@ -52057,6 +52086,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L403-L404"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "80d6fb4e137d08113c7540f34cdd8906a4e1a39df1d9deb88138ebb2ba3212b7"
 
 [[test]]
@@ -52066,6 +52096,7 @@ macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L419-L420"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "b7391a1f023008371897a73ff308034c9d6fe9861a6e53ab16d122982ac35f41"
 
 [[test]]
