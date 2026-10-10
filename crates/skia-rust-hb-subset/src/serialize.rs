@@ -350,6 +350,16 @@ impl Serializer {
         });
     }
 
+    /// `object_graph ()`: the packed objects as `(bytes, real links, virtual links)`, with `None` for
+    /// the nil object.
+    #[allow(clippy::type_complexity)] // the shape `graph::Graph::new` takes
+    pub(crate) fn object_graph(&self) -> Vec<Option<(Vec<u8>, Vec<Link>, Vec<Link>)>> {
+        self.packed
+            .iter()
+            .map(|o| o.as_ref().map(|o| (o.data.clone(), o.real_links.clone(), o.virtual_links.clone())))
+            .collect()
+    }
+
     /// Port of `end_serialize()` (hb-serialize.hh#L302-L330) followed by `copy_bytes()`
     /// (hb-serialize.hh#L715-L730). Returns `None` on an error. An offset overflow also returns
     /// `None`: `HarfBuzz` would then run the repacker (`hb-repacker.hh`), which is not ported.
