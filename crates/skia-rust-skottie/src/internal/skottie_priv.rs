@@ -25,8 +25,7 @@ use crate::skottie::{
 };
 use crate::skottie_json::{LogJson, ValueExt, parse_default, string_text};
 use crate::skottie_property::{
-    ColorPropertyHandle, NodeType, OpacityPropertyHandle, PropertyObserver,
-    TransformPropertyHandle,
+    ColorPropertyHandle, NodeType, OpacityPropertyHandle, PropertyObserver, TransformPropertyHandle,
 };
 use crate::slot_manager::SlotManager;
 
@@ -165,7 +164,8 @@ impl<'a, 'j> AutoScope<'a, 'j> {
     /// A scope that starts with the given animators.
     #[must_use]
     pub fn with_scope(builder: &'a AnimationBuilder<'j>, scope: AnimatorScope) -> Self {
-        let prev_scope = std::mem::replace(&mut *builder.current_animator_scope.borrow_mut(), scope);
+        let prev_scope =
+            std::mem::replace(&mut *builder.current_animator_scope.borrow_mut(), scope);
         Self {
             builder,
             prev_scope: Some(prev_scope),
@@ -173,6 +173,9 @@ impl<'a, 'j> AutoScope<'a, 'j> {
     }
 
     /// Ends the scope, and returns its animators.
+    ///
+    /// # Panics
+    /// If the scope was released already (not possible: this consumes the scope).
     #[must_use]
     pub fn release(mut self) -> AnimatorScope {
         let prev = self.prev_scope.take().expect("the scope is released once");
@@ -208,7 +211,10 @@ impl<'a, 'j> AutoPropertyTracker<'a, 'j> {
             // updateContext
             let name = obj.get("nm").as_string().map(string_text);
             let context = name.or_else(|| prev_context.clone());
-            *builder.property_observer_context.borrow_mut() = context.clone();
+            builder
+                .property_observer_context
+                .borrow_mut()
+                .clone_from(&context);
             observer.on_enter_node(context.as_deref(), node_type);
         }
         Self {
@@ -310,7 +316,10 @@ impl<'j> AnimationBuilder<'j> {
         let _apt = AutoPropertyTracker::new(self, jroot, NodeType::Composition);
 
         self.parse_assets(jroot.get("assets").as_array());
-        self.parse_fonts(jroot.get("fonts").as_object(), jroot.get("chars").as_array());
+        self.parse_fonts(
+            jroot.get("fonts").as_object(),
+            jroot.get("chars").as_array(),
+        );
         self.slots_root.set(jroot.get("slots").as_object());
 
         let root = CompositionBuilder::new(self, self.comp_size, jroot).build(self);
@@ -352,6 +361,7 @@ impl<'j> AnimationBuilder<'j> {
     /// Resolves the fonts of the animation. Text layers (M22) own the font table; until they are
     /// ported there is nothing to resolve.
     // Port of: modules/skottie/src/text/Font.cpp (chrome/m156) (`AnimationBuilder::parseFonts`)
+    #[allow(clippy::unused_self)] // the font table is M22's; it needs the builder
     fn parse_fonts(&self, _jfonts: Option<&ObjectValue>, _jchars: Option<&ArrayValue>) {
         // TODO(M22): font table and embedded glyph fonts.
     }
@@ -497,7 +507,11 @@ impl<'j> AnimationBuilder<'j> {
         self.image_asset_cache.borrow().get(id).cloned()
     }
 
-    pub(crate) fn cache_footage_asset(&self, id: &str, info: FootageAssetInfo) -> Rc<FootageAssetInfo> {
+    pub(crate) fn cache_footage_asset(
+        &self,
+        id: &str,
+        info: FootageAssetInfo,
+    ) -> Rc<FootageAssetInfo> {
         let info = Rc::new(info);
         self.image_asset_cache
             .borrow_mut()
@@ -661,4 +675,11 @@ impl AnimatablePropertyContainer for OpacityAdapter {
 
 impl_container_animator!(OpacityAdapter);
 
-opaque_debug!(AnimationInfo, FootageAssetInfo, ScopedAssetRef<'j>, AutoScope<'a, 'j>, AutoPropertyTracker<'a, 'j>, AnimationBuilder<'j>);
+opaque_debug!(
+    AnimationInfo,
+    FootageAssetInfo,
+    ScopedAssetRef<'j>,
+    AutoScope<'a, 'j>,
+    AutoPropertyTracker<'a, 'j>,
+    AnimationBuilder<'j>
+);

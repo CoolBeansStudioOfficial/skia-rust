@@ -26484,7 +26484,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/AudioLayer.cpp#L15-L134"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "576673de103f9db058d949f616db049e4e4ecda91b10e1821cd9d34f175df56a"
 
 [[test]]
@@ -26493,7 +26493,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L82-L267"
 module = "skottie"
-status = "todo"
+status = "failing"
+reason = "ported (ignored): the last color property it observes is the ADBE Fill effect's, which is M21; the opacity and transform expressions pass"
 span_hash = "4d3d520bc4b74d1328ed1370c84e61ea182c583cd781d9f6737ef6fbee75a6c4"
 
 [[test]]
@@ -26503,6 +26504,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L269-L364"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22: TextAdapter, TextValue, the shaper)"
 span_hash = "0a8c3b2432a32ee6193bb0a9c038db64774fa0854c38f7713f427525aa404262"
 
 [[test]]
@@ -26511,7 +26513,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Image.cpp#L16-L135"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "a723a06fb725285ee974530e1e5c091f3b79d6f2d47b88f53b71406986e8a130"
 
 [[test]]
@@ -26520,7 +26522,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Keyframe.cpp#L47-L227"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "617485d4ac03673a60cf816b1375b8e52de71126c6f5be206a2c6d3091abcb90"
 
 [[test]]
@@ -26530,6 +26532,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L270-L370"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22) and the ADBE Fill effect (M21)"
 span_hash = "c4a6a5889bbf16c3031beb4697f572b81167325381345e80f559a37b07d1ba1f"
 
 [[test]]
@@ -26539,6 +26542,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L372-L414"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22) and the ADBE Fill effect (M21)"
 span_hash = "44602197777e5443e6093b37df0e434f672ad08f6ff7dae12edd6fe5da53b965"
 
 [[test]]
@@ -26620,7 +26624,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L31-L95"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "4db4ba6d4772a480d787b2eeaa8a56382b86351e8d632f185e36b05a91c76746"
 
 [[test]]
@@ -26629,7 +26633,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L272-L322"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "30288e0efed5505486832bb52df608f1f0b9ccd625a561539c48d82d91bef234"
 
 [[test]]
@@ -26638,7 +26642,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L97-L244"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "ef45e221f4f07ccd4c73b9ad23450987c574d1aa642face5255e0c0979ae8c65"
 
 [[test]]
@@ -26647,7 +26651,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L246-L270"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "a23e254561f26d622220b4771834c03c93db7e0bcc453ec737e087c1d42accb1"
 
 [[test]]
@@ -26656,7 +26660,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L19-L29"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "2d69b0f4e9a2006ce922581980a6dc217779dca55fdb01dc0576b20c71581bbf"
 
 [[test]]

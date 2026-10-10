@@ -82,7 +82,7 @@ pub struct Keyframe {
     /// Encodes the value interpolation in `[KFRec_n .. KFRec_n+1)`:
     ///   0 -> constant
     ///   1 -> linear
-    ///   n -> cubic: cubic_mappers[n-2]
+    ///   n -> cubic: `cubic_mappers[n-2]`
     pub mapping: u32,
 }
 
@@ -162,6 +162,9 @@ impl KeyframeData {
     }
 
     /// Main entry point: `t` -> the interpolation info.
+    ///
+    /// # Panics
+    /// If there are no keyframes.
     // Port of: modules/skottie/src/animator/KeyframeAnimator.cpp#L22-L49 (chrome/m156) (`getLERPInfo`)
     #[must_use]
     pub fn get_lerp_info(&self, t: f32) -> LerpInfo {
@@ -395,6 +398,9 @@ pub trait AnimatorBuilder {
 ///
 /// Note: the legacy format contains duplicates, as normal frames are contiguous:
 ///       frame(n).e == frame(n+1).s
+///
+/// # Panics
+/// If a keyframe that was parsed as an object is not one (not possible).
 // Port of: modules/skottie/src/animator/KeyframeAnimator.cpp#L91-L164 (chrome/m156)
 pub fn parse_keyframes(
     builder: &mut dyn AnimatorBuilder,
@@ -403,23 +409,21 @@ pub fn parse_keyframes(
 ) -> bool {
     let keyframe_type = builder.base().keyframe_type;
 
-    let parse_value = |builder: &mut dyn AnimatorBuilder,
-                           jkf: &ObjectValue,
-                           i: usize,
-                           v: &mut KeyframeValue| {
-        let mut parsed = builder.parse_kf_value(abuilder, jkf, jkf.get("s"), v);
+    let parse_value =
+        |builder: &mut dyn AnimatorBuilder, jkf: &ObjectValue, i: usize, v: &mut KeyframeValue| {
+            let mut parsed = builder.parse_kf_value(abuilder, jkf, jkf.get("s"), v);
 
-        // A missing value is only OK for the last legacy KF
-        // (where it is pulled from prev KF 'end' value).
-        if !parsed && i > 0 && i == jkfs.size() - 1 {
-            let prev_kf = jkfs[i - 1]
-                .as_object()
-                .expect("the previous keyframe was parsed as an object");
-            parsed = builder.parse_kf_value(abuilder, jkf, prev_kf.get("e"), v);
-        }
+            // A missing value is only OK for the last legacy KF
+            // (where it is pulled from prev KF 'end' value).
+            if !parsed && i > 0 && i == jkfs.size() - 1 {
+                let prev_kf = jkfs[i - 1]
+                    .as_object()
+                    .expect("the previous keyframe was parsed as an object");
+                parsed = builder.parse_kf_value(abuilder, jkf, prev_kf.get("e"), v);
+            }
 
-        parsed
-    };
+            parsed
+        };
 
     let mut constant_value = true;
 
@@ -462,7 +466,7 @@ pub fn parse_keyframes(
     }
 
     let base = builder.base();
-    debug_assert!(base.kfs.len() == jkfs.size());
+    debug_assert_eq!(base.kfs.len(), jkfs.size());
     base.cms.shrink_to_fit();
 
     if constant_value {

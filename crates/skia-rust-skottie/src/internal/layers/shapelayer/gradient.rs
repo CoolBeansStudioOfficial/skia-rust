@@ -16,9 +16,7 @@ use skia_rust_core::t_pin::t_pin;
 use skia_rust_sksg::gradient::ColorStop;
 use skia_rust_sksg::{LinearGradient, PaintNode, RadialGradient, ShaderNode, ShaderPaint};
 
-use crate::internal::animator::{
-    AnimatablePropertyContainer, Prop, PropertyContainer,
-};
+use crate::internal::animator::{AnimatablePropertyContainer, Prop, PropertyContainer};
 use crate::internal::skottie_priv::AnimationBuilder;
 use crate::json::ObjectValue;
 use crate::skottie_json::{ValueExt, parse_default};
@@ -166,8 +164,8 @@ impl GradientAdapter {
                 //     vector, where 0% corresponds to s_point and 100% corresponds to e_point.
                 //   - highlight angle rotates the point around s_point
                 //
-                let rotated_e_point =
-                    Matrix::rotate_deg_pivot(self.highlight_angle.get(), s_point).map_point(e_point);
+                let rotated_e_point = Matrix::rotate_deg_pivot(self.highlight_angle.get(), s_point)
+                    .map_point(e_point);
 
                 // The valid range for length is [-100% .. 100%], where negative values mirror the
                 // positive interval relative to s_point.

@@ -20,10 +20,14 @@ use crate::json::ObjectValue;
 use crate::skottie_value::VectorValue;
 
 use super::animator::{
-    AnimatablePropertyContainer, Animator, DiscardableAdapterBase, IntoJsonProp, Prop, PropertyContainer,
+    AnimatablePropertyContainer, Animator, DiscardableAdapterBase, IntoJsonProp, Prop,
+    PropertyContainer,
 };
 use super::camera::CameraState;
 use super::skottie_priv::AnimationBuilder;
+
+/// The skew limit of AE, in degrees.
+const MAX_SKEW_ANGLE: f32 = 85.0;
 
 /// The 2D transform of a layer or shape group.
 // Port of: modules/skottie/src/Transform.h#L29-L68 (chrome/m156) (`class TransformAdapter2D`)
@@ -43,6 +47,7 @@ pub struct TransformAdapter2D {
 impl TransformAdapter2D {
     /// Binds the transform properties (`TransformAdapter2D::TransformAdapter2D`).
     // Port of: modules/skottie/src/Transform.cpp#L22-L40 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ constructor
     pub fn make<'a>(
         abuilder: &AnimationBuilder<'_>,
         janchor_point: impl IntoJsonProp<'a>,
@@ -77,7 +82,11 @@ impl TransformAdapter2D {
                 abuilder,
                 jposition,
                 &position,
-                if auto_orient { Some(&orientation) } else { None },
+                if auto_orient {
+                    Some(&orientation)
+                } else {
+                    None
+                },
             );
 
             Self {
@@ -186,7 +195,6 @@ impl TransformAdapter2D {
             }
 
             // AE control limit.
-            const MAX_SKEW_ANGLE: f32 = 85.0;
             sk = -float_degrees_to_radians(t_pin(sk, -MAX_SKEW_ANGLE, MAX_SKEW_ANGLE));
             sa = float_degrees_to_radians(sa);
 

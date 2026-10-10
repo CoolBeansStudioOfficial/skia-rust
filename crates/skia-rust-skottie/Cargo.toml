@@ -16,5 +16,8 @@ skia-rust-resources.workspace = true
 skia-rust-effects.workspace = true
 bitflags.workspace = true
 
+[dev-dependencies]
+skia-rust-raster.workspace = true
+
 [lints]
 workspace = true

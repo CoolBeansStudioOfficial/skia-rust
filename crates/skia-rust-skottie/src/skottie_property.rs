@@ -210,7 +210,12 @@ pub type LazyHandle<'a, T> = &'a dyn Fn() -> Box<T>;
 pub trait PropertyObserver {
     /// A color property (`onColorProperty`).
     #[doc(alias = "onColorProperty")]
-    fn on_color_property(&self, _node_name: Option<&str>, _handle: LazyHandle<'_, ColorPropertyHandle>) {}
+    fn on_color_property(
+        &self,
+        _node_name: Option<&str>,
+        _handle: LazyHandle<'_, ColorPropertyHandle>,
+    ) {
+    }
 
     /// An opacity property (`onOpacityProperty`).
     #[doc(alias = "onOpacityProperty")]

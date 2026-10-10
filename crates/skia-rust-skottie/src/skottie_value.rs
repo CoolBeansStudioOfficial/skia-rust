@@ -46,7 +46,7 @@ impl VectorValue {
     #[must_use]
     pub fn to_v3(&self) -> V3 {
         V3 {
-            x: if !self.is_empty() { self[0] } else { 0.0 },
+            x: if self.is_empty() { 0.0 } else { self[0] },
             y: if self.len() > 1 { self[1] } else { 0.0 },
             z: if self.len() > 2 { self[2] } else { 0.0 },
         }
@@ -96,10 +96,10 @@ impl ColorValue {
     // Port of: modules/skottie/src/animator/VectorKeyframeAnimator.cpp#L68-L77 (chrome/m156)
     #[must_use]
     pub fn to_color4f(&self) -> Color4f {
-        let r = if !self.is_empty() {
-            t_pin(self[0], 0.0, 1.0)
-        } else {
+        let r = if self.is_empty() {
             0.0
+        } else {
+            t_pin(self[0], 0.0, 1.0)
         };
         let g = if self.len() > 1 {
             t_pin(self[1], 0.0, 1.0)

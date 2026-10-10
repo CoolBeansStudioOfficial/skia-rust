@@ -167,7 +167,7 @@ impl std::fmt::Debug for PropertyContainer {
             .field("animators", &self.animators.borrow().len())
             .field("has_synced", &self.has_synced.get())
             .field("has_slot_id", &self.has_slot_id.get())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -340,7 +340,11 @@ impl PropertyContainer {
         if let Some(jprop_slot_id) = jprop.get("sid").as_string() {
             match abuilder.get_slots_root() {
                 None => {
-                    abuilder.log_json(LoggerLevel::Warning, jprop, "Slotid found but no slots were found in the json. Using default values.");
+                    abuilder.log_json(
+                        LoggerLevel::Warning,
+                        jprop,
+                        "Slotid found but no slots were found in the json. Using default values.",
+                    );
                 }
                 Some(slots_root) => {
                     let slot = slots_root.get(&string_text(jprop_slot_id)).as_object();
@@ -351,7 +355,11 @@ impl PropertyContainer {
                             None => return false,
                         }
                     } else {
-                        abuilder.log_json(LoggerLevel::Warning, jprop, "Specified slotID not found in 'slots'. Using default values.");
+                        abuilder.log_json(
+                            LoggerLevel::Warning,
+                            jprop,
+                            "Specified slotID not found in 'slots'. Using default values.",
+                        );
                     }
                 }
             }
@@ -371,7 +379,11 @@ impl PropertyContainer {
                     return true;
                 }
             } else {
-                abuilder.log_json(LoggerLevel::Warning, jprop, "Expression encountered but ExpressionManager not provided.");
+                abuilder.log_json(
+                    LoggerLevel::Warning,
+                    jprop,
+                    "Expression encountered but ExpressionManager not provided.",
+                );
             }
         }
 
@@ -384,21 +396,29 @@ impl PropertyContainer {
             }
 
             if !matches!(jprop_a, Value::Null(_)) {
-                abuilder.log_json(LoggerLevel::Error, jprop, "Could not parse (explicit) static property.");
+                abuilder.log_json(
+                    LoggerLevel::Error,
+                    jprop,
+                    "Could not parse (explicit) static property.",
+                );
                 return false;
             }
         }
 
         // Keyframed property.
         let mut animator = None;
-        if let Some(jkfs) = jprop_k.as_array() {
-            if jkfs.size() > 0 {
-                animator = builder.make_from_keyframes(abuilder, jkfs);
-            }
+        if let Some(jkfs) = jprop_k.as_array()
+            && jkfs.size() > 0
+        {
+            animator = builder.make_from_keyframes(abuilder, jkfs);
         }
 
         let Some(animator) = animator else {
-            abuilder.log_json(LoggerLevel::Error, jprop, "Could not parse keyframed property.");
+            abuilder.log_json(
+                LoggerLevel::Error,
+                jprop,
+                "Could not parse keyframed property.",
+            );
             return false;
         };
 
@@ -457,7 +477,12 @@ impl Bindable for f32 {
         jprop: Option<&ObjectValue>,
         target: &Prop<Self>,
     ) -> bool {
-        scalar_keyframe_animator::bind(container, abuilder, jprop, ScalarTarget::Whole(target.clone()))
+        scalar_keyframe_animator::bind(
+            container,
+            abuilder,
+            jprop,
+            ScalarTarget::Whole(target.clone()),
+        )
     }
 }
 
@@ -495,9 +520,11 @@ impl Bindable for ColorValue {
     ) -> bool {
         if let Some(sid) = parse_slot_id(jprop) {
             container.set_has_slot_id();
-            abuilder
-                .slot_manager()
-                .track_color_value(&string_text(sid), target.clone(), container.this());
+            abuilder.slot_manager().track_color_value(
+                &string_text(sid),
+                target.clone(),
+                container.this(),
+            );
         }
         vector_keyframe_animator::bind_vector(container, abuilder, jprop, target)
     }

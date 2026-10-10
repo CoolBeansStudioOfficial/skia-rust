@@ -120,9 +120,11 @@ impl<T: FloatVec> Animator for VectorKeyframeAnimator<T> {
         let v1 = &self.storage[o1..o1 + self.vec_len];
         let mut target = self.target.borrow_mut();
         let dst = target.floats_mut();
-        debug_assert!(dst.len() == self.vec_len);
+        debug_assert_eq!(dst.len(), self.vec_len);
 
-        let is_constant = lerp_info.vrec0.equals(lerp_info.vrec1, KeyframeValueType::Index);
+        let is_constant = lerp_info
+            .vrec0
+            .equals(lerp_info.vrec1, KeyframeValueType::Index);
         if is_constant {
             // memcmp: bitwise comparison.
             if dst.iter().zip(v0).any(|(d, s)| d.to_bits() != s.to_bits()) {
@@ -225,8 +227,8 @@ impl<T: FloatVec> AnimatorBuilder for VectorAnimatorBuilder<T> {
         debug_assert!(jkfs.size() > 0);
 
         // peek at the first keyframe value to find our vector length
-        let jkf0 = jkfs[0].as_object()?;
-        if !(self.parse_len)(jkf0.get("s"), &mut self.vec_len) {
+        let first_kf = jkfs[0].as_object()?;
+        if !(self.parse_len)(first_kf.get("s"), &mut self.vec_len) {
             return None;
         }
 
@@ -296,7 +298,11 @@ impl<T: FloatVec> AnimatorBuilder for VectorAnimatorBuilder<T> {
         let mut offset = self.current_vec * self.vec_len;
         debug_assert!(offset + self.vec_len <= self.storage.len());
 
-        if !(self.parse_data)(jv, self.vec_len, &mut self.storage[offset..offset + self.vec_len]) {
+        if !(self.parse_data)(
+            jv,
+            self.vec_len,
+            &mut self.storage[offset..offset + self.vec_len],
+        ) {
             return false;
         }
 
@@ -444,6 +450,7 @@ impl VectorBindTarget for ShapeValue {
 
 impl<T: FloatVec> std::fmt::Debug for VectorAnimatorBuilder<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("VectorAnimatorBuilder").finish_non_exhaustive()
+        f.debug_struct("VectorAnimatorBuilder")
+            .finish_non_exhaustive()
     }
 }

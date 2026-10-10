@@ -147,8 +147,7 @@ impl MaskAdapter {
         );
 
         if self.requires_isolation() {
-            mask = LayerEffect::make(Some(mask), self.blend_mode)
-                .expect("the mask is not null");
+            mask = LayerEffect::make(Some(mask), self.blend_mode).expect("the mask is not null");
         }
 
         mask
@@ -158,7 +157,11 @@ impl MaskAdapter {
     fn requires_isolation_for(blend_mode: BlendMode) -> bool {
         debug_assert!(matches!(
             blend_mode,
-            BlendMode::Src | BlendMode::SrcOver | BlendMode::SrcIn | BlendMode::DstOut | BlendMode::Xor
+            BlendMode::Src
+                | BlendMode::SrcOver
+                | BlendMode::SrcIn
+                | BlendMode::DstOut
+                | BlendMode::Xor
         ));
 
         // Some mask modes touch pixels outside the immediate draw geometry.
@@ -366,7 +369,7 @@ impl Animator for LayerController {
 
 /// The layer transform also applies to its effects.
 const TRANSFORM_EFFECTS: u32 = 0x01;
-/// Dispatch all seek() events even when the layer is inactive.
+/// Dispatch all `seek()` events even when the layer is inactive.
 const FORCE_SEEK: u32 = 0x02;
 
 /// The kinds of layers that have content builders.
@@ -435,13 +438,34 @@ impl<'j> LayerBuilder<'j> {
 
         // This table maps the 'ty' field to the appropriate layer building member function
         let builder_info = match layer_type {
-            0 => BuilderInfo { kind: Some(LayerKind::Precomp), flags: TRANSFORM_EFFECTS }, // precomp
-            1 => BuilderInfo { kind: Some(LayerKind::Solid), flags: TRANSFORM_EFFECTS },   // solid
-            2 | 9 => BuilderInfo { kind: Some(LayerKind::Footage), flags: TRANSFORM_EFFECTS }, // image, video
-            3 | 13 => BuilderInfo { kind: Some(LayerKind::Null), flags: 0 }, // null, camera
-            4 => BuilderInfo { kind: Some(LayerKind::Shape), flags: 0 },     // shape
-            5 => BuilderInfo { kind: Some(LayerKind::Text), flags: 0 },      // text
-            6 => BuilderInfo { kind: Some(LayerKind::Audio), flags: FORCE_SEEK }, // audio
+            0 => BuilderInfo {
+                kind: Some(LayerKind::Precomp),
+                flags: TRANSFORM_EFFECTS,
+            }, // precomp
+            1 => BuilderInfo {
+                kind: Some(LayerKind::Solid),
+                flags: TRANSFORM_EFFECTS,
+            }, // solid
+            2 | 9 => BuilderInfo {
+                kind: Some(LayerKind::Footage),
+                flags: TRANSFORM_EFFECTS,
+            }, // image, video
+            3 | 13 => BuilderInfo {
+                kind: Some(LayerKind::Null),
+                flags: 0,
+            }, // null, camera
+            4 => BuilderInfo {
+                kind: Some(LayerKind::Shape),
+                flags: 0,
+            }, // shape
+            5 => BuilderInfo {
+                kind: Some(LayerKind::Text),
+                flags: 0,
+            }, // text
+            6 => BuilderInfo {
+                kind: Some(LayerKind::Audio),
+                flags: FORCE_SEEK,
+            }, // audio
             // 7 pholderVideo, 8 imageSeq, 10 pholderStill, 11 guide, 12 adjustment, 14 light
             _ => BuilderInfo::default(),
         };
@@ -515,7 +539,9 @@ impl<'j> LayerBuilder<'j> {
             TransformType::K2D
         };
         let layer_transform = self.get_transform(abuilder, cbuilder, transform_chain_type);
-        *self.layer_transform.borrow_mut() = layer_transform.clone();
+        self.layer_transform
+            .borrow_mut()
+            .clone_from(&layer_transform);
 
         layer_transform
     }
@@ -667,7 +693,11 @@ impl<'j> LayerBuilder<'j> {
         }
 
         // Optional layer mask.
-        layer = attach_mask(self.jlayer.get("masksProperties").as_array(), abuilder, layer);
+        layer = attach_mask(
+            self.jlayer.get("masksProperties").as_array(),
+            abuilder,
+            layer,
+        );
 
         // Does the transform apply to effects also?
         // (AE quirk: it doesn't - except for solid layers)
@@ -685,7 +715,8 @@ impl<'j> LayerBuilder<'j> {
 
         // Optional layer effects.
         if let Some(jeffects) = self.jlayer.get("ef").as_array() {
-            layer = EffectBuilder::new(abuilder, layer_size, cbuilder).attach_effects(jeffects, layer);
+            layer =
+                EffectBuilder::new(abuilder, layer_size, cbuilder).attach_effects(jeffects, layer);
         }
 
         // Attach the transform after effects, when needed.
@@ -696,7 +727,8 @@ impl<'j> LayerBuilder<'j> {
 
         // Optional layer styles.
         if let Some(jstyles) = self.jlayer.get("sy").as_array() {
-            layer = EffectBuilder::new(abuilder, layer_size, cbuilder).attach_styles(jstyles, layer);
+            layer =
+                EffectBuilder::new(abuilder, layer_size, cbuilder).attach_styles(jstyles, layer);
         }
 
         // Optional layer opacity.

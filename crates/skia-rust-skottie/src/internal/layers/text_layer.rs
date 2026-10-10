@@ -24,7 +24,11 @@ impl AnimationBuilder<'_> {
         layer: &ObjectValue,
         _info: &mut LayerInfo,
     ) -> Option<Rc<dyn RenderNode>> {
-        self.log_json(LoggerLevel::Warning, layer, "Text layers are not supported yet.");
+        self.log_json(
+            LoggerLevel::Warning,
+            layer,
+            "Text layers are not supported yet.",
+        );
         None
     }
 }

@@ -23,7 +23,7 @@ pub trait ExternalLayer {
 pub trait PrecompInterceptor {
     /// Invoked at animation build time, for each precomp layer.
     ///
-    /// `id` is the target composition ID (usually assigned automatically by BM: comp_0, ...),
+    /// `id` is the target composition ID (usually assigned automatically by BM: `comp_0`, ...),
     /// `name` the name of the precomp layer (by default it matches the target comp name, but can
     /// be changed in AE) and `size` the Lottie-specified precomp layer size. Returns an
     /// `ExternalLayer` implementation (to be used instead of the actual Lottie file content), or

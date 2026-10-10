@@ -13,11 +13,11 @@ use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::Scalar;
 use skia_rust_core::size::Size;
+use skia_rust_sksg::render_node::Hit;
 use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{
     InvalidationController, Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext,
 };
-use skia_rust_sksg::render_node::Hit;
 
 use crate::external_layer::ExternalLayer;
 use crate::impl_container_animator;
@@ -47,7 +47,11 @@ impl TimeRemapper {
             let container = PropertyContainer::new(weak.clone());
             let t = Prop::new(0.0);
             container.bind(abuilder, jtm, &t);
-            Self { container, scale, t }
+            Self {
+                container,
+                scale,
+                t,
+            }
         })
     }
 
@@ -108,7 +112,9 @@ struct SgAdapter {
 
 impl std::fmt::Debug for SgAdapter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SgAdapter").field("size", &self.size).finish_non_exhaustive()
+        f.debug_struct("SgAdapter")
+            .field("size", &self.size)
+            .finish_non_exhaustive()
     }
 }
 
@@ -150,7 +156,8 @@ impl RenderNode for SgAdapter {
             &canvas.total_matrix(),
             true,
         );
-        self.external.render(canvas, f64::from(self.current_t.get()));
+        self.external
+            .render(canvas, f64::from(self.current_t.get()));
     }
 
     fn on_node_at(&self, p: Point) -> Option<Hit> {
@@ -174,7 +181,7 @@ impl Animator for AnimatorAdapter {
     }
 }
 
-impl<'j> AnimationBuilder<'j> {
+impl AnimationBuilder<'_> {
     /// Attaches the content an `PrecompInterceptor` provides for the layer, if any.
     // Port of: modules/skottie/src/layers/PrecompLayer.cpp#L100-L178 (chrome/m156) (`attachExternalPrecompLayer`)
     fn attach_external_precomp_layer(
@@ -191,8 +198,11 @@ impl<'j> AnimationBuilder<'j> {
             return None;
         };
 
-        let external_layer =
-            precomp_interceptor.on_load_precomp(&string_text(id), &string_text(nm), layer_info.size)?;
+        let external_layer = precomp_interceptor.on_load_precomp(
+            &string_text(id),
+            &string_text(nm),
+            layer_info.size,
+        )?;
 
         let sg_adapter = SgAdapter::new(external_layer, layer_info.size);
 

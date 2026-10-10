@@ -95,17 +95,19 @@ impl EllipseGeometryAdapter {
     fn make(jellipse: &ObjectValue, abuilder: &AnimationBuilder<'_>) -> Rc<Self> {
         let adapter = Rc::new_cyclic(|weak: &Weak<Self>| {
             let base = DiscardableAdapterBase::new(weak.clone(), SgRRect::make_empty());
-            base.node().set_direction(if parse_default::<i32>(jellipse.get("d"), -1) == 3 {
-                PathDirection::CCW
-            } else {
-                PathDirection::CW
-            });
+            base.node()
+                .set_direction(if parse_default::<i32>(jellipse.get("d"), -1) == 3 {
+                    PathDirection::CCW
+                } else {
+                    PathDirection::CW
+                });
             base.node().set_initial_point_index(1); // starting point: (Center, Top)
 
             let size = Prop::new(V2::new(0.0, 0.0));
             let position = Prop::new(V2::new(0.0, 0.0)); // center
             base.container().bind(abuilder, jellipse.get("s"), &size);
-            base.container().bind(abuilder, jellipse.get("p"), &position);
+            base.container()
+                .bind(abuilder, jellipse.get("p"), &position);
             Self {
                 base,
                 size,
@@ -148,11 +150,12 @@ impl RectangleGeometryAdapter {
     fn make(jrect: &ObjectValue, abuilder: &AnimationBuilder<'_>) -> Rc<Self> {
         let adapter = Rc::new_cyclic(|weak: &Weak<Self>| {
             let base = DiscardableAdapterBase::new(weak.clone(), SgRRect::make_empty());
-            base.node().set_direction(if parse_default::<i32>(jrect.get("d"), -1) == 3 {
-                PathDirection::CCW
-            } else {
-                PathDirection::CW
-            });
+            base.node()
+                .set_direction(if parse_default::<i32>(jrect.get("d"), -1) == 3 {
+                    PathDirection::CCW
+                } else {
+                    PathDirection::CW
+                });
             base.node().set_initial_point_index(2); // starting point: (Right, Top - radius.y)
 
             let size = Prop::new(V2::new(0.0, 0.0));
@@ -419,6 +422,12 @@ shape_adapter!(RoundCornersAdapter);
 
 // ---- Offset paths ----
 
+const JOIN_MAP: [Join; 3] = [
+    Join::Miter, // 'lj': 1
+    Join::Round, // 'lj': 2
+    Join::Bevel, // 'lj': 3
+];
+
 /// Drives an offset effect.
 // Port of: modules/skottie/src/layers/shapelayer/OffsetPaths.cpp#L21-L51 (chrome/m156) (`class OffsetPathsAdapter`)
 struct OffsetPathsAdapter {
@@ -438,12 +447,6 @@ impl OffsetPathsAdapter {
                 weak.clone(),
                 OffsetEffect::make(Some(child)).expect("the child is not null"),
             );
-            const JOIN_MAP: [Join; 3] = [
-                Join::Miter, // 'lj': 1
-                Join::Round, // 'lj': 2
-                Join::Bevel, // 'lj': 3
-            ];
-
             let join = parse_default::<i32>(joffset.get("lj"), 1) - 1;
             let index = usize::try_from(t_pin(join, 0, 2)).expect("pinned to 0..=2");
             base.node().set_join(JOIN_MAP[index]);
@@ -451,7 +454,8 @@ impl OffsetPathsAdapter {
             let amount = Prop::new(0.0);
             let miter_limit = Prop::new(0.0);
             base.container().bind(abuilder, joffset.get("a"), &amount);
-            base.container().bind(abuilder, joffset.get("ml"), &miter_limit);
+            base.container()
+                .bind(abuilder, joffset.get("ml"), &miter_limit);
             Self {
                 base,
                 amount,
@@ -487,12 +491,15 @@ struct PuckerBloatEffect {
     state: GeometryEffectState,
     /// Fraction of the transition to center. I.e.
     ///
-    ///     0 -> no effect
-    ///     1 -> vertices collapsed to center
+    /// - 0: no effect
+    /// - 1: vertices collapsed to center
     ///
     /// Negative values are allowed (inverse direction), as are extranormal values.
     amount: Cell<f32>,
 }
+
+/// `1 - 0.551915024494f`: <http://spencermortensen.com/articles/bezier-circle/>
+const CUBIC_CIRCLE_COEFF: f32 = 1.0 - 0.551_915_05_f32;
 
 /// The parameters of a `cubicTo()`.
 struct CubicInfo {
@@ -538,21 +545,20 @@ impl PuckerBloatEffect {
         let mut contour_start = Point { x: 0.0, y: 0.0 };
         let mut cubics: Vec<CubicInfo> = Vec::new();
 
-        let commit_contour = |builder: &mut PathBuilder,
-                              contour_start: Point,
-                              cubics: &mut Vec<CubicInfo>| {
-            builder.move_to(lerp(contour_start, center, amount));
-            for c in cubics.iter() {
-                builder.cubic_to(
-                    lerp(c.ctrl0, center, -amount),
-                    lerp(c.ctrl1, center, -amount),
-                    lerp(c.pt, center, amount),
-                );
-            }
-            builder.close();
+        let commit_contour =
+            |builder: &mut PathBuilder, contour_start: Point, cubics: &mut Vec<CubicInfo>| {
+                builder.move_to(lerp(contour_start, center, amount));
+                for c in cubics.iter() {
+                    builder.cubic_to(
+                        lerp(c.ctrl0, center, -amount),
+                        lerp(c.ctrl1, center, -amount),
+                        lerp(c.pt, center, amount),
+                    );
+                }
+                builder.close();
 
-            cubics.clear();
-        };
+                cubics.clear();
+            };
 
         // Normalize all verbs to cubic representation.
         let mut iter = PathIter::new(&input, true);
@@ -586,11 +592,13 @@ impl PuckerBloatEffect {
                 }
                 PathVerb::Conic => {
                     // We should only ever encounter conics from circles/ellipses.
-                    debug_assert!(f32::nearly_equal(rec.conic_weight(), SCALAR_ROOT_2_OVER_2, None));
+                    debug_assert!(f32::nearly_equal(
+                        rec.conic_weight(),
+                        SCALAR_ROOT_2_OVER_2,
+                        None
+                    ));
 
                     // http://spencermortensen.com/articles/bezier-circle/
-                    const CUBIC_CIRCLE_COEFF: f32 = 1.0 - 0.551_915_024_494_f32;
-
                     let conic_start = cubics.last().map_or(contour_start, |c| c.pt);
                     let conic_end = pts[2];
 
@@ -629,7 +637,9 @@ impl Node for PuckerBloatEffect {
     }
 
     fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
-        geometry_effect_revalidate(&self.state, ic, ctm, |child, _| self.revalidate_effect(child))
+        geometry_effect_revalidate(&self.state, ic, ctm, |child, _| {
+            self.revalidate_effect(child)
+        })
     }
 }
 
@@ -698,7 +708,10 @@ impl ShapeBuilder {
             } else {
                 mode
             };
-            merge_recs.push(MergeRec { geo, mode: rec_mode });
+            merge_recs.push(MergeRec {
+                geo,
+                mode: rec_mode,
+            });
         }
 
         Merge::make(&merge_recs)
@@ -879,8 +892,8 @@ impl ShapeBuilder {
     ) -> Geometries {
         let mut bloated: Geometries = Vec::with_capacity(geos.len());
 
-        for g in &geos {
-            let adapter = PuckerBloatAdapter::make(jround, abuilder, g);
+        for g in geos {
+            let adapter = PuckerBloatAdapter::make(jround, abuilder, &g);
             let node = attach_adapter(abuilder, &adapter, adapter.base.node());
             bloated.push(node as Rc<dyn GeometryNode>);
         }

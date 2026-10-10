@@ -67,9 +67,9 @@ const PAINT_ATTACHERS: [PaintAttacher; 4] = [
 // Some paint types (looking at you dashed-stroke) mess with the local geometry.
 // Port of: modules/skottie/src/layers/shapelayer/ShapeLayer.cpp#L70-L77 (chrome/m156) (`gPaintGeometryAdjusters`)
 const PAINT_GEOMETRY_ADJUSTERS: [Option<GeometryEffectAttacher>; 4] = [
-    None,                                     // color fill
+    None,                                       // color fill
     Some(ShapeBuilder::adjust_stroke_geometry), // color stroke
-    None,                                     // gradient fill
+    None,                                       // gradient fill
     Some(ShapeBuilder::adjust_stroke_geometry), // gradient stroke
 ];
 
@@ -101,28 +101,108 @@ struct ShapeInfo {
     flags: u16,
 }
 
+// Alphabetized for binary search lookup.
+static SHAPE_INFO: [ShapeInfo; 16] = [
+    ShapeInfo {
+        type_string: "el",
+        shape_type: ShapeType::Geometry,
+        attacher_index: 2,
+        flags: NONE,
+    }, // ellipse
+    ShapeInfo {
+        type_string: "fl",
+        shape_type: ShapeType::Paint,
+        attacher_index: 0,
+        flags: NONE,
+    }, // fill
+    ShapeInfo {
+        type_string: "gf",
+        shape_type: ShapeType::Paint,
+        attacher_index: 2,
+        flags: NONE,
+    }, // gfill
+    ShapeInfo {
+        type_string: "gr",
+        shape_type: ShapeType::Group,
+        attacher_index: 0,
+        flags: NONE,
+    }, // group
+    ShapeInfo {
+        type_string: "gs",
+        shape_type: ShapeType::Paint,
+        attacher_index: 3,
+        flags: NONE,
+    }, // gstroke
+    ShapeInfo {
+        type_string: "mm",
+        shape_type: ShapeType::GeometryEffect,
+        attacher_index: 0,
+        flags: SUPPRESS_DRAWS,
+    }, // merge
+    ShapeInfo {
+        type_string: "op",
+        shape_type: ShapeType::GeometryEffect,
+        attacher_index: 3,
+        flags: NONE,
+    }, // offset
+    ShapeInfo {
+        type_string: "pb",
+        shape_type: ShapeType::GeometryEffect,
+        attacher_index: 4,
+        flags: NONE,
+    }, // pucker/bloat
+    ShapeInfo {
+        type_string: "rc",
+        shape_type: ShapeType::Geometry,
+        attacher_index: 1,
+        flags: NONE,
+    }, // rrect
+    ShapeInfo {
+        type_string: "rd",
+        shape_type: ShapeType::GeometryEffect,
+        attacher_index: 2,
+        flags: NONE,
+    }, // round
+    ShapeInfo {
+        type_string: "rp",
+        shape_type: ShapeType::DrawEffect,
+        attacher_index: 0,
+        flags: NONE,
+    }, // repeater
+    ShapeInfo {
+        type_string: "sh",
+        shape_type: ShapeType::Geometry,
+        attacher_index: 0,
+        flags: NONE,
+    }, // shape
+    ShapeInfo {
+        type_string: "sr",
+        shape_type: ShapeType::Geometry,
+        attacher_index: 3,
+        flags: NONE,
+    }, // polystar
+    ShapeInfo {
+        type_string: "st",
+        shape_type: ShapeType::Paint,
+        attacher_index: 1,
+        flags: NONE,
+    }, // stroke
+    ShapeInfo {
+        type_string: "tm",
+        shape_type: ShapeType::GeometryEffect,
+        attacher_index: 1,
+        flags: NONE,
+    }, // trim
+    ShapeInfo {
+        type_string: "tr",
+        shape_type: ShapeType::Transform,
+        attacher_index: 0,
+        flags: NONE,
+    }, // transform
+];
+
 // Port of: modules/skottie/src/layers/shapelayer/ShapeLayer.cpp#L108-L141 (chrome/m156) (`FindShapeInfo`)
 fn find_shape_info(jshape: &ObjectValue) -> Option<&'static ShapeInfo> {
-    // Alphabetized for binary search lookup.
-    static SHAPE_INFO: [ShapeInfo; 16] = [
-        ShapeInfo { type_string: "el", shape_type: ShapeType::Geometry,       attacher_index: 2, flags: NONE }, // ellipse
-        ShapeInfo { type_string: "fl", shape_type: ShapeType::Paint,          attacher_index: 0, flags: NONE }, // fill
-        ShapeInfo { type_string: "gf", shape_type: ShapeType::Paint,          attacher_index: 2, flags: NONE }, // gfill
-        ShapeInfo { type_string: "gr", shape_type: ShapeType::Group,          attacher_index: 0, flags: NONE }, // group
-        ShapeInfo { type_string: "gs", shape_type: ShapeType::Paint,          attacher_index: 3, flags: NONE }, // gstroke
-        ShapeInfo { type_string: "mm", shape_type: ShapeType::GeometryEffect, attacher_index: 0, flags: SUPPRESS_DRAWS }, // merge
-        ShapeInfo { type_string: "op", shape_type: ShapeType::GeometryEffect, attacher_index: 3, flags: NONE }, // offset
-        ShapeInfo { type_string: "pb", shape_type: ShapeType::GeometryEffect, attacher_index: 4, flags: NONE }, // pucker/bloat
-        ShapeInfo { type_string: "rc", shape_type: ShapeType::Geometry,       attacher_index: 1, flags: NONE }, // rrect
-        ShapeInfo { type_string: "rd", shape_type: ShapeType::GeometryEffect, attacher_index: 2, flags: NONE }, // round
-        ShapeInfo { type_string: "rp", shape_type: ShapeType::DrawEffect,     attacher_index: 0, flags: NONE }, // repeater
-        ShapeInfo { type_string: "sh", shape_type: ShapeType::Geometry,       attacher_index: 0, flags: NONE }, // shape
-        ShapeInfo { type_string: "sr", shape_type: ShapeType::Geometry,       attacher_index: 3, flags: NONE }, // polystar
-        ShapeInfo { type_string: "st", shape_type: ShapeType::Paint,          attacher_index: 1, flags: NONE }, // stroke
-        ShapeInfo { type_string: "tm", shape_type: ShapeType::GeometryEffect, attacher_index: 1, flags: NONE }, // trim
-        ShapeInfo { type_string: "tr", shape_type: ShapeType::Transform,      attacher_index: 0, flags: NONE }, // transform
-    ];
-
     let ty = jshape.get("ty").as_string()?;
     let key = string_text(ty);
 
@@ -174,7 +254,7 @@ struct ShapeRec<'a> {
     suppressed: bool,
 }
 
-impl<'j> AnimationBuilder<'j> {
+impl AnimationBuilder<'_> {
     // Port of: modules/skottie/src/layers/shapelayer/ShapeLayer.cpp#L182-L359 (chrome/m156) (`attachShape`)
     #[allow(clippy::too_many_lines)] // one function in Skia, ported as written
     fn attach_shape<'a>(
@@ -350,7 +430,7 @@ impl<'j> AnimationBuilder<'j> {
         }
 
         // By now we should have popped all local geometry effects.
-        debug_assert!(ctx.geometry_effect_stack.len() == initial_geometry_effects);
+        debug_assert_eq!(ctx.geometry_effect_stack.len(), initial_geometry_effects);
 
         let mut shape_wrapper: Option<Rc<dyn RenderNode>> = None;
         if draws.len() == 1 {
@@ -384,21 +464,21 @@ impl<'j> AnimationBuilder<'j> {
 
             let local_scope = ascope.release();
             let local_count = local_scope.len();
-            self.current_animator_scope
-                .borrow_mut()
-                .splice(ctx.committed_animators..ctx.committed_animators, local_scope);
+            self.current_animator_scope.borrow_mut().splice(
+                ctx.committed_animators..ctx.committed_animators,
+                local_scope,
+            );
             ctx.committed_animators += local_count;
         }
 
         // Push transformed local geometries to parent list, for subsequent paints.
         for geo in geos {
             ctx.geometry_stack.push(match &shape_transform {
-                Some(shape_transform) => GeometryTransform::make(
-                    Some(geo),
-                    Some(Rc::clone(shape_transform)),
-                )
-                .map(|transformed| transformed as Rc<dyn GeometryNode>)
-                .expect("the geometry and transform are not null"),
+                Some(shape_transform) => {
+                    GeometryTransform::make(Some(geo), Some(Rc::clone(shape_transform)))
+                        .map(|transformed| transformed as Rc<dyn GeometryNode>)
+                        .expect("the geometry and transform are not null")
+                }
                 None => geo,
             });
         }

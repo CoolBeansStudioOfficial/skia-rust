@@ -1066,6 +1066,7 @@ fn write_value(value: &Value, stream: &mut dyn WStream) {
 }
 
 /// What `write_pending` starts from.
+#[derive(Clone, Copy)]
 enum PendingRoot<'a> {
     Value(&'a Value),
     Object(&'a ObjectValue),

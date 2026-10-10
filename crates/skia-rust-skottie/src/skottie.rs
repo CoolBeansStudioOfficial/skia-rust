@@ -281,7 +281,11 @@ impl Builder {
         if !stream.has_length() {
             // TODO: handle explicit buffering?
             if let Some(logger) = &self.logger {
-                logger.log(LoggerLevel::Error, "Cannot parse streaming content.\n", None);
+                logger.log(
+                    LoggerLevel::Error,
+                    "Cannot parse streaming content.\n",
+                    None,
+                );
             }
             return None;
         }
@@ -289,7 +293,11 @@ impl Builder {
         let length = stream.get_length();
         let Some(data) = Data::from_stream(stream, length) else {
             if let Some(logger) = &self.logger {
-                logger.log(LoggerLevel::Error, "Failed to read the input stream.\n", None);
+                logger.log(
+                    LoggerLevel::Error,
+                    "Failed to read the input stream.\n",
+                    None,
+                );
             }
             return None;
         };
@@ -526,7 +534,12 @@ impl Animation {
 
     /// Draws the current animation frame, with the given render flags (`render`).
     // Port of: modules/skottie/src/Skottie.cpp#L469-L493 (chrome/m156)
-    pub fn render_with_flags(&self, canvas: &Canvas, dst: Option<&Rect>, render_flags: RenderFlags) {
+    pub fn render_with_flags(
+        &self,
+        canvas: &Canvas,
+        dst: Option<&Rect>,
+        render_flags: RenderFlags,
+    ) {
         let Some(scene_root) = &self.scene_root else {
             return;
         };
@@ -548,7 +561,9 @@ impl Animation {
             canvas.clip_rect(src_r, ClipOp::Intersect, false);
         }
 
-        if self.flags.contains(AnimationFlags::REQUIRES_TOP_LEVEL_ISOLATION)
+        if self
+            .flags
+            .contains(AnimationFlags::REQUIRES_TOP_LEVEL_ISOLATION)
             && !render_flags.contains(RenderFlags::SKIP_TOP_LEVEL_ISOLATION)
         {
             // The animation uses non-trivial blending, and needs
@@ -564,8 +579,15 @@ impl Animation {
     /// Updates the animation state for `t`, a normalized `[0..1]` frame selector (0 -> first
     /// frame, 1 -> final frame). Deprecated: use one of the other versions.
     // Port of: modules/skottie/include/Skottie.h#L225-L227 (chrome/m156)
-    pub fn seek(&self, t: f32, ic: Option<&mut InvalidationController>) {
-        self.seek_frame_time(f64::from(t) * f64::from(self.duration()), ic);
+    pub fn seek(&self, t: f32) {
+        self.seek_with_ic(t, None);
+    }
+
+    /// [`Animation::seek`] with an optional invalidation controller (dirty region tracking).
+    // Port of: modules/skottie/include/Skottie.h#L225-L227 (chrome/m156)
+    #[doc(alias = "seek")]
+    pub fn seek_with_ic(&self, t: f32, ic: Option<&mut InvalidationController>) {
+        self.seek_frame_time_with_ic(f64::from(t) * f64::from(self.duration()), ic);
     }
 
     /// Updates the animation state to match `t`, specified as a frame index i.e. relative to
@@ -576,9 +598,16 @@ impl Animation {
     ///   0.0 -> first frame
     ///   1.0 -> second frame
     ///   0.5 -> halfway between first and second frame
+    #[doc(alias = "seekFrame")]
+    pub fn seek_frame(&self, t: f64) {
+        self.seek_frame_with_ic(t, None);
+    }
+
+    /// [`Animation::seek_frame`] with an optional invalidation controller (dirty region
+    /// tracking).
     // Port of: modules/skottie/src/Skottie.cpp#L495-L511 (chrome/m156)
     #[doc(alias = "seekFrame")]
-    pub fn seek_frame(&self, t: f64, ic: Option<&mut InvalidationController>) {
+    pub fn seek_frame_with_ic(&self, t: f64, ic: Option<&mut InvalidationController>) {
         let Some(scene_root) = &self.scene_root else {
             return;
         };
@@ -599,10 +628,17 @@ impl Animation {
 
     /// Updates the animation state to match `t`, specified in frame time i.e. relative to
     /// `duration()`.
+    #[doc(alias = "seekFrameTime")]
+    pub fn seek_frame_time(&self, t: f64) {
+        self.seek_frame_time_with_ic(t, None);
+    }
+
+    /// [`Animation::seek_frame_time`] with an optional invalidation controller (dirty region
+    /// tracking).
     // Port of: modules/skottie/src/Skottie.cpp#L513-L515 (chrome/m156)
     #[doc(alias = "seekFrameTime")]
-    pub fn seek_frame_time(&self, t: f64, ic: Option<&mut InvalidationController>) {
-        self.seek_frame(t * f64::from(self.fps), ic);
+    pub fn seek_frame_time_with_ic(&self, t: f64, ic: Option<&mut InvalidationController>) {
+        self.seek_frame_with_ic(t * f64::from(self.fps), ic);
     }
 
     /// The animation duration in seconds.

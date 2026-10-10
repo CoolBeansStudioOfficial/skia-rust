@@ -192,12 +192,12 @@ impl CameraState {
 // Port of: modules/skottie/src/Camera.cpp#L111-L125 (chrome/m156)
 #[must_use]
 pub fn default_camera_transform(viewport_size: Size) -> Rc<dyn Transform> {
+    const DEFAULT_AE_ZOOM: f32 = 879.13;
+
     let center = Point {
         x: viewport_size.width * 0.5,
         y: viewport_size.height * 0.5,
     };
-
-    const DEFAULT_AE_ZOOM: f32 = 879.13;
 
     let pos = V3 {
         x: center.x,

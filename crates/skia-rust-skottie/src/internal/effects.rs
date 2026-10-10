@@ -104,10 +104,10 @@ impl<'a, 'j> EffectBuilder<'a, 'j> {
             let name = string_text(mn);
             // lower_bound over the alphabetized table.
             let idx = BUILDER_INFO.partition_point(|(n, _)| n.as_bytes() < name.as_bytes());
-            if let Some((n, builder)) = BUILDER_INFO.get(idx) {
-                if *n == name {
-                    return Some(*builder);
-                }
+            if let Some((n, builder)) = BUILDER_INFO.get(idx)
+                && *n == name
+            {
+                return Some(*builder);
             }
         }
 
