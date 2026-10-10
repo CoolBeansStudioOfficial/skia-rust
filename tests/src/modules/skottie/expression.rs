@@ -104,10 +104,8 @@ impl PropertyObserver for FakePropertyObserver {
 }
 
 // Port of: modules/skottie/tests/Expression.cpp#L82-L267 (chrome/m156)
-def_test!(
-    Skottie_Expression,
-    |r| {
-        let json = r##"{
+def_test!(Skottie_Expression, |r| {
+    let json = r##"{
              "v": "5.2.1",
              "w": 100,
              "h": 100,
@@ -270,60 +268,59 @@ def_test!(
              ]
            }"##;
 
-        let mut stream = MemoryStream::make_copy(json.as_bytes());
+    let mut stream = MemoryStream::make_copy(json.as_bytes());
 
-        let em = Rc::new(FakeExpressionManager);
-        let observer = Rc::new(FakePropertyObserver::default());
+    let em = Rc::new(FakeExpressionManager);
+    let observer = Rc::new(FakePropertyObserver::default());
 
-        let anim = Builder::new()
-            .set_expression_manager(em)
-            .set_property_observer(observer.clone())
-            .make_from_stream(&mut *stream);
+    let anim = Builder::new()
+        .set_expression_manager(em)
+        .set_property_observer(observer.clone())
+        .make_from_stream(&mut *stream);
 
-        reporter_assert!(r, anim.is_some());
-        let Some(anim) = anim else {
-            return;
-        };
+    reporter_assert!(r, anim.is_some());
+    let Some(anim) = anim else {
+        return;
+    };
 
-        anim.seek_frame_time(0.0);
+    anim.seek_frame_time(0.0);
 
-        reporter_assert!(
-            r,
-            f32::nearly_equal(
-                observer
-                    .opacity
-                    .borrow()
-                    .as_ref()
-                    .expect("an opacity handle")
-                    .get(),
-                7.0,
-                None
-            )
-        );
-        let anchor_point = observer
-            .transform
-            .borrow()
-            .as_ref()
-            .expect("a transform handle")
-            .get()
-            .anchor_point;
-        reporter_assert!(r, f32::nearly_equal(anchor_point.x, 0.1, None));
-        reporter_assert!(r, f32::nearly_equal(anchor_point.y, 0.2, None));
-        reporter_assert!(
-            r,
+    reporter_assert!(
+        r,
+        f32::nearly_equal(
             observer
-                .color
+                .opacity
                 .borrow()
                 .as_ref()
-                .expect("a color handle")
-                .get()
-                == Color4f {
-                    r: 0.1,
-                    g: 0.2,
-                    b: 0.3,
-                    a: 1.0
-                }
-                .to_color()
-        );
-    }
-);
+                .expect("an opacity handle")
+                .get(),
+            7.0,
+            None
+        )
+    );
+    let anchor_point = observer
+        .transform
+        .borrow()
+        .as_ref()
+        .expect("a transform handle")
+        .get()
+        .anchor_point;
+    reporter_assert!(r, f32::nearly_equal(anchor_point.x, 0.1, None));
+    reporter_assert!(r, f32::nearly_equal(anchor_point.y, 0.2, None));
+    reporter_assert!(
+        r,
+        observer
+            .color
+            .borrow()
+            .as_ref()
+            .expect("a color handle")
+            .get()
+            == Color4f {
+                r: 0.1,
+                g: 0.2,
+                b: 0.3,
+                a: 1.0
+            }
+            .to_color()
+    );
+});
