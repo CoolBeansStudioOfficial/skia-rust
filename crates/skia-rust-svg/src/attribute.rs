@@ -133,16 +133,10 @@ impl PresentationAttributes {
     pub fn make_initial() -> Self {
         let mut result = Self::default();
 
-        result
-            .fill
-            .set(Paint::from_color(Fill::new(Color::BLACK)));
+        result.fill.set(Paint::from_color(Fill::new(Color::BLACK)));
         result.fill_opacity.set(1.0);
-        result
-            .fill_rule
-            .set(FillRule::new(FillRuleType::NonZero));
-        result
-            .clip_rule
-            .set(FillRule::new(FillRuleType::NonZero));
+        result.fill_rule.set(FillRule::new(FillRuleType::NonZero));
+        result.clip_rule.set(FillRule::new(FillRuleType::NonZero));
 
         result.stroke.set(Paint::with_type(PaintType::None));
         result
@@ -163,10 +157,14 @@ impl PresentationAttributes {
 
         result.color.set(Color::BLACK);
         result.color_interpolation.set(Colorspace::SRGB);
-        result.color_interpolation_filters.set(Colorspace::LinearRGB);
+        result
+            .color_interpolation_filters
+            .set(Colorspace::LinearRGB);
 
         result.font_family.init(FontFamily::new("Sans"));
-        result.font_style.init(FontStyle::new(FontStyleType::Normal));
+        result
+            .font_style
+            .init(FontStyle::new(FontStyleType::Normal));
         result.font_size.init(FontSize::new(Length::new(24.0)));
         result
             .font_weight

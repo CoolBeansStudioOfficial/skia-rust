@@ -25,7 +25,9 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, shaders};
 use skia_rust_effects::image_filters::{blur, color_filter};
-use skia_rust_tools::font_tool_utils::{EmojiFontFormat, EmojiTestSample, emoji_sample, name_for_font_format};
+use skia_rust_tools::font_tool_utils::{
+    EmojiFontFormat, EmojiTestSample, emoji_sample, name_for_font_format,
+};
 
 /// Spits out an arbitrary gradient to test blur with shader on paint.
 // Port of: gm/coloremoji.cpp#L46-L53 (chrome/m156)
@@ -72,7 +74,10 @@ fn make_blur(amount: f32, input: Option<ImageFilter>) -> Option<ImageFilter> {
 
 // Port of: gm/coloremoji.cpp#L70-L73 (chrome/m156)
 fn make_color_filter() -> Option<ColorFilter> {
-    color_filters::lighting(Color::from_rgb(0x00, 0x80, 0xFF), Color::from_rgb(0xFF, 0x20, 0x00))
+    color_filters::lighting(
+        Color::from_rgb(0x00, 0x80, 0xFF),
+        Color::from_rgb(0xFF, 0x20, 0x00),
+    )
 }
 
 // Port of: gm/coloremoji.cpp#L80-L233 (chrome/m156), ColorEmojiGM
@@ -166,7 +171,8 @@ impl GM for ColorEmojiGm {
                 for make_gray_i in 0..2 {
                     for make_mode in 0..2 {
                         for alpha in 0..2 {
-                            let mut shader_font = Font::from_typeface(Some(font.typeface().clone()));
+                            let mut shader_font =
+                                Font::from_typeface(Some(font.typeface().clone()));
                             let mut shader_paint = Paint::default();
                             if make_linear_i != 0 {
                                 shader_paint.set_shader(make_linear());
@@ -242,22 +248,10 @@ impl GM for ColorEmojiGm {
             canvas.save();
             canvas.draw_rect(clip_rect, &clip_hairline);
             paint.set_alpha(0x20);
-            canvas.draw_simple_text(
-                text_bytes,
-                TextEncoding::UTF8,
-                (0.0, 0.0),
-                &font,
-                &paint,
-            );
+            canvas.draw_simple_text(text_bytes, TextEncoding::UTF8, (0.0, 0.0), &font, &paint);
             canvas.clip_rect(clip_rect, None, None);
             paint.set_alpha_f(1.0);
-            canvas.draw_simple_text(
-                text_bytes,
-                TextEncoding::UTF8,
-                (0.0, 0.0),
-                &font,
-                &paint,
-            );
+            canvas.draw_simple_text(text_bytes, TextEncoding::UTF8, (0.0, 0.0), &font, &paint);
             canvas.restore();
             canvas.translate((0.0, 25.0));
         }

@@ -523,7 +523,10 @@ impl TextBuffer {
 fn line_of(doc: &str, offset: usize) -> i32 {
     let end = offset.min(doc.len());
     #[allow(clippy::naive_bytecount)] // no extra dependency for a line count
-    let n = doc.as_bytes()[..end].iter().filter(|&&b| b == b'\n').count();
+    let n = doc.as_bytes()[..end]
+        .iter()
+        .filter(|&&b| b == b'\n')
+        .count();
     i32::try_from(n + 1).unwrap_or(i32::MAX)
 }
 
@@ -748,8 +751,17 @@ mod tests {
     #[test]
     fn malformed() {
         for d in [
-            "", "<a>", "<a></b>", "<a/><b/>", "<a x=1/>", "<a x='1' x='2'/>", "<a>&foo;</a>",
-            "<!DOCTYPE a [<!ENTITY e 'x'>]><a/>", "<a", "x<a/>", "<a><</a>",
+            "",
+            "<a>",
+            "<a></b>",
+            "<a/><b/>",
+            "<a x=1/>",
+            "<a x='1' x='2'/>",
+            "<a>&foo;</a>",
+            "<!DOCTYPE a [<!ENTITY e 'x'>]><a/>",
+            "<a",
+            "x<a/>",
+            "<a><</a>",
         ] {
             assert!(events(d).is_none(), "{d}");
         }
@@ -757,6 +769,8 @@ mod tests {
 
     #[test]
     fn doctype_without_entities() {
-        assert!(events("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"x.dtd\"><svg/>").is_some());
+        assert!(
+            events("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"x.dtd\"><svg/>").is_some()
+        );
     }
 }

@@ -76,7 +76,10 @@ impl LengthContext {
     /// `SkSVGLengthContext(viewport, dpi = 90)`.
     #[must_use]
     pub const fn new(viewport: Size) -> Self {
-        Self { viewport, dpi: 90.0 }
+        Self {
+            viewport,
+            dpi: 90.0,
+        }
     }
 
     #[must_use]
@@ -666,7 +669,8 @@ impl<'a> RenderContext<'a> {
                 // (e.g. gradient control points), which requires access to the render context
                 // and node being rendered.
                 let mut pctx = PresentationContext::default();
-                pctx.named_colors.clone_from(&self.presentation_context.named_colors);
+                pctx.named_colors
+                    .clone_from(&self.presentation_context.named_colors);
                 let local_ctx = RenderContext::new(
                     self.canvas,
                     self.id_mapper,
@@ -676,9 +680,7 @@ impl<'a> RenderContext<'a> {
                 );
 
                 let node = self.find_node_by_id(paint_selector.iri());
-                let painted = node
-                    .get()
-                    .is_some_and(|n| n.as_paint(&local_ctx, &mut p));
+                let painted = node.get().is_some_and(|n| n.as_paint(&local_ctx, &mut p));
                 if !painted {
                     // Use the fallback color.
                     p.set_color(self.resolve_svg_color(paint_selector.color()));

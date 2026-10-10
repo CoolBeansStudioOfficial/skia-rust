@@ -155,6 +155,9 @@ fn renders_the_smile_glyph() {
     let painted = px.iter().filter(|c| c.a() != 0).count();
     assert!(painted > 100_000, "{painted}");
     // The face is yellow-ish.
-    let yellow = px.iter().filter(|c| c.r() > 200 && c.g() > 150 && c.b() < 100).count();
+    let yellow = px
+        .iter()
+        .filter(|c| c.r() > 200 && c.g() > 150 && c.b() < 100)
+        .count();
     assert!(yellow > 50_000, "{yellow}");
 }

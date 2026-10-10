@@ -338,7 +338,9 @@ pub fn find_color(value: &str, color: &mut Color) -> Option<usize> {
             let r = nib2byte((hex >> 8) & 0xF);
             let g = nib2byte((hex >> 4) & 0xF);
             let b = nib2byte(hex & 0xF);
-            *color = Color::new(((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF));
+            *color = Color::new(
+                ((a & 0xFF) << 24) | ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF),
+            );
             Some(end)
         } else if len == 6 || len == 8 {
             if len == 6 {

@@ -76,7 +76,11 @@ pub(crate) fn render_shape(
     ctx: &RenderContext<'_>,
     on_draw: impl Fn(&Canvas, &LengthContext, &SkPaint, PathFillType),
 ) {
-    let fill_type = ctx.presentation_context().inherited.fill_rule.as_fill_type();
+    let fill_type = ctx
+        .presentation_context()
+        .inherited
+        .fill_rule
+        .as_fill_type();
 
     let fill_paint = ctx.fill_paint();
     let stroke_paint = ctx.stroke_paint();

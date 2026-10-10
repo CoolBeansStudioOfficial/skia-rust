@@ -20,8 +20,8 @@ use crate::attribute_parser::AttributeParser;
 use crate::render_context::{BboxContext, RenderContext};
 use crate::types::{
     Align, ColorType, Colorspace, DashArray, Display, Fill, FillRule, FontFamily, FontSize,
-    FontStyle, FontWeight, FuncIri, Length, LineCap, LineJoin, NumberType, Paint, Property,
-    PreserveAspectRatio, Scale, TextAnchor, Visibility, VisibilityType,
+    FontStyle, FontWeight, FuncIri, Length, LineCap, LineJoin, NumberType, Paint,
+    PreserveAspectRatio, Property, Scale, TextAnchor, Visibility, VisibilityType,
 };
 use crate::value::Value;
 
@@ -224,11 +224,7 @@ impl NodeBase {
     pub fn on_prepare_to_render(&self, has_children: bool, ctx: &mut RenderContext<'_>) -> bool {
         ctx.apply_presentation_attributes(
             &self.presentation_attributes,
-            if has_children {
-                0
-            } else {
-                RenderContext::LEAF
-            },
+            if has_children { 0 } else { RenderContext::LEAF },
         );
 
         // visibility:hidden and display:none disable rendering.
@@ -236,8 +232,7 @@ impl NodeBase {
         //   ignore it. Eventually we should be able to add SkASSERT(display.isValue()).
         let visibility = ctx.presentation_context().inherited.visibility.ty();
         let display = &self.presentation_attributes.display; // display is uninherited
-        visibility != VisibilityType::Hidden
-            && (!display.is_value() || **display != Display::None)
+        visibility != VisibilityType::Hidden && (!display.is_value() || **display != Display::None)
     }
 
     // Port of: modules/svg/src/SkSVGNode.cpp#L96-L133 (chrome/m156)
@@ -255,7 +250,12 @@ impl NodeBase {
         parse_and_set!("clip-path", set_clip_path, FuncIri, false);
         parse_and_set!("clip-rule", set_clip_rule, FillRule, true);
         parse_and_set!("color", set_color, ColorType, true);
-        parse_and_set!("color-interpolation", set_color_interpolation, Colorspace, true);
+        parse_and_set!(
+            "color-interpolation",
+            set_color_interpolation,
+            Colorspace,
+            true
+        );
         parse_and_set!(
             "color-interpolation-filters",
             set_color_interpolation_filters,
@@ -283,7 +283,12 @@ impl NodeBase {
         parse_and_set!("stroke-dashoffset", set_stroke_dash_offset, Length, true);
         parse_and_set!("stroke-linecap", set_stroke_line_cap, LineCap, true);
         parse_and_set!("stroke-linejoin", set_stroke_line_join, LineJoin, true);
-        parse_and_set!("stroke-miterlimit", set_stroke_miter_limit, NumberType, true);
+        parse_and_set!(
+            "stroke-miterlimit",
+            set_stroke_miter_limit,
+            NumberType,
+            true
+        );
         parse_and_set!("stroke-opacity", set_stroke_opacity, NumberType, true);
         parse_and_set!("stroke-width", set_stroke_width, Length, true);
         parse_and_set!("text-anchor", set_text_anchor, TextAnchor, true);

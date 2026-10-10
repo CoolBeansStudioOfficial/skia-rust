@@ -190,12 +190,14 @@ pub fn test_font_mgr() -> FontMgr {
                     make_from_stream: crate::fonts::test_typeface::TestTypeface::make_from_stream,
                 },
                 TypefaceDecoder {
-                    factory_id: crate::fonts::test_svg_typeface::TestSvgTypeface::DEFAULT_FACTORY_ID,
+                    factory_id:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::DEFAULT_FACTORY_ID,
                     make_from_stream:
                         crate::fonts::test_svg_typeface::TestSvgTypeface::make_default_from_stream,
                 },
                 TypefaceDecoder {
-                    factory_id: crate::fonts::test_svg_typeface::TestSvgTypeface::PLANETS_FACTORY_ID,
+                    factory_id:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::PLANETS_FACTORY_ID,
                     make_from_stream:
                         crate::fonts::test_svg_typeface::TestSvgTypeface::make_planets_from_stream,
                 },
@@ -309,7 +311,10 @@ pub fn emoji_sample(format: EmojiFontFormat) -> EmojiTestSample {
             sample_text: "abcdefghij",
         },
         EmojiFontFormat::Test => EmojiTestSample {
-            typeface: Some(create_portable_typeface(Some("Emoji"), FontStyle::default())),
+            typeface: Some(create_portable_typeface(
+                Some("Emoji"),
+                FontStyle::default(),
+            )),
             sample_text,
         },
     }

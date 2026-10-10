@@ -83,11 +83,16 @@ impl GM for ColorEmojiBlendModesGm {
             skia_rust_core::alpha_type::AlphaType::Opaque,
             None,
         );
-        assert!(self.bg.install_pixels(
-            &info,
-            G_DATA.iter().flat_map(|v| v.to_ne_bytes()).collect::<Vec<u8>>(),
-            8,
-        ));
+        assert!(
+            self.bg.install_pixels(
+                &info,
+                G_DATA
+                    .iter()
+                    .flat_map(|v| v.to_ne_bytes())
+                    .collect::<Vec<u8>>(),
+                8,
+            )
+        );
     }
 
     // Port of: gm/coloremoji_blendmodes.cpp#L73-L160 (chrome/m156), onDraw

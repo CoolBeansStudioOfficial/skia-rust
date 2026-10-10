@@ -28,9 +28,7 @@ use crate::poly::Poly;
 use crate::rect::Rect;
 use crate::render_context::{LengthContext, ObbScope, PresentationContext, RenderContext};
 use crate::svg::{Svg, SvgType};
-use crate::types::{
-    Iri, Length, ObjectBoundingBoxUnits, TransformType,
-};
+use crate::types::{Iri, Length, ObjectBoundingBoxUnits, TransformType};
 use crate::use_::Use;
 use crate::value::Value;
 
@@ -84,7 +82,10 @@ impl<'a> StyleIterator<'a> {
             let sep = self.next_separator(pos);
             debug_assert!(sep == self.s.len() || self.s[sep] == b';');
 
-            let value_sep = self.s[pos..].iter().position(|&c| c == b':').map(|i| pos + i);
+            let value_sep = self.s[pos..]
+                .iter()
+                .position(|&c| c == b':')
+                .map(|i| pos + i);
             if let Some(value_sep) = value_sep
                 && value_sep < sep
             {
@@ -92,7 +93,11 @@ impl<'a> StyleIterator<'a> {
                 value = trimmed_string(&self.s[value_sep + 1..sep]);
             }
 
-            self.pos = if sep < self.s.len() { Some(sep + 1) } else { None };
+            self.pos = if sep < self.s.len() {
+                Some(sep + 1)
+            } else {
+                None
+            };
         }
 
         (name, value)

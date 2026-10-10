@@ -140,8 +140,16 @@ impl SvgNode for Svg {
     fn on_prepare_to_render(&self, ctx: &mut RenderContext<'_>) -> bool {
         // x/y are ignored for outermost svg elements
         let zero = Length::new(0.0);
-        let x = if self.ty == SvgType::Inner { &self.x } else { &zero };
-        let y = if self.ty == SvgType::Inner { &self.y } else { &zero };
+        let x = if self.ty == SvgType::Inner {
+            &self.x
+        } else {
+            &zero
+        };
+        let y = if self.ty == SvgType::Inner {
+            &self.y
+        } else {
+            &zero
+        };
 
         let view_port_rect = ctx
             .length_context()

@@ -15,25 +15,25 @@ use std::sync::Arc;
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_space::ColorSpace;
-use skia_rust_core::device::PendingGlyphDrawable;
-use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::mask::MaskFormat;
-use skia_rust_core::mipmap::Mipmap;
-use skia_rust_core::rect::Rect;
-use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::device::PendingGlyphDrawable;
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::glyph::{
     ActionType, Glyph, GlyphAction, GlyphDigest, GlyphPositionRoundingSpec,
 };
 use skia_rust_core::glyph_run::GlyphRunList;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::mask::MaskFormat;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::packed_glyph_id::PackedGlyphId;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::AddPathMode;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::{scalar, scalar_floor_to_scalar};
 use skia_rust_core::scaler_context::ScalerContextBuildFlags;
 use skia_rust_core::strike::StrikeGuard;
@@ -275,7 +275,10 @@ impl GlyphRunListPainter {
                     }
                     let mut bm = Bitmap::new();
                     let installed = bm.install_pixels(
-                        &ImageInfo::new_n32_premul((mask.bounds.width(), mask.bounds.height()), None),
+                        &ImageInfo::new_n32_premul(
+                            (mask.bounds.width(), mask.bounds.height()),
+                            None,
+                        ),
                         mask.image.to_vec(),
                         mask.row_bytes as usize,
                     );
