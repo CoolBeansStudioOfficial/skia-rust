@@ -241,4 +241,3 @@ pub trait XmlParser {
         !self.end_element(elem_name)
     }
 }
-

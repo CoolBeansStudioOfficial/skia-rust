@@ -112,7 +112,11 @@ fn parse_xml_decl(b: &[u8]) -> Res<Option<XmlDecl>> {
             return Err(Malformed);
         }
         let name_start = *pos;
-        while b.get(*pos).copied().is_some_and(|c| c.is_ascii_alphabetic()) {
+        while b
+            .get(*pos)
+            .copied()
+            .is_some_and(|c| c.is_ascii_alphabetic())
+        {
             *pos += 1;
         }
         let name = &b[name_start..*pos];
@@ -136,13 +140,12 @@ fn parse_xml_decl(b: &[u8]) -> Res<Option<XmlDecl>> {
         let value_start = *pos;
         loop {
             match b.get(*pos) {
-                None => return Err(Malformed),
                 Some(&c) if c == quote => break,
                 // the value characters expat accepts in a pseudo attribute
                 Some(&c) if c.is_ascii_alphanumeric() || matches!(c, b'.' | b'-' | b'_') => {
                     *pos += 1;
                 }
-                Some(_) => return Err(Malformed),
+                _ => return Err(Malformed),
             }
         }
         let value = &b[value_start..*pos];
@@ -207,27 +210,25 @@ fn push_char(out: &mut String, c: char) -> bool {
 
 fn decode_utf16(units: &[u8], big_endian: bool) -> Decoded {
     let mut text = String::with_capacity(units.len() / 2);
-    let mut iter = units.chunks_exact(2).map(|p| {
+    let mut iter = units.as_chunks::<2>().0.iter().map(|&p| {
         if big_endian {
-            u16::from_be_bytes([p[0], p[1]])
+            u16::from_be_bytes(p)
         } else {
-            u16::from_le_bytes([p[0], p[1]])
+            u16::from_le_bytes(p)
         }
     });
-    let mut poisoned = units.len() % 2 != 0;
+    let mut poisoned = !units.len().is_multiple_of(2);
     while let Some(unit) = iter.next() {
         // expat takes any unit after a high surrogate as the second half of the pair, using its
         // low ten bits; a low surrogate that starts a character is invalid.
         let code = match unit {
-            0xD800..=0xDBFF => match iter.next() {
-                Some(next) => {
-                    0x1_0000 + ((u32::from(unit) & 0x3FF) << 10) + (u32::from(next) & 0x3FF)
-                }
-                None => {
+            0xD800..=0xDBFF => {
+                let Some(next) = iter.next() else {
                     poisoned = true;
                     break;
-                }
-            },
+                };
+                0x1_0000 + ((u32::from(unit) & 0x3FF) << 10) + (u32::from(next) & 0x3FF)
+            }
             0xDC00..=0xDFFF => {
                 poisoned = true;
                 break;
@@ -355,7 +356,7 @@ struct AttDef {
 }
 
 /// The tokens of the DTD (the prolog tokens of expat's `xmltok_impl.c`).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tok<'a> {
     /// `<!KEYWORD` followed by white space or `%`.
     DeclOpen(&'a str),
@@ -607,7 +608,9 @@ impl<'a> Scanner<'a, '_> {
         };
         // After a name, a number token or a literal only these may follow.
         let name_end_ok = |next: Option<u8>| {
-            next.is_some_and(|n| is_space(n) || matches!(n, b'>' | b')' | b',' | b'|' | b'[' | b'%'))
+            next.is_some_and(|n| {
+                is_space(n) || matches!(n, b'>' | b')' | b',' | b'|' | b'[' | b'%')
+            })
         };
         match c {
             b'"' | b'\'' => {
@@ -885,16 +888,16 @@ impl<'a> Scanner<'a, '_> {
 
     /// A content model group after its `(`; `first` is the token after the `(`.
     fn content_group(&mut self, first: Tok<'a>) -> Res {
-        self.content_particle(first)?;
+        self.content_particle(&first)?;
         let mut tok = self.dtd_token()?;
         let separator = match tok {
-            Tok::Comma | Tok::Or => Some(tok.clone()),
+            Tok::Comma | Tok::Or => Some(tok),
             _ => None,
         };
         if let Some(sep) = separator {
             while tok == sep {
                 let next = self.dtd_token()?;
-                self.content_particle(next)?;
+                self.content_particle(&next)?;
                 tok = self.dtd_token()?;
             }
         }
@@ -904,7 +907,7 @@ impl<'a> Scanner<'a, '_> {
         }
     }
 
-    fn content_particle(&mut self, tok: Tok<'a>) -> Res {
+    fn content_particle(&mut self, tok: &Tok<'a>) -> Res {
         match tok {
             Tok::Name(_) | Tok::NameSuffixed => Ok(()),
             Tok::OpenParen => {
@@ -933,9 +936,7 @@ impl<'a> Scanner<'a, '_> {
             match self.dtd_token()? {
                 Tok::Name("CDATA") => is_cdata = true,
                 Tok::Name("ID") => is_id = true,
-                Tok::Name(
-                    "IDREF" | "IDREFS" | "ENTITY" | "ENTITIES" | "NMTOKEN" | "NMTOKENS",
-                ) => {}
+                Tok::Name("IDREF" | "IDREFS" | "ENTITY" | "ENTITIES" | "NMTOKEN" | "NMTOKENS") => {}
                 Tok::Name("NOTATION") => {
                     if self.dtd_token()? != Tok::OpenParen {
                         return Err(Malformed);
@@ -967,8 +968,12 @@ impl<'a> Scanner<'a, '_> {
             self.skip_space();
             let literal_at = self.pos;
             let value = match self.dtd_token()? {
-                Tok::PoundName("REQUIRED" | "IMPLIED") => None,
                 Tok::PoundName("FIXED") if self.keep_processing => {
+                    Some(self.attlist_default(is_cdata)?)
+                }
+                Tok::Literal(_) if self.keep_processing => {
+                    // the literal is parsed again as an attribute value
+                    self.pos = literal_at;
                     Some(self.attlist_default(is_cdata)?)
                 }
                 Tok::PoundName("FIXED") => {
@@ -976,12 +981,7 @@ impl<'a> Scanner<'a, '_> {
                     self.expect_system_literal()?;
                     None
                 }
-                Tok::Literal(_) if self.keep_processing => {
-                    // the literal is parsed again as an attribute value
-                    self.pos = literal_at;
-                    Some(self.attlist_default(is_cdata)?)
-                }
-                Tok::Literal(_) => None,
+                Tok::PoundName("REQUIRED" | "IMPLIED") | Tok::Literal(_) => None,
                 _ => return Err(Malformed),
             };
             if !self.keep_processing {
@@ -1361,6 +1361,9 @@ fn check_entity_value(value: &str, names: Names) -> Res {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
 
 /// Whether `c` may be in a public identifier literal (expat's `isPublicId`).
 fn is_public_id_char(c: u8) -> bool {
