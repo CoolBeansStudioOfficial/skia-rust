@@ -28866,6 +28866,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/AtlasOobTest.cpp#L188-L206"
 module = "gpu"
 status = "todo"
+reason = "needs the text path (Slug, SkStrikeServer/Client remote glyph cache, SkTypeface_remote): G12b"
 span_hash = "872884cecb642129429263c6cbc8401f287f0901417123a4f91c5de1667099dc"
 
 [[test]]
@@ -51359,7 +51360,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L62-L163"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "d354de868796ed129df91539cec76b10a736ac3652c202d502d0fc936326f312"
 
 [[test]]
@@ -51368,7 +51369,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/DrawAtlasTest.cpp#L344-L398"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "c7fa68e7ed5a957916fe704f6ecf728c670e1f1beb118a695abdf8f015fb075c"
 
 [[test]]
@@ -51377,7 +51378,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L269-L330"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "61f4b77b0e9335a788caefc309b7d9de9669e1904ad580d0b96a4bee156e04e8"
 
 [[test]]
@@ -51386,7 +51387,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L165-L267"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "2bb1050d599f1db064d3adb552659ff8ae4900e9fe3934900a73b0cb20ae88a8"
 
 [[test]]
