@@ -18,11 +18,15 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters::blur_filter;
 use skia_rust_effects::image_filters::drop_shadow_filter;
 
-use crate::effect_node::{effect_on_render, effect_on_revalidate};
+use crate::effect_node::{effect_on_node_at, effect_on_render, effect_on_revalidate};
 use crate::invalidation_controller::InvalidationController;
 use crate::node::{Node, NodeCore, inval_traits};
 use crate::render_node::{Hit, RenderContext, RenderNode, ScopedRenderContext};
 use crate::util::rect_contains;
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blender::Blender;
+use skia_rust_core::canvas::SaveLayerRec;
+use skia_rust_core::paint::Paint;
 
 /// The state of an image filter node (the `ImageFilter` base class): the revalidated filter and
 /// its crop rect.
@@ -513,5 +517,170 @@ impl RenderNode for ImageFilterEffect {
         debug_assert!(rect_contains(&self.core.bounds(), p));
         let _ = p;
         Some(Hit::This)
+    }
+}
+
+/// Applies a blender to the content of its child (`BlenderEffect`).
+// Port of: modules/sksg/include/SkSGRenderEffect.h#L286-L300 (chrome/m156) (`class BlenderEffect`)
+#[doc(alias = "sksg::BlenderEffect")]
+#[derive(Debug)]
+pub struct BlenderEffect {
+    core: NodeCore,
+    child: Rc<dyn RenderNode>,
+    blender: RefCell<Option<Blender>>,
+}
+
+impl BlenderEffect {
+    /// `BlenderEffect::Make(child, blender)`: `None` if there is no child.
+    // Port of: modules/sksg/src/SkSGRenderEffect.cpp#L199-L202 (chrome/m156) (`BlenderEffect::Make`)
+    #[doc(alias = "Make")]
+    #[must_use]
+    pub fn make(child: Option<Rc<dyn RenderNode>>, blender: Option<Blender>) -> Option<Rc<Self>> {
+        let child = child?;
+        let effect = Rc::new_cyclic(|weak: &Weak<Self>| Self {
+            core: NodeCore::new(0, weak.clone()),
+            child: Rc::clone(&child),
+            blender: RefCell::new(blender),
+        });
+        // The EffectNode base observes the child.
+        effect.observe_inval(effect.child.as_ref());
+        Some(effect)
+    }
+
+    /// The blender (`getBlender`).
+    #[must_use]
+    pub fn blender(&self) -> Option<Blender> {
+        self.blender.borrow().clone()
+    }
+
+    /// Sets the blender, invalidating the node if it changed (`setBlender`).
+    pub fn set_blender(&self, blender: Option<Blender>) {
+        if *self.blender.borrow() != blender {
+            *self.blender.borrow_mut() = blender;
+            self.invalidate();
+        }
+    }
+}
+
+impl Drop for BlenderEffect {
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp (chrome/m156) (`EffectNode::~EffectNode`)
+    fn drop(&mut self) {
+        self.unobserve_inval(self.child.as_ref());
+    }
+}
+
+impl Node for BlenderEffect {
+    fn core(&self) -> &NodeCore {
+        &self.core
+    }
+
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp#L28-L32 (chrome/m156) (`EffectNode::onRevalidate`)
+    fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
+        effect_on_revalidate(&self.child, ic, ctm)
+    }
+}
+
+impl RenderNode for BlenderEffect {
+    // Port of: modules/sksg/src/SkSGRenderEffect.cpp#L210-L214 (chrome/m156) (`BlenderEffect::onRender`)
+    fn on_render(&self, canvas: &Canvas, ctx: Option<&RenderContext>) {
+        let blender = self.blender.borrow().clone();
+        let scope = ScopedRenderContext::new(canvas, ctx).modulate_blender(blender);
+        effect_on_render(&self.child, canvas, Some(scope.context()));
+    }
+
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp#L24-L26 (chrome/m156) (`EffectNode::onNodeAt`)
+    fn on_node_at(&self, p: Point) -> Option<Hit> {
+        // TODO: we likely need to do something more sophisticated than delegate to descendants here.
+        effect_on_node_at(&self.child, p)
+    }
+}
+
+/// Composites its child through a layer, with a blend mode (`LayerEffect`).
+// Port of: modules/sksg/include/SkSGRenderEffect.h#L302-L316 (chrome/m156) (`class LayerEffect`)
+#[doc(alias = "sksg::LayerEffect")]
+#[derive(Debug)]
+pub struct LayerEffect {
+    core: NodeCore,
+    child: Rc<dyn RenderNode>,
+    mode: Cell<BlendMode>,
+}
+
+impl LayerEffect {
+    /// `LayerEffect::Make(child, mode)`: `None` if there is no child.
+    // Port of: modules/sksg/src/SkSGRenderEffect.cpp#L221-L224 (chrome/m156) (`LayerEffect::Make`)
+    #[doc(alias = "Make")]
+    #[must_use]
+    pub fn make(child: Option<Rc<dyn RenderNode>>, mode: BlendMode) -> Option<Rc<Self>> {
+        let child = child?;
+        let effect = Rc::new_cyclic(|weak: &Weak<Self>| Self {
+            core: NodeCore::new(0, weak.clone()),
+            child: Rc::clone(&child),
+            mode: Cell::new(mode),
+        });
+        // The EffectNode base observes the child.
+        effect.observe_inval(effect.child.as_ref());
+        Some(effect)
+    }
+
+    /// The blend mode (`getMode`).
+    #[must_use]
+    pub fn mode(&self) -> BlendMode {
+        self.mode.get()
+    }
+
+    /// Sets the blend mode, invalidating the node if it changed (`setMode`).
+    pub fn set_mode(&self, mode: BlendMode) {
+        if self.mode.get() != mode {
+            self.mode.set(mode);
+            self.invalidate();
+        }
+    }
+}
+
+impl Drop for LayerEffect {
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp (chrome/m156) (`EffectNode::~EffectNode`)
+    fn drop(&mut self) {
+        self.unobserve_inval(self.child.as_ref());
+    }
+}
+
+impl Node for LayerEffect {
+    fn core(&self) -> &NodeCore {
+        &self.core
+    }
+
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp#L28-L32 (chrome/m156) (`EffectNode::onRevalidate`)
+    fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
+        effect_on_revalidate(&self.child, ic, ctm)
+    }
+}
+
+impl RenderNode for LayerEffect {
+    // Port of: modules/sksg/src/SkSGEffectNode.cpp#L24-L26 (chrome/m156) (`EffectNode::onNodeAt`)
+    fn on_node_at(&self, p: Point) -> Option<Hit> {
+        effect_on_node_at(&self.child, p)
+    }
+
+    // Port of: modules/sksg/src/SkSGRenderEffect.cpp#L232-L249 (chrome/m156) (`LayerEffect::onRender`)
+    fn on_render(&self, canvas: &Canvas, ctx: Option<&RenderContext>) {
+        // SkAutoCanvasRestore(canvas, false): the save count is restored on every exit path.
+        let save_count = canvas.save_count();
+        {
+            // Commit any potential pending paint effects to their own layer.
+            let _scope = ScopedRenderContext::new(canvas, ctx).set_isolation(
+                &self.core.bounds(),
+                &canvas.total_matrix(),
+                true,
+            );
+            let mut layer_paint = Paint::default();
+            if let Some(ctx) = ctx {
+                // Apply all optional context overrides upfront.
+                ctx.modulate_paint(&canvas.total_matrix(), &mut layer_paint, false);
+            }
+            layer_paint.set_blend_mode(self.mode.get());
+            canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
+            effect_on_render(&self.child, canvas, None);
+        }
+        canvas.restore_to_count(save_count);
     }
 }
