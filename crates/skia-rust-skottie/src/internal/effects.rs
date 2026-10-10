@@ -34,6 +34,7 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 mod cc_toner;
 mod color;
 mod displacement_map;
+mod fractal_noise;
 mod convolution;
 mod corner_pin;
 mod filters;
@@ -166,6 +167,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
+    ("ADBE Fractal Noise", fractal_noise::attach_fractal_noise_effect),
     ("ADBE Gaussian Blur 2", filters::attach_gaussian_blur_effect),
     ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
