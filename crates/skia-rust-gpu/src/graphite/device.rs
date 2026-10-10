@@ -2,7 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/gpu/graphite/Device.h, src/gpu/graphite/Device.cpp (L1-L2140 and L2343-L2631,
-//                   the drawing core; paths, text and special images are G10c/G10d)
+//                   the drawing core, and the special image functions; text is G12b)
 
 //! [`Device`]: the Graphite `SkDevice`. It turns the canvas's draw calls into draws recorded in
 //! its [`DrawContext`], and flushes them into `Task`s of its recorder.
@@ -23,11 +23,11 @@
 //!   is G12a, so the device passes none and every clip element that is not analytic is a
 //!   depth-only clip draw.
 //! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
-//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawSpecial()`, `snapSpecial()`,
-//!   `drawCoverageMask()`, `drawBlurredRRect()` and the image filtering backend (G10c), and
-//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`) and the image
-//!   links of `notifyInUse()` (`Image_Graphite` does not own the device: see `image_graphite`).
-//!   `makeSurface()`, `makeImageCopy()` and the non-copyable `onWritePixels()` fallback are ported.
+//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawCoverageMask()` and `drawBlurredRRect()`, and
+//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
+//!   `makeSurface()`, `makeImageCopy()`, the non-copyable `onWritePixels()` fallback,
+//!   `drawSpecial()`, `snapSpecial()` and the image filtering backend (`docs/design/gpu.md` §5.5)
+//!   are ported. Images link to the device through its [`DeviceLink`] (§5.6).
 //! - Sparse strips (Q5, G17) and `GPU_TEST_UTILS` readPixels.
 
 use std::cell::RefCell;
@@ -40,12 +40,14 @@ use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::{Color, Color4f};
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::device::{CreateInfo, Device as CoreDevice, DeviceState};
 use skia_rust_core::image::{Image, RequiredProperties};
+use skia_rust_core::image_filter_types::Backend;
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::mesh::Mesh;
+use skia_rust_core::mesh::{self, Mesh, mesh_priv};
 use skia_rust_core::paint::{Cap, Paint, Style as PaintStyle};
 use skia_rust_core::path::Path;
 use skia_rust_core::pixmap::Pixmap;
@@ -57,6 +59,7 @@ use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
+use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::vertices::Vertices;
@@ -86,13 +89,15 @@ use crate::graphite::geom::shape::Shape;
 use crate::graphite::geom::transform::{Transform, Type as TransformType};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::image_factories::texture_from_image;
-use crate::graphite::image_graphite::Image as GraphiteImage;
+use crate::graphite::image_filter_backend::make_graphite_backend;
+use crate::graphite::image_graphite::{DeviceLink, Image as GraphiteImage, wrap_device};
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::paint_params::{PaintParams, ShadingParams, SimpleImage};
 use crate::graphite::recorder::{Recorder, RecorderInner, RecorderPriv, TrackedDevice};
 use crate::graphite::render_step::Coverage;
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::{DstReadStrategy, LoadOp};
+use crate::graphite::special_image::make_graphite;
 use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::upload_task::{MipLevel, UploadSource};
@@ -460,6 +465,10 @@ pub struct DeviceCore {
 
     // The tracked handle of this core, to deregister it.
     this: Weak<RefCell<DeviceCore>>,
+
+    // What the images of this device's target hold of it (`sk_sp<Device>` in
+    // `Image_Base::fLinkedDevices`, `docs/design/gpu.md` §5.6).
+    link: Arc<DeviceLink>,
 }
 
 impl std::fmt::Debug for DeviceCore {
@@ -494,7 +503,8 @@ impl Device {
     /// allowUnpremul)`: if `register_with_recorder` is false, it is meant to be a short-lived
     /// Device that is managed by the caller within a limited scope (such that it is guaranteed to
     /// go out of scope before the Recorder can be snapped).
-    // Port of: src/gpu/graphite/Device.cpp#L452-L520 (chrome/m156)
+    #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+    #[allow(clippy::missing_panics_doc)] // the panics are SkASSERT-style invariants of the C++
     #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
     #[must_use]
     pub fn make(
@@ -537,8 +547,17 @@ impl Device {
         }
 
         let state = DeviceState::new(dc.image_info().clone(), *dc.surface_props());
+        let link = DeviceLink::new(
+            priv_.unique_id(),
+            dc.target().ref_proxy().expect("a device has a target"),
+        );
         let core = Rc::new_cyclic(|this| {
-            RefCell::new(DeviceCore::new(recorder.downgrade(), dc, this.clone()))
+            RefCell::new(DeviceCore::new(
+                recorder.downgrade(),
+                dc,
+                this.clone(),
+                link,
+            ))
         });
         let device = Device {
             state,
@@ -781,6 +800,7 @@ impl DeviceCore {
         recorder: Weak<RecorderInner>,
         dc: DrawContext,
         this: Weak<RefCell<DeviceCore>>,
+        link: Arc<DeviceLink>,
     ) -> Self {
         let width = dc.image_info().width();
         let height = dc.image_info().height();
@@ -810,7 +830,31 @@ impl DeviceCore {
             is_flushing: false,
             scoped_recording_id: 0,
             this,
+            link,
         }
+    }
+
+    /// The link the images of this device's target hold (`Image::WrapDevice`'s `linkDevice`).
+    #[must_use]
+    pub fn link(&self) -> &Arc<DeviceLink> {
+        &self.link
+    }
+
+    /// The device's ID ([`DeviceLink::device_id`]).
+    #[must_use]
+    pub fn device_id(&self) -> u32 {
+        self.link.device_id()
+    }
+
+    /// `fDC->recordDependency(task)`: the dependency of a draw of this device on `task`.
+    pub fn record_dependency(&mut self, task: TaskRef) {
+        self.dc.record_dependency(task);
+    }
+
+    /// Marks that another device's draw depends on this device's current contents
+    /// (`fMustFlushDependencies = true` in `notifyInUse`).
+    pub fn set_must_flush_dependencies(&mut self) {
+        self.must_flush_dependencies = true;
     }
 
     // Updates the cached local-to-device transform (`localToDeviceTransform()` when
@@ -873,6 +917,108 @@ impl DeviceCore {
         )
     }
 
+    /// `drawSpecial(special, localToDevice, sampling, paint, constraint)`: draws `special` with
+    /// `local_to_device` instead of the device's transform, as an image rect over its subset.
+    // Port of: src/gpu/graphite/Device.cpp#L2444-L2479 (chrome/m156)
+    #[doc(alias = "drawSpecial")]
+    pub fn draw_special(
+        &mut self,
+        special: &SpecialImage,
+        local_to_device: &Matrix,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        constraint: SrcRectConstraint,
+    ) {
+        debug_assert!(paint.mask_filter().is_none() && paint.image_filter().is_none());
+
+        let img = special.as_image();
+        let Some(img) = img.filter(|img| img.as_base().is_graphite_backed()) else {
+            skia_log_w!("Couldn't get Graphite-backed special image as image");
+            return;
+        };
+
+        // drawSpecial could be the same as drawEdgeAAImageSet or drawImageRect except that it
+        // ignores the currently assigned local-to-device transform and uses the one provided.
+        // But because SkSpecialImage guarantees the subset is already contained in the image and
+        // it's not empty, we can skip the src/dst correction.
+        let src = SkRect::from_irect(special.subset());
+        let dst = SkRect::from_iwh(special.width(), special.height());
+        debug_assert!(SkRect::from_irect(img.bounds()).contains(&src) && !dst.is_empty());
+
+        let local_matrix = Matrix::rect_to_rect_or_identity(src, dst, None);
+        let subset = if constraint == SrcRectConstraint::Strict {
+            src
+        } else {
+            SkRect::from_irect(img.bounds())
+        };
+        let image_shader = SimpleImage {
+            image: img,
+            local_matrix: Some(local_matrix),
+            subset,
+            sampling_options: *sampling,
+        };
+
+        // The image filtering and layer code paths often rely on the paint being non-AA to avoid
+        // coverage operations. To stay consistent with the other backends, we use an edge AA
+        // "quad" whose flags match the paint's AA request.
+        let aa_flags = if paint.is_anti_alias() {
+            EdgeFlags::ALL
+        } else {
+            EdgeFlags::NONE
+        };
+        self.draw_geometry(
+            &Transform::new(M44::from(local_to_device)),
+            Geometry::EdgeAAQuad(EdgeAAQuad::from_sk_rect(&dst, aa_flags)),
+            &PaintParams::from_paint_with_image(paint, image_shader, 1.0),
+            &default_fill_style(),
+        );
+    }
+
+    /// `snapSpecial(subset, forceCopy)`: a special image of `subset` of the device's target, a
+    /// copy if `force_copy` or the target cannot be sampled.
+    ///
+    /// Can be called after the device has been marked immutable (no recorder); it then wraps the
+    /// target without a copy.
+    // Port of: src/gpu/graphite/Device.cpp#L2519-L2548 (chrome/m156)
+    #[doc(alias = "snapSpecial")]
+    pub fn snap_special(&mut self, subset: &IRect, force_copy: bool) -> Option<SpecialImage> {
+        // NOTE: snapSpecial() can be called even after the device has been marked immutable
+        // (null recorder), but in those cases it should not be a copy and just returns the image
+        // view.
+        let recorder = self.recorder();
+        let (device_image, final_subset) = if force_copy || !self.dc.is_texturable() {
+            let image =
+                self.make_image_copy(*subset, Budgeted::Yes, Mipmapped::No, BackingFit::Approx);
+            (image, IRect::from_size(subset.size()))
+        } else {
+            // TODO(b/323886870): For now snapSpecial() force adds the pending work to the
+            // recorder's root task list. Once shared atlas management is solved and DrawTasks can
+            // be nested in a graph then this can go away in favor of auto-flushing through the
+            // image's linked device.
+            if recorder.is_some() {
+                self.flush_pending_work(None);
+            }
+            let image = wrap_device(
+                self.dc.target(),
+                self.dc.is_texturable(),
+                self.dc.image_info(),
+                None,
+                Arc::clone(&self.link),
+            )
+            .map(GraphiteImage::into_core);
+            (image, *subset)
+        };
+
+        // For non-copying "snapSpecial", the semantics are returning an image view of the surface
+        // data, and relying on higher-level draw and restore logic for the contents to make sense.
+        make_graphite(
+            recorder.as_ref(),
+            &final_subset,
+            device_image,
+            self.dc.surface_props(),
+        )
+    }
+
     /// `Device::resetStorageCache()`'s body: the storage context drops its cached storage.
     // Port of: src/gpu/graphite/Device.cpp (`resetStorageCache`, chrome/m156)
     pub fn reset_storage_cache(&self) {
@@ -891,10 +1037,21 @@ impl DeviceCore {
         result
     }
 
+    // `Image_Base::notifyInUse(recorder, fDC)` for each image `key_context` recorded while it
+    // built a paint key (`add_image_to_key`).
+    fn notify_images_in_use(&mut self, recorder: &Recorder, key_context: &KeyContext<'_>) {
+        for image in key_context.take_images_in_use() {
+            if let Some(image) = GraphiteImage::from_core(&image) {
+                image.notify_in_use(recorder, Some(self));
+            }
+        }
+    }
+
     /// `abandonRecorder()`.
     // Port of: src/gpu/graphite/Device.h#L111-L113 (chrome/m156)
     pub fn abandon_recorder(&mut self) {
         self.recorder = Weak::new();
+        self.link.mark_abandoned();
     }
 
     /// `isScratchDevice()`: scratch device status is inferred from whether or not the Device's
@@ -948,92 +1105,6 @@ impl DeviceCore {
         }
     }
 
-    /// `notifyInUse(recorder, drawContext)`: called by an Image wrapping this Device to mark that
-    /// the pending contents of this Device will be read by `recorder`, and specifically by
-    /// `draw_context` (if any). Flushes any necessary work (depending on scratch state) and
-    /// records task dependencies. Returns true if the caller does not need to track the Device on
-    /// the Image anymore.
-    ///
-    /// `is_unique` is `this->unique()`: whether nothing else references the device.
-    // Port of: src/gpu/graphite/Device.cpp#L593-L652 (chrome/m156)
-    #[allow(clippy::missing_panics_doc)] // the panics are SkASSERT-style invariants of the C++
-    pub fn notify_in_use(
-        &mut self,
-        recorder: &Recorder,
-        mut draw_context: Option<&mut DrawContext>,
-        is_unique: bool,
-    ) -> bool {
-        if self.is_scratch_device() {
-            if let Some(last_task) = self.last_task.clone() {
-                // Increment the pending read count for the device's target
-                recorder
-                    .priv_()
-                    .add_pending_read(self.dc.target().proxy().expect("a device has a target"));
-                if let Some(draw_context) = draw_context.as_deref_mut() {
-                    // Add a reference to the device's drawTask to `drawContext` if that's
-                    // provided.
-                    draw_context.record_dependency(last_task);
-                } else {
-                    // If there's no `drawContext` this notify represents a copy, so for now
-                    // append the task to the root task list since that is where the subsequent
-                    // copy task will go as well.
-                    recorder.priv_().add(last_task);
-                }
-            } else {
-                // If there's no draw task yet, there are two possible scenarios:
-                //
-                // 1) the device is being drawn into a child scratch device (backdrop filter or
-                //    init-from-prev layer), and the child will later on be drawn back into the
-                //    device's `drawContext`. In this case `device` should already have performed
-                //    an internal flush and have no pending work, and not yet be marked
-                //    immutable. The correct action at this point in time is to do nothing: the
-                //    final task order in the device's DrawTask will be pre-notified tasks into
-                //    the device's target, then the child's DrawTask when it's drawn back into
-                //    `device`, and then any post tasks that further modify the `device`'s
-                //    target.
-                // 2) the scratch device was flushed to a drawContext's local task list,
-                //    resulting in no pending work but also no lastTask. The correct action is
-                //    again to do nothing. In this case, it is also possible that the device was
-                //    not registered with the recorder.
-                debug_assert!(
-                    self.recorder.upgrade().is_none()
-                        || std::ptr::eq(self.recorder.as_ptr(), recorder_inner_ptr(recorder))
-                );
-            }
-
-            // Scratch devices are often already marked immutable, but they are also the way in
-            // which Image finds the last snapped DrawTask so we don't unlink scratch devices.
-            // The scratch image view will be short-lived as well, or the device will transition
-            // to a non-scratch device in a future Recording and then it will be unlinked then.
-            // Thus, we always return false for scratch devices so they are not unlinked from
-            // their images.
-            false
-        } else {
-            // Automatic flushing of image views only happens when mixing reads and writes on the
-            // originating Recorder. Draws of the view on another Recorder will always see the
-            // texture content dependent on how Recordings are inserted.
-            let same_recorder = self.recorder.upgrade().is_some()
-                && std::ptr::eq(self.recorder.as_ptr(), recorder_inner_ptr(recorder));
-            if same_recorder {
-                // Non-scratch devices push their tasks to the root task list to maintain an order
-                // consistent with the client-triggering actions. Because of this, there's no need
-                // to add references to the `drawContext` that the device is being drawn into.
-                self.flush_pending_work(None);
-
-                if draw_context.is_some() {
-                    // But if we are being drawn into another context, remember that there is an
-                    // outstanding dependency on the current state of this device, in which case
-                    // it's next flush must also flush those other devices before its new tasks
-                    // are added.
-                    self.must_flush_dependencies = true;
-                }
-            }
-            // Return true (to unlink with the image) if the non-scratch surface is immutable
-            // since this Device cannot record any more commands that will modify its texture.
-            self.recorder.upgrade().is_none() || is_unique
-        }
-    }
-
     /// `flushPendingWork(drawContext)`: ensures clip elements are drawn that will clip previous
     /// draw calls, snaps all pending work from the `DrawContext` as a `RenderPassTask` and
     /// records it in the Device's recorder.
@@ -1046,6 +1117,19 @@ impl DeviceCore {
     // Port of: src/gpu/graphite/Device.cpp#L2348-L2403 (chrome/m156)
     #[allow(clippy::missing_panics_doc)] // the panics are SkASSERT-style invariants of the C++
     pub fn flush_pending_work(&mut self, draw_context: Option<&mut DrawContext>) {
+        self.flush_pending_work_with_current(draw_context, None);
+    }
+
+    /// [`flush_pending_work`](Self::flush_pending_work) while `current` (another device) records
+    /// a draw that reads this device's image: the dependency flush reaches `current` through this
+    /// reference, since it is borrowed (`docs/design/gpu.md` §5.6).
+    // Port of: src/gpu/graphite/Device.cpp#L2348-L2403 (chrome/m156)
+    #[allow(clippy::missing_panics_doc)] // the panics are SkASSERT-style invariants of the C++
+    pub fn flush_pending_work_with_current(
+        &mut self,
+        draw_context: Option<&mut DrawContext>,
+        current: Option<&mut DeviceCore>,
+    ) {
         // If this is a scratch device being flushed, it should only be flushing into the expected
         // next recording from when the Device was first created.
         let Some(recorder) = self.recorder() else {
@@ -1071,7 +1155,10 @@ impl DeviceCore {
             let target = self.dc.target().ref_proxy().expect("a device has a target");
             recorder
                 .priv_()
-                .flush_tracked_devices_with_dependency(&target);
+                .flush_tracked_devices_with_dependency_and_current(
+                    &target,
+                    current.map(|current| current as &mut dyn TrackedDevice),
+                );
         }
 
         // While unbounded recursion is gone, bounded re-entrant flushing is still possible during
@@ -1095,6 +1182,7 @@ impl DeviceCore {
                 // devices won't flush to the recorder at all and will only store the snapped task
                 // here.
                 self.last_task.clone_from(&draw_task);
+                self.link.set_last_task(draw_task.clone());
             } else {
                 // Non-scratch devices do not need to point back to the last snapped task since
                 // they are always added to the root task list.
@@ -1106,6 +1194,7 @@ impl DeviceCore {
                 // Recorder and are only included when they are drawn (e.g. restored), we should
                 // be able to assert that `fLastTask` is null.
                 self.last_task = None;
+                self.link.set_last_task(None);
             }
 
             if let Some(draw_task) = draw_task {
@@ -1321,6 +1410,70 @@ impl DeviceCore {
             &transform,
             Geometry::Vertices(vertices.clone()),
             &PaintParams::new(paint, primitive_blender, skip_color_xform, false),
+            &default_fill_style(),
+        );
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156)
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: &Blender, paint: &Paint) {
+        if !mesh.is_valid() {
+            return;
+        }
+        let Some(spec) = mesh.spec() else {
+            return;
+        };
+
+        // The caller could modify its CPU buffers after the draw, so the draw copies the data it
+        // reads: the vertices from the vertex offset and the indices from the index offset.
+        let vertex_size = mesh.vertex_count() * spec.stride();
+        let vertex_offset = mesh.vertex_offset();
+        let vertex_bytes = mesh
+            .vertex_buffer()
+            .expect("a valid mesh has a vertex buffer")
+            .with_data(|data| data[vertex_offset..vertex_offset + vertex_size].to_vec());
+        let vb = mesh::meshes::make_vertex_buffer(Some(&vertex_bytes), vertex_size);
+        let uniforms = mesh.uniforms().cloned();
+
+        let result = if let Some(ib) = mesh.index_buffer() {
+            let index_size = mesh.index_count() * std::mem::size_of::<u16>();
+            let index_offset = mesh.index_offset();
+            let index_bytes =
+                ib.with_data(|data| data[index_offset..index_offset + index_size].to_vec());
+            let ib = mesh::meshes::make_index_buffer(Some(&index_bytes), index_size);
+            Mesh::make_indexed(
+                Some(spec.clone()),
+                mesh.mode(),
+                Some(vb),
+                mesh.vertex_count(),
+                0,
+                Some(ib),
+                mesh.index_count(),
+                0,
+                uniforms,
+                mesh.children(),
+                mesh.bounds(),
+            )
+        } else {
+            Mesh::make(
+                Some(spec.clone()),
+                mesh.mode(),
+                Some(vb),
+                mesh.vertex_count(),
+                0,
+                uniforms,
+                mesh.children(),
+                mesh.bounds(),
+            )
+        };
+        let draw_mesh = result.mesh;
+
+        // A null blender is only used for the primitive color if the mesh has colors.
+        let primitive_blender = mesh_priv::has_colors(spec).then_some(blender);
+        let transform = self.local_to_device_transform();
+        self.draw_geometry(
+            &transform,
+            Geometry::Mesh(draw_mesh),
+            &PaintParams::new(paint, primitive_blender, false, false).make_with_mesh(mesh),
             &default_fill_style(),
         );
     }
@@ -1961,6 +2114,7 @@ impl DeviceCore {
             Geometry::Vertices(vertices) => {
                 return Some(renderers.vertices(vertices.has_colors(), vertices.has_tex_coords()));
             }
+            Geometry::Mesh(_) => return Some(renderers.mesh()),
             Geometry::EdgeAAQuad(quad) => {
                 debug_assert!(style.is_fill_style());
                 // handled by specialized system, simplified from rects and round rects
@@ -2321,6 +2475,8 @@ impl DeviceCore {
             skia_log_w!("Key context creation failed in Device::drawGeometry, draw dropped!");
             return;
         };
+        // The images the key samples are notified as in use by this draw (`add_image_to_key`).
+        self.notify_images_in_use(recorder, &key_context);
 
         // If we are unclipped, do not depend on the dst, and cover the target, then we can adjust
         // load ops of the renderpass to more optimally handle the draw (and avoid redundant
@@ -2443,7 +2599,9 @@ impl DeviceCore {
             && !avoid_depth_mode
             && !get_inner_bounds(&geometry, local_to_device).is_empty_negative_or_nan()
         {
-            Some(shading.optimize_for_opacity(&key_context, paint_id))
+            let id = shading.optimize_for_opacity(&key_context, paint_id);
+            self.notify_images_in_use(recorder, &key_context);
+            Some(id)
         } else {
             None
         };
@@ -2786,11 +2944,6 @@ impl DeviceCore {
     }
 }
 
-// The address of the `RecorderInner` a `Recorder` handle refers to.
-fn recorder_inner_ptr(recorder: &Recorder) -> *const RecorderInner {
-    recorder.downgrade().as_ptr()
-}
-
 impl ClipDrawHooks for DeviceCore {
     fn draw_clip_shape(
         &mut self,
@@ -2857,6 +3010,25 @@ impl TrackedDevice for DeviceCore {
 
     fn reset_storage_cache(&mut self) {
         self.dc.storage_context().borrow_mut().reset_cache();
+    }
+
+    fn device_id(&self) -> u32 {
+        DeviceCore::device_id(self)
+    }
+
+    fn as_device_core(&mut self) -> Option<&mut DeviceCore> {
+        Some(self)
+    }
+
+    fn is_cell(&self, other: &Rc<RefCell<dyn TrackedDevice>>) -> bool {
+        std::ptr::addr_eq(Weak::as_ptr(&self.this), Rc::as_ptr(other))
+    }
+}
+
+impl Drop for DeviceCore {
+    // `~Device()`: the images that link to the device see that it is gone (`unique()`).
+    fn drop(&mut self) {
+        self.link.mark_dropped();
     }
 }
 
@@ -3077,10 +3249,8 @@ impl CoreDevice for Device {
             .draw_vertices(vertices, &blender, paint, skip_color_xform);
     }
 
-    // Port of: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156)
-    fn draw_mesh(&mut self, _mesh: &Mesh, _blender: Blender, _paint: &Paint) {
-        // `MeshRenderStep` and `Geometry::Mesh` come with the mesh port (G7a leftovers).
-        skia_log_w!("Device::drawMesh needs MeshRenderStep; the mesh is not drawn.");
+    fn draw_mesh(&mut self, mesh: &Mesh, blender: Blender, paint: &Paint) {
+        self.sync().draw_mesh(mesh, &blender, paint);
     }
 
     // Port of: src/gpu/graphite/Device.cpp#L1100-L1132 (chrome/m156)
@@ -3097,6 +3267,36 @@ impl CoreDevice for Device {
 
     fn use_draw_coverage_mask_for_mask_filters(&self) -> bool {
         true
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2444-L2479 (chrome/m156)
+    fn draw_special(
+        &mut self,
+        src: &SpecialImage,
+        local_to_device: &Matrix,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        constraint: SrcRectConstraint,
+    ) {
+        self.sync()
+            .draw_special(src, local_to_device, sampling, paint, constraint);
+    }
+
+    // `snapSpecialScaled()` is not overridden by Graphite: the `SkDevice` default (`None`).
+
+    // Port of: src/gpu/graphite/Device.cpp#L2519-L2548 (chrome/m156)
+    fn snap_special(&mut self, bounds: &IRect, force_copy: bool) -> Option<SpecialImage> {
+        self.sync().snap_special(bounds, force_copy)
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2550-L2553 (chrome/m156)
+    fn create_image_filtering_backend(
+        &self,
+        surface_props: &SurfaceProps,
+        color_type: ColorType,
+    ) -> Option<Arc<dyn Backend>> {
+        let recorder = self.core.borrow().recorder()?;
+        Some(make_graphite_backend(&recorder, surface_props, color_type))
     }
 
     fn draw_image_rect(

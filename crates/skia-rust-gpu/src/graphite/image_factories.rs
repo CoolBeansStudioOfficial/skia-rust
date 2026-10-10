@@ -9,21 +9,25 @@
 //!
 //! Not ported here: the lazy-generator path of `TextureFromImage` (`make_texture_image_from_lazy`,
 //! the generator and picture cases of `SkImage_Lazy`, which need the generator's texture
-//! callbacks), the YUVA factories (G15), `WrapTexture` and `PromiseTextureFrom` (G11a and G15),
-//! and `MakeWithFilter` (G10c).
+//! callbacks), the YUVA factories (G15), and `WrapTexture` and `PromiseTextureFrom` (G11a and
+//! G15). `MakeWithFilter` is [`make_with_filter`].
 
 use std::sync::Arc;
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::image::{Image as CoreImage, RequiredProperties};
 use skia_rust_core::image_base::{ImageBase, ImageType};
+use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::image_info::ColorInfo;
 use skia_rust_core::image_raster::ImageRaster;
 use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
+use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::gpu::gpu_types::{Budgeted, Mipmapped};
-use crate::graphite::image_graphite::{Image, make_subset};
+use crate::graphite::image_filter_backend::make_graphite_backend;
+use crate::graphite::image_graphite::{Image, make_non_budgeted, make_subset};
 use crate::graphite::recorder::Recorder;
 use crate::graphite::texture_utils::make_bitmap_proxy_view;
 
@@ -128,4 +132,30 @@ pub fn subset_texture_from(
         img.make_subset(subset, required_props)?
     };
     texture_from_image(recorder, &subset_img, required_props)
+}
+
+/// `MakeWithFilter(recorder, src, filter, subset, clipBounds, outSubset, offset)`: filters
+/// `subset` of `src` on the GPU with the Graphite image filter backend. Returns the result image,
+/// its subset that holds the result (`outSubset`) and the offset of that subset relative to `src`
+/// (`offset`).
+// Port of: src/gpu/graphite/ImageFactories.cpp#L390-L414 (chrome/m156)
+#[doc(alias = "MakeWithFilter")]
+#[must_use]
+pub fn make_with_filter(
+    recorder: &Recorder,
+    src: &CoreImage,
+    filter: &ImageFilter,
+    subset: &IRect,
+    clip_bounds: &IRect,
+) -> Option<(CoreImage, IRect, IPoint)> {
+    let backend = make_graphite_backend(recorder, &SurfaceProps::default(), src.color_type());
+    let (image, out_subset, offset) =
+        filter.make_image_with_filter(backend, src, *subset, *clip_bounds)?;
+    // The skif backend creates budgeted, scratch textures. This is what we want most of the time,
+    // but for the final result image returned from MakeWithFilter(), it needs to be a
+    // non-budgeted non-shareable texture (i.e. matching what we return from the other factory
+    // methods).
+    debug_assert!(image.as_base().is_graphite_backed());
+    let image = make_non_budgeted(recorder, &image)?;
+    Some((image, out_subset, offset))
 }

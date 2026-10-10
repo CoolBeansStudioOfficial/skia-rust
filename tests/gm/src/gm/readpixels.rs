@@ -174,11 +174,7 @@ impl GM for ReadPixelsGm {
 }
 
 // Port of: gm/readpixels.cpp#L189 (chrome/m156), DEF_GM( return new ReadPixelsGM; )
-crate::def_gm!(
-    #[ignore = "see notes/gm_readpixels_cpp_ReadPixelsGM.md"]
-    ReadPixelsGM = "ReadPixelsGM",
-    ReadPixelsGm
-);
+crate::def_gm!(ReadPixelsGM = "ReadPixelsGM", ReadPixelsGm);
 
 // Port of: gm/readpixels.cpp#L58-L68 (chrome/m156), draw_contents
 fn draw_contents(canvas: &Canvas) {

@@ -24,6 +24,7 @@ pub mod blit_row;
 pub mod color_util;
 pub mod cpu;
 pub mod estimates;
+pub mod half;
 pub mod memset;
 pub mod rp;
 pub mod swizzle;
@@ -32,4 +33,4 @@ pub mod testing;
 pub mod tier;
 pub mod vx;
 
-pub use tier::{Backend, Estimates, Selection, Tier, Unsupported, selection};
+pub use tier::{Backend, Estimates, Selection, Tier, Unsupported, selection, selection_is_forced};

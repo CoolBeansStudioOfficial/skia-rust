@@ -1,14 +1,15 @@
 //! skcms, Skia's color management module, ported to Rust: ICC profile parsing, transfer
 //! functions, gamut matrices and pixel format / color profile transforms.
 //!
-//! This is the portable scalar port: the transform pipeline runs the baseline stages of
-//! `Transform_inl.h` one pixel at a time. Per-CPU-tier kernels will come later through
-//! `skia-rust-simd`.
+//! This is a scalar port: the transform pipeline runs the stages of `Transform_inl.h` one pixel
+//! at a time. The baseline, HSW and SKX kernels differ only in their half-float conversions;
+//! the `cpu` module models skcms's own CPU dispatch (see its docs for how oracle tiers map).
 //!
 //! Names follow the mechanical mapping of `docs/PORTING.md` (`skcms_ICCProfile` is
 //! [`IccProfile`], `skcms_Parse` is [`parse`], ...); each public item carries a
 //! `#[doc(alias = "skcms_...")]`. See `docs/API_MAPPING.md`.
 
+mod cpu;
 mod curve;
 mod math;
 mod parse;
@@ -90,6 +91,49 @@ mod tests {
             None,
             2,
         ));
+    }
+
+    // The HSW/SKX kernels round half floats to nearest even where the baseline kernel truncates;
+    // every forced (oracle) tier models the oracle host, which ran SKX.
+    fn to_half_bits(v: f32) -> u16 {
+        let src: Vec<u8> = [v, 0.0, 0.0, 1.0]
+            .iter()
+            .flat_map(|f| f.to_le_bytes())
+            .collect();
+        let mut dst = [0u8; 8];
+        assert!(transform(
+            &src,
+            PixelFormat::RgbaFfff,
+            AlphaFormat::Unpremul,
+            None,
+            &mut dst,
+            PixelFormat::RgbaHhhh,
+            AlphaFormat::Unpremul,
+            None,
+            1,
+        ));
+        u16::from_le_bytes([dst[0], dst[1]])
+    }
+
+    #[test]
+    fn forced_tiers_model_the_oracle_hosts_skx_kernel() {
+        use skia_rust_simd::testing::{force_tier, oracle_selection};
+        use skia_rust_simd::{Backend, Estimates, Selection, Tier};
+        // 1 + 0.75 half ulps: truncation gives 0x3c00, round to nearest even 0x3c01.
+        let v = 1.0 + 0.75 / 1024.0;
+        for tier in [Tier::Scalar, Tier::Sse2, Tier::Sse41, Tier::Ml3, Tier::Ml4] {
+            let _guard = force_tier(oracle_selection(tier)).expect("runs here");
+            assert_eq!(cpu::cpu_type(), cpu::CpuType::Skx);
+            assert!(cpu::hardware_half());
+            assert_eq!(to_half_bits(v), 0x3c01, "{tier}");
+        }
+        // The model backend does not change the answer.
+        let sel = Selection {
+            tier: Tier::Sse2,
+            backend: Backend::Model(Estimates::AmdZen4),
+        };
+        let _guard = force_tier(sel).expect("model tiers are built for tests");
+        assert_eq!(to_half_bits(v), 0x3c01);
     }
 
     #[test]

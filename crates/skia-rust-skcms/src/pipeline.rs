@@ -149,6 +149,9 @@ fn to_fixed(f: f32) -> u32 {
 
 // Port of: modules/skcms/src/Transform_inl.h#L148-L162 (chrome/m156)
 fn f_from_half(half: u16) -> f32 {
+    if crate::cpu::hardware_half() {
+        return skia_rust_simd::half::cvtph2ps(half);
+    }
     let wide = u32::from(half);
     // A half is 1-5-10 sign-exponent-mantissa, with 15 exponent bias.
     let s = wide & 0x8000;
@@ -168,6 +171,9 @@ fn f_from_half(half: u16) -> f32 {
 // Port of: modules/skcms/src/Transform_inl.h#L180-L197 (chrome/m156)
 #[allow(clippy::cast_possible_truncation)] // mirrors cast<U16>(U32)
 fn half_from_f(f: f32) -> u16 {
+    if crate::cpu::hardware_half() {
+        return skia_rust_simd::half::cvtps2ph(f);
+    }
     // A float is 1-8-23 sign-exponent-mantissa, with 127 exponent bias.
     let sem = f.to_bits();
     let s = sem & 0x8000_0000;

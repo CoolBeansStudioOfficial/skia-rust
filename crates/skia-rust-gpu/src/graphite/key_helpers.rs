@@ -1951,6 +1951,19 @@ fn add_image_to_key(
         return;
     };
 
+    // We must call notifyInUse() here to link the final, Graphite-backed 'imageToDraw'
+    // to the DrawContext that will sample it.
+    //
+    // This is necessary for two primary cases:
+    // 1. The original image was not Graphite-backed.
+    // 2. The original image was already Graphite-backed, but produced through Image::Copy,
+    //    possibly from a different DrawContext.
+    //
+    // skia-rust: the key context records the image and the device that draws notifies it once
+    // the key is built, since it holds the `DrawContext` mutably (`docs/design/gpu.md` §5.6).
+    debug_assert!(image_to_draw.as_base().is_graphite_backed());
+    key_context.notify_in_use(image_to_draw.clone());
+
     // Here we detect pixel aligned blit-like image draws. Some devices have low precision filtering
     // and will produce degraded (blurry) images unexpectedly for sequential exact pixel blits when
     // not using nearest filtering. This is common for canvas scrolling implementations. Forcing

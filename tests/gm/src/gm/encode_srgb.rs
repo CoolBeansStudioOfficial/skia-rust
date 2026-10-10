@@ -138,7 +138,6 @@ impl GM for EncodeSrgbGm {
 
 // Port of: gm/encode_srgb.cpp#L156 (chrome/m156)
 crate::def_gm!(
-    #[ignore = "see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kPNG.md"]
     EncodeSRGBGM_kPNG = "EncodeSRGBGM(SkEncodedImageFormat::kPNG)",
     EncodeSrgbGm {
         format: EncodedFormat::Png
@@ -147,7 +146,6 @@ crate::def_gm!(
 
 // Port of: gm/encode_srgb.cpp#L158 (chrome/m156)
 crate::def_gm!(
-    #[ignore = "see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kJPEG.md"]
     EncodeSRGBGM_kJPEG = "EncodeSRGBGM(SkEncodedImageFormat::kJPEG)",
     EncodeSrgbGm {
         format: EncodedFormat::Jpeg
