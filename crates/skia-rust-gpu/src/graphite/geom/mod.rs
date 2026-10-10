@@ -1,6 +1,7 @@
 //! Geometry of Graphite: rects, transforms, shapes, and the bounds and intersection trees.
 
 pub mod analytic_blur_mask;
+pub mod analytic_rrect_blur_mask;
 pub mod bounds_manager;
 pub mod coverage_mask_shape;
 pub mod edge_aa_quad;

@@ -38,6 +38,8 @@ use crate::arc::Arc;
 use crate::bitmap::Bitmap;
 use crate::blend_mode::BlendMode;
 use crate::blender::Blender;
+use crate::blur_mask_filter_impl::BlurMaskFilterImpl;
+use crate::blur_types::BlurStyle;
 use crate::canvas_priv::{AutoCanvasMatrixPaint, MAX_PICTURE_OPS_TO_UNROLL_INSTEAD_OF_REF};
 use crate::clip_op::ClipOp;
 use crate::color::{Color, Color4f};
@@ -59,6 +61,7 @@ use crate::image_filter_types::{
 use crate::image_info::{ColorInfo, ImageInfo};
 use crate::lattice_iter::LatticeIter;
 use crate::m44::M44;
+use crate::mask_filter::MaskFilterType;
 use crate::matrix::Matrix;
 use crate::matrix_priv::map_rect;
 use crate::mesh::Mesh;
@@ -77,6 +80,7 @@ use crate::shader::Shader;
 use crate::shaders::ImageShader;
 use crate::size::ISize;
 use crate::slug::Slug;
+use crate::stroke_rec::StrokeRec;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::text_blob::TextBlob;
 use crate::tile_mode::TileMode;
@@ -633,9 +637,16 @@ struct PredrawFlags(u32);
 impl PredrawFlags {
     const NONE: PredrawFlags = PredrawFlags(0);
     const CHECK_FOR_OVERWRITE: PredrawFlags = PredrawFlags(1);
+    /// `kSkipMaskFilterAutoLayer`: the caller takes the mask filter's layer itself.
+    const SKIP_MASK_FILTER_AUTO_LAYER: PredrawFlags = PredrawFlags(2);
 
     fn has(self, other: PredrawFlags) -> bool {
         self.0 & other.0 != 0
+    }
+
+    /// `flags | other`.
+    fn with(self, other: PredrawFlags) -> PredrawFlags {
+        PredrawFlags(self.0 | other.0)
     }
 }
 
@@ -783,6 +794,67 @@ impl CanvasState {
             return None;
         }
         Some(AutoLayerForImageFilter::new(self, paint, raw_bounds))
+    }
+
+    /// `canAttemptBlurredRRectDraw(paint)`: the blur mask filter of `paint`, when the top device
+    /// may draw a blurred round rect analytically (only devices that use coverage masks for mask
+    /// filters, with a fill, no path effect and a normal blur style).
+    // Port of: src/core/SkCanvas.cpp#L1979-L2006 (chrome/m156)
+    fn can_attempt_blurred_rrect_draw(&self, paint: &Paint) -> Option<BlurMaskFilterImpl> {
+        if !self.top_device().use_draw_coverage_mask_for_mask_filters() {
+            // Perform a regular draw in the legacy mask filter case.
+            return None;
+        }
+        if paint.path_effect().is_some() {
+            return None;
+        }
+        // TODO: Once stroke-and-fill goes away, we can check the paint's style directly.
+        if !StrokeRec::from_paint(paint, None, None).is_fill_style() {
+            return None;
+        }
+        let mask_filter = paint.mask_filter()?;
+        let base = mask_filter.as_base();
+        if base.filter_type() != MaskFilterType::Blur {
+            return None;
+        }
+        let blur_mask_filter = base.as_blur_mask_filter_impl()?;
+        if blur_mask_filter.blur_style() != BlurStyle::Normal {
+            return None;
+        }
+        Some(blur_mask_filter.clone())
+    }
+
+    /// `attemptBlurredRRectDraw(rrect, blurMaskFilter, paint, flags)`: draws the blurred rrect on
+    /// the top device. Returns `None` when it was drawn (or the predraw was refused), and the
+    /// layer to draw the rrect with otherwise. The fallback's `addMaskFilterLayer` is not ported
+    /// (core has no mask filter auto-layers yet): the draw continues with the paint's mask filter.
+    // Port of: src/core/SkCanvas.cpp#L2008-L2034 (chrome/m156)
+    fn attempt_blurred_rrect_draw(
+        &mut self,
+        rrect: &RRect,
+        blur_mask_filter: &BlurMaskFilterImpl,
+        paint: &Paint,
+        flags: PredrawFlags,
+    ) -> Option<AutoLayerForImageFilter> {
+        let bounds = *rrect.bounds();
+        let layer = self.about_to_draw(
+            paint,
+            Some(&bounds),
+            flags.with(PredrawFlags::SKIP_MASK_FILTER_AUTO_LAYER),
+        )?;
+
+        let ctm = self.total_matrix();
+        let device_sigma = blur_mask_filter.compute_xformed_device_sigma(&ctm);
+        let local_sigma = blur_mask_filter.compute_xformed_local_sigma(&ctm);
+        if self
+            .top_device_mut()
+            .draw_blurred_rrect(rrect, layer.paint(), local_sigma, device_sigma)
+        {
+            // Analytic draw was successful.
+            self.end_auto_layer(&layer);
+            return None;
+        }
+        Some(layer)
     }
 
     /// The end of an `AutoLayerForImageFilter` (its destructor): restores the layers it added.
@@ -1894,10 +1966,18 @@ impl CanvasState {
             return;
         }
 
-        // (canAttemptBlurredRRectDraw is always None for the raster device.)
-        if let Some(auto_layer) =
+        let layer = if let Some(blur) = self.can_attempt_blurred_rrect_draw(paint) {
+            // Returns a layer if a blurred draw was unsuccessful.
+            self.attempt_blurred_rrect_draw(
+                &RRect::new_rect(r),
+                &blur,
+                paint,
+                PredrawFlags::CHECK_FOR_OVERWRITE,
+            )
+        } else {
             self.about_to_draw(paint, Some(r), PredrawFlags::CHECK_FOR_OVERWRITE)
-        {
+        };
+        if let Some(auto_layer) = layer {
             self.top_device_mut().draw_rect(r, auto_layer.paint());
             self.end_auto_layer(&auto_layer);
         }
@@ -1934,7 +2014,18 @@ impl CanvasState {
             return;
         }
 
-        if let Some(auto_layer) = self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
+        let layer = if let Some(blur) = self.can_attempt_blurred_rrect_draw(paint) {
+            // Returns a layer if a blurred draw was unsuccessful.
+            self.attempt_blurred_rrect_draw(
+                &RRect::new_oval(oval),
+                &blur,
+                paint,
+                PredrawFlags::NONE,
+            )
+        } else {
+            self.about_to_draw(paint, Some(oval), PredrawFlags::NONE)
+        };
+        if let Some(auto_layer) = layer {
             self.top_device_mut().draw_oval(oval, auto_layer.paint());
             self.end_auto_layer(&auto_layer);
         }
@@ -1959,7 +2050,22 @@ impl CanvasState {
             return;
         }
 
-        if let Some(auto_layer) = self.about_to_draw(paint, Some(oval), PredrawFlags::NONE) {
+        // Arcs with sweeps >= 360° are ovals. In this case, attempt a specialized blurred draw.
+        let blurred = self
+            .can_attempt_blurred_rrect_draw(paint)
+            .filter(|_| sweep_angle.abs() >= 360.0);
+        let layer = if let Some(blur) = blurred {
+            // Returns a layer if a blurred draw was unsuccessful.
+            self.attempt_blurred_rrect_draw(
+                &RRect::new_oval(oval),
+                &blur,
+                paint,
+                PredrawFlags::NONE,
+            )
+        } else {
+            self.about_to_draw(paint, Some(oval), PredrawFlags::NONE)
+        };
+        if let Some(auto_layer) = layer {
             self.top_device_mut().draw_arc(
                 &Arc::new(*oval, start_angle, sweep_angle, use_center),
                 auto_layer.paint(),
@@ -1992,7 +2098,13 @@ impl CanvasState {
             return;
         }
 
-        if let Some(auto_layer) = self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE) {
+        let layer = if let Some(blur) = self.can_attempt_blurred_rrect_draw(paint) {
+            // Returns a layer if a blurred draw was unsuccessful.
+            self.attempt_blurred_rrect_draw(rrect, &blur, paint, PredrawFlags::NONE)
+        } else {
+            self.about_to_draw(paint, Some(bounds), PredrawFlags::NONE)
+        };
+        if let Some(auto_layer) = layer {
             self.top_device_mut().draw_rrect(rrect, auto_layer.paint());
             self.end_auto_layer(&auto_layer);
         }

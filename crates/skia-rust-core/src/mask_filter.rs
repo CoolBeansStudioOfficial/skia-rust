@@ -185,6 +185,13 @@ pub trait MaskFilterBase: Any + fmt::Debug + Send + Sync {
         None
     }
 
+    /// The blur implementation itself, for the filters that are one (the `static_cast` to
+    /// `SkBlurMaskFilterImpl` in `SkCanvas::canAttemptBlurredRRectDraw`). Not in Skia's
+    /// interface: skia-rust has no downcasts, so the blur filter answers for itself.
+    fn as_blur_mask_filter_impl(&self) -> Option<&BlurMaskFilterImpl> {
+        None
+    }
+
     /// As an optimization, some filters can be applied to a smaller nine-patch instead of the
     /// full-sized rectangle. These nine-patches are not only smaller, but more
     /// re-usable/cacheable. Then, when drawing/blitting, the nine-patch can be expanded to the

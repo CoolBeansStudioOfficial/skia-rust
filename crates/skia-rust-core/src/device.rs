@@ -433,6 +433,20 @@ pub trait Device {
     /// Draws a round rect (`drawRRect`).
     #[doc(alias = "drawRRect")]
     fn draw_rrect(&mut self, rr: &RRect, paint: &Paint);
+    /// Draws a blurred round rect analytically, if the device can (`drawBlurredRRect`). Returns
+    /// false when it did not draw, and the canvas then draws the shape another way. Only devices
+    /// that use coverage masks for mask filters are asked (`useDrawCoverageMaskForMaskFilters`).
+    // Port of: src/core/SkDevice.h#L468-L470 (chrome/m156)
+    #[doc(alias = "drawBlurredRRect")]
+    fn draw_blurred_rrect(
+        &mut self,
+        _rrect: &RRect,
+        _paint: &Paint,
+        _local_sigma: crate::m44::V2,
+        _device_sigma: crate::scalar::scalar,
+    ) -> bool {
+        false
+    }
     /// Draws a path (`drawPath`).
     #[doc(alias = "drawPath")]
     fn draw_path(&mut self, path: &Path, paint: &Paint);
