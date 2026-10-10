@@ -340,7 +340,9 @@ pub trait ComputeStep: Send + Sync + Debug {
         _resource: &ResourceDesc,
         _uniform_manager: &mut UniformManager,
     ) {
-        panic!("ComputeSteps that initialize a uniform buffer must override prepareUniformBuffer()");
+        panic!(
+            "ComputeSteps that initialize a uniform buffer must override prepareUniformBuffer()"
+        );
     }
 
     /// `calculateBufferSize(resourceIndex, resource)`: the required allocation size of a buffer

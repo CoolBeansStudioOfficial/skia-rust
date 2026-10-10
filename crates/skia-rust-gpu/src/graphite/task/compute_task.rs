@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use crate::graphite::command_buffer::CommandBuffer;
-use crate::graphite::context_priv::ContextPriv;
 use crate::graphite::compute::dispatch_group::DispatchGroup;
+use crate::graphite::context_priv::ContextPriv;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::ScratchResourceManager;

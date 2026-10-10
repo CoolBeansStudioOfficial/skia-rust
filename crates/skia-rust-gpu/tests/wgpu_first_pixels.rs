@@ -31,6 +31,7 @@ use skia_rust_gpu::graphite::compute::compute_step::{
     ComputeStep, ComputeStepBase, DataFlow, NativeShaderFormat, NativeShaderSource, ResourceDesc,
     ResourcePolicy, ResourceType, WorkgroupSize,
 };
+use skia_rust_gpu::graphite::compute::dispatch_group::Builder;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::device::Device;
@@ -38,7 +39,6 @@ use skia_rust_gpu::graphite::graphite_types::{
     InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
 use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, ClearBuffer, LoadOp};
-use skia_rust_gpu::graphite::compute::dispatch_group::Builder;
 use skia_rust_gpu::graphite::task::compute_task::ComputeTask;
 use skia_rust_gpu::graphite::task::copy_task::CopyBufferToBufferTask;
 use skia_rust_gpu::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
@@ -364,11 +364,7 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
 
     // The storage buffer is the group's shared slot 0, so the step binds it at index 0.
     let mut builder = Builder::new(&recorder);
-    builder.assign_shared_buffer(
-        BindBufferInfo::new(&storage, 0, 32),
-        0,
-        ClearBuffer::No,
-    );
+    builder.assign_shared_buffer(BindBufferInfo::new(&storage, 0, 32), 0, ClearBuffer::No);
     assert!(builder.append_step(&step, Some(WorkgroupSize::new(1, 1, 1))));
     let group = builder.finalize();
     recorder.priv_().add(CopyBufferToBufferTask::make(
@@ -378,9 +374,7 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
         0,
         32,
     ));
-    recorder
-        .priv_()
-        .add(ComputeTask::make(vec![group]));
+    recorder.priv_().add(ComputeTask::make(vec![group]));
     recorder.priv_().add(CopyBufferToBufferTask::make(
         storage.as_arc(),
         0,

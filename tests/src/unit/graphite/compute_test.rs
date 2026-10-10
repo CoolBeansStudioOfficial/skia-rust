@@ -5,8 +5,10 @@
 
 #![cfg(test)]
 // The tests check exact float results, as the C++ does (there are no tolerances in this project).
-// The C++ tests are long and convert integer problem sizes to floats; the allows mirror that.
+// The C++ tests are long, convert integer problem sizes to floats and declare their constants
+// between statements; the allows mirror that.
 #![allow(
+    clippy::items_after_statements,
     clippy::float_cmp,
     clippy::too_many_lines,
     clippy::cast_precision_loss,
@@ -26,12 +28,12 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color4f;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
-use skia_rust_core::swizzle::Swizzle;
 use skia_rust_core::size::ISize;
+use skia_rust_core::swizzle::Swizzle;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_gpu::gpu::buffer_writer::BufferWriter;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped, Protected, Renderable};
@@ -79,22 +81,29 @@ fn map_buffer(context: &mut WgpuContext, buffer: &Buffer, offset: usize) -> Vec<
             context.shared_context().tick();
         }
     }
-    let mut data = buffer.map().expect("the buffer maps once its map completes");
+    let mut data = buffer
+        .map()
+        .expect("the buffer maps once its map completes");
     data.split_off(offset)
 }
 
 /// Reads `bytes` as native-endian `f32`s, the way the tests read the output buffers.
 fn read_f32s(bytes: &[u8]) -> Vec<f32> {
     bytes
-        .chunks_exact(4)
-        .map(|c| f32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|c| f32::from_ne_bytes(*c))
         .collect()
 }
 
 /// `sync_buffer_to_cpu()`: makes `buffer` readable on the CPU, through a transfer buffer if the
 /// backend cannot map it directly. Returns the buffer to map after submission.
 // Port of: tests/graphite/ComputeTest.cpp#L58-L84 (chrome/m156)
-fn sync_buffer_to_cpu(recorder: &mut Recorder, buffer: &ResourceRef<Buffer>) -> ResourceRef<Buffer> {
+fn sync_buffer_to_cpu(
+    recorder: &mut Recorder,
+    buffer: &ResourceRef<Buffer>,
+) -> ResourceRef<Buffer> {
     if recorder.priv_().caps().draw_buffer_can_be_mapped() {
         // `buffer` can be mapped directly, however it may still require a synchronization step
         // by the underlying API (e.g. a managed buffer in Metal). SynchronizeToCpuTask
@@ -257,10 +266,7 @@ def_graphite_adapter_test!(Compute_SingleDispatchTest, |reporter, context| {
     recorder.priv_().add(ComputeTask::make(groups));
 
     // Ensure the output buffer is synchronized to the CPU once the GPU submission has finished.
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
 
     // Submit the work and wait for it to complete.
     let Some(_recording) = submit_recording(context, &mut recorder) else {
@@ -520,14 +526,8 @@ def_graphite_adapter_test!(Compute_DispatchGroupTest, |reporter, context| {
     recorder.priv_().add(ComputeTask::make(groups));
 
     // Ensure the output buffers get synchronized to the CPU once the GPU submission has finished.
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
-    let extra_output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &extra_output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
+    let extra_output_buffer = sync_buffer_to_cpu(&mut recorder, &extra_output_info.ref_buffer());
 
     // Submit the work and wait for it to complete.
     let Some(_recording) = submit_recording(context, &mut recorder) else {
@@ -643,7 +643,11 @@ def_graphite_adapter_test!(Compute_UniformBufferTest, |reporter, context| {
             debug_assert_eq!(resource_index, 0);
             #[cfg(debug_assertions)]
             {
-                let uniforms = [Uniform::new_owned("factor".to_owned(), SkSLType::Float, K_NON_ARRAY)];
+                let uniforms = [Uniform::new_owned(
+                    "factor".to_owned(),
+                    SkSLType::Float,
+                    K_NON_ARRAY,
+                )];
                 mgr.set_expected_uniforms(&uniforms, /*is_substruct=*/ false);
             }
             mgr.write_f32(K_FACTOR);
@@ -710,10 +714,7 @@ def_graphite_adapter_test!(Compute_UniformBufferTest, |reporter, context| {
     recorder.priv_().add(ComputeTask::make(groups));
 
     // Ensure the output buffer is synchronized to the CPU once the GPU submission has finished.
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
 
     // Submit the work and wait for it to complete.
     let Some(_recording) = submit_recording(context, &mut recorder) else {
@@ -848,10 +849,7 @@ def_graphite_adapter_test!(Compute_ExternallyAssignedBuffer, |reporter, context|
     recorder.priv_().add(ComputeTask::make(groups));
 
     // Ensure the output buffer is synchronized to the CPU once the GPU submission has finished.
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
 
     // Submit the work and wait for it to complete.
     let Some(_recording) = submit_recording(context, &mut recorder) else {
@@ -1024,7 +1022,11 @@ def_graphite_adapter_test!(Compute_StorageTextureReadAndWrite, |reporter, contex
             .to_owned()
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
+        fn calculate_texture_parameters(
+            &self,
+            index: usize,
+            _r: &ResourceDesc,
+        ) -> (ISize, ColorType) {
             debug_assert_eq!(index, 1);
             (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
         }
@@ -1088,7 +1090,9 @@ def_graphite_adapter_test!(Compute_StorageTextureReadAndWrite, |reporter, contex
     );
     let src_proxy = {
         let shared = recorder.priv_().resource_provider().clone();
-        let mut rp = shared.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut rp = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         TextureProxy::make(
             caps.as_ref(),
             &mut rp,
@@ -1177,12 +1181,8 @@ def_graphite_adapter_test!(Compute_StorageTextureReadAndWrite, |reporter, contex
 
     for x in 0..K_DIM {
         for y in 0..K_DIM {
-            let expected = color4f_from_bytes_rgba(color_set_argb(
-                255,
-                x * 256 / K_DIM,
-                y * 256 / K_DIM,
-                0,
-            ));
+            let expected =
+                color4f_from_bytes_rgba(color_set_argb(255, x * 256 / K_DIM, y * 256 / K_DIM, 0));
             let color = pixels.get_color_4f((x as i32, y as i32));
             reporter_assert!(
                 reporter,
@@ -1269,7 +1269,11 @@ def_graphite_adapter_test!(Compute_ReadOnlyStorageBuffer, |reporter, context| {
             }
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
+        fn calculate_texture_parameters(
+            &self,
+            index: usize,
+            _r: &ResourceDesc,
+        ) -> (ISize, ColorType) {
             debug_assert_eq!(index, 1);
             (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
         }
@@ -1346,12 +1350,8 @@ def_graphite_adapter_test!(Compute_ReadOnlyStorageBuffer, |reporter, context| {
 
     for x in 0..K_DIM {
         for y in 0..K_DIM {
-            let expected = color4f_from_color(color_set_argb(
-                255,
-                x * 256 / K_DIM,
-                y * 256 / K_DIM,
-                0,
-            ));
+            let expected =
+                color4f_from_color(color_set_argb(255, x * 256 / K_DIM, y * 256 / K_DIM, 0));
             let color = pixels.get_color_4f((x as i32, y as i32));
             let pass = [color.r, color.g, color.b, color.a]
                 == [expected.r, expected.g, expected.b, expected.a];
@@ -1391,169 +1391,180 @@ fn color4f_from_color(c: u32) -> Color4f {
 }
 
 // Port of: tests/graphite/ComputeTest.cpp#L1179-L1324 (chrome/m156)
-def_graphite_adapter_test!(Compute_StorageTextureMultipleComputeSteps, |reporter, context| {
-    const K_DIM: u32 = 8;
+def_graphite_adapter_test!(
+    Compute_StorageTextureMultipleComputeSteps,
+    |reporter, context| {
+        const K_DIM: u32 = 8;
 
-    #[derive(Debug)]
-    struct TestComputeStep1 {
-        base: ComputeStepBase,
-    }
-
-    impl ComputeStep for TestComputeStep1 {
-        fn base(&self) -> &ComputeStepBase {
-            &self.base
+        #[derive(Debug)]
+        struct TestComputeStep1 {
+            base: ComputeStepBase,
         }
 
-        fn compute_sksl(&self) -> String {
-            r"
+        impl ComputeStep for TestComputeStep1 {
+            fn base(&self) -> &ComputeStepBase {
+                &self.base
+            }
+
+            fn compute_sksl(&self) -> String {
+                r"
                 void main() {
                     textureWrite(dst, sk_LocalInvocationID.xy, half4(0.0, 1.0, 0.0, 1.0));
                 }
             "
-            .to_owned()
+                .to_owned()
+            }
+
+            fn calculate_texture_parameters(
+                &self,
+                index: usize,
+                _r: &ResourceDesc,
+            ) -> (ISize, ColorType) {
+                debug_assert_eq!(index, 0);
+                (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
+            }
+
+            fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
+                WorkgroupSize::new(1, 1, 1)
+            }
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
-            debug_assert_eq!(index, 0);
-            (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
+        #[derive(Debug)]
+        struct TestComputeStep2 {
+            base: ComputeStepBase,
         }
 
-        fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
-            WorkgroupSize::new(1, 1, 1)
-        }
-    }
+        impl ComputeStep for TestComputeStep2 {
+            fn base(&self) -> &ComputeStepBase {
+                &self.base
+            }
 
-    #[derive(Debug)]
-    struct TestComputeStep2 {
-        base: ComputeStepBase,
-    }
-
-    impl ComputeStep for TestComputeStep2 {
-        fn base(&self) -> &ComputeStepBase {
-            &self.base
-        }
-
-        fn compute_sksl(&self) -> String {
-            r"
+            fn compute_sksl(&self) -> String {
+                r"
                 void main() {
                     half4 color = textureRead(src, sk_LocalInvocationID.xy);
                     textureWrite(dst, sk_LocalInvocationID.xy, color);
                 }
             "
-            .to_owned()
+                .to_owned()
+            }
+
+            fn calculate_texture_parameters(
+                &self,
+                index: usize,
+                _r: &ResourceDesc,
+            ) -> (ISize, ColorType) {
+                debug_assert_eq!(index, 1);
+                (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
+            }
+
+            fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
+                WorkgroupSize::new(1, 1, 1)
+            }
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
-            debug_assert_eq!(index, 1);
-            (ISize::new(K_DIM as i32, K_DIM as i32), ColorType::RGBA8888)
-        }
-
-        fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
-            WorkgroupSize::new(1, 1, 1)
-        }
-    }
-
-    let resources1 = [ResourceDesc::with_slot_and_sksl(
-        ResourceType::WriteOnlyStorageTexture,
-        DataFlow::Shared,
-        ResourcePolicy::None,
-        0,
-        "dst",
-    )];
-    let resources2 = [
-        ResourceDesc::with_slot_and_sksl(
-            ResourceType::ReadOnlyTexture,
-            DataFlow::Shared,
-            ResourcePolicy::None,
-            0,
-            "src",
-        ),
-        ResourceDesc::with_slot_and_sksl(
+        let resources1 = [ResourceDesc::with_slot_and_sksl(
             ResourceType::WriteOnlyStorageTexture,
             DataFlow::Shared,
             ResourcePolicy::None,
-            1,
+            0,
             "dst",
-        ),
-    ];
-    let step1: Arc<dyn ComputeStep> = Arc::new(TestComputeStep1 {
-        base: ComputeStepBase::new(
-            "TestStorageTexturesFirstPass",
-            WorkgroupSize::new(K_DIM, K_DIM, 1),
-            &resources1,
-            &[],
-            false,
-        ),
-    });
-    let step2: Arc<dyn ComputeStep> = Arc::new(TestComputeStep2 {
-        base: ComputeStepBase::new(
-            "TestStorageTexturesSecondPass",
-            WorkgroupSize::new(K_DIM, K_DIM, 1),
-            &resources2,
-            &[],
-            false,
-        ),
-    });
+        )];
+        let resources2 = [
+            ResourceDesc::with_slot_and_sksl(
+                ResourceType::ReadOnlyTexture,
+                DataFlow::Shared,
+                ResourcePolicy::None,
+                0,
+                "src",
+            ),
+            ResourceDesc::with_slot_and_sksl(
+                ResourceType::WriteOnlyStorageTexture,
+                DataFlow::Shared,
+                ResourcePolicy::None,
+                1,
+                "dst",
+            ),
+        ];
+        let step1: Arc<dyn ComputeStep> = Arc::new(TestComputeStep1 {
+            base: ComputeStepBase::new(
+                "TestStorageTexturesFirstPass",
+                WorkgroupSize::new(K_DIM, K_DIM, 1),
+                &resources1,
+                &[],
+                false,
+            ),
+        });
+        let step2: Arc<dyn ComputeStep> = Arc::new(TestComputeStep2 {
+            base: ComputeStepBase::new(
+                "TestStorageTexturesSecondPass",
+                WorkgroupSize::new(K_DIM, K_DIM, 1),
+                &resources2,
+                &[],
+                false,
+            ),
+        });
 
-    let mut recorder = context.make_recorder(None);
+        let mut recorder = context.make_recorder(None);
 
-    let mut builder = Builder::new(&recorder);
-    let _ = builder.append_step(&step1, None);
-    let _ = builder.append_step(&step2, None);
+        let mut builder = Builder::new(&recorder);
+        let _ = builder.append_step(&step1, None);
+        let _ = builder.append_step(&step2, None);
 
-    let Some(dst) = builder.get_shared_texture_resource(1) else {
-        errorf!(reporter, "shared resource at slot 1 is missing");
-        return;
-    };
+        let Some(dst) = builder.get_shared_texture_resource(1) else {
+            errorf!(reporter, "shared resource at slot 1 is missing");
+            return;
+        };
 
-    let groups = vec![builder.finalize()];
-    recorder.priv_().add(ComputeTask::make(groups));
+        let groups = vec![builder.finalize()];
+        recorder.priv_().add(ComputeTask::make(groups));
 
-    let Some(_recording) = submit_recording(context, &mut recorder) else {
-        errorf!(reporter, "Failed to make recording");
-        return;
-    };
+        let Some(_recording) = submit_recording(context, &mut recorder) else {
+            errorf!(reporter, "Failed to make recording");
+            return;
+        };
 
-    let image_info = ImageInfo::new(
-        (K_DIM as i32, K_DIM as i32),
-        ColorType::RGBA8888,
-        AlphaType::Unpremul,
-        None,
-    );
-    let mut bitmap = Bitmap::new();
-    bitmap.alloc_pixels_info(&image_info, None);
-    let mut pixels = bitmap.peek_pixels_mut().expect("the bitmap has pixels");
-    let read_pixels_success = context.read_pixels_into(
-        &mut pixels,
-        &TextureProxyView::new(Some(dst), Swizzle::rgba()),
-        &image_info,
-        0,
-        0,
-    );
-    reporter_assert!(reporter, read_pixels_success);
+        let image_info = ImageInfo::new(
+            (K_DIM as i32, K_DIM as i32),
+            ColorType::RGBA8888,
+            AlphaType::Unpremul,
+            None,
+        );
+        let mut bitmap = Bitmap::new();
+        bitmap.alloc_pixels_info(&image_info, None);
+        let mut pixels = bitmap.peek_pixels_mut().expect("the bitmap has pixels");
+        let read_pixels_success = context.read_pixels_into(
+            &mut pixels,
+            &TextureProxyView::new(Some(dst), Swizzle::rgba()),
+            &image_info,
+            0,
+            0,
+        );
+        reporter_assert!(reporter, read_pixels_success);
 
-    for x in 0..K_DIM {
-        for y in 0..K_DIM {
-            let expected = color4f_from_color(0xFF00_FF00);
-            let color = pixels.get_color_4f((x as i32, y as i32));
-            reporter_assert!(
-                reporter,
-                expected == color,
-                "At position {{{}, {}}}, expected {{{:.1}, {:.1}, {:.1}, {:.1}}}, found {{{:.1}, {:.1}, {:.1}, {:.1}}}",
-                x,
-                y,
-                expected.r,
-                expected.g,
-                expected.b,
-                expected.a,
-                color.r,
-                color.g,
-                color.b,
-                color.a
-            );
+        for x in 0..K_DIM {
+            for y in 0..K_DIM {
+                let expected = color4f_from_color(0xFF00_FF00);
+                let color = pixels.get_color_4f((x as i32, y as i32));
+                reporter_assert!(
+                    reporter,
+                    expected == color,
+                    "At position {{{}, {}}}, expected {{{:.1}, {:.1}, {:.1}, {:.1}}}, found {{{:.1}, {:.1}, {:.1}, {:.1}}}",
+                    x,
+                    y,
+                    expected.r,
+                    expected.g,
+                    expected.b,
+                    expected.a,
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a
+                );
+            }
         }
     }
-});
+);
 
 // Port of: tests/graphite/ComputeTest.cpp#L1329-L1491 (chrome/m156)
 def_graphite_adapter_test!(Compute_SampledTexture, |reporter, context| {
@@ -1581,9 +1592,16 @@ def_graphite_adapter_test!(Compute_SampledTexture, |reporter, context| {
             .to_owned()
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
+        fn calculate_texture_parameters(
+            &self,
+            index: usize,
+            _r: &ResourceDesc,
+        ) -> (ISize, ColorType) {
             debug_assert_eq!(index, 0);
-            (ISize::new(K_SRC_DIM as i32, K_SRC_DIM as i32), ColorType::RGBA8888)
+            (
+                ISize::new(K_SRC_DIM as i32, K_SRC_DIM as i32),
+                ColorType::RGBA8888,
+            )
         }
 
         fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
@@ -1614,9 +1632,16 @@ def_graphite_adapter_test!(Compute_SampledTexture, |reporter, context| {
             .to_owned()
         }
 
-        fn calculate_texture_parameters(&self, index: usize, _r: &ResourceDesc) -> (ISize, ColorType) {
+        fn calculate_texture_parameters(
+            &self,
+            index: usize,
+            _r: &ResourceDesc,
+        ) -> (ISize, ColorType) {
             debug_assert!(index == 0 || index == 1);
-            (ISize::new(K_DST_DIM as i32, K_DST_DIM as i32), ColorType::RGBA8888)
+            (
+                ISize::new(K_DST_DIM as i32, K_DST_DIM as i32),
+                ColorType::RGBA8888,
+            )
         }
 
         fn calculate_sampler_parameters(&self, index: usize, _r: &ResourceDesc) -> SamplerDesc {
@@ -1838,22 +1863,24 @@ def_graphite_adapter_test!(Compute_AtomicOperationsTest, |reporter, context| {
 
 // Port of: tests/graphite/ComputeTest.cpp#L1635-L1774 (chrome/m156)
 // The C++ test returns early on Dawn D3D11 (b/315834710); the wgpu backend has no such context.
-def_graphite_adapter_test!(Compute_AtomicOperationsOverArrayAndStructTest, |reporter, context| {
-    const K_WORKGROUP_COUNT: u32 = 32;
-    const K_WORKGROUP_SIZE: u32 = 128;
+def_graphite_adapter_test!(
+    Compute_AtomicOperationsOverArrayAndStructTest,
+    |reporter, context| {
+        const K_WORKGROUP_COUNT: u32 = 32;
+        const K_WORKGROUP_SIZE: u32 = 128;
 
-    #[derive(Debug)]
-    struct TestComputeStep {
-        base: ComputeStepBase,
-    }
-
-    impl ComputeStep for TestComputeStep {
-        fn base(&self) -> &ComputeStepBase {
-            &self.base
+        #[derive(Debug)]
+        struct TestComputeStep {
+            base: ComputeStepBase,
         }
 
-        fn compute_sksl(&self) -> String {
-            r"
+        impl ComputeStep for TestComputeStep {
+            fn base(&self) -> &ComputeStepBase {
+                &self.base
+            }
+
+            fn compute_sksl(&self) -> String {
+                r"
                 const uint WORKGROUP_SIZE = 128;
                 workgroup atomicUint localCounts[2];
                 void main() {
@@ -1871,87 +1898,88 @@ def_graphite_adapter_test!(Compute_AtomicOperationsOverArrayAndStructTest, |repo
                     }
                 }
             "
-            .to_owned()
+                .to_owned()
+            }
+
+            fn calculate_buffer_size(&self, index: usize, r: &ResourceDesc) -> usize {
+                debug_assert_eq!(index, 0);
+                debug_assert_eq!(r.slot, 0);
+                debug_assert_eq!(r.flow, DataFlow::Shared);
+                2 * std::mem::size_of::<u32>()
+            }
+
+            fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
+                WorkgroupSize::new(K_WORKGROUP_COUNT, 1, 1)
+            }
+
+            fn prepare_storage_buffer(
+                &self,
+                resource_index: usize,
+                _r: &ResourceDesc,
+                mut writer: BufferWriter<'_>,
+            ) {
+                debug_assert_eq!(resource_index, 0);
+                writer.zero_bytes(2 * std::mem::size_of::<u32>());
+            }
         }
 
-        fn calculate_buffer_size(&self, index: usize, r: &ResourceDesc) -> usize {
-            debug_assert_eq!(index, 0);
-            debug_assert_eq!(r.slot, 0);
-            debug_assert_eq!(r.flow, DataFlow::Shared);
-            2 * std::mem::size_of::<u32>()
+        let resources = [ResourceDesc::with_slot_and_sksl(
+            ResourceType::StorageBuffer,
+            DataFlow::Shared,
+            ResourcePolicy::Mapped,
+            0,
+            "ssbo {\n   atomicUint globalCountsFirstHalf;\n   atomicUint globalCountsSecondHalf;\n}\n",
+        )];
+        let step: Arc<dyn ComputeStep> = Arc::new(TestComputeStep {
+            base: ComputeStepBase::new(
+                "TestAtomicOperationsOverArrayAndStruct",
+                WorkgroupSize::new(K_WORKGROUP_SIZE, 1, 1),
+                &resources,
+                &[],
+                false,
+            ),
+        });
+
+        let mut recorder = context.make_recorder(None);
+
+        let mut builder = Builder::new(&recorder);
+        let _ = builder.append_step(&step, None);
+        let info = builder.get_shared_buffer_resource(0);
+        if !info.is_valid() {
+            errorf!(reporter, "shared resource at slot 0 is missing");
+            return;
         }
 
-        fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
-            WorkgroupSize::new(K_WORKGROUP_COUNT, 1, 1)
-        }
+        let groups = vec![builder.finalize()];
+        recorder.priv_().add(ComputeTask::make(groups));
 
-        fn prepare_storage_buffer(
-            &self,
-            resource_index: usize,
-            _r: &ResourceDesc,
-            mut writer: BufferWriter<'_>,
-        ) {
-            debug_assert_eq!(resource_index, 0);
-            writer.zero_bytes(2 * std::mem::size_of::<u32>());
-        }
+        let buffer = sync_buffer_to_cpu(&mut recorder, &info.ref_buffer());
+
+        let Some(_recording) = submit_recording(context, &mut recorder) else {
+            errorf!(reporter, "Failed to make recording");
+            return;
+        };
+
+        const K_EXPECTED_COUNT: u32 = K_WORKGROUP_COUNT * K_WORKGROUP_SIZE / 2;
+        let bytes = map_buffer(context, &buffer, info.offset as usize);
+        let first_half_count = u32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+        let second_half_count = u32::from_ne_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
+        reporter_assert!(
+            reporter,
+            first_half_count == K_EXPECTED_COUNT,
+            "expected '{}', found '{}'",
+            K_EXPECTED_COUNT,
+            first_half_count
+        );
+        reporter_assert!(
+            reporter,
+            second_half_count == K_EXPECTED_COUNT,
+            "expected '{}', found '{}'",
+            K_EXPECTED_COUNT,
+            second_half_count
+        );
     }
-
-    let resources = [ResourceDesc::with_slot_and_sksl(
-        ResourceType::StorageBuffer,
-        DataFlow::Shared,
-        ResourcePolicy::Mapped,
-        0,
-        "ssbo {\n   atomicUint globalCountsFirstHalf;\n   atomicUint globalCountsSecondHalf;\n}\n",
-    )];
-    let step: Arc<dyn ComputeStep> = Arc::new(TestComputeStep {
-        base: ComputeStepBase::new(
-            "TestAtomicOperationsOverArrayAndStruct",
-            WorkgroupSize::new(K_WORKGROUP_SIZE, 1, 1),
-            &resources,
-            &[],
-            false,
-        ),
-    });
-
-    let mut recorder = context.make_recorder(None);
-
-    let mut builder = Builder::new(&recorder);
-    let _ = builder.append_step(&step, None);
-    let info = builder.get_shared_buffer_resource(0);
-    if !info.is_valid() {
-        errorf!(reporter, "shared resource at slot 0 is missing");
-        return;
-    }
-
-    let groups = vec![builder.finalize()];
-    recorder.priv_().add(ComputeTask::make(groups));
-
-    let buffer = sync_buffer_to_cpu(&mut recorder, &info.ref_buffer());
-
-    let Some(_recording) = submit_recording(context, &mut recorder) else {
-        errorf!(reporter, "Failed to make recording");
-        return;
-    };
-
-    const K_EXPECTED_COUNT: u32 = K_WORKGROUP_COUNT * K_WORKGROUP_SIZE / 2;
-    let bytes = map_buffer(context, &buffer, info.offset as usize);
-    let first_half_count = u32::from_ne_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-    let second_half_count = u32::from_ne_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
-    reporter_assert!(
-        reporter,
-        first_half_count == K_EXPECTED_COUNT,
-        "expected '{}', found '{}'",
-        K_EXPECTED_COUNT,
-        first_half_count
-    );
-    reporter_assert!(
-        reporter,
-        second_half_count == K_EXPECTED_COUNT,
-        "expected '{}', found '{}'",
-        K_EXPECTED_COUNT,
-        second_half_count
-    );
-});
+);
 
 // Port of: tests/graphite/ComputeTest.cpp#L1776-L1881 (chrome/m156)
 def_graphite_adapter_test!(Compute_ClearedBuffer, |reporter, context| {
@@ -2039,10 +2067,7 @@ def_graphite_adapter_test!(Compute_ClearedBuffer, |reporter, context| {
     let groups = vec![builder.finalize()];
     recorder.priv_().add(ComputeTask::make(groups));
 
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
 
     let Some(_recording) = submit_recording(context, &mut recorder) else {
         errorf!(reporter, "Failed to make recording");
@@ -2052,12 +2077,7 @@ def_graphite_adapter_test!(Compute_ClearedBuffer, |reporter, context| {
     let out_bytes = map_buffer(context, &output_buffer, output_info.offset as usize);
     for i in 0..K_PROBLEM_SIZE as usize {
         let found = u32::from_ne_bytes(out_bytes[i * 4..i * 4 + 4].try_into().expect("4 bytes"));
-        reporter_assert!(
-            reporter,
-            found == 0,
-            "expected '0u', found '{}'",
-            found
-        );
+        reporter_assert!(reporter, found == 0, "expected '0u', found '{}'", found);
     }
 });
 
@@ -2175,10 +2195,7 @@ def_graphite_adapter_test!(Compute_ClearOrdering, |reporter, context| {
     groups.push(builder.finalize());
     recorder.priv_().add(ComputeTask::make(groups));
 
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output.ref_buffer());
 
     let Some(_recording) = submit_recording(context, &mut recorder) else {
         errorf!(reporter, "Failed to make recording");
@@ -2188,12 +2205,7 @@ def_graphite_adapter_test!(Compute_ClearOrdering, |reporter, context| {
     let out_bytes = map_buffer(context, &output_buffer, output.offset as usize);
     for i in 0..K_ELEMENT_COUNT as usize {
         let found = u32::from_ne_bytes(out_bytes[i * 4..i * 4 + 4].try_into().expect("4 bytes"));
-        reporter_assert!(
-            reporter,
-            found == 0,
-            "expected '0u', found '{}'",
-            found
-        );
+        reporter_assert!(reporter, found == 0, "expected '0u', found '{}'", found);
     }
 });
 
@@ -2323,10 +2335,7 @@ def_graphite_adapter_test!(Compute_ClearOrderingScratchBuffers, |reporter, conte
     groups.push(builder.finalize());
     recorder.priv_().add(ComputeTask::make(groups));
 
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output.ref_buffer());
 
     let Some(_recording) = submit_recording(context, &mut recorder) else {
         errorf!(reporter, "Failed to make recording");
@@ -2336,12 +2345,7 @@ def_graphite_adapter_test!(Compute_ClearOrderingScratchBuffers, |reporter, conte
     let out_bytes = map_buffer(context, &output_buffer, output.offset as usize);
     for i in 0..K_ELEMENT_COUNT as usize {
         let found = u32::from_ne_bytes(out_bytes[i * 4..i * 4 + 4].try_into().expect("4 bytes"));
-        reporter_assert!(
-            reporter,
-            found == 0,
-            "expected '0u', found '{}'",
-            found
-        );
+        reporter_assert!(reporter, found == 0, "expected '0u', found '{}'", found);
     }
 });
 
@@ -2726,10 +2730,7 @@ def_graphite_adapter_test!(Compute_WorkgroupUniformLoadTest, |reporter, context|
     let groups = vec![builder.finalize()];
     recorder.priv_().add(ComputeTask::make(groups));
 
-    let output_buffer = sync_buffer_to_cpu(
-        &mut recorder,
-        &output_info.ref_buffer(),
-    );
+    let output_buffer = sync_buffer_to_cpu(&mut recorder, &output_info.ref_buffer());
 
     let Some(_recording) = submit_recording(context, &mut recorder) else {
         errorf!(reporter, "Failed to make recording");

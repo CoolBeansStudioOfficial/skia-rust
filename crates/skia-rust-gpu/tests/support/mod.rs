@@ -14,6 +14,7 @@ use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
@@ -26,7 +27,7 @@ use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
-use skia_rust_core::color_type::ColorType;
+use skia_rust_gpu::graphite::compute::dispatch_group::DispatchGroup;
 use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
 use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
@@ -45,7 +46,6 @@ use skia_rust_gpu::graphite::resource_types::{
     AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
 use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
-use skia_rust_gpu::graphite::compute::dispatch_group::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
 use skia_rust_gpu::graphite::texture_format::TextureFormat;

@@ -45,6 +45,9 @@ use crate::graphite::command_buffer::{
     BufferTextureCopyData, CommandBufferBackend, CommandBufferCore, RenderPassCall, ReplayState,
     ResourceTracker,
 };
+use crate::graphite::compute::dispatch_group::{
+    BindingResource, DispatchGroup, GlobalSizeOrIndirect,
+};
 use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::context_utils::collect_intrinsic_uniforms;
 use crate::graphite::draw_pass::DrawPassCommand;
@@ -56,7 +59,6 @@ use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::{DstReadStrategy, Layout, LoadOp, SamplerDesc, StoreOp};
 use crate::graphite::sampler::Sampler;
-use crate::graphite::compute::dispatch_group::{BindingResource, DispatchGroup, GlobalSizeOrIndirect};
 use crate::graphite::task::render_pass_task::DrawPass;
 use crate::graphite::texture::Texture;
 use crate::graphite::texture_format::{
