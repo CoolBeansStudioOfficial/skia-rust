@@ -406,11 +406,7 @@ fn do_jpeg(
         encoded_info.profile_data(),
         icc_channel_mismatch(encoded_info.profile(), channels),
     ) {
-        color_space = write_icc_profile(
-            doc,
-            Data::new_copy(encoded_icc_profile_data),
-            channels,
-        );
+        color_space = write_icc_profile(doc, Data::new_copy(encoded_icc_profile_data), channels);
     } else if let Some(codec_icc_profile) = encoded_info
         .profile()
         .filter(|p| !icc_channel_mismatch(Some(p), channels))

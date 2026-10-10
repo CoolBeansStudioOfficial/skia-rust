@@ -980,7 +980,6 @@ pub fn draw_device_default(
     );
 }
 
-
 /// Clips `device` to `sh` (`SkDevice::clipShader`): the shader keeps the device's current
 /// local-to-device matrix, and for a difference clip its alpha is inverted.
 // Port of: src/core/SkDevice.h#L251-L257 (chrome/m156)

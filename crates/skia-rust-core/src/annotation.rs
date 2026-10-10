@@ -53,11 +53,7 @@ impl Canvas {
     /// Defines the named destination `name` at `point` (`SkAnnotateNamedDestination`).
     // Port of: src/core/SkAnnotation.cpp#L36-L42 (chrome/m156)
     #[doc(alias = "SkAnnotateNamedDestination")]
-    pub fn draw_named_destination_annotation(
-        &self,
-        point: impl Into<Point>,
-        name: &Data,
-    ) -> &Self {
+    pub fn draw_named_destination_annotation(&self, point: impl Into<Point>, name: &Data) -> &Self {
         let point = point.into();
         let rect = Rect::from_xywh(point.x, point.y, 0.0, 0.0);
         self.draw_annotation(rect, AnnotationKeys::define_named_dest_key(), Some(name))

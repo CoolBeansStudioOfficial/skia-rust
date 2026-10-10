@@ -10,9 +10,7 @@
 //! the paint's alpha, blend mode and stroke.
 
 use skia_rust_core::clip_op::ClipOp;
-use skia_rust_core::clip_stack::{
-    ClipStack, DeviceSpaceType, Iter, IterStart, WIDE_OPEN_GEN_ID,
-};
+use skia_rust_core::clip_stack::{ClipStack, DeviceSpaceType, Iter, IterStart, WIDE_OPEN_GEN_ID};
 use skia_rust_core::color::Color4f;
 use skia_rust_core::matrix::{Matrix, TypeMask};
 use skia_rust_core::path::Path;

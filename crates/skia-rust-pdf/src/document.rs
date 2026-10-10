@@ -36,8 +36,8 @@ use skia_rust_core::utf::count_utf8;
 use crate::bitmap::IccProfileKey;
 use crate::deflate::DeflateWStream;
 use crate::device::{ContentHandle, PdfDevice};
-use crate::graphic_state::{FillGraphicState, StrokeGraphicState};
 use crate::gradient_shader::GradientKey;
+use crate::graphic_state::{FillGraphicState, StrokeGraphicState};
 use crate::jpeg;
 use crate::keyed_image::BitmapKey;
 use crate::metadata::{
@@ -47,9 +47,7 @@ use crate::metadata::{
 use crate::shader::ImageShaderKey;
 use crate::srgb_icc::SRGB_PROFILE;
 use crate::tag::{Mark, StructTree};
-use crate::types::{
-    PdfArray, PdfDict, PdfIndirectReference, PdfObject, PdfParentTreeKey,
-};
+use crate::types::{PdfArray, PdfDict, PdfIndirectReference, PdfObject, PdfParentTreeKey};
 use crate::utils::rect_to_array;
 
 /// `SK_ScalarDefaultRasterDPI`.
@@ -204,7 +202,11 @@ fn to_valid_utf8_string(d: &Data) -> Vec<u8> {
 
 /// `serializeHeader`: `%PDF-1.4` and the binary comment that marks the file as binary.
 // Port of: src/pdf/SkPDFDocument.cpp#L124-L131 (chrome/m156)
-fn serialize_header(offset_map: &mut PdfOffsetMap, w_stream: &mut DynamicMemoryWStream, flushed: usize) {
+fn serialize_header(
+    offset_map: &mut PdfOffsetMap,
+    w_stream: &mut DynamicMemoryWStream,
+    flushed: usize,
+) {
     offset_map.mark_start_of_document(flushed + w_stream.bytes_written());
     w_stream.write_text("%PDF-1.4\n%");
     // The PDF spec recommends a comment with four bytes, all with their high bits set. "\xD3\xEB
@@ -988,7 +990,12 @@ impl<'a> Document<'a> {
     /// `None` if the size is empty, the document is closed, or `content` is outside the page.
     // Port of: src/core/SkDocument.cpp#L28-L58 (chrome/m156)
     #[doc(alias = "beginPage")]
-    pub fn begin_page(&mut self, width: f32, height: f32, content: Option<&Rect>) -> Option<&Canvas> {
+    pub fn begin_page(
+        &mut self,
+        width: f32,
+        height: f32,
+        content: Option<&Rect>,
+    ) -> Option<&Canvas> {
         if width <= 0.0 || height <= 0.0 || PageState::Closed == self.state {
             return None;
         }
@@ -1032,8 +1039,7 @@ impl<'a> Document<'a> {
         // devices at the rasterized scale, not the 72dpi scale.  Bitmap layer
         // devices are created when saveLayer is called with an ImageFilter;  see
         // SkPDFDevice::createDevice().
-        let page_size: ISize =
-            Size::new(width * raster_scale, height * raster_scale).to_round();
+        let page_size: ISize = Size::new(width * raster_scale, height * raster_scale).to_round();
         let mut initial_transform = Matrix::new_identity();
         // Skia uses the top left as the origin but PDF natively has the origin at the
         // bottom left. This matrix corrects for that, as well as the raster scale.

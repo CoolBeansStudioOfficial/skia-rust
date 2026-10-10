@@ -15780,6 +15780,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
 status = "todo"
+reason = "the fuzz harness is not ported (M27); the PDF canvas itself exists (M25)"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -23452,6 +23453,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/pdf_never_embed.cpp#L75-L82"
 module = "pdf"
 status = "todo"
+reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
 span_hash = "97aca5bd6cb2532ba13afcfa2dc4585acbe1e2d625f2acf795d08fac8bb66e56"
 
 [[test]]
@@ -23461,6 +23463,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L39-L71"
 module = "pdf"
 status = "todo"
+reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
 span_hash = "4a4237338aa189fd527933941ece441bf282fdb49c2b1c8403da406d2baa41f8"
 
 [[test]]
@@ -23470,6 +23473,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L87-L128"
 module = "pdf"
 status = "todo"
+reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
 span_hash = "d7c89821fc31c0613da4b24ccaeff0d83db936894ee5c69742d9699f2f70399b"
 
 [[test]]
@@ -28918,7 +28922,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L74-L91"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "b8a1a237daf5cfaed622650b2d3b0eedb5ec1a5946a0f557f3d31ecba65b128b"
 
 [[test]]
@@ -28927,7 +28931,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L55-L72"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "1ae6864a0a7b270f5c6efb3d8da2239b463e451d6c364bad41fb1b46489e35b4"
 
 [[test]]
@@ -29891,7 +29895,7 @@ macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L417-L427"
 module = "pdf"
 status = "todo"
-reason = "needs the PDF backend"
+reason = "the PDF device is ported (M25); the test runs the whole kCanvasTests table (picture recording step, SkVertices, image shader step) that canvas_test.rs does not port yet"
 span_hash = "d7b93abad16ec3a9cc129ab3aebb9c09facafe313b4eaed5f86906a0d9fefc1f"
 
 [[test]]
@@ -29948,8 +29952,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L183-L186"
 module = "core"
-status = "todo"
-reason = "compiled only with SK_SUPPORT_PDF and drives a recording canvas and a PDF canvas as well as raster: needs SkPictureRecorder and PDF"
+status = "passing"
 span_hash = "b411483d5169109a4857bd181d09b5555864a0d2e87543c5f7f8abc86ce9f96f"
 
 [[test]]
@@ -29968,8 +29971,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L188-L196"
 module = "core"
-status = "todo"
-reason = "compiled only with SK_SUPPORT_PDF and drives a recording canvas and a PDF canvas as well as raster: needs SkPictureRecorder and PDF"
+status = "passing"
 span_hash = "586b58721a05f9871b4e6bafc9a926c5b949409b5d94a539a6f2c89a3c021da0"
 
 [[test]]
@@ -37530,8 +37532,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L266-L278"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): beginPage() draws into an SkPDFDevice, and SkExecutor is not ported"
+status = "passing"
 span_hash = "7a01f0bf0182e220ef61eb02bd352ac751a3e41f6f5831c7a714902e3152b54c"
 
 [[test]]
@@ -37540,8 +37541,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L144-L154"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "660fecc38b4fff68978bb5e5990c1cca633dcf44a148f3b36f3691d1cb31bc5f"
 
 [[test]]
@@ -37550,8 +37550,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L135-L142"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "b955840561fb488214bdad8b97271a0f82b4a7cd9be0ca28e961faae000217d0"
 
 [[test]]
@@ -37560,8 +37559,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L249-L262"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "b7e50e9a126ca835dc3036213bd5d9f5514203fccb03098d597cf768ee87b254"
 
 [[test]]
@@ -37570,8 +37568,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L168-L212"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "24a88d3bbaf1e293e61565fdc5df8a343a1acceddc4ecbd7399d8c597bb036a2"
 
 [[test]]
@@ -37580,8 +37577,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L215-L244"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "c377d5c006ad4537e79da38e14458faf280f6567912b105fa469879f9416a8d1"
 
 [[test]]
@@ -37591,6 +37587,7 @@ macro = "DEF_TEST"
 source = "tests/PDFGlyphsToUnicodeTest.cpp#L43-L215"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF fonts (M26): SkPDFFont and the ToUnicode CMap writer"
 span_hash = "912bf4ed6c75784c2189ec41e18ab94c20ce6fa6c6d594f084ca8b5797e7112c"
 
 [[test]]
@@ -37599,7 +37596,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFJpegEmbedTest.cpp#L65-L123"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "7677cdebc7ae56b40ba80e9f4c647851f5d053dbf409408648011291839aed4a"
 
 [[test]]
@@ -37608,7 +37605,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFJpegEmbedTest.cpp#L160-L309"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "306fc49e6e428b8d952b68b821c8ed8bdde6d57929dbc6ef852b617414f6b342"
 
 [[test]]
@@ -37617,8 +37614,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFMetadataAttributeTest.cpp#L23-L68"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
+status = "passing"
 span_hash = "ad816d75ef7a2a826c90b051ef94fc80e0b92f2c0305db55c7e0578779de89f1"
 
 [[test]]
@@ -37627,7 +37623,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFOpaqueSrcModeToSrcOverTest.cpp#L41-L60"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "33f575f6eab377a6b1a05e3c4ec593d18c5f5aa03ad3e34fec5563f249427b14"
 
 [[test]]
@@ -37636,7 +37632,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L430-L476"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "80363b3a9ba920c9e7101db6217e48a5357b89c8acd7480e60f26449e727c560"
 
 [[test]]
@@ -37655,6 +37651,7 @@ macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L342-L355"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF fonts (M26): SkPDFFont::CanEmbedTypeface"
 span_hash = "410c13dc14d77b34d24a921b89fa7857a81e27258d2c079ae4d506b0da51a3a9"
 
 [[test]]
@@ -37663,7 +37660,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L661-L675"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "0a9a940290eae6f7cc198484143caab8e80bb25f01dd2605313f30781e0961a0"
 
 [[test]]
@@ -37672,7 +37669,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L321-L338"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "01df0a99ef9088cb37e98cb68d52a4976c76a73f06333fd6f89151c7be06f60c"
 
 [[test]]
@@ -37682,7 +37679,7 @@ macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L274-L279"
 module = "pdf"
 status = "todo"
-reason = "needs the PDF device (M25): test_issue1083 draws a glyph through a PDF canvas"
+reason = "test_issue1083 draws a glyph through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
 span_hash = "5040f08710655cb75e4d29733ef954f679fec631c8c1612074b69ae3ace49909"
 
 [[test]]
@@ -37709,7 +37706,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L620-L638"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "169d75804e189928c6922b12f14a0dbe7de480f0a37d5f1d99fcad9c52882dbe"
 
 [[test]]
@@ -37718,7 +37715,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L642-L659"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "9b0ffbc6eee634aedeabac7fa14850853735f6197f86c36e74807d5ef6024785"
 
 [[test]]
@@ -37727,7 +37724,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L478-L499"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "ea8d3c217818bcc7c3454598553248ec8c7d5fd8c46dcfbba4dd5e6e0fbba4d9"
 
 [[test]]
@@ -37736,7 +37733,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedLinkTest.cpp#L39-L95"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "34d44d06beb1c6622afd0850c1b2ef3c06535b469dc0559834866eb7e5e59bc2"
 
 [[test]]
@@ -37745,7 +37742,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTableTest.cpp#L36-L156"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "837ec719b0306ca466f26b7e11a40091fa032ad1efb7887e6ce347d68686134b"
 
 [[test]]
@@ -37754,7 +37751,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L228-L233"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "e5372973821ef366f8bae8dac20497df824ccf0c4ac4bcd8e5a07c020d262557"
 
 [[test]]
@@ -37763,7 +37760,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L244-L249"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "37fe13d71cd6980ec1e2b1e49c9496366a70636a11efdd99eebaf2808ea26306"
 
 [[test]]
@@ -37772,7 +37769,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L236-L241"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "1f4e4c3b06a857eb8ee7656c6090ffc50af86872fe44e1b50c2addc97df13696"
 
 [[test]]
@@ -37782,6 +37779,7 @@ macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L253-L325"
 module = "pdf"
 status = "todo"
+reason = "draws text marks through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
 span_hash = "b2e8945ad0a2b565437f3d07a5773fb2584b584ea21d76265d44bf701f21d7bf"
 
 [[test]]

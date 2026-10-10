@@ -199,7 +199,11 @@ fn write_structured_document(
     let mut test_bitmap = Bitmap::new();
     test_bitmap.alloc_n32_pixels((72, 72), None);
     test_bitmap.erase_color(Color::RED);
-    canvas.draw_image(test_bitmap.as_image().expect("an image"), (72.0, 144.0), None);
+    canvas.draw_image(
+        test_bitmap.as_image().expect("an image"),
+        (72.0, 144.0),
+        None,
+    );
 
     set_node_id(canvas, 10);
     message = "and finishes on the second page.";

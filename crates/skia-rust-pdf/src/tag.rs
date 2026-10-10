@@ -16,9 +16,7 @@ use skia_rust_core::point::Point;
 
 use crate::document::DocInner;
 use crate::metadata::Outline;
-use crate::types::{
-    PdfArray, PdfDict, PdfIndirectReference, PdfOptionalArray, PdfParentTreeKey,
-};
+use crate::types::{PdfArray, PdfDict, PdfIndirectReference, PdfOptionalArray, PdfParentTreeKey};
 
 /// `SkPDF::NodeID`: the reserved node IDs for artifacts.
 // Port of: include/docs/SkPDFDocument.h#L276-L285 (chrome/m156)
@@ -577,7 +575,10 @@ impl StructTree {
             });
         }
         let entry_index = usize::try_from(struct_parents_key.value).expect("a valid key");
-        if !matches!(self.parent_tree[entry_index], ParentTreeEntry::Stream { .. }) {
+        if !matches!(
+            self.parent_tree[entry_index],
+            ParentTreeEntry::Stream { .. }
+        ) {
             return Mark::default();
         }
 
@@ -594,14 +595,16 @@ impl StructTree {
                     .last()
                     .is_some_and(|m| m.location.page_index <= page_index)
         );
-        self.elems[struct_elem].marked_content.push(MarkedContentInfo {
-            location: Location {
-                point: Point::new(f32::NAN, f32::NAN),
-                page_index,
-            },
-            mcid,
-            struct_parents_key: *struct_parents_key,
-        });
+        self.elems[struct_elem]
+            .marked_content
+            .push(MarkedContentInfo {
+                location: Location {
+                    point: Point::new(f32::NAN, f32::NAN),
+                    page_index,
+                },
+                mcid,
+                struct_parents_key: *struct_parents_key,
+            });
         children.push(struct_elem);
         Mark {
             struct_elem: Some(struct_elem),
@@ -1002,7 +1005,8 @@ impl StructTree {
                     children,
                     content_stream_ref,
                 } => {
-                    if content_stream_ref.is_valid() || *content_stream_ref == PAGE_CONTENT_STREAM_REF
+                    if content_stream_ref.is_valid()
+                        || *content_stream_ref == PAGE_CONTENT_STREAM_REF
                     {
                         let mut struct_elem_for_mcid_array = PdfArray::new();
                         for struct_elem in children {
@@ -1065,8 +1069,7 @@ impl StructTree {
             outline_ref = doc.reserve_ref();
             let entry_ref = doc.reserve_ref();
             let none = PdfIndirectReference::default();
-            let entry =
-                self.structelem_outline_emit(doc, root, outline_ref, none, entry_ref, none);
+            let entry = self.structelem_outline_emit(doc, root, outline_ref, none, entry_ref, none);
             outline.insert_ref("First", entry_ref);
             outline.insert_ref("Last", entry_ref);
             outline.insert_int(
@@ -1374,7 +1377,10 @@ impl HeaderEntry {
             if !child.children.is_empty() {
                 entry.insert_ref("First", child.children[0].reference);
                 entry.insert_ref("Last", child.children[child.children.len() - 1].reference);
-                entry.insert_int("Count", i32::try_from(child.descendents_emitted).expect("fits"));
+                entry.insert_int(
+                    "Count",
+                    i32::try_from(child.descendents_emitted).expect("fits"),
+                );
             }
             doc.emit(&entry, child.reference);
         }

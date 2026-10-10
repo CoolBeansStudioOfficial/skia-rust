@@ -69,7 +69,9 @@ def_test!(SkPDF_JpegEmbedTest, |r| {
         let mut document = new_document(&mut pdf, Some(&jpeg::metadata_with_callbacks()));
         let canvas = document.begin_page(642.0, 2048.0, None).expect("a canvas");
 
-        canvas.clear(skia_rust_core::color::Color4f::from_color(Color::new(0xFFCC_CCCC)));
+        canvas.clear(skia_rust_core::color::Color4f::from_color(Color::new(
+            0xFFCC_CCCC,
+        )));
         canvas.clip_irect(IRect::new(0, 0, 642, 2048), None);
 
         let im1 = deferred_from_encoded_data(Some(mandrill_data), None);

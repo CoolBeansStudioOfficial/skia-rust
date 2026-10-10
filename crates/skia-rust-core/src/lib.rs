@@ -1,8 +1,8 @@
 //! Core types of skia-rust, ported from Skia's `include/core` and `src/core`.
 
 pub mod align;
-pub mod annotation;
 pub mod alpha_type;
+pub mod annotation;
 pub mod arc;
 pub mod arena_alloc;
 pub mod bbh_factory;
