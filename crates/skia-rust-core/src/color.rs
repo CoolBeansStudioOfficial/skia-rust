@@ -485,6 +485,12 @@ impl ColorChannelFlag {
         self.0
     }
 
+    /// A flag set from its raw bits (`static_cast<SkColorChannelFlags>(bits)`).
+    #[must_use]
+    pub const fn from_bits(bits: u32) -> Self {
+        Self(bits)
+    }
+
     /// True if all of `other`'s bits are set.
     #[must_use]
     pub const fn contains(self, other: Self) -> bool {
