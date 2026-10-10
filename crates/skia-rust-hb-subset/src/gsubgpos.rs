@@ -81,10 +81,6 @@ impl<'a> Gsubgpos<'a> {
         self.v.off16(8)
     }
 
-    pub(crate) fn get_lookup_count(&self) -> u32 {
-        self.lookup_list().u16(0)
-    }
-
     /// `get_lookup (i)`: the empty (`Null`) lookup past the end.
     pub(crate) fn get_lookup(&self, i: u32) -> View<'a> {
         let ll = self.lookup_list();
@@ -157,7 +153,7 @@ pub(crate) fn lookup_subtable_count(l: View<'_>) -> u32 {
     l.u16(4)
 }
 
-pub(crate) fn lookup_subtable<'a>(l: View<'a>, i: u32) -> View<'a> {
+pub(crate) fn lookup_subtable(l: View<'_>, i: u32) -> View<'_> {
     l.off16(6 + 2 * i as usize)
 }
 
@@ -177,7 +173,7 @@ fn extension_type(kind: Kind) -> u32 {
 }
 
 /// `ExtensionFormat1`: `(inner lookup type, inner subtable)` when the subtable is format 1.
-pub(crate) fn extension_inner<'a>(sub: View<'a>) -> Option<(u32, View<'a>)> {
+pub(crate) fn extension_inner(sub: View<'_>) -> Option<(u32, View<'_>)> {
     if sub.u16(0) == 1 {
         Some((sub.u16(2), sub.off32(4)))
     } else {
@@ -418,7 +414,7 @@ pub(crate) struct ClosureLookupsCtx<'a> {
     table: Gsubgpos<'a>,
 }
 
-impl<'a> ClosureLookupsCtx<'a> {
+impl ClosureLookupsCtx<'_> {
     fn lookup_limit_exceeded(&self) -> bool {
         self.lookup_count > HB_MAX_LOOKUP_VISIT_COUNT
     }
@@ -577,17 +573,7 @@ impl CollectFeaturesCtx<'_> {
             return;
         }
         let feature_count = l.u16(4);
-        if !self.has_feature_filter {
-            // All features.
-            if l.u16(2) != 0xFFFF && !self.visited_feature_indices(1) {
-                self.feature_indices.insert(l.u16(2));
-            }
-            if !self.visited_feature_indices(feature_count) {
-                for i in 0..feature_count as usize {
-                    self.feature_indices.insert(l.u16(6 + 2 * i));
-                }
-            }
-        } else {
+        if self.has_feature_filter {
             if self.feature_indices_filter.is_empty() {
                 return;
             }
@@ -598,6 +584,16 @@ impl CollectFeaturesCtx<'_> {
                 }
                 self.feature_indices.insert(feature_index);
                 self.feature_indices_filter.remove(&feature_index);
+            }
+        } else {
+            // All features.
+            if l.u16(2) != 0xFFFF && !self.visited_feature_indices(1) {
+                self.feature_indices.insert(l.u16(2));
+            }
+            if !self.visited_feature_indices(feature_count) {
+                for i in 0..feature_count as usize {
+                    self.feature_indices.insert(l.u16(6 + 2 * i));
+                }
             }
         }
     }
@@ -686,11 +682,11 @@ fn filter_tag_list(tags: &mut Vec<u32>, filter: Option<&BTreeSet<u32>>) -> bool 
         if t == 0 || visited.contains(&t) {
             continue;
         }
-        if let Some(f) = filter {
-            if !f.contains(&t) {
-                removed = true;
-                continue;
-            }
+        if let Some(f) = filter
+            && !f.contains(&t)
+        {
+            removed = true;
+            continue;
         }
         visited.insert(t);
         out.push(t);
@@ -879,12 +875,12 @@ fn prune_langsys(
     let mut script_count = 0u32;
     let mut langsys_feature_count = 0u32;
     // `visitScript` / `visitLangsys`
-    let mut visit_script = |script_count: &mut u32| -> bool {
+    let visit_script = |script_count: &mut u32| -> bool {
         let r = *script_count < HB_MAX_SCRIPTS;
         *script_count += 1;
         r
     };
-    let mut visit_langsys = |count: &mut u32, feature_count: u32| -> bool {
+    let visit_langsys = |count: &mut u32, feature_count: u32| -> bool {
         *count += feature_count;
         *count < HB_MAX_LANGSYS_FEATURE_COUNT
     };
@@ -1292,11 +1288,11 @@ fn feature_list_subset(
                 feature_subset(c, s, table, f, tag_v)
             })
         };
-        if !ret {
-            s.revert(snap);
-        } else {
+        if ret {
             let len = View::new(s.bytes()).u16(0);
             s.set_u16(out, (len + 1) as u16);
+        } else {
+            s.revert(snap);
         }
     }
     true
@@ -1380,11 +1376,11 @@ fn script_list_subset(
             let script = this.off16(rec + 4);
             s.serialize_subset(rec_pos + 4, 2, true, |s| script_subset(c, s, script, tag_v))
         };
-        if !ret {
-            s.revert(snap);
-        } else {
+        if ret {
             let len = View::new(s.bytes()).u16(0);
             s.set_u16(out, (len + 1) as u16);
+        } else {
+            s.revert(snap);
         }
     }
     true
@@ -1438,11 +1434,11 @@ fn script_subset(
                 let l = this.off16(rec + 4);
                 s.serialize_subset(rec_pos + 4, 2, true, |s| langsys_subset(c, s, l))
             };
-            if !ret {
-                s.revert(snap);
-            } else {
+            if ret {
                 let len = View::new(s.bytes()).u16(2);
                 s.set_u16(out + 2, (len + 1) as u16);
+            } else {
+                s.revert(snap);
             }
         }
     }

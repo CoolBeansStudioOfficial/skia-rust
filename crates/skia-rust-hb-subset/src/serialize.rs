@@ -15,7 +15,6 @@
 //! last packed to the first packed.
 
 // The serializer API is ported whole; the layout tables use the parts the small tables do not.
-#![allow(dead_code)]
 
 use std::collections::HashMap;
 
@@ -35,6 +34,7 @@ pub(crate) enum Whence {
     /// Relative to the tail of the object that holds the offset.
     Tail,
     /// From the start of the serialized table.
+    #[allow(dead_code)] // part of `whence_t`; no ported table uses it
     Absolute,
 }
 
@@ -85,8 +85,6 @@ pub(crate) struct Serializer {
     /// `end - tail`: the bytes of all packed objects.
     tail_bytes: usize,
     errors: u32,
-    /// The bytes of the finished table (`copy_bytes`).
-    output: Vec<u8>,
     /// The largest `head + tail` byte count of any allocation: the buffer size the table needs
     /// (`allocate_size` runs out of room above it).
     peak: usize,
@@ -105,10 +103,6 @@ impl Serializer {
         self.errors != 0
     }
 
-    pub(crate) fn offset_overflow(&self) -> bool {
-        self.errors & ERROR_OFFSET_OVERFLOW != 0
-    }
-
     pub(crate) fn only_offset_overflow(&self) -> bool {
         self.errors == ERROR_OFFSET_OVERFLOW
     }
@@ -121,11 +115,6 @@ impl Serializer {
     pub(crate) fn err(&mut self, err_type: u32) -> bool {
         self.errors |= err_type;
         false
-    }
-
-    /// Port of `check_success()`.
-    pub(crate) fn check_success(&mut self, success: bool) -> bool {
-        self.errors == 0 && (success || self.err(ERROR_OTHER))
     }
 
     /// Port of `check_assign()` for a field of `bits` bits: an error when `value` does not fit.
@@ -296,24 +285,12 @@ impl Serializer {
         pos
     }
 
-    pub(crate) fn embed_u8(&mut self, v: u8) -> usize {
-        self.embed(&[v])
-    }
-
     pub(crate) fn embed_u16(&mut self, v: u16) -> usize {
         self.embed(&v.to_be_bytes())
     }
 
     pub(crate) fn embed_u32(&mut self, v: u32) -> usize {
         self.embed(&v.to_be_bytes())
-    }
-
-    /// Port of `align()` (hb-serialize.hh#L531-L536).
-    pub(crate) fn align(&mut self, alignment: usize) {
-        let l = self.length() % alignment;
-        if l != 0 {
-            self.allocate(alignment - l);
-        }
     }
 
     /// The bytes of the current object, to patch a field in place.
@@ -371,26 +348,6 @@ impl Serializer {
             position: pos as u32,
             objidx,
         });
-    }
-
-    /// Port of `add_virtual_link()` (hb-serialize.hh#L465-L478).
-    pub(crate) fn add_virtual_link(&mut self, objidx: ObjIdx) {
-        if self.in_error() || objidx == 0 {
-            return;
-        }
-        self.cur().virtual_links.push(Link {
-            width: 0,
-            is_signed: false,
-            whence: Whence::Head,
-            bias: 0,
-            position: 0,
-            objidx,
-        });
-    }
-
-    /// `end - tail` of `HarfBuzz`: the total size of the packed objects.
-    pub(crate) fn tail_bytes(&self) -> usize {
-        self.tail_bytes
     }
 
     /// Port of `end_serialize()` (hb-serialize.hh#L302-L330) followed by `copy_bytes()`

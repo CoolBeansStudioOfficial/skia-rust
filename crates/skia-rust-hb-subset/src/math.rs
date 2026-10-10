@@ -66,6 +66,7 @@ fn value_record_copy(s: &mut Serializer, v: View<'_>, off: usize) {
 }
 
 /// `MATH::subset` (hb-ot-math-table.hh#L1077-L1090).
+#[allow(clippy::unnecessary_wraps)] // the callback shape of `run_table`
 pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, math: View<'_>) -> Res<bool> {
     let out = s.embed(&math.d[..math.d.len().min(10)]);
     // `mathConstants.serialize_copy (c, mathConstants, this, 0, Head)`
@@ -169,7 +170,7 @@ fn kern_info_record_copy(s: &mut Serializer, v: View<'_>, off: usize) {
         let kern = v.off16(off + 2 * k);
         s.push();
         s.embed_u16(kern.u16(0) as u16);
-        for i in 0..(2 * kern.u16(0) as usize + 1) {
+        for i in 0..=(2 * kern.u16(0) as usize) {
             value_record_copy(s, kern, 2 + 4 * i);
         }
         let idx = s.pop_pack(true);
@@ -190,16 +191,11 @@ fn variants_subset(plan: &Plan<'_>, s: &mut Serializer, mv: View<'_>) -> bool {
         if mv.is_null16(field) {
             return new_coverage;
         }
-        let mut i = start;
-        for g in Coverage(mv.off16(field)).iter() {
-            if i >= end {
-                break;
-            }
+        for (i, g) in (start..end).zip(Coverage(mv.off16(field)).iter()) {
             if glyphset.contains(&g) {
                 new_coverage.push(map_gid(plan, g));
                 indices.insert(i);
             }
-            i += 1;
         }
         new_coverage
     };

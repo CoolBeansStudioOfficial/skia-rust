@@ -12,7 +12,7 @@ use crate::{FLAG_NOTDEF_OUTLINE, Res, SubsetError};
 
 /// `gvar_GVAR::get_glyph_var_data_bytes` (hb-ot-var-gvar-table.hh#L560-L574): the range of the
 /// variation data of the glyph in the table.
-fn glyph_var_data<'a>(gvar: View<'a>, glyph_count: u32, glyph: u32) -> &'a [u8] {
+fn glyph_var_data(gvar: View<'_>, glyph_count: u32, glyph: u32) -> &[u8] {
     let offset = |i: u32| -> u32 {
         if i > glyph_count {
             return 0;
@@ -77,7 +77,7 @@ pub(crate) fn subset_gvar(plan: &mut Plan<'_>) -> Res<bool> {
     let mut padding_size = 0u32;
     for &(_, old_gid) in it {
         let mut glyph_data_size = glyph_var_data(gvar, glyph_count, old_gid).len() as u32;
-        if glyph_data_size % 2 != 0 {
+        if !glyph_data_size.is_multiple_of(2) {
             glyph_data_size += 1;
             padding_size += 1;
         }
@@ -128,7 +128,7 @@ pub(crate) fn subset_gvar(plan: &mut Plan<'_>) -> Res<bool> {
         let var_data = glyph_var_data(gvar, glyph_count, old_gid);
         body.extend_from_slice(var_data);
         glyph_offset += var_data.len() as u32;
-        if !long_offset && var_data.len() % 2 != 0 {
+        if !long_offset && !var_data.len().is_multiple_of(2) {
             body.push(0);
             glyph_offset += 1;
         }

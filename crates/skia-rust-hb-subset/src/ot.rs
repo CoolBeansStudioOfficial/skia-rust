@@ -12,7 +12,7 @@
 use std::collections::{BTreeSet, HashMap};
 
 use crate::bytes::{bit_storage, u8_at, u16_at, u24_at, u32_at};
-use crate::serialize::{ERROR_INT_OVERFLOW, ObjIdx, Serializer, Whence};
+use crate::serialize::{ERROR_INT_OVERFLOW, Serializer, Whence};
 
 /// `NOT_COVERED` (OT/Layout/Common/CoverageFormat1.hh#L45).
 pub(crate) const NOT_COVERED: u32 = u32::MAX;
@@ -36,10 +36,6 @@ impl<'a> View<'a> {
 
     pub(crate) fn u16(&self, o: usize) -> u32 {
         u32::from(u16_at(self.d, o))
-    }
-
-    pub(crate) fn i16(&self, o: usize) -> i32 {
-        i32::from(u16_at(self.d, o) as i16)
     }
 
     pub(crate) fn u24(&self, o: usize) -> u32 {
@@ -102,25 +98,12 @@ pub(crate) fn set_add_range(set: &mut BTreeSet<u32>, first: u32, last: u32) {
     }
 }
 
-/// `hb_set_t::del_range (a, HB_SET_VALUE_INVALID)`-style removal of everything from `a` on.
-pub(crate) fn set_del_from(set: &mut BTreeSet<u32>, a: u32) {
-    let doomed: Vec<u32> = set.range(a..).copied().collect();
-    for v in doomed {
-        set.remove(&v);
-    }
-}
-
-/// `hb_set_t::is_subset`.
-pub(crate) fn set_is_subset(a: &BTreeSet<u32>, b: &BTreeSet<u32>) -> bool {
-    a.is_subset(b)
-}
-
 /// `Coverage` (OT/Layout/Common/Coverage.hh), formats 1 and 2 (formats 3 and 4 need glyph ids over
 /// 0xFFFF, which a font with 16 bit glyph ids cannot have).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Coverage<'a>(pub View<'a>);
 
-impl<'a> Coverage<'a> {
+impl Coverage<'_> {
     pub(crate) fn format(&self) -> u32 {
         self.0.u16(0)
     }
@@ -203,47 +186,9 @@ impl<'a> Coverage<'a> {
         }
     }
 
-    /// `Coverage::intersects_coverage (glyphs, index)`.
-    pub(crate) fn intersects_coverage(&self, glyphs: &BTreeSet<u32>, index: u32) -> bool {
-        let v = self.0;
-        match self.format() {
-            1 => glyphs.contains(&v.u16(4 + 2 * index as usize)),
-            2 => {
-                // `rangeRecord.as_array ().bsearch (index)`: the range whose `value` is `index`.
-                let len = v.u16(2) as usize;
-                let found = crate::bytes::bsearch(len, |i| index.cmp(&v.u16(4 + 6 * i)));
-                match found {
-                    Some(i) => set_intersects_range(glyphs, v.u16(4 + 6 * i), v.u16(4 + 6 * i + 2)),
-                    None => false,
-                }
-            }
-            _ => false,
-        }
-    }
-
-    /// `Coverage::collect_coverage`: the glyphs of the table in a set.
-    pub(crate) fn collect_coverage(&self) -> BTreeSet<u32> {
-        let v = self.0;
-        let mut out = BTreeSet::new();
-        match self.format() {
-            1 => {
-                for i in 0..v.u16(2) as usize {
-                    out.insert(v.u16(4 + 2 * i));
-                }
-            }
-            2 => {
-                for i in 0..v.u16(2) as usize {
-                    let r = 4 + 6 * i;
-                    set_add_range(&mut out, v.u16(r), v.u16(r + 2));
-                }
-            }
-            _ => {}
-        }
-        out
-    }
-
     /// `Coverage::iter ()`: the glyphs in coverage order. Format 2 stops at a range whose start
     /// coverage index does not continue the previous one (`CoverageFormat2_4::iter_t`).
+    #[allow(clippy::iter_not_returning_iterator)] // `Coverage::iter ()` collected into a vector
     pub(crate) fn iter(&self) -> Vec<u32> {
         let v = self.0;
         let mut out = Vec::new();
@@ -362,68 +307,63 @@ pub(crate) fn coverage_serialize(s: &mut Serializer, glyphs: &[u32]) -> bool {
         return false;
     }
     s.set_u16(start, format);
-    match format {
-        1 => {
-            // `glyphArray.serialize (c, glyphs)`
-            s.embed_u16(glyphs.len() as u16);
-            for &g in glyphs {
-                s.embed_u16(g as u16);
-            }
-            true
+    if format == 1 {
+        // `glyphArray.serialize (c, glyphs)`
+        s.embed_u16(glyphs.len() as u16);
+        for &g in glyphs {
+            s.embed_u16(g as u16);
         }
-        _ => {
-            // `CoverageFormat2_4::serialize`
-            let mut num_ranges = 0u32;
-            let mut last = u32::MAX - 1;
-            for &g in glyphs {
-                if last.wrapping_add(1) != g {
-                    num_ranges += 1;
-                }
-                last = g;
+        true
+    } else {
+        // `CoverageFormat2_4::serialize`
+        let mut num_ranges = 0u32;
+        let mut last = u32::MAX - 1;
+        for &g in glyphs {
+            if last.wrapping_add(1) != g {
+                num_ranges += 1;
             }
-            s.embed_u16(num_ranges as u16);
-            let base = s.allocate(6 * num_ranges as usize);
-            if num_ranges == 0 {
-                return true;
-            }
-            let mut count = 0u32;
-            let mut range = usize::MAX;
-            let mut last = u32::MAX - 1;
-            let mut unsorted = false;
-            for &g in glyphs {
-                if last.wrapping_add(1) != g {
-                    if last != u32::MAX - 1 && last.wrapping_add(1) > g {
-                        unsorted = true;
-                    }
-                    range = range.wrapping_add(1);
-                    s.set_u16(base + 6 * range, g as u16);
-                    s.set_u16(base + 6 * range + 4, count as u16);
-                }
-                s.set_u16(base + 6 * range + 2, g as u16);
-                last = g;
-                count += 1;
-            }
-            if unsorted {
-                // `rangeRecord.as_array ().qsort (RangeRecord::cmp_range)`
-                let mut recs: Vec<(u16, u16, u16)> = (0..num_ranges as usize)
-                    .map(|i| {
-                        let b = s.bytes();
-                        (
-                            u16_at(b, base + 6 * i),
-                            u16_at(b, base + 6 * i + 2),
-                            u16_at(b, base + 6 * i + 4),
-                        )
-                    })
-                    .collect();
-                recs.sort();
-                for (i, r) in recs.iter().enumerate() {
-                    s.set_u16(base + 6 * i, r.0);
-                    s.set_u16(base + 6 * i + 2, r.1);
-                    s.set_u16(base + 6 * i + 4, r.2);
-                }
-            }
-            true
+            last = g;
         }
+        s.embed_u16(num_ranges as u16);
+        let base = s.allocate(6 * num_ranges as usize);
+        if num_ranges == 0 {
+            return true;
+        }
+        let mut range = usize::MAX;
+        let mut last = u32::MAX - 1;
+        let mut unsorted = false;
+        for (count, &g) in glyphs.iter().enumerate() {
+            if last.wrapping_add(1) != g {
+                if last != u32::MAX - 1 && last.wrapping_add(1) > g {
+                    unsorted = true;
+                }
+                range = range.wrapping_add(1);
+                s.set_u16(base + 6 * range, g as u16);
+                s.set_u16(base + 6 * range + 4, count as u16);
+            }
+            s.set_u16(base + 6 * range + 2, g as u16);
+            last = g;
+        }
+        if unsorted {
+            // `rangeRecord.as_array ().qsort (RangeRecord::cmp_range)`
+            let mut recs: Vec<(u16, u16, u16)> = (0..num_ranges as usize)
+                .map(|i| {
+                    let b = s.bytes();
+                    (
+                        u16_at(b, base + 6 * i),
+                        u16_at(b, base + 6 * i + 2),
+                        u16_at(b, base + 6 * i + 4),
+                    )
+                })
+                .collect();
+            recs.sort_unstable();
+            for (i, r) in recs.iter().enumerate() {
+                s.set_u16(base + 6 * i, r.0);
+                s.set_u16(base + 6 * i + 2, r.1);
+                s.set_u16(base + 6 * i + 4, r.2);
+            }
+        }
+        true
     }
 }
 
@@ -513,14 +453,11 @@ impl Serializer {
     }
 }
 
-/// `ObjIdx` re-export for the layout modules.
-pub(crate) type Idx = ObjIdx;
-
 /// Port of `ClassDef` reading (hb-ot-layout-common.hh#L1500-L2280), formats 1 and 2.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ClassDef<'a>(pub View<'a>);
 
-impl<'a> ClassDef<'a> {
+impl ClassDef<'_> {
     pub(crate) fn format(&self) -> u32 {
         self.0.u16(0)
     }
@@ -573,30 +510,6 @@ impl<'a> ClassDef<'a> {
                 ret.min(u64::from(u32::MAX)) as u32
             }
             _ => NOT_COVERED,
-        }
-    }
-
-    /// `ClassDef::collect_class`.
-    pub(crate) fn collect_class(&self, glyphs: &mut BTreeSet<u32>, klass: u32) {
-        let v = self.0;
-        match self.format() {
-            1 => {
-                let start = v.u16(2);
-                for i in 0..v.u16(4) as usize {
-                    if v.u16(6 + 2 * i) == klass {
-                        glyphs.insert(start + i as u32);
-                    }
-                }
-            }
-            2 => {
-                for i in 0..v.u16(2) as usize {
-                    let r = 4 + 6 * i;
-                    if v.u16(r + 4) == klass {
-                        set_add_range(glyphs, v.u16(r), v.u16(r + 2));
-                    }
-                }
-            }
-            _ => {}
         }
     }
 
@@ -767,10 +680,10 @@ impl<'a> ClassDef<'a> {
                                 std::cmp::Ordering::Greater
                             }
                         });
-                        if let Some(i) = found {
-                            if v.u16(4 + 6 * i + 4) == klass {
-                                out.insert(g);
-                            }
+                        if let Some(i) = found
+                            && v.u16(4 + 6 * i + 4) == klass
+                        {
+                            out.insert(g);
                         }
                     }
                     return;
@@ -911,7 +824,7 @@ pub(crate) fn classdef_serialize(s: &mut Serializer, it_with_class_zero: &[(u32,
             prev_gid = cur_gid;
             prev_klass = cur_klass;
         }
-        if num_glyphs != 0 && 1 + (glyph_max - glyph_min + 1) <= num_ranges * 3 {
+        if num_glyphs != 0 && (glyph_max - glyph_min + 1) < num_ranges * 3 {
             format = 1;
         }
     }
@@ -982,7 +895,7 @@ pub(crate) fn classdef_serialize(s: &mut Serializer, it_with_class_zero: &[(u32,
                     )
                 })
                 .collect();
-            recs.sort();
+            recs.sort_unstable();
             for (i, r) in recs.iter().enumerate() {
                 s.set_u16(first + 6 * i, r.0);
                 s.set_u16(first + 6 * i + 2, r.1);
@@ -1046,10 +959,10 @@ pub(crate) fn classdef_subset(
                 if new_gid == INVALID {
                     continue;
                 }
-                if let Some(f) = &glyph_filter {
-                    if !f.has(gid) {
-                        continue;
-                    }
+                if let Some(f) = &glyph_filter
+                    && !f.has(gid)
+                {
+                    continue;
                 }
                 let klass = v.u16(6 + 2 * (gid - start) as usize);
                 if klass == 0 {
@@ -1078,10 +991,10 @@ pub(crate) fn classdef_subset(
                     if new_gid == INVALID {
                         continue;
                     }
-                    if let Some(f) = &glyph_filter {
-                        if !f.has(g) {
-                            continue;
-                        }
+                    if let Some(f) = &glyph_filter
+                        && !f.has(g)
+                    {
+                        continue;
                     }
                     glyph_and_klass.push((new_gid, klass));
                     orig_klasses.insert(klass);
@@ -1100,10 +1013,10 @@ pub(crate) fn classdef_subset(
                         if new_gid == INVALID {
                             continue;
                         }
-                        if let Some(f) = &glyph_filter {
-                            if !f.has(g) {
-                                continue;
-                            }
+                        if let Some(f) = &glyph_filter
+                            && !f.has(g)
+                        {
+                            continue;
                         }
                         glyph_and_klass.push((new_gid, klass));
                         orig_klasses.insert(klass);

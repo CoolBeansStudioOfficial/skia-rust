@@ -133,7 +133,7 @@ fn context_closure_recurse_lookups(
                         );
                     }
                     ContextFormat::CoverageBased => {
-                        pos_glyphs = c.parent_active_glyphs().clone();
+                        pos_glyphs.clone_from(c.parent_active_glyphs());
                     }
                 }
             } else if lc.format == ContextFormat::Simple {
@@ -206,7 +206,6 @@ fn closure_lookup(
 
 struct Rule {
     input_count: u32,
-    lookup_count: u32,
     /// `inputZ.as_array (inputCount ? inputCount - 1 : 0)`
     input: Vec<u32>,
     lookups: Vec<(u32, u32)>,
@@ -223,13 +222,12 @@ fn parse_rule(r: View<'_>) -> Rule {
         .collect();
     Rule {
         input_count,
-        lookup_count,
         input,
         lookups,
     }
 }
 
-fn rule_set_rules<'a>(rs: View<'a>) -> Vec<View<'a>> {
+fn rule_set_rules(rs: View<'_>) -> Vec<View<'_>> {
     (0..rs.u16(0) as usize)
         .map(|i| rs.off16(2 + 2 * i))
         .collect()
@@ -612,11 +610,11 @@ pub(crate) fn context_subset(
                         rule_set_subset(s, rs, lookup_map, &plan.glyph_map)
                     })
                 };
-                if !ret {
+                if ret {
+                    new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
+                } else {
                     s.array_pop(out + 4);
                     s.revert(snap);
-                } else {
-                    new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
                 }
             }
             s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &new_coverage));
@@ -1207,11 +1205,11 @@ pub(crate) fn chain_context_subset(
                         )
                     })
                 };
-                if !ret {
+                if ret {
+                    new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
+                } else {
                     s.array_pop(out + 4);
                     s.revert(snap);
-                } else {
-                    new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
                 }
             }
             s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &new_coverage));

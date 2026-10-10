@@ -219,9 +219,7 @@ fn subset_table_inner(plan: &mut Plan<'_>, t: u32) -> Res<()> {
         b"gvar" => var::subset_gvar(plan).map(|_| ()),
         b"HVAR" | b"VVAR" => Err(SubsetError::Unsupported("HVAR/VVAR")),
         b"CFF " | b"CFF2" | b"VORG" => Err(SubsetError::Unsupported("CFF/CFF2/VORG")),
-        b"sbix" => {
-            layout::run_table(plan, t, |plan, s, v| color::subset_sbix(plan, s, v)).map(|_| ())
-        }
+        b"sbix" => layout::run_table(plan, t, color::subset_sbix).map(|_| ()),
         b"COLR" => layout::run_table(plan, t, colr::colr_subset).map(|_| ()),
         b"CPAL" => layout::run_table(plan, t, colr::cpal_subset).map(|_| ()),
         b"CBLC" => {

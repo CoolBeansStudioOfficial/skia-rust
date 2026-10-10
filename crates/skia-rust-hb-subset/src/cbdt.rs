@@ -57,6 +57,7 @@ fn add_offset(s: &mut Serializer, index_format: u32, offset: u32, size: &mut u32
 }
 
 /// `CBLC::subset` and `CBDT::sink`: returns the new `CBDT` through `cbdt_out`.
+#[allow(clippy::unnecessary_wraps)] // the callback shape of `run_table`
 pub(crate) fn subset(
     plan: &Plan<'_>,
     s: &mut Serializer,

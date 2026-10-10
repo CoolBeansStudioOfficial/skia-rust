@@ -71,10 +71,6 @@ impl<'a> Colr<'a> {
     fn has_var_store(&self) -> bool {
         self.v1_offset(30) != 0
     }
-    fn has_delta_set_index_map(&self) -> bool {
-        self.v1_offset(26) != 0
-    }
-
     /// `get_base_glyph_record`: `(glyphId, firstLayerIdx, numLayers)` of the version 0 record.
     fn base_glyph_record(&self, gid: u32) -> Option<(u32, u32, u32)> {
         let recs = self.base_glyphs();
@@ -156,17 +152,14 @@ fn is_wrapped_variable(format: u32) -> bool {
 /// the `Offset24To<Paint>` children.
 fn paint_size(format: u32) -> usize {
     match format {
-        1 | 10 => 6,
+        1 | 10 | 20 | 21 | 24 | 25 => 6,
         2 | 3 => 5,
         4..=7 => 16,
-        8 | 9 => 12,
+        8 | 9 | 18 | 19 | 30 | 31 => 12,
         11 => 3,
         12 | 13 => 7,
-        14..=17 | 28 | 29 => 8,
-        18 | 19 | 30 | 31 => 12,
-        20 | 21 | 24 | 25 => 6,
+        14..=17 | 28 | 29 | 32 => 8,
         22 | 23 | 26 | 27 => 10,
-        32 => 8,
         _ => 0,
     }
 }
@@ -437,6 +430,8 @@ fn embed_bytes(s: &mut Serializer, v: View<'_>, off: usize, len: usize) -> usize
     s.embed(&bytes)
 }
 
+// The helpers keep `self` so that the calls read like the C++ member calls.
+#[allow(clippy::unused_self)]
 impl SubsetCtx<'_, '_> {
     fn check16(&self, s: &mut Serializer, pos: usize, value: u32) -> bool {
         if !s.check_fits(u64::from(value), 16, ERROR_INT_OVERFLOW) {
@@ -718,6 +713,7 @@ impl SubsetCtx<'_, '_> {
 }
 
 /// `COLR::subset` (COLR.hh#L2037-L2128).
+#[allow(clippy::unnecessary_wraps)] // the callback shape of `run_table`
 pub(crate) fn colr_subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>) -> Res<bool> {
     let colr = Colr(data);
     let ctx = SubsetCtx { plan };
@@ -851,6 +847,7 @@ fn serialize_v0(
 // -------------------------------------------------------------------------------------------
 
 /// `CPAL::subset` (CPAL.hh#L267-L325) with `CPAL::serialize` and `CPALV1Tail::serialize`.
+#[allow(clippy::unnecessary_wraps)] // the callback shape of `run_table`
 pub(crate) fn cpal_subset(plan: &Plan<'_>, s: &mut Serializer, cpal: View<'_>) -> Res<bool> {
     let num_palettes = cpal.u16(4) as usize;
     if num_palettes == 0 {

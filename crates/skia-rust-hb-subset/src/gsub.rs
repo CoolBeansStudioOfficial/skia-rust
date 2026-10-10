@@ -22,7 +22,7 @@ use crate::serialize::{ERROR_INT_OVERFLOW, Serializer, Whence};
 /// `SubstLookupSubTable::intersects`.
 pub(crate) fn intersects(lookup_type: u32, sub: View<'_>, glyphs: &BTreeSet<u32>) -> bool {
     match lookup_type {
-        1 | 2 | 3 => {
+        1..=3 => {
             // Single (formats 1, 2), Multiple and Alternate (format 1): `coverage.intersects`.
             let ok_format = match lookup_type {
                 1 => matches!(sub.u16(0), 1 | 2),
@@ -322,11 +322,11 @@ fn set_subset(plan: &Plan<'_>, s: &mut Serializer, lookup_type: u32, sub: View<'
                 }
             })
         };
-        if !ret {
+        if ret {
+            new_coverage.push(map_gid(plan, g));
+        } else {
             s.array_pop(out + 4);
             s.revert(snap);
-        } else {
-            new_coverage.push(map_gid(plan, g));
         }
     }
     s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &new_coverage));
