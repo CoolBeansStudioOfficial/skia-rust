@@ -21,6 +21,7 @@ pub mod anisotropic;
 pub mod arcofzorro;
 pub mod arcto;
 pub mod arithmode;
+pub mod asyncrescaleandread;
 pub mod b_119394958;
 pub mod backdrop_imagefilter_croprect;
 pub mod badpaint;

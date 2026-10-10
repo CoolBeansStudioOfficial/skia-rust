@@ -16288,8 +16288,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L598-L598"
 module = "codec"
-status = "todo"
-reason = "needs asyncRescaleAndReadPixelsYUV420 on the CPU (rescale and YUV readback), which is not ported; the raster golden async_yuv_no_scale exists"
+status = "passing"
 span_hash = "a5f5047f706c65778545eb45ceb747c5f323f6530876d08471faf91a47d45f9e"
 
 [[test]]
