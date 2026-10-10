@@ -14,21 +14,38 @@
 
 use std::sync::Arc;
 
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color::ColorChannelFlag;
+use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::{Image as CoreImage, RequiredProperties};
 use skia_rust_core::image_base::{ImageBase, ImageType};
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::image_info::ColorInfo;
+use skia_rust_core::image_info_priv::color_info_is_valid;
 use skia_rust_core::image_raster::ImageRaster;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::surface_props::SurfaceProps;
 
-use crate::gpu::gpu_types::{Budgeted, Mipmapped};
+use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin};
+use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
+use crate::gpu::swizzle::Swizzle;
+use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::image_filter_backend::make_graphite_backend;
 use crate::graphite::image_graphite::{Image, make_non_budgeted, make_subset};
+use crate::graphite::caps::Caps;
 use crate::graphite::recorder::Recorder;
+use crate::graphite::texture::ReleaseCallback;
+use crate::graphite::texture_format::{
+    are_color_type_and_format_compatible, read_swizzle_for_color_type,
+    texture_format_channel_mask, texture_format_color_type_info,
+};
+use crate::graphite::texture_info::texture_info_priv;
+use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::make_bitmap_proxy_view;
 
 /// `make_from_bitmap(recorder, colorInfo, bitmap, mipmaps, budgeted, requiredProps, label)`: an
@@ -113,6 +130,135 @@ fn make_texture_image_from_lazy(
         required_props,
         "LazySkImageBitmapTexture",
     )
+}
+
+/// `validate_backend_texture(caps, texture, info)`: whether `texture` can back an image with `info`.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L50-L68 (chrome/m156)
+fn validate_backend_texture(caps: &dyn Caps, texture: &BackendTexture, info: &ColorInfo) -> bool {
+    let dimensions = texture.dimensions();
+    if !texture.is_valid() || dimensions.width <= 0 || dimensions.height <= 0 {
+        return false;
+    }
+
+    if !color_info_is_valid(info) {
+        return false;
+    }
+
+    if !caps.is_texturable(&texture.info(), false) {
+        return false;
+    }
+
+    are_color_type_and_format_compatible(
+        info.color_type(),
+        texture_info_priv::view_format(&texture.info()),
+    )
+}
+
+/// `WrapTexture` with an explicit color type (the deprecated overload): the image reads `texture`
+/// as `color_type`, with the given origin. The label is `"WrappedImage"` and the texture has no
+/// release callback.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L72-L127 (chrome/m156), without the mipmap and
+// release arguments (`genMipmaps` = kNo)
+#[doc(alias = "WrapTexture")]
+#[must_use]
+pub fn wrap_texture(
+    recorder: &Recorder,
+    backend_texture: &BackendTexture,
+    color_type: ColorType,
+    alpha_type: AlphaType,
+    color_space: Option<ColorSpace>,
+    origin: Origin,
+) -> Option<CoreImage> {
+    let info = ColorInfo::new(color_type, alpha_type, color_space);
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+    if !validate_backend_texture(&*caps, backend_texture, &info) {
+        return None;
+    }
+
+    let texture = {
+        let mut provider = priv_
+            .resource_provider()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        provider.create_wrapped_texture(backend_texture, "WrappedImage")?
+    };
+    let proxy = TextureProxy::wrap(texture);
+    let swizzle = read_swizzle_for_color_type(color_type, proxy.format());
+    let view = TextureProxyView::new_with_origin(Some(proxy), swizzle, origin);
+    Some(Image::new(view, &info).into_core())
+}
+
+/// `WrapTexture(recorder, backendTex, alphaType, colorSpace, origin, releaseP, releaseC)`: an image
+/// over a client's backend texture, with the color type inferred from the texture's format.
+/// `release` is the texture's release callback. The label is `"WrappedImage"`.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L129-L213 (chrome/m156), with `genMipmaps` = kNo
+#[doc(alias = "WrapTexture")]
+#[must_use]
+pub fn wrap_texture_for_alpha_type(
+    recorder: &Recorder,
+    backend_texture: &BackendTexture,
+    alpha_type: AlphaType,
+    color_space: Option<ColorSpace>,
+    origin: Origin,
+    release: Option<CallbackProc>,
+) -> Option<CoreImage> {
+    let release_helper = release.map(RefCntedCallback::make);
+
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+
+    let format = texture_info_priv::view_format(&backend_texture.info());
+    let (mut ct, _) = texture_format_color_type_info(format);
+    // The ambiguity for single-channel textures (R) is resolved by the alpha type: premul and
+    // unpremul mean an alpha-only texture; opaque means red data.
+    if alpha_type == AlphaType::Premul || alpha_type == AlphaType::Unpremul {
+        ct = match ct {
+            ColorType::R8UNorm => ColorType::Alpha8,
+            ColorType::R16UNorm => ColorType::A16UNorm,
+            ColorType::R16Float => ColorType::A16Float,
+            other => other,
+        };
+    }
+
+    let mut swizzle = read_swizzle_for_color_type(ct, format);
+    let mut alpha_type = alpha_type;
+    // An unknown alpha type needs to be forced to opaque by a swizzle if the texture format won't
+    // do it for us automatically. Once we force it to opaque, we can report kOpaque for the
+    // higher-level image's alpha type.
+    if alpha_type == AlphaType::Unknown {
+        alpha_type = AlphaType::Opaque;
+        if texture_format_channel_mask(format) & ColorChannelFlag::ALPHA.bits() != 0
+            && swizzle.as_string().as_bytes()[3] != b'1'
+        {
+            swizzle = Swizzle::concat(&swizzle, &Swizzle::rgb1());
+            // Patch `ct` if possible:
+            ct = match ct {
+                ColorType::RGBA8888 => ColorType::RGB888x,
+                ColorType::RGBA1010102 => ColorType::RGB101010x,
+                ColorType::BGRA1010102 => ColorType::BGR101010x,
+                ColorType::RGBAF16 => ColorType::RGBF16F16F16x,
+                other => other,
+            };
+        }
+    }
+
+    let info = ColorInfo::new(ct, alpha_type, color_space);
+    if !validate_backend_texture(&*caps, backend_texture, &info) {
+        return None;
+    }
+
+    let texture = {
+        let mut provider = priv_
+            .resource_provider()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        provider.create_wrapped_texture(backend_texture, "WrappedImage")?
+    };
+    texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
+
+    let view = TextureProxyView::new_with_origin(Some(TextureProxy::wrap(texture)), swizzle, origin);
+    Some(Image::new(view, &info).into_core())
 }
 
 /// `SubsetTextureFrom(recorder, img, subset, requiredProps)`: a Graphite-backed copy of `subset` of

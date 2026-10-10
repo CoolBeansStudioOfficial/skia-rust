@@ -8,6 +8,7 @@ pub mod compute_test;
 pub mod device_test;
 pub mod draw_atlas_test;
 pub mod graphite_resource_cache_test;
+pub mod image_origin_test;
 pub mod image_shader_test;
 pub mod inner_fill_test;
 pub mod intersection_tree_test;
