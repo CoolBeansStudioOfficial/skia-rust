@@ -1,6 +1,7 @@
 //! Ports of `src/gpu/graphite/*`, one module per file pair.
 
 pub mod async_read;
+pub mod atlas_provider;
 pub mod attribute;
 pub mod backend_texture;
 pub mod buffer;
@@ -8,6 +9,7 @@ pub mod buffer_manager;
 pub mod built_in_code_snippet_id;
 pub mod caps;
 pub mod client_mapped_buffer_manager;
+pub mod clip_atlas_manager;
 pub mod clip_stack;
 pub mod command_buffer;
 pub mod compute;
@@ -44,15 +46,13 @@ pub mod key_helpers;
 pub mod key_helpers_ii;
 pub mod paint_params;
 pub mod paint_params_key;
+pub mod path_atlas;
 pub mod pipeline_creation_task;
 pub mod pipeline_data;
 pub mod pipeline_manager;
 pub mod proxy_cache;
-pub mod path_atlas;
-pub mod raster_path_atlas;
-pub mod atlas_provider;
-pub mod clip_atlas_manager;
 pub mod queue_manager;
+pub mod raster_path_atlas;
 pub mod raster_path_utils;
 pub mod recorder;
 pub mod recording;

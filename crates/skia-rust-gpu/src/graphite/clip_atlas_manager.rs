@@ -8,6 +8,14 @@
 //! managers hold the masks: one for masks that can be keyed by their elements, and a smaller one
 //! for those that can only be keyed by their save record.
 
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
+// The atlas positions and sizes are small integers, converted as the C++ converts them
+// (`SkIPoint` to `skvx::half2`, `int` to `float`).
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -79,12 +87,12 @@ fn render_elements(helper: &mut RasterMaskHelper<'_>, elements: &[&ClipElement])
 
         // Draw the shape; based on how we've initialized the buffer and chosen alpha+invert,
         // every element is drawn with the kReplace_Op.
-        if invert != element.shape.inverted() {
+        if invert == element.shape.inverted() {
+            helper.draw_clip(&element.shape, &element.local_to_device, alpha);
+        } else {
             let mut inverted = element.shape.clone();
             inverted.set_inverted(invert);
             helper.draw_clip(&inverted, &element.local_to_device, alpha);
-        } else {
-            helper.draw_clip(&element.shape, &element.local_to_device, alpha);
         }
         is_first = false;
     }
@@ -120,7 +128,8 @@ impl PlotEvictionCallback for MaskCacheEvictor {
     // Port of: src/gpu/graphite/ClipAtlasManager.cpp#L286-L316 (chrome/m156), `evict`
     fn evict(&mut self, plot_locator: PlotLocator) {
         let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
-        let index = (plot_locator.page_index() * cache.num_plots + plot_locator.plot_index()) as usize;
+        let index =
+            (plot_locator.page_index() * cache.num_plots + plot_locator.plot_index()) as usize;
         let keys = std::mem::take(&mut cache.key_lists[index]);
         for (key, bounds) in keys {
             // Remove the entry with these bounds from the key's list (the first one matches).
@@ -234,7 +243,13 @@ impl ClipDrawAtlasMgr {
         }
 
         let mut locator = AtlasLocator::default();
-        let proxy = self.add_to_atlas(recorder, elements, mask_device_bounds, out_pos, &mut locator)?;
+        let proxy = self.add_to_atlas(
+            recorder,
+            elements,
+            mask_device_bounds,
+            out_pos,
+            &mut locator,
+        )?;
 
         // Add locator and bounds to the cache, at the end of the key's list.
         let mut cache = self.cache.lock().unwrap_or_else(PoisonError::into_inner);
@@ -288,9 +303,7 @@ impl ClipDrawAtlasMgr {
             -mask_device_bounds.top + K_CLIP_ENTRY_PADDING,
         );
         {
-            let mut pixmap = self
-                .draw_atlas
-                .prep_for_render(locator, 0, clear_color)?;
+            let mut pixmap = self.draw_atlas.prep_for_render(locator, 0, clear_color)?;
             let mut helper = RasterMaskHelper::over_pixmap(&mut pixmap, translate);
             render_elements(&mut helper, elements);
         }
@@ -392,7 +405,7 @@ impl ClipAtlasManager {
     /// `findOrCreateEntry(stackRecordID, elementList, maskDeviceBounds, outPos)`: the texture
     /// holding the clip mask of `elements`, and where the mask starts in it. The mask is
     /// rendered on first use, and reused when the same elements come again. If it does not fit in
-    /// the atlas, it is cached in the ProxyCache instead.
+    /// the atlas, it is cached in the `ProxyCache` instead.
     // Port of: src/gpu/graphite/ClipAtlasManager.cpp#L84-L127 (chrome/m156)
     #[doc(alias = "findOrCreateEntry")]
     pub fn find_or_create_entry(
@@ -503,7 +516,12 @@ impl ClipAtlasSeam for RecorderClipAtlas<'_> {
         mask_bounds: IRect,
         out_pos: &mut IPoint,
     ) -> Option<Arc<TextureProxy>> {
-        self.manager
-            .find_or_create_entry(self.recorder, stack_record_id, element_list, mask_bounds, out_pos)
+        self.manager.find_or_create_entry(
+            self.recorder,
+            stack_record_id,
+            element_list,
+            mask_bounds,
+            out_pos,
+        )
     }
 }

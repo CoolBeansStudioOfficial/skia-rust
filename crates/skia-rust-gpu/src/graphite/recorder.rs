@@ -37,6 +37,7 @@ use skia_rust_core::size::ISize;
 use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::token::TokenTracker;
+use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
@@ -45,10 +46,9 @@ use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::graphite_types::InsertFinishInfo;
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
-use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::proxy_cache::ProxyCache;
-use crate::graphite::renderer_provider::PathRendererStrategy as RendererProviderStrategy;
 use crate::graphite::recording::{LazyProxyData, Recording};
+use crate::graphite::renderer_provider::PathRendererStrategy as RendererProviderStrategy;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
@@ -758,7 +758,11 @@ impl<'a> RecorderPriv<'a> {
     /// for the draw (it cannot be borrowed again) is flushed through `current`, where C++ reaches
     /// it through the tracked list.
     // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
-    pub fn flush_tracked_devices_and_current(&self, flush_source: &str, current: &mut dyn TrackedDevice) {
+    pub fn flush_tracked_devices_and_current(
+        &self,
+        flush_source: &str,
+        current: &mut dyn TrackedDevice,
+    ) {
         let _ = flush_source;
         let recorder = self.recorder;
         debug_assert!(!recorder.is_flushing_tracked_devices.get());

@@ -8,6 +8,14 @@
 //! work is done once for each mask. Three managers hold the masks: the cached one, the small-path
 //! one for masks of at most 162 pixels, and an uncached one for shapes that cannot be cached.
 
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
+// The atlas positions and sizes are small integers, converted as the C++ converts them
+// (`SkIPoint` to `skvx::half2`, `int` to `float`).
+
 use std::sync::Arc;
 
 use skia_rust_core::point::IPoint;
@@ -19,7 +27,9 @@ use crate::graphite::draw_atlas::UseStorageTextures;
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::geom::shape::Shape;
 use crate::graphite::geom::transform::Transform;
-use crate::graphite::path_atlas::{DrawAtlasMgr, K_ENTRY_PADDING, PathAtlas, path_atlas_dimensions};
+use crate::graphite::path_atlas::{
+    DrawAtlasMgr, K_ENTRY_PADDING, PathAtlas, path_atlas_dimensions,
+};
 use crate::graphite::proxy_cache::find_or_create_cached_proxy_from_bitmap;
 use crate::graphite::raster_path_utils::{Half2, RasterMaskHelper, generate_path_mask_key};
 use crate::graphite::recorder::Recorder;
@@ -197,13 +207,8 @@ impl PathAtlas for RasterPathAtlas {
         }
 
         // Failed to add to atlases, try to add to ProxyCache.
-        let mask_key = generate_path_mask_key(
-            shape,
-            local_to_device,
-            stroke_rec,
-            mask_origin,
-            mask_size,
-        );
+        let mask_key =
+            generate_path_mask_key(shape, local_to_device, stroke_rec, mask_origin, mask_size);
         // SkIRect::MakeSize({maskSize.x(), maskSize.y()}).makeOffset(kEntryPadding, kEntryPadding)
         let shape_bounds = IRect::from_xywh(
             K_ENTRY_PADDING,
@@ -216,11 +221,8 @@ impl PathAtlas for RasterPathAtlas {
             &mask_key,
             || {
                 // RasterMaskHelper::Allocate(shapeBounds.size(), -transformedMaskOffset, pad)
-                let mut buffer = RasterMaskHelper::allocate(
-                    shape_bounds.size(),
-                    K_ENTRY_PADDING,
-                    0,
-                );
+                let mut buffer =
+                    RasterMaskHelper::allocate(shape_bounds.size(), K_ENTRY_PADDING, 0);
                 {
                     let mut helper = RasterMaskHelper::over(
                         &mut buffer,
