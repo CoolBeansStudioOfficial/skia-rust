@@ -27,4 +27,16 @@ build() {
 }
 
 build encode_lossless_c -U__SSE2__ -U__SSE4_1__
+build_main() {
+  name="$1"
+  main_src="$2"
+  shift 2
+  gcc $BASE "$@" -c "$HERE/$main_src" -o "$OUT/$name-main2.o"
+  objs=""
+  for o in "$OUT/$name"-*.o; do
+    case "$o" in *-main.o|*-main2.o) ;; *) objs="$objs $o" ;; esac
+  done
+  gcc -o "$OUT/$name-methods" "$OUT/$name-main2.o" $objs -lm
+}
+build_main encode_lossless_c encode_lossless_methods.c -U__SSE2__ -U__SSE4_1__
 build encode_lossless_sse -msse4.1

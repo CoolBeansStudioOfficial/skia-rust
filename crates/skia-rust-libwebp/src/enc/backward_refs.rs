@@ -117,6 +117,16 @@ impl PixOrCopy {
         }
     }
 
+    /// Port of `PixOrCopyCreateCacheIdx`: a colour-cache index of length 1.
+    #[must_use]
+    pub fn cache_idx(idx: u32) -> Self {
+        Self {
+            mode: PixOrCopyMode::CacheIdx,
+            len: 1,
+            argb_or_distance: idx,
+        }
+    }
+
     /// Port of `PixOrCopyLiteral(p, component)`: component 0 is blue, 1 green, 2 red, 3 alpha.
     #[must_use]
     pub fn literal_component(&self, component: u32) -> u32 {

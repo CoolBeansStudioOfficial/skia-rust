@@ -45,7 +45,7 @@
 )]
 
 use super::bit_writer::BitWriter;
-use super::vp8l::encode_stream;
+use super::vp8l_encode::{EncodeConfig, encode_stream};
 
 /// Port of `WEBP_MAX_DIMENSION`.
 pub const WEBP_MAX_DIMENSION: usize = 16383;
@@ -71,6 +71,25 @@ pub fn encode_lossless(
     quality: i32,
     exact: bool,
 ) -> Option<Vec<u8>> {
+    encode_lossless_method(width, height, argb, 0, quality, exact)
+}
+
+/// Encodes like [`encode_lossless`] at `config->method = method` (0 to 4): the VP8L stream that
+/// the alpha plane of a lossy picture uses at `method` 3 is `method` 3 with `exact` set.
+///
+/// Returns `None` for `method` above 4 and wherever [`encode_lossless`] does.
+#[must_use]
+pub fn encode_lossless_method(
+    width: usize,
+    height: usize,
+    argb: &[u32],
+    method: u32,
+    quality: i32,
+    exact: bool,
+) -> Option<Vec<u8>> {
+    if method > 4 {
+        return None;
+    }
     if width == 0 || height == 0 || width > WEBP_MAX_DIMENSION || height > WEBP_MAX_DIMENSION {
         return None;
     }
@@ -93,7 +112,14 @@ pub fn encode_lossless(
     bw.put_bits((height - 1) as u32, VP8L_IMAGE_SIZE_BITS);
     bw.put_bits(u32::from(has_alpha), 1);
     bw.put_bits(VP8L_VERSION, VP8L_VERSION_BITS);
-    encode_stream(width, height, &pixels, quality, &mut bw);
+    let config = EncodeConfig {
+        method,
+        quality,
+        exact,
+    };
+    if !encode_stream(width, height, &pixels, &config, &mut bw) {
+        return None;
+    }
     let webpll_data = bw.finish();
     // WriteImage: RIFF header, VP8L chunk, padding to an even size.
     let vp8l_size = 1 + webpll_data.len();

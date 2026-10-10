@@ -46,20 +46,14 @@
     clippy::manual_range_contains
 )]
 
-use super::backward_refs::{
-    HashChain, PixOrCopy, PixOrCopyMode, get_backward_references_low_effort,
-};
+use super::backward_refs::{HashChain, PixOrCopy, PixOrCopyMode};
 use super::backward_refs_select::get_backward_references;
 use super::bit_writer::BitWriter;
 use super::entropy::bits_log2_floor;
-use super::histogram::{
-    Histogram, HistogramSet, NUM_DISTANCE_CODES, get_histo_image_symbols, histogram_num_codes,
-};
+use super::histogram::{HistogramSet, NUM_DISTANCE_CODES, histogram_num_codes};
 use super::huffman::{
     HuffmanTreeCode, HuffmanTreeToken, create_compressed_huffman_tree, create_huffman_tree,
 };
-use super::palette::{apply_palette, get_color_palette};
-use super::predictor::{residual_image_low_effort, sub_pixels, subtract_green_from_blue_and_red};
 use super::prefix::prefix_encode;
 
 /// Port of `MAX_HUFF_IMAGE_SIZE`.
@@ -68,18 +62,8 @@ const MAX_HUFF_IMAGE_SIZE: usize = 2600;
 const MIN_HUFFMAN_BITS: u32 = 2;
 /// Port of `MAX_HUFFMAN_BITS`.
 const MAX_HUFFMAN_BITS: u32 = 9;
-/// Port of `MAX_TRANSFORM_BITS` (the cap for `method < 4`).
-const MAX_TRANSFORM_BITS: u32 = 6;
 /// Port of `CODE_LENGTH_CODES`.
 const CODE_LENGTH_CODES: usize = 19;
-/// Port of `TRANSFORM_PRESENT`.
-const TRANSFORM_PRESENT: u32 = 1;
-/// Port of `SUBTRACT_GREEN_TRANSFORM`.
-const SUBTRACT_GREEN_TRANSFORM: u32 = 2;
-/// Port of `PREDICTOR_TRANSFORM`.
-const PREDICTOR_TRANSFORM: u32 = 0;
-/// Port of `COLOR_INDEXING_TRANSFORM`.
-const COLOR_INDEXING_TRANSFORM: u32 = 3;
 /// Port of `NUM_LITERAL_CODES`.
 const NUM_LITERAL_CODES: usize = 256;
 
@@ -89,28 +73,35 @@ pub fn sub_sample_size(size: usize, sampling_bits: u32) -> usize {
     (size + (1usize << sampling_bits) - 1) >> sampling_bits
 }
 
-/// Port of `GetHistoBits` for `method 0`.
-fn get_histo_bits(use_palette: bool, width: usize, height: usize) -> u32 {
-    let mut histo_bits: u32 = if use_palette { 9 } else { 7 };
+/// Port of `GetHistoBits`.
+pub(super) fn get_histo_bits(method: u32, use_palette: bool, width: usize, height: usize) -> u32 {
+    let mut histo_bits: i32 = (if use_palette { 9 } else { 7 }) - method as i32;
     loop {
         let huff_image_size =
-            sub_sample_size(width, histo_bits) * sub_sample_size(height, histo_bits);
+            sub_sample_size(width, histo_bits as u32) * sub_sample_size(height, histo_bits as u32);
         if huff_image_size <= MAX_HUFF_IMAGE_SIZE {
             break;
         }
         histo_bits += 1;
     }
-    histo_bits.clamp(MIN_HUFFMAN_BITS, MAX_HUFFMAN_BITS)
+    histo_bits.clamp(MIN_HUFFMAN_BITS as i32, MAX_HUFFMAN_BITS as i32) as u32
 }
 
-/// Port of `GetTransformBits` for `method 0`.
-fn get_transform_bits(histo_bits: u32) -> u32 {
-    histo_bits.min(MAX_TRANSFORM_BITS)
+/// Port of `GetTransformBits`.
+pub(super) fn get_transform_bits(method: u32, histo_bits: u32) -> u32 {
+    let max_transform_bits = match method {
+        0..=3 => 6,
+        4 => 5,
+        _ => 4,
+    };
+    histo_bits.min(max_transform_bits)
 }
 
 /// Port of `GetHuffBitLengthsAndCodes`: the code lengths of the five alphabets of each histogram
 /// (literal, red, blue, alpha, distance), in `5 * i + k` order.
-fn get_huff_bit_lengths_and_codes(histogram_image: &mut HistogramSet) -> Vec<HuffmanTreeCode> {
+pub(super) fn get_huff_bit_lengths_and_codes(
+    histogram_image: &mut HistogramSet,
+) -> Vec<HuffmanTreeCode> {
     let mut codes = Vec::with_capacity(5 * histogram_image.size);
     for i in 0..histogram_image.size {
         let histo = histogram_image.histograms[i]
@@ -135,7 +126,7 @@ fn get_huff_bit_lengths_and_codes(histogram_image: &mut HistogramSet) -> Vec<Huf
 }
 
 /// Port of `StoreHuffmanTreeOfHuffmanTreeToBitMask`.
-fn store_huffman_tree_of_huffman_tree_to_bit_mask(
+pub(super) fn store_huffman_tree_of_huffman_tree_to_bit_mask(
     bw: &mut BitWriter,
     code_length_bitdepth: &[u8; CODE_LENGTH_CODES],
 ) {
@@ -156,7 +147,7 @@ fn store_huffman_tree_of_huffman_tree_to_bit_mask(
 }
 
 /// Port of `ClearHuffmanTreeIfOnlyOneSymbol`.
-fn clear_huffman_tree_if_only_one_symbol(huffman_code: &mut HuffmanTreeCode) {
+pub(super) fn clear_huffman_tree_if_only_one_symbol(huffman_code: &mut HuffmanTreeCode) {
     let mut count = 0;
     for &len in &huffman_code.code_lengths {
         if len != 0 {
@@ -171,7 +162,7 @@ fn clear_huffman_tree_if_only_one_symbol(huffman_code: &mut HuffmanTreeCode) {
 }
 
 /// Port of `StoreHuffmanTreeToBitMask`.
-fn store_huffman_tree_to_bit_mask(
+pub(super) fn store_huffman_tree_to_bit_mask(
     bw: &mut BitWriter,
     tokens: &[HuffmanTreeToken],
     huffman_code: &HuffmanTreeCode,
@@ -193,7 +184,7 @@ fn store_huffman_tree_to_bit_mask(
 }
 
 /// Port of `StoreFullHuffmanCode`.
-fn store_full_huffman_code(bw: &mut BitWriter, tree: &HuffmanTreeCode) {
+pub(super) fn store_full_huffman_code(bw: &mut BitWriter, tree: &HuffmanTreeCode) {
     let mut code_length_bitdepth = HuffmanTreeCode::new(CODE_LENGTH_CODES);
     bw.put_bits(0, 1);
     let tokens = create_compressed_huffman_tree(tree);
@@ -249,7 +240,7 @@ fn store_full_huffman_code(bw: &mut BitWriter, tree: &HuffmanTreeCode) {
 }
 
 /// Port of `StoreHuffmanCode`.
-fn store_huffman_code(bw: &mut BitWriter, huffman_code: &HuffmanTreeCode) {
+pub(super) fn store_huffman_code(bw: &mut BitWriter, huffman_code: &HuffmanTreeCode) {
     let mut count = 0;
     let mut symbols = [0usize; 2];
     const K_MAX_BITS: u32 = 8;
@@ -287,7 +278,7 @@ fn store_huffman_code(bw: &mut BitWriter, huffman_code: &HuffmanTreeCode) {
 }
 
 /// Port of `StoreImageToBitMask`: the entropy-coded symbols of the image `refs`.
-fn store_image_to_bit_mask(
+pub(super) fn store_image_to_bit_mask(
     bw: &mut BitWriter,
     width: usize,
     histo_bits: u32,
@@ -353,14 +344,14 @@ fn store_image_to_bit_mask(
 }
 
 /// Port of `WriteHuffmanCode`.
-fn write_huffman_code(bw: &mut BitWriter, code: &HuffmanTreeCode, code_index: usize) {
+pub(super) fn write_huffman_code(bw: &mut BitWriter, code: &HuffmanTreeCode, code_index: usize) {
     let depth = u32::from(code.code_lengths[code_index]);
     let symbol = u32::from(code.codes[code_index]);
     bw.put_bits(symbol, depth);
 }
 
 /// Port of `WriteHuffmanCodeWithExtraBits`.
-fn write_huffman_code_with_extra_bits(
+pub(super) fn write_huffman_code_with_extra_bits(
     bw: &mut BitWriter,
     code: &HuffmanTreeCode,
     code_index: usize,
@@ -374,7 +365,7 @@ fn write_huffman_code_with_extra_bits(
 
 /// Port of `EncodeImageNoHuffman`: a sub-image (palette, predictor modes, histogram map) coded
 /// with its own Huffman codes and no colour cache.
-fn encode_image_no_huffman(
+pub(super) fn encode_image_no_huffman(
     bw: &mut BitWriter,
     argb: &[u32],
     hash_chain: &mut HashChain,
@@ -399,167 +390,4 @@ fn encode_image_no_huffman(
         clear_huffman_tree_if_only_one_symbol(code);
     }
     store_image_to_bit_mask(bw, width, 0, &refs.refs, &histogram_symbols, &huffman_codes);
-}
-
-/// Port of `EncodeImageInternal` for one candidate (no colour cache, one sub-configuration).
-fn encode_image_internal(
-    bw: &mut BitWriter,
-    argb: &[u32],
-    hash_chain: &mut HashChain,
-    width: usize,
-    height: usize,
-    quality: i32,
-    low_effort: bool,
-    histogram_bits: u32,
-) {
-    let histogram_image_xysize =
-        sub_sample_size(width, histogram_bits) * sub_sample_size(height, histogram_bits);
-    super::backward_refs::hash_chain_fill(hash_chain, quality, argb, width, height, low_effort);
-    let refs = get_backward_references_low_effort(width, height, argb, hash_chain);
-    let mut histogram_image = HistogramSet::new(histogram_image_xysize, 0);
-    let mut tmp_histo = Histogram::new(0);
-    let mut histogram_symbols = vec![0u16; histogram_image_xysize];
-    get_histo_image_symbols(
-        width,
-        height,
-        &refs,
-        quality,
-        low_effort,
-        histogram_bits as i32,
-        0,
-        &mut histogram_image,
-        &mut tmp_histo,
-        &mut histogram_symbols,
-    );
-    let mut histogram_image_size = histogram_image.size;
-    let mut huffman_codes = get_huff_bit_lengths_and_codes(&mut histogram_image);
-    // cache_bits_tmp == 0: no colour cache.
-    bw.put_bits(0, 1);
-    let write_histogram_image = histogram_image_size > 1;
-    bw.put_bits(u32::from(write_histogram_image), 1);
-    if write_histogram_image {
-        let mut histogram_argb = vec![0u32; histogram_image_xysize];
-        let mut max_index: usize = 0;
-        for i in 0..histogram_image_xysize {
-            let symbol_index = histogram_symbols[i] as usize;
-            histogram_argb[i] = (symbol_index as u32) << 8;
-            if symbol_index >= max_index {
-                max_index = symbol_index + 1;
-            }
-        }
-        histogram_image_size = max_index;
-        bw.put_bits(histogram_bits - 2, 3);
-        let mut hash_chain_histogram = HashChain::new(histogram_image_xysize);
-        encode_image_no_huffman(
-            bw,
-            &histogram_argb,
-            &mut hash_chain_histogram,
-            sub_sample_size(width, histogram_bits),
-            sub_sample_size(height, histogram_bits),
-            quality,
-            low_effort,
-        );
-    }
-    for code in huffman_codes.iter_mut().take(5 * histogram_image_size) {
-        store_huffman_code(bw, code);
-        clear_huffman_tree_if_only_one_symbol(code);
-    }
-    store_image_to_bit_mask(
-        bw,
-        width,
-        histogram_bits,
-        &refs.refs,
-        &histogram_symbols,
-        &huffman_codes,
-    );
-}
-
-/// Port of `ApplyPredictFilter` and `ApplySubtractGreen` order, plus the palette path, for one
-/// candidate: writes the transforms and the image, as `EncodeStreamHook` does.
-pub fn encode_stream(
-    width: usize,
-    height: usize,
-    argb_in: &[u32],
-    quality: i32,
-    bw: &mut BitWriter,
-) {
-    let palette = get_color_palette(argb_in, width, height, width);
-    let use_palette = palette.is_some();
-    let palette = palette.unwrap_or_default();
-    let palette_size = palette.len();
-    let histo_bits = get_histo_bits(use_palette, width, height);
-    let transform_bits = get_transform_bits(histo_bits);
-    let mut hash_chain = HashChain::new(width * height);
-    let low_effort = true;
-
-    let (argb, current_width): (Vec<u32>, usize);
-    if use_palette {
-        // EncodePalette.
-        bw.put_bits(TRANSFORM_PRESENT, 1);
-        bw.put_bits(COLOR_INDEXING_TRANSFORM, 2);
-        bw.put_bits((palette_size - 1) as u32, 8);
-        let mut tmp_palette = vec![0u32; palette_size];
-        for i in (1..palette_size).rev() {
-            tmp_palette[i] = sub_pixels(palette[i], palette[i - 1]);
-        }
-        tmp_palette[0] = palette[0];
-        encode_image_no_huffman(
-            bw,
-            &tmp_palette,
-            &mut hash_chain,
-            palette_size,
-            1,
-            20,
-            low_effort,
-        );
-        // MapImageFromPalette.
-        let xbits: u32 = match palette_size {
-            0..=2 => 3,
-            3..=4 => 2,
-            5..=16 => 1,
-            _ => 0,
-        };
-        argb = apply_palette(argb_in, width, &palette, width, height, xbits);
-        current_width = sub_sample_size(width, xbits);
-    } else {
-        let mut copy = argb_in.to_vec();
-        let use_subtract_green = true;
-        let use_predict = true;
-        if use_subtract_green {
-            bw.put_bits(TRANSFORM_PRESENT, 1);
-            bw.put_bits(SUBTRACT_GREEN_TRANSFORM, 2);
-            subtract_green_from_blue_and_red(&mut copy);
-        }
-        if use_predict {
-            let pred_bits = transform_bits;
-            let transform_width = sub_sample_size(width, pred_bits);
-            let transform_height = sub_sample_size(height, pred_bits);
-            let transform_data = residual_image_low_effort(width, height, pred_bits, &mut copy);
-            bw.put_bits(TRANSFORM_PRESENT, 1);
-            bw.put_bits(PREDICTOR_TRANSFORM, 2);
-            bw.put_bits(pred_bits - 2, 3);
-            encode_image_no_huffman(
-                bw,
-                &transform_data,
-                &mut hash_chain,
-                transform_width,
-                transform_height,
-                quality,
-                low_effort,
-            );
-        }
-        argb = copy;
-        current_width = width;
-    }
-    bw.put_bits(0, 1); // No more transforms.
-    encode_image_internal(
-        bw,
-        &argb,
-        &mut hash_chain,
-        current_width,
-        height,
-        quality,
-        low_effort,
-        histo_bits,
-    );
 }

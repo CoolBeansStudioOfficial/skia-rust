@@ -261,7 +261,8 @@ impl HistogramSet {
 }
 
 /// Port of `BitsEntropyRefine`.
-fn bits_entropy_refine(entropy: &BitEntropy) -> f32 {
+#[must_use]
+pub fn bits_entropy_refine(entropy: &BitEntropy) -> f32 {
     let mix: f32;
     if entropy.nonzeros < 5 {
         if entropy.nonzeros <= 1 {

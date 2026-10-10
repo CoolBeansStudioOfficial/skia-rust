@@ -49,8 +49,9 @@
 use super::backward_refs::{
     BackwardRefs, HashChain, MAX_LENGTH, PixOrCopy, distance_to_plane_code,
 };
+use super::color_cache::ColorCache;
 use super::entropy::fast_log2;
-use super::histogram::{Histogram, NUM_DISTANCE_CODES, histogram_num_codes};
+use super::histogram::{Histogram, NUM_DISTANCE_CODES, NUM_LENGTH_CODES, histogram_num_codes};
 use super::prefix::prefix_encode_bits;
 
 /// Port of `VALUES_IN_BYTE`.
@@ -414,9 +415,16 @@ impl CostManager {
     }
 }
 
-/// Port of `AddSingleLiteralWithCostModel` (no colour cache).
+/// Port of `GetCacheCost`.
+fn get_cache_cost(m: &CostModel, idx: usize) -> f32 {
+    m.literal[VALUES_IN_BYTE + NUM_LENGTH_CODES + idx]
+}
+
+/// Port of `AddSingleLiteralWithCostModel`. `hashers` is `Some` when the colour cache is used
+/// (`use_color_cache`); a colour found in it costs a cache index, any other colour is inserted.
 fn add_single_literal_with_cost_model(
     argb: &[u32],
+    mut hashers: Option<&mut ColorCache>,
     cost_model: &CostModel,
     idx: usize,
     prev_cost: f32,
@@ -424,8 +432,18 @@ fn add_single_literal_with_cost_model(
     dist_array: &mut [u16],
 ) {
     let color = argb[idx];
-    let mul1: f32 = 0.82;
-    let cost_val = prev_cost + get_literal_cost(cost_model, color) * mul1;
+    let ix = hashers.as_ref().and_then(|h| h.contains(color));
+    let mut cost_val = prev_cost;
+    if let Some(ix) = ix {
+        let mul0: f32 = 0.68;
+        cost_val += get_cache_cost(cost_model, ix) * mul0;
+    } else {
+        let mul1: f32 = 0.82;
+        if let Some(h) = hashers.as_mut() {
+            h.insert(color);
+        }
+        cost_val += get_literal_cost(cost_model, color) * mul1;
+    }
     if cost[idx] > cost_val {
         cost[idx] = cost_val;
         dist_array[idx] = 1; // only one is inserted.
@@ -437,16 +455,26 @@ fn backward_references_hash_chain_distance_only(
     xsize: usize,
     ysize: usize,
     argb: &[u32],
+    cache_bits: i32,
     hash_chain: &HashChain,
     refs: &BackwardRefs,
 ) -> Vec<u16> {
     let pix_count = xsize * ysize;
-    let cost_model = cost_model_build(xsize as i32, 0, refs);
+    let cost_model = cost_model_build(xsize as i32, cache_bits, refs);
+    let mut hashers = (cache_bits > 0).then(|| ColorCache::new(cache_bits as u32));
     let mut mgr = CostManager::new(vec![0u16; pix_count], pix_count, &cost_model);
     mgr.dist_array[0] = 0;
     {
         let (costs, dist) = (&mut mgr.costs, &mut mgr.dist_array);
-        add_single_literal_with_cost_model(argb, &cost_model, 0, 0.0, costs, dist);
+        add_single_literal_with_cost_model(
+            argb,
+            hashers.as_mut(),
+            &cost_model,
+            0,
+            0.0,
+            costs,
+            dist,
+        );
     }
     let mut offset_prev: i32 = -1;
     let mut len_prev: i32 = -1;
@@ -465,7 +493,15 @@ fn backward_references_hash_chain_distance_only(
         let (offset, len) = find_copy(i);
         {
             let (costs, dist) = (&mut mgr.costs, &mut mgr.dist_array);
-            add_single_literal_with_cost_model(argb, &cost_model, i, prev_cost, costs, dist);
+            add_single_literal_with_cost_model(
+                argb,
+                hashers.as_mut(),
+                &cost_model,
+                i,
+                prev_cost,
+                costs,
+                dist,
+            );
         }
         if len >= 2 {
             if offset != offset_prev {
@@ -522,19 +558,34 @@ fn trace_backwards(dist_array: &[u16]) -> Vec<u16> {
 /// Port of `BackwardReferencesHashChainFollowChosenPath` (no colour cache).
 fn backward_references_hash_chain_follow_chosen_path(
     argb: &[u32],
+    cache_bits: i32,
     chosen_path: &[u16],
     hash_chain: &HashChain,
     refs: &mut BackwardRefs,
 ) {
+    let mut hashers = (cache_bits > 0).then(|| ColorCache::new(cache_bits as u32));
     refs.clear();
     let mut i: usize = 0;
     for &len in chosen_path {
         if len != 1 {
             let offset = hash_chain.find_offset(i);
             refs.push(PixOrCopy::copy(offset as u32, u32::from(len)));
+            if let Some(h) = hashers.as_mut() {
+                for k in 0..len as usize {
+                    h.insert(argb[i + k]);
+                }
+            }
             i += len as usize;
         } else {
-            refs.push(PixOrCopy::literal(argb[i]));
+            let idx = hashers.as_ref().and_then(|h| h.contains(argb[i]));
+            if let Some(idx) = idx {
+                refs.push(PixOrCopy::cache_idx(idx as u32));
+            } else {
+                if let Some(h) = hashers.as_mut() {
+                    h.insert(argb[i]);
+                }
+                refs.push(PixOrCopy::literal(argb[i]));
+            }
             i += 1;
         }
     }
@@ -547,15 +598,18 @@ pub fn backward_references_trace_backwards(
     xsize: usize,
     ysize: usize,
     argb: &[u32],
+    cache_bits: i32,
     hash_chain: &HashChain,
     refs_src: &BackwardRefs,
 ) -> BackwardRefs {
-    let dist_array =
-        backward_references_hash_chain_distance_only(xsize, ysize, argb, hash_chain, refs_src);
+    let dist_array = backward_references_hash_chain_distance_only(
+        xsize, ysize, argb, cache_bits, hash_chain, refs_src,
+    );
     let chosen_path = trace_backwards(&dist_array);
     let mut refs_dst = BackwardRefs::default();
     backward_references_hash_chain_follow_chosen_path(
         argb,
+        cache_bits,
         &chosen_path,
         hash_chain,
         &mut refs_dst,
