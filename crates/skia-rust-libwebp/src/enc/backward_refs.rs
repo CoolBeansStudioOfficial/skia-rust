@@ -7,12 +7,46 @@
 //! Port of libwebp `src/enc/backward_references_enc.{c,h}`: the hash chain of match candidates,
 //! the LZ77 parse of it, and the 2D-locality rewrite of distances.
 //!
-//! Only the low-effort path (`method == 0`, which is what `SkWebpEncoder` uses for lossless) and
-//! the colour-cache-free parse are ported. The RLE, box and cost-model parses, and the colour
-//! cache search, are reached only for `method > 0` and are not part of this port.
+//! The colour cache is never used on the paths `SkWebpEncoder` reaches (lossless `method 0`
+//! picks `cache_bits == 0`), so the parses here are the colour-cache-free ones. The box parse and
+//! the colour-cache search belong to the `method > 0` searches and are not ported.
 //!
 //! The C references are stored in blocks; the blocks only affect allocation, not the sequence
 //! that the cursor walks, so a flat vector holds the same content.
+
+// Module-level clippy allows. The C arithmetic mixes int, uint32_t, size_t and float, and the
+// casts below are the width and sign conversions of the C source. The index loops, `if`/`else`
+// chains and exact float comparisons keep the C control flow and evaluation order, so that the
+// code can be read against the C source; they are not simplified.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::needless_range_loop,
+    clippy::float_cmp,
+    clippy::manual_midpoint,
+    clippy::redundant_else,
+    clippy::single_match,
+    clippy::items_after_statements,
+    clippy::let_and_return,
+    clippy::needless_for_each,
+    clippy::while_let_loop,
+    clippy::approx_constant,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::explicit_iter_loop,
+    clippy::collapsible_else_if,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
 
 /// Port of `MAX_LENGTH`.
 pub const MAX_LENGTH: u32 = (1 << MAX_LENGTH_BITS) - 1;
@@ -66,13 +100,21 @@ impl PixOrCopy {
     /// Port of `PixOrCopyCreateCopy`.
     #[must_use]
     pub fn copy(distance: u32, len: u32) -> Self {
-        Self { mode: PixOrCopyMode::Copy, len: len as u16, argb_or_distance: distance }
+        Self {
+            mode: PixOrCopyMode::Copy,
+            len: len as u16,
+            argb_or_distance: distance,
+        }
     }
 
     /// Port of `PixOrCopyCreateLiteral`.
     #[must_use]
     pub fn literal(argb: u32) -> Self {
-        Self { mode: PixOrCopyMode::Literal, len: 1, argb_or_distance: argb }
+        Self {
+            mode: PixOrCopyMode::Literal,
+            len: 1,
+            argb_or_distance: argb,
+        }
     }
 
     /// Port of `PixOrCopyLiteral(p, component)`: component 0 is blue, 1 green, 2 red, 3 alpha.
@@ -128,7 +170,9 @@ impl HashChain {
     /// Port of `VP8LHashChainInit`.
     #[must_use]
     pub fn new(size: usize) -> Self {
-        Self { offset_length: vec![0; size] }
+        Self {
+            offset_length: vec![0; size],
+        }
     }
 
     /// Port of `VP8LHashChainFindOffset`.
@@ -146,7 +190,10 @@ impl HashChain {
     /// Port of `VP8LHashChainFindCopy`.
     #[must_use]
     pub fn find_copy(&self, base_position: usize) -> (i32, i32) {
-        (self.find_offset(base_position), self.find_length(base_position))
+        (
+            self.find_offset(base_position),
+            self.find_length(base_position),
+        )
     }
 }
 
@@ -173,12 +220,20 @@ fn get_window_size_for_hash_chain(quality: i32, xsize: i32) -> i32 {
     } else {
         xsize << 4
     };
-    if max_window_size > WINDOW_SIZE { WINDOW_SIZE } else { max_window_size }
+    if max_window_size > WINDOW_SIZE {
+        WINDOW_SIZE
+    } else {
+        max_window_size
+    }
 }
 
 /// Port of `MaxFindCopyLength`.
-fn max_find_copy_length(len: usize) -> usize {
-    if len < MAX_LENGTH as usize { len } else { MAX_LENGTH as usize }
+pub(super) fn max_find_copy_length(len: usize) -> usize {
+    if len < MAX_LENGTH as usize {
+        len
+    } else {
+        MAX_LENGTH as usize
+    }
 }
 
 /// Port of `VP8LVectorMismatch` (`VectorMismatch_C`): the length of the common prefix, at most
@@ -192,7 +247,12 @@ fn vector_mismatch(array1: &[u32], array2: &[u32], length: usize) -> usize {
 }
 
 /// Port of `FindMatchLength`.
-fn find_match_length(array1: &[u32], array2: &[u32], best_len_match: usize, max_limit: usize) -> usize {
+pub(super) fn find_match_length(
+    array1: &[u32],
+    array2: &[u32],
+    best_len_match: usize,
+    max_limit: usize,
+) -> usize {
     if array1[best_len_match] != array2[best_len_match] {
         return 0;
     }
@@ -291,8 +351,12 @@ pub fn hash_chain_fill(
                 }
                 iter -= 1;
             }
-            let curr_length =
-                find_match_length(&argb[argb_start - 1..], &argb[argb_start..], best_length, max_len);
+            let curr_length = find_match_length(
+                &argb[argb_start - 1..],
+                &argb[argb_start..],
+                best_length,
+                max_len,
+            );
             if curr_length > best_length {
                 best_length = curr_length;
                 best_distance = 1;
@@ -326,7 +390,8 @@ pub fn hash_chain_fill(
         }
         let mut max_base_position = base_position;
         loop {
-            p.offset_length[base_position] = (best_distance << MAX_LENGTH_BITS) | (best_length as u32);
+            p.offset_length[base_position] =
+                (best_distance << MAX_LENGTH_BITS) | (best_length as u32);
             base_position -= 1;
             if best_distance == 0 || base_position == 0 {
                 break;
@@ -369,12 +434,24 @@ pub fn backward_references_lz77(
         if len >= MIN_LENGTH {
             let len_ini = len;
             let mut max_reach: usize = 0;
-            let j_max = if i + len_ini as usize >= pix_count { pix_count - 1 } else { i + len_ini as usize };
-            i_last_check = if i as isize > i_last_check { i as isize } else { i_last_check };
+            let j_max = if i + len_ini as usize >= pix_count {
+                pix_count - 1
+            } else {
+                i + len_ini as usize
+            };
+            i_last_check = if i as isize > i_last_check {
+                i as isize
+            } else {
+                i_last_check
+            };
             let mut j = (i_last_check + 1) as usize;
             while j <= j_max {
                 let len_j = hash_chain.find_length(j);
-                let reach = j + if len_j >= MIN_LENGTH { len_j as usize } else { 1 };
+                let reach = j + if len_j >= MIN_LENGTH {
+                    len_j as usize
+                } else {
+                    1
+                };
                 if reach > max_reach {
                     len = (j - i) as i32;
                     max_reach = reach;
@@ -412,7 +489,7 @@ pub fn distance_to_plane_code(xsize: i32, dist: i32) -> i32 {
 }
 
 /// Port of `BackwardReferences2DLocality`: rewrites every copy distance to its plane code.
-fn backward_references_2d_locality(xsize: i32, refs: &mut BackwardRefs) {
+pub(super) fn backward_references_2d_locality(xsize: i32, refs: &mut BackwardRefs) {
     for v in &mut refs.refs {
         if v.is_copy() {
             let dist = v.argb_or_distance as i32;

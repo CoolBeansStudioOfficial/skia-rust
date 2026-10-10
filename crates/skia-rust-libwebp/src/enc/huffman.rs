@@ -7,6 +7,40 @@
 //! Port of libwebp `src/utils/huffman_encode_utils.{c,h}`: optimal length-limited Huffman trees,
 //! the run-length tokenisation of code lengths, and canonical code assignment.
 
+// Module-level clippy allows. The C arithmetic mixes int, uint32_t, size_t and float, and the
+// casts below are the width and sign conversions of the C source. The index loops, `if`/`else`
+// chains and exact float comparisons keep the C control flow and evaluation order, so that the
+// code can be read against the C source; they are not simplified.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::needless_range_loop,
+    clippy::float_cmp,
+    clippy::manual_midpoint,
+    clippy::redundant_else,
+    clippy::single_match,
+    clippy::items_after_statements,
+    clippy::let_and_return,
+    clippy::needless_for_each,
+    clippy::while_let_loop,
+    clippy::approx_constant,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::explicit_iter_loop,
+    clippy::collapsible_else_if,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
+
 /// Port of `HuffmanTreeToken`: a code-length symbol (0..=15, or the escapes 16, 17, 18) and its
 /// extra bits.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -26,7 +60,10 @@ impl HuffmanTreeCode {
     /// A code over `num_symbols` symbols, all lengths and codes zero.
     #[must_use]
     pub fn new(num_symbols: usize) -> Self {
-        Self { code_lengths: vec![0; num_symbols], codes: vec![0; num_symbols] }
+        Self {
+            code_lengths: vec![0; num_symbols],
+            codes: vec![0; num_symbols],
+        }
     }
 
     /// Port of `tree->num_symbols`.
@@ -72,7 +109,7 @@ fn optimize_huffman_for_rle(length: usize, good_for_rle: &mut [u8], counts: &mut
     {
         let mut symbol = counts[0];
         let mut stride: usize = 0;
-        for i in 0..length + 1 {
+        for i in 0..=length {
             if i == length || counts[i] != symbol {
                 if (symbol == 0 && stride >= 5) || (symbol != 0 && stride >= 7) {
                     for k in 0..stride {
@@ -92,7 +129,7 @@ fn optimize_huffman_for_rle(length: usize, good_for_rle: &mut [u8], counts: &mut
         let mut stride: u32 = 0;
         let mut limit: u32 = counts[0];
         let mut sum: u32 = 0;
-        for i in 0..length + 1 {
+        for i in 0..=length {
             if i == length
                 || good_for_rle[i] != 0
                 || (i != 0 && good_for_rle[i - 1] != 0)
@@ -143,11 +180,7 @@ fn set_bit_depths(tree: &HuffmanTree, pool: &[HuffmanTree], bit_depths: &mut [u8
 
 /// Port of `GenerateOptimalTree`: writes the code length of each used symbol of `histogram` into
 /// `bit_depths`, with no code longer than `tree_depth_limit`.
-fn generate_optimal_tree(
-    histogram: &[u32],
-    tree_depth_limit: u32,
-    bit_depths: &mut [u8],
-) {
+fn generate_optimal_tree(histogram: &[u32], tree_depth_limit: u32, bit_depths: &mut [u8]) {
     let tree_size_orig = histogram.iter().filter(|&&h| h != 0).count();
     if tree_size_orig == 0 {
         return; // pretty optimal already!
@@ -160,10 +193,19 @@ fn generate_optimal_tree(
         for (j, &h) in histogram.iter().enumerate() {
             if h != 0 {
                 let count = if h < count_min { count_min } else { h };
-                tree.push(HuffmanTree { total_count: count, value: j as i32, pool_left: -1, pool_right: -1 });
+                tree.push(HuffmanTree {
+                    total_count: count,
+                    value: j as i32,
+                    pool_left: -1,
+                    pool_right: -1,
+                });
             }
         }
-        tree.sort_by(|a, b| b.total_count.cmp(&a.total_count).then(a.value.cmp(&b.value)));
+        tree.sort_by(|a, b| {
+            b.total_count
+                .cmp(&a.total_count)
+                .then(a.value.cmp(&b.value))
+        });
         let mut pool: Vec<HuffmanTree> = Vec::new();
         if tree.len() > 1 {
             // Normal case.
@@ -175,7 +217,10 @@ fn generate_optimal_tree(
                 pool.push(b);
                 let tps = pool.len() as i32;
                 let count = a.total_count.wrapping_add(b.total_count);
-                let k = tree.iter().position(|t| t.total_count <= count).unwrap_or(tree.len());
+                let k = tree
+                    .iter()
+                    .position(|t| t.total_count <= count)
+                    .unwrap_or(tree.len());
                 tree.insert(
                     k,
                     HuffmanTree {
@@ -212,20 +257,32 @@ fn code_repeated_values(
     prev_value: u8,
 ) {
     if value != prev_value {
-        tokens.push(HuffmanTreeToken { code: value, extra_bits: 0 });
+        tokens.push(HuffmanTreeToken {
+            code: value,
+            extra_bits: 0,
+        });
         repetitions -= 1;
     }
     while repetitions >= 1 {
         if repetitions < 3 {
             for _ in 0..repetitions {
-                tokens.push(HuffmanTreeToken { code: value, extra_bits: 0 });
+                tokens.push(HuffmanTreeToken {
+                    code: value,
+                    extra_bits: 0,
+                });
             }
             break;
         } else if repetitions < 7 {
-            tokens.push(HuffmanTreeToken { code: 16, extra_bits: (repetitions - 3) as u8 });
+            tokens.push(HuffmanTreeToken {
+                code: 16,
+                extra_bits: (repetitions - 3) as u8,
+            });
             break;
         } else {
-            tokens.push(HuffmanTreeToken { code: 16, extra_bits: 3 });
+            tokens.push(HuffmanTreeToken {
+                code: 16,
+                extra_bits: 3,
+            });
             repetitions -= 6;
         }
     }
@@ -236,17 +293,29 @@ fn code_repeated_zeros(mut repetitions: usize, tokens: &mut Vec<HuffmanTreeToken
     while repetitions >= 1 {
         if repetitions < 3 {
             for _ in 0..repetitions {
-                tokens.push(HuffmanTreeToken { code: 0, extra_bits: 0 });
+                tokens.push(HuffmanTreeToken {
+                    code: 0,
+                    extra_bits: 0,
+                });
             }
             break;
         } else if repetitions < 11 {
-            tokens.push(HuffmanTreeToken { code: 17, extra_bits: (repetitions - 3) as u8 });
+            tokens.push(HuffmanTreeToken {
+                code: 17,
+                extra_bits: (repetitions - 3) as u8,
+            });
             break;
         } else if repetitions < 139 {
-            tokens.push(HuffmanTreeToken { code: 18, extra_bits: (repetitions - 11) as u8 });
+            tokens.push(HuffmanTreeToken {
+                code: 18,
+                extra_bits: (repetitions - 11) as u8,
+            });
             break;
         } else {
-            tokens.push(HuffmanTreeToken { code: 18, extra_bits: 0x7f }); // 138 repeated 0s
+            tokens.push(HuffmanTreeToken {
+                code: 18,
+                extra_bits: 0x7f,
+            }); // 138 repeated 0s
             repetitions -= 138;
         }
     }
@@ -288,8 +357,8 @@ fn reverse_bits(num_bits: usize, bits: u32) -> u32 {
     let mut i: usize = 0;
     while i < num_bits {
         i += 4;
-        retval |= u32::from(K_REVERSED_BITS[(bits & 0xf) as usize])
-            << (MAX_ALLOWED_CODE_LENGTH + 1 - i);
+        retval |=
+            u32::from(K_REVERSED_BITS[(bits & 0xf) as usize]) << (MAX_ALLOWED_CODE_LENGTH + 1 - i);
         bits >>= 4;
     }
     retval >>= MAX_ALLOWED_CODE_LENGTH + 1 - num_bits;
@@ -327,10 +396,6 @@ pub fn create_huffman_tree(
     let num_symbols = huff_code.num_symbols();
     let mut buf_rle = vec![0u8; num_symbols];
     optimize_huffman_for_rle(num_symbols, &mut buf_rle, histogram);
-    generate_optimal_tree(
-        histogram,
-        tree_depth_limit,
-        &mut huff_code.code_lengths,
-    );
+    generate_optimal_tree(histogram, tree_depth_limit, &mut huff_code.code_lengths);
     convert_bit_depths_to_symbols(huff_code);
 }
