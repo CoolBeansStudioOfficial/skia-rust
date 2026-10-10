@@ -13,13 +13,13 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::paint::Style as PaintStyle;
 use skia_rust_core::fixed::{FIXED_1, fixed_round_to_int};
 use skia_rust_core::floating_point::float_round2int;
 use skia_rust_core::geometry::AutoConicToQuads;
+use skia_rust_core::paint::Style as PaintStyle;
 use skia_rust_core::path::Path;
-use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::path_priv::all_points_eq;
+use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::path_types::{PathDirection, PathVerb};
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
@@ -162,12 +162,7 @@ pub fn append_line(x: f32, y: f32, content: &mut dyn WStream) {
 /// The `c` (or `y`, when the second control point is the end point) operator.
 // Port of: src/pdf/SkPDFUtils.cpp#L91-L111 (chrome/m156)
 #[allow(clippy::float_cmp)] // exact comparison, as in Skia
-fn append_cubic(
-    ctl1: Point,
-    ctl2: Point,
-    dst: Point,
-    content: &mut dyn WStream,
-) {
+fn append_cubic(ctl1: Point, ctl2: Point, dst: Point, content: &mut dyn WStream) {
     let mut cmd = "y\n";
     append_scalar(ctl1.x, content);
     content.write_text(" ");
@@ -291,14 +286,10 @@ impl<'a> ContourBuffer<'a> {
     // Port of: src/pdf/SkPDFUtils.cpp#L163-L173 (chrome/m156)
     fn select_line(pts: &[Point]) -> Option<Line> {
         let p0 = pts[0];
-        pts[1..]
-            .iter()
-            .rev()
-            .find(|&&p| p != p0)
-            .map(|&p| Line {
-                orig: p0,
-                vec: p - p0,
-            })
+        pts[1..].iter().rev().find(|&&p| p != p0).map(|&p| Line {
+            orig: p0,
+            vec: p - p0,
+        })
     }
 
     // Port of: src/pdf/SkPDFUtils.cpp#L175-L200 (chrome/m156)
@@ -372,8 +363,10 @@ pub fn emit_path(
     // able to draw some such entities with no visible result, so those drawings are discarded.
     let mut cbuffer = ContourBuffer::new(content, empty_area);
     let preserve_empty_verbs = empty_verb == EmptyVerb::Preserve;
-    let iter = path.iter();
-    for rec in iter {
+    // `SkPath::Iter iter(path, false)`: the legacy iterator, which turns the close of an open
+    // contour into a line back to its start, followed by the close.
+    let mut iter = skia_rust_core::path::Iter::new(path, false);
+    while let Some(rec) = iter.next_rec() {
         // `args` gets all the points, even the implicit first point.
         let args = rec.points();
         match rec.verb() {

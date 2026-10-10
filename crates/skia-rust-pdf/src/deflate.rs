@@ -86,9 +86,19 @@ impl<'a> DeflateWStream<'a> {
         if this.out.is_none() {
             return this;
         }
-        let window_bits = if gzip { WINDOW_BITS_GZIP } else { WINDOW_BITS_ZLIB };
+        let window_bits = if gzip {
+            WINDOW_BITS_GZIP
+        } else {
+            WINDOW_BITS_ZLIB
+        };
         debug_assert!((-1..=9).contains(&compression_level));
-        this.z = Deflate::new(compression_level, window_bits, MEM_LEVEL, Z_DEFAULT_STRATEGY).ok();
+        this.z = Deflate::new(
+            compression_level,
+            window_bits,
+            MEM_LEVEL,
+            Z_DEFAULT_STRATEGY,
+        )
+        .ok();
         this
     }
 

@@ -9,9 +9,7 @@ use skia_rust_core::random::Random;
 use skia_rust_core::stream::DynamicMemoryWStream;
 use skia_rust_core::utils::parse_path;
 use skia_rust_pdf::float_to_decimal::{MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH, float_to_decimal};
-use skia_rust_pdf::utils::{
-    EmptyArea, EmptyPath, EmptyVerb, color_to_decimal, emit_path,
-};
+use skia_rust_pdf::utils::{EmptyArea, EmptyPath, EmptyVerb, color_to_decimal, emit_path};
 
 use crate::{Reporter, def_test, errorf, reporter_assert};
 
@@ -119,7 +117,11 @@ def_test!(SkPDF_EmitPath, |reporter| {
         ("M10,10", "", DISCARD_EMPTY_PATH),
         // Empty verb
         ("M10,10 L20,20 L20,20", "10 10 m\n20 20 l\n20 20 l\n", 0),
-        ("M10,10 L20,20 L20,20", "10 10 m\n20 20 l\n", DISCARD_EMPTY_VERB),
+        (
+            "M10,10 L20,20 L20,20",
+            "10 10 m\n20 20 l\n",
+            DISCARD_EMPTY_VERB,
+        ),
         // Empty area
         ("M10,10 L10,10", "10 10 m\n10 10 l\n", 0),
         ("M10,10 L10,10", "", DISCARD_EMPTY_AREA),
@@ -129,8 +131,16 @@ def_test!(SkPDF_EmitPath, |reporter| {
         ("M10,10 L20,20 L30,30", "", DISCARD_EMPTY_AREA),
         ("M10,10 L20,20 L0,0", "10 10 m\n20 20 l\n0 0 l\n", 0),
         ("M10,10 L20,20 L0,0", "", DISCARD_EMPTY_AREA),
-        ("M5,5   M10,10 L20,20 L20 30", "10 10 m\n20 20 l\n20 30 l\n", 0),
-        ("M5,5   M10,10 L20,20 L20 30", "10 10 m\n20 20 l\n20 30 l\n", DISCARD_EMPTY_AREA),
+        (
+            "M5,5   M10,10 L20,20 L20 30",
+            "10 10 m\n20 20 l\n20 30 l\n",
+            0,
+        ),
+        (
+            "M5,5   M10,10 L20,20 L20 30",
+            "10 10 m\n20 20 l\n20 30 l\n",
+            DISCARD_EMPTY_AREA,
+        ),
         (
             "M5,5   M10,10 L20,20 L20 30 Z",
             "10 10 m\n20 20 l\n20 30 l\n10 10 l\nh\n",
