@@ -339,6 +339,16 @@ impl ObjectValue {
         &self.0
     }
 
+    /// The JSON text of this object, as `Value::toString` writes it.
+    // Port of: modules/jsonreader/SkJSONReader.cpp#L978-L984 (chrome/m156) (`Value::toString`)
+    #[doc(alias = "toString")]
+    #[must_use]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut stream = DynamicMemoryWStream::new();
+        write_pending(PendingRoot::Object(self), &mut stream);
+        stream.detach_as_data().as_bytes().to_vec()
+    }
+
     /// The value for `key`, or null if there is none (`operator[]`).
     // Port of: modules/jsonreader/SkJSONReader.h#L337-L340 (chrome/m156)
     #[doc(alias = "operator[]")]
@@ -1052,8 +1062,20 @@ impl<'a> Parser<'a> {
 /// Writes `value` as compact JSON, iteratively.
 // Port of: modules/jsonreader/SkJSONReader.cpp#L894-L974 (chrome/m156) (`Write`)
 fn write_value(value: &Value, stream: &mut dyn WStream) {
+    write_pending(PendingRoot::Value(value), stream);
+}
+
+/// What `write_pending` starts from.
+enum PendingRoot<'a> {
+    Value(&'a Value),
+    Object(&'a ObjectValue),
+}
+
+/// Writes a root value or object as compact JSON, iteratively.
+fn write_pending(root: PendingRoot<'_>, stream: &mut dyn WStream) {
     enum Pending<'a> {
         Value(&'a Value),
+        Object(&'a ObjectValue),
         Key(&'a StringValue),
         ArrayClose,
         ObjectClose,
@@ -1061,7 +1083,10 @@ fn write_value(value: &Value, stream: &mut dyn WStream) {
         KeySeparator,
     }
 
-    let mut pending = vec![Pending::Value(value)];
+    let mut pending = vec![match root {
+        PendingRoot::Value(value) => Pending::Value(value),
+        PendingRoot::Object(object) => Pending::Object(object),
+    }];
     while let Some(item) = pending.pop() {
         match item {
             Pending::ArrayClose => {
@@ -1077,6 +1102,21 @@ fn write_value(value: &Value, stream: &mut dyn WStream) {
                 stream.write_text(":");
             }
             Pending::Key(key) => write_quoted(stream, key.as_bytes()),
+            Pending::Object(object) => {
+                stream.write_text("{");
+                // "key: val, key: val, .. }" in reverse order
+                pending.push(Pending::ObjectClose);
+                let mut last_member = true;
+                for member in object.members().iter().rev() {
+                    if !last_member {
+                        pending.push(Pending::ListSeparator);
+                    }
+                    pending.push(Pending::Value(&member.value));
+                    pending.push(Pending::KeySeparator);
+                    pending.push(Pending::Key(&member.key));
+                    last_member = false;
+                }
+            }
             Pending::Value(val) => match val {
                 Value::Null(_) => {
                     stream.write_text("null");
@@ -1104,21 +1144,7 @@ fn write_value(value: &Value, stream: &mut dyn WStream) {
                         last_value = false;
                     }
                 }
-                Value::Object(object) => {
-                    stream.write_text("{");
-                    // "key: val, key: val, .. }" in reverse order
-                    pending.push(Pending::ObjectClose);
-                    let mut last_member = true;
-                    for member in object.members().iter().rev() {
-                        if !last_member {
-                            pending.push(Pending::ListSeparator);
-                        }
-                        pending.push(Pending::Value(&member.value));
-                        pending.push(Pending::KeySeparator);
-                        pending.push(Pending::Key(&member.key));
-                        last_member = false;
-                    }
-                }
+                Value::Object(object) => pending.push(Pending::Object(object)),
             },
         }
     }
