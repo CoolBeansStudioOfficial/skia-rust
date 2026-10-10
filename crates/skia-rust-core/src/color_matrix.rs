@@ -3,11 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: include/effects/SkColorMatrix.h, src/effects/SkColorMatrix.cpp
 //
-// skia-rust: `RGBtoYUV` / `YUVtoRGB` are not ported (they need `SkYUVColorSpace` and the
-// `SkColorMatrix_RGB2YUV` tables, which belong to the YUV code).
 
 //! `SkColorMatrix`: a 5x4 color matrix (row-major, 4 rows of 5 coefficients), used by the matrix
 //! color filters.
+
+use crate::image_info::YUVColorSpace;
 
 /// Index of the red scale coefficient (`kR_Scale`).
 const R_SCALE: usize = 0;
@@ -217,5 +217,27 @@ mod tests {
         let mut m = ColorMatrix { mat: [0.5; 20] };
         m.set_identity();
         assert_eq!(m, ColorMatrix::default());
+    }
+}
+
+impl ColorMatrix {
+    /// The RGB to YUV matrix of a colour space (`SkColorMatrix::RGBtoYUV`).
+    // Port of: src/effects/SkColorMatrix.cpp#L13-L17 (chrome/m156)
+    #[doc(alias = "SkColorMatrix::RGBtoYUV")]
+    #[must_use]
+    pub fn rgb_to_yuv(cs: YUVColorSpace) -> Self {
+        Self {
+            mat: crate::yuv_math::color_matrix_rgb2yuv(cs),
+        }
+    }
+
+    /// The YUV to RGB matrix of a colour space (`SkColorMatrix::YUVtoRGB`).
+    // Port of: src/effects/SkColorMatrix.cpp#L19-L23 (chrome/m156)
+    #[doc(alias = "SkColorMatrix::YUVtoRGB")]
+    #[must_use]
+    pub fn yuv_to_rgb(cs: YUVColorSpace) -> Self {
+        Self {
+            mat: crate::yuv_math::color_matrix_yuv2rgb(cs),
+        }
     }
 }
