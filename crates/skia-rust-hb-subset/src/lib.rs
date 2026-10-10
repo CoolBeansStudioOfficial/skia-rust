@@ -185,6 +185,8 @@ fn subset_table(plan: &mut Plan<'_>, t: u32) -> Res<()> {
         }
         b"HVAR" | b"VVAR" | b"gvar" => Err(SubsetError::Unsupported("HVAR/VVAR/gvar")),
         b"CFF " | b"CFF2" | b"VORG" => Err(SubsetError::Unsupported("CFF/CFF2/VORG")),
+        // `CPAL::subset` returns false without retained palette colours, which drops the table.
+        b"CPAL" if plan.colr_palettes.is_empty() => Ok(()),
         b"sbix" | b"COLR" | b"CPAL" | b"CBLC" => Err(SubsetError::Unsupported("colour tables")),
         // `hhea`, `vhea` and `loca` are skipped (handled by `hmtx`, `vmtx` and `glyf`), `CBDT` is
         // skipped (handled by `CBLC`), and every other table is dropped
