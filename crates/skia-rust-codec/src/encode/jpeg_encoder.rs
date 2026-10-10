@@ -29,7 +29,7 @@ use skia_rust_core::image_info::YUVColorSpace;
 use skia_rust_core::image_info_priv::{color_type_is_alpha_only, color_type_num_channels};
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::yuva_info::{PlaneConfig, YUVAInfo, subsampling_factors};
-use skia_rust_core::yuva_pixmaps::{DataType, YUVAPixmaps};
+use skia_rust_core::yuva_pixmaps::{DataType, PlaneView, YUVAPixmaps};
 use skia_rust_libjpeg::{ColorSpace as JpegColorSpace, Compress};
 
 use crate::encode::icc::write_icc_profile;
@@ -478,7 +478,8 @@ fn encode_yuva_to_vec(
     for (marker, body) in xmp_and_icc_segments(color_space, options) {
         cinfo.write_marker(marker, &body).ok()?;
     }
-    let planes: Vec<Pixmap<'_>> = (0..src.num_planes()).map(|i| src.plane(i)).collect();
+    let plane_views: Vec<_> = (0..src.num_planes()).map(|i| src.plane(i)).collect();
+    let planes: Vec<Pixmap<'_>> = plane_views.iter().map(PlaneView::pixmap).collect();
     let mut row = vec![0u8; 3 * usize::try_from(width).ok()?];
     for y in 0..usize::try_from(height).ok()? {
         yuva_copy_row(&planes, yuva, y, &mut row)?;

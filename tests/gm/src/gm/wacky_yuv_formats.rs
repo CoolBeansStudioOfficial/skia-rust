@@ -897,7 +897,8 @@ impl YuvGenerator {
 
     // Port of: YUVUtils.cpp `look_up`: the channel of the plane at a normalized point.
     fn look_up(&self, norm_pt: Point, plane: usize, channel: ColorChannel) -> u8 {
-        let pmap = self.pixmaps.plane(plane);
+        let plane_view = self.pixmaps.plane(plane);
+        let pmap = plane_view.pixmap();
         let x = (norm_pt.x * pmap.width() as f32).floor() as i32;
         let y = (norm_pt.y * pmap.height() as f32).floor() as i32;
         let ii = pmap

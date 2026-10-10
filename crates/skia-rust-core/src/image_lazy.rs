@@ -6,19 +6,21 @@
 //! `SkImage_Lazy`: an image whose pixels are made on demand by an [`ImageGenerator`].
 //!
 //! The generator is shared (`SharedGenerator`) by every lazy image made from it, and is only
-//! used under its lock, as Skia's `ScopedGenerator` does. The decoded bitmap is kept per image
-//! (`cached_bitmap`) where Skia keeps it in the global `SkBitmapCache`; the mipmaps are kept per
-//! image where Skia keeps them in `SkMipmapCache`. Nothing observes the difference in pixels,
-//! only in the global cache's statistics, which are not ported (`docs/design/codecs.md` R6).
+//! used under its lock, as Skia's `ScopedGenerator` does. The decoded bitmap is kept in the
+//! global [`crate::bitmap_cache`], and the image posts its entries as stale when it is dropped.
+//! The mipmaps are kept per image where Skia keeps them in `SkMipmapCache`; that cache is not
+//! ported, so a mipmap is not shared between images or purged on its own.
 //!
 //! skia-rust: GPU readback (`readPixelsProxy`), the YUV planes cache (`getPlanes`),
 //! `onMakeSurface` and unique-ID listeners are not ported.
 
 use core::any::Any;
 use core::fmt;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError};
 
 use crate::bitmap::Bitmap;
+use crate::bitmap_cache::{self, BitmapCacheDesc};
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::data::Data;
@@ -137,12 +139,12 @@ pub struct ImageLazy {
     info: ImageInfo,
     unique_id: u32,
     shared: Arc<SharedGenerator>,
-    /// The decoded pixels, once made (the entry `SkBitmapCache` holds for this image).
-    cached_bitmap: Mutex<Option<Bitmap>>,
     /// The mipmaps the image shader samples, once built (`SkMipmapCache`).
     cached_mips: OnceLock<Option<Arc<Mipmap>>>,
     /// The result of the last `makeColorTypeAndColorSpace` (`fOnMakeColorTypeAndSpaceResult`).
     on_make_color_type_result: Mutex<Option<Image>>,
+    /// Whether the image's pixels were added to the bitmap cache (`fAddedToRasterCache`).
+    added_to_raster_cache: AtomicBool,
 }
 
 impl ImageLazy {
@@ -155,43 +157,33 @@ impl ImageLazy {
             info: validator.info,
             unique_id: validator.unique_id,
             shared,
-            cached_bitmap: Mutex::new(None),
             cached_mips: OnceLock::new(),
             on_make_color_type_result: Mutex::new(None),
+            added_to_raster_cache: AtomicBool::new(false),
         })
     }
 
-    /// Decodes the pixels into a new immutable bitmap (the miss path of `getROPixels`).
-    // Port of: src/image/SkImage_Lazy.cpp#L114-L143 (chrome/m156), allocation and decode
-    fn decode_ro_pixels(&self) -> Option<Bitmap> {
-        let mut bitmap = Bitmap::new();
-        if !bitmap.try_alloc_pixels_info(&self.info, None) {
-            return None;
-        }
-        let ok = {
-            let mut pm = bitmap.peek_pixels_mut()?;
-            let mut generator = lock(&self.shared.generator);
-            generator.get_pixels_into(&mut pm)
-        };
-        // readPixelsProxy (the GPU fallback) is not ported.
-        if !ok {
-            return None;
-        }
-        bitmap.set_immutable();
-        Some(bitmap)
-    }
-
-    /// A read-only copy of the pixels, decoded on the first request and kept for the next ones
-    /// (`SkImage_Lazy::getROPixels` with `kAllow_CachingHint`).
+    /// The pixels of the image, decoded on the first request and kept in the bitmap cache for the
+    /// next ones (`SkImage_Lazy::getROPixels` with `kAllow_CachingHint`).
     // Port of: src/image/SkImage_Lazy.cpp#L114-L143 (chrome/m156)
     #[doc(alias = "getROPixels")]
     fn get_ro_pixels_cached(&self) -> Option<Bitmap> {
-        let mut cache = lock(&self.cached_bitmap);
-        if let Some(bitmap) = cache.as_ref() {
-            return Some(bitmap.clone());
+        let desc = BitmapCacheDesc::for_image(self.unique_id, self.info.width(), self.info.height());
+        let mut bitmap = Bitmap::new();
+        if bitmap_cache::find(&desc, &mut bitmap) {
+            return Some(bitmap);
         }
-        let bitmap = self.decode_ro_pixels()?;
-        *cache = Some(bitmap.clone());
+        let mut rec = bitmap_cache::alloc(&desc, &self.info)?;
+        // readPixelsProxy (the GPU fallback) is not ported.
+        let decoded = rec.with_pixmap_mut(|pixmap| {
+            let mut generator = lock(&self.shared.generator);
+            generator.get_pixels_into(pixmap)
+        })?;
+        if !decoded {
+            return None;
+        }
+        bitmap_cache::add(rec, &mut bitmap);
+        self.added_to_raster_cache.store(true, Ordering::Relaxed);
         Some(bitmap)
     }
 
@@ -213,6 +205,16 @@ impl ImageLazy {
         }
 
         images::raster_from_data(info, crate::data::Data::new_from_vec(bytes), row_bytes)
+    }
+}
+
+impl Drop for ImageLazy {
+    // Port of: src/image/SkImage_Base.cpp#L35-L39 (chrome/m156), `~SkImage_Base`: an image in the
+    // raster cache makes its entries stale, so they are purged.
+    fn drop(&mut self) {
+        if self.added_to_raster_cache.load(Ordering::Relaxed) {
+            bitmap_cache::notify_bitmap_gen_id_is_stale(self.unique_id);
+        }
     }
 }
 
