@@ -1304,6 +1304,7 @@ dependencies = [
  "skia-rust-sksl",
  "skia-rust-text",
  "skia-rust-tools",
+ "skia-rust-zlib",
 ]
 
 [[package]]

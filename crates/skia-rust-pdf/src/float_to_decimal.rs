@@ -161,10 +161,12 @@ pub fn float_to_decimal(
                 break;
             }
         }
-        out.resize(out.len() + usize::try_from(decimal_shift).unwrap_or(0), b'0');
+        out.resize(
+            out.len() + usize::try_from(decimal_shift).unwrap_or(0),
+            b'0',
+        );
     } else {
-        let places_before_decimal =
-            i32::try_from(buffer_index).unwrap_or(i32::MAX) + decimal_shift;
+        let places_before_decimal = i32::try_from(buffer_index).unwrap_or(i32::MAX) + decimal_shift;
         if places_before_decimal > 0 {
             for _ in 0..places_before_decimal {
                 buffer_index -= 1;

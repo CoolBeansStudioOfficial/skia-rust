@@ -183,10 +183,6 @@ pub mod offset_simple_poly_test;
 #[cfg(test)]
 pub mod paint_test;
 #[cfg(test)]
-pub mod pdf_deflate_w_stream_test;
-#[cfg(test)]
-pub mod pdf_primitives_test;
-#[cfg(test)]
 pub mod parametric_stage_test;
 #[cfg(test)]
 pub mod parse_color_test;
@@ -308,6 +304,10 @@ pub mod path_raw_shapes_test;
 pub mod path_raw_test;
 #[cfg(test)]
 pub mod path_test;
+#[cfg(test)]
+pub mod pdf_deflate_w_stream_test;
+#[cfg(test)]
+pub mod pdf_primitives_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
 #[cfg(test)]
@@ -444,11 +444,11 @@ pub mod swizzler_test;
 #[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
+pub mod time;
+#[cfg(test)]
 pub mod typeface_test;
 #[cfg(test)]
 pub mod vertices_test;
-#[cfg(test)]
-pub mod time;
 #[cfg(test)]
 pub mod wangs_formula_test;
 #[cfg(test)]
