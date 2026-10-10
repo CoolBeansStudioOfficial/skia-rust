@@ -627,7 +627,6 @@ def_test!(Encode_WebpQuality, |reporter| {
 
 // Port of: tests/EncodeTest.cpp#L561-L607 (chrome/m156)
 def_test!(
-    #[ignore = "needs the lossy WebP encoder for pictures with transparency (ALPH: VP8L at method 3, not ported)"]
     Encode_WebpOptions,
     |reporter| {
         // ToolUtils::GetResourceAsBitmap: the test returns when the resource is not available.

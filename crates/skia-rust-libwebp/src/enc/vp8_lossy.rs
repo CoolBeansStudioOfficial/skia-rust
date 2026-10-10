@@ -9,10 +9,9 @@
 //! `SkWebpEncoder` sets them: `InitVP8Encoder` (`MapConfigToTools`, the resets, the defaults),
 //! `VP8EncAnalyze`, the token loop, and `VP8EncWrite`.
 //!
-//! Not ported: pictures with an alpha plane (`VP8EncStartAlpha` needs the lossless alpha coder at
-//! method 3, which the VP8L port does not have); `WebPCleanupTransparentArea` is then not
-//! reached, and `encode_lossy` returns `None` for them. The sharp YUV conversion, the dithering,
-//! the progress hook and the statistics are not reached (see `picture.rs`).
+//! Pictures with an alpha plane are coded with their ALPH payload (`alpha_enc.rs`), after
+//! `WebPCleanupTransparentArea` (`picture_cleanup.rs`). Not ported: the sharp YUV conversion, the
+//! dithering, the progress hook and the statistics are not reached (see `picture.rs`).
 
 // Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
 // and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
@@ -176,8 +175,8 @@ pub fn init_vp8_encoder(config: &LossyConfig, width: usize, height: usize) -> VP
 
 /// Encodes the opaque picture `rgba` (`width x height`, 4 bytes per pixel, `RGBA` order, or
 /// `RGBX` with `opaque_rgbx`) as a lossy WebP file, as `SkWebpEncoder` does with the given
-/// quality. Returns `None` where the C encoder fails, or for pictures with transparency (not
-/// ported; see the module comment).
+/// quality, including the ALPH chunk for pictures with transparency. Returns `None` where the C
+/// encoder fails.
 #[must_use]
 pub fn encode_lossy(
     rgba: &[u8],
