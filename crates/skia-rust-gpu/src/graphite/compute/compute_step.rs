@@ -27,6 +27,12 @@ use crate::graphite::uniform_manager::UniformManager;
 #[doc(alias = "kMaxComputeDataFlowSlots")]
 pub const MAX_COMPUTE_DATA_FLOW_SLOTS: i32 = 28;
 
+/// `kIndirectDispatchArgumentSize`: the size of the `IndirectDispatchArgs` a `kIndirectBuffer`
+/// holds (three workgroup counts, `global_size_x`, `global_size_y` and `global_size_z`).
+// Port of: src/gpu/graphite/ComputeTypes.h#L20-L25 (chrome/m156)
+#[doc(alias = "kIndirectDispatchArgumentSize")]
+pub const INDIRECT_DISPATCH_ARGUMENT_SIZE: usize = 3 * std::mem::size_of::<u32>();
+
 /// `WorkgroupSize`: the space that a compute shader operates on. The "work group count" (global
 /// size) and the local size of a work group are both expressed with it.
 // Port of: src/gpu/graphite/ComputeTypes.h#L46-L58 (chrome/m156)
