@@ -299,6 +299,8 @@ def_graphite_test_for_all_contexts!(TestManyDrawsGraphite, |reporter, context| {
         return;
     };
     test_many_draws(surface.canvas());
+});
+
 // Port of: tests/CanvasTest.cpp#L150-L159 (chrome/m156)
 #[allow(clippy::cast_precision_loss)] // SkIntToScalar of a small size
 fn multi_canvas_driver(w: i32, h: i32, mut proc: impl FnMut(&Canvas)) {
