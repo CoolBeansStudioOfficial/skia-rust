@@ -30045,7 +30045,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L399-L450"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "66ce94c7fdf35b02b922726132bbe869514e6fdd1625b75d246ee7195ec7ab1e"
 
 [[test]]
@@ -30063,8 +30063,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L476-L509"
 module = "codec"
-status = "todo"
-reason = "also covers WebP, JPEG, GIF, BMP and WBMP"
+status = "passing"
 span_hash = "59a690f215236cc0bfda12750f78cd4418ef1429822705af0d34cb4a9a73d3c1"
 
 [[test]]
@@ -30074,7 +30073,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
 status = "todo"
-reason = "the PNG cases are disabled in Skia (#if 0); the rest decode GIF"
+reason = "test_partial (CodecPartialTest.cpp#L76-L137) calls getFrameCount between incremental decodes; the Rust incremental-decode guard (codec.rs IncrementalDecode) borrows the codec, so that call cannot run while a decode is in progress. Needs an API decision on the guard (docs/design/codecs.md 5.1)"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -30083,7 +30082,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L227-L326"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "dbb1f33ab7e77a16503d162970678842bbb89ee99d2ff11016ab30e3ea5aefb5"
 
 [[test]]
@@ -30093,6 +30092,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L159-L172"
 module = "codec"
 status = "todo"
+reason = "test_partial calls getFrameCount between incremental decodes, which the incremental-decode guard borrow forbids (see Codec_partial)"
 span_hash = "951edd5d75ba3e18683915cee77e015b6411e6149dd3713a237b43a4771e8f34"
 
 [[test]]
@@ -30101,7 +30101,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L176-L225"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1cab08b88a5d3a609611ec178a2975651af3f414c59089c01ff48661f0a162c7"
 
 [[test]]
@@ -30111,6 +30111,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L368-L372"
 module = "codec"
 status = "todo"
+reason = "test_interleaved calls getPixels while an incremental decode is in progress and expects incrementalDecode to then fail with kInvalidParameters; the incremental-decode guard borrows the codec, so getPixels cannot run in between (see Codec_partial)"
 span_hash = "8aa8cb62cb4b05d26c475f5f4e1b61af99a8fe942d293becf36f5a10088c818d"
 
 [[test]]
