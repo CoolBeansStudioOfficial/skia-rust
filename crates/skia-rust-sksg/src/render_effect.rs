@@ -511,6 +511,7 @@ impl RenderNode for ImageFilterEffect {
         // TODO: map p through the filter DAG and dispatch to descendants?
         // For now, image filters occlude hit-testing.
         debug_assert!(rect_contains(&self.core.bounds(), p));
+        let _ = p;
         Some(Hit::This)
     }
 }
