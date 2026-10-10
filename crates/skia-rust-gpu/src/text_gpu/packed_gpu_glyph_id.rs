@@ -49,7 +49,7 @@ pub struct PackedGpuGlyphId {
 
 impl PackedGpuGlyphId {
     /// `PackedGPUGlyphID(id, format, padding, isSDF)`. `padding` must be 0, 1, or 2 and should be
-    /// determined by the SubRun choice, it should never be a parameter controlled by SubRun data.
+    /// determined by the `SubRun` choice, it should never be a parameter controlled by `SubRun` data.
     // Port of: src/text/gpu/PackedGPUGlyphID.h#L23-L29 (chrome/m156)
     #[must_use]
     pub fn new(id: PackedGlyphId, format: MaskFormat, padding: i32, is_sdf: bool) -> Self {

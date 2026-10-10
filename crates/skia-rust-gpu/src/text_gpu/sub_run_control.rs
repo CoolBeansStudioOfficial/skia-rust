@@ -68,6 +68,7 @@ pub type SDFFont = (Font, scalar, SdftMatrixRange);
 // Port of: src/text/gpu/SubRunControl.h#L47-L87 (chrome/m156)
 #[doc(alias = "sktext::gpu::SubRunControl")]
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(clippy::struct_excessive_bools)] // mirrors the C++ members
 pub struct SubRunControl {
     /// `fMinDistanceFieldFontSize`: below this size (in device space) distance field text will
     /// not be used.
@@ -103,6 +104,7 @@ impl SubRunControl {
     /// If `0 < min && min <= max` does not hold (`SkASSERT_RELEASE`).
     // Port of: src/text/gpu/SubRunControl.cpp#L43-L56 (chrome/m156)
     #[must_use]
+    #[allow(clippy::fn_params_excessive_bools)] // mirrors the C++ constructor's parameters
     pub fn new(
         able_to_use_sdft: bool,
         use_sdft_for_small_text: bool,

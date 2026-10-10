@@ -182,6 +182,7 @@ impl TextBlobRedrawCoordinator {
     /// `findOrCreateBlob(viewMatrix, glyphRunList, paint, strikeDeviceInfo)`.
     // Port of: src/text/gpu/TextBlobRedrawCoordinator.cpp#L58-L91 (chrome/m156)
     #[must_use]
+    #[allow(clippy::missing_panics_doc)] // lock poisoning only
     pub fn find_or_create_blob(
         &self,
         view_matrix: &Matrix,
@@ -231,6 +232,7 @@ impl TextBlobRedrawCoordinator {
     /// `find(key)`: finds the blob and moves it to the head of the list.
     // Port of: src/text/gpu/TextBlobRedrawCoordinator.cpp#L109-L124 (chrome/m156)
     #[must_use]
+    #[allow(clippy::missing_panics_doc)] // lock poisoning only
     pub fn find(&self, key: &TextBlobKey) -> Option<Arc<TextBlob>> {
         let mut state = self.lock();
         let blob = state.find_in_cache(key)?;
@@ -239,6 +241,7 @@ impl TextBlobRedrawCoordinator {
             .front()
             .is_none_or(|head| !Arc::ptr_eq(head, &blob))
         {
+            #[allow(clippy::collapsible_if)] // keeps the C++ nesting
             if let Some(pos) = state.blob_list.iter().position(|b| Arc::ptr_eq(b, &blob)) {
                 let moved = state.blob_list.remove(pos).expect("position is in range");
                 state.blob_list.push_front(moved);

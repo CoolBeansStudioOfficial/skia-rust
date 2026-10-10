@@ -7,6 +7,8 @@
 //! checked in `text_pixels.rs`.
 
 #![cfg(not(target_arch = "wasm32"))]
+// Glyph counts and font sizes in these tests are tiny.
+#![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 
 use std::collections::HashSet;
 use std::sync::Arc;

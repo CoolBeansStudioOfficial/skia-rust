@@ -6,9 +6,9 @@
 //! [`GlyphVector`]: the glyphs of a sub run, as packed ids until the code is running on the GPU
 //! side, where they become atlas entries.
 //!
-//! GlyphVector provides a way to delay the lookup of glyphs until the code is running on the GPU
-//! in single threaded mode. The GlyphVector is created in a multi-threaded environment, but the
-//! StrikeCache is only single threaded (and must be single threaded because of the atlas).
+//! `GlyphVector` provides a way to delay the lookup of glyphs until the code is running on the GPU
+//! in single threaded mode. The `GlyphVector` is created in a multi-threaded environment, but the
+//! `StrikeCache` is only single threaded (and must be single threaded because of the atlas).
 //!
 //! Once in the single-threaded GPU environment the glyph packed IDs are converted into a GPU
 //! backend specific entry type from which each glyph's atlas location can be determined.
@@ -66,7 +66,7 @@ impl GlyphVector {
     // Port of: src/text/gpu/GlyphVector.cpp#L49-L60 (chrome/m156)
     #[must_use]
     pub fn make(promise: StrikePromise, packed_ids: &[PackedGlyphId]) -> Self {
-        assert!(!packed_ids.is_empty());
+        assert_ne!(packed_ids.len(), 0);
         Self {
             strike_promise: Mutex::new(promise),
             packed_ids: packed_ids.to_vec(),
