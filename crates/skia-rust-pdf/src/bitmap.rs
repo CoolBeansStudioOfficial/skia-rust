@@ -468,8 +468,10 @@ fn to_pixels(image: &Image) -> Bitmap {
         }
     }
     // TODO: support GPU images in PDFs
-    let mut pixmap = bm.pixmap();
-    if !image.read_pixels_to_pixmap(&mut pixmap, (0, 0)) {
+    let read = bm
+        .peek_pixels_mut()
+        .is_some_and(|mut pixmap| image.read_pixels_to_pixmap(&mut pixmap, (0, 0)));
+    if !read {
         bm.erase_color(skia_rust_core::color::Color::from_argb(0xFF, 0, 0, 0));
     }
     bm
