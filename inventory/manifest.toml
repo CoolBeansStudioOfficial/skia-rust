@@ -28836,8 +28836,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and WebP decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
+status = "passing"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -30200,6 +30199,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L613-L654"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources), which is compiled only under SK_ENABLE_SKOTTIE (CodecAnimTest.cpp#L609-L656); Skottie is not part of this port"
 span_hash = "20b0d2a1236cc71076b533990a89d9c90a6c2b9911f11dcfb1dfa4ea85712cee"
 
 [[test]]
@@ -30218,6 +30218,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L99-L515"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: a table-driven check of frame metadata over GIF, WebP, JPEG and PNG (every decoder it uses exists; the DNG row is RAW, not built); needs its own pass (CodecAnimTest.cpp#L99-L515)"
 span_hash = "1456d17b53798cf014215b7285c3571da7a249998a971ea920234e7c90689380"
 
 [[test]]
@@ -30235,7 +30236,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L591-L607"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7b3c44657f3d5020809b8c8565f5426c8a56b534a4c7572ba19a457b5c12f15a"
 
 [[test]]
@@ -30456,6 +30457,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: needs make_gradient_bitmap (raster surface with a linear gradient shader read back) and the skcms conversions, compared with the C++ tolerances of 1 and 20 (CodecTest.cpp#L2444-L2519)"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -30848,7 +30850,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2614-L2644"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ab1b08d4ae34b6cc479f07a78a95595ee5619adfc33060ec38f05d567eb9b333"
 
 [[test]]
@@ -31983,7 +31985,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L715-L853"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7f1c6429f76a73fa789c93bc34e2427abecb1f5eaf3be4d98e88842b81d876f0"
 
 [[test]]
@@ -32066,6 +32068,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -32075,6 +32078,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -32084,6 +32088,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
@@ -32092,7 +32097,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L42-L63"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "63f340303eac4db96eb88adb22ca13f294bfee6c0561897c78f4d4f8dc239f12"
 
 [[test]]
@@ -33324,6 +33329,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L317-L343"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f07d5af87da0ee7092ca314bcc520c281e60d56eec0bcf5c0458e5a91083ca9c"
 
 [[test]]
@@ -33333,6 +33339,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L188-L275"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "ebed41d01008bef29f9417bdb74d0e70499d947424ac0fb8373baac783a632d8"
 
 [[test]]
@@ -33342,6 +33349,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L279-L314"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f29365c24ebe2ef0c8278e65eecfeaaf2c6f0b9aec6cb031460622c213e374fc"
 
 [[test]]
@@ -33351,6 +33359,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L99-L186"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "d2a6e4a04749bd85b199cc758c26edd3d93b9b4b8b54a609e54cd3e58de48d19"
 
 [[test]]
@@ -35887,7 +35896,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
 status = "todo"
-reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
+reason = "not ported in this sweep: needs the draw_image_test_pattern and assert_equal helpers and ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -36169,7 +36178,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
 status = "todo"
-reason = "decodes images/mandrill_128.png and needs SkPngEncoder (codecs not ported)"
+reason = "not ported in this sweep: needs ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
@@ -36198,8 +36207,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IndexedPngOverflowTest.cpp#L32-L40"
 module = "codec"
-status = "todo"
-reason = "draws onto an SkSurface::Raster canvas, and core has no surface yet"
+status = "passing"
 span_hash = "831f671f976e87477fe7664ed4f5f030454577776b530980c3d8db704c00deba"
 
 [[test]]
@@ -36299,6 +36307,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP writers, not ported"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36308,6 +36317,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L991-L1068"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP parsers, not ported"
 span_hash = "2d60cd60c3fc426cb379f0d0fd844964ab88bddf33c3cb0b05408926dc7eb962"
 
 [[test]]
@@ -36317,6 +36327,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap decoding (SkAndroidCodec gainmap accessors, GainmapInfo; docs/design/codecs.md C13), not ported"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36326,6 +36337,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap transcoding (GainmapInfo, MPF writer; docs/design/codecs.md C13), not ported"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36335,6 +36347,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap metadata (docs/design/codecs.md C13); the gainmap accessors are not ported"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -36344,6 +36357,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -36353,6 +36367,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L336-L426"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "f8199271ae2b0efed2315d5e4e600bb47b044fa20a5bb46b6e162cf4ab198022"
 
 [[test]]
@@ -36362,6 +36377,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L116-L175"
 module = "codec"
 status = "todo"
+reason = "needs the JPEG marker scanner for multi-picture and gainmap segments (docs/design/codecs.md 8), not ported"
 span_hash = "711305fa2b6db46e04f28bde7e1902b4b8839a27e621a51a8727be407cf87f20"
 
 [[test]]
@@ -36371,6 +36387,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L198-L334"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "7d371c40aae789a82d47ab8f61a5f5e9b96ee52fd3d4fdae947f69f7c86e1ef6"
 
 [[test]]
@@ -43631,6 +43648,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L46-L83"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "17c7dff2868b8ef936ffa8792c540914a5223158fe4a03005942c190c15ea008"
 
 [[test]]
@@ -43640,6 +43658,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L107-L161"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "942485a940b622aa2179a219f584336c11f7e24bc5e4ae1e855ef1dd74f37fe9"
 
 [[test]]
@@ -43649,6 +43668,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L19-L44"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "266ef4fcc105ea167b792d889f3b9e27bdd132903356022c28d162dd8bf9d456"
 
 [[test]]

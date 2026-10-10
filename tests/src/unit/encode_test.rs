@@ -25,6 +25,8 @@ use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::stream::MemoryStream;
 
 use skia_rust_codec::encode::jpeg_encoder::{self, AlphaOption, Downsample};
+use skia_rust_core::canvas::Canvas;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 use std::sync::{Arc, Mutex};
 
@@ -799,3 +801,171 @@ def_test!(
         reporter_assert!(reporter, !output);
     }
 );
+
+/// Port of `almost_equals(SkPMColor a, SkPMColor b, int tolerance)` (EncodeTest.cpp): every
+/// premultiplied channel of `a` and `b` must differ by at most `tolerance`.
+fn almost_equals_premul(a: [i32; 4], b: [i32; 4], tolerance: i32) -> bool {
+    a.iter()
+        .zip(b.iter())
+        .all(|(p, q)| (p - q).abs() <= tolerance)
+}
+
+// Port of: tests/EncodeTest.cpp#L715-L853 (chrome/m156)
+def_test!(Encode_jpeg_blend_to_black, |r| {
+    let resource = "images/rainbow-gradient.png";
+    let jpeg_tolerance = 60;
+    for color_type in [ColorType::RGBA8888, ColorType::BGRA8888, ColorType::RGBAF16] {
+        for alpha_type in [AlphaType::Unpremul, AlphaType::Premul] {
+            for blend_on_black in [true, false] {
+                r.set_context(Some(format!(
+                    "colorType=0x{:x} alphaType=0x{:x} blendOnBlack={}",
+                    color_type as u32,
+                    alpha_type as u32,
+                    i32::from(blend_on_black)
+                )));
+
+                // Decode the test image into `original_bitmap` into correct alpha and color type.
+                let Some(data) = get_resource_as_data(resource) else {
+                    reporter_assert!(r, false);
+                    return;
+                };
+                let Ok(mut codec) = make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+                    reporter_assert!(r, false);
+                    return;
+                };
+                let dst_info = codec
+                    .info()
+                    .with_alpha_type(alpha_type)
+                    .with_color_type(color_type);
+                let row_bytes = dst_info.min_row_bytes();
+                let mut original_pixels = vec![0u8; dst_info.compute_byte_size(row_bytes)];
+                let result = codec.get_pixels(&dst_info, &mut original_pixels, row_bytes, None);
+                reporter_assert!(r, result == CodecResult::Success);
+                if result != CodecResult::Success {
+                    continue;
+                }
+                let mut original_bitmap = Bitmap::new();
+                let _ =
+                    original_bitmap.install_pixels(&dst_info, original_pixels.clone(), row_bytes);
+
+                let mut reference_bitmap = Bitmap::new();
+                if blend_on_black {
+                    let reference_info = dst_info.clone();
+                    reference_bitmap.alloc_pixels_info(&reference_info, None);
+                    reference_bitmap.erase_color(Color::BLACK);
+                    // SkCanvas blackCanvas(referenceBM); blackCanvas.drawImage(originalBitmap, 0, 0)
+                    if let (Some(black_canvas), Some(original_image)) = (
+                        Canvas::from_bitmap(&mut reference_bitmap, None),
+                        original_bitmap.as_image(),
+                    ) {
+                        black_canvas.draw_image(&original_image, (0, 0), None);
+                    }
+                } else {
+                    let opaque_info = dst_info
+                        .with_alpha_type(AlphaType::Opaque)
+                        .with_color_type(ColorType::RGB888x);
+                    let opaque_row_bytes = opaque_info.min_row_bytes();
+                    let mut opaque_pixels =
+                        vec![0u8; opaque_info.compute_byte_size(opaque_row_bytes)];
+                    let success = convert_pixels(
+                        &opaque_info,
+                        &mut opaque_pixels,
+                        opaque_row_bytes,
+                        &dst_info,
+                        &original_pixels,
+                        row_bytes,
+                    );
+                    reporter_assert!(r, success);
+                    if !success {
+                        continue;
+                    }
+                    let _ = reference_bitmap.install_pixels(
+                        &opaque_info,
+                        opaque_pixels,
+                        opaque_row_bytes,
+                    );
+                }
+
+                let Some(src) = Pixmap::new_readonly(&dst_info, &original_pixels, row_bytes) else {
+                    reporter_assert!(r, false);
+                    continue;
+                };
+                let options = jpeg_encoder::Options {
+                    alpha_option: if blend_on_black {
+                        AlphaOption::BlendOnBlack
+                    } else {
+                        AlphaOption::Ignore
+                    },
+                    ..jpeg_encoder::Options::default()
+                };
+                let Some(roundtrip_data) = jpeg_encoder::encode_pixmap(&src, &options) else {
+                    reporter_assert!(r, false);
+                    continue;
+                };
+
+                let Ok(mut roundtrip_codec) =
+                    make_codec_from_stream(MemoryStream::make_copy(roundtrip_data.as_bytes()))
+                else {
+                    reporter_assert!(r, false);
+                    continue;
+                };
+                let roundtrip_info = roundtrip_codec.info();
+                let roundtrip_row_bytes = roundtrip_info.min_row_bytes();
+                let mut roundtrip_pixels =
+                    vec![0u8; roundtrip_info.compute_byte_size(roundtrip_row_bytes)];
+                // C++ does not check this result.
+                let _ = roundtrip_codec.get_pixels(
+                    &roundtrip_info,
+                    &mut roundtrip_pixels,
+                    roundtrip_row_bytes,
+                    None,
+                );
+                let mut roundtrip_bitmap = Bitmap::new();
+                let _ = roundtrip_bitmap.install_pixels(
+                    &roundtrip_info,
+                    roundtrip_pixels,
+                    roundtrip_row_bytes,
+                );
+
+                if reference_bitmap.dimensions() != roundtrip_bitmap.dimensions() {
+                    reporter_assert!(r, false);
+                    continue;
+                }
+
+                let mut should_continue = false;
+                for y in 0..reference_bitmap.height() {
+                    if should_continue {
+                        break;
+                    }
+                    for x in 0..reference_bitmap.width() {
+                        let original_color = reference_bitmap.get_color((x, y));
+                        let roundtrip_color = roundtrip_bitmap.get_color((x, y));
+                        let original_premul = pre_multiply_color(original_color);
+                        let roundtrip_premul = pre_multiply_color(roundtrip_color);
+                        let almost_same = almost_equals_premul(
+                            premul_channels(original_color),
+                            premul_channels(roundtrip_color),
+                            jpeg_tolerance,
+                        );
+                        reporter_assert!(
+                            r,
+                            almost_same,
+                            "x={}, y={}, original=0x{:08x}, roundtrip=0x{:08x}, color={}, alpha={}",
+                            x,
+                            y,
+                            original_premul,
+                            roundtrip_premul,
+                            color_type as i32,
+                            alpha_type as i32
+                        );
+                        if !almost_same {
+                            should_continue = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    r.set_context(None);
+});
