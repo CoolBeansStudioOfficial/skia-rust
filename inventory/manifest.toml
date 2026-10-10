@@ -31897,7 +31897,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EmptyPathTest.cpp#L172-L174"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c9b290ad64c76a21d2dd1c5f2d41be585d59d10df4ca9a66d007ef9dfdd639e"
 
 [[test]]
@@ -32482,6 +32482,7 @@ macro = "DEF_TEST"
 source = "tests/FitsInTest.cpp#L23-L89"
 module = "core"
 status = "todo"
+reason = "uses C++ enum types as SkTFitsIn arguments (E, TestEnum_t, enum-to-int and int-to-enum); skia-rust has no implicit enum/integer conversion to port these cases against yet"
 span_hash = "7e323d0a651df2df9641b94e7793bd220462ed7b5187aa87ebee9cc26fd157f6"
 
 [[test]]
@@ -36221,7 +36222,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/InsetConvexPolyTest.cpp#L14-L110"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e073c8961b60956bffa79edf877cb41294e13ead9a72f67b11738a1b578c069e"
 
 [[test]]
@@ -36239,7 +36240,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IsClosedSingleContourTest.cpp#L11-L53"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "809374f75e3811b15edbfa5cc1731d587807e2e66a98b5947bcc6053148987a1"
 
 [[test]]
@@ -36600,6 +36601,7 @@ macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L777-L790"
 module = "core"
 status = "todo"
+reason = "ARM NEON only (vrsraq_n_u16/vrshrq_n_u16 under SK_ARM_HAS_NEON): skia_rust_simd has no NEON kernel for it and this is an x86-64 host, so it cannot be checked here"
 span_hash = "58f00a450b5d581c1553e08b8504acbc36d0df2d2729fd64185b5b0bcdd7b368"
 
 [[test]]
@@ -36726,7 +36728,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L31-L81"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8ab4b363cfae7d6bb92523a26c75700538fa5dbf2755cf5dcc09c1b673531de8"
 
 [[test]]
@@ -36735,7 +36737,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L83-L123"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0abe351d00c9b75c2e4e4e336d4050238fce98f8ac72e64c059e8b41a0fe6c98"
 
 [[test]]
@@ -36744,7 +36746,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L185-L244"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "38b536b78a907435c7ad240a5c9cff06a0d6a75b1afae8ff54efc62766e898c5"
 
 [[test]]
@@ -36753,7 +36755,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L125-L183"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "46c3883e6b6577b0d9c591df61c0395839741fe428d0698db907f4d26e7da39d"
 
 [[test]]
@@ -36762,7 +36764,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L246-L283"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f1b33cf103f02324bf1c40fbd580644fcfcb238c8a44090d54a0dbb6cdc2e1ef"
 
 [[test]]
@@ -36843,7 +36845,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MemoryTest.cpp#L12-L20"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_calloc_throw/sk_free allocator wrappers; Rust uses std allocation"
 span_hash = "d87a253ea55760a32fd7fcd44b5cd36cfb352555efb84aa4b48ba275e7cecacb"
 
 [[test]]
@@ -37463,7 +37466,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OffsetSimplePolyTest.cpp#L15-L204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a2820b0d2b1bca454cc4bb228df60bb993a956de2f5ee7c4136b465620892c7d"
 
 [[test]]
@@ -37512,7 +37515,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OverAlignedTest.cpp#L18-L26"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc_throw 8-byte alignment guarantee; Rust uses std allocation"
 span_hash = "f1cdeeadcc6ad1e7ff6d4718f1480013290798c4a6cee84f4d3b5ee45aeb9f77"
 
 [[test]]
@@ -42229,7 +42233,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L53-L82"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d065b85b07869b3d6c54c299ac785233fec8a734af4a64bd61aab62b872e4f95"
 
 [[test]]
@@ -42238,7 +42242,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L23-L51"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e8d90eb864c857a954bd136ae8a14ac1a5e643709ed57b1d1f69d6a8cba24433"
 
 [[test]]
@@ -42247,7 +42251,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L85-L135"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7afae3ff8bd66ba75200a9347213198ae9266b5a6bf8dbad55eb4274c6f5990c"
 
 [[test]]
@@ -42492,7 +42496,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ScaleToSidesTest.cpp#L16-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "85bdd27da399005bdceff6b437cf2b245d3f2b7e24d948d669962bfbc358c0e4"
 
 [[test]]
@@ -49476,7 +49480,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L73-L120"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "needs the codec's SkSampler::Fill (src/codec/SkSampler.cpp), which is not ported yet"
 span_hash = "326883b46293b49ff187a9f91d5e857fb4530b2cdb448802ae2712ef677cb821"
 
@@ -51152,6 +51156,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L212-L252"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "43d702fa5d8ca7865f631de49075195e600569fa270a43288c90a3038f6de85f"
 
 [[test]]
@@ -51161,6 +51166,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L173-L182"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "4d790e257e2a241da9f8a95f8d75076941c09807092090b069d4e10aa77233ae"
 
 [[test]]
@@ -51170,6 +51176,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L195-L204"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "b4a6e72df58745be46dab3db1baf87510d550ac8e74e3d3f0df8b3c6af974a24"
 
 [[test]]
@@ -51179,6 +51186,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L206-L210"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "c7f78bcdfe860e5d2ce77dafc99b09ec8a826465b979cb44cc649c7d41264b04"
 
 [[test]]
@@ -51188,6 +51196,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L184-L193"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "d559d5808a9106cb8c13c44167125c720234e8aa2c9bdfdad201ae101f5f0f47"
 
 [[test]]

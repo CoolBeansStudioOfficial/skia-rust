@@ -8,6 +8,8 @@ pub mod bbh_factory;
 pub mod bezier_curves;
 pub mod bitmap;
 pub mod bitmap_cache;
+#[doc(hidden)]
+pub mod bitmap_proc_state_priv;
 pub mod blend_mode;
 pub mod blend_mode_blender;
 #[doc(hidden)]

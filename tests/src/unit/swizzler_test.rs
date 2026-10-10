@@ -14,6 +14,12 @@ use skia_rust_simd::swizzle::{
     unpremul_simulating_rp,
 };
 
+use skia_rust_codec::codec::ZeroInitialized;
+use skia_rust_codec::sampler;
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image_info::ImageInfo;
+
 use crate::{Reporter, def_test, def_tier_test, reporter_assert};
 
 /// Runs a one-pixel byte kernel (`SkOpts::...(&dst, &src, 1)`) and returns the output pixel.
@@ -22,6 +28,116 @@ fn one_pixel(kernel: fn(&mut [u8], &[u8], usize), src: u32) -> u32 {
     kernel(&mut dst, &src.to_ne_bytes(), 1);
     u32::from_ne_bytes(dst)
 }
+
+// Port of: tests/SwizzlerTest.cpp#L21-L70 (chrome/m156)
+fn check_fill(
+    reporter: &mut Reporter,
+    image_info: &ImageInfo,
+    start_row: u32,
+    end_row: u32,
+    row_bytes: usize,
+    offset: usize,
+) {
+    // Calculate the total size of the image in bytes. Use the smallest possible size.
+    // The offset value tells us to adjust the pointer from the memory we allocate in order
+    // to test on different memory alignments. If offset is nonzero, we need to increase the
+    // size of the memory we allocate in order to make sure that we have enough. We are
+    // still allocating the smallest possible size.
+    let total_bytes = image_info.compute_byte_size(row_bytes) + offset;
+
+    // Create fake image data where every byte has a value of 0
+    let mut storage = vec![0u8; total_bytes];
+
+    // Adjust the pointer in order to test on different memory alignments
+    let image_data = offset;
+    let image_start = image_data + row_bytes * start_row as usize;
+    let fill_info = image_info.with_wh(
+        image_info.width(),
+        i32::try_from(end_row - start_row + 1).expect("height fits in i32"),
+    );
+    sampler::fill(
+        &fill_info,
+        &mut storage[image_start..],
+        row_bytes,
+        ZeroInitialized::No,
+    );
+
+    // Ensure that the pixels are filled properly
+    // The bots should catch any memory corruption
+    let mut index_ptr = image_data + start_row as usize * row_bytes;
+    for _y in start_row..=end_row {
+        for x in 0..usize::try_from(image_info.width()).expect("non-negative width") {
+            let pixel = match image_info.color_type() {
+                ColorType::N32 => {
+                    let p = index_ptr + 4 * x;
+                    u32::from_ne_bytes(storage[p..p + 4].try_into().expect("4 bytes")) == 0
+                }
+                ColorType::Gray8 => storage[index_ptr + x] == 0,
+                ColorType::RGB565 => {
+                    let p = index_ptr + 2 * x;
+                    u16::from_ne_bytes(storage[p..p + 2].try_into().expect("2 bytes")) == 0
+                }
+                _ => false,
+            };
+            reporter_assert!(reporter, pixel);
+        }
+        index_ptr += row_bytes;
+    }
+}
+
+// Port of: tests/SwizzlerTest.cpp#L73-L120 (chrome/m156)
+def_test!(SwizzlerFill, |r| {
+    // Test on an invalid width and representative widths
+    let widths: [u32; 3] = [0, 10, 50];
+    // In order to call Fill(), there must be at least one row to fill
+    // Test on the smallest possible height and representative heights
+    let heights: [u32; 3] = [1, 5, 10];
+    // Test on interesting possibilities for row padding
+    let paddings: [usize; 2] = [0, 4];
+    // Iterate over test dimensions
+    for width in widths {
+        for height in heights {
+            // Create image info objects
+            let color_info = ImageInfo::new_n32(
+                (
+                    i32::try_from(width).expect("width fits in i32"),
+                    i32::try_from(height).expect("height fits in i32"),
+                ),
+                AlphaType::Unknown,
+                None,
+            );
+            let gray_info = color_info.with_color_type(ColorType::Gray8);
+            let color565_info = color_info.with_color_type(ColorType::RGB565);
+            let width = width as usize;
+            for &padding in &paddings {
+                // Calculate row bytes
+                let color_row_bytes = ColorType::N32.bytes_per_pixel() * width + padding;
+                let index_row_bytes = width + padding;
+                let gray_row_bytes = index_row_bytes;
+                let color565_row_bytes = ColorType::RGB565.bytes_per_pixel() * width + padding;
+                // If there is padding, we can invent an offset to change the memory alignment
+                for offset in (0..=padding).step_by(4) {
+                    // Test all possible start rows with all possible end rows
+                    for start_row in 0..height {
+                        for end_row in start_row..height {
+                            // Test fill with each color type
+                            check_fill(r, &color_info, start_row, end_row, color_row_bytes, offset);
+                            check_fill(r, &gray_info, start_row, end_row, gray_row_bytes, offset);
+                            check_fill(
+                                r,
+                                &color565_info,
+                                start_row,
+                                end_row,
+                                color565_row_bytes,
+                                offset,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+});
 
 // Port of: tests/SwizzlerTest.cpp#L122-L152 (chrome/m156)
 def_test!(SwizzleOpts, |r| {
