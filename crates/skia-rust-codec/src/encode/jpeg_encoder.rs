@@ -8,7 +8,8 @@
 // encode_pixmap, encode_image, Options, Downsample, AlphaOption}`).
 //
 // Not ported, each returns `false` / `None` rather than encoding differently:
-// - `EncodeYUVAPixmaps` / `MakeYUV`: the YUVA pixmap type is not in skia-rust-core.
+// - `SkJpegEncoder::Make(SkYUVAPixmaps)` (the `SkEncoder` for YUVA): only `encode_yuva` is
+//   ported, which writes the whole file, as `Encode(SkWStream*, SkYUVAPixmaps)` does.
 // - `Options::origin`: the EXIF segment is written by `SkExif::WriteExif`, which this crate does
 //   not port (`exif.rs` only parses).
 // - the gainmap encoder (`SkJpegGainmapEncoder.cpp`), which is outside this port.
@@ -17,6 +18,7 @@ use std::io;
 use std::sync::{Arc, Mutex};
 
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::convert_pixels::convert_pixels;
 use skia_rust_core::data::Data;
@@ -25,6 +27,9 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::{color_type_is_alpha_only, color_type_num_channels};
 use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::yuva_info::{PlaneConfig, YUVAInfo, subsampling_factors};
+use skia_rust_core::yuva_pixmaps::{DataType, YUVAPixmaps};
+use skia_rust_core::image_info::YUVColorSpace;
 use skia_rust_libjpeg::{ColorSpace as JpegColorSpace, Compress};
 
 use crate::encode::icc::write_icc_profile;
@@ -171,14 +176,23 @@ fn row_source(src_info: &ImageInfo, options: &Options) -> Option<RowSource> {
 
 /// `SkJpegMetadataEncoder::AppendXMPStandard` and `AppendICC`, in that order.
 fn metadata_segments(src: &Pixmap<'_>, options: &Options) -> Vec<(u8, Vec<u8>)> {
+    let cs = src.color_space();
+    xmp_and_icc_segments(cs.as_ref(), options)
+}
+
+/// The XMP and ICC segments for a colour space (`AppendXMPStandard` and `AppendICC`, in that
+/// order). Shared by the RGB and YUVA encoders.
+fn xmp_and_icc_segments(
+    color_space: Option<&ColorSpace>,
+    options: &Options,
+) -> Vec<(u8, Vec<u8>)> {
     let mut segments = Vec::new();
     if let Some(xmp) = &options.xmp_metadata {
         let mut body = XMP_STANDARD_SIG.to_vec();
         body.extend_from_slice(xmp.as_bytes());
         segments.push((XMP_MARKER, body));
     }
-    let cs = src.color_space();
-    if let Some(icc) = write_icc_profile(cs.as_ref()) {
+    if let Some(icc) = write_icc_profile(color_space) {
         // The profile is written as one segment: "1 of 1".
         let mut body = ICC_SIG.to_vec();
         body.push(1);
@@ -377,4 +391,127 @@ pub fn encode_image(img: &Image, options: &Options) -> Option<Data> {
     let bitmap = img.as_legacy_bitmap()?;
     let pixmap = bitmap.peek_pixels()?;
     encode_pixmap(&pixmap, options)
+}
+
+/// The row `row` of plane `plane` of `src`, as the bytes of the plane's row (`addr(0, row)`).
+fn yuva_plane_row<'v>(view: &'v Pixmap<'_>, row: usize) -> Option<&'v [u8]> {
+    let start = row.checked_mul(view.row_bytes())?;
+    view.addr()?.get(start..)
+}
+
+/// Port of `yuva_copy_row` (SkJpegEncoderImpl.cpp): one row of Y, U and V triples, from the
+/// planes of `src`. Only the Y,U,V and Y,UV configurations are supported, as the encoder checks.
+// Port of: src/encode/SkJpegEncoderImpl.cpp#L201-L236 (chrome/m156)
+fn yuva_copy_row(
+    planes: &[Pixmap<'_>],
+    info: &YUVAInfo,
+    row: usize,
+    dst: &mut [u8],
+) -> Option<()> {
+    let width = usize::try_from(planes[0].info().width()).ok()?;
+    match info.plane_config() {
+        PlaneConfig::Y_U_V => {
+            let (ss_width_u, ss_height_u) = info.plane_subsampling_factors(1);
+            let (ss_width_v, ss_height_v) = info.plane_subsampling_factors(2);
+            let src_y = yuva_plane_row(&planes[0], row)?;
+            let src_u = yuva_plane_row(&planes[1], row / usize::try_from(ss_height_u).ok()?)?;
+            let src_v = yuva_plane_row(&planes[2], row / usize::try_from(ss_height_v).ok()?)?;
+            let ss_width_u = usize::try_from(ss_width_u).ok()?;
+            let ss_width_v = usize::try_from(ss_width_v).ok()?;
+            for col in 0..width {
+                dst[3 * col] = *src_y.get(col)?;
+                dst[3 * col + 1] = *src_u.get(col / ss_width_u)?;
+                dst[3 * col + 2] = *src_v.get(col / ss_width_v)?;
+            }
+            Some(())
+        }
+        PlaneConfig::Y_UV => {
+            let (ss_width_uv, ss_height_uv) = info.plane_subsampling_factors(1);
+            let src_y = yuva_plane_row(&planes[0], row)?;
+            let ss_width_uv = usize::try_from(ss_width_uv).ok()?;
+            let src_uv = yuva_plane_row(&planes[1], row / usize::try_from(ss_height_uv).ok()?)?;
+            for col in 0..width {
+                dst[3 * col] = *src_y.get(col)?;
+                dst[3 * col + 1] = *src_uv.get(2 * (col / ss_width_uv))?;
+                dst[3 * col + 2] = *src_uv.get(2 * (col / ss_width_uv) + 1)?;
+            }
+            Some(())
+        }
+        _ => None,
+    }
+}
+
+/// Port of `SkJpegEncoder::Encode(SkWStream*, const SkYUVAPixmaps&, const SkColorSpace*,
+/// const Options&)`: the JPEG bytes of YUVA pixmaps, with `color_space` only for its ICC profile.
+/// Returns `None` for an invalid layout, a colour space other than JPEG full range, data that is
+/// not 8-bit, a plane configuration other than Y,U,V or Y,UV, or an origin (not ported).
+// Port of: src/encode/SkJpegEncoderImpl.cpp#L300-L320 and #L338-L378, and
+// include/encode/SkJpegEncoder.h (chrome/m156)
+fn encode_yuva_to_vec(
+    src: &YUVAPixmaps,
+    color_space: Option<&ColorSpace>,
+    options: &Options,
+) -> Option<Vec<u8>> {
+    if !src.is_valid() || options.origin.is_some() {
+        return None;
+    }
+    // SkJpegEncoderMgr::initializeYUV: no colour space conversion, only 8-bit data, and only the
+    // two plane configurations `yuva_copy_row` understands.
+    let info = src.pixmaps_info();
+    if info.yuv_color_space() != YUVColorSpace::JPEGFull {
+        return None;
+    }
+    if info.data_type() != DataType::Unorm8 {
+        return None;
+    }
+    let yuva = info.yuva_info();
+    if !matches!(yuva.plane_config(), PlaneConfig::Y_U_V | PlaneConfig::Y_UV) {
+        return None;
+    }
+    let width = u32::try_from(yuva.width()).ok()?;
+    let height = u32::try_from(yuva.height()).ok()?;
+    let (ss_horiz, ss_vert) = subsampling_factors(yuva.subsampling());
+
+    let mut cinfo = Compress::new();
+    cinfo.set_image(width, height, JpegColorSpace::YCbCr, 3);
+    cinfo.set_defaults().ok()?;
+    // The Y sampling factors are the subsampling of the input; U and V keep a factor of one.
+    cinfo.set_component_sampling(0, ss_horiz, ss_vert).ok()?;
+    // SkJpegEncoderImpl::initializeCommon
+    cinfo.set_optimize_coding(true).ok()?;
+    cinfo
+        .set_quality(i32::try_from(options.quality).ok()?, true)
+        .ok()?;
+    cinfo.start_compress(true).ok()?;
+    for (marker, body) in xmp_and_icc_segments(color_space, options) {
+        cinfo.write_marker(marker, &body).ok()?;
+    }
+    let planes: Vec<Pixmap<'_>> = (0..src.num_planes()).map(|i| src.plane(i)).collect();
+    let mut row = vec![0u8; 3 * usize::try_from(width).ok()?];
+    for y in 0..usize::try_from(height).ok()? {
+        yuva_copy_row(&planes, yuva, y, &mut row)?;
+        match cinfo.write_scanlines(&[row.as_slice()]) {
+            Ok(1) => {}
+            _ => return None,
+        }
+    }
+    cinfo.finish_compress().ok()?;
+    Some(cinfo.take_output())
+}
+
+/// Encodes YUVA pixmaps as a JPEG into `writer`. Returns `true` on success.
+///
+/// Port of `SkJpegEncoder::Encode(SkWStream*, const SkYUVAPixmaps&, const SkColorSpace*,
+/// const Options&)`. The colour space is used only for its ICC profile; pass `None` for none.
+#[doc(alias = "SkJpegEncoder::Encode")]
+pub fn encode_yuva<W: io::Write>(
+    src: &YUVAPixmaps,
+    color_space: Option<&ColorSpace>,
+    writer: &mut W,
+    options: &Options,
+) -> bool {
+    match encode_yuva_to_vec(src, color_space, options) {
+        Some(bytes) => writer.write_all(&bytes).is_ok(),
+        None => false,
+    }
 }

@@ -19734,7 +19734,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/ducky_yuv_blend.cpp#L24-L84"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "82979063bd979c6cde802000e70d1c656f7e354dd6affaac7897842a271dd07f"
 
 [[test]]
@@ -25869,7 +25869,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1394-L1394"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b733e55bcd3893cd68e5ded9005607e622df1deaa13b14ab8cf9385f318f1569"
 
 [[test]]
@@ -50997,7 +50997,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L98-L142"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e304009709c4709eeb92ff784c06ca86553b8b27d1ea72b2309b38bbde6bbfbb"
 
 [[test]]
@@ -51006,7 +51006,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L181-L208"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2f2275240e3b5065ab6f4746a443154a84bb4085c7d5c0dd4635b87ffdfb3b34"
 
 [[test]]
@@ -51015,7 +51015,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L212-L240"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "aaaf18d6c36ef3f61d4734f6adc37f13954ec87bd268dfdcf0cd283223184209"
 
 [[test]]
