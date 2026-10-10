@@ -13,6 +13,7 @@ use skia_rust_core::paint::{Cap, Join, Paint, Style};
 use skia_rust_core::rect::Rect;
 
 use crate::node::{Node, NodeCore, inval_traits};
+use crate::shader::ShaderNode;
 use crate::util::{float_round_to_int, pin};
 
 /// The attributes of a paint node (the private fields of `PaintNode`).
@@ -175,5 +176,67 @@ impl PaintNode for Color {
     // Port of: modules/sksg/src/SkSGPaint.cpp#L53-L55 (chrome/m156) (`Color::onApplyToPaint`)
     fn on_apply_to_paint(&self, paint: &mut Paint) {
         paint.set_color(self.color.get());
+    }
+}
+
+/// A shader paint: the paint takes its shader from a shader node (`ShaderPaint`).
+// Port of: modules/sksg/include/SkSGPaint.h#L72-L85 (chrome/m156) (`class ShaderPaint`)
+#[doc(alias = "sksg::ShaderPaint")]
+#[derive(Debug)]
+pub struct ShaderPaint {
+    core: NodeCore,
+    attrs: PaintAttrs,
+    shader: Rc<dyn ShaderNode>,
+}
+
+impl ShaderPaint {
+    /// `ShaderPaint::Make(shader)`: `None` if there is no shader.
+    // Port of: modules/sksg/src/SkSGPaint.cpp#L60-L63 (chrome/m156) (`ShaderPaint::Make`)
+    #[doc(alias = "Make")]
+    #[must_use]
+    pub fn make(shader: Option<Rc<dyn ShaderNode>>) -> Option<Rc<Self>> {
+        let shader = shader?;
+        let paint = Rc::new_cyclic(|weak: &Weak<Self>| Self {
+            core: NodeCore::new(PAINT_TRAITS, weak.clone()),
+            attrs: PaintAttrs::default(),
+            shader: Rc::clone(&shader),
+        });
+        // Port of: modules/sksg/src/SkSGPaint.cpp#L65-L68 (chrome/m156) (`ShaderPaint::ShaderPaint`)
+        paint.observe_inval(paint.shader.as_ref());
+        Some(paint)
+    }
+}
+
+impl Drop for ShaderPaint {
+    // Port of: modules/sksg/src/SkSGPaint.cpp#L70-L72 (chrome/m156) (`ShaderPaint::~ShaderPaint`)
+    fn drop(&mut self) {
+        self.unobserve_inval(self.shader.as_ref());
+    }
+}
+
+impl Node for ShaderPaint {
+    fn core(&self) -> &NodeCore {
+        &self.core
+    }
+
+    // Port of: modules/sksg/src/SkSGPaint.cpp#L74-L78 (chrome/m156) (`ShaderPaint::onRevalidate`)
+    fn on_revalidate(
+        &self,
+        ic: Option<&mut crate::invalidation_controller::InvalidationController>,
+        ctm: &Matrix,
+    ) -> Rect {
+        debug_assert!(self.core.has_inval());
+        self.shader.revalidate(ic, ctm)
+    }
+}
+
+impl PaintNode for ShaderPaint {
+    fn paint_attrs(&self) -> &PaintAttrs {
+        &self.attrs
+    }
+
+    // Port of: modules/sksg/src/SkSGPaint.cpp#L80-L82 (chrome/m156) (`ShaderPaint::onApplyToPaint`)
+    fn on_apply_to_paint(&self, paint: &mut Paint) {
+        paint.set_shader(self.shader.shader());
     }
 }
