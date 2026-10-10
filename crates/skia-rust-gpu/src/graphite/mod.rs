@@ -50,6 +50,7 @@ pub mod path_atlas;
 pub mod pipeline_creation_task;
 pub mod pipeline_data;
 pub mod pipeline_manager;
+pub mod precompile;
 pub mod proxy_cache;
 pub mod queue_manager;
 pub mod raster_path_atlas;
