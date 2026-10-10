@@ -312,6 +312,9 @@ bitflags! {
         const DRAW_MESH = 1 << 13;
         /// `kSparseStrips`: the sparse strips render steps.
         const SPARSE_STRIPS = 1 << 14;
+        /// `InternalDrawTypeFlags::kCoverageMask`: `CoverageMaskRenderStep`, used for path atlases
+        /// and mask filters (internal to Graphite).
+        const INTERNAL_COVERAGE_MASK = 1 << 15;
     }
 }
 

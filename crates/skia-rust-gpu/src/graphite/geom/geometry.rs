@@ -14,6 +14,9 @@
 use skia_rust_core::mesh::Mesh;
 use skia_rust_core::vertices::Vertices;
 
+use skia_rust_core::m44::M44;
+
+use crate::graphite::geom::coverage_mask_shape::CoverageMaskShape;
 use crate::graphite::geom::edge_aa_quad::EdgeAAQuad;
 use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::shape::Shape;
@@ -34,6 +37,8 @@ pub enum Geometry {
     Vertices(Vertices),
     /// `Type::kMesh`.
     Mesh(Mesh),
+    /// `Type::kCoverageMaskShape`.
+    CoverageMaskShape(CoverageMaskShape),
 }
 
 impl Geometry {
@@ -99,6 +104,7 @@ impl Geometry {
             Self::Empty => true,
             Self::Shape(shape) => shape.is_empty() && !shape.inverted(),
             Self::EdgeAAQuad(_) | Self::Vertices(_) | Self::Mesh(_) => false,
+            Self::CoverageMaskShape(_) => false,
         }
     }
 
@@ -128,6 +134,43 @@ impl Geometry {
         }
     }
 
+    /// `isCoverageMaskShape()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L167 (chrome/m156)
+    #[must_use]
+    pub const fn is_coverage_mask_shape(&self) -> bool {
+        matches!(self, Self::CoverageMaskShape(_))
+    }
+
+    /// `coverageMaskShape()`. Skia asserts that the type is `kCoverageMaskShape`.
+    ///
+    /// # Panics
+    /// If the geometry is not a coverage mask shape.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L185-L187 (chrome/m156)
+    #[must_use]
+    pub fn coverage_mask_shape(&self) -> &CoverageMaskShape {
+        match self {
+            Self::CoverageMaskShape(mask) => mask,
+            _ => panic!("Geometry::coverage_mask_shape() called on a non-mask geometry"),
+        }
+    }
+
+    /// `maskToDevice()`: the transform from the mask space to device space, for the geometry
+    /// types that have a mask space (coverage masks).
+    // Port of: src/gpu/graphite/geom/Geometry.h#L345-L349 (chrome/m156)
+    #[must_use]
+    pub fn mask_to_device(&self) -> Option<&M44> {
+        match self {
+            Self::CoverageMaskShape(mask) => Some(mask.mask_to_device()),
+            _ => None,
+        }
+    }
+
+    /// `setCoverageMaskShape(maskShape)`: the geometry becomes the coverage mask.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L256-L262 (chrome/m156)
+    pub fn set_coverage_mask_shape(&mut self, mask: CoverageMaskShape) {
+        *self = Self::CoverageMaskShape(mask);
+    }
+
     /// `bounds()` for the ported variants.
     // Port of: src/gpu/graphite/geom/Geometry.h#L318-L335 (chrome/m156), the ported cases
     #[must_use]
@@ -138,6 +181,7 @@ impl Geometry {
             Self::EdgeAAQuad(quad) => quad.bounds(),
             Self::Vertices(vertices) => Rect::from_sk_rect(vertices.bounds()),
             Self::Mesh(mesh) => Rect::from_sk_rect(&mesh.bounds()),
+            Self::CoverageMaskShape(mask) => mask.bounds(),
         }
     }
 }

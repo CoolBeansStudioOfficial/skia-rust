@@ -2,6 +2,7 @@
 
 pub mod analytic_blur_mask;
 pub mod bounds_manager;
+pub mod coverage_mask_shape;
 pub mod edge_aa_quad;
 pub mod geometry;
 pub mod intersection_tree;
