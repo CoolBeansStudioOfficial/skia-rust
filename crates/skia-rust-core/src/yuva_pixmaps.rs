@@ -591,6 +591,21 @@ impl YUVAPixmaps {
         Pixmap::new(info, bytes, row_bytes)
     }
 
+    /// Row `row` of plane `i` as its `row_bytes` writable bytes, padding included. `None` for a
+    /// plane or row past the plane, or when the pixels are shared with another [`Data`]. Decoders
+    /// write rows this way, because libjpeg's rows are wider than the plane when the plane is
+    /// padded to whole blocks.
+    // skia-rust: no Skia counterpart; SkYUVAPixmaps hands out raw row pointers (`writable_addr`).
+    #[must_use]
+    pub fn plane_row_mut(&mut self, i: usize, row: usize) -> Option<&mut [u8]> {
+        if i >= self.num_planes() || row >= self.plane_infos[i].height() as usize {
+            return None;
+        }
+        let row_bytes = self.plane_row_bytes[i];
+        let start = self.plane_offsets[i] + row * row_bytes;
+        self.data.writable_data()?.get_mut(start..start + row_bytes)
+    }
+
     /// The locations of Y, U, V and A (`toYUVALocations`).
     #[must_use]
     pub fn to_yuva_locations(&self) -> Option<YUVALocations> {
