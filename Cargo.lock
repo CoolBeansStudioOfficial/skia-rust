@@ -1295,6 +1295,7 @@ dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-gpu",
+ "skia-rust-libpng",
  "skia-rust-libwebp",
  "skia-rust-pathops",
  "skia-rust-pdf",

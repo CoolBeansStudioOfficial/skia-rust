@@ -30644,8 +30644,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L900-L1046"
 module = "codec"
-status = "todo"
-reason = "writes its PNG with the libpng write path (codecs C16), not ported"
+status = "passing"
 span_hash = "895a9da5a7006c17fcacd9a84c0d8d6bac7019f7ed7feeaa150029df871dbc6b"
 
 [[test]]
