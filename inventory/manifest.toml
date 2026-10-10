@@ -31519,7 +31519,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryPoolTest.cpp#L15-L38"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "417cbf80c0ae30cba720a25a1b0d13975288c98f09531cc8a5f66de5d67a58f8"
 
 [[test]]
@@ -39384,7 +39384,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4979-L5005"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2b4e4900519d55954e010f8aee7eb852509506c50c3cc834b5192adde6731b4f"
 
 [[test]]
@@ -39411,7 +39411,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4947-L4976"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9a5f4fccc0cd627cfad1fb14e546fbfa24cf3cb9e71af149870a30c5d04ffeef"
 
 [[test]]
@@ -39429,7 +39429,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4760-L4774"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4bc1dc03a2462afcd04b2755f7bf4fa32246cc6d96d4f2082eb91f4b32d5bfa7"
 
 [[test]]
@@ -39646,7 +39646,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5493-L5510"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0b06dd91c541a0828424e80edec988ffb7e2ec54079f04528a5adfb8a68bbe84"
 
 [[test]]
@@ -39655,7 +39655,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5474-L5490"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c03f3451fd76582d7fa4659568b5a075c3c88df0f7ac123a0f5bc1454d1365b5"
 
 [[test]]
@@ -42456,7 +42456,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1206-L1221"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "70c7f2ef7f152cde663b8898194cf6b7915684d54cddcd2ac96c7d560c4d36fb"
 
 [[test]]
@@ -48486,7 +48486,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Skbug5221.cpp#L32-L35"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "230aea752b8926c4354185b6dac54a9c3c3850bf04018e685c0f1d3d06b42a51"
 
 [[test]]
@@ -48505,7 +48505,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Skbug6389.cpp#L20-L29"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "89c89ec7cba386522ffbd5fc72738bbe2cf5ff82ce91ed950741ed120450d20f"
 
 [[test]]
