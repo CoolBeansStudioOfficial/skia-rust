@@ -12,10 +12,10 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::colors;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::runtime_effect::RuntimeEffect;
-use skia_rust_core::data::Data;
 use skia_rust_gpu::gpu::gpu_types::Mipmapped;
 use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 
@@ -24,6 +24,8 @@ use crate::{Reporter, def_graphite_adapter_test, errorf, reporter_assert};
 
 // Port of: tests/F16DrawTest.cpp#L26-L93 (chrome/m156)
 // Tests that draws to an F16 surface blend as expected.
+// The length mirrors the C++ function, whose expectation table is part of it.
+#[allow(clippy::too_many_lines)]
 fn test_f16(reporter: &mut Reporter, surface: &mut dyn TestSurface) {
     // Some blend modes and their corresponding expected red channel output when blending premul src
     // (2, 0, 0, 0) with dst (0, 0, 0, 0) on an F16 surface.

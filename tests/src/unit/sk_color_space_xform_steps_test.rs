@@ -483,16 +483,23 @@ fn check_xform_result(
     let rb_result = dst_surface.read_pixels(&mut rb_bm);
     reporter_assert!(reporter, rb_result);
 
-    // `reinterpret_cast<const float*>(rb_bm.pixmap().addr(0, 0))`: the first pixel's four floats.
-    let mut rb_rgba = [0.0_f32; 4];
-    if let Some(pixmap) = rb_bm.peek_pixels() {
-        if let Some(bytes) = pixmap.addr() {
-            for (channel, chunk) in rb_rgba.iter_mut().zip(bytes.as_chunks::<4>().0) {
-                *channel = f32::from_ne_bytes(*chunk);
-            }
-        }
-    }
+    let rb_rgba = first_pixel_f32(&rb_bm);
     reporter_assert!(reporter, rgba_close(&rb_rgba, expected_rgba));
+}
+
+// `reinterpret_cast<const float*>(rb_bm.pixmap().addr(0, 0))`: the first pixel's four floats.
+fn first_pixel_f32(bitmap: &Bitmap) -> [f32; 4] {
+    let mut rgba = [0.0_f32; 4];
+    let Some(pixmap) = bitmap.peek_pixels() else {
+        return rgba;
+    };
+    let Some(bytes) = pixmap.addr() else {
+        return rgba;
+    };
+    for (channel, chunk) in rgba.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *channel = f32::from_ne_bytes(*chunk);
+    }
+    rgba
 }
 
 // Body of test to ensure that SkColorSpaceXformSteps::apply, raster, ganesh, and graphite all
@@ -698,14 +705,14 @@ fn run_color_space_xform_test(reporter: &mut Reporter, mut backend: Backend<'_>)
                 // `SkSurfaces::RenderTarget(recorder.get(), info)`; a surface that cannot be made
                 // is skipped.
                 let Some(dst_surface) =
-                    GraphiteSurface::render_target(*recorder, &dst_info, Mipmapped::No, None, "")
+                    GraphiteSurface::render_target(recorder, &dst_info, Mipmapped::No, None, "")
                 else {
                     continue;
                 };
                 check_xform_result(
                     reporter,
                     &mut GraphiteTestSurface {
-                        context: &mut **context,
+                        context,
                         surface: &dst_surface,
                     },
                     &src_image,

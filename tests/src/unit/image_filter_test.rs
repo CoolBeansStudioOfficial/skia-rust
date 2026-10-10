@@ -44,18 +44,18 @@ use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters::{self, Dither};
-use skia_rust_gpu::graphite::graphite_types::InsertRecordingInfo;
-use skia_rust_gpu::graphite::resource_types::Shareable;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, Mipmapped};
+use skia_rust_gpu::graphite::graphite_types::InsertRecordingInfo;
 use skia_rust_gpu::graphite::image_factories as graphite_image_factories;
+use skia_rust_gpu::graphite::resource_types::Shareable;
 use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
 use crate::{
-    Reporter, def_graphite_adapter_test, def_graphite_test_for_all_contexts, def_test, def_tier_test,
-    reporter_assert,
+    Reporter, def_graphite_adapter_test, def_graphite_test_for_all_contexts, def_test,
+    def_tier_test, reporter_assert,
 };
 
 /// `make_context(out, src)`: a raster context whose desired output is `out` and whose source is
@@ -1215,166 +1215,168 @@ def_graphite_test_for_all_contexts!(ImageFilterMakeWithFilter_Graphite, |reporte
 // is going to the client for likely reuse. If it is assigned a scratch texture, then later
 // recordings may incorrectly overwrite the contents of the scratch texture.
 // Port of: tests/ImageFilterTest.cpp#L2006-L2135 (chrome/m156)
-def_graphite_adapter_test!(ImageFilterMakeWithFilter_ScratchReuse_Graphite, |reporter, context| {
-    // (The C++ uses `ToolUtils::CreateTestingRecorderOptions()`, which only adds a testing image
-    // provider. This test never looks up an image by id, so the default options are used.)
-    let mut recorder = context.make_recorder(None);
+def_graphite_adapter_test!(
+    ImageFilterMakeWithFilter_ScratchReuse_Graphite,
+    |reporter, context| {
+        // (The C++ uses `ToolUtils::CreateTestingRecorderOptions()`, which only adds a testing image
+        // provider. This test never looks up an image by id, so the default options are used.)
+        let mut recorder = context.make_recorder(None);
 
-    let info = ImageInfo::new((16, 8), ColorType::RGBA8888, AlphaType::Premul, None);
-    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
-    reporter_assert!(reporter, surface.is_some());
-    let Some(surface) = surface else {
-        return;
-    };
-
-    let filter_cyan = image_filters::shader(Some(shaders::color(Color::CYAN)), Dither::No, None)
-        .expect("a shader filter");
-    let filter_magenta =
-        image_filters::shader(Some(shaders::color(Color::MAGENTA)), Dither::No, None)
-            .expect("a shader filter");
-
-    // First, make the cyan image filter result, where we also draw the resulting SkImage in the
-    // same Recorder that produced it. Before fixing b/549741762, this tricked the
-    // ScratchResourceManager into instantiating it as a scratch texture.
-    let cyan_filter_image;
-    let cyan_subset;
-    let cyan_offset;
-    {
-        // NOTE The source image is ignored for these solid-color image filters.
-        let made = graphite_image_factories::make_with_filter(
-            &recorder,
-            &surface.as_image(),
-            &filter_cyan,
-            &surface.image_info().bounds(),
-            &IRect::from_wh(8, 8),
-        );
-        reporter_assert!(reporter, made.is_some());
-        let Some((image, subset, offset)) = made else {
+        let info = ImageInfo::new((16, 8), ColorType::RGBA8888, AlphaType::Premul, None);
+        let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+        reporter_assert!(reporter, surface.is_some());
+        let Some(surface) = surface else {
             return;
         };
-        cyan_filter_image = image;
-        cyan_subset = subset;
-        cyan_offset = offset;
 
-        // Like other image factories returning Graphite-backed SkImages to a client, the
-        // underlying TextureProxy should be instantiated upon return, be non-shareable, and
-        // be non-budgeted.
-        let graphite_image = skia_rust_gpu::graphite::image_graphite::Image::from_core(&cyan_filter_image);
-        reporter_assert!(reporter, graphite_image.is_some());
-        if let Some(graphite_image) = graphite_image {
-            let proxy = graphite_image.texture_proxy_view().proxy();
-            reporter_assert!(reporter, proxy.is_some_and(|p| p.is_instantiated()));
-            if let Some(texture) = proxy.and_then(|p| p.ref_texture()) {
-                reporter_assert!(reporter, texture.base().budgeted() == Budgeted::No);
-                reporter_assert!(reporter, texture.base().shareable() == Shareable::No);
+        let filter_cyan =
+            image_filters::shader(Some(shaders::color(Color::CYAN)), Dither::No, None)
+                .expect("a shader filter");
+        let filter_magenta =
+            image_filters::shader(Some(shaders::color(Color::MAGENTA)), Dither::No, None)
+                .expect("a shader filter");
+
+        // First, make the cyan image filter result, where we also draw the resulting SkImage in the
+        // same Recorder that produced it. Before fixing b/549741762, this tricked the
+        // ScratchResourceManager into instantiating it as a scratch texture.
+        let cyan_filter_image;
+        let cyan_subset;
+        let cyan_offset;
+        {
+            // NOTE The source image is ignored for these solid-color image filters.
+            let made = graphite_image_factories::make_with_filter(
+                &recorder,
+                &surface.as_image(),
+                &filter_cyan,
+                &surface.image_info().bounds(),
+                &IRect::from_wh(8, 8),
+            );
+            reporter_assert!(reporter, made.is_some());
+            let Some((image, subset, offset)) = made else {
+                return;
+            };
+            cyan_filter_image = image;
+            cyan_subset = subset;
+            cyan_offset = offset;
+
+            // Like other image factories returning Graphite-backed SkImages to a client, the
+            // underlying TextureProxy should be instantiated upon return, be non-shareable, and
+            // be non-budgeted.
+            let graphite_image =
+                skia_rust_gpu::graphite::image_graphite::Image::from_core(&cyan_filter_image);
+            reporter_assert!(reporter, graphite_image.is_some());
+            if let Some(graphite_image) = graphite_image {
+                let proxy = graphite_image.texture_proxy_view().proxy();
+                reporter_assert!(reporter, proxy.is_some_and(|p| p.is_instantiated()));
+                if let Some(texture) = proxy.and_then(|p| p.ref_texture()) {
+                    reporter_assert!(reporter, texture.base().budgeted() == Budgeted::No);
+                    reporter_assert!(reporter, texture.base().shareable() == Shareable::No);
+                }
+            }
+
+            // Now draw back to surface at (0,0), which should fill left half with cyan.
+            surface.canvas().draw_image_rect_with_sampling_options(
+                &cyan_filter_image,
+                Some((&Rect::from_irect(cyan_subset), SrcRectConstraint::Strict)),
+                Rect::from_irect(IRect::from_pt_size(cyan_offset, cyan_subset.size())),
+                SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+                &Paint::default(),
+            );
+            // Snap the Recording and insert it to prepare the resources used by MakeWithFilter()
+            let recording = recorder.snap();
+            reporter_assert!(reporter, recording.is_some());
+            if let Some(mut recording) = recording {
+                let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
             }
         }
 
-        // Now draw back to surface at (0,0), which should fill left half with cyan.
-        surface.canvas().draw_image_rect_with_sampling_options(
-            &cyan_filter_image,
-            Some((
-                &Rect::from_irect(cyan_subset),
-                SrcRectConstraint::Strict,
-            )),
-            Rect::from_irect(IRect::from_pt_size(cyan_offset, cyan_subset.size())),
-            SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
-            &Paint::default(),
-        );
-        // Snap the Recording and insert it to prepare the resources used by MakeWithFilter()
-        let recording = recorder.snap();
-        reporter_assert!(reporter, recording.is_some());
-        if let Some(mut recording) = recording {
-            let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
-        }
-    }
+        // Second, use the magenta image filter as part of a save layer to render into the right half
+        // of the surface with a texture that definitely should be classified as scratch.
+        {
+            let canvas = surface.canvas();
+            canvas.save();
+            canvas.clip_irect(IRect::from_ltrb(8, 0, 16, 8), None);
+            let mut layer_paint = Paint::default();
+            layer_paint.set_image_filter(filter_magenta);
+            canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
+            canvas.restore();
+            canvas.restore();
 
-    // Second, use the magenta image filter as part of a save layer to render into the right half
-    // of the surface with a texture that definitely should be classified as scratch.
-    {
-        let canvas = surface.canvas();
-        canvas.save();
-        canvas.clip_irect(IRect::from_ltrb(8, 0, 16, 8), None);
-        let mut layer_paint = Paint::default();
-        layer_paint.set_image_filter(filter_magenta);
-        canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
-        canvas.restore();
-        canvas.restore();
-
-        // Snap the Recording and insert it to instantiate the layer's scratch texture. The layer's
-        // scratch texture and the cyanFilterImage result were crafted to be the same size. If the
-        // latter was incorrectly instantiated as a scratch texture, its contents will be replaced
-        // with magenta. Future use of cyanFilterImage will then draw incorrectly.
-        let recording = recorder.snap();
-        reporter_assert!(reporter, recording.is_some());
-        if let Some(mut recording) = recording {
-            let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
-        }
-    }
-
-    // Redraw the cyan image on both the left and right-hand side. If everything works correctly,
-    // this should be a no-op for the left side and replace the RHS with cyan to leave `surface`
-    // completely cyan. If the image was corrupted, the LHS will turn magenta instead.
-    // (and if it's neither solid cyan (correct) or solid magenta (expected corruption), then
-    //  something extra bad is happening!)
-    {
-        let canvas = surface.canvas();
-        canvas.save();
-        let dst = Rect::from_irect(IRect::from_pt_size(cyan_offset, cyan_subset.size()));
-        canvas.draw_image_rect_with_sampling_options(
-            &cyan_filter_image,
-            Some((&Rect::from_irect(cyan_subset), SrcRectConstraint::Strict)),
-            dst,
-            SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
-            &Paint::default(),
-        );
-        canvas.translate((8, 0));
-        canvas.draw_image_rect_with_sampling_options(
-            &cyan_filter_image,
-            Some((&Rect::from_irect(cyan_subset), SrcRectConstraint::Strict)),
-            dst,
-            SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
-            &Paint::default(),
-        );
-        canvas.restore();
-
-        // Insert the recording before doing the test readback
-        let recording = recorder.snap();
-        reporter_assert!(reporter, recording.is_some());
-        if let Some(mut recording) = recording {
-            let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
-        }
-    }
-
-    // Readback and confirm the image is cyan
-    let mut dst = Bitmap::new();
-    dst.alloc_pixels_info(&surface.image_info().clone(), None);
-    let Some(mut pm) = dst.peek_pixels_mut() else {
-        return;
-    };
-    if !context.read_surface_pixels(&surface, &mut pm, 0, 0) {
-        // Probably a protected context: the C++ logs and returns.
-        return;
-    }
-
-    let mut all_cyan = true;
-    let mut all_magenta = true;
-    for y in 0..pm.height() {
-        for x in 0..pm.width() {
-            let c = pm.get_color((x, y));
-            if c != Color::CYAN {
-                all_cyan = false;
-            }
-            if c != Color::MAGENTA {
-                all_magenta = false;
+            // Snap the Recording and insert it to instantiate the layer's scratch texture. The layer's
+            // scratch texture and the cyanFilterImage result were crafted to be the same size. If the
+            // latter was incorrectly instantiated as a scratch texture, its contents will be replaced
+            // with magenta. Future use of cyanFilterImage will then draw incorrectly.
+            let recording = recorder.snap();
+            reporter_assert!(reporter, recording.is_some());
+            if let Some(mut recording) = recording {
+                let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
             }
         }
+
+        // Redraw the cyan image on both the left and right-hand side. If everything works correctly,
+        // this should be a no-op for the left side and replace the RHS with cyan to leave `surface`
+        // completely cyan. If the image was corrupted, the LHS will turn magenta instead.
+        // (and if it's neither solid cyan (correct) or solid magenta (expected corruption), then
+        //  something extra bad is happening!)
+        {
+            let canvas = surface.canvas();
+            canvas.save();
+            let dst = Rect::from_irect(IRect::from_pt_size(cyan_offset, cyan_subset.size()));
+            canvas.draw_image_rect_with_sampling_options(
+                &cyan_filter_image,
+                Some((&Rect::from_irect(cyan_subset), SrcRectConstraint::Strict)),
+                dst,
+                SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+                &Paint::default(),
+            );
+            canvas.translate((8, 0));
+            canvas.draw_image_rect_with_sampling_options(
+                &cyan_filter_image,
+                Some((&Rect::from_irect(cyan_subset), SrcRectConstraint::Strict)),
+                dst,
+                SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+                &Paint::default(),
+            );
+            canvas.restore();
+
+            // Insert the recording before doing the test readback
+            let recording = recorder.snap();
+            reporter_assert!(reporter, recording.is_some());
+            if let Some(mut recording) = recording {
+                let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
+            }
+        }
+
+        // Readback and confirm the image is cyan
+        let mut dst = Bitmap::new();
+        dst.alloc_pixels_info(&surface.image_info().clone(), None);
+        let Some(mut pm) = dst.peek_pixels_mut() else {
+            return;
+        };
+        if !context.read_surface_pixels(&surface, &mut pm, 0, 0) {
+            // Probably a protected context: the C++ logs and returns.
+            return;
+        }
+
+        let mut all_cyan = true;
+        let mut all_magenta = true;
+        for y in 0..pm.height() {
+            for x in 0..pm.width() {
+                let c = pm.get_color((x, y));
+                if c != Color::CYAN {
+                    all_cyan = false;
+                }
+                if c != Color::MAGENTA {
+                    all_magenta = false;
+                }
+            }
+        }
+        reporter_assert!(reporter, !(all_cyan && all_magenta));
+        reporter_assert!(
+            reporter,
+            all_cyan,
+            "MakeWithFilter image was corrupted, all magenta = {}",
+            all_magenta
+        );
     }
-    reporter_assert!(reporter, !(all_cyan && all_magenta));
-    reporter_assert!(
-        reporter,
-        all_cyan,
-        "MakeWithFilter image was corrupted, all magenta = {}",
-        all_magenta
-    );
-});
+);
