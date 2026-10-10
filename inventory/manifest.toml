@@ -33620,7 +33620,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1616-L1707"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "98e9eacc073618fa591c1a4a6a048390c39479dbd3f873c012387b39db8adb58"
 
 [[test]]
@@ -33629,7 +33630,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1283-L1340"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "7ac820529f2987fd3c49e8e965928e8da9855fbd38f593c8fe33009a830b3525"
 
 [[test]]
@@ -33638,7 +33640,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1172-L1199"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "dfea03328dc9e282d9a416697d1a63953bbf8c717920a1d1588b5793b37bcf01"
 
 [[test]]
@@ -33647,7 +33650,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1143-L1169"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c62cb2cbb1fc6f2b7e74768ae602454f0d9ced5e6cbff8c11ffd43ca1e94a9c0"
 
 [[test]]
@@ -33656,7 +33660,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1749-L1781"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c06e02af895930052bc6e6d31c9ebbca6603aa051444a26ad4002863ea01174a"
 
 [[test]]
@@ -33665,7 +33670,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1070-L1082"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "340599a491e78276283066ab0463d8b95c1e9d70bc7dbf7b0aa5d08178d2c54a"
 
 [[test]]
@@ -33674,7 +33680,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L609-L623"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c2134ba57114350db0fcc81afa4e58b93e6c0c6ebc8aeb35bfde681ead6ca9e6"
 
 [[test]]
@@ -33683,7 +33690,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1567-L1614"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "dfc9d1c58e6735153bc706b6ad8efc7aae29a9541221227ed5ea19155501e275"
 
 [[test]]
@@ -33692,7 +33700,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1045-L1067"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4b3aebd9e06683579debb05dc9e4d328b050266ea18ea2bcf3cd997d826c2d37"
 
 [[test]]
@@ -33701,7 +33710,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1784-L1827"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "45b21f88e39ece2d337ed45dfc208105b9889a836115c39206745e722985c063"
 
 [[test]]
@@ -33710,7 +33720,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L541-L543"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "60e32cd49df12af4492ca9b8fb7239e920fa630510490ae8a79e1d8bf525d6c2"
 
 [[test]]
@@ -33719,7 +33730,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L936-L974"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "ae4292bcecfff59220d855cecbc2c66dbe6eb4d3843bb493b04350327e777a26"
 
 [[test]]
@@ -33738,7 +33750,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1482-L1526"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "6074fd6cf7377c5515bcb318de1d229832e4379e75803fdcae8b71ef4fe879a4"
 
 [[test]]
@@ -33747,7 +33760,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1106-L1140"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "5f4eccf2306e8229f52d740e408b00853edc516836c2f3029de6aab463230c00"
 
 [[test]]
@@ -33756,7 +33770,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1085-L1103"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "64faa4c12e69a879db389b5bc5ccdd4cb4e65e6b0bd7af6da5cd940ecae89c2d"
 
 [[test]]
@@ -33765,7 +33780,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1344-L1478"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "b3e290f19daed2cb7ed23c2bffb3ca2efaee9a45b31dbe5c322d7e1c5feadf00"
 
 [[test]]
@@ -33774,7 +33790,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L977-L1042"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "ec9206d6f9feb64f38ed143429d96d85ed6e46500785e1d3f372b8c28be52715"
 
 [[test]]
@@ -33783,7 +33800,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L812-L860"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "26635b1d09bfbcfa9119b92de8c17557a5a83ac13a6d424a39f1c9f907497071"
 
 [[test]]
@@ -33792,7 +33810,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1831-L1901"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "d68e264b5bc4108b578e1cb85374ec6117216c1f2b21a27bf1b983ac32d58d86"
 
 [[test]]
@@ -33801,7 +33820,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1243-L1279"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c0de0cd56588f4b4da09c5a7ba9f8107435dffdd7087255c5cb68597b84d8432"
 
 [[test]]
@@ -33810,7 +33830,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L673-L727"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "36cef5351f07f68f574d2ef1a55023756c458e30493babb109345a2f6fc568f6"
 
 [[test]]
@@ -33819,7 +33840,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L765-L783"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1fc6d0f4ffcd8327c374645f2e178c00a940436ae7e913ca2bdcdc51ba87c734"
 
 [[test]]
@@ -33828,7 +33850,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L730-L762"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "45290ddee5970512df78044d448f47e0bc6f0829bc34cf1c8fb9424eeacc6a38"
 
 [[test]]
@@ -33837,7 +33860,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L547-L605"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1a891e3d6865d5838e793b10e961906ad5ed005263331cf2eb2a1075ca296808"
 
 [[test]]
@@ -33846,7 +33870,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L627-L669"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "bd7a3bfbadce08205b56cccbcaf2c2b02f56c679c80f58de7540096fb9a87229"
 
 [[test]]
@@ -33855,7 +33880,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L863-L933"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8d2bac0dd1695ec6b084f271b42f48015eeab18c1da98d6cae44c2025b66ede0"
 
 [[test]]
@@ -33864,7 +33890,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1714-L1746"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8cb6ed3a86414e93e3a8210e17fa79e4023cdabe1bedaa2dfc6b5ca1ff559b20"
 
 [[test]]
@@ -33883,7 +33910,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1204-L1240"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "2cac973fc254570f24aea19f2c3f3065b8fbb594addd83012840636948ec857c"
 
 [[test]]
@@ -33901,7 +33929,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1529-L1563"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e9cc99cf8710a27ee84d4c3c673dd081e05e82df1fbf056e33851574cc3da386"
 
 [[test]]
@@ -33910,7 +33939,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L786-L809"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c0e75c6dd862faf5a3f16afdf62a507e13f313891ed6e36b5839749501225855"
 
 [[test]]
@@ -33919,7 +33949,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1959-L2083"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4b4f8d7163f3dbfa35945dc6ec59ddffaaabd62bbc601d67997355e7669f517d"
 
 [[test]]
@@ -34018,7 +34049,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrGLExtensionsTest.cpp#L34-L50"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "73a590acb05f1df449670907ec851d9d40ee4eabc83ff861690d29c0a87a0316"
 
 [[test]]
@@ -34065,7 +34097,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrMemoryPoolTest.cpp#L181-L234"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "061a74af16ed02637c1f351040bbe8ba9ec1be8f15956a708d84448de30ed2c3"
 
 [[test]]
@@ -34074,7 +34107,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrMemoryPoolTest.cpp#L255-L321"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "55323850828d57a989e10e410f3946c1c31b22d26d57d9894710c8e655e3bf87"
 
 [[test]]
@@ -34193,7 +34227,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L84-L135"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c51ad534a1d780e8143235fb88bb4a1a39d6731188c8db0894850d997d814396"
 
 [[test]]
@@ -34202,7 +34237,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L137-L195"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "a8f75b50e33037e8c6ef7d350936689b61411808a55d5ceb406402b4d55078b2"
 
 [[test]]
@@ -34211,7 +34247,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L197-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "57cde785f062c77d8c039d463ce3064e4ca0544e3138192862028a08aedbdab4"
 
 [[test]]
@@ -34220,7 +34257,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadCropTest.cpp#L246-L258"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "11eb0ab7cdcf0a897581b0f91e0960ebc70a7fd6500f7f0483e194dfd713dae6"
 
 [[test]]
@@ -34229,7 +34267,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadCropTest.cpp#L260-L274"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "32bd87ab7eadbe08ce4124ceb98d55ea0c1247d2ada27def915f3c868ed5bbe6"
 
 [[test]]
@@ -34238,7 +34277,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrRenderTaskClusterTest.cpp#L136-L183"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4a68d5bcdbb7d8fa0dba65752074985fe802c86c390a2086f6f998fdcf88ac93"
 
 [[test]]
@@ -34247,7 +34287,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2337-L2367"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e695809be1f7af34875e23c4d6435d74f36c7ed512f2ea4a848726087f9ae825"
 
 [[test]]
@@ -34256,7 +34297,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2103-L2234"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "72338873eee0de332a9e02ee2e8b765492afd965e0ec4bb2a04ed94292e60a85"
 
 [[test]]
@@ -34265,7 +34307,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2236-L2335"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "f30a2c663a0bf63ee141e561e84082721570d21796cd14ba3d8cafad1c148b7f"
 
 [[test]]
@@ -34274,7 +34317,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1523-L1627"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "5a88b91854437bb8984a29efde49c58f8c9f4597cae7f04bf46b8b2f21837e57"
 
 [[test]]
@@ -34283,7 +34327,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1863-L1969"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "7405bb8d48fb56a308df687483705255d8044ff29549322d8d052e4142a1d279"
 
 [[test]]
@@ -34292,7 +34337,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2042-L2101"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "001a47785a381eef4217cac436a72367468c40667bfa97831cece44ecd808c5f"
 
 [[test]]
@@ -34301,7 +34347,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1971-L2040"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "10f8708f7520a4ebd853d38e03f3b76349c2018ffbe73039ea53d921d0d53bd6"
 
 [[test]]
@@ -48669,7 +48716,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SmallPathRendererTest.cpp#L71-L138"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "abf00279d6baa4802e3fedee48172278a7407e15d22d2cc20e7d94ba19973a60"
 
 [[test]]
@@ -48678,7 +48726,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SmallPathRendererTest.cpp#L58-L69"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "3865d458c9a2a29ac2892454699e58836096963994f301c77d812b5d0cfcc3e8"
 
 [[test]]
@@ -50228,7 +50277,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1066-L1124"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e9ab0ae50032bd3b6f227658e4777e2e7d66e9120ef2527ed9fa74cfe2746fcc"
 
 [[test]]
@@ -50237,7 +50287,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1516-L1545"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "f381e31d6452b86881f182b3fdb3af38b95501a622679ace757215421b447231"
 
 [[test]]
@@ -50246,7 +50297,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1602-L1620"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8bc455e457cc78bf2bee9d9c818eb97e2bcc19c7845459faf1b9c3c145971eb2"
 
 [[test]]
@@ -50255,7 +50307,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1547-L1559"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "952160a200e08c4daacfbbf4c002adee4779d18e1954d35835dba45ac65331ef"
 
 [[test]]
@@ -50264,7 +50317,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1571-L1600"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "654f1c54c25a062aec87f97ecb1651d69bfca4615af377c72c7e476d5a440194"
 
 [[test]]
@@ -50283,7 +50337,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1126-L1307"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "193674510f57274e2134921a0e3639ac8c1286babdd26af0a83a26c818f2c90f"
 
 [[test]]
@@ -50292,7 +50347,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1309-L1414"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "d9f6c27a5739a92139b1c69b0f8f3dfd76d522b0556a4d1d020ee8c863e5afb0"
 
 [[test]]
@@ -50301,7 +50357,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1426-L1466"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1c91a4477d6d98468a213aa00e7f41006f32287e4e5e4bcf4c3793110a53a6a7"
 
 [[test]]
@@ -50310,7 +50367,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1469-L1514"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "2a5df6ea8a422f94ca53cd1b684f85df53072682d2441a4830798576fdc3e3bf"
 
 [[test]]
@@ -50717,7 +50775,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L361-L493"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "2cec5d065aab70a7c5fc867275231dce5401bbe1ac83b4635eedfb59eb8661e5"
 
 [[test]]
@@ -50726,7 +50785,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L497-L653"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "87e174478cd4c2dd7bb6d300ab804d6e3df978e4969defadf3ca99c634fac1bd"
 
 [[test]]
@@ -50735,7 +50795,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L657-L828"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "0f0ab2d81276dd542fcf97b6433dda6a0057d4ecc63c27e370fa8d9385674313"
 
 [[test]]
@@ -50744,7 +50805,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L832-L1018"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "b5b456905d7a7615299f72d4ccb0b9316bcbc6b62360ee280de404141956fbb6"
 
 [[test]]
@@ -50753,7 +50815,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1031-L1188"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "5c97ce8980bb312fda7c675de9f7cb5fa0aa689a6745136077f86d1e315abb6d"
 
 [[test]]
@@ -50762,7 +50825,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1192-L1403"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "744954c3f3176fef9d061d88c5a21ca2e8aea7d05483b95f41a090152039bb07"
 
 [[test]]
@@ -50771,7 +50835,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1407-L1618"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "abdcc8fa1608f93d96a6cfb62ca741e53b0737185c4e2b173c7e576aa3a33235"
 
 [[test]]
@@ -50780,7 +50845,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1622-L1776"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "a6fbdaf037442886d3cb8bcd934e43c5acb117b3d07577920f279f9be296e51e"
 
 [[test]]
@@ -50789,7 +50855,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1782-L1930"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "aff41849f2647710bac63b3762b02b0e423b59cb68bbfb6d04551e0a6cc3391e"
 
 [[test]]
@@ -51066,7 +51133,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WindowRectanglesTest.cpp#L21-L79"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "bd94d8207ae732e47ef02cd84222dff17d2b48f5bb5c0a00cd317eea9691e968"
 
 [[test]]
