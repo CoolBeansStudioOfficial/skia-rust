@@ -23,6 +23,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// Which `run_program` kernel skcms picks.
 // Port of: modules/skcms/skcms.cc#L2459 (chrome/m156)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+// `Hsw` is only detected on x86-64 hosts; elsewhere only forced tiers (`Skx`) and `Baseline` occur.
+#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
 pub(crate) enum CpuType {
     Baseline,
     Hsw,
