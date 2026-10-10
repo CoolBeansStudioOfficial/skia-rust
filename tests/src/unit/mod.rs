@@ -44,6 +44,7 @@ pub mod codec_anim_test;
 pub mod codec_exact_read_test;
 #[cfg(test)]
 pub mod codec_partial_test;
+pub mod codec_recommended_type_test;
 #[cfg(test)]
 pub mod codec_test;
 #[cfg(test)]
@@ -88,6 +89,7 @@ pub mod edge_test;
 pub mod empty_path_test;
 #[cfg(test)]
 pub mod encode_test;
+pub mod encoded_info_test;
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;

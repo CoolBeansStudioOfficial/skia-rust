@@ -30327,7 +30327,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecRecommendedTypeTest.cpp#L23-L43"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "97820c70071424c9eae913fadb8a8c410b39449929a221516742f9035e3a9562"
 
 [[test]]
@@ -32006,7 +32006,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodedInfoTest.cpp#L22-L46"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "61c803e3093464c4699b0f1976d3b3ed20a760fa8cb159662b75d1d751c86821"
 
 [[test]]
