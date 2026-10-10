@@ -16,16 +16,6 @@ use crate::plan::{Plan, unsupported};
 use crate::serialize::Serializer;
 use crate::{Res, SubsetError};
 
-/// The `layout_variation_idx_delta_map` of the plan is empty unless the `GDEF` has a variation
-/// store, which this port rejects; variation devices are therefore dropped (`VariationDevice::copy`).
-pub(crate) fn gdef_has_var_store(gdef: View<'_>) -> bool {
-    match gdef.u16(0) {
-        1 => gdef.u32(0) >= 0x0001_0003 && gdef.u32(14) != 0,
-        2 => gdef.u32(14 + 4) != 0,
-        _ => false,
-    }
-}
-
 /// `GDEF::has_mark_glyph_sets` for version 1.
 fn markglyphsets_off(gdef: View<'_>) -> Option<View<'_>> {
     if gdef.u16(0) == 1 && gdef.u32(0) >= 0x0001_0002 && gdef.u16(12) != 0 {
@@ -217,11 +207,11 @@ fn attach_list_subset(plan: &Plan<'_>, s: &mut Serializer, this: View<'_>) -> bo
                 true
             })
         };
-        if !ret {
+        if ret {
+            new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
+        } else {
             s.array_pop(out + 2);
             s.revert(snap);
-        } else {
-            new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
         }
     }
     let ok = !new_coverage.is_empty();
@@ -249,11 +239,11 @@ fn lig_caret_list_subset(plan: &Plan<'_>, s: &mut Serializer, this: View<'_>) ->
             let lig_glyph = this.off16(off_field);
             s.serialize_subset(o, 2, true, |s| lig_glyph_subset(plan, s, lig_glyph))
         };
-        if !ret {
+        if ret {
+            new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
+        } else {
             s.array_pop(out + 2);
             s.revert(snap);
-        } else {
-            new_coverage.push(plan.glyph_map.get(&g).copied().unwrap_or(INVALID));
         }
     }
     let ok = !new_coverage.is_empty();

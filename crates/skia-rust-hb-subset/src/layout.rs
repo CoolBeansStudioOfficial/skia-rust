@@ -21,24 +21,18 @@ pub(crate) struct LayoutPlan {
     pub gpos: TablePlan,
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)] // a reference to a byte-string literal
-fn has(plan: &Plan<'_>, t: &[u8; 4]) -> bool {
-    !plan.source.table(tag(t)).is_empty()
-}
-
 /// Port of `layout_populate_gids_to_retain` (hb-subset-plan-layout.cc#L338-L368).
 pub(crate) fn populate_gids_to_retain(plan: &mut Plan<'_>) -> Res<()> {
     crate::gsubgpos::populate_gids_to_retain(plan)
 }
 
 /// Port of `_math_closure` (hb-subset-plan.cc#L136-L146).
-pub(crate) fn math_closure(plan: &mut Plan<'_>, glyphs: &mut BTreeSet<u32>) -> Res<()> {
+pub(crate) fn math_closure(plan: &Plan<'_>, glyphs: &mut BTreeSet<u32>) {
     crate::math::closure_glyphs(View::new(plan.source.table(tag(b"MATH"))), glyphs);
-    Ok(())
 }
 
 /// Port of `_nameid_closure` (hb-subset-plan.cc#L432-L447), without axis locations.
-pub(crate) fn nameid_closure(plan: &mut Plan<'_>) -> Res<()> {
+pub(crate) fn nameid_closure(plan: &mut Plan<'_>) {
     if !plan.drop_tables.contains(&tag(b"STAT")) {
         let ids = stat_name_ids(plan.source.table(tag(b"STAT")));
         plan.name_ids.extend(ids);
@@ -57,7 +51,6 @@ pub(crate) fn nameid_closure(plan: &mut Plan<'_>) -> Res<()> {
     if !plan.drop_tables.contains(&tag(b"GSUB")) {
         crate::gsubgpos::collect_name_ids(plan, Kind::Gsub);
     }
-    Ok(())
 }
 
 /// `STAT::collect_name_ids` (hb-ot-stat-table.hh#L518-L541) with no user axes location: every

@@ -200,7 +200,7 @@ fn subset_matches_hb_subset() {
         failures.join("\n")
     );
     // A font in NOT_PORTED must still be unsupported, so that the list shrinks as the port grows.
-    let now_ported: Vec<&str> = NOT_PORTED
+    let newly_exact: Vec<&str> = NOT_PORTED
         .iter()
         .map(|(font, _)| *font)
         .filter(|font| !gaps.keys().any(|g| g.starts_with(&format!("{font}:"))))
@@ -251,10 +251,10 @@ fn subset_matches_hb_subset_extended() {
             it.next().unwrap(),
             it.next().unwrap(),
         );
-        if let Ok(only) = std::env::var("HB_SUBSET_EXT_FONT") {
-            if !font.contains(&only) {
-                continue;
-            }
+        if let Ok(only) = std::env::var("HB_SUBSET_EXT_FONT")
+            && !font.contains(&only)
+        {
+            continue;
         }
         let key = format!("{font} {index} {set}");
         let Some(want) = want.get(&key) else {

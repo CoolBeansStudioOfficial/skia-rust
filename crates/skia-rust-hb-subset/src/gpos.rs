@@ -81,7 +81,7 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, lookup_type: u32, sub:
                 true
             }
         }
-        4 | 5 | 6 => {
+        4..=6 => {
             if sub.u16(0) != 1 {
                 return true;
             }
@@ -221,28 +221,25 @@ fn single_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
     }
     s.set_u16(pos, out_format as u16);
     let glyphs: Vec<u32> = it.iter().map(|p| p.0).collect();
-    match out_format {
-        1 => {
-            // `SinglePosFormat1::serialize`
-            let out = pos;
-            s.allocate(4);
-            s.set_u16(out + 4, value_format as u16);
-            if let Some(&(_, vo)) = it.first() {
-                copy_values(s, value_format, value_format, sub, sub, vo);
-            }
-            s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &glyphs));
+    if out_format == 1 {
+        // `SinglePosFormat1::serialize`
+        let out = pos;
+        s.allocate(4);
+        s.set_u16(out + 4, value_format as u16);
+        if let Some(&(_, vo)) = it.first() {
+            copy_values(s, value_format, value_format, sub, sub, vo);
         }
-        _ => {
-            // `SinglePosFormat2::serialize`
-            let out = pos;
-            s.allocate(6);
-            s.set_u16(out + 4, value_format as u16);
-            s.set_u16(out + 6, it.len() as u16);
-            for &(_, vo) in &it {
-                copy_values(s, value_format, value_format, sub, sub, vo);
-            }
-            s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &glyphs));
+        s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &glyphs));
+    } else {
+        // `SinglePosFormat2::serialize`
+        let out = pos;
+        s.allocate(6);
+        s.set_u16(out + 4, value_format as u16);
+        s.set_u16(out + 6, it.len() as u16);
+        for &(_, vo) in &it {
+            copy_values(s, value_format, value_format, sub, sub, vo);
         }
+        s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &glyphs));
     }
     ret
 }
@@ -272,11 +269,11 @@ fn pair1_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
         let ret = offset_subset(s, o, sub, 10 + 2 * i, |s, ps| {
             pair_set_subset(plan, s, ps, vf0, vf1)
         });
-        if !ret {
+        if ret {
+            new_coverage.push(map_gid(&plan.glyph_map, g));
+        } else {
             s.array_pop(out + 8);
             s.revert(snap);
-        } else {
-            new_coverage.push(map_gid(&plan.glyph_map, g));
         }
     }
     s.serialize_serialize(out + 2, 2, |s| coverage_serialize(s, &new_coverage));
@@ -478,7 +475,7 @@ fn anchor_matrix_subset(s: &mut Serializer, m: View<'_>, num_rows: u32, indexes:
     for &i in indexes {
         let field = 2 + 2 * i as usize;
         let pos = s.embed_u16(m.u16(field) as u16);
-        offset_subset(s, pos, m, field, |s, a| anchor_subset(s, a));
+        offset_subset(s, pos, m, field, anchor_subset);
     }
     true
 }
@@ -528,7 +525,7 @@ fn mark_array_subset(
         let pos = s.embed(&bytes_of(ma, rec, 4));
         let klass = ma.u16(rec);
         s.set_u16(pos, map_gid(klass_mapping, klass) as u16);
-        ret |= offset_subset(s, pos + 2, ma, rec + 2, |s, a| anchor_subset(s, a));
+        ret |= offset_subset(s, pos + 2, ma, rec + 2, anchor_subset);
         new_length += 1;
     }
     s.set_u16(out, new_length as u16);
@@ -560,8 +557,8 @@ fn cursive_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
         let rec = 6 + 4 * i;
         let pos = s.embed(&bytes_of(sub, rec, 4));
         let mut r = false;
-        r |= offset_subset(s, pos, sub, rec, |s, a| anchor_subset(s, a));
-        r |= offset_subset(s, pos + 2, sub, rec + 2, |s, a| anchor_subset(s, a));
+        r |= offset_subset(s, pos, sub, rec, anchor_subset);
+        r |= offset_subset(s, pos + 2, sub, rec + 2, anchor_subset);
         let _ = r;
     }
     let glyphs: Vec<u32> = it.iter().map(|p| p.0).collect();

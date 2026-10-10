@@ -226,7 +226,7 @@ impl<'a> Plan<'a> {
 
         let mut mathed = self.glyphset_gsub.clone();
         if !self.drop_tables.contains(&tag(b"MATH")) {
-            crate::layout::math_closure(self, &mut mathed)?;
+            crate::layout::math_closure(self, &mut mathed);
             remove_invalid_gids(&mut mathed, num_glyphs);
         }
 
@@ -239,7 +239,7 @@ impl<'a> Plan<'a> {
 
         self.glyphset_colred = cur_glyphset.clone();
 
-        crate::layout::nameid_closure(self)?;
+        crate::layout::nameid_closure(self);
 
         // Populate a full set of glyphs to retain by adding all referenced composite glyphs.
         if glyf.has_data() {
