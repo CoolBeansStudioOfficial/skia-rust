@@ -23,6 +23,7 @@ fn c_str(buf: &[u8]) -> &[u8] {
 
 // Port of: tests/PDFPrimitivesTest.cpp#L386-L404 (chrome/m156)
 // test to see that all finite scalars round trip via scanf().
+#[allow(clippy::float_cmp)] // the test compares exactly, as `roundTripFloat != inputFloat` does
 fn check_pdf_scalar_serialization(reporter: &mut Reporter, input_float: f32) {
     let mut float_string = [0u8; MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH];
     let len = float_to_decimal(input_float, &mut float_string);
@@ -96,6 +97,7 @@ def_test!(SkPDF_Primitives_Color, |reporter| {
         reporter_assert!(reporter, parsed.is_ok());
         let f = parsed.unwrap_or(0.0);
         // `int roundTrip = (int)(0.5 + f * 255);`: `f * 255` is a float, the sum a double.
+        #[allow(clippy::cast_possible_truncation)] // the C++ `(int)` cast of a value in range
         let round_trip = (0.5 + f64::from(f * 255.0)) as i32;
         reporter_assert!(reporter, round_trip == i32::from(i));
     }
