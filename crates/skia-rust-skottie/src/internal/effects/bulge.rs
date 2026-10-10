@@ -16,14 +16,9 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeEffectBuilder};
-use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::scalar::{scalar_abs, scalar_asin};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
-use skia_rust_core::tile_mode::TileMode;
-use skia_rust_core::picture::Picture;
-use skia_rust_core::picture_recorder::PictureRecorder;
-use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::{Hit, has_children_inval};
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext};
@@ -36,7 +31,7 @@ use super::super::animator::{
     AnimatablePropertyContainer, DiscardableAdapterBase, Prop, PropertyContainer,
 };
 use super::super::skottie_priv::AnimationBuilder;
-use super::{EffectBinder, EffectBuilder, attach_adapter_node};
+use super::{EffectBinder, EffectBuilder, attach_adapter_node, repeating_content_shader};
 
 /// The bulge SkSL: the bulge is a combination of spherical and exponential displacement along the
 /// radius, in a space where the ellipse is a unit circle centered on the origin.
@@ -144,19 +139,8 @@ impl BulgeNode {
     fn content_shader(&self) -> Option<Shader> {
         if self.content_shader.borrow().is_none() || has_children_inval(std::slice::from_ref(&self.child))
         {
-            self.child.revalidate(None, &Matrix::new_identity());
-            let mut recorder = PictureRecorder::new();
-            let canvas = recorder.begin_recording(Rect::from_size(self.child_size), false);
-            self.child.render(canvas, None);
-            let picture: Option<Picture> = recorder.finish_recording_as_picture(None);
-            *self.content_shader.borrow_mut() = picture.and_then(|picture| {
-                picture.to_shader(
-                    (TileMode::Repeat, TileMode::Repeat),
-                    FilterMode::Linear,
-                    None::<&Matrix>,
-                    None::<&Rect>,
-                )
-            });
+            *self.content_shader.borrow_mut() =
+                repeating_content_shader(&self.child, self.child_size);
         }
         self.content_shader.borrow().clone()
     }
