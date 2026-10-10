@@ -140,17 +140,32 @@ fn check_unfulfilled(reporter: &mut Reporter, checker: &Checker) {
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L133-L138 (chrome/m156)
 fn check_fulfilled_ahead_by_one(reporter: &mut Reporter, checker: &Checker, expected: i32) {
-    check_fulfill_and_release_cnts(reporter, checker, expected, ReleaseBalanceExpectation::OffByOne);
+    check_fulfill_and_release_cnts(
+        reporter,
+        checker,
+        expected,
+        ReleaseBalanceExpectation::OffByOne,
+    );
 }
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L140-L145 (chrome/m156)
 fn check_fulfilled_ahead_by_two(reporter: &mut Reporter, checker: &Checker, expected: i32) {
-    check_fulfill_and_release_cnts(reporter, checker, expected, ReleaseBalanceExpectation::OffByTwo);
+    check_fulfill_and_release_cnts(
+        reporter,
+        checker,
+        expected,
+        ReleaseBalanceExpectation::OffByTwo,
+    );
 }
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L147-L152 (chrome/m156)
 fn check_all_done(reporter: &mut Reporter, checker: &Checker, expected: i32) {
-    check_fulfill_and_release_cnts(reporter, checker, expected, ReleaseBalanceExpectation::Balanced);
+    check_fulfill_and_release_cnts(
+        reporter,
+        checker,
+        expected,
+        ReleaseBalanceExpectation::Balanced,
+    );
 }
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L154-L158 (chrome/m156)
@@ -354,71 +369,77 @@ def_graphite_adapter_test!(NonVolatileGraphitePromiseImageTest, |reporter, conte
 });
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L328-L400 (chrome/m156)
-def_graphite_adapter_test!(NonVolatileGraphitePromiseImageFulfillFailureTest, |reporter, context| {
-    let dimensions = ISize::new(16, 16);
-    let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, true);
-    let checker = Arc::clone(&test_ctx.checker);
-    // Draw the image a few different ways.
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        check_unfulfilled(reporter, &checker);
-        let mut recording = snap(&mut test_ctx);
-        check_unfulfilled(reporter, &checker);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfilled_ahead_by_one(reporter, &checker, 1);
-        // Test that reinserting gives uninstantiated PromiseImages a second chance
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 2);
-    }
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        let mut paint = Paint::default();
-        paint.set_color_filter(linear_to_srgb_gamma());
-        canvas_of(&test_ctx).draw_image_with_sampling_options(
-            &img,
-            (0.0, 0.0),
-            SamplingOptions::default(),
-            Some(&paint),
-        );
-        let mut recording = snap(&mut test_ctx);
-        check_fulfills_only(reporter, &checker, 2);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 3);
-    }
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        let shader = img.to_shader(None, SamplingOptions::default(), None);
-        reporter_assert!(reporter, shader.is_some());
-        let mut paint = Paint::default();
-        paint.set_shader(shader);
-        canvas_of(&test_ctx).draw_rect(Rect::from_wh(1.0, 1.0), &paint);
-        let mut recording = snap(&mut test_ctx);
-        check_fulfills_only(reporter, &checker, 3);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
+def_graphite_adapter_test!(
+    NonVolatileGraphitePromiseImageFulfillFailureTest,
+    |reporter, context| {
+        let dimensions = ISize::new(16, 16);
+        let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, true);
+        let checker = Arc::clone(&test_ctx.checker);
+        // Draw the image a few different ways.
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            check_unfulfilled(reporter, &checker);
+            let mut recording = snap(&mut test_ctx);
+            check_unfulfilled(reporter, &checker);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfilled_ahead_by_one(reporter, &checker, 1);
+            // Test that reinserting gives uninstantiated PromiseImages a second chance
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 2);
+        }
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            let mut paint = Paint::default();
+            paint.set_color_filter(linear_to_srgb_gamma());
+            canvas_of(&test_ctx).draw_image_with_sampling_options(
+                &img,
+                (0.0, 0.0),
+                SamplingOptions::default(),
+                Some(&paint),
+            );
+            let mut recording = snap(&mut test_ctx);
+            check_fulfills_only(reporter, &checker, 2);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 3);
+        }
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            let shader = img.to_shader(None, SamplingOptions::default(), None);
+            reporter_assert!(reporter, shader.is_some());
+            let mut paint = Paint::default();
+            paint.set_shader(shader);
+            canvas_of(&test_ctx).draw_rect(Rect::from_wh(1.0, 1.0), &paint);
+            let mut recording = snap(&mut test_ctx);
+            check_fulfills_only(reporter, &checker, 3);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 4);
+        }
+        test_ctx.surface = None;
+        test_ctx.img = None;
+        // Despite fulfill failing 4x, the imageRelease callback still fires
+        reporter_assert!(reporter, lock(&checker).image_release_count == 1);
+        synced_submit(context);
+        // fulfill should've been called 4x while release should never have been called
         check_fulfills_only(reporter, &checker, 4);
     }
-    test_ctx.surface = None;
-    test_ctx.img = None;
-    // Despite fulfill failing 4x, the imageRelease callback still fires
-    reporter_assert!(reporter, lock(&checker).image_release_count == 1);
-    synced_submit(context);
-    // fulfill should've been called 4x while release should never have been called
-    check_fulfills_only(reporter, &checker, 4);
-});
+);
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L402-L422 (chrome/m156)
-def_graphite_adapter_test!(NonVolatileGraphitePromiseImageCreationFailureTest, |reporter, context| {
-    // Note: these dimensions are invalid and will cause MakeGraphitePromiseTexture to fail
-    let dimensions = ISize::new(0, 0);
-    let test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, true);
-    let checker = Arc::clone(&test_ctx.checker);
-    reporter_assert!(reporter, test_ctx.img.is_none());
-    // Despite MakeGraphitePromiseTexture failing, ImageRelease is called
-    reporter_assert!(reporter, lock(&checker).fulfill_count == 0);
-    reporter_assert!(reporter, lock(&checker).image_release_count == 1);
-    reporter_assert!(reporter, lock(&checker).total_release_count() == 0);
-});
+def_graphite_adapter_test!(
+    NonVolatileGraphitePromiseImageCreationFailureTest,
+    |reporter, context| {
+        // Note: these dimensions are invalid and will cause MakeGraphitePromiseTexture to fail
+        let dimensions = ISize::new(0, 0);
+        let test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, true);
+        let checker = Arc::clone(&test_ctx.checker);
+        reporter_assert!(reporter, test_ctx.img.is_none());
+        // Despite MakeGraphitePromiseTexture failing, ImageRelease is called
+        reporter_assert!(reporter, lock(&checker).fulfill_count == 0);
+        reporter_assert!(reporter, lock(&checker).image_release_count == 1);
+        reporter_assert!(reporter, lock(&checker).total_release_count() == 0);
+    }
+);
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L424-L517 (chrome/m156)
 def_graphite_adapter_test!(VolatileGraphitePromiseImageTest, |reporter, context| {
@@ -474,57 +495,60 @@ def_graphite_adapter_test!(VolatileGraphitePromiseImageTest, |reporter, context|
 });
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L519-L590 (chrome/m156)
-def_graphite_adapter_test!(VolatileGraphitePromiseImageFulfillFailureTest, |reporter, context| {
-    let dimensions = ISize::new(16, 16);
-    let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::Yes, true);
-    let checker = Arc::clone(&test_ctx.checker);
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        check_unfulfilled(reporter, &checker);
-        let mut recording = snap(&mut test_ctx);
-        check_unfulfilled(reporter, &checker);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 1);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 2);
-    }
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        let mut paint = Paint::default();
-        paint.set_color_filter(linear_to_srgb_gamma());
-        canvas_of(&test_ctx).draw_image_with_sampling_options(
-            &img,
-            (0.0, 0.0),
-            SamplingOptions::default(),
-            Some(&paint),
-        );
-        let mut recording = snap(&mut test_ctx);
-        check_fulfills_only(reporter, &checker, 2);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 3);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 4);
-    }
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        let shader = img.to_shader(None, SamplingOptions::default(), None);
-        reporter_assert!(reporter, shader.is_some());
-        let mut paint = Paint::default();
-        paint.set_shader(shader);
-        canvas_of(&test_ctx).draw_rect(Rect::from_wh(1.0, 1.0), &paint);
-        let mut recording = snap(&mut test_ctx);
-        check_fulfills_only(reporter, &checker, 4);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
-        check_fulfills_only(reporter, &checker, 5);
-        reporter_assert!(reporter, !insert_recording(context, &mut recording));
+def_graphite_adapter_test!(
+    VolatileGraphitePromiseImageFulfillFailureTest,
+    |reporter, context| {
+        let dimensions = ISize::new(16, 16);
+        let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::Yes, true);
+        let checker = Arc::clone(&test_ctx.checker);
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            check_unfulfilled(reporter, &checker);
+            let mut recording = snap(&mut test_ctx);
+            check_unfulfilled(reporter, &checker);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 1);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 2);
+        }
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            let mut paint = Paint::default();
+            paint.set_color_filter(linear_to_srgb_gamma());
+            canvas_of(&test_ctx).draw_image_with_sampling_options(
+                &img,
+                (0.0, 0.0),
+                SamplingOptions::default(),
+                Some(&paint),
+            );
+            let mut recording = snap(&mut test_ctx);
+            check_fulfills_only(reporter, &checker, 2);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 3);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 4);
+        }
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            let shader = img.to_shader(None, SamplingOptions::default(), None);
+            reporter_assert!(reporter, shader.is_some());
+            let mut paint = Paint::default();
+            paint.set_shader(shader);
+            canvas_of(&test_ctx).draw_rect(Rect::from_wh(1.0, 1.0), &paint);
+            let mut recording = snap(&mut test_ctx);
+            check_fulfills_only(reporter, &checker, 4);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 5);
+            reporter_assert!(reporter, !insert_recording(context, &mut recording));
+            check_fulfills_only(reporter, &checker, 6);
+        }
+        test_ctx.surface = None;
+        test_ctx.img = None;
+        synced_submit(context);
         check_fulfills_only(reporter, &checker, 6);
     }
-    test_ctx.surface = None;
-    test_ctx.img = None;
-    synced_submit(context);
-    check_fulfills_only(reporter, &checker, 6);
-});
+);
 
 // Port of: tests/graphite/GraphitePromiseImageTest.cpp#L593-L627 (chrome/m156)
 def_graphite_adapter_test!(GraphitePromiseImageRecorderLoss, |reporter, context| {
@@ -592,7 +616,11 @@ def_graphite_adapter_test!(GraphitePromiseImageMultipleImgUses, |reporter, conte
         test_ctx.img = None;
         recordings.clear();
         if is_volatile == Volatile::Yes {
-            check_all_done(reporter, &checker, i32::try_from(NUM_RECORDINGS).unwrap_or(0));
+            check_all_done(
+                reporter,
+                &checker,
+                i32::try_from(NUM_RECORDINGS).unwrap_or(0),
+            );
         } else {
             check_all_done(reporter, &checker, 1);
         }

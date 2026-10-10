@@ -29127,6 +29127,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BigImageTest.cpp#L602-L610"
 module = "gpu"
 status = "todo"
+reason = "not ported: GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image); G15 follow-up"
 span_hash = "3ddf1b5dfeabf1e50db75b10bf7230019d0e0405fae98d16befbb5984e4a7f09"
 
 [[test]]
@@ -29146,6 +29147,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BigImageTest.cpp#L612-L620"
 module = "gpu"
 status = "todo"
+reason = "not ported: GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image); G15 follow-up"
 span_hash = "997331e09547ceed3a794acbaa65970257fa49be663d57b33ce654341f0487d8"
 
 [[test]]
@@ -51576,6 +51578,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L730-L806"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "4274de16f285eda996048df7ca9928e9418d260420272275482c46e60922090b"
 
 [[test]]
@@ -51585,6 +51588,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L688-L726"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "81b537814825d3685bb5e20ada5598cee382023e4728e3252bf8c6f63c1eba86"
 
 [[test]]
@@ -51594,6 +51598,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L460-L479"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "8cb37d6d2a0a622bf38e7c82ebf08b5332978ee916753fee22f8ef2057e2906b"
 
 [[test]]
@@ -51603,6 +51608,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L377-L458"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "6f393e3a83df94f2acb8986d2dd3d80973cf6c3f8c1593298a5e68a8bf87c1b3"
 
 [[test]]
@@ -51612,6 +51618,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L279-L375"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "21f7522379829a4d26bd4023f9bb8dbced7db7226dcd34ec90dc4d9431c0009b"
 
 [[test]]
@@ -51621,6 +51628,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L602-L685"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "947531a53ba99f89dc03545145e0b05705e9d91963fe9b9ed7a4e6ad48183659"
 
 [[test]]
@@ -51630,6 +51638,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L481-L600"
 module = "gpu"
 status = "todo"
+reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
 span_hash = "c9e8ac0548867a0ae13b52bb1c0a8f2e6955c1083d5be8818affd2501789d932"
 
 [[test]]

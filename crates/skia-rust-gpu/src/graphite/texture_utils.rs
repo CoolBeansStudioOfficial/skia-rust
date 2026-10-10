@@ -34,27 +34,27 @@ use crate::gpu::backing_fit::BackingFit;
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Renderable};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::sk_log::{skia_log_e, skia_log_w};
+use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_context::DrawContext;
+use crate::graphite::graphite_types::Volatile;
 use crate::graphite::image_graphite::Image;
 use crate::graphite::image_provider::{
     DefaultImageProvider, ImageProvider, valid_client_provided_image,
 };
-use crate::graphite::backend_texture::BackendTexture;
-use crate::graphite::graphite_types::Volatile;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::copy_task::CopyTextureToTextureTask;
 use crate::graphite::task::upload_task::{ImageUploadContext, MipLevel, UploadSource};
+use crate::graphite::texture::{ReleaseCallback, Texture};
 use crate::graphite::texture_format::{
     are_color_type_and_format_compatible, read_swizzle_for_color_type,
     texture_format_bytes_per_block, texture_format_color_type_info,
     texture_format_compression_type,
 };
 use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
-use crate::graphite::texture::{ReleaseCallback, Texture};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
 
@@ -235,7 +235,10 @@ struct PromiseLazyInstantiateCallback {
 
 impl PromiseLazyInstantiateCallback {
     // Port of: src/gpu/graphite/TextureUtils.cpp#L223-L242 (chrome/m156)
-    fn instantiate(&self, resource_provider: &mut ResourceProvider) -> Option<ResourceRef<Texture>> {
+    fn instantiate(
+        &self,
+        resource_provider: &mut ResourceProvider,
+    ) -> Option<ResourceRef<Texture>> {
         // Invoke the fulfill proc to get the promised backend texture.
         let (backend_texture, texture_release) = (self.fulfill_proc)();
         if !backend_texture.is_valid() {
@@ -243,8 +246,8 @@ impl PromiseLazyInstantiateCallback {
             return None;
         }
 
-        let texture_release_cb = texture_release
-            .map(|proc| RefCntedCallback::make(CallbackProc::Plain(proc)));
+        let texture_release_cb =
+            texture_release.map(|proc| RefCntedCallback::make(CallbackProc::Plain(proc)));
 
         let texture = resource_provider.create_wrapped_texture(&backend_texture, &self.label);
         let Some(texture) = texture else {
@@ -265,7 +268,7 @@ impl PromiseLazyInstantiateCallback {
 pub fn make_promise_image_lazy_proxy(
     caps: &dyn Caps,
     dimensions: ISize,
-    texture_info: TextureInfo,
+    texture_info: &TextureInfo,
     is_volatile: Volatile,
     release_helper: Arc<RefCntedCallback>,
     fulfill_proc: PromiseTextureFulfillProc,
@@ -283,7 +286,7 @@ pub fn make_promise_image_lazy_proxy(
     TextureProxy::make_lazy(
         caps,
         dimensions,
-        &texture_info,
+        texture_info,
         Budgeted::No,
         is_volatile,
         Box::new(move |resource_provider| callback.instantiate(resource_provider)),

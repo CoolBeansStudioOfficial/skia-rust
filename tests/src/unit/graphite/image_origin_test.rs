@@ -4,6 +4,9 @@
 // Port of: tests/graphite/ImageOriginTest.cpp (chrome/m156)
 
 #![cfg(test)]
+// The image sizes are constants of 4 and 8 pixels, exact in f32 (as the C++ int-to-float
+// conversions are).
+#![allow(clippy::cast_precision_loss)]
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;

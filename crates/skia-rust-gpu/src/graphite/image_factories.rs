@@ -36,16 +36,16 @@ use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::sk_log::skia_log_w;
 use crate::gpu::swizzle::Swizzle;
 use crate::graphite::backend_texture::BackendTexture;
+use crate::graphite::caps::Caps;
+use crate::graphite::graphite_types::Volatile;
 use crate::graphite::image_filter_backend::make_graphite_backend;
 use crate::graphite::image_graphite::{Image, make_non_budgeted, make_subset};
-use crate::graphite::caps::Caps;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::texture::ReleaseCallback;
 use crate::graphite::texture_format::{
-    are_color_type_and_format_compatible, read_swizzle_for_color_type,
-    texture_format_channel_mask, texture_format_color_type_info,
+    are_color_type_and_format_compatible, read_swizzle_for_color_type, texture_format_channel_mask,
+    texture_format_color_type_info,
 };
-use crate::graphite::graphite_types::Volatile;
 use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
@@ -262,7 +262,8 @@ pub fn wrap_texture_for_alpha_type(
     };
     texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
 
-    let view = TextureProxyView::new_with_origin(Some(TextureProxy::wrap(texture)), swizzle, origin);
+    let view =
+        TextureProxyView::new_with_origin(Some(TextureProxy::wrap(texture)), swizzle, origin);
     Some(Image::new(view, &info).into_core())
 }
 
@@ -273,6 +274,8 @@ pub fn wrap_texture_for_alpha_type(
 // Port of: src/gpu/graphite/ImageFactories.cpp#L255-L311 (chrome/m156)
 #[doc(alias = "PromiseTextureFrom")]
 #[must_use]
+// The parameters are the ones of `SkImages::PromiseTextureFrom`.
+#[allow(clippy::too_many_arguments)]
 pub fn promise_texture_from(
     recorder: &Recorder,
     dimensions: ISize,
@@ -308,7 +311,7 @@ pub fn promise_texture_from(
     let proxy = make_promise_image_lazy_proxy(
         &*caps,
         dimensions,
-        texture_info.clone(),
+        texture_info,
         is_volatile,
         release_helper,
         fulfill_proc,
