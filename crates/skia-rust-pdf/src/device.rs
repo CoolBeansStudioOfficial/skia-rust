@@ -1918,6 +1918,20 @@ impl Device for PdfDevice {
         )))
     }
 
+    /// `createImageFilteringBackend`: `SkDevice`'s default, the raster backend (the PDF device does
+    /// not override it, so image filters run on the CPU, see `create_device`).
+    // Port of: src/core/SkDevice.cpp#L322-L325 (chrome/m156)
+    fn create_image_filtering_backend(
+        &self,
+        surface_props: &SurfaceProps,
+        color_type: ColorType,
+    ) -> Option<std::sync::Arc<dyn skia_rust_core::image_filter_types::Backend>> {
+        Some(skia_rust_raster::image_filter_backend::make_raster_backend(
+            *surface_props,
+            color_type,
+        ))
+    }
+
     /// `drawAnnotation`.
     // Port of: src/pdf/SkPDFDevice.cpp#L430-L492 (chrome/m156)
     fn draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&Data>) {
