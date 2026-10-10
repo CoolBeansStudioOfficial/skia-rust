@@ -82,19 +82,16 @@ impl CachedImageInfo {
             .clone_with_pixel_geometry(skia_rust_core::surface_props::PixelGeometry::Unknown);
 
         // Use a rotation-invariant scale.
-        let mut size = match total_m.decompose_scale(None) {
-            Some(size) => size,
-            None => {
-                let center = Point::new(bounds.center_x(), bounds.center_y());
-                let area = skia_rust_core::matrix_priv::differential_area_scale(total_m, center);
-                if !is_finite(area) || area.abs() <= SCALAR_NEARLY_ZERO {
-                    Size::new(1.0, 1.0) // ill-conditioned matrix
-                } else {
-                    let root = area.sqrt();
-                    Size::new(root, root)
-                }
+        let mut size = total_m.decompose_scale(None).unwrap_or_else(|| {
+            let center = Point::new(bounds.center_x(), bounds.center_y());
+            let area = skia_rust_core::matrix_priv::differential_area_scale(total_m, center);
+            if !is_finite(area) || area.abs() <= SCALAR_NEARLY_ZERO {
+                Size::new(1.0, 1.0) // ill-conditioned matrix
+            } else {
+                let root = area.sqrt();
+                Size::new(root, root)
             }
-        };
+        });
         size.width *= bounds.width();
         size.height *= bounds.height();
 
@@ -116,27 +113,25 @@ impl CachedImageInfo {
             tile_size.height as scalar / bounds.height(),
         );
 
-        let image_cs = dst_color_space
+        let image_color_space = dst_color_space
             .cloned()
             .unwrap_or_else(ColorSpace::new_srgb);
-        let image_ct = if color_type_max_bits_per_channel(dst_color_type) <= 8 {
+        let image_color_type = if color_type_max_bits_per_channel(dst_color_type) <= 8 {
             ColorType::RGBA8888
         } else {
             ColorType::RGBAF16Norm
         };
 
+        #[allow(clippy::cast_precision_loss)] // mirrors SkIntToScalar of the tile size (exact)
+        let tile_rect = Rect::from_wh(tile_size.width as scalar, tile_size.height as scalar);
         Some(CachedImageInfo {
             tile_scale,
-            matrix_for_draw: Matrix::rect_to_rect_or_identity(
-                *bounds,
-                Rect::from_wh(tile_size.width as scalar, tile_size.height as scalar),
-                None,
-            ),
+            matrix_for_draw: Matrix::rect_to_rect_or_identity(*bounds, tile_rect, None),
             image_info: ImageInfo::new(
                 tile_size,
-                image_ct,
+                image_color_type,
                 skia_rust_core::alpha_type::AlphaType::Premul,
-                image_cs,
+                image_color_space,
             ),
             props,
         })

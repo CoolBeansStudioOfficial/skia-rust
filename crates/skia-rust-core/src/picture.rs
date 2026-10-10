@@ -189,6 +189,12 @@ impl Picture {
         self.inner.added_to_cache.store(true, Ordering::Relaxed);
     }
 
+    /// Returns true if this is the only reference to the picture (`SkRefCnt::unique`).
+    #[must_use]
+    pub fn unique(&self) -> bool {
+        Arc::strong_count(&self.inner) == 1
+    }
+
     /// Returns a non-zero value unique among pictures in Skia's process (`uniqueID`).
     #[doc(alias = "uniqueID")]
     #[must_use]

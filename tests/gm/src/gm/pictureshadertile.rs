@@ -120,10 +120,8 @@ impl GM for PictureShaderTileGm {
     // Port of: gm/pictureshadertile.cpp#L89-L124 (chrome/m156), onOnceBeforeDraw
     fn on_once_before_draw(&mut self) {
         let mut recorder = PictureRecorder::new();
-        let picture_canvas = recorder.begin_recording(
-            Rect::from_wh(K_PICTURE_SIZE, K_PICTURE_SIZE),
-            false,
-        );
+        let picture_canvas =
+            recorder.begin_recording(Rect::from_wh(K_PICTURE_SIZE, K_PICTURE_SIZE), false);
         draw_scene(picture_canvas, K_PICTURE_SIZE);
         let picture = recorder.finish_recording_as_picture(None);
 
@@ -155,11 +153,12 @@ impl GM for PictureShaderTileGm {
                     None,
                 );
                 // When the tile == picture bounds, exercise the picture + offset path.
-                let (picture_ref, tile_ptr) = if tile == Rect::from_wh(K_PICTURE_SIZE, K_PICTURE_SIZE) {
-                    (&offset_picture, None)
-                } else {
-                    (&picture, Some(tile))
-                };
+                let (picture_ref, tile_ptr) =
+                    if tile == Rect::from_wh(K_PICTURE_SIZE, K_PICTURE_SIZE) {
+                        (&offset_picture, None)
+                    } else {
+                        (&picture, Some(tile))
+                    };
                 let picture_ref: Option<&Picture> = picture_ref.as_ref();
                 picture_ref.and_then(|picture| {
                     picture.to_shader(
