@@ -40,3 +40,7 @@ so the order was not the cause. Facts established:
   of this Linux host, or the sprite pipeline picks lowp on the oracle and highp here. Next step: dump
   the stage list and lowp/highp choice of the restore blit (needs an oracle dump; the oracle host is
   gone), or force a BGRA layer in the test harness to compare.
+
+Tried forcing the layer of a 565 canvas to BGRA8888 (the oracle's N32): the 565 hash changes
+(so BGRA vs RGBA layers do round differently on this host) but still does not match the golden, so
+the BGRA hypothesis alone is not the cause. Left failing.
