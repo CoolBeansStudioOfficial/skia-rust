@@ -31,7 +31,7 @@
 
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_cost::VP8EncProba;
-use super::vp8_enc_dsp::{BPS, VP8Matrix};
+use super::vp8_enc_dsp::{BPS, Edge, VP8Matrix};
 use super::picture::YuvPicture;
 use super::vp8_token::VP8TBuffer;
 
@@ -305,6 +305,12 @@ pub struct VP8EncIterator {
     pub uv_bits: u64,
     /// `do_trellis_`.
     pub do_trellis: bool,
+    /// `tmp_32` of `VP8IteratorImport`: the top samples taken from the source picture (luma
+    /// 0..16, then chroma 16..32), used while `use_tmp_top` is set (the analysis pass).
+    pub top_tmp: [u8; 32],
+    /// `true` when the top samples come from `top_tmp` (the `VP8IteratorImport(it, tmp)` mode)
+    /// instead of `enc.y_top`.
+    pub use_tmp_top: bool,
 }
 
 /// Port of `VP8Scan` (`src/enc/vp8i_enc.h`'s `extern`, defined in `quant_enc.c`): the offsets of
@@ -357,6 +363,8 @@ impl VP8EncIterator {
             luma_bits: 0,
             uv_bits: 0,
             do_trellis: false,
+            top_tmp: [0; 32],
+            use_tmp_top: false,
         };
         it.reset(enc);
         it
@@ -681,6 +689,115 @@ impl VP8EncIterator {
         Self::import_block(&mut self.yuv, yin + U_OFF_ENC, &pic.u, us, uvstride, uv_w, uv_h, 8);
         Self::import_block(&mut self.yuv, yin + V_OFF_ENC, &pic.v, us, uvstride, uv_w, uv_h, 8);
     }
+
+    /// Port of `VP8IteratorImport(it, tmp_32)` with a scratch `tmp_32`: the left and top samples
+    /// are taken from the source picture (the analysis pass). The top samples go to `top_tmp`,
+    /// and `use_tmp_top` is set so that the predictors read them.
+    pub fn import_tmp(&mut self, enc: &mut VP8Encoder, pic: &YuvPicture) {
+        self.import(pic);
+        let x = self.x;
+        let y = self.y;
+        let ystride = pic.y_stride();
+        let uvstride = pic.uv_stride();
+        let ys = (y * ystride + x) * 16;
+        let us = (y * uvstride + x) * 8;
+        let w = (pic.width - x * 16).min(16);
+        let h = (pic.height - y * 16).min(16);
+        let uv_w = (w + 1) >> 1;
+        let uv_h = (h + 1) >> 1;
+        if x == 0 {
+            self.init_left(enc);
+        } else {
+            if y == 0 {
+                self.left[0] = 127;
+                self.left[32] = 127;
+                self.left[48] = 127;
+            } else {
+                self.left[0] = pic.y[ys - 1 - ystride];
+                self.left[32] = pic.u[us - 1 - uvstride];
+                self.left[48] = pic.v[us - 1 - uvstride];
+            }
+            // ImportLine(ysrc - 1, y_stride, y_left_, h, 16) and the chroma equivalents.
+            import_line(&pic.y, ys - 1, ystride, &mut self.left[1..17], h, 16);
+            import_line(&pic.u, us - 1, uvstride, &mut self.left[33..41], uv_h, 8);
+            import_line(&pic.v, us - 1, uvstride, &mut self.left[49..57], uv_h, 8);
+        }
+        self.use_tmp_top = true;
+        if y == 0 {
+            self.top_tmp = [127; 32];
+        } else {
+            import_line(&pic.y, ys - ystride, 1, &mut self.top_tmp[0..16], w, 16);
+            import_line(&pic.u, us - uvstride, 1, &mut self.top_tmp[16..24], uv_w, 8);
+            import_line(&pic.v, us - uvstride, 1, &mut self.top_tmp[24..32], uv_w, 8);
+        }
+    }
+
+    /// The luma top samples of the current macroblock (`y_top_`): the scratch row of the
+    /// analysis pass, or the encoder's row.
+    #[must_use]
+    pub fn y_top_edge<'a>(&'a self, enc: &'a VP8Encoder) -> Edge<'a> {
+        if self.use_tmp_top {
+            Edge {
+                buf: &self.top_tmp,
+                base: 0,
+            }
+        } else {
+            Edge {
+                buf: &enc.y_top,
+                base: self.x * 16,
+            }
+        }
+    }
+
+    /// The chroma top samples of the current macroblock (`uv_top_`).
+    #[must_use]
+    pub fn uv_top_edge<'a>(&'a self, enc: &'a VP8Encoder) -> Edge<'a> {
+        if self.use_tmp_top {
+            Edge {
+                buf: &self.top_tmp,
+                base: 16,
+            }
+        } else {
+            Edge {
+                buf: &enc.y_top,
+                base: enc.mb_w * 16 + self.x * 16,
+            }
+        }
+    }
+
+    /// The luma left samples (`y_left_`, with the corner at index 0 of the edge).
+    #[must_use]
+    pub fn y_left_edge(&self) -> Edge<'_> {
+        Edge {
+            buf: &self.left,
+            base: 1,
+        }
+    }
+
+    /// The chroma left samples (`u_left_`), and `v_left_` 16 samples after them.
+    #[must_use]
+    pub fn uv_left_edge(&self) -> Edge<'_> {
+        Edge {
+            buf: &self.left,
+            base: 33,
+        }
+    }
+}
+
+/// Port of `ImportLine`: `dst[i] = src[i * stride]` for `i < len`, then `dst[i] = dst[len - 1]`
+/// up to `total_len`.
+fn import_line(src: &[u8], src_off: usize, src_stride: usize, dst: &mut [u8], len: usize, total_len: usize) {
+    let mut s = src_off;
+    for i in 0..len {
+        dst[i] = src[s];
+        s += src_stride;
+    }
+    for i in len..total_len {
+        dst[i] = dst[len - 1];
+    }
+}
+
+impl VP8EncIterator {
 }
 
 /// Index into `enc.y_top` of luma sample `i` (`0..20`) of macroblock column `x`: the top row of

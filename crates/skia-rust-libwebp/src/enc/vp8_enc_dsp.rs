@@ -392,53 +392,61 @@ fn dc_mode(
 /// Port of `IntraChromaPreds_C`: the four chroma predictors for the two 8x8 blocks of U and V.
 /// `top` holds the U top edge followed by the V top edge (8 samples each), and `left` the U left
 /// edge at `left.base` and the V left edge 16 samples later, as the C pointer arithmetic does.
-pub fn intra_chroma_preds(dst: &mut [u8], left: Edge<'_>, top: Edge<'_>) {
-    dc_mode(&mut dst[C8DC8..], Some(left), Some(top), 8, 8, 4);
-    vertical_pred(&mut dst[C8VE8..], Some(top), 8);
-    horizontal_pred(&mut dst[C8HE8..], Some(left), 8);
-    true_motion(&mut dst[C8TM8..], Some(left), Some(top), 8);
+pub fn intra_chroma_preds(dst: &mut [u8], left: Option<Edge<'_>>, top: Option<Edge<'_>>) {
+    dc_mode(&mut dst[C8DC8..], left, top, 8, 8, 4);
+    vertical_pred(&mut dst[C8VE8..], top, 8);
+    horizontal_pred(&mut dst[C8HE8..], left, 8);
+    true_motion(&mut dst[C8TM8..], left, top, 8);
     let dst = &mut dst[8..];
-    let top = Edge {
-        buf: top.buf,
-        base: top.base + 8,
-    };
-    let left = Edge {
-        buf: left.buf,
-        base: left.base + 16,
-    };
-    dc_mode(&mut dst[C8DC8..], Some(left), Some(top), 8, 8, 4);
-    vertical_pred(&mut dst[C8VE8..], Some(top), 8);
-    horizontal_pred(&mut dst[C8HE8..], Some(left), 8);
-    true_motion(&mut dst[C8TM8..], Some(left), Some(top), 8);
+    // `if (top != NULL) top += 8; if (left != NULL) left += 16;`
+    let top = top.map(|t| Edge {
+        buf: t.buf,
+        base: t.base + 8,
+    });
+    let left = left.map(|l| Edge {
+        buf: l.buf,
+        base: l.base + 16,
+    });
+    dc_mode(&mut dst[C8DC8..], left, top, 8, 8, 4);
+    vertical_pred(&mut dst[C8VE8..], top, 8);
+    horizontal_pred(&mut dst[C8HE8..], left, 8);
+    true_motion(&mut dst[C8TM8..], left, top, 8);
 }
 
 /// Port of `Intra16Preds_C`: the four luma 16x16 predictors.
-pub fn intra16_preds(dst: &mut [u8], left: Edge<'_>, top: Edge<'_>) {
-    dc_mode(&mut dst[I16DC16..], Some(left), Some(top), 16, 16, 5);
-    vertical_pred(&mut dst[I16VE16..], Some(top), 16);
-    horizontal_pred(&mut dst[I16HE16..], Some(left), 16);
-    true_motion(&mut dst[I16TM16..], Some(left), Some(top), 16);
+pub fn intra16_preds(dst: &mut [u8], left: Option<Edge<'_>>, top: Option<Edge<'_>>) {
+    dc_mode(&mut dst[I16DC16..], left, top, 16, 16, 5);
+    vertical_pred(&mut dst[I16VE16..], top, 16);
+    horizontal_pred(&mut dst[I16HE16..], left, 16);
+    true_motion(&mut dst[I16TM16..], left, top, 16);
 }
 
 // Offsets of the predictor outputs in the prediction area (`vp8i_enc.h`).
-const I16DC16: usize = 0 * 16 * BPS;
-const I16TM16: usize = I16DC16 + 16;
-const I16VE16: usize = 1 * 16 * BPS;
-const I16HE16: usize = I16VE16 + 16;
-const C8DC8: usize = 2 * 16 * BPS;
-const C8TM8: usize = C8DC8 + 1 * 16;
-const C8VE8: usize = 2 * 16 * BPS + 8 * BPS;
-const C8HE8: usize = C8VE8 + 1 * 16;
-const I4DC4: usize = 3 * 16 * BPS;
-const I4TM4: usize = I4DC4 + 4;
-const I4VE4: usize = I4DC4 + 8;
-const I4HE4: usize = I4DC4 + 12;
-const I4RD4: usize = I4DC4 + 16;
-const I4VR4: usize = I4DC4 + 20;
-const I4LD4: usize = I4DC4 + 24;
-const I4VL4: usize = I4DC4 + 28;
-const I4HD4: usize = 3 * 16 * BPS + 4 * BPS;
-const I4HU4: usize = I4HD4 + 4;
+pub const I16DC16: usize = 0 * 16 * BPS;
+pub const I16TM16: usize = I16DC16 + 16;
+pub const I16VE16: usize = 1 * 16 * BPS;
+pub const I16HE16: usize = I16VE16 + 16;
+pub const C8DC8: usize = 2 * 16 * BPS;
+pub const C8TM8: usize = C8DC8 + 1 * 16;
+pub const C8VE8: usize = 2 * 16 * BPS + 8 * BPS;
+pub const C8HE8: usize = C8VE8 + 1 * 16;
+pub const I4DC4: usize = 3 * 16 * BPS;
+pub const I4TM4: usize = I4DC4 + 4;
+pub const I4VE4: usize = I4DC4 + 8;
+pub const I4HE4: usize = I4DC4 + 12;
+pub const I4RD4: usize = I4DC4 + 16;
+pub const I4VR4: usize = I4DC4 + 20;
+pub const I4LD4: usize = I4DC4 + 24;
+pub const I4VL4: usize = I4DC4 + 28;
+pub const I4HD4: usize = 3 * 16 * BPS + 4 * BPS;
+pub const I4HU4: usize = I4HD4 + 4;
+
+/// Port of `VP8I16ModeOffsets` (`quant_enc.c`): the Intra16 modes DC, TM, VE, HE.
+pub const I16_MODE_OFFSETS: [usize; 4] = [I16DC16, I16TM16, I16VE16, I16HE16];
+/// Port of `VP8UVModeOffsets`: the chroma modes DC, TM, VE, HE.
+pub const UV_MODE_OFFSETS: [usize; 4] = [C8DC8, C8TM8, C8VE8, C8HE8];
+/// Port of `VP8I4ModeOffsets`: the ten intra 4x4 modes.
+pub const I4_MODE_OFFSETS: [usize; 10] = [I4DC4, I4TM4, I4VE4, I4HE4, I4RD4, I4VR4, I4LD4, I4VL4, I4HD4, I4HU4];
 
 #[inline]
 fn avg3(a: u8, b: u8, c: u8) -> u8 {
