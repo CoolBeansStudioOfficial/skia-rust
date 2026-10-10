@@ -1328,6 +1328,7 @@ dependencies = [
  "skia-rust-sksl",
  "skia-rust-text",
  "skia-rust-tools",
+ "skia-rust-unicode",
  "skia-rust-zlib",
 ]
 
@@ -1351,6 +1352,14 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-svg",
  "skia-rust-text",
+]
+
+[[package]]
+name = "skia-rust-unicode"
+version = "0.156.0"
+dependencies = [
+ "bitflags",
+ "skia-rust-core",
 ]
 
 [[package]]
