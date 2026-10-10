@@ -390,6 +390,40 @@ impl RendererProvider {
         }
     }
 
+    /// `renderers()`: every renderer, in the order the constructor registered them (`fRenderers`).
+    /// The sparse-strip renderers are compiled out of the oracle build (`docs/design/gpu.md` Q5),
+    /// so they are not in the list.
+    // Port of: src/gpu/graphite/RendererProvider.h#L156-L158 (chrome/m156), with the registration
+    // order of src/gpu/graphite/RendererProvider.cpp#L107-L255 (chrome/m156)
+    #[must_use]
+    pub fn renderers(&self) -> Vec<&Renderer> {
+        let mut renderers = vec![
+            &self.convex_tessellated_wedges,
+            &self.coverage_mask,
+            &self.bitmap_text[MaskFormat::A8 as usize],
+            &self.bitmap_text[MaskFormat::A565 as usize],
+            &self.bitmap_text[MaskFormat::Argb as usize],
+            &self.sdf_text[1],
+            &self.sdf_text[0],
+            &self.analytic_rrect,
+            &self.per_edge_aa_quad,
+            &self.non_aa_bounds_fill,
+            &self.circular_arc,
+            &self.analytic_blur,
+            &self.analytic_rrect_blur,
+        ];
+        renderers.extend(self.vertices.iter());
+        renderers.push(&self.mesh);
+        // The stencil renderers are registered per `(evenOdd, inverse)` pair, curves then wedges,
+        // at index `2 * inverse + evenOdd`.
+        for index in [0, 2, 1, 3] {
+            renderers.push(&self.stencil_tessellated_curves[index]);
+            renderers.push(&self.stencil_tessellated_wedges[index]);
+        }
+        renderers.extend(self.tessellated_strokes.iter());
+        renderers
+    }
+
     /// `lookup(renderStepID)`: the step with the given id, or `None` for an invalid id and for the
     /// steps that are not ported yet (Skia always has one).
     // Port of: src/gpu/graphite/RendererProvider.h#L160-L162 (chrome/m156)

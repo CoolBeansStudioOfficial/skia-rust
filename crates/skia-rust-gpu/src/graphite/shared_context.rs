@@ -20,9 +20,12 @@ use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::context_options::PipelineCacheOp;
 use crate::graphite::global_cache::GlobalCache;
 use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::pipeline_manager::PipelineManager;
+use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
+use crate::graphite::serialization_utils::pipeline_desc_to_data;
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::thread_safe_resource_provider::ThreadSafeResourceProvider;
 
@@ -218,13 +221,15 @@ impl SharedContext {
     /// backend's pipeline creation (`createGraphicsPipeline`, G11b) is that closure. A pipeline it
     /// creates is added to the cache, which may return a pipeline another thread added first.
     ///
-    /// The `kAddingPipeline` callback runs with no serialized key: `PipelineDescToData`
-    /// (`SerializationUtils`, G14) is not ported, so the deprecated `PipelineCallback` never runs.
+    /// The `kAddingPipeline` callback gets the pipeline's serialized key (`PipelineDescToData`),
+    /// which the deprecated `PipelineCallback` needs, and is only built when a callback is set.
     // Port of: src/gpu/graphite/SharedContext.cpp#L73-L125 (chrome/m156)
     #[doc(alias = "findOrCreateGraphicsPipeline")]
     pub fn find_or_create_graphics_pipeline(
         &self,
         pipeline_key: &UniqueKey,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
         flags: PipelineCreationFlags,
         create: impl FnOnce(u32) -> Option<Arc<dyn GraphicsPipeline>>,
     ) -> Option<Arc<dyn GraphicsPipeline>> {
@@ -242,10 +247,16 @@ impl SharedContext {
             .global_cache
             .add_graphics_pipeline(pipeline_key, pipeline);
         if added_to_cache && self.global_cache.has_pipeline_callback() {
+            let data = pipeline_desc_to_data(
+                &*self.caps,
+                &self.shader_dictionary,
+                pipeline_desc,
+                render_pass_desc,
+            );
             self.global_cache.invoke_pipeline_callback(
                 PipelineCacheOp::AddingPipeline,
                 &*pipeline,
-                None,
+                data.as_ref(),
             );
         }
         Some(pipeline)
