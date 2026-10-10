@@ -105,7 +105,6 @@ impl PropertyObserver for FakePropertyObserver {
 
 // Port of: modules/skottie/tests/Expression.cpp#L82-L267 (chrome/m156)
 def_test!(
-    #[ignore = "needs the ADBE Fill layer effect (M21): its color property is the last one observed"]
     Skottie_Expression,
     |r| {
         let json = r##"{
