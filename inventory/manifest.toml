@@ -44916,7 +44916,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L142-L156"
 module = "core"
 status = "todo"
-reason = "needs SkBitmapCache and the discardable bitmap path of SkImage_Base (SkBitmapCache is not ported)"
+reason = "needs SkMipmapCache (FindAndRef/AddAndRef on a local SkResourceCache): SkMipmap must be an SkCachedData with discardable storage (test_mipmapcache checks its ref count, cache state and lock, and gFactoryCalls > 0). Mipmap sampling reads through borrowed bytes, so that storage is a redesign of mipmap.rs. SkBitmapCache itself is ported (bitmap_cache)"
 span_hash = "4be179903ee23ca7aca0785a9d8d69e254004ac6ad4923615daaf7ea93831b51"
 
 [[test]]
@@ -44926,7 +44926,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L190-L223"
 module = "core"
 status = "todo"
-reason = "needs SkBitmapCache and the discardable image path of SkImage_Base (SkBitmapCache is not ported)"
+reason = "needs DeferredFromPicture (the picture image generator, SkPictureImageGenerator, is not ported: notes/pictureimagegenerator.md). The bitmap-cache path of lazy images is ported and tested (bitmap_cache::tests), and the raster half of this test has no other blocker"
 span_hash = "09f9239bac59098e5ce0584ede860e49c9f763ee6ba3c0e72a869fcc87113957"
 
 [[test]]

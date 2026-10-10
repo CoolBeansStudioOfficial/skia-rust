@@ -90,10 +90,22 @@ def_test!(YUVPlanesCache, |reporter| {
     };
 
     yuv_planes_cache::add(gen_id, &data, &yuva_pixmaps, Some(&mut cache));
-    check_data(reporter, &data, 2, CachedState::InCache, LockedState::Locked);
+    check_data(
+        reporter,
+        &data,
+        2,
+        CachedState::InCache,
+        LockedState::Locked,
+    );
 
     data.unref();
-    check_data(reporter, &data, 1, CachedState::InCache, LockedState::Unlocked);
+    check_data(
+        reporter,
+        &data,
+        1,
+        CachedState::InCache,
+        LockedState::Unlocked,
+    );
 
     let found = yuv_planes_cache::find_and_ref(gen_id, Some(&mut cache));
     reporter_assert!(reporter, found.is_some());
