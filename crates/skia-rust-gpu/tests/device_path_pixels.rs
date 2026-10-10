@@ -162,7 +162,10 @@ const CLEAR: [u8; 4] = [0, 0, 0, 0];
 
 // Checks the convex wedges that chooseMSAARenderer picks (Device.cpp#L2304-L2341) by pixels.
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_convex_fill_covers_its_inside_only() {
     let Some(mut context) = real_context() else {
         return;
@@ -182,7 +185,10 @@ fn a_convex_fill_covers_its_inside_only() {
 // A concave fill leaves the notches between the spikes clear.
 // Covers: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156), `StencilTessellatedWedges`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_concave_fill_leaves_its_notches_clear() {
     let Some(mut context) = real_context() else {
         return;
@@ -197,7 +203,10 @@ fn a_concave_fill_leaves_its_notches_clear() {
 // An inverse fill covers everything outside the path.
 // Covers: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156), `shape.inverted()`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn an_inverse_fill_covers_the_outside() {
     let Some(mut context) = real_context() else {
         return;
@@ -217,7 +226,10 @@ fn an_inverse_fill_covers_the_outside() {
 // A stroke is centred on the outline: the vertex at (64, 20) with width 8 covers y in [16, 24).
 // Covers: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156), `kStroke_Style`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_stroke_covers_its_outline_only() {
     let Some(mut context) = real_context() else {
         return;
@@ -234,7 +246,10 @@ fn a_stroke_covers_its_outline_only() {
 // A stroke-and-fill covers the inside and the outline.
 // Covers: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156), `kStrokeAndFill_Style`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_stroke_and_fill_covers_the_inside_and_the_outline() {
     let Some(mut context) = real_context() else {
         return;
@@ -254,7 +269,10 @@ fn a_stroke_and_fill_covers_the_inside_and_the_outline() {
 // A hairline is one device pixel wide along the outline, and covers nothing inside.
 // Covers: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156), `kHairline_Style`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_hairline_draws_a_thin_line_on_the_outline() {
     let Some(mut context) = real_context() else {
         return;
@@ -338,7 +356,10 @@ fn mesh_of(points: &[(f32, f32)], indices: Option<&[u16]>) -> Mesh {
 // A mesh fills its triangles with the paint's color.
 // Covers: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh`
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_mesh_fills_its_triangle() {
     let Some(mut context) = real_context() else {
         return;
@@ -358,7 +379,10 @@ fn a_mesh_fills_its_triangle() {
 // An indexed mesh draws the triangles its index buffer names.
 // Covers: src/gpu/graphite/Device.cpp#L1007-L1070 (chrome/m156), `drawMesh` with an index buffer
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn an_indexed_mesh_fills_the_triangles_of_its_indices() {
     let Some(mut context) = real_context() else {
         return;

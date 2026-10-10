@@ -62,7 +62,7 @@ pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) 
             ("passing", _) => report.regressions.push(id.clone()),
             (other, Outcome::Ok) => report.newly_passing.push((id.clone(), other.to_owned())),
             (_, Outcome::Failed) => report.failing.push(id.clone()),
-            (_, Outcome::Ignored) => {}
+            (_, Outcome::Ignored | Outcome::AdapterGated) => {}
         }
     }
     for (id, status) in &by_id {
