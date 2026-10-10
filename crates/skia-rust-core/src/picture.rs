@@ -17,7 +17,7 @@
 
 use std::fmt;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::bbh_factory::BBoxHierarchy;
 use crate::canvas::Canvas;
@@ -73,6 +73,19 @@ pub(crate) struct PictureInner {
     // placeholders provide the bare minimum to operate on a picture
     record: Option<Arc<Record>>,
     bbh: Option<Arc<dyn BBoxHierarchy>>,
+    // `fAddedToCache`: whether a cache entry (a picture shader's image) was made from the picture.
+    added_to_cache: AtomicBool,
+}
+
+impl Drop for PictureInner {
+    // Port of: src/core/SkPicture.cpp#L69-L73 (chrome/m156), `~SkPicture`
+    fn drop(&mut self) {
+        if self.added_to_cache.load(Ordering::Relaxed) {
+            crate::resource_cache::post_purge_shared_id(picture_priv::make_shared_id(
+                self.unique_id,
+            ));
+        }
+    }
 }
 
 impl fmt::Debug for dyn BBoxHierarchy {
@@ -123,6 +136,7 @@ impl Picture {
                 approx_bytes_used_by_sub_pictures,
                 record,
                 bbh,
+                added_to_cache: AtomicBool::new(false),
             }),
         }
     }
@@ -166,6 +180,13 @@ impl Picture {
     #[must_use]
     pub fn cull_rect(&self) -> Rect {
         self.inner.cull_rect
+    }
+
+    /// Records that a cache entry was made from the picture (`SkPicturePriv::AddedToCache`), so
+    /// dropping the picture purges its entries.
+    // Port of: src/core/SkPicturePriv.h#L66-L70 (chrome/m156), `AddedToCache`
+    pub(crate) fn set_added_to_cache(&self) {
+        self.inner.added_to_cache.store(true, Ordering::Relaxed);
     }
 
     /// Returns a non-zero value unique among pictures in Skia's process (`uniqueID`).
