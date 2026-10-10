@@ -29404,7 +29404,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BlurTest.cpp#L649-L670"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "eaa66185af08de114b9e9775588cf87e3adad3abd8ac7bc0362acddc66ab2f41"
 
 [[test]]

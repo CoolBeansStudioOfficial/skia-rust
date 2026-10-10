@@ -34,6 +34,13 @@ const VERTEX_COUNT: usize = 104;
 // Port of: src/gpu/graphite/render/AnalyticRRectBlurRenderStep.cpp#L29 (chrome/m156)
 const INDEX_COUNT: usize = 162;
 
+/// `std::floor(std::ceil(6.f * sigma) / 2.0)`, which divides in double and is stored as a float.
+// Port of: src/gpu/graphite/render/AnalyticRRectBlurRenderStep.cpp#L400-L401 (chrome/m156)
+#[allow(clippy::cast_possible_truncation)] // the C++ stores the double result in an SkScalar
+fn blur_radius_for(sigma: f32) -> f32 {
+    (f64::from((6.0_f32 * sigma).ceil()) / 2.0).floor() as f32
+}
+
 /// `std::max(a, b)`: `(a < b) ? b : a`, which is not `f32::max` for NaN.
 fn std_max(a: f32, b: f32) -> f32 {
     if a < b { b } else { a }
@@ -94,15 +101,11 @@ fn vertex_buffer() -> Vec<Vertex> {
     for row in 0..5_i32 {
         for col in 0..5_i32 {
             // Skip corners.
-            if (row == 0 && col == 0)
-                || (row == 0 && col == 4)
-                || (row == 4 && col == 0)
-                || (row == 4 && col == 4)
-            {
+            if matches!((row, col), (0 | 4, 0 | 4)) {
                 continue;
             }
 
-            let mut c_id = (row * 5 + col) as u32;
+            let mut c_id = u32::try_from(row * 5 + col).expect("a cell index is not negative");
             let x0 = col;
             let x1 = col + 1;
             let y0 = row;
@@ -134,19 +137,26 @@ fn vertex_buffer() -> Vec<Vertex> {
 
 /// `write_index_buffer`: the 162 indices of the grid.
 // Port of: src/gpu/graphite/render/AnalyticRRectBlurRenderStep.cpp#L179-L213 (chrome/m156)
-fn index_buffer() -> Vec<u16> {
-    let mut indices = vec![
+fn index_buffer() -> [u16; INDEX_COUNT] {
+    // The 4 corner fans (9 indices each).
+    const CORNERS: [u16; 36] = [
         // Corner 0: TL Corner, fan from v2.
-        2, 0, 1, 2, 4, 0, 2, 3, 4, // Corner 1: TR Corner, fan from v9.
-        9, 5, 6, 9, 6, 7, 9, 7, 8, // Corner 2: BR Corner, fan from v10.
-        10, 11, 12, 10, 12, 13, 10, 13, 14, // Corner 3: BL Corner, fan from v16.
+        2, 0, 1, 2, 4, 0, 2, 3, 4, //
+        // Corner 1: TR Corner, fan from v9.
+        9, 5, 6, 9, 6, 7, 9, 7, 8, //
+        // Corner 2: BR Corner, fan from v10.
+        10, 11, 12, 10, 12, 13, 10, 13, 14, //
+        // Corner 3: BL Corner, fan from v16.
         16, 17, 18, 16, 18, 19, 16, 19, 15,
     ];
+    let mut indices = [0_u16; INDEX_COUNT];
+    indices[..CORNERS.len()].copy_from_slice(&CORNERS);
 
     // Create remaining quads.
     let mut base: u16 = 20;
-    for _ in 0..21 {
-        indices.extend_from_slice(&[base, base + 1, base + 3, base + 1, base + 2, base + 3]);
+    let (quads, _) = indices[CORNERS.len()..].as_chunks_mut::<6>();
+    for quad in quads {
+        *quad = [base, base + 1, base + 3, base + 1, base + 2, base + 3];
         base += 4;
     }
     indices
@@ -246,10 +256,7 @@ impl AnalyticRRectBlurRenderStep {
         if let Some(mut writer) = buffer_manager
             .get_index_writer(std::mem::size_of::<u16>() * INDEX_COUNT, &index_binding)
         {
-            let indices: [u16; INDEX_COUNT] = index_buffer()
-                .try_into()
-                .expect("the index buffer has INDEX_COUNT indices");
-            writer.put(&indices);
+            writer.put(&index_buffer());
         }
 
         Self {
@@ -297,7 +304,7 @@ impl RenderStep for AnalyticRRectBlurRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/AnalyticRRectBlurRenderStep.cpp#L290-L392 (chrome/m156)
-    #[allow(clippy::too_many_lines)] // mirrors the C++ function
+    #[allow(clippy::too_many_lines, clippy::similar_names)] // mirrors the C++ function and names
     fn write_vertices(&self, writer: &mut DrawWriter<'_>, params: &DrawParams, ssbo_index: u32) {
         let blur = params.geometry().analytic_rrect_blur_mask();
         let rrect = blur.rrect();
@@ -327,14 +334,19 @@ impl RenderStep for AnalyticRRectBlurRenderStep {
         let mut ins_y_min = rect.top + std_max(sat_pad_y, safe_offset_top);
         let mut ins_y_max = rect.bottom - std_max(sat_pad_y, safe_offset_bottom);
 
-        // Snap innermost inset bounds to the center if they are overlapping.
+        // Snap innermost inset bounds to the center if they are overlapping. The C++ averages with
+        // `(a + b) * 0.5`, which `f32::midpoint` may round differently.
         if ins_x_min >= ins_x_max {
-            ins_x_min = (rect.left + rect.right) * 0.5;
-            ins_x_max = ins_x_min;
+            #[allow(clippy::manual_midpoint)]
+            let center_x = (rect.left + rect.right) * 0.5;
+            ins_x_min = center_x;
+            ins_x_max = center_x;
         }
         if ins_y_min >= ins_y_max {
-            ins_y_min = (rect.top + rect.bottom) * 0.5;
-            ins_y_max = ins_y_min;
+            #[allow(clippy::manual_midpoint)]
+            let center_y = (rect.top + rect.bottom) * 0.5;
+            ins_y_min = center_y;
+            ins_y_max = center_y;
         }
 
         // Our outermost edge safe inset bounds. This allows us to assume full coverage when we are
@@ -433,10 +445,9 @@ impl RenderStep for AnalyticRRectBlurRenderStep {
             (1.0_f32 / std::f32::consts::SQRT_2) / local_sigma.x,
             (1.0_f32 / std::f32::consts::SQRT_2) / local_sigma.y,
         );
-        // `std::floor(std::ceil(6.f * localSigma.x) / 2.0)`: the division is in double.
         let blur_radius = V2::new(
-            (f64::from((6.0_f32 * local_sigma.x).ceil()) / 2.0).floor() as f32,
-            (f64::from((6.0_f32 * local_sigma.y).ceil()) / 2.0).floor() as f32,
+            blur_radius_for(local_sigma.x),
+            blur_radius_for(local_sigma.y),
         );
 
         {
@@ -463,5 +474,22 @@ impl RenderStep for AnalyticRRectBlurRenderStep {
             Some(blur.ref_cdf_proxy()),
             SamplerDesc::new(&SamplingOptions::from(FilterMode::Linear), TileMode::Clamp),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{INDEX_COUNT, VERTEX_COUNT, index_buffer, vertex_buffer};
+
+    #[test]
+    fn grid_has_the_counts_of_the_cpp_template() {
+        assert_eq!(vertex_buffer().len(), VERTEX_COUNT);
+        assert_eq!(index_buffer().len(), INDEX_COUNT);
+    }
+
+    #[test]
+    fn every_index_names_a_vertex_of_the_grid() {
+        let vertex_count = u16::try_from(VERTEX_COUNT).expect("the vertex count fits in u16");
+        assert!(index_buffer().iter().all(|&i| i < vertex_count));
     }
 }
