@@ -7,11 +7,25 @@
 // effects compile the program of the layer's "sh" property with the SkSL runtime effects, and
 // bind its uniforms to the effect properties.
 
+use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 
+use skia_rust_core::canvas::{Canvas, SaveLayerRec};
 use skia_rust_core::data::Data;
-use skia_rust_core::runtime_effect::RuntimeEffect;
-use skia_rust_sksg::{ExternalColorFilter, RenderNode};
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
+use skia_rust_core::point::Point;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::runtime_effect::{ChildPtr, RuntimeEffect};
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
+use skia_rust_core::shader::Shader;
+use skia_rust_core::size::Size;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_sksg::invalidation_controller::InvalidationController;
+use skia_rust_sksg::render_node::{Hit, has_children_inval};
+use skia_rust_sksg::{
+    ExternalColorFilter, Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext,
+};
 
 use crate::impl_container_animator;
 use crate::json::ArrayValue;
@@ -21,8 +35,9 @@ use crate::skottie_value::{ScalarValue, VectorValue};
 use super::super::animator::{
     AnimatablePropertyContainer, DiscardableAdapterBase, Prop, PropertyContainer,
 };
-use super::super::skottie_priv::AnimationBuilder;
-use super::{EffectBinder, EffectBuilder, attach_adapter_node};
+use crate::skottie::LoggerLevel;
+use super::super::skottie_priv::{AnimationBuilder, ScopedAssetRef};
+use super::{EffectBinder, EffectBuilder, attach_adapter_node, repeating_content_shader};
 
 /// The black and white `SkSL`: the luminance of the color, weighted per hue sector.
 // Port of: modules/skottie/src/effects/BlackAndWhiteEffect.cpp#L15-L31 (chrome/m156) (`BLACK_AND_WHITE_EFFECT`)
@@ -142,6 +157,15 @@ const FIRST_UNIFORM_INDEX: usize = 1;
 struct SkSlEffectBase {
     effect: Option<RuntimeEffect>,
     uniforms: Vec<(String, Prop<VectorValue>)>,
+    children: Vec<ChildData>,
+}
+
+/// A child of the `SkSL` program bound to a property: an image (its shader), or the layer content.
+// Port of: modules/skottie/src/effects/SkSLEffect.cpp#L80-L86 (chrome/m156) (`SkSLEffectBase::ChildData`)
+struct ChildData {
+    ty: i32,
+    name: String,
+    child: ChildPtr,
 }
 
 impl SkSlEffectBase {
@@ -156,6 +180,7 @@ impl SkSlEffectBase {
         let mut this = Self {
             effect,
             uniforms: Vec::new(),
+            children: Vec::new(),
         };
         this.bind_uniforms(jprops, abuilder, container);
         this
@@ -211,10 +236,45 @@ impl SkSlEffectBase {
             if ty == SKSL_PROP_UNIFORM {
                 let value = Prop::new(VectorValue::new());
                 container.bind(abuilder, jprop.get("v"), &value);
-                self.uniforms.push((name, value));
+                self.uniforms.push((name.clone(), value));
             }
-            // The image and layer children are bound by the shader effect (`buildChildrenData`);
-            // the color filter has no children.
+            if ty == SKSL_PROP_IMAGE {
+                self.bind_image(jprop, abuilder, name);
+            } else if ty == SKSL_PROP_LAYER {
+                self.children.push(ChildData {
+                    ty,
+                    name,
+                    child: ChildPtr::Empty,
+                });
+            }
+        }
+    }
+
+    /// Binds an image child to the first frame of its footage asset, as a linear shader.
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L165-L182 (chrome/m156) (`SkSLEffectBase::bindUniforms`, image children)
+    fn bind_image(&mut self, jprop: &crate::json::ObjectValue, abuilder: &AnimationBuilder<'_>, name: String) {
+        let Some(jimage_ref) = jprop.get("v").as_object() else {
+            return;
+        };
+        let footage_asset = ScopedAssetRef::new(abuilder, jimage_ref);
+        let asset_info = footage_asset
+            .asset()
+            .and_then(|jasset| abuilder.load_footage_asset(jasset));
+        match asset_info {
+            Some(info) => {
+                let frame_data = info.asset.get_frame_data(0.0);
+                let sampling = SamplingOptions::from(FilterMode::Linear);
+                let child = frame_data
+                    .image
+                    .and_then(|image| image.to_shader(None::<(TileMode, TileMode)>, sampling, None::<&Matrix>))
+                    .map_or(ChildPtr::Empty, ChildPtr::from);
+                self.children.push(ChildData {
+                    ty: SKSL_PROP_IMAGE,
+                    name,
+                    child,
+                });
+            }
+            None => abuilder.log(LoggerLevel::Warning, "cannot find asset for custom shader effect"),
         }
     }
 
@@ -294,4 +354,170 @@ pub(super) fn attach_sksl_color_filter(
     let adapter = SkSlColorFilterAdapter::make(jprops, &layer, eb.builder());
     let node = Rc::clone(adapter.base.node());
     Some(attach_adapter_node(eb.builder(), &adapter, node))
+}
+
+/// The `SkSL` shader node: it fills its layer with the shader of the effect.
+// Port of: modules/skottie/src/effects/SkSLEffect.cpp#L56-L114 (chrome/m156) (`SkSLShaderNode`)
+#[derive(Debug)]
+pub(super) struct SkSlShaderNode {
+    core: NodeCore,
+    child: Rc<dyn RenderNode>,
+    content_size: Size,
+    // Cached shaders.
+    effect_shader: RefCell<Option<Shader>>,
+    content_shader: RefCell<Option<Shader>>,
+}
+
+impl SkSlShaderNode {
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L60-L62 (chrome/m156) (`SkSLShaderNode::SkSLShaderNode`)
+    fn make(child: Rc<dyn RenderNode>, content_size: Size) -> Rc<Self> {
+        let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
+            core: NodeCore::new(0, weak.clone()),
+            child: Rc::clone(&child),
+            content_size,
+            effect_shader: RefCell::new(None),
+            content_shader: RefCell::new(None),
+        });
+        // The custom node observes its child.
+        node.observe_inval(node.child.as_ref());
+        node
+    }
+
+    /// Sets the effect shader, invalidating the node if it changed (`setShader`).
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L70-L72 (chrome/m156) (`SG_ATTRIBUTE(Shader)`)
+    pub(super) fn set_shader(&self, shader: Option<Shader>) {
+        if *self.effect_shader.borrow() != shader {
+            *self.effect_shader.borrow_mut() = shader;
+            self.invalidate();
+        }
+    }
+
+    /// The layer content as a repeating picture shader (`contentShader`).
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L60-L75 (chrome/m156) (`SkSLShaderNode::contentShader`)
+    pub(super) fn content_shader(&self) -> Option<Shader> {
+        if self.content_shader.borrow().is_none()
+            || has_children_inval(std::slice::from_ref(&self.child))
+        {
+            *self.content_shader.borrow_mut() =
+                repeating_content_shader(&self.child, self.content_size);
+        }
+        self.content_shader.borrow().clone()
+    }
+}
+
+impl Drop for SkSlShaderNode {
+    // Port of: modules/sksg/src/SkSGRenderNode.cpp#L258-L262 (chrome/m156) (`CustomRenderNode::~CustomRenderNode`)
+    fn drop(&mut self) {
+        self.unobserve_inval(self.child.as_ref());
+    }
+}
+
+impl Node for SkSlShaderNode {
+    fn core(&self) -> &NodeCore {
+        &self.core
+    }
+
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L84-L87 (chrome/m156) (`SkSLShaderNode::onRevalidate`)
+    fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
+        self.child.revalidate(ic, ctm)
+    }
+}
+
+impl RenderNode for SkSlShaderNode {
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L88-L100 (chrome/m156) (`SkSLShaderNode::onRender`)
+    fn on_render(&self, canvas: &Canvas, ctx: Option<&RenderContext>) {
+        let bounds = self.core().bounds();
+        let scope = ScopedRenderContext::new(canvas, ctx).set_isolation(
+            &bounds,
+            &canvas.total_matrix(),
+            true,
+        );
+        canvas.save_layer(&SaveLayerRec::default().bounds(&bounds));
+        self.child.render(canvas, Some(scope.context()));
+
+        let mut effect_paint = Paint::default();
+        effect_paint.set_shader(self.effect_shader.borrow().clone());
+        effect_paint.set_blend_mode(skia_rust_core::blend_mode::BlendMode::SrcIn);
+        canvas.draw_paint(&effect_paint);
+    }
+
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L101 (chrome/m156) (`SkSLShaderNode::onNodeAt`)
+    fn on_node_at(&self, _p: Point) -> Option<Hit> {
+        // no hit-testing
+        None
+    }
+}
+
+/// The `SkSL` shader adapter: the uniforms and children of the program make the shader.
+// Port of: modules/skottie/src/effects/SkSLEffect.cpp#L232-L262 (chrome/m156) (`SkSLShaderAdapter`)
+struct SkSlShaderAdapter {
+    base: DiscardableAdapterBase<SkSlShaderNode>,
+    sksl: SkSlEffectBase,
+}
+
+impl SkSlShaderAdapter {
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L234-L245 (chrome/m156) (`SkSLShaderAdapter::SkSLShaderAdapter`)
+    fn make(
+        jprops: &ArrayValue,
+        abuilder: &AnimationBuilder<'_>,
+        node: Rc<SkSlShaderNode>,
+    ) -> Rc<Self> {
+        Rc::new_cyclic(|weak: &Weak<Self>| {
+            let base = DiscardableAdapterBase::new(weak.clone(), node);
+            let sksl = SkSlEffectBase::new(jprops, abuilder, base.container());
+            Self { base, sksl }
+        })
+    }
+
+    /// The children of the program (`buildChildrenData`): the layer content, or the image shader.
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L213-L229 (chrome/m156) (`SkSLEffectBase::buildChildrenData`)
+    fn build_children_data(effect: &RuntimeEffect, children: &[ChildData], node: &SkSlShaderNode) -> Vec<ChildPtr> {
+        let mut children_data = vec![ChildPtr::Empty; effect.children().len()];
+        for child_data in children {
+            // Undeclared children are skipped (Skia logs them).
+            let Some(metadata) = effect.find_child(&child_data.name) else {
+                continue;
+            };
+            if child_data.ty == SKSL_PROP_LAYER {
+                children_data[metadata.index()] = node
+                    .content_shader()
+                    .map_or(ChildPtr::Empty, ChildPtr::from);
+            } else if child_data.ty == SKSL_PROP_IMAGE {
+                children_data[metadata.index()] = child_data.child.clone();
+            }
+        }
+        children_data
+    }
+}
+
+impl AnimatablePropertyContainer for SkSlShaderAdapter {
+    fn container(&self) -> &PropertyContainer {
+        self.base.container()
+    }
+
+    // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L247-L258 (chrome/m156) (`SkSLShaderAdapter::onSync`)
+    fn on_sync(&self) {
+        let Some(effect) = &self.sksl.effect else {
+            return;
+        };
+        let uniforms = Data::new_copy(&self.sksl.build_uniform_data(effect));
+        let children = Self::build_children_data(effect, &self.sksl.children, self.base.node());
+        let shader = effect.make_shader(uniforms, &children, None::<&Matrix>);
+        self.base.node().set_shader(shader);
+    }
+}
+
+impl_container_animator!(SkSlShaderAdapter);
+
+/// The `SkSL` shader effect (`SkSL Shader`).
+// Port of: modules/skottie/src/effects/SkSLEffect.cpp#L290-L296 (chrome/m156) (`EffectBuilder::attachSkSLShader`)
+pub(super) fn attach_sksl_shader(
+    eb: &EffectBuilder<'_, '_>,
+    jprops: &ArrayValue,
+    layer: Option<Rc<dyn RenderNode>>,
+) -> Option<Rc<dyn RenderNode>> {
+    let layer = layer?;
+    let shader_node = SkSlShaderNode::make(layer, eb.layer_size());
+    let adapter = SkSlShaderAdapter::make(jprops, eb.builder(), Rc::clone(&shader_node));
+    Some(attach_adapter_node(eb.builder(), &adapter, shader_node))
 }
