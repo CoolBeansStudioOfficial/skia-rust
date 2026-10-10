@@ -392,12 +392,14 @@ Code that takes caps takes `&dyn Caps` (`TextureProxy::make(caps, …)` replaced
 
 - `graphite::Device` implements core's `Device` trait (`crates/skia-rust-core/src/device.rs`). The
   core `Canvas` holds it as `Box<dyn Device>` (§5.2 for how the recorder reaches it).
-- `Image_Graphite`, `Image_YUVA_Graphite` and `SpecialImage_Graphite` implement core's `ImageBase`
-  and special-image traits; `is_texture_backed()` becomes true for them.
+- `Image_Graphite` and `Image_YUVA_Graphite` implement core's `ImageBase`; `is_texture_backed()`
+  becomes true for them. `SpecialImage_Graphite` is the texture flavor of core's `SpecialImage`
+  (§5.5).
 - Text: core keeps the `Slug` placeholder (`docs/design/text.md` T13). `text_gpu` provides the
   `SubRunContainer`/`Slug` implementation that `Device::draw_glyph_run_list` uses.
 - Image filters: `Device::create_image_filtering_backend` returns Graphite's `skif::Backend` port,
-  which uses `SkShaderBlurAlgorithm` (ported in S21) with GPU draws.
+  which uses `SkShaderBlurAlgorithm` (ported to core) with GPU draws. Special images and the image
+  links are §5.5 and §5.6.
 
 ### 4.3 Public API (skia-safe shape, `third_party/rust-skia/skia-safe/src/gpu/graphite*`)
 
@@ -479,6 +481,172 @@ Everything those threads share lives in `Arc<SharedContext>`.
   `API_MAPPING.md`).
 - Compilation order never affects pixels. The command trace records pipelines by key, not by
   creation order.
+
+### 5.5 Backend-polymorphic special images and the image filter backend (Q-A, decided)
+
+**Questions for the maintainer:** none block this; the change has no public API impact. For the
+record, two internal core traits lose bounds: `skif::Backend` and `SkBlurEngine`/`Algorithm`
+(`image_filter_types::Backend`, `blur_engine::{BlurEngine, BlurAlgorithm}`) are no longer
+`Send + Sync`. Neither is part of skia-safe's API.
+
+**Problem.** Core's `SpecialImage` was a raster-only struct holding a `Bitmap`. Skia's
+`SkSpecialImage` is abstract, with `SkSpecialImage_Raster` and `skgpu::graphite::SpecialImage`
+(`SpecialImage_Graphite.cpp`). Without the Graphite flavor, `Device::drawSpecial`,
+`snapSpecial` and `createImageFilteringBackend` could not be ported, so on Graphite every layer
+restore (`drawDevice` → `snapSpecial` + `drawSpecial`) and every image filter drew nothing.
+Constraints: core must not depend on the GPU crate, no `unsafe`, and the raster path must not
+change in behavior or cost.
+
+**Decision.** Graphite's special image only wraps a Graphite-backed `SkImage` (Skia's own TODO
+says special images are going away in favor of images plus a subset). Core already has a
+backend-polymorphic image: `Image(Arc<dyn ImageBase>)`, whose `ImageBase` the GPU crate implements
+(`image_graphite::Image`). So the texture flavor is expressible in core without knowing the GPU
+crate:
+
+```rust
+pub struct SpecialImage { subset: IRect, backing: Backing, props: SurfaceProps }
+enum Backing {
+    Raster(Bitmap),   // SkSpecialImage_Raster
+    Texture(Image),   // skgpu::graphite::SpecialImage: a texture-backed core Image
+}
+```
+
+- Every virtual of `SkSpecialImage` becomes a `match` (`backingStoreDimensions`, `asImage`,
+  `onMakeBackingStoreSubset`, `asShader`: the raster subclass's for `Raster`, the base class's,
+  with `SkImageShader::MakeSubset`, for `Texture`). `SkSpecialImages::AsBitmap` is `None` for
+  `Texture`, as in C++.
+- `SpecialImage::make_from_texture_image(subset, image, props)` is the backend-independent half of
+  `SpecialImage_Graphite`; `skia_rust_gpu::graphite::special_image::make_graphite` is
+  `SkSpecialImages::MakeGraphite` (converts the image with the recorder's image provider first).
+- The raster flavor keeps the same fields and code paths: one enum discriminant check, no
+  allocation, no dynamic dispatch. The raster tests and the raster image filter backend are
+  untouched.
+
+`skif::Backend` drops `Send + Sync`: a backend lives for one filter evaluation on its device's
+thread, and Graphite's holds the `Rc`-based recorder (weakly, where C++ holds a raw pointer).
+`skif::Context` keeps `Arc<dyn Backend>`; the Graphite constructor allows
+`clippy::arc_with_non_send_sync` with a comment.
+
+**Graphite side** (all ported from `Device.cpp` and `TextureUtils.cpp`):
+
+- `Device::drawSpecial` (an `EdgeAAQuad` image draw with the given transform),
+  `snapSpecial` (flush and `WrapDevice`, or `makeImageCopy` when forced or not texturable),
+  `createImageFilteringBackend` (`MakeGraphiteBackend`). `snapSpecialScaled` keeps the
+  `SkDevice` default (`None`): Graphite does not override it.
+- `graphite::image_filter_backend::GraphiteBackend`: `makeDevice` (budgeted, approx-fit,
+  `kDiscard` scratch devices), `makeImage` (`MakeGraphite`), `getCachedBitmap`
+  (`RecorderPriv::CreateCachedProxy`), and the blur engine, which is `SkShaderBlurAlgorithm`.
+- `SkShaderBlurAlgorithm` is backend independent (it draws runtime-effect shaders into devices the
+  backend makes), so it is ported to core (`core::shader_blur_algorithm`: `Compute2DBlurKernel`,
+  `Compute2DBlurOffsets`, `Compute1DBlurLinearKernel`, `renderBlur`, `evalBlur1D/2D`, `blur`) as a
+  trait whose only required method is `makeDevice`. The raster engine does not use it
+  (`RasterShaderBlurAlgorithm` is not wired up), so raster output is unchanged.
+- `SkImageFilter_Base::makeImageWithFilter` and both `SkImages::MakeWithFilter` factories (raster
+  in `skia_rust_raster::images`, Graphite in `graphite::image_factories`, with
+  `Image_Base::makeNonBudgeted`) are ported with it. They return `(Image, IRect, IPoint)` as
+  skia-safe's `images::make_with_filter` does.
+
+**Alternatives considered.**
+
+- *A `SpecialImageBacking` trait object in core* (`Arc<dyn …>` implemented by raster and GPU):
+  the open-ended form of Skia's virtuals, but the raster flavor would pay an allocation and a
+  vtable call, and no backend needs more than "a texture-backed `Image`".
+- *A generic `SpecialImage<B>`*: infects `FilterResult`, `Device` and the canvas with a type
+  parameter; rejected.
+- *Converting through raster* (read back, filter on the CPU, upload): changes results and defeats
+  the GPU backend.
+
+**Tests.** Noop adapter (`crates/skia-rust-gpu/tests/special_images.rs`, CI): `snapSpecial`
+wraps or copies the target with the right subset; subsets share the texture; `drawSpecial`
+records a draw; the backend's devices, `MakeGraphite`, `getCachedBitmap` and the shader blur
+(2D and two-pass 1D) produce texture-backed results of the requested size; a restored layer
+reaches the root task list. `ImageFilterMakeWithFilter` (raster) and
+`ImageFilterMakeWithFilter_Graphite` (noop) are ported and pass. Real adapter, `#[ignore]`d in CI
+(`special_image_pixels.rs`, lavapipe here): a blur image filter (2D and 1D passes; exact solid
+center, clear outside, partial premultiplied edge falling off), and a half-alpha layer composited
+into its parent. All targets are `RGBA_8888`, so the bytes do not depend on N32 order.
+
+### 5.6 Live image-to-device links (Q-B, decided)
+
+**Questions for the maintainer:** none; the decision has no public API change versus skia-safe
+(`Image` stays `Send + Sync`, `Surface` and `Recorder` stay `!Send`). One Skia quirk is ported as
+is and flagged: `Image_Base::isDynamic()` returns true only when some, but not all, of several
+linked devices were just unlinked (`return emptyCount > 0` after resetting it to 0 when all were
+unlinked), so a surface image with one live device is not "dynamic" for
+`onMakeSubset`/`makeColorTypeAndColorSpace`.
+
+**Problem.** In Skia, `Image::WrapDevice` links a surface's image to its `Device`
+(`fLinkedDevices`, `sk_sp<Device>`), and `Image_Base::notifyInUse` (called when the image is put
+into a paint key, copied, or cached) flushes the device's pending work, so the image sees every
+draw made to the surface before the image is used. Our `ImageBase` is `Send + Sync`
+(`Arc<dyn ImageBase>`), while a Graphite device is `Rc<RefCell<DeviceCore>>` (§5.1), so an image
+cannot hold the device. G10d flushed at `as_image()` time instead, so draws made after
+`as_image()` were lost to the image (`NotifyInUseTestAsImage` fails).
+
+**Options.**
+
+1. *A non-`Send` Graphite image* (holding `Rc<RefCell<DeviceCore>>`). Requires either dropping
+   `Send + Sync` from `ImageBase` (breaks skia-safe's `Image: Send + Sync` for every image,
+   including raster ones that are legitimately shared across threads) or a second, non-core image
+   type (breaks `Canvas::draw_image(&Image)` and every API that takes an `Image`). Rejected:
+   public API break for all backends to serve one.
+2. *An `Arc`-based linking token with deferred flush tasks.* The image holds a `Send + Sync`
+   token; the device would register "flush me" closures that run later. A closure that captures
+   the device is `!Send` again, and deferring the flush past the draw that reads the image
+   reorders tasks (the draw would be recorded before the device's work is in the root list),
+   which is exactly the ordering bug `NotifyInUseTest` documents.
+3. *Recorder-side tracking.* The recorder already holds every registered device
+   (`fTrackedDevices`, `Weak`). The image needs a key to find its device there, and a few facts
+   about the device that `Device::notifyInUse` reads without touching the device.
+4. *Keep flushing at `as_image()`* (status quo): wrong results, rejected.
+
+**Decision: 2 + 3, synchronous.** The image holds an `Arc<DeviceLink>` per linked device
+(`image_graphite::DeviceLink`, `Send + Sync`), the device owns the same `Arc`:
+
+| `DeviceLink` field | what `Device::notifyInUse` reads in C++ |
+|---|---|
+| `device_id` | the `sk_sp<Device>` itself: the recorder finds the live device by this ID |
+| `recorder_id` | `fRecorder == recorder` |
+| `target: Arc<TextureProxy>` | `isScratchDevice()` (target not instantiated) and the pending-read proxy |
+| `abandoned` (set by `abandonRecorder`) | `!fRecorder` (the device is immutable) |
+| `dropped` (set when `DeviceCore` drops) | `device->unique()` (only the image would still hold it) |
+| `last_task` (mirrors `fLastTask`) | a scratch device's last snapped draw task |
+
+`Image_Base::notifyInUse`, `linkDevice(s)`, `unlinkDevices`, `isDynamic` and `Device::notifyInUse`
+are ported against the link. The scratch branch needs only the link (it records
+`last_task` as a dependency of the reading draw, or adds it to the root list for a copy). The
+non-scratch branch runs on the recorder's thread: it looks the device up in the recorder's tracked
+devices by ID (`RecorderPriv::find_tracked_device`) and calls `flushPendingWork` on it right
+away, so task order matches C++ exactly (A1, B1, A2, B2 in `NotifyInUseTestAsImage`).
+
+Two borrow rules replace C++'s free aliasing:
+
+- `add_image_to_key` cannot reach the drawing device (the `KeyContext` only reads the
+  `DrawContext`), so the key context records the Graphite-backed images it keys and
+  `Device::drawGeometry` notifies them right after `toKey`, before the draw is recorded: the
+  same point in the draw as Skia's (after the flush-before-draw, before the draw).
+- The drawing device is mutably borrowed during the notify. When the linked device is the
+  drawing device itself (a surface drawing its own image), it is flushed through that borrow;
+  when flushing the linked device triggers `flushTrackedDevices(dependency)` and the drawing
+  device has pending reads of it, the drawing device is flushed through the borrow too
+  (`flush_tracked_devices_with_dependency_and_current`). Other borrowed devices are the one
+  already flushing, as before.
+
+**API impact.** None on the public, skia-safe-shaped API. `Surface::as_image()` no longer flushes;
+the image sees later draws, as in Skia. `wrap_device` takes the device's link. Internal additions:
+`TrackedDevice::{device_id, as_device_core, is_cell}` (defaulted, so test doubles are unaffected),
+`KeyContext::notify_in_use`, `Image::{link_device, link_devices, notify_in_use, unlink_devices,
+is_dynamic}`, `make_non_budgeted`. Draws of the image on another recorder do not flush (Skia:
+"Draws of the view on another Recorder will always see the texture content dependent on how
+Recordings are inserted").
+
+**Tests.** Noop (`special_images.rs`, CI): `as_image()` records nothing; the first draw of the
+image flushes A1; after more draws to A, the next draw flushes B1 then A2 (root task counts);
+a surface drawing its own image flushes itself; once the surface drops, the image unlinks on its
+next use. Real adapter: `special_image_pixels.rs::a_surface_image_sees_draws_made_after_it_was_taken`
+and the full `NotifyInUseTest.cpp` port (`NotifyInUseTestAsImage`, `NotifyInUseTestSnapshot` and
+the 29 layer blend-mode cases), all passing on lavapipe; the 31 manifest entries stay `todo` with
+the adapter reason because CI has no rendering adapter.
 
 ---
 
