@@ -58,10 +58,8 @@ use skia_rust_gpu::graphite::task::upload_task::{
 };
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
 use skia_rust_gpu::graphite::texture_proxy_view::TextureProxyView;
-use skia_rust_gpu::graphite::uniform::{K_NON_ARRAY, Uniform};
 use skia_rust_gpu::graphite::uniform_manager::UniformManager;
 use skia_rust_gpu::graphite::wgpu::WgpuContext;
-use skia_rust_gpu::sksl_type_shared::SkSLType;
 
 use crate::{def_graphite_adapter_test, errorf, reporter_assert};
 
@@ -643,10 +641,10 @@ def_graphite_adapter_test!(Compute_UniformBufferTest, |reporter, context| {
             debug_assert_eq!(resource_index, 0);
             #[cfg(debug_assertions)]
             {
-                let uniforms = [Uniform::new_owned(
+                let uniforms = [skia_rust_gpu::graphite::uniform::Uniform::new_owned(
                     "factor".to_owned(),
-                    SkSLType::Float,
-                    K_NON_ARRAY,
+                    skia_rust_gpu::sksl_type_shared::SkSLType::Float,
+                    skia_rust_gpu::graphite::uniform::K_NON_ARRAY,
                 )];
                 mgr.set_expected_uniforms(&uniforms, /*is_substruct=*/ false);
             }
