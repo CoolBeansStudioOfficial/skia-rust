@@ -623,7 +623,7 @@ fn pick_best_intra4(enc: &mut VP8Encoder, it: &mut VP8EncIterator, rd: &mut Mode
         let (x, y) = (it.i4 & 3, it.i4 >> 2);
         it.top_nz[x] = i32::from(rd_i4.nz != 0);
         it.left_nz[y] = i32::from(rd_i4.nz != 0);
-        if !it.rotate_i4() {
+        if !it.rotate_i4(best_blocks) {
             break;
         }
     }
