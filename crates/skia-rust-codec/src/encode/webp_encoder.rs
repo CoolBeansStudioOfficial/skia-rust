@@ -10,9 +10,10 @@
 // `method 3`, `WebPConfigPreset(DEFAULT, quality)`), including the ALPH chunk of pictures with
 // transparency, through `skia_rust_libwebp::enc`.
 //
+// The ICC profile of the colour space is embedded as an `ICCP` chunk by `skia_rust_libwebp::mux`
+// (libwebp's WebPMux), as `SkWebpEncoder::Encode` does.
+//
 // Not ported, and reported as `false` / `None` rather than encoded differently:
-// - an ICC profile on the pixmap's colour space: the ICCP chunk is written by libwebp's WebPMux,
-//   which is not ported. Without a colour space the file is the plain VP8L bitstream, as in Skia.
 // - `EncodeAnimated` (WebPAnimEncoder) and the GPU-backed `EncodeImage` (no `DirectContext`
 //   type in this port; `encode_image` reads the raster pixels of the image).
 
@@ -28,6 +29,7 @@ use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_libwebp::enc::encode_lossless;
 use skia_rust_libwebp::enc::vp8_lossy::encode_lossy;
+use skia_rust_libwebp::mux::Mux;
 
 use crate::encode::icc::write_icc_profile;
 
@@ -109,9 +111,22 @@ fn encode_to_vec(src: &Pixmap<'_>, options: &Options) -> Option<Vec<u8>> {
     if !(0.0..=100.0).contains(&options.quality) {
         return None;
     }
-    if write_icc_profile(src.color_space().as_ref()).is_some() {
-        return None;
-    }
+    // SkWebpEncoder::Encode: the ICC profile of the colour space, if it has one.
+    let icc = write_icc_profile(src.color_space().as_ref());
+    let encoded = encode_picture(src, options)?;
+    let Some(icc) = icc else {
+        return Some(encoded);
+    };
+    // libwebp needs an encoded image before a profile can be added: WebPMuxSetImage, then
+    // WebPMuxSetChunk("ICCP") and WebPMuxAssemble.
+    let mut mux = Mux::new();
+    mux.set_image(&encoded).ok()?;
+    mux.set_chunk(*b"ICCP", &icc).ok()?;
+    mux.assemble().ok()
+}
+
+/// The WebP bitstream of the pixels of `src`, without the ICC profile (`WebPEncode`).
+fn encode_picture(src: &Pixmap<'_>, options: &Options) -> Option<Vec<u8>> {
     let info = src.info();
     let width = usize::try_from(info.width()).ok()?;
     let height = usize::try_from(info.height()).ok()?;

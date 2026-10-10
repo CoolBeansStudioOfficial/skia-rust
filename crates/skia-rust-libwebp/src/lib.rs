@@ -35,6 +35,7 @@ pub mod huffman;
 pub mod idec;
 pub mod io;
 pub mod lossless;
+pub mod mux;
 mod output;
 pub mod rescaler;
 pub mod vp8_dec;
