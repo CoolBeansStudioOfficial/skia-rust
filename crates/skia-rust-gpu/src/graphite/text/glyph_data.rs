@@ -152,6 +152,7 @@ impl GlyphData {
 
         let current_atlas_gen = atlas_manager.atlas_generation(self.render_data.mask_format);
 
+        #[allow(clippy::if_not_else)] // keeps the C++ branch order
         if self.atlas_generation != current_atlas_gen {
             // Calculate the texture coordinates for the vertexes during first use
             // (fAtlasGeneration is set to kInvalidAtlasGeneration) or the atlas has changed in
@@ -227,7 +228,7 @@ impl GlyphData {
     /// the strike to the source (always 1), the depth and the SSBO index.
     // Port of: src/gpu/graphite/text/GlyphData.cpp#L139-L172 (chrome/m156)
     // The instance data narrows the atlas coordinates to 16 bits, as the C++ `uint16_t(...)`.
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, clippy::too_many_arguments)]
     pub fn fill_instance_data(
         &self,
         vf: &VertexFiller,

@@ -8,6 +8,17 @@
 //! The distance field is made with Danielsson's 8SSEDT over the mask's edge texels, whose
 //! distances come from Gustavson's gradient-based estimate (2011).
 
+// The casts mirror the C++ int/size_t index arithmetic; `0.5 * (dx + dy)` mirrors the C++ float
+// expression exactly (midpoint would change evaluation order); the single-character names are
+// the C++ names; the panics are slice-length preconditions.
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::manual_midpoint,
+    clippy::many_single_char_names,
+    clippy::missing_panics_doc
+)]
+
 use crate::color_data::{packed16_to_b32, packed16_to_g32, packed16_to_r32};
 use crate::point::Point;
 use crate::point::point_priv;

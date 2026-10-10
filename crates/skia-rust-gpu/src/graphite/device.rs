@@ -1068,6 +1068,7 @@ impl DeviceCore {
     /// them fit, the draws recorded so far are flushed to make room, and the rest are drawn next.
     // Port of: src/gpu/graphite/Device.cpp#L1536-L1607 (chrome/m156)
     #[doc(alias = "drawAtlasSubRun")]
+    #[allow(clippy::missing_panics_doc)] // the expect is the C++ non-null backend data invariant
     pub fn draw_atlas_sub_run(
         &mut self,
         sub_run: &Arc<AtlasSubRun>,
@@ -2295,6 +2296,7 @@ impl DeviceCore {
     // shape is drawn from the raster path atlas instead: then the renderer is the one
     // `PathAtlas::addShape()` returns, and the first value is `None`.
     // Port of: src/gpu/graphite/Device.cpp#L2142-L2302 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // one function in C++
     fn choose_renderer<'r>(
         recorder: RecorderPriv<'r>,
         local_to_device: &Transform,

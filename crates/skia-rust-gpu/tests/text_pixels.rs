@@ -14,6 +14,8 @@
 //! them with `cargo test -p skia-rust-gpu --test text_pixels -- --ignored`. A machine with no
 //! adapter that renders reports that and passes, unless `SKIA_RUST_REQUIRE_ADAPTER` is set.
 #![cfg(not(target_arch = "wasm32"))]
+// Pixel coordinates are far below 2^24.
+#![allow(clippy::cast_precision_loss)]
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color::Color4f;

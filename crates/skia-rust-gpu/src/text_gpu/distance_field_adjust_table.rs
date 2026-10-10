@@ -75,6 +75,7 @@ fn build_distance_adjust_table(device_gamma: scalar) -> Vec<scalar> {
                 let t = border_alpha * (border_alpha * (4.0 * border_alpha - 6.0) + 5.0) / 3.0;
 
                 // compute distance which gives us that t value
+                #[allow(clippy::items_after_statements)] // next to its only use, as in C++
                 const DISTANCE_FIELD_AA_FACTOR: f32 = 0.65; // should match SK_DistanceFieldAAFactor
                 let d = 2.0 * DISTANCE_FIELD_AA_FACTOR * t - DISTANCE_FIELD_AA_FACTOR;
 
@@ -119,6 +120,7 @@ impl DistanceFieldAdjustTable {
     /// `getAdjustment(lum, useGammaCorrectTable)`.
     // Port of: src/text/gpu/DistanceFieldAdjustTable.h#L28-L31 (chrome/m156)
     #[must_use]
+    #[allow(clippy::cast_sign_loss)] // the C++ `lum >> shift` index; the luminance is non-negative
     pub fn get_adjustment(&self, lum: i32, use_gamma_correct_table: bool) -> scalar {
         let lum = (lum >> DISTANCE_ADJUST_LUM_SHIFT) as usize;
         if use_gamma_correct_table {
