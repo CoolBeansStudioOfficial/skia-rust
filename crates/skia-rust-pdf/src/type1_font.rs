@@ -143,7 +143,7 @@ fn parse_pfa(
     *trailer_len = size - *header_len - *hex_data_len;
 
     // Verify that the data section is hex encoded and count the bytes.
-    let mut nibbles = 0;
+    let mut nibbles: usize = 0;
     while data_pos < trailer_pos {
         let c = src[data_pos];
         data_pos += 1;
@@ -156,12 +156,13 @@ fn parse_pfa(
         }
         nibbles += 1;
     }
-    *data_len = (nibbles + 1) / 2;
+    *data_len = nibbles.div_ceil(2);
 
     true
 }
 
 // Port of: src/pdf/SkPDFType1Font.cpp#L143-L155 (hexToBin, chrome/m156)
+#[allow(clippy::cast_possible_wrap)] // the digit values are below 16
 fn hex_to_bin(c: u8) -> i8 {
     if !c.is_ascii_hexdigit() {
         -1
@@ -177,6 +178,7 @@ fn hex_to_bin(c: u8) -> i8 {
 }
 
 // Port of: src/pdf/SkPDFType1Font.cpp#L157-L246 (convert_type1_font_stream, chrome/m156)
+#[allow(clippy::cast_sign_loss)] // the nibbles are checked to be non-negative
 fn convert_type1_font_stream(
     src_stream: Option<&mut dyn StreamAsset>,
     header_len: &mut usize,
@@ -363,6 +365,8 @@ fn type1_font_descriptor(doc: &DocHandle, pdf_strike_spec: &PdfStrikeSpec) -> Pd
 /// `SkPDFEmitType1Font`: writes a Type1 font.
 // Port of: src/pdf/SkPDFType1Font.cpp#L321-L363 (chrome/m156)
 #[doc(alias = "SkPDFEmitType1Font")]
+#[allow(clippy::missing_panics_doc)] // the SkASSERTs and SkTo checks of the C++
+#[allow(clippy::cast_possible_truncation)] // `int emSize = fUnitsPerEM`
 pub fn emit_type1_font(pdf_font: &PdfFont, doc: &DocHandle) {
     let strike = pdf_font.strike();
     let typeface = strike.path().strike_spec.typeface().clone();

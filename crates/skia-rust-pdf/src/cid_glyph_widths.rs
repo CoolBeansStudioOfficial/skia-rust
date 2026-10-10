@@ -6,6 +6,9 @@
 //! `SkPDFMakeCIDGlyphWidthsArray`: the `W` array of a CID font, the advances of the glyphs a
 //! document used.
 
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts mirror the C++
+#![allow(clippy::missing_panics_doc)] // the SkTo checks of the C++
+
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::strike_spec::BulkGlyphMetricsAndPaths;

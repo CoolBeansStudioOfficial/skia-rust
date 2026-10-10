@@ -16,7 +16,7 @@
 //! `form_xobject`), the gradient and image shaders (`gradient_shader`, `shader`), the images
 //! with their JPEG pass-through (`bitmap`, `keyed_image`, `jpeg`), `SkClusterator`
 //! (`clusterator`), the structure tree (`tag`), and the fonts (M26): `SkPDFFont` with its Type3
-//! and Type0/CID fonts, the `ToUnicode` CMaps, the CID glyph widths, Type1 fonts, and the text
+//! and Type0/CID fonts, the `ToUnicode` maps, the CID glyph widths, Type1 fonts, and the text
 //! of the device (`font`, `glyph_use`, `to_unicode_cmap`, `cid_glyph_widths`, `type1_font`).
 //!
 //! Fonts are embedded whole: the subsetter is not ported (`docs/design/modules.md` Q4), and

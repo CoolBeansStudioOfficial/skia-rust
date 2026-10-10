@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: src/pdf/SkPDFMakeToUnicodeCmap.{h,cpp} (chrome/m156)
 
-//! `SkPDFMakeToUnicodeCmap`: the `ToUnicode` CMap that maps the glyphs a PDF font used back to
+//! `SkPDFMakeToUnicodeCmap`: the `ToUnicode` `CMap` that maps the glyphs a PDF font used back to
 //! text.
 
 use skia_rust_core::font_types::GlyphId;
@@ -110,7 +110,7 @@ fn append_bfchar_section(bfchar: &[BfChar], multi_byte: bool, cmap: &mut Dynamic
 }
 
 // Port of: src/pdf/SkPDFMakeToUnicodeCmap.cpp#L114-L162 (append_bfchar_section_ex, chrome/m156)
-#[allow(clippy::cast_possible_truncation)] // `glyphId - glyphOffset` is an int passed as SkGlyphID
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // `glyphId - glyphOffset` is an int passed as SkGlyphID
 fn append_bfchar_section_ex(
     glyph_to_unicode_ex: &GlyphToUnicodeEx,
     multi_byte: bool,
@@ -136,7 +136,7 @@ fn append_bfchar_section_ex(
         if glyph_id < first_glyph_id || last_glyph_id < glyph_id {
             return;
         }
-        if i % 100 == 0 {
+        if i.is_multiple_of(100) {
             let count = (glyph_count - i).min(100);
             cmap.write_dec_as_text(i32::try_from(count).expect("at most 100"));
             cmap.write_text(" beginbfchar\n");
@@ -284,7 +284,7 @@ pub fn append_cmap_sections(
     append_bfrange_section(&bfrange_entries, multi_byte_glyphs, cmap);
 }
 
-/// `SkPDFMakeToUnicodeCmap`: the `ToUnicode` CMap of the glyphs in `subset` (all of the glyphs
+/// `SkPDFMakeToUnicodeCmap`: the `ToUnicode` `CMap` of the glyphs in `subset` (all of the glyphs
 /// when there is none), as a stream.
 // Port of: src/pdf/SkPDFMakeToUnicodeCmap.cpp#L264-L279 (chrome/m156)
 #[doc(alias = "SkPDFMakeToUnicodeCmap")]
