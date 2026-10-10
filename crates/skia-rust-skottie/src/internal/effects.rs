@@ -34,6 +34,7 @@ mod corner_pin;
 mod filters;
 mod gradient_ramp;
 mod linear_wipe;
+mod radial_wipe;
 mod runtime;
 mod shift_channels;
 mod styles;
@@ -150,6 +151,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         convolution::attach_directional_blur_effect,
     ),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
+    ("ADBE Radial Wipe", radial_wipe::attach_radial_wipe_effect),
     ("ADBE Ramp", gradient_ramp::attach_gradient_effect),
     ("ADBE Sharpen", convolution::attach_sharpen_effect),
     (
@@ -172,6 +174,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
 const LEGACY_TINT_EFFECT: i32 = 20;
 const LEGACY_FILL_EFFECT: i32 = 21;
 const LEGACY_TRITONE_EFFECT: i32 = 23;
+const LEGACY_RADIAL_WIPE_EFFECT: i32 = 26;
 const LEGACY_DROP_SHADOW_EFFECT: i32 = 25;
 const LEGACY_GAUSSIAN_BLUR_EFFECT: i32 = 29;
 
@@ -256,6 +259,7 @@ impl<'a, 'j> EffectBuilder<'a, 'j> {
             LEGACY_TINT_EFFECT => Some(color::attach_tint_effect),
             LEGACY_FILL_EFFECT => Some(color::attach_fill_effect),
             LEGACY_TRITONE_EFFECT => Some(color::attach_tritone_effect),
+            LEGACY_RADIAL_WIPE_EFFECT => Some(radial_wipe::attach_radial_wipe_effect),
             LEGACY_DROP_SHADOW_EFFECT => Some(filters::attach_drop_shadow_effect),
             LEGACY_GAUSSIAN_BLUR_EFFECT => Some(filters::attach_gaussian_blur_effect),
             _ => None,
