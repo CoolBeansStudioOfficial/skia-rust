@@ -17,11 +17,12 @@
 //! a device drawn into a canvas is gone from the caller's hands, so the content is shared.
 //! `ScopedContentEntry` is a [`ScopedEntry`] that the draw begins and ends explicitly.
 //!
-//! Not ported yet, and waiting for the fonts (`modules.md` M26): drawing glyphs. A glyph run
-//! draws nothing (`PdfDevice::on_draw_glyph_run_list`), where Skia's `internalDrawGlyphRun`,
-//! `drawGlyphRunAsPath` and `GlyphPositioner` write the text, so the font resources stay empty.
+//! The text (`internalDrawGlyphRun`, `drawGlyphRunAsPath`, `GlyphPositioner`) is in the `text`
+//! module. The fonts it uses are in [`crate::font`].
 
 #![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
+
+mod text;
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -76,7 +77,6 @@ use skia_rust_raster::surfaces::raster_n32_premul;
 
 use crate::bitmap::{serialize_image_size, serialize_image_xobject};
 use crate::clip_stack_device::{ClipStackDevice, clip_stack_as_path};
-use crate::clusterator::Clusterator;
 use crate::document::{DocHandle, LinkType, PdfLink, PdfNamedDestination, elem_id_key};
 use crate::form_xobject::make_form_x_object;
 use crate::graphic_stack_state::{Entry, GraphicStackState, StreamSelector};
@@ -2156,20 +2156,12 @@ impl Device for PdfDevice {
     }
 
     /// `onDrawGlyphRunList`.
-    ///
-    /// TODO(M26): the glyph runs are drawn with `SkPDFFont`s (`internalDrawGlyphRun` of
-    /// `SkPDFDevice.cpp#L849-L1075`, `drawGlyphRunAsPath`, `GlyphPositioner`). Until the fonts are
-    /// ported, a glyph run draws nothing.
-    // Port of: src/pdf/SkPDFDevice.cpp#L1068-L1075 (chrome/m156)
-    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, _paint: &Paint) {
-        debug_assert!(!list.has_rsxform());
-        // The clusters are walked as Skia does, so that the title of a structure element that is
-        // drawn with text can be recorded; the fonts are the missing part.
+    // Port of: src/pdf/SkPDFDevice.cpp#L1108-L1115 (chrome/m156)
+    fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
         let ctx = self.ctx();
-        let _ = ctx;
-        for glyph_run in list.runs() {
-            let _clusterator = Clusterator::new(glyph_run);
-        }
+        self.content
+            .borrow_mut()
+            .draw_glyph_run_list(&ctx, self.clip.cs(), list, paint);
     }
 
     /// `drawDevice`.

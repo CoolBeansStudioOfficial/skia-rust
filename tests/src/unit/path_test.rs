@@ -5,15 +5,16 @@
 
 #![cfg(test)]
 
-// Not ported yet (manifest stays `todo`): DEF_TESTs that need SkCanvas / SkSurface / SkPaint,
-// the stroker (`skpathutils::FillPathWithPaint`), SkRegion::setPath or PathOps:
-//   Paths (draws through SkSurface; also SkRegion::setPath, SkStrokeRec, the stroker),
-//   PathBigCubic, HugeGeometry, ClipPath_nonfinite, skbug_6450,
-//   path_walk_simple_edges_1154864, path_walk_edges_concave_large_dx (SkSurface / SkCanvas).
+// Not ported yet (manifest stays `todo`): DEF_TESTs that need the helpers of PathTest.cpp or a
+// missing API:
+//   Paths (about 70 static helpers of PathTest.cpp, not ported; several need SkRegion::setPath,
+//   SkStrokeRec and SkPath::dump),
+//   skbug_6450 (SkMakeNullCanvas is SkNWayCanvas(0, 0), not ported).
 
 use crate::{Reporter, def_test, def_tier_test, reporter_assert};
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
+use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
 use skia_rust_core::float_bits::bits_to_float;
 use skia_rust_core::floating_point::is_finite;
@@ -33,7 +34,9 @@ use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
-use skia_rust_core::scalar::{SCALAR_INFINITY, Scalar, scalar, scalar_sqrt};
+use skia_rust_core::scalar::{
+    SCALAR_INFINITY, SCALAR_MAX, SCALAR_NAN, Scalar, scalar, scalar_sqrt,
+};
 use skia_rust_core::utils::parse_path;
 use skia_rust_core::vertices::{VertexMode, Vertices};
 use skia_rust_raster::surfaces;
@@ -1613,4 +1616,138 @@ def_test!(Fuzz_b42534575_ExtremeStrokeBounds, |reporter| {
     let success = fill_path_with_paint(&path, &paint, &mut dst_builder, None, None);
     // skia-rust: SK_BUILD_FOR_FUZZER is not defined, so only the non-fuzzer expectation applies.
     reporter_assert!(reporter, success);
+});
+
+// Port of: tests/PathTest.cpp#L4760-L4774 (chrome/m156)
+def_test!(PathBigCubic, |_reporter| {
+    let path = PathBuilder::new()
+        .move_to((bits_to_float(0x0000_0000), bits_to_float(0x0000_0000))) // 0, 0
+        .move_to((bits_to_float(0x4400_0000), bits_to_float(0x3739_38b8))) // 512, 1.10401e-05f
+        .cubic_to(
+            (bits_to_float(0x0000_0001), bits_to_float(0xdf00_0052)),
+            (bits_to_float(0x0000_0100), bits_to_float(0x0000_0000)),
+            (bits_to_float(0x0000_0100), bits_to_float(0x0000_0000)),
+        )
+        .move_to((0.0, 512.0))
+        .detach();
+
+    // this call should not assert
+    let mut surface = surfaces::raster_n32_premul((255, 255)).expect("surface");
+    surface.canvas().draw_path(&path, &Paint::default());
+});
+
+// Port of: tests/PathTest.cpp#L4947-L4976 (chrome/m156)
+def_test!(HugeGeometry, |_reporter| {
+    let mut surf = surfaces::raster_n32_premul((100, 100)).expect("surface");
+    let canvas = surf.canvas();
+
+    let aas = [false, true];
+    let styles = [Style::Fill, Style::Stroke, Style::StrokeAndFill];
+    let values: [scalar; 8] = [
+        0.0,
+        1.0,
+        1000.0,
+        1000.0 * 1000.0,
+        1000.0_f32 * 1000.0 * 10000.0,
+        SCALAR_MAX / 2.0,
+        SCALAR_MAX,
+        SCALAR_INFINITY,
+    ];
+
+    let mut paint = Paint::default();
+    for x in values {
+        let r = Rect::new(-x, -x, x, x);
+        for width in values {
+            paint.set_stroke_width(width);
+            for aa in aas {
+                paint.set_anti_alias(aa);
+                for style in styles {
+                    paint.set_style(style);
+                    canvas.draw_rect(r, &paint);
+                    canvas.draw_oval(r, &paint);
+                }
+            }
+        }
+    }
+});
+
+// Treat nonfinite paths as "empty" or "full", depending on inverse-filltype
+// Port of: tests/PathTest.cpp#L4979-L5005 (chrome/m156)
+def_test!(ClipPath_nonfinite, |reporter| {
+    let mut surf = surfaces::raster_n32_premul((10, 10)).expect("surface");
+    let canvas = surf.canvas();
+
+    reporter_assert!(reporter, !canvas.is_clip_empty());
+    for aa in [false, true] {
+        for ft in [PathFillType::Winding, PathFillType::InverseWinding] {
+            for bad in [SCALAR_INFINITY, SCALAR_NAN] {
+                for bits in 1..=15 {
+                    let mut p0 = Point::new(0.0, 0.0);
+                    let mut p1 = Point::new(0.0, 0.0);
+                    if bits & 1 != 0 {
+                        p0.x = -bad;
+                    }
+                    if bits & 2 != 0 {
+                        p0.y = -bad;
+                    }
+                    if bits & 4 != 0 {
+                        p1.x = bad;
+                    }
+                    if bits & 8 != 0 {
+                        p1.y = bad;
+                    }
+
+                    let path = Path::line(p0, p1).make_fill_type(ft);
+                    canvas.save();
+                    canvas.clip_path(&path, ClipOp::Intersect, aa);
+                    reporter_assert!(
+                        reporter,
+                        canvas.is_clip_empty() != path.is_inverse_fill_type()
+                    );
+                    canvas.restore();
+                }
+            }
+        }
+    }
+    reporter_assert!(reporter, !canvas.is_clip_empty());
+});
+
+// Port of: tests/PathTest.cpp#L5474-L5490 (chrome/m156)
+def_test!(path_walk_simple_edges_1154864, |_reporter| {
+    // Drawing this path triggered an assert in walk_simple_edges:
+    let mut surface = surfaces::raster_n32_premul((32, 32)).expect("surface");
+
+    let path = PathBuilder::new_with_fill_type(PathFillType::Winding)
+        .move_to((0.006_659_984_6, 2.0))
+        .quad_to((0.006_659_984_6, 4.0), (-1.99334, 4.0))
+        .quad_to((-3.99334, 4.0), (-3.99334, 2.0))
+        .quad_to((-3.99334, 0.0), (-1.99334, 0.0))
+        .quad_to((0.006_659_984_6, 0.0), (0.006_659_984_6, 2.0))
+        .close()
+        .detach();
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    surface.canvas().draw_path(&path, &paint);
+});
+
+// crbug.com/398075927
+// Port of: tests/PathTest.cpp#L5493-L5510 (chrome/m156)
+def_test!(path_walk_edges_concave_large_dx, |_reporter| {
+    // The large surface size is necessary to reproduce the bug because we need
+    // changes in y to be large enough but then also changes in x need to be much greater
+    // while also ensuring we are blitting the interesting edge. Also the larger numbers
+    // more easily capture the numerical instability with the algorithm.
+    let mut surface = surfaces::raster_n32_premul((900, 700)).expect("surface");
+
+    let path = PathBuilder::new()
+        .line_to((100.0, 400.0))
+        .line_to((90.0, 600.0))
+        .quad_to((35000.0, 200.0), (35000.0, 200.0))
+        .detach();
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+    paint.set_style(Style::Fill);
+    surface.canvas().draw_path(&path, &paint);
 });

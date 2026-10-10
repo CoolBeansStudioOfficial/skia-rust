@@ -16262,8 +16262,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L248-L248"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "2f7ce0a62eb4ff8024755b208f3f1c7cb39e964f62886e4f4e3dee35338b2276"
 
 [[test]]
@@ -16272,8 +16271,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L247-L247"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "86e4b5b4cb9022b0cb1ad273abdcf2a3e9e7fa334d8db7b2241ab1441916216c"
 
 [[test]]
@@ -16282,8 +16280,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L249-L249"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "efc2992a8cec1fac5460227544973a094fd3aa2ee4642f3541340f744b9148a4"
 
 [[test]]
@@ -23444,8 +23441,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pdf_never_embed.cpp#L75-L82"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "97aca5bd6cb2532ba13afcfa2dc4585acbe1e2d625f2acf795d08fac8bb66e56"
 
 [[test]]
@@ -23454,8 +23450,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L39-L71"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "4a4237338aa189fd527933941ece441bf282fdb49c2b1c8403da406d2baa41f8"
 
 [[test]]
@@ -23464,8 +23459,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L87-L128"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "d7c89821fc31c0613da4b24ccaeff0d83db936894ee5c69742d9699f2f70399b"
 
 [[test]]
@@ -25211,6 +25205,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L319-L335"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "873f9a185dd5165d35322e18d8f1fdeeedc64f633b4cf6818c403cdb0831ea05"
 
 [[test]]
@@ -25220,6 +25215,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L338-L355"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "ac26030cfea96f67ef5c6bf32d28353ace9c71d0f177f0c319139eb9fecc6462"
 
 [[test]]
@@ -25229,6 +25225,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L420-L439"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "b6a8c4ce73ecbc73a08c694d29c96ed68fc3490fa7852e077a77c5de5ea5b548"
 
 [[test]]
@@ -25238,6 +25235,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L357-L365"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "e68ccd99059244529a5fe76fdadafabd356fdbd698dab8c67e2bce77e94c9987"
 
 [[test]]
@@ -25247,6 +25245,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L368-L377"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "1599d2e5b1bde5ae6e740976d5834cf43b9d9fb5199465b1b36f2ebe8184791a"
 
 [[test]]
@@ -25265,6 +25264,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L441-L498"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "8ff85b9491e48ac09dd5334c1cac5044fe406758ebc7ff25c0026df478e59487"
 
 [[test]]
@@ -26491,7 +26491,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/AudioLayer.cpp#L15-L134"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "576673de103f9db058d949f616db049e4e4ecda91b10e1821cd9d34f175df56a"
 
 [[test]]
@@ -26500,7 +26500,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L82-L267"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "4d3d520bc4b74d1328ed1370c84e61ea182c583cd781d9f6737ef6fbee75a6c4"
 
 [[test]]
@@ -26510,6 +26510,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L269-L364"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22: TextAdapter, TextValue, the shaper)"
 span_hash = "0a8c3b2432a32ee6193bb0a9c038db64774fa0854c38f7713f427525aa404262"
 
 [[test]]
@@ -26518,7 +26519,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Image.cpp#L16-L135"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "a723a06fb725285ee974530e1e5c091f3b79d6f2d47b88f53b71406986e8a130"
 
 [[test]]
@@ -26527,7 +26528,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Keyframe.cpp#L47-L227"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "617485d4ac03673a60cf816b1375b8e52de71126c6f5be206a2c6d3091abcb90"
 
 [[test]]
@@ -26537,6 +26538,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L270-L370"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
 span_hash = "c4a6a5889bbf16c3031beb4697f572b81167325381345e80f559a37b07d1ba1f"
 
 [[test]]
@@ -26546,6 +26548,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L372-L414"
 module = "skottie"
 status = "todo"
+reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
 span_hash = "44602197777e5443e6093b37df0e434f672ad08f6ff7dae12edd6fe5da53b965"
 
 [[test]]
@@ -26627,7 +26630,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L31-L95"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "4db4ba6d4772a480d787b2eeaa8a56382b86351e8d632f185e36b05a91c76746"
 
 [[test]]
@@ -26636,7 +26639,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L272-L322"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "30288e0efed5505486832bb52df608f1f0b9ccd625a561539c48d82d91bef234"
 
 [[test]]
@@ -26645,7 +26648,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L97-L244"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "ef45e221f4f07ccd4c73b9ad23450987c574d1aa642face5255e0c0979ae8c65"
 
 [[test]]
@@ -26654,7 +26657,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L246-L270"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "a23e254561f26d622220b4771834c03c93db7e0bcc453ec737e087c1d42accb1"
 
 [[test]]
@@ -26663,7 +26666,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/SkottieTest.cpp#L19-L29"
 module = "skottie"
-status = "todo"
+status = "passing"
 span_hash = "2d69b0f4e9a2006ce922581980a6dc217779dca55fdb01dc0576b20c71581bbf"
 
 [[test]]
@@ -28850,6 +28853,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L289-L486"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "ef5e1b6c798ca13173981d77d71aedba406a9136fc630c0ccc2e341a18fcecb4"
 
 [[test]]
@@ -28859,6 +28863,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L218-L287"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "b0540d4618ff389249f1755a6ea966a4297e8fe2b274b30c017071a9093b86d5"
 
 [[test]]
@@ -28868,6 +28873,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L89-L147"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "e54d8349b869a86f0a2bb8ab363a5efee50a1f1ed63541a47f6a504d7baffc93"
 
 [[test]]
@@ -28877,6 +28883,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L54-L87"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "a66042424860af780cccedba1728ffc5770a61041a800b33ba5fed71ee480fbd"
 
 [[test]]
@@ -28886,6 +28893,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L149-L191"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "754d7846678af1b451f36ad85c636ca00d95e669b85f96948477f8a2833eb644"
 
 [[test]]
@@ -28895,6 +28903,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L35-L52"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "8c34d810c5db1088a52d8b6994b57bbe0568d1231ba643e2b83ca5949e039e1a"
 
 [[test]]
@@ -28904,6 +28913,7 @@ macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L39-L52"
 module = "core"
 status = "todo"
+reason = "needs SkAnnotateRectWithURL (SkAnnotation), which is not ported"
 span_hash = "46a11585f2c3ce6f2dd89608a3c935532e31d950b8b3a56e4aafc32ea625900b"
 
 [[test]]
@@ -29206,6 +29216,7 @@ macro = "DEF_TEST"
 source = "tests/BRDTest.cpp#L18-L52"
 module = "core"
 status = "todo"
+reason = "needs SkBitmapRegionDecoder (src/codec/SkBitmapRegionDecoder), not ported"
 span_hash = "d5a453c17809e0abaf6b69b2811ed028a62f873a786bdb4f4c21afcbadada6e0"
 
 [[test]]
@@ -29740,6 +29751,7 @@ macro = "DEF_TEST"
 source = "tests/CachedDecodingPixelRefTest.cpp#L94-L131"
 module = "core"
 status = "todo"
+reason = "needs SkCachedDecodingPixelRef and Image::NewFromGenerator over a decoding generator; neither is ported"
 span_hash = "8d3f155735a1ac834fed5ae8bf2603a77cfda8fa77edf7c1af99c39487dddebe"
 
 [[test]]
@@ -30191,8 +30203,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L613-L654"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources), which is compiled only under SK_ENABLE_SKOTTIE (CodecAnimTest.cpp#L609-L656); Skottie is not part of this port"
+status = "passing"
 span_hash = "20b0d2a1236cc71076b533990a89d9c90a6c2b9911f11dcfb1dfa4ea85712cee"
 
 [[test]]
@@ -30210,8 +30221,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L99-L515"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: a table-driven check of frame metadata over GIF, WebP, JPEG and PNG (every decoder it uses exists; the DNG row is RAW, not built); needs its own pass (CodecAnimTest.cpp#L99-L515)"
+status = "passing"
 span_hash = "1456d17b53798cf014215b7285c3571da7a249998a971ea920234e7c90689380"
 
 [[test]]
@@ -30274,8 +30284,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
-status = "todo"
-reason = "test_partial (CodecPartialTest.cpp#L76-L137) calls getFrameCount between incremental decodes; the Rust incremental-decode guard (codec.rs IncrementalDecode) borrows the codec, so that call cannot run while a decode is in progress. Needs an API decision on the guard (docs/design/codecs.md 5.1)"
+status = "passing"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -30293,8 +30302,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L159-L172"
 module = "codec"
-status = "todo"
-reason = "test_partial calls getFrameCount between incremental decodes, which the incremental-decode guard borrow forbids (see Codec_partial)"
+status = "passing"
 span_hash = "951edd5d75ba3e18683915cee77e015b6411e6149dd3713a237b43a4771e8f34"
 
 [[test]]
@@ -30312,8 +30320,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L368-L372"
 module = "codec"
-status = "todo"
-reason = "test_interleaved calls getPixels while an incremental decode is in progress and expects incrementalDecode to then fail with kInvalidParameters; the incremental-decode guard borrows the codec, so getPixels cannot run in between (see Codec_partial)"
+status = "passing"
 span_hash = "8aa8cb62cb4b05d26c475f5f4e1b61af99a8fe942d293becf36f5a10088c818d"
 
 [[test]]
@@ -30449,8 +30456,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs make_gradient_bitmap (raster surface with a linear gradient shader read back) and the skcms conversions, compared with the C++ tolerances of 1 and 20 (CodecTest.cpp#L2444-L2519)"
+status = "failing"
+reason = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1). The project allows no tolerances, so the test stays ignored"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -30650,8 +30657,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L900-L1046"
 module = "codec"
-status = "todo"
-reason = "writes its PNG with the libpng write path (codecs C16), not ported"
+status = "passing"
 span_hash = "895a9da5a7006c17fcacd9a84c0d8d6bac7019f7ed7feeaa150029df871dbc6b"
 
 [[test]]
@@ -31395,6 +31401,7 @@ macro = "DEF_TEST"
 source = "tests/DebugLayerManagerTest.cpp#L87-L89"
 module = "core"
 status = "todo"
+reason = "needs SkDebugLayerManager (src/core/SkDebugLayerManager), not ported"
 span_hash = "b4d51160ccaffc9b5f400844bf376dae2db990633f62db21e74e97d137eb8b15"
 
 [[test]]
@@ -31694,7 +31701,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryPoolTest.cpp#L15-L38"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "417cbf80c0ae30cba720a25a1b0d13975288c98f09531cc8a5f66de5d67a58f8"
 
 [[test]]
@@ -32060,8 +32067,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -32070,8 +32076,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -32080,8 +32085,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
@@ -32485,6 +32489,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L222-L261"
 module = "core"
 status = "todo"
+reason = "needs SkFlattenable::Register for the test's own drawables (IntDrawable, RootDrawable, CompoundDrawable, PaintDrawable); flattenable.rs has a fixed compile-time registry and no Register"
 span_hash = "520f87b718e85bd040399cd840993a96fb4ed25f60303312fb5ea94f0dc03f58"
 
 [[test]]
@@ -32494,6 +32499,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L263-L299"
 module = "core"
 status = "todo"
+reason = "needs SkFlattenable::Register for the test's own drawables (IntDrawable, RootDrawable, CompoundDrawable, PaintDrawable), and drawString with ToolUtils::DefaultFont"
 span_hash = "7bc71c400c07de159a095c91868674bff2cfc0a44f8e34aac110e3e213ca2ed3"
 
 [[test]]
@@ -32503,6 +32509,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L302-L312"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilter::Deserialize; ReadBuffer has read_shader, read_color_filter, read_path_effect and read_blender but no read_image_filter"
 span_hash = "cda713f8b292c6f89f83e001fbfbd949135621bba363bab417bacf578133b0f7"
 
 [[test]]
@@ -32512,6 +32519,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenableFactoryToName.cpp#L33-L42"
 module = "core"
 status = "todo"
+reason = "its flattenable round trips use SkImageFilters::Blur and SkImage::makeShader: image filters are not ported"
 span_hash = "c43ee6c76e1e11a5da75963e6bee4531148b083c16b62ce17ebd4171291fa7cd"
 
 [[test]]
@@ -32521,6 +32529,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenableNameToFactory.cpp#L11-L24"
 module = "core"
 status = "todo"
+reason = "SkFlattenable::NameToFactory needs a registry that holds the names of the shader factories (SkImageShader); FlattenableRegistry has per-kind tables but no populated default registry"
 span_hash = "016aef745cf3e863ee99b05782f6f037361d2e1486a3caeab784acd5e2d67930"
 
 [[test]]
@@ -33303,6 +33312,7 @@ macro = "DEF_TEST"
 source = "tests/FrontBufferedStreamTest.cpp#L293-L301"
 module = "core"
 status = "todo"
+reason = "FrontBufferedStream::make returns a Box<dyn StreamRewindable> that is not Send, but Codec::make_from_stream requires Box<dyn Stream + Send>"
 span_hash = "74f7d21d70e673c241063595c2d126279ad1fee087bd320425d49f08730cd381"
 
 [[test]]
@@ -33616,7 +33626,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1616-L1707"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "98e9eacc073618fa591c1a4a6a048390c39479dbd3f873c012387b39db8adb58"
 
 [[test]]
@@ -33625,7 +33636,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1283-L1340"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "7ac820529f2987fd3c49e8e965928e8da9855fbd38f593c8fe33009a830b3525"
 
 [[test]]
@@ -33634,7 +33646,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1172-L1199"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "dfea03328dc9e282d9a416697d1a63953bbf8c717920a1d1588b5793b37bcf01"
 
 [[test]]
@@ -33643,7 +33656,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1143-L1169"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c62cb2cbb1fc6f2b7e74768ae602454f0d9ced5e6cbff8c11ffd43ca1e94a9c0"
 
 [[test]]
@@ -33652,7 +33666,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1749-L1781"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c06e02af895930052bc6e6d31c9ebbca6603aa051444a26ad4002863ea01174a"
 
 [[test]]
@@ -33661,7 +33676,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1070-L1082"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "340599a491e78276283066ab0463d8b95c1e9d70bc7dbf7b0aa5d08178d2c54a"
 
 [[test]]
@@ -33670,7 +33686,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L609-L623"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c2134ba57114350db0fcc81afa4e58b93e6c0c6ebc8aeb35bfde681ead6ca9e6"
 
 [[test]]
@@ -33679,7 +33696,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1567-L1614"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "dfc9d1c58e6735153bc706b6ad8efc7aae29a9541221227ed5ea19155501e275"
 
 [[test]]
@@ -33688,7 +33706,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1045-L1067"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4b3aebd9e06683579debb05dc9e4d328b050266ea18ea2bcf3cd997d826c2d37"
 
 [[test]]
@@ -33697,7 +33716,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1784-L1827"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "45b21f88e39ece2d337ed45dfc208105b9889a836115c39206745e722985c063"
 
 [[test]]
@@ -33706,7 +33726,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L541-L543"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "60e32cd49df12af4492ca9b8fb7239e920fa630510490ae8a79e1d8bf525d6c2"
 
 [[test]]
@@ -33715,7 +33736,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L936-L974"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "ae4292bcecfff59220d855cecbc2c66dbe6eb4d3843bb493b04350327e777a26"
 
 [[test]]
@@ -33734,7 +33756,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1482-L1526"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "6074fd6cf7377c5515bcb318de1d229832e4379e75803fdcae8b71ef4fe879a4"
 
 [[test]]
@@ -33743,7 +33766,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1106-L1140"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "5f4eccf2306e8229f52d740e408b00853edc516836c2f3029de6aab463230c00"
 
 [[test]]
@@ -33752,7 +33776,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1085-L1103"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "64faa4c12e69a879db389b5bc5ccdd4cb4e65e6b0bd7af6da5cd940ecae89c2d"
 
 [[test]]
@@ -33761,7 +33786,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1344-L1478"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "b3e290f19daed2cb7ed23c2bffb3ca2efaee9a45b31dbe5c322d7e1c5feadf00"
 
 [[test]]
@@ -33770,7 +33796,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L977-L1042"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "ec9206d6f9feb64f38ed143429d96d85ed6e46500785e1d3f372b8c28be52715"
 
 [[test]]
@@ -33779,7 +33806,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L812-L860"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "26635b1d09bfbcfa9119b92de8c17557a5a83ac13a6d424a39f1c9f907497071"
 
 [[test]]
@@ -33788,7 +33816,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1831-L1901"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "d68e264b5bc4108b578e1cb85374ec6117216c1f2b21a27bf1b983ac32d58d86"
 
 [[test]]
@@ -33797,7 +33826,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1243-L1279"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c0de0cd56588f4b4da09c5a7ba9f8107435dffdd7087255c5cb68597b84d8432"
 
 [[test]]
@@ -33806,7 +33836,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L673-L727"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "36cef5351f07f68f574d2ef1a55023756c458e30493babb109345a2f6fc568f6"
 
 [[test]]
@@ -33815,7 +33846,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L765-L783"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1fc6d0f4ffcd8327c374645f2e178c00a940436ae7e913ca2bdcdc51ba87c734"
 
 [[test]]
@@ -33824,7 +33856,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L730-L762"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "45290ddee5970512df78044d448f47e0bc6f0829bc34cf1c8fb9424eeacc6a38"
 
 [[test]]
@@ -33833,7 +33866,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L547-L605"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1a891e3d6865d5838e793b10e961906ad5ed005263331cf2eb2a1075ca296808"
 
 [[test]]
@@ -33842,7 +33876,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L627-L669"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "bd7a3bfbadce08205b56cccbcaf2c2b02f56c679c80f58de7540096fb9a87229"
 
 [[test]]
@@ -33851,7 +33886,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L863-L933"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8d2bac0dd1695ec6b084f271b42f48015eeab18c1da98d6cae44c2025b66ede0"
 
 [[test]]
@@ -33860,7 +33896,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1714-L1746"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8cb6ed3a86414e93e3a8210e17fa79e4023cdabe1bedaa2dfc6b5ca1ff559b20"
 
 [[test]]
@@ -33879,7 +33916,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1204-L1240"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "2cac973fc254570f24aea19f2c3f3065b8fbb594addd83012840636948ec857c"
 
 [[test]]
@@ -33897,7 +33935,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1529-L1563"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e9cc99cf8710a27ee84d4c3c673dd081e05e82df1fbf056e33851574cc3da386"
 
 [[test]]
@@ -33906,7 +33945,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L786-L809"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c0e75c6dd862faf5a3f16afdf62a507e13f313891ed6e36b5839749501225855"
 
 [[test]]
@@ -33915,7 +33955,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1959-L2083"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4b4f8d7163f3dbfa35945dc6ec59ddffaaabd62bbc601d67997355e7669f517d"
 
 [[test]]
@@ -34014,7 +34055,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrGLExtensionsTest.cpp#L34-L50"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "73a590acb05f1df449670907ec851d9d40ee4eabc83ff861690d29c0a87a0316"
 
 [[test]]
@@ -34061,7 +34103,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrMemoryPoolTest.cpp#L181-L234"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "061a74af16ed02637c1f351040bbe8ba9ec1be8f15956a708d84448de30ed2c3"
 
 [[test]]
@@ -34070,7 +34113,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrMemoryPoolTest.cpp#L255-L321"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "55323850828d57a989e10e410f3946c1c31b22d26d57d9894710c8e655e3bf87"
 
 [[test]]
@@ -34189,7 +34233,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L84-L135"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "c51ad534a1d780e8143235fb88bb4a1a39d6731188c8db0894850d997d814396"
 
 [[test]]
@@ -34198,7 +34243,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L137-L195"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "a8f75b50e33037e8c6ef7d350936689b61411808a55d5ceb406402b4d55078b2"
 
 [[test]]
@@ -34207,7 +34253,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadBufferTest.cpp#L197-L241"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "57cde785f062c77d8c039d463ce3064e4ca0544e3138192862028a08aedbdab4"
 
 [[test]]
@@ -34216,7 +34263,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadCropTest.cpp#L246-L258"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "11eb0ab7cdcf0a897581b0f91e0960ebc70a7fd6500f7f0483e194dfd713dae6"
 
 [[test]]
@@ -34225,7 +34273,8 @@ kind = "unit"
 macro = "TEST"
 source = "tests/GrQuadCropTest.cpp#L260-L274"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "32bd87ab7eadbe08ce4124ceb98d55ea0c1247d2ada27def915f3c868ed5bbe6"
 
 [[test]]
@@ -34234,7 +34283,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrRenderTaskClusterTest.cpp#L136-L183"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "4a68d5bcdbb7d8fa0dba65752074985fe802c86c390a2086f6f998fdcf88ac93"
 
 [[test]]
@@ -34243,7 +34293,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2337-L2367"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e695809be1f7af34875e23c4d6435d74f36c7ed512f2ea4a848726087f9ae825"
 
 [[test]]
@@ -34252,7 +34303,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2103-L2234"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "72338873eee0de332a9e02ee2e8b765492afd965e0ec4bb2a04ed94292e60a85"
 
 [[test]]
@@ -34261,7 +34313,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2236-L2335"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "f30a2c663a0bf63ee141e561e84082721570d21796cd14ba3d8cafad1c148b7f"
 
 [[test]]
@@ -34270,7 +34323,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1523-L1627"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "5a88b91854437bb8984a29efde49c58f8c9f4597cae7f04bf46b8b2f21837e57"
 
 [[test]]
@@ -34279,7 +34333,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1863-L1969"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "7405bb8d48fb56a308df687483705255d8044ff29549322d8d052e4142a1d279"
 
 [[test]]
@@ -34288,7 +34343,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L2042-L2101"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "001a47785a381eef4217cac436a72367468c40667bfa97831cece44ecd808c5f"
 
 [[test]]
@@ -34297,7 +34353,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrStyledShapeTest.cpp#L1971-L2040"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "10f8708f7520a4ebd853d38e03f3b76349c2018ffbe73039ea53d921d0d53bd6"
 
 [[test]]
@@ -34981,6 +35038,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -34990,6 +35048,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -34999,6 +35058,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -35008,6 +35068,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -35017,6 +35078,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -35026,6 +35088,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -35035,6 +35098,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -35044,6 +35108,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L20-L47"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "753d4f76097391c67c30432d642f81b96f1e182293cb48a7f1b10387a0ea64fb"
 
 [[test]]
@@ -35053,6 +35118,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L49-L73"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "3e580ffed2f451dc72b1544eed04a1fb6e9b930666a52c2e19a3291e6c55c248"
 
 [[test]]
@@ -35116,6 +35182,7 @@ macro = "DEF_TEST"
 source = "tests/ImageCacheTest.cpp#L120-L141"
 module = "core"
 status = "todo"
+reason = "needs SkImageCacher (the image cache), not ported; only the ImageCacheratorGM in tests/gm/src/gm/image_pict.rs mentions it"
 span_hash = "089a39b06e5a4537db1c7985c106751efda8a9735fa3e341a62a9b2633d2131d"
 
 [[test]]
@@ -35125,6 +35192,7 @@ macro = "DEF_TEST"
 source = "tests/ImageCacheTest.cpp#L143-L156"
 module = "core"
 status = "todo"
+reason = "needs SkImageCacher (the image cache), not ported; only the ImageCacheratorGM in tests/gm/src/gm/image_pict.rs mentions it"
 span_hash = "bae0ad122f5b03dced3479a0140ca4f1e464f630bb8479c8df08b8f6fe8ff782"
 
 [[test]]
@@ -35757,6 +35825,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorOrientationTest.cpp#L40-L124"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs SkCodecImageGenerator (skia-rust-codec codec_image_generator.rs) and the images/orientation JPEG resources, both present"
 span_hash = "7dc1f22d89bbdf60ae89fa176af650fc00cf2637dad578a6d2bdfe17d0027ca1"
 
 [[test]]
@@ -35766,6 +35835,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L76-L96"
 module = "core"
 status = "todo"
+reason = "needs the YUVA planes API of SkImageGenerator (queryYUVAInfo, getYUVAPlanes, SkYUVAPixmaps); image_generator.rs says it is not ported"
 span_hash = "f75f2fd94b00d32811ae969baa2de1cf677939fb56c3a78b8f14fa0dc5c18016"
 
 [[test]]
@@ -35775,6 +35845,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L104-L134"
 module = "core"
 status = "todo"
+reason = "needs SkImageGenerators::MakeFromPicture (src/image/SkImageGenerator_picture), not ported"
 span_hash = "fb124bd9a0694f6be9429215dcc75df6c8151e7ece429cae9463eb5bd5c9770d"
 
 [[test]]
@@ -35888,8 +35959,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs the draw_image_test_pattern and assert_equal helpers and ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
+status = "passing"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -36170,8 +36240,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
+status = "passing"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
@@ -36400,6 +36469,7 @@ macro = "DEF_TEST"
 source = "tests/LListTest.cpp#L44-L154"
 module = "core"
 status = "todo"
+reason = "needs SkTInternalLList (src/base/SkTInternalLList.h), not ported"
 span_hash = "af51b06598e1761240129f4e3036c2ed525f7dbc68c5618dd3b61be15a5d2d88"
 
 [[test]]
@@ -37104,6 +37174,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L36-L71"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "c424a2bde6f55eb583fbfc2f8c284d55bcd64d35679900d7b79d18abdfd97a3f"
 
 [[test]]
@@ -37113,6 +37184,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L90-L125"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "950f9debc25dae01562e85219f95cf89bae505583634e3e571c17277ce8465ae"
 
 [[test]]
@@ -37122,6 +37194,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L144-L172"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "5a693ee3406d3c7e688041b4e3312258d8f24e1fed61aa5961e3ed88611d47d4"
 
 [[test]]
@@ -37215,6 +37288,7 @@ macro = "DEF_TEST"
 source = "tests/MultiPictureDocumentTest.cpp#L101-L187"
 module = "core"
 status = "todo"
+reason = "needs SkMultiPictureDocument (include/docs/SkMultiPictureDocument.h), not ported"
 span_hash = "2c61704658a89c3335f6b41f5c94c20183ac93f1c4257292c2802efaef516189"
 
 [[test]]
@@ -37462,7 +37536,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OSPathTest.cpp#L69-L109"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3030033a6c8b53f412e69a3c25a571dd572ae7227d697d1d21cbe004c8685ca0"
 
 [[test]]
@@ -37593,8 +37667,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFGlyphsToUnicodeTest.cpp#L43-L215"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF fonts (M26): SkPDFFont and the ToUnicode CMap writer"
+status = "passing"
 span_hash = "912bf4ed6c75784c2189ec41e18ab94c20ce6fa6c6d594f084ca8b5797e7112c"
 
 [[test]]
@@ -37657,8 +37730,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L342-L355"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF fonts (M26): SkPDFFont::CanEmbedTypeface"
+status = "passing"
 span_hash = "410c13dc14d77b34d24a921b89fa7857a81e27258d2c079ae4d506b0da51a3a9"
 
 [[test]]
@@ -37685,8 +37757,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L274-L279"
 module = "pdf"
-status = "todo"
-reason = "test_issue1083 draws a glyph through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
+status = "passing"
 span_hash = "5040f08710655cb75e4d29733ef954f679fec631c8c1612074b69ae3ace49909"
 
 [[test]]
@@ -37785,8 +37856,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L253-L325"
 module = "pdf"
-status = "todo"
-reason = "draws text marks through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
+status = "passing"
 span_hash = "b2e8945ad0a2b565437f3d07a5773fb2584b584ea21d76265d44bf701f21d7bf"
 
 [[test]]
@@ -37804,7 +37874,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L164-L182"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6038f9c12481d53d4b625bd07a4d5faa90fdd54dca3383b2c597bc6072f935c9"
 
 [[test]]
@@ -37813,7 +37883,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L44-L67"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b92d16aa703e5f4c222721f49b41101610aacba68bd21cb4ac9b674c73b21009"
 
 [[test]]
@@ -37831,7 +37901,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L103-L143"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4ece65bccac54276d8445f6a471900b9eba1157184bb32b62a332191c30e4304"
 
 [[test]]
@@ -37840,7 +37910,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L184-L206"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c973d11834057890e0939e7bf4aa12c77e9a29910a33f3ff0772c320d4002f2"
 
 [[test]]
@@ -39500,7 +39570,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4979-L5005"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2b4e4900519d55954e010f8aee7eb852509506c50c3cc834b5192adde6731b4f"
 
 [[test]]
@@ -39527,7 +39597,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4947-L4976"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "9a5f4fccc0cd627cfad1fb14e546fbfa24cf3cb9e71af149870a30c5d04ffeef"
 
 [[test]]
@@ -39545,7 +39615,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4760-L4774"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4bc1dc03a2462afcd04b2755f7bf4fa32246cc6d96d4f2082eb91f4b32d5bfa7"
 
 [[test]]
@@ -39636,6 +39706,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4780-L4873"
 module = "core"
 status = "todo"
+reason = "needs the ~70 static helpers that tests/PathTest.cpp calls (test_isLine, test_convexity, test_path_to_region, test_dump, ...); none is ported yet in tests/src/unit/path_test.rs"
 span_hash = "abb46f91fa83ef0918a1918563a1ce8dce2e62a52922d0a6da720fd5612aed29"
 
 [[test]]
@@ -39761,7 +39832,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5493-L5510"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0b06dd91c541a0828424e80edec988ffb7e2ec54079f04528a5adfb8a68bbe84"
 
 [[test]]
@@ -39770,7 +39841,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L5474-L5490"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c03f3451fd76582d7fa4659568b5a075c3c88df0f7ac123a0f5bc1454d1365b5"
 
 [[test]]
@@ -39789,6 +39860,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4891-L4911"
 module = "core"
 status = "todo"
+reason = "needs SkMakeNullCanvas, which is SkNWayCanvas(0, 0) (include/utils/SkNullCanvas.h); SkNWayCanvas is not ported"
 span_hash = "fce26fa9ead1e78b9df98fb1f64f48b5457bdd0e394baccec13f90a585c32b9e"
 
 [[test]]
@@ -40840,6 +40912,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L133-L147"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "b854aff823cdc614b5ff6ad5a75aad0dca6cff2d3ba7b374609d64639536299a"
 
 [[test]]
@@ -40849,6 +40922,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L118-L131"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "16619ce0428b8878ddb3faf740a4ad448a67a51bcf5e1db0ecd298de9b7db930"
 
 [[test]]
@@ -40858,6 +40932,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/RawPtrTest.cpp#L57-L72"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "e5a80a311aec1e6b92edc6a72e0c490941a913660027db490129184ba68fa9c9"
 
 [[test]]
@@ -40867,6 +40942,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L98-L102"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "21e052e6116059f4772f03ca60bfab13e21cd57f1736dd3d349a930d054f5f78"
 
 [[test]]
@@ -40876,6 +40952,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L191-L200"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "7e85c54c39528ae81e1009d82f3937c311969bd9057e4f50f5139a0847573da9"
 
 [[test]]
@@ -40885,6 +40962,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L87-L92"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "75dafc457d5472c492eb603736675346b522d040f8794caf575f61a04cc6838d"
 
 [[test]]
@@ -40894,6 +40972,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L248-L268"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "674cb2d70c4fcfedba0558aa44b6f6fc3cafdc1ef1ffc50baadcc6836cea0487"
 
 [[test]]
@@ -40903,6 +40982,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L104-L108"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "7403ba8979a9d520b2b229ed4e20e211418b3054195a53eebf5d52f465f1e3eb"
 
 [[test]]
@@ -40912,6 +40992,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L202-L246"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "d1e83e572bc43213809c20ebf5a000fff645d42342a8556f30d7f2692263cde5"
 
 [[test]]
@@ -40921,6 +41002,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L110-L116"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "c73bfbc62e8e6574339e5a96e916c9f2d2d294fdac30b18d409f4916dfd68782"
 
 [[test]]
@@ -40930,6 +41012,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L270-L289"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "36ef8e09b6f0ed7f7c40cef07b0353f48c812493b3a63f4f13f191d5727dbd06"
 
 [[test]]
@@ -40939,6 +41022,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L149-L161"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "182cb05cf39391563ad0474f85b2d34e2243c70749754b82c28adaf0969951d0"
 
 [[test]]
@@ -40948,6 +41032,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L301-L324"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "1da6a6d78491afb2dbf149e2f2feda48af1ac3b588518e57837afd3b8dbf6cff"
 
 [[test]]
@@ -40957,6 +41042,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L163-L189"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "074477497aba9136c9e4154eb304859812286e57e9676354bf0ea0227b8ed9fb"
 
 [[test]]
@@ -40966,6 +41052,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L291-L299"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "35b26acadd9ad6e8d08abc3ce363141f55149773afea977fd3c154d42ef48fd2"
 
 [[test]]
@@ -41459,6 +41546,7 @@ macro = "DEF_TEST"
 source = "tests/RecordingXfermodeTest.cpp#L144-L182"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs its Drawer, BitmapBackedCanvasStrategy and PictureStrategy helpers (SkRTreeFactory and SkCanvas over an SkBitmap exist)"
 span_hash = "cb614555a46183c9821ef93e5bfd655648a5b05b1bd8abe88a665e0498f78995"
 
 [[test]]
@@ -41936,6 +42024,7 @@ macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1633-L1650"
 module = "core"
 status = "todo"
+reason = "needs the 16 helper functions that RoundRect calls (test_round_rect_basic ... test_conservative_intersection); none is ported yet in tests/src/unit/round_rect_test.rs"
 span_hash = "24ac10c9bfd7c6fcc278de24bf2cd382df3c37a300acdf8eaeb3a15a400b5478"
 
 [[test]]
@@ -42515,6 +42604,7 @@ macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L64-L131"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::equal_pixels and picture_to_image (not in tests/src or tests/tools) and the SkPngEncoder and SkPngDecoder image procs"
 span_hash = "33904253c3e96ec0c8670081c07cc6814922146b16c505c008c7dee10230039a"
 
 [[test]]
@@ -42524,6 +42614,7 @@ macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L201-L230"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs the make_pic and test_pictures helpers of SerialProcsTest.cpp"
 span_hash = "84a6468ea2d37f6733878a60d8b657207610b0d0bbd4da23b5ddc384537f517a"
 
 [[test]]
@@ -42542,6 +42633,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1105-L1135"
 module = "core"
 status = "todo"
+reason = "needs SkCanvas::drawAnnotation and SkAnnotateRectWithURL, SkAnnotateNamedDestination, SkAnnotateLinkToDestination (SkAnnotation, SkAnnotationKeys), not ported; records.rs has no DrawAnnotation"
 span_hash = "dfa829a590c9aa506e2d6eab9e60d3a0ed0e9915fe83bc32b07a30d0185d4bcf"
 
 [[test]]
@@ -42550,7 +42642,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1206-L1221"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "70c7f2ef7f152cde663b8898194cf6b7915684d54cddcd2ac96c7d560c4d36fb"
 
 [[test]]
@@ -42624,6 +42716,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1137-L1164"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 external initial storage (SkBinaryWriteBuffer(storage, size), usingInitialStorage), not ported (write_buffer.rs)"
 span_hash = "789af0489830e07aa21e22f4578321e78105936cf0d36d9bfa7c59c15060b160"
 
 [[test]]
@@ -42782,7 +42875,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBase64Test.cpp#L18-L62"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4eed7553f78dfb734967f7ab8fc3e52c5c8e0c6bd88990b384dab8d7be82f87d"
 
 [[test]]
@@ -43645,7 +43738,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L46-L83"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "17c7dff2868b8ef936ffa8792c540914a5223158fe4a03005942c190c15ea008"
 
 [[test]]
@@ -43655,7 +43748,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L107-L161"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "942485a940b622aa2179a219f584336c11f7e24bc5e4ae1e855ef1dd74f37fe9"
 
 [[test]]
@@ -43665,7 +43758,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L19-L44"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "266ef4fcc105ea167b792d889f3b9e27bdd132903356022c28d162dd8bf9d456"
 
 [[test]]
@@ -48500,6 +48593,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L21-L32"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "9d6dd86527137ddb85b6b5bec33f6ad9c15dccfb64bc1986f6701d4a027789a3"
 
 [[test]]
@@ -48509,6 +48603,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L169-L205"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "a496ac79b0984339d5f91ba5662139bd0e2532fd2457fb3101981bae82c3bbb1"
 
 [[test]]
@@ -48518,6 +48613,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L207-L246"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "60680dab6be742ca6cd9ae71e4c432dd385050c0721713fb03e553e1e6dda5d5"
 
 [[test]]
@@ -48527,6 +48623,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L81-L103"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "50424cd55f675266ecc23b147be8945a3c746c65faaf2f849fff3f5c9b1c0c0a"
 
 [[test]]
@@ -48536,6 +48633,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L34-L57"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "0a0fb04258df555319d900d81b0a101bf405022c01aad1af752df14c4e827533"
 
 [[test]]
@@ -48545,6 +48643,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L106-L167"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "0febe987f1c1db8c848bf0d44a8a9712c0e7189726cd3390549df78274444e7d"
 
 [[test]]
@@ -48554,6 +48653,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L59-L79"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "3fb9dba4d1a9a9a902bbb80b5ff2e82506ae26f4adfd3eefef064ceb2a5c7069"
 
 [[test]]
@@ -48572,7 +48672,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Skbug5221.cpp#L32-L35"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "230aea752b8926c4354185b6dac54a9c3c3850bf04018e685c0f1d3d06b42a51"
 
 [[test]]
@@ -48591,7 +48691,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Skbug6389.cpp#L20-L29"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "89c89ec7cba386522ffbd5fc72738bbe2cf5ff82ce91ed950741ed120450d20f"
 
 [[test]]
@@ -48650,7 +48750,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SmallPathRendererTest.cpp#L71-L138"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "abf00279d6baa4802e3fedee48172278a7407e15d22d2cc20e7d94ba19973a60"
 
 [[test]]
@@ -48659,7 +48760,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SmallPathRendererTest.cpp#L58-L69"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "3865d458c9a2a29ac2892454699e58836096963994f301c77d812b5d0cfcc3e8"
 
 [[test]]
@@ -48689,6 +48791,7 @@ macro = "DEF_TEST"
 source = "tests/SpecialImageTest.cpp#L189-L191"
 module = "core"
 status = "todo"
+reason = "needs SkSpecialImages::MakeFromRaster for an SkImage (special_image.rs has only the Bitmap overload) and SkSpecialImage::draw (not in special_image.rs)"
 span_hash = "c265fc5a22c7960d1ab3f67cc0fc24c3a29550e4c6c48b3c8f89829661f0bb7a"
 
 [[test]]
@@ -48698,6 +48801,7 @@ macro = "DEF_TEST"
 source = "tests/SpecialImageTest.cpp#L147-L165"
 module = "core"
 status = "todo"
+reason = "needs SkSpecialImage::draw(canvas, x, y), not in special_image.rs"
 span_hash = "59871c22e97482962f8321b6e5d31740662f9846c80c4ace098823b753c4e749"
 
 [[test]]
@@ -49772,6 +49876,7 @@ macro = "DEF_TEST"
 source = "tests/TestTest.cpp#L97-L122"
 module = "core"
 status = "todo"
+reason = "needs CtsEnforcement (tests/CtsEnforcement.h: RunMode, eval, withWorkarounds and the API-level constants), which is not ported"
 span_hash = "b38f5f3033c73270bc0da251e3d89ed9135c0e6be74fb370c965d3a7db91fd96"
 
 [[test]]
@@ -49780,7 +49885,8 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_TEST"
 source = "tests/TestTest.cpp#L25-L27"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "DEF_CONDITIONAL_TEST with the condition 1 == 0: Skia registers the test disabled, so it never runs and has no behavior to port"
 span_hash = "ef3757e766be4ceb0f2a6e86ec9defa267354325b1504e7d51ffe22ab9212b30"
 
 [[test]]
@@ -49869,7 +49975,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TestTest.cpp#L15-L17"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "09805c99f5f4ce3e5c88942997bd2df18a97ccbd19b37995896789887804ee0e"
 
 [[test]]
@@ -49878,7 +49984,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_TEST"
 source = "tests/TestTest.cpp#L20-L22"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2d35444eb3652c6687b78abe90a178c603d27f5c2d5f25df7d3403e3dc5e84dd"
 
 [[test]]
@@ -50207,7 +50313,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1066-L1124"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e9ab0ae50032bd3b6f227658e4777e2e7d66e9120ef2527ed9fa74cfe2746fcc"
 
 [[test]]
@@ -50216,7 +50323,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1516-L1545"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "f381e31d6452b86881f182b3fdb3af38b95501a622679ace757215421b447231"
 
 [[test]]
@@ -50225,7 +50333,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1602-L1620"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "8bc455e457cc78bf2bee9d9c818eb97e2bcc19c7845459faf1b9c3c145971eb2"
 
 [[test]]
@@ -50234,7 +50343,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1547-L1559"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "952160a200e08c4daacfbbf4c002adee4779d18e1954d35835dba45ac65331ef"
 
 [[test]]
@@ -50243,7 +50353,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1571-L1600"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "654f1c54c25a062aec87f97ecb1651d69bfca4615af377c72c7e476d5a440194"
 
 [[test]]
@@ -50262,7 +50373,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1126-L1307"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "193674510f57274e2134921a0e3639ac8c1286babdd26af0a83a26c818f2c90f"
 
 [[test]]
@@ -50271,7 +50383,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1309-L1414"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "d9f6c27a5739a92139b1c69b0f8f3dfd76d522b0556a4d1d020ee8c863e5afb0"
 
 [[test]]
@@ -50280,7 +50393,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1426-L1466"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "1c91a4477d6d98468a213aa00e7f41006f32287e4e5e4bcf4c3793110a53a6a7"
 
 [[test]]
@@ -50289,7 +50403,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TriangulatingPathRendererTests.cpp#L1469-L1514"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "2a5df6ea8a422f94ca53cd1b684f85df53072682d2441a4830798576fdc3e3bf"
 
 [[test]]
@@ -50471,6 +50586,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L187-L304"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "e965c70639197334bfec5be88306295e8dcfcbf288779c1e854b437280696acb"
 
 [[test]]
@@ -50480,6 +50596,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L479-L613"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "2bd04f9e1a224452e707353a32d204c46e7d012f477185da9f36325eb2e9b490"
 
 [[test]]
@@ -50489,6 +50606,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L306-L477"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "b758b4765946ae78a1f1b6c70c9d83be585021e56852c9e79f79c84d84d30edc"
 
 [[test]]
@@ -50498,6 +50616,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L181-L185"
 module = "core"
 status = "todo"
+reason = "tests the C++ utility templates test_search, test_autounref and test_autostarray (SkTSearch, SkAutoUnref, SkAutoSTArray), which have no port"
 span_hash = "d1b1e1170f4b7487c583f780416799a781ad07ec52f526413a6aeba209ee5ced"
 
 [[test]]
@@ -50506,7 +50625,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L615-L646"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bee1fd1f690c687c4678422c3c588a2c481520432469e1fdfa5e6100f04139a9"
 
 [[test]]
@@ -50692,7 +50811,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L361-L493"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "2cec5d065aab70a7c5fc867275231dce5401bbe1ac83b4635eedfb59eb8661e5"
 
 [[test]]
@@ -50701,7 +50821,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L497-L653"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "87e174478cd4c2dd7bb6d300ab804d6e3df978e4969defadf3ca99c634fac1bd"
 
 [[test]]
@@ -50710,7 +50831,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L657-L828"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "0f0ab2d81276dd542fcf97b6433dda6a0057d4ecc63c27e370fa8d9385674313"
 
 [[test]]
@@ -50719,7 +50841,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L832-L1018"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "b5b456905d7a7615299f72d4ccb0b9316bcbc6b62360ee280de404141956fbb6"
 
 [[test]]
@@ -50728,7 +50851,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1031-L1188"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "5c97ce8980bb312fda7c675de9f7cb5fa0aa689a6745136077f86d1e315abb6d"
 
 [[test]]
@@ -50737,7 +50861,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1192-L1403"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "744954c3f3176fef9d061d88c5a21ca2e8aea7d05483b95f41a090152039bb07"
 
 [[test]]
@@ -50746,7 +50871,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1407-L1618"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "abdcc8fa1608f93d96a6cfb62ca741e53b0737185c4e2b173c7e576aa3a33235"
 
 [[test]]
@@ -50755,7 +50881,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1622-L1776"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "a6fbdaf037442886d3cb8bcd934e43c5acb117b3d07577920f279f9be296e51e"
 
 [[test]]
@@ -50764,7 +50891,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/VkPreferredFeaturesTest.cpp#L1782-L1930"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "aff41849f2647710bac63b3762b02b0e423b59cb68bbfb6d04551e0a6cc3391e"
 
 [[test]]
@@ -51041,7 +51169,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/WindowRectanglesTest.cpp#L21-L79"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "bd94d8207ae732e47ef02cd84222dff17d2b48f5bb5c0a00cd317eea9691e968"
 
 [[test]]
@@ -51166,8 +51295,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L212-L252"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "43d702fa5d8ca7865f631de49075195e600569fa270a43288c90a3038f6de85f"
 
 [[test]]
@@ -51176,8 +51304,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L173-L182"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "4d790e257e2a241da9f8a95f8d75076941c09807092090b069d4e10aa77233ae"
 
 [[test]]
@@ -51186,8 +51313,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L195-L204"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "b4a6e72df58745be46dab3db1baf87510d550ac8e74e3d3f0df8b3c6af974a24"
 
 [[test]]
@@ -51196,8 +51322,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L206-L210"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "c7f78bcdfe860e5d2ce77dafc99b09ec8a826465b979cb44cc649c7d41264b04"
 
 [[test]]
@@ -51206,8 +51331,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L184-L193"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "d559d5808a9106cb8c13c44167125c720234e8aa2c9bdfdad201ae101f5f0f47"
 
 [[test]]

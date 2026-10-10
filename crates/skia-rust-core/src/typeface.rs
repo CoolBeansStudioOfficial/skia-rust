@@ -13,6 +13,7 @@ use std::any::Any;
 use std::fmt;
 use std::sync::{Arc, OnceLock, RwLock};
 
+use crate::advanced_typeface_metrics::{AdvancedTypefaceMetrics, FontFlags, FontType};
 use crate::data::Data;
 use crate::descriptor::Descriptor;
 use crate::font::Font;
@@ -256,6 +257,21 @@ pub trait TypefaceBase: Any + Send + Sync + fmt::Debug {
     fn on_get_glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
         dst.fill(0);
     }
+
+    /// `SkTypeface::onGetAdvancedMetrics`: what the PDF backend needs to embed the typeface.
+    /// `None` (the default) for a typeface that has none, as `SkEmptyTypeface` and
+    /// `SkUserTypeface` return null.
+    // Port of: include/core/SkTypeface.h (onGetAdvancedMetrics, chrome/m156)
+    #[doc(alias = "onGetAdvancedMetrics")]
+    fn on_get_advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        None
+    }
+
+    /// `SkTypeface::getPostScriptGlyphNames`: the PostScript name of each glyph, from the start
+    /// of `dst`. The default leaves `dst` as it is (no names), as `SkEmptyTypeface` does.
+    // Port of: include/core/SkTypeface.h#L393 (chrome/m156)
+    #[doc(alias = "getPostScriptGlyphNames")]
+    fn get_post_script_glyph_names(&self, _dst: &mut [String]) {}
 
     /// `SkTypeface::onComputeBounds`: the bounds the typeface gives itself. `None` (the default)
     /// makes [`Typeface::get_bounds`] measure the font.
@@ -807,6 +823,53 @@ impl Typeface {
     #[doc(alias = "getGlyphToUnicodeMap")]
     pub fn glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
         self.0.on_get_glyph_to_unicode_map(dst);
+    }
+
+    /// `SkTypeface::getPostScriptGlyphNames`: the PostScript name of each glyph, from the start
+    /// of `dst`.
+    // Port of: include/core/SkTypeface.h#L393 (chrome/m156)
+    #[doc(alias = "getPostScriptGlyphNames")]
+    pub fn post_script_glyph_names(&self, dst: &mut [String]) {
+        self.0.get_post_script_glyph_names(dst);
+    }
+
+    /// `SkTypeface::getAdvancedMetrics`: what the PDF backend needs to embed the typeface, or
+    /// `None` if the typeface cannot say. The PostScript name falls back on the family name, and
+    /// the `OS/2` `fsType` of a TrueType or CFF font marks it not embeddable or not subsettable.
+    // Port of: src/core/SkTypeface.cpp#L516-L536 (chrome/m156)
+    #[doc(alias = "getAdvancedMetrics")]
+    #[must_use]
+    pub fn advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        // The `SkOTTableOS2::Version::V2::Type::Raw` masks of `fsType`.
+        const RESTRICTED: u16 = 1 << 1;
+        const PREVIEW_PRINT: u16 = 1 << 2;
+        const EDITABLE: u16 = 1 << 3;
+        const NO_SUBSETTING: u16 = 1 << 8;
+        const BITMAP: u16 = 1 << 9;
+        let mut result = self.0.on_get_advanced_metrics()?;
+        if result.post_script_name.is_empty() {
+            result.post_script_name = self
+                .post_script_name()
+                .unwrap_or_else(|| self.family_name());
+        }
+        if result.font_type == FontType::TrueType || result.font_type == FontType::Cff {
+            // SkOTTableOS2::Version::V2::Type::Field fsType, a big-endian `uint16_t` at offset 8.
+            const OS2_TAG: FourByteTag = set_four_byte_tag(b'O', b'S', b'/', b'2');
+            const FS_TYPE_OFFSET: usize = 8;
+            let mut fs_type = [0u8; 2];
+            if self.get_table_data(OS2_TAG, FS_TYPE_OFFSET, 2, Some(&mut fs_type)) == 2 {
+                let fs_type = u16::from_be_bytes(fs_type);
+                if fs_type & BITMAP != 0
+                    || (fs_type & RESTRICTED != 0 && fs_type & (PREVIEW_PRINT | EDITABLE) == 0)
+                {
+                    result.flags |= FontFlags::NOT_EMBEDDABLE;
+                }
+                if fs_type & NO_SUBSETTING != 0 {
+                    result.flags |= FontFlags::NOT_SUBSETTABLE;
+                }
+            }
+        }
+        Some(result)
     }
 }
 

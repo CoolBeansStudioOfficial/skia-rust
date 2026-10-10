@@ -42,3 +42,12 @@ pub fn make_large_s32() -> skia_rust_core::rect::Rect {
     const LARGE: f32 = 536_870_912.0;
     skia_rust_core::rect::Rect::new(-LARGE, -LARGE, LARGE, LARGE)
 }
+
+/// The change test of an `f32` attribute setter: attributes are compared exactly, as the
+/// `SG_ATTRIBUTE` macro does with `attr == v`.
+// Port of: modules/sksg/include/SkSGNode.h#L100-L106 (chrome/m156) (`SG_ATTRIBUTE` setter test)
+#[allow(clippy::float_cmp)] // exact comparison, as in SG_ATTRIBUTE
+#[must_use]
+pub fn scalar_changed(old: f32, new: f32) -> bool {
+    old != new
+}

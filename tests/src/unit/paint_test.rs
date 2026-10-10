@@ -2,27 +2,29 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/PaintTest.cpp (chrome/m156)
-//
-// Not ported yet (each needs a type that is not ported):
-// - `Paint_copy`: `SkMaskFilter::MakeBlur` (mask filters, Phase 3).
-// - `Paint_flattening`, `Paint_MoreFlattening`: `SkBinaryWriteBuffer` / `SkReadBuffer`
-//   (`SkPaintPriv::Flatten`, `SkReadBuffer::readPaint`).
-// - `Paint_nothingToDraw`: `SkColorMatrix` and `SkColorFilters::Matrix` (color filters,
-//   Phase 3).
 
 #![cfg(test)]
 
 use crate::{def_font_test, def_test, reporter_assert};
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blur_mask::BlurMask;
+use skia_rust_core::blur_types::BlurStyle;
+use skia_rust_core::color_filters::{self, Clamp};
+use skia_rust_core::color_matrix::ColorMatrix;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::flattenable::FlattenableRegistry;
 use skia_rust_core::font_types::FontHinting;
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
-use skia_rust_core::paint::{Join, Paint, Style};
+use skia_rust_core::mask_filter::MaskFilter;
+use skia_rust_core::paint::{Cap, Join, Paint, Style};
 use skia_rust_core::paint_priv;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_utils::fill_path_with_paint;
 use skia_rust_core::point::Point;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Contains;
 use skia_rust_core::scalar::{SCALAR_1, int_to_scalar, scalar};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
 // found and fixed for webkit: mishandling when we hit recursion limit on
@@ -88,6 +90,113 @@ def_font_test!(Paint_regression_measureText, |reporter| {
     // `measure_text` returns its bounds, so only the empty-text assertion is left.
     let (_width, r) = font.measure_text(b"", TextEncoding::UTF8, None);
     reporter_assert!(reporter, r.is_empty());
+});
+
+// Port of: tests/PaintTest.cpp#L44-L67 (chrome/m156)
+def_test!(Paint_copy, |reporter| {
+    let mut paint = Paint::default();
+    // set a few member variables
+    paint.set_style(Style::StrokeAndFill);
+    paint.set_stroke_width(int_to_scalar(2));
+    // set a few pointers (`MakeBlur` with the default `respectCTM` of true)
+    paint.set_mask_filter(MaskFilter::blur(
+        BlurStyle::Normal,
+        BlurMask::convert_radius_to_sigma(1.0),
+        true,
+    ));
+
+    // copy the paint using the copy constructor and check they are the same
+    let mut copied_paint = paint.clone();
+    reporter_assert!(reporter, paint == copied_paint);
+
+    // copy the paint using the equal operator and check they are the same
+    copied_paint.clone_from(&paint);
+    reporter_assert!(reporter, paint == copied_paint);
+
+    // clean the paint and check they are back to their initial states
+    let clean_paint = Paint::default();
+    paint.reset();
+    copied_paint.reset();
+    reporter_assert!(reporter, clean_paint == paint);
+    reporter_assert!(reporter, clean_paint == copied_paint);
+});
+
+// Port of: tests/PaintTest.cpp#L103-L146 (chrome/m156)
+def_test!(Paint_flattening, |reporter| {
+    let caps = [Cap::Butt, Cap::Round, Cap::Square];
+    let joins = [Join::Miter, Join::Round, Join::Bevel];
+    let styles = [Style::Fill, Style::Stroke, Style::StrokeAndFill];
+
+    let mut paint = Paint::default();
+    paint.set_anti_alias(true);
+
+    // we don't serialize hinting or encoding -- soon to be removed from paint
+
+    for &cap in &caps {
+        paint.set_stroke_cap(cap);
+        for &join in &joins {
+            paint.set_stroke_join(join);
+            for &style in &styles {
+                paint.set_style(style);
+
+                let mut writer = BinaryWriteBuffer::new();
+                writer.write_paint(&paint);
+
+                let mut buf = vec![0u8; writer.bytes_written()];
+                writer.write_to_memory(&mut buf);
+                let mut reader = ReadBuffer::new(&buf);
+
+                let paint2 = reader.read_paint(&FlattenableRegistry::EMPTY);
+                reporter_assert!(reporter, paint2 == paint);
+            }
+        }
+    }
+});
+
+// Port of: tests/PaintTest.cpp#L164-L182 (chrome/m156)
+def_test!(Paint_MoreFlattening, |r| {
+    let mut paint = Paint::default();
+    paint.set_color(0x00AA_BBCCu32);
+    paint.set_blend_mode(BlendMode::Modulate);
+
+    let mut writer = BinaryWriteBuffer::new();
+    writer.write_paint(&paint);
+
+    let mut buf = vec![0u8; writer.bytes_written()];
+    writer.write_to_memory(&mut buf);
+    let mut reader = ReadBuffer::new(&buf);
+
+    let other = reader.read_paint(&FlattenableRegistry::EMPTY);
+    reporter_assert!(r, reader.offset() == writer.bytes_written());
+
+    // No matter the encoding, these must always hold.
+    reporter_assert!(r, other.color() == paint.color());
+    reporter_assert!(r, other.as_blend_mode() == paint.as_blend_mode());
+});
+
+// Port of: tests/PaintTest.cpp#L184-L206 (chrome/m156)
+def_test!(Paint_nothingToDraw, |r| {
+    let mut paint = Paint::default();
+
+    reporter_assert!(r, !paint.nothing_to_draw());
+    paint.set_alpha(0);
+    reporter_assert!(r, paint.nothing_to_draw());
+
+    paint.set_alpha(0xFF);
+    paint.set_blend_mode(BlendMode::Dst);
+    reporter_assert!(r, paint.nothing_to_draw());
+
+    paint.set_alpha(0);
+    paint.set_blend_mode(BlendMode::SrcOver);
+
+    let mut cm = ColorMatrix::default();
+    cm.set_identity(); // does not change alpha
+    paint.set_color_filter(color_filters::matrix(&cm, Clamp::Yes));
+    reporter_assert!(r, paint.nothing_to_draw());
+
+    cm.post_translate(0.0, 0.0, 0.0, 1.0 / 255.0); // wacks alpha
+    paint.set_color_filter(color_filters::matrix(&cm, Clamp::Yes));
+    reporter_assert!(r, !paint.nothing_to_draw());
 });
 
 // Port of: tests/PaintTest.cpp#L208-L244 (chrome/m156)

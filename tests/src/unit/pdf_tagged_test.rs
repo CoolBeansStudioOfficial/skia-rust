@@ -1,25 +1,25 @@
 // Copyright 2018 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/PDFTaggedTest.cpp (chrome/m156), all but `SkPDF_tagged_saveLayer`, which looks
-// for the marked content of text and waits for the PDF fonts (modules.md M26).
+// Port of: tests/PDFTaggedTest.cpp (chrome/m156)
 
 #![allow(clippy::field_reassign_with_default)] // the tests assign the fields one by one, as the C++ does
 
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::SaveLayerRec;
 use skia_rust_core::color::Color;
 use skia_rust_core::font::Font;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::size::Size;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
 use skia_rust_pdf::jpeg;
-use skia_rust_pdf::metadata::{Metadata, Outline};
+use skia_rust_pdf::metadata::{CompressionLevel, Metadata, Outline};
 use skia_rust_pdf::tag::{StructureElementNode, node_id};
 use skia_rust_pdf::utils::get_date_time;
 use skia_rust_pdf::{new_document, set_node_id};
 use skia_rust_tools::font_tool_utils::default_typeface;
 
-use crate::def_test;
+use crate::{def_test, reporter_assert};
 
 type PdfTag = StructureElementNode;
 
@@ -272,4 +272,77 @@ def_test!(SkPDF_structelem_header_outline_doc_noheader, |_r| {
         Outline::StructureElementHeaders,
         EmitHeader::No,
     );
+});
+
+// Port of: tests/PDFTaggedTest.cpp#L245-L325 (chrome/m156)
+// Test that structure tagging is preserved inside saveLayer (FormXObject).
+def_test!(SkPDF_tagged_saveLayer, |r| {
+    let mut metadata = Metadata::default();
+    metadata.title = "Tagged SaveLayer Test".to_owned();
+    metadata.creator = "Skia".to_owned();
+    metadata.allow_no_jpegs = true;
+    metadata.compression_level = CompressionLevel::None;
+
+    let make_element = |elem_id: i32, ty: &str| -> PdfTag {
+        let mut element = PdfTag::default();
+        element.node_id = elem_id;
+        element.type_string = ty.to_owned();
+        element
+    };
+
+    let mut elem_id = 1;
+    let mut root = make_element(elem_id, "Document");
+    elem_id += 1;
+    root.child_vector.push(make_element(elem_id, "P"));
+    elem_id += 1;
+    root.child_vector.push(make_element(elem_id, "P"));
+    let first_node_id = root.child_vector[0].node_id;
+    let second_node_id = root.child_vector[1].node_id;
+
+    metadata.structure_element_tree_root = Some(root);
+
+    let mut output_stream = DynamicMemoryWStream::new();
+    let mut document = new_document(&mut output_stream, Some(&metadata));
+
+    let mut paint = Paint::default();
+    paint.set_color(Color::BLACK);
+    let font = Font::from_size(default_typeface(), 14.0);
+    let canvas = document.begin_page(612.0, 792.0, None).expect("a canvas");
+
+    set_node_id(canvas, first_node_id);
+    canvas.draw_str("Before saveLayer", (72.0, 72.0), &font, &paint);
+
+    let mut layer_paint = Paint::default();
+    layer_paint.set_alpha_f(0.8);
+    canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
+    set_node_id(canvas, second_node_id);
+    canvas.draw_str("Inside saveLayer", (72.0, 144.0), &font, &paint);
+    canvas.restore();
+
+    document.end_page();
+    document.close();
+    drop(document);
+
+    let pdf_data = output_stream.detach_as_data();
+    let data = pdf_data.as_bytes();
+
+    // `std::search(haystack, needle.begin(), needle.end() - 1)`: the needle without its NUL.
+    let contains = |haystack: &[u8], needle: &str| -> bool {
+        let needle = needle.as_bytes();
+        haystack.windows(needle.len()).any(|w| w == needle)
+    };
+    let count = |haystack: &[u8], needle: &str| -> usize {
+        let needle = needle.as_bytes();
+        haystack
+            .windows(needle.len())
+            .filter(|w| *w == needle)
+            .count()
+    };
+
+    // Expect both a page stream and a FormXObject stream carrying marked content.
+    reporter_assert!(r, count(data, "/StructParents ") >= 2);
+
+    // Marks in the FormXObject stream should be referenced from the structure tree with /Stm.
+    reporter_assert!(r, contains(data, "/Type /MCR"));
+    reporter_assert!(r, contains(data, "/Stm "));
 });

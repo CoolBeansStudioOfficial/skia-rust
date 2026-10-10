@@ -15,8 +15,6 @@ skia-rust-pathops.workspace = true
 skia-rust-codec.workspace = true
 skia-rust-zlib.workspace = true
 skia-rust-skcms.workspace = true
-
-[dev-dependencies]
 skia-rust-effects.workspace = true
 
 [lints]

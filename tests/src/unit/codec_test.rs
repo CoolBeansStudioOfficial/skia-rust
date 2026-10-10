@@ -16,7 +16,8 @@ use skia_rust_codec::{
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::Canvas;
-use skia_rust_core::color::Color;
+use skia_rust_core::color::{Color, PMColor, colors, pre_multiply_color};
+use skia_rust_core::color_priv::{get_packed_a32, get_packed_b32, get_packed_g32, get_packed_r32};
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use skia_rust_core::color_space_priv::color_space_almost_equal;
 use skia_rust_core::color_type::ColorType;
@@ -25,19 +26,29 @@ use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::md5::{Digest, Md5};
+use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
-use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
+use skia_rust_core::tile_mode::TileMode;
 use std::sync::{Arc, Mutex};
 
+use skia_rust_codec::png_composite_chunk_reader::PngChunkReader;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_libpng::{
+    PNG_HANDLE_CHUNK_ALWAYS, PngResult, PngStruct, UnknownChunk, create_info_struct,
+};
 use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_raster::surfaces;
 
 use crate::codec_priv::{
     ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
 };
 use crate::resources::{get_resource_as_data, get_resource_as_image, resource_dir};
+use crate::tools::tool_utils;
 use crate::unit::codec_exact_read_test::SharedStream;
 use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
 
@@ -165,12 +176,12 @@ fn test_incremental_decode(
 ) {
     let mut bm = Pixels::alloc(info);
     let row_bytes = bm.row_bytes;
-    match codec.start_incremental_decode(info, &mut bm.data, row_bytes, None) {
-        Ok(mut decode) => {
-            let (result, _) = decode.incremental_decode();
-            reporter_assert!(reporter, result == Result::Success);
-        }
-        Err(result) => reporter_assert!(reporter, result == Result::Success),
+    let result = codec.start_incremental_decode(info, &mut bm.data, row_bytes, None);
+    if result == Result::Success {
+        let (result, _) = codec.incremental_decode(&mut bm.data);
+        reporter_assert!(reporter, result == Result::Success);
+    } else {
+        reporter_assert!(reporter, result == Result::Success);
     }
     compare_to_good_digest(reporter, good_digest, &bm);
 }
@@ -207,31 +218,28 @@ fn test_in_stripes(
             };
             let offset = bm.row_offset(y);
             let row_bytes = bm.row_bytes;
-            match codec.start_incremental_decode(
+            let start_result = codec.start_incremental_decode(
                 info,
                 &mut bm.data[offset..],
                 row_bytes,
                 Some(&options),
-            ) {
-                Err(_) => {
-                    errorf!(
-                        reporter,
-                        "failed to start incremental decode!\ttop: {}\tbottom{}",
-                        subset.top(),
-                        subset.bottom()
-                    );
-                    return;
-                }
-                Ok(mut decode) => {
-                    if decode.incremental_decode().0 != Result::Success {
-                        errorf!(
-                            reporter,
-                            "failed incremental decode starting from line {}",
-                            y
-                        );
-                        return;
-                    }
-                }
+            );
+            if start_result != Result::Success {
+                errorf!(
+                    reporter,
+                    "failed to start incremental decode!\ttop: {}\tbottom{}",
+                    subset.top(),
+                    subset.bottom()
+                );
+                return;
+            }
+            if codec.incremental_decode(&mut bm.data[offset..]).0 != Result::Success {
+                errorf!(
+                    reporter,
+                    "failed incremental decode starting from line {}",
+                    y
+                );
+                return;
             }
             y += 2 * stripe_height;
         }
@@ -910,16 +918,15 @@ def_test!(Codec_rowsDecoded, |r| {
     let info = codec.info().with_color_type(ColorType::N32);
     let row_bytes = info.min_row_bytes();
     let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
-    let Ok(mut incremental) = codec.start_incremental_decode(&info, &mut pixels, row_bytes, None)
-    else {
+    if codec.start_incremental_decode(&info, &mut pixels, row_bytes, None) != Result::Success {
         reporter_assert!(r, false);
         return;
-    };
+    }
     // The rows decoded are reported from zero, which is the value the C++ test checks for after
     // an arbitrary starting value.
-    let (result, rows_decoded) = incremental.incremental_decode();
+    let (result, rows_decoded) = codec.incremental_decode(&mut pixels);
     reporter_assert!(r, result == Result::IncompleteInput);
-    reporter_assert!(r, rows_decoded == 0);
+    reporter_assert!(r, rows_decoded == Some(0));
 });
 
 // Port of: tests/CodecTest.cpp#L1988-L1999 (chrome/m156)
@@ -2000,10 +2007,7 @@ fn test_conversion_possible(
             reporter_assert!(reporter, result == Result::Unimplemented);
         }
 
-        let result = match codec.start_incremental_decode(&info_f16, &mut bm, row_bytes, None) {
-            Ok(_) => Result::Success,
-            Err(result) => result,
-        };
+        let result = codec.start_incremental_decode(&info_f16, &mut bm, row_bytes, None);
         if supports_incremental_decoder {
             reporter_assert!(reporter, result == Result::Success);
         } else if pass == 0 {
@@ -2256,10 +2260,7 @@ def_test!(Codec_fallBack, |r| {
         let info = codec.info().with_color_type(ColorType::N32);
         let mut bm = Pixels::alloc(&info);
 
-        let result = match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, None) {
-            Ok(_) => Result::Success,
-            Err(result) => result,
-        };
+        let result = codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, None);
         if result != Result::Unimplemented {
             errorf!(r, "Is scanline decoding now implemented for {}?", file);
             continue;
@@ -2384,19 +2385,17 @@ def_test!(Codec_InvalidAnimated, |r| {
             },
             ..Options::default()
         };
-        match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, Some(&opts)) {
-            Err(result) => {
-                errorf!(
-                    r,
-                    "Failed to start decoding frame {} (out of {}) with error {}",
-                    index,
-                    frame_infos.len(),
-                    result.as_str()
-                );
-            }
-            Ok(mut incremental) => {
-                incremental.incremental_decode();
-            }
+        let result = codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, Some(&opts));
+        if result == Result::Success {
+            codec.incremental_decode(&mut bm.data);
+        } else {
+            errorf!(
+                r,
+                "Failed to start decoding frame {} (out of {}) with error {}",
+                index,
+                frame_infos.len(),
+                result.as_str()
+            );
         }
     }
 });
@@ -2683,4 +2682,420 @@ def_test!(jpeg_invalid_stream_state, |r| {
     reporter_assert!(r, res != Result::Success);
     // But the stream should be rewinded if we attempt other operations.
     reporter_assert!(r, codec.codec().needs_rewind());
+});
+
+// Port of: tests/CodecTest.cpp#L2286-L2304 (chrome/m156), make_gradient_bitmap: a 50 by 50 RGBA
+// premultiplied bitmap of a rainbow gradient, drawn in the colour space `cs`.
+fn make_gradient_bitmap(cs: Option<ColorSpace>) -> Bitmap {
+    const WIDTH: i32 = 50;
+    const HEIGHT: i32 = 50;
+    // The same size as a float, for the geometry.
+    const SIZE_F: f32 = 50.0;
+    // Define the gradient shader.
+    let gradient_colors = [
+        colors::RED,
+        colors::YELLOW,
+        colors::GREEN,
+        colors::CYAN,
+        colors::BLUE,
+        colors::MAGENTA,
+        colors::RED,
+    ];
+    let points = (Point::new(0.0, 0.0), Point::new(SIZE_F, 0.0));
+    let rainbow_shader = gradient_shaders::linear_gradient(
+        points,
+        &Gradient::new(
+            Colors::new(&gradient_colors, None, TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    );
+    let mut gradient_paint = Paint::default();
+    gradient_paint.set_shader(rainbow_shader);
+
+    let info = ImageInfo::new((WIDTH, HEIGHT), ColorType::RGBA8888, AlphaType::Premul, cs);
+    let Some(mut surface) = surfaces::raster(&info, None, None) else {
+        return Bitmap::new();
+    };
+    surface
+        .canvas()
+        .draw_rect(Rect::from_wh(SIZE_F, SIZE_F), &gradient_paint);
+    let mut bmp = Bitmap::new();
+    bmp.alloc_pixels_info(&info, None);
+    if let Some(mut pixmap) = bmp.peek_pixels_mut() {
+        surface.read_pixels_to_pixmap(&mut pixmap, (0, 0));
+    }
+    bmp
+}
+
+// Port of: tests/CodecTest.cpp#L2320-L2338 (chrome/m156), almost_equals: whether two premultiplied
+// colours differ by at most `tolerance` in every channel.
+fn almost_equals(a: PMColor, b: PMColor, tolerance: i64) -> bool {
+    let channels = [
+        (get_packed_r32(a), get_packed_r32(b)),
+        (get_packed_g32(a), get_packed_g32(b)),
+        (get_packed_b32(a), get_packed_b32(b)),
+        (get_packed_a32(a), get_packed_a32(b)),
+    ];
+    channels
+        .iter()
+        .all(|&(x, y)| (i64::from(x) - i64::from(y)).abs() <= tolerance)
+}
+
+// Port of: tests/CodecTest.cpp#L2340-L2359 (chrome/m156), compare_bitmaps_approx
+fn compare_bitmaps_approx(actual: &Bitmap, expected: &Bitmap, tol: i64) -> bool {
+    for y in 0..actual.height() {
+        for x in 0..actual.width() {
+            let c1 = actual.get_color((x, y));
+            let c2 = expected.get_color((x, y));
+            let actual_pm_color = pre_multiply_color(c1);
+            let expected_pm_color = pre_multiply_color(c2);
+
+            let almost_same = almost_equals(actual_pm_color, expected_pm_color, tol);
+            if !almost_same {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+// Decodes `codec` into a new bitmap of `info`, as the C++ test does with `getPixels` on an
+// `SkBitmap` made by `allocPixels(info)`. The result of the decode is not checked, as in C++.
+fn decode_to_bitmap(codec: &mut Codec<'_>, info: &ImageInfo) -> Bitmap {
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(info, None);
+    let row_bytes = bm.row_bytes();
+    let mut pixmap = bm.peek_pixels_mut();
+    if let Some(pixels) = pixmap.as_mut().and_then(|pm| pm.bytes_mut()) {
+        codec.get_pixels(info, pixels, row_bytes, None);
+    }
+    bm
+}
+
+// Verifies that transforming a source image results in the same bitmap as a pre-transformed file.
+// The C++ compares with a tolerance of 1 for PNG and 20 for JPEG. The project allows no
+// tolerances, so every channel must match exactly here.
+// Port of: tests/CodecTest.cpp#L2444-L2519 (chrome/m156), Codec_RoundTripColorXform
+def_test!(
+    #[ignore = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1)"]
+    Codec_RoundTripColorXform,
+    |r| {
+        struct TestCase {
+            src_file: &'static str,
+            // The pre-transformed file to compare a real transform against.
+            xform_file: &'static str,
+            // The destination space for the real transform.
+            xform_space: ColorSpace,
+        }
+
+        let test_cases = [
+            TestCase {
+                src_file: "images/gradient_displayp3.png",
+                xform_file: "images/gradient_p3_to_adobe.png",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::DOT22,
+                    &named_gamut::ADOBE_RGB,
+                )
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+            },
+            TestCase {
+                src_file: "images/gradient_adobergb.png",
+                xform_file: "images/gradient_adobe_to_p3.png",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::SRGB,
+                    &named_gamut::DISPLAY_P3,
+                )
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+            },
+            TestCase {
+                src_file: "images/gradient_displayp3.jpeg",
+                xform_file: "images/gradient_p3_to_adobe.jpeg",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::DOT22,
+                    &named_gamut::ADOBE_RGB,
+                )
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+            },
+            TestCase {
+                src_file: "images/gradient_adobergb.jpeg",
+                xform_file: "images/gradient_adobe_to_p3.jpeg",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::SRGB,
+                    &named_gamut::DISPLAY_P3,
+                )
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+            },
+        ];
+
+        for test in &test_cases {
+            let Some(src_data) = get_resource_as_data(test.src_file) else {
+                errorf!(r, "Could not load source file: {}", test.src_file);
+                continue;
+            };
+
+            let Ok(mut src_codec) =
+                Codec::make_from_stream(MemoryStream::make_copy(&src_data), decoders())
+            else {
+                errorf!(r, "Could not create codec for: {}", test.src_file);
+                continue;
+            };
+
+            let tol = 0;
+
+            // No op colorspace transform, creates the same gradient with this colorspace in memory
+            // and compares it to the original image decoded
+            {
+                let src_cs = src_codec.info().color_space();
+                let actual_bitmap = make_gradient_bitmap(src_cs);
+
+                let expected_data = get_resource_as_data(test.src_file);
+                let Some(expected_data) = expected_data else {
+                    errorf!(r, "Could not load source file: {}", test.src_file);
+                    continue;
+                };
+                let Ok(mut expected_codec) =
+                    Codec::make_from_stream(MemoryStream::make_copy(&expected_data), decoders())
+                else {
+                    errorf!(r, "Could not create codec for: {}", test.src_file);
+                    continue;
+                };
+                let expected_info = expected_codec.info();
+                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
+
+                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                    errorf!(
+                        r,
+                        "Src file: {}, expected file: {}",
+                        test.src_file,
+                        test.src_file
+                    );
+                }
+            }
+
+            // Transform colorspace, test against tranformed file
+            {
+                let xform_info = src_codec.info().with_color_space(test.xform_space.clone());
+                let actual_bitmap = decode_to_bitmap(&mut src_codec, &xform_info);
+
+                let Some(xform_data) = get_resource_as_data(test.xform_file) else {
+                    errorf!(r, "Could not load transformed file: {}", test.xform_file);
+                    continue;
+                };
+                let Ok(mut expected_codec) =
+                    Codec::make_from_stream(MemoryStream::make_copy(&xform_data), decoders())
+                else {
+                    errorf!(r, "Could not create codec for: {}", test.xform_file);
+                    continue;
+                };
+                let expected_info = expected_codec.info();
+                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
+
+                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                    errorf!(
+                        r,
+                        "Src file: {}, expected file: {}",
+                        test.src_file,
+                        test.xform_file
+                    );
+                }
+            }
+        }
+    }
+);
+
+// Port of: tests/CodecTest.cpp#L943-L950 (chrome/m156), gUnknowns: the chunks that match the
+// Android framework's use. Each chunk's data includes its terminating zero, as `sizeof` does in
+// the C++.
+const PNG_UNKNOWN_NAMES: [&[u8; 4]; 3] = [b"npOl", b"npLb", b"npTc"];
+const PNG_UNKNOWN_DATA: [&[u8]; 3] = [b"outline\0", b"layoutBounds\0", b"ninePatchData\0"];
+
+// Port of: tests/CodecTest.cpp#L966-L1001 (chrome/m156), ChunkReader: checks each unknown chunk
+// as the decoder reads it. The reader runs on the codec, so it records what it saw and the test
+// reports the failures.
+#[derive(Default)]
+struct PngChunkState {
+    seen: [bool; 3],
+    failures: Vec<String>,
+}
+
+struct ChunkReader {
+    state: Arc<Mutex<PngChunkState>>,
+}
+
+impl PngChunkReader for ChunkReader {
+    // Port of: ChunkReader::readChunk (tests/CodecTest.cpp#L971-L990)
+    fn read_chunk(&mut self, tag: &[u8; 4], data: &[u8]) -> bool {
+        let mut state = self.state.lock().expect("chunk state");
+        for i in 0..PNG_UNKNOWN_NAMES.len() {
+            if tag == PNG_UNKNOWN_NAMES[i] {
+                // Tag matches. This should have been the first time we see it.
+                if state.seen[i] {
+                    state.failures.push(format!("chunk {i} was seen twice"));
+                }
+                state.seen[i] = true;
+
+                // Data and length should match
+                if data != PNG_UNKNOWN_DATA[i] {
+                    state.failures.push(format!("chunk {i} has the wrong data"));
+                }
+                return true;
+            }
+        }
+        state
+            .failures
+            .push("Saw an unexpected unknown chunk.".to_string());
+        true
+    }
+}
+
+// Port of: the png_* calls of tests/CodecTest.cpp#L900-L940 and #L950-L962 (chrome/m156): writes
+// `bm` (1 by 1, RGBA) as a PNG with the three unknown chunks, and returns the file.
+fn write_png_with_unknown_chunks(bm: &Pixels) -> PngResult<Vec<u8>> {
+    let sink = Arc::new(Mutex::new(Vec::<u8>::new()));
+    let writer_sink = Arc::clone(&sink);
+    let mut png = PngStruct::new_write(Box::new(move |bytes: &[u8]| {
+        writer_sink
+            .lock()
+            .expect("png sink")
+            .extend_from_slice(bytes);
+        true
+    }));
+    let mut info = create_info_struct();
+    // PNG_COLOR_TYPE_RGB_ALPHA (6), PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT and
+    // PNG_FILTER_TYPE_DEFAULT (all 0).
+    png.set_ihdr(
+        &mut info,
+        u32::try_from(bm.info.width()).unwrap_or(0),
+        u32::try_from(bm.info.height()).unwrap_or(0),
+        8,
+        6,
+        0,
+        0,
+        0,
+    )?;
+
+    png.set_keep_unknown_chunks(PNG_HANDLE_CHUNK_ALWAYS, &PNG_UNKNOWN_NAMES);
+    let unknowns = [
+        // PNG_HAVE_IHDR: the chunks come after the header.
+        UnknownChunk {
+            name: *b"npOl\0",
+            data: PNG_UNKNOWN_DATA[0].to_vec(),
+            location: 0x01,
+        },
+        UnknownChunk {
+            name: *b"npLb\0",
+            data: PNG_UNKNOWN_DATA[1].to_vec(),
+            location: 0x01,
+        },
+        UnknownChunk {
+            name: *b"npTc\0",
+            data: PNG_UNKNOWN_DATA[2].to_vec(),
+            location: 0x01,
+        },
+    ];
+    png.set_unknown_chunks(&mut info, &unknowns)?;
+
+    png.write_info(&info)?;
+    for j in 0..bm.info.height() {
+        let row_start = usize::try_from(j).unwrap_or(0) * bm.row_bytes;
+        let row = &bm.data[row_start..][..bm.row_bytes];
+        png.write_rows(&[row])?;
+    }
+    png.write_end(&info)?;
+    drop(png);
+
+    let file = sink.lock().expect("png sink").clone();
+    Ok(file)
+}
+
+// Decodes `codec` into `bm`, which is allocated with `info`, and returns the result. Port of the
+// getPixels call in tests/CodecTest.cpp#L1005-L1013 (chrome/m156).
+fn decode_into_bitmap(codec: &mut Codec<'_>, info: &ImageInfo, bm: &mut Bitmap) -> Result {
+    let row_bytes = bm.row_bytes();
+    let mut pixmap = bm.peek_pixels_mut();
+    match pixmap.as_mut().and_then(|pm| pm.bytes_mut()) {
+        Some(pixels) => codec.get_pixels(info, pixels, row_bytes, None),
+        None => Result::InvalidParameters,
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L900-L1046 (chrome/m156), Codec_pngChunkReader
+def_test!(Codec_pngChunkReader, |r| {
+    // Create a bitmap for hashing. Use unpremul RGBA for libpng.
+    let w = 1;
+    let h = 1;
+    let bm_info = ImageInfo::new((w, h), ColorType::RGBA8888, AlphaType::Unpremul, None);
+    let mut bm = Pixels::alloc(&bm_info);
+    bm.erase(Color::BLUE);
+    let good_digest = bm.md5();
+
+    // Write to a png file.
+    let Ok(file) = write_png_with_unknown_chunks(&bm) else {
+        errorf!(r, "failed writing png");
+        return;
+    };
+
+    let state = Arc::new(Mutex::new(PngChunkState::default()));
+    let chunk_reader = ChunkReader {
+        state: Arc::clone(&state),
+    };
+
+    // Now read the file with SkCodec.
+    let Ok(mut codec) = png_codec::make_from_stream_with_chunk_reader(
+        MemoryStream::make_copy(&file),
+        Some(Box::new(chunk_reader)),
+    ) else {
+        reporter_assert!(r, false);
+        return;
+    };
+
+    // Now compare to the original.
+    let codec_info = codec.info();
+    let mut decoded_bm = Bitmap::new();
+    decoded_bm.alloc_pixels_info(&codec_info, None);
+    let result = decode_into_bitmap(&mut codec, &codec_info, &mut decoded_bm);
+    reporter_assert!(r, result == Result::Success);
+
+    if decoded_bm.color_type() != bm.info.color_type() {
+        let mut tmp = Bitmap::new();
+        let success = tool_utils::copy_to(&mut tmp, bm.info.color_type(), &decoded_bm);
+        reporter_assert!(r, success);
+        if !success {
+            return;
+        }
+        decoded_bm = tmp;
+    }
+
+    let decoded = Pixels {
+        info: decoded_bm.info().clone(),
+        row_bytes: decoded_bm.row_bytes(),
+        data: decoded_bm
+            .pixmap()
+            .bytes()
+            .map(<[u8]>::to_vec)
+            .unwrap_or_default(),
+    };
+    compare_to_good_digest(r, &good_digest, &decoded);
+    reporter_assert!(
+        r,
+        state.lock().expect("chunk state").seen.iter().all(|&s| s)
+    );
+
+    // Decoding again will read the chunks again.
+    {
+        let mut state = state.lock().expect("chunk state");
+        state.seen = [false; 3];
+        reporter_assert!(r, !state.seen.iter().all(|&s| s));
+    }
+    let result = decode_into_bitmap(&mut codec, &codec_info, &mut decoded_bm);
+    reporter_assert!(r, result == Result::Success);
+    reporter_assert!(
+        r,
+        state.lock().expect("chunk state").seen.iter().all(|&s| s)
+    );
+
+    for failure in &state.lock().expect("chunk state").failures {
+        errorf!(r, "{}", failure);
+    }
 });

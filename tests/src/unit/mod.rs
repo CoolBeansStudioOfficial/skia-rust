@@ -79,6 +79,8 @@ pub mod descriptor_test;
 #[cfg(test)]
 pub mod direct_mask_limit_test;
 #[cfg(test)]
+pub mod discardable_memory_pool_test;
+#[cfg(test)]
 pub mod discardable_memory_test;
 #[cfg(test)]
 pub mod draw_bitmap_rect_test;
@@ -188,6 +190,8 @@ pub mod mip_map_test;
 pub mod nonlinear_blending_test;
 #[cfg(test)]
 pub mod offset_simple_poly_test;
+#[cfg(test)]
+pub mod os_path_test;
 #[cfg(test)]
 pub mod paint_test;
 #[cfg(test)]
@@ -317,6 +321,8 @@ pub mod pdf_deflate_w_stream_test;
 #[cfg(test)]
 pub mod pdf_document_test;
 #[cfg(test)]
+pub mod pdf_glyphs_to_unicode_test;
+#[cfg(test)]
 pub mod pdf_jpeg_embed_test;
 #[cfg(test)]
 pub mod pdf_metadata_attribute_test;
@@ -401,6 +407,8 @@ pub mod simplify_paint_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
+pub mod sk_base64_test;
+#[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
@@ -451,6 +459,10 @@ pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
 #[cfg(test)]
+pub mod skbug5221;
+#[cfg(test)]
+pub mod skbug6389;
+#[cfg(test)]
 pub mod src_over_test;
 #[cfg(test)]
 pub mod srgb_test;
@@ -465,11 +477,15 @@ pub mod surface_test;
 #[cfg(test)]
 pub mod swizzler_test;
 #[cfg(test)]
+pub mod test_test;
+#[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
 pub mod time;
 #[cfg(test)]
 pub mod typeface_test;
+#[cfg(test)]
+pub mod utils_test;
 #[cfg(test)]
 pub mod vertices_test;
 #[cfg(test)]
@@ -478,6 +494,8 @@ pub mod wangs_formula_test;
 pub mod webp_test;
 #[cfg(test)]
 pub mod write_pixels_test;
+#[cfg(test)]
+pub mod writer32_test;
 #[cfg(test)]
 pub mod yuv_cache_test;
 #[cfg(test)]

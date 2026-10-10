@@ -1,9 +1,7 @@
 // Copyright 2010 The Android Open Source Project
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/PDFPrimitivesTest.cpp (chrome/m156), all of it but `SkPDF_Primitives` (its
-// `test_issue1083` draws a glyph through a PDF canvas) and `SkPDF_FontCanEmbedTypeface`, which
-// wait for the PDF fonts (modules.md M26).
+// Port of: tests/PDFPrimitivesTest.cpp (chrome/m156)
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,6 +10,7 @@ use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
 use skia_rust_core::color::Color4f;
 use skia_rust_core::font::Font;
+use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::glyph_run::GlyphRun;
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
 use skia_rust_core::image_filter_result::FilterResult;
@@ -22,7 +21,9 @@ use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::shader::Shader;
-use skia_rust_core::stream::{DynamicMemoryWStream, NullWStream};
+use skia_rust_core::stream::{
+    DynamicMemoryWStream, MemoryStream, NullWStream, StreamAsset, WStream,
+};
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::utils::parse_path;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
@@ -30,12 +31,17 @@ use skia_rust_effects::image_filters;
 use skia_rust_effects::perlin_noise_shader::shaders as perlin_shaders;
 use skia_rust_pdf::clusterator::{Cluster, Clusterator};
 use skia_rust_pdf::float_to_decimal::{MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH, float_to_decimal};
+use skia_rust_pdf::font::can_embed_typeface;
 use skia_rust_pdf::jpeg;
 use skia_rust_pdf::metadata::Metadata;
 use skia_rust_pdf::new_document;
+use skia_rust_pdf::types::{PdfArray, PdfDict, PdfObject, PdfUnion};
 use skia_rust_pdf::utils::{EmptyArea, EmptyPath, EmptyVerb, color_to_decimal, emit_path};
-use skia_rust_tools::font_tool_utils::default_font;
+use skia_rust_tools::font_tool_utils::{
+    create_typeface_from_resource, default_font, default_typeface,
+};
 
+use crate::resources::get_resource_as_data;
 use crate::{Reporter, def_test, errorf, reporter_assert};
 
 /// The bytes of a C string: up to the first NUL.
@@ -45,6 +51,29 @@ fn c_str(buf: &[u8]) -> &[u8] {
         None => buf,
     }
 }
+
+// Port of: tests/PDFPrimitivesTest.cpp#L342-L355 (chrome/m156)
+def_test!(SkPDF_FontCanEmbedTypeface, |reporter| {
+    let mut null_w_stream = NullWStream::new();
+    let doc = new_document(&mut null_w_stream, None);
+    let doc_handle = doc.handle();
+
+    let resource = "fonts/Roboto2-Regular_NoEmbed.ttf";
+    let resource_stream: Option<Box<dyn StreamAsset>> = get_resource_as_data(resource)
+        .map(|data| -> Box<dyn StreamAsset> { MemoryStream::make_copy(&data) });
+    let no_embed_typeface = create_typeface_from_resource(resource_stream, 0);
+    if let Some(no_embed_typeface) = no_embed_typeface {
+        reporter_assert!(
+            reporter,
+            !can_embed_typeface(&no_embed_typeface, &doc_handle)
+        );
+    }
+    let portable_typeface = default_typeface();
+    reporter_assert!(
+        reporter,
+        can_embed_typeface(&portable_typeface, &doc_handle)
+    );
+});
 
 // Port of: tests/PDFPrimitivesTest.cpp#L386-L404 (chrome/m156)
 // test to see that all finite scalars round trip via scanf().
@@ -279,6 +308,247 @@ impl ImageFilterBase for TestImageFilter {
         content_bounds
     }
 }
+
+// Port of: tests/PDFPrimitivesTest.cpp#L67-L74 (chrome/m156)
+fn emit_to_string(emit: impl FnOnce(&mut DynamicMemoryWStream)) -> Vec<u8> {
+    let mut buffer = DynamicMemoryWStream::new();
+    emit(&mut buffer);
+    let mut tmp = vec![0u8; buffer.bytes_written()];
+    buffer.copy_to(&mut tmp);
+    tmp
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L76-L98 (chrome/m156)
+fn assert_eq(reporter: &mut Reporter, sk_string: &[u8], s: &str) {
+    if sk_string != s.as_bytes() {
+        errorf!(
+            reporter,
+            "'{}' != '{}'",
+            s,
+            String::from_utf8_lossy(sk_string)
+        );
+    }
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L100-L106 (chrome/m156)
+fn assert_emit_eq_object(reporter: &mut Reporter, object: &dyn PdfObject, s: &str) {
+    let result = emit_to_string(|buffer| object.emit_object(buffer));
+    assert_eq(reporter, &result, s);
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L100-L106 (chrome/m156)
+fn assert_emit_eq_union(reporter: &mut Reporter, object: &PdfUnion, s: &str) {
+    let result = emit_to_string(|buffer| object.emit_object(buffer));
+    assert_eq(reporter, &result, s);
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L108-L127 (chrome/m156)
+// This test used to assert without the fix submitted for
+// http://code.google.com/p/skia/issues/detail?id=1083.
+// SKP files might have invalid glyph ids. This test ensures they are ignored,
+// and there is no assert on input data in Debug mode.
+fn test_issue1083() {
+    let mut out_stream = DynamicMemoryWStream::new();
+    let mut doc = new_document(&mut out_stream, Some(&jpeg::metadata_with_callbacks()));
+    let canvas = doc.begin_page(100.0, 100.0, None).expect("a canvas");
+
+    let glyph_id: u16 = 65000;
+    let font = default_font();
+    canvas.draw_simple_text(
+        glyph_id.to_ne_bytes(),
+        TextEncoding::GlyphId,
+        (0.0, 0.0),
+        &font,
+        &Paint::default(),
+    );
+
+    doc.close();
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L129-L134 (chrome/m156)
+fn assert_emit_eq_number(reporter: &mut Reporter, number: f32) {
+    let pdf_union = PdfUnion::scalar(number);
+    let result = emit_to_string(|buffer| pdf_union.emit_object(buffer));
+    let text = String::from_utf8_lossy(&result).into_owned();
+    let value = text.parse::<f32>().unwrap_or(f32::NAN);
+    #[allow(clippy::float_cmp)] // exact comparison, as in the C++
+    if value != number {
+        errorf!(reporter, "{:.9e} != {}", number, text);
+    }
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L133-L181 (chrome/m156)
+fn test_pdf_union(reporter: &mut Reporter) {
+    let bool_true = PdfUnion::bool(true);
+    assert_emit_eq_union(reporter, &bool_true, "true");
+
+    let bool_false = PdfUnion::bool(false);
+    assert_emit_eq_union(reporter, &bool_false, "false");
+
+    let int42 = PdfUnion::int(42);
+    assert_emit_eq_union(reporter, &int42, "42");
+
+    assert_emit_eq_number(reporter, 0.5); // SK_ScalarHalf
+    assert_emit_eq_number(reporter, 110_999.75_f32); // bigScalar
+    assert_emit_eq_number(reporter, 50_000_000.1_f32); // biggerScalar
+    assert_emit_eq_number(reporter, 1.0_f32 / 65536.0); // smallScalar
+
+    let string_simple = PdfUnion::text_string("test ) string ( foo");
+    assert_emit_eq_union(reporter, &string_simple, "(test \\) string \\( foo)");
+
+    let string_complex_input = "\ttest ) string ( foo";
+    let string_complex = PdfUnion::text_string(string_complex_input);
+    assert_emit_eq_union(reporter, &string_complex, "(\\011test \\) string \\( foo)");
+
+    let binary_string_input: &[u8] =
+        b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10";
+    let binary_string = PdfUnion::byte_string(binary_string_input);
+    assert_emit_eq_union(
+        reporter,
+        &binary_string,
+        "<0102030405060708090A0B0C0D0E0F10>",
+    );
+
+    let name_input = "Test name\twith#tab";
+    let name = PdfUnion::name_escaped(name_input);
+    assert_emit_eq_union(reporter, &name, "/Test#20name#09with#23tab");
+
+    let name_input2 = "A#/%()<>[]{}B";
+    let name2 = PdfUnion::name_escaped(name_input2);
+    assert_emit_eq_union(reporter, &name2, "/A#23#2F#25#28#29#3C#3E#5B#5D#7B#7DB");
+
+    let name3 = PdfUnion::name("SimpleNameWithOnlyPrintableASCII");
+    assert_emit_eq_union(reporter, &name3, "/SimpleNameWithOnlyPrintableASCII");
+
+    // Test that we correctly handle characters with the high-bit set.
+    let high_bit_string: &[u8] = b"\xDE\xADbe\xEF";
+    let high_bit_name = PdfUnion::name_escaped(high_bit_string);
+    assert_emit_eq_union(reporter, &high_bit_name, "/#DE#ADbe#EF");
+
+    // https://bugs.skia.org/9508
+    // https://crbug.com/494913
+    // Trailing '\0' characters must be removed.
+    let name_input4: &[u8] = b"Test name with nil\0";
+    let name4 = PdfUnion::name_escaped(name_input4);
+    assert_emit_eq_union(reporter, &name4, "/Test#20name#20with#20nil");
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L183-L220 (chrome/m156)
+fn test_pdf_array(reporter: &mut Reporter) {
+    let mut array = PdfArray::new();
+    assert_emit_eq_object(reporter, &array, "[]");
+
+    array.append_int(42);
+    assert_emit_eq_object(reporter, &array, "[42]");
+
+    array.append_scalar(0.5); // SK_ScalarHalf
+    assert_emit_eq_object(reporter, &array, "[42 .5]");
+
+    array.append_int(0);
+    assert_emit_eq_object(reporter, &array, "[42 .5 0]");
+
+    array.append_bool(true);
+    assert_emit_eq_object(reporter, &array, "[42 .5 0 true]");
+
+    array.append_name("ThisName");
+    assert_emit_eq_object(reporter, &array, "[42 .5 0 true /ThisName]");
+
+    array.append_name_escaped("AnotherName");
+    assert_emit_eq_object(reporter, &array, "[42 .5 0 true /ThisName /AnotherName]");
+
+    array.append_text_string("This String");
+    assert_emit_eq_object(
+        reporter,
+        &array,
+        "[42 .5 0 true /ThisName /AnotherName (This String)]",
+    );
+
+    array.append_byte_string("Another String");
+    assert_emit_eq_object(
+        reporter,
+        &array,
+        "[42 .5 0 true /ThisName /AnotherName (This String) (Another String)]",
+    );
+
+    let mut inner_array = PdfArray::new();
+    inner_array.append_int(-1);
+    array.append_object(Box::new(inner_array));
+    assert_emit_eq_object(
+        reporter,
+        &array,
+        "[42 .5 0 true /ThisName /AnotherName (This String) (Another String) [-1]]",
+    );
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L222-L272 (chrome/m156)
+fn test_pdf_dict(reporter: &mut Reporter) {
+    let mut dict = PdfDict::new(None);
+    assert_emit_eq_object(reporter, &dict, "<<>>");
+
+    dict.insert_int_usize("n1", 42);
+    assert_emit_eq_object(reporter, &dict, "<</n1 42>>");
+
+    dict = PdfDict::new(None);
+    assert_emit_eq_object(reporter, &dict, "<<>>");
+
+    dict.insert_int("n1", 42);
+    assert_emit_eq_object(reporter, &dict, "<</n1 42>>");
+
+    dict.insert_scalar("n2", 0.5); // SK_ScalarHalf
+
+    let n3 = "n3";
+    let mut inner_array = PdfArray::new();
+    inner_array.append_int(-100);
+    dict.insert_object_escaped_key(n3, Box::new(inner_array));
+    assert_emit_eq_object(reporter, &dict, "<</n1 42\n/n2 .5\n/n3 [-100]>>");
+
+    dict = PdfDict::new(None);
+    assert_emit_eq_object(reporter, &dict, "<<>>");
+
+    dict.insert_int("n1", 24);
+    assert_emit_eq_object(reporter, &dict, "<</n1 24>>");
+
+    dict.insert_int_usize("n2", 99);
+    assert_emit_eq_object(reporter, &dict, "<</n1 24\n/n2 99>>");
+
+    dict.insert_scalar("n3", 0.5); // SK_ScalarHalf
+    assert_emit_eq_object(reporter, &dict, "<</n1 24\n/n2 99\n/n3 .5>>");
+
+    dict.insert_name("n4", "AName");
+    assert_emit_eq_object(reporter, &dict, "<</n1 24\n/n2 99\n/n3 .5\n/n4 /AName>>");
+
+    dict.insert_name_escaped("n5", "AnotherName");
+    assert_emit_eq_object(
+        reporter,
+        &dict,
+        "<</n1 24\n/n2 99\n/n3 .5\n/n4 /AName\n/n5 /AnotherName>>",
+    );
+
+    dict.insert_text_string("n6", "A String");
+    assert_emit_eq_object(
+        reporter,
+        &dict,
+        "<</n1 24\n/n2 99\n/n3 .5\n/n4 /AName\n/n5 /AnotherName\n/n6 (A String)>>",
+    );
+
+    dict.insert_byte_string("n7", "Another String");
+    assert_emit_eq_object(
+        reporter,
+        &dict,
+        "<</n1 24\n/n2 99\n/n3 .5\n/n4 /AName\n/n5 /AnotherName\n/n6 (A String)\n/n7 (Another String)>>",
+    );
+
+    dict = PdfDict::new(Some("DType"));
+    assert_emit_eq_object(reporter, &dict, "<</Type /DType>>");
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L274-L279 (chrome/m156)
+def_test!(SkPDF_Primitives, |reporter| {
+    test_pdf_union(reporter);
+    test_pdf_array(reporter);
+    test_pdf_dict(reporter);
+    test_issue1083();
+});
 
 // Port of: tests/PDFPrimitivesTest.cpp#L320-L339 (chrome/m156)
 // Check that PDF rendering of image filters successfully falls back to

@@ -5,11 +5,14 @@
 
 //! `src/xml`: the XML parser callbacks, the DOM and the XML writer.
 //!
-//! Skia parses with expat. Here a small safe tokenizer (`parser::tokenize`) produces the same
-//! element, attribute and text events (docs/design/codecs.md Q4).
+//! Skia parses with expat. Here a safe tokenizer (`tokenizer`) produces the same element,
+//! attribute and text events and rejects the documents expat rejects (docs/design/codecs.md Q4,
+//! and `docs/API_MAPPING.md` for what is left out).
 
 pub mod dom;
+mod name_tables;
 pub mod parser;
+mod tokenizer;
 pub mod writer;
 
 pub use dom::{Attr, AttrIter, Dom, DomParser, Node, NodeType};

@@ -719,6 +719,13 @@ impl ReadBuffer<'_> {
         self.curr
     }
 
+    /// Whether every byte has been read (`SkReadBuffer::eof`).
+    // Port of: src/core/SkReadBuffer.h#L82 (chrome/m156)
+    #[must_use]
+    pub fn eof(&self) -> bool {
+        self.curr >= self.data.len()
+    }
+
     /// Reads a color (`readColor4f`): four scalars, or all zeros if the buffer cannot give them.
     // Port of: src/core/SkReadBuffer.cpp#L169-L173 (chrome/m156)
     #[doc(alias = "readColor4f")]

@@ -30,7 +30,7 @@ impl Benchmark for WriterBench {
             // for (size_t j = 0; j <= gLen; j++) writer.writeString(gStr, j);
             for j in 0..=G_STR.len() {
                 // writeString(str, len) writes the first `len` bytes of `str`.
-                writer.write_string(&G_STR[..j]);
+                writer.write_string(Some(&G_STR[..j]));
             }
         }
     }

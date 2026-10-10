@@ -172,6 +172,8 @@ pub struct CodecBase<'a> {
     dst_is_src_profile: bool,
     dst_xform_format: Option<PixelFormat>,
     dst_xform_alpha_format: AlphaFormat,
+    /// Port of `fStartedIncrementalDecode`: set by a successful start, cleared by a rewind.
+    started_incremental_decode: bool,
 }
 
 impl std::fmt::Debug for CodecBase<'_> {
@@ -237,6 +239,8 @@ impl<'a> CodecBase<'a> {
             return true;
         }
         self.curr_scanline = -1;
+        // startIncrementalDecode will need to be called before incrementalDecode.
+        self.started_incremental_decode = false;
         imp.on_rewind(self)
     }
 
@@ -744,6 +748,7 @@ impl<'a> Codec<'a> {
                 dst_is_src_profile: false,
                 dst_xform_format: None,
                 dst_xform_alpha_format: AlphaFormat::Unpremul,
+                started_incremental_decode: false,
             },
             imp,
         }
@@ -1295,32 +1300,35 @@ impl<'a> Codec<'a> {
         result
     }
 
-    /// Port of `SkCodec::startIncrementalDecode`: starts decoding into `dst`, which must stay
-    /// valid and be passed to every [`IncrementalDecode::incremental_decode`] call. Returns a guard
-    /// on success, or the `Result` that stopped the start.
+    /// Port of `SkCodec::startIncrementalDecode`: prepares to decode into `dst` in parts.
+    ///
+    /// The destination is only borrowed for this call, so the decode keeps no reference to it:
+    /// every [`Codec::incremental_decode`] call takes the destination again, and other calls
+    /// (such as [`Codec::frame_infos`] or [`Codec::get_pixels`]) may run between those calls.
+    /// Like `SkCodec`, [`Codec::get_pixels`] and a rewind end the started decode.
     ///
     /// # Errors
     /// The `Result` that stopped the start: `Unimplemented` for a codec without incremental
     /// decoding, `InvalidParameters` for a bad subset or destination, and the frame, scale or
     /// decoder failure otherwise.
-    // Port of: src/codec/SkCodec.cpp#L618-L671 (chrome/m156), with the destination held by the
-    // returned guard rather than by the codec
+    // Port of: src/codec/SkCodec.cpp#L618-L671 (chrome/m156)
     #[doc(alias = "startIncrementalDecode")]
-    pub fn start_incremental_decode<'c, 'd>(
-        &'c mut self,
+    pub fn start_incremental_decode(
+        &mut self,
         info: &ImageInfo,
-        dst: &'d mut [u8],
+        dst: &mut [u8],
         row_bytes: usize,
         options: Option<&Options>,
-    ) -> std::result::Result<IncrementalDecode<'c, 'a, 'd>, Result> {
+    ) -> Result {
+        self.base.started_incremental_decode = false;
         if !self.imp.on_supports_incremental_decode(info) {
-            return Err(Result::Unimplemented);
+            return Result::Unimplemented;
         }
         if info.color_type() == ColorType::Unknown {
-            return Err(Result::InvalidConversion);
+            return Result::InvalidConversion;
         }
         if dst.is_empty() {
-            return Err(Result::InvalidParameters);
+            return Result::InvalidParameters;
         }
 
         let default_options = Options::default();
@@ -1328,22 +1336,22 @@ impl<'a> Codec<'a> {
         if let Some(subset) = options.subset {
             let size = IRect::from_wh(info.width(), info.height());
             if !size.contains(&subset) {
-                return Err(Result::InvalidParameters);
+                return Result::InvalidParameters;
             }
             let top = subset.top();
             let bottom = subset.bottom();
             if top < 0 || top >= info.height() || top >= bottom || bottom > info.height() {
-                return Err(Result::InvalidParameters);
+                return Result::InvalidParameters;
             }
         }
 
         let frame_index_result = self.handle_frame_index(info, &mut *dst, row_bytes, options);
         if frame_index_result != Result::Success {
-            return Err(frame_index_result);
+            return frame_index_result;
         }
 
         if !self.dimensions_supported(info.dimensions()) {
-            return Err(Result::InvalidScale);
+            return Result::InvalidScale;
         }
 
         self.base.dst_info = info.clone();
@@ -1351,15 +1359,42 @@ impl<'a> Codec<'a> {
         let result =
             self.imp
                 .on_start_incremental_decode(&mut self.base, info, dst, row_bytes, options);
-        if result == Result::Success {
-            Ok(IncrementalDecode {
-                codec: self,
-                dst,
-                row_bytes,
-            })
+        self.base.started_incremental_decode = result == Result::Success;
+        result
+    }
+
+    /// Port of `SkCodec::incrementalDecode`: decodes as much of the started decode as the input
+    /// allows into `dst`, which must be the destination given to
+    /// [`Codec::start_incremental_decode`].
+    ///
+    /// Returns the result and, only for [`Result::IncompleteInput`], the number of rows written.
+    /// `Success` means every requested row is decoded. `IncompleteInput` means the decode may be
+    /// resumed once more input is available. Without a started decode the result is
+    /// `InvalidParameters`.
+    // Port of: include/codec/SkCodec.h#L521-L526 (incrementalDecode)
+    #[doc(alias = "incrementalDecode")]
+    pub fn incremental_decode(&mut self, dst: &mut [u8]) -> (Result, Option<usize>) {
+        let (result, rows_decoded) = self.incremental_decode_rows(dst);
+        let rows = if result == Result::IncompleteInput {
+            usize::try_from(rows_decoded).ok()
         } else {
-            Err(result)
+            None
+        };
+        (result, rows)
+    }
+
+    /// Port of `SkCodec::incrementalDecode` with the rows as `int`, for the codecs that drive it
+    /// (sampled and ICO decodes need the count for filling).
+    // Port of: include/codec/SkCodec.h#L521-L526 (incrementalDecode)
+    pub(crate) fn incremental_decode_rows(&mut self, dst: &mut [u8]) -> (Result, i32) {
+        if !self.base.started_incremental_decode {
+            return (Result::InvalidParameters, 0);
         }
+        let mut rows_decoded = 0;
+        let result = self
+            .imp
+            .on_incremental_decode(&mut self.base, dst, &mut rows_decoded);
+        (result, rows_decoded)
     }
 
     /// Port of the `onSupportsIncrementalDecode` virtual, for a codec that wraps this one (the ICO
@@ -1367,17 +1402,6 @@ impl<'a> Codec<'a> {
     // Port of: src/codec/SkCodec.h (onSupportsIncrementalDecode, called on an embedded codec)
     pub(crate) fn supports_incremental_decode_imp(&self, dst: &ImageInfo) -> bool {
         self.imp.on_supports_incremental_decode(dst)
-    }
-
-    /// Port of `SkCodec::incrementalDecode` for a codec that wraps this one: decodes the next rows
-    /// into `dst`, which must be the destination of the start call.
-    // Port of: src/codec/SkCodec.cpp (incrementalDecode), without the started-decode bookkeeping
-    pub(crate) fn incremental_decode_imp(&mut self, dst: &mut [u8]) -> (Result, i32) {
-        let mut rows_decoded = 0;
-        let result = self
-            .imp
-            .on_incremental_decode(&mut self.base, dst, &mut rows_decoded);
-        (result, rows_decoded)
     }
 
     /// Port of `SkCodec::fillIncompleteImage`: writes zeros over the rows a decode did not
@@ -1456,56 +1480,6 @@ impl<'a> Codec<'a> {
         } else {
             Err(Result::Unimplemented)
         }
-    }
-}
-
-/// An incremental decode in progress: the codec and the destination it writes into. Port of the
-/// state `SkCodec` keeps between `startIncrementalDecode` and `incrementalDecode`.
-#[must_use]
-#[derive(Debug)]
-pub struct IncrementalDecode<'c, 'a, 'd> {
-    codec: &'c mut Codec<'a>,
-    dst: &'d mut [u8],
-    row_bytes: usize,
-}
-
-impl IncrementalDecode<'_, '_, '_> {
-    /// Port of `SkCodec::getSampler(true)` during an incremental decode: the sampler the decode
-    /// writes through.
-    pub(crate) fn sampler(&mut self) -> Option<&mut dyn Sampler> {
-        self.codec.get_sampler(true)
-    }
-
-    /// Port of `SkCodec::fillIncompleteImage` for the destination of this decode.
-    pub(crate) fn fill_incomplete_image(
-        &mut self,
-        info: &ImageInfo,
-        zero_init: ZeroInitialized,
-        lines_requested: i32,
-        lines_decoded: i32,
-    ) {
-        let row_bytes = self.row_bytes;
-        self.codec.fill_incomplete_image(
-            info,
-            &mut *self.dst,
-            row_bytes,
-            zero_init,
-            lines_requested,
-            lines_decoded,
-        );
-    }
-
-    /// Port of `SkCodec::incrementalDecode`. Returns the result and the number of rows written
-    /// into the destination so far. `Success` means every requested row is decoded. An
-    /// `IncompleteInput` result means the decode may be resumed once more input is available.
-    // Port of: src/codec/SkCodec.cpp (incrementalDecode, inline in include/codec/SkCodec.h#L521-L526)
-    pub fn incremental_decode(&mut self) -> (Result, i32) {
-        let mut rows_decoded = 0;
-        let codec = &mut *self.codec;
-        let result = codec
-            .imp
-            .on_incremental_decode(&mut codec.base, self.dst, &mut rows_decoded);
-        (result, rows_decoded)
     }
 }
 

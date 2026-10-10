@@ -78,6 +78,11 @@ impl HaltingStream {
     pub(crate) fn add_new_data(&self, extra: usize) {
         self.with(|s| s.limit = s.total_size.min(s.limit + extra));
     }
+
+    // Port of: HaltingStream::isAllDataReceived
+    pub(crate) fn is_all_data_received(&self) -> bool {
+        self.with(|s| s.limit == s.total_size)
+    }
 }
 
 impl Stream for HaltingStream {
@@ -220,27 +225,23 @@ def_test!(Codec_partialAnim, |r| {
             frame_index: i32::try_from(i).unwrap_or(i32::MAX),
             ..Options::default()
         };
-        match partial_codec.start_incremental_decode(&info, &mut frame.data, row_bytes, Some(&opts))
-        {
-            Ok(mut incremental) => {
-                let (result, _) = incremental.incremental_decode();
-                reporter_assert!(r, result == Result::IncompleteInput);
-                halting.add_new_data(second_half);
-                let (result, _) = incremental.incremental_decode();
-                reporter_assert!(r, result == Result::Success);
-            }
-            Err(result) => {
-                // The C++ returns here after reporting the failure to start.
-                errorf!(
-                    r,
-                    "Failed to start incremental decode for {} on frame {} with {}",
-                    path,
-                    i,
-                    result.as_str()
-                );
-                return;
-            }
+        let start_result =
+            partial_codec.start_incremental_decode(&info, &mut frame.data, row_bytes, Some(&opts));
+        if start_result != Result::Success {
+            errorf!(
+                r,
+                "Failed to start incremental decode for {} on frame {} with {}",
+                path,
+                i,
+                start_result.as_str()
+            );
+            return;
         }
+        let (result, _) = partial_codec.incremental_decode(&mut frame.data);
+        reporter_assert!(r, result == Result::IncompleteInput);
+        halting.add_new_data(second_half);
+        let (result, _) = partial_codec.incremental_decode(&mut frame.data);
+        reporter_assert!(r, result == Result::Success);
         let frame_info = partial_codec.frame_infos();
         reporter_assert!(r, frame_info.len() == i + 1);
         reporter_assert!(r, frame_info[i].fully_received);
@@ -343,16 +344,16 @@ def_test!(Codec_GifPreMap, |r| {
     if let Ok(mut codec) = codec {
         let mut bm = Pixels::alloc(&info);
         let row_bytes = bm.row_bytes;
-        match codec.start_incremental_decode(&info, &mut bm.data, row_bytes, None) {
-            Ok(mut incremental) => {
-                // Note that this is incrementalDecode, not startIncrementalDecode.
-                let (result, _) = incremental.incremental_decode();
-                reporter_assert!(r, result == Result::IncompleteInput);
-                halting.add_new_data(data.len());
-                let (result, _) = incremental.incremental_decode();
-                reporter_assert!(r, result == Result::Success);
-            }
-            Err(result) => reporter_assert!(r, result == Result::Success),
+        let start_result = codec.start_incremental_decode(&info, &mut bm.data, row_bytes, None);
+        if start_result == Result::Success {
+            // Note that this is incrementalDecode, not startIncrementalDecode.
+            let (result, _) = codec.incremental_decode(&mut bm.data);
+            reporter_assert!(r, result == Result::IncompleteInput);
+            halting.add_new_data(data.len());
+            let (result, _) = codec.incremental_decode(&mut bm.data);
+            reporter_assert!(r, result == Result::Success);
+        } else {
+            reporter_assert!(r, start_result == Result::Success);
         }
         compare_bitmaps(r, &truth, &bm);
     }
@@ -394,6 +395,167 @@ def_test!(Codec_incomplete, |r| {
             len += 5;
         }
     }
+});
+
+// Port of: tests/CodecPartialTest.cpp#L43-L51 (chrome/m156), create_truth: the full decode of
+// `data`, in the standard info, against which the partial decodes are compared.
+fn create_truth(data: &[u8]) -> Option<Pixels> {
+    let mut codec = codecs::make_codec_from_stream(MemoryStream::make_copy(data)).ok()?;
+    let info = standardize_info(&codec);
+    let mut dst = Pixels::alloc(&info);
+    let row_bytes = dst.row_bytes;
+    (codec.get_pixels(&info, &mut dst.data, row_bytes, None) == Result::Success).then_some(dst)
+}
+
+// Port of: tests/CodecPartialTest.cpp#L64-L122 (chrome/m156), the test_partial overload that
+// takes the file's bytes: the stream halts at `min_bytes`, and grows by `increment` bytes each
+// time the decode needs more input. `getFrameCount` runs between the incremental decodes, as
+// Chromium does before it resumes a decode.
+fn test_partial(r: &mut Reporter, name: &str, file: &[u8], min_bytes: usize, increment: usize) {
+    let Some(truth) = create_truth(file) else {
+        errorf!(r, "Failed to decode {}\n", name);
+        return;
+    };
+
+    // Now decode part of the file. The stream is kept, as the C++ test holds on to a pointer to
+    // it, so the test can add data while the codec owns it.
+    let stream = HaltingStream::new(file, min_bytes);
+    let Ok(mut partial_codec) = codecs::make_codec_from_stream(Box::new(stream.clone())) else {
+        errorf!(
+            r,
+            "Failed to create codec for {} with {} bytes",
+            name,
+            min_bytes
+        );
+        return;
+    };
+
+    let info = standardize_info(&partial_codec);
+    let mut incremental = Pixels::alloc(&info);
+    let row_bytes = incremental.row_bytes;
+
+    loop {
+        let start_result =
+            partial_codec.start_incremental_decode(&info, &mut incremental.data, row_bytes, None);
+        if start_result == Result::Success {
+            break;
+        }
+        if stream.is_all_data_received() {
+            errorf!(r, "Failed to start incremental decode\n");
+            return;
+        }
+        stream.add_new_data(increment);
+    }
+
+    loop {
+        // This imitates how Chromium calls getFrameCount before resuming a decode.
+        partial_codec.get_frame_count();
+
+        let (result, _) = partial_codec.incremental_decode(&mut incremental.data);
+        if result == Result::Success {
+            break;
+        }
+
+        reporter_assert!(r, result == Result::IncompleteInput);
+
+        if stream.is_all_data_received() {
+            errorf!(r, "Failed to completely decode {}", name);
+            return;
+        }
+
+        stream.add_new_data(increment);
+    }
+
+    // compare to original
+    compare_bitmaps(r, &truth, &incremental);
+}
+
+// This size is arbitrary, but deliberately different from the buffer size used by SkPngCodec.
+// Port of: tests/CodecPartialTest.cpp#L92-L97 (chrome/m156), kIncrement
+const PARTIAL_INCREMENT: usize = 1000;
+
+// Port of: tests/CodecPartialTest.cpp#L92-L97 (chrome/m156), the test_partial overload that
+// reads a resource, with the increment of 1000 bytes the C++ test uses for it. A file the
+// resource tree does not have is skipped, as in C++.
+fn test_partial_resource(r: &mut Reporter, name: &str, min_bytes: usize) {
+    let file = skip_missing_resource!(get_resource_as_data(name), name);
+    test_partial(
+        r,
+        name,
+        &file,
+        (file.len() / 2).max(min_bytes),
+        PARTIAL_INCREMENT,
+    );
+}
+
+// Port of: tests/CodecPartialTest.cpp#L139-L157 (chrome/m156)
+def_test!(Codec_partial, |r| {
+    test_partial_resource(r, "images/box.gif", 0);
+    test_partial_resource(r, "images/randPixels.gif", 215);
+    test_partial_resource(r, "images/color_wheel.gif", 0);
+});
+
+// Port of: tests/CodecPartialTest.cpp#L159-L172 (chrome/m156)
+def_test!(Codec_partialWuffs, |r| {
+    let path = "images/alphabetAnim.gif";
+    let Some(file) = get_resource_as_data(path) else {
+        errorf!(r, "missing {}", path);
+        return;
+    };
+    // This is the end of the first frame. SkCodec will treat this as a single frame gif.
+    let Some(first_frame) = file.get(..153) else {
+        errorf!(r, "{} is shorter than its first frame", path);
+        return;
+    };
+    // Start with 100 to get a partial decode, then add the rest of the first frame to decode a
+    // full image.
+    test_partial(r, path, first_frame, 100, 53);
+});
+
+// Test that calling getPixels when an incremental decode has been started (but not finished)
+// makes the next call to incrementalDecode require a call to startIncrementalDecode.
+// Port of: tests/CodecPartialTest.cpp#L331-L366 (chrome/m156), test_interleaved
+fn test_interleaved(r: &mut Reporter, name: &str) {
+    let Some(file) = get_resource_as_data(name) else {
+        return;
+    };
+    let half_size = file.len() / 2;
+    let Ok(mut partial_codec) =
+        codecs::make_codec_from_stream(Box::new(HaltingStream::new(&file, half_size)))
+    else {
+        errorf!(r, "Failed to create codec for {}", name);
+        return;
+    };
+
+    let info = standardize_info(&partial_codec);
+    let mut incremental = Pixels::alloc(&info);
+    let row_bytes = incremental.row_bytes;
+
+    let start_result =
+        partial_codec.start_incremental_decode(&info, &mut incremental.data, row_bytes, None);
+    if start_result != Result::Success {
+        errorf!(r, "Failed to start incremental decode\n");
+        return;
+    }
+
+    let (result, _) = partial_codec.incremental_decode(&mut incremental.data);
+    reporter_assert!(r, result == Result::IncompleteInput);
+
+    let mut full = Pixels::alloc(&info);
+    let full_row_bytes = full.row_bytes;
+    let result = partial_codec.get_pixels(&info, &mut full.data, full_row_bytes, None);
+    reporter_assert!(r, result == Result::IncompleteInput);
+
+    // Now incremental decode will fail
+    let (result, _) = partial_codec.incremental_decode(&mut incremental.data);
+    reporter_assert!(r, result == Result::InvalidParameters);
+}
+
+// Port of: tests/CodecPartialTest.cpp#L368-L372 (chrome/m156)
+def_test!(Codec_rewind, |r| {
+    test_interleaved(r, "images/plane.png");
+    test_interleaved(r, "images/plane_interlaced.png");
+    test_interleaved(r, "images/box.gif");
 });
 
 // Port of: tests/CodecPartialTest.cpp#L377-L396 (gNoGlobalColorMap), the data of Codec_GifPreMap.

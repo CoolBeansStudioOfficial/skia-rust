@@ -4,10 +4,9 @@
 // Port of: tests/ImageTest.cpp (chrome/m156)
 //
 // Not ported (what the Rust port does not have, or cannot express):
-// * `ImageEncode`, `image_subset_encode_skbug_7752`,
-//   `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: every one of them
-//   makes `create_codec_image()` or encodes a PNG (`SkPngEncoder`, `DeferredFromEncodedData`),
-//   which is not ported.
+// * `ImageScalePixels`, `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: each of them
+//   makes `create_codec_image()` (SkPngEncoder + DeferredFromEncodedData) in its last case, and
+//   the rest of the test has not been ported yet.
 // * `Image_ColorSpace`, `Image_nonfinite_dst`: decode image resources
 //   (png, jpg, webp) or make a lazy picture image (`DeferredFromPicture`), and the last two need
 //   `ToolUtils::PixelIter`/`any_image_will_do` helpers that are not ported yet.
@@ -15,16 +14,18 @@
 
 #![cfg(test)]
 
+use skia_rust_codec::encode::png_encoder;
 use skia_rust_codec::image_generator_from_encoded::make_from_encoded;
 use skia_rust_codec::images::deferred_from_encoded_data;
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_priv::pack_argb32;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
-use skia_rust_core::image::Image;
+use skia_rust_core::image::{Image, RequiredProperties};
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
 use skia_rust_core::image_info::ImageInfo;
@@ -35,7 +36,7 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
-use skia_rust_core::rect::Rect;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_raster::surfaces;
@@ -43,7 +44,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
-use crate::{Reporter, def_test, def_tier_test, reporter_assert, skip_missing_resource};
+use crate::tools::tool_utils::equal_pixels_image;
+use crate::{Reporter, def_test, def_tier_test, errorf, reporter_assert, skip_missing_resource};
 
 // Port of: tests/ImageTest.cpp#L702-L705 (chrome/m156)
 struct EmptyGenerator {
@@ -589,4 +591,148 @@ def_test!(image_roundtrip_encode, |reporter| {
     };
     reporter_assert!(reporter, img1.read_pixels_to_pixmap(&mut pm, (0, 0)));
     reporter_assert!(reporter, equal(&bm0, &bm1));
+});
+
+// Port of: tests/ImageTest.cpp#L132-L136 (chrome/m156), draw_image_test_pattern: a white canvas
+// with a black square at (5, 5) of 10 by 10.
+fn draw_image_test_pattern(canvas: &Canvas) {
+    canvas.clear(Color::WHITE);
+    let mut paint = Paint::default();
+    paint.set_color(Color::BLACK);
+    canvas.draw_rect(Rect::from_xywh(5.0, 5.0, 10.0, 10.0), &paint);
+}
+
+// Port of: tests/ImageTest.cpp#L138-L143 (chrome/m156), create_image
+fn create_image() -> Option<Image> {
+    let info = ImageInfo::new_n32((20, 20), AlphaType::Opaque, None);
+    let mut surface = surfaces::raster(&info, None, None)?;
+    draw_image_test_pattern(surface.canvas());
+    surface.image_snapshot()
+}
+
+// Port of: tests/ImageTest.cpp#L87-L103 (chrome/m156), read_pixels_info: the N32 info of the
+// image's size and alpha type.
+fn read_pixels_info(image: &Image) -> ImageInfo {
+    ImageInfo::new_n32((image.width(), image.height()), image.alpha_type(), None)
+}
+
+// Port of: tests/ImageTest.cpp#L106-L130 (chrome/m156), assert_equal (dContextA is always null
+// here: there is no GPU backend). `b` is raster, so it can be read back.
+fn assert_equal(reporter: &mut Reporter, a: &Image, subset_a: Option<IRect>, b: &Image) {
+    let width_a = subset_a.map_or(a.width(), |s| s.width());
+    let height_a = subset_a.map_or(a.height(), |s| s.height());
+
+    reporter_assert!(reporter, width_a == b.width());
+    reporter_assert!(reporter, height_a == b.height());
+
+    // see skbug.com/40035123
+    //REPORTER_ASSERT(reporter, a->isOpaque() == b->isOpaque());
+
+    let info_a = read_pixels_info(a);
+    let info_b = read_pixels_info(b);
+    let row_bytes_a = info_a.min_row_bytes();
+    let row_bytes_b = info_b.min_row_bytes();
+    let mut pmap_a = vec![0u8; info_a.compute_byte_size(row_bytes_a)];
+    let mut pmap_b = vec![0u8; info_b.compute_byte_size(row_bytes_b)];
+
+    let (src_x, src_y) = subset_a.map_or((0, 0), |s| (s.x(), s.y()));
+
+    reporter_assert!(
+        reporter,
+        a.read_pixels(&info_a, &mut pmap_a, row_bytes_a, (src_x, src_y))
+    );
+    reporter_assert!(
+        reporter,
+        b.read_pixels(&info_b, &mut pmap_b, row_bytes_b, (0, 0))
+    );
+
+    let width_bytes = usize::try_from(width_a).unwrap_or(0) * 4;
+    for y in 0..usize::try_from(height_a).unwrap_or(0) {
+        // pmapA.addr32(0, y) and pmapB.addr32(0, y), compared over widthA pixels.
+        reporter_assert!(
+            reporter,
+            pmap_a[y * row_bytes_a..][..width_bytes] == pmap_b[y * row_bytes_b..][..width_bytes]
+        );
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L193-L209 (chrome/m156), test_encode with a null dContext
+fn test_encode(reporter: &mut Reporter, image: &Image) {
+    let ir = IRect::from_xywh(5, 5, 10, 10);
+    let Some(orig_encoded) = png_encoder::encode_image(image, &png_encoder::Options::default())
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(reporter, orig_encoded.size() > 0);
+
+    let Some(decoded) = deferred_from_encoded_data(Some(orig_encoded.clone()), None) else {
+        errorf!(reporter, "failed to decode image!");
+        return;
+    };
+    assert_equal(reporter, image, None, &decoded);
+
+    // Now see if we can instantiate an image from a subset of the surface/origEncoded
+    let Some(decoded) = deferred_from_encoded_data(Some(orig_encoded), None)
+        .and_then(|encoded| encoded.make_subset(ir, RequiredProperties::default()))
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    assert_equal(reporter, image, Some(ir), &decoded);
+}
+
+// Port of: tests/ImageTest.cpp#L211-L213 (chrome/m156), ImageEncode
+def_test!(ImageEncode, |reporter| {
+    let Some(image) = create_image() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    test_encode(reporter, &image);
+});
+
+// Port of: tests/ImageTest.cpp#L1687-L1700 (chrome/m156), image_subset_encode_skbug_7752
+def_test!(image_subset_encode_skbug_7752, |reporter| {
+    let path = "images/mandrill_128.png";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let Some(image) = deferred_from_encoded_data(Some(Data::new_from_vec(data)), None) else {
+        errorf!(reporter, "failed to decode {}", path);
+        return;
+    };
+    let w = image.width();
+    let h = image.height();
+
+    // Port of the check_roundtrip lambda.
+    let check_roundtrip = |reporter: &mut Reporter, img: &Image| {
+        let encoded = png_encoder::encode_image(img, &png_encoder::Options::default());
+        let Some(img2) = deferred_from_encoded_data(encoded, None) else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        reporter_assert!(reporter, equal_pixels_image(img, &img2));
+    };
+    check_roundtrip(reporter, &image); // should trivially pass
+    let Some(subset) = image.make_subset(
+        IRect::from_ltrb(0, 0, w / 2, h / 2),
+        RequiredProperties::default(),
+    ) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    check_roundtrip(reporter, &subset);
+    let Some(subset) = image.make_subset(
+        IRect::from_ltrb(w / 2, h / 2, w, h),
+        RequiredProperties::default(),
+    ) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    check_roundtrip(reporter, &subset);
+    let Some(linear) =
+        image.make_color_space(ColorSpace::new_srgb_linear(), RequiredProperties::default())
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    check_roundtrip(reporter, &linear);
 });
