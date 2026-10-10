@@ -51,9 +51,12 @@ fn unhex(s: &str) -> Vec<u8> {
 
 #[test]
 fn matches_expat() {
-    let path = std::env::var("XML_EXPAT_CORPUS")
-        .unwrap_or_else(|_| format!("{}/tests/data/expat_corpus.txt", env!("CARGO_MANIFEST_DIR")));
-    let corpus = std::fs::read_to_string(&path).expect("corpus");
+    // The committed corpus is compiled in (no file access on wasm); a path in the environment
+    // runs another one.
+    let corpus = match std::env::var("XML_EXPAT_CORPUS") {
+        Ok(path) => std::fs::read_to_string(path).expect("corpus"),
+        Err(_) => include_str!("data/expat_corpus.txt").to_owned(),
+    };
     let max_fail: usize = std::env::var("XML_EXPAT_MAX_FAIL")
         .ok()
         .and_then(|v| v.parse().ok())
