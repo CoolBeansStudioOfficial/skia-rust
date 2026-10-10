@@ -30272,8 +30272,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
-status = "todo"
-reason = "test_partial (CodecPartialTest.cpp#L76-L137) calls getFrameCount between incremental decodes; the Rust incremental-decode guard (codec.rs IncrementalDecode) borrows the codec, so that call cannot run while a decode is in progress. Needs an API decision on the guard (docs/design/codecs.md 5.1)"
+status = "passing"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -30291,8 +30290,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L159-L172"
 module = "codec"
-status = "todo"
-reason = "test_partial calls getFrameCount between incremental decodes, which the incremental-decode guard borrow forbids (see Codec_partial)"
+status = "passing"
 span_hash = "951edd5d75ba3e18683915cee77e015b6411e6149dd3713a237b43a4771e8f34"
 
 [[test]]
@@ -30310,8 +30308,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L368-L372"
 module = "codec"
-status = "todo"
-reason = "test_interleaved calls getPixels while an incremental decode is in progress and expects incrementalDecode to then fail with kInvalidParameters; the incremental-decode guard borrows the codec, so getPixels cannot run in between (see Codec_partial)"
+status = "passing"
 span_hash = "8aa8cb62cb4b05d26c475f5f4e1b61af99a8fe942d293becf36f5a10088c818d"
 
 [[test]]

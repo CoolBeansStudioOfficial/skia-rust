@@ -176,14 +176,12 @@ fn every_png_resource_decodes_without_panicking() {
                 .expect("a codec for the whole file");
             // A decode that the one-shot path rejects at setup (for example a palette without a
             // PLTE chunk) is rejected by the start call too.
-            let incremental_result = match codec.start_incremental_decode(
-                &info,
-                &mut incremental_pixels,
-                row_bytes,
-                None,
-            ) {
-                Ok(mut guard) => guard.incremental_decode().0,
-                Err(start_result) => start_result,
+            let start_result =
+                codec.start_incremental_decode(&info, &mut incremental_pixels, row_bytes, None);
+            let incremental_result = if start_result == Result::Success {
+                codec.incremental_decode(&mut incremental_pixels).0
+            } else {
+                start_result
             };
             assert_eq!(
                 incremental_result,

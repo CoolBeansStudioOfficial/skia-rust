@@ -154,14 +154,16 @@ pub(crate) fn on_get_android_pixels(
             row_bytes,
             Some(&subset_options.base),
         ) {
-            Ok(mut decode) => {
-                let (inc_result, rows_decoded) = decode.incremental_decode();
+            Result::Success => {
+                let (inc_result, rows_decoded) = this.codec.incremental_decode_rows(pixels);
                 if inc_result == Result::Success {
                     return Result::Success;
                 }
                 if inc_result == Result::IncompleteInput || inc_result == Result::ErrorInInput {
-                    decode.fill_incomplete_image(
+                    this.codec.fill_incomplete_image(
                         &scaled_info,
+                        pixels,
+                        row_bytes,
                         options.base.zero_initialized,
                         scaled_subset_height,
                         rows_decoded,
@@ -169,11 +171,11 @@ pub(crate) fn on_get_android_pixels(
                 }
                 return inc_result;
             }
-            Err(Result::Unimplemented) => {
+            Result::Unimplemented => {
                 // Otherwise fall down to use the old scanline decoder. subset_options.subset is
                 // reset below, so it will not continue to point to the object that is gone.
             }
-            Err(start_result) => return start_result,
+            start_result => return start_result,
         }
     }
 
@@ -285,8 +287,8 @@ fn sampled_decode(
             row_bytes,
             Some(&incremental_options.base),
         ) {
-            Ok(mut decode) => {
-                let Some(sampler_ref) = decode.sampler() else {
+            Result::Success => {
+                let Some(sampler_ref) = this.codec.get_sampler(true) else {
                     return Result::Unimplemented;
                 };
                 if sampler_ref.set_sample_x(sample_x) != info.width() {
@@ -297,14 +299,16 @@ fn sampled_decode(
                 }
                 sampler_ref.set_sample_y(sample_y);
 
-                let (inc_result, rows_decoded) = decode.incremental_decode();
+                let (inc_result, rows_decoded) = this.codec.incremental_decode_rows(pixels);
                 if inc_result == Result::Success {
                     return Result::Success;
                 }
                 if inc_result == Result::IncompleteInput || inc_result == Result::ErrorInInput {
                     debug_assert!(rows_decoded <= info.height());
-                    decode.fill_incomplete_image(
+                    this.codec.fill_incomplete_image(
                         info,
+                        pixels,
+                        row_bytes,
                         options.base.zero_initialized,
                         info.height(),
                         rows_decoded,
@@ -312,12 +316,12 @@ fn sampled_decode(
                 }
                 return inc_result;
             }
-            Err(Result::IncompleteInput | Result::ErrorInInput) => {
+            Result::IncompleteInput | Result::ErrorInInput => {
                 return Result::InvalidInput;
             }
             // For Unimplemented we fall back to the scanline decoder.
-            Err(Result::Unimplemented) => {}
-            Err(start_result) => return start_result,
+            Result::Unimplemented => {}
+            start_result => return start_result,
         }
     }
 

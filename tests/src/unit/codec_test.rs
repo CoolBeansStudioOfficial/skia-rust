@@ -165,12 +165,12 @@ fn test_incremental_decode(
 ) {
     let mut bm = Pixels::alloc(info);
     let row_bytes = bm.row_bytes;
-    match codec.start_incremental_decode(info, &mut bm.data, row_bytes, None) {
-        Ok(mut decode) => {
-            let (result, _) = decode.incremental_decode();
-            reporter_assert!(reporter, result == Result::Success);
-        }
-        Err(result) => reporter_assert!(reporter, result == Result::Success),
+    let result = codec.start_incremental_decode(info, &mut bm.data, row_bytes, None);
+    if result == Result::Success {
+        let (result, _) = codec.incremental_decode(&mut bm.data);
+        reporter_assert!(reporter, result == Result::Success);
+    } else {
+        reporter_assert!(reporter, result == Result::Success);
     }
     compare_to_good_digest(reporter, good_digest, &bm);
 }
@@ -207,31 +207,28 @@ fn test_in_stripes(
             };
             let offset = bm.row_offset(y);
             let row_bytes = bm.row_bytes;
-            match codec.start_incremental_decode(
+            let start_result = codec.start_incremental_decode(
                 info,
                 &mut bm.data[offset..],
                 row_bytes,
                 Some(&options),
-            ) {
-                Err(_) => {
-                    errorf!(
-                        reporter,
-                        "failed to start incremental decode!\ttop: {}\tbottom{}",
-                        subset.top(),
-                        subset.bottom()
-                    );
-                    return;
-                }
-                Ok(mut decode) => {
-                    if decode.incremental_decode().0 != Result::Success {
-                        errorf!(
-                            reporter,
-                            "failed incremental decode starting from line {}",
-                            y
-                        );
-                        return;
-                    }
-                }
+            );
+            if start_result != Result::Success {
+                errorf!(
+                    reporter,
+                    "failed to start incremental decode!\ttop: {}\tbottom{}",
+                    subset.top(),
+                    subset.bottom()
+                );
+                return;
+            }
+            if codec.incremental_decode(&mut bm.data[offset..]).0 != Result::Success {
+                errorf!(
+                    reporter,
+                    "failed incremental decode starting from line {}",
+                    y
+                );
+                return;
             }
             y += 2 * stripe_height;
         }
@@ -910,16 +907,15 @@ def_test!(Codec_rowsDecoded, |r| {
     let info = codec.info().with_color_type(ColorType::N32);
     let row_bytes = info.min_row_bytes();
     let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
-    let Ok(mut incremental) = codec.start_incremental_decode(&info, &mut pixels, row_bytes, None)
-    else {
+    if codec.start_incremental_decode(&info, &mut pixels, row_bytes, None) != Result::Success {
         reporter_assert!(r, false);
         return;
-    };
+    }
     // The rows decoded are reported from zero, which is the value the C++ test checks for after
     // an arbitrary starting value.
-    let (result, rows_decoded) = incremental.incremental_decode();
+    let (result, rows_decoded) = codec.incremental_decode(&mut pixels);
     reporter_assert!(r, result == Result::IncompleteInput);
-    reporter_assert!(r, rows_decoded == 0);
+    reporter_assert!(r, rows_decoded == Some(0));
 });
 
 // Port of: tests/CodecTest.cpp#L1988-L1999 (chrome/m156)
@@ -2000,10 +1996,7 @@ fn test_conversion_possible(
             reporter_assert!(reporter, result == Result::Unimplemented);
         }
 
-        let result = match codec.start_incremental_decode(&info_f16, &mut bm, row_bytes, None) {
-            Ok(_) => Result::Success,
-            Err(result) => result,
-        };
+        let result = codec.start_incremental_decode(&info_f16, &mut bm, row_bytes, None);
         if supports_incremental_decoder {
             reporter_assert!(reporter, result == Result::Success);
         } else if pass == 0 {
@@ -2256,10 +2249,7 @@ def_test!(Codec_fallBack, |r| {
         let info = codec.info().with_color_type(ColorType::N32);
         let mut bm = Pixels::alloc(&info);
 
-        let result = match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, None) {
-            Ok(_) => Result::Success,
-            Err(result) => result,
-        };
+        let result = codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, None);
         if result != Result::Unimplemented {
             errorf!(r, "Is scanline decoding now implemented for {}?", file);
             continue;
@@ -2384,19 +2374,17 @@ def_test!(Codec_InvalidAnimated, |r| {
             },
             ..Options::default()
         };
-        match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, Some(&opts)) {
-            Err(result) => {
-                errorf!(
-                    r,
-                    "Failed to start decoding frame {} (out of {}) with error {}",
-                    index,
-                    frame_infos.len(),
-                    result.as_str()
-                );
-            }
-            Ok(mut incremental) => {
-                incremental.incremental_decode();
-            }
+        let result = codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, Some(&opts));
+        if result == Result::Success {
+            codec.incremental_decode(&mut bm.data);
+        } else {
+            errorf!(
+                r,
+                "Failed to start decoding frame {} (out of {}) with error {}",
+                index,
+                frame_infos.len(),
+                result.as_str()
+            );
         }
     }
 });
