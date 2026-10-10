@@ -30,7 +30,7 @@ use crate::graphite::unique_paint_params_id::UniquePaintParamsID;
 const CURRENT_VERSION: u32 = 3;
 
 // Port of: src/gpu/graphite/SerializationUtils.cpp#L25 (chrome/m156)
-const MAGIC: [u8; 8] = [b's', b'k', b'i', b'a', b'p', b'i', b'p', b'e'];
+const MAGIC: [u8; 8] = *b"skiapipe";
 
 // Port of: src/gpu/graphite/SerializationUtils.cpp#L233 (chrome/m156), `SK_BLOB_END_TAG`
 const BLOB_END_TAG: u32 = set_four_byte_tag(b'e', b'n', b'd', b' ');
@@ -193,7 +193,7 @@ fn stream_is_pipeline(stream: &mut Reader<'_>) -> bool {
 fn serialize_graphics_pipeline_desc(
     shader_code_dictionary: &ShaderCodeDictionary,
     stream: &mut Writer,
-    pipeline_desc: &GraphicsPipelineDesc,
+    pipeline_desc: GraphicsPipelineDesc,
 ) -> bool {
     let key_data = shader_code_dictionary.lookup(pipeline_desc.paint_params_id());
     let key = PaintParamsKey::new(&key_data);
@@ -249,8 +249,10 @@ fn deserialize_graphics_pipeline_desc(
             return false;
         };
         let key_data: Vec<i32> = bytes
-            .chunks_exact(4)
-            .map(|chunk| i32::from_ne_bytes(chunk.try_into().unwrap_or([0; 4])))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|chunk| i32::from_ne_bytes(*chunk))
             .collect();
 
         let ppk = PaintParamsKey::new(&key_data);
@@ -297,7 +299,7 @@ fn block_contains_ext_format(
         }
 
         let data_length = PaintParamsKey::encode_data_size(data_length_encoded);
-        debug_assert!(data_length >= 0 && data_length <= PaintParamsKey::EMBEDDED_DATA_SIZE_LIMIT);
+        debug_assert!((0..=PaintParamsKey::EMBEDDED_DATA_SIZE_LIMIT).contains(&data_length));
         // `data_length` is non-negative here: `encode_data_size` maps the negative encoding back.
         let data_bytes = usize::try_from(data_length).unwrap_or(0) * 4;
         if stream.position() + data_bytes > stream.length() {
@@ -377,7 +379,7 @@ fn graphics_pipeline_desc_contains_ext_format(
 }
 
 // Port of: src/gpu/graphite/SerializationUtils.cpp#L202-L209 (chrome/m156)
-fn serialize_attachment_desc(stream: &mut Writer, attachment_desc: &AttachmentDesc) {
+fn serialize_attachment_desc(stream: &mut Writer, attachment_desc: AttachmentDesc) {
     let tag = if attachment_desc.format == TextureFormat::Unsupported {
         set_four_byte_tag(TextureFormat::Unsupported as u8, 0, 0, 1)
     } else {
@@ -451,9 +453,9 @@ fn deserialize_attachment_desc(stream: &mut Reader<'_>) -> Option<AttachmentDesc
 
 // Port of: src/gpu/graphite/SerializationUtils.cpp#L240-L255 (chrome/m156)
 fn serialize_render_pass_desc(stream: &mut Writer, render_pass_desc: &RenderPassDesc) -> bool {
-    serialize_attachment_desc(stream, &render_pass_desc.color_attachment);
-    serialize_attachment_desc(stream, &render_pass_desc.color_resolve_attachment);
-    serialize_attachment_desc(stream, &render_pass_desc.depth_stencil_attachment);
+    serialize_attachment_desc(stream, render_pass_desc.color_attachment);
+    serialize_attachment_desc(stream, render_pass_desc.color_resolve_attachment);
+    serialize_attachment_desc(stream, render_pass_desc.depth_stencil_attachment);
 
     stream.write16(render_pass_desc.write_swizzle.as_key());
     stream.write8(render_pass_desc.sample_count as u8);
@@ -531,7 +533,7 @@ fn render_pass_contains_ext_format(
 fn serialize_pipeline_desc(
     shader_code_dictionary: &ShaderCodeDictionary,
     stream: &mut Writer,
-    pipeline_desc: &GraphicsPipelineDesc,
+    pipeline_desc: GraphicsPipelineDesc,
     render_pass_desc: &RenderPassDesc,
 ) -> bool {
     stream.write(&MAGIC);
@@ -628,7 +630,7 @@ pub fn pipeline_desc_to_data(
     if !serialize_pipeline_desc(
         shader_code_dictionary,
         &mut stream,
-        pipeline_desc,
+        *pipeline_desc,
         render_pass_desc,
     ) {
         return None;

@@ -407,14 +407,17 @@ fn reset_stable_keys(effects: &[RuntimeEffect]) {
 #[ignore = "needs a real adapter in CI (lavapipe job)"]
 #[allow(non_snake_case)]
 fn UserDefinedStableKeyTest() {
+    // The number of user-defined stable keys (the PrecompileFactories effects).
+    const NUM_USER_DEFINED_STABLE_KEYS: usize = 7;
     let mut reporter = Reporter::new("UserDefinedStableKeyTest");
     let handler = PipelineCallBackHandler::new();
-    let mut new_options = ContextOptions::default();
-    new_options.pipeline_caching_callback = Some(handler.caching_callback());
+    let mut new_options = ContextOptions {
+        pipeline_caching_callback: Some(handler.caching_callback()),
+        ..ContextOptions::default()
+    };
 
     // We're going to also use all these runtime effects via the normal API
     // (c.f. create_paint_and_options)
-    const NUM_USER_DEFINED_STABLE_KEYS: usize = 7;
     let user_defined_known_runtime_effects = [
         get_annulus_shader_effect(),
         get_src_blender_effect(),
@@ -506,8 +509,10 @@ fn UserDefinedStableKeyTest() {
 fn UserDefinedStableKeyTest_Duplicates() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Duplicates");
     let handler = PipelineCallBackHandler::new();
-    let mut new_options = ContextOptions::default();
-    new_options.pipeline_caching_callback = Some(handler.caching_callback());
+    let mut new_options = ContextOptions {
+        pipeline_caching_callback: Some(handler.caching_callback()),
+        ..ContextOptions::default()
+    };
 
     let user_defined_known_runtime_effects =
         [get_annulus_shader_effect(), get_annulus_shader_effect()];
@@ -540,8 +545,10 @@ fn UserDefinedStableKeyTest_Duplicates() {
 fn UserDefinedStableKeyTest_Nullptrs() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Nullptrs");
     let handler = PipelineCallBackHandler::new();
-    let mut new_options = ContextOptions::default();
-    new_options.pipeline_caching_callback = Some(handler.caching_callback());
+    let mut new_options = ContextOptions {
+        pipeline_caching_callback: Some(handler.caching_callback()),
+        ..ContextOptions::default()
+    };
 
     let annulus = get_annulus_shader_effect();
     let src = get_src_blender_effect();
@@ -569,8 +576,10 @@ fn UserDefinedStableKeyTest_Nullptrs() {
 fn UserDefinedStableKeyTest_Overflow() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Overflow");
     let handler = PipelineCallBackHandler::new();
-    let mut new_options = ContextOptions::default();
-    new_options.pipeline_caching_callback = Some(handler.caching_callback());
+    let mut new_options = ContextOptions {
+        pipeline_caching_callback: Some(handler.caching_callback()),
+        ..ContextOptions::default()
+    };
 
     let count = 2 * USER_DEFINED_KNOWN_RUNTIME_EFFECTS_RESERVED_CNT;
     let mut user_defined_known_runtime_effects = Vec::new();

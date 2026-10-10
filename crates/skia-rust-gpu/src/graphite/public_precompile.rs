@@ -155,6 +155,9 @@ fn precompile_combinations(
 /// `render_pass_properties`.
 // Port of: src/gpu/graphite/PublicPrecompile.cpp#L89-L337 (chrome/m156)
 #[doc(alias = "Precompile")]
+// One-to-one with Skia's `Precompile()`, which is one function: the loops over the render passes
+// and the draw types stay together so that the order of the combinations matches Skia's.
+#[allow(clippy::too_many_lines)]
 pub fn precompile(
     precompile_context: &PrecompileContext,
     options: &PaintOptions,

@@ -6,7 +6,7 @@
 //! A caching-callback client: it collects the pipelines a context reports (their labels and, when
 //! they can be serialized, their Android-style keys), so that a test can recreate them later.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use skia_rust_core::data::Data;
 use skia_rust_gpu::graphite::context_options::{
@@ -73,7 +73,7 @@ impl PipelineCallBackHandler {
         from_precompile: bool,
         android_style_key: Option<Data>,
     ) {
-        let mut map = self.map.lock().unwrap_or_else(|e| e.into_inner());
+        let mut map = self.map.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(found) = map
             .iter_mut()
             .find(|d| d.unique_key_hash == unique_key_hash && d.label == label)
@@ -99,7 +99,7 @@ impl PipelineCallBackHandler {
     // Port of: tools/graphite/PipelineCallbackHandler.h#L49-L58 (chrome/m156)
     #[must_use]
     pub fn retrieve_keys(&self) -> Vec<Data> {
-        let map = self.map.lock().unwrap_or_else(|e| e.into_inner());
+        let map = self.map.lock().unwrap_or_else(PoisonError::into_inner);
         map.iter()
             .filter_map(|d| d.android_style_key.clone())
             .collect()
@@ -108,6 +108,9 @@ impl PipelineCallBackHandler {
     /// `reset()`: forgets every pipeline.
     // Port of: tools/graphite/PipelineCallbackHandler.h#L60-L64 (chrome/m156)
     pub fn reset(&self) {
-        self.map.lock().unwrap_or_else(|e| e.into_inner()).clear();
+        self.map
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clear();
     }
 }

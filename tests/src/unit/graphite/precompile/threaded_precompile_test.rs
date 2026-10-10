@@ -90,14 +90,15 @@ fn shuffle<T>(items: &mut [T]) {
     let mut state = std::collections::hash_map::RandomState::new().build_hasher();
     for i in (1..items.len()).rev() {
         state.write_usize(i);
-        let j = (state.finish() as usize) % (i + 1);
+        let bound = u64::try_from(i + 1).unwrap_or(u64::MAX);
+        let j = usize::try_from(state.finish() % bound).unwrap_or(0);
         items.swap(i, j);
     }
 }
 
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L201-L234 (chrome/m156), the
 // anonymous `precompile_gradients`
-fn precompile_gradients(precompile_context: PrecompileContext, permute: bool) {
+fn precompile_gradients(precompile_context: &PrecompileContext, permute: bool) {
     let mut combos = gradient_flavours();
     if permute {
         shuffle(&mut combos);
@@ -122,7 +123,7 @@ fn precompile_gradients(precompile_context: PrecompileContext, permute: bool) {
     for create_options in combos {
         let paint_options = create_options();
         precompile(
-            &precompile_context,
+            precompile_context,
             &paint_options,
             DrawTypeFlags::BITMAP_TEXT_MASK,
             std::slice::from_ref(&props),
@@ -132,7 +133,7 @@ fn precompile_gradients(precompile_context: PrecompileContext, permute: bool) {
 
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L236-L250 (chrome/m156), the
 // anonymous `purge_on_thread`
-fn purge_on_thread(precompile_context: PrecompileContext, keep_looping: &AtomicBool) {
+fn purge_on_thread(precompile_context: &PrecompileContext, keep_looping: &AtomicBool) {
     let sleep_duration = Duration::from_millis(1);
     while keep_looping.load(Ordering::Acquire) {
         thread::sleep(sleep_duration);
@@ -155,13 +156,13 @@ fn run_test(
         let precompile_context = context.make_precompile_context();
         let keep_purging = Arc::clone(&keep_purging);
         threads.push(thread::spawn(move || {
-            purge_on_thread(precompile_context, &keep_purging);
+            purge_on_thread(&precompile_context, &keep_purging);
         }));
     }
     for _ in 0..num_precompile_threads {
         let precompile_context = context.make_precompile_context();
         threads.push(thread::spawn(move || {
-            precompile_gradients(precompile_context, permute);
+            precompile_gradients(&precompile_context, permute);
         }));
     }
 

@@ -113,7 +113,7 @@ def_graphite_adapter_test_with_options!(
     PipelineManagerThreadedTest_1,
     |options| { threaded_options(options) },
     |reporter, context| {
-        run_test(reporter, context, /* precompile_first= */ true)
+        run_test(reporter, context, /* precompile_first= */ true);
     }
 );
 
@@ -122,7 +122,7 @@ def_graphite_adapter_test_with_options!(
     PipelineManagerThreadedTest_2,
     |options| { threaded_options(options) },
     |reporter, context| {
-        run_test(reporter, context, /* precompile_first= */ false)
+        run_test(reporter, context, /* precompile_first= */ false);
     }
 );
 
@@ -133,7 +133,7 @@ def_graphite_adapter_test_with_options!(
     PipelineManagerThreadedTest_3,
     |_options| {},
     |reporter, context| {
-        run_test(reporter, context, /* precompile_first= */ true)
+        run_test(reporter, context, /* precompile_first= */ true);
     }
 );
 
@@ -142,6 +142,6 @@ def_graphite_adapter_test_with_options!(
     PipelineManagerThreadedTest_4,
     |_options| {},
     |reporter, context| {
-        run_test(reporter, context, /* precompile_first= */ false)
+        run_test(reporter, context, /* precompile_first= */ false);
     }
 );
