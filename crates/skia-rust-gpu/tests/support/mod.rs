@@ -407,6 +407,18 @@ impl Caps for MockCaps {
         false
     }
 
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize {
+        2048 * 1024 * 4
+    }
+
+    fn min_distance_field_font_size(&self) -> f32 {
+        18.0
+    }
+
+    fn glyphs_as_paths_font_size(&self) -> f32 {
+        324.0
+    }
+
     fn set_backend_labels(&self) -> bool {
         false
     }

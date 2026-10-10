@@ -75,7 +75,7 @@ pub mod special_image;
 pub mod storage_context;
 pub mod surface_graphite;
 pub mod task;
-pub mod text_atlas_manager;
+pub mod text;
 pub mod texture;
 pub mod texture_format;
 pub mod texture_format_xfer_fn;

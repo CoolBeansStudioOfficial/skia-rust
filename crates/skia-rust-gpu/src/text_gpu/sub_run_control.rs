@@ -126,19 +126,14 @@ impl SubRunControl {
     /// `Caps::getSubRunControl(useSDFTForSmallText)`.
     // Port of: src/gpu/graphite/Caps.cpp#L415-L427 (chrome/m156)
     #[must_use]
-    pub fn from_caps(
-        caps: &dyn Caps,
-        min_distance_field_font_size: scalar,
-        glyphs_as_paths_font_size: scalar,
-        use_sdft_for_small_text: bool,
-    ) -> Self {
+    pub fn from_caps(caps: &dyn Caps, use_sdft_for_small_text: bool) -> Self {
         Self::new(
             // `supportsDistanceFieldText()` is `fShaderDerivativeSupport`.
             caps.shader_caps().shader_derivative_support,
             use_sdft_for_small_text,
             true, // ableToUsePerspectiveSDFT
-            min_distance_field_font_size,
-            glyphs_as_paths_font_size,
+            caps.min_distance_field_font_size(),
+            caps.glyphs_as_paths_font_size(),
             true, // forcePathAA
             caps.support_bilerp_from_glyph_atlas(),
         )
@@ -207,12 +202,7 @@ impl SubRunControl {
     /// size to the source space size, and the matrix range where this font can be reused.
     // Port of: src/text/gpu/SubRunControl.cpp#L88-L129 (chrome/m156)
     #[must_use]
-    pub fn get_sdf_font(
-        &self,
-        font: &Font,
-        view_matrix: &Matrix,
-        text_loc: Point,
-    ) -> SDFFont {
+    pub fn get_sdf_font(&self, font: &Font, view_matrix: &Matrix, text_loc: Point) -> SDFFont {
         let text_size = font.size();
         let mut scaled_text_size = approximate_transformed_text_size(font, view_matrix, text_loc);
         if scaled_text_size <= 0.0
@@ -313,7 +303,8 @@ mod tests {
         let control = control();
         let mut font = Font::default();
         font.set_size(100.0);
-        let (df_font, to_source, range) = control.get_sdf_font(&font, Matrix::i(), Point::new(0.0, 0.0));
+        let (df_font, to_source, range) =
+            control.get_sdf_font(&font, Matrix::i(), Point::new(0.0, 0.0));
         assert_eq!(df_font.size(), 162.0);
         assert_eq!(to_source, 100.0 / 162.0);
         assert!(range.matrix_in_range(Matrix::i()));
