@@ -858,6 +858,9 @@ impl WgpuCaps {
     fn finish_initialization(&mut self, options: &ContextOptions) {
         self.max_internal_sample_count = options.internal_multisample_count;
 
+        // `fOptionsPriv->fMaxTextureSizeOverride`
+        self.max_texture_size = self.max_texture_size.min(options.max_texture_size_override);
+
         self.glyph_cache_texture_maximum_bytes = options.glyph_cache_texture_maximum_bytes;
         self.min_msaa_path_size = options.minimum_path_size_for_msaa;
         self.requested_path_renderer_strategy = options.path_renderer_strategy;

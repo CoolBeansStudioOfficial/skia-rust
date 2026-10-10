@@ -28865,7 +28865,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/AtlasOobTest.cpp#L188-L206"
 module = "gpu"
 status = "todo"
-reason = "needs the text path (Slug, SkStrikeServer/Client remote glyph cache, SkTypeface_remote): G12b"
+reason = "needs the remote glyph cache (SkStrikeServer/Client, SkTypeface_remote, T23) and Slug deserialization; the GPU text path itself (G12b) is ported"
 span_hash = "872884cecb642129429263c6cbc8401f287f0901417123a4f91c5de1667099dc"
 
 [[test]]
@@ -31487,6 +31487,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/DirectMaskLimitTest.cpp#L109-L135"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with cargo test -p skia-rust-tests --lib -- --ignored"
 span_hash = "d60a7f6964eacd0370483139ae0ac08d14cbc95365f47669973a4ceb1ccd1271"
 
 [[test]]
