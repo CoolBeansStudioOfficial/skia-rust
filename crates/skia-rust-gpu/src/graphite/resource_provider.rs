@@ -15,7 +15,7 @@
 //! found or created by [`crate::graphite::shared_context::SharedContext::find_or_create_compute_pipeline`] (G11b); the shared flow
 //! ([`ResourceProvider::find_or_create_keyed`]) serves the resource kinds.
 
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use skia_rust_core::size::ISize;
 
@@ -23,6 +23,8 @@ use crate::gpu::gpu_types::{Budgeted, StdSteadyClockTimePoint};
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer::Buffer;
+use crate::graphite::compute_pipeline::ComputePipeline;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::resource::{ResourceObject, ResourceRef};
@@ -55,6 +57,14 @@ pub trait ResourceProviderBackend: Send {
         info: &TextureInfo,
         label: &str,
     ) -> Option<ResourceRef<Texture>>;
+
+    /// `findOrCreateComputePipeline()`'s shared-context half: the pipeline of a compute step from
+    /// the global cache, or created by the backend. A backend without compute pipelines returns
+    /// `None`, which fails the dispatch group that asked for it.
+    fn find_or_create_compute_pipeline(
+        &mut self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>>;
 
     /// `createBuffer()`.
     fn create_buffer(
@@ -342,6 +352,16 @@ impl ResourceProvider {
 
     /// `findOrCreateCompatibleSampler()`.
     // Port of: src/gpu/graphite/ResourceProvider.cpp#L125-L156 (chrome/m156)
+    /// `findOrCreateComputePipeline(pipelineDesc)`.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L44-L60 (chrome/m156)
+    #[doc(alias = "findOrCreateComputePipeline")]
+    pub fn find_or_create_compute_pipeline(
+        &mut self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        self.backend.find_or_create_compute_pipeline(pipeline_desc)
+    }
+
     #[doc(alias = "findOrCreateCompatibleSampler")]
     pub fn find_or_create_compatible_sampler(
         &mut self,

@@ -163,10 +163,13 @@ macro_rules! def_test {
 /// `docs/design/gpu.md` section 7). The body runs once, on
 /// [`tools::graphite_test_context::real_context`].
 ///
-/// The test is `#[ignore]`d, because CI has no adapter and an ignored test cannot be mistaken for
-/// a passing one by `cargo xtask inventory verify`; run it with `cargo test -p skia-rust-tests
-/// --lib -- --ignored <name>` on a machine with an adapter. Without one it says so and returns,
-/// unless `SKIA_RUST_REQUIRE_ADAPTER` is set.
+/// Without the `skia_rust_adapter_tests` cfg the test is `#[ignore]`d, because a machine without
+/// an adapter cannot run it, and an ignored test cannot be mistaken for a passing one by
+/// `cargo xtask inventory verify`. The Linux x64 CI jobs set the cfg (and
+/// `SKIA_RUST_REQUIRE_ADAPTER`) so lavapipe runs them. Elsewhere, run them with
+/// `RUSTFLAGS="--cfg skia_rust_adapter_tests" cargo test -p skia-rust-tests --lib` on a machine
+/// with an adapter. Without one the test says so and returns, unless `SKIA_RUST_REQUIRE_ADAPTER`
+/// is set.
 ///
 /// ```ignore
 /// def_graphite_adapter_test!(ImageShaderTest, |reporter, context| {
@@ -177,7 +180,10 @@ macro_rules! def_test {
 macro_rules! def_graphite_adapter_test {
     ($(#[$attr:meta])* $name:ident, |$reporter:ident, $context:ident| $body:block) => {
         #[test]
-        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        #[cfg_attr(
+            not(skia_rust_adapter_tests),
+            ignore = "needs a real adapter in CI (lavapipe job)"
+        )]
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
@@ -212,7 +218,10 @@ macro_rules! def_graphite_adapter_test_with_options {
     ($(#[$attr:meta])* $name:ident, |$options:ident| $set_options:block,
      |$reporter:ident, $context:ident| $body:block) => {
         #[test]
-        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        #[cfg_attr(
+            not(skia_rust_adapter_tests),
+            ignore = "needs a real adapter in CI (lavapipe job)"
+        )]
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {

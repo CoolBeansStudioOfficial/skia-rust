@@ -26,6 +26,8 @@ use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
+use skia_rust_gpu::graphite::compute::dispatch_group::DispatchGroup;
+use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
 use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
@@ -43,7 +45,6 @@ use skia_rust_gpu::graphite::resource_types::{
     AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
 use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
-use skia_rust_gpu::graphite::task::compute_task::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
 use skia_rust_gpu::graphite::texture_format::TextureFormat;
@@ -491,6 +492,12 @@ pub struct MockResourceBackend {
 }
 
 impl ResourceProviderBackend for MockResourceBackend {
+    fn find_or_create_compute_pipeline(
+        &mut self,
+        _pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        None
+    }
     fn max_texture_size(&self) -> i32 {
         4096
     }
@@ -773,7 +780,7 @@ impl CommandBuffer for MockCommandBuffer {
         !self.fail
     }
 
-    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool {
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<DispatchGroup>]) -> bool {
         self.calls.push(Call::ComputePass(dispatches.len()));
         !self.fail
     }

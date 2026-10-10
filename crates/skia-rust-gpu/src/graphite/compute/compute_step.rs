@@ -17,13 +17,21 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::size::ISize;
 
+use crate::gpu::buffer_writer::BufferWriter;
 use crate::graphite::resource_types::SamplerDesc;
+use crate::graphite::uniform_manager::UniformManager;
 
 /// `kMaxComputeDataFlowSlots`: the maximum number of shared resource binding slots permitted for
 /// `ComputeStep`s of a `DispatchGroup`.
 // Port of: src/gpu/graphite/ComputeTypes.h#L16-L17 (chrome/m156)
 #[doc(alias = "kMaxComputeDataFlowSlots")]
 pub const MAX_COMPUTE_DATA_FLOW_SLOTS: i32 = 28;
+
+/// `kIndirectDispatchArgumentSize`: the size of the `IndirectDispatchArgs` a `kIndirectBuffer`
+/// holds (three workgroup counts, `global_size_x`, `global_size_y` and `global_size_z`).
+// Port of: src/gpu/graphite/ComputeTypes.h#L20-L25 (chrome/m156)
+#[doc(alias = "kIndirectDispatchArgumentSize")]
+pub const INDIRECT_DISPATCH_ARGUMENT_SIZE: usize = 3 * std::mem::size_of::<u32>();
 
 /// `WorkgroupSize`: the space that a compute shader operates on. The "work group count" (global
 /// size) and the local size of a work group are both expressed with it.
@@ -298,6 +306,43 @@ pub trait ComputeStep: Send + Sync + Debug {
     #[doc(alias = "nativeShaderSource")]
     fn native_shader_source(&self, _format: NativeShaderFormat) -> NativeShaderSource<'_> {
         panic!("ComputeSteps that support native shader source must override nativeShaderSource()");
+    }
+
+    /// `prepareStorageBuffer(resourceIndex, resource, writer)`: fills a mapped storage buffer on
+    /// the CPU before the dispatch runs.
+    ///
+    /// # Panics
+    /// By default, like `SK_ABORT` in `ComputeStep::prepareStorageBuffer`.
+    // Port of: src/gpu/graphite/compute/ComputeStep.cpp#L54-L56 (chrome/m156)
+    #[doc(alias = "prepareStorageBuffer")]
+    fn prepare_storage_buffer(
+        &self,
+        _resource_index: usize,
+        _resource: &ResourceDesc,
+        _writer: BufferWriter<'_>,
+    ) {
+        panic!(
+            "ComputeSteps that initialize a mapped storage buffer must override \
+             prepareStorageBuffer()"
+        );
+    }
+
+    /// `prepareUniformBuffer(resourceIndex, resource, uniformManager)`: adds the uniforms of a
+    /// mapped uniform buffer.
+    ///
+    /// # Panics
+    /// By default, like `SK_ABORT` in `ComputeStep::prepareUniformBuffer`.
+    // Port of: src/gpu/graphite/compute/ComputeStep.cpp#L58-L60 (chrome/m156)
+    #[doc(alias = "prepareUniformBuffer")]
+    fn prepare_uniform_buffer(
+        &self,
+        _resource_index: usize,
+        _resource: &ResourceDesc,
+        _uniform_manager: &mut UniformManager,
+    ) {
+        panic!(
+            "ComputeSteps that initialize a uniform buffer must override prepareUniformBuffer()"
+        );
     }
 
     /// `calculateBufferSize(resourceIndex, resource)`: the required allocation size of a buffer

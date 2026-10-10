@@ -31,10 +31,14 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
+use crate::gpu::sk_log::skia_log_e;
 use crate::gpu::token::TokenTracker;
 use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::backend_texture::BackendTexture;
@@ -55,9 +59,14 @@ use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResour
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
-use crate::graphite::task::upload_task::{UploadList, UploadTask};
-use crate::graphite::texture_info::TextureInfo;
+use crate::graphite::task::upload_task::{
+    ImageUploadContext, MipLevel, UploadInstance, UploadList, UploadSource, UploadTask,
+};
+use crate::graphite::texture::ReleaseCallback;
+use crate::graphite::texture_format::read_swizzle_for_color_type;
+use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::make_bitmap_proxy_view;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
 use crate::text_gpu::strike_cache::StrikeCache;
@@ -361,6 +370,12 @@ impl Recorder {
         Self { inner }
     }
 
+    /// A shared handle to the recorder's state, for the objects that borrow it while the recorder
+    /// is used (`DispatchGroup::Builder` in `Recorder::priv()` terms).
+    pub(crate) fn inner(&self) -> Rc<RecorderInner> {
+        self.inner.clone()
+    }
+
     /// `priv()`.
     #[doc(alias = "priv")]
     #[must_use]
@@ -500,6 +515,106 @@ impl Recorder {
         self.inner.caps.max_texture_size()
     }
 
+    /// `updateBackendTexture(backendTex, srcData, numLevels, finishedProc, finishedContext)`:
+    /// uploads `src_data` (the base level and, for a mipmapped texture, every mip level) into
+    /// `backend_texture`. `release` is called once the texture is no longer used by the upload.
+    /// Returns `false` if the texture is invalid, of another backend, or the level count is wrong.
+    // Port of: src/gpu/graphite/Recorder.cpp#L394-L455 (chrome/m156)
+    #[doc(alias = "updateBackendTexture")]
+    pub fn update_backend_texture(
+        &mut self,
+        backend_texture: &BackendTexture,
+        src_data: &[Pixmap<'_>],
+        release: Option<CallbackProc>,
+    ) -> bool {
+        let release_helper = release.map(RefCntedCallback::make);
+
+        if !backend_texture.is_valid() || backend_texture.backend() != self.backend() {
+            return false;
+        }
+
+        if src_data.is_empty() {
+            return false;
+        }
+
+        // If the texture has MIP levels then we require that the full set is overwritten.
+        let mut num_expected_levels = 1;
+        if backend_texture.info().mipmapped() == Mipmapped::Yes {
+            let dimensions = backend_texture.dimensions();
+            num_expected_levels =
+                usize::try_from(Mipmap::compute_level_count_size(dimensions)).unwrap_or(0) + 1;
+        }
+        if src_data.len() != num_expected_levels {
+            return false;
+        }
+
+        let priv_ = self.priv_();
+        let caps = Arc::clone(priv_.caps());
+        let texture = {
+            let mut provider = priv_
+                .resource_provider()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            provider.create_wrapped_texture(backend_texture, "")
+        };
+        let Some(texture) = texture else {
+            return false;
+        };
+        texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
+
+        let format = texture_info_priv::view_format(&backend_texture.info());
+        let mip_levels: Vec<MipLevel<'_>> = src_data
+            .iter()
+            .map(|level| MipLevel {
+                pixels: level.addr(),
+                row_bytes: level.row_bytes(),
+            })
+            .collect();
+
+        // Src and dst colorInfo are the same.
+        let color_info = src_data[0].info().color_info().clone();
+        let swizzle = read_swizzle_for_color_type(color_info.color_type(), format);
+        let view = TextureProxyView::new(Some(TextureProxy::wrap(texture)), swizzle);
+        let dimensions = IRect::from_size(backend_texture.dimensions());
+        let upload_source = UploadSource::make(
+            &*caps,
+            &view,
+            &color_info,
+            &color_info,
+            &mip_levels,
+            dimensions,
+        );
+        if !upload_source.is_valid() {
+            skia_log_e!("Recorder::updateBackendTexture: Could not create UploadSource");
+            return false;
+        }
+
+        if upload_source.attempt_upload_on_host() {
+            return true;
+        }
+
+        // Add UploadTask to Recorder.
+        let instance = UploadInstance::make(
+            &*caps,
+            &mut priv_.upload_buffer_manager().borrow_mut(),
+            &upload_source,
+            Some(Box::new(ImageUploadContext)),
+        );
+        if !instance.is_valid() {
+            skia_log_e!("Recorder::updateBackendTexture: Could not create UploadInstance");
+            return false;
+        }
+        let Some(upload_task) = UploadTask::make_instance(instance) else {
+            return false;
+        };
+
+        // Need to flush any pending work in case it depends on this texture.
+        priv_.flush_tracked_devices("Recorder::updateBackendTexture: Update Backend Texture");
+        priv_.add(upload_task);
+
+        true
+    }
+
     /// `createBackendTexture()`: creates a texture the client owns, or an invalid one if `info`
     /// is invalid or of another backend, or the texture cannot be created.
     // Port of: src/gpu/graphite/Recorder.cpp#L364-L373 (chrome/m156)
@@ -630,7 +745,7 @@ impl RecorderInner {
         RecorderPriv { recorder: self }
     }
 
-    fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
+    pub(crate) fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
         self.resource_provider
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

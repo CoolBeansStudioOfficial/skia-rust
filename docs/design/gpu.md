@@ -561,8 +561,8 @@ wraps or copies the target with the right subset; subsets share the texture; `dr
 records a draw; the backend's devices, `MakeGraphite`, `getCachedBitmap` and the shader blur
 (2D and two-pass 1D) produce texture-backed results of the requested size; a restored layer
 reaches the root task list. `ImageFilterMakeWithFilter` (raster) and
-`ImageFilterMakeWithFilter_Graphite` (noop) are ported and pass. Real adapter, `#[ignore]`d in CI
-(`special_image_pixels.rs`, lavapipe here): a blur image filter (2D and 1D passes; exact solid
+`ImageFilterMakeWithFilter_Graphite` (noop) are ported and pass. Real adapter, run in CI with the
+cfg (`special_image_pixels.rs`, lavapipe in CI and here): a blur image filter (2D and 1D passes; exact solid
 center, clear outside, partial premultiplied edge falling off), and a half-alpha layer composited
 into its parent. All targets are `RGBA_8888`, so the bytes do not depend on N32 order.
 
@@ -645,8 +645,8 @@ image flushes A1; after more draws to A, the next draw flushes B1 then A2 (root 
 a surface drawing its own image flushes itself; once the surface drops, the image unlinks on its
 next use. Real adapter: `special_image_pixels.rs::a_surface_image_sees_draws_made_after_it_was_taken`
 and the full `NotifyInUseTest.cpp` port (`NotifyInUseTestAsImage`, `NotifyInUseTestSnapshot` and
-the 29 layer blend-mode cases), all passing on lavapipe; the 31 manifest entries stay `todo` with
-the adapter reason because CI has no rendering adapter.
+the 29 layer blend-mode cases), all passing on lavapipe; the 31 manifest entries are `passing`
+(the adapter cfg, section 7 and section 8).
 
 ---
 
@@ -775,9 +775,13 @@ Surfaces and images read back through the context: `WgpuContext::read_surface_pi
 `Device::onReadPixels` (snap, insert, `ContextPriv::readPixels`), `read_image_pixels` the same for
 an image, and `asyncReadPixels` draws a source that is not copyable, is bottom-left or needs a
 transfer function into a copyable texture (`CopyAsDraw`) first. Ported tests that read pixels use
-`def_graphite_adapter_test!` (tests/src/lib.rs): they are `#[ignore]`d, so CI cannot count them as
-passing, and their entries stay `todo` ("needs a real adapter in CI (lavapipe job)") until a GPU
-job runs `--ignored`. Run them locally with `cargo test -p skia-rust-tests --lib -- --ignored`.
+`def_graphite_adapter_test!` (tests/src/lib.rs), and the GPU crate's own pixel tests
+(`crates/skia-rust-gpu/tests/`) use `cfg_attr(not(skia_rust_adapter_tests), ignore = …)`. The
+cfg is declared in the workspace `Cargo.toml`. Without it they are ignored, so a machine without
+an adapter cannot count them as passing. With it, they run; without an adapter they say so and
+return, unless `SKIA_RUST_REQUIRE_ADAPTER` is set, which makes a missing adapter a failure.
+Run them locally with `RUSTFLAGS="--cfg skia_rust_adapter_tests" cargo test -p skia-rust-tests
+--lib` (and `cargo test -p skia-rust-gpu`) on a machine with an adapter.
 
 ---
 
@@ -794,10 +798,20 @@ job runs `--ignored`. Run them locally with `cargo test -p skia-rust-tests --lib
 | oracle (G0b) | Linux container, Windows | Skia + Dawn build and DM runs; manual dispatch per pin bump | n/a |
 | RTX report | maintainer's machine | `xtask gpu-report` on D3D12 and Vulkan against the two RTX tiers | never |
 
-Unit tests that need a real adapter use one `skiatest`-style gate: with `SKIA_RUST_GPU=required`
-(set by the GPU jobs) a missing adapter is a failure; elsewhere such tests are skipped. `xtask
-verify` must see them run on at least one GPU job before it accepts `passing` (the existing
-"ignored, needs gpu" outcome in `xtask/src/verify.rs`).
+**The lavapipe job, as built.** The Linux x64 jobs of `.github/workflows/ci.yml` (`test`,
+`test-release` and `inventory`, which runs `xtask inventory verify`) install
+`mesa-vulkan-drivers` (lavapipe, from the Ubuntu archive; not yet the pinned Mesa of G0b), append
+`--cfg skia_rust_adapter_tests` to `RUSTFLAGS`, and set `SKIA_RUST_REQUIRE_ADAPTER=1`, so the
+adapter-gated tests run and a missing adapter fails. The request is `adapter_backend_context`
+with `Backends::all()`, which reads no environment variable, so no `WGPU_BACKEND` is set. The
+arm64 Linux, Windows and macOS jobs do not get the cfg, so those tests stay ignored there.
+
+`xtask inventory verify` treats the adapter-gated tests as follows. With the cfg, an ignored
+adapter-gated test that is `passing` is a regression, since it should have run. Without the cfg
+(a plain `cargo xtask inventory verify` on a machine with no adapter), it is listed as "NOT
+CHECKABLE on this host" and is neither a regression nor a pass (`verify::check`, the
+`ADAPTER_IGNORE_REASON` match on libtest's `ignored, <reason>` line). An adapter-gated test that
+fails on lavapipe is `failing` like any other failing test.
 
 ---
 

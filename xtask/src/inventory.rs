@@ -198,7 +198,8 @@ pub fn verify(root: &Path, update: bool) -> Result<()> {
     let gm_entries = entries(Kind::Gm);
     let golden_entries = entries(Kind::SkslGolden);
     let bench_entries = entries(Kind::Bench);
-    let unit = verify::check(&unit_entries, &verify::run_ported_tests(root)?);
+    let unit_results = verify::run_ported_tests(root)?;
+    let unit = verify::check(&unit_entries, &unit_results, verify::adapter_cfg_enabled());
     let gms = verify_gms::check(&gm_entries, &verify_gms::run_gm_verify(root)?);
     let goldens = match verify_sksl::run_sksl_golden_verify(root)? {
         Some(results) => verify_sksl::check(&golden_entries, &results),
