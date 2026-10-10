@@ -58,7 +58,11 @@ impl<'a> Gsubgpos<'a> {
     /// `None` for an unsupported major version (version 2 uses 24 bit offsets).
     pub(crate) fn new(d: &'a [u8]) -> Option<Self> {
         let v = View::new(d);
-        if v.u16(0) == 1 { Some(Gsubgpos { v }) } else { None }
+        if v.u16(0) == 1 {
+            Some(Gsubgpos { v })
+        } else {
+            None
+        }
     }
 
     pub(crate) fn version(&self) -> u32 {
@@ -84,7 +88,11 @@ impl<'a> Gsubgpos<'a> {
     /// `get_lookup (i)`: the empty (`Null`) lookup past the end.
     pub(crate) fn get_lookup(&self, i: u32) -> View<'a> {
         let ll = self.lookup_list();
-        if i >= ll.u16(0) { View::new(&[]) } else { ll.off16(2 + 2 * i as usize) }
+        if i >= ll.u16(0) {
+            View::new(&[])
+        } else {
+            ll.off16(2 + 2 * i as usize)
+        }
     }
 
     pub(crate) fn get_script_count(&self) -> u32 {
@@ -97,7 +105,11 @@ impl<'a> Gsubgpos<'a> {
 
     pub(crate) fn get_script(&self, i: u32) -> View<'a> {
         let sl = self.script_list();
-        if i >= sl.u16(0) { View::new(&[]) } else { sl.off16(2 + 6 * i as usize + 4) }
+        if i >= sl.u16(0) {
+            View::new(&[])
+        } else {
+            sl.off16(2 + 6 * i as usize + 4)
+        }
     }
 
     pub(crate) fn get_feature_count(&self) -> u32 {
@@ -110,12 +122,20 @@ impl<'a> Gsubgpos<'a> {
             return 0;
         }
         let fl = self.feature_list();
-        if i >= fl.u16(0) { 0 } else { fl.u32(2 + 6 * i as usize) }
+        if i >= fl.u16(0) {
+            0
+        } else {
+            fl.u32(2 + 6 * i as usize)
+        }
     }
 
     pub(crate) fn get_feature(&self, i: u32) -> View<'a> {
         let fl = self.feature_list();
-        if i >= fl.u16(0) { View::new(&[]) } else { fl.off16(2 + 6 * i as usize + 4) }
+        if i >= fl.u16(0) {
+            View::new(&[])
+        } else {
+            fl.off16(2 + 6 * i as usize + 4)
+        }
     }
 
     /// `featureVars` of a version 1.1 table.
@@ -158,13 +178,23 @@ fn extension_type(kind: Kind) -> u32 {
 
 /// `ExtensionFormat1`: `(inner lookup type, inner subtable)` when the subtable is format 1.
 pub(crate) fn extension_inner<'a>(sub: View<'a>) -> Option<(u32, View<'a>)> {
-    if sub.u16(0) == 1 { Some((sub.u16(2), sub.off32(4))) } else { None }
+    if sub.u16(0) == 1 {
+        Some((sub.u16(2), sub.off32(4)))
+    } else {
+        None
+    }
 }
 
 /// `SubTable::intersects (glyphs, lookup_type)` through `hb_intersects_context_t`.
-pub(crate) fn subtable_intersects(kind: Kind, lookup_type: u32, sub: View<'_>, glyphs: &BTreeSet<u32>) -> bool {
+pub(crate) fn subtable_intersects(
+    kind: Kind,
+    lookup_type: u32,
+    sub: View<'_>,
+    glyphs: &BTreeSet<u32>,
+) -> bool {
     if lookup_type == extension_type(kind) {
-        return extension_inner(sub).is_some_and(|(t, inner)| subtable_intersects(kind, t, inner, glyphs));
+        return extension_inner(sub)
+            .is_some_and(|(t, inner)| subtable_intersects(kind, t, inner, glyphs));
     }
     match kind {
         Kind::Gsub => gsub::intersects(lookup_type, sub, glyphs),
@@ -175,7 +205,8 @@ pub(crate) fn subtable_intersects(kind: Kind, lookup_type: u32, sub: View<'_>, g
 /// `Lookup::intersects`: `hb_intersects_context_t` stops at the first subtable that does.
 pub(crate) fn lookup_intersects(kind: Kind, l: View<'_>, glyphs: &BTreeSet<u32>) -> bool {
     let t = lookup_type(l);
-    (0..lookup_subtable_count(l)).any(|i| subtable_intersects(kind, t, lookup_subtable(l, i), glyphs))
+    (0..lookup_subtable_count(l))
+        .any(|i| subtable_intersects(kind, t, lookup_subtable(l, i), glyphs))
 }
 
 /// `hb_have_non_1to1_context_t` over a subtable (GSUB only).
@@ -277,9 +308,18 @@ impl<'a> ClosureCtx<'a> {
 
     fn is_lookup_done(&mut self, lookup_index: u32) -> bool {
         let pop = self.glyphs.len() as u32;
-        if self.done_lookups_glyph_count.get(&lookup_index).copied().unwrap_or(INVALID) != pop {
+        if self
+            .done_lookups_glyph_count
+            .get(&lookup_index)
+            .copied()
+            .unwrap_or(INVALID)
+            != pop
+        {
             self.done_lookups_glyph_count.insert(lookup_index, pop);
-            self.done_lookups_glyph_set.entry(lookup_index).or_default().clear();
+            self.done_lookups_glyph_set
+                .entry(lookup_index)
+                .or_default()
+                .clear();
         }
         let parent = self.parent_active_glyphs().clone();
         let covered = self.done_lookups_glyph_set.entry(lookup_index).or_default();
@@ -340,7 +380,12 @@ fn subtable_closure(c: &mut ClosureCtx<'_>, lookup_type: u32, sub: View<'_>) {
 }
 
 /// `hb_ot_layout_lookups_substitute_closure` (hb-ot-layout.cc#L1616-L1650).
-fn lookups_substitute_closure(num_glyphs: u32, gsub: Gsubgpos<'_>, lookups: &BTreeSet<u32>, glyphs: &mut BTreeSet<u32>) {
+fn lookups_substitute_closure(
+    num_glyphs: u32,
+    gsub: Gsubgpos<'_>,
+    lookups: &BTreeSet<u32>,
+    glyphs: &mut BTreeSet<u32>,
+) {
     let mut c = ClosureCtx::new(num_glyphs, glyphs, gsub);
     let mut iteration_count = 0;
     loop {
@@ -446,7 +491,12 @@ fn subtable_closure_lookups(c: &mut ClosureLookupsCtx<'_>, lookup_type: u32, sub
 }
 
 /// `GSUBGPOS::closure_lookups<TLookup>` (hb-ot-layout-gsubgpos.hh#L4867-L4883).
-fn closure_lookups(kind: Kind, table: Gsubgpos<'_>, glyphs: &BTreeSet<u32>, lookup_indexes: &mut BTreeSet<u32>) {
+fn closure_lookups(
+    kind: Kind,
+    table: Gsubgpos<'_>,
+    glyphs: &BTreeSet<u32>,
+    lookup_indexes: &mut BTreeSet<u32>,
+) {
     let mut c = ClosureLookupsCtx {
         kind,
         glyphs,
@@ -571,7 +621,11 @@ impl CollectFeaturesCtx<'_> {
 
 /// `hb_ot_layout_collect_features` with the scripts either all (`None`) or the listed tags, all
 /// languages, and the features either all (`None`) or the listed tags.
-fn collect_features(g: Gsubgpos<'_>, scripts: Option<&[u32]>, features: Option<&[u32]>) -> BTreeSet<u32> {
+fn collect_features(
+    g: Gsubgpos<'_>,
+    scripts: Option<&[u32]>,
+    features: Option<&[u32]>,
+) -> BTreeSet<u32> {
     let mut c = CollectFeaturesCtx {
         g,
         feature_indices: BTreeSet::new(),
@@ -586,7 +640,8 @@ fn collect_features(g: Gsubgpos<'_>, scripts: Option<&[u32]>, features: Option<&
     // `compute_feature_filter`
     if let Some(features) = features {
         c.has_feature_filter = true;
-        let features_set: BTreeSet<u32> = features.iter().copied().take_while(|&t| t != 0).collect();
+        let features_set: BTreeSet<u32> =
+            features.iter().copied().take_while(|&t| t != 0).collect();
         for i in 0..g.get_feature_count() {
             if features_set.contains(&g.get_feature_tag(i)) {
                 c.feature_indices_filter.insert(i);
@@ -605,7 +660,8 @@ fn collect_features(g: Gsubgpos<'_>, scripts: Option<&[u32]>, features: Option<&
             for &script in scripts.iter().take_while(|&&t| t != 0) {
                 // `find_script_index`: a binary search of the sorted script records.
                 let sl = g.script_list();
-                let found = crate::bytes::bsearch(sl.u16(0) as usize, |i| script.cmp(&sl.u32(2 + 6 * i)));
+                let found =
+                    crate::bytes::bsearch(sl.u16(0) as usize, |i| script.cmp(&sl.u32(2 + 6 * i)));
                 if let Some(i) = found {
                     let s = g.get_script(i as u32);
                     c.script_collect_features(s);
@@ -656,7 +712,11 @@ pub(crate) struct TablePlan {
 
 /// `remap_indexes`: the position of each element in the set.
 fn remap_indexes(indexes: &BTreeSet<u32>) -> HashMap<u32, u32> {
-    indexes.iter().enumerate().map(|(i, &v)| (v, i as u32)).collect()
+    indexes
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| (v, i as u32))
+        .collect()
 }
 
 /// `_closure_glyphs_lookups_features<T>` (hb-subset-plan-layout.cc#L233-L292). `glyphs` is the
@@ -681,16 +741,28 @@ pub(crate) fn closure_glyphs_lookups_features(
     let num_glyphs = plan.source.num_glyphs();
 
     // `_collect_layout_indices`
-    let mut features: Vec<u32> = (0..table.get_feature_count()).map(|i| table.get_feature_tag(i)).collect();
+    let mut features: Vec<u32> = (0..table.get_feature_count())
+        .map(|i| table.get_feature_tag(i))
+        .collect();
     let retain_all_features = !filter_tag_list(&mut features, Some(&plan.layout_features));
-    let mut scripts: Vec<u32> = (0..table.get_script_count()).map(|i| table.get_script_tag(i)).collect();
+    let mut scripts: Vec<u32> = (0..table.get_script_count())
+        .map(|i| table.get_script_tag(i))
+        .collect();
     let retain_all_scripts = !filter_tag_list(&mut scripts, None);
 
     let mut lookup_indices: BTreeSet<u32> = BTreeSet::new();
     let mut feature_indices = collect_features(
         table,
-        if retain_all_scripts { None } else { Some(&scripts) },
-        if retain_all_features { None } else { Some(&features) },
+        if retain_all_scripts {
+            None
+        } else {
+            Some(&scripts)
+        },
+        if retain_all_features {
+            None
+        } else {
+            Some(&features)
+        },
     );
     for &fi in &feature_indices {
         let f = table.get_feature(fi);
@@ -717,7 +789,8 @@ pub(crate) fn closure_glyphs_lookups_features(
         if f.u16(0) != 0 && tag == TAG_SIZE {
             continue;
         }
-        let intersects = (0..f.u16(2) as usize).any(|k| out.lookups.contains_key(&f.u16(4 + 2 * k)));
+        let intersects =
+            (0..f.u16(2) as usize).any(|k| out.lookups.contains_key(&f.u16(4 + 2 * k)));
         if !intersects {
             feature_indices.remove(&i);
         }
@@ -725,7 +798,12 @@ pub(crate) fn closure_glyphs_lookups_features(
     let duplicate_feature_map = find_duplicate_features(table, &out.lookups, &feature_indices);
 
     let mut new_feature_indices = BTreeSet::new();
-    prune_langsys(table, &duplicate_feature_map, &mut out.langsys, &mut new_feature_indices);
+    prune_langsys(
+        table,
+        &duplicate_feature_map,
+        &mut out.langsys,
+        &mut new_feature_indices,
+    );
     // `remap_feature_indices`
     let mut i = 0u32;
     for &fi in &new_feature_indices {
@@ -872,7 +950,10 @@ fn prune_langsys(
                     continue;
                 }
                 collect_features(l, new_feature_indexes);
-                script_langsys_map.entry(script_index).or_default().insert(li as u32);
+                script_langsys_map
+                    .entry(script_index)
+                    .or_default()
+                    .insert(li as u32);
             }
         } else {
             for li in 0..lang_count {
@@ -881,7 +962,10 @@ fn prune_langsys(
                     continue;
                 }
                 collect_features(l, new_feature_indexes);
-                script_langsys_map.entry(script_index).or_default().insert(li as u32);
+                script_langsys_map
+                    .entry(script_index)
+                    .or_default()
+                    .insert(li as u32);
             }
         }
     }
@@ -1025,7 +1109,11 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>, kind: 
     };
     let out = s.allocate(10); // extend_min
     // out->version = version (a 1.1 table without feature variations becomes 1.0 below)
-    let version = if table.version() >= 0x0001_0001 { 0x0001_0000 } else { table.version() };
+    let version = if table.version() >= 0x0001_0001 {
+        0x0001_0000
+    } else {
+        table.version()
+    };
     s.set_u32(out, version);
 
     // lookupList
@@ -1040,14 +1128,18 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>, kind: 
         s.zero_field(out + 6, 2);
     } else {
         let fl = table.feature_list();
-        s.serialize_subset(out + 6, 2, true, |s| feature_list_subset(&mut c, s, table, fl));
+        s.serialize_subset(out + 6, 2, true, |s| {
+            feature_list_subset(&mut c, s, table, fl)
+        });
     }
     // scriptList
     if table.v.is_null16(4) {
         s.zero_field(out + 4, 2);
     } else {
         let sl = table.script_list();
-        s.serialize_subset(out + 4, 2, true, |s| script_list_subset(&mut c, s, table, sl));
+        s.serialize_subset(out + 4, 2, true, |s| {
+            script_list_subset(&mut c, s, table, sl)
+        });
     }
     Ok(true)
 }
@@ -1088,7 +1180,12 @@ fn lookup_subset(plan: &Plan<'_>, kind: Kind, s: &mut Serializer, this: View<'_>
     s.set_u16(out + 2, lookup_flag(this) as u16);
 
     for i in 0..lookup_subtable_count(this) {
-        if !subtable_intersects(kind, lookup_type_v, lookup_subtable(this, i), &plan.glyphset_gsub) {
+        if !subtable_intersects(
+            kind,
+            lookup_type_v,
+            lookup_subtable(this, i),
+            &plan.glyphset_gsub,
+        ) {
             continue;
         }
         // `subset_offset_array (c, out->get_subtables<TSubTable> (), this, lookup_type)`
@@ -1100,7 +1197,9 @@ fn lookup_subset(plan: &Plan<'_>, kind: Kind, s: &mut Serializer, this: View<'_>
             false
         } else {
             let sub = this.off16(off_field);
-            s.serialize_subset(o, 2, true, |s| subtable_subset(plan, kind, s, lookup_type_v, sub))
+            s.serialize_subset(o, 2, true, |s| {
+                subtable_subset(plan, kind, s, lookup_type_v, sub)
+            })
         };
         if !ret {
             s.array_pop(out + 4);
@@ -1129,7 +1228,13 @@ fn lookup_subset(plan: &Plan<'_>, kind: Kind, s: &mut Serializer, this: View<'_>
 }
 
 /// `SubTable::dispatch (subset context, lookup_type)`.
-fn subtable_subset(plan: &Plan<'_>, kind: Kind, s: &mut Serializer, lookup_type_v: u32, sub: View<'_>) -> bool {
+fn subtable_subset(
+    plan: &Plan<'_>,
+    kind: Kind,
+    s: &mut Serializer,
+    lookup_type_v: u32,
+    sub: View<'_>,
+) -> bool {
     if lookup_type_v == extension_type(kind) {
         // `Extension::dispatch (hb_subset_context_t)`: `ExtensionFormat1::subset`
         if sub.u16(0) != 1 {
@@ -1162,7 +1267,12 @@ fn subtable_subset(plan: &Plan<'_>, kind: Kind, s: &mut Serializer, lookup_type_
 
 /// `RecordListOfFeature::subset` (hb-ot-layout-common.hh#L944-L968) with `Record<Feature>::subset`
 /// and `Feature::subset`.
-fn feature_list_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, table: Gsubgpos<'_>, this: View<'_>) -> bool {
+fn feature_list_subset(
+    c: &mut SubsetLayoutCtx<'_, '_>,
+    s: &mut Serializer,
+    table: Gsubgpos<'_>,
+    this: View<'_>,
+) -> bool {
     let out = s.allocate(2); // extend_min
     for index in 0..this.u16(0) {
         if !c.table_plan().features.contains_key(&index) {
@@ -1178,7 +1288,9 @@ fn feature_list_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, tabl
             false
         } else {
             let f = this.off16(rec + 4);
-            s.serialize_subset(rec_pos + 4, 2, true, |s| feature_subset(c, s, table, f, tag_v))
+            s.serialize_subset(rec_pos + 4, 2, true, |s| {
+                feature_subset(c, s, table, f, tag_v)
+            })
         };
         if !ret {
             s.revert(snap);
@@ -1191,7 +1303,13 @@ fn feature_list_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, tabl
 }
 
 /// `Feature::subset` (hb-ot-layout-common.hh#L795-L822).
-fn feature_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, _table: Gsubgpos<'_>, this: View<'_>, tag_v: u32) -> bool {
+fn feature_subset(
+    c: &mut SubsetLayoutCtx<'_, '_>,
+    s: &mut Serializer,
+    _table: Gsubgpos<'_>,
+    this: View<'_>,
+    tag_v: u32,
+) -> bool {
     let out = s.allocate(4); // extend_min
     // out->featureParams.serialize_subset (c, featureParams, this, tag)
     if this.is_null16(0) {
@@ -1242,7 +1360,12 @@ fn feature_params_subset(s: &mut Serializer, params: View<'_>, tag_v: u32) -> bo
 }
 
 /// `RecordListOfScript::subset` (hb-ot-layout-common.hh#L1210-L1230) with `Record<Script>::subset`.
-fn script_list_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, _table: Gsubgpos<'_>, this: View<'_>) -> bool {
+fn script_list_subset(
+    c: &mut SubsetLayoutCtx<'_, '_>,
+    s: &mut Serializer,
+    _table: Gsubgpos<'_>,
+    this: View<'_>,
+) -> bool {
     let out = s.allocate(2);
     for index in 0..this.u16(0) {
         let snap = s.snapshot();
@@ -1268,7 +1391,12 @@ fn script_list_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, _tabl
 }
 
 /// `Script::subset` (hb-ot-layout-common.hh#L1148-L1198).
-fn script_subset(c: &mut SubsetLayoutCtx<'_, '_>, s: &mut Serializer, this: View<'_>, tag_v: u32) -> bool {
+fn script_subset(
+    c: &mut SubsetLayoutCtx<'_, '_>,
+    s: &mut Serializer,
+    this: View<'_>,
+    tag_v: u32,
+) -> bool {
     if !c.visit_script() {
         return false;
     }

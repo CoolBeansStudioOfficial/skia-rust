@@ -10,11 +10,11 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use crate::Res;
 use crate::bytes::{bsearch, tag};
 use crate::ot::{INVALID, View, offset_subset_w, set_add_range, set_intersects_range};
 use crate::plan::{Plan, unsupported};
 use crate::serialize::{ERROR_INT_OVERFLOW, Serializer, Whence};
-use crate::Res;
 
 const NO_VARIATION: u32 = 0xFFFF_FFFF;
 const HB_MAX_NESTING_LEVEL: u32 = 64;
@@ -41,16 +41,32 @@ impl<'a> Colr<'a> {
         self.0.u16(12)
     }
     fn v1_offset(&self, field: usize) -> u32 {
-        if self.version() >= 1 { self.0.u32(field) } else { 0 }
+        if self.version() >= 1 {
+            self.0.u32(field)
+        } else {
+            0
+        }
     }
     fn base_glyph_list(&self) -> View<'a> {
-        if self.v1_offset(14) == 0 { View::new(&[]) } else { self.0.sub(self.0.u32(14) as usize) }
+        if self.v1_offset(14) == 0 {
+            View::new(&[])
+        } else {
+            self.0.sub(self.0.u32(14) as usize)
+        }
     }
     fn layer_list(&self) -> View<'a> {
-        if self.v1_offset(18) == 0 { View::new(&[]) } else { self.0.sub(self.0.u32(18) as usize) }
+        if self.v1_offset(18) == 0 {
+            View::new(&[])
+        } else {
+            self.0.sub(self.0.u32(18) as usize)
+        }
     }
     fn clip_list(&self) -> View<'a> {
-        if self.v1_offset(22) == 0 { View::new(&[]) } else { self.0.sub(self.0.u32(22) as usize) }
+        if self.v1_offset(22) == 0 {
+            View::new(&[])
+        } else {
+            self.0.sub(self.0.u32(22) as usize)
+        }
     }
     fn has_var_store(&self) -> bool {
         self.v1_offset(30) != 0
@@ -82,7 +98,14 @@ impl<'a> Colr<'a> {
             return Vec::new();
         }
         let count = num.min(total - first);
-        (0..count).map(|k| (layers.u16(4 * (first + k) as usize), layers.u16(4 * (first + k) as usize + 2))).collect()
+        (0..count)
+            .map(|k| {
+                (
+                    layers.u16(4 * (first + k) as usize),
+                    layers.u16(4 * (first + k) as usize + 2),
+                )
+            })
+            .collect()
     }
 }
 
@@ -95,7 +118,11 @@ fn add_range(set: &mut BTreeSet<u32>, first: u32, last: u32) {
 
 /// `remap_indexes`.
 fn remap_indexes(indexes: &BTreeSet<u32>) -> HashMap<u32, u32> {
-    indexes.iter().enumerate().map(|(i, &v)| (v, i as u32)).collect()
+    indexes
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| (v, i as u32))
+        .collect()
 }
 
 /// `_remap_palette_indexes`.
@@ -119,7 +146,10 @@ fn remap_palette_indexes(palette_indexes: &BTreeSet<u32>) -> HashMap<u32, u32> {
 
 /// `Variable<T>` wrappers: the paint formats that carry a `VarIdx` after the structure.
 fn is_wrapped_variable(format: u32) -> bool {
-    matches!(format, 3 | 5 | 7 | 9 | 15 | 17 | 19 | 21 | 23 | 25 | 27 | 29 | 31)
+    matches!(
+        format,
+        3 | 5 | 7 | 9 | 15 | 17 | 19 | 21 | 23 | 25 | 27 | 29 | 31
+    )
 }
 
 /// The size of the paint structure (without the `VarIdx` of a `Variable<T>`), and the position of
@@ -158,7 +188,11 @@ impl ClosureCtx<'_> {
         if num == 0 || first == NO_VARIATION {
             return;
         }
-        add_range(&mut self.variation_indices, first, first.wrapping_add(num - 1));
+        add_range(
+            &mut self.variation_indices,
+            first,
+            first.wrapping_add(num - 1),
+        );
     }
 
     /// `Paint::dispatch (hb_colrv1_closure_context_t)`.
@@ -170,7 +204,8 @@ impl ClosureCtx<'_> {
         if self.nesting_level_left == 0 {
             return;
         }
-        let delta = (paint.d.as_ptr() as usize).wrapping_sub(self.colr.0.d.as_ptr() as usize) as u32;
+        let delta =
+            (paint.d.as_ptr() as usize).wrapping_sub(self.colr.0.d.as_ptr() as usize) as u32;
         if !self.visited_paint.insert(delta) {
             return;
         }
@@ -222,7 +257,11 @@ impl ClosureCtx<'_> {
                 }
                 let list = self.colr.layer_list();
                 for i in first..first.wrapping_add(num) {
-                    let off = if i < list.u32(0) { list.u32(4 + 4 * i as usize) } else { 0 };
+                    let off = if i < list.u32(0) {
+                        list.u32(4 + 4 * i as usize)
+                    } else {
+                        0
+                    };
                     if off != 0 {
                         self.dispatch(list.sub(off as usize));
                     }
@@ -291,7 +330,10 @@ impl ClosureCtx<'_> {
 }
 
 /// `COLR::closure_forV1` (COLR.hh#L1796-L1830).
-fn closure_for_v1(colr: Colr<'_>, glyphset: &mut BTreeSet<u32>) -> (BTreeSet<u32>, BTreeSet<u32>, BTreeSet<u32>) {
+fn closure_for_v1(
+    colr: Colr<'_>,
+    glyphset: &mut BTreeSet<u32>,
+) -> (BTreeSet<u32>, BTreeSet<u32>, BTreeSet<u32>) {
     let mut c = ClosureCtx {
         colr,
         visited_paint: BTreeSet::new(),
@@ -356,7 +398,8 @@ pub(crate) fn colr_closure(plan: &mut Plan<'_>, glyphs_colred: &mut BTreeSet<u32
     glyphs_colred.extend(glyphset_colrv0);
 
     // Closure for COLRv1.
-    let (layer_indices, mut palette_indices, variation_indices) = closure_for_v1(colr, glyphs_colred);
+    let (layer_indices, mut palette_indices, variation_indices) =
+        closure_for_v1(colr, glyphs_colred);
 
     // `closure_V0palette_indices`
     if colr.num_base_glyphs() != 0 && colr.num_layers() != 0 {
@@ -388,7 +431,9 @@ struct SubsetCtx<'p, 'a> {
 }
 
 fn embed_bytes(s: &mut Serializer, v: View<'_>, off: usize, len: usize) -> usize {
-    let bytes: Vec<u8> = (0..len).map(|k| v.d.get(off + k).copied().unwrap_or(0)).collect();
+    let bytes: Vec<u8> = (0..len)
+        .map(|k| v.d.get(off + k).copied().unwrap_or(0))
+        .collect();
     s.embed(&bytes)
 }
 
@@ -406,12 +451,18 @@ impl SubsetCtx<'_, '_> {
     }
 
     fn palette(&self, idx: u32) -> u32 {
-        self.plan.colr_palettes.get(&idx).copied().unwrap_or(INVALID)
+        self.plan
+            .colr_palettes
+            .get(&idx)
+            .copied()
+            .unwrap_or(INVALID)
     }
 
     /// The offset of the child `Paint` at `field` of `paint` (24 bit), subset into the object.
     fn child(&self, s: &mut Serializer, out: usize, paint: View<'_>, field: usize) -> bool {
-        offset_subset_w(s, out + field, 3, paint, field, |s, p| self.paint_subset(s, p))
+        offset_subset_w(s, out + field, 3, paint, field, |s, p| {
+            self.paint_subset(s, p)
+        })
     }
 
     /// `Variable<T>::subset`'s trailer: the `VarIdx`, which must be mapped unless it is
@@ -461,7 +512,11 @@ impl SubsetCtx<'_, '_> {
             1 => {
                 // `PaintColrLayers::subset`
                 let first = if paint.u8(1) != 0 {
-                    self.plan.colrv1_layers.get(&paint.u32(2)).copied().unwrap_or(INVALID)
+                    self.plan
+                        .colrv1_layers
+                        .get(&paint.u32(2))
+                        .copied()
+                        .unwrap_or(INVALID)
                 } else {
                     0
                 };
@@ -469,9 +524,9 @@ impl SubsetCtx<'_, '_> {
                 true
             }
             2 | 3 => self.check16(s, out + 1, self.palette(paint.u16(1))),
-            4..=9 => {
-                offset_subset_w(s, out + 1, 3, paint, 1, |s, l| self.color_line_subset(s, l, format % 2 == 1))
-            }
+            4..=9 => offset_subset_w(s, out + 1, 3, paint, 1, |s, l| {
+                self.color_line_subset(s, l, format % 2 == 1)
+            }),
             10 => {
                 if !self.check16(s, out + 4, self.glyph(paint.u16(4))) {
                     return false;
@@ -489,7 +544,11 @@ impl SubsetCtx<'_, '_> {
                     let variable = format == 13;
                     s.serialize_subset(out + 4, 3, true, |s| {
                         embed_bytes(s, paint.sub(off), 0, 24);
-                        if variable { self.var_trailer(s, paint.sub(off).u32(24)) } else { true }
+                        if variable {
+                            self.var_trailer(s, paint.sub(off).u32(24))
+                        } else {
+                            true
+                        }
                     })
                 };
                 if !ok {
@@ -561,7 +620,12 @@ impl SubsetCtx<'_, '_> {
         true
     }
 
-    fn serialize_clip_records(&self, s: &mut Serializer, list: View<'_>, map: &BTreeMap<u32, u32>) -> u32 {
+    fn serialize_clip_records(
+        &self,
+        s: &mut Serializer,
+        list: View<'_>,
+        map: &BTreeMap<u32, u32>,
+    ) -> u32 {
         if map.is_empty() {
             return 0;
         }
@@ -645,7 +709,9 @@ impl SubsetCtx<'_, '_> {
             len += 1;
             s.set_u32(out, len);
             let pos = s.allocate(4);
-            ret |= offset_subset_w(s, pos, 4, list, 4 + 4 * i as usize, |s, p| self.paint_subset(s, p));
+            ret |= offset_subset_w(s, pos, 4, list, 4 + 4 * i as usize, |s, p| {
+                self.paint_subset(s, p)
+            });
         }
         ret
     }
@@ -661,7 +727,11 @@ pub(crate) fn colr_subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>) -
     // `base_it`
     let mut base_records: Vec<(u32, u32)> = Vec::new(); // (new gid, numLayers)
     for new_gid in 0..num_output {
-        let old_gid = plan.reverse_glyph_map.get(&new_gid).copied().unwrap_or(INVALID);
+        let old_gid = plan
+            .reverse_glyph_map
+            .get(&new_gid)
+            .copied()
+            .unwrap_or(INVALID);
         if !glyphset.contains(&old_gid) {
             continue;
         }
@@ -672,11 +742,17 @@ pub(crate) fn colr_subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>) -
     // `layer_it`
     let mut layer_vectors: Vec<Vec<(u32, u32)>> = Vec::new();
     for new_gid in 0..num_output {
-        let old_gid = plan.reverse_glyph_map.get(&new_gid).copied().unwrap_or(INVALID);
+        let old_gid = plan
+            .reverse_glyph_map
+            .get(&new_gid)
+            .copied()
+            .unwrap_or(INVALID);
         if !glyphset.contains(&old_gid) {
             continue;
         }
-        let Some((_, first, num)) = colr.base_glyph_record(old_gid) else { continue };
+        let Some((_, first, num)) = colr.base_glyph_record(old_gid) else {
+            continue;
+        };
         if first >= colr.num_layers() || first + num > colr.num_layers() {
             continue;
         }
@@ -687,7 +763,11 @@ pub(crate) fn colr_subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>) -
                 ok = false;
                 break;
             };
-            let new_color = plan.colr_palettes.get(&color_idx).copied().unwrap_or(INVALID);
+            let new_color = plan
+                .colr_palettes
+                .get(&color_idx)
+                .copied()
+                .unwrap_or(INVALID);
             out_layers.push((new_layer_gid, new_color));
         }
         if ok {
@@ -707,7 +787,9 @@ pub(crate) fn colr_subset(plan: &Plan<'_>, s: &mut Serializer, data: View<'_>) -
     }
     // `subset_varstore` and `subset_delta_set_index_map` do nothing without variation indices
     // (the closure reports those as unsupported).
-    if !offset_subset_w(s, out + 14, 4, data, 14, |s, l| ctx.base_glyph_list_subset(s, l)) {
+    if !offset_subset_w(s, out + 14, 4, data, 14, |s, l| {
+        ctx.base_glyph_list_subset(s, l)
+    }) {
         return Ok(false);
     }
     offset_subset_w(s, out + 18, 4, data, 18, |s, l| ctx.layer_list_subset(s, l));
@@ -778,7 +860,11 @@ pub(crate) fn cpal_subset(plan: &Plan<'_>, s: &mut Serializer, cpal: View<'_>) -
     if color_index_map.is_empty() {
         return Ok(false);
     }
-    let retained: BTreeSet<u32> = color_index_map.keys().copied().filter(|&k| k != 0xFFFF).collect();
+    let retained: BTreeSet<u32> = color_index_map
+        .keys()
+        .copied()
+        .filter(|&k| k != 0xFFFF)
+        .collect();
     if retained.is_empty() {
         return Ok(false);
     }
@@ -798,11 +884,17 @@ pub(crate) fn cpal_subset(plan: &Plan<'_>, s: &mut Serializer, cpal: View<'_>) -
         first_color_index_for_layer.push(first);
         first_color_to_layer_index.insert(first, first_color_index_for_layer.len() as u32 - 1);
     }
-    s.set_u16(out + 6, (first_color_index_for_layer.len() * retained.len()) as u16);
+    s.set_u16(
+        out + 6,
+        (first_color_index_for_layer.len() * retained.len()) as u16,
+    );
 
     // `CPAL::serialize`
     for &idx in &record_indices {
-        let layer_index = first_color_to_layer_index.get(&idx).copied().unwrap_or(INVALID);
+        let layer_index = first_color_to_layer_index
+            .get(&idx)
+            .copied()
+            .unwrap_or(INVALID);
         s.embed_u16(layer_index.wrapping_mul(retained.len() as u32) as u16);
     }
     let num_color_records = cpal.u16(6) as usize;
@@ -811,7 +903,11 @@ pub(crate) fn cpal_subset(plan: &Plan<'_>, s: &mut Serializer, cpal: View<'_>) -
     for &first in &first_color_index_for_layer {
         for &color_index in &retained {
             let i = (first + color_index) as usize;
-            let v = if i < num_color_records { color_records.u32(4 * i) } else { 0 };
+            let v = if i < num_color_records {
+                color_records.u32(4 * i)
+            } else {
+                0
+            };
             s.embed_u32(v);
         }
     }

@@ -16,9 +16,8 @@ use std::collections::{BTreeSet, HashMap};
 use crate::context;
 use crate::gsubgpos::Kind;
 use crate::ot::{
-    offset_subset, serialize_copy_device,
-    ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset, coverage_serialize,
-    coverage_subset, device_copy,
+    ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset,
+    coverage_serialize, coverage_subset, device_copy, offset_subset, serialize_copy_device,
 };
 use crate::plan::Plan;
 use crate::serialize::{Serializer, Whence};
@@ -32,12 +31,17 @@ pub(crate) fn intersects(lookup_type: u32, sub: View<'_>, glyphs: &BTreeSet<u32>
         1 => matches!(format, 1 | 2) && Coverage(sub.off16(2)).intersects(glyphs),
         2 => match format {
             1 => pair1_intersects(sub, glyphs),
-            2 => Coverage(sub.off16(2)).intersects(glyphs) && ClassDef(sub.off16(10)).intersects(glyphs),
+            2 => {
+                Coverage(sub.off16(2)).intersects(glyphs)
+                    && ClassDef(sub.off16(10)).intersects(glyphs)
+            }
             _ => false,
         },
         3 => format == 1 && Coverage(sub.off16(2)).intersects(glyphs),
         4..=6 => {
-            format == 1 && Coverage(sub.off16(2)).intersects(glyphs) && Coverage(sub.off16(4)).intersects(glyphs)
+            format == 1
+                && Coverage(sub.off16(2)).intersects(glyphs)
+                && Coverage(sub.off16(4)).intersects(glyphs)
         }
         7 => context::context_intersects(sub, glyphs),
         8 => context::chain_context_intersects(sub, glyphs),
@@ -99,7 +103,13 @@ fn map_gid(map: &HashMap<u32, u32>, g: u32) -> u32 {
 
 /// `bytes[off..off + len]` of the view, zero padded.
 fn bytes_of(v: View<'_>, off: usize, len: usize) -> Vec<u8> {
-    let mut out: Vec<u8> = v.d.get(off..).unwrap_or(&[]).iter().copied().take(len).collect();
+    let mut out: Vec<u8> =
+        v.d.get(off..)
+            .unwrap_or(&[])
+            .iter()
+            .copied()
+            .take(len)
+            .collect();
     out.resize(len, 0);
     out
 }
@@ -115,7 +125,14 @@ fn value_len(format: u32) -> usize {
 
 /// `ValueFormat::copy_values` (ValueFormat.hh#L123-L166) with an empty variation delta map. The
 /// values are at `vo` of `vals`; the device offsets are relative to `base`.
-fn copy_values(s: &mut Serializer, format: u32, new_format: u32, base: View<'_>, vals: View<'_>, vo: usize) {
+fn copy_values(
+    s: &mut Serializer,
+    format: u32,
+    new_format: u32,
+    base: View<'_>,
+    vals: View<'_>,
+    vo: usize,
+) {
     if format == 0 {
         return;
     }
@@ -252,7 +269,9 @@ fn pair1_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
         }
         let snap = s.snapshot();
         let o = s.array_append(out + 8, 2);
-        let ret = offset_subset(s, o, sub, 10 + 2 * i, |s, ps| pair_set_subset(plan, s, ps, vf0, vf1));
+        let ret = offset_subset(s, o, sub, 10 + 2 * i, |s, ps| {
+            pair_set_subset(plan, s, ps, vf0, vf1)
+        });
         if !ret {
             s.array_pop(out + 8);
             s.revert(snap);
@@ -351,10 +370,15 @@ fn pair2_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
     let total_len = len1 + len2;
     let class1_count = sub.u16(12);
     let class2_count = sub.u16(14);
-    let class2_idxs: Vec<u32> = (0..class2_count).filter(|c| klass2_map.contains_key(c)).collect();
+    let class2_idxs: Vec<u32> = (0..class2_count)
+        .filter(|c| klass2_map.contains_key(c))
+        .collect();
     for class1_idx in (0..class1_count).filter(|c| klass1_map.contains_key(c)) {
         for &class2_idx in &class2_idxs {
-            let idx = class1_idx.wrapping_mul(class2_count).wrapping_add(class2_idx).wrapping_mul(total_len) as usize;
+            let idx = class1_idx
+                .wrapping_mul(class2_count)
+                .wrapping_add(class2_idx)
+                .wrapping_mul(total_len) as usize;
             copy_values(s, vf1, vf1, sub, sub, 16 + 2 * idx);
             copy_values(s, vf2, vf2, sub, sub, 16 + 2 * (idx + len1 as usize));
         }
@@ -394,7 +418,11 @@ fn anchor_subset(s: &mut Serializer, anchor: View<'_>) -> bool {
 
 /// `Device::get_variation_index`.
 fn device_variation_index(dev: View<'_>) -> u32 {
-    if dev.u16(4) == 0x8000 { dev.u32(0) } else { NO_VARIATIONS_INDEX }
+    if dev.u16(4) == 0x8000 {
+        dev.u32(0)
+    } else {
+        NO_VARIATIONS_INDEX
+    }
 }
 
 /// `AnchorFormat3::subset` (AnchorFormat3.hh#L71-L141) with an empty variation index map.
@@ -402,12 +430,20 @@ fn anchor3_subset(s: &mut Serializer, anchor: View<'_>) -> bool {
     let start = s.embed(&bytes_of(anchor, 0, 6));
     let x_dev = anchor.u16(6);
     let y_dev = anchor.u16(8);
-    let x_varidx = if x_dev != 0 { device_variation_index(anchor.sub(x_dev as usize)) } else { NO_VARIATIONS_INDEX };
+    let x_varidx = if x_dev != 0 {
+        device_variation_index(anchor.sub(x_dev as usize))
+    } else {
+        NO_VARIATIONS_INDEX
+    };
     if x_varidx != NO_VARIATIONS_INDEX {
         // `layout_variation_idx_delta_map` has no entry for it.
         return false;
     }
-    let y_varidx = if y_dev != 0 { device_variation_index(anchor.sub(y_dev as usize)) } else { NO_VARIATIONS_INDEX };
+    let y_varidx = if y_dev != 0 {
+        device_variation_index(anchor.sub(y_dev as usize))
+    } else {
+        NO_VARIATIONS_INDEX
+    };
     if y_varidx != NO_VARIATIONS_INDEX {
         return false;
     }
@@ -448,7 +484,11 @@ fn anchor_matrix_subset(s: &mut Serializer, m: View<'_>, num_rows: u32, indexes:
 }
 
 /// `Markclass_closure_and_remap_indexes` (MarkArray.hh#L146-L170).
-fn markclass_closure(mark_cov: &[u32], ma: View<'_>, glyphset: &BTreeSet<u32>) -> HashMap<u32, u32> {
+fn markclass_closure(
+    mark_cov: &[u32],
+    ma: View<'_>,
+    glyphset: &BTreeSet<u32>,
+) -> HashMap<u32, u32> {
     let n = ma.u16(0) as usize;
     let orig_classes: BTreeSet<u32> = mark_cov
         .iter()
@@ -536,7 +576,12 @@ fn cursive_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
 /// The marks of a mark coverage that are retained: `(glyph, record index)`.
 fn retained_marks(plan: &Plan<'_>, mark_cov: &[u32], ma: View<'_>) -> Vec<u32> {
     let n = ma.u16(0) as usize;
-    mark_cov.iter().zip(0..n).filter(|(g, _)| plan.glyphset_gsub.contains(g)).map(|(&g, _)| g).collect()
+    mark_cov
+        .iter()
+        .zip(0..n)
+        .filter(|(g, _)| plan.glyphset_gsub.contains(g))
+        .map(|(&g, _)| g)
+        .collect()
 }
 
 /// The part of the three mark attachment subsetters up to and including the mark array.
@@ -558,9 +603,13 @@ fn mark_prefix(
         return None;
     }
     s.set_u16(out + 6, klass_mapping.len() as u16);
-    let new_coverage: Vec<u32> =
-        retained_marks(plan, &mark_cov, ma).into_iter().map(|g| map_gid(glyph_map, g)).collect();
-    if !s.serialize_serialize(out + mark_cov_field, 2, |s| coverage_serialize(s, &new_coverage)) {
+    let new_coverage: Vec<u32> = retained_marks(plan, &mark_cov, ma)
+        .into_iter()
+        .map(|g| map_gid(glyph_map, g))
+        .collect();
+    if !s.serialize_serialize(out + mark_cov_field, 2, |s| {
+        coverage_serialize(s, &new_coverage)
+    }) {
         return None;
     }
     if !offset_subset(s, out + mark_array_field, sub, mark_array_field, |s, ma| {
@@ -584,7 +633,12 @@ fn mark_mark_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool 
 /// The two subsetters differ only in the number of rows of the second array: the number of
 /// retained base glyphs with a non-empty row for mark to base, and the number of retained second
 /// marks for mark to mark.
-fn mark_base_or_mark_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>, is_mark_mark: bool) -> bool {
+fn mark_base_or_mark_subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    sub: View<'_>,
+    is_mark_mark: bool,
+) -> bool {
     let glyphset = &plan.glyphset_gsub;
     let out = s.allocate(12);
     s.set_u16(out, sub.u16(0) as u16);
@@ -623,8 +677,14 @@ fn mark_base_or_mark_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>, 
     if !s.serialize_serialize(out + 4, 2, |s| coverage_serialize(s, &new_coverage)) {
         return false;
     }
-    let rows = if is_mark_mark { iter.len() } else { new_coverage.len() } as u32;
-    offset_subset(s, out + 10, sub, 10, |s, m| anchor_matrix_subset(s, m, rows, &indexes))
+    let rows = if is_mark_mark {
+        iter.len()
+    } else {
+        new_coverage.len()
+    } as u32;
+    offset_subset(s, out + 10, sub, 10, |s, m| {
+        anchor_matrix_subset(s, m, rows, &indexes)
+    })
 }
 
 /// `MarkLigPosFormat1_2::subset` with `LigatureArray::subset`.
@@ -638,7 +698,15 @@ fn mark_lig_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
     let lig_cov = Coverage(sub.off16(4)).iter();
     let mut new_lig_coverage: Vec<u32> = Vec::new();
     if !offset_subset(s, out + 10, sub, 10, |s, la| {
-        lig_array_subset(plan, s, la, &lig_cov, class_count, &klass_mapping, &mut new_lig_coverage)
+        lig_array_subset(
+            plan,
+            s,
+            la,
+            &lig_cov,
+            class_count,
+            &klass_mapping,
+            &mut new_lig_coverage,
+        )
     }) {
         return false;
     }
@@ -665,14 +733,19 @@ fn lig_array_subset(
         let src = la.off16(2 + 2 * i);
         let rows = src.u16(0);
         let total = rows.wrapping_mul(class_count);
-        let indexes: Vec<u32> = (0..total).filter(|idx| klass_mapping.contains_key(&(idx % class_count))).collect();
-        let non_empty =
-            indexes.iter().any(|&idx| !matrix_offset_is_null(src, idx / class_count, idx % class_count, class_count));
+        let indexes: Vec<u32> = (0..total)
+            .filter(|idx| klass_mapping.contains_key(&(idx % class_count)))
+            .collect();
+        let non_empty = indexes.iter().any(|&idx| {
+            !matrix_offset_is_null(src, idx / class_count, idx % class_count, class_count)
+        });
         if !non_empty {
             continue;
         }
         let pos = s.array_append(out, 2);
-        ret |= offset_subset(s, pos, la, 2 + 2 * i, |s, m| anchor_matrix_subset(s, m, rows, &indexes));
+        ret |= offset_subset(s, pos, la, 2 + 2 * i, |s, m| {
+            anchor_matrix_subset(s, m, rows, &indexes)
+        });
         new_coverage.push(map_gid(&plan.glyph_map_gsub, g));
     }
     ret

@@ -40,7 +40,8 @@ pub(crate) fn intersects(lookup_type: u32, sub: View<'_>, glyphs: &BTreeSet<u32>
             cov.iter().into_iter().take(n).enumerate().any(|(i, g)| {
                 glyphs.contains(&g) && {
                     let ls = sub.off16(6 + 2 * i);
-                    (0..ls.u16(0) as usize).any(|k| ligature_intersects(ls.off16(2 + 2 * k), glyphs))
+                    (0..ls.u16(0) as usize)
+                        .any(|k| ligature_intersects(ls.off16(2 + 2 * k), glyphs))
                 }
             })
         }
@@ -493,7 +494,9 @@ fn reverse_chain_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> b
                 return false;
             }
             let c = Coverage(sub.off16(first + 2 * i));
-            if !s.serialize_subset(o, 2, true, |s| coverage_subset(s, c, plan.source.num_glyphs(), &plan.glyph_map_gsub)) {
+            if !s.serialize_subset(o, 2, true, |s| {
+                coverage_subset(s, c, plan.source.num_glyphs(), &plan.glyph_map_gsub)
+            }) {
                 return false;
             }
         }

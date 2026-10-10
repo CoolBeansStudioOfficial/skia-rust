@@ -60,7 +60,11 @@ pub(crate) fn subset_gvar(plan: &mut Plan<'_>) -> Res<bool> {
     if data.is_empty() || !sanitize_shallow(gvar, plan.source.num_glyphs()) {
         return Err(SubsetError::Failed);
     }
-    let glyph_count = if gvar.u32(0) != 0 { plan.source.num_glyphs() } else { 0 };
+    let glyph_count = if gvar.u32(0) != 0 {
+        plan.source.num_glyphs()
+    } else {
+        0
+    };
     let num_glyphs = plan.num_output_glyphs;
     let axis_count = gvar.u16(4);
     let shared_tuple_count = gvar.u16(6);
@@ -139,7 +143,8 @@ pub(crate) fn subset_gvar(plan: &mut Plan<'_>) -> Res<bool> {
         if long_offset {
             out[offsets_pos + 4 * i..offsets_pos + 4 * i + 4].copy_from_slice(&o.to_be_bytes());
         } else {
-            out[offsets_pos + 2 * i..offsets_pos + 2 * i + 2].copy_from_slice(&(o as u16).to_be_bytes());
+            out[offsets_pos + 2 * i..offsets_pos + 2 * i + 2]
+                .copy_from_slice(&(o as u16).to_be_bytes());
         }
     }
     out.extend_from_slice(&body);

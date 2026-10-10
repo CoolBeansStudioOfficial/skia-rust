@@ -205,7 +205,10 @@ fn subset_matches_hb_subset() {
         .map(|(font, _)| *font)
         .filter(|font| !gaps.keys().any(|g| g.starts_with(&format!("{font}:"))))
         .collect();
-    assert!(now_ported.is_empty(), "now ported, remove from NOT_PORTED: {now_ported:?}");
+    assert!(
+        now_ported.is_empty(),
+        "now ported, remove from NOT_PORTED: {now_ported:?}"
+    );
 }
 
 /// A local-only run over a larger corpus: `HB_SUBSET_EXT_DIR` names a directory with `fonts/`,
@@ -220,19 +223,34 @@ fn subset_matches_hb_subset_extended() {
     let corpus = fs::read_to_string(ext.join("corpus.txt")).unwrap();
     let expected = fs::read_to_string(ext.join("expected.txt")).unwrap();
     let mut want: BTreeMap<String, String> = BTreeMap::new();
-    for line in expected.lines().filter(|l| !l.starts_with('#') && !l.is_empty()) {
+    for line in expected
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.is_empty())
+    {
         let mut it = line.splitn(4, ' ');
-        let key = format!("{} {} {}", it.next().unwrap(), it.next().unwrap(), it.next().unwrap());
+        let key = format!(
+            "{} {} {}",
+            it.next().unwrap(),
+            it.next().unwrap(),
+            it.next().unwrap()
+        );
         want.insert(key, it.next().unwrap().to_string());
     }
     let (mut exact, mut missing) = (0usize, 0usize);
     let mut gaps: BTreeMap<String, usize> = BTreeMap::new();
     let mut bad_fonts: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut font_cache: BTreeMap<String, Vec<u8>> = BTreeMap::new();
-    for line in corpus.lines().filter(|l| !l.starts_with('#') && !l.is_empty()) {
+    for line in corpus
+        .lines()
+        .filter(|l| !l.starts_with('#') && !l.is_empty())
+    {
         let mut it = line.splitn(4, ' ');
-        let (font, index, set, gids) =
-            (it.next().unwrap(), it.next().unwrap(), it.next().unwrap(), it.next().unwrap());
+        let (font, index, set, gids) = (
+            it.next().unwrap(),
+            it.next().unwrap(),
+            it.next().unwrap(),
+            it.next().unwrap(),
+        );
         if let Ok(only) = std::env::var("HB_SUBSET_EXT_FONT") {
             if !font.contains(&only) {
                 continue;
@@ -248,9 +266,14 @@ fn subset_matches_hb_subset_extended() {
             .or_insert_with(|| fs::read(ext.join("fonts").join(font)).unwrap());
         let glyphs: Vec<u32> = gids.split(',').map(|g| g.parse().unwrap()).collect();
         let ttc_index: u32 = index.parse().unwrap();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| try_subset_font(data, glyphs, ttc_index)));
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            try_subset_font(data, glyphs, ttc_index)
+        }));
         let Ok(result) = result else {
-            bad_fonts.entry(font.to_string()).or_default().push(format!("{set}: PANIC"));
+            bad_fonts
+                .entry(font.to_string())
+                .or_default()
+                .push(format!("{set}: PANIC"));
             continue;
         };
         match result {
@@ -259,17 +282,28 @@ fn subset_matches_hb_subset_extended() {
                 if &got == want {
                     exact += 1;
                 } else {
-                    bad_fonts.entry(font.to_string()).or_default().push(format!("{set}: got {got}, want {want}"));
+                    bad_fonts
+                        .entry(font.to_string())
+                        .or_default()
+                        .push(format!("{set}: got {got}, want {want}"));
                 }
             }
             Err(SubsetError::Failed) => {
                 if want == "FAIL" {
                     exact += 1;
                 } else {
-                    bad_fonts.entry(font.to_string()).or_default().push(format!("{set}: failed, want {want}"));
+                    bad_fonts
+                        .entry(font.to_string())
+                        .or_default()
+                        .push(format!("{set}: failed, want {want}"));
                 }
             }
-            Err(SubsetError::Unsupported(what)) => *gaps.entry(what.to_string()).or_default() += 1,
+            Err(SubsetError::Unsupported(what)) => {
+                *gaps.entry(what.to_string()).or_default() += 1;
+                if std::env::var("HB_SUBSET_EXT_VERBOSE").is_ok() {
+                    eprintln!("extended: unsupported {what}: {font} {set}");
+                }
+            }
         }
     }
     eprintln!("extended: exact {exact}, missing expected {missing}");
