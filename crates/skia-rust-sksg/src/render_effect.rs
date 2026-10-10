@@ -439,11 +439,21 @@ impl ImageFilterEffect {
         let Some(filter) = filter else {
             return child;
         };
+        Self::make_with_filter(&child, &filter)
+    }
+
+    /// `ImageFilterEffect::Make(child, filter)` as the concrete node, so that its cropping can be
+    /// set without a downcast.
+    #[must_use]
+    pub fn make_with_filter(
+        child: &Rc<dyn RenderNode>,
+        filter: &Rc<dyn ImageFilterNode>,
+    ) -> Rc<Self> {
         let effect = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             // filters always override descendent damage
             core: NodeCore::new(inval_traits::OVERRIDE_DAMAGE, weak.clone()),
-            child: Rc::clone(&child),
-            image_filter: Rc::clone(&filter),
+            child: Rc::clone(child),
+            image_filter: Rc::clone(filter),
             cropping: Cell::new(Cropping::None),
         });
         // Port of: modules/sksg/src/SkSGRenderEffect.cpp#L184-L188 (chrome/m156) (`ImageFilterEffect::ImageFilterEffect`)
