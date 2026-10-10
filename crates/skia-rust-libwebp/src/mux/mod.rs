@@ -27,6 +27,8 @@
     clippy::struct_excessive_bools
 )]
 
+pub mod anim_encode;
+
 use crate::vp8_dec;
 use crate::vp8l;
 
