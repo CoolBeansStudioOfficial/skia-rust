@@ -22,3 +22,26 @@ Hypotheses, not checked:
 Next step: dump the first differing pixel of that row from the oracle goldens and compare
 with the planes produced by `create_yuv` for that format; check the two hypotheses above
 before changing the arithmetic.
+
+## Second attempt (branch port/yuva-cpu3): not resolved, still failing
+
+What was done: seeded the golden cache per the preamble, built gm-verify in release, and ran
+`gm-verify --match WackyYUVFormatsGM` with diffs. Every tier and config still mismatches (ours
+`2dd72380...` vs golden `68ceb28e...` for 565; `45aefe1a...` vs `5de20777...` for f16). The 8888
+diff PNG for `cpu-x64-scalar-rgba` shows three panels (ours | golden | diff) at 11415x1451, so each
+panel is 3805 px wide. The raw dumps are 3805x1451 RGBA8888.
+
+Findings:
+- The diff PNG shows only one band mismatching (the 4:4:4 interleaved format row).
+- Comparing the raw dumps pixel by pixel gives 311949 differing pixels over 194 rows
+  (first at x=1, y=220: ours `cccccc`, golden `000000`), so the raw comparison does not match
+  the single band the PNG shows. Either the raw dump is not laid out as the PNG panels, or the
+  mismatch is wider than the diff image shows. This was not resolved.
+
+Not checked (still open): Y410 packing and the 10-bit rounding, AYUV channel order, and the
+alpha/color type per plane. The YUVAPixmaps plane change in this branch did not alter the
+pixel values of this GM (it only changes plane views; `from_external_pixmaps` still copies).
+
+Next step: confirm the raw dump layout against the golden's dimensions (look at how gm-verify
+writes `.raw` for multi-panel output), then dump the first mismatching pixel of the 4:4:4 row
+from both sides and check the Y410/AYUV packing against `SkYUVAPixmaps` plane formats.
