@@ -30443,8 +30443,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs make_gradient_bitmap (raster surface with a linear gradient shader read back) and the skcms conversions, compared with the C++ tolerances of 1 and 20 (CodecTest.cpp#L2444-L2519)"
+status = "failing"
+reason = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1). The project allows no tolerances, so the test stays ignored"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
