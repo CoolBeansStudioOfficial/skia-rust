@@ -19,11 +19,10 @@
 //!
 //! # What is not here yet
 //!
-//! - `ClipStack` (G10b) is the device's clip; the clip atlas it can hand draws (`ClipAtlasManager`)
-//!   is G12a, so the device passes none and every clip element that is not analytic is a
-//!   depth-only clip draw.
-//! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
-//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawCoverageMask()` and `drawBlurredRRect()`, and
+//! - The compute path atlas (`getComputePathAtlas`, Vello, G13) and the sparse strips
+//!   (`PathRendererStrategy::kCPUSparseStripsMSAA8`, G17): the path renderer strategies that need
+//!   them fall back to tessellation.
+//! - Text (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawBlurredRRect()`, and
 //!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
 //!   `makeSurface()`, `makeImageCopy()`, the non-copyable `onWritePixels()` fallback,
 //!   `drawSpecial()`, `snapSpecial()` and the image filtering backend (`docs/design/gpu.md` §5.5)
@@ -36,6 +35,7 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blend_mode_blender::get_blend_mode_singleton;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
@@ -49,6 +49,7 @@ use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::mesh::{self, Mesh, mesh_priv};
 use skia_rust_core::paint::{Cap, Paint, Style as PaintStyle};
+use skia_rust_core::paint_priv::compute_luminance_color;
 use skia_rust_core::path::Path;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::Point;
@@ -59,18 +60,23 @@ use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::ISize;
+use skia_rust_core::slug::Slug;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
-use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 use skia_rust_core::vertices::Vertices;
 use skia_rust_raster::region_path::RegionExt;
 use skia_rust_simd::vx::{self, Float2};
 
 use crate::gpu::backing_fit::{BackingFit, get_approx_size};
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Renderable};
+use crate::gpu::mask_format::MaskFormat;
+use crate::gpu::sk_log::skia_log_e;
 use crate::gpu::sk_log::skia_log_w;
+use crate::graphite::clip_atlas_manager::RecorderClipAtlas;
 use crate::graphite::clip_stack::{
-    ClipDrawHooks, ClipStack, ClipState, ElementList, PixelSnapping,
+    ClipAtlasManager as ClipAtlasSeam, ClipDrawHooks, ClipStack, ClipState, ElementList,
+    PixelSnapping,
 };
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::draw_list_base::MAX_RENDER_STEPS;
@@ -81,11 +87,14 @@ use crate::graphite::draw_order::{
 use crate::graphite::draw_params::{Clip, StrokeStyle};
 use crate::graphite::draw_types::DstUsage;
 use crate::graphite::geom::bounds_manager::{BoundsManager, HybridBoundsManager};
+use crate::graphite::geom::coverage_mask_shape::CoverageMaskShape;
+use crate::graphite::geom::coverage_mask_shape::MaskInfo;
 use crate::graphite::geom::edge_aa_quad::{EdgeAAQuad, Flags as EdgeFlags};
 use crate::graphite::geom::geometry::Geometry;
 use crate::graphite::geom::intersection_tree::IntersectionTree;
 use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::shape::Shape;
+use crate::graphite::geom::sub_run_data::SubRunData;
 use crate::graphite::geom::transform::{Transform, Type as TransformType};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::image_factories::texture_from_image;
@@ -93,9 +102,11 @@ use crate::graphite::image_filter_backend::make_graphite_backend;
 use crate::graphite::image_graphite::{DeviceLink, Image as GraphiteImage, wrap_device};
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::paint_params::{PaintParams, ShadingParams, SimpleImage};
+use crate::graphite::path_atlas::PathAtlas;
 use crate::graphite::recorder::{Recorder, RecorderInner, RecorderPriv, TrackedDevice};
 use crate::graphite::render_step::Coverage;
 use crate::graphite::renderer::Renderer;
+use crate::graphite::renderer_provider::PathRendererStrategy;
 use crate::graphite::resource_types::{DstReadStrategy, LoadOp};
 use crate::graphite::special_image::make_graphite;
 use crate::graphite::surface_graphite::Surface;
@@ -103,7 +114,13 @@ use crate::graphite::task::TaskRef;
 use crate::graphite::task::upload_task::{MipLevel, UploadSource};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
+use crate::graphite::texture_utils::as_view;
 use crate::graphite::unique_paint_params_id::UniquePaintParamsID;
+use crate::text_gpu::glyph_vector::RendererData;
+use crate::text_gpu::slug_impl::SlugImpl;
+use crate::text_gpu::sub_run_container::AtlasSubRun;
+use crate::text_gpu::sub_run_container::{StrikeDeviceInfo, SubRunTarget};
+use crate::text_gpu::sub_run_control::SubRunControl;
 
 // ASSERT_SINGLE_OWNER: a device is `!Send` (it holds `Rc`s), which is the single-owner contract.
 
@@ -466,6 +483,10 @@ pub struct DeviceCore {
     // The tracked handle of this core, to deregister it.
     this: Weak<RefCell<DeviceCore>>,
 
+    // `fSubRunControl`: how text is drawn on this device (distance field text, direct masks or
+    // paths), from the caps and the device's surface props.
+    sub_run_control: SubRunControl,
+
     // What the images of this device's target hold of it (`sk_sp<Device>` in
     // `Image_Base::fLinkedDevices`, `docs/design/gpu.md` §5.6).
     link: Arc<DeviceLink>,
@@ -525,7 +546,6 @@ impl Device {
         // - This would also apply for compute renderers that have to write directly to
         //   `target`, but the current versions of compute render into separate compute-compatible
         //   textures instead.
-        // (Only the tessellation strategy exists until G10c/G12a.)
         let priv_ = recorder.priv_();
         let caps = priv_.caps();
         if caps.get_compatible_msaa_sample_count(target.texture_info()) <= SampleCount::One {
@@ -547,6 +567,12 @@ impl Device {
         }
 
         let state = DeviceState::new(dc.image_info().clone(), *dc.surface_props());
+        // `fSubRunControl(recorder->priv().caps()->getSubRunControl(
+        // surfaceProps.isUseDeviceIndependentFonts()))`
+        let sub_run_control = SubRunControl::from_caps(
+            &**caps,
+            dc.surface_props().is_use_device_independent_fonts(),
+        );
         let link = DeviceLink::new(
             priv_.unique_id(),
             dc.target().ref_proxy().expect("a device has a target"),
@@ -557,6 +583,7 @@ impl Device {
                 dc,
                 this.clone(),
                 link,
+                sub_run_control,
             ))
         });
         let device = Device {
@@ -801,6 +828,7 @@ impl DeviceCore {
         dc: DrawContext,
         this: Weak<RefCell<DeviceCore>>,
         link: Arc<DeviceLink>,
+        sub_run_control: SubRunControl,
     ) -> Self {
         let width = dc.image_info().width();
         let height = dc.image_info().height();
@@ -830,6 +858,7 @@ impl DeviceCore {
             is_flushing: false,
             scoped_recording_id: 0,
             this,
+            sub_run_control,
             link,
         }
     }
@@ -972,6 +1001,163 @@ impl DeviceCore {
             &PaintParams::from_paint_with_image(paint, image_shader, 1.0),
             &default_fill_style(),
         );
+    }
+
+    /// `drawCoverageMask(mask, maskToDevice, sampling, paint)`: draws a Graphite-backed mask image
+    /// as a `CoverageMaskShape` placed by `mask_to_device`. The device's local-to-device transform
+    /// shades it.
+    // Port of: src/gpu/graphite/Device.cpp#L2481-L2517 (chrome/m156)
+    #[doc(alias = "drawCoverageMask")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )] // SkTo<uint16_t> and the int to float of the mask size, as the C++
+    pub fn draw_coverage_mask(
+        &mut self,
+        mask: &SpecialImage,
+        mask_to_device: &Matrix,
+        paint: &Paint,
+    ) {
+        let subset = mask.subset();
+        let mask_info = MaskInfo {
+            texture_origin: (subset.left as u16, subset.top as u16),
+            mask_size: (mask.width() as u16, mask.height() as u16),
+        };
+
+        let Some(mask_image) = mask.as_image() else {
+            skia_log_w!("Couldn't get Graphite-backed special image as texture proxy view");
+            return;
+        };
+        let Some(proxy) = as_view(Some(&mask_image)).ref_proxy() else {
+            skia_log_w!("Couldn't get Graphite-backed special image as texture proxy view");
+            return;
+        };
+        let Some(recorder) = self.recorder() else {
+            return;
+        };
+
+        // Every other "Image" draw reaches the underlying texture via AddToKey/NotifyInUse, which
+        // handles notifying the image. The texture here is consumed by the RenderStep and is not
+        // part of the PaintParams, so the notification is done here.
+        if let Some(graphite) = GraphiteImage::from_core(&mask_image) {
+            graphite.notify_in_use(&recorder, Some(self));
+        }
+
+        // CoverageMaskShape() wraps a Shape when it's used as a PathAtlas, but in this case the
+        // original shape has been long lost, so just use a Rect that bounds the image. The
+        // provided `maskToDevice` places the mask in device space. The Device's local-to-device
+        // transform is used for shading.
+        let mask_shape = CoverageMaskShape::new(
+            &Shape::from_rect(Rect::wh(mask.width() as f32, mask.height() as f32)),
+            proxy,
+            M44::from(mask_to_device),
+            mask_info,
+        );
+        let local_to_device = self.local_to_device_transform();
+        self.draw_geometry(
+            &local_to_device,
+            Geometry::CoverageMaskShape(mask_shape),
+            &PaintParams::new(paint, None, false, false),
+            &default_fill_style(),
+        );
+    }
+
+    /// `Device::drawAtlasSubRun(subRun, drawOrigin, paint, subRunStorage, rendererData)`: draws
+    /// the glyphs of an atlas sub run. The glyphs are first added to the text atlas; if not all of
+    /// them fit, the draws recorded so far are flushed to make room, and the rest are drawn next.
+    // Port of: src/gpu/graphite/Device.cpp#L1536-L1607 (chrome/m156)
+    #[doc(alias = "drawAtlasSubRun")]
+    #[allow(clippy::missing_panics_doc)] // the expect is the C++ non-null backend data invariant
+    pub fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        let Some(recorder) = self.recorder() else {
+            return;
+        };
+
+        // For color emoji, the shading behaves similarly to how drawImageRects override the shader
+        // via a SimpleImage. However, for text, the "image" is coming from the atlas and
+        // RenderStep as a primitive color and is combined with the paint color using the
+        // primitive blender, so we construct the PaintParams to explicitly ignore the paint's set
+        // shader. For regular and LCD text, the mask image provides coverage so there is no
+        // primitive blender.
+        let primitive_blender = (sub_run.mask_format() == MaskFormat::Argb)
+            .then(|| get_blend_mode_singleton(BlendMode::DstIn));
+        let paint_params = PaintParams::new(
+            paint,
+            primitive_blender,
+            /*skip_color_xform=*/ false,
+            /*ignore_shader=*/ primitive_blender.is_some(),
+        );
+        let use_gamma_correct_distance_table = self
+            .dc
+            .image_info()
+            .color_space()
+            .is_some_and(|color_space| color_space.gamma_is_linear());
+        let local_to_device = self.local_to_device_transform();
+
+        let sub_run_end = sub_run.glyph_count();
+
+        if !sub_run.glyph_vector().has_backend_data() {
+            sub_run
+                .glyph_vector()
+                .init_backend_data(&recorder, renderer_data);
+        }
+
+        let (bounds, mask_to_device) = sub_run
+            .vertex_filler()
+            .bounds_and_device_matrix(&local_to_device.matrix().to_m33(), draw_origin);
+
+        let mut sub_run_cursor = 0;
+        while sub_run_cursor < sub_run_end {
+            // For the remainder of the run, add any atlas uploads to the Recorder's
+            // TextAtlasManager
+            let (ok, glyphs_regenerated) = sub_run
+                .glyph_vector()
+                .backend()
+                .as_mut()
+                .expect("the sub run has backend data")
+                .regenerate_atlas(sub_run_cursor, sub_run_end, &recorder);
+
+            // There was a problem allocating the glyph in the atlas. Bail.
+            if !ok {
+                return;
+            }
+            if glyphs_regenerated > 0 {
+                self.draw_geometry(
+                    &local_to_device,
+                    Geometry::SubRun(SubRunData::new(
+                        Arc::clone(sub_run),
+                        Rect::from_sk_rect(&bounds),
+                        M44::from(&mask_to_device),
+                        sub_run_cursor,
+                        glyphs_regenerated,
+                        compute_luminance_color(paint),
+                        use_gamma_correct_distance_table,
+                        self.dc.surface_props().pixel_geometry(),
+                        &recorder,
+                    )),
+                    &paint_params,
+                    &default_fill_style(),
+                );
+            }
+            sub_run_cursor += glyphs_regenerated;
+
+            if sub_run_cursor < sub_run_end {
+                // Flush if not all the glyphs are handled because the atlas is out of space. We
+                // flush every Device because the glyphs that are being flushed/referenced are not
+                // necessarily specific to this Device. This addresses both multiple SkSurfaces
+                // within a Recorder, and nested layers.
+                recorder
+                    .priv_()
+                    .flush_tracked_devices_and_current("Device::drawAtlasSubRun", self);
+            }
+        }
     }
 
     /// `snapSpecial(subset, forceCopy)`: a special image of `subset` of the device's target, a
@@ -1212,8 +1398,12 @@ impl DeviceCore {
     /// into the Device's `DrawTask`.
     // Port of: src/gpu/graphite/Device.cpp#L2409-L2430 (chrome/m156)
     fn internal_flush(&mut self, recorder: &Recorder) {
-        // (The atlas provider would record its pending uploads that pending draws reference here
-        // (G12a).)
+        // Push any pending uploads from the atlas provider that pending draws reference.
+        recorder
+            .priv_()
+            .atlas_provider()
+            .borrow_mut()
+            .record_uploads(&mut self.dc, recorder);
 
         // Clip shapes are depth-only draws, but aren't recorded in the DrawContext until a flush
         // in order to determine the Z values for each element.
@@ -1227,7 +1417,12 @@ impl DeviceCore {
         self.current_depth = DrawOrder::K_CLEAR_DEPTH;
         self.atlased_path_count = 0;
 
-        // (Any cleanup in the AtlasProvider (G12a).)
+        // Any cleanup in the AtlasProvider.
+        recorder
+            .priv_()
+            .atlas_provider()
+            .borrow_mut()
+            .compact(recorder);
     }
 
     // Port of: src/gpu/graphite/Device.cpp#L2432-L2442 (chrome/m156)
@@ -2097,24 +2292,50 @@ impl DeviceCore {
         self.draw_geometry(local_to_device, geometry, paint, &style);
     }
 
-    // The renderer for a geometry and style: the code of `chooseRenderer()` that does not
-    // involve a path atlas or a `PathRendererStrategy` other than tessellation (G10c, G12a).
+    // The renderer for a geometry and style: `chooseRenderer()`. The second value is whether the
+    // shape is drawn from the raster path atlas instead: then the renderer is the one
+    // `PathAtlas::addShape()` returns, and the first value is `None`.
     // Port of: src/gpu/graphite/Device.cpp#L2142-L2302 (chrome/m156)
+    #[allow(clippy::too_many_lines)] // one function in C++
     fn choose_renderer<'r>(
-        recorder: &'r RecorderPriv<'_>,
+        recorder: RecorderPriv<'r>,
         local_to_device: &Transform,
         geometry: &Geometry,
         style: &StrokeRec,
         draw_bounds: &Rect,
-    ) -> Option<&'r Renderer> {
+        atlased_path_count: i32,
+    ) -> (Option<&'r Renderer>, bool) {
         let renderers = recorder.renderer_provider();
         let ty = style.style();
 
         match geometry {
-            Geometry::Vertices(vertices) => {
-                return Some(renderers.vertices(vertices.has_colors(), vertices.has_tex_coords()));
+            Geometry::SubRun(sub_run_data) => {
+                let renderer_data = sub_run_data.renderer_data();
+                if !renderer_data.is_sdf {
+                    return (
+                        Some(
+                            renderers.bitmap_text(renderer_data.is_lcd, renderer_data.mask_format),
+                        ),
+                        false,
+                    );
+                }
+                // Even though the SkPaint can request subpixel rendering, we still need to match
+                // this with the pixel geometry.
+                let use_lcd =
+                    renderer_data.is_lcd && sub_run_data.pixel_geometry() != PixelGeometry::Unknown;
+                return (Some(renderers.sdf_text(use_lcd)), false);
             }
-            Geometry::Mesh(_) => return Some(renderers.mesh()),
+            Geometry::Vertices(vertices) => {
+                return (
+                    Some(renderers.vertices(vertices.has_colors(), vertices.has_tex_coords())),
+                    false,
+                );
+            }
+            Geometry::Mesh(_) => return (Some(renderers.mesh()), false),
+            // drawCoverageMask() passes in CoverageMaskShapes that reference a provided texture.
+            // The CoverageMask renderer can also be chosen later on if the shape is assigned to
+            // to be rendered into the PathAtlas.
+            Geometry::CoverageMaskShape(_) => return (Some(renderers.coverage_mask()), false),
             Geometry::EdgeAAQuad(quad) => {
                 debug_assert!(style.is_fill_style());
                 // handled by specialized system, simplified from rects and round rects
@@ -2127,18 +2348,18 @@ impl DeviceCore {
                     // turned on because quad tile edges will seam with each in either mode. We
                     // also switch to use the cover bounds when the quad is pixel aligned to be
                     // consistent with drawRect Renderer handling.
-                    Some(renderers.non_aa_bounds_fill())
+                    (Some(renderers.non_aa_bounds_fill()), false)
                 } else {
-                    Some(renderers.per_edge_aa_quad())
+                    (Some(renderers.per_edge_aa_quad()), false)
                 };
             }
             Geometry::Shape(_) => {}
             // We must account for new Geometry types with specific Renderers
-            Geometry::Empty => return None,
+            Geometry::Empty => return (None, false),
         }
 
         let Geometry::Shape(shape) = geometry else {
-            return None;
+            return (None, false);
         };
         if is_simple_shape(shape, local_to_device, ty) {
             debug_assert_ne!(ty, StrokeStyleKind::StrokeAndFill); // stroke+fill is *not* simple
@@ -2151,9 +2372,9 @@ impl DeviceCore {
 
             return if shape.is_empty() || pixel_aligned_rect {
                 debug_assert!(!shape.is_empty() || shape.inverted());
-                Some(renderers.non_aa_bounds_fill())
+                (Some(renderers.non_aa_bounds_fill()), false)
             } else {
-                Some(renderers.analytic_rrect())
+                (Some(renderers.analytic_rrect()), false)
             };
         }
 
@@ -2178,39 +2399,67 @@ impl DeviceCore {
                     StrokeStyleKind::StrokeAndFill => {
                         // This produces a strange result that this op doesn't implement.
                     }
-                    StrokeStyleKind::Fill => return Some(renderers.circular_arc()),
+                    StrokeStyleKind::Fill => return (Some(renderers.circular_arc()), false),
                     StrokeStyleKind::Stroke | StrokeStyleKind::Hairline => {
                         // Strokes that don't use the center point are supported with butt & round
                         // caps.
                         let is_wedge = shape.arc().is_wedge();
                         let is_square_cap = style.cap() == Cap::Square;
                         if !is_wedge && !is_square_cap {
-                            return Some(renderers.circular_arc());
+                            return (Some(renderers.circular_arc()), false);
                         }
                     }
                 }
             }
         }
 
-        // (The PathRendererStrategy dispatch to the compute, small and raster path atlases, and
-        // to sparse strips, comes with G12a and G17; the strategy is tessellation.)
+        // The PathRendererStrategy dispatch. The Vello compute strategies are never selected (the
+        // RendererProvider does not support them in this build), and the sparse strips are not
+        // ported yet (G17), so they fall through to tessellation like a shape that does not fit.
+        match renderers.path_renderer_strategy() {
+            PathRendererStrategy::TessellationAndSmallAtlas => {
+                const K_MAX_SMALL_PATH_ATLAS_COUNT: i32 = 256;
+                let min_path_size_for_msaa = recorder.caps().min_path_size_for_msaa();
+                let size = draw_bounds.size();
+                if atlased_path_count < K_MAX_SMALL_PATH_ATLAS_COUNT
+                    && size[0] <= min_path_size_for_msaa
+                    && size[1] <= min_path_size_for_msaa
+                {
+                    // Small paths are rasterized on the CPU for higher quality.
+                    return (None, true);
+                } // else falls back to tessellation
+            }
+            PathRendererStrategy::RasterAtlas => {
+                // Everything is rasterized on the CPU and packed into the atlas.
+                return (None, true);
+            }
+            // Never uses an atlas for rendering.
+            PathRendererStrategy::Tessellation
+            | PathRendererStrategy::ComputeAnalyticAA
+            | PathRendererStrategy::ComputeMSAA16
+            | PathRendererStrategy::ComputeMSAA8
+            | PathRendererStrategy::CpuSparseStripsMsaa8 => {}
+        }
 
         // If we got here, it requires tessellated path rendering or an MSAA technique applied to
         // a simple shape (so we interpret them as paths to reduce the number of pipelines we
         // need).
-        Some(Self::choose_msaa_renderer(
-            recorder,
-            shape,
-            style,
-            draw_bounds,
-        ))
+        (
+            Some(Self::choose_msaa_renderer(
+                recorder,
+                shape,
+                style,
+                draw_bounds,
+            )),
+            false,
+        )
     }
 
     // Ignoring specialized Shape renderers and the selected PathRendererStrategy, choose a
     // MSAA-requiring tessellation-based renderer for the shape and style.
     // Port of: src/gpu/graphite/Device.cpp#L2304-L2341 (chrome/m156)
     fn choose_msaa_renderer<'r>(
-        recorder: &'r RecorderPriv<'_>,
+        recorder: RecorderPriv<'r>,
         shape: &Shape,
         style: &StrokeRec,
         draw_bounds: &Rect,
@@ -2356,14 +2605,22 @@ impl DeviceCore {
         // Calculate the clipped bounds of the draw and determine the clip elements that affect
         // the draw without updating the clip stack.
         let mut clip_elements = ElementList::new();
-        let mut clip = self.clip().visit_clip_stack_for_draw(
-            local_to_device,
-            &mut geometry,
-            style,
-            &mut clip_elements,
-            // (The clip atlas is G12a: without it the remaining elements are depth-only draws.)
-            None,
-        );
+        let mut clip = {
+            let atlas_provider = rp.atlas_provider();
+            let mut atlas_provider = atlas_provider.borrow_mut();
+            let mut clip_atlas = atlas_provider
+                .clip_atlas_manager()
+                .map(|manager| RecorderClipAtlas { recorder, manager });
+            self.clip().visit_clip_stack_for_draw(
+                local_to_device,
+                &mut geometry,
+                style,
+                &mut clip_elements,
+                clip_atlas
+                    .as_mut()
+                    .map(|clip_atlas| clip_atlas as &mut dyn ClipAtlasSeam),
+            )
+        };
         if clip.is_clipped_out() {
             // Clipped out, so don't record anything.
             return;
@@ -2374,16 +2631,18 @@ impl DeviceCore {
         // coverage, require AA bounds outsetting, and have a single renderStep. The clip's draw
         // bounds are passed in for heuristics, so it's fine if it doesn't include the AA
         // outsetting we add for some analytic coverage renderers.
-        let Some(renderer) = Self::choose_renderer(
-            &rp,
+        let (chosen_renderer, use_path_atlas) = Self::choose_renderer(
+            rp,
             local_to_device,
             &geometry,
             style,
             &clip.transformed_shape_bounds(),
-        ) else {
+            self.atlased_path_count,
+        );
+        if chosen_renderer.is_none() && !use_path_atlas {
             skia_log_w!("Skipping draw with no supported renderer or PathAtlas.");
             return;
-        };
+        }
 
         // Update the pixel bounds of the draw to include any outsets done by the renderer (or
         // that must be included in the pixels required when using an atlas). This is important so
@@ -2391,7 +2650,7 @@ impl DeviceCore {
         // if the calculated coverage for a pixel is 0.
         //
         // TODO (thomsmit): Add handling specifically for EndCaps to align the clip to tile size.
-        if renderer.outset_bounds_for_aa() {
+        if chosen_renderer.is_none_or(Renderer::outset_bounds_for_aa) {
             clip.outset_bounds_for_aa();
         }
 
@@ -2407,7 +2666,7 @@ impl DeviceCore {
             paint,
             Some(clip.non_msaa_clip()),
             clip_shader.as_ref(),
-            renderer.coverage(),
+            chosen_renderer.map_or(Coverage::SingleChannel, Renderer::coverage),
             format,
         );
 
@@ -2415,19 +2674,21 @@ impl DeviceCore {
         // between the main renderer and possibly a secondaryRenderer. As we can't be sure whether
         // a secondary renderer is required prior to getting the dstUsage from shading.toKey(), we
         // pessimistically assume it's required for needsFlushBeforeDraw().
-        let mut num_new_render_steps = renderer.num_render_steps();
+        let mut num_new_render_steps = chosen_renderer.map_or(1, Renderer::num_render_steps);
         let mut style_type = style.style();
-        if style_type == StrokeStyleKind::StrokeAndFill {
-            debug_assert!(geometry.is_shape());
-            num_new_render_steps += rp
-                .renderer_provider()
-                .tessellated_strokes(/*inverse_fill=*/ false)
-                .num_render_steps();
-        } else if style_type == StrokeStyleKind::Fill && renderer.use_non_aa_inner_fill() {
-            num_new_render_steps += rp
-                .renderer_provider()
-                .non_aa_bounds_fill()
-                .num_render_steps();
+        if let Some(renderer) = chosen_renderer {
+            if style_type == StrokeStyleKind::StrokeAndFill {
+                debug_assert!(geometry.is_shape());
+                num_new_render_steps += rp
+                    .renderer_provider()
+                    .tessellated_strokes(/*inverse_fill=*/ false)
+                    .num_render_steps();
+            } else if style_type == StrokeStyleKind::Fill && renderer.use_non_aa_inner_fill() {
+                num_new_render_steps += rp
+                    .renderer_provider()
+                    .non_aa_bounds_fill()
+                    .num_render_steps();
+            }
         }
 
         // Decide if we have any reason to flush pending work. A flush may be necessary for two
@@ -2447,15 +2708,25 @@ impl DeviceCore {
         // TODO (thomsmit): Adjust this when the draw limit is removed.
         let needs_flush = self.needs_flush_before_draw(num_new_render_steps, dst_read_strategy);
         if needs_flush {
-            // (Flushing the tracked devices instead, when a path atlas was chosen, is G12a.)
-            self.flush_pending_work(None);
+            if use_path_atlas {
+                // We need to flush work for all devices associated with the current Recorder.
+                // Otherwise we may end up with outstanding draws that depend on past atlas state.
+                rp.flush_tracked_devices_and_current(
+                    "Device::drawGeometry Flush Before Draw",
+                    self,
+                );
+            } else {
+                self.flush_pending_work(None);
+            }
         }
 
         // Determine the paint ID and collect the paint uniforms now before anything has been
         // recorded. The paint may reference an SkPicture or a Graphite-backed dynamic SkImage
         // that can trigger a flush of the Recorder.
         let mut key_gen_flags = KeyGenFlags::DEFAULT;
-        if renderer.use_non_aa_inner_fill() || renderer.coverage() == Coverage::None {
+        if chosen_renderer.is_some_and(|renderer| {
+            renderer.use_non_aa_inner_fill() || renderer.coverage() == Coverage::None
+        }) {
             key_gen_flags |= KeyGenFlags::PREFER_FIXED_SRC_BLEND;
         }
         let key_context = KeyContext::new_with_draw_context(
@@ -2510,7 +2781,62 @@ impl DeviceCore {
             // But then continue to render the flood fill with shading
         }
 
-        // (If an atlas path renderer was chosen the shape is inserted into the atlas here (G12a).)
+        // If an atlas path renderer was chosen we need to insert the shape into the atlas and
+        // schedule it to be drawn. Otherwise the renderer that was chosen is the one to draw with.
+        let renderer: &Renderer = if use_path_atlas {
+            let transformed_bounds = clip.transformed_shape_bounds();
+            let mut clipped_shape_bounds =
+                transformed_bounds.make_intersect(Rect::from_sk_irect(&clip.scissor()));
+            if clipped_shape_bounds.area() >= 0.8 * transformed_bounds.area() {
+                // The clip isn't excluding very much of the original shape, so store the entire
+                // path in the atlas to avoid redundant entries with slightly different clips.
+                clipped_shape_bounds = transformed_bounds;
+            }
+            let mut atlas_mask = add_shape_to_path_atlas(
+                recorder,
+                &clipped_shape_bounds,
+                geometry.shape(),
+                local_to_device,
+                style,
+            );
+
+            // If there was no space in the atlas and we haven't flushed already, then flush
+            // pending work to clear up space in the atlas. If we had already flushed once (which
+            // would have cleared the atlas) then the atlas is too small for this shape.
+            if atlas_mask.is_none() && !needs_flush {
+                // We need to flush work for all devices associated with the current Recorder.
+                // Otherwise we may end up with outstanding draws that depend on past atlas state.
+                rp.flush_tracked_devices_and_current("Device::drawGeometry Atlas Flush", self);
+
+                // Try inserting the shape again.
+                atlas_mask = add_shape_to_path_atlas(
+                    recorder,
+                    &clipped_shape_bounds,
+                    geometry.shape(),
+                    local_to_device,
+                    style,
+                );
+            }
+
+            let Some((atlas_renderer, mask)) = atlas_mask else {
+                skia_log_e!("Failed to add shape to atlas!");
+                // TODO(b/285195175): This can happen if the atlas is not large enough or a
+                // compatible atlas texture cannot be created.
+                return;
+            };
+            // Since addShape() was successful we should have a valid Renderer now. The atlas also
+            // has handled the original `geometry` and `style` so update the local variables to
+            // match what needs to be recorded to sample the atlas mask.
+            debug_assert!(
+                atlas_renderer.num_render_steps() == 1 && !atlas_renderer.emits_primitive_color()
+            );
+            geometry.set_coverage_mask_shape(mask);
+            style_type = StrokeStyleKind::Fill;
+            self.atlased_path_count += 1;
+            atlas_renderer
+        } else {
+            chosen_renderer.expect("a renderer is chosen when no PathAtlas is")
+        };
 
         // Renderers and their component RenderSteps have flexibility in defining their
         // DepthStencilSettings. However, the clipping and ordering managed between Device and
@@ -2731,7 +3057,7 @@ impl DeviceCore {
         // case the element may still be rendered into the depth buffer with tessellation (likely
         // w/o AA).
         let renderer = Self::choose_msaa_renderer(
-            &rp,
+            rp,
             shape,
             &default_fill_style(),
             &clip.transformed_shape_bounds(),
@@ -2819,7 +3145,7 @@ impl DeviceCore {
         let rp = recorder.priv_();
         let key_db = rp.pop_or_create_key_and_data_builder();
         let renderer = Self::choose_msaa_renderer(
-            &rp,
+            rp,
             shape,
             &default_fill_style(),
             &clip.transformed_shape_bounds(),
@@ -3032,6 +3358,60 @@ impl Drop for DeviceCore {
     }
 }
 
+impl Device {
+    /// `Device::strikeDeviceInfo()`: what the sub runs need to know about this device.
+    // Port of: src/gpu/graphite/Device.cpp#L665-L667 (chrome/m156)
+    #[doc(alias = "strikeDeviceInfo")]
+    #[must_use]
+    pub fn strike_device_info(&self) -> StrikeDeviceInfo {
+        StrikeDeviceInfo {
+            surface_props: *self.state.surface_props(),
+            scaler_context_flags: self.scaler_context_flags(),
+            sub_run_control: self.core.borrow().sub_run_control,
+        }
+    }
+
+    /// `Device::drawAtlasSubRun(subRun, drawOrigin, paint, subRunStorage, rendererData)`: the
+    /// atlas delegate (`atlasDelegate()`) the sub runs draw through.
+    // Port of: src/gpu/graphite/Device.cpp#L1514-L1522 (chrome/m156)
+    #[doc(alias = "drawAtlasSubRun")]
+    #[doc(alias = "atlasDelegate")]
+    pub fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        self.sync()
+            .draw_atlas_sub_run(sub_run, draw_origin, paint, renderer_data);
+    }
+}
+
+/// The `AtlasDrawDelegate` and `SkCanvas*` of `SubRun::draw` for a device: the atlas sub runs are
+/// drawn with [`Device::draw_atlas_sub_run`], and the paths with the device.
+// Port of: src/gpu/graphite/Device.cpp#L1514-L1522 (chrome/m156), `atlasDelegate()`
+struct DeviceSubRunTarget<'a> {
+    device: &'a mut Device,
+}
+
+impl SubRunTarget for DeviceSubRunTarget<'_> {
+    fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        self.device
+            .draw_atlas_sub_run(sub_run, draw_origin, paint, renderer_data);
+    }
+
+    fn device(&mut self) -> &mut dyn CoreDevice {
+        &mut *self.device
+    }
+}
+
 impl CoreDevice for Device {
     fn state(&self) -> &DeviceState {
         &self.state
@@ -3228,14 +3608,53 @@ impl CoreDevice for Device {
         self.sync().draw_arc(arc, paint);
     }
 
-    // Port of: src/gpu/graphite/Device.h#L238-L240 (chrome/m156)
+    // Port of: src/gpu/graphite/Device.cpp#L1522-L1534 (chrome/m156)
     fn on_draw_glyph_run_list(
         &mut self,
-        _list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
-        _paint: &Paint,
+        list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
+        paint: &Paint,
     ) {
-        // Text is drawn through the sub run container of `text_gpu` (G12b).
-        skia_log_w!("Device::onDrawGlyphRunList needs text_gpu (G12b); the text is not drawn.");
+        let Some(recorder) = self.core.borrow().recorder() else {
+            return;
+        };
+        let strike_device_info = self.strike_device_info();
+        let local_to_device = self.state.local_to_device().clone();
+        let mut target = DeviceSubRunTarget { device: self };
+        recorder.priv_().text_blob_cache().draw_glyph_run_list(
+            &mut target,
+            &local_to_device,
+            list,
+            paint,
+            &strike_device_info,
+        );
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2573-L2580 (chrome/m156)
+    fn convert_glyph_run_list_to_slug(
+        &mut self,
+        list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
+        paint: &Paint,
+    ) -> Option<Slug> {
+        let strike_device_info = self.strike_device_info();
+        SlugImpl::make(
+            self.state.local_to_device(),
+            list,
+            paint,
+            &strike_device_info,
+        )
+        .map(Slug::from_base)
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2582-L2585 (chrome/m156)
+    fn draw_slug(&mut self, slug: &Slug, paint: &Paint) {
+        let Some(slug_impl) = slug.as_base().as_any().downcast_ref::<SlugImpl>() else {
+            skia_log_w!("Device::drawSlug: the slug was not made by a Graphite device.");
+            return;
+        };
+        let mut target = DeviceSubRunTarget { device: self };
+        slug_impl
+            .sub_runs()
+            .draw(&mut target, slug_impl.origin(), paint);
     }
 
     fn draw_vertices(
@@ -3360,4 +3779,26 @@ impl CoreDevice for Device {
     fn on_write_pixels(&mut self, src: &Pixmap<'_>, x: i32, y: i32) -> bool {
         self.sync().on_write_pixels(src, x, y)
     }
+}
+
+/// `PathAtlas::addShape()` on the recorder's raster path atlas, which the draw of a shape uses.
+/// The atlas is borrowed only for the call: the returned renderer belongs to the recorder.
+// Port of: src/gpu/graphite/Device.cpp#L1877-L1880 (chrome/m156), the `pathAtlas->addShape()` call
+fn add_shape_to_path_atlas<'r>(
+    recorder: &'r Recorder,
+    transformed_shape_bounds: &Rect,
+    shape: &Shape,
+    local_to_device: &Transform,
+    style: &StrokeRec,
+) -> Option<(&'r Renderer, CoverageMaskShape)> {
+    let rp = recorder.priv_();
+    let atlas_provider = rp.atlas_provider();
+    let mut atlas_provider = atlas_provider.borrow_mut();
+    atlas_provider.raster_path_atlas().add_shape(
+        recorder,
+        transformed_shape_bounds,
+        shape,
+        local_to_device,
+        style,
+    )
 }

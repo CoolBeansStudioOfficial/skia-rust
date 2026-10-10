@@ -7,8 +7,8 @@
 //! under an affine transformation.
 //!
 //! [`AtlasClip`] is a clip whose mask lives in an atlas texture and [`NonMSAAClip`] holds both.
-//! The atlas half is only data here: the atlas that fills it (`ClipAtlasManager`) is G12a, so the
-//! `ClipStack` never produces a non-empty `AtlasClip` until then (see `clip_stack`).
+//! The atlas half is filled by the recorder's `ClipAtlasManager` (G12a); the
+//! `ClipStack` produces a non-empty `AtlasClip` only with a clip atlas (see `clip_stack`).
 
 use std::sync::Arc;
 

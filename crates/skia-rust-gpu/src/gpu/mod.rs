@@ -11,6 +11,7 @@ pub mod dither_utils;
 pub mod gpu_types;
 pub mod gradient_bitmap;
 pub mod key_builder;
+pub mod mask_format;
 pub mod rectanizer;
 pub mod rectanizer_pow2;
 pub mod rectanizer_skyline;

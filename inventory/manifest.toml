@@ -19828,6 +19828,7 @@ macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L188-L188"
 module = "codec"
 status = "todo"
+reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet"
 span_hash = "5c06e81aa5205c6cbfaeb468b02ed765240cff984513105fc850029631d2dcc6"
 
 [[test]]
@@ -19837,6 +19838,7 @@ macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L189-L189"
 module = "codec"
 status = "todo"
+reason = "not ported: DEF_VARIANTS, as the entry above (the one-GM-per-name registration cannot express the three variants yet)"
 span_hash = "44de642452e3eb339e86b9e7e4e8c57eb9c127f1d1b14af0d11fca99c4048646"
 
 [[test]]
@@ -19872,8 +19874,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L157-L157"
 module = "codec"
-status = "todo"
-reason = "needs the WebP encoder (SkWebpEncoder), not ported"
+status = "passing"
 span_hash = "264bec9587041a19a2420f8c893831fd714f9187232960821caabdb71f4c4d4c"
 
 [[test]]
@@ -28863,6 +28864,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/AtlasOobTest.cpp#L188-L206"
 module = "gpu"
 status = "todo"
+reason = "needs the remote glyph cache (SkStrikeServer/Client, SkTypeface_remote, T23) and Slug deserialization; the GPU text path itself (G12b) is ported"
 span_hash = "872884cecb642129429263c6cbc8401f287f0901417123a4f91c5de1667099dc"
 
 [[test]]
@@ -31484,6 +31486,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/DirectMaskLimitTest.cpp#L109-L135"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with cargo test -p skia-rust-tests --lib -- --ignored"
 span_hash = "d60a7f6964eacd0370483139ae0ac08d14cbc95365f47669973a4ceb1ccd1271"
 
 [[test]]
@@ -31703,8 +31706,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L682-L713"
 module = "codec"
-status = "todo"
-reason = "needs the WebP encoder (SkWebpEncoder), not ported"
+status = "passing"
 span_hash = "fb71069dbe7830f5087c5b2662e2fd0336686cded8ac7fd19f8d04340b3e0174"
 
 [[test]]
@@ -31740,7 +31742,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L609-L655"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "d0aeb7ca70b4f8bbaf3d22f459c1ff79c3be52168d17d92e00c339197c59704e"
 
 [[test]]
@@ -31750,6 +31752,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L657-L680"
 module = "codec"
 status = "todo"
+reason = "passes only because lossy animation (WebPAnimEncoder YUV candidates) is not ported: frame 1 fails in WebPAnimEncoderAdd before the size check Skia reaches on frame 2"
 span_hash = "4cf87318a15498e5ac0d60325e0bb1364add1a40459e37194f556a8280c4bfa5"
 
 [[test]]
@@ -31758,7 +31761,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L561-L607"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "216cc5795a107d8d142eae88d2cfda8ebdf537827cb18603bcb7caf7ead8dbd6"
 
 [[test]]
@@ -31767,7 +31770,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L508-L559"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "3207b0d70f9880658d2a87b67e7f48f864f3b4cfa324d56b452a169bdf623d39"
 
 [[test]]
@@ -51355,7 +51358,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L62-L163"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "d354de868796ed129df91539cec76b10a736ac3652c202d502d0fc936326f312"
 
 [[test]]
@@ -51364,7 +51367,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/graphite/DrawAtlasTest.cpp#L344-L398"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "c7fa68e7ed5a957916fe704f6ecf728c670e1f1beb118a695abdf8f015fb075c"
 
 [[test]]
@@ -51373,7 +51376,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L269-L330"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "61f4b77b0e9335a788caefc309b7d9de9669e1904ad580d0b96a4bee156e04e8"
 
 [[test]]
@@ -51382,7 +51385,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/DrawAtlasTest.cpp#L165-L267"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "2bb1050d599f1db064d3adb552659ff8ae4900e9fe3934900a73b0cb20ae88a8"
 
 [[test]]

@@ -289,6 +289,18 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, mipmapped)
     }
 
+    fn get_default_storage_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+    ) -> TextureInfo {
+        self.get_default_sampled_texture_info(
+            color_type,
+            Mipmapped::No,
+            Protected::No,
+            skia_rust_gpu::gpu::gpu_types::Renderable::No,
+        )
+    }
+
     fn get_default_readable_texture_info(
         &self,
         format: TextureFormat,
@@ -393,6 +405,18 @@ impl Caps for MockCaps {
 
     fn support_bilerp_from_glyph_atlas(&self) -> bool {
         false
+    }
+
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize {
+        2048 * 1024 * 4
+    }
+
+    fn min_distance_field_font_size(&self) -> f32 {
+        18.0
+    }
+
+    fn glyphs_as_paths_font_size(&self) -> f32 {
+        324.0
     }
 
     fn set_backend_labels(&self) -> bool {

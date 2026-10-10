@@ -31,6 +31,8 @@ wgpu = { workspace = true, features = ["std", "wgsl", "webgpu", "fragile-send-sy
 [dev-dependencies]
 # Validates every generated WGSL shader (docs/design/gpu.md §6.3, W4).
 naga = { workspace = true, features = ["wgsl-in"] }
+# The portable test fonts the text tests draw with.
+skia-rust-tools.workspace = true
 
 [features]
 # Emits the command trace of docs/design/gpu.md §3.2 (`graphite::wgpu::trace`): every resource,
