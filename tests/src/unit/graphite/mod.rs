@@ -14,6 +14,7 @@ pub mod key_test;
 pub mod multisample_test;
 pub mod notify_in_use_test;
 pub mod pipeline_data_cache_test;
+pub mod precompile;
 pub mod recorder_test;
 pub mod rect_test;
 pub mod rt_effect_test;
