@@ -17,6 +17,8 @@ use skia_rust_gpu::graphite::context_options::{
 use skia_rust_gpu::graphite::graphics_pipeline::{
     GraphicsPipeline, GraphicsPipelineBase, PipelineCreationFlags,
 };
+use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
+use skia_rust_gpu::graphite::render_pass_desc::RenderPassDesc;
 use skia_rust_gpu::graphite::wgpu::{make_context, noop_backend_context};
 
 #[derive(Debug)]
@@ -67,16 +69,28 @@ fn a_miss_creates_once_and_later_lookups_reuse_the_pipeline() {
     let creations = AtomicU32::new(0);
 
     let first = shared
-        .find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |id| {
-            creations.fetch_add(1, Ordering::Relaxed);
-            Some(graphics("first", 1, id))
-        })
+        .find_or_create_graphics_pipeline(
+            &k,
+            &GraphicsPipelineDesc::default(),
+            &RenderPassDesc::default(),
+            PipelineCreationFlags::NONE,
+            |id| {
+                creations.fetch_add(1, Ordering::Relaxed);
+                Some(graphics("first", 1, id))
+            },
+        )
         .expect("the pipeline is created");
     let second = shared
-        .find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |_| {
-            creations.fetch_add(1, Ordering::Relaxed);
-            Some(graphics("second", 2, 0))
-        })
+        .find_or_create_graphics_pipeline(
+            &k,
+            &GraphicsPipelineDesc::default(),
+            &RenderPassDesc::default(),
+            PipelineCreationFlags::NONE,
+            |_| {
+                creations.fetch_add(1, Ordering::Relaxed);
+                Some(graphics("second", 2, 0))
+            },
+        )
         .expect("the cached pipeline is found");
 
     assert_eq!(creations.load(Ordering::Relaxed), 1);
@@ -93,7 +107,13 @@ fn a_failed_creation_caches_nothing() {
 
     assert!(
         shared
-            .find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |_| None)
+            .find_or_create_graphics_pipeline(
+                &k,
+                &GraphicsPipelineDesc::default(),
+                &RenderPassDesc::default(),
+                PipelineCreationFlags::NONE,
+                |_| None
+            )
             .is_none()
     );
     assert_eq!(
@@ -127,10 +147,20 @@ fn the_caching_callback_sees_additions_and_hits() {
     let shared = context.shared_context().base();
     let k = key();
 
-    shared.find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |id| {
-        Some(graphics("cb", 3, id))
-    });
-    shared.find_or_create_graphics_pipeline(&k, PipelineCreationFlags::NONE, |_| None);
+    shared.find_or_create_graphics_pipeline(
+        &k,
+        &GraphicsPipelineDesc::default(),
+        &RenderPassDesc::default(),
+        PipelineCreationFlags::NONE,
+        |id| Some(graphics("cb", 3, id)),
+    );
+    shared.find_or_create_graphics_pipeline(
+        &k,
+        &GraphicsPipelineDesc::default(),
+        &RenderPassDesc::default(),
+        PipelineCreationFlags::NONE,
+        |_| None,
+    );
 
     assert_eq!(
         *seen.lock().unwrap(),

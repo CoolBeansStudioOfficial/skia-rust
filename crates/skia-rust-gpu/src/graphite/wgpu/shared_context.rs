@@ -693,8 +693,12 @@ impl PipelineCreationContext for WgpuSharedContext {
         render_pass_desc: &RenderPassDesc,
         flags: PipelineCreationFlags,
     ) -> Option<Arc<dyn GraphicsPipeline>> {
-        self.base
-            .find_or_create_graphics_pipeline(pipeline_key, flags, |compilation_id| {
+        self.base.find_or_create_graphics_pipeline(
+            pipeline_key,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+            |compilation_id| {
                 self.create_graphics_pipeline(
                     runtime_dict,
                     pipeline_key,
@@ -704,6 +708,7 @@ impl PipelineCreationContext for WgpuSharedContext {
                     compilation_id,
                 )
                 .map(|pipeline| pipeline as Arc<dyn GraphicsPipeline>)
-            })
+            },
+        )
     }
 }
