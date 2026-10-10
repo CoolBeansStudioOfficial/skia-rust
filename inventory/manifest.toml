@@ -29542,7 +29542,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CachedDataTest.cpp#L81-L101"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "eccc9dd7f405f88fa7eb243a405d2ad1efb007c58c2d89b8b5860d7ecc0604e2"
 
 [[test]]
@@ -31519,7 +31519,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryTest.cpp#L51-L56"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "90223ae1e1b816ff91cac0d2ab58339a4a54e4fb7444b0eece5dc2157dedc2e4"
 
 [[test]]
@@ -31528,7 +31528,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryTest.cpp#L58-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2e2bf3e0145cb4af1770f1897e145f11c9e220858ced83501de188360eca38c8"
 
 [[test]]
@@ -44917,6 +44917,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L142-L156"
 module = "core"
 status = "todo"
+reason = "needs SkBitmapCache and the discardable bitmap path of SkImage_Base (SkBitmapCache is not ported)"
 span_hash = "4be179903ee23ca7aca0785a9d8d69e254004ac6ad4923615daaf7ea93831b51"
 
 [[test]]
@@ -44926,6 +44927,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L190-L223"
 module = "core"
 status = "todo"
+reason = "needs SkBitmapCache and the discardable image path of SkImage_Base (SkBitmapCache is not ported)"
 span_hash = "09f9239bac59098e5ce0584ede860e49c9f763ee6ba3c0e72a869fcc87113957"
 
 [[test]]
@@ -44934,7 +44936,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L297-L308"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ad3dd43b3e93cf7e548308db7c7e1e141541691bd6359b5d7b7d5cddbb6b9686"
 
 [[test]]
@@ -51003,7 +51005,7 @@ macro = "DEF_TEST"
 source = "tests/YUVCacheTest.cpp#L38-L87"
 module = "codec"
 status = "todo"
-reason = "needs SkResourceCache and SkCachedData (src/core/SkResourceCache.cpp, src/core/SkCachedData.cpp), which are not ported; SkYUVPlanesCache is written on top of them"
+reason = "SkYUVPlanesCache (src/core/SkYUVPlanesCache.cpp) is not ported. The test compares the plane addresses read back from the cache with the ones it stored, which needs SkYUVAPixmaps::FromExternalPixmaps to borrow the SkCachedData memory; the port copies the planes (docs/API_MAPPING.md), so the addresses cannot match"
 span_hash = "becfc2108f78aae7bda54068391a38c0c50fed47c58eb53f4d39a6f29d47de1a"
 
 [[test]]
