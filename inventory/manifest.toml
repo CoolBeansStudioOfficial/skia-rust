@@ -51166,8 +51166,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L212-L252"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "43d702fa5d8ca7865f631de49075195e600569fa270a43288c90a3038f6de85f"
 
 [[test]]
@@ -51176,8 +51175,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L173-L182"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "4d790e257e2a241da9f8a95f8d75076941c09807092090b069d4e10aa77233ae"
 
 [[test]]
@@ -51186,8 +51184,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L195-L204"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "b4a6e72df58745be46dab3db1baf87510d550ac8e74e3d3f0df8b3c6af974a24"
 
 [[test]]
@@ -51196,8 +51193,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L206-L210"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "c7f78bcdfe860e5d2ce77dafc99b09ec8a826465b979cb44cc649c7d41264b04"
 
 [[test]]
@@ -51206,8 +51202,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L184-L193"
 module = "core"
-status = "todo"
-reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
+status = "passing"
 span_hash = "d559d5808a9106cb8c13c44167125c720234e8aa2c9bdfdad201ae101f5f0f47"
 
 [[test]]

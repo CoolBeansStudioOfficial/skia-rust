@@ -479,6 +479,8 @@ pub mod webp_test;
 #[cfg(test)]
 pub mod write_pixels_test;
 #[cfg(test)]
+pub mod writer32_test;
+#[cfg(test)]
 pub mod yuv_cache_test;
 #[cfg(test)]
 pub mod yuv_test;
