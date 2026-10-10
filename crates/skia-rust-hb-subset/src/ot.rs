@@ -477,7 +477,9 @@ impl Serializer {
     /// `*this = 0` for an offset field.
     pub(crate) fn zero_field(&mut self, pos: usize, width: u8) {
         let w = usize::from(width);
-        self.bytes_mut()[pos..pos + w].fill(0);
+        if let Some(b) = self.bytes_mut().get_mut(pos..pos + w) {
+            b.fill(0);
+        }
     }
 
     /// `ArrayOf::serialize_append` for an array whose length is at `len_pos` and which ends the

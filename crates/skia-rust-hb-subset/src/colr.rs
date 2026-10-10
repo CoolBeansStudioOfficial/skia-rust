@@ -429,7 +429,7 @@ impl SubsetCtx<'_, '_> {
     fn color_line_subset(&self, s: &mut Serializer, line: View<'_>, variable_stops: bool) -> bool {
         let out = s.allocate(3);
         // `extend` is a `HBUINT8`
-        s.bytes_mut()[out] = line.u8(0) as u8;
+        s.set_u8(out, line.u8(0) as u8);
         let n = line.u16(1);
         s.set_u16(out + 1, n as u16);
         let stride = if variable_stops { 10 } else { 6 };
@@ -536,7 +536,7 @@ impl SubsetCtx<'_, '_> {
         if !s.check_fits(u64::from(list.u8(0)), 8, ERROR_INT_OVERFLOW) {
             return false;
         }
-        s.bytes_mut()[out] = list.u8(0) as u8;
+        s.set_u8(out, list.u8(0) as u8);
         let glyphset = &self.plan.glyphset_colred;
         let mut new_gid_offset_map: BTreeMap<u32, u32> = BTreeMap::new();
         for i in 0..list.u32(1) as usize {

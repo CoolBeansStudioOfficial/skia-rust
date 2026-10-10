@@ -160,6 +160,22 @@ fn subset_table(plan: &mut Plan<'_>, t: u32) -> Res<()> {
     if let Some(r) = layout::subset_table(plan, t) {
         return r.map(|_| ());
     }
+    let r = subset_table_inner(plan, t);
+    // The serialization buffer of the table (`_hb_subset_table`): the tables that do not go
+    // through `layout::run_table` are accounted by the size of the table they produced.
+    if r.is_ok()
+        && matches!(&t.to_be_bytes(), b"glyf" | b"hdmx" | b"name" | b"hmtx" | b"vmtx" | b"maxp" | b"cmap" | b"OS/2" | b"post" | b"gvar")
+    {
+        let blob_len = plan.source.table(t).len();
+        let out_len = plan.dest_table_len(t);
+        if !plan.account_table(t, blob_len, out_len) {
+            return Err(SubsetError::Failed);
+        }
+    }
+    r
+}
+
+fn subset_table_inner(plan: &mut Plan<'_>, t: u32) -> Res<()> {
     match &t.to_be_bytes() {
         b"glyf" => glyf::subset(plan).map(|_| ()),
         b"hdmx" => tables::subset_hdmx(plan).map(|_| ()),
