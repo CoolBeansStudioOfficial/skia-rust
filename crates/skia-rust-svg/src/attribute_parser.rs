@@ -1354,3 +1354,6 @@ impl Parse for Display {
         p.parse_eos_token().then_some(display)
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -14,5 +14,8 @@ skia-rust-core.workspace = true
 skia-rust-effects.workspace = true
 skia-rust-pathops.workspace = true
 
+[dev-dependencies]
+skia-rust-raster.workspace = true
+
 [lints]
 workspace = true
