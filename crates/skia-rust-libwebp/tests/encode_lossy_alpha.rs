@@ -120,6 +120,8 @@ fn encode_lossy_alpha_matches_reference() {
             let line = expected.next().expect("one expected line per case");
             let fields: Vec<&str> = line.split(' ').collect();
             assert_eq!(fields[0], name);
+            // The qualities are 0, 50 and 100: exact in f32.
+            #[allow(clippy::cast_precision_loss)]
             let got = encode_lossy(&rgba, w, h, quality as f32, false);
             if fields.get(4) == Some(&"error") {
                 if got.is_some() {
