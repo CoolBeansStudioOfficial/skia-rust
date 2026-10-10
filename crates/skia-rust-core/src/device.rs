@@ -470,15 +470,25 @@ pub trait Device {
     #[doc(alias = "onDrawGlyphRunList")]
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint);
 
-    /// The glyph drawables that [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list) did not
-    /// draw, in the order they were met, and forgets them.
+    /// Draws `list` up to its next glyph drawable and returns that drawable instead of drawing
+    /// it; the caller draws the drawable and calls again with the same `cursor` to continue
+    /// with the glyphs after it. `None` means the list is drawn completely.
     ///
     /// skia-rust: Skia's glyph painter draws a glyph drawable with the *canvas*
-    /// (`canvas->saveLayer(); drawable->draw(canvas)`). A Rust device cannot reach the canvas that
-    /// is drawing it, so it hands the drawables back and the canvas draws them once the device
-    /// call returns (see `Canvas::draw_glyph_run_list`). The default has none.
-    fn take_pending_glyph_drawables(&mut self) -> Vec<PendingGlyphDrawable> {
-        Vec::new()
+    /// (`canvas->saveLayer(); drawable->draw(canvas)`) in the middle of the run, between the
+    /// path glyphs and the mask glyphs. A Rust device cannot reach the canvas that is drawing
+    /// it, so the painter yields at each drawable and the canvas draws it, which keeps Skia's
+    /// draw order. The default draws the whole list with
+    /// [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list).
+    fn on_draw_glyph_run_list_step(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+        cursor: &mut GlyphRunDrawCursor,
+    ) -> Option<PendingGlyphDrawable> {
+        let _ = cursor;
+        self.on_draw_glyph_run_list(list, paint);
+        None
     }
 
     /// `SkDevice::convertGlyphRunListToSlug`: a slug of the glyphs of `list`, drawn with
@@ -1006,7 +1016,7 @@ pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
 
 /// A glyph drawable a device collected while drawing a glyph run list: the drawable, the matrix
 /// that places it relative to the canvas, and the paint of the text
-/// (`Device::take_pending_glyph_drawables`).
+/// (`Device::on_draw_glyph_run_list_step`).
 #[derive(Clone, Debug)]
 pub struct PendingGlyphDrawable {
     /// The drawable of the glyph (`glyph->drawable()`).
@@ -1030,6 +1040,40 @@ pub fn draw_glyph_run_list(device: &mut dyn Device, list: &GlyphRunList<'_>, pai
         simplify_glyph_run_rsxform_and_redraw(device, list, paint);
     } else {
         device.on_draw_glyph_run_list(list, paint);
+    }
+}
+
+/// Where a glyph run list draw stopped at a glyph drawable, so that
+/// [`Device::on_draw_glyph_run_list_step`] continues right after it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GlyphRunDrawCursor {
+    /// The tile of the device draw that was being drawn (`DrawTiler`); 0 without tiling.
+    pub tile: usize,
+    /// The run that was being drawn.
+    pub run: usize,
+    /// How many drawables of that run were returned already; `None` when the run has not
+    /// started.
+    pub drawables_done: Option<usize>,
+}
+
+/// [`draw_glyph_run_list`] up to the next glyph drawable (see
+/// [`Device::on_draw_glyph_run_list_step`]). Start with a default `cursor` and call again with
+/// the same one until it returns `None`.
+// Port of: src/core/SkDevice.cpp#L424-L435 (chrome/m156)
+pub fn draw_glyph_run_list_step(
+    device: &mut dyn Device,
+    list: &GlyphRunList<'_>,
+    paint: &Paint,
+    cursor: &mut GlyphRunDrawCursor,
+) -> Option<PendingGlyphDrawable> {
+    if !device.state().local_to_device().is_finite() {
+        return None;
+    }
+    if list.has_rsxform() {
+        simplify_glyph_run_rsxform_and_redraw(device, list, paint);
+        None
+    } else {
+        device.on_draw_glyph_run_list_step(list, paint, cursor)
     }
 }
 

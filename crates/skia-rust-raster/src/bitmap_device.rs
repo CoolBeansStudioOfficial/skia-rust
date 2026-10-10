@@ -25,7 +25,9 @@ use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
-use skia_rust_core::device::{CreateInfo, Device, DeviceState, PendingGlyphDrawable};
+use skia_rust_core::device::{
+    CreateInfo, Device, DeviceState, GlyphRunDrawCursor, PendingGlyphDrawable,
+};
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -298,8 +300,6 @@ pub struct BitmapDevice {
     state: DeviceState,
     bitmap: Bitmap,
     rc_stack: RasterClipStack,
-    /// The glyph drawables the last glyph run list draws left for the canvas.
-    pending_glyph_drawables: Vec<PendingGlyphDrawable>,
 }
 
 impl BitmapDevice {
@@ -324,7 +324,6 @@ impl BitmapDevice {
             state: DeviceState::new(bitmap.info().clone(), surface_props),
             rc_stack: RasterClipStack::new(bitmap.width(), bitmap.height()),
             bitmap,
-            pending_glyph_drawables: Vec::new(),
         }
     }
 
@@ -837,7 +836,27 @@ impl Device for BitmapDevice {
 
     // Port of: src/core/SkBitmapDevice.cpp#L351-L360 (chrome/m156)
     // Port of: src/core/SkBitmapDevice.cpp#L540-L545 (chrome/m156)
+    //
+    // skia-rust: a glyph drawable needs the canvas, so this draw skips the drawables; canvases
+    // draw through `on_draw_glyph_run_list_step`, which returns them in order.
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
+        let mut cursor = GlyphRunDrawCursor::default();
+        while self
+            .on_draw_glyph_run_list_step(list, paint, &mut cursor)
+            .is_some()
+        {}
+    }
+
+    // Port of: src/core/SkBitmapDevice.cpp#L540-L545 (chrome/m156)
+    //
+    // skia-rust: LOOP_TILER { drawGlyphRunList(...) } that leaves a tile when its glyph
+    // painter returns a drawable and enters it again at the same place on the next call.
+    fn on_draw_glyph_run_list_step(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+        cursor: &mut GlyphRunDrawCursor,
+    ) -> Option<PendingGlyphDrawable> {
         debug_assert!(!list.has_rsxform());
         let image_info = self.state.image_info();
         let color_space = image_info.color_space();
@@ -846,15 +865,51 @@ impl Device for BitmapDevice {
             image_info.color_type(),
             color_space.as_ref(),
         );
-        let mut pending = Vec::new();
-        self.loop_tiler(None, |draw| {
-            draw.draw_glyph_run_list(&painter, list, paint, &mut pending);
-        });
-        self.pending_glyph_drawables.append(&mut pending);
-    }
+        let BitmapDevice {
+            state,
+            bitmap,
+            rc_stack,
+        } = self;
+        let rc = rc_stack.rc();
+        let local_to_device = state.local_to_device();
+        let props = *state.surface_props();
+        let mut tiler = DrawTiler::new(local_to_device, rc, None);
+        let mut root = Self::draw_pixmap(bitmap);
+        let dimensions = (root.width(), root.height());
 
-    fn take_pending_glyph_drawables(&mut self) -> Vec<PendingGlyphDrawable> {
-        std::mem::take(&mut self.pending_glyph_drawables)
+        let mut tile_index = 0;
+        while let Some(tile) = tiler.next(local_to_device, rc, dimensions) {
+            if tile_index < cursor.tile {
+                tile_index += 1;
+                continue;
+            }
+            let pending = match tile {
+                Tile::Whole => {
+                    let mut draw = Draw::new(root.reborrow_mut(), local_to_device, rc);
+                    draw.props = Some(&props);
+                    draw.draw_glyph_run_list(&painter, list, paint, cursor)
+                }
+                Tile::Sub(tile_bounds) => {
+                    let Some(dst) = root.extract_subset_mut(tile_bounds) else {
+                        panic!("SkASSERT_RELEASE(success)");
+                    };
+                    let mut draw = Draw::new(dst, tiler.tile_matrix(), tiler.tile_rc());
+                    draw.props = Some(&props);
+                    draw.draw_glyph_run_list(&painter, list, paint, cursor)
+                }
+            };
+            if pending.is_some() {
+                cursor.tile = tile_index;
+                return pending;
+            }
+            // The next tile starts at the first run.
+            tile_index += 1;
+            *cursor = GlyphRunDrawCursor {
+                tile: tile_index,
+                ..GlyphRunDrawCursor::default()
+            };
+        }
+        None
     }
 
     fn draw_path(&mut self, path: &Path, paint: &Paint) {

@@ -5,8 +5,9 @@
 // `skcpu::GlyphRunListPainter`.
 //
 // Glyph drawables are drawn with the canvas (`canvas->saveLayer(); drawable->draw(canvas)`),
-// which a device cannot reach: the painter collects them (`PendingGlyphDrawable`) and the canvas
-// draws them when the device call returns (`Device::take_pending_glyph_drawables`).
+// which a device cannot reach: the painter returns at each drawable (`PendingGlyphDrawable`)
+// and the canvas draws it, then calls the painter again with the same `GlyphRunDrawCursor` to
+// continue after it (`Device::on_draw_glyph_run_list_step`). The draw order is Skia's.
 
 //! The CPU glyph painter: chooses, for each run, whether its glyphs draw as paths, as masks
 //! at device positions, or as scaled masks, and hands the accepted glyphs to the device.
@@ -16,7 +17,7 @@ use std::sync::Arc;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::device::PendingGlyphDrawable;
+use skia_rust_core::device::{GlyphRunDrawCursor, PendingGlyphDrawable};
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::glyph::{
     ActionType, Glyph, GlyphAction, GlyphDigest, GlyphPositionRoundingSpec,
@@ -102,7 +103,9 @@ impl GlyphRunListPainter {
     ///
     /// When the paint has a path effect or mask filter (its strike descriptor is not ported).
     ///
-    /// Glyph drawables are not drawn but added to `pending_drawables` (see the module docs).
+    /// Glyph drawables are not drawn: the first one that `cursor` has not passed is returned and
+    /// `cursor` moves past it; call again to continue (see the module docs). `None` means every
+    /// run is drawn.
     // Port of: src/core/SkGlyphRunPainter.cpp#L219-L423 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     pub fn draw_for_bitmap_device(
@@ -111,8 +114,8 @@ impl GlyphRunListPainter {
         list: &GlyphRunList<'_>,
         paint: &Paint,
         draw_matrix: &Matrix,
-        pending_drawables: &mut Vec<PendingGlyphDrawable>,
-    ) {
+        cursor: &mut GlyphRunDrawCursor,
+    ) -> Option<PendingGlyphDrawable> {
         // The bitmap blitters can only draw LCD text to a N32 bitmap in srcOver. Otherwise,
         // convert the lcd text into A8 text. The props communicate this to the scaler.
         let props = if self.color_type == ColorType::N32 && paint.is_src_over() {
@@ -126,7 +129,17 @@ impl GlyphRunListPainter {
         let mut position_matrix = draw_matrix.clone();
         position_matrix.pre_translate(draw_origin);
 
-        for run in list.runs() {
+        for (run_index, run) in list.runs().iter().enumerate() {
+            // Runs before the cursor's are drawn already; the cursor's run continues after the
+            // drawables it returned.
+            if run_index < cursor.run {
+                continue;
+            }
+            let resumed_drawables = if run_index == cursor.run {
+                cursor.drawables_done
+            } else {
+                None
+            };
             let run_font = run.font();
             let mut source: Vec<(GlyphId, Point)> = run.source().collect();
 
@@ -151,6 +164,12 @@ impl GlyphRunListPainter {
                         || path_paint.mask_filter().is_some()
                         || (stroking && !hairline);
 
+                    // The paths of a resumed run are drawn already.
+                    let accepted = if resumed_drawables.is_some() {
+                        Vec::new()
+                    } else {
+                        accepted
+                    };
                     for (digest, pos) in accepted {
                         let glyph = guard.glyph(digest);
                         let Some(path) = glyph.path() else {
@@ -178,7 +197,12 @@ impl GlyphRunListPainter {
                         prepare_for_drawing(&mut guard, ActionType::Drawable, &source);
                     source = rejected;
 
-                    for (digest, pos) in accepted {
+                    let first = resumed_drawables.unwrap_or(0);
+                    // The drawable at `first` is the next one to draw; the call that continues
+                    // after it returns the one after.
+                    if let Some((index, (digest, pos))) =
+                        accepted.into_iter().enumerate().nth(first)
+                    {
                         let glyph = guard.glyph(digest);
                         let Some(drawable) = glyph.drawable() else {
                             panic!("a glyph accepted for drawables has a drawable");
@@ -190,7 +214,9 @@ impl GlyphRunListPainter {
                             translate,
                         );
                         // The canvas draws it: saveLayer(m.mapRect(bounds), paint); draw(m).
-                        pending_drawables.push(PendingGlyphDrawable {
+                        cursor.run = run_index;
+                        cursor.drawables_done = Some(index + 1);
+                        return Some(PendingGlyphDrawable {
                             drawable: drawable.clone(),
                             matrix: m,
                             paint: paint.clone(),
@@ -311,6 +337,7 @@ impl GlyphRunListPainter {
                 }
             }
         }
+        None
     }
 }
 
