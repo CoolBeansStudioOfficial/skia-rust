@@ -3,20 +3,22 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 #![cfg(test)]
 
-// Port of: tests/ExifTest.cpp (chrome/m156), the cases for the JPEG orientation and the EXIF parser
-// (ExifOrientation, ExifOrientationInExif, ExifOrientationInSubIFD, ExifParse, ExifTruncate).
-// GetImageRespectsExif needs the WebP decoder, and ExifWrite* needs SkExif's WriteExif, which is
-// not ported.
+// Port of: tests/ExifTest.cpp (chrome/m156), the cases for the JPEG orientation, the EXIF parser
+// and the EXIF writer (ExifWrite*). GetImageRespectsExif needs the WebP decoder, which is not
+// ported here.
 
 use skia_rust_codec::codec::Options;
 use skia_rust_codec::codecs;
-use skia_rust_codec::exif::{Metadata, parse};
+use skia_rust_codec::encode::jpeg_encoder;
+use skia_rust_codec::exif::{Metadata, parse, write_exif};
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color::Color;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::MemoryStream;
 
 use crate::resources::get_resource_as_data;
-use crate::{def_test, reporter_assert, skip_missing_resource};
+use crate::{def_test, errorf, reporter_assert, skip_missing_resource};
 
 fn approx_eq(x: f32, y: f32, epsilon: f32) -> bool {
     (x - y).abs() < epsilon
@@ -208,4 +210,86 @@ def_test!(GetImageRespectsExif, |r| {
             reporter_assert!(r, false, "Not success {}", result.as_str());
         }
     }
+});
+
+// Port of: tests/ExifTest.cpp#L221-L229 (chrome/m156), metadata_are_equal
+fn metadata_are_equal(m1: &Metadata, m2: &Metadata) -> bool {
+    m1.origin == m2.origin
+        && m1.hdr_headroom == m2.hdr_headroom
+        && m1.resolution_unit == m2.resolution_unit
+        && m1.x_resolution == m2.x_resolution
+        && m1.y_resolution == m2.y_resolution
+        && m1.pixel_x_dimension == m2.pixel_x_dimension
+        && m1.pixel_y_dimension == m2.pixel_y_dimension
+}
+
+// Port of: tests/ExifTest.cpp#L231-L263 (chrome/m156), ExifWriteOrientation
+def_test!(ExifWriteOrientation, |r| {
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(&ImageInfo::new_n32_premul((100, 100), None), None);
+    bm.erase_color(Color::BLUE);
+    let Some(pm) = bm.peek_pixels() else {
+        errorf!(r, "failed to peek pixels");
+        return;
+    };
+    for o in [
+        EncodedOrigin::TopLeft,
+        EncodedOrigin::TopRight,
+        EncodedOrigin::BottomRight,
+        EncodedOrigin::BottomLeft,
+        EncodedOrigin::LeftTop,
+        EncodedOrigin::RightTop,
+        EncodedOrigin::RightBottom,
+        EncodedOrigin::LeftBottom,
+    ] {
+        let options = jpeg_encoder::Options {
+            origin: Some(o),
+            ..jpeg_encoder::Options::default()
+        };
+        let Some(data) = jpeg_encoder::encode_pixmap(&pm, &options) else {
+            errorf!(r, "Failed to encode with orientation {:?}", o);
+            return;
+        };
+
+        let Ok(codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(data.as_bytes()))
+        else {
+            errorf!(r, "Failed to create a codec with orientation {:?}", o);
+            return;
+        };
+        reporter_assert!(r, codec.origin() == o);
+    }
+});
+
+// Port of: tests/ExifTest.cpp#L265-L283 (chrome/m156), ExifWriteTest
+def_test!(ExifWriteTest, |r| {
+    // Parse exif data
+    let path = "images/test2-nonuniform.exif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let mut exif = Metadata::default();
+    parse(&mut exif, Some(&data));
+
+    // Write parsed data back to exif
+    let Some(write_data) = write_exif(&exif) else {
+        reporter_assert!(r, false);
+        return;
+    };
+
+    // Parse the new exif data that was written
+    let mut write_exif_metadata = Metadata::default();
+    parse(&mut write_exif_metadata, Some(write_data.as_bytes()));
+
+    reporter_assert!(r, metadata_are_equal(&write_exif_metadata, &exif));
+});
+
+// We are not able to write HDRheadroom data from a Metadata instance so WriteExif
+// should fail and return nullptr when fHdrHeadroom is present.
+// Port of: tests/ExifTest.cpp#L285-L296 (chrome/m156), ExifWriteFailsHDRheadroom
+def_test!(ExifWriteFailsHDRheadroom, |r| {
+    let path = "images/test0-hdr.exif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+    let mut exif = Metadata::default();
+    parse(&mut exif, Some(&data));
+
+    // Write parsed data back to exif
+    reporter_assert!(r, write_exif(&exif).is_none());
 });

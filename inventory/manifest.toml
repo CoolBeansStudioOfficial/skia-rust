@@ -32068,8 +32068,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -32078,8 +32077,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -32088,8 +32086,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
-status = "todo"
-reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
+status = "passing"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
