@@ -143,6 +143,8 @@ pub mod inf_rect_test;
 #[cfg(test)]
 pub mod invalid_indexed_png_test;
 #[cfg(test)]
+pub mod json_test;
+#[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
