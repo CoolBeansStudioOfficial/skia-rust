@@ -20,11 +20,12 @@ use skia_rust_core::utils::parse;
 use skia_rust_core::utils::parse_color::find_named_color;
 
 use crate::types::{
-    Align, ColorKind, ColorType, Colorspace, DashArray, DashArrayType, Display, Fill, FillRule, FillRuleType, FontFamily, FontSize, FontStyle, FontStyleType, FontWeight,
-    FontWeightType, FuncIri, IntegerType, Iri, IriType, Length, LengthUnit, LineCap, LineJoin,
-    LineJoinType, NumberType, ObjectBoundingBoxUnits, ObjectBoundingBoxUnitsType, Paint,
-    PreserveAspectRatio, Property, PropertyState, Scale, StringType, TextAnchor, TextAnchorType,
-    TransformType, ViewBoxType, Visibility, VisibilityType,
+    Align, ColorKind, ColorType, Colorspace, DashArray, DashArrayType, Display, Fill, FillRule,
+    FillRuleType, FontFamily, FontSize, FontStyle, FontStyleType, FontWeight, FontWeightType,
+    FuncIri, IntegerType, Iri, IriType, Length, LengthUnit, LineCap, LineJoin, LineJoinType,
+    NumberType, ObjectBoundingBoxUnits, ObjectBoundingBoxUnitsType, Paint, PreserveAspectRatio,
+    Property, PropertyState, Scale, StringType, TextAnchor, TextAnchorType, TransformType,
+    ViewBoxType, Visibility, VisibilityType,
 };
 
 // TODO: these should be shared with SkParse.cpp

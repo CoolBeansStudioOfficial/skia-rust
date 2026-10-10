@@ -4281,7 +4281,11 @@ impl Canvas {
         {
             let save_count = self.save_count();
             let drawable_bounds = matrix.map_rect(drawable.bounds()).0;
-            self.save_layer(&SaveLayerRec::default().bounds(&drawable_bounds).paint(paint));
+            self.save_layer(
+                &SaveLayerRec::default()
+                    .bounds(&drawable_bounds)
+                    .paint(paint),
+            );
             drawable.draw(self, Some(matrix));
             self.restore_to_count(save_count);
         }

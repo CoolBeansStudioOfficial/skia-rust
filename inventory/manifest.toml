@@ -17524,8 +17524,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L239-L239"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "48e8dbc53f707bb9689eef37f8523cde808d0fd65dfb1b6a7c89631e5c7ac91d"
 
 [[test]]
@@ -17570,8 +17569,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L184-L184"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "2856bdad8b9554dd449258212601b5c921e4eb0c96f14bb82e9b30589671315e"
 
 [[test]]
@@ -20412,8 +20410,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L421-L421"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "239e2354257a78b085fb557cfb20e47a2c0a43405bbec3aec84ce795ba963b15"
 
 [[test]]
@@ -20422,8 +20419,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L422-L422"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "0b8bb0448b554627361bf5ce88e34b2828aabc8a98455779df6f3e5cad8d6619"
 
 [[test]]
@@ -20432,8 +20428,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L420-L420"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c5bfc71e5da3f87e9d64cb8035206bfd6b62072a49187c9444d73bb338b18770"
 
 [[test]]
@@ -20442,8 +20437,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L418-L418"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "cdd14bbe1977cc2726ea4b03ea0a9d58d492bcf906f26d0c0eabbdf1d202feaf"
 
 [[test]]
@@ -20452,8 +20446,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L419-L419"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c0ccc875c6b30aa95defbf120b3fc23ed45bf129c78e64a53f00bfc6e450d59d"
 
 [[test]]
@@ -22683,8 +22676,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mixedtextblobs.cpp#L168-L168"
 module = "text"
-status = "todo"
-reason = "PlanetTypeface() falls back to the Planet SVG family (TestSVGTypeface, T20, not ported)"
+status = "passing"
 span_hash = "77e1a1444265579e7529b5d780c6bc53a58d34d147d93bfaca7db412679f09ea"
 
 [[test]]
@@ -24176,8 +24168,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L243-L243"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "8d29721a5104d21bf28fa451ca4c442937c40c7330e235185ee654fb11d2fa00"
 
 [[test]]
@@ -24268,8 +24259,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L244-L244"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "0e3bb17f46f8dd2c3ce29b0dc771ddedf50a1af4ce82e03e75fad8b770da9c8f"
 
 [[test]]
@@ -24278,8 +24268,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji_rendering.cpp#L114-L114"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "3f1481afff68eb3b6cf60531b39a4792bddd60cbca90bb3616a9bb5e57349168"
 
 [[test]]
@@ -28475,6 +28464,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Filters.cpp#L16-L34"
 module = "svg"
 status = "todo"
+reason = "needs the SVG filter elements (M14), not constructed by the M13 core"
 span_hash = "98fd58d115a9e860f54e50fb4d840746382c24bc161a514cdd4ee50f76449519"
 
 [[test]]
@@ -28484,6 +28474,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Text.cpp#L21-L199"
 module = "svg"
 status = "todo"
+reason = "needs the SVG text elements and shaper (M15), not constructed by the M13 core"
 span_hash = "a33e1381b25f49449d038ee66e8180167e807254d7934610a61a3891a38c473c"
 
 [[test]]
@@ -37772,7 +37763,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParseColorTest.cpp#L168-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9b4ab7635cf6f3111d3a4a0e9eeb873c20c2a17bfa13ae6023306681ad819b1"
 
 [[test]]
@@ -42935,7 +42926,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkDOMTest.cpp#L26-L84"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fba1729276169d3e225db40e2c2ca587bc771e3618e91865cf963d63d4b377cb"
 
 [[test]]
@@ -50210,8 +50201,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L717-L755"
 module = "text"
-status = "todo"
-reason = "needs ToolUtils::EmojiSample(kTest) (TestSVGTypeface, T20)"
+status = "passing"
 span_hash = "700ee7e8d34ea7a3e6fea13ae26d228684cba29da97a05bbb30e840f493e684f"
 
 [[test]]

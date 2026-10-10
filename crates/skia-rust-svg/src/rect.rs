@@ -152,7 +152,10 @@ impl SvgNode for Rect {
             || set_parsed(&mut self.x, AttributeParser::parse_named("x", n, v))
             || set_parsed(&mut self.y, AttributeParser::parse_named("y", n, v))
             || set_parsed(&mut self.width, AttributeParser::parse_named("width", n, v))
-            || set_parsed(&mut self.height, AttributeParser::parse_named("height", n, v))
+            || set_parsed(
+                &mut self.height,
+                AttributeParser::parse_named("height", n, v),
+            )
             || set_parsed_optional(&mut self.rx, AttributeParser::parse_named("rx", n, v))
             || set_parsed_optional(&mut self.ry, AttributeParser::parse_named("ry", n, v))
     }

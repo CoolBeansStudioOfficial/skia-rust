@@ -14,4 +14,4 @@ pub mod writer;
 
 pub use dom::{Attr, AttrIter, Dom, DomParser, Node, NodeType};
 pub use parser::{XmlParser, XmlParserError, XmlParserErrorCode};
-pub use writer::{XmlParserWriter, XmlStreamWriter, XmlWriter, XmlWriterBase, K_NO_PRETTY_FLAG};
+pub use writer::{K_NO_PRETTY_FLAG, XmlParserWriter, XmlStreamWriter, XmlWriter, XmlWriterBase};

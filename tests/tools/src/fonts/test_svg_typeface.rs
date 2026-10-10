@@ -19,7 +19,7 @@ use skia_rust_core::fixed::fixed_to_scalar;
 use skia_rust_core::font_arguments::FontArguments;
 use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_descriptor::{FactoryId, FontDescriptor};
-use skia_rust_core::font_metrics::{FontMetrics, Flags as FontMetricsFlags};
+use skia_rust_core::font_metrics::{Flags as FontMetricsFlags, FontMetrics};
 use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_priv::scale_font_metrics;
 use skia_rust_core::font_style::FontStyle;
@@ -325,8 +325,18 @@ impl TestSvgTypeface {
             glyph("fonts/svg/planets/venus.svg", (0.0, 100.0), 240.0, 0x2640), // ♀
             glyph("fonts/svg/planets/earth.svg", (0.0, 100.0), 240.0, 0x2641), // ♁
             glyph("fonts/svg/planets/mars.svg", (0.0, 50.0), 130.0, 0x2642), // ♂
-            glyph("fonts/svg/planets/jupiter.svg", (0.0, 1000.0), 2200.0, 0x2643), // ♃
-            glyph("fonts/svg/planets/saturn.svg", (-300.0, 1500.0), 2600.0, 0x2644), // ♄
+            glyph(
+                "fonts/svg/planets/jupiter.svg",
+                (0.0, 1000.0),
+                2200.0,
+                0x2643,
+            ), // ♃
+            glyph(
+                "fonts/svg/planets/saturn.svg",
+                (-300.0, 1500.0),
+                2600.0,
+                0x2644,
+            ), // ♄
             glyph("fonts/svg/planets/uranus.svg", (0.0, 375.0), 790.0, 0x2645), // ♅
             glyph("fonts/svg/planets/neptune.svg", (0.0, 350.0), 740.0, 0x2646), // ♆
         ];
@@ -609,7 +619,8 @@ impl ScalerContextImpl for TestSvgScalerContext {
         let glyph_id = self.data.clamp(glyph.glyph_id());
 
         // TODO: this should be SkImageInfo::MakeS32 when that passes all the tests.
-        let info = ImageInfo::new_n32_premul((i32::from(glyph.width()), i32::from(glyph.height())), None);
+        let info =
+            ImageInfo::new_n32_premul((i32::from(glyph.width()), i32::from(glyph.height())), None);
         let row_bytes = glyph.row_bytes();
         // bm.eraseColor(0)
         let width_bytes = usize::from(glyph.width()) * 4;

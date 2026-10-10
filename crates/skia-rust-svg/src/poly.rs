@@ -102,7 +102,12 @@ impl SvgNode for Poly {
         if let Some(points) = AttributeParser::parse_named::<PointsType>("points", n, v) {
             // TODO: we can likely just keep the points array and create the SkPath when needed.
             // only polygons are auto-closed
-            self.path = Path::polygon(&points, self.transformable.base().tag() == Tag::Polygon, None, None);
+            self.path = Path::polygon(
+                &points,
+                self.transformable.base().tag() == Tag::Polygon,
+                None,
+                None,
+            );
             self.points = points;
         }
 

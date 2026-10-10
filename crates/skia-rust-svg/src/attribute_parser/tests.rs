@@ -10,7 +10,10 @@ fn parse<T: Parse>(s: &str) -> Option<T> {
 
 #[test]
 fn colors() {
-    assert_eq!(parse::<ColorType>("#f00"), Some(Color::from_rgb(0xff, 0, 0)));
+    assert_eq!(
+        parse::<ColorType>("#f00"),
+        Some(Color::from_rgb(0xff, 0, 0))
+    );
     assert_eq!(
         parse::<ColorType>(" #0a0b0c "),
         Some(Color::from_rgb(10, 11, 12))
@@ -85,12 +88,16 @@ fn view_box_and_aspect_ratio() {
 
 #[test]
 fn properties() {
-    let pr = AttributeParser::parse_property::<NumberType, true>("fill-opacity", "fill-opacity", "0.5")
-        .unwrap();
-    assert!(pr.is_value());
     let pr =
-        AttributeParser::parse_property::<NumberType, true>("fill-opacity", "fill-opacity", "inherit")
+        AttributeParser::parse_property::<NumberType, true>("fill-opacity", "fill-opacity", "0.5")
             .unwrap();
+    assert!(pr.is_value());
+    let pr = AttributeParser::parse_property::<NumberType, true>(
+        "fill-opacity",
+        "fill-opacity",
+        "inherit",
+    )
+    .unwrap();
     assert!(!pr.is_value());
     assert!(
         AttributeParser::parse_property::<NumberType, true>("fill-opacity", "stroke", "1")
@@ -113,5 +120,8 @@ fn func_iri_points_and_dashes() {
     );
     let da = parse::<DashArray>("1 2, 3").unwrap();
     assert_eq!(da.dash_array().len(), 3);
-    assert_eq!(parse::<DashArray>("none").unwrap().ty(), DashArrayType::None);
+    assert_eq!(
+        parse::<DashArray>("none").unwrap().ty(),
+        DashArrayType::None
+    );
 }

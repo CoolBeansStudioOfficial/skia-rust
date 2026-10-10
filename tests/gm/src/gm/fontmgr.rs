@@ -35,7 +35,9 @@ const MAX_FAMILIES: usize = 30;
 // Port of: gm/fontmgr.cpp#L39-L43 (chrome/m156)
 fn draw_string(canvas: &Canvas, text: &str, x: scalar, y: scalar, font: &Font) -> scalar {
     canvas.draw_str(text, (x, y), font, &Paint::default());
-    x + font.measure_text(text.as_bytes(), TextEncoding::UTF8, None).0
+    x + font
+        .measure_text(text.as_bytes(), TextEncoding::UTF8, None)
+        .0
 }
 
 // Port of: gm/fontmgr.cpp#L45-L92 (chrome/m156)
@@ -156,10 +158,40 @@ impl GM for FontMgrGm {
                 x = draw_string(canvas, &sname, x, y, &font) + 20.0;
 
                 // check to see that we get different glyphs in japanese and chinese
-                x = draw_character(canvas, 0x5203, x, y, &font, fm, Some(&family_name), &[ZH], &fs);
-                x = draw_character(canvas, 0x5203, x, y, &font, fm, Some(&family_name), &[JA], &fs);
+                x = draw_character(
+                    canvas,
+                    0x5203,
+                    x,
+                    y,
+                    &font,
+                    fm,
+                    Some(&family_name),
+                    &[ZH],
+                    &fs,
+                );
+                x = draw_character(
+                    canvas,
+                    0x5203,
+                    x,
+                    y,
+                    &font,
+                    fm,
+                    Some(&family_name),
+                    &[JA],
+                    &fs,
+                );
                 // check that emoji characters are found
-                x = draw_character(canvas, 0x1f601, x, y, &font, fm, Some(&family_name), &[], &fs);
+                x = draw_character(
+                    canvas,
+                    0x1f601,
+                    x,
+                    y,
+                    &font,
+                    fm,
+                    Some(&family_name),
+                    &[],
+                    &fs,
+                );
             }
             y += 24.0;
         }
@@ -426,7 +458,12 @@ impl FontMgrBoundsGm {
 
         if label_bounds {
             let name = font.typeface().family_name();
-            canvas.draw_str(&name, (min.left, min.bottom), &label_font, &Paint::default());
+            canvas.draw_str(
+                &name,
+                (min.left, min.bottom),
+                &label_font,
+                &Paint::default(),
+            );
         }
         for glyph_to_draw in &glyphs_to_draw {
             let path = font.get_path(glyph_to_draw.id).unwrap_or_else(Path::new);

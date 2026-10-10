@@ -164,6 +164,8 @@ pub mod paint_test;
 #[cfg(test)]
 pub mod parametric_stage_test;
 #[cfg(test)]
+pub mod parse_color_test;
+#[cfg(test)]
 pub mod parse_path_test;
 #[cfg(test)]
 pub mod path_builder_test;
