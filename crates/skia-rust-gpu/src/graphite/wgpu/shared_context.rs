@@ -18,6 +18,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
+use skia_rust_core::runtime_effect::RuntimeEffect;
+
 use crate::gpu::resource_key::UniqueKey;
 use crate::graphite::buffer::Buffer;
 use crate::graphite::buffer_manager::{
@@ -216,8 +218,17 @@ impl WgpuSharedContext {
         let noop_fragment =
             create_noop_fragment(&backend_context.device, caps.allow_scoped_error_checks())?;
 
-        // (The context options carry no user-defined known runtime effects yet.)
-        let shader_dictionary = ShaderCodeDictionary::new(get_binding_layout(&caps), &[]);
+        // Null entries are skipped, as in `ShaderCodeDictionary`'s constructor.
+        let user_defined_known_runtime_effects: Vec<RuntimeEffect> = options
+            .user_defined_known_runtime_effects
+            .iter()
+            .flatten()
+            .cloned()
+            .collect();
+        let shader_dictionary = ShaderCodeDictionary::new(
+            get_binding_layout(&caps),
+            &user_defined_known_runtime_effects,
+        );
 
         let uniform_buffers_bind_group_layouts =
             create_uniform_buffers_bind_group_layouts(&backend_context.device, &caps);

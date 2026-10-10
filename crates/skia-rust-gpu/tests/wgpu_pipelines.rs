@@ -1163,6 +1163,12 @@ impl PipelineCreationContext for FakeContext {
         &self.base
     }
 
+    fn renderer_provider(&self) -> &skia_rust_gpu::graphite::renderer_provider::RendererProvider {
+        unimplemented!(
+            "the fake context has no renderer provider; the tests here do not precompile"
+        )
+    }
+
     fn find_or_create_graphics_pipeline(
         &self,
         _runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
