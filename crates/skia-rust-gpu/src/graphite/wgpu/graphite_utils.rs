@@ -549,9 +549,26 @@ pub fn compile_wgsl_shader_module(
 ) -> Option<wgpu::ShaderModule> {
     let caps = shared_context.caps();
     let device = shared_context.device();
+    // naga does not implement WGSL's `unrestricted_pointer_parameters`, which Skia's generated
+    // WGSL uses (docs/design/gpu.md 6.3, W4): such a module is rewritten, every other one is
+    // handed over as the text. The browser compiles the text itself.
+    #[cfg(not(target_arch = "wasm32"))]
+    let source = match crate::graphite::wgpu::naga_pointer_args::shader_source(wgsl) {
+        Ok(source) => source,
+        Err(error) => {
+            error_handler.compile_error(
+                wgsl,
+                &format!("{error}\n"),
+                /* shader_was_cached= */ false,
+            );
+            return None;
+        }
+    };
+    #[cfg(target_arch = "wasm32")]
+    let source = wgpu::ShaderSource::Wgsl(wgsl.into());
     let descriptor = wgpu::ShaderModuleDescriptor {
         label: caps.set_backend_labels().then_some(label),
-        source: wgpu::ShaderSource::Wgsl(wgsl.into()),
+        source,
     };
 
     if !caps.allow_scoped_error_checks() {

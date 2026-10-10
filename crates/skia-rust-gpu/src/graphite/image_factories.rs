@@ -1,18 +1,18 @@
 // Copyright 2022 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Ported from Skia: src/gpu/graphite/ImageFactories.cpp (the bitmap, raster, subset and texture
-// factories; `TextureFromImage` and `SubsetTextureFrom`)
+// Ported from Skia: src/gpu/graphite/ImageFactories.cpp (the bitmap, raster, subset, texture and
+// YUVA factories; `TextureFromImage`, `SubsetTextureFrom` and the `TextureFromYUVA*` family)
 
-//! Image factories (`include/gpu/graphite/Image.h`): `TextureFromImage`, `SubsetTextureFrom`, and the
-//! bitmap path they share (`make_from_bitmap`).
+//! Image factories (`include/gpu/graphite/Image.h`): `TextureFromImage`, `SubsetTextureFrom`, the
+//! YUVA factories, and the bitmap path they share (`make_from_bitmap`).
 //!
 //! Not ported here: the lazy-generator path of `TextureFromImage` (`make_texture_image_from_lazy`,
 //! the generator and picture cases of `SkImage_Lazy`, which need the generator's texture
-//! callbacks), the YUVA factories (G15), and `WrapTexture` and `PromiseTextureFrom` (G11a and
-//! G15). `MakeWithFilter` is [`make_with_filter`].
+//! callbacks). `MakeWithFilter` is [`make_with_filter`].
 
-use std::sync::Arc;
+use std::array;
+use std::sync::{Arc, PoisonError};
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
@@ -26,10 +26,15 @@ use skia_rust_core::image_info::{ColorInfo, ImageInfo};
 use skia_rust_core::image_info_priv::{color_info_is_valid, image_info_is_valid};
 use skia_rust_core::image_raster::ImageRaster;
 use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::size::ISize;
 use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::yuva_info::YUVAInfo;
+use skia_rust_core::yuva_pixmaps::{YUVAPixmapInfo, YUVAPixmaps};
+use skia_rust_raster::pixmap_draw::scale_pixels;
 
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
@@ -40,6 +45,7 @@ use crate::graphite::caps::Caps;
 use crate::graphite::graphite_types::Volatile;
 use crate::graphite::image_filter_backend::make_graphite_backend;
 use crate::graphite::image_graphite::{Image, make_non_budgeted, make_subset};
+use crate::graphite::image_yuva_graphite::ImageYuva;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::texture::ReleaseCallback;
 use crate::graphite::texture_format::{
@@ -52,6 +58,7 @@ use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::{
     PromiseTextureFulfillProc, make_bitmap_proxy_view, make_promise_image_lazy_proxy,
 };
+use crate::graphite::yuva_backend_textures::{YUVABackendTextureInfo, YUVABackendTextures};
 
 /// `make_from_bitmap(recorder, colorInfo, bitmap, mipmaps, budgeted, requiredProps, label)`: an
 /// image over a texture the bitmap is uploaded to.
@@ -321,6 +328,235 @@ pub fn promise_texture_from(
     let swizzle = read_swizzle_for_color_type(color_info.color_type(), format);
     let view = TextureProxyView::new_with_origin(Some(proxy), swizzle, origin);
     Some(Image::new(view, color_info).into_core())
+}
+
+/// `PromiseTextureFromYUVA(recorder, backendTextureInfo, imageColorSpace, isVolatile, fulfillProc,
+/// imageReleaseProc, textureReleaseProc, imageContext, planeContexts, label)`: a YUVA image whose
+/// planes are provided by the fulfill procs, one per plane (`plane_fulfill_procs`, the
+/// `planeContexts` of C++, whose context is the closure's own state). `image_release` runs once the
+/// image and every recording that uses it are gone, even when the image cannot be made.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L331-L377 (chrome/m156)
+#[doc(alias = "PromiseTextureFromYUVA")]
+#[must_use]
+pub fn promise_texture_from_yuva(
+    recorder: &Recorder,
+    backend_texture_info: &YUVABackendTextureInfo,
+    image_color_space: Option<ColorSpace>,
+    is_volatile: Volatile,
+    plane_fulfill_procs: &[PromiseTextureFulfillProc],
+    image_release: Option<Box<dyn FnOnce() + Send>>,
+    label: &str,
+) -> Option<CoreImage> {
+    // Our contract is that we will always call the _image_ release proc even on failure. We use
+    // the helper to convey the imageContext, so we need to ensure Make doesn't fail.
+    let release_helper = RefCntedCallback::make(CallbackProc::Plain(
+        image_release.unwrap_or_else(|| Box::new(|| {})),
+    ));
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+
+    // Precompute the dimensions for all promise texture planes.
+    let plane_dimensions = backend_texture_info.yuva_info().plane_dimensions();
+    if plane_dimensions.is_empty() {
+        return None;
+    }
+
+    let label_str = if label.is_empty() {
+        String::from("Wrapped_PromiseYUVPlane")
+    } else {
+        format!("{label}_PromiseYUVPlane")
+    };
+
+    let num_planes = backend_texture_info.num_planes();
+    let mut planes: [TextureProxyView; YUVAInfo::MAX_PLANES] =
+        array::from_fn(|_| TextureProxyView::default());
+    for (i, plane) in planes.iter_mut().enumerate().take(num_planes) {
+        let lazy_proxy = make_promise_image_lazy_proxy(
+            &*caps,
+            plane_dimensions[i],
+            backend_texture_info.plane_texture_info(i),
+            is_volatile,
+            Arc::clone(&release_helper),
+            Arc::clone(plane_fulfill_procs.get(i)?),
+            &label_str,
+        );
+        // Promise YUVA images assume the default rgba swizzle.
+        *plane = TextureProxyView::from_proxy(lazy_proxy);
+    }
+    ImageYuva::make(
+        &*caps,
+        backend_texture_info.yuva_info(),
+        &planes[..num_planes],
+        image_color_space,
+    )
+    .map(ImageYuva::into_core)
+}
+
+/// `TextureFromYUVAPixmaps(recorder, pixmaps, requiredProps, limitToMaxTextureSize,
+/// imageColorSpace, label)`: a YUVA image whose planes are uploaded from `pixmaps`. A plane is
+/// rescaled to fit the largest texture size when `limit_to_max_texture_size` is set.
+///
+/// The upload copies each plane into a bitmap (C++ installs the plane's pixels without a copy).
+// Port of: src/gpu/graphite/ImageFactories.cpp#L539-L597 (chrome/m156)
+#[doc(alias = "TextureFromYUVAPixmaps")]
+#[must_use]
+pub fn texture_from_yuva_pixmaps(
+    recorder: &Recorder,
+    pixmaps: &YUVAPixmaps,
+    required_props: RequiredProperties,
+    limit_to_max_texture_size: bool,
+    image_color_space: Option<ColorSpace>,
+    label: &str,
+) -> Option<CoreImage> {
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+
+    // Determine if we have to resize the pixmaps.
+    let max_texture_size = caps.max_texture_size();
+    let yuva = pixmaps.yuva_info();
+    let max_dim = yuva.width().max(yuva.height());
+
+    let mut final_info = pixmaps.pixmaps_info();
+    let rescale = max_dim > max_texture_size;
+    if rescale {
+        if !limit_to_max_texture_size {
+            return None;
+        }
+        // The float arithmetic and the truncation are those of the C++ expression.
+        #[allow(clippy::cast_precision_loss)] // mirrors the C++ `static_cast<float>`
+        let scale = max_texture_size as f32 / max_dim as f32;
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+        // C++ static_cast<int>
+        let new_dimensions = ISize::new(
+            ((yuva.width() as f32 * scale) as i32).min(max_texture_size),
+            ((yuva.height() as f32 * scale) as i32).min(max_texture_size),
+        );
+        let new_yuva = yuva.with_dimensions(new_dimensions)?;
+        final_info = YUVAPixmapInfo::from_data_type(&new_yuva, pixmaps.data_type(), None)?;
+    }
+
+    let label_str = if label.is_empty() {
+        String::from("YUVRasterBitmapPlane")
+    } else {
+        format!("{label}_YUVBitmapPlane")
+    };
+
+    let mipmapped = if required_props.mipmapped {
+        Mipmapped::Yes
+    } else {
+        Mipmapped::No
+    };
+    let final_yuva = *final_info.yuva_info();
+    let num_planes = final_yuva.num_planes();
+    let mut planes: [TextureProxyView; YUVAInfo::MAX_PLANES] =
+        array::from_fn(|_| TextureProxyView::default());
+    for (i, plane) in planes.iter_mut().enumerate().take(num_planes) {
+        let mut bmp = Bitmap::new();
+        if rescale {
+            // Rescale the data before uploading.
+            let plane_info = final_info.plane_info(i)?;
+            let row_bytes = plane_info.min_row_bytes();
+            let mut pixels = vec![0_u8; plane_info.compute_byte_size(row_bytes)];
+            {
+                let mut dst = Pixmap::new(plane_info, &mut pixels, row_bytes)?;
+                let source = pixmaps.plane(i);
+                let src = source.pixmap();
+                if !scale_pixels(&src, &mut dst, &SamplingOptions::from(FilterMode::Linear)) {
+                    return None;
+                }
+            }
+            if !bmp.install_pixels(plane_info, pixels, row_bytes) {
+                return None;
+            }
+        } else {
+            // Use the original data to upload.
+            let source = pixmaps.plane(i);
+            let pixels = source.addr()?.to_vec();
+            if !bmp.install_pixels(source.info(), pixels, source.row_bytes()) {
+                return None;
+            }
+        }
+        *plane = make_bitmap_proxy_view(recorder, &bmp, None, mipmapped, Budgeted::No, &label_str)
+            .unwrap_or_default();
+    }
+    ImageYuva::make(
+        &*caps,
+        &final_yuva,
+        &planes[..num_planes],
+        image_color_space,
+    )
+    .map(ImageYuva::into_core)
+}
+
+/// `TextureFromYUVATextures(recorder, yuvaTextures, imageColorSpace, releaseP, releaseC, label)`:
+/// a YUVA image over the wrapped backend textures of its planes. `release` is the release callback
+/// the textures share.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L599-L631 (chrome/m156)
+#[doc(alias = "TextureFromYUVATextures")]
+#[must_use]
+pub fn texture_from_yuva_textures(
+    recorder: &Recorder,
+    yuva_textures: &YUVABackendTextures,
+    image_color_space: Option<ColorSpace>,
+    release: Option<CallbackProc>,
+    label: &str,
+) -> Option<CoreImage> {
+    let release_helper = release.map(RefCntedCallback::make);
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+
+    let label_str = if label.is_empty() {
+        String::from("Wrapped_YUVPlane")
+    } else {
+        format!("{label}_YUVPlane")
+    };
+
+    let num_planes = yuva_textures.num_planes();
+    let mut planes: [TextureProxyView; YUVAInfo::MAX_PLANES] =
+        array::from_fn(|_| TextureProxyView::default());
+    for (i, plane) in planes.iter_mut().enumerate().take(num_planes) {
+        let texture = {
+            let mut provider = priv_
+                .resource_provider()
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            provider.create_wrapped_texture(&yuva_textures.plane_texture(i), &label_str)
+        };
+        let Some(texture) = texture else {
+            skia_log_w!("Failed to wrap backend texture for YUVA plane {i}");
+            return None;
+        };
+        texture.set_release_callback(
+            release_helper
+                .clone()
+                .map(|helper| helper as ReleaseCallback),
+        );
+        *plane = TextureProxyView::from_proxy(Some(TextureProxy::wrap(texture)));
+    }
+
+    ImageYuva::make(
+        &*caps,
+        yuva_textures.yuva_info(),
+        &planes[..num_planes],
+        image_color_space,
+    )
+    .map(ImageYuva::into_core)
+}
+
+/// `TextureFromYUVAImages(recorder, yuvaInfo, images, imageColorSpace)`: a YUVA image that views
+/// the planes of Graphite-backed `images`. It does no work on the recorder.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L633-L640 (chrome/m156)
+#[doc(alias = "TextureFromYUVAImages")]
+#[must_use]
+pub fn texture_from_yuva_images(
+    recorder: &Recorder,
+    yuva_info: &YUVAInfo,
+    images: &[CoreImage],
+    image_color_space: Option<ColorSpace>,
+) -> Option<CoreImage> {
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+    ImageYuva::wrap_images(&*caps, yuva_info, images, image_color_space).map(ImageYuva::into_core)
 }
 
 /// `SubsetTextureFrom(recorder, img, subset, requiredProps)`: a Graphite-backed copy of `subset` of

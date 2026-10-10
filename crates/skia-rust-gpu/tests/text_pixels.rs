@@ -198,7 +198,10 @@ fn draw_text(device: &mut Device, font: &Font, paint: &Paint, text: &str, origin
 // text, some are fully covered, and none are outside it.
 // Port of: src/gpu/graphite/render/BitmapTextRenderStep.cpp#L19-L212 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn small_text_is_drawn_from_the_atlas() {
     let Some(mut context) = real_context() else {
         return;
@@ -233,7 +236,10 @@ fn small_text_is_drawn_from_the_atlas() {
 // two copies are identical.
 // Port of: src/text/gpu/TextBlobRedrawCoordinator.cpp#L58-L91 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_blob_drawn_twice_makes_identical_copies() {
     let Some(mut context) = real_context() else {
         return;
@@ -263,7 +269,10 @@ fn a_blob_drawn_twice_makes_identical_copies() {
 // text has the size asked for.
 // Port of: src/gpu/graphite/render/SDFTextRenderStep.cpp#L53-L204 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn large_text_is_drawn_from_distance_fields() {
     let Some(mut context) = real_context() else {
         return;
@@ -287,7 +296,10 @@ fn large_text_is_drawn_from_distance_fields() {
 // Text beyond the distance field sizes is drawn as paths and covers pixels like text does.
 // Port of: src/text/gpu/SubRunContainer.cpp#L1357-L1659 (chrome/m156), the path case
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn huge_text_is_drawn_as_paths() {
     let Some(mut context) = real_context() else {
         return;
@@ -304,7 +316,10 @@ fn huge_text_is_drawn_as_paths() {
 // A slug draws the same pixels as the blob it was made of.
 // Port of: src/gpu/graphite/Device.cpp#L2573-L2585 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_slug_draws_the_same_pixels_as_its_text() {
     let Some(mut context) = real_context() else {
         return;
@@ -337,7 +352,10 @@ fn a_slug_draws_the_same_pixels_as_its_text() {
 // colors are not the gray-coverage premultiplied reds of A8 text.
 // Port of: src/gpu/graphite/render/BitmapTextRenderStep.cpp#L19-L212 (chrome/m156), the LCD variant
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn lcd_text_covers_pixels_with_per_channel_coverage() {
     let Some(mut context) = real_context() else {
         return;

@@ -59,7 +59,7 @@ pub struct Image {
     // `Image_Base::fLinkedDevices` (with `fDeviceLinkLock`): devices are flushed in
     // `notify_in_use()`. If a linked device is gone or marked immutable, it is unlinked. If all
     // linked devices are removed, this array becomes empty.
-    linked_devices: Mutex<Vec<Option<Arc<DeviceLink>>>>,
+    links: ImageLinks,
 }
 
 /// The `Send + Sync` half of a Graphite `Device` that the images of its target hold
@@ -212,23 +212,14 @@ impl DeviceLink {
     }
 }
 
-impl Image {
-    /// `Image(TextureProxyView, const SkColorInfo&)`. The image's dimensions are the proxy's.
-    // Port of: src/gpu/graphite/Image_Graphite.cpp#L24-L30 (chrome/m156)
-    #[doc(alias = "Image")]
-    #[must_use]
-    pub fn new(view: TextureProxyView, color_info: &ColorInfo) -> Image {
-        // Graphite does not cache based on the image's unique ID so always request a new one
-        // (`kNeedNewImageUniqueID`).
-        let info = ImageInfo::from_color_info(view.dimensions(), color_info.clone());
-        Image {
-            info,
-            unique_id: next_image_id(),
-            texture_proxy_view: view,
-            linked_devices: Mutex::new(Vec::new()),
-        }
-    }
+/// The devices linked to a Graphite image (`Image_Base::fLinkedDevices`, with
+/// `fDeviceLinkLock`). Shared by [`Image`] and the YUVA image, which are both `Image_Base`s.
+#[derive(Debug, Default)]
+pub struct ImageLinks {
+    linked_devices: Mutex<Vec<Option<Arc<DeviceLink>>>>,
+}
 
+impl ImageLinks {
     fn links(&self) -> MutexGuard<'_, Vec<Option<Arc<DeviceLink>>>> {
         self.linked_devices
             .lock()
@@ -249,7 +240,7 @@ impl Image {
     /// `linkDevices(other)`: copies `other`'s links to this image, which shares its texture.
     // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L31-L38 (chrome/m156)
     #[doc(alias = "linkDevices")]
-    pub fn link_devices(&self, other: &Image) {
+    pub fn link_devices(&self, other: &ImageLinks) {
         let other_links: Vec<Option<Arc<DeviceLink>>> = other.links().clone();
         self.links().extend(other_links);
     }
@@ -339,6 +330,68 @@ impl Image {
     #[must_use]
     pub fn has_linked_devices(&self) -> bool {
         self.links().iter().any(Option::is_some)
+    }
+}
+
+impl Image {
+    /// `Image(TextureProxyView, const SkColorInfo&)`. The image's dimensions are the proxy's.
+    // Port of: src/gpu/graphite/Image_Graphite.cpp#L24-L30 (chrome/m156)
+    #[doc(alias = "Image")]
+    #[must_use]
+    pub fn new(view: TextureProxyView, color_info: &ColorInfo) -> Image {
+        // Graphite does not cache based on the image's unique ID so always request a new one
+        // (`kNeedNewImageUniqueID`).
+        let info = ImageInfo::from_color_info(view.dimensions(), color_info.clone());
+        Image {
+            info,
+            unique_id: next_image_id(),
+            texture_proxy_view: view,
+            links: ImageLinks::default(),
+        }
+    }
+
+    /// The links of this image (`fLinkedDevices`), for the images that share its texture.
+    #[must_use]
+    pub fn links(&self) -> &ImageLinks {
+        &self.links
+    }
+
+    /// `linkDevice(device)`: see [`ImageLinks::link_device`].
+    #[doc(alias = "linkDevice")]
+    pub fn link_device(&self, link: Arc<DeviceLink>) {
+        self.links.link_device(link);
+    }
+
+    /// `linkDevices(other)`: copies `other`'s links to this image, which shares its texture.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L31-L38 (chrome/m156)
+    #[doc(alias = "linkDevices")]
+    pub fn link_devices(&self, other: &Image) {
+        self.links.link_devices(&other.links);
+    }
+
+    /// `notifyInUse(recorder, drawContext)`: see [`ImageLinks::notify_in_use`].
+    #[doc(alias = "notifyInUse")]
+    pub fn notify_in_use(&self, recorder: &Recorder, current: Option<&mut DeviceCore>) {
+        self.links.notify_in_use(recorder, current);
+    }
+
+    /// `unlinkDevices(recorder)`: see [`ImageLinks::unlink_devices`].
+    #[doc(alias = "unlinkDevices")]
+    pub fn unlink_devices(&self, recorder: &Recorder) {
+        self.links.unlink_devices(recorder);
+    }
+
+    /// `isDynamic()`: see [`ImageLinks::is_dynamic`].
+    #[doc(alias = "isDynamic")]
+    #[must_use]
+    pub fn is_dynamic(&self) -> bool {
+        self.links.is_dynamic()
+    }
+
+    /// Whether any device is linked (for tests: `fLinkedDevices` is not empty).
+    #[must_use]
+    pub fn has_linked_devices(&self) -> bool {
+        self.links.has_linked_devices()
     }
 
     /// Wraps this image as a core `SkImage` handle (`sk_sp<Image>`).

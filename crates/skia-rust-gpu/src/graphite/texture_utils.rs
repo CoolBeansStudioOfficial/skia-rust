@@ -29,6 +29,7 @@ use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::sampling_priv::aniso_fallback;
 use skia_rust_core::size::ISize;
 use skia_rust_core::texture_compression_type::TextureCompressionType;
+use skia_rust_core::yuva_info::YUVAChannels;
 
 use crate::gpu::backing_fit::BackingFit;
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Renderable};
@@ -42,6 +43,7 @@ use crate::graphite::image_graphite::Image;
 use crate::graphite::image_provider::{
     DefaultImageProvider, ImageProvider, valid_client_provided_image,
 };
+use crate::graphite::image_yuva_graphite::ImageYuva;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
@@ -492,12 +494,17 @@ pub fn get_graphite_backed(
 
     let result = if image.as_base().is_graphite_backed() {
         let caps: Arc<dyn Caps> = Arc::clone(recorder.priv_().caps());
-        let texturable = Image::from_core(image).is_none_or(|graphite| {
-            graphite
-                .texture_proxy_view()
-                .proxy()
+        // Every plane of a YUVA image must be texturable; a single-texture image has one view.
+        let view_texturable = |view: &TextureProxyView| {
+            view.proxy()
                 .is_none_or(|proxy| caps.is_texturable(proxy.texture_info(), false))
-        });
+        };
+        let texturable = if let Some(yuva) = ImageYuva::from_core(image) {
+            (0..YUVAChannels::COUNT).all(|i| view_texturable(yuva.proxy_view(i)))
+        } else {
+            Image::from_core(image)
+                .is_none_or(|graphite| view_texturable(graphite.texture_proxy_view()))
+        };
         if !texturable {
             sampling = SamplingOptions::from(FilterMode::Nearest);
         } else if mipmapped == Mipmapped::Yes && !image.has_mipmaps() {

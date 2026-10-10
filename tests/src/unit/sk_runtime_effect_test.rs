@@ -7,7 +7,7 @@
 //!
 //! Ported here: the factory and reflection tests, the shader, color filter and blender tests and
 //! the builders. Not ported yet, and left `todo` in the manifest with the reason:
-//! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Graphite tests.
+//! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Ganesh variants.
 
 // The ported tests keep the C++ declaration order and function lengths.
 #![allow(
@@ -17,6 +17,7 @@
 )]
 
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::Canvas;
@@ -28,22 +29,34 @@ use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::IPoint;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::runtime_effect::{
     ChildPtr, Options, RuntimeEffect, RuntimeShaderBuilder, uniform as uniform_flags,
 };
 use skia_rust_core::runtime_effect_priv;
+use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
+use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::blenders as effects_blenders;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::image_factories::texture_from_image;
+use skia_rust_gpu::graphite::recorder::Recorder;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
+use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
+
+use crate::tools::test_surface::{GraphiteTestSurface, TestSurface};
 use skia_rust_sksl::program_settings::Version;
 
-use crate::{Reporter, def_test, errorf, reporter_assert};
+use crate::{Reporter, def_graphite_adapter_test, def_test, errorf, reporter_assert};
+use skia_rust_core::image::RequiredProperties;
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L89-L96 (chrome/m156)
 fn test_invalid_effect(r: &mut Reporter, src: &str, expected: &str) {
@@ -538,10 +551,18 @@ fn paint_canvas(canvas: &Canvas, paint: &mut Paint, pre_test_callback: Option<Pr
 }
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L420-L426 (chrome/m156)
-fn read_pixels(surface: &mut Surface<'_>, pixels: &mut [u32; 4]) -> bool {
+fn read_pixels(surface: &mut dyn TestSurface, pixels: &mut [u32; 4]) -> bool {
     let info = surface.image_info();
-    let mut bytes = [0_u8; 16];
-    let ok = surface.read_pixels(&info, &mut bytes, info.min_row_bytes(), (0, 0));
+    // `SkPixmap dest{info, pixels, info.minRowBytes()}`: the pixels are read as native `uint32_t`s.
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_pixels_info(&info, None);
+    let ok = surface.read_pixels(&mut bitmap);
+    let Some(pixmap) = bitmap.peek_pixels() else {
+        return false;
+    };
+    let Some(bytes) = pixmap.addr() else {
+        return false;
+    };
     for (pixel, chunk) in pixels.iter_mut().zip(bytes.as_chunks::<4>().0) {
         *pixel = u32::from_ne_bytes(*chunk);
     }
@@ -552,7 +573,7 @@ fn read_pixels(surface: &mut Surface<'_>, pixels: &mut [u32; 4]) -> bool {
 fn verify_2x2_surface_results(
     r: &mut Reporter,
     effect: &RuntimeEffect,
-    surface: &mut Surface<'_>,
+    surface: &mut dyn TestSurface,
     expected: [u32; 4],
 ) {
     let mut actual = [0_u32; 4];
@@ -589,20 +610,28 @@ fn make_surface(size: (i32, i32)) -> Surface<'static> {
 
 /// `TestEffect`.
 // Port of: tests/SkRuntimeEffectTest.cpp#L470-L558 (chrome/m156)
-struct TestEffect {
-    surface: Surface<'static>,
+struct TestEffect<'a> {
+    surface: Box<dyn TestSurface + 'a>,
     builder: Option<RuntimeShaderBuilder>,
 }
 
-impl TestEffect {
+impl TestEffect<'static> {
     fn new() -> Self {
         Self::with_size((2, 2))
     }
 
-    /// `TestEffect(r, grContext, graphite, size)`: a surface of `size`.
+    /// `TestEffect(r, grContext, graphite, size)`: a raster surface of `size`.
     fn with_size(size: (i32, i32)) -> Self {
+        Self::with_surface(Box::new(make_surface(size)))
+    }
+}
+
+impl<'a> TestEffect<'a> {
+    /// `TestEffect(r, grContext, graphite, size)` for a surface the caller made (a raster one, or
+    /// the Graphite one of `SkRuntimeEffectSimple_Graphite`).
+    fn with_surface(surface: Box<dyn TestSurface + 'a>) -> Self {
         TestEffect {
-            surface: make_surface(size),
+            surface,
             builder: None,
         }
     }
@@ -688,7 +717,7 @@ impl TestEffect {
         paint_canvas(canvas, &mut paint, pre_test_callback);
 
         let effect = self.builder().effect().clone();
-        verify_2x2_surface_results(r, &effect, &mut self.surface, expected);
+        verify_2x2_surface_results(r, &effect, &mut *self.surface, expected);
     }
 
     fn test_uniform(
@@ -731,8 +760,10 @@ fn make_rgbw_shader() -> Shader {
 }
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L702-L808 (chrome/m156)
-fn test_runtime_effect_shaders(r: &mut Reporter) {
-    let mut effect = TestEffect::new();
+// The C++ builds its `TestEffect` from `grContext` and `graphite`; here the caller passes the
+// surface it made (raster for `SkRuntimeEffectSimple`, Graphite for the Graphite variant).
+fn test_runtime_effect_shaders(r: &mut Reporter, surface: Box<dyn TestSurface + '_>) {
+    let mut effect = TestEffect::with_surface(surface);
 
     // Local coords
     effect.build(
@@ -929,7 +960,26 @@ fn test_runtime_effect_shaders(r: &mut Reporter) {
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L810-L812 (chrome/m156)
 def_test!(SkRuntimeEffectSimple, |r| {
-    test_runtime_effect_shaders(r);
+    test_runtime_effect_shaders(r, Box::new(make_surface((2, 2))));
+});
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L742-L748 (chrome/m156)
+def_graphite_adapter_test!(SkRuntimeEffectSimple_Graphite, |reporter, context| {
+    let recorder = context.make_recorder(None);
+    let info = ImageInfo::new((2, 2), ColorType::RGBA8888, AlphaType::Premul, None);
+    // `make_surface` with a Graphite `GraphiteInfo`: `SkSurfaces::RenderTarget(recorder, info)`.
+    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+    reporter_assert!(reporter, surface.is_some());
+    let Some(surface) = surface else {
+        return;
+    };
+    test_runtime_effect_shaders(
+        reporter,
+        Box::new(GraphiteTestSurface {
+            context,
+            surface: &surface,
+        }),
+    );
 });
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L956-L972 (chrome/m156)
@@ -1259,6 +1309,124 @@ def_test!(SkRuntimeShaderIsOpaque, |r| {
     test(r, "return uOnes;", false);
     test(r, "return cOnes.eval(xy);", false);
 });
+
+// This test verifies that when a runtime shader's input coordinates are previously transformed
+// by a local matrix (which may be lifted to the vertex shader on GPU backends), the coordinates
+// resolve correctly for the runtime shader and any child shaders.
+// Port of: tests/SkRuntimeEffectTest.cpp#L1621-L1699 (chrome/m156)
+//
+// The C++ makes `surface` from `graphiteInfo` (its recorder) and makes the texture image of the
+// bitmap with `ToolUtils::MakeTextureImage(canvas, ...)`, whose Graphite branch is
+// `SkImages::TextureFromImage(canvas->recorder(), ...)`. The caller passes the recorder and the
+// surface it made.
+fn test_using_transformed_coords(
+    reporter: &mut Reporter,
+    recorder: &Recorder,
+    surface: &mut dyn TestSurface,
+) {
+    // Make a 1x12 pixel image with left 1/4 red and right 3/4 green.
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_n32_pixels((12, 1), true);
+    {
+        let Some(bitmap_canvas) = Canvas::from_bitmap(&mut bitmap, None) else {
+            return;
+        };
+        let mut red = Paint::default();
+        red.set_color4f(colors::RED, None::<&ColorSpace>);
+        bitmap_canvas.draw_irect(IRect::from_xywh(0, 0, 3, 1), &red);
+        let mut green = Paint::default();
+        green.set_color4f(colors::GREEN, None::<&ColorSpace>);
+        bitmap_canvas.draw_irect(IRect::from_xywh(3, 0, 9, 1), &green);
+    }
+
+    // `ToolUtils::MakeTextureImage(canvas, bitmap.asImage())->makeShader(SkFilterMode::kNearest)`.
+    let Some(image) = bitmap.as_image() else {
+        return;
+    };
+    let texture = texture_from_image(recorder, &image, RequiredProperties { mipmapped: false });
+    let Some(image_shader) = ImageShader::make(
+        texture,
+        TileMode::Clamp,
+        TileMode::Clamp,
+        &SamplingOptions::new(FilterMode::Nearest, MipmapMode::None),
+        None,
+        false,
+    ) else {
+        return;
+    };
+
+    // Runtime effect that sets the blue channel to 1 in the right half of its child. (The C++
+    // comment "round() doesn't seem to be legal in runtime shaders" is not part of the source.)
+    let src = "uniform shader s;\
+        half4 main(float2 p) {\
+            return half4(s.eval(p).rg, max(0.0, sign(p.x / 12.0 - 0.5)), 1.0);\
+        }";
+    // The C++ makes the effect twice (`runtimeEffectResult` and `effect`); both are the same.
+    let effect = RuntimeEffect::make_for_shader(src, None);
+    reporter_assert!(reporter, effect.is_ok());
+    let Ok(effect) = effect else {
+        return;
+    };
+
+    // Nest the image shader under the runtime shader, all under a local matrix transformation that
+    // translates the draw right 1/4 of the way.
+    let Some(nested) =
+        effect.make_shader(Data::new_empty(), &[ChildPtr::Shader(image_shader)], None)
+    else {
+        return;
+    };
+    let mut paint = Paint::default();
+    paint.set_shader(nested.with_local_matrix(&Matrix::translate((3.0, 0.0))));
+
+    surface.canvas().draw_paint(&paint);
+
+    // Read pixels.
+    let mut read_bitmap = Bitmap::new();
+    read_bitmap.alloc_pixels_info(&surface.image_info(), None);
+    if !surface.read_pixels(&mut read_bitmap) {
+        errorf!(reporter, "readPixels failed");
+        return;
+    }
+    let Some(pixmap) = read_bitmap.peek_pixels() else {
+        return;
+    };
+
+    // The first half of the canvas should be red, since the image was drawn shifted to the right
+    // with clamp tiling.
+    reporter_assert!(reporter, pixmap.get_color_4f((1, 0)) == colors::RED);
+    reporter_assert!(reporter, pixmap.get_color_4f((4, 0)) == colors::RED);
+
+    // The third quarter of the canvas should be green. This is the second quarter of the image,
+    // translated right, and not affected by the runtime shader which should only touch the right
+    // half of the image.
+    reporter_assert!(reporter, pixmap.get_color_4f((7, 0)) == colors::GREEN);
+
+    // The last quarter of the canvas should be cyan, since the green in the image has its blue
+    // channel set to 1 by the runtime shader.
+    reporter_assert!(reporter, pixmap.get_color_4f((10, 0)) == colors::CYAN);
+}
+
+// Port of: tests/SkRuntimeEffectTest.cpp#L1702-L1710 (chrome/m156)
+def_graphite_adapter_test!(
+    SkRuntimeShader_TransformedCoords_Graphite,
+    |reporter, context| {
+        let recorder = context.make_recorder(None);
+        let info = ImageInfo::new((12, 1), ColorType::RGBA8888, AlphaType::Premul, None);
+        let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+        reporter_assert!(reporter, surface.is_some());
+        let Some(surface) = surface else {
+            return;
+        };
+        test_using_transformed_coords(
+            reporter,
+            &recorder,
+            &mut GraphiteTestSurface {
+                context,
+                surface: &surface,
+            },
+        );
+    }
+);
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L1744-L1788 (chrome/m156)
 def_test!(SkRuntimeShader_b500080194, |r| {

@@ -32,6 +32,8 @@ use crate::graphite::graphite_types::{
     InsertFinishInfo, InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
 use crate::graphite::image_graphite::Image;
+use crate::graphite::pipeline_manager::PipelineCreationContext;
+use crate::graphite::precompile_context::PrecompileContext;
 use crate::graphite::queue_manager::QueueManager;
 use crate::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use crate::graphite::resource::ResourceRef;
@@ -365,6 +367,15 @@ impl WgpuContext {
             options.unwrap_or(&default_options),
             None,
         )
+    }
+
+    /// `makePrecompileContext()`: a `PrecompileContext` on this context's shared state.
+    // Port of: src/gpu/graphite/Context.cpp (chrome/m156), `Context::makePrecompileContext`
+    #[doc(alias = "makePrecompileContext")]
+    #[must_use]
+    pub fn make_precompile_context(&self) -> PrecompileContext {
+        let shared: Arc<dyn PipelineCreationContext> = self.shared_context.clone();
+        PrecompileContext::new(shared)
     }
 }
 

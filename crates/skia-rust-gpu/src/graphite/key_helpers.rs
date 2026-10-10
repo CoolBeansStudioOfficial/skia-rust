@@ -21,9 +21,9 @@
 //!
 //! - gradients with more than 8 stops in a storage buffer (`StorageContext`, the `use_storage_buffer`
 //!   path). Those add an error block; the color-and-offset texture path is ported.
-//! - the image shader's `AddToKey` case is ported (`add_image_to_key`, G10d). The YUV image case
-//!   (`add_yuv_image_to_key`, G15) and the picture shader (`Surface::Make` for its tile, G15) add an
-//!   error block.
+//! - the image shader's `AddToKey` case is ported (`add_image_to_key`, G10d), including the YUV
+//!   image case (`add_yuv_image_to_key`, G15). The picture shader (`Surface::Make` for its tile,
+//!   G15) adds an error block.
 //! - the runtime effect shader `AddToKey` case. Its block (`RuntimeEffectBlock`) is in
 //!   `key_helpers_ii`, but this shader dispatch does not route to it yet. It adds an error block.
 
@@ -45,7 +45,7 @@ use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::raster_pipeline::contexts::PerlinNoiseShaderType;
-use skia_rust_core::rect::{Contains, Rect, RoundOut};
+use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::runtime_effect_priv;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::SCALAR_NEARLY_ZERO;
@@ -63,6 +63,8 @@ use skia_rust_core::shaders::runtime_shader::RuntimeShader;
 use skia_rust_core::shaders::shader_base::{GradientType, ShaderBase, ShaderType};
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::yuv_math;
+use skia_rust_core::yuva_info::{Siting, YUVAChannels};
 use skia_rust_effects::conical_gradient::{ConicalGradient, ConicalType};
 use skia_rust_effects::gradient::Interpolation;
 use skia_rust_effects::gradient::interpolation::ColorSpace as InterpolationColorSpace;
@@ -80,6 +82,7 @@ use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
 use crate::graphite::image_graphite::Image as GraphiteImage;
+use crate::graphite::image_yuva_graphite::ImageYuva;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::key_helpers_ii::{
     ColorSpaceTransformBlock, ColorSpaceTransformData, RuntimeEffectBlock, RuntimeEffectShaderData,
@@ -1536,7 +1539,15 @@ fn add_local_matrix_to_key(
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L2238-L2262 (chrome/m156)
 fn get_image_origin_matrix(image: &Image) -> Matrix {
     // If the image is not graphite backed then we can assume the origin will be TopLeft as we
-    // require that in the ImageProvider utility.
+    // require that in the ImageProvider utility. Graphite YUV images are assumed to be TopLeft
+    // origin too, except that the YUV formats can encode their own origin.
+    if image.as_base().is_yuva()
+        && let Some(yuva) = ImageYuva::from_core(image)
+    {
+        // The YUV formats can encode their own origin including reflection and rotation, so the
+        // local matrix is concatenated with the inverse of the origin matrix.
+        return yuva.yuva_info().inverse_origin_matrix();
+    }
     if image.as_base().is_graphite_backed()
         && let Some(graphite) = GraphiteImage::from_core(image)
     {
@@ -1924,11 +1935,186 @@ fn add_runtime_shader_to_key(key_context: &KeyContext<'_>, shader: &RuntimeShade
     builder(key_context).end_block();
 }
 
+/// `add_yuv_image_to_key(keyContext, imageToDraw, subset, sampling, tileModeX, tileModeY, isRaw)`:
+/// the YUV image shader block over the planes of a YUVA image, composed with the colour space
+/// transform from the image's colour space to the destination's (or, for a raw draw, the premul
+/// step the YUV shader skips).
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L1952-L2104 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+#[allow(clippy::too_many_lines)] // mirrors the C++ function
+fn add_yuv_image_to_key(
+    key_context: &KeyContext<'_>,
+    image_to_draw: &Image,
+    subset: Rect,
+    sampling: SamplingOptions,
+    tile_mode_x: TileMode,
+    tile_mode_y: TileMode,
+    is_raw: bool,
+) {
+    let Some(yuva_image) = ImageYuva::from_core(image_to_draw) else {
+        builder(key_context).add_error_block();
+        return;
+    };
+    let yuva_info = yuva_image.yuva_info();
+    // We would want to add a translation to the local matrix to handle other sitings.
+    debug_assert_eq!(yuva_info.siting_xy(), (Siting::Centered, Siting::Centered));
+
+    let mut img_data = YUVImageData::new(
+        sampling,
+        tile_mode_x,
+        tile_mode_y,
+        image_to_draw.dimensions(),
+        subset,
+    );
+    for loc_index in 0..YUVAChannels::COUNT {
+        let view = yuva_image.proxy_view(loc_index);
+        if view.is_valid() {
+            img_data.texture_proxies[loc_index] = view.ref_proxy();
+            // The view's swizzle has the data channel for the YUVA location in all slots, so read
+            // the 0th slot to determine the channel select.
+            let first = view.swizzle().as_string().as_bytes()[0];
+            img_data.channel_select[loc_index] = match first {
+                b'r' => [1.0, 0.0, 0.0, 0.0],
+                b'g' => [0.0, 1.0, 0.0, 0.0],
+                b'b' => [0.0, 0.0, 1.0, 0.0],
+                b'a' => [0.0, 0.0, 0.0, 1.0],
+                _ => {
+                    debug_assert!(false, "Unexpected swizzle for YUVA data");
+                    [0.0; 4]
+                }
+            };
+        } else {
+            // Only the A proxy view should be null, in which case we bind the Y proxy view to pass
+            // validation and send all 1s for the channel selection to signal opaque alpha.
+            debug_assert_eq!(loc_index, YUVAChannels::A as usize);
+            img_data.texture_proxies[loc_index] =
+                yuva_image.proxy_view(YUVAChannels::Y as usize).ref_proxy();
+            img_data.channel_select[loc_index] = [1.0; 4];
+            // For the hardcoded sampling no-swizzle case, we use this to set constant alpha.
+            img_data.alpha_param = 1.0;
+        }
+    }
+
+    let (ssx, ssy) = yuva_image.uv_subsample_factors();
+    if ssx > 1 || ssy > 1 {
+        // We need to adjust the image size we use for sampling to reflect the actual image size of
+        // the UV planes. However, since our coordinates are in Y's texel space we need to scale
+        // accordingly.
+        let view = yuva_image.proxy_view(YUVAChannels::U as usize);
+        let uv_dims = view.dimensions();
+        img_data.img_size_uv = ISize::new(uv_dims.width * ssx, uv_dims.height * ssy);
+        // This promotion of nearest to linear filtering for UV planes exists to mimic libjpeg[-turbo]'s
+        // do_fancy_upsampling option. We will filter the subsampled plane, however we want to filter
+        // at a fixed point for each logical image pixel to simulate nearest neighbor. In the shader
+        // we detect that the UV filtermode doesn't match the Y filtermode, and snap to Y pixel
+        // centers.
+        let uv_texturable = view.proxy().is_some_and(|proxy| {
+            key_context
+                .caps()
+                .is_texturable(proxy.texture_info(), false)
+        });
+        if img_data.sampling.filter == FilterMode::Nearest && uv_texturable {
+            img_data.sampling_uv =
+                SamplingOptions::new(FilterMode::Linear, img_data.sampling.mipmap);
+            // Consider a logical image pixel at the edge of the subset. When computing the logical
+            // pixel color value we should use a blend of two values from the subsampled plane.
+            // Depending on where the subset edge falls in the actual subsampled plane, one of those
+            // values may come from outside the subset. Hence, we will use the default inset in Y
+            // texel space of 1/2. This applies the wrap mode to the subset but allows linear
+            // filtering to read pixels that are just outside the subset.
+            img_data.linear_filter_uv_inset = Point::new(0.5, 0.5);
+        } else if img_data.sampling.filter == FilterMode::Linear {
+            // We need to inset so that we aren't sampling outside the subset, but no farther. Start
+            // by mapping the subset to UV texel space.
+            #[allow(clippy::cast_precision_loss)] // mirrors the C++ `1.f/ssx` float division
+            let scale_x = 1.0_f32 / ssx as f32;
+            #[allow(clippy::cast_precision_loss)] // mirrors the C++ `1.f/ssy` float division
+            let scale_y = 1.0_f32 / ssy as f32;
+            let subset = img_data.subset;
+            let subset_uv = Rect {
+                left: subset.left * scale_x,
+                top: subset.top * scale_y,
+                right: subset.right * scale_x,
+                bottom: subset.bottom * scale_y,
+            };
+            // Round to UV texel borders.
+            let i_subset_uv: IRect = subset_uv.round_out();
+            // Inset in UV and map back to Y texel space. This gives us the largest possible inset
+            // rectangle that will not sample outside of the subset texels in UV space.
+            #[allow(clippy::cast_precision_loss)] // the texel coordinates are small, exact in f32
+            let inset_rect_uv = Rect {
+                left: (i_subset_uv.left as f32 + 0.5) * ssx as f32,
+                top: (i_subset_uv.top as f32 + 0.5) * ssy as f32,
+                right: (i_subset_uv.right as f32 - 0.5) * ssx as f32,
+                bottom: (i_subset_uv.bottom as f32 - 0.5) * ssy as f32,
+            };
+            // Compute the intersection with the original inset.
+            let mut inset_rect = subset;
+            inset_rect.outset((-0.5, -0.5));
+            let _ = inset_rect.intersect(inset_rect_uv);
+            // Compute the max inset values to ensure we always remain within the subset.
+            img_data.linear_filter_uv_inset = Point::new(
+                (inset_rect.left - subset.left).max(subset.right - inset_rect.right),
+                (inset_rect.top - subset.top).max(subset.bottom - inset_rect.bottom),
+            );
+        }
+    }
+
+    let yuv_m = yuv_math::color_matrix_yuv2rgb(yuva_info.yuv_color_space());
+    // We drop the fourth column entirely since the transformation should not depend on alpha. The
+    // fifth column is sent as a separate vector. The fourth row is also dropped entirely because
+    // alpha should never be modified.
+    img_data.yuv_to_rgb_matrix.set_all(
+        yuv_m[0], yuv_m[1], yuv_m[2], yuv_m[5], yuv_m[6], yuv_m[7], yuv_m[10], yuv_m[11], yuv_m[12],
+    );
+    img_data.yuv_to_rgb_translate = [yuv_m[4], yuv_m[9], yuv_m[14]];
+
+    // The actual output from the YUV image shader for non-opaque images is unpremul, so we need to
+    // correct for the fact that the YUVA image's alpha type is premul.
+    let image_color_space = image_to_draw.color_space();
+    let src_at = if image_to_draw.alpha_type() == AlphaType::Premul {
+        AlphaType::Unpremul
+    } else {
+        image_to_draw.alpha_type()
+    };
+    let data = if is_raw {
+        // Because the premul alpha step was avoided in the YUV shader, it must happen here when
+        // drawing unpremul (i.e., non-opaque) images.
+        ColorSpaceTransformData::from_color_spaces(
+            image_color_space.as_ref(),
+            src_at,
+            image_color_space.as_ref(),
+            image_to_draw.alpha_type(),
+        )
+    } else {
+        let dst_info = key_context.dst_color_info();
+        let mut dst_at = dst_info.alpha_type();
+        // Setting the dst alphaType up this way is necessary because otherwise the constructor for
+        // SkColorSpaceXformSteps will set dstAT = srcAT when dstAT == kOpaque, and the premul step
+        // needed for non-opaque images won't occur.
+        if dst_at == AlphaType::Opaque && src_at == AlphaType::Unpremul {
+            dst_at = AlphaType::Premul;
+        }
+        ColorSpaceTransformData::from_color_spaces(
+            image_color_space.as_ref(),
+            src_at,
+            dst_info.color_space_ref(),
+            dst_at,
+        )
+    };
+
+    compose(
+        key_context,
+        || YUVImageShaderBlock::add_block(key_context, &img_data),
+        || ColorSpaceTransformBlock::add_block(key_context, &data),
+    );
+}
+
 /// `add_image_to_key(keyContext, image, subset, sampling, tileModeX, tileModeY, isRaw)`: the
 /// image shader's block, with the image converted to a Graphite-backed one first. A draw whose
 /// image cannot be converted adds an error block (the draw is dropped).
 ///
-/// The YUVA branch (`add_yuv_image_to_key`) is not ported (G15): a YUVA image adds an error block.
+/// A YUVA image takes [`add_yuv_image_to_key`] instead.
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L2106-L2236 (chrome/m156)
 #[allow(clippy::too_many_arguments)] // mirrors the C++ signature
 fn add_image_to_key(
@@ -1998,8 +2184,15 @@ fn add_image_to_key(
     }
 
     if image_to_draw.as_base().is_yuva() {
-        // add_yuv_image_to_key is G15.
-        builder(key_context).add_error_block();
+        add_yuv_image_to_key(
+            key_context,
+            &image_to_draw,
+            subset,
+            new_sampling,
+            tile_mode_x,
+            tile_mode_y,
+            is_raw,
+        );
         return;
     }
 

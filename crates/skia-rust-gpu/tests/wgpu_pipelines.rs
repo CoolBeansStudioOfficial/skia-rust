@@ -1163,16 +1163,26 @@ impl PipelineCreationContext for FakeContext {
         &self.base
     }
 
+    fn renderer_provider(&self) -> &skia_rust_gpu::graphite::renderer_provider::RendererProvider {
+        unimplemented!(
+            "the fake context has no renderer provider; the tests here do not precompile"
+        )
+    }
+
     fn find_or_create_graphics_pipeline(
         &self,
         _runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
         pipeline_key: &skia_rust_gpu::gpu::resource_key::UniqueKey,
-        _pipeline_desc: &GraphicsPipelineDesc,
-        _render_pass_desc: &RenderPassDesc,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
         flags: PipelineCreationFlags,
     ) -> Option<Arc<dyn GraphicsPipeline>> {
-        self.base
-            .find_or_create_graphics_pipeline(pipeline_key, flags, |compilation_id| {
+        self.base.find_or_create_graphics_pipeline(
+            pipeline_key,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+            |compilation_id| {
                 self.creations.fetch_add(1, Ordering::Relaxed);
                 Some(Arc::new(FakePipeline {
                     base: GraphicsPipelineBase::new(
@@ -1182,7 +1192,8 @@ impl PipelineCreationContext for FakeContext {
                         flags.contains(PipelineCreationFlags::FOR_PRECOMPILATION),
                     ),
                 }) as Arc<dyn GraphicsPipeline>)
-            })
+            },
+        )
     }
 }
 
