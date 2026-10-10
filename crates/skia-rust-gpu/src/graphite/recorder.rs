@@ -19,8 +19,8 @@
 //!
 //! # Not yet ported
 //!
-//! The members that need other ports are left out and noted where they were: the atlas provider
-//! (G12a), the strike cache and text blob cache (G12b), the `KeyAndDataBuilder` pool (G5a),
+//! The members that need other ports are left out and noted where they were: the text atlas of
+//! the atlas provider and the strike cache and text blob cache (G12b), the `KeyAndDataBuilder` pool (G5a),
 //! `makeDeferredCanvas()` and the target proxy device (G10a), the backend texture calls
 //! (`BackendTexture`, G11a), `ImageProvider` (G10d), the capture manager and
 //! `dumpMemoryStatistics()`.
@@ -45,7 +45,9 @@ use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::graphite_types::InsertFinishInfo;
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
+use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::proxy_cache::ProxyCache;
+use crate::graphite::renderer_provider::PathRendererStrategy as RendererProviderStrategy;
 use crate::graphite::recording::{LazyProxyData, Recording};
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
@@ -241,6 +243,9 @@ pub struct RecorderInner {
     is_flushing_tracked_devices: Cell<bool>,
 
     key_and_data_builders: RefCell<Vec<KeyAndDataBuilder>>,
+
+    /// `fAtlasProvider`: the path and clip atlases the draws of this recorder share.
+    atlas_provider: RefCell<AtlasProvider>,
 }
 
 impl std::fmt::Debug for RecorderInner {
@@ -303,6 +308,11 @@ impl Recorder {
             upload_buffer_manager.clone(),
             &dbm_options,
         );
+        // `fAtlasProvider(std::make_unique<AtlasProvider>(this))`: the clip atlas is used only by
+        // the raster path atlas strategy.
+        let raster_path_strategy = shared_context.renderer_provider().path_renderer_strategy()
+            == RendererProviderStrategy::RasterAtlas;
+        let atlas_provider = AtlasProvider::new(&*caps, raster_path_strategy);
 
         Self {
             inner: Rc::new(RecorderInner {
@@ -324,6 +334,7 @@ impl Recorder {
                 target_proxy_data: RefCell::new(None),
                 is_flushing_tracked_devices: Cell::new(false),
                 key_and_data_builders: RefCell::new(Vec::new()),
+                atlas_provider: RefCell::new(atlas_provider),
             }),
         }
     }
@@ -436,7 +447,7 @@ impl Recorder {
         let result = if valid {
             Some(recording)
         } else {
-            // The atlas provider would invalidate its atlases here (G12a).
+            inner.atlas_provider.borrow_mut().invalidate_atlases();
             drop(recording);
             None
         };
@@ -458,8 +469,9 @@ impl Recorder {
             index += 1;
         }
 
-        // The atlas provider would invalidate its atlases if recordings need not be ordered
-        // (G12a).
+        if !inner.require_ordered_recordings {
+            inner.atlas_provider.borrow_mut().invalidate_atlases();
+        }
 
         // For each KeyAndDataBuilder owned by the Recorder, check if the high watermark of data
         // usage over the lifetime snap is less than half of allocated capacity. If so, shrink the
@@ -534,8 +546,13 @@ impl Recorder {
         // any Gpu resources.
 
         // Notify the atlas and resource provider to free any resources it can (does not include
-        // resources that are locked due to pending work). The atlas provider (G12a) and the
-        // strike cache (G12b) are not ported.
+        // resources that are locked due to pending work). The strike cache (G12b) is not ported.
+        let recorder: &Recorder = self;
+        recorder
+            .inner
+            .atlas_provider
+            .borrow_mut()
+            .free_gpu_resources(recorder);
         self.inner.lock_resource_provider().free_gpu_resources();
     }
 
@@ -672,7 +689,7 @@ pub struct RecorderPriv<'a> {
     recorder: &'a RecorderInner,
 }
 
-impl RecorderPriv<'_> {
+impl<'a> RecorderPriv<'a> {
     /// `add()`: adds a task to the root task list.
     // Port of: src/gpu/graphite/Recorder.cpp#L632-L637 (chrome/m156)
     pub fn add(&self, task: TaskRef) {
@@ -734,6 +751,31 @@ impl RecorderPriv<'_> {
             }
         }
 
+        recorder.is_flushing_tracked_devices.set(false);
+    }
+
+    /// `flushTrackedDevices()` called while `current` records a draw: the device that is borrowed
+    /// for the draw (it cannot be borrowed again) is flushed through `current`, where C++ reaches
+    /// it through the tracked list.
+    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
+    pub fn flush_tracked_devices_and_current(&self, flush_source: &str, current: &mut dyn TrackedDevice) {
+        let _ = flush_source;
+        let recorder = self.recorder;
+        debug_assert!(!recorder.is_flushing_tracked_devices.get());
+        recorder.is_flushing_tracked_devices.set(true);
+        let mut index = 0;
+        while index < recorder.tracked_device_count() {
+            if let Some(device) = recorder.tracked_device(index) {
+                if let Ok(mut device) = device.try_borrow_mut() {
+                    device.flush_pending_work();
+                } else if current.is_cell(&device) {
+                    current.flush_pending_work();
+                }
+            }
+            index += 1;
+        }
+        // Issue next upload flush token (see flush_tracked_devices).
+        let _ = recorder.token_tracker.borrow_mut().issue_flush_token();
         recorder.is_flushing_tracked_devices.set(false);
     }
 
@@ -852,8 +894,9 @@ impl RecorderPriv<'_> {
     /// `rendererProvider()`.
     #[doc(alias = "rendererProvider")]
     #[must_use]
-    pub fn renderer_provider(&self) -> &RendererProvider {
-        self.recorder.shared_context.renderer_provider()
+    pub fn renderer_provider(&self) -> &'a RendererProvider {
+        let recorder: &'a RecorderInner = self.recorder;
+        recorder.shared_context.renderer_provider()
     }
 
     /// `sharedContext()->pipelineManager()`.
@@ -861,6 +904,14 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
         self.recorder.shared_context.pipeline_manager()
+    }
+
+    /// `atlasProvider()`.
+    #[doc(alias = "atlasProvider")]
+    #[must_use]
+    pub fn atlas_provider(&self) -> &'a RefCell<AtlasProvider> {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.atlas_provider
     }
 
     /// `resourceProvider()`.
