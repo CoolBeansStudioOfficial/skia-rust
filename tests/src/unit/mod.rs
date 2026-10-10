@@ -364,6 +364,8 @@ pub mod shadow_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
+pub mod sk_base64_test;
+#[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
