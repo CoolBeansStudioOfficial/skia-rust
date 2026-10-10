@@ -75,15 +75,15 @@ impl XmlParserError {
     #[doc(alias = "getErrorString")]
     pub fn get_error_string(&self, str: &mut String) {
         let mut temp = String::new();
-        if self.code != XmlParserErrorCode::NoError {
+        if self.code == XmlParserErrorCode::NoError {
+            XmlParserError::get_native_error_string(self.native_code, &mut temp);
+        } else {
             // `(unsigned)fCode < std::size(gErrorStrings)` then `gErrorStrings[fCode - 1]`
             let code = self.code as usize;
             if code < ERROR_STRINGS.len() {
                 temp.push_str(ERROR_STRINGS[code - 1]);
             }
             temp.push_str(&self.noun);
-        } else {
-            XmlParserError::get_native_error_string(self.native_code, &mut temp);
         }
         str.push_str(&temp);
     }
@@ -208,11 +208,9 @@ pub trait XmlParser {
     {
         let mut doc = Vec::new();
         let mut memory = None;
-        if doc_stream.has_length() {
-            if let Some(base) = doc_stream.get_memory_base() {
-                // `base + getPosition()`, `getLength() - getPosition()`
-                memory = Some(base[doc_stream.get_position()..].to_vec());
-            }
+        if let (true, Some(base)) = (doc_stream.has_length(), doc_stream.get_memory_base()) {
+            // `base + getPosition()`, `getLength() - getPosition()`
+            memory = Some(base[doc_stream.get_position()..].to_vec());
         }
         if let Some(m) = memory {
             doc = m;
@@ -283,7 +281,7 @@ fn is_name_char(c: u8) -> bool {
 
 /// The XML `Char` production.
 fn is_xml_char(c: u32) -> bool {
-    matches!(c, 0x9 | 0xA | 0xD | 0x20..=0xD7FF | 0xE000..=0xFFFD | 0x10000..=0x10FFFF)
+    matches!(c, 0x9 | 0xA | 0xD | 0x20..=0xD7FF | 0xE000..=0xFFFD | 0x1_0000..=0x10_FFFF)
 }
 
 impl<'a> Cursor<'a> {
@@ -377,9 +375,8 @@ impl<'a> Cursor<'a> {
     }
 
     fn attr_value(&mut self) -> Result<String, Fail> {
-        let quote = match self.peek() {
-            Some(q @ (b'"' | b'\'')) => q,
-            _ => return Err(self.pos),
+        let Some(quote @ (b'"' | b'\'')) = self.peek() else {
+            return Err(self.pos);
         };
         self.pos += 1;
         let mut out = Vec::new();
@@ -525,6 +522,7 @@ impl TextBuffer {
 
 fn line_of(doc: &str, offset: usize) -> i32 {
     let end = offset.min(doc.len());
+    #[allow(clippy::naive_bytecount)] // no extra dependency for a line count
     let n = doc.as_bytes()[..end].iter().filter(|&&b| b == b'\n').count();
     i32::try_from(n + 1).unwrap_or(i32::MAX)
 }

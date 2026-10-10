@@ -67,6 +67,10 @@ impl XmlWriterBase {
     }
 
     // Port of: src/xml/SkXMLWriter.cpp#L74-L78 (chrome/m156)
+    ///
+    /// # Panics
+    ///
+    /// If no element is open.
     #[doc(alias = "getEnd")]
     pub fn get_end(&mut self) -> Elem {
         self.elems.pop().expect("an open element")
