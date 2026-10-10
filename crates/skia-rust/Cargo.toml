@@ -13,11 +13,14 @@ publish = false # until core + CPU raster reach 100% (docs/PLAN.md §9.3)
 skia-rust-core.workspace = true
 skia-rust-pathops.workspace = true
 skia-rust-codec = { workspace = true, optional = true }
+skia-rust-pdf = { workspace = true, optional = true }
 
 [features]
 default = ["codec"]
 # The codec layer and its lazy-image factories (PLAN §3.2).
 codec = ["dep:skia-rust-codec"]
+# The PDF backend (`skia_safe::pdf`, `skia_safe::Document`); modules.md M25.
+pdf = ["dep:skia-rust-pdf"]
 
 [lints]
 workspace = true

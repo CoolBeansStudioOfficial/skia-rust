@@ -11,6 +11,16 @@ pub use skia_rust_pathops::PathOpsExt;
 #[cfg(feature = "codec")]
 pub use skia_rust_codec as codec;
 
+/// The PDF backend (`skia_safe::pdf`).
+#[cfg(feature = "pdf")]
+pub mod pdf;
+
+/// `skia_safe::Document`: a sequence of pages drawn to canvases.
+#[cfg(feature = "pdf")]
+pub mod document;
+#[cfg(feature = "pdf")]
+pub use document::Document;
+
 /// The image factories (`skia_safe::images`): the raster and lazy factories of core, and the
 /// codec's `deferred_from_encoded_data`.
 pub mod images {

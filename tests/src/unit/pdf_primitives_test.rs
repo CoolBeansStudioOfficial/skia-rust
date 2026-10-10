@@ -1,15 +1,40 @@
 // Copyright 2010 The Android Open Source Project
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/PDFPrimitivesTest.cpp (chrome/m156), the tests that need no PDF device.
-// `SkPDF_Primitives` (its `test_issue1083` draws a glyph through a PDF canvas) and the tests that
-// draw are left to the PDF device (modules.md M25).
+// Port of: tests/PDFPrimitivesTest.cpp (chrome/m156), all of it but `SkPDF_Primitives` (its
+// `test_issue1083` draws a glyph through a PDF canvas) and `SkPDF_FontCanEmbedTypeface`, which
+// wait for the PDF fonts (modules.md M26).
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
+use skia_rust_core::color::Color4f;
+use skia_rust_core::font::Font;
+use skia_rust_core::glyph_run::GlyphRun;
+use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
+use skia_rust_core::image_filter_result::FilterResult;
+use skia_rust_core::image_filter_types::{Context, Mapping};
+use skia_rust_core::paint::Paint;
+use skia_rust_core::path::Path;
+use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
-use skia_rust_core::stream::DynamicMemoryWStream;
+use skia_rust_core::rect::{IRect, Rect};
+use skia_rust_core::shader::Shader;
+use skia_rust_core::stream::{DynamicMemoryWStream, NullWStream};
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::utils::parse_path;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_effects::image_filters;
+use skia_rust_effects::perlin_noise_shader::shaders as perlin_shaders;
+use skia_rust_pdf::clusterator::{Cluster, Clusterator};
 use skia_rust_pdf::float_to_decimal::{MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH, float_to_decimal};
+use skia_rust_pdf::jpeg;
+use skia_rust_pdf::metadata::Metadata;
+use skia_rust_pdf::new_document;
 use skia_rust_pdf::utils::{EmptyArea, EmptyPath, EmptyVerb, color_to_decimal, emit_path};
+use skia_rust_tools::font_tool_utils::default_font;
 
 use crate::{Reporter, def_test, errorf, reporter_assert};
 
@@ -208,4 +233,361 @@ def_test!(SkPDF_EmitPath, |reporter| {
         );
         reporter_assert!(reporter, did_emit != result.is_empty());
     }
+});
+
+/// `TestImageFilter`: an image filter that records that it was asked to filter.
+// Port of: tests/PDFPrimitivesTest.cpp#L276-L318 (chrome/m156)
+#[derive(Debug)]
+struct TestImageFilter {
+    common: ImageFilterCommon,
+    visited: Arc<AtomicBool>,
+}
+
+impl TestImageFilter {
+    fn new(visited: Arc<AtomicBool>) -> Self {
+        Self {
+            common: ImageFilterCommon::new(Vec::new(), Some(false)),
+            visited,
+        }
+    }
+}
+
+impl ImageFilterBase for TestImageFilter {
+    fn common(&self) -> &ImageFilterCommon {
+        &self.common
+    }
+
+    fn on_filter_image(&self, ctx: &Context<'_>) -> FilterResult {
+        self.visited.store(true, Ordering::SeqCst);
+        ctx.source().clone()
+    }
+
+    fn on_get_input_layer_bounds(
+        &self,
+        _mapping: &Mapping,
+        desired_output: IRect,
+        _content_bounds: Option<IRect>,
+    ) -> IRect {
+        desired_output
+    }
+
+    fn on_get_output_layer_bounds(
+        &self,
+        _mapping: &Mapping,
+        content_bounds: Option<IRect>,
+    ) -> Option<IRect> {
+        content_bounds
+    }
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L320-L339 (chrome/m156)
+// Check that PDF rendering of image filters successfully falls back to
+// CPU rasterization.
+def_test!(SkPDF_ImageFilter, |reporter| {
+    let mut stream = DynamicMemoryWStream::new();
+    let visited = Arc::new(AtomicBool::new(false));
+    {
+        let mut doc = new_document(&mut stream, Some(&jpeg::metadata_with_callbacks()));
+        let canvas = doc.begin_page(100.0, 100.0, None).expect("a canvas");
+
+        let filter = ImageFilter::from_base(TestImageFilter::new(Arc::clone(&visited)));
+
+        // Filter just created; should be unvisited.
+        reporter_assert!(reporter, !visited.load(Ordering::SeqCst));
+        let mut paint = Paint::default();
+        paint.set_image_filter(filter);
+        canvas.draw_rect(Rect::from_wh(100.0, 100.0), &paint);
+        doc.close();
+    }
+
+    // Filter was used in rendering; should be visited.
+    reporter_assert!(reporter, visited.load(Ordering::SeqCst));
+});
+
+/// `make_run`: a glyph run over the given arrays.
+// Port of: tests/PDFPrimitivesTest.cpp#L452-L461 (chrome/m156)
+fn make_run(
+    glyphs: &[u16],
+    pos: &[Point],
+    font: &Font,
+    clusters: &[u32],
+    utf8_text: &[u8],
+) -> GlyphRun {
+    GlyphRun::new(
+        font.clone(),
+        pos.to_vec(),
+        glyphs.to_vec(),
+        utf8_text.to_vec(),
+        clusters.to_vec(),
+        Vec::new(),
+    )
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L463-L511 (chrome/m156)
+def_test!(SkPDF_Clusterator, |reporter| {
+    let font = default_font();
+    {
+        const LEN: usize = 11;
+        let clusters: [u32; LEN] = [3, 2, 2, 1, 0, 4, 4, 7, 6, 6, 5];
+        let glyphs: [u16; LEN] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let pos = [Point::new(0.0, 0.0); LEN];
+        let text = b"abcdefgh";
+        let run = make_run(&glyphs, &pos, &font, &clusters, text);
+        let mut clusterator = Clusterator::new(&run);
+        let at = |i: usize| Some(&run.text()[i..=i]);
+        let expectations = [
+            Cluster {
+                utf8_text: at(3),
+                text_byte_length: 1,
+                glyph_index: 0,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: at(2),
+                text_byte_length: 1,
+                glyph_index: 1,
+                glyph_count: 2,
+            },
+            Cluster {
+                utf8_text: at(1),
+                text_byte_length: 1,
+                glyph_index: 3,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: at(0),
+                text_byte_length: 1,
+                glyph_index: 4,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: at(4),
+                text_byte_length: 1,
+                glyph_index: 5,
+                glyph_count: 2,
+            },
+            Cluster {
+                utf8_text: at(7),
+                text_byte_length: 1,
+                glyph_index: 7,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: at(6),
+                text_byte_length: 1,
+                glyph_index: 8,
+                glyph_count: 2,
+            },
+            Cluster {
+                utf8_text: at(5),
+                text_byte_length: 1,
+                glyph_index: 10,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: None,
+                text_byte_length: 0,
+                glyph_index: 0,
+                glyph_count: 0,
+            },
+        ];
+        for expectation in &expectations {
+            reporter_assert!(reporter, clusterator.next() == *expectation);
+        }
+    }
+    {
+        const LEN: usize = 5;
+        let clusters: [u32; LEN] = [0, 1, 4, 5, 6];
+        let glyphs: [u16; LEN] = [43, 167, 79, 79, 82];
+        let pos = [Point::new(0.0, 0.0); LEN];
+        let text = b"Ha\xCC\x8Allo";
+        let run = make_run(&glyphs, &pos, &font, &clusters, text);
+        let mut clusterator = Clusterator::new(&run);
+        let t = run.text();
+        let expectations = [
+            Cluster {
+                utf8_text: Some(&t[0..1]),
+                text_byte_length: 1,
+                glyph_index: 0,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: Some(&t[1..4]),
+                text_byte_length: 3,
+                glyph_index: 1,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: Some(&t[4..5]),
+                text_byte_length: 1,
+                glyph_index: 2,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: Some(&t[5..6]),
+                text_byte_length: 1,
+                glyph_index: 3,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: Some(&t[6..7]),
+                text_byte_length: 1,
+                glyph_index: 4,
+                glyph_count: 1,
+            },
+            Cluster {
+                utf8_text: None,
+                text_byte_length: 0,
+                glyph_index: 0,
+                glyph_count: 0,
+            },
+        ];
+        for expectation in &expectations {
+            reporter_assert!(reporter, clusterator.next() == *expectation);
+        }
+    }
+});
+
+// Port of: tests/PDFPrimitivesTest.cpp#L513-L535 (chrome/m156)
+def_test!(fuzz875632f0, |_reporter| {
+    let mut stream = NullWStream::new();
+    let mut doc = new_document(&mut stream, Some(&jpeg::metadata_with_callbacks()));
+    let canvas = doc.begin_page(128.0, 160.0, None).expect("a canvas");
+
+    let _auto_canvas_restore = AutoCanvasRestore::guard(canvas, false);
+
+    let mut layer_paint = Paint::new(Color4f::new(0.0, 0.0, 0.0, 0.0), None);
+    layer_paint.set_image_filter(image_filters::dilate((536_870_912.0, 0.0), None, None));
+    layer_paint.set_blend_mode(BlendMode::Clear);
+
+    canvas.save_layer(&SaveLayerRec::default().paint(&layer_paint));
+    canvas.save_layer(&SaveLayerRec::default());
+
+    let mut paint = Paint::default();
+    paint.set_blend_mode(BlendMode::Darken);
+    paint.set_shader(perlin_shaders::fractal_noise((0.0, 0.0), 2, 0.0, None));
+    paint.set_color4f(Color4f::new(0.0, 0.0, 0.0, 0.0), None);
+
+    canvas.draw_path(&Path::new(), &paint);
+});
+
+// Port of: tests/PDFPrimitivesTest.cpp#L582-L594 (chrome/m156)
+fn pdf_contains(data: &[u8], needle: &str) -> bool {
+    let needle = needle.as_bytes();
+    if needle.is_empty() || data.len() < needle.len() {
+        return false;
+    }
+    data.windows(needle.len()).any(|window| window == needle)
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L596-L600 (chrome/m156)
+fn make_linear_gradient(colors: &[Color4f], tile_mode: TileMode) -> Shader {
+    let pts = [Point::new(0.0, 0.0), Point::new(64.0, 64.0)];
+    gradient_shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &Gradient::new(
+            Colors::new(colors, None, tile_mode, None),
+            Interpolation::default(),
+        ),
+        None,
+    )
+    .expect("a gradient")
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L602-L618 (chrome/m156)
+fn render_gradient_pdf(
+    colors: &[Color4f],
+    rasterize_for_print: bool,
+    tile_mode: TileMode,
+) -> Vec<u8> {
+    let mut metadata: Metadata = jpeg::metadata_with_callbacks();
+    metadata.rasterize_alpha_gradients_for_printing = rasterize_for_print;
+    let mut stream = DynamicMemoryWStream::new();
+    {
+        let mut doc = new_document(&mut stream, Some(&metadata));
+        let canvas = doc.begin_page(64.0, 64.0, None).expect("a canvas");
+        let mut paint = Paint::default();
+        paint.set_shader(make_linear_gradient(colors, tile_mode));
+        canvas.draw_rect(Rect::from_wh(64.0, 64.0), &paint);
+        doc.end_page();
+        doc.close();
+    }
+    stream.detach_as_vector()
+}
+
+// Port of: tests/PDFPrimitivesTest.cpp#L620-L644 (chrome/m156)
+// The print workaround should avoid the alpha-gradient vector encoding that
+// triggers downstream PDF-to-PostScript failures.
+def_test!(SkPDF_RasterizeAlphaGradientForPrinting, |reporter| {
+    let with_alpha = [
+        Color4f::new(1.0, 0.0, 0.0, 0.5),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+    ];
+
+    let off = render_gradient_pdf(&with_alpha, false, TileMode::Clamp);
+    let on = render_gradient_pdf(&with_alpha, true, TileMode::Clamp);
+
+    reporter_assert!(reporter, pdf_contains(&off, "/S /Luminosity"));
+
+    reporter_assert!(reporter, !pdf_contains(&on, "/S /Luminosity"));
+    reporter_assert!(reporter, pdf_contains(&on, "/Subtype /Image"));
+
+    let off = render_gradient_pdf(&with_alpha, false, TileMode::Decal);
+    let on = render_gradient_pdf(&with_alpha, true, TileMode::Decal);
+
+    reporter_assert!(reporter, pdf_contains(&off, "/S /Luminosity"));
+    reporter_assert!(reporter, !pdf_contains(&on, "/S /Luminosity"));
+    reporter_assert!(reporter, pdf_contains(&on, "/Subtype /Image"));
+});
+
+// Port of: tests/PDFPrimitivesTest.cpp#L646-L668 (chrome/m156)
+// The workaround must touch alpha gradients only. An opaque gradient has no
+// soft mask to begin with, so the flag must not change its output at all.
+def_test!(SkPDF_RasterizeAlphaGradientForPrinting_OpaqueUnchanged, |reporter| {
+    let opaque = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+    ];
+
+    let off = render_gradient_pdf(&opaque, false, TileMode::Clamp);
+    let on = render_gradient_pdf(&opaque, true, TileMode::Clamp);
+
+    reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
+    reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
+    reporter_assert!(reporter, off == on);
+
+    let off = render_gradient_pdf(&opaque, false, TileMode::Decal);
+    let on = render_gradient_pdf(&opaque, true, TileMode::Decal);
+
+    reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
+    reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
+    reporter_assert!(reporter, off == on);
+});
+
+// Port of: tests/PDFPrimitivesTest.cpp#L670-L685 (chrome/m156)
+def_test!(SkPDF_GradientDegenerateStopsDoesNotCrash, |_reporter| {
+    let colors = [
+        Color4f::new(0.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 0.0, 1.0),
+    ];
+    let pos = [1.0f32, 1.0];
+    let shader = gradient_shaders::sweep_gradient(
+        (32.0, 32.0),
+        (0.0, 360.0),
+        &Gradient::new(
+            Colors::new(&colors, Some(&pos), TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    )
+    .expect("a gradient");
+
+    let mut stream = DynamicMemoryWStream::new();
+    let mut doc = new_document(&mut stream, Some(&jpeg::metadata_with_callbacks()));
+    let canvas = doc.begin_page(64.0, 64.0, None).expect("a canvas");
+    let mut paint = Paint::default();
+    paint.set_shader(shader);
+    canvas.draw_rect(Rect::from_wh(64.0, 64.0), &paint);
+    doc.end_page();
+    doc.close();
 });

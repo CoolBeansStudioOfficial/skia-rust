@@ -879,6 +879,33 @@ enum PageState {
 #[doc(alias = "SkPDF::MakeDocument")]
 #[must_use]
 pub fn new_document<'a>(writer: &'a mut dyn WStream, metadata: Option<&Metadata>) -> Document<'a> {
+    new_document_boxed(Box::new(BorrowedWStream(writer)), metadata)
+}
+
+/// A `&mut dyn WStream` as a stream of its own.
+struct BorrowedWStream<'a>(&'a mut dyn WStream);
+
+impl WStream for BorrowedWStream<'_> {
+    fn write(&mut self, buffer: &[u8]) -> bool {
+        self.0.write(buffer)
+    }
+
+    fn flush(&mut self) {
+        self.0.flush();
+    }
+
+    fn bytes_written(&self) -> usize {
+        self.0.bytes_written()
+    }
+}
+
+/// [`new_document`] for a document that owns its stream, as the facade's `pdf::new_document`
+/// (which adapts a `std::io::Write`) needs.
+#[must_use]
+pub fn new_document_boxed<'a>(
+    writer: Box<dyn WStream + 'a>,
+    metadata: Option<&Metadata>,
+) -> Document<'a> {
     let mut meta = metadata.cloned().unwrap_or_default();
     if meta.raster_dpi <= 0.0 {
         meta.raster_dpi = DEFAULT_RASTER_DPI;
@@ -906,7 +933,7 @@ pub fn new_document<'a>(writer: &'a mut dyn WStream, metadata: Option<&Metadata>
 #[doc(alias = "SkDocument")]
 pub struct Document<'a> {
     /// The destination. `None` once the document is closed or aborted.
-    stream: Option<&'a mut dyn WStream>,
+    stream: Option<Box<dyn WStream + 'a>>,
     inner: DocHandle,
     state: PageState,
     /// The canvas of the current page (`fCanvas`).
@@ -926,7 +953,7 @@ impl std::fmt::Debug for Document<'_> {
 
 impl<'a> Document<'a> {
     // Port of: src/pdf/SkPDFDocument.cpp#L238-L245, src/core/SkDocument.cpp#L16 (chrome/m156)
-    fn new(stream: &'a mut dyn WStream, metadata: Metadata) -> Self {
+    fn new(stream: Box<dyn WStream + 'a>, metadata: Metadata) -> Self {
         Self {
             stream: Some(stream),
             inner: DocHandle(Rc::new(RefCell::new(DocInner::new(metadata)))),
@@ -949,7 +976,7 @@ impl<'a> Document<'a> {
         };
         self.inner.with(|d| {
             let n = d.out.bytes_written();
-            d.out.write_to_and_reset(stream);
+            d.out.write_to_and_reset(&mut *stream);
             d.flushed += n;
         });
     }
@@ -982,6 +1009,12 @@ impl<'a> Document<'a> {
             canvas.translate((inner.x(), inner.y()));
         }
         Some(canvas)
+    }
+
+    /// The canvas of the current page, if there is one (what the last `begin_page` returned).
+    #[must_use]
+    pub fn canvas(&self) -> Option<&Canvas> {
+        self.canvas.as_ref()
     }
 
     /// `SkPDFDocument::onBeginPage`.

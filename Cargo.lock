@@ -1124,6 +1124,7 @@ dependencies = [
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-pathops",
+ "skia-rust-pdf",
 ]
 
 [[package]]
@@ -1235,7 +1236,12 @@ dependencies = [
 name = "skia-rust-pdf"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-codec",
  "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-pathops",
+ "skia-rust-raster",
+ "skia-rust-skcms",
  "skia-rust-zlib",
 ]
 
