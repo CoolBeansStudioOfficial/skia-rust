@@ -21,6 +21,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::{Hit, has_children_inval};
+use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext};
 
 use crate::impl_container_animator;
@@ -33,7 +34,7 @@ use super::super::animator::{
 use super::super::skottie_priv::AnimationBuilder;
 use super::{EffectBinder, EffectBuilder, attach_adapter_node, repeating_content_shader};
 
-/// The bulge SkSL: the bulge is a combination of spherical and exponential displacement along the
+/// The bulge `SkSL`: the bulge is a combination of spherical and exponential displacement along the
 /// radius, in a space where the ellipse is a unit circle centered on the origin.
 // Port of: modules/skottie/src/effects/BulgeEffect.cpp#L37-L84 (chrome/m156) (`gBulgeDisplacementSkSL`)
 const BULGE_DISPLACEMENT_SKSL: &str = concat!(
@@ -91,10 +92,10 @@ pub(super) struct BulgeNode {
 
 impl BulgeNode {
     // Port of: modules/skottie/src/effects/BulgeEffect.cpp#L99-L101 (chrome/m156) (`BulgeNode::BulgeNode`)
-    fn make(child: Rc<dyn RenderNode>, child_size: Size) -> Rc<Self> {
+    fn make(child: &Rc<dyn RenderNode>, child_size: Size) -> Rc<Self> {
         let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             core: NodeCore::new(0, weak.clone()),
-            child: Rc::clone(&child),
+            child: Rc::clone(child),
             child_size,
             effect_shader: RefCell::new(None),
             content_shader: RefCell::new(None),
@@ -128,7 +129,7 @@ impl BulgeNode {
     /// Sets the bulge height, invalidating the node if it changed (`setHeight`).
     // Port of: modules/skottie/src/effects/BulgeEffect.cpp#L105-L107 (chrome/m156) (`SG_ATTRIBUTE(Height)`)
     pub(super) fn set_height(&self, height: f32) {
-        if self.height.get() != height {
+        if scalar_changed(self.height.get(), height) {
             self.height.set(height);
             self.invalidate();
         }
@@ -137,7 +138,8 @@ impl BulgeNode {
     /// The layer content as a repeating picture shader (`contentShader`).
     // Port of: modules/skottie/src/effects/BulgeEffect.cpp#L126-L139 (chrome/m156) (`BulgeNode::contentShader`)
     fn content_shader(&self) -> Option<Shader> {
-        if self.content_shader.borrow().is_none() || has_children_inval(std::slice::from_ref(&self.child))
+        if self.content_shader.borrow().is_none()
+            || has_children_inval(std::slice::from_ref(&self.child))
         {
             *self.content_shader.borrow_mut() =
                 repeating_content_shader(&self.child, self.child_size);
@@ -155,8 +157,12 @@ impl BulgeNode {
         let radius = self.radius.get();
         let center = self.center.get();
         let adj_height = scalar_abs(height) / 4.0_f32;
+        // The `(1 + a) / 2` of Skia, in float.
+        #[allow(clippy::manual_midpoint)]
         let r = (1.0_f32 + adj_height) / 2.0_f32 / adj_height.sqrt();
         // `std::pow(float, int)` is evaluated in double precision, then narrowed to float.
+        // The double precision `std::pow(float, int)` times the float 1.3f, narrowed to float.
+        #[allow(clippy::cast_possible_truncation)]
         let h = (f64::from(adj_height).powf(3.0) * f64::from(1.3_f32)) as f32;
 
         let child_shader = self.content_shader();
@@ -247,11 +253,7 @@ struct BulgeEffectAdapter {
 
 impl BulgeEffectAdapter {
     // Port of: modules/skottie/src/effects/BulgeEffect.cpp#L200-L222 (chrome/m156) (`BulgeEffectAdapter::BulgeEffectAdapter`)
-    fn make(
-        jprops: &ArrayValue,
-        abuilder: &AnimationBuilder<'_>,
-        node: Rc<BulgeNode>,
-    ) -> Rc<Self> {
+    fn make(jprops: &ArrayValue, abuilder: &AnimationBuilder<'_>, node: Rc<BulgeNode>) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
             let base = DiscardableAdapterBase::new(weak.clone(), node);
             let horizontal_radius = Prop::new(0.0);
@@ -304,7 +306,7 @@ pub(super) fn attach_bulge_effect(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
-    let node = BulgeNode::make(layer, eb.layer_size());
+    let node = BulgeNode::make(&layer, eb.layer_size());
     let adapter = BulgeEffectAdapter::make(jprops, eb.builder(), Rc::clone(&node));
     Some(attach_adapter_node(eb.builder(), &adapter, node))
 }

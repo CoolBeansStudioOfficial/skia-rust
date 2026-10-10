@@ -13,14 +13,14 @@
 use std::rc::Rc;
 
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::rect::Rect;
-use skia_rust_core::sampling_options::FilterMode;
-use skia_rust_core::tile_mode::TileMode;
-use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::size::Size;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::{MaskShaderEffect, RenderNode};
 
@@ -38,18 +38,18 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 mod bulge;
 mod cc_toner;
 mod color;
-mod sphere;
-mod displacement_map;
-mod fractal_noise;
 mod convolution;
 mod corner_pin;
+mod displacement_map;
 mod filters;
+mod fractal_noise;
 mod gradient_ramp;
 mod linear_wipe;
 mod motion_tile;
 mod radial_wipe;
 mod runtime;
 mod shift_channels;
+mod sphere;
 mod styles;
 mod transform_effect;
 mod venetian_blinds;
@@ -192,7 +192,10 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
-    ("ADBE Fractal Noise", fractal_noise::attach_fractal_noise_effect),
+    (
+        "ADBE Fractal Noise",
+        fractal_noise::attach_fractal_noise_effect,
+    ),
     ("ADBE Gaussian Blur 2", filters::attach_gaussian_blur_effect),
     ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),

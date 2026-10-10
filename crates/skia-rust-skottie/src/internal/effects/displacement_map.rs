@@ -35,11 +35,9 @@ use super::super::animator::{
     AnimatablePropertyContainer, DiscardableAdapterBase, Prop, PropertyContainer,
 };
 use super::super::skottie_priv::AnimationBuilder;
-use super::{
-    EffectBinder, EffectBuilder, LayerContent, attach_adapter_node, get_content_picture,
-};
+use super::{EffectBinder, EffectBuilder, LayerContent, attach_adapter_node, get_content_picture};
 
-/// The displacement SkSL: the selector matrix picks the displacement and the coverage from the
+/// The displacement `SkSL`: the selector matrix picks the displacement and the coverage from the
 /// map, and the child is sampled at the displaced position.
 // Port of: modules/skottie/src/effects/DisplacementMapEffect.cpp#L23-L33 (chrome/m156) (`gDisplacementSkSL`)
 const DISPLACEMENT_SKSL: &str = concat!(
@@ -135,7 +133,7 @@ fn coeffs(sel: Selector) -> SelectorCoeffs {
         Selector::Saturation => c(0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0), // kS: D = s, C = 1.0
         Selector::Full => c(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0), // kFull: D = 1.0, C = 1.0
         Selector::Half => c(0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 1.0), // kHalf: D = 0.5, C = 1.0
-        Selector::Off => c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0),  // kOff: D = 0.0, C = 1.0
+        Selector::Off => c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), // kOff: D = 0.0, C = 1.0
     }
 }
 
@@ -358,11 +356,7 @@ impl DisplacementNode {
 }
 
 /// Assigns a child shader of the runtime shader builder (a null shader is assigned as null).
-fn assign_child(
-    builder: &mut RuntimeEffectBuilder,
-    name: &str,
-    shader: Option<Shader>,
-) {
+fn assign_child(builder: &mut RuntimeEffectBuilder, name: &str, shader: Option<Shader>) {
     match shader {
         Some(shader) => {
             builder.child(name).assign(shader);
@@ -532,10 +526,10 @@ impl AnimatablePropertyContainer for DisplacementMapAdapter {
     fn on_sync(&self) {
         let node = self.base.node();
         node.set_scale((*self.max_horizontal.borrow(), *self.max_vertical.borrow()));
-        node.set_child_tile_mode(if *self.edge_behavior.borrow() != 0.0 {
-            TileMode::Repeat
-        } else {
+        node.set_child_tile_mode(if *self.edge_behavior.borrow() == 0.0 {
             TileMode::Decal
+        } else {
+            TileMode::Repeat
         });
         node.set_pos(pos_from_value(*self.map_behavior.borrow()));
         node.set_x_selector(selector_from_value(*self.horizontal_selector.borrow()));
@@ -566,12 +560,9 @@ pub(super) fn attach_displacement_map_effect(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let displ = get_displacement_source(jprops, eb);
-    let Some(displ_node) = DisplacementNode::make(
-        layer.clone(),
-        eb.layer_size(),
-        displ.content,
-        displ.size,
-    ) else {
+    let Some(displ_node) =
+        DisplacementNode::make(layer.clone(), eb.layer_size(), displ.content, displ.size)
+    else {
         return layer;
     };
     let adapter = DisplacementMapAdapter::make(jprops, eb.builder(), displ_node);

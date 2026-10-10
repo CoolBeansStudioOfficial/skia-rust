@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::floating_point::{FLOAT_PI, float_degrees_to_radians};
 use skia_rust_core::canvas::{Canvas, SaveLayerRec};
+use skia_rust_core::floating_point::{FLOAT_PI, float_degrees_to_radians};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
@@ -25,6 +25,7 @@ use skia_rust_core::shader::Shader;
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::Hit;
+use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext};
 
 use crate::impl_container_animator;
@@ -37,7 +38,7 @@ use super::super::animator::{
 use super::super::skottie_priv::AnimationBuilder;
 use super::{EffectBinder, EffectBuilder, attach_adapter_node};
 
-/// The noise SkSL template: the sublayer loop over the octaves, with the filter and fractal
+/// The noise `SkSL` template: the sublayer loop over the octaves, with the filter and fractal
 /// functions spliced in (the `%s` and `%u` placeholders of `gNoiseEffectSkSL`).
 // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L39-L105 (chrome/m156) (`gNoiseEffectSkSL`)
 const NOISE_EFFECT_SKSL: &str = concat!(
@@ -125,7 +126,8 @@ const FRACTAL_TURBULENT_SMOOTH_SKSL: &str =
 
 /// The turbulent sharp fractal.
 // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L158-L162 (chrome/m156) (`gFractalTurbulentSharpSkSL`)
-const FRACTAL_TURBULENT_SHARP_SKSL: &str = "float fractal(float n) { return sqrt(2*abs(0.5 - n)); }";
+const FRACTAL_TURBULENT_SHARP_SKSL: &str =
+    "float fractal(float n) { return sqrt(2*abs(0.5 - n)); }";
 
 /// The sample filter of the noise (`NoiseFilter`).
 // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L164-L169 (chrome/m156) (`NoiseFilter`)
@@ -212,10 +214,10 @@ pub(super) struct FractalNoiseNode {
 
 impl FractalNoiseNode {
     // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L268-L270 (chrome/m156) (`FractalNoiseNode::FractalNoiseNode`)
-    fn make(child: Rc<dyn RenderNode>) -> Rc<Self> {
+    fn make(child: &Rc<dyn RenderNode>) -> Rc<Self> {
         let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             core: NodeCore::new(0, weak.clone()),
-            child: Rc::clone(&child),
+            child: Rc::clone(child),
             effect_shader: RefCell::new(None),
             matrix: RefCell::new(Matrix::new_identity()),
             sub_matrix: RefCell::new(Matrix::new_identity()),
@@ -279,7 +281,7 @@ impl FractalNoiseNode {
     /// Sets the noise weight, invalidating the node if it changed (`setNoiseWeight`).
     // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L291-L300 (chrome/m156) (`SG_ATTRIBUTE(NoiseWeight)`)
     pub(super) fn set_noise_weight(&self, weight: f32) {
-        if self.noise_weight.get() != weight {
+        if scalar_changed(self.noise_weight.get(), weight) {
             self.noise_weight.set(weight);
             self.invalidate();
         }
@@ -288,7 +290,7 @@ impl FractalNoiseNode {
     /// Sets the octaves, invalidating the node if they changed (`setOctaves`).
     // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L291-L300 (chrome/m156) (`SG_ATTRIBUTE(Octaves)`)
     pub(super) fn set_octaves(&self, octaves: f32) {
-        if self.octaves.get() != octaves {
+        if scalar_changed(self.octaves.get(), octaves) {
             self.octaves.set(octaves);
             self.invalidate();
         }
@@ -297,7 +299,7 @@ impl FractalNoiseNode {
     /// Sets the persistence, invalidating the node if it changed (`setPersistence`).
     // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L291-L300 (chrome/m156) (`SG_ATTRIBUTE(Persistence)`)
     pub(super) fn set_persistence(&self, persistence: f32) {
-        if self.persistence.get() != persistence {
+        if scalar_changed(self.persistence.get(), persistence) {
             self.persistence.set(persistence);
             self.invalidate();
         }
@@ -306,17 +308,19 @@ impl FractalNoiseNode {
     /// The noise shader (`buildEffectShader`).
     // Port of: modules/skottie/src/effects/FractalNoiseEffect.cpp#L302-L320 (chrome/m156) (`FractalNoiseNode::buildEffectShader`)
     fn build_effect_shader(&self) -> Option<Shader> {
-        let effect = noise_effect(
-            self.octaves.get(),
-            self.filter.get(),
-            self.fractal.get(),
-        )?;
+        let effect = noise_effect(self.octaves.get(), self.filter.get(), self.fractal.get())?;
         let mut builder = RuntimeEffectBuilder::new(effect);
         let (planes_x, planes_y) = self.noise_planes.get();
-        builder.uniform("u_noise_planes").set_f32(&[planes_x, planes_y]);
-        builder.uniform("u_noise_weight").set_f32(&[self.noise_weight.get()]);
+        builder
+            .uniform("u_noise_planes")
+            .set_f32(&[planes_x, planes_y]);
+        builder
+            .uniform("u_noise_weight")
+            .set_f32(&[self.noise_weight.get()]);
         builder.uniform("u_octaves").set_f32(&[self.octaves.get()]);
-        builder.uniform("u_persistence").set_f32(&[self.persistence.get()]);
+        builder
+            .uniform("u_persistence")
+            .set_f32(&[self.persistence.get()]);
         let sub = self.sub_matrix.borrow();
         builder.uniform("u_submatrix").set_f32(&[
             sub.rc(0, 0),
@@ -509,6 +513,12 @@ impl FractalNoiseAdapter {
         };
         let evo_rad = float_degrees_to_radians(*self.evolution.borrow());
         // SkRandom(seed).nextRangeU(0, 100), as a float.
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            clippy::cast_precision_loss
+        )]
+        // mirrors the `static_cast<uint32_t>` seed and the uint32 offset converted to float
         let offset = Random::new(*self.random_seed.borrow() as u32).next_range_u(0, 100) as f32;
         let evo = evo_rad * scale;
         let evo_ = scalar_floor_to_scalar(evo);
@@ -545,10 +555,8 @@ impl FractalNoiseAdapter {
     fn sub_matrix(&self) -> Matrix {
         let scale = 100.0 / t_pin(*self.sub_scale.borrow(), 10.0, 10000.0);
         let sub_offset = *self.sub_offset.borrow();
-        Matrix::translate(Point::new(
-            -sub_offset.x * 0.01,
-            -sub_offset.y * 0.01,
-        )) * Matrix::rotate_deg(-*self.sub_rotation.borrow())
+        Matrix::translate(Point::new(-sub_offset.x * 0.01, -sub_offset.y * 0.01))
+            * Matrix::rotate_deg(-*self.sub_rotation.borrow())
             * Matrix::scale((scale, scale))
     }
 
@@ -616,7 +624,7 @@ pub(super) fn attach_fractal_noise_effect(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
-    let node = FractalNoiseNode::make(layer);
+    let node = FractalNoiseNode::make(&layer);
     let adapter = FractalNoiseAdapter::make(jprops, eb.builder(), Rc::clone(&node));
     Some(attach_adapter_node(eb.builder(), &adapter, node))
 }

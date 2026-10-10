@@ -20,6 +20,7 @@ use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::Hit;
+use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode, ScopedRenderContext};
 
 use crate::impl_container_animator;
@@ -49,11 +50,11 @@ pub(super) struct RWipeRenderNode {
 
 impl RWipeRenderNode {
     // Port of: modules/skottie/src/effects/RadialWipeEffect.cpp#L17-L19 (chrome/m156) (`RWipeRenderNode::RWipeRenderNode`)
-    fn make(layer: Rc<dyn RenderNode>) -> Rc<Self> {
+    fn make(layer: &Rc<dyn RenderNode>) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
             let node = Self {
                 core: NodeCore::new(0, weak.clone()),
-                child: Rc::clone(&layer),
+                child: Rc::clone(layer),
                 completion: Cell::new(0.0),
                 start_angle: Cell::new(0.0),
                 wipe_center: Cell::new(Point { x: 0.0, y: 0.0 }),
@@ -70,7 +71,7 @@ impl RWipeRenderNode {
     /// Sets a scalar attribute, invalidating the node if it changed (`SG_ATTRIBUTE`).
     // Port of: modules/skottie/src/effects/RadialWipeEffect.cpp#L21-L26 (chrome/m156) (`SG_ATTRIBUTE`)
     fn set_scalar(&self, cell: &Cell<f32>, value: f32) {
-        if cell.get() != value {
+        if scalar_changed(cell.get(), value) {
             cell.set(value);
             self.invalidate();
         }
@@ -139,11 +140,7 @@ impl Node for RWipeRenderNode {
     }
 
     // Port of: modules/skottie/src/effects/RadialWipeEffect.cpp#L35-L61 (chrome/m156) (`RWipeRenderNode::onRevalidate`)
-    fn on_revalidate(
-        &self,
-        ic: Option<&mut InvalidationController>,
-        ctm: &Matrix,
-    ) -> Rect {
+    fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
         let content_bounds = self.child.revalidate(ic, ctm);
         let completion = self.completion.get();
         if completion >= 100.0 {
@@ -215,7 +212,7 @@ impl RadialWipeAdapter {
     // Port of: modules/skottie/src/effects/RadialWipeEffect.cpp#L121-L135 (chrome/m156) (`RadialWipeAdapter::RadialWipeAdapter`)
     fn make(
         jprops: &ArrayValue,
-        layer: Rc<dyn RenderNode>,
+        layer: &Rc<dyn RenderNode>,
         abuilder: &AnimationBuilder<'_>,
     ) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
@@ -270,7 +267,7 @@ pub(super) fn attach_radial_wipe_effect(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
-    let adapter = RadialWipeAdapter::make(jprops, layer, eb.builder());
+    let adapter = RadialWipeAdapter::make(jprops, &layer, eb.builder());
     let node = Rc::clone(adapter.base.node());
     Some(attach_adapter_node(eb.builder(), &adapter, node))
 }

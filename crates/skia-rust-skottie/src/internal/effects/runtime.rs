@@ -35,9 +35,9 @@ use crate::skottie_value::{ScalarValue, VectorValue};
 use super::super::animator::{
     AnimatablePropertyContainer, DiscardableAdapterBase, Prop, PropertyContainer,
 };
-use crate::skottie::LoggerLevel;
 use super::super::skottie_priv::{AnimationBuilder, ScopedAssetRef};
 use super::{EffectBinder, EffectBuilder, attach_adapter_node, repeating_content_shader};
+use crate::skottie::LoggerLevel;
 
 /// The black and white `SkSL`: the luminance of the color, weighted per hue sector.
 // Port of: modules/skottie/src/effects/BlackAndWhiteEffect.cpp#L15-L31 (chrome/m156) (`BLACK_AND_WHITE_EFFECT`)
@@ -252,7 +252,12 @@ impl SkSlEffectBase {
 
     /// Binds an image child to the first frame of its footage asset, as a linear shader.
     // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L165-L182 (chrome/m156) (`SkSLEffectBase::bindUniforms`, image children)
-    fn bind_image(&mut self, jprop: &crate::json::ObjectValue, abuilder: &AnimationBuilder<'_>, name: String) {
+    fn bind_image(
+        &mut self,
+        jprop: &crate::json::ObjectValue,
+        abuilder: &AnimationBuilder<'_>,
+        name: String,
+    ) {
         let Some(jimage_ref) = jprop.get("v").as_object() else {
             return;
         };
@@ -266,7 +271,9 @@ impl SkSlEffectBase {
                 let sampling = SamplingOptions::from(FilterMode::Linear);
                 let child = frame_data
                     .image
-                    .and_then(|image| image.to_shader(None::<(TileMode, TileMode)>, sampling, None::<&Matrix>))
+                    .and_then(|image| {
+                        image.to_shader(None::<(TileMode, TileMode)>, sampling, None::<&Matrix>)
+                    })
                     .map_or(ChildPtr::Empty, ChildPtr::from);
                 self.children.push(ChildData {
                     ty: SKSL_PROP_IMAGE,
@@ -274,7 +281,10 @@ impl SkSlEffectBase {
                     child,
                 });
             }
-            None => abuilder.log(LoggerLevel::Warning, "cannot find asset for custom shader effect"),
+            None => abuilder.log(
+                LoggerLevel::Warning,
+                "cannot find asset for custom shader effect",
+            ),
         }
     }
 
@@ -370,10 +380,10 @@ pub(super) struct SkSlShaderNode {
 
 impl SkSlShaderNode {
     // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L60-L62 (chrome/m156) (`SkSLShaderNode::SkSLShaderNode`)
-    fn make(child: Rc<dyn RenderNode>, content_size: Size) -> Rc<Self> {
+    fn make(child: &Rc<dyn RenderNode>, content_size: Size) -> Rc<Self> {
         let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             core: NodeCore::new(0, weak.clone()),
-            child: Rc::clone(&child),
+            child: Rc::clone(child),
             content_size,
             effect_shader: RefCell::new(None),
             content_shader: RefCell::new(None),
@@ -471,7 +481,11 @@ impl SkSlShaderAdapter {
 
     /// The children of the program (`buildChildrenData`): the layer content, or the image shader.
     // Port of: modules/skottie/src/effects/SkSLEffect.cpp#L213-L229 (chrome/m156) (`SkSLEffectBase::buildChildrenData`)
-    fn build_children_data(effect: &RuntimeEffect, children: &[ChildData], node: &SkSlShaderNode) -> Vec<ChildPtr> {
+    fn build_children_data(
+        effect: &RuntimeEffect,
+        children: &[ChildData],
+        node: &SkSlShaderNode,
+    ) -> Vec<ChildPtr> {
         let mut children_data = vec![ChildPtr::Empty; effect.children().len()];
         for child_data in children {
             // Undeclared children are skipped (Skia logs them).
@@ -517,7 +531,7 @@ pub(super) fn attach_sksl_shader(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
-    let shader_node = SkSlShaderNode::make(layer, eb.layer_size());
+    let shader_node = SkSlShaderNode::make(&layer, eb.layer_size());
     let adapter = SkSlShaderAdapter::make(jprops, eb.builder(), Rc::clone(&shader_node));
     Some(attach_adapter_node(eb.builder(), &adapter, shader_node))
 }
