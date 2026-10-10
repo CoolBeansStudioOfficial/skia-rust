@@ -238,3 +238,95 @@ pub fn find(desc: &BitmapCacheDesc, result: &mut Bitmap) -> bool {
             .is_some_and(|rec| rec.install(result))
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::image_generator::ImageGenerator;
+    use crate::images;
+
+    // A round trip through the cache, and the purge of an ID that is marked stale.
+    #[test]
+    fn add_then_find_then_stale() {
+        let image_id = next_image_id();
+        let desc = BitmapCacheDesc::for_image(image_id, 4, 4);
+        let info = ImageInfo::new_n32_premul((4, 4), None);
+
+        let mut rec = alloc(&desc, &info).expect("alloc");
+        let written = rec.with_pixmap_mut(|pixmap| {
+            pixmap.writable_addr().expect("pixels").fill(0xab);
+        });
+        assert!(written.is_some());
+
+        let mut bitmap = Bitmap::new();
+        add(rec, &mut bitmap);
+        assert!(bitmap.pixel_ref().is_some());
+
+        let mut found = Bitmap::new();
+        assert!(find(&desc, &mut found));
+        let pixels = found
+            .peek_pixels()
+            .and_then(|pm| pm.bytes().map(<[u8]>::to_vec));
+        assert!(pixels.is_some_and(|bytes| bytes.iter().all(|&b| b == 0xab)));
+
+        notify_bitmap_gen_id_is_stale(image_id);
+        let mut gone = Bitmap::new();
+        assert!(!find(&desc, &mut gone));
+    }
+
+    // The pixels of a generator, which is only asked for them once.
+    struct FillGenerator {
+        info: ImageInfo,
+        unique_id: u32,
+    }
+
+    impl ImageGenerator for FillGenerator {
+        fn info(&self) -> &ImageInfo {
+            &self.info
+        }
+
+        fn unique_id(&self) -> u32 {
+            self.unique_id
+        }
+
+        fn on_get_pixels(
+            &mut self,
+            _info: &ImageInfo,
+            pixels: &mut [u8],
+            _row_bytes: usize,
+        ) -> bool {
+            pixels.fill(0x5a);
+            true
+        }
+    }
+
+    // Reading a lazy image caches its pixels, and dropping the image purges them.
+    #[test]
+    fn dropping_a_lazy_image_purges_its_bitmap() {
+        let info = ImageInfo::new_n32_premul((4, 4), None);
+        let generator = FillGenerator {
+            info: info.clone(),
+            unique_id: next_image_id(),
+        };
+        let image = images::deferred_from_generator(Some(Box::new(generator))).expect("lazy image");
+        let desc = BitmapCacheDesc::for_image(image.unique_id(), 4, 4);
+
+        let row_bytes = info.min_row_bytes();
+        let mut bytes = vec![0u8; info.compute_byte_size(row_bytes)];
+        assert!(image.read_pixels(&info, &mut bytes, row_bytes, (0, 0)));
+        assert!(bytes.iter().all(|&b| b == 0x5a));
+
+        let mut cached = Bitmap::new();
+        assert!(
+            find(&desc, &mut cached),
+            "decoded pixels are in the bitmap cache"
+        );
+
+        drop(image);
+        let mut after = Bitmap::new();
+        assert!(
+            !find(&desc, &mut after),
+            "dropping the image purges its entries"
+        );
+    }
+}

@@ -12,13 +12,13 @@ use skia_rust_core::discardable_memory_pool::DiscardableMemoryPool;
 
 use crate::{Reporter, def_test, reporter_assert};
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum LockedState {
     Unlocked,
     Locked,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum CachedState {
     NotInCache,
     InCache,

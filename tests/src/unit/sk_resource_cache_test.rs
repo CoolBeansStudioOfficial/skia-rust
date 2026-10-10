@@ -44,12 +44,12 @@ impl TestRec {
         data: i32,
         flags: Arc<AtomicU32>,
         can_be_purged: Arc<AtomicBool>,
-    ) -> Box<Self> {
-        Box::new(Self {
+    ) -> Self {
+        Self {
             key: test_key(shared_id, data),
             flags,
             can_be_purged,
-        })
+        }
     }
 }
 
@@ -88,15 +88,20 @@ fn test_duplicate_add(cache: &mut ResourceCache, reporter: &mut Reporter, purgab
     let flags1 = Arc::new(AtomicU32::new(0));
 
     let can_be_purged0 = Arc::new(AtomicBool::new(purgable));
-    let rec0 = TestRec::new(shared_id, data, flags0.clone(), can_be_purged0.clone());
-    let rec1 = TestRec::new(
+    let rec0 = Box::new(TestRec::new(
+        shared_id,
+        data,
+        flags0.clone(),
+        can_be_purged0.clone(),
+    ));
+    let rec1 = Box::new(TestRec::new(
         shared_id,
         data,
         flags1.clone(),
         Arc::new(AtomicBool::new(false)),
-    );
+    ));
     // SkASSERT(rec0->getKey() == rec1->getKey())
-    debug_assert!(rec0.key() == rec1.key());
+    debug_assert_eq!(rec0.key(), rec1.key());
 
     reporter_assert!(reporter, flags0.load(Ordering::Relaxed) & DID_INSTALL == 0);
     reporter_assert!(reporter, flags1.load(Ordering::Relaxed) & DID_INSTALL == 0);

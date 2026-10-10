@@ -168,7 +168,8 @@ impl ImageLazy {
     // Port of: src/image/SkImage_Lazy.cpp#L114-L143 (chrome/m156)
     #[doc(alias = "getROPixels")]
     fn get_ro_pixels_cached(&self) -> Option<Bitmap> {
-        let desc = BitmapCacheDesc::for_image(self.unique_id, self.info.width(), self.info.height());
+        let desc =
+            BitmapCacheDesc::for_image(self.unique_id, self.info.width(), self.info.height());
         let mut bitmap = Bitmap::new();
         if bitmap_cache::find(&desc, &mut bitmap) {
             return Some(bitmap);
