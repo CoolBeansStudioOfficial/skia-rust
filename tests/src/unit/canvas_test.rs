@@ -8,8 +8,6 @@
 // - `canvas_clipbounds`: its last block calls `SkPictureRecorder().beginRecording` (picture
 //   recording), and `SkCanvas c(-10, -20)` (`Canvas::new_no_pixels` returns `None` for a
 //   negative size as in skia-safe, where the C++ clamps to zero).
-// - `canvas_clip_restriction`, `canvas_empty_clip`: compiled only with `SK_SUPPORT_PDF`, and drive
-//   a recording canvas and a PDF canvas as well as the raster one (picture recording, PDF).
 // - `Canvas_bitmap`: steps use `SkPictureRecorder` + `drawPicture`, `SkVertices` and an image
 //   shader (`SkBitmap::makeShader`, Phase 3).
 // - `Canvas_pdf`: PDF.
@@ -33,13 +31,17 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
-use skia_rust_core::rect::Rect;
+use skia_rust_core::rect::{IRect, Rect};
+use skia_rust_core::stream::NullWStream;
 
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_graphite_test_for_all_contexts, def_tier_test, errorf, reporter_assert};
+use crate::{
+    Reporter, def_graphite_test_for_all_contexts, def_test, def_tier_test, errorf, reporter_assert,
+};
 use skia_rust_gpu::gpu::gpu_types::Mipmapped;
 use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 
@@ -297,4 +299,67 @@ def_graphite_test_for_all_contexts!(TestManyDrawsGraphite, |reporter, context| {
         return;
     };
     test_many_draws(surface.canvas());
+// Port of: tests/CanvasTest.cpp#L150-L159 (chrome/m156)
+fn multi_canvas_driver(w: i32, h: i32, mut proc: impl FnMut(&Canvas)) {
+    let mut recorder = PictureRecorder::new();
+    proc(recorder.begin_recording(Rect::from_wh(w as f32, h as f32), false));
+
+    let mut stream = NullWStream::new();
+    let mut doc = skia_rust_pdf::new_document(
+        &mut stream,
+        Some(&skia_rust_pdf::jpeg::metadata_with_callbacks()),
+    );
+    proc(doc.begin_page(w as f32, h as f32, None).expect("a canvas"));
+
+    let mut surface = surfaces::raster_n32_premul((w, h)).expect("surface");
+    proc(surface.canvas());
+}
+
+const BASE_RESTRICTED_R: IRect = IRect {
+    left: 0,
+    top: 0,
+    right: 10,
+    bottom: 10,
+};
+
+// Port of: tests/CanvasTest.cpp#L163-L173 (chrome/m156)
+fn test_restriction(reporter: &mut Reporter, canvas: &Canvas) {
+    reporter_assert!(
+        reporter,
+        canvas.device_clip_bounds() == Some(BASE_RESTRICTED_R)
+    );
+
+    let restriction_r = IRect::new(2, 2, 8, 8);
+    canvas.android_framework_set_device_clip_restriction(&restriction_r);
+    reporter_assert!(reporter, canvas.device_clip_bounds() == Some(restriction_r));
+
+    let clip_r = IRect::new(4, 4, 6, 6);
+    canvas.clip_rect(Rect::from_irect(&clip_r), ClipOp::Intersect, None);
+    reporter_assert!(reporter, canvas.device_clip_bounds() == Some(clip_r));
+}
+
+// Port of: tests/CanvasTest.cpp#L183-L186 (chrome/m156)
+// Clip restriction logic exists in the canvas itself, and in various kinds of devices.
+//
+// This test explicitly tries to exercise that variety:
+// - picture : empty device but exercises canvas itself
+// - pdf : uses SkClipStack in its device (as does SVG and GPU)
+// - raster : uses SkRasterClip in its device
+def_test!(canvas_clip_restriction, |reporter| {
+    multi_canvas_driver(
+        BASE_RESTRICTED_R.width(),
+        BASE_RESTRICTED_R.height(),
+        |canvas| test_restriction(reporter, canvas),
+    );
+});
+
+// Port of: tests/CanvasTest.cpp#L188-L196 (chrome/m156)
+def_test!(canvas_empty_clip, |reporter| {
+    multi_canvas_driver(50, 50, |canvas| {
+        canvas.save();
+        canvas.clip_rect(Rect::new(0.0, 0.0, 20.0, 40.0), ClipOp::Intersect, None);
+        reporter_assert!(reporter, !canvas.is_clip_empty());
+        canvas.clip_rect(Rect::new(30.0, 0.0, 50.0, 40.0), ClipOp::Intersect, None);
+        reporter_assert!(reporter, canvas.is_clip_empty());
+    });
 });
