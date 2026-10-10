@@ -6,6 +6,7 @@ members = [
     "crates/skia-rust-sksl",
     "crates/skia-rust-skcms",
     "crates/skia-rust-zlib",
+    "crates/skia-rust-hb-subset",
     "crates/skia-rust-libpng",
     "crates/skia-rust-libwebp",
     "crates/skia-rust-wuffs",
@@ -39,6 +40,7 @@ authors = ["The skia-rust Authors"]
 skia-rust-simd = { path = "crates/skia-rust-simd", version = "0.156.0" }
 skia-rust-skcms = { path = "crates/skia-rust-skcms", version = "0.156.0" }
 skia-rust-zlib = { path = "crates/skia-rust-zlib", version = "0.156.0" }
+skia-rust-hb-subset = { path = "crates/skia-rust-hb-subset", version = "0.156.0" }
 skia-rust-libpng = { path = "crates/skia-rust-libpng", version = "0.156.0" }
 skia-rust-wuffs = { path = "crates/skia-rust-wuffs", version = "0.156.0" }
 skia-rust-libwebp = { path = "crates/skia-rust-libwebp", version = "0.156.0" }
