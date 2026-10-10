@@ -261,10 +261,14 @@ fn draw_glyph_path(
 }
 
 /// The blitter chooser of the glyph draw: `SkA8Blitter_Choose`, which ignores the arena, the
-/// surface properties and the device bounds.
+/// surface properties and the device bounds. Public so that the GPU path atlases can rasterize
+/// their A8 masks with the same blitter.
+///
+/// # Panics
+/// Never, for a valid `dst`: `SkA8Blitter_Choose` always returns a blitter.
 // Port of: src/core/SkBlitter_A8.cpp#L317-L324 (chrome/m156)
 #[allow(clippy::too_many_arguments)] // mirrors SkBlitter's BlitterChooser signature
-fn choose_a8<'b>(
+pub fn choose_a8<'b>(
     dst: Pixmap<'b>,
     ctm: &Matrix,
     paint: &Paint,

@@ -49,6 +49,7 @@ pub mod pipeline_data;
 pub mod pipeline_manager;
 pub mod proxy_cache;
 pub mod queue_manager;
+pub mod raster_path_utils;
 pub mod recorder;
 pub mod recording;
 pub mod render;
