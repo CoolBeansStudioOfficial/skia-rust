@@ -2839,7 +2839,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench( "skottie_phonehub_svgo_no_frill
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L165-L167"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "119a966c18498ccbe9258c1d95a827d977e57833c929609f9de7feab74e798ed"
 
@@ -2848,7 +2848,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench( "skottie_phonehub_svgo_no_frill
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L142-L144"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "d498f1614d93848490c55727668661cee202b73b5bb50aab986831fda8627dd2"
 
@@ -2857,7 +2857,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench( "skottie_phonehub_svgo_no_frill
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L168-L170"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "02bc5b5b9ed179fc482eff59c35f520e2087239f8ff8c144d0deff35c18c75cf"
 
@@ -2866,7 +2866,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench( "skottie_phonehub_svgo_no_masks
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L160-L162"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "56834011ef794fd3bb739ee2bcc9f1c9ad9ee07bff6ad02ea292bf4f91d99242"
 
@@ -2875,7 +2875,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_large", // 426593 "skot
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L105-L106"
-module = "text"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "f2a671ac6f3153ae5b2607ef5d87b049e17884afd5179d94effe28a9409ae8a5"
@@ -2885,7 +2885,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_medium", // 10947 "skot
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L107-L108"
-module = "effects"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "e44c54ce958ddfe26268ff49d7925416b990640f206bcfbc517ece9e3bdb9856"
@@ -2895,7 +2895,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_connecting.jso
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L112-L113"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "53680d107324f108729d834ecc7bd38b802d9d5e54c2a6f34d6a16b215ef1ce0"
@@ -2905,7 +2905,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_connecting_min
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L148-L149"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "909e5f8fc409a269a8f4799795ba93f3eebb529509e9c4a967cc5dbef0b106ce"
@@ -2915,7 +2915,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_generic_error.
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L114-L115"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "d536d63e0fc7117cdf4cea6f8913e0f8ee590f54ecb03f52cb69babd1d61b97b"
@@ -2925,7 +2925,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_generic_error_
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L150-L151"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "774ec0dda52a2582a72e923240b5f512786b3133a3a5f08a2080ffe76be53715"
@@ -2935,7 +2935,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_onboard.json",
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L116-L117"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "7faf8967497e7f450e98cd47c754a4e63f0a727d42b9d51ac07a1a6a0a12c670"
@@ -2945,7 +2945,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_onboard_min.js
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L152-L153"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "9b9404993af8924d831ba37b42a2ad235db29bc7b207a8a4d823ccc43f69ee1d"
@@ -2955,7 +2955,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_connectin
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L120-L121"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "737a1e5b39f457f4a25c1415014673f5af5851257847e2c3107d0149499623e3"
 
@@ -2964,7 +2964,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_connectin
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L154-L155"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "7a3154daea2f038a5df755bac20fa024366518ac495c8f3d5fe32ac8ea264df1"
 
@@ -2973,7 +2973,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_generic_e
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L122-L123"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "955fcc411652f6e8f505b3ed752454df302935d6986f5ba3207644a20a43b8f6"
 
@@ -2982,7 +2982,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_generic_e
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L156-L157"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "0a62da253c333b6281da2459222a53b0b8ea1a637a99bed7b5b83d7026144315"
 
@@ -2991,7 +2991,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_frills
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L140-L141"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "0db67b9e2920aaafabc3f6c6f985fb924999a937bca2ba1339877a275e4994d9"
 
@@ -3000,7 +3000,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_frills
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L145-L146"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "f126f354b35707388e3fc815904a3b8d8956bdf08f06ffd7f2b74330c553adce"
 
@@ -3009,7 +3009,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_frills
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L171-L173"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "3fe144cb3935d48de6e2cd37079c023169f3476b60093993b5ed589dbbe1aa4b"
 
@@ -3018,7 +3018,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_masks_
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L131-L132"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "a73a849247a12c851fc0ad8716197cff03fdce9da2e6c829f3a2600a35595e33"
 
@@ -3027,7 +3027,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_masks_
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L133-L134"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "2598862cd93dd8cb56b92b43a80c17ccfd01984691f5f0eb624318b242f2740a"
 
@@ -3036,7 +3036,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_no_masks_
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L163-L164"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "f3610f70d5a55d3cc285e2a911f5e1c89e1301d42fc9ce4d952d2de9efe816de"
 
@@ -3045,7 +3045,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_onboard.j
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L124-L125"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "195e0c1c68454f0f35f423e2e475ff190a6e795d816f4cb8067bfe61fd726661"
 
@@ -3054,7 +3054,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_phonehub_svgo_onboard_m
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L158-L159"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "c5840b1257157c81fd32ca6fe84b9d993135460631b349ffb183654b03e053e8"
 
@@ -3063,7 +3063,7 @@ id = 'bench/DecodeBench.cpp::SkottieDecodeBench("skottie_small", // 1112 "skotti
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L109-L110"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "8098ba2eaed2e643026d4a5a787fa9a0bf3b8cf3c9902b94c439c85edba99f49"
@@ -3073,7 +3073,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L217-L219"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "ebd72d28e613cacf8036a4316506d42c0d6883eddc7b3d53cd9af74b32d1ec24"
 
@@ -3082,7 +3082,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L199-L201"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "ac3a99f7119d352769dcd1ce6c5a88fdb88efa97cd64048b2d1aa07753288f1e"
 
@@ -3091,7 +3091,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L228-L230"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "efa2f24a4bc16b4c39451076c93ab89772ac5b8b99d33f9ee280a55f9f162b70"
 
@@ -3100,7 +3100,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L202-L204"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "653b6b08b2fb676aa2b6ab0e98547f47751d1c415dc81f9a2255fbf8f0120699"
 
@@ -3109,7 +3109,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L231-L233"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "d79c9a0a8d8088a5f659db1611191ad09b7dddedd6fb73abfd75583928e49f3f"
 
@@ -3118,7 +3118,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L205-L207"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "71cf9ef21ea502f66cbae84aa1951f20013eb11d96624fdb7700d48193f72ea3"
 
@@ -3127,7 +3127,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L234-L236"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "966c3b902ee9de60b90bf1d5f8c1cbec50d7d599980e8cb35f1be5369d38dc8c"
 
@@ -3136,7 +3136,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L193-L195"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "8d24d4bc5d90cc8622d4834147daac53cdf0ac20189fe0030d1c95d229a26f8c"
 
@@ -3145,7 +3145,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L222-L224"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "6570f7b366fc260afeb67751c4a30dd144673ec003ab1c768e0229a8fb1fb951"
 
@@ -3154,7 +3154,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L196-L198"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "ed934195ae15d10a1ec95565e924adabe760b241394c8a4d2b6e82f9c9f10c1a"
 
@@ -3163,7 +3163,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench( "skottiepic_phonehub_svg
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L225-L227"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "79215d2f2eebf968aca6ca0d1ddccd14502f078ca990e1a18cc47f9a36423848"
 
@@ -3172,7 +3172,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_large", "skot
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L175-L176"
-module = "text"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "88f620810c838d7ea9617cd0e74db99e87b713376c402e52abf8e4c8cdfc6017"
@@ -3182,7 +3182,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_medium", "sko
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L177-L178"
-module = "effects"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "3685069ab909f6720e190dd0182faf0b6a4c5d92aa9bcf0891f1f05d04773d1d"
@@ -3192,7 +3192,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_conn
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L181-L182"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "fa29aef55f3ebb525416f05623c4c12c8e11b6c93a3aafc4f6e46ae05c8ab1cb"
@@ -3202,7 +3202,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_conn
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L208-L209"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "30fd0f1383410d721ee95638def4a5b489d8c744b56ce22b160374e33ab4008d"
@@ -3212,7 +3212,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_gene
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L183-L184"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "de3eafb0af3128be31b47ade13687dee5f0206f3c95a0a5c798ce24ea17aabbe"
@@ -3222,7 +3222,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_gene
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L210-L211"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "f1444e75d9357a9bbfe04fb60801c1007ad79854a30cd4eb17ad259b945dac46"
@@ -3232,7 +3232,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_onbo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L185-L186"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "d562f7ce0a485cb41789e2c7050aa771ef0596e6585eaf8e0225552b3b66303a"
@@ -3242,7 +3242,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_onbo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L212-L213"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "92437dedb3ecdbcaeb190d2d2303e6cb03ea79b1cbb12a027ee59ddee92f4eca"
@@ -3252,7 +3252,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_svgo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L187-L188"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "312fd265fc31c805ea09dc6e257ac5a6f4051374cdd3c9b838739b7a6a622842"
 
@@ -3261,7 +3261,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_svgo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L214-L216"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "b84a41ae12d13f5a51d0f98643de549f4bd7c9cf97b96f3bab60530dded04b9a"
 
@@ -3270,7 +3270,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_svgo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L189-L190"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "075bd67a44c36fb9eed5085fc1ae7cf67f45eb6687b8d894870f5050cc767df9"
 
@@ -3279,7 +3279,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_svgo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L191-L192"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "d9f07f1b01a436c9f88f70d77c618af99128faae9e538e5be2f3aaf7bc719a7d"
 
@@ -3288,7 +3288,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_phonehub_svgo
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L220-L221"
-module = "svg"
+module = "skottie"
 status = "todo"
 span_hash = "439f4e476dd0c0de1c77d493a47c4a505b908f7ac0e6ff9d4e7e4bec825bec4a"
 
@@ -3297,7 +3297,7 @@ id = 'bench/DecodeBench.cpp::SkottiePictureDecodeBench("skottiepic_small", "skot
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/DecodeBench.cpp#L179-L180"
-module = "core"
+module = "skottie"
 status = "todo"
 reason = "Skottie (modules/skottie) and the codec stack are not ported"
 span_hash = "59ad996d69bd81e2ccfae5f242f2d2d33e269f348d1ef950f49a2ccb8ed231b9"
@@ -7050,7 +7050,7 @@ id = "bench/ParagraphBench.cpp::ParagraphBench"
 kind = "bench"
 macro = "DEF_BENCH"
 source = "bench/ParagraphBench.cpp#L98-L98"
-module = "core"
+module = "paragraph"
 status = "todo"
 reason = "modules/skparagraph is not ported"
 span_hash = "c68a53f074bb9a99934ea6e9c626ac4d7f5f35510d6281edac6bfce79cb0ab60"
@@ -9915,7 +9915,7 @@ id = "bench/ShaperBench.cpp::arabic"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L42-L42"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "cfbc642f74893da04ff97b36d6c9dca4956d68c8f44e722304ff62855f39f93d"
@@ -9925,7 +9925,7 @@ id = "bench/ShaperBench.cpp::armenian"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L43-L43"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "e63fc2c745436cd22d7c97f31653182ed6be8b645f41be8579b1cac34b2ca236"
@@ -9935,7 +9935,7 @@ id = "bench/ShaperBench.cpp::balinese"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L44-L44"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "f63166e743c13f4d2a8ac94caba15f0506f95d657ff7d7338741dcc6918ee96f"
@@ -9945,7 +9945,7 @@ id = "bench/ShaperBench.cpp::bengali"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L45-L45"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "b5fb4d1e9b313bafe891f9e4014e1c66d697669ad384a294be349ce8766626c5"
@@ -9955,7 +9955,7 @@ id = "bench/ShaperBench.cpp::buginese"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L46-L46"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "6e1e3ad66127a8f7176a5d1b04bc205ed46f69e8e04c1dfa6c96826384a88abf"
@@ -9965,7 +9965,7 @@ id = "bench/ShaperBench.cpp::cherokee"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L47-L47"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "c6ad38fc5cf2e2808f0f8831c06a243332ddc7679275669d5f734d1d5ee25826"
@@ -9975,7 +9975,7 @@ id = "bench/ShaperBench.cpp::cyrillic"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L48-L48"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "81f8c48015834b2f1254da3a73eda5f07be0600b598aec4295ac78bb30707ca7"
@@ -9985,7 +9985,7 @@ id = "bench/ShaperBench.cpp::devanagari"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L49-L49"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "1ec47f8f9052b80478275dc9cd4bd092fa0b80f895dbf57f63969768fc71e156"
@@ -9995,7 +9995,7 @@ id = "bench/ShaperBench.cpp::emoji"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L50-L50"
-module = "text"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "5623321dcc00c4d9095308e54a6025a48b850182d7b6b595414f439901efc811"
@@ -10005,7 +10005,7 @@ id = "bench/ShaperBench.cpp::english"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L51-L51"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d0248ce8ab2e4d2d29c29e0d111314b8d1c2054431d2f51a35bff0c3cdf3d888"
@@ -10015,7 +10015,7 @@ id = "bench/ShaperBench.cpp::ethiopic"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L52-L52"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "b733404542df228743ff57bec383b1d686c808c74dde00b3e732ebe780ca0b70"
@@ -10025,7 +10025,7 @@ id = "bench/ShaperBench.cpp::greek"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L53-L53"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "656cf31c664df524a2574e917d074ba1c46cecdc621e06c4147c3c0f58bb1b5c"
@@ -10035,7 +10035,7 @@ id = "bench/ShaperBench.cpp::han_simplified"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L55-L55"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "af13e0f7626eb8fe9165b88d6f66fa3cd0eb265a3824e32e22a89a26f2aa6d6d"
@@ -10045,7 +10045,7 @@ id = "bench/ShaperBench.cpp::han_traditional"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L56-L56"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "27c08e6337e1701ec41d2c52550376a79b9d158456a9dcc463c96d11e00628c0"
@@ -10055,7 +10055,7 @@ id = "bench/ShaperBench.cpp::hangul"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L54-L54"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "dbe554a5a5783197861f806726a8573c6f58be3bf9236d941ec76eb9ac179c3d"
@@ -10065,7 +10065,7 @@ id = "bench/ShaperBench.cpp::hebrew"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L57-L57"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "f635a3992a0f8760eacc18137d8a5b50e10aa9c47a09614d877632c112920df7"
@@ -10075,7 +10075,7 @@ id = "bench/ShaperBench.cpp::javanese"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L58-L58"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "ffa81cf62d44dbe1d266edde076cab638d23656651e4f8f788f8b6a99c81c4b2"
@@ -10085,7 +10085,7 @@ id = "bench/ShaperBench.cpp::kana"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L59-L59"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "14baf212f4383b9f253520706c07a66949debb95749302417aa8f87b79957541"
@@ -10095,7 +10095,7 @@ id = "bench/ShaperBench.cpp::khmer"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L60-L60"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "75ded366a59fd3d582b2e42cf4dd3a25f1f62f2c69260a25876861b57c658ec5"
@@ -10105,7 +10105,7 @@ id = "bench/ShaperBench.cpp::lao"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L61-L61"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "30acea00d7f5edd4844c2d1ecc4d66ba4cd9e2cd970e658300420c823f9a4852"
@@ -10115,7 +10115,7 @@ id = "bench/ShaperBench.cpp::mandaic"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L62-L62"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "83a30e1d2851265c9d9cee2757fcf51e438fd218334f7c80e4f8b025e2f9f773"
@@ -10125,7 +10125,7 @@ id = "bench/ShaperBench.cpp::myanmar"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L63-L63"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "12dadfb956cd4f2d41078a25ac1cb222bdd7070bdb6da709afe5c03b238a3194"
@@ -10135,7 +10135,7 @@ id = "bench/ShaperBench.cpp::newtailue"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L64-L64"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "095cef25ddf400e39c9b0010c456d96ecff9408aad6c38fbba0401e7f7bc351d"
@@ -10145,7 +10145,7 @@ id = "bench/ShaperBench.cpp::nko"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L65-L65"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "8d2b64ef5447098bb229f3a4ab84b7756b21f1ab4d087b14605465fc5fcdbc82"
@@ -10155,7 +10155,7 @@ id = "bench/ShaperBench.cpp::sinhala"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L66-L66"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "1fcd9d6aaa19b26fbb35b4430995622127669acfa680e4e19580bc7509c70b00"
@@ -10165,7 +10165,7 @@ id = "bench/ShaperBench.cpp::sundanese"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L67-L67"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "0760f3ec91e44623cf697d320298dd7b7b52308b0aedbfa39b08fd0f33eec58d"
@@ -10175,7 +10175,7 @@ id = "bench/ShaperBench.cpp::syriac"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L68-L68"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "5f0b89156baf653cfa9e0d6dd9774897bdf07c20626d6e4aed8343cfddf43b05"
@@ -10185,7 +10185,7 @@ id = "bench/ShaperBench.cpp::taitham"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L69-L69"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "88ec61cec075417267017c1e3cd3d6b2fcd9eb9443f7209f933aa6337d48a95d"
@@ -10195,7 +10195,7 @@ id = "bench/ShaperBench.cpp::tamil"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L70-L70"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d842b25f8f04f087c57b0c0d1d16d9b86f1c8662d6b6ef8248ad960df839e357"
@@ -10205,7 +10205,7 @@ id = "bench/ShaperBench.cpp::thaana"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L71-L71"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "517ed22c11482d751354b58f199640e5dca38efc49f9f7724e1e7e210bbd72bc"
@@ -10215,7 +10215,7 @@ id = "bench/ShaperBench.cpp::thai"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L72-L72"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "d324fe70ff89ef0895f644ad58cb65008b9ee4b304c39ef091b900c13aabb2fc"
@@ -10225,7 +10225,7 @@ id = "bench/ShaperBench.cpp::tibetan"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L73-L73"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "e55803e9083e1281757ca58ef725fa931a591ed96b521e4d48fb7a3306cae3e3"
@@ -10235,7 +10235,7 @@ id = "bench/ShaperBench.cpp::tifnagh"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L74-L74"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "7c4cdb5fa4ec40d7872e6a25156d309ff7e55bb57ccd9f21687655ede5dcfd6e"
@@ -10245,7 +10245,7 @@ id = "bench/ShaperBench.cpp::vai"
 kind = "bench"
 macro = "SHAPER_BENCH"
 source = "bench/ShaperBench.cpp#L75-L75"
-module = "core"
+module = "shaper"
 status = "todo"
 reason = "SkShaper (modules/skshaper) is not ported"
 span_hash = "9dfa9badf4fee2725eb29150dbd6b34eb10de01a85a84c17707b1b7510870975"
@@ -14032,7 +14032,8 @@ id = "dm/lottie/images/mandrill_64.png"
 kind = "dm-lottie"
 source = "resources/skottie/images/mandrill_64.png"
 module = "skottie"
-status = "todo"
+status = "excluded"
+reason = "not a lottie source: an image asset that DM's lottie source loads; DM gathers *.json only (dm/DM.cpp#L929)"
 span_hash = "a53da472802fdb36f7515d0eacddfd5416fd4c625fd940269192f925c57e6e08"
 
 [[test]]
@@ -14040,7 +14041,8 @@ id = "dm/lottie/images/mandrill_large.png"
 kind = "dm-lottie"
 source = "resources/skottie/images/mandrill_large.png"
 module = "skottie"
-status = "todo"
+status = "excluded"
+reason = "not a lottie source: an image asset that DM's lottie source loads; DM gathers *.json only (dm/DM.cpp#L929)"
 span_hash = "52f52c75599ab30ba187355ee029d7aa52a7e78c99283fd37561c9d50fbd0f0b"
 
 [[test]]
@@ -14048,7 +14050,8 @@ id = "dm/lottie/images/triangle.png"
 kind = "dm-lottie"
 source = "resources/skottie/images/triangle.png"
 module = "skottie"
-status = "todo"
+status = "excluded"
+reason = "not a lottie source: an image asset that DM's lottie source loads; DM gathers *.json only (dm/DM.cpp#L929)"
 span_hash = "f47415c5d4dee9f708c976a0223378ed2d5c634238cfc7cb00dfbe5e5f387765"
 
 [[test]]
@@ -14057,6 +14060,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-2planes.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "06956a33217bda8800061770c2f4933ab5aea6dddfceb643606169c64684d86a"
 
 [[test]]
@@ -14065,6 +14069,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-3planes.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4b5409457a399079f20948cfb2608556ae98775e1b738d7a47db2469c9dd2747"
 
 [[test]]
@@ -14073,6 +14078,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-parenting-camera.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e295314493df7f5adec790fdb49971081232220945e5f9b14f66a8117e080b4f"
 
 [[test]]
@@ -14081,6 +14087,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-parenting-nocamera.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d03e2e53795b330a4a063c266e4d9e3745e13e48896bc209732b0f0912b61a96"
 
 [[test]]
@@ -14089,6 +14096,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-3d-rotation-order.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "245fcdf5b8d9b26cd91d21dd9b4660e3b42ad5c86939c4f1553d56659f387974"
 
 [[test]]
@@ -14097,6 +14105,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-auto-orient-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a325beb2d64fc4add9f3f685958ff846d759ea21e590d999eca8a96c0b518355"
 
 [[test]]
@@ -14105,6 +14114,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-auto-orient.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a179e68de193b129c99d9fd757973b07296057bacec12e6f789d75003a8afee6"
 
 [[test]]
@@ -14113,6 +14123,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-bezier-extranormal.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "da167715a41fb6e9363ba7817e8f347535e4deb569c3b2bf64480fa34eea8937"
 
 [[test]]
@@ -14121,6 +14132,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-blackandwhite-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2728fcdb410dac426b161751548b33dfbf3760eca2ebff81e2f28bbf8ffbdde3"
 
 [[test]]
@@ -14129,6 +14141,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-blendmode-hardmix.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a5975bc38342b18cea13c8eb4ce870ae9c962f49fe4a0e821e7130c854a33869"
 
 [[test]]
@@ -14137,6 +14150,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast-legacy.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "161798288a36766f73a5fa72ffa03667b6442a069fe3c42d2e16f147c5e3bdcb"
 
 [[test]]
@@ -14145,6 +14159,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-brightnesscontrast.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6e8fe04d4e193255732dd58baa881aa32b7ed52658a50ea3718348d331fd1c74"
 
 [[test]]
@@ -14153,6 +14168,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-bulge.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "0f7e266e82bbf8e164f2acbeff508f90e307465ffd7961895d046bcb44d641b2"
 
 [[test]]
@@ -14161,6 +14177,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-one-node.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "b43df24d4c4764a592baac66d69652509ff6e3809f40eb34248741efef8817e0"
 
 [[test]]
@@ -14169,6 +14186,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-1.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7f7b43bde5f9b40c7ebe3506c65e6f8a226dafde574bf72c9fb1cb9102aa3a37"
 
 [[test]]
@@ -14177,6 +14195,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "fb46628939c491f59bd4ead0cdf6b825a4ee4f0402318d255622fce260fd0ea3"
 
 [[test]]
@@ -14185,6 +14204,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-parent-3.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d946859711c4d2ae2c08aa23c133380218221d7bdc79825f00f045e8028ebfb2"
 
 [[test]]
@@ -14193,6 +14213,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-precomp.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1fe90455ff1f5a1840dd8cca99012f279c40d553501f373a1c189eee47c9ead8"
 
 [[test]]
@@ -14201,6 +14222,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-camera-rotation.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "da7e3cb3b006421e6ecb40ca1ec5ff5909779a19ad43a6e67ef599a250a647af"
 
 [[test]]
@@ -14209,6 +14231,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-cctoner.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "b5da2e567d251aa9d6e86bf33d643f8f64811411e578e75500fae86878768639"
 
 [[test]]
@@ -14217,6 +14240,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-chained-mattes.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4b05f89cc8f721b7f7b5cdfdeb67047ca2c985722bd7e314fee520613c5771d3"
 
 [[test]]
@@ -14225,6 +14249,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-coloroverlay-style.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2479597ca056f57171d77e7e95680b367c2248ae0bdb5673bedabdd747a5d2bd"
 
 [[test]]
@@ -14233,6 +14258,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-corner-pin-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "8601abd812992ab96fbc97c320e15e65af153bdb9165458da3edf10d965ccb7e"
 
 [[test]]
@@ -14241,6 +14267,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-directional-blur.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "b0339a7d4150d51649cec8524f19f963fcb36198a11df5762fe34a47bd4046e8"
 
 [[test]]
@@ -14249,6 +14276,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-expand.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9406975d8382a3270f882a7e465b3d3358d8be1bcb59fb9ad70628357e259c84"
 
 [[test]]
@@ -14257,6 +14285,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-hsla.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "14e4ba696db2ae3aaae437cb39bbe3642c7359fdd6b050944eb7128bf47b7586"
 
 [[test]]
@@ -14265,6 +14294,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-lfho.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6f518c54e920dde0fcc935ebf07e8073274d2455026a6b7d56c25ed92ac4b99a"
 
 [[test]]
@@ -14273,6 +14303,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-rgba.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2a252e1afe6f0606057e4b5eaf2f80b81994b7dc927c8ba1696072c64a88a275"
 
 [[test]]
@@ -14281,6 +14312,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-displacement-tiling.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d319d58cc7d4084914bb4c2ddcc2029dd56f364b09e72cc75cd7900f3dc3fafa"
 
 [[test]]
@@ -14289,6 +14321,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-dropshadow-ramp.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7b0bed06b39e38421d21d41be03ecbdcbadd6f339f2eefec82aff4b1946f1a3d"
 
 [[test]]
@@ -14297,6 +14330,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-dropshadow-style.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e94b5e88d26507977a8fc6c41c41d289e4ec6054b2a5d3c022f41fa46123598a"
 
 [[test]]
@@ -14305,6 +14339,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-effects-transform.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f0d0c9ef17f590ee51bedc2e3e983251a8774ebf120f55fab04b395bd9f6bd6a"
 
 [[test]]
@@ -14313,6 +14348,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fill-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9a57a53cd0f88f1e63047104bc3b2d576274068dd2567e4173b0a0e3037ac999"
 
 [[test]]
@@ -14321,6 +14357,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-basic.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e1605efc8ad32aa22f22b756e5d5aded9830961020b8466f2e89e2b94436ea20"
 
 [[test]]
@@ -14329,6 +14366,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-block.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "62b4d8014613222592251453eedd641355bf54b3dc19fb1e2079ff4b9665bf12"
 
 [[test]]
@@ -14337,6 +14375,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-cycle.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6701512882ec862d999716b615fc797baad9c698cb6574696214ce84691e4663"
 
 [[test]]
@@ -14345,6 +14384,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-linear.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "60277add29b9b0bd47a42bf0a7ddedd41e4d7e90a9f92999f845d84f366a7825"
 
 [[test]]
@@ -14353,6 +14393,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-scalerotate.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "540c3a6e475ec84d38376a8d9839d08516b947a99324be61c3ef97ee98fa1ef3"
 
 [[test]]
@@ -14361,6 +14402,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-softlinear.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c767522d81127ecdd73daff92314e1046a06030543a1d1e175deadc82c7b306a"
 
 [[test]]
@@ -14369,6 +14411,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-sphere.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6b1bd921af03f75ae273821249bd9c88a2c1748897d601a03db9bfcebf895abf"
 
 [[test]]
@@ -14377,6 +14420,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-suboptions.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9e0c7c701550af7c73394599bd35c1314f5d5c79a996807e2bb336b0fee71edd"
 
 [[test]]
@@ -14385,6 +14429,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentbasic.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c7c909bad2ca21c813b9a29ba8c82d88bfc76679d180f6a1acdfb52170b67a08"
 
 [[test]]
@@ -14393,6 +14438,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentsharp.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7445b407a3d750e3424ec5d6e41546fb5282b6e54b794e1d3195fbf7c68852a2"
 
 [[test]]
@@ -14401,6 +14447,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-fractalnoise-turbulentsmooth.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "110eda870ad51a4da34bc121289a7425d3cfe49611ddc3e159f1f3b75dcb75a9"
 
 [[test]]
@@ -14409,6 +14456,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gaussian-blur.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e92b52760c9d2b8f8acec19e06b1c0490a3431bc371133c701dc8c7244262d8a"
 
 [[test]]
@@ -14417,6 +14465,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-glow-spread.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9363069a369d54c552c5fe43c8f227aed0d34f684eebfb9ac5f93e1117b479db"
 
 [[test]]
@@ -14425,6 +14474,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-opacity.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e60a7f31fa4dcc59b24cf61bc19f8c14b6112dc195ed565609a4a8b7e869afb4"
 
 [[test]]
@@ -14433,6 +14483,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-radial-highlight.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "bf9b277c5d4b8fcf899bcc8c40fb237a05ae8693cb6b43f6a505f5e06d514896"
 
 [[test]]
@@ -14441,6 +14492,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-gradient-ramp.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "149bc2c21c7edca9899f07396bd7e6dbd5f407eaf253d672ab645560d0f07a22"
 
 [[test]]
@@ -14449,6 +14501,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-hidden-shapes-layers.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "0a8be8aabd77ec1cedddae1886ec6c59782ba2611bb3d30593ab4049dff62d69"
 
 [[test]]
@@ -14457,6 +14510,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-huesaturation-animated.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "515fb973ec6490feae7a01952ce11f401f59a5184d5006e3c742e9569eebf8d6"
 
 [[test]]
@@ -14465,6 +14519,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-huesaturation-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "5b9b1113a4e89c5ea4a1898a0a96184a7e0c6641c09b4b32d264bf68931e9ec3"
 
 [[test]]
@@ -14473,6 +14528,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-inline-fonts.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "0655ae9ab0a9f9c99ff7002dde531fc6155741f129cdad09d092a91ffe444eab"
 
 [[test]]
@@ -14481,6 +14537,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-innerglow-style.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6798d4f88d8d8371ae2f9bd45fdd78788f3f496e607ae0ebd111d651bfd73d1d"
 
 [[test]]
@@ -14489,6 +14546,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-innershadow-style.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4e80173afab91dc72c61d10baace1fb26a845c82d5bf09829e1c9bd770a581da"
 
 [[test]]
@@ -14497,6 +14555,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-invert-effect-yiq.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e280b75f29af29eea4b466f6a7a861a55a45a6e60958fd1c1810be7158b93572"
 
 [[test]]
@@ -14505,6 +14564,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-invert-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "231407598838e4ccf12fb97edaf89483af7aed8e3742a313d3840d00ad2651f9"
 
 [[test]]
@@ -14513,6 +14573,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-levels-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "339094c831692b1a83fbf297424ff7a124e11c9991cf0a2e43efeb0fc46c862e"
 
 [[test]]
@@ -14521,6 +14582,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-line-height.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a6607d37d8eb34e71e5932b44402d220a5142aa3e76ebcdcc29b9480dc328bbe"
 
 [[test]]
@@ -14529,6 +14591,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-linear-wipe-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "228b4ed1d35df11e81d4a2544c116f09cd49e87634ddaeebc7a6b40cc2607bbf"
 
 [[test]]
@@ -14537,6 +14600,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-luma-matte.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "28bce647ea51959f26dde73a060630082f30da5cadcd76fafdea0d09bf000dd5"
 
 [[test]]
@@ -14545,6 +14609,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-mask-feather.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "34a717dab9beaa120421c34d318a9839bcb912f38f2c7f9d5ff6ed9af7f7029b"
 
 [[test]]
@@ -14553,6 +14618,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-masking-opaque.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "488834a8f9526a05694a625b30884f67000ece981f537db7282ada3572ab1dde"
 
 [[test]]
@@ -14561,6 +14627,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-masking-translucent.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e160cd56df5f98898d9b02827c3f0a17e8d30557f609cc465cc18df61e67015d"
 
 [[test]]
@@ -14569,6 +14636,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-blendmode.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c87386c116cbe7592818fd0bd76eb7038cf72c4b1fe074ac2b604c5106384065"
 
 [[test]]
@@ -14577,6 +14645,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-nonsequential.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3ef643776cf8f2645d421101c23d14b0989fe31ddfada50bc5f0fa68567cdb86"
 
 [[test]]
@@ -14585,6 +14654,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-matte-visible.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3b5638acf41b7712365333e5cbe6e6dcd22fd8a45b842d89548b1cb1bcf1ade1"
 
 [[test]]
@@ -14593,6 +14663,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-mergepaths-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "11003a9338fd8aa7d75e4272480e5b95ff373b0be389381a1f06d15871b43977"
 
 [[test]]
@@ -14601,6 +14672,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-mask.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9333940c64928499e1d546ff721699626a31f9c114200f0d55e65a3378f51042"
 
 [[test]]
@@ -14609,6 +14681,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph-360.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c5b45ffda7879566b62ff970c0009812184daeda99bddb030e8dbc16949a8dd1"
 
 [[test]]
@@ -14617,6 +14690,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph0.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3f844c553470a894b3ef7a0c4d7c9531bcf531492906d06fcccf03c4175778ae"
 
 [[test]]
@@ -14625,6 +14699,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motion-blur-ph360.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "65daff3d286215fef5cc20c14903e781cc7f2f61b4e8292bd354e9b71f63eadb"
 
 [[test]]
@@ -14633,6 +14708,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motiontile-effect-phase.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a82e397ff1b3f1ca0bf9bfc9608b365a706987449b9bca722144437294031334"
 
 [[test]]
@@ -14641,6 +14717,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-motiontile-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1051d462cf9c81de65a6fa5b5b7fffaa5b38130f8b85f97fa09e44b3c3c671dc"
 
 [[test]]
@@ -14649,6 +14726,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-multi-range-selectors.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a4d5b85f9ee58d13e29e8dca4ae8aae51b7e62ae7ed97b4b26016de80a7fca3a"
 
 [[test]]
@@ -14657,6 +14735,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-nested-animation.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4f15510262d838b31a212e58bf925e524dbbf066813571e9df3ec0c6a7882349"
 
 [[test]]
@@ -14665,6 +14744,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-offsetpaths-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "07d0eabb145a1e8fda8fa81f08563a3dd242a3a9f7bf96c14de1a3367293e72c"
 
 [[test]]
@@ -14673,6 +14753,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-outerglow-style.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a7bf51fc6134317d5fddd5f749bf5d05a3092666a6b166c6ac3e7321f8635abf"
 
 [[test]]
@@ -14681,6 +14762,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-connecting.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "22d62b6c5034d4369705eeb00bfc56ce35f6fa0b93ef81a4a398c50f567876fa"
 
 [[test]]
@@ -14689,6 +14771,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-connecting_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "5bd08431cf3ada1b75cd18e60a7e1bbc702b89a85a8bf9e71be98ec89feb83c5"
 
 [[test]]
@@ -14697,6 +14780,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-generic-error.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "defd76fce020460fd1f5be651c061f7ae39ee8dcf6d778d48752061d13e4be03"
 
 [[test]]
@@ -14705,6 +14789,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-generic-error_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "083d0f2d11d896a3049e4578035330752c180915ed41675fb74a8594549b1061"
 
 [[test]]
@@ -14713,6 +14798,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-onboard.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "051fd93502a0312f49c9cec7d5d5565f6e379fdcdc461af7b1f6d383c5316ae7"
 
 [[test]]
@@ -14721,6 +14807,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-onboard_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "0a30522b758389eac537ac5957834769cf66d16e79701aa627b11ff5ad7bbc1c"
 
 [[test]]
@@ -14729,6 +14816,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-connecting.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1b66c0631f740a290756e8e78523336b53eec5d5a37eb12da3c658fd3eea9c4d"
 
 [[test]]
@@ -14737,6 +14825,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-connecting_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1f40ff716e5b0002b62a97368d4eda2a6ebddba8e4910504cd03d658486ce2ed"
 
 [[test]]
@@ -14745,6 +14834,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-generic-error.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f934273edbdf771b2baf983ce2ffc64648dfdf83c9794c0da0765b0d6f00a389"
 
 [[test]]
@@ -14753,6 +14843,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-generic-error_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9937f9a6b320d8ccf4051e19567d5c8ed95834fd75c7d0ec36d0041a250e2c26"
 
 [[test]]
@@ -14761,6 +14852,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-connecting.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6af3665fc4dd4418a28b6f6ec7eaef41877fca24fb19318c904c9bb3f6c4d700"
 
 [[test]]
@@ -14769,6 +14861,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-connecting_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "31e8c0dbddf3649b1c73320f1417a535271094e22dd38d493ee423027948afde"
 
 [[test]]
@@ -14777,6 +14870,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-generic-error.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "28b965364ec4115c3d4a3de89ce2932970f2db91cc3855bb41095040e8051439"
 
 [[test]]
@@ -14785,6 +14879,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-generic-error_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "20bdf7271dc84e1ffc4d0a3a55a801ee5bef75015600571fa81ea97f8e32b778"
 
 [[test]]
@@ -14793,6 +14888,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-onboard.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "dbe2a6b081a44c6f5bfe98dfda27a6639428d542652d09dcd1da50bd03ea8871"
 
 [[test]]
@@ -14801,6 +14897,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-frills-onboard_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "b195c9c2ada891c6220500f4bbf77f5149c39528eb78da8c1b235237d3e76841"
 
 [[test]]
@@ -14809,6 +14906,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-connecting.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c6b2372c7554a41e24049660c2834436d9f8424e7168ee1fea810fb356a49a30"
 
 [[test]]
@@ -14817,6 +14915,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-connecting_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d40d4707498ac7a93dfc5498b16e5827ea17f63b54c26a81e8238c052c377610"
 
 [[test]]
@@ -14825,6 +14924,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-onboard.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d74e79e31af9608c8c0a23acf1ed62c6fb86b554a8c4d4c394a6551c3fe843aa"
 
 [[test]]
@@ -14833,6 +14933,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-no-masks-onboard_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "de60914decc4b0f85d815d8bebe8489da10c83d4edb8ef135ce06d095f9a2396"
 
 [[test]]
@@ -14841,6 +14942,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-onboard.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "62d84a62495fe7b25c5c8f0c69886e0802918f51074c88cd1eded7de1787b725"
 
 [[test]]
@@ -14849,6 +14951,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-phonehub-svgo-onboard_min.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e692d6d1d35a5e3aa8f280ff18da3ab0da2bbcff773898bd37aeede2f2c5aad7"
 
 [[test]]
@@ -14857,6 +14960,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-prolevels-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "92d59bb1c06ee9299ea76c21739d52f699e46bccd9d07ad9758763108d1a9a71"
 
 [[test]]
@@ -14865,6 +14969,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-puckerbloat-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d2619d41752552eb172cb2ae2ee6692f167e8d4d791c4cbbcbbb3a3985039281"
 
 [[test]]
@@ -14873,6 +14978,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-radial-wipe-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d09ff708156578127803143fd77f6e651a03528286a5ed61bfef3fc0430ed7e7"
 
 [[test]]
@@ -14881,6 +14987,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-repeater.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "fb2e8bd708ed7fed18f2ce6050480ef85288f02603b8f1cbb4849101773fbd68"
 
 [[test]]
@@ -14889,6 +14996,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sharpen.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3e3943abf04a5243b50cf2e07eb4d987c863a1e084e6909e68a0701108ac3620"
 
 [[test]]
@@ -14897,6 +15005,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-shift-channels-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "9faf3f8146a7c525a56f1554c746193f12112539514c2d916f7f194f17f2b964"
 
 [[test]]
@@ -14905,6 +15014,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-shift-channels-fullon-alpha.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "5ec0d8c430a184a79fddba185dbf772fd2f24c4ad0ba38afc0967a110574e0d2"
 
 [[test]]
@@ -14913,6 +15023,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-color-filter.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f7586f770efc5212cfa3af04bf2395a4bc0340bd448c1888c57e04f91970918b"
 
 [[test]]
@@ -14921,6 +15032,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-effect-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7d80c4fdc183cf20bac901e572169a466dbcb66c379866a2040a8be24d7b4a74"
 
 [[test]]
@@ -14929,6 +15041,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sksl-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "ca00065ff6d9f6b9948e1c0c1fa5170d385c8d2ce643252bfb008aaef946a2ec"
 
 [[test]]
@@ -14937,6 +15050,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-slots.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2407e489013bd68efca0dbbb4ce720b0d22988536cbce95cef1d6292fe02d6e2"
 
 [[test]]
@@ -14945,6 +15059,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-spatial-supernormal.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2866dfb1dbd02d839f5d7c58d5970c6b3e2681313e9bdf76c22381b3f4783fad"
 
 [[test]]
@@ -14953,6 +15068,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-controls.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f9fa825e2b2300b52da3881feedb8c767b9744dbeb26448324f614bf7df6a6e4"
 
 [[test]]
@@ -14961,6 +15077,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "dab704ed71b413f2c46c4724480a81fdd20949d5fcf1755f06da8b0596e6513a"
 
 [[test]]
@@ -14969,6 +15086,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-lighting-types.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "52d09690b3a84022aff5e5a501281bd942d414099b28b0ea177f9bfd0912a1b0"
 
 [[test]]
@@ -14977,6 +15095,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-lighting.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c6e6c964c50b3c6d7373a21c7365617549719d9752d47fcef2a89c9cee09cdeb"
 
 [[test]]
@@ -14985,6 +15104,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-sphere-transparecy.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e0f0193b4dfa05054a4708f69dc2ddc4ee71e9a9750a5a0eb8b427ad8e0dc301"
 
 [[test]]
@@ -14993,6 +15113,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-allcaps.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e4dd8609d3fb688f979cac157391965242153c512f63539d74bd9715cbd71576"
 
 [[test]]
@@ -15001,6 +15122,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-01.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2052888f189222d64e005a16fd76c06aac5c67cf4a1dbaa64f9127d2f046dd83"
 
 [[test]]
@@ -15009,6 +15131,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-02.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "ce30b4fa882e2547f0c106d450fb9d9518bf0faf08cfa5d5de53cedbadc15642"
 
 [[test]]
@@ -15017,6 +15140,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-03.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "cd6540d94817cbeb4bb565bacd86e0d4be6495382925369ad2704a4396bbdd4e"
 
 [[test]]
@@ -15025,6 +15149,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animatedglyphs-04.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "618633cb8629f9aac993902636862c2ab0d7a8bd009e6262007c4d79b96722f6"
 
 [[test]]
@@ -15033,6 +15158,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-1.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "15f7481c1f9093852c8d7535c2645b5be6a8c382360601ff72d6d3551ef01e26"
 
 [[test]]
@@ -15041,6 +15167,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a01eb814c3a97a9acbbe274c75c18ace042b7bfb097971e2744edb012f7f3d06"
 
 [[test]]
@@ -15049,6 +15176,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-3.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "ed3d721cc6ef9dcef00c4176f035144eb78b91b30cdc47fe729a73993ce6da13"
 
 [[test]]
@@ -15057,6 +15185,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-4.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "91e1d59ac580855d582ba690c834774174a4b726b6afb0ce9c5e04407df2244a"
 
 [[test]]
@@ -15065,6 +15194,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-5.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "5dc66372e0653ce2bc6832e3f4f129deecf7ea418d10a1d8e0d82fdc727d0f77"
 
 [[test]]
@@ -15073,6 +15203,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-6.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "306cc9478b2385010c5e06bd1a9b4a7ba98e60c8cc9c4309ab27a55c91c6a78c"
 
 [[test]]
@@ -15081,6 +15212,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-7.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4da3c375861eca9f15402b4517ddaf4d89a62fb9b1ead5c141109f09fa208dee"
 
 [[test]]
@@ -15089,6 +15221,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-8.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "fb7e0b68ae2cb3e66ff16f6bf7a43e5665d42ea529c6dfa11cc0b65b634b375e"
 
 [[test]]
@@ -15097,6 +15230,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-fillstrokeopacity.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "70a20622fd397607fb9aa63e1957b107156f0b9103072b3e5306ad5a914facbe"
 
 [[test]]
@@ -15105,6 +15239,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-linespacing.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "b37864ce5c800d4d882fd2fa6c2af8c2f006115c2cc5c4605f36ca45e39721f5"
 
 [[test]]
@@ -15113,6 +15248,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-opacity.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "63d3d83d89e1843c8c658c449b75286c97ae51f6212892816c158896bcb341f2"
 
 [[test]]
@@ -15121,6 +15257,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-1.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d3c7a6a499865fe13cf1af87e31aed20084f7836a46cb6a2b09bd95d1f407f6a"
 
 [[test]]
@@ -15129,6 +15266,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-randomize-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "71b08657303646319748734015d967f8d11c407f1dbe0ee34ae1342bd48d796f"
 
 [[test]]
@@ -15137,6 +15275,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-animator-strokewidth.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2664952feaa75a0fb6ff47af983554e0ce9ad3a791706505dab2a0aa2a8eff4c"
 
 [[test]]
@@ -15145,6 +15284,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-baseline-shift.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f3dfae7eaaac3abc3f36fa1e140c2b03540489eb54b2348baaa43a3c5265f116"
 
 [[test]]
@@ -15153,6 +15293,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-blur.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6c5f419cf0f56bb451a081969bd541498c6542c65612835050f1e00d32267fbd"
 
 [[test]]
@@ -15161,6 +15302,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-emptylines.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "980bc57ccb818416990857100372c68d0b50ae43886fa99b6948d56d789f2d86"
 
 [[test]]
@@ -15169,6 +15311,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-fill-over-stroke.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d5e3732854a3044334425a1879048117d4d569af38de11bd39fa62136ee90add"
 
 [[test]]
@@ -15177,6 +15320,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1a438bd4cb8d68c2107432f407f598e6e5aab7ee471527ba6dfd1ec3ab865cad"
 
 [[test]]
@@ -15185,6 +15329,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-grouping-alignment.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "366d2012e10800920407b596957967c30dd65a03ee30e9871fb721dd1ef09bca"
 
 [[test]]
@@ -15193,6 +15338,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-perchar-3d.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e205cf79803ee5d87a6579bf75abd83e3ea152d2cf908a019ff5274a5f7393aa"
 
 [[test]]
@@ -15201,6 +15347,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-downscaletofit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "55027de052d10486a660d595ce3985a5b47fc341dd5d147e0b2e3ac56a08137c"
 
 [[test]]
@@ -15209,6 +15356,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-pointmode-scaletofit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "57c30517cb506ecd8a326b7ba0566e4875ceeac8c3036baaf0a2e4ad2803fc1e"
 
 [[test]]
@@ -15217,6 +15365,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-resize-to-fit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e58f6358691a6d39f1388504ee4273dd6ac6f9c8d35b9fd26f5a02751151d822"
 
 [[test]]
@@ -15225,6 +15374,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-rtl.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4dcabb6e61e4db8381354580f0a19ec29c9152538b0d56258d9daa79ac2c5062"
 
 [[test]]
@@ -15233,6 +15383,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-maxlines.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "abf51a43af965372f72b83be7cceb64f7b8ff843fba63ea2d369ddd28f2b0cdc"
 
 [[test]]
@@ -15241,6 +15392,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit-minmax.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f2f5d1cc0109568a726569af3698fc649e0d12b6254c49bc66e8973e4c508edf"
 
 [[test]]
@@ -15249,6 +15401,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-scale-to-fit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "db02b67c21e9797bd4f7303bbabf692834a3ecfc4976e9a7e498ada0df2319c0"
 
 [[test]]
@@ -15257,6 +15410,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokejoin.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "28d59b8bd69d9a548dc2d1ac4d21a7def41cb8c86de6b3081f73d43cfafe7cd4"
 
 [[test]]
@@ -15265,6 +15419,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-strokescale.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "19d00eadc8407f35ec80e2e4072fa74e24cb267f176c519d6256c7eab43847cc"
 
 [[test]]
@@ -15273,6 +15428,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-tracking.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "8ca8690deb805422b1ccbd2ef3bf0e992943c69c19893800faf28ef0e063be3b"
 
 [[test]]
@@ -15281,6 +15437,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "8f41d4978e57430441e5e659dd10c5103b3839c161f4236bf5d6bcbce3356f4f"
 
 [[test]]
@@ -15289,6 +15446,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-bottom.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7fd6536fdaf91a08f69b022f17710fd7bb19c42c9ae6d4609cf28c1e03c9bf45"
 
 [[test]]
@@ -15297,6 +15455,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-scaletofit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1635414e999882d1b04b98b17f94976ca500cde87e88efcd4fda1a06a8ec9fee"
 
 [[test]]
@@ -15305,6 +15464,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "f0e522d1000efa71f9d174c1e17540f31480de78dc6a4937eef78318a06e771c"
 
 [[test]]
@@ -15313,6 +15473,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign-visual-scaletofit.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c7863915ebfca07f24e018645aa3656835f840fa7a7d0f434b156aed13415ce8"
 
 [[test]]
@@ -15321,6 +15482,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-valign.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3fbbe4222ced18c80c543a618f89036fd97e8a2a2e811f72272b80e426cb8345"
 
 [[test]]
@@ -15329,6 +15491,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-variations.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "76bfcdd62ad15572dca871099e028e80ccc6e085517dc18a1557fbea5305f432"
 
 [[test]]
@@ -15337,6 +15500,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-vertical-clip.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "edfe24823850d67004addfa6ab9f8c5b81e19cd69fad54c939019a839253420a"
 
 [[test]]
@@ -15345,6 +15509,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-whitespace-align.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e7d18544a99b59444099ba606b285632eff81720e9e56745de32f940f1a8f72f"
 
 [[test]]
@@ -15353,6 +15518,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-text-words-linebreak.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e25e55fee86b20ebaeb3175dbbed56ae7a36444d936263272e2acf2e76a2d22e"
 
 [[test]]
@@ -15361,6 +15527,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-01.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "cf9ae7caa436232c8e0ae648b3a3d18a498820145700cef95125082c99cbdd03"
 
 [[test]]
@@ -15369,6 +15536,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-02.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "7c0003acbdac15474776b66da9284cdf32f5fa706c0bd73e8a0367cbf865bec4"
 
 [[test]]
@@ -15377,6 +15545,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-03.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "cef31b7dce69146ab048ef1d7851f6ad6fcaa89eae3afb6e3bf587e8a9730de5"
 
 [[test]]
@@ -15385,6 +15554,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-04.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "5efe7c7d8a1503bee69b633a05daa851b26f54dba2506dfd09ab125fb5b1e065"
 
 [[test]]
@@ -15393,6 +15563,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-05.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "3a62f6e220d2650596fcc979ea801a6ab8429446bb6e1248bf99eb7d0d58d310"
 
 [[test]]
@@ -15401,6 +15572,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-01.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "16c0840a09ff15b54b1f49cec6905a6f87a778a1ea9896bd832f46c96cab1534"
 
 [[test]]
@@ -15409,6 +15581,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-02.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c2187abfe4271392c42af1ff37e642dd42887b060fe08b1edc3278ee44b67555"
 
 [[test]]
@@ -15417,6 +15590,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-paragraph-03.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "aa91eb33dde00df259657a1ca9fc4e987a9634616113744e10405d4619dea520"
 
 [[test]]
@@ -15425,6 +15599,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-textpath-tracking.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "08fcc3ab9be1a97d0db64b4d85ba68250e14ebdb948db84b009e77a751b938b1"
 
 [[test]]
@@ -15433,6 +15608,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-threshold-compositing.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "d0dbaa1543412ce26d08e16edb84871e46c787fd9f554bc626ff9ad6a5bb5890"
 
 [[test]]
@@ -15441,6 +15617,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-threshold-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6942daee62f50e8135c5ebea173feddfaf2f79d3e39b01aeec24d36dab5f2c69"
 
 [[test]]
@@ -15449,6 +15626,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-time-reverse.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "a26fbec98b32448ac66475374c7ccc8dd2b99dcff94718a3e779fc2355a6d426"
 
 [[test]]
@@ -15457,6 +15635,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-transform-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "e6f63c2ed11848309142595325fad241f2d5a9db4eb38efb9d5a8cd3cb75480e"
 
 [[test]]
@@ -15465,6 +15644,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-transform-skew.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "deddc705acae29cc5b72aeffefd1f5e73f744bb92d6817cf6622214432246209"
 
 [[test]]
@@ -15473,6 +15653,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-trimpath-fill.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "61cec8ca78f2674a218d9529b09c150fad0c752f060db214e439f026fbeda5b3"
 
 [[test]]
@@ -15481,6 +15662,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-trimpath-modes.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "1e83725f44fa022c66f4da04fc19548cd5f9e522aee0e58c1e0378fe833f1246"
 
 [[test]]
@@ -15489,6 +15671,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-tritone-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "0db1e46e4186e34387f9f562ddb3e8f60155fd96006857d3ec6ab51ddc9aa977"
 
 [[test]]
@@ -15497,6 +15680,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie-venetianblinds-effect.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "2b942401f484276447cecc6e606cf66ebdf513d40268e7014579f91746c71dca"
 
 [[test]]
@@ -15505,6 +15689,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_fill_rule.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "afa8e6341f88f89acdad45955dcef6e3df6426569a4be0007016dc9d76f03348"
 
 [[test]]
@@ -15513,6 +15698,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_1.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "4be626cdd6c9570ee4b37bff7821c03d19ea9639daf76a3973b9b878510df6eb"
 
 [[test]]
@@ -15521,6 +15707,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_2.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "ec544c771f040ea6b2760fdd05732e581efb66945f8996983ae75c7825e52e91"
 
 [[test]]
@@ -15529,6 +15716,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_multiframe.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "c98e867305a75528d8f163ce472fd11af0cda12a4464ee85b13ec25afac9ce7f"
 
 [[test]]
@@ -15537,6 +15725,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_search.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "383126fef6cf995ffa3f99484680470f6f51b3d2c74cf3540b0bf8707905585f"
 
 [[test]]
@@ -15545,6 +15734,7 @@ kind = "dm-lottie"
 source = "resources/skottie/skottie_sample_webfont.json"
 module = "skottie"
 status = "todo"
+reason = "needs-oracle: no DM --src lottie goldens (oracle ran --src gm only)"
 span_hash = "6a91ac6ca704e7ecbc58b4042a7e2b3071f398bb03a9dec22718f19e4ff9627e"
 
 [[test]]
@@ -15824,7 +16014,7 @@ id = "fuzz/FuzzSkParagraph.cpp::SkParagraph"
 kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzSkParagraph.cpp#L262-L288"
-module = "core"
+module = "paragraph"
 status = "todo"
 span_hash = "a871566365cd66d25552b4f1380950664ab8ab49d06ef30da358ccb586cce942"
 
@@ -17524,8 +17714,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L239-L239"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "48e8dbc53f707bb9689eef37f8523cde808d0fd65dfb1b6a7c89631e5c7ac91d"
 
 [[test]]
@@ -17570,8 +17759,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L184-L184"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "2856bdad8b9554dd449258212601b5c921e4eb0c96f14bb82e9b30589671315e"
 
 [[test]]
@@ -20412,8 +20600,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L421-L421"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "239e2354257a78b085fb557cfb20e47a2c0a43405bbec3aec84ce795ba963b15"
 
 [[test]]
@@ -20422,8 +20609,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L422-L422"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "0b8bb0448b554627361bf5ce88e34b2828aabc8a98455779df6f3e5cad8d6619"
 
 [[test]]
@@ -20432,8 +20618,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L420-L420"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c5bfc71e5da3f87e9d64cb8035206bfd6b62072a49187c9444d73bb338b18770"
 
 [[test]]
@@ -20442,8 +20627,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L418-L418"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "cdd14bbe1977cc2726ea4b03ea0a9d58d492bcf906f26d0c0eabbdf1d202feaf"
 
 [[test]]
@@ -20452,8 +20636,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L419-L419"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c0ccc875c6b30aa95defbf120b3fc23ed45bf129c78e64a53f00bfc6e450d59d"
 
 [[test]]
@@ -22685,8 +22868,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mixedtextblobs.cpp#L168-L168"
 module = "text"
-status = "todo"
-reason = "PlanetTypeface() falls back to the Planet SVG family (TestSVGTypeface, T20, not ported)"
+status = "passing"
 span_hash = "77e1a1444265579e7529b5d780c6bc53a58d34d147d93bfaca7db412679f09ea"
 
 [[test]]
@@ -24179,8 +24361,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L243-L243"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "8d29721a5104d21bf28fa451ca4c442937c40c7330e235185ee654fb11d2fa00"
 
 [[test]]
@@ -24225,8 +24406,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "failing"
+reason = "565/f16 differ in a few pixels of the smallest perspective glyphs; see notes/gm-scaledemojiperspective-test.md"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
@@ -24271,8 +24452,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L244-L244"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "0e3bb17f46f8dd2c3ce29b0dc771ddedf50a1af4ce82e03e75fad8b770da9c8f"
 
 [[test]]
@@ -24281,8 +24461,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji_rendering.cpp#L114-L114"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "3f1481afff68eb3b6cf60531b39a4792bddd60cbca90bb3616a9bb5e57349168"
 
 [[test]]
@@ -26371,7 +26550,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Shaper.cpp#L520-L586"
 module = "skottie"
-status = "todo"
+status = "excluded"
+reason = "CoreText shaper test (SK_SHAPER_CORETEXT_AVAILABLE, an Apple platform API); not built by the oracle and skia-rust has no CoreText backend"
 span_hash = "e1daaf6f04a2f22304edfb4566f3473d1732c106aa9ad0a00cd47ef7f678ea75"
 
 [[test]]
@@ -28445,7 +28625,8 @@ kind = "unit"
 macro = "UNIX_ONLY_TEST"
 source = "modules/skunicode/tests/SkUnicodeTest.cpp#L105-L116"
 module = "unicode"
-status = "todo"
+status = "excluded"
+reason = "libgrapheme implementation test (SK_UNICODE_LIBGRAPHEME_IMPLEMENTATION); skia_use_libgrapheme is false in the oracle build (modules.md §1.1)"
 span_hash = "f6968273caf2ae922ec6e2c3f2f6366399f098121e0588d294d5de6186915a82"
 
 [[test]]
@@ -28491,6 +28672,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Filters.cpp#L16-L34"
 module = "svg"
 status = "todo"
+reason = "needs the SVG filter elements (M14), not constructed by the M13 core"
 span_hash = "98fd58d115a9e860f54e50fb4d840746382c24bc161a514cdd4ee50f76449519"
 
 [[test]]
@@ -28500,6 +28682,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Text.cpp#L21-L199"
 module = "svg"
 status = "todo"
+reason = "needs the SVG text elements and shaper (M15), not constructed by the M13 core"
 span_hash = "a33e1381b25f49449d038ee66e8180167e807254d7934610a61a3891a38c473c"
 
 [[test]]
@@ -28644,8 +28827,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and WebP decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
+status = "passing"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -29096,7 +29278,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L52-L87"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "281ecb63a396c9edc91ce141626a54220b00c9abc54d848acad3cb0339aa0a08"
 
 [[test]]
@@ -29105,7 +29287,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L107-L117"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cb6237ee364bc03bdb0dc3fa36a561fce59be12d543abc888ad0f1c26cbcab1c"
 
 [[test]]
@@ -29114,7 +29296,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L121-L197"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7d0efcb54705e90da8884fafa4550bf943a5ba581f38d46601aa29a17ca247df"
 
 [[test]]
@@ -29123,7 +29305,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L201-L264"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "225d1218d78bc65567ecd34831ff1c0aea6b1833bac9d3431e9de36729c6371b"
 
 [[test]]
@@ -30008,6 +30190,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L613-L654"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources), which is compiled only under SK_ENABLE_SKOTTIE (CodecAnimTest.cpp#L609-L656); Skottie is not part of this port"
 span_hash = "20b0d2a1236cc71076b533990a89d9c90a6c2b9911f11dcfb1dfa4ea85712cee"
 
 [[test]]
@@ -30026,6 +30209,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L99-L515"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: a table-driven check of frame metadata over GIF, WebP, JPEG and PNG (every decoder it uses exists; the DNG row is RAW, not built); needs its own pass (CodecAnimTest.cpp#L99-L515)"
 span_hash = "1456d17b53798cf014215b7285c3571da7a249998a971ea920234e7c90689380"
 
 [[test]]
@@ -30043,7 +30227,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L591-L607"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7b3c44657f3d5020809b8c8565f5426c8a56b534a4c7572ba19a457b5c12f15a"
 
 [[test]]
@@ -30061,7 +30245,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L399-L450"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "66ce94c7fdf35b02b922726132bbe869514e6fdd1625b75d246ee7195ec7ab1e"
 
 [[test]]
@@ -30079,8 +30263,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L476-L509"
 module = "codec"
-status = "todo"
-reason = "also covers WebP, JPEG, GIF, BMP and WBMP"
+status = "passing"
 span_hash = "59a690f215236cc0bfda12750f78cd4418ef1429822705af0d34cb4a9a73d3c1"
 
 [[test]]
@@ -30090,7 +30273,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
 status = "todo"
-reason = "the PNG cases are disabled in Skia (#if 0); the rest decode GIF"
+reason = "test_partial (CodecPartialTest.cpp#L76-L137) calls getFrameCount between incremental decodes; the Rust incremental-decode guard (codec.rs IncrementalDecode) borrows the codec, so that call cannot run while a decode is in progress. Needs an API decision on the guard (docs/design/codecs.md 5.1)"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -30099,7 +30282,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L227-L326"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "dbb1f33ab7e77a16503d162970678842bbb89ee99d2ff11016ab30e3ea5aefb5"
 
 [[test]]
@@ -30109,6 +30292,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L159-L172"
 module = "codec"
 status = "todo"
+reason = "test_partial calls getFrameCount between incremental decodes, which the incremental-decode guard borrow forbids (see Codec_partial)"
 span_hash = "951edd5d75ba3e18683915cee77e015b6411e6149dd3713a237b43a4771e8f34"
 
 [[test]]
@@ -30117,7 +30301,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L176-L225"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1cab08b88a5d3a609611ec178a2975651af3f414c59089c01ff48661f0a162c7"
 
 [[test]]
@@ -30127,6 +30311,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L368-L372"
 module = "codec"
 status = "todo"
+reason = "test_interleaved calls getPixels while an incremental decode is in progress and expects incrementalDecode to then fail with kInvalidParameters; the incremental-decode guard borrows the codec, so getPixels cannot run in between (see Codec_partial)"
 span_hash = "8aa8cb62cb4b05d26c475f5f4e1b61af99a8fe942d293becf36f5a10088c818d"
 
 [[test]]
@@ -30135,7 +30320,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecRecommendedTypeTest.cpp#L23-L43"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "97820c70071424c9eae913fadb8a8c410b39449929a221516742f9035e3a9562"
 
 [[test]]
@@ -30180,8 +30365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L818-L847"
 module = "codec"
-status = "todo"
-reason = "covers JPEG and RAW as well as PNG"
+status = "passing"
 span_hash = "b8af011d0296dbf4a71e41480fb671673f98c8a13aac56c7089cc197cbe69350"
 
 [[test]]
@@ -30199,7 +30383,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1834-L1838"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "fecd4476d0102f374a9aee3dd06eef2bddea85881b6b6554c674725c03d1f1ec"
 
 [[test]]
@@ -30226,7 +30410,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2398-L2400"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "compiled out: the registration sits inside #if (0) (tests/CodecTest.cpp#L2308-L2401); it only generates the golden files for Codec_RoundTripColorXform"
 span_hash = "c076ae311a737a010b0478519e4ce3ac5701c4ffc2361b943c1092ec7577e9f1"
 
 [[test]]
@@ -30235,7 +30420,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1753-L1787"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9f482cb8eed28000ca8129f010f42a485f712df9fbd1aea3a8fb56beeb28a54f"
 
 [[test]]
@@ -30253,8 +30438,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1642-L1661"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and GIF decoders for many-progressive-scans.jpg and skbug5887.gif"
+status = "passing"
 span_hash = "13996169337ad20fa6107ae03de3ceacba68d2556d931abbde772bf0fe97bb8a"
 
 [[test]]
@@ -30264,6 +30448,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: needs make_gradient_bitmap (raster surface with a linear gradient shader read back) and the skcms conversions, compared with the C++ tolerances of 1 and 20 (CodecTest.cpp#L2444-L2519)"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -30300,7 +30485,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1486-L1529"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f7e925c605e459f17dee0531c1b68499076d7156fdd7b7b1e9a39b3573e561e5"
 
 [[test]]
@@ -30345,8 +30530,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2139-L2161"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported yet); the GIF decoder itself is ported"
+status = "passing"
 span_hash = "643e8e092078997c804740246efdf727489107dc5e5a1f6a62cef6dc145bf9c5"
 
 [[test]]
@@ -30409,7 +30593,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2045-L2061"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "0273a5ff6afe062142a04534e94207b89f1802410e33776186015d95bb4330cc"
 
 [[test]]
@@ -30418,8 +30602,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L753-L772"
 module = "codec"
-status = "todo"
-reason = "covers several formats (JPEG, WebP, BMP, ICO, GIF)"
+status = "passing"
 span_hash = "85f96953aad5dedcc5b663c34a82fd4241acfcd867b2a00d7e14f044fe98a8a7"
 
 [[test]]
@@ -30428,8 +30611,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2004-L2043"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG decoder and getICCProfile"
+status = "passing"
 span_hash = "6da5c76d1a2f48a7812a21eb606b4a42f0997451e66460ea77eba8976970a27d"
 
 [[test]]
@@ -30448,8 +30630,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1885-L1896"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder and GetResourceAsImage"
+status = "passing"
 span_hash = "17a56816ce56c394365e82cc9703f21f94b3786661f6423da7b5f3c4adfc297a"
 
 [[test]]
@@ -30477,7 +30658,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1294-L1333"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f9764c264e3c0eaf0006b5ee8f71ab1f976002c01706c8116294959f0c9abbb0"
 
 [[test]]
@@ -30542,8 +30723,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1409-L1440"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder"
+status = "passing"
 span_hash = "5a2560b9b4f002e2f52b606c822204032c58ba009fc2b002010fe76f9ff6fc86"
 
 [[test]]
@@ -30661,7 +30841,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2614-L2644"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ab1b08d4ae34b6cc479f07a78a95595ee5619adfc33060ec38f05d567eb9b333"
 
 [[test]]
@@ -31002,7 +31182,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L96-L200"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "4e25fc4d29a89a5e9fb0f1a94bb3754c966dbb0e1cf4661a823e3606bba56a29"
 
@@ -31012,7 +31192,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L240-L248"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "562a1196d5162b20cf50da0b6c6f0cff08e3678e54280aff046ee6d6a2ba9099"
 
@@ -31022,7 +31202,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L230-L238"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "2f10b2ff28e14b0e210668fe29c2df7e3c47a93893fa48711ba494ce238f2289"
 
@@ -31041,7 +31221,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L202-L228"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "522cdb76b6665d602c9d4b4d3a49d222f288c74d2e9ef1a5a464950cf643b572"
 
@@ -31051,7 +31231,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L381-L420"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "65482ef3c6f86f17b99ed88e10a18e54215ba22dbcda08423698ab449c598e31"
 
@@ -31061,7 +31241,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L422-L452"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "674dfa64615e2f74d402e7cf09344344c679d4c01b62ee71a1ec8ee756a211ba"
 
@@ -31705,7 +31885,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EmptyPathTest.cpp#L172-L174"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c9b290ad64c76a21d2dd1c5f2d41be585d59d10df4ca9a66d007ef9dfdd639e"
 
 [[test]]
@@ -31796,7 +31976,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L715-L853"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7f1c6429f76a73fa789c93bc34e2427abecb1f5eaf3be4d98e88842b81d876f0"
 
 [[test]]
@@ -31814,7 +31994,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodedInfoTest.cpp#L22-L46"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "61c803e3093464c4699b0f1976d3b3ed20a760fa8cb159662b75d1d751c86821"
 
 [[test]]
@@ -31879,6 +32059,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -31888,6 +32069,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -31897,6 +32079,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
@@ -31905,7 +32088,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L42-L63"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "63f340303eac4db96eb88adb22ca13f294bfee6c0561897c78f4d4f8dc239f12"
 
 [[test]]
@@ -32290,6 +32473,7 @@ macro = "DEF_TEST"
 source = "tests/FitsInTest.cpp#L23-L89"
 module = "core"
 status = "todo"
+reason = "uses C++ enum types as SkTFitsIn arguments (E, TestEnum_t, enum-to-int and int-to-enum); skia-rust has no implicit enum/integer conversion to port these cases against yet"
 span_hash = "7e323d0a651df2df9641b94e7793bd220462ed7b5187aa87ebee9cc26fd157f6"
 
 [[test]]
@@ -33136,6 +33320,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L317-L343"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f07d5af87da0ee7092ca314bcc520c281e60d56eec0bcf5c0458e5a91083ca9c"
 
 [[test]]
@@ -33145,6 +33330,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L188-L275"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "ebed41d01008bef29f9417bdb74d0e70499d947424ac0fb8373baac783a632d8"
 
 [[test]]
@@ -33154,6 +33340,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L279-L314"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f29365c24ebe2ef0c8278e65eecfeaaf2c6f0b9aec6cb031460622c213e374fc"
 
 [[test]]
@@ -33163,6 +33350,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L99-L186"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "d2a6e4a04749bd85b199cc758c26edd3d93b9b4b8b54a609e54cd3e58de48d19"
 
 [[test]]
@@ -35699,7 +35887,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
 status = "todo"
-reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
+reason = "not ported in this sweep: needs the draw_image_test_pattern and assert_equal helpers and ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -35981,7 +36169,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
 status = "todo"
-reason = "decodes images/mandrill_128.png and needs SkPngEncoder (codecs not ported)"
+reason = "not ported in this sweep: needs ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
@@ -36010,8 +36198,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IndexedPngOverflowTest.cpp#L32-L40"
 module = "codec"
-status = "todo"
-reason = "draws onto an SkSurface::Raster canvas, and core has no surface yet"
+status = "passing"
 span_hash = "831f671f976e87477fe7664ed4f5f030454577776b530980c3d8db704c00deba"
 
 [[test]]
@@ -36029,7 +36216,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/InsetConvexPolyTest.cpp#L14-L110"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e073c8961b60956bffa79edf877cb41294e13ead9a72f67b11738a1b578c069e"
 
 [[test]]
@@ -36047,7 +36234,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IsClosedSingleContourTest.cpp#L11-L53"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "809374f75e3811b15edbfa5cc1731d587807e2e66a98b5947bcc6053148987a1"
 
 [[test]]
@@ -36111,6 +36298,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP writers, not ported"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36120,6 +36308,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L991-L1068"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP parsers, not ported"
 span_hash = "2d60cd60c3fc426cb379f0d0fd844964ab88bddf33c3cb0b05408926dc7eb962"
 
 [[test]]
@@ -36129,6 +36318,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap decoding (SkAndroidCodec gainmap accessors, GainmapInfo; docs/design/codecs.md C13), not ported"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36138,6 +36328,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap transcoding (GainmapInfo, MPF writer; docs/design/codecs.md C13), not ported"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36147,6 +36338,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap metadata (docs/design/codecs.md C13); the gainmap accessors are not ported"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -36156,6 +36348,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -36165,6 +36358,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L336-L426"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "f8199271ae2b0efed2315d5e4e600bb47b044fa20a5bb46b6e162cf4ab198022"
 
 [[test]]
@@ -36174,6 +36368,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L116-L175"
 module = "codec"
 status = "todo"
+reason = "needs the JPEG marker scanner for multi-picture and gainmap segments (docs/design/codecs.md 8), not ported"
 span_hash = "711305fa2b6db46e04f28bde7e1902b4b8839a27e621a51a8727be407cf87f20"
 
 [[test]]
@@ -36183,6 +36378,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L198-L334"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "7d371c40aae789a82d47ab8f61a5f5e9b96ee52fd3d4fdae947f69f7c86e1ef6"
 
 [[test]]
@@ -36408,6 +36604,7 @@ macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L777-L790"
 module = "core"
 status = "todo"
+reason = "ARM NEON only (vrsraq_n_u16/vrshrq_n_u16 under SK_ARM_HAS_NEON): skia_rust_simd has no NEON kernel for it and this is an x86-64 host, so it cannot be checked here"
 span_hash = "58f00a450b5d581c1553e08b8504acbc36d0df2d2729fd64185b5b0bcdd7b368"
 
 [[test]]
@@ -36534,7 +36731,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L31-L81"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8ab4b363cfae7d6bb92523a26c75700538fa5dbf2755cf5dcc09c1b673531de8"
 
 [[test]]
@@ -36543,7 +36740,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L83-L123"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0abe351d00c9b75c2e4e4e336d4050238fce98f8ac72e64c059e8b41a0fe6c98"
 
 [[test]]
@@ -36552,7 +36749,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L185-L244"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "38b536b78a907435c7ad240a5c9cff06a0d6a75b1afae8ff54efc62766e898c5"
 
 [[test]]
@@ -36561,7 +36758,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L125-L183"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "46c3883e6b6577b0d9c591df61c0395839741fe428d0698db907f4d26e7da39d"
 
 [[test]]
@@ -36570,7 +36767,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L246-L283"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f1b33cf103f02324bf1c40fbd580644fcfcb238c8a44090d54a0dbb6cdc2e1ef"
 
 [[test]]
@@ -36651,7 +36848,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MemoryTest.cpp#L12-L20"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_calloc_throw/sk_free allocator wrappers; Rust uses std allocation"
 span_hash = "d87a253ea55760a32fd7fcd44b5cd36cfb352555efb84aa4b48ba275e7cecacb"
 
 [[test]]
@@ -37271,7 +37469,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OffsetSimplePolyTest.cpp#L15-L204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a2820b0d2b1bca454cc4bb228df60bb993a956de2f5ee7c4136b465620892c7d"
 
 [[test]]
@@ -37320,7 +37518,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OverAlignedTest.cpp#L18-L26"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc_throw 8-byte alignment guarantee; Rust uses std allocation"
 span_hash = "f1cdeeadcc6ad1e7ff6d4718f1480013290798c4a6cee84f4d3b5ee45aeb9f77"
 
 [[test]]
@@ -37329,7 +37528,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFDeflateWStreamTest.cpp#L120-L178"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "b33073bac23007231af9613e0e5ffd00640a9a1234c6666f20ed4276c08dadba"
 
 [[test]]
@@ -37339,6 +37538,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L266-L278"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): beginPage() draws into an SkPDFDevice, and SkExecutor is not ported"
 span_hash = "7a01f0bf0182e220ef61eb02bd352ac751a3e41f6f5831c7a714902e3152b54c"
 
 [[test]]
@@ -37348,6 +37548,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L144-L154"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "660fecc38b4fff68978bb5e5990c1cca633dcf44a148f3b36f3691d1cb31bc5f"
 
 [[test]]
@@ -37357,6 +37558,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L135-L142"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "b955840561fb488214bdad8b97271a0f82b4a7cd9be0ca28e961faae000217d0"
 
 [[test]]
@@ -37366,6 +37568,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L249-L262"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "b7e50e9a126ca835dc3036213bd5d9f5514203fccb03098d597cf768ee87b254"
 
 [[test]]
@@ -37375,6 +37578,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L168-L212"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "24a88d3bbaf1e293e61565fdc5df8a343a1acceddc4ecbd7399d8c597bb036a2"
 
 [[test]]
@@ -37384,6 +37588,7 @@ macro = "DEF_TEST"
 source = "tests/PDFDocumentTest.cpp#L215-L244"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "c377d5c006ad4537e79da38e14458faf280f6567912b105fa469879f9416a8d1"
 
 [[test]]
@@ -37420,6 +37625,7 @@ macro = "DEF_TEST"
 source = "tests/PDFMetadataAttributeTest.cpp#L23-L68"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): the test draws through beginPage(), which needs SkPDFDevice"
 span_hash = "ad816d75ef7a2a826c90b051ef94fc80e0b92f2c0305db55c7e0578779de89f1"
 
 [[test]]
@@ -37446,7 +37652,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L501-L580"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "0b9b4207c8f2435e103401e39422e91915d7d7a56a5633da63b775905e0ebf30"
 
 [[test]]
@@ -37483,6 +37689,7 @@ macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L274-L279"
 module = "pdf"
 status = "todo"
+reason = "needs the PDF device (M25): test_issue1083 draws a glyph through a PDF canvas"
 span_hash = "5040f08710655cb75e4d29733ef954f679fec631c8c1612074b69ae3ace49909"
 
 [[test]]
@@ -37491,7 +37698,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L407-L417"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "061ea40ee135e83f45349fa5db2dbcf320b31dd3e4ac8c4e9158cd7bf3ba0cfb"
 
 [[test]]
@@ -37500,7 +37707,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L386-L404"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "a197a94198403f3c2564231885d70ebef6827c7663fa21a8875b3163935de879"
 
 [[test]]
@@ -37788,7 +37995,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParseColorTest.cpp#L168-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9b4ab7635cf6f3111d3a4a0e9eeb873c20c2a17bfa13ae6023306681ad819b1"
 
 [[test]]
@@ -40198,7 +40405,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L92-L158"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "095110dc93caa823137921edfa9856a10bf4bb7c326f3b3edf7f64b164ee6de8"
 
@@ -40208,7 +40415,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L170-L178"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "84d0ef1a863a0da5dc42f271a6a2075b3d3a4cdc99617775d2aaa823fe6312fe"
 
@@ -40218,7 +40425,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L160-L168"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "da3e909d9fe2094bffd345508acddb1aae30f8f795fda24057f5d80c56afb8c2"
 
@@ -41060,7 +41267,7 @@ id = "tests/RecordOptsTest.cpp::RecordOpts_MergeSvgOpacityAndFilterLayers"
 kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordOptsTest.cpp#L225-L362"
-module = "svg"
+module = "core"
 status = "todo"
 reason = "needs SkImageFilters::Blur and ::Picture and SkColorFilters::Blend (image/color filters are not ported; Phase 3)"
 span_hash = "a0485662140c50b6e4276b6c93c9b55cab7d89598b92b8fdb9e293b4ac920455"
@@ -41262,7 +41469,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L103-L106"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bd8918a18aedd5621dde131df0ef5444338191c839d48ff57ee8524c062c1b65"
 
 [[test]]
@@ -41289,7 +41496,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L108-L111"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6b88c040423cc48f1a0973b170d5d27018d2749c69b19248129436897ae84838"
 
 [[test]]
@@ -41352,7 +41559,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L440-L459"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "170c8c7cd10547478cfa032f00849c0717e77b83a862873c05a48d116071f930"
 
 [[test]]
@@ -42037,7 +42244,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L53-L82"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d065b85b07869b3d6c54c299ac785233fec8a734af4a64bd61aab62b872e4f95"
 
 [[test]]
@@ -42046,7 +42253,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L23-L51"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e8d90eb864c857a954bd136ae8a14ac1a5e643709ed57b1d1f69d6a8cba24433"
 
 [[test]]
@@ -42055,7 +42262,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L85-L135"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7afae3ff8bd66ba75200a9347213198ae9266b5a6bf8dbad55eb4274c6f5990c"
 
 [[test]]
@@ -42300,7 +42507,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ScaleToSidesTest.cpp#L16-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "85bdd27da399005bdceff6b437cf2b245d3f2b7e24d948d669962bfbc358c0e4"
 
 [[test]]
@@ -42951,7 +43158,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkDOMTest.cpp#L26-L84"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fba1729276169d3e225db40e2c2ca587bc771e3618e91865cf963d63d4b377cb"
 
 [[test]]
@@ -43440,6 +43647,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L46-L83"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "17c7dff2868b8ef936ffa8792c540914a5223158fe4a03005942c190c15ea008"
 
 [[test]]
@@ -43449,6 +43657,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L107-L161"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "942485a940b622aa2179a219f584336c11f7e24bc5e4ae1e855ef1dd74f37fe9"
 
 [[test]]
@@ -43458,6 +43667,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L19-L44"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "266ef4fcc105ea167b792d889f3b9e27bdd132903356022c28d162dd8bf9d456"
 
 [[test]]
@@ -49284,7 +49494,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L73-L120"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "needs the codec's SkSampler::Fill (src/codec/SkSampler.cpp), which is not ported yet"
 span_hash = "326883b46293b49ff187a9f91d5e857fb4530b2cdb448802ae2712ef677cb821"
 
@@ -49890,7 +50100,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/Time.cpp#L19-L61"
 module = "pdf"
-status = "todo"
+status = "passing"
 span_hash = "a5ba4ffe15b0c95201a5d2ec2d6ae441063d6e66dc762ce2f2572cb3608c2790"
 
 [[test]]
@@ -50226,8 +50436,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L717-L755"
 module = "text"
-status = "todo"
-reason = "needs ToolUtils::EmojiSample(kTest) (TestSVGTypeface, T20)"
+status = "passing"
 span_hash = "700ee7e8d34ea7a3e6fea13ae26d228684cba29da97a05bbb30e840f493e684f"
 
 [[test]]
@@ -50960,6 +51169,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L212-L252"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "43d702fa5d8ca7865f631de49075195e600569fa270a43288c90a3038f6de85f"
 
 [[test]]
@@ -50969,6 +51179,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L173-L182"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "4d790e257e2a241da9f8a95f8d75076941c09807092090b069d4e10aa77233ae"
 
 [[test]]
@@ -50978,6 +51189,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L195-L204"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "b4a6e72df58745be46dab3db1baf87510d550ac8e74e3d3f0df8b3c6af974a24"
 
 [[test]]
@@ -50987,6 +51199,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L206-L210"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "c7f78bcdfe860e5d2ce77dafc99b09ec8a826465b979cb44cc649c7d41264b04"
 
 [[test]]
@@ -50996,6 +51209,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L184-L193"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "d559d5808a9106cb8c13c44167125c720234e8aa2c9bdfdad201ae101f5f0f47"
 
 [[test]]

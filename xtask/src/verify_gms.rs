@@ -41,11 +41,22 @@ struct GmEntry {
 }
 
 /// The registry key (`gm::dashing::Dashing5GM(true)`) for a manifest GM id
-/// (`gm/dashing.cpp::Dashing5GM(true)`), or `None` if the id isn't a GM in `gm/`.
+/// (`gm/dashing.cpp::Dashing5GM(true)`), or `None` if the id isn't a GM in `gm/` or in a
+/// module's `gm/` directory. A module GM (`modules/skottie/gm/SkottieGM.cpp::SkottieWebFontGM`)
+/// is `gm::modules::skottie::skottie_gm::SkottieWebFontGM`, the module directory name as in the
+/// unit-test paths (`modules::svg::…`).
 pub fn gm_key(id: &str) -> Option<String> {
     let (file, name) = id.split_once("::")?;
-    let rest = file.strip_prefix("gm/")?.strip_suffix(".cpp")?;
-    let mut parts = vec!["gm".to_owned()];
+    let file = file.strip_suffix(".cpp")?;
+    let (mut parts, rest) = if let Some(rest) = file.strip_prefix("gm/") {
+        (vec!["gm".to_owned()], rest)
+    } else {
+        let (module, rest) = file.strip_prefix("modules/")?.split_once('/')?;
+        (
+            vec!["gm".to_owned(), "modules".to_owned(), snake_case(module)],
+            rest.strip_prefix("gm/")?,
+        )
+    };
     for part in rest.split('/') {
         let snake = snake_case(part);
         parts.push(if snake.starts_with(|c: char| c.is_ascii_digit()) {
@@ -146,6 +157,15 @@ mod tests {
             gm_key("gm/asyncrescaleandread.cpp::images/dog.jpg#2").as_deref(),
             Some("gm::asyncrescaleandread::images/dog.jpg#2")
         );
+        assert_eq!(
+            gm_key("modules/skottie/gm/SkottieGM.cpp::SkottieWebFontGM").as_deref(),
+            Some("gm::modules::skottie::skottie_gm::SkottieWebFontGM")
+        );
+        assert_eq!(
+            gm_key("modules/skparagraph/gm/simple_gm.cpp::ParagraphGM(kUseUnderline)").as_deref(),
+            Some("gm::modules::skparagraph::simple_gm::ParagraphGM(kUseUnderline)")
+        );
+        assert_eq!(gm_key("modules/skottie/tests/Text.cpp::Skottie_Text"), None);
         assert_eq!(gm_key("tests/PointTest.cpp::Point"), None);
     }
 

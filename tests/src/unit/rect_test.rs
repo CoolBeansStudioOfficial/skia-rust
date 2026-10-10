@@ -2,16 +2,17 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/RectTest.cpp (chrome/m156)
-//
-// Not ported yet (manifest stays `todo`): `Rect`, `Rect_grow` (SkBitmap, SkCanvas, SkPaint),
-// `big_tiled_rect_crbug_927075` (SkSurface, SkCanvas). Their helpers `has_green_pixels`,
-// `test_stroke_width_clipping` and `test_skbug4406` go with `Rect`/`Rect_grow`.
 
 #![cfg(test)]
 
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
 use skia_rust_core::floating_point::is_finite;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::m44::{M44, V3, V4};
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::rect_priv::subtract;
@@ -22,8 +23,100 @@ use skia_rust_core::rect::rect_priv::{
 };
 use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::scalar::{SCALAR_INFINITY, SCALAR_MAX, SCALAR_NAN, SCALAR_PI, scalar};
+use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_raster::surfaces;
 
 use crate::{Reporter, def_test, reporter_assert};
+
+// Port of: tests/RectTest.cpp#L29-L39 (chrome/m156)
+// The C++ reads the test bitmap while the canvas that draws into it is alive; here the same
+// pixels are read through the canvas (`peek_pixels`) for the same reason.
+fn has_green_pixels(canvas: &Canvas) -> bool {
+    let peeked = canvas.peek_pixels().expect("pixels");
+    let pixmap = peeked.pixmap();
+    for j in 0..pixmap.height() {
+        for i in 0..pixmap.width() {
+            if pixmap.get_color((i, j)).g() != 0 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+// Port of: tests/RectTest.cpp#L41-L63 (chrome/m156)
+fn test_stroke_width_clipping(reporter: &mut Reporter) {
+    let mut bm = Bitmap::default();
+    bm.alloc_n32_pixels((100, 10), None);
+    bm.erase_color(Color::TRANSPARENT);
+    let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_stroke_width(10.0);
+    paint.set_color(Color::new(0xff00_ff00));
+    // clip out the left half of our canvas
+    canvas.clip_rect(Rect::from_xywh(51.0, 0.0, 49.0, 100.0), None, None);
+    // no stroke bleed should be visible
+    canvas.draw_rect(Rect::from_wh(44.0, 100.0), &paint);
+    reporter_assert!(reporter, !has_green_pixels(&canvas));
+    // right stroke edge should bleed into the visible area
+    canvas.scale((2.0, 2.0));
+    canvas.draw_rect(Rect::from_wh(22.0, 50.0), &paint);
+    reporter_assert!(reporter, has_green_pixels(&canvas));
+}
+
+// Port of: tests/RectTest.cpp#L65-L101 (chrome/m156)
+fn test_skbug4406(reporter: &mut Reporter) {
+    let mut bm = Bitmap::default();
+    bm.alloc_n32_pixels((10, 10), None);
+    bm.erase_color(Color::TRANSPARENT);
+    let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+    let r = Rect {
+        left: 1.5,
+        top: 1.0,
+        right: 3.5,
+        bottom: 3.0,
+    };
+    // draw filled green rect first
+    let mut paint = Paint::default();
+    paint.set_style(Style::Fill);
+    paint.set_color(Color::new(0xff00_ff00));
+    paint.set_stroke_width(1.0);
+    paint.set_anti_alias(true);
+    canvas.draw_rect(r, &paint);
+    // paint black with stroke rect (that asserts in skbug.com/40035555)
+    // over the filled rect, it should cover it
+    paint.set_style(Style::Stroke);
+    paint.set_color(Color::new(0xff00_0000));
+    paint.set_stroke_width(1.0);
+    canvas.draw_rect(r, &paint);
+    reporter_assert!(reporter, !has_green_pixels(&canvas));
+    // do it again with thinner stroke
+    paint.set_style(Style::Fill);
+    paint.set_color(Color::new(0xff00_ff00));
+    paint.set_stroke_width(1.0);
+    paint.set_anti_alias(true);
+    canvas.draw_rect(r, &paint);
+    // paint black with stroke rect (that asserts in skbug.com/40035555)
+    // over the filled rect, it doesnt cover it completelly with thinner stroke
+    paint.set_style(Style::Stroke);
+    paint.set_color(Color::new(0xff00_0000));
+    paint.set_stroke_width(0.99);
+    canvas.draw_rect(r, &paint);
+    reporter_assert!(reporter, has_green_pixels(&canvas));
+}
+
+// Port of: tests/RectTest.cpp#L103-L106 (chrome/m156)
+def_test!(Rect, |reporter| {
+    test_stroke_width_clipping(reporter);
+    test_skbug4406(reporter);
+});
+
+// Port of: tests/RectTest.cpp#L108-L111 (chrome/m156)
+def_test!(Rect_grow, |reporter| {
+    test_stroke_width_clipping(reporter);
+    test_skbug4406(reporter);
+});
 
 // Port of: tests/RectTest.cpp#L119-L125 (chrome/m156)
 def_test!(Rect_largest, |reporter| {
@@ -617,4 +710,33 @@ def_test!(Rect_ClosestDisjointEdge, |r| {
         r,
         closest_disjoint_edge(&IRect::new(10, 10, -1, 2), &IRect::new(15, 8, -2, 20)).is_empty()
     );
+});
+
+// Port of: tests/RectTest.cpp#L440-L459 (chrome/m156)
+// Before the fix, this sequence would trigger a release_assert in the Tiler
+// in SkBitmapDevice.cpp
+def_test!(big_tiled_rect_crbug_927075, |_reporter| {
+    // since part of the regression test allocates a huge buffer, don't bother trying on
+    // 32-bit devices (e.g. chromecast) so we avoid them failing to allocated.
+
+    if size_of::<*const ()>() == 8 {
+        let w = 67_108_863;
+        let h = 1;
+        let info = ImageInfo::new_n32_premul((w, h), None);
+
+        let mut surf = surfaces::raster(&info, None, None).expect("surface");
+        let canvas = surf.canvas();
+
+        let r = Rect {
+            left: 257.0,
+            top: 213.0,
+            right: 67_109_120.0,
+            bottom: 214.0,
+        };
+        let mut paint = Paint::default();
+        paint.set_anti_alias(true);
+
+        canvas.translate((-r.left, -r.top));
+        canvas.draw_rect(r, &paint);
+    }
 });

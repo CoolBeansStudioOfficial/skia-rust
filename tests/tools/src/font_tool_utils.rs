@@ -190,6 +190,18 @@ pub fn test_font_mgr() -> FontMgr {
                     make_from_stream: crate::fonts::test_typeface::TestTypeface::make_from_stream,
                 },
                 TypefaceDecoder {
+                    factory_id:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::DEFAULT_FACTORY_ID,
+                    make_from_stream:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::make_default_from_stream,
+                },
+                TypefaceDecoder {
+                    factory_id:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::PLANETS_FACTORY_ID,
+                    make_from_stream:
+                        crate::fonts::test_svg_typeface::TestSvgTypeface::make_planets_from_stream,
+                },
+                TypefaceDecoder {
                     factory_id: skia_rust_text::utils::custom_typeface::FACTORY_ID,
                     make_from_stream: skia_rust_text::utils::custom_typeface::make_from_stream,
                 },
@@ -282,9 +294,8 @@ pub fn name_for_font_format(format: EmojiFontFormat) -> &'static str {
 ///
 /// # Panics
 ///
-/// For [`EmojiFontFormat::Test`], which is `CreatePortableTypeface("Emoji")` and needs
-/// `TestSVGTypeface` (docs/design/text.md T20), not ported yet.
-// Port of: tools/fonts/FontToolUtils.cpp#L143-L165 (chrome/m156), the resource branches
+/// [`EmojiFontFormat::Test`] is `CreatePortableTypeface("Emoji")`, the `TestSVGTypeface`.
+// Port of: tools/fonts/FontToolUtils.cpp#L143-L165 (chrome/m156)
 #[must_use]
 pub fn emoji_sample(format: EmojiFontFormat) -> EmojiTestSample {
     let sample_text = "\u{1F600} \u{2662}";
@@ -299,10 +310,49 @@ pub fn emoji_sample(format: EmojiFontFormat) -> EmojiTestSample {
             typeface: create_typeface_from_resource(None, 0),
             sample_text: "abcdefghij",
         },
-        EmojiFontFormat::Test => {
-            panic!("EmojiSample(Test) needs TestSVGTypeface, which is not ported yet (T20)")
-        }
+        EmojiFontFormat::Test => EmojiTestSample {
+            typeface: Some(create_portable_typeface(
+                Some("Emoji"),
+                FontStyle::default(),
+            )),
+            sample_text,
+        },
     }
+}
+
+/// `ToolUtils::EmojiSample()`: the platform's emoji font (a resource, so missing in the portable
+/// configuration), or the test emoji font.
+// Port of: tools/fonts/FontToolUtils.cpp#L122-L141 (chrome/m156)
+#[must_use]
+pub fn emoji_sample_default() -> EmojiTestSample {
+    static SAMPLE: OnceLock<EmojiTestSample> = OnceLock::new();
+    SAMPLE
+        .get_or_init(|| {
+            // Linux: `EmojiSample(EmojiFontFormat::Cbdt)` (Windows: ColrV0, macOS: Sbix), which
+            // reads a resource.
+            let sample = emoji_sample(EmojiFontFormat::Cbdt);
+            if sample.typeface.is_some() {
+                return sample;
+            }
+            emoji_sample(EmojiFontFormat::Test)
+        })
+        .clone()
+}
+
+/// `ToolUtils::PlanetTypeface()`: the planets font resource (missing in the portable
+/// configuration), or the test typeface of the `Planet` family.
+// Port of: tools/fonts/FontToolUtils.cpp#L106-L120 (chrome/m156)
+#[must_use]
+pub fn planet_typeface() -> Typeface {
+    static PLANET_TYPEFACE: OnceLock<Typeface> = OnceLock::new();
+    PLANET_TYPEFACE
+        .get_or_init(|| {
+            if let Some(typeface) = create_typeface_from_resource(None, 0) {
+                return typeface;
+            }
+            create_test_typeface(Some("Planet"), FontStyle::default())
+        })
+        .clone()
 }
 
 /// `ToolUtils::add_to_text_blob_w_len(builder, text, encoding, font, x, y)`: adds a run of the

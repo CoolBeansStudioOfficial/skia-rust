@@ -9,13 +9,16 @@
 //! | `tests/…` | `unit` |
 //! | `modules/<m>/tests/…` | `modules::<m>` |
 //!
-//! GMs (`gm/…`) live in the `skia-rust-gm` crate and are checked by [`crate::verify_gms`].
+//! GMs (`gm/…`, `modules/<m>/gm/…`) live in the `skia-rust-gm` crate and are checked by
+//! [`crate::verify_gms`], whose registry keys [`module_path`] returns for them.
 
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context, Result, bail, ensure};
+
+use crate::verify_gms;
 
 /// `PointTest` -> `point_test`, `RRectInPathTest` -> `r_rect_in_path_test`,
 /// `M44Test` -> `m44_test`, `SkVxTest` -> `sk_vx_test`.
@@ -57,6 +60,9 @@ pub fn module_path(id: &str) -> Option<String> {
         rest
     } else {
         let (module, rest) = file.strip_prefix("modules/")?.split_once('/')?;
+        if rest.starts_with("gm/") {
+            return verify_gms::gm_key(id);
+        }
         parts.push("modules".to_owned());
         parts.push(snake_case(module));
         rest.strip_prefix("tests/")?
@@ -301,6 +307,10 @@ mod tests {
         assert_eq!(
             module_path("tests/GrMeshTest.cpp::GrMeshTest#2").as_deref(),
             Some("unit::gr_mesh_test::GrMeshTest_2")
+        );
+        assert_eq!(
+            module_path("modules/skottie/gm/SkottieGM.cpp::SkottieWebFontGM").as_deref(),
+            Some("gm::modules::skottie::skottie_gm::SkottieWebFontGM")
         );
         assert_eq!(module_path("gm/aarectmodes.cpp"), None);
     }
