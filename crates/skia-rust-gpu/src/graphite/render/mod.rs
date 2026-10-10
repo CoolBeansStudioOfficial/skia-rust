@@ -1,6 +1,8 @@
 //! The `RenderStep`s of Graphite: `src/gpu/graphite/render/*`. The steps listed here are ported;
 //! see `renderer_provider` for the ones still missing.
 
+pub mod analytic_blur_render_step;
+pub mod analytic_rrect_blur_render_step;
 pub mod analytic_rrect_render_step;
 pub mod bitmap_text_render_step;
 pub mod circular_arc_render_step;
