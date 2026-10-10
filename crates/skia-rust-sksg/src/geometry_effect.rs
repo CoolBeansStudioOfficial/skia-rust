@@ -45,6 +45,12 @@ pub struct GeometryEffectState {
 }
 
 impl GeometryEffectState {
+    /// The child geometry (`GeometryEffect::fChild`).
+    #[must_use]
+    pub fn child(&self) -> &Rc<dyn GeometryNode> {
+        &self.child
+    }
+
     fn new(child: Rc<dyn GeometryNode>) -> Self {
         Self {
             child,
@@ -56,7 +62,7 @@ impl GeometryEffectState {
 /// `GeometryEffect::onRevalidate`: revalidates the child, derives the path from it, and returns
 /// the tight bounds of that path.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L63-L70 (chrome/m156) (`GeometryEffect::onRevalidate`)
-fn geometry_effect_revalidate(
+pub fn geometry_effect_revalidate(
     state: &GeometryEffectState,
     ic: Option<&mut InvalidationController>,
     ctm: &Matrix,
@@ -71,25 +77,25 @@ fn geometry_effect_revalidate(
 
 /// `GeometryEffect::onClip`.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L47-L49 (chrome/m156) (`GeometryEffect::onClip`)
-fn geometry_effect_clip(state: &GeometryEffectState, canvas: &Canvas, anti_alias: bool) {
+pub fn geometry_effect_clip(state: &GeometryEffectState, canvas: &Canvas, anti_alias: bool) {
     canvas.clip_path(&state.path.borrow(), ClipOp::Intersect, anti_alias);
 }
 
 /// `GeometryEffect::onDraw`.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L51-L53 (chrome/m156) (`GeometryEffect::onDraw`)
-fn geometry_effect_draw(state: &GeometryEffectState, canvas: &Canvas, paint: &Paint) {
+pub fn geometry_effect_draw(state: &GeometryEffectState, canvas: &Canvas, paint: &Paint) {
     canvas.draw_path(&state.path.borrow(), paint);
 }
 
 /// `GeometryEffect::onContains`.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L55-L57 (chrome/m156) (`GeometryEffect::onContains`)
-fn geometry_effect_contains(state: &GeometryEffectState, p: Point) -> bool {
+pub fn geometry_effect_contains(state: &GeometryEffectState, p: Point) -> bool {
     state.path.borrow().contains(p)
 }
 
 /// `GeometryEffect::onAsPath`.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L59-L61 (chrome/m156) (`GeometryEffect::onAsPath`)
-fn geometry_effect_as_path(state: &GeometryEffectState) -> SkPath {
+pub fn geometry_effect_as_path(state: &GeometryEffectState) -> SkPath {
     state.path.borrow().clone()
 }
 
@@ -729,7 +735,7 @@ impl GeometryNode for OffsetEffect {
 /// Builds a geometry effect node around `child`: the `GeometryEffect` base constructor observes
 /// the child.
 // Port of: modules/sksg/src/SkSGGeometryEffect.cpp#L36-L41 (chrome/m156) (`GeometryEffect::GeometryEffect`)
-fn make_geometry_effect<T: GeometryNode + 'static>(
+pub fn make_geometry_effect<T: GeometryNode + 'static>(
     child: &Rc<dyn GeometryNode>,
     build: impl FnOnce(NodeCore, GeometryEffectState) -> T,
 ) -> Rc<T> {
