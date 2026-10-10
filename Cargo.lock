@@ -1189,6 +1189,7 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-resources",
  "skia-rust-simd",
+ "skia-rust-skcms",
  "skia-rust-text",
  "skia-rust-tools",
  "zstd",

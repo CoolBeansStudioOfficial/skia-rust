@@ -23,6 +23,7 @@ pub mod image_filter_backend;
 pub mod image_picture;
 pub mod images;
 pub mod mask_filter_base;
+pub mod picture_shader;
 mod pixel_rows;
 pub mod pixmap_draw;
 pub mod raster_canvas;

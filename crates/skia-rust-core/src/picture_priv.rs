@@ -68,6 +68,23 @@ pub(crate) const VERSION_COMBINE_COLOR_SHADERS: u32 = 107;
 // Port of: src/core/SkPicturePriv.h#L145-L176 (chrome/m156)
 pub(crate) const VERSION_WORKING_COLOR_SPACE_OUTPUT: u32 = 109;
 
+/// The shared ID of the resource cache entries made from picture `picture_id`
+/// (`SkPicturePriv::MakeSharedID`).
+// Port of: src/core/SkPicturePriv.h#L61-L64 (chrome/m156), `MakeSharedID`
+#[doc(alias = "MakeSharedID")]
+#[must_use]
+pub fn make_shared_id(picture_id: u32) -> u64 {
+    let shared_id = u64::from(crate::font_types::set_four_byte_tag(b'p', b'i', b'c', b't'));
+    (shared_id << 32) | u64::from(picture_id)
+}
+
+/// Records that a cache entry was made from `pic` (`SkPicturePriv::AddedToCache`).
+// Port of: src/core/SkPicturePriv.h#L66-L70 (chrome/m156), `AddedToCache`
+#[doc(alias = "AddedToCache")]
+pub fn added_to_cache(pic: &Picture) {
+    pic.set_added_to_cache();
+}
+
 /// Makes a picture from its parts (`MakePicture`). A `None` record makes a placeholder.
 // Port of: src/core/SkPicture.cpp#L355-L368 (chrome/m156)
 #[doc(alias = "MakePicture")]

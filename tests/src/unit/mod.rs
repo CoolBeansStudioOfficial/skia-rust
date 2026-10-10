@@ -142,6 +142,8 @@ pub mod image_filter_test;
 #[cfg(test)]
 pub mod image_from565_bitmap;
 #[cfg(test)]
+pub mod image_generator_test;
+#[cfg(test)]
 pub mod image_is_opaque_test;
 #[cfg(test)]
 pub mod image_new_shader_test;
@@ -311,7 +313,7 @@ pub mod pdf_deflate_w_stream_test;
 pub mod pdf_primitives_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
-#[cfg(test)]
+pub mod picture_shader_test;
 pub mod picture_test;
 #[cfg(test)]
 pub mod pixel_ref_test;

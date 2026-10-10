@@ -436,7 +436,8 @@ impl ResourceCache {
     }
 
     /// Processes the purge-shared-ID messages that are waiting (`checkMessages`).
-    fn check_messages(&mut self) {
+    // Port of: src/core/SkResourceCache.cpp (chrome/m156), `CheckMessages`
+    pub fn check_messages(&mut self) {
         let msgs = std::mem::take(&mut *lock_unpoisoned(&self.inbox));
         for shared_id in msgs {
             self.purge_shared_id(shared_id);

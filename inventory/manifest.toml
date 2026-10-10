@@ -17330,8 +17330,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/bug6643.cpp#L20-L39"
 module = "raster"
-status = "todo"
-reason = "needs SkPicture::makeShader (picture shaders), which is not ported"
+status = "passing"
 span_hash = "0329d80fcad52ec42f37d8fd969c0161ccd56249758eab275a8ea9e03e7876e2"
 
 [[test]]
@@ -21212,8 +21211,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/gradients.cpp#L810-L893"
 module = "effects"
-status = "todo"
-reason = "needs SkPictureShader (picture recording), not ported yet"
+status = "passing"
 span_hash = "e17d72e72a90cfca48a93abdb1e4693a40adda431bcdbb0d84c142c659823005"
 
 [[test]]
@@ -23594,7 +23592,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L205-L205"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
 span_hash = "db76d71347c8892590bfa7b9d9ab0f4df4f2cfd428329ca7a36fb2b463ffb02e"
 
 [[test]]
@@ -23603,7 +23602,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L207-L207"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
 span_hash = "217f121bd485057830d1141367817a99b11108b2c1802e32332417673b653f98"
 
 [[test]]
@@ -23612,7 +23612,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshader.cpp#L206-L206"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "565 mismatch on a few anti-aliased edge pixels, 1 LSB in R/B; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
 span_hash = "918f0190ff903e17d4ddc44d55c6b4f4165c11c0c90bed67fa3641cbccaaafce"
 
 [[test]]
@@ -23621,7 +23622,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L239-L306"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "f16 mismatch: 27 px at the perspective text edges; see notes/gm_pictureshader_cpp_pictureshader_persp.md"
 span_hash = "f0ac1763cc55e0128c976cc379a7e2e53b0a2dbdfaf09c99f580111842281a2e"
 
 [[test]]
@@ -23630,7 +23632,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pictureshader.cpp#L209-L237"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "53e679b28350fc501e1d6e708cb660d117d34bf6a4323475b86c8e7adaf7f115"
 
 [[test]]
@@ -23639,7 +23641,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshadercache.cpp#L96-L96"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "565 mismatch: 3 px of 1 LSB at circle AA edges; see notes/gm_pictureshader_cpp_PictureShaderGM_50_100.md"
 span_hash = "6dbf4df69ab3b21ca535c4c43e74a3283213b1f5667432e890ad6d6f74b1bd91"
 
 [[test]]
@@ -23648,7 +23651,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/pictureshadertile.cpp#L161-L161"
 module = "effects"
-status = "todo"
+status = "failing"
+reason = "565 mismatch: 134 px of 1 LSB at AA edges; see notes/gm_pictureshadertile_cpp_PictureShaderTileGM.md"
 span_hash = "3f514a4e65b4ed698948ac44194cf0098c43fc50120b617659615dc1aec28455"
 
 [[test]]
@@ -35771,7 +35775,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L104-L134"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fb124bd9a0694f6be9429215dcc75df6c8151e7ece429cae9463eb5bd5c9770d"
 
 [[test]]
@@ -39834,7 +39838,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureShaderTest.cpp#L26-L59"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7021aab330147d05e98b2b96902032c70b7dfc2357253b3b55bce1f6be754a77"
 
 [[test]]
@@ -39843,7 +39847,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureShaderTest.cpp#L67-L119"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "062cf98deb841d5531d7e8515e802bc86ce697335ae3457a2b4f657aec011775"
 
 [[test]]
@@ -45137,8 +45141,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L190-L223"
 module = "core"
-status = "todo"
-reason = "needs DeferredFromPicture (the picture image generator, SkPictureImageGenerator, is not ported: notes/pictureimagegenerator.md). The bitmap-cache path of lazy images is ported and tested (bitmap_cache::tests), and the raster half of this test has no other blocker"
+status = "passing"
 span_hash = "09f9239bac59098e5ce0584ede860e49c9f763ee6ba3c0e72a869fcc87113957"
 
 [[test]]
