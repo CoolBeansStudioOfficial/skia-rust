@@ -52,6 +52,10 @@ pub(crate) struct Plan<'a> {
     pub name_ids: BTreeSet<u32>,
     /// `colr_palettes`: old palette index to new, from the COLR closure.
     pub colr_palettes: HashMap<u32, u32>,
+    /// `colrv1_layers`: old `LayerList` index to new.
+    pub colrv1_layers: HashMap<u32, u32>,
+    /// `_glyphset_colred`: `glyphset_mathed` plus the glyphs `COLR` refers to.
+    pub glyphset_colred: BTreeSet<u32>,
     pub name_languages: BTreeSet<u32>,
     pub drop_tables: BTreeSet<u32>,
     pub no_subset_tables: BTreeSet<u32>,
@@ -99,6 +103,8 @@ impl<'a> Plan<'a> {
             os2_max_cmap_codepoint: 0,
             name_ids,
             colr_palettes: HashMap::new(),
+            colrv1_layers: HashMap::new(),
+            glyphset_colred: BTreeSet::new(),
             name_languages,
             drop_tables,
             no_subset_tables,
@@ -210,9 +216,11 @@ impl<'a> Plan<'a> {
         self.glyphset_mathed = mathed.clone();
         let mut cur_glyphset = mathed;
         if !self.drop_tables.contains(&tag(b"COLR")) {
-            crate::color::colr_closure(self, &mut cur_glyphset)?;
+            crate::colr::colr_closure(self, &mut cur_glyphset)?;
             remove_invalid_gids(&mut cur_glyphset, num_glyphs);
         }
+
+        self.glyphset_colred = cur_glyphset.clone();
 
         crate::layout::nameid_closure(self)?;
 

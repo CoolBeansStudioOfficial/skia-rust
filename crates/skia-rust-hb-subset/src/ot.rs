@@ -1134,3 +1134,24 @@ pub(crate) fn serialize_copy_device(s: &mut Serializer, pos: usize, parent: View
     ret
 }
 
+/// `OffsetTo<...>::serialize_subset` for an offset field of `width` bytes (2, 3 or 4) of `parent`.
+pub(crate) fn offset_subset_w(
+    s: &mut Serializer,
+    pos: usize,
+    width: u8,
+    parent: View<'_>,
+    field: usize,
+    f: impl FnOnce(&mut Serializer, View<'_>) -> bool,
+) -> bool {
+    let off = match width {
+        2 => parent.u16(field),
+        3 => parent.u24(field),
+        _ => parent.u32(field),
+    } as usize;
+    if off == 0 {
+        s.zero_field(pos, width);
+        return false;
+    }
+    let child = parent.sub(off);
+    s.serialize_subset(pos, width, true, |s| f(s, child))
+}

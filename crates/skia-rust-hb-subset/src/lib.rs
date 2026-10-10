@@ -28,6 +28,7 @@
 mod bytes;
 mod cff;
 mod cmap;
+mod colr;
 mod color;
 mod gdef;
 mod glyf;
@@ -188,10 +189,10 @@ fn subset_table(plan: &mut Plan<'_>, t: u32) -> Res<()> {
         b"gvar" => var::subset_gvar(plan).map(|_| ()),
         b"HVAR" | b"VVAR" => Err(SubsetError::Unsupported("HVAR/VVAR")),
         b"CFF " | b"CFF2" | b"VORG" => Err(SubsetError::Unsupported("CFF/CFF2/VORG")),
-        // `CPAL::subset` returns false without retained palette colours, which drops the table.
-        b"CPAL" if plan.colr_palettes.is_empty() => Ok(()),
         b"sbix" => layout::run_table(plan, t, |plan, s, v| color::subset_sbix(plan, s, v)).map(|_| ()),
-        b"COLR" | b"CPAL" | b"CBLC" => Err(SubsetError::Unsupported("colour tables")),
+        b"COLR" => layout::run_table(plan, t, colr::colr_subset).map(|_| ()),
+        b"CPAL" => layout::run_table(plan, t, colr::cpal_subset).map(|_| ()),
+        b"CBLC" => Err(SubsetError::Unsupported("CBLC/CBDT")),
         // `hhea`, `vhea` and `loca` are skipped (handled by `hmtx`, `vmtx` and `glyf`), `CBDT` is
         // skipped (handled by `CBLC`), and every other table is dropped
         // (`HB_SUBSET_FLAGS_PASSTHROUGH_UNRECOGNIZED` is not set).

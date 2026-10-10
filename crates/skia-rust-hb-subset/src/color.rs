@@ -4,21 +4,10 @@
 //! Colour tables (`COLR`, `CPAL`, `CBLC`/`CBDT`, `sbix`). `sbix` is ported; the others are not
 //! yet.
 
-use std::collections::BTreeSet;
-
-use crate::bytes::tag;
 use crate::ot::View;
-use crate::plan::{Plan, unsupported};
+use crate::plan::Plan;
 use crate::serialize::{ObjIdx, Serializer, Whence};
 use crate::{Res, SubsetError};
-
-/// Port of `_colr_closure` (hb-subset-plan.cc#L98-L134).
-pub(crate) fn colr_closure(plan: &mut Plan<'_>, _glyphs: &mut BTreeSet<u32>) -> Res<()> {
-    if !plan.source.table(tag(b"COLR")).is_empty() {
-        return unsupported("COLR");
-    }
-    Ok(())
-}
 
 // -------------------------------------------------------------------------------------------
 // sbix
