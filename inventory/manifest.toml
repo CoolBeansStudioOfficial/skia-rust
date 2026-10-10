@@ -25773,8 +25773,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1081-L1085"
 module = "codec"
-status = "todo"
-reason = "needs the WackyYUVFormatsGM generator path (create_YUV formats, YUVAPlanarConfig, extract_planes, splat drawing, labels) and YUVGenerator's CPU conversion; not ported yet (raster golden wacky_yuv_formats_imggen exists)"
+status = "failing"
+reason = "ported and registered with #[ignore]: all configs mismatch the golden; the 4:4:4 interleaved row differs (see notes/gm_wacky_yuv_formats_cpp_WackyYUVFormatsGM_imggen.md)"
 span_hash = "9568ddaf9d765e57a8b090dc698dc03cb50a9a5db494f0942f2be7fcecb0109f"
 
 [[test]]
