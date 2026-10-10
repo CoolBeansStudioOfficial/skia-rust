@@ -22,6 +22,7 @@ pub mod prefix;
 pub mod tables;
 pub mod tree_tables;
 pub mod vp8_bit_writer;
+pub mod vp8_analysis;
 pub mod vp8_cost;
 pub mod vp8_encoder;
 pub mod vp8_token;
