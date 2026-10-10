@@ -514,9 +514,8 @@ impl Recorder {
         let mut num_expected_levels = 1;
         if backend_texture.info().mipmapped() == Mipmapped::Yes {
             let dimensions = backend_texture.dimensions();
-            num_expected_levels = usize::try_from(Mipmap::compute_level_count_size(dimensions))
-                .unwrap_or(0)
-                + 1;
+            num_expected_levels =
+                usize::try_from(Mipmap::compute_level_count_size(dimensions)).unwrap_or(0) + 1;
         }
         if src_data.len() != num_expected_levels {
             return false;
