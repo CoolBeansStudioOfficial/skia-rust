@@ -40,6 +40,8 @@ use skia_rust_core::strike::StrikeGuard;
 use skia_rust_core::strike_spec::{BulkGlyphMetrics, StrikeSpec};
 use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 
+use crate::oracle_n32::is_n32;
+
 /// The part of `skcpu::Draw` that the glyph painter paints through (`BitmapDevicePainter`).
 // Port of: src/core/SkGlyphRunPainter.h#L20-L35 (chrome/m156), BitmapDevicePainter
 pub trait BitmapDevicePainter {
@@ -115,7 +117,7 @@ impl GlyphRunListPainter {
     ) {
         // The bitmap blitters can only draw LCD text to a N32 bitmap in srcOver. Otherwise,
         // convert the lcd text into A8 text. The props communicate this to the scaler.
-        let props = if self.color_type == ColorType::N32 && paint.is_src_over() {
+        let props = if is_n32(self.color_type) && paint.is_src_over() {
             self.device_props
         } else {
             self.bitmap_fallback_props
