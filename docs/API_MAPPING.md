@@ -673,3 +673,17 @@ Deviations from the reference API (rust-skia's `skia-safe`, see `docs/PORTING.md
 | `ProxyCache::findOrCreateCachedProxy(Recorder*, ...)` | none | `find_or_create_cache_entry(key, label, create)` + `make_unique_key_invalidation_listener` | the image entry point is `find_or_create_cached_proxy_from_image` (G10d) and the bitmap one is `RecorderPriv::create_cached_proxy`; invalidation posts straight to the cache's inbox instead of the global `SkMessageBus` |
 | `skia_private::THashMap`, `SkTDPQueue` | none | `t_hash::THashMap`, `t_dp_queue::TDPQueue` (core) | ported where Skia's iteration/heap order is observable (proxy cache, purge order) |
 | `SkImageFilters::Dilate/Erode(radiusX, radiusY, input, cropRect)`, `MatrixConvolution`, `DisplacementMap` | none | `image_filters::{dilate, erode, matrix_convolution, displacement_map}` (`skia_rust_effects::image_filters`) | the radii and the scale are `(f32, f32)` / `f32` and crops are `Option<Rect>` (as in `offset`/`blur`); `matrix_convolution` takes the kernel as `&[f32]`, so the C++ null-kernel case has no representation; `displacement_map` takes a `ColorChannel`, so the out-of-range channel case has none either; flattening (`SK_FLATTENABLE_HOOKS`) is not ported on this branch |
+
+**YUVA (`skia_rust_core::{yuva_info, yuva_pixmaps, yuv_math}`, codec YUV planes)**
+
+| Skia / skia-safe | skia-rust | deviation |
+|---|---|---|
+| `SkYUVAInfo`, `SkYUVAInfo::PlaneConfig/Subsampling/Siting/YUVAChannels/YUVALocation` | `YUVAInfo`, `yuva_info::{PlaneConfig, Subsampling, Siting, YUVAChannels, YUVALocation}` | `YUVAInfo::new` returns `Option` (the invalid info is `None`), as skia-safe does |
+| `SkYUVAInfo::PlaneDimensions(…, SkISize[4])` | `yuva_info::plane_dimensions_array` (returns the count and `[ISize; 4]`), `YUVAInfo::plane_dimensions() -> Vec<ISize>` | the array form is the C++ shape; the `Vec` form is skia-safe's |
+| `SkYUVAPixmapInfo` | `YUVAPixmapInfo` | `new`/`from_data_type` return `Option`; `plane_info`/`row_bytes` return `Option` (C++ returns a reference or 0 past the last plane) |
+| `SkYUVAPixmapInfo::SupportedDataTypes` | `yuva_pixmaps::SupportedDataTypes` (a `u32` bit set) | `all()`, `supported()`, `enable_data_type()` as in Skia |
+| `SkYUVAPixmaps` (planes are `SkPixmap` members) | `YUVAPixmaps` (owns one `Data`; the planes are views) | `plane(i)` returns a `Pixmap<'_>` by value, and `plane_mut(i)` / `plane_row_mut(i, row)` give writes; `FromExternalMemory` and `FromExternalPixmaps` are not ported (they borrow memory the caller keeps, which needs a lifetime on the type); `Allocate` zero-fills instead of leaving the memory uninitialized |
+| `SkCodec::queryYUVAInfo(types, SkYUVAPixmapInfo*)` | `Codec::query_yuva_info(&SupportedDataTypes) -> Option<YUVAPixmapInfo>` | the null out-parameter has no spelling (the result is the return value) |
+| `SkCodec::getYUVAPlanes(const SkYUVAPixmaps&)` | `Codec::get_yuva_planes(&mut YUVAPixmaps)` | `&mut` because the decoder writes the planes (skia-safe takes `&` and writes through pointers) |
+| `SkJpegEncoder::Encode(SkWStream*, const SkYUVAPixmaps&, const SkColorSpace*, Options)` | `jpeg_encoder::encode_yuva(&YUVAPixmaps, Option<&ColorSpace>, &mut W, &Options)` | the `SkEncoder` from `Make(…YUVA…)` is not ported, only the whole-file encode |
+| `SkColorMatrix::RGBtoYUV(cs)` / `YUVtoRGB(cs)` | `ColorMatrix::rgb_to_yuv(cs)` / `yuv_to_rgb(cs)` | as skia-safe's `ColorMatrix` naming; the tables are `yuv_math::color_matrix_{rgb2yuv,yuv2rgb}` (`SkColorMatrix_RGB2YUV` / `YUV2RGB`) |

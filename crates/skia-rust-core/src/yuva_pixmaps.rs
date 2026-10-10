@@ -50,6 +50,12 @@ impl DataType {
     pub const LAST: Self = Self::Unorm10_Unorm2;
 }
 
+/// A dimension (`int`) as a length. Image dimensions are never negative here, so the zero for a
+/// negative value is unreachable; it keeps the conversion total.
+fn dim_len(dimension: i32) -> usize {
+    usize::try_from(dimension).unwrap_or(0)
+}
+
 /// `kDataTypeCnt`: the number of [`DataType`] values.
 pub const DATA_TYPE_CNT: usize = 4;
 
@@ -141,13 +147,8 @@ pub fn default_color_type_for_data_type(data_type: DataType, num_channels: usize
             DataType::Float16 => ColorType::R16G16Float,
             DataType::Unorm10_Unorm2 => ColorType::Unknown,
         },
-        3 => match data_type {
-            DataType::Unorm8 => ColorType::RGBA8888,
-            DataType::Unorm16 => ColorType::R16G16B16A16UNorm,
-            DataType::Float16 => ColorType::RGBAF16,
-            DataType::Unorm10_Unorm2 => ColorType::RGBA1010102,
-        },
-        4 => match data_type {
+        // Three and four channels share their colour types.
+        3 | 4 => match data_type {
             DataType::Unorm8 => ColorType::RGBA8888,
             DataType::Unorm16 => ColorType::R16G16B16A16UNorm,
             DataType::Float16 => ColorType::RGBAF16,
@@ -177,8 +178,7 @@ pub fn num_channels_and_data_type(color_type: ColorType) -> (usize, DataType) {
         ColorType::RGBF16F16F16x => (3, DataType::Float16),
         ColorType::RGBA8888 => (4, DataType::Unorm8),
         ColorType::R16G16B16A16UNorm => (4, DataType::Unorm16),
-        ColorType::RGBAF16 => (4, DataType::Float16),
-        ColorType::RGBAF16Norm => (4, DataType::Float16),
+        ColorType::RGBAF16 | ColorType::RGBAF16Norm => (4, DataType::Float16),
         ColorType::RGBA1010102 => (4, DataType::Unorm10_Unorm2),
         _ => (0, DataType::Unorm8),
     }
@@ -202,7 +202,12 @@ impl Default for YUVAPixmapInfo {
         Self {
             yuva_info: YUVAInfo::default(),
             plane_infos: std::array::from_fn(|_| {
-                ImageInfo::new(ISize::new(0, 0), ColorType::Unknown, AlphaType::Unknown, None)
+                ImageInfo::new(
+                    ISize::new(0, 0),
+                    ColorType::Unknown,
+                    AlphaType::Unknown,
+                    None,
+                )
             }),
             row_bytes: [0; YUVAInfo::MAX_PLANES],
             data_type: DataType::Unorm8,
@@ -228,10 +233,8 @@ impl YUVAPixmapInfo {
         if color_types.len() != yuva_info.num_planes() {
             return None;
         }
-        if let Some(rb) = row_bytes {
-            if rb.len() != color_types.len() {
-                return None;
-            }
+        if row_bytes.is_some_and(|rb| rb.len() != color_types.len()) {
+            return None;
         }
         let mut color_types_array = [ColorType::Unknown; YUVAInfo::MAX_PLANES];
         color_types_array[..color_types.len()].copy_from_slice(color_types);
@@ -239,7 +242,11 @@ impl YUVAPixmapInfo {
         if let Some(rb) = row_bytes {
             row_bytes_array[..rb.len()].copy_from_slice(rb);
         }
-        Self::new_from_arrays(yuva_info, &color_types_array, row_bytes.map(|_| &row_bytes_array))
+        Self::new_from_arrays(
+            yuva_info,
+            &color_types_array,
+            row_bytes.map(|_| &row_bytes_array),
+        )
     }
 
     /// Port of `SkYUVAPixmapInfo(const SkYUVAInfo&, DataType, const size_t rowBytes[])`.
@@ -277,20 +284,24 @@ impl YUVAPixmapInfo {
             yuva_info.origin(),
         );
         let mut temp_row_bytes = [0usize; YUVAInfo::MAX_PLANES];
-        let row_bytes = match row_bytes {
-            Some(rb) => *rb,
-            None => {
-                for i in 0..n {
-                    temp_row_bytes[i] =
-                        color_types[i].bytes_per_pixel() * plane_dimensions[i].width as usize;
-                }
-                temp_row_bytes
+        let row_bytes = if let Some(rb) = row_bytes {
+            *rb
+        } else {
+            for i in 0..n {
+                temp_row_bytes[i] =
+                    color_types[i].bytes_per_pixel() * dim_len(plane_dimensions[i].width);
             }
+            temp_row_bytes
         };
         let mut ok = true;
         let mut data_type = DataType::Unorm8;
         let mut plane_infos: [ImageInfo; YUVAInfo::MAX_PLANES] = std::array::from_fn(|_| {
-            ImageInfo::new(ISize::new(0, 0), ColorType::Unknown, AlphaType::Unknown, None)
+            ImageInfo::new(
+                ISize::new(0, 0),
+                ColorType::Unknown,
+                AlphaType::Unknown,
+                None,
+            )
         });
         let mut out_row_bytes = [0usize; YUVAInfo::MAX_PLANES];
         for i in 0..n {
@@ -302,7 +313,8 @@ impl YUVAPixmapInfo {
                 AlphaType::Unpremul,
                 None,
             );
-            let num_required_channels = num_channels_in_plane(yuva_info.plane_config(), i).unwrap_or(0);
+            let num_required_channels =
+                num_channels_in_plane(yuva_info.plane_config(), i).unwrap_or(0);
             debug_assert!(num_required_channels > 0);
             let (num_color_type_channels, color_type_data_type) =
                 num_channels_and_data_type(color_types[i]);
@@ -372,7 +384,8 @@ impl YUVAPixmapInfo {
             }
             return 0;
         }
-        self.yuva_info.compute_total_bytes(&self.row_bytes, plane_sizes)
+        self.yuva_info
+            .compute_total_bytes(&self.row_bytes, plane_sizes)
     }
 
     /// Whether this info is valid and uses colour types the `supported` data types allow
@@ -433,8 +446,7 @@ impl YUVAPixmaps {
             DataType::Unorm8 => ColorType::RGBA8888,
             // F16 has better GPU support than 16 bit unorm. Often "16" bit unorm values are actually
             // lower precision.
-            DataType::Unorm16 => ColorType::RGBAF16,
-            DataType::Float16 => ColorType::RGBAF16,
+            DataType::Unorm16 | DataType::Float16 => ColorType::RGBAF16,
             DataType::Unorm10_Unorm2 => ColorType::RGBA1010102,
         }
     }
@@ -484,7 +496,7 @@ impl YUVAPixmaps {
             let s = src.plane(i);
             let s_row_bytes = s.row_bytes();
             let min_row_bytes = s.info().min_row_bytes();
-            let height = s.info().height() as usize;
+            let height = dim_len(s.info().height());
             let s_bytes = s.addr().unwrap_or(&[]);
             let d_row_bytes = result.plane_row_bytes[i];
             let d_offset = result.plane_offsets[i];
@@ -510,7 +522,7 @@ impl YUVAPixmaps {
             debug_assert!(info.plane_infos[i].valid_row_bytes(info.row_bytes[i]));
             plane_row_bytes[i] = info.row_bytes[i];
             plane_offsets[i] = addr;
-            let plane_size = info.row_bytes[i] * info.plane_infos[i].height() as usize;
+            let plane_size = info.row_bytes[i] * dim_len(info.plane_infos[i].height());
             debug_assert!(plane_size != 0);
             addr += plane_size;
         }
@@ -573,7 +585,7 @@ impl YUVAPixmaps {
     #[must_use]
     pub fn plane(&self, i: usize) -> Pixmap<'_> {
         let info = &self.plane_infos[i];
-        let size = self.plane_row_bytes[i] * info.height() as usize;
+        let size = self.plane_row_bytes[i] * dim_len(info.height());
         let start = self.plane_offsets[i];
         let bytes = self.data.as_bytes().get(start..start + size).unwrap_or(&[]);
         Pixmap::new_readonly(info, bytes, self.plane_row_bytes[i]).unwrap_or_default()
@@ -583,7 +595,7 @@ impl YUVAPixmaps {
     /// (Skia writes through its pointers; a shared buffer cannot be written safely).
     #[must_use]
     pub fn plane_mut(&mut self, i: usize) -> Option<Pixmap<'_>> {
-        let size = self.plane_row_bytes[i] * self.plane_infos[i].height() as usize;
+        let size = self.plane_row_bytes[i] * dim_len(self.plane_infos[i].height());
         let start = self.plane_offsets[i];
         let row_bytes = self.plane_row_bytes[i];
         let info = &self.plane_infos[i];
@@ -598,7 +610,7 @@ impl YUVAPixmaps {
     // skia-rust: no Skia counterpart; SkYUVAPixmaps hands out raw row pointers (`writable_addr`).
     #[must_use]
     pub fn plane_row_mut(&mut self, i: usize, row: usize) -> Option<&mut [u8]> {
-        if i >= self.num_planes() || row >= self.plane_infos[i].height() as usize {
+        if i >= self.num_planes() || row >= dim_len(self.plane_infos[i].height()) {
             return None;
         }
         let row_bytes = self.plane_row_bytes[i];

@@ -25,11 +25,11 @@ use skia_rust_core::data::Data;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::image_info::YUVColorSpace;
 use skia_rust_core::image_info_priv::{color_type_is_alpha_only, color_type_num_channels};
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::yuva_info::{PlaneConfig, YUVAInfo, subsampling_factors};
 use skia_rust_core::yuva_pixmaps::{DataType, YUVAPixmaps};
-use skia_rust_core::image_info::YUVColorSpace;
 use skia_rust_libjpeg::{ColorSpace as JpegColorSpace, Compress};
 
 use crate::encode::icc::write_icc_profile;
@@ -182,10 +182,7 @@ fn metadata_segments(src: &Pixmap<'_>, options: &Options) -> Vec<(u8, Vec<u8>)> 
 
 /// The XMP and ICC segments for a colour space (`AppendXMPStandard` and `AppendICC`, in that
 /// order). Shared by the RGB and YUVA encoders.
-fn xmp_and_icc_segments(
-    color_space: Option<&ColorSpace>,
-    options: &Options,
-) -> Vec<(u8, Vec<u8>)> {
+fn xmp_and_icc_segments(color_space: Option<&ColorSpace>, options: &Options) -> Vec<(u8, Vec<u8>)> {
     let mut segments = Vec::new();
     if let Some(xmp) = &options.xmp_metadata {
         let mut body = XMP_STANDARD_SIG.to_vec();
@@ -402,12 +399,7 @@ fn yuva_plane_row<'v>(view: &'v Pixmap<'_>, row: usize) -> Option<&'v [u8]> {
 /// Port of `yuva_copy_row` (SkJpegEncoderImpl.cpp): one row of Y, U and V triples, from the
 /// planes of `src`. Only the Y,U,V and Y,UV configurations are supported, as the encoder checks.
 // Port of: src/encode/SkJpegEncoderImpl.cpp#L201-L236 (chrome/m156)
-fn yuva_copy_row(
-    planes: &[Pixmap<'_>],
-    info: &YUVAInfo,
-    row: usize,
-    dst: &mut [u8],
-) -> Option<()> {
+fn yuva_copy_row(planes: &[Pixmap<'_>], info: &YUVAInfo, row: usize, dst: &mut [u8]) -> Option<()> {
     let width = usize::try_from(planes[0].info().width()).ok()?;
     match info.plane_config() {
         PlaneConfig::Y_U_V => {

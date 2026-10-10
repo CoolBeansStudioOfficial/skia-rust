@@ -15,7 +15,6 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
-use skia_rust_core::yuva_pixmaps::{SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::ImageInfo;
@@ -23,6 +22,7 @@ use skia_rust_core::matrix::{Matrix, ScaleToFit};
 use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::Stream;
+use skia_rust_core::yuva_pixmaps::{SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_skcms::{
     AlphaFormat, IccProfile, PixelFormat, approximately_equal_profiles, srgb_profile,
 };
@@ -411,7 +411,11 @@ pub trait CodecImpl: Send {
     /// Port of `onGetYUVAPlanes`: decodes into the planes of `pixmaps`, which `on_query_yuva_info`
     /// laid out (the default: unimplemented).
     // Port of: include/codec/SkCodec.h#L883 (chrome/m156)
-    fn on_get_yuva_planes(&mut self, _base: &mut CodecBase<'_>, _pixmaps: &mut YUVAPixmaps) -> Result {
+    fn on_get_yuva_planes(
+        &mut self,
+        _base: &mut CodecBase<'_>,
+        _pixmaps: &mut YUVAPixmaps,
+    ) -> Result {
         Result::Unimplemented
     }
 
@@ -874,7 +878,10 @@ impl<'a> Codec<'a> {
     // Port of: src/codec/SkCodec.cpp#L277-L284 (chrome/m156)
     #[doc(alias = "SkCodec::queryYUVAInfo")]
     #[must_use]
-    pub fn query_yuva_info(&self, supported_data_types: &SupportedDataTypes) -> Option<YUVAPixmapInfo> {
+    pub fn query_yuva_info(
+        &self,
+        supported_data_types: &SupportedDataTypes,
+    ) -> Option<YUVAPixmapInfo> {
         let info = self
             .imp
             .on_query_yuva_info(&self.base, supported_data_types)?;

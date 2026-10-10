@@ -39,7 +39,10 @@ fn codec_yuv(reporter: &mut Reporter, path: &str, expected_info: Option<&YUVAInf
     reporter_assert!(reporter, codec.query_yuva_info(&no_types).is_none());
 
     let yuva_pixmap_info = codec.query_yuva_info(&all_types);
-    reporter_assert!(reporter, expected_info.is_some() == yuva_pixmap_info.is_some());
+    reporter_assert!(
+        reporter,
+        expected_info.is_some() == yuva_pixmap_info.is_some()
+    );
     let Some(yuva_pixmap_info) = yuva_pixmap_info else {
         return;
     };
@@ -112,7 +115,11 @@ def_test!(Jpeg_YUV_Codec, |reporter| {
 
     // H2V2
     let expectations = set_expectations(ISize::new(512, 512), Subsampling::S420);
-    codec_yuv(reporter, "images/mandrill_512_q075.jpg", expectations.as_ref());
+    codec_yuv(
+        reporter,
+        "images/mandrill_512_q075.jpg",
+        expectations.as_ref(),
+    );
 
     // H1V1
     let expectations = set_expectations(ISize::new(512, 512), Subsampling::S444);
@@ -124,15 +131,27 @@ def_test!(Jpeg_YUV_Codec, |reporter| {
 
     // Non-power of two dimensions
     let expectations = set_expectations(ISize::new(439, 154), Subsampling::S420);
-    codec_yuv(reporter, "images/cropped_mandrill.jpg", expectations.as_ref());
+    codec_yuv(
+        reporter,
+        "images/cropped_mandrill.jpg",
+        expectations.as_ref(),
+    );
 
     let expectations = set_expectations(ISize::new(8, 8), Subsampling::S420);
     codec_yuv(reporter, "images/randPixels.jpg", expectations.as_ref());
 
     // Progressive images
     let expectations = set_expectations(ISize::new(512, 512), Subsampling::S444);
-    codec_yuv(reporter, "images/brickwork-texture.jpg", expectations.as_ref());
-    codec_yuv(reporter, "images/brickwork_normal-map.jpg", expectations.as_ref());
+    codec_yuv(
+        reporter,
+        "images/brickwork-texture.jpg",
+        expectations.as_ref(),
+    );
+    codec_yuv(
+        reporter,
+        "images/brickwork_normal-map.jpg",
+        expectations.as_ref(),
+    );
 
     // A CMYK encoded image should fail.
     codec_yuv(reporter, "images/CMYK.jpg", None);
@@ -154,7 +173,8 @@ def_test!(YUVMath, |reporter| {
 
     // Not sure what the theoretical precision we can hope for is, so pick a big value that
     // passes (when I think we're correct).
-    let tolerance: f32 = 1.0 / (1 << 18) as f32;
+    // 1.0f/(1 << 18), exact in f32
+    let tolerance: f32 = 1.0 / 262_144.0;
 
     for cs in spaces {
         let mut r2ym = ColorMatrix::rgb_to_yuv(cs);
@@ -200,7 +220,10 @@ fn verify_same(reporter: &mut Reporter, a: &YUVAPixmaps, b: &YUVAPixmaps) {
     for plane in 0..a.num_planes() {
         let a_plane = a.plane(plane);
         let b_plane = b.plane(plane);
-        reporter_assert!(reporter, a_plane.compute_byte_size() == b_plane.compute_byte_size());
+        reporter_assert!(
+            reporter,
+            a_plane.compute_byte_size() == b_plane.compute_byte_size()
+        );
         let a_bytes = a_plane.addr().unwrap_or(&[]);
         let b_bytes = b_plane.addr().unwrap_or(&[]);
         let bytes_per_pixel = a_plane.info().bytes_per_pixel();

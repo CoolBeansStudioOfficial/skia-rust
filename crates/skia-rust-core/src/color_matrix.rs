@@ -208,18 +208,6 @@ fn set_concat(result: &mut [f32; 20], outer: &[f32; 20], inner: &[f32; 20]) {
     *result = target;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn identity_is_the_default() {
-        let mut m = ColorMatrix { mat: [0.5; 20] };
-        m.set_identity();
-        assert_eq!(m, ColorMatrix::default());
-    }
-}
-
 impl ColorMatrix {
     /// The RGB to YUV matrix of a colour space (`SkColorMatrix::RGBtoYUV`).
     // Port of: src/effects/SkColorMatrix.cpp#L13-L17 (chrome/m156)
@@ -239,5 +227,17 @@ impl ColorMatrix {
         Self {
             mat: crate::yuv_math::color_matrix_yuv2rgb(cs),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identity_is_the_default() {
+        let mut m = ColorMatrix { mat: [0.5; 20] };
+        m.set_identity();
+        assert_eq!(m, ColorMatrix::default());
     }
 }
