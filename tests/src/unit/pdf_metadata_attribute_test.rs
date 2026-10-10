@@ -3,6 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/PDFMetadataAttributeTest.cpp (chrome/m156)
 
+#![allow(clippy::field_reassign_with_default)] // the tests assign the fields one by one, as the C++ does
+
 use skia_rust_core::stream::DynamicMemoryWStream;
 use skia_rust_pdf::jpeg;
 use skia_rust_pdf::metadata::Metadata;

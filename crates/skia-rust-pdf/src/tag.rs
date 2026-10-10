@@ -63,7 +63,7 @@ struct Attribute {
 /// `SkPDF::AttributeList`: attributes for nodes in the PDF tree.
 ///
 /// Each attribute must have an owner (e.g. "Layout", "List", "Table", etc) and an attribute name
-/// (e.g. "BBox", "RowSpan", etc.) from PDF32000_2008 14.8.5, and then a value of the proper type
+/// (e.g. "`BBox`", "`RowSpan`", etc.) from `PDF32000_2008` 14.8.5, and then a value of the proper type
 /// according to the spec.
 ///
 /// skia-rust: the strings are copied. The attributes are kept as data and made into PDF objects
@@ -209,11 +209,11 @@ impl StructureElementNode {
     }
 }
 
-/// `SkPDFStructElem::StringFromElemId`: structure elements (/StructElem) may have an element
+/// `SkPDFStructElem::StringFromElemId`: structure elements (/`StructElem`) may have an element
 /// identifier (/ID) which is a byte string. Element identifiers are used by attributes
-/// (/StructElem /A) to refer to structure elements. The mapping from element identifier to
-/// structure element is emitted in the /IDTree. Element identifiers are stored as an integer
-/// (elemId) and this creates a byte string. Since the /IDTree is a name tree the element
+/// (/`StructElem` /A) to refer to structure elements. The mapping from element identifier to
+/// structure element is emitted in the /`IDTree`. Element identifiers are stored as an integer
+/// (elemId) and this creates a byte string. Since the /`IDTree` is a name tree the element
 /// identifier keys must be ordered; the digits are zero-padded so that lexicographic order
 /// matches numeric order.
 // Port of: src/pdf/SkPDFTag.cpp#L52-L56 (chrome/m156)
@@ -273,19 +273,10 @@ struct ContentItemInfo {
 
 /// `SkPDFStructElem::ContentIndex`.
 // Port of: src/pdf/SkPDFTag.cpp#L129-L144 (chrome/m156)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 struct ContentIndex {
     parent_id: PdfParentTreeKey,
     mcid: i32,
-}
-
-impl Default for ContentIndex {
-    fn default() -> Self {
-        Self {
-            parent_id: PdfParentTreeKey::default(),
-            mcid: 0,
-        }
-    }
 }
 
 impl ContentIndex {
@@ -296,6 +287,7 @@ impl ContentIndex {
         }
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)] // mirrors the C++ const reference
     fn from_content_item(cii: &ContentItemInfo) -> Self {
         Self {
             parent_id: cii.struct_parent_key,
@@ -303,6 +295,7 @@ impl ContentIndex {
         }
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)] // mirrors the C++ const method
     fn valid(&self) -> bool {
         self.parent_id.is_valid()
     }
@@ -328,6 +321,7 @@ impl ContentSpan {
         self.data.expect("a non-empty span").1
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)] // mirrors the C++ const reference
     fn accumulate_index(&mut self, ci: &ContentIndex) {
         if !ci.valid() {
             return;
@@ -408,6 +402,7 @@ impl Mark {
     /// `structType`: only call when valid.
     // Port of: src/pdf/SkPDFTag.cpp#L267-L270 (chrome/m156)
     #[must_use]
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn struct_type(&self, tree: &StructTree) -> String {
         let e = self.struct_elem.expect("a valid mark");
         tree.elems[e].struct_type.clone()
@@ -415,6 +410,7 @@ impl Mark {
 
     /// `accumulate`: only call when valid.
     // Port of: src/pdf/SkPDFTag.cpp#L279-L283 (chrome/m156)
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn accumulate(&self, tree: &mut StructTree, point: Point) {
         let e = self.struct_elem.expect("a valid mark");
         let location = &mut tree.elems[e].marked_content[self.mark_index].location;
@@ -459,7 +455,7 @@ pub struct StructTree {
     struct_elem_for_elem_id: HashMap<i32, usize>,
     root: Option<usize>,
     outline: Outline,
-    /// Indexed by ?::StructParent or ?::StructParents.
+    /// Indexed by ?`::StructParent` or ?`::StructParents`.
     parent_tree: Vec<ParentTreeEntry>,
 }
 
@@ -540,15 +536,16 @@ impl StructTree {
     }
 
     /// `createMarkForElemId`: creates a new marked-content identifier (MCID) to be used with a
-    /// marked-content sequence parented by the structure element (StructElem) with the given
-    /// element identifier (elemId). The StructTreeRoot::ParentTree[?::StructParents][mcid] will
+    /// marked-content sequence parented by the structure element (`StructElem`) with the given
+    /// element identifier (elemId). The `StructTreeRoot::ParentTree`[?`::StructParents`][mcid] will
     /// refer to the structure element. The structure element will add this MCID as its next
-    /// child (in StructElem::K). Returns a false Mark if elemId does not refer to a StructElem.
+    /// child (in `StructElem::K`). Returns a false Mark if elemId does not refer to a `StructElem`.
     ///
     /// If a true Mark is returned and `struct_parents_key` is false, the Mark will be added to a
-    /// new StructParents and `struct_parents_key` will be updated to reference the StructParents
+    /// new `StructParents` and `struct_parents_key` will be updated to reference the `StructParents`
     /// entry.
     // Port of: src/pdf/SkPDFTag.cpp#L285-L324 (chrome/m156)
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn create_mark_for_elem_id(
         &mut self,
         elem_id: i32,
@@ -652,13 +649,14 @@ impl StructTree {
         }
     }
 
-    /// `createStructParentKeyForElemId`: creates a key to use with /StructParent in a content
-    /// item (usually an annotation) which refers to the structure element (StructElem) with the
-    /// given element identifier (elemId). The StructTreeRoot ParentTree will map from this key
+    /// `createStructParentKeyForElemId`: creates a key to use with /`StructParent` in a content
+    /// item (usually an annotation) which refers to the structure element (`StructElem`) with the
+    /// given element identifier (elemId). The `StructTreeRoot` `ParentTree` will map from this key
     /// to the structure element. The structure element will add the content item as its next
-    /// child (as StructElem::K::OBJR). Returns a false key if elemId does not refer to a
-    /// StructElem.
+    /// child (as `StructElem::K::OBJR`). Returns a false key if elemId does not refer to a
+    /// `StructElem`.
     // Port of: src/pdf/SkPDFTag.cpp#L355-L376 (chrome/m156)
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn create_struct_parent_key_for_elem_id(
         &mut self,
         elem_id: i32,
@@ -955,7 +953,7 @@ impl StructTree {
         doc.emit(&dict, reference)
     }
 
-    /// `emitStructTreeRoot`: the reference of the /StructTreeRoot, or none if nothing is used.
+    /// `emitStructTreeRoot`: the reference of the /`StructTreeRoot`, or none if nothing is used.
     // Port of: src/pdf/SkPDFTag.cpp#L629-L735 (chrome/m156)
     pub(crate) fn emit_struct_tree_root(&mut self, doc: &mut DocInner) -> PdfIndirectReference {
         let Some(root) = self.root else {

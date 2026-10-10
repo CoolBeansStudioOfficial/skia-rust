@@ -43,7 +43,7 @@ fn load_resource(r: &mut Reporter, test: &str, filename: &str) -> Option<Data> {
     if data.is_none() {
         infof!(r, "\n{}: Resource '{}' can not be found.\n", test, filename);
     }
-    data.map(|bytes| Data::new_from_vec(bytes)) // May return None.
+    data.map(Data::new_from_vec) // May return None.
 }
 
 // Test that for Jpeg files that use the JFIF colorspace, they are

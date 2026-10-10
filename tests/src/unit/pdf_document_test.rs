@@ -3,6 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/PDFDocumentTest.cpp (chrome/m156)
 
+#![allow(clippy::field_reassign_with_default)] // the tests assign the fields one by one, as the C++ does
+#![allow(clippy::cast_precision_loss)] // mirrors the C++ casts of the test drawing code
+#![allow(clippy::cast_possible_truncation)] // mirrors the C++ casts of the test drawing code
+#![allow(clippy::cast_sign_loss)] // mirrors the C++ casts of the test drawing code
+
 use std::io::Read as _;
 
 use skia_rust_core::bitmap::Bitmap;

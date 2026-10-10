@@ -82,6 +82,7 @@ impl<'a> Clusterator<'a> {
     /// `SkClusterator(const sktext::GlyphRun&)`.
     // Port of: src/pdf/SkClusterator.cpp#L30-L43 (chrome/m156)
     #[must_use]
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn new(run: &'a GlyphRun) -> Self {
         let clusters = if run.clusters().is_empty() {
             None
@@ -125,6 +126,7 @@ impl<'a> Clusterator<'a> {
 
     /// `next`: the next cluster, or one with no glyphs when done.
     // Port of: src/pdf/SkClusterator.cpp#L45-L65 (chrome/m156)
+    #[allow(clippy::should_implement_trait)] // mirrors SkClusterator::next, which returns a Cluster, not an Option
     pub fn next(&mut self) -> Cluster<'a> {
         if self.current_glyph_index >= self.glyph_count {
             return Cluster {
@@ -156,8 +158,7 @@ impl<'a> Clusterator<'a> {
         }
         let cluster_glyph_count = self.current_glyph_index - cluster_glyph_index;
         let mut cluster_end = self.text_byte_length;
-        for i in 0..self.glyph_count as usize {
-            let c = clusters[i];
+        for &c in clusters.iter().take(self.glyph_count as usize) {
             if c > cluster && c < cluster_end {
                 cluster_end = c;
             }

@@ -27,7 +27,7 @@ use crate::utils::{
 
 // Port of: src/pdf/SkPDFGraphicStackState.cpp#L18-L25 (chrome/m156)
 fn emit_pdf_color(color: &Color4f, result: &mut dyn WStream) {
-    debug_assert!((color.a - 1.0).abs() == 0.0); // We handle alpha elsewhere.
+    debug_assert_eq!((color.a - 1.0).abs(), 0.0); // We handle alpha elsewhere.
     append_color_component_f(color.r, result);
     result.write_text(" ");
     append_color_component_f(color.g, result);
@@ -48,7 +48,7 @@ fn rect_intersect(mut u: Rect, v: Rect) -> Rect {
     }
 }
 
-/// Test to see if the clipstack is a simple rect, If so, we can avoid all PathOps code and speed
+/// Test to see if the clipstack is a simple rect, If so, we can avoid all `PathOps` code and speed
 /// thing up.
 // Port of: src/pdf/SkPDFGraphicStackState.cpp#L32-L61 (chrome/m156)
 fn is_rect(clip_stack: &ClipStack, bounds: &Rect) -> Option<Rect> {
@@ -98,13 +98,12 @@ fn apply_clip(stack: &ClipStack, outer_bounds: &Rect, mut f: impl FnMut(&Path)) 
             ClipOp::Difference => PathOp::Difference,
             ClipOp::Intersect => PathOp::Intersect,
         };
-        if op == PathOp::Difference
+        if (op == PathOp::Difference
             || operand.is_inverse_fill_type()
-            || !HUGE.contains(operand.bounds())
+            || !HUGE.contains(operand.bounds()))
+            && let Some(result) = skia_rust_pathops::op(&Path::rect(bounds, None), &operand, op)
         {
-            if let Some(result) = skia_rust_pathops::op(&Path::rect(bounds, None), &operand, op) {
-                operand = result;
-            }
+            operand = result;
         }
         debug_assert!(!operand.is_inverse_fill_type());
         f(&operand);
@@ -243,6 +242,7 @@ impl GraphicStackState {
 
     /// `updateClip`.
     // Port of: src/pdf/SkPDFGraphicStackState.cpp#L162-L184 (chrome/m156)
+    #[allow(clippy::missing_panics_doc)] // asserts the C++ preconditions
     pub fn update_clip(
         &mut self,
         out: &mut dyn WStream,
@@ -284,7 +284,7 @@ impl GraphicStackState {
             );
             self.pop(out);
 
-            debug_assert!(self.current_entry().matrix.get_type() == TypeMask::empty());
+            debug_assert_eq!(self.current_entry().matrix.get_type(), TypeMask::empty());
         }
         if matrix.get_type() == TypeMask::empty() {
             return;

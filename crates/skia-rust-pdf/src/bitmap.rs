@@ -3,9 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: src/pdf/SkPDFBitmap.{h,cpp} (chrome/m156)
 
-//! `SkPDFBitmap`: an image as an Image XObject. A JPEG that the decoder understands is embedded
+//! `SkPDFBitmap`: an image as an Image `XObject`. A JPEG that the decoder understands is embedded
 //! as it is (DCT); anything else is written as deflated pixels with a soft mask for the alpha,
 //! or re-encoded as a JPEG when it is opaque and the metadata asks for a lossy encoding.
+
+#![allow(clippy::cast_sign_loss)] // sizes and counts are non-negative, as the C++ size_t conversions assume
 
 use std::hash::{Hash, Hasher};
 
@@ -77,6 +79,7 @@ fn bgra_color_at(bm: &Pixmap<'_>, x: i32, y: i32) -> u32 {
 /// are rendered as grey because of the separate soft mask and color resizing. e.g.:
 /// gm/bitmappremul.cpp
 // Port of: src/pdf/SkPDFBitmap.cpp#L40-L66 (get_neighbor_avg_color, chrome/m156)
+#[allow(clippy::manual_checked_ops)] // mirrors the C++ `n > 0` test
 fn get_neighbor_avg_color(bm: &Pixmap<'_>, x_orig: i32, y_orig: i32) -> u32 {
     debug_assert_eq!(ColorType::BGRA8888, bm.color_type());
     let (mut r, mut g, mut b, mut n) = (0u32, 0u32, 0u32, 0u32);
@@ -214,6 +217,7 @@ fn do_deflated_alpha(pm: &Pixmap<'_>, doc: &DocHandle, reference: PdfIndirectRef
 }
 
 // Port of: src/pdf/SkPDFBitmap.cpp#L154-L178 (write_icc_profile, chrome/m156)
+#[allow(clippy::needless_pass_by_value)] // takes the profile data as the C++ does (sk_sp<SkData>)
 fn write_icc_profile(doc: &DocHandle, icc: Data, channels: i32) -> PdfUnion {
     let key = IccProfileKey {
         data: icc.clone(),
@@ -333,10 +337,10 @@ fn do_deflated_image(
 
     if let Some(color_space_ref) = pm.color_space() {
         let icc_profile = color_space_ref.to_profile();
-        if !icc_channel_mismatch(Some(&icc_profile), channels) {
-            if let Some(icc_data) = icc_data_for_profile(&icc_profile) {
-                color_space = write_icc_profile(doc, icc_data, channels);
-            }
+        if !icc_channel_mismatch(Some(&icc_profile), channels)
+            && let Some(icc_data) = icc_data_for_profile(&icc_profile)
+        {
+            color_space = write_icc_profile(doc, icc_data, channels);
         }
     }
 
@@ -363,6 +367,7 @@ fn do_deflated_image(
 }
 
 // Port of: src/pdf/SkPDFBitmap.cpp#L299-L371 (do_jpeg, chrome/m156)
+#[allow(clippy::needless_pass_by_value)] // takes the JPEG data as the C++ does (sk_sp<SkData>)
 fn do_jpeg(
     data: Data,
     image_color_space: Option<&ColorSpace>,
@@ -416,10 +421,10 @@ fn do_jpeg(
         }
     } else if let Some(image_color_space) = image_color_space {
         let image_icc_profile = image_color_space.to_profile();
-        if !icc_channel_mismatch(Some(&image_icc_profile), channels) {
-            if let Some(image_icc_data) = icc_data_for_profile(&image_icc_profile) {
-                color_space = write_icc_profile(doc, image_icc_data, channels);
-            }
+        if !icc_channel_mismatch(Some(&image_icc_profile), channels)
+            && let Some(image_icc_data) = icc_data_for_profile(&image_icc_profile)
+        {
+            color_space = write_icc_profile(doc, image_icc_data, channels);
         }
     }
 
@@ -524,7 +529,7 @@ pub fn serialize_image_size(img: &Image, doc: &DocHandle, encoding_quality: i32)
     serialize_image(img, encoding_quality, doc, PdfIndirectReference::default())
 }
 
-/// `SkPDFSerializeImage`: serializes an image as an Image XObject. A `encoding_quality` over 100
+/// `SkPDFSerializeImage`: serializes an image as an Image `XObject`. A `encoding_quality` over 100
 /// means lossless.
 // Port of: src/pdf/SkPDFBitmap.cpp#L436-L452 (chrome/m156)
 #[doc(alias = "SkPDFSerializeImage")]

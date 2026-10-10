@@ -68,7 +68,7 @@ pub type EncodeJpegCallback = fn(dst: &mut dyn WStream, src: &Pixmap<'_>, qualit
 
 /// `SkPDF::Metadata`: optional metadata for the PDF document.
 ///
-/// Not ported: `fSubsetter` (HarfBuzz is the only one).
+/// Not ported: `fSubsetter` (`HarfBuzz` is the only one).
 // Port of: include/docs/SkPDFDocument.h#L93-L240 (chrome/m156)
 #[doc(alias = "SkPDF::Metadata")]
 #[derive(Clone)]

@@ -12,7 +12,7 @@
 //! cross-reference table, trailer, page tree, pages, links and named destinations (`document`),
 //! the document metadata with the XMP packet and the sRGB output intent of PDF/A (`metadata`,
 //! `srgb_icc`), `SkPDFDevice` with its graphic stack, graphic states, resource dictionaries and
-//! form XObjects (`device`, `graphic_stack_state`, `graphic_state`, `resource_dict`,
+//! form `XObjects` (`device`, `graphic_stack_state`, `graphic_state`, `resource_dict`,
 //! `form_xobject`), the gradient and image shaders (`gradient_shader`, `shader`), the images
 //! with their JPEG pass-through (`bitmap`, `keyed_image`, `jpeg`), `SkClusterator`
 //! (`clusterator`) and the structure tree (`tag`).

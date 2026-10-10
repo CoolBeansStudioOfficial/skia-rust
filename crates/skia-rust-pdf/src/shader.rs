@@ -8,6 +8,8 @@
 //! drawn with a PDF device; anything else is rasterized to a bitmap that is used as an image
 //! shader.
 
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
+
 use std::hash::{Hash, Hasher};
 
 use skia_rust_core::bitmap::Bitmap;
@@ -453,6 +455,7 @@ fn make_fallback_shader(
         return PdfIndirectReference::default();
     }
     // Clamp the bitmap size to about 1M pixels
+    #[allow(clippy::items_after_statements)] // mirrors the C++ function-local constant
     const MAX_BITMAP_AREA: i32 = 1024 * 1024;
     let bitmap_area = surface_b_box.width() as f32 * surface_b_box.height() as f32;
     let mut raster_scale = 1.0f32;
@@ -513,10 +516,10 @@ fn make_fallback_shader(
 
 // Port of: src/pdf/SkPDFShader.cpp#L324-L331 (adjust_color, chrome/m156)
 fn adjust_color(shader: &Shader, paint_color: &Color4f) -> Color4f {
-    if let Some((img, _, _)) = shader.is_a_image() {
-        if img.is_alpha_only() {
-            return *paint_color;
-        }
+    if let Some((img, _, _)) = shader.is_a_image()
+        && img.is_alpha_only()
+    {
+        return *paint_color;
     }
     Color4f::new(0.0, 0.0, 0.0, paint_color.a) // only preserve the alpha.
 }

@@ -20,6 +20,8 @@
 //! deflated serially and the output is reproducible; the font subsets (`modules.md` M26), which
 //! `close` emits before the trailer.
 
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

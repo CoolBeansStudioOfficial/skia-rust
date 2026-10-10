@@ -3,6 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/PDFTaggedLinkTest.cpp (chrome/m156)
 
+#![allow(clippy::field_reassign_with_default)] // the tests assign the fields one by one, as the C++ does
+
 use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
 use skia_rust_core::font::Font;

@@ -4,6 +4,8 @@
 // Port of: tests/PDFTaggedTest.cpp (chrome/m156), all but `SkPDF_tagged_saveLayer`, which looks
 // for the marked content of text and waits for the PDF fonts (modules.md M26).
 
+#![allow(clippy::field_reassign_with_default)] // the tests assign the fields one by one, as the C++ does
+
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color;
 use skia_rust_core::font::Font;
