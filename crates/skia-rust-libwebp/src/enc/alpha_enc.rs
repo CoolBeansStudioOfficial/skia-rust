@@ -296,6 +296,8 @@ fn encode_alpha_internal(
 /// lossless, with the filters of `filtering` and `effort_level` = `config->method`. Returns the
 /// `ALPH` chunk payload, the smallest of the tried candidates (the first one on a tie).
 #[must_use]
+// Mirrors the C `if (try_map != FILTER_TRY_NONE)`, which tries the filters and falls back to none.
+#[allow(clippy::if_not_else)]
 pub fn encode_alpha(
     alpha: &[u8],
     width: usize,
@@ -309,7 +311,8 @@ pub fn encode_alpha(
         let mut best: Option<Vec<u8>> = None;
         for filter in WEBP_FILTER_NONE..WEBP_FILTER_LAST {
             if try_map & 1 != 0 {
-                let trial = encode_alpha_internal(alpha, width, height, method, filter, effort_level)?;
+                let trial =
+                    encode_alpha_internal(alpha, width, height, method, filter, effort_level)?;
                 let better = match &best {
                     None => true,
                     Some(b) => trial.len() < b.len(),

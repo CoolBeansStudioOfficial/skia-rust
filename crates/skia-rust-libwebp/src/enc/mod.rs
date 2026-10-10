@@ -7,8 +7,8 @@
 //! Port of the libwebp 1.4.0 encoder that `SkWebpEncoder` uses: the VP8L (lossless) encoder and
 //! its helpers. See `docs/design/codecs.md` §7 for the scope.
 
-pub mod backward_refs;
 pub mod alpha_enc;
+pub mod backward_refs;
 pub mod backward_refs_cost;
 pub mod backward_refs_select;
 pub mod bit_writer;

@@ -29,7 +29,7 @@ use skia_rust_raster::surfaces;
 use std::sync::{Arc, Mutex};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
-use crate::{def_test, reporter_assert};
+use crate::{def_test, errorf, reporter_assert};
 use skia_rust_codec::encode::webp_encoder::{self as webp, Compression};
 use skia_rust_libwebp::get_features;
 
@@ -626,62 +626,172 @@ def_test!(Encode_WebpQuality, |reporter| {
 });
 
 // Port of: tests/EncodeTest.cpp#L561-L607 (chrome/m156)
-def_test!(
-    Encode_WebpOptions,
-    |reporter| {
-        // ToolUtils::GetResourceAsBitmap: the test returns when the resource is not available.
-        let Some(image) = get_resource_as_image("images/google_chrome.ico") else {
-            return;
-        };
-        let Some(bitmap) = image.as_legacy_bitmap() else {
-            reporter_assert!(reporter, false);
-            return;
-        };
-        let Some(src) = bitmap.peek_pixels() else {
-            reporter_assert!(reporter, false);
-            return;
-        };
+def_test!(Encode_WebpOptions, |reporter| {
+    // ToolUtils::GetResourceAsBitmap: the test returns when the resource is not available.
+    let Some(image) = get_resource_as_image("images/google_chrome.ico") else {
+        return;
+    };
+    let Some(bitmap) = image.as_legacy_bitmap() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(src) = bitmap.peek_pixels() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
 
-        let mut options = webp::Options {
-            compression: Compression::Lossless,
-            quality: 0.0,
-        };
-        let data0 = webp::encode_pixmap(&src, &options);
-        reporter_assert!(reporter, data0.is_some());
+    let mut options = webp::Options {
+        compression: Compression::Lossless,
+        quality: 0.0,
+    };
+    let data0 = webp::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data0.is_some());
 
-        options.quality = 100.0;
-        let data1 = webp::encode_pixmap(&src, &options);
-        reporter_assert!(reporter, data1.is_some());
+    options.quality = 100.0;
+    let data1 = webp::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data1.is_some());
 
-        options.compression = Compression::Lossy;
-        options.quality = 100.0;
-        let data2 = webp::encode_pixmap(&src, &options);
-        reporter_assert!(reporter, data2.is_some());
+    options.compression = Compression::Lossy;
+    options.quality = 100.0;
+    let data2 = webp::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data2.is_some());
 
-        options.compression = Compression::Lossy;
-        options.quality = 50.0;
-        let data3 = webp::encode_pixmap(&src, &options);
-        reporter_assert!(reporter, data3.is_some());
+    options.compression = Compression::Lossy;
+    options.quality = 50.0;
+    let data3 = webp::encode_pixmap(&src, &options);
+    reporter_assert!(reporter, data3.is_some());
 
-        let (Some(data0), Some(data1), Some(data2), Some(data3)) = (data0, data1, data2, data3)
-        else {
-            return;
-        };
-        reporter_assert!(reporter, data0.size() > data1.size());
-        reporter_assert!(reporter, data1.size() > data2.size());
-        reporter_assert!(reporter, data2.size() > data3.size());
+    let (Some(data0), Some(data1), Some(data2), Some(data3)) = (data0, data1, data2, data3) else {
+        return;
+    };
+    reporter_assert!(reporter, data0.size() > data1.size());
+    reporter_assert!(reporter, data1.size() > data2.size());
+    reporter_assert!(reporter, data2.size() > data3.size());
 
-        let decode = |data: Data| {
-            deferred_from_encoded_data(Some(data), None).and_then(|img| img.as_legacy_bitmap())
-        };
-        let (Some(bm0), Some(bm1), Some(bm2), Some(bm3)) =
-            (decode(data0), decode(data1), decode(data2), decode(data3))
-        else {
-            reporter_assert!(reporter, false);
-            return;
-        };
-        reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm1, 0));
-        reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm2, 90));
-        reporter_assert!(reporter, almost_equals_bitmap(&bm2, &bm3, 50));
+    let decode = |data: Data| {
+        deferred_from_encoded_data(Some(data), None).and_then(|img| img.as_legacy_bitmap())
+    };
+    let (Some(bm0), Some(bm1), Some(bm2), Some(bm3)) =
+        (decode(data0), decode(data1), decode(data2), decode(data3))
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm1, 0));
+    reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm2, 90));
+    reporter_assert!(reporter, almost_equals_bitmap(&bm2, &bm3, 50));
+});
+
+// Port of: tests/EncodeTest.cpp#L609-L655 (chrome/m156)
+def_test!(Encode_WebpAnimated, |reporter| {
+    let frame_count: usize = 3;
+    let width = 16;
+    let height = 16;
+    let info = ImageInfo::new((width, height), ColorType::N32, AlphaType::Premul, None);
+    let durations = [50, 100, 150];
+    let colors = [Color::RED, Color::BLUE, Color::GREEN];
+
+    let mut bitmaps: Vec<Bitmap> = Vec::new();
+    for color in colors {
+        let mut bm = Bitmap::new();
+        bm.alloc_pixels_info(&info, None);
+        bm.erase_color(color);
+        bitmaps.push(bm);
     }
-);
+    let mut frames = Vec::new();
+    for (i, bm) in bitmaps.iter().enumerate() {
+        let Some(pixmap) = bm.peek_pixels() else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        frames.push(webp::Frame {
+            pixmap,
+            duration: durations[i],
+        });
+    }
+
+    let mut stream: Vec<u8> = Vec::new();
+    let options = webp::Options {
+        compression: Compression::Lossless,
+        quality: 100.0,
+    };
+    reporter_assert!(
+        reporter,
+        webp::encode_animated(&mut stream, &frames, &options)
+    );
+
+    let Ok(mut codec) = make_codec_from_stream(MemoryStream::make_copy(&stream)) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let frame_count_decoded = codec.get_frame_count();
+    reporter_assert!(
+        reporter,
+        usize::try_from(frame_count_decoded) == Ok(frame_count)
+    );
+
+    for i in 0..frame_count {
+        let index = i32::try_from(i).unwrap_or(-1);
+        let row_bytes = info.min_row_bytes();
+        let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+        let codec_options = skia_rust_codec::codec::Options {
+            frame_index: index,
+            ..skia_rust_codec::codec::Options::default()
+        };
+        let result = codec.get_pixels(&info, &mut pixels, row_bytes, Some(&codec_options));
+        if result != CodecResult::Success {
+            errorf!(reporter, "error in frame {}: {:?}", i, result);
+        }
+
+        let mut decoded = Bitmap::new();
+        reporter_assert!(
+            reporter,
+            decoded.install_pixels(&info, Some(pixels), row_bytes)
+        );
+        reporter_assert!(reporter, almost_equals_bitmap(&decoded, &bitmaps[i], 0));
+        let frame_info = codec.get_frame_info(index);
+        reporter_assert!(
+            reporter,
+            frame_info.is_some_and(|f| f.duration == durations[i])
+        );
+    }
+});
+
+// Port of: tests/EncodeTest.cpp#L657-L680 (chrome/m156)
+def_test!(Encode_WebpAnimated_FrameUnmatched, |reporter| {
+    // Create two frames with unmatched sizes and verify the encode should fail.
+    let mut bm1 = Bitmap::new();
+    bm1.alloc_pixels_info(
+        &ImageInfo::new((8, 8), ColorType::N32, AlphaType::Premul, None),
+        None,
+    );
+    bm1.erase_color(Color::YELLOW);
+    let mut bm2 = Bitmap::new();
+    bm2.alloc_pixels_info(
+        &ImageInfo::new((16, 16), ColorType::N32, AlphaType::Premul, None),
+        None,
+    );
+    bm2.erase_color(Color::YELLOW);
+    let (Some(pixmap1), Some(pixmap2)) = (bm1.peek_pixels(), bm2.peek_pixels()) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let frames = vec![
+        webp::Frame {
+            pixmap: pixmap1,
+            duration: 200,
+        },
+        webp::Frame {
+            pixmap: pixmap2,
+            duration: 200,
+        },
+    ];
+
+    let mut stream: Vec<u8> = Vec::new();
+    let options = webp::Options {
+        compression: Compression::Lossy,
+        quality: 100.0,
+    };
+    let output = webp::encode_animated(&mut stream, &frames, &options);
+    reporter_assert!(reporter, !output);
+});

@@ -13,9 +13,9 @@
 // The ICC profile of the colour space is embedded as an `ICCP` chunk by `skia_rust_libwebp::mux`
 // (libwebp's WebPMux), as `SkWebpEncoder::Encode` does.
 //
-// Not ported, and reported as `false` / `None` rather than encoded differently:
-// - `EncodeAnimated` (WebPAnimEncoder) and the GPU-backed `EncodeImage` (no `DirectContext`
-//   type in this port; `encode_image` reads the raster pixels of the image).
+// The animated encoder (`encode_animated`, WebPAnimEncoder) is ported for lossless frames. Lossy
+// animation is not ported and reports `false`. The GPU-backed `EncodeImage` is not ported (no
+// `DirectContext` type in this port; `encode_image` reads the raster pixels of the image).
 
 use std::io;
 
@@ -27,9 +27,10 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::pixmap::Pixmap;
-use skia_rust_libwebp::enc::encode_lossless;
 use skia_rust_libwebp::enc::vp8_lossy::encode_lossy;
+use skia_rust_libwebp::enc::{encode_lossless, encode_lossless_method};
 use skia_rust_libwebp::mux::Mux;
+use skia_rust_libwebp::mux::anim_encode::{ArgbPicture, FrameConfig, anim_encoder_new};
 
 use crate::encode::icc::write_icc_profile;
 
@@ -172,4 +173,103 @@ pub fn encode_image(img: &Image, options: &Options) -> Option<Data> {
     let bitmap = img.as_legacy_bitmap()?;
     let pixmap = bitmap.peek_pixels()?;
     encode_pixmap(&pixmap, options)
+}
+
+/// Port of `SkEncoder::Frame`: the pixels of one frame of an animation and its duration (ms).
+#[derive(Debug)]
+pub struct Frame<'a> {
+    /// The frame's pixels.
+    pub pixmap: Pixmap<'a>,
+    /// The frame's duration in milliseconds.
+    pub duration: i32,
+}
+
+/// Encodes `frames` as an animated WebP file into `writer`. Returns `true` on success.
+///
+/// Port of `SkWebpEncoder::EncodeAnimated`: each frame goes through the same preprocessing and
+/// `WebPEncode` as a still image (its transparent pixels replaced), then `WebPAnimEncoderAdd`
+/// with its timestamp, and `WebPAnimEncoderAssemble` at the end. Lossy frames are not ported
+/// (the lossy candidates of the animation encoder), so a lossy `options` returns `false`.
+#[must_use]
+pub fn encode_animated<W: io::Write>(
+    writer: &mut W,
+    frames: &[Frame<'_>],
+    options: &Options,
+) -> bool {
+    let Some(first) = frames.first() else {
+        return false;
+    };
+    let first_info = first.pixmap.info();
+    let canvas_width = first_info.width();
+    let canvas_height = first_info.height();
+    let Some(mut enc) = anim_encoder_new(canvas_width, canvas_height, None) else {
+        return false;
+    };
+    if options.compression != Compression::Lossless || !(0.0..=100.0).contains(&options.quality) {
+        return false;
+    }
+    let mut timestamp: i32 = 0;
+    for frame in frames {
+        let info = frame.pixmap.info();
+        if info.width() != canvas_width || info.height() != canvas_height {
+            return false;
+        }
+        let Some(mut argb) = argb_pixels(&frame.pixmap) else {
+            return false;
+        };
+        // preprocess_webp_picture: VP8L at method 0, use_argb, and the WebPEncode of the picture,
+        // whose WebPReplaceTransparentPixels changes the pixels the animation encoder then reads.
+        let config = FrameConfig {
+            lossless: true,
+            method: 0,
+            quality: options.quality,
+            exact: false,
+        };
+        let (Ok(w), Ok(h)) = (
+            usize::try_from(canvas_width),
+            usize::try_from(canvas_height),
+        ) else {
+            return false;
+        };
+        // WebPEncode's output is not used here; a failure of the encode fails the animation.
+        // The quality is in `0.0..=100.0` (checked above): the truncation is libwebp's `(int)`.
+        #[allow(clippy::cast_possible_truncation)]
+        let quality = options.quality as i32;
+        if !argb_replace_transparent_then_encode(&mut argb, w, h, quality) {
+            return false;
+        }
+        let picture = ArgbPicture {
+            width: canvas_width,
+            height: canvas_height,
+            argb,
+        };
+        if enc.add(Some(&picture), timestamp, Some(config)).is_err() {
+            return false;
+        }
+        timestamp = timestamp.wrapping_add(frame.duration);
+    }
+    // Add a last fake frame to signal the last duration.
+    if enc.add(None, timestamp, None).is_err() {
+        return false;
+    }
+    match enc.assemble() {
+        Ok(data) => writer.write_all(&data).is_ok(),
+        Err(_) => false,
+    }
+}
+
+/// `WebPReplaceTransparentPixels(pic, 0x000000)` on `argb` (`WebPEncode` with `exact = 0`), then
+/// the lossless encode of the picture (`VP8LEncodeImage`). Returns `false` where it fails.
+fn argb_replace_transparent_then_encode(
+    argb: &mut [u32],
+    width: usize,
+    height: usize,
+    quality: i32,
+) -> bool {
+    for px in argb.iter_mut() {
+        if (*px >> 24) == 0 {
+            *px = 0;
+        }
+    }
+    encode_lossless_method(width, height, argb, 0, quality, true).is_some()
 }

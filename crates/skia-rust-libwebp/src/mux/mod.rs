@@ -50,7 +50,7 @@ const TAG_XMP: u32 = mkfourcc(b'X', b'M', b'P', b' ');
 /// Port of `NIL_TAG`: matches any tag in `CountChunks`.
 const NIL_TAG: u32 = 0;
 
-/// Port of `CHUNK_HEADER_SIZE` (format_constants.h).
+/// Port of `CHUNK_HEADER_SIZE` (`format_constants.h`).
 const CHUNK_HEADER_SIZE: usize = 8;
 /// Port of `RIFF_HEADER_SIZE`.
 const RIFF_HEADER_SIZE: usize = 12;
@@ -91,7 +91,7 @@ pub enum MuxError {
     NotEnoughData,
 }
 
-/// Port of `WebPChunkId` (mux_types.h).
+/// Port of `WebPChunkId` (`mux_types.h`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkId {
     /// Port of `WEBP_CHUNK_VP8X`.
@@ -281,7 +281,7 @@ fn image_emit(wpi: &MuxImage, dst: &mut Vec<u8>) {
 
 /// Port of `ChunkInfo` lookups for the `WebPMuxFrameInfo` id: `ANMF` or `IMAGE` (a still image).
 ///
-/// Port of `WebPMuxFrameInfo` (mux_types.h): the frame's bitstream, offsets, duration, dispose and
+/// Port of `WebPMuxFrameInfo` (`mux_types.h`): the frame's bitstream, offsets, duration, dispose and
 /// blend methods.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FrameInfo<'a> {
@@ -316,6 +316,51 @@ pub enum Blend {
     Blend,
     /// Port of `WEBP_MUX_NO_BLEND`.
     NoBlend,
+}
+
+/// Port of the `WebPMuxFrameInfo` that `WebPMuxGetFrame` returns: the frame's bitstream is owned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OwnedFrame {
+    /// The frame's bitstream, a single WebP file.
+    pub bitstream: Vec<u8>,
+    pub x_offset: i32,
+    pub y_offset: i32,
+    pub duration: i32,
+    pub id: ChunkId,
+    pub dispose: Dispose,
+    pub blend: Blend,
+}
+
+/// Port of `SynthesizeBitstream` (muxread.c#L392-L426): a single WebP file of the image, with a
+/// `VP8X` header and the `ALPH` chunk when the image has alpha.
+fn synthesize_bitstream(wpi: &MuxImage) -> Result<Vec<u8>, MuxError> {
+    let Some(img) = wpi.img.as_ref() else {
+        return Err(MuxError::BadData);
+    };
+    let need_vp8x = wpi.alpha.is_some();
+    let vp8x_size = if need_vp8x {
+        CHUNK_HEADER_SIZE + VP8X_CHUNK_SIZE
+    } else {
+        0
+    };
+    let alpha_size = wpi.alpha.as_ref().map_or(0, Chunk::disk_size);
+    let size = RIFF_HEADER_SIZE + vp8x_size + alpha_size + img.disk_size();
+    let mut data = Vec::with_capacity(size);
+    put_le32(&mut data, mkfourcc(b'R', b'I', b'F', b'F'));
+    put_le32(&mut data, (size - CHUNK_HEADER_SIZE) as u32);
+    put_le32(&mut data, mkfourcc(b'W', b'E', b'B', b'P'));
+    if let Some(alpha) = wpi.alpha.as_ref() {
+        // EmitVP8XChunk: the alpha flag and the canvas of the image.
+        put_le32(&mut data, TAG_VP8X);
+        put_le32(&mut data, VP8X_CHUNK_SIZE as u32);
+        put_le32(&mut data, ALPHA_FLAG);
+        put_le24(&mut data, (wpi.width - 1) as u32);
+        put_le24(&mut data, (wpi.height - 1) as u32);
+        alpha.emit(&mut data);
+    }
+    img.emit(&mut data);
+    debug_assert_eq!(data.len(), size);
+    Ok(data)
 }
 
 /// Port of `WebPMuxAnimParams`: the background colour and the loop count.
@@ -367,10 +412,7 @@ fn mux_image_finalize(wpi: &mut MuxImage) -> bool {
 
 /// Port of `ChunkVerifyAndAssign`: the chunk at the start of `data` (`data_size` bytes are left,
 /// and the RIFF payload holds `riff_size` bytes).
-fn chunk_verify_and_assign(
-    data: &[u8],
-    riff_size: usize,
-) -> Result<Chunk, MuxError> {
+fn chunk_verify_and_assign(data: &[u8], riff_size: usize) -> Result<Chunk, MuxError> {
     if data.len() < CHUNK_HEADER_SIZE {
         return Err(MuxError::NotEnoughData);
     }
@@ -655,10 +697,10 @@ impl Mux {
                 h = self.images[0].height;
             }
             let mut f = 0;
-            if let Some(wpi) = self.images.first() {
-                if wpi.has_alpha {
-                    f |= ALPHA_FLAG;
-                }
+            if let Some(wpi) = self.images.first()
+                && wpi.has_alpha
+            {
+                f |= ALPHA_FLAG;
             }
             (w, h, f)
         };
@@ -872,7 +914,13 @@ impl Mux {
         let mut data = Vec::with_capacity(ANIM_CHUNK_SIZE);
         put_le32(&mut data, params.bgcolor);
         put_le16(&mut data, params.loop_count as u32);
-        set_head(Chunk { tag: TAG_ANIM, data }, &mut self.anim)
+        set_head(
+            Chunk {
+                tag: TAG_ANIM,
+                data,
+            },
+            &mut self.anim,
+        )
     }
 
     /// Port of `WebPMuxSetCanvasSize`.
@@ -882,7 +930,10 @@ impl Mux {
     /// Returns `InvalidArgument` for sizes the format cannot hold.
     #[doc(alias = "WebPMuxSetCanvasSize")]
     pub fn set_canvas_size(&mut self, width: i32, height: i32) -> Result<(), MuxError> {
-        if width < 0 || height < 0 || i64::from(width) > MAX_CANVAS_SIZE || i64::from(height) > MAX_CANVAS_SIZE
+        if width < 0
+            || height < 0
+            || i64::from(width) > MAX_CANVAS_SIZE
+            || i64::from(height) > MAX_CANVAS_SIZE
         {
             return Err(MuxError::InvalidArgument);
         }
@@ -948,7 +999,7 @@ impl Mux {
         put_le24(&mut frame, info.duration as u32);
         frame.push(
             (if info.blend == Blend::NoBlend { 2 } else { 0 })
-                | (if info.dispose == Dispose::Background { 1 } else { 0 }),
+                | u8::from(info.dispose == Dispose::Background),
         );
         set_head_opt(
             Chunk {
@@ -972,6 +1023,62 @@ impl Mux {
         let index = search_image(&self.images, nth).ok_or(MuxError::NotFound)?;
         self.images.remove(index);
         Ok(())
+    }
+
+    /// Port of `WebPMuxGetFrame`: the `nth` image (1-based; 0 is the last) as a frame, with its
+    /// bitstream synthesized as a single WebP file (`SynthesizeBitstream`).
+    ///
+    /// # Errors
+    ///
+    /// Returns the `MuxError` the C function would return.
+    #[doc(alias = "WebPMuxGetFrame")]
+    pub fn get_frame(&self, nth: u32) -> Result<OwnedFrame, MuxError> {
+        let index = search_image(&self.images, nth).ok_or(MuxError::NotFound)?;
+        let wpi = &self.images[index];
+        let Some(img) = wpi.img.as_ref() else {
+            return Err(MuxError::BadData);
+        };
+        let bitstream = synthesize_bitstream(wpi)?;
+        match &wpi.header {
+            // MuxGetImageInternal: the defaults of a still image.
+            None => Ok(OwnedFrame {
+                bitstream,
+                x_offset: 0,
+                y_offset: 0,
+                duration: 1,
+                id: chunk_id_from_tag(img.tag),
+                dispose: Dispose::None,
+                blend: Blend::Blend,
+            }),
+            // MuxGetFrameInternal: the fields of the ANMF header.
+            Some(header) => {
+                if header.tag != TAG_ANMF {
+                    return Err(MuxError::InvalidArgument);
+                }
+                if header.data.len() < ANMF_CHUNK_SIZE {
+                    return Err(MuxError::BadData);
+                }
+                let d = &header.data;
+                let bits = d[15];
+                Ok(OwnedFrame {
+                    bitstream,
+                    x_offset: 2 * get_le24(&d[0..]) as i32,
+                    y_offset: 2 * get_le24(&d[3..]) as i32,
+                    duration: get_le24(&d[12..]) as i32,
+                    id: chunk_id_from_tag(header.tag),
+                    dispose: if bits & 1 != 0 {
+                        Dispose::Background
+                    } else {
+                        Dispose::None
+                    },
+                    blend: if bits & 2 != 0 {
+                        Blend::NoBlend
+                    } else {
+                        Blend::Blend
+                    },
+                })
+            }
+        }
     }
 
     /// Port of `MuxCleanup`: a single frame that covers the canvas becomes a still image, and a
@@ -1014,13 +1121,13 @@ impl Mux {
                 }
                 let x_offset = 2 * get_le24(&header.data[0..]) as i32;
                 let y_offset = 2 * get_le24(&header.data[3..]) as i32;
-                let max_x_pos = x_offset + wpi.width;
-                let max_y_pos = y_offset + wpi.height;
-                if max_x_pos > max_x {
-                    max_x = max_x_pos;
+                let right = x_offset + wpi.width;
+                let bottom = y_offset + wpi.height;
+                if right > max_x {
+                    max_x = right;
                 }
-                if max_y_pos > max_y {
-                    max_y = max_y_pos;
+                if bottom > max_y {
+                    max_y = bottom;
                 }
             }
             Ok((max_x, max_y))
@@ -1092,7 +1199,13 @@ impl Mux {
         put_le32(&mut data, flags);
         put_le24(&mut data, (width - 1) as u32);
         put_le24(&mut data, (height - 1) as u32);
-        set_head(Chunk { tag: TAG_VP8X, data }, &mut self.vp8x)
+        set_head(
+            Chunk {
+                tag: TAG_VP8X,
+                data,
+            },
+            &mut self.vp8x,
+        )
     }
 
     /// Port of `WebPMuxAssemble`: the WebP file of the mux, in the order the C code emits it.
@@ -1153,7 +1266,10 @@ fn search_image(images: &[MuxImage], nth: u32) -> Option<usize> {
 
 /// Port of `GetImageData`: the image chunk, the alpha chunk and whether the image is lossless, of
 /// a WebP file or of a raw bitstream.
-fn get_image_data(bitstream: &[u8]) -> Result<(Vec<u8>, Option<Vec<u8>>, bool), MuxError> {
+/// The image bytes, the alpha bytes and the lossless flag of a bitstream.
+type ImageData = (Vec<u8>, Option<Vec<u8>>, bool);
+
+fn get_image_data(bitstream: &[u8]) -> Result<ImageData, MuxError> {
     if bitstream.len() < TAG_SIZE || &bitstream[..TAG_SIZE] != b"RIFF" {
         // Not a WebP file: the input is the bitstream.
         let lossless = vp8l::check_signature(bitstream);

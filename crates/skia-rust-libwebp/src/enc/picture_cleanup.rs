@@ -82,7 +82,7 @@ pub fn cleanup_transparent_area(pic: &mut YuvPicture) {
     let width = pic.width;
     let height = pic.height;
     let y_stride = width;
-    let uv_stride = (width + 1) / 2;
+    let uv_stride = width.div_ceil(2);
     let a_stride = width;
     let a = a.clone();
     let y = &mut pic.y;
@@ -114,7 +114,16 @@ pub fn cleanup_transparent_area(pic: &mut YuvPicture) {
             x += SIZE;
         }
         if x < width {
-            smoothen_block(&a, a_ptr + x, a_stride, y, y_ptr + x, y_stride, width - x, SIZE);
+            smoothen_block(
+                &a,
+                a_ptr + x,
+                a_stride,
+                y,
+                y_ptr + x,
+                y_stride,
+                width - x,
+                SIZE,
+            );
         }
         a_ptr += SIZE * a_stride;
         y_ptr += SIZE * y_stride;
@@ -126,11 +135,29 @@ pub fn cleanup_transparent_area(pic: &mut YuvPicture) {
         let sub_height = height - yy;
         let mut x = 0usize;
         while x + SIZE <= width {
-            smoothen_block(&a, a_ptr + x, a_stride, y, y_ptr + x, y_stride, SIZE, sub_height);
+            smoothen_block(
+                &a,
+                a_ptr + x,
+                a_stride,
+                y,
+                y_ptr + x,
+                y_stride,
+                SIZE,
+                sub_height,
+            );
             x += SIZE;
         }
         if x < width {
-            smoothen_block(&a, a_ptr + x, a_stride, y, y_ptr + x, y_stride, width - x, sub_height);
+            smoothen_block(
+                &a,
+                a_ptr + x,
+                a_stride,
+                y,
+                y_ptr + x,
+                y_stride,
+                width - x,
+                sub_height,
+            );
         }
     }
 }
