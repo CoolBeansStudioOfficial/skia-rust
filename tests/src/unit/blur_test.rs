@@ -11,7 +11,12 @@
 #![allow(clippy::neg_cmp_op_on_partial_ord)] // REPORTER_ASSERT(r, sigma > 0) negates the condition
 #![allow(clippy::float_cmp)] // the C++ compares scalars with ==
 
-use crate::{def_test, reporter_assert};
+use crate::{def_graphite_test_for_all_contexts, def_test, reporter_assert};
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blur_mask::BlurMask;
 use skia_rust_core::blur_types::BlurStyle;
@@ -20,6 +25,7 @@ use skia_rust_core::color::Color;
 
 use skia_rust_core::mask::{AllocType, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{BlurRec, MaskFilter};
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::math_priv::clamp_pos;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
@@ -479,4 +485,37 @@ def_test!(EmbossPerlinCrash, |_reporter| {
 
     let mut surface = surfaces::raster_n32_premul((100, 100)).expect("surface");
     surface.canvas().draw_paint(&p);
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// Reproducing integer overflow in https://g-issues.skia.org/issues/413427423
+// Port of: tests/BlurTest.cpp#L649-L670 (chrome/m156)
+def_graphite_test_for_all_contexts!(BlurPointCircle, |reporter, context| {
+    let info = ImageInfo::new((1, 1), ColorType::RGBA8888, AlphaType::Premul, None);
+    let mut recorder = context.make_recorder(None);
+    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+    reporter_assert!(reporter, surface.is_some());
+    let Some(surface) = surface else {
+        return;
+    };
+    let canvas = surface.canvas();
+
+    let mut paint = Paint::default();
+    paint.set_mask_filter(MaskFilter::blur(BlurStyle::Normal, 5.0, false));
+
+    canvas.concat(&Matrix::new_all(
+        0.000_256_608_007,
+        0.0,
+        0.0,
+        0.0,
+        0.000_256_608_007,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    ));
+    canvas.draw_arc(Rect::new(-1.0, -1.0, 1.0, 1.0), 0.0, 360.0, false, &paint);
+
+    let _ = recorder.snap();
 });
