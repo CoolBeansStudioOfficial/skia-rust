@@ -8,6 +8,7 @@
 //! its helpers. See `docs/design/codecs.md` §7 for the scope.
 
 pub mod backward_refs;
+pub mod alpha_enc;
 pub mod backward_refs_cost;
 pub mod backward_refs_select;
 pub mod bit_writer;
@@ -20,6 +21,7 @@ pub mod huffman;
 pub mod palette;
 pub mod palette_sort;
 pub mod picture;
+pub mod picture_cleanup;
 pub mod predictor;
 pub mod prefix;
 pub mod tables;

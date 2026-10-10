@@ -49,7 +49,9 @@
     clippy::cast_sign_loss
 )]
 
+use super::alpha_enc::{AlphaFiltering, encode_alpha, has_transparency};
 use super::picture::{YuvPicture, import_rgba};
+use super::picture_cleanup::cleanup_transparent_area;
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_cost::VP8EncProba;
 use super::vp8_encoder::{
@@ -187,14 +189,21 @@ pub fn encode_lossy(
     if width == 0 || height == 0 || width > 16383 || height > 16383 {
         return None;
     }
-    let pic: YuvPicture = import_rgba(rgba, 4 * width, width, height, false, !opaque_rgbx)?;
-    if pic.a.is_some() {
-        return None;
-    }
+    let mut pic: YuvPicture = import_rgba(rgba, 4 * width, width, height, false, !opaque_rgbx)?;
+    // WebPEncode: WebPCleanupTransparentArea unless `exact` (SkWebpEncoder keeps exact = 0).
+    cleanup_transparent_area(&mut pic);
+    // VP8EncInitAlpha / VP8EncStartAlpha: the ALPH payload of a picture with transparency, at
+    // alpha_filtering = 1 (fast), alpha_compression = 1 (lossless), effort = config->method = 3.
+    let alpha = match pic.a.as_deref() {
+        Some(a) if has_transparency(a) => {
+            Some(encode_alpha(a, width, height, AlphaFiltering::Fast, 3)?)
+        }
+        _ => None,
+    };
     let config = preset_default(quality, 3);
     let mut enc = init_vp8_encoder(&config, width, height);
     if !analyze_and_code(&mut enc, &pic) {
         return None;
     }
-    vp8_enc_write(&mut enc, width, height)
+    vp8_enc_write(&mut enc, width, height, alpha.as_deref())
 }

@@ -27,16 +27,20 @@ build() {
 }
 
 build encode_lossless_c -U__SSE2__ -U__SSE4_1__
+# build_main <lib-prefix> <main.c> <output-name> [flags]: links another harness main against the
+# objects of the portable build (the objects of the `build` above, minus their own main).
 build_main() {
   name="$1"
   main_src="$2"
-  shift 2
-  gcc $BASE "$@" -c "$HERE/$main_src" -o "$OUT/$name-main2.o"
+  out_name="$3"
+  shift 3
+  gcc $BASE "$@" -c "$HERE/$main_src" -o "$OUT/$out_name-main.o"
   objs=""
   for o in "$OUT/$name"-*.o; do
-    case "$o" in *-main.o|*-main2.o) ;; *) objs="$objs $o" ;; esac
+    case "$o" in *-main.o) ;; *) objs="$objs $o" ;; esac
   done
-  gcc -o "$OUT/$name-methods" "$OUT/$name-main2.o" $objs -lm
+  gcc -o "$OUT/$out_name" "$OUT/$out_name-main.o" $objs -lm
 }
-build_main encode_lossless_c encode_lossless_methods.c -U__SSE2__ -U__SSE4_1__
+build_main encode_lossless_c encode_lossless_methods.c encode_lossless_methods -U__SSE2__ -U__SSE4_1__
+build_main encode_lossless_c encode_lossy_alpha.c encode_lossy_alpha -U__SSE2__ -U__SSE4_1__
 build encode_lossless_sse -msse4.1

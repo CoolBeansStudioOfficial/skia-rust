@@ -59,6 +59,10 @@ const RIFF_HEADER_SIZE: usize = 12;
 const CHUNK_HEADER_SIZE: usize = 8;
 /// Port of `VP8_FRAME_HEADER_SIZE`.
 const VP8_FRAME_HEADER_SIZE: usize = 10;
+/// Port of `VP8X_CHUNK_SIZE`.
+const VP8X_CHUNK_SIZE: usize = 10;
+/// Port of `ALPHA_FLAG` (`mux_types.h`): the alpha bit of the VP8X flags.
+const ALPHA_FLAG: u8 = 0x10;
 /// Port of `VP8_SIGNATURE`.
 const VP8_SIGNATURE: u32 = 0x9d_012a;
 /// Port of `VP8_MAX_PARTITION0_SIZE`.
@@ -185,7 +189,12 @@ fn generate_partition0(enc: &mut VP8Encoder) {
 /// Port of `VP8EncWrite`, for an opaque picture: the complete WebP file of the encoded frame.
 /// Returns `None` where the C code reports an error (the partitions or the frame are too big).
 #[must_use]
-pub fn vp8_enc_write(enc: &mut VP8Encoder, width: usize, height: usize) -> Option<Vec<u8>> {
+pub fn vp8_enc_write(
+    enc: &mut VP8Encoder,
+    width: usize,
+    height: usize,
+    alpha: Option<&[u8]>,
+) -> Option<Vec<u8>> {
     generate_partition0(enc);
     let part0 = enc.bw.bytes().to_vec();
     let size0 = part0.len();
@@ -195,7 +204,15 @@ pub fn vp8_enc_write(enc: &mut VP8Encoder, width: usize, height: usize) -> Optio
     }
     let pad = vp8_size & 1;
     vp8_size += pad;
-    let riff_size = 4 + CHUNK_HEADER_SIZE + vp8_size;
+    // VP8EncWrite: the minimum is "WEBP" plus the VP8 chunk; VP8X and ALPH add their chunks.
+    let mut riff_size = 4 + CHUNK_HEADER_SIZE + vp8_size;
+    if alpha.is_some() {
+        riff_size += CHUNK_HEADER_SIZE + VP8X_CHUNK_SIZE;
+    }
+    if let Some(alpha) = alpha {
+        let padded_alpha_size = alpha.len() + (alpha.len() & 1);
+        riff_size += CHUNK_HEADER_SIZE + padded_alpha_size;
+    }
     if riff_size > 0xffff_fffe {
         return None;
     }
@@ -208,6 +225,24 @@ pub fn vp8_enc_write(enc: &mut VP8Encoder, width: usize, height: usize) -> Optio
     out.extend_from_slice(b"RIFF");
     out.extend_from_slice(&(riff_size as u32).to_le_bytes());
     out.extend_from_slice(b"WEBP");
+    if let Some(alpha) = alpha {
+        // PutVP8XHeader: the alpha flag, and the canvas size minus one (24-bit fields).
+        out.extend_from_slice(b"VP8X");
+        out.extend_from_slice(&(VP8X_CHUNK_SIZE as u32).to_le_bytes());
+        out.push(ALPHA_FLAG);
+        out.extend_from_slice(&[0, 0, 0]);
+        let w1 = (width - 1) as u32;
+        let h1 = (height - 1) as u32;
+        out.extend_from_slice(&w1.to_le_bytes()[..3]);
+        out.extend_from_slice(&h1.to_le_bytes()[..3]);
+        // PutAlphaChunk
+        out.extend_from_slice(b"ALPH");
+        out.extend_from_slice(&(alpha.len() as u32).to_le_bytes());
+        out.extend_from_slice(alpha);
+        if alpha.len() & 1 != 0 {
+            out.push(0);
+        }
+    }
     // PutVP8Header
     out.extend_from_slice(b"VP8 ");
     out.extend_from_slice(&(vp8_size as u32).to_le_bytes());
