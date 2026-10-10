@@ -1,10 +1,10 @@
 // Copyright 2016 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: gm/encode_srgb.cpp (chrome/m156). The WebP variant is not registered: the WebP encoder
-// is not ported.
+// Port of: gm/encode_srgb.cpp (chrome/m156).
 
 use skia_rust_codec::codecs::make_codec_from_stream;
+use skia_rust_codec::encode::webp_encoder;
 use skia_rust_codec::encode::{jpeg_encoder, png_encoder};
 use skia_rust_codec::images::deferred_from_encoded_data;
 use skia_rust_core::alpha_type::AlphaType;
@@ -23,10 +23,11 @@ const IMAGE_HEIGHT: i32 = 128;
 const IMAGE_WIDTH_F: f32 = 128.0;
 const IMAGE_HEIGHT_F: f32 = 128.0;
 
-/// The encoded format of the GM (`SkEncodedImageFormat`), for the two encoders that are ported.
+/// The encoded format of the GM (`SkEncodedImageFormat`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum EncodedFormat {
     Png,
+    Webp,
     Jpeg,
 }
 
@@ -84,6 +85,8 @@ fn encode_data(bitmap: &Bitmap, format: EncodedFormat) -> Option<Data> {
     let src = bitmap.peek_pixels()?;
     match format {
         EncodedFormat::Png => png_encoder::encode_pixmap(&src, &png_encoder::Options::default()),
+        // SkWebpEncoder::Options() defaults: lossy at quality 100.
+        EncodedFormat::Webp => webp_encoder::encode_pixmap(&src, &webp_encoder::Options::default()),
         EncodedFormat::Jpeg => jpeg_encoder::encode_pixmap(&src, &jpeg_encoder::Options::default()),
     }
 }
@@ -97,6 +100,7 @@ impl GM for EncodeSrgbGm {
     fn name(&self) -> String {
         match self.format {
             EncodedFormat::Png => "encode-srgb-png".to_string(),
+            EncodedFormat::Webp => "encode-srgb-webp".to_string(),
             EncodedFormat::Jpeg => "encode-srgb-jpg".to_string(),
         }
     }
@@ -141,6 +145,14 @@ crate::def_gm!(
     EncodeSRGBGM_kPNG = "EncodeSRGBGM(SkEncodedImageFormat::kPNG)",
     EncodeSrgbGm {
         format: EncodedFormat::Png
+    }
+);
+
+// Port of: gm/encode_srgb.cpp#L157 (chrome/m156)
+crate::def_gm!(
+    EncodeSRGBGM_kWEBP = "EncodeSRGBGM(SkEncodedImageFormat::kWEBP)",
+    EncodeSrgbGm {
+        format: EncodedFormat::Webp
     }
 );
 

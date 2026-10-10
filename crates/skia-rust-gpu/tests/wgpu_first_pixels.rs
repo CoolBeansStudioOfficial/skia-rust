@@ -26,27 +26,20 @@ use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_gpu::gpu::backing_fit::BackingFit;
 use skia_rust_gpu::gpu::gpu_types::{Budgeted, CallbackResult, Mipmapped};
 use skia_rust_gpu::graphite::async_read::PixelTransferResult;
-use skia_rust_gpu::graphite::buffer::{BindBufferInfo, Buffer};
-use skia_rust_gpu::graphite::command_buffer::ResourceTracker;
+use skia_rust_gpu::graphite::buffer::BindBufferInfo;
 use skia_rust_gpu::graphite::compute::compute_step::{
     ComputeStep, ComputeStepBase, DataFlow, NativeShaderFormat, NativeShaderSource, ResourceDesc,
     ResourcePolicy, ResourceType, WorkgroupSize,
 };
-use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
-use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
+use skia_rust_gpu::graphite::compute::dispatch_group::Builder;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::device::Device;
 use skia_rust_gpu::graphite::graphite_types::{
     InsertRecordingInfo, InsertStatus, SubmitInfo, SyncToCpu,
 };
-use skia_rust_gpu::graphite::resource::ResourceRef;
-use skia_rust_gpu::graphite::resource_provider::ResourceProvider;
-use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, LoadOp};
-use skia_rust_gpu::graphite::task::TaskRef;
-use skia_rust_gpu::graphite::task::compute_task::{
-    BindingResource, ComputeTask, Dispatch, DispatchGroup, GlobalSizeOrIndirect, ResourceBinding,
-};
+use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, ClearBuffer, LoadOp};
+use skia_rust_gpu::graphite::task::compute_task::ComputeTask;
 use skia_rust_gpu::graphite::task::copy_task::CopyBufferToBufferTask;
 use skia_rust_gpu::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
 use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
@@ -319,36 +312,6 @@ fn cs_main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 }
 
-/// One dispatch of the pipeline over a storage buffer.
-#[derive(Debug)]
-struct DoubleGroup {
-    pipeline: Arc<dyn ComputePipeline>,
-    buffer: ResourceRef<Buffer>,
-    dispatches: Vec<Dispatch>,
-}
-
-impl DispatchGroup for DoubleGroup {
-    fn snap_child_task(&mut self) -> Option<TaskRef> {
-        None
-    }
-
-    fn prepare_resources(&mut self, _resource_provider: &mut ResourceProvider) -> bool {
-        true
-    }
-
-    fn add_resource_refs(&mut self, tracker: &mut dyn ResourceTracker) {
-        tracker.track_resource(self.buffer.to_any());
-    }
-
-    fn dispatches(&self) -> &[Dispatch] {
-        &self.dispatches
-    }
-
-    fn pipeline(&self, _index: u32) -> Option<Arc<dyn ComputePipeline>> {
-        Some(self.pipeline.clone())
-    }
-}
-
 #[test]
 #[allow(clippy::too_many_lines)] // one scenario: upload, dispatch, copy back, read
 fn a_compute_pass_dispatches_over_a_storage_buffer() {
@@ -369,11 +332,6 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
             true,
         ),
     });
-    let pipeline = context
-        .shared_context()
-        .find_or_create_compute_pipeline(&ComputePipelineDesc::new(step))
-        .expect("a compute pipeline");
-
     let mut recorder = context.make_recorder(None);
     let (upload, storage, readback) = {
         let mut provider = ContextPriv::resource_provider(&context).lock().unwrap();
@@ -404,18 +362,11 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
     }
     upload.unmap_with(&data);
 
-    let group = DoubleGroup {
-        pipeline,
-        buffer: storage.clone(),
-        dispatches: vec![Dispatch {
-            pipeline_index: 0,
-            bindings: vec![ResourceBinding {
-                index: 0,
-                resource: BindingResource::Buffer(BindBufferInfo::new(&storage, 0, 32)),
-            }],
-            global_size_or_indirect: GlobalSizeOrIndirect::Size(WorkgroupSize::new(1, 1, 1)),
-        }],
-    };
+    // The storage buffer is the group's shared slot 0, so the step binds it at index 0.
+    let mut builder = Builder::new(&recorder);
+    builder.assign_shared_buffer(BindBufferInfo::new(&storage, 0, 32), 0, ClearBuffer::No);
+    assert!(builder.append_step(&step, Some(WorkgroupSize::new(1, 1, 1))));
+    let group = builder.finalize();
     recorder.priv_().add(CopyBufferToBufferTask::make(
         upload.as_arc(),
         0,
@@ -423,9 +374,7 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
         0,
         32,
     ));
-    recorder
-        .priv_()
-        .add(ComputeTask::make(vec![Box::new(group)]));
+    recorder.priv_().add(ComputeTask::make(vec![group]));
     recorder.priv_().add(CopyBufferToBufferTask::make(
         storage.as_arc(),
         0,

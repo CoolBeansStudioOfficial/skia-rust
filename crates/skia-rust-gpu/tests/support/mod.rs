@@ -26,6 +26,8 @@ use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
+use skia_rust_gpu::graphite::compute::dispatch_group::DispatchGroup;
+use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
 use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
 use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
@@ -43,7 +45,6 @@ use skia_rust_gpu::graphite::resource_types::{
     AccessPattern, BufferType, Discardable, ImmutableSamplerInfo, Layout, Ownership, ResourceType,
 };
 use skia_rust_gpu::graphite::shader_code_dictionary::ShaderCodeDictionary;
-use skia_rust_gpu::graphite::task::compute_task::DispatchGroup;
 use skia_rust_gpu::graphite::task::render_pass_task::DrawPass;
 use skia_rust_gpu::graphite::texture::{Texture, TextureBackend};
 use skia_rust_gpu::graphite::texture_format::TextureFormat;
@@ -289,6 +290,18 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, mipmapped)
     }
 
+    fn get_default_storage_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+    ) -> TextureInfo {
+        self.get_default_sampled_texture_info(
+            color_type,
+            Mipmapped::No,
+            Protected::No,
+            skia_rust_gpu::gpu::gpu_types::Renderable::No,
+        )
+    }
+
     fn get_default_readable_texture_info(
         &self,
         format: TextureFormat,
@@ -395,6 +408,18 @@ impl Caps for MockCaps {
         false
     }
 
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize {
+        2048 * 1024 * 4
+    }
+
+    fn min_distance_field_font_size(&self) -> f32 {
+        18.0
+    }
+
+    fn glyphs_as_paths_font_size(&self) -> f32 {
+        324.0
+    }
+
     fn set_backend_labels(&self) -> bool {
         false
     }
@@ -467,6 +492,12 @@ pub struct MockResourceBackend {
 }
 
 impl ResourceProviderBackend for MockResourceBackend {
+    fn find_or_create_compute_pipeline(
+        &mut self,
+        _pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        None
+    }
     fn max_texture_size(&self) -> i32 {
         4096
     }
@@ -749,7 +780,7 @@ impl CommandBuffer for MockCommandBuffer {
         !self.fail
     }
 
-    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool {
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<DispatchGroup>]) -> bool {
         self.calls.push(Call::ComputePass(dispatches.len()));
         !self.fail
     }

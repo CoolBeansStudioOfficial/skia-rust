@@ -26,6 +26,7 @@ use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
+use crate::graphite::renderer_provider::PathRendererStrategy;
 use crate::graphite::resource_types::DstReadStrategy;
 use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo, Layout};
 use crate::graphite::texture_format::TextureFormat;
@@ -209,6 +210,10 @@ pub trait Caps: Send + Sync + Debug {
         renderable: Renderable,
     ) -> TextureInfo;
 
+    /// `getDefaultStorageTextureInfo(colorType)`.
+    #[doc(alias = "getDefaultStorageTextureInfo")]
+    fn get_default_storage_texture_info(&self, color_type: ColorType) -> TextureInfo;
+
     /// `getDefaultReadableTextureInfo()`.
     #[doc(alias = "getDefaultReadableTextureInfo")]
     fn get_default_readable_texture_info(
@@ -330,6 +335,22 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "avoidMSAA")]
     fn avoid_msaa(&self) -> bool;
 
+    /// `minPathSizeForMSAA()`: paths no larger than this (in both dimensions) use the small path
+    /// atlas with `kTessellationAndSmallAtlas`. Zero disables it.
+    // Port of: src/gpu/graphite/Caps.h#L421 (chrome/m156)
+    #[doc(alias = "minPathSizeForMSAA")]
+    fn min_path_size_for_msaa(&self) -> f32 {
+        0.0
+    }
+
+    /// `requestedPathRendererStrategy()`: the strategy the context options request (a GPU test
+    /// utilities override), used when the strategy is supported.
+    // Port of: src/gpu/graphite/Caps.h#L107 (chrome/m156)
+    #[doc(alias = "requestedPathRendererStrategy")]
+    fn requested_path_renderer_strategy(&self) -> Option<PathRendererStrategy> {
+        None
+    }
+
     /// `msaaRenderToSingleSampledSupport()`.
     // Port of: src/gpu/graphite/Caps.h#L134 (chrome/m156)
     #[doc(alias = "msaaRenderToSingleSampledSupport")]
@@ -359,6 +380,22 @@ pub trait Caps: Send + Sync + Debug {
     // Port of: src/gpu/graphite/Caps.h#L429 (chrome/m156)
     #[doc(alias = "supportBilerpFromGlyphAtlas")]
     fn support_bilerp_from_glyph_atlas(&self) -> bool;
+
+    /// `glyphCacheTextureMaximumBytes()`: the largest a single glyph atlas texture should be.
+    // Port of: src/gpu/graphite/Caps.h#L425 (chrome/m156)
+    #[doc(alias = "glyphCacheTextureMaximumBytes")]
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize;
+
+    /// `minDistanceFieldFontSize()`: below this size (in device space) distance field text is
+    /// not used.
+    // Port of: src/gpu/graphite/Caps.h#L423 (chrome/m156)
+    #[doc(alias = "minDistanceFieldFontSize")]
+    fn min_distance_field_font_size(&self) -> f32;
+
+    /// `glyphsAsPathsFontSize()`: above this size (in device space) glyphs are drawn as paths.
+    // Port of: src/gpu/graphite/Caps.h#L424 (chrome/m156)
+    #[doc(alias = "glyphsAsPathsFontSize")]
+    fn glyphs_as_paths_font_size(&self) -> f32;
 
     /// `setBackendLabels()`.
     // Port of: src/gpu/graphite/Caps.h#L435 (chrome/m156)

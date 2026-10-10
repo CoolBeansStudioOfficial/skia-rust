@@ -155,6 +155,8 @@ pub struct GlyphRunList<'a> {
     runs: Cow<'a, [GlyphRun]>,
     /// `fSourceBounds`: the bounds of the glyphs, relative to the origin.
     source_bounds: Rect,
+    /// `fOriginalTextBlob->uniqueID()`: the identity of the blob the runs came from, if any.
+    original_text_blob_id: Option<u32>,
     /// `fOrigin`.
     origin: Point,
 }
@@ -167,8 +169,37 @@ impl<'a> GlyphRunList<'a> {
         Self {
             runs,
             source_bounds,
+            original_text_blob_id: None,
             origin,
         }
+    }
+
+    /// `GlyphRunList(blob, bounds, origin, glyphRunList, builder)` for the runs of a blob: the
+    /// unique ID of the blob is what the GPU caches its processed text under.
+    // Port of: src/text/GlyphRun.cpp#L33-L44 (chrome/m156)
+    #[must_use]
+    pub fn with_original_text_blob(mut self, blob: &TextBlob) -> Self {
+        self.original_text_blob_id = Some(blob.unique_id());
+        self
+    }
+
+    /// `canCache()`: whether the runs came from a blob, whose cached GPU data can be found by its
+    /// ID.
+    // Port of: src/text/GlyphRun.cpp#L56-L58 (chrome/m156)
+    #[must_use]
+    pub fn can_cache(&self) -> bool {
+        self.original_text_blob_id.is_some()
+    }
+
+    /// `uniqueID()`: the unique ID of the blob the runs came from.
+    ///
+    /// # Panics
+    /// If the list has no blob (`canCache()` is false).
+    // Port of: src/text/GlyphRun.cpp#L60-L62 (chrome/m156)
+    #[must_use]
+    pub fn unique_id(&self) -> u32 {
+        self.original_text_blob_id
+            .expect("uniqueID() needs a list made from a blob")
     }
 
     /// `runCount()`.
@@ -460,6 +491,7 @@ impl GlyphRunBuilder {
             iter.next();
         }
         self.set_glyph_run_list(*blob.bounds(), origin)
+            .with_original_text_blob(blob)
     }
 
     /// `setGlyphRunList(blob, bounds, origin)`, without a blob.

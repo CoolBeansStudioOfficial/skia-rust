@@ -163,10 +163,13 @@ macro_rules! def_test {
 /// `docs/design/gpu.md` section 7). The body runs once, on
 /// [`tools::graphite_test_context::real_context`].
 ///
-/// The test is `#[ignore]`d, because CI has no adapter and an ignored test cannot be mistaken for
-/// a passing one by `cargo xtask inventory verify`; run it with `cargo test -p skia-rust-tests
-/// --lib -- --ignored <name>` on a machine with an adapter. Without one it says so and returns,
-/// unless `SKIA_RUST_REQUIRE_ADAPTER` is set.
+/// Without the `skia_rust_adapter_tests` cfg the test is `#[ignore]`d, because a machine without
+/// an adapter cannot run it, and an ignored test cannot be mistaken for a passing one by
+/// `cargo xtask inventory verify`. The Linux x64 CI jobs set the cfg (and
+/// `SKIA_RUST_REQUIRE_ADAPTER`) so lavapipe runs them. Elsewhere, run them with
+/// `RUSTFLAGS="--cfg skia_rust_adapter_tests" cargo test -p skia-rust-tests --lib` on a machine
+/// with an adapter. Without one the test says so and returns, unless `SKIA_RUST_REQUIRE_ADAPTER`
+/// is set.
 ///
 /// ```ignore
 /// def_graphite_adapter_test!(ImageShaderTest, |reporter, context| {
@@ -177,13 +180,60 @@ macro_rules! def_test {
 macro_rules! def_graphite_adapter_test {
     ($(#[$attr:meta])* $name:ident, |$reporter:ident, $context:ident| $body:block) => {
         #[test]
-        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        #[cfg_attr(
+            not(skia_rust_adapter_tests),
+            ignore = "needs a real adapter in CI (lavapipe job)"
+        )]
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
             if let Some((context_name, mut context)) =
                 $crate::tools::graphite_test_context::real_context()
+            {
+                reporter.set_context(Some(context_name));
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
+                reporter.set_context(None);
+            }
+            reporter.finish();
+        }
+    };
+}
+
+/// [`def_graphite_adapter_test!`] for a test whose context is made with options
+/// (`DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS`'s options-setting function): `|options| { ... }`
+/// sets them on the defaults, and the body runs once on a real adapter made with them.
+///
+/// ```ignore
+/// def_graphite_adapter_test_with_options!(
+///     DirectMaskLimitTest_Graphite,
+///     |options| { options.min_distance_field_font_size = 384.0; },
+///     |reporter, context| { /* ... */ }
+/// );
+/// ```
+#[macro_export]
+macro_rules! def_graphite_adapter_test_with_options {
+    ($(#[$attr:meta])* $name:ident, |$options:ident| $set_options:block,
+     |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        #[cfg_attr(
+            not(skia_rust_adapter_tests),
+            ignore = "needs a real adapter in CI (lavapipe job)"
+        )]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut context_options =
+                ::skia_rust_gpu::graphite::context_options::ContextOptions::default();
+            {
+                let $options = &mut context_options;
+                $set_options
+            }
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            if let Some((context_name, mut context)) =
+                $crate::tools::graphite_test_context::real_context_with_options(&context_options)
             {
                 reporter.set_context(Some(context_name));
                 let run = |$reporter: &mut $crate::Reporter,

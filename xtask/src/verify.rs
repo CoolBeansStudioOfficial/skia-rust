@@ -66,12 +66,23 @@ pub fn module_path(id: &str) -> Option<String> {
     Some(parts.join("::"))
 }
 
+/// The `ignore` reason of the adapter-gated tests (`def_graphite_adapter_test!` in
+/// `tests/src/lib.rs`, and the GPU crate's pixel tests). They are ignored only without the
+/// `skia_rust_adapter_tests` cfg, so this must match that `cfg_attr`'s reason exactly.
+pub const ADAPTER_IGNORE_REASON: &str = "needs a real adapter in CI (lavapipe job)";
+
+/// The cfg that runs the adapter-gated tests (declared in the workspace `Cargo.toml`).
+pub const ADAPTER_CFG: &str = "skia_rust_adapter_tests";
+
 /// Outcome of one Rust test in a `cargo test` run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
     Ok,
     Failed,
     Ignored,
+    /// Ignored because the adapter cfg is off (`ADAPTER_IGNORE_REASON`): the test did not run
+    /// here, but it runs on the GPU CI jobs, which set the cfg.
+    AdapterGated,
 }
 
 /// Parses libtest's plain output: `test unit::point_test::Point ... ok`.
@@ -87,12 +98,25 @@ pub fn parse_test_output(stdout: &str) -> BTreeMap<String, Outcome> {
         let outcome = match result.trim() {
             "ok" => Outcome::Ok,
             "FAILED" => Outcome::Failed,
+            r if r.starts_with("ignored") && r.contains(ADAPTER_IGNORE_REASON) => {
+                Outcome::AdapterGated
+            }
             r if r.starts_with("ignored") => Outcome::Ignored,
             _ => continue,
         };
         out.insert(name.trim().to_owned(), outcome);
     }
     out
+}
+
+/// Whether `RUSTFLAGS` (as `cargo` will see it) sets [`ADAPTER_CFG`], so the adapter-gated tests
+/// run in the `cargo test` that `run_ported_tests` starts.
+pub fn adapter_cfg_enabled() -> bool {
+    std::env::var("RUSTFLAGS").is_ok_and(|flags| {
+        flags
+            .split_whitespace()
+            .any(|flag| flag == ADAPTER_CFG || flag == format!("--cfg={ADAPTER_CFG}"))
+    })
 }
 
 /// Runs the ported tests and returns each one's outcome, keyed by Rust test path.
@@ -137,14 +161,22 @@ pub struct Report {
     pub excluded_but_ported: Vec<String>,
     /// Entries whose test exists but fails (id), for `--update`.
     pub failing: Vec<String>,
-    /// GMs that could not be checked on every tier on this host (never marked passing, never a
-    /// regression).
+    /// Entries that could not be checked on this host (never marked passing, never a regression):
+    /// GMs not checkable on every tier, and adapter-gated tests run without the adapter cfg.
     pub not_checkable: Vec<String>,
 }
 
 /// Compares test outcomes with manifest statuses. `entries` is (id, status) for every
 /// unit test in the manifest; harness self-tests (`tests::…`) are ignored.
-pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) -> Report {
+///
+/// `adapter_cfg` says whether the adapter-gated tests ran (see [`adapter_cfg_enabled`]). Without
+/// it, a `passing` entry whose test is adapter-gated is not a regression: it is listed in
+/// `not_checkable`. With it, that ignore is a regression, since the test should have run.
+pub fn check(
+    entries: &[(String, String)],
+    results: &BTreeMap<String, Outcome>,
+    adapter_cfg: bool,
+) -> Report {
     let mut report = Report::default();
     let mut by_path: BTreeMap<String, (&str, &str)> = BTreeMap::new();
     for (id, status) in entries {
@@ -165,12 +197,15 @@ pub fn check(entries: &[(String, String)], results: &BTreeMap<String, Outcome>) 
         match (*status, outcome) {
             ("excluded", _) => report.excluded_but_ported.push((*id).to_owned()),
             ("passing", Outcome::Ok) => {}
+            ("passing", Outcome::AdapterGated) if !adapter_cfg => {
+                report.not_checkable.push((*id).to_owned());
+            }
             ("passing", _) => report.regressions.push((*id).to_owned()),
             (other, Outcome::Ok) => report
                 .newly_passing
                 .push(((*id).to_owned(), other.to_owned())),
             (_, Outcome::Failed) => report.failing.push((*id).to_owned()),
-            (_, Outcome::Ignored) => {}
+            (_, Outcome::Ignored | Outcome::AdapterGated) => {}
         }
     }
     for (path, (id, status)) in &by_path {
@@ -276,11 +311,13 @@ mod tests {
                    test unit::point_test::Point ... ok\n\
                    test unit::rect_test::Rect ... FAILED\n\
                    test unit::x::Y ... ignored, needs gpu\n\
+                   test unit::graphite::A ... ignored, needs a real adapter in CI (lavapipe job)\n\
                    test result: FAILED.";
         let r = parse_test_output(out);
         assert_eq!(r["unit::point_test::Point"], Outcome::Ok);
         assert_eq!(r["unit::rect_test::Rect"], Outcome::Failed);
         assert_eq!(r["unit::x::Y"], Outcome::Ignored);
+        assert_eq!(r["unit::graphite::A"], Outcome::AdapterGated);
     }
 
     #[test]
@@ -304,10 +341,46 @@ mod tests {
             ("unit::nope::X".to_owned(), Outcome::Ok),
             ("tests::harness".to_owned(), Outcome::Ok),
         ]);
-        let r = check(&entries, &results);
+        let r = check(&entries, &results, false);
         assert_eq!(r.unknown, ["unit::nope::X"]);
         assert_eq!(r.excluded_but_ported, ["tests/ArenaAllocTest.cpp::A"]);
         assert_eq!(r.newly_passing.len(), 1);
         assert_eq!(r.regressions.len(), 2);
+    }
+
+    #[test]
+    fn adapter_gated_ignore_is_a_regression_only_with_the_cfg() {
+        let entries = vec![
+            (
+                "tests/graphite/ComputeTest.cpp::Compute".to_owned(),
+                "passing".to_owned(),
+            ),
+            (
+                "tests/graphite/ComputeTest.cpp::Other".to_owned(),
+                "todo".to_owned(),
+            ),
+        ];
+        let results = BTreeMap::from([
+            (
+                "unit::graphite::compute_test::Compute".to_owned(),
+                Outcome::AdapterGated,
+            ),
+            (
+                "unit::graphite::compute_test::Other".to_owned(),
+                Outcome::AdapterGated,
+            ),
+        ]);
+        // Without the cfg: not run, not a regression, and the todo entry stays todo.
+        let off = check(&entries, &results, false);
+        assert_eq!(off.regressions, Vec::<String>::new());
+        assert_eq!(off.newly_passing, Vec::<(String, String)>::new());
+        assert_eq!(
+            off.not_checkable,
+            ["tests/graphite/ComputeTest.cpp::Compute"]
+        );
+        // With the cfg, the same ignore means the test did not run: a regression.
+        let on = check(&entries, &results, true);
+        assert_eq!(on.regressions, ["tests/graphite/ComputeTest.cpp::Compute"]);
+        assert_eq!(on.not_checkable, Vec::<String>::new());
     }
 }

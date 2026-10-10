@@ -48,6 +48,7 @@ use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
+use crate::graphite::renderer_provider::PathRendererStrategy;
 use crate::graphite::resource_types::{
     Discardable, DstReadStrategy, Layout, LoadOp, NUM_SAMPLE_KEY_BITS, ResourceType, TextureUsage,
     Tiling, samples_to_key,
@@ -512,6 +513,8 @@ pub struct WgpuCaps {
     max_internal_sample_count: SampleCount,
     glyph_cache_texture_maximum_bytes: usize,
     min_msaa_path_size: f32,
+    /// `fRequestedPathRendererStrategy` (GPU test utilities override).
+    requested_path_renderer_strategy: Option<PathRendererStrategy>,
     min_distance_field_font_size: f32,
     glyphs_as_paths_font_size: f32,
     max_path_atlas_texture_size: i32,
@@ -575,6 +578,7 @@ impl WgpuCaps {
             max_internal_sample_count: SampleCount::Four,
             glyph_cache_texture_maximum_bytes: 2048 * 1024 * 4,
             min_msaa_path_size: 0.0,
+            requested_path_renderer_strategy: None,
             min_distance_field_font_size: 18.0,
             glyphs_as_paths_font_size: 324.0,
             max_path_atlas_texture_size: 8192,
@@ -854,8 +858,12 @@ impl WgpuCaps {
     fn finish_initialization(&mut self, options: &ContextOptions) {
         self.max_internal_sample_count = options.internal_multisample_count;
 
+        // `fOptionsPriv->fMaxTextureSizeOverride`
+        self.max_texture_size = self.max_texture_size.min(options.max_texture_size_override);
+
         self.glyph_cache_texture_maximum_bytes = options.glyph_cache_texture_maximum_bytes;
         self.min_msaa_path_size = options.minimum_path_size_for_msaa;
+        self.requested_path_renderer_strategy = options.path_renderer_strategy;
         self.min_distance_field_font_size = options.min_distance_field_font_size;
         self.glyphs_as_paths_font_size = options.glyphs_as_paths_font_size;
         self.max_path_atlas_texture_size = options.max_path_atlas_texture_size;
@@ -1176,6 +1184,13 @@ impl WgpuCaps {
     #[must_use]
     pub fn min_path_size_for_msaa(&self) -> f32 {
         self.min_msaa_path_size
+    }
+
+    /// `requestedPathRendererStrategy()`.
+    #[doc(alias = "requestedPathRendererStrategy")]
+    #[must_use]
+    pub fn requested_path_renderer_strategy(&self) -> Option<PathRendererStrategy> {
+        self.requested_path_renderer_strategy
     }
 
     /// `minDistanceFieldFontSize()`.
@@ -2095,6 +2110,11 @@ impl Caps for WgpuCaps {
         self.get_default_sampled_texture_info(color_type, mipmapped, is_protected, renderable)
     }
 
+    // Port of: src/gpu/graphite/Caps.cpp#L386-L398 (chrome/m156)
+    fn get_default_storage_texture_info(&self, color_type: ColorType) -> TextureInfo {
+        WgpuCaps::get_default_storage_texture_info(self, color_type)
+    }
+
     // Port of: src/gpu/graphite/Caps.cpp#L340-L351 (chrome/m156)
     fn get_default_readable_texture_info(
         &self,
@@ -2178,6 +2198,14 @@ impl Caps for WgpuCaps {
         WgpuCaps::avoid_msaa(self)
     }
 
+    fn min_path_size_for_msaa(&self) -> f32 {
+        WgpuCaps::min_path_size_for_msaa(self)
+    }
+
+    fn requested_path_renderer_strategy(&self) -> Option<PathRendererStrategy> {
+        WgpuCaps::requested_path_renderer_strategy(self)
+    }
+
     fn msaa_render_to_single_sampled_support(&self) -> bool {
         WgpuCaps::msaa_render_to_single_sampled_support(self)
     }
@@ -2200,6 +2228,18 @@ impl Caps for WgpuCaps {
 
     fn support_bilerp_from_glyph_atlas(&self) -> bool {
         WgpuCaps::support_bilerp_from_glyph_atlas(self)
+    }
+
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize {
+        WgpuCaps::glyph_cache_texture_maximum_bytes(self)
+    }
+
+    fn min_distance_field_font_size(&self) -> f32 {
+        WgpuCaps::min_distance_field_font_size(self)
+    }
+
+    fn glyphs_as_paths_font_size(&self) -> f32 {
+        WgpuCaps::glyphs_as_paths_font_size(self)
     }
 
     fn set_backend_labels(&self) -> bool {

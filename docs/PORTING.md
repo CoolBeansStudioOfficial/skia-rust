@@ -111,6 +111,7 @@ Pixels must match Skia bit for bit, so arithmetic is translated, never paraphras
 - **C++-only assertions** (pointer identity, `sizeof`, layout via `reinterpret_cast`): translate them to the closest Rust-observable property if one exists (e.g. `size_of::<Point>() == 8`). If none exists, keep the line as a comment starting `// skia-rust: not expressible in Rust:` with the reason. That is the only allowed omission.
 - `SkRandom` is ported (`skia_rust_core::random`), so random-driven tests reproduce Skia's exact sequences.
 - A test that exercises only Skia's own containers or utilities, where Rust uses `std` instead (`SkString`, `SkTArray`, `SkTDArray`, `SkTHash*`, `SkArenaAlloc`, `SkSpan`, `SkTSort`, `SkBitSet`, `SkStringView`, `SkSemaphore`, `SkOnce`), is **excluded**: set `status = "excluded"` and `reason = "tests Skia's <X>; Rust uses <Y>"` in the manifest, and don't port it.
+- Tests that need a real GPU adapter (`def_graphite_adapter_test!`) are ignored unless `--cfg skia_rust_adapter_tests` is set, which the Linux x64 CI jobs do with lavapipe. Locally, run them with `RUSTFLAGS="--cfg skia_rust_adapter_tests"`; without the cfg, `inventory verify` lists them as "NOT CHECKABLE" and never as a regression. Details: `docs/design/gpu.md` §7–8.
 - GMs (`gm/*.cpp`) have their own harness: see §11.
 
 ## 7. Clippy and lints

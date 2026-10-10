@@ -145,6 +145,27 @@ impl StrokeRec {
         }
     }
 
+    /// `applyToPaint(paint)`: sets the paint's style and stroke parameters from this record.
+    // Port of: src/core/SkStrokeRec.cpp#L127-L138 (chrome/m156)
+    #[doc(alias = "applyToPaint")]
+    pub fn apply_to_paint(&self, paint: &mut Paint) {
+        if self.width < 0.0 {
+            // fill
+            paint.set_style(PaintStyle::Fill);
+            return;
+        }
+
+        paint.set_style(if self.stroke_and_fill {
+            PaintStyle::StrokeAndFill
+        } else {
+            PaintStyle::Stroke
+        });
+        paint.set_stroke_width(self.width);
+        paint.set_stroke_miter(self.miter_limit);
+        paint.set_stroke_cap(self.cap);
+        paint.set_stroke_join(self.join);
+    }
+
     /// The stroke width.
     #[doc(alias = "getWidth")]
     #[must_use]

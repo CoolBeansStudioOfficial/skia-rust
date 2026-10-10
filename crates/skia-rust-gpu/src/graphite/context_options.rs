@@ -78,6 +78,12 @@ pub struct ContextOptions {
     pub internal_multisample_count: SampleCount,
     /// `fInternalMSAATileSize`.
     pub internal_msaa_tile_size: Option<ISize>,
+    /// `fOptionsPriv->fPathRendererStrategy` (GPU test utilities): overrides the path renderer
+    /// strategy when the strategy is supported.
+    pub path_renderer_strategy: Option<crate::graphite::renderer_provider::PathRendererStrategy>,
+    /// `fOptionsPriv->fMaxTextureSizeOverride` (GPU test utilities): the largest texture size the
+    /// caps report is at most this.
+    pub max_texture_size_override: i32,
     /// `fMinimumPathSizeForMSAA`: paths smaller than this are not drawn with MSAA.
     pub minimum_path_size_for_msaa: f32,
     /// `fGlyphCacheTextureMaximumBytes`.
@@ -126,6 +132,8 @@ impl Default for ContextOptions {
             disable_driver_correctness_workarounds: false,
             internal_multisample_count: SampleCount::Four,
             internal_msaa_tile_size: None,
+            path_renderer_strategy: None,
+            max_texture_size_override: i32::MAX,
             minimum_path_size_for_msaa: 0.0,
             glyph_cache_texture_maximum_bytes: 2048 * 1024 * 4,
             min_distance_field_font_size: 18.0,

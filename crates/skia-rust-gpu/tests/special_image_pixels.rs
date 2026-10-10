@@ -77,7 +77,10 @@ const CLEAR: [u8; 4] = [0, 0, 0, 0];
 // far outside it is clear, and around the edge it is a partial, premultiplied red that falls off
 // away from the rect.
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_blur_image_filter_blurs_on_the_gpu() {
     let Some(mut context) = real_context() else {
         return;
@@ -112,7 +115,10 @@ fn a_blur_image_filter_blurs_on_the_gpu() {
 // A layer drawn with half alpha is restored into its parent through snapSpecial() and
 // drawSpecial().
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_restored_layer_is_composited_into_its_parent() {
     let Some(mut context) = real_context() else {
         return;
@@ -138,7 +144,10 @@ fn a_restored_layer_is_composited_into_its_parent() {
 // Q-B: an image of surface A drawn into B sees A's draws up to the moment it is drawn, including
 // draws made to A after `as_image()`; a second draw of the image after more draws to A sees those.
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_surface_image_sees_draws_made_after_it_was_taken() {
     let Some(mut context) = real_context() else {
         return;

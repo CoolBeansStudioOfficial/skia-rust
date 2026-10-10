@@ -23,12 +23,12 @@ use crate::gpu::gpu_types::{GpuStats, Protected};
 use crate::gpu::ref_cnted_callback::RefCntedCallback;
 use crate::gpu::sk_log::skia_log_e;
 use crate::graphite::buffer::Buffer;
+use crate::graphite::compute::dispatch_group::DispatchGroup;
 use crate::graphite::context_priv::SharedResourceProvider;
 use crate::graphite::render_pass_desc::RenderPassDesc;
 use crate::graphite::resource::{AnyResourceRef, CommandBufferRef, Resource, ResourceRef};
 use crate::graphite::resource_types::{LoadOp, SamplerDesc};
 use crate::graphite::sampler::Sampler;
-use crate::graphite::task::compute_task::DispatchGroup;
 use crate::graphite::task::render_pass_task::DrawPass;
 use crate::graphite::texture::Texture;
 
@@ -133,7 +133,7 @@ pub trait CommandBuffer {
 
     /// `addComputePass()`.
     #[doc(alias = "addComputePass")]
-    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool;
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<DispatchGroup>]) -> bool;
 
     /// `copyBufferToBuffer()`.
     #[doc(alias = "copyBufferToBuffer")]
@@ -312,7 +312,7 @@ pub trait CommandBufferBackend {
     #[doc(alias = "onAddComputePass")]
     fn on_add_compute_pass(
         &mut self,
-        dispatch_groups: &mut [Box<dyn DispatchGroup>],
+        dispatch_groups: &mut [Box<DispatchGroup>],
         tracker: &mut dyn ResourceTracker,
     ) -> bool;
 
@@ -668,7 +668,7 @@ impl<B: CommandBufferBackend + 'static> CommandBuffer for CommandBufferCore<B> {
     }
 
     // Port of: src/gpu/graphite/CommandBuffer.cpp#L188-L198 (chrome/m156)
-    fn add_compute_pass(&mut self, dispatch_groups: &mut [Box<dyn DispatchGroup>]) -> bool {
+    fn add_compute_pass(&mut self, dispatch_groups: &mut [Box<DispatchGroup>]) -> bool {
         if !self
             .backend
             .on_add_compute_pass(dispatch_groups, &mut self.command_buffer_resources)

@@ -73,6 +73,8 @@ pub mod descriptor_test;
 #[cfg(test)]
 pub mod discardable_memory_test;
 #[cfg(test)]
+pub mod direct_mask_limit_test;
+#[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
 pub mod draw_path_test;

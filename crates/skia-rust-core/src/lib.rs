@@ -54,6 +54,7 @@ pub mod descriptor;
 pub mod device;
 pub mod discardable_memory;
 pub mod discardable_memory_pool;
+pub mod distance_field_gen;
 pub mod draw_procs;
 pub mod draw_shadow_info;
 pub mod draw_types;

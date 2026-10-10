@@ -19,8 +19,7 @@
 //!
 //! # Not yet ported
 //!
-//! The members that need other ports are left out and noted where they were: the atlas provider
-//! (G12a), the strike cache and text blob cache (G12b), the `KeyAndDataBuilder` pool (G5a),
+//! The members that need other ports are left out and noted where they were: the `KeyAndDataBuilder` pool (G5a),
 //! `makeDeferredCanvas()` and the target proxy device (G10a), the backend texture calls
 //! (`BackendTexture`, G11a), `ImageProvider` (G10d), the capture manager and
 //! `dumpMemoryStatistics()`.
@@ -32,11 +31,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
+use crate::gpu::sk_log::skia_log_e;
 use crate::gpu::token::TokenTracker;
+use crate::graphite::atlas_provider::AtlasProvider;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
@@ -47,6 +51,7 @@ use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::recording::{LazyProxyData, Recording};
+use crate::graphite::renderer_provider::PathRendererStrategy as RendererProviderStrategy;
 use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
@@ -54,11 +59,18 @@ use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResour
 use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
-use crate::graphite::task::upload_task::{UploadList, UploadTask};
-use crate::graphite::texture_info::TextureInfo;
+use crate::graphite::task::upload_task::{
+    ImageUploadContext, MipLevel, UploadInstance, UploadList, UploadSource, UploadTask,
+};
+use crate::graphite::texture::ReleaseCallback;
+use crate::graphite::texture_format::read_swizzle_for_color_type;
+use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::make_bitmap_proxy_view;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
+use crate::text_gpu::strike_cache::StrikeCache;
+use crate::text_gpu::text_blob_redraw_coordinator::TextBlobRedrawCoordinator;
 
 /// `kDefaultRecorderBudget`: 256 MiB.
 // Port of: include/gpu/graphite/Recorder.h#L74 (chrome/m156)
@@ -241,6 +253,15 @@ pub struct RecorderInner {
     is_flushing_tracked_devices: Cell<bool>,
 
     key_and_data_builders: RefCell<Vec<KeyAndDataBuilder>>,
+
+    /// `fAtlasProvider`: the path, clip and glyph atlases the draws of this recorder share.
+    atlas_provider: RefCell<AtlasProvider>,
+
+    /// `fStrikeCache`: the strikes of the glyphs on this recorder's atlases.
+    strike_cache: RefCell<StrikeCache>,
+
+    /// `fTextBlobCache`: the processed text blobs this recorder can draw again.
+    text_blob_cache: TextBlobRedrawCoordinator,
 }
 
 impl std::fmt::Debug for RecorderInner {
@@ -303,6 +324,11 @@ impl Recorder {
             upload_buffer_manager.clone(),
             &dbm_options,
         );
+        // `fAtlasProvider(std::make_unique<AtlasProvider>(this))`: the clip atlas is used only by
+        // the raster path atlas strategy.
+        let raster_path_strategy = shared_context.renderer_provider().path_renderer_strategy()
+            == RendererProviderStrategy::RasterAtlas;
+        let atlas_provider = AtlasProvider::new(&*caps, raster_path_strategy);
 
         Self {
             inner: Rc::new(RecorderInner {
@@ -324,6 +350,9 @@ impl Recorder {
                 target_proxy_data: RefCell::new(None),
                 is_flushing_tracked_devices: Cell::new(false),
                 key_and_data_builders: RefCell::new(Vec::new()),
+                atlas_provider: RefCell::new(atlas_provider),
+                strike_cache: RefCell::new(StrikeCache::new()),
+                text_blob_cache: TextBlobRedrawCoordinator::new(unique_id),
             }),
         }
     }
@@ -339,6 +368,12 @@ impl Recorder {
     #[must_use]
     pub fn from_inner(inner: Rc<RecorderInner>) -> Self {
         Self { inner }
+    }
+
+    /// A shared handle to the recorder's state, for the objects that borrow it while the recorder
+    /// is used (`DispatchGroup::Builder` in `Recorder::priv()` terms).
+    pub(crate) fn inner(&self) -> Rc<RecorderInner> {
+        self.inner.clone()
     }
 
     /// `priv()`.
@@ -436,7 +471,7 @@ impl Recorder {
         let result = if valid {
             Some(recording)
         } else {
-            // The atlas provider would invalidate its atlases here (G12a).
+            inner.atlas_provider.borrow_mut().invalidate_atlases();
             drop(recording);
             None
         };
@@ -458,8 +493,9 @@ impl Recorder {
             index += 1;
         }
 
-        // The atlas provider would invalidate its atlases if recordings need not be ordered
-        // (G12a).
+        if !inner.require_ordered_recordings {
+            inner.atlas_provider.borrow_mut().invalidate_atlases();
+        }
 
         // For each KeyAndDataBuilder owned by the Recorder, check if the high watermark of data
         // usage over the lifetime snap is less than half of allocated capacity. If so, shrink the
@@ -477,6 +513,106 @@ impl Recorder {
     #[must_use]
     pub fn max_texture_size(&self) -> i32 {
         self.inner.caps.max_texture_size()
+    }
+
+    /// `updateBackendTexture(backendTex, srcData, numLevels, finishedProc, finishedContext)`:
+    /// uploads `src_data` (the base level and, for a mipmapped texture, every mip level) into
+    /// `backend_texture`. `release` is called once the texture is no longer used by the upload.
+    /// Returns `false` if the texture is invalid, of another backend, or the level count is wrong.
+    // Port of: src/gpu/graphite/Recorder.cpp#L394-L455 (chrome/m156)
+    #[doc(alias = "updateBackendTexture")]
+    pub fn update_backend_texture(
+        &mut self,
+        backend_texture: &BackendTexture,
+        src_data: &[Pixmap<'_>],
+        release: Option<CallbackProc>,
+    ) -> bool {
+        let release_helper = release.map(RefCntedCallback::make);
+
+        if !backend_texture.is_valid() || backend_texture.backend() != self.backend() {
+            return false;
+        }
+
+        if src_data.is_empty() {
+            return false;
+        }
+
+        // If the texture has MIP levels then we require that the full set is overwritten.
+        let mut num_expected_levels = 1;
+        if backend_texture.info().mipmapped() == Mipmapped::Yes {
+            let dimensions = backend_texture.dimensions();
+            num_expected_levels =
+                usize::try_from(Mipmap::compute_level_count_size(dimensions)).unwrap_or(0) + 1;
+        }
+        if src_data.len() != num_expected_levels {
+            return false;
+        }
+
+        let priv_ = self.priv_();
+        let caps = Arc::clone(priv_.caps());
+        let texture = {
+            let mut provider = priv_
+                .resource_provider()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            provider.create_wrapped_texture(backend_texture, "")
+        };
+        let Some(texture) = texture else {
+            return false;
+        };
+        texture.set_release_callback(release_helper.map(|helper| helper as ReleaseCallback));
+
+        let format = texture_info_priv::view_format(&backend_texture.info());
+        let mip_levels: Vec<MipLevel<'_>> = src_data
+            .iter()
+            .map(|level| MipLevel {
+                pixels: level.addr(),
+                row_bytes: level.row_bytes(),
+            })
+            .collect();
+
+        // Src and dst colorInfo are the same.
+        let color_info = src_data[0].info().color_info().clone();
+        let swizzle = read_swizzle_for_color_type(color_info.color_type(), format);
+        let view = TextureProxyView::new(Some(TextureProxy::wrap(texture)), swizzle);
+        let dimensions = IRect::from_size(backend_texture.dimensions());
+        let upload_source = UploadSource::make(
+            &*caps,
+            &view,
+            &color_info,
+            &color_info,
+            &mip_levels,
+            dimensions,
+        );
+        if !upload_source.is_valid() {
+            skia_log_e!("Recorder::updateBackendTexture: Could not create UploadSource");
+            return false;
+        }
+
+        if upload_source.attempt_upload_on_host() {
+            return true;
+        }
+
+        // Add UploadTask to Recorder.
+        let instance = UploadInstance::make(
+            &*caps,
+            &mut priv_.upload_buffer_manager().borrow_mut(),
+            &upload_source,
+            Some(Box::new(ImageUploadContext)),
+        );
+        if !instance.is_valid() {
+            skia_log_e!("Recorder::updateBackendTexture: Could not create UploadInstance");
+            return false;
+        }
+        let Some(upload_task) = UploadTask::make_instance(instance) else {
+            return false;
+        };
+
+        // Need to flush any pending work in case it depends on this texture.
+        priv_.flush_tracked_devices("Recorder::updateBackendTexture: Update Backend Texture");
+        priv_.add(upload_task);
+
+        true
     }
 
     /// `createBackendTexture()`: creates a texture the client owns, or an invalid one if `info`
@@ -534,9 +670,18 @@ impl Recorder {
         // any Gpu resources.
 
         // Notify the atlas and resource provider to free any resources it can (does not include
-        // resources that are locked due to pending work). The atlas provider (G12a) and the
-        // strike cache (G12b) are not ported.
+        // resources that are locked due to pending work).
+        let recorder: &Recorder = self;
+        recorder
+            .inner
+            .atlas_provider
+            .borrow_mut()
+            .free_gpu_resources(recorder);
         self.inner.lock_resource_provider().free_gpu_resources();
+
+        // This is technically not GPU memory, but there's no other place for the client to tell
+        // us to clean this up, and without any cleanup it can grow unbounded.
+        self.inner.strike_cache.borrow_mut().free_all();
     }
 
     /// `performDeferredCleanup()`.
@@ -600,7 +745,7 @@ impl RecorderInner {
         RecorderPriv { recorder: self }
     }
 
-    fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
+    pub(crate) fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
         self.resource_provider
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -672,7 +817,7 @@ pub struct RecorderPriv<'a> {
     recorder: &'a RecorderInner,
 }
 
-impl RecorderPriv<'_> {
+impl<'a> RecorderPriv<'a> {
     /// `add()`: adds a task to the root task list.
     // Port of: src/gpu/graphite/Recorder.cpp#L632-L637 (chrome/m156)
     pub fn add(&self, task: TaskRef) {
@@ -687,7 +832,29 @@ impl RecorderPriv<'_> {
     /// In debug builds if a flush is already in progress.
     // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
     #[doc(alias = "flushTrackedDevices")]
-    pub fn flush_tracked_devices(&self, _flush_source: &str) {
+    pub fn flush_tracked_devices(&self, flush_source: &str) {
+        (*self).flush_tracked_devices_with_current(flush_source, None);
+    }
+
+    /// `flushTrackedDevices()` called while `current` records a draw (an atlas draw of its device
+    /// needs the atlases flushed first). `current` is mutably borrowed for the draw, so it is
+    /// flushed through this reference, where C++ reaches it through the tracked list.
+    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
+    pub fn flush_tracked_devices_and_current(
+        &self,
+        flush_source: &str,
+        current: &mut dyn TrackedDevice,
+    ) {
+        (*self).flush_tracked_devices_with_current(flush_source, Some(current));
+    }
+
+    // The body of `flushTrackedDevices()`, with the device that is borrowed for the draw (if any).
+    // Port of: src/gpu/graphite/Recorder.cpp#L662-L705 (chrome/m156)
+    fn flush_tracked_devices_with_current(
+        self,
+        _flush_source: &str,
+        mut current: Option<&mut dyn TrackedDevice>,
+    ) {
         let recorder = self.recorder;
         debug_assert!(!recorder.is_flushing_tracked_devices.get());
         recorder.is_flushing_tracked_devices.set(true);
@@ -698,12 +865,17 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // flushed.
             if let Some(device) = recorder.tracked_device(index) {
-                // A device that is borrowed is the one that triggered this flush from inside its
-                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies).
-                // It flushes itself.
                 if let Ok(mut device) = device.try_borrow_mut() {
                     device.flush_pending_work();
+                } else if let Some(current) = current.as_deref_mut()
+                    && current.is_cell(&device)
+                {
+                    // The device recording the draw flushes through the reference it lent.
+                    current.flush_pending_work();
                 }
+                // Any other borrowed device is the one that triggered this flush from inside its
+                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies), and
+                // it flushes itself.
             }
             index += 1;
         }
@@ -852,8 +1024,9 @@ impl RecorderPriv<'_> {
     /// `rendererProvider()`.
     #[doc(alias = "rendererProvider")]
     #[must_use]
-    pub fn renderer_provider(&self) -> &RendererProvider {
-        self.recorder.shared_context.renderer_provider()
+    pub fn renderer_provider(&self) -> &'a RendererProvider {
+        let recorder: &'a RecorderInner = self.recorder;
+        recorder.shared_context.renderer_provider()
     }
 
     /// `sharedContext()->pipelineManager()`.
@@ -861,6 +1034,30 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
         self.recorder.shared_context.pipeline_manager()
+    }
+
+    /// `atlasProvider()`.
+    #[doc(alias = "atlasProvider")]
+    #[must_use]
+    pub fn atlas_provider(&self) -> &'a RefCell<AtlasProvider> {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.atlas_provider
+    }
+
+    /// `strikeCache()`.
+    #[doc(alias = "strikeCache")]
+    #[must_use]
+    pub fn strike_cache(&self) -> &'a RefCell<StrikeCache> {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.strike_cache
+    }
+
+    /// `textBlobCache()`.
+    #[doc(alias = "textBlobCache")]
+    #[must_use]
+    pub fn text_blob_cache(&self) -> &'a TextBlobRedrawCoordinator {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.text_blob_cache
     }
 
     /// `resourceProvider()`.
