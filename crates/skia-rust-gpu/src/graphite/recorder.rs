@@ -361,6 +361,12 @@ impl Recorder {
         Self { inner }
     }
 
+    /// A shared handle to the recorder's state, for the objects that borrow it while the recorder
+    /// is used (`DispatchGroup::Builder` in `Recorder::priv()` terms).
+    pub(crate) fn inner(&self) -> Rc<RecorderInner> {
+        self.inner.clone()
+    }
+
     /// `priv()`.
     #[doc(alias = "priv")]
     #[must_use]
@@ -630,7 +636,7 @@ impl RecorderInner {
         RecorderPriv { recorder: self }
     }
 
-    fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
+    pub(crate) fn lock_resource_provider(&self) -> std::sync::MutexGuard<'_, ResourceProvider> {
         self.resource_provider
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

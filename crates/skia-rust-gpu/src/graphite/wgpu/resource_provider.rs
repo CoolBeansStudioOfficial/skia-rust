@@ -22,6 +22,9 @@ use std::collections::{HashMap, VecDeque};
 use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 
+use crate::graphite::compute_pipeline::ComputePipeline;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
+
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
@@ -864,6 +867,13 @@ pub fn wgpu_backend(provider: &mut ResourceProvider) -> Option<&mut WgpuResource
 }
 
 impl ResourceProviderBackend for WgpuResourceProvider {
+    fn find_or_create_compute_pipeline(
+        &mut self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        self.shared().find_or_create_compute_pipeline(pipeline_desc)
+    }
+
     fn max_texture_size(&self) -> i32 {
         self.shared().caps().max_texture_size()
     }

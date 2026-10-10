@@ -33,7 +33,10 @@ use skia_rust_gpu::graphite::scratch_resource_manager::{
     ProxyReadCountMap, ScratchResourceManager,
 };
 use skia_rust_gpu::graphite::task::clear_buffers_task::ClearBuffersTask;
-use skia_rust_gpu::graphite::task::compute_task::{ComputeTask, DispatchGroup};
+use skia_rust_gpu::graphite::compute::compute_step::{ComputeStep, ComputeStepBase, WorkgroupSize};
+use skia_rust_gpu::graphite::compute::dispatch_group::{Builder, DispatchGroup};
+use skia_rust_gpu::graphite::resource_types::ClearBuffer;
+use skia_rust_gpu::graphite::task::compute_task::{ComputeTask, DispatchGroupList};
 use skia_rust_gpu::graphite::task::copy_task::{
     CopyBufferToBufferTask, CopyTextureToBufferTask, CopyTextureToTextureTask,
 };
@@ -45,15 +48,17 @@ use skia_rust_gpu::graphite::task::upload_task::{
     ConditionalUploadContext, ImageUploadContext, MipLevel, UploadInstance, UploadList,
     UploadSource, UploadTask,
 };
-use skia_rust_gpu::graphite::task::{ReplayTargetData, Status, TaskRef};
+use skia_rust_gpu::graphite::task::{ReplayTargetData, Status};
 use skia_rust_gpu::graphite::texture::Texture;
 use skia_rust_gpu::graphite::texture_format::TextureFormat;
 use skia_rust_gpu::graphite::texture_info::TextureInfo;
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
+use skia_rust_gpu::graphite::recorder::Recorder;
 use skia_rust_gpu::graphite::texture_proxy_view::TextureProxyView;
 use skia_rust_gpu::graphite::upload_buffer_manager::UploadBufferManager;
 use support::{
-    Call, MockCaps, MockCommandBuffer, MockContext, provider, rgba_info, shared_provider,
+    Call, MockCaps, MockCommandBuffer, MockContext, make_recorder, provider, rgba_info,
+    shared_provider,
     texture_info,
 };
 
@@ -651,44 +656,47 @@ fn upload_to_the_replay_target_is_translated_and_cropped() {
     assert_eq!(copies[0].rect, IRect::from_wh(2, 2));
 }
 
+/// A step with no resources: a dispatch of it needs only a compute pipeline.
 #[derive(Debug)]
-struct MockGroup {
-    child: Option<TaskRef>,
-    prepare_ok: bool,
+struct NoResourceStep(ComputeStepBase);
+
+impl ComputeStep for NoResourceStep {
+    fn base(&self) -> &ComputeStepBase {
+        &self.0
+    }
 }
 
-impl DispatchGroup for MockGroup {
-    fn snap_child_task(&mut self) -> Option<TaskRef> {
-        self.child.take()
+/// A finished group with no dispatches, whose shared buffer is cleared before it runs (so it has
+/// a child task), or with the given dispatch.
+fn group(recorder: &Recorder, cleared: Option<BindBufferInfo>, dispatch: bool) -> Box<DispatchGroup> {
+    let mut builder = Builder::new(recorder);
+    if let Some(buffer) = cleared {
+        builder.assign_shared_buffer(buffer, 0, ClearBuffer::Yes);
     }
-
-    fn prepare_resources(&mut self, _resource_provider: &mut ResourceProvider) -> bool {
-        self.prepare_ok
+    if dispatch {
+        let step: Arc<dyn ComputeStep> = Arc::new(NoResourceStep(ComputeStepBase::new(
+            "NoResourceStep",
+            WorkgroupSize::default(),
+            &[],
+            &[],
+            false,
+        )));
+        assert!(builder.append_step(&step, None));
     }
+    builder.finalize()
 }
 
 #[test]
 fn compute_task_splits_compute_passes_at_dependent_tasks() {
     let (mut rp, _) = provider();
+    let (recorder, _) = make_recorder(MockCaps::default());
     let b = buffer(&mut rp, 64);
-    let clear = |offset: u32| ClearBuffersTask::make(vec![BindBufferInfo::new(&b, offset, 4)]);
-    let groups: Vec<Box<dyn DispatchGroup>> = vec![
-        Box::new(MockGroup {
-            child: None,
-            prepare_ok: true,
-        }),
-        Box::new(MockGroup {
-            child: Some(clear(8)),
-            prepare_ok: true,
-        }),
-        Box::new(MockGroup {
-            child: None,
-            prepare_ok: true,
-        }),
-        Box::new(MockGroup {
-            child: Some(clear(12)),
-            prepare_ok: true,
-        }),
+    let cleared = |offset: u32| Some(BindBufferInfo::new(&b, offset, 4));
+    let groups: DispatchGroupList = vec![
+        group(&recorder, None, false),
+        group(&recorder, cleared(8), false),
+        group(&recorder, None, false),
+        group(&recorder, cleared(12), false),
     ];
     let mut list = TaskList::new();
     list.add(ComputeTask::make(groups));
@@ -709,20 +717,14 @@ fn compute_task_splits_compute_passes_at_dependent_tasks() {
         ]
     );
 
-    // A failing group preparation fails the task.
-    let failing: Vec<Box<dyn DispatchGroup>> = vec![Box::new(MockGroup {
-        child: None,
-        prepare_ok: false,
-    })];
+    // A group whose pipeline cannot be created fails the task.
+    let failing: DispatchGroupList = vec![group(&recorder, None, true)];
     let mut list = TaskList::new();
     list.add(ComputeTask::make(failing));
     assert_eq!(run_prepare(&mut list, &mut rp), Status::Fail);
 
     // A failing compute pass fails the task.
-    let groups: Vec<Box<dyn DispatchGroup>> = vec![Box::new(MockGroup {
-        child: None,
-        prepare_ok: true,
-    })];
+    let groups: DispatchGroupList = vec![group(&recorder, None, false)];
     let mut list = TaskList::new();
     list.add(ComputeTask::make(groups));
     let mut cb = MockCommandBuffer {

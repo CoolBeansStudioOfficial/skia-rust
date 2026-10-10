@@ -13,6 +13,9 @@ use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
+use skia_rust_gpu::graphite::compute_pipeline::ComputePipeline;
+use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
+
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color::Color;
 use skia_rust_core::size::ISize;
@@ -83,6 +86,13 @@ struct MockBackend {
 impl ResourceProviderBackend for MockBackend {
     fn max_texture_size(&self) -> i32 {
         4096
+    }
+
+    fn find_or_create_compute_pipeline(
+        &mut self,
+        _pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        None
     }
 
     fn build_key_for_texture(

@@ -56,7 +56,7 @@ use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::resource_types::{DstReadStrategy, Layout, LoadOp, SamplerDesc, StoreOp};
 use crate::graphite::sampler::Sampler;
-use crate::graphite::task::compute_task::{BindingResource, DispatchGroup, GlobalSizeOrIndirect};
+use crate::graphite::compute::dispatch_group::{BindingResource, DispatchGroup, GlobalSizeOrIndirect};
 use crate::graphite::task::render_pass_task::DrawPass;
 use crate::graphite::texture::Texture;
 use crate::graphite::texture_format::{
@@ -414,7 +414,7 @@ impl WgpuCommandBufferBackend {
     fn add_compute_pass(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        dispatch_groups: &mut [Box<dyn DispatchGroup>],
+        dispatch_groups: &mut [Box<DispatchGroup>],
         tracker: &mut dyn ResourceTracker,
     ) -> bool {
         let device = self.shared_context.device();
@@ -1624,7 +1624,7 @@ impl CommandBufferBackend for WgpuCommandBufferBackend {
     // Port of: src/gpu/graphite/dawn/DawnCommandBuffer.cpp#L298-L321 (chrome/m156)
     fn on_add_compute_pass(
         &mut self,
-        dispatch_groups: &mut [Box<dyn DispatchGroup>],
+        dispatch_groups: &mut [Box<DispatchGroup>],
         tracker: &mut dyn ResourceTracker,
     ) -> bool {
         let Some(mut encoder) = self.command_encoder.take() else {
