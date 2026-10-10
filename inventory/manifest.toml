@@ -19828,7 +19828,7 @@ macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L188-L188"
 module = "codec"
 status = "todo"
-reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet; the lossy variants also need ALPH (transparent images)"
+reason = "not ported: DEF_VARIANTS registers three GMs per manifest id, which the one-GM-per-name registration cannot express yet"
 span_hash = "5c06e81aa5205c6cbfaeb468b02ed765240cff984513105fc850029631d2dcc6"
 
 [[test]]
@@ -19838,7 +19838,7 @@ macro = "DEF_VARIANTS"
 source = "gm/encode_color_types.cpp#L189-L189"
 module = "codec"
 status = "todo"
-reason = "not ported: the lossy variants need ALPH for the transparent pictures (VP8L at method 3, not ported)"
+reason = "not ported: DEF_VARIANTS, as the entry above (the one-GM-per-name registration cannot express the three variants yet)"
 span_hash = "44de642452e3eb339e86b9e7e4e8c57eb9c127f1d1b14af0d11fca99c4048646"
 
 [[test]]
