@@ -17,7 +17,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::size::ISize;
 
+use crate::gpu::buffer_writer::BufferWriter;
 use crate::graphite::resource_types::SamplerDesc;
+use crate::graphite::uniform_manager::UniformManager;
 
 /// `kMaxComputeDataFlowSlots`: the maximum number of shared resource binding slots permitted for
 /// `ComputeStep`s of a `DispatchGroup`.
@@ -298,6 +300,41 @@ pub trait ComputeStep: Send + Sync + Debug {
     #[doc(alias = "nativeShaderSource")]
     fn native_shader_source(&self, _format: NativeShaderFormat) -> NativeShaderSource<'_> {
         panic!("ComputeSteps that support native shader source must override nativeShaderSource()");
+    }
+
+    /// `prepareStorageBuffer(resourceIndex, resource, writer)`: fills a mapped storage buffer on
+    /// the CPU before the dispatch runs.
+    ///
+    /// # Panics
+    /// By default, like `SK_ABORT` in `ComputeStep::prepareStorageBuffer`.
+    // Port of: src/gpu/graphite/compute/ComputeStep.cpp#L54-L56 (chrome/m156)
+    #[doc(alias = "prepareStorageBuffer")]
+    fn prepare_storage_buffer(
+        &self,
+        _resource_index: usize,
+        _resource: &ResourceDesc,
+        _writer: BufferWriter<'_>,
+    ) {
+        panic!(
+            "ComputeSteps that initialize a mapped storage buffer must override \
+             prepareStorageBuffer()"
+        );
+    }
+
+    /// `prepareUniformBuffer(resourceIndex, resource, uniformManager)`: adds the uniforms of a
+    /// mapped uniform buffer.
+    ///
+    /// # Panics
+    /// By default, like `SK_ABORT` in `ComputeStep::prepareUniformBuffer`.
+    // Port of: src/gpu/graphite/compute/ComputeStep.cpp#L58-L60 (chrome/m156)
+    #[doc(alias = "prepareUniformBuffer")]
+    fn prepare_uniform_buffer(
+        &self,
+        _resource_index: usize,
+        _resource: &ResourceDesc,
+        _uniform_manager: &mut UniformManager,
+    ) {
+        panic!("ComputeSteps that initialize a uniform buffer must override prepareUniformBuffer()");
     }
 
     /// `calculateBufferSize(resourceIndex, resource)`: the required allocation size of a buffer
