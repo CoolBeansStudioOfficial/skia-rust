@@ -6,8 +6,7 @@
 //! The portable font manager (`ToolUtils::MakePortableFontMgr`): the test typefaces, grouped by
 //! family, with no other fonts.
 //!
-//! The `Emoji` and `Planet` families (`TestSVGTypeface`, `SK_ENABLE_SVG`) are not here yet.
-//! They arrive with T20, which needs the SVG DOM (docs/design/text.md §8, Q1).
+//! The `Emoji` and `Planet` families are the `TestSVGTypeface`s (`SK_ENABLE_SVG`).
 
 use std::sync::Arc;
 
@@ -21,6 +20,7 @@ use skia_rust_core::typeface::Typeface;
 use skia_rust_core::utf::Unichar;
 use skia_rust_text::utils::custom_typeface;
 
+use super::test_svg_typeface::TestSvgTypeface;
 use super::test_typeface::{TestTypeface, typefaces};
 
 /// One face of a [`TestFontStyleSet`] (`FontStyleSet::TypefaceEntry`).
@@ -101,6 +101,20 @@ impl TestFontMgr {
         // C++ asserts that the test data has a default and falls back to the first family.
         let (default_family, default_typeface) =
             default.expect("TestTypeface must have a default typeface");
+
+        // `#if defined(SK_ENABLE_SVG)`
+        let svg_family = |family_name: &'static str, typeface: Typeface| {
+            Arc::new(TestFontStyleSet {
+                family_name,
+                typefaces: vec![TypefaceEntry {
+                    typeface,
+                    style: FontStyle::normal(),
+                    style_name: "Normal",
+                }],
+            })
+        };
+        families.push(svg_family("Emoji", TestSvgTypeface::default_typeface()));
+        families.push(svg_family("Planet", TestSvgTypeface::planets()));
         Self {
             families,
             default_family,
@@ -143,6 +157,10 @@ impl FontMgrBase for TestFontMgr {
             1
         } else if name.contains("erif") {
             2
+        } else if name.contains("oji") {
+            6
+        } else if name.contains("Planet") {
+            7
         } else {
             return None;
         };
@@ -224,6 +242,14 @@ impl FontMgrBase for TestFontMgr {
             TypefaceDecoder {
                 factory_id: TestTypeface::FACTORY_ID,
                 make_from_stream: TestTypeface::make_from_stream,
+            },
+            TypefaceDecoder {
+                factory_id: TestSvgTypeface::DEFAULT_FACTORY_ID,
+                make_from_stream: TestSvgTypeface::make_default_from_stream,
+            },
+            TypefaceDecoder {
+                factory_id: TestSvgTypeface::PLANETS_FACTORY_ID,
+                make_from_stream: TestSvgTypeface::make_planets_from_stream,
             },
             // `SkCustomTypefaceBuilder`'s decoder, which C++ registers for every configuration.
             TypefaceDecoder {

@@ -11,6 +11,30 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 
+/// `ToolUtils::equal_pixels(const SkPixmap&, const SkPixmap&)`: same size, same color type, and
+/// the same bytes in every row (only the `width * bytesPerPixel` bytes of each row are compared).
+// Port of: tools/ToolUtils.cpp#L457-L474 (chrome/m156)
+#[must_use]
+pub fn equal_pixels(a: &Pixmap<'_>, b: &Pixmap<'_>) -> bool {
+    if a.width() != b.width() || a.height() != b.height() {
+        return false;
+    }
+    if a.color_type() != b.color_type() {
+        return false;
+    }
+    // width * bytesPerPixel, which is minRowBytes() for a valid info.
+    let row_len = a.info().min_row_bytes();
+    for y in 0..a.height() {
+        let (Some(a_row), Some(b_row)) = (a.addr_at((0, y)), b.addr_at((0, y))) else {
+            return false;
+        };
+        if a_row[..row_len] != b_row[..row_len] {
+            return false;
+        }
+    }
+    true
+}
+
 /// `ToolUtils::alphatype_name`.
 // Port of: tools/ToolUtils.cpp#L52-L60 (chrome/m156)
 #[must_use]

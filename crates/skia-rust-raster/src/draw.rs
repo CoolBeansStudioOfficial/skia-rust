@@ -31,7 +31,7 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode_priv::supports_coverage_as_alpha;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::device::Device;
+use skia_rust_core::device::{Device, PendingGlyphDrawable};
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
@@ -631,6 +631,73 @@ impl<'a> Draw<'a> {
             draw.ctm = &matrix;
             draw.draw_rect(&src_bounds, &paint_with_shader);
         }
+    }
+
+    /// Draws `bitmap` with its top left corner at `(x, y)` in device space (`drawSprite`).
+    // Port of: src/core/SkDraw.cpp#L445-L492 (chrome/m156)
+    #[doc(alias = "drawSprite")]
+    pub fn draw_sprite(&mut self, bitmap: &Bitmap, x: i32, y: i32, orig_paint: &Paint) {
+        self.validate();
+
+        // nothing to draw
+        if self.rc.is_empty()
+            || bitmap.width() == 0
+            || bitmap.height() == 0
+            || bitmap.color_type() == ColorType::Unknown
+        {
+            return;
+        }
+
+        let bounds = IRect::from_xywh(x, y, bitmap.width(), bitmap.height());
+
+        if self.rc.quick_reject(&bounds) {
+            return; // nothing to draw
+        }
+
+        let mut paint = orig_paint.clone();
+        paint.set_style(Style::Fill);
+
+        let Some(pmap) = bitmap.peek_pixels() else {
+            return;
+        };
+
+        if paint.color_filter().is_none() && clip_handles_sprite(self.rc, x, y, &pmap) {
+            let alloc = ArenaAlloc::new();
+            let blitter = choose_sprite(
+                self.dst.reborrow_mut(),
+                &paint,
+                pmap,
+                x,
+                y,
+                &alloc,
+                self.rc.clip_shader(),
+                false,
+            );
+            if let Some(mut blitter) = blitter {
+                fill_irect_clip(&bounds, self.rc, &mut *blitter);
+                return;
+            }
+        }
+
+        // get a scalar version of our rect
+        let r = Rect::from_irect(bounds);
+
+        // create shader with offset
+        let mut matrix = Matrix::default();
+        matrix.set_translate((r.left(), r.top()));
+        let Some(paint_with_shader) = make_paint_with_image_and_mips(
+            &paint,
+            bitmap,
+            &SamplingOptions::default(),
+            Some(&matrix),
+            None,
+        ) else {
+            return;
+        };
+        let mut draw = self.reborrow();
+        draw.ctm = Matrix::i();
+        // call ourself with a rect
+        draw.draw_rect(&r, &paint_with_shader);
     }
 
     /// Debug checks of the draw's state (`validate`).
@@ -1523,18 +1590,21 @@ impl Draw<'_> {
     /// The canvas of C++ is not passed: glyph paths draw on this draw, see [`BitmapDevicePainter`].
     // Port of: src/core/SkDraw_text.cpp#L125-L134 (chrome/m156)
     #[doc(alias = "drawGlyphRunList")]
+    ///
+    /// skia-rust: glyph drawables are added to `pending_drawables`, for the canvas to draw.
     pub fn draw_glyph_run_list(
         &mut self,
         painter: &GlyphRunListPainter,
         list: &GlyphRunList<'_>,
         paint: &Paint,
+        pending_drawables: &mut Vec<PendingGlyphDrawable>,
     ) {
         self.validate();
         if self.rc.is_empty() {
             return;
         }
         let ctm = self.ctm;
-        painter.draw_for_bitmap_device(self, list, paint, ctm);
+        painter.draw_for_bitmap_device(self, list, paint, ctm, pending_drawables);
     }
 }
 
@@ -1542,7 +1612,64 @@ impl Draw<'_> {
 /// draw itself.
 impl BitmapDevicePainter for Draw<'_> {
     // Port of: src/core/SkDraw_text.cpp#L53-L123 (chrome/m156), Draw::paintMasks
+    //
+    // skia-rust: the blitter of the C++ is created once and the ARGB32 masks are drawn with
+    // `drawSprite` in between. Here a blitter borrows the pixels, so it is made per run of
+    // masks that are not ARGB32, and the sprites are drawn between those runs. The order of the
+    // glyphs is the same.
     fn paint_masks(&mut self, accepted: &[(&Glyph, Point)], paint: &Paint) {
+        let mut start = 0;
+        while start < accepted.len() {
+            let is_sprite = accepted[start].0.mask_format() == MaskFormat::Argb32;
+            let mut end = start + 1;
+            while end < accepted.len()
+                && (accepted[end].0.mask_format() == MaskFormat::Argb32) == is_sprite
+            {
+                end += 1;
+            }
+            let run = &accepted[start..end];
+            if is_sprite {
+                for (glyph, pos) in run {
+                    self.paint_sprite_mask(glyph, *pos, paint);
+                }
+            } else {
+                self.paint_blit_masks(run, paint);
+            }
+            start = end;
+        }
+    }
+
+    fn draw_bitmap(
+        &mut self,
+        bitmap: &Bitmap,
+        matrix: &Matrix,
+        dst_or_null: Option<&Rect>,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        mips: Option<Arc<Mipmap>>,
+    ) {
+        Draw::draw_bitmap(self, bitmap, matrix, dst_or_null, sampling, paint, mips);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
+    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
+        // canvas->concat(m): the canvas matrix is an SkM44, so CTM * m is composed in 4x4 (float
+        // order of SkM44::setConcat), and the device takes its 3x3 part (`asM33`).
+        let ctm = M44::concat(&M44::from(self.ctm.clone()), &M44::from(matrix.clone())).to_m33();
+        let mut draw = self.reborrow();
+        draw.ctm = &ctm;
+        draw.draw_path(path, paint, None);
+    }
+
+    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint) {
+        self.draw_path(path, paint, None);
+    }
+}
+
+impl Draw<'_> {
+    /// `Draw::paintMasks` for masks that are not ARGB32: blits them with the paint's blitter.
+    // Port of: src/core/SkDraw_text.cpp#L53-L123 (chrome/m156)
+    fn paint_blit_masks(&mut self, accepted: &[(&Glyph, Point)], paint: &Paint) {
         let rc = self.rc;
         let use_region = rc.is_bw() && !rc.is_rect();
         auto_blitter_choose(
@@ -1561,11 +1688,6 @@ impl BitmapDevicePainter for Draw<'_> {
                         let mask = glyph.mask_at(*pos);
                         let mut clipper = Cliperator::new(rc.bw_rgn(), mask.bounds);
                         if clipper.is_done() {
-                            continue;
-                        }
-                        // TODO(text-T20): color masks are drawn with `Draw::drawSprite`, whose
-                        // fallback needs the image-shader paint. Until then they draw nothing.
-                        if mask.format == MaskFormat::Argb32 {
                             continue;
                         }
                         loop {
@@ -1597,10 +1719,6 @@ impl BitmapDevicePainter for Draw<'_> {
                                 None => continue,
                             }
                         };
-                        // TODO(text-T20): color masks need `Draw::drawSprite` (see above).
-                        if mask.format == MaskFormat::Argb32 {
-                            continue;
-                        }
                         wrapper.blitter().blit_mask(&mask, &bounds);
                     }
                 }
@@ -1608,18 +1726,44 @@ impl BitmapDevicePainter for Draw<'_> {
         );
     }
 
-    // Port of: src/core/SkCanvas.cpp#L2866-L2874 (chrome/m156), concat then drawPath
-    fn draw_glyph_path_concat(&mut self, path: &Path, matrix: &Matrix, paint: &Paint) {
-        // canvas->concat(m): the canvas matrix is an SkM44, so CTM * m is composed in 4x4 (float
-        // order of SkM44::setConcat), and the device takes its 3x3 part (`asM33`).
-        let ctm = M44::concat(&M44::from(self.ctm.clone()), &M44::from(matrix.clone())).to_m33();
-        let mut draw = self.reborrow();
-        draw.ctm = &ctm;
-        draw.draw_path(path, paint, None);
-    }
+    /// `Draw::paintMasks` for an ARGB32 (color) mask: the same position checks, then
+    /// `drawSprite` of the glyph image.
+    // Port of: src/core/SkDraw_text.cpp#L66-L84 and #L98-L119 (chrome/m156)
+    fn paint_sprite_mask(&mut self, glyph: &Glyph, pos: Point, paint: &Paint) {
+        let rc = self.rc;
+        if !check_glyph_position(pos) {
+            return;
+        }
+        let mask = glyph.mask_at(pos);
+        if rc.is_bw() && !rc.is_rect() {
+            let clipper = Cliperator::new(rc.bw_rgn(), mask.bounds);
+            if clipper.is_done() {
+                return;
+            }
+        } else {
+            let clip_bounds = if rc.is_bw() {
+                *rc.bw_rgn().bounds()
+            } else {
+                *rc.aa_rgn().bounds()
+            };
+            // this extra test is worth it, assuming that most of the time it succeeds
+            // since we can avoid writing to storage
+            if !clip_bounds.contains_no_empty_check(&mask.bounds)
+                && IRect::intersect(&mask.bounds, &clip_bounds).is_none()
+            {
+                return;
+            }
+        }
 
-    fn draw_glyph_path_device(&mut self, path: &Path, paint: &Paint) {
-        self.draw_path(path, paint, None);
+        let mut bm = Bitmap::new();
+        let installed = bm.install_pixels(
+            &ImageInfo::new_n32_premul((mask.bounds.width(), mask.bounds.height()), None),
+            mask.image.to_vec(),
+            mask.row_bytes as usize,
+        );
+        debug_assert!(installed);
+        bm.set_immutable();
+        self.draw_sprite(&bm, mask.bounds.left, mask.bounds.top, paint);
     }
 }
 

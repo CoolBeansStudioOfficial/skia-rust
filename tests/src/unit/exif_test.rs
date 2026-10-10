@@ -8,9 +8,11 @@
 // GetImageRespectsExif needs the WebP decoder, and ExifWrite* needs SkExif's WriteExif, which is
 // not ported.
 
+use skia_rust_codec::codec::Options;
 use skia_rust_codec::codecs;
 use skia_rust_codec::exif::{Metadata, parse};
 use skia_rust_core::encoded_origin::EncodedOrigin;
+use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::stream::MemoryStream;
 
 use crate::resources::get_resource_as_data;
@@ -171,5 +173,39 @@ def_test!(ExifTruncate, |r| {
         parse(&mut exif, Some(&data[..558]));
         reporter_assert!(r, exif.pixel_x_dimension.is_some());
         reporter_assert!(r, exif.pixel_y_dimension.is_some());
+    }
+});
+
+// Port of: tests/ExifTest.cpp#L42-L63 (chrome/m156)
+def_test!(GetImageRespectsExif, |r| {
+    let path = "images/orientation/6.webp";
+    let Some(data) = get_resource_as_data(path) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    // SkWebpDecoder::Decode(std::move(stream), nullptr)
+    let Ok(mut codec) =
+        skia_rust_codec::webp_codec::make_from_stream(MemoryStream::make_copy(&data))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let origin = codec.origin();
+    reporter_assert!(
+        r,
+        origin == EncodedOrigin::RightTop,
+        "Actual origin {:?}",
+        origin
+    );
+    let result = codec.get_image(None::<ImageInfo>, None::<&Options>);
+    match result {
+        Ok(frame) => {
+            let dims = frame.dimensions();
+            reporter_assert!(r, dims.width == 100, "width {} != 100", dims.width);
+            reporter_assert!(r, dims.height == 80, "height {} != 80", dims.height);
+        }
+        Err(result) => {
+            reporter_assert!(r, false, "Not success {}", result.as_str());
+        }
     }
 });

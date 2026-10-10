@@ -13,6 +13,7 @@ use skia_rust_core::font_arguments::variation_position::Coordinate;
 use skia_rust_core::font_arguments::{FontArguments, VariationPosition};
 use skia_rust_core::font_descriptor::FontDescriptor;
 use skia_rust_core::font_parameters::variation::Axis;
+use skia_rust_core::font_priv::glyphs_to_unichars;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::font_types::{FourByteTag, set_four_byte_tag};
@@ -21,10 +22,11 @@ use skia_rust_core::rect::Rect;
 use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream, StreamAsset};
 use skia_rust_core::typeface::{SerializeBehavior, Typeface};
 use skia_rust_core::typeface_cache::TypefaceCache;
-use skia_rust_core::utf::Unichar;
+use skia_rust_core::utf::{Unichar, count_utf8, next_utf8};
 use skia_rust_text::utils::custom_typeface::CustomTypefaceBuilder;
 use skia_rust_tools::font_tool_utils::{
-    create_test_typeface, create_typeface_from_resource, default_typeface, test_font_mgr,
+    create_test_typeface, create_typeface_from_resource, default_typeface, emoji_sample_default,
+    test_font_mgr,
 };
 use skia_rust_tools::fonts::test_empty_typeface::TestEmptyTypeface;
 
@@ -861,4 +863,49 @@ def_test!(CustomTypeface_invalid_glyphid, |reporter| {
         bounds[0] == Rect::from_ltrb(10.0, 20.0, 30.0, 40.0)
     );
     reporter_assert!(reporter, bounds[1] == Rect::from_ltrb(0.0, 0.0, 0.0, 0.0));
+});
+
+// Port of: tests/TypefaceTest.cpp#L717-L755 (chrome/m156)
+def_test!(Typeface_glyph_to_char, |reporter| {
+    let emoji_sample = emoji_sample_default();
+    let typeface = emoji_sample.typeface.expect("an emoji typeface");
+    let font = Font::from_size(typeface, 12.0);
+    let text = emoji_sample.sample_text.as_bytes();
+    let family_name = font.typeface().family_name();
+
+    let codepoint_count = usize::try_from(count_utf8(text)).unwrap();
+    let mut remaining = text;
+    let original_codepoints: Vec<Unichar> = (0..codepoint_count)
+        .map(|_| next_utf8(&mut remaining))
+        .collect();
+    let mut glyphs = vec![0 as GlyphId; codepoint_count];
+    font.unichars_to_glyphs(&original_codepoints, &mut glyphs);
+    if glyphs.contains(&0) {
+        errorf!(
+            reporter,
+            "Unexpected typeface \"{}\". Expected full support for emoji_sample_text.",
+            family_name
+        );
+        return;
+    }
+
+    let mut new_codepoints = vec![0 as Unichar; codepoint_count];
+    glyphs_to_unichars(&font, &glyphs, &mut new_codepoints);
+
+    for i in 0..codepoint_count {
+        // GDI does not support character to glyph mapping outside BMP. The font manager is never
+        // GDI here (ToolUtils::FontMgrIsGDI is false), so that skip never applies.
+        // If two codepoints map to the same glyph then this assert is not valid.
+        // However, the emoji test font should never have multiple characters map to the same glyph.
+        reporter_assert!(
+            reporter,
+            original_codepoints[i] == new_codepoints[i],
+            "name:{} i:{} original:{} new:{} glyph:{}",
+            family_name,
+            i,
+            original_codepoints[i],
+            new_codepoints[i],
+            glyphs[i]
+        );
+    }
 });

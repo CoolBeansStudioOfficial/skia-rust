@@ -23,6 +23,8 @@ skia-rust-libwebp.workspace = true
 skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-tools.workspace = true
 skia-rust-text.workspace = true
+skia-rust-pdf.workspace = true
+skia-rust-zlib.workspace = true
 skia-rust-simd = { workspace = true, features = ["testing", "models"] }
 
 [lints]

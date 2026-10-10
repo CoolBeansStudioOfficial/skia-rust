@@ -2,16 +2,253 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/QuadRootsTest.cpp (chrome/m156)
-//
-// Not ported yet (manifest stays `todo`): `QuadRootsReal_ActualQuadratics`, `QuadRootsReal_Linear`
-// and `QuadRootsReal_Constant` (they also check `SkDQuad::RootsReal` from SkPathOps).
 
 #![cfg(test)]
 
-use skia_rust_core::floating_point::is_finite_all;
+use skia_rust_core::floating_point::{
+    double_nearly_zero, doubles_nearly_equal_ulps_max_diff, is_finite_all,
+};
 use skia_rust_core::quads;
+use skia_rust_pathops::quad::DQuad;
 
-use crate::{def_test, reporter_assert};
+use crate::{Reporter, def_test, reporter_assert};
+
+// Port of: tests/QuadRootsTest.cpp#L25-L90 (chrome/m156)
+// The C++ `testQuadRootsReal` helper, with its `ReporterContext`s as `set_context` calls. The
+// C++ reads `expectedRoots[i]` for every root the solver reports; the Rust loop stops at the
+// shorter of the two, so a count mismatch (already reported above) cannot index out of bounds.
+fn test_quad_roots_real(
+    reporter: &mut Reporter,
+    name: &str,
+    a: f64,
+    b: f64,
+    c: f64,
+    expected_roots: &[f64],
+) {
+    reporter.set_context(Some(name.to_string()));
+    // Validate test case
+    reporter_assert!(
+        reporter,
+        expected_roots.len() <= 2,
+        "Invalid test case, up to 2 roots allowed"
+    );
+
+    for (i, &x) in expected_roots.iter().enumerate() {
+        // A*x^2 + B*x + C should equal 0
+        let y = a * x * x + b * x + c;
+        reporter_assert!(
+            reporter,
+            double_nearly_zero(y),
+            "Invalid test case root {}. {:.16} != 0",
+            i,
+            y
+        );
+
+        if i > 0 {
+            let ascending = expected_roots[i - 1] <= expected_roots[i];
+            reporter_assert!(
+                reporter,
+                ascending,
+                "Invalid test case root {}. Roots should be sorted in ascending order",
+                i
+            );
+        }
+    }
+
+    {
+        reporter.set_context(Some(format!("{name}: Pathops Implementation")));
+        let mut roots = [0.0f64; 2];
+        let root_count = DQuad::roots_real(a, b, c, &mut roots);
+        reporter_assert!(
+            reporter,
+            expected_roots.len() == root_count,
+            "Wrong number of roots returned {} != {}",
+            expected_roots.len(),
+            root_count
+        );
+
+        // We don't care which order the roots are returned from the algorithm.
+        // For determinism, we will sort them (and ensure the provided solutions are also sorted).
+        roots[..root_count].sort_by(f64::total_cmp);
+        for i in 0..root_count.min(expected_roots.len()) {
+            if double_nearly_zero(expected_roots[i]) {
+                reporter_assert!(
+                    reporter,
+                    double_nearly_zero(roots[i]),
+                    "0 != {:.16} at index {}",
+                    roots[i],
+                    i
+                );
+            } else {
+                reporter_assert!(
+                    reporter,
+                    doubles_nearly_equal_ulps_max_diff(expected_roots[i], roots[i], 64),
+                    "{:.16} != {:.16} at index {}",
+                    expected_roots[i],
+                    roots[i],
+                    i
+                );
+            }
+        }
+    }
+    {
+        reporter.set_context(Some(format!("{name}: SkQuads Implementation")));
+        let mut roots = [0.0f64; 2];
+        let root_count = quads::roots_real(a, b, c, &mut roots);
+        reporter_assert!(
+            reporter,
+            expected_roots.len() == root_count,
+            "Wrong number of roots returned {} != {}",
+            expected_roots.len(),
+            root_count
+        );
+
+        // We don't care which order the roots are returned from the algorithm.
+        // For determinism, we will sort them (and ensure the provided solutions are also sorted).
+        roots[..root_count].sort_by(f64::total_cmp);
+        for i in 0..root_count.min(expected_roots.len()) {
+            if double_nearly_zero(expected_roots[i]) {
+                reporter_assert!(
+                    reporter,
+                    double_nearly_zero(roots[i]),
+                    "0 != {:.16} at index {}",
+                    roots[i],
+                    i
+                );
+            } else {
+                reporter_assert!(
+                    reporter,
+                    doubles_nearly_equal_ulps_max_diff(expected_roots[i], roots[i], 64),
+                    "{:.16} != {:.16} at index {}",
+                    expected_roots[i],
+                    roots[i],
+                    i
+                );
+            }
+        }
+    }
+    reporter.set_context(None);
+}
+
+// Port of: tests/QuadRootsTest.cpp#L92-L158 (chrome/m156)
+def_test!(
+    #[allow(clippy::excessive_precision, clippy::unreadable_literal)]
+    // literals copied verbatim from the C++ test
+    QuadRootsReal_ActualQuadratics,
+    |reporter| {
+        // All answers are given with 16 significant digits (max for a double) or as an integer
+        // when the answer is exact.
+        test_quad_roots_real(
+            reporter,
+            "two roots 3x^2 - 20x - 40",
+            3.0,
+            -20.0,
+            -40.0,
+            &[-1.610798991397109, 8.277465658063775],
+        );
+
+        // (2x - 4)(x + 17)
+        test_quad_roots_real(
+            reporter,
+            "two roots 2x^2 + 30x - 68",
+            2.0,
+            30.0,
+            -68.0,
+            &[-17.0, 2.0],
+        );
+
+        test_quad_roots_real(
+            reporter,
+            "two roots x^2 - 5",
+            1.0,
+            0.0,
+            -5.0,
+            &[-2.236067977499790, 2.236067977499790],
+        );
+
+        test_quad_roots_real(reporter, "one root x^2 - 2x + 1", 1.0, -2.0, 1.0, &[1.0]);
+
+        test_quad_roots_real(reporter, "no roots 5x^2 + 6x + 7", 5.0, 6.0, 7.0, &[]);
+
+        test_quad_roots_real(reporter, "no roots 4x^2 + 1", 4.0, 0.0, 1.0, &[]);
+
+        test_quad_roots_real(
+            reporter,
+            "one root is zero, another is big",
+            14.0,
+            -13.0,
+            0.0,
+            &[0.0, 0.9285714285714286],
+        );
+
+        // Values from a failing test case observed during testing.
+        test_quad_roots_real(
+            reporter,
+            "one root is zero, another is small",
+            0.2929016490705016,
+            0.0000030451558069,
+            0.0,
+            &[-0.00001039651301576329, 0.0],
+        );
+
+        test_quad_roots_real(
+            reporter,
+            "b and c are zero, a is positive 4x^2",
+            4.0,
+            0.0,
+            0.0,
+            &[0.0],
+        );
+
+        test_quad_roots_real(
+            reporter,
+            "b and c are zero, a is negative -4x^2",
+            -4.0,
+            0.0,
+            0.0,
+            &[0.0],
+        );
+
+        // One solution is 0, the other is so close to zero it returns
+        // true for sk_double_nearly_zero, so it is collapsed into one.
+        test_quad_roots_real(
+            reporter,
+            "a and b are huge, c is zero",
+            4.3719914983870202e+291,
+            1.0269509510194551e+152,
+            0.0,
+            &[0.0],
+        );
+
+        // The roots are not in the range of doubles.
+        // Rust has no hexadecimal float literals, so the C++ literals `0x1p-1055`,
+        // `0x1.3000006p-1044` and `-0x1.c000008p+1009` are built exactly here:
+        // 0x1p-1055 is the subnormal 2^19 * 2^-1074; 0x1.3000006p-1044 is 0x13000006 * 2^-1072,
+        // i.e. the subnormal 0x13000006 * 4 * 2^-1074; -0x1.c000008p+1009 is 0x1c000008 * 2^981.
+        test_quad_roots_real(
+            reporter,
+            "Very small A B, very large C",
+            f64::from_bits(1 << 19),
+            f64::from_bits(0x1300_0006 * 4),
+            -(f64::from(0x1c00_0008_u32) * 2f64.powi(981)),
+            &[],
+        );
+    }
+);
+
+// Port of: tests/QuadRootsTest.cpp#L160-L168 (chrome/m156)
+def_test!(QuadRootsReal_Linear, |reporter| {
+    test_quad_roots_real(reporter, "positive slope 5x + 6", 0.0, 5.0, 6.0, &[-1.2]);
+
+    test_quad_roots_real(reporter, "negative slope -3x - 9", 0.0, -3.0, -9.0, &[-3.0]);
+});
+
+// Port of: tests/QuadRootsTest.cpp#L170-L178 (chrome/m156)
+def_test!(QuadRootsReal_Constant, |reporter| {
+    test_quad_roots_real(reporter, "No intersections y = -10", 0.0, 0.0, -10.0, &[]);
+
+    test_quad_roots_real(reporter, "Infinite solutions y = 0", 0.0, 0.0, 0.0, &[0.0]);
+});
 
 // Port of: tests/QuadRootsTest.cpp#L123-L147 (chrome/m156)
 def_test!(QuadRootsReal_NonFiniteNumbers, |reporter| {
