@@ -422,16 +422,14 @@ pub fn texture_from_yuva_pixmaps(
         if !limit_to_max_texture_size {
             return None;
         }
-        // Port note: the float arithmetic and the truncation are those of the C++ expression.
+        // The float arithmetic and the truncation are those of the C++ expression.
         #[allow(clippy::cast_precision_loss)] // mirrors the C++ `static_cast<float>`
         let scale = max_texture_size as f32 / max_dim as f32;
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+        // C++ static_cast<int>
         let new_dimensions = ISize::new(
-            (yuva.width() as f32 * scale) as i32,
-            (yuva.height() as f32 * scale) as i32,
-        );
-        let new_dimensions = ISize::new(
-            new_dimensions.width.min(max_texture_size),
-            new_dimensions.height.min(max_texture_size),
+            ((yuva.width() as f32 * scale) as i32).min(max_texture_size),
+            ((yuva.height() as f32 * scale) as i32).min(max_texture_size),
         );
         let new_yuva = yuva.with_dimensions(new_dimensions)?;
         final_info = YUVAPixmapInfo::from_data_type(&new_yuva, pixmaps.data_type(), None)?;
@@ -478,18 +476,16 @@ pub fn texture_from_yuva_pixmaps(
                 return None;
             }
         }
-        *plane = make_bitmap_proxy_view(
-            recorder,
-            &bmp,
-            None,
-            mipmapped,
-            Budgeted::No,
-            &label_str,
-        )
-        .unwrap_or_default();
+        *plane = make_bitmap_proxy_view(recorder, &bmp, None, mipmapped, Budgeted::No, &label_str)
+            .unwrap_or_default();
     }
-    ImageYuva::make(&*caps, &final_yuva, &planes[..num_planes], image_color_space)
-        .map(ImageYuva::into_core)
+    ImageYuva::make(
+        &*caps,
+        &final_yuva,
+        &planes[..num_planes],
+        image_color_space,
+    )
+    .map(ImageYuva::into_core)
 }
 
 /// `TextureFromYUVATextures(recorder, yuvaTextures, imageColorSpace, releaseP, releaseC, label)`:

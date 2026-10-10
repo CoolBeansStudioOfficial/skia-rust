@@ -351,58 +351,61 @@ fn synced_submit(context: &mut WgpuContext) {
 }
 
 // Port of: tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L279-L375 (chrome/m156)
-def_graphite_adapter_test!(NonVolatileGraphiteYUVAPromiseImageTest, |reporter, context| {
-    let dimensions = ISize::new(16, 16);
-    let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, false);
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        check_unfulfilled(reporter, &test_ctx);
-        let mut recording = snap(&mut test_ctx);
-        check_unfulfilled(reporter, &test_ctx); // NVPIs not fulfilled at snap
-        reporter_assert!(reporter, insert_recording(context, &mut recording));
-        check_fulfilled_ahead_by_one(reporter, &test_ctx, 1); // NVPIs fulfilled at insert
-    }
-    let _ = context.submit(SubmitInfo::default());
-    // testContext.fImg still has a ref so we should not have called TextureRelease.
-    check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-    synced_submit(context);
-    check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-    // Test that more draws and insertions don't refulfill the NVPI.
-    {
-        let img = test_ctx.img.clone().expect("the image");
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        let mut recording = snap(&mut test_ctx);
-        check_fulfilled_ahead_by_one(reporter, &test_ctx, 1); // No new fulfill
-        reporter_assert!(reporter, insert_recording(context, &mut recording));
-        // testContext.fImg should still be fulfilled from the first time we inserted a Recording.
+def_graphite_adapter_test!(
+    NonVolatileGraphiteYUVAPromiseImageTest,
+    |reporter, context| {
+        let dimensions = ISize::new(16, 16);
+        let mut test_ctx = setup_test_context(context, reporter, dimensions, Volatile::No, false);
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            check_unfulfilled(reporter, &test_ctx);
+            let mut recording = snap(&mut test_ctx);
+            check_unfulfilled(reporter, &test_ctx); // NVPIs not fulfilled at snap
+            reporter_assert!(reporter, insert_recording(context, &mut recording));
+            check_fulfilled_ahead_by_one(reporter, &test_ctx, 1); // NVPIs fulfilled at insert
+        }
+        let _ = context.submit(SubmitInfo::default());
+        // testContext.fImg still has a ref so we should not have called TextureRelease.
         check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-    }
-    synced_submit(context);
-    check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-    // Test that dropping the SkImage's ref doesn't change anything.
-    {
-        let img = test_ctx.img.take().expect("the image");
-        canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-        drop(img);
-        let mut recording = snap(&mut test_ctx);
+        synced_submit(context);
         check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-        reporter_assert!(reporter, insert_recording(context, &mut recording));
+        // Test that more draws and insertions don't refulfill the NVPI.
+        {
+            let img = test_ctx.img.clone().expect("the image");
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            let mut recording = snap(&mut test_ctx);
+            check_fulfilled_ahead_by_one(reporter, &test_ctx, 1); // No new fulfill
+            reporter_assert!(reporter, insert_recording(context, &mut recording));
+            // testContext.fImg should still be fulfilled from the first time we inserted a Recording.
+            check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
+        }
+        synced_submit(context);
         check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
+        // Test that dropping the SkImage's ref doesn't change anything.
+        {
+            let img = test_ctx.img.take().expect("the image");
+            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+            drop(img);
+            let mut recording = snap(&mut test_ctx);
+            check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
+            reporter_assert!(reporter, insert_recording(context, &mut recording));
+            check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
+        }
+        // fImg's proxy is reffed by the recording so, despite fImg being reset earlier, the
+        // imageRelease callback doesn't occur until the recording is deleted.
+        reporter_assert!(
+            reporter,
+            lock(&test_ctx.image_checker).image_release_count == 1
+        );
+        // testContext.fImg no longer holds a ref but the last recording is still not submitted.
+        check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
+        synced_submit(context);
+        // Now TextureRelease should definitely have been called.
+        check_all_done(reporter, &test_ctx, 1);
     }
-    // fImg's proxy is reffed by the recording so, despite fImg being reset earlier, the
-    // imageRelease callback doesn't occur until the recording is deleted.
-    reporter_assert!(
-        reporter,
-        lock(&test_ctx.image_checker).image_release_count == 1
-    );
-    // testContext.fImg no longer holds a ref but the last recording is still not submitted.
-    check_fulfilled_ahead_by_one(reporter, &test_ctx, 1);
-    synced_submit(context);
-    // Now TextureRelease should definitely have been called.
-    check_all_done(reporter, &test_ctx, 1);
-});
+);
 
 // Port of: tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L377-L458 (chrome/m156)
 def_graphite_adapter_test!(
@@ -633,55 +636,59 @@ def_graphite_adapter_test!(GraphiteYUVAPromiseImageRecorderLoss, |reporter, cont
 // Test out PromiseImages appearing in multiple Recordings. In particular, test that previous
 // instantiations don't impact the Recording's collection of PromiseImages.
 // Port of: tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L730-L806 (chrome/m156)
-def_graphite_adapter_test!(GraphiteYUVAPromiseImageMultipleImgUses, |reporter, context| {
-    const NUM_RECORDINGS: usize = 3;
-    let dimensions = ISize::new(16, 16);
-    for is_volatile in [Volatile::No, Volatile::Yes] {
-        let expected_volatile = if is_volatile == Volatile::Yes { 4 } else { 0 };
-        let expected_non_volatile = 4 - expected_volatile;
-        let mut test_ctx = setup_test_context(context, reporter, dimensions, is_volatile, false);
-        let mut recordings: Vec<Recording> = Vec::with_capacity(NUM_RECORDINGS);
-        let img = test_ctx.img.clone().expect("the image");
-        for i in 0..NUM_RECORDINGS {
-            let i_count = i32::try_from(i).unwrap_or(0);
-            canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
-            recordings.push(snap(&mut test_ctx));
-            if is_volatile == Volatile::Yes {
-                check_fulfills_only(reporter, &test_ctx, i_count);
-            } else {
-                check_fulfills_only(reporter, &test_ctx, i32::from(i > 0));
+def_graphite_adapter_test!(
+    GraphiteYUVAPromiseImageMultipleImgUses,
+    |reporter, context| {
+        const NUM_RECORDINGS: usize = 3;
+        let dimensions = ISize::new(16, 16);
+        for is_volatile in [Volatile::No, Volatile::Yes] {
+            let expected_volatile = if is_volatile == Volatile::Yes { 4 } else { 0 };
+            let expected_non_volatile = 4 - expected_volatile;
+            let mut test_ctx =
+                setup_test_context(context, reporter, dimensions, is_volatile, false);
+            let mut recordings: Vec<Recording> = Vec::with_capacity(NUM_RECORDINGS);
+            let img = test_ctx.img.clone().expect("the image");
+            for i in 0..NUM_RECORDINGS {
+                let i_count = i32::try_from(i).unwrap_or(0);
+                canvas_of(&test_ctx).draw_image(&img, (0.0, 0.0), None);
+                recordings.push(snap(&mut test_ctx));
+                if is_volatile == Volatile::Yes {
+                    check_fulfills_only(reporter, &test_ctx, i_count);
+                } else {
+                    check_fulfills_only(reporter, &test_ctx, i32::from(i > 0));
+                }
+                let recording = &mut recordings[i];
+                let num_volatile = i32::try_from(recording.priv_().num_volatile_promise_images());
+                let num_non_volatile =
+                    i32::try_from(recording.priv_().num_non_volatile_promise_images());
+                reporter_assert!(reporter, num_volatile == Ok(expected_volatile));
+                reporter_assert!(reporter, num_non_volatile == Ok(expected_non_volatile));
+                reporter_assert!(reporter, insert_recording(context, recording));
+                if is_volatile == Volatile::Yes {
+                    check_fulfills_only(reporter, &test_ctx, i_count + 1);
+                } else {
+                    check_fulfills_only(reporter, &test_ctx, 1);
+                }
+                // Non-volatiles are cleared out after a successful insertion.
+                reporter_assert!(
+                    reporter,
+                    recordings[i].priv_().num_non_volatile_promise_images() == 0
+                );
             }
-            let recording = &mut recordings[i];
-            let num_volatile = i32::try_from(recording.priv_().num_volatile_promise_images());
-            let num_non_volatile =
-                i32::try_from(recording.priv_().num_non_volatile_promise_images());
-            reporter_assert!(reporter, num_volatile == Ok(expected_volatile));
-            reporter_assert!(reporter, num_non_volatile == Ok(expected_non_volatile));
-            reporter_assert!(reporter, insert_recording(context, recording));
+            synced_submit(context);
+            test_ctx.surface = None;
+            drop(img);
+            test_ctx.img = None;
+            recordings.clear();
             if is_volatile == Volatile::Yes {
-                check_fulfills_only(reporter, &test_ctx, i_count + 1);
+                check_all_done(
+                    reporter,
+                    &test_ctx,
+                    i32::try_from(NUM_RECORDINGS).unwrap_or(0),
+                );
             } else {
-                check_fulfills_only(reporter, &test_ctx, 1);
+                check_all_done(reporter, &test_ctx, 1);
             }
-            // Non-volatiles are cleared out after a successful insertion.
-            reporter_assert!(
-                reporter,
-                recordings[i].priv_().num_non_volatile_promise_images() == 0
-            );
-        }
-        synced_submit(context);
-        test_ctx.surface = None;
-        drop(img);
-        test_ctx.img = None;
-        recordings.clear();
-        if is_volatile == Volatile::Yes {
-            check_all_done(
-                reporter,
-                &test_ctx,
-                i32::try_from(NUM_RECORDINGS).unwrap_or(0),
-            );
-        } else {
-            check_all_done(reporter, &test_ctx, 1);
         }
     }
-});
+);

@@ -40,10 +40,10 @@ use crate::graphite::caps::Caps;
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::graphite_types::Volatile;
 use crate::graphite::image_graphite::Image;
-use crate::graphite::image_yuva_graphite::ImageYuva;
 use crate::graphite::image_provider::{
     DefaultImageProvider, ImageProvider, valid_client_provided_image,
 };
+use crate::graphite::image_yuva_graphite::ImageYuva;
 use crate::graphite::recorder::Recorder;
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
@@ -502,7 +502,8 @@ pub fn get_graphite_backed(
         let texturable = if let Some(yuva) = ImageYuva::from_core(image) {
             (0..YUVAChannels::COUNT).all(|i| view_texturable(yuva.proxy_view(i)))
         } else {
-            Image::from_core(image).is_none_or(|graphite| view_texturable(graphite.texture_proxy_view()))
+            Image::from_core(image)
+                .is_none_or(|graphite| view_texturable(graphite.texture_proxy_view()))
         };
         if !texturable {
             sampling = SamplingOptions::from(FilterMode::Nearest);

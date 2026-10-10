@@ -88,7 +88,7 @@ impl ImageYuva {
         let mut protected = Protected::No;
         for (i, proxy) in proxies.iter().enumerate() {
             if !proxy.is_valid() {
-                debug_assert!(i == YUVAChannels::A as usize);
+                debug_assert_eq!(i, YUVAChannels::A as usize);
                 continue;
             }
             if proxy.mipmapped() == Mipmapped::No {
@@ -153,9 +153,8 @@ impl ImageYuva {
             if plane.dimensions() != plane_dimensions[i] {
                 return None;
             }
-            pixmap_channel_masks[i] = ColorChannelFlag::from_bits(
-                texture_info_priv::channel_mask(proxy.texture_info()),
-            );
+            pixmap_channel_masks[i] =
+                ColorChannelFlag::from_bits(texture_info_priv::channel_mask(proxy.texture_info()));
         }
 
         // Re-arrange the proxies from planes to channels.
@@ -201,10 +200,7 @@ impl ImageYuva {
         let mut channel_proxies: [TextureProxyView; YUVAChannels::COUNT] =
             std::array::from_fn(|_| TextureProxyView::default());
         for (i, channel_proxy) in channel_proxies.iter_mut().enumerate() {
-            let YUVALocation {
-                plane,
-                mut channel,
-            } = locations[i];
+            let YUVALocation { plane, mut channel } = locations[i];
             if let Ok(plane) = usize::try_from(plane) {
                 let view = &planes[plane];
                 let format = view.proxy().map(|proxy| proxy.format());
@@ -260,12 +256,7 @@ impl ImageYuva {
                 return None;
             }
         }
-        let image = Self::make(
-            caps,
-            yuva_info,
-            &planes[..num_planes],
-            image_color_space,
-        )?;
+        let image = Self::make(caps, yuva_info, &planes[..num_planes], image_color_space)?;
         // Unlike the other factories, this YUVA image shares the texture proxies with each plane
         // image, so if those are linked to Devices, it must inherit those same links.
         for plane_image in images.iter().take(num_planes) {

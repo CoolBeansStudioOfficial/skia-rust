@@ -35,8 +35,6 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::{Color4f, PMColor4f};
-use skia_rust_core::yuv_math;
-use skia_rust_core::yuva_info::{Siting, YUVAChannels};
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
@@ -65,6 +63,8 @@ use skia_rust_core::shaders::runtime_shader::RuntimeShader;
 use skia_rust_core::shaders::shader_base::{GradientType, ShaderBase, ShaderType};
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::tile_mode::TileMode;
+use skia_rust_core::yuv_math;
+use skia_rust_core::yuva_info::{Siting, YUVAChannels};
 use skia_rust_effects::conical_gradient::{ConicalGradient, ConicalType};
 use skia_rust_effects::gradient::Interpolation;
 use skia_rust_effects::gradient::interpolation::ColorSpace as InterpolationColorSpace;
@@ -1957,7 +1957,7 @@ fn add_yuv_image_to_key(
     };
     let yuva_info = yuva_image.yuva_info();
     // We would want to add a translation to the local matrix to handle other sitings.
-    debug_assert!(yuva_info.siting_xy() == (Siting::Centered, Siting::Centered));
+    debug_assert_eq!(yuva_info.siting_xy(), (Siting::Centered, Siting::Centered));
 
     let mut img_data = YUVImageData::new(
         sampling,
@@ -1986,7 +1986,7 @@ fn add_yuv_image_to_key(
         } else {
             // Only the A proxy view should be null, in which case we bind the Y proxy view to pass
             // validation and send all 1s for the channel selection to signal opaque alpha.
-            debug_assert!(loc_index == YUVAChannels::A as usize);
+            debug_assert_eq!(loc_index, YUVAChannels::A as usize);
             img_data.texture_proxies[loc_index] =
                 yuva_image.proxy_view(YUVAChannels::Y as usize).ref_proxy();
             img_data.channel_select[loc_index] = [1.0; 4];
@@ -2008,9 +2008,11 @@ fn add_yuv_image_to_key(
         // at a fixed point for each logical image pixel to simulate nearest neighbor. In the shader
         // we detect that the UV filtermode doesn't match the Y filtermode, and snap to Y pixel
         // centers.
-        let uv_texturable = view
-            .proxy()
-            .is_some_and(|proxy| key_context.caps().is_texturable(proxy.texture_info(), false));
+        let uv_texturable = view.proxy().is_some_and(|proxy| {
+            key_context
+                .caps()
+                .is_texturable(proxy.texture_info(), false)
+        });
         if img_data.sampling.filter == FilterMode::Nearest && uv_texturable {
             img_data.sampling_uv =
                 SamplingOptions::new(FilterMode::Linear, img_data.sampling.mipmap);
@@ -2039,18 +2041,17 @@ fn add_yuv_image_to_key(
             let i_subset_uv: IRect = subset_uv.round_out();
             // Inset in UV and map back to Y texel space. This gives us the largest possible inset
             // rectangle that will not sample outside of the subset texels in UV space.
-            #[allow(clippy::cast_precision_loss)] // the texel coordinates are small
-            let (ssx_f, ssy_f) = (ssx as f32, ssy as f32);
+            #[allow(clippy::cast_precision_loss)] // the texel coordinates are small, exact in f32
             let inset_rect_uv = Rect {
-                left: (i_subset_uv.left as f32 + 0.5) * ssx_f,
-                top: (i_subset_uv.top as f32 + 0.5) * ssy_f,
-                right: (i_subset_uv.right as f32 - 0.5) * ssx_f,
-                bottom: (i_subset_uv.bottom as f32 - 0.5) * ssy_f,
+                left: (i_subset_uv.left as f32 + 0.5) * ssx as f32,
+                top: (i_subset_uv.top as f32 + 0.5) * ssy as f32,
+                right: (i_subset_uv.right as f32 - 0.5) * ssx as f32,
+                bottom: (i_subset_uv.bottom as f32 - 0.5) * ssy as f32,
             };
             // Compute the intersection with the original inset.
             let mut inset_rect = subset;
             inset_rect.outset((-0.5, -0.5));
-            let _ = inset_rect.intersect(&inset_rect_uv);
+            let _ = inset_rect.intersect(inset_rect_uv);
             // Compute the max inset values to ensure we always remain within the subset.
             img_data.linear_filter_uv_inset = Point::new(
                 (inset_rect.left - subset.left).max(subset.right - inset_rect.right),
