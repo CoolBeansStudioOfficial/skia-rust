@@ -38,6 +38,7 @@ use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::device::DeviceCore;
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::recorder::Recorder;
+use crate::graphite::resource_types::Shareable;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::copy_task::CopyTextureToTextureTask;
 use crate::graphite::texture_format::{
@@ -578,6 +579,72 @@ pub fn make_subset(
         BackingFit::Exact,
         &get_chained_label(image, "ImageSubsetTexture", "_Subset"),
     )
+}
+
+/// `Image_Base::makeNonBudgeted(recorder)`: `this` with a non-budgeted, non-shareable texture. An
+/// instantiated budgeted texture is copied; an uninstantiated one is made non-budgeted and
+/// instantiated in place, and the image is unlinked from its devices.
+// Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L123-L170 (chrome/m156)
+#[doc(alias = "makeNonBudgeted")]
+#[must_use]
+pub fn make_non_budgeted(recorder: &Recorder, this: &CoreImage) -> Option<CoreImage> {
+    let image = Image::from_core(this)?;
+    let proxy = image.texture_proxy_view().proxy()?;
+    // First iterate the proxies held by the image and see if they are instantiated or need to be
+    // updated to Budgeted::kNo.
+    let mut needs_instantiation = false;
+    if proxy.is_instantiated() {
+        // At this point, the properties of the TextureProxy are locked in.
+        let compatible = proxy.with_texture(|texture| {
+            texture.is_some_and(|texture| {
+                texture.base().budgeted() == Budgeted::No
+                    && texture.base().shareable() == Shareable::No
+            })
+        });
+        if !compatible {
+            // Not compatible but instantiated, so make a copy that is non-budgeted.
+            return image.copy_image(
+                recorder,
+                image.bounds(),
+                Budgeted::No,
+                if image.has_mipmaps() {
+                    Mipmapped::Yes
+                } else {
+                    Mipmapped::No
+                },
+                BackingFit::Exact,
+                &get_chained_label(image, "NonBudgeted", "_NonBudgeted"),
+            );
+        }
+        // else this proxy is already consistent with the contract.
+    } else {
+        needs_instantiation = true;
+    }
+
+    if needs_instantiation {
+        // There are presumably tasks (either in the root task list already or on a linked
+        // Device) that will initialize this image's proxy. Since the tasks reference the existing
+        // TextureProxy, we can't create a new proxy that is non-budgeted. Instead we modify it
+        // directly and then unlink this Image from its devices.
+        proxy.set_budgeted(Budgeted::No);
+        let instantiated = {
+            let priv_ = recorder.priv_();
+            let mut provider = priv_
+                .resource_provider()
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            proxy.instantiate(&mut provider)
+        };
+        if !instantiated {
+            return None;
+        }
+
+        image.unlink_devices(recorder);
+    }
+
+    // At this point we already were not dynamic, or we unlinked all our devices.
+    debug_assert!(!image.is_dynamic());
+    Some(this.clone())
 }
 
 /// `Image_Base::makeColorTypeAndColorSpace(recorder, targetCT, targetCS, requiredProps)`: `this`

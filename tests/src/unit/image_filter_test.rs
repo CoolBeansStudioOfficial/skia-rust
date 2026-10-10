@@ -23,7 +23,9 @@ use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas as CoreCanvas;
 use skia_rust_core::canvas::SaveLayerRec;
 use skia_rust_core::color::{Color, Color4f, ColorChannel};
+use skia_rust_core::color_filters;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::{ImageFilter, MapDirection};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, irect_intersect_in_place};
@@ -32,6 +34,8 @@ use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::point::IPoint;
+use skia_rust_core::rect::Contains;
 use skia_rust_core::rect::{IRect, Rect, RoundOut, rect_priv};
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
@@ -40,11 +44,16 @@ use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters::{self, Dither};
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::image_factories as graphite_image_factories;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_raster::image_filter_backend::make_raster_backend;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
-use crate::{def_tier_test, reporter_assert};
+use crate::{
+    Reporter, def_graphite_test_for_all_contexts, def_test, def_tier_test, reporter_assert,
+};
 
 /// `make_context(out, src)`: a raster context whose desired output is `out` and whose source is
 /// `src` (`make_backend_compatible_with_image` is the raster backend here).
@@ -1072,4 +1081,128 @@ def_tier_test!(ImageFilter_UnboundedInputMagnifier_EdgeLeak, |reporter| {
     }
 
     reporter_assert!(reporter, !leaked, "Edge padding leaked by magnifier");
+});
+
+// Port of: tests/ImageFilterTest.cpp#L379-L389 (chrome/m156)
+fn make_grayscale(input: Option<ImageFilter>, crop_rect: Option<Rect>) -> Option<ImageFilter> {
+    let mut matrix = [0.0f32; 20];
+    matrix[0] = 0.2126;
+    matrix[5] = 0.2126;
+    matrix[10] = 0.2126;
+    matrix[1] = 0.7152;
+    matrix[6] = 0.7152;
+    matrix[11] = 0.7152;
+    matrix[2] = 0.0722;
+    matrix[7] = 0.0722;
+    matrix[12] = 0.0722;
+    matrix[18] = 1.0;
+    let filter = color_filters::matrix_row_major(&matrix, color_filters::Clamp::Yes);
+    image_filters::color_filter(filter, input, crop_rect)
+}
+
+/// `makeWithFilter(src, filter, subset, clipBounds, &outSubset, &offset)`: the result, its
+/// subset and offset (the out-parameters are the returned tuple).
+type MakeWithFilterFn<'a> =
+    dyn Fn(&Image, &ImageFilter, &IRect, &IRect) -> Option<(Image, IRect, IPoint)> + 'a;
+
+/// `createSurface(width, height)` followed by the drawing of `draw` into its canvas and
+/// `makeImageSnapshot()`.
+type CreateSnapshotFn<'a> = dyn Fn(i32, i32, &dyn Fn(&CoreCanvas)) -> Option<Image> + 'a;
+
+// Port of: tests/ImageFilterTest.cpp#L1839-L1911 (chrome/m156)
+fn test_make_with_filter(
+    reporter: &mut Reporter,
+    create_snapshot: &CreateSnapshotFn<'_>,
+    make_with_filter: &MakeWithFilterFn<'_>,
+) {
+    let mut subset = IRect::from_xywh(25, 20, 50, 50);
+    let source_image = create_snapshot(192, 128, &|canvas| {
+        canvas.clear(Color::RED);
+        let mut blue_paint = Paint::default();
+        blue_paint.set_color(Color::BLUE);
+        canvas.draw_rect(Rect::from_irect(subset), &blue_paint);
+    });
+    reporter_assert!(reporter, source_image.is_some());
+    let Some(source_image) = source_image else {
+        return;
+    };
+
+    let mut filter = make_grayscale(None, None).expect("a grayscale filter");
+    let mut clip_bounds = IRect::from_xywh(30, 35, 100, 100);
+
+    // (The "filter is required", "outSubset is required" and "offset is required" cases cannot
+    // be expressed: the filter is a reference and the out-parameters are the returned tuple.)
+
+    let big_subset = IRect::from_xywh(-10000, -10000, 20000, 20000);
+    let result = make_with_filter(&source_image, &filter, &big_subset, &clip_bounds);
+    reporter_assert!(reporter, result.is_none()); // subset needs to be w/in source's bounds
+
+    let k_empty = IRect::new_empty();
+    let result = make_with_filter(&source_image, &filter, &k_empty, &clip_bounds);
+    reporter_assert!(reporter, result.is_none()); // subset can't be empty
+
+    let result = make_with_filter(&source_image, &filter, &subset, &k_empty);
+    reporter_assert!(reporter, result.is_none()); // clipBounds can't be empty
+
+    let k_left_field = IRect::from_xywh(-1000, 0, 100, 100);
+    let result = make_with_filter(&source_image, &filter, &subset, &k_left_field);
+    reporter_assert!(reporter, result.is_none());
+
+    let result = make_with_filter(&source_image, &filter, &subset, &clip_bounds);
+
+    reporter_assert!(reporter, result.is_some());
+    if let Some((result, out_subset, offset)) = &result {
+        reporter_assert!(reporter, result.bounds().contains(out_subset));
+        let dest_rect =
+            IRect::from_xywh(offset.x, offset.y, out_subset.width(), out_subset.height());
+        reporter_assert!(reporter, clip_bounds.contains(&dest_rect));
+    }
+
+    // In GPU-mode, this case creates a special image with a backing size that differs from
+    // the content size
+    {
+        clip_bounds = IRect::from_xywh(0, 0, 170, 100);
+        subset = IRect::from_xywh(0, 0, 160, 90);
+
+        filter = image_filters::blend(BlendMode::SrcOver, None, None, None).expect("a blend");
+        let result = make_with_filter(&source_image, &filter, &subset, &clip_bounds);
+        reporter_assert!(reporter, result.is_some());
+
+        // (The Ganesh origin check does not apply.)
+    }
+}
+
+// Port of: tests/ImageFilterTest.cpp#L1915-L1936 (chrome/m156)
+def_test!(ImageFilterMakeWithFilter, |reporter| {
+    let create_raster_snapshot = |width: i32, height: i32, draw: &dyn Fn(&CoreCanvas)| {
+        let info = ImageInfo::new_n32((width, height), AlphaType::Opaque, None);
+        let mut surface = surfaces::raster(&info, None, None)?;
+        draw(surface.canvas());
+        surface.image_snapshot()
+    };
+
+    let raster = |src: &Image, filter: &ImageFilter, subset: &IRect, clip_bounds: &IRect| {
+        skia_rust_raster::images::make_with_filter(src, filter, subset, clip_bounds)
+    };
+
+    test_make_with_filter(reporter, &create_raster_snapshot, &raster);
+});
+
+// Port of: tests/ImageFilterTest.cpp#L1972-L2000 (chrome/m156)
+def_graphite_test_for_all_contexts!(ImageFilterMakeWithFilter_Graphite, |reporter, context| {
+    let recorder = context.make_recorder(None);
+
+    let create_graphite_snapshot = |width: i32, height: i32, draw: &dyn Fn(&CoreCanvas)| {
+        let info = ImageInfo::new_n32((width, height), AlphaType::Premul, None);
+        let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "")?;
+        draw(surface.canvas());
+        // `makeImageSnapshot()` of a Graphite surface (`onNewImageSnapshot`).
+        surface.make_image_copy(None, Mipmapped::No)
+    };
+
+    let graphite = |src: &Image, filter: &ImageFilter, subset: &IRect, clip_bounds: &IRect| {
+        graphite_image_factories::make_with_filter(&recorder, src, filter, subset, clip_bounds)
+    };
+
+    test_make_with_filter(reporter, &create_graphite_snapshot, &graphite);
 });
