@@ -51630,6 +51630,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageOriginTest.cpp#L171-L174"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "21a2643b561da6a470acd3962f270a6b13e019742c941cfcb650051309bd1173"
 
 [[test]]
@@ -51639,6 +51640,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageOriginTest.cpp#L176-L179"
 module = "gpu"
 status = "todo"
+reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
 span_hash = "91fd122497c76c796b369927d5d7ec970dd692cd42f64cdf46cd8179577f755d"
 
 [[test]]
