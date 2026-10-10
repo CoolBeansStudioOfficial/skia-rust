@@ -20,11 +20,15 @@ use crate::skottie::LoggerLevel;
 use crate::skottie_json::{ValueExt, parse_default, string_text};
 use crate::skottie_property::NodeType;
 
-use super::animator::{AnimatablePropertyContainer, Bindable, IntoJsonProp, Prop, PropertyContainer};
+use super::animator::{
+    AnimatablePropertyContainer, Bindable, IntoJsonProp, Prop, PropertyContainer,
+};
 use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
 mod color;
+mod filters;
+mod transform_effect;
 
 /// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
 // Port of: modules/skottie/src/SkottiePriv.h#L168-L181 (chrome/m156) (`attachDiscardableAdapter<T>`)
@@ -32,13 +36,13 @@ fn attach_adapter_node<A, N>(
     abuilder: &AnimationBuilder<'_>,
     adapter: &Rc<A>,
     node: Rc<N>,
-) -> Option<Rc<dyn RenderNode>>
+) -> Rc<dyn RenderNode>
 where
     A: AnimatablePropertyContainer + 'static,
     N: RenderNode + 'static,
 {
     abuilder.attach_discardable_adapter(adapter);
-    Some(node as Rc<dyn RenderNode>)
+    node as Rc<dyn RenderNode>
 }
 
 /// The syntactic helper that binds the properties of an effect by index (`EffectBinder`).
@@ -94,8 +98,15 @@ pub type StyleBuilderFn = for<'a, 'j> fn(
 // Port of: modules/skottie/src/effects/Effects.cpp#L31-L63 (chrome/m156) (`gBuilderInfo`)
 const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     // alphabetized for binary search lookup
+    (
+        "ADBE Brightness & Contrast 2",
+        color::attach_brightness_contrast_effect,
+    ),
+    ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
+    ("ADBE Gaussian Blur 2", filters::attach_gaussian_blur_effect),
+    ("ADBE Geometry2", transform_effect::attach_transform_effect),
     ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
     ("ADBE Invert", color::attach_invert_effect),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
@@ -109,6 +120,8 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
 const LEGACY_TINT_EFFECT: i32 = 20;
 const LEGACY_FILL_EFFECT: i32 = 21;
 const LEGACY_TRITONE_EFFECT: i32 = 23;
+const LEGACY_DROP_SHADOW_EFFECT: i32 = 25;
+const LEGACY_GAUSSIAN_BLUR_EFFECT: i32 = 29;
 
 /// The layer style builders, by style type (`ty`): `None` for the styles that are not supported.
 /// M21 adds them.
@@ -183,6 +196,8 @@ impl<'a, 'j> EffectBuilder<'a, 'j> {
             LEGACY_TINT_EFFECT => Some(color::attach_tint_effect),
             LEGACY_FILL_EFFECT => Some(color::attach_fill_effect),
             LEGACY_TRITONE_EFFECT => Some(color::attach_tritone_effect),
+            LEGACY_DROP_SHADOW_EFFECT => Some(filters::attach_drop_shadow_effect),
+            LEGACY_GAUSSIAN_BLUR_EFFECT => Some(filters::attach_gaussian_blur_effect),
             _ => None,
         };
         if legacy.is_some() {

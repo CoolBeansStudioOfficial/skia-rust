@@ -17,7 +17,9 @@ use skia_rust_core::color_filters::{self, Clamp};
 use skia_rust_core::color_matrix::ColorMatrix;
 use skia_rust_core::data::Data;
 use skia_rust_core::runtime_effect::RuntimeEffect;
-use skia_rust_core::scalar::{SCALAR_NEARLY_ZERO, Scalar, scalar_pow, scalar_trunc_to_int};
+use skia_rust_core::scalar::{
+    SCALAR_NEARLY_ZERO, SCALAR_PI, Scalar, scalar_pow, scalar_round_to_int, scalar_trunc_to_int,
+};
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_sksg::{
     Color as SgColor, ExternalColorFilter, GradientColorFilter, ModeColorFilter, RenderNode,
@@ -81,12 +83,9 @@ impl FillAdapter {
     ) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
             let color_node = SgColor::make(Color::BLACK);
-            let filter = ModeColorFilter::make(
-                Some(layer),
-                Some(Rc::clone(&color_node)),
-                BlendMode::SrcIn,
-            )
-            .expect("the layer is not null");
+            let filter =
+                ModeColorFilter::make(Some(layer), Some(Rc::clone(&color_node)), BlendMode::SrcIn)
+                    .expect("the layer is not null");
             let base = DiscardableAdapterBase::new(weak.clone(), filter);
             let color = Prop::new(ColorValue::new());
             let opacity = Prop::new(1.0);
@@ -128,7 +127,7 @@ pub(super) fn attach_fill_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = FillAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Tint -------------------------------------------------------------------------------------
@@ -207,7 +206,7 @@ pub(super) fn attach_tint_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = TintAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Tritone ----------------------------------------------------------------------------------
@@ -300,7 +299,7 @@ pub(super) fn attach_tritone_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = TritoneAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Invert -----------------------------------------------------------------------------------
@@ -324,7 +323,7 @@ struct StColorMatrix {
 
 /// The matrix of an invert channel selection (the lambda `stcm`).
 // Port of: modules/skottie/src/effects/InvertEffect.cpp#L48-L84 (chrome/m156)
-#[allow(clippy::cast_possible_truncation)] // mirrors static_cast<uint8_t> of the channel selector
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // mirrors static_cast<uint8_t>
 fn invert_st_color_matrix(channel: f32) -> StColorMatrix {
     use InvertSpace::{Hsl, Rgb, Yiq};
 
@@ -445,7 +444,7 @@ pub(super) fn attach_invert_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = InvertEffectAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Threshold --------------------------------------------------------------------------------
@@ -516,12 +515,171 @@ pub(super) fn attach_threshold_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = ThresholdAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
+}
+
+// ---- Brightness/Contrast ----------------------------------------------------------------------
+
+/// The brightness `SkSL`: a power curve on the inverted color.
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L76-L82 (chrome/m156) (`BRIGHTNESS_EFFECT`)
+const BRIGHTNESS_SKSL: &str = concat!(
+    "uniform half a;",
+    "half4 main(half4 color) {",
+    "color.rgb = 1 - pow(1 - color.rgb, half3(a));",
+    "return color;",
+    "}",
+);
+
+/// The contrast `SkSL`: a cubic polynomial in the color (the default, non-accurate approximation).
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L40-L53 (chrome/m156) (`CONTRAST_EFFECT`)
+const CONTRAST_SKSL: &str = concat!(
+    "uniform half a;",
+    "uniform half b;",
+    "uniform half c;",
+    "half4 main(half4 color) {",
+    "color.rgb = ((a*color.rgb + b)*color.rgb + c)*color.rgb;",
+    "return color;",
+    "}",
+);
+
+thread_local! {
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L150-L151 (chrome/m156)
+    static BRIGHTNESS_EFFECT: RuntimeEffect =
+        RuntimeEffect::make_for_color_filter(BRIGHTNESS_SKSL, None)
+            .expect("the brightness effect compiles");
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L150-L151 (chrome/m156)
+    static CONTRAST_EFFECT: RuntimeEffect =
+        RuntimeEffect::make_for_color_filter(CONTRAST_SKSL, None)
+            .expect("the contrast effect compiles");
+}
+
+/// The brightness uniform: the exponent of the power curve.
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L65-L69 (chrome/m156) (`make_brightness_coeffs`)
+fn make_brightness_coeffs(brightness: f32) -> f32 {
+    scalar_pow(2.0, brightness * 1.8)
+}
+
+/// The contrast uniforms `a`, `b` and `c` of the polynomial.
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L23-L33 (chrome/m156) (`make_contrast_coeffs`)
+fn make_contrast_coeffs(contrast: f32) -> [u8; 12] {
+    let b = SCALAR_PI * contrast;
+    let a = -2.0 * b / 3.0;
+    let c = 1.0 - b / 3.0;
+    let mut bytes = [0_u8; 12];
+    bytes[0..4].copy_from_slice(&a.to_ne_bytes());
+    bytes[4..8].copy_from_slice(&b.to_ne_bytes());
+    bytes[8..12].copy_from_slice(&c.to_ne_bytes());
+    bytes
+}
+
+/// Adjusts the brightness and contrast of the layer, or applies the legacy matrix.
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L121-L186 (chrome/m156) (`BrightnessContrastAdapter`)
+struct BrightnessContrastAdapter {
+    base: DiscardableAdapterBase<ExternalColorFilter>,
+    brightness: Prop<ScalarValue>,
+    contrast: Prop<ScalarValue>,
+    use_legacy: Prop<ScalarValue>,
+}
+
+impl BrightnessContrastAdapter {
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L144-L160 (chrome/m156) (`BrightnessContrastAdapter::BrightnessContrastAdapter`)
+    fn make(
+        jprops: &ArrayValue,
+        layer: Rc<dyn RenderNode>,
+        abuilder: &AnimationBuilder<'_>,
+    ) -> Rc<Self> {
+        Rc::new_cyclic(|weak: &Weak<Self>| {
+            let base = DiscardableAdapterBase::new(weak.clone(), external_color_filter(layer));
+            let brightness = Prop::new(0.0);
+            let contrast = Prop::new(0.0);
+            let use_legacy = Prop::new(0.0);
+            EffectBinder::new(jprops, abuilder, base.container())
+                .bind(0, &brightness)
+                .bind(1, &contrast)
+                .bind(2, &use_legacy);
+            Self {
+                base,
+                brightness,
+                contrast,
+                use_legacy,
+            }
+        })
+    }
+
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L162-L173 (chrome/m156) (`makeLegacyCF`)
+    fn make_legacy_cf(&self) -> Option<ColorFilter> {
+        let brightness = t_pin(*self.brightness.borrow(), -100.0, 100.0) / 255.0;
+        let contrast = t_pin(*self.contrast.borrow(), -100.0, 100.0) / 100.0;
+        let s = if contrast > 0.0 {
+            1.0 / std_max(1.0 - contrast, SCALAR_NEARLY_ZERO)
+        } else {
+            1.0 + contrast
+        };
+        let b = 0.5 * (1.0 - s) + brightness * std_max(s, 1.0);
+        let cm: [f32; 20] = [
+            s, 0.0, 0.0, 0.0, b, //
+            0.0, s, 0.0, 0.0, b, //
+            0.0, 0.0, s, 0.0, b, //
+            0.0, 0.0, 0.0, 1.0, 0.0,
+        ];
+        color_filters::matrix_row_major(&cm, Clamp::Yes)
+    }
+
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L175-L186 (chrome/m156) (`makeCF`)
+    fn make_cf(&self) -> Option<ColorFilter> {
+        let raw_contrast = *self.contrast.borrow();
+        let brightness = t_pin(*self.brightness.borrow(), -150.0, 150.0) / 150.0;
+        let contrast = t_pin(raw_contrast, -50.0, 100.0) / 100.0;
+
+        let b_eff = if brightness.nearly_zero(None) {
+            None
+        } else {
+            let coeff = make_brightness_coeffs(brightness);
+            BRIGHTNESS_EFFECT.with(|effect| runtime_color_filter(effect, &coeff.to_ne_bytes()))
+        };
+        let c_eff = if raw_contrast.nearly_zero(None) {
+            None
+        } else {
+            let coeffs = make_contrast_coeffs(contrast);
+            CONTRAST_EFFECT.with(|effect| runtime_color_filter(effect, &coeffs))
+        };
+        color_filters::compose(c_eff.as_ref(), b_eff)
+    }
+}
+
+impl AnimatablePropertyContainer for BrightnessContrastAdapter {
+    fn container(&self) -> &PropertyContainer {
+        self.base.container()
+    }
+
+    // Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L134-L139 (chrome/m156) (`BrightnessContrastAdapter::onSync`)
+    fn on_sync(&self) {
+        let cf = if scalar_round_to_int(*self.use_legacy.borrow()) != 0 {
+            self.make_legacy_cf()
+        } else {
+            self.make_cf()
+        };
+        self.base.node().set_color_filter(cf);
+    }
+}
+
+impl_container_animator!(BrightnessContrastAdapter);
+
+/// The brightness/contrast effect (`ADBE Brightness & Contrast 2`).
+// Port of: modules/skottie/src/effects/BrightnessContrastEffect.cpp#L252-L258 (chrome/m156) (`EffectBuilder::attachBrightnessContrastEffect`)
+pub(super) fn attach_brightness_contrast_effect(
+    eb: &EffectBuilder<'_, '_>,
+    jprops: &ArrayValue,
+    layer: Option<Rc<dyn RenderNode>>,
+) -> Option<Rc<dyn RenderNode>> {
+    let adapter = BrightnessContrastAdapter::make(jprops, layer?, eb.builder());
+    let node = Rc::clone(adapter.base.node());
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Hue/Saturation ---------------------------------------------------------------------------
 
-/// The saturation SkSL: AE saturation semantics, with a per-component chroma scale.
+/// The saturation `SkSL`: AE saturation semantics, with a per-component chroma scale.
 // Port of: modules/skottie/src/effects/HueSaturationEffect.cpp#L16-L47 (chrome/m156) (`gSaturateSkSL`)
 const SATURATE_SKSL: &str = concat!(
     "uniform half u_scale;",
@@ -675,7 +833,7 @@ pub(super) fn attach_hue_saturation_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = HueSaturationEffectAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 // ---- Levels -----------------------------------------------------------------------------------
@@ -744,11 +902,13 @@ impl ChannelMapper {
         let mut clip = [0.0_f32, 1.0];
         // kLottieDoClip
         if scalar_trunc_to_int(clip_info.clip_black.get()) == 1 {
-            let idx = if out_0 <= out_1 { 0 } else { 1 };
+            // Port of: `fOutBlack <= fOutWhite ? 0 : 1`: the negation keeps NaN at index 1.
+            #[allow(clippy::neg_cmp_op_on_partial_ord)]
+            let idx = usize::from(!(out_0 <= out_1));
             clip[idx] = t_pin(out_0, 0.0, 1.0);
         }
         if scalar_trunc_to_int(clip_info.clip_white.get()) == 1 {
-            let idx = if out_0 <= out_1 { 1 } else { 0 };
+            let idx = usize::from(out_0 <= out_1);
             clip[idx] = t_pin(out_1, 0.0, 1.0);
         }
 
@@ -803,9 +963,7 @@ impl EasyLevelsEffectAdapter {
             let binder = EffectBinder::new(jprops, abuilder, base.container());
             binder.bind(0, &channel);
             mapper.bind(&binder, 2);
-            binder
-                .bind(7, &clip.clip_black)
-                .bind(8, &clip.clip_white);
+            binder.bind(7, &clip.clip_black).bind(8, &clip.clip_white);
             Self {
                 base,
                 mapper,
@@ -830,10 +988,10 @@ impl AnimatablePropertyContainer for EasyLevelsEffectAdapter {
         const A_CHANNEL: i32 = 5;
 
         let channel = scalar_trunc_to_int(*self.channel.borrow());
-        let lut = if !(RGB_CHANNEL..=A_CHANNEL).contains(&channel) {
-            None
-        } else {
+        let lut = if (RGB_CHANNEL..=A_CHANNEL).contains(&channel) {
             self.mapper.build_lut(&self.clip)
+        } else {
+            None
         };
         let Some(lut) = lut else {
             self.base.node().set_color_filter(None);
@@ -931,7 +1089,7 @@ pub(super) fn attach_easy_levels_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = EasyLevelsEffectAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }
 
 /// The pro levels effect (`ADBE Pro Levels2`).
@@ -943,5 +1101,5 @@ pub(super) fn attach_pro_levels_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let adapter = ProLevelsEffectAdapter::make(jprops, layer?, eb.builder());
     let node = Rc::clone(adapter.base.node());
-    attach_adapter_node(eb.builder(), &adapter, node)
+    Some(attach_adapter_node(eb.builder(), &adapter, node))
 }

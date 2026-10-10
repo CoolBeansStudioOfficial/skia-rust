@@ -26503,8 +26503,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "modules/skottie/tests/Expression.cpp#L82-L267"
 module = "skottie"
-status = "failing"
-reason = "ported (ignored): the last color property it observes is the ADBE Fill effect's, which is M21; the opacity and transform expressions pass"
+status = "passing"
 span_hash = "4d3d520bc4b74d1328ed1370c84e61ea182c583cd781d9f6737ef6fbee75a6c4"
 
 [[test]]
@@ -26542,7 +26541,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L270-L370"
 module = "skottie"
 status = "todo"
-reason = "needs the text layers (M22) and the ADBE Fill effect (M21)"
+reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
 span_hash = "c4a6a5889bbf16c3031beb4697f572b81167325381345e80f559a37b07d1ba1f"
 
 [[test]]
@@ -26552,7 +26551,7 @@ macro = "DEF_TEST"
 source = "modules/skottie/tests/PropertyObserver.cpp#L372-L414"
 module = "skottie"
 status = "todo"
-reason = "needs the text layers (M22) and the ADBE Fill effect (M21)"
+reason = "needs the text layers (M22): the text property observer and TextPropertyValue; the ADBE Fill effects it also observes are ported (M21a)"
 span_hash = "44602197777e5443e6093b37df0e434f672ad08f6ff7dae12edd6fe5da53b965"
 
 [[test]]
