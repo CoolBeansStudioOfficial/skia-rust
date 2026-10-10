@@ -30,6 +30,7 @@ pub mod alpha;
 pub mod alpha_processing;
 mod bit_reader;
 pub mod demux;
+pub mod enc;
 pub mod huffman;
 pub mod idec;
 pub mod io;
