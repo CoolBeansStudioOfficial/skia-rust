@@ -40,6 +40,7 @@ mod corner_pin;
 mod filters;
 mod gradient_ramp;
 mod linear_wipe;
+mod motion_tile;
 mod radial_wipe;
 mod runtime;
 mod shift_channels;
@@ -186,6 +187,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         shift_channels::attach_shift_channels_effect,
     ),
     ("ADBE Threshold2", color::attach_threshold_effect),
+    ("ADBE Tile", motion_tile::attach_motion_tile_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
     (
