@@ -176,6 +176,11 @@ impl VP8TBuffer {
         self.add_token(bit, proba_idx, &mut proba.stats[ct][s.0][s.1][k])
     }
 
+    /// Port of `VP8TBufferClear` (the pages are released; the buffer is empty again).
+    pub fn clear(&mut self) {
+        self.tokens.clear();
+    }
+
     /// Port of `VP8EmitTokens`: writes the recorded tokens with the frame probabilities `probas`
     /// (the flattened `coeffs_`), in order. Returns 1.
     pub fn emit_tokens(&self, bw: &mut VP8BitWriter, probas: &[u8]) -> i32 {

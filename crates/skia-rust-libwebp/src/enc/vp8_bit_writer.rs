@@ -166,13 +166,25 @@ impl VP8BitWriter {
         true
     }
 
-    /// Port of `VP8BitWriterFinish`: pads with zero bits, flushes, and returns the bytes.
-    #[must_use]
-    pub fn finish(mut self) -> Vec<u8> {
+    /// Port of `VP8BitWriterFinish`: pads with zero bits and flushes. The bytes stay in the
+    /// writer, as the C buffer does (see [`VP8BitWriter::bytes`]).
+    pub fn finish_in_place(&mut self) {
         self.put_bits(0, 9 - self.nb_bits);
         self.nb_bits = 0; // pad with zeroes
         self.flush();
+    }
+
+    /// Port of `VP8BitWriterFinish` followed by taking the buffer.
+    #[must_use]
+    pub fn finish(mut self) -> Vec<u8> {
+        self.finish_in_place();
         self.buf
+    }
+
+    /// Port of `VP8BitWriterBuf`: the bytes written so far.
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        &self.buf
     }
 
     /// Port of `VP8BitWriterSize`: the number of bytes written so far.
