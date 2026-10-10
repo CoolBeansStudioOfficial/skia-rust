@@ -21,7 +21,7 @@ pub(crate) const HEX_DIGITS_UPPER: &[u8; 16] = b"0123456789ABCDEF";
 /// `SkPDFIndirectReference`: a reference to an indirect object. A negative value is "none".
 // Port of: src/pdf/SkPDFTypes.h#L30-L37 (chrome/m156)
 #[doc(alias = "SkPDFIndirectReference")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PdfIndirectReference {
     /// The object number. Negative for "no reference".
     pub value: i32,
@@ -44,10 +44,24 @@ impl PdfIndirectReference {
 /// `SkPDFParentTreeKey`: a key of the structure parent tree. A negative value is "none".
 // Port of: src/pdf/SkPDFTypes.h#L39-L42 (chrome/m156)
 #[doc(alias = "SkPDFParentTreeKey")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PdfParentTreeKey {
     /// The key. Negative for "none".
     pub value: i32,
+}
+
+impl Default for PdfParentTreeKey {
+    fn default() -> Self {
+        Self { value: -1 }
+    }
+}
+
+impl PdfParentTreeKey {
+    /// `explicit operator bool`: whether this is a key.
+    #[must_use]
+    pub fn is_valid(self) -> bool {
+        self.value >= 0
+    }
 }
 
 /// `SkPDFObject`: a PDF object that can print itself.
@@ -531,6 +545,18 @@ impl PdfDict {
     /// `insertRef`.
     pub fn insert_ref(&mut self, key: &str, value: PdfIndirectReference) {
         self.insert(key, PdfUnion::reference(value));
+    }
+
+    /// `insertRef(SkString, ...)`: the key is escaped.
+    pub fn insert_ref_escaped_key(&mut self, key: impl AsRef<[u8]>, value: PdfIndirectReference) {
+        self.records
+            .push((PdfUnion::name_escaped(key), PdfUnion::reference(value)));
+    }
+
+    /// `insertObject(SkString, ...)`: the key is escaped.
+    pub fn insert_object_escaped_key(&mut self, key: impl AsRef<[u8]>, value: Box<dyn PdfObject>) {
+        self.records
+            .push((PdfUnion::name_escaped(key), PdfUnion::object(value)));
     }
 
     /// `insertObject`.

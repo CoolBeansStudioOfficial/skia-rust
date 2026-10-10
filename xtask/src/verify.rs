@@ -92,25 +92,38 @@ pub enum Outcome {
 }
 
 /// Parses libtest's plain output: `test unit::point_test::Point ... ok`.
+///
+/// Output a test writes to stdout from a thread libtest does not capture can land in front of a
+/// result on the same line, so every `test <path> ... <result>` occurrence in a line is parsed,
+/// not only one at the start of the line.
 pub fn parse_test_output(stdout: &str) -> BTreeMap<String, Outcome> {
     let mut out = BTreeMap::new();
     for line in stdout.lines() {
-        let Some(rest) = line.strip_prefix("test ") else {
-            continue;
-        };
-        let Some((name, result)) = rest.rsplit_once(" ... ") else {
-            continue;
-        };
-        let outcome = match result.trim() {
-            "ok" => Outcome::Ok,
-            "FAILED" => Outcome::Failed,
-            r if r.starts_with("ignored") && r.contains(ADAPTER_IGNORE_REASON) => {
-                Outcome::AdapterGated
+        let mut rest = line;
+        while let Some(start) = rest.find("test ") {
+            let candidate = &rest[start + "test ".len()..];
+            rest = candidate;
+            let Some((name, result)) = candidate.split_once(" ... ") else {
+                continue;
+            };
+            if name.is_empty() || name.contains(char::is_whitespace) {
+                continue;
             }
-            r if r.starts_with("ignored") => Outcome::Ignored,
-            _ => continue,
-        };
-        out.insert(name.trim().to_owned(), outcome);
+            // A later result on the same line starts with another `test `.
+            let result = result.split(" test ").next().unwrap_or(result).trim();
+            let outcome = if result == "ok" || result.starts_with("ok ") {
+                Outcome::Ok
+            } else if result == "FAILED" || result.starts_with("FAILED ") {
+                Outcome::Failed
+            } else if result.starts_with("ignored") && result.contains(ADAPTER_IGNORE_REASON) {
+                Outcome::AdapterGated
+            } else if result.starts_with("ignored") {
+                Outcome::Ignored
+            } else {
+                continue;
+            };
+            out.insert(name.to_owned(), outcome);
+        }
     }
     out
 }
@@ -275,6 +288,18 @@ pub fn finish(report: &Report, update: bool, what: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn parses_results_after_interleaved_output() {
+        let out = parse_test_output(
+            "stray outputtest unit::a::A ... ok\n\
+             test unit::b::B ... FAILED\n\
+             noise test unit::c::C ... ignored, needs a real adapter in CI (lavapipe job)\n",
+        );
+        assert_eq!(out.get("unit::a::A"), Some(&Outcome::Ok));
+        assert_eq!(out.get("unit::b::B"), Some(&Outcome::Failed));
+        assert_eq!(out.get("unit::c::C"), Some(&Outcome::AdapterGated));
+    }
+
     use super::*;
 
     #[test]

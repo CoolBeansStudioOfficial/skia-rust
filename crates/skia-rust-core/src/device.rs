@@ -418,6 +418,19 @@ pub trait Device {
         None
     }
 
+    /// Associates `rect` with an annotation, a key-value pair (`drawAnnotation`). The default does
+    /// nothing, as Skia's does; the PDF device handles links, named destinations and node ids.
+    // Port of: src/core/SkDevice.h#L398 (chrome/m156)
+    #[doc(alias = "drawAnnotation")]
+    fn draw_annotation(&mut self, _rect: &Rect, _key: &str, _value: Option<&crate::data::Data>) {}
+
+    /// This device as `Any`, for the downcast of `static_cast<SkPDFDevice*>(device)`. skia-rust has
+    /// no RTTI: a device that other code must recognize (the PDF device, whose `drawDevice` takes
+    /// layers made by its own `createDevice`) answers here.
+    fn as_any(&self) -> Option<&dyn std::any::Any> {
+        None
+    }
+
     /// Fills the clip with `paint` (`drawPaint`).
     #[doc(alias = "drawPaint")]
     fn draw_paint(&mut self, paint: &Paint);
@@ -863,13 +876,7 @@ pub trait Device {
         // SkCanvas only calls drawDevice() when there are no filters (so the transform is pixel
         // aligned). As such it can be drawn without clamping.
         let relative_transform = device.state().relative_transform(self.state()).to_m33();
-        let strict = sampling.filter != FilterMode::Nearest
-            || sampling.use_cubic
-            || sampling.mipmap != crate::sampling_options::MipmapMode::None
-            || sampling.is_aniso()
-            || !relative_transform.is_translate()
-            || !is_int(relative_transform.translate_x())
-            || !is_int(relative_transform.translate_y());
+        let strict = needs_strict_draw_device(sampling, &relative_transform);
         self.draw_special(
             &device_image,
             &relative_transform,
@@ -938,6 +945,51 @@ pub trait Device {
     fn peek_pixels(&self) -> Option<Pixmap<'_>> {
         self.on_peek_pixels()
     }
+}
+
+/// Whether `SkDevice::drawDevice` must draw the layer with the strict constraint: the sampling
+/// reads neighbors, or the transform is not a whole-pixel translation. A device that overrides
+/// `drawDevice` and falls back to the base class for layers with pixels (the PDF device) uses
+/// this with [`Device::snap_special_all`] and [`Device::draw_special`].
+// Port of: src/core/SkDevice.cpp#L327-L343 (chrome/m156)
+#[must_use]
+pub fn needs_strict_draw_device(sampling: &SamplingOptions, relative_transform: &Matrix) -> bool {
+    sampling.filter != FilterMode::Nearest
+        || sampling.use_cubic
+        || sampling.mipmap != crate::sampling_options::MipmapMode::None
+        || sampling.is_aniso()
+        || !relative_transform.is_translate()
+        || !is_int(relative_transform.translate_x())
+        || !is_int(relative_transform.translate_y())
+}
+
+/// `SkDevice::drawDevice`, the base class's: draws the pixels of `device` (a layer being
+/// restored) into `this`, for a device that overrides `drawDevice` and needs the base behavior.
+// Port of: src/core/SkDevice.cpp#L327-L343 (chrome/m156)
+pub fn draw_device_default(
+    this: &mut dyn Device,
+    device: &mut dyn Device,
+    sampling: &SamplingOptions,
+    paint: &Paint,
+) {
+    let Some(device_image) = device.snap_special_all() else {
+        return;
+    };
+    // SkCanvas only calls drawDevice() when there are no filters (so the transform is pixel
+    // aligned). As such it can be drawn without clamping.
+    let relative_transform = device.state().relative_transform(this.state()).to_m33();
+    let strict = needs_strict_draw_device(sampling, &relative_transform);
+    this.draw_special(
+        &device_image,
+        &relative_transform,
+        sampling,
+        paint,
+        if strict {
+            SrcRectConstraint::Strict
+        } else {
+            SrcRectConstraint::Fast
+        },
+    );
 }
 
 /// Clips `device` to `sh` (`SkDevice::clipShader`): the shader keeps the device's current

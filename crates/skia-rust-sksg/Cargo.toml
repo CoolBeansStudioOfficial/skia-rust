@@ -1,0 +1,18 @@
+[package]
+name = "skia-rust-sksg"
+description = "Scene graph of skia-rust (sksg): nodes, geometry, paints, effects, render nodes, invalidation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-effects.workspace = true
+skia-rust-pathops.workspace = true
+
+[lints]
+workspace = true

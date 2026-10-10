@@ -10,9 +10,14 @@
 use std::fmt::Write as _;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use skia_rust_codec::codec::Codec;
+use skia_rust_core::data::Data;
 use skia_rust_core::md5::Md5;
+use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::stream::WStream;
 
 use crate::date_time::DateTime;
+use crate::tag::StructureElementNode;
 use crate::types::{PdfArray, PdfDict};
 
 /// `SK_MILESTONE`, the milestone of the Skia this crate ports.
@@ -51,13 +56,22 @@ pub enum Outline {
     StructureElements = 2,
 }
 
+/// `SkPDF::DecodeJpegCallback`: decodes a JPEG, so that Skia can embed its bytes as they are.
+// Port of: include/docs/SkPDFDocument.h#L90 (chrome/m156)
+#[doc(alias = "SkPDF::DecodeJpegCallback")]
+pub type DecodeJpegCallback = fn(Data) -> Option<Codec<'static>>;
+
+/// `SkPDF::EncodeJpegCallback`: encodes `src` as a JPEG of the given quality into `dst`.
+// Port of: include/docs/SkPDFDocument.h#L91 (chrome/m156)
+#[doc(alias = "SkPDF::EncodeJpegCallback")]
+pub type EncodeJpegCallback = fn(dst: &mut dyn WStream, src: &Pixmap<'_>, quality: i32) -> bool;
+
 /// `SkPDF::Metadata`: optional metadata for the PDF document.
 ///
-/// Not ported yet: the structure element tree root and the executor (M25), and the JPEG
-/// decoder and encoder callbacks (`SkPDF::JPEG`, with the libjpeg helpers).
+/// Not ported: `fSubsetter` (`HarfBuzz` is the only one).
 // Port of: include/docs/SkPDFDocument.h#L93-L240 (chrome/m156)
 #[doc(alias = "SkPDF::Metadata")]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone)]
 pub struct Metadata {
     /// The document's title.
     pub title: String,
@@ -89,6 +103,55 @@ pub struct Metadata {
     pub compression_level: CompressionLevel,
     /// The outline (bookmarks) of a tagged document.
     pub outline: Outline,
+    /// An optional tree of structured document tags that provide a semantic representation of
+    /// the content (`fStructureElementTreeRoot`). The document keeps a copy.
+    pub structure_element_tree_root: Option<StructureElementNode>,
+    /// A way to decode JPEGs (`jpegDecoder`); `jpeg::decode` is Skia's.
+    pub jpeg_decoder: Option<DecodeJpegCallback>,
+    /// A way to encode JPEGs (`jpegEncoder`); `jpeg::encode` is Skia's.
+    pub jpeg_encoder: Option<EncodeJpegCallback>,
+    /// Allows a document that can't embed JPEGs, to avoid an assert (`allowNoJpegs`).
+    pub allow_no_jpegs: bool,
+    /// Executor to handle threaded work within PDF Backend (`fExecutor`). Experimental.
+    ///
+    /// skia-rust: the document is not `Send` (its devices are shared through `Rc`), so the work
+    /// that Skia hands to the executor (serializing images, deflating streams) is done on the
+    /// calling thread, in order, which is what a document without an executor does. The output is
+    /// the reproducible one, and `abort` has no job to wait for.
+    pub executor: Option<std::sync::Arc<dyn skia_rust_core::executor::Executor>>,
+}
+
+impl std::fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Metadata")
+            .field("title", &self.title)
+            .field("author", &self.author)
+            .field("subject", &self.subject)
+            .field("keywords", &self.keywords)
+            .field("creator", &self.creator)
+            .field("producer", &self.producer)
+            .field("creation", &self.creation)
+            .field("modified", &self.modified)
+            .field("lang", &self.lang)
+            .field("raster_dpi", &self.raster_dpi)
+            .field("pdfa", &self.pdfa)
+            .field("encoding_quality", &self.encoding_quality)
+            .field(
+                "rasterize_alpha_gradients_for_printing",
+                &self.rasterize_alpha_gradients_for_printing,
+            )
+            .field("compression_level", &self.compression_level)
+            .field("outline", &self.outline)
+            .field(
+                "structure_element_tree_root",
+                &self.structure_element_tree_root,
+            )
+            .field("has_jpeg_decoder", &self.jpeg_decoder.is_some())
+            .field("has_jpeg_encoder", &self.jpeg_encoder.is_some())
+            .field("allow_no_jpegs", &self.allow_no_jpegs)
+            .field("has_executor", &self.executor.is_some())
+            .finish()
+    }
 }
 
 impl Default for Metadata {
@@ -110,6 +173,11 @@ impl Default for Metadata {
             rasterize_alpha_gradients_for_printing: false,
             compression_level: CompressionLevel::Default,
             outline: Outline::None,
+            structure_element_tree_root: None,
+            jpeg_decoder: None,
+            jpeg_encoder: None,
+            allow_no_jpegs: false,
+            executor: None,
         }
     }
 }

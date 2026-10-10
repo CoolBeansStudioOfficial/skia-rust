@@ -12,10 +12,13 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::fixed::{FIXED_1, fixed_round_to_int};
 use skia_rust_core::floating_point::float_round2int;
 use skia_rust_core::geometry::AutoConicToQuads;
+use skia_rust_core::image::Image;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Style as PaintStyle;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_priv::all_points_eq;
@@ -23,12 +26,15 @@ use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::path_types::{PathDirection, PathVerb};
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
+use skia_rust_core::shader::Shader;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
 use skia_rust_core::utf::to_utf16;
 
 use crate::date_time::DateTime;
 use crate::float_to_decimal::{MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH, float_to_decimal};
+use crate::resource_dict::{ResourceType, write_resource_name};
 use crate::types::HEX_DIGITS_UPPER;
+use crate::types::{PdfArray, PdfDict};
 
 /// `SkScalarNearlyZero` tolerance for collinearity: `1 / 2^24`. `SkScalarNearlyZero`'s default
 /// epsilon is too coarse for some of the GMs that stress large scales.
@@ -539,6 +545,152 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
     let d = doy - (153 * mp + 2) / 5 + 1; // [1, 31]
     let m = if mp < 10 { mp + 3 } else { mp - 9 }; // [1, 12]
     (if m <= 2 { y + 1 } else { y }, m, d)
+}
+
+/// `SkPDFMakeArray` for scalars: an array of the given scalars.
+// Port of: src/pdf/SkPDFTypes.h#L194-L209 (SkPDFMakeArray, chrome/m156)
+#[must_use]
+pub fn make_scalar_array(values: &[f32]) -> PdfArray {
+    let mut array = PdfArray::new();
+    array.reserve(values.len());
+    for &v in values {
+        array.append_scalar(v);
+    }
+    array
+}
+
+/// `SkPDFMakeArray` for ints: an array of the given integers.
+// Port of: src/pdf/SkPDFTypes.h#L194-L209 (SkPDFMakeArray, chrome/m156)
+#[must_use]
+pub fn make_int_array(values: &[i32]) -> PdfArray {
+    let mut array = PdfArray::new();
+    array.reserve(values.len());
+    for &v in values {
+        array.append_int(v);
+    }
+    array
+}
+
+/// `SkPDFUtils::RectToArray`.
+// Port of: src/pdf/SkPDFUtils.cpp#L65-L67 (chrome/m156)
+#[doc(alias = "SkPDFUtils::RectToArray")]
+#[must_use]
+pub fn rect_to_array(r: &Rect) -> PdfArray {
+    make_scalar_array(&[r.left, r.top, r.right, r.bottom])
+}
+
+/// `SkPDFUtils::MatrixToArray`.
+// Port of: src/pdf/SkPDFUtils.cpp#L69-L75 (chrome/m156)
+#[doc(alias = "SkPDFUtils::MatrixToArray")]
+#[must_use]
+pub fn matrix_to_array(matrix: &Matrix) -> PdfArray {
+    let a = matrix.to_affine().unwrap_or_else(|| {
+        let mut a = [0.0; 6];
+        Matrix::set_affine_identity(&mut a);
+        a
+    });
+    make_scalar_array(&a)
+}
+
+/// `SkPDFUtils::ApplyGraphicState`.
+// Port of: src/pdf/SkPDFUtils.cpp#L366-L369 (chrome/m156)
+#[doc(alias = "SkPDFUtils::ApplyGraphicState")]
+pub fn apply_graphic_state(object_index: i32, content: &mut dyn WStream) {
+    write_resource_name(content, ResourceType::ExtGState, object_index);
+    content.write_text(" gs\n");
+}
+
+/// `SkPDFUtils::ApplyPattern`.
+// Port of: src/pdf/SkPDFUtils.cpp#L371-L381 (chrome/m156)
+#[doc(alias = "SkPDFUtils::ApplyPattern")]
+pub fn apply_pattern(object_index: i32, content: &mut dyn WStream) {
+    // Select Pattern color space (CS, cs) and set pattern object as current
+    // color (SCN, scn)
+    content.write_text("/Pattern CS/Pattern cs");
+    write_resource_name(content, ResourceType::Pattern, object_index);
+    content.write_text(" SCN");
+    write_resource_name(content, ResourceType::Pattern, object_index);
+    content.write_text(" scn\n");
+}
+
+/// `SkPDFUtils::GetShaderLocalMatrix`: the local matrix of a local-matrix shader, else identity.
+// Port of: src/pdf/SkPDFUtils.h#L111-L117 (chrome/m156)
+#[doc(alias = "SkPDFUtils::GetShaderLocalMatrix")]
+#[must_use]
+pub fn get_shader_local_matrix(shader: &Shader) -> Matrix {
+    if let Some((_, local_matrix)) = shader.as_base().make_as_a_local_matrix_shader() {
+        return local_matrix;
+    }
+    Matrix::new_identity()
+}
+
+/// `SkPDFUtils::InverseTransformBBox`: maps `bbox` through the inverse of `matrix`.
+// Port of: src/pdf/SkPDFUtils.cpp#L430-L436 (chrome/m156)
+#[doc(alias = "SkPDFUtils::InverseTransformBBox")]
+pub fn inverse_transform_bbox(matrix: &Matrix, bbox: &mut Rect) -> bool {
+    if let Some(inverse) = matrix.invert() {
+        *bbox = inverse.map_rect(*bbox).0;
+        return true;
+    }
+    false
+}
+
+/// `SkPDFUtils::PopulateTilingPatternDict`.
+// Port of: src/pdf/SkPDFUtils.cpp#L438-L460 (chrome/m156)
+#[doc(alias = "SkPDFUtils::PopulateTilingPatternDict")]
+pub fn populate_tiling_pattern_dict(
+    pattern: &mut PdfDict,
+    bbox: &Rect,
+    tile_x: bool,
+    tile_y: bool,
+    resources: PdfDict,
+    matrix: &Matrix,
+) {
+    const TILING_PATTERN_TYPE: i32 = 1;
+    const COLORED_TILING_PATTERN_PAINT_TYPE: i32 = 1;
+    const CONSTANT_SPACING_TILING_TYPE: i32 = 1;
+
+    pattern.insert_name("Type", "Pattern");
+    pattern.insert_int("PatternType", TILING_PATTERN_TYPE);
+    pattern.insert_int("PaintType", COLORED_TILING_PATTERN_PAINT_TYPE);
+    pattern.insert_int("TilingType", CONSTANT_SPACING_TILING_TYPE);
+    pattern.insert_object("BBox", Box::new(rect_to_array(bbox)));
+    // PDF tiling is a raster operation which may involve pixel snapping XStep and YStep values.
+    // Add space between "tiles" if not tiling in the given direction. https://crbug.com/41496385
+    pattern.insert_scalar("XStep", bbox.width() + if tile_x { 0.0 } else { 2.0 });
+    pattern.insert_scalar("YStep", bbox.height() + if tile_y { 0.0 } else { 2.0 });
+    pattern.insert_object("Resources", Box::new(resources));
+    if !matrix.is_identity() {
+        pattern.insert_object("Matrix", Box::new(matrix_to_array(matrix)));
+    }
+}
+
+/// `SkPDFUtils::ToBitmap`: the read-only pixels of an image.
+// Port of: src/pdf/SkPDFUtils.cpp#L462-L474 (chrome/m156)
+#[doc(alias = "SkPDFUtils::ToBitmap")]
+#[must_use]
+pub fn to_bitmap(img: &Image) -> Option<Bitmap> {
+    // TODO: support GPU images
+    let bitmap = img.get_ro_pixels()?;
+    debug_assert_eq!(bitmap.dimensions(), img.dimensions());
+    debug_assert!(!bitmap.draws_nothing());
+    Some(bitmap)
+}
+
+/// `SkPDFUtils::AppendTransform`: the `cm` operator.
+// Port of: src/pdf/SkPDFUtils.cpp#L476-L489 (chrome/m156)
+#[doc(alias = "SkPDFUtils::AppendTransform")]
+pub fn append_transform(matrix: &Matrix, content: &mut dyn WStream) {
+    let values = matrix.to_affine().unwrap_or_else(|| {
+        let mut a = [0.0; 6];
+        Matrix::set_affine_identity(&mut a);
+        a
+    });
+    for v in values {
+        append_scalar(v, content);
+        content.write_text(" ");
+    }
+    content.write_text("cm\n");
 }
 
 #[cfg(test)]
