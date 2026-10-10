@@ -291,8 +291,13 @@ impl RenderStep for CoverageMaskRenderStep {
         // to get back to Skia's texel-based coords.
         remainder.pre_scale((dims_f32(dims.width), dims_f32(dims.height)), None);
 
-        // Write uniforms.
-        gatherer.uniform_manager().write_matrix(&remainder);
+        // Write uniforms (`UniformExpectationsValidator uev(gatherer, this->uniforms())`).
+        let uniforms = gatherer.uniform_manager();
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
+        uniforms.write_matrix(&remainder);
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
 
         // Write textures and samplers.
         let filter = if pixel_aligned {

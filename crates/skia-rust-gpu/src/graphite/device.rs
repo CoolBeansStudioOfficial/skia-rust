@@ -71,6 +71,8 @@ use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Renderable};
 use crate::gpu::sk_log::skia_log_w;
 use crate::gpu::sk_log::skia_log_e;
 use crate::graphite::clip_atlas_manager::RecorderClipAtlas;
+use crate::graphite::geom::coverage_mask_shape::MaskInfo;
+use crate::graphite::texture_utils::as_view;
 use crate::graphite::clip_stack::{
     ClipAtlasManager as ClipAtlasSeam, ClipDrawHooks, ClipStack, ClipState, ElementList,
     PixelSnapping,
@@ -976,6 +978,61 @@ impl DeviceCore {
             &Transform::new(M44::from(local_to_device)),
             Geometry::EdgeAAQuad(EdgeAAQuad::from_sk_rect(&dst, aa_flags)),
             &PaintParams::from_paint_with_image(paint, image_shader, 1.0),
+            &default_fill_style(),
+        );
+    }
+
+    /// `drawCoverageMask(mask, maskToDevice, sampling, paint)`: draws a Graphite-backed mask image
+    /// as a `CoverageMaskShape` placed by `mask_to_device`. The device's local-to-device transform
+    /// shades it.
+    // Port of: src/gpu/graphite/Device.cpp#L2481-L2517 (chrome/m156)
+    #[doc(alias = "drawCoverageMask")]
+    pub fn draw_coverage_mask(
+        &mut self,
+        mask: &SpecialImage,
+        mask_to_device: &Matrix,
+        paint: &Paint,
+    ) {
+        let subset = mask.subset();
+        let mask_info = MaskInfo {
+            texture_origin: (subset.left as u16, subset.top as u16),
+            mask_size: (mask.width() as u16, mask.height() as u16),
+        };
+
+        let Some(mask_image) = mask.as_image() else {
+            skia_log_w!("Couldn't get Graphite-backed special image as texture proxy view");
+            return;
+        };
+        let Some(proxy) = as_view(Some(&mask_image)).ref_proxy() else {
+            skia_log_w!("Couldn't get Graphite-backed special image as texture proxy view");
+            return;
+        };
+        let Some(recorder) = self.recorder() else {
+            return;
+        };
+
+        // Every other "Image" draw reaches the underlying texture via AddToKey/NotifyInUse, which
+        // handles notifying the image. The texture here is consumed by the RenderStep and is not
+        // part of the PaintParams, so the notification is done here.
+        if let Some(graphite) = GraphiteImage::from_core(&mask_image) {
+            graphite.notify_in_use(&recorder, Some(self));
+        }
+
+        // CoverageMaskShape() wraps a Shape when it's used as a PathAtlas, but in this case the
+        // original shape has been long lost, so just use a Rect that bounds the image. The
+        // provided `maskToDevice` places the mask in device space. The Device's local-to-device
+        // transform is used for shading.
+        let mask_shape = CoverageMaskShape::new(
+            &Shape::from_rect(Rect::wh(mask.width() as f32, mask.height() as f32)),
+            proxy,
+            M44::from(mask_to_device),
+            mask_info,
+        );
+        let local_to_device = self.local_to_device_transform();
+        self.draw_geometry(
+            &local_to_device,
+            Geometry::CoverageMaskShape(mask_shape),
+            &PaintParams::new(paint, None, false, false),
             &default_fill_style(),
         );
     }
