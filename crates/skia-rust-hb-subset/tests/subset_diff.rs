@@ -26,14 +26,11 @@ const NOT_PORTED: &[(&str, &str)] = &[
     ("DejaVuSans.subset.ttf", "layout tables"),
     ("DejaVuSans.subset_noHx.ttf", "layout tables"),
     ("Distortable.ttf", "HVAR/VVAR/gvar"),
-    ("Em.ttf", "layout tables"),
     ("HangingS.ttf", "layout tables"),
     ("NotoSansCJK-VF-subset.otf.ttc", "CFF/CFF2/VORG"),
-    ("ReallyBigA.ttf", "layout tables"),
     ("Roboto-Regular.ttf", "layout tables"),
     ("Roboto2-Regular_NoEmbed.ttf", "layout tables"),
     ("SampleSVG.ttf", "layout tables"),
-    ("SpiderSymbol.ttf", "layout tables"),
     ("Stroking.otf", "CFF"),
     ("Variable.ttf", "layout tables"),
     ("VaryAlongQuads.ttf", "layout tables"),
@@ -43,7 +40,6 @@ const NOT_PORTED: &[(&str, &str)] = &[
     ("planetsbix.ttf", "colour tables"),
     ("sbix.ttf", "colour tables"),
     ("sbix_uncompressed_flags.ttf", "colour tables"),
-    ("test.ttc", "layout tables"),
     ("test_glyphs-glyf_colr_1.ttf", "colour tables"),
     ("test_glyphs-glyf_colr_1_variable.ttf", "colour tables"),
 ];
@@ -220,10 +216,10 @@ fn subset_matches_hb_subset() {
         failures.join("\n")
     );
     // A font in NOT_PORTED must still be unsupported, so that the list shrinks as the port grows.
-    for (font, _) in NOT_PORTED {
-        assert!(
-            gaps.keys().any(|g| g.starts_with(&format!("{font}:"))),
-            "{font} is now ported: remove it from NOT_PORTED"
-        );
-    }
+    let now_ported: Vec<&str> = NOT_PORTED
+        .iter()
+        .map(|(font, _)| *font)
+        .filter(|font| !gaps.keys().any(|g| g.starts_with(&format!("{font}:"))))
+        .collect();
+    assert!(now_ported.is_empty(), "now ported, remove from NOT_PORTED: {now_ported:?}");
 }

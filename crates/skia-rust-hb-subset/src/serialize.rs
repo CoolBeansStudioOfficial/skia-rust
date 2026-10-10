@@ -55,6 +55,10 @@ struct Object {
     data: Vec<u8>,
     real_links: Vec<Link>,
     virtual_links: Vec<Link>,
+    /// `packed.length` and `end - tail` when the object was pushed: `pop_discard` restores them
+    /// (`revert (obj->head, obj->tail)` and `discard_stale_objects ()`).
+    packed_len_at_push: usize,
+    tail_bytes_at_push: usize,
 }
 
 /// Port of `hb_serialize_context_t::snapshot_t` (hb-serialize.hh#L182-L190).
@@ -102,6 +106,10 @@ impl Serializer {
         self.errors & ERROR_OFFSET_OVERFLOW != 0
     }
 
+    pub(crate) fn only_offset_overflow(&self) -> bool {
+        self.errors == ERROR_OFFSET_OVERFLOW
+    }
+
     pub(crate) fn only_overflow(&self) -> bool {
         self.errors == ERROR_OFFSET_OVERFLOW || self.errors == ERROR_INT_OVERFLOW
     }
@@ -137,7 +145,11 @@ impl Serializer {
         if self.in_error() {
             return;
         }
-        self.stack.push(Object::default());
+        self.stack.push(Object {
+            packed_len_at_push: self.packed.len(),
+            tail_bytes_at_push: self.tail_bytes,
+            ..Object::default()
+        });
     }
 
     fn cur(&mut self) -> &mut Object {
@@ -194,7 +206,14 @@ impl Serializer {
         if self.in_error() && !self.only_overflow() {
             return;
         }
-        self.stack.pop();
+        if let Some(obj) = self.stack.pop() {
+            // Objects packed while this one was under construction are stale now.
+            while self.packed.len() > obj.packed_len_at_push {
+                let stale = self.packed.pop().flatten().expect("packed object");
+                self.packed_map.remove(&(stale.data, stale.real_links));
+            }
+            self.tail_bytes = obj.tail_bytes_at_push;
+        }
     }
 
     /// Port of `pop_pack()` (hb-serialize.hh#L378-L440). Returns 0 for an empty object.
@@ -225,6 +244,7 @@ impl Serializer {
                 data: key.0,
                 real_links: key.1,
                 virtual_links: obj.virtual_links,
+                ..Object::default()
             }));
             self.tail_bytes += len;
             return objidx;

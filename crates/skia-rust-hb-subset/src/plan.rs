@@ -31,6 +31,10 @@ pub(crate) struct Plan<'a> {
     pub glyphset_gsub: BTreeSet<u32>,
     pub glyphset: BTreeSet<u32>,
     pub glyph_map: HashMap<u32, u32>,
+    /// `glyph_map_gsub`: the new glyph id of each glyph of `glyphset_gsub`.
+    pub glyph_map_gsub: HashMap<u32, u32>,
+    pub used_mark_sets_map: HashMap<u32, u32>,
+    pub layout: crate::layout::LayoutPlan,
     pub reverse_glyph_map: HashMap<u32, u32>,
     pub new_to_old_gid_list: Vec<(u32, u32)>,
     pub num_output_glyphs: u32,
@@ -72,6 +76,9 @@ impl<'a> Plan<'a> {
             glyphset_gsub: BTreeSet::new(),
             glyphset: BTreeSet::new(),
             glyph_map: HashMap::new(),
+            glyph_map_gsub: HashMap::new(),
+            used_mark_sets_map: HashMap::new(),
+            layout: crate::layout::LayoutPlan::default(),
             reverse_glyph_map: HashMap::new(),
             new_to_old_gid_list: Vec::new(),
             num_output_glyphs: 0,
@@ -88,6 +95,11 @@ impl<'a> Plan<'a> {
         plan.populate_gids_to_retain()?;
         plan.create_old_gid_to_new_gid_map();
 
+        // `_create_glyph_map_gsub`
+        for &g in &plan.glyphset_gsub {
+            plan.glyph_map_gsub.insert(g, plan.glyph_map.get(&g).copied().unwrap_or(HB_SET_VALUE_INVALID));
+        }
+
         // Now that we have old to new gid map update the unicode to new gid list.
         for p in &mut plan.unicode_to_new_gid_list {
             p.1 = plan
@@ -95,6 +107,11 @@ impl<'a> Plan<'a> {
                 .get(&p.1)
                 .copied()
                 .unwrap_or(HB_SET_VALUE_INVALID);
+        }
+        if !plan.drop_tables.contains(&tag(b"GDEF")) {
+            let gdef = plan.source.table(tag(b"GDEF"));
+            plan.used_mark_sets_map =
+                crate::gdef::remap_used_mark_sets(crate::ot::View::new(gdef), &plan.glyphset_gsub);
         }
         Ok(plan)
     }
