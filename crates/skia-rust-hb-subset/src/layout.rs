@@ -160,6 +160,9 @@ pub(crate) fn run_table(
     let mut s = Serializer::new();
     s.start_serialize();
     let needed = subset(plan, &mut s, View::new(data))?;
+    if !plan.account_table(t, data.len(), s.peak()) {
+        return Err(crate::SubsetError::Failed);
+    }
     let out = s.end_serialize();
     if s.in_error() && !s.only_offset_overflow() {
         return Err(crate::SubsetError::Failed);

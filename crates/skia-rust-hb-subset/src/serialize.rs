@@ -87,6 +87,9 @@ pub(crate) struct Serializer {
     errors: u32,
     /// The bytes of the finished table (`copy_bytes`).
     output: Vec<u8>,
+    /// The largest `head + tail` byte count of any allocation: the buffer size the table needs
+    /// (`allocate_size` runs out of room above it).
+    peak: usize,
 }
 
 impl Serializer {
@@ -181,7 +184,10 @@ impl Serializer {
         if self.in_error() && !self.only_overflow() {
             return;
         }
-        assert_eq!(snap.depth, self.stack.len());
+        if snap.depth != self.stack.len() {
+            // An overflow-only error left the stack unbalanced (`push` is a no-op in error).
+            return;
+        }
         if let Some(cur) = self.stack.last_mut() {
             cur.real_links.truncate(snap.num_real_links);
             cur.virtual_links.truncate(snap.num_virtual_links);
@@ -257,17 +263,36 @@ impl Serializer {
     /// Port of `allocate_size(size, clear = true)`: appends `size` zero bytes and returns their
     /// position in the current object.
     pub(crate) fn allocate(&mut self, size: usize) -> usize {
+        if self.in_error() {
+            // `allocate_size` returns `nullptr`.
+            return self.stack.last().map_or(0, |o| o.data.len());
+        }
         let cur = self.cur();
         let pos = cur.data.len();
         cur.data.resize(pos + size, 0);
+        self.note_peak();
         pos
+    }
+
+    fn note_peak(&mut self) {
+        let head: usize = self.stack.iter().map(|o| o.data.len()).sum();
+        self.peak = self.peak.max(head + self.tail_bytes);
+    }
+
+    /// The buffer size the serialization needed, in bytes.
+    pub(crate) fn peak(&self) -> usize {
+        self.peak
     }
 
     /// Port of `embed(const char *, unsigned)`: appends the bytes and returns their position.
     pub(crate) fn embed(&mut self, bytes: &[u8]) -> usize {
+        if self.in_error() {
+            return self.stack.last().map_or(0, |o| o.data.len());
+        }
         let cur = self.cur();
         let pos = cur.data.len();
         cur.data.extend_from_slice(bytes);
+        self.note_peak();
         pos
     }
 
@@ -293,19 +318,36 @@ impl Serializer {
 
     /// The bytes of the current object, to patch a field in place.
     pub(crate) fn bytes_mut(&mut self) -> &mut [u8] {
-        &mut self.cur().data
+        match self.stack.last_mut() {
+            Some(o) => &mut o.data,
+            None => &mut [],
+        }
     }
 
     pub(crate) fn bytes(&self) -> &[u8] {
-        &self.stack.last().expect("no current object").data
+        self.stack.last().map_or(&[], |o| &o.data)
     }
 
+    /// Writes a field of the current object. A write outside the object is dropped: it only
+    /// happens after an earlier allocation failed, when `HarfBuzz`'s `allocate_size` returned
+    /// `nullptr` and the serializer is in error.
     pub(crate) fn set_u16(&mut self, pos: usize, v: u16) {
-        self.cur().data[pos..pos + 2].copy_from_slice(&v.to_be_bytes());
+        if let Some(b) = self.bytes_mut().get_mut(pos..pos + 2) {
+            b.copy_from_slice(&v.to_be_bytes());
+        }
     }
 
     pub(crate) fn set_u32(&mut self, pos: usize, v: u32) {
-        self.cur().data[pos..pos + 4].copy_from_slice(&v.to_be_bytes());
+        if let Some(b) = self.bytes_mut().get_mut(pos..pos + 4) {
+            b.copy_from_slice(&v.to_be_bytes());
+        }
+    }
+
+    /// Writes a byte of the current object (dropped outside the object, as above).
+    pub(crate) fn set_u8(&mut self, pos: usize, v: u8) {
+        if let Some(b) = self.bytes_mut().get_mut(pos) {
+            *b = v;
+        }
     }
 
     /// Port of `add_link()` (hb-serialize.hh#L511-L545). `pos` is the position of the offset
@@ -318,7 +360,7 @@ impl Serializer {
         whence: Whence,
         bias: u32,
     ) {
-        if self.in_error() || objidx == 0 {
+        if self.in_error() || objidx == 0 || self.stack.is_empty() {
             return;
         }
         self.cur().real_links.push(Link {

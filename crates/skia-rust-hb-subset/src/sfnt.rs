@@ -159,6 +159,11 @@ pub(crate) struct FaceBuilder {
 }
 
 impl FaceBuilder {
+    /// The length of the table added with the tag, 0 when there is none.
+    pub(crate) fn table_len(&self, t: u32) -> usize {
+        self.tables.get(&t).map_or(0, Vec::len)
+    }
+
     /// Port of `hb_face_builder_add_table` (hb-face-builder.cc#L219-L240): a second table with
     /// the same tag replaces the first.
     pub(crate) fn add_table(&mut self, t: u32, contents: Vec<u8>) {

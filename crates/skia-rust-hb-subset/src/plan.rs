@@ -60,6 +60,9 @@ pub(crate) struct Plan<'a> {
     pub drop_tables: BTreeSet<u32>,
     pub no_subset_tables: BTreeSet<u32>,
     dest: FaceBuilder,
+    /// `buf.allocated` of `hb_subset_plan_execute_or_fail`: the serialization buffer shared by the
+    /// tables.
+    buf_allocated: u32,
 }
 
 impl<'a> Plan<'a> {
@@ -97,6 +100,7 @@ impl<'a> Plan<'a> {
             layout: crate::layout::LayoutPlan::default(),
             layout_features: DEFAULT_LAYOUT_FEATURES.iter().map(|t| tag(t)).collect(),
             reverse_glyph_map: HashMap::new(),
+            buf_allocated: vector_grow(0, 8192 - 16),
             new_to_old_gid_list: Vec::new(),
             num_output_glyphs: 0,
             os2_min_cmap_codepoint: 0,
@@ -266,6 +270,51 @@ impl<'a> Plan<'a> {
         }
     }
 
+    /// The buffer handling of `_hb_subset_table` and `_hb_subset_table_try`
+    /// (hb-subset-table.hh#L36-L190) for a table of `blob_len` source bytes whose serialization
+    /// needed `peak` bytes: the buffer starts at the estimated size (and never shrinks), doubles
+    /// while the serializer runs out of room, and the table fails once the doubled size exceeds
+    /// 256 times the source table. Returns whether the table gets subset.
+    pub(crate) fn account_table(&mut self, t: u32, blob_len: usize, peak: usize) -> bool {
+        let estimate = self.estimate_table_size(blob_len, t);
+        self.buf_allocated = vector_grow(self.buf_allocated, estimate);
+        loop {
+            if peak as u64 <= u64::from(self.buf_allocated) {
+                return true;
+            }
+            let buf_size = self.buf_allocated.wrapping_mul(2).wrapping_add(16);
+            if buf_size > (blob_len as u32).wrapping_mul(256) {
+                return false;
+            }
+            self.buf_allocated = buf_size;
+        }
+    }
+
+    /// `_hb_subset_estimate_table_size` (hb-subset-table.hh#L72-L100).
+    fn estimate_table_size(&self, table_len: usize, t: u32) -> u32 {
+        let src_glyphs = self.source.num_glyphs();
+        let dst_glyphs = self.glyphset.len() as u32;
+        let mut bulk: u32 = 8192;
+        let same_size = [tag(b"GSUB"), tag(b"GPOS"), tag(b"GDEF"), tag(b"name")].contains(&t);
+        if self.flags & FLAG_RETAIN_GIDS != 0 {
+            if t == tag(b"CFF ") {
+                bulk += src_glyphs * 16;
+            } else if t == tag(b"CFF2") {
+                bulk += src_glyphs * 4;
+            }
+        }
+        let table_len = table_len as u32;
+        if src_glyphs == 0 || same_size {
+            return bulk + table_len;
+        }
+        bulk + (f64::from(table_len) * (f64::from(dst_glyphs) / f64::from(src_glyphs)).sqrt()) as u32
+    }
+
+    /// The length of the table in the destination face.
+    pub(crate) fn dest_table_len(&self, t: u32) -> usize {
+        self.dest.table_len(t)
+    }
+
     /// Port of `hb_subset_plan_t::add_table`.
     pub(crate) fn add_table(&mut self, t: u32, contents: Vec<u8>) {
         self.dest.add_table(t, contents);
@@ -280,6 +329,16 @@ impl<'a> Plan<'a> {
     pub(crate) fn old_gid_for_new_gid(&self, new_gid: u32) -> Option<u32> {
         self.reverse_glyph_map.get(&new_gid).copied()
     }
+}
+
+/// `hb_vector_t::alloc (size)` from `allocated` (hb-vector.hh#L516-L540): grows by 1.5 times plus
+/// 8 until the size fits.
+fn vector_grow(allocated: u32, size: u32) -> u32 {
+    let mut new_allocated = allocated;
+    while size > new_allocated {
+        new_allocated += (new_allocated >> 1) + 8;
+    }
+    new_allocated
 }
 
 /// Port of `_remove_invalid_gids` (hb-subset-plan.cc#L156-L160).
