@@ -38,8 +38,9 @@
 //!
 //! - The atlas clip (rasterizing the remaining effective elements into a clip mask in an atlas
 //!   when MSAA is unavailable) stops at [`ClipAtlasManager`]: the stack calls it exactly as
-//!   `ClipAtlasManager::findOrCreateEntry()` is called in C++, and `Device` passes `None` until
-//!   G12a ports the atlas. With `None` the remaining elements are drawn as depth-only clip draws.
+//!   `ClipAtlasManager::findOrCreateEntry()` is called in C++. The device passes the clip atlas of
+//!   the recorder when the raster path strategy is in use; otherwise the remaining elements are
+//!   drawn as depth-only clip draws.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
