@@ -184,7 +184,7 @@ fn run_test(
 // threads with the goal of creating cache races.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L414 (chrome/m156)
 def_graphite_test_for_all_contexts!(
-    #[ignore = "naga rejects the storage-buffer gradient WGSL (unrestricted_pointer_parameters); docs/design/gpu.md W4"]
+    #[ignore = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"]
     ThreadedPipelinePrecompileTest,
     |reporter, context| {
         let num_purging_threads = 0;
@@ -234,7 +234,7 @@ const NUM_OPACITY_VARIATIONS: u32 = 2;
 // purging.
 // Port of: tests/graphite/precompile/ThreadedPrecompileTest.cpp#L505-L516 (chrome/m156)
 def_graphite_test_for_all_contexts!(
-    #[ignore = "naga rejects the storage-buffer gradient WGSL (unrestricted_pointer_parameters); docs/design/gpu.md W4"]
+    #[ignore = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"]
     ThreadedPipelinePrecompilePurgingTest,
     |reporter, context| {
         let num_purging_threads = 0;

@@ -53269,7 +53269,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
 status = "failing"
-reason = "naga rejects the storage-buffer gradient WGSL (unrestricted_pointer_parameters, docs/design/gpu.md W4): BitmapText_Mask + LinearGradientBuffer fails shader validation on every context"
+reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]
@@ -53279,7 +53279,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L423"
 module = "gpu"
 status = "failing"
-reason = "naga rejects the storage-buffer gradient WGSL (unrestricted_pointer_parameters, docs/design/gpu.md W4): BitmapText_Mask + LinearGradientBuffer fails shader validation on every context"
+reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
 span_hash = "491300b6238f0a3452e358838411314abd952c2585848399423b33c5ef0991a5"
 
 [[test]]
