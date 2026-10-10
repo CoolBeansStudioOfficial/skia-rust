@@ -11,6 +11,7 @@ pub mod inner_fill_test;
 pub mod intersection_tree_test;
 pub mod key_test;
 pub mod multisample_test;
+pub mod notify_in_use_test;
 pub mod pipeline_data_cache_test;
 pub mod recorder_test;
 pub mod rect_test;
