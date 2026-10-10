@@ -100,6 +100,7 @@ use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::image_factories::texture_from_image;
 use crate::graphite::image_filter_backend::make_graphite_backend;
 use crate::graphite::image_graphite::{DeviceLink, Image as GraphiteImage, wrap_device};
+use crate::graphite::image_yuva_graphite::image_links;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::paint_params::{PaintParams, ShadingParams, SimpleImage};
 use crate::graphite::path_atlas::PathAtlas;
@@ -1227,8 +1228,9 @@ impl DeviceCore {
     // built a paint key (`add_image_to_key`).
     fn notify_images_in_use(&mut self, recorder: &Recorder, key_context: &KeyContext<'_>) {
         for image in key_context.take_images_in_use() {
-            if let Some(image) = GraphiteImage::from_core(&image) {
-                image.notify_in_use(recorder, Some(self));
+            // A YUVA image's links are the same kind of `Image_Base` links as a Graphite image's.
+            if let Some(links) = image_links(&image) {
+                links.notify_in_use(recorder, Some(self));
             }
         }
     }

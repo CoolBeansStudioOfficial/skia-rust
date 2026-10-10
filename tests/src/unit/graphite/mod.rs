@@ -9,6 +9,7 @@ pub mod device_test;
 pub mod draw_atlas_test;
 pub mod graphite_promise_image_test;
 pub mod graphite_resource_cache_test;
+pub mod graphite_yuva_promise_image_test;
 pub mod image_origin_test;
 pub mod image_shader_test;
 pub mod inner_fill_test;
