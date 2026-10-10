@@ -155,6 +155,24 @@ pub trait TrackedDevice {
     /// `resetStorageCache()`.
     #[doc(alias = "resetStorageCache")]
     fn reset_storage_cache(&mut self);
+
+    /// The device's ID (`DeviceLink`, `docs/design/gpu.md` §5.6); 0 for a device that images
+    /// cannot link to.
+    fn device_id(&self) -> u32 {
+        0
+    }
+
+    /// The Graphite device behind this tracked device, for the image links that flush it
+    /// (`Image_Base::notifyInUse` holds `sk_sp<Device>`).
+    fn as_device_core(&mut self) -> Option<&mut crate::graphite::device::DeviceCore> {
+        None
+    }
+
+    /// Whether `other` is this device's own cell (the device that is mutably borrowed while it
+    /// records a draw cannot be borrowed again).
+    fn is_cell(&self, _other: &Rc<RefCell<dyn TrackedDevice>>) -> bool {
+        false
+    }
 }
 
 /// A device the recorder tracks. The recorder holds it weakly: the surface's canvas owns the
@@ -723,6 +741,19 @@ impl RecorderPriv<'_> {
     /// `dependency`.
     // Port of: src/gpu/graphite/Recorder.cpp#L639-L660 (chrome/m156)
     pub fn flush_tracked_devices_with_dependency(&self, dependency: &Arc<TextureProxy>) {
+        self.flush_tracked_devices_with_dependency_and_current(dependency, None);
+    }
+
+    /// `flushTrackedDevices(dependency)` called while `current` records a draw (an image linked
+    /// to another device was drawn into it, `Image_Base::notifyInUse`). `current` is mutably
+    /// borrowed for the draw, so when it has pending reads of `dependency` it is flushed through
+    /// this reference, where C++ reaches it through the tracked list.
+    // Port of: src/gpu/graphite/Recorder.cpp#L639-L660 (chrome/m156)
+    pub fn flush_tracked_devices_with_dependency_and_current(
+        &self,
+        dependency: &Arc<TextureProxy>,
+        mut current: Option<&mut dyn TrackedDevice>,
+    ) {
         // This version of flushTrackedDevices() must be re-entrant because it is entirely
         // possible for client-owned surfaces to read and write to each other, where this will be
         // called with different textures for `dependency`. The recursion stops once the
@@ -735,14 +766,22 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // snapped.
             if let Some(device) = self.recorder.tracked_device(index) {
-                // A device that is borrowed is the one that triggered this flush from inside its
-                // own operation: it does not read its own target.
-                let has_pending_reads = device
-                    .try_borrow()
-                    .is_ok_and(|device| device.has_pending_reads(dependency));
-                if has_pending_reads {
-                    device.borrow_mut().flush_pending_work();
+                if let Ok(borrowed) = device.try_borrow() {
+                    let has_pending_reads = borrowed.has_pending_reads(dependency);
+                    drop(borrowed);
+                    if has_pending_reads {
+                        device.borrow_mut().flush_pending_work();
+                    }
+                } else if let Some(current) = current.as_deref_mut()
+                    && current.is_cell(&device)
+                {
+                    // The device recording a draw that reads `dependency`'s image.
+                    if current.has_pending_reads(dependency) {
+                        current.flush_pending_work();
+                    }
                 }
+                // Any other borrowed device is the one that triggered this flush from inside its
+                // own operation: it does not read its own target.
             }
             index += 1;
         }
@@ -954,6 +993,22 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn unique_id(&self) -> u32 {
         self.recorder.unique_id
+    }
+
+    /// The tracked device whose [`TrackedDevice::device_id`] is `device_id`, if it is still
+    /// tracked and alive (the `sk_sp<Device>` an image link holds in C++).
+    #[must_use]
+    pub fn find_tracked_device(&self, device_id: u32) -> Option<Rc<RefCell<dyn TrackedDevice>>> {
+        if device_id == 0 {
+            return None;
+        }
+        (0..self.recorder.tracked_device_count())
+            .filter_map(|index| self.recorder.tracked_device(index))
+            .find(|device| {
+                device
+                    .try_borrow()
+                    .is_ok_and(|device| device.device_id() == device_id)
+            })
     }
 
     /// `nextRecordingID()` (`SK_DEBUG`).

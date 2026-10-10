@@ -2,20 +2,24 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/gpu/graphite/Image_Graphite.{h,cpp}, and the parts of
-// src/gpu/graphite/Image_Base_Graphite.{h,cpp} that a Graphite image without linked Devices needs
-// (`copyImage`, `onMakeSubset`, `makeColorTypeAndColorSpace`, `textureSize`).
+// src/gpu/graphite/Image_Base_Graphite.{h,cpp} that a Graphite image needs (`copyImage`,
+// `onMakeSubset`, `makeColorTypeAndColorSpace`, `textureSize`, the device links and
+// `notifyInUse`).
 //
 // skia-rust deviations:
-// - `Image_Base::notifyInUse()` and the linked `Device`s (`linkDevice`, `isDynamic`, `unlinkDevices`,
-//   `makeNonBudgeted`) are not ported. `ImageBase` is `Send + Sync` and a `Device` is `Rc`-based
-//   (`docs/design/gpu.md` §5.1), so an image cannot own a `Device`. `Surface::as_image` flushes the
-//   device instead (see `surface_graphite`), so an image snapshot holds the draws made before it.
+// - Linked devices (`fLinkedDevices`) are [`DeviceLink`]s, not `sk_sp<Device>`. `ImageBase` is
+//   `Send + Sync` and a `Device` is `Rc`-based (`docs/design/gpu.md` §5.1, §5.6), so an image holds
+//   the `Send + Sync` half of the device's state that `Device::notifyInUse` reads (its recorder's
+//   ID, its target, whether it is immutable or gone, a scratch device's last task) and reaches the
+//   device itself through its recorder's tracked devices, on the recorder's thread.
+// - `makeNonBudgeted` is not ported.
 // - Operations that take an `SkRecorder*` (`onMakeSubset`, `makeColorTypeAndColorSpace`) need the
 //   recorder, which `ImageBase` cannot pass; they are `*_with_recorder` methods here, and the
 //   `ImageBase` methods return `None`.
 
 use std::any::Any;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
@@ -31,8 +35,10 @@ use skia_rust_core::rect::IRect;
 use crate::gpu::backing_fit::{BackingFit, get_approx_size};
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Protected};
 use crate::gpu::sk_log::skia_log_w;
+use crate::graphite::device::DeviceCore;
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::recorder::Recorder;
+use crate::graphite::task::TaskRef;
 use crate::graphite::task::copy_task::CopyTextureToTextureTask;
 use crate::graphite::texture_format::{
     are_color_type_and_format_compatible, read_swizzle_for_color_type,
@@ -49,6 +55,160 @@ pub struct Image {
     info: ImageInfo,
     unique_id: u32,
     texture_proxy_view: TextureProxyView,
+    // `Image_Base::fLinkedDevices` (with `fDeviceLinkLock`): devices are flushed in
+    // `notify_in_use()`. If a linked device is gone or marked immutable, it is unlinked. If all
+    // linked devices are removed, this array becomes empty.
+    linked_devices: Mutex<Vec<Option<Arc<DeviceLink>>>>,
+}
+
+/// The `Send + Sync` half of a Graphite `Device` that the images of its target hold
+/// (`docs/design/gpu.md` §5.6): what `Device::notifyInUse()` reads of the device, and the ID its
+/// recorder finds the device by.
+#[derive(Debug)]
+pub struct DeviceLink {
+    device_id: u32,
+    recorder_id: u32,
+    target: Arc<TextureProxy>,
+    state: Mutex<LinkState>,
+}
+
+#[derive(Debug, Default)]
+struct LinkState {
+    // The device abandoned its recorder (`!fRecorder`): it is immutable.
+    abandoned: bool,
+    // The device was dropped; in C++ the image would hold the last reference (`unique()`).
+    dropped: bool,
+    // `Device::fLastTask` of a scratch device.
+    last_task: Option<TaskRef>,
+}
+
+/// The next device ID (never 0).
+fn next_device_id() -> u32 {
+    static NEXT_ID: AtomicU32 = AtomicU32::new(1);
+    loop {
+        let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+        if id != 0 {
+            return id;
+        }
+    }
+}
+
+impl DeviceLink {
+    /// The link of a new device of the recorder `recorder_id` that draws into `target`.
+    #[must_use]
+    pub fn new(recorder_id: u32, target: Arc<TextureProxy>) -> Arc<DeviceLink> {
+        Arc::new(DeviceLink {
+            device_id: next_device_id(),
+            recorder_id,
+            target,
+            state: Mutex::new(LinkState::default()),
+        })
+    }
+
+    fn state(&self) -> MutexGuard<'_, LinkState> {
+        self.state.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// The ID of the linked device.
+    #[must_use]
+    pub fn device_id(&self) -> u32 {
+        self.device_id
+    }
+
+    /// Records `Device::fLastTask`.
+    pub fn set_last_task(&self, task: Option<TaskRef>) {
+        self.state().last_task = task;
+    }
+
+    /// The device abandoned its recorder.
+    pub fn mark_abandoned(&self) {
+        self.state().abandoned = true;
+    }
+
+    /// The device was dropped.
+    pub fn mark_dropped(&self) {
+        self.state().dropped = true;
+    }
+
+    /// `device->recorder() && !device->unique()`: the device can still write to the texture.
+    #[must_use]
+    pub fn is_live(&self) -> bool {
+        let state = self.state();
+        !state.abandoned && !state.dropped
+    }
+
+    // `Device::isScratchDevice()`, read off the shared target.
+    // Port of: src/gpu/graphite/Device.cpp#L2559-L2571 (chrome/m156)
+    fn is_scratch_device(&self) -> bool {
+        !self.target.is_instantiated() && !self.target.is_lazy()
+    }
+
+    /// `Device::notifyInUse(recorder, drawContext)` through the link: `current` is the device
+    /// whose draw reads the image (C++'s `drawContext` is its `DrawContext`), or `None` for a
+    /// copy. Returns true if the image does not need to track the device anymore.
+    // Port of: src/gpu/graphite/Device.cpp#L593-L652 (chrome/m156)
+    pub fn notify_in_use(&self, recorder: &Recorder, current: Option<&mut DeviceCore>) -> bool {
+        if self.is_scratch_device() {
+            let last_task = self.state().last_task.clone();
+            if let Some(last_task) = last_task {
+                // Increment the pending read count for the device's target
+                recorder.priv_().add_pending_read(&self.target);
+                if let Some(current) = current {
+                    // Add a reference to the device's drawTask to `drawContext` if that's
+                    // provided.
+                    current.record_dependency(last_task);
+                } else {
+                    // If there's no `drawContext` this notify represents a copy, so for now
+                    // append the task to the root task list since that is where the subsequent
+                    // copy task will go as well.
+                    recorder.priv_().add(last_task);
+                }
+            }
+            // (Else there is no draw task yet: the device has no pending work, or it flushed it
+            // to a drawContext's local task list. The correct action is to do nothing.)
+
+            // Scratch devices are often already marked immutable, but they are also the way in
+            // which Image finds the last snapped DrawTask so we don't unlink scratch devices.
+            false
+        } else {
+            // Automatic flushing of image views only happens when mixing reads and writes on the
+            // originating Recorder. Draws of the view on another Recorder will always see the
+            // texture content dependent on how Recordings are inserted.
+            let same_recorder = self.is_live() && self.recorder_id == recorder.priv_().unique_id();
+            if same_recorder {
+                let has_draw_context = current.is_some();
+                match current {
+                    Some(current) if current.device_id() == self.device_id => {
+                        // The device draws its own image.
+                        current.flush_pending_work(None);
+                        current.set_must_flush_dependencies();
+                    }
+                    current => {
+                        if let Some(device) = recorder.priv_().find_tracked_device(self.device_id)
+                            && let Ok(mut device) = device.try_borrow_mut()
+                            && let Some(device) = device.as_device_core()
+                        {
+                            // Non-scratch devices push their tasks to the root task list to
+                            // maintain an order consistent with the client-triggering actions.
+                            // Because of this, there's no need to add references to the
+                            // `drawContext` that the device is being drawn into.
+                            device.flush_pending_work_with_current(None, current);
+                            if has_draw_context {
+                                // But if we are being drawn into another context, remember that
+                                // there is an outstanding dependency on the current state of
+                                // this device, in which case it's next flush must also flush
+                                // those other devices before its new tasks are added.
+                                device.set_must_flush_dependencies();
+                            }
+                        }
+                    }
+                }
+            }
+            // Return true (to unlink with the image) if the non-scratch surface is immutable
+            // since this Device cannot record any more commands that will modify its texture.
+            !self.is_live()
+        }
+    }
 }
 
 impl Image {
@@ -64,7 +224,120 @@ impl Image {
             info,
             unique_id: next_image_id(),
             texture_proxy_view: view,
+            linked_devices: Mutex::new(Vec::new()),
         }
+    }
+
+    fn links(&self) -> MutexGuard<'_, Vec<Option<Arc<DeviceLink>>>> {
+        self.linked_devices
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// `linkDevice(device)`: links this image to the device that can write to its texture, so
+    /// that when the image is sampled in a draw, any pending work from the device is
+    /// automatically flushed. Only called before the image is returned from a factory.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L40-L46 (chrome/m156)
+    #[doc(alias = "linkDevice")]
+    pub fn link_device(&self, link: Arc<DeviceLink>) {
+        // Technically this lock isn't needed since this is only called before the Image is
+        // returned to user code that could expose it to multiple threads.
+        self.links().push(Some(link));
+    }
+
+    /// `linkDevices(other)`: copies `other`'s links to this image, which shares its texture.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L31-L38 (chrome/m156)
+    #[doc(alias = "linkDevices")]
+    pub fn link_devices(&self, other: &Image) {
+        let other_links: Vec<Option<Arc<DeviceLink>>> = other.links().clone();
+        self.links().extend(other_links);
+    }
+
+    /// `notifyInUse(recorder, drawContext, unlinkDevices)`: notifies the linked devices that
+    /// their pending contents will be read by `recorder` (by `current`'s draw, if any).
+    // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L50-L81 (chrome/m156)
+    fn notify_in_use_impl(
+        &self,
+        recorder: &Recorder,
+        mut current: Option<&mut DeviceCore>,
+        unlink_devices: bool,
+    ) {
+        // unlinkDevices can't be used with a DrawContext
+        debug_assert!(current.is_none() || !unlink_devices);
+
+        // skia-rust: the links are taken out of the lock while the devices are notified (C++
+        // holds a spin lock); a device flush never reaches this image again.
+        let mut links = std::mem::take(&mut *self.links());
+        if !links.is_empty() {
+            let mut empty_count = 0;
+            for slot in &mut links {
+                let unlink = match slot {
+                    None => true,
+                    Some(link) => {
+                        link.notify_in_use(recorder, current.as_deref_mut()) || unlink_devices
+                    }
+                };
+                if unlink {
+                    // Already unlinked or notifyInUse() signals the device doesn't need to be
+                    // linked anymore.
+                    *slot = None;
+                    empty_count += 1;
+                }
+            }
+            if empty_count == links.len() {
+                links.clear();
+            }
+        }
+        let mut guard = self.links();
+        links.append(&mut guard);
+        *guard = links;
+    }
+
+    /// `notifyInUse(recorder, drawContext)`: `current` is the device whose draw samples this
+    /// image (C++'s `drawContext` is its `DrawContext`), or `None` for a copy.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.h#L40-L42 (chrome/m156)
+    #[doc(alias = "notifyInUse")]
+    pub fn notify_in_use(&self, recorder: &Recorder, current: Option<&mut DeviceCore>) {
+        self.notify_in_use_impl(recorder, current, /*unlink_devices=*/ false);
+    }
+
+    /// `unlinkDevices(recorder)`: notifies any linked devices as in-use without a draw context
+    /// and then removes all links so the image is no longer dynamic.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.h#L130-L133 (chrome/m156)
+    #[doc(alias = "unlinkDevices")]
+    pub fn unlink_devices(&self, recorder: &Recorder) {
+        self.notify_in_use_impl(recorder, None, /*unlink_devices=*/ true);
+    }
+
+    /// `isDynamic()`: unlinks the devices that can no longer write to the texture.
+    ///
+    /// As in C++, the result is true only when some (not all) of several linked devices were
+    /// unlinked by this call.
+    // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L83-L100 (chrome/m156)
+    #[doc(alias = "isDynamic")]
+    #[must_use]
+    pub fn is_dynamic(&self) -> bool {
+        let mut links = self.links();
+        let mut empty_count = 0;
+        if !links.is_empty() {
+            for slot in links.iter_mut() {
+                if slot.as_ref().is_none_or(|link| !link.is_live()) {
+                    *slot = None;
+                    empty_count += 1;
+                }
+            }
+            if empty_count == links.len() {
+                links.clear();
+                empty_count = 0;
+            }
+        }
+        empty_count > 0
+    }
+
+    /// Whether any device is linked (for tests: `fLinkedDevices` is not empty).
+    #[must_use]
+    pub fn has_linked_devices(&self) -> bool {
+        self.links().iter().any(Option::is_some)
     }
 
     /// Wraps this image as a core `SkImage` handle (`sk_sp<Image>`).
@@ -211,6 +484,7 @@ impl Image {
         backing_fit: BackingFit,
         label: &str,
     ) -> Option<CoreImage> {
+        self.notify_in_use(recorder, None);
         Image::copy(
             recorder,
             None,
@@ -229,11 +503,12 @@ impl Image {
     #[doc(alias = "onReinterpretColorSpace")]
     #[must_use]
     pub fn reinterpret_color_space(&self, new_cs: Option<ColorSpace>) -> CoreImage {
-        Image::new(
+        let image = Image::new(
             self.texture_proxy_view.clone(),
             &self.info.color_info().with_color_space(new_cs),
-        )
-        .into_core()
+        );
+        image.link_devices(self);
+        image.into_core()
     }
 
     fn bounds_irect(&self) -> IRect {
@@ -273,7 +548,6 @@ fn get_chained_label(image: &Image, empty: &str, concat: &str) -> String {
 /// `Image_Base::onMakeSubset(recorder, subset, requiredProps)`: `this` itself when it already is
 /// `subset` with the mipmaps that are required, and a copy of `subset` otherwise.
 ///
-/// Skia's `!isDynamic()` check is not made (see the module docs).
 // Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L185-L201 (chrome/m156)
 #[doc(alias = "onMakeSubset")]
 #[must_use]
@@ -284,7 +558,12 @@ pub fn make_subset(
     required_props: RequiredProperties,
 ) -> Option<CoreImage> {
     let image = Image::from_core(this)?;
-    if image.bounds() == subset && (!required_props.mipmapped || image.has_mipmaps()) {
+    // optimization : return self if the subset == our bounds and requirements met and the
+    // image's texture is immutable
+    if image.bounds() == subset
+        && (!required_props.mipmapped || image.has_mipmaps())
+        && !image.is_dynamic()
+    {
         return Some(this.clone());
     }
     image.copy_image(
@@ -303,8 +582,7 @@ pub fn make_subset(
 
 /// `Image_Base::makeColorTypeAndColorSpace(recorder, targetCT, targetCS, requiredProps)`: `this`
 /// itself when the color info already matches, and a copy drawn into the new color info otherwise.
-// Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L226-L247 (chrome/m156), without the
-// `!isDynamic()` check (see the module docs)
+// Port of: src/gpu/graphite/Image_Base_Graphite.cpp#L226-L247 (chrome/m156)
 #[doc(alias = "makeColorTypeAndColorSpace")]
 #[must_use]
 pub fn make_color_type_and_color_space(
@@ -316,7 +594,9 @@ pub fn make_color_type_and_color_space(
 ) -> Option<CoreImage> {
     let image = Image::from_core(this)?;
     let dst_color_info = ColorInfo::new(target_color_type, this.alpha_type(), target_color_space);
-    if *this.image_info().color_info() == dst_color_info {
+    // optimization : return self if there's no color type/space change and the image's texture
+    // is immutable
+    if *this.image_info().color_info() == dst_color_info && !image.is_dynamic() {
         return Some(this.clone());
     }
     copy_as_draw(
@@ -339,7 +619,9 @@ pub fn make_color_type_and_color_space(
 /// `Image::WrapDevice`'s view-level part: the image of a device's target, read with `override_info`
 /// when one is given. `None` if the target cannot be sampled or the override does not fit the
 /// texture's format or the device's alpha type.
-// Port of: src/gpu/graphite/Image_Graphite.cpp#L49-L85 (chrome/m156), without `linkDevice`
+///
+/// The image is linked to the device through `link` (`linkDevice`).
+// Port of: src/gpu/graphite/Image_Graphite.cpp#L49-L85 (chrome/m156)
 #[doc(alias = "WrapDevice")]
 #[must_use]
 pub fn wrap_device(
@@ -347,6 +629,7 @@ pub fn wrap_device(
     texturable: bool,
     device_info: &ImageInfo,
     override_info: Option<ColorInfo>,
+    link: Arc<DeviceLink>,
 ) -> Option<Image> {
     if !target.is_valid() || !texturable {
         return None;
@@ -378,7 +661,9 @@ pub fn wrap_device(
     };
     // The image's dimensions are the target's, which can be larger than the device's when the
     // device was created with an approximate backing fit.
-    Some(Image::new(view, &info))
+    let image = Image::new(view, &info);
+    image.link_device(link);
+    Some(image)
 }
 
 impl ImageBase for Image {
