@@ -221,6 +221,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("CC Sphere", sphere::attach_sphere_effect),
     ("CC Toner", cc_toner::attach_cc_toner_effect),
     ("SkSL Color Filter", runtime::attach_sksl_color_filter),
+    ("SkSL Shader", runtime::attach_sksl_shader),
 ];
 
 /// The legacy effect types (`ty`) of the clients that do not name the effect (`mn`).
