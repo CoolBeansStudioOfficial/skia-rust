@@ -11,6 +11,7 @@ its own licence file, and the upstream licence text is reproduced there unchange
 | libjpeg-turbo 3.1.0 (e14cbfaa)                            | skia-rust-libjpeg        | IJG, BSD-3-Clause, Zlib | crates/skia-rust-libjpeg/LICENSE |
 | libwebp 1.4.0 (845d5476)                                  | skia-rust-libwebp        | BSD-3-Clause  | crates/skia-rust-libwebp/LICENSE     |
 | Wuffs v0.3 (e3f919cc)                                     | skia-rust-wuffs          | Apache-2.0    | crates/skia-rust-wuffs/LICENSE       |
+| HarfBuzz hb-subset 13.1.0 (9cb1fee5)                      | skia-rust-hb-subset      | MIT (Old MIT) | crates/skia-rust-hb-subset/LICENSE   |
 
 Wuffs (crates/skia-rust-wuffs) is Apache-2.0, not BSD. Its upstream copyright notice is
 "Copyright 2017 The Wuffs Authors", and the Apache License, Version 2.0 text is reproduced

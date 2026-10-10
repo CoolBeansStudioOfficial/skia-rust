@@ -1213,6 +1213,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-hb-subset"
+version = "0.156.0"
+
+[[package]]
 name = "skia-rust-libjpeg"
 version = "0.156.0"
 
