@@ -26,6 +26,7 @@ use super::animator::{
 use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
+mod cc_toner;
 mod color;
 mod convolution;
 mod corner_pin;
@@ -129,6 +130,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Threshold2", color::attach_threshold_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
+    ("CC Toner", cc_toner::attach_cc_toner_effect),
     ("SkSL Color Filter", runtime::attach_sksl_color_filter),
 ];
 
