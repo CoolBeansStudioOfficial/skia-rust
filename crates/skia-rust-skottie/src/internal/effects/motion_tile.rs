@@ -11,6 +11,7 @@ use std::rc::{Rc, Weak};
 
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color4f;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::picture::Picture;
@@ -21,11 +22,11 @@ use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_core::color::Color4f;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
 use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::{Hit, has_children_inval};
+use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode};
 
 use crate::impl_container_animator;
@@ -61,11 +62,11 @@ pub(super) struct TileRenderNode {
 
 impl TileRenderNode {
     // Port of: modules/skottie/src/effects/MotionTileEffect.cpp#L28-L30 (chrome/m156) (`TileRenderNode::TileRenderNode`)
-    fn make(layer_size: (f32, f32), layer: Rc<dyn RenderNode>) -> Rc<Self> {
+    fn make(layer_size: (f32, f32), layer: &Rc<dyn RenderNode>) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
             let node = Self {
                 core: NodeCore::new(0, weak.clone()),
-                child: Rc::clone(&layer),
+                child: Rc::clone(layer),
                 layer_size,
                 tile_center: Cell::new(Point { x: 0.0, y: 0.0 }),
                 tile_w: Cell::new(1.0),
@@ -146,7 +147,7 @@ impl TileRenderNode {
 /// Sets a scalar attribute of a tile node, invalidating it if it changed.
 // Port of: modules/skottie/src/effects/MotionTileEffect.cpp#L41-L49 (chrome/m156) (`SG_ATTRIBUTE`)
 fn set_cell(node: &TileRenderNode, cell: &Cell<f32>, value: f32) {
-    if cell.get() != value {
+    if scalar_changed(cell.get(), value) {
         cell.set(value);
         node.invalidate();
     }
@@ -165,12 +166,13 @@ impl Node for TileRenderNode {
     }
 
     // Port of: modules/skottie/src/effects/MotionTileEffect.cpp#L50-L128 (chrome/m156) (`TileRenderNode::onRevalidate`)
-    fn on_revalidate(&self, mut ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
+    fn on_revalidate(&self, ic: Option<&mut InvalidationController>, ctm: &Matrix) -> Rect {
         let (layer_w, layer_h) = self.layer_size;
         // Re-record the layer picture if needed.
-        if self.layer_picture.borrow().is_none() || has_children_inval(std::slice::from_ref(&self.child))
+        if self.layer_picture.borrow().is_none()
+            || has_children_inval(std::slice::from_ref(&self.child))
         {
-            self.child.revalidate(ic.as_deref_mut(), ctm);
+            self.child.revalidate(ic, ctm);
             let mut recorder = PictureRecorder::new();
             let canvas = recorder.begin_recording(Rect::from_wh(layer_w, layer_h), false);
             self.child.render(canvas, None);
@@ -188,11 +190,8 @@ impl Node for TileRenderNode {
             tile_size.0,
             tile_size.1,
         );
-        let layer_shader_matrix = Matrix::rect_to_rect_or_identity(
-            Rect::from_wh(layer_w, layer_h),
-            tile,
-            None,
-        );
+        let layer_shader_matrix =
+            Matrix::rect_to_rect_or_identity(Rect::from_wh(layer_w, layer_h), tile, None);
         let tm = if self.mirror_edges.get() {
             TileMode::Mirror
         } else {
@@ -203,7 +202,7 @@ impl Node for TileRenderNode {
         });
 
         let phase = self.phase.get();
-        if phase != 0.0 && layer_shader.is_some() && tile.is_finite() {
+        if scalar_changed(phase, 0.0) && layer_shader.is_some() && tile.is_finite() {
             // To implement AE phase semantics, we construct a mask shader for the pass-through
             // rows/columns. We then draw the layer content through this mask, and then again
             // through the inverse mask with a phase shift.
@@ -218,7 +217,10 @@ impl Node for TileRenderNode {
 
             // The mask is generated using a step gradient shader, spanning 2 x tile width/height,
             // and perpendicular to the phase vector.
-            let colors = [Color4f::new(1.0, 1.0, 1.0, 1.0), Color4f::new(0.0, 0.0, 0.0, 0.0)];
+            let colors = [
+                Color4f::new(1.0, 1.0, 1.0, 1.0),
+                Color4f::new(0.0, 0.0, 0.0, 0.0),
+            ];
             let pos = [0.5_f32, 0.5];
             let pts = [
                 Point::new(tile.x(), tile.y()),
@@ -320,12 +322,13 @@ impl MotionTileAdapter {
     // Port of: modules/skottie/src/effects/MotionTileEffect.cpp#L155-L180 (chrome/m156) (`MotionTileAdapter::MotionTileAdapter`)
     fn make(
         jprops: &ArrayValue,
-        layer: Rc<dyn RenderNode>,
+        layer: &Rc<dyn RenderNode>,
         abuilder: &AnimationBuilder<'_>,
         layer_size: (f32, f32),
     ) -> Rc<Self> {
         Rc::new_cyclic(|weak: &Weak<Self>| {
-            let base = DiscardableAdapterBase::new(weak.clone(), TileRenderNode::make(layer_size, layer));
+            let base =
+                DiscardableAdapterBase::new(weak.clone(), TileRenderNode::make(layer_size, layer));
             let tile_center = Prop::new(Vec2Value::new(0.0, 0.0));
             let tile_w = Prop::new(1.0);
             let tile_h = Prop::new(1.0);
@@ -389,7 +392,7 @@ pub(super) fn attach_motion_tile_effect(
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
     let size = eb.layer_size();
-    let adapter = MotionTileAdapter::make(jprops, layer, eb.builder(), (size.width, size.height));
+    let adapter = MotionTileAdapter::make(jprops, &layer, eb.builder(), (size.width, size.height));
     let node = Rc::clone(adapter.base.node());
     Some(attach_adapter_node(eb.builder(), &adapter, node))
 }

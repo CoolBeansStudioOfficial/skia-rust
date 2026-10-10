@@ -24,6 +24,7 @@ use skia_rust_core::size::Size;
 use skia_rust_core::t_pin::t_pin;
 use skia_rust_sksg::invalidation_controller::InvalidationController;
 use skia_rust_sksg::render_node::{Hit, has_children_inval};
+use skia_rust_sksg::util::scalar_changed;
 use skia_rust_sksg::{Node, NodeCore, RenderContext, RenderNode};
 
 use crate::impl_container_animator;
@@ -36,7 +37,7 @@ use super::super::animator::{
 use super::super::skottie_priv::AnimationBuilder;
 use super::{EffectBinder, EffectBuilder, attach_adapter_node, repeating_content_shader};
 
-/// The sphere SkSL: the eye ray is cast to the unit sphere, rotated, UV-mapped, and lit by the
+/// The sphere `SkSL`: the eye ray is cast to the unit sphere, rotated, UV-mapped, and lit by the
 /// `apply_light()` of the lighting model (`%s`).
 // Port of: modules/skottie/src/effects/SphereEffect.cpp#L31-L63 (chrome/m156) (`gSphereSkSL`)
 const SPHERE_SKSL: &str = concat!(
@@ -146,10 +147,10 @@ pub(super) struct SphereNode {
 
 impl SphereNode {
     // Port of: modules/skottie/src/effects/SphereEffect.cpp#L128-L130 (chrome/m156) (`SphereNode::SphereNode`)
-    fn make(child: Rc<dyn RenderNode>, child_size: Size) -> Rc<Self> {
+    fn make(child: &Rc<dyn RenderNode>, child_size: Size) -> Rc<Self> {
         let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             core: NodeCore::new(0, weak.clone()),
-            child: Rc::clone(&child),
+            child: Rc::clone(child),
             child_size,
             sphere_shader: RefCell::new(None),
             content_shader: RefCell::new(None),
@@ -292,7 +293,9 @@ impl SphereNode {
             if has_fancy_light {
                 let l_vec = light_vec * -selector;
                 let l_color = self.light_color.get();
-                builder.uniform("l_vec").set_f32(&[l_vec.x, l_vec.y, l_vec.z]);
+                builder
+                    .uniform("l_vec")
+                    .set_f32(&[l_vec.x, l_vec.y, l_vec.z]);
                 builder
                     .uniform("l_color")
                     .set_f32(&[l_color.x, l_color.y, l_color.z]);
@@ -319,7 +322,7 @@ impl SphereNode {
 /// Sets a scalar attribute of the sphere node, invalidating it if it changed.
 // Port of: modules/skottie/src/effects/SphereEffect.cpp#L142-L182 (chrome/m156) (`SG_ATTRIBUTE`)
 fn set_scalar(node: &SphereNode, cell: &Cell<f32>, value: f32) {
-    if cell.get() != value {
+    if scalar_changed(cell.get(), value) {
         cell.set(value);
         node.invalidate();
     }
@@ -559,7 +562,7 @@ pub(super) fn attach_sphere_effect(
     layer: Option<Rc<dyn RenderNode>>,
 ) -> Option<Rc<dyn RenderNode>> {
     let layer = layer?;
-    let sphere = SphereNode::make(layer, eb.layer_size());
+    let sphere = SphereNode::make(&layer, eb.layer_size());
     let adapter = SphereAdapter::make(jprops, eb.builder(), Rc::clone(&sphere));
     Some(attach_adapter_node(eb.builder(), &adapter, sphere))
 }

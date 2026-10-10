@@ -85,7 +85,10 @@ impl AnimationBuilder<'_> {
     /// it.
     // Port of: modules/skottie/src/layers/FootageLayer.cpp#L102-L145 (chrome/m156) (`loadFootageAsset`)
     #[doc(alias = "loadFootageAsset")]
-    pub(crate) fn load_footage_asset(&self, default_jimage: &ObjectValue) -> Option<Rc<FootageAssetInfo>> {
+    pub(crate) fn load_footage_asset(
+        &self,
+        default_jimage: &ObjectValue,
+    ) -> Option<Rc<FootageAssetInfo>> {
         let mut jimage = Some(default_jimage);
         let slot_id = default_jimage.get("sid").as_string();
         if let Some(slot_id) = slot_id {

@@ -51,8 +51,8 @@ fn sk4f_to_l32(px: [f32; 4]) -> Color {
 fn lerp_color(c0: Color, c1: Color, t: f32) -> Color {
     let c0_4f = sk4f_from_l32(c0);
     let c1_4f = sk4f_from_l32(c1);
-    let c_4f: [f32; 4] = std::array::from_fn(|i| c0_4f[i] + (c1_4f[i] - c0_4f[i]) * t);
-    sk4f_to_l32(c_4f)
+    let mixed: [f32; 4] = std::array::from_fn(|i| c0_4f[i] + (c1_4f[i] - c0_4f[i]) * t);
+    sk4f_to_l32(mixed)
 }
 
 /// The CC Toner adapter: the gradient stops are the tone colors, the weight is the blend amount.

@@ -135,7 +135,12 @@ impl LinearWipeAdapter {
         let pos = [adjusted_t, adjusted_t + feather / grad_len];
 
         let gradient = Gradient::new(
-            Colors::new(&colors[..], Some(&pos[..]), skia_rust_core::tile_mode::TileMode::Clamp, None),
+            Colors::new(
+                &colors[..],
+                Some(&pos[..]),
+                skia_rust_core::tile_mode::TileMode::Clamp,
+                None,
+            ),
             Interpolation::default(),
         );
         MaskInfo {

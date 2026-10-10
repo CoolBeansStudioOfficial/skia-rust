@@ -29,6 +29,14 @@ use super::{
     sync_mask_shader,
 };
 
+/// The feather sigma factor of the feather (`kFeatherSigmaFactor`).
+// Port of: modules/skottie/src/effects/VenetianBlindsEffect.cpp#L79-L79 (chrome/m156) (`kFeatherSigmaFactor`)
+const FEATHER_SIGMA_FACTOR: f32 = 3.0;
+
+/// The minimum feather, for soft gradient edges (`kMinFeather`).
+// Port of: modules/skottie/src/effects/VenetianBlindsEffect.cpp#L80-L80 (chrome/m156) (`kMinFeather`)
+const MIN_FEATHER: f32 = 0.5;
+
 /// `std::max(a, b)`: `b` only if `a < b`.
 // Port of: <algorithm> std::max (chrome/m156)
 fn std_max(a: f32, b: f32) -> f32 {
@@ -101,10 +109,6 @@ impl VenetianBlindsAdapter {
             };
         }
 
-        const FEATHER_SIGMA_FACTOR: f32 = 3.0;
-        // for soft gradient edges
-        const MIN_FEATHER: f32 = 0.5;
-
         let t = completion * 0.01_f32;
         let size = std_max(1.0_f32, *self.width.borrow());
         let angle = float_degrees_to_radians(-*self.direction.borrow());
@@ -120,17 +124,27 @@ impl VenetianBlindsAdapter {
         //
         // Gradient value at fp0/fp1, fp2/fp3.
         // Note: g01 > 0 iff fp0-fp1 is collapsed and g23 < 1 iff fp2-fp3 is collapsed
-        let g01 = std_max(0.0_f32, 0.5_f32 * (1.0_f32 + ieee_float_divide(0.0_f32 - t, df)));
-        let g23 = std_min(1.0_f32, 0.5_f32 * (1.0_f32 + ieee_float_divide(1.0_f32 - t, df)));
+        #[allow(clippy::manual_midpoint)]
+        // the `0.5 * (1 + x)` of Skia, in float
+        let g01 = std_max(
+            0.0_f32,
+            0.5_f32 * (1.0_f32 + ieee_float_divide(0.0_f32 - t, df)),
+        );
+        #[allow(clippy::manual_midpoint)]
+        // the `0.5 * (1 + x)` of Skia, in float
+        let g23 = std_min(
+            1.0_f32,
+            0.5_f32 * (1.0_f32 + ieee_float_divide(1.0_f32 - t, df)),
+        );
 
         let c01 = Color4f::new(1.0, 1.0, 1.0, g01);
         let c23 = Color4f::new(1.0, 1.0, 1.0, g23);
         let colors = [c01, c23, c23, c01];
         let pos = [
             // 0,              // fp0
-            t - df0 - df0,     // fp1
-            t + df1 - df0,     // fp2
-            1.0 - df1 - df0,   // fp3
+            t - df0 - df0,   // fp1
+            t + df1 - df0,   // fp2
+            1.0 - df1 - df0, // fp3
             1.0,
         ];
 
