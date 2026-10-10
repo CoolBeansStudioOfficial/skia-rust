@@ -13,7 +13,9 @@ use crate::plan::{Plan, unsupported};
 use crate::serialize::{ERROR_INT_OVERFLOW, Serializer};
 
 fn bytes_of(v: View<'_>, off: usize, len: usize) -> Vec<u8> {
-    (0..len).map(|k| v.d.get(off + k).copied().unwrap_or(0)).collect()
+    (0..len)
+        .map(|k| v.d.get(off + k).copied().unwrap_or(0))
+        .collect()
 }
 
 /// `BASE::subset` (hb-ot-layout-base-table.hh#L598-L618).
@@ -57,7 +59,9 @@ fn script_list_subset(plan: &Plan<'_>, s: &mut Serializer, list: View<'_>) -> bo
         let rec = 2 + 6 * i;
         // `layout_scripts` has every script.
         let pos = s.embed(&bytes_of(list, rec, 6));
-        if !offset_subset(s, pos + 4, list, rec + 4, |s, b| base_script_subset(plan, s, b)) {
+        if !offset_subset(s, pos + 4, list, rec + 4, |s, b| {
+            base_script_subset(plan, s, b)
+        }) {
             return false;
         }
         len += 1;

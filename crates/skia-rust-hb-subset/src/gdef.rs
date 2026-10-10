@@ -8,7 +8,10 @@
 
 use std::collections::BTreeSet;
 
-use crate::ot::{ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset, coverage_serialize, coverage_subset};
+use crate::ot::{
+    ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset,
+    coverage_serialize, coverage_subset,
+};
 use crate::plan::{Plan, unsupported};
 use crate::serialize::Serializer;
 use crate::{Res, SubsetError};
@@ -34,9 +37,14 @@ fn markglyphsets_off(gdef: View<'_>) -> Option<View<'_>> {
 
 /// `remap_used_mark_sets` (hb-subset-plan-layout.cc#L36-L51): the indexes of the mark glyph sets
 /// that intersect the glyph set, remapped to be contiguous.
-pub(crate) fn remap_used_mark_sets(gdef: View<'_>, glyphset_gsub: &BTreeSet<u32>) -> std::collections::HashMap<u32, u32> {
+pub(crate) fn remap_used_mark_sets(
+    gdef: View<'_>,
+    glyphset_gsub: &BTreeSet<u32>,
+) -> std::collections::HashMap<u32, u32> {
     let mut map = std::collections::HashMap::new();
-    let Some(sets) = markglyphsets_off(gdef) else { return map };
+    let Some(sets) = markglyphsets_off(gdef) else {
+        return map;
+    };
     // `MarkGlyphSets::collect_used_mark_sets`, format 1 only.
     if sets.u16(0) != 1 {
         return map;
@@ -110,7 +118,9 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, gdef: View<'_>) -> Res
             false
         } else {
             let sets = gdef.off16(12);
-            s.serialize_subset(out_mgs_pos, 2, true, |s| mark_glyph_sets_subset(plan, s, sets))
+            s.serialize_subset(out_mgs_pos, 2, true, |s| {
+                mark_glyph_sets_subset(plan, s, sets)
+            })
         };
     }
 
@@ -133,7 +143,8 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, gdef: View<'_>) -> Res
         let v = gdef.off16(6);
         s.serialize_subset(out + 6, 2, true, |s| attach_list_subset(plan, s, v))
     };
-    let subset_markattachclassdef = subset_classdef(s, out + 10, gdef.is_null16(10), gdef.off16(10), &cdp);
+    let subset_markattachclassdef =
+        subset_classdef(s, out + 10, gdef.is_null16(10), gdef.off16(10), &cdp);
     let subset_ligcaretlist = if gdef.is_null16(8) {
         s.zero_field(out + 8, 2);
         false
@@ -151,7 +162,13 @@ pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, gdef: View<'_>) -> Res
 }
 
 /// `out->classDef.serialize_subset (c, classDef, this, nullptr, false, true)`.
-fn subset_classdef(s: &mut Serializer, pos: usize, is_null: bool, cd: View<'_>, cdp: &ClassDefPlan<'_>) -> bool {
+fn subset_classdef(
+    s: &mut Serializer,
+    pos: usize,
+    is_null: bool,
+    cd: View<'_>,
+    cdp: &ClassDefPlan<'_>,
+) -> bool {
     if is_null {
         s.zero_field(pos, 2);
         return false;
@@ -161,7 +178,12 @@ fn subset_classdef(s: &mut Serializer, pos: usize, is_null: bool, cd: View<'_>, 
             s,
             ClassDef(cd),
             cdp,
-            ClassDefSubsetArgs { klass_map: None, keep_empty_table: false, use_class_zero: true, glyph_filter: None },
+            ClassDefSubsetArgs {
+                klass_map: None,
+                keep_empty_table: false,
+                use_class_zero: true,
+                glyph_filter: None,
+            },
         )
     })
 }

@@ -13,8 +13,8 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::gsubgpos::{ClosureCtx, ClosureLookupsCtx, Kind};
 use crate::ot::{
-    ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset, coverage_serialize,
-    coverage_subset,
+    ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset,
+    coverage_serialize, coverage_subset,
 };
 use crate::plan::Plan;
 use crate::serialize::{ERROR_INT_OVERFLOW, Serializer, Whence};
@@ -37,7 +37,11 @@ enum IData<'a> {
 
 /// `this + offset` for a `Coverage` offset stored as an array value.
 fn coverage_at(base: View<'_>, value: u32) -> Coverage<'_> {
-    if value == 0 { Coverage(View::new(&[])) } else { Coverage(base.sub(value as usize)) }
+    if value == 0 {
+        Coverage(View::new(&[]))
+    } else {
+        Coverage(base.sub(value as usize))
+    }
 }
 
 /// `intersects_glyph`, `intersects_class` and `intersects_coverage`
@@ -120,7 +124,13 @@ fn context_closure_recurse_lookups(
                     }
                     ContextFormat::ClassBased => {
                         let parent = c.parent_active_glyphs().clone();
-                        intersected_glyphs(&parent, lc.data[1], value, &mut pos_glyphs, &mut lc.intersected_cache);
+                        intersected_glyphs(
+                            &parent,
+                            lc.data[1],
+                            value,
+                            &mut pos_glyphs,
+                            &mut lc.intersected_cache,
+                        );
                     }
                     ContextFormat::CoverageBased => {
                         pos_glyphs = c.parent_active_glyphs().clone();
@@ -132,18 +142,33 @@ fn context_closure_recurse_lookups(
             } else {
                 let input_value = input.get(seq_index as usize - 1).copied().unwrap_or(0);
                 let glyphs = c.glyphs.clone();
-                intersected_glyphs(&glyphs, lc.data[1], input_value, &mut pos_glyphs, &mut lc.intersected_cache);
+                intersected_glyphs(
+                    &glyphs,
+                    lc.data[1],
+                    input_value,
+                    &mut pos_glyphs,
+                    &mut lc.intersected_cache,
+                );
             }
         }
         covered_seq_indices.insert(seq_index);
-        let cur = if has_pos_glyphs { std::mem::take(&mut pos_glyphs) } else { c.glyphs.clone() };
+        let cur = if has_pos_glyphs {
+            std::mem::take(&mut pos_glyphs)
+        } else {
+            c.glyphs.clone()
+        };
         c.active_glyphs_stack.push(cur);
 
         let mut end_index = input_count;
         if lc.format == ContextFormat::CoverageBased {
             end_index += 1;
         }
-        c.recurse(lookup_list_index, &mut covered_seq_indices, seq_index, end_index);
+        c.recurse(
+            lookup_list_index,
+            &mut covered_seq_indices,
+            seq_index,
+            end_index,
+        );
         c.pop_cur_done_glyphs();
     }
 }
@@ -193,12 +218,21 @@ fn parse_rule(r: View<'_>) -> Rule {
     let n = input_count.saturating_sub(1) as usize;
     let input: Vec<u32> = (0..n).map(|i| r.u16(4 + 2 * i)).collect();
     let base = 4 + 2 * n;
-    let lookups = (0..lookup_count as usize).map(|i| (r.u16(base + 4 * i), r.u16(base + 4 * i + 2))).collect();
-    Rule { input_count, lookup_count, input, lookups }
+    let lookups = (0..lookup_count as usize)
+        .map(|i| (r.u16(base + 4 * i), r.u16(base + 4 * i + 2)))
+        .collect();
+    Rule {
+        input_count,
+        lookup_count,
+        input,
+        lookups,
+    }
 }
 
 fn rule_set_rules<'a>(rs: View<'a>) -> Vec<View<'a>> {
-    (0..rs.u16(0) as usize).map(|i| rs.off16(2 + 2 * i)).collect()
+    (0..rs.u16(0) as usize)
+        .map(|i| rs.off16(2 + 2 * i))
+        .collect()
 }
 
 // -------------------------------------------------------------------------------------------
@@ -284,7 +318,17 @@ pub(crate) fn context_closure(c: &mut ClosureCtx<'_>, sub: View<'_>) {
                         continue;
                     }
                     let rule = parse_rule(r);
-                    closure_lookup(c, &[], rule.input_count, &rule.input, &[], &rule.lookups, g, &mut lc, false);
+                    closure_lookup(
+                        c,
+                        &[],
+                        rule.input_count,
+                        &rule.input,
+                        &[],
+                        &rule.lookups,
+                        g,
+                        &mut lc,
+                        false,
+                    );
                 }
             }
             c.pop_cur_done_glyphs();
@@ -320,7 +364,17 @@ pub(crate) fn context_closure(c: &mut ClosureCtx<'_>, sub: View<'_>) {
                         continue;
                     }
                     let rule = parse_rule(r);
-                    closure_lookup(c, &[], rule.input_count, &rule.input, &[], &rule.lookups, i as u32, &mut lc, false);
+                    closure_lookup(
+                        c,
+                        &[],
+                        rule.input_count,
+                        &rule.input,
+                        &[],
+                        &rule.lookups,
+                        i as u32,
+                        &mut lc,
+                        false,
+                    );
                 }
             }
             c.pop_cur_done_glyphs();
@@ -338,15 +392,28 @@ pub(crate) fn context_closure(c: &mut ClosureCtx<'_>, sub: View<'_>) {
             let cur = cov0.intersect_set(&prev);
             *c.active_glyphs_stack.last_mut().expect("pushed") = cur;
             let base = 6 + 2 * glyph_count as usize;
-            let lookups: Vec<(u32, u32)> =
-                (0..lookup_count).map(|i| (sub.u16(base + 4 * i), sub.u16(base + 4 * i + 2))).collect();
-            let input: Vec<u32> = (1..glyph_count as usize).map(|i| sub.u16(6 + 2 * i)).collect();
+            let lookups: Vec<(u32, u32)> = (0..lookup_count)
+                .map(|i| (sub.u16(base + 4 * i), sub.u16(base + 4 * i + 2)))
+                .collect();
+            let input: Vec<u32> = (1..glyph_count as usize)
+                .map(|i| sub.u16(6 + 2 * i))
+                .collect();
             let mut lc = ClosureLookupContext {
                 format: ContextFormat::CoverageBased,
                 data: [IData::Coverage(sub); 3],
                 intersected_cache: HashMap::new(),
             };
-            closure_lookup(c, &[], glyph_count, &input, &[], &lookups, 0, &mut lc, false);
+            closure_lookup(
+                c,
+                &[],
+                glyph_count,
+                &input,
+                &[],
+                &lookups,
+                0,
+                &mut lc,
+                false,
+            );
             c.pop_cur_done_glyphs();
         }
         _ => {}
@@ -429,10 +496,16 @@ pub(crate) fn context_closure_lookups(c: &mut ClosureLookupsCtx<'_>, sub: View<'
 
 /// `serialize_lookuprecord_array` (hb-ot-layout-gsubgpos.hh#L1723-L1741): the retained records
 /// with the lookup index remapped. Returns the count.
-fn serialize_lookuprecord_array(s: &mut Serializer, records: &[(u32, u32)], lookup_map: &HashMap<u32, u32>) -> u32 {
+fn serialize_lookuprecord_array(
+    s: &mut Serializer,
+    records: &[(u32, u32)],
+    lookup_map: &HashMap<u32, u32>,
+) -> u32 {
     let mut count = 0;
     for &(seq, lookup) in records {
-        let Some(&new) = lookup_map.get(&lookup) else { continue };
+        let Some(&new) = lookup_map.get(&lookup) else {
+            continue;
+        };
         s.embed_u16(seq as u16);
         s.embed_u16(new as u16);
         count += 1;
@@ -503,7 +576,12 @@ fn rule_set_subset(
 }
 
 /// `Context::dispatch (hb_subset_context_t)`.
-pub(crate) fn context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, sub: View<'_>) -> bool {
+pub(crate) fn context_subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    kind: Kind,
+    sub: View<'_>,
+) -> bool {
     let lookup_map = lookup_map_of(plan, kind);
     let cdp = ClassDefPlan {
         glyph_map_gsub: &plan.glyph_map_gsub,
@@ -530,7 +608,9 @@ pub(crate) fn context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, su
                     false
                 } else {
                     let rs = sub.off16(6 + 2 * i);
-                    s.serialize_subset(o, 2, true, |s| rule_set_subset(s, rs, lookup_map, &plan.glyph_map))
+                    s.serialize_subset(o, 2, true, |s| {
+                        rule_set_subset(s, rs, lookup_map, &plan.glyph_map)
+                    })
                 };
                 if !ret {
                     s.array_pop(out + 4);
@@ -566,13 +646,17 @@ pub(crate) fn context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, su
                         s,
                         cd,
                         &cdp,
-                        ClassDefSubsetArgs { klass_map: Some(&mut klass_map), ..Default::default() },
+                        ClassDefSubsetArgs {
+                            klass_map: Some(&mut klass_map),
+                            ..Default::default()
+                        },
                     )
                 });
             }
             let retained_coverage_glyphs = cov.intersect_set(&plan.glyphset_gsub);
             let mut coverage_glyph_classes = BTreeSet::new();
-            ClassDef(sub.off16(4)).intersected_classes(&retained_coverage_glyphs, &mut coverage_glyph_classes);
+            ClassDef(sub.off16(4))
+                .intersected_classes(&retained_coverage_glyphs, &mut coverage_glyph_classes);
 
             let n = sub.u16(6) as usize;
             let mut non_zero_index: i64 = -1;
@@ -589,7 +673,9 @@ pub(crate) fn context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, su
                         false
                     } else {
                         let rs = sub.off16(8 + 2 * i);
-                        s.serialize_subset(o, 2, true, |s| rule_set_subset(s, rs, lookup_map, &klass_map))
+                        s.serialize_subset(o, 2, true, |s| {
+                            rule_set_subset(s, rs, lookup_map, &klass_map)
+                        })
                     }
                 };
                 if ok {
@@ -631,8 +717,9 @@ pub(crate) fn context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, su
                 }
             }
             let base = 6 + 2 * glyph_count as usize;
-            let records: Vec<(u32, u32)> =
-                (0..lookup_count).map(|i| (sub.u16(base + 4 * i), sub.u16(base + 4 * i + 2))).collect();
+            let records: Vec<(u32, u32)> = (0..lookup_count)
+                .map(|i| (sub.u16(base + 4 * i), sub.u16(base + 4 * i + 2)))
+                .collect();
             let count = serialize_lookuprecord_array(s, &records, lookup_map);
             if count > 0xFFFF {
                 s.err(ERROR_INT_OVERFLOW);
@@ -668,8 +755,16 @@ fn parse_chain_rule(r: View<'_>) -> ChainRule {
     let lookahead: Vec<u32> = (0..la_len).map(|i| r.u16(la_pos + 2 + 2 * i)).collect();
     let lk_pos = la_pos + 2 + 2 * la_len;
     let lk_len = r.u16(lk_pos) as usize;
-    let lookups = (0..lk_len).map(|i| (r.u16(lk_pos + 2 + 4 * i), r.u16(lk_pos + 2 + 4 * i + 2))).collect();
-    ChainRule { backtrack, input_len_p1, input, lookahead, lookups }
+    let lookups = (0..lk_len)
+        .map(|i| (r.u16(lk_pos + 2 + 4 * i), r.u16(lk_pos + 2 + 4 * i + 2)))
+        .collect();
+    ChainRule {
+        backtrack,
+        input_len_p1,
+        input,
+        lookahead,
+        lookups,
+    }
 }
 
 fn chain_intersects(glyphs: &BTreeSet<u32>, rule: &ChainRule, data: &[IData<'_>; 3]) -> bool {
@@ -700,7 +795,11 @@ pub(crate) fn chain_context_intersects(sub: View<'_>, glyphs: &BTreeSet<u32>) ->
             let backtrack_cd = ClassDef(sub.off16(4));
             let input_cd = ClassDef(sub.off16(6));
             let lookahead_cd = ClassDef(sub.off16(8));
-            let data = [IData::Class(backtrack_cd), IData::Class(input_cd), IData::Class(lookahead_cd)];
+            let data = [
+                IData::Class(backtrack_cd),
+                IData::Class(input_cd),
+                IData::Class(lookahead_cd),
+            ];
             let retained_coverage_glyphs = cov.intersect_set(glyphs);
             let mut coverage_glyph_classes = BTreeSet::new();
             input_cd.intersected_classes(&retained_coverage_glyphs, &mut coverage_glyph_classes);
@@ -715,7 +814,9 @@ pub(crate) fn chain_context_intersects(sub: View<'_>, glyphs: &BTreeSet<u32>) ->
         }
         3 => {
             let (backtrack, input, lookahead, _) = parse_chain3(sub);
-            let Some(&first) = input.first() else { return false };
+            let Some(&first) = input.first() else {
+                return false;
+            };
             if !coverage_at(sub, first).intersects(glyphs) {
                 return false;
             }
@@ -742,7 +843,9 @@ fn parse_chain3(sub: View<'_>) -> Chain3 {
     let lookahead: Vec<u32> = (0..la_len).map(|i| sub.u16(la_pos + 2 + 2 * i)).collect();
     let lk_pos = la_pos + 2 + 2 * la_len;
     let lk_len = sub.u16(lk_pos) as usize;
-    let lookups = (0..lk_len).map(|i| (sub.u16(lk_pos + 2 + 4 * i), sub.u16(lk_pos + 2 + 4 * i + 2))).collect();
+    let lookups = (0..lk_len)
+        .map(|i| (sub.u16(lk_pos + 2 + 4 * i), sub.u16(lk_pos + 2 + 4 * i + 2)))
+        .collect();
     (backtrack, input, lookahead, lookups)
 }
 
@@ -802,7 +905,11 @@ pub(crate) fn chain_context_closure(c: &mut ClosureCtx<'_>, sub: View<'_>) {
             let lookahead_cd = ClassDef(sub.off16(8));
             let mut lc = ClosureLookupContext {
                 format: ContextFormat::ClassBased,
-                data: [IData::Class(backtrack_cd), IData::Class(input_cd), IData::Class(lookahead_cd)],
+                data: [
+                    IData::Class(backtrack_cd),
+                    IData::Class(input_cd),
+                    IData::Class(lookahead_cd),
+                ],
                 intersected_cache: HashMap::new(),
             };
             let n = sub.u16(10) as usize;
@@ -902,7 +1009,11 @@ pub(crate) fn chain_context_closure_lookups(c: &mut ClosureLookupsCtx<'_>, sub: 
             let backtrack_cd = ClassDef(sub.off16(4));
             let input_cd = ClassDef(sub.off16(6));
             let lookahead_cd = ClassDef(sub.off16(8));
-            let data = [IData::Class(backtrack_cd), IData::Class(input_cd), IData::Class(lookahead_cd)];
+            let data = [
+                IData::Class(backtrack_cd),
+                IData::Class(input_cd),
+                IData::Class(lookahead_cd),
+            ];
             let n = sub.u16(10) as usize;
             for i in 0..n {
                 if !input_cd.intersects_class(c.glyphs, i as u32) {
@@ -1004,7 +1115,9 @@ fn chain_rule_subset(
             chain_rule_serialize(s, &rule, lookup_map, &plan.glyph_map, None, None);
         }
         Some(bm) => {
-            let (Some(im), Some(lm)) = (maps.input, maps.lookahead) else { return false };
+            let (Some(im), Some(lm)) = (maps.input, maps.lookahead) else {
+                return false;
+            };
             if !rule.backtrack.iter().all(|g| bm.contains_key(g))
                 || !rule.input.iter().all(|g| im.contains_key(g))
                 || !rule.lookahead.iter().all(|g| lm.contains_key(g))
@@ -1034,7 +1147,9 @@ fn chain_rule_set_subset(
         let o_snap = s.snapshot();
         let o = s.array_append(out, 2);
         let r = rs.off16(2 + 2 * i);
-        if !s.serialize_subset(o, 2, true, |s| chain_rule_subset(plan, s, r, lookup_map, maps)) {
+        if !s.serialize_subset(o, 2, true, |s| {
+            chain_rule_subset(plan, s, r, lookup_map, maps)
+        }) {
             s.array_pop(out);
             s.revert(o_snap);
         }
@@ -1047,7 +1162,12 @@ fn chain_rule_set_subset(
 }
 
 /// `ChainContext::dispatch (hb_subset_context_t)`.
-pub(crate) fn chain_context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Kind, sub: View<'_>) -> bool {
+pub(crate) fn chain_context_subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    kind: Kind,
+    sub: View<'_>,
+) -> bool {
     let lookup_map = lookup_map_of(plan, kind);
     let cdp = ClassDefPlan {
         glyph_map_gsub: &plan.glyph_map_gsub,
@@ -1079,7 +1199,11 @@ pub(crate) fn chain_context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Ki
                             s,
                             rs,
                             lookup_map,
-                            ChainMaps { backtrack: None, input: None, lookahead: None },
+                            ChainMaps {
+                                backtrack: None,
+                                input: None,
+                                lookahead: None,
+                            },
                         )
                     })
                 };
@@ -1108,21 +1232,32 @@ pub(crate) fn chain_context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Ki
             let mut backtrack_klass_map: HashMap<u32, u32> = HashMap::new();
             let mut input_klass_map: HashMap<u32, u32> = HashMap::new();
             let mut lookahead_klass_map: HashMap<u32, u32> = HashMap::new();
-            for (pos, map) in
-                [(4usize, &mut backtrack_klass_map), (6, &mut input_klass_map), (8, &mut lookahead_klass_map)]
-            {
+            for (pos, map) in [
+                (4usize, &mut backtrack_klass_map),
+                (6, &mut input_klass_map),
+                (8, &mut lookahead_klass_map),
+            ] {
                 if sub.is_null16(pos) {
                     s.zero_field(out + pos, 2);
                     continue;
                 }
                 let cd = ClassDef(sub.off16(pos));
                 s.serialize_subset(out + pos, 2, true, |s| {
-                    classdef_subset(s, cd, &cdp, ClassDefSubsetArgs { klass_map: Some(map), ..Default::default() })
+                    classdef_subset(
+                        s,
+                        cd,
+                        &cdp,
+                        ClassDefSubsetArgs {
+                            klass_map: Some(map),
+                            ..Default::default()
+                        },
+                    )
                 });
             }
             let retained_coverage_glyphs = cov.intersect_set(&plan.glyphset_gsub);
             let mut coverage_glyph_classes = BTreeSet::new();
-            ClassDef(sub.off16(6)).intersected_classes(&retained_coverage_glyphs, &mut coverage_glyph_classes);
+            ClassDef(sub.off16(6))
+                .intersected_classes(&retained_coverage_glyphs, &mut coverage_glyph_classes);
 
             let n = sub.u16(10) as usize;
             let mut non_zero_index: i64 = -1;
@@ -1144,7 +1279,9 @@ pub(crate) fn chain_context_subset(plan: &Plan<'_>, s: &mut Serializer, kind: Ki
                         false
                     } else {
                         let rs = sub.off16(12 + 2 * i);
-                        s.serialize_subset(o, 2, true, |s| chain_rule_set_subset(plan, s, rs, lookup_map, maps))
+                        s.serialize_subset(o, 2, true, |s| {
+                            chain_rule_set_subset(plan, s, rs, lookup_map, maps)
+                        })
                     }
                 };
                 if ok {

@@ -25,7 +25,9 @@ fn sbix_sanitize(sbix: View<'_>, num_glyphs: u32) -> bool {
     }
     (0..count as usize).all(|i| {
         let off = sbix.u32(8 + 4 * i) as usize;
-        off == 0 || (off < sbix.d.len() && 4 + 4 * (u64::from(num_glyphs) + 1) <= (sbix.d.len() - off) as u64)
+        off == 0
+            || (off < sbix.d.len()
+                && 4 + 4 * (u64::from(num_glyphs) + 1) <= (sbix.d.len() - off) as u64)
     })
 }
 
@@ -57,7 +59,12 @@ pub(crate) fn subset_sbix(plan: &Plan<'_>, s: &mut Serializer, sbix: View<'_>) -
         let strike_off = sbix.u32(8 + 4 * i) as usize;
         let ret = strike_off != 0
             && sbix.d.len() >= strike_off
-            && strike_subset(plan, s, sbix.sub(strike_off), (sbix.d.len() - strike_off) as u32);
+            && strike_subset(
+                plan,
+                s,
+                sbix.sub(strike_off),
+                (sbix.d.len() - strike_off) as u32,
+            );
         if ret {
             objidxs.push(s.pop_pack(true));
             new_strikes.push(pos);
@@ -75,7 +82,12 @@ pub(crate) fn subset_sbix(plan: &Plan<'_>, s: &mut Serializer, sbix: View<'_>) -
 }
 
 /// `SBIXStrike::subset` (OT/Color/sbix/sbix.hh#L125-L172).
-fn strike_subset(plan: &Plan<'_>, s: &mut Serializer, strike: View<'_>, available_len: u32) -> bool {
+fn strike_subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    strike: View<'_>,
+    available_len: u32,
+) -> bool {
     let num_output_glyphs = plan.num_output_glyphs as usize;
     let snap = s.snapshot();
     let out = s.allocate(4 + 4 * (num_output_glyphs + 1));
@@ -85,7 +97,12 @@ fn strike_subset(plan: &Plan<'_>, s: &mut Serializer, strike: View<'_>, availabl
     let mut has_glyphs = false;
     for new_gid in 0..num_output_glyphs {
         let old = plan.reverse_glyph_map.get(&(new_gid as u32)).copied();
-        let offsets = old.map(|g| (strike.u32(4 + 4 * g as usize), strike.u32(4 + 4 * (g as usize + 1))));
+        let offsets = old.map(|g| {
+            (
+                strike.u32(4 + 4 * g as usize),
+                strike.u32(4 + 4 * (g as usize + 1)),
+            )
+        });
         let skip = match offsets {
             None => true,
             Some((a, b)) => a == 0 || b == 0 || b <= a || b - a <= 8 || b > available_len,
@@ -98,7 +115,9 @@ fn strike_subset(plan: &Plan<'_>, s: &mut Serializer, strike: View<'_>, availabl
         let (a, b) = offsets.unwrap_or_default();
         let delta = b - a;
         // `SBIXGlyph::copy`: the 8 byte header and the data.
-        let bytes: Vec<u8> = (0..delta as usize).map(|k| strike.d.get(a as usize + k).copied().unwrap_or(0)).collect();
+        let bytes: Vec<u8> = (0..delta as usize)
+            .map(|k| strike.d.get(a as usize + k).copied().unwrap_or(0))
+            .collect();
         s.embed(&bytes);
         s.set_u32(out + 4 + 4 * new_gid, head);
         head += delta;

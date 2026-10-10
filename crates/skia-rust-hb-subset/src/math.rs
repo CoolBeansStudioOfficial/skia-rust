@@ -26,7 +26,12 @@ pub(crate) fn closure_glyphs(math: View<'_>, glyph_set: &mut BTreeSet<u32>) {
         if variants.is_null16(cov_field) {
             return;
         }
-        for (i, g) in Coverage(variants.off16(cov_field)).iter().into_iter().take(count).enumerate() {
+        for (i, g) in Coverage(variants.off16(cov_field))
+            .iter()
+            .into_iter()
+            .take(count)
+            .enumerate()
+        {
             if !glyph_set.contains(&g) {
                 continue;
             }
@@ -53,7 +58,9 @@ fn map_gid(plan: &Plan<'_>, g: u32) -> u32 {
 /// `MathValueRecord::copy (c, base)`: the record at `off` of `v`, whose device offset is relative
 /// to `v`.
 fn value_record_copy(s: &mut Serializer, v: View<'_>, off: usize) {
-    let bytes: Vec<u8> = (0..4).map(|k| v.d.get(off + k).copied().unwrap_or(0)).collect();
+    let bytes: Vec<u8> = (0..4)
+        .map(|k| v.d.get(off + k).copied().unwrap_or(0))
+        .collect();
     let pos = s.embed(&bytes);
     serialize_copy_device(s, pos + 2, v, off + 2);
 }
@@ -121,7 +128,9 @@ fn record_array_subset_at(
 fn glyph_info_subset(plan: &Plan<'_>, s: &mut Serializer, gi: View<'_>) -> bool {
     let out = s.embed(&gi.d[..gi.d.len().min(8)]);
     offset_subset(s, out, gi, 0, |s, v| italics_or_accent_subset(plan, s, v));
-    offset_subset(s, out + 2, gi, 2, |s, v| italics_or_accent_subset(plan, s, v));
+    offset_subset(s, out + 2, gi, 2, |s, v| {
+        italics_or_accent_subset(plan, s, v)
+    });
     let extended: Vec<u32> = Coverage(gi.off16(4))
         .iter()
         .into_iter()
@@ -147,7 +156,9 @@ fn kern_info_subset(plan: &Plan<'_>, s: &mut Serializer, v: View<'_>) -> bool {
 }
 
 fn kern_info_record_copy(s: &mut Serializer, v: View<'_>, off: usize) {
-    let bytes: Vec<u8> = (0..8).map(|k| v.d.get(off + k).copied().unwrap_or(0)).collect();
+    let bytes: Vec<u8> = (0..8)
+        .map(|k| v.d.get(off + k).copied().unwrap_or(0))
+        .collect();
     let pos = s.embed(&bytes);
     for k in 0..4 {
         // `mathKern[i].serialize_copy (c, mathKern[i], base, 0, Head)`: `MathKern::copy`
@@ -224,7 +235,12 @@ fn construction_subset(plan: &Plan<'_>, s: &mut Serializer, c: View<'_>) -> bool
     s.set_u16(out + 2, len as u16);
     for i in 0..len as usize {
         // `MathGlyphVariantRecord::subset`
-        let pos = s.embed(&[c.u8(4 + 4 * i) as u8, c.u8(5 + 4 * i) as u8, c.u8(6 + 4 * i) as u8, c.u8(7 + 4 * i) as u8]);
+        let pos = s.embed(&[
+            c.u8(4 + 4 * i) as u8,
+            c.u8(5 + 4 * i) as u8,
+            c.u8(6 + 4 * i) as u8,
+            c.u8(7 + 4 * i) as u8,
+        ]);
         let v = map_gid(plan, c.u16(4 + 4 * i));
         if !s.check_fits(u64::from(v), 16, ERROR_INT_OVERFLOW) {
             return false;
@@ -241,7 +257,9 @@ fn assembly_subset(plan: &Plan<'_>, s: &mut Serializer, a: View<'_>) -> bool {
     s.embed_u16(n as u16);
     for i in 0..n {
         let off = 6 + 10 * i;
-        let bytes: Vec<u8> = (0..10).map(|k| a.d.get(off + k).copied().unwrap_or(0)).collect();
+        let bytes: Vec<u8> = (0..10)
+            .map(|k| a.d.get(off + k).copied().unwrap_or(0))
+            .collect();
         let pos = s.embed(&bytes);
         let v = map_gid(plan, a.u16(off));
         if !s.check_fits(u64::from(v), 16, ERROR_INT_OVERFLOW) {

@@ -52,7 +52,9 @@ impl<'a> View<'a> {
 
     /// `this + o`: the bytes from offset `o` on.
     pub(crate) fn sub(&self, o: usize) -> View<'a> {
-        View { d: self.d.get(o..).unwrap_or(&[]) }
+        View {
+            d: self.d.get(o..).unwrap_or(&[]),
+        }
     }
 
     /// `this + offset16`: the empty (`Null`) view when the offset field is zero.
@@ -150,7 +152,11 @@ impl<'a> Coverage<'a> {
                     Some(i) => {
                         let r = 4 + 6 * i;
                         let (first, last, value) = (v.u16(r), v.u16(r + 2), v.u16(r + 4));
-                        if first <= last { value + (g - first) } else { NOT_COVERED }
+                        if first <= last {
+                            value + (g - first)
+                        } else {
+                            NOT_COVERED
+                        }
                     }
                     // The `Null` range has first = last = value = 0.
                     None => NOT_COVERED,
@@ -345,7 +351,11 @@ pub(crate) fn coverage_serialize(s: &mut Serializer, glyphs: &[u32]) -> bool {
             max = g;
         }
     }
-    let format = if !unsorted && count <= num_ranges * 3 { 1 } else { 2 };
+    let format = if !unsorted && count <= num_ranges * 3 {
+        1
+    } else {
+        2
+    };
     if max > 0xFFFF {
         // Formats 3 and 4 (24 bit glyph ids) are not ported: no 16 bit font has such glyphs.
         s.err(ERROR_INT_OVERFLOW);
@@ -398,7 +408,11 @@ pub(crate) fn coverage_serialize(s: &mut Serializer, glyphs: &[u32]) -> bool {
                 let mut recs: Vec<(u16, u16, u16)> = (0..num_ranges as usize)
                     .map(|i| {
                         let b = s.bytes();
-                        (u16_at(b, base + 6 * i), u16_at(b, base + 6 * i + 2), u16_at(b, base + 6 * i + 4))
+                        (
+                            u16_at(b, base + 6 * i),
+                            u16_at(b, base + 6 * i + 2),
+                            u16_at(b, base + 6 * i + 4),
+                        )
                     })
                     .collect();
                 recs.sort();
@@ -518,7 +532,11 @@ impl<'a> ClassDef<'a> {
             1 => {
                 // classValue[(unsigned) (glyph_id - startGlyph)]
                 let idx = g.wrapping_sub(v.u16(2));
-                if idx < v.u16(4) { v.u16(6 + 2 * idx as usize) } else { 0 }
+                if idx < v.u16(4) {
+                    v.u16(6 + 2 * idx as usize)
+                } else {
+                    0
+                }
             }
             2 => {
                 let len = v.u16(2) as usize;
@@ -623,7 +641,9 @@ impl<'a> ClassDef<'a> {
                 let count = v.u16(4);
                 let start = v.u16(2);
                 if klass == 0 {
-                    let Some(g) = set_next(glyphs, INVALID) else { return false };
+                    let Some(g) = set_next(glyphs, INVALID) else {
+                        return false;
+                    };
                     if g < start {
                         return true;
                     }
@@ -632,7 +652,8 @@ impl<'a> ClassDef<'a> {
                         return true;
                     }
                 }
-                (0..count as usize).any(|i| v.u16(6 + 2 * i) == klass && glyphs.contains(&(start + i as u32)))
+                (0..count as usize)
+                    .any(|i| v.u16(6 + 2 * i) == klass && glyphs.contains(&(start + i as u32)))
             }
             2 => {
                 let len = v.u16(2) as usize;
@@ -674,7 +695,12 @@ impl<'a> ClassDef<'a> {
     }
 
     /// `ClassDef::intersected_class_glyphs`.
-    pub(crate) fn intersected_class_glyphs(&self, glyphs: &BTreeSet<u32>, klass: u32, out: &mut BTreeSet<u32>) {
+    pub(crate) fn intersected_class_glyphs(
+        &self,
+        glyphs: &BTreeSet<u32>,
+        klass: u32,
+        out: &mut BTreeSet<u32>,
+    ) {
         let v = self.0;
         match self.format() {
             1 => {
@@ -780,7 +806,9 @@ impl<'a> ClassDef<'a> {
                 let start = v.u16(2);
                 let count = v.u16(4);
                 let end_glyph = start.wrapping_add(count).wrapping_sub(1);
-                if glyphs.first().copied().unwrap_or(0) < start || glyphs.last().copied().unwrap_or(0) > end_glyph {
+                if glyphs.first().copied().unwrap_or(0) < start
+                    || glyphs.last().copied().unwrap_or(0) > end_glyph
+                {
                     out.insert(0);
                 }
                 for i in 0..count as usize {
@@ -835,7 +863,12 @@ pub(crate) struct ClassDefSubsetArgs<'x, 'a> {
 
 impl Default for ClassDefSubsetArgs<'_, '_> {
     fn default() -> Self {
-        ClassDefSubsetArgs { klass_map: None, keep_empty_table: true, use_class_zero: true, glyph_filter: None }
+        ClassDefSubsetArgs {
+            klass_map: None,
+            keep_empty_table: true,
+            use_class_zero: true,
+            glyph_filter: None,
+        }
     }
 }
 
@@ -850,7 +883,11 @@ pub(crate) struct ClassDefPlan<'p> {
 /// (L2057-L2116): `it` holds `(glyph, class)` sorted by glyph.
 pub(crate) fn classdef_serialize(s: &mut Serializer, it_with_class_zero: &[(u32, u32)]) -> bool {
     let start = s.allocate(2);
-    let it: Vec<(u32, u32)> = it_with_class_zero.iter().copied().filter(|p| p.1 != 0).collect();
+    let it: Vec<(u32, u32)> = it_with_class_zero
+        .iter()
+        .copied()
+        .filter(|p| p.1 != 0)
+        .collect();
     let mut format = 2u32;
     let mut glyph_max = 0u32;
     if !it.is_empty() {
@@ -938,7 +975,11 @@ pub(crate) fn classdef_serialize(s: &mut Serializer, it_with_class_zero: &[(u32,
             let mut recs: Vec<(u16, u16, u16)> = (0..num_ranges as usize)
                 .map(|i| {
                     let b = s.bytes();
-                    (u16_at(b, first + 6 * i), u16_at(b, first + 6 * i + 2), u16_at(b, first + 6 * i + 4))
+                    (
+                        u16_at(b, first + 6 * i),
+                        u16_at(b, first + 6 * i + 2),
+                        u16_at(b, first + 6 * i + 4),
+                    )
                 })
                 .collect();
             recs.sort();
@@ -988,7 +1029,12 @@ pub(crate) fn classdef_subset(
     args: ClassDefSubsetArgs<'_, '_>,
 ) -> bool {
     let v = cd.0;
-    let ClassDefSubsetArgs { klass_map, keep_empty_table, mut use_class_zero, glyph_filter } = args;
+    let ClassDefSubsetArgs {
+        klass_map,
+        keep_empty_table,
+        mut use_class_zero,
+        glyph_filter,
+    } = args;
     let mut glyph_and_klass: Vec<(u32, u32)> = Vec::new();
     let mut orig_klasses: BTreeSet<u32> = BTreeSet::new();
     match cd.format() {
@@ -1073,7 +1119,13 @@ pub(crate) fn classdef_subset(
         _ => return false,
     }
     let non_empty = !glyph_and_klass.is_empty();
-    if !classdef_remap_and_serialize(s, &orig_klasses, use_class_zero, &mut glyph_and_klass, klass_map) {
+    if !classdef_remap_and_serialize(
+        s,
+        &orig_klasses,
+        use_class_zero,
+        &mut glyph_and_klass,
+        klass_map,
+    ) {
         return false;
     }
     keep_empty_table || non_empty
@@ -1124,7 +1176,12 @@ pub(crate) fn offset_subset(
 /// `OffsetTo<Device>::serialize_copy (c, src, base, 0, Head)` with the offset field `field` of
 /// `parent`, written at `pos` of the current object: the new object is linked even when the copy
 /// produced nothing (an empty object has no index and no link).
-pub(crate) fn serialize_copy_device(s: &mut Serializer, pos: usize, parent: View<'_>, field: usize) -> bool {
+pub(crate) fn serialize_copy_device(
+    s: &mut Serializer,
+    pos: usize,
+    parent: View<'_>,
+    field: usize,
+) -> bool {
     s.zero_field(pos, 2);
     if parent.is_null16(field) {
         return false;

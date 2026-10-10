@@ -21,7 +21,14 @@ const HB_MAX_COMPOSITE_OPERATIONS_PER_GLYPH: i64 = 64;
 
 /// `default_layout_features` (hb-subset-input.cc#L82-L186).
 const DEFAULT_LAYOUT_FEATURES: [&[u8; 4]; 72] = [
-    b"rvrn", b"ccmp", b"liga", b"locl", b"mark", b"mkmk", b"rlig", b"frac", b"numr", b"dnom", b"calt", b"clig", b"curs", b"kern", b"rclt", b"valt", b"vert", b"vkrn", b"vpal", b"vrt2", b"ltra", b"ltrm", b"rtla", b"rtlm", b"rand", b"jalt", b"chws", b"vchw", b"halt", b"vhal", b"Harf", b"HARF", b"Buzz", b"BUZZ", b"init", b"medi", b"fina", b"isol", b"med2", b"fin2", b"fin3", b"cswh", b"mset", b"stch", b"ljmo", b"vjmo", b"tjmo", b"abvs", b"blws", b"abvm", b"blwm", b"nukt", b"akhn", b"rphf", b"rkrf", b"pref", b"blwf", b"half", b"abvf", b"pstf", b"cfar", b"vatu", b"cjct", b"init", b"pres", b"abvs", b"blws", b"psts", b"haln", b"dist", b"abvm", b"blwm"
+    b"rvrn", b"ccmp", b"liga", b"locl", b"mark", b"mkmk", b"rlig", b"frac", b"numr", b"dnom",
+    b"calt", b"clig", b"curs", b"kern", b"rclt", b"valt", b"vert", b"vkrn", b"vpal", b"vrt2",
+    b"ltra", b"ltrm", b"rtla", b"rtlm", b"rand", b"jalt", b"chws", b"vchw", b"halt", b"vhal",
+    b"Harf", b"HARF", b"Buzz", b"BUZZ", b"init", b"medi", b"fina", b"isol", b"med2", b"fin2",
+    b"fin3", b"cswh", b"mset", b"stch", b"ljmo", b"vjmo", b"tjmo", b"abvs", b"blws", b"abvm",
+    b"blwm", b"nukt", b"akhn", b"rphf", b"rkrf", b"pref", b"blwf", b"half", b"abvf", b"pstf",
+    b"cfar", b"vatu", b"cjct", b"init", b"pres", b"abvs", b"blws", b"psts", b"haln", b"dist",
+    b"abvm", b"blwm",
 ];
 
 /// Port of `hb_subset_plan_t` (hb-subset-plan.hh#L116-L238), for the fields Skia's input reaches.
@@ -121,7 +128,13 @@ impl<'a> Plan<'a> {
 
         // `_create_glyph_map_gsub`
         for &g in &plan.glyphset_gsub {
-            plan.glyph_map_gsub.insert(g, plan.glyph_map.get(&g).copied().unwrap_or(HB_SET_VALUE_INVALID));
+            plan.glyph_map_gsub.insert(
+                g,
+                plan.glyph_map
+                    .get(&g)
+                    .copied()
+                    .unwrap_or(HB_SET_VALUE_INVALID),
+            );
         }
 
         // Now that we have old to new gid map update the unicode to new gid list.
@@ -307,7 +320,8 @@ impl<'a> Plan<'a> {
         if src_glyphs == 0 || same_size {
             return bulk + table_len;
         }
-        bulk + (f64::from(table_len) * (f64::from(dst_glyphs) / f64::from(src_glyphs)).sqrt()) as u32
+        bulk + (f64::from(table_len) * (f64::from(dst_glyphs) / f64::from(src_glyphs)).sqrt())
+            as u32
     }
 
     /// The length of the table in the destination face.

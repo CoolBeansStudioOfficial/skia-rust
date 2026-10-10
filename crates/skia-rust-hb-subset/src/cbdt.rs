@@ -57,7 +57,12 @@ fn add_offset(s: &mut Serializer, index_format: u32, offset: u32, size: &mut u32
 }
 
 /// `CBLC::subset` and `CBDT::sink`: returns the new `CBDT` through `cbdt_out`.
-pub(crate) fn subset(plan: &Plan<'_>, s: &mut Serializer, cblc: View<'_>, cbdt_out: &mut Option<Vec<u8>>) -> Res<bool> {
+pub(crate) fn subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    cblc: View<'_>,
+    cbdt_out: &mut Option<Vec<u8>>,
+) -> Res<bool> {
     let out = s.allocate(8);
     s.set_u32(out, cblc.u32(0));
     let cbdt_data = plan.source.table(tag(b"CBDT"));
@@ -95,12 +100,21 @@ fn size_table_subset(
     cbdt: View<'_>,
     cbdt_prime: &mut Vec<u8>,
 ) -> bool {
-    let bytes: Vec<u8> = (0..48).map(|k| table.d.get(k).copied().unwrap_or(0)).collect();
+    let bytes: Vec<u8> = (0..48)
+        .map(|k| table.d.get(k).copied().unwrap_or(0))
+        .collect();
     let out = s.embed(&bytes);
-    let mut ctx = SizeCtx { size: table.u32(4), num_tables: table.u32(8), start_glyph: 1, end_glyph: 0 };
+    let mut ctx = SizeCtx {
+        size: table.u32(4),
+        num_tables: table.u32(8),
+        start_glyph: 1,
+        end_glyph: 0,
+    };
     // `NNOffset32To<IndexSubtableArray>::serialize_subset`: an offset of 0 is the CBLC itself.
     let array = cblc.sub(table.u32(0) as usize);
-    if !s.serialize_subset(out, 4, false, |s| index_subtable_array_subset(plan, s, array, &mut ctx, cbdt, cbdt_prime)) {
+    if !s.serialize_subset(out, 4, false, |s| {
+        index_subtable_array_subset(plan, s, array, &mut ctx, cbdt, cbdt_prime)
+    }) {
         return false;
     }
     if ctx.size == 0 || ctx.num_tables == 0 || ctx.start_glyph > ctx.end_glyph {
@@ -126,8 +140,12 @@ fn index_subtable_array_subset(
     let mut lookup: Vec<(u32, usize)> = Vec::new();
     let mut start_glyph_is_set = false;
     for new_gid in 0..plan.num_output_glyphs {
-        let Some(old_gid) = plan.old_gid_for_new_gid(new_gid) else { continue };
-        let Some(rec) = find_table(array, old_gid, ctx.num_tables) else { continue };
+        let Some(old_gid) = plan.old_gid_for_new_gid(new_gid) else {
+            continue;
+        };
+        let Some(rec) = find_table(array, old_gid, ctx.num_tables) else {
+            continue;
+        };
         // `IndexSubtableRecord::get_image_data`
         let first = array.u16(8 * rec);
         let last = array.u16(8 * rec + 2);
@@ -151,7 +169,18 @@ fn index_subtable_array_subset(
     let mut start = 0;
     while start < lookup.len() {
         let rec = lookup[start].1;
-        if !add_new_record(plan, s, array, rec, &lookup, &mut start, &mut records, ctx, cbdt, cbdt_prime) {
+        if !add_new_record(
+            plan,
+            s,
+            array,
+            rec,
+            &lookup,
+            &mut start,
+            &mut records,
+            ctx,
+            cbdt,
+            cbdt_prime,
+        ) {
             for _ in 0..records.len() {
                 s.pop_discard();
             }
@@ -164,7 +193,16 @@ fn index_subtable_array_subset(
     }
     let n = records.len();
     for (i, &(first, last)) in records.iter().enumerate() {
-        let pos = s.embed(&[(first >> 8) as u8, first as u8, (last >> 8) as u8, last as u8, 0, 0, 0, 0]);
+        let pos = s.embed(&[
+            (first >> 8) as u8,
+            first as u8,
+            (last >> 8) as u8,
+            last as u8,
+            0,
+            0,
+            0,
+            0,
+        ]);
         s.add_link(pos + 4, 4, objidxs[n - 1 - i], Whence::Head, 0);
     }
     true
@@ -190,7 +228,9 @@ fn add_new_record(
     records.push((1, 0));
     ctx.size += 8;
     s.push();
-    if !add_new_subtable(plan, s, array, rec, lookup, start, records, ctx, cbdt, cbdt_prime) {
+    if !add_new_subtable(
+        plan, s, array, rec, lookup, start, records, ctx, cbdt, cbdt_prime,
+    ) {
         s.pop_discard();
         s.revert(snap);
         cbdt_prime.truncate(old_cbdt_prime_length);
@@ -253,7 +293,9 @@ fn add_new_subtable(
             early_exit = true;
             break;
         }
-        let Some(record) = records.last_mut() else { return false };
+        let Some(record) = records.last_mut() else {
+            return false;
+        };
         let num_missing = add_glyph_for_subset(record, new_gid);
         // `fill_missing_glyphs`
         let local_offset = (cbdt_prime.len() as u32).wrapping_sub(image_data_offset);
@@ -276,7 +318,9 @@ fn add_new_subtable(
         let old_idx = (old_gid - next_first) as usize;
         // `copy_glyph_at_idx`
         let next_subtable = array.sub(next_off as usize);
-        let Some((offset, length)) = get_image_data(next_subtable, old_idx) else { return false };
+        let Some((offset, length)) = get_image_data(next_subtable, old_idx) else {
+            return false;
+        };
         let cbdt_length = cbdt.d.len() as u32;
         if offset > cbdt_length || cbdt_length - offset < length {
             return false;

@@ -30,14 +30,14 @@ mod bytes;
 mod cbdt;
 mod cff;
 mod cmap;
-mod colr;
 mod color;
+mod colr;
+mod context;
 mod gdef;
 mod glyf;
 mod gpos;
 mod gsub;
 mod gsubgpos;
-mod context;
 mod layout;
 mod math;
 mod os2_ranges;
@@ -166,7 +166,19 @@ fn subset_table(plan: &mut Plan<'_>, t: u32) -> Res<()> {
     // The serialization buffer of the table (`_hb_subset_table`): the tables that do not go
     // through `layout::run_table` are accounted by the size of the table they produced.
     if r.is_ok()
-        && matches!(&t.to_be_bytes(), b"glyf" | b"hdmx" | b"name" | b"hmtx" | b"vmtx" | b"maxp" | b"cmap" | b"OS/2" | b"post" | b"gvar")
+        && matches!(
+            &t.to_be_bytes(),
+            b"glyf"
+                | b"hdmx"
+                | b"name"
+                | b"hmtx"
+                | b"vmtx"
+                | b"maxp"
+                | b"cmap"
+                | b"OS/2"
+                | b"post"
+                | b"gvar"
+        )
     {
         let blob_len = plan.source.table(t).len();
         let out_len = plan.dest_table_len(t);
@@ -207,7 +219,9 @@ fn subset_table_inner(plan: &mut Plan<'_>, t: u32) -> Res<()> {
         b"gvar" => var::subset_gvar(plan).map(|_| ()),
         b"HVAR" | b"VVAR" => Err(SubsetError::Unsupported("HVAR/VVAR")),
         b"CFF " | b"CFF2" | b"VORG" => Err(SubsetError::Unsupported("CFF/CFF2/VORG")),
-        b"sbix" => layout::run_table(plan, t, |plan, s, v| color::subset_sbix(plan, s, v)).map(|_| ()),
+        b"sbix" => {
+            layout::run_table(plan, t, |plan, s, v| color::subset_sbix(plan, s, v)).map(|_| ())
+        }
         b"COLR" => layout::run_table(plan, t, colr::colr_subset).map(|_| ()),
         b"CPAL" => layout::run_table(plan, t, colr::cpal_subset).map(|_| ()),
         b"CBLC" => {
