@@ -50,6 +50,7 @@ pub mod data;
 pub mod data_table;
 pub mod descriptor;
 pub mod device;
+pub mod distance_field_gen;
 pub mod draw_procs;
 pub mod draw_types;
 pub mod drawable;
