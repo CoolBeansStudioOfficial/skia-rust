@@ -1,45 +1,58 @@
 // Copyright 2018 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: src/pdf/SkPDFSubsetFont.{h,cpp} (chrome/m156), the `#else` branch
+// Port of: src/pdf/SkPDFSubsetFont.{h,cpp} (chrome/m156), the `SK_PDF_USE_HARFBUZZ_SUBSET` branch
 
 //! The font subsetting seam of the PDF backend (`docs/design/modules.md` Q4).
 //!
 //! Skia subsets the fonts it embeds with `HarfBuzz`'s `hb-subset` when it is built with
-//! `SK_PDF_USE_HARFBUZZ_SUBSET` (`BUILD.gn#L1262-L1279`).
+//! `SK_PDF_USE_HARFBUZZ_SUBSET` (`BUILD.gn#L1262-L1279`). The port of the parts of `hb-subset`
+//! that Skia uses is `skia-rust-hb-subset`; this module is `subset_harfbuzz` of
+//! `SkPDFSubsetFont.cpp` over it.
 //!
-//! Q4 is decided: the parts of `hb-subset` that Skia uses are ported, byte-exact, in a crate of
-//! their own. Until it lands, this module is the branch Skia takes when
-//! `SK_PDF_USE_HARFBUZZ_SUBSET` is off (`SkPDFSubsetFont.cpp#L200-L210`): [`pdf_subset_font`]
-//! returns `None`, so the caller embeds the font data as it is (Skia's "if subsetting fails,
-//! fall back to original font data"), and [`pdf_can_subset_table_based_fonts`] is false, so a
-//! font whose data is not in a standard format is drawn as Type3. The whole-font embedding is
-//! not the final behaviour.
+//! The seam takes the font data (the whole file, as `typeface.openStream` gives it), the glyph
+//! usage and the collection index, like `SkPDFSubsetFont(typeface, glyphUsage)`.
 //!
-//! The seam takes the font data, the glyph usage and the collection index and returns the
-//! subset data, like `SkPDFSubsetFont`.
+//! Not reproduced: the table-based face (`hb_face_create_for_tables` over `copyTableData`), which
+//! Skia builds when the typeface has no memory stream or when the memory-stream face fails. It
+//! needs the typeface's tables, not the bytes this seam receives. Its reachable case is a WOFF or
+//! WOFF2 font (`kAltDataFormat_FontFlag`): `HarfBuzz` does not recognize those containers, so the
+//! seam returns `None` for them and the caller embeds the original data.
+
+use skia_rust_hb_subset::subset_font;
 
 use crate::glyph_use::PdfGlyphUse;
 
 /// `SkPDFSubsetFont`: the typeface's data subset to the glyphs used, with the glyph ids
-/// unchanged; `None` if it cannot be subset. Always `None` until the hb-subset port lands (Q4).
-// Port of: src/pdf/SkPDFSubsetFont.cpp#L200-L202 (chrome/m156)
+/// unchanged; `None` if it cannot be subset (the caller then embeds the original data).
+// Port of: src/pdf/SkPDFSubsetFont.cpp#L133-L183 (`subset_harfbuzz`), #L187-L189 (chrome/m156)
 #[doc(alias = "SkPDFSubsetFont")]
 #[must_use]
 pub fn pdf_subset_font(
-    _font_data: &[u8],
-    _glyph_usage: &PdfGlyphUse,
-    _ttc_index: i32,
+    font_data: &[u8],
+    glyph_usage: &PdfGlyphUse,
+    ttc_index: i32,
 ) -> Option<Vec<u8>> {
-    // TODO(Q4 = hb-subset port): subset with the port of hb-subset.
-    None
+    // `stream_to_face` converts the `int` index to `unsigned`, so a negative index is out of
+    // range there and no face is made.
+    let ttc_index = u32::try_from(ttc_index).ok()?;
+    // `glyphUsage.getSetValues([&glyphs](unsigned gid) { hb_set_add(glyphs, gid); })`. The ids
+    // are `GlyphId` (16-bit) values, so the narrowing mirrors the C++ `unsigned`.
+    let mut glyphs = Vec::new();
+    glyph_usage.get_set_values(|gid| {
+        #[allow(clippy::cast_possible_truncation)] // a 16-bit glyph id, as the C++ `unsigned`
+        glyphs.push(gid as u32);
+    });
+    // `make_subset` (flags: `RETAIN_GIDS`, plus `NOTDEF_OUTLINE` when glyph 0 is in the set),
+    // `hb_subset_or_fail`, `hb_face_reference_blob` and `to_data` are in `subset_font`.
+    subset_font(font_data, glyphs, ttc_index)
 }
 
-/// `SkPDFCanSubsetTableBasedFonts`. Always false until the hb-subset port lands (Q4).
-// Port of: src/pdf/SkPDFSubsetFont.cpp#L204-L206 (chrome/m156)
+/// `SkPDFCanSubsetTableBasedFonts`: `hb_version_atleast(4, 4, 0)`. The oracle's `HarfBuzz` is the
+/// pinned 13.1.0 (`DEPS#L55`), so this is true.
+// Port of: src/pdf/SkPDFSubsetFont.cpp#L191-L198 (chrome/m156)
 #[doc(alias = "SkPDFCanSubsetTableBasedFonts")]
 #[must_use]
 pub fn pdf_can_subset_table_based_fonts() -> bool {
-    // TODO(Q4 = hb-subset port): true once the subsetter handles table-based fonts.
-    false
+    true
 }
