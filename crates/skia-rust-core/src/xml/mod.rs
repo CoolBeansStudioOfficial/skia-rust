@@ -7,7 +7,7 @@
 //!
 //! Skia parses with expat. Here a safe tokenizer (`tokenizer`) produces the same element,
 //! attribute and text events and rejects the documents expat rejects (docs/design/codecs.md Q4,
-//! and docs/API_MAPPING.md for what is left out).
+//! and `docs/API_MAPPING.md` for what is left out).
 
 pub mod dom;
 mod name_tables;
