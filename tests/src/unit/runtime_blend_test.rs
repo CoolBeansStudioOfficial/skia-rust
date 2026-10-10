@@ -5,8 +5,8 @@
 
 //! `RuntimeBlendTest`: runtime blenders must blend exactly as the built-in blend modes do.
 //!
-//! The helper `GetRuntimeBlendForBlendMode` is `tools/RuntimeBlendUtils.cpp`. Only the CPU test
-//! is ported: the Ganesh and Graphite variants need those backends.
+//! The helper `GetRuntimeBlendForBlendMode` is `tools/RuntimeBlendUtils.cpp`. The Ganesh variant
+//! needs that backend and is not ported.
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
@@ -19,10 +19,12 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeShaderBuilder};
 use skia_rust_core::shaders;
-use skia_rust_raster::surface::Surface;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_test, reporter_assert};
+use crate::tools::test_surface::{GraphiteTestSurface, TestSurface};
+use crate::{Reporter, def_graphite_adapter_test, def_test, reporter_assert};
 
 // Port of: tests/RuntimeBlendTest.cpp#L39-L45 (chrome/m156)
 fn nearly_equal(x: Color, y: Color) -> bool {
@@ -52,7 +54,7 @@ fn get_runtime_blend_for_blend_mode(mode: BlendMode) -> Blender {
 }
 
 // Port of: tests/RuntimeBlendTest.cpp#L47-L106 (chrome/m156)
-fn test_blend(r: &mut Reporter, surface: &mut Surface<'_>) {
+fn test_blend(r: &mut Reporter, surface: &mut dyn TestSurface) {
     let mut bitmap = Bitmap::new();
     reporter_assert!(r, bitmap.try_alloc_pixels_info(&surface.image_info(), None));
 
@@ -84,7 +86,7 @@ fn test_blend(r: &mut Reporter, surface: &mut Surface<'_>) {
                     surface.canvas().draw_rect(Rect::from_wh(1.0, 1.0), &paint);
 
                     // Read back the red/blue blended pixel.
-                    reporter_assert!(r, surface.read_pixels_to_bitmap(&mut bitmap, (0, 0)));
+                    reporter_assert!(r, surface.read_pixels(&mut bitmap));
                     colors_out.push(bitmap.get_color((0, 0)));
                 }
 
@@ -120,4 +122,24 @@ def_test!(SkRuntimeBlender_CPU, |r| {
     let mut surface = surfaces::raster(&info, None, None).expect("a raster surface");
 
     test_blend(r, &mut surface);
+});
+
+// Port of: tests/RuntimeBlendTest.cpp#L127-L140 (chrome/m156)
+def_graphite_adapter_test!(SkRuntimeBlender_Graphite, |reporter, context| {
+    let recorder = context.make_recorder(None);
+
+    let info = ImageInfo::new_n32_premul((1, 1), None);
+    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+    reporter_assert!(reporter, surface.is_some());
+    let Some(surface) = surface else {
+        return;
+    };
+
+    test_blend(
+        reporter,
+        &mut GraphiteTestSurface {
+            context,
+            surface: &surface,
+        },
+    );
 });

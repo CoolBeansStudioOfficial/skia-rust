@@ -154,7 +154,10 @@ const CLEAR: [u8; 4] = [0, 0, 0, 0];
 // and nothing outside.
 // Port of: src/gpu/graphite/RasterPathAtlas.cpp#L50-L115 (chrome/m156), the atlas draw of a fill
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn a_fill_through_the_raster_atlas_covers_its_inside_only() {
     let Some(mut context) = real_context() else {
         return;
@@ -173,7 +176,10 @@ fn a_fill_through_the_raster_atlas_covers_its_inside_only() {
 // The inverse fill of a path through the raster atlas covers everything outside it.
 // Port of: src/gpu/graphite/RasterPathAtlas.cpp#L120-L137 (chrome/m156), the inverse mask
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn an_inverse_fill_through_the_raster_atlas_covers_the_outside() {
     let Some(mut context) = real_context() else {
         return;
@@ -190,7 +196,10 @@ fn an_inverse_fill_through_the_raster_atlas_covers_the_outside() {
 // neither clear nor solid, and its colour is red at that alpha.
 // Port of: src/gpu/graphite/RasterPathAtlas.cpp#L127-L137 (chrome/m156), the AA mask
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 fn an_antialiased_edge_through_the_raster_atlas_is_partly_covered() {
     let Some(mut context) = real_context() else {
         return;

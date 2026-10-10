@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 use skia_rust_core::data::Data;
 use skia_rust_core::executor::Executor;
+use skia_rust_core::runtime_effect::RuntimeEffect;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::shader_error_handler::ShaderErrorHandler;
@@ -69,7 +70,7 @@ impl<F: ?Sized> fmt::Debug for Callback<F> {
 /// Options for creating a Graphite `Context`.
 // Port of: include/gpu/graphite/ContextOptions.h#L34-L252 (chrome/m156)
 #[doc(alias = "skgpu::graphite::ContextOptions")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 #[allow(clippy::struct_excessive_bools)] // mirrors the C++ options struct
 pub struct ContextOptions {
     /// `fDisableDriverCorrectnessWorkarounds`: disables workarounds for driver bugs.
@@ -124,6 +125,9 @@ pub struct ContextOptions {
     /// `fShaderErrorHandler`: where shader compilation errors are reported. The default handler
     /// prints the error and asserts in debug builds.
     pub shader_error_handler: Option<Callback<dyn ShaderErrorHandler>>,
+    /// `fUserDefinedKnownRuntimeEffects`: the runtime effects the client gives stable keys to.
+    /// A `None` entry is skipped, as Skia does for a null `sk_sp`.
+    pub user_defined_known_runtime_effects: Vec<Option<RuntimeEffect>>,
 }
 
 impl Default for ContextOptions {
@@ -158,6 +162,7 @@ impl Default for ContextOptions {
             pipeline_callback: None,
             executor: None,
             shader_error_handler: None,
+            user_defined_known_runtime_effects: Vec::new(),
         }
     }
 }

@@ -74,6 +74,7 @@ pub mod descriptor_test;
 pub mod direct_mask_limit_test;
 pub mod discardable_memory_test;
 #[cfg(test)]
+#[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
 pub mod draw_path_test;
@@ -86,6 +87,8 @@ pub mod encode_test;
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
+#[cfg(test)]
+pub mod f16_draw_test;
 #[cfg(test)]
 pub mod f16_stages_test;
 #[cfg(test)]
@@ -347,6 +350,8 @@ pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
 pub mod shadow_test;
+#[cfg(test)]
+pub mod simplify_paint_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]

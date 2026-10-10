@@ -21,7 +21,9 @@ bitflags.workspace = true
 # wgpu backend (docs/design/gpu.md §4.1). Native targets get every backend wgpu enables by
 # default plus the `noop` adapter (`Backends::NOOP`) that the headless context tests run on.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wgpu = { workspace = true, features = ["std", "parking_lot", "wgsl", "dx12", "metal", "vulkan", "gles", "noop"] }
+wgpu = { workspace = true, features = ["std", "parking_lot", "wgsl", "dx12", "metal", "vulkan", "gles", "noop", "naga-ir"] }
+# Parses WGSL to rewrite storage pointer parameters (graphite::wgpu::naga_pointer_args).
+naga = { workspace = true, features = ["wgsl-in"] }
 
 # wasm32 (Q6): wgpu's WebGPU backend, whose types are `!Send`; `Recording: Send` needs the
 # non-atomic fragile marker (`wasm32-unknown-unknown` has no threads). Build-only in CI.
