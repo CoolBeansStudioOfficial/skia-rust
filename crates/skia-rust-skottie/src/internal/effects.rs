@@ -28,6 +28,7 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
 mod color;
 mod filters;
+mod runtime;
 mod transform_effect;
 
 /// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
@@ -98,6 +99,7 @@ pub type StyleBuilderFn = for<'a, 'j> fn(
 // Port of: modules/skottie/src/effects/Effects.cpp#L31-L63 (chrome/m156) (`gBuilderInfo`)
 const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     // alphabetized for binary search lookup
+    ("ADBE Black&White", runtime::attach_black_and_white_effect),
     (
         "ADBE Brightness & Contrast 2",
         color::attach_brightness_contrast_effect,
@@ -113,6 +115,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ("ADBE Threshold2", color::attach_threshold_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
+    ("SkSL Color Filter", runtime::attach_sksl_color_filter),
 ];
 
 /// The legacy effect types (`ty`) of the clients that do not name the effect (`mn`).
