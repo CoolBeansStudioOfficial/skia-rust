@@ -2,7 +2,7 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Ported from Skia: src/gpu/graphite/Device.h, src/gpu/graphite/Device.cpp (L1-L2140 and L2343-L2631,
-//                   the drawing core; paths, text and special images are G10c/G10d)
+//                   the drawing core, and the special image functions; text is G12b)
 
 //! [`Device`]: the Graphite `SkDevice`. It turns the canvas's draw calls into draws recorded in
 //! its [`DrawContext`], and flushes them into `Task`s of its recorder.
@@ -23,11 +23,11 @@
 //!   is G12a, so the device passes none and every clip element that is not analytic is a
 //!   depth-only clip draw.
 //! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
-//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawSpecial()`, `snapSpecial()`,
-//!   `drawCoverageMask()`, `drawBlurredRRect()` and the image filtering backend (G10c), and
-//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`) and the image
-//!   links of `notifyInUse()` (`Image_Graphite` does not own the device: see `image_graphite`).
-//!   `makeSurface()`, `makeImageCopy()` and the non-copyable `onWritePixels()` fallback are ported.
+//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawCoverageMask()` and `drawBlurredRRect()`, and
+//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
+//!   `makeSurface()`, `makeImageCopy()`, the non-copyable `onWritePixels()` fallback,
+//!   `drawSpecial()`, `snapSpecial()` and the image filtering backend (`docs/design/gpu.md` §5.5)
+//!   are ported. Images link to the device through its [`DeviceLink`] (§5.6).
 //! - Sparse strips (Q5, G17) and `GPU_TEST_UTILS` readPixels.
 
 use std::cell::RefCell;
