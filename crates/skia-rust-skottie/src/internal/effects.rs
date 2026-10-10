@@ -28,8 +28,10 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 
 mod color;
 mod convolution;
+mod corner_pin;
 mod filters;
 mod runtime;
+mod shift_channels;
 mod styles;
 mod transform_effect;
 
@@ -106,6 +108,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         "ADBE Brightness & Contrast 2",
         color::attach_brightness_contrast_effect,
     ),
+    ("ADBE Corner Pin", corner_pin::attach_corner_pin_effect),
     ("ADBE Drop Shadow", filters::attach_drop_shadow_effect),
     ("ADBE Easy Levels2", color::attach_easy_levels_effect),
     ("ADBE Fill", color::attach_fill_effect),
@@ -119,6 +122,10 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
     ),
     ("ADBE Pro Levels2", color::attach_pro_levels_effect),
     ("ADBE Sharpen", convolution::attach_sharpen_effect),
+    (
+        "ADBE Shift Channels",
+        shift_channels::attach_shift_channels_effect,
+    ),
     ("ADBE Threshold2", color::attach_threshold_effect),
     ("ADBE Tint", color::attach_tint_effect),
     ("ADBE Tritone", color::attach_tritone_effect),
