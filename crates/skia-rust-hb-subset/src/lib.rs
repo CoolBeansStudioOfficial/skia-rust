@@ -27,6 +27,7 @@
 
 mod base;
 mod bytes;
+mod cbdt;
 mod cff;
 mod cmap;
 mod colr;
@@ -209,7 +210,14 @@ fn subset_table_inner(plan: &mut Plan<'_>, t: u32) -> Res<()> {
         b"sbix" => layout::run_table(plan, t, |plan, s, v| color::subset_sbix(plan, s, v)).map(|_| ()),
         b"COLR" => layout::run_table(plan, t, colr::colr_subset).map(|_| ()),
         b"CPAL" => layout::run_table(plan, t, colr::cpal_subset).map(|_| ()),
-        b"CBLC" => Err(SubsetError::Unsupported("CBLC/CBDT")),
+        b"CBLC" => {
+            let mut cbdt = None;
+            let r = layout::run_table(plan, t, |plan, s, v| cbdt::subset(plan, s, v, &mut cbdt));
+            if let Some(bytes) = cbdt {
+                plan.add_table(tag(b"CBDT"), bytes);
+            }
+            r.map(|_| ())
+        }
         // `hhea`, `vhea` and `loca` are skipped (handled by `hmtx`, `vmtx` and `glyf`), `CBDT` is
         // skipped (handled by `CBLC`), and every other table is dropped
         // (`HB_SUBSET_FLAGS_PASSTHROUGH_UNRECOGNIZED` is not set).
