@@ -4,14 +4,15 @@
 // Ported from Skia: src/gpu/graphite/RendererProvider.h, src/gpu/graphite/RendererProvider.cpp
 //
 // PARTIAL. This is the subset of `RendererProvider` whose render steps are ported: the
-// single-step renderers for PerEdgeAAQuad, CircularArc, CoverBounds[NonAAFill] and the tessellating
-// renderers (convex wedges, stencil curves and wedges with the middle-out fan, and strokes), and
-// the coverage mask renderer. The path renderer strategy is chosen from `Caps` as in the C++
-// constructor. Still missing, each with its step's port:
+// single-step renderers for PerEdgeAAQuad, CircularArc, CoverBounds[NonAAFill], the text steps,
+// the analytic blurs (AnalyticBlur, AnalyticRRectBlur) and the tessellating renderers (convex
+// wedges, stencil curves and wedges with the middle-out fan, and strokes), and the coverage mask
+// renderer. The path renderer strategy is chosen from `Caps` as in the C++ constructor. Still
+// missing, each with its step's port:
 // - the Vello compute strategies (`kComputeAnalyticAA`, `kComputeMSAA16`, `kComputeMSAA8`) are
 //   never supported: Skia builds them only with `SK_ENABLE_VELLO_SHADERS`, which is off here;
-// - the sparse-strip strategy (`kCPUSparseStripsMSAA8`, G17) is never supported;
-// - the blur renderers and the sparse-strip renderers need G7c and G17.
+// - the sparse-strip strategy (`kCPUSparseStripsMSAA8`, G17) is never supported, and the
+//   sparse-strip renderers (`EndCap`, `WideTile`) need G17.
 
 use std::sync::Arc;
 
@@ -21,6 +22,8 @@ use crate::gpu::mask_format::MaskFormat;
 use crate::graphite::buffer_manager::StaticBufferManager;
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_types::DrawTypeFlags;
+use crate::graphite::render::analytic_blur_render_step::AnalyticBlurRenderStep;
+use crate::graphite::render::analytic_rrect_blur_render_step::AnalyticRRectBlurRenderStep;
 use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use crate::graphite::render::bitmap_text_render_step::BitmapTextRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
@@ -89,6 +92,10 @@ pub struct RendererProvider {
     non_aa_bounds_fill: Renderer,
     /// `fCircularArc`.
     circular_arc: Renderer,
+    /// `fAnalyticBlur`.
+    analytic_blur: Renderer,
+    /// `fAnalyticRRectBlur`.
+    analytic_rrect_blur: Renderer,
     /// `fMesh`.
     mesh: Renderer,
     /// `fConvexTessellatedWedges`.
@@ -265,6 +272,14 @@ impl RendererProvider {
             Arc::new(CircularArcRenderStep::new(layout, buffer_manager)),
             DrawTypeFlags::CIRCULAR_ARC,
         );
+        let analytic_blur = single_step(
+            Arc::new(AnalyticBlurRenderStep::new(layout)),
+            DrawTypeFlags::DROP_SHADOWS,
+        );
+        let analytic_rrect_blur = single_step(
+            Arc::new(AnalyticRRectBlurRenderStep::new(layout, buffer_manager)),
+            DrawTypeFlags::DROP_SHADOWS,
+        );
         // Port of: src/gpu/graphite/RendererProvider.cpp#L202 (chrome/m156), `initFromStep(&fMesh)`
         let mesh = single_step(
             Arc::new(MeshRenderStep::new(layout)),
@@ -330,6 +345,8 @@ impl RendererProvider {
             per_edge_aa_quad,
             non_aa_bounds_fill,
             circular_arc,
+            analytic_blur,
+            analytic_rrect_blur,
             mesh,
             convex_tessellated_wedges,
             stencil_tessellated_curves,
@@ -351,6 +368,8 @@ impl RendererProvider {
             &self.per_edge_aa_quad,
             &self.non_aa_bounds_fill,
             &self.circular_arc,
+            &self.analytic_blur,
+            &self.analytic_rrect_blur,
             &self.mesh,
             &self.convex_tessellated_wedges,
         ]
@@ -446,6 +465,20 @@ impl RendererProvider {
     #[must_use]
     pub const fn circular_arc(&self) -> &Renderer {
         &self.circular_arc
+    }
+
+    /// `analyticBlur()`.
+    // Port of: src/gpu/graphite/RendererProvider.h#L148 (chrome/m156)
+    #[must_use]
+    pub const fn analytic_blur(&self) -> &Renderer {
+        &self.analytic_blur
+    }
+
+    /// `analyticRRectBlur()`.
+    // Port of: src/gpu/graphite/RendererProvider.h#L149 (chrome/m156)
+    #[must_use]
+    pub const fn analytic_rrect_blur(&self) -> &Renderer {
+        &self.analytic_rrect_blur
     }
 
     /// `mesh()`: the renderer of `SkMesh` draws.

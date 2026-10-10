@@ -22,6 +22,7 @@ use skia_rust_core::matrix::{Matrix, ScaleToFit};
 use skia_rust_core::rect::{Contains, IRect, Rect, RoundOut};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::Stream;
+use skia_rust_core::yuva_pixmaps::{SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_skcms::{
     AlphaFormat, IccProfile, PixelFormat, approximately_equal_profiles, srgb_profile,
 };
@@ -188,6 +189,12 @@ impl<'a> CodecBase<'a> {
     #[must_use]
     pub fn dimensions(&self) -> ISize {
         ISize::new(self.encoded_info.width(), self.encoded_info.height())
+    }
+
+    /// Port of `SkCodec::getOrigin`, for the codec implementations.
+    #[must_use]
+    pub(crate) fn origin(&self) -> EncodedOrigin {
+        self.origin
     }
 
     /// Port of `SkCodec::stream`: the stream the codec reads from.
@@ -389,6 +396,28 @@ pub trait CodecImpl: Send {
         options: &Options,
         rows_decoded: &mut i32,
     ) -> Result;
+
+    /// Port of `onQueryYUVAInfo`: the YUVA layout this image decodes to, when the codec can
+    /// decode to planes (the default: it cannot).
+    // Port of: include/codec/SkCodec.h#L880-L881 (chrome/m156)
+    fn on_query_yuva_info(
+        &self,
+        _base: &CodecBase<'_>,
+        _supported: &SupportedDataTypes,
+    ) -> Option<YUVAPixmapInfo> {
+        None
+    }
+
+    /// Port of `onGetYUVAPlanes`: decodes into the planes of `pixmaps`, which `on_query_yuva_info`
+    /// laid out (the default: unimplemented).
+    // Port of: include/codec/SkCodec.h#L883 (chrome/m156)
+    fn on_get_yuva_planes(
+        &mut self,
+        _base: &mut CodecBase<'_>,
+        _pixmaps: &mut YUVAPixmaps,
+    ) -> Result {
+        Result::Unimplemented
+    }
 
     /// Port of `onRewind`. The default rewinds the stream.
     fn on_rewind(&mut self, base: &mut CodecBase<'_>) -> bool {
@@ -844,6 +873,35 @@ impl<'a> Codec<'a> {
     }
 
     /// Port of `SkCodec::getPixels(info, pixels, rowBytes, options)`. Decodes the image into
+    /// Port of `SkCodec::queryYUVAInfo`: the YUVA layout the image decodes to, or `None` when it
+    /// has no YUV planes or they do not use a data type in `supported_data_types`.
+    // Port of: src/codec/SkCodec.cpp#L277-L284 (chrome/m156)
+    #[doc(alias = "SkCodec::queryYUVAInfo")]
+    #[must_use]
+    pub fn query_yuva_info(
+        &self,
+        supported_data_types: &SupportedDataTypes,
+    ) -> Option<YUVAPixmapInfo> {
+        let info = self
+            .imp
+            .on_query_yuva_info(&self.base, supported_data_types)?;
+        info.is_supported(supported_data_types).then_some(info)
+    }
+
+    /// Port of `SkCodec::getYUVAPlanes`: decodes into the planes of `pixmaps`, which must come
+    /// from a successful [`query_yuva_info`](Self::query_yuva_info).
+    // Port of: src/codec/SkCodec.cpp#L286-L294 (chrome/m156)
+    #[doc(alias = "SkCodec::getYUVAPlanes")]
+    pub fn get_yuva_planes(&mut self, pixmaps: &mut YUVAPixmaps) -> Result {
+        if !pixmaps.is_valid() {
+            return Result::InvalidInput;
+        }
+        if !self.base.rewind_if_needed(self.imp.as_mut()) {
+            return Result::CouldNotRewind;
+        }
+        self.imp.on_get_yuva_planes(&mut self.base, pixmaps)
+    }
+
     /// `dst`, which holds `info.height()` rows `row_bytes` apart.
     // Port of: src/codec/SkCodec.cpp#L491-L499 and #L502-L564 (getPixels, getPixelsBudgeted),
     // with the decode budget left out.

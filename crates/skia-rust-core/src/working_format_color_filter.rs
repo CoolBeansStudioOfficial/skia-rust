@@ -28,7 +28,7 @@ use crate::write_buffer::BinaryWriteBuffer;
 // Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.h#L21-L38 (chrome/m156)
 #[doc(alias = "SkWorkingFormatCalculator")]
 #[derive(Clone, Debug)]
-struct WorkingFormatCalculator {
+pub struct WorkingFormatCalculator {
     tf: TransferFunction,
     use_dst_tf: bool,
     gamut: Matrix3x3,
@@ -39,7 +39,8 @@ struct WorkingFormatCalculator {
 
 impl WorkingFormatCalculator {
     // Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.cpp#L40-L55 (chrome/m156)
-    fn new(
+    #[must_use]
+    pub fn new(
         tf: Option<&TransferFunction>,
         gamut: Option<&Matrix3x3>,
         at: Option<&AlphaType>,
@@ -69,8 +70,13 @@ impl WorkingFormatCalculator {
 
     /// The working color space and alpha type for the destination `dst_cs`
     /// (`SkWorkingFormatCalculator::workingFormat`).
+    ///
+    /// # Panics
+    /// If the destination has no numerical transfer function and the calculator takes its
+    /// transfer function from it.
     // Port of: src/effects/colorfilters/SkWorkingFormatColorFilter.cpp#L57-L72 (chrome/m156)
-    fn working_format(&self, dst_cs: &ColorSpace) -> (Option<ColorSpace>, AlphaType) {
+    #[must_use]
+    pub fn working_format(&self, dst_cs: &ColorSpace) -> (Option<ColorSpace>, AlphaType) {
         let tf = if self.use_dst_tf {
             dst_cs
                 .is_numerical_transfer_fn()
