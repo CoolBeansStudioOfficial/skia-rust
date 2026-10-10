@@ -67,7 +67,7 @@ fn unpaired_surrogate_is_negative_and_ends_the_scan() {
     // A failed decode moves to the end (SkUTF's next_fail), so the 0x61 is not visited.
     let mut seen = Vec::new();
     for_each_codepoint_utf16(&[0xD800, 0x61], |u, before, after| {
-        seen.push((u, before, after))
+        seen.push((u, before, after));
     });
     assert_eq!(seen, vec![(-1, 0, 2)]);
 }
