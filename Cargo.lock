@@ -1188,6 +1188,7 @@ dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-raster",
+ "skia-rust-resources",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-text",
@@ -1256,6 +1257,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-resources"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-codec",
+ "skia-rust-core",
+ "skia-rust-raster",
+]
+
+[[package]]
 name = "skia-rust-rp-diff"
 version = "0.156.0"
 dependencies = [
@@ -1280,7 +1290,12 @@ dependencies = [
 name = "skia-rust-skottie"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
  "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-raster",
+ "skia-rust-resources",
+ "skia-rust-sksg",
 ]
 
 [[package]]
@@ -1318,10 +1333,12 @@ dependencies = [
  "skia-rust-core",
  "skia-rust-effects",
  "skia-rust-gpu",
+ "skia-rust-libpng",
  "skia-rust-libwebp",
  "skia-rust-pathops",
  "skia-rust-pdf",
  "skia-rust-raster",
+ "skia-rust-resources",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-skottie",

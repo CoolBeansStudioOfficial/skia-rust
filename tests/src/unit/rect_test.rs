@@ -118,7 +118,7 @@ def_test!(Rect_grow, |reporter| {
     test_skbug4406(reporter);
 });
 
-// Port of: tests/RectTest.cpp#L119-L125 (chrome/m156)
+// Port of: tests/RectTest.cpp#L119-L126 (chrome/m156)
 def_test!(Rect_largest, |reporter| {
     reporter_assert!(reporter, !make_i_large().is_empty());
     reporter_assert!(reporter, make_i_largest_inverted().is_empty());
@@ -132,7 +132,7 @@ def_test!(Rect_largest, |reporter| {
  *  - setBoundsCheck should return false, and set the rect to all zeros
  *  - setBoundsNoCheck should ensure that rect.isFinite() is false (definitely NOT all zeros)
  */
-// Port of: tests/RectTest.cpp#L133-L161 (chrome/m156)
+// Port of: tests/RectTest.cpp#L133-L153 (chrome/m156)
 def_test!(Rect_setbounds, |reporter| {
     let p0 = [
         Point::new(SCALAR_INFINITY, 0.0),
@@ -177,7 +177,7 @@ def_test!(Rect_setbounds, |reporter| {
     }
 });
 
-// Port of: tests/RectTest.cpp#L146-L151 (chrome/m156)
+// Port of: tests/RectTest.cpp#L155-L161 (chrome/m156)
 fn make_big_value(_reporter: &Reporter) -> f32 {
     // need to make a big value, one that will cause rect.width() to overflow to inf.
     // however, the windows compiler wants about this if it can see the big value inlined.
@@ -596,7 +596,7 @@ def_test!(Rect_QuadContainsRect, |reporter| {
     }
 });
 
-// Port of: tests/RectTest.cpp#L398-L438 (chrome/m156)
+// Port of: tests/RectTest.cpp#L398-L436 (chrome/m156)
 def_test!(Rect_ClosestDisjointEdge, |r| {
     // All test cases will use this rect for the src, so dst can be conveniently relative to it.
     const K_SRC: IRect = IRect::new(0, 0, 10, 10);

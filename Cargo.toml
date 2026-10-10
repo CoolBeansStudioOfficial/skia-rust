@@ -16,10 +16,11 @@ members = [
     "crates/skia-rust-effects",
     "crates/skia-rust-pathops",
     "crates/skia-rust-text",
-    "crates/skia-rust-svg",
-    "crates/skia-rust-pdf",
     "crates/skia-rust-skottie",
     "crates/skia-rust-sksg",
+    "crates/skia-rust-resources",
+    "crates/skia-rust-svg",
+    "crates/skia-rust-pdf",
     "benches",
     "crates/skia-rust-gpu",
     "tests",
@@ -58,6 +59,7 @@ skia-rust-tools = { path = "tests/tools", version = "0.156.0" }
 skia-rust-gpu = { path = "crates/skia-rust-gpu", version = "0.156.0" }
 skia-rust-skottie = { path = "crates/skia-rust-skottie", version = "0.156.0" }
 skia-rust-sksg = { path = "crates/skia-rust-sksg", version = "0.156.0" }
+skia-rust-resources = { path = "crates/skia-rust-resources", version = "0.156.0" }
 bitflags = "2"
 # wgpu backend of Graphite (docs/design/gpu.md §4.1, R7): pinned exactly, bumps are their own PRs.
 # `default-features = false`: each target picks its backends in crates/skia-rust-gpu/Cargo.toml.

@@ -264,6 +264,7 @@ pub mod pathfill;
 pub mod pathinterior;
 pub mod pathmaskcache;
 pub mod pathreverse;
+pub mod pdf_never_embed;
 pub mod perlinnoise;
 pub mod perspimages;
 pub mod perspshaders;

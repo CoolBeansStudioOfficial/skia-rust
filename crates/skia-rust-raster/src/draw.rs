@@ -31,7 +31,7 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode_priv::supports_coverage_as_alpha;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color_type::ColorType;
-use skia_rust_core::device::{Device, PendingGlyphDrawable};
+use skia_rust_core::device::{Device, GlyphRunDrawCursor, PendingGlyphDrawable};
 use skia_rust_core::draw_procs::draw_treat_as_hairline;
 use skia_rust_core::draw_types::DrawCoverage;
 use skia_rust_core::floating_point::{float_round2int, float_saturate2int};
@@ -1591,20 +1591,21 @@ impl Draw<'_> {
     // Port of: src/core/SkDraw_text.cpp#L125-L134 (chrome/m156)
     #[doc(alias = "drawGlyphRunList")]
     ///
-    /// skia-rust: glyph drawables are added to `pending_drawables`, for the canvas to draw.
+    /// skia-rust: stops at each glyph drawable and returns it, for the canvas to draw; call
+    /// again with the same `cursor` to continue.
     pub fn draw_glyph_run_list(
         &mut self,
         painter: &GlyphRunListPainter,
         list: &GlyphRunList<'_>,
         paint: &Paint,
-        pending_drawables: &mut Vec<PendingGlyphDrawable>,
-    ) {
+        cursor: &mut GlyphRunDrawCursor,
+    ) -> Option<PendingGlyphDrawable> {
         self.validate();
         if self.rc.is_empty() {
-            return;
+            return None;
         }
         let ctm = self.ctm;
-        painter.draw_for_bitmap_device(self, list, paint, ctm, pending_drawables);
+        painter.draw_for_bitmap_device(self, list, paint, ctm, cursor)
     }
 }
 

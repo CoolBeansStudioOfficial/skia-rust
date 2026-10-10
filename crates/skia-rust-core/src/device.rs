@@ -470,15 +470,25 @@ pub trait Device {
     #[doc(alias = "onDrawGlyphRunList")]
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint);
 
-    /// The glyph drawables that [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list) did not
-    /// draw, in the order they were met, and forgets them.
+    /// Draws `list` up to its next glyph drawable and returns that drawable instead of drawing
+    /// it; the caller draws the drawable and calls again with the same `cursor` to continue
+    /// with the glyphs after it. `None` means the list is drawn completely.
     ///
     /// skia-rust: Skia's glyph painter draws a glyph drawable with the *canvas*
-    /// (`canvas->saveLayer(); drawable->draw(canvas)`). A Rust device cannot reach the canvas that
-    /// is drawing it, so it hands the drawables back and the canvas draws them once the device
-    /// call returns (see `Canvas::draw_glyph_run_list`). The default has none.
-    fn take_pending_glyph_drawables(&mut self) -> Vec<PendingGlyphDrawable> {
-        Vec::new()
+    /// (`canvas->saveLayer(); drawable->draw(canvas)`) in the middle of the run, between the
+    /// path glyphs and the mask glyphs. A Rust device cannot reach the canvas that is drawing
+    /// it, so the painter yields at each drawable and the canvas draws it, which keeps Skia's
+    /// draw order. The default draws the whole list with
+    /// [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list).
+    fn on_draw_glyph_run_list_step(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+        cursor: &mut GlyphRunDrawCursor,
+    ) -> Option<PendingGlyphDrawable> {
+        let _ = cursor;
+        self.on_draw_glyph_run_list(list, paint);
+        None
     }
 
     /// `SkDevice::convertGlyphRunListToSlug`: a slug of the glyphs of `list`, drawn with
@@ -1006,7 +1016,7 @@ pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
 
 /// A glyph drawable a device collected while drawing a glyph run list: the drawable, the matrix
 /// that places it relative to the canvas, and the paint of the text
-/// (`Device::take_pending_glyph_drawables`).
+/// (`Device::on_draw_glyph_run_list_step`).
 #[derive(Clone, Debug)]
 pub struct PendingGlyphDrawable {
     /// The drawable of the glyph (`glyph->drawable()`).
@@ -1033,12 +1043,58 @@ pub fn draw_glyph_run_list(device: &mut dyn Device, list: &GlyphRunList<'_>, pai
     }
 }
 
-/// `SkDevice::simplifyGlyphRunRSXFormAndRedraw`: draws each `RSXform` glyph as its own run, with
-/// the device transform set to the glyph's rotation-scale and translation.
-///
-/// The canvas-level `concat` of C++ becomes a device transform change, which is the same for
-/// the raster device (its matrix is the canvas matrix). A shader in `paint` needs the
-/// local-matrix shader that `make_post_inverse_lm` builds.
+/// Where a glyph run list draw stopped at a glyph drawable, so that
+/// [`Device::on_draw_glyph_run_list_step`] continues right after it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GlyphRunDrawCursor {
+    /// The tile of the device draw that was being drawn (`DrawTiler`); 0 without tiling.
+    pub tile: usize,
+    /// The run that was being drawn.
+    pub run: usize,
+    /// How many drawables of that run were returned already; `None` when the run has not
+    /// started.
+    pub drawables_done: Option<usize>,
+    /// The progress through a list with `RSXform`s (`simplifyGlyphRunRSXFormAndRedraw`); `None`
+    /// before such a list starts, and always `None` for a list without `RSXform`s.
+    pub rsxform: Option<Box<RSXformDrawCursor>>,
+}
+
+/// Where a glyph run list with `RSXform`s stopped at a glyph drawable (see
+/// [`GlyphRunDrawCursor::rsxform`]).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RSXformDrawCursor {
+    /// The run that is being drawn.
+    pub run: usize,
+    /// The glyph of `run` that is being drawn, when the run has rotations.
+    pub glyph: usize,
+    /// The cursor of the sub-list that is being drawn.
+    pub sub: GlyphRunDrawCursor,
+}
+
+/// [`draw_glyph_run_list`] up to the next glyph drawable (see
+/// [`Device::on_draw_glyph_run_list_step`]). Start with a default `cursor` and call again with
+/// the same one until it returns `None`.
+// Port of: src/core/SkDevice.cpp#L424-L435 (chrome/m156)
+pub fn draw_glyph_run_list_step(
+    device: &mut dyn Device,
+    list: &GlyphRunList<'_>,
+    paint: &Paint,
+    cursor: &mut GlyphRunDrawCursor,
+) -> Option<PendingGlyphDrawable> {
+    if !device.state().local_to_device().is_finite() {
+        return None;
+    }
+    if list.has_rsxform() {
+        simplify_glyph_run_rsxform_step(device, list, paint, cursor)
+    } else {
+        device.on_draw_glyph_run_list_step(list, paint, cursor)
+    }
+}
+
+/// `SkDevice::simplifyGlyphRunRSXFormAndRedraw` without the canvas: draws each `RSXform` glyph
+/// as its own run, with the device transform set to the glyph's rotation-scale and translation.
+/// Glyph drawables are skipped, since only a canvas can draw them (see
+/// [`simplify_glyph_run_rsxform_step`]).
 // Port of: src/core/SkDevice.cpp#L438-L479 (chrome/m156)
 #[doc(alias = "simplifyGlyphRunRSXFormAndRedraw")]
 pub fn simplify_glyph_run_rsxform_and_redraw(
@@ -1046,48 +1102,100 @@ pub fn simplify_glyph_run_rsxform_and_redraw(
     list: &GlyphRunList<'_>,
     paint: &Paint,
 ) {
+    let mut cursor = GlyphRunDrawCursor::default();
+    while simplify_glyph_run_rsxform_step(device, list, paint, &mut cursor).is_some() {}
+}
+
+/// `SkDevice::simplifyGlyphRunRSXFormAndRedraw` up to the next glyph drawable, which it returns
+/// instead of drawing (see [`Device::on_draw_glyph_run_list_step`]). Start with a default
+/// `cursor` and call again with the same one until it returns `None`.
+///
+/// The canvas-level `concat` of C++ becomes a device transform change while a glyph is drawn,
+/// which is the same for the raster device (its matrix is the canvas matrix). A glyph drawable
+/// is drawn by the canvas after that transform is restored, with the glyph's matrix
+/// concatenated in front of the drawable's matrix: the canvas draws `CTM * glyphToLocal * m`
+/// in C++, and here `CTM` with `glyphToLocal * m`. A shader in `paint` needs the local-matrix
+/// shader that `make_post_inverse_lm` builds.
+// Port of: src/core/SkDevice.cpp#L438-L479 (chrome/m156)
+#[doc(alias = "simplifyGlyphRunRSXFormAndRedraw")]
+pub fn simplify_glyph_run_rsxform_step(
+    device: &mut dyn Device,
+    list: &GlyphRunList<'_>,
+    paint: &Paint,
+    cursor: &mut GlyphRunDrawCursor,
+) -> Option<PendingGlyphDrawable> {
     let builder = GlyphRunBuilder::new();
-    for run in list.runs() {
+    let state = cursor.rsxform.get_or_insert_with(Default::default);
+    let runs = list.runs();
+    while state.run < runs.len() {
+        let run = &runs[state.run];
         if run.scaled_rotations().is_empty() {
             let sub_list = builder.make_glyph_run_list(run.clone(), paint, Point::default());
-            draw_glyph_run_list(device, &sub_list, paint);
+            if let Some(pending) =
+                draw_glyph_run_list_step(device, &sub_list, paint, &mut state.sub)
+            {
+                return Some(pending);
+            }
+            state.sub = GlyphRunDrawCursor::default();
+            state.run += 1;
             continue;
         }
-        let origin = list.origin();
-        for (i, (glyph_id, pos)) in run.source().enumerate() {
-            let scale_rotate = run.scaled_rotations()[i];
-            let rsxform = RSXform::new(scale_rotate.x, scale_rotate.y, (pos.x, pos.y));
-            let mut glyph_to_local = Matrix::default();
-            glyph_to_local
-                .set_rsxform(&rsxform)
-                .post_translate(Point::new(origin.x, origin.y));
 
-            // We want to rotate each glyph by the rsxform, but we don't want to rotate "space"
-            // (i.e. the shader that cares about the ctm) so we have to undo our little ctm
-            // trick with a localmatrixshader so that the shader draws as if there was no
-            // change to the ctm.
-            let mut inverting_paint = paint.clone();
-            inverting_paint.set_shader(make_post_inverse_lm(paint.shader_ref(), &glyph_to_local));
-            let sub_list = builder.make_glyph_run_list(
-                GlyphRun::new(
-                    run.font().clone(),
-                    vec![Point::default()],
-                    vec![glyph_id],
-                    Vec::new(),
-                    Vec::new(),
-                    Vec::new(),
-                ),
-                paint,
-                Point::default(),
-            );
-            let local_to_device = M44::concat(
-                device.state().local_to_device44(),
-                &M44::from(glyph_to_local),
-            );
+        let origin = list.origin();
+        let Some((glyph_id, pos)) = run.source().nth(state.glyph) else {
+            state.glyph = 0;
+            state.run += 1;
+            continue;
+        };
+        let scale_rotate = run.scaled_rotations()[state.glyph];
+        let rsxform = RSXform::new(scale_rotate.x, scale_rotate.y, (pos.x, pos.y));
+        let mut glyph_to_local = Matrix::default();
+        glyph_to_local
+            .set_rsxform(&rsxform)
+            .post_translate(Point::new(origin.x, origin.y));
+
+        // We want to rotate each glyph by the rsxform, but we don't want to rotate "space"
+        // (i.e. the shader that cares about the ctm) so we have to undo our little ctm
+        // trick with a localmatrixshader so that the shader draws as if there was no
+        // change to the ctm.
+        let mut inverting_paint = paint.clone();
+        inverting_paint.set_shader(make_post_inverse_lm(paint.shader_ref(), &glyph_to_local));
+        let sub_list = builder.make_glyph_run_list(
+            GlyphRun::new(
+                run.font().clone(),
+                vec![Point::default()],
+                vec![glyph_id],
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            ),
+            paint,
+            Point::default(),
+        );
+        let local_to_device = M44::concat(
+            device.state().local_to_device44(),
+            &M44::from(glyph_to_local.clone()),
+        );
+        let pending = {
             let mut restore = DeviceTransformRestore::new(&mut *device, &local_to_device);
-            draw_glyph_run_list(restore.device(), &sub_list, &inverting_paint);
+            draw_glyph_run_list_step(
+                restore.device(),
+                &sub_list,
+                &inverting_paint,
+                &mut state.sub,
+            )
+        };
+        if let Some(pending) = pending {
+            return Some(PendingGlyphDrawable {
+                drawable: pending.drawable,
+                matrix: Matrix::concat(&glyph_to_local, &pending.matrix),
+                paint: pending.paint,
+            });
         }
+        state.sub = GlyphRunDrawCursor::default();
+        state.glyph += 1;
     }
+    None
 }
 
 /// `make_post_inverse_lm`: the shader drawn with the inverse of `lm` as its local matrix, or

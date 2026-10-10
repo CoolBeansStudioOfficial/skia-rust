@@ -250,7 +250,7 @@ def_test!(QuadRootsReal_Constant, |reporter| {
     test_quad_roots_real(reporter, "Infinite solutions y = 0", 0.0, 0.0, 0.0, &[0.0]);
 });
 
-// Port of: tests/QuadRootsTest.cpp#L123-L147 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L180-L204 (chrome/m156)
 def_test!(QuadRootsReal_NonFiniteNumbers, |reporter| {
     // The Pathops implementation does not check for infinities nor nans in all cases.
     let mut roots = [0.0f64; 2];
@@ -285,7 +285,7 @@ def_test!(QuadRootsReal_NonFiniteNumbers, |reporter| {
 // Test the discriminant using
 // Use quadratics of the form F_n * x^2 - 2 * F_(n-1) * x + F_(n-2).
 //   This has a discriminant of F_(n-1)^2 - F_n * F_(n-2) = 1 if n is even else -1.
-// Port of: tests/QuadRootsTest.cpp#L149-L165 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L209-L222 (chrome/m156)
 def_test!(
     #[allow(clippy::float_cmp)] // exact float comparisons, as in the C++ test
     QuadDiscriminant_Fibonacci,
@@ -307,7 +307,7 @@ def_test!(
     }
 );
 
-// Port of: tests/QuadRootsTest.cpp#L167-L182 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L224-L238 (chrome/m156)
 def_test!(
     #[allow(clippy::float_cmp)] // exact float comparisons, as in the C++ test
     QuadRoots_Basic,
@@ -339,7 +339,7 @@ def_test!(
 // Test the roots using
 // Use quadratics of the form F_n * x^2 - 2 * F_(n-1) * x + F_(n-2).
 // The roots are (F_(n–1) ± 1)/F_n if n is even otherwise there are no roots.
-// Port of: tests/QuadRootsTest.cpp#L184-L220 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L243-L273 (chrome/m156)
 def_test!(
     #[allow(clippy::float_cmp)] // exact float comparisons, as in the C++ test
     QuadRoots_Fibonacci,
@@ -387,7 +387,7 @@ def_test!(
 // Floating-Point Arithmetic" located at
 // https://github.com/goualard-f/QuadraticEquation.jl/blob/main/test/tests.jl
 
-// Port of: tests/QuadRootsTest.cpp#L226-L232 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L279-L285 (chrome/m156)
 struct TestCase {
     a: f64,
     b: f64,
@@ -396,7 +396,7 @@ struct TestCase {
     answer_hi: f64,
 }
 
-// Port of: tests/QuadRootsTest.cpp#L234-L377 (chrome/m156)
+// Port of: tests/QuadRootsTest.cpp#L287-L376 (chrome/m156)
 def_test!(
     #[allow(clippy::excessive_precision, clippy::unreadable_literal)] // literals copied verbatim from the C++ test
     #[allow(clippy::approx_constant)] // literals copied verbatim from the C++ test
