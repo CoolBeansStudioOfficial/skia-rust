@@ -72,15 +72,15 @@ impl GetPixels for AndroidCodec<'_> {
 
 /// An `SkBitmap` made by `allocPixels(info)`: the pixels of `info` in one buffer, with the
 /// minimum row bytes, so `bm.getAddr(0, y)` is `data[y * row_bytes..]`.
-struct Pixels {
-    info: ImageInfo,
-    row_bytes: usize,
-    data: Vec<u8>,
+pub(crate) struct Pixels {
+    pub(crate) info: ImageInfo,
+    pub(crate) row_bytes: usize,
+    pub(crate) data: Vec<u8>,
 }
 
 impl Pixels {
     // Port of: SkBitmap::allocPixels(info)
-    fn alloc(info: &ImageInfo) -> Self {
+    pub(crate) fn alloc(info: &ImageInfo) -> Self {
         let row_bytes = info.min_row_bytes();
         Self {
             info: info.clone(),
@@ -102,7 +102,7 @@ impl Pixels {
     }
 
     // Port of: md5(const SkBitmap& bm) in tests/CodecTest.cpp#L93-L103
-    fn md5(&self) -> Digest {
+    pub(crate) fn md5(&self) -> Digest {
         let mut md5 = Md5::new();
         let row_len = self.info.bytes_per_pixel() * usize::try_from(self.info.width()).unwrap_or(0);
         for y in 0..self.info.height() {
