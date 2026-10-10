@@ -37462,7 +37462,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OSPathTest.cpp#L69-L109"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "3030033a6c8b53f412e69a3c25a571dd572ae7227d697d1d21cbe004c8685ca0"
 
 [[test]]
@@ -50508,7 +50508,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L615-L646"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bee1fd1f690c687c4678422c3c588a2c481520432469e1fdfa5e6100f04139a9"
 
 [[test]]
