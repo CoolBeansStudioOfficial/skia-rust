@@ -608,8 +608,8 @@ impl VP8EncIterator {
     /// Port of `VP8IteratorRotateI4`: stores the samples of the reconstructed 4x4 block `i4` of
     /// the `yuv_out` work area as the boundary of the next blocks. Returns `false` after the
     /// last block.
-    pub fn rotate_i4(&mut self) -> bool {
-        let blk = self.yuv_out + VP8_SCAN[self.i4];
+    pub fn rotate_i4(&mut self, yuv_out: usize) -> bool {
+        let blk = yuv_out + VP8_SCAN[self.i4];
         let top = self.i4_top;
         for i in 0..=3 {
             // store future top samples: top[-4 + i]
