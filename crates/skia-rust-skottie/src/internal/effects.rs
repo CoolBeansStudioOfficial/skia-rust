@@ -29,6 +29,7 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 mod color;
 mod filters;
 mod runtime;
+mod styles;
 mod transform_effect;
 
 /// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
@@ -127,9 +128,17 @@ const LEGACY_DROP_SHADOW_EFFECT: i32 = 25;
 const LEGACY_GAUSSIAN_BLUR_EFFECT: i32 = 29;
 
 /// The layer style builders, by style type (`ty`): `None` for the styles that are not supported.
-/// M21 adds them.
 // Port of: modules/skottie/src/effects/Effects.cpp#L199-L208 (chrome/m156) (`gStyleBuilders`)
-const STYLE_BUILDERS: &[Option<StyleBuilderFn>] = &[];
+const STYLE_BUILDERS: &[Option<StyleBuilderFn>] = &[
+    None,                                     // 'ty': 0 -> stroke
+    Some(styles::attach_drop_shadow_style),   // 'ty': 1 -> drop shadow
+    Some(styles::attach_inner_shadow_style),  // 'ty': 2 -> inner shadow
+    Some(styles::attach_outer_glow_style),    // 'ty': 3 -> outer glow
+    Some(styles::attach_inner_glow_style),    // 'ty': 4 -> inner glow
+    None,                                     // 'ty': 5 -> bevel/emboss
+    None,                                     // 'ty': 6 -> satin
+    Some(styles::attach_color_overlay_style), // 'ty': 7 -> color overlay
+];
 
 /// A layer content tree and its size.
 // Port of: modules/skottie/src/effects/Effects.h#L50-L53 (chrome/m156) (`EffectBuilder::LayerContent`)
