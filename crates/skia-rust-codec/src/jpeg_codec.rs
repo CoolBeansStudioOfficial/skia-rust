@@ -10,7 +10,9 @@
 //   `CodecImpl` can own it. It is replaced on a rewind, which reads the header again.
 // * The encoded bytes are kept in memory (`MemSource`), so a rewind never reads the stream.
 // * The orientation comes from the EXIF data through `exif` (`SkExif::Parse`).
-// * YUV planes (`onQueryYUVAInfo`, `onGetYUVAPlanes`) are not ported yet.
+// * YUV planes (`onQueryYUVAInfo`, `onGetYUVAPlanes`) decode into `YUVAPixmaps` by copying each
+//   iMCU row out of libjpeg's raw buffers (`copy_plane_rows`), not by handing libjpeg pointers
+//   into the planes.
 
 //! The JPEG decoder (`SkJpegCodec`): whole-image and progressive decodes, native scaling by 1/8
 //! steps, colour conversion, RGB565 and grayscale output, CMYK/YCCK through the swizzler, and
@@ -22,10 +24,12 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
-use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::image_info::{ImageInfo, YUVColorSpace};
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
+use skia_rust_core::yuva_info::{PlaneConfig, Siting, Subsampling, YUVAInfo};
+use skia_rust_core::yuva_pixmaps::{DataType, SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_libjpeg::{
     ColorSpace as JColorSpace, ConsumeResult, Decompress, DitherMode, HeaderResult, JpegSource,
     SrcBuf,
@@ -532,9 +536,158 @@ impl JpegCodec {
     }
 }
 
+// Port of: jpeglib.h `DCTSIZE` (8), the side of a DCT block.
+const DCTSIZE: usize = 8;
+
+/// Port of `is_yuv_supported`: whether the header describes a YCbCr image whose chroma is not
+/// subsampled relative to a luma block layout Skia supports, and the subsampling, Y and chroma
+/// block-padded row bytes. Only checked with `supported`, when it is `Some`, against the data
+/// types a caller accepts.
+// Port of: src/codec/SkJpegCodec.cpp#L775-L864 (chrome/m156), the checks and the row bytes
+fn yuv_layout(
+    decoder: &Decompress,
+    supported: Option<&SupportedDataTypes>,
+) -> Option<(Subsampling, [usize; 3])> {
+    // The raw output is only the YCbCr planes.
+    if decoder.jpeg_color_space != JColorSpace::YCbCr || decoder.comp_info.len() < 3 {
+        return None;
+    }
+    // Only the common cases, where U and V have sampling factors of one (see the C++ comment on
+    // why larger chroma factors are not supported).
+    let c = &decoder.comp_info;
+    if c[1].h_samp_factor != 1
+        || c[1].v_samp_factor != 1
+        || c[2].h_samp_factor != 1
+        || c[2].v_samp_factor != 1
+    {
+        return None;
+    }
+    let h_samp_y = c[0].h_samp_factor;
+    let v_samp_y = c[0].v_samp_factor;
+    let subsampling = match (h_samp_y, v_samp_y) {
+        (1, 1) => Subsampling::S444,
+        (2, 1) => Subsampling::S422,
+        (2, 2) => Subsampling::S420,
+        (1, 2) => Subsampling::S440,
+        (4, 1) => Subsampling::S411,
+        (4, 2) => Subsampling::S410,
+        _ => return None,
+    };
+    if supported.is_some_and(|supported| !supported.supported(PlaneConfig::Y_U_V, DataType::Unorm8))
+    {
+        return None;
+    }
+    let row_bytes = std::array::from_fn(|i| c[i].width_in_blocks as usize * DCTSIZE);
+    Some((subsampling, row_bytes))
+}
+
+/// Copies decoded rows into plane `plane` of `pixmaps`, from row `first_row`. Rows past the plane
+/// are dropped: Skia decodes them into a scratch row (`extraRow`).
+// Port of: src/codec/SkJpegCodec.cpp#L944-L981 (the row pointers of onGetYUVAPlanes)
+fn copy_plane_rows(
+    pixmaps: &mut YUVAPixmaps,
+    plane: usize,
+    rows: &[Vec<u8>],
+    first_row: usize,
+) -> bool {
+    let height = usize::try_from(pixmaps.plane(plane).info().height()).unwrap_or(0);
+    for (j, src) in rows.iter().enumerate() {
+        let row = first_row + j;
+        if row >= height {
+            break;
+        }
+        let Some(dst) = pixmaps.plane_row_mut(plane, row) else {
+            return false;
+        };
+        let n = src.len().min(dst.len());
+        dst[..n].copy_from_slice(&src[..n]);
+    }
+    true
+}
+
 impl CodecImpl for JpegCodec {
     fn on_get_encoded_format(&self) -> EncodedImageFormat {
         EncodedImageFormat::JPEG
+    }
+
+    // Port of: src/codec/SkJpegCodec.cpp#L866-L870 (onQueryYUVAInfo)
+    fn on_query_yuva_info(
+        &self,
+        base: &CodecBase<'_>,
+        supported: &SupportedDataTypes,
+    ) -> Option<YUVAPixmapInfo> {
+        let (subsampling, row_bytes) = yuv_layout(&self.decoder, Some(supported))?;
+        let yuva_info = YUVAInfo::new(
+            base.dimensions(),
+            PlaneConfig::Y_U_V,
+            subsampling,
+            YUVColorSpace::JPEG,
+            base.origin(),
+            (Siting::Centered, Siting::Centered),
+        )?;
+        let color_types = [ColorType::Alpha8; 3];
+        YUVAPixmapInfo::new(&yuva_info, &color_types, Some(&row_bytes))
+    }
+
+    // Port of: src/codec/SkJpegCodec.cpp#L872-L970 (onGetYUVAPlanes)
+    fn on_get_yuva_planes(
+        &mut self,
+        _base: &mut CodecBase<'_>,
+        pixmaps: &mut YUVAPixmaps,
+    ) -> Result {
+        if yuv_layout(&self.decoder, None).is_none() || pixmaps.num_planes() != 3 {
+            return Result::InvalidInput;
+        }
+        // `dinfo->raw_data_out = TRUE; jpeg_start_decompress`.
+        self.decoder.raw_data_out = true;
+        match self.decoder.start_decompress() {
+            Ok(true) => {}
+            _ => return Result::InvalidInput,
+        }
+        let dinfo = &self.decoder;
+        let num_y_rows_per_block =
+            DCTSIZE * usize::try_from(dinfo.comp_info[0].v_samp_factor).unwrap_or(0);
+        // The Y rows of one iMCU row, then the U and V rows (DCTSIZE each).
+        let rows_per_plane = [num_y_rows_per_block, DCTSIZE, DCTSIZE];
+        let width_per_plane: [usize; 3] =
+            std::array::from_fn(|i| dinfo.comp_info[i].width_in_blocks as usize * DCTSIZE);
+        let mut planes: Vec<Vec<Vec<u8>>> = (0..3)
+            .map(|i| vec![vec![0u8; width_per_plane[i]]; rows_per_plane[i]])
+            .collect();
+
+        // Full iMCU rows first (the C++ rounds down), then the partial last one.
+        let output_height = dinfo.output_height as usize;
+        let num_iters = output_height / num_y_rows_per_block;
+        let remaining_rows = output_height - num_iters * num_y_rows_per_block;
+        for block in 0..num_iters {
+            match self.decoder.read_raw_data(&mut planes) {
+                Ok(lines) if lines >= num_y_rows_per_block => {}
+                _ => return Result::InvalidInput,
+            }
+            let y_base = block * num_y_rows_per_block;
+            let uv_base = block * DCTSIZE;
+            if !copy_plane_rows(pixmaps, 0, &planes[0], y_base)
+                || !copy_plane_rows(pixmaps, 1, &planes[1], uv_base)
+                || !copy_plane_rows(pixmaps, 2, &planes[2], uv_base)
+            {
+                return Result::InvalidInput;
+            }
+        }
+        if remaining_rows > 0 {
+            match self.decoder.read_raw_data(&mut planes) {
+                Ok(lines) if lines >= remaining_rows => {}
+                _ => return Result::InvalidInput,
+            }
+            let y_base = num_iters * num_y_rows_per_block;
+            let uv_base = num_iters * DCTSIZE;
+            if !copy_plane_rows(pixmaps, 0, &planes[0], y_base)
+                || !copy_plane_rows(pixmaps, 1, &planes[1], uv_base)
+                || !copy_plane_rows(pixmaps, 2, &planes[2], uv_base)
+            {
+                return Result::InvalidInput;
+            }
+        }
+        Result::Success
     }
 
     // Port of: src/codec/SkJpegCodec.cpp#L531-L620 (onGetPixels)

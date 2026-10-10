@@ -75,9 +75,8 @@ impl EncodedOrigin {
         }
     }
 
-    /// Port of `SkEncodedOriginToMatrixInverse`: the matrix equal to `to_matrix(w, h).invert()`,
-    /// written out per origin as in the C++ so that no inversion rounding is involved.
-    // Port of: include/codec/SkEncodedOrigin.h#L49-L62 (chrome/m156)
+    /// Port of `SkEncodedOriginToMatrixInverse`: the inverse of [`to_matrix`](Self::to_matrix).
+    // Port of: include/codec/SkEncodedOrigin.h#L46-L62 (chrome/m156)
     #[doc(alias = "SkEncodedOriginToMatrixInverse")]
     #[must_use]
     // mirrors the implicit int-to-float conversion of the C++ `MakeAll(..., w, ..., h, ...)` calls

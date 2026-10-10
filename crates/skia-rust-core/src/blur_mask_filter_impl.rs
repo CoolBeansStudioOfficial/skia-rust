@@ -260,6 +260,11 @@ impl MaskFilterBase for BlurMaskFilterImpl {
         })
     }
 
+    // skia-rust: the self-downcast of `SkBlurMaskFilterImpl` (see `MaskFilterBase`).
+    fn as_blur_mask_filter_impl(&self) -> Option<&BlurMaskFilterImpl> {
+        Some(self)
+    }
+
     // Port of: src/core/SkBlurMaskFilterImpl.cpp#L252-L394 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     fn filter_rrect_to_nine(

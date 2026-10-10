@@ -894,8 +894,8 @@ fn a_failed_compilation_resolves_to_no_pipeline() {
     let shared = shared_context(&vulkan(), &options_with(&handler, None));
     let manager = shared.base().pipeline_manager();
     let (_, rp_desc, dict) = solid_desc(&shared, "analytic_rrect[0]");
-    // The renderer provider has no `AnalyticBlur` step yet.
-    let desc = GraphicsPipelineDesc::new(RenderStepID::AnalyticBlur, UniquePaintParamsID::new(1));
+    // The renderer provider has no sparse strips step (`EndCap`, G17), so no pipeline can be made.
+    let desc = GraphicsPipelineDesc::new(RenderStepID::EndCap, UniquePaintParamsID::new(1));
 
     let handle =
         shared.create_pipeline_handle(Some(dict), &desc, &rp_desc, PipelineCreationFlags::NONE);
