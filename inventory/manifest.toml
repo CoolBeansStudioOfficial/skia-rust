@@ -37792,7 +37792,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParseColorTest.cpp#L168-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9b4ab7635cf6f3111d3a4a0e9eeb873c20c2a17bfa13ae6023306681ad819b1"
 
 [[test]]

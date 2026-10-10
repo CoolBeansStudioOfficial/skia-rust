@@ -143,6 +143,7 @@ pub mod packed_glyph_id;
 pub mod paint;
 #[doc(hidden)]
 pub mod paint_priv;
+pub mod parse;
 pub mod path;
 pub mod path_builder;
 pub mod path_data;
