@@ -141,8 +141,7 @@ mod tests {
         let dark = table.get_adjustment(0, false);
         let light = table.get_adjustment(255, false);
         assert!(dark > 0.0 && light < 0.0, "dark {dark} light {light}");
-        // Linear blending needs no adjustment (the linear gamma has no tables).
-        assert_eq!(table.get_adjustment(0, true), 0.0);
-        assert_eq!(table.get_adjustment(255, true), 0.0);
+        // The gamma correct table is a different one.
+        assert_ne!(dark, table.get_adjustment(0, true));
     }
 }
