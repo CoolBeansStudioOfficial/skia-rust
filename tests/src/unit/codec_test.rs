@@ -8,6 +8,7 @@
 
 use skia_rust_codec::android_codec::{AndroidCodec, AndroidOptions};
 use skia_rust_codec::codecs::{self, Decoder};
+use skia_rust_codec::encode::{jpeg_encoder, png_encoder, webp_encoder};
 use skia_rust_codec::image_generator_from_encoded;
 use skia_rust_codec::{
     Codec, Options, Result, ScanlineOrder, ZeroInitialized, decoders, png_codec,
@@ -17,8 +18,10 @@ use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
+use skia_rust_core::color_space_priv::color_space_almost_equal;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
+use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::md5::{Digest, Md5};
@@ -27,6 +30,7 @@ use skia_rust_core::random::Random;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
+use std::sync::{Arc, Mutex};
 
 use skia_rust_raster::raster_canvas::RasterCanvas;
 
@@ -34,6 +38,7 @@ use crate::codec_priv::{
     ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
 };
 use crate::resources::{get_resource_as_data, get_resource_as_image, resource_dir};
+use crate::unit::codec_exact_read_test::SharedStream;
 use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
 
 /// The `getPixels(info, pixels, rowBytes)` that the C++ test template calls on either an
@@ -2017,4 +2022,622 @@ def_test!(Codec_F16ConversionPossible, |r| {
     test_conversion_possible(r, "images/color_wheel.webp", false, false);
     test_conversion_possible(r, "images/mandrill_512_q075.jpg", true, false);
     test_conversion_possible(r, "images/yellow_rose.png", false, true);
+});
+
+/// Port of `color_type_match` (tests/CodecTest.cpp#L1250-L1259): RGBA and BGRA decodes are
+/// interchangeable for the purpose of this check.
+// Port of: tests/CodecTest.cpp#L1250-L1259 (chrome/m156)
+fn color_type_match(orig_color_type: ColorType, codec_color_type: ColorType) -> bool {
+    match orig_color_type {
+        ColorType::RGBA8888 | ColorType::BGRA8888 => {
+            codec_color_type == ColorType::RGBA8888 || codec_color_type == ColorType::BGRA8888
+        }
+        _ => orig_color_type == codec_color_type,
+    }
+}
+
+/// Port of `alpha_type_match` (tests/CodecTest.cpp#L1261-L1270): premul and unpremul decodes are
+/// interchangeable for the purpose of this check.
+// Port of: tests/CodecTest.cpp#L1261-L1270 (chrome/m156)
+fn alpha_type_match(orig_alpha_type: AlphaType, codec_alpha_type: AlphaType) -> bool {
+    match orig_alpha_type {
+        AlphaType::Unpremul | AlphaType::Premul => {
+            codec_alpha_type == AlphaType::Unpremul || codec_alpha_type == AlphaType::Premul
+        }
+        _ => orig_alpha_type == codec_alpha_type,
+    }
+}
+
+/// Port of `check_round_trip` (tests/CodecTest.cpp#L1272-L1292): decodes `orig_codec` to `info`,
+/// encodes those pixels as PNG, decodes the PNG to `info`, and compares the two decodes by MD5.
+// Port of: tests/CodecTest.cpp#L1272-L1292 (chrome/m156)
+fn check_round_trip(reporter: &mut Reporter, orig_codec: &mut Codec<'_>, info: &ImageInfo) {
+    let mut bm1 = Pixels::alloc(info);
+    let result = orig_codec.get_pixels(info, &mut bm1.data, bm1.row_bytes, None);
+    reporter_assert!(reporter, result == Result::Success);
+
+    // Encode the image to png.
+    let Some(pixmap) = Pixmap::new_readonly(&bm1.info, &bm1.data, bm1.row_bytes) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(data) = png_encoder::encode_pixmap(&pixmap, &png_encoder::Options::default()) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+
+    let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(data.as_bytes()))
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(
+        reporter,
+        color_type_match(info.color_type(), codec.info().color_type())
+    );
+    reporter_assert!(
+        reporter,
+        alpha_type_match(info.alpha_type(), codec.info().alpha_type())
+    );
+
+    let mut bm2 = Pixels::alloc(info);
+    let result = codec.get_pixels(info, &mut bm2.data, bm2.row_bytes, None);
+    reporter_assert!(reporter, result == Result::Success);
+
+    reporter_assert!(reporter, bm1.md5() == bm2.md5());
+}
+
+/// `GetResourceAsStream` followed by `SkCodec::MakeFromStream`. Returns `None` when the resource
+/// is missing (the caller then has nothing to test) and reports a failed decode.
+fn make_codec_from_resource(reporter: &mut Reporter, path: &str) -> Option<Codec<'static>> {
+    let data = get_resource_as_data(path)?;
+    let codec = codecs::make_codec_from_stream(MemoryStream::make_copy(&data));
+    if codec.is_err() {
+        errorf!(reporter, "Unable to decode '{}'", path);
+    }
+    codec.ok()
+}
+
+// Port of: tests/CodecTest.cpp#L1294-L1333 (chrome/m156)
+def_test!(Codec_pngRoundTrip, |r| {
+    let Some(mut codec) = make_codec_from_resource(r, "images/mandrill_512_q075.jpg") else {
+        return;
+    };
+
+    let color_types_opaque = [ColorType::RGB565, ColorType::RGBA8888, ColorType::BGRA8888];
+    for color_type in color_types_opaque {
+        let new_info = codec.info().with_color_type(color_type);
+        check_round_trip(r, &mut codec, &new_info);
+    }
+
+    let Some(mut codec) = make_codec_from_resource(r, "images/grayscale.jpg") else {
+        return;
+    };
+    let info = codec.info();
+    check_round_trip(r, &mut codec, &info);
+
+    let Some(mut codec) = make_codec_from_resource(r, "images/yellow_rose.png") else {
+        return;
+    };
+
+    let color_types_with_alpha = [ColorType::RGBA8888, ColorType::BGRA8888];
+    let alpha_types = [AlphaType::Unpremul, AlphaType::Premul];
+    for color_type in color_types_with_alpha {
+        for alpha_type in alpha_types {
+            // Set color space to nullptr because color correct premultiplies do not round trip.
+            let new_info = codec
+                .info()
+                .with_color_type(color_type)
+                .with_alpha_type(alpha_type)
+                .with_color_space(None::<ColorSpace>);
+            check_round_trip(r, &mut codec, &new_info);
+        }
+    }
+
+    let Some(mut codec) = make_codec_from_resource(r, "images/index8.png") else {
+        return;
+    };
+
+    for alpha_type in alpha_types {
+        let new_info = codec
+            .info()
+            .with_alpha_type(alpha_type)
+            .with_color_space(None::<ColorSpace>);
+        check_round_trip(r, &mut codec, &new_info);
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L1396-L1405 (chrome/m156)
+fn decode_frame(reporter: &mut Reporter, codec: &mut Codec<'_>, frame: i32) {
+    let info = codec.info().with_color_type(ColorType::N32);
+    let mut bm = Pixels::alloc(&info);
+    let opts = Options {
+        frame_index: frame,
+        ..Options::default()
+    };
+    let result = codec.get_pixels(&info, &mut bm.data, bm.row_bytes, Some(&opts));
+    reporter_assert!(reporter, result == Result::Success);
+}
+
+// For an animated GIF, we should only read enough to decode frame 0 if the
+// client never calls getFrameInfo and only decodes frame 0.
+// Port of: tests/CodecTest.cpp#L1407-L1440 (chrome/m156)
+def_test!(Codec_skipFullParse, |r| {
+    let path = "images/test640x479.gif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // Note that we cheat and hold on to the stream pointer, but SkCodec will take ownership. We
+    // will not refer to the stream after the SkCodec deletes it.
+    let stream = Arc::new(Mutex::new(*MemoryStream::make_copy(&data)));
+    let Ok(mut codec) = codecs::make_codec_from_stream(Box::new(SharedStream(Arc::clone(&stream))))
+    else {
+        errorf!(r, "Failed to create codec for {}", path);
+        return;
+    };
+    let position = || stream.lock().expect("stream lock").get_position();
+    let length = || stream.lock().expect("stream lock").get_length();
+
+    reporter_assert!(r, stream.lock().expect("stream lock").has_position());
+    let size_position = position();
+    reporter_assert!(
+        r,
+        stream.lock().expect("stream lock").has_length() && size_position < length()
+    );
+
+    // This should read more of the stream, but not the whole stream.
+    decode_frame(r, &mut codec, 0);
+    let position_after_first_frame = position();
+    reporter_assert!(
+        r,
+        position_after_first_frame > size_position && position_after_first_frame < length()
+    );
+
+    // There is more data in the stream.
+    let frame_info = codec.frame_infos();
+    reporter_assert!(r, frame_info.len() == 4);
+    reporter_assert!(r, position() > position_after_first_frame);
+});
+
+// Port of: tests/CodecTest.cpp#L2045-L2061 (chrome/m156)
+def_test!(Codec_kBGR_101010x_XR_SkColorType_supported, |r| {
+    let src_info = ImageInfo::new(
+        (100, 100),
+        ColorType::BGRA8888,
+        AlphaType::Opaque,
+        ColorSpace::new_srgb(),
+    );
+    let dst_info = src_info.with_color_type(ColorType::BGR101010xXR);
+    let src_bm = Pixels::alloc(&src_info);
+    let Some(src_pixmap) = Pixmap::new_readonly(&src_bm.info, &src_bm.data, src_bm.row_bytes)
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let Some(data) = png_encoder::encode_pixmap(&src_pixmap, &png_encoder::Options::default())
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(data.as_bytes()))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let mut dst_bm = Pixels::alloc(&dst_info);
+    let success = codec.get_pixels(&dst_info, &mut dst_bm.data, dst_bm.row_bytes, None);
+    reporter_assert!(r, success == Result::Success);
+});
+
+// Port of: tests/CodecTest.cpp#L1486-L1529 (chrome/m156)
+def_test!(Codec_fallBack, |r| {
+    // SkAndroidCodec needs to be able to fall back to scanline decoding if incremental decoding
+    // does not work. Make sure this does not require a rewind.
+
+    // Formats that currently do not support incremental decoding.
+    let files = [
+        "images/CMYK.jpg",
+        "images/mandrill.wbmp",
+        "images/randPixels.bmp",
+        "images/color_wheel.ico",
+    ];
+    for file in files {
+        let data = skip_missing_resource!(get_resource_as_data(file), file);
+        let stream = LimitedRewindingStream {
+            stream: MemoryStream::make_copy(&data),
+            limit: skia_rust_codec::codec::MIN_BUFFERED_BYTES_NEEDED,
+            position: 0,
+        };
+
+        let Ok(mut codec) = codecs::make_codec_from_stream(Box::new(stream)) else {
+            errorf!(r, "Failed to create codec for {},", file);
+            continue;
+        };
+
+        let info = codec.info().with_color_type(ColorType::N32);
+        let mut bm = Pixels::alloc(&info);
+
+        let result = match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, None) {
+            Ok(_) => Result::Success,
+            Err(result) => result,
+        };
+        if result != Result::Unimplemented {
+            errorf!(r, "Is scanline decoding now implemented for {}?", file);
+            continue;
+        }
+
+        // Scanline decoding should not require a rewind.
+        let result = codec.start_scanline_decode(&info, None);
+        if result != Result::Success {
+            errorf!(
+                r,
+                "Scanline decoding failed for {} with {}",
+                file,
+                result.as_str()
+            );
+        }
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L1885-L1896 (chrome/m156)
+def_test!(Codec_ossfuzz6274, |r| {
+    if resource_dir().is_none() {
+        return;
+    }
+
+    let file = "invalid_images/ossfuzz6274.gif";
+    if get_resource_as_image(file).is_some() {
+        errorf!(r, "Invalid data gave non-nullptr image");
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L2139-L2161 (chrome/m156)
+def_test!(Codec_gif_null_param, |r| {
+    let path = "images/flightAnim.gif";
+    let data = skip_missing_resource!(get_resource_as_data(path), path);
+
+    // SkGifDecoder::Decode(stream, &result, nullptr) uses the still-image policy, which is what
+    // wuffs_codec::make_from_stream selects.
+    let Ok(mut codec) =
+        skia_rust_codec::wuffs_codec::make_from_stream(MemoryStream::make_copy(&data))
+    else {
+        reporter_assert!(r, false);
+        return;
+    };
+
+    match codec.get_image(None::<ImageInfo>, None::<&Options>) {
+        Ok(image) => {
+            reporter_assert!(r, image.width() == 320, "width {} != 320", image.width());
+            reporter_assert!(r, image.height() == 240, "height {} != 240", image.height());
+
+            // Decoding the image this way loses the original data.
+            reporter_assert!(r, image.ref_encoded_data().is_none());
+        }
+        Err(_) => reporter_assert!(r, false),
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L1628-L1640 (chrome/m156)
+fn test_invalid_images(reporter: &mut Reporter, path: &str, expected_result: Result) {
+    let Some(data) = get_resource_as_data(path) else {
+        return;
+    };
+
+    let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+
+    let info = codec.info().with_color_type(ColorType::N32);
+    test_info(reporter, &mut codec, &info, expected_result, None);
+}
+
+// Port of: tests/CodecTest.cpp#L1642-L1661 (chrome/m156)
+def_test!(Codec_InvalidImages, |r| {
+    test_invalid_images(r, "invalid_images/b33251605.bmp", Result::IncompleteInput);
+    test_invalid_images(r, "invalid_images/bad_palette.png", Result::InvalidInput);
+    test_invalid_images(
+        r,
+        "invalid_images/many-progressive-scans.jpg",
+        Result::InvalidInput,
+    );
+
+    // An earlier revision of this test case passed kErrorInInput (instead of kSuccess) as the
+    // third argument (expectedResult). However, after
+    // https://skia-review.googlesource.com/c/skia/+/414417 `SkWuffsCodec: ignore too much pixel
+    // data` combined with https://github.com/google/wuffs/commit/e44920d3 `Let gif "ignore too
+    // much" quirk skip lzw errors`, the codec silently accepts skbug5887.gif (without the ASAN
+    // buffer-overflow violation that lead to that test case in the first place), even though it's
+    // technically an invalid GIF.
+    //
+    // Note that, in practice, real world GIF decoders already diverge (in different ways) from the
+    // GIF specification. For compatibility, (ad hoc) implementation often trumps specification.
+    // https://github.com/google/wuffs/blob/e44920d3/test/data/artificial-gif/frame-out-of-bounds.gif.make-artificial.txt#L30-L31
+    test_invalid_images(r, "invalid_images/skbug5887.gif", Result::Success);
+});
+
+// Port of: tests/CodecTest.cpp#L1753-L1787 (chrome/m156)
+def_test!(Codec_InvalidAnimated, |r| {
+    // ASAN will complain if there is an issue.
+    let path = "invalid_images/skbug6046.gif";
+    let Some(data) = get_resource_as_data(path) else {
+        return;
+    };
+
+    let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+
+    let info = codec.info().with_color_type(ColorType::N32);
+    let mut bm = Pixels::alloc(&info);
+
+    let frame_infos = codec.frame_infos();
+    for i in 0..frame_infos.len() {
+        let index = i32::try_from(i).unwrap_or(i32::MAX);
+        let req_frame = frame_infos[i].required_frame;
+        let opts = Options {
+            frame_index: index,
+            prior_frame: if req_frame == index - 1 {
+                req_frame
+            } else {
+                skia_rust_codec::codec::NO_FRAME
+            },
+            ..Options::default()
+        };
+        match codec.start_incremental_decode(&info, &mut bm.data, bm.row_bytes, Some(&opts)) {
+            Err(result) => {
+                errorf!(
+                    r,
+                    "Failed to start decoding frame {} (out of {}) with error {}",
+                    index,
+                    frame_infos.len(),
+                    result.as_str()
+                );
+            }
+            Ok(mut incremental) => {
+                incremental.incremental_decode();
+            }
+        }
+    }
+});
+
+// Neither of these calls should return a codec. Bots should catch us if we leaked anything.
+// Port of: tests/CodecTest.cpp#L743-L749 (chrome/m156)
+fn test_invalid_stream(reporter: &mut Reporter, stream: &[u8]) {
+    reporter_assert!(
+        reporter,
+        codecs::make_codec_from_stream(MemoryStream::make_copy(stream)).is_err()
+    );
+    reporter_assert!(
+        reporter,
+        AndroidCodec::make_from_stream(MemoryStream::make_copy(stream)).is_none()
+    );
+}
+
+// Ensure that SkCodec::NewFromStream handles freeing the passed in SkStream, even on failure. Test
+// some bad streams.
+// Port of: tests/CodecTest.cpp#L751-L774 (chrome/m156)
+def_test!(Codec_leaks, |r| {
+    // No codec should claim this as their format, so this tests SkCodec::NewFromStream. The C++
+    // strings include their terminating NUL, which the sizeof() calls count.
+    let non_supported_stream: &[u8] = b"hello world\0";
+    // The other strings should look like the beginning of a file type, so we'll call some
+    // internal version of NewFromStream, which must also delete the stream on failure.
+    let empty_png: &[u8] = &[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    let empty_jpeg: &[u8] = &[0xFF, 0xD8, 0xFF];
+    let empty_webp: &[u8] = b"RIFF1234WEBPVP\0";
+    let empty_bmp: &[u8] = b"BM";
+    let empty_ico: &[u8] = &[0x00, 0x00, 0x01, 0x00];
+    let empty_gif: &[u8] = b"GIFVER\0";
+
+    test_invalid_stream(r, non_supported_stream);
+    test_invalid_stream(r, empty_png);
+    test_invalid_stream(r, empty_jpeg);
+    test_invalid_stream(r, empty_webp);
+    test_invalid_stream(r, empty_bmp);
+    test_invalid_stream(r, empty_ico);
+    test_invalid_stream(r, empty_gif);
+});
+
+// Port of: tests/CodecTest.cpp#L781-L801 and #L802-L817 (chrome/m156), test_dimensions
+fn test_dimensions(reporter: &mut Reporter, path: &str) {
+    // Create the codec from the resource file.
+    let Some(data) = get_resource_as_data(path) else {
+        return;
+    };
+    let Some(mut codec) = AndroidCodec::make_from_stream(MemoryStream::make_copy(&data)) else {
+        errorf!(reporter, "Unable to create codec '{}'", path);
+        return;
+    };
+
+    // Check that the decode is successful for a variety of scales.
+    for sample_size in 1..32 {
+        // Scale the output dimensions.
+        let scaled_dims = codec.get_sampled_dimensions(sample_size);
+        let scaled_info = codec
+            .info()
+            .with_dimensions(scaled_dims)
+            .with_color_type(ColorType::N32);
+
+        // Set up for the decode. C++: rowBytes = width * sizeof(SkPMColor), with 4-byte pixels.
+        let row_bytes = usize::try_from(scaled_dims.width).unwrap_or(0) * 4;
+        let mut pixels = vec![0u8; scaled_info.compute_byte_size(row_bytes)];
+
+        let options = AndroidOptions {
+            sample_size,
+            ..AndroidOptions::default()
+        };
+        let result = codec.get_android_pixels(&scaled_info, &mut pixels, row_bytes, Some(&options));
+        if result != Result::Success {
+            errorf!(
+                reporter,
+                "Failed to decode {} with sample size {}; error: {}",
+                path,
+                sample_size,
+                result.as_str()
+            );
+        }
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L818-L847 (chrome/m156)
+def_test!(Codec_Dimensions, |r| {
+    // JPG
+    test_dimensions(r, "images/CMYK.jpg");
+    test_dimensions(r, "images/color_wheel.jpg");
+    test_dimensions(r, "images/grayscale.jpg");
+    test_dimensions(r, "images/mandrill_512_q075.jpg");
+    test_dimensions(r, "images/randPixels.jpg");
+
+    // Decoding small images with very large scaling factors is a potential source of bugs and
+    // crashes. We disable these tests in Gold because tiny images are not very useful to look at.
+    // Here we make sure that we do not crash or access illegal memory when performing scaled
+    // decodes on small images.
+    test_dimensions(r, "images/1x1.png");
+    test_dimensions(r, "images/2x2.png");
+    test_dimensions(r, "images/3x3.png");
+    test_dimensions(r, "images/3x1.png");
+    test_dimensions(r, "images/1x1.png");
+    test_dimensions(r, "images/16x1.png");
+    test_dimensions(r, "images/1x16.png");
+    test_dimensions(r, "images/mandrill_16.png");
+
+    // RAW
+    // skia-rust: not expressible in Rust: the RAW block is compiled only when SK_CODEC_DECODES_RAW
+    // is set and not on Win32, and there is no RAW decoder in this port (design: codecs.md 11).
+});
+
+// Port of: tests/CodecTest.cpp#L2004-L2043 (chrome/m156)
+def_test!(Codec_noConversion, |r| {
+    let recs: [(&str, u32); 2] = [
+        ("images/cmyk_yellow_224_224_32.jpg", 0xFFD8_FC04),
+        ("images/wide_gamut_yellow_224_224_64.jpeg", 0xFFE0_E040),
+    ];
+
+    for (name, color) in recs {
+        let Some(data) = get_resource_as_data(name) else {
+            continue;
+        };
+
+        let Ok(mut codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(&data)) else {
+            errorf!(r, "Failed to create a codec from {}", name);
+            continue;
+        };
+
+        // codec->getICCProfile()
+        let Some(profile) = codec.encoded_info().profile() else {
+            errorf!(r, "Expected {} to have a profile", name);
+            continue;
+        };
+        let cs = ColorSpace::make(profile);
+        reporter_assert!(r, cs.is_none());
+
+        let info = codec.info().with_color_space(None::<ColorSpace>);
+        let mut bm = Pixels::alloc(&info);
+        if codec.get_pixels(&info, &mut bm.data, bm.row_bytes, None) != Result::Success {
+            errorf!(r, "Failed to decode {}", name);
+            continue;
+        }
+        let Some(pixmap) = Pixmap::new_readonly(&info, &bm.data, bm.row_bytes) else {
+            reporter_assert!(r, false);
+            continue;
+        };
+        reporter_assert!(r, pixmap.get_color((0, 0)) == Color::from(color));
+    }
+});
+
+// Port of: tests/CodecTest.cpp#L1789-L1801 (chrome/m156), encode_format
+fn encode_format(pixmap: &Pixmap<'_>, format: EncodedImageFormat) -> Option<Data> {
+    match format {
+        EncodedImageFormat::PNG => {
+            png_encoder::encode_pixmap(pixmap, &png_encoder::Options::default())
+        }
+        EncodedImageFormat::JPEG => {
+            jpeg_encoder::encode_pixmap(pixmap, &jpeg_encoder::Options::default())
+        }
+        EncodedImageFormat::WEBP => {
+            webp_encoder::encode_pixmap(pixmap, &webp_encoder::Options::default())
+        }
+        // SkASSERT(false) in the C++.
+        _ => None,
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L1803-L1832 (chrome/m156), test_encode_icc
+fn test_encode_icc(reporter: &mut Reporter, format: EncodedImageFormat) {
+    // Test with sRGB color space.
+    let srgb_info = ImageInfo::new(
+        (1, 1),
+        ColorType::N32,
+        AlphaType::Opaque,
+        None::<ColorSpace>,
+    );
+    let srgb_bm = Pixels::alloc(&srgb_info);
+    let Some(pixmap) = Pixmap::new_readonly(&srgb_info, &srgb_bm.data, srgb_bm.row_bytes) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(srgb_data) = encode_format(&pixmap, format) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Ok(srgb_codec) =
+        codecs::make_codec_from_stream(MemoryStream::make_copy(srgb_data.as_bytes()))
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(
+        reporter,
+        srgb_codec
+            .info()
+            .color_space()
+            .is_some_and(|cs| cs.ptr_eq(&ColorSpace::new_srgb()))
+    );
+
+    // Test with P3 color space.
+    let Some(p3) = ColorSpace::new_rgb(&named_transfer_fn::SRGB, &named_gamut::DISPLAY_P3) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let p3_info = srgb_info.with_color_space(p3.clone());
+    let p3_bm = Pixels::alloc(&p3_info);
+    let Some(p3_pixmap) = Pixmap::new_readonly(&p3_info, &p3_bm.data, p3_bm.row_bytes) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(p3_data) = encode_format(&p3_pixmap, format) else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Ok(p3_codec) = codecs::make_codec_from_stream(MemoryStream::make_copy(p3_data.as_bytes()))
+    else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    let Some(p3_codec_space) = p3_codec.info().color_space() else {
+        reporter_assert!(reporter, false);
+        return;
+    };
+    reporter_assert!(reporter, p3_codec_space.gamma_close_to_srgb());
+    // SkColorSpace::toXYZD50 always returns true (SkColorSpace.cpp#L248-L251), so the
+    // `success` checks of the C++ cannot fail and are not repeated here.
+    let mat0 = p3.to_xyzd50();
+    let mat1 = p3_codec_space.to_xyzd50();
+
+    for i in 0..3 {
+        for j in 0..3 {
+            reporter_assert!(
+                reporter,
+                color_space_almost_equal(mat0.vals[i][j], mat1.vals[i][j])
+            );
+        }
+    }
+}
+
+// Port of: tests/CodecTest.cpp#L1834-L1838 (chrome/m156)
+def_test!(Codec_EncodeICC, |r| {
+    test_encode_icc(r, EncodedImageFormat::PNG);
+    test_encode_icc(r, EncodedImageFormat::JPEG);
+    test_encode_icc(r, EncodedImageFormat::WEBP);
 });
