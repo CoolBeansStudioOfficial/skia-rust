@@ -36,6 +36,7 @@ mod gsub;
 mod gsubgpos;
 mod context;
 mod layout;
+mod math;
 mod os2_ranges;
 mod ot;
 mod plan;

@@ -23,8 +23,6 @@ use skia_rust_hb_subset::{SubsetError, try_subset_font};
 /// which table is the first one the port stops at.
 const NOT_PORTED: &[(&str, &str)] = &[
     ("7630.otf", "CFF"),
-    ("DejaVuSans.subset.ttf", "layout tables"),
-    ("DejaVuSans.subset_noHx.ttf", "layout tables"),
     ("NotoSansCJK-VF-subset.otf.ttc", "CFF/CFF2/VORG"),
     ("Stroking.otf", "CFF"),
     ("colr.ttf", "colour tables"),

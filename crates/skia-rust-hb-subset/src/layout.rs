@@ -32,10 +32,8 @@ pub(crate) fn populate_gids_to_retain(plan: &mut Plan<'_>) -> Res<()> {
 }
 
 /// Port of `_math_closure` (hb-subset-plan.cc#L136-L146).
-pub(crate) fn math_closure(plan: &mut Plan<'_>, _glyphs: &mut BTreeSet<u32>) -> Res<()> {
-    if has(plan, b"MATH") {
-        return unsupported("MATH");
-    }
+pub(crate) fn math_closure(plan: &mut Plan<'_>, glyphs: &mut BTreeSet<u32>) -> Res<()> {
+    crate::math::closure_glyphs(View::new(plan.source.table(tag(b"MATH"))), glyphs);
     Ok(())
 }
 
@@ -185,7 +183,8 @@ pub(crate) fn subset_table(plan: &mut Plan<'_>, t: u32) -> Option<Res<bool>> {
         b"GDEF" => Some(run_table(plan, t, |plan, s, v| crate::gdef::subset(plan, s, v))),
         b"GSUB" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gsub))),
         b"GPOS" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gpos))),
-        b"BASE" | b"MATH" => Some(unsupported("BASE/MATH")),
+        b"MATH" => Some(run_table(plan, t, crate::math::subset)),
+        b"BASE" => Some(unsupported("BASE")),
         _ => None,
     }
 }
