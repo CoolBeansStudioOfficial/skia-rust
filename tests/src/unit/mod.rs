@@ -345,6 +345,8 @@ pub mod serialization_test;
 pub mod shader_test;
 pub mod shadow_test;
 #[cfg(test)]
+pub mod simplify_paint_test;
+#[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
 pub mod sk_color4f_test;

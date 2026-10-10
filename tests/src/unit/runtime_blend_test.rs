@@ -19,13 +19,11 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::runtime_effect::{RuntimeEffect, RuntimeShaderBuilder};
 use skia_rust_core::shaders;
-use skia_rust_core::canvas::Canvas;
 use skia_rust_gpu::gpu::gpu_types::Mipmapped;
 use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
-use skia_rust_gpu::graphite::wgpu::WgpuContext;
-use skia_rust_raster::surface::Surface;
 use skia_rust_raster::surfaces;
 
+use crate::tools::test_surface::{GraphiteTestSurface, TestSurface};
 use crate::{Reporter, def_graphite_adapter_test, def_test, reporter_assert};
 
 // Port of: tests/RuntimeBlendTest.cpp#L39-L45 (chrome/m156)
@@ -55,50 +53,8 @@ fn get_runtime_blend_for_blend_mode(mode: BlendMode) -> Blender {
         .expect("the blend effect makes a blender")
 }
 
-/// The surface `SkSurface*` that `test_blend` draws on and reads back, so the raster and Graphite
-/// variants share its body.
-trait BlendTarget {
-    fn image_info(&self) -> ImageInfo;
-    fn canvas(&mut self) -> &Canvas;
-    /// `surface->readPixels(bitmap.info(), bitmap.getPixels(), bitmap.rowBytes(), 0, 0)`.
-    fn read_pixels(&mut self, bitmap: &mut Bitmap) -> bool;
-}
-
-impl BlendTarget for Surface<'_> {
-    fn image_info(&self) -> ImageInfo {
-        Surface::image_info(self)
-    }
-    fn canvas(&mut self) -> &Canvas {
-        Surface::canvas(self)
-    }
-    fn read_pixels(&mut self, bitmap: &mut Bitmap) -> bool {
-        self.read_pixels_to_bitmap(bitmap, (0, 0))
-    }
-}
-
-/// A Graphite surface with the context that reads it back.
-struct GraphiteBlendTarget<'a> {
-    context: &'a mut WgpuContext,
-    surface: &'a GraphiteSurface,
-}
-
-impl BlendTarget for GraphiteBlendTarget<'_> {
-    fn image_info(&self) -> ImageInfo {
-        self.surface.image_info().clone()
-    }
-    fn canvas(&mut self) -> &Canvas {
-        self.surface.canvas()
-    }
-    fn read_pixels(&mut self, bitmap: &mut Bitmap) -> bool {
-        let Some(mut pm) = bitmap.peek_pixels_mut() else {
-            return false;
-        };
-        self.context.read_surface_pixels(self.surface, &mut pm, 0, 0)
-    }
-}
-
 // Port of: tests/RuntimeBlendTest.cpp#L47-L106 (chrome/m156)
-fn test_blend(r: &mut Reporter, surface: &mut dyn BlendTarget) {
+fn test_blend(r: &mut Reporter, surface: &mut dyn TestSurface) {
     let mut bitmap = Bitmap::new();
     reporter_assert!(r, bitmap.try_alloc_pixels_info(&surface.image_info(), None));
 
@@ -181,7 +137,7 @@ def_graphite_adapter_test!(SkRuntimeBlender_Graphite, |reporter, context| {
 
     test_blend(
         reporter,
-        &mut GraphiteBlendTarget {
+        &mut GraphiteTestSurface {
             context,
             surface: &surface,
         },
