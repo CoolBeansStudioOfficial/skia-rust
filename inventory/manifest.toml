@@ -30164,8 +30164,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L818-L847"
 module = "codec"
-status = "todo"
-reason = "covers JPEG and RAW as well as PNG"
+status = "passing"
 span_hash = "b8af011d0296dbf4a71e41480fb671673f98c8a13aac56c7089cc197cbe69350"
 
 [[test]]
@@ -30183,7 +30182,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1834-L1838"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "fecd4476d0102f374a9aee3dd06eef2bddea85881b6b6554c674725c03d1f1ec"
 
 [[test]]
@@ -30210,7 +30209,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2398-L2400"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "compiled out: the registration sits inside #if (0) (tests/CodecTest.cpp#L2308-L2401); it only generates the golden files for Codec_RoundTripColorXform"
 span_hash = "c076ae311a737a010b0478519e4ce3ac5701c4ffc2361b943c1092ec7577e9f1"
 
 [[test]]
@@ -30219,7 +30219,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1753-L1787"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9f482cb8eed28000ca8129f010f42a485f712df9fbd1aea3a8fb56beeb28a54f"
 
 [[test]]
@@ -30237,8 +30237,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1642-L1661"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and GIF decoders for many-progressive-scans.jpg and skbug5887.gif"
+status = "passing"
 span_hash = "13996169337ad20fa6107ae03de3ceacba68d2556d931abbde772bf0fe97bb8a"
 
 [[test]]
@@ -30284,7 +30283,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1486-L1529"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f7e925c605e459f17dee0531c1b68499076d7156fdd7b7b1e9a39b3573e561e5"
 
 [[test]]
@@ -30329,8 +30328,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2139-L2161"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported yet); the GIF decoder itself is ported"
+status = "passing"
 span_hash = "643e8e092078997c804740246efdf727489107dc5e5a1f6a62cef6dc145bf9c5"
 
 [[test]]
@@ -30393,7 +30391,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2045-L2061"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "0273a5ff6afe062142a04534e94207b89f1802410e33776186015d95bb4330cc"
 
 [[test]]
@@ -30402,8 +30400,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L753-L772"
 module = "codec"
-status = "todo"
-reason = "covers several formats (JPEG, WebP, BMP, ICO, GIF)"
+status = "passing"
 span_hash = "85f96953aad5dedcc5b663c34a82fd4241acfcd867b2a00d7e14f044fe98a8a7"
 
 [[test]]
@@ -30412,8 +30409,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2004-L2043"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG decoder and getICCProfile"
+status = "passing"
 span_hash = "6da5c76d1a2f48a7812a21eb606b4a42f0997451e66460ea77eba8976970a27d"
 
 [[test]]
@@ -30432,8 +30428,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1885-L1896"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder and GetResourceAsImage"
+status = "passing"
 span_hash = "17a56816ce56c394365e82cc9703f21f94b3786661f6423da7b5f3c4adfc297a"
 
 [[test]]
@@ -30461,7 +30456,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1294-L1333"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f9764c264e3c0eaf0006b5ee8f71ab1f976002c01706c8116294959f0c9abbb0"
 
 [[test]]
@@ -30526,8 +30521,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1409-L1440"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder"
+status = "passing"
 span_hash = "5a2560b9b4f002e2f52b606c822204032c58ba009fc2b002010fe76f9ff6fc86"
 
 [[test]]
