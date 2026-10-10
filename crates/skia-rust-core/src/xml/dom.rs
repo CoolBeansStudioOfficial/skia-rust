@@ -134,7 +134,7 @@ impl DomParser {
             self.flush_attributes();
         }
         self.need_to_flush = true;
-        self.elem_name = elem.to_owned();
+        elem.clone_into(&mut self.elem_name);
         self.elem_type = ty;
         self.level += 1;
     }
@@ -271,6 +271,10 @@ impl Dom {
     }
 
     // Port of: src/xml/SkDOM.cpp#L332-L338 (chrome/m156)
+    ///
+    /// # Panics
+    ///
+    /// If [`Dom::begin_parsing`] was not called.
     #[doc(alias = "finishParsing")]
     pub fn finish_parsing(&mut self) -> Option<Node> {
         let parser = self.parser.take().expect("begin_parsing was called");
