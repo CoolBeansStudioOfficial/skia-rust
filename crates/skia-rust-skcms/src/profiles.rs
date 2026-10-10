@@ -443,8 +443,10 @@ pub fn make_usable_as_destination_with_single_curve(profile: &mut IccProfile) ->
     true
 }
 
-/// Call before your first call to [`transform`] to skip runtime CPU detection. A no-op: the
-/// portable port does not detect CPU features.
+/// Call before your first call to [`transform`] to skip runtime CPU detection (the baseline
+/// kernel is used: software half-float conversions on x86-64).
 // Port of: modules/skcms/skcms.cc#L46-L48 (chrome/m156)
 #[doc(alias = "skcms_DisableRuntimeCPUDetection")]
-pub fn disable_runtime_cpu_detection() {}
+pub fn disable_runtime_cpu_detection() {
+    crate::cpu::disable_runtime_cpu_detection();
+}

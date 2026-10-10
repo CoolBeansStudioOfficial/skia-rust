@@ -11,3 +11,9 @@ publish = false
 
 [lints]
 workspace = true
+
+[dependencies]
+skia-rust-simd.workspace = true
+
+[dev-dependencies]
+skia-rust-simd = { workspace = true, features = ["testing", "models"] }

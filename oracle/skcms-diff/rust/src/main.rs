@@ -378,6 +378,8 @@ fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 }
 
 fn main() {
+    // The C++ twin is built SKCMS_PORTABLE (baseline kernel): software half conversions.
+    skcms::disable_runtime_cpu_detection();
     let root = std::env::args().nth(1).unwrap();
     let root_norm = root.replace('\\', "/");
     // ---- transfer functions

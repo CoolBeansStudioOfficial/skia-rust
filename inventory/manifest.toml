@@ -19854,8 +19854,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L158-L158"
 module = "codec"
-status = "failing"
-reason = "mismatch on every config; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kJPEG.md"
+status = "passing"
 span_hash = "32379a251c0de003983602c57953717dfd65a59b7af18def9f28bd29dc8ec526"
 
 [[test]]
@@ -19864,8 +19863,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L156-L156"
 module = "codec"
-status = "failing"
-reason = "a few RGB565 pixels differ from the golden; see notes/gm_encode_srgb_cpp_EncodeSRGBGM_kPNG.md"
+status = "passing"
 span_hash = "326e490e92eb0daad17dfdc20a58fc7ab225e5a4ec904eb705cadacb867389b4"
 
 [[test]]
