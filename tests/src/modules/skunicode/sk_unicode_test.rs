@@ -11,6 +11,8 @@ use skia_rust_unicode::unicode_client;
 use crate::{def_test, reporter_assert};
 
 // Port of: modules/skunicode/tests/SkUnicodeTest.cpp#L73-L84 (chrome/m156)
+// Skia runs this only on Unix (`UNIX_ONLY_TEST`). The client implementation is pure Rust with no
+// platform code, so the port runs everywhere: a superset, with the same assertions.
 def_test!(SkUnicode_Client, |reporter| {
     // u"\U000f2008", the code point U+F2008 as a surrogate pair.
     let text: Vec<u16> = "\u{f2008}".encode_utf16().collect();
