@@ -27,7 +27,7 @@ use skia_rust_gpu::graphite::draw_atlas::{
     K_MAX_MULTITEXTURE_PAGES, PlotEvictionCallback, PlotLocator, UseStorageTextures,
 };
 use skia_rust_gpu::graphite::recorder::Recorder;
-use skia_rust_gpu::graphite::text_atlas_manager::AtlasConfig;
+use skia_rust_gpu::graphite::text::text_atlas_manager::AtlasConfig;
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
 
 use crate::{Reporter, def_graphite_test_for_all_contexts, def_test, reporter_assert};

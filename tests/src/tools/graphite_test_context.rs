@@ -62,6 +62,15 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
 /// context.
 #[must_use]
 pub fn real_context() -> Option<(String, WgpuContext)> {
+    real_context_with_options(&ContextOptions::default())
+}
+
+/// [`real_context`] created with `options`.
+///
+/// # Panics
+/// As [`real_context`].
+#[must_use]
+pub fn real_context_with_options(options: &ContextOptions) -> Option<(String, WgpuContext)> {
     let Some((backend_context, info)) = any_adapter_backend_context() else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
@@ -70,8 +79,7 @@ pub fn real_context() -> Option<(String, WgpuContext)> {
         eprintln!("no adapter that renders: skipping");
         return None;
     };
-    let context = make_context(&backend_context, &ContextOptions::default())
-        .expect("a context on the adapter");
+    let context = make_context(&backend_context, options).expect("a context on the adapter");
     Some((format!("{} ({:?})", info.name, info.backend), context))
 }
 
