@@ -43738,7 +43738,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L46-L83"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "17c7dff2868b8ef936ffa8792c540914a5223158fe4a03005942c190c15ea008"
 
 [[test]]
@@ -43748,7 +43748,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L107-L161"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "942485a940b622aa2179a219f584336c11f7e24bc5e4ae1e855ef1dd74f37fe9"
 
 [[test]]
@@ -43758,7 +43758,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L19-L44"
 module = "codec"
 status = "todo"
-reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
+reason = "needs the XMP reader (SkJpegMakeXmp / SkXmp; core has an XML parser now, but the XMP reader is not ported) and SkGainmapInfo (not ported): gainmap metadata, left for the gainmap task (docs/design/codecs.md 8)"
 span_hash = "266ef4fcc105ea167b792d889f3b9e27bdd132903356022c28d162dd8bf9d456"
 
 [[test]]
