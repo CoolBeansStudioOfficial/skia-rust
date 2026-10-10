@@ -21,6 +21,9 @@
 //! keeps the fonts in `fFontMap`), and the glyph usage of a font is shared with the device that
 //! draws with it, so it is behind a `RefCell`. The document is single-threaded.
 
+#![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts mirror the C++
+#![allow(clippy::missing_panics_doc)] // the asserts and SkTo checks of the C++
+
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -570,7 +573,7 @@ pub fn get_metrics(typeface: &Typeface, doc: &DocHandle) -> Option<Rc<AdvancedTy
         }
     }
     // Fonts are always subset, so always prepend the subset tag.
-    let tag = doc.with(|d| d.next_font_subset_tag());
+    let tag = doc.with(crate::document::DocInner::next_font_subset_tag);
     metrics.post_script_name.insert_str(0, &tag);
     let metrics = Rc::new(metrics);
     doc.with(|d| d.typeface_metrics.insert(id, Some(Rc::clone(&metrics))));
@@ -612,6 +615,7 @@ pub fn get_unicode_map_ex(typeface: &Typeface, doc: &DocHandle) -> Rc<RefCell<Gl
 }
 
 /// The hash of a `SkGlyphID` key (`SkGoodHash`).
+#[allow(clippy::trivially_copy_pass_by_ref)] // the signature of the hash function of `THashMap`
 fn glyph_id_hash(key: &GlyphId) -> u32 {
     skia_rust_core::checksum::GoodHash::good_hash(key)
 }
@@ -694,10 +698,10 @@ fn emit_subset_type0(font: &PdfFont, doc: &DocHandle) {
     let em_size = u16::try_from(scalar_round_to_int(strike.path().units_per_em)).expect("SkToU16");
     populate_common_font_descriptor(&mut descriptor, &metrics, em_size, 0);
 
-    let font_asset = typeface.open_stream();
-    let font_data = font_asset
-        .map(|(mut asset, _ttc_index)| read_stream(asset.as_mut()))
-        .unwrap_or_default();
+    let (font_data, ttc_index) = match typeface.open_stream() {
+        Some((mut asset, ttc_index)) => (read_stream(asset.as_mut()), ttc_index),
+        None => (Vec::new(), 0),
+    };
     if font_data.is_empty() {
         // C++: "Error: (SkTypeface)(%p)::openStream() returned empty stream (%p) when
         // identified as kType1CID_Font or kTrueType_Font."
@@ -705,7 +709,7 @@ fn emit_subset_type0(font: &PdfFont, doc: &DocHandle) {
         let mut subset_font_data = None;
         if can_subset(&metrics) {
             debug_assert_eq!(font.first_glyph_id(), 1);
-            subset_font_data = pdf_subset_font(&typeface, &font.glyph_usage());
+            subset_font_data = pdf_subset_font(&font_data, &font.glyph_usage(), ttc_index);
         }
         // If subsetting fails, fall back to original font data.
         let subset_font_asset = subset_font_data.unwrap_or(font_data);
@@ -885,6 +889,18 @@ fn type3_descriptor(
     typeface: &Typeface,
     x_height: scalar,
 ) -> PdfIndirectReference {
+    // PDF32000_2008: FontStretch should be used for Type3 fonts in Tagged PDF documents.
+    const STRETCH_NAMES: [&str; 9] = [
+        "UltraCondensed",
+        "ExtraCondensed",
+        "Condensed",
+        "SemiCondensed",
+        "Normal",
+        "SemiExpanded",
+        "Expanded",
+        "ExtraExpanded",
+        "UltraExpanded",
+    ];
     if let Some(reference) =
         doc.with(|d| d.type3_font_descriptors.get(&typeface.unique_id()).copied())
     {
@@ -901,17 +917,6 @@ fn type3_descriptor(
     }
 
     // PDF32000_2008: FontStretch should be used for Type3 fonts in Tagged PDF documents.
-    const STRETCH_NAMES: [&str; 9] = [
-        "UltraCondensed",
-        "ExtraCondensed",
-        "Condensed",
-        "SemiCondensed",
-        "Normal",
-        "SemiExpanded",
-        "Expanded",
-        "ExtraExpanded",
-        "UltraExpanded",
-    ];
     let stretch_name = STRETCH_NAMES
         [usize::try_from(*typeface.font_style().width() - 1).expect("a width of at least 1")];
     descriptor.insert_name("FontStretch", stretch_name);
@@ -948,7 +953,7 @@ fn type3_descriptor(
 
 // Port of: src/pdf/SkPDFFont.cpp#L727-L896 (emit_subset_type3, chrome/m156)
 #[allow(clippy::too_many_lines)] // one function in the C++, kept as is
-#[allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts mirror the C++
+#[allow(clippy::if_not_else)] // mirrors the C++ branches
 fn emit_subset_type3(pdf_font: &PdfFont, doc: &DocHandle) {
     let pdf_strike = pdf_font.strike();
     let first_glyph_id = pdf_font.first_glyph_id();
@@ -1097,9 +1102,9 @@ fn emit_subset_type3(pdf_font: &PdfFont, doc: &DocHandle) {
 
                 // This is a `d1` glyph (shaded with the current fill)
                 let small_glyph = small_glyphs.glyph(PackedGlyphId::from_glyph_id(g_id));
-                let small_bbox = small_glyph.rect();
+                let small_glyph_bounds = small_glyph.rect();
                 let small_ibox: IRect = Matrix::scale((bitmap_scale, bitmap_scale))
-                    .map_rect(small_bbox)
+                    .map_rect(small_glyph_bounds)
                     .0
                     .round_out();
                 bbox = IRect::join(&bbox, &small_ibox);
@@ -1160,7 +1165,7 @@ fn emit_subset_type3(pdf_font: &PdfFont, doc: &DocHandle) {
                 apply_graphic_state(smask_graphic_state.value, &mut content);
 
                 // Draw a rectangle the size of the glyph (masked by SMask)
-                append_rectangle(&Rect::from_irect(&image.bounds()), &mut content);
+                append_rectangle(&Rect::from_irect(image.bounds()), &mut content);
                 paint_path(Style::Fill, PathFillType::Winding, &mut content);
 
                 // Add glyph resources to font resource dict

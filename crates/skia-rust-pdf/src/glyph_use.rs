@@ -5,6 +5,8 @@
 
 //! `SkPDFGlyphUse`: the set of glyphs of a font that a document used.
 
+#![allow(clippy::missing_panics_doc)] // the SkBitSet asserts of the C++
+
 use skia_rust_core::font_types::GlyphId;
 
 /// `SkPDFGlyphUse`: a set of the glyph ids in `first_non_zero..=last_glyph`, and glyph 0.

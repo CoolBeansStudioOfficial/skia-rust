@@ -840,6 +840,12 @@ impl Typeface {
     #[doc(alias = "getAdvancedMetrics")]
     #[must_use]
     pub fn advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        // The `SkOTTableOS2::Version::V2::Type::Raw` masks of `fsType`.
+        const RESTRICTED: u16 = 1 << 1;
+        const PREVIEW_PRINT: u16 = 1 << 2;
+        const EDITABLE: u16 = 1 << 3;
+        const NO_SUBSETTING: u16 = 1 << 8;
+        const BITMAP: u16 = 1 << 9;
         let mut result = self.0.on_get_advanced_metrics()?;
         if result.post_script_name.is_empty() {
             result.post_script_name = self
@@ -853,11 +859,6 @@ impl Typeface {
             let mut fs_type = [0u8; 2];
             if self.get_table_data(OS2_TAG, FS_TYPE_OFFSET, 2, Some(&mut fs_type)) == 2 {
                 let fs_type = u16::from_be_bytes(fs_type);
-                const RESTRICTED: u16 = 1 << 1;
-                const PREVIEW_PRINT: u16 = 1 << 2;
-                const EDITABLE: u16 = 1 << 3;
-                const NO_SUBSETTING: u16 = 1 << 8;
-                const BITMAP: u16 = 1 << 9;
                 if fs_type & BITMAP != 0
                     || (fs_type & RESTRICTED != 0 && fs_type & (PREVIEW_PRINT | EDITABLE) == 0)
                 {

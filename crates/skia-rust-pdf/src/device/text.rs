@@ -36,6 +36,7 @@ use crate::utils::{append_scalar, write_uint8, write_uint16_be};
 
 /// `GlyphPositioner`: writes the positions and codes of the glyphs of a text object.
 // Port of: src/pdf/SkPDFDevice.cpp#L775-L851 (chrome/m156)
+#[allow(clippy::struct_excessive_bools)] // the flags of the C++ class
 struct GlyphPositioner {
     pdf_font: Option<PdfFont>,
     current_matrix_origin: Point,
@@ -342,7 +343,7 @@ impl Content {
             let elem_id = self.mark_manager.elem_id();
             doc.with(|d| {
                 d.struct_tree
-                    .add_struct_elem_title(elem_id, glyph_run.text())
+                    .add_struct_elem_title(elem_id, glyph_run.text());
             });
         }
 

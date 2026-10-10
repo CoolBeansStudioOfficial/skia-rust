@@ -36,13 +36,13 @@ use skia_rust_core::typeface::{
 use skia_rust_core::utf::Unichar;
 
 use super::base::{
-    BridgeFontRef, BridgeFontStyle, BridgeMappingIndex, BridgeNormalizedCoords,
-    OutlineFormat, coordinates_for_shifted_named_instance_index, fill_glyph_to_unicode_map,
-    font_ref_is_valid, get_font_style, get_outline_collection, get_unscaled_metrics, is_embeddable,
-    is_fixed_pitch, is_script_style, is_serif_style, is_subsettable, italic_angle, lookup_glyph_or_zero,
-    outline_format, make_font_ref, make_mapping_index,
-    normalized_coords_equal, num_glyphs, populate_axes, resolve_into_normalized_coords, table_data,
-    table_tags, units_per_em_or_zero, variation_position,
+    BridgeFontRef, BridgeFontStyle, BridgeMappingIndex, BridgeNormalizedCoords, OutlineFormat,
+    coordinates_for_shifted_named_instance_index, fill_glyph_to_unicode_map, font_ref_is_valid,
+    get_font_style, get_outline_collection, get_unscaled_metrics, is_embeddable, is_fixed_pitch,
+    is_script_style, is_serif_style, is_subsettable, italic_angle, lookup_glyph_or_zero,
+    make_font_ref, make_mapping_index, normalized_coords_equal, num_glyphs, outline_format,
+    populate_axes, resolve_into_normalized_coords, table_data, table_tags, units_per_em_or_zero,
+    variation_position,
 };
 use super::colr::resolve_palette;
 use super::hinting::{BridgeGlyphStyles, get_bridge_glyph_styles};
@@ -293,7 +293,13 @@ impl TypefaceBase for TypefaceFontations {
         if !is_subsettable(&font_ref) {
             info.flags |= FontFlags::NOT_SUBSETTABLE;
         }
-        if table_data(&font_ref, set_four_byte_tag(b'f', b'v', b'a', b'r'), 0, &mut []) != 0 {
+        if table_data(
+            &font_ref,
+            set_four_byte_tag(b'f', b'v', b'a', b'r'),
+            0,
+            &mut [],
+        ) != 0
+        {
             info.flags |= FontFlags::VARIABLE;
         }
 
