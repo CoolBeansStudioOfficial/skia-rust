@@ -16,6 +16,7 @@ use skia_rust_core::tile_mode::TileMode;
 
 use crate::graphite::attribute::{Attribute, Interpolation, Varying};
 use crate::graphite::buffer::BindBufferInfo;
+use crate::graphite::caps::ResourceBindingRequirements;
 use crate::graphite::context_utils::emit_sampler_layout;
 use crate::graphite::draw_params::DrawParams;
 use crate::graphite::draw_types::{PrimitiveType, VertexAttribType};
@@ -24,7 +25,6 @@ use crate::graphite::paint_params_key::RootNodesInfo;
 use crate::graphite::pipeline_data::PipelineDataGatherer;
 use crate::graphite::render::common_depth_stencil_settings::DIRECT_DEPTH_LESS_PASS;
 use crate::graphite::render_step::{RenderStep, RenderStepBase, RenderStepFlags, RenderStepID};
-use crate::graphite::caps::ResourceBindingRequirements;
 use crate::graphite::resource_types::{Layout, SamplerDesc};
 use crate::graphite::uniform::Uniform;
 use crate::sksl_type_shared::SkSLType;
@@ -55,7 +55,11 @@ const STATIC_ATTRS: [Attribute; 0] = [];
 const APPEND_ATTRS: [Attribute; 8] = [
     Attribute::new("drawBounds", VertexAttribType::Float4, SkSLType::Float4),
     // ltrb of the mask bounds in the atlas, normalized (`UShort4_norm`).
-    Attribute::new("maskBoundsIn", VertexAttribType::UShort4Norm, SkSLType::Float4),
+    Attribute::new(
+        "maskBoundsIn",
+        VertexAttribType::UShort4Norm,
+        SkSLType::Float4,
+    ),
     // Remaining translation extracted from the actual `maskToDevice` transform.
     Attribute::new("deviceOrigin", VertexAttribType::Float2, SkSLType::Float2),
     Attribute::new("depth", VertexAttribType::Float, SkSLType::Float),
@@ -103,7 +107,11 @@ impl CoverageMaskRenderStep {
                 // `textureCoords` are the atlas-relative UV coordinates of the draw, which can
                 // spill beyond `maskBounds` for inverse fills.
                 Varying::new("maskBounds", SkSLType::Float4, Interpolation::Perspective),
-                Varying::new("textureCoords", SkSLType::Float2, Interpolation::Perspective),
+                Varying::new(
+                    "textureCoords",
+                    SkSLType::Float2,
+                    Interpolation::Perspective,
+                ),
                 // 'invert' is set to 0 use unmodified coverage, and set to 1 for "1-c".
                 Varying::new("invert", SkSLType::Half, Interpolation::Perspective),
             ],
@@ -153,6 +161,8 @@ impl RenderStep for CoverageMaskRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/CoverageMaskRenderStep.cpp#L123-L201 (chrome/m156)
+    // The mask coordinates are converted to `ushort_norm` and compared exactly, as the C++ does.
+    #[allow(clippy::cast_possible_truncation, clippy::float_cmp)]
     fn write_vertices(&self, writer: &mut DrawWriter<'_>, params: &DrawParams, ssbo_index: u32) {
         let coverage_mask = params.geometry().coverage_mask_shape();
         let proxy_dims = coverage_mask.texture_proxy().dimensions();
@@ -180,14 +190,15 @@ impl RenderStep for CoverageMaskRenderStep {
             // Since we know this is an inverted mask, then we can exactly map the draw's clip
             // bounds to mask space so that the clip is still fully covered without branching in
             // the vertex shader.
-            debug_assert!(
-                *mask_to_device == M44::translate(device_origin[0], device_origin[1], 0.0)
+            debug_assert_eq!(
+                *mask_to_device,
+                M44::translate(device_origin[0], device_origin[1], 0.0)
             );
             draw_bounds = ltrb(&offset_rect(&params.draw_bounds(), device_origin));
 
             // If the mask is fully clipped out, then the shape's mask info should be (0,0,0,0).
             // If it's not fully clipped out, then the mask info should be non-empty.
-            let empty_mask = mask_bounds.iter().all(|v| *v == 0.0);
+            let empty_mask = mask_bounds.iter().all(|v| *v == 0.0); // exact, as the C++
             if empty_mask {
                 // The inversion check is strict inequality, so (0,0,0,0) would not be detected.
                 // Adjust to (0,0,1/2,1/2) to restrict sampling to the top-left quarter of the
@@ -200,7 +211,12 @@ impl RenderStep for CoverageMaskRenderStep {
             }
             // and store RBLT so that the 'maskBoundsIn' attribute has xy > zw to detect inverse
             // fill.
-            mask_bounds = [mask_bounds[2], mask_bounds[3], mask_bounds[0], mask_bounds[1]];
+            mask_bounds = [
+                mask_bounds[2],
+                mask_bounds[3],
+                mask_bounds[0],
+                mask_bounds[1],
+            ];
         } else {
             // If we aren't inverted, then the originally assigned values don't need to be
             // adjusted.
@@ -247,6 +263,8 @@ impl RenderStep for CoverageMaskRenderStep {
 
         // Since the mask bounds define normalized texels of the texture, we can encode them as
         // ushort_norm without losing precision to save space.
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        // ushort_norm, as the C++
         let mask_bounds_u16: [u16; 4] = mask_bounds.map(|v| (65535.0 * v + 0.5) as u16);
 
         let m = params.transform().matrix(); // local-to-device
@@ -262,6 +280,8 @@ impl RenderStep for CoverageMaskRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/CoverageMaskRenderStep.cpp#L203-L249 (chrome/m156)
+    // The pixel-alignment test compares exactly, as the C++ does.
+    #[allow(clippy::float_cmp)]
     fn write_uniforms_and_textures(
         &self,
         params: &DrawParams,
@@ -285,7 +305,7 @@ impl RenderStep for CoverageMaskRenderStep {
         let pixel_aligned = remainder.is_identity()
             && device_origin
                 .iter()
-                .all(|&o| o == (o + SCALAR_NEARLY_ZERO).floor());
+                .all(|&o| o == (o + SCALAR_NEARLY_ZERO).floor()); // exact, as the C++
 
         // The mask coordinates in the vertex shader will be normalized, so scale by the proxy size
         // to get back to Skia's texel-based coords.

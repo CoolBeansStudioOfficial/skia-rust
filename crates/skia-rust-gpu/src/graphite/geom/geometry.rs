@@ -103,8 +103,10 @@ impl Geometry {
         match self {
             Self::Empty => true,
             Self::Shape(shape) => shape.is_empty() && !shape.inverted(),
-            Self::EdgeAAQuad(_) | Self::Vertices(_) | Self::Mesh(_) => false,
-            Self::CoverageMaskShape(_) => false,
+            Self::EdgeAAQuad(_)
+            | Self::Vertices(_)
+            | Self::Mesh(_)
+            | Self::CoverageMaskShape(_) => false,
         }
     }
 
