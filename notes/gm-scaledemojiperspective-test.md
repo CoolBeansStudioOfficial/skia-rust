@@ -44,3 +44,11 @@ so the order was not the cause. Facts established:
 Tried forcing the layer of a 565 canvas to BGRA8888 (the oracle's N32): the 565 hash changes
 (so BGRA vs RGBA layers do round differently on this host) but still does not match the golden, so
 the BGRA hypothesis alone is not the cause. Left failing.
+
+Follow-up measurement (565, scalar): ours with an RGBA layer vs the golden: 297 pixels differ; ours with a
+BGRA8888 layer vs the golden: 5561; RGBA layer vs BGRA layer (both ours): 5318 pixels, all differing by
+exactly one LSB in one channel. In real Skia a BGRA and an RGBA layer give identical numerics, so
+some Rust blit/pipeline path is not byte-order independent (probably a lowp/highp or legacy-blitter
+choice that depends on the color type). Next step for whoever continues: find which stage list the
+sprite restore blit (layer N32 -> 565) picks for RGBA vs BGRA and why the arithmetic differs; the
+297 remaining pixels are probably the same asymmetry (the oracle ran with BGRA layers).
