@@ -13,8 +13,10 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::color_type::ColorType;
 use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::{Paint, Style};
@@ -91,7 +93,7 @@ fn small_atlas_options(min_size: f32) -> ContextOptions {
 fn make_device(recorder: &Recorder) -> Device {
     Device::make_with_info(
         Some(recorder),
-        &ImageInfo::new_n32_premul((SIZE, SIZE), None),
+        &ImageInfo::new((SIZE, SIZE), ColorType::RGBA8888, AlphaType::Premul, None),
         Budgeted::Yes,
         Mipmapped::No,
         BackingFit::Exact,
