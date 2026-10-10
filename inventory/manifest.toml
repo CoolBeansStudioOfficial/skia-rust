@@ -25017,6 +25017,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L319-L335"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "873f9a185dd5165d35322e18d8f1fdeeedc64f633b4cf6818c403cdb0831ea05"
 
 [[test]]
@@ -25026,6 +25027,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L338-L355"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "ac26030cfea96f67ef5c6bf32d28353ace9c71d0f177f0c319139eb9fecc6462"
 
 [[test]]
@@ -25035,6 +25037,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L420-L439"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "b6a8c4ce73ecbc73a08c694d29c96ed68fc3490fa7852e077a77c5de5ea5b548"
 
 [[test]]
@@ -25044,6 +25047,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L357-L365"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "e68ccd99059244529a5fe76fdadafabd356fdbd698dab8c67e2bce77e94c9987"
 
 [[test]]
@@ -25053,6 +25057,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L368-L377"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "1599d2e5b1bde5ae6e740976d5834cf43b9d9fb5199465b1b36f2ebe8184791a"
 
 [[test]]
@@ -25071,6 +25076,7 @@ macro = "DEF_SURFACE_TESTS"
 source = "gm/surface.cpp#L441-L498"
 module = "core"
 status = "todo"
+reason = "DEF_SURFACE_TESTS GM (gm/surface.cpp) that the GM harness runs with the raster and GPU surface makers; only SurfacePropsGM(0) is ported (tests/gm/src/gm/surface.rs)"
 span_hash = "8ff85b9491e48ac09dd5334c1cac5044fe406758ebc7ff25c0026df478e59487"
 
 [[test]]
@@ -28655,6 +28661,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L289-L486"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "ef5e1b6c798ca13173981d77d71aedba406a9136fc630c0ccc2e341a18fcecb4"
 
 [[test]]
@@ -28664,6 +28671,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L218-L287"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "b0540d4618ff389249f1755a6ea966a4297e8fe2b274b30c017071a9093b86d5"
 
 [[test]]
@@ -28673,6 +28681,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L89-L147"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "e54d8349b869a86f0a2bb8ab363a5efee50a1f1ed63541a47f6a504d7baffc93"
 
 [[test]]
@@ -28682,6 +28691,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L54-L87"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "a66042424860af780cccedba1728ffc5770a61041a800b33ba5fed71ee480fbd"
 
 [[test]]
@@ -28691,6 +28701,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L149-L191"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "754d7846678af1b451f36ad85c636ca00d95e669b85f96948477f8a2833eb644"
 
 [[test]]
@@ -28700,6 +28711,7 @@ macro = "DEF_TEST"
 source = "tests/AnimatedImageTest.cpp#L35-L52"
 module = "core"
 status = "todo"
+reason = "needs SkAnimatedImage (src/codec/SkAnimatedImage), not ported; skia-rust-codec only has the codec frame API (codec_animation.rs)"
 span_hash = "8c34d810c5db1088a52d8b6994b57bbe0568d1231ba643e2b83ca5949e039e1a"
 
 [[test]]
@@ -29012,6 +29024,7 @@ macro = "DEF_TEST"
 source = "tests/BRDTest.cpp#L18-L52"
 module = "core"
 status = "todo"
+reason = "needs SkBitmapRegionDecoder (src/codec/SkBitmapRegionDecoder), not ported"
 span_hash = "d5a453c17809e0abaf6b69b2811ed028a62f873a786bdb4f4c21afcbadada6e0"
 
 [[test]]
@@ -29546,6 +29559,7 @@ macro = "DEF_TEST"
 source = "tests/CachedDecodingPixelRefTest.cpp#L94-L131"
 module = "core"
 status = "todo"
+reason = "needs SkCachedDecodingPixelRef and Image::NewFromGenerator over a decoding generator; neither is ported"
 span_hash = "8d3f155735a1ac834fed5ae8bf2603a77cfda8fa77edf7c1af99c39487dddebe"
 
 [[test]]
@@ -31205,6 +31219,7 @@ macro = "DEF_TEST"
 source = "tests/DebugLayerManagerTest.cpp#L87-L89"
 module = "core"
 status = "todo"
+reason = "needs SkDebugLayerManager (src/core/SkDebugLayerManager), not ported"
 span_hash = "b4d51160ccaffc9b5f400844bf376dae2db990633f62db21e74e97d137eb8b15"
 
 [[test]]
@@ -32292,6 +32307,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L222-L261"
 module = "core"
 status = "todo"
+reason = "needs SkFlattenable::Register for the test's own drawables (IntDrawable, RootDrawable, CompoundDrawable, PaintDrawable); flattenable.rs has a fixed compile-time registry and no Register"
 span_hash = "520f87b718e85bd040399cd840993a96fb4ed25f60303312fb5ea94f0dc03f58"
 
 [[test]]
@@ -32301,6 +32317,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L263-L299"
 module = "core"
 status = "todo"
+reason = "needs SkFlattenable::Register for the test's own drawables (IntDrawable, RootDrawable, CompoundDrawable, PaintDrawable), and drawString with ToolUtils::DefaultFont"
 span_hash = "7bc71c400c07de159a095c91868674bff2cfc0a44f8e34aac110e3e213ca2ed3"
 
 [[test]]
@@ -32310,6 +32327,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenDrawableTest.cpp#L302-L312"
 module = "core"
 status = "todo"
+reason = "needs SkImageFilter::Deserialize; ReadBuffer has read_shader, read_color_filter, read_path_effect and read_blender but no read_image_filter"
 span_hash = "cda713f8b292c6f89f83e001fbfbd949135621bba363bab417bacf578133b0f7"
 
 [[test]]
@@ -34834,6 +34852,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L75-L110"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "0cee14bd055d60b8ba11bc1c26bf2eb616f3fa2bab023997847bb7539a71caa8"
 
 [[test]]
@@ -34843,6 +34862,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1205-L1329"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "7f040f5e8eb339611e89353569e8c9aafe5d3b74ce02e5c411b1eea98254f3ff"
 
 [[test]]
@@ -34852,6 +34872,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L228-L281"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "8a7ede3298e6d8b6e13ebe08c323c1637493a8201d43fa663bb2507694b3a83a"
 
 [[test]]
@@ -34861,6 +34882,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L112-L226"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "1f71392e2cca295a1921a919e0fa53674624f301bf856aaeab6f7e5e6ce14b4b"
 
 [[test]]
@@ -34870,6 +34892,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L283-L321"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "f3e9658e6c2e55952e3d07e2a00336d1b5eaf798d2b278ccd17c99709e2a3d2e"
 
 [[test]]
@@ -34879,6 +34902,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L485-L932"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "26c0d5e13841f0866e31ecdd45adac15608493bc3a745069f22454747bed98ed"
 
 [[test]]
@@ -34888,6 +34912,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L323-L415"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "bd83ad66c9f141eceafc771d8f64dc6ce3c329bcbe68540cc3996f64e18e8715"
 
 [[test]]
@@ -34897,6 +34922,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L20-L47"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "753d4f76097391c67c30432d642f81b96f1e182293cb48a7f1b10387a0ea64fb"
 
 [[test]]
@@ -34906,6 +34932,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L49-L73"
 module = "core"
 status = "todo"
+reason = "needs SkHdrMetadata (ContentLightLevel, MasteringDisplayColorVolume, Agtm parse and serialize, PCHIP and RWTMO); no HDR metadata module is ported"
 span_hash = "3e580ffed2f451dc72b1544eed04a1fb6e9b930666a52c2e19a3291e6c55c248"
 
 [[test]]
@@ -34969,6 +34996,7 @@ macro = "DEF_TEST"
 source = "tests/ImageCacheTest.cpp#L120-L141"
 module = "core"
 status = "todo"
+reason = "needs SkImageCacher (the image cache), not ported; only the ImageCacheratorGM in tests/gm/src/gm/image_pict.rs mentions it"
 span_hash = "089a39b06e5a4537db1c7985c106751efda8a9735fa3e341a62a9b2633d2131d"
 
 [[test]]
@@ -34978,6 +35006,7 @@ macro = "DEF_TEST"
 source = "tests/ImageCacheTest.cpp#L143-L156"
 module = "core"
 status = "todo"
+reason = "needs SkImageCacher (the image cache), not ported; only the ImageCacheratorGM in tests/gm/src/gm/image_pict.rs mentions it"
 span_hash = "bae0ad122f5b03dced3479a0140ca4f1e464f630bb8479c8df08b8f6fe8ff782"
 
 [[test]]
@@ -35610,6 +35639,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorOrientationTest.cpp#L40-L124"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs SkCodecImageGenerator (skia-rust-codec codec_image_generator.rs) and the images/orientation JPEG resources, both present"
 span_hash = "7dc1f22d89bbdf60ae89fa176af650fc00cf2637dad578a6d2bdfe17d0027ca1"
 
 [[test]]
@@ -35619,6 +35649,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L76-L96"
 module = "core"
 status = "todo"
+reason = "needs the YUVA planes API of SkImageGenerator (queryYUVAInfo, getYUVAPlanes, SkYUVAPixmaps); image_generator.rs says it is not ported"
 span_hash = "f75f2fd94b00d32811ae969baa2de1cf677939fb56c3a78b8f14fa0dc5c18016"
 
 [[test]]
@@ -35628,6 +35659,7 @@ macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L104-L134"
 module = "core"
 status = "todo"
+reason = "needs SkImageGenerators::MakeFromPicture (src/image/SkImageGenerator_picture), not ported"
 span_hash = "fb124bd9a0694f6be9429215dcc75df6c8151e7ece429cae9463eb5bd5c9770d"
 
 [[test]]
@@ -36100,6 +36132,7 @@ macro = "DEF_TEST"
 source = "tests/JSONTest.cpp#L353-L436"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "a5be8fe686904a3995d5f1fc26adeab42bbd709305cd5bfa79afab5efd72067f"
 
 [[test]]
@@ -36109,6 +36142,7 @@ macro = "DEF_TEST"
 source = "tests/JSONTest.cpp#L193-L340"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "e42f9c24b8ed27e43bf38c3eb7a474397fcd7193f9f52415c53823ccc74c0700"
 
 [[test]]
@@ -36118,6 +36152,7 @@ macro = "DEF_TEST"
 source = "tests/JSONTest.cpp#L500-L513"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "2f2bf133395c21ecff03bddc5b8e693d40897d06d7cee9aa0e346da6036775ba"
 
 [[test]]
@@ -36127,6 +36162,7 @@ macro = "DEF_TEST"
 source = "tests/JSONTest.cpp#L23-L153"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "0f415d651c7dab25961e700249f58fb1362ad0820cd67848547d8dc9e281481d"
 
 [[test]]
@@ -36136,6 +36172,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/JSONTest.cpp#L438-L498"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "41e7cf64352981344d57c141faf9d8672ba8dd23e2a6e9fdcd9fe08e169af5b0"
 
 [[test]]
@@ -36145,6 +36182,7 @@ macro = "DEF_TEST"
 source = "tests/JSONTest.cpp#L515-L560"
 module = "core"
 status = "todo"
+reason = "needs the full skjson DOM and SkJSONWriter pretty modes (modules/jsonreader, src/utils/SkJSONWriter); tests/src/tools/json.rs ports only the subset the trace tools use"
 span_hash = "2a96663f72bb0d309394f7053fd4fa111a4b43ee890435baef99df531e959f12"
 
 [[test]]
@@ -36245,6 +36283,7 @@ macro = "DEF_TEST"
 source = "tests/LListTest.cpp#L44-L154"
 module = "core"
 status = "todo"
+reason = "needs SkTInternalLList (src/base/SkTInternalLList.h), not ported"
 span_hash = "af51b06598e1761240129f4e3036c2ed525f7dbc68c5618dd3b61be15a5d2d88"
 
 [[test]]
@@ -36949,6 +36988,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L36-L71"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "c424a2bde6f55eb583fbfc2f8c284d55bcd64d35679900d7b79d18abdfd97a3f"
 
 [[test]]
@@ -36958,6 +36998,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L90-L125"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "950f9debc25dae01562e85219f95cf89bae505583634e3e571c17277ce8465ae"
 
 [[test]]
@@ -36967,6 +37008,7 @@ macro = "DEF_TEST"
 source = "tests/MessageBusTest.cpp#L144-L172"
 module = "core"
 status = "todo"
+reason = "needs SkMessageBus (src/core/SkMessageBus.h), not ported; the GPU async-read code only names it in comments"
 span_hash = "5a693ee3406d3c7e688041b4e3312258d8f24e1fed61aa5961e3ed88611d47d4"
 
 [[test]]
@@ -37060,6 +37102,7 @@ macro = "DEF_TEST"
 source = "tests/MultiPictureDocumentTest.cpp#L101-L187"
 module = "core"
 status = "todo"
+reason = "needs SkMultiPictureDocument (include/docs/SkMultiPictureDocument.h), not ported"
 span_hash = "2c61704658a89c3335f6b41f5c94c20183ac93f1c4257292c2802efaef516189"
 
 [[test]]
@@ -39477,6 +39520,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4780-L4873"
 module = "core"
 status = "todo"
+reason = "needs the ~70 static helpers that tests/PathTest.cpp calls (test_isLine, test_convexity, test_path_to_region, test_dump, ...); none is ported yet in tests/src/unit/path_test.rs"
 span_hash = "abb46f91fa83ef0918a1918563a1ce8dce2e62a52922d0a6da720fd5612aed29"
 
 [[test]]
@@ -39630,6 +39674,7 @@ macro = "DEF_TEST"
 source = "tests/PathTest.cpp#L4891-L4911"
 module = "core"
 status = "todo"
+reason = "needs SkMakeNullCanvas, which is SkNWayCanvas(0, 0) (include/utils/SkNullCanvas.h); SkNWayCanvas is not ported"
 span_hash = "fce26fa9ead1e78b9df98fb1f64f48b5457bdd0e394baccec13f90a585c32b9e"
 
 [[test]]
@@ -41315,6 +41360,7 @@ macro = "DEF_TEST"
 source = "tests/RecordingXfermodeTest.cpp#L144-L182"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs its Drawer, BitmapBackedCanvasStrategy and PictureStrategy helpers (SkRTreeFactory and SkCanvas over an SkBitmap exist)"
 span_hash = "cb614555a46183c9821ef93e5bfd655648a5b05b1bd8abe88a665e0498f78995"
 
 [[test]]
@@ -41792,6 +41838,7 @@ macro = "DEF_TEST"
 source = "tests/RoundRectTest.cpp#L1633-L1650"
 module = "core"
 status = "todo"
+reason = "needs the 16 helper functions that RoundRect calls (test_round_rect_basic ... test_conservative_intersection); none is ported yet in tests/src/unit/round_rect_test.rs"
 span_hash = "24ac10c9bfd7c6fcc278de24bf2cd382df3c37a300acdf8eaeb3a15a400b5478"
 
 [[test]]
@@ -42371,6 +42418,7 @@ macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L64-L131"
 module = "core"
 status = "todo"
+reason = "needs ToolUtils::equal_pixels and picture_to_image (not in tests/src or tests/tools) and the SkPngEncoder and SkPngDecoder image procs"
 span_hash = "33904253c3e96ec0c8670081c07cc6814922146b16c505c008c7dee10230039a"
 
 [[test]]
@@ -42380,6 +42428,7 @@ macro = "DEF_TEST"
 source = "tests/SerialProcsTest.cpp#L201-L230"
 module = "core"
 status = "todo"
+reason = "portable, not ported in sweep 3: needs the make_pic and test_pictures helpers of SerialProcsTest.cpp"
 span_hash = "84a6468ea2d37f6733878a60d8b657207610b0d0bbd4da23b5ddc384537f517a"
 
 [[test]]
@@ -42398,6 +42447,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1105-L1135"
 module = "core"
 status = "todo"
+reason = "needs SkCanvas::drawAnnotation and SkAnnotateRectWithURL, SkAnnotateNamedDestination, SkAnnotateLinkToDestination (SkAnnotation, SkAnnotationKeys), not ported; records.rs has no DrawAnnotation"
 span_hash = "dfa829a590c9aa506e2d6eab9e60d3a0ed0e9915fe83bc32b07a30d0185d4bcf"
 
 [[test]]
@@ -42480,6 +42530,7 @@ macro = "DEF_TEST"
 source = "tests/SerializationTest.cpp#L1137-L1164"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 external initial storage (SkBinaryWriteBuffer(storage, size), usingInitialStorage), not ported (write_buffer.rs)"
 span_hash = "789af0489830e07aa21e22f4578321e78105936cf0d36d9bfa7c59c15060b160"
 
 [[test]]
@@ -42612,6 +42663,7 @@ macro = "DEF_TEST"
 source = "tests/SimplifyPaintTest.cpp#L230-L234"
 module = "core"
 status = "todo"
+reason = "needs SkColorSpace::toXYZD50 for make_knockout (color_space.rs has gamut_transform_to but no toXYZD50); the rest of the test is portable"
 span_hash = "266953378ba39908140d619b0ab842430c6079facf077aaeece06f524ff30603"
 
 [[test]]
@@ -48355,6 +48407,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L21-L32"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "9d6dd86527137ddb85b6b5bec33f6ad9c15dccfb64bc1986f6701d4a027789a3"
 
 [[test]]
@@ -48364,6 +48417,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L169-L205"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "a496ac79b0984339d5f91ba5662139bd0e2532fd2457fb3101981bae82c3bbb1"
 
 [[test]]
@@ -48373,6 +48427,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L207-L246"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "60680dab6be742ca6cd9ae71e4c432dd385050c0721713fb03e553e1e6dda5d5"
 
 [[test]]
@@ -48382,6 +48437,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L81-L103"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "50424cd55f675266ecc23b147be8945a3c746c65faaf2f849fff3f5c9b1c0c0a"
 
 [[test]]
@@ -48391,6 +48447,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L34-L57"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "0a0fb04258df555319d900d81b0a101bf405022c01aad1af752df14c4e827533"
 
 [[test]]
@@ -48400,6 +48457,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L106-L167"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "0febe987f1c1db8c848bf0d44a8a9712c0e7189726cd3390549df78274444e7d"
 
 [[test]]
@@ -48409,6 +48467,7 @@ macro = "DEF_TEST"
 source = "tests/SkXmpTest.cpp#L59-L79"
 module = "core"
 status = "todo"
+reason = "needs SkXmp (the XMP parser used by the HDR gain map and Ultra HDR code), not ported"
 span_hash = "3fb9dba4d1a9a9a902bbb80b5ff2e82506ae26f4adfd3eefef064ceb2a5c7069"
 
 [[test]]
@@ -48546,6 +48605,7 @@ macro = "DEF_TEST"
 source = "tests/SpecialImageTest.cpp#L189-L191"
 module = "core"
 status = "todo"
+reason = "needs SkSpecialImages::MakeFromRaster for an SkImage (special_image.rs has only the Bitmap overload) and SkSpecialImage::draw (not in special_image.rs)"
 span_hash = "c265fc5a22c7960d1ab3f67cc0fc24c3a29550e4c6c48b3c8f89829661f0bb7a"
 
 [[test]]
@@ -48555,6 +48615,7 @@ macro = "DEF_TEST"
 source = "tests/SpecialImageTest.cpp#L147-L165"
 module = "core"
 status = "todo"
+reason = "needs SkSpecialImage::draw(canvas, x, y), not in special_image.rs"
 span_hash = "59871c22e97482962f8321b6e5d31740662f9846c80c4ace098823b753c4e749"
 
 [[test]]
