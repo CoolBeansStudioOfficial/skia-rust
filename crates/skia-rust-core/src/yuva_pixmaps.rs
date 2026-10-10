@@ -510,6 +510,43 @@ impl YUVAPixmaps {
         Some(result)
     }
 
+    /// Port of `SkYUVAPixmaps::FromExternalPixmaps`: pixmaps for `yuva_info` whose planes are the
+    /// first `yuva_info.num_planes()` of `planes`. `None` for an invalid info, or too few planes.
+    ///
+    /// skia-rust: the planes are copied into one allocation, as [`YUVAPixmaps::make_copy`] does,
+    /// because these pixmaps own their storage (`docs/API_MAPPING.md`). The copy keeps each
+    /// plane's color type, dimensions and row bytes, and copies the pixels row by row, so every
+    /// read of the result equals the read of the source at the time of the call.
+    // Port of: src/core/SkYUVAPixmaps.cpp#L186-L208 (chrome/m156), the external-pixmap constructor
+    #[doc(alias = "SkYUVAPixmaps::FromExternalPixmaps")]
+    #[must_use]
+    pub fn from_external_pixmaps(yuva_info: &YUVAInfo, planes: &[Pixmap<'_>]) -> Option<Self> {
+        let n = yuva_info.num_planes();
+        if planes.len() < n {
+            return None;
+        }
+        let planes = &planes[..n];
+        let color_types: Vec<ColorType> = planes.iter().map(Pixmap::color_type).collect();
+        let row_bytes: Vec<usize> = planes.iter().map(Pixmap::row_bytes).collect();
+        let info = YUVAPixmapInfo::new(yuva_info, &color_types, Some(&row_bytes))?;
+        let mut result = Self::allocate(&info)?;
+        for (i, s) in planes.iter().enumerate() {
+            let s_row_bytes = s.row_bytes();
+            let min_row_bytes = s.info().min_row_bytes();
+            let height = dim_len(s.info().height());
+            let s_bytes = s.addr().unwrap_or(&[]);
+            let d_row_bytes = result.plane_row_bytes[i];
+            let d_offset = result.plane_offsets[i];
+            let d_bytes = &mut result.data.writable_data()?[d_offset..];
+            for row in 0..height {
+                let src_row = &s_bytes[row * s_row_bytes..row * s_row_bytes + min_row_bytes];
+                d_bytes[row * d_row_bytes..row * d_row_bytes + min_row_bytes]
+                    .copy_from_slice(src_row);
+            }
+        }
+        Some(result)
+    }
+
     // The planes of a fresh allocation: consecutive, each `rowBytes * height` bytes long, as
     // `initPixmapsFromSingleAllocation` lays them out.
     // Port of: src/core/SkYUVAPixmaps.cpp#L186-L208 (chrome/m156), the private constructor

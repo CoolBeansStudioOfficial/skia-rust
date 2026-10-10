@@ -21,6 +21,8 @@ pub mod blit_mask_clip;
 #[cfg(test)]
 pub mod blur_test;
 #[cfg(test)]
+pub mod cached_data_test;
+#[cfg(test)]
 pub mod canvas_test;
 #[cfg(test)]
 pub mod capped_hairlines_test;
@@ -70,6 +72,7 @@ pub mod data_ref_test;
 pub mod descriptor_test;
 #[cfg(test)]
 pub mod direct_mask_limit_test;
+pub mod discardable_memory_test;
 #[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
@@ -360,6 +363,8 @@ pub mod sk_glyph_test;
 pub mod sk_image_test;
 #[cfg(test)]
 pub mod sk_path_range_iter_test;
+#[cfg(test)]
+pub mod sk_resource_cache_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
