@@ -16,7 +16,8 @@ use skia_rust_codec::{
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::Canvas;
-use skia_rust_core::color::Color;
+use skia_rust_core::color::{Color, PMColor, colors, pre_multiply_color};
+use skia_rust_core::color_priv::{get_packed_a32, get_packed_b32, get_packed_g32, get_packed_r32};
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use skia_rust_core::color_space_priv::color_space_almost_equal;
 use skia_rust_core::color_type::ColorType;
@@ -25,14 +26,19 @@ use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::md5::{Digest, Md5};
+use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
+use skia_rust_core::point::Point;
 use skia_rust_core::random::Random;
-use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::{IRect, Rect};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
+use skia_rust_core::tile_mode::TileMode;
 use std::sync::{Arc, Mutex};
 
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_raster::raster_canvas::RasterCanvas;
+use skia_rust_raster::surfaces;
 
 use crate::codec_priv::{
     ScopedCodecDecoders, ico_decoder, make_ico_from_png_resource, serial_test_lock,
@@ -2672,3 +2678,223 @@ def_test!(jpeg_invalid_stream_state, |r| {
     // But the stream should be rewinded if we attempt other operations.
     reporter_assert!(r, codec.codec().needs_rewind());
 });
+
+// Port of: tests/CodecTest.cpp#L2286-L2304 (chrome/m156), make_gradient_bitmap: a 50 by 50 RGBA
+// premultiplied bitmap of a rainbow gradient, drawn in the colour space `cs`.
+fn make_gradient_bitmap(cs: Option<ColorSpace>) -> Bitmap {
+    const WIDTH: i32 = 50;
+    const HEIGHT: i32 = 50;
+    // The same size as a float, for the geometry.
+    const SIZE_F: f32 = 50.0;
+    // Define the gradient shader.
+    let gradient_colors = [
+        colors::RED,
+        colors::YELLOW,
+        colors::GREEN,
+        colors::CYAN,
+        colors::BLUE,
+        colors::MAGENTA,
+        colors::RED,
+    ];
+    let points = (Point::new(0.0, 0.0), Point::new(SIZE_F, 0.0));
+    let rainbow_shader = gradient_shaders::linear_gradient(
+        points,
+        &Gradient::new(
+            Colors::new(&gradient_colors, None, TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    );
+    let mut gradient_paint = Paint::default();
+    gradient_paint.set_shader(rainbow_shader);
+
+    let info = ImageInfo::new((WIDTH, HEIGHT), ColorType::RGBA8888, AlphaType::Premul, cs);
+    let Some(mut surface) = surfaces::raster(&info, None, None) else {
+        return Bitmap::new();
+    };
+    surface
+        .canvas()
+        .draw_rect(Rect::from_wh(SIZE_F, SIZE_F), &gradient_paint);
+    let mut bmp = Bitmap::new();
+    bmp.alloc_pixels_info(&info, None);
+    if let Some(mut pixmap) = bmp.peek_pixels_mut() {
+        surface.read_pixels_to_pixmap(&mut pixmap, (0, 0));
+    }
+    bmp
+}
+
+// Port of: tests/CodecTest.cpp#L2320-L2338 (chrome/m156), almost_equals: whether two premultiplied
+// colours differ by at most `tolerance` in every channel.
+fn almost_equals(a: PMColor, b: PMColor, tolerance: i64) -> bool {
+    let channels = [
+        (get_packed_r32(a), get_packed_r32(b)),
+        (get_packed_g32(a), get_packed_g32(b)),
+        (get_packed_b32(a), get_packed_b32(b)),
+        (get_packed_a32(a), get_packed_a32(b)),
+    ];
+    channels
+        .iter()
+        .all(|&(x, y)| (i64::from(x) - i64::from(y)).abs() <= tolerance)
+}
+
+// Port of: tests/CodecTest.cpp#L2340-L2359 (chrome/m156), compare_bitmaps_approx
+fn compare_bitmaps_approx(actual: &Bitmap, expected: &Bitmap, tol: i64) -> bool {
+    for y in 0..actual.height() {
+        for x in 0..actual.width() {
+            let c1 = actual.get_color((x, y));
+            let c2 = expected.get_color((x, y));
+            let actual_pm_color = pre_multiply_color(c1);
+            let expected_pm_color = pre_multiply_color(c2);
+
+            let almost_same = almost_equals(actual_pm_color, expected_pm_color, tol);
+            if !almost_same {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+// Decodes `codec` into a new bitmap of `info`, as the C++ test does with `getPixels` on an
+// `SkBitmap` made by `allocPixels(info)`. The result of the decode is not checked, as in C++.
+fn decode_to_bitmap(codec: &mut Codec<'_>, info: &ImageInfo) -> Bitmap {
+    let mut bm = Bitmap::new();
+    bm.alloc_pixels_info(info, None);
+    let row_bytes = bm.row_bytes();
+    let mut pixmap = bm.peek_pixels_mut();
+    if let Some(pixels) = pixmap.as_mut().and_then(|pm| pm.bytes_mut()) {
+        codec.get_pixels(info, pixels, row_bytes, None);
+    }
+    bm
+}
+
+// Verifies that transforming a source image results in the same bitmap as a pre-transformed file.
+// The C++ compares with a tolerance of 1 for PNG and 20 for JPEG. The project allows no
+// tolerances, so every channel must match exactly here.
+// Port of: tests/CodecTest.cpp#L2444-L2519 (chrome/m156), Codec_RoundTripColorXform
+def_test!(
+    #[ignore = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1)"]
+    Codec_RoundTripColorXform,
+    |r| {
+        struct TestCase {
+            src_file: &'static str,
+            // The pre-transformed file to compare a real transform against.
+            xform_file: &'static str,
+            // The destination space for the real transform.
+            xform_space: ColorSpace,
+        }
+
+        let test_cases = [
+            TestCase {
+                src_file: "images/gradient_displayp3.png",
+                xform_file: "images/gradient_p3_to_adobe.png",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::DOT22,
+                    &named_gamut::ADOBE_RGB,
+                )
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+            },
+            TestCase {
+                src_file: "images/gradient_adobergb.png",
+                xform_file: "images/gradient_adobe_to_p3.png",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::SRGB,
+                    &named_gamut::DISPLAY_P3,
+                )
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+            },
+            TestCase {
+                src_file: "images/gradient_displayp3.jpeg",
+                xform_file: "images/gradient_p3_to_adobe.jpeg",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::DOT22,
+                    &named_gamut::ADOBE_RGB,
+                )
+                .expect("MakeRGB(k2Dot2, AdobeRGB)"),
+            },
+            TestCase {
+                src_file: "images/gradient_adobergb.jpeg",
+                xform_file: "images/gradient_adobe_to_p3.jpeg",
+                xform_space: ColorSpace::new_rgb(
+                    &named_transfer_fn::SRGB,
+                    &named_gamut::DISPLAY_P3,
+                )
+                .expect("MakeRGB(kSRGB, kDisplayP3)"),
+            },
+        ];
+
+        for test in &test_cases {
+            let Some(src_data) = get_resource_as_data(test.src_file) else {
+                errorf!(r, "Could not load source file: {}", test.src_file);
+                continue;
+            };
+
+            let Ok(mut src_codec) =
+                Codec::make_from_stream(MemoryStream::make_copy(&src_data), decoders())
+            else {
+                errorf!(r, "Could not create codec for: {}", test.src_file);
+                continue;
+            };
+
+            let tol = 0;
+
+            // No op colorspace transform, creates the same gradient with this colorspace in memory
+            // and compares it to the original image decoded
+            {
+                let src_cs = src_codec.info().color_space();
+                let actual_bitmap = make_gradient_bitmap(src_cs);
+
+                let expected_data = get_resource_as_data(test.src_file);
+                let Some(expected_data) = expected_data else {
+                    errorf!(r, "Could not load source file: {}", test.src_file);
+                    continue;
+                };
+                let Ok(mut expected_codec) =
+                    Codec::make_from_stream(MemoryStream::make_copy(&expected_data), decoders())
+                else {
+                    errorf!(r, "Could not create codec for: {}", test.src_file);
+                    continue;
+                };
+                let expected_info = expected_codec.info();
+                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
+
+                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                    errorf!(
+                        r,
+                        "Src file: {}, expected file: {}",
+                        test.src_file,
+                        test.src_file
+                    );
+                }
+            }
+
+            // Transform colorspace, test against tranformed file
+            {
+                let xform_info = src_codec.info().with_color_space(test.xform_space.clone());
+                let actual_bitmap = decode_to_bitmap(&mut src_codec, &xform_info);
+
+                let Some(xform_data) = get_resource_as_data(test.xform_file) else {
+                    errorf!(r, "Could not load transformed file: {}", test.xform_file);
+                    continue;
+                };
+                let Ok(mut expected_codec) =
+                    Codec::make_from_stream(MemoryStream::make_copy(&xform_data), decoders())
+                else {
+                    errorf!(r, "Could not create codec for: {}", test.xform_file);
+                    continue;
+                };
+                let expected_info = expected_codec.info();
+                let expected_bitmap = decode_to_bitmap(&mut expected_codec, &expected_info);
+
+                if !compare_bitmaps_approx(&actual_bitmap, &expected_bitmap, tol) {
+                    errorf!(
+                        r,
+                        "Src file: {}, expected file: {}",
+                        test.src_file,
+                        test.xform_file
+                    );
+                }
+            }
+        }
+    }
+);
