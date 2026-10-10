@@ -52591,8 +52591,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L502-L567"
 module = "gpu"
-status = "failing"
-reason = "naga rejects a storage buffer pointer as a function argument (docs/design/gpu.md 6.3), so the multi-stop gradient pipelines fail validation on every context; test is #[ignore]d"
+status = "passing"
 span_hash = "4aea09b4c0c3f8cc5731d90a5ad6d68ca8246f9273b095c21e58038881c1bb93"
 
 [[test]]

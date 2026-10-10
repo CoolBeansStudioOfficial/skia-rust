@@ -1,7 +1,6 @@
 # naga and `unrestricted_pointer_parameters` (Graphite gradients with more than 8 stops)
 
-Status: analysis only. Options (a) and (b) do not exist; only (c), a backend-side
-transformation, is left, so per the task nothing was implemented. Needs a decision.
+Status: implemented as option (c) in `crates/skia-rust-gpu/src/graphite/wgpu/naga_pointer_args.rs` (gpu.md 6.3, W4); the analysis below is kept for reference.
 
 ## 1. Reproduction (main at 52e997b, wgpu/naga 30.0.1)
 

@@ -20,7 +20,7 @@ use skia_rust_gpu::graphite::graphite_types::{SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
     CapsProfile, WgpuContext, WgpuSharedContext, any_adapter_backend_context, make_context,
-    noop_backend_context,
+    noop_backend_context, noop_backend_context_for_profile,
 };
 
 /// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
@@ -46,9 +46,12 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
         CapsProfile::dawn_d3d12(),
         CapsProfile::dawn_vulkan().wgpu_restricted(),
     ] {
-        let shared_context =
-            WgpuSharedContext::make_with_profile(&noop_backend_context(), &profile, options)
-                .expect("a shared context on the noop device");
+        let shared_context = WgpuSharedContext::make_with_profile(
+            &noop_backend_context_for_profile(&profile),
+            &profile,
+            options,
+        )
+        .expect("a shared context on the noop device");
         contexts.push((profile.name, WgpuContext::new(shared_context, options)));
     }
     contexts
