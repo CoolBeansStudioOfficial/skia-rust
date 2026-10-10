@@ -132,10 +132,8 @@ fn the_caching_callback_sees_additions_and_hits() {
     let sink = Arc::clone(&seen);
     let callback: Arc<PipelineCachingCallbackFn> = Arc::new(
         move |op: PipelineCacheOp, label: &str, _hash: u32, _pre: bool, key: Option<&Data>| {
-            assert!(
-                key.is_none(),
-                "no serialized key until SerializationUtils (G14)"
-            );
+            // An added pipeline carries its serialized key (`PipelineDescToData`); a found one has none.
+            assert_eq!(key.is_some(), op == PipelineCacheOp::AddingPipeline);
             sink.lock().unwrap().push((op, label.to_string()));
         },
     );

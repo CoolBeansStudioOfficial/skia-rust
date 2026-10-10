@@ -3,6 +3,7 @@
 pub mod graphite_test_context;
 pub mod json;
 pub mod pipeline_callback_handler;
+#[cfg(test)]
 pub mod precompile_effect_factories;
 pub mod sk_meta_data;
 pub mod sksl_goldens;

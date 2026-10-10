@@ -135,8 +135,8 @@ impl PrecompileContext {
         serialized_pipeline_key: Option<&Data>,
         mut unique_hash: Option<&mut u32>,
     ) -> String {
-        if let Some(unique_hash) = unique_hash.as_deref_mut() {
-            *unique_hash = 0;
+        if let Some(hash) = &mut unique_hash {
+            **hash = 0;
         }
         let base = self.shared_context.shared_context();
         let caps = base.caps();
@@ -156,7 +156,7 @@ impl PrecompileContext {
             return String::new();
         };
 
-        if let Some(unique_hash) = unique_hash.as_deref_mut() {
+        if let Some(unique_hash) = unique_hash {
             // This will make use of the UniquePaintParamsID registered in data_to_pipeline_desc.
             let pipeline_key = caps.make_graphics_pipeline_key(&pipeline_desc, &render_pass_desc);
             *unique_hash = pipeline_key.hash();

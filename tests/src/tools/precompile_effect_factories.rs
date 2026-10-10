@@ -22,9 +22,9 @@ use skia_rust_gpu::graphite::precompile::runtime_effect::{
 use skia_rust_gpu::graphite::precompile::shader::PrecompileShader;
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L14-L28 (chrome/m156)
-/// The annulus shader's SkSL.
+/// The annulus shader's `SkSL`.
 #[must_use]
-pub fn get_annulus_shader_code() -> &'static str {
+pub(crate) fn get_annulus_shader_code() -> &'static str {
     // draw a annulus centered at "center" w/ inner and outer radii in "radii"
     "uniform float2 center;\
      uniform float2 radii;\
@@ -51,7 +51,7 @@ fn float_uniforms(values: &[f32]) -> Data {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L30-L43 (chrome/m156)
 /// The annulus shader's effect. Skia makes it once, into a static.
 #[must_use]
-pub fn get_annulus_shader_effect() -> RuntimeEffect {
+pub(crate) fn get_annulus_shader_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     EFFECT
         .get_or_init(|| {
@@ -64,7 +64,7 @@ pub fn get_annulus_shader_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L45-L58 (chrome/m156)
 /// The annulus shader, made with the fixed uniforms, and its precompile description.
 #[must_use]
-pub fn create_annulus_runtime_shader() -> (Shader, PrecompileShader) {
+pub(crate) fn create_annulus_runtime_shader() -> (Shader, PrecompileShader) {
     let effect = get_annulus_shader_effect();
     let uniforms = float_uniforms(&[50.0, 50.0, 40.0, 50.0]);
     let s = effect
@@ -90,7 +90,7 @@ fn make_blender_effect(
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L60-L73 (chrome/m156)
 #[must_use]
-pub fn get_src_blender_effect() -> RuntimeEffect {
+pub(crate) fn get_src_blender_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     make_blender_effect(
         &EFFECT,
@@ -102,7 +102,7 @@ pub fn get_src_blender_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L75-L88 (chrome/m156)
 /// The source blender's blender, and its precompile description.
 #[must_use]
-pub fn create_src_runtime_blender() -> (Blender, PrecompileBlender) {
+pub(crate) fn create_src_runtime_blender() -> (Blender, PrecompileBlender) {
     let effect = get_src_blender_effect();
     let b = effect
         .make_blender(Data::new_empty(), &[])
@@ -114,7 +114,7 @@ pub fn create_src_runtime_blender() -> (Blender, PrecompileBlender) {
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L90-L103 (chrome/m156)
 #[must_use]
-pub fn get_dst_blender_effect() -> RuntimeEffect {
+pub(crate) fn get_dst_blender_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     make_blender_effect(
         &EFFECT,
@@ -126,7 +126,7 @@ pub fn get_dst_blender_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L105-L118 (chrome/m156)
 /// The destination blender's blender, and its precompile description.
 #[must_use]
-pub fn create_dst_runtime_blender() -> (Blender, PrecompileBlender) {
+pub(crate) fn create_dst_runtime_blender() -> (Blender, PrecompileBlender) {
     let effect = get_dst_blender_effect();
     let b = effect
         .make_blender(Data::new_empty(), &[])
@@ -138,7 +138,7 @@ pub fn create_dst_runtime_blender() -> (Blender, PrecompileBlender) {
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L120-L137 (chrome/m156)
 #[must_use]
-pub fn get_combo_blender_effect() -> RuntimeEffect {
+pub(crate) fn get_combo_blender_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     make_blender_effect(
         &EFFECT,
@@ -155,7 +155,7 @@ pub fn get_combo_blender_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L139-L157 (chrome/m156)
 /// The combination blender, with the source and destination blenders as its children.
 #[must_use]
-pub fn create_combo_runtime_blender() -> (Blender, PrecompileBlender) {
+pub(crate) fn create_combo_runtime_blender() -> (Blender, PrecompileBlender) {
     let effect = get_combo_blender_effect();
     let (src, src_o) = create_src_runtime_blender();
     let (dst, dst_o) = create_dst_runtime_blender();
@@ -177,7 +177,7 @@ pub fn create_combo_runtime_blender() -> (Blender, PrecompileBlender) {
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L160-L173 (chrome/m156)
 #[must_use]
-pub fn get_double_color_filter_effect() -> RuntimeEffect {
+pub(crate) fn get_double_color_filter_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     EFFECT
         .get_or_init(|| {
@@ -193,7 +193,7 @@ pub fn get_double_color_filter_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L175-L184 (chrome/m156)
 /// The double color filter, and its precompile description.
 #[must_use]
-pub fn create_double_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
+pub(crate) fn create_double_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
     let effect = get_double_color_filter_effect();
     let cf = effect
         .make_color_filter(Data::new_empty(), &[])
@@ -205,7 +205,7 @@ pub fn create_double_runtime_color_filter() -> (ColorFilter, PrecompileColorFilt
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L186-L199 (chrome/m156)
 #[must_use]
-pub fn get_half_color_filter_effect() -> RuntimeEffect {
+pub(crate) fn get_half_color_filter_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     // We withhold this name to test out the default name case
     EFFECT
@@ -222,7 +222,7 @@ pub fn get_half_color_filter_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L201-L213 (chrome/m156)
 /// The half color filter, and its precompile description.
 #[must_use]
-pub fn create_half_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
+pub(crate) fn create_half_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
     let effect = get_half_color_filter_effect();
     let cf = effect
         .make_color_filter(Data::new_empty(), &[])
@@ -234,7 +234,7 @@ pub fn create_half_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter
 
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L215-L231 (chrome/m156)
 #[must_use]
-pub fn get_combo_color_filter_effect() -> RuntimeEffect {
+pub(crate) fn get_combo_color_filter_effect() -> RuntimeEffect {
     static EFFECT: OnceLock<RuntimeEffect> = OnceLock::new();
     EFFECT
         .get_or_init(|| {
@@ -255,7 +255,7 @@ pub fn get_combo_color_filter_effect() -> RuntimeEffect {
 // Port of: tools/graphite/precompile/PrecompileEffectFactories.cpp#L233-L250 (chrome/m156)
 /// The combination color filter, with the double and half color filters as its children.
 #[must_use]
-pub fn create_combo_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
+pub(crate) fn create_combo_runtime_color_filter() -> (ColorFilter, PrecompileColorFilter) {
     let effect = get_combo_color_filter_effect();
     let (src, src_o) = create_double_runtime_color_filter();
     let (dst, dst_o) = create_half_runtime_color_filter();
