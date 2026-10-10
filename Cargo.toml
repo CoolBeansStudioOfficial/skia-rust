@@ -100,6 +100,14 @@ missing_safety_doc = "deny"
 [profile.test]
 opt-level = 1
 
+# The raster pipeline's row interpreter (skia-rust-simd) runs every per-pixel stage of a shader,
+# including the SkSL noise of the Skottie effects, which the Skottie animations test drives over a
+# 2048x2048 picture tile (Skia's kMaxTileArea). It is the same work Skia does, so it is built at
+# opt-level 2 for the test profile (opt-level 3 exhausted the memory of the test build of this
+# crate); debug assertions and overflow checks stay on. The animations test: 368 s -> 84 s.
+[profile.test.package.skia-rust-simd]
+opt-level = 2
+
 [profile.release]
 debug = 1
 
