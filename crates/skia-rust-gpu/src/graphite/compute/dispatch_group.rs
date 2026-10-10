@@ -14,21 +14,21 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
+use crate::gpu::gpu_types::Budgeted;
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::buffer::BindBufferInfo;
+use crate::graphite::buffer_manager::DrawBufferManager;
 use crate::graphite::caps::Caps;
 use crate::graphite::command_buffer::ResourceTracker;
 use crate::graphite::compute::compute_step::{
-    ComputeStep, DataFlow, MAX_COMPUTE_DATA_FLOW_SLOTS, ResourceDesc, ResourcePolicy,
-    ResourceType, WorkgroupBufferDesc, WorkgroupSize,
+    ComputeStep, DataFlow, MAX_COMPUTE_DATA_FLOW_SLOTS, ResourceDesc, ResourcePolicy, ResourceType,
+    WorkgroupBufferDesc, WorkgroupSize,
 };
 use crate::graphite::compute_pipeline::ComputePipeline;
 use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
-use crate::graphite::buffer_manager::DrawBufferManager;
 use crate::graphite::recorder::{Recorder, RecorderInner};
 use crate::graphite::resource::ResourceRef;
 use crate::graphite::resource_provider::ResourceProvider;
-use crate::gpu::gpu_types::Budgeted;
 use crate::graphite::resource_types::{ClearBuffer, SamplerDesc};
 use crate::graphite::sampler::Sampler;
 use crate::graphite::task::TaskRef;
@@ -280,6 +280,8 @@ impl Builder {
     }
 
     // Port of: src/gpu/graphite/compute/DispatchGroup.cpp#L112-L225 (chrome/m156)
+    // One function, as in C++: the binding indices of the step's resources are computed together.
+    #[allow(clippy::too_many_lines)]
     fn append_step_internal(
         &mut self,
         step: &Arc<dyn ComputeStep>,
@@ -288,7 +290,6 @@ impl Builder {
         let mut dispatch_bindings: Vec<ResourceBinding> = Vec::new();
         let resources = step.resources();
         dispatch_bindings.reserve(resources.len());
-        let mut next_index = 0usize;
 
         let caps = self.recorder.priv_().caps().clone();
         let binding_reqs = caps.resource_binding_requirements();
@@ -299,24 +300,22 @@ impl Builder {
 
         let mut buffer_or_global_index: BindingIndex = 0;
         let mut tex_index: BindingIndex = 0;
-        for r in resources {
+        for (index, r) in resources.iter().enumerate() {
             debug_assert!(r.slot == -1 || (r.slot >= 0 && r.slot < MAX_COMPUTE_DATA_FLOW_SLOTS));
-            let index = next_index;
-            next_index += 1;
             let maybe_resource: Option<BindingResource> = match r.flow {
                 DataFlow::Private => {
-                    debug_assert!(r.ty != ResourceType::ReadOnlyTexture);
-                    debug_assert!(r.ty != ResourceType::SampledTexture);
+                    debug_assert_ne!(r.ty, ResourceType::ReadOnlyTexture);
+                    debug_assert_ne!(r.ty, ResourceType::SampledTexture);
                     self.allocate_resource(step.as_ref(), r, index)
                 }
                 DataFlow::Shared => {
                     debug_assert!(r.slot >= 0);
                     let slot = usize::try_from(r.slot).unwrap_or(0);
                     if self.output_table.shared_slots[slot].is_none() {
-                        debug_assert!(r.ty != ResourceType::ReadOnlyTexture);
-                        debug_assert!(r.ty != ResourceType::SampledTexture);
+                        debug_assert_ne!(r.ty, ResourceType::ReadOnlyTexture);
+                        debug_assert_ne!(r.ty, ResourceType::SampledTexture);
                         let allocated = self.allocate_resource(step.as_ref(), r, index);
-                        self.output_table.shared_slots[slot] = allocated.clone();
+                        self.output_table.shared_slots[slot].clone_from(&allocated);
                         allocated
                     } else {
                         let existing = self.output_table.shared_slots[slot].clone();
@@ -390,7 +389,8 @@ impl Builder {
             .last()
             .is_none_or(|desc| desc.unique_id() != step.unique_id())
         {
-            obj.pipeline_descs.push(ComputePipelineDesc::new(step.clone()));
+            obj.pipeline_descs
+                .push(ComputePipelineDesc::new(step.clone()));
         }
         let pipeline_index = u32::try_from(obj.pipeline_descs.len() - 1).unwrap_or(u32::MAX);
 
@@ -416,14 +416,17 @@ impl Builder {
         debug_assert!(buffer.is_valid());
         debug_assert!(buffer.size != 0);
         self.output_table.shared_slots[slot] = Some(BindingResource::Buffer(buffer.clone()));
-        if cleared == ClearBuffer::Yes {
-            if let Some(obj) = self.obj.as_mut() {
-                obj.clear_list.push(buffer);
-            }
+        if cleared == ClearBuffer::Yes
+            && let Some(obj) = self.obj.as_mut()
+        {
+            obj.clear_list.push(buffer);
         }
     }
 
     /// `assignSharedTexture(texture, slot)`.
+    ///
+    /// # Panics
+    /// If the builder was already finalized (its group is gone).
     // Port of: src/gpu/graphite/compute/DispatchGroup.cpp#L239-L245 (chrome/m156)
     pub fn assign_shared_texture(&mut self, texture: Arc<TextureProxy>, slot: usize) {
         let obj = self
@@ -501,11 +504,13 @@ impl Builder {
                         ClearBuffer::No
                     };
                     let buf_info = buffer_mgr.get_storage(buffer_size, cleared);
-                    buf_info.is_valid().then_some(BindingResource::Buffer(buf_info))
+                    buf_info
+                        .is_valid()
+                        .then_some(BindingResource::Buffer(buf_info))
                 }
             }
             ResourceType::IndirectBuffer => {
-                debug_assert!(resource.policy != ResourcePolicy::Mapped);
+                debug_assert_ne!(resource.policy, ResourcePolicy::Mapped);
                 let buffer_size = step.calculate_buffer_size(resource_idx, resource);
                 debug_assert!(buffer_size != 0);
                 let cleared = if resource.policy == ResourcePolicy::Clear {
@@ -514,15 +519,17 @@ impl Builder {
                     ClearBuffer::No
                 };
                 let buf_info = buffer_mgr.get_indirect_storage(buffer_size, cleared);
-                buf_info.is_valid().then_some(BindingResource::Buffer(buf_info))
+                buf_info
+                    .is_valid()
+                    .then_some(BindingResource::Buffer(buf_info))
             }
             ResourceType::UniformBuffer => {
-                debug_assert!(resource.policy == ResourcePolicy::Mapped);
+                debug_assert_eq!(resource.policy, ResourcePolicy::Mapped);
                 let resource_reqs = caps.resource_binding_requirements();
                 let mut ubo_mgr = UniformManager::new(resource_reqs.uniform_buffer_layout);
                 step.prepare_uniform_buffer(resource_idx, resource, &mut ubo_mgr);
                 let data_block = ubo_mgr.finish();
-                debug_assert!(!data_block.is_empty());
+                debug_assert_ne!(data_block.len(), 0);
                 let mut mapped = buffer_mgr.get_mapped_uniform_buffer(data_block.len(), 0)?;
                 mapped.writer().write_bytes(data_block);
                 Some(BindingResource::Buffer(mapped.binding.clone()))

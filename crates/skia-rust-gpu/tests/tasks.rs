@@ -20,11 +20,15 @@ use skia_rust_gpu::gpu::swizzle::Swizzle;
 use skia_rust_gpu::graphite::buffer::{BindBufferInfo, Buffer};
 use skia_rust_gpu::graphite::caps::AttachmentSizePolicy;
 use skia_rust_gpu::graphite::command_buffer::BufferTextureCopyData;
+use skia_rust_gpu::graphite::compute::compute_step::{ComputeStep, ComputeStepBase, WorkgroupSize};
+use skia_rust_gpu::graphite::compute::dispatch_group::{Builder, DispatchGroup};
 use skia_rust_gpu::graphite::graphics_pipeline::GraphicsPipeline;
 use skia_rust_gpu::graphite::graphite_types::{DepthStencilFlags, SampleCount};
+use skia_rust_gpu::graphite::recorder::Recorder;
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use skia_rust_gpu::graphite::resource::ResourceRef;
 use skia_rust_gpu::graphite::resource_provider::ResourceProvider;
+use skia_rust_gpu::graphite::resource_types::ClearBuffer;
 use skia_rust_gpu::graphite::resource_types::{
     AccessPattern, BufferType, DstReadStrategy, LoadOp, StoreOp,
 };
@@ -33,9 +37,6 @@ use skia_rust_gpu::graphite::scratch_resource_manager::{
     ProxyReadCountMap, ScratchResourceManager,
 };
 use skia_rust_gpu::graphite::task::clear_buffers_task::ClearBuffersTask;
-use skia_rust_gpu::graphite::compute::compute_step::{ComputeStep, ComputeStepBase, WorkgroupSize};
-use skia_rust_gpu::graphite::compute::dispatch_group::{Builder, DispatchGroup};
-use skia_rust_gpu::graphite::resource_types::ClearBuffer;
 use skia_rust_gpu::graphite::task::compute_task::{ComputeTask, DispatchGroupList};
 use skia_rust_gpu::graphite::task::copy_task::{
     CopyBufferToBufferTask, CopyTextureToBufferTask, CopyTextureToTextureTask,
@@ -53,13 +54,11 @@ use skia_rust_gpu::graphite::texture::Texture;
 use skia_rust_gpu::graphite::texture_format::TextureFormat;
 use skia_rust_gpu::graphite::texture_info::TextureInfo;
 use skia_rust_gpu::graphite::texture_proxy::TextureProxy;
-use skia_rust_gpu::graphite::recorder::Recorder;
 use skia_rust_gpu::graphite::texture_proxy_view::TextureProxyView;
 use skia_rust_gpu::graphite::upload_buffer_manager::UploadBufferManager;
 use support::{
     Call, MockCaps, MockCommandBuffer, MockContext, make_recorder, provider, rgba_info,
-    shared_provider,
-    texture_info,
+    shared_provider, texture_info,
 };
 
 fn proxy(
@@ -672,7 +671,11 @@ impl ComputeStep for NoResourceStep {
 
 /// A finished group with no dispatches, whose shared buffer is cleared before it runs (so it has
 /// a child task), or with the given dispatch.
-fn group(recorder: &Recorder, cleared: Option<BindBufferInfo>, dispatch: bool) -> Box<DispatchGroup> {
+fn group(
+    recorder: &Recorder,
+    cleared: Option<BindBufferInfo>,
+    dispatch: bool,
+) -> Box<DispatchGroup> {
     let mut builder = Builder::new(recorder);
     if let Some(buffer) = cleared {
         builder.assign_shared_buffer(buffer, 0, ClearBuffer::Yes);
