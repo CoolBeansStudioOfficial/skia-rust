@@ -23621,8 +23621,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/readpixels.cpp#L189-L189"
 module = "raster"
-status = "failing"
-reason = "ported; mismatches all 45 checks, first divergence in the RGBA_F16 source cells (ICO decode to F16 or read_pixels gamut transform). See notes/gm_readpixels_cpp_ReadPixelsGM.md"
+status = "passing"
 span_hash = "4dd00057ff1d1b5ae27df2e2e5536218e50ad3c242998345b474700e39bc4485"
 
 [[test]]
