@@ -8,6 +8,7 @@
 
 use std::sync::{Arc, OnceLock};
 
+use skia_rust_core::advanced_typeface_metrics::AdvancedTypefaceMetrics;
 use skia_rust_core::descriptor::Descriptor;
 use skia_rust_core::fixed::fixed_to_float;
 use skia_rust_core::font_arguments::FontArguments;
@@ -450,6 +451,16 @@ impl TypefaceBase for TestTypeface {
     fn on_get_glyph_to_unicode_map(&self, dst: &mut [Unichar]) {
         let count = self.test_font.char_codes.len().min(dst.len());
         dst[..count].copy_from_slice(&self.test_font.char_codes[..count]);
+    }
+
+    /// `TestTypeface::onGetAdvancedMetrics` (pdf only): only the PostScript name is set, so the
+    /// type is `Other` and a PDF draws the typeface as Type3.
+    // Port of: tools/fonts/TestTypeface.cpp#L157-L161 (chrome/m156)
+    fn on_get_advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        Some(AdvancedTypefaceMetrics {
+            post_script_name: self.test_font.name.to_owned(),
+            ..AdvancedTypefaceMetrics::default()
+        })
     }
 }
 

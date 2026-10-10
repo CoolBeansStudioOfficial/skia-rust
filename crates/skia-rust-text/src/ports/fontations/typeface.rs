@@ -11,6 +11,9 @@
 
 use std::sync::{Arc, OnceLock};
 
+use skia_rust_core::advanced_typeface_metrics::{
+    AdvancedTypefaceMetrics, FontFlags, FontType, StyleFlags,
+};
 use skia_rust_core::color::Color;
 use skia_rust_core::data::Data;
 use skia_rust_core::descriptor::Descriptor;
@@ -22,6 +25,7 @@ use skia_rust_core::font_parameters::variation::Axis;
 use skia_rust_core::font_style::{FontStyle, Slant, Weight, Width};
 use skia_rust_core::font_types::{FontHinting, FourByteTag, GlyphId, set_four_byte_tag};
 use skia_rust_core::mask::MaskFormat;
+use skia_rust_core::rect::IRect;
 use skia_rust_core::scaler_context::{
     ScalerContext, ScalerContextEffects, ScalerContextFlags, ScalerContextRec,
 };
@@ -33,8 +37,10 @@ use skia_rust_core::utf::Unichar;
 
 use super::base::{
     BridgeFontRef, BridgeFontStyle, BridgeMappingIndex, BridgeNormalizedCoords,
-    coordinates_for_shifted_named_instance_index, fill_glyph_to_unicode_map, font_ref_is_valid,
-    get_font_style, lookup_glyph_or_zero, make_font_ref, make_mapping_index,
+    OutlineFormat, coordinates_for_shifted_named_instance_index, fill_glyph_to_unicode_map,
+    font_ref_is_valid, get_font_style, get_outline_collection, get_unscaled_metrics, is_embeddable,
+    is_fixed_pitch, is_script_style, is_serif_style, is_subsettable, italic_angle, lookup_glyph_or_zero,
+    outline_format, make_font_ref, make_mapping_index,
     normalized_coords_equal, num_glyphs, populate_axes, resolve_into_normalized_coords, table_data,
     table_tags, units_per_em_or_zero, variation_position,
 };
@@ -272,6 +278,61 @@ impl TypefaceBase for TypefaceFontations {
             Box::new(MemoryStream::from_data(Some(self.font_data.clone()))),
             index,
         ))
+    }
+
+    /// `SkTypeface_Fontations::onGetAdvancedMetrics`.
+    // Port of: src/ports/SkTypeface_fontations.cpp#L1059-L1120 (chrome/m156)
+    #[allow(clippy::cast_possible_truncation)] // mirrors the C++ float to integer conversions
+    fn on_get_advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        let mut info = AdvancedTypefaceMetrics::default();
+        let font_ref = self.font_ref();
+
+        if !is_embeddable(&font_ref) {
+            info.flags |= FontFlags::NOT_EMBEDDABLE;
+        }
+        if !is_subsettable(&font_ref) {
+            info.flags |= FontFlags::NOT_SUBSETTABLE;
+        }
+        if table_data(&font_ref, set_four_byte_tag(b'f', b'v', b'a', b'r'), 0, &mut []) != 0 {
+            info.flags |= FontFlags::VARIABLE;
+        }
+
+        match outline_format(&get_outline_collection(&font_ref)) {
+            OutlineFormat::Glyf => info.font_type = FontType::TrueType,
+            OutlineFormat::Cff => info.font_type = FontType::Cff,
+            // leave info->fType kOther.
+            _ => {}
+        }
+
+        // Metrics information.
+        let metrics = get_unscaled_metrics(&font_ref, &self.normalized_coords);
+        info.ascent = metrics.ascent as i16;
+        info.descent = metrics.descent as i16;
+        info.cap_height = metrics.cap_height as i16;
+        info.bbox = IRect::new(
+            metrics.x_min as i32,
+            metrics.top as i32,
+            metrics.x_max as i32,
+            metrics.bottom as i32,
+        );
+
+        // Style information.
+        if is_fixed_pitch(&font_ref) {
+            info.style |= StyleFlags::FIXED_PITCH;
+        }
+        if let Some(font_style) = get_font_style(&font_ref, &self.normalized_coords)
+            && font_style.slant == 1
+        {
+            // SkFontStyle::Slant::kItalic_Slant
+            info.style |= StyleFlags::ITALIC;
+        }
+        if is_serif_style(&font_ref) {
+            info.style |= StyleFlags::SERIF;
+        } else if is_script_style(&font_ref) {
+            info.style |= StyleFlags::SCRIPT;
+        }
+        info.italic_angle = italic_angle(&font_ref) as i16;
+        Some(info)
     }
 
     /// `SkTypeface_Fontations::onGetFamilyName`.

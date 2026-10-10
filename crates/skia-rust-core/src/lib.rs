@@ -1,5 +1,6 @@
 //! Core types of skia-rust, ported from Skia's `include/core` and `src/core`.
 
+pub mod advanced_typeface_metrics;
 pub mod align;
 pub mod alpha_type;
 pub mod annotation;

@@ -11,6 +11,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use skia_rust_core::advanced_typeface_metrics::AdvancedTypefaceMetrics;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::descriptor::Descriptor;
@@ -560,6 +561,14 @@ impl TypefaceBase for TestSvgTypeface {
             debug_assert!(g < glyph_to_unicode.len());
             glyph_to_unicode[g] = c;
         }
+    }
+
+    // Port of: tools/fonts/TestSVGTypeface.cpp#L149-L153 (chrome/m156)
+    fn on_get_advanced_metrics(&self) -> Option<AdvancedTypefaceMetrics> {
+        Some(AdvancedTypefaceMetrics {
+            post_script_name: self.data.name.clone(),
+            ..AdvancedTypefaceMetrics::default()
+        })
     }
 }
 
