@@ -201,6 +201,7 @@ pub mod scaler_context;
 pub mod serial_procs;
 pub mod sfnt;
 pub mod shader;
+pub mod shader_blur_algorithm;
 pub mod shaders;
 pub mod size;
 pub mod slug;

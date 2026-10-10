@@ -50,7 +50,7 @@ pub fn box_blur_window(sigma: f32) -> i32 {
 /// One algorithm of a [`BlurEngine`] (`SkBlurEngine::Algorithm`).
 // Port of: src/core/SkBlurEngine.h#L95-L124 (chrome/m156)
 #[doc(alias = "SkBlurEngine::Algorithm")]
-pub trait BlurAlgorithm: Send + Sync {
+pub trait BlurAlgorithm {
     /// The maximum sigma that can be passed to [`blur`](Self::blur). Larger sigmas must downscale
     /// the input first.
     fn max_sigma(&self) -> f32;
@@ -74,7 +74,7 @@ pub trait BlurAlgorithm: Send + Sync {
 /// A backend's blur engine (`SkBlurEngine`).
 // Port of: src/core/SkBlurEngine.h#L47-L67 (chrome/m156)
 #[doc(alias = "SkBlurEngine")]
-pub trait BlurEngine: Send + Sync {
+pub trait BlurEngine {
     /// The algorithm for blurring `sigma` in an image of `color_type`, or `None` if the engine
     /// has none for it (`findAlgorithm`).
     fn find_algorithm(&self, sigma: Size, color_type: ColorType) -> Option<&dyn BlurAlgorithm>;

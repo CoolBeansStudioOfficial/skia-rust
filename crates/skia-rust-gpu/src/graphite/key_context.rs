@@ -30,6 +30,7 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::color::{Color4f, PMColor4f};
 use skia_rust_core::color_data::PM_COLOR4F_BLACK;
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
+use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ColorInfo;
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
@@ -109,6 +110,10 @@ pub struct KeyContext<'a> {
     // and a separate alpha portion. The two portions will never be used together but are stored
     // together to reduce the number of uniforms.
     paint_color: PMColor4f,
+    // The Graphite-backed images the key samples, in order: the device notifies them after the
+    // key is built (`notifyInUse` in `add_image_to_key`, `docs/design/gpu.md` §5.6). Shared by
+    // the scoped copies of this context.
+    images_in_use: Rc<RefCell<Vec<Image>>>,
     key_gen_flags: KeyGenFlags,
 }
 
@@ -151,6 +156,7 @@ impl<'a> KeyContext<'a> {
             local_matrix: None,
             dst_color_info: dst_color_info.clone(),
             paint_color: PM_COLOR4F_BLACK,
+            images_in_use: Rc::default(),
             key_gen_flags: KeyGenFlags::DEFAULT,
         }
     }
@@ -188,6 +194,7 @@ impl<'a> KeyContext<'a> {
             local_matrix: None,
             dst_color_info: dst_color_info.clone(),
             paint_color: PM_COLOR4F_BLACK,
+            images_in_use: Rc::default(),
             key_gen_flags: initial_flags,
         };
         context.paint_color = color4f_prep_for_dst(*paint_color, &context.dst_color_info)
@@ -275,6 +282,7 @@ impl<'a> KeyContext<'a> {
             local_matrix: None,
             dst_color_info: self.dst_color_info.clone(),
             paint_color: PM_COLOR4F_BLACK,
+            images_in_use: Rc::clone(&self.images_in_use),
             key_gen_flags: self.key_gen_flags,
         };
         context.paint_color = color4f_prep_for_dst(*paint_color, &context.dst_color_info)
@@ -282,6 +290,18 @@ impl<'a> KeyContext<'a> {
             .premul();
         context.paint_color.a = paint_color.a;
         context
+    }
+
+    /// Records that the key samples `image`, a Graphite-backed image whose linked devices must be
+    /// notified (`Image_Base::notifyInUse(recorder, drawContext)`) by the device that draws.
+    pub fn notify_in_use(&self, image: Image) {
+        self.images_in_use.borrow_mut().push(image);
+    }
+
+    /// Takes the images recorded by [`notify_in_use`](Self::notify_in_use).
+    #[must_use]
+    pub fn take_images_in_use(&self) -> Vec<Image> {
+        std::mem::take(&mut *self.images_in_use.borrow_mut())
     }
 
     // Port of: src/gpu/graphite/KeyContext.cpp#L58-L72 (chrome/m156)

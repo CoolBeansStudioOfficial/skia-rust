@@ -4,14 +4,11 @@
 // Ported from Skia: src/gpu/graphite/Surface_Graphite.{h,cpp}
 //
 // skia-rust deviations:
-// - `Surface::asImage()` flushes the surface's pending draws into the recorder before it returns
-//   the image. Skia links the image to the device and flushes lazily when the image is first used
-//   (`Image_Base::notifyInUse`); see `image_graphite` for why an image cannot own the device. Draws
-//   made to the surface after `asImage()` are therefore not visible to that image.
 // - `SkSurface_Base` is `SurfaceBase` plus the canvas, as for the raster surface.
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::canvas::{Canvas, SurfaceBase};
@@ -187,7 +184,8 @@ impl Surface {
         let core = Rc::clone(device.core());
         // `Image::WrapDevice(fDevice)`: fails for a device whose target cannot be sampled.
         let texturable = device.is_texturable();
-        let image_view = wrap_device(&target, texturable, &info, None)?;
+        let link = Arc::clone(device.core().borrow().link());
+        let image_view = wrap_device(&target, texturable, &info, None, link)?;
 
         let canvas = Canvas::from_device(Box::new(device));
         let base = Rc::new(SurfaceBase::new());
@@ -235,13 +233,13 @@ impl Surface {
         &self.target
     }
 
-    /// `asImage()`: the image of the surface's target, which is made with the surface. The
-    /// surface's pending draws are flushed first (see the module docs).
+    /// `asImage()`: the image of the surface's target, which is made with the surface. The image
+    /// is linked to the surface's device: a draw of the image flushes the draws made to the
+    /// surface before it (`Image_Base::notifyInUse`), including those made after this call.
     // Port of: src/gpu/graphite/Surface_Graphite.cpp#L70-L77 (chrome/m156)
     #[doc(alias = "asImage")]
     #[must_use]
     pub fn as_image(&self) -> CoreImage {
-        self.flush_pending_work(None);
         self.image_view.clone()
     }
 
@@ -257,9 +255,15 @@ impl Surface {
         if other_ct == self.image_view.color_type() && other_alpha == self.image_view.alpha_type() {
             return Some(self.image_view.clone());
         }
-        self.flush_pending_work(None);
         let color_info = ColorInfo::new(other_ct, other_alpha, self.info.color_space());
-        let image = wrap_device(&self.target, self.texturable, &self.info, Some(color_info))?;
+        let link = Arc::clone(self.device.borrow().link());
+        let image = wrap_device(
+            &self.target,
+            self.texturable,
+            &self.info,
+            Some(color_info),
+            link,
+        )?;
         Some(image.into_core())
     }
 

@@ -558,10 +558,14 @@ pub struct Stats {
 }
 
 /// The backend a filter evaluation makes its devices, images and shaders with
-/// (`skif::Backend`). The raster backend is `skia_rust_raster::image_filter_backend`.
+/// (`skif::Backend`). The raster backend is `skia_rust_raster::image_filter_backend`; Graphite's is
+/// `skia_rust_gpu::graphite::image_filter_backend`.
+///
+/// Not `Send + Sync`: a backend lives for one filter evaluation on the thread of its device, and
+/// Graphite's holds the `Rc`-based recorder (`docs/design/gpu.md` §5.5).
 // Port of: src/core/SkImageFilterTypes.h#L1158-L1186 (chrome/m156)
 #[doc(alias = "skif::Backend")]
-pub trait Backend: Send + Sync {
+pub trait Backend {
     /// A device of `size` in premultiplied color type `color_type()` (`makeDevice`); `props`
     /// overrides the backend's surface properties.
     #[doc(alias = "makeDevice")]
