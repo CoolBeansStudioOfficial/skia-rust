@@ -151,9 +151,7 @@ impl PrecompileContext {
             return String::new();
         };
 
-        let Some(renderer_provider) = base.renderer_provider() else {
-            return String::new();
-        };
+        let renderer_provider = self.shared_context.renderer_provider();
         let Some(render_step) = renderer_provider.lookup(pipeline_desc.render_step_id()) else {
             return String::new();
         };

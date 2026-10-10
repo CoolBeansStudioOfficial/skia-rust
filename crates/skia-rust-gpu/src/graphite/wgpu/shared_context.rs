@@ -684,6 +684,10 @@ impl PipelineCreationContext for WgpuSharedContext {
         &self.base
     }
 
+    fn renderer_provider(&self) -> &RendererProvider {
+        RecorderSharedContext::renderer_provider(self)
+    }
+
     // Port of: src/gpu/graphite/SharedContext.cpp#L73-L125 (chrome/m156)
     fn find_or_create_graphics_pipeline(
         &self,

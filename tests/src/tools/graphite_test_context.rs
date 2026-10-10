@@ -16,6 +16,7 @@
 use skia_rust_gpu::graphite::buffer_manager::StaticBufferManager;
 use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::context_priv::ContextPriv;
+use skia_rust_gpu::graphite::graphite_types::{SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
     CapsProfile, WgpuContext, WgpuSharedContext, any_adapter_backend_context, make_context,
@@ -98,4 +99,22 @@ pub fn renderer_provider(context: &WgpuContext) -> RendererProvider {
         caps.shader_caps().infinity_support,
         &mut static_buffer_manager,
     )
+}
+
+/// `GraphiteTestContext::syncedSubmit(context)`: submits the context's work and, where the
+/// context cannot wait for the GPU, ticks it until the submitted work has finished.
+// Port of: tools/graphite/GraphiteTestContext.cpp#L51-L62 (chrome/m156)
+pub fn synced_submit(context: &mut WgpuContext) {
+    let sync = if context.shared_context().caps().allow_cpu_sync() {
+        SyncToCpu::Yes
+    } else {
+        SyncToCpu::No
+    };
+    let _ = context.submit(SubmitInfo::new(sync));
+    if sync == SyncToCpu::No {
+        while context.has_unfinished_gpu_work() {
+            context.shared_context().tick();
+            context.check_async_work_completion();
+        }
+    }
 }

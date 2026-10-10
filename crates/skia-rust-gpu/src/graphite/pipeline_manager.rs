@@ -27,6 +27,8 @@
 //! - `wait_TestOnly`, `getStats` and `Stats` exist in every build (Skia's are `GPU_TEST_UTILS`).
 
 use std::collections::HashMap;
+
+use crate::graphite::renderer_provider::RendererProvider;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, Weak};
 
@@ -58,6 +60,10 @@ const LOW_PRIORITY_WORK_LIST: i32 = 1;
 pub trait PipelineCreationContext: Send + Sync {
     /// The backend-neutral half of the shared context.
     fn shared_context(&self) -> &SharedContext;
+
+    /// `rendererProvider()`: the renderers of this context, made on first use by the backend
+    /// (the one provider of the shared context; see `WgpuSharedContext::renderer_provider`).
+    fn renderer_provider(&self) -> &RendererProvider;
 
     /// `findOrCreateGraphicsPipeline(runtimeDict, pipelineKey, pipelineDesc, renderPassDesc,
     /// flags)`: finds the pipeline in the global cache or creates it with the backend's
