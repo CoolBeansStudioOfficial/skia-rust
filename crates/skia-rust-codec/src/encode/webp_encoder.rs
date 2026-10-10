@@ -7,11 +7,10 @@
 //
 // Ported: the lossless encoder (`Compression::Lossless`, libwebp's VP8L at `method 0`, as
 // `SkWebpEncoderImpl` sets it), and the lossy encoder (`Compression::Lossy`, libwebp's VP8 at
-// `method 3`, `WebPConfigPreset(DEFAULT, quality)`) for opaque pictures, through
-// `skia_rust_libwebp::enc`.
+// `method 3`, `WebPConfigPreset(DEFAULT, quality)`), including the ALPH chunk of pictures with
+// transparency, through `skia_rust_libwebp::enc`.
 //
 // Not ported, and reported as `false` / `None` rather than encoded differently:
-// - lossy pictures with transparency: the ALPH chunk needs the VP8L encoder at `method 3`.
 // - an ICC profile on the pixmap's colour space: the ICCP chunk is written by libwebp's WebPMux,
 //   which is not ported. Without a colour space the file is the plain VP8L bitstream, as in Skia.
 // - `EncodeAnimated` (WebPAnimEncoder) and the GPU-backed `EncodeImage` (no `DirectContext`
