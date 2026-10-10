@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-pdf"
+description = "Skia's PDF backend (src/pdf, include/docs/SkPDFDocument.h) for skia-rust"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+skia-rust-core.workspace = true
+skia-rust-zlib.workspace = true
+
+[lints]
+workspace = true

@@ -17,6 +17,7 @@ members = [
     "crates/skia-rust-pathops",
     "crates/skia-rust-text",
     "crates/skia-rust-svg",
+    "crates/skia-rust-pdf",
     "benches",
     "crates/skia-rust-gpu",
     "tests",
@@ -50,6 +51,7 @@ skia-rust-effects = { path = "crates/skia-rust-effects", version = "0.156.0" }
 skia-rust-pathops = { path = "crates/skia-rust-pathops", version = "0.156.0" }
 skia-rust-text = { path = "crates/skia-rust-text", version = "0.156.0" }
 skia-rust-svg = { path = "crates/skia-rust-svg", version = "0.156.0" }
+skia-rust-pdf = { path = "crates/skia-rust-pdf", version = "0.156.0" }
 skia-rust-tools = { path = "tests/tools", version = "0.156.0" }
 skia-rust-gpu = { path = "crates/skia-rust-gpu", version = "0.156.0" }
 bitflags = "2"
