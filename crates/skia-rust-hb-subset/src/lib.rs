@@ -42,6 +42,7 @@ mod plan;
 mod serialize;
 mod sfnt;
 mod tables;
+mod var;
 
 use std::collections::BTreeSet;
 
@@ -183,7 +184,8 @@ fn subset_table(plan: &mut Plan<'_>, t: u32) -> Res<()> {
             plan.add_table(t, bytes);
             Ok(())
         }
-        b"HVAR" | b"VVAR" | b"gvar" => Err(SubsetError::Unsupported("HVAR/VVAR/gvar")),
+        b"gvar" => var::subset_gvar(plan).map(|_| ()),
+        b"HVAR" | b"VVAR" => Err(SubsetError::Unsupported("HVAR/VVAR")),
         b"CFF " | b"CFF2" | b"VORG" => Err(SubsetError::Unsupported("CFF/CFF2/VORG")),
         // `CPAL::subset` returns false without retained palette colours, which drops the table.
         b"CPAL" if plan.colr_palettes.is_empty() => Ok(()),
