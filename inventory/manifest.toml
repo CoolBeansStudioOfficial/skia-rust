@@ -29388,7 +29388,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BlurTest.cpp#L649-L670"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "eaa66185af08de114b9e9775588cf87e3adad3abd8ac7bc0362acddc66ab2f41"
 
 [[test]]
@@ -29731,7 +29731,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/CanvasTest.cpp#L782-L791"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "31a0cc23ce1e463de918d1baaae422e6e4cb5fdacbc0f195de923644d2097f71"
 
 [[test]]
@@ -31927,7 +31927,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/F16DrawTest.cpp#L110-L119"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "4c6e08a94bcb4665d5bb6c8c987aff915462efc981c4ba5d5a99d6afb62b174b"
 
 [[test]]
@@ -35282,7 +35282,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/ImageFilterTest.cpp#L2006-L2147"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "8577ea1da512d1d9a0ee61a2c0ce6b8cc3b363ec286aa1eeca0e6857e463cf28"
 
 [[test]]
@@ -41742,7 +41742,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/RuntimeBlendTest.cpp#L128-L139"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "6e48c68619bf3b0d76c02c5cfbf38fda3b8b727908e47afe63d1adfa6954b417"
 
 [[test]]
@@ -42460,7 +42460,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderTest.cpp#L178-L184"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "25c1cccab019e139aab3ec7531278b8463f852c680897533c91ddbfab6377543"
 
 [[test]]
@@ -42479,7 +42479,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/ShaderTest.cpp#L201-L211"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "a22a9817dbfa22494700187c3530b8b67335ce045214672259689a5fe5dcb9dc"
 
 [[test]]
@@ -42525,7 +42525,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SimplifyPaintTest.cpp#L202-L213"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "91b1ce2b2503e775b9912e497450fc58cb7b4ce66f55c75caaa0fea96219700a"
 
 [[test]]
@@ -42534,7 +42534,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SimplifyPaintTest.cpp#L230-L234"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "266953378ba39908140d619b0ab842430c6079facf077aaeece06f524ff30603"
 
 [[test]]
@@ -42907,7 +42907,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L446-L459"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "bd82249c45b3f4febaaeb7d37de18a8e8a4d14590531b082b37f47529c2c681e"
 
 [[test]]
@@ -42916,7 +42916,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L419-L424"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "58f13e69e7bacaa2dbd109f4f83ddaa1732c20cca51584a6eca6d5c962b9276e"
 
 [[test]]
@@ -45150,8 +45150,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkRuntimeEffectTest.cpp#L742-L747"
 module = "gpu"
-status = "todo"
-reason = "Graphite only"
+status = "passing"
 span_hash = "9acf7d781b6a7b6d57d93422dc28c40731eeb491e979979f902f87a1d39beec7"
 
 [[test]]
@@ -45289,8 +45288,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkRuntimeEffectTest.cpp#L1702-L1709"
 module = "gpu"
-status = "todo"
-reason = "Graphite only"
+status = "passing"
 span_hash = "0c2de3cca25299ff75789f388257818a48d7ed8b3318c54b1cb98a3271146670"
 
 [[test]]
