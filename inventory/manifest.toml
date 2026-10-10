@@ -51154,8 +51154,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1635-L1774"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "1edeb5d7d8d54998f076051e703428c146d5fc5ab975db6c3ad60ba31e19a4bd"
 
 [[test]]
@@ -51164,8 +51163,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1498-L1628"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "4e34457613fbb6e2fd33ab496d5abf78cf8bca5a36ed6353bb74edd92b907396"
 
 [[test]]
@@ -51174,8 +51172,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1883-L1995"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "caf6026dd80538bc9f6228d2a7bf290383d497448c3bf5c53c143317205311a4"
 
 [[test]]
@@ -51184,8 +51181,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1997-L2117"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "325641f5b2002fbc9ca96a44127bd704e5aed05d3c254309990e8f6dd526ac35"
 
 [[test]]
@@ -51194,8 +51190,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1776-L1881"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "93d08b535c92d77fb953916fa2f78db7f26299031ec411cb3b5393cf22fb4a40"
 
 [[test]]
@@ -51204,8 +51199,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L251-L494"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "32be8bf85ced593b687d75a637c9c036d18f73d81908d108df82bfbf91293d49"
 
 [[test]]
@@ -51214,8 +51208,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L647-L762"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "ea0aad1cd2bd488ff91338ed2beac97e4f7a8d0763e1244e2e0ec17943fb4523"
 
 [[test]]
@@ -51224,8 +51217,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L2119-L2289"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "65cf6d047cfde2cc2ae8c6343e0145417037deb77bd8d6471923869b3d4ac998"
 
 [[test]]
@@ -51244,8 +51236,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_CONTEXT"
 source = "tests/graphite/ComputeTest.cpp#L2542-L2663"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "20fbe94122a5866e506ece416cc3ebdced284406a6c2eb0caf27e29a7eafdf57"
 
 [[test]]
@@ -51254,8 +51245,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1036-L1176"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "797404a0af49d40c1525f437a26d9bfbd974ef327c38f61af54b5cc0b99a7f26"
 
 [[test]]
@@ -51264,8 +51254,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1329-L1491"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "bdaa92687140f73ca7428d71a262abca448f4034a0451070087d0d08337f040e"
 
 [[test]]
@@ -51274,8 +51263,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L120-L247"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "0eacf8795fbfd582916aa8cb3dcc545f091d1a6b56442d15679a8b87c444e4d6"
 
 [[test]]
@@ -51284,8 +51272,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L766-L867"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "68723a7d2cce5c501764bc83e8bd982572a61d67bab8cf4760f6f9cc7691f06f"
 
 [[test]]
@@ -51294,8 +51281,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L1179-L1324"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "5c61c3b4fd012043f87bc306831ef8625ded50200d5449dc1f2ee43e52dc8668"
 
 [[test]]
@@ -51304,8 +51290,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L871-L1034"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "15afe1122ab70d2ecc540e0593ab020bcb4b73c7f3ed35e2bbeacb976781dd88"
 
 [[test]]
@@ -51314,8 +51299,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L498-L643"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "869349d0664f588861128d253dbeff0c2f44b7fae8c620c454bfe4399595a9d6"
 
 [[test]]
@@ -51334,8 +51318,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_METAL_CONTEXTS"
 source = "tests/graphite/ComputeTest.cpp#L2665-L2783"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "1493184740670606764b5f0b9851328e4e17d60a20c842fef39644f11cdc7cbc"
 
 [[test]]
@@ -51362,8 +51345,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/DeviceTest.cpp#L21-L82"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "469645b7af5b913d87de0d7c2181687b740dee0e4968e7f6a373d3af35bcf7a0"
 
 [[test]]
@@ -51704,8 +51686,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageShaderTest.cpp#L88-L107"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "415598ad6c884921724399623b38f1c1220b43e71a8cb424525f93545f04a88c"
 
 [[test]]
@@ -51778,8 +51759,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/MultisampleTest.cpp#L92-L160"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "c608179d4ef3f0e02c48902f53e117da77d4e7e1011fb1976f02b6e1e816e456"
 
 [[test]]
@@ -51788,8 +51768,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/MultisampleTest.cpp#L26-L86"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "8afbdcd7d2f376f0bb342c72053eb8bea203210275f2b279f19959f2bbb04715"
 
 [[test]]
@@ -51808,8 +51787,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L397-L398"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "2eca21f01a50082412d9fd292be53c8860b3f3e8fd28218d1429dfa4108bbfe0"
 
 [[test]]
@@ -51818,8 +51796,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L455-L456"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "79197ddf913b0e108aa7b4b36a855262130e8e104cf10f842c0409da416072e5"
 
 [[test]]
@@ -51828,8 +51805,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L437-L438"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "11340bfeb171042fc6c0aee0df40929e2a18c10fc852e2e7cbde55230ec4e70b"
 
 [[test]]
@@ -51838,8 +51814,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L435-L436"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "57b37b2a8ae978e233e38ad5aa87dda6e21c60c5803c5a1523bf0be5ae73d0ae"
 
 [[test]]
@@ -51848,8 +51823,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L431-L432"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "47e2a055cd508f8bad15886ae04c3e35c61ff46a6b88b5f6344b51b87c2ac0a6"
 
 [[test]]
@@ -51858,8 +51832,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L443-L444"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "b5d2a6139583198d37833d3ca3a45850f9dea3e2fbd9ca219be8e238a3933084"
 
 [[test]]
@@ -51868,8 +51841,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L401-L402"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "398bccfda4fb9eda5542b4a659502731121ed13efcba90589b977dbc97bb023c"
 
 [[test]]
@@ -51878,8 +51850,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L417-L418"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "b2e8deae285a861dc6469479b4aaf651c8022f5b55fbed1a73b3acb99acaaed7"
 
 [[test]]
@@ -51888,8 +51859,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L409-L410"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "dcdd519a975663376ce43bacfb5efb954c1673796108a019ff73cd3016770386"
 
 [[test]]
@@ -51898,8 +51868,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L413-L414"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "b657046b4839d29d4722b7a8bb05361beb20c3971d196e94141b715eea969d9c"
 
 [[test]]
@@ -51908,8 +51877,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L405-L406"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "4e1a063b2530266d224a4e22e5286f3b7e5f96cb3d4c1af8e1a6fd9af3a24406"
 
 [[test]]
@@ -51918,8 +51886,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L445-L446"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "eec88fe9e2bdf155db372f1a839a6996a5a8c19858f44926b77b16cb4073180a"
 
 [[test]]
@@ -51928,8 +51895,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L439-L440"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "ac6f95256eebe1c1f637e2ce586c82f340d3fee0072feb80783b1d35716ee2ef"
 
 [[test]]
@@ -51938,8 +51904,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L451-L452"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "46d431378f9eeb90f9ddbba9c5408e038f824c7f3ff575a11096dfcbd543d29b"
 
 [[test]]
@@ -51948,8 +51913,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L433-L434"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "f969fdefda575c43ca4434b32946de34d4350214362b04bf0101736649d186d2"
 
 [[test]]
@@ -51958,8 +51922,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L457-L458"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "5f16fc22d864299d917b026075fb5757a1869293e678b2ec688ea384a5419bfd"
 
 [[test]]
@@ -51968,8 +51931,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L423-L424"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "3c4d35a91dbba3cb34f6685e9cb03f72296833f866260961dcf9937d5e1ab39a"
 
 [[test]]
@@ -51978,8 +51940,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L447-L448"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "cbcbd56671fa2ce868056dca120fcb2faca19ac2351e9650d3c0e690c9c8fd49"
 
 [[test]]
@@ -51988,8 +51949,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/NotifyInUseTest.cpp#L182-L222"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "a2dfe3c7152db7d0231134258ef1f39428ee7081b9507529f0342f0371a6c8de"
 
 [[test]]
@@ -51998,8 +51958,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/NotifyInUseTest.cpp#L103-L141"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "f677ab3100d525402c6857473f43eb4c2d32df5f5452b8a5114cc760cc1a1e0e"
 
 [[test]]
@@ -52008,8 +51967,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L429-L430"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "d893e28f8f7dc69a83ad80502758ea8f074e20148a2ef88a95ace17257c22071"
 
 [[test]]
@@ -52018,8 +51976,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L421-L422"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "12cdaa7090d99812acfecad5cbb193f1ea4f2f089ed67cbd46b43c1e41351226"
 
 [[test]]
@@ -52028,8 +51985,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L453-L454"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "8cec35055b172fc0c947e4c4aa0ab3b464199576bd32d4b6fb4da034c1e63d8f"
 
 [[test]]
@@ -52038,8 +51994,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L425-L426"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "9d5ecec5feeb5f75f72b1ffd5e9c400ac019744e2208832a34649882b016c7c1"
 
 [[test]]
@@ -52048,8 +52003,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L441-L442"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "e53d72424c9b9b0febc9572019bd274509230ede1199c8f77abeb24bdc092869"
 
 [[test]]
@@ -52058,8 +52012,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L399-L400"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "0a5c1f42f62fa50e2a7e246d1e80d6ce5c3623d7f9def6c90954ded5858c1738"
 
 [[test]]
@@ -52068,8 +52021,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L415-L416"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "aa66a96e88ef7277833cdecda2339ebcd858ab9d129cce2158757568324d09e9"
 
 [[test]]
@@ -52078,8 +52030,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L407-L408"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "c339bf25d3092051cca5f5ddb2d6b67e451c55d6c4aa95927551c1a0feb5a535"
 
 [[test]]
@@ -52088,8 +52039,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L411-L412"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "f54df62e11daf27a3afa5e5ef7b8bf6629a3041dd11d66abe82cb5441d703356"
 
 [[test]]
@@ -52098,8 +52048,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L403-L404"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "80d6fb4e137d08113c7540f34cdd8906a4e1a39df1d9deb88138ebb2ba3212b7"
 
 [[test]]
@@ -52108,8 +52057,7 @@ kind = "unit"
 macro = "DEFINE_LAYER_BLEND_TEST"
 source = "tests/graphite/NotifyInUseTest.cpp#L419-L420"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "b7391a1f023008371897a73ff308034c9d6fe9861a6e53ab16d122982ac35f41"
 
 [[test]]
