@@ -218,8 +218,10 @@ fn verify_same(reporter: &mut Reporter, a: &YUVAPixmaps, b: &YUVAPixmaps) {
     reporter_assert!(reporter, a.yuva_info() == b.yuva_info());
     reporter_assert!(reporter, a.num_planes() == b.num_planes());
     for plane in 0..a.num_planes() {
-        let a_plane = a.plane(plane);
-        let b_plane = b.plane(plane);
+        let a_view = a.plane(plane);
+        let b_view = b.plane(plane);
+        let a_plane = a_view.pixmap();
+        let b_plane = b_view.pixmap();
         reporter_assert!(
             reporter,
             a_plane.compute_byte_size() == b_plane.compute_byte_size()

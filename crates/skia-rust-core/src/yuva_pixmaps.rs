@@ -6,14 +6,23 @@
 //! [`YUVAPixmapInfo`] (the layout of the planes of a YUVA image) and [`YUVAPixmaps`] (the planes
 //! with their pixels).
 //!
-//! skia-rust deviation: [`YUVAPixmaps`] owns its pixels in one [`Data`] and hands out the planes as
-//! [`Pixmap`] views ([`YUVAPixmaps::plane`] returns the view by value). Skia's `SkPixmap` planes
-//! are stored beside the data they point into, which a safe Rust struct cannot do. The
-//! `FromExternalMemory` and `FromExternalPixmaps` constructors are not ported for the same reason:
-//! they borrow memory the caller keeps, so they would need a lifetime on the whole type. Use
-//! [`YUVAPixmaps::from_data`] to hand over the memory.
+//! skia-rust deviation: [`YUVAPixmaps`] keeps its pixels in one shared allocation: a [`Data`] it
+//! owns, or the memory of a [`CachedData`] (`SkYUVPlanesCache` makes its planes this way). The
+//! planes are [`PlaneView`]s of that memory, so two `YUVAPixmaps` made from the same cached data
+//! have the same plane addresses, as Skia's planes do. Skia's `SkPixmap` planes are stored beside
+//! the data they point into, which a safe Rust struct cannot do; a [`PlaneView`] borrows the bytes
+//! instead, and a cached plane holds the cached data's lock while the view lives.
+//!
+//! `FromExternalMemory` is not ported: it borrows memory the caller keeps, which needs a lifetime
+//! on the whole type. `FromExternalPixmaps` copies the planes it is given (the caller's pixmaps are
+//! only borrowed for the call). Use [`YUVAPixmaps::from_data`] or [`YUVAPixmaps::from_cached_data`]
+//! to hand over the memory.
+
+use std::ops::Range;
+use std::sync::Arc;
 
 use crate::alpha_type::AlphaType;
+use crate::cached_data::{CachedData, CachedDataGuard};
 use crate::color_type::ColorType;
 use crate::data::Data;
 use crate::image_info::{ImageInfo, YUVColorSpace};
@@ -405,6 +414,69 @@ impl YUVAPixmapInfo {
     }
 }
 
+/// The memory the planes of a [`YUVAPixmaps`] are in.
+#[derive(Clone, Debug)]
+enum PlaneStorage {
+    /// Pixels in a [`Data`] the pixmaps own or share. Writable while it is not shared.
+    Data(Data),
+    /// Pixels in the memory of a cached data, which the planes view while it is locked.
+    Cached(Arc<CachedData>),
+}
+
+/// The bytes of a [`PlaneView`]: borrowed from a [`Data`], or locked from a cached data.
+#[derive(Debug)]
+enum PlaneBytes<'a> {
+    Borrowed(&'a [u8]),
+    Locked {
+        guard: CachedDataGuard<'a>,
+        range: Range<usize>,
+    },
+    /// The cached data is unlocked (or its lock failed): the plane has no pixels.
+    None,
+}
+
+/// A read-only view of one plane of a [`YUVAPixmaps`] (`SkYUVAPixmaps::plane`).
+///
+/// The view holds the cached data's lock when the plane is cached, so drop it before calling
+/// another method on the same cached data.
+#[derive(Debug)]
+pub struct PlaneView<'a> {
+    info: &'a ImageInfo,
+    row_bytes: usize,
+    bytes: PlaneBytes<'a>,
+}
+
+impl PlaneView<'_> {
+    /// The plane's image info (`SkPixmap::info`).
+    #[must_use]
+    pub fn info(&self) -> &ImageInfo {
+        self.info
+    }
+
+    /// The plane's row bytes (`SkPixmap::rowBytes`).
+    #[must_use]
+    pub fn row_bytes(&self) -> usize {
+        self.row_bytes
+    }
+
+    /// The plane's pixels, or `None` if there are none (`SkPixmap::addr`).
+    #[must_use]
+    pub fn addr(&self) -> Option<&[u8]> {
+        match &self.bytes {
+            PlaneBytes::Borrowed(bytes) => Some(bytes),
+            PlaneBytes::Locked { guard, range } => guard.get(range.clone()),
+            PlaneBytes::None => None,
+        }
+    }
+
+    /// The plane as a [`Pixmap`] over its pixels, or an empty pixmap if there are none.
+    #[must_use]
+    pub fn pixmap(&self) -> Pixmap<'_> {
+        let bytes = self.addr().unwrap_or(&[]);
+        Pixmap::new_readonly(self.info, bytes, self.row_bytes).unwrap_or_default()
+    }
+}
+
 /// Port of `SkYUVAPixmaps`: the YUV(A) planes of an image, with their pixels in one allocation.
 // Port of: include/core/SkYUVAPixmaps.h#L199-L335 (chrome/m156)
 #[doc(alias = "SkYUVAPixmaps")]
@@ -412,11 +484,11 @@ impl YUVAPixmapInfo {
 pub struct YUVAPixmaps {
     yuva_info: YUVAInfo,
     data_type: DataType,
-    // Each plane's image info, row bytes and offset into `data`.
+    // Each plane's image info, row bytes and offset into `storage`.
     plane_infos: [ImageInfo; YUVAInfo::MAX_PLANES],
     plane_row_bytes: [usize; YUVAInfo::MAX_PLANES],
     plane_offsets: [usize; YUVAInfo::MAX_PLANES],
-    data: Data,
+    storage: PlaneStorage,
 }
 
 impl Default for YUVAPixmaps {
@@ -428,7 +500,7 @@ impl Default for YUVAPixmaps {
             plane_infos: YUVAPixmapInfo::default().plane_infos,
             plane_row_bytes: [0; YUVAInfo::MAX_PLANES],
             plane_offsets: [0; YUVAInfo::MAX_PLANES],
-            data: Data::new_empty(),
+            storage: PlaneStorage::Data(Data::new_empty()),
         }
     }
 }
@@ -461,7 +533,10 @@ impl YUVAPixmaps {
             return None;
         }
         let total = info.compute_total_bytes(None);
-        Some(Self::from_parts(info, Data::new_zero_initialized(total)))
+        Some(Self::from_parts(
+            info,
+            PlaneStorage::Data(Data::new_zero_initialized(total)),
+        ))
     }
 
     /// Port of `SkYUVAPixmaps::FromData`: pixmaps over `data`, which must hold all the planes.
@@ -477,7 +552,27 @@ impl YUVAPixmaps {
         if info.compute_total_bytes(None) > data.size() {
             return None;
         }
-        Some(Self::from_parts(info, data))
+        Some(Self::from_parts(info, PlaneStorage::Data(data)))
+    }
+
+    /// The pixmaps of `info` over the memory of `data`, the planes laid out as
+    /// `initPixmapsFromSingleAllocation` lays them out. `None` for an invalid info or too little
+    /// data.
+    ///
+    /// The planes view the cached data's memory and share it with every clone of these pixmaps,
+    /// as the planes of `SkYUVAPixmaps::FromExternalPixmaps` do in Skia. The data is not copied.
+    // skia-rust: the C++ takes `SkPixmap`s that point into the cached data; the pixmaps here hold
+    // the cached data itself, so the plane addresses are the data's addresses.
+    #[doc(alias = "SkYUVAPixmaps::FromExternalPixmaps")]
+    #[must_use]
+    pub fn from_cached_data(info: &YUVAPixmapInfo, data: Arc<CachedData>) -> Option<Self> {
+        if !info.is_valid() {
+            return None;
+        }
+        if info.compute_total_bytes(None) > data.size() {
+            return None;
+        }
+        Some(Self::from_parts(info, PlaneStorage::Cached(data)))
     }
 
     /// Port of `SkYUVAPixmaps::MakeCopy`: a copy of `src` with its own pixels.
@@ -500,7 +595,7 @@ impl YUVAPixmaps {
             let s_bytes = s.addr().unwrap_or(&[]);
             let d_row_bytes = result.plane_row_bytes[i];
             let d_offset = result.plane_offsets[i];
-            let d_bytes = &mut result.data.writable_data()?[d_offset..];
+            let d_bytes = &mut result.owned_bytes_mut()?[d_offset..];
             for row in 0..height {
                 let src_row = &s_bytes[row * s_row_bytes..row * s_row_bytes + min_row_bytes];
                 d_bytes[row * d_row_bytes..row * d_row_bytes + min_row_bytes]
@@ -537,7 +632,7 @@ impl YUVAPixmaps {
             let s_bytes = s.addr().unwrap_or(&[]);
             let d_row_bytes = result.plane_row_bytes[i];
             let d_offset = result.plane_offsets[i];
-            let d_bytes = &mut result.data.writable_data()?[d_offset..];
+            let d_bytes = &mut result.owned_bytes_mut()?[d_offset..];
             for row in 0..height {
                 let src_row = &s_bytes[row * s_row_bytes..row * s_row_bytes + min_row_bytes];
                 d_bytes[row * d_row_bytes..row * d_row_bytes + min_row_bytes]
@@ -550,7 +645,7 @@ impl YUVAPixmaps {
     // The planes of a fresh allocation: consecutive, each `rowBytes * height` bytes long, as
     // `initPixmapsFromSingleAllocation` lays them out.
     // Port of: src/core/SkYUVAPixmaps.cpp#L186-L208 (chrome/m156), the private constructor
-    fn from_parts(info: &YUVAPixmapInfo, data: Data) -> Self {
+    fn from_parts(info: &YUVAPixmapInfo, storage: PlaneStorage) -> Self {
         let n = info.num_planes();
         let mut plane_row_bytes = [0usize; YUVAInfo::MAX_PLANES];
         let mut plane_offsets = [0usize; YUVAInfo::MAX_PLANES];
@@ -569,7 +664,16 @@ impl YUVAPixmaps {
             plane_infos: info.plane_infos.clone(),
             plane_row_bytes,
             plane_offsets,
-            data,
+            storage,
+        }
+    }
+
+    /// The bytes of an owned allocation, for writing (`None` for a cached one, or a shared
+    /// [`Data`]).
+    fn owned_bytes_mut(&mut self) -> Option<&mut [u8]> {
+        match &mut self.storage {
+            PlaneStorage::Data(data) => data.writable_data(),
+            PlaneStorage::Cached(_) => None,
         }
     }
 
@@ -618,25 +722,47 @@ impl YUVAPixmaps {
         }
     }
 
-    /// Plane `i` as a [`Pixmap`] view of the pixels (`plane`).
+    /// Plane `i` as a read-only view of the pixels (`plane`). A cached plane holds the cached
+    /// data's lock while the view lives.
     #[must_use]
-    pub fn plane(&self, i: usize) -> Pixmap<'_> {
+    pub fn plane(&self, i: usize) -> PlaneView<'_> {
         let info = &self.plane_infos[i];
-        let size = self.plane_row_bytes[i] * dim_len(info.height());
+        let row_bytes = self.plane_row_bytes[i];
+        let size = row_bytes * dim_len(info.height());
         let start = self.plane_offsets[i];
-        let bytes = self.data.as_bytes().get(start..start + size).unwrap_or(&[]);
-        Pixmap::new_readonly(info, bytes, self.plane_row_bytes[i]).unwrap_or_default()
+        let range = start..start + size;
+        let bytes = match &self.storage {
+            PlaneStorage::Data(data) => match data.as_bytes().get(range) {
+                Some(bytes) => PlaneBytes::Borrowed(bytes),
+                None => PlaneBytes::None,
+            },
+            PlaneStorage::Cached(cached) => match cached.data() {
+                Some(guard) if guard.len() >= range.end => PlaneBytes::Locked { guard, range },
+                _ => PlaneBytes::None,
+            },
+        };
+        PlaneView {
+            info,
+            row_bytes,
+            bytes,
+        }
     }
 
     /// Plane `i` as a writable [`Pixmap`], `None` when the pixels are shared with another [`Data`]
-    /// (Skia writes through its pointers; a shared buffer cannot be written safely).
+    /// or are cached (Skia writes through its pointers; shared memory cannot be written safely
+    /// here).
     #[must_use]
     pub fn plane_mut(&mut self, i: usize) -> Option<Pixmap<'_>> {
         let size = self.plane_row_bytes[i] * dim_len(self.plane_infos[i].height());
         let start = self.plane_offsets[i];
         let row_bytes = self.plane_row_bytes[i];
+        // The fields are borrowed separately, so the info can be kept while the bytes are written.
         let info = &self.plane_infos[i];
-        let bytes = self.data.writable_data()?.get_mut(start..start + size)?;
+        let data = match &mut self.storage {
+            PlaneStorage::Data(data) => data,
+            PlaneStorage::Cached(_) => return None,
+        };
+        let bytes = data.writable_data()?.get_mut(start..start + size)?;
         Pixmap::new(info, bytes, row_bytes)
     }
 
@@ -652,7 +778,7 @@ impl YUVAPixmaps {
         }
         let row_bytes = self.plane_row_bytes[i];
         let start = self.plane_offsets[i] + row * row_bytes;
-        self.data.writable_data()?.get_mut(start..start + row_bytes)
+        self.owned_bytes_mut()?.get_mut(start..start + row_bytes)
     }
 
     /// The locations of Y, U, V and A (`toYUVALocations`).
@@ -664,10 +790,14 @@ impl YUVAPixmaps {
         self.yuva_info.to_yuva_locations(&channel_flags)
     }
 
-    /// Whether these pixmaps own the memory of the planes (`ownsStorage`). Always true here, as
-    /// the pixels are in a [`Data`] that the pixmaps own or share.
+    /// Whether these pixmaps own the memory of the planes (`ownsStorage`). True when the pixels
+    /// are in a [`Data`] (which the pixmaps own or share); false for the memory of a cached data,
+    /// which the cache owns.
     #[must_use]
     pub fn owns_storage(&self) -> bool {
-        self.data.size() > 0
+        match &self.storage {
+            PlaneStorage::Data(data) => data.size() > 0,
+            PlaneStorage::Cached(_) => false,
+        }
     }
 }

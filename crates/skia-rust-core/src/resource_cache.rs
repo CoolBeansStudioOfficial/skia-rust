@@ -13,9 +13,11 @@
 //! Skia keeps a process-wide cache behind [`ResourceCache::global`]. That cache is a `Mutex`,
 //! where Skia's `SkSynchronizedResourceCache` locks.
 //!
-//! Not ported: the `Rec` payload of `postAddInstall(void*)`, which only the bitmap cache uses,
-//! and the memory dump and debug-print facilities.
+//! The `postAddInstall(void*)` payload is [`ResourceCache::add_with_payload`]: the payload is a
+//! closure over the caller's data, and the record is passed to it as `&dyn Rec`. Not ported: the
+//! memory dump and debug-print facilities.
 
+use std::any::Any;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
@@ -138,6 +140,10 @@ pub trait Rec: Send {
 
     /// Returns the category name, for diagnostics (`getCategory`).
     fn category(&self) -> &'static str;
+
+    /// Returns the record as `Any`, so a visitor can reach its payload (skia-rust: Skia's
+    /// visitors cast the `Rec` to its subclass; this is the safe downcast).
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// The visitor of [`ResourceCache::find`]. It returns `true` if the record is valid, and `false`
@@ -350,6 +356,17 @@ impl ResourceCache {
     ///
     /// Only if the cache's internal links are broken, which no call of this API does.
     pub fn add(&mut self, rec: Box<dyn Rec>) {
+        self.add_with_payload(rec, |_| {});
+    }
+
+    /// Adds a record, then calls `payload` with the record the cache keeps: the new one, or the
+    /// preexisting one it kept instead (`add(rec, payload)`, with `postAddInstall(payload)`).
+    /// The payload runs before the cache's purge check, so it sees the record installed.
+    ///
+    /// # Panics
+    ///
+    /// Only if the cache's internal links are broken, which no call of this API does.
+    pub fn add_with_payload(&mut self, rec: Box<dyn Rec>, payload: impl FnOnce(&dyn Rec)) {
         self.check_messages();
         if let Some(&preexisting) = self.hash.get(rec.key()) {
             let slot = self.slots[preexisting]
@@ -361,6 +378,7 @@ impl ResourceCache {
             } else {
                 // If it cannot be purged, we reuse it and delete the new one.
                 slot.rec.post_add_install();
+                payload(&*slot.rec);
                 return;
             }
         }
@@ -368,11 +386,9 @@ impl ResourceCache {
         let bytes = rec.bytes_used();
         let idx = self.add_to_head(rec, bytes);
         self.hash.insert(key, idx);
-        self.slots[idx]
-            .as_mut()
-            .expect("slot was just added")
-            .rec
-            .post_add_install();
+        let slot = self.slots[idx].as_mut().expect("slot was just added");
+        slot.rec.post_add_install();
+        payload(&*slot.rec);
         // Since the new rec may push us over budget, we perform a purge check now.
         self.purge_as_needed(false);
     }

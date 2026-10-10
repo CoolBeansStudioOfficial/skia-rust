@@ -73,6 +73,10 @@ impl Rec for TestRec {
     fn category(&self) -> &'static str {
         "test-category"
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 // Port of: tests/SkResourceCacheTest.cpp#L259-L295 (chrome/m156), `test_duplicate_add`

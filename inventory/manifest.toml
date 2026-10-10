@@ -51003,8 +51003,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVCacheTest.cpp#L38-L87"
 module = "codec"
-status = "todo"
-reason = "SkYUVPlanesCache (src/core/SkYUVPlanesCache.cpp) is not ported. The test compares the plane addresses read back from the cache with the ones it stored, which needs SkYUVAPixmaps::FromExternalPixmaps to borrow the SkCachedData memory; the port copies the planes (docs/API_MAPPING.md), so the addresses cannot match"
+status = "passing"
 span_hash = "becfc2108f78aae7bda54068391a38c0c50fed47c58eb53f4d39a6f29d47de1a"
 
 [[test]]
