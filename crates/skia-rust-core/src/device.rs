@@ -28,6 +28,7 @@ use crate::clip_op::ClipOp;
 use crate::color::{Color, Color4f};
 use crate::color_priv::{alpha_255_to_256, alpha_mul};
 use crate::color_type::ColorType;
+use crate::drawable::Drawable;
 use crate::floating_point::float_round2int;
 use crate::glyph_run::{GlyphRun, GlyphRunBuilder, GlyphRunList};
 use crate::image::Image;
@@ -455,6 +456,17 @@ pub trait Device {
     // Port of: src/core/SkDevice.h#L535-L537 (chrome/m156)
     #[doc(alias = "onDrawGlyphRunList")]
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint);
+
+    /// The glyph drawables that [`on_draw_glyph_run_list`](Self::on_draw_glyph_run_list) did not
+    /// draw, in the order they were met, and forgets them.
+    ///
+    /// skia-rust: Skia's glyph painter draws a glyph drawable with the *canvas*
+    /// (`canvas->saveLayer(); drawable->draw(canvas)`). A Rust device cannot reach the canvas that
+    /// is drawing it, so it hands the drawables back and the canvas draws them once the device
+    /// call returns (see `Canvas::draw_glyph_run_list`). The default has none.
+    fn take_pending_glyph_drawables(&mut self) -> Vec<PendingGlyphDrawable> {
+        Vec::new()
+    }
 
     /// `SkDevice::convertGlyphRunListToSlug`: a slug of the glyphs of `list`, drawn with
     /// `paint`. Only GPU devices make slugs; every other device returns `None`.
@@ -938,6 +950,19 @@ pub fn clip_shader(device: &mut dyn Device, sh: &Shader, op: ClipOp) {
         sh = sh.make_invert_alpha();
     }
     device.on_clip_shader(sh);
+}
+
+/// A glyph drawable a device collected while drawing a glyph run list: the drawable, the matrix
+/// that places it relative to the canvas, and the paint of the text
+/// (`Device::take_pending_glyph_drawables`).
+#[derive(Clone, Debug)]
+pub struct PendingGlyphDrawable {
+    /// The drawable of the glyph (`glyph->drawable()`).
+    pub drawable: Drawable,
+    /// The matrix from the drawable's space to the canvas's (`m` in `drawForBitmapDevice`).
+    pub matrix: Matrix,
+    /// The paint the text is drawn with.
+    pub paint: Paint,
 }
 
 /// `SkDevice::drawGlyphRunList` without the canvas: draws `list` on `device`, through
