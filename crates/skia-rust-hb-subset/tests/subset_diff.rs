@@ -206,8 +206,8 @@ fn subset_matches_hb_subset() {
         .filter(|font| !gaps.keys().any(|g| g.starts_with(&format!("{font}:"))))
         .collect();
     assert!(
-        now_ported.is_empty(),
-        "now ported, remove from NOT_PORTED: {now_ported:?}"
+        newly_exact.is_empty(),
+        "now ported, remove from NOT_PORTED: {newly_exact:?}"
     );
 }
 
