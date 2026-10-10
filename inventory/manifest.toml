@@ -30221,8 +30221,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L99-L515"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: a table-driven check of frame metadata over GIF, WebP, JPEG and PNG (every decoder it uses exists; the DNG row is RAW, not built); needs its own pass (CodecAnimTest.cpp#L99-L515)"
+status = "passing"
 span_hash = "1456d17b53798cf014215b7285c3571da7a249998a971ea920234e7c90689380"
 
 [[test]]
