@@ -69,10 +69,8 @@ impl GM for PictureShaderCacheGm {
     // Port of: gm/pictureshadercache.cpp#L51-L57 (chrome/m156), onOnceBeforeDraw
     fn on_once_before_draw(&mut self) {
         let mut recorder = PictureRecorder::new();
-        let picture_canvas = recorder.begin_recording(
-            Rect::from_wh(self.tile_size, self.tile_size),
-            false,
-        );
+        let picture_canvas =
+            recorder.begin_recording(Rect::from_wh(self.tile_size, self.tile_size), false);
         self.draw_tile(picture_canvas);
         self.picture = recorder.finish_recording_as_picture(None);
     }

@@ -17,6 +17,7 @@
 )]
 
 use crate::prelude::*;
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::AutoCanvasRestore;
 use skia_rust_core::color::colors;
 use skia_rust_core::color_space::ColorSpace;
@@ -24,17 +25,16 @@ use skia_rust_core::floating_point::float_midpoint;
 use skia_rust_core::font_types::TextEncoding;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
+use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_core::scalar::{scalar, scalar_interp};
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
-use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::picture_recorder::PictureRecorder;
-use skia_rust_core::sampling_options::FilterMode;
 use skia_rust_effects::gradient::interpolation::{ColorSpace as InterpColorSpace, InPremul};
-use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
+use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_tools::font_tool_utils::default_portable_font;
 
 const G_COLORS: [Color4f; 5] = [
@@ -1847,8 +1847,9 @@ fn draw_circle_shader(
     canvas.draw_circle((cx, cy), r, &p);
 }
 
-// Port of: gm/gradients.cpp#L810-L863 (chrome/m156), fancy_gradients
-crate::def_simple_gm!(fancy_gradients, canvas, 800, 300, {
+// Port of: gm/gradients.cpp#L810-L893 (chrome/m156), the body of fancy_gradients
+#[allow(clippy::too_many_lines)] // mirrors the long C++ DEF_SIMPLE_GM body
+fn fancy_gradients_draw(canvas: &Canvas) {
     draw_circle_shader(canvas, (150.0, 150.0, 100.0), || {
         // Checkerboard using two linear gradients + picture shader.
         let k_tile_size: scalar = 80.0 / 2.0_f32.sqrt();
@@ -2005,4 +2006,9 @@ crate::def_simple_gm!(fancy_gradients, canvas, 800, 300, {
             radial,
         ))
     });
+}
+
+// Port of: gm/gradients.cpp#L810 (chrome/m156), DEF_SIMPLE_GM(fancy_gradients, canvas, 800, 300)
+crate::def_simple_gm!(fancy_gradients, canvas, 800, 300, {
+    fancy_gradients_draw(canvas);
 });

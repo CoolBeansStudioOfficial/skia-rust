@@ -35848,8 +35848,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageGeneratorTest.cpp#L104-L134"
 module = "core"
-status = "todo"
-reason = "needs SkImageGenerators::MakeFromPicture (src/image/SkImageGenerator_picture), not ported"
+status = "passing"
 span_hash = "fb124bd9a0694f6be9429215dcc75df6c8151e7ece429cae9463eb5bd5c9770d"
 
 [[test]]
@@ -39909,7 +39908,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureShaderTest.cpp#L26-L59"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7021aab330147d05e98b2b96902032c70b7dfc2357253b3b55bce1f6be754a77"
 
 [[test]]
@@ -39918,7 +39917,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PictureShaderTest.cpp#L67-L119"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "062cf98deb841d5531d7e8515e802bc86ce697335ae3457a2b4f657aec011775"
 
 [[test]]
@@ -45233,8 +45232,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L190-L223"
 module = "core"
-status = "todo"
-reason = "needs DeferredFromPicture (the picture image generator, SkPictureImageGenerator, is not ported: notes/pictureimagegenerator.md). The bitmap-cache path of lazy images is ported and tested (bitmap_cache::tests), and the raster half of this test has no other blocker"
+status = "passing"
 span_hash = "09f9239bac59098e5ce0584ede860e49c9f763ee6ba3c0e72a869fcc87113957"
 
 [[test]]
