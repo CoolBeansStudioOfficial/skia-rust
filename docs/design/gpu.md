@@ -725,10 +725,25 @@ with the full texts in the release, as in `rp-diff`.
 - W3: not started. `ChromePrecompileTest`, `AndroidPrecompileTest`, `CombinationBuilderTest` and
   `PaintParamsKeyTest` need the Precompile API (G14: `PaintOptions`, `PrecompileShader` and the
   rest, `UniqueKeyUtils`).
-- W4: done for everything W2 makes. naga accepts every shader except the ones that pass a pointer
-  to a storage buffer array as a function argument (the 12-stop gradients on a device with storage
-  buffers): that is WGSL's `unrestricted_pointer_parameters`, which Tint implements and naga does
-  not. The test names the error and requires that it is the only one.
+- W4: done for everything W2 makes. naga rejects one family of Tint-valid shaders, the ones that
+  pass a pointer to a storage buffer array as a function argument (the 12-stop gradients on a
+  device with storage buffers): that is WGSL's `unrestricted_pointer_parameters`, which Tint
+  implements and naga 30 does not (no front-end support, an unconditional validator check, and
+  no newer release). Skia's WGSL text is unchanged (it is what W2 and W3 compare); the one place
+  the backend does not hand wgpu that text as is lies in `compile_wgsl_shader_module`:
+  `graphite::wgpu::naga_pointer_args` parses a source that mentions `ptr<storage`, and only if
+  naga's validation fails with `InvalidArgumentPointerSpace` on a `storage` pointer does it
+  rewrite the naga IR and hand wgpu `ShaderSource::Naga`; every other module is passed as text
+  (the browser build always is). The rewrite specialises each function with such a parameter once
+  per distinct global its callers pass (`&_storage2.fsStorageBuffer`, or a caller's own parameter
+  after that caller was specialised), drops the parameter, makes its uses the access chain on the
+  global, and recurses through the callees; callees come before callers in the new function
+  arena. A call site that passes anything but a constant member access chain on a storage global,
+  or an expression or statement the rewrite does not map, fails the shader module with a
+  `RewriteError` through the error handler, never a guess. The result is validated again.
+  `wgsl_pipelines` validates what the backend would hand wgpu for all 2,795 corpus pipelines (63
+  shaders need the rewrite), with no tolerated error; the unit tests in the module cover one and
+  two levels of nesting, two buffers and the failure case.
 - W5: `KeyTest` (3), `PipelineDataCacheTest` (1) and `RTEffectTest` (4) are ported and pass on the
   noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
   `PaintParamsKeyTest` (2) the Precompile API (G14).

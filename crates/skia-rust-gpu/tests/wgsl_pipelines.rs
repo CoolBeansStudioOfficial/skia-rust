@@ -14,7 +14,8 @@
 //! - W4, validity: naga parses and validates every WGSL shader the corpus makes. naga rejects one
 //!   family of Tint-valid shaders, the ones that pass a pointer to a storage buffer array as a
 //!   function argument (`unrestricted_pointer_parameters`, which Tint implements and naga does
-//!   not): [`KNOWN_NAGA_LIMITATION`] lists the error and the tests pin that it is the only one.
+//!   not): the backend rewrites those modules (`graphite::wgpu::naga_pointer_args`) and the test
+//!   validates what the backend would hand wgpu, with no tolerated error.
 //!
 //! Also here: the shaders are the same on every run (no hash-order or address dependence).
 
@@ -28,22 +29,26 @@ use support::wgsl_corpus::{
 };
 
 use skia_rust_gpu::graphite::context_options::ContextOptions;
+use skia_rust_gpu::graphite::wgpu::naga_pointer_args::{PreparedSource, prepare_shader_source};
 use skia_rust_gpu::graphite::wgpu::{CapsProfile, WgpuCaps};
 
-/// What naga says about a storage buffer pointer function argument.
-const KNOWN_NAGA_LIMITATION: &str = "InvalidArgumentPointerSpace";
-
-/// Parses and validates `wgsl` with naga, with every capability on (the shaders use `enable f16`,
-/// `var<immediate>` and `@blend_src`).
-fn naga_validate(wgsl: &str) -> Result<(), String> {
-    let module = naga::front::wgsl::parse_str(wgsl).map_err(|e| e.emit_to_string(wgsl))?;
-    naga::valid::Validator::new(
-        naga::valid::ValidationFlags::all(),
-        naga::valid::Capabilities::all(),
-    )
-    .validate(&module)
-    .map_err(|e| format!("{e:?}"))?;
-    Ok(())
+/// What the backend gives wgpu for `wgsl`: parses and validates it with naga, with every capability
+/// on (the shaders use `enable f16`, `var<immediate>` and `@blend_src`), after the rewrite of
+/// storage pointer parameters the backend applies. Returns whether the rewrite was needed.
+fn naga_validate(wgsl: &str) -> Result<bool, String> {
+    match prepare_shader_source(wgsl).map_err(|e| e.to_string())? {
+        PreparedSource::Rewritten(_) => Ok(true),
+        PreparedSource::Wgsl(_) => {
+            let module = naga::front::wgsl::parse_str(wgsl).map_err(|e| e.emit_to_string(wgsl))?;
+            naga::valid::Validator::new(
+                naga::valid::ValidationFlags::all(),
+                naga::valid::Capabilities::all(),
+            )
+            .validate(&module)
+            .map_err(|e| format!("{e:?}"))?;
+            Ok(false)
+        }
+    }
 }
 
 /// Steps with each kind of coverage and vertex color, enough to see every fragment shape.
@@ -107,7 +112,7 @@ fn corpus() -> &'static [(String, Vec<Pipeline>)] {
 #[test]
 fn every_pipeline_of_the_corpus_compiles_and_validates() {
     let mut failures: Vec<String> = Vec::new();
-    let mut known_naga_limitation = 0;
+    let mut rewritten = 0;
     let mut total = 0;
     let mut with_fragment_shader = 0;
     for (_, pipelines) in corpus() {
@@ -129,10 +134,8 @@ fn every_pipeline_of_the_corpus_compiles_and_validates() {
                     }
                     for (stage, wgsl) in stages {
                         match naga_validate(wgsl) {
-                            Ok(()) => {}
-                            Err(e) if e.contains(KNOWN_NAGA_LIMITATION) => {
-                                known_naga_limitation += 1;
-                            }
+                            Ok(false) => {}
+                            Ok(true) => rewritten += 1,
                             Err(e) => failures.push(format!(
                                 "{}: naga rejects the {stage} shader\n{e}",
                                 pipeline.name
@@ -147,7 +150,7 @@ fn every_pipeline_of_the_corpus_compiles_and_validates() {
     assert!(with_fragment_shader >= 1500, "{with_fragment_shader}");
     eprintln!(
         "{total} pipelines, {with_fragment_shader} with a fragment shader, \
-         {known_naga_limitation} shaders hit the naga storage pointer limitation"
+         {rewritten} shaders needed the storage pointer rewrite"
     );
     if !failures.is_empty() {
         let shown = failures

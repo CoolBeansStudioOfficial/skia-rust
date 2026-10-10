@@ -3,7 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/graphite/TextureFallbackTest.cpp (chrome/m156), the tests that inspect the SkSL
 // `EmitStorageFallbackTexture` writes, and `TextureFallbackMultiStopGradientsDrawTest` (it draws
-// and submits without reading back, but is `#[ignore]`d: naga rejects the gradient shaders).
+// and submits without reading back; the backend rewrites the storage pointer parameters of its
+// shaders for naga, docs/design/gpu.md 6.3).
 
 #![cfg(test)]
 // Mirrors the C++ tests, which declare constants and similarly named bindings inline.
@@ -529,7 +530,6 @@ def_graphite_test_for_all_contexts!(
 // 8. End-to-end Draw Test with Multi-Stop (> 8 stops) Gradients
 // Port of: tests/graphite/TextureFallbackTest.cpp#L502-L567 (chrome/m156)
 def_graphite_test_for_all_contexts!(
-    #[ignore = "naga rejects a storage buffer pointer as a function argument (docs/design/gpu.md 6.3): the gradient pipelines fail validation"]
     TextureFallbackMultiStopGradientsDrawTest,
     |reporter, context| {
         let mut recorder = context.make_recorder(None);
