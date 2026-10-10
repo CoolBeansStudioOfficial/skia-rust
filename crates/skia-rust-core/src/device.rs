@@ -52,6 +52,7 @@ use crate::scalar::scalar;
 use crate::scaler_context::ScalerContextBuildFlags;
 use crate::shader::Shader;
 use crate::size::ISize;
+use crate::slug::Slug;
 use crate::special_image::SpecialImage;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::utils::patch_utils;
@@ -439,6 +440,24 @@ pub trait Device {
     // Port of: src/core/SkDevice.h#L535-L537 (chrome/m156)
     #[doc(alias = "onDrawGlyphRunList")]
     fn on_draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint);
+
+    /// `SkDevice::convertGlyphRunListToSlug`: a slug of the glyphs of `list`, drawn with
+    /// `paint`. Only GPU devices make slugs; every other device returns `None`.
+    // Port of: src/core/SkDevice.cpp#L481-L484 (chrome/m156)
+    #[doc(alias = "convertGlyphRunListToSlug")]
+    fn convert_glyph_run_list_to_slug(
+        &mut self,
+        _list: &GlyphRunList<'_>,
+        _paint: &Paint,
+    ) -> Option<Slug> {
+        None
+    }
+
+    /// `SkDevice::drawSlug`: draws a slug the device made. Skia aborts ("Slug drawing not
+    /// supported.") on a device that never makes slugs; here nothing is drawn.
+    // Port of: src/core/SkDevice.cpp#L486-L488 (chrome/m156)
+    #[doc(alias = "drawSlug")]
+    fn draw_slug(&mut self, _slug: &Slug, _paint: &Paint) {}
 
     /// `SkDevice::scalerContextFlags`: the flags of the glyph masks drawn on this device. A
     /// linear color space drops the gamma hacks; otherwise they stay on, and the contrast boost

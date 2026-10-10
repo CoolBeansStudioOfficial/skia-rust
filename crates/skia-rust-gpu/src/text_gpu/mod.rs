@@ -4,9 +4,16 @@
 //! atlas delegate.
 
 pub mod distance_field_adjust_table;
+pub mod glyph_vector;
 pub mod packed_gpu_glyph_id;
 pub mod sdf_mask_filter;
+pub mod slug_impl;
+pub mod strike_cache;
+pub mod sub_run_container;
 pub mod sub_run_control;
+pub mod text_blob;
+pub mod text_blob_redraw_coordinator;
+pub mod vertex_filler;
 
 use skia_rust_core::mask::MaskFormat as GlyphMaskFormat;
 

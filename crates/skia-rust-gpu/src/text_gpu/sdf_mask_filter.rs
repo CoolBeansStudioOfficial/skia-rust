@@ -126,12 +126,11 @@ mod tests {
         let src = Mask::new(&image, IRect::new(0, 0, 4, 4), 4, MaskFormat::A8);
         let mut dst = MaskBuilder::default();
         let mut margin = IPoint::new(0, 0);
-        assert!(make().as_base().filter_mask(
-            &mut dst,
-            &src,
-            Matrix::i(),
-            Some(&mut margin)
-        ));
+        assert!(
+            make()
+                .as_base()
+                .filter_mask(&mut dst, &src, Matrix::i(), Some(&mut margin))
+        );
         assert_eq!(dst.format, MaskFormat::Sdf);
         assert_eq!(margin, IPoint::new(4, 4));
         assert_eq!(dst.bounds, IRect::new(-4, -4, 8, 8));

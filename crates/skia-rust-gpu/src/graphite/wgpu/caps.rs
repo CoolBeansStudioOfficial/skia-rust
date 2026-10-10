@@ -2227,6 +2227,18 @@ impl Caps for WgpuCaps {
         WgpuCaps::support_bilerp_from_glyph_atlas(self)
     }
 
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize {
+        WgpuCaps::glyph_cache_texture_maximum_bytes(self)
+    }
+
+    fn min_distance_field_font_size(&self) -> f32 {
+        WgpuCaps::min_distance_field_font_size(self)
+    }
+
+    fn glyphs_as_paths_font_size(&self) -> f32 {
+        WgpuCaps::glyphs_as_paths_font_size(self)
+    }
+
     fn set_backend_labels(&self) -> bool {
         WgpuCaps::set_backend_labels(self)
     }

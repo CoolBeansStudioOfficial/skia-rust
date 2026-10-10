@@ -1949,6 +1949,38 @@ impl CanvasState {
         }
     }
 
+    // Port of: src/core/SkCanvas.cpp#L2463-L2479 (chrome/m156), onConvertGlyphRunListToSlug
+    fn convert_glyph_run_list_to_slug(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+    ) -> Option<Slug> {
+        let bounds = list.source_bounds_with_origin();
+        if bounds.is_empty() || !bounds.is_finite() || self.nothing_to_draw(paint) {
+            return None;
+        }
+        // See the comment in draw_glyph_run_list(): text applies mask filters itself.
+        let auto_layer = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE)?;
+        let slug = self
+            .top_device_mut()
+            .convert_glyph_run_list_to_slug(list, auto_layer.paint());
+        self.end_auto_layer(&auto_layer);
+        slug
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2488-L2498 (chrome/m156), onDrawSlug
+    fn draw_slug(&mut self, slug: &Slug, paint: &Paint) {
+        let bounds = slug.source_bounds_with_origin();
+        if self.internal_quick_reject(&bounds, paint, None) {
+            return;
+        }
+        // See the comment in draw_glyph_run_list(): text applies mask filters itself.
+        if let Some(auto_layer) = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
+            self.top_device_mut().draw_slug(slug, auto_layer.paint());
+            self.end_auto_layer(&auto_layer);
+        }
+    }
+
     // Port of: src/core/SkCanvas.cpp#L2205-L2223 (chrome/m156)
     fn draw_path(&mut self, path: &Path, paint: &Paint) {
         if let Some(hooks) = self.hooks.as_mut()
@@ -3849,12 +3881,35 @@ impl Canvas {
         self
     }
 
-    /// Draws a slug (`drawSlug`). A null slug draws nothing; a [`Slug`] is never made on the CPU.
-    // Port of: src/core/SkCanvas.cpp#L2481-L2486 (chrome/m156)
+    /// Makes a slug of `blob` drawn at `origin` with `paint`, as if it was drawn with
+    /// [`draw_text_blob`](Self::draw_text_blob) (`convertBlobToSlug`). Returns `None` if the blob
+    /// would not draw (not because of clipping, but because of some paint optimization), and
+    /// always on devices that do not make slugs (every device but the GPU's).
+    // Port of: src/core/SkCanvas.cpp#L2459-L2479 (chrome/m156)
+    #[doc(alias = "convertBlobToSlug")]
+    #[doc(alias = "Slug::ConvertBlob")]
+    #[must_use]
+    pub fn convert_blob_to_slug(
+        &self,
+        blob: &TextBlob,
+        origin: impl Into<Point>,
+        paint: &Paint,
+    ) -> Option<Slug> {
+        let mut builder = GlyphRunBuilder::new();
+        let list = builder.blob_to_glyph_run_list(blob, origin.into());
+        self.state
+            .borrow_mut()
+            .convert_glyph_run_list_to_slug(&list, paint)
+    }
+
+    /// Draws a slug obeying the canvas' mapping and clipping (`drawSlug`). A null slug draws
+    /// nothing.
+    // Port of: src/core/SkCanvas.cpp#L2481-L2498 (chrome/m156)
     #[doc(alias = "drawSlug")]
-    pub fn draw_slug(&self, slug: Option<&Slug>, _paint: &Paint) -> &Self {
+    #[doc(alias = "Slug::draw")]
+    pub fn draw_slug(&self, slug: Option<&Slug>, paint: &Paint) -> &Self {
         if let Some(slug) = slug {
-            match *slug {}
+            self.state.borrow_mut().draw_slug(slug, paint);
         }
         self
     }

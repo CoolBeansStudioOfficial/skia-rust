@@ -381,6 +381,22 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "supportBilerpFromGlyphAtlas")]
     fn support_bilerp_from_glyph_atlas(&self) -> bool;
 
+    /// `glyphCacheTextureMaximumBytes()`: the largest a single glyph atlas texture should be.
+    // Port of: src/gpu/graphite/Caps.h#L425 (chrome/m156)
+    #[doc(alias = "glyphCacheTextureMaximumBytes")]
+    fn glyph_cache_texture_maximum_bytes(&self) -> usize;
+
+    /// `minDistanceFieldFontSize()`: below this size (in device space) distance field text is
+    /// not used.
+    // Port of: src/gpu/graphite/Caps.h#L423 (chrome/m156)
+    #[doc(alias = "minDistanceFieldFontSize")]
+    fn min_distance_field_font_size(&self) -> f32;
+
+    /// `glyphsAsPathsFontSize()`: above this size (in device space) glyphs are drawn as paths.
+    // Port of: src/gpu/graphite/Caps.h#L424 (chrome/m156)
+    #[doc(alias = "glyphsAsPathsFontSize")]
+    fn glyphs_as_paths_font_size(&self) -> f32;
+
     /// `setBackendLabels()`.
     // Port of: src/gpu/graphite/Caps.h#L435 (chrome/m156)
     #[doc(alias = "setBackendLabels")]
