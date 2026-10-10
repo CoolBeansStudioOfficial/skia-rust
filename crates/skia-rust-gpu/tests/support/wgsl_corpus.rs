@@ -29,6 +29,7 @@ use skia_rust_core::point::Point;
 use skia_rust_core::runtime_effect::RuntimeEffect;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders};
+use skia_rust_gpu::gpu::mask_format::MaskFormat;
 use skia_rust_gpu::gpu::shader_error_handler::{ShaderErrorHandler, build_shader_error_message};
 use skia_rust_gpu::gpu::swizzle::Swizzle;
 use skia_rust_gpu::graphite::buffer_manager::StaticBufferManager;
@@ -108,6 +109,17 @@ pub fn all_steps(provider: &RendererProvider) -> Vec<(String, Arc<dyn RenderStep
             provider.tessellated_strokes(true),
         ),
     ];
+    // The text renderers: the bitmap text of each atlas format (565 is all LCD text), and the
+    // distance field text without and with LCD.
+    for (name, use_lcd, format) in [
+        ("bitmap_text_mask", false, MaskFormat::A8),
+        ("bitmap_text_lcd", true, MaskFormat::A565),
+        ("bitmap_text_color", false, MaskFormat::Argb),
+    ] {
+        renderers.push((name.into(), provider.bitmap_text(use_lcd, format)));
+    }
+    renderers.push(("sdf_text".into(), provider.sdf_text(false)));
+    renderers.push(("sdf_text_lcd".into(), provider.sdf_text(true)));
     for (has_color, has_tex_coords) in [(false, false), (false, true), (true, false), (true, true)]
     {
         renderers.push((
