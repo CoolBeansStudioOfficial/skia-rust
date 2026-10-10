@@ -11,6 +11,39 @@
 //! `VP8CodeIntraModes` walks the macroblocks and is ported with the macroblock iterator (see the
 //! encoder module), since it reads the iterator's mode predictors.
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::too_many_arguments,
+    clippy::bool_to_int_with_if,
+    clippy::needless_range_loop,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::too_many_lines,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 use super::tree_tables::{K_BMODES_PROBA, VP8_COEFFS_PROBA0, VP8_COEFFS_UPDATE_PROBA};
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_cost::{NUM_BANDS, NUM_CTX, NUM_PROBAS, NUM_TYPES, VP8EncProba};

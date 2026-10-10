@@ -14,6 +14,33 @@
 //! filter statistics (`VP8StoreFilterStats`), the show-compressed export, the progress reports,
 //! and the non-token loop `VP8EncLoop` (used only when `use_tokens` is off).
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::too_many_arguments,
+    clippy::bool_to_int_with_if,
+    clippy::cast_precision_loss,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -276,7 +303,7 @@ pub fn vp8_enc_token_loop(enc: &mut VP8Encoder, pic: &YuvPicture) -> bool {
     tokens.emit_tokens(&mut enc.parts[0], &flat);
     enc.tokens = tokens;
     // PostLoopFinalize: finish the partitions, then the filter strength.
-    for p in enc.parts.iter_mut() {
+    for p in &mut enc.parts {
         p.finish_in_place();
     }
     adjust_filter_strength(enc);

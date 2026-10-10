@@ -18,6 +18,28 @@
 //! The SSE2 and NEON kernels are not ported: the differential contract is the C path (see
 //! `docs/design/codecs.md` §7).
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::bool_to_int_with_if,
+    clippy::cast_precision_loss,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
