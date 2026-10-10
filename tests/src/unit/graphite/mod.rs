@@ -7,6 +7,7 @@ pub mod cache_budget_test;
 pub mod compute_test;
 pub mod device_test;
 pub mod draw_atlas_test;
+pub mod graphite_promise_image_test;
 pub mod graphite_resource_cache_test;
 pub mod image_origin_test;
 pub mod image_shader_test;

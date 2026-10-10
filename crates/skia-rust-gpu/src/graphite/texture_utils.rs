@@ -32,14 +32,19 @@ use skia_rust_core::texture_compression_type::TextureCompressionType;
 
 use crate::gpu::backing_fit::BackingFit;
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Renderable};
-use crate::gpu::sk_log::skia_log_e;
+use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
+use crate::gpu::sk_log::{skia_log_e, skia_log_w};
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_context::DrawContext;
 use crate::graphite::image_graphite::Image;
 use crate::graphite::image_provider::{
     DefaultImageProvider, ImageProvider, valid_client_provided_image,
 };
+use crate::graphite::backend_texture::BackendTexture;
+use crate::graphite::graphite_types::Volatile;
 use crate::graphite::recorder::Recorder;
+use crate::graphite::resource::ResourceRef;
+use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::surface_graphite::Surface;
 use crate::graphite::task::copy_task::CopyTextureToTextureTask;
 use crate::graphite::task::upload_task::{ImageUploadContext, MipLevel, UploadSource};
@@ -49,6 +54,7 @@ use crate::graphite::texture_format::{
     texture_format_compression_type,
 };
 use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
+use crate::graphite::texture::{ReleaseCallback, Texture};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
 
@@ -208,6 +214,80 @@ pub fn make_bitmap_proxy_view(
     }
 
     Some(upload_source.view().clone())
+}
+
+/// `GraphitePromiseTextureFulfillProc`: called when a promise image's texture is instantiated. It
+/// returns the backend texture the promise is fulfilled with and the callback run when that
+/// texture is released (`GraphitePromiseTextureReleaseProc` with its context). The fulfill call
+/// may happen more than once for volatile promise images.
+pub type PromiseTextureFulfillProc =
+    Arc<dyn Fn() -> (BackendTexture, Option<Box<dyn FnOnce() + Send>>) + Send + Sync>;
+
+/// `PromiseLazyInstantiateCallback`: the lazy instantiation of a promise image's proxy. It calls
+/// the fulfill proc, and wraps the returned backend texture. It holds the image release helper,
+/// so the image release runs when the last proxy referencing it goes away.
+// Port of: src/gpu/graphite/TextureUtils.cpp#L198-L250 (chrome/m156)
+struct PromiseLazyInstantiateCallback {
+    _release_helper: Arc<RefCntedCallback>,
+    fulfill_proc: PromiseTextureFulfillProc,
+    label: String,
+}
+
+impl PromiseLazyInstantiateCallback {
+    // Port of: src/gpu/graphite/TextureUtils.cpp#L223-L242 (chrome/m156)
+    fn instantiate(&self, resource_provider: &mut ResourceProvider) -> Option<ResourceRef<Texture>> {
+        // Invoke the fulfill proc to get the promised backend texture.
+        let (backend_texture, texture_release) = (self.fulfill_proc)();
+        if !backend_texture.is_valid() {
+            skia_log_w!("FulfillProc returned an invalid backend texture");
+            return None;
+        }
+
+        let texture_release_cb = texture_release
+            .map(|proc| RefCntedCallback::make(CallbackProc::Plain(proc)));
+
+        let texture = resource_provider.create_wrapped_texture(&backend_texture, &self.label);
+        let Some(texture) = texture else {
+            skia_log_w!("Failed to wrap BackendTexture returned by fulfill proc");
+            return None;
+        };
+        texture.set_release_callback(texture_release_cb.map(|cb| cb as ReleaseCallback));
+        Some(texture)
+    }
+}
+
+/// `MakePromiseImageLazyProxy(caps, dimensions, textureInfo, isVolatile, releaseHelper, fulfillProc,
+/// fulfillContext, textureReleaseProc, label)`: a lazy proxy that is instantiated by calling
+/// `fulfill_proc`. Promise proxies are never budgeted, as they belong to a client's image.
+// Port of: src/gpu/graphite/TextureUtils.cpp#L345-L368 (chrome/m156)
+#[doc(alias = "MakePromiseImageLazyProxy")]
+#[must_use]
+pub fn make_promise_image_lazy_proxy(
+    caps: &dyn Caps,
+    dimensions: ISize,
+    texture_info: TextureInfo,
+    is_volatile: Volatile,
+    release_helper: Arc<RefCntedCallback>,
+    fulfill_proc: PromiseTextureFulfillProc,
+    label: &str,
+) -> Option<Arc<TextureProxy>> {
+    debug_assert!(!dimensions.is_empty());
+
+    let callback = PromiseLazyInstantiateCallback {
+        _release_helper: release_helper,
+        fulfill_proc,
+        label: label.to_owned(),
+    };
+    // Proxies for promise images are assumed to always be destined for a client's SkImage so
+    // are never considered budgeted.
+    TextureProxy::make_lazy(
+        caps,
+        dimensions,
+        &texture_info,
+        Budgeted::No,
+        is_volatile,
+        Box::new(move |resource_provider| callback.instantiate(resource_provider)),
+    )
 }
 
 /// `make_renderable(srcInfo, dstInfo)`: the color info a copy of `src_info` into `dst_info` renders

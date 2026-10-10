@@ -22,16 +22,18 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image::{Image as CoreImage, RequiredProperties};
 use skia_rust_core::image_base::{ImageBase, ImageType};
 use skia_rust_core::image_filter::ImageFilter;
-use skia_rust_core::image_info::ColorInfo;
-use skia_rust_core::image_info_priv::color_info_is_valid;
+use skia_rust_core::image_info::{ColorInfo, ImageInfo};
+use skia_rust_core::image_info_priv::{color_info_is_valid, image_info_is_valid};
 use skia_rust_core::image_raster::ImageRaster;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
+use skia_rust_core::size::ISize;
 use skia_rust_core::surface_props::SurfaceProps;
 
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
+use crate::gpu::sk_log::skia_log_w;
 use crate::gpu::swizzle::Swizzle;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::image_filter_backend::make_graphite_backend;
@@ -43,10 +45,13 @@ use crate::graphite::texture_format::{
     are_color_type_and_format_compatible, read_swizzle_for_color_type,
     texture_format_channel_mask, texture_format_color_type_info,
 };
-use crate::graphite::texture_info::texture_info_priv;
+use crate::graphite::graphite_types::Volatile;
+use crate::graphite::texture_info::{TextureInfo, texture_info_priv};
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
-use crate::graphite::texture_utils::make_bitmap_proxy_view;
+use crate::graphite::texture_utils::{
+    PromiseTextureFulfillProc, make_bitmap_proxy_view, make_promise_image_lazy_proxy,
+};
 
 /// `make_from_bitmap(recorder, colorInfo, bitmap, mipmaps, budgeted, requiredProps, label)`: an
 /// image over a texture the bitmap is uploaded to.
@@ -259,6 +264,60 @@ pub fn wrap_texture_for_alpha_type(
 
     let view = TextureProxyView::new_with_origin(Some(TextureProxy::wrap(texture)), swizzle, origin);
     Some(Image::new(view, &info).into_core())
+}
+
+/// `PromiseTextureFrom(recorder, dimensions, textureInfo, colorInfo, origin, isVolatile,
+/// fulfillProc, imageReleaseProc, textureReleaseProc, imageContext)`: an image whose texture is
+/// provided by `fulfill_proc` when the recording that uses it is inserted. `image_release` runs
+/// once the image and every recording that uses it are gone.
+// Port of: src/gpu/graphite/ImageFactories.cpp#L255-L311 (chrome/m156)
+#[doc(alias = "PromiseTextureFrom")]
+#[must_use]
+pub fn promise_texture_from(
+    recorder: &Recorder,
+    dimensions: ISize,
+    texture_info: &TextureInfo,
+    color_info: &ColorInfo,
+    origin: Origin,
+    is_volatile: Volatile,
+    fulfill_proc: PromiseTextureFulfillProc,
+    image_release: Option<Box<dyn FnOnce() + Send>>,
+) -> Option<CoreImage> {
+    // Our contract is that we will always call the _image_ release proc even on failure. We use
+    // the helper to convey the imageContext, so we need to ensure Make doesn't fail.
+    let release_helper = RefCntedCallback::make(CallbackProc::Plain(
+        image_release.unwrap_or_else(|| Box::new(|| {})),
+    ));
+
+    let priv_ = recorder.priv_();
+    let caps = Arc::clone(priv_.caps());
+
+    let info = ImageInfo::from_color_info(dimensions, color_info.clone());
+    if !image_info_is_valid(&info) {
+        skia_log_w!("Invalid SkImageInfo");
+        return None;
+    }
+
+    let format = texture_info_priv::view_format(texture_info);
+    if !are_color_type_and_format_compatible(color_info.color_type(), format) {
+        skia_log_w!("Incompatible SkColorType and TextureInfo");
+        return None;
+    }
+
+    // Non-YUVA promise images use the 'imageContext' for both the release proc and fulfill proc.
+    let proxy = make_promise_image_lazy_proxy(
+        &*caps,
+        dimensions,
+        texture_info.clone(),
+        is_volatile,
+        release_helper,
+        fulfill_proc,
+        "",
+    )?;
+
+    let swizzle = read_swizzle_for_color_type(color_info.color_type(), format);
+    let view = TextureProxyView::new_with_origin(Some(proxy), swizzle, origin);
+    Some(Image::new(view, color_info).into_core())
 }
 
 /// `SubsetTextureFrom(recorder, img, subset, requiredProps)`: a Graphite-backed copy of `subset` of
