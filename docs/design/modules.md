@@ -439,7 +439,11 @@ unicode range bits), `hdmx`, `GDEF`, `GSUB`/`GPOS` (all lookup types and formats
 script and language-system pruning, duplicate-feature merging, GSUB closure), `BASE`, `MATH`, `COLR` (v0 and v1),
 `CPAL`, `sbix`, `CBLC`/`CBDT`, `gvar`, name-id closure from `STAT`/`fvar`/`CPAL`/layout features, passthrough of
 `STAT`/`cvt `/`fpgm`/`prep`/`fvar`/`avar`/`cvar`/`MVAR`, the drop list (`DSIG`, `kern`, `morx`, `SVG `, ...), the serialization
-buffer growth of `_hb_subset_table` (a table that needs more than 256 times its source fails, as in HarfBuzz).
+buffer growth of `_hb_subset_table` (a table that needs more than 256 times its source fails, as in HarfBuzz), and
+`hb-repacker` (`graph`, `graph_gsubgpos`, `repacker`, `hbmap`): graph sorting by shortest distance, 24/32-bit space
+assignment and subgraph isolation, duplication of shared nodes, priority raising, `GSUB`/`GPOS` extension promotion, and the
+splitting of `PairPos` formats 1 and 2, `MarkBasePos` format 1 and `LigatureSubst` subtables. `hb_hashmap_t`'s open addressing is
+copied (`HbMap`) because the repacker visits nodes in its iteration order.
 
 **Not ported, with the reason.**
 - `CFF `, `CFF2`, `VORG`, and `HVAR`/`VVAR`: unreachable from Skia (above). They report `Unsupported`.
@@ -447,7 +451,8 @@ buffer growth of `_hb_subset_table` (a table that needs more than 256 times its 
   `COLR` variation stores): variable fonts only, so unreachable. `Unsupported`.
 - The HarfBuzz sanitizer. A malformed table makes `hb-subset` fail (`FAIL` in the oracle); this port subsets what it can read
   and applies size checks only. Fonts that sanitize (every font in the corpus) are unaffected.
-- `hb-repacker` (offset-overflow resolution): see the status line below.
+- `hb-repacker` pieces that no `GSUB`/`GPOS` the corpus can build reaches: the `GPOS` splitters for `PairPos` with device
+  tables inside value records are ported but only the device-table-free path is exercised by the oracle fonts.
 
 **Verification.** `oracle/subset-diff/` builds HarfBuzz at the pin with Skia's defines (`build.sh`), runs a C driver that calls
 `hb-subset` exactly as `SkPDFSubsetFont.cpp` does, over `corpus.txt` (every Skia resources font with outlines: single glyph,
@@ -455,7 +460,15 @@ last glyph, ASCII, three seeded random sets, all glyphs, each with and without g
 SHA-256 per entry). `crates/skia-rust-hb-subset/tests/subset_diff.rs` replays the corpus and requires identical bytes: no
 tolerance, and a font that is not ported must report `Unsupported` for the part it stops at (the test fails when a listed font
 becomes exact, so the list can only shrink). The same test accepts `HB_SUBSET_EXT_DIR` for a larger local corpus made by the same
-scripts (HarfBuzz's own test fonts and system fonts are not redistributable here).
+scripts (HarfBuzz's own test fonts and system fonts are not redistributable here). 5672 entries of such a local corpus
+(HarfBuzz's test fonts and system fonts) are exact; what does not match is two fonts that HarfBuzz rejects in its sanitizer
+(`FAIL` in the oracle) and the entries that need a part listed above.
+
+Real fonts hardly ever overflow in ways that reach the repacker's extension promotion and subtable splitting, so
+`oracle/subset-diff/gen_synthetic.py` writes synthetic fonts (`oracle/subset-diff/synthetic/`, replayed by
+`repacker_matches_hb_subset_on_synthetic_fonts`) whose `GSUB`/`GPOS` need them: ligature, mark-to-base and pair-positioning
+subtables that only fit after splitting, plain lookups promoted to extensions, shared nodes duplicated, and two `PairPos`
+format 2 fonts for which HarfBuzz itself fails (its split leaves the first half just over the limit); the port fails with it.
 
 ---
 
