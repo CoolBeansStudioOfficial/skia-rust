@@ -16,6 +16,7 @@ use std::collections::{BTreeSet, HashMap};
 use crate::context;
 use crate::gsubgpos::Kind;
 use crate::ot::{
+    offset_subset, serialize_copy_device,
     ClassDef, ClassDefPlan, ClassDefSubsetArgs, Coverage, INVALID, View, classdef_subset, coverage_serialize,
     coverage_subset, device_copy,
 };
@@ -101,23 +102,6 @@ fn bytes_of(v: View<'_>, off: usize, len: usize) -> Vec<u8> {
     let mut out: Vec<u8> = v.d.get(off..).unwrap_or(&[]).iter().copied().take(len).collect();
     out.resize(len, 0);
     out
-}
-
-/// `OffsetTo::serialize_subset` for the offset field `field` of `parent`, written at `pos` of the
-/// current object: `*this = 0; if (src.is_null ()) return false; ...`.
-fn offset_subset(
-    s: &mut Serializer,
-    pos: usize,
-    parent: View<'_>,
-    field: usize,
-    f: impl FnOnce(&mut Serializer, View<'_>) -> bool,
-) -> bool {
-    if parent.is_null16(field) {
-        s.zero_field(pos, 2);
-        return false;
-    }
-    let child = parent.off16(field);
-    s.serialize_subset(pos, 2, true, |s| f(s, child))
 }
 
 // -------------------------------------------------------------------------------------------
@@ -435,17 +419,8 @@ fn anchor3_subset(s: &mut Serializer, anchor: View<'_>) -> bool {
     }
     let xpos = s.embed_u16(x_dev as u16);
     let ypos = s.embed_u16(y_dev as u16);
-    for (pos, dev) in [(xpos, x_dev), (ypos, y_dev)] {
-        // `serialize_copy`
-        s.zero_field(pos, 2);
-        if dev == 0 {
-            continue;
-        }
-        s.push();
-        let _ = device_copy(s, anchor.sub(dev as usize));
-        let idx = s.pop_pack(true);
-        s.add_link(pos, 2, idx, Whence::Head, 0);
-    }
+    serialize_copy_device(s, xpos, anchor, 6);
+    serialize_copy_device(s, ypos, anchor, 8);
     true
 }
 

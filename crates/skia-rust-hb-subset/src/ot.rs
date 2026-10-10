@@ -1101,3 +1101,36 @@ pub(crate) fn device_copy(s: &mut Serializer, dev: View<'_>) -> bool {
         _ => false,
     }
 }
+
+/// `OffsetTo::serialize_subset` for the offset field `field` of `parent`, written at `pos` of the
+/// current object: `*this = 0; if (src.is_null ()) return false; ...`.
+pub(crate) fn offset_subset(
+    s: &mut Serializer,
+    pos: usize,
+    parent: View<'_>,
+    field: usize,
+    f: impl FnOnce(&mut Serializer, View<'_>) -> bool,
+) -> bool {
+    if parent.is_null16(field) {
+        s.zero_field(pos, 2);
+        return false;
+    }
+    let child = parent.off16(field);
+    s.serialize_subset(pos, 2, true, |s| f(s, child))
+}
+
+/// `OffsetTo<Device>::serialize_copy (c, src, base, 0, Head)` with the offset field `field` of
+/// `parent`, written at `pos` of the current object: the new object is linked even when the copy
+/// produced nothing (an empty object has no index and no link).
+pub(crate) fn serialize_copy_device(s: &mut Serializer, pos: usize, parent: View<'_>, field: usize) -> bool {
+    s.zero_field(pos, 2);
+    if parent.is_null16(field) {
+        return false;
+    }
+    s.push();
+    let ret = device_copy(s, parent.off16(field));
+    let idx = s.pop_pack(true);
+    s.add_link(pos, 2, idx, Whence::Head, 0);
+    ret
+}
+

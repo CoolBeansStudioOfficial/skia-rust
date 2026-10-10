@@ -35,6 +35,8 @@ pub(crate) struct Plan<'a> {
     pub codepoint_to_glyph: BTreeMap<u32, u32>,
     pub glyphset_gsub: BTreeSet<u32>,
     pub glyphset: BTreeSet<u32>,
+    /// `_glyphset_mathed`: `glyphset_gsub` plus the glyphs `MATH` refers to.
+    pub glyphset_mathed: BTreeSet<u32>,
     pub glyph_map: HashMap<u32, u32>,
     /// `glyph_map_gsub`: the new glyph id of each glyph of `glyphset_gsub`.
     pub glyph_map_gsub: HashMap<u32, u32>,
@@ -84,6 +86,7 @@ impl<'a> Plan<'a> {
             codepoint_to_glyph: BTreeMap::new(),
             glyphset_gsub: BTreeSet::new(),
             glyphset: BTreeSet::new(),
+            glyphset_mathed: BTreeSet::new(),
             glyph_map: HashMap::new(),
             glyph_map_gsub: HashMap::new(),
             used_mark_sets_map: HashMap::new(),
@@ -204,6 +207,7 @@ impl<'a> Plan<'a> {
             remove_invalid_gids(&mut mathed, num_glyphs);
         }
 
+        self.glyphset_mathed = mathed.clone();
         let mut cur_glyphset = mathed;
         if !self.drop_tables.contains(&tag(b"COLR")) {
             crate::color::colr_closure(self, &mut cur_glyphset)?;
