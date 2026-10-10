@@ -73,9 +73,7 @@ fn compile(
     coverage: Coverage,
 ) {
     let base = shared_context.shared_context();
-    let Some(renderer_provider) = base.renderer_provider() else {
-        return;
-    };
+    let renderer_provider = shared_context.renderer_provider();
     let pipeline_manager = base.pipeline_manager();
 
     for r in renderer_provider.renderers() {
@@ -181,7 +179,7 @@ pub fn precompile(
         let Some(write_swizzle) =
             write_swizzle_for_color_type(rpp.dst_ct, texture_info_priv::view_format(&info))
         else {
-            continue; // Skip generating pipelines that would never show up at runtime
+            continue; // Skip
         };
 
         // TODO(robertphillips): address mismatches between the MSAA requirements of the Renderers
@@ -251,9 +249,9 @@ pub fn precompile(
                 // Special case handling to pick up the:
                 //     "CoverBoundsRenderStep[InverseCover] + (empty)"
                 // pipelines.
-                let render_step = base
+                let render_step = shared_context
                     .renderer_provider()
-                    .and_then(|rp| rp.lookup(RenderStepID::CoverBounds_InverseCover))
+                    .lookup(RenderStepID::CoverBounds_InverseCover)
                     .cloned();
                 if let Some(render_step) = render_step {
                     let _handle = base.pipeline_manager().create_handle(
