@@ -18,6 +18,7 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
+use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar_ceil_to_int;
 use skia_rust_core::serial_procs::{
@@ -27,6 +28,7 @@ use skia_rust_core::stream::{DynamicMemoryWStream, MemoryStream, Stream, StreamA
 use skia_rust_core::text_blob::TextBlobBuilder;
 use skia_rust_core::typeface::{SerializeBehavior, Typeface};
 use skia_rust_core::utils::text_utils::{Align, draw_string};
+use skia_rust_core::write_buffer::BinaryWriteBuffer;
 use skia_rust_effects::dash_path_effect;
 use skia_rust_raster::surfaces;
 use skia_rust_tools::font_tool_utils::{
@@ -462,4 +464,23 @@ def_font_test!(Serialization_PictureTypeface, |reporter| {
         ..Default::default()
     };
     test_picture_typeface_serialization(reporter, Some(&serial_procs), Some(&deserial_procs));
+});
+
+// Port of: tests/SerializationTest.cpp#L1206-L1221 (chrome/m156), ReadBuffer_empty
+def_test!(ReadBuffer_empty, |reporter| {
+    let mut writer = BinaryWriteBuffer::new();
+    writer.write_int(123);
+    // `writeDataAsByteArray(SkData::MakeEmpty())`: the bytes of the data, with their size first.
+    writer.write_byte_array(Data::new_empty().as_bytes());
+    writer.write_int(321);
+
+    let size = writer.bytes_written();
+    let mut storage = vec![0u8; size];
+    writer.write_to_memory(&mut storage);
+
+    let mut reader = ReadBuffer::new(&storage);
+    reporter_assert!(reporter, reader.read_int() == 123);
+    let data = reader.read_byte_array_as_data();
+    reporter_assert!(reporter, data.is_some_and(|data| data.size() == 0));
+    reporter_assert!(reporter, reader.read_int() == 321);
 });

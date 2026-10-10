@@ -74,6 +74,7 @@ pub mod data_ref_test;
 pub mod descriptor_test;
 #[cfg(test)]
 pub mod direct_mask_limit_test;
+pub mod discardable_memory_pool_test;
 pub mod discardable_memory_test;
 #[cfg(test)]
 pub mod draw_bitmap_rect_test;
@@ -419,6 +420,10 @@ pub mod sk_strike_test;
 pub mod sk_utf_test;
 #[cfg(test)]
 pub mod sk_vx_test;
+#[cfg(test)]
+pub mod skbug5221;
+#[cfg(test)]
+pub mod skbug6389;
 #[cfg(test)]
 pub mod src_over_test;
 #[cfg(test)]
