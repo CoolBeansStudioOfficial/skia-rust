@@ -35,6 +35,7 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
 use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::blend_mode_blender::get_blend_mode_singleton;
 use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
@@ -48,6 +49,7 @@ use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::mesh::{self, Mesh, mesh_priv};
 use skia_rust_core::paint::{Cap, Paint, Style as PaintStyle};
+use skia_rust_core::paint_priv::compute_luminance_color;
 use skia_rust_core::path::Path;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::Point;
@@ -57,16 +59,18 @@ use skia_rust_core::rrect::{RRect, rrect_priv};
 use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
+use skia_rust_core::slug::Slug;
 use skia_rust_core::size::ISize;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
-use skia_rust_core::surface_props::SurfaceProps;
+use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 use skia_rust_core::vertices::Vertices;
 use skia_rust_raster::region_path::RegionExt;
 use skia_rust_simd::vx::{self, Float2};
 
 use crate::gpu::backing_fit::{BackingFit, get_approx_size};
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Renderable};
+use crate::gpu::mask_format::MaskFormat;
 use crate::gpu::sk_log::skia_log_e;
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::clip_atlas_manager::RecorderClipAtlas;
@@ -75,6 +79,12 @@ use crate::graphite::clip_stack::{
     PixelSnapping,
 };
 use crate::graphite::draw_context::DrawContext;
+use crate::graphite::geom::sub_run_data::SubRunData;
+use crate::text_gpu::glyph_vector::RendererData;
+use crate::text_gpu::sub_run_container::AtlasSubRun;
+use crate::text_gpu::slug_impl::SlugImpl;
+use crate::text_gpu::sub_run_container::{StrikeDeviceInfo, SubRunTarget};
+use crate::text_gpu::sub_run_control::SubRunControl;
 use crate::graphite::draw_list_base::MAX_RENDER_STEPS;
 use crate::graphite::draw_list_types::{DrawParamsId, LayerId};
 use crate::graphite::draw_order::{
@@ -473,6 +483,10 @@ pub struct DeviceCore {
     // The tracked handle of this core, to deregister it.
     this: Weak<RefCell<DeviceCore>>,
 
+    // `fSubRunControl`: how text is drawn on this device (distance field text, direct masks or
+    // paths), from the caps and the device's surface props.
+    sub_run_control: SubRunControl,
+
     // What the images of this device's target hold of it (`sk_sp<Device>` in
     // `Image_Base::fLinkedDevices`, `docs/design/gpu.md` §5.6).
     link: Arc<DeviceLink>,
@@ -553,6 +567,12 @@ impl Device {
         }
 
         let state = DeviceState::new(dc.image_info().clone(), *dc.surface_props());
+        // `fSubRunControl(recorder->priv().caps()->getSubRunControl(
+        // surfaceProps.isUseDeviceIndependentFonts()))`
+        let sub_run_control = SubRunControl::from_caps(
+            &**caps,
+            dc.surface_props().is_use_device_independent_fonts(),
+        );
         let link = DeviceLink::new(
             priv_.unique_id(),
             dc.target().ref_proxy().expect("a device has a target"),
@@ -563,6 +583,7 @@ impl Device {
                 dc,
                 this.clone(),
                 link,
+                sub_run_control,
             ))
         });
         let device = Device {
@@ -807,6 +828,7 @@ impl DeviceCore {
         dc: DrawContext,
         this: Weak<RefCell<DeviceCore>>,
         link: Arc<DeviceLink>,
+        sub_run_control: SubRunControl,
     ) -> Self {
         let width = dc.image_info().width();
         let height = dc.image_info().height();
@@ -836,6 +858,7 @@ impl DeviceCore {
             is_flushing: false,
             scoped_recording_id: 0,
             this,
+            sub_run_control,
             link,
         }
     }
@@ -1038,6 +1061,102 @@ impl DeviceCore {
             &PaintParams::new(paint, None, false, false),
             &default_fill_style(),
         );
+    }
+
+    /// `Device::drawAtlasSubRun(subRun, drawOrigin, paint, subRunStorage, rendererData)`: draws
+    /// the glyphs of an atlas sub run. The glyphs are first added to the text atlas; if not all of
+    /// them fit, the draws recorded so far are flushed to make room, and the rest are drawn next.
+    // Port of: src/gpu/graphite/Device.cpp#L1536-L1607 (chrome/m156)
+    #[doc(alias = "drawAtlasSubRun")]
+    pub fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        let Some(recorder) = self.recorder() else {
+            return;
+        };
+
+        // For color emoji, the shading behaves similarly to how drawImageRects override the shader
+        // via a SimpleImage. However, for text, the "image" is coming from the atlas and
+        // RenderStep as a primitive color and is combined with the paint color using the
+        // primitive blender, so we construct the PaintParams to explicitly ignore the paint's set
+        // shader. For regular and LCD text, the mask image provides coverage so there is no
+        // primitive blender.
+        let primitive_blender = (sub_run.mask_format() == MaskFormat::Argb)
+            .then(|| get_blend_mode_singleton(BlendMode::DstIn));
+        let paint_params = PaintParams::new(
+            paint,
+            primitive_blender,
+            /*skip_color_xform=*/ false,
+            /*ignore_shader=*/ primitive_blender.is_some(),
+        );
+        let use_gamma_correct_distance_table = self
+            .dc
+            .image_info()
+            .color_space()
+            .is_some_and(|color_space| color_space.gamma_is_linear());
+        let local_to_device = self.local_to_device_transform();
+
+        let sub_run_end = sub_run.glyph_count();
+
+        if !sub_run.glyph_vector().has_backend_data() {
+            sub_run
+                .glyph_vector()
+                .init_backend_data(&recorder, renderer_data);
+        }
+
+        let (bounds, mask_to_device) = sub_run
+            .vertex_filler()
+            .bounds_and_device_matrix(&local_to_device.matrix().to_m33(), draw_origin);
+
+        let mut sub_run_cursor = 0;
+        while sub_run_cursor < sub_run_end {
+            // For the remainder of the run, add any atlas uploads to the Recorder's
+            // TextAtlasManager
+            let (ok, glyphs_regenerated) = sub_run
+                .glyph_vector()
+                .backend()
+                .as_mut()
+                .expect("the sub run has backend data")
+                .regenerate_atlas(sub_run_cursor, sub_run_end, &recorder);
+
+            // There was a problem allocating the glyph in the atlas. Bail.
+            if !ok {
+                return;
+            }
+            if glyphs_regenerated > 0 {
+                self.draw_geometry(
+                    &local_to_device,
+                    Geometry::SubRun(SubRunData::new(
+                        Arc::clone(sub_run),
+                        Rect::from_sk_rect(&bounds),
+                        M44::from(&mask_to_device),
+                        sub_run_cursor,
+                        glyphs_regenerated,
+                        compute_luminance_color(paint),
+                        use_gamma_correct_distance_table,
+                        self.dc.surface_props().pixel_geometry(),
+                        &recorder,
+                    )),
+                    &paint_params,
+                    &default_fill_style(),
+                );
+            }
+            sub_run_cursor += glyphs_regenerated;
+
+            if sub_run_cursor < sub_run_end {
+                // Flush if not all the glyphs are handled because the atlas is out of space. We
+                // flush every Device because the glyphs that are being flushed/referenced are not
+                // necessarily specific to this Device. This addresses both multiple SkSurfaces
+                // within a Recorder, and nested layers.
+                recorder
+                    .priv_()
+                    .flush_tracked_devices_and_current("Device::drawAtlasSubRun", self);
+            }
+        }
     }
 
     /// `snapSpecial(subset, forceCopy)`: a special image of `subset` of the device's target, a
@@ -2188,6 +2307,20 @@ impl DeviceCore {
         let ty = style.style();
 
         match geometry {
+            Geometry::SubRun(sub_run_data) => {
+                let renderer_data = sub_run_data.renderer_data();
+                if !renderer_data.is_sdf {
+                    return (
+                        Some(renderers.bitmap_text(renderer_data.is_lcd, renderer_data.mask_format)),
+                        false,
+                    );
+                }
+                // Even though the SkPaint can request subpixel rendering, we still need to match
+                // this with the pixel geometry.
+                let use_lcd = renderer_data.is_lcd
+                    && sub_run_data.pixel_geometry() != PixelGeometry::Unknown;
+                return (Some(renderers.sdf_text(use_lcd)), false);
+            }
             Geometry::Vertices(vertices) => {
                 return (
                     Some(renderers.vertices(vertices.has_colors(), vertices.has_tex_coords())),
@@ -3221,6 +3354,60 @@ impl Drop for DeviceCore {
     }
 }
 
+impl Device {
+    /// `Device::strikeDeviceInfo()`: what the sub runs need to know about this device.
+    // Port of: src/gpu/graphite/Device.cpp#L665-L667 (chrome/m156)
+    #[doc(alias = "strikeDeviceInfo")]
+    #[must_use]
+    pub fn strike_device_info(&self) -> StrikeDeviceInfo {
+        StrikeDeviceInfo {
+            surface_props: *self.state.surface_props(),
+            scaler_context_flags: self.scaler_context_flags(),
+            sub_run_control: self.core.borrow().sub_run_control,
+        }
+    }
+
+    /// `Device::drawAtlasSubRun(subRun, drawOrigin, paint, subRunStorage, rendererData)`: the
+    /// atlas delegate (`atlasDelegate()`) the sub runs draw through.
+    // Port of: src/gpu/graphite/Device.cpp#L1514-L1522 (chrome/m156)
+    #[doc(alias = "drawAtlasSubRun")]
+    #[doc(alias = "atlasDelegate")]
+    pub fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        self.sync()
+            .draw_atlas_sub_run(sub_run, draw_origin, paint, renderer_data);
+    }
+}
+
+/// The `AtlasDrawDelegate` and `SkCanvas*` of `SubRun::draw` for a device: the atlas sub runs are
+/// drawn with [`Device::draw_atlas_sub_run`], and the paths with the device.
+// Port of: src/gpu/graphite/Device.cpp#L1514-L1522 (chrome/m156), `atlasDelegate()`
+struct DeviceSubRunTarget<'a> {
+    device: &'a mut Device,
+}
+
+impl SubRunTarget for DeviceSubRunTarget<'_> {
+    fn draw_atlas_sub_run(
+        &mut self,
+        sub_run: &Arc<AtlasSubRun>,
+        draw_origin: Point,
+        paint: &Paint,
+        renderer_data: RendererData,
+    ) {
+        self.device
+            .draw_atlas_sub_run(sub_run, draw_origin, paint, renderer_data);
+    }
+
+    fn device(&mut self) -> &mut dyn CoreDevice {
+        &mut *self.device
+    }
+}
+
 impl CoreDevice for Device {
     fn state(&self) -> &DeviceState {
         &self.state
@@ -3417,14 +3604,48 @@ impl CoreDevice for Device {
         self.sync().draw_arc(arc, paint);
     }
 
-    // Port of: src/gpu/graphite/Device.h#L238-L240 (chrome/m156)
+    // Port of: src/gpu/graphite/Device.cpp#L1522-L1534 (chrome/m156)
     fn on_draw_glyph_run_list(
         &mut self,
-        _list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
-        _paint: &Paint,
+        list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
+        paint: &Paint,
     ) {
-        // Text is drawn through the sub run container of `text_gpu` (G12b).
-        skia_log_w!("Device::onDrawGlyphRunList needs text_gpu (G12b); the text is not drawn.");
+        let Some(recorder) = self.core.borrow().recorder() else {
+            return;
+        };
+        let strike_device_info = self.strike_device_info();
+        let local_to_device = self.state.local_to_device().clone();
+        let mut target = DeviceSubRunTarget { device: self };
+        recorder.priv_().text_blob_cache().draw_glyph_run_list(
+            &mut target,
+            &local_to_device,
+            list,
+            paint,
+            &strike_device_info,
+        );
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2573-L2580 (chrome/m156)
+    fn convert_glyph_run_list_to_slug(
+        &mut self,
+        list: &skia_rust_core::glyph_run::GlyphRunList<'_>,
+        paint: &Paint,
+    ) -> Option<Slug> {
+        let strike_device_info = self.strike_device_info();
+        SlugImpl::make(self.state.local_to_device(), list, paint, &strike_device_info)
+            .map(Slug::from_base)
+    }
+
+    // Port of: src/gpu/graphite/Device.cpp#L2582-L2585 (chrome/m156)
+    fn draw_slug(&mut self, slug: &Slug, paint: &Paint) {
+        let Some(slug_impl) = slug.as_base().as_any().downcast_ref::<SlugImpl>() else {
+            skia_log_w!("Device::drawSlug: the slug was not made by a Graphite device.");
+            return;
+        };
+        let mut target = DeviceSubRunTarget { device: self };
+        slug_impl
+            .sub_runs()
+            .draw(&mut target, slug_impl.origin(), paint);
     }
 
     fn draw_vertices(
