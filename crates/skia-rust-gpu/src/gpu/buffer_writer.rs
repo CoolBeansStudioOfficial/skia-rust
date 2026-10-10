@@ -76,6 +76,12 @@ impl<'a> BufferWriter<'a> {
         self.slice(bytes).fill(0);
     }
 
+    /// `write(data)`: writes the bytes of `value`, advancing the writer.
+    // Port of: src/gpu/BufferWriter.h#L96-L99 (chrome/m156)
+    pub fn write<T: BufferWrite + ?Sized>(&mut self, value: &T) {
+        value.write_to(self);
+    }
+
     /// Writes the raw bytes `src` (`write(const void*, size_t)`).
     // Port of: src/gpu/BufferWriter.h#L111-L114 (chrome/m156)
     pub fn write_bytes(&mut self, src: &[u8]) {

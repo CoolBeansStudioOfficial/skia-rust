@@ -435,6 +435,14 @@ impl Builder {
         self.output_table.shared_slots[slot] = Some(BindingResource::Texture(TextureIndex(index)));
     }
 
+    /// `reset()`: starts a new, empty group and forgets the slot table. Skia compiles this only
+    /// with `GPU_TEST_UTILS`; it is public here because the compute tests reuse one builder.
+    // Port of: src/gpu/graphite/compute/DispatchGroup.cpp#L255-L260 (chrome/m156)
+    pub fn reset(&mut self) {
+        self.output_table.reset();
+        self.obj = Some(DispatchGroup::default());
+    }
+
     /// `finalize()`: the group, which is immutable from here on. The builder is reset.
     // Port of: src/gpu/graphite/compute/DispatchGroup.cpp#L247-L252 (chrome/m156)
     #[must_use]

@@ -664,6 +664,10 @@ impl ComputeStep for NoResourceStep {
     fn base(&self) -> &ComputeStepBase {
         &self.0
     }
+
+    fn calculate_global_dispatch_size(&self) -> WorkgroupSize {
+        WorkgroupSize::new(1, 1, 1)
+    }
 }
 
 /// A finished group with no dispatches, whose shared buffer is cleared before it runs (so it has
