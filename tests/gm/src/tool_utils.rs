@@ -157,6 +157,20 @@ pub fn create_checkerboard_bitmap(w: i32, h: i32, c1: Color, c2: Color, check_si
     bitmap
 }
 
+/// `ToolUtils::create_checkerboard_image`: a `w` by `h` premultiplied N32 snapshot of a
+/// checkerboard of `c1` and `c2` squares of `check_size`.
+///
+/// # Panics
+/// If the surface cannot be made.
+// Port of: tools/ToolUtils.cpp#L171-L175 (chrome/m156)
+#[must_use]
+pub fn create_checkerboard_image(w: i32, h: i32, c1: Color, c2: Color, check_size: i32) -> Image {
+    let info = ImageInfo::new_n32_premul((w, h), None);
+    let mut surf = surfaces::raster(&info, None, None).expect("a surface");
+    draw_checkerboard(surf.canvas(), c1, c2, check_size);
+    surf.image_snapshot().expect("a snapshot")
+}
+
 /// `ToolUtils::draw_checkerboard`: fills `canvas` with a checkerboard of `c1` and `c2` squares of
 /// `size`.
 // Port of: tools/ToolUtils.cpp#L177-L182 (chrome/m156)
@@ -178,4 +192,70 @@ pub fn make_surface(
     canvas
         .new_surface(info, props)
         .or_else(|| surfaces::raster(info, None, props))
+}
+
+/// Port of `ToolUtils::DecodeDataToBitmap` (tools/DecodeUtils.cpp): decodes `data` with the image
+/// generator's natural info and the default colour space, or `None` if it cannot be decoded.
+// Port of: tools/DecodeUtils.cpp#L23-L28 (chrome/m156)
+#[must_use]
+pub fn decode_data_to_bitmap(data: Vec<u8>) -> Option<skia_rust_core::bitmap::Bitmap> {
+    use skia_rust_core::bitmap::Bitmap;
+    use skia_rust_core::image_info::ImageInfo;
+    let mut generator = skia_rust_codec::image_generator_from_encoded::make_from_encoded(
+        Some(Data::new_from_vec(data)),
+        None,
+    )?;
+    let info: ImageInfo = generator.info().with_color_space(None);
+    let row_bytes = info.min_row_bytes();
+    let mut pixels = vec![0u8; info.compute_byte_size(row_bytes)];
+    if !generator.get_pixels(&info, &mut pixels, row_bytes) {
+        return None;
+    }
+    let mut bm = Bitmap::new();
+    bm.install_pixels(&info, pixels, row_bytes).then_some(bm)
+}
+
+/// Port of `ToolUtils::GetResourceAsBitmap`: the decoded bitmap of the resource at `path`.
+// Port of: tools/DecodeUtils.h#L23-L25 (chrome/m156)
+#[must_use]
+pub fn get_resource_as_bitmap(path: &str) -> Option<skia_rust_core::bitmap::Bitmap> {
+    decode_data_to_bitmap(get_resource_as_data(path)?)
+}
+
+/// `ToolUtils::MakeTextureImage` (tools/GpuToolUtils.h) on a raster canvas: there is no recording
+/// context or recorder, so the image is returned as it is.
+// Port of: tools/GpuToolUtils.h#L32-L62 (chrome/m156)
+#[must_use]
+pub fn make_texture_image(_canvas: &Canvas, orig: Option<Image>) -> Option<Image> {
+    orig
+}
+
+pub fn copy_to(
+    dst: &mut Bitmap,
+    dst_color_type: skia_rust_core::color_type::ColorType,
+    src: &Bitmap,
+) -> bool {
+    let Some(src_pm) = src.peek_pixels() else {
+        return false;
+    };
+
+    let mut tmp_dst = Bitmap::new();
+    let dst_info = src_pm.info().with_color_type(dst_color_type);
+    if !tmp_dst.set_info(&dst_info, None) {
+        return false;
+    }
+
+    if !tmp_dst.try_alloc_pixels() {
+        return false;
+    }
+
+    let Some(mut dst_pm) = tmp_dst.peek_pixels_mut() else {
+        return false;
+    };
+    if !src_pm.read_pixels_to_pixmap(&mut dst_pm, (0, 0)) {
+        return false;
+    }
+
+    dst.swap(&mut tmp_dst);
+    true
 }

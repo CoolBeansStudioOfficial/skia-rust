@@ -17,7 +17,7 @@ use crate::runtime_effect_priv;
 
 /// `kSkiaBuiltInReservedCnt`.
 // Port of: src/core/SkKnownRuntimeEffects.h#L23 (chrome/m156)
-const SKIA_BUILT_IN_RESERVED_CNT: u32 = 500;
+pub const SKIA_BUILT_IN_RESERVED_CNT: u32 = 500;
 /// `kSkiaKnownRuntimeEffectsReservedCnt`.
 // Port of: src/core/SkKnownRuntimeEffects.h#L24 (chrome/m156)
 const SKIA_KNOWN_RUNTIME_EFFECTS_RESERVED_CNT: u32 = 500;
@@ -31,14 +31,18 @@ const SKIA_KNOWN_RUNTIME_EFFECTS_END: u32 =
 
 /// `kUserDefinedKnownRuntimeEffectsStart`.
 // Port of: src/core/SkKnownRuntimeEffects.h#L30 (chrome/m156)
-const USER_DEFINED_KNOWN_RUNTIME_EFFECTS_START: u32 = SKIA_KNOWN_RUNTIME_EFFECTS_END;
+pub const USER_DEFINED_KNOWN_RUNTIME_EFFECTS_START: u32 = SKIA_KNOWN_RUNTIME_EFFECTS_END;
+/// `kUserDefinedKnownRuntimeEffectsReservedCnt`.
+// Port of: src/core/SkKnownRuntimeEffects.h#L22 (chrome/m156)
+pub const USER_DEFINED_KNOWN_RUNTIME_EFFECTS_RESERVED_CNT: u32 = 100;
 /// `kUserDefinedKnownRuntimeEffectsEnd`: the reserved count is 100.
 // Port of: src/core/SkKnownRuntimeEffects.h#L31-L32 (chrome/m156)
-const USER_DEFINED_KNOWN_RUNTIME_EFFECTS_END: u32 = USER_DEFINED_KNOWN_RUNTIME_EFFECTS_START + 100;
+const USER_DEFINED_KNOWN_RUNTIME_EFFECTS_END: u32 =
+    USER_DEFINED_KNOWN_RUNTIME_EFFECTS_START + USER_DEFINED_KNOWN_RUNTIME_EFFECTS_RESERVED_CNT;
 
 /// `kUnknownRuntimeEffectIDStart`.
 // Port of: src/core/SkKnownRuntimeEffects.h#L33 (chrome/m156)
-const UNKNOWN_RUNTIME_EFFECT_ID_START: u32 = USER_DEFINED_KNOWN_RUNTIME_EFFECTS_END;
+pub const UNKNOWN_RUNTIME_EFFECT_ID_START: u32 = USER_DEFINED_KNOWN_RUNTIME_EFFECTS_END;
 
 /// `SkKnownRuntimeEffects::StableKey`: the stable key of a Skia known runtime effect.
 ///
@@ -166,8 +170,10 @@ pub fn maybe_get_known_runtime_effect(candidate: u32) -> Option<RuntimeEffect> {
     None
 }
 
-/// The `StableKey` with the value `candidate`, if there is one.
-fn stable_key_from_u32(candidate: u32) -> Option<StableKey> {
+/// The `StableKey` with the value `candidate`, if there is one (`static_cast<StableKey>` of a
+/// viable value).
+#[must_use]
+pub fn stable_key_from_u32(candidate: u32) -> Option<StableKey> {
     let key = match candidate {
         500 => StableKey::Invalid,
         501 => StableKey::OneDBlur4,

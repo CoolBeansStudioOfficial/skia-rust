@@ -25,13 +25,12 @@
 //!
 //! # What is not ported yet
 //!
-//! `makeGraphicsPipelineKey`, `extractGraphicsDescs` and `makeComputePipelineKey` need
-//! `GraphicsPipelineDesc`, `UniquePaintParamsID` and `ComputePipelineDesc` (G5/G7/G11b);
-//! `getImmutableSamplerInfo` and `toString(ImmutableSamplerInfo)` are YCbCr-only and wgpu has no
-//! YCbCr samplers. [`ShaderCaps`] is the subset of `SkSL::ShaderCaps` that `Caps` sets until the
-//! `SkSL` crate's type lands.
+//! `extractGraphicsDescs` is the inverse of `makeGraphicsPipelineKey`; it serves the persistent
+//! pipeline storage (G14). `getImmutableSamplerInfo` and `toString(ImmutableSamplerInfo)` are
+//! YCbCr-only and wgpu has no YCbCr samplers. [`ShaderCaps`] is `SkSL::ShaderCaps`, re-exported with the other
+//! backend-neutral half of `Caps` from [`crate::graphite::caps`].
 
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use bitflags::bitflags;
 use skia_rust_core::color_type::ColorType;
@@ -39,8 +38,13 @@ use skia_rust_core::size::ISize;
 use skia_rust_core::texture_compression_type::TextureCompressionType;
 
 use crate::gpu::gpu_types::{BackendApi, GpuStatsFlags, Mipmapped, Protected, Renderable};
-use crate::graphite::caps::{AttachmentSizePolicy, Caps};
-use crate::graphite::context_options::ContextOptions;
+use crate::gpu::resource_key::{UniqueKey, UniqueKeyBuilder, UniqueKeyDomain};
+use crate::gpu::shader_error_handler::{DefaultShaderErrorHandler, ShaderErrorHandler};
+use crate::graphite::caps::{AttachmentSizePolicy, Caps, default_shader_caps};
+pub use crate::graphite::caps::{ResourceBindingRequirements, ShaderCaps};
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
+use crate::graphite::context_options::{Callback, ContextOptions};
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_resource_key::{GraphiteResourceKey, GraphiteResourceKeyBuilder};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
@@ -193,8 +197,27 @@ pub struct CapsProfile {
 impl CapsProfile {
     /// The facts of a real wgpu device. `has_tick` is whether the device can be polled
     /// (everywhere except the browser).
+    ///
+    /// `ShaderF16` is left out even when the device has it: Graphite's f16 WGSL writes a `half4`
+    /// fragment output, which wgpu 30 rejects for an `Rgba8Unorm` target (Dawn accepts it), and
+    /// the D3D12 goldens were rendered without f16 (Skia builds Dawn without DXC,
+    /// `docs/design/gpu.md` §1.3), so all-f32 WGSL matches the gating tier. Use
+    /// [`from_device_with_f16`](Self::from_device_with_f16) to opt in.
     #[must_use]
     pub fn from_device(device: &wgpu::Device, has_tick: bool) -> Self {
+        Self::from_device_with_f16(device, has_tick, false)
+    }
+
+    /// [`from_device`](Self::from_device), with `ShaderF16` reported when `allow_shader_f16` is
+    /// true and the device has the feature. Pipelines made with it fail on wgpu 30 (see
+    /// [`from_device`](Self::from_device)): it is for tests of the f16 layouts, and for a wgpu
+    /// that accepts f16 fragment outputs.
+    #[must_use]
+    pub fn from_device_with_f16(
+        device: &wgpu::Device,
+        has_tick: bool,
+        allow_shader_f16: bool,
+    ) -> Self {
         let info = device.adapter_info();
         let wgpu_features = device.features();
         let limits = device.limits();
@@ -206,7 +229,7 @@ impl CapsProfile {
             }
         };
         set(
-            wgpu_features.contains(wgpu::Features::SHADER_F16),
+            allow_shader_f16 && wgpu_features.contains(wgpu::Features::SHADER_F16),
             DeviceFeatures::SHADER_F16,
         );
         set(
@@ -352,117 +375,6 @@ impl CapsProfile {
             name: format!("{}-wgpucaps", self.name),
             features: self.features - DeviceFeatures::DAWN_ONLY,
             ..self.clone()
-        }
-    }
-}
-
-/// The subset of `SkSL::ShaderCaps` that `Caps` and `DawnCaps` set.
-// Port of: src/gpu/graphite/Caps.cpp#L35-L44, src/gpu/graphite/dawn/DawnCaps.cpp#L441-L455
-//          (chrome/m156)
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools)] // mirrors SkSL::ShaderCaps
-pub struct ShaderCaps {
-    /// `fFlatInterpolationSupport`.
-    pub flat_interpolation_support: bool,
-    /// `fShaderDerivativeSupport`.
-    pub shader_derivative_support: bool,
-    /// `fExplicitTextureLodSupport`.
-    pub explicit_texture_lod_support: bool,
-    /// `fSampleMaskSupport`.
-    pub sample_mask_support: bool,
-    /// `fInfinitySupport`.
-    pub infinity_support: bool,
-    /// `fIntegerSupport`.
-    pub integer_support: bool,
-    /// `fNonsquareMatrixSupport`.
-    pub nonsquare_matrix_support: bool,
-    /// `fInverseHyperbolicSupport`.
-    pub inverse_hyperbolic_support: bool,
-    /// `fFloatIs32Bits`.
-    pub float_is_32_bits: bool,
-    /// `fDualSourceBlendingSupport`.
-    pub dual_source_blending_support: bool,
-    /// `fFBFetchSupport`.
-    pub fb_fetch_support: bool,
-}
-
-impl Default for ShaderCaps {
-    /// `SkSL::ShaderCaps` after `Caps::setDefaultShaderCaps()`.
-    // Port of: src/gpu/graphite/Caps.cpp#L35-L44 (chrome/m156)
-    fn default() -> Self {
-        Self {
-            flat_interpolation_support: true,
-            shader_derivative_support: true,
-            explicit_texture_lod_support: true,
-            sample_mask_support: true,
-            infinity_support: true,
-            integer_support: true,
-            nonsquare_matrix_support: true,
-            inverse_hyperbolic_support: true,
-            float_is_32_bits: true,
-            dual_source_blending_support: false,
-            fb_fetch_support: false,
-        }
-    }
-}
-
-/// `ResourceBindingRequirements`.
-// Port of: src/gpu/graphite/Caps.h#L55-L100 (chrome/m156)
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools)] // mirrors the C++ struct
-pub struct ResourceBindingRequirements {
-    /// The API of the backend currently in use.
-    pub backend_api: BackendApi,
-    /// The required data layout rules for the contents of a uniform buffer.
-    pub uniform_buffer_layout: Layout,
-    /// The required data layout rules for the contents of a storage buffer.
-    pub storage_buffer_layout: Layout,
-    /// Whether textures and samplers are bound separately.
-    pub separate_texture_and_sampler_binding: bool,
-    /// Whether intrinsic constants are stored as push constants (immediates).
-    pub use_push_constants_for_intrinsic_constants: bool,
-    /// Whether compute shader textures use separate index ranges from other resources.
-    pub compute_uses_distinct_idx_ranges_for_textures: bool,
-    /// `fUniformsSetIdx`.
-    pub uniforms_set_idx: i32,
-    /// `fTextureSamplerSetIdx`.
-    pub texture_sampler_set_idx: i32,
-    /// `fInputAttachmentSetIdx`.
-    pub input_attachment_set_idx: i32,
-    /// `fIntrinsicBufferBinding`.
-    pub intrinsic_buffer_binding: i32,
-    /// `fCombinedUniformBufferBinding`.
-    pub combined_uniform_buffer_binding: i32,
-    /// `fStorageBufferBinding`.
-    pub storage_buffer_binding: i32,
-    /// Maximum texture atlas dimension for the storage buffer fallback texture.
-    pub max_fallback_texture_size: i32,
-    /// `fMaxFallbackTextureBytes`.
-    pub max_fallback_texture_bytes: i32,
-}
-
-impl ResourceBindingRequirements {
-    /// `kUnassigned`.
-    pub const UNASSIGNED: i32 = -1;
-}
-
-impl Default for ResourceBindingRequirements {
-    fn default() -> Self {
-        Self {
-            backend_api: BackendApi::Unsupported,
-            uniform_buffer_layout: Layout::Invalid,
-            storage_buffer_layout: Layout::Invalid,
-            separate_texture_and_sampler_binding: false,
-            use_push_constants_for_intrinsic_constants: false,
-            compute_uses_distinct_idx_ranges_for_textures: false,
-            uniforms_set_idx: Self::UNASSIGNED,
-            texture_sampler_set_idx: Self::UNASSIGNED,
-            input_attachment_set_idx: Self::UNASSIGNED,
-            intrinsic_buffer_binding: Self::UNASSIGNED,
-            combined_uniform_buffer_binding: Self::UNASSIGNED,
-            storage_buffer_binding: Self::UNASSIGNED,
-            max_fallback_texture_size: Self::UNASSIGNED,
-            max_fallback_texture_bytes: Self::UNASSIGNED,
         }
     }
 }
@@ -620,6 +532,10 @@ pub struct WgpuCaps {
     allow_scoped_error_checks: bool,
     supports_command_buffer_timestamps: bool,
     supports_half_precision: bool,
+
+    /// `Caps::fShaderErrorHandler`: `ContextOptions::fShaderErrorHandler`, or the default
+    /// handler.
+    shader_error_handler: Callback<dyn ShaderErrorHandler>,
 }
 
 impl WgpuCaps {
@@ -637,7 +553,7 @@ impl WgpuCaps {
             required_transfer_buffer_alignment: 0,
             texture_data_row_bytes_alignment: 1,
             max_varyings: 0,
-            shader_caps: ShaderCaps::default(),
+            shader_caps: default_shader_caps(),
             ndc_y_axis_points_down: false,
             clamp_to_border_support: true,
             protected_support: false,
@@ -678,6 +594,11 @@ impl WgpuCaps {
             allow_scoped_error_checks: true,
             supports_command_buffer_timestamps: false,
             supports_half_precision: false,
+            // Port of: src/gpu/graphite/Caps.cpp#L50-L54 (chrome/m156)
+            shader_error_handler: options
+                .shader_error_handler
+                .clone()
+                .unwrap_or_else(|| Callback(Arc::new(DefaultShaderErrorHandler))),
         };
         caps.init_caps(options);
         caps.init_shader_caps();
@@ -964,6 +885,14 @@ impl WgpuCaps {
     }
 
     // ---- DawnCaps.h accessors ----------------------------------------------------------------
+
+    /// `shaderErrorHandler()`: where shader compilation errors are reported.
+    // Port of: src/gpu/graphite/Caps.h#L413 (chrome/m156)
+    #[doc(alias = "shaderErrorHandler")]
+    #[must_use]
+    pub fn shader_error_handler(&self) -> &dyn ShaderErrorHandler {
+        &*self.shader_error_handler.0
+    }
 
     /// `supportsHalfPrecision()`.
     #[doc(alias = "supportsHalfPrecision")]
@@ -1954,6 +1883,81 @@ impl WgpuCaps {
             | (samples_to_key(depth_stencil.sample_count) << DEPTH_STENCIL_NUM_SAMPLES_OFFSET)
             | load_resolve_attachment_key
     }
+
+    /// `makeGraphicsPipelineKey()`: four words, the render step id, the paint id, the render pass
+    /// description's key and the write swizzle's key.
+    // Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L547-L568 (chrome/m156)
+    #[doc(alias = "makeGraphicsPipelineKey")]
+    #[must_use]
+    pub fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        let mut pipeline_key = UniqueKey::new();
+        {
+            // 4 uint32_t's (render step id, paint id, uint32 RenderPassDesc, uint16 write swizzle
+            // key)
+            let mut builder = UniqueKeyBuilder::new(
+                &mut pipeline_key,
+                get_pipeline_domain(),
+                GRAPHICS_PIPELINE_KEY_DATA32_COUNT,
+                Some("DawnGraphicsPipeline"),
+            );
+            // Add GraphicsPipelineDesc key.
+            builder[0] = pipeline_desc.render_step_id() as u32;
+            builder[1] = pipeline_desc.paint_params_id().as_uint();
+
+            // Add RenderPassDesc key and write swizzle (which is separate from the
+            // RenderPassDescKey because it is applied in the program writing to the target, and
+            // is not actually part of the underlying GPU render pass config).
+            builder[2] = self.get_render_pass_desc_key_for_pipeline(render_pass_desc, false);
+            builder[3] = u32::from(render_pass_desc.write_swizzle.as_key());
+            builder.finish();
+        }
+        pipeline_key
+    }
+
+    /// `makeComputePipelineKey()`: one word, the compute step's unique id.
+    // Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L633-L649 (chrome/m156)
+    #[doc(alias = "makeComputePipelineKey")]
+    #[must_use]
+    pub fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        static COMPUTE_PIPELINE_DOMAIN: LazyLock<UniqueKeyDomain> =
+            LazyLock::new(UniqueKey::generate_domain);
+
+        let mut pipeline_key = UniqueKey::new();
+        {
+            // The key is made up of a single uint32_t corresponding to the compute step ID.
+            let mut builder = UniqueKeyBuilder::new(
+                &mut pipeline_key,
+                *COMPUTE_PIPELINE_DOMAIN,
+                1,
+                Some("ComputePipeline"),
+            );
+            builder[0] = pipeline_desc.compute_step().unique_id();
+
+            // TODO(b/240615224): The local work group size should factor into the key here since
+            // it is specified in the shader text on Dawn/SPIR-V. This is not a problem right now
+            // since ComputeSteps don't vary their workgroup size dynamically.
+
+            builder.finish();
+        }
+        pipeline_key
+    }
+}
+
+/// `kDawnGraphicsPipelineKeyData32Count`.
+// Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L545 (chrome/m156)
+const GRAPHICS_PIPELINE_KEY_DATA32_COUNT: u16 = 4;
+
+/// `get_pipeline_domain()`: the key domain of the graphics pipelines.
+// Port of: src/gpu/graphite/dawn/DawnCaps.cpp#L38-L43 (chrome/m156)
+#[must_use]
+pub fn get_pipeline_domain() -> UniqueKeyDomain {
+    static GRAPHICS_PIPELINE_DOMAIN: LazyLock<UniqueKeyDomain> =
+        LazyLock::new(UniqueKey::generate_domain);
+    *GRAPHICS_PIPELINE_DOMAIN
 }
 
 /// `kDefaultSampledUsage`: Graphite by default requires copy-src and copy-dst for sampled
@@ -1986,6 +1990,40 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
+    fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        WgpuCaps::make_graphics_pipeline_key(self, pipeline_desc, render_pass_desc)
+    }
+
+    fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        WgpuCaps::make_compute_pipeline_key(self, pipeline_desc)
+    }
+
+    fn get_dst_read_strategy(&self) -> DstReadStrategy {
+        WgpuCaps::get_dst_read_strategy(self)
+    }
+
+    fn supports_hardware_advanced_blending(&self) -> bool {
+        // `fBlendEqSupport` keeps its `kBasic` default (`Caps.h`); the WebGPU backend never raises
+        // it, so advanced blend modes always use shader blending.
+        false
+    }
+
+    fn dual_source_blending_support(&self) -> bool {
+        self.shader_caps.dual_source_blending_support
+    }
+
+    fn storage_buffer_support(&self) -> bool {
+        WgpuCaps::storage_buffer_support(self)
+    }
+
+    fn clamp_to_border_support(&self) -> bool {
+        WgpuCaps::clamp_to_border_support(self)
+    }
+
     fn max_texture_size(&self) -> i32 {
         WgpuCaps::max_texture_size(self)
     }
@@ -2046,6 +2084,35 @@ impl Caps for WgpuCaps {
         WgpuCaps::get_depth_stencil_format(self, flags)
     }
 
+    // Port of: src/gpu/graphite/Caps.cpp#L310-L338 (chrome/m156)
+    fn get_default_sampled_texture_info(
+        &self,
+        color_type: ColorType,
+        mipmapped: Mipmapped,
+        is_protected: Protected,
+        renderable: Renderable,
+    ) -> TextureInfo {
+        self.get_default_sampled_texture_info(color_type, mipmapped, is_protected, renderable)
+    }
+
+    // Port of: src/gpu/graphite/Caps.cpp#L340-L351 (chrome/m156)
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        is_protected: Protected,
+    ) -> TextureInfo {
+        WgpuCaps::get_default_readable_texture_info(self, format, is_protected)
+    }
+
+    // Port of: src/gpu/graphite/Caps.cpp#L353-L363 (chrome/m156)
+    fn get_texture_info_for_sampled_copy(
+        &self,
+        info: &TextureInfo,
+        mipmapped: Mipmapped,
+    ) -> TextureInfo {
+        WgpuCaps::get_texture_info_for_sampled_copy(self, info, mipmapped)
+    }
+
     // Port of: src/gpu/graphite/Caps.cpp#L295-L308 (chrome/m156)
     fn get_default_attachment_texture_info(
         &self,
@@ -2069,6 +2136,102 @@ impl Caps for WgpuCaps {
 
     fn is_renderable_with_msrtss(&self, info: &TextureInfo) -> bool {
         WgpuCaps::is_renderable_with_msrtss(self, info)
+    }
+
+    fn shader_caps(&self) -> &ShaderCaps {
+        WgpuCaps::shader_caps(self)
+    }
+
+    fn resource_binding_requirements(&self) -> &ResourceBindingRequirements {
+        WgpuCaps::resource_binding_requirements(self)
+    }
+
+    fn max_varyings(&self) -> i32 {
+        WgpuCaps::max_varyings(self)
+    }
+
+    fn ndc_y_axis_points_down(&self) -> bool {
+        WgpuCaps::ndc_y_axis_points_down(self)
+    }
+
+    fn protected_support(&self) -> bool {
+        WgpuCaps::protected_support(self)
+    }
+
+    fn semaphore_support(&self) -> bool {
+        WgpuCaps::semaphore_support(self)
+    }
+
+    fn allow_cpu_sync(&self) -> bool {
+        WgpuCaps::allow_cpu_sync(self)
+    }
+
+    fn storage_buffer_support_for_compute(&self) -> bool {
+        WgpuCaps::storage_buffer_support_for_compute(self)
+    }
+
+    fn compute_support(&self) -> bool {
+        WgpuCaps::compute_support(self)
+    }
+
+    fn avoid_msaa(&self) -> bool {
+        WgpuCaps::avoid_msaa(self)
+    }
+
+    fn msaa_render_to_single_sampled_support(&self) -> bool {
+        WgpuCaps::msaa_render_to_single_sampled_support(self)
+    }
+
+    fn use_draw_list_layer(&self) -> bool {
+        WgpuCaps::use_draw_list_layer(self)
+    }
+
+    fn load_op_affects_msaa_pipelines(&self) -> bool {
+        WgpuCaps::load_op_affects_msaa_pipelines(self)
+    }
+
+    fn max_path_atlas_texture_size(&self) -> i32 {
+        WgpuCaps::max_path_atlas_texture_size(self)
+    }
+
+    fn allow_multiple_atlas_textures(&self) -> bool {
+        WgpuCaps::allow_multiple_atlas_textures(self)
+    }
+
+    fn support_bilerp_from_glyph_atlas(&self) -> bool {
+        WgpuCaps::support_bilerp_from_glyph_atlas(self)
+    }
+
+    fn set_backend_labels(&self) -> bool {
+        WgpuCaps::set_backend_labels(self)
+    }
+
+    fn is_sample_count_supported(&self, format: TextureFormat, sample_count: SampleCount) -> bool {
+        WgpuCaps::is_sample_count_supported(self, format, sample_count)
+    }
+
+    fn is_texturable(&self, info: &TextureInfo, allow_msaa: bool) -> bool {
+        WgpuCaps::is_texturable(self, info, allow_msaa)
+    }
+
+    fn is_readable(&self, info: &TextureInfo, allow_msaa: bool) -> bool {
+        WgpuCaps::is_readable(self, info, allow_msaa)
+    }
+
+    fn is_renderable(&self, info: &TextureInfo) -> bool {
+        WgpuCaps::is_renderable(self, info)
+    }
+
+    fn is_copyable_src(&self, info: &TextureInfo) -> bool {
+        WgpuCaps::is_copyable_src(self, info)
+    }
+
+    fn is_copyable_dst(&self, info: &TextureInfo) -> bool {
+        WgpuCaps::is_copyable_dst(self, info)
+    }
+
+    fn is_storage(&self, info: &TextureInfo) -> bool {
+        WgpuCaps::is_storage(self, info)
     }
 }
 

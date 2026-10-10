@@ -106,7 +106,7 @@ pub fn color_space_xform_create_proc(
 /// One color space of `CreateProc`: a byte array that `ColorSpace::serialize` wrote, which must
 /// deserialize.
 // Port of: src/effects/colorfilters/SkColorSpaceXformColorFilter.cpp#L69-L76 (chrome/m156)
-fn read_color_space(buffer: &mut ReadBuffer<'_>) -> Option<ColorSpace> {
+pub(crate) fn read_color_space(buffer: &mut ReadBuffer<'_>) -> Option<ColorSpace> {
     let data = buffer.read_byte_array_as_data();
     if !buffer.validate(data.is_some()) {
         return None;

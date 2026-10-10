@@ -67,7 +67,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
         let texture_info =
             caps.get_default_sampled_texture_info(color_type, mipmapped, is_protected, renderable);
         TextureProxy::make(
-            skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+            caps,
             &mut resource_provider.lock().unwrap(),
             dimensions,
             &texture_info,
@@ -168,7 +168,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
 
     // Lazy, non-volatile TextureProxy, unsuccessful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+        caps,
         K_VALID_SIZE,
         &texture_info,
         Budgeted::No,
@@ -189,7 +189,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
 
     // Lazy, non-volatile TextureProxy, successful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+        caps,
         K_VALID_SIZE,
         &texture_info,
         Budgeted::No,
@@ -207,7 +207,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
 
     // Lazy, volatile TextureProxy, unsuccessful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+        caps,
         K_VALID_SIZE,
         &texture_info,
         Budgeted::No,
@@ -228,7 +228,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
 
     // Lazy, volatile TextureProxy, successful instantiation.
     let texture_proxy = TextureProxy::make_lazy(
-        skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+        caps,
         K_VALID_SIZE,
         &texture_info,
         Budgeted::No,
@@ -301,7 +301,7 @@ def_graphite_test_for_all_contexts!(GraphiteTextureProxyTest, |reporter, context
     reporter_assert!(reporter, instantiate_success);
 
     let texture_proxy = TextureProxy::make_lazy(
-        skia_rust_gpu::graphite::caps::Caps::max_texture_size(caps),
+        caps,
         K_VALID_SIZE,
         &texture_info,
         Budgeted::No,

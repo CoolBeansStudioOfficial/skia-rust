@@ -2,27 +2,79 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/ColorFilterTest.cpp (chrome/m156)
-//
-// `WorkingFormatFilterFlags` needs `SkWorkingFormatColorFilter`, which is not ported; it is tracked
-// as `todo` in the manifest.
 
 #![cfg(test)]
 
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
 use skia_rust_core::color_filter::ColorFilter;
-use skia_rust_core::color_filters;
+use skia_rust_core::color_filters::{self, Clamp};
+use skia_rust_core::color_space::{named_gamut, named_transfer_fn};
 use skia_rust_core::paint::Paint;
 use skia_rust_core::random::Random;
 use skia_rust_core::read_buffer::ReadBuffer;
 use skia_rust_core::shaders;
+use skia_rust_core::working_format_color_filter::with_working_format;
 use skia_rust_core::write_buffer::BinaryWriteBuffer;
 use skia_rust_effects::flattenable::REGISTRY;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 
 use crate::{def_test, reporter_assert};
+
+// Port of: tests/ColorFilterTest.cpp#L120-L153 (chrome/m156)
+def_test!(WorkingFormatFilterFlags, |r| {
+    {
+        // A matrix with final row 0,0,0,1,0 shouldn't change alpha.
+        let cf = color_filters::matrix_row_major(
+            &[
+                1.0, 0.0, 0.0, 0.0, 0.0, //
+                0.0, 1.0, 0.0, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, 0.0, //
+                0.0, 0.0, 0.0, 1.0, 0.0,
+            ],
+            Clamp::Yes,
+        )
+        .expect("the matrix filter is valid");
+        reporter_assert!(r, cf.is_alpha_unchanged());
+
+        // No working format change will itself change alpha.
+        let cf = with_working_format(
+            Some(cf),
+            Some(&named_transfer_fn::LINEAR),
+            Some(&named_gamut::DISPLAY_P3),
+            Some(&AlphaType::Unpremul),
+        )
+        .expect("the child filter is not null");
+        reporter_assert!(r, cf.is_alpha_unchanged());
+    }
+
+    {
+        // Here's a matrix that definitely does change alpha.
+        let cf = color_filters::matrix_row_major(
+            &[
+                1.0, 0.0, 0.0, 0.0, 0.0, //
+                0.0, 1.0, 0.0, 0.0, 0.0, //
+                0.0, 0.0, 1.0, 0.0, 0.0, //
+                0.0, 0.0, 0.0, 0.0, 1.0,
+            ],
+            Clamp::Yes,
+        )
+        .expect("the matrix filter is valid");
+        reporter_assert!(r, !cf.is_alpha_unchanged());
+
+        let cf = with_working_format(
+            Some(cf),
+            Some(&named_transfer_fn::LINEAR),
+            Some(&named_gamut::DISPLAY_P3),
+            Some(&AlphaType::Unpremul),
+        )
+        .expect("the child filter is not null");
+        reporter_assert!(r, !cf.is_alpha_unchanged());
+    }
+});
 
 // Port of: tests/ColorFilterTest.cpp#L193-L207 (chrome/m156)
 def_test!(ColorFilter_OpaqueShaderPaintAlpha, |r| {

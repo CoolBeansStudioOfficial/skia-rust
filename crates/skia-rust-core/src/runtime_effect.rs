@@ -369,8 +369,9 @@ bitflags! {
 pub(crate) struct EffectData {
     /// `fHash`.
     pub(crate) hash: u32,
-    /// `fStableKey`.
-    pub(crate) stable_key: u32,
+    /// `fStableKey` (atomic because `SkRuntimeEffectPriv::SetStableKey` assigns it after the
+    /// effect is shared).
+    pub(crate) stable_key: std::sync::atomic::AtomicU32,
     /// `fName`.
     pub(crate) name: String,
     /// `fBaseProgram`.
@@ -689,7 +690,7 @@ impl RuntimeEffect {
         debug_assert_eq!(children.len(), sample_usages.len());
         Ok(RuntimeEffect(Arc::new(EffectData {
             hash,
-            stable_key: options.stable_key,
+            stable_key: std::sync::atomic::AtomicU32::new(options.stable_key),
             name: options.name.to_owned(),
             base_program: Mutex::new(program),
             required_sksl_version,

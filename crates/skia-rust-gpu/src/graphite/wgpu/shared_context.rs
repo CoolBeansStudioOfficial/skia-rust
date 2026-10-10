@@ -9,23 +9,53 @@
 //!
 //! This is the concrete `SharedContext` (`docs/design/gpu.md` §4.1): the backend-neutral base's
 //! members that exist so far are [`WgpuSharedContext::caps`] and the recorder-facing
-//! [`RecorderSharedContext`] interface. The global cache, the pipeline manager, the executor, the
-//! runtime-effect dictionary and the `ThreadSafeResourceProvider` come with G9b, G6 and G11b;
-//! `createGraphicsPipeline` comes with `GraphicsPipeline` (G11b).
+//! [`RecorderSharedContext`] interface. The base also has the global cache and the pipeline
+//! manager (with the executor of the context options); `createGraphicsPipeline` and
+//! `createComputePipeline` are here, and [`WgpuSharedContext`] is the
+//! [`PipelineCreationContext`] the pipeline manager's tasks compile against.
 
-use std::sync::{Arc, Weak};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::gpu::gpu_types::{BackendApi, Protected};
+use crate::gpu::resource_key::UniqueKey;
+use crate::graphite::buffer::Buffer;
+use crate::graphite::buffer_manager::{
+    StaticBufferHost, StaticBufferManager, StaticFinishResult, StaticVertexCopyRanges,
+};
 use crate::graphite::caps::Caps;
+use crate::graphite::compute_pipeline::ComputePipeline;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use crate::graphite::context_options::ContextOptions;
+use crate::graphite::global_cache::GlobalCache;
+use crate::graphite::graphics_pipeline::{GraphicsPipeline, PipelineCreationFlags};
+use crate::graphite::graphics_pipeline_desc::{
+    GraphicsPipelineDesc, GraphicsPipelineHandle, PipelineHandleFactory,
+};
+use crate::graphite::pipeline_manager::{PipelineCreationContext, SharedContextPipelineFactory};
 use crate::graphite::recorder::RecorderSharedContext;
+use crate::graphite::render_pass_desc::RenderPassDesc;
+use crate::graphite::renderer_provider::RendererProvider;
+use crate::graphite::resource::{Resource, ResourceRef};
 use crate::graphite::resource_provider::ResourceProvider;
+use crate::graphite::resource_types::Layout;
+use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
+use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
+use crate::graphite::shared_context::SharedContext;
+use crate::graphite::task::TaskRef;
+use crate::graphite::thread_safe_resource_provider::THREADED_SAFE_RESOURCE_BUDGET;
+use crate::graphite::upload_buffer_manager::UploadBufferManager;
 use crate::graphite::wgpu::async_wait::create_checked;
 use crate::graphite::wgpu::caps::{
     COMBINED_UNIFORM_INDEX, CapsProfile, INTRINSIC_UNIFORM_BUFFER_INDEX, STORAGE_BUFFER_INDEX,
     WgpuCaps,
 };
+use crate::graphite::wgpu::compute_pipeline::WgpuComputePipeline;
+use crate::graphite::wgpu::graphics_pipeline::WgpuGraphicsPipeline;
 use crate::graphite::wgpu::resource_provider::WgpuResourceProvider;
+
+/// `SK_InvalidGenID`: the recorder id of a resource provider no recorder owns.
+const INVALID_GEN_ID: u32 = 0;
 
 /// `DawnBackendContext`: the wgpu objects the client creates and passes into
 /// [`make_shared_context`](WgpuSharedContext::make) / [`make_context`](super::make_context).
@@ -70,12 +100,69 @@ pub struct WgpuSharedContext {
     queue: wgpu::Queue,
     has_tick: bool,
     caps: Arc<WgpuCaps>,
+    /// The backend-neutral half (`SharedContext`): caps, shader dictionary, renderer provider and
+    /// the thread-safe resource provider.
+    base: SharedContext,
     // A noop fragment shader, it is used to workaround a Dawn validation error (Dawn doesn't
     // allow a pipeline with a color attachment but without a fragment shader).
     noop_fragment: wgpu::ShaderModule,
 
     uniform_buffers_bind_group_layouts: [wgpu::BindGroupLayout; 4],
     single_texture_sampler_bind_group_layout: wgpu::BindGroupLayout,
+
+    // `fRendererProvider`: made on first use (by the first recorder, or by the context when it
+    // finishes its initialization), which also makes the renderers' static vertex and index
+    // buffers. `SharedContext::setRendererProvider()` is not used: this is the one provider.
+    renderer_provider: OnceLock<RendererProvider>,
+    // The copy tasks that fill the renderers' static buffers and the transfer buffers they read
+    // (`UploadBufferManager::transferToCommandBuffer`): the `Context` hands both to its queue
+    // manager when it finishes its initialization, which is the first submission that has them.
+    static_buffer_tasks: Mutex<Vec<TaskRef>>,
+    static_upload_buffers: Mutex<Vec<ResourceRef<Buffer>>>,
+    // Whether the renderers' static buffers could not be made (`StaticFinishResult::Failure`).
+    static_buffers_failed: AtomicBool,
+    // Where the command trace goes (`graphite::wgpu::trace`).
+    #[cfg(feature = "trace")]
+    trace_sink: Mutex<Option<Box<dyn crate::graphite::wgpu::trace::TraceSink>>>,
+}
+
+// The `Context` side of `StaticBufferManager::finalize()`: the copy tasks and their transfer
+// buffers wait in the shared context for the context's queue manager, and the final static
+// buffers go to the global cache.
+struct StaticBuffers<'a> {
+    tasks: &'a Mutex<Vec<TaskRef>>,
+    upload_buffers: &'a Mutex<Vec<ResourceRef<Buffer>>>,
+    global_cache: &'a GlobalCache,
+}
+
+impl StaticBufferHost for StaticBuffers<'_> {
+    fn add_upload_buffer_manager_refs(&mut self, upload_manager: &mut UploadBufferManager) {
+        self.upload_buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .extend(upload_manager.take_buffers());
+    }
+
+    fn add_task(&mut self, task: &TaskRef, _is_protected: Protected) -> bool {
+        self.tasks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(task.clone());
+        true
+    }
+
+    fn add_static_resource(&mut self, buffer: ResourceRef<Buffer>) {
+        self.global_cache.add_static_resource(buffer.into_any());
+    }
+
+    fn testing_only_set_static_vertex_info(
+        &mut self,
+        ranges: Vec<StaticVertexCopyRanges>,
+        buffer: Option<Arc<Resource<Buffer>>>,
+    ) {
+        self.global_cache
+            .testing_only_set_static_vertex_info(ranges, buffer);
+    }
 }
 
 // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L21-L40 (chrome/m156)
@@ -90,6 +177,16 @@ fn create_noop_fragment(device: &wgpu::Device, scoped: bool) -> Option<wgpu::Sha
             ),
         })
     })
+}
+
+// Port of: src/gpu/graphite/SharedContext.cpp#L30-L33 (chrome/m156)
+fn get_binding_layout(caps: &WgpuCaps) -> Layout {
+    let reqs = caps.resource_binding_requirements();
+    if caps.storage_buffer_support() {
+        reqs.storage_buffer_layout
+    } else {
+        reqs.uniform_buffer_layout
+    }
 }
 
 impl WgpuSharedContext {
@@ -119,21 +216,44 @@ impl WgpuSharedContext {
         let noop_fragment =
             create_noop_fragment(&backend_context.device, caps.allow_scoped_error_checks())?;
 
+        // (The context options carry no user-defined known runtime effects yet.)
+        let shader_dictionary = ShaderCodeDictionary::new(get_binding_layout(&caps), &[]);
+
         let uniform_buffers_bind_group_layouts =
             create_uniform_buffers_bind_group_layouts(&backend_context.device, &caps);
         let single_texture_sampler_bind_group_layout =
             create_single_texture_sampler_bind_group_layout(&backend_context.device, &caps);
 
-        Some(Arc::new_cyclic(|this| Self {
+        let base = SharedContext::new(
+            caps.clone(),
+            BackendApi::Dawn,
+            shader_dictionary,
+            options.executor.as_ref().map(|executor| executor.0.clone()),
+        );
+        let shared = Arc::new_cyclic(|this| Self {
             this: this.clone(),
             device: backend_context.device.clone(),
             queue: backend_context.queue.clone(),
             has_tick: backend_context.has_tick,
             caps,
+            base,
             noop_fragment,
             uniform_buffers_bind_group_layouts,
             single_texture_sampler_bind_group_layout,
-        }))
+            renderer_provider: OnceLock::new(),
+            static_buffer_tasks: Mutex::new(Vec::new()),
+            static_upload_buffers: Mutex::new(Vec::new()),
+            static_buffers_failed: AtomicBool::new(false),
+            #[cfg(feature = "trace")]
+            trace_sink: Mutex::new(None),
+        });
+        // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L74-L76 (chrome/m156): the
+        // thread-safe provider wraps a resource provider made by the shared context itself, so it
+        // is set once the shared context exists.
+        shared.base.set_thread_safe_resource_provider(
+            shared.make_resource_provider(INVALID_GEN_ID, THREADED_SAFE_RESOURCE_BUDGET),
+        );
+        Some(shared)
     }
 
     /// `dawnCaps()` / `caps()`.
@@ -141,6 +261,19 @@ impl WgpuSharedContext {
     #[must_use]
     pub fn caps(&self) -> &Arc<WgpuCaps> {
         &self.caps
+    }
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    #[must_use]
+    pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        self.base.shader_code_dictionary()
+    }
+
+    /// The backend-neutral half of the shared context.
+    #[must_use]
+    pub fn base(&self) -> &SharedContext {
+        &self.base
     }
 
     /// `device()`.
@@ -198,6 +331,87 @@ impl WgpuSharedContext {
         if self.has_tick {
             self.tick();
         }
+    }
+
+    /// The copy tasks that fill the renderers' static buffers (`QueueManager::addTask()` in
+    /// `Context::finishInitialization`), taken out of the shared context. Makes the renderer
+    /// provider if it does not exist yet. Empty after the tasks have been taken.
+    #[must_use]
+    pub fn take_static_buffer_tasks(&self) -> Vec<TaskRef> {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        std::mem::take(
+            &mut *self
+                .static_buffer_tasks
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
+    }
+
+    /// The transfer buffers the static buffer tasks read, which the command buffer holding the
+    /// tasks must keep alive (`addUploadBufferManagerRefs`), taken out of the shared context.
+    #[must_use]
+    pub fn take_static_upload_buffers(&self) -> Vec<ResourceRef<Buffer>> {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        std::mem::take(
+            &mut *self
+                .static_upload_buffers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
+    }
+
+    /// Whether the renderers' static buffers could not be created, in which case any renderer
+    /// that uses them would draw incorrectly and the context must not be used.
+    #[must_use]
+    pub fn static_buffers_failed(&self) -> bool {
+        let _ = RecorderSharedContext::renderer_provider(self);
+        self.static_buffers_failed.load(Ordering::Acquire)
+    }
+
+    /// Sets where the command trace goes (`None` stops tracing).
+    #[cfg(feature = "trace")]
+    pub fn set_trace_sink(&self, sink: Option<Box<dyn crate::graphite::wgpu::trace::TraceSink>>) {
+        *self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = sink;
+    }
+
+    /// Records `build()` in the trace, if there is a sink.
+    #[cfg(feature = "trace")]
+    pub fn trace(&self, build: impl FnOnce() -> crate::graphite::wgpu::trace::Record) {
+        let mut sink = self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(sink) = sink.as_mut() {
+            sink.record(&build());
+        }
+    }
+
+    /// Records `build(hash)` in the trace, where `hash` names `bytes`, which go to the sink as a
+    /// blob first. Does nothing without a sink.
+    #[cfg(feature = "trace")]
+    pub fn trace_with_blob(
+        &self,
+        bytes: &[u8],
+        build: impl FnOnce(u64) -> crate::graphite::wgpu::trace::Record,
+    ) {
+        let mut sink = self
+            .trace_sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(sink) = sink.as_mut() {
+            let hash = crate::graphite::wgpu::trace::hash_bytes(bytes);
+            sink.blob(hash, bytes);
+            sink.record(&build(hash));
+        }
+    }
+
+    /// A weak reference to the shared context, for objects that trace after it is gone.
+    #[cfg(feature = "trace")]
+    pub(crate) fn downgrade(&self) -> Weak<WgpuSharedContext> {
+        self.this.clone()
     }
 
     /// `getUniformBuffersBindGroupLayout()`: the layout of the uniform buffers bind group for
@@ -317,7 +531,7 @@ fn create_single_texture_sampler_bind_group_layout(
 
 impl RecorderSharedContext for WgpuSharedContext {
     fn caps(&self) -> Arc<dyn Caps> {
-        self.caps.clone()
+        self.base.caps_arc().clone()
     }
 
     fn backend(&self) -> BackendApi {
@@ -329,6 +543,39 @@ impl RecorderSharedContext for WgpuSharedContext {
         Protected::No
     }
 
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        self.base.shader_code_dictionary()
+    }
+
+    fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
+        let this: Arc<dyn PipelineCreationContext> = self.this.upgrade()?;
+        Some(Arc::new(SharedContextPipelineFactory::new(&this)))
+    }
+
+    // Port of: src/gpu/graphite/SharedContext.cpp (rendererProvider), RendererProvider.cpp#L87
+    fn renderer_provider(&self) -> &RendererProvider {
+        self.renderer_provider.get_or_init(|| {
+            let resource_provider = Arc::new(Mutex::new(self.make_resource_provider(0, 0)));
+            let mut buffer_manager = StaticBufferManager::new(resource_provider, &*self.caps);
+            let renderer_provider = RendererProvider::new(
+                self.caps
+                    .resource_binding_requirements()
+                    .uniform_buffer_layout,
+                self.caps.shader_caps().infinity_support,
+                &mut buffer_manager,
+            );
+            let result = buffer_manager.finalize(&mut StaticBuffers {
+                tasks: &self.static_buffer_tasks,
+                upload_buffers: &self.static_upload_buffers,
+                global_cache: self.base.global_cache(),
+            });
+            if result == StaticFinishResult::Failure {
+                self.static_buffers_failed.store(true, Ordering::Release);
+            }
+            renderer_provider
+        })
+    }
+
     // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L89-L98 (chrome/m156)
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {
         let shared_context = self
@@ -336,9 +583,126 @@ impl RecorderSharedContext for WgpuSharedContext {
             .upgrade()
             .expect("the shared context is alive while it makes resource providers");
         ResourceProvider::new(
-            Box::new(WgpuResourceProvider::new(shared_context)),
+            Box::new(WgpuResourceProvider::new(&shared_context)),
             recorder_id,
             resource_budget,
         )
+    }
+}
+
+impl WgpuSharedContext {
+    /// `createGraphicsPipeline(runtimeDict, pipelineKey, pipelineDesc, renderPassDesc, flags,
+    /// compilationID)`: the backend half of `findOrCreateGraphicsPipeline`.
+    // Port of: src/gpu/graphite/dawn/DawnSharedContext.cpp#L194-L212 (chrome/m156)
+    #[doc(alias = "createGraphicsPipeline")]
+    #[must_use]
+    pub fn create_graphics_pipeline(
+        &self,
+        runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
+        pipeline_key: &UniqueKey,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+        compilation_id: u32,
+    ) -> Option<Arc<WgpuGraphicsPipeline>> {
+        WgpuGraphicsPipeline::make(
+            self,
+            runtime_dict,
+            pipeline_key,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+            compilation_id,
+        )
+    }
+
+    /// `createComputePipeline(desc)` (`DawnResourceProvider::createComputePipeline`).
+    // Port of: src/gpu/graphite/dawn/DawnResourceProvider.cpp#L544-L547 (chrome/m156)
+    #[doc(alias = "createComputePipeline")]
+    #[must_use]
+    pub fn create_compute_pipeline(
+        &self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<WgpuComputePipeline>> {
+        WgpuComputePipeline::make(self, pipeline_desc)
+    }
+
+    /// `ResourceProvider::findOrCreateComputePipeline(pipelineDesc)`: the compute pipeline of the
+    /// step, from the global cache or created and added to it.
+    // Port of: src/gpu/graphite/ResourceProvider.cpp#L44-L60 (chrome/m156)
+    #[doc(alias = "findOrCreateComputePipeline")]
+    #[must_use]
+    pub fn find_or_create_compute_pipeline(
+        &self,
+        pipeline_desc: &ComputePipelineDesc,
+    ) -> Option<Arc<dyn ComputePipeline>> {
+        let pipeline_key = self.caps.make_compute_pipeline_key(pipeline_desc);
+        self.base
+            .find_or_create_compute_pipeline(&pipeline_key, || {
+                self.create_compute_pipeline(pipeline_desc)
+                    .map(|pipeline| pipeline as Arc<dyn ComputePipeline>)
+            })
+    }
+
+    /// `pipelineManager()->createHandle(this, runtimeDict, pipelineDesc, renderPassDesc, flags)`:
+    /// finds the pipeline or queues its compilation (see [`PipelineManager`]).
+    ///
+    /// [`PipelineManager`]: crate::graphite::pipeline_manager::PipelineManager
+    #[doc(alias = "createHandle")]
+    #[must_use]
+    pub fn create_pipeline_handle(
+        self: &Arc<Self>,
+        runtime_dict: Option<Arc<RuntimeEffectDictionary>>,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+    ) -> GraphicsPipelineHandle {
+        let this: Arc<dyn PipelineCreationContext> = self.clone();
+        self.base.pipeline_manager().create_handle(
+            &this,
+            runtime_dict,
+            pipeline_desc,
+            render_pass_desc,
+            flags,
+        )
+    }
+
+    /// `pipelineManager()->resolveHandle(handle)`.
+    #[doc(alias = "resolveHandle")]
+    #[must_use]
+    pub fn resolve_pipeline_handle(
+        &self,
+        handle: &GraphicsPipelineHandle,
+    ) -> Option<Arc<dyn GraphicsPipeline>> {
+        self.base.pipeline_manager().resolve_handle(handle)
+    }
+}
+
+impl PipelineCreationContext for WgpuSharedContext {
+    fn shared_context(&self) -> &SharedContext {
+        &self.base
+    }
+
+    // Port of: src/gpu/graphite/SharedContext.cpp#L73-L125 (chrome/m156)
+    fn find_or_create_graphics_pipeline(
+        &self,
+        runtime_dict: Option<&Arc<RuntimeEffectDictionary>>,
+        pipeline_key: &UniqueKey,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+        flags: PipelineCreationFlags,
+    ) -> Option<Arc<dyn GraphicsPipeline>> {
+        self.base
+            .find_or_create_graphics_pipeline(pipeline_key, flags, |compilation_id| {
+                self.create_graphics_pipeline(
+                    runtime_dict,
+                    pipeline_key,
+                    pipeline_desc,
+                    render_pass_desc,
+                    flags,
+                    compilation_id,
+                )
+                .map(|pipeline| pipeline as Arc<dyn GraphicsPipeline>)
+            })
     }
 }

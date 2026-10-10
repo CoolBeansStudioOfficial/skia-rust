@@ -162,7 +162,7 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 |---|---|---|---|---|
 | Shader compiler | Tint → HLSL → **FXC** (no DXC: `dawn@e03f1d59:CMakeLists.txt#L164` `DAWN_USE_BUILT_DXC OFF`, so `UseDXC` is force-set false, `PhysicalDeviceD3D12.cpp#L655-L672`) | Tint → SPIR-V → driver | — | naga → HLSL → FXC or DXC; naga → SPIR-V |
 | FXC flags | `OPTIMIZATION_LEVEL0` (`fxc_optimizations` off), `PACK_MATRIX_ROW_MAJOR`, `IEEE_STRICTNESS` (`RenderPipelineD3D12.cpp#L343-L366`, `#L386-L391`) | — | — | `ENABLE_STRICTNESS` only, default O1 (`dx12/shader_compilation.rs#L232-L240`); not configurable |
-| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC) |
+| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC); **off by default in our caps** (below) |
 | Storage buffers | yes (`DawnCaps.cpp#L358-L363`) | **no** (Vulkan excluded there) | SSBO vs UBO paint/step data; different WGSL | yes |
 | Immediates | `maxImmediateSize` = 64 (`Constants.h#L58`) | 64 (`PhysicalDeviceVk.cpp#L974`) | intrinsics via `var<immediate>` (`DawnCaps.cpp#L343-L344`) | `IMMEDIATES` |
 | Dual-source blending | yes (`PhysicalDeviceD3D12.cpp#L161`) | yes | blend formulas with `@blend_src` | `DUAL_SOURCE_BLENDING` |
@@ -173,6 +173,13 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 | `depth24plus-stencil8` | **`D32_FLOAT_S8X24`** (`d3d/UtilsD3D.cpp#L338-L341`) | `D24_UNORM_S8` if supported | painter's depth precision | `D24_UNORM_S8_UINT` (`auxil/dxgi/conv.rs#L67`) |
 | MSAA | 4×, `SampleDesc.Quality = 0` | 4× | — | 4×, `Quality = 0` |
 | Robustness | disabled by toggle | disabled | — | naga bounds checks on (turning them off is `unsafe`) |
+
+`WgpuCaps` never reports `ShaderF16` for a real device (`CapsProfile::from_device`; opt in with
+`from_device_with_f16`), even where the adapter has it. wgpu 30 rejects the `half4` fragment
+outputs Graphite's f16 WGSL writes for an `Rgba8Unorm` target (Dawn accepts them), and the D3D12
+goldens were rendered without f16, so all-f32 WGSL matches the gating tier. The Dawn Vulkan
+oracle profile keeps `SHADER_F16`, and `a_half_precision_fragment_output_is_a_creation_failure_on_wgpu`
+pins the wgpu failure.
 
 Two consequences:
 
@@ -282,6 +289,20 @@ Our wgpu backend emits the same records from the same places (the port of `DawnC
 friends), behind a test-only `trace` feature. `xtask gpu-trace diff <gm>` prints the first
 differing record with its context, like `rp-diff`.
 
+**Status (G11c).** The `trace` cargo feature of `skia-rust-gpu` emits the records
+(`graphite::wgpu::trace`: `Record`, `TraceSink`, `JsonLinesSink`, `MemorySink`;
+`WgpuSharedContext::set_trace_sink`). A record is an operation name with ordered fields, written as
+one JSON object per line, and byte payloads (mapped buffer flushes, queue writes, WGSL, read-back
+bytes) go to the sink once per FNV-1a hash as blobs. Resources are named by the trace id their
+creation record (`create_buffer`, `create_texture`) carries; the pass records are
+`begin_render_pass`, `set_pipeline`, `set_bind_group`, `set_vertex_buffer`, `set_index_buffer`,
+`set_scissor_rect`, `set_viewport`, `set_immediates`, `set_blend_constant`, `draw`,
+`draw_indexed`, `draw_indirect`, `draw_indexed_indirect`, `blit_with_draw` (the emulated MSAA
+load and resolve), `end_render_pass`, and the compute and copy equivalents, then `submit`. Not yet
+traced: sampler creation and the final readback of a surface (`map_read` records the bytes of any
+mapped read buffer). The oracle side of the format is not written, so there is no `gpu-trace
+diff` yet.
+
 Committed artifacts stay small: per-tier hash lists (`oracle/gpu/expected/<tier>/<gm>.txt`, one
 line per record hash), as `rp-diff/expected` does. Full traces and shader texts go into the
 `goldens-m156` release as `gpu-trace-<tier>.tar`, downloaded on mismatch.
@@ -358,16 +379,27 @@ link to the half it comes from. Real polymorphism inside Graphite stays a trait 
 `PathAtlas` (enum: Raster, plus Compute for completeness, not built), `DrawListBase` (enum:
 `DrawList`, `DrawListLayer`).
 
+*One exception, `Caps` (done in G6).* `graphite::caps::Caps` stays a trait: it is `Caps.h`'s
+public interface, and the key layer, the shader generators and the recorder run against
+profile-driven and fake caps in tests with no device. The data types `Caps.h` declares
+(`ResourceBindingRequirements`, `AttachmentSizePolicy`, `SkSL::ShaderCaps` with
+`default_shader_caps()` for `setDefaultShaderCaps`) live beside it, and `graphite::wgpu::WgpuCaps`
+is `DawnCaps` plus the base class's state, so every function still has one `// Port of:` link.
+Code that takes caps takes `&dyn Caps` (`TextureProxy::make(caps, …)` replaced the
+`max_texture_size` parameter).
+
 ### 4.2 Seams into core
 
 - `graphite::Device` implements core's `Device` trait (`crates/skia-rust-core/src/device.rs`). The
   core `Canvas` holds it as `Box<dyn Device>` (§5.2 for how the recorder reaches it).
-- `Image_Graphite`, `Image_YUVA_Graphite` and `SpecialImage_Graphite` implement core's `ImageBase`
-  and special-image traits; `is_texture_backed()` becomes true for them.
+- `Image_Graphite` and `Image_YUVA_Graphite` implement core's `ImageBase`; `is_texture_backed()`
+  becomes true for them. `SpecialImage_Graphite` is the texture flavor of core's `SpecialImage`
+  (§5.5).
 - Text: core keeps the `Slug` placeholder (`docs/design/text.md` T13). `text_gpu` provides the
   `SubRunContainer`/`Slug` implementation that `Device::draw_glyph_run_list` uses.
 - Image filters: `Device::create_image_filtering_backend` returns Graphite's `skif::Backend` port,
-  which uses `SkShaderBlurAlgorithm` (ported in S21) with GPU draws.
+  which uses `SkShaderBlurAlgorithm` (ported to core) with GPU draws. Special images and the image
+  links are §5.5 and §5.6.
 
 ### 4.3 Public API (skia-safe shape, `third_party/rust-skia/skia-safe/src/gpu/graphite*`)
 
@@ -450,6 +482,172 @@ Everything those threads share lives in `Arc<SharedContext>`.
 - Compilation order never affects pixels. The command trace records pipelines by key, not by
   creation order.
 
+### 5.5 Backend-polymorphic special images and the image filter backend (Q-A, decided)
+
+**Questions for the maintainer:** none block this; the change has no public API impact. For the
+record, two internal core traits lose bounds: `skif::Backend` and `SkBlurEngine`/`Algorithm`
+(`image_filter_types::Backend`, `blur_engine::{BlurEngine, BlurAlgorithm}`) are no longer
+`Send + Sync`. Neither is part of skia-safe's API.
+
+**Problem.** Core's `SpecialImage` was a raster-only struct holding a `Bitmap`. Skia's
+`SkSpecialImage` is abstract, with `SkSpecialImage_Raster` and `skgpu::graphite::SpecialImage`
+(`SpecialImage_Graphite.cpp`). Without the Graphite flavor, `Device::drawSpecial`,
+`snapSpecial` and `createImageFilteringBackend` could not be ported, so on Graphite every layer
+restore (`drawDevice` → `snapSpecial` + `drawSpecial`) and every image filter drew nothing.
+Constraints: core must not depend on the GPU crate, no `unsafe`, and the raster path must not
+change in behavior or cost.
+
+**Decision.** Graphite's special image only wraps a Graphite-backed `SkImage` (Skia's own TODO
+says special images are going away in favor of images plus a subset). Core already has a
+backend-polymorphic image: `Image(Arc<dyn ImageBase>)`, whose `ImageBase` the GPU crate implements
+(`image_graphite::Image`). So the texture flavor is expressible in core without knowing the GPU
+crate:
+
+```rust
+pub struct SpecialImage { subset: IRect, backing: Backing, props: SurfaceProps }
+enum Backing {
+    Raster(Bitmap),   // SkSpecialImage_Raster
+    Texture(Image),   // skgpu::graphite::SpecialImage: a texture-backed core Image
+}
+```
+
+- Every virtual of `SkSpecialImage` becomes a `match` (`backingStoreDimensions`, `asImage`,
+  `onMakeBackingStoreSubset`, `asShader`: the raster subclass's for `Raster`, the base class's,
+  with `SkImageShader::MakeSubset`, for `Texture`). `SkSpecialImages::AsBitmap` is `None` for
+  `Texture`, as in C++.
+- `SpecialImage::make_from_texture_image(subset, image, props)` is the backend-independent half of
+  `SpecialImage_Graphite`; `skia_rust_gpu::graphite::special_image::make_graphite` is
+  `SkSpecialImages::MakeGraphite` (converts the image with the recorder's image provider first).
+- The raster flavor keeps the same fields and code paths: one enum discriminant check, no
+  allocation, no dynamic dispatch. The raster tests and the raster image filter backend are
+  untouched.
+
+`skif::Backend` drops `Send + Sync`: a backend lives for one filter evaluation on its device's
+thread, and Graphite's holds the `Rc`-based recorder (weakly, where C++ holds a raw pointer).
+`skif::Context` keeps `Arc<dyn Backend>`; the Graphite constructor allows
+`clippy::arc_with_non_send_sync` with a comment.
+
+**Graphite side** (all ported from `Device.cpp` and `TextureUtils.cpp`):
+
+- `Device::drawSpecial` (an `EdgeAAQuad` image draw with the given transform),
+  `snapSpecial` (flush and `WrapDevice`, or `makeImageCopy` when forced or not texturable),
+  `createImageFilteringBackend` (`MakeGraphiteBackend`). `snapSpecialScaled` keeps the
+  `SkDevice` default (`None`): Graphite does not override it.
+- `graphite::image_filter_backend::GraphiteBackend`: `makeDevice` (budgeted, approx-fit,
+  `kDiscard` scratch devices), `makeImage` (`MakeGraphite`), `getCachedBitmap`
+  (`RecorderPriv::CreateCachedProxy`), and the blur engine, which is `SkShaderBlurAlgorithm`.
+- `SkShaderBlurAlgorithm` is backend independent (it draws runtime-effect shaders into devices the
+  backend makes), so it is ported to core (`core::shader_blur_algorithm`: `Compute2DBlurKernel`,
+  `Compute2DBlurOffsets`, `Compute1DBlurLinearKernel`, `renderBlur`, `evalBlur1D/2D`, `blur`) as a
+  trait whose only required method is `makeDevice`. The raster engine does not use it
+  (`RasterShaderBlurAlgorithm` is not wired up), so raster output is unchanged.
+- `SkImageFilter_Base::makeImageWithFilter` and both `SkImages::MakeWithFilter` factories (raster
+  in `skia_rust_raster::images`, Graphite in `graphite::image_factories`, with
+  `Image_Base::makeNonBudgeted`) are ported with it. They return `(Image, IRect, IPoint)` as
+  skia-safe's `images::make_with_filter` does.
+
+**Alternatives considered.**
+
+- *A `SpecialImageBacking` trait object in core* (`Arc<dyn …>` implemented by raster and GPU):
+  the open-ended form of Skia's virtuals, but the raster flavor would pay an allocation and a
+  vtable call, and no backend needs more than "a texture-backed `Image`".
+- *A generic `SpecialImage<B>`*: infects `FilterResult`, `Device` and the canvas with a type
+  parameter; rejected.
+- *Converting through raster* (read back, filter on the CPU, upload): changes results and defeats
+  the GPU backend.
+
+**Tests.** Noop adapter (`crates/skia-rust-gpu/tests/special_images.rs`, CI): `snapSpecial`
+wraps or copies the target with the right subset; subsets share the texture; `drawSpecial`
+records a draw; the backend's devices, `MakeGraphite`, `getCachedBitmap` and the shader blur
+(2D and two-pass 1D) produce texture-backed results of the requested size; a restored layer
+reaches the root task list. `ImageFilterMakeWithFilter` (raster) and
+`ImageFilterMakeWithFilter_Graphite` (noop) are ported and pass. Real adapter, `#[ignore]`d in CI
+(`special_image_pixels.rs`, lavapipe here): a blur image filter (2D and 1D passes; exact solid
+center, clear outside, partial premultiplied edge falling off), and a half-alpha layer composited
+into its parent. All targets are `RGBA_8888`, so the bytes do not depend on N32 order.
+
+### 5.6 Live image-to-device links (Q-B, decided)
+
+**Questions for the maintainer:** none; the decision has no public API change versus skia-safe
+(`Image` stays `Send + Sync`, `Surface` and `Recorder` stay `!Send`). One Skia quirk is ported as
+is and flagged: `Image_Base::isDynamic()` returns true only when some, but not all, of several
+linked devices were just unlinked (`return emptyCount > 0` after resetting it to 0 when all were
+unlinked), so a surface image with one live device is not "dynamic" for
+`onMakeSubset`/`makeColorTypeAndColorSpace`.
+
+**Problem.** In Skia, `Image::WrapDevice` links a surface's image to its `Device`
+(`fLinkedDevices`, `sk_sp<Device>`), and `Image_Base::notifyInUse` (called when the image is put
+into a paint key, copied, or cached) flushes the device's pending work, so the image sees every
+draw made to the surface before the image is used. Our `ImageBase` is `Send + Sync`
+(`Arc<dyn ImageBase>`), while a Graphite device is `Rc<RefCell<DeviceCore>>` (§5.1), so an image
+cannot hold the device. G10d flushed at `as_image()` time instead, so draws made after
+`as_image()` were lost to the image (`NotifyInUseTestAsImage` fails).
+
+**Options.**
+
+1. *A non-`Send` Graphite image* (holding `Rc<RefCell<DeviceCore>>`). Requires either dropping
+   `Send + Sync` from `ImageBase` (breaks skia-safe's `Image: Send + Sync` for every image,
+   including raster ones that are legitimately shared across threads) or a second, non-core image
+   type (breaks `Canvas::draw_image(&Image)` and every API that takes an `Image`). Rejected:
+   public API break for all backends to serve one.
+2. *An `Arc`-based linking token with deferred flush tasks.* The image holds a `Send + Sync`
+   token; the device would register "flush me" closures that run later. A closure that captures
+   the device is `!Send` again, and deferring the flush past the draw that reads the image
+   reorders tasks (the draw would be recorded before the device's work is in the root list),
+   which is exactly the ordering bug `NotifyInUseTest` documents.
+3. *Recorder-side tracking.* The recorder already holds every registered device
+   (`fTrackedDevices`, `Weak`). The image needs a key to find its device there, and a few facts
+   about the device that `Device::notifyInUse` reads without touching the device.
+4. *Keep flushing at `as_image()`* (status quo): wrong results, rejected.
+
+**Decision: 2 + 3, synchronous.** The image holds an `Arc<DeviceLink>` per linked device
+(`image_graphite::DeviceLink`, `Send + Sync`), the device owns the same `Arc`:
+
+| `DeviceLink` field | what `Device::notifyInUse` reads in C++ |
+|---|---|
+| `device_id` | the `sk_sp<Device>` itself: the recorder finds the live device by this ID |
+| `recorder_id` | `fRecorder == recorder` |
+| `target: Arc<TextureProxy>` | `isScratchDevice()` (target not instantiated) and the pending-read proxy |
+| `abandoned` (set by `abandonRecorder`) | `!fRecorder` (the device is immutable) |
+| `dropped` (set when `DeviceCore` drops) | `device->unique()` (only the image would still hold it) |
+| `last_task` (mirrors `fLastTask`) | a scratch device's last snapped draw task |
+
+`Image_Base::notifyInUse`, `linkDevice(s)`, `unlinkDevices`, `isDynamic` and `Device::notifyInUse`
+are ported against the link. The scratch branch needs only the link (it records
+`last_task` as a dependency of the reading draw, or adds it to the root list for a copy). The
+non-scratch branch runs on the recorder's thread: it looks the device up in the recorder's tracked
+devices by ID (`RecorderPriv::find_tracked_device`) and calls `flushPendingWork` on it right
+away, so task order matches C++ exactly (A1, B1, A2, B2 in `NotifyInUseTestAsImage`).
+
+Two borrow rules replace C++'s free aliasing:
+
+- `add_image_to_key` cannot reach the drawing device (the `KeyContext` only reads the
+  `DrawContext`), so the key context records the Graphite-backed images it keys and
+  `Device::drawGeometry` notifies them right after `toKey`, before the draw is recorded: the
+  same point in the draw as Skia's (after the flush-before-draw, before the draw).
+- The drawing device is mutably borrowed during the notify. When the linked device is the
+  drawing device itself (a surface drawing its own image), it is flushed through that borrow;
+  when flushing the linked device triggers `flushTrackedDevices(dependency)` and the drawing
+  device has pending reads of it, the drawing device is flushed through the borrow too
+  (`flush_tracked_devices_with_dependency_and_current`). Other borrowed devices are the one
+  already flushing, as before.
+
+**API impact.** None on the public, skia-safe-shaped API. `Surface::as_image()` no longer flushes;
+the image sees later draws, as in Skia. `wrap_device` takes the device's link. Internal additions:
+`TrackedDevice::{device_id, as_device_core, is_cell}` (defaulted, so test doubles are unaffected),
+`KeyContext::notify_in_use`, `Image::{link_device, link_devices, notify_in_use, unlink_devices,
+is_dynamic}`, `make_non_budgeted`. Draws of the image on another recorder do not flush (Skia:
+"Draws of the view on another Recorder will always see the texture content dependent on how
+Recordings are inserted").
+
+**Tests.** Noop (`special_images.rs`, CI): `as_image()` records nothing; the first draw of the
+image flushes A1; after more draws to A, the next draw flushes B1 then A2 (root task counts);
+a surface drawing its own image flushes itself; once the surface drops, the image unlinks on its
+next use. Real adapter: `special_image_pixels.rs::a_surface_image_sees_draws_made_after_it_was_taken`
+and the full `NotifyInUseTest.cpp` port (`NotifyInUseTestAsImage`, `NotifyInUseTestSnapshot` and
+the 29 layer blend-mode cases), all passing on lavapipe; the 31 manifest entries stay `todo` with
+the adapter reason because CI has no rendering adapter.
+
 ---
 
 ## 6. Byte-identical WGSL
@@ -506,6 +704,53 @@ in `f64`). Matching it is a porting task with exact text feedback.
 oracle profiles. W2 and W3 hash files are committed under `crates/skia-rust-gpu/tests/data/wgsl/`
 with the full texts in the release, as in `rp-diff`.
 
+**Status after G6** (`port/gpu-g6`):
+
+- *Pipeline* (all of `ShaderInfo::Make` and the shader half of `DawnGraphicsPipeline::Make`):
+  `graphite::wgpu::pipeline_shaders::make_pipeline_shaders(caps, dict, rte_dict, rp_desc, step,
+  paint_id, error_handler)` builds the `SkSL` (`ShaderInfo`) and compiles it to WGSL
+  (`gpu::sksl_to_backend::sksl_to_wgsl`, the minified Graphite modules, `fSharpenTextures`,
+  `fForceNoRTFlip`, `fForceHighPrecision` as Dawn sets them). It needs a `WgpuCaps`, which
+  `CapsProfile` builds without a device.
+- W1: unchanged, 416 of 420 (the Graphite modules now load, which no `.wgsl` golden uses).
+- W2: `crates/skia-rust-gpu/tests/wgsl_pipelines.rs` runs a corpus (3 profiles, about 70 paints, every
+  `RenderStep` of the `RendererProvider`, RGBA8 and A8 targets: 2,545 pipelines by default,
+  `WGSL_FULL=1` for about 12,000) and checks that it is deterministic. `WGSL_DUMP_DIR` writes the
+  per-profile pipeline dumps (`name`, pipeline label, FNV-1a hashes of the four shaders) and
+  `WGSL_ORACLE_DIR` compares them with the oracle's. **Missing: the oracle dump** (the oracle host
+  is gone, so G0b cannot produce it) **and the headless recorder** (G10: `Device`, `DrawPass`,
+  `ClipStack`), which is what turns "a GM" into its triples of render pass, step and key. Missing
+  paints: image/YUV/picture shaders and clips (G10), perlin noise and mesh (their key blocks are
+  ported, the paints need `Device`).
+- W3: not started. `ChromePrecompileTest`, `AndroidPrecompileTest`, `CombinationBuilderTest` and
+  `PaintParamsKeyTest` need the Precompile API (G14: `PaintOptions`, `PrecompileShader` and the
+  rest, `UniqueKeyUtils`).
+- W4: done for everything W2 makes. naga accepts every shader except the ones that pass a pointer
+  to a storage buffer array as a function argument (the 12-stop gradients on a device with storage
+  buffers): that is WGSL's `unrestricted_pointer_parameters`, which Tint implements and naga does
+  not. The test names the error and requires that it is the only one.
+- W5: `KeyTest` (3), `PipelineDataCacheTest` (1) and `RTEffectTest` (4) are ported and pass on the
+  noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
+  `PaintParamsKeyTest` (2) the Precompile API (G14).
+
+**Status after G10b** (`port/gpu-g10b`): `graphite::clip_stack::ClipStack` is the whole of
+`ClipStack.cpp` (element tree, `SaveRecord`s, combine/simplify, `visitClipStackForDraw`,
+`updateClipStateForDraw`, `recordDeferredClipDraws`, analytic clips, depth-only clip draws for both
+draw lists). The device calls back through `ClipDrawHooks`. `NonMSAAClip` (`AnalyticClip` +
+`AtlasClip`) is in `geom::non_msaa_clip`, and `ShadingParams` keys it with `AddAnalyticClip`
+(`key_helpers_ii::add_analytic_clip`, including the atlas block and its texture binding). The one
+seam is the clip atlas: `ClipAtlasManager` (G12a) is a trait that `visit_clip_stack_for_draw` calls
+exactly as the C++ does; the device passes `None`, so every non-analytic element is a depth-only
+clip draw until G12a. W2's clip paints and `ClipStackTest`-style checks are headless tests in
+`tests/clip_stack.rs`; Skia has no Graphite `ClipStack` unit test in m156 (the `GrClipStackTest`
+entries are Ganesh's `GrClipStack`).
+
+An identity local matrix is not elided anywhere in Skia: the gradient factories end with
+`makeWithLocalMatrix(lm ? *lm : SkMatrix::I())` and `SkShader::makeWithLocalMatrix` always wraps,
+and Graphite's key code for `SkLocalMatrixShader` folds the gradient's unit-space matrix into that
+wrapper. The skia-rust gradients match (`LocalMatrix[LinearGradient4+PreAlpha]`), so there is
+nothing to fix.
+
 ---
 
 ## 7. What runs without a GPU
@@ -516,6 +761,23 @@ with the full texts in the release, as in `rp-diff`.
 | Headless recorder | DrawList sort, DrawPass command building, renderer choice, ClipStack element decisions, uniform/vertex bytes, pipeline sets (W2), the CPU half of the command trace | `CapsProfile` + a recorder without a wgpu device; compared with G0b traces |
 | wgpu `noop` adapter (`Backends::NOOP`, `wgpu-types backend.rs#L27-L39`) | resource cache, proxy cache, texture proxies, recorder/recording lifecycle, keys, precompile, storage context, texture fallback; any test that creates resources and never reads pixels | a real `Context` on the noop backend. Each port says in its PR whether the test reads pixels. About 115 candidates by file (§9) |
 | Real adapter | anything that reads pixels (`ReadWritePixelsGraphiteTest`, `ImageOriginTest`, `MultisampleTest`, `ComputeTest`, `AtlasTests`, …) and all GPU GMs | lavapipe (Linux), WARP (Windows), Metal (macOS) |
+
+The real-adapter tests are written against `adapter_backend_context` (software adapters first)
+and skip, saying so, when the machine has none; setting `SKIA_RUST_REQUIRE_ADAPTER` makes a missing
+adapter an error, for the GPU CI jobs. In the cloud container lavapipe is `mesa-vulkan-drivers`
+(`apt-get install mesa-vulkan-drivers`; Mesa 25.2 here, llvmpipe on LLVM 20.1). The first pixels
+tests (`tests/wgpu_first_pixels.rs`) run there: cleared and rect-filled targets read back exactly,
+and a path drawn through the MSAA render pass whose resolve is emulated (wgpu has no
+load-from-resolve), read back with `WgpuContext::read_pixels` (`asyncReadTexture` /
+`transferPixels` / `finalizeAsyncReadPixels`).
+
+Surfaces and images read back through the context: `WgpuContext::read_surface_pixels` is
+`Device::onReadPixels` (snap, insert, `ContextPriv::readPixels`), `read_image_pixels` the same for
+an image, and `asyncReadPixels` draws a source that is not copyable, is bottom-left or needs a
+transfer function into a copyable texture (`CopyAsDraw`) first. Ported tests that read pixels use
+`def_graphite_adapter_test!` (tests/src/lib.rs): they are `#[ignore]`d, so CI cannot count them as
+passing, and their entries stay `todo` ("needs a real adapter in CI (lavapipe job)") until a GPU
+job runs `--ignored`. Run them locally with `cargo test -p skia-rust-tests --lib -- --ignored`.
 
 ---
 

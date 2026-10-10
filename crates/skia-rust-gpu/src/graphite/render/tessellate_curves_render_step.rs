@@ -177,7 +177,7 @@ impl RenderStep for TessellateCurvesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/TessellateCurvesRenderStep.cpp#L118-L130 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         // TODO (Skia): Approximate perspective scaling to match how PatchWriter is configured (or
         // provide explicit tessellation level in instance data instead of replicating work).
         let curve_type = if self.infinity_support {
@@ -249,9 +249,15 @@ impl RenderStep for TessellateCurvesRenderStep {
         params: &DrawParams,
         gatherer: &mut PipelineDataGatherer,
     ) {
-        gatherer
-            .uniform_manager()
-            .write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
+        let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
+        uniforms.write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }
 

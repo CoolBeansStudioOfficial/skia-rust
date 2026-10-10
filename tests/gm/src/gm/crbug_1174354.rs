@@ -75,16 +75,9 @@ fn draw_bg_blur(canvas: &Canvas, rect: IRect, sigma: f32) {
 }
 
 // Port of: gm/crbug_1174354.cpp#L32-L38 (chrome/m156)
-crate::def_simple_gm!(
-    #[ignore = "see notes/gm_crbug_1174354_cpp_crbug_1174354.md"]
-    crbug_1174354,
-    canvas,
-    70,
-    250,
-    {
-        draw_bg_blur(canvas, IRect::from_xywh(10, 10, 50, 50), 5.0);
-        draw_bg_blur(canvas, IRect::from_xywh(10, 70, 50, 50), 15.0);
-        draw_bg_blur(canvas, IRect::from_xywh(10, 130, 50, 50), 30.0);
-        draw_bg_blur(canvas, IRect::from_xywh(10, 190, 50, 50), 70.0);
-    }
-);
+crate::def_simple_gm!(crbug_1174354, canvas, 70, 250, {
+    draw_bg_blur(canvas, IRect::from_xywh(10, 10, 50, 50), 5.0);
+    draw_bg_blur(canvas, IRect::from_xywh(10, 70, 50, 50), 15.0);
+    draw_bg_blur(canvas, IRect::from_xywh(10, 130, 50, 50), 30.0);
+    draw_bg_blur(canvas, IRect::from_xywh(10, 190, 50, 50), 70.0);
+});

@@ -71,7 +71,7 @@ impl RenderStep for MiddleOutFanRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/MiddleOutFanRenderStep.cpp#L47-L52 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         concat!(
             "float4 devPosition = localToDevice * float4(position, 0.0, 1.0);\n",
             "devPosition.z = depth;\n",
@@ -116,8 +116,14 @@ impl RenderStep for MiddleOutFanRenderStep {
         params: &DrawParams,
         gatherer: &mut PipelineDataGatherer,
     ) {
-        gatherer
-            .uniform_manager()
-            .write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
+        let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
+        uniforms.write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }

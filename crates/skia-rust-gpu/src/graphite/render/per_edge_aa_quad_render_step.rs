@@ -232,7 +232,7 @@ impl RenderStep for PerEdgeAAQuadRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/PerEdgeAAQuadRenderStep.cpp#L202-L213 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         // The body of a vertex function: it defines `float4 devPosition` and writes the
         // already-defined `float2 stepLocalCoords`.
         "float4 devPosition = per_edge_aa_quad_vertex_fn(\

@@ -432,6 +432,23 @@ pub fn selection() -> Selection {
     Selection::native(Tier::detect())
 }
 
+/// Whether [`selection`] is a forced selection (`testing::force_tier`, test builds only), i.e.
+/// the code is being run to reproduce an oracle tier rather than to run on this host as is.
+///
+/// Used by libraries that do their own CPU dispatch outside `SkOpts` (skcms), which model the
+/// oracle host's dispatch while a tier is forced.
+#[must_use]
+pub fn selection_is_forced() -> bool {
+    #[cfg(any(test, feature = "testing"))]
+    {
+        crate::testing::forced().is_some()
+    }
+    #[cfg(not(any(test, feature = "testing")))]
+    {
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

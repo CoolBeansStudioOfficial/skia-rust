@@ -3,9 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/patch.cpp (chrome/m156)
 //
-// `patch_primitive` and `patch_alpha` are ported (their `dopatch` calls use the gradient shader
-// `make_shader()`, and no image). `patch_image` and `patch_image_persp` decode mandrill_128.png,
-// which skia-rust cannot decode yet, so they are not ported.
+// `patch_image` and `patch_image_persp` use the mandrill_128.png image shader; the other GMs use
+// the gradient shader `make_shader()`.
 
 // The int/usize-to-scalar casts of the small counts and offsets mirror the C++ arithmetic.
 #![allow(clippy::cast_precision_loss)]
@@ -13,9 +12,12 @@
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::PointMode;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::image::Image;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::point::Point;
+use skia_rust_core::sampling_options::SamplingOptions;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_core::utils::patch_utils;
@@ -139,13 +141,32 @@ const G_TEX_COORDS: [Point; patch_utils::NUM_CORNERS] = [
 
 // `dopatch` for the no-image path (the GM passes `nullptr` for the image).
 // Port of: gm/patch.cpp#L98-L150 (chrome/m156), dopatch
-fn dopatch(canvas: &Canvas, colors: &[Color; patch_utils::NUM_CORNERS]) {
+fn dopatch(
+    canvas: &Canvas,
+    colors: &[Color; patch_utils::NUM_CORNERS],
+    img: Option<&Image>,
+    local_matrix: Option<&Matrix>,
+) {
     let mut paint = Paint::default();
     paint.set_color(Color::GREEN);
 
     let modes = [BlendMode::Src, BlendMode::Dst, BlendMode::ColorDodge];
 
-    let shader = make_shader();
+    let mut tex_storage = [Point::new(0.0, 0.0); patch_utils::NUM_CORNERS];
+    let mut tex = G_TEX_COORDS;
+    let shader = if let Some(img) = img {
+        let w = img.width() as f32;
+        let h = img.height() as f32;
+        let shader = img.to_shader(None, SamplingOptions::default(), local_matrix);
+        tex_storage[0] = Point::new(0.0, 0.0);
+        tex_storage[1] = Point::new(w, 0.0);
+        tex_storage[2] = Point::new(w, h);
+        tex_storage[3] = Point::new(0.0, h);
+        tex = tex_storage;
+        shader
+    } else {
+        make_shader()
+    };
 
     canvas.save();
     for (y, &mode) in modes.iter().enumerate() {
@@ -161,18 +182,12 @@ fn dopatch(canvas: &Canvas, colors: &[Color; patch_utils::NUM_CORNERS]) {
                 }
                 2 => {
                     paint.set_shader(shader.clone());
-                    canvas.draw_patch(
-                        &G_CUBICS,
-                        None::<&[Color; 4]>,
-                        Some(&G_TEX_COORDS),
-                        mode,
-                        &paint,
-                    );
+                    canvas.draw_patch(&G_CUBICS, None::<&[Color; 4]>, Some(&tex), mode, &paint);
                     paint.set_shader(None);
                 }
                 3 => {
                     paint.set_shader(shader.clone());
-                    canvas.draw_patch(&G_CUBICS, colors, Some(&G_TEX_COORDS), mode, &paint);
+                    canvas.draw_patch(&G_CUBICS, colors, Some(&tex), mode, &paint);
                     paint.set_shader(None);
                 }
                 _ => {}
@@ -188,7 +203,26 @@ fn dopatch(canvas: &Canvas, colors: &[Color; patch_utils::NUM_CORNERS]) {
 // Port of: gm/patch.cpp#L158-L162 (chrome/m156), DEF_SIMPLE_GM(patch_primitive)
 crate::def_simple_gm!(patch_primitive, canvas, 1500, 1100, {
     let colors = [Color::RED, Color::GREEN, Color::BLUE, Color::CYAN];
-    dopatch(canvas, &colors);
+    dopatch(canvas, &colors, None, None);
+});
+
+// Port of: gm/patch.cpp#L164-L168 (chrome/m156), DEF_SIMPLE_GM(patch_image)
+crate::def_simple_gm!(patch_image, canvas, 1500, 1100, {
+    let colors = [Color::RED, Color::GREEN, Color::BLUE, Color::CYAN];
+    let image = crate::tool_utils::get_resource_as_image("images/mandrill_128.png")
+        .expect("images/mandrill_128.png");
+    dopatch(canvas, &colors, Some(&image), None);
+});
+
+// Port of: gm/patch.cpp#L170-L178 (chrome/m156), DEF_SIMPLE_GM(patch_image_persp)
+crate::def_simple_gm!(patch_image_persp, canvas, 1500, 1100, {
+    let colors = [Color::RED, Color::GREEN, Color::BLUE, Color::CYAN];
+    // force perspective: localM[6] = 0.00001f
+    let mut local_m = Matrix::new_identity();
+    local_m.set_all(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.000_01, 0.0, 1.0);
+    let image = crate::tool_utils::get_resource_as_image("images/mandrill_128.png")
+        .expect("images/mandrill_128.png");
+    dopatch(canvas, &colors, Some(&image), Some(&local_m));
 });
 
 // Port of: gm/patch.cpp#L179-L185 (chrome/m156), DEF_SIMPLE_GM(patch_alpha)
@@ -199,5 +233,5 @@ crate::def_simple_gm!(patch_alpha, canvas, 1500, 1100, {
         Color::BLUE,
         Color::new(0x00FF_00FF),
     ];
-    dopatch(canvas, &colors);
+    dopatch(canvas, &colors, None, None);
 });

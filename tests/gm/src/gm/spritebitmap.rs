@@ -9,12 +9,14 @@
 #![allow(clippy::cast_precision_loss)]
 
 use crate::prelude::*;
+use crate::tool_utils::create_checkerboard_image;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::canvas::AutoCanvasRestore;
 use skia_rust_core::image_filter::ImageFilter;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_effects::image_filters::blur;
 use skia_rust_raster::raster_canvas::RasterCanvas;
@@ -103,8 +105,25 @@ impl GM for SpriteBitmapGm {
 
 // Port of: gm/spritebitmap.cpp#L71-L71 (chrome/m156), DEF_GM( return new SpriteBitmapGM; )
 
-crate::def_gm!(
-    #[ignore = "see notes/gm_spritebitmap_cpp_SpriteBitmapGM.md"]
-    SpriteBitmapGM,
-    SpriteBitmapGm
-);
+crate::def_gm!(SpriteBitmapGM, SpriteBitmapGm);
+// Port of: gm/spritebitmap.cpp#L73-L86 (chrome/m156), drawimagerect_filter
+crate::def_simple_gm_bg!(drawimagerect_filter, canvas, 180, 60, Color::WHITE, {
+    let image = create_checkerboard_image(50, 50, Color::WHITE, Color::BLACK, 1);
+    let sampling = SamplingOptions::from(FilterMode::Linear);
+    canvas.translate((5.0, 5.0));
+    canvas.draw_image_with_sampling_options(&image, (0.5, 0.5), sampling, None);
+    canvas.translate((60.0, 0.0));
+    canvas.draw_image_rect_with_sampling_options(
+        &image,
+        None,
+        Rect::new(0.5, 0.5, 50.5, 50.5),
+        sampling,
+        &Paint::default(),
+    );
+    // `auto shader = image->makeShader(sampling);` is never used.
+    canvas.translate((60.0, 0.0));
+    let mut paint = Paint::default();
+    let offset = Matrix::translate((0.5, 0.5));
+    paint.set_shader(image.to_shader(None, sampling, &offset));
+    canvas.draw_rect(Rect::new(0.0, 0.0, 50.0, 50.0), &paint);
+});

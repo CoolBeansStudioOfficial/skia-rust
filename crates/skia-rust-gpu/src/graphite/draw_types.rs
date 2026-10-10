@@ -199,6 +199,17 @@ pub enum BarrierType {
     ReadDstFromInput,
 }
 
+/// The uniform buffer slots a draw binds (`UniformSlot`).
+// Port of: src/gpu/graphite/DrawTypes.h#L134-L139 (chrome/m156)
+#[doc(alias = "skgpu::graphite::UniformSlot")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum UniformSlot {
+    /// `kCombinedUniforms`: slot for paints and render step uniforms.
+    CombinedUniforms,
+    /// `kStorage`: storage buffer slot.
+    Storage,
+}
+
 bitflags! {
     /// `RenderStateFlags`: which kind of vertex and instance data a pipeline state appends.
     // Port of: src/gpu/graphite/DrawTypes.h#L194-L201 (chrome/m156)
@@ -215,6 +226,28 @@ bitflags! {
         const APPEND_INSTANCES = 0b0100;
         /// `kAppendDynamicInstances`: appends instances with a flexible vertex count.
         const APPEND_DYNAMIC_INSTANCES = 0b1000;
+    }
+}
+
+bitflags! {
+    /// `DstUsage`: how a pipeline depends on the prior values of the dst pixels.
+    // Port of: src/gpu/graphite/DrawTypes.h#L178-L192 (chrome/m156)
+    #[doc(alias = "skgpu::graphite::DstUsage")]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub struct DstUsage: u8 {
+        /// `kNone`: prior values of dst pixels have no effect on the final written color for any
+        /// use of the pipeline.
+        const NONE = 0b0000;
+        /// `kDependsOnDst`: prior values of dst pixels can affect the final written color.
+        const DEPENDS_ON_DST = 0b0001;
+        /// `kDstReadRequired`: the prior values must be available in the fragment shader.
+        const DST_READ_REQUIRED = 0b0010;
+        /// `kAdvancedBlend`: the final color uses an advanced blend function, which may need
+        /// barriers for hardware.
+        const ADVANCED_BLEND = 0b0100;
+        /// `kDstOnlyUsedByRenderer`: the only reason for `DEPENDS_ON_DST` is analytic coverage
+        /// from the renderer.
+        const DST_ONLY_USED_BY_RENDERER = 0b1000;
     }
 }
 

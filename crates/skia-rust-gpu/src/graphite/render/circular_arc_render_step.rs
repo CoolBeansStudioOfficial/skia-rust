@@ -185,7 +185,7 @@ impl RenderStep for CircularArcRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/CircularArcRenderStep.cpp#L131-L142 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         "float4 devPosition = circular_arc_vertex_fn(\
          position, \
          centerScales, radiiAndFlags, geoClipPlane, fragClipPlane0, fragClipPlane1, \

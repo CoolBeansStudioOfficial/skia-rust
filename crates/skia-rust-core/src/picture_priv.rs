@@ -63,6 +63,11 @@ pub(crate) const VERSION_UNCLAMPED_MATRIX_COLOR_FILTER: u32 = 105;
 // Port of: src/core/SkPicturePriv.h#L174 (chrome/m156)
 pub(crate) const VERSION_COMBINE_COLOR_SHADERS: u32 = 107;
 
+/// The version where `SkWorkingColorSpaceShader` gained its alpha type and output space
+/// (`kWorkingColorSpaceOutput`).
+// Port of: src/core/SkPicturePriv.h#L145-L176 (chrome/m156)
+pub(crate) const VERSION_WORKING_COLOR_SPACE_OUTPUT: u32 = 109;
+
 /// Makes a picture from its parts (`MakePicture`). A `None` record makes a placeholder.
 // Port of: src/core/SkPicture.cpp#L355-L368 (chrome/m156)
 #[doc(alias = "MakePicture")]

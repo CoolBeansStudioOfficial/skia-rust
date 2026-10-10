@@ -10,7 +10,6 @@
 // - the path renderer strategy (`IsSupported`, the strategy choice in the constructor) needs
 //   `Caps` (`requestedPathRendererStrategy`, `avoidMSAA`, `minPathSizeForMSAA`), which is G10;
 // - `fCoverageMask` needs `CoverageMaskRenderStep` (needs `CoverageMaskShape`, G2);
-// - `fMesh` needs `MeshRenderStep`, whose payload is `SkMesh` (not ported);
 // - the bitmap and SDF text renderers, the blur renderers and the sparse-strip renderers need
 //   G7c and G17.
 
@@ -27,13 +26,14 @@ use crate::graphite::render::common_depth_stencil_settings::{
     WINDING_STENCIL_PASS,
 };
 use crate::graphite::render::cover_bounds_render_step::CoverBoundsRenderStep;
+use crate::graphite::render::mesh_render_step::MeshRenderStep;
 use crate::graphite::render::middle_out_fan_render_step::MiddleOutFanRenderStep;
 use crate::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
 use crate::graphite::render::tessellate_curves_render_step::TessellateCurvesRenderStep;
 use crate::graphite::render::tessellate_strokes_render_step::TessellateStrokesRenderStep;
 use crate::graphite::render::tessellate_wedges_render_step::TessellateWedgesRenderStep;
 use crate::graphite::render::vertices_render_step::VerticesRenderStep;
-use crate::graphite::render_step::{RenderStep, RenderStepID};
+use crate::graphite::render_step::{NUM_RENDER_STEPS, RenderStep, RenderStepID};
 use crate::graphite::renderer::Renderer;
 use crate::graphite::resource_types::Layout;
 
@@ -53,6 +53,8 @@ pub struct RendererProvider {
     non_aa_bounds_fill: Renderer,
     /// `fCircularArc`.
     circular_arc: Renderer,
+    /// `fMesh`.
+    mesh: Renderer,
     /// `fConvexTessellatedWedges`.
     convex_tessellated_wedges: Renderer,
     /// `fStencilTessellatedCurves[2 * inverse + evenOdd]`, indexed by `PathFillType`.
@@ -65,6 +67,8 @@ pub struct RendererProvider {
     cover_fill: Arc<dyn RenderStep>,
     /// The inverse cover step of the stencil-then-cover renderers (`coverInverse`).
     cover_inverse: Arc<dyn RenderStep>,
+    /// `fRenderSteps`: the steps of all the renderers, indexed by `RenderStepID`.
+    render_steps: [Option<Arc<dyn RenderStep>>; NUM_RENDER_STEPS],
 }
 
 impl RendererProvider {
@@ -116,6 +120,11 @@ impl RendererProvider {
             Arc::new(CircularArcRenderStep::new(layout, buffer_manager)),
             DrawTypeFlags::CIRCULAR_ARC,
         );
+        // Port of: src/gpu/graphite/RendererProvider.cpp#L202 (chrome/m156), `initFromStep(&fMesh)`
+        let mesh = single_step(
+            Arc::new(MeshRenderStep::new(layout)),
+            DrawTypeFlags::DRAW_MESH,
+        );
 
         // The tessellating path renderers that use stencil can share the cover steps.
         let cover_fill: Arc<dyn RenderStep> = Arc::new(CoverBoundsRenderStep::new(
@@ -159,19 +168,56 @@ impl RendererProvider {
             },
         ];
 
-        Self {
+        let mut provider = Self {
             analytic_rrect,
             vertices,
             per_edge_aa_quad,
             non_aa_bounds_fill,
             circular_arc,
+            mesh,
             convex_tessellated_wedges,
             stencil_tessellated_curves,
             stencil_tessellated_wedges,
             tessellated_strokes,
             cover_fill,
             cover_inverse,
+            render_steps: std::array::from_fn(|_| None),
+        };
+        provider.collect_render_steps();
+        provider
+    }
+
+    /// Fills `fRenderSteps`: every step of every renderer by its id (`assumeOwnership`).
+    fn collect_render_steps(&mut self) {
+        let all_renderers = [
+            &self.analytic_rrect,
+            &self.per_edge_aa_quad,
+            &self.non_aa_bounds_fill,
+            &self.circular_arc,
+            &self.mesh,
+            &self.convex_tessellated_wedges,
+        ]
+        .into_iter()
+        .chain(&self.vertices)
+        .chain(&self.stencil_tessellated_curves)
+        .chain(&self.stencil_tessellated_wedges)
+        .chain(&self.tessellated_strokes);
+        for step in all_renderers
+            .flat_map(|renderer| renderer.steps().iter())
+            .chain([&self.cover_fill, &self.cover_inverse])
+        {
+            // Renderers share some steps (the cover steps), which are the same object.
+            self.render_steps[step.render_step_id() as usize]
+                .get_or_insert_with(|| Arc::clone(step));
         }
+    }
+
+    /// `lookup(renderStepID)`: the step with the given id, or `None` for an invalid id and for the
+    /// steps that are not ported yet (Skia always has one).
+    // Port of: src/gpu/graphite/RendererProvider.h#L160-L162 (chrome/m156)
+    #[must_use]
+    pub fn lookup(&self, render_step_id: RenderStepID) -> Option<&Arc<dyn RenderStep>> {
+        self.render_steps[render_step_id as usize].as_ref()
     }
 
     /// `fAnalyticRRect`.
@@ -207,6 +253,13 @@ impl RendererProvider {
     #[must_use]
     pub const fn circular_arc(&self) -> &Renderer {
         &self.circular_arc
+    }
+
+    /// `mesh()`: the renderer of `SkMesh` draws.
+    // Port of: src/gpu/graphite/RendererProvider.h#L131-L133 (chrome/m156)
+    #[must_use]
+    pub const fn mesh(&self) -> &Renderer {
+        &self.mesh
     }
 
     /// `convexTessellatedWedges()`.

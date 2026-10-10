@@ -110,3 +110,66 @@ crate::def_simple_gm!(color4f, canvas, 1024, 260, {
         canvas.translate((0.0, 120.0));
     }
 });
+
+// Port of: gm/color4f.cpp#L97-L129 (chrome/m156)
+crate::def_simple_gm!(color4shader, canvas, 360, 480, {
+    canvas.translate((10.0, 10.0));
+    let srgb = ColorSpace::new_srgb();
+    let spin = srgb.with_color_spin(); // RGB -> GBR
+    let colors = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 1.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+        Color4f::new(0.5, 0.5, 0.5, 1.0),
+    ];
+    let mut paint = Paint::default();
+    let r = Rect::from_wh(100.0, 100.0);
+    for c4 in colors {
+        let shaders_list = [
+            shaders::color_in_space(c4, None),
+            shaders::color_in_space(c4, srgb.clone()),
+            shaders::color_in_space(c4, spin.clone()),
+        ];
+        canvas.save();
+        for s in shaders_list {
+            paint.set_shader(s);
+            canvas.draw_rect(r, &paint);
+            canvas.translate((r.width() * 6.0 / 5.0, 0.0));
+        }
+        canvas.restore();
+        canvas.translate((0.0, r.height() * 6.0 / 5.0));
+    }
+});
+
+// Port of: gm/color4f.cpp#L131-L166 (chrome/m156)
+crate::def_simple_gm!(color4blendcf, canvas, 360, 480, {
+    canvas.translate((10.0, 10.0));
+    let srgb = ColorSpace::new_srgb();
+    let spin = srgb.with_color_spin(); // RGB -> GBR
+    let colors = [
+        Color4f::new(1.0, 0.0, 0.0, 1.0),
+        Color4f::new(0.0, 1.0, 0.0, 1.0),
+        Color4f::new(0.0, 0.0, 1.0, 1.0),
+        Color4f::new(0.5, 0.5, 0.5, 1.0),
+    ];
+    let mut paint = Paint::default();
+    paint.set_color(Color::WHITE);
+    let r = Rect::from_wh(100.0, 100.0);
+    for c4 in colors {
+        // Use kModulate and a paint color of white so the final drawn color is color-space
+        // managed 'c4'.
+        let filters = [
+            color_filters::blend(c4, None, BlendMode::Modulate),
+            color_filters::blend(c4, Some(&srgb), BlendMode::Modulate),
+            color_filters::blend(c4, Some(&spin), BlendMode::Modulate),
+        ];
+        canvas.save();
+        for f in filters {
+            paint.set_color_filter(f);
+            canvas.draw_rect(r, &paint);
+            canvas.translate((r.width() * 6.0 / 5.0, 0.0));
+        }
+        canvas.restore();
+        canvas.translate((0.0, r.height() * 6.0 / 5.0));
+    }
+});

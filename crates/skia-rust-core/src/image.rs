@@ -12,8 +12,8 @@
 //!
 //! skia-rust: GPU and lazy images (textures, generators, pictures, encoded data), `SkRecorder`s
 //! and `GrDirectContext`s, caching hints (a hint only), asynchronous readback, `makeScaled`
-//! (it draws into a surface; `skia_rust_raster::images::make_scaled` provides it), `scalePixels`
-//! (likewise: `skia_rust_raster::images::scale_pixels`) and encoding are not ported.
+//! (it draws into a surface; `skia_rust_raster::images::make_scaled` provides it),
+//! and encoding are not ported. `scalePixels` is `skia_rust_raster::pixmap_draw::ImageScalePixels`.
 
 use core::fmt;
 use std::sync::Arc;

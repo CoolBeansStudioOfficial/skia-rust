@@ -31,25 +31,33 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::size::ISize;
 
-use crate::gpu::gpu_types::{BackendApi, Protected, StdSteadyClockTimePoint};
+use crate::gpu::gpu_types::{BackendApi, Budgeted, Mipmapped, Protected, StdSteadyClockTimePoint};
 use crate::gpu::ref_cnted_callback::{CallbackProc, RefCntedCallback};
 use crate::gpu::token::TokenTracker;
 use crate::graphite::backend_texture::BackendTexture;
 use crate::graphite::buffer_manager::{DrawBufferManager, DrawBufferManagerOptions};
 use crate::graphite::caps::Caps;
 use crate::graphite::context_priv::SharedResourceProvider;
+use crate::graphite::graphics_pipeline_desc::PipelineHandleFactory;
 use crate::graphite::graphite_types::InsertFinishInfo;
+use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
+use crate::graphite::pipeline_data::PipelineDataGatherer;
+use crate::graphite::proxy_cache::ProxyCache;
 use crate::graphite::recording::{LazyProxyData, Recording};
+use crate::graphite::renderer_provider::RendererProvider;
 use crate::graphite::resource_provider::ResourceProvider;
 use crate::graphite::runtime_effect_dictionary::RuntimeEffectDictionary;
 use crate::graphite::scratch_resource_manager::{ProxyReadCountMap, ScratchResourceManager};
+use crate::graphite::shader_code_dictionary::ShaderCodeDictionary;
 use crate::graphite::task::TaskRef;
 use crate::graphite::task::task_list::TaskList;
 use crate::graphite::task::upload_task::{UploadList, UploadTask};
 use crate::graphite::texture_info::TextureInfo;
 use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_utils::make_bitmap_proxy_view;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
 
 /// `kDefaultRecorderBudget`: 256 MiB.
@@ -104,9 +112,25 @@ pub trait RecorderSharedContext: Send + Sync + std::fmt::Debug {
     #[doc(alias = "isProtected")]
     fn is_protected(&self) -> Protected;
 
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    fn shader_code_dictionary(&self) -> &ShaderCodeDictionary;
+
     /// `makeResourceProvider()`: a resource provider with its own resource cache.
     #[doc(alias = "makeResourceProvider")]
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider;
+
+    /// `rendererProvider()`: the renderers draws are recorded with. They are shared by the
+    /// context and all its recorders (`SharedContext::rendererProvider()`).
+    #[doc(alias = "rendererProvider")]
+    fn renderer_provider(&self) -> &RendererProvider;
+
+    /// `pipelineManager()`: the pipeline manager draw passes create their pipelines with.
+    /// `None` until `PipelineManager` is ported (G9b); draw passes then cannot create pipelines.
+    #[doc(alias = "pipelineManager")]
+    fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
+        None
+    }
 }
 
 /// What the recorder calls on the devices that draw through it (`Device`, ported with G10a,
@@ -131,6 +155,24 @@ pub trait TrackedDevice {
     /// `resetStorageCache()`.
     #[doc(alias = "resetStorageCache")]
     fn reset_storage_cache(&mut self);
+
+    /// The device's ID (`DeviceLink`, `docs/design/gpu.md` §5.6); 0 for a device that images
+    /// cannot link to.
+    fn device_id(&self) -> u32 {
+        0
+    }
+
+    /// The Graphite device behind this tracked device, for the image links that flush it
+    /// (`Image_Base::notifyInUse` holds `sk_sp<Device>`).
+    fn as_device_core(&mut self) -> Option<&mut crate::graphite::device::DeviceCore> {
+        None
+    }
+
+    /// Whether `other` is this device's own cell (the device that is mutably borrowed while it
+    /// records a draw cannot be borrowed again).
+    fn is_cell(&self, _other: &Rc<RefCell<dyn TrackedDevice>>) -> bool {
+        false
+    }
 }
 
 /// A device the recorder tracks. The recorder holds it weakly: the surface's canvas owns the
@@ -150,6 +192,22 @@ fn next_id() -> u32 {
 
 /// `SK_InvalidGenID`.
 const SK_INVALID_GEN_ID: u32 = 0;
+
+/// `Recorder::kMaxKeyAndDataBuilders`.
+// Port of: include/gpu/graphite/Recorder.h#L252 (chrome/m156)
+const MAX_KEY_AND_DATA_BUILDERS: usize = 2;
+
+/// The scratch state a draw collects its paint key and data in (`KeyAndDataBuilder`, a
+/// `std::pair<PipelineDataGatherer, PaintParamsKeyBuilder>`). Both are in `RefCell`s because the
+/// `KeyContext` that walks a paint holds them by shared reference, as it holds pointers in C++.
+// Port of: include/gpu/graphite/Recorder.h (KeyAndDataBuilder) (chrome/m156)
+#[derive(Debug)]
+pub struct KeyAndDataBuilder {
+    /// `first`.
+    pub gatherer: RefCell<PipelineDataGatherer>,
+    /// `second`.
+    pub builder: RefCell<PaintParamsKeyBuilder>,
+}
 
 /// The recorder's state; devices hold a `Weak` to it.
 #[doc(alias = "skgpu::graphite::Recorder")]
@@ -181,6 +239,8 @@ pub struct RecorderInner {
     target_proxy_data: RefCell<Option<LazyProxyData>>,
 
     is_flushing_tracked_devices: Cell<bool>,
+
+    key_and_data_builders: RefCell<Vec<KeyAndDataBuilder>>,
 }
 
 impl std::fmt::Debug for RecorderInner {
@@ -220,7 +280,8 @@ impl Recorder {
             .require_ordered_recordings
             .unwrap_or_else(|| caps.require_ordered_recordings());
 
-        // fClientImageProvider (G10d) is not ported.
+        // fClientImageProvider is not ported: a client's ImageProvider is not an option of the
+        // Copy-only RecorderOptions. Graphite uses the DefaultImageProvider (image_provider).
         let resource_provider = match context_resource_provider {
             Some(resource_provider) => resource_provider,
             None => Arc::new(std::sync::Mutex::new(
@@ -262,6 +323,7 @@ impl Recorder {
                 finished_procs: RefCell::new(Vec::new()),
                 target_proxy_data: RefCell::new(None),
                 is_flushing_tracked_devices: Cell::new(false),
+                key_and_data_builders: RefCell::new(Vec::new()),
             }),
         }
     }
@@ -270,6 +332,13 @@ impl Recorder {
     #[must_use]
     pub fn downgrade(&self) -> Weak<RecorderInner> {
         Rc::downgrade(&self.inner)
+    }
+
+    /// A handle on the recorder a device upgraded its `Weak<RecorderInner>` to. Dropping the
+    /// handle only drops that reference: it does not end the recorder.
+    #[must_use]
+    pub fn from_inner(inner: Rc<RecorderInner>) -> Self {
+        Self { inner }
     }
 
     /// `priv()`.
@@ -390,7 +459,15 @@ impl Recorder {
         }
 
         // The atlas provider would invalidate its atlases if recordings need not be ordered
-        // (G12a), and the KeyAndDataBuilders would shrink their capacity (G5a).
+        // (G12a).
+
+        // For each KeyAndDataBuilder owned by the Recorder, check if the high watermark of data
+        // usage over the lifetime snap is less than half of allocated capacity. If so, shrink the
+        // capacity.
+        for key_db in inner.key_and_data_builders.borrow().iter() {
+            key_db.gatherer.borrow_mut().try_shrink_capacity();
+            key_db.builder.borrow_mut().try_shrink_capacity();
+        }
 
         result
     }
@@ -621,7 +698,12 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // flushed.
             if let Some(device) = recorder.tracked_device(index) {
-                device.borrow_mut().flush_pending_work();
+                // A device that is borrowed is the one that triggered this flush from inside its
+                // own operation (e.g. `Device::flushPendingWork()` flushing its dependencies).
+                // It flushes itself.
+                if let Ok(mut device) = device.try_borrow_mut() {
+                    device.flush_pending_work();
+                }
             }
             index += 1;
         }
@@ -640,7 +722,7 @@ impl RecorderPriv<'_> {
             // has abandoned its recorder leaves the list.
             let remove = device
                 .as_ref()
-                .is_none_or(|device| !device.borrow().has_recorder());
+                .is_none_or(|device| device.try_borrow().is_ok_and(|d| !d.has_recorder()));
             if remove {
                 if let Some(device) = &device {
                     device.borrow_mut().abandon_recorder(); // Keep ~Device() happy
@@ -659,6 +741,19 @@ impl RecorderPriv<'_> {
     /// `dependency`.
     // Port of: src/gpu/graphite/Recorder.cpp#L639-L660 (chrome/m156)
     pub fn flush_tracked_devices_with_dependency(&self, dependency: &Arc<TextureProxy>) {
+        self.flush_tracked_devices_with_dependency_and_current(dependency, None);
+    }
+
+    /// `flushTrackedDevices(dependency)` called while `current` records a draw (an image linked
+    /// to another device was drawn into it, `Image_Base::notifyInUse`). `current` is mutably
+    /// borrowed for the draw, so when it has pending reads of `dependency` it is flushed through
+    /// this reference, where C++ reaches it through the tracked list.
+    // Port of: src/gpu/graphite/Recorder.cpp#L639-L660 (chrome/m156)
+    pub fn flush_tracked_devices_with_dependency_and_current(
+        &self,
+        dependency: &Arc<TextureProxy>,
+        mut current: Option<&mut dyn TrackedDevice>,
+    ) {
         // This version of flushTrackedDevices() must be re-entrant because it is entirely
         // possible for client-owned surfaces to read and write to each other, where this will be
         // called with different textures for `dependency`. The recursion stops once the
@@ -671,10 +766,22 @@ impl RecorderPriv<'_> {
             // cleaned up along with any immutable or uniquely held Devices once everything is
             // snapped.
             if let Some(device) = self.recorder.tracked_device(index) {
-                let has_pending_reads = device.borrow().has_pending_reads(dependency);
-                if has_pending_reads {
-                    device.borrow_mut().flush_pending_work();
+                if let Ok(borrowed) = device.try_borrow() {
+                    let has_pending_reads = borrowed.has_pending_reads(dependency);
+                    drop(borrowed);
+                    if has_pending_reads {
+                        device.borrow_mut().flush_pending_work();
+                    }
+                } else if let Some(current) = current.as_deref_mut()
+                    && current.is_cell(&device)
+                {
+                    // The device recording a draw that reads `dependency`'s image.
+                    if current.has_pending_reads(dependency) {
+                        current.flush_pending_work();
+                    }
                 }
+                // Any other borrowed device is the one that triggered this flush from inside its
+                // own operation: it does not read its own target.
             }
             index += 1;
         }
@@ -696,11 +803,78 @@ impl RecorderPriv<'_> {
         &self.recorder.caps
     }
 
+    /// `registerDevice(device)`.
+    #[doc(alias = "registerDevice")]
+    pub fn register_device(&self, device: TrackedDeviceRef) {
+        self.recorder.register_device(device);
+    }
+
+    /// `deregisterDevice(device)`.
+    #[doc(alias = "deregisterDevice")]
+    pub fn deregister_device(&self, device: &TrackedDeviceRef) {
+        self.recorder.deregister_device(device);
+    }
+
+    /// `popOrCreateKeyAndDataBuilder()`.
+    // Port of: src/gpu/graphite/Recorder.cpp#L700-L715 (chrome/m156)
+    #[doc(alias = "popOrCreateKeyAndDataBuilder")]
+    #[must_use]
+    pub fn pop_or_create_key_and_data_builder(&self) -> KeyAndDataBuilder {
+        if let Some(key_db) = self.recorder.key_and_data_builders.borrow_mut().pop() {
+            return key_db;
+        }
+
+        let use_storage_buffers = self.caps().storage_buffer_support();
+        let binding_req = self.caps().resource_binding_requirements();
+        let gatherer_layout = if use_storage_buffers {
+            binding_req.storage_buffer_layout
+        } else {
+            binding_req.uniform_buffer_layout
+        };
+
+        KeyAndDataBuilder {
+            gatherer: RefCell::new(PipelineDataGatherer::new(gatherer_layout)),
+            builder: RefCell::new(PaintParamsKeyBuilder::new(self.shader_code_dictionary())),
+        }
+    }
+
+    /// `pushKeyAndDataBuilder(keyDB)`.
+    // Port of: src/gpu/graphite/Recorder.cpp#L717-L725 (chrome/m156)
+    #[doc(alias = "pushKeyAndDataBuilder")]
+    pub fn push_key_and_data_builder(&self, key_db: KeyAndDataBuilder) {
+        let mut builders = self.recorder.key_and_data_builders.borrow_mut();
+        if builders.len() < MAX_KEY_AND_DATA_BUILDERS {
+            builders.push(key_db);
+        }
+        // If no empty slot was found, the "keyDB" goes out of scope here.
+    }
+
+    /// `rendererProvider()`.
+    #[doc(alias = "rendererProvider")]
+    #[must_use]
+    pub fn renderer_provider(&self) -> &RendererProvider {
+        self.recorder.shared_context.renderer_provider()
+    }
+
+    /// `sharedContext()->pipelineManager()`.
+    #[doc(alias = "pipelineManager")]
+    #[must_use]
+    pub fn pipeline_manager(&self) -> Option<Arc<dyn PipelineHandleFactory>> {
+        self.recorder.shared_context.pipeline_manager()
+    }
+
     /// `resourceProvider()`.
     #[doc(alias = "resourceProvider")]
     #[must_use]
     pub fn resource_provider(&self) -> &SharedResourceProvider {
         &self.recorder.resource_provider
+    }
+
+    /// `shaderCodeDictionary()`.
+    #[doc(alias = "shaderCodeDictionary")]
+    #[must_use]
+    pub fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
+        self.recorder.shared_context.shader_code_dictionary()
     }
 
     /// `runtimeEffectDictionary()`.
@@ -715,6 +889,65 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn is_protected(&self) -> Protected {
         self.recorder.shared_context.is_protected()
+    }
+
+    /// `RecorderPriv::CreateCachedProxy(recorder, bitmap, label)`: the texture of `bitmap`, cached
+    /// in the recorder's proxy cache by the bitmap's pixel identity. `None` without a recorder
+    /// (the pre-compile path), or if the texture cannot be created.
+    ///
+    /// The cache entry is invalidated when the bitmap's pixel ref is destroyed or changes, as long
+    /// as the bitmap is shared (otherwise nothing else can change its pixels).
+    // Port of: src/gpu/graphite/Recorder.cpp#L727-L736 (chrome/m156), with the bitmap generator of
+    // src/gpu/graphite/ProxyCache.cpp#L97-L140 (chrome/m156)
+    #[doc(alias = "CreateCachedProxy")]
+    pub fn create_cached_proxy(
+        recorder: Option<&Recorder>,
+        bitmap: &Bitmap,
+        label: &str,
+    ) -> Option<Arc<TextureProxy>> {
+        debug_assert!(!bitmap.is_null());
+        let recorder = recorder?;
+        let priv_ = recorder.priv_();
+
+        let key = ProxyCache::bitmap_key(bitmap);
+        let shared = Arc::clone(priv_.resource_provider());
+        // The provider's lock is held only while the cache is consulted: creating and uploading
+        // the proxy lock it again.
+        {
+            let mut provider = shared
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(cached) = provider.proxy_cache()?.find_cache_entry(&key) {
+                return Some(cached);
+            }
+        }
+
+        // Cache miss: create the proxy and upload the bitmap into it.
+        let proxy =
+            make_bitmap_proxy_view(recorder, bitmap, None, Mipmapped::No, Budgeted::Yes, label)?
+                .ref_proxy()?;
+
+        // The bitmap may be held by more than just this call, so add a listener that removes the
+        // entry when the pixels go away.
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let listener = if bitmap.pixel_ref().is_some() && !bitmap.pixel_ref_is_unique() {
+            let listener = provider
+                .proxy_cache()?
+                .make_unique_key_invalidation_listener(&key);
+            if let Some(pixel_ref) = bitmap.pixel_ref() {
+                pixel_ref.add_gen_id_change_listener(Some(Arc::clone(&listener)));
+            }
+            Some(listener)
+        } else {
+            None
+        };
+
+        provider
+            .proxy_cache()?
+            .insert_cache_entry(&key, Arc::clone(&proxy), listener);
+        Some(proxy)
     }
 
     /// `rootUploadList()`.
@@ -760,6 +993,22 @@ impl RecorderPriv<'_> {
     #[must_use]
     pub fn unique_id(&self) -> u32 {
         self.recorder.unique_id
+    }
+
+    /// The tracked device whose [`TrackedDevice::device_id`] is `device_id`, if it is still
+    /// tracked and alive (the `sk_sp<Device>` an image link holds in C++).
+    #[must_use]
+    pub fn find_tracked_device(&self, device_id: u32) -> Option<Rc<RefCell<dyn TrackedDevice>>> {
+        if device_id == 0 {
+            return None;
+        }
+        (0..self.recorder.tracked_device_count())
+            .filter_map(|index| self.recorder.tracked_device(index))
+            .find(|device| {
+                device
+                    .try_borrow()
+                    .is_ok_and(|device| device.device_id() == device_id)
+            })
     }
 
     /// `nextRecordingID()` (`SK_DEBUG`).

@@ -1,9 +1,8 @@
 // Copyright 2016 Google Inc.
 // Copyright 2026 The skia-rust Authors.
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: src/encode (chrome/m156), the encoders the crate ships: PNG, JPEG and WebP (the
-// lossless WebP encoder; lossy WebP and the ICC and animated paths are not ported, see
-// `webp_encoder`).
+// Port of: src/encode (chrome/m156), the encoders the crate ships: PNG, JPEG and WebP (lossless
+// and lossy, with the ICC and animated paths; see `webp_encoder`).
 
 pub mod icc;
 pub mod image_encoder_fns;

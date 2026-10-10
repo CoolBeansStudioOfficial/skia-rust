@@ -67,6 +67,53 @@ pub fn default_portable_font() -> Font {
     Font::from_size(default_portable_typeface(), DEFAULT_TEXT_SIZE)
 }
 
+/// `ToolUtils::CreateStringBitmap`: a `w` by `h` premultiplied N32 bitmap with `text` drawn in
+/// `color` at `(x, y)` in the default portable typeface at `text_size`. The background is
+/// transparent.
+///
+/// # Panics
+/// If the bitmap's canvas cannot be made.
+// Port of: tools/fonts/FontToolUtils.cpp#L239-L263 (chrome/m156)
+#[must_use]
+#[allow(clippy::cast_precision_loss)] // mirrors SkIntToScalar: the coordinates are small integers
+pub fn create_string_bitmap(
+    w: i32,
+    h: i32,
+    color: skia_rust_core::color::Color,
+    x: i32,
+    y: i32,
+    text_size: i32,
+    text: &str,
+) -> skia_rust_core::bitmap::Bitmap {
+    use skia_rust_core::bitmap::Bitmap;
+    use skia_rust_core::canvas::Canvas;
+    use skia_rust_core::color::Color;
+    use skia_rust_core::font::Font;
+    use skia_rust_core::paint::Paint;
+    use skia_rust_core::point::Point;
+    use skia_rust_raster::raster_canvas::RasterCanvas;
+
+    // `bitmap.allocN32Pixels(w, h)` and the final `setInfo(MakeS32(w, h, kPremul))` describe the
+    // same pixels, so the bitmap is returned as it was drawn.
+    let mut bitmap = Bitmap::new();
+    bitmap.alloc_n32_pixels((w, h), false);
+    {
+        let canvas = Canvas::from_bitmap(&mut bitmap, None).expect("a canvas for the bitmap");
+        canvas.clear(Color::new(0x0000_0000));
+        let mut paint = Paint::default();
+        paint.set_color(color);
+        let font = Font::from_size(default_portable_typeface(), text_size as f32);
+        canvas.draw_simple_text(
+            text.as_bytes(),
+            TextEncoding::UTF8,
+            Point::new(x as f32, y as f32),
+            &font,
+            &paint,
+        );
+    }
+    bitmap
+}
+
 /// The font configurations a unit test can run under (docs/design/text.md §8). GMs always run
 /// under [`FontConfig::Portable`], the GM oracle's configuration.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

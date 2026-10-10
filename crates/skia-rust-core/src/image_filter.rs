@@ -21,12 +21,14 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::color_filter::ColorFilter;
+use crate::image::Image;
 use crate::image_filter_result::FilterResult;
-use crate::image_filter_types::{Context, Mapping, MatrixCapability, round_out};
+use crate::image_filter_types::{Backend, Context, Mapping, MatrixCapability, Stats, round_out};
+use crate::local_matrix_image_filter::make_local_matrix_image_filter;
 use crate::m44::M44;
 use crate::matrix::Matrix;
-use crate::point::Point;
-use crate::rect::{IRect, Rect, rect_priv};
+use crate::point::{IPoint, Point};
+use crate::rect::{Contains, IRect, Rect, rect_priv};
 
 /// `SkImageFilter_Base::Direction`'s `SkImageFilter::MapDirection`.
 // Port of: include/core/SkImageFilter.h#L120-L125 (chrome/m156)
@@ -367,6 +369,58 @@ impl ImageFilter {
     #[must_use]
     pub fn ptr_eq(&self, other: &ImageFilter) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
+    }
+
+    /// `SkImageFilter::makeWithLocalMatrix(matrix)`: this filter, applied with `matrix` as a local
+    /// matrix. `None` if the matrix cannot be inverted.
+    // Port of: src/core/SkImageFilter.cpp#L130-L132 (chrome/m156)
+    #[doc(alias = "makeWithLocalMatrix")]
+    #[must_use]
+    pub fn with_local_matrix(&self, matrix: &Matrix) -> Option<ImageFilter> {
+        make_local_matrix_image_filter(matrix, Some(self.clone()))
+    }
+
+    /// `SkImageFilter_Base::makeImageWithFilter`: filters `src` (its `subset`) with this filter,
+    /// with `backend` doing the work, and returns the result, the subset of it that was produced,
+    /// and its offset within `clip_bounds`. `None` if the filter produces nothing.
+    ///
+    /// Reached through `SkImages::MakeWithFilter` (see `skia_rust_raster::image_filter_backend`).
+    // Port of: src/core/SkImageFilter.cpp#L265-L300 (chrome/m156)
+    #[doc(alias = "makeImageWithFilter")]
+    #[must_use]
+    pub fn make_image_with_filter(
+        &self,
+        backend: Arc<dyn Backend>,
+        src: &Image,
+        subset: IRect,
+        clip_bounds: IRect,
+    ) -> Option<(Image, IRect, IPoint)> {
+        if !src.bounds().contains(subset) {
+            return None;
+        }
+
+        let src_special_image = backend.make_image(&subset, src).map(Arc::new)?;
+
+        let stats = Stats::default();
+        let context = Context::new(
+            backend,
+            Mapping::from_layer_matrix(&M44::new_identity()),
+            clip_bounds,
+            FilterResult::new(
+                Some(src_special_image),
+                IPoint::new(subset.left, subset.top),
+            ),
+            src.image_info().color_space(),
+            Some(&stats),
+        );
+
+        let result = self.as_base().filter_image(&context);
+        let (special, offset) = result.image_and_offset(&context);
+        let special = special?;
+
+        let subset = special.subset();
+        let image = special.as_image()?;
+        Some((image, subset, offset))
     }
 
     /// `countInputs`.

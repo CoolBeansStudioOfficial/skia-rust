@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/tilemodes.cpp (chrome/m156)
 //
-// Only `TilingGM(true)`, `TilingGM(false)` and `Tiling2GM(make_bm, "tilemode_bitmap")` are ported
-// here. `tilemode_decal` decodes mandrill_128.png, which skia-rust cannot decode yet.
+// Ported here: `TilingGM(true)`, `TilingGM(false)`, `Tiling2GM(make_bm, "tilemode_bitmap")` and
+// `tilemode_decal`.
 
 // The int-to-scalar casts of small sizes mirror the C++ arithmetic of the GM.
 #![allow(clippy::cast_precision_loss)]
@@ -22,7 +22,7 @@ use skia_rust_core::images;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
-use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
+use skia_rust_core::sampling_options::{CubicResampler, FilterMode, SamplingOptions};
 use skia_rust_core::scalar::scalar;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::tile_mode::TileMode;
@@ -290,3 +290,105 @@ crate::def_gm!(
 crate::def_gm!(TilingGM_true = "TilingGM(true)", TilingGm::new(true));
 // Port of: gm/tilemodes.cpp#L274-L274 (chrome/m156), DEF_GM( return new TilingGM(false); )
 crate::def_gm!(TilingGM_false = "TilingGM(false)", TilingGm::new(false));
+
+// Port of: gm/tilemodes.cpp#L280-L322 (chrome/m156), DEF_SIMPLE_GM tilemode_decal
+crate::def_simple_gm!(tilemode_decal, canvas, 720, 1100, {
+    let img = crate::tool_utils::get_resource_as_image("images/mandrill_128.png")
+        .expect("images/mandrill_128.png");
+    let mut bgpaint = Paint::default();
+    bgpaint.set_color(Color::YELLOW);
+
+    let r = Rect::from_ltrb(
+        -20.0,
+        -20.0,
+        img.width() as f32 + 20.0,
+        img.height() as f32 + 20.0,
+    );
+    canvas.translate((45.0, 45.0));
+
+    let pairs = [
+        (TileMode::Clamp, TileMode::Clamp),
+        (TileMode::Clamp, TileMode::Decal),
+        (TileMode::Decal, TileMode::Clamp),
+        (TileMode::Decal, TileMode::Decal),
+    ];
+    for (tx, ty) in pairs {
+        let mut paint = Paint::default();
+        canvas.save();
+        for proc_index in 0..5 {
+            canvas.save();
+            // Apply a slight rotation to highlight the differences between filtered and unfiltered
+            // decal edges
+            canvas.rotate(4.0, None);
+            canvas.draw_rect(r, &bgpaint);
+            tilemode_decal_shader(proc_index, &mut paint, &img, tx, ty);
+            canvas.draw_rect(r, &paint);
+            canvas.restore();
+            canvas.translate((0.0, r.height() + 20.0));
+        }
+        canvas.restore();
+        canvas.translate((r.width() + 10.0, 0.0));
+    }
+});
+
+// The five `shader_procs` lambdas of `tilemode_decal`, selected by index.
+// Port of: gm/tilemodes.cpp#L288-L311 (chrome/m156), shader_procs
+fn tilemode_decal_shader(
+    proc_index: usize,
+    paint: &mut Paint,
+    img: &skia_rust_core::image::Image,
+    tx: TileMode,
+    ty: TileMode,
+) {
+    let w = img.width() as f32;
+    let h = img.height() as f32;
+    let grad_colors = [colors::RED, colors::BLUE];
+    match proc_index {
+        // Test no filtering with decal mode
+        0 => {
+            paint.set_shader(img.to_shader(
+                (tx, ty),
+                SamplingOptions::from(FilterMode::Nearest),
+                None,
+            ));
+        }
+        // Test bilerp approximation for decal mode (or clamp to border HW)
+        1 => {
+            paint.set_shader(img.to_shader(
+                (tx, ty),
+                SamplingOptions::from(FilterMode::Linear),
+                None,
+            ));
+        }
+        // Test bicubic filter with decal mode
+        2 => {
+            paint.set_shader(img.to_shader(
+                (tx, ty),
+                SamplingOptions::from(CubicResampler::mitchell()),
+                None,
+            ));
+        }
+        3 => {
+            let grad = Gradient::new(
+                Colors::new(&grad_colors, None, tx, None),
+                Interpolation::default(),
+            );
+            paint.set_shader(shaders::linear_gradient(
+                (Point::new(0.0, 0.0), Point::new(w * 1.0, h * 1.0)),
+                &grad,
+                None,
+            ));
+        }
+        _ => {
+            let grad = Gradient::new(
+                Colors::new(&grad_colors, None, tx, None),
+                Interpolation::default(),
+            );
+            paint.set_shader(shaders::radial_gradient(
+                (Point::new(w * 0.5, w * 0.5), w * 0.5),
+                &grad,
+                None,
+            ));
+        }
+    }
+}

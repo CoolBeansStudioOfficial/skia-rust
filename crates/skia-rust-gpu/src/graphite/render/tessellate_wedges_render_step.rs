@@ -186,7 +186,7 @@ impl RenderStep for TessellateWedgesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/TessellateWedgesRenderStep.cpp#L122-L140 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         let curve_type = if self.infinity_support {
             "curve_type_using_inf_support(p23)"
         } else {
@@ -286,8 +286,14 @@ impl RenderStep for TessellateWedgesRenderStep {
         params: &DrawParams,
         gatherer: &mut PipelineDataGatherer,
     ) {
-        gatherer
-            .uniform_manager()
-            .write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
+        let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
+        uniforms.write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }

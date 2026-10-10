@@ -120,7 +120,7 @@ impl RenderStep for VerticesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/VerticesRenderStep.cpp#L117-L144 (chrome/m156)
-    fn vertex_sksl(&self) -> String {
+    fn vertex_sksl(&self, _roots: &crate::graphite::paint_params_key::RootNodesInfo) -> String {
         match (self.has_color, self.has_tex_coords) {
             (true, true) => concat!(
                 "color = half4(vertColor.bgr * vertColor.a, vertColor.a);\n",
@@ -149,7 +149,10 @@ impl RenderStep for VerticesRenderStep {
     }
 
     // Port of: src/gpu/graphite/render/VerticesRenderStep.cpp#L146-L151 (chrome/m156)
-    fn fragment_color_sksl(&self) -> String {
+    fn fragment_color_sksl(
+        &self,
+        _roots: &crate::graphite::paint_params_key::RootNodesInfo,
+    ) -> String {
         if self.has_color {
             "primitiveColor = color;\n".to_owned()
         } else {
@@ -204,8 +207,15 @@ impl RenderStep for VerticesRenderStep {
     ) {
         // Vertices are transformed on the GPU. The depth is a uniform, so the same depth is not
         // copied for each vertex.
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
         let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
         uniforms.write_m44(params.transform().matrix());
         uniforms.write_f32(params.order().depth_as_float());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }

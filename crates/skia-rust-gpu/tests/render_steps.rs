@@ -36,11 +36,12 @@ use skia_rust_gpu::graphite::draw_types::{
 use skia_rust_gpu::graphite::draw_writer::{DrawPassCommandList, DrawWriter, Vertices};
 use skia_rust_gpu::graphite::geom::edge_aa_quad::{EdgeAAQuad, Flags as AAFlags};
 use skia_rust_gpu::graphite::geom::geometry::Geometry;
-use skia_rust_gpu::graphite::geom::non_msaa_clip::AnalyticClip;
+use skia_rust_gpu::graphite::geom::non_msaa_clip::NonMSAAClip;
 use skia_rust_gpu::graphite::geom::rect::Rect;
 use skia_rust_gpu::graphite::geom::shape::Shape;
 use skia_rust_gpu::graphite::geom::transform::Transform;
 use skia_rust_gpu::graphite::graphite_types::DepthStencilFlags;
+use skia_rust_gpu::graphite::paint_params_key::RootNodesInfo;
 use skia_rust_gpu::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use skia_rust_gpu::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use skia_rust_gpu::graphite::render::common_depth_stencil_settings::{
@@ -216,7 +217,7 @@ fn params_for(geometry: Geometry, bounds: SkRect, scissor: IRect) -> DrawParams 
         Rect::from_sk_rect(&bounds),
         Rect::from_sk_rect(&bounds),
         scissor,
-        AnalyticClip::default(),
+        NonMSAAClip::default(),
         false,
     );
     // Painter's depth 1: `depthAsFloat()` is then `1 - 1/65535`.
@@ -551,7 +552,7 @@ fn render_step_sksl_text_is_byte_identical() {
         REGULAR_COVER_PASS,
     );
     assert_eq!(
-        cover.vertex_sksl(),
+        cover.vertex_sksl(&RootNodesInfo::default()),
         concat!(
             "float4 devPosition = cover_bounds_vertex_fn(",
             "float2(sk_VertexID / 2, sk_VertexID % 2), ",
@@ -562,7 +563,7 @@ fn render_step_sksl_text_is_byte_identical() {
 
     let quad = PerEdgeAAQuadRenderStep::new(Layout::Std140, &mut manager);
     assert_eq!(
-        quad.vertex_sksl(),
+        quad.vertex_sksl(&RootNodesInfo::default()),
         concat!(
             "float4 devPosition = per_edge_aa_quad_vertex_fn(",
             "cornerID, normal, ",
@@ -579,7 +580,7 @@ fn render_step_sksl_text_is_byte_identical() {
 
     let arc = CircularArcRenderStep::new(Layout::Std140, &mut manager);
     assert_eq!(
-        arc.vertex_sksl(),
+        arc.vertex_sksl(&RootNodesInfo::default()),
         concat!(
             "float4 devPosition = circular_arc_vertex_fn(",
             "position, ",
@@ -661,7 +662,7 @@ fn stroked_params(geometry: Geometry, bounds: SkRect, stroke: StrokeStyle) -> Dr
             right: 100,
             bottom: 100,
         },
-        AnalyticClip::default(),
+        NonMSAAClip::default(),
         false,
     );
     DrawParams::new(
@@ -1059,7 +1060,7 @@ fn analytic_rrect_sksl_text_is_byte_identical() {
     let mut manager = static_manager();
     let step = AnalyticRRectRenderStep::new(Layout::Std140, &mut manager);
     assert_eq!(
-        step.vertex_sksl(),
+        step.vertex_sksl(&RootNodesInfo::default()),
         concat!(
             "float4 devPosition = analytic_rrect_vertex_fn(",
             "cornerID, position, normal, normalScale, centerWeight, ",
@@ -1115,7 +1116,7 @@ fn tessellate_sksl_text_is_byte_identical() {
             "stepLocalCoords = localCoord;\n",
         ]
         .concat();
-        assert_eq!(curves.vertex_sksl(), expected);
+        assert_eq!(curves.vertex_sksl(&RootNodesInfo::default()), expected);
     }
 
     // TessellateWedgesRenderStep.cpp#L122-L140: the `%s` is the curve type.
@@ -1144,7 +1145,7 @@ fn tessellate_sksl_text_is_byte_identical() {
             "stepLocalCoords = localCoord;\n",
         ]
         .concat();
-        assert_eq!(wedges.vertex_sksl(), expected);
+        assert_eq!(wedges.vertex_sksl(&RootNodesInfo::default()), expected);
     }
 
     // TessellateStrokesRenderStep.cpp#L113-L124: the `%s` is the curve type, for fill and inverse.
@@ -1166,14 +1167,14 @@ fn tessellate_sksl_text_is_byte_identical() {
                 "stepLocalCoords = devAndLocalCoords.zw;\n",
             ]
             .concat();
-            assert_eq!(strokes.vertex_sksl(), expected);
+            assert_eq!(strokes.vertex_sksl(&RootNodesInfo::default()), expected);
         }
     }
 
     // MiddleOutFanRenderStep.cpp#L47-L52.
     let fan = MiddleOutFanRenderStep::new(Layout::Std140, true);
     assert_eq!(
-        fan.vertex_sksl(),
+        fan.vertex_sksl(&RootNodesInfo::default()),
         concat!(
             "float4 devPosition = localToDevice * float4(position, 0.0, 1.0);\n",
             "devPosition.z = depth;\n",
