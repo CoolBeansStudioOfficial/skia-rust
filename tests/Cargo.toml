@@ -20,6 +20,7 @@ skia-rust-skottie.workspace = true
 skia-rust-sksg.workspace = true
 skia-rust-resources.workspace = true
 skia-rust-codec.workspace = true
+skia-rust-libpng.workspace = true
 skia-rust-libwebp.workspace = true
 skia-rust-sksl = { workspace = true, features = ["wgsl"] }
 skia-rust-tools.workspace = true
