@@ -440,6 +440,8 @@ pub const I4LD4: usize = I4DC4 + 24;
 pub const I4VL4: usize = I4DC4 + 28;
 pub const I4HD4: usize = 3 * 16 * BPS + 4 * BPS;
 pub const I4HU4: usize = I4HD4 + 4;
+/// Port of `I4TMP`: the scratch block of the intra 4x4 search.
+pub const I4TMP: usize = I4HD4 + 8;
 
 /// Port of `VP8I16ModeOffsets` (`quant_enc.c`): the Intra16 modes DC, TM, VE, HE.
 pub const I16_MODE_OFFSETS: [usize; 4] = [I16DC16, I16TM16, I16VE16, I16HE16];
