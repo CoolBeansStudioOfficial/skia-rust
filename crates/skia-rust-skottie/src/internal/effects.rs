@@ -4,12 +4,11 @@
 // Ported from Skia: modules/skottie/src/effects/Effects.h, modules/skottie/src/effects/Effects.cpp
 // (chrome/m156)
 //
-// The effect builder boundary. The layer builder calls `EffectBuilder::attach_effects` and
-// `attach_styles` for the layer effects ("ef") and layer styles ("sy"). The effects themselves
-// are M21: this module has the builder, its lookup and its dispatch loops, and an empty builder
-// table. Until M21 fills `BUILDER_INFO` (alphabetized by effect name, `mn`) and `STYLE_BUILDERS`,
-// every effect is reported as unsupported and left out, exactly as Skia treats an effect it does
-// not know.
+// The effect builder. The layer builder calls `EffectBuilder::attach_effects` and
+// `attach_styles` for the layer effects ("ef") and layer styles ("sy"). The effect builders are
+// in the submodules: `color` (fill, tint, tritone, invert, threshold, hue/saturation, levels).
+// Each effect not yet ported is left out of `BUILDER_INFO` and reported as unsupported, exactly
+// as Skia treats an effect it does not know.
 
 use std::rc::Rc;
 
@@ -21,8 +20,59 @@ use crate::skottie::LoggerLevel;
 use crate::skottie_json::{ValueExt, parse_default, string_text};
 use crate::skottie_property::NodeType;
 
+use super::animator::{AnimatablePropertyContainer, Bindable, IntoJsonProp, Prop, PropertyContainer};
 use super::composition::CompositionBuilder;
 use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
+
+mod color;
+
+/// Attaches an adapter (`attachDiscardableAdapter`) and returns its node.
+// Port of: modules/skottie/src/SkottiePriv.h#L168-L181 (chrome/m156) (`attachDiscardableAdapter<T>`)
+fn attach_adapter_node<A, N>(
+    abuilder: &AnimationBuilder<'_>,
+    adapter: &Rc<A>,
+    node: Rc<N>,
+) -> Option<Rc<dyn RenderNode>>
+where
+    A: AnimatablePropertyContainer + 'static,
+    N: RenderNode + 'static,
+{
+    abuilder.attach_discardable_adapter(adapter);
+    Some(node as Rc<dyn RenderNode>)
+}
+
+/// The syntactic helper that binds the properties of an effect by index (`EffectBinder`).
+// Port of: modules/skottie/src/effects/Effects.h#L87-L108 (chrome/m156) (`class EffectBinder`)
+pub(super) struct EffectBinder<'a, 'j, 'c> {
+    jprops: &'a ArrayValue,
+    abuilder: &'a AnimationBuilder<'j>,
+    container: &'c PropertyContainer,
+}
+
+impl<'a, 'j, 'c> EffectBinder<'a, 'j, 'c> {
+    /// A binder of the properties `jprops`, for the container `container`.
+    // Port of: modules/skottie/src/effects/Effects.h#L87-L96 (chrome/m156) (`EffectBinder::EffectBinder`)
+    pub(super) fn new(
+        jprops: &'a ArrayValue,
+        abuilder: &'a AnimationBuilder<'j>,
+        container: &'c PropertyContainer,
+    ) -> Self {
+        Self {
+            jprops,
+            abuilder,
+            container,
+        }
+    }
+
+    /// Binds the property at `prop_index` to `target`.
+    // Port of: modules/skottie/src/effects/Effects.h#L98-L104 (chrome/m156) (`EffectBinder::bind`)
+    pub(super) fn bind<T: Bindable>(&self, prop_index: usize, target: &Prop<T>) -> &Self {
+        let jprop = EffectBuilder::get_prop_value(self.jprops, prop_index);
+        self.container
+            .bind(self.abuilder, jprop.into_prop(), target);
+        self
+    }
+}
 
 /// The function that attaches one effect: the effect properties and the layer to apply it to.
 // Port of: modules/skottie/src/effects/Effects.h#L61-L62 (chrome/m156) (`EffectBuilder::EffectBuilderT`)
@@ -42,7 +92,23 @@ pub type StyleBuilderFn = for<'a, 'j> fn(
 
 /// The supported effects, by name (`mn`), alphabetized for binary search lookup. M21 adds them.
 // Port of: modules/skottie/src/effects/Effects.cpp#L31-L63 (chrome/m156) (`gBuilderInfo`)
-const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[];
+const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
+    // alphabetized for binary search lookup
+    ("ADBE Easy Levels2", color::attach_easy_levels_effect),
+    ("ADBE Fill", color::attach_fill_effect),
+    ("ADBE HUE SATURATION", color::attach_hue_saturation_effect),
+    ("ADBE Invert", color::attach_invert_effect),
+    ("ADBE Pro Levels2", color::attach_pro_levels_effect),
+    ("ADBE Threshold2", color::attach_threshold_effect),
+    ("ADBE Tint", color::attach_tint_effect),
+    ("ADBE Tritone", color::attach_tritone_effect),
+];
+
+/// The legacy effect types (`ty`) of the clients that do not name the effect (`mn`).
+// Port of: modules/skottie/src/effects/Effects.cpp#L50-L60 (chrome/m156) (`kTint_Effect` etc.)
+const LEGACY_TINT_EFFECT: i32 = 20;
+const LEGACY_FILL_EFFECT: i32 = 21;
+const LEGACY_TRITONE_EFFECT: i32 = 23;
 
 /// The layer style builders, by style type (`ty`): `None` for the styles that are not supported.
 /// M21 adds them.
@@ -112,9 +178,16 @@ impl<'a, 'j> EffectBuilder<'a, 'j> {
         }
 
         // Some legacy clients rely solely on the 'ty' field and generate (non-BM) JSON without a
-        // valid 'mn' string. The effects they name (tint, fill, tritone, drop shadow, radial
-        // wipe, gaussian blur) are M21's: they are not in the table yet.
-        let _ = parse_default::<i32>(jeffect.get("ty"), -1);
+        // valid 'mn' string.
+        let legacy: Option<EffectBuilderFn> = match parse_default::<i32>(jeffect.get("ty"), -1) {
+            LEGACY_TINT_EFFECT => Some(color::attach_tint_effect),
+            LEGACY_FILL_EFFECT => Some(color::attach_fill_effect),
+            LEGACY_TRITONE_EFFECT => Some(color::attach_tritone_effect),
+            _ => None,
+        };
+        if legacy.is_some() {
+            return legacy;
+        }
 
         self.builder.log_json(
             LoggerLevel::Warning,
