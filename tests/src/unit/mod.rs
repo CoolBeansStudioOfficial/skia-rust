@@ -84,6 +84,8 @@ pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
 #[cfg(test)]
+pub mod f16_draw_test;
+#[cfg(test)]
 pub mod f16_stages_test;
 #[cfg(test)]
 pub mod fill_path_test;
