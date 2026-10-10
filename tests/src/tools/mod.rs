@@ -11,5 +11,6 @@ pub mod sksl_goldens;
 pub mod sksl_minify;
 pub mod sksl_trace_utils;
 pub mod skslc;
+pub mod test_surface;
 pub mod tool_utils;
 pub mod unique_key_utils;
