@@ -13,6 +13,10 @@
 use std::rc::Rc;
 
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::FilterMode;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_raster::picture_shader::PictureShaderExt;
 use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::shader::Shader;
@@ -34,6 +38,7 @@ use super::skottie_priv::{AnimationBuilder, AutoPropertyTracker};
 mod bulge;
 mod cc_toner;
 mod color;
+mod sphere;
 mod displacement_map;
 mod fractal_noise;
 mod convolution;
@@ -94,6 +99,23 @@ pub(super) fn get_content_picture(
     let canvas = recorder.begin_recording(bounds, false);
     node.render(canvas, None);
     recorder.finish_recording_as_picture(None)
+}
+
+/// The layer content recorded at `size`, as a repeating picture shader: the content of the bulge
+/// and sphere shaders (`contentShader`).
+// Port of: modules/skottie/src/effects/BulgeEffect.cpp#L126-L139 (chrome/m156) (`BulgeNode::contentShader`)
+pub(super) fn repeating_content_shader(child: &Rc<dyn RenderNode>, size: Size) -> Option<Shader> {
+    child.revalidate(None, &Matrix::new_identity());
+    let mut recorder = PictureRecorder::new();
+    let canvas = recorder.begin_recording(Rect::from_size(size), false);
+    child.render(canvas, None);
+    let picture = recorder.finish_recording_as_picture(None)?;
+    picture.to_shader(
+        (TileMode::Repeat, TileMode::Repeat),
+        FilterMode::Linear,
+        None::<&Matrix>,
+        None::<&Rect>,
+    )
 }
 
 /// Pushes a mask to its node (`MaskShaderEffectBase::onSync`).
@@ -196,6 +218,7 @@ const BUILDER_INFO: &[(&str, EffectBuilderFn)] = &[
         "ADBE Venetian Blinds",
         venetian_blinds::attach_venetian_blinds_effect,
     ),
+    ("CC Sphere", sphere::attach_sphere_effect),
     ("CC Toner", cc_toner::attach_cc_toner_effect),
     ("SkSL Color Filter", runtime::attach_sksl_color_filter),
 ];
