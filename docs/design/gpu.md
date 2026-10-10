@@ -733,6 +733,18 @@ with the full texts in the release, as in `rp-diff`.
   noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
   `PaintParamsKeyTest` (2) the Precompile API (G14).
 
+**Status after G7c** (`port/gpu-g7c`): `RendererProvider` holds every renderer of the oracle build
+(the sparse-strip renderers excepted, Q5). `AnalyticBlurRenderStep` and `AnalyticRRectBlurRenderStep`
+are ported with their geometry (`Geometry::AnalyticBlur`, `AnalyticRRectBlur`), the
+`AnalyticBlurMask` circle case (`MakeCircle`), and the canvas and `Device::drawBlurredRRect` path
+for blurred ovals, rects and rrects (`SkCanvas::attemptBlurredRRectDraw`). Not ported, because
+they build their look-up table with `std::erf` (`CreateIntegralTable`, `AnalyticRRectBlurMask::Make`'s
+CDF), which the standard library lacks and the libm decision (PR #87, on hold) would provide:
+`AnalyticBlurMask::MakeRect` (rects) and `AnalyticRRectBlurMask::Make` (rounded rects). Until then
+those draws fall back to a regular draw, which in Graphite still ignores the mask filter (as before
+this step), so their output is unblurred. `BlurPointCircle` covers the circle path only. The core
+canvas's `addMaskFilterLayer` fallback is not ported (core has no mask filter auto-layers).
+
 **Status after G10b** (`port/gpu-g10b`): `graphite::clip_stack::ClipStack` is the whole of
 `ClipStack.cpp` (element tree, `SaveRecord`s, combine/simplify, `visitClipStackForDraw`,
 `updateClipStateForDraw`, `recordDeferredClipDraws`, analytic clips, depth-only clip draws for both

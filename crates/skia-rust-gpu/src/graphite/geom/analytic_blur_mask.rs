@@ -99,24 +99,18 @@ impl AnalyticBlurMask {
         // it only supports scale + translate matrices, but is still a valid circle that can be
         // blurred.
         if rrect_priv::is_circle(src_rrect) && local_to_device.is_similarity() {
-            let src_rect = src_rrect.rect();
-            let dev_center = local_to_device.map_point(src_rect.center());
+            let src = src_rrect.rect();
+            let dev_center = local_to_device.map_point(src.center());
             let dev_radius = local_to_device
-                .map_vector((0.0, src_rect.width() / 2.0))
+                .map_vector((0.0, src.width() / 2.0))
                 .length();
-            let dev_rect = SkRect {
+            let dev = SkRect {
                 left: dev_center.x - dev_radius,
                 top: dev_center.y - dev_radius,
                 right: dev_center.x + dev_radius,
                 bottom: dev_center.y + dev_radius,
             };
-            return Self::make_circle(
-                recorder,
-                &local_to_device,
-                device_sigma,
-                src_rect,
-                &dev_rect,
-            );
+            return Self::make_circle(recorder, &local_to_device, device_sigma, src, &dev);
         }
 
         // SK_SUPPORT_LEGACY_GRAPHITE_RRECT_BLUR is off: MakeRRect is not built.
@@ -184,9 +178,15 @@ impl AnalyticBlurMask {
         //      (solidRadius - 0.5) / textureRadius"
         // to avoid passing large values to length() that would overflow. We precalculate
         // "1 / textureRadius" and "(solidRadius - 0.5) / textureRadius" here.
-        let shape_data = Rect::new(
+        // The C++ averages with `(a + b) * 0.5`, which `f32::midpoint` may round differently.
+        #[allow(clippy::manual_midpoint)]
+        let (center_x, center_y) = (
             (dev_rect.left + dev_rect.right) * 0.5,
             (dev_rect.top + dev_rect.bottom) * 0.5,
+        );
+        let shape_data = Rect::new(
+            center_x,
+            center_y,
             1.0 / params.texture_radius,
             (params.solid_radius - 0.5) / params.texture_radius,
         );
@@ -248,6 +248,10 @@ impl AnalyticBlurMask {
     }
 }
 
+/// `kHalfPlaneThreshold` of `AnalyticBlurMask::MakeCircle`.
+// Port of: src/gpu/graphite/geom/AnalyticBlurMask.cpp#L232 (chrome/m156)
+const K_HALF_PLANE_THRESHOLD: f32 = 0.1;
+
 /// `DerivedParams` of `AnalyticBlurMask::MakeCircle`: the quantized radius and sigma, and the
 /// profile's geometry.
 // Port of: src/gpu/graphite/geom/AnalyticBlurMask.cpp#L223-L259 (chrome/m156)
@@ -271,7 +275,6 @@ impl DerivedParams {
         // half-plane. Similarly, in the extreme high ratio cases circle becomes a point WRT to the
         // Guassian and the profile texture is a just a Gaussian evaluation. However, we haven't yet
         // implemented this latter optimization.
-        const K_HALF_PLANE_THRESHOLD: f32 = 0.1;
         // std::min(a, b) is `(b < a) ? b : a`.
         let ratio = quantized_dev_sigma / quantized_radius;
         let sigma_to_radius_ratio = if 8.0 < ratio { 8.0 } else { ratio };
