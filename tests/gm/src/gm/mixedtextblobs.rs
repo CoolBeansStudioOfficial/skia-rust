@@ -5,6 +5,8 @@
 
 // The size_t-to-scalar cast of the clip index mirrors the C++ arithmetic of the GM.
 #![allow(clippy::cast_precision_loss)]
+// corrupted_ax/corrupted_ay mirror the C++ names.
+#![allow(clippy::similar_names)]
 
 use crate::prelude::*;
 use skia_rust_core::font::{Edging, Font};

@@ -880,7 +880,7 @@ def_test!(Typeface_glyph_to_char, |reporter| {
         .collect();
     let mut glyphs = vec![0 as GlyphId; codepoint_count];
     font.unichars_to_glyphs(&original_codepoints, &mut glyphs);
-    if glyphs.iter().any(|&g| g == 0) {
+    if glyphs.contains(&0) {
         errorf!(
             reporter,
             "Unexpected typeface \"{}\". Expected full support for emoji_sample_text.",

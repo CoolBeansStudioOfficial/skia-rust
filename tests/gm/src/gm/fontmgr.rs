@@ -7,6 +7,14 @@
 #![allow(clippy::many_single_char_names)]
 // The glyph index and the int-to-scalar casts mirror the C++ conversions.
 #![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+// The functions, local items and by-reference styles mirror the C++ GM.
+// Exact float comparison of the constructor arguments mirrors the C++ getName.
+#![allow(
+    clippy::float_cmp,
+    clippy::too_many_lines,
+    clippy::items_after_statements,
+    clippy::trivially_copy_pass_by_ref
+)]
 
 use crate::prelude::*;
 use skia_rust_core::canvas::AutoCanvasRestore;
@@ -18,7 +26,6 @@ use skia_rust_core::font_style::{FontStyle, Slant};
 use skia_rust_core::font_types::{GlyphId, TextEncoding};
 use skia_rust_core::graphics::set_font_cache_limit;
 use skia_rust_core::paint::{Paint, Style};
-use skia_rust_core::path::Path;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
@@ -27,6 +34,7 @@ use skia_rust_effects::dash_path_effect;
 use skia_rust_tools::font_tool_utils::{
     default_font, default_portable_typeface, default_typeface, test_font_mgr,
 };
+use std::fmt::Write as _;
 
 // limit this just so we don't take too long to draw
 // Port of: gm/fontmgr.cpp#L37 (chrome/m156)
@@ -147,12 +155,13 @@ impl GM for FontMgrGm {
             let set = fm.create_style_set(i);
             for j in 0..set.count() {
                 let (fs, mut sname) = set.get_style(j);
-                sname.push_str(&format!(
+                let _ = write!(
+                    sname,
                     " [{} {} {}]",
                     *fs.weight(),
                     *fs.width(),
                     fs.slant() as i32
-                ));
+                );
 
                 font.set_typeface(set.create_typeface(j));
                 x = draw_string(canvas, &sname, x, y, &font) + 20.0;
@@ -217,7 +226,7 @@ impl FontMgrMatchGm {
         for j in 0..fset.count() {
             let (fs, mut sname) = fset.get_style(j);
 
-            sname.push_str(&format!(" [{} {}]", *fs.weight(), *fs.width()));
+            let _ = write!(sname, " [{} {}]", *fs.weight(), *fs.width());
 
             f.set_typeface(fset.create_typeface(j));
             let mut x: scalar = 0.0;
@@ -466,7 +475,7 @@ impl FontMgrBoundsGm {
             );
         }
         for glyph_to_draw in &glyphs_to_draw {
-            let path = font.get_path(glyph_to_draw.id).unwrap_or_else(Path::new);
+            let path = font.get_path(glyph_to_draw.id).unwrap_or_default();
             let style = if path.is_empty() {
                 Style::Fill
             } else {

@@ -9,6 +9,8 @@
 
 // The int-to-scalar casts of small constants mirror the C++ arithmetic of the GM.
 #![allow(clippy::cast_precision_loss)]
+// k_pts/k_pos and similar names mirror the C++ GM.
+#![allow(clippy::similar_names)]
 
 use crate::prelude::*;
 use skia_rust_core::color_filter::ColorFilter;

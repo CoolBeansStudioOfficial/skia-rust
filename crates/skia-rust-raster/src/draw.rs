@@ -680,7 +680,7 @@ impl<'a> Draw<'a> {
         }
 
         // get a scalar version of our rect
-        let r = Rect::from_irect(&bounds);
+        let r = Rect::from_irect(bounds);
 
         // create shader with offset
         let mut matrix = Matrix::default();
