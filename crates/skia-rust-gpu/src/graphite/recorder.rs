@@ -19,8 +19,7 @@
 //!
 //! # Not yet ported
 //!
-//! The members that need other ports are left out and noted where they were: the text atlas of
-//! the atlas provider and the strike cache and text blob cache (G12b), the `KeyAndDataBuilder` pool (G5a),
+//! The members that need other ports are left out and noted where they were: the `KeyAndDataBuilder` pool (G5a),
 //! `makeDeferredCanvas()` and the target proxy device (G10a), the backend texture calls
 //! (`BackendTexture`, G11a), `ImageProvider` (G10d), the capture manager and
 //! `dumpMemoryStatistics()`.
@@ -61,6 +60,8 @@ use crate::graphite::texture_info::TextureInfo;
 use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_utils::make_bitmap_proxy_view;
 use crate::graphite::upload_buffer_manager::UploadBufferManager;
+use crate::text_gpu::strike_cache::StrikeCache;
+use crate::text_gpu::text_blob_redraw_coordinator::TextBlobRedrawCoordinator;
 
 /// `kDefaultRecorderBudget`: 256 MiB.
 // Port of: include/gpu/graphite/Recorder.h#L74 (chrome/m156)
@@ -244,8 +245,14 @@ pub struct RecorderInner {
 
     key_and_data_builders: RefCell<Vec<KeyAndDataBuilder>>,
 
-    /// `fAtlasProvider`: the path and clip atlases the draws of this recorder share.
+    /// `fAtlasProvider`: the path, clip and glyph atlases the draws of this recorder share.
     atlas_provider: RefCell<AtlasProvider>,
+
+    /// `fStrikeCache`: the strikes of the glyphs on this recorder's atlases.
+    strike_cache: RefCell<StrikeCache>,
+
+    /// `fTextBlobCache`: the processed text blobs this recorder can draw again.
+    text_blob_cache: TextBlobRedrawCoordinator,
 }
 
 impl std::fmt::Debug for RecorderInner {
@@ -335,6 +342,8 @@ impl Recorder {
                 is_flushing_tracked_devices: Cell::new(false),
                 key_and_data_builders: RefCell::new(Vec::new()),
                 atlas_provider: RefCell::new(atlas_provider),
+                strike_cache: RefCell::new(StrikeCache::new()),
+                text_blob_cache: TextBlobRedrawCoordinator::new(unique_id),
             }),
         }
     }
@@ -546,7 +555,7 @@ impl Recorder {
         // any Gpu resources.
 
         // Notify the atlas and resource provider to free any resources it can (does not include
-        // resources that are locked due to pending work). The strike cache (G12b) is not ported.
+        // resources that are locked due to pending work).
         let recorder: &Recorder = self;
         recorder
             .inner
@@ -554,6 +563,10 @@ impl Recorder {
             .borrow_mut()
             .free_gpu_resources(recorder);
         self.inner.lock_resource_provider().free_gpu_resources();
+
+        // This is technically not GPU memory, but there's no other place for the client to tell
+        // us to clean this up, and without any cleanup it can grow unbounded.
+        self.inner.strike_cache.borrow_mut().free_all();
     }
 
     /// `performDeferredCleanup()`.
@@ -914,6 +927,22 @@ impl<'a> RecorderPriv<'a> {
     pub fn atlas_provider(&self) -> &'a RefCell<AtlasProvider> {
         let recorder: &'a RecorderInner = self.recorder;
         &recorder.atlas_provider
+    }
+
+    /// `strikeCache()`.
+    #[doc(alias = "strikeCache")]
+    #[must_use]
+    pub fn strike_cache(&self) -> &'a RefCell<StrikeCache> {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.strike_cache
+    }
+
+    /// `textBlobCache()`.
+    #[doc(alias = "textBlobCache")]
+    #[must_use]
+    pub fn text_blob_cache(&self) -> &'a TextBlobRedrawCoordinator {
+        let recorder: &'a RecorderInner = self.recorder;
+        &recorder.text_blob_cache
     }
 
     /// `resourceProvider()`.

@@ -537,6 +537,18 @@ impl StrikePromise {
         }
     }
 
+    /// `SkStrikePromise::resetStrike`: drops the reference to the strike, so that it can be
+    /// purged from the cache if needed.
+    ///
+    /// skia-rust: C++ leaves a null strike; here the promise goes back to the spec of the strike,
+    /// which makes a strike again if [`strike`](Self::strike) is called.
+    // Port of: src/text/StrikeForGPU.cpp#L37-L39 (chrome/m156)
+    pub fn reset_strike(&mut self) {
+        if let Self::Strike(strike) = self {
+            *self = Self::Spec(Box::new(strike.strike_spec().clone()));
+        }
+    }
+
     /// `SkStrikePromise::descriptor`.
     // Port of: src/text/StrikeForGPU.cpp#L41-L47 (chrome/m156)
     #[must_use]
