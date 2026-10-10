@@ -20,6 +20,7 @@ pub mod predictor;
 pub mod prefix;
 pub mod tables;
 pub mod vp8_bit_writer;
+pub mod vp8_enc_dsp;
 pub mod vp8l;
 pub mod webp;
 
