@@ -19,6 +19,11 @@ const HB_SET_VALUE_INVALID: u32 = 0xFFFF_FFFF;
 const HB_MAX_NESTING_LEVEL: u32 = 64;
 const HB_MAX_COMPOSITE_OPERATIONS_PER_GLYPH: i64 = 64;
 
+/// `default_layout_features` (hb-subset-input.cc#L82-L186).
+const DEFAULT_LAYOUT_FEATURES: [&[u8; 4]; 72] = [
+    b"rvrn", b"ccmp", b"liga", b"locl", b"mark", b"mkmk", b"rlig", b"frac", b"numr", b"dnom", b"calt", b"clig", b"curs", b"kern", b"rclt", b"valt", b"vert", b"vkrn", b"vpal", b"vrt2", b"ltra", b"ltrm", b"rtla", b"rtlm", b"rand", b"jalt", b"chws", b"vchw", b"halt", b"vhal", b"Harf", b"HARF", b"Buzz", b"BUZZ", b"init", b"medi", b"fina", b"isol", b"med2", b"fin2", b"fin3", b"cswh", b"mset", b"stch", b"ljmo", b"vjmo", b"tjmo", b"abvs", b"blws", b"abvm", b"blwm", b"nukt", b"akhn", b"rphf", b"rkrf", b"pref", b"blwf", b"half", b"abvf", b"pstf", b"cfar", b"vatu", b"cjct", b"init", b"pres", b"abvs", b"blws", b"psts", b"haln", b"dist", b"abvm", b"blwm"
+];
+
 /// Port of `hb_subset_plan_t` (hb-subset-plan.hh#L116-L238), for the fields Skia's input reaches.
 pub(crate) struct Plan<'a> {
     pub source: &'a Face<'a>,
@@ -35,6 +40,8 @@ pub(crate) struct Plan<'a> {
     pub glyph_map_gsub: HashMap<u32, u32>,
     pub used_mark_sets_map: HashMap<u32, u32>,
     pub layout: crate::layout::LayoutPlan,
+    /// `layout_features`: the feature tags kept by default (hb-subset-input.cc#L82-L187).
+    pub layout_features: BTreeSet<u32>,
     pub reverse_glyph_map: HashMap<u32, u32>,
     pub new_to_old_gid_list: Vec<(u32, u32)>,
     pub num_output_glyphs: u32,
@@ -79,6 +86,7 @@ impl<'a> Plan<'a> {
             glyph_map_gsub: HashMap::new(),
             used_mark_sets_map: HashMap::new(),
             layout: crate::layout::LayoutPlan::default(),
+            layout_features: DEFAULT_LAYOUT_FEATURES.iter().map(|t| tag(t)).collect(),
             reverse_glyph_map: HashMap::new(),
             new_to_old_gid_list: Vec::new(),
             num_output_glyphs: 0,
