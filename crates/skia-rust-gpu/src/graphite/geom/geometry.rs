@@ -6,10 +6,10 @@
 //! [`Geometry`]: what a draw covers, as seen by the `RenderStep`s.
 //!
 //! Only the variants whose payload types are ported are here: `Empty`, `Shape`, `EdgeAAQuad`,
-//! `Vertices` and `Mesh`. The other variants of Skia's `Geometry` (`SubRun`, `CoverageMaskShape`,
-//! `AnalyticBlur`, `AnalyticRRectBlur`, and the sparse-strip `WideTiles` and `EndCaps`) wait for
-//! their payload types (G2, G7c, G10 and G17). Their `bounds()` cases are not written here, so no
-//! draw can carry them yet.
+//! `Vertices`, `Mesh`, `CoverageMaskShape` and `SubRun`. The other variants of Skia's `Geometry`
+//! (`AnalyticBlur`, `AnalyticRRectBlur`, and the sparse-strip `WideTiles` and `EndCaps`) wait for
+//! their payload types (G10 and G17). Their `bounds()` cases are not written here, so no draw can
+//! carry them yet.
 
 use skia_rust_core::mesh::Mesh;
 use skia_rust_core::vertices::Vertices;
@@ -20,6 +20,7 @@ use crate::graphite::geom::coverage_mask_shape::CoverageMaskShape;
 use crate::graphite::geom::edge_aa_quad::EdgeAAQuad;
 use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::shape::Shape;
+use crate::graphite::geom::sub_run_data::SubRunData;
 
 /// The geometry of a draw (`skgpu::graphite::Geometry`), restricted to the ported variants.
 // Port of: src/gpu/graphite/geom/Geometry.h#L26-L106 (chrome/m156), the ported variants
@@ -39,6 +40,8 @@ pub enum Geometry {
     Mesh(Mesh),
     /// `Type::kCoverageMaskShape`.
     CoverageMaskShape(CoverageMaskShape),
+    /// `Type::kSubRun`.
+    SubRun(SubRunData),
 }
 
 impl Geometry {
@@ -106,7 +109,8 @@ impl Geometry {
             Self::EdgeAAQuad(_)
             | Self::Vertices(_)
             | Self::Mesh(_)
-            | Self::CoverageMaskShape(_) => false,
+            | Self::CoverageMaskShape(_)
+            | Self::SubRun(_) => false,
         }
     }
 
@@ -156,13 +160,34 @@ impl Geometry {
         }
     }
 
+    /// `isSubRun()`.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L165 (chrome/m156)
+    #[must_use]
+    pub const fn is_sub_run(&self) -> bool {
+        matches!(self, Self::SubRun(_))
+    }
+
+    /// `subRunData()`. Skia asserts that the type is `kSubRun`.
+    ///
+    /// # Panics
+    /// If the geometry is not a text sub run.
+    // Port of: src/gpu/graphite/geom/Geometry.h#L183 (chrome/m156)
+    #[must_use]
+    pub fn sub_run_data(&self) -> &SubRunData {
+        match self {
+            Self::SubRun(sub_run) => sub_run,
+            _ => panic!("Geometry::sub_run_data() called on a non-sub-run geometry"),
+        }
+    }
+
     /// `maskToDevice()`: the transform from the mask space to device space, for the geometry
-    /// types that have a mask space (coverage masks).
+    /// types that have a mask space (coverage masks and text sub runs).
     // Port of: src/gpu/graphite/geom/Geometry.h#L345-L349 (chrome/m156)
     #[must_use]
     pub fn mask_to_device(&self) -> Option<&M44> {
         match self {
             Self::CoverageMaskShape(mask) => Some(mask.mask_to_device()),
+            Self::SubRun(sub_run) => Some(sub_run.mask_to_device()),
             _ => None,
         }
     }
@@ -184,6 +209,7 @@ impl Geometry {
             Self::Vertices(vertices) => Rect::from_sk_rect(vertices.bounds()),
             Self::Mesh(mesh) => Rect::from_sk_rect(&mesh.bounds()),
             Self::CoverageMaskShape(mask) => mask.bounds(),
+            Self::SubRun(sub_run) => sub_run.bounds(),
         }
     }
 }
