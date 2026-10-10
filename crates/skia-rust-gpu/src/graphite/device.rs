@@ -19,11 +19,10 @@
 //!
 //! # What is not here yet
 //!
-//! - `ClipStack` (G10b) is the device's clip; the clip atlas it can hand draws (`ClipAtlasManager`)
-//!   is G12a, so the device passes none and every clip element that is not analytic is a
-//!   depth-only clip draw.
-//! - Path rendering (`chooseRenderer()`'s atlas strategies, path atlases, G12a), text
-//!   (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawCoverageMask()` and `drawBlurredRRect()`, and
+//! - The compute path atlas (`getComputePathAtlas`, Vello, G13) and the sparse strips
+//!   (`PathRendererStrategy::kCPUSparseStripsMSAA8`, G17): the path renderer strategies that need
+//!   them fall back to tessellation.
+//! - Text (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawBlurredRRect()`, and
 //!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
 //!   `makeSurface()`, `makeImageCopy()`, the non-copyable `onWritePixels()` fallback,
 //!   `drawSpecial()`, `snapSpecial()` and the image filtering backend (`docs/design/gpu.md` §5.5)
@@ -533,7 +532,6 @@ impl Device {
         // - This would also apply for compute renderers that have to write directly to
         //   `target`, but the current versions of compute render into separate compute-compatible
         //   textures instead.
-        // (Only the tessellation strategy exists until G10c/G12a.)
         let priv_ = recorder.priv_();
         let caps = priv_.caps();
         if caps.get_compatible_msaa_sample_count(target.texture_info()) <= SampleCount::One {
