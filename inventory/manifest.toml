@@ -42782,7 +42782,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkBase64Test.cpp#L18-L62"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4eed7553f78dfb734967f7ab8fc3e52c5c8e0c6bd88990b384dab8d7be82f87d"
 
 [[test]]

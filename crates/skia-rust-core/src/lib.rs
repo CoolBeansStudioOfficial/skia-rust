@@ -5,6 +5,7 @@ pub mod alpha_type;
 pub mod annotation;
 pub mod arc;
 pub mod arena_alloc;
+pub mod base64;
 pub mod bbh_factory;
 pub mod bezier_curves;
 pub mod bitmap;
