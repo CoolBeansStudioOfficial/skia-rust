@@ -321,6 +321,8 @@ pub mod pdf_deflate_w_stream_test;
 #[cfg(test)]
 pub mod pdf_document_test;
 #[cfg(test)]
+pub mod pdf_glyphs_to_unicode_test;
+#[cfg(test)]
 pub mod pdf_jpeg_embed_test;
 #[cfg(test)]
 pub mod pdf_metadata_attribute_test;
