@@ -758,40 +758,44 @@ def_test!(Encode_WebpAnimated, |reporter| {
 });
 
 // Port of: tests/EncodeTest.cpp#L657-L680 (chrome/m156)
-def_test!(Encode_WebpAnimated_FrameUnmatched, |reporter| {
-    // Create two frames with unmatched sizes and verify the encode should fail.
-    let mut bm1 = Bitmap::new();
-    bm1.alloc_pixels_info(
-        &ImageInfo::new((8, 8), ColorType::N32, AlphaType::Premul, None),
-        None,
-    );
-    bm1.erase_color(Color::YELLOW);
-    let mut bm2 = Bitmap::new();
-    bm2.alloc_pixels_info(
-        &ImageInfo::new((16, 16), ColorType::N32, AlphaType::Premul, None),
-        None,
-    );
-    bm2.erase_color(Color::YELLOW);
-    let (Some(pixmap1), Some(pixmap2)) = (bm1.peek_pixels(), bm2.peek_pixels()) else {
-        reporter_assert!(reporter, false);
-        return;
-    };
-    let frames = vec![
-        webp::Frame {
-            pixmap: pixmap1,
-            duration: 200,
-        },
-        webp::Frame {
-            pixmap: pixmap2,
-            duration: 200,
-        },
-    ];
+def_test!(
+    #[ignore = "passes only because lossy animation (WebPAnimEncoder YUV candidates) is not ported: frame 1 fails in WebPAnimEncoderAdd before the size check Skia reaches on frame 2"]
+    Encode_WebpAnimated_FrameUnmatched,
+    |reporter| {
+        // Create two frames with unmatched sizes and verify the encode should fail.
+        let mut bm1 = Bitmap::new();
+        bm1.alloc_pixels_info(
+            &ImageInfo::new((8, 8), ColorType::N32, AlphaType::Premul, None),
+            None,
+        );
+        bm1.erase_color(Color::YELLOW);
+        let mut bm2 = Bitmap::new();
+        bm2.alloc_pixels_info(
+            &ImageInfo::new((16, 16), ColorType::N32, AlphaType::Premul, None),
+            None,
+        );
+        bm2.erase_color(Color::YELLOW);
+        let (Some(pixmap1), Some(pixmap2)) = (bm1.peek_pixels(), bm2.peek_pixels()) else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        let frames = vec![
+            webp::Frame {
+                pixmap: pixmap1,
+                duration: 200,
+            },
+            webp::Frame {
+                pixmap: pixmap2,
+                duration: 200,
+            },
+        ];
 
-    let mut stream: Vec<u8> = Vec::new();
-    let options = webp::Options {
-        compression: Compression::Lossy,
-        quality: 100.0,
-    };
-    let output = webp::encode_animated(&mut stream, &frames, &options);
-    reporter_assert!(reporter, !output);
-});
+        let mut stream: Vec<u8> = Vec::new();
+        let options = webp::Options {
+            compression: Compression::Lossy,
+            quality: 100.0,
+        };
+        let output = webp::encode_animated(&mut stream, &frames, &options);
+        reporter_assert!(reporter, !output);
+    }
+);

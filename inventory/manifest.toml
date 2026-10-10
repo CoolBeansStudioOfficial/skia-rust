@@ -31750,7 +31750,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L657-L680"
 module = "codec"
-status = "passing"
+status = "todo"
+reason = "passes only because lossy animation (WebPAnimEncoder YUV candidates) is not ported: frame 1 fails in WebPAnimEncoderAdd before the size check Skia reaches on frame 2"
 span_hash = "4cf87318a15498e5ac0d60325e0bb1364add1a40459e37194f556a8280c4bfa5"
 
 [[test]]
