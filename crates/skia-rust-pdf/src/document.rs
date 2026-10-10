@@ -17,8 +17,7 @@
 //! the buffer to the stream it was made with at the end of each page, at `close` and at `abort`.
 //! A device must be `'static`, so it cannot borrow the stream. The bytes, and the offsets in the
 //! cross-reference table, are those of Skia. Not ported: the executor, so that streams are
-//! deflated serially and the output is reproducible; the font subsets (`modules.md` M26), which
-//! `close` emits before the trailer.
+//! deflated serially and the output is reproducible.
 
 #![allow(clippy::cast_precision_loss)] // SkIntToScalar-style casts of pixel sizes mirror the C++
 
@@ -26,18 +25,22 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use skia_rust_core::advanced_typeface_metrics::AdvancedTypefaceMetrics;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::data::Data;
+use skia_rust_core::descriptor::Descriptor;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
-use skia_rust_core::utf::count_utf8;
+use skia_rust_core::typeface::TypefaceId;
+use skia_rust_core::utf::{Unichar, count_utf8};
 
 use crate::bitmap::IccProfileKey;
 use crate::deflate::DeflateWStream;
 use crate::device::{ContentHandle, PdfDevice};
+use crate::font::PdfStrike;
 use crate::gradient_shader::GradientKey;
 use crate::graphic_state::{FillGraphicState, StrokeGraphicState};
 use crate::jpeg;
@@ -49,6 +52,7 @@ use crate::metadata::{
 use crate::shader::ImageShaderKey;
 use crate::srgb_icc::SRGB_PROFILE;
 use crate::tag::{Mark, StructTree};
+use crate::to_unicode_cmap::GlyphToUnicodeEx;
 use crate::types::{PdfArray, PdfDict, PdfIndirectReference, PdfObject, PdfParentTreeKey};
 use crate::utils::rect_to_array;
 
@@ -414,6 +418,23 @@ pub(crate) struct DocInner {
     pub(crate) current_page_links: Vec<PdfLink>,
     pub(crate) named_destinations: Vec<PdfNamedDestination>,
 
+    /// `fTypefaceMetrics`: `None` for a typeface that cannot be embedded at all.
+    pub(crate) typeface_metrics: HashMap<TypefaceId, Option<Rc<AdvancedTypefaceMetrics>>>,
+    /// `fType1GlyphNames`.
+    pub(crate) type1_glyph_names: HashMap<TypefaceId, Rc<Vec<String>>>,
+    /// `fToUnicodeMap`.
+    pub(crate) to_unicode_map: HashMap<TypefaceId, Rc<Vec<Unichar>>>,
+    /// `fToUnicodeMapEx`.
+    pub(crate) to_unicode_map_ex: HashMap<TypefaceId, Rc<RefCell<GlyphToUnicodeEx>>>,
+    /// `fFontDescriptors`.
+    pub(crate) font_descriptors: HashMap<TypefaceId, PdfIndirectReference>,
+    /// `fType3FontDescriptors`.
+    pub(crate) type3_font_descriptors: HashMap<TypefaceId, PdfIndirectReference>,
+    /// `fStrikes`, by the descriptor of the path strike.
+    pub(crate) strikes: HashMap<Descriptor, PdfStrike>,
+    /// `fNextFontSubsetTag`.
+    next_font_subset_tag: u32,
+
     /// For tagged PDFs (`fStructTree`).
     pub(crate) struct_tree: StructTree,
 }
@@ -461,6 +482,14 @@ impl DocInner {
             no_smask_graphic_state: PdfIndirectReference::default(),
             current_page_links: Vec::new(),
             named_destinations: Vec::new(),
+            typeface_metrics: HashMap::new(),
+            type1_glyph_names: HashMap::new(),
+            to_unicode_map: HashMap::new(),
+            to_unicode_map_ex: HashMap::new(),
+            font_descriptors: HashMap::new(),
+            type3_font_descriptors: HashMap::new(),
+            strikes: HashMap::new(),
+            next_font_subset_tag: 0,
             struct_tree,
         }
     }
@@ -723,12 +752,44 @@ impl DocInner {
         }
     }
 
+    /// `nextFontSubsetTag`: the six uppercase letters and a plus sign that start the name of a
+    /// font subset.
+    // Port of: src/pdf/SkPDFDocument.cpp#L611-L627 (chrome/m156)
+    pub(crate) fn next_font_subset_tag(&mut self) -> String {
+        // PDF 32000-1:2008 Section 9.6.4 FontSubsets "The tag shall consist of six uppercase
+        // letters" "followed by a plus sign" "different subsets in the same PDF file shall have
+        // different tags." There are 26^6 or 308,915,776 possible values. So start in range then
+        // increment and mod.
+        let mut this_font_subset_tag = self.next_font_subset_tag;
+        self.next_font_subset_tag = (self.next_font_subset_tag + 1) % 308_915_776;
+
+        let mut subset_tag = String::with_capacity(7);
+        for _ in 0..6 {
+            subset_tag.push(char::from(
+                b'A' + u8::try_from(this_font_subset_tag % 26).expect("< 26"),
+            ));
+            this_font_subset_tag /= 26;
+        }
+        subset_tag.push('+');
+        subset_tag
+    }
+
+    /// `get_fonts`: the fonts of all strikes, sorted so that the output PDF is reproducible.
+    // Port of: src/pdf/SkPDFDocument.cpp#L596-L609 (chrome/m156)
+    fn get_fonts(&self) -> Vec<crate::font::PdfFont> {
+        let mut fonts: Vec<crate::font::PdfFont> =
+            self.strikes.values().flat_map(PdfStrike::fonts).collect();
+        // Sort so the output PDF is reproducible.
+        fonts.sort_by_key(|f| f.indirect_reference().value);
+        fonts
+    }
+
     /// `SkPDFDocument::onClose`: writes the catalog, the page tree and the trailer. Writes
     /// nothing when there is no page, as in Skia.
     // Port of: src/pdf/SkPDFDocument.cpp#L628-L689 (onClose, chrome/m156)
-    fn on_close(&mut self) {
+    fn on_close(&mut self) -> Option<PdfIndirectReference> {
         if self.pages.is_empty() {
-            return;
+            return None;
         }
         let mut doc_catalog = PdfDict::new(Some("Catalog"));
         if self.metadata.pdfa {
@@ -784,11 +845,12 @@ impl DocInner {
             doc_catalog.insert_text_string("Lang", lang.as_str());
         }
 
-        let doc_catalog_ref = self.emit_new(&doc_catalog);
+        Some(self.emit_new(&doc_catalog))
+    }
 
-        // TODO(M26): `for f in get_fonts() { f.emitSubset(self) }`: the font subsets are written
-        // here, before the trailer, once `SkPDFFont` is ported.
-
+    /// The end of `SkPDFDocument::onClose`: the footer, once the fonts are written.
+    // Port of: src/pdf/SkPDFDocument.cpp#L684-L688 (chrome/m156)
+    fn on_close_footer(&mut self, doc_catalog_ref: PdfIndirectReference) {
         let flushed = self.flushed;
         serialize_footer(
             &self.offset_map,
@@ -973,6 +1035,13 @@ impl<'a> Document<'a> {
         self.inner.metadata()
     }
 
+    /// The shared state of the document (what a font reads of `SkPDFDocument*`).
+    #[doc(hidden)]
+    #[must_use]
+    pub fn handle(&self) -> DocHandle {
+        self.inner.clone()
+    }
+
     /// Passes the bytes written so far to the stream.
     fn flush(&mut self) {
         let Some(stream) = self.stream.as_deref_mut() else {
@@ -1142,7 +1211,16 @@ impl<'a> Document<'a> {
             match self.state {
                 PageState::BetweenPages => {
                     self.state = PageState::Closed;
-                    self.inner.with(DocInner::on_close);
+                    // `onClose`: the catalog, then the fonts (which draw Type3 glyphs with
+                    // devices of their own, so they are written outside of the borrow of the
+                    // state), then the trailer.
+                    if let Some(doc_catalog_ref) = self.inner.with(DocInner::on_close) {
+                        let fonts = self.inner.with(|d| d.get_fonts());
+                        for font in fonts {
+                            font.emit_subset(&self.inner);
+                        }
+                        self.inner.with(|d| d.on_close_footer(doc_catalog_ref));
+                    }
                     self.flush();
                     // we don't own the stream, but we mark it nullptr since we can
                     // no longer write to it.

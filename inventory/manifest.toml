@@ -23444,8 +23444,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pdf_never_embed.cpp#L75-L82"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "97aca5bd6cb2532ba13afcfa2dc4585acbe1e2d625f2acf795d08fac8bb66e56"
 
 [[test]]
@@ -23454,8 +23453,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L39-L71"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "4a4237338aa189fd527933941ece441bf282fdb49c2b1c8403da406d2baa41f8"
 
 [[test]]
@@ -23464,8 +23462,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/pdf_never_embed.cpp#L87-L128"
 module = "pdf"
-status = "todo"
-reason = "draws text and embeds fonts through the PDF backend: needs the PDF fonts (M26)"
+status = "passing"
 span_hash = "d7c89821fc31c0613da4b24ccaeff0d83db936894ee5c69742d9699f2f70399b"
 
 [[test]]
@@ -37593,8 +37590,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFGlyphsToUnicodeTest.cpp#L43-L215"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF fonts (M26): SkPDFFont and the ToUnicode CMap writer"
+status = "passing"
 span_hash = "912bf4ed6c75784c2189ec41e18ab94c20ce6fa6c6d594f084ca8b5797e7112c"
 
 [[test]]
@@ -37657,8 +37653,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L342-L355"
 module = "pdf"
-status = "todo"
-reason = "needs the PDF fonts (M26): SkPDFFont::CanEmbedTypeface"
+status = "passing"
 span_hash = "410c13dc14d77b34d24a921b89fa7857a81e27258d2c079ae4d506b0da51a3a9"
 
 [[test]]
@@ -37685,8 +37680,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFPrimitivesTest.cpp#L274-L279"
 module = "pdf"
-status = "todo"
-reason = "test_issue1083 draws a glyph through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
+status = "passing"
 span_hash = "5040f08710655cb75e4d29733ef954f679fec631c8c1612074b69ae3ace49909"
 
 [[test]]
@@ -37785,8 +37779,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PDFTaggedTest.cpp#L253-L325"
 module = "pdf"
-status = "todo"
-reason = "draws text marks through a PDF canvas: needs the PDF fonts (M26); the device is ported (M25) and stubs text"
+status = "passing"
 span_hash = "b2e8945ad0a2b565437f3d07a5773fb2584b584ea21d76265d44bf701f21d7bf"
 
 [[test]]
