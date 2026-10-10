@@ -1826,7 +1826,9 @@ impl DrawShape {
     fn new(local_to_device: &Transform, geometry: &Geometry) -> Self {
         let local_to_device = geometry
             .mask_to_device()
-            .map_or(*local_to_device, |mask_to_device| Transform::new(*mask_to_device));
+            .map_or(*local_to_device, |mask_to_device| {
+                Transform::new(*mask_to_device)
+            });
         let mut shape = Shape::default();
         let mut edge_flags = EdgeFlags::ALL;
         let shape_matches_geometry;

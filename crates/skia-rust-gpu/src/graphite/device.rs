@@ -59,8 +59,8 @@ use skia_rust_core::rrect::{RRect, rrect_priv};
 use skia_rust_core::rsxform::RSXform;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::shader::Shader;
-use skia_rust_core::slug::Slug;
 use skia_rust_core::size::ISize;
+use skia_rust_core::slug::Slug;
 use skia_rust_core::special_image::SpecialImage;
 use skia_rust_core::stroke_rec::{InitStyle, StrokeRec, Style as StrokeStyleKind};
 use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
@@ -79,12 +79,6 @@ use crate::graphite::clip_stack::{
     PixelSnapping,
 };
 use crate::graphite::draw_context::DrawContext;
-use crate::graphite::geom::sub_run_data::SubRunData;
-use crate::text_gpu::glyph_vector::RendererData;
-use crate::text_gpu::sub_run_container::AtlasSubRun;
-use crate::text_gpu::slug_impl::SlugImpl;
-use crate::text_gpu::sub_run_container::{StrikeDeviceInfo, SubRunTarget};
-use crate::text_gpu::sub_run_control::SubRunControl;
 use crate::graphite::draw_list_base::MAX_RENDER_STEPS;
 use crate::graphite::draw_list_types::{DrawParamsId, LayerId};
 use crate::graphite::draw_order::{
@@ -100,6 +94,7 @@ use crate::graphite::geom::geometry::Geometry;
 use crate::graphite::geom::intersection_tree::IntersectionTree;
 use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::shape::Shape;
+use crate::graphite::geom::sub_run_data::SubRunData;
 use crate::graphite::geom::transform::{Transform, Type as TransformType};
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use crate::graphite::image_factories::texture_from_image;
@@ -121,6 +116,11 @@ use crate::graphite::texture_proxy::TextureProxy;
 use crate::graphite::texture_proxy_view::TextureProxyView;
 use crate::graphite::texture_utils::as_view;
 use crate::graphite::unique_paint_params_id::UniquePaintParamsID;
+use crate::text_gpu::glyph_vector::RendererData;
+use crate::text_gpu::slug_impl::SlugImpl;
+use crate::text_gpu::sub_run_container::AtlasSubRun;
+use crate::text_gpu::sub_run_container::{StrikeDeviceInfo, SubRunTarget};
+use crate::text_gpu::sub_run_control::SubRunControl;
 
 // ASSERT_SINGLE_OWNER: a device is `!Send` (it holds `Rc`s), which is the single-owner contract.
 
@@ -2311,14 +2311,16 @@ impl DeviceCore {
                 let renderer_data = sub_run_data.renderer_data();
                 if !renderer_data.is_sdf {
                     return (
-                        Some(renderers.bitmap_text(renderer_data.is_lcd, renderer_data.mask_format)),
+                        Some(
+                            renderers.bitmap_text(renderer_data.is_lcd, renderer_data.mask_format),
+                        ),
                         false,
                     );
                 }
                 // Even though the SkPaint can request subpixel rendering, we still need to match
                 // this with the pixel geometry.
-                let use_lcd = renderer_data.is_lcd
-                    && sub_run_data.pixel_geometry() != PixelGeometry::Unknown;
+                let use_lcd =
+                    renderer_data.is_lcd && sub_run_data.pixel_geometry() != PixelGeometry::Unknown;
                 return (Some(renderers.sdf_text(use_lcd)), false);
             }
             Geometry::Vertices(vertices) => {
@@ -3632,8 +3634,13 @@ impl CoreDevice for Device {
         paint: &Paint,
     ) -> Option<Slug> {
         let strike_device_info = self.strike_device_info();
-        SlugImpl::make(self.state.local_to_device(), list, paint, &strike_device_info)
-            .map(Slug::from_base)
+        SlugImpl::make(
+            self.state.local_to_device(),
+            list,
+            paint,
+            &strike_device_info,
+        )
+        .map(Slug::from_base)
     }
 
     // Port of: src/gpu/graphite/Device.cpp#L2582-L2585 (chrome/m156)

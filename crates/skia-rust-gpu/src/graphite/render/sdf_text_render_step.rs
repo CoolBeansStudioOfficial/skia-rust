@@ -58,8 +58,16 @@ pub(crate) const SDF_VERTEX_SKSL: &str = "texIndex = half(indexAndFlags.x);\
 /// The varyings of the distance field text steps.
 // Port of: src/gpu/graphite/render/SDFTextRenderStep.cpp#L68-L71 (chrome/m156)
 pub(crate) const SDF_VARYINGS: [Varying; 3] = [
-    Varying::new("unormTexCoords", SkSLType::Float2, Interpolation::Perspective),
-    Varying::new("textureCoords", SkSLType::Float2, Interpolation::Perspective),
+    Varying::new(
+        "unormTexCoords",
+        SkSLType::Float2,
+        Interpolation::Perspective,
+    ),
+    Varying::new(
+        "textureCoords",
+        SkSLType::Float2,
+        Interpolation::Perspective,
+    ),
     Varying::new("texIndex", SkSLType::Float, Interpolation::Perspective),
 ];
 

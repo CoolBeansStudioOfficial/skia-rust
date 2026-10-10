@@ -1201,6 +1201,7 @@ dependencies = [
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-sksl",
+ "skia-rust-tools",
  "wgpu",
 ]
 
