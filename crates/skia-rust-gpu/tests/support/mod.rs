@@ -289,6 +289,18 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, mipmapped)
     }
 
+    fn get_default_storage_texture_info(
+        &self,
+        color_type: skia_rust_core::color_type::ColorType,
+    ) -> TextureInfo {
+        self.get_default_sampled_texture_info(
+            color_type,
+            Mipmapped::No,
+            Protected::No,
+            skia_rust_gpu::gpu::gpu_types::Renderable::No,
+        )
+    }
+
     fn get_default_readable_texture_info(
         &self,
         format: TextureFormat,
