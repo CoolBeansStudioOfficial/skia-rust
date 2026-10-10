@@ -187,7 +187,7 @@ pub(crate) fn subset_table(plan: &mut Plan<'_>, t: u32) -> Option<Res<bool>> {
         b"GSUB" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gsub))),
         b"GPOS" => Some(run_table(plan, t, |plan, s, v| crate::gsubgpos::subset(plan, s, v, Kind::Gpos))),
         b"MATH" => Some(run_table(plan, t, crate::math::subset)),
-        b"BASE" => Some(unsupported("BASE")),
+        b"BASE" => Some(run_table(plan, t, crate::base::subset)),
         _ => None,
     }
 }
