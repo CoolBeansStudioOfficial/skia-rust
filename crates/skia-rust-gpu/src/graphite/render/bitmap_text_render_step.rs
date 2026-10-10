@@ -77,7 +77,11 @@ pub(crate) const TEXT_APPEND_ATTRS: [Attribute; 7] = [
     Attribute::new("size", VertexAttribType::UShort2, SkSLType::UShort2),
     Attribute::new("uvPos", VertexAttribType::UShort2, SkSLType::UShort2),
     Attribute::new("xyPos", VertexAttribType::Float2, SkSLType::Float2),
-    Attribute::new("indexAndFlags", VertexAttribType::UShort2, SkSLType::UShort2),
+    Attribute::new(
+        "indexAndFlags",
+        VertexAttribType::UShort2,
+        SkSLType::UShort2,
+    ),
     Attribute::new(
         "strikeToSourceScale",
         VertexAttribType::Float,

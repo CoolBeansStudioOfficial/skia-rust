@@ -17,10 +17,10 @@ use std::sync::Arc;
 
 use skia_rust_core::path_types::PathFillType;
 
+use crate::gpu::mask_format::MaskFormat;
 use crate::graphite::buffer_manager::StaticBufferManager;
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_types::DrawTypeFlags;
-use crate::gpu::mask_format::MaskFormat;
 use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use crate::graphite::render::bitmap_text_render_step::BitmapTextRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
@@ -234,10 +234,16 @@ impl RendererProvider {
             (MaskFormat::Argb, DrawTypeFlags::BITMAP_TEXT_COLOR),
         ]
         .map(|(format, draw_types)| {
-            single_step(Arc::new(BitmapTextRenderStep::new(layout, format)), draw_types)
+            single_step(
+                Arc::new(BitmapTextRenderStep::new(layout, format)),
+                draw_types,
+            )
         });
         let sdf_text = [
-            single_step(Arc::new(SDFTextRenderStep::new(layout)), DrawTypeFlags::SDF_TEXT),
+            single_step(
+                Arc::new(SDFTextRenderStep::new(layout)),
+                DrawTypeFlags::SDF_TEXT,
+            ),
             single_step(
                 Arc::new(SDFTextLCDRenderStep::new(layout)),
                 DrawTypeFlags::SDF_TEXT_LCD,
