@@ -4,14 +4,23 @@
 // Ported from Skia: src/core/SkGlyphRunPainter.{h,cpp} (chrome/m156), the CPU painter
 // `skcpu::GlyphRunListPainter`.
 //
-// Not ported yet, and reached only by glyphs that wave 1 never draws: ARGB32 (color) glyph masks,
-// which need `Draw::drawSprite` (T20), and glyph drawables, which need `SkDrawable::draw` on a
-// canvas (T17). Those glyphs are skipped with a TODO and draw nothing; they never panic.
+// Glyph drawables are drawn with the canvas (`canvas->saveLayer(); drawable->draw(canvas)`),
+// which a device cannot reach: the painter collects them (`PendingGlyphDrawable`) and the canvas
+// draws them when the device call returns (`Device::take_pending_glyph_drawables`).
 
 //! The CPU glyph painter: chooses, for each run, whether its glyphs draw as paths, as masks
 //! at device positions, or as scaled masks, and hands the accepted glyphs to the device.
 
+use std::sync::Arc;
+
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_space::ColorSpace;
+use skia_rust_core::device::PendingGlyphDrawable;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::mask::MaskFormat;
+use skia_rust_core::mipmap::Mipmap;
+use skia_rust_core::rect::Rect;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::font_types::GlyphId;
 use skia_rust_core::glyph::{
@@ -36,6 +45,18 @@ use skia_rust_core::surface_props::{PixelGeometry, SurfaceProps};
 pub trait BitmapDevicePainter {
     /// `paintMasks`: paints the accepted glyph masks at their device positions.
     fn paint_masks(&mut self, accepted: &[(&Glyph, Point)], paint: &Paint);
+
+    /// `drawBitmap(bitmap, matrix, dstOrNull, sampling, paint, mips)`: draws a pre-rasterized
+    /// bitmap (the color glyphs that are drawn scaled).
+    fn draw_bitmap(
+        &mut self,
+        bitmap: &Bitmap,
+        matrix: &Matrix,
+        dst_or_null: Option<&Rect>,
+        sampling: &SamplingOptions,
+        paint: &Paint,
+        mips: Option<Arc<Mipmap>>,
+    );
 
     /// `canvas->concat(m); canvas->drawPath(path, paint)`: draws `path` with `matrix` applied
     /// before the device transform.
@@ -80,7 +101,8 @@ impl GlyphRunListPainter {
     /// # Panics
     ///
     /// When the paint has a path effect or mask filter (its strike descriptor is not ported).
-    /// Color glyphs and glyph drawables are skipped (see the module docs).
+    ///
+    /// Glyph drawables are not drawn but added to `pending_drawables` (see the module docs).
     // Port of: src/core/SkGlyphRunPainter.cpp#L219-L423 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     pub fn draw_for_bitmap_device(
@@ -89,6 +111,7 @@ impl GlyphRunListPainter {
         list: &GlyphRunList<'_>,
         paint: &Paint,
         draw_matrix: &Matrix,
+        pending_drawables: &mut Vec<PendingGlyphDrawable>,
     ) {
         // The bitmap blitters can only draw LCD text to a N32 bitmap in srcOver. Otherwise,
         // convert the lcd text into A8 text. The props communicate this to the scaler.
@@ -150,15 +173,29 @@ impl GlyphRunListPainter {
                     }
                 }
                 if !source.is_empty() {
-                    // Glyph drawables are drawn with `SkDrawable::draw(canvas)`, which is not
-                    // ported yet. A glyph that has one is a glyph the wave-1 typefaces never make.
                     let mut guard = strike.lock();
-                    // TODO(text-T17): accepted glyph drawables are drawn with `SkDrawable::draw`
-                    // into a saveLayer of the canvas, which the device painter cannot reach yet.
-                    // Until then they draw nothing.
-                    let (_drawables, rejected) =
+                    let (accepted, rejected) =
                         prepare_for_drawing(&mut guard, ActionType::Drawable, &source);
                     source = rejected;
+
+                    for (digest, pos) in accepted {
+                        let glyph = guard.glyph(digest);
+                        let Some(drawable) = glyph.drawable() else {
+                            panic!("a glyph accepted for drawables has a drawable");
+                        };
+                        let translate = Point::new(draw_origin.x + pos.x, draw_origin.y + pos.y);
+                        let mut m = Matrix::default();
+                        m.set_scale_translate(
+                            (strike_to_source_scale, strike_to_source_scale),
+                            translate,
+                        );
+                        // The canvas draws it: saveLayer(m.mapRect(bounds), paint); draw(m).
+                        pending_drawables.push(PendingGlyphDrawable {
+                            drawable: drawable.clone(),
+                            matrix: m,
+                            paint: paint.clone(),
+                        });
+                    }
                 }
             }
 
@@ -229,11 +266,45 @@ impl GlyphRunListPainter {
                     &position_matrix,
                     &source,
                 );
-                for (digest, _src_pos) in accepted {
-                    let _mask = guard.glyph(digest).mask();
-                    // TODO(text-T20): the ARGB32 glyphs of this branch are drawn with
-                    // `Draw::drawSprite`, which is not ported. Until then they draw nothing, as
-                    // the A8 and LCD glyphs here do (`if (mask.fFormat != kARGB32_Format) continue`).
+                let inv_max_scale = 1.0 / max_scale;
+                for (digest, src_pos) in accepted {
+                    let mask = guard.glyph(digest).mask();
+                    // TODO: is this needed will A8 and BW just work?
+                    if mask.format != MaskFormat::Argb32 {
+                        continue;
+                    }
+                    let mut bm = Bitmap::new();
+                    let installed = bm.install_pixels(
+                        &ImageInfo::new_n32_premul((mask.bounds.width(), mask.bounds.height()), None),
+                        mask.image.to_vec(),
+                        mask.row_bytes as usize,
+                    );
+                    debug_assert!(installed);
+                    bm.set_immutable();
+
+                    // Since the glyph in the cache is scaled by maxScale, its top left vector is
+                    // too long. Reduce it to find proper positions on the device.
+                    #[allow(clippy::cast_precision_loss)] // SkIRect ints to SkScalar
+                    let pos = Point::new(
+                        draw_origin.x + src_pos.x + (mask.bounds.left as scalar) * inv_max_scale,
+                        draw_origin.y + src_pos.y + (mask.bounds.top as scalar) * inv_max_scale,
+                    );
+
+                    // Calculate the preConcat matrix for drawBitmap to get the rectangle from the
+                    // glyph cache (which is multiplied by maxScale) to land in the right place.
+                    let mut translate = Matrix::translate(pos);
+                    translate.pre_scale((inv_max_scale, inv_max_scale), None);
+
+                    // Draw the bitmap using the rect from the scaled cache, and not the source
+                    // rectangle for the glyph.
+                    device.draw_bitmap(
+                        &bm,
+                        &translate,
+                        None,
+                        &SamplingOptions::from(FilterMode::Linear),
+                        paint,
+                        None,
+                    );
                 }
             }
         }

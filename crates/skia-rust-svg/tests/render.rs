@@ -143,3 +143,18 @@ fn polygon_polyline_line_ellipse_and_path() {
     assert_eq!(at(&px, 40, 5, 25), Color::from_argb(0xff, 7, 8, 9));
     assert_eq!(at(&px, 40, 25, 25), Color::from_argb(0xff, 10, 11, 12));
 }
+
+#[test]
+fn renders_the_smile_glyph() {
+    let svg = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../third_party/skia/resources/fonts/svg/smile.svg"
+    ))
+    .unwrap();
+    let px = render(&svg, 800, 800);
+    let painted = px.iter().filter(|c| c.a() != 0).count();
+    assert!(painted > 100_000, "{painted}");
+    // The face is yellow-ish.
+    let yellow = px.iter().filter(|c| c.r() > 200 && c.g() > 150 && c.b() < 100).count();
+    assert!(yellow > 50_000, "{yellow}");
+}

@@ -3,3 +3,4 @@
 
 pub mod font_tool_utils;
 pub mod fonts;
+pub mod resources;

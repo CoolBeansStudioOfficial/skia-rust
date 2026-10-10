@@ -25,7 +25,7 @@ use skia_rust_core::blender::Blender;
 use skia_rust_core::canvas::{PointMode, SrcRectConstraint};
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::color::Color;
-use skia_rust_core::device::{CreateInfo, Device, DeviceState};
+use skia_rust_core::device::{CreateInfo, Device, DeviceState, PendingGlyphDrawable};
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
@@ -298,6 +298,8 @@ pub struct BitmapDevice {
     state: DeviceState,
     bitmap: Bitmap,
     rc_stack: RasterClipStack,
+    /// The glyph drawables the last glyph run list draws left for the canvas.
+    pending_glyph_drawables: Vec<PendingGlyphDrawable>,
 }
 
 impl BitmapDevice {
@@ -322,6 +324,7 @@ impl BitmapDevice {
             state: DeviceState::new(bitmap.info().clone(), surface_props),
             rc_stack: RasterClipStack::new(bitmap.width(), bitmap.height()),
             bitmap,
+            pending_glyph_drawables: Vec::new(),
         }
     }
 
@@ -417,6 +420,7 @@ impl BitmapDevice {
             state,
             bitmap,
             rc_stack,
+            ..
         } = self;
         let rc = rc_stack.rc();
         let local_to_device = state.local_to_device();
@@ -481,6 +485,7 @@ impl BitmapDevice {
             state,
             bitmap,
             rc_stack,
+            ..
         } = self;
         let dst = Self::draw_pixmap(bitmap);
         let mut draw = Draw::new(dst, state.local_to_device(), rc_stack.rc());
@@ -841,7 +846,15 @@ impl Device for BitmapDevice {
             image_info.color_type(),
             color_space.as_ref(),
         );
-        self.loop_tiler(None, |draw| draw.draw_glyph_run_list(&painter, list, paint));
+        let mut pending = Vec::new();
+        self.loop_tiler(None, |draw| {
+            draw.draw_glyph_run_list(&painter, list, paint, &mut pending);
+        });
+        self.pending_glyph_drawables.append(&mut pending);
+    }
+
+    fn take_pending_glyph_drawables(&mut self) -> Vec<PendingGlyphDrawable> {
+        std::mem::take(&mut self.pending_glyph_drawables)
     }
 
     fn draw_path(&mut self, path: &Path, paint: &Paint) {
