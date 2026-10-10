@@ -352,7 +352,9 @@ impl ResourceCache {
     pub fn add(&mut self, rec: Box<dyn Rec>) {
         self.check_messages();
         if let Some(&preexisting) = self.hash.get(rec.key()) {
-            let slot = self.slots[preexisting].as_mut().expect("hashed slot is live");
+            let slot = self.slots[preexisting]
+                .as_mut()
+                .expect("hashed slot is live");
             if slot.rec.can_be_purged() {
                 // If it can be purged, the install may fail, so we have to remove it.
                 self.remove(preexisting);
@@ -477,7 +479,9 @@ impl ResourceCache {
             return;
         }
         self.release(idx);
-        let old_head = self.head.expect("a list with a record other than idx has a head");
+        let old_head = self
+            .head
+            .expect("a list with a record other than idx has a head");
         self.slots[old_head].as_mut().expect("head is live").prev = Some(idx);
         let slot = self.slots[idx].as_mut().expect("moved slot is live");
         slot.next = Some(old_head);
@@ -512,7 +516,11 @@ impl ResourceCache {
 
     /// Removes `idx` from the cache and drops the record (`remove`).
     fn remove(&mut self, idx: usize) {
-        let used = self.slots[idx].as_ref().expect("removed slot is live").rec.bytes_used();
+        let used = self.slots[idx]
+            .as_ref()
+            .expect("removed slot is live")
+            .rec
+            .bytes_used();
         debug_assert!(used <= self.total_bytes_used);
         self.release(idx);
         let slot = self.slots[idx].take().expect("removed slot is live");
@@ -524,4 +532,3 @@ impl ResourceCache {
         drop(slot);
     }
 }
-

@@ -17,11 +17,11 @@ pub mod blur_mask;
 pub mod blur_mask_filter_impl;
 pub mod blur_types;
 pub mod buffer;
+pub mod cached_data;
 pub mod canvas;
 #[doc(hidden)]
 pub mod canvas_priv;
 pub mod capabilities;
-pub mod cached_data;
 pub mod checksum;
 pub mod clip_op;
 pub mod clip_stack;
