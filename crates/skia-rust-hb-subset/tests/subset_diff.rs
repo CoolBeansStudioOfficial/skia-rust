@@ -27,9 +27,6 @@ const NOT_PORTED: &[(&str, &str)] = &[
     ("Stroking.otf", "CFF"),
     ("colr.ttf", "colour tables"),
     ("planetcolr.ttf", "colour tables"),
-    ("planetsbix.ttf", "colour tables"),
-    ("sbix.ttf", "colour tables"),
-    ("sbix_uncompressed_flags.ttf", "colour tables"),
     ("test_glyphs-glyf_colr_1.ttf", "colour tables"),
     ("test_glyphs-glyf_colr_1_variable.ttf", "colour tables"),
 ];
