@@ -162,7 +162,7 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 |---|---|---|---|---|
 | Shader compiler | Tint → HLSL → **FXC** (no DXC: `dawn@e03f1d59:CMakeLists.txt#L164` `DAWN_USE_BUILT_DXC OFF`, so `UseDXC` is force-set false, `PhysicalDeviceD3D12.cpp#L655-L672`) | Tint → SPIR-V → driver | — | naga → HLSL → FXC or DXC; naga → SPIR-V |
 | FXC flags | `OPTIMIZATION_LEVEL0` (`fxc_optimizations` off), `PACK_MATRIX_ROW_MAJOR`, `IEEE_STRICTNESS` (`RenderPipelineD3D12.cpp#L343-L366`, `#L386-L391`) | — | — | `ENABLE_STRICTNESS` only, default O1 (`dx12/shader_compilation.rs#L232-L240`); not configurable |
-| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC) |
+| `ShaderF16` | **no** (only with built DXC, `PhysicalDeviceD3D12.cpp#L186-L191`) | yes on NVIDIA (`PhysicalDeviceVk.cpp#L382`) | D3D12: `fForceHighPrecision`, `Layout::kStd140`/`kStd430` (`DawnCaps.cpp#L330-L338`, `DawnGraphicsPipeline.cpp#L343-L345`) | `SHADER_F16` (DX12 needs DXC); **off by default in our caps** (below) |
 | Storage buffers | yes (`DawnCaps.cpp#L358-L363`) | **no** (Vulkan excluded there) | SSBO vs UBO paint/step data; different WGSL | yes |
 | Immediates | `maxImmediateSize` = 64 (`Constants.h#L58`) | 64 (`PhysicalDeviceVk.cpp#L974`) | intrinsics via `var<immediate>` (`DawnCaps.cpp#L343-L344`) | `IMMEDIATES` |
 | Dual-source blending | yes (`PhysicalDeviceD3D12.cpp#L161`) | yes | blend formulas with `@blend_src` | `DUAL_SOURCE_BLENDING` |
@@ -173,6 +173,13 @@ toggles `skip_validation`, `disable_lazy_clear_for_mapped_at_creation_buffer`,
 | `depth24plus-stencil8` | **`D32_FLOAT_S8X24`** (`d3d/UtilsD3D.cpp#L338-L341`) | `D24_UNORM_S8` if supported | painter's depth precision | `D24_UNORM_S8_UINT` (`auxil/dxgi/conv.rs#L67`) |
 | MSAA | 4×, `SampleDesc.Quality = 0` | 4× | — | 4×, `Quality = 0` |
 | Robustness | disabled by toggle | disabled | — | naga bounds checks on (turning them off is `unsafe`) |
+
+`WgpuCaps` never reports `ShaderF16` for a real device (`CapsProfile::from_device`; opt in with
+`from_device_with_f16`), even where the adapter has it. wgpu 30 rejects the `half4` fragment
+outputs Graphite's f16 WGSL writes for an `Rgba8Unorm` target (Dawn accepts them), and the D3D12
+goldens were rendered without f16, so all-f32 WGSL matches the gating tier. The Dawn Vulkan
+oracle profile keeps `SHADER_F16`, and `a_half_precision_fragment_output_is_a_creation_failure_on_wgpu`
+pins the wgpu failure.
 
 Two consequences:
 
@@ -281,6 +288,20 @@ A compact binary (or JSON lines) per GM:
 Our wgpu backend emits the same records from the same places (the port of `DawnCommandBuffer` and
 friends), behind a test-only `trace` feature. `xtask gpu-trace diff <gm>` prints the first
 differing record with its context, like `rp-diff`.
+
+**Status (G11c).** The `trace` cargo feature of `skia-rust-gpu` emits the records
+(`graphite::wgpu::trace`: `Record`, `TraceSink`, `JsonLinesSink`, `MemorySink`;
+`WgpuSharedContext::set_trace_sink`). A record is an operation name with ordered fields, written as
+one JSON object per line, and byte payloads (mapped buffer flushes, queue writes, WGSL, read-back
+bytes) go to the sink once per FNV-1a hash as blobs. Resources are named by the trace id their
+creation record (`create_buffer`, `create_texture`) carries; the pass records are
+`begin_render_pass`, `set_pipeline`, `set_bind_group`, `set_vertex_buffer`, `set_index_buffer`,
+`set_scissor_rect`, `set_viewport`, `set_immediates`, `set_blend_constant`, `draw`,
+`draw_indexed`, `draw_indirect`, `draw_indexed_indirect`, `blit_with_draw` (the emulated MSAA
+load and resolve), `end_render_pass`, and the compute and copy equivalents, then `submit`. Not yet
+traced: sampler creation and the final readback of a surface (`map_read` records the bytes of any
+mapped read buffer). The oracle side of the format is not written, so there is no `gpu-trace
+diff` yet.
 
 Committed artifacts stay small: per-tier hash lists (`oracle/gpu/expected/<tier>/<gm>.txt`, one
 line per record hash), as `rp-diff/expected` does. Full traces and shader texts go into the
@@ -544,6 +565,18 @@ with the full texts in the release, as in `rp-diff`.
   noop adapter. `CacheKeyTest` (2) needs `ImageProvider` and `Image_Graphite` (G10), and
   `PaintParamsKeyTest` (2) the Precompile API (G14).
 
+**Status after G10b** (`port/gpu-g10b`): `graphite::clip_stack::ClipStack` is the whole of
+`ClipStack.cpp` (element tree, `SaveRecord`s, combine/simplify, `visitClipStackForDraw`,
+`updateClipStateForDraw`, `recordDeferredClipDraws`, analytic clips, depth-only clip draws for both
+draw lists). The device calls back through `ClipDrawHooks`. `NonMSAAClip` (`AnalyticClip` +
+`AtlasClip`) is in `geom::non_msaa_clip`, and `ShadingParams` keys it with `AddAnalyticClip`
+(`key_helpers_ii::add_analytic_clip`, including the atlas block and its texture binding). The one
+seam is the clip atlas: `ClipAtlasManager` (G12a) is a trait that `visit_clip_stack_for_draw` calls
+exactly as the C++ does; the device passes `None`, so every non-analytic element is a depth-only
+clip draw until G12a. W2's clip paints and `ClipStackTest`-style checks are headless tests in
+`tests/clip_stack.rs`; Skia has no Graphite `ClipStack` unit test in m156 (the `GrClipStackTest`
+entries are Ganesh's `GrClipStack`).
+
 An identity local matrix is not elided anywhere in Skia: the gradient factories end with
 `makeWithLocalMatrix(lm ? *lm : SkMatrix::I())` and `SkShader::makeWithLocalMatrix` always wraps,
 and Graphite's key code for `SkLocalMatrixShader` folds the gradient's unit-space matrix into that
@@ -560,6 +593,23 @@ nothing to fix.
 | Headless recorder | DrawList sort, DrawPass command building, renderer choice, ClipStack element decisions, uniform/vertex bytes, pipeline sets (W2), the CPU half of the command trace | `CapsProfile` + a recorder without a wgpu device; compared with G0b traces |
 | wgpu `noop` adapter (`Backends::NOOP`, `wgpu-types backend.rs#L27-L39`) | resource cache, proxy cache, texture proxies, recorder/recording lifecycle, keys, precompile, storage context, texture fallback; any test that creates resources and never reads pixels | a real `Context` on the noop backend. Each port says in its PR whether the test reads pixels. About 115 candidates by file (§9) |
 | Real adapter | anything that reads pixels (`ReadWritePixelsGraphiteTest`, `ImageOriginTest`, `MultisampleTest`, `ComputeTest`, `AtlasTests`, …) and all GPU GMs | lavapipe (Linux), WARP (Windows), Metal (macOS) |
+
+The real-adapter tests are written against `adapter_backend_context` (software adapters first)
+and skip, saying so, when the machine has none; setting `SKIA_RUST_REQUIRE_ADAPTER` makes a missing
+adapter an error, for the GPU CI jobs. In the cloud container lavapipe is `mesa-vulkan-drivers`
+(`apt-get install mesa-vulkan-drivers`; Mesa 25.2 here, llvmpipe on LLVM 20.1). The first pixels
+tests (`tests/wgpu_first_pixels.rs`) run there: cleared and rect-filled targets read back exactly,
+and a path drawn through the MSAA render pass whose resolve is emulated (wgpu has no
+load-from-resolve), read back with `WgpuContext::read_pixels` (`asyncReadTexture` /
+`transferPixels` / `finalizeAsyncReadPixels`).
+
+Surfaces and images read back through the context: `WgpuContext::read_surface_pixels` is
+`Device::onReadPixels` (snap, insert, `ContextPriv::readPixels`), `read_image_pixels` the same for
+an image, and `asyncReadPixels` draws a source that is not copyable, is bottom-left or needs a
+transfer function into a copyable texture (`CopyAsDraw`) first. Ported tests that read pixels use
+`def_graphite_adapter_test!` (tests/src/lib.rs): they are `#[ignore]`d, so CI cannot count them as
+passing, and their entries stay `todo` ("needs a real adapter in CI (lavapipe job)") until a GPU
+job runs `--ignored`. Run them locally with `cargo test -p skia-rust-tests --lib -- --ignored`.
 
 ---
 

@@ -122,6 +122,20 @@ pub enum Error {
     HuffMissingCode,
     /// A source manager failure that Skia turns into `error_exit` (`skipInputBytes` past the end).
     SourceSkipFailed,
+    /// `JERR_NO_QUANT_TABLE`: a component names a quantization table that was never set.
+    NoQuantTable(i32),
+    /// `JERR_NO_HUFF_TABLE`: a scan names a Huffman table that was never set.
+    NoHuffTable(i32),
+    /// `JERR_HUFF_CLEN_OVERFLOW`: an optimal Huffman code would be longer than 32 bits.
+    HuffCodeLengthOverflow,
+    /// `JERR_COMPONENT_COUNT`: more components than the library or the scan supports.
+    ComponentCount(i32, i32),
+    /// `JERR_CONVERSION_NOTIMPL`: a colour conversion this port does not implement.
+    ConversionNotImplemented,
+    /// `JERR_BAD_MCU_SIZE`: the MCU would hold more blocks than `C_MAX_BLOCKS_IN_MCU`.
+    BadMcuSize,
+    /// `JERR_BUFFER_SIZE`: `jpeg_write_raw_data` got fewer rows than one iMCU row.
+    BufferSize,
     /// `JERR_BAD_ALIGN_TYPE` and similar internal checks that cannot be reached with valid API use.
     Internal(&'static str),
 }
@@ -170,6 +184,15 @@ impl fmt::Display for Error {
             Error::BadDropSampling => f.write_str("Bogus drop-sampling request"),
             Error::HuffMissingCode => f.write_str("Corrupt JPEG data: bad Huffman code"),
             Error::SourceSkipFailed => f.write_str("Failure to skip input data"),
+            Error::NoQuantTable(i) => write!(f, "Quantization table 0x{i:02x} was not defined"),
+            Error::NoHuffTable(i) => write!(f, "Huffman table 0x{i:02x} was not defined"),
+            Error::HuffCodeLengthOverflow => f.write_str("Huffman code size table overflow"),
+            Error::ComponentCount(n, max) => {
+                write!(f, "Too many color components: {n}, max {max}")
+            }
+            Error::ConversionNotImplemented => f.write_str("Unsupported color conversion request"),
+            Error::BadMcuSize => f.write_str("Sampling factors too large for interleaved scan"),
+            Error::BufferSize => f.write_str("Input buffer too small"),
             Error::Internal(what) => write!(f, "internal error: {what}"),
         }
     }

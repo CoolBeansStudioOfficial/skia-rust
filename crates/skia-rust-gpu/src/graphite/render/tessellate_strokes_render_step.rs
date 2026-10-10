@@ -319,9 +319,16 @@ impl RenderStep for TessellateStrokesRenderStep {
         // affineMatrix = float4 (2x2 of transform), translate = float2, maxScale = float.
         // Column-major 2x2 of the transform.
         let upper = [m.rc(0, 0), m.rc(1, 0), m.rc(0, 1), m.rc(1, 1)];
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
         let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
         uniforms.write_vec(upper);
         uniforms.write_vec([m.rc(0, 3), m.rc(1, 3)]);
         uniforms.write_f32(params.transform().max_scale_factor());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }

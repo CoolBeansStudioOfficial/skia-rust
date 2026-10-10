@@ -158,6 +158,44 @@ macro_rules! def_test {
     };
 }
 
+/// Port of `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` / `DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS` for
+/// the tests that read pixels back, so need a real adapter (lavapipe, WARP or Metal;
+/// `docs/design/gpu.md` section 7). The body runs once, on
+/// [`tools::graphite_test_context::real_context`].
+///
+/// The test is `#[ignore]`d, because CI has no adapter and an ignored test cannot be mistaken for
+/// a passing one by `cargo xtask inventory verify`; run it with `cargo test -p skia-rust-tests
+/// --lib -- --ignored <name>` on a machine with an adapter. Without one it says so and returns,
+/// unless `SKIA_RUST_REQUIRE_ADAPTER` is set.
+///
+/// ```ignore
+/// def_graphite_adapter_test!(ImageShaderTest, |reporter, context| {
+///     /* … */
+/// });
+/// ```
+#[macro_export]
+macro_rules! def_graphite_adapter_test {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident, $context:ident| $body:block) => {
+        #[test]
+        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            if let Some((context_name, mut context)) =
+                $crate::tools::graphite_test_context::real_context()
+            {
+                reporter.set_context(Some(context_name));
+                let run = |$reporter: &mut $crate::Reporter,
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
+                reporter.set_context(None);
+            }
+            reporter.finish();
+        }
+    };
+}
+
 /// Port of `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS(name, reporter, context, ...)`: runs the body
 /// once per context of [`tools::graphite_test_context::all_contexts`], with the context's name
 /// prefixed to each failure.
@@ -175,12 +213,12 @@ macro_rules! def_graphite_test_for_all_contexts {
         #[allow(non_snake_case)]
         fn $name() {
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            for (context_name, context) in $crate::tools::graphite_test_context::all_contexts() {
+            for (context_name, mut context) in $crate::tools::graphite_test_context::all_contexts() {
                 reporter.set_context(Some(context_name));
                 // A closure, as in `def_test!`: an early `return` ends this context only.
                 let run = |$reporter: &mut $crate::Reporter,
-                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &context);
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
             }
             reporter.set_context(None);
             reporter.finish();
@@ -214,14 +252,14 @@ macro_rules! def_graphite_test_for_contexts_with_options {
                 $set_options
             }
             let mut reporter = $crate::Reporter::new(stringify!($name));
-            for (context_name, context) in
+            for (context_name, mut context) in
                 $crate::tools::graphite_test_context::all_contexts_with_options(&context_options)
             {
                 reporter.set_context(Some(context_name));
                 // A closure, as in `def_test!`: an early `return` ends this context only.
                 let run = |$reporter: &mut $crate::Reporter,
-                           $context: &::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
-                run(&mut reporter, &context);
+                           $context: &mut ::skia_rust_gpu::graphite::wgpu::WgpuContext| $body;
+                run(&mut reporter, &mut context);
             }
             reporter.set_context(None);
             reporter.finish();

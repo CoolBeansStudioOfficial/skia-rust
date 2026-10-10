@@ -249,9 +249,15 @@ impl RenderStep for TessellateCurvesRenderStep {
         params: &DrawParams,
         gatherer: &mut PipelineDataGatherer,
     ) {
-        gatherer
-            .uniform_manager()
-            .write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        gatherer.check_rewind();
+        let uniforms = gatherer.uniform_manager();
+        // `UniformExpectationsValidator uev(gatherer, this->uniforms())`
+        #[cfg(debug_assertions)]
+        uniforms.set_expected_uniforms(self.uniforms(), false);
+        uniforms.write_m44(params.transform().matrix());
+        #[cfg(debug_assertions)]
+        uniforms.done_with_expected_uniforms();
     }
 }
 

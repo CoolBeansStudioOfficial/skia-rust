@@ -7,7 +7,7 @@
 //!
 //! This is the part of `DawnGraphicsPipeline::Make` that needs no device. It is split out because
 //! it is what the byte-identical-WGSL criterion checks (`docs/design/gpu.md` §6.3): with a
-//! [`WgpuCaps`] built from a [`CapsProfile`] it runs on any machine. `GraphicsPipeline` (G11b)
+//! [`WgpuCaps`] built from a [`CapsProfile`] it runs on any machine. `WgpuGraphicsPipeline` (G11b)
 //! builds the wgpu shader modules and the pipeline from its result.
 
 use std::sync::Arc;

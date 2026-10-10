@@ -25,6 +25,7 @@
 
 use crate::prelude::*;
 use skia_rust_core::clip_op::ClipOp;
+use skia_rust_core::color_priv::ColorConverter;
 use skia_rust_core::font::Font;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Cap, Join, Paint, Style};
@@ -34,6 +35,8 @@ use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::point::Point;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::scalar::scalar;
+use skia_rust_core::tile_mode::TileMode;
+use skia_rust_effects::gradient::{Colors, Gradient, Interpolation, shaders as gradient_shaders};
 use skia_rust_tools::font_tool_utils::default_portable_typeface;
 
 // skbug.com/40032398 shows that this cubic, when slightly clipped, creates big
@@ -379,3 +382,151 @@ impl GM for CubicClosePathGm {
 crate::def_gm!(CubicPathGM, CubicPathGm);
 // Port of: gm/cubicpaths.cpp#L544 (chrome/m156)
 crate::def_gm!(CubicClosePathGM, CubicClosePathGm);
+
+// Port of: gm/cubicpaths.cpp#L371-L382 (chrome/m156), CubicPathShaderGM::drawPath
+#[allow(clippy::too_many_arguments)] // mirrors the C++ drawPath signature
+fn draw_cubic_shader_path(
+    path: &mut Path,
+    canvas: &Canvas,
+    clip: &Rect,
+    cap: Cap,
+    join: Join,
+    style: Style,
+    fill: PathFillType,
+    stroke_width: f32,
+) {
+    let s: f32 = 50.0;
+    let pts = [Point::new(0.0, 0.0), Point::new(s, s)];
+    let pos: [f32; 3] = [0.0, 1.0 / 2.0, 1.0];
+    let conv = ColorConverter::new(&[
+        Color::from(0x80F0_0080),
+        Color::from(0xF0F0_8000),
+        Color::from(0x8000_80F0),
+    ]);
+
+    path.set_fill_type(fill);
+
+    let mut paint = Paint::default();
+    paint.set_stroke_cap(cap);
+    paint.set_stroke_width(stroke_width);
+    paint.set_stroke_join(join);
+    paint.set_shader(gradient_shaders::linear_gradient(
+        (pts[0], pts[1]),
+        &Gradient::new(
+            Colors::new(conv.colors4f(), Some(&pos), TileMode::Clamp, None),
+            Interpolation::default(),
+        ),
+        None,
+    ));
+    paint.set_style(style);
+    canvas.save();
+    canvas.clip_rect(*clip, None, None);
+    canvas.draw_path(path, &paint);
+    canvas.restore();
+}
+
+// Port of: gm/cubicpaths.cpp#L371-L540 (chrome/m156), CubicPathShaderGM
+struct CubicPathShaderGm;
+
+impl GM for CubicPathShaderGm {
+    fn name(&self) -> String {
+        "cubicpath_shader".to_owned()
+    }
+
+    fn size(&mut self) -> ISize {
+        ISize::new(1240, 390)
+    }
+
+    // Port of: gm/cubicpaths.cpp#L400-L538 (chrome/m156), onDraw
+    fn on_draw(&mut self, canvas: &Canvas) {
+        let fills: [(PathFillType, &str); 4] = [
+            (PathFillType::Winding, "Winding"),
+            (PathFillType::EvenOdd, "Even / Odd"),
+            (PathFillType::InverseWinding, "Inverse Winding"),
+            (PathFillType::InverseEvenOdd, "Inverse Even / Odd"),
+        ];
+        let styles: [(Style, &str); 3] = [
+            (Style::Fill, "Fill"),
+            (Style::Stroke, "Stroke"),
+            (Style::StrokeAndFill, "Stroke And Fill"),
+        ];
+        let caps: [(Cap, Join, &str); 3] = [
+            (Cap::Butt, Join::Bevel, "Butt"),
+            (Cap::Round, Join::Round, "Round"),
+            (Cap::Square, Join::Bevel, "Square"),
+        ];
+
+        let mut path = PathBuilder::new()
+            .move_to((25.0, 10.0))
+            .cubic_to((40.0, 20.0), (60.0, 20.0), (75.0, 10.0))
+            .detach();
+
+        let mut title_paint = Paint::default();
+        title_paint.set_color(Color::BLACK);
+        title_paint.set_anti_alias(true);
+        let mut font = Font::from_size(default_portable_typeface(), 15.0);
+        let title = "Cubic Drawn Into Rectangle Clips With Indicated Style, Fill and Linecaps, \
+                     with stroke width 10";
+        canvas.draw_str(title, (20.0, 20.0), &font, &title_paint);
+
+        let rect = Rect::new(0.0, 0.0, 100.0, 30.0);
+        canvas.save();
+        canvas.translate((10.0, 30.0));
+        canvas.save();
+        for (cap_index, (cap, join, _)) in caps.iter().enumerate() {
+            if 0 < cap_index {
+                canvas.translate(((rect.width() + 40.0) * styles.len() as f32, 0.0));
+            }
+            canvas.save();
+            for (fill_index, (fill, _)) in fills.iter().enumerate() {
+                if 0 < fill_index {
+                    canvas.translate((0.0, rect.height() + 40.0));
+                }
+                canvas.save();
+                for (style_index, (style, _)) in styles.iter().enumerate() {
+                    if 0 < style_index {
+                        canvas.translate((rect.width() + 40.0, 0.0));
+                    }
+                    let color = Color::from(0xff00_7000);
+                    draw_cubic_shader_path(
+                        &mut path, canvas, &rect, *cap, *join, *style, *fill, 10.0,
+                    );
+                    let mut rect_paint = Paint::default();
+                    rect_paint.set_color(Color::BLACK);
+                    rect_paint.set_style(Style::Stroke);
+                    rect_paint.set_stroke_width(-1.0);
+                    rect_paint.set_anti_alias(true);
+                    canvas.draw_rect(rect, &rect_paint);
+                    let mut label_paint = Paint::default();
+                    label_paint.set_color(color);
+                    font.set_size(10.0);
+                    canvas.draw_str(
+                        styles[style_index].1,
+                        (0.0, rect.height() + 12.0),
+                        &font,
+                        &label_paint,
+                    );
+                    canvas.draw_str(
+                        fills[fill_index].1,
+                        (0.0, rect.height() + 24.0),
+                        &font,
+                        &label_paint,
+                    );
+                    canvas.draw_str(
+                        caps[cap_index].2,
+                        (0.0, rect.height() + 36.0),
+                        &font,
+                        &label_paint,
+                    );
+                }
+                canvas.restore();
+            }
+            canvas.restore();
+        }
+        canvas.restore();
+        canvas.restore();
+    }
+}
+
+// Port of: gm/cubicpaths.cpp#L371 (chrome/m156), DEF_GM( return new CubicPathShaderGM; )
+crate::def_gm!(CubicPathShaderGM, CubicPathShaderGm);

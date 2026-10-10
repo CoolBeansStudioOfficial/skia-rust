@@ -18,7 +18,24 @@ use skia_rust_gpu::graphite::resource::{AnyResource, Resource, ResourceObject, R
 use skia_rust_gpu::graphite::resource_cache::{ResourceCache, ScratchResourceSet};
 use skia_rust_gpu::graphite::resource_types::{Ownership, ResourceType, Shareable};
 
-use crate::{def_graphite_test_for_all_contexts, reporter_assert};
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::canvas::Canvas;
+use skia_rust_core::color::Color;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::data::Data;
+use skia_rust_core::image::RequiredProperties;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::images;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::context_priv::ContextPriv;
+use skia_rust_gpu::graphite::graphite_types::{InsertRecordingInfo, SubmitInfo, SyncToCpu};
+use skia_rust_gpu::graphite::image_factories::texture_from_image;
+use skia_rust_gpu::graphite::surface_graphite::Surface;
+use skia_rust_gpu::graphite::texture_utils::as_view;
+use skia_rust_raster::raster_canvas::RasterCanvas;
+
+use crate::{def_graphite_test_for_all_contexts, errorf, reporter_assert};
 
 // The tests below use raw `Resource*` pointers to name resources the cache owns; the port uses an
 // `Arc` clone of the resource, which keeps its memory (not a usage ref) alive.
@@ -851,4 +868,290 @@ def_graphite_test_for_all_contexts!(GraphiteTimeLimitedPurgeTest, |reporter, con
 
     reporter_assert!(reporter, count() > 0);
     reporter_assert!(reporter, count() < K_LARGE_RESOURCE_COUNT);
+});
+
+// Port of: tests/graphite/GraphiteResourceCacheTest.cpp#L81-L91 (chrome/m156)
+fn create_image_data(info: &ImageInfo) -> Vec<u8> {
+    let row_bytes = info.min_row_bytes();
+    let mut data = vec![0_u8; row_bytes * usize::try_from(info.height()).unwrap()];
+    let mut bm = Bitmap::new();
+    let installed = bm.install_pixels(info, data.clone(), row_bytes);
+    assert!(installed);
+    {
+        let canvas = Canvas::from_bitmap(&mut bm, None).expect("canvas");
+        canvas.clear(Color::RED);
+    }
+    let len = data.len();
+    data.copy_from_slice(&bm.peek_pixels().expect("pixels").bytes().expect("bytes")[..len]);
+    data
+}
+
+def_graphite_test_for_all_contexts!(GraphiteBudgetedResourcesTest, |reporter, context| {
+    // Port of: tests/graphite/GraphiteResourceCacheTest.cpp#L96-L283 (chrome/m156)
+    let mut recorder = context.make_recorder(None);
+    let resource_provider = recorder.priv_().resource_provider().clone();
+    // The C++ test holds `ResourceCache*` and `ResourceProvider*`; the provider is behind a lock
+    // here, which must not be held across the calls that use the provider themselves.
+    macro_rules! resource_cache {
+        () => {
+            resource_provider.lock().unwrap().resource_cache()
+        };
+    }
+
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 0);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 0);
+
+    // Test making a non budgeted, non shareable resource.
+    let resource = TestResource::make(
+        resource_cache!(),
+        Ownership::Owned,
+        Budgeted::No,
+        Shareable::No,
+        1,
+    );
+    let resource_ptr = resource.as_arc().clone();
+
+    reporter_assert!(reporter, resource_ptr.base().budgeted() == Budgeted::No);
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    // Resource is not shareable and we have a ref on it. Thus it shouldn't be findable in the cache
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 0);
+
+    // When we reset our TestResource it should go back into the cache since it can be used as a
+    // scratch resource (since it is not shareable). At that point the budget should be changed to
+    // Budgeted::kYes.
+    drop(resource);
+    resource_cache!().force_process_returned_resources();
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 1);
+    // Even though we reset our ref on the resource we still have the ptr to it and should be the
+    // resource in the cache. So in general this is dangerous it should be safe for this test to
+    // directly access the resource.
+    reporter_assert!(reporter, resource_ptr.base().budgeted() == Budgeted::Yes);
+
+    // Test that the scratch resource can fulfill a new non-budgeted, non-shareable request
+    let key = TestResource::create_key();
+    let mut resource_ptr2 =
+        resource_cache!().find_and_ref_resource(&key, Budgeted::No, Shareable::No, "", None);
+    reporter_assert!(
+        reporter,
+        resource_ptr2
+            .as_ref()
+            .is_some_and(|found| found.base().unique_id() == resource_ptr.base().unique_id())
+    );
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 0);
+    reporter_assert!(
+        reporter,
+        resource_ptr2
+            .as_ref()
+            .is_some_and(|found| found.base().budgeted() == Budgeted::No)
+    );
+    drop(resource_ptr2.take()); // resourcePtr2->unref()
+    resource_cache!().force_process_returned_resources();
+
+    // Test making a budgeted, shareable resource. Since we returned all refs to the prior non
+    // shareable resource, it should be able to be switched to a shareable resource.
+    let shared =
+        resource_cache!().find_and_ref_resource(&key, Budgeted::Yes, Shareable::Yes, "", None);
+    reporter_assert!(
+        reporter,
+        shared
+            .as_ref()
+            .is_some_and(|found| found.base().unique_id() == resource_ptr.base().unique_id())
+    );
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 1); // still findable
+    reporter_assert!(reporter, resource_ptr.base().budgeted() == Budgeted::Yes);
+    reporter_assert!(reporter, resource_ptr.base().shareable() == Shareable::Yes);
+
+    // While the shareable resource is held, make a second shareable request which should still
+    // find the existing resource in the cache.
+    resource_ptr2 =
+        resource_cache!().find_and_ref_resource(&key, Budgeted::Yes, Shareable::Yes, "", None);
+    reporter_assert!(
+        reporter,
+        resource_ptr2
+            .as_ref()
+            .is_some_and(|found| found.base().unique_id() == resource_ptr.base().unique_id())
+    );
+    drop(resource_ptr2.take()); // resourcePtr2->unref()
+
+    // Now make a non-shareable request with the same key. This should fail to find a valid resource
+    // since the one in the cache still has outstanding usage refs requiring it to be shareable.
+    resource_ptr2 =
+        resource_cache!().find_and_ref_resource(&key, Budgeted::Yes, Shareable::No, "", None);
+    reporter_assert!(reporter, resource_ptr2.is_none());
+
+    // Return the shareable resource and then re-request the non-shareable key. Without any more
+    // usage refs, the shareable resource can be restricted back to non-shareable usage.
+    drop(shared); // resource.reset()
+    resource_cache!().force_process_returned_resources();
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 1);
+
+    resource_ptr2 =
+        resource_cache!().find_and_ref_resource(&key, Budgeted::Yes, Shareable::No, "", None);
+    reporter_assert!(
+        reporter,
+        resource_ptr2
+            .as_ref()
+            .is_some_and(|found| found.base().unique_id() == resource_ptr.base().unique_id())
+    );
+    reporter_assert!(reporter, resource_cache!().get_resource_count() == 1);
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 0); // not findable again
+    reporter_assert!(
+        reporter,
+        resource_ptr2.as_ref().is_some_and(|found| {
+            found.base().budgeted() == Budgeted::Yes && found.base().shareable() == Shareable::No
+        })
+    );
+    drop(resource_ptr2.take()); // resourcePtr2->unref()
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // Test that SkImage's and SkSurface's underlying Resource's follow the expected budgeted
+    // system.
+    let info = ImageInfo::new((10, 10), ColorType::RGBA8888, AlphaType::Premul, None);
+
+    // First test SkImages. Since we can't directly create a Graphite SkImage we first have to make
+    // a raster SkImage than convert that to a Graphite SkImage via makeTextureImage.
+    let data = create_image_data(&info);
+    let image = images::raster_from_data(&info, Data::new_from_vec(data), info.min_row_bytes());
+    reporter_assert!(reporter, image.is_some());
+    let Some(image) = image else {
+        return;
+    };
+
+    let image_gpu = texture_from_image(&recorder, &image, RequiredProperties::default());
+    reporter_assert!(reporter, image_gpu.is_some());
+
+    let image_resource_ptr;
+    {
+        // We don't want the view holding a ref to the Proxy or else we can't send things back to
+        // the cache.
+        let view = as_view(image_gpu.as_ref());
+        reporter_assert!(reporter, view.proxy().is_some());
+        let Some(image_proxy) = view.ref_proxy() else {
+            return;
+        };
+        drop(view);
+        // Make sure the proxy is instantiated
+        if !image_proxy.instantiate(&mut resource_provider.lock().unwrap()) {
+            errorf!(reporter, "Failed to instantiate Proxy");
+            return;
+        }
+        image_resource_ptr =
+            image_proxy.with_texture(|texture| texture.map(|t| t.as_arc().clone()));
+    }
+    reporter_assert!(reporter, image_resource_ptr.is_some());
+    let Some(image_resource_ptr) = image_resource_ptr else {
+        return;
+    };
+    // There is an extra resource for the buffer that is uploading the data to the texture. If host
+    // image copy is supported, the buffer may or may not be used based on other parameters.
+    let buffers_used_for_upload =
+        i64::try_from(resource_cache!().get_resource_count()).unwrap() - 2;
+    reporter_assert!(reporter, buffers_used_for_upload <= 1);
+    reporter_assert!(
+        reporter,
+        ContextPriv::caps(context).supports_host_image_copy() || buffers_used_for_upload == 1
+    );
+    reporter_assert!(
+        reporter,
+        i64::try_from(resource_cache!().get_resource_count()).unwrap()
+            == 2 + buffers_used_for_upload
+    );
+    reporter_assert!(reporter, resource_cache!().num_findable_resources() == 1);
+    reporter_assert!(
+        reporter,
+        image_resource_ptr.base().budgeted() == Budgeted::No
+    );
+
+    // Submit all upload work so we can drop refs to the image and get it returned to the cache.
+    let Some(mut recording) = recorder.snap() else {
+        errorf!(reporter, "Failed to make recording");
+        return;
+    };
+    let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
+    let _ = context.submit(SubmitInfo::new(SyncToCpu::Yes));
+    drop(recording);
+    drop(image_gpu);
+    resource_cache!().force_process_returned_resources();
+
+    reporter_assert!(
+        reporter,
+        i64::try_from(resource_cache!().get_resource_count()).unwrap()
+            == 2 + buffers_used_for_upload
+    );
+    // Remapping async buffers before returning them to the cache can extend buffer lifetime.
+    if !ContextPriv::caps(context).buffer_maps_are_async() {
+        reporter_assert!(
+            reporter,
+            i64::try_from(resource_cache!().num_findable_resources()).unwrap()
+                == 2 + buffers_used_for_upload
+        );
+    }
+    reporter_assert!(
+        reporter,
+        image_resource_ptr.base().budgeted() == Budgeted::Yes
+    );
+
+    // Now try an SkSurface. This is simpler since we can directly create Graphite SkSurface's.
+    let Some(surface) = Surface::render_target(&recorder, &info, Mipmapped::No, None, "") else {
+        errorf!(reporter, "Failed to make surface");
+        return;
+    };
+
+    let surface_resource_ptr;
+    {
+        // `top_device_graphite_target_proxy(surface->getCanvas())`
+        let Some(surface_proxy) = surface.target().ref_proxy() else {
+            errorf!(reporter, "Failed to get surface proxy");
+            return;
+        };
+
+        // Make sure the proxy is instantiated
+        if !surface_proxy.instantiate(&mut resource_provider.lock().unwrap()) {
+            errorf!(reporter, "Failed to instantiate surface proxy");
+            return;
+        }
+        surface_resource_ptr = surface_proxy
+            .with_texture(|texture| texture.map(|t| t.as_arc().clone()))
+            .expect("an instantiated texture");
+    }
+
+    reporter_assert!(
+        reporter,
+        i64::try_from(resource_cache!().get_resource_count()).unwrap()
+            == 3 + buffers_used_for_upload
+    );
+    // Remapping async buffers before returning them to the cache can extend buffer lifetime.
+    if !ContextPriv::caps(context).buffer_maps_are_async() {
+        reporter_assert!(
+            reporter,
+            i64::try_from(resource_cache!().num_findable_resources()).unwrap()
+                == 2 + buffers_used_for_upload
+        );
+    }
+    reporter_assert!(
+        reporter,
+        surface_resource_ptr.base().budgeted() == Budgeted::No
+    );
+
+    // The creation of the surface may have added an initial clear to it. Thus if we just reset the
+    // surface it will flush the clean on the device and we don't be dropping all our refs to the
+    // surface. So we force all the work to happen first.
+    let Some(mut recording) = recorder.snap() else {
+        errorf!(reporter, "Failed to make recording");
+        return;
+    };
+    let _ = context.insert_recording(InsertRecordingInfo::new(&mut recording));
+    let _ = context.submit(SubmitInfo::new(SyncToCpu::Yes));
+    drop(recording);
+
+    drop(surface);
+    resource_cache!().force_process_returned_resources();
+    reporter_assert!(
+        reporter,
+        surface_resource_ptr.base().budgeted() == Budgeted::Yes
+    );
 });

@@ -11,7 +11,7 @@ use skia_rust_core::rect::IRect;
 use crate::graphite::draw_order::DrawOrder;
 use crate::graphite::draw_types::BarrierType;
 use crate::graphite::geom::geometry::Geometry;
-use crate::graphite::geom::non_msaa_clip::AnalyticClip;
+use crate::graphite::geom::non_msaa_clip::NonMSAAClip;
 use crate::graphite::geom::rect::Rect;
 use crate::graphite::geom::transform::Transform;
 
@@ -137,14 +137,14 @@ impl StrokeStyle {
 /// key and uniforms (`PaintParams`, G6), so only whether one is present is kept here.
 // Port of: src/gpu/graphite/DrawParams.h#L53-L116 (chrome/m156)
 #[doc(alias = "skgpu::graphite::Clip")]
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 // `non_msaa_clip` mirrors Skia's `fNonMSAAClip` member name.
 #[allow(clippy::struct_field_names)]
 pub struct Clip {
     draw_bounds: Rect,
     transformed_shape_bounds: Rect,
     scissor: IRect,
-    non_msaa_clip: AnalyticClip,
+    non_msaa_clip: NonMSAAClip,
     has_shader: bool,
 }
 
@@ -152,11 +152,11 @@ impl Clip {
     /// `Clip(drawBounds, shapeBounds, scissor, nonMSAAClip, shader)`.
     // Port of: src/gpu/graphite/DrawParams.h#L58-L66 (chrome/m156)
     #[must_use]
-    pub const fn new(
+    pub fn new(
         draw_bounds: Rect,
         shape_bounds: Rect,
         scissor: IRect,
-        non_msaa_clip: AnalyticClip,
+        non_msaa_clip: NonMSAAClip,
         has_shader: bool,
     ) -> Self {
         Self {
@@ -192,7 +192,7 @@ impl Clip {
     /// `nonMSAAClip()`.
     // Port of: src/gpu/graphite/DrawParams.h#L96 (chrome/m156)
     #[must_use]
-    pub const fn non_msaa_clip(&self) -> &AnalyticClip {
+    pub const fn non_msaa_clip(&self) -> &NonMSAAClip {
         &self.non_msaa_clip
     }
 
@@ -327,6 +327,16 @@ impl DrawParams {
     #[must_use]
     pub const fn is_stroke(&self) -> bool {
         self.stroke.is_some()
+    }
+
+    /// Updates the order, draw bounds and scissor of a depth-only clip draw (Skia's
+    /// `friend class ClipStack`).
+    // Port of: src/gpu/graphite/DrawParams.h#L176 (chrome/m156), the ClipStack's writes in
+    // `RawElement::drawClip()`
+    pub(crate) fn update_clip_draw(&mut self, order: DrawOrder, draw_bounds: Rect, scissor: IRect) {
+        self.order = order;
+        self.draw_bounds = draw_bounds;
+        self.scissor = scissor;
     }
 
     /// `strokeStyle()`. Skia asserts that the draw is stroked.

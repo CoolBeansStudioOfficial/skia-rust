@@ -46,6 +46,9 @@ pub struct WgpuTexture {
     // The sampler is identified by its resource's unique id, as `getCachedSingleTextureBindGroup`
     // compares ids rather than pointers.
     cached_single_texture_bind_groups: Mutex<Vec<(ResourceUniqueId, wgpu::BindGroup)>>,
+    /// The id the command trace names the texture by.
+    #[cfg(feature = "trace")]
+    trace_id: u64,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -181,7 +184,7 @@ impl WgpuTexture {
         let texture = Self::make_wgpu_texture(shared_context, dimensions, info, label)?;
         let (sample_texture_view, render_texture_view) =
             Self::create_texture_views(&texture, info, backend_label(shared_context, label))?;
-        Some(Self::wrap_objects(
+        let texture = Self::wrap_objects(
             dimensions,
             info,
             Some(texture),
@@ -189,7 +192,39 @@ impl WgpuTexture {
             render_texture_view,
             Ownership::Owned,
             label,
-        ))
+        );
+        trace!(
+            shared_context,
+            crate::graphite::wgpu::trace::Record::new("create_texture")
+                .u(
+                    "id",
+                    as_wgpu_texture(&texture).map_or(0, WgpuTexture::trace_id)
+                )
+                .u("width", u32::try_from(dimensions.width).unwrap_or(0))
+                .u("height", u32::try_from(dimensions.height).unwrap_or(0))
+                .u("sample_count", info.sample_count() as u32)
+                .u("mipmapped", u32::from(info.mipmapped() == Mipmapped::Yes))
+                .s(
+                    "format",
+                    info.get::<WgpuTextureInfoData>()
+                        .and_then(|info| info.format)
+                        .map_or(String::new(), |format| format!("{format:?}"))
+                )
+                .u(
+                    "usage",
+                    info.get::<WgpuTextureInfoData>()
+                        .map_or(0, |info| u64::from(info.usage.bits()))
+                )
+                .s("label", label)
+        );
+        Some(texture)
+    }
+
+    /// The id the command trace names the texture by.
+    #[cfg(feature = "trace")]
+    #[must_use]
+    pub fn trace_id(&self) -> u64 {
+        self.trace_id
     }
 
     /// `MakeWrapped(…, wgpu::Texture, …)`: wraps a client texture.
@@ -255,6 +290,8 @@ impl WgpuTexture {
                 render_texture_view,
             })),
             cached_single_texture_bind_groups: Mutex::new(Vec::new()),
+            #[cfg(feature = "trace")]
+            trace_id: crate::graphite::wgpu::trace::next_trace_id(),
         };
         Texture::make(
             dimensions,

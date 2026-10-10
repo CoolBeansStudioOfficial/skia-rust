@@ -82,3 +82,26 @@ pub fn make_raster_backend(surface_props: SurfaceProps, color_type: ColorType) -
         color_type,
     })
 }
+
+/// `SkImages::MakeWithFilter(src, filter, subset, clipBounds, &outSubset, &offset)`: filters the
+/// `subset` of `src` with `filter` on the raster backend. Returns the result, the subset of it
+/// that was produced and its offset within `clip_bounds`, or `None` if the filter produced
+/// nothing.
+///
+/// skia-rust: Skia's null `src` and `filter` cannot be expressed, so both are references.
+// Port of: src/image/SkImage_RasterFactories.cpp#L108-L123 (chrome/m156)
+#[doc(alias = "MakeWithFilter")]
+#[must_use]
+pub fn make_with_filter(
+    src: &Image,
+    filter: &skia_rust_core::image_filter::ImageFilter,
+    subset: IRect,
+    clip_bounds: IRect,
+) -> Option<(Image, IRect, skia_rust_core::point::IPoint)> {
+    // skif::MakeRasterBackend({}, src->colorType())
+    let backend = make_raster_backend(
+        skia_rust_core::surface_props::SurfaceProps::default(),
+        src.color_type(),
+    );
+    filter.make_image_with_filter(backend, src, subset, clip_bounds)
+}

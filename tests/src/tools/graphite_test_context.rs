@@ -18,7 +18,8 @@ use skia_rust_gpu::graphite::context_options::ContextOptions;
 use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
-    CapsProfile, WgpuContext, WgpuSharedContext, make_context, noop_backend_context,
+    CapsProfile, WgpuContext, WgpuSharedContext, any_adapter_backend_context, make_context,
+    noop_backend_context,
 };
 
 /// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
@@ -50,6 +51,28 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
         contexts.push((profile.name, WgpuContext::new(shared_context, options)));
     }
     contexts
+}
+
+/// The context the tests that read pixels run on: one on a real adapter (software adapters
+/// first; `adapter_backend_context`) with its name, or `None` after saying so when the machine has
+/// none. With `SKIA_RUST_REQUIRE_ADAPTER` set, a missing adapter is an error (the GPU CI jobs).
+///
+/// # Panics
+/// If `SKIA_RUST_REQUIRE_ADAPTER` is set and there is no adapter, or the adapter cannot make a
+/// context.
+#[must_use]
+pub fn real_context() -> Option<(String, WgpuContext)> {
+    let Some((backend_context, info)) = any_adapter_backend_context() else {
+        assert!(
+            std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
+            "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
+        );
+        eprintln!("no adapter that renders: skipping");
+        return None;
+    };
+    let context = make_context(&backend_context, &ContextOptions::default())
+        .expect("a context on the adapter");
+    Some((format!("{} ({:?})", info.name, info.backend), context))
 }
 
 /// `context->priv().rendererProvider()`.

@@ -15,17 +15,21 @@
 //!
 //! Not ported (not used by libpng or Skia): gzip framing, preset dictionaries and the
 //! `Z_TREES`/`Z_BLOCK` break points beyond what the state machine itself needs.
-//! Deflate (the compressor) is a separate port.
+//! Deflate (the compressor) is in [`deflate`], with its trees in `trees`.
 //!
 //! The crate is `unsafe`-free and depends on nothing but `std`.
 
 pub mod adler32;
+pub mod deflate;
 mod inffast;
 mod inffixed;
 pub mod inflate;
 pub mod inftrees;
+mod trees;
+mod trees_tables;
 
 pub use adler32::adler32;
+pub use deflate::{Deflate, Deflated};
 pub use inflate::{DEF_WBITS, Inflate};
 pub use inftrees::Code;
 

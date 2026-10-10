@@ -116,7 +116,20 @@ fn shared_context_reads_the_device() {
     .unwrap();
     let shared = WgpuSharedContext::make(&backend_context, &ContextOptions::default()).unwrap();
     let caps = shared.caps();
-    assert!(caps.supports_half_precision());
+    // `ShaderF16` is off by default even when the device has it: wgpu 30 rejects the f16
+    // fragment outputs of Graphite's shaders, and the D3D12 goldens were rendered without f16
+    // (`docs/design/gpu.md` §1.3).
+    assert!(!caps.supports_half_precision());
+    // Opting in reports it.
+    let f16_profile =
+        CapsProfile::from_device_with_f16(&backend_context.device, backend_context.has_tick, true);
+    let f16_shared = WgpuSharedContext::make_with_profile(
+        &backend_context,
+        &f16_profile,
+        &ContextOptions::default(),
+    )
+    .unwrap();
+    assert!(f16_shared.caps().supports_half_precision());
     assert!(caps.shader_caps().dual_source_blending_support);
     assert!(Caps::draw_buffer_can_be_mapped(&**caps));
     assert!(

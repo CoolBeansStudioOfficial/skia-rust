@@ -17,20 +17,25 @@ use std::sync::{Arc, Mutex};
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
-use skia_rust_gpu::gpu::gpu_types::{BackendApi, Mipmapped, Protected};
+use skia_rust_gpu::gpu::gpu_types::{BackendApi, GpuStats, Mipmapped, Protected};
 use skia_rust_gpu::gpu::ref_cnted_callback::RefCntedCallback;
+use skia_rust_gpu::gpu::resource_key::{UniqueKey, UniqueKeyBuilder};
 use skia_rust_gpu::graphite::buffer::{Buffer, BufferBackend, MappedData};
+use skia_rust_gpu::graphite::buffer_manager::StaticBufferManager;
 use skia_rust_gpu::graphite::caps::{
     AttachmentSizePolicy, Caps, ResourceBindingRequirements, ShaderCaps, default_shader_caps,
 };
 use skia_rust_gpu::graphite::command_buffer::{BufferTextureCopyData, CommandBuffer};
+use skia_rust_gpu::graphite::compute_pipeline_desc::ComputePipelineDesc;
 use skia_rust_gpu::graphite::context_priv::{ContextPriv, SharedResourceProvider};
+use skia_rust_gpu::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use skia_rust_gpu::graphite::graphite_resource_key::{
     GraphiteResourceKey, GraphiteResourceKeyBuilder,
 };
 use skia_rust_gpu::graphite::graphite_types::{DepthStencilFlags, SampleCount};
 use skia_rust_gpu::graphite::recorder::{Recorder, RecorderOptions, RecorderSharedContext};
 use skia_rust_gpu::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
+use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::resource::{AnyResourceRef, Resource, ResourceRef};
 use skia_rust_gpu::graphite::resource_provider::{ResourceProvider, ResourceProviderBackend};
 use skia_rust_gpu::graphite::resource_types::DstReadStrategy;
@@ -284,6 +289,26 @@ impl Caps for MockCaps {
         texture_info(format, SampleCount::One, mipmapped)
     }
 
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        _is_protected: Protected,
+    ) -> TextureInfo {
+        texture_info(format, SampleCount::One, Mipmapped::No)
+    }
+
+    fn get_texture_info_for_sampled_copy(
+        &self,
+        info: &TextureInfo,
+        mipmapped: Mipmapped,
+    ) -> TextureInfo {
+        texture_info(
+            texture_info_priv::view_format(info),
+            SampleCount::One,
+            mipmapped,
+        )
+    }
+
     fn get_compatible_msaa_sample_count(&self, _info: &TextureInfo) -> SampleCount {
         SampleCount::Four
     }
@@ -401,6 +426,33 @@ impl Caps for MockCaps {
     fn is_storage(&self, _info: &TextureInfo) -> bool {
         false
     }
+
+    fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        _render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey {
+        let mut key = UniqueKey::new();
+        {
+            let mut builder =
+                UniqueKeyBuilder::new(&mut key, UniqueKey::generate_domain(), 2, Some("Mock"));
+            builder[0] = pipeline_desc.render_step_id() as u32;
+            builder[1] = pipeline_desc.paint_params_id().as_uint();
+            builder.finish();
+        }
+        key
+    }
+
+    fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey {
+        let mut key = UniqueKey::new();
+        {
+            let mut builder =
+                UniqueKeyBuilder::new(&mut key, UniqueKey::generate_domain(), 1, Some("Mock"));
+            builder[0] = pipeline_desc.unique_id();
+            builder.finish();
+        }
+        key
+    }
 }
 
 /// Counts what the mock resource provider back end created.
@@ -474,14 +526,23 @@ pub struct MockSharedContext {
     pub caps: Arc<MockCaps>,
     pub counts: BackendCounts,
     pub shader_dictionary: ShaderCodeDictionary,
+    pub renderer_provider: RendererProvider,
 }
 
 impl MockSharedContext {
     pub fn new(caps: MockCaps) -> Arc<Self> {
+        let (resource_provider, _) = shared_provider();
+        let mut buffer_manager = StaticBufferManager::new(resource_provider, &caps);
+        let renderer_provider = RendererProvider::new(
+            Layout::Std140,
+            caps.shader_caps().infinity_support,
+            &mut buffer_manager,
+        );
         Arc::new(Self {
             caps: Arc::new(caps),
             counts: BackendCounts::default(),
             shader_dictionary: ShaderCodeDictionary::new(Layout::Std140, &[]),
+            renderer_provider,
         })
     }
 }
@@ -501,6 +562,10 @@ impl RecorderSharedContext for MockSharedContext {
 
     fn shader_code_dictionary(&self) -> &ShaderCodeDictionary {
         &self.shader_dictionary
+    }
+
+    fn renderer_provider(&self) -> &RendererProvider {
+        &self.renderer_provider
     }
 
     fn make_resource_provider(&self, recorder_id: u32, resource_budget: usize) -> ResourceProvider {
@@ -601,6 +666,42 @@ pub struct MockCommandBuffer {
 }
 
 impl CommandBuffer for MockCommandBuffer {
+    fn is_protected(&self) -> Protected {
+        Protected::No
+    }
+
+    fn has_work(&self) -> bool {
+        self.calls
+            .iter()
+            .any(|call| !matches!(call, Call::TrackResource | Call::FinishedProc))
+    }
+
+    fn set_new_command_buffer_resources(&mut self) -> bool {
+        true
+    }
+
+    fn reset_command_buffer(&mut self) {
+        self.tracked.clear();
+        self.finished_procs.clear();
+    }
+
+    fn call_finished_procs(&mut self, success: bool) {
+        for finished_proc in &self.finished_procs {
+            if success {
+                finished_proc.set_stats(&GpuStats::default());
+            } else {
+                finished_proc.set_failure_result();
+            }
+        }
+        self.finished_procs.clear();
+    }
+
+    fn add_buffers_to_async_map_on_submit(&mut self, _buffers: &[ResourceRef<Buffer>]) {}
+
+    fn buffers_to_async_map_on_submit(&self) -> &[ResourceRef<Buffer>] {
+        &[]
+    }
+
     fn track_resource(&mut self, resource: AnyResourceRef) {
         self.calls.push(Call::TrackResource);
         self.tracked.push(resource);
@@ -635,7 +736,7 @@ impl CommandBuffer for MockCommandBuffer {
         _dst_read_bounds: IRect,
         resolve_offset: IPoint,
         viewport_dims: ISize,
-        draw_passes: &[Box<dyn DrawPass>],
+        draw_passes: &mut [Box<dyn DrawPass>],
     ) -> bool {
         self.calls.push(Call::RenderPass {
             has_resolve: resolve_texture.is_some(),
@@ -648,7 +749,7 @@ impl CommandBuffer for MockCommandBuffer {
         !self.fail
     }
 
-    fn add_compute_pass(&mut self, dispatches: &[Box<dyn DispatchGroup>]) -> bool {
+    fn add_compute_pass(&mut self, dispatches: &mut [Box<dyn DispatchGroup>]) -> bool {
         self.calls.push(Call::ComputePass(dispatches.len()));
         !self.fail
     }

@@ -21,9 +21,9 @@
 //!
 //! - gradients with more than 8 stops in a storage buffer (`StorageContext`, the `use_storage_buffer`
 //!   path). Those add an error block; the color-and-offset texture path is ported.
-//! - the image and YUV image `AddToKey` cases, and the picture shader. Their `AsView` step needs a
-//!   Graphite-backed image (`Image_Graphite`, G10d) and, for the picture shader, `Surface::Make`.
-//!   Those cases add an error block.
+//! - the image shader's `AddToKey` case is ported (`add_image_to_key`, G10d). The YUV image case
+//!   (`add_yuv_image_to_key`, G15) and the picture shader (`Surface::Make` for its tile, G15) add an
+//!   error block.
 //! - the runtime effect shader `AddToKey` case. Its block (`RuntimeEffectBlock`) is in
 //!   `key_helpers_ii`, but this shader dispatch does not route to it yet. It adds an error block.
 
@@ -33,12 +33,14 @@ use std::sync::{Arc, LazyLock};
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color::{Color4f, PMColor4f};
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::floating_point::ieee_float_divide;
+use skia_rust_core::image::Image;
 use skia_rust_core::m44::M44;
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::point::Point;
@@ -47,6 +49,7 @@ use skia_rust_core::rect::{Contains, Rect, RoundOut};
 use skia_rust_core::runtime_effect_priv;
 use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::scalar::SCALAR_NEARLY_ZERO;
+use skia_rust_core::scalar::scalar_is_int;
 use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders::blend_shader::BlendShader;
 use skia_rust_core::shaders::color_filter_shader::ColorFilterShader;
@@ -71,20 +74,24 @@ use skia_rust_effects::radial_gradient::RadialGradient;
 use skia_rust_effects::sweep_gradient::SweepGradient;
 
 use crate::gpu::dither_utils::{dither_range_for_config, make_dither_lut};
+use crate::gpu::gpu_types::Origin;
 use crate::gpu::gradient_bitmap::create_gradient_color_and_offset_bitmap;
 use crate::gpu::sk_log::skia_log_w;
 use crate::graphite::built_in_code_snippet_id::BuiltInCodeSnippetID;
 use crate::graphite::caps::Caps;
+use crate::graphite::image_graphite::Image as GraphiteImage;
 use crate::graphite::key_context::{KeyContext, KeyGenFlags};
 use crate::graphite::key_helpers_ii::{
     ColorSpaceTransformBlock, ColorSpaceTransformData, RuntimeEffectBlock, RuntimeEffectShaderData,
-    ScopedUniformWriter, add_blend_mode, add_children_to_key, add_to_key_color_filter, blend,
-    compose, solid_color_shader_add_block,
+    ScopedUniformWriter, add_blend_mode, add_children_to_key, add_fixed_blend_mode,
+    add_to_key_color_filter, blend, compose, solid_color_shader_add_block,
 };
 use crate::graphite::paint_params_key::PaintParamsKeyBuilder;
 use crate::graphite::recorder::RecorderPriv;
 use crate::graphite::resource_types::{ImmutableSamplerInfo, SamplerDesc};
+use crate::graphite::storage_context::StorageContext;
 use crate::graphite::texture_proxy::TextureProxy;
+use crate::graphite::texture_utils::{as_view, get_graphite_backed};
 use crate::graphite::uniform_manager::UniformManager;
 
 /// The key builder, borrowed for one call.
@@ -223,6 +230,14 @@ pub struct GradientData {
     /// `fColorsAndOffsetsProxy`. Set by the caller for stop counts above the inline limit when
     /// storage buffers are not used.
     pub colors_and_offsets_proxy: Option<Arc<TextureProxy>>,
+    /// `fSrcColors`: the stops, kept for stop counts above the inline limit when storage buffers
+    /// are used, to be copied into the storage buffer.
+    pub src_colors: Vec<PMColor4f>,
+    /// `fSrcOffsets`: the offsets of `src_colors` (`None` for evenly spaced stops).
+    pub src_offsets: Option<Vec<f32>>,
+    /// `fSrcShader`: the address of the gradient shader, which identifies its data in the
+    /// `StorageContext`.
+    pub src_shader: usize,
     /// `fInterpolation`.
     pub interpolation: Interpolation,
 }
@@ -259,6 +274,9 @@ impl GradientData {
             }; 8],
             offsets: [[0.0; 4]; 2],
             colors_and_offsets_proxy: None,
+            src_colors: Vec::new(),
+            src_offsets: None,
+            src_shader: 0,
             interpolation: Interpolation::default(),
         }
     }
@@ -281,6 +299,7 @@ impl GradientData {
         num_stops: usize,
         colors: &[PMColor4f],
         offsets: Option<&[f32]>,
+        shader: &GradientBaseShader,
         colors_and_offsets_proxy: Option<Arc<TextureProxy>>,
         use_storage_buffer: bool,
         interpolation: Interpolation,
@@ -303,6 +322,17 @@ impl GradientData {
             }; 8],
             offsets: [[0.0; 4]; 2],
             colors_and_offsets_proxy: None,
+            src_colors: if num_stops > Self::NUM_INTERNAL_STORAGE_STOPS && use_storage_buffer {
+                colors[..num_stops].to_vec()
+            } else {
+                Vec::new()
+            },
+            src_offsets: if num_stops > Self::NUM_INTERNAL_STORAGE_STOPS && use_storage_buffer {
+                offsets.map(|offsets| offsets[..num_stops].to_vec())
+            } else {
+                None
+            },
+            src_shader: std::ptr::from_ref(shader) as usize,
             interpolation,
         };
 
@@ -344,6 +374,49 @@ impl GradientData {
     }
 }
 
+/// Writes the color and offset data directly in the gatherer gradient buffer and returns the
+/// offset the data begins at in the buffer.
+///
+/// Returns a negative offset to signal failure, in which case the paint key must be poisoned
+/// to drop the draw.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L297-L321 (chrome/m156)
+#[allow(clippy::cast_precision_loss)] // the stop index and count are small integers
+fn write_color_and_offset_bufdata(
+    storage_context: &mut StorageContext,
+    num_stops: usize,
+    colors: &[PMColor4f],
+    offsets: Option<&[f32]>,
+    shader_key: usize,
+) -> i32 {
+    let (dst_data, buffer_offset) = storage_context.allocate_gradient_data_for(
+        i32::try_from(num_stops).expect("gradient stop count fits an int"),
+        shader_key,
+    );
+    if let Some(dst_data) = dst_data {
+        debug_assert!(buffer_offset >= 0);
+        // Data doesn't already exist so we need to write it. Writes all offset data, then color
+        // data. This way when binary searching through the offsets, there is better cache
+        // locality.
+        let mut color_idx = num_stops;
+        for i in 0..num_stops {
+            let offset = match offsets {
+                Some(offsets) => offsets[i],
+                None => (i as f32) / ((num_stops - 1) as f32),
+            };
+            debug_assert!((0.0..=1.0).contains(&offset));
+
+            dst_data[i] = offset;
+            dst_data[color_idx] = colors[i].r;
+            dst_data[color_idx + 1] = colors[i].g;
+            dst_data[color_idx + 2] = colors[i].b;
+            dst_data[color_idx + 3] = colors[i].a;
+            color_idx += 4;
+        }
+    }
+
+    buffer_offset
+}
+
 /// Adds the gradient blocks (`GradientShaderBlocks`).
 // Port of: src/gpu/graphite/KeyHelpers.h#L108-L110 (chrome/m156)
 #[derive(Debug)]
@@ -356,24 +429,39 @@ impl GradientShaderBlocks {
     // Port of: src/gpu/graphite/KeyHelpers.cpp#L394-L465 (chrome/m156)
     #[doc(alias = "AddBlock")]
     pub fn add_block(key_context: &KeyContext<'_>, grad_data: &GradientData) {
-        // The buffer offset is only non-zero on the storage-buffer path, which is not ported.
-        let buffer_offset = 0;
+        // The buffer offset is only non-zero on the storage-buffer path.
+        let mut buffer_offset = 0;
         if grad_data.num_stops > GradientData::NUM_INTERNAL_STORAGE_STOPS
             && key_context.recorder().is_some()
         {
+            let has_storage;
             if grad_data.use_storage_buffer {
-                // `write_color_and_offset_bufdata` needs the draw context's `StorageContext`,
-                // which is not ported yet.
-                builder(key_context).add_error_block();
-                return;
+                debug_assert!(key_context.storage_context().is_some());
+                if let Some(storage_context) = key_context.storage_context() {
+                    buffer_offset = write_color_and_offset_bufdata(
+                        &mut storage_context.borrow_mut(),
+                        grad_data.num_stops,
+                        &grad_data.src_colors,
+                        grad_data.src_offsets.as_deref(),
+                        grad_data.src_shader,
+                    );
+                    has_storage = buffer_offset >= 0;
+                } else {
+                    has_storage = false;
+                }
+            } else {
+                // The color-and-offset texture is bound with nearest filtering and clamped
+                // tiling.
+                key_context.pipeline_data_gatherer().borrow_mut().add(
+                    grad_data.colors_and_offsets_proxy.clone(),
+                    SamplerDesc::new(&SamplingOptions::from(FilterMode::Nearest), TileMode::Clamp),
+                );
+                has_storage = grad_data.colors_and_offsets_proxy.is_some();
             }
-            // The color-and-offset texture is bound with nearest filtering and clamped tiling.
-            key_context.pipeline_data_gatherer().borrow_mut().add(
-                grad_data.colors_and_offsets_proxy.clone(),
-                SamplerDesc::new(&SamplingOptions::from(FilterMode::Nearest), TileMode::Clamp),
-            );
-            if grad_data.colors_and_offsets_proxy.is_none() {
+
+            if !has_storage {
                 builder(key_context).add_error_block();
+                skia_log_w!("Couldn't upload large gradient color stop data");
                 return;
             }
         }
@@ -1442,9 +1530,29 @@ fn add_local_matrix_to_key(
     builder(key_context).end_block();
 }
 
+/// `get_image_origin_matrix(image)`: the flip a Graphite-backed image with a bottom-left origin
+/// needs; the identity otherwise. YUVA images carry their own origin matrix, which is not ported
+/// (G15) and is treated as the identity here.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2238-L2262 (chrome/m156)
+fn get_image_origin_matrix(image: &Image) -> Matrix {
+    // If the image is not graphite backed then we can assume the origin will be TopLeft as we
+    // require that in the ImageProvider utility.
+    if image.as_base().is_graphite_backed()
+        && let Some(graphite) = GraphiteImage::from_core(image)
+    {
+        let view = graphite.texture_proxy_view();
+        if view.origin() == Origin::BottomLeft {
+            // Pixel heights are far below 2^24, so the conversion is exact.
+            #[allow(clippy::cast_precision_loss)]
+            let height = view.height() as f32;
+            return Matrix::scale_translate((1.0, -1.0), (0.0, height));
+        }
+    }
+    // Otherwise no modification required
+    Matrix::default()
+}
+
 // Port of: src/gpu/graphite/KeyHelpers.cpp#L2283-L2303 (chrome/m156)
-// The origin matrix of a Graphite-backed image (`get_image_origin_matrix`) needs the image's
-// texture view, which is not ported (G10d): such images add an error block.
 fn add_local_matrix_shader_to_key(key_context: &KeyContext<'_>, shader: &LocalMatrixShader) {
     let wrapped = shader.wrapped_shader();
     let wrapped_base = wrapped.as_base();
@@ -1454,12 +1562,7 @@ fn add_local_matrix_shader_to_key(key_context: &KeyContext<'_>, shader: &LocalMa
                 builder(key_context).add_error_block();
                 return;
             };
-            if image_shader.image().as_base().is_graphite_backed() {
-                builder(key_context).add_error_block();
-                return;
-            }
-            // "Otherwise no modification required": the origin matrix is the identity.
-            Matrix::default()
+            get_image_origin_matrix(image_shader.image())
         }
         ShaderType::GradientBase => {
             let Some(gradient_matrix) = get_gradient_matrix(wrapped_base) else {
@@ -1630,6 +1733,7 @@ fn add_gradient_to_key(
         color_count,
         colors,
         positions,
+        shader,
         proxy,
         grad_uses_storage,
         *shader.interpolation(),
@@ -1820,6 +1924,173 @@ fn add_runtime_shader_to_key(key_context: &KeyContext<'_>, shader: &RuntimeShade
     builder(key_context).end_block();
 }
 
+/// `add_image_to_key(keyContext, image, subset, sampling, tileModeX, tileModeY, isRaw)`: the
+/// image shader's block, with the image converted to a Graphite-backed one first. A draw whose
+/// image cannot be converted adds an error block (the draw is dropped).
+///
+/// The YUVA branch (`add_yuv_image_to_key`) is not ported (G15): a YUVA image adds an error block.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2106-L2236 (chrome/m156)
+#[allow(clippy::too_many_arguments)] // mirrors the C++ signature
+fn add_image_to_key(
+    key_context: &KeyContext<'_>,
+    image: &Image,
+    mut subset: Rect,
+    sampling: SamplingOptions,
+    tile_mode_x: TileMode,
+    tile_mode_y: TileMode,
+    is_raw: bool,
+) {
+    let Some(recorder) = key_context.recorder() else {
+        builder(key_context).add_error_block();
+        return;
+    };
+    let (image_to_draw, mut new_sampling) = get_graphite_backed(recorder, image, sampling);
+    let Some(image_to_draw) = image_to_draw else {
+        skia_log_w!("Couldn't convert SkImage to a Graphite-backed representation");
+        builder(key_context).add_error_block();
+        return;
+    };
+
+    // Here we detect pixel aligned blit-like image draws. Some devices have low precision filtering
+    // and will produce degraded (blurry) images unexpectedly for sequential exact pixel blits when
+    // not using nearest filtering. This is common for canvas scrolling implementations. Forcing
+    // nearest filtering when possible can also be a minor perf/power optimization depending on the
+    // hardware.
+    if !(key_context
+        .flags()
+        .contains(KeyGenFlags::DISABLE_SAMPLING_OPTIMIZATION)
+        || new_sampling.use_cubic)
+    {
+        let mut total_m = key_context.local2dev().to_m33();
+        if let Some(local_matrix) = key_context.local_matrix() {
+            total_m.pre_concat(local_matrix);
+        }
+        total_m.normalize_perspective();
+        // The matrix should be translation with only pixel aligned 2d translation.
+        let sampling_has_no_effect = total_m.is_translate()
+            && scalar_is_int(total_m.translate_x())
+            && scalar_is_int(total_m.translate_y());
+        if sampling_has_no_effect {
+            new_sampling = SamplingOptions::from(FilterMode::Nearest);
+        }
+
+        if sampling_has_no_effect && !key_context.clip_draw_bounds().is_empty() {
+            let mut local_draw_bounds = *key_context.clip_draw_bounds();
+            local_draw_bounds.offset((-total_m.translate_x(), -total_m.translate_y()));
+            if subset.contains(&local_draw_bounds) {
+                // The draw is strictly within the subset, so we don't need to clamp.
+                subset = Rect::from_size(image_to_draw.dimensions());
+            }
+        }
+    }
+
+    if image_to_draw.as_base().is_yuva() {
+        // add_yuv_image_to_key is G15.
+        builder(key_context).add_error_block();
+        return;
+    }
+
+    // `AsView`: a non-YUVA Graphite-backed image always has a texture view.
+    let view = as_view(Some(&image_to_draw));
+    if view.proxy().is_none() {
+        builder(key_context).add_error_block();
+        return;
+    }
+    let mut img_data = ImageData::new(
+        new_sampling,
+        tile_mode_x,
+        tile_mode_y,
+        view.dimensions(),
+        subset,
+        ImmutableSamplerInfo::default(),
+    );
+    img_data.texture_proxy = view.ref_proxy();
+    let read_swizzle = view.swizzle();
+    let mut color_xform_data = ColorSpaceTransformData::from_steps(ColorSpaceXformSteps::default());
+    color_xform_data.read_swizzle = read_swizzle;
+    color_xform_data.is_alpha_only = image_to_draw.is_alpha_only();
+
+    if !is_raw {
+        let dst = key_context.dst_color_info();
+        color_xform_data.steps = ColorSpaceXformSteps::new(
+            image_to_draw.color_space().as_ref(),
+            image_to_draw.alpha_type(),
+            dst.color_space_ref(),
+            dst.alpha_type(),
+        );
+
+        if image_to_draw.is_alpha_only()
+            && !key_context
+                .flags()
+                .contains(KeyGenFlags::DISABLE_ALPHA_ONLY_IMAGE_COLORIZATION)
+        {
+            // NOTE: Alpha is not affected by colorspace conversion to the dst, and the paint color
+            // is already xformed to the dst, but the ColorSpaceTransformBlock is necessary to apply
+            // any read swizzle, which is often necessary for alpha-only color types.
+            blend(
+                key_context,
+                || add_fixed_blend_mode(key_context, BlendMode::DstIn),
+                || {
+                    compose(
+                        key_context,
+                        || ImageShaderBlock::add_block(key_context, &img_data),
+                        || ColorSpaceTransformBlock::add_block(key_context, &color_xform_data),
+                    );
+                },
+                || RGBPaintColorBlock::add_block(key_context),
+            );
+            return;
+        }
+    }
+
+    compose(
+        key_context,
+        || ImageShaderBlock::add_block(key_context, &img_data),
+        || ColorSpaceTransformBlock::add_block(key_context, &color_xform_data),
+    );
+}
+
+/// `AddToKey(PaintParams::SimpleImage)`: an image shader on a paint is always a local matrix
+/// shader composed with an image shader; this makes the same call sequence with the decomposed
+/// objects.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2686-L2701 (chrome/m156)
+#[doc(alias = "AddToKey")]
+pub fn add_simple_image_to_key(
+    key_context: &KeyContext<'_>,
+    simple_image: &crate::graphite::paint_params::SimpleImage,
+) {
+    add_local_matrix_to_key(
+        key_context,
+        simple_image.local_matrix.as_ref().unwrap_or(Matrix::i()),
+        &get_image_origin_matrix(&simple_image.image),
+        |child_ctx| {
+            add_image_to_key(
+                child_ctx,
+                &simple_image.image,
+                simple_image.subset,
+                simple_image.sampling_options,
+                TileMode::Clamp,
+                TileMode::Clamp,
+                /* is_raw= */ false,
+            );
+        },
+    );
+}
+
+/// `AddToKey(SkImageShader)`: the image shader's fields go to `add_image_to_key`.
+// Port of: src/gpu/graphite/KeyHelpers.cpp#L2232-L2236 (chrome/m156)
+fn add_image_shader_to_key(key_context: &KeyContext<'_>, shader: &ImageShader) {
+    add_image_to_key(
+        key_context,
+        shader.image(),
+        shader.subset(),
+        shader.sampling(),
+        shader.tile_mode_x(),
+        shader.tile_mode_y(),
+        shader.is_raw(),
+    );
+}
+
 /// Adds the implementation of `shader` to `key_context`'s key (`AddToKey(SkShader)`). A `None`
 /// shader is a programming error: a fixed transparent solid color keeps the key's structure.
 ///
@@ -1883,8 +2154,11 @@ pub fn add_to_key_shader(key_context: &KeyContext<'_>, shader: Option<&Shader>) 
             Some(s) => add_ctm_shader_to_key(key_context, s),
             None => builder(key_context).add_error_block(),
         },
-        // Not ported yet: the image, YUV, perlin, picture and runtime shaders (see the module
-        // docs).
+        ShaderType::Image => match downcast_shader::<ImageShader>(base) {
+            Some(s) => add_image_shader_to_key(key_context, s),
+            None => builder(key_context).add_error_block(),
+        },
+        // Not ported yet: the YUV, picture and dictionary-less shaders (see the module docs).
         _ => builder(key_context).add_error_block(),
     }
 }

@@ -148,6 +148,12 @@ impl Shared {
 #[derive(Debug)]
 pub struct WgpuBuffer {
     shared: Arc<Shared>,
+    /// The id the command trace names the buffer by.
+    #[cfg(feature = "trace")]
+    trace_id: u64,
+    /// Where the buffer's flushes and reads are traced.
+    #[cfg(feature = "trace")]
+    trace_context: std::sync::Weak<WgpuSharedContext>,
 }
 
 /// `DawnBuffer::Make()`'s usage for a buffer.
@@ -236,6 +242,16 @@ impl WgpuBuffer {
             cached_single_buffer_bind_groups: Mutex::new(Vec::new()),
         });
         let may_be_remapped = usage.contains(wgpu::BufferUsages::MAP_WRITE);
+        #[cfg(feature = "trace")]
+        let trace_id = crate::graphite::wgpu::trace::next_trace_id();
+        trace!(
+            shared_context,
+            crate::graphite::wgpu::trace::Record::new("create_buffer")
+                .u("id", trace_id)
+                .u("size", size as u64)
+                .u("usage", u64::from(usage.bits()))
+                .s("label", label)
+        );
         Some(Buffer::make(
             size,
             // Dawn doesn't support protected memory
@@ -246,8 +262,21 @@ impl WgpuBuffer {
             // writing
             /* requiresPrepareForReturnToCache= */
             may_be_remapped,
-            Box::new(Self { shared }),
+            Box::new(Self {
+                shared,
+                #[cfg(feature = "trace")]
+                trace_id,
+                #[cfg(feature = "trace")]
+                trace_context: shared_context.downgrade(),
+            }),
         ))
+    }
+
+    /// The id the command trace names the buffer by.
+    #[cfg(feature = "trace")]
+    #[must_use]
+    pub fn trace_id(&self) -> u64 {
+        self.trace_id
     }
 
     /// `dawnBuffer()`: the wgpu buffer, absent once freed.
@@ -313,7 +342,17 @@ impl BufferBackend for WgpuBuffer {
         } else {
             // If buffer is only created with MapRead usage, the mapped range is read only.
             let view = buffer.slice(..).get_mapped_range().ok()?;
-            Some(view.to_vec())
+            let bytes = view.to_vec();
+            #[cfg(feature = "trace")]
+            if let Some(shared_context) = self.trace_context.upgrade() {
+                shared_context.trace_with_blob(&bytes, |hash| {
+                    crate::graphite::wgpu::trace::Record::new("map_read")
+                        .u("buffer", self.trace_id)
+                        .u("size", bytes.len() as u64)
+                        .u("hash", hash)
+                });
+            }
+            Some(bytes)
         }
     }
 
@@ -336,6 +375,15 @@ impl BufferBackend for WgpuBuffer {
                 .get_mapped_range_mut()
                 .expect("a mapped buffer has a mapped range");
             view.copy_from_slice(written);
+            #[cfg(feature = "trace")]
+            if let Some(shared_context) = self.trace_context.upgrade() {
+                shared_context.trace_with_blob(written, |hash| {
+                    crate::graphite::wgpu::trace::Record::new("flush_mapped_buffer")
+                        .u("buffer", self.trace_id)
+                        .u("size", written.len() as u64)
+                        .u("hash", hash)
+                });
+            }
         }
         self.shared.set_map_state(MapState::Unmapped);
         buffer.unmap();

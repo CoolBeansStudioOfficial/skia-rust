@@ -21,8 +21,11 @@ use skia_rust_core::color_type::ColorType;
 use skia_rust_core::size::ISize;
 
 use crate::gpu::gpu_types::{BackendApi, Mipmapped, Protected, Renderable};
+use crate::gpu::resource_key::UniqueKey;
+use crate::graphite::compute_pipeline_desc::ComputePipelineDesc;
+use crate::graphite::graphics_pipeline_desc::GraphicsPipelineDesc;
 use crate::graphite::graphite_types::{DepthStencilFlags, SampleCount};
-use crate::graphite::render_pass_desc::AttachmentDesc;
+use crate::graphite::render_pass_desc::{AttachmentDesc, RenderPassDesc};
 use crate::graphite::resource_types::DstReadStrategy;
 use crate::graphite::resource_types::{Discardable, ImmutableSamplerInfo, Layout};
 use crate::graphite::texture_format::TextureFormat;
@@ -143,6 +146,14 @@ pub trait Caps: Send + Sync + Debug {
     #[doc(alias = "bufferMapsAreAsync")]
     fn buffer_maps_are_async(&self) -> bool;
 
+    /// `supportsHostImageCopy()`: only `VulkanCaps` sets it (with `VK_EXT_host_image_copy`), so
+    /// it is `false` for the Dawn-style backends this port has.
+    // Port of: src/gpu/graphite/Caps.h#L411 (chrome/m156)
+    #[doc(alias = "supportsHostImageCopy")]
+    fn supports_host_image_copy(&self) -> bool {
+        false
+    }
+
     /// `requiredUniformBufferAlignment()`: a power of two.
     #[doc(alias = "requiredUniformBufferAlignment")]
     fn required_uniform_buffer_alignment(&self) -> usize;
@@ -196,6 +207,23 @@ pub trait Caps: Send + Sync + Debug {
         mipmapped: Mipmapped,
         is_protected: Protected,
         renderable: Renderable,
+    ) -> TextureInfo;
+
+    /// `getDefaultReadableTextureInfo()`.
+    #[doc(alias = "getDefaultReadableTextureInfo")]
+    fn get_default_readable_texture_info(
+        &self,
+        format: TextureFormat,
+        is_protected: Protected,
+    ) -> TextureInfo;
+
+    /// `getTextureInfoForSampledCopy()`: the info of a texture that a copy of `info`'s texture is
+    /// made into so that it can be sampled.
+    #[doc(alias = "getTextureInfoForSampledCopy")]
+    fn get_texture_info_for_sampled_copy(
+        &self,
+        info: &TextureInfo,
+        mipmapped: Mipmapped,
     ) -> TextureInfo;
 
     /// `getDefaultAttachmentTextureInfo()`.
@@ -371,4 +399,19 @@ pub trait Caps: Send + Sync + Debug {
     // Port of: src/gpu/graphite/Caps.h#L219 (chrome/m156)
     #[doc(alias = "isStorage")]
     fn is_storage(&self, info: &TextureInfo) -> bool;
+
+    /// `makeGraphicsPipelineKey(pipelineDesc, renderPassDesc)`: the key of the graphics pipeline
+    /// made from the descriptions, in the backend's key domain.
+    // Port of: src/gpu/graphite/Caps.h#L114-L115 (chrome/m156)
+    #[doc(alias = "makeGraphicsPipelineKey")]
+    fn make_graphics_pipeline_key(
+        &self,
+        pipeline_desc: &GraphicsPipelineDesc,
+        render_pass_desc: &RenderPassDesc,
+    ) -> UniqueKey;
+
+    /// `makeComputePipelineKey(pipelineDesc)`.
+    // Port of: src/gpu/graphite/Caps.h#L116 (chrome/m156)
+    #[doc(alias = "makeComputePipelineKey")]
+    fn make_compute_pipeline_key(&self, pipeline_desc: &ComputePipelineDesc) -> UniqueKey;
 }

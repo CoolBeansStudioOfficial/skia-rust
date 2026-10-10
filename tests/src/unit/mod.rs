@@ -77,6 +77,7 @@ pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]
+pub mod encode_test;
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;

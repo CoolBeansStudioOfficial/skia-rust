@@ -1047,6 +1047,21 @@ impl Mipmap {
         })
     }
 
+    /// The writable level `index` for `SkMipmapBuilder::level`: the level's info with the
+    /// mipmap's colour space, its row bytes and its pixel bytes.
+    // Port of: src/core/SkMipmap.cpp#L289-L297 (chrome/m156), getLevel (writable, as the builder
+    // hands out the level's pixmap)
+    pub(crate) fn level_pixels_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<(ImageInfo, usize, &mut [u8])> {
+        let rec = self.levels.get(index)?.clone();
+        let info = rec.info.with_color_space(self.cs.clone());
+        let len = rec.row_bytes * usize::try_from(rec.info.height()).ok()?;
+        let bytes = self.data.get_mut(rec.offset..rec.offset + len)?;
+        Some((info, rec.row_bytes, bytes))
+    }
+
     /// Whether this mipmap can be attached to an image whose base level has the info `root`
     /// (`validForRootLevel`).
     // Port of: src/core/SkMipmap.cpp#L252-L276 (chrome/m156)

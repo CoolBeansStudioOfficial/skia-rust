@@ -20,6 +20,7 @@ pub mod runtime_shader;
 pub mod shader_base;
 pub mod transform_shader;
 pub mod tri_color_shader;
+pub mod working_color_space_shader;
 
 use crate::alpha_type::AlphaType;
 use crate::blend_mode::BlendMode;

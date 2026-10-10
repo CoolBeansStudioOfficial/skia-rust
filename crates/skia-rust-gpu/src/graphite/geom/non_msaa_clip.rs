@@ -6,10 +6,17 @@
 //! `skgpu::graphite::AnalyticClip`: a rect or rrect clip with any circular or rectangular corners
 //! under an affine transformation.
 //!
-//! `AtlasClip` and `NonMSAAClip` are not here yet: both hold a `TextureProxy`, which is not ported.
+//! [`AtlasClip`] is a clip whose mask lives in an atlas texture and [`NonMSAAClip`] holds both.
+//! The atlas half is only data here: the atlas that fills it (`ClipAtlasManager`) is G12a, so the
+//! `ClipStack` never produces a non-empty `AtlasClip` until then (see `clip_stack`).
 
-use skia_rust_core::rect::Rect as SkRect;
+use std::sync::Arc;
+
+use skia_rust_core::point::IPoint;
+use skia_rust_core::rect::{IRect, Rect as SkRect};
 use skia_rust_simd::vx::Float4;
+
+use crate::graphite::texture_proxy::TextureProxy;
 
 /// `AnalyticClip`: the shader inputs for an analytic clip. The defaults produce no clip.
 // Port of: src/gpu/graphite/geom/NonMSAAClip.h#L51-L62 (chrome/m156)
@@ -50,5 +57,47 @@ impl AnalyticClip {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.bounds.is_empty() && !self.inverted
+    }
+}
+
+/// `AtlasClip`: a clip that uses a mask in an atlas.
+// Port of: src/gpu/graphite/geom/NonMSAAClip.h#L68-L75 (chrome/m156)
+#[doc(alias = "skgpu::graphite::AtlasClip")]
+#[derive(Clone, Debug, Default)]
+pub struct AtlasClip {
+    /// `fMaskBounds`: the bounds of the mask area, in device space.
+    pub mask_bounds: IRect,
+    /// `fOutPos`: where the mask was placed in the atlas.
+    pub out_pos: IPoint,
+    /// `fAtlasTexture`.
+    pub atlas_texture: Option<Arc<TextureProxy>>,
+}
+
+impl AtlasClip {
+    /// `isEmpty()`: no atlas texture means no atlas clip.
+    // Port of: src/gpu/graphite/geom/NonMSAAClip.h#L73 (chrome/m156)
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.atlas_texture.is_none()
+    }
+}
+
+/// `NonMSAAClip`: the combined non-MSAA clip structure.
+// Port of: src/gpu/graphite/geom/NonMSAAClip.h#L80-L86 (chrome/m156)
+#[doc(alias = "skgpu::graphite::NonMSAAClip")]
+#[derive(Clone, Debug, Default)]
+pub struct NonMSAAClip {
+    /// `fAnalyticClip`.
+    pub analytic_clip: AnalyticClip,
+    /// `fAtlasClip`.
+    pub atlas_clip: AtlasClip,
+}
+
+impl NonMSAAClip {
+    /// `isEmpty()`.
+    // Port of: src/gpu/graphite/geom/NonMSAAClip.h#L85 (chrome/m156)
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.analytic_clip.is_empty() && self.atlas_clip.is_empty()
     }
 }

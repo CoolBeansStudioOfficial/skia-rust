@@ -1145,6 +1145,7 @@ dependencies = [
 name = "skia-rust-codec"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
  "skia-rust-core",
  "skia-rust-libjpeg",
  "skia-rust-libpng",
@@ -1200,6 +1201,7 @@ dependencies = [
  "naga",
  "skia-rust-core",
  "skia-rust-effects",
+ "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
  "skia-rust-sksl",

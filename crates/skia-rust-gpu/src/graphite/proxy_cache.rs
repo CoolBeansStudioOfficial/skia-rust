@@ -17,8 +17,8 @@
 //! `RecorderPriv::CreateCachedProxy` (bitmap tables such as the dither look-up table) is
 //! [`crate::graphite::recorder::RecorderPriv::create_cached_proxy`], built on
 //! [`ProxyCache::find_cache_entry`] and [`ProxyCache::insert_cache_entry`]. The image entry point
-//! `findOrCreateCachedProxy(recorder, key, GPUGeneratorFn)` needs `Image::notifyInUse`, which is
-//! not ported yet (G10d).
+//! `findOrCreateCachedProxy(recorder, key, GPUGeneratorFn)` is
+//! [`find_or_create_cached_proxy_from_image`].
 
 use std::sync::{Arc, Mutex, Weak};
 
@@ -323,4 +323,48 @@ impl ProxyCache {
     pub fn bitmap_key(bitmap: &Bitmap) -> UniqueKey {
         make_bitmap_key(bitmap)
     }
+}
+
+/// `ProxyCache::findOrCreateCachedProxy(recorder, key, context, GPUGeneratorFn)`: the proxy cached
+/// for `key`, or the texture of the image `generator` makes for it, which is then cached. Images
+/// the GPU generates never have invalidation listeners.
+///
+/// The resource provider is locked only while the cache is consulted and while the image's
+/// texture is instantiated: the generator records draws, which lock it again.
+// Port of: src/gpu/graphite/ProxyCache.cpp#L142-L170 (chrome/m156)
+#[doc(alias = "findOrCreateCachedProxy")]
+pub fn find_or_create_cached_proxy_from_image(
+    recorder: &crate::graphite::recorder::Recorder,
+    key: &UniqueKey,
+    generator: impl FnOnce(&crate::graphite::recorder::Recorder) -> Option<skia_rust_core::image::Image>,
+) -> Option<Arc<TextureProxy>> {
+    let shared = Arc::clone(recorder.priv_().resource_provider());
+    {
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(cached) = provider
+            .proxy_cache()
+            .and_then(|cache| cache.find_cache_entry(key))
+        {
+            return Some(cached);
+        }
+    }
+
+    // Cache miss: make the image without holding the provider's lock.
+    let image = generator(recorder)?;
+    let view = crate::graphite::texture_utils::as_view(Some(&image));
+    let proxy = view.ref_proxy()?;
+    {
+        let mut provider = shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        // Force `textureImage`'s TextureProxy to be instantiated so that it's not treated by a
+        // Recorder as a scratch image that can have a temporary scratch texture assignment.
+        proxy.instantiate(&mut provider);
+        provider
+            .proxy_cache()?
+            .insert_cache_entry(key, Arc::clone(&proxy), None);
+    }
+    Some(proxy)
 }
