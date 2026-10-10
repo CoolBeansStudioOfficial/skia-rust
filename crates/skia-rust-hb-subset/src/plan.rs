@@ -48,6 +48,8 @@ pub(crate) struct Plan<'a> {
     pub os2_min_cmap_codepoint: u32,
     pub os2_max_cmap_codepoint: u32,
     pub name_ids: BTreeSet<u32>,
+    /// `colr_palettes`: old palette index to new, from the COLR closure.
+    pub colr_palettes: HashMap<u32, u32>,
     pub name_languages: BTreeSet<u32>,
     pub drop_tables: BTreeSet<u32>,
     pub no_subset_tables: BTreeSet<u32>,
@@ -93,6 +95,7 @@ impl<'a> Plan<'a> {
             os2_min_cmap_codepoint: 0,
             os2_max_cmap_codepoint: 0,
             name_ids,
+            colr_palettes: HashMap::new(),
             name_languages,
             drop_tables,
             no_subset_tables,
