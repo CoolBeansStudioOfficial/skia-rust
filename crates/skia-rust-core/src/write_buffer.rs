@@ -23,6 +23,7 @@ use crate::alpha_type::AlphaType;
 use crate::blender::Blender;
 use crate::color::Color4f;
 use crate::color_filter::ColorFilter;
+use crate::data::Data;
 use crate::image::Image;
 use crate::mask_filter::MaskFilter;
 use crate::matrix::Matrix;
@@ -88,6 +89,33 @@ impl Writer32 {
         Writer32::default()
     }
 
+    /// An empty writer that has room for `capacity` bytes before it grows. The storage that
+    /// `SkWriter32(void* storage, size_t)` writes into is not ported: the bytes always live in
+    /// this writer, so only the allocation is hinted here.
+    // Port of: src/core/SkWriter32.h#L43-L53 (chrome/m156), the initial storage as a capacity
+    #[must_use]
+    pub fn with_capacity(capacity: usize) -> Writer32 {
+        Writer32 {
+            data: Vec::with_capacity(capacity),
+        }
+    }
+
+    /// Discards everything written (`reset` with no external storage).
+    // Port of: src/core/SkWriter32.h#L55-L65 (chrome/m156)
+    pub fn reset(&mut self) {
+        self.data.clear();
+    }
+
+    /// Moves the cursor back to `offset` bytes from the beginning. `offset` must be a multiple
+    /// of 4 no greater than [`bytes_written`](Self::bytes_written) (`rewindToOffset`).
+    // Port of: src/core/SkWriter32.h#L229-L233 (chrome/m156)
+    #[doc(alias = "rewindToOffset")]
+    pub fn rewind_to_offset(&mut self, offset: usize) {
+        debug_assert_eq!(align4(offset), offset);
+        debug_assert!(offset <= self.bytes_written());
+        self.data.truncate(offset);
+    }
+
     /// The current offset, always a multiple of 4 (`bytesWritten`).
     // Port of: src/core/SkWriter32.h#L49 (chrome/m156)
     #[doc(alias = "bytesWritten")]
@@ -127,6 +155,45 @@ impl Writer32 {
             .copy_from_slice(&value.to_ne_bytes());
     }
 
+    /// Writes the four scalars of `rect`, left, top, right, bottom (`writeRect`).
+    // Port of: src/core/SkWriter32.h#L134-L136 (chrome/m156)
+    #[doc(alias = "writeRect")]
+    pub fn write_rect(&mut self, rect: &Rect) {
+        self.write_scalar(rect.left);
+        self.write_scalar(rect.top);
+        self.write_scalar(rect.right);
+        self.write_scalar(rect.bottom);
+    }
+
+    /// Writes `data` as its length, then its bytes padded to 4 bytes. `None` writes a zero
+    /// length (`writeData`).
+    // Port of: src/core/SkWriter32.h#L213-L219 (chrome/m156)
+    #[doc(alias = "writeData")]
+    pub fn write_data(&mut self, data: Option<&Data>) {
+        let len = data.map_or(0, |data| u32::try_from(data.size()).unwrap_or(u32::MAX));
+        self.write_u32(len);
+        if let Some(data) = data {
+            self.write_pad(data.as_bytes());
+        }
+    }
+
+    /// The number of bytes [`write_data`](Self::write_data) writes for `data`
+    /// (`WriteDataSize`).
+    // Port of: src/core/SkWriter32.h#L221-L223 (chrome/m156)
+    #[doc(alias = "WriteDataSize")]
+    #[must_use]
+    pub fn write_data_size(data: Option<&Data>) -> usize {
+        4 + align4(data.map_or(0, Data::size))
+    }
+
+    /// A copy of the bytes written, as data (`snapshotAsData`).
+    // Port of: src/core/SkWriter32.cpp#L78-L80 (chrome/m156)
+    #[doc(alias = "snapshotAsData")]
+    #[must_use]
+    pub fn snapshot_as_data(&self) -> Data {
+        Data::new_copy(&self.data)
+    }
+
     /// Reserves `size` bytes, which need not be a multiple of 4: the remaining space (if any) is
     /// filled in with zeroes (`reservePad`).
     // Port of: src/core/SkWriter32.h#L180-L188 (chrome/m156)
@@ -143,9 +210,10 @@ impl Writer32 {
     }
 
     /// Writes a string as its length, its bytes, a terminating `\0`, and the padding to 4 bytes
-    /// (`writeString`).
-    // Port of: src/core/SkWriter32.cpp#L38-L55 (chrome/m156)
-    pub fn write_string(&mut self, value: &str) {
+    /// (`writeString`). `None` is written as `""`.
+    // Port of: src/core/SkWriter32.cpp#L38-L53 (chrome/m156)
+    pub fn write_string(&mut self, value: Option<&str>) {
+        let value = value.unwrap_or("");
         let len = value.len();
         let ptr = self.reserve_pad(size_of::<u32>() + len + 1);
         ptr[..4].copy_from_slice(&u32::try_from(len).unwrap_or(u32::MAX).to_ne_bytes());
@@ -195,6 +263,50 @@ impl Writer32 {
         self.data[offset..offset + size_of::<u32>()].copy_from_slice(&value.to_ne_bytes());
     }
 
+    /// Overwrites the scalar at `offset` (`overwriteTAt<SkScalar>`).
+    // Port of: src/core/SkWriter32.h#L94-L98 (chrome/m156), with SkScalar
+    #[doc(alias = "overwriteTAt")]
+    pub fn overwrite_scalar_at(&mut self, offset: usize, value: f32) {
+        self.data[offset..offset + size_of::<f32>()].copy_from_slice(&value.to_ne_bytes());
+    }
+
+    /// Overwrites the four scalars of a rectangle at `offset` (`overwriteTAt<SkRect>`).
+    // Port of: src/core/SkWriter32.h#L94-L98 (chrome/m156), with SkRect
+    #[doc(alias = "overwriteTAt")]
+    pub fn overwrite_rect_at(&mut self, offset: usize, rect: &Rect) {
+        self.overwrite_scalar_at(offset, rect.left);
+        self.overwrite_scalar_at(offset + 4, rect.top);
+        self.overwrite_scalar_at(offset + 8, rect.right);
+        self.overwrite_scalar_at(offset + 12, rect.bottom);
+    }
+
+    /// Reads the scalar at `offset` (`readTAt<SkScalar>`).
+    ///
+    /// # Panics
+    /// If the scalar is not within the bytes written.
+    // Port of: src/core/SkWriter32.h#L84-L88 (chrome/m156), with SkScalar
+    #[doc(alias = "readTAt")]
+    #[must_use]
+    pub fn read_scalar_at(&self, offset: usize) -> f32 {
+        f32::from_bits(self.read32_at(offset))
+    }
+
+    /// Reads the four scalars of a rectangle at `offset` (`readTAt<SkRect>`).
+    ///
+    /// # Panics
+    /// If the rectangle is not within the bytes written.
+    // Port of: src/core/SkWriter32.h#L84-L88 (chrome/m156), with SkRect
+    #[doc(alias = "readTAt")]
+    #[must_use]
+    pub fn read_rect_at(&self, offset: usize) -> Rect {
+        Rect {
+            left: self.read_scalar_at(offset),
+            top: self.read_scalar_at(offset + 4),
+            right: self.read_scalar_at(offset + 8),
+            bottom: self.read_scalar_at(offset + 12),
+        }
+    }
+
     /// Reads the word at `offset` (`readTAt<uint32_t>`).
     ///
     /// # Panics
@@ -221,6 +333,33 @@ impl Writer32 {
     // Port of: src/core/SkWriter32.h#L236-L238 (chrome/m156)
     pub fn flatten(&self, dst: &mut [u8]) {
         dst[..self.data.len()].copy_from_slice(&self.data);
+    }
+}
+
+/// A [`Writer32`] that starts with room for `N` bytes (`SkSWriter32<N>`). The room is a capacity
+/// hint: see [`Writer32::with_capacity`].
+// Port of: src/core/SkWriter32.h#L264-L284 (chrome/m156)
+#[doc(alias = "SkSWriter32")]
+#[derive(Clone, Debug)]
+pub struct SWriter32<const N: usize>(Writer32);
+
+impl<const N: usize> Default for SWriter32<N> {
+    fn default() -> Self {
+        SWriter32(Writer32::with_capacity(N))
+    }
+}
+
+impl<const N: usize> std::ops::Deref for SWriter32<N> {
+    type Target = Writer32;
+
+    fn deref(&self) -> &Writer32 {
+        &self.0
+    }
+}
+
+impl<const N: usize> std::ops::DerefMut for SWriter32<N> {
+    fn deref_mut(&mut self) -> &mut Writer32 {
+        &mut self.0
     }
 }
 
@@ -540,7 +679,7 @@ impl BinaryWriteBuffer {
             let index = i32::try_from(position + 1).unwrap_or(i32::MAX);
             self.writer.write32(index << 8);
         } else {
-            self.writer.write_string(name);
+            self.writer.write_string(Some(name));
             self.flattenable_dict.push(name.to_owned());
         }
         // Make room for the size of the flattened object, then record it afterwards.
