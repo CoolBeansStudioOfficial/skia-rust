@@ -16289,6 +16289,7 @@ macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L598-L598"
 module = "codec"
 status = "todo"
+reason = "needs asyncRescaleAndReadPixelsYUV420 on the CPU (rescale and YUV readback), which is not ported; the raster golden async_yuv_no_scale exists"
 span_hash = "a5f5047f706c65778545eb45ceb747c5f323f6530876d08471faf91a47d45f9e"
 
 [[test]]
@@ -21915,6 +21916,7 @@ macro = "DEF_GM"
 source = "gm/imagefromyuvtextures.cpp#L378-L378"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "96e500d6f4ddb491c8a3a937be2321af42e64397b05d71a499b3b439ddc9a785"
 
 [[test]]
@@ -21924,6 +21926,7 @@ macro = "DEF_GM"
 source = "gm/imagefromyuvtextures.cpp#L377-L377"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "f2b3dc07ece8e80248d4558d1ee229fd7a03bf8fde1a91286c1ef6fb0d303c32"
 
 [[test]]
@@ -23668,6 +23671,7 @@ macro = "DEF_GM"
 source = "gm/rendertomipmappedyuvimageplanes.cpp#L152-L152"
 module = "codec"
 status = "todo"
+reason = "Graphite-only: skips on every other backend, so the oracle has no raster golden"
 span_hash = "b6126f8618abd5a5d126d3241a6f9187d7f9f5189a9865ab2889b327be266e72"
 
 [[test]]
@@ -25771,6 +25775,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1081-L1085"
 module = "codec"
 status = "todo"
+reason = "needs the WackyYUVFormatsGM generator path (create_YUV formats, YUVAPlanarConfig, extract_planes, splat drawing, labels) and YUVGenerator's CPU conversion; not ported yet (raster golden wacky_yuv_formats_imggen exists)"
 span_hash = "9568ddaf9d765e57a8b090dc698dc03cb50a9a5db494f0942f2be7fcecb0109f"
 
 [[test]]
@@ -25780,6 +25785,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1092-L1096"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "80bf782f28b1c80235aa32edee8cc19dc81ee01003b91d539ff2b70310a6bfb3"
 
 [[test]]
@@ -25789,6 +25795,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1086-L1090"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "9a6951a379ec0e4f95d525e1f41fce0aeb8d2764372419ff48fda472a3ea2780"
 
 [[test]]
@@ -25798,6 +25805,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1051-L1055"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "914c28f7053c1aea74e8e16eac6b7ef13ee81291022f7b49bd84c6107a393797"
 
 [[test]]
@@ -25807,6 +25815,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1076-L1080"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "f33b4d2a0558cd596ebea7ac8a89acc8cd66692893a83136f23df879cec740e1"
 
 [[test]]
@@ -25816,6 +25825,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1061-L1065"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "b8864919ea0ee8d806ec95f2fb51a2aff11be81c61c944b0200bae0d6cd5efa6"
 
 [[test]]
@@ -25825,6 +25835,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1066-L1070"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "15cf033adc1fb200513001ef766bdbb228ecbe7a6f1f6b20347a52df716e2d0f"
 
 [[test]]
@@ -25834,6 +25845,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1097-L1101"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "c087f6d6a98c6b1bf448667d58d9be4155bd3f762e69122a1f2c87f6d5de30aa"
 
 [[test]]
@@ -25843,6 +25855,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1056-L1060"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "26888ff1490779d83147084ae25ead4e400cc2eb09757654be11248318b43220"
 
 [[test]]
@@ -25852,6 +25865,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1071-L1075"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "52ffc23b7fc456f5f004c20a583b3512726bc60ba8b7de74d48575f21e9b7f77"
 
 [[test]]
@@ -25861,6 +25875,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1304-L1304"
 module = "codec"
 status = "todo"
+reason = "needs a GPU context to create the YUV images (skips on raster; no raster golden)"
 span_hash = "3e5f7d543fd905104a1410db3643065519dd4e4e7942759ce7f2c1d372f0614e"
 
 [[test]]
@@ -25969,6 +25984,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/yuv420_odd_dim.cpp#L74-L112"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "64ca3e0b677219bbcae2fecc2a55b1c5775de11a52a2c7c8ee5db8ce18db8387"
 
 [[test]]
@@ -25978,6 +25994,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/yuv420_odd_dim.cpp#L115-L194"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "7a8b37c2ed31461181c4af0aac2aab5f97dceca296ac497c5326fd83def0e552"
 
 [[test]]
@@ -25987,6 +26004,7 @@ macro = "DEF_GM"
 source = "gm/yuvtorgbsubset.cpp#L194-L194"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "c24024d1b95237be410897b72c02c2086ea4b74301bc2098807c60461fa6a957"
 
 [[test]]
@@ -50989,6 +51007,7 @@ macro = "DEF_TEST"
 source = "tests/YUVCacheTest.cpp#L38-L87"
 module = "codec"
 status = "todo"
+reason = "needs SkResourceCache and SkCachedData (src/core/SkResourceCache.cpp, src/core/SkCachedData.cpp), which are not ported; SkYUVPlanesCache is written on top of them"
 span_hash = "becfc2108f78aae7bda54068391a38c0c50fed47c58eb53f4d39a6f29d47de1a"
 
 [[test]]

@@ -5,20 +5,25 @@
 //
 // The other GMs of this file (WackyYUVFormatsGM, YUVMakeColorSpaceGM) are not ported yet.
 
+// GM ports mirror the C++ int-to-float conversions of image sizes.
+#![allow(clippy::cast_precision_loss)]
+
 use crate::prelude::*;
 use crate::tool_utils::get_resource_as_image;
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::color_filters::{self, Clamp};
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::{ImageInfo, YUVColorSpace};
 use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
-use skia_rust_core::alpha_type::AlphaType;
-use skia_rust_core::color_type::ColorType;
-use skia_rust_core::encoded_origin::EncodedOrigin;
-use skia_rust_core::yuva_info::{PlaneConfig, Siting, Subsampling, YUVAInfo, plane_dimensions_array};
 use skia_rust_core::yuv_math::color_matrix_rgb2yuv;
-use skia_rust_core::blend_mode::BlendMode;
+use skia_rust_core::yuva_info::{
+    PlaneConfig, Siting, Subsampling, YUVAInfo, plane_dimensions_array,
+};
 use skia_rust_raster::surfaces;
 
 // Port of: tools/gpu/YUVUtils.cpp#L156-L205 (chrome/m156), sk_gpu_test::MakeYUVAPlanesAsA8 with no

@@ -12,6 +12,10 @@ use skia_rust_core::paint::Paint;
 use skia_rust_core::rect::Rect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
 
+// Port of: gm/ducky_yuv_blend.cpp#L24-L26 (chrome/m156), kNumPerRow and kPad
+const NUM_PER_ROW: i32 = 4;
+const PAD: f32 = 10.0;
+
 // Modeled on the layout test css3/blending/background-blend-mode-image-image.html to reproduce
 // skbug.com/40040948
 //
@@ -25,16 +29,14 @@ crate::def_simple_gm_can_fail!(ducky_yuv_blend, canvas, error_msg, 560, 1130, {
         error_msg.push_str("Image(s) failed to load.");
         return DrawResult::Fail;
     };
-    let Some(ducky_fg) = get_resource_as_image("images/ducky.jpg") else {
+    let Some(jpeg) = get_resource_as_image("images/ducky.jpg") else {
         error_msg.clear();
         error_msg.push_str("Image(s) failed to load.");
         return DrawResult::Fail;
     };
     // duckyFG[1] = duckyFG[0] on raster.
-    let duck_fg = [ducky_fg.clone(), ducky_fg];
+    let duck_fg = [jpeg.clone(), jpeg];
 
-    const NUM_PER_ROW: i32 = 4;
-    const PAD: f32 = 10.0;
     let dst_rect = Rect::from_wh(130.0, 130.0);
     let mut row_cnt = 0;
 

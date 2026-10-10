@@ -26,10 +26,10 @@ use skia_rust_core::encoded_image_format::EncodedImageFormat;
 use skia_rust_core::encoded_origin::EncodedOrigin;
 use skia_rust_core::image_info::{ImageInfo, YUVColorSpace};
 use skia_rust_core::rect::IRect;
-use skia_rust_core::yuva_info::{PlaneConfig, Siting, Subsampling, YUVAInfo};
-use skia_rust_core::yuva_pixmaps::{DataType, SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_core::size::ISize;
 use skia_rust_core::stream::{MemoryStream, Stream};
+use skia_rust_core::yuva_info::{PlaneConfig, Siting, Subsampling, YUVAInfo};
+use skia_rust_core::yuva_pixmaps::{DataType, SupportedDataTypes, YUVAPixmapInfo, YUVAPixmaps};
 use skia_rust_libjpeg::{
     ColorSpace as JColorSpace, ConsumeResult, Decompress, DitherMode, HeaderResult, JpegSource,
     SrcBuf,
@@ -549,7 +549,11 @@ fn yuv_layout(
     // Only the common cases, where U and V have sampling factors of one (see the C++ comment on
     // why larger chroma factors are not supported).
     let c = &decoder.comp_info;
-    if c[1].h_samp_factor != 1 || c[1].v_samp_factor != 1 || c[2].h_samp_factor != 1 || c[2].v_samp_factor != 1 {
+    if c[1].h_samp_factor != 1
+        || c[1].v_samp_factor != 1
+        || c[2].h_samp_factor != 1
+        || c[2].v_samp_factor != 1
+    {
         return None;
     }
     let h_samp_y = c[0].h_samp_factor;
@@ -563,10 +567,9 @@ fn yuv_layout(
         (4, 2) => Subsampling::S410,
         _ => return None,
     };
-    if let Some(supported) = supported {
-        if !supported.supported(PlaneConfig::Y_U_V, DataType::Unorm8) {
-            return None;
-        }
+    if supported.is_some_and(|supported| !supported.supported(PlaneConfig::Y_U_V, DataType::Unorm8))
+    {
+        return None;
     }
     let row_bytes = std::array::from_fn(|i| c[i].width_in_blocks as usize * DCTSIZE);
     Some((subsampling, row_bytes))
@@ -581,7 +584,7 @@ fn copy_plane_rows(
     rows: &[Vec<u8>],
     first_row: usize,
 ) -> bool {
-    let height = pixmaps.plane(plane).info().height() as usize;
+    let height = usize::try_from(pixmaps.plane(plane).info().height()).unwrap_or(0);
     for (j, src) in rows.iter().enumerate() {
         let row = first_row + j;
         if row >= height {
@@ -621,7 +624,11 @@ impl CodecImpl for JpegCodec {
     }
 
     // Port of: src/codec/SkJpegCodec.cpp#L872-L970 (onGetYUVAPlanes)
-    fn on_get_yuva_planes(&mut self, _base: &mut CodecBase<'_>, pixmaps: &mut YUVAPixmaps) -> Result {
+    fn on_get_yuva_planes(
+        &mut self,
+        _base: &mut CodecBase<'_>,
+        pixmaps: &mut YUVAPixmaps,
+    ) -> Result {
         if yuv_layout(&self.decoder, None).is_none() || pixmaps.num_planes() != 3 {
             return Result::InvalidInput;
         }
@@ -632,10 +639,12 @@ impl CodecImpl for JpegCodec {
             _ => return Result::InvalidInput,
         }
         let dinfo = &self.decoder;
-        let num_y_rows_per_block = DCTSIZE * dinfo.comp_info[0].v_samp_factor as usize;
+        let num_y_rows_per_block =
+            DCTSIZE * usize::try_from(dinfo.comp_info[0].v_samp_factor).unwrap_or(0);
         // The Y rows of one iMCU row, then the U and V rows (DCTSIZE each).
         let rows_per_plane = [num_y_rows_per_block, DCTSIZE, DCTSIZE];
-        let width_per_plane: [usize; 3] = std::array::from_fn(|i| dinfo.comp_info[i].width_in_blocks as usize * DCTSIZE);
+        let width_per_plane: [usize; 3] =
+            std::array::from_fn(|i| dinfo.comp_info[i].width_in_blocks as usize * DCTSIZE);
         let mut planes: Vec<Vec<Vec<u8>>> = (0..3)
             .map(|i| vec![vec![0u8; width_per_plane[i]]; rows_per_plane[i]])
             .collect();

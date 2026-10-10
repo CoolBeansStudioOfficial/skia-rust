@@ -163,28 +163,34 @@ impl YUVALocation {
     #[doc(alias = "AreValidLocations")]
     #[must_use]
     pub fn are_valid_locations(locations: &YUVALocations) -> (bool, usize) {
-        let mut max_slot_used: i32 = -1;
+        // `maxSlotUsed`, with None for the C++ -1.
+        let mut max_slot_used: Option<usize> = None;
         let mut used = [false; YUVAInfo::MAX_PLANES];
         let mut valid = true;
         for (i, loc) in locations.iter().enumerate() {
-            if loc.plane < 0 {
-                if i != YUVAChannels::A as usize {
-                    valid = false; // only the 'A' plane can be omitted
+            match usize::try_from(loc.plane) {
+                // A plane of -1 is absent: only the 'A' value can be.
+                Err(_) => {
+                    if i != YUVAChannels::A as usize {
+                        valid = false; // only the 'A' plane can be omitted
+                    }
                 }
-            } else if loc.plane >= YUVAInfo::MAX_PLANES as i32 {
-                valid = false; // A maximum of four input textures is allowed
-            } else {
-                max_slot_used = max_slot_used.max(loc.plane);
-                used[i] = true;
+                // A maximum of four input textures is allowed
+                Ok(plane) if plane >= YUVAInfo::MAX_PLANES => valid = false,
+                Ok(plane) => {
+                    max_slot_used = Some(max_slot_used.map_or(plane, |max| max.max(plane)));
+                    used[i] = true;
+                }
             }
         }
         // All the used slots should be packed starting at 0 with no gaps
-        for i in 0..=max_slot_used {
-            if !used[i as usize] {
-                valid = false;
-            }
+        if max_slot_used.is_some_and(|max| used[..=max].contains(&false)) {
+            valid = false;
         }
-        let num_planes = if valid { (max_slot_used + 1) as usize } else { 0 };
+        let num_planes = match (valid, max_slot_used) {
+            (true, Some(max)) => max + 1,
+            _ => 0,
+        };
         (valid, num_planes)
     }
 }
@@ -224,7 +230,10 @@ impl Default for YUVAInfo {
 }
 
 // Port of: src/core/SkYUVAInfo.cpp#L14-L25 (is_plane_config_compatible_with_subsampling)
-fn is_plane_config_compatible_with_subsampling(config: PlaneConfig, subsampling: Subsampling) -> bool {
+fn is_plane_config_compatible_with_subsampling(
+    config: PlaneConfig,
+    subsampling: Subsampling,
+) -> bool {
     if config == PlaneConfig::Unknown || subsampling == Subsampling::Unknown {
         return false;
     }
@@ -260,9 +269,12 @@ pub fn plane_subsampling_factors(
     subsampling: Subsampling,
     plane_idx: i32,
 ) -> (i32, i32) {
+    // `planeIdx < 0` is the failed conversion; `planeIdx > NumPlanes` is kept as in Skia.
+    let Ok(plane_idx) = usize::try_from(plane_idx) else {
+        return (0, 0);
+    };
     if !is_plane_config_compatible_with_subsampling(plane_config, subsampling)
-        || plane_idx < 0
-        || plane_idx > num_planes(plane_config) as i32
+        || plane_idx > num_planes(plane_config)
     {
         return (0, 0);
     }
@@ -342,7 +354,7 @@ pub fn plane_dimensions_array(
         }
         PlaneConfig::YUV | PlaneConfig::UYV | PlaneConfig::YUVA | PlaneConfig::UYVA => {
             plane_dims[0] = ISize::new(w, h);
-            debug_assert!(plane_dims[0] == uv_size);
+            debug_assert_eq!(plane_dims[0], uv_size);
             1
         }
     };
@@ -353,6 +365,7 @@ pub fn plane_dimensions_array(
 // Port of: include/core/SkYUVAInfo.h#L125-L142 (chrome/m156)
 #[doc(alias = "SkYUVAInfo::NumPlanes")]
 #[must_use]
+#[allow(clippy::match_same_arms)] // one arm per plane configuration, as the C++ switch
 pub const fn num_planes(plane_config: PlaneConfig) -> usize {
     match plane_config {
         PlaneConfig::Unknown => 0,
@@ -375,6 +388,7 @@ pub const fn num_planes(plane_config: PlaneConfig) -> usize {
 // Port of: include/core/SkYUVAInfo.h#L144-L183 (chrome/m156)
 #[doc(alias = "SkYUVAInfo::NumChannelsInPlane")]
 #[must_use]
+#[allow(clippy::match_same_arms)] // one arm per plane configuration, as the C++ switch
 pub fn num_channels_in_plane(plane_config: PlaneConfig, i: usize) -> Option<usize> {
     let n = match plane_config {
         PlaneConfig::Unknown => 0,
@@ -439,13 +453,11 @@ pub fn get_yuva_locations(
     let mut yuva_locations = YUVALocations::default();
     for (i, &(plane, chan_idx)) in planes_and_indices.iter().enumerate() {
         if plane >= 0 {
-            let channel = channel_index_to_channel(plane_channel_flags[plane as usize], chan_idx)?;
-            yuva_locations[i] = YUVALocation {
-                plane,
-                channel,
-            };
+            let flags = *plane_channel_flags.get(usize::try_from(plane).ok()?)?;
+            let channel = channel_index_to_channel(flags, chan_idx)?;
+            yuva_locations[i] = YUVALocation { plane, channel };
         } else {
-            debug_assert!(i == YUVAChannels::A as usize);
+            debug_assert_eq!(i, YUVAChannels::A as usize);
             yuva_locations[i] = YUVALocation {
                 plane: -1,
                 channel: ColorChannel::R,
@@ -458,7 +470,10 @@ pub fn get_yuva_locations(
 /// Port of `channel_index_to_channel` (src/core/SkYUVAInfo.cpp): the channel at `channel_idx` of a
 /// plane with `channel_flags`, or `None` when the plane has no such channel.
 // Port of: src/core/SkYUVAInfo.cpp#L134-L179 (chrome/m156)
-fn channel_index_to_channel(channel_flags: ColorChannelFlag, channel_idx: i32) -> Option<ColorChannel> {
+fn channel_index_to_channel(
+    channel_flags: ColorChannelFlag,
+    channel_idx: i32,
+) -> Option<ColorChannel> {
     use ColorChannel::{A, B, G, R};
     match channel_flags {
         // For gray returning any of R, G, or B for index 0 is ok.
@@ -497,6 +512,7 @@ fn channel_index_to_channel(channel_flags: ColorChannelFlag, channel_idx: i32) -
 // Port of: src/core/SkYUVAInfo.cpp#L181-L199 (chrome/m156)
 #[doc(alias = "SkYUVAInfo::HasAlpha")]
 #[must_use]
+#[allow(clippy::match_same_arms)] // one arm per plane configuration, as the C++ switch
 pub const fn has_alpha(plane_config: PlaneConfig) -> bool {
     match plane_config {
         PlaneConfig::Unknown
@@ -534,15 +550,17 @@ impl YUVAInfo {
         siting_xy: impl Into<Option<(Siting, Siting)>>,
     ) -> Option<Self> {
         let origin = origin.into().unwrap_or(EncodedOrigin::TopLeft);
-        let (siting_x, siting_y) = siting_xy.into().unwrap_or((Siting::Centered, Siting::Centered));
+        let (siting_horizontal, siting_vertical) = siting_xy
+            .into()
+            .unwrap_or((Siting::Centered, Siting::Centered));
         let info = Self::new_unchecked(
             dimensions.into(),
             plane_config,
             subsampling,
             yuv_color_space,
             origin,
-            siting_x,
-            siting_y,
+            siting_horizontal,
+            siting_vertical,
         );
         info.is_valid().then_some(info)
     }
@@ -558,7 +576,9 @@ impl YUVAInfo {
         siting_x: Siting,
         siting_y: Siting,
     ) -> Self {
-        if dimensions.is_empty() || !is_plane_config_compatible_with_subsampling(plane_config, subsampling) {
+        if dimensions.is_empty()
+            || !is_plane_config_compatible_with_subsampling(plane_config, subsampling)
+        {
             return Self::default();
         }
         Self {
@@ -647,7 +667,12 @@ impl YUVAInfo {
     /// The dimensions of each plane, as stored (before the origin is applied).
     #[must_use]
     pub fn plane_dimensions(&self) -> Vec<ISize> {
-        let (n, dims) = plane_dimensions_array(self.dimensions, self.plane_config, self.subsampling, self.origin);
+        let (n, dims) = plane_dimensions_array(
+            self.dimensions,
+            self.plane_config,
+            self.subsampling,
+            self.origin,
+        );
         dims[..n].to_vec()
     }
 
@@ -678,13 +703,20 @@ impl YUVAInfo {
         }
         let mut safe = SafeMath::new();
         let mut total_bytes: usize = 0;
-        let (n, plane_dimensions) =
-            plane_dimensions_array(self.dimensions, self.plane_config, self.subsampling, self.origin);
+        let (n, plane_dimensions) = plane_dimensions_array(
+            self.dimensions,
+            self.plane_config,
+            self.subsampling,
+            self.origin,
+        );
         let mut sizes = [0usize; Self::MAX_PLANES];
         for i in 0..n {
             debug_assert!(!plane_dimensions[i].is_empty());
             debug_assert!(row_bytes[i] != 0);
-            let size = safe.mul(row_bytes[i], plane_dimensions[i].height as usize);
+            let size = safe.mul(
+                row_bytes[i],
+                usize::try_from(plane_dimensions[i].height).unwrap_or(0),
+            );
             sizes[i] = size;
             total_bytes = safe.add(total_bytes, size);
         }
