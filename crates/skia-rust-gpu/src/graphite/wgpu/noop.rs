@@ -51,3 +51,32 @@ pub fn noop_backend_context() -> WgpuBackendContext {
     noop_backend_context_with_features(wgpu::Features::empty(), wgpu::Limits::default())
         .expect("the noop backend creates a device")
 }
+
+/// A noop device that has what the pipelines of `profile` need: immediates (64 bytes), and the
+/// half-float and dual-source-blending features if the profile has them. The pipelines the
+/// tests make validate on it, which they do not on [`noop_backend_context`] (`var<immediate>`
+/// needs the feature).
+///
+/// # Panics
+/// If wgpu cannot create the noop device, which means wgpu was built without the `noop` feature.
+#[must_use]
+pub fn noop_backend_context_for_profile(
+    profile: &crate::graphite::wgpu::CapsProfile,
+) -> WgpuBackendContext {
+    use crate::graphite::wgpu::DeviceFeatures;
+    let mut features = wgpu::Features::IMMEDIATES;
+    if profile.features.contains(DeviceFeatures::SHADER_F16) {
+        features |= wgpu::Features::SHADER_F16;
+    }
+    if profile
+        .features
+        .contains(DeviceFeatures::DUAL_SOURCE_BLENDING)
+    {
+        features |= wgpu::Features::DUAL_SOURCE_BLENDING;
+    }
+    let limits = wgpu::Limits {
+        max_immediate_size: 64,
+        ..wgpu::Limits::default()
+    };
+    noop_backend_context_with_features(features, limits).expect("the noop backend creates a device")
+}

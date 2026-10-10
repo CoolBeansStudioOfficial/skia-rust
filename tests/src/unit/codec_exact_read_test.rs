@@ -16,7 +16,7 @@ use crate::{def_test, reporter_assert};
 // The C++ test wraps one SkMemoryStream in an UnowningStream for every codec, so each codec starts
 // where the previous one stopped. This handle shares the stream the same way, and forwards every
 // call to it.
-struct SharedStream(Arc<Mutex<MemoryStream>>);
+pub(crate) struct SharedStream(pub(crate) Arc<Mutex<MemoryStream>>);
 
 impl Stream for SharedStream {
     fn read(&mut self, buffer: &mut [u8]) -> usize {

@@ -46,7 +46,7 @@ use crate::color::{Color, Color4f};
 use crate::color_filters;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
-use crate::device::{CreateInfo, Device, NoPixelsDevice, clip_shader};
+use crate::device::{CreateInfo, Device, NoPixelsDevice, PendingGlyphDrawable, clip_shader};
 use crate::floating_point::is_finite_all;
 use crate::font::Font;
 use crate::font_types::{GlyphId, TextEncoding};
@@ -2138,35 +2138,53 @@ impl CanvasState {
 
     /// `onDrawTextBlob`: the hook may record the blob; otherwise its glyph runs are drawn.
     // Port of: src/core/SkCanvas.cpp#L2436-L2441 (chrome/m156), onDrawTextBlob
-    fn draw_text_blob(&mut self, blob: &TextBlob, x: scalar, y: scalar, paint: &Paint) {
+    fn draw_text_blob(
+        &mut self,
+        blob: &TextBlob,
+        x: scalar,
+        y: scalar,
+        paint: &Paint,
+    ) -> Option<PendingGlyphDraw> {
         if let Some(hooks) = self.hooks.as_mut()
             && hooks.on_draw_text_blob(blob, x, y, paint)
         {
-            return;
+            return None;
         }
         let mut builder = GlyphRunBuilder::new();
         let list = builder.blob_to_glyph_run_list(blob, Point::new(x, y));
-        self.draw_glyph_run_list(&list, paint);
+        self.draw_glyph_run_list(&list, paint)
     }
 
     // Port of: src/core/SkCanvas.cpp#L2443-L2455 (chrome/m156), onDrawGlyphRunList
-    fn draw_glyph_run_list(&mut self, list: &GlyphRunList<'_>, paint: &Paint) {
+    //
+    // skia-rust: the draw is left open when it returns the layers of the paint and the glyph
+    // drawables the device collected; `Canvas::finish_glyph_run_draw` draws those (a drawable
+    // draws with the canvas, which is borrowed here) and ends the layers.
+    fn draw_glyph_run_list(
+        &mut self,
+        list: &GlyphRunList<'_>,
+        paint: &Paint,
+    ) -> Option<PendingGlyphDraw> {
         if let Some(hooks) = self.hooks.as_mut()
             && hooks.on_draw_glyph_run_list(list, paint)
         {
-            return;
+            return None;
         }
         let bounds = list.source_bounds_with_origin();
         if self.internal_quick_reject(&bounds, paint, None) {
-            return;
+            return None;
         }
         // Text attempts to apply any mask filter internally, so this draw does not need the
         // mask filter auto-layer (`kSkipMaskFilterAutoLayer`). The mask filter layer is never
         // added in this port (see `AutoLayerForImageFilter::new`), so the flag is implicit.
-        if let Some(auto_layer) = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE) {
-            crate::device::draw_glyph_run_list(self.top_device_mut(), list, auto_layer.paint());
-            self.end_auto_layer(&auto_layer);
-        }
+        let auto_layer = self.about_to_draw(paint, Some(&bounds), PredrawFlags::NONE)?;
+        let device = self.top_device_mut();
+        crate::device::draw_glyph_run_list(device, list, auto_layer.paint());
+        let drawables = device.take_pending_glyph_drawables();
+        Some(PendingGlyphDraw {
+            auto_layer,
+            drawables,
+        })
     }
 
     // Port of: src/core/SkCanvas.cpp#L2463-L2479 (chrome/m156), onConvertGlyphRunListToSlug
@@ -3191,6 +3209,13 @@ struct AutoLayerForImageFilter {
     temp_layers_for_filters: i32,
 }
 
+/// A glyph run list draw that has reached the device but is not finished: the layers of its
+/// paint are still open, and the glyph drawables the device could not draw wait for the canvas.
+struct PendingGlyphDraw {
+    auto_layer: AutoLayerForImageFilter,
+    drawables: Vec<PendingGlyphDrawable>,
+}
+
 impl AutoLayerForImageFilter {
     /// The paint the draw should use (`paint()`).
     fn paint(&self) -> &Paint {
@@ -4190,7 +4215,8 @@ impl Canvas {
             let mut builder = GlyphRunBuilder::new();
             let list = builder.text_to_glyph_run_list(font, paint, text, origin.into(), encoding);
             if !list.is_empty() {
-                self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+                let pending = self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+                self.finish_glyph_run_draw(pending);
             }
         }
         self
@@ -4322,9 +4348,11 @@ impl Canvas {
         if total_glyph_count > max_glyph_count {
             return self;
         }
-        self.state
+        let pending = self
+            .state
             .borrow_mut()
             .draw_text_blob(blob, origin.x, origin.y, paint);
+        self.finish_glyph_run_draw(pending);
         self
     }
 
@@ -4366,7 +4394,37 @@ impl Canvas {
     fn draw_glyph_run(&self, run: GlyphRun, origin: Point, paint: &Paint) {
         let builder = GlyphRunBuilder::new();
         let list = builder.make_glyph_run_list(run, paint, origin);
-        self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+        let pending = self.state.borrow_mut().draw_glyph_run_list(&list, paint);
+        self.finish_glyph_run_draw(pending);
+    }
+
+    /// Draws the glyph drawables a glyph run list draw collected, then ends its layers. The
+    /// glyph painter draws a drawable glyph as
+    /// `SkAutoCanvasRestore acr(canvas, false); canvas->saveLayer(&bounds, &paint);
+    /// drawable->draw(canvas, &m)`; it runs here, after the device call, because it needs the
+    /// canvas (see [`Device::take_pending_glyph_drawables`]).
+    // Port of: src/core/SkGlyphRunPainter.cpp#L296-L309 (chrome/m156)
+    fn finish_glyph_run_draw(&self, pending: Option<PendingGlyphDraw>) {
+        let Some(pending) = pending else {
+            return;
+        };
+        for PendingGlyphDrawable {
+            drawable,
+            matrix,
+            paint,
+        } in &pending.drawables
+        {
+            let save_count = self.save_count();
+            let drawable_bounds = matrix.map_rect(drawable.bounds()).0;
+            self.save_layer(
+                &SaveLayerRec::default()
+                    .bounds(&drawable_bounds)
+                    .paint(paint),
+            );
+            drawable.draw(self, Some(matrix));
+            self.restore_to_count(save_count);
+        }
+        self.state.borrow_mut().end_auto_layer(&pending.auto_layer);
     }
 
     /// Draws a path (`drawPath`).

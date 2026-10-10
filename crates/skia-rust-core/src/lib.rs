@@ -9,6 +9,8 @@ pub mod bbh_factory;
 pub mod bezier_curves;
 pub mod bitmap;
 pub mod bitmap_cache;
+#[doc(hidden)]
+pub mod bitmap_proc_state_priv;
 pub mod blend_mode;
 pub mod blend_mode_blender;
 #[doc(hidden)]
@@ -260,6 +262,7 @@ pub mod working_format_color_filter;
 pub mod write_buffer;
 #[doc(hidden)]
 pub mod write_pixels_rec;
+pub mod xml;
 pub mod yuv_math;
 pub mod yuv_planes_cache;
 pub mod yuva_info;

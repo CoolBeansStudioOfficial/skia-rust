@@ -17,7 +17,7 @@
 //   `Canvas_degenerate_dimension`: image filters (`SkImageFilters::Empty/Blur/Shader`, Phase 3).
 // - `NWayCanvas`, `CanvasStack`: `SkNWayCanvas`, `SkCanvasStack` and `SkCanvas` subclasses.
 // - `PaintFilterCanvas_ConsistentState`: `SkPaintFilterCanvas`.
-// - `TestManyDrawsGanesh`, `TestManyDrawsGraphite`: GPU.
+// - `TestManyDrawsGanesh`: GPU (Ganesh is out of scope).
 
 #![cfg(test)]
 
@@ -39,7 +39,11 @@ use skia_rust_core::stream::NullWStream;
 use skia_rust_raster::raster_canvas::RasterCanvas;
 use skia_rust_raster::surfaces;
 
-use crate::{Reporter, def_test, def_tier_test, errorf, reporter_assert};
+use crate::{
+    Reporter, def_graphite_test_for_all_contexts, def_test, def_tier_test, errorf, reporter_assert,
+};
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 
 // Port of: tests/CanvasTest.cpp#L200-L243 (chrome/m156)
 def_tier_test!(CanvasNewRasterTest, |reporter| {
@@ -338,4 +342,27 @@ def_test!(canvas_empty_clip, |reporter| {
         canvas.clip_rect(Rect::new(30.0, 0.0, 50.0, 40.0), ClipOp::Intersect, None);
         reporter_assert!(reporter, canvas.is_clip_empty());
     });
+});
+
+// Draw a lot of rectangles with different colors. On the GPU, the different colors make this
+// relatively difficult to batch.
+// Port of: tests/CanvasTest.cpp#L757-L765 (chrome/m156)
+fn test_many_draws(canvas: &skia_rust_core::canvas::Canvas) {
+    let mut paint = Paint::default();
+    for i in 0..10000_u32 {
+        paint.set_color(Color::new((0xFF << 24) | i));
+        canvas.draw_rect(Rect::from_xywh(0.0, 0.0, 1.0, 1.0), &paint);
+    }
+}
+
+// Port of: tests/CanvasTest.cpp#L781-L791 (chrome/m156)
+def_graphite_test_for_all_contexts!(TestManyDrawsGraphite, |reporter, context| {
+    let info = ImageInfo::new((1, 1), ColorType::RGBA8888, AlphaType::Premul, None);
+    let recorder = context.make_recorder(None);
+    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+    reporter_assert!(reporter, surface.is_some());
+    let Some(surface) = surface else {
+        return;
+    };
+    test_many_draws(surface.canvas());
 });

@@ -17715,8 +17715,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji.cpp#L239-L239"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "48e8dbc53f707bb9689eef37f8523cde808d0fd65dfb1b6a7c89631e5c7ac91d"
 
 [[test]]
@@ -17761,8 +17760,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/coloremoji_blendmodes.cpp#L184-L184"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "2856bdad8b9554dd449258212601b5c921e4eb0c96f14bb82e9b30589671315e"
 
 [[test]]
@@ -20603,8 +20601,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L421-L421"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "239e2354257a78b085fb557cfb20e47a2c0a43405bbec3aec84ce795ba963b15"
 
 [[test]]
@@ -20613,8 +20610,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L422-L422"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "0b8bb0448b554627361bf5ce88e34b2828aabc8a98455779df6f3e5cad8d6619"
 
 [[test]]
@@ -20623,8 +20619,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L420-L420"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c5bfc71e5da3f87e9d64cb8035206bfd6b62072a49187c9444d73bb338b18770"
 
 [[test]]
@@ -20633,8 +20628,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L418-L418"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "cdd14bbe1977cc2726ea4b03ea0a9d58d492bcf906f26d0c0eabbdf1d202feaf"
 
 [[test]]
@@ -20643,8 +20637,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/fontmgr.cpp#L419-L419"
 module = "text"
-status = "todo"
-reason = "needs T20: the portable font manager's Emoji and Planet families (TestSVGTypeface) are not ported (docs/design/text.md)"
+status = "passing"
 span_hash = "c0ccc875c6b30aa95defbf120b3fc23ed45bf129c78e64a53f00bfc6e450d59d"
 
 [[test]]
@@ -22876,8 +22869,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/mixedtextblobs.cpp#L168-L168"
 module = "text"
-status = "todo"
-reason = "PlanetTypeface() falls back to the Planet SVG family (TestSVGTypeface, T20, not ported)"
+status = "passing"
 span_hash = "77e1a1444265579e7529b5d780c6bc53a58d34d147d93bfaca7db412679f09ea"
 
 [[test]]
@@ -24373,8 +24365,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L243-L243"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "8d29721a5104d21bf28fa451ca4c442937c40c7330e235185ee654fb11d2fa00"
 
 [[test]]
@@ -24419,8 +24410,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "failing"
+reason = "565/f16 differ in a few pixels of the smallest perspective glyphs; see notes/gm-scaledemojiperspective-test.md"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
@@ -24465,8 +24456,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L244-L244"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "0e3bb17f46f8dd2c3ce29b0dc771ddedf50a1af4ce82e03e75fad8b770da9c8f"
 
 [[test]]
@@ -24475,8 +24465,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji_rendering.cpp#L114-L114"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "passing"
 span_hash = "3f1481afff68eb3b6cf60531b39a4792bddd60cbca90bb3616a9bb5e57349168"
 
 [[test]]
@@ -28687,6 +28676,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Filters.cpp#L16-L34"
 module = "svg"
 status = "todo"
+reason = "needs the SVG filter elements (M14), not constructed by the M13 core"
 span_hash = "98fd58d115a9e860f54e50fb4d840746382c24bc161a514cdd4ee50f76449519"
 
 [[test]]
@@ -28696,6 +28686,7 @@ macro = "DEF_TEST"
 source = "modules/svg/tests/Text.cpp#L21-L199"
 module = "svg"
 status = "todo"
+reason = "needs the SVG text elements and shaper (M15), not constructed by the M13 core"
 span_hash = "a33e1381b25f49449d038ee66e8180167e807254d7934610a61a3891a38c473c"
 
 [[test]]
@@ -28840,8 +28831,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/AndroidCodecTest.cpp#L41-L133"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and WebP decoders (not ported); computeSampleSize and the sampled decode it uses are ported"
+status = "passing"
 span_hash = "2c76182291c9828ff1543ca458398951dd07d187cd1f7ff9c40cced4741defac"
 
 [[test]]
@@ -29292,7 +29282,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L52-L87"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "281ecb63a396c9edc91ce141626a54220b00c9abc54d848acad3cb0339aa0a08"
 
 [[test]]
@@ -29301,7 +29291,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L107-L117"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "cb6237ee364bc03bdb0dc3fa36a561fce59be12d543abc888ad0f1c26cbcab1c"
 
 [[test]]
@@ -29310,7 +29300,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L121-L197"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7d0efcb54705e90da8884fafa4550bf943a5ba581f38d46601aa29a17ca247df"
 
 [[test]]
@@ -29319,7 +29309,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BezierCurveTest.cpp#L201-L264"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "225d1218d78bc65567ecd34831ff1c0aea6b1833bac9d3431e9de36729c6371b"
 
 [[test]]
@@ -29943,7 +29933,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/CanvasTest.cpp#L782-L791"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "31a0cc23ce1e463de918d1baaae422e6e4cb5fdacbc0f195de923644d2097f71"
 
 [[test]]
@@ -30202,6 +30192,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L613-L654"
 module = "codec"
 status = "todo"
+reason = "needs SkAnimCodecPlayer (modules/skresources), which is compiled only under SK_ENABLE_SKOTTIE (CodecAnimTest.cpp#L609-L656); Skottie is not part of this port"
 span_hash = "20b0d2a1236cc71076b533990a89d9c90a6c2b9911f11dcfb1dfa4ea85712cee"
 
 [[test]]
@@ -30220,6 +30211,7 @@ macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L99-L515"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: a table-driven check of frame metadata over GIF, WebP, JPEG and PNG (every decoder it uses exists; the DNG row is RAW, not built); needs its own pass (CodecAnimTest.cpp#L99-L515)"
 span_hash = "1456d17b53798cf014215b7285c3571da7a249998a971ea920234e7c90689380"
 
 [[test]]
@@ -30237,7 +30229,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L591-L607"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7b3c44657f3d5020809b8c8565f5426c8a56b534a4c7572ba19a457b5c12f15a"
 
 [[test]]
@@ -30255,7 +30247,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L399-L450"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "66ce94c7fdf35b02b922726132bbe869514e6fdd1625b75d246ee7195ec7ab1e"
 
 [[test]]
@@ -30273,8 +30265,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L476-L509"
 module = "codec"
-status = "todo"
-reason = "also covers WebP, JPEG, GIF, BMP and WBMP"
+status = "passing"
 span_hash = "59a690f215236cc0bfda12750f78cd4418ef1429822705af0d34cb4a9a73d3c1"
 
 [[test]]
@@ -30284,7 +30275,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L139-L157"
 module = "codec"
 status = "todo"
-reason = "the PNG cases are disabled in Skia (#if 0); the rest decode GIF"
+reason = "test_partial (CodecPartialTest.cpp#L76-L137) calls getFrameCount between incremental decodes; the Rust incremental-decode guard (codec.rs IncrementalDecode) borrows the codec, so that call cannot run while a decode is in progress. Needs an API decision on the guard (docs/design/codecs.md 5.1)"
 span_hash = "8794418f1e199f3c09f3e719191aecf679c840b2b3952c30a6b71218cb0f7d72"
 
 [[test]]
@@ -30293,7 +30284,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L227-L326"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "dbb1f33ab7e77a16503d162970678842bbb89ee99d2ff11016ab30e3ea5aefb5"
 
 [[test]]
@@ -30303,6 +30294,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L159-L172"
 module = "codec"
 status = "todo"
+reason = "test_partial calls getFrameCount between incremental decodes, which the incremental-decode guard borrow forbids (see Codec_partial)"
 span_hash = "951edd5d75ba3e18683915cee77e015b6411e6149dd3713a237b43a4771e8f34"
 
 [[test]]
@@ -30311,7 +30303,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L176-L225"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "1cab08b88a5d3a609611ec178a2975651af3f414c59089c01ff48661f0a162c7"
 
 [[test]]
@@ -30321,6 +30313,7 @@ macro = "DEF_TEST"
 source = "tests/CodecPartialTest.cpp#L368-L372"
 module = "codec"
 status = "todo"
+reason = "test_interleaved calls getPixels while an incremental decode is in progress and expects incrementalDecode to then fail with kInvalidParameters; the incremental-decode guard borrows the codec, so getPixels cannot run in between (see Codec_partial)"
 span_hash = "8aa8cb62cb4b05d26c475f5f4e1b61af99a8fe942d293becf36f5a10088c818d"
 
 [[test]]
@@ -30329,7 +30322,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecRecommendedTypeTest.cpp#L23-L43"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "97820c70071424c9eae913fadb8a8c410b39449929a221516742f9035e3a9562"
 
 [[test]]
@@ -30374,8 +30367,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L818-L847"
 module = "codec"
-status = "todo"
-reason = "covers JPEG and RAW as well as PNG"
+status = "passing"
 span_hash = "b8af011d0296dbf4a71e41480fb671673f98c8a13aac56c7089cc197cbe69350"
 
 [[test]]
@@ -30393,7 +30385,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1834-L1838"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "fecd4476d0102f374a9aee3dd06eef2bddea85881b6b6554c674725c03d1f1ec"
 
 [[test]]
@@ -30420,7 +30412,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2398-L2400"
 module = "codec"
-status = "todo"
+status = "excluded"
+reason = "compiled out: the registration sits inside #if (0) (tests/CodecTest.cpp#L2308-L2401); it only generates the golden files for Codec_RoundTripColorXform"
 span_hash = "c076ae311a737a010b0478519e4ce3ac5701c4ffc2361b943c1092ec7577e9f1"
 
 [[test]]
@@ -30429,7 +30422,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1753-L1787"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9f482cb8eed28000ca8129f010f42a485f712df9fbd1aea3a8fb56beeb28a54f"
 
 [[test]]
@@ -30447,8 +30440,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1642-L1661"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG and GIF decoders for many-progressive-scans.jpg and skbug5887.gif"
+status = "passing"
 span_hash = "13996169337ad20fa6107ae03de3ceacba68d2556d931abbde772bf0fe97bb8a"
 
 [[test]]
@@ -30458,6 +30450,7 @@ macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
 status = "todo"
+reason = "not ported in this sweep: needs make_gradient_bitmap (raster surface with a linear gradient shader read back) and the skcms conversions, compared with the C++ tolerances of 1 and 20 (CodecTest.cpp#L2444-L2519)"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -30494,7 +30487,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1486-L1529"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f7e925c605e459f17dee0531c1b68499076d7156fdd7b7b1e9a39b3573e561e5"
 
 [[test]]
@@ -30539,8 +30532,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2139-L2161"
 module = "codec"
-status = "todo"
-reason = "needs SkCodec::getImage (not ported yet); the GIF decoder itself is ported"
+status = "passing"
 span_hash = "643e8e092078997c804740246efdf727489107dc5e5a1f6a62cef6dc145bf9c5"
 
 [[test]]
@@ -30603,7 +30595,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2045-L2061"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "0273a5ff6afe062142a04534e94207b89f1802410e33776186015d95bb4330cc"
 
 [[test]]
@@ -30612,8 +30604,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L753-L772"
 module = "codec"
-status = "todo"
-reason = "covers several formats (JPEG, WebP, BMP, ICO, GIF)"
+status = "passing"
 span_hash = "85f96953aad5dedcc5b663c34a82fd4241acfcd867b2a00d7e14f044fe98a8a7"
 
 [[test]]
@@ -30622,8 +30613,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2004-L2043"
 module = "codec"
-status = "todo"
-reason = "needs the JPEG decoder and getICCProfile"
+status = "passing"
 span_hash = "6da5c76d1a2f48a7812a21eb606b4a42f0997451e66460ea77eba8976970a27d"
 
 [[test]]
@@ -30642,8 +30632,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1885-L1896"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder and GetResourceAsImage"
+status = "passing"
 span_hash = "17a56816ce56c394365e82cc9703f21f94b3786661f6423da7b5f3c4adfc297a"
 
 [[test]]
@@ -30671,7 +30660,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1294-L1333"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "f9764c264e3c0eaf0006b5ee8f71ab1f976002c01706c8116294959f0c9abbb0"
 
 [[test]]
@@ -30736,8 +30725,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L1409-L1440"
 module = "codec"
-status = "todo"
-reason = "needs the GIF decoder"
+status = "passing"
 span_hash = "5a2560b9b4f002e2f52b606c822204032c58ba009fc2b002010fe76f9ff6fc86"
 
 [[test]]
@@ -30855,7 +30843,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2614-L2644"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "ab1b08d4ae34b6cc479f07a78a95595ee5619adfc33060ec38f05d567eb9b333"
 
 [[test]]
@@ -31196,7 +31184,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L96-L200"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "4e25fc4d29a89a5e9fb0f1a94bb3754c966dbb0e1cf4661a823e3606bba56a29"
 
@@ -31206,7 +31194,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L240-L248"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "562a1196d5162b20cf50da0b6c6f0cff08e3678e54280aff046ee6d6a2ba9099"
 
@@ -31216,7 +31204,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L230-L238"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "2f10b2ff28e14b0e210668fe29c2df7e3c47a93893fa48711ba494ce238f2289"
 
@@ -31235,7 +31223,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L202-L228"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "522cdb76b6665d602c9d4b4d3a49d222f288c74d2e9ef1a5a464950cf643b572"
 
@@ -31245,7 +31233,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L381-L420"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "65482ef3c6f86f17b99ed88e10a18e54215ba22dbcda08423698ab449c598e31"
 
@@ -31255,7 +31243,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CubicRootsTest.cpp#L422-L452"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDCubic (SkPathOps), not ported yet"
 span_hash = "674dfa64615e2f74d402e7cf09344344c679d4c01b62ee71a1ec8ee756a211ba"
 
@@ -31899,7 +31887,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EmptyPathTest.cpp#L172-L174"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c9b290ad64c76a21d2dd1c5f2d41be585d59d10df4ca9a66d007ef9dfdd639e"
 
 [[test]]
@@ -31990,7 +31978,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L715-L853"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "7f1c6429f76a73fa789c93bc34e2427abecb1f5eaf3be4d98e88842b81d876f0"
 
 [[test]]
@@ -32008,7 +31996,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodedInfoTest.cpp#L22-L46"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "61c803e3093464c4699b0f1976d3b3ed20a760fa8cb159662b75d1d751c86821"
 
 [[test]]
@@ -32073,6 +32061,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L287-L296"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "50911d0dccf68ed9b0192686c21feecacac80ab9581aaea79baac86aae885e53"
 
 [[test]]
@@ -32082,6 +32071,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L231-L263"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "b45f9f1549c5b820c9f85c2a7e6a4eac371fa273d47cf3db62737a80dd81e166"
 
 [[test]]
@@ -32091,6 +32081,7 @@ macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L265-L283"
 module = "codec"
 status = "todo"
+reason = "needs SkExif::WriteExif and the EXIF writer; the port only parses EXIF (exif.rs)"
 span_hash = "bc9c259bd7764a518fc29eff467b83ce38e9df372002c224735c5d27caceedd1"
 
 [[test]]
@@ -32099,7 +32090,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ExifTest.cpp#L42-L63"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "63f340303eac4db96eb88adb22ca13f294bfee6c0561897c78f4d4f8dc239f12"
 
 [[test]]
@@ -32137,7 +32128,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/F16DrawTest.cpp#L110-L119"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "4c6e08a94bcb4665d5bb6c8c987aff915462efc981c4ba5d5a99d6afb62b174b"
 
 [[test]]
@@ -32484,6 +32475,7 @@ macro = "DEF_TEST"
 source = "tests/FitsInTest.cpp#L23-L89"
 module = "core"
 status = "todo"
+reason = "uses C++ enum types as SkTFitsIn arguments (E, TestEnum_t, enum-to-int and int-to-enum); skia-rust has no implicit enum/integer conversion to port these cases against yet"
 span_hash = "7e323d0a651df2df9641b94e7793bd220462ed7b5187aa87ebee9cc26fd157f6"
 
 [[test]]
@@ -33330,6 +33322,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L317-L343"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f07d5af87da0ee7092ca314bcc520c281e60d56eec0bcf5c0458e5a91083ca9c"
 
 [[test]]
@@ -33339,6 +33332,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L188-L275"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "ebed41d01008bef29f9417bdb74d0e70499d947424ac0fb8373baac783a632d8"
 
 [[test]]
@@ -33348,6 +33342,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L279-L314"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "f29365c24ebe2ef0c8278e65eecfeaaf2c6f0b9aec6cb031460622c213e374fc"
 
 [[test]]
@@ -33357,6 +33352,7 @@ macro = "DEF_TEST"
 source = "tests/GainmapShaderTest.cpp#L99-L186"
 module = "codec"
 status = "todo"
+reason = "needs the gainmap shader (SkGainmapShader, core) and GainmapInfo, which are not ported (docs/design/codecs.md 8)"
 span_hash = "d2a6e4a04749bd85b199cc758c26edd3d93b9b4b8b54a609e54cd3e58de48d19"
 
 [[test]]
@@ -35492,7 +35488,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/ImageFilterTest.cpp#L2006-L2147"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "8577ea1da512d1d9a0ee61a2c0ce6b8cc3b363ec286aa1eeca0e6857e463cf28"
 
 [[test]]
@@ -35893,7 +35889,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
 status = "todo"
-reason = "needs SkPngEncoder and SkImages::DeferredFromEncodedData (codecs not ported)"
+reason = "not ported in this sweep: needs the draw_image_test_pattern and assert_equal helpers and ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -36175,7 +36171,7 @@ macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
 status = "todo"
-reason = "decodes images/mandrill_128.png and needs SkPngEncoder (codecs not ported)"
+reason = "not ported in this sweep: needs ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
@@ -36204,8 +36200,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IndexedPngOverflowTest.cpp#L32-L40"
 module = "codec"
-status = "todo"
-reason = "draws onto an SkSurface::Raster canvas, and core has no surface yet"
+status = "passing"
 span_hash = "831f671f976e87477fe7664ed4f5f030454577776b530980c3d8db704c00deba"
 
 [[test]]
@@ -36223,7 +36218,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/InsetConvexPolyTest.cpp#L14-L110"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e073c8961b60956bffa79edf877cb41294e13ead9a72f67b11738a1b578c069e"
 
 [[test]]
@@ -36241,7 +36236,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/IsClosedSingleContourTest.cpp#L11-L53"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "809374f75e3811b15edbfa5cc1731d587807e2e66a98b5947bcc6053148987a1"
 
 [[test]]
@@ -36305,6 +36300,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L615-L702"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP writers, not ported"
 span_hash = "9610696b5052569c4a02724b75dacad398c9ed7b3c6e487eb4991c65b4d5c592"
 
 [[test]]
@@ -36314,6 +36310,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L991-L1068"
 module = "codec"
 status = "todo"
+reason = "needs gainmap metadata (GainmapInfo in core, docs/design/codecs.md C13) and the MPF/XMP parsers, not ported"
 span_hash = "2d60cd60c3fc426cb379f0d0fd844964ab88bddf33c3cb0b05408926dc7eb962"
 
 [[test]]
@@ -36323,6 +36320,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L463-L572"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap decoding (SkAndroidCodec gainmap accessors, GainmapInfo; docs/design/codecs.md C13), not ported"
 span_hash = "f4ac08342731d0ae364e73260a268a50336d694418ba515498da0b17acbcc9d7"
 
 [[test]]
@@ -36332,6 +36330,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L765-L839"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap transcoding (GainmapInfo, MPF writer; docs/design/codecs.md C13), not ported"
 span_hash = "9deef51eb6338e7eb612f64331e734c5ee80b872b4fe5e3d39893b224c42ad95"
 
 [[test]]
@@ -36341,6 +36340,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L574-L611"
 module = "codec"
 status = "todo"
+reason = "needs JPEG gainmap metadata (docs/design/codecs.md C13); the gainmap accessors are not ported"
 span_hash = "a040d2b8df3d908a1b8b02a153d23bae535b2884014ba6039c317a3c01084a9f"
 
 [[test]]
@@ -36350,6 +36350,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L893-L989"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "978f54400feeaf3d98e34ed56b2e3f9ebb648c2b96b7679f1d172d475a1363e3"
 
 [[test]]
@@ -36359,6 +36360,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L336-L426"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "f8199271ae2b0efed2315d5e4e600bb47b044fa20a5bb46b6e162cf4ab198022"
 
 [[test]]
@@ -36368,6 +36370,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L116-L175"
 module = "codec"
 status = "todo"
+reason = "needs the JPEG marker scanner for multi-picture and gainmap segments (docs/design/codecs.md 8), not ported"
 span_hash = "711305fa2b6db46e04f28bde7e1902b4b8839a27e621a51a8727be407cf87f20"
 
 [[test]]
@@ -36377,6 +36380,7 @@ macro = "DEF_TEST"
 source = "tests/JpegGainmapTest.cpp#L198-L334"
 module = "codec"
 status = "todo"
+reason = "needs the MPF parser (SkJpegMultiPicture, docs/design/codecs.md 8), not ported"
 span_hash = "7d371c40aae789a82d47ab8f61a5f5e9b96ee52fd3d4fdae947f69f7c86e1ef6"
 
 [[test]]
@@ -36602,6 +36606,7 @@ macro = "DEF_TEST"
 source = "tests/MathTest.cpp#L777-L790"
 module = "core"
 status = "todo"
+reason = "ARM NEON only (vrsraq_n_u16/vrshrq_n_u16 under SK_ARM_HAS_NEON): skia_rust_simd has no NEON kernel for it and this is an x86-64 host, so it cannot be checked here"
 span_hash = "58f00a450b5d581c1553e08b8504acbc36d0df2d2729fd64185b5b0bcdd7b368"
 
 [[test]]
@@ -36728,7 +36733,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L31-L81"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "8ab4b363cfae7d6bb92523a26c75700538fa5dbf2755cf5dcc09c1b673531de8"
 
 [[test]]
@@ -36737,7 +36742,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L83-L123"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "0abe351d00c9b75c2e4e4e336d4050238fce98f8ac72e64c059e8b41a0fe6c98"
 
 [[test]]
@@ -36746,7 +36751,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L185-L244"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "38b536b78a907435c7ad240a5c9cff06a0d6a75b1afae8ff54efc62766e898c5"
 
 [[test]]
@@ -36755,7 +36760,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L125-L183"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "46c3883e6b6577b0d9c591df61c0395839741fe428d0698db907f4d26e7da39d"
 
 [[test]]
@@ -36764,7 +36769,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MatrixProcsTest.cpp#L246-L283"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "f1b33cf103f02324bf1c40fbd580644fcfcb238c8a44090d54a0dbb6cdc2e1ef"
 
 [[test]]
@@ -36845,7 +36850,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MemoryTest.cpp#L12-L20"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_calloc_throw/sk_free allocator wrappers; Rust uses std allocation"
 span_hash = "d87a253ea55760a32fd7fcd44b5cd36cfb352555efb84aa4b48ba275e7cecacb"
 
 [[test]]
@@ -37465,7 +37471,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OffsetSimplePolyTest.cpp#L15-L204"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "a2820b0d2b1bca454cc4bb228df60bb993a956de2f5ee7c4136b465620892c7d"
 
 [[test]]
@@ -37514,7 +37520,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/OverAlignedTest.cpp#L18-L26"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "tests Skia's sk_malloc_throw 8-byte alignment guarantee; Rust uses std allocation"
 span_hash = "f1cdeeadcc6ad1e7ff6d4718f1480013290798c4a6cee84f4d3b5ee45aeb9f77"
 
 [[test]]
@@ -37986,7 +37993,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ParseColorTest.cpp#L168-L198"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "c9b4ab7635cf6f3111d3a4a0e9eeb873c20c2a17bfa13ae6023306681ad819b1"
 
 [[test]]
@@ -40396,7 +40403,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L92-L158"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "095110dc93caa823137921edfa9856a10bf4bb7c326f3b3edf7f64b164ee6de8"
 
@@ -40406,7 +40413,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L170-L178"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "84d0ef1a863a0da5dc42f271a6a2075b3d3a4cdc99617775d2aaa823fe6312fe"
 
@@ -40416,7 +40423,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/QuadRootsTest.cpp#L160-L168"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "also checks SkDQuad (SkPathOps), not ported yet"
 span_hash = "da3e909d9fe2094bffd345508acddb1aae30f8f795fda24057f5d80c56afb8c2"
 
@@ -41460,7 +41467,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L103-L106"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "bd8918a18aedd5621dde131df0ef5444338191c839d48ff57ee8524c062c1b65"
 
 [[test]]
@@ -41487,7 +41494,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L108-L111"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6b88c040423cc48f1a0973b170d5d27018d2749c69b19248129436897ae84838"
 
 [[test]]
@@ -41550,7 +41557,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RectTest.cpp#L440-L459"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "170c8c7cd10547478cfa032f00849c0717e77b83a862873c05a48d116071f930"
 
 [[test]]
@@ -41956,7 +41963,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/RuntimeBlendTest.cpp#L128-L139"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "6e48c68619bf3b0d76c02c5cfbf38fda3b8b727908e47afe63d1adfa6954b417"
 
 [[test]]
@@ -42235,7 +42242,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L53-L82"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "d065b85b07869b3d6c54c299ac785233fec8a734af4a64bd61aab62b872e4f95"
 
 [[test]]
@@ -42244,7 +42251,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L23-L51"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "e8d90eb864c857a954bd136ae8a14ac1a5e643709ed57b1d1f69d6a8cba24433"
 
 [[test]]
@@ -42253,7 +42260,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SRGBTest.cpp#L85-L135"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "7afae3ff8bd66ba75200a9347213198ae9266b5a6bf8dbad55eb4274c6f5990c"
 
 [[test]]
@@ -42498,7 +42505,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ScaleToSidesTest.cpp#L16-L77"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "85bdd27da399005bdceff6b437cf2b245d3f2b7e24d948d669962bfbc358c0e4"
 
 [[test]]
@@ -42674,7 +42681,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderTest.cpp#L178-L184"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "25c1cccab019e139aab3ec7531278b8463f852c680897533c91ddbfab6377543"
 
 [[test]]
@@ -42693,7 +42700,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/ShaderTest.cpp#L201-L211"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "a22a9817dbfa22494700187c3530b8b67335ce045214672259689a5fe5dcb9dc"
 
 [[test]]
@@ -42739,7 +42746,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SimplifyPaintTest.cpp#L202-L213"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "91b1ce2b2503e775b9912e497450fc58cb7b4ce66f55c75caaa0fea96219700a"
 
 [[test]]
@@ -42748,7 +42755,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SimplifyPaintTest.cpp#L230-L234"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "266953378ba39908140d619b0ab842430c6079facf077aaeece06f524ff30603"
 
 [[test]]
@@ -43121,7 +43128,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L446-L459"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "bd82249c45b3f4febaaeb7d37de18a8e8a4d14590531b082b37f47529c2c681e"
 
 [[test]]
@@ -43130,7 +43137,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkColorSpaceXformStepsTest.cpp#L419-L424"
 module = "skcms"
-status = "todo"
+status = "passing"
 span_hash = "58f13e69e7bacaa2dbd109f4f83ddaa1732c20cca51584a6eca6d5c962b9276e"
 
 [[test]]
@@ -43149,7 +43156,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkDOMTest.cpp#L26-L84"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "fba1729276169d3e225db40e2c2ca587bc771e3618e91865cf963d63d4b377cb"
 
 [[test]]
@@ -43638,6 +43645,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L46-L83"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "17c7dff2868b8ef936ffa8792c540914a5223158fe4a03005942c190c15ea008"
 
 [[test]]
@@ -43647,6 +43655,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L107-L161"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "942485a940b622aa2179a219f584336c11f7e24bc5e4ae1e855ef1dd74f37fe9"
 
 [[test]]
@@ -43656,6 +43665,7 @@ macro = "DEF_TEST"
 source = "tests/SkJpegXmpTest.cpp#L19-L44"
 module = "codec"
 status = "todo"
+reason = "needs SkJpegXmp (XMP parsing; Skia uses expat and no XML dependency is allowed) and SkGainmapInfo (docs/design/codecs.md 8, Q4)"
 span_hash = "266ef4fcc105ea167b792d889f3b9e27bdd132903356022c28d162dd8bf9d456"
 
 [[test]]
@@ -45366,8 +45376,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkRuntimeEffectTest.cpp#L742-L747"
 module = "gpu"
-status = "todo"
-reason = "Graphite only"
+status = "passing"
 span_hash = "9acf7d781b6a7b6d57d93422dc28c40731eeb491e979979f902f87a1d39beec7"
 
 [[test]]
@@ -45505,8 +45514,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/SkRuntimeEffectTest.cpp#L1702-L1709"
 module = "gpu"
-status = "todo"
-reason = "Graphite only"
+status = "passing"
 span_hash = "0c2de3cca25299ff75789f388257818a48d7ed8b3318c54b1cb98a3271146670"
 
 [[test]]
@@ -49484,7 +49492,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SwizzlerTest.cpp#L73-L120"
 module = "core"
-status = "todo"
+status = "passing"
 reason = "needs the codec's SkSampler::Fill (src/codec/SkSampler.cpp), which is not ported yet"
 span_hash = "326883b46293b49ff187a9f91d5e857fb4530b2cdb448802ae2712ef677cb821"
 
@@ -50426,8 +50434,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TypefaceTest.cpp#L717-L755"
 module = "text"
-status = "todo"
-reason = "needs ToolUtils::EmojiSample(kTest) (TestSVGTypeface, T20)"
+status = "passing"
 span_hash = "700ee7e8d34ea7a3e6fea13ae26d228684cba29da97a05bbb30e840f493e684f"
 
 [[test]]
@@ -51160,6 +51167,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L212-L252"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "43d702fa5d8ca7865f631de49075195e600569fa270a43288c90a3038f6de85f"
 
 [[test]]
@@ -51169,6 +51177,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L173-L182"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "4d790e257e2a241da9f8a95f8d75076941c09807092090b069d4e10aa77233ae"
 
 [[test]]
@@ -51178,6 +51187,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L195-L204"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "b4a6e72df58745be46dab3db1baf87510d550ac8e74e3d3f0df8b3c6af974a24"
 
 [[test]]
@@ -51187,6 +51197,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L206-L210"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "c7f78bcdfe860e5d2ce77dafc99b09ec8a826465b979cb44cc649c7d41264b04"
 
 [[test]]
@@ -51196,6 +51207,7 @@ macro = "DEF_TEST"
 source = "tests/Writer32Test.cpp#L184-L193"
 module = "core"
 status = "todo"
+reason = "needs SkWriter32 reset/rewind, readTAt/overwriteTAt, writeData/snapshotAsData and SkSWriter32<N> inline storage; write_buffer.rs ports only the write path"
 span_hash = "d559d5808a9106cb8c13c44167125c720234e8aa2c9bdfdad201ae101f5f0f47"
 
 [[test]]
@@ -51785,8 +51797,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L730-L806"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "4274de16f285eda996048df7ca9928e9418d260420272275482c46e60922090b"
 
 [[test]]
@@ -51795,8 +51806,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L688-L726"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "81b537814825d3685bb5e20ada5598cee382023e4728e3252bf8c6f63c1eba86"
 
 [[test]]
@@ -51805,8 +51815,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L460-L479"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "8cb37d6d2a0a622bf38e7c82ebf08b5332978ee916753fee22f8ef2057e2906b"
 
 [[test]]
@@ -51815,8 +51824,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L377-L458"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "6f393e3a83df94f2acb8986d2dd3d80973cf6c3f8c1593298a5e68a8bf87c1b3"
 
 [[test]]
@@ -51825,8 +51833,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L279-L375"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "21f7522379829a4d26bd4023f9bb8dbced7db7226dcd34ec90dc4d9431c0009b"
 
 [[test]]
@@ -51835,8 +51842,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L602-L685"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "947531a53ba99f89dc03545145e0b05705e9d91963fe9b9ed7a4e6ad48183659"
 
 [[test]]
@@ -51845,8 +51851,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphiteYUVAPromiseImageTest.cpp#L481-L600"
 module = "gpu"
-status = "todo"
-reason = "not ported: SkYUVAInfo / YUVABackendTextureInfo / YUVABackendTextures (core and public API), Image_YUVA_Graphite, PromiseTextureFromYUVA and add_yuv_image_to_key (G15 follow-up); the promise-proxy machinery they use is ported"
+status = "passing"
 span_hash = "c9e8ac0548867a0ae13b52bb1c0a8f2e6955c1083d5be8818affd2501789d932"
 
 [[test]]
@@ -52791,8 +52796,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureFallbackTest.cpp#L502-L567"
 module = "gpu"
-status = "failing"
-reason = "naga rejects a storage buffer pointer as a function argument (docs/design/gpu.md 6.3), so the multi-stop gradient pipelines fail validation on every context; test is #[ignore]d"
+status = "passing"
 span_hash = "4aea09b4c0c3f8cc5731d90a5ad6d68ca8246f9273b095c21e58038881c1bb93"
 
 [[test]]
@@ -53278,7 +53282,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1846-L1849"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions and the Android runtime-effect manager"
+reason = "blocked: needs AndroidPaintOptions (1797 lines), PrecompileTestUtils (444 lines) and the Android label tables (the Vulkan context filter maps to the dawn-vk-wgpucaps profile)"
 span_hash = "4fcc16e6972220980ade1243dbe4cba20a6984fdf149256f0996e10316143d94"
 
 [[test]]
@@ -53288,7 +53292,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1851-L1854"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions and the Android runtime-effect manager"
+reason = "blocked: needs AndroidPaintOptions (1797 lines), PrecompileTestUtils (444 lines) and the Android label tables (the Vulkan context filter maps to the dawn-vk-wgpucaps profile)"
 span_hash = "6b25778470d0f2e77a77cb55f0d1d16cfa34b7cf3f141c0504bbbbbe9df9d2fa"
 
 [[test]]
@@ -53298,7 +53302,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1856-L1883"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions (external formats need DataContainsExternalFormat)"
+reason = "blocked: needs AndroidPaintOptions (1797 lines), PrecompileTestUtils (444 lines) and the Android label tables (the Vulkan context filter maps to the dawn-vk-wgpucaps profile)"
 span_hash = "3cfdbb39a383ed5937d0dec84251d4deb60519552729ae220876b953529efefb"
 
 [[test]]
@@ -53317,8 +53321,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/ChromePrecompileTest.cpp#L1039-L1091"
 module = "gpu"
-status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also PrecompileTestUtils and the label lists"
+status = "excluded"
+reason = "Dawn-Metal-only context predicate (is_dawn_metal_context_type); the port has no Metal context (docs/design/gpu.md section 7), so the test selects no context"
 span_hash = "b9fa3fb52734a48f54e9dba33341f3b7797f65a603e0e436823cc30db3eb5a84"
 
 [[test]]
@@ -53337,7 +53341,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L599-L757"
 module = "gpu"
 status = "todo"
-reason = "blocked: PaintOptions, PrecompileShader/ColorFilter/Blender and buildCombinations are ported (CombinationBuilderTest passes); still missing the public Precompile() and PrecompileContext, PaintParamsTestUtils (1384 lines), UniqueKeyUtils, and the real draws through a Recorder (DrawContext, G10)"
+reason = "blocked: needs PaintParamsTestUtils (1384 lines: random shader, blender, color-filter, mask-filter and image-filter factories, picture and YUV images), UniqueKeyUtils.ExtractKeyDescs (caps extractGraphicsDescs) and the real draws through a DrawContext; the PaintOptions, precompile factories, key builder, PaintParams/ShadingParams and Precompile() are ported"
 span_hash = "25e954f62aef6e170677ee4de39e6262be07fd5bd9c488b436329b4cd7608346"
 
 [[test]]
@@ -53347,7 +53351,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L510-L590"
 module = "gpu"
 status = "todo"
-reason = "blocked: PaintOptions, PrecompileShader/ColorFilter/Blender and buildCombinations are ported (CombinationBuilderTest passes); still missing the public Precompile() and PrecompileContext, PaintParamsTestUtils (1384 lines), UniqueKeyUtils, and the real draws through a Recorder (DrawContext, G10)"
+reason = "blocked: needs PaintParamsTestUtils (1384 lines: random shader, blender, color-filter, mask-filter and image-filter factories, picture and YUV images), UniqueKeyUtils.ExtractKeyDescs (caps extractGraphicsDescs) and the real draws through a DrawContext; the PaintOptions, precompile factories, key builder, PaintParams/ShadingParams and Precompile() are ported"
 span_hash = "f0e8c8f3fc45d833731095f4653a3234ada145863b11620c8bf41c2c5ceeb329"
 
 [[test]]
@@ -53356,8 +53360,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "04418895cc364843e4729b7dc120d01fa600e79738742d4dcfbe5a7fe410af43"
 
 [[test]]
@@ -53366,8 +53369,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "2bc88ec6fa815b8d40ca462ad6c915a63613272070a02825492946207ad27a57"
 
 [[test]]
@@ -53376,8 +53378,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "204099448c35f5f10d2031184aafba107a1e85f207cb2d60d149965ae28c6bb2"
 
 [[test]]
@@ -53386,8 +53387,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "248429179577202f2e94987f8b9a63ba5a767f3159d34a3f70892685ac4c99ad"
 
 [[test]]
@@ -53396,8 +53396,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L124-L135"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "f33cebb0b0cc56164f95db1a76e98c6223d6cd9db0ba478131a3ecab769ca570"
 
 [[test]]
@@ -53406,8 +53405,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L137-L148"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "169b5714c6c79e2f0acd12cb7665635a18f8b42c3be7fa1152d8f358c21d6a54"
 
 [[test]]
@@ -53416,8 +53414,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L152-L163"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "1a62cea2888d6c856c2c06ef3f825179b5a233a5b40d78c88dd6b4bfc0e96083"
 
 [[test]]
@@ -53426,8 +53423,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L165-L176"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
+status = "passing"
 span_hash = "a7333e03fcb38181275a65ea6510afc620df267dfb58a43cfd47e427a127de27"
 
 [[test]]
@@ -53436,8 +53432,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PrecompileStatsTest.cpp#L29-L114"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; the test is Dawn-Metal-only (its context predicate), so it also needs a real adapter"
+status = "excluded"
+reason = "Dawn-Metal-only context predicate (is_dawn_metal_context_type); the port has no Metal context (docs/design/gpu.md section 7), so the test selects no context"
 span_hash = "409a0729ec3c8beb7901f02edb13d22ad250af18908ed7836fd71b4d7daf49b2"
 
 [[test]]
@@ -53447,7 +53443,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
 status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
+reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53457,7 +53453,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
 status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
+reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53467,7 +53463,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
 status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
+reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]
@@ -53476,8 +53472,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
+status = "failing"
+reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]
@@ -53486,8 +53482,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L423"
 module = "gpu"
-status = "todo"
-reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
+status = "failing"
+reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
 span_hash = "491300b6238f0a3452e358838411314abd952c2585848399423b33c5ef0991a5"
 
 [[test]]
@@ -53496,8 +53492,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L357-L447"
 module = "gpu"
-status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
+status = "passing"
 span_hash = "ceb2650bb3822864f29d95c9efa5c4cd5bd69dbebf42b8fa338b1809901737c2"
 
 [[test]]
@@ -53506,8 +53501,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L450-L485"
 module = "gpu"
-status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
+status = "passing"
 span_hash = "8f5e1d051ee53b2c225b88e5d84de3e48fed2f6f6a72e8a4493427121ab22df8"
 
 [[test]]
@@ -53516,8 +53510,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L489-L527"
 module = "gpu"
-status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
+status = "passing"
 span_hash = "b1a86fea3b0fe18cf6920f0235deb2137fbe0c76a2a5a4b5d5325e7d5c538a49"
 
 [[test]]
@@ -53526,8 +53519,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L530-L564"
 module = "gpu"
-status = "todo"
-reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
+status = "passing"
 span_hash = "5c029133f183362d19ebf209699df5987524dc22e30950184c2206484c27f6b8"
 
 [[test]]
@@ -55332,8 +55324,8 @@ id = "tests/sksl/compute/AtomicDeclarations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicDeclarations.wgsl"
 module = "sksl"
-status = "todo"
-reason = "stale golden: input not in gn/sksl_tests.gni, never regenerated at the pin"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "c60414d8276eb3b4efc757dfe73a7f325ff3d0fb8f74065fe5ec3b1c794b9989"
 
 [[test]]
@@ -55385,8 +55377,8 @@ id = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 module = "sksl"
-status = "todo"
-reason = "stale golden: input not in gn/sksl_tests.gni, never regenerated at the pin"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "e4ddea6cb00400f18fb2ee450e687687cdd5674ad13bb0ed7b2ddab9c7bc1763"
 
 [[test]]
@@ -62264,8 +62256,8 @@ id = "tests/sksl/intrinsics/IsInf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsInf.wgsl"
 module = "sksl"
-status = "todo"
-reason = "needs-tint-validation: the golden is Tint's rejection of `isinf` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "e69a050ac40fae5106c7a112f06693b316dcfe8487f7d71a13c4f6a98e04c33d"
 
 [[test]]
@@ -62317,8 +62309,8 @@ id = "tests/sksl/intrinsics/IsNan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsNan.wgsl"
 module = "sksl"
-status = "todo"
-reason = "needs-tint-validation: the golden is Tint's rejection of `isnan` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "ebea7f542c6d5cf030135ff0b1d906a155660b903653a64c024d8ffbcf678682"
 
 [[test]]

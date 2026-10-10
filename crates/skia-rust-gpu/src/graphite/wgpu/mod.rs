@@ -43,6 +43,8 @@ pub mod context;
 pub mod error_checker;
 pub mod graphics_pipeline;
 pub mod graphite_utils;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod naga_pointer_args;
 pub mod pipeline_shaders;
 pub mod queue_manager;
 pub mod resource_provider;
@@ -66,4 +68,6 @@ mod noop;
 #[cfg(not(target_arch = "wasm32"))]
 pub use adapter::{adapter_backend_context, any_adapter_backend_context};
 #[cfg(not(target_arch = "wasm32"))]
-pub use noop::{noop_backend_context, noop_backend_context_with_features};
+pub use noop::{
+    noop_backend_context, noop_backend_context_for_profile, noop_backend_context_with_features,
+};

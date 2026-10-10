@@ -46,6 +46,14 @@ impl Swizzle {
         Swizzle::from_chars(b[0] as char, b[1] as char, b[2] as char, b[3] as char)
     }
 
+    /// `SwizzleCtorAccessor::Make(key)`: the swizzle with the given compact key, as read back from
+    /// a serialized pipeline key. Skia does not validate the key.
+    // Port of: src/gpu/SwizzlePriv.h#L21 and src/gpu/Swizzle.h#L85 (chrome/m156)
+    #[must_use]
+    pub const fn from_key(key: u16) -> Swizzle {
+        Swizzle { key }
+    }
+
     // Port of: src/gpu/Swizzle.h#L46 (chrome/m156)
     /// `asKey()`: compact representation of the swizzle suitable for a key.
     #[must_use]

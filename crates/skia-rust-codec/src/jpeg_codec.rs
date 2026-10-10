@@ -481,6 +481,12 @@ impl JpegCodec {
             self.allocate_storage(base, info);
             let mut last_scan_completed = 0;
             while !self.decoder.input_complete() {
+                // Port of: src/codec/SkJpegDecoderMgr.cpp#L42-L51 (progress_monitor). libjpeg calls
+                // it through `dinfo->progress` before each consume; the error it raises at 100
+                // scans is a longjmp to the decoder manager, which returns kInvalidInput.
+                if self.decoder.input_scan_number >= 100 {
+                    return Result::InvalidInput;
+                }
                 match self.decoder.consume_input() {
                     Ok(ConsumeResult::Suspended) => break,
                     Ok(ConsumeResult::ScanCompleted) => {

@@ -11,6 +11,8 @@ pub mod as_a_dash_test;
 #[cfg(test)]
 pub mod bad_ico_test;
 #[cfg(test)]
+pub mod bezier_curve_test;
+#[cfg(test)]
 pub mod bitmap_copy_test;
 #[cfg(test)]
 pub mod bitmap_get_color_test;
@@ -44,6 +46,7 @@ pub mod codec_anim_test;
 pub mod codec_exact_read_test;
 #[cfg(test)]
 pub mod codec_partial_test;
+pub mod codec_recommended_type_test;
 #[cfg(test)]
 pub mod codec_test;
 #[cfg(test)]
@@ -76,6 +79,7 @@ pub mod descriptor_test;
 pub mod direct_mask_limit_test;
 pub mod discardable_memory_test;
 #[cfg(test)]
+#[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
 pub mod draw_path_test;
@@ -84,10 +88,15 @@ pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]
+pub mod empty_path_test;
+#[cfg(test)]
 pub mod encode_test;
+pub mod encoded_info_test;
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
+#[cfg(test)]
+pub mod f16_draw_test;
 #[cfg(test)]
 pub mod f16_stages_test;
 #[cfg(test)]
@@ -140,16 +149,23 @@ pub mod image_is_opaque_test;
 pub mod image_new_shader_test;
 #[cfg(test)]
 pub mod image_test;
+pub mod indexed_png_overflow_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
+pub mod inset_convex_poly_test;
+#[cfg(test)]
 pub mod invalid_indexed_png_test;
+#[cfg(test)]
+pub mod is_closed_single_contour_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
 #[cfg(test)]
 pub mod math_test;
+#[cfg(test)]
+pub mod matrix_procs_test;
 #[cfg(test)]
 pub mod matrix_test;
 #[cfg(test)]
@@ -165,9 +181,13 @@ pub mod mip_map_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
 #[cfg(test)]
+pub mod offset_simple_poly_test;
+#[cfg(test)]
 pub mod paint_test;
 #[cfg(test)]
 pub mod parametric_stage_test;
+#[cfg(test)]
+pub mod parse_color_test;
 #[cfg(test)]
 pub mod parse_path_test;
 #[cfg(test)]
@@ -363,16 +383,22 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod scale_to_sides_test;
+#[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
 pub mod shadow_test;
+#[cfg(test)]
+pub mod simplify_paint_test;
 #[cfg(test)]
 pub mod size_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
+#[cfg(test)]
+pub mod sk_dom_test;
 #[cfg(test)]
 pub mod sk_font_metrics_priv_test;
 #[cfg(test)]
@@ -419,6 +445,8 @@ pub mod sk_utf_test;
 pub mod sk_vx_test;
 #[cfg(test)]
 pub mod src_over_test;
+#[cfg(test)]
+pub mod srgb_test;
 #[cfg(test)]
 pub mod stream_test;
 #[cfg(test)]

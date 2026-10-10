@@ -3,18 +3,27 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: tests/SkColorSpaceXformStepsTest.cpp (chrome/m156)
 //
-// Not ported (they need SkSurface / SkBitmap / SkImage, which are not ported yet; the manifest
-// entries stay `todo`):
-//   - SkColorSpaceXform_Raster
-//   - SkColorSpaceXform_Graphite
-// (SkColorSpaceXform_Ganesh is excluded in the manifest.)
+// The Ganesh variant (`SkColorSpaceXform_Ganesh`) needs that backend and is excluded.
 
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
+use skia_rust_core::color::Color;
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use skia_rust_core::color_space_xform_steps::ColorSpaceXformSteps;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image::{Image, RequiredProperties};
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::images;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::image_factories::texture_from_image;
+use skia_rust_gpu::graphite::recorder::Recorder;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
+use skia_rust_gpu::graphite::wgpu::WgpuContext;
+use skia_rust_raster::surfaces;
 use skia_rust_skcms::{Matrix3x3, TransferFunction};
 
-use crate::{Reporter, def_test, errorf, reporter_assert};
+use crate::tools::test_surface::{GraphiteTestSurface, TestSurface};
+use crate::{Reporter, def_graphite_adapter_test, def_test, errorf, reporter_assert};
 
 // Port of: tests/SkColorSpaceXformStepsTest.cpp#L40-L44 (chrome/m156)
 fn trfn_pq_100() -> TransferFunction {
@@ -441,20 +450,69 @@ def_test!(
     }
 );
 
+/// The `make_surface` / `upload_image` pair of `run_color_space_xform_test`: none (the
+/// `SkColorSpaceXformSteps::apply` path, `SkColorSpaceXform_Apply`), a raster surface
+/// (`SkColorSpaceXform_Raster`), or Graphite with the recorder that makes the surfaces and uploads
+/// the images, and the context they are read back through (`SkColorSpaceXform_Graphite`).
+enum Backend<'a> {
+    Apply,
+    Raster,
+    Graphite {
+        context: &'a mut WgpuContext,
+        recorder: &'a Recorder,
+    },
+}
+
+// The body after the destination surface is made: `clear(SK_ColorWHITE)`, `drawImage(src, 0, 0)`,
+// then the read back to an F32 target and its check.
+// Port of: tests/SkColorSpaceXformStepsTest.cpp#L392-L410 (chrome/m156)
+fn check_xform_result(
+    reporter: &mut Reporter,
+    dst_surface: &mut dyn TestSurface,
+    src_image: &Image,
+    dst_info: &ImageInfo,
+    expected_rgba: &[f32; 4],
+) {
+    dst_surface.canvas().clear(Color::WHITE);
+    dst_surface.canvas().draw_image(src_image, (0.0, 0.0), None);
+
+    // Read back to an F32 target.
+    let rb_info = dst_info.with_color_type(ColorType::RGBAF32);
+    let mut rb_bm = Bitmap::new();
+    rb_bm.alloc_pixels_info(&rb_info, None);
+    let rb_result = dst_surface.read_pixels(&mut rb_bm);
+    reporter_assert!(reporter, rb_result);
+
+    let rb_rgba = first_pixel_f32(&rb_bm);
+    reporter_assert!(reporter, rgba_close(&rb_rgba, expected_rgba));
+}
+
+// `reinterpret_cast<const float*>(rb_bm.pixmap().addr(0, 0))`: the first pixel's four floats.
+fn first_pixel_f32(bitmap: &Bitmap) -> [f32; 4] {
+    let mut rgba = [0.0_f32; 4];
+    let Some(pixmap) = bitmap.peek_pixels() else {
+        return rgba;
+    };
+    let Some(bytes) = pixmap.addr() else {
+        return rgba;
+    };
+    for (channel, chunk) in rgba.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *channel = f32::from_ne_bytes(*chunk);
+    }
+    rgba
+}
+
 // Body of test to ensure that SkColorSpaceXformSteps::apply, raster, ganesh, and graphite all
 // produce the same results for color space conversions.
-//
-// skia-rust: not expressible in Rust: the `make_surface` / `upload_image` parameters and the
-// F16 image / surface round trip they drive (SkBitmap, SkImage, SkSurface are not ported yet).
-// Only the `SkColorSpaceXformSteps::apply` path, which is all `SkColorSpaceXform_Apply` runs, is
-// ported.
-// Port of: tests/SkColorSpaceXformStepsTest.cpp#L268-L411 (chrome/m156)
+// Port of: tests/SkColorSpaceXformStepsTest.cpp#L270-L411 (chrome/m156)
 #[allow(clippy::too_many_lines)] // mirrors the structure of the C++ function
 #[allow(clippy::similar_names)] // mirrors the C++ variable names
 #[allow(clippy::items_after_statements)] // mirrors the C++ local declarations
 #[allow(clippy::excessive_precision)] // Skia's float literals kept verbatim
 #[allow(clippy::eq_op)] // mirrors 203/203.f in the C++ expected values
-fn run_color_space_xform_test(reporter: &mut Reporter) {
+fn run_color_space_xform_test(reporter: &mut Reporter, mut backend: Backend<'_>) {
+    const K_WIDTH: i32 = 2;
+    const K_HEIGHT: i32 = 2;
     const K_PQ100: f32 = 0.508_078_421_517_399;
     const K_PQ203: f32 = 0.580_688_881_041_610_9;
     const K_PQ1000: f32 = 0.751_827_096_247_041;
@@ -542,25 +600,151 @@ fn run_color_space_xform_test(reporter: &mut Reporter) {
     ];
 
     for rec in &recs {
-        let steps = ColorSpaceXformSteps::new(
-            Some(rec.src_cs),
-            AlphaType::Unpremul,
-            Some(rec.dst_cs),
-            AlphaType::Unpremul,
+        if matches!(backend, Backend::Apply) {
+            let steps = ColorSpaceXformSteps::new(
+                Some(rec.src_cs),
+                AlphaType::Unpremul,
+                Some(rec.dst_cs),
+                AlphaType::Unpremul,
+            );
+            let mut xform_rgba = [
+                rec.src_rgba[0],
+                rec.src_rgba[1],
+                rec.src_rgba[2],
+                rec.src_rgba[3],
+            ];
+            steps.apply(&mut xform_rgba);
+            reporter_assert!(reporter, rgba_close(&xform_rgba, &rec.expected_rgba));
+            continue;
+        }
+
+        // Create an F16 image with the specified color. If we do not convert explicitly to
+        // F16, then when the GPU based tests attempt to implicitly convert to F32 textures
+        // and fail, they fall back to converting to 8888, which results in clamping and
+        // ginormous error. Write the values directly (rather than ask SkColor4fs) to ensure
+        // we are testing the full pipeline.
+        let src_info = ImageInfo::new(
+            (K_WIDTH, K_HEIGHT),
+            ColorType::RGBAF32,
+            AlphaType::Premul,
+            rec.src_cs.clone(),
         );
-        let mut xform_rgba = [
-            rec.src_rgba[0],
-            rec.src_rgba[1],
-            rec.src_rgba[2],
-            rec.src_rgba[3],
-        ];
-        steps.apply(&mut xform_rgba);
-        reporter_assert!(reporter, rgba_close(&xform_rgba, &rec.expected_rgba));
+
+        // Write the pixels as F32.
+        let mut src_bm_f32 = Bitmap::new();
+        src_bm_f32.alloc_pixels_info(&src_info, None);
+        src_bm_f32.erase_color(Color::TRANSPARENT);
+        {
+            let mut pm = src_bm_f32
+                .peek_pixels_mut()
+                .expect("the F32 bitmap has pixels");
+            for x in 0..K_WIDTH {
+                for y in 0..K_HEIGHT {
+                    let p = pm
+                        .writable_addr_at((x, y))
+                        .expect("a pixel of the F32 bitmap");
+                    for c in 0..4 {
+                        p[4 * c..4 * c + 4].copy_from_slice(&rec.src_rgba[c].to_ne_bytes());
+                    }
+                }
+            }
+        }
+        let mut src_bm = Bitmap::new();
+        src_bm.alloc_pixels_info(&src_info.with_color_type(ColorType::RGBAF16), None);
+        let rp_result = match src_bm.peek_pixels_mut() {
+            Some(mut dst) => src_bm_f32.read_pixels_to_pixmap(&mut dst, (0, 0)),
+            None => false,
+        };
+        reporter_assert!(reporter, rp_result);
+        src_bm.set_immutable();
+
+        let Some(src_raster) = images::raster_from_bitmap(&src_bm) else {
+            errorf!(reporter, "RasterFromBitmap failed");
+            continue;
+        };
+        // `upload_image`: `SkImages::TextureFromImage(recorder, image, {false})` (Graphite only).
+        let src_image = match &backend {
+            Backend::Graphite { recorder, .. } => {
+                let uploaded = texture_from_image(
+                    recorder,
+                    &src_raster,
+                    RequiredProperties { mipmapped: false },
+                );
+                reporter_assert!(reporter, uploaded.is_some());
+                let Some(uploaded) = uploaded else {
+                    continue;
+                };
+                uploaded
+            }
+            Backend::Apply | Backend::Raster => src_raster,
+        };
+
+        // Render the image to an F16 target.
+        let dst_info = ImageInfo::new(
+            (K_WIDTH, K_HEIGHT),
+            ColorType::RGBAF16,
+            AlphaType::Premul,
+            rec.dst_cs.clone(),
+        );
+        match &mut backend {
+            Backend::Apply => {}
+            Backend::Raster => {
+                // `SkSurfaces::Raster(info)`; a surface that cannot be made is skipped.
+                let Some(mut dst_surface) = surfaces::raster(&dst_info, None, None) else {
+                    continue;
+                };
+                check_xform_result(
+                    reporter,
+                    &mut dst_surface,
+                    &src_image,
+                    &dst_info,
+                    &rec.expected_rgba,
+                );
+            }
+            Backend::Graphite { context, recorder } => {
+                // `SkSurfaces::RenderTarget(recorder.get(), info)`; a surface that cannot be made
+                // is skipped.
+                let Some(dst_surface) =
+                    GraphiteSurface::render_target(recorder, &dst_info, Mipmapped::No, None, "")
+                else {
+                    continue;
+                };
+                check_xform_result(
+                    reporter,
+                    &mut GraphiteTestSurface {
+                        context,
+                        surface: &dst_surface,
+                    },
+                    &src_image,
+                    &dst_info,
+                    &rec.expected_rgba,
+                );
+            }
+        }
     }
 }
 
 // Test color space space conversion using SkColorSpaceXformSteps::apply.
 // Port of: tests/SkColorSpaceXformStepsTest.cpp#L414-L416 (chrome/m156)
 def_test!(SkColorSpaceXform_Apply, |reporter| {
-    run_color_space_xform_test(reporter);
+    run_color_space_xform_test(reporter, Backend::Apply);
+});
+
+// Test color space space conversion using raster.
+// Port of: tests/SkColorSpaceXformStepsTest.cpp#L419-L424 (chrome/m156)
+def_test!(SkColorSpaceXform_Raster, |reporter| {
+    run_color_space_xform_test(reporter, Backend::Raster);
+});
+
+// Test color space conversion using Graphite.
+// Port of: tests/SkColorSpaceXformStepsTest.cpp#L444-L460 (chrome/m156)
+def_graphite_adapter_test!(SkColorSpaceXform_Graphite, |reporter, context| {
+    let recorder = context.make_recorder(None);
+    run_color_space_xform_test(
+        reporter,
+        Backend::Graphite {
+            context,
+            recorder: &recorder,
+        },
+    );
 });

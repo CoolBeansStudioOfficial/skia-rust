@@ -1167,8 +1167,9 @@ fn with_pair(
 // Scale must be less than or equal to the ratio limit / (*a + *b).
 // This code assumes that NaN and Inf are never passed in.
 // Port of: src/core/SkScaleToSides.h#L20-L63 (chrome/m156)
+#[doc(hidden)] // exposed for tests/ScaleToSidesTest.cpp, as `SkScaleToSides::AdjustRadii`
 #[allow(clippy::cast_possible_truncation)] // mirrors the (float) casts in SkScaleToSides
-fn adjust_radii(limit: f64, scale: f64, a: &mut scalar, b: &mut scalar) {
+pub fn adjust_radii(limit: f64, scale: f64, a: &mut scalar, b: &mut scalar) {
     debug_assert!(scale < 1.0 && scale > 0.0);
 
     *a = (f64::from(*a) * scale) as f32;
