@@ -20,6 +20,9 @@ use crate::skottie_value::ColorValue;
 use super::Geometries;
 use super::geometry::{ShapeBuilder, shape_adapter};
 
+const JOINS: [Join; 3] = [Join::Miter, Join::Round, Join::Bevel];
+const CAPS: [Cap; 3] = [Cap::Butt, Cap::Round, Cap::Square];
+
 /// Whether a fill/stroke adapter drives a color or a gradient.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ShaderType {
@@ -67,25 +70,25 @@ impl FillStrokeAdapter {
             let opacity = Prop::new(100.0);
             let stroke_width = Prop::new(1.0);
 
-            base.container().attach_discardable_adapter(gradient_adapter);
+            base.container()
+                .attach_discardable_adapter(gradient_adapter);
 
             base.container().bind(abuilder, jpaint.get("o"), &opacity);
 
             base.node().set_anti_alias(true);
 
             if fs_type == FillStrokeType::Stroke {
-                base.container().bind(abuilder, jpaint.get("w"), &stroke_width);
+                base.container()
+                    .bind(abuilder, jpaint.get("w"), &stroke_width);
 
                 base.node().set_style(Style::Stroke);
                 base.node()
                     .set_stroke_miter(parse_default::<f32>(jpaint.get("ml"), 4.0));
 
-                const JOINS: [Join; 3] = [Join::Miter, Join::Round, Join::Bevel];
                 // size_t arithmetic: "lj": 0 wraps around, and pins to the last join.
                 let lj = parse_default::<usize>(jpaint.get("lj"), 1).wrapping_sub(1);
                 base.node().set_stroke_join(JOINS[lj.min(JOINS.len() - 1)]);
 
-                const CAPS: [Cap; 3] = [Cap::Butt, Cap::Round, Cap::Square];
                 // size_t arithmetic: "lc": 0 wraps around, and pins to the last cap.
                 let lc = parse_default::<usize>(jpaint.get("lc"), 1).wrapping_sub(1);
                 base.node().set_stroke_cap(CAPS[lc.min(CAPS.len() - 1)]);
@@ -113,10 +116,10 @@ impl FillStrokeAdapter {
         self.base.node().set_opacity(self.opacity.get() * 0.01);
         self.base.node().set_stroke_width(self.stroke_width.get());
 
-        if self.shader_type == ShaderType::Color {
-            if let Some(color_node) = &self.color_node {
-                color_node.set_color(self.color.borrow().to_color());
-            }
+        if self.shader_type == ShaderType::Color
+            && let Some(color_node) = &self.color_node
+        {
+            color_node.set_color(self.color.borrow().to_color());
         }
     }
 }
@@ -275,14 +278,14 @@ impl ShapeBuilder {
         abuilder: &AnimationBuilder<'_>,
         mut geos: Geometries,
     ) -> Geometries {
-        if let Some(jdash) = jstroke.get("d").as_array() {
-            if jdash.size() > 1 {
-                for geo in &mut geos {
-                    let adapter = DashAdapter::make(jdash, abuilder, Rc::clone(geo));
-                    let node = Rc::clone(adapter.base.node());
-                    abuilder.attach_discardable_adapter(&adapter);
-                    *geo = node as Rc<dyn GeometryNode>;
-                }
+        if let Some(jdash) = jstroke.get("d").as_array()
+            && jdash.size() > 1
+        {
+            for geo in &mut geos {
+                let adapter = DashAdapter::make(jdash, abuilder, Rc::clone(geo));
+                let node = Rc::clone(adapter.base.node());
+                abuilder.attach_discardable_adapter(&adapter);
+                *geo = node as Rc<dyn GeometryNode>;
             }
         }
 

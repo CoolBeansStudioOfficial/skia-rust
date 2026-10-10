@@ -39,7 +39,7 @@ impl Animator for ForwardingPlaybackController {
     }
 }
 
-impl<'j> AnimationBuilder<'j> {
+impl AnimationBuilder<'_> {
     /// Attaches an audio layer: it has no render node, its playback is controlled from the
     /// animator tree.
     // Port of: modules/skottie/src/layers/AudioLayer.cpp#L51-L84 (chrome/m156) (`attachAudioLayer`)
@@ -59,11 +59,7 @@ impl<'j> AnimationBuilder<'j> {
 
             if let (Some(name), Some(path), Some(id)) = (name, path, id) {
                 let track = self.resource_provider().and_then(|rp| {
-                    rp.load_audio_asset(
-                        &string_text(path),
-                        &string_text(name),
-                        &string_text(id),
-                    )
+                    rp.load_audio_asset(&string_text(path), &string_text(name), &string_text(id))
                 });
                 if let Some(track) = track {
                     self.push_animator(Rc::new(ForwardingPlaybackController {

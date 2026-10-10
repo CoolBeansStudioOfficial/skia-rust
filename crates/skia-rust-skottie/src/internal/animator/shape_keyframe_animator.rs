@@ -19,10 +19,10 @@ fn shape_encoding_len(vertex_count: usize) -> usize {
 /// Some versions wrap shape values as single-element arrays.
 // Port of: modules/skottie/src/animator/ShapeKeyframeAnimator.cpp#L50-L58 (chrome/m156) (`shape_root`)
 fn shape_root(jv: &Value) -> Option<&ObjectValue> {
-    if let Some(av) = jv.as_array() {
-        if av.size() == 1 {
-            return av[0].as_object();
-        }
+    if let Some(av) = jv.as_array()
+        && av.size() == 1
+    {
+        return av[0].as_object();
     }
 
     jv.as_object()
@@ -31,11 +31,11 @@ fn shape_root(jv: &Value) -> Option<&ObjectValue> {
 /// Parses the number of floats of the encoding of the shape `jv`.
 // Port of: modules/skottie/src/animator/ShapeKeyframeAnimator.cpp#L60-L69 (chrome/m156) (`parse_encoding_len`)
 pub(crate) fn parse_encoding_len(jv: &Value, len: &mut usize) -> bool {
-    if let Some(jshape) = shape_root(jv) {
-        if let Some(jvs) = jshape.get("v").as_array() {
-            *len = shape_encoding_len(jvs.size());
-            return true;
-        }
+    if let Some(jshape) = shape_root(jv)
+        && let Some(jvs) = jshape.get("v").as_array()
+    {
+        *len = shape_encoding_len(jvs.size());
+        return true;
     }
     false
 }

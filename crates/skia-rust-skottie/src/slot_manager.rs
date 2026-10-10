@@ -169,13 +169,13 @@ impl SlotManager {
     /// Sets the image asset of an image slot. Returns false if there is no such slot.
     // Port of: modules/skottie/src/SlotManager.cpp#L67-L77 (chrome/m156)
     #[doc(alias = "setImageSlot")]
-    pub fn set_image_slot(&self, slot_id: &str, i: Option<Rc<dyn ImageAsset>>) -> bool {
+    pub fn set_image_slot(&self, slot_id: &str, i: Option<&Rc<dyn ImageAsset>>) -> bool {
         let map = self.image_map.borrow();
         let Some(image_group) = map.find(slot_id) else {
             return false;
         };
         for image_asset in image_group {
-            image_asset.set_image_asset(i.clone());
+            image_asset.set_image_asset(i.cloned());
         }
         self.revalidator.revalidate();
         true
@@ -224,7 +224,9 @@ impl SlotManager {
     pub fn color_slot(&self, slot_id: &str) -> Option<Color> {
         let map = self.color_map.borrow();
         let value_group = map.find(slot_id)?;
-        value_group.first().map(|pair| pair.value.borrow().to_color())
+        value_group
+            .first()
+            .map(|pair| pair.value.borrow().to_color())
     }
 
     /// The image asset of an image slot.

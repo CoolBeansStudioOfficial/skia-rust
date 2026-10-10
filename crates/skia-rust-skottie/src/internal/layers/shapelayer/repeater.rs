@@ -26,8 +26,8 @@ use crate::internal::skottie_priv::AnimationBuilder;
 use crate::json::ObjectValue;
 use crate::skottie_json::{ValueExt, parse_default};
 
-use super::geometry::{ShapeBuilder, shape_adapter};
 use super::Draws;
+use super::geometry::{ShapeBuilder, shape_adapter};
 
 /// How the instances are composited.
 // Port of: modules/skottie/src/layers/shapelayer/Repeater.cpp#L36 (chrome/m156) (`RepeaterRenderNode::CompositeMode`)
@@ -73,11 +73,11 @@ macro_rules! sg_attribute {
 }
 
 impl RepeaterRenderNode {
-    fn new(children: Vec<Rc<dyn RenderNode>>, mode: CompositeMode) -> Rc<Self> {
+    fn new(children: &[Rc<dyn RenderNode>], mode: CompositeMode) -> Rc<Self> {
         let node = Rc::new_cyclic(|weak: &Weak<Self>| Self {
             // CustomRenderNode: cannot make assumptions about its children's damage.
             core: NodeCore::new(inval_traits::OVERRIDE_DAMAGE, weak.clone()),
-            children: children.clone(),
+            children: children.to_vec(),
             mode,
             children_bounds: Cell::new(Rect::new_empty()),
             count: Cell::new(0),
@@ -89,7 +89,7 @@ impl RepeaterRenderNode {
             position: Cell::new(V2::new(0.0, 0.0)),
             scale: Cell::new(V2::new(1.0, 1.0)),
         });
-        observe_children(node.as_ref(), &children);
+        observe_children(node.as_ref(), children);
         node
     }
 
@@ -224,7 +224,7 @@ impl RepeaterAdapter {
         jrepeater: &ObjectValue,
         jtransform: &ObjectValue,
         abuilder: &AnimationBuilder<'_>,
-        draws: Draws,
+        draws: &[Rc<dyn RenderNode>],
     ) -> Rc<Self> {
         let adapter = Rc::new_cyclic(|weak: &Weak<Self>| {
             let mode = if parse_default::<i32>(jrepeater.get("m"), 1) == 1 {
@@ -232,7 +232,8 @@ impl RepeaterAdapter {
             } else {
                 CompositeMode::Above
             };
-            let base = DiscardableAdapterBase::new(weak.clone(), RepeaterRenderNode::new(draws, mode));
+            let base =
+                DiscardableAdapterBase::new(weak.clone(), RepeaterRenderNode::new(draws, mode));
 
             let count = Prop::new(0.0);
             let offset = Prop::new(0.0);
@@ -304,7 +305,7 @@ impl ShapeBuilder {
             // input draws are in top->bottom order - reverse for paint order
             draws.reverse();
 
-            let adapter = RepeaterAdapter::make(jrepeater, jtransform, abuilder, draws);
+            let adapter = RepeaterAdapter::make(jrepeater, jtransform, abuilder, &draws);
             let node = Rc::clone(adapter.base.node());
             abuilder.attach_discardable_adapter(&adapter);
             vec![node as Rc<dyn RenderNode>]

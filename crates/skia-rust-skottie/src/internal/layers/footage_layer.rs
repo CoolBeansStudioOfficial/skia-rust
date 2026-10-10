@@ -62,7 +62,9 @@ impl Animator for FootageAnimator {
             return false;
         }
 
-        let frame_data = self.asset.get_frame_data((t + self.time_bias) * self.time_scale);
+        let frame_data = self
+            .asset
+            .get_frame_data((t + self.time_bias) * self.time_scale);
         let m = image_matrix(&frame_data, self.asset_size);
         if frame_data.image != self.image_node.image()
             || frame_data.sampling != self.image_node.sampling_options()
@@ -78,7 +80,7 @@ impl Animator for FootageAnimator {
     }
 }
 
-impl<'j> AnimationBuilder<'j> {
+impl AnimationBuilder<'_> {
     /// Loads the image asset of `default_jimage` (or the one a slot replaces it with), and caches
     /// it.
     // Port of: modules/skottie/src/layers/FootageLayer.cpp#L102-L145 (chrome/m156) (`loadFootageAsset`)
@@ -184,7 +186,10 @@ impl<'j> AnimationBuilder<'j> {
             // No animator needed, resolve the (only) frame upfront.
             let frame_data = asset_info.asset.get_frame_data(0.0);
             if frame_data.image.is_none() {
-                self.log(LoggerLevel::Error, "Could not load single-frame image asset.");
+                self.log(
+                    LoggerLevel::Error,
+                    "Could not load single-frame image asset.",
+                );
                 return None;
             }
 

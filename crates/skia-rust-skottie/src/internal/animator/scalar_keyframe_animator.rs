@@ -29,7 +29,11 @@ impl Animator for ScalarKeyframeAnimator {
         let lerp_info = self.data.get_lerp_info(t);
         let old_value = self.target.get();
 
-        let new_value = lerp(lerp_info.vrec0.flt(), lerp_info.vrec1.flt(), lerp_info.weight);
+        let new_value = lerp(
+            lerp_info.vrec0.flt(),
+            lerp_info.vrec1.flt(),
+            lerp_info.weight,
+        );
         self.target.set(new_value);
 
         #[allow(clippy::float_cmp)] // exact comparison, as in Skia
@@ -139,9 +143,11 @@ pub(crate) fn bind(
 ) -> bool {
     if let Some(sid) = parse_slot_id(jprop) {
         container.set_has_slot_id();
-        abuilder
-            .slot_manager()
-            .track_scalar_value(&string_text(sid), target.clone(), container.this());
+        abuilder.slot_manager().track_scalar_value(
+            &string_text(sid),
+            target.clone(),
+            container.this(),
+        );
     }
     let mut builder = ScalarAnimatorBuilder {
         base: AnimatorBuilderBase::new(KeyframeValueType::Scalar),

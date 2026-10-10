@@ -35,9 +35,8 @@ pub use skottie::{
     LayerInfo, Logger, LoggerLevel, MarkerObserver, RenderFlags, Stats,
 };
 pub use skottie_property::{
-    ColorPropertyHandle, ColorPropertyValue, NodeType, OpacityPropertyHandle,
-    OpacityPropertyValue, PropertyHandle, PropertyObserver, TransformPropertyHandle,
-    TransformPropertyValue,
+    ColorPropertyHandle, ColorPropertyValue, NodeType, OpacityPropertyHandle, OpacityPropertyValue,
+    PropertyHandle, PropertyObserver, TransformPropertyHandle, TransformPropertyValue,
 };
 pub use skottie_value::{ColorValue, ScalarValue, ShapeValue, Vec2Value, VectorValue};
 pub use slot_manager::{SlotID, SlotInfo, SlotManager};

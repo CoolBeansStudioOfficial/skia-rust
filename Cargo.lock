@@ -1289,7 +1289,12 @@ dependencies = [
 name = "skia-rust-skottie"
 version = "0.156.0"
 dependencies = [
+ "bitflags",
  "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-raster",
+ "skia-rust-resources",
+ "skia-rust-sksg",
 ]
 
 [[package]]

@@ -82,7 +82,7 @@ impl Animator for Vec2KeyframeAnimator {
             let vidx = lerp_info.vrec0.idx();
             if self.rot_target.is_some() && vidx as usize == self.values.len() - 1 && vidx > 0 {
                 debug_assert!(self.values[vidx as usize].cmeasure.is_none());
-                debug_assert!(lerp_info.vrec1.idx() == vidx);
+                debug_assert_eq!(lerp_info.vrec1.idx(), vidx);
 
                 // Change LERPInfo{0, SIZE - 1, SIZE - 1}
                 // to     LERPInfo{1, SIZE - 2, SIZE - 1}
@@ -109,8 +109,7 @@ impl Animator for Vec2KeyframeAnimator {
                 // interpolation position to become negative or larger than the path length.
                 // In those cases the expectation is to extrapolate using the endpoint tangent.
                 if distance < 0.0 || distance > len {
-                    let overshoot =
-                        std_max(-distance, distance - len).copysign(distance);
+                    let overshoot = std_max(-distance, distance - len).copysign(distance);
                     pos += tan * overshoot;
                 }
 
@@ -149,7 +148,7 @@ impl Animator for Vec2ExpressionAnimator {
 
         let result = self.expression_evaluator.evaluate(t);
         let new_value = V2::new(
-            if !result.is_empty() { result[0] } else { 0.0 },
+            if result.is_empty() { 0.0 } else { result[0] },
             if result.len() > 1 { result[1] } else { 0.0 },
         );
         self.target.set(new_value);
@@ -162,8 +161,8 @@ impl Animator for Vec2ExpressionAnimator {
 struct Vec2AnimatorBuilder {
     base: AnimatorBuilderBase,
     values: Vec<SpatialValue>,
-    vec_target: Prop<V2>,                // required
-    rot_target: Option<Prop<f32>>,       // optional
+    vec_target: Prop<V2>,          // required
+    rot_target: Option<Prop<f32>>, // optional
     ti: V2,
     to: V2,
     pending_spatial: bool,

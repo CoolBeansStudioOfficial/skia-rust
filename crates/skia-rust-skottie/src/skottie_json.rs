@@ -113,10 +113,10 @@ pub fn parse_slot_id(jobj: Option<&ObjectValue>) -> Option<&StringValue> {
 impl Parse for f32 {
     fn parse(v: &Value, s: &mut Self) -> bool {
         // Some versions wrap values as single-element arrays.
-        if let Some(array) = v.as_array() {
-            if array.size() > 0 {
-                return Self::parse(&array[0], s);
-            }
+        if let Some(array) = v.as_array()
+            && array.size() > 0
+        {
+            return Self::parse(&array[0], s);
         }
 
         if let Some(num) = v.as_number() {
@@ -156,7 +156,8 @@ macro_rules! parse_integral {
             fn parse(v: &Value, result: &mut Self) -> bool {
                 if let Some(num) = v.as_number() {
                     let dbl = num.value();
-                    #[allow(clippy::cast_precision_loss)] // mirrors static_cast<double>(max)
+                    #[allow(clippy::cast_precision_loss, clippy::cast_lossless)]
+                    // mirrors static_cast<double>(max)
                     if dbl > <$ty>::MAX as f64 || dbl < <$ty>::MIN as f64 {
                         return false;
                     }
