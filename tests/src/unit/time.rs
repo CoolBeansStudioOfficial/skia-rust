@@ -7,12 +7,13 @@ use skia_rust_pdf::utils::get_date_time;
 
 use crate::{def_test, errorf, reporter_assert};
 
+// TODO(future generation): update these values.
+const MINIMUM_SANE_YEAR: u16 = 1964;
+const MAXIMUM_SANE_YEAR: u16 = 2064;
+
 // Port of: tests/Time.cpp#L19-L61 (chrome/m156)
 def_test!(SkPDFUtils_GetDateTime, |r| {
     let date_time = get_date_time();
-    // TODO(future generation): update these values.
-    const MINIMUM_SANE_YEAR: u16 = 1964;
-    const MAXIMUM_SANE_YEAR: u16 = 2064;
     if date_time.year < MINIMUM_SANE_YEAR {
         errorf!(
             r,
