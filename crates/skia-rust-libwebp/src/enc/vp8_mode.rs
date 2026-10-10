@@ -194,9 +194,9 @@ fn is_flat_source16(yuv: &[u8], src: usize) -> bool {
 
 /// A copy of the `BPS`-stride window at `off` of `yuv` (up to 128 bytes, zero past the end), so
 /// that a prediction and its output can be borrowed from the same work area.
-fn window(yuv: &[u8], off: usize) -> [u8; 128] {
-    let mut w = [0u8; 128];
-    let n = (yuv.len().saturating_sub(off)).min(128);
+fn window(yuv: &[u8], off: usize) -> [u8; 256] {
+    let mut w = [0u8; 256];
+    let n = (yuv.len().saturating_sub(off)).min(256);
     w[..n].copy_from_slice(&yuv[off..off + n]);
     w
 }
