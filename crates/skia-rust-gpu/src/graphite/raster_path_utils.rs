@@ -10,7 +10,12 @@
 
 // The mask offsets are small non-negative `int`s in the C++, converted to indices and to floats
 // exactly as the C++ converts them.
-#![allow(clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#![allow(
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation
+)]
 
 use std::sync::OnceLock;
 
@@ -153,7 +158,10 @@ impl RasterMaskHelper<'_> {
     /// # Panics
     /// If the pixmap has no writable pixels.
     #[must_use]
-    pub fn over_pixmap<'a>(pixmap: &'a mut Pixmap<'_>, translation: IPoint) -> RasterMaskHelper<'a> {
+    pub fn over_pixmap<'a>(
+        pixmap: &'a mut Pixmap<'_>,
+        translation: IPoint,
+    ) -> RasterMaskHelper<'a> {
         let info = pixmap.info().clone();
         let row_bytes = pixmap.row_bytes();
         let raster_clip = RasterClip::from_rect(&IRect::from_size(info.dimensions()));
@@ -385,7 +393,8 @@ pub fn generate_clip_mask_key(
             );
             for element in elements_for_mask {
                 // Add transform key and get packed fractional translation bits
-                let frac_bits = add_transform_key(&mut builder, element_key_index, &element.local_to_device);
+                let frac_bits =
+                    add_transform_key(&mut builder, element_key_index, &element.local_to_device);
                 let op_bits = element.op as u32;
                 builder[element_key_index + 4] = frac_bits | (op_bits << 16);
 
@@ -412,7 +421,8 @@ pub fn generate_clip_mask_key(
             key_bounds.offset((-(ul as i32), -(ut as i32)));
 
             if include_bounds {
-                builder[element_key_index] = (key_bounds.left as u32) | ((key_bounds.top as u32) << 16);
+                builder[element_key_index] =
+                    (key_bounds.left as u32) | ((key_bounds.top as u32) << 16);
                 builder[element_key_index + 1] =
                     (key_bounds.right as u32) | ((key_bounds.bottom as u32) << 16);
             }

@@ -14,8 +14,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use skia_rust_core::clip_op::ClipOp;
-use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::color::Color4f;
+use skia_rust_core::device::Device as CoreDevice;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
@@ -107,6 +107,7 @@ fn make_device(recorder: &Recorder) -> Device {
 /// The passes of what `device` recorded: the commands and the pipeline descriptions of each.
 struct Pass {
     commands: Vec<DrawPassCommand>,
+    descs: Vec<GraphicsPipelineDesc>,
     steps: Vec<RenderStepID>,
 }
 
@@ -126,6 +127,7 @@ fn snap(device: &mut Device) -> Vec<Pass> {
             for pass in render_pass.draw_passes() {
                 passes.push(Pass {
                     commands: pass.commands().to_vec(),
+                    descs: pass.pipeline_descs().to_vec(),
                     steps: pass
                         .pipeline_descs()
                         .iter()
@@ -412,4 +414,79 @@ fn a_clip_mask_is_reused_from_the_clip_atlas() {
         .expect("the inner clip mask is found");
     assert!(Arc::ptr_eq(&first, &inner));
     assert_eq!(inner_pos, IPoint::new(first_pos.x + 10, first_pos.y + 10));
+}
+
+/// Whether each pipeline the commands bind is depth-only (it has no paint).
+fn bound_depth_only(pass: &Pass) -> Vec<bool> {
+    pass.commands
+        .iter()
+        .filter_map(|command| match command {
+            DrawPassCommand::BindGraphicsPipeline { pipeline_index } => Some(
+                !pass.descs[*pipeline_index as usize]
+                    .paint_params_id()
+                    .is_valid(),
+            ),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A polygon of `points`, as a path.
+fn polygon(points: &[(f32, f32)]) -> Path {
+    let mut builder = PathBuilder::new();
+    builder.move_to(Point::new(points[0].0, points[0].1));
+    for &(x, y) in &points[1..] {
+        builder.line_to(Point::new(x, y));
+    }
+    builder.close();
+    builder.detach()
+}
+
+// Anti-aliased path clips that are not analytic are flattened into the clip atlas by the raster
+// strategy, so no depth-only clip draw is recorded for them. The tessellation strategy has no clip
+// atlas, and records one depth-only draw for each path.
+// Port of: src/gpu/graphite/ClipStack.cpp (the atlas call of visitClipStackForDraw), with
+// src/gpu/graphite/AtlasProvider.cpp#L23-L27 (chrome/m156), use_clip_atlas
+#[test]
+fn clip_paths_are_flattened_into_the_clip_atlas_with_the_raster_strategy() {
+    for (options, clip_atlas) in [
+        (raster_atlas_options(), true),
+        (ContextOptions::default(), false),
+    ] {
+        let context = context_with(&options);
+        let recorder = context.make_recorder(None);
+        let mut device = make_device(&recorder);
+        device.push_clip_stack();
+        device.clip_path(
+            &polygon(&[(4.0, 4.0), (40.0, 4.0), (4.0, 40.0)]),
+            ClipOp::Intersect,
+            true,
+        );
+        device.clip_path(
+            &polygon(&[(16.0, 16.0), (60.0, 16.0), (16.0, 60.0)]),
+            ClipOp::Intersect,
+            true,
+        );
+        let mut paint = Paint::new(Color4f::new(1.0, 0.0, 0.0, 1.0), None);
+        paint.set_anti_alias(true);
+        device.draw_rect(
+            &skia_rust_core::rect::Rect::new(0.5, 0.5, 50.25, 50.25),
+            &paint,
+        );
+        device.pop_clip_stack();
+
+        let passes = snap(&mut device);
+        let [pass] = &passes[..] else {
+            panic!("one pass");
+        };
+        let depth_only = bound_depth_only(pass);
+        let clip_draws = depth_only.iter().filter(|&&d| d).count();
+        let shading = depth_only.iter().filter(|&&d| !d).count();
+        assert_eq!(shading, 1, "one shading pipeline: {depth_only:?}");
+        if clip_atlas {
+            assert_eq!(clip_draws, 0, "the clips are in the atlas: {depth_only:?}");
+        } else {
+            assert!(clip_draws >= 2, "the clips are drawn: {depth_only:?}");
+        }
+    }
 }

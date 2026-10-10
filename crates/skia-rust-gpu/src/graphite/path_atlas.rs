@@ -10,6 +10,14 @@
 //! recorder is passed to each call instead, so the atlases hold no reference to it, and the
 //! `DrawAtlas` eviction callback shares the shape cache through an `Arc`.
 
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
+// The atlas positions and sizes are small integers, converted as the C++ converts them
+// (`SkIPoint` to `skvx::half2`, `int` to `float`).
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -51,7 +59,11 @@ const K_MIN_ATLAS_TEXTURE_SIZE: i32 = 512;
 /// caps allow.
 // Port of: src/gpu/graphite/PathAtlas.cpp#L24-L33 (chrome/m156)
 #[must_use]
-pub fn path_atlas_dimensions(caps: &dyn Caps, requested_width: u32, requested_height: u32) -> (u32, u32) {
+pub fn path_atlas_dimensions(
+    caps: &dyn Caps,
+    requested_width: u32,
+    requested_height: u32,
+) -> (u32, u32) {
     let max_texture_size = caps
         .max_path_atlas_texture_size()
         .max(K_MIN_ATLAS_TEXTURE_SIZE)
@@ -103,7 +115,11 @@ pub trait PathAtlas {
     /// `isSuitableForAtlasing(transformedShapeBounds, clipBounds)`: whether a coverage mask of
     /// these bounds benefits from atlasing without causing too many atlas renders.
     // Port of: src/gpu/graphite/PathAtlas.h#L92-L97 (chrome/m156)
-    fn is_suitable_for_atlasing(&self, _transformed_shape_bounds: &Rect, _clip_bounds: &Rect) -> bool {
+    fn is_suitable_for_atlasing(
+        &self,
+        _transformed_shape_bounds: &Rect,
+        _clip_bounds: &Rect,
+    ) -> bool {
         true
     }
 
@@ -287,13 +303,8 @@ impl DrawAtlasMgr {
         transformed_mask_offset: IPoint,
         out_pos: &mut Half2,
     ) -> Option<Arc<TextureProxy>> {
-        let mask_key = generate_path_mask_key(
-            shape,
-            local_to_device,
-            stroke_rec,
-            mask_origin,
-            mask_size,
-        );
+        let mask_key =
+            generate_path_mask_key(shape, local_to_device, stroke_rec, mask_origin, mask_size);
 
         let cached = self
             .cache

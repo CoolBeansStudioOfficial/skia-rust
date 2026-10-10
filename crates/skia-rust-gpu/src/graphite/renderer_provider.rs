@@ -21,7 +21,6 @@ use skia_rust_core::path_types::PathFillType;
 use crate::graphite::buffer_manager::StaticBufferManager;
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_types::DrawTypeFlags;
-use crate::graphite::render::coverage_mask_render_step::CoverageMaskRenderStep;
 use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use crate::graphite::render::common_depth_stencil_settings::{
@@ -29,6 +28,7 @@ use crate::graphite::render::common_depth_stencil_settings::{
     WINDING_STENCIL_PASS,
 };
 use crate::graphite::render::cover_bounds_render_step::CoverBoundsRenderStep;
+use crate::graphite::render::coverage_mask_render_step::CoverageMaskRenderStep;
 use crate::graphite::render::mesh_render_step::MeshRenderStep;
 use crate::graphite::render::middle_out_fan_render_step::MiddleOutFanRenderStep;
 use crate::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
@@ -139,11 +139,12 @@ impl RendererProvider {
             // The raster path atlas is currently always supported.
             PathRendererStrategy::RasterAtlas => true,
             // The Vello compute strategies need `SK_ENABLE_VELLO_SHADERS`, which is off here.
+            // The Vello compute strategies need `SK_ENABLE_VELLO_SHADERS`, and the sparse strips
+            // are not ported yet (G17).
             PathRendererStrategy::ComputeAnalyticAA
             | PathRendererStrategy::ComputeMSAA16
-            | PathRendererStrategy::ComputeMSAA8 => false,
-            // The sparse strips are not ported yet (G17).
-            PathRendererStrategy::CpuSparseStripsMsaa8 => false,
+            | PathRendererStrategy::ComputeMSAA8
+            | PathRendererStrategy::CpuSparseStripsMsaa8 => false,
         }
     }
 
@@ -190,6 +191,7 @@ impl RendererProvider {
     /// `RendererProvider(caps, bufferManager)` with `strategy` as the path renderer strategy.
     // Port of: src/gpu/graphite/RendererProvider.cpp#L87-L140 (chrome/m156)
     #[must_use]
+    #[allow(clippy::too_many_lines)] // mirrors the C++ constructor
     pub fn new_with_strategy(
         strategy: PathRendererStrategy,
         layout: Layout,
