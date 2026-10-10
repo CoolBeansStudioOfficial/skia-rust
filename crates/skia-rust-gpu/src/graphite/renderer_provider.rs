@@ -11,8 +11,7 @@
 // - the Vello compute strategies (`kComputeAnalyticAA`, `kComputeMSAA16`, `kComputeMSAA8`) are
 //   never supported: Skia builds them only with `SK_ENABLE_VELLO_SHADERS`, which is off here;
 // - the sparse-strip strategy (`kCPUSparseStripsMSAA8`, G17) is never supported;
-// - the bitmap and SDF text renderers, the blur renderers and the sparse-strip renderers need
-//   G7c and G17.
+// - the blur renderers and the sparse-strip renderers need G7c and G17.
 
 use std::sync::Arc;
 
@@ -21,7 +20,9 @@ use skia_rust_core::path_types::PathFillType;
 use crate::graphite::buffer_manager::StaticBufferManager;
 use crate::graphite::caps::Caps;
 use crate::graphite::draw_types::DrawTypeFlags;
+use crate::gpu::mask_format::MaskFormat;
 use crate::graphite::render::analytic_rrect_render_step::AnalyticRRectRenderStep;
+use crate::graphite::render::bitmap_text_render_step::BitmapTextRenderStep;
 use crate::graphite::render::circular_arc_render_step::CircularArcRenderStep;
 use crate::graphite::render::common_depth_stencil_settings::{
     DIRECT_DEPTH_LESS_PASS, EVEN_ODD_STENCIL_PASS, INVERSE_COVER_PASS, REGULAR_COVER_PASS,
@@ -32,6 +33,8 @@ use crate::graphite::render::coverage_mask_render_step::CoverageMaskRenderStep;
 use crate::graphite::render::mesh_render_step::MeshRenderStep;
 use crate::graphite::render::middle_out_fan_render_step::MiddleOutFanRenderStep;
 use crate::graphite::render::per_edge_aa_quad_render_step::PerEdgeAAQuadRenderStep;
+use crate::graphite::render::sdf_text_lcd_render_step::SDFTextLCDRenderStep;
+use crate::graphite::render::sdf_text_render_step::SDFTextRenderStep;
 use crate::graphite::render::tessellate_curves_render_step::TessellateCurvesRenderStep;
 use crate::graphite::render::tessellate_strokes_render_step::TessellateStrokesRenderStep;
 use crate::graphite::render::tessellate_wedges_render_step::TessellateWedgesRenderStep;
@@ -76,6 +79,10 @@ pub struct RendererProvider {
     analytic_rrect: Renderer,
     /// `fVertices[2 * hasColor + hasTexCoords]`.
     vertices: [Renderer; 4],
+    /// `fBitmapText[int(MaskFormat)]`.
+    bitmap_text: [Renderer; 3],
+    /// `fSDFText[bool isLCD]`.
+    sdf_text: [Renderer; 2],
     /// `fPerEdgeAAQuad`.
     per_edge_aa_quad: Renderer,
     /// `fNonAABoundsFill`.
@@ -220,6 +227,22 @@ impl RendererProvider {
             vertices_renderer(layout, true, false),
             vertices_renderer(layout, true, true),
         ];
+        // Port of: src/gpu/graphite/RendererProvider.cpp#L141-L163 (chrome/m156)
+        let bitmap_text = [
+            (MaskFormat::A8, DrawTypeFlags::BITMAP_TEXT_MASK),
+            (MaskFormat::A565, DrawTypeFlags::BITMAP_TEXT_LCD),
+            (MaskFormat::Argb, DrawTypeFlags::BITMAP_TEXT_COLOR),
+        ]
+        .map(|(format, draw_types)| {
+            single_step(Arc::new(BitmapTextRenderStep::new(layout, format)), draw_types)
+        });
+        let sdf_text = [
+            single_step(Arc::new(SDFTextRenderStep::new(layout)), DrawTypeFlags::SDF_TEXT),
+            single_step(
+                Arc::new(SDFTextLCDRenderStep::new(layout)),
+                DrawTypeFlags::SDF_TEXT_LCD,
+            ),
+        ];
         let per_edge_aa_quad = single_step(
             Arc::new(PerEdgeAAQuadRenderStep::new(layout, buffer_manager)),
             DrawTypeFlags::PER_EDGE_AA_QUAD,
@@ -296,6 +319,8 @@ impl RendererProvider {
             coverage_mask,
             analytic_rrect,
             vertices,
+            bitmap_text,
+            sdf_text,
             per_edge_aa_quad,
             non_aa_bounds_fill,
             circular_arc,
@@ -325,6 +350,8 @@ impl RendererProvider {
         ]
         .into_iter()
         .chain(&self.vertices)
+        .chain(&self.bitmap_text)
+        .chain(&self.sdf_text)
         .chain(&self.stencil_tessellated_curves)
         .chain(&self.stencil_tessellated_wedges)
         .chain(&self.tessellated_strokes);
@@ -372,6 +399,26 @@ impl RendererProvider {
     #[must_use]
     pub const fn vertices(&self, has_color: bool, has_tex_coords: bool) -> &Renderer {
         &self.vertices[2 * (has_color as usize) + (has_tex_coords as usize)]
+    }
+
+    /// `bitmapText(useLCDText, format)`: the renderer of atlased bitmap text. 565 represents all
+    /// LCD rendering, regardless of the texture format.
+    // Port of: src/gpu/graphite/RendererProvider.h#L116-L124 (chrome/m156)
+    #[must_use]
+    pub fn bitmap_text(&self, use_lcd_text: bool, format: MaskFormat) -> &Renderer {
+        // We use 565 here to represent all LCD rendering, regardless of texture format
+        if use_lcd_text {
+            return &self.bitmap_text[MaskFormat::A565 as usize];
+        }
+        debug_assert_ne!(format, MaskFormat::A565);
+        &self.bitmap_text[format as usize]
+    }
+
+    /// `sdfText(useLCDText)`: the renderer of distance field text.
+    // Port of: src/gpu/graphite/RendererProvider.h#L125 (chrome/m156)
+    #[must_use]
+    pub fn sdf_text(&self, use_lcd_text: bool) -> &Renderer {
+        &self.sdf_text[usize::from(use_lcd_text)]
     }
 
     /// `fPerEdgeAAQuad`.

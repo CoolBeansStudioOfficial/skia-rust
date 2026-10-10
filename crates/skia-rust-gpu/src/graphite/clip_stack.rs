@@ -29,8 +29,8 @@
 //! - `ClipStack::clipShader()`'s shader blending, `SaveRecord::shader()` and `Clip::shader()` are
 //!   kept as `Shader` handles; the `Clip` only records whether one is present (the shader itself
 //!   is read from [`ClipStack::clip_shader_ref`]).
-//! - `Geometry::maskToDevice()` is always null here: the geometries that carry one
-//!   (`CoverageMaskShape`, analytic blurs) are not ported yet.
+//! - `Geometry::maskToDevice()` is read for the geometries that carry one (coverage masks and
+//!   text sub runs; the analytic blurs are not ported yet).
 //! - `SK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER` is not built, so `AnalyticClip` is the xform +
 //!   per-corner-radii variant.
 //!
@@ -1824,7 +1824,9 @@ struct DrawShape {
 impl DrawShape {
     // Port of: src/gpu/graphite/ClipStack.cpp#L1384-L1415 (chrome/m156)
     fn new(local_to_device: &Transform, geometry: &Geometry) -> Self {
-        // `geometry.maskToDevice()` is null for every ported geometry (see the module docs).
+        let local_to_device = geometry
+            .mask_to_device()
+            .map_or(*local_to_device, |mask_to_device| Transform::new(*mask_to_device));
         let mut shape = Shape::default();
         let mut edge_flags = EdgeFlags::ALL;
         let shape_matches_geometry;
@@ -1851,7 +1853,7 @@ impl DrawShape {
             shape.is_flood_fill() || (!shape.inverted() && (shape.is_rect() || shape.is_rrect()));
 
         Self {
-            local_to_device: *local_to_device,
+            local_to_device,
             shape,
             edge_flags,
             transformed_shape_bounds: Rect::default(),
