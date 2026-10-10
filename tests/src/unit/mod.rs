@@ -426,6 +426,8 @@ pub mod surface_test;
 #[cfg(test)]
 pub mod swizzler_test;
 #[cfg(test)]
+pub mod test_test;
+#[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
 pub mod typeface_test;

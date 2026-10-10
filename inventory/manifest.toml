@@ -49570,6 +49570,7 @@ macro = "DEF_TEST"
 source = "tests/TestTest.cpp#L97-L122"
 module = "core"
 status = "todo"
+reason = "needs CtsEnforcement (tests/CtsEnforcement.h: RunMode, eval, withWorkarounds and the API-level constants), which is not ported"
 span_hash = "b38f5f3033c73270bc0da251e3d89ed9135c0e6be74fb370c965d3a7db91fd96"
 
 [[test]]
@@ -49578,7 +49579,8 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_TEST"
 source = "tests/TestTest.cpp#L25-L27"
 module = "core"
-status = "todo"
+status = "excluded"
+reason = "DEF_CONDITIONAL_TEST with the condition 1 == 0: Skia registers the test disabled, so it never runs and has no behavior to port"
 span_hash = "ef3757e766be4ceb0f2a6e86ec9defa267354325b1504e7d51ffe22ab9212b30"
 
 [[test]]
@@ -49667,7 +49669,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/TestTest.cpp#L15-L17"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "09805c99f5f4ce3e5c88942997bd2df18a97ccbd19b37995896789887804ee0e"
 
 [[test]]
@@ -49676,7 +49678,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_TEST"
 source = "tests/TestTest.cpp#L20-L22"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2d35444eb3652c6687b78abe90a178c603d27f5c2d5f25df7d3403e3dc5e84dd"
 
 [[test]]
