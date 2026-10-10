@@ -7,7 +7,7 @@
 //!
 //! Ported here: the factory and reflection tests, the shader, color filter and blender tests and
 //! the builders. Not ported yet, and left `todo` in the manifest with the reason:
-//! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Graphite tests.
+//! - `SkRuntimeShaderSampleCoords` (it needs `GrSkSLFP`, Ganesh) and the Ganesh variants.
 
 // The ported tests keep the C++ declaration order and function lengths.
 #![allow(
