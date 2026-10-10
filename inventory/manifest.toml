@@ -28904,6 +28904,7 @@ macro = "DEF_TEST"
 source = "tests/AnnotationTest.cpp#L39-L52"
 module = "core"
 status = "todo"
+reason = "needs SkAnnotateRectWithURL (SkAnnotation), which is not ported"
 span_hash = "46a11585f2c3ce6f2dd89608a3c935532e31d950b8b3a56e4aafc32ea625900b"
 
 [[test]]
@@ -32512,6 +32513,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenableFactoryToName.cpp#L33-L42"
 module = "core"
 status = "todo"
+reason = "its flattenable round trips use SkImageFilters::Blur and SkImage::makeShader: image filters are not ported"
 span_hash = "c43ee6c76e1e11a5da75963e6bee4531148b083c16b62ce17ebd4171291fa7cd"
 
 [[test]]
@@ -32521,6 +32523,7 @@ macro = "DEF_TEST"
 source = "tests/FlattenableNameToFactory.cpp#L11-L24"
 module = "core"
 status = "todo"
+reason = "SkFlattenable::NameToFactory needs a registry that holds the names of the shader factories (SkImageShader); FlattenableRegistry has per-kind tables but no populated default registry"
 span_hash = "016aef745cf3e863ee99b05782f6f037361d2e1486a3caeab784acd5e2d67930"
 
 [[test]]
@@ -33303,6 +33306,7 @@ macro = "DEF_TEST"
 source = "tests/FrontBufferedStreamTest.cpp#L293-L301"
 module = "core"
 status = "todo"
+reason = "FrontBufferedStream::make returns a Box<dyn StreamRewindable> that is not Send, but Codec::make_from_stream requires Box<dyn Stream + Send>"
 span_hash = "74f7d21d70e673c241063595c2d126279ad1fee087bd320425d49f08730cd381"
 
 [[test]]
@@ -40840,6 +40844,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L133-L147"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "b854aff823cdc614b5ff6ad5a75aad0dca6cff2d3ba7b374609d64639536299a"
 
 [[test]]
@@ -40849,6 +40854,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L118-L131"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "16619ce0428b8878ddb3faf740a4ad448a67a51bcf5e1db0ecd298de9b7db930"
 
 [[test]]
@@ -40858,6 +40864,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/RawPtrTest.cpp#L57-L72"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "e5a80a311aec1e6b92edc6a72e0c490941a913660027db490129184ba68fa9c9"
 
 [[test]]
@@ -40867,6 +40874,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L98-L102"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "21e052e6116059f4772f03ca60bfab13e21cd57f1736dd3d349a930d054f5f78"
 
 [[test]]
@@ -40876,6 +40884,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L191-L200"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "7e85c54c39528ae81e1009d82f3937c311969bd9057e4f50f5139a0847573da9"
 
 [[test]]
@@ -40885,6 +40894,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L87-L92"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "75dafc457d5472c492eb603736675346b522d040f8794caf575f61a04cc6838d"
 
 [[test]]
@@ -40894,6 +40904,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L248-L268"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "674cb2d70c4fcfedba0558aa44b6f6fc3cafdc1ef1ffc50baadcc6836cea0487"
 
 [[test]]
@@ -40903,6 +40914,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L104-L108"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "7403ba8979a9d520b2b229ed4e20e211418b3054195a53eebf5d52f465f1e3eb"
 
 [[test]]
@@ -40912,6 +40924,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L202-L246"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "d1e83e572bc43213809c20ebf5a000fff645d42342a8556f30d7f2692263cde5"
 
 [[test]]
@@ -40921,6 +40934,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L110-L116"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "c73bfbc62e8e6574339e5a96e916c9f2d2d294fdac30b18d409f4916dfd68782"
 
 [[test]]
@@ -40930,6 +40944,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L270-L289"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "36ef8e09b6f0ed7f7c40cef07b0353f48c812493b3a63f4f13f191d5727dbd06"
 
 [[test]]
@@ -40939,6 +40954,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L149-L161"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "182cb05cf39391563ad0474f85b2d34e2243c70749754b82c28adaf0969951d0"
 
 [[test]]
@@ -40948,6 +40964,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L301-L324"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "1da6a6d78491afb2dbf149e2f2feda48af1ac3b588518e57837afd3b8dbf6cff"
 
 [[test]]
@@ -40957,6 +40974,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L163-L189"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "074477497aba9136c9e4154eb304859812286e57e9676354bf0ea0227b8ed9fb"
 
 [[test]]
@@ -40966,6 +40984,7 @@ macro = "DEF_TEST"
 source = "tests/RawPtrTest.cpp#L291-L299"
 module = "core"
 status = "todo"
+reason = "tests partition_alloc's raw_ptr (src/partition_alloc/raw_ptr.h, dangling-pointer detection and raw_ref), which is not ported"
 span_hash = "35b26acadd9ad6e8d08abc3ce363141f55149773afea977fd3c154d42ef48fd2"
 
 [[test]]
@@ -50473,6 +50492,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L187-L304"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "e965c70639197334bfec5be88306295e8dcfcbf288779c1e854b437280696acb"
 
 [[test]]
@@ -50482,6 +50502,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L479-L613"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "2bd04f9e1a224452e707353a32d204c46e7d012f477185da9f36325eb2e9b490"
 
 [[test]]
@@ -50491,6 +50512,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L306-L477"
 module = "core"
 status = "todo"
+reason = "tests the C++ range adaptors SkEnumerate, SkZip and SkMakeZip, which have no port (Rust code uses iterator adaptors)"
 span_hash = "b758b4765946ae78a1f1b6c70c9d83be585021e56852c9e79f79c84d84d30edc"
 
 [[test]]
@@ -50500,6 +50522,7 @@ macro = "DEF_TEST"
 source = "tests/UtilsTest.cpp#L181-L185"
 module = "core"
 status = "todo"
+reason = "tests the C++ utility templates test_search, test_autounref and test_autostarray (SkTSearch, SkAutoUnref, SkAutoSTArray), which have no port"
 span_hash = "d1b1e1170f4b7487c583f780416799a781ad07ec52f526413a6aeba209ee5ced"
 
 [[test]]
