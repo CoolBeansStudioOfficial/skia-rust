@@ -4,6 +4,8 @@
 // dead_code: each test crate uses a subset of these helpers.
 #![allow(dead_code, clippy::cast_sign_loss)]
 
+pub mod lossy_corpus;
+
 use std::fmt::Write as _;
 use std::path::PathBuf;
 

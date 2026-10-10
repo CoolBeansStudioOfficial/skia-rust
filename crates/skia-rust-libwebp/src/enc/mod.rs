@@ -15,6 +15,7 @@ pub mod entropy;
 pub mod histogram;
 pub mod huffman;
 pub mod palette;
+pub mod picture;
 pub mod predictor;
 pub mod prefix;
 pub mod tables;
