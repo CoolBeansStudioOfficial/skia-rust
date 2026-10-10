@@ -218,7 +218,10 @@ macro_rules! def_graphite_adapter_test_with_options {
     ($(#[$attr:meta])* $name:ident, |$options:ident| $set_options:block,
      |$reporter:ident, $context:ident| $body:block) => {
         #[test]
-        #[ignore = "needs a real adapter in CI (lavapipe job)"]
+        #[cfg_attr(
+            not(skia_rust_adapter_tests),
+            ignore = "needs a real adapter in CI (lavapipe job)"
+        )]
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {

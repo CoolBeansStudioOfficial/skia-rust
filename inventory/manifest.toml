@@ -31487,8 +31487,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/DirectMaskLimitTest.cpp#L109-L135"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with cargo test -p skia-rust-tests --lib -- --ignored"
+status = "passing"
 span_hash = "d60a7f6964eacd0370483139ae0ac08d14cbc95365f47669973a4ceb1ccd1271"
 
 [[test]]
@@ -51435,8 +51434,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L631-L701"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "71ebc078afa10a0673f3d11fd65326f47fa68b58e70f74fdc90d216f81507c75"
 
 [[test]]
@@ -51445,8 +51443,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L593-L627"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "ba36733016829de95dc19112dc325b7f271fbe64b2a21b8bc88f44a32e101fd2"
 
 [[test]]
@@ -51455,8 +51452,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L402-L422"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "de04b3096e588bdc693ed4ef28b9192f86b7262d1a48c48fe1f8986ad45a4f28"
 
 [[test]]
@@ -51465,8 +51461,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L328-L400"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "077df3d2b33c874d40de04ae74756b89a43643db7ea5a6b432f670b18f5230e9"
 
 [[test]]
@@ -51475,8 +51470,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L242-L326"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "d38bef6a3fba0b5e3c204d0cc8af6f60f1470308e73af8dcdacc9fb1fdfd4828"
 
 [[test]]
@@ -51485,8 +51479,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L519-L590"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "72f962a84f1fed8e6461f64c866f0d21677a725be98e26c46a7c9f83c0bdee49"
 
 [[test]]
@@ -51495,8 +51488,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/GraphitePromiseImageTest.cpp#L424-L517"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "89ca76331d9bec0a6872e7e8c8bc5d5ca2dedf382fc13d92ddf313398358a332"
 
 [[test]]
@@ -51647,8 +51639,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageOriginTest.cpp#L171-L174"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "21a2643b561da6a470acd3962f270a6b13e019742c941cfcb650051309bd1173"
 
 [[test]]
@@ -51657,8 +51648,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageOriginTest.cpp#L176-L179"
 module = "gpu"
-status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); ported and passing on lavapipe with `cargo test -p skia-rust-tests --lib -- --ignored`"
+status = "passing"
 span_hash = "91fd122497c76c796b369927d5d7ec970dd692cd42f64cdf46cd8179577f755d"
 
 [[test]]
