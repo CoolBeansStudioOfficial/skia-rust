@@ -1,0 +1,18 @@
+[package]
+name = "skia-rust-resources"
+description = "Resource providers and image assets of skia-rust (skresources): files, data URIs, caching, image and multi-frame assets"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-codec.workspace = true
+skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
+
+[lints]
+workspace = true

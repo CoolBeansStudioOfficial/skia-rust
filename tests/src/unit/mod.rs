@@ -154,9 +154,9 @@ pub mod inf_rect_test;
 pub mod inset_convex_poly_test;
 #[cfg(test)]
 pub mod invalid_indexed_png_test;
+pub mod is_closed_single_contour_test;
 #[cfg(test)]
 pub mod json_test;
-pub mod is_closed_single_contour_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
@@ -378,6 +378,8 @@ pub mod shadow_test;
 pub mod simplify_paint_test;
 #[cfg(test)]
 pub mod size_test;
+#[cfg(test)]
+pub mod sk_base64_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]

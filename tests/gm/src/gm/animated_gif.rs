@@ -5,18 +5,25 @@
 // --animatedGif resource (images/test640x479.gif). The GM is drawn at its first frame, as the
 // golden is; the animation (onAnimate) is not run.
 //
-// `AnimCodecPlayerExifGM` (the other GM in that file) needs SkAnimCodecPlayer, which is not ported.
+// `AnimCodecPlayerExifGM` (the other GMs in that file) is ported below, with SkAnimCodecPlayer.
 
 // The C++ converts between int and scalar, and between indices, as written: the sizes and frame
 // indices here are small, so the conversions are exact.
-#![allow(clippy::cast_precision_loss, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation
+)]
 
 use skia_rust_codec::codec::{FrameInfo, NO_FRAME, Options, Result as CodecResult};
 use skia_rust_codec::{Codec, decoders};
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::point::Point;
+use skia_rust_core::size::ISize;
 use skia_rust_core::stream::MemoryStream;
+use skia_rust_resources::AnimCodecPlayer;
 
 use crate::prelude::*;
 use crate::tool_utils::get_resource_as_data;
@@ -164,3 +171,109 @@ impl GM for AnimatedGifGm {
 }
 
 crate::def_gm!(AnimatedGifGM, AnimatedGifGm::new());
+
+// Port of: gm/animated_gif.cpp#L179-L245 (AnimCodecPlayerExifGM, chrome/m156), under
+// SK_ENABLE_SKOTTIE. Draws one frame of an animation per grid cell, using the player.
+struct AnimCodecPlayerExifGm {
+    path: &'static str,
+    size: ISize,
+    player: Option<AnimCodecPlayer>,
+    frame_infos: Vec<FrameInfo>,
+}
+
+impl AnimCodecPlayerExifGm {
+    fn new(path: &'static str) -> Self {
+        Self {
+            path,
+            size: ISize::new(0, 0),
+            player: None,
+            frame_infos: Vec::new(),
+        }
+    }
+
+    // Port of: gm/animated_gif.cpp#L181-L200 (init)
+    fn init(&mut self) {
+        if self.player.is_some() {
+            return;
+        }
+        let Some(data) = get_resource_as_data(self.path) else {
+            return;
+        };
+        let Ok(mut codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders())
+        else {
+            return;
+        };
+        self.frame_infos = codec.frame_infos();
+        let player = AnimCodecPlayer::new(codec);
+
+        // We'll draw one of each frame, so make it big enough to hold them all in a grid. The
+        // grid will be roughly square, with "factor" frames per row and up to "factor" rows.
+        let count = self.frame_infos.len();
+        let root = (count as f32).sqrt();
+        let factor = root.ceil() as i32;
+        let image_size = player.dimensions();
+        self.size.width = image_size.width * factor;
+        self.size.height = image_size.height * ((count as f32 / factor as f32).ceil() as i32);
+        self.player = Some(player);
+    }
+}
+
+impl GM for AnimCodecPlayerExifGm {
+    // Port of: gm/animated_gif.cpp#L202-L205 (getName)
+    fn name(&self) -> String {
+        let basename = self.path.rsplit('/').next().unwrap_or(self.path);
+        format!("AnimCodecPlayerExif_{basename}")
+    }
+
+    // Port of: gm/animated_gif.cpp#L207-L210 (getISize)
+    fn size(&mut self) -> ISize {
+        self.init();
+        self.size
+    }
+
+    // Port of: gm/animated_gif.cpp#L212-L243 (onDraw)
+    fn on_draw_with_error(&mut self, canvas: &Canvas, _error_msg: &mut String) -> DrawResult {
+        self.init();
+        let Some(player) = self.player.as_mut() else {
+            return DrawResult::Ok;
+        };
+
+        let root = (self.frame_infos.len() as f32).sqrt();
+        let factor = root.ceil() as i32;
+        let dimensions = player.dimensions();
+
+        let mut duration: u32 = 0;
+        let mut frame: usize = 0;
+        while duration < player.duration() {
+            let saved = canvas.save();
+            let frame_i32 = i32::try_from(frame).unwrap_or(i32::MAX);
+            let x_translate = (frame_i32 % factor) * dimensions.width;
+            let y_translate = (frame_i32 / factor) * dimensions.height;
+            canvas.translate((x_translate as f32, y_translate as f32));
+
+            if let Some(image) = player.get_frame() {
+                canvas.draw_image(&image, Point { x: 0.0, y: 0.0 }, None);
+            }
+            // The frame durations are the codec's, not the player's end times.
+            let frame_duration = self.frame_infos[frame].duration;
+            duration += u32::try_from(frame_duration).unwrap_or(0);
+            player.seek(duration);
+            canvas.restore_to_count(saved);
+            frame += 1;
+        }
+        DrawResult::Ok
+    }
+}
+
+crate::def_gm!(
+    AnimCodecPlayerExifGM_required_webp = "AnimCodecPlayerExifGM(\"images/required.webp\")",
+    AnimCodecPlayerExifGm::new("images/required.webp")
+);
+crate::def_gm!(
+    AnimCodecPlayerExifGM_required_gif = "AnimCodecPlayerExifGM(\"images/required.gif\")",
+    AnimCodecPlayerExifGm::new("images/required.gif")
+);
+crate::def_gm!(
+    AnimCodecPlayerExifGM_stoplight_h_webp = "AnimCodecPlayerExifGM(\"images/stoplight_h.webp\")",
+    AnimCodecPlayerExifGm::new("images/stoplight_h.webp")
+);
