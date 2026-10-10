@@ -314,12 +314,11 @@ impl CodecImpl for IcoCodec {
     ) -> Result {
         let mut index = 0;
         while let Some(i) = self.choose_codec(dst_info.dimensions(), index) {
-            // The guard only borrows the destination for the call, so it is dropped at once: the
-            // embedded codec keeps the decode's state, and the destination is passed again to
+            // The embedded codec keeps only the decode's state; the destination is passed again to
             // `on_incremental_decode`.
-            let started = self.embedded[i]
-                .start_incremental_decode(dst_info, dst, row_bytes, Some(options))
-                .is_ok();
+            let started =
+                self.embedded[i].start_incremental_decode(dst_info, dst, row_bytes, Some(options))
+                    == Result::Success;
             if started {
                 self.curr = Some(i);
                 return Result::Success;
@@ -339,7 +338,7 @@ impl CodecImpl for IcoCodec {
     ) -> Result {
         match self.curr {
             Some(i) => {
-                let (result, rows) = self.embedded[i].incremental_decode_imp(dst);
+                let (result, rows) = self.embedded[i].incremental_decode_rows(dst);
                 *rows_decoded = rows;
                 result
             }

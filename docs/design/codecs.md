@@ -51,8 +51,8 @@ source for decode/encode calls and resource names, not from running it; read the
    `images::deferred_from_encoded_data`. Inside, SkCodec's base/virtual split becomes a
    `CodecBase` struct plus a `CodecImpl` trait whose methods receive `&mut CodecBase` (§5).
    Two deviations go to `docs/API_MAPPING.md`: streams must be `Send` (so a codec can back a
-   shared lazy image), and incremental decoding returns a guard that borrows the destination
-   pixels instead of storing a raw pointer.
+   shared lazy image), and the incremental decode takes the destination on each call instead
+   of storing a raw pointer (§5.2).
 7. **Lazy images live in core, codec support in codec.** `ImageGenerator` (trait) and
    `ImageLazy` (`SkImage_Lazy`) go in core. `CodecImageGenerator`,
    `image_generators::make_from_encoded` and `images::deferred_from_encoded_data` go in
@@ -373,11 +373,13 @@ pub(crate) trait CodecImpl {
   `unique_ptr` there, and so do we.
 - The pixel destination is `&mut [u8]` + `row_bytes`. Fills (`SkSampler::Fill`) and swizzles
   index the slice with Skia's offsets.
-- **Incremental decoding** keeps the destination between calls. skia-safe's
-  `start_incremental_decode(&mut self, …, dst: &mut [u8], …) -> Result` hides a stored pointer.
-  Here it returns `Result<IncrementalDecode<'_, '_>, Result>`, a guard that borrows both the
-  codec and `dst` and has `incremental_decode(&mut self) -> (Result, Option<usize>)`. Ported
-  tests change call sites mechanically. Record this in API_MAPPING.
+- **Incremental decoding** keeps no reference to the destination. skia-safe's
+  `start_incremental_decode(&mut self, …, dst: &mut [u8], …) -> Result` is kept, and so is
+  `incremental_decode(&mut self) -> (Result, Option<usize>)` except that it takes the destination
+  again, `incremental_decode(&mut self, dst: &mut [u8])`, as `CodecImpl::on_incremental_decode`
+  already does. The codec stores only Skia's `fStartedIncrementalDecode` flag (cleared by a
+  rewind), so `get_frame_count` and `get_pixels` can run between the calls, as in C++. A guard
+  that borrowed the codec for the whole decode blocked that. Record this in API_MAPPING.
 - **Streams.** `Codec` owns a `Box<dyn Stream + Send + 'a>` (core's `Stream`, with Skia's
   optional `rewind`/`seek`/`peek`/`get_memory_base`/`get_length`). skia-safe's
   `from_stream<T: io::Read + io::Seek>` wraps the reader in an adapter that implements
