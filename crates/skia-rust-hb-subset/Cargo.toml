@@ -1,0 +1,14 @@
+[package]
+name = "skia-rust-hb-subset"
+description = "Port of the parts of HarfBuzz's hb-subset (harfbuzz 9cb1fee5) that Skia's PDF backend uses, byte-exact"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true
