@@ -4,3 +4,5 @@
 pub mod skottie;
 #[cfg(test)]
 pub mod sksg;
+#[cfg(test)]
+pub mod skunicode;
