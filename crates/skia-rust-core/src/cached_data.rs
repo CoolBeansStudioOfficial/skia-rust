@@ -183,11 +183,7 @@ impl CachedData {
     #[must_use]
     pub fn new_discardable(size: usize, dm: Box<dyn DiscardableMemory>) -> Arc<Self> {
         let has_data = dm.data().is_some();
-        Arc::new(Self::with_storage(
-            size,
-            Storage::Discardable(dm),
-            has_data,
-        ))
+        Arc::new(Self::with_storage(size, Storage::Discardable(dm), has_data))
     }
 
     fn with_storage(size: usize, storage: Storage, has_data: bool) -> Self {
