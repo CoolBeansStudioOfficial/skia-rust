@@ -64,11 +64,11 @@ fn fills_a_rect() {
 #[test]
 fn style_attribute_and_inheritance() {
     // fill comes from the group's style, the circle overrides stroke only.
-    let svg = r##"<svg width="20" height="20">
+    let svg = r#"<svg width="20" height="20">
         <g style="fill: #00ff00; stroke:none">
             <circle cx="10" cy="10" r="6"/>
         </g>
-    </svg>"##;
+    </svg>"#;
     let px = render(svg, 20, 20);
     assert_eq!(at(&px, 20, 10, 10), Color::from_argb(0xff, 0, 0xff, 0));
     assert_eq!(at(&px, 20, 0, 0), Color::from_argb(0, 0, 0, 0));
@@ -77,9 +77,9 @@ fn style_attribute_and_inheritance() {
 #[test]
 fn transform_and_view_box() {
     // The view box maps 10x10 user units to the 20x20 viewport.
-    let svg = r##"<svg width="20" height="20" viewBox="0 0 10 10">
+    let svg = r#"<svg width="20" height="20" viewBox="0 0 10 10">
         <rect width="5" height="5" fill="blue" transform="translate(5,5)"/>
-    </svg>"##;
+    </svg>"#;
     let px = render(svg, 20, 20);
     assert_eq!(at(&px, 20, 15, 15), Color::from_argb(0xff, 0, 0, 0xff));
     assert_eq!(at(&px, 20, 5, 5), Color::from_argb(0, 0, 0, 0));
@@ -107,7 +107,7 @@ fn use_cycles_terminate() {
 
 #[test]
 fn finds_nodes_by_id() {
-    let dom = Dom::from_str(r##"<svg><g id="x"><path id="p" d="M0 0L1 1"/></g></svg>"##).unwrap();
+    let dom = Dom::from_str(r#"<svg><g id="x"><path id="p" d="M0 0L1 1"/></g></svg>"#).unwrap();
     assert_eq!(dom.find_node_by_id("x").unwrap().tag(), Tag::G);
     assert_eq!(dom.find_node_by_id("p").unwrap().tag(), Tag::Path);
     assert!(dom.find_node_by_id("nope").is_none());

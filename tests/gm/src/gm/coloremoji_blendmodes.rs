@@ -9,6 +9,8 @@
 
 // The int-to-scalar casts of small constants mirror the C++ arithmetic of the GM.
 #![allow(clippy::cast_precision_loss)]
+// The GM body and its mode table mirror the C++ function.
+#![allow(clippy::too_many_lines, clippy::items_after_statements)]
 // Single-letter names mirror the C++ GM (w, h, x, y).
 #![allow(clippy::many_single_char_names)]
 

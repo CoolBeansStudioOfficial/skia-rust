@@ -91,7 +91,7 @@ impl GM for ScaledEmojiGm {
                 if ch != i32::from(b' ') {
                     // appendUnichar
                     self.strip_spaces_sample_text
-                        .push(char::from_u32(ch as u32).unwrap_or('\u{FFFD}'));
+                        .push(char::from_u32(ch.cast_unsigned()).unwrap_or('\u{FFFD}'));
                     count += 1;
                 }
             }
