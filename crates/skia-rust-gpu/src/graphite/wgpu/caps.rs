@@ -2005,10 +2005,6 @@ fn lcm(a: usize, b: usize) -> Option<usize> {
 }
 
 impl Caps for WgpuCaps {
-    fn get_default_storage_texture_info(&self, color_type: ColorType) -> TextureInfo {
-        WgpuCaps::get_default_storage_texture_info(self, color_type)
-    }
-
     fn make_graphics_pipeline_key(
         &self,
         pipeline_desc: &GraphicsPipelineDesc,

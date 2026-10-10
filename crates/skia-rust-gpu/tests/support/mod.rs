@@ -14,7 +14,6 @@ use std::any::Any;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use skia_rust_core::color_type::ColorType;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::size::ISize;
@@ -202,10 +201,6 @@ impl Default for MockCaps {
 impl Caps for MockCaps {
     fn max_texture_size(&self) -> i32 {
         4096
-    }
-
-    fn get_default_storage_texture_info(&self, _color_type: ColorType) -> TextureInfo {
-        todo!()
     }
 
     fn get_dst_read_strategy(&self) -> DstReadStrategy {
