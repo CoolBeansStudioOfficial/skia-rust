@@ -8,6 +8,7 @@
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image::Image;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::IPoint;
 
@@ -33,6 +34,22 @@ pub fn equal_pixels(a: &Pixmap<'_>, b: &Pixmap<'_>) -> bool {
         }
     }
     true
+}
+
+/// `ToolUtils::equal_pixels(const SkImage*, const SkImage*)`: the two images, made raster, have the
+/// same pixels (see [`equal_pixels`]). An image that cannot be made raster or peeked is not equal
+/// (C++ aborts on a null image here).
+// Port of: tools/ToolUtils.cpp#L487-L500 (chrome/m156)
+#[must_use]
+pub fn equal_pixels_image(a: &Image, b: &Image) -> bool {
+    // ensure that peekPixels will succeed
+    let (Some(raster_a), Some(raster_b)) = (a.to_raster_image(), b.to_raster_image()) else {
+        return false;
+    };
+    let (Some(pm0), Some(pm1)) = (raster_a.peek_pixels(), raster_b.peek_pixels()) else {
+        return false;
+    };
+    equal_pixels(&pm0, &pm1)
 }
 
 /// `ToolUtils::alphatype_name`.

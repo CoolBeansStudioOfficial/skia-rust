@@ -35882,8 +35882,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L211-L213"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs the draw_image_test_pattern and assert_equal helpers and ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
+status = "passing"
 span_hash = "da926d8e0ffe52f76ed1c34d4c6785e82a2cbb0e93b402d49e5b25415f0b2fce"
 
 [[test]]
@@ -36164,8 +36163,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1687-L1700"
 module = "codec"
-status = "todo"
-reason = "not ported in this sweep: needs ToolUtils::equal_pixels for SkImage (makeRasterImage + peekPixels), which tool_utils does not have yet"
+status = "passing"
 span_hash = "47fdc75248424ed204f93ab1b2b4ae749a2897cf2230bb93c0541853d2a8ae27"
 
 [[test]]
