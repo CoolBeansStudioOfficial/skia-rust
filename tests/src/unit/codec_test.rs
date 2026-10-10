@@ -2641,3 +2641,46 @@ def_test!(Codec_EncodeICC, |r| {
     test_encode_icc(r, EncodedImageFormat::JPEG);
     test_encode_icc(r, EncodedImageFormat::WEBP);
 });
+
+// Port of: tests/CodecTest.cpp#L2614-L2644 (chrome/m156)
+def_test!(jpeg_invalid_stream_state, |r| {
+    // Invalid/corrupted jpeg data.
+    let path = "invalid_images/b464333052.jpg";
+    let Some(data) = get_resource_as_data(path) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    let Some(mut codec) = AndroidCodec::make_from_stream(MemoryStream::make_copy(&data)) else {
+        reporter_assert!(r, false);
+        return;
+    };
+    reporter_assert!(r, !codec.codec().needs_rewind());
+
+    let info = codec.info();
+    let mut pm = Pixels::alloc(&info);
+    let row_bytes = pm.row_bytes;
+
+    // Attempt a decode at an odd size, to exercise the sampledDecode path.
+    let opts = AndroidOptions {
+        sample_size: 7,
+        ..AndroidOptions::default()
+    };
+    let sz = codec.get_sampled_dimensions(opts.sample_size);
+    let res = codec.get_android_pixels(
+        &info.with_dimensions(sz),
+        &mut pm.data,
+        row_bytes,
+        Some(&opts),
+    );
+    // Expected to fail due to bad data.
+    reporter_assert!(r, res != Result::Success);
+    // But the stream should be rewinded if we attempt other operations.
+    reporter_assert!(r, codec.codec().needs_rewind());
+
+    // Attempt a decode at the natural size, to exercize the getPixels path.
+    let res = codec.get_android_pixels(&info, &mut pm.data, row_bytes, None);
+    // Expected to fail due to bad data.
+    reporter_assert!(r, res != Result::Success);
+    // But the stream should be rewinded if we attempt other operations.
+    reporter_assert!(r, codec.codec().needs_rewind());
+});

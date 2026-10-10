@@ -3,8 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: src/codec/SkWebpCodec.cpp (chrome/m156) and src/codec/SkWebpCodec.h, the WebP codec on
 // top of skia-rust-libwebp (demux for the container and frames, the incremental decoder for the
-// pixels). The EXIF orientation is not read yet: `SkParseEncodedOrigin` needs `SkExif`, which is
-// not ported, so the origin stays top-left.
+// pixels). The origin comes from the EXIF chunk through `SkParseEncodedOrigin`.
 
 //! Skia's WebP codec: `SkWebpCodec`, with its animation frames, scaling and subset decodes, and
 //! the blend of an animated frame with the frame before it.
@@ -820,6 +819,16 @@ pub fn make_from_stream<'a>(
         }
     }
 
+    // The EXIF orientation, if the file has an EXIF chunk that gives one. The origin defaults to
+    // kDefault_SkEncodedOrigin (top-left).
+    // Port of: src/codec/SkWebpCodec.cpp#L289-L296 (chrome/m156)
+    let mut origin = EncodedOrigin::TopLeft;
+    if let Some(iter) = demuxer.get_chunk(*b"EXIF", 1)
+        && let Some(parsed) = crate::exif::parse_encoded_origin(iter.chunk)
+    {
+        origin = parsed;
+    }
+
     // Get the first frame and its "features" to determine the color and alpha types.
     let Some(frame) = demuxer.get_frame(1) else {
         return Err(CodecResult::IncompleteInput);
@@ -861,7 +870,7 @@ pub fn make_from_stream<'a>(
         encoded_info,
         Box::new(imp),
         None,
-        EncodedOrigin::TopLeft,
+        origin,
         Some(SkcmsPixelFormat::Bgra8888),
     ))
 }

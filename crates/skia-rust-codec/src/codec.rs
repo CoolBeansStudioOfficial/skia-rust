@@ -782,6 +782,15 @@ impl<'a> Codec<'a> {
         self.imp.on_get_encoded_data(&mut self.base)
     }
 
+    /// Whether the next decode will rewind the stream first: the state `SkCodec::fNeedsRewind`
+    /// holds. The tests read it through `SkCodecPriv::needsRewind` (tests/CodecTest.cpp#L2609-L2612),
+    /// a friend of `SkCodec`.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn needs_rewind(&self) -> bool {
+        self.base.needs_rewind
+    }
+
     /// Port of `SkCodec::getFrameCount`: the number of frames. A codec that reads its input
     /// incrementally may report more frames later.
     // Port of: include/codec/SkCodec.h#L670-L672 (chrome/m156)

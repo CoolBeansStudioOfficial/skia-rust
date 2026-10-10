@@ -137,6 +137,7 @@ pub mod image_is_opaque_test;
 pub mod image_new_shader_test;
 #[cfg(test)]
 pub mod image_test;
+pub mod indexed_png_overflow_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
