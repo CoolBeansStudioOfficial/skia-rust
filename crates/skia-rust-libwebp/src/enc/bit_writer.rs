@@ -11,6 +11,40 @@
 //! `NumBytes` is `ceil(total_bits / 8)` in both models. This port keeps a byte-granular
 //! accumulator, which produces the same bytes and the same `num_bytes()` at every point.
 
+// Module-level clippy allows. The C arithmetic mixes int, uint32_t, size_t and float, and the
+// casts below are the width and sign conversions of the C source. The index loops, `if`/`else`
+// chains and exact float comparisons keep the C control flow and evaluation order, so that the
+// code can be read against the C source; they are not simplified.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::needless_range_loop,
+    clippy::float_cmp,
+    clippy::manual_midpoint,
+    clippy::redundant_else,
+    clippy::single_match,
+    clippy::items_after_statements,
+    clippy::let_and_return,
+    clippy::needless_for_each,
+    clippy::while_let_loop,
+    clippy::approx_constant,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::explicit_iter_loop,
+    clippy::collapsible_else_if,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
+
 /// Port of `VP8LBitWriter`: a bit accumulator in front of a byte buffer.
 #[derive(Clone, Debug, Default)]
 pub struct BitWriter {

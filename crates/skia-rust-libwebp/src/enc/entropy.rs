@@ -11,6 +11,40 @@
 //! `float`, and the `double` operations of `FastSLog2Slow` for large counts. Rust never contracts
 //! `a * b + c` into an FMA, which matches the `-ffp-contract=off` reference build.
 
+// Module-level clippy allows. The C arithmetic mixes int, uint32_t, size_t and float, and the
+// casts below are the width and sign conversions of the C source. The index loops, `if`/`else`
+// chains and exact float comparisons keep the C control flow and evaluation order, so that the
+// code can be read against the C source; they are not simplified.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::needless_range_loop,
+    clippy::float_cmp,
+    clippy::manual_midpoint,
+    clippy::redundant_else,
+    clippy::single_match,
+    clippy::items_after_statements,
+    clippy::let_and_return,
+    clippy::needless_for_each,
+    clippy::while_let_loop,
+    clippy::approx_constant,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::explicit_iter_loop,
+    clippy::collapsible_else_if,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
+
 use super::tables::{K_LOG2_TABLE, K_SLOG2_TABLE};
 
 /// Port of `VP8L_NON_TRIVIAL_SYM`.
@@ -22,6 +56,8 @@ const LOG_2_RECIPROCAL: f64 = 1.442_695_040_888_963_4;
 const LOG_LOOKUP_IDX_MAX: u32 = 256;
 /// Port of `APPROX_LOG_WITH_CORRECTION_MAX`.
 const APPROX_LOG_WITH_CORRECTION_MAX: u32 = 65536;
+/// Port of `APPROX_LOG_MAX`.
+const APPROX_LOG_MAX: u32 = 4096;
 
 /// Port of `BitsLog2Floor`: the index of the highest set bit of `n` (0 for 0, as the C fallback).
 #[must_use]
@@ -60,6 +96,36 @@ pub fn fast_slog2(v: u32) -> f32 {
     }
 }
 
+/// Port of `FastLog2Slow_C`: `log2(v)` for `v >= 256`.
+fn fast_log2_slow(v: u32) -> f32 {
+    if v < APPROX_LOG_WITH_CORRECTION_MAX {
+        let log_cnt = bits_log2_floor(v) - 7;
+        let y: u32 = 1 << log_cnt;
+        let orig_v = v;
+        let shifted = (v >> log_cnt) as usize;
+        // C: `log_2 = kLog2Table[v] + log_cnt;` is a float sum, widened to double.
+        let mut log_2 = f64::from(K_LOG2_TABLE[shifted] + log_cnt as f32);
+        if orig_v >= APPROX_LOG_MAX {
+            let correction = ((23 * (orig_v & (y - 1))) >> 4) as i32;
+            log_2 += f64::from(correction) / f64::from(orig_v);
+        }
+        log_2 as f32
+    } else {
+        // C: `(float)(LOG_2_RECIPROCAL * log((double)v))`.
+        (LOG_2_RECIPROCAL * f64::from(v).ln()) as f32
+    }
+}
+
+/// Port of `VP8LFastLog2`.
+#[must_use]
+pub fn fast_log2(v: u32) -> f32 {
+    if v < LOG_LOOKUP_IDX_MAX {
+        K_LOG2_TABLE[v as usize]
+    } else {
+        fast_log2_slow(v)
+    }
+}
+
 /// Port of `VP8LBitEntropy`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BitEntropy {
@@ -74,7 +140,13 @@ impl BitEntropy {
     /// Port of `VP8LBitEntropyInit`.
     #[must_use]
     pub fn new() -> Self {
-        Self { entropy: 0.0, sum: 0, nonzeros: 0, max_val: 0, nonzero_code: NON_TRIVIAL_SYM }
+        Self {
+            entropy: 0.0,
+            sum: 0,
+            nonzeros: 0,
+            max_val: 0,
+            nonzero_code: NON_TRIVIAL_SYM,
+        }
     }
 }
 
@@ -123,7 +195,9 @@ fn get_entropy_unrefined_helper(
 ) {
     let streak = i as i32 - *i_prev as i32;
     if *val_prev != 0 {
-        bit_entropy.sum = bit_entropy.sum.wrapping_add(val_prev.wrapping_mul(streak as u32));
+        bit_entropy.sum = bit_entropy
+            .sum
+            .wrapping_add(val_prev.wrapping_mul(streak as u32));
         bit_entropy.nonzeros += streak;
         bit_entropy.nonzero_code = *i_prev as u32;
         bit_entropy.entropy -= fast_slog2(*val_prev) * streak as f32;
@@ -148,17 +222,35 @@ pub fn get_entropy_unrefined(x: &[u32], length: usize) -> (BitEntropy, Streaks) 
     for i in 1..length {
         let xi = x[i];
         if xi != x_prev {
-            get_entropy_unrefined_helper(xi, i, &mut x_prev, &mut i_prev, &mut bit_entropy, &mut stats);
+            get_entropy_unrefined_helper(
+                xi,
+                i,
+                &mut x_prev,
+                &mut i_prev,
+                &mut bit_entropy,
+                &mut stats,
+            );
         }
     }
-    get_entropy_unrefined_helper(0, length, &mut x_prev, &mut i_prev, &mut bit_entropy, &mut stats);
+    get_entropy_unrefined_helper(
+        0,
+        length,
+        &mut x_prev,
+        &mut i_prev,
+        &mut bit_entropy,
+        &mut stats,
+    );
     bit_entropy.entropy += fast_slog2(bit_entropy.sum);
     (bit_entropy, stats)
 }
 
 /// Port of `GetCombinedEntropyUnrefined_C`: the statistics of `X[i] + Y[i]`.
 #[must_use]
-pub fn get_combined_entropy_unrefined(x: &[u32], y: &[u32], length: usize) -> (BitEntropy, Streaks) {
+pub fn get_combined_entropy_unrefined(
+    x: &[u32],
+    y: &[u32],
+    length: usize,
+) -> (BitEntropy, Streaks) {
     let mut stats = Streaks::default();
     let mut bit_entropy = BitEntropy::new();
     let mut i_prev: usize = 0;
@@ -166,10 +258,24 @@ pub fn get_combined_entropy_unrefined(x: &[u32], y: &[u32], length: usize) -> (B
     for i in 1..length {
         let xy = x[i].wrapping_add(y[i]);
         if xy != xy_prev {
-            get_entropy_unrefined_helper(xy, i, &mut xy_prev, &mut i_prev, &mut bit_entropy, &mut stats);
+            get_entropy_unrefined_helper(
+                xy,
+                i,
+                &mut xy_prev,
+                &mut i_prev,
+                &mut bit_entropy,
+                &mut stats,
+            );
         }
     }
-    get_entropy_unrefined_helper(0, length, &mut xy_prev, &mut i_prev, &mut bit_entropy, &mut stats);
+    get_entropy_unrefined_helper(
+        0,
+        length,
+        &mut xy_prev,
+        &mut i_prev,
+        &mut bit_entropy,
+        &mut stats,
+    );
     bit_entropy.entropy += fast_slog2(bit_entropy.sum);
     (bit_entropy, stats)
 }

@@ -8,9 +8,17 @@
 //! its helpers. See `docs/design/codecs.md` §7 for the scope.
 
 pub mod backward_refs;
+pub mod backward_refs_cost;
+pub mod backward_refs_select;
 pub mod bit_writer;
 pub mod entropy;
 pub mod histogram;
 pub mod huffman;
+pub mod palette;
+pub mod predictor;
 pub mod prefix;
 pub mod tables;
+pub mod vp8l;
+pub mod webp;
+
+pub use webp::encode_lossless;

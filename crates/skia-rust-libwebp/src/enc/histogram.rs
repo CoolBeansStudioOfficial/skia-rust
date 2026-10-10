@@ -11,10 +11,44 @@
 //! The float cost model keeps the C expressions and their evaluation order (see `entropy.rs`).
 //! `NUM_PARTITIONS` binning and the greedy and stochastic combiners are ported in full.
 
+// Module-level clippy allows. The C arithmetic mixes int, uint32_t, size_t and float, and the
+// casts below are the width and sign conversions of the C source. The index loops, `if`/`else`
+// chains and exact float comparisons keep the C control flow and evaluation order, so that the
+// code can be read against the C source; they are not simplified.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines,
+    clippy::similar_names,
+    clippy::many_single_char_names,
+    clippy::unreadable_literal,
+    clippy::needless_range_loop,
+    clippy::float_cmp,
+    clippy::manual_midpoint,
+    clippy::redundant_else,
+    clippy::single_match,
+    clippy::items_after_statements,
+    clippy::let_and_return,
+    clippy::needless_for_each,
+    clippy::while_let_loop,
+    clippy::approx_constant,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::explicit_iter_loop,
+    clippy::collapsible_else_if,
+    clippy::collapsible_if,
+    clippy::manual_range_contains
+)]
+
 use super::backward_refs::{BackwardRefs, PixOrCopy, PixOrCopyMode};
 use super::entropy::{
-    extra_cost, extra_cost_combined, get_combined_entropy_unrefined, get_entropy_unrefined,
-    BitEntropy, Streaks, NON_TRIVIAL_SYM,
+    BitEntropy, NON_TRIVIAL_SYM, Streaks, extra_cost, extra_cost_combined,
+    get_combined_entropy_unrefined, get_entropy_unrefined,
 };
 use super::prefix::prefix_encode_bits;
 
@@ -42,7 +76,11 @@ pub const INVALID_HISTOGRAM_SYMBOL: u16 = u16::MAX;
 pub fn histogram_num_codes(palette_code_bits: i32) -> usize {
     NUM_LITERAL_CODES
         + NUM_LENGTH_CODES
-        + if palette_code_bits > 0 { 1usize << palette_code_bits } else { 0 }
+        + if palette_code_bits > 0 {
+            1usize << palette_code_bits
+        } else {
+            0
+        }
 }
 
 /// Port of `VP8LHistogram`.
@@ -94,6 +132,16 @@ impl Histogram {
 
     /// Port of `VP8LHistogramAddSinglePixOrCopy` (without a distance modifier).
     pub fn add_single_pix_or_copy(&mut self, v: &PixOrCopy) {
+        self.add_single_pix_or_copy_with(v, None);
+    }
+
+    /// Port of `VP8LHistogramAddSinglePixOrCopy` with an optional distance modifier (the 2D
+    /// plane code of the cost model).
+    pub fn add_single_pix_or_copy_with(
+        &mut self,
+        v: &PixOrCopy,
+        distance_modifier: Option<&dyn Fn(u32) -> u32>,
+    ) {
         match v.mode {
             PixOrCopyMode::Literal => {
                 self.alpha[v.literal_component(3) as usize] += 1;
@@ -108,7 +156,11 @@ impl Histogram {
             PixOrCopyMode::Copy => {
                 let (code, _extra_bits) = prefix_encode_bits(v.length() as i32);
                 self.literal[NUM_LITERAL_CODES + code as usize] += 1;
-                let (code, _extra_bits) = prefix_encode_bits(v.argb_or_distance as i32);
+                let distance = match distance_modifier {
+                    None => v.argb_or_distance,
+                    Some(modify) => modify(v.argb_or_distance),
+                };
+                let (code, _extra_bits) = prefix_encode_bits(distance as i32);
                 self.distance[code as usize] += 1;
             }
         }
@@ -160,12 +212,18 @@ impl HistogramSet {
             h.reset_scalars();
             histograms.push(Some(h));
         }
-        Self { size, max_size: size, histograms }
+        Self {
+            size,
+            max_size: size,
+            histograms,
+        }
     }
 
     /// Port of `VP8LHistogramSetClear`: every slot becomes an empty histogram.
     pub fn clear(&mut self) {
-        let cache_bits = self.histograms[0].as_ref().map_or(0, |h| h.palette_code_bits);
+        let cache_bits = self.histograms[0]
+            .as_ref()
+            .map_or(0, |h| h.palette_code_bits);
         self.histograms = (0..self.max_size)
             .map(|_| Some(Box::new(Histogram::new(cache_bits))))
             .collect();
@@ -196,7 +254,9 @@ impl HistogramSet {
     }
 
     fn get(&self, i: usize) -> &Histogram {
-        self.histograms[i].as_deref().expect("histogram slot in use")
+        self.histograms[i]
+            .as_deref()
+            .expect("histogram slot in use")
     }
 }
 
@@ -220,7 +280,11 @@ fn bits_entropy_refine(entropy: &BitEntropy) -> f32 {
     }
     let mut min_limit = 2.0 * entropy.sum as f32 - entropy.max_val as f32;
     min_limit = mix * min_limit + (1.0 - mix) * entropy.entropy;
-    if entropy.entropy < min_limit { min_limit } else { entropy.entropy }
+    if entropy.entropy < min_limit {
+        min_limit
+    } else {
+        entropy.entropy
+    }
 }
 
 /// Port of `InitialHuffmanCost`.
@@ -233,19 +297,28 @@ fn initial_huffman_cost() -> f32 {
 /// Port of `FinalHuffmanCost`.
 fn final_huffman_cost(stats: &Streaks) -> f32 {
     let mut retval = initial_huffman_cost();
-    retval += stats.counts[0] as f32 * 1.5625 + 0.234375 * stats.streaks[0][1] as f32;
-    retval += stats.counts[1] as f32 * 2.578125 + 0.703125 * stats.streaks[1][1] as f32;
-    retval += 1.796875 * stats.streaks[0][0] as f32;
+    retval += stats.counts[0] as f32 * 1.5625 + 0.234_375 * stats.streaks[0][1] as f32;
+    retval += stats.counts[1] as f32 * 2.578_125 + 0.703_125 * stats.streaks[1][1] as f32;
+    retval += 1.796_875 * stats.streaks[0][0] as f32;
     retval += 3.28125 * stats.streaks[1][0] as f32;
     retval
 }
 
 /// Port of `PopulationCost`: the cost of one alphabet, its trivial symbol (if requested) and
 /// whether it is used.
-fn population_cost(population: &[u32], length: usize, trivial_sym: Option<&mut u32>, is_used: &mut u8) -> f32 {
+fn population_cost(
+    population: &[u32],
+    length: usize,
+    trivial_sym: Option<&mut u32>,
+    is_used: &mut u8,
+) -> f32 {
     let (bit_entropy, stats) = get_entropy_unrefined(population, length);
     if let Some(t) = trivial_sym {
-        *t = if bit_entropy.nonzeros == 1 { bit_entropy.nonzero_code } else { NON_TRIVIAL_SYM };
+        *t = if bit_entropy.nonzeros == 1 {
+            bit_entropy.nonzero_code
+        } else {
+            NON_TRIVIAL_SYM
+        };
     }
     *is_used = u8::from(stats.streaks[1][0] != 0 || stats.streaks[1][1] != 0);
     bits_entropy_refine(&bit_entropy) + final_huffman_cost(&stats)
@@ -302,7 +375,12 @@ pub fn histogram_estimate_bits(p: &mut Histogram) -> f32 {
 
 /// Port of `GetCombinedHistogramEntropy`: adds the cost of `a + b` to `cost`, returning false as
 /// soon as it exceeds `cost_threshold`.
-fn get_combined_histogram_entropy(a: &Histogram, b: &Histogram, cost_threshold: f32, cost: &mut f32) -> bool {
+fn get_combined_histogram_entropy(
+    a: &Histogram,
+    b: &Histogram,
+    cost_threshold: f32,
+    cost: &mut f32,
+) -> bool {
     let palette_code_bits = a.palette_code_bits;
     let mut trivial_at_end = false;
     *cost += get_combined_entropy(
@@ -325,7 +403,10 @@ fn get_combined_histogram_entropy(a: &Histogram, b: &Histogram, cost_threshold: 
         let color_a = (a.trivial_symbol >> 24) & 0xff;
         let color_r = (a.trivial_symbol >> 16) & 0xff;
         let color_b = a.trivial_symbol & 0xff;
-        if (color_a == 0 || color_a == 0xff) && (color_r == 0 || color_r == 0xff) && (color_b == 0 || color_b == 0xff) {
+        if (color_a == 0 || color_a == 0xff)
+            && (color_r == 0 || color_r == 0xff)
+            && (color_b == 0 || color_b == 0xff)
+        {
             trivial_at_end = true;
         }
     }
@@ -381,11 +462,29 @@ fn get_combined_histogram_entropy(a: &Histogram, b: &Histogram, cost_threshold: 
 /// C branches that copy an unused operand instead of adding it.
 fn histogram_add_into(a: &Histogram, b: &Histogram, out: &mut Histogram) {
     let literal_size = histogram_num_codes(a.palette_code_bits);
-    add_vector_into(a.is_used[0], &a.literal[..literal_size], b.is_used[0], &b.literal[..literal_size], &mut out.literal[..literal_size]);
+    add_vector_into(
+        a.is_used[0],
+        &a.literal[..literal_size],
+        b.is_used[0],
+        &b.literal[..literal_size],
+        &mut out.literal[..literal_size],
+    );
     add_array_into(a.is_used[1], &a.red, b.is_used[1], &b.red, &mut out.red);
     add_array_into(a.is_used[2], &a.blue, b.is_used[2], &b.blue, &mut out.blue);
-    add_array_into(a.is_used[3], &a.alpha, b.is_used[3], &b.alpha, &mut out.alpha);
-    add_array_into(a.is_used[4], &a.distance, b.is_used[4], &b.distance, &mut out.distance);
+    add_array_into(
+        a.is_used[3],
+        &a.alpha,
+        b.is_used[3],
+        &b.alpha,
+        &mut out.alpha,
+    );
+    add_array_into(
+        a.is_used[4],
+        &a.distance,
+        b.is_used[4],
+        &b.distance,
+        &mut out.distance,
+    );
     for i in 0..5 {
         out.is_used[i] = a.is_used[i] | b.is_used[i];
     }
@@ -394,7 +493,12 @@ fn histogram_add_into(a: &Histogram, b: &Histogram, out: &mut Histogram) {
 /// Port of `VP8LHistogramAdd` for `b == out` (the `ADD_EQ` branch): `out += a`.
 fn histogram_add_eq(a: &Histogram, out: &mut Histogram) {
     let literal_size = histogram_num_codes(a.palette_code_bits);
-    add_eq_into(a.is_used[0], &a.literal[..literal_size], out.is_used[0], &mut out.literal[..literal_size]);
+    add_eq_into(
+        a.is_used[0],
+        &a.literal[..literal_size],
+        out.is_used[0],
+        &mut out.literal[..literal_size],
+    );
     add_eq_array(a.is_used[1], &a.red, &mut out.red, out.is_used[1]);
     add_eq_array(a.is_used[2], &a.blue, &mut out.blue, out.is_used[2]);
     add_eq_array(a.is_used[3], &a.alpha, &mut out.alpha, out.is_used[3]);
@@ -420,7 +524,13 @@ fn add_vector_into(a_used: u8, a: &[u32], b_used: u8, b: &[u32], out: &mut [u32]
     }
 }
 
-fn add_array_into<const N: usize>(a_used: u8, a: &[u32; N], b_used: u8, b: &[u32; N], out: &mut [u32; N]) {
+fn add_array_into<const N: usize>(
+    a_used: u8,
+    a: &[u32; N],
+    b_used: u8,
+    b: &[u32; N],
+    out: &mut [u32; N],
+) {
     add_vector_into(a_used, a, b_used, b, out);
 }
 
@@ -443,19 +553,32 @@ fn add_eq_array<const N: usize>(a_used: u8, a: &[u32; N], out: &mut [u32; N], ou
 /// Port of `HistogramAdd` for `b != out`: the sums, then the trivial symbol.
 fn histogram_add_full_into(a: &Histogram, b: &Histogram, out: &mut Histogram) {
     histogram_add_into(a, b, out);
-    out.trivial_symbol = if a.trivial_symbol == b.trivial_symbol { a.trivial_symbol } else { NON_TRIVIAL_SYM };
+    out.trivial_symbol = if a.trivial_symbol == b.trivial_symbol {
+        a.trivial_symbol
+    } else {
+        NON_TRIVIAL_SYM
+    };
 }
 
 /// Port of `HistogramAdd` for `b == out`.
 fn histogram_add_full_eq(a: &Histogram, out: &mut Histogram) {
     let b_trivial = out.trivial_symbol;
     histogram_add_eq(a, out);
-    out.trivial_symbol = if a.trivial_symbol == b_trivial { a.trivial_symbol } else { NON_TRIVIAL_SYM };
+    out.trivial_symbol = if a.trivial_symbol == b_trivial {
+        a.trivial_symbol
+    } else {
+        NON_TRIVIAL_SYM
+    };
 }
 
 /// Port of `HistogramAddEval`: the cost change of merging `a` and `b` into `out` (when it is
 /// below the threshold, `out` receives the merge).
-fn histogram_add_eval(a: &Histogram, b: &Histogram, out: &mut Histogram, cost_threshold: f32) -> f32 {
+fn histogram_add_eval(
+    a: &Histogram,
+    b: &Histogram,
+    out: &mut Histogram,
+    cost_threshold: f32,
+) -> f32 {
     let mut cost: f32 = 0.0;
     let sum_cost = a.bit_cost + b.bit_cost;
     let cost_threshold = cost_threshold + sum_cost;
@@ -525,14 +648,24 @@ fn update_histogram_cost(h: &mut Histogram) {
     let mut red_sym: u32 = 0;
     let mut blue_sym: u32 = 0;
     let mut used = h.is_used;
-    let alpha_cost = population_cost(&h.alpha, NUM_LITERAL_CODES, Some(&mut alpha_sym), &mut used[3]);
+    let alpha_cost = population_cost(
+        &h.alpha,
+        NUM_LITERAL_CODES,
+        Some(&mut alpha_sym),
+        &mut used[3],
+    );
     let distance_cost = population_cost(&h.distance, NUM_DISTANCE_CODES, None, &mut used[4])
         + extra_cost(&h.distance, NUM_DISTANCE_CODES) as f32;
     let num_codes = histogram_num_codes(h.palette_code_bits);
     h.literal_cost = population_cost(&h.literal, num_codes, None, &mut used[0])
         + extra_cost(&h.literal[NUM_LITERAL_CODES..], NUM_LENGTH_CODES) as f32;
     h.red_cost = population_cost(&h.red, NUM_LITERAL_CODES, Some(&mut red_sym), &mut used[1]);
-    h.blue_cost = population_cost(&h.blue, NUM_LITERAL_CODES, Some(&mut blue_sym), &mut used[2]);
+    h.blue_cost = population_cost(
+        &h.blue,
+        NUM_LITERAL_CODES,
+        Some(&mut blue_sym),
+        &mut used[2],
+    );
     h.is_used = used;
     h.bit_cost = h.literal_cost + h.red_cost + h.blue_cost + alpha_cost + distance_cost;
     if (alpha_sym | red_sym | blue_sym) == NON_TRIVIAL_SYM {
@@ -559,20 +692,29 @@ fn get_histo_bin_index(h: &Histogram, c: &DominantCostRange, low_effort: bool) -
     let mut bin_id = get_bin_id_for_entropy(c.literal_min, c.literal_max, h.literal_cost);
     if !low_effort {
         bin_id = bin_id * NUM_PARTITIONS + get_bin_id_for_entropy(c.red_min, c.red_max, h.red_cost);
-        bin_id = bin_id * NUM_PARTITIONS + get_bin_id_for_entropy(c.blue_min, c.blue_max, h.blue_cost);
+        bin_id =
+            bin_id * NUM_PARTITIONS + get_bin_id_for_entropy(c.blue_min, c.blue_max, h.blue_cost);
     }
     bin_id
 }
 
 /// Port of `HistogramBuild`.
-fn histogram_build(xsize: usize, histo_bits: i32, refs: &BackwardRefs, image_histo: &mut HistogramSet) {
+fn histogram_build(
+    xsize: usize,
+    histo_bits: i32,
+    refs: &BackwardRefs,
+    image_histo: &mut HistogramSet,
+) {
     let mut x: usize = 0;
     let mut y: usize = 0;
     let histo_xsize = sub_sample_size(xsize, histo_bits);
     image_histo.clear();
     for v in &refs.refs {
         let ix = (y >> histo_bits) * histo_xsize + (x >> histo_bits);
-        image_histo.histograms[ix].as_mut().expect("slot").add_single_pix_or_copy(v);
+        image_histo.histograms[ix]
+            .as_mut()
+            .expect("slot")
+            .add_single_pix_or_copy(v);
         x += v.length() as usize;
         while x >= xsize {
             x -= xsize;
@@ -612,7 +754,11 @@ fn histogram_copy_and_analyze(
 }
 
 /// Port of `HistogramAnalyzeEntropyBin`.
-fn histogram_analyze_entropy_bin(image_histo: &HistogramSet, bin_map: &mut [u16], low_effort: bool) {
+fn histogram_analyze_entropy_bin(
+    image_histo: &HistogramSet,
+    bin_map: &mut [u16],
+    low_effort: bool,
+) {
     let histo_size = image_histo.size;
     let mut cost_range = DominantCostRange::new();
     for i in 0..histo_size {
@@ -719,7 +865,10 @@ struct HistoQueue {
 
 impl HistoQueue {
     fn new(max_size: usize) -> Self {
-        Self { queue: Vec::with_capacity(max_size + 1), max_size }
+        Self {
+            queue: Vec::with_capacity(max_size + 1),
+            max_size,
+        }
     }
 
     /// Port of `HistoQueuePopPair`: removes entry `i` by moving the last entry into its place.
@@ -738,7 +887,12 @@ impl HistoQueue {
 }
 
 /// Port of `HistoQueueUpdatePair`.
-fn histo_queue_update_pair(h1: &Histogram, h2: &Histogram, threshold: f32, pair: &mut HistogramPair) {
+fn histo_queue_update_pair(
+    h1: &Histogram,
+    h2: &Histogram,
+    threshold: f32,
+    pair: &mut HistogramPair,
+) {
     let sum_cost = h1.bit_cost + h2.bit_cost;
     pair.cost_combo = 0.0;
     get_combined_histogram_entropy(h1, h2, sum_cost + threshold, &mut pair.cost_combo);
@@ -756,8 +910,17 @@ fn histo_queue_push(
     if q.queue.len() == q.max_size {
         return 0.0;
     }
-    let (idx1, idx2) = if idx1 > idx2 { (idx2, idx1) } else { (idx1, idx2) };
-    let mut pair = HistogramPair { idx1, idx2, cost_diff: 0.0, cost_combo: 0.0 };
+    let (idx1, idx2) = if idx1 > idx2 {
+        (idx2, idx1)
+    } else {
+        (idx1, idx2)
+    };
+    let mut pair = HistogramPair {
+        idx1,
+        idx2,
+        cost_diff: 0.0,
+        cost_combo: 0.0,
+    };
     let h1 = histograms[idx1 as usize].as_deref().expect("h1");
     let h2 = histograms[idx2 as usize].as_deref().expect("h2");
     histo_queue_update_pair(h1, h2, threshold, &mut pair);
@@ -789,9 +952,17 @@ fn histogram_combine_greedy(image_histo: &mut HistogramSet, num_used: &mut i32) 
         let idx1 = queue.queue[0].idx1;
         let idx2 = queue.queue[0].idx2;
         let a = image_histo.histograms[idx2 as usize].take().expect("idx2");
-        histogram_add_full_eq(&a, image_histo.histograms[idx1 as usize].as_mut().expect("idx1"));
+        histogram_add_full_eq(
+            &a,
+            image_histo.histograms[idx1 as usize]
+                .as_mut()
+                .expect("idx1"),
+        );
         image_histo.histograms[idx2 as usize] = Some(a);
-        image_histo.histograms[idx1 as usize].as_mut().expect("idx1").bit_cost = queue.queue[0].cost_combo;
+        image_histo.histograms[idx1 as usize]
+            .as_mut()
+            .expect("idx1")
+            .bit_cost = queue.queue[0].cost_combo;
         image_histo.remove(idx2 as usize, num_used);
         let mut i = 0;
         while i < queue.queue.len() {
@@ -813,7 +984,11 @@ fn histogram_combine_greedy(image_histo: &mut HistogramSet, num_used: &mut i32) 
 }
 
 /// Port of `HistogramCombineStochastic`. Returns `do_greedy`.
-fn histogram_combine_stochastic(image_histo: &mut HistogramSet, num_used: &mut i32, min_cluster_size: i32) -> bool {
+fn histogram_combine_stochastic(
+    image_histo: &mut HistogramSet,
+    num_used: &mut i32,
+    min_cluster_size: i32,
+) -> bool {
     let mut seed: u32 = 1;
     let mut tries_with_no_success: i32 = 0;
     let outer_iters = *num_used;
@@ -837,7 +1012,11 @@ fn histogram_combine_stochastic(image_histo: &mut HistogramSet, num_used: &mut i
         }) {
             break;
         }
-        let mut best_cost = if queue.queue.is_empty() { 0.0 } else { queue.queue[0].cost_diff };
+        let mut best_cost = if queue.queue.is_empty() {
+            0.0
+        } else {
+            queue.queue[0].cost_diff
+        };
         let rand_range = ((*num_used - 1) as u32).wrapping_mul(*num_used as u32);
         let num_tries = *num_used / 2;
         let mut j = 0;
@@ -850,7 +1029,8 @@ fn histogram_combine_stochastic(image_histo: &mut HistogramSet, num_used: &mut i
             }
             let idx1 = mappings[idx1 as usize];
             let idx2 = mappings[idx2 as usize];
-            let curr_cost = histo_queue_push(&mut queue, &image_histo.histograms, idx1, idx2, best_cost);
+            let curr_cost =
+                histo_queue_push(&mut queue, &image_histo.histograms, idx1, idx2, best_cost);
             if curr_cost < 0.0 {
                 best_cost = curr_cost;
                 if queue.queue.len() == queue.max_size {
@@ -866,11 +1046,20 @@ fn histogram_combine_stochastic(image_histo: &mut HistogramSet, num_used: &mut i
                 .binary_search(&best_idx2)
                 .expect("best_idx2 is mapped");
             mappings.remove(pos);
-            let a = image_histo.histograms[best_idx2 as usize].take().expect("best_idx2");
-            histogram_add_full_eq(&a, image_histo.histograms[best_idx1 as usize].as_mut().expect("best_idx1"));
+            let a = image_histo.histograms[best_idx2 as usize]
+                .take()
+                .expect("best_idx2");
+            histogram_add_full_eq(
+                &a,
+                image_histo.histograms[best_idx1 as usize]
+                    .as_mut()
+                    .expect("best_idx1"),
+            );
             image_histo.histograms[best_idx2 as usize] = Some(a);
-            image_histo.histograms[best_idx1 as usize].as_mut().expect("best_idx1").bit_cost =
-                queue.queue[0].cost_combo;
+            image_histo.histograms[best_idx1 as usize]
+                .as_mut()
+                .expect("best_idx1")
+                .bit_cost = queue.queue[0].cost_combo;
             image_histo.remove(best_idx2 as usize, num_used);
             let mut j = 0;
             while j < queue.queue.len() {
@@ -1032,8 +1221,16 @@ pub fn get_histo_image_symbols(
     tmp_histo: &mut Histogram,
     histogram_symbols: &mut [u16],
 ) {
-    let histo_xsize = if histogram_bits != 0 { sub_sample_size(xsize, histogram_bits) } else { 1 };
-    let histo_ysize = if histogram_bits != 0 { sub_sample_size(ysize, histogram_bits) } else { 1 };
+    let histo_xsize = if histogram_bits != 0 {
+        sub_sample_size(xsize, histogram_bits)
+    } else {
+        1
+    };
+    let histo_ysize = if histogram_bits != 0 {
+        sub_sample_size(ysize, histogram_bits)
+    } else {
+        1
+    };
     let image_histo_raw_size = histo_xsize * histo_ysize;
     let mut orig_histo = HistogramSet::new(image_histo_raw_size, cache_bits);
     let entropy_combine_num_bins = if low_effort { NUM_PARTITIONS } else { BIN_SIZE };
@@ -1041,7 +1238,12 @@ pub fn get_histo_image_symbols(
     let mut cluster_mappings = vec![0u16; image_histo_raw_size];
     let mut num_used = image_histo_raw_size as i32;
     histogram_build(xsize, histogram_bits, refs, &mut orig_histo);
-    histogram_copy_and_analyze(&mut orig_histo, image_histo, &mut num_used, histogram_symbols);
+    histogram_copy_and_analyze(
+        &mut orig_histo,
+        image_histo,
+        &mut num_used,
+        histogram_symbols,
+    );
     let entropy_combine = (num_used as usize > entropy_combine_num_bins * 2) && quality < 100;
     if entropy_combine {
         let num_clusters = num_used as usize;
@@ -1059,7 +1261,13 @@ pub fn get_histo_image_symbols(
             low_effort,
         );
         let mut tmp = vec![0u16; image_histo_raw_size];
-        optimize_histogram_symbols(image_histo, &mut cluster_mappings, num_clusters, &mut tmp, histogram_symbols);
+        optimize_histogram_symbols(
+            image_histo,
+            &mut cluster_mappings,
+            num_clusters,
+            &mut tmp,
+            histogram_symbols,
+        );
     }
     if !low_effort || !entropy_combine {
         let x = quality as f32 / 100.0;
@@ -1073,4 +1281,3 @@ pub fn get_histo_image_symbols(
     image_histo.remove_empty();
     histogram_remap(&orig_histo, image_histo, histogram_symbols);
 }
-
