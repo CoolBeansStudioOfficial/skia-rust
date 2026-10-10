@@ -4,10 +4,13 @@ pub mod align;
 pub mod alpha_type;
 pub mod arc;
 pub mod arena_alloc;
+pub mod base64;
 pub mod bbh_factory;
 pub mod bezier_curves;
 pub mod bitmap;
 pub mod bitmap_cache;
+#[doc(hidden)]
+pub mod bitmap_proc_state_priv;
 pub mod blend_mode;
 pub mod blend_mode_blender;
 #[doc(hidden)]
@@ -135,6 +138,7 @@ pub mod mesh;
 pub mod mipmap;
 pub mod mipmap_accessor;
 pub mod mipmap_builder;
+pub mod os_path;
 pub mod packed_glyph_id;
 pub mod paint;
 #[doc(hidden)]

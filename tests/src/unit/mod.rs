@@ -9,6 +9,8 @@ pub mod as_a_dash_test;
 #[cfg(test)]
 pub mod bad_ico_test;
 #[cfg(test)]
+pub mod bezier_curve_test;
+#[cfg(test)]
 pub mod bitmap_copy_test;
 #[cfg(test)]
 pub mod bitmap_get_color_test;
@@ -82,6 +84,8 @@ pub mod draw_text_test;
 #[cfg(test)]
 pub mod edge_test;
 #[cfg(test)]
+pub mod empty_path_test;
+#[cfg(test)]
 pub mod encode_test;
 pub mod exif_test;
 #[cfg(test)]
@@ -141,13 +145,19 @@ pub mod image_test;
 #[cfg(test)]
 pub mod inf_rect_test;
 #[cfg(test)]
+pub mod inset_convex_poly_test;
+#[cfg(test)]
 pub mod invalid_indexed_png_test;
+#[cfg(test)]
+pub mod is_closed_single_contour_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
 #[cfg(test)]
 pub mod math_test;
+#[cfg(test)]
+pub mod matrix_procs_test;
 #[cfg(test)]
 pub mod matrix_test;
 #[cfg(test)]
@@ -162,6 +172,10 @@ pub mod meta_data_test;
 pub mod mip_map_test;
 #[cfg(test)]
 pub mod nonlinear_blending_test;
+#[cfg(test)]
+pub mod offset_simple_poly_test;
+#[cfg(test)]
+pub mod os_path_test;
 #[cfg(test)]
 pub mod paint_test;
 #[cfg(test)]
@@ -345,12 +359,16 @@ pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
 #[cfg(test)]
+pub mod scale_to_sides_test;
+#[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
 pub mod shadow_test;
 #[cfg(test)]
 pub mod size_test;
+#[cfg(test)]
+pub mod sk_base64_test;
 #[cfg(test)]
 pub mod sk_color4f_test;
 #[cfg(test)]
@@ -404,6 +422,8 @@ pub mod sk_vx_test;
 #[cfg(test)]
 pub mod src_over_test;
 #[cfg(test)]
+pub mod srgb_test;
+#[cfg(test)]
 pub mod stream_test;
 #[cfg(test)]
 pub mod stroke_test;
@@ -414,9 +434,13 @@ pub mod surface_test;
 #[cfg(test)]
 pub mod swizzler_test;
 #[cfg(test)]
+pub mod test_test;
+#[cfg(test)]
 pub mod text_blob_test;
 #[cfg(test)]
 pub mod typeface_test;
+#[cfg(test)]
+pub mod utils_test;
 #[cfg(test)]
 pub mod vertices_test;
 #[cfg(test)]
@@ -425,6 +449,8 @@ pub mod wangs_formula_test;
 pub mod webp_test;
 #[cfg(test)]
 pub mod write_pixels_test;
+#[cfg(test)]
+pub mod writer32_test;
 #[cfg(test)]
 pub mod yuv_cache_test;
 #[cfg(test)]
