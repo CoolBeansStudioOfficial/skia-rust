@@ -25,9 +25,6 @@ const NOT_PORTED: &[(&str, &str)] = &[
     ("7630.otf", "CFF"),
     ("NotoSansCJK-VF-subset.otf.ttc", "CFF/CFF2/VORG"),
     ("Stroking.otf", "CFF"),
-    ("colr.ttf", "colour tables"),
-    ("planetcolr.ttf", "colour tables"),
-    ("test_glyphs-glyf_colr_1.ttf", "colour tables"),
     ("test_glyphs-glyf_colr_1_variable.ttf", "colour tables"),
 ];
 
