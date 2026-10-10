@@ -10,8 +10,6 @@
 // Not ported, each returns `false` / `None` rather than encoding differently:
 // - `SkJpegEncoder::Make(SkYUVAPixmaps)` (the `SkEncoder` for YUVA): only `encode_yuva` is
 //   ported, which writes the whole file, as `Encode(SkWStream*, SkYUVAPixmaps)` does.
-// - `Options::origin`: the EXIF segment is written by `SkExif::WriteExif`, which this crate does
-//   not port (`exif.rs` only parses).
 // - the gainmap encoder (`SkJpegGainmapEncoder.cpp`), which is outside this port.
 
 use std::io;
@@ -33,6 +31,7 @@ use skia_rust_core::yuva_pixmaps::{DataType, PlaneView, YUVAPixmaps};
 use skia_rust_libjpeg::{ColorSpace as JpegColorSpace, Compress};
 
 use crate::encode::icc::write_icc_profile;
+use crate::exif;
 
 /// `kXMPMarker` (APP1) and `kXMPStandardSig` (`SkJpegConstants.h`).
 const XMP_MARKER: u8 = 0xE1;
@@ -40,6 +39,25 @@ const XMP_STANDARD_SIG: &[u8] = b"http://ns.adobe.com/xap/1.0/\0";
 /// `kICCMarker` (APP2) and `kICCSig` (`SkJpegConstants.h`).
 const ICC_MARKER: u8 = 0xE2;
 const ICC_SIG: &[u8] = b"ICC_PROFILE\0";
+/// `kExifMarker` (APP1) and `kExifSig` (`SkJpegConstants.h`).
+// Port of: src/codec/SkJpegConstants.h#L55-L56 (kExifMarker, kExifSig)
+const EXIF_MARKER: u8 = 0xE1;
+const EXIF_SIG: &[u8] = b"Exif\0";
+
+// Port of: src/encode/SkJpegEncoderImpl.cpp#L493-L505 (chrome/m156), SkJpegMetadataEncoder::
+// AppendOrigin: the APP1 segment of the Exif data that holds only the orientation. None when the
+// Exif data cannot be written.
+fn origin_segment(origin: EncodedOrigin) -> Option<(u8, Vec<u8>)> {
+    let metadata = exif::Metadata {
+        origin: Some(origin),
+        ..exif::Metadata::default()
+    };
+    let exif = exif::write_exif(&metadata)?;
+    let mut body = EXIF_SIG.to_vec();
+    body.push(0);
+    body.extend_from_slice(exif.as_bytes());
+    Some((EXIF_MARKER, body))
+}
 
 /// Port of `SkJpegEncoder::Downsample`: the chroma subsampling. The default is 4:2:0.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
@@ -180,8 +198,8 @@ fn metadata_segments(src: &Pixmap<'_>, options: &Options) -> Vec<(u8, Vec<u8>)> 
     xmp_and_icc_segments(cs.as_ref(), options)
 }
 
-/// The XMP and ICC segments for a colour space (`AppendXMPStandard` and `AppendICC`, in that
-/// order). Shared by the RGB and YUVA encoders.
+/// The XMP, ICC and origin segments for a colour space (`AppendXMPStandard`, `AppendICC` and
+/// `AppendOrigin`, in that order). Shared by the RGB and YUVA encoders.
 fn xmp_and_icc_segments(color_space: Option<&ColorSpace>, options: &Options) -> Vec<(u8, Vec<u8>)> {
     let mut segments = Vec::new();
     if let Some(xmp) = &options.xmp_metadata {
@@ -196,6 +214,9 @@ fn xmp_and_icc_segments(color_space: Option<&ColorSpace>, options: &Options) -> 
         body.push(1);
         body.extend_from_slice(&icc);
         segments.push((ICC_MARKER, body));
+    }
+    if let Some(origin) = options.origin {
+        segments.extend(origin_segment(origin));
     }
     segments
 }
@@ -301,9 +322,6 @@ pub fn make<'a>(
     src: Pixmap<'a>,
     options: &Options,
 ) -> Option<JpegEncoder<'a>> {
-    if options.origin.is_some() {
-        return None;
-    }
     let info = src.info();
     let width = u32::try_from(info.width()).ok()?;
     let height = u32::try_from(info.height()).ok()?;
@@ -436,7 +454,7 @@ fn yuva_copy_row(planes: &[Pixmap<'_>], info: &YUVAInfo, row: usize, dst: &mut [
 /// Port of `SkJpegEncoder::Encode(SkWStream*, const SkYUVAPixmaps&, const SkColorSpace*,
 /// const Options&)`: the JPEG bytes of YUVA pixmaps, with `color_space` only for its ICC profile.
 /// Returns `None` for an invalid layout, a colour space other than JPEG full range, data that is
-/// not 8-bit, a plane configuration other than Y,U,V or Y,UV, or an origin (not ported).
+/// not 8-bit, or a plane configuration other than Y,U,V or Y,UV.
 // Port of: src/encode/SkJpegEncoderImpl.cpp#L300-L320 and #L338-L378, and
 // include/encode/SkJpegEncoder.h (chrome/m156)
 fn encode_yuva_to_vec(
@@ -444,7 +462,7 @@ fn encode_yuva_to_vec(
     color_space: Option<&ColorSpace>,
     options: &Options,
 ) -> Option<Vec<u8>> {
-    if !src.is_valid() || options.origin.is_some() {
+    if !src.is_valid() {
         return None;
     }
     // SkJpegEncoderMgr::initializeYUV: no colour space conversion, only 8-bit data, and only the
