@@ -37603,7 +37603,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L164-L182"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "6038f9c12481d53d4b625bd07a4d5faa90fdd54dca3383b2c597bc6072f935c9"
 
 [[test]]
@@ -37612,7 +37612,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L44-L67"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "b92d16aa703e5f4c222721f49b41101610aacba68bd21cb4ac9b674c73b21009"
 
 [[test]]
@@ -37630,7 +37630,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L103-L143"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "4ece65bccac54276d8445f6a471900b9eba1157184bb32b62a332191c30e4304"
 
 [[test]]
@@ -37639,7 +37639,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/PaintTest.cpp#L184-L206"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "1c973d11834057890e0939e7bf4aa12c77e9a29910a33f3ff0772c320d4002f2"
 
 [[test]]
