@@ -404,7 +404,10 @@ fn reset_stable_keys(effects: &[RuntimeEffect]) {
 //       mapped back to the stable runtime-effects (clients really shouldn't do this though!)
 // Port of: tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L357-L447 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn UserDefinedStableKeyTest() {
     // The number of user-defined stable keys (the PrecompileFactories effects).
@@ -504,7 +507,10 @@ fn UserDefinedStableKeyTest() {
 // Test that the ShaderCodeDictionary can deduplicate the user-defined known runtime effect list
 // Port of: tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L449-L487 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn UserDefinedStableKeyTest_Duplicates() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Duplicates");
@@ -540,7 +546,10 @@ fn UserDefinedStableKeyTest_Duplicates() {
 // user-defined known runtime effect list
 // Port of: tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L489-L528 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn UserDefinedStableKeyTest_Nullptrs() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Nullptrs");
@@ -571,7 +580,10 @@ fn UserDefinedStableKeyTest_Nullptrs() {
 // Test that the ShaderCodeDictionary can handle excess user-defined known runtime effects
 // Port of: tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L530-L566 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn UserDefinedStableKeyTest_Overflow() {
     let mut reporter = Reporter::new("UserDefinedStableKeyTest_Overflow");

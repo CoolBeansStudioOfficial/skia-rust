@@ -132,7 +132,10 @@ fn run_test(
 // Verify that the threaded PipelineManager terminates cleanly
 // Port of: tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn PipelineManagerEarlyExitTest_1() {
     run_test(
@@ -145,7 +148,10 @@ fn PipelineManagerEarlyExitTest_1() {
 // Verify that the PrecompileContext pins everything it needs to operate on its own
 // Port of: tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn PipelineManagerEarlyExitTest_2() {
     run_test(
@@ -158,7 +164,10 @@ fn PipelineManagerEarlyExitTest_2() {
 // The next two are the same as above but single threaded
 // Port of: tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn PipelineManagerEarlyExitTest_3() {
     run_test(
@@ -170,7 +179,10 @@ fn PipelineManagerEarlyExitTest_3() {
 
 // Port of: tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172 (chrome/m156)
 #[test]
-#[ignore = "needs a real adapter in CI (lavapipe job)"]
+#[cfg_attr(
+    not(skia_rust_adapter_tests),
+    ignore = "needs a real adapter in CI (lavapipe job)"
+)]
 #[allow(non_snake_case)]
 fn PipelineManagerEarlyExitTest_4() {
     run_test(

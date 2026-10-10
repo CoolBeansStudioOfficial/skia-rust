@@ -53148,8 +53148,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "04418895cc364843e4729b7dc120d01fa600e79738742d4dcfbe5a7fe410af43"
 
 [[test]]
@@ -53158,8 +53157,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "2bc88ec6fa815b8d40ca462ad6c915a63613272070a02825492946207ad27a57"
 
 [[test]]
@@ -53168,8 +53166,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "204099448c35f5f10d2031184aafba107a1e85f207cb2d60d149965ae28c6bb2"
 
 [[test]]
@@ -53178,8 +53175,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "248429179577202f2e94987f8b9a63ba5a767f3159d34a3f70892685ac4c99ad"
 
 [[test]]
@@ -53188,8 +53184,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L124-L135"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "f33cebb0b0cc56164f95db1a76e98c6223d6cd9db0ba478131a3ecab769ca570"
 
 [[test]]
@@ -53198,8 +53193,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L137-L148"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "169b5714c6c79e2f0acd12cb7665635a18f8b42c3be7fa1152d8f358c21d6a54"
 
 [[test]]
@@ -53208,8 +53202,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L152-L163"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "1a62cea2888d6c856c2c06ef3f825179b5a233a5b40d78c88dd6b4bfc0e96083"
 
 [[test]]
@@ -53218,8 +53211,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L165-L176"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "a7333e03fcb38181275a65ea6510afc620df267dfb58a43cfd47e427a127de27"
 
 [[test]]
@@ -53288,8 +53280,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L357-L447"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "ceb2650bb3822864f29d95c9efa5c4cd5bd69dbebf42b8fa338b1809901737c2"
 
 [[test]]
@@ -53298,8 +53289,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L450-L485"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "8f5e1d051ee53b2c225b88e5d84de3e48fed2f6f6a72e8a4493427121ab22df8"
 
 [[test]]
@@ -53308,8 +53298,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L489-L527"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "b1a86fea3b0fe18cf6920f0235deb2137fbe0c76a2a5a4b5d5325e7d5c538a49"
 
 [[test]]
@@ -53318,8 +53307,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L530-L564"
 module = "gpu"
-status = "todo"
-reason = "needs a real rendering adapter (CI has none): passes on lavapipe with --ignored; the test is ported with #[ignore] (docs/design/gpu.md adapter-test precedent)"
+status = "passing"
 span_hash = "5c029133f183362d19ebf209699df5987524dc22e30950184c2206484c27f6b8"
 
 [[test]]
@@ -55124,8 +55112,8 @@ id = "tests/sksl/compute/AtomicDeclarations.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicDeclarations.wgsl"
 module = "sksl"
-status = "todo"
-reason = "stale golden: input not in gn/sksl_tests.gni, never regenerated at the pin"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "c60414d8276eb3b4efc757dfe73a7f325ff3d0fb8f74065fe5ec3b1c794b9989"
 
 [[test]]
@@ -55177,8 +55165,8 @@ id = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/compute/AtomicOperationsOverArrayAndStruct.wgsl"
 module = "sksl"
-status = "todo"
-reason = "stale golden: input not in gn/sksl_tests.gni, never regenerated at the pin"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "e4ddea6cb00400f18fb2ee450e687687cdd5674ad13bb0ed7b2ddab9c7bc1763"
 
 [[test]]
@@ -62056,8 +62044,8 @@ id = "tests/sksl/intrinsics/IsInf.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsInf.wgsl"
 module = "sksl"
-status = "todo"
-reason = "needs-tint-validation: the golden is Tint's rejection of `isinf` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "e69a050ac40fae5106c7a112f06693b316dcfe8487f7d71a13c4f6a98e04c33d"
 
 [[test]]
@@ -62109,8 +62097,8 @@ id = "tests/sksl/intrinsics/IsNan.wgsl"
 kind = "sksl-golden"
 source = "tests/sksl/intrinsics/IsNan.wgsl"
 module = "sksl"
-status = "todo"
-reason = "needs-tint-validation: the golden is Tint's rejection of `isnan` (WGSL has no such builtin); naga also rejects 9 other goldens, so it cannot stand in for Tint (docs/design/sksl.md R6)"
+status = "failing"
+reason = "generated WGSL differs from the golden (surfaced by inventory verify --update; not yet investigated)"
 span_hash = "ebea7f542c6d5cf030135ff0b1d906a155660b903653a64c024d8ffbcf678682"
 
 [[test]]
