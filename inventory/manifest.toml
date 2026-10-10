@@ -16478,7 +16478,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/asyncrescaleandread.cpp#L598-L598"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "a5f5047f706c65778545eb45ceb747c5f323f6530876d08471faf91a47d45f9e"
 
 [[test]]
@@ -19924,7 +19924,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/ducky_yuv_blend.cpp#L24-L84"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "82979063bd979c6cde802000e70d1c656f7e354dd6affaac7897842a271dd07f"
 
 [[test]]
@@ -22105,6 +22105,7 @@ macro = "DEF_GM"
 source = "gm/imagefromyuvtextures.cpp#L378-L378"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "96e500d6f4ddb491c8a3a937be2321af42e64397b05d71a499b3b439ddc9a785"
 
 [[test]]
@@ -22114,6 +22115,7 @@ macro = "DEF_GM"
 source = "gm/imagefromyuvtextures.cpp#L377-L377"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "f2b3dc07ece8e80248d4558d1ee229fd7a03bf8fde1a91286c1ef6fb0d303c32"
 
 [[test]]
@@ -23858,6 +23860,7 @@ macro = "DEF_GM"
 source = "gm/rendertomipmappedyuvimageplanes.cpp#L152-L152"
 module = "codec"
 status = "todo"
+reason = "Graphite-only: skips on every other backend, so the oracle has no raster golden"
 span_hash = "b6126f8618abd5a5d126d3241a6f9187d7f9f5189a9865ab2889b327be266e72"
 
 [[test]]
@@ -25960,7 +25963,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1081-L1085"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "9568ddaf9d765e57a8b090dc698dc03cb50a9a5db494f0942f2be7fcecb0109f"
 
 [[test]]
@@ -25970,6 +25973,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1092-L1096"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "80bf782f28b1c80235aa32edee8cc19dc81ee01003b91d539ff2b70310a6bfb3"
 
 [[test]]
@@ -25979,6 +25983,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1086-L1090"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "9a6951a379ec0e4f95d525e1f41fce0aeb8d2764372419ff48fda472a3ea2780"
 
 [[test]]
@@ -25988,6 +25993,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1051-L1055"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "914c28f7053c1aea74e8e16eac6b7ef13ee81291022f7b49bd84c6107a393797"
 
 [[test]]
@@ -25997,6 +26003,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1076-L1080"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "f33b4d2a0558cd596ebea7ac8a89acc8cd66692893a83136f23df879cec740e1"
 
 [[test]]
@@ -26006,6 +26013,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1061-L1065"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "b8864919ea0ee8d806ec95f2fb51a2aff11be81c61c944b0200bae0d6cd5efa6"
 
 [[test]]
@@ -26015,6 +26023,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1066-L1070"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "15cf033adc1fb200513001ef766bdbb228ecbe7a6f1f6b20347a52df716e2d0f"
 
 [[test]]
@@ -26024,6 +26033,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1097-L1101"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "c087f6d6a98c6b1bf448667d58d9be4155bd3f762e69122a1f2c87f6d5de30aa"
 
 [[test]]
@@ -26033,6 +26043,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1056-L1060"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "26888ff1490779d83147084ae25ead4e400cc2eb09757654be11248318b43220"
 
 [[test]]
@@ -26042,6 +26053,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1071-L1075"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "52ffc23b7fc456f5f004c20a583b3512726bc60ba8b7de74d48575f21e9b7f77"
 
 [[test]]
@@ -26051,6 +26063,7 @@ macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1304-L1304"
 module = "codec"
 status = "todo"
+reason = "needs a GPU context to create the YUV images (skips on raster; no raster golden)"
 span_hash = "3e5f7d543fd905104a1410db3643065519dd4e4e7942759ce7f2c1d372f0614e"
 
 [[test]]
@@ -26059,7 +26072,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/wacky_yuv_formats.cpp#L1394-L1394"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "b733e55bcd3893cd68e5ded9005607e622df1deaa13b14ab8cf9385f318f1569"
 
 [[test]]
@@ -26159,6 +26172,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/yuv420_odd_dim.cpp#L74-L112"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "64ca3e0b677219bbcae2fecc2a55b1c5775de11a52a2c7c8ee5db8ce18db8387"
 
 [[test]]
@@ -26168,6 +26182,7 @@ macro = "DEF_SIMPLE_GM_CAN_FAIL"
 source = "gm/yuv420_odd_dim.cpp#L115-L194"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "7a8b37c2ed31461181c4af0aac2aab5f97dceca296ac497c5326fd83def0e552"
 
 [[test]]
@@ -26177,6 +26192,7 @@ macro = "DEF_GM"
 source = "gm/yuvtorgbsubset.cpp#L194-L194"
 module = "codec"
 status = "todo"
+reason = "GPU-only: the C++ skips without a GPU or Graphite context, so the oracle has no raster golden"
 span_hash = "c24024d1b95237be410897b72c02c2086ea4b74301bc2098807c60461fa6a957"
 
 [[test]]
@@ -29580,7 +29596,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BlurTest.cpp#L649-L670"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "eaa66185af08de114b9e9775588cf87e3adad3abd8ac7bc0362acddc66ab2f41"
 
 [[test]]
@@ -29720,7 +29736,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CachedDataTest.cpp#L81-L101"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "eccc9dd7f405f88fa7eb243a405d2ad1efb007c58c2d89b8b5860d7ecc0604e2"
 
 [[test]]
@@ -31697,7 +31713,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryTest.cpp#L51-L56"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "90223ae1e1b816ff91cac0d2ab58339a4a54e4fb7444b0eece5dc2157dedc2e4"
 
 [[test]]
@@ -31706,7 +31722,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/DiscardableMemoryTest.cpp#L58-L63"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "2e2bf3e0145cb4af1770f1897e145f11c9e220858ced83501de188360eca38c8"
 
 [[test]]
@@ -45095,6 +45111,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L142-L156"
 module = "core"
 status = "todo"
+reason = "needs SkMipmapCache (FindAndRef/AddAndRef on a local SkResourceCache): SkMipmap must be an SkCachedData with discardable storage (test_mipmapcache checks its ref count, cache state and lock, and gFactoryCalls > 0). Mipmap sampling reads through borrowed bytes, so that storage is a redesign of mipmap.rs. SkBitmapCache itself is ported (bitmap_cache)"
 span_hash = "4be179903ee23ca7aca0785a9d8d69e254004ac6ad4923615daaf7ea93831b51"
 
 [[test]]
@@ -45104,6 +45121,7 @@ macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L190-L223"
 module = "core"
 status = "todo"
+reason = "needs DeferredFromPicture (the picture image generator, SkPictureImageGenerator, is not ported: notes/pictureimagegenerator.md). The bitmap-cache path of lazy images is ported and tested (bitmap_cache::tests), and the raster half of this test has no other blocker"
 span_hash = "09f9239bac59098e5ce0584ede860e49c9f763ee6ba3c0e72a869fcc87113957"
 
 [[test]]
@@ -45112,7 +45130,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkResourceCacheTest.cpp#L297-L308"
 module = "core"
-status = "todo"
+status = "passing"
 span_hash = "ad3dd43b3e93cf7e548308db7c7e1e141541691bd6359b5d7b7d5cddbb6b9686"
 
 [[test]]
@@ -51180,7 +51198,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVCacheTest.cpp#L38-L87"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "becfc2108f78aae7bda54068391a38c0c50fed47c58eb53f4d39a6f29d47de1a"
 
 [[test]]
@@ -51189,7 +51207,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L98-L142"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "e304009709c4709eeb92ff784c06ca86553b8b27d1ea72b2309b38bbde6bbfbb"
 
 [[test]]
@@ -51198,7 +51216,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L181-L208"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "2f2275240e3b5065ab6f4746a443154a84bb4085c7d5c0dd4635b87ffdfb3b34"
 
 [[test]]
@@ -51207,7 +51225,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/YUVTest.cpp#L212-L240"
 module = "codec"
-status = "todo"
+status = "passing"
 span_hash = "aaaf18d6c36ef3f61d4734f6adc37f13954ec87bd268dfdcf0cd283223184209"
 
 [[test]]
@@ -53254,6 +53272,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1846-L1849"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions and the Android runtime-effect manager"
 span_hash = "4fcc16e6972220980ade1243dbe4cba20a6984fdf149256f0996e10316143d94"
 
 [[test]]
@@ -53263,6 +53282,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1851-L1854"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions and the Android runtime-effect manager"
 span_hash = "6b25778470d0f2e77a77cb55f0d1d16cfa34b7cf3f141c0504bbbbbe9df9d2fa"
 
 [[test]]
@@ -53272,6 +53292,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/AndroidPrecompileTest.cpp#L1856-L1883"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also AndroidPaintOptions (external formats need DataContainsExternalFormat)"
 span_hash = "3cfdbb39a383ed5937d0dec84251d4deb60519552729ae220876b953529efefb"
 
 [[test]]
@@ -53291,6 +53312,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/ChromePrecompileTest.cpp#L1039-L1091"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also PrecompileTestUtils and the label lists"
 span_hash = "b9fa3fb52734a48f54e9dba33341f3b7797f65a603e0e436823cc30db3eb5a84"
 
 [[test]]
@@ -53299,7 +53321,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/CombinationBuilderTest.cpp#L595-L624"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "6fc57e0dfe7f33bbf55b36f3d2fb48ef09ebea20557f9a612db70ab6db4d0dcd"
 
 [[test]]
@@ -53309,7 +53331,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L599-L757"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs the Precompile API (PaintOptions, PrecompileShader/ColorFilter/Blender, UniqueKeyUtils, DrawContext), which is not ported (G14)"
+reason = "blocked: PaintOptions, PrecompileShader/ColorFilter/Blender and buildCombinations are ported (CombinationBuilderTest passes); still missing the public Precompile() and PrecompileContext, PaintParamsTestUtils (1384 lines), UniqueKeyUtils, and the real draws through a Recorder (DrawContext, G10)"
 span_hash = "25e954f62aef6e170677ee4de39e6262be07fd5bd9c488b436329b4cd7608346"
 
 [[test]]
@@ -53319,7 +53341,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/PaintParamsKeyTest.cpp#L510-L590"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs the Precompile API (PaintOptions, PrecompileShader/ColorFilter/Blender, UniqueKeyUtils, DrawContext), which is not ported (G14)"
+reason = "blocked: PaintOptions, PrecompileShader/ColorFilter/Blender and buildCombinations are ported (CombinationBuilderTest passes); still missing the public Precompile() and PrecompileContext, PaintParamsTestUtils (1384 lines), UniqueKeyUtils, and the real draws through a Recorder (DrawContext, G10)"
 span_hash = "f0e8c8f3fc45d833731095f4653a3234ada145863b11620c8bf41c2c5ceeb329"
 
 [[test]]
@@ -53329,7 +53351,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L120-L131"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "04418895cc364843e4729b7dc120d01fa600e79738742d4dcfbe5a7fe410af43"
 
 [[test]]
@@ -53339,7 +53361,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L134-L145"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "2bc88ec6fa815b8d40ca462ad6c915a63613272070a02825492946207ad27a57"
 
 [[test]]
@@ -53349,7 +53371,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L148-L159"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "204099448c35f5f10d2031184aafba107a1e85f207cb2d60d149965ae28c6bb2"
 
 [[test]]
@@ -53359,7 +53381,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerEarlyExit.cpp#L161-L172"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "248429179577202f2e94987f8b9a63ba5a767f3159d34a3f70892685ac4c99ad"
 
 [[test]]
@@ -53369,7 +53391,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L124-L135"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "f33cebb0b0cc56164f95db1a76e98c6223d6cd9db0ba478131a3ecab769ca570"
 
 [[test]]
@@ -53379,7 +53401,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L137-L148"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "169b5714c6c79e2f0acd12cb7665635a18f8b42c3be7fa1152d8f358c21d6a54"
 
 [[test]]
@@ -53389,7 +53411,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L152-L163"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "1a62cea2888d6c856c2c06ef3f825179b5a233a5b40d78c88dd6b4bfc0e96083"
 
 [[test]]
@@ -53399,7 +53421,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PipelineManagerThreaded.cpp#L165-L176"
 module = "gpu"
 status = "todo"
-reason = "needs PrecompileContext/Precompile (G14) and render-target surfaces (G10d); draws and Context::insertRecording exist since G10a/G11c; the PipelineManager it exercises (task de-duplication, priorities, shutdown) is ported in G11b and tested in crates/skia-rust-gpu/tests/wgpu_pipelines.rs"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; also render-target surfaces (G10d)"
 span_hash = "a7333e03fcb38181275a65ea6510afc620df267dfb58a43cfd47e427a127de27"
 
 [[test]]
@@ -53409,6 +53431,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/PrecompileStatsTest.cpp#L29-L114"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete; the test is Dawn-Metal-only (its context predicate), so it also needs a real adapter"
 span_hash = "409a0729ec3c8beb7901f02edb13d22ad250af18908ed7836fd71b4d7daf49b2"
 
 [[test]]
@@ -53418,6 +53441,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53427,6 +53451,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53436,6 +53461,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]
@@ -53445,6 +53471,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]
@@ -53454,6 +53481,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L423"
 module = "gpu"
 status = "todo"
+reason = "blocked: public Precompile() and PrecompileContext are not ported yet (PublicPrecompile.cpp, PrecompileContext.cpp). Precompile() walks every Renderer, and RendererProvider lacks the blur and sparse-strip renderers (G7c, G17), so the pipeline set would be incomplete"
 span_hash = "491300b6238f0a3452e358838411314abd952c2585848399423b33c5ef0991a5"
 
 [[test]]
@@ -53463,6 +53491,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L357-L447"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
 span_hash = "ceb2650bb3822864f29d95c9efa5c4cd5bd69dbebf42b8fa338b1809901737c2"
 
 [[test]]
@@ -53472,6 +53501,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L450-L485"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
 span_hash = "8f5e1d051ee53b2c225b88e5d84de3e48fed2f6f6a72e8a4493427121ab22df8"
 
 [[test]]
@@ -53481,6 +53511,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L489-L527"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
 span_hash = "b1a86fea3b0fe18cf6920f0235deb2137fbe0c76a2a5a4b5d5325e7d5c538a49"
 
 [[test]]
@@ -53490,6 +53521,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/precompile/UserdefinedStableKeyTest.cpp#L530-L564"
 module = "gpu"
 status = "todo"
+reason = "blocked: needs SerializationUtils (serialized pipeline keys, not ported), PrecompileContext, and the public Precompile() (its renderer list is incomplete until G7c and G17); also tools/graphite/precompile/PrecompileEffectFactories"
 span_hash = "5c029133f183362d19ebf209699df5987524dc22e30950184c2206484c27f6b8"
 
 [[test]]

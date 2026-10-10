@@ -22,8 +22,9 @@
 //! - The compute path atlas (`getComputePathAtlas`, Vello, G13) and the sparse strips
 //!   (`PathRendererStrategy::kCPUSparseStripsMSAA8`, G17): the path renderer strategies that need
 //!   them fall back to tessellation.
-//! - Text (`onDrawGlyphRunList`, `drawSlug`, G12b), `drawBlurredRRect()`, and
-//!   `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
+//! - `drawBlurredRRect()` covers the analytic blur over rects and circles (`AnalyticBlurMask`);
+//!   the rounded-rect blur (`AnalyticRRectBlurMask`, `std::erf`) falls back to a regular draw.
+//! - `drawAsTiledImageRect()` (it needs `TiledTextureUtils::DrawAsTiledImageRect`).
 //!   `makeSurface()`, `makeImageCopy()`, the non-copyable `onWritePixels()` fallback,
 //!   `drawSpecial()`, `snapSpecial()` and the image filtering backend (`docs/design/gpu.md` §5.5)
 //!   are ported. Images link to the device through its [`DeviceLink`] (§5.6).
@@ -45,7 +46,7 @@ use skia_rust_core::device::{CreateInfo, Device as CoreDevice, DeviceState};
 use skia_rust_core::image::{Image, RequiredProperties};
 use skia_rust_core::image_filter_types::Backend;
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
-use skia_rust_core::m44::M44;
+use skia_rust_core::m44::{M44, V2};
 use skia_rust_core::matrix::Matrix;
 use skia_rust_core::mesh::{self, Mesh, mesh_priv};
 use skia_rust_core::paint::{Cap, Paint, Style as PaintStyle};
@@ -69,6 +70,7 @@ use skia_rust_raster::region_path::RegionExt;
 use skia_rust_simd::vx::{self, Float2};
 
 use crate::gpu::backing_fit::{BackingFit, get_approx_size};
+use crate::gpu::blur_utils::blur_is_effectively_identity;
 use crate::gpu::gpu_types::{Budgeted, Mipmapped, Origin, Renderable};
 use crate::gpu::mask_format::MaskFormat;
 use crate::gpu::sk_log::skia_log_e;
@@ -86,6 +88,7 @@ use crate::graphite::draw_order::{
 };
 use crate::graphite::draw_params::{Clip, StrokeStyle};
 use crate::graphite::draw_types::DstUsage;
+use crate::graphite::geom::analytic_blur_mask::AnalyticBlurMask;
 use crate::graphite::geom::bounds_manager::{BoundsManager, HybridBoundsManager};
 use crate::graphite::geom::coverage_mask_shape::CoverageMaskShape;
 use crate::graphite::geom::coverage_mask_shape::MaskInfo;
@@ -1815,6 +1818,52 @@ impl DeviceCore {
         );
     }
 
+    /// `drawBlurredRRect(rrect, paint, localSigma, deviceSigma)`: a blurred rrect drawn with the
+    /// analytic blur steps. Returns false when it cannot be drawn that way, and the canvas then
+    /// draws it another way. The `AnalyticRRectBlurMask` case is not ported (its CDF look-up
+    /// table needs `std::erf`, see `geom::analytic_rrect_blur_mask`), so rounded rects fall back.
+    // Port of: src/gpu/graphite/Device.cpp#L2587-L2630 (chrome/m156)
+    fn draw_blurred_rrect(
+        &mut self,
+        rrect: &RRect,
+        paint: &Paint,
+        _local_sigma: V2,
+        device_sigma: f32,
+    ) -> bool {
+        if blur_is_effectively_identity(device_sigma) {
+            self.draw_rrect(rrect, paint);
+            return true;
+        }
+
+        let transform = self.local_to_device_transform();
+        let rrect_to_blur = if paint.is_anti_alias() {
+            *rrect
+        } else {
+            // Snap the the rounded rectangle to pixel edges to match the behavior of
+            // Device::drawRRect() for non-AA blurs when the AnalyticBlurMask approach isn't
+            // supported.
+            let snapped = snap_rect_to_pixels(&transform, &Rect::from_sk_rect(rrect.rect()), None);
+            RRect::new_rect_radii(snapped.as_sk_rect(), rrect.radii_ref())
+        };
+
+        let Some(recorder) = self.recorder() else {
+            return false;
+        };
+        let Some(analytic_blur) =
+            AnalyticBlurMask::make(&recorder, &transform, device_sigma, &rrect_to_blur)
+        else {
+            // AnalyticRRectBlurMask::Make is not ported (std::erf): fall back.
+            return false;
+        };
+        self.draw_geometry(
+            &transform,
+            Geometry::AnalyticBlur(analytic_blur),
+            &PaintParams::new(paint, None, false, false),
+            &StrokeRec::from_paint(paint, None, None),
+        );
+        true
+    }
+
     // Port of: src/gpu/graphite/Device.cpp#L1204-L1329 (chrome/m156)
     #[allow(clippy::too_many_lines)] // mirrors the C++ function
     #[allow(clippy::similar_names)] // mirrors the C++ names strokeRect/strokeRRect
@@ -2332,6 +2381,10 @@ impl DeviceCore {
                 );
             }
             Geometry::Mesh(_) => return (Some(renderers.mesh()), false),
+            Geometry::AnalyticBlur(_) => return (Some(renderers.analytic_blur()), false),
+            Geometry::AnalyticRRectBlur(_) => {
+                return (Some(renderers.analytic_rrect_blur()), false);
+            }
             // drawCoverageMask() passes in CoverageMaskShapes that reference a provided texture.
             // The CoverageMask renderer can also be chosen later on if the shape is assigned to
             // to be rendered into the PathAtlas.
@@ -3594,6 +3647,17 @@ impl CoreDevice for Device {
 
     fn draw_rrect(&mut self, rr: &RRect, paint: &Paint) {
         self.sync().draw_rrect(rr, paint);
+    }
+
+    fn draw_blurred_rrect(
+        &mut self,
+        rrect: &RRect,
+        paint: &Paint,
+        local_sigma: V2,
+        device_sigma: f32,
+    ) -> bool {
+        self.sync()
+            .draw_blurred_rrect(rrect, paint, local_sigma, device_sigma)
     }
 
     fn draw_path(&mut self, path: &Path, paint: &Paint) {

@@ -11,12 +11,19 @@
 #![allow(clippy::neg_cmp_op_on_partial_ord)] // REPORTER_ASSERT(r, sigma > 0) negates the condition
 #![allow(clippy::float_cmp)] // the C++ compares scalars with ==
 
-use crate::{def_test, reporter_assert};
+use crate::{def_graphite_adapter_test, def_test, reporter_assert};
+use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blur_mask::BlurMask;
 use skia_rust_core::blur_types::BlurStyle;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_core::matrix::Matrix;
+use skia_rust_core::size::ISize;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface;
 
 use skia_rust_core::mask::{AllocType, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{BlurRec, MaskFilter};
@@ -479,4 +486,31 @@ def_test!(EmbossPerlinCrash, |_reporter| {
 
     let mut surface = surfaces::raster_n32_premul((100, 100)).expect("surface");
     surface.canvas().draw_paint(&p);
+});
+
+// Port of: tests/BlurTest.cpp#L649-L670 (chrome/m156)
+def_graphite_adapter_test!(BlurPointCircle, |_reporter, context| {
+    let ii = ImageInfo::new(
+        ISize::new(1, 1),
+        ColorType::RGBA8888,
+        AlphaType::Premul,
+        None,
+    );
+    let mut recorder = context.make_recorder(None);
+    let surface = Surface::render_target(&recorder, &ii, Mipmapped::No, None, "");
+    let surface = surface.expect("a render target");
+    let canvas = surface.canvas();
+
+    let mut paint = Paint::default();
+    paint.set_mask_filter(MaskFilter::blur(BlurStyle::Normal, 5.0, false));
+
+    // The C++ float literal, rounded to the same f32.
+    #[allow(clippy::excessive_precision)]
+    let scale: f32 = 0.000_256_608_007;
+    canvas.concat(&Matrix::new_all(
+        scale, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 1.0,
+    ));
+    canvas.draw_arc(Rect::new(-1.0, -1.0, 1.0, 1.0), 0.0, 360.0, false, &paint);
+
+    let _ = recorder.snap();
 });
