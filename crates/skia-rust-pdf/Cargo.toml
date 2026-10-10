@@ -10,7 +10,14 @@ authors.workspace = true
 
 [dependencies]
 skia-rust-core.workspace = true
+skia-rust-raster.workspace = true
+skia-rust-pathops.workspace = true
+skia-rust-codec.workspace = true
 skia-rust-zlib.workspace = true
+skia-rust-skcms.workspace = true
+
+[dev-dependencies]
+skia-rust-effects.workspace = true
 
 [lints]
 workspace = true

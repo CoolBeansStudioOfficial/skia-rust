@@ -2,6 +2,7 @@
 
 pub mod align;
 pub mod alpha_type;
+pub mod annotation;
 pub mod arc;
 pub mod arena_alloc;
 pub mod bbh_factory;

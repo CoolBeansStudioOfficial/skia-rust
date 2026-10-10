@@ -1124,6 +1124,7 @@ dependencies = [
  "skia-rust-codec",
  "skia-rust-core",
  "skia-rust-pathops",
+ "skia-rust-pdf",
 ]
 
 [[package]]
@@ -1235,7 +1236,12 @@ dependencies = [
 name = "skia-rust-pdf"
 version = "0.156.0"
 dependencies = [
+ "skia-rust-codec",
  "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-pathops",
+ "skia-rust-raster",
+ "skia-rust-skcms",
  "skia-rust-zlib",
 ]
 
@@ -1270,6 +1276,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "skia-rust-skottie"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+]
+
+[[package]]
+name = "skia-rust-sksg"
+version = "0.156.0"
+dependencies = [
+ "skia-rust-core",
+ "skia-rust-effects",
+ "skia-rust-pathops",
+]
+
+[[package]]
 name = "skia-rust-sksl"
 version = "0.156.0"
 dependencies = [
@@ -1301,6 +1323,8 @@ dependencies = [
  "skia-rust-raster",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-skottie",
+ "skia-rust-sksg",
  "skia-rust-sksl",
  "skia-rust-text",
  "skia-rust-tools",

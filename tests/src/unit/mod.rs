@@ -5,6 +5,8 @@ pub mod aa_clip_test;
 #[cfg(test)]
 pub mod android_codec_test;
 #[cfg(test)]
+pub mod annotation_test;
+#[cfg(test)]
 pub mod as_a_dash_test;
 #[cfg(test)]
 pub mod bad_ico_test;
@@ -44,6 +46,7 @@ pub mod codec_anim_test;
 pub mod codec_exact_read_test;
 #[cfg(test)]
 pub mod codec_partial_test;
+#[cfg(test)]
 pub mod codec_recommended_type_test;
 #[cfg(test)]
 pub mod codec_test;
@@ -75,8 +78,8 @@ pub mod data_ref_test;
 pub mod descriptor_test;
 #[cfg(test)]
 pub mod direct_mask_limit_test;
-pub mod discardable_memory_test;
 #[cfg(test)]
+pub mod discardable_memory_test;
 #[cfg(test)]
 pub mod draw_bitmap_rect_test;
 #[cfg(test)]
@@ -89,7 +92,9 @@ pub mod edge_test;
 pub mod empty_path_test;
 #[cfg(test)]
 pub mod encode_test;
+#[cfg(test)]
 pub mod encoded_info_test;
+#[cfg(test)]
 pub mod exif_test;
 #[cfg(test)]
 pub mod extended_sk_color_type_tests;
@@ -147,6 +152,7 @@ pub mod image_is_opaque_test;
 pub mod image_new_shader_test;
 #[cfg(test)]
 pub mod image_test;
+#[cfg(test)]
 pub mod indexed_png_overflow_test;
 #[cfg(test)]
 pub mod inf_rect_test;
@@ -156,6 +162,8 @@ pub mod inset_convex_poly_test;
 pub mod invalid_indexed_png_test;
 #[cfg(test)]
 pub mod is_closed_single_contour_test;
+#[cfg(test)]
+pub mod json_test;
 #[cfg(test)]
 pub mod m44_test;
 #[cfg(test)]
@@ -307,7 +315,21 @@ pub mod path_test;
 #[cfg(test)]
 pub mod pdf_deflate_w_stream_test;
 #[cfg(test)]
+pub mod pdf_document_test;
+#[cfg(test)]
+pub mod pdf_jpeg_embed_test;
+#[cfg(test)]
+pub mod pdf_metadata_attribute_test;
+#[cfg(test)]
+pub mod pdf_opaque_src_mode_to_src_over_test;
+#[cfg(test)]
 pub mod pdf_primitives_test;
+#[cfg(test)]
+pub mod pdf_tagged_link_test;
+#[cfg(test)]
+pub mod pdf_tagged_table_test;
+#[cfg(test)]
+pub mod pdf_tagged_test;
 #[cfg(test)]
 pub mod picture_bbh_test;
 #[cfg(test)]
@@ -372,6 +394,7 @@ pub mod scale_to_sides_test;
 pub mod serialization_test;
 #[cfg(test)]
 pub mod shader_test;
+#[cfg(test)]
 pub mod shadow_test;
 #[cfg(test)]
 pub mod simplify_paint_test;

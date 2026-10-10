@@ -1,0 +1,16 @@
+[package]
+name = "skia-rust-skottie"
+description = "Lottie player of skia-rust: the SkJSON reader (skottie::json) so far"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+skia-rust-core.workspace = true
+
+[lints]
+workspace = true

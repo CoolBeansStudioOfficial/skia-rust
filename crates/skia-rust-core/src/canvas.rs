@@ -1735,6 +1735,13 @@ impl CanvasState {
         }
     }
 
+    // Port of: src/core/SkCanvas.cpp#L2710-L2716 (chrome/m156)
+    fn on_draw_annotation(&mut self, rect: &Rect, key: &str, value: Option<&crate::data::Data>) {
+        if self.predraw_notify() {
+            self.top_device_mut().draw_annotation(rect, key, value);
+        }
+    }
+
     // Port of: src/core/SkCanvas.cpp#L1939-L1977 (chrome/m156)
     fn on_draw_points(&mut self, mode: PointMode, pts: &[Point], paint: &Paint) {
         if let Some(hooks) = self.hooks.as_mut()
@@ -3915,6 +3922,22 @@ impl Canvas {
     #[doc(alias = "drawPaint")]
     pub fn draw_paint(&self, paint: &Paint) -> &Self {
         self.state.borrow_mut().on_draw_paint(paint);
+        self
+    }
+
+    /// Associates `rect` with an annotation: a key and its value (`drawAnnotation`). Devices that
+    /// do not support annotations ignore it.
+    // Port of: src/core/SkCanvas.cpp#L1852-L1857 (chrome/m156)
+    #[doc(alias = "drawAnnotation")]
+    pub fn draw_annotation(
+        &self,
+        rect: impl AsRef<Rect>,
+        key: &str,
+        value: Option<&crate::data::Data>,
+    ) -> &Self {
+        self.state
+            .borrow_mut()
+            .on_draw_annotation(rect.as_ref(), key, value);
         self
     }
 

@@ -21,7 +21,7 @@
 use skia_rust_core::color_space::{ColorSpace, named_gamut, named_transfer_fn};
 use skia_rust_core::md5::Md5;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
-use skia_rust_skcms::{Matrix3x3, TfType, TransferFunction};
+use skia_rust_skcms::{Curve, IccProfile, Matrix3x3, TfType, TransferFunction};
 
 /// Port of `kD50_x`, `kD50_y`, `kD50_z` (SkICC.cpp#L40-L42).
 const KD50_X: f32 = 0.9642;
@@ -356,4 +356,43 @@ pub fn write_icc_profile(color_space: Option<&ColorSpace>) -> Option<Vec<u8>> {
 pub fn write_icc_profile_for_rgb(fn_: &TransferFunction, to_xyzd50: &Matrix3x3) -> Option<Vec<u8>> {
     let cs = ColorSpace::new_rgb(fn_, to_xyzd50)?;
     write_icc_profile(Some(&cs))
+}
+
+/// Port of `SkWriteICCProfile(const skcms_ICCProfile*, const char* desc)` (SkICC.cpp#L564-L707)
+/// for a profile that has a matrix to XYZ D50 and, optionally, one parametric curve shared by the
+/// three channels (the profile of an sRGB-like colour space, `SkColorSpace::toProfile`). Returns
+/// `None` for a profile with other tags (`CICP`, `HAGC`, `A2B`, `B2A`) or with curves that are
+/// tables or differ, which this writer does not write.
+// Port of: src/encode/SkICC.cpp#L564-L707 (chrome/m156)
+#[doc(alias = "SkWriteICCProfile")]
+#[must_use]
+pub fn write_icc_profile_from_profile(profile: &IccProfile, desc: &str) -> Option<Vec<u8>> {
+    if !profile.has_to_xyzd50
+        || profile.has_cicp
+        || profile.has_hagc
+        || profile.has_a2b
+        || profile.has_b2a
+    {
+        return None;
+    }
+    let trc = if profile.has_trc {
+        let (Curve::Parametric(r), Curve::Parametric(g), Curve::Parametric(b)) =
+            (&profile.trc[0], &profile.trc[1], &profile.trc[2])
+        else {
+            return None;
+        };
+        if r != g || g != b {
+            return None;
+        }
+        Some(*r)
+    } else {
+        None
+    };
+    Some(write_profile(
+        &Profile {
+            to_xyzd50: profile.to_xyzd50,
+            trc,
+        },
+        desc,
+    ))
 }
