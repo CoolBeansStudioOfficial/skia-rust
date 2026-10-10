@@ -246,7 +246,14 @@ impl RasterSink {
         src.modify_surface_props(&mut props);
         let mut surface =
             Surface::wrap_pixels(&mut dst, Some(&props)).expect("allocated pixels can be wrapped");
-        let result = src.draw(surface.canvas());
+        // The goldens this config is compared with come from an oracle whose N32 is BGRA, except
+        // for `8888` on a host whose N32 is RGBA (the `-rgba` tiers): code that makes explicit
+        // `kRGBA_8888` surfaces (the picture shader's tile) must behave like that oracle.
+        let oracle_n32_is_bgra = !uses_rgba_goldens(self.config, ColorType::N32);
+        let result =
+            skia_rust_raster::oracle_n32::testing::with_oracle_n32_bgra(oracle_n32_is_bgra, || {
+                src.draw(surface.canvas())
+            });
         drop(surface); // gives the drawn pixels back to `dst`
         Rendered {
             result,

@@ -38,6 +38,7 @@ use crate::blitter_a8::A8CoverageBlitter;
 use crate::core_blitters::{
     Argb32BlackBlitter, Argb32Blitter, Argb32OpaqueBlitter, Argb32ShaderBlitter,
 };
+use crate::oracle_n32::is_n32;
 use crate::raster_pipeline_blitter::{RasterPipelineBlitter, create_raster_pipeline_blitter};
 
 /// Whether the legacy blitters (`SkARGB32_*_Blitter`) can draw `paint` into `device`
@@ -84,7 +85,7 @@ pub fn use_legacy_blitter(
     }
 
     // Only kN32 is handled by legacy blitters now
-    device.color_type() == ColorType::N32
+    is_n32(device.color_type())
 }
 
 /// The blitter `SkBlitter::Choose` made, by kind (the C++ returns an `SkBlitter*`).
@@ -235,7 +236,7 @@ pub(crate) fn choose_kind<'a>(
     }
 
     // Everything but legacy kN32_SkColorType should already be handled.
-    debug_assert_eq!(device.color_type(), ColorType::N32);
+    debug_assert!(is_n32(device.color_type()));
 
     // And we should be blending with SrcOver
     debug_assert_eq!(paint.as_blend_mode(), Some(BlendMode::SrcOver));
