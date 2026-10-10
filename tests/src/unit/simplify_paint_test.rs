@@ -33,6 +33,8 @@ use crate::{Reporter, def_graphite_adapter_test, def_test, errorf, reporter_asse
 
 // Port of: tests/SimplifyPaintTest.cpp#L35-L35 (chrome/m156)
 const K_SURFACE_SIZE: i32 = 32;
+// `kSurfaceSize` as a scalar: the C++ converts it implicitly.
+const K_SURFACE_SIZE_F: f32 = 32.0;
 
 // Port of: tests/SimplifyPaintTest.cpp#L37-L39 (chrome/m156)
 fn draw_paint(canvas: &Canvas, paint: &Paint) {
@@ -41,12 +43,12 @@ fn draw_paint(canvas: &Canvas, paint: &Paint) {
 
 // Port of: tests/SimplifyPaintTest.cpp#L41-L43 (chrome/m156)
 fn draw_rect(canvas: &Canvas, paint: &Paint) {
-    canvas.draw_rect(Rect::from_wh(K_SURFACE_SIZE as f32, K_SURFACE_SIZE as f32), paint);
+    canvas.draw_rect(Rect::from_wh(K_SURFACE_SIZE_F, K_SURFACE_SIZE_F), paint);
 }
 
 // Port of: tests/SimplifyPaintTest.cpp#L45-L47 (chrome/m156)
 fn draw_rrect(canvas: &Canvas, paint: &Paint) {
-    let size = K_SURFACE_SIZE as f32;
+    let size = K_SURFACE_SIZE_F;
     canvas.draw_rrect(
         RRect::new_rect_xy(Rect::new(0.0, 0.0, size, size), 4.0, 4.0),
         paint,
@@ -55,7 +57,7 @@ fn draw_rrect(canvas: &Canvas, paint: &Paint) {
 
 // Port of: tests/SimplifyPaintTest.cpp#L49-L54 (chrome/m156)
 fn draw_arc(canvas: &Canvas, paint: &Paint) {
-    let size = K_SURFACE_SIZE as f32;
+    let size = K_SURFACE_SIZE_F;
     // SkArc::Type::kWedge, which closes the arc through the oval's center.
     let arc = Arc::new(Rect::new(-size, -size, size, size), 0.0, 270.0, true);
     canvas.draw_arc_2(&arc, paint);
@@ -63,8 +65,8 @@ fn draw_arc(canvas: &Canvas, paint: &Paint) {
 
 // Port of: tests/SimplifyPaintTest.cpp#L56-L65 (chrome/m156)
 fn create_dented_rect() -> Path {
-    let half = (K_SURFACE_SIZE / 2) as f32;
-    let size = K_SURFACE_SIZE as f32;
+    let half = K_SURFACE_SIZE_F / 2.0;
+    let size = K_SURFACE_SIZE_F;
     let mut b = PathBuilder::new();
     b.move_to((0.0, 0.0));
     b.line_to((half, 1.0));
@@ -82,7 +84,8 @@ fn draw_path(canvas: &Canvas, paint: &Paint) {
 }
 
 // Port of: tests/SimplifyPaintTest.cpp#L73-L80 (chrome/m156)
-const DRAW_METHODS: [fn(&Canvas, &Paint); 5] = [draw_paint, draw_rect, draw_rrect, draw_arc, draw_path];
+const DRAW_METHODS: [fn(&Canvas, &Paint); 5] =
+    [draw_paint, draw_rect, draw_rrect, draw_arc, draw_path];
 
 // Create an SkColorSpace that removes the specified color channel with the transfer
 // function of the provided colorSpace
@@ -129,6 +132,8 @@ fn almost_equals(a: Color, b: Color, tolerance: i32) -> bool {
 }
 
 // Port of: tests/SimplifyPaintTest.cpp#L121-L197 (chrome/m156)
+// The length and the local items mirror the C++ function's.
+#[allow(clippy::too_many_lines, clippy::items_after_statements)]
 fn run_test(surface: &mut dyn TestSurface, reporter: &mut Reporter) {
     let info = ImageInfo::new(
         (K_SURFACE_SIZE, K_SURFACE_SIZE),
@@ -258,13 +263,8 @@ def_test!(SimplifyPaintTest_Raster, |reporter| {
 // Port of: tests/SimplifyPaintTest.cpp#L201-L213 (chrome/m156)
 def_graphite_adapter_test!(SimplifyPaintTest_Graphite, |reporter, context| {
     let recorder = context.make_recorder(None);
-    let surface = GraphiteSurface::render_target(
-        &recorder,
-        &get_surface_ii(),
-        Mipmapped::No,
-        None,
-        "",
-    );
+    let surface =
+        GraphiteSurface::render_target(&recorder, &get_surface_ii(), Mipmapped::No, None, "");
     reporter_assert!(reporter, surface.is_some());
     let Some(surface) = surface else {
         return;

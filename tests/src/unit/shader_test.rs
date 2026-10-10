@@ -148,7 +148,11 @@ fn test_nested_blends(reporter: &mut Reporter, surface: &mut dyn TestSurface) {
         .expect("a nested blender");
 
     let mut paint = Paint::default();
-    paint.set_shader(shaders::blend_blender(&nested_blender, green_shader, red_shader));
+    paint.set_shader(shaders::blend_blender(
+        &nested_blender,
+        green_shader,
+        red_shader,
+    ));
     paint.set_blender(blender);
 
     // Do the drawing.

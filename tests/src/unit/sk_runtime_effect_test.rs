@@ -29,16 +29,16 @@ use skia_rust_core::color_space_priv::srgb_singleton;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::data::Data;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::paint::Paint;
 use skia_rust_core::matrix::Matrix;
+use skia_rust_core::paint::Paint;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::IRect;
 use skia_rust_core::runtime_effect::{
     ChildPtr, Options, RuntimeEffect, RuntimeShaderBuilder, uniform as uniform_flags,
 };
 use skia_rust_core::runtime_effect_priv;
-use skia_rust_core::shader::Shader;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::shader::Shader;
 use skia_rust_core::shaders;
 use skia_rust_core::shaders::image_shader::ImageShader;
 use skia_rust_core::tile_mode::TileMode;
@@ -1343,11 +1343,7 @@ fn test_using_transformed_coords(
     let Some(image) = bitmap.as_image() else {
         return;
     };
-    let texture = texture_from_image(
-        recorder,
-        &image,
-        RequiredProperties { mipmapped: false },
-    );
+    let texture = texture_from_image(recorder, &image, RequiredProperties { mipmapped: false });
     let Some(image_shader) = ImageShader::make(
         texture,
         TileMode::Clamp,
@@ -1374,11 +1370,9 @@ fn test_using_transformed_coords(
 
     // Nest the image shader under the runtime shader, all under a local matrix transformation that
     // translates the draw right 1/4 of the way.
-    let Some(nested) = effect.make_shader(
-        Data::new_empty(),
-        &[ChildPtr::Shader(image_shader)],
-        None,
-    ) else {
+    let Some(nested) =
+        effect.make_shader(Data::new_empty(), &[ChildPtr::Shader(image_shader)], None)
+    else {
         return;
     };
     let mut paint = Paint::default();
@@ -1413,23 +1407,26 @@ fn test_using_transformed_coords(
 }
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L1702-L1710 (chrome/m156)
-def_graphite_adapter_test!(SkRuntimeShader_TransformedCoords_Graphite, |reporter, context| {
-    let recorder = context.make_recorder(None);
-    let info = ImageInfo::new((12, 1), ColorType::RGBA8888, AlphaType::Premul, None);
-    let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
-    reporter_assert!(reporter, surface.is_some());
-    let Some(surface) = surface else {
-        return;
-    };
-    test_using_transformed_coords(
-        reporter,
-        &recorder,
-        &mut GraphiteTestSurface {
-            context,
-            surface: &surface,
-        },
-    );
-});
+def_graphite_adapter_test!(
+    SkRuntimeShader_TransformedCoords_Graphite,
+    |reporter, context| {
+        let recorder = context.make_recorder(None);
+        let info = ImageInfo::new((12, 1), ColorType::RGBA8888, AlphaType::Premul, None);
+        let surface = GraphiteSurface::render_target(&recorder, &info, Mipmapped::No, None, "");
+        reporter_assert!(reporter, surface.is_some());
+        let Some(surface) = surface else {
+            return;
+        };
+        test_using_transformed_coords(
+            reporter,
+            &recorder,
+            &mut GraphiteTestSurface {
+                context,
+                surface: &surface,
+            },
+        );
+    }
+);
 
 // Port of: tests/SkRuntimeEffectTest.cpp#L1744-L1788 (chrome/m156)
 def_test!(SkRuntimeShader_b500080194, |r| {

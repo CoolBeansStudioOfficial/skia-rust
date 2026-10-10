@@ -13,20 +13,20 @@
 
 use crate::{def_graphite_test_for_all_contexts, def_test, reporter_assert};
 use skia_rust_core::alpha_type::AlphaType;
-use skia_rust_core::color_type::ColorType;
-use skia_rust_core::image_info::ImageInfo;
-use skia_rust_gpu::gpu::gpu_types::Mipmapped;
-use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blur_mask::BlurMask;
 use skia_rust_core::blur_types::BlurStyle;
 use skia_rust_core::canvas::Canvas;
 use skia_rust_core::color::Color;
+use skia_rust_core::color_type::ColorType;
+use skia_rust_core::image_info::ImageInfo;
+use skia_rust_gpu::gpu::gpu_types::Mipmapped;
+use skia_rust_gpu::graphite::surface_graphite::Surface as GraphiteSurface;
 
 use skia_rust_core::mask::{AllocType, MaskBuilder, MaskFormat};
 use skia_rust_core::mask_filter::{BlurRec, MaskFilter};
-use skia_rust_core::matrix::Matrix;
 use skia_rust_core::math_priv::clamp_pos;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_utils::fill_path_with_paint_to_path;
@@ -504,7 +504,11 @@ def_graphite_test_for_all_contexts!(BlurPointCircle, |reporter, context| {
     let mut paint = Paint::default();
     paint.set_mask_filter(MaskFilter::blur(BlurStyle::Normal, 5.0, false));
 
-    canvas.concat(&Matrix::new_all(
+    // The float literal is the C++ one, kept verbatim.
+    #[allow(clippy::excessive_precision)]
+    // The float literal is the C++ one, kept verbatim.
+    #[allow(clippy::excessive_precision)]
+    let matrix = Matrix::new_all(
         0.000_256_608_007,
         0.0,
         0.0,
@@ -514,7 +518,8 @@ def_graphite_test_for_all_contexts!(BlurPointCircle, |reporter, context| {
         0.0,
         0.0,
         1.0,
-    ));
+    );
+    canvas.concat(&matrix);
     canvas.draw_arc(Rect::new(-1.0, -1.0, 1.0, 1.0), 0.0, 360.0, false, &paint);
 
     let _ = recorder.snap();
