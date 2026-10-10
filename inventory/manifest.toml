@@ -19873,7 +19873,7 @@ macro = "DEF_GM"
 source = "gm/encode_srgb.cpp#L157-L157"
 module = "codec"
 status = "todo"
-reason = "needs the WebP encoder (SkWebpEncoder), not ported"
+reason = "needs the lossy WebP encoder (the default SkWebpEncoder options are lossy; libwebp enc/ VP8 not ported)"
 span_hash = "264bec9587041a19a2420f8c893831fd714f9187232960821caabdb71f4c4d4c"
 
 [[test]]
@@ -31704,8 +31704,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L682-L713"
 module = "codec"
-status = "todo"
-reason = "needs the WebP encoder (SkWebpEncoder), not ported"
+status = "passing"
 span_hash = "fb71069dbe7830f5087c5b2662e2fd0336686cded8ac7fd19f8d04340b3e0174"
 
 [[test]]
@@ -31742,6 +31741,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L609-L655"
 module = "codec"
 status = "todo"
+reason = "needs WebPAnimEncoder (libwebp mux/anim_encode, not ported)"
 span_hash = "d0aeb7ca70b4f8bbaf3d22f459c1ff79c3be52168d17d92e00c339197c59704e"
 
 [[test]]
@@ -31751,6 +31751,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L657-L680"
 module = "codec"
 status = "todo"
+reason = "needs WebPAnimEncoder (libwebp mux/anim_encode, not ported)"
 span_hash = "4cf87318a15498e5ac0d60325e0bb1364add1a40459e37194f556a8280c4bfa5"
 
 [[test]]
@@ -31760,6 +31761,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L561-L607"
 module = "codec"
 status = "todo"
+reason = "needs the lossy WebP encoder (libwebp enc/ VP8, not ported; the lossless encoder is ported)"
 span_hash = "216cc5795a107d8d142eae88d2cfda8ebdf537827cb18603bcb7caf7ead8dbd6"
 
 [[test]]
@@ -31769,6 +31771,7 @@ macro = "DEF_TEST"
 source = "tests/EncodeTest.cpp#L508-L559"
 module = "codec"
 status = "todo"
+reason = "needs the lossy WebP encoder (libwebp enc/ VP8, not ported; the lossless encoder is ported)"
 span_hash = "3207b0d70f9880658d2a87b67e7f48f864f3b4cfa324d56b452a169bdf623d39"
 
 [[test]]

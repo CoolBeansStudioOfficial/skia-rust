@@ -549,3 +549,39 @@ def_test!(Encode_JpegDownsample, |reporter| {
     reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm1, 60));
     reporter_assert!(reporter, almost_equals_bitmap(&bm1, &bm2, 60));
 });
+
+// Port of: tests/EncodeTest.cpp#L682-L713 (chrome/m156)
+def_test!(Encode_Alpha, |reporter| {
+    // These formats have no sensible way to encode alpha images.
+    for format in ["jpeg", "png", "webp"] {
+        for ct_index in (ColorType::Unknown as i32 + 1)..=(ColorType::LAST_ENUM as i32) {
+            let Some(ct) = ColorType::from_i32(ct_index) else {
+                continue;
+            };
+            // Non-alpha-only colortypes are tested elsewhere.
+            if !skia_rust_core::image_info_priv::color_type_is_alpha_only(ct) {
+                continue;
+            }
+            let info = ImageInfo::new((10, 10), ct, AlphaType::Premul, None);
+            let mut bm = Bitmap::new();
+            bm.alloc_pixels_info(&info, None);
+            bm.erase_color(Color::TRANSPARENT);
+            let pixmap = bm.pixmap();
+            let encoded = match format {
+                "jpeg" => jpeg_encoder::encode_pixmap(&pixmap, &jpeg_encoder::Options::default()),
+                "png" => png_encoder::encode_pixmap(&pixmap, &Options::default()),
+                _ => skia_rust_codec::encode::webp_encoder::encode_pixmap(
+                    &pixmap,
+                    &skia_rust_codec::encode::webp_encoder::Options::default(),
+                ),
+            };
+            if matches!(format, "jpeg" | "png") && ct == ColorType::Alpha8 {
+                // We support encoding alpha8 to png and jpeg with our own private meaning.
+                reporter_assert!(reporter, encoded.is_some());
+                reporter_assert!(reporter, encoded.as_ref().is_some_and(|d| d.size() > 0));
+            } else {
+                reporter_assert!(reporter, encoded.is_none());
+            }
+        }
+    }
+});
