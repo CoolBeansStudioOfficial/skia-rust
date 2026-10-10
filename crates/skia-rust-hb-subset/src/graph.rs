@@ -30,7 +30,14 @@ pub(crate) struct GLink {
 impl GLink {
     /// A link with `Head` whence, no bias and unsigned, like the ones the graph code creates.
     pub(crate) fn new(width: u8, objidx: u32, position: u32) -> GLink {
-        GLink { width, is_signed: false, whence: Whence::Head, bias: 0, position, objidx }
+        GLink {
+            width,
+            is_signed: false,
+            whence: Whence::Head,
+            bias: 0,
+            position,
+            objidx,
+        }
     }
 }
 
@@ -69,10 +76,16 @@ impl PriorityQueue {
                 return;
             }
             let has_right = right < self.heap.len();
-            if self.heap[index].0 <= self.heap[left].0 && (!has_right || self.heap[index].0 <= self.heap[right].0) {
+            if self.heap[index].0 <= self.heap[left].0
+                && (!has_right || self.heap[index].0 <= self.heap[right].0)
+            {
                 return;
             }
-            let child = if !has_right || self.heap[left].0 < self.heap[right].0 { left } else { right };
+            let child = if !has_right || self.heap[left].0 < self.heap[right].0 {
+                left
+            } else {
+                right
+            };
             self.heap.swap(index, child);
             index = child;
         }
@@ -120,7 +133,10 @@ pub(crate) struct Vertex {
 
 impl Vertex {
     fn blank() -> Vertex {
-        Vertex { single_parent: NONE, ..Vertex::default() }
+        Vertex {
+            single_parent: NONE,
+            ..Vertex::default()
+        }
     }
 
     pub(crate) fn table_size(&self) -> usize {
@@ -325,7 +341,11 @@ impl InvSet {
     }
 }
 
+/// A packed object of the serializer: `(bytes, real links, virtual links)`.
+pub(crate) type PackedObject = (Vec<u8>, Vec<Link>, Vec<Link>);
+
 /// `graph_t`.
+#[allow(clippy::struct_excessive_bools)] // the flags of `graph_t`
 pub(crate) struct Graph {
     pub vertices: Vec<Vertex>,
     pub ordering: Vec<u32>,
@@ -341,7 +361,7 @@ pub(crate) struct Graph {
 impl Graph {
     /// The constructor from the packed objects of a serializer (`graph_t (const T& objects)`):
     /// `(bytes, real links, virtual links)`, the first being the nil object.
-    pub(crate) fn new(objects: Vec<Option<(Vec<u8>, Vec<Link>, Vec<Link>)>>) -> Graph {
+    pub(crate) fn new(objects: Vec<Option<PackedObject>>) -> Graph {
         let mut g = Graph {
             vertices: Vec::new(),
             ordering: Vec::new(),
@@ -360,10 +380,16 @@ impl Graph {
         g.ordering = vec![0; n];
         let mut order = n;
         for (i, obj) in objects.into_iter().enumerate() {
-            let Some((bytes, real, virt)) = obj else { continue };
+            let Some((bytes, real, virt)) = obj else {
+                continue;
+            };
             let mut v = Vertex::blank();
             let buf = g.bufs.len();
-            v.obj = Obj { buf, head: 0, len: bytes.len() };
+            v.obj = Obj {
+                buf,
+                head: 0,
+                len: bytes.len(),
+            };
             g.bufs.push(bytes);
             let adjust = |l: &Link| GLink {
                 width: l.width,
@@ -496,8 +522,13 @@ impl Graph {
                     continue;
                 }
                 let child_v = &mut self.vertices[link.objidx as usize];
-                let link_width = if link.width != 0 { u32::from(link.width) } else { 4 };
-                let child_weight = child_v.obj.len as i64 + (1i64 << (link_width * 8)) * i64::from(child_v.space + 1);
+                let link_width = if link.width != 0 {
+                    u32::from(link.width)
+                } else {
+                    4
+                };
+                let child_weight = child_v.obj.len as i64
+                    + (1i64 << (link_width * 8)) * i64::from(child_v.space + 1);
                 let child_distance = next_distance + child_weight;
                 if child_distance < child_v.distance {
                     child_v.distance = child_distance;
@@ -544,7 +575,10 @@ impl Graph {
             for link in self.vertices[next_id as usize].all_links() {
                 removed_edges[link.objidx as usize] += 1;
                 let v = &self.vertices[link.objidx as usize];
-                if v.incoming_edges.wrapping_sub(removed_edges[link.objidx as usize]) == 0 {
+                if v.incoming_edges
+                    .wrapping_sub(removed_edges[link.objidx as usize])
+                    == 0
+                {
                     queue.insert(v.modified_distance(order), link.objidx);
                     order += 1;
                 }
@@ -579,18 +613,13 @@ impl Graph {
         }
     }
 
-    fn find_subgraph_inv(&self, node_idx: u32, subgraph: &mut InvSet) {
-        if subgraph.has(node_idx) {
-            return;
-        }
-        subgraph.add(node_idx);
-        for link in self.vertices[node_idx as usize].all_links() {
-            self.find_subgraph_inv(link.objidx, subgraph);
-        }
-    }
-
     /// `find_subgraph_size`.
-    pub(crate) fn find_subgraph_size(&self, node_idx: u32, subgraph: &mut BTreeSet<u32>, max_depth: u32) -> usize {
+    pub(crate) fn find_subgraph_size(
+        &self,
+        node_idx: u32,
+        subgraph: &mut BTreeSet<u32>,
+        max_depth: u32,
+    ) -> usize {
         if !subgraph.insert(node_idx) {
             return 0;
         }
@@ -646,7 +675,13 @@ impl Graph {
         }
     }
 
-    fn find_connected_nodes(&self, start_idx: u32, targets: &mut BTreeSet<u32>, visited: &mut InvSet, connected: &mut BTreeSet<u32>) {
+    fn find_connected_nodes(
+        &self,
+        start_idx: u32,
+        targets: &mut BTreeSet<u32>,
+        visited: &mut InvSet,
+        connected: &mut BTreeSet<u32>,
+    ) {
         if visited.has(start_idx) {
             return;
         }
@@ -669,7 +704,10 @@ impl Graph {
         let mut visited_set = BTreeSet::new();
         let mut roots = BTreeSet::new();
         self.find_space_roots(&mut visited_set, &mut roots);
-        let mut visited = InvSet { set: visited_set, inverted: true };
+        let mut visited = InvSet {
+            set: visited_set,
+            inverted: true,
+        };
         if roots.is_empty() {
             return false;
         }
@@ -702,10 +740,20 @@ impl Graph {
         count
     }
 
-    fn reassign_link(&mut self, parent_idx: u32, link_index: usize, is_virtual: bool, new_idx: u32) {
+    fn reassign_link(
+        &mut self,
+        parent_idx: u32,
+        link_index: usize,
+        is_virtual: bool,
+        new_idx: u32,
+    ) {
         let old_idx = {
             let v = &mut self.vertices[parent_idx as usize];
-            let link = if is_virtual { &mut v.virtual_links[link_index] } else { &mut v.real_links[link_index] };
+            let link = if is_virtual {
+                &mut v.virtual_links[link_index]
+            } else {
+                &mut v.real_links[link_index]
+            };
             let old = link.objidx;
             link.objidx = new_idx;
             old
@@ -722,13 +770,19 @@ impl Graph {
             let num_real = self.vertices[i as usize].real_links.len();
             let total = num_real + self.vertices[i as usize].virtual_links.len();
             for count in 0..total {
-                let (is_virtual, idx) = if count < num_real { (false, count) } else { (true, count - num_real) };
+                let (is_virtual, idx) = if count < num_real {
+                    (false, count)
+                } else {
+                    (true, count - num_real)
+                };
                 let link = if is_virtual {
                     self.vertices[i as usize].virtual_links[idx]
                 } else {
                     self.vertices[i as usize].real_links[idx]
                 };
-                let Some(v) = id_map.has(link.objidx) else { continue };
+                let Some(v) = id_map.has(link.objidx) else {
+                    continue;
+                };
                 if only_wide && (link.is_signed || (link.width != 4 && link.width != 3)) {
                     continue;
                 }
@@ -740,14 +794,14 @@ impl Graph {
     /// `isolate_subgraph`.
     pub(crate) fn isolate_subgraph(&mut self, roots: &mut BTreeSet<u32>) -> bool {
         self.update_parents();
-        let mut subgraph = HbMap::new_minus_one();
+        let mut subgraph = HbMap::new();
         let mut parents = BTreeSet::new();
         for &root_idx in roots.iter() {
             let n = self.wide_parents(root_idx, &mut parents);
             subgraph.set(root_idx, n);
             self.find_subgraph_map(root_idx, &mut subgraph);
         }
-        let mut index_map = HbMap::new_minus_one();
+        let mut index_map = HbMap::new();
         let mut made_changes = false;
         let entries: Vec<(u32, u32)> = subgraph.iter().collect();
         for (node, subgraph_incoming_edges) in entries {
@@ -762,7 +816,10 @@ impl Graph {
         if !made_changes {
             return false;
         }
-        let new_subgraph: Vec<u32> = subgraph.keys().map(|k| index_map.has(k).unwrap_or(k)).collect();
+        let new_subgraph: Vec<u32> = subgraph
+            .keys()
+            .map(|k| index_map.has(k).unwrap_or(k))
+            .collect();
         self.remap_obj_indices(&index_map, &new_subgraph, false);
         let parents_vec: Vec<u32> = parents.iter().copied().collect();
         self.remap_obj_indices(&index_map, &parents_vec, true);
@@ -842,7 +899,11 @@ impl Graph {
         let num_real = self.vertices[parent_idx as usize].real_links.len();
         let total = num_real + self.vertices[parent_idx as usize].virtual_links.len();
         for count in 0..total {
-            let (is_virtual, idx) = if count < num_real { (false, count) } else { (true, count - num_real) };
+            let (is_virtual, idx) = if count < num_real {
+                (false, count)
+            } else {
+                (true, count - num_real)
+            };
             let objidx = if is_virtual {
                 self.vertices[parent_idx as usize].virtual_links[idx].objidx
             } else {
@@ -1006,17 +1067,27 @@ impl Graph {
 
     /// `add_link (offset, parent_id, child_id)` for a 16-bit offset at `position`.
     pub(crate) fn add_link(&mut self, position: u32, parent_id: u32, child_id: u32) {
-        self.vertices[parent_id as usize].real_links.push(GLink::new(2, child_id, position));
+        self.vertices[parent_id as usize]
+            .real_links
+            .push(GLink::new(2, child_id, position));
         self.vertices[child_id as usize].add_parent(parent_id, false);
     }
 
     /// `move_child`: the 16-bit offset at `old_position` of the old parent now sits at
     /// `new_position` of the new one.
-    pub(crate) fn move_child(&mut self, old_parent_idx: u32, old_position: usize, new_parent_idx: u32, new_position: usize) -> u32 {
+    pub(crate) fn move_child(
+        &mut self,
+        old_parent_idx: u32,
+        old_position: usize,
+        new_parent_idx: u32,
+        new_position: usize,
+    ) -> u32 {
         self.distance_invalid = true;
         self.positions_invalid = true;
         let child_id = self.index_for_offset(old_parent_idx, old_position);
-        self.vertices[new_parent_idx as usize].real_links.push(GLink::new(2, child_id, new_position as u32));
+        self.vertices[new_parent_idx as usize]
+            .real_links
+            .push(GLink::new(2, child_id, new_position as u32));
         self.vertices[child_id as usize].add_parent(new_parent_idx, false);
         self.vertices[old_parent_idx as usize].remove_real_link(child_id, old_position as u32);
         self.vertices[child_id as usize].remove_parent(old_parent_idx);
@@ -1061,7 +1132,10 @@ impl Graph {
 
     /// `will_overflow (graph, &overflows)`: with `overflows` set, collects the records and returns
     /// whether there are any.
-    pub(crate) fn will_overflow(&mut self, mut overflows: Option<&mut Vec<OverflowRecord>>) -> bool {
+    pub(crate) fn will_overflow(
+        &mut self,
+        mut overflows: Option<&mut Vec<OverflowRecord>>,
+    ) -> bool {
         if let Some(o) = overflows.as_deref_mut() {
             o.clear();
         }
@@ -1073,14 +1147,21 @@ impl Graph {
                 if is_valid_offset(offset, link) {
                     continue;
                 }
-                let Some(o) = overflows.as_deref_mut() else { return true };
+                let Some(o) = overflows.as_deref_mut() else {
+                    return true;
+                };
                 // The record set is keyed by the hash of the record (the key is a pointer to a
                 // reused local, so only the hash tells the records apart).
-                let hash = (parent_idx.wrapping_mul(2_654_435_761).wrapping_mul(31)).wrapping_add(link.objidx.wrapping_mul(2_654_435_761)) & 0x3FFF_FFFF;
+                let hash = (parent_idx.wrapping_mul(2_654_435_761).wrapping_mul(31))
+                    .wrapping_add(link.objidx.wrapping_mul(2_654_435_761))
+                    & 0x3FFF_FFFF;
                 if !record_set.insert(hash) {
                     continue;
                 }
-                o.push(OverflowRecord { parent: parent_idx, child: link.objidx });
+                o.push(OverflowRecord {
+                    parent: parent_idx,
+                    child: link.objidx,
+                });
             }
         }
         match overflows {
@@ -1139,12 +1220,12 @@ fn is_valid_offset(offset: i64, link: &GLink) -> bool {
     }
     if link.is_signed {
         if link.width == 4 {
-            offset >= -(1i64 << 31) && offset < (1i64 << 31)
+            (-(1i64 << 31)..(1i64 << 31)).contains(&offset)
         } else {
             (-(1 << 15)..(1 << 15)).contains(&offset)
         }
     } else if link.width == 4 {
-        offset >= 0 && offset < (1i64 << 32)
+        (0..(1i64 << 32)).contains(&offset)
     } else if link.width == 3 {
         (0..(1 << 24)).contains(&offset)
     } else {
@@ -1153,7 +1234,12 @@ fn is_valid_offset(offset: i64, link: &GLink) -> bool {
 }
 
 /// `vertex_t::link_positions_valid`.
-fn link_positions_valid(v: &Vertex, num_objects: usize, removed_nil: bool, original: &[Link]) -> bool {
+fn link_positions_valid(
+    v: &Vertex,
+    num_objects: usize,
+    removed_nil: bool,
+    original: &[Link],
+) -> bool {
     let mut assigned: BTreeSet<u32> = BTreeSet::new();
     for l in original {
         if l.objidx >= num_objects || (removed_nil && l.objidx == 0) {

@@ -116,15 +116,8 @@ fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-#[test]
-fn subset_matches_hb_subset() {
-    let fonts_dir = repo_root().join("third_party/skia/resources/fonts");
-    if !fonts_dir.is_dir() {
-        // The resources come from third_party/skia, which is absent from some checkouts.
-        eprintln!("todo: skipping, missing third_party/skia/resources/fonts");
-        return;
-    }
-    let dir = repo_root().join("oracle/subset-diff");
+/// Replays `dir/corpus.txt` over the fonts of `fonts_dir` and compares with `dir/expected.txt`.
+fn replay(fonts_dir: &Path, dir: &Path, not_ported: &[(&str, &str)]) {
     let corpus = fs::read_to_string(dir.join("corpus.txt")).unwrap();
     let expected = fs::read_to_string(dir.join("expected.txt")).unwrap();
 
@@ -144,7 +137,7 @@ fn subset_matches_hb_subset() {
         want.insert(key, it.next().unwrap().to_string());
     }
 
-    let not_ported: BTreeMap<&str, &str> = NOT_PORTED.iter().copied().collect();
+    let not_ported_map: BTreeMap<&str, &str> = not_ported.iter().copied().collect();
     let mut exact = 0usize;
     let mut gaps: BTreeMap<String, usize> = BTreeMap::new();
     let mut font_cache: BTreeMap<String, Vec<u8>> = BTreeMap::new();
@@ -183,7 +176,7 @@ fn subset_matches_hb_subset() {
                     failures.push(format!("{key}: failed, want {want}"));
                 }
             }
-            Err(SubsetError::Unsupported(what)) => match not_ported.get(font) {
+            Err(SubsetError::Unsupported(what)) => match not_ported_map.get(font) {
                 Some(_) => *gaps.entry(format!("{font}: {what}")).or_default() += 1,
                 None => failures.push(format!("{key}: unexpectedly unsupported ({what})")),
             },
@@ -200,7 +193,7 @@ fn subset_matches_hb_subset() {
         failures.join("\n")
     );
     // A font in NOT_PORTED must still be unsupported, so that the list shrinks as the port grows.
-    let newly_exact: Vec<&str> = NOT_PORTED
+    let newly_exact: Vec<&str> = not_ported
         .iter()
         .map(|(font, _)| *font)
         .filter(|font| !gaps.keys().any(|g| g.starts_with(&format!("{font}:"))))
@@ -209,6 +202,31 @@ fn subset_matches_hb_subset() {
         newly_exact.is_empty(),
         "now ported, remove from NOT_PORTED: {newly_exact:?}"
     );
+}
+
+#[test]
+fn subset_matches_hb_subset() {
+    let fonts_dir = repo_root().join("third_party/skia/resources/fonts");
+    if !fonts_dir.is_dir() {
+        // The resources come from third_party/skia, which is absent from some checkouts.
+        eprintln!("todo: skipping, missing third_party/skia/resources/fonts");
+        return;
+    }
+    replay(
+        &fonts_dir,
+        &repo_root().join("oracle/subset-diff"),
+        NOT_PORTED,
+    );
+}
+
+/// The synthetic fonts of `oracle/subset-diff/gen_synthetic.py`: layout tables that overflow in ways
+/// that make hb-repacker promote lookups to extensions, split subtables and duplicate shared nodes.
+/// Two of them make `HarfBuzz` fail (a split `PairPos` format 2 that still does not fit), and the port
+/// must fail with it.
+#[test]
+fn repacker_matches_hb_subset_on_synthetic_fonts() {
+    let dir = repo_root().join("oracle/subset-diff/synthetic");
+    replay(&dir.join("fonts"), &dir, &[]);
 }
 
 /// A local-only run over a larger corpus: `HB_SUBSET_EXT_DIR` names a directory with `fonts/`,

@@ -409,7 +409,9 @@ fn ligature_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
             false
         } else {
             let ls = sub.off16(6 + 2 * i);
-            s.serialize_subset(o, 2, true, |s| ligature_set_subset(plan, s, ls))
+            s.serialize_subset(o, 2, true, |s| {
+                ligature_set_subset(plan, s, ls, coverage_idx)
+            })
         };
         if !ret {
             s.array_pop(out + 4);
@@ -420,7 +422,12 @@ fn ligature_subset(plan: &Plan<'_>, s: &mut Serializer, sub: View<'_>) -> bool {
 }
 
 /// `LigatureSet::subset` (LigatureSet.hh#L174-L192).
-fn ligature_set_subset(plan: &Plan<'_>, s: &mut Serializer, ls: View<'_>) -> bool {
+fn ligature_set_subset(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    ls: View<'_>,
+    coverage_idx: usize,
+) -> bool {
     let out = s.allocate(2);
     for k in 0..ls.u16(0) as usize {
         let snap = s.snapshot();
@@ -430,22 +437,36 @@ fn ligature_set_subset(plan: &Plan<'_>, s: &mut Serializer, ls: View<'_>) -> boo
             false
         } else {
             let lig = ls.off16(2 + 2 * k);
-            s.serialize_subset(o, 2, true, |s| ligature_subset_one(plan, s, lig))
+            s.serialize_subset(o, 2, true, |s| {
+                ligature_subset_one(plan, s, lig, coverage_idx)
+            })
         };
         if !ret {
             s.array_pop(out);
             s.revert(snap);
         }
     }
-    View::new(s.bytes()).u16(0) != 0
+    let any = View::new(s.bytes()).u16(0) != 0;
+    if any {
+        // Ensure Coverage table is always packed after this.
+        s.add_virtual_link(coverage_idx);
+    }
+    any
 }
 
 /// `Ligature::subset` (Ligature.hh#L165-L186).
-fn ligature_subset_one(plan: &Plan<'_>, s: &mut Serializer, lig: View<'_>) -> bool {
+fn ligature_subset_one(
+    plan: &Plan<'_>,
+    s: &mut Serializer,
+    lig: View<'_>,
+    coverage_idx: usize,
+) -> bool {
     let glyphset = &plan.glyphset_gsub;
     if !ligature_intersects(lig, glyphset) || !glyphset.contains(&lig.u16(0)) {
         return false;
     }
+    // Ensure Coverage table is always packed after this.
+    s.add_virtual_link(coverage_idx);
     let out = s.allocate(4);
     s.set_u16(out, map_gid(plan, lig.u16(0)) as u16);
     let n = lig.u16(2).saturating_sub(1) as usize;

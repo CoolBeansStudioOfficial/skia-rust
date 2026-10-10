@@ -327,6 +327,22 @@ impl Serializer {
         }
     }
 
+    /// Port of `object_t::add_virtual_link` (hb-serialize.hh#L90-L108) on the current object: an
+    /// ordering constraint for the repacker, with no bytes.
+    pub(crate) fn add_virtual_link(&mut self, objidx: ObjIdx) {
+        if objidx == 0 || self.in_error() || self.stack.is_empty() {
+            return;
+        }
+        self.cur().virtual_links.push(Link {
+            width: 0,
+            is_signed: false,
+            whence: Whence::Head,
+            bias: 0,
+            position: 0,
+            objidx,
+        });
+    }
+
     /// Port of `add_link()` (hb-serialize.hh#L511-L545). `pos` is the position of the offset
     /// field in the current object.
     pub(crate) fn add_link(
@@ -356,7 +372,15 @@ impl Serializer {
     pub(crate) fn object_graph(&self) -> Vec<Option<(Vec<u8>, Vec<Link>, Vec<Link>)>> {
         self.packed
             .iter()
-            .map(|o| o.as_ref().map(|o| (o.data.clone(), o.real_links.clone(), o.virtual_links.clone())))
+            .map(|o| {
+                o.as_ref().map(|o| {
+                    (
+                        o.data.clone(),
+                        o.real_links.clone(),
+                        o.virtual_links.clone(),
+                    )
+                })
+            })
             .collect()
     }
 
