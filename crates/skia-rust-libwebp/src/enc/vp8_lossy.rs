@@ -43,13 +43,18 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
-#![allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss
+)]
 
 use super::picture::{YuvPicture, import_rgba};
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_cost::VP8EncProba;
-use super::vp8_encoder::{LossyConfig, MbInfo, RdLevel, SegmentHeader, FilterHeader, SegmentInfo, VP8Encoder};
+use super::vp8_encoder::{
+    FilterHeader, LossyConfig, MbInfo, RdLevel, SegmentHeader, SegmentInfo, VP8Encoder,
+};
 use super::vp8_frame::analyze_and_code;
 use super::vp8_syntax::vp8_enc_write;
 use super::vp8_token::VP8TBuffer;

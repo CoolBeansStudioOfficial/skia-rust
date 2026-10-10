@@ -30,6 +30,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::resources::{get_resource_as_data, get_resource_as_image};
 use crate::{def_test, reporter_assert};
+use skia_rust_codec::encode::webp_encoder::{self as webp, Compression};
+use skia_rust_libwebp::get_features;
 
 /// Port of `PNG_KEYWORD_MAX_LENGTH` (png.h).
 const PNG_KEYWORD_MAX_LENGTH: usize = 79;
@@ -585,3 +587,102 @@ def_test!(Encode_Alpha, |reporter| {
         }
     }
 });
+
+// Port of: tests/EncodeTest.cpp#L508-L559 (chrome/m156)
+def_test!(Encode_WebpQuality, |reporter| {
+    let mut bm = Bitmap::new();
+    let info = ImageInfo::new((100, 100), ColorType::N32, AlphaType::Premul, None);
+    bm.alloc_pixels_info(&info, None);
+    bm.erase_color(Color::BLUE);
+    let pixmap = bm.pixmap();
+
+    let mut opts = webp::Options {
+        compression: Compression::Lossless,
+        ..webp::Options::default()
+    };
+    let data_lossless = webp::encode_pixmap(&pixmap, &opts);
+    reporter_assert!(reporter, data_lossless.is_some());
+
+    opts.compression = Compression::Lossy;
+    opts.quality = 99.0;
+    let data_lossy = webp::encode_pixmap(&pixmap, &opts);
+    reporter_assert!(reporter, data_lossy.is_some());
+
+    // `expected` is true for a lossless encode; the format is what WebPGetFeatures reports.
+    let mut test = |data: &Option<Data>, expected_lossless: bool| {
+        let Some(data) = data else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        let Ok(features) = get_features(data.as_bytes()) else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        reporter_assert!(reporter, features.is_lossless == expected_lossless);
+    };
+
+    test(&data_lossy, false);
+    test(&data_lossless, true);
+});
+
+// Port of: tests/EncodeTest.cpp#L561-L607 (chrome/m156)
+def_test!(
+    #[ignore = "needs the lossy WebP encoder for pictures with transparency (ALPH: VP8L at method 3, not ported)"]
+    Encode_WebpOptions,
+    |reporter| {
+        // ToolUtils::GetResourceAsBitmap: the test returns when the resource is not available.
+        let Some(image) = get_resource_as_image("images/google_chrome.ico") else {
+            return;
+        };
+        let Some(bitmap) = image.as_legacy_bitmap() else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        let Some(src) = bitmap.peek_pixels() else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+
+        let mut options = webp::Options {
+            compression: Compression::Lossless,
+            quality: 0.0,
+        };
+        let data0 = webp::encode_pixmap(&src, &options);
+        reporter_assert!(reporter, data0.is_some());
+
+        options.quality = 100.0;
+        let data1 = webp::encode_pixmap(&src, &options);
+        reporter_assert!(reporter, data1.is_some());
+
+        options.compression = Compression::Lossy;
+        options.quality = 100.0;
+        let data2 = webp::encode_pixmap(&src, &options);
+        reporter_assert!(reporter, data2.is_some());
+
+        options.compression = Compression::Lossy;
+        options.quality = 50.0;
+        let data3 = webp::encode_pixmap(&src, &options);
+        reporter_assert!(reporter, data3.is_some());
+
+        let (Some(data0), Some(data1), Some(data2), Some(data3)) = (data0, data1, data2, data3)
+        else {
+            return;
+        };
+        reporter_assert!(reporter, data0.size() > data1.size());
+        reporter_assert!(reporter, data1.size() > data2.size());
+        reporter_assert!(reporter, data2.size() > data3.size());
+
+        let decode = |data: Data| {
+            deferred_from_encoded_data(Some(data), None).and_then(|img| img.as_legacy_bitmap())
+        };
+        let (Some(bm0), Some(bm1), Some(bm2), Some(bm3)) =
+            (decode(data0), decode(data1), decode(data2), decode(data3))
+        else {
+            reporter_assert!(reporter, false);
+            return;
+        };
+        reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm1, 0));
+        reporter_assert!(reporter, almost_equals_bitmap(&bm0, &bm2, 90));
+        reporter_assert!(reporter, almost_equals_bitmap(&bm2, &bm3, 50));
+    }
+);

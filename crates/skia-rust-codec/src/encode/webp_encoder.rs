@@ -6,11 +6,12 @@
 // Compression}`).
 //
 // Ported: the lossless encoder (`Compression::Lossless`, libwebp's VP8L at `method 0`, as
-// `SkWebpEncoderImpl` sets it), through `skia_rust_libwebp::enc`.
+// `SkWebpEncoderImpl` sets it), and the lossy encoder (`Compression::Lossy`, libwebp's VP8 at
+// `method 3`, `WebPConfigPreset(DEFAULT, quality)`) for opaque pictures, through
+// `skia_rust_libwebp::enc`.
 //
 // Not ported, and reported as `false` / `None` rather than encoded differently:
-// - `Compression::Lossy`: the VP8 lossy encoder (libwebp `enc/`), which is not in
-//   `skia-rust-libwebp` yet.
+// - lossy pictures with transparency: the ALPH chunk needs the VP8L encoder at `method 3`.
 // - an ICC profile on the pixmap's colour space: the ICCP chunk is written by libwebp's WebPMux,
 //   which is not ported. Without a colour space the file is the plain VP8L bitstream, as in Skia.
 // - `EncodeAnimated` (WebPAnimEncoder) and the GPU-backed `EncodeImage` (no `DirectContext`
@@ -27,13 +28,14 @@ use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::color_type_is_alpha_only;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_libwebp::enc::encode_lossless;
+use skia_rust_libwebp::enc::vp8_lossy::encode_lossy;
 
 use crate::encode::icc::write_icc_profile;
 
 /// Port of `SkWebpEncoder::Compression`: lossy or lossless WebP.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 pub enum Compression {
-    /// The VP8 lossy encoder (not ported; see the module comment).
+    /// The VP8 lossy encoder (libwebp `method 3`), for pictures without transparency.
     #[default]
     Lossy,
     /// The VP8L lossless encoder.
@@ -60,9 +62,9 @@ impl Default for Options {
     }
 }
 
-/// `SkPixmap` pixels as ARGB words (`0xAARRGGBB`), read as unpremultiplied `RGBA_8888` the way
-/// `preprocess_webp_picture` imports them. Returns `None` for alpha-only or unreadable pixmaps.
-fn argb_pixels(src: &Pixmap<'_>) -> Option<Vec<u32>> {
+/// `SkPixmap` pixels as unpremultiplied `RGBA_8888` bytes, the way `preprocess_webp_picture`
+/// imports them. Returns `None` for alpha-only or unreadable pixmaps.
+fn rgba_pixels(src: &Pixmap<'_>) -> Option<Vec<u8>> {
     let info = src.info();
     if color_type_is_alpha_only(info.color_type()) {
         return None;
@@ -81,6 +83,13 @@ fn argb_pixels(src: &Pixmap<'_>) -> Option<Vec<u32>> {
     if !convert_pixels(&dst_info, &mut rgba, dst_rb, info, pixels, src.row_bytes()) {
         return None;
     }
+    Some(rgba)
+}
+
+/// `SkPixmap` pixels as ARGB words (`0xAARRGGBB`), read as unpremultiplied `RGBA_8888`.
+/// Returns `None` for alpha-only or unreadable pixmaps.
+fn argb_pixels(src: &Pixmap<'_>) -> Option<Vec<u32>> {
+    let rgba = rgba_pixels(src)?;
     Some(
         rgba.as_chunks::<4>()
             .0
@@ -101,16 +110,17 @@ fn encode_to_vec(src: &Pixmap<'_>, options: &Options) -> Option<Vec<u8>> {
     if !(0.0..=100.0).contains(&options.quality) {
         return None;
     }
-    match options.compression {
-        Compression::Lossy => return None,
-        Compression::Lossless => {}
-    }
     if write_icc_profile(src.color_space().as_ref()).is_some() {
         return None;
     }
     let info = src.info();
     let width = usize::try_from(info.width()).ok()?;
     let height = usize::try_from(info.height()).ok()?;
+    if options.compression == Compression::Lossy {
+        // SkWebpEncoderImpl: the RGBA import (use_argb = 0), with the quality as the preset's.
+        let rgba = rgba_pixels(src)?;
+        return encode_lossy(&rgba, width, height, options.quality, false);
+    }
     let argb = argb_pixels(src)?;
     // libwebp takes the quality as `(int)config->quality` once `WebPConfigPreset` has checked it.
     // The quality is in `0.0..=100.0` (checked above), so the truncation is libwebp's `(int)`.

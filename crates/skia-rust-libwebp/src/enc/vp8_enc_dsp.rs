@@ -39,7 +39,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -470,7 +469,9 @@ pub const I16_MODE_OFFSETS: [usize; 4] = [I16DC16, I16TM16, I16VE16, I16HE16];
 /// Port of `VP8UVModeOffsets`: the chroma modes DC, TM, VE, HE.
 pub const UV_MODE_OFFSETS: [usize; 4] = [C8DC8, C8TM8, C8VE8, C8HE8];
 /// Port of `VP8I4ModeOffsets`: the ten intra 4x4 modes.
-pub const I4_MODE_OFFSETS: [usize; 10] = [I4DC4, I4TM4, I4VE4, I4HE4, I4RD4, I4VR4, I4LD4, I4VL4, I4HD4, I4HU4];
+pub const I4_MODE_OFFSETS: [usize; 10] = [
+    I4DC4, I4TM4, I4VE4, I4HE4, I4RD4, I4VR4, I4LD4, I4VL4, I4HD4, I4HU4,
+];
 
 #[inline]
 fn avg3(a: u8, b: u8, c: u8) -> u8 {
@@ -864,7 +865,11 @@ pub fn quantize_block(input: &mut [i16], out: &mut [i16], mtx: &VP8Matrix) -> bo
     for n in 0..16 {
         let j = K_ZIGZAG[n];
         let sign = i32::from(input[j]) < 0;
-        let coeff = (if sign { -i32::from(input[j]) } else { i32::from(input[j]) } as u32)
+        let coeff = (if sign {
+            -i32::from(input[j])
+        } else {
+            i32::from(input[j])
+        } as u32)
             .wrapping_add(u32::from(mtx.sharpen[j]));
         if coeff > mtx.zthresh[j] {
             let q = u32::from(mtx.q[j]);

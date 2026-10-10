@@ -40,7 +40,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -51,17 +50,17 @@
 )]
 
 use super::picture::YuvPicture;
+use super::tree_tables::{VP8_COEFFS_PROBA0, VP8_COEFFS_UPDATE_PROBA};
 use super::vp8_analysis::vp8_enc_analyze;
 use super::vp8_cost::{
     NUM_BANDS, NUM_CTX, NUM_PROBAS, NUM_TYPES, VP8EncProba, bit_cost, calculate_level_costs,
     init_residual, set_residual_coeffs,
 };
-use super::vp8_encoder::{NUM_MB_SEGMENTS, VP8Encoder, VP8EncIterator};
+use super::vp8_encoder::{NUM_MB_SEGMENTS, VP8EncIterator, VP8Encoder};
 use super::vp8_filter::adjust_filter_strength;
 use super::vp8_mode::{ModeScore, vp8_decimate};
 use super::vp8_quant::vp8_set_segment_params;
 use super::vp8_token::VP8TBuffer;
-use super::tree_tables::{VP8_COEFFS_PROBA0, VP8_COEFFS_UPDATE_PROBA};
 
 /// Port of `MIN_COUNT`: the minimum number of macroblocks before the probabilities are updated.
 const MIN_COUNT: usize = 96;
@@ -101,9 +100,8 @@ fn set_segment_probas(enc: &mut VP8Encoder) {
         probas[0] = get_proba(p[0] + p[1], p[2] + p[3]);
         probas[1] = get_proba(p[0], p[1]);
         probas[2] = get_proba(p[2], p[3]);
-        enc.segment_hdr.update_map = i32::from(
-            probas[0] != 255 || probas[1] != 255 || probas[2] != 255,
-        );
+        enc.segment_hdr.update_map =
+            i32::from(probas[0] != 255 || probas[1] != 255 || probas[2] != 255);
         let pr = enc.proba.segments;
         if enc.segment_hdr.update_map == 0 {
             // ResetSegments
@@ -141,11 +139,7 @@ fn reset_token_stats(proba: &mut VP8EncProba) {
 
 /// Port of `CalcTokenProba`.
 fn calc_token_proba(nb: i32, total: i32) -> i32 {
-    if nb != 0 {
-        255 - nb * 255 / total
-    } else {
-        255
-    }
+    if nb != 0 { 255 - nb * 255 / total } else { 255 }
 }
 
 /// Port of `BranchCost`.
@@ -254,7 +248,8 @@ pub fn vp8_enc_token_loop(enc: &mut VP8Encoder, pic: &YuvPicture) -> bool {
     let mut tokens = std::mem::take(&mut enc.tokens);
     while ok && num_pass_left > 0 {
         num_pass_left -= 1;
-        let is_last_pass = stats_dq.abs() <= 0.4 || num_pass_left == 0 || enc.max_i4_header_bits == 0;
+        let is_last_pass =
+            stats_dq.abs() <= 0.4 || num_pass_left == 0 || enc.max_i4_header_bits == 0;
         let mut size_p0: u64 = 0;
         let mut cnt = max_count as i64;
         let mut it = VP8EncIterator::new(enc);
@@ -312,7 +307,9 @@ pub fn vp8_enc_token_loop(enc: &mut VP8Encoder, pic: &YuvPicture) -> bool {
 
 /// Port of `PreLoopInitialize`'s partition setup: the token partitions of the frame.
 pub fn init_partitions(enc: &mut VP8Encoder) {
-    enc.parts = (0..enc.num_parts).map(|_| super::vp8_bit_writer::VP8BitWriter::new()).collect();
+    enc.parts = (0..enc.num_parts)
+        .map(|_| super::vp8_bit_writer::VP8BitWriter::new())
+        .collect();
 }
 
 /// Port of `VP8EncAnalyze`'s caller order in `WebPEncode`: analysis, then the token loop.

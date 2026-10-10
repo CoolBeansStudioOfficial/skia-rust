@@ -37,7 +37,6 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -51,8 +50,8 @@
 
 use super::picture::YuvPicture;
 use super::vp8_enc_dsp::{
-    Edge, I16_MODE_OFFSETS, UV_MODE_OFFSETS, VP8Histogram, collect_histogram, intra16_preds,
-    intra_chroma_preds,
+    Edge, I16_MODE_OFFSETS, UV_MODE_OFFSETS, VP8Histogram, collect_histogram, intra_chroma_preds,
+    intra16_preds,
 };
 use super::vp8_encoder::{NUM_MB_SEGMENTS, U_OFF_ENC, VP8EncIterator, VP8Encoder, Y_OFF_ENC};
 

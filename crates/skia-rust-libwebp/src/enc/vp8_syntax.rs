@@ -41,13 +41,16 @@
     clippy::precedence,
     clippy::unusual_byte_groupings
 )]
-
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::too_many_lines)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
+)]
 
 use super::vp8_bit_writer::VP8BitWriter;
 use super::vp8_encoder::{NUM_MB_SEGMENTS, VP8EncIterator, VP8Encoder};
 use super::vp8_tree::{
-    bmode_probas, put_i16_mode, put_i4_mode, put_segment, put_uv_mode, write_probas,
+    bmode_probas, put_i4_mode, put_i16_mode, put_segment, put_uv_mode, write_probas,
 };
 
 /// Port of `RIFF_HEADER_SIZE`.
