@@ -376,6 +376,8 @@ pub mod sk_color4f_test;
 #[cfg(test)]
 pub mod sk_color_space_xform_steps_test;
 #[cfg(test)]
+pub mod sk_dom_test;
+#[cfg(test)]
 pub mod sk_font_metrics_priv_test;
 #[cfg(test)]
 pub mod sk_gauss_filter_test;
