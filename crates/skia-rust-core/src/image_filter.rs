@@ -21,11 +21,14 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::color_filter::ColorFilter;
+use crate::image::Image;
 use crate::image_filter_result::FilterResult;
-use crate::image_filter_types::{Context, Mapping, MatrixCapability, round_out};
+use crate::image_filter_types::{Backend, Context, Mapping, MatrixCapability, Stats, round_out};
 use crate::m44::M44;
 use crate::matrix::Matrix;
+use crate::point::IPoint;
 use crate::point::Point;
+use crate::rect::Contains;
 use crate::rect::{IRect, Rect, rect_priv};
 
 /// `SkImageFilter_Base::Direction`'s `SkImageFilter::MapDirection`.
@@ -361,6 +364,54 @@ impl ImageFilter {
     #[must_use]
     pub fn as_base(&self) -> &dyn ImageFilterBase {
         &*self.0
+    }
+
+    /// `makeImageWithFilter(backend, src, subset, clipBounds, outSubset, offset)`: filters the
+    /// `subset` of `src` with `backend`, restricted to `clip_bounds`. Returns the image, the
+    /// subset of it that holds the result (`outSubset`) and where that subset goes relative to
+    /// `src`'s origin (`offset`), or `None` if `subset` is not within `src` or filtering fails.
+    ///
+    /// The `SkImages::MakeWithFilter` factories (raster: `skia_rust_raster::images`, Graphite:
+    /// `skia_rust_gpu::graphite::image_factories`) call this with their backend.
+    // Port of: src/core/SkImageFilter.cpp#L265-L300 (chrome/m156)
+    #[doc(alias = "makeImageWithFilter")]
+    #[must_use]
+    pub fn make_image_with_filter(
+        &self,
+        backend: Arc<dyn Backend>,
+        src: &Image,
+        subset: &IRect,
+        clip_bounds: &IRect,
+    ) -> Option<(Image, IRect, IPoint)> {
+        // (`outSubset` and `offset` are the returned tuple, so they cannot be null.)
+        if !src.bounds().contains(subset) {
+            return None;
+        }
+
+        let src_special_image = backend.make_image(subset, src)?;
+
+        let stats = Stats::default();
+        let context = Context::new(
+            backend,
+            Mapping::from_layer_matrix(&M44::new_identity()),
+            *clip_bounds,
+            FilterResult::new(Some(Arc::new(src_special_image)), subset.top_left()),
+            src.color_space(),
+            Some(&stats),
+        );
+
+        let (result, offset) = self.0.filter_image(&context).image_and_offset(&context);
+        // (`stats.reportStats()` only prints in debug builds of Skia.)
+
+        let result = result?;
+
+        debug_assert!(clip_bounds.contains(&IRect::from_xywh(
+            offset.x,
+            offset.y,
+            result.width(),
+            result.height()
+        )));
+        Some((result.as_image()?, result.subset(), offset))
     }
 
     /// True if `self` and `other` are the same filter (Skia's `sk_sp` comparison).

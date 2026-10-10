@@ -34997,7 +34997,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1915-L1936"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "a5935d880c36caeebf926377f5b5fbe6ef552acac4350b376b1bfc86f83fd38e"
 
 [[test]]
@@ -35016,7 +35016,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/ImageFilterTest.cpp#L1972-L2000"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "bd95df1a4e3d90e7a08ddafdb127e1ead82c49ffcd79f0524b571a80eaa4e865"
 
 [[test]]
