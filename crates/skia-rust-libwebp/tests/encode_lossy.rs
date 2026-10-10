@@ -13,6 +13,8 @@
 
 mod common;
 
+use std::fmt::Write as _;
+
 use common::lossy_corpus::{IMAGES, fnv1a64, make_rgba};
 use skia_rust_libwebp::enc::vp8_lossy::encode_lossy;
 
@@ -27,31 +29,33 @@ fn lossy_encode_matches_c_reference_for_opaque_images() {
         if kind == 4 || kind == 7 {
             continue;
         }
-        for quality in [0u32, 50, 100] {
+        for quality in [0.0f32, 50.0, 100.0] {
             for rgbx in [false, true] {
                 let mut rgba = make_rgba(kind, w, h);
                 if rgbx {
-                    for px in rgba.chunks_exact_mut(4) {
+                    for px in rgba.as_chunks_mut::<4>().0 {
                         px[3] = 255;
                     }
                 }
-                let bytes = encode_lossy(&rgba, w, h, quality as f32, rgbx).expect("encodes");
+                let bytes = encode_lossy(&rgba, w, h, quality, rgbx).expect("encodes");
                 let rgbx_tag = if rgbx { " rgbx" } else { "" };
-                actual.push_str(&format!(
-                    "{name} {w} {h} {quality}{rgbx_tag} {} {:016x}\n",
+                writeln!(
+                    actual,
+                    "{name} {w} {h} {quality}{rgbx_tag} {} {:016x}",
                     bytes.len(),
                     fnv1a64(&bytes)
-                ));
+                )
+                .expect("write to String");
             }
         }
     }
-    let expected: String = EXPECTED
-        .lines()
-        .filter(|l| {
-            let name = l.split(' ').next().unwrap_or("");
-            !name.starts_with("noise_alpha") && !name.starts_with("alpha_ramp")
-        })
-        .map(|l| format!("{l}\n"))
-        .collect();
+    let mut expected = String::new();
+    for l in EXPECTED.lines() {
+        let name = l.split(' ').next().unwrap_or("");
+        if !name.starts_with("noise_alpha") && !name.starts_with("alpha_ramp") {
+            expected.push_str(l);
+            expected.push('\n');
+        }
+    }
     assert_eq!(actual, expected);
 }

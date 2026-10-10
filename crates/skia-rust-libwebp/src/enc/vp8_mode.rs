@@ -15,6 +15,30 @@
 //! The C swaps the `yuv_out_` and `yuv_out2_` pointers and the `dst`/`tmp_dst` pointers; the port
 //! swaps the offsets into the iterator's work area, which are the same pointers.
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::bool_to_int_with_if,
+    clippy::cast_precision_loss,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -78,7 +102,7 @@ fn mult_8b(a: i32, b: i32) -> i32 {
 }
 
 /// Port of `VP8ModeScore` (`vp8i_enc.h`): the score and the levels of one mode decision.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ModeScore {
     /// `D`: distortion.
     pub d: i64,
@@ -108,25 +132,7 @@ pub struct ModeScore {
     pub derr: [[i8; 3]; 2],
 }
 
-impl Default for ModeScore {
-    fn default() -> Self {
-        Self {
-            d: 0,
-            sd: 0,
-            h: 0,
-            r: 0,
-            score: 0,
-            y_dc_levels: [0; 16],
-            y_ac_levels: [[0; 16]; 16],
-            uv_levels: [[0; 16]; 8],
-            mode_i16: 0,
-            modes_i4: [0; 16],
-            mode_uv: 0,
-            nz: 0,
-            derr: [[0; 3]; 2],
-        }
-    }
-}
+
 
 /// Port of `InitScore`.
 fn init_score(rd: &mut ModeScore) {

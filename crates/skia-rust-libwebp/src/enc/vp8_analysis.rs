@@ -13,6 +13,31 @@
 //! reached), `preprocessing = 0` (no `SmoothSegmentMap`) and `segments = 4`, so `VP8EncAnalyze`
 //! always takes the segment job. The single-segment `ResetAllMBInfo` path is ported.
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::too_many_arguments,
+    clippy::bool_to_int_with_if,
+    clippy::cast_precision_loss,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -85,7 +110,7 @@ fn final_alpha_value(alpha: i32) -> i32 {
 }
 
 /// Port of `GetAlpha`.
-fn get_alpha(histo: &VP8Histogram) -> i32 {
+fn get_alpha(histo: VP8Histogram) -> i32 {
     let max_value = histo.max_value;
     let last_non_zero = histo.last_non_zero;
     if max_value > 1 {
@@ -228,7 +253,7 @@ fn mb_analyze_best_intra16_mode(enc: &mut VP8Encoder, it: &mut VP8EncIterator) -
             0,
             16,
         );
-        let alpha = get_alpha(&histo);
+        let alpha = get_alpha(histo);
         if alpha > best_alpha {
             best_alpha = alpha;
             best_mode = mode;
@@ -252,7 +277,7 @@ fn mb_analyze_best_uv_mode(enc: &mut VP8Encoder, it: &mut VP8EncIterator) -> i32
             16,
             16 + 4 + 4,
         );
-        let alpha = get_alpha(&histo);
+        let alpha = get_alpha(histo);
         if alpha > best_alpha {
             best_alpha = alpha;
         }
@@ -291,7 +316,7 @@ fn mb_analyze(
 
 /// Port of `ResetAllMBInfo`: the single default segment, for `segments == 1` pictures.
 fn reset_all_mb_info(enc: &mut VP8Encoder) {
-    for mb in enc.mb_info.iter_mut() {
+    for mb in &mut enc.mb_info {
         mb.type_ = 1; // I16x16
         mb.uv_mode = 0;
         mb.skip = 0; // not skipped

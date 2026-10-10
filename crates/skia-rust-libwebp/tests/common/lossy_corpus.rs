@@ -2,6 +2,10 @@
 //! and `yuv_import.c`): the image generators of `encode_lossless.c` (`make_image`) as RGBA bytes,
 //! the case list in the order of `main`, and the FNV-1a hash the references print.
 
+// The generators mirror the C reference's `uint8_t` and `int` arithmetic, so their casts wrap as the
+// C conversions do; the single-letter names are the C names (x, y, r, g, b, a).
+#![allow(clippy::cast_possible_truncation, clippy::many_single_char_names)]
+
 /// One corpus image: name, generator kind, width, height.
 pub const IMAGES: [(&str, u32, usize, usize); 12] = [
     ("gradient_37x23", 0, 37, 23),

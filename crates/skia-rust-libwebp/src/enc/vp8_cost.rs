@@ -12,6 +12,32 @@
 //! The C `remapped_costs_` pointer table is `level_cost[type][VP8EncBands[n]][ctx]`; the port
 //! reads that directly, which is the same entry the C pointer names.
 
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::too_many_arguments,
+    clippy::bool_to_int_with_if,
+    clippy::cast_precision_loss,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::manual_range_contains,
+    clippy::too_many_lines,
+    clippy::struct_excessive_bools,
+    clippy::fn_params_excessive_bools,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,

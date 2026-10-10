@@ -22,6 +22,27 @@
 
 // The C arithmetic mixes int, uint32_t and uint8_t, and the casts below are the width and sign
 // conversions of the C source. The index loops keep the C control flow for readability.
+// Clippy allows for the C arithmetic and control flow: the C code mixes int, uint32_t
+// and uint8_t, spells table offsets as `0 + 0 * BPS`, nests the mode trees as `if` chains,
+// and indexes by position. The port keeps those shapes so that each line can be checked
+// against the C source; the casts are the width and sign conversions of the C source.
+#![allow(
+    clippy::identity_op,
+    clippy::erasing_op,
+    clippy::collapsible_if,
+    clippy::collapsible_else_if,
+    clippy::too_many_arguments,
+    clippy::bool_to_int_with_if,
+    clippy::unreadable_literal,
+    clippy::if_not_else,
+    clippy::needless_pass_by_value,
+    clippy::items_after_statements,
+    clippy::float_cmp,
+    clippy::int_plus_one,
+    clippy::precedence,
+    clippy::unusual_byte_groupings
+)]
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -121,11 +142,7 @@ fn linear_to_gamma(base_value: u32, shift: i32) -> i32 {
 /// entries and was checked against this formula for every entry.
 #[inline]
 fn inv_alpha(a: u32) -> u32 {
-    if a == 0 {
-        0
-    } else {
-        (1u32 << K_ALPHA_FIX) / a
-    }
+    (1u32 << K_ALPHA_FIX).checked_div(a).unwrap_or(0)
 }
 
 /// Port of `DIVIDE_BY_ALPHA` for the `USE_INVERSE_ALPHA_TABLE` branch (which `picture_csp_enc.c`

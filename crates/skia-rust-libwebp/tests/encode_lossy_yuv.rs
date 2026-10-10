@@ -13,6 +13,8 @@
 
 mod common;
 
+use std::fmt::Write as _;
+
 use common::lossy_corpus::{IMAGES, fnv1a64, make_rgba};
 use skia_rust_libwebp::enc::picture::import_rgba;
 
@@ -30,19 +32,18 @@ fn yuv_import_matches_c_reference() {
             }
             let mut rgba = make_rgba(kind, w, h);
             if rgbx {
-                for px in rgba.chunks_exact_mut(4) {
+                for px in rgba.as_chunks_mut::<4>().0 {
                     px[3] = 255;
                 }
             }
             let pic = import_rgba(&rgba, 4 * w, w, h, false, !rgbx).expect("import");
-            let mut line = format!("{name} {w} {h} {}", u8::from(rgbx));
+            write!(actual, "{name} {w} {h} {}", u8::from(rgbx)).expect("write to String");
             for plane in [Some(&pic.y), Some(&pic.u), Some(&pic.v), pic.a.as_ref()] {
                 match plane {
-                    Some(p) => line.push_str(&format!(" {:016x}", fnv1a64(p))),
-                    None => line.push_str(" -"),
+                    Some(p) => write!(actual, " {:016x}", fnv1a64(p)).expect("write to String"),
+                    None => actual.push_str(" -"),
                 }
             }
-            actual.push_str(&line);
             actual.push('\n');
         }
     }
