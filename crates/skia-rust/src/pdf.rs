@@ -196,3 +196,44 @@ pub fn new_document<'a, W: io::Write + ?Sized>(
 pub fn set_node_id(canvas: &Canvas, node_id: i32) {
     skia_rust_pdf::set_node_id(canvas, node_id);
 }
+
+#[cfg(test)]
+mod tests {
+    use skia_rust_core::paint::Paint;
+    use skia_rust_core::rect::Rect;
+
+    use super::{Metadata, new_document};
+
+    // Port of: rust-skia skia-safe/src/docs/pdf_document.rs (`generate_pdf_with_structure_and_attributes`
+    // shape: a document with a structure tree, written through `std::io::Write`).
+    #[test]
+    fn writes_a_pdf_through_io_write() {
+        let mut bytes: Vec<u8> = Vec::new();
+        {
+            let mut root = super::StructureElementNode::new("Document");
+            root.node_id = 1;
+            let metadata = Metadata {
+                title: "Facade".to_owned(),
+                structure_element_tree_root: Some(root),
+                ..Metadata::default()
+            };
+            let document = new_document(&mut bytes, Some(&metadata));
+            let mut document = document.begin_page((200.0, 200.0), None);
+            super::set_node_id(document.canvas(), 1);
+            document
+                .canvas()
+                .draw_rect(Rect::from_wh(50.0, 50.0), &Paint::default());
+            assert_eq!(document.page(), 1);
+            let document = document.end_page();
+            assert_eq!(document.pages(), 1);
+            document.close();
+        }
+        assert!(bytes.starts_with(b"%PDF-1.4"));
+        assert!(bytes.ends_with(b"%%EOF\n"));
+        assert!(
+            bytes
+                .windows(b"/StructTreeRoot".len())
+                .any(|w| w == b"/StructTreeRoot")
+        );
+    }
+}

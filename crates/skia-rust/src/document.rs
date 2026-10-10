@@ -42,7 +42,6 @@ impl<State: std::fmt::Debug> std::fmt::Debug for Document<'_, State> {
 
 impl<State> Document<'_, State> {
     /// Stops writing the document. No trailer is written.
-    #[doc(alias = "abort")]
     pub fn abort(mut self) {
         self.document.abort();
     }
@@ -85,7 +84,6 @@ impl<'a> Document<'a, state::Open> {
     /// Closes the document, `close`, and writes it out.
     ///
     /// This function consumes and drops the document.
-    #[doc(alias = "close")]
     pub fn close(mut self) {
         self.document.close();
     }
