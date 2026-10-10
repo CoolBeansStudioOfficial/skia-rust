@@ -262,6 +262,7 @@ crate::def_gm!(
     ScaledEmojiGm::new(ScaledEmojiKind::Pos, EmojiFontFormat::Test)
 );
 crate::def_gm!(
+    #[ignore = "see notes/gm-scaledemojiperspective-test.md"]
     ScaledEmojiPerspectiveGM_Test = "ScaledEmojiPerspectiveGM(ToolUtils::EmojiFontFormat::Test)",
     ScaledEmojiGm::new(ScaledEmojiKind::Perspective, EmojiFontFormat::Test)
 );

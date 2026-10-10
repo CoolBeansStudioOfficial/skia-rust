@@ -24415,8 +24415,8 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/scaledemoji.cpp#L245-L245"
 module = "text"
-status = "todo"
-reason = "EmojiSample(Test) needs TestSVGTypeface (T20, not ported)"
+status = "failing"
+reason = "565/f16 differ in a few pixels of the smallest perspective glyphs; see notes/gm-scaledemojiperspective-test.md"
 span_hash = "fc541cd23891d42640c055361d022cb76a47841081af87ed4e963a1cf5962158"
 
 [[test]]
