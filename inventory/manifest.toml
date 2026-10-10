@@ -16262,8 +16262,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L248-L248"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "2f7ce0a62eb4ff8024755b208f3f1c7cb39e964f62886e4f4e3dee35338b2276"
 
 [[test]]
@@ -16272,8 +16271,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L247-L247"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "86e4b5b4cb9022b0cb1ad273abdcf2a3e9e7fa334d8db7b2241ab1441916216c"
 
 [[test]]
@@ -16282,8 +16280,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/animated_gif.cpp#L249-L249"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources, not ported)"
+status = "passing"
 span_hash = "efc2992a8cec1fac5460227544973a094fd3aa2ee4642f3541340f744b9148a4"
 
 [[test]]
@@ -30206,8 +30203,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecAnimTest.cpp#L613-L654"
 module = "codec"
-status = "todo"
-reason = "needs SkAnimCodecPlayer (modules/skresources), which is compiled only under SK_ENABLE_SKOTTIE (CodecAnimTest.cpp#L609-L656); Skottie is not part of this port"
+status = "passing"
 span_hash = "20b0d2a1236cc71076b533990a89d9c90a6c2b9911f11dcfb1dfa4ea85712cee"
 
 [[test]]

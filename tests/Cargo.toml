@@ -18,6 +18,7 @@ skia-rust-gpu.workspace = true
 skia-rust-skcms.workspace = true
 skia-rust-skottie.workspace = true
 skia-rust-sksg.workspace = true
+skia-rust-resources.workspace = true
 skia-rust-codec.workspace = true
 skia-rust-libwebp.workspace = true
 skia-rust-sksl = { workspace = true, features = ["wgsl"] }

@@ -1,9 +1,9 @@
 // Copyright 2018 Google LLC
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: tests/CodecAnimTest.cpp (chrome/m156), the cases that decode GIF only. The other cases
-// (Codec_565 and AndroidCodec_animated use WebP, Codec_frames also uses WebP, JPEG and DNG, and
-// AnimCodecPlayer needs SkOttie) are not ported yet.
+// Port of: tests/CodecAnimTest.cpp (chrome/m156), the cases that decode GIF and the
+// AnimCodecPlayer case. The other cases (Codec_565 and AndroidCodec_animated use WebP, Codec_frames
+// also uses WebP, JPEG and DNG) are not ported yet.
 
 #![cfg(test)]
 // Sizes and frame indices are small, so the int-to-float and int-to-index casts are exact, as in
@@ -14,7 +14,9 @@ use skia_rust_codec::android_codec::AndroidCodec;
 use skia_rust_codec::codec::{NO_FRAME, Options, Result};
 use skia_rust_codec::{Codec, decoders};
 use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::size::ISize;
 use skia_rust_core::stream::MemoryStream;
+use skia_rust_resources::AnimCodecPlayer;
 
 use crate::resources::get_resource_as_data;
 use crate::{Reporter, def_test, errorf, reporter_assert, skip_missing_resource};
@@ -162,6 +164,58 @@ def_test!(EncodedOriginToMatrixTest, |r| {
         reporter_assert!(
             r,
             inverse.is_some_and(|inverse| origin.to_matrix_inverse(100, 80) == inverse)
+        );
+    }
+});
+
+// Port of: tests/CodecAnimTest.cpp#L613-L654 (chrome/m156) (`DEF_TEST(AnimCodecPlayer)`)
+def_test!(AnimCodecPlayer, |r| {
+    // The file, its duration in milliseconds, and its size.
+    let cases: [(&str, u32, ISize); 14] = [
+        ("images/alphabetAnim.gif", 1300, ISize::new(100, 100)),
+        ("images/randPixels.gif", 0, ISize::new(8, 8)),
+        ("images/randPixels.jpg", 0, ISize::new(8, 8)),
+        ("images/randPixels.png", 0, ISize::new(8, 8)),
+        ("images/stoplight.webp", 2500, ISize::new(11, 29)),
+        ("images/stoplight_h.webp", 2500, ISize::new(29, 11)),
+        ("images/orientation/1.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/2.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/3.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/4.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/5.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/6.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/7.webp", 0, ISize::new(100, 80)),
+        ("images/orientation/8.webp", 0, ISize::new(100, 80)),
+    ];
+
+    for (file, duration, size) in cases {
+        let data = skip_missing_resource!(get_resource_as_data(file), file);
+        let Ok(codec) = Codec::make_from_stream(MemoryStream::make_copy(&data), decoders()) else {
+            errorf!(r, "Failed to decode {}", file);
+            continue;
+        };
+
+        let mut player = AnimCodecPlayer::new(codec);
+        reporter_assert!(r, player.duration() == duration);
+        reporter_assert!(r, player.dimensions() == size);
+
+        let f0 = player.get_frame();
+        reporter_assert!(r, f0.is_some());
+        reporter_assert!(
+            r,
+            f0.is_some_and(|frame| frame.bounds().size() == size),
+            "Mismatched size for initial frame of {}",
+            file
+        );
+
+        player.seek(500);
+        let f1 = player.get_frame();
+        reporter_assert!(r, f1.is_some());
+        reporter_assert!(
+            r,
+            f1.is_some_and(|frame| frame.bounds().size() == size),
+            "Mismatched size for frame at 500 ms of {}",
+            file
         );
     }
 });
