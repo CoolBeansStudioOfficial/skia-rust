@@ -405,8 +405,7 @@ fn gradient_function_code(info: &GradientData, result: &mut dyn WStream) {
                 a.to_opaque() == b.to_opaque()
             }
         };
-        let constant_color_both_sides =
-            eq_ignoring_alpha(&info.colors[i - 1], &info.colors[i]) && // This range is a solid color.
+        let constant_color_both_sides = eq_ignoring_alpha(&info.colors[i - 1], &info.colors[i]) && // This range is a solid color.
             i != color_count - 1 &&                                    // This is not the last range.
             eq_ignoring_alpha(&info.colors[i], &info.colors[i + 1]); // Next range is same solid color.
 
@@ -834,7 +833,17 @@ fn split_perspective(input: &Matrix) -> Option<(Matrix, Matrix)> {
     // p0 p1 p2
     // But we need the inverse of persp.
     let mut perspective_inverse = Matrix::new_identity();
-    perspective_inverse.set_all(one, zero, zero, zero, one, zero, -p0 / p2, -p1 / p2, 1.0 / p2);
+    perspective_inverse.set_all(
+        one,
+        zero,
+        zero,
+        zero,
+        one,
+        zero,
+        -p0 / p2,
+        -p1 / p2,
+        1.0 / p2,
+    );
 
     let mut affine = Matrix::new_identity();
     affine.set_all(
@@ -1009,18 +1018,17 @@ fn make_function_shader(doc: &DocHandle, state: &GradientKey) -> PdfIndirectRefe
         pdf_shader.insert_object(
             "Domain",
             Box::new(make_scalar_array(&[
-                bbox.left, bbox.right, bbox.top, bbox.bottom,
+                bbox.left,
+                bbox.right,
+                bbox.top,
+                bbox.bottom,
             ])),
         );
 
         let domain = make_scalar_array(&[bbox.left, bbox.right, bbox.top, bbox.bottom]);
         let range_object = make_int_array(&[0, 1, 0, 1, 0, 1]);
-        let function_ref = make_ps_function(
-            &function_code.detach_as_vector(),
-            domain,
-            range_object,
-            doc,
-        );
+        let function_ref =
+            make_ps_function(&function_code.detach_as_vector(), domain, range_object, doc);
         pdf_shader.insert_ref("Function", function_ref);
     }
 

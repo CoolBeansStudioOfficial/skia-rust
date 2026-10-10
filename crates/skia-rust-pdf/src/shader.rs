@@ -24,8 +24,8 @@ use skia_rust_core::t_pin::t_pin;
 use skia_rust_core::tile_mode::TileMode;
 use skia_rust_raster::surfaces::raster_n32_premul;
 
-use crate::document::DocHandle;
 use crate::device::PdfDevice;
+use crate::document::DocHandle;
 use crate::gradient_shader::make_gradient_shader;
 use crate::keyed_image::{BitmapKey, bitmap_key_from_image};
 use crate::types::{PdfDict, PdfIndirectReference};
@@ -94,7 +94,12 @@ impl Hash for ImageShaderKey {
 // Port of: src/pdf/SkPDFShader.cpp#L28-L31 (draw, chrome/m156)
 fn draw(canvas: &Canvas, image: &Image, paint_color: &Color4f) {
     let paint = Paint::new(paint_color, None);
-    canvas.draw_image_with_sampling_options(image, (0.0, 0.0), SamplingOptions::default(), Some(&paint));
+    canvas.draw_image_with_sampling_options(
+        image,
+        (0.0, 0.0),
+        SamplingOptions::default(),
+        Some(&paint),
+    );
 }
 
 // Port of: src/pdf/SkPDFShader.cpp#L33-L40 (to_bitmap, chrome/m156)
@@ -148,7 +153,10 @@ fn fill_color_from_bitmap(
     let rect = Rect::new(left, top, right, bottom);
     if !rect.is_empty() {
         let color = Color4f::from_color(bitmap.get_color((x, y)));
-        let paint = Paint::new(Color4f::new(color.r, color.g, color.b, alpha * color.a), None);
+        let paint = Paint::new(
+            Color4f::new(color.r, color.g, color.b, alpha * color.a),
+            None,
+        );
         canvas.draw_rect(rect, &paint);
     }
 }
@@ -322,7 +330,8 @@ fn make_image_shader(
             let extracted = bitmap.extract_subset(&mut left, subset);
             debug_assert!(extracted);
 
-            let mut left_matrix = scale_translate(-device_bounds.left, 1.0, device_bounds.left, 0.0);
+            let mut left_matrix =
+                scale_translate(-device_bounds.left, 1.0, device_bounds.left, 0.0);
             draw_bitmap_matrix(&canvas, &left, &left_matrix, paint_color);
 
             if tile_modes_y == TileMode::Mirror {
@@ -384,7 +393,8 @@ fn make_image_shader(
             let extracted = bitmap.extract_subset(&mut bottom, subset);
             debug_assert!(extracted);
 
-            let mut bottom_matrix = scale_translate(1.0, device_bounds.bottom - height, 0.0, height);
+            let mut bottom_matrix =
+                scale_translate(1.0, device_bounds.bottom - height, 0.0, height);
             draw_bitmap_matrix(&canvas, &bottom, &bottom_matrix, paint_color);
 
             if tile_modes_x == TileMode::Mirror {

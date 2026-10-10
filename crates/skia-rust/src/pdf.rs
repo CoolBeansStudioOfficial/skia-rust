@@ -179,7 +179,8 @@ pub fn new_document<'a, W: io::Write + ?Sized>(
         bytes_written: 0,
     };
     let inner_metadata = metadata.map(Metadata::to_inner);
-    let document = skia_rust_pdf::document::new_document_boxed(Box::new(stream), inner_metadata.as_ref());
+    let document =
+        skia_rust_pdf::document::new_document_boxed(Box::new(stream), inner_metadata.as_ref());
     Document::new(document, state::Open { pages: 0 })
 }
 

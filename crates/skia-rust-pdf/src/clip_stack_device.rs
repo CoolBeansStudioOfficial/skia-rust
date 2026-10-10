@@ -62,7 +62,10 @@ impl ClipStackDevice {
     #[doc(alias = "devClipBounds")]
     #[must_use]
     pub fn dev_clip_bounds(&self, state: &DeviceState) -> IRect {
-        let r: IRect = self.clip_stack.bounds(&state.image_info().bounds()).round_out();
+        let r: IRect = self
+            .clip_stack
+            .bounds(&state.image_info().bounds())
+            .round_out();
         if !r.is_empty() {
             debug_assert!(state.image_info().bounds().contains_no_empty_check(&r));
         }

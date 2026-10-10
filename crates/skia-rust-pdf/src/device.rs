@@ -25,6 +25,8 @@ use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
+use skia_rust_core::alpha_type::AlphaType;
+use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::blend_mode_priv::{BlendFastPath, check_fast_path};
 use skia_rust_core::blender::Blender;
@@ -40,8 +42,6 @@ use skia_rust_core::device::{CreateInfo, Device, DeviceState, draw_device_defaul
 use skia_rust_core::glyph_run::GlyphRunList;
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::alpha_type::AlphaType;
-use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::mask::{CreateMode, MaskBuilder};
 use skia_rust_core::matrix::{Matrix, TypeMask};
 use skia_rust_core::mesh::Mesh;
@@ -74,6 +74,7 @@ use skia_rust_raster::surfaces::raster_n32_premul;
 
 use crate::bitmap::{serialize_image_size, serialize_image_xobject};
 use crate::clip_stack_device::{ClipStackDevice, clip_stack_as_path};
+use crate::clusterator::Clusterator;
 use crate::document::{DocHandle, LinkType, PdfLink, PdfNamedDestination, elem_id_key};
 use crate::form_xobject::make_form_x_object;
 use crate::graphic_stack_state::{Entry, GraphicStackState, StreamSelector};
@@ -88,7 +89,6 @@ use crate::utils::{
     blend_mode_name, close_path, emit_path, make_int_array, move_to, paint_path, stroke_path,
 };
 use skia_rust_core::annotation::AnnotationKeys;
-use crate::clusterator::Clusterator;
 
 /// `SK_PDF_MASK_QUALITY`: the JPEG quality of the masks.
 // Port of: src/pdf/SkPDFTypes.h#L28-L31 (chrome/m156)
@@ -300,7 +300,10 @@ fn alpha_image_to_greyscale_image(mask: &Image) -> Option<Image> {
 }
 
 // Port of: src/pdf/SkPDFDevice.cpp#L230-L233 (add_resource, chrome/m156)
-fn add_resource(resources: &mut BTreeSet<PdfIndirectReference>, reference: PdfIndirectReference) -> i32 {
+fn add_resource(
+    resources: &mut BTreeSet<PdfIndirectReference>,
+    reference: PdfIndirectReference,
+) -> i32 {
     resources.insert(reference);
     reference.value
 }
@@ -663,9 +666,7 @@ impl Content {
         if let Some(shader) = paint.shader_ref() {
             if shader.as_base().shader_type() == ShaderType::Color {
                 let base: &dyn std::any::Any = shader.as_base();
-                let color_shader = base
-                    .downcast_ref::<ColorShader>()
-                    .expect("a color shader");
+                let color_shader = base.downcast_ref::<ColorShader>().expect("a color shader");
                 // We don't have to set a shader just for a color.
                 color = color_shader.color();
                 color.a *= paint.alpha_f();
@@ -823,8 +824,7 @@ impl Content {
                     self.content_buffer.write_text("Q\nq\n");
                     self.needs_extra_save = true;
                 }
-                self.content_buffer
-                    .prepend_to_and_reset(&mut self.content);
+                self.content_buffer.prepend_to_and_reset(&mut self.content);
                 debug_assert_eq!(self.content_buffer.bytes_written(), 0);
             }
             return;
@@ -834,7 +834,8 @@ impl Content {
                 self.content.write_text("Q\nq\n");
                 self.needs_extra_save = true;
             }
-            self.content_buffer.write_to_and_reset_dynamic(&mut self.content);
+            self.content_buffer
+                .write_to_and_reset_dynamic(&mut self.content);
             debug_assert_eq!(self.content_buffer.bytes_written(), 0);
         }
 
@@ -858,9 +859,12 @@ impl Content {
             // If there is shape, then an empty source with Src, SrcIn, SrcOut,
             // DstIn, DstAtop or Modulate reduces to Clear and DstOut or SrcAtop
             // reduces to Dst.
-            if shape.is_none() || blend_mode == BlendMode::DstOut || blend_mode == BlendMode::SrcATop
+            if shape.is_none()
+                || blend_mode == BlendMode::DstOut
+                || blend_mode == BlendMode::SrcATop
             {
-                let content = self.begin_entry(ctx, None, &Matrix::new_identity(), &stock_paint, 0.0);
+                let content =
+                    self.begin_entry(ctx, None, &Matrix::new_identity(), &stock_paint, 0.0);
                 self.draw_form_x_object(ctx, dst, None);
                 self.end_entry(ctx, None, content);
                 return;
@@ -877,7 +881,13 @@ impl Content {
             // the shape of what's been drawn at all times. It's the intersection of
             // the non-transparent parts of the device and the outlines (shape) of
             // all images and devices drawn.
-            self.draw_form_x_object_with_mask(ctx, src_form_x_object, dst, BlendMode::SrcOver, true);
+            self.draw_form_x_object_with_mask(
+                ctx,
+                src_form_x_object,
+                dst,
+                BlendMode::SrcOver,
+                true,
+            );
         } else if let Some(shape) = shape {
             // Draw shape into a form-xobject.
             let mut filled_paint = Paint::default();
@@ -896,7 +906,13 @@ impl Content {
             let s_mask = shape_dev.make_form_x_object_from_device(false);
             self.draw_form_x_object_with_mask(ctx, dst, s_mask, BlendMode::SrcOver, true);
         } else {
-            self.draw_form_x_object_with_mask(ctx, dst, src_form_x_object, BlendMode::SrcOver, true);
+            self.draw_form_x_object_with_mask(
+                ctx,
+                dst,
+                src_form_x_object,
+                BlendMode::SrcOver,
+                true,
+            );
         }
 
         if blend_mode == BlendMode::Clear {
@@ -1067,7 +1083,12 @@ impl Content {
 
     /// `drawPaint`.
     // Port of: src/pdf/SkPDFDevice.cpp#L444-L460 (chrome/m156)
-    pub(crate) fn draw_paint(&mut self, ctx: &DeviceCtx, clip_stack: &ClipStack, src_paint: &Paint) {
+    pub(crate) fn draw_paint(
+        &mut self,
+        ctx: &DeviceCtx,
+        clip_stack: &ClipStack,
+        src_paint: &Paint,
+    ) {
         if Self::has_empty_clip(ctx, clip_stack) {
             return;
         }
@@ -1130,7 +1151,8 @@ impl Content {
             page_xform.pre_concat(&ctx.local_to_device);
 
             for user_point in points {
-                self.mark_manager.accumulate(page_xform.map_point(*user_point));
+                self.mark_manager
+                    .accumulate(page_xform.map_point(*user_point));
             }
         }
         let count = points.len();
@@ -1792,7 +1814,11 @@ impl PdfDevice {
                 ),
             ),
             clip: ClipStackDevice::new(),
-            content: Rc::new(RefCell::new(Content::new(page_size, doc, initial_transform))),
+            content: Rc::new(RefCell::new(Content::new(
+                page_size,
+                doc,
+                initial_transform,
+            ))),
             doc: doc.clone(),
         }
     }
@@ -1900,8 +1926,7 @@ impl Device for PdfDevice {
 
         // TODO: It may be possible to express some filters natively using PDF
         // to improve quality and file size (skbug.com/40034150)
-        if layer_paint
-            .is_some_and(|p| p.image_filter().is_some() || p.color_filter().is_some())
+        if layer_paint.is_some_and(|p| p.image_filter().is_some() || p.color_filter().is_some())
             || cinfo
                 .info
                 .color_space()
@@ -1959,7 +1984,10 @@ impl Device for PdfDevice {
                 return;
             }
             if AnnotationKeys::define_named_dest_key() == key {
-                let mut p = self.state.local_to_device().map_point(Point::new(rect.x(), rect.y()));
+                let mut p = self
+                    .state
+                    .local_to_device()
+                    .map_point(Point::new(rect.x(), rect.y()));
                 p = page_xform.map_point(p);
                 let pg = self.doc.with(|d| d.current_page());
                 self.doc.with(|d| {
@@ -2179,8 +2207,8 @@ impl Device for PdfDevice {
         }
         let mut entry = entry;
         let dims = device.state().image_info().dimensions();
-        let shape =
-            Path::rect(Rect::from_wh(dims.width as f32, dims.height as f32), None).make_transform(&matrix);
+        let shape = Path::rect(Rect::from_wh(dims.width as f32, dims.height as f32), None)
+            .make_transform(&matrix);
         if entry.need_shape() {
             entry.set_shape(shape.clone());
         }
@@ -2193,11 +2221,18 @@ impl Device for PdfDevice {
         // If it does not have its own marks it will be part of the content of the current mark.
         let current_struct_elem_id = content.mark_manager.elem_id();
         let other_content = pdf_device.content_handle();
-        if other_content.borrow().mark_manager.struct_parents_key().is_valid() {
+        if other_content
+            .borrow()
+            .mark_manager
+            .struct_parents_key()
+            .is_valid()
+        {
             content.mark_manager.set_next_marks_elem_id(0);
             content.begin_mark();
         }
-        let x_object = other_content.borrow_mut().make_form_x_object_from_device(false);
+        let x_object = other_content
+            .borrow_mut()
+            .make_form_x_object_from_device(false);
         content.draw_form_x_object(&ctx, x_object, Some(&shape));
         content
             .mark_manager

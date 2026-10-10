@@ -14,12 +14,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::image::Image;
-use skia_rust_core::matrix::Matrix;
-use skia_rust_core::shader::Shader;
 use skia_rust_core::fixed::{FIXED_1, fixed_round_to_int};
 use skia_rust_core::floating_point::float_round2int;
 use skia_rust_core::geometry::AutoConicToQuads;
+use skia_rust_core::image::Image;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::Style as PaintStyle;
 use skia_rust_core::path::Path;
 use skia_rust_core::path_priv::all_points_eq;
@@ -27,14 +26,15 @@ use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::path_types::{PathDirection, PathVerb};
 use skia_rust_core::point::{Point, Vector};
 use skia_rust_core::rect::Rect;
+use skia_rust_core::shader::Shader;
 use skia_rust_core::stream::{DynamicMemoryWStream, WStream};
 use skia_rust_core::utf::to_utf16;
 
 use crate::date_time::DateTime;
-use crate::resource_dict::{ResourceType, write_resource_name};
-use crate::types::{PdfArray, PdfDict};
 use crate::float_to_decimal::{MAXIMUM_SK_FLOAT_TO_DECIMAL_LENGTH, float_to_decimal};
+use crate::resource_dict::{ResourceType, write_resource_name};
 use crate::types::HEX_DIGITS_UPPER;
+use crate::types::{PdfArray, PdfDict};
 
 /// `SkScalarNearlyZero` tolerance for collinearity: `1 / 2^24`. `SkScalarNearlyZero`'s default
 /// epsilon is too coarse for some of the GMs that stress large scales.
@@ -692,7 +692,6 @@ pub fn append_transform(matrix: &Matrix, content: &mut dyn WStream) {
     }
     content.write_text("cm\n");
 }
-
 
 #[cfg(test)]
 mod tests {

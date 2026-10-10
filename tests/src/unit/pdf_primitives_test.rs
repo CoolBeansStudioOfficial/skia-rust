@@ -543,26 +543,29 @@ def_test!(SkPDF_RasterizeAlphaGradientForPrinting, |reporter| {
 // Port of: tests/PDFPrimitivesTest.cpp#L646-L668 (chrome/m156)
 // The workaround must touch alpha gradients only. An opaque gradient has no
 // soft mask to begin with, so the flag must not change its output at all.
-def_test!(SkPDF_RasterizeAlphaGradientForPrinting_OpaqueUnchanged, |reporter| {
-    let opaque = [
-        Color4f::new(1.0, 0.0, 0.0, 1.0),
-        Color4f::new(0.0, 0.0, 1.0, 1.0),
-    ];
+def_test!(
+    SkPDF_RasterizeAlphaGradientForPrinting_OpaqueUnchanged,
+    |reporter| {
+        let opaque = [
+            Color4f::new(1.0, 0.0, 0.0, 1.0),
+            Color4f::new(0.0, 0.0, 1.0, 1.0),
+        ];
 
-    let off = render_gradient_pdf(&opaque, false, TileMode::Clamp);
-    let on = render_gradient_pdf(&opaque, true, TileMode::Clamp);
+        let off = render_gradient_pdf(&opaque, false, TileMode::Clamp);
+        let on = render_gradient_pdf(&opaque, true, TileMode::Clamp);
 
-    reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
-    reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
-    reporter_assert!(reporter, off == on);
+        reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
+        reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
+        reporter_assert!(reporter, off == on);
 
-    let off = render_gradient_pdf(&opaque, false, TileMode::Decal);
-    let on = render_gradient_pdf(&opaque, true, TileMode::Decal);
+        let off = render_gradient_pdf(&opaque, false, TileMode::Decal);
+        let on = render_gradient_pdf(&opaque, true, TileMode::Decal);
 
-    reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
-    reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
-    reporter_assert!(reporter, off == on);
-});
+        reporter_assert!(reporter, !pdf_contains(&on, "/Subtype /Image"));
+        reporter_assert!(reporter, pdf_contains(&on, "/Shading"));
+        reporter_assert!(reporter, off == on);
+    }
+);
 
 // Port of: tests/PDFPrimitivesTest.cpp#L670-L685 (chrome/m156)
 def_test!(SkPDF_GradientDegenerateStopsDoesNotCrash, |_reporter| {

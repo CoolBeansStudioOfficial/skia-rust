@@ -548,11 +548,7 @@ impl PdfDict {
     }
 
     /// `insertRef(SkString, ...)`: the key is escaped.
-    pub fn insert_ref_escaped_key(
-        &mut self,
-        key: impl AsRef<[u8]>,
-        value: PdfIndirectReference,
-    ) {
+    pub fn insert_ref_escaped_key(&mut self, key: impl AsRef<[u8]>, value: PdfIndirectReference) {
         self.records
             .push((PdfUnion::name_escaped(key), PdfUnion::reference(value)));
     }
