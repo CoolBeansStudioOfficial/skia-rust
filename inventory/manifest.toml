@@ -53568,7 +53568,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
-status = "passing"
+status = "failing"
+reason = "timing-dependent: on Windows CI the dawn-d3d12 / dawn-vk-wgpucaps contexts report 1 / 7 graphics cache hits where 0 are expected (executor compile tasks race the draws); under investigation (port/gpu-unit-sweep-4)"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]
