@@ -64,6 +64,7 @@ pub mod color_test;
 pub mod convert_pixels_test;
 #[cfg(test)]
 pub mod core_blitters_test;
+pub mod cpu_backend_test;
 #[cfg(test)]
 pub mod cubic_map_test;
 #[cfg(test)]
@@ -407,6 +408,8 @@ pub mod scale_to_sides_test;
 #[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
+pub mod shader_image_filter_test;
+pub mod shader_opacity_test;
 pub mod shader_test;
 #[cfg(test)]
 pub mod shadow_test;

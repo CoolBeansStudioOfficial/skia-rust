@@ -514,3 +514,49 @@ def_graphite_adapter_test!(BlurPointCircle, |_reporter, context| {
 
     let _ = recorder.snap();
 });
+
+// Port of: tests/BlurTest.cpp#L674-L710 (chrome/m156)
+def_test!(
+    #[allow(clippy::excessive_precision, clippy::unreadable_literal)]
+    // the C++ float constants, verbatim
+    blur_b508075339,
+    |reporter| {
+        // This test verifies that eval_blur_passes correctly handles a specific edge case where
+        // the source and destination bounds do not intersect on the axis being processed.
+        //
+        // Historically, skipping the X-pass combined with this artificial bounds padding meant
+        // that the starting X-coordinate for the Y-pass (loopStart) could be greater than the
+        // source image width.
+        const CANVAS_SIZE: i32 = 64;
+        const SIGMA_X: f32 = 0.390625;
+        const SIGMA_Y: f32 = 99.609375;
+        const OFFSET_X: f32 = -65.618912;
+        const OFFSET_Y: f32 = -99.999985;
+
+        let inner = skia_rust_effects::image_filters::offset((OFFSET_X, OFFSET_Y), None, None);
+        let filter = skia_rust_effects::image_filters::blur(
+            SIGMA_X,
+            SIGMA_Y,
+            skia_rust_core::tile_mode::TileMode::Decal,
+            inner,
+            None,
+        );
+
+        let mut surface = skia_rust_raster::surfaces::raster_n32_premul((CANVAS_SIZE, CANVAS_SIZE));
+        reporter_assert!(reporter, surface.is_some());
+        let Some(surface) = surface.as_mut() else {
+            return;
+        };
+        let canvas = surface.canvas();
+
+        let mut paint = skia_rust_core::paint::Paint::default();
+        paint.set_image_filter(filter);
+
+        // This drawRect triggers the image filter graph evaluation. The test passes if it
+        // completes without triggering an SkASSERT in SkBitmap::getAddr.
+        canvas.draw_rect(
+            skia_rust_core::rect::Rect::from_iwh(CANVAS_SIZE, CANVAS_SIZE),
+            &paint,
+        );
+    }
+);

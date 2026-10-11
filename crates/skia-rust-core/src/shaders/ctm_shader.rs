@@ -51,9 +51,9 @@ impl CtmShader {
 }
 
 impl ShaderBase for CtmShader {
-    // `SkShader::isOpaque` is not overridden: false.
+    // Port of: src/shaders/SkLocalMatrixShader.h#L89 (chrome/m156)
     fn is_opaque(&self) -> bool {
-        false
+        self.proxy_shader.as_base().is_opaque()
     }
 
     // Port of: src/shaders/SkLocalMatrixShader.cpp#L75-L77 (chrome/m156)
