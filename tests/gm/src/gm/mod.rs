@@ -309,6 +309,7 @@ pub mod rrects;
 pub mod rsxtext;
 pub mod runtimecolorfilter;
 pub mod runtimefunctions;
+pub mod runtimeimagefilter;
 pub mod runtimeshader;
 pub mod savelayer;
 pub mod scaledemoji;

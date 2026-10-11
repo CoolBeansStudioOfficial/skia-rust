@@ -24031,8 +24031,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM_BG"
 source = "gm/runtimeimagefilter.cpp#L44-L79"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "failing"
+reason = "runtime-shader image filter: diagnostic pass with diffs: 1580 of 375000 px differ (565), all in the skew and perspective cells (max channel delta 66/255); the translate, scale and rotate cells match. See notes/gm_runtimeimagefilter_cpp_rtif_distort.md"
 span_hash = "e49d839eed03fd735b14a2a2d6892cf924ec590ee4be114ed2bf70535be1773b"
 
 [[test]]
@@ -24041,8 +24041,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/runtimeimagefilter.cpp#L81-L111"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::RuntimeShader (the runtime-shader image filter), which is not ported; its other factories (matrix convolution, lighting, displacement, erode/dilate, magnifier, arithmetic) are on main"
+status = "passing"
 span_hash = "8415cadfee6eba60dd9f8c94b2e8f5512e54750ad54a3e7b0f59c1399b4083fe"
 
 [[test]]
