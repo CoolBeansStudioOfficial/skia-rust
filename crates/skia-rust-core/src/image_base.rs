@@ -218,6 +218,14 @@ pub trait ImageBase: Any + fmt::Debug + Send + Sync {
         None
     }
 
+    /// The GPU memory the image's textures use (`SkImage::textureSize`, a pure virtual of `SkImage`
+    /// that the GPU-backed images override). Zero for images in memory.
+    // Port of: include/core/SkImage.h#L432 (chrome/m156)
+    #[doc(alias = "textureSize")]
+    fn texture_size(&self) -> usize {
+        0
+    }
+
     /// Whether the image can be drawn (`onIsValid`, with no recorder). Raster images always
     /// can; lazy images ask their generator.
     // Port of: src/image/SkImage_Base.h#L88 (chrome/m156)

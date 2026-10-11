@@ -29351,7 +29351,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BigImageTest.cpp#L602-L610"
 module = "gpu"
 status = "todo"
-reason = "not ported: GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image); G15 follow-up"
+reason = "needs the GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image needs SkImages::DeferredFromPicture, not in core)"
 span_hash = "3ddf1b5dfeabf1e50db75b10bf7230019d0e0405fae98d16befbb5984e4a7f09"
 
 [[test]]
@@ -29371,7 +29371,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/BigImageTest.cpp#L612-L620"
 module = "gpu"
 status = "todo"
-reason = "not ported: GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image); G15 follow-up"
+reason = "needs the GPU_TEST_UTILS tiling hooks (gOverrideMaxTextureSizeGraphite, gNumTilesDrawnGraphite) in the Graphite tiled draw path, and picture-backed images (make_big_picture_image needs SkImages::DeferredFromPicture, not in core)"
 span_hash = "997331e09547ceed3a794acbaa65970257fa49be663d57b33ce654341f0487d8"
 
 [[test]]
@@ -29639,8 +29639,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L451-L510"
 module = "effects"
-status = "todo"
-reason = "tests GrBlurUtils::ComputeBlurredRRectParams, a Ganesh helper (SK_GANESH only)"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e8113eb7274ae6167f2fe94e27779117074326184a02a789c4fbf9993e11afd0"
 
 [[test]]
@@ -29668,8 +29668,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/BlurTest.cpp#L674-L710"
 module = "effects"
-status = "todo"
-reason = "needs the blur image filter (SkImageFilters::Blur/Offset), Phase 3"
+status = "passing"
 span_hash = "16168b90b74b85588f21cb1da754c3ee44d07163e06b650ae35c13637f5e3e17"
 
 [[test]]
@@ -29707,7 +29706,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CPUBackendTest.cpp#L21-L44"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "cc04b02c3d8c99acabf53b00d70fec932d119a157fcfd242fbe92ec5f4bf40f8"
 
 [[test]]
@@ -29847,8 +29846,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L656-L678"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Blur (image filters, Phase 3)"
+status = "passing"
 span_hash = "6458ecd400f32c021dadecb44127867458044e250bc27f1fe0adaf9214813166"
 
 [[test]]
@@ -29867,8 +29865,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CanvasTest.cpp#L627-L635"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Empty (image filters, Phase 3)"
+status = "passing"
 span_hash = "fd424754688b2854e68eb312142b5201a8dbeaf97a965a03b2fbb627ca6db8de"
 
 [[test]]
@@ -30463,8 +30460,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/CodecTest.cpp#L2444-L2519"
 module = "codec"
-status = "failing"
-reason = "fails exactly: the JPEG cases compare a lossy decode (7 to 17 off per channel) with an unencoded render, which no exact comparison can pass; the PNG gradient_displayp3 cases are 1 off per channel (the C++ tolerance is 1). The project allows no tolerances, so the test stays ignored"
+status = "passing"
 span_hash = "b66aa6d5a51cbec17464984284de34ccdcdef602449490c105ae710b608d0fdf"
 
 [[test]]
@@ -32207,6 +32203,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2376-L2401"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "efaf4ca3e755ff1a82da3207667d5ff04d669159a1be5a4e977bc1ccbecebac6"
 
 [[test]]
@@ -32216,6 +32213,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2000-L2044"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "11785566e1bf37f5e6749ad01aa45b65863c7cc311ed6e6da6a9ceba8f353e14"
 
 [[test]]
@@ -32225,6 +32223,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2230-L2258"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "e11c90e59e6fd6bb16f60debc87d5b3301b16fa31c1913dc97705673e2716057"
 
 [[test]]
@@ -32234,6 +32233,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2113-L2130"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "06fb5b5a3820f283af1bcf25db07deedf4d2cd37be88eec67ea923c9927a8e67"
 
 [[test]]
@@ -32243,6 +32243,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1740-L1813"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "08a5685d9d895b9daecb94f37f564f889f762874063ab2b93cb898dff1019acb"
 
 [[test]]
@@ -32252,6 +32253,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1472-L1518"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "084f60a7bf0dca8b39f9f74ef9a1cf31005512e08803ebf8e6921fbb0313a722"
 
 [[test]]
@@ -32261,6 +32263,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2178-L2228"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "a41bd505d5c7083e2618e1e2c84574d75e5a9f1b072f62c056e1e45e61915bdd"
 
 [[test]]
@@ -32270,6 +32273,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1520-L1567"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "8b75bbe15977614f58bbf27c75b64df49ebe99cb495259c9283066c4a7f5aebc"
 
 [[test]]
@@ -32279,6 +32283,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2132-L2176"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "ba4b7ce19cfdb41bb537734a04853bf6c73a9e2c072f914b1e2e78524a25f44b"
 
 [[test]]
@@ -32288,6 +32293,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2260-L2305"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "d4e579ae35aa4dd5f3be637c9223c319782431bcb2fc446dc3173e64dcb051ba"
 
 [[test]]
@@ -32297,6 +32303,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2307-L2374"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "6b704a2fad79598d78e5484785233fd6a4e60947c7e6e3700f5eed70aca03199"
 
 [[test]]
@@ -32306,6 +32313,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1698-L1712"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "e1bb80ef8fa1f0488fde80aca5f9abe07afbfeaaa94e79807883f38883562f4e"
 
 [[test]]
@@ -32315,6 +32323,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1585-L1609"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "36dd50a5af3b9f2fd86ff8428a3a4d36db751e23ef33d1cd0df01c452c82bbfa"
 
 [[test]]
@@ -32324,6 +32333,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1569-L1583"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "a325944ed5b7e4f38cb87f2c0166a001c6a83b45826049f1bd31d6e951a302e1"
 
 [[test]]
@@ -32333,6 +32343,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1439-L1467"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "9296069d7f802f7fa2aafa607f6cd238d0bcb2606510b86036087a4db10ed2e5"
 
 [[test]]
@@ -32342,6 +32353,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1410-L1437"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "0b2deb1dceebec65bf319defc5d998af42f43c27bb03a4b009b295f5c1de7fb7"
 
 [[test]]
@@ -32351,6 +32363,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1815-L1866"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "55f75aa3e2d10854f34b7367e63b0493b50136f16b947a4b84e5bdfdcdd711be"
 
 [[test]]
@@ -32360,6 +32373,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1868-L1891"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "3556864a0d696beaaf002b5b76e757f2742c8e2e7792939782ef436085937dc3"
 
 [[test]]
@@ -32369,6 +32383,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1611-L1639"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "5c88f30d7748a407d6cb767a92a48762ecbd41353ea60ed5ec234b3d792fd184"
 
 [[test]]
@@ -32378,6 +32393,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2722-L2785"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "d71184fa50dbe3a0f11491381c9b50953714e1410f3374282d46441f05a324d2"
 
 [[test]]
@@ -32387,6 +32403,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1641-L1696"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "751c37c93f794f1c14ec47376f9a9e55e00727610e1a4f5675c9849d562fccf2"
 
 [[test]]
@@ -32396,6 +32413,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2676-L2720"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "b704a2c2231075169304b0c0a668d5ea4b360cb8f5dd3aec680fd660c7d7bd6f"
 
 [[test]]
@@ -32405,6 +32423,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2406-L2573"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "2bd77d23d26b2835f1fdf4ec3fd512892a047ebce311d0baf3716b13d45f92d9"
 
 [[test]]
@@ -32414,6 +32433,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2575-L2674"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "8853949d7b12248a8b222b5c8e10b6996b717b9ed523e97fd847018b8f3634e8"
 
 [[test]]
@@ -32423,6 +32443,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1717-L1738"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "fb69648b5fa293cb3290f247633d32bab75620d86f389b9cd306a56db05e8d8e"
 
 [[test]]
@@ -32432,6 +32453,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1918-L1961"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "6f03fd7d35d5c7a40ea2b8dd4ff91e1cf3009b423e6fdeff72150090c99340ea"
 
 [[test]]
@@ -32441,6 +32463,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1963-L1995"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "95cd13f7efcf6202dd851bbbd147e12961113f2b50f73c308c772e02c8e84caf"
 
 [[test]]
@@ -32450,6 +32473,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L1896-L1916"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "aaea11e73ebd885d0c36a2e4e056ff71f4ad695d2300dc553aae4bfe69ce91f5"
 
 [[test]]
@@ -32459,6 +32483,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2079-L2111"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "efd38cdbbe9e542980ba5474a4e5e49c4f3fbb77145deffd9abf92cb891d14a6"
 
 [[test]]
@@ -32468,6 +32493,7 @@ macro = "DEF_TEST_SUITE"
 source = "tests/FilterResultTest.cpp#L2046-L2077"
 module = "effects"
 status = "todo"
+reason = "needs the FilterResult test harness (tests/FilterResultTest.cpp#L78-L1408: FilterResultTestAccess, ApplyAction, FilterResultImageResolver, TestRunner, TestCase; it compares pixels with the per-channel tolerances the C++ declares), which is not ported; a separate task"
 span_hash = "631e6d7b953af373f313735c2d1602073dc577fe3bfd3f5f792c9f5844ec8351"
 
 [[test]]
@@ -33929,7 +33955,8 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/GrClipStackTest.cpp#L1904-L1953"
 module = "effects"
-status = "todo"
+status = "excluded"
+reason = "Ganesh-only; Graphite is the only GPU backend in scope"
 span_hash = "e24061eb55ab1719dff00f5586f40ee3ef3c8f7664f8dd82b7c9e794ef438ce1"
 
 [[test]]
@@ -35032,6 +35059,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L935-L1118"
 module = "effects"
 status = "todo"
+reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
 span_hash = "8919614c6ba66b3f18d088a537126666cf8fefaf4f4648555532f86ec9d2151c"
 
 [[test]]
@@ -35129,6 +35157,7 @@ macro = "DEF_TEST"
 source = "tests/HdrMetadataTest.cpp#L1120-L1203"
 module = "effects"
 status = "todo"
+reason = "needs skhdr::Metadata, AdaptiveGlobalToneMap and AgtmHelpers (include/private/SkHdrMetadata.h, src/codec/SkHdrAgtmPriv.h), which are not ported"
 span_hash = "fb3bcbe96da112d41cacc3db4725ea649e707a39e44019bfc7056b6fcf2fc5ff"
 
 [[test]]
@@ -35223,6 +35252,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L244-L250"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "fdb6f08a67e161ed6d736796a430aa84cf7ca4da9365f283fbce651da59139d3"
 
 [[test]]
@@ -35232,6 +35262,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L191-L207"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "9930b94dc2f04f1ba131b4f82cc0ad05ca28c528e20d93a923a15cea74597a7e"
 
 [[test]]
@@ -35241,6 +35272,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L345-L364"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
 span_hash = "cff36d33fc5db8aa50f2e1ade26f7438ad8c6e2ab069e18b6616a7231b429be6"
 
 [[test]]
@@ -35258,7 +35290,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1661-L1663"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d5ca1f352270c98f1e72bd2ec351ea8e89faf4732b7fb18191b3405fd9629858"
 
 [[test]]
@@ -35277,7 +35309,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1614-L1616"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "6db6d15d011401d09cf636c976e41d05b5af5056f11631608294d97481db0756"
 
 [[test]]
@@ -35324,7 +35356,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1448-L1453"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "c33d8eb5b4c1dc77ed74209fdaeacead1e71bc8074d0d97f5cf69afab9678b40"
 
 [[test]]
@@ -35333,8 +35365,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L440-L542"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::SpotLitSpecular (the lighting filters are not ported)"
+status = "passing"
 span_hash = "01ec23a8d21ca70b514522e1a47040cff2804bc1d9770b7ea255d796512f3c1c"
 
 [[test]]
@@ -35343,7 +35374,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1834-L1837"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "344df332cd333a4011f21a371b409cccf877fa93e449f23e930dd773206be28d"
 
 [[test]]
@@ -35362,7 +35393,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L956-L978"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "8dc0405dc8479d63ad006e848161916ffd28429135479cb6ac1b9ec6d2a5b4b8"
 
 [[test]]
@@ -35371,8 +35402,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1674-L1733"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::PointLitDiffuse (the lighting filters are not ported)"
+status = "passing"
 span_hash = "05a58bf7805ec3677358dcfc7976e1ab2426f08cb6fcf20118d828bb933addfd"
 
 [[test]]
@@ -35400,7 +35430,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2192-L2219"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b288c10b2442a9d0ef19208f88a2bade24ef8710ae9378868cc074534ff7e08a"
 
 [[test]]
@@ -35409,7 +35439,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1077-L1088"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "40e5a02bce11045578445fc19dda041173f551cc0a8b9750efed70f5e864e12e"
 
 [[test]]
@@ -35418,7 +35448,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1306-L1308"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2b5cc0f5d0a1f7fa8532eb66646e2e14ca04d68e519f8afc8174d48aa8affc6c"
 
 [[test]]
@@ -35446,7 +35476,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L926-L946"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "94c048999a5041846f057bd76f3cbbe74e5c422bc4a19c9583644beb66a73b62"
 
 [[test]]
@@ -35455,7 +35485,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L818-L893"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "7d8dbbf91d1ea298177343063cc202a6feda95971d2f8bfd837455d215628459"
 
 [[test]]
@@ -35464,7 +35494,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1162-L1206"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d98250eefad2c7aef6ce3b3c0336b9ad4597be0374bd22ceb5b00150625aedad"
 
 [[test]]
@@ -35473,7 +35503,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1386-L1435"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "56879dfa0e6401be2c6ff68e3b004a8f02b754d44d5686278c9237c47d785bfa"
 
 [[test]]
@@ -35482,7 +35512,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L805-L807"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "0cc445be3a324590154b97af7ff9fb8dea251cdbc0fb88ebe55a8b713a2268cc"
 
 [[test]]
@@ -35512,6 +35542,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1736-L1778"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter serialization (SkImageFilter::Serialize with SkSerialProcs image encoding, and Deserialize), which is not ported"
 span_hash = "48b2658d5af7ae7a39d11ec33c7c44a682576595b64d82c5dafbdc5cbd8f38db"
 
 [[test]]
@@ -35521,6 +35552,7 @@ macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1780-L1789"
 module = "effects"
 status = "todo"
+reason = "needs SkImageFilter::Deserialize (not ported) to read the crbug769134.fil resource"
 span_hash = "90ec8bb7a718bb9bdb49596fb5c945a5c71990f1c70580613d563fc39771c434"
 
 [[test]]
@@ -35566,7 +35598,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1319-L1343"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2acdbacd4a7b604c8f587dd41db850a9c10c050a4b9f73645a8c29a28304718d"
 
 [[test]]
@@ -35641,7 +35673,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L640-L642"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b4add939901eebf3a1b85a16c77cf7fd2c46867ccaff889c0722c43d94b41d58"
 
 [[test]]
@@ -35660,7 +35692,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1540-L1588"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72800aeb695ac29a798e06088165d97064338404d444bde7e2298a77f0559aab"
 
 [[test]]
@@ -35669,7 +35701,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1024-L1075"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "b76fa073f0942989da493d72cd3c04456536c47240c7b7dfd122e161217284ff"
 
 [[test]]
@@ -35678,7 +35710,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L980-L1000"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "72f8decd28f08fefe8c064a02edd3225d4e78cafda857885dd90285d1f5ec47d"
 
 [[test]]
@@ -35696,7 +35728,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L769-L771"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "9d4db0357def2c50e3341fba4d806bee3b88fd52657cbf24fc7e8f41f190f1ad"
 
 [[test]]
@@ -35733,7 +35765,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2436-L2486"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "e0e1d74ff3f454581a6ca3f80effd8921d7801d9f729d8d15c706b76a9c991c6"
 
 [[test]]
@@ -35788,7 +35820,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L2222-L2269"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "836e6d9be11e63fb173fadd21eed52ff98c0d87046f7be9a11095dfbca9bbfa8"
 
 [[test]]
@@ -35797,7 +35829,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterTest.cpp#L1590-L1593"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "d310e99e9ad971f472237c0f2ad4b4f651a2e0399fb76c03977e0c7c16e37265"
 
 [[test]]
@@ -35900,7 +35932,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageNewShaderTest.cpp#L160-L169"
 module = "effects"
-status = "todo"
+status = "passing"
 span_hash = "2c0892a6e016d8a827ef5b14be3ef22319d8bae1e3a8adf5d8bc62367235413a"
 
 [[test]]
@@ -36603,8 +36635,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L39-L74"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "0d42bcac0c6de3beda7b36e163ef9673800f86c8beff43a84e8026be74f19f30"
 
 [[test]]
@@ -36613,8 +36644,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/MaskCacheTest.cpp#L76-L110"
 module = "effects"
-status = "todo"
-reason = "tests SkMaskCache/SkResourceCache, which are not ported (nine-patch masks are not cached)"
+status = "passing"
 span_hash = "62af44fbf4e58e5c1e1594cd42cf0792eed48ea451d8a6f56c72964c66b4066d"
 
 [[test]]
@@ -41253,8 +41283,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordDrawTest.cpp#L204-L227"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilters::Blur (image filters are not ported; Phase 3)"
+status = "passing"
 span_hash = "c2a68486b19a4895c9b6c3f346de159bbb86dc1dd66ae69185ecddae7f6d8fad"
 
 [[test]]
@@ -42688,8 +42717,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L149-L152"
 module = "effects"
-status = "todo"
-reason = "needs SkShaders::RadialGradient, which is not ported (the shader filter itself is ported)"
+status = "passing"
 span_hash = "7a104f9158f33fd41d9a0857e59d5e57e455f50afea991518cf2446ffc4c6cf9"
 
 [[test]]
@@ -42699,7 +42727,7 @@ macro = "DEF_TEST"
 source = "tests/ShaderImageFilterTest.cpp#L213-L217"
 module = "effects"
 status = "todo"
-reason = "needs SkSL: m156 builds this filter from SkKnownRuntimeEffects (morphology, displacement, matrix convolution, lighting, magnifier, arithmetic blender); SkSL is not ported"
+reason = "needs SkImageFilters::RuntimeShader (include/effects/SkImageFilters.h), which is not in the port"
 span_hash = "e0f4fe37e83622e4f04f5b9a1bcec2124116d93cc5f6a9b157242608d59b857f"
 
 [[test]]
@@ -42718,8 +42746,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ShaderOpacityTest.cpp#L120-L125"
 module = "effects"
-status = "todo"
-reason = "test_gradient needs SkShaders::LinearGradient (gradients not ported)"
+status = "passing"
 span_hash = "05464f0bdeb2a9cc18814bf38d380a89c8deabd88c4787200fb39e0d1b2cc32f"
 
 [[test]]
@@ -43656,8 +43683,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L900-L933"
 module = "codec"
-status = "todo"
-reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
+status = "passing"
 span_hash = "471fbafe3a9de2084e462b789053ce5aac435865cff51a8f0d32cc36471f8da7"
 
 [[test]]
@@ -43666,8 +43692,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L982-L1047"
 module = "codec"
-status = "todo"
-reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
+status = "passing"
 span_hash = "060a0c5afe2acc84397d0d861f06223452e20139435c4f00990c1f830aa8cb88"
 
 [[test]]
@@ -43676,8 +43701,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/SkJpegRustCodecTest.cpp#L938-L978"
 module = "codec"
-status = "todo"
-reason = "pending maintainer decision: keeps the tolerances of Skia's own assertion (same question as Codec_RoundTripColorXform)"
+status = "passing"
 span_hash = "e8f1e0fb849c3d6b9344caf28cb9f92e7d3a78aff7f68977d9de86297daf89ff"
 
 [[test]]
@@ -50075,7 +50099,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/TextureSizeTest.cpp#L95-L106"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "e5cd8e2d2c10053b2ba7131eb101d615b1305a2ce44add14e5006cbae1c3036e"
 
 [[test]]
@@ -50811,7 +50835,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L305-L351"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "73e4256be011ffd3b39335973ee1654427d2d8a953d61460bff360d20757d9b0"
 
 [[test]]
@@ -50820,7 +50845,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L92-L94"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "8dd5ac4337d0cff0a8b48e612054a1f22a14c9b7483910547a0cfcd97225263b"
 
 [[test]]
@@ -50829,7 +50855,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L96-L98"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "b277cbee061b2650e7a54ca0417b000e5ff2663374d643d68bce4bd4a2fc3cc0"
 
 [[test]]
@@ -50838,7 +50865,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L101-L118"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "e8282a1031c55b3eb6fbd754725766bbf055661ca53057b923b9691eddbfdb21"
 
 [[test]]
@@ -50847,7 +50875,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L480-L508"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "b92ff09207f34b5c51a19a3d2f2ae5b12ed0d56fb551c94944fabb456108dd9c"
 
 [[test]]
@@ -50856,7 +50885,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L353-L370"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "f115d9ad9ed943e41c957aa339304d7f5e8cecce3a20f9750786175811e22105"
 
 [[test]]
@@ -50865,7 +50895,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L372-L390"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "dc7e16b3bda5be2c8d5fdb26837ee8977d909c26a306b334a6e351efb02437e4"
 
 [[test]]
@@ -50874,7 +50905,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L393-L411"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "bf4483776c3608df07631dfe4765e1633c0ae02481781f56e8e253a99829468c"
 
 [[test]]
@@ -50883,7 +50915,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L413-L432"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "bb5d8708e50e849a4b6045e6750522aab5e22d9c5ce923dbdc6f4fae1237e4c4"
 
 [[test]]
@@ -50892,7 +50925,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L434-L456"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "e1819f7e067d850ae96ca265a58c059c5c0ae8deed66bdaa7ec4d86ea3ab4fe6"
 
 [[test]]
@@ -50901,7 +50935,8 @@ kind = "unit"
 macro = "DEF_GANESH_AND_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L458-L477"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "655c36167aa4e3f828d0411f8c447a1db99661829769b45514b9bb00bce966cb"
 
 [[test]]
@@ -50930,7 +50965,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST"
 source = "tests/VkProtectedContextTest.cpp#L203-L211"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu"
 span_hash = "34617c3c1763c1caab04f5365615d893a1bcc51f8e1aec5d25cd0a9d9074c71c"
 
 [[test]]
@@ -51178,6 +51214,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/WritePixelsTest.cpp#L504-L510"
 module = "gpu"
 status = "todo"
+reason = "portable now (Device::write_pixels and read_surface_pixels exist); not ported in this sweep (665 C++ lines)"
 span_hash = "c33ca7374fcb3b3dd9d39bf298984983d5d63a0d03536b3d457f809d0ff5e51d"
 
 [[test]]
@@ -51306,7 +51343,8 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/AHardwareBufferTest.cpp#L169-L222"
 module = "gpu"
-status = "todo"
+status = "excluded"
+reason = "Android-only (AHardwareBuffer, __ANDROID_API__ >= 26); skia-rust has no Android hardware-buffer backend"
 span_hash = "cd6bdb4f1f6df73d56ecb4c685442a86c0faa2d3a01e3a7cf05f10fa58169f75"
 
 [[test]]
@@ -51325,7 +51363,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L136-L316"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
+reason = "portable now (SkImages::WrapTexture is image_factories::wrap_texture); not ported in this sweep (about 200 C++ lines of format and swizzle assertions)"
 span_hash = "f6fd396359b3b5c2b041d88b4793701ae6b457d820e617f8cfea3862cdb3b2bc"
 
 [[test]]
@@ -51335,7 +51373,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/BackendTextureTest.cpp#L89-L133"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite surfaces (G10d); the backend half (wgpu BackendTexture, G11a) is ported and covered by BackendTextureTest"
+reason = "needs SkSurfaces::WrapBackendTexture, which is not ported (surface_graphite.rs has render_target only)"
 span_hash = "5ff63d68fa32663a3e6018888fe2d89e0007404ea37e4698dc4a1dd45d90bb14"
 
 [[test]]
@@ -51391,7 +51429,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L102-L130"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs the ImageProvider of ToolUtils::CreateTestingRecorderOptions (a caching test provider, not ported)"
+reason = "needs the caching testing ImageProvider of ToolUtils::CreateTestingRecorderOptions, which is not ported (image_provider.rs has the trait only)"
 span_hash = "4233167d7c332ccba6bd7c33960ff3f5a4b293c41317f422da20179bbcf1e148"
 
 [[test]]
@@ -51401,7 +51439,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/CacheKeyTest.cpp#L56-L98"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs the testing ImageProvider (ToolUtils::CreateTestingRecorderOptions) and SkImages::DeferredFromPicture (SkImage_Picture, not in core)"
+reason = "needs the caching testing ImageProvider of ToolUtils::CreateTestingRecorderOptions (not ported) and SkImages::DeferredFromPicture (picture-backed images, not in core)"
 span_hash = "bca31076d1e11de7bfbd509765d6edbc31aea02691660dce3347307c95c4d88a"
 
 [[test]]
@@ -51583,7 +51621,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_CONTEXT"
 source = "tests/graphite/DawnBackendTextureTest.cpp#L48-L77"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "5faa8cb9b322cfa168eb8a91ad44849aa67f622351303bdccd37356a83bd39e7"
 
 [[test]]
@@ -51592,7 +51630,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_DAWN_CONTEXT"
 source = "tests/graphite/DawnBackendTextureTest.cpp#L24-L45"
 module = "gpu"
-status = "todo"
+status = "passing"
 span_hash = "5c8af49feadcbc430dfda1dc400ae0d65a3d8aad6d72c42835e004d8005da762"
 
 [[test]]
@@ -51657,7 +51695,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L106-L124"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite surfaces and Canvas::baseRecorder (G10d)"
+reason = "needs Canvas::baseRecorder, which the core Canvas does not have"
 span_hash = "b2b7272b46185581d429b6394c33a11afc76d848047fd1b1bbe8997c01e75d02"
 
 [[test]]
@@ -51667,7 +51705,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L47-L69"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images (G10d) and a Graphite Context (G9b, G11)"
+reason = "needs the recorder overload of Image::makeColorSpace(recorder, cs, props) (core has the recorder-less form only)"
 span_hash = "6ecce1972aa4749138f26806d851ce6f246ec35c1002bcbdcff305dd9c44a510"
 
 [[test]]
@@ -51677,7 +51715,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/GraphiteContextRecorderTest.cpp#L71-L104"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images (G10d) and a Graphite Context (G9b, G11)"
+reason = "needs Image::makeScaled(recorder, ...) on Graphite images, which is not ported in core or skia-rust-gpu"
 span_hash = "87801866277a961cee822bdfad5f7ed527424d93f46d8eba991a009f3eedd0b1"
 
 [[test]]
@@ -51903,7 +51941,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L287-L301"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test images include picture-backed images (SkImages::DeferredFromPicture, SkPicture not ported) and makeColorSpace(recorder); the readback tests also need a real adapter in CI (lavapipe job)"
+reason = "picture-backed cases need SkImages::DeferredFromPicture (not in core); the other cases need the testing ImageProvider of ToolUtils::CreateTestingRecorderOptions (not ported)"
 span_hash = "769f3e7d94554ba63ed59ba896a629b8d95037eff9cbe11e101d7777d31b1c4c"
 
 [[test]]
@@ -51913,7 +51951,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L329-L344"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test images include picture-backed images (SkImages::DeferredFromPicture, SkPicture not ported) and makeColorSpace(recorder); the readback tests also need a real adapter in CI (lavapipe job)"
+reason = "picture-backed cases need SkImages::DeferredFromPicture (not in core); the other cases need the testing ImageProvider of ToolUtils::CreateTestingRecorderOptions (not ported)"
 span_hash = "bd9f1a9d54213f9bba32845d6b0bab0bfa2ad67c4b26384293a63fb3468763ba"
 
 [[test]]
@@ -51923,7 +51961,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L475-L536"
 module = "gpu"
 status = "todo"
-reason = "blocked: the picture-backed case needs SkImage_Picture (SkImages::DeferredFromPicture), which core does not port"
+reason = "picture-backed cases need SkImages::DeferredFromPicture (not in core); the other cases need the testing ImageProvider of ToolUtils::CreateTestingRecorderOptions (not ported)"
 span_hash = "a5c4a7389f25af94e92395d22b44dd741d08b7852119962d9547f4b95278bfc3"
 
 [[test]]
@@ -51933,7 +51971,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ImageProviderTest.cpp#L348-L437"
 module = "gpu"
 status = "todo"
-reason = "blocked: the picture-backed case needs SkImage_Picture (SkImages::DeferredFromPicture), which core does not port; the other cases are ported (ImageFactories, makeSubset)"
+reason = "picture-backed cases need SkImages::DeferredFromPicture (not in core); the other cases need the testing ImageProvider of ToolUtils::CreateTestingRecorderOptions (not ported)"
 span_hash = "0349669b93166727ce607075c137f4d961961a627a2d52fba8f89c293777b83c"
 
 [[test]]
@@ -51952,7 +51990,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159"
 module = "gpu"
 status = "todo"
-reason = "blocked: the test reads pixels back and/or inserts recordings into a context (readPixels, insertRecording), which need the Context readback path (G11c); it also wraps backend textures (G11a)"
+reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and read_image_pixels exist); not ported in this sweep; the readback needs a real adapter (lavapipe job)"
 span_hash = "70d48fa524bfc7e47f591b1d5ccc68650033055447b6dfd4809162c11f7e24ed"
 
 [[test]]
@@ -52034,7 +52072,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/MutableImagesTest.cpp#L505-L526"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs a real adapter in CI (lavapipe job) and the mutable-image recording replays (Recording targets, backend textures); not ported yet"
+reason = "needs the mutable-image recording replays (Recording targets, backend textures) and a real adapter (lavapipe job); not ported (526 C++ lines)"
 span_hash = "2c80076ae3b11aaa4ecbe4a33d563a5561df0215577c229fcc07f07a5681354e"
 
 [[test]]
@@ -52322,8 +52360,8 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PersistentPipelineStorageTest.cpp#L85-L116"
 module = "gpu"
-status = "todo"
-reason = "needs a Vulkan context type (the wgpu noop device is not one) and render-target surfaces (G10d)"
+status = "excluded"
+reason = "Vulkan-backend internals; skia-rust's GPU backend is wgpu (the test's context filter is IsVulkanContextType)"
 span_hash = "7af26e57545c180ab328dc9e5712c8a78d369083026ec0683f263f3947d67b4f"
 
 [[test]]
@@ -52333,7 +52371,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L185-L201"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
+reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
 span_hash = "3f665a1eece38d8ea118f6efa2006f343e2a2023c010a463246ab338b5566712"
 
 [[test]]
@@ -52343,7 +52381,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L224-L240"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
+reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
 span_hash = "33d03447c4bb3448abaac0a4df29f3c928c60d05eff4879a5a81d3ae5a0bb1e8"
 
 [[test]]
@@ -52353,7 +52391,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L204-L220"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
+reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
 span_hash = "53cc55cd7f8e6cbd77377032bc5fcb0b672a8426776e6614395aafe64b3b5372"
 
 [[test]]
@@ -52363,7 +52401,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L243-L259"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
+reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
 span_hash = "d28c4abb980619eedcfdaa542fbdaf9feee73d8399e2369a0253546b95d1440b"
 
 [[test]]
@@ -52373,7 +52411,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_CONTEXTS"
 source = "tests/graphite/PipelineCallbackTest.cpp#L340-L371"
 module = "gpu"
 status = "todo"
-reason = "needs render-target surfaces (G10d) and PrecompileContext (G14) for the Precompile variants; draws, Context::insertRecording and submit run on wgpu since G10a/G11c"
+reason = "portable now (RenderTarget surfaces, PrecompileContext and ContextOptions pipeline callbacks exist); not ported in this sweep (372 C++ lines)"
 span_hash = "28e0d79b7882cdd4a7d4e4d0e80ec0fcd2ee6f6d47748b49a5047937a77f879a"
 
 [[test]]
@@ -52392,6 +52430,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L32-L55"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "bf80ebfd8bf69ebc51624f20b8091dc79bfca61f1f393693d2e5e7cddfa12c31"
 
 [[test]]
@@ -52401,6 +52440,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L428-L472"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "461b6d6cbc0d478cea70fa75629cf06938a5e340c0cd6e70eed6cbc3abdb68b1"
 
 [[test]]
@@ -52410,6 +52450,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L59-L90"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "51b37ae404e1c4193283ad258042523e9bd6659ff8849e7095a7f4dacebbe38e"
 
 [[test]]
@@ -52419,6 +52460,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L160-L185"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "6161c31d6a34c7f29b0fcfbb5ab3d3bad7d8f09e2d5bc2c518d50e752092d1c6"
 
 [[test]]
@@ -52428,6 +52470,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L188-L211"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "5dfaeeae270429f078f5f2489b9b2587d6e585d6f849792cc32c4019fece8064"
 
 [[test]]
@@ -52437,6 +52480,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L215-L249"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "a0ea5201dd8aae025f2f573fba6b9258e24734d5a4f626813df329fd2f7a35b2"
 
 [[test]]
@@ -52446,6 +52490,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L252-L269"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "b63722db183ee8c5fb393cb691a04bfe37f8abe38c26cde24d00ac904805b957"
 
 [[test]]
@@ -52455,6 +52500,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L272-L319"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "ffbc33d25bcb7d0f4286c23d6bcca38d30fe9a4aef1ee67a7c87b75be6e8d852"
 
 [[test]]
@@ -52464,6 +52510,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ProxyCacheTest.cpp#L323-L392"
 module = "gpu"
 status = "todo"
+reason = "portable now (ProxyCache is ported); not ported in this sweep (474 C++ lines): needs a bitmap-from-resource helper (ToolUtils::GetResourceAsBitmap, not in tests/src/tools) and the resource-cache test accessors"
 span_hash = "da5424dd8588cedb1c5630eaa9d49535aaf882853c1ca03e3e222eff4e85c801"
 
 [[test]]
@@ -52509,7 +52556,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L559-L646"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Context::asyncRescaleAndReadPixels (RescaleImage, not ported) on Image and Surface, and a real adapter in CI (lavapipe job)"
+reason = "needs Context::asyncRescaleAndReadPixels with RescaleImage on Image and Surface (not ported; see wgpu/context.rs) and a real adapter (lavapipe job)"
 span_hash = "26e9b48f9bfc7306afb4a9e0703cded74a6fd3382ffd71a690224ce2a4370a1c"
 
 [[test]]
@@ -52519,7 +52566,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/ReadWritePixelsGraphiteTest.cpp#L648-L712"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Context::asyncRescaleAndReadPixels (RescaleImage, not ported) on Image and Surface, and a real adapter in CI (lavapipe job)"
+reason = "needs Context::asyncRescaleAndReadPixels with RescaleImage on Image and Surface (not ported; see wgpu/context.rs) and a real adapter (lavapipe job)"
 span_hash = "e0d9bfd0cb3e1a96a52445d291210c63dd40a0934fadee247cdd9447090d8fb8"
 
 [[test]]
@@ -52557,7 +52604,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/RecordingOrderTest.cpp#L127-L132"
 module = "gpu"
 status = "todo"
-reason = "needs surfaces, text and readPixels on a Graphite Context (G10, G11)"
+reason = "portable now (Surface draws, text and read_surface_pixels exist); not ported in this sweep (132 C++ lines)"
 span_hash = "7da47fa14cf85984748bbb534d1623ae8835d9c47e86ef35a376967926b5f9d2"
 
 [[test]]
@@ -52567,7 +52614,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L109-L129"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "a2b9febf3e1618650f93e8c31661cde87b33a63b9d4a331a262f7e733f3af6d2"
 
 [[test]]
@@ -52577,7 +52624,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L132-L156"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "b64020236433e3b6c6ae78125351ceef5e95bc5447397bbefbf6196c6646a91e"
 
 [[test]]
@@ -52587,7 +52634,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L222-L270"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "7266c50c44b90afadf316748051344c4dafc53c54daf04cb3601c21190859571"
 
 [[test]]
@@ -52597,7 +52644,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L335-L442"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "de77450f83271214b64fdd92d0115aadea7e77c87f833eedfb24aa97ca0157ef"
 
 [[test]]
@@ -52607,7 +52654,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L444-L470"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "41b77eb21da5e4cf060fd81064d8962e34d19c6480987300bfde365b0c2dee3c"
 
 [[test]]
@@ -52617,7 +52664,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L273-L300"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "4ff470d6cdc4f7337f119aa83665dab16acea5da6d64cc8080fa1097d1200bc0"
 
 [[test]]
@@ -52627,7 +52674,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L473-L488"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "1353d545d5b18899346b1b0c5efdd5b930764ab844c3e1f8e097e2184c29160a"
 
 [[test]]
@@ -52637,7 +52684,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L492-L503"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "59952babf4a5f09fee39dfd43e376060d75a7a026ebae4fa8e5f79f7fdd5e4d9"
 
 [[test]]
@@ -52647,7 +52694,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L159-L187"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "1d21115c4a5bea955715d8c61da74b71ed2a9f0ad984e18f0c80676d522e12cd"
 
 [[test]]
@@ -52657,7 +52704,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L190-L219"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "d1774591cb1a1759252700dd615682c183300972e0113e4c9bd1e0bc1f96e677"
 
 [[test]]
@@ -52667,7 +52714,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/RecordingSurfacesTest.cpp#L303-L333"
 module = "gpu"
 status = "todo"
-reason = "blocked: needs Recorder::makeDeferredCanvas / the target proxy device and insertRecording with a target surface, translation and clip (G10a remainder), and a real adapter in CI (lavapipe job)"
+reason = "needs Recorder::makeDeferredCanvas, which is not ported (no deferred canvas in skia-rust-gpu), and insertRecording with a target surface, translation and clip"
 span_hash = "2943ede640374e442c6cd7cc5f46e3e05f43ed08b05529d1627cbee690165dfd"
 
 [[test]]
@@ -52875,7 +52922,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L223-L278"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images/surfaces/promise images (G10d)"
+reason = "portable now (RasterFromBitmap, TextureFromImage, RenderTarget and PromiseTextureFrom exist); not ported in this sweep (280 C++ lines)"
 span_hash = "c436c8d191665d858069448e5e207bc8a702b624d62b61e170e269fc2dde7255"
 
 [[test]]
@@ -52894,7 +52941,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/TextureProxyTest.cpp#L202-L221"
 module = "gpu"
 status = "todo"
-reason = "needs Graphite images/surfaces/promise images (G10d)"
+reason = "portable now (RasterFromBitmap, TextureFromImage, RenderTarget and PromiseTextureFrom exist); not ported in this sweep (280 C++ lines)"
 span_hash = "353c152200fc7c0e62d0fff8d16693abf0781f5db92f25eb614acd3fced7c4bb"
 
 [[test]]
@@ -53219,6 +53266,7 @@ macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/UpdateBackendTextureTest.cpp#L252-L310"
 module = "gpu"
 status = "todo"
+reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and Recorder::update_backend_texture exist); not ported in this sweep (310 C++ lines)"
 span_hash = "2d6e0ba71eee51a95b3dccd5515e28bac006f5547612ce72305192518c04a344"
 
 [[test]]
@@ -53228,6 +53276,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/UpdateBackendTextureTest.cpp#L195-L250"
 module = "gpu"
 status = "todo"
+reason = "portable now (SkImages::WrapTexture, SkSurfaces::RenderTarget and Recorder::update_backend_texture exist); not ported in this sweep (310 C++ lines)"
 span_hash = "11e58475b27bd59ca9c457bd3c3ca542a00b41c4752eef51eaf5927debaef3c1"
 
 [[test]]
@@ -53246,7 +53295,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L204-L332"
 module = "gpu"
 status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); not ported yet: reads draw and static vertex buffers back through async buffer maps"
+reason = "needs a real adapter (lavapipe job) and async readback of draw and static vertex buffers through buffer maps; not ported in this sweep (332 C++ lines)"
 span_hash = "63bccaf83ce8e4b9d2e6bc058b0b5fff3636bf374f130bdfb46cac43e00e882a"
 
 [[test]]
@@ -53256,7 +53305,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_DAWN_AND_VULKAN_CONTEXTS"
 source = "tests/graphite/VerticesPaddingTest.cpp#L133-L202"
 module = "gpu"
 status = "todo"
-reason = "needs a real adapter in CI (lavapipe job); not ported yet: reads draw and static vertex buffers back through async buffer maps"
+reason = "needs a real adapter (lavapipe job) and async readback of draw and static vertex buffers through buffer maps; not ported in this sweep (332 C++ lines)"
 span_hash = "5fd20f7e7ab840f4a62acbf6525107645b553e11aa2d48b95c80d883205fa8b6"
 
 [[test]]
@@ -53295,8 +53344,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/crbug_513836996.cpp#L26-L89"
 module = "gpu"
-status = "todo"
-reason = "blocked: Canvas::experimental_DrawEdgeAAImageSet is not ported on skia_rust_core::Canvas (only Device::draw_edge_aa_image_set exists); then needs a real adapter in CI (lavapipe job)"
+status = "passing"
 span_hash = "8168143c638c6ba2f67b404db2e501e4c13bf0914c35ecb178647c92c3096624"
 
 [[test]]
@@ -53467,7 +53515,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L465-L514"
 module = "gpu"
 status = "todo"
-reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
+reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
 span_hash = "0c6bc99f3dd425203f0902b4329fba7b05370d706a7ed5ab5a1f5bb4e76e72f2"
 
 [[test]]
@@ -53477,7 +53525,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L558-L577"
 module = "gpu"
 status = "todo"
-reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
+reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
 span_hash = "d6168d2be1ff4f5dd5518b2aa884f773e66690908fb826a61368e866fbc41d7a"
 
 [[test]]
@@ -53487,7 +53535,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L428-L461"
 module = "gpu"
 status = "todo"
-reason = "blocked: records on other threads, and this port's Recorder is not Send (Rc-based); the precompile-only threaded tests are ported; the gradient WGSL also fails naga (docs/design/gpu.md W4)"
+reason = "needs Recorders recording on other threads: this port's Recorder is not Send (Rc-based, recorder.rs); the precompile-only threaded tests are ported and passing"
 span_hash = "3fb42a8d02f9e5d30039c3a56380fb3852ffcd076ee11b859f31f2db414cf026"
 
 [[test]]
@@ -53497,7 +53545,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L518-L553"
 module = "gpu"
 status = "failing"
-reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
+reason = "timing-dependent: on Windows CI the dawn-d3d12 / dawn-vk-wgpucaps contexts report 1 / 7 graphics cache hits where 0 are expected (executor compile tasks race the draws); under investigation (port/gpu-unit-sweep-4)"
 span_hash = "66f7e8418e610d93371bff0b345d4ee7ef09bec132fb380f63a45a5aff935cf1"
 
 [[test]]
@@ -53506,8 +53554,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/precompile/ThreadedPrecompileTest.cpp#L390-L423"
 module = "gpu"
-status = "failing"
-reason = "wgpu validation errors on pipeline creation (still failing after the naga storage-pointer rewrite; under investigation)"
+status = "passing"
 span_hash = "491300b6238f0a3452e358838411314abd952c2585848399423b33c5ef0991a5"
 
 [[test]]
@@ -53553,6 +53600,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L17-L54"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "93fa00027f66a2a0e78cc04385abe16e594c537da0b4844bb32007f6f5a96e53"
 
 [[test]]
@@ -53562,6 +53610,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L56-L85"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "996f277b86123bd6ab8f12f801c462fad2722c5d5df794683e5ae7bdf284819f"
 
 [[test]]
@@ -53571,6 +53620,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L236-L266"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "69d6e620088158f4435a88aa613aef074197e90aae4e16220ec8595c278fca23"
 
 [[test]]
@@ -53580,6 +53630,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L268-L338"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "f3c496a72d45f8867c8de3f168fc3caf1eec8fc2ff5aff432e4a27b56766afb7"
 
 [[test]]
@@ -53589,6 +53640,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L87-L184"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "04acf4546249a04d1ae7d79bb7ad37bffd5a7ad163a9fc0470f9a49e4f800e41"
 
 [[test]]
@@ -53598,6 +53650,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L340-L396"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "18dba13598a45e3a9f071489495ee75d59d5373f3654ad5067b57888df82899f"
 
 [[test]]
@@ -53607,6 +53660,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/AtlasTests.cpp#L186-L234"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "a01e59db8ed139eb87ab9136fae8023bb141a705bda9a842bc5d680e06fb5440"
 
 [[test]]
@@ -53616,6 +53670,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/ClipTest.cpp#L192-L192"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "6a182e0ec52a781aa12be2ec8365cb6eaa4e3f2c0a0b72c49ee185bcbe931c73"
 
 [[test]]
@@ -53625,6 +53680,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/ClipTest.cpp#L194-L194"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "7cb71ec2e31c95e337e74ae8040d55ef97f999b25612ec5524794da71e08c9fa"
 
 [[test]]
@@ -53634,6 +53690,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L307-L315"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "d861c53351150872f2b1646f7ed9e32e24be276accd7505333420f11e7876358"
 
 [[test]]
@@ -53643,6 +53700,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L317-L325"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "f92d6c378bc3d0b673cf6343fcf24b8635ada25c6e5cd27f8869232aa353f933"
 
 [[test]]
@@ -53652,6 +53710,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L297-L305"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "a6b0585d72d6ecc3be9c1ad468f6cca6e00f96a3af86e84609f9ec1edcbde66b"
 
 [[test]]
@@ -53661,6 +53720,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L327-L334"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "677bc0d9e8c06f4b177ef75afee39f275bdf96a1a76dd2115b79aafd121457ab"
 
 [[test]]
@@ -53670,6 +53730,7 @@ macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/graphite/sparse_strips/CoverageTest.cpp#L336-L343"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "d6ef276f110274b0dd9fe47face211f70954afdaa30c4b1e77acd7c48cbc69dd"
 
 [[test]]
@@ -53679,6 +53740,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/FlattenTest.cpp#L655-L657"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "ad30d99067d9307ed4267f0b190cb40edc8657bb8de3f6697810d6e9a3ab822c"
 
 [[test]]
@@ -53688,6 +53750,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/FlattenTest.cpp#L651-L653"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "383dee66b798045b2db43ffe7c2678e5c8f039c9a0e7dd1bf442b89a60974e5a"
 
 [[test]]
@@ -53697,6 +53760,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/LUTTest.cpp#L158-L164"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "2d760c9462a6ff86885854c9b016cd3da856873449dcabb5c4b75546660be5d7"
 
 [[test]]
@@ -53706,6 +53770,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/OracleTest.cpp#L238-L313"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "85680617c54c7928e88eaeb6f2ed16f0630f1f4bfc0fcffe642dc4e1a1c2cb1f"
 
 [[test]]
@@ -53715,6 +53780,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/OracleTest.cpp#L139-L236"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "d82e9a89a852a514e6f4da84d4c6a6ac2c1f4081a04e74188e2ec452defbc49e"
 
 [[test]]
@@ -53724,6 +53790,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/PolylineTest.cpp#L19-L154"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "f470115d1d74904f61aaa6dab23b415bf12f1c40750a20e69f605b65a832e026"
 
 [[test]]
@@ -53733,6 +53800,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/PolylineTest.cpp#L156-L435"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "face46144c54733b57731aec0e76d81e387dbabfcbad03b07ee1951e963c8714"
 
 [[test]]
@@ -53742,6 +53810,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/TilerTest.cpp#L256-L258"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "ae00c747a15c1e7a538611786acffcb7ddd01daeeb789f1891b712a153274141"
 
 [[test]]
@@ -53751,6 +53820,7 @@ macro = "DEF_TEST"
 source = "tests/graphite/sparse_strips/TilerTest.cpp#L260-L262"
 module = "gpu"
 status = "todo"
+reason = "sparse strips (G17, Q5) are not ported: skia-rust-gpu has no sparse_strips module (5.1k C++ lines)"
 span_hash = "39a92d2e1fbd431fa1d5621991075bdf1a48d161a61e3028201016ebbadf3d81"
 
 [[test]]

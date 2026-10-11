@@ -5,7 +5,8 @@
 
 //! `SkBlurMaskFilterImpl`: the blur mask filter ([`MaskFilter::blur`]).
 //!
-//! skia-rust: the nine-patch masks are not cached (`SkMaskCache`/`SkResourceCache`), and the
+//! skia-rust: the nine-patch masks are not cached (the `SkMaskCache` port in [`crate::mask_cache`]
+//! is not yet called from here; the output is the same without the cache), and the
 //! small masks are drawn through a [`MaskRasterizer`] (see [`crate::mask_filter`]). `asImageFilter`
 //! (which needs the blur image filter) is not ported yet. Flattening is ported
 //! ([`blur_create_proc`]).

@@ -8,7 +8,7 @@
 use skia_rust_core::image_filter::{ImageFilter, ImageFilterBase, ImageFilterCommon};
 use skia_rust_core::image_filter_result::FilterResult;
 use skia_rust_core::image_filter_types::{Context, Mapping, MatrixCapability};
-use skia_rust_core::rect::IRect;
+use skia_rust_core::rect::{IRect, Rect};
 
 /// Index of the outer input (`kOuter`).
 const OUTER: usize = 0;
@@ -31,6 +31,16 @@ impl ImageFilterBase for ComposeImageFilter {
     // Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L24 (chrome/m156)
     fn on_get_ctm_capability(&self) -> MatrixCapability {
         MatrixCapability::Complex
+    }
+
+    // Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L142-L145 (chrome/m156)
+    fn compute_fast_bounds(&self, src: &Rect) -> Rect {
+        // The inner filter sees the source bounds; the outer filter sees its result.
+        let inner = self
+            .get_input(INNER)
+            .map_or(*src, |input| input.compute_fast_bounds(src));
+        self.get_input(OUTER)
+            .map_or(inner, |input| input.compute_fast_bounds(inner))
     }
 
     // Port of: src/effects/imagefilters/SkComposeImageFilter.cpp#L38-L50 (chrome/m156)

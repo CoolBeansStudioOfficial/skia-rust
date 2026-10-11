@@ -186,3 +186,54 @@ def_test!(RecordDraw_drawImage, |_r| {
 
     let _canvas = Canvas::new_no_pixels((10, 10), None);
 });
+
+/// `sloppy_rect_eq(a, b)`: `b` is within one pixel of `a`.
+// Port of: tests/RecordDrawTest.cpp#L138-L143 (chrome/m156)
+fn sloppy_rect_eq(a: Rect, b: Rect) -> bool {
+    use skia_rust_core::rect::Contains;
+    let mut inset = a;
+    inset.inset((1.0, 1.0));
+    let mut outset = a;
+    outset.outset((1.0, 1.0));
+    outset.contains(b) && !inset.contains(b)
+}
+
+// Port of: tests/RecordDrawTest.cpp#L204-L227 (chrome/m156)
+def_test!(
+    RecordDraw_EmptySaveLayerWithBackdropFilterAffectsCullRect,
+    |r| {
+        use skia_rust_core::bbh_factory::Metadata;
+        use skia_rust_core::canvas::SaveLayerRec;
+        use skia_rust_core::record_draw::record_fill_bounds;
+        use skia_rust_core::tile_mode::TileMode;
+
+        let record: SharedRecord = Rc::new(RefCell::new(Record::new()));
+        let recorder = RecordCanvas::new(&record, 50, 50);
+
+        let blur_filter =
+            skia_rust_effects::image_filters::blur(5.0, 5.0, TileMode::Decal, None, None);
+
+        recorder.save();
+        recorder.clip_rect(Rect::from_wh(40.0, 40.0), None, None);
+        recorder.save_layer(
+            &SaveLayerRec::default()
+                .backdrop(blur_filter.as_ref().expect("a blur filter"))
+                .backdrop_tile_mode(TileMode::Decal),
+        );
+        recorder.restore();
+        recorder.restore();
+
+        // Even though there is nothing drawn inside the saveLayer, the bounds should still fill the
+        // the clip region due to it affecting the backdrop.
+        let record = record.borrow();
+        let mut bounds = vec![Rect::default(); record.count()];
+        let mut meta = vec![Metadata::default(); record.count()];
+        record_fill_bounds(&Rect::from_wh(50.0, 50.0), &record, &mut bounds, &mut meta);
+        let expected = Rect::from_ltrb(0.0, 0.0, 40.0, 40.0);
+        reporter_assert!(r, sloppy_rect_eq(bounds[0], expected));
+        reporter_assert!(r, sloppy_rect_eq(bounds[1], expected));
+        reporter_assert!(r, sloppy_rect_eq(bounds[2], expected));
+        reporter_assert!(r, sloppy_rect_eq(bounds[3], expected));
+        reporter_assert!(r, sloppy_rect_eq(bounds[4], expected));
+    }
+);

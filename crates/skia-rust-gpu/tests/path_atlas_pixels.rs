@@ -33,14 +33,24 @@ use skia_rust_gpu::graphite::graphite_types::{
 };
 use skia_rust_gpu::graphite::renderer_provider::PathRendererStrategy;
 use skia_rust_gpu::graphite::resource_types::LoadOp;
-use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
+use skia_rust_gpu::graphite::wgpu::{
+    AdapterTestContext, WgpuContext, make_context, serialized_adapter_context,
+};
 
 const SIZE: i32 = 128;
 
 /// A context on a real adapter with the raster path atlas strategy, or `None` (after saying so) if
 /// the machine has no adapter that renders.
-fn real_context() -> Option<WgpuContext> {
-    let Some((backend_context, info)) = adapter_backend_context(wgpu::Backends::all()) else {
+/// A context on the binary's one shared device, with the adapter test lock held (see
+/// `skia_rust_gpu::graphite::wgpu::serialized_adapter_context`).
+fn real_context() -> Option<AdapterTestContext<WgpuContext>> {
+    let options = ContextOptions {
+        path_renderer_strategy: Some(PathRendererStrategy::RasterAtlas),
+        ..ContextOptions::default()
+    };
+    let Some((context, info)) = serialized_adapter_context(|backend_context| {
+        make_context(backend_context, &options).expect("a context")
+    }) else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
             "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
@@ -52,11 +62,7 @@ fn real_context() -> Option<WgpuContext> {
         "adapter: {} ({:?}, {:?})",
         info.name, info.backend, info.device_type
     );
-    let options = ContextOptions {
-        path_renderer_strategy: Some(PathRendererStrategy::RasterAtlas),
-        ..ContextOptions::default()
-    };
-    Some(make_context(&backend_context, &options).expect("a context"))
+    Some(context)
 }
 
 /// A paint of an opaque red, with or without antialiasing.

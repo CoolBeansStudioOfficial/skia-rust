@@ -64,6 +64,7 @@ pub mod color_test;
 pub mod convert_pixels_test;
 #[cfg(test)]
 pub mod core_blitters_test;
+pub mod cpu_backend_test;
 #[cfg(test)]
 pub mod cubic_map_test;
 #[cfg(test)]
@@ -180,6 +181,7 @@ pub mod json_test;
 pub mod m44_test;
 #[cfg(test)]
 pub mod malloc_pixel_ref_test;
+pub mod mask_cache_test;
 #[cfg(test)]
 pub mod math_test;
 #[cfg(test)]
@@ -422,6 +424,8 @@ pub mod serial_procs_test;
 #[cfg(test)]
 pub mod serialization_test;
 #[cfg(test)]
+pub mod shader_image_filter_test;
+pub mod shader_opacity_test;
 pub mod shader_test;
 #[cfg(test)]
 pub mod shadow_test;
@@ -513,6 +517,8 @@ pub mod swizzler_test;
 pub mod test_test;
 #[cfg(test)]
 pub mod text_blob_test;
+#[cfg(test)]
+pub mod texture_size_test;
 #[cfg(test)]
 pub mod time;
 #[cfg(test)]

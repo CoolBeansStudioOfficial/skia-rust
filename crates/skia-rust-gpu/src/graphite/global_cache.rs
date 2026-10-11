@@ -354,7 +354,12 @@ impl GlobalCache {
         let mut inner = self.lock();
         let mut to_remove = Vec::new();
         inner.graphics_pipelines.foreach(|key, pipeline| {
-            if pipeline.base().last_access_time() < purge_time {
+            // A never-accessed pipeline has C++'s default (epoch) time, before any purge time.
+            if pipeline
+                .base()
+                .last_access_time()
+                .is_none_or(|last_access| last_access < purge_time)
+            {
                 to_remove.push(key.clone());
             }
         });
