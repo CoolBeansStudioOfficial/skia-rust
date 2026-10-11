@@ -19,8 +19,8 @@ use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::graphite_types::{SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
-    CapsProfile, DeviceFeatures, WgpuContext, WgpuSharedContext, any_adapter_backend_context,
-    make_context, noop_backend_context, noop_backend_context_for_profile,
+    AdapterTestContext, CapsProfile, DeviceFeatures, WgpuContext, WgpuSharedContext, make_context,
+    noop_backend_context, noop_backend_context_for_profile, serialized_adapter_context,
 };
 
 /// `skiatest::IsDawnContextType` for a context name from [`all_contexts`]: the Dawn profiles are
@@ -70,13 +70,15 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
 
 /// The context the tests that read pixels run on: one on a real adapter (software adapters
 /// first; `adapter_backend_context`) with its name, or `None` after saying so when the machine has
-/// none. With `SKIA_RUST_REQUIRE_ADAPTER` set, a missing adapter is an error (the GPU CI jobs).
+/// none. The device is the test binary's one shared device and the context holds the adapter test
+/// lock until it is dropped, so adapter tests run one at a time (`docs/design/gpu.md` section 8).
+/// With `SKIA_RUST_REQUIRE_ADAPTER` set, a missing adapter is an error (the GPU CI jobs).
 ///
 /// # Panics
 /// If `SKIA_RUST_REQUIRE_ADAPTER` is set and there is no adapter, or the adapter cannot make a
 /// context.
 #[must_use]
-pub fn real_context() -> Option<(String, WgpuContext)> {
+pub fn real_context() -> Option<(String, AdapterTestContext<WgpuContext>)> {
     real_context_with_options(&ContextOptions::default())
 }
 
@@ -85,8 +87,12 @@ pub fn real_context() -> Option<(String, WgpuContext)> {
 /// # Panics
 /// As [`real_context`].
 #[must_use]
-pub fn real_context_with_options(options: &ContextOptions) -> Option<(String, WgpuContext)> {
-    let Some((backend_context, info)) = any_adapter_backend_context() else {
+pub fn real_context_with_options(
+    options: &ContextOptions,
+) -> Option<(String, AdapterTestContext<WgpuContext>)> {
+    let Some((context, info)) = serialized_adapter_context(|backend_context| {
+        make_context(backend_context, options).expect("a context on the adapter")
+    }) else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
             "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
@@ -94,7 +100,6 @@ pub fn real_context_with_options(options: &ContextOptions) -> Option<(String, Wg
         eprintln!("no adapter that renders: skipping");
         return None;
     };
-    let context = make_context(&backend_context, options).expect("a context on the adapter");
     Some((format!("{} ({:?})", info.name, info.backend), context))
 }
 

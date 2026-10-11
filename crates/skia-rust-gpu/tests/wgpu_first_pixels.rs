@@ -42,11 +42,17 @@ use skia_rust_gpu::graphite::resource_types::{AccessPattern, BufferType, ClearBu
 use skia_rust_gpu::graphite::task::compute_task::ComputeTask;
 use skia_rust_gpu::graphite::task::copy_task::CopyBufferToBufferTask;
 use skia_rust_gpu::graphite::task::synchronize_to_cpu_task::SynchronizeToCpuTask;
-use skia_rust_gpu::graphite::wgpu::{WgpuContext, adapter_backend_context, make_context};
+use skia_rust_gpu::graphite::wgpu::{
+    AdapterTestContext, WgpuContext, make_context, serialized_adapter_context,
+};
 
 /// A context on a real adapter, or `None` (after saying so) if the machine has none.
-fn real_context() -> Option<WgpuContext> {
-    let Some((backend_context, info)) = adapter_backend_context(wgpu::Backends::all()) else {
+/// A context on the binary's one shared device, with the adapter test lock held (see
+/// `skia_rust_gpu::graphite::wgpu::serialized_adapter_context`).
+fn real_context() -> Option<AdapterTestContext<WgpuContext>> {
+    let Some((context, info)) = serialized_adapter_context(|backend_context| {
+        make_context(backend_context, &ContextOptions::default()).expect("a context")
+    }) else {
         assert!(
             std::env::var_os("SKIA_RUST_REQUIRE_ADAPTER").is_none(),
             "SKIA_RUST_REQUIRE_ADAPTER is set but there is no adapter"
@@ -58,7 +64,7 @@ fn real_context() -> Option<WgpuContext> {
         "adapter: {} ({:?}, {:?})",
         info.name, info.backend, info.device_type
     );
-    Some(make_context(&backend_context, &ContextOptions::default()).expect("a context"))
+    Some(context)
 }
 
 fn solid(r: f32, g: f32, b: f32) -> Paint {
@@ -211,7 +217,7 @@ fn a_buffer_copy_is_read_back_through_the_async_map() {
     };
     let mut recorder = context.make_recorder(None);
     let (src, dst) = {
-        let mut provider = ContextPriv::resource_provider(&context).lock().unwrap();
+        let mut provider = ContextPriv::resource_provider(&*context).lock().unwrap();
         (
             provider
                 .find_or_create_non_shareable_buffer(
@@ -334,7 +340,7 @@ fn a_compute_pass_dispatches_over_a_storage_buffer() {
     });
     let mut recorder = context.make_recorder(None);
     let (upload, storage, readback) = {
-        let mut provider = ContextPriv::resource_provider(&context).lock().unwrap();
+        let mut provider = ContextPriv::resource_provider(&*context).lock().unwrap();
         let mut make = |size, ty, access, label| {
             provider
                 .find_or_create_non_shareable_buffer(size, ty, access, label)

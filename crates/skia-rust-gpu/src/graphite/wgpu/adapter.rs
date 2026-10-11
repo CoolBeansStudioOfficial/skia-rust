@@ -10,6 +10,9 @@
 //! wgpu has: software adapters (lavapipe, WARP) come first, as the pixel tests are meant to run
 //! on them (`docs/design/gpu.md` §2).
 
+use std::ops::{Deref, DerefMut};
+use std::sync::{Mutex, MutexGuard, OnceLock, PoisonError};
+
 use crate::graphite::wgpu::async_wait::block_on;
 use crate::graphite::wgpu::shared_context::WgpuBackendContext;
 
@@ -58,4 +61,74 @@ pub fn adapter_backend_context(
     }))
     .ok()?;
     Some((WgpuBackendContext::new(device, queue), info))
+}
+
+/// The one device a test binary shares: made on first use by [`adapter_backend_context`] with
+/// every backend, and never dropped (a `static` is not), so an adapter test binary creates one
+/// instance, adapter and device and tears none of them down.
+///
+/// The Windows CI jobs died intermittently with `STATUS_ACCESS_VIOLATION` inside the WARP D3D12
+/// software adapter while the tests of one binary, which libtest runs on parallel threads, each
+/// created and dropped their own instance and device (`docs/design/gpu.md` section 8).
+static SHARED_BACKEND_CONTEXT: OnceLock<Option<(WgpuBackendContext, wgpu::AdapterInfo)>> =
+    OnceLock::new();
+
+/// Held by every [`AdapterTestContext`], so the adapter tests of one binary run one at a time.
+static ADAPTER_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+/// A clone of the process-wide backend context [`adapter_backend_context`] makes (with
+/// `Backends::all()`) the first time, or `None` if there is no adapter. For the tests that read
+/// pixels; use [`serialized_adapter_context`] unless the test must hold the device itself.
+#[must_use]
+pub fn shared_adapter_backend_context() -> Option<(WgpuBackendContext, wgpu::AdapterInfo)> {
+    SHARED_BACKEND_CONTEXT
+        .get_or_init(any_adapter_backend_context)
+        .clone()
+}
+
+/// A context made from the shared device, with the process-wide adapter test lock held until it
+/// is dropped. It derefs to the `Context` (`WgpuContext`).
+#[derive(Debug)]
+pub struct AdapterTestContext<C> {
+    // Declared first, so the context is dropped before the lock is released.
+    context: C,
+    _serial: MutexGuard<'static, ()>,
+}
+
+impl<C> Deref for AdapterTestContext<C> {
+    type Target = C;
+    fn deref(&self) -> &C {
+        &self.context
+    }
+}
+
+impl<C> DerefMut for AdapterTestContext<C> {
+    fn deref_mut(&mut self) -> &mut C {
+        &mut self.context
+    }
+}
+
+/// Takes the process-wide adapter test lock (a test that panicked while holding it does not
+/// poison it), then makes the context with `make` from the shared backend context. `None` if
+/// there is no adapter.
+///
+/// The lock and the shared device are the mitigation for the Windows WARP crash described on
+/// the shared device's `static`: no two adapter tests of a binary run at once, and none creates
+/// or destroys a device.
+#[must_use]
+pub fn serialized_adapter_context<C>(
+    make: impl FnOnce(&WgpuBackendContext) -> C,
+) -> Option<(AdapterTestContext<C>, wgpu::AdapterInfo)> {
+    let serial = ADAPTER_TEST_LOCK
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    let (backend_context, info) = shared_adapter_backend_context()?;
+    let context = make(&backend_context);
+    Some((
+        AdapterTestContext {
+            context,
+            _serial: serial,
+        },
+        info,
+    ))
 }
