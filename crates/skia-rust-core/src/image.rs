@@ -37,6 +37,33 @@ use crate::shaders::image_shader::ImageShader;
 use crate::size::ISize;
 use crate::tile_mode::TileMode;
 
+/// The gamma `Image::rescale` (and the asynchronous rescale-and-read calls) rescale in
+/// (`SkImage::RescaleGamma`).
+// Port of: include/core/SkImage.h#L591 (chrome/m156)
+#[doc(alias = "SkImage::RescaleGamma")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum RescaleGamma {
+    /// `kSrc`: rescale in the source's gamma.
+    Src,
+    /// `kLinear`: rescale in linear gamma.
+    Linear,
+}
+
+/// The sampling used when rescaling an image (`SkImage::RescaleMode`).
+// Port of: include/core/SkImage.h#L593-L598 (chrome/m156)
+#[doc(alias = "SkImage::RescaleMode")]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum RescaleMode {
+    /// `kNearest`.
+    Nearest,
+    /// `kLinear`.
+    Linear,
+    /// `kRepeatedLinear`: halves the size repeatedly with linear sampling, then the last step.
+    RepeatedLinear,
+    /// `kRepeatedCubic`: halves the size repeatedly with Catmull-Rom sampling, then the last step.
+    RepeatedCubic,
+}
+
 /// Properties an image made from another must have (`SkImage::RequiredProperties`).
 // Port of: include/core/SkImage.h#L101-L110 (chrome/m156)
 #[doc(alias = "SkImage::RequiredProperties")]

@@ -16,16 +16,17 @@ use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::bitmap::Bitmap;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::SrcRectConstraint;
+use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::color_type::ColorType;
 use skia_rust_core::compressed_data_utils::compressed_format_data_size;
-use skia_rust_core::image::{Image as CoreImage, RequiredProperties};
+use skia_rust_core::image::{Image as CoreImage, RequiredProperties, RescaleGamma, RescaleMode};
 use skia_rust_core::image_info::{ColorInfo, ImageInfo};
 use skia_rust_core::image_info_priv::image_info_is_valid;
 use skia_rust_core::mipmap::Mipmap;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::point::IPoint;
 use skia_rust_core::rect::{IRect, Rect};
-use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
+use skia_rust_core::sampling_options::{CubicResampler, FilterMode, MipmapMode, SamplingOptions};
 use skia_rust_core::sampling_priv::aniso_fallback;
 use skia_rust_core::size::ISize;
 use skia_rust_core::texture_compression_type::TextureCompressionType;
@@ -387,6 +388,202 @@ pub fn copy_as_draw(
         dst_color_info.color_type(),
         final_alpha_type(image.image_info().alpha_type(), dst_info.alpha_type()),
     )
+}
+
+/// `SkRect::Make(SkIRect)`.
+fn rect_from_irect(r: IRect) -> Rect {
+    // mirrors SkRect::Make(SkIRect): the coordinates are integers, which an f32 holds exactly
+    #[allow(clippy::cast_precision_loss)]
+    Rect::new(
+        r.left() as f32,
+        r.top() as f32,
+        r.right() as f32,
+        r.bottom() as f32,
+    )
+}
+
+/// `SkRect::Make(SkISize)`.
+fn rect_from_size(s: ISize) -> Rect {
+    // mirrors SkRect::Make(SkISize): the dimensions are integers, which an f32 holds exactly
+    #[allow(clippy::cast_precision_loss)]
+    Rect::from_xywh(0.0, 0.0, s.width as f32, s.height as f32)
+}
+
+/// `RescaleImage(recorder, srcImage, srcIRect, dstInfo, rescaleGamma, rescaleMode)`: rescales the
+/// `src_irect` part of `src_image` to the dimensions of `dst_info`, by drawing it into scratch
+/// surfaces (halving each step for the repeated modes), and returns the result with the color
+/// type and alpha type of `dst_info`.
+// Port of: src/gpu/graphite/TextureUtils.cpp#L428-L520 (chrome/m156)
+#[doc(alias = "RescaleImage")]
+#[must_use]
+pub fn rescale_image(
+    recorder: &Recorder,
+    src_image: &CoreImage,
+    src_irect: IRect,
+    dst_info: &ImageInfo,
+    mut rescale_gamma: RescaleGamma,
+    mut rescale_mode: RescaleMode,
+) -> Option<CoreImage> {
+    let src_color_info = src_image.image_info().color_info().clone();
+
+    // Other than the final step, rescaling will be performed in the source color type and color
+    // space, possibly with a linear gamma adjustment (although changing the SkColorSpace can be
+    // applied to the result of make_renderable).
+    let mut step_info = make_renderable(&src_color_info, &src_color_info);
+
+    // Make a Surface *exactly* (barring renderable adjustments) matching dstInfo for the final
+    // scaling step.
+    let render_dst_info = make_renderable(&src_color_info, dst_info.color_info());
+    let dst = Surface::make_scratch(
+        recorder,
+        &ImageInfo::from_color_info(dst_info.dimensions(), render_dst_info.clone()),
+        "RescaleDstTexture",
+        Budgeted::Yes,
+        Mipmapped::No,
+        BackingFit::Exact,
+        /*allow_unpremul=*/ true,
+    )?;
+
+    let mut step_src = rect_from_irect(src_irect);
+
+    let final_size = dst_info.dimensions();
+    if final_size == src_irect.size() {
+        rescale_gamma = RescaleGamma::Src;
+        rescale_mode = RescaleMode::Nearest;
+    }
+
+    // Within a rescaling pass tempInput is read from and tempOutput is written to.
+    // At the end of the pass tempOutput's texture is wrapped and assigned to tempInput.
+    let mut temp_input: CoreImage = src_image.clone();
+
+    // Assume we should ignore the rescale linear request if the surface has no color space since
+    // it's unclear how we'd linearize from an unknown color space.
+    if rescale_gamma == RescaleGamma::Linear
+        && step_info
+            .color_space_ref()
+            .is_some_and(|cs| !cs.gamma_is_linear())
+    {
+        // Draw the src image into a new surface with linear gamma, and make that the new tempInput.
+        let linear_gamma = step_info
+            .color_space_ref()
+            .map(ColorSpace::with_linear_gamma)?;
+        let gamma_dst_info =
+            ImageInfo::from_color_info(src_irect.size(), step_info.with_color_space(linear_gamma));
+        let gamma_dst = Surface::make_scratch(
+            recorder,
+            &gamma_dst_info,
+            "RescaleLinearGammaTexture",
+            Budgeted::Yes,
+            Mipmapped::No,
+            BackingFit::Approx,
+            /*allow_unpremul=*/ false,
+        )?;
+        let gamma_dst_rect = rect_from_size(src_irect.size());
+
+        let mut paint = Paint::default();
+        paint.set_blend_mode(BlendMode::Src);
+        gamma_dst.canvas().draw_image_rect_with_sampling_options(
+            &temp_input,
+            Some((&step_src, SrcRectConstraint::Strict)),
+            gamma_dst_rect,
+            SamplingOptions::from(FilterMode::Nearest),
+            &paint,
+        );
+        // `gamma_dst` is released at the end of this block, where Skia's `tempOutput` is reassigned
+        // by the first step of the loop.
+        temp_input = gamma_dst.as_image();
+        step_src = gamma_dst_rect;
+        // The remaining steps output linear gamma too.
+        step_info = gamma_dst_info.color_info().clone();
+    }
+
+    loop {
+        // The next step's dimensions. For the repeated modes each step at most halves (or
+        // doubles) the size, so the filtering stays close to the target scale.
+        let next_dims = next_rescale_dims(step_src, final_size, rescale_mode);
+
+        // The step's target: a scratch surface, or `dst` for the final step (Skia's `tempOutput`).
+        // The scratch surface is released at the end of the step, once `tempInput` holds its image.
+        let step_surface = if next_dims == final_size {
+            None
+        } else {
+            Some(Surface::make_scratch(
+                recorder,
+                &ImageInfo::from_color_info(next_dims, step_info.clone()),
+                "RescaleImageTempTexture",
+                Budgeted::Yes,
+                Mipmapped::No,
+                BackingFit::Approx,
+                /*allow_unpremul=*/ false,
+            )?)
+        };
+        let step_dst_rect = rect_from_size(next_dims);
+
+        let sampling = match rescale_mode {
+            RescaleMode::RepeatedCubic => SamplingOptions::from(CubicResampler::catmull_rom()),
+            RescaleMode::Nearest => SamplingOptions::from(FilterMode::Nearest),
+            RescaleMode::Linear | RescaleMode::RepeatedLinear => {
+                SamplingOptions::from(FilterMode::Linear)
+            }
+        };
+        let mut paint = Paint::default();
+        paint.set_blend_mode(BlendMode::Src);
+        let target = step_surface.as_ref().unwrap_or(&dst);
+        target.canvas().draw_image_rect_with_sampling_options(
+            &temp_input,
+            Some((&step_src, SrcRectConstraint::Strict)),
+            step_dst_rect,
+            sampling,
+            &paint,
+        );
+
+        temp_input = target.as_image();
+        step_src = rect_from_size(next_dims);
+
+        if rect_has_size(step_src, final_size) {
+            break;
+        }
+    }
+
+    // Cast back to the requested color type and final alpha type now that rendering is finished.
+    dst.as_image_with_color(
+        dst_info.color_type(),
+        final_alpha_type(src_image.alpha_type(), render_dst_info.alpha_type()),
+    )
+}
+
+/// Whether `rect` has the size `size`. Both are integer-valued, so the exact comparison is the
+/// C++ `!=` of the loop of `RescaleImage`.
+#[allow(clippy::float_cmp, clippy::cast_precision_loss)] // mirrors the C++ exact comparison
+fn rect_has_size(rect: Rect, size: ISize) -> bool {
+    rect.width() == size.width as f32 && rect.height() == size.height as f32
+}
+
+/// The next step's dimensions of `RescaleImage`'s loop: for the repeated modes, each step halves
+/// (or doubles) a side towards `final_size`; the other modes go straight to `final_size`.
+// Port of: src/gpu/graphite/TextureUtils.cpp#L460-L475 (chrome/m156)
+// mirrors the C++ float arithmetic on integer-valued rects, and its float to int conversions
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::manual_midpoint
+)]
+fn next_rescale_dims(src_rect: Rect, final_size: ISize, mode: RescaleMode) -> ISize {
+    let mut next = final_size;
+    if mode != RescaleMode::Nearest && mode != RescaleMode::Linear {
+        let (fin_w, fin_h) = (final_size.width as f32, final_size.height as f32);
+        if src_rect.width() > fin_w {
+            next.width = ((src_rect.width() + 1.0) / 2.0).max(fin_w) as i32;
+        } else if src_rect.width() < fin_w {
+            next.width = (src_rect.width() * 2.0).min(fin_w) as i32;
+        }
+        if src_rect.height() > fin_h {
+            next.height = ((src_rect.height() + 1.0) / 2.0).max(fin_h) as i32;
+        } else if src_rect.height() < fin_h {
+            next.height = (src_rect.height() * 2.0).min(fin_h) as i32;
+        }
+    }
+    next
 }
 
 /// `GenerateMipmaps(recorder, drawContext, texture)`: fills the mip levels of `texture` by

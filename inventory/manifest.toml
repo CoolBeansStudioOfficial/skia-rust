@@ -52082,8 +52082,7 @@ kind = "unit"
 macro = "DEF_CONDITIONAL_GRAPHITE_TEST_FOR_ALL_CONTEXTS"
 source = "tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159"
 module = "gpu"
-status = "todo"
-reason = "Blocked on missing APIs: Context::asyncRescaleAndReadPixels (the Image and Surface overloads with RescaleGamma/RescaleMode) is not ported to the wgpu context, and ManagedGraphiteTexture::MakeMipmappedFromPixmaps is not in tests/src/tools. Not a substitute read: the test reads its result through the async rescale (tests/graphite/ImageWrapTextureMipmapsTest.cpp#L25-L159)."
+status = "passing"
 span_hash = "70d48fa524bfc7e47f591b1d5ccc68650033055447b6dfd4809162c11f7e24ed"
 
 [[test]]
