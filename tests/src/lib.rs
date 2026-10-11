@@ -18,8 +18,15 @@
 //! [`errorf!`] mirrors `ERRORF` and [`infof!`] mirrors `INFOF`. Like Skia's `Reporter`,
 //! failures are collected and the test keeps running; it fails at the end if any
 //! assertion failed.
+//!
+//! # Serial tests
+//! Skia's `DEF_SERIAL_TEST` tests run alone: DM runs them after all the parallel tests. Every
+//! test macro here takes a read guard on one process-wide lock ([`test_read_guard`]), and
+//! [`def_serial_test!`] takes the write guard ([`test_write_guard`]), so a serial test runs while
+//! no other test runs. See `docs/PORTING.md` section 6.
 
 use std::fmt;
+use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 pub mod codec_priv;
 pub mod gainmap_test_common;
@@ -30,6 +37,25 @@ pub mod tmp_dir;
 pub mod tools;
 #[cfg(test)]
 pub mod unit;
+
+/// The process-wide test lock. Parallel tests hold a read guard, serial tests a write guard.
+static TEST_LOCK: RwLock<()> = RwLock::new(());
+
+/// The read guard that every test macro (all but [`def_serial_test!`]) holds for its whole body.
+///
+/// A poisoned lock is recovered: a failed test panics while holding its guard, and that must not
+/// fail the tests after it. The lock guards no data, so there is no inconsistent state to fear.
+#[doc(hidden)]
+pub fn test_read_guard() -> RwLockReadGuard<'static, ()> {
+    TEST_LOCK.read().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The write guard that [`def_serial_test!`] holds: no other test runs while it is held.
+/// Poisoning is recovered as in [`test_read_guard`].
+#[doc(hidden)]
+pub fn test_write_guard() -> RwLockWriteGuard<'static, ()> {
+    TEST_LOCK.write().unwrap_or_else(PoisonError::into_inner)
+}
 
 /// One recorded failure: where it happened, the failed condition and the message.
 #[derive(Debug, Clone)]
@@ -136,6 +162,10 @@ impl Reporter {
 
 /// Port of `DEF_TEST(name, reporter)`.
 ///
+/// The test runs in parallel with the other parallel tests: it holds a read guard on the test lock
+/// (see the module docs), so it never overlaps a [`def_serial_test!`] test. Use
+/// [`def_serial_test!`] for a `DEF_SERIAL_TEST`.
+///
 /// ```ignore
 /// def_test!(Point, |reporter| {
 ///     reporter_assert!(reporter, 1 + 1 == 2);
@@ -151,9 +181,39 @@ macro_rules! def_test {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut reporter = $crate::Reporter::new(stringify!($name));
             // The body runs as a closure, so an early `return` (after a failed assertion) ends only
             // the body. Without it the failures recorded so far would never reach `finish()`.
+            let run = |$reporter: &mut $crate::Reporter| $body;
+            run(&mut reporter);
+            reporter.finish();
+        }
+    };
+}
+
+/// Port of `DEF_SERIAL_TEST(name, reporter)`: a [`def_test!`] that runs alone. It holds the write
+/// guard on the test lock, so no parallel test runs while it does, and every parallel test runs
+/// before or after it. Use it for a test that changes process-wide state that other tests read,
+/// such as the codec registry (`SkCodecs::Register`).
+///
+/// The name, the body and the failure reporting are the same as [`def_test!`]'s.
+///
+/// ```ignore
+/// def_serial_test!(Ico_usesRegisteredPngDecoder, |reporter| {
+///     /* registers a decoder, then checks what the codec made */
+/// });
+/// ```
+#[macro_export]
+macro_rules! def_serial_test {
+    ($(#[$attr:meta])* $name:ident, |$reporter:ident| $body:block) => {
+        #[test]
+        $(#[$attr])*
+        #[allow(non_snake_case)]
+        fn $name() {
+            let _test_guard = $crate::test_write_guard();
+            let mut reporter = $crate::Reporter::new(stringify!($name));
+            // A closure, as in `def_test!`: an early `return` ends only the body.
             let run = |$reporter: &mut $crate::Reporter| $body;
             run(&mut reporter);
             reporter.finish();
@@ -190,6 +250,7 @@ macro_rules! def_graphite_adapter_test {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut reporter = $crate::Reporter::new(stringify!($name));
             if let Some((context_name, mut context)) =
                 $crate::tools::graphite_test_context::real_context()
@@ -228,6 +289,7 @@ macro_rules! def_graphite_adapter_test_with_options {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut context_options =
                 ::skia_rust_gpu::graphite::context_options::ContextOptions::default();
             {
@@ -265,6 +327,7 @@ macro_rules! def_graphite_test_for_all_contexts {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut reporter = $crate::Reporter::new(stringify!($name));
             for (context_name, mut context) in $crate::tools::graphite_test_context::all_contexts() {
                 reporter.set_context(Some(context_name));
@@ -299,6 +362,7 @@ macro_rules! def_graphite_test_for_contexts_with_options {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut context_options = ::skia_rust_gpu::graphite::context_options::ContextOptions::default();
             {
                 let $options = &mut context_options;
@@ -343,6 +407,7 @@ macro_rules! def_tier_test {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut reporter = $crate::Reporter::new(stringify!($name));
             for sel in $crate::tier_selections() {
                 let _guard = ::skia_rust_simd::testing::force_tier(sel)
@@ -370,6 +435,7 @@ macro_rules! def_font_test {
         $(#[$attr])*
         #[allow(non_snake_case)]
         fn $name() {
+            let _test_guard = $crate::test_read_guard();
             let mut reporter = $crate::Reporter::new(stringify!($name));
             for config in [
                 ::skia_rust_tools::font_tool_utils::FontConfig::Portable,
