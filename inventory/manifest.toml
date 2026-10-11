@@ -19041,8 +19041,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/crbug_224618.cpp#L116-L116"
 module = "raster"
-status = "todo"
-reason = "not ported in this sweep: 3-D SkM44 transforms and animation timing; no missing API identified yet"
+status = "passing"
 span_hash = "aa2d7d994189dc45687a003f564c69cc6a2245e9ea55d6e124b11cfe74e8366f"
 
 [[test]]
@@ -19942,7 +19941,7 @@ macro = "DEF_SIMPLE_GM"
 source = "gm/emboss.cpp#L202-L324"
 module = "effects"
 status = "todo"
-reason = "needs images, text and the dither/color shader on an emboss paint"
+reason = "draws text and images under an emboss mask filter, which EmbossGM (gm/emboss.cpp::EmbossGM, failing) shows mismatches on every config (text drawn after the emboss mask is black); the helpers are not ported, notes/gm_emboss_cpp_EmbossGM.md"
 span_hash = "d65602f66fd45b7075b3c7dd8d2c738f0eebd9a20e171294f8e0b3c60e7fe4f1"
 
 [[test]]
@@ -21608,7 +21607,7 @@ macro = "DEF_GM"
 source = "gm/hdr_pip_blur.cpp#L199-L199"
 module = "effects"
 status = "todo"
-reason = "needs colour-managed offscreen surfaces (canvas makeSurface with Rec2020/PQ colour spaces) and SkImage::makeColorSpace on raster images; not ported"
+reason = "needs SkCanvas::makeSurface (an offscreen surface with a Rec2020 colour space made from a canvas) and SkSurface::makeTemporaryImage, which are not ported; SkImage::makeColorSpace and SkImages::MakeWithFilter are on main"
 span_hash = "32e3564d88a9e68bf785432ec2bda3fc35e99bd25ac14df9217f0d51fe3cef6b"
 
 [[test]]
@@ -23385,8 +23384,8 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/pathmeasure.cpp#L59-L61"
 module = "raster"
-status = "todo"
-reason = "source is #if 0 (no live GM; the repro needs GBs of RAM)"
+status = "excluded"
+reason = "compiled out: gm/pathmeasure.cpp#L57-L62 is #if 0 (no live GM; the repro needs GBs of RAM)"
 span_hash = "d3dc7d7aadc3ae7b0d83f6a33984d6fbb196fe9d2c924e1a391022796f47f632"
 
 [[test]]
