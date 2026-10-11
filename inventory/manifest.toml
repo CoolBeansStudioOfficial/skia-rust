@@ -51237,8 +51237,7 @@ kind = "unit"
 macro = "DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS"
 source = "tests/WritePixelsTest.cpp#L504-L510"
 module = "gpu"
-status = "todo"
-reason = "portable now (Device::write_pixels and read_surface_pixels exist); not ported in this sweep (665 C++ lines)"
+status = "passing"
 span_hash = "c33ca7374fcb3b3dd9d39bf298984983d5d63a0d03536b3d457f809d0ff5e51d"
 
 [[test]]
