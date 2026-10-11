@@ -1216,6 +1216,7 @@ dependencies = [
  "skia-rust-resources",
  "skia-rust-simd",
  "skia-rust-skcms",
+ "skia-rust-skottie",
  "skia-rust-text",
  "skia-rust-tools",
  "zstd",

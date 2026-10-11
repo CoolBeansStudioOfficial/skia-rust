@@ -28,7 +28,7 @@ pub type OpacityPropertyValue = f32;
 /// The value of a transform property.
 // Port of: modules/skottie/include/SkottieProperty.h#L121-L132 (chrome/m156) (`TransformPropertyValue`)
 #[doc(alias = "skottie::TransformPropertyValue")]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct TransformPropertyValue {
     /// The anchor point (`fAnchorPoint`).
     pub anchor_point: Point,

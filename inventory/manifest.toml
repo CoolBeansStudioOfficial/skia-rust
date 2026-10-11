@@ -26423,7 +26423,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/ExternalProperties.cpp#L138-L138"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer and the text property handles (TextPropertyHandle, onTextProperty)"
 span_hash = "cf6518affcf7117dc7efb0545bd2f814687da4d2e66647672ce3942fd674b1bc"
 
 [[test]]
@@ -26432,8 +26432,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L182-L182"
 module = "skottie"
-status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+status = "passing"
 span_hash = "541f39506ae3df91222ff1b07d8febc9c4fe77b7f4c22fb710a0b016585ddd4a"
 
 [[test]]
@@ -26443,7 +26442,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L183-L183"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
 span_hash = "f74e03d29d896f95053bb67b85a11800925db8023addbdc7df4f839799a6dc98"
 
 [[test]]
@@ -26452,8 +26451,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L242-L242"
 module = "skottie"
-status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+status = "passing"
 span_hash = "6c83508dc70d702b41352f5622d7651704762b270d0ee34fa4ff5a07e7af2329"
 
 [[test]]
@@ -26463,7 +26461,7 @@ macro = "DEF_GM"
 source = "modules/skottie/gm/SkottieGM.cpp#L94-L94"
 module = "skottie"
 status = "todo"
-reason = "not wired: tests/gm does not depend on skia-rust-skottie, and these GMs need the Skottie JSON resources and a resource provider"
+reason = "needs Skottie text (M22, not ported): text layers (TextAdapter, TextAnimator, Font, TextShaper) are a stub in skia-rust-skottie::internal::layers::text_layer"
 span_hash = "fd5304773225efaa47b6e282a52395f1f0a417cc9e9239a51c353a27ef1b9c67"
 
 [[test]]
