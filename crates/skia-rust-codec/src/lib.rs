@@ -32,6 +32,7 @@ pub mod image_generator_from_encoded;
 pub mod images;
 pub mod jpeg_codec;
 pub mod jpeg_constants;
+pub mod jpeg_metadata_decoder;
 pub mod jpeg_multi_picture;
 pub mod jpeg_segment_scan;
 pub mod jpeg_source_mgr;
