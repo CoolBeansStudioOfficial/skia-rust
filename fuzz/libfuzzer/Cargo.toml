@@ -25,6 +25,34 @@ doc = false
 bench = false
 
 [[bin]]
+name = "ImageFilter"
+path = "fuzz_targets/ImageFilter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "NullCanvas"
+path = "fuzz_targets/NullCanvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "PDFCanvas"
+path = "fuzz_targets/PDFCanvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "RasterN32Canvas"
+path = "fuzz_targets/RasterN32Canvas.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "DrawFunctions"
 path = "fuzz_targets/DrawFunctions.rs"
 test = false

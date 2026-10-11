@@ -15743,8 +15743,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L88-L101"
 module = "effects"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "15f6918a93263665e207f33d47ceb1482da8731b1f5b7cb762c47bd4dc4dbad8"
 
 [[test]]
@@ -15773,8 +15772,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L47-L49"
 module = "core"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "c61376d2f97a328c9dc1a444cdbbb3b13f44d5c1ef928f030e6288b1f36ead56"
 
 [[test]]
@@ -15783,8 +15781,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L214-L219"
 module = "pdf"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "690b3cd731e6c353430dce3f46520e8a47b00797a75432a59d0ff6f6458f5be6"
 
 [[test]]
@@ -15793,8 +15790,7 @@ kind = "fuzz"
 macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L53-L58"
 module = "core"
-status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+status = "passing"
 span_hash = "8950aed9b32a880fc3d5c6e6df0b7971cb0b873dd02a74a0030d2193b0c5cee4"
 
 [[test]]
@@ -15804,7 +15800,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L64-L84"
 module = "core"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "needs SkPicturePriv::MakeFromBuffer (SkPicture.cpp#L228), the buffer reader of a serialized picture, which is not ported (Picture::from_data reads the stream form, another function); Skia may signalBug on every input here, since serialize writes a tag where MakeFromBuffer reads its marker; needs an oracle check"
 span_hash = "360fe3a07e4845e275f666c092c6b473ce8494c901dd9c374ff5b10750ac556f"
 
 [[test]]
@@ -15814,7 +15810,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L237-L242"
 module = "svg"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "M16: SkSVGCanvas (include/svg/SkSVGCanvas.h) is not ported; skia-rust-svg reads SVG but does not write it"
 span_hash = "c623f2e12b63c6a1e806121aa3eb8c7f4d4c981545a124261262c685c20b99c3"
 
 [[test]]
@@ -15824,7 +15820,7 @@ macro = "DEF_FUZZ"
 source = "fuzz/FuzzCanvas.cpp#L107-L167"
 module = "effects"
 status = "todo"
-reason = "FuzzCanvas slice: needs FuzzCanvas.cpp and FuzzNicePath/Matrix/RRect ported (docs/design/fuzz.md §6)"
+reason = "needs SkImageFilter::serialize and SkImageFilter::Deserialize, which are not ported; the bit flips read once per serialized byte, so the reads depend on the output"
 span_hash = "856b16a4f26126f72b3e99aff969d63f6cce7cd0b33b56825981db99d64ce6d2"
 
 [[test]]
