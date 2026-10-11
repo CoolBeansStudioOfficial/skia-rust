@@ -24265,8 +24265,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/savelayer.cpp#L128-L147"
 module = "raster"
-status = "todo"
-reason = "needs SkCanvasPriv::SaveBehind/DrawBehind (save-behind layer), not ported"
+status = "passing"
 span_hash = "992202a95cfbe6949be743488fff10a336ba5fd51d9e2515d4d147f4e5e404a4"
 
 [[test]]

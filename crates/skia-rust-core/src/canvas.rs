@@ -22,7 +22,7 @@
 //!   text, drawables, shadows, meshes, annotations (`SkFont`, ... are not ported; the edge-AA
 //!   quad and image-set draws are, see [`Canvas::experimental_draw_edge_aa_quad`]); image filters on
 //!   paints and layers (`AutoLayerForImageFilter`, `internalDrawDeviceWithFilter`, backdrops;
-//!   `skif` is Phase 3); `saveBehind`/`drawClippedToSaveBehind` (Android only); mask filter
+//!   `skif` is Phase 3); mask filter
 //!   auto-layers (`useDrawCoverageMaskForMaskFilters` is false for the raster device); the
 //!   blurred-rrect fast path; `SkRasterHandleAllocator`; `SkNWayCanvas`. The virtual
 //!   `willSave`/`didConcat`/`onDrawRect`/... of a subclass are [`CanvasHooks`] (D7), which pictures
@@ -48,8 +48,8 @@ use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::data::Data;
 use crate::device::{
-    CreateInfo, Device, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph, PendingGlyphKind,
-    clip_shader,
+    CreateInfo, Device, DeviceTransformRestore, GlyphRunDrawCursor, NoPixelsDevice, PendingGlyph,
+    PendingGlyphKind, clip_shader,
 };
 use crate::drawable::Drawable;
 use crate::floating_point::is_finite_all;
@@ -86,6 +86,7 @@ use crate::shader::Shader;
 use crate::shaders::ImageShader;
 use crate::size::ISize;
 use crate::slug::Slug;
+use crate::special_image::SpecialImage;
 use crate::stroke_rec::StrokeRec;
 use crate::surface_props::{PixelGeometry, SurfaceProps};
 use crate::text_blob::TextBlob;
@@ -742,6 +743,8 @@ struct MCRec {
     matrix: M44,
     deferred_save_count: i32,
     layer: Option<Layer>,
+    /// The pixels a save-behind keeps (`fBackImage`).
+    back_image: Option<BackImage>,
 }
 
 impl MCRec {
@@ -751,8 +754,18 @@ impl MCRec {
             matrix: prev.matrix,
             deferred_save_count: 0,
             layer: None,
+            back_image: None,
         }
     }
+}
+
+/// The device pixels under a save-behind, put back under the drawing when the save is restored
+/// (`SkCanvas::BackImage`).
+// Port of: include/core/SkCanvas.h#L2470-L2480 (chrome/m156)
+#[derive(Debug)]
+struct BackImage {
+    image: SpecialImage,
+    loc: IPoint,
 }
 
 /// Where glyphs are drawn: at points, or with `RSXform`s (the `positions` of `drawGlyphs`).
@@ -879,6 +892,7 @@ impl CanvasState {
                 matrix: M44::new_identity(),
                 deferred_save_count: 0,
                 layer: None,
+                back_image: None,
             }],
             devices: vec![device],
             quick_reject_bounds: Rect::new_empty(),
@@ -1118,6 +1132,107 @@ impl CanvasState {
         self.mc_stack.push(rec);
 
         self.top_device_mut().push_clip_stack();
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L514-L530 (chrome/m156), with `onDoSaveBehind`'s default
+    // (true): no canvas subclass overrides it here.
+    fn only_axis_aligned_save_behind(&mut self, bounds: Option<&Rect>) -> i32 {
+        if let Some(bounds) = bounds
+            && !self.local_clip_bounds().intersects(bounds)
+        {
+            // Assuming clips never expand, if the request bounds is outside of the current clip
+            // there is no need to copy/restore the area, so just devolve back to a regular save.
+            self.save();
+        } else {
+            self.save_count += 1;
+            self.internal_save();
+            self.internal_save_behind(bounds);
+        }
+        self.save_count - 1
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L1102-L1140 (chrome/m156)
+    fn internal_save_behind(&mut self, local_bounds: Option<&Rect>) {
+        let dev_clip_bounds = self.top_device().dev_clip_bounds();
+        let dev_bounds = if let Some(local_bounds) = local_bounds {
+            // Map the local bounds into the top device's coordinate space (this is not
+            // necessarily the full global CTM transform).
+            let (mapped, _) = self
+                .top_device()
+                .state()
+                .local_to_device()
+                .map_rect(local_bounds);
+            IRect::intersect(&mapped.round(), &dev_clip_bounds).unwrap_or_else(IRect::new_empty)
+        } else {
+            dev_clip_bounds
+        };
+        if dev_bounds.is_empty() {
+            return;
+        }
+
+        // This is getting the special image from the current device, which is then drawn into
+        // (both by a client, and the drawClippedToSaveBehind below). Since this is not saving a
+        // layer, with its own device, we need to explicitly copy the back image contents so that
+        // its original content is available when we splat it back later during restore.
+        let Some(back_image) = self.top_device_mut().snap_special(&dev_bounds, true) else {
+            return;
+        };
+
+        // we really need the save, so we can wack the fMCRec
+        self.check_for_deferred_save();
+
+        self.mc_rec_mut().back_image = Some(BackImage {
+            image: back_image,
+            loc: IPoint::new(dev_bounds.left, dev_bounds.top),
+        });
+
+        let mut paint = Paint::default();
+        paint.set_blend_mode(BlendMode::Clear);
+        self.on_draw_behind(&paint);
+    }
+
+    // Port of: src/core/SkCanvas.cpp#L2070-L2112 (chrome/m156)
+    fn on_draw_behind(&mut self, paint: &Paint) {
+        // The most recent save-behind record that has a back image bounds what is drawn; with no
+        // back image there is nothing to draw.
+        let Some(bounds) = self.mc_stack.iter().rev().find_map(|rec| {
+            rec.back_image.as_ref().map(|back| {
+                IRect::from_xywh(
+                    back.loc.x,
+                    back.loc.y,
+                    back.image.width(),
+                    back.image.height(),
+                )
+            })
+        }) else {
+            return;
+        };
+
+        // The backimage location (and thus bounds) were defined in the device's space, so mark
+        // it as a clip. We use a clip instead of just drawing a rect in case the paint has an
+        // image filter on it (which is applied before any auto-layer so the filter is clipped).
+        self.top_device_mut().push_clip_stack();
+        {
+            // We also have to temporarily whack the device matrix since clipRegion is affected by
+            // the global-to-device matrix and clipRect is affected by the local-to-device.
+            let mut restore =
+                DeviceTransformRestore::new(self.top_device_mut(), &M44::new_identity());
+            restore
+                .device()
+                .clip_rect(&Rect::from(bounds), ClipOp::Intersect, false);
+            // ~adtr will reset the local-to-device matrix so that drawPaint() shades correctly.
+        }
+
+        // The layer, if any, ends after the clip is popped, as the `std::optional` in Skia does
+        // at the end of the function.
+        let layer = self.about_to_draw(paint, None, PredrawFlags::NONE);
+        if let Some(layer) = &layer {
+            self.top_device_mut().draw_paint(layer.paint());
+        }
+        self.top_device_mut().pop_clip_stack();
+        if let Some(layer) = layer {
+            self.end_auto_layer(&layer);
+        }
     }
 
     // Port of: src/core/SkCanvas.cpp#L496-L512 (chrome/m156)
@@ -1428,6 +1543,7 @@ impl CanvasState {
         // now detach these from fMCRec so we can pop(). Gets freed after its drawn
         let mut rec = self.mc_stack.pop().expect("checked above");
         let layer = rec.layer.take();
+        let back_image = rec.back_image.take();
         let mut layer_device = if layer.is_some() {
             self.devices.pop()
         } else {
@@ -1437,6 +1553,19 @@ impl CanvasState {
         let matrix = self.mc_rec().matrix;
         self.top_device_mut().pop_clip_stack();
         self.top_device_mut().state_mut().set_global_ctm(&matrix);
+
+        if let Some(back_image) = back_image {
+            // Port of: src/core/SkCanvas.cpp#L1161-L1168 (chrome/m156)
+            let mut paint = Paint::default();
+            paint.set_blend_mode(BlendMode::DstOver);
+            self.top_device_mut().draw_special(
+                &back_image.image,
+                &Matrix::translate(back_image.loc),
+                &SamplingOptions::default(),
+                &paint,
+                SrcRectConstraint::Strict,
+            );
+        }
 
         // Draw the layer's device contents into the now-current older device. We can't call
         // public draw functions since we don't want to record them.
@@ -3801,6 +3930,28 @@ impl Canvas {
             Some(pm) => self.state.borrow_mut().write_pixels(&pm, x, y),
             None => false,
         }
+    }
+
+    /// Saves the matrix and clip, and keeps the device's pixels under `subset` (local
+    /// coordinates; `None` for the whole device) so that the restore puts them back under what
+    /// was drawn (`SkCanvasPriv::SaveBehind`, `only_axis_aligned_saveBehind`). Returns the previous
+    /// save count.
+    #[doc(alias = "saveBehind")]
+    #[doc(alias = "SkCanvasPriv::SaveBehind")]
+    pub fn save_behind(&self, subset: Option<&Rect>) -> usize {
+        usize::try_from(
+            self.state
+                .borrow_mut()
+                .only_axis_aligned_save_behind(subset),
+        )
+        .unwrap_or(0)
+    }
+
+    /// Draws `paint` over the most recent save-behind area only (`drawClippedToSaveBehind`,
+    /// `SkCanvasPriv::DrawBehind`). Draws nothing without an active save-behind.
+    #[doc(alias = "drawClippedToSaveBehind")]
+    pub fn draw_clipped_to_save_behind(&self, paint: &Paint) {
+        self.state.borrow_mut().on_draw_behind(paint);
     }
 
     /// Saves the matrix and clip; returns the previous save count (`save`).
