@@ -1,11 +1,12 @@
 // Copyright 2016 Google Inc.
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
-// Port of: gm/image_pict.cpp (chrome/m156), ImagePictGM and the ImageCacheratorGM picture and
-// raster variants
+// Port of: gm/image_pict.cpp (chrome/m156), ImagePictGM and the ImageCacheratorGM picture, raster
+// and texture variants
 //
-// Not ported: the texture variant of `ImageCacheratorGM` (GPU-only: its generator needs a GPU
-// context, so the raster sink skips it).
+// The texture variant is GPU-only: `make_tex_generator` needs a GPU context or a recorder, and the
+// raster sink has neither, so its factory returns no generator and `makeCaches` fails (a skip).
+// The texture generator itself (`TextureGenerator`, a GPU texture) is not ported.
 
 use crate::canvas::Canvas;
 use crate::{DrawResult, GM};
@@ -229,8 +230,15 @@ fn make_pic_generator(pic: &Picture) -> Option<Box<dyn ImageGenerator>> {
 /// The generator factory of an `ImageCacheratorGM` (`FactoryFunc`).
 type FactoryFunc = fn(&Picture) -> Option<Box<dyn ImageGenerator>>;
 
-// Port of: gm/image_pict.cpp#L257-L366 (chrome/m156), class ImageCacheratorGM (the picture and
-// raster generators; the texture generator is GPU-only and not ported)
+// Port of: gm/image_pict.cpp#L244-L252 (chrome/m156), make_tex_generator, on the raster sink: the
+// C++ returns nullptr when `GrAsDirectContext(canvas->recordingContext())` and `canvas->recorder()`
+// are both null, which is always the case here.
+fn make_tex_generator(_pic: &Picture) -> Option<Box<dyn ImageGenerator>> {
+    None
+}
+
+// Port of: gm/image_pict.cpp#L257-L366 (chrome/m156), class ImageCacheratorGM (the picture,
+// raster and texture generators; the texture generator is GPU-only and not ported)
 struct ImageCacheratorGm {
     name: String,
     factory: FactoryFunc,
@@ -347,6 +355,19 @@ crate::def_gm!(
     ImageCacheratorGm {
         name: "image-cacherator-from-raster".to_string(),
         factory: make_ras_generator,
+        picture: None,
+        image: None,
+        image_subset: None,
+    }
+);
+
+// Port of: gm/image_pict.cpp#L442-L444 (chrome/m156), DEF_GM( return new ImageCacheratorGM("texture", ...) )
+// The raster sink skips it (no generator), so the GM has no golden to match.
+crate::def_gm!(
+    ImageCacheratorGM_texture = "ImageCacheratorGM(\"texture\", make_tex_generator, true)",
+    ImageCacheratorGm {
+        name: "image-cacherator-from-texture".to_string(),
+        factory: make_tex_generator,
         picture: None,
         image: None,
         image_subset: None,
