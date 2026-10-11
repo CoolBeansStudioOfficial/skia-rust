@@ -19,8 +19,8 @@ use skia_rust_gpu::graphite::context_priv::ContextPriv;
 use skia_rust_gpu::graphite::graphite_types::{SubmitInfo, SyncToCpu};
 use skia_rust_gpu::graphite::renderer_provider::RendererProvider;
 use skia_rust_gpu::graphite::wgpu::{
-    CapsProfile, WgpuContext, WgpuSharedContext, any_adapter_backend_context, make_context,
-    noop_backend_context, noop_backend_context_for_profile,
+    CapsProfile, DeviceFeatures, WgpuContext, WgpuSharedContext, any_adapter_backend_context,
+    make_context, noop_backend_context, noop_backend_context_for_profile,
 };
 
 /// The contexts `DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS` tests run on, with a name for each.
@@ -41,11 +41,14 @@ pub fn all_contexts_with_options(options: &ContextOptions) -> Vec<(String, WgpuC
         make_context(&noop_backend_context(), options).expect("a context on the noop device"),
     )];
     // What Dawn reported on D3D12 (with its Dawn-only features), and what Dawn on Vulkan reports
-    // that wgpu can express.
-    for profile in [
-        CapsProfile::dawn_d3d12(),
-        CapsProfile::dawn_vulkan().wgpu_restricted(),
-    ] {
+    // that wgpu can express. The Vulkan profile has `ShaderF16`, which wgpu 30 cannot express for
+    // these pipelines: its fragment output is a `half4`, and wgpu's pipeline validation rejects it
+    // for an `Rgba8Unorm`/`Bgra8Unorm` target ("Output format Float32x4 is incompatible with the
+    // shader Float16x4"), where Dawn accepts it. So the feature is removed, as `from_device`
+    // leaves it out for real devices and `tests/draw_pass.rs` and `tests/wgpu_pipelines.rs` do.
+    let mut vulkan = CapsProfile::dawn_vulkan().wgpu_restricted();
+    vulkan.features -= DeviceFeatures::SHADER_F16;
+    for profile in [CapsProfile::dawn_d3d12(), vulkan] {
         let shared_context = WgpuSharedContext::make_with_profile(
             &noop_backend_context_for_profile(&profile),
             &profile,
