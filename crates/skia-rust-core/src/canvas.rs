@@ -248,7 +248,14 @@ pub struct SaveLayerRec<'a> {
     pub(crate) flags: SaveLayerFlags,
     /// Relative scale of the image content that initializes the layer (`fExperimentalBackdropScale`).
     pub(crate) experimental_backdrop_scale: f32,
+    /// Image filters applied to the layer when it is restored (`fFilters`). A `None` entry is the
+    /// identity.
+    pub(crate) filters: &'a [Option<ImageFilter>],
 }
+
+/// The most image filters a layer takes (`SkCanvas::kMaxFiltersPerLayer`).
+// Port of: include/core/SkCanvas.h#L694 (chrome/m156)
+const MAX_FILTERS_PER_LAYER: usize = 16;
 
 impl Default for SaveLayerRec<'_> {
     /// No bounds, no paint, no backdrop, no flags.
@@ -261,6 +268,7 @@ impl Default for SaveLayerRec<'_> {
             color_space: None,
             flags: SaveLayerFlags::empty(),
             experimental_backdrop_scale: 1.0,
+            filters: &[],
         }
     }
 }
@@ -304,6 +312,15 @@ impl<'a> SaveLayerRec<'a> {
     #[must_use]
     pub fn experimental_backdrop_scale(mut self, scale: f32) -> Self {
         self.experimental_backdrop_scale = scale;
+        self
+    }
+
+    /// The image filters applied to the layer when it is restored, in order (`SkCanvas::SaveLayerRec`
+    /// `FilterSpan`). A `None` entry is the identity. A paint's image filter takes their place.
+    #[doc(alias = "FilterSpan")]
+    #[must_use]
+    pub fn filters(mut self, filters: &'a [Option<ImageFilter>]) -> Self {
+        self.filters = filters;
         self
     }
 
@@ -742,7 +759,7 @@ impl SurfaceBase {
 struct Layer {
     paint: Paint,
     /// The image filters applied when the layer is restored (`fImageFilters`).
-    filters: Vec<ImageFilter>,
+    filters: Vec<Option<ImageFilter>>,
     is_coverage: bool,
     discard: bool,
     includes_padding: bool,
@@ -1298,12 +1315,15 @@ impl CanvasState {
         // MatrixTransform bilerp also smoothed cropped edges. See skbug.com/40042614
         restore_paint.set_anti_alias(true);
 
-        // `paintFilter`: the paint's image filter, taken before `restore_paint` lost it.
-        let filters: Vec<ImageFilter> = rec
-            .paint
-            .and_then(Paint::image_filter)
-            .into_iter()
-            .collect();
+        // `paintFilter ? FilterSpan{&paintFilter, 1} : rec.fFilters`: the paint's image filter,
+        // taken before `restore_paint` lost it, else the record's filters, at most
+        // kMaxFiltersPerLayer of them.
+        // Port of: src/core/SkCanvas.cpp#L904-L908 (chrome/m156)
+        let mut filters: Vec<Option<ImageFilter>> = match rec.paint.and_then(Paint::image_filter) {
+            Some(paint_filter) => vec![Some(paint_filter)],
+            None => rec.filters.to_vec(),
+        };
+        filters.truncate(MAX_FILTERS_PER_LAYER);
         let cf = restore_paint.color_filter();
         let blender = restore_paint.blender();
 
@@ -1500,7 +1520,8 @@ impl CanvasState {
             // necessary to evaluate the backdrop filter. If no filters are involved, then the
             // devices differ by integer translations and are always compatible.
             let backdrop_paint = Paint::default();
-            let backdrop_filters: Vec<ImageFilter> = rec.backdrop.cloned().into_iter().collect();
+            let backdrop_filters: Vec<Option<ImageFilter>> =
+                rec.backdrop.cloned().into_iter().map(Some).collect();
             // Port of: src/core/SkCanvas.cpp#L1074 (chrome/m156)
             #[allow(clippy::float_cmp)] // Skia compares the scale with exactly 1
             let scale_backdrop = rec.experimental_backdrop_scale != 1.0;
@@ -2918,7 +2939,7 @@ impl CanvasState {
     ) {
         let output_bounds = self.top_device().dev_clip_bounds();
         let Some((mapping, src_bounds)) = get_layer_mapping_and_bounds(
-            std::slice::from_ref(filter),
+            std::slice::from_ref(&Some(filter.clone())),
             self.top_device().state().local_to_device44(),
             &output_bounds,
             Some(dst),
@@ -3136,7 +3157,7 @@ fn irect_join(dst: &mut IRect, r: &IRect) {
 #[allow(clippy::too_many_lines)] // mirrors get_layer_mapping_and_bounds
 #[allow(clippy::float_cmp)] // mirrors `scaleFactor != 1.f` in SkCanvas.cpp
 fn get_layer_mapping_and_bounds(
-    filters: &[ImageFilter],
+    filters: &[Option<ImageFilter>],
     local_to_dst: &M44,
     target_output: &IRect,
     content_bounds: Option<&Rect>,
@@ -3167,7 +3188,7 @@ fn get_layer_mapping_and_bounds(
     // transforms with perspective and skew from triggering excessive buffer allocations.
     let mut mapping = Mapping::new();
     let mut capability = MatrixCapability::Complex;
-    for filter in filters {
+    for filter in filters.iter().flatten() {
         capability = capability.min(filter.ctm_capability());
     }
     if !mapping.decompose_ctm(local_to_dst, capability, center) {
@@ -3212,11 +3233,12 @@ fn get_layer_mapping_and_bounds(
         // `LayerSpace<SkIRect>::Union` over the filters' input bounds.
         layer_bounds = IRect::new_empty();
         for (i, filter) in filters.iter().enumerate() {
-            let bounds = filter.as_base().get_input_bounds(
-                &mapping,
-                *target_output,
-                content_bounds.copied(),
-            );
+            // A null filter is the identity: its input is the whole base layer.
+            let bounds = filter.as_ref().map_or(base_layer_bounds, |filter| {
+                filter
+                    .as_base()
+                    .get_input_bounds(&mapping, *target_output, content_bounds.copied())
+            });
             if i == 0 {
                 layer_bounds = bounds;
             } else {
@@ -3227,7 +3249,7 @@ fn get_layer_mapping_and_bounds(
         // due to required inputs for filters (e.g. a displacement map with a large radius).
         if layer_bounds.width() > max_layer_dim || layer_bounds.height() > max_layer_dim {
             let ideal_mapping = Mapping::from_layer_matrix(mapping.layer_matrix());
-            for filter in filters {
+            for filter in filters.iter().flatten() {
                 let ideal_layer_bounds = filter.as_base().get_input_bounds(
                     &ideal_mapping,
                     *target_output,
@@ -3302,7 +3324,7 @@ fn internal_draw_device_with_filter(
     ctm: &M44,
     src: Option<&mut dyn Device>,
     dst: &mut dyn Device,
-    filters: &[ImageFilter],
+    filters: &[Option<ImageFilter>],
     paint: &Paint,
     compat: DeviceCompatibleWithFilter,
     filter_color_info: &ColorInfo,
@@ -3498,7 +3520,7 @@ fn internal_draw_device_with_filter(
     let filters_or_null: Vec<Option<&ImageFilter>> = if filters.is_empty() {
         vec![None]
     } else {
-        filters.iter().map(Some).collect()
+        filters.iter().map(Option::as_ref).collect()
     };
 
     for filter in filters_or_null {

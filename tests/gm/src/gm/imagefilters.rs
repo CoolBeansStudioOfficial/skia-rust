@@ -2,9 +2,6 @@
 // Copyright 2026 The skia-rust Authors
 // Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 // Port of: gm/imagefilters.cpp (chrome/m156)
-//
-// Not ported here: `multiple_filters` (it needs SkCanvasPriv::ScaledBackdropLayer and
-// SkCanvas::FilterSpan).
 
 // GM ports mirror the C++ integer and scalar casts.
 #![allow(
@@ -14,7 +11,7 @@
 )]
 
 use crate::prelude::*;
-use crate::tool_utils::{get_resource_as_image, make_surface};
+use crate::tool_utils::{draw_checkerboard, get_resource_as_image, make_surface};
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
 use skia_rust_core::canvas::{AutoCanvasRestore, SaveLayerRec};
@@ -26,7 +23,7 @@ use skia_rust_core::image::Image;
 use skia_rust_core::image_filter::ImageFilter;
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::matrix::Matrix;
-use skia_rust_core::paint::Paint;
+use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::rect::Rect;
 use skia_rust_core::rrect::RRect;
 use skia_rust_core::sampling_options::{FilterMode, MipmapMode, SamplingOptions};
@@ -38,8 +35,8 @@ use skia_rust_effects::high_contrast_filter::{
 };
 use skia_rust_effects::image_filters::shader_filter::Dither;
 use skia_rust_effects::image_filters::{
-    blend, blur, color_filter, compose, image_sampled, matrix_convolution, matrix_transform,
-    shader as shader_filter,
+    blend, blur, color_filter, compose, dilate, drop_shadow_only, erode, image_sampled,
+    matrix_convolution, matrix_transform, shader as shader_filter,
 };
 use skia_rust_effects::shader_mask_filter;
 
@@ -353,4 +350,66 @@ crate::def_simple_gm!(imagefilters_effect_order, canvas, 512, 512, {
         Some(&test_mask_paint),
     );
     canvas.restore();
+});
+
+// Draws a layer that is restored with `filters` applied, as the GM's lambda does with
+// `SkCanvasPriv::ScaledBackdropLayer(nullptr, &restorePaint, nullptr, 1, 0, filters)`.
+// Port of: gm/imagefilters.cpp#L294-L317 (chrome/m156), drawFilteredLayer
+fn draw_filtered_layer(canvas: &Canvas, filters: &[Option<ImageFilter>]) {
+    let mut restore_paint = Paint::default();
+    restore_paint.set_alpha_f(0.5);
+    let rec = SaveLayerRec::default()
+        .paint(&restore_paint)
+        .filters(filters);
+
+    canvas.save();
+    canvas.clip_rect(Rect::from_wh(200.0, 200.0), None, None);
+    canvas.save_layer(&rec);
+
+    let mut paint = Paint::default();
+    paint.set_style(Style::Stroke);
+    paint.set_stroke_width(20.0);
+    paint.set_color(Color::GREEN);
+    canvas.draw_circle((100.0, 100.0), 70.0, &paint);
+
+    canvas.restore();
+    canvas.restore();
+    canvas.translate((205.0, 0.0));
+}
+
+// Port of: gm/imagefilters.cpp#L290-L332 (chrome/m156), DEF_SIMPLE_GM(multiple_filters)
+crate::def_simple_gm!(multiple_filters, canvas, 415, 210, {
+    // ToolUtils::draw_checkerboard(canvas) with its defaults
+    draw_checkerboard(
+        canvas,
+        Color::from(0xFF_99_99_99_u32),
+        Color::from(0xFF_66_66_66_u32),
+        8,
+    );
+    canvas.translate((5.0, 5.0));
+
+    {
+        // Test with two non-null filters that each change bounds in a different way:
+        let filters = [
+            dilate((5.0, 5.0), None, None),
+            erode((5.0, 5.0), None, None),
+        ];
+        draw_filtered_layer(canvas, &filters);
+    }
+
+    {
+        // Test with one null filter, to more closely mimic the canvas2D layers use-case:
+        let filters = [
+            drop_shadow_only(
+                (7.0, 7.0),
+                (5.0, 5.0),
+                Color4f::from(Color::BLUE),
+                None,
+                None,
+                None,
+            ),
+            None,
+        ];
+        draw_filtered_layer(canvas, &filters);
+    }
 });
