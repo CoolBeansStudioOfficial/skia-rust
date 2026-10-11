@@ -30,11 +30,9 @@
 use std::rc::Rc;
 
 use skia_rust_core::bitmap::Bitmap;
-use skia_rust_core::canvas::{Canvas, ContentChangeMode, PeekedPixels, SurfaceBase};
+use skia_rust_core::canvas::{Canvas, ContentChangeMode, PeekedPixels, SnapshotKind, SurfaceBase};
 use skia_rust_core::image::Image;
 use skia_rust_core::image_info::ImageInfo;
-use skia_rust_core::image_raster::CopyPixelsMode;
-use skia_rust_core::images;
 use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::point::{IPoint, Point};
@@ -100,6 +98,9 @@ impl<'a> Surface<'a> {
         let device = BitmapDevice::with_props(bitmap, props);
         let canvas = Canvas::from_device(Box::new(device));
         let base = Rc::new(SurfaceBase::new());
+        base.set_snapshot_kind(SnapshotKind::Raster {
+            owns_pixels: target.is_none(),
+        });
         canvas.set_surface_base(Some(Rc::clone(&base)));
         Surface {
             base,
@@ -122,6 +123,7 @@ impl<'a> Surface<'a> {
         let props = SurfaceProps::default();
         let canvas = Canvas::new_no_pixels_irect(&IRect::from_wh(width, height), Some(&props));
         let base = Rc::new(SurfaceBase::new());
+        base.set_snapshot_kind(SnapshotKind::Null);
         canvas.set_surface_base(Some(Rc::clone(&base)));
         Some(Surface {
             base,
@@ -284,12 +286,7 @@ impl<'a> Surface<'a> {
     // Port of: src/image/SkSurface.cpp#L90-L92 (chrome/m156)
     #[doc(alias = "makeImageSnapshot")]
     pub fn image_snapshot(&mut self) -> Option<Image> {
-        if let Some(cached) = self.base.cached_image() {
-            return Some(cached);
-        }
-        let cached = self.new_image_snapshot(None)?;
-        self.base.set_cached_image(cached.clone());
-        Some(cached)
+        self.base.image_snapshot(&self.canvas)
     }
 
     /// An image of the `bounds` of the surface's current pixels (`makeImageSnapshot(bounds)`);
@@ -303,7 +300,7 @@ impl<'a> Surface<'a> {
         if bounds == surf_bounds {
             self.image_snapshot()
         } else {
-            self.new_image_snapshot(Some(&bounds))
+            self.base.image_snapshot_subset(&self.canvas, &bounds)
         }
     }
 
@@ -327,40 +324,6 @@ impl<'a> Surface<'a> {
         if let Some(image) = image {
             canvas.draw_image_with_sampling_options(image, offset, sampling, paint);
         }
-    }
-
-    /// `SkSurface_Raster::onNewImageSnapshot`.
-    // Port of: src/image/SkSurface_Raster.cpp#L112-L136 (chrome/m156)
-    fn new_image_snapshot(&mut self, subset: Option<&IRect>) -> Option<Image> {
-        if self.null {
-            // SkNullSurface::onNewImageSnapshot
-            return None;
-        }
-        let we_own_the_pixels = self.target.is_none();
-        self.canvas.with_root_bitmap(|bitmap| {
-            if let Some(subset) = subset {
-                debug_assert!(IRect::from_wh(bitmap.width(), bitmap.height()).contains(subset));
-                let mut dst = Bitmap::new();
-                if !dst.try_alloc_pixels_info(&bitmap.info().with_dimensions(subset.size()), None) {
-                    return None;
-                }
-                let read = dst.peek_pixels_mut().is_some_and(|mut pm| {
-                    bitmap.read_pixels_to_pixmap(&mut pm, (subset.left, subset.top))
-                });
-                debug_assert!(read);
-                dst.set_immutable(); // key, so MakeFromBitmap doesn't make a copy of the buffer
-                return dst.as_image();
-            }
-
-            // The snapshot shares the pixel ref (a clone of the handle); the next write to the
-            // surface's bitmap copies it first. Pixels we do not own are always copied.
-            let cpm = if we_own_the_pixels {
-                CopyPixelsMode::Never
-            } else {
-                CopyPixelsMode::Always
-            };
-            images::make_image_from_raster_bitmap(bitmap, cpm)
-        })?
     }
 
     /// The pixels, if the surface has any (`peekPixels`).

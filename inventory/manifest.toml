@@ -21818,8 +21818,7 @@ kind = "gm"
 macro = "DEF_SIMPLE_GM"
 source = "gm/image_shader.cpp#L221-L252"
 module = "text"
-status = "todo"
-reason = "needs SkCanvas::getSurface (canvas to surface link): not ported"
+status = "passing"
 span_hash = "03ad64e8492ba90105fad40541a6408d6c0d1f7fa8ac3fc84e4e8e1f3edc8e1b"
 
 [[test]]
