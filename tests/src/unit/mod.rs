@@ -347,13 +347,13 @@ pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
 #[cfg(test)]
-pub mod point3_test;
-#[cfg(test)]
-pub mod point_test;
-#[cfg(test)]
 pub mod png_rust_decoder_test;
 #[cfg(test)]
 pub mod png_rust_encoder_test;
+#[cfg(test)]
+pub mod point3_test;
+#[cfg(test)]
+pub mod point_test;
 #[cfg(test)]
 pub mod poly_utils_test;
 #[cfg(test)]

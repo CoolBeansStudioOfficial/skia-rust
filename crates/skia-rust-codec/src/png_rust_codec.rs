@@ -55,7 +55,10 @@ const MAX_PNG_SIZE: u32 = 1_000_000;
 // Port of: src/codec/SkCodecColorProfile.h (SkCodecs::ColorProfile), chrome/m156
 enum ColorProfile {
     /// An ICC profile that was read from the `iCCP` chunk.
-    Icc { data: Arc<[u8]>, profile: IccProfile },
+    Icc {
+        data: Arc<[u8]>,
+        profile: IccProfile,
+    },
     /// A profile generated from the colour information (no ICC bytes).
     Generated(IccProfile),
 }
@@ -140,9 +143,7 @@ fn to_codec_result(result: DecodingResult) -> Result {
         DecodingResult::Success | DecodingResult::EndOfFrame => Result::Success,
         DecodingResult::FormatError => Result::ErrorInInput,
         DecodingResult::ParameterError => Result::InvalidParameters,
-        DecodingResult::OtherIoError | DecodingResult::LimitsExceededError => {
-            Result::InternalError
-        }
+        DecodingResult::OtherIoError | DecodingResult::LimitsExceededError => Result::InternalError,
         DecodingResult::IncompleteInput => Result::IncompleteInput,
     }
 }
@@ -159,7 +160,8 @@ fn create_color_profile(reader: &Reader<'_>) -> Option<ColorProfile> {
         // images are rare and not supported (see `SkColorSpace::MakeCICP`).
         let primaries = skia_rust_core::color_space::named_primaries::CicpId::from_u8(primaries);
         let transfer = skia_rust_core::color_space::named_transfer_fn::CicpId::from_u8(transfer);
-        if let (true, Some(primaries), Some(transfer)) = (matrix == 0 && full_range, primaries, transfer)
+        if let (true, Some(primaries), Some(transfer)) =
+            (matrix == 0 && full_range, primaries, transfer)
             && let Some(color_space) = ColorSpace::new_cicp(primaries, transfer)
         {
             return Some(ColorProfile::Generated(color_space.to_profile()));
@@ -486,7 +488,10 @@ impl PngFrames {
     /// Port of `FrameHolder::getFrameInfo`.
     // Port of: src/codec/SkPngRustCodec.cpp#L1158-L1166 (getFrameInfo, chrome/m156)
     fn get_frame_info(&self, index: i32, info: Option<&mut FrameInfo>) -> bool {
-        let Some(index) = usize::try_from(index).ok().filter(|&i| i < self.frames.len()) else {
+        let Some(index) = usize::try_from(index)
+            .ok()
+            .filter(|&i| i < self.frames.len())
+        else {
             return false;
         };
         if let Some(info) = info {
@@ -608,7 +613,10 @@ impl std::fmt::Debug for PngRustCodec<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PngRustCodec")
             .field("encoded", &self.encoded)
-            .field("frame_at_current_stream_position", &self.frame_at_current_stream_position)
+            .field(
+                "frame_at_current_stream_position",
+                &self.frame_at_current_stream_position,
+            )
             .field("frames", &self.frame_holder)
             .finish_non_exhaustive()
     }
@@ -721,7 +729,9 @@ impl PngRustCodec<'_> {
         self.stream_is_positioned_at_start_of_frame_data = true;
         self.frame_at_current_stream_position += 1;
         if self.frame_at_current_stream_position == self.frame_holder.size() {
-            return self.frame_holder.append_new_frame(&self.reader, &self.encoded);
+            return self
+                .frame_holder
+                .append_new_frame(&self.reader, &self.encoded);
         }
         Result::Success
     }
@@ -744,13 +754,14 @@ impl PngRustCodec<'_> {
                 return Result::CouldNotRewind;
             }
             // The constructor read this header, so reading it again succeeds.
-            let reader = Reader::new(Arc::clone(&self.priv_stream))
-                .expect("the PNG header was read before");
+            let reader =
+                Reader::new(Arc::clone(&self.priv_stream)).expect("the PNG header was read before");
             self.reader = reader;
             read_unknown_chunks(&self.reader, &self.base_png.chunk_reader);
             let idat_is_not_part_of_animation =
                 self.reader.has_actl_chunk() && !self.reader.has_fctl_chunk();
-            self.frame_at_current_stream_position = if idat_is_not_part_of_animation { -1 } else { 0 };
+            self.frame_at_current_stream_position =
+                if idat_is_not_part_of_animation { -1 } else { 0 };
             self.stream_is_positioned_at_start_of_frame_data = true;
         }
         while self.frame_at_current_stream_position < index {
@@ -815,11 +826,8 @@ impl PngRustCodec<'_> {
             let row_len = dst_row_size.min(dst.len() - dst_pos);
             // Advancing by a whole stride is robust if the last row lacks stride padding.
             let stride = dst_row_stride.min(dst.len() - dst_pos);
-            self.base_png.apply_xform_row(
-                base,
-                &mut dst[dst_pos..dst_pos + row_len],
-                src_row,
-            );
+            self.base_png
+                .apply_xform_row(base, &mut dst[dst_pos..dst_pos + row_len], src_row);
             dst_pos += stride;
             rows_written += 1;
         }
@@ -881,9 +889,10 @@ impl PngRustCodec<'_> {
         }
 
         let (y_byte_offset, first_row, last_row) = if let Some(subset) = options.subset {
-            let Some(y_byte_offset) = self.encoded_row_bytes_usize().checked_mul(
-                usize::try_from(subset.top()).unwrap_or(0),
-            ) else {
+            let Some(y_byte_offset) = self
+                .encoded_row_bytes_usize()
+                .checked_mul(usize::try_from(subset.top()).unwrap_or(0))
+            else {
                 return Result::ErrorInInput;
             };
             (y_byte_offset, subset.top(), subset.bottom() - 1)
@@ -1052,8 +1061,11 @@ impl PngRustCodec<'_> {
             debug_assert!(decoded_full_width_row.len() >= src_row.len());
             decoded_full_width_row[..src_row.len()].copy_from_slice(src_row);
             xformed_interlaced_row = vec![0; decoding_dst.row_size];
-            self.base_png
-                .apply_xform_row(base, &mut xformed_interlaced_row, &decoded_full_width_row);
+            self.base_png.apply_xform_row(
+                base,
+                &mut xformed_interlaced_row,
+                &decoded_full_width_row,
+            );
         }
 
         let dst_bytes_per_pixel = decoding_dst.bytes_per_pixel;
@@ -1238,8 +1250,7 @@ impl PngRustCodec<'_> {
                     // sampler (`getSampler` returns none), so sampling does not reach here.
                     debug_assert!(!is_sampling);
                     let preblend = &mut state.preblend;
-                    self.base_png
-                        .apply_xform_row(base, preblend, &decoded_row);
+                    self.base_png.apply_xform_row(base, preblend, &decoded_row);
                     blend_row(
                         window(dst, &decoding_dst),
                         &state.preblend,
@@ -1551,7 +1562,10 @@ impl CodecImpl for PngRustCodec<'_> {
 
     // Port of: src/codec/SkPngRustCodec.cpp#L1483-L1494 (getEncodedData, chrome/m156)
     fn on_get_encoded_data(&mut self, _base: &mut CodecBase<'_>) -> Option<Data> {
-        let stream = self.priv_stream.lock().unwrap_or_else(PoisonError::into_inner);
+        let stream = self
+            .priv_stream
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         if let Some(data) = stream.get_data() {
             return Some(data);
         }
