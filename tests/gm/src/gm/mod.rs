@@ -304,6 +304,7 @@ pub mod preservefillrule;
 pub mod quadpaths;
 pub mod radial_gradient_precision;
 pub mod readpixels;
+pub mod recordopts;
 pub mod rect_poly_stroke;
 pub mod rectangletexture;
 pub mod repeated_bitmap;
