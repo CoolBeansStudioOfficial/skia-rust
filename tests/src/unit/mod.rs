@@ -404,6 +404,8 @@ pub mod record_test_utils;
 #[cfg(test)]
 pub mod recorder_test;
 #[cfg(test)]
+pub mod recording_xfermode_test;
+#[cfg(test)]
 pub mod rect_test;
 #[cfg(test)]
 pub mod region_test;

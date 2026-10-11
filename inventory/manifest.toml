@@ -41534,8 +41534,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/RecordingXfermodeTest.cpp#L144-L182"
 module = "core"
-status = "todo"
-reason = "portable, not ported in sweep 3: needs its Drawer, BitmapBackedCanvasStrategy and PictureStrategy helpers (SkRTreeFactory and SkCanvas over an SkBitmap exist)"
+status = "passing"
 span_hash = "cb614555a46183c9821ef93e5bfd655648a5b05b1bd8abe88a665e0498f78995"
 
 [[test]]
