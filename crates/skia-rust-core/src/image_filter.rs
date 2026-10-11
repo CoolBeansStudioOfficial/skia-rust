@@ -454,11 +454,8 @@ pub fn unflatten_common(
         return None;
     }
 
-    // skia-rust: `SK_BUILD_FOR_FUZZER` builds (OSS-Fuzz, `skia_build_fuzzers`) refuse more than
-    // four inputs.
-    if count > 4 {
-        return None;
-    }
+    // The `SK_BUILD_FOR_FUZZER` limit of four inputs is not ported: it is a fuzzer-only build
+    // option, and the oracle build is not a fuzzer build (as for SkSL's fuzzer limits).
 
     let mut inputs = Vec::new();
     for _ in 0..count {
