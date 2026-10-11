@@ -648,6 +648,11 @@ Open questions for the coordinator:
    **Status: proceeding per recommendation, pending maintainer confirmation.** The PNG part is
    ported in `port/codec-cr-png` (`png =0.18.1`, the version Skia's `MODULE.bazel` pins); the
    default (non-`for_android`) build is the one ported, so Q5's patch is not needed for it.
+   The JPEG part (`SkJpegRustCodec` on `zune-jpeg =0.5.16-rc1`, `SkJpegRustEncoder` on
+   `jpeg-encoder =0.6.0`) and the Rust EXIF parser are ported in `port/codec-cr-jpeg`, with
+   `zune-core =0.5.3` (`std`) as the byte-stream crate. The MPF scanner and the gainmap path
+   wait for the XMP / ISO 21496-1 decoder; the `PNGRustEncoder` fuzz target waits for the fuzz
+   crate.
 2. **Q2 — `dm-image` goldens.** The Windows oracle host is gone. Options: (a) leave 217 entries
    `todo` until a host exists (default); (b) build a CPU-only Linux DM (no Dawn, no fonts) and
    render `--src image` for `8888`/`565`/`f16`. First compare a sample of `--src gm` outputs

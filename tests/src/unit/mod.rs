@@ -347,9 +347,7 @@ pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
 #[cfg(test)]
-pub mod png_rust_decoder_test;
 #[cfg(test)]
-pub mod png_rust_encoder_test;
 #[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
@@ -397,6 +395,7 @@ pub mod round_rect_test;
 #[cfg(test)]
 pub mod runtime_blend_test;
 #[cfg(test)]
+pub mod rust_exif_test;
 pub mod safe_math_test;
 #[cfg(test)]
 pub mod scalar_test;
@@ -429,8 +428,11 @@ pub mod sk_glyph_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
+pub mod sk_jpeg_rust_codec_test;
 pub mod sk_path_range_iter_test;
 #[cfg(test)]
+pub mod sk_png_rust_decoder_test;
+pub mod sk_png_rust_encoder_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;
