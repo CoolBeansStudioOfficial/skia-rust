@@ -20144,8 +20144,7 @@ kind = "gm"
 macro = "DEF_GM"
 source = "gm/filterfastbounds.cpp#L334-L334"
 module = "effects"
-status = "todo"
-reason = "not attempted in this sweep: 335-line GM over Picture/Tile/MatrixTransform/DropShadow image filters, whose fast-bounds path has not been checked against the golden"
+status = "passing"
 span_hash = "0bdb74bd7488427d37404fdf8e86afcc0895dbb24c4e273ec204d030c96a8346"
 
 [[test]]
