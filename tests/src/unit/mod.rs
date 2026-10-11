@@ -151,6 +151,7 @@ pub mod icc_test;
 #[cfg(test)]
 pub mod image_bitmap_test;
 #[cfg(test)]
+pub mod image_filter_cache_test;
 pub mod image_filter_test;
 #[cfg(test)]
 pub mod image_from565_bitmap;

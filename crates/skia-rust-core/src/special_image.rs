@@ -208,6 +208,17 @@ impl SpecialImage {
         }
     }
 
+    /// The bytes of the pixels this image shows (`getSize()`): a raster image's byte size, or the
+    /// texture size of a texture-backed one.
+    // Port of: src/core/SkSpecialImage.cpp#L83 (chrome/m156), src/gpu/graphite/SpecialImage_Graphite.cpp#L28-L30 (chrome/m156)
+    #[must_use]
+    pub fn get_size(&self) -> usize {
+        match &self.backing {
+            Backing::Raster(bm) => bm.compute_byte_size(),
+            Backing::Texture(image) => image.texture_size(),
+        }
+    }
+
     /// `isExactFit()`: whether the subset is the whole backing store.
     // Port of: src/core/SkSpecialImage.h#L67 (chrome/m156)
     #[doc(alias = "isExactFit")]

@@ -11,9 +11,9 @@
 //! trait are the non-virtual parts of `SkImageFilter_Base` (the DAG recursion over inputs,
 //! `filterImage`, the bounds queries). The filters themselves live in `skia-rust-effects`.
 //!
-//! skia-rust: the image filter cache (`SkImageFilterCache`) is not ported, so `filterImage` always
-//! evaluates the filter (the cache only saves work; results are the same). Serialization
-//! (`flatten`/`Unflatten`) is not ported.
+//! skia-rust: the image filter cache is [`crate::image_filter_cache`], used by `filterImage` through
+//! [`crate::image_filter_types::Backend::cache`]. Serialization (`flatten`/`Unflatten`) is not
+//! ported.
 
 use core::any::Any;
 use core::fmt;
@@ -22,6 +22,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::color_filter::ColorFilter;
 use crate::image::Image;
+use crate::image_filter_cache::{
+    CreateIfNecessary, ImageFilterCache, ImageFilterCacheKey, SK_INVALID_UNIQUE_ID,
+};
 use crate::image_filter_result::FilterResult;
 use crate::image_filter_types::{Backend, Context, Mapping, MatrixCapability, Stats, round_out};
 use crate::local_matrix_image_filter::make_local_matrix_image_filter;
@@ -49,6 +52,16 @@ pub struct ImageFilterCommon {
     inputs: Vec<Option<ImageFilter>>,
     uses_src_input: bool,
     unique_id: u32,
+}
+
+impl Drop for ImageFilterCommon {
+    /// `~SkImageFilter_Base()`: drops the cached results of this filter.
+    // Port of: src/core/SkImageFilter.cpp#L163-L165 (chrome/m156)
+    fn drop(&mut self) {
+        if let Some(cache) = ImageFilterCache::get_default(CreateIfNecessary::Yes) {
+            cache.purge_by_image_filter(self.unique_id);
+        }
+    }
 }
 
 impl ImageFilterCommon {
@@ -324,14 +337,41 @@ pub trait ImageFilterBase: Any + fmt::Debug + Send + Sync {
     }
 
     /// `SkImageFilter_Base::filterImage`: the filtered result of the DAG rooted here.
-    // Port of: src/core/SkImageFilter.cpp#L244-L271 (chrome/m156), without the cache
+    // Port of: src/core/SkImageFilter.cpp#L244-L271 (chrome/m156)
     #[doc(alias = "filterImage")]
     fn filter_image(&self, context: &Context<'_>) -> FilterResult {
         context.mark_visited_image_filter();
         if context.desired_output().is_empty() || !context.mapping().layer_matrix().is_finite() {
             return FilterResult::default();
         }
-        self.on_filter_image(context)
+
+        // Some image filters that operate on the source image still affect transparent black, so
+        // if there is clipping, we may have optimized away the source image as an empty input, but
+        // still need to run the filter on it. This means `fUsesSrcInput` is not equivalent to the
+        // source being non-null.
+        let src_in_key = self.common().uses_src_input && context.source().has_image();
+        let (src_gen_id, src_subset) = match context.source().image() {
+            Some(image) if src_in_key => (image.unique_id(), image.subset()),
+            _ => (SK_INVALID_UNIQUE_ID, IRect::from_wh(0, 0)),
+        };
+        let key = ImageFilterCacheKey::new(
+            self.unique_id(),
+            context.mapping().layer_matrix().to_m33(),
+            context.desired_output(),
+            src_gen_id,
+            src_subset,
+        );
+        if let Some(result) = context.backend().cache().and_then(|cache| cache.get(&key)) {
+            context.mark_cache_hit();
+            return result;
+        }
+
+        let result = self.on_filter_image(context);
+
+        if let Some(cache) = context.backend().cache() {
+            cache.set(key, self.unique_id(), &result);
+        }
+        result
     }
 }
 

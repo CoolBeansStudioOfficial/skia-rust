@@ -35251,8 +35251,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L244-L250"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
+status = "passing"
 span_hash = "fdb6f08a67e161ed6d736796a430aa84cf7ca4da9365f283fbce651da59139d3"
 
 [[test]]
@@ -35261,8 +35260,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L191-L207"
 module = "effects"
-status = "todo"
-reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
+status = "passing"
 span_hash = "9930b94dc2f04f1ba131b4f82cc0ad05ca28c528e20d93a923a15cea74597a7e"
 
 [[test]]
@@ -35272,7 +35270,7 @@ macro = "DEF_SERIAL_TEST"
 source = "tests/ImageFilterCacheTest.cpp#L345-L364"
 module = "effects"
 status = "todo"
-reason = "needs SkImageFilterCache (src/core/SkImageFilterCache.h), which is not ported"
+reason = "needs def_serial_test! (on origin/main, not on this branch), so the DEF_SERIAL_TEST is not ported yet"
 span_hash = "cff36d33fc5db8aa50f2e1ade26f7438ad8c6e2ab069e18b6616a7231b429be6"
 
 [[test]]
