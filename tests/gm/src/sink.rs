@@ -108,6 +108,19 @@ pub fn uses_rgba_goldens(config: Config, host_n32: ColorType) -> bool {
     config == Config::N32 && host_n32 == ColorType::RGBA8888
 }
 
+/// The `kN32_SkColorType` of the oracle build whose goldens `config` is compared with on a host
+/// whose N32 is `host_n32`: RGBA for the `-rgba` tiers ([`uses_rgba_goldens`]), else BGRA (the
+/// default tiers come from a Windows build). The harness forces it for the render
+/// (`skia_rust_raster::oracle_n32::testing::force_oracle_n32`), as it forces the CPU tier.
+#[must_use]
+pub fn oracle_n32(config: Config, host_n32: ColorType) -> ColorType {
+    if uses_rgba_goldens(config, host_n32) {
+        ColorType::RGBA8888
+    } else {
+        ColorType::BGRA8888
+    }
+}
+
 /// `DM::Result::Status`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Status {

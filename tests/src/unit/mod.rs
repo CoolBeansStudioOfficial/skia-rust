@@ -129,6 +129,8 @@ pub mod fontations_test;
 #[cfg(test)]
 pub mod front_buffered_stream_test;
 #[cfg(test)]
+pub mod gainmap_shader_test;
+#[cfg(test)]
 pub mod geometry_test;
 #[cfg(test)]
 pub mod gif_test;
@@ -166,6 +168,8 @@ pub mod inset_convex_poly_test;
 pub mod invalid_indexed_png_test;
 #[cfg(test)]
 pub mod is_closed_single_contour_test;
+#[cfg(test)]
+pub mod jpeg_gainmap_test;
 #[cfg(test)]
 pub mod json_test;
 #[cfg(test)]
@@ -347,6 +351,8 @@ pub mod pixel_ref_test;
 #[cfg(test)]
 pub mod pixels_rec_test;
 #[cfg(test)]
+pub mod png_gainmap_test;
+#[cfg(test)]
 pub mod point3_test;
 #[cfg(test)]
 pub mod point_test;
@@ -425,8 +431,9 @@ pub mod sk_glyph_test;
 #[cfg(test)]
 pub mod sk_image_test;
 #[cfg(test)]
-pub mod sk_path_range_iter_test;
+pub mod sk_jpeg_xmp_test;
 #[cfg(test)]
+pub mod sk_path_range_iter_test;
 pub mod sk_raster_pipeline_opts_test;
 #[cfg(test)]
 pub mod sk_raster_pipeline_test;

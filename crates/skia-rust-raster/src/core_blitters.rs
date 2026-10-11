@@ -33,7 +33,6 @@ use skia_rust_core::color_priv::{
     A32_MASK, A32_SHIFT, alpha_255_to_256, alpha_mul_q, get_packed_a32, get_packed_b32,
     get_packed_g32, get_packed_r32, pack_argb32,
 };
-use skia_rust_core::color_type::ColorType;
 use skia_rust_core::mask::{Mask, MaskFormat};
 use skia_rust_core::paint::Paint;
 use skia_rust_core::pixmap::Pixmap;
@@ -45,6 +44,7 @@ use skia_rust_simd::memset::{memset32, rect_memset32};
 
 use crate::blit_row::{GLOBAL_ALPHA_FLAG32, Proc32, SRC_PIXEL_ALPHA_FLAG32, color32, factory32};
 use crate::blitter::{BlitMemory, Blitter, DirectBlit, blit_mask_default};
+use crate::oracle_n32::is_n32;
 use crate::pixel_rows::{
     bytes_mut, load_u32s, offset32, read32, with_rows32, with_span32, write32,
 };
@@ -219,7 +219,7 @@ fn blit_color(
     let width = to_len(clip.width());
     let height = to_len(clip.height());
 
-    if device.color_type() == ColorType::N32 && mask.format == MaskFormat::A8 {
+    if is_n32(device.color_type()) && mask.format == MaskFormat::A8 {
         let mask_bytes = mask.get_addr(x, y);
         with_rows32(device, scratch, x, y, width, height, |dst, dst_rb| {
             blit_mask_d32_a8(
@@ -235,7 +235,7 @@ fn blit_color(
         return true;
     }
 
-    if device.color_type() == ColorType::N32 && mask.format == MaskFormat::Lcd16 {
+    if is_n32(device.color_type()) && mask.format == MaskFormat::Lcd16 {
         let mask_bytes = mask.get_addr(x, y);
 
         let mut blit_row: fn(&mut [u32], &[u8], Color, PMColor) = blit_row_lcd16;

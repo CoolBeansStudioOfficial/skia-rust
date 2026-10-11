@@ -31,6 +31,7 @@ use skia_rust_core::shader::Shader;
 
 use crate::blit_row::{GLOBAL_ALPHA_FLAG32, Proc32, SRC_PIXEL_ALPHA_FLAG32, factory32};
 use crate::blitter::{BlitMemory, Blitter, blit_mask_default, blit_v_default};
+use crate::oracle_n32::is_n32;
 use crate::pixel_rows::{bytes_mut, load_u32s, with_span32};
 use crate::raster_pipeline_blitter::{
     RasterPipelineBlitter, SOURCE, create_raster_pipeline_blitter_with_pipeline,
@@ -453,7 +454,7 @@ fn choose_l32<'a>(
     if paint.mask_filter().is_some() {
         return Err(source);
     }
-    if source.color_type() == ColorType::N32 && paint.is_src_over() {
+    if is_n32(source.color_type()) && paint.is_src_over() {
         // this can handle alpha, but not xfermode
         return Ok(Box::new(SpriteD32S32::new(
             source,
@@ -540,13 +541,12 @@ pub(crate) fn choose_sprite_kind<'a>(
             blitter = Some(Box::new(SpriteMemcpy::new(source.take().expect("source"))));
         }
         if blitter.is_none() {
-            #[allow(clippy::single_match)] // mirrors the C++ switch, which has only kN32
-            match dst.color_type() {
-                ColorType::N32 => match choose_l32(source.take().expect("source"), paint) {
+            // The C++ switch on the color type has only `kN32`.
+            if is_n32(dst.color_type()) {
+                match choose_l32(source.take().expect("source"), paint) {
                     Ok(b) => blitter = Some(b),
                     Err(s) => source = Some(s),
-                },
-                _ => {}
+                }
             }
         }
     }

@@ -109,7 +109,6 @@ impl GM for PictureShaderCacheGm {
 
 // Port of: gm/pictureshadercache.cpp#L96-L96 (chrome/m156), DEF_GM(return new PictureShaderCacheGM(100);)
 crate::def_gm!(
-    #[ignore = "565 mismatch: see notes/gm_pictureshadercache_cpp_PictureShaderCacheGM_100.md"]
     PictureShaderCacheGm_100 = "PictureShaderCacheGM(100)",
     PictureShaderCacheGm::new(100.0)
 );

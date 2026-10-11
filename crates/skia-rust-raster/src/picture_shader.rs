@@ -42,6 +42,7 @@ use skia_rust_core::size::{ISize, Size};
 use skia_rust_core::surface_props::SurfaceProps;
 use skia_rust_core::tile_mode::TileMode;
 
+use crate::oracle_n32::ExplicitColorType;
 use crate::surfaces;
 
 /// `kMaxTileArea`: the tile is clamped to about 4M pixels.
@@ -139,6 +140,9 @@ impl CachedImageInfo {
 
     // Port of: src/shaders/SkPictureShader.cpp#L215-L226 (chrome/m156), `CachedImageInfo::makeImage`
     fn make_image(&mut self, picture: &Picture) -> Option<Image> {
+        // skia-rust: the tile's color type is explicit (`kRGBA_8888` is not N32 in a BGRA build;
+        // see `oracle_n32`).
+        let _explicit = ExplicitColorType::enter(self.image_info.color_type());
         let mut surf = surfaces::raster(&self.image_info, None::<usize>, Some(&self.props))?;
         {
             let canvas = surf.canvas();

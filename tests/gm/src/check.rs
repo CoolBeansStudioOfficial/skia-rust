@@ -25,6 +25,11 @@
 //! [`uses_rgba_goldens`]). A tier with no such golden is **not checkable** for `8888` there.
 //! `565` and `f16` do not depend on byte order and always use the default tiers.
 //!
+//! Their *bytes* do not, but which blitter draws an offscreen surface Skia makes with an explicit
+//! `kRGBA_8888` (the picture shader's tile) does: it is N32 only in an RGBA build. So each render
+//! also forces the N32 of the oracle build it is compared with ([`oracle_n32`],
+//! `skia_rust_raster::oracle_n32`), as it forces the CPU tier.
+//!
 //! # Verdicts
 //! A GM is [`Verdict::Passing`] only when every config matches on every non-proxy oracle tier
 //! with goldens and every such tier was checkable here. Any mismatch (or a draw failure, a panic,
@@ -38,6 +43,7 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use serde::Serialize;
+use skia_rust_raster::oracle_n32::testing::force_oracle_n32;
 use skia_rust_simd::estimates::{AMD_ZEN4, Fingerprints};
 use skia_rust_simd::testing::force_tier;
 use skia_rust_simd::{Estimates, Selection, Tier};
@@ -45,7 +51,7 @@ use skia_rust_simd::{Estimates, Selection, Tier};
 use crate::diff;
 use crate::goldens::{GoldenStore, sha256_hex};
 use crate::registry::GmRegistration;
-use crate::sink::{Config, GmSrc, RasterSink, Status, packed_bytes, uses_rgba_goldens};
+use crate::sink::{Config, GmSrc, RasterSink, Status, oracle_n32, packed_bytes, uses_rgba_goldens};
 use skia_rust_core::color_type::ColorType;
 
 /// Oracle tiers that only approximate the tier they stand for (design §4.5).
@@ -282,9 +288,12 @@ enum Render {
     Pixels { bytes: Vec<u8>, size: (i32, i32) },
 }
 
-fn render(src: GmSrc, config: Config, sel: Selection) -> Render {
+/// Renders `src` for `config` as the oracle build whose goldens it is compared with: on the CPU
+/// tier `sel`, with that build's `kN32_SkColorType` (`oracle_n32`).
+fn render(src: GmSrc, config: Config, sel: Selection, oracle_n32: ColorType) -> Render {
     let result = catch_unwind(AssertUnwindSafe(|| {
         let _guard = force_tier(sel).map_err(|e| e.to_string())?;
+        let _n32 = force_oracle_n32(oracle_n32);
         Ok::<_, String>(RasterSink::new(config).draw(&src))
     }));
     match result {
@@ -362,7 +371,7 @@ pub fn check_gm(
                     continue;
                 }
             };
-            match render(*src, config, sel) {
+            match render(*src, config, sel, oracle_n32(config, opts.host_n32)) {
                 Render::Panicked(msg) => push(Some(sel), None, Outcome::Panicked { msg }),
                 Render::Failed(msg) => push(Some(sel), None, Outcome::DrawFailed { msg }),
                 Render::Skipped(msg) => {

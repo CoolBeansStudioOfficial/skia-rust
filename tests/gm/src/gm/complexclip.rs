@@ -22,12 +22,18 @@ use skia_rust_core::canvas::SaveLayerRec;
 use skia_rust_core::clip_op::ClipOp;
 use skia_rust_core::font::Font;
 use skia_rust_core::font_types::TextEncoding;
+use skia_rust_core::matrix::Matrix;
 use skia_rust_core::paint::{Paint, Style};
 use skia_rust_core::path::Path;
 use skia_rust_core::path_builder::PathBuilder;
 use skia_rust_core::path_types::PathFillType;
 use skia_rust_core::rect::Rect;
+use skia_rust_core::rrect::RRect;
+use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::tile_mode::TileMode;
 use skia_rust_tools::font_tool_utils::default_portable_typeface;
+
+use crate::tool_utils::get_resource_as_image;
 
 // Port of: gm/complexclip.cpp#L14-L16 (chrome/m156)
 const G_PATH_COLOR: Color = Color::BLACK;
@@ -278,5 +284,78 @@ crate::def_simple_gm!(clip_shader_layer, canvas, 430, 320, {
     // now draw a layer with the same image, and watch it get restored w/ the clip
     canvas.save_layer(&SaveLayerRec::default().bounds(&r));
     canvas.draw_color(Color::new(0xFFFF_0000), None);
+    canvas.restore();
+});
+
+// Port of: gm/complexclip.cpp#L486-L547 (chrome/m156), clip_shader_difference
+crate::def_simple_gm!(clip_shader_difference, canvas, 512, 512, {
+    let image = get_resource_as_image("images/yellow_rose.png")
+        .expect("images/yellow_rose.png (set SKIA_RESOURCES)");
+    canvas.clear(Color::GRAY);
+    let rect = Rect::from_wh(256.0, 256.0);
+    let local = Matrix::rect_to_rect_or_identity(
+        Rect::from_isize(image.dimensions()),
+        Rect::from_wh(64.0, 64.0),
+        None,
+    );
+    let shader = image
+        .to_shader(
+            (TileMode::Repeat, TileMode::Repeat),
+            SamplingOptions::default(),
+            &local,
+        )
+        .expect("an image shader");
+
+    let mut paint = Paint::default();
+    paint.set_color(Color::RED);
+    paint.set_anti_alias(true);
+
+    // TL: A rectangle
+    canvas.save();
+    canvas.translate((0.0, 0.0));
+    canvas.clip_shader(shader.clone(), ClipOp::Difference);
+    canvas.draw_rect(rect, &paint);
+    canvas.restore();
+
+    // TR: A round rectangle
+    canvas.save();
+    canvas.translate((256.0, 0.0));
+    canvas.clip_shader(shader.clone(), ClipOp::Difference);
+    canvas.draw_rrect(RRect::new_rect_xy(rect, 64.0, 64.0), &paint);
+    canvas.restore();
+
+    // BL: A path
+    canvas.save();
+    canvas.translate((0.0, 256.0));
+    canvas.clip_shader(shader.clone(), ClipOp::Difference);
+    let mut path = PathBuilder::new();
+    path.move_to((0.0, 128.0));
+    path.line_to((128.0, 256.0));
+    path.line_to((256.0, 128.0));
+    path.line_to((128.0, 0.0));
+    // SK_ScalarSqrt2 (the C literal `1.41421356f`, same f32).
+    #[allow(clippy::approx_constant)]
+    let d = 64.0_f32 * 1.414_213_5_f32;
+    path.move_to((128.0 - d, 128.0 - d));
+    path.line_to((128.0 - d, 128.0 + d));
+    path.line_to((128.0 + d, 128.0 + d));
+    path.line_to((128.0 + d, 128.0 - d));
+    canvas.draw_path(&path.detach(), &paint);
+    canvas.restore();
+
+    // BR: Text
+    canvas.save();
+    canvas.translate((256.0, 256.0));
+    canvas.clip_shader(shader.clone(), ClipOp::Difference);
+    let font = Font::from_size(default_portable_typeface(), 64.0);
+    for y in 0..4 {
+        canvas.draw_simple_text(
+            b"Hello",
+            TextEncoding::UTF8,
+            (32.0, y as f32 * 64.0),
+            &font,
+            &paint,
+        );
+    }
     canvas.restore();
 });
