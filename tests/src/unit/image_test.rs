@@ -4,8 +4,6 @@
 // Port of: tests/ImageTest.cpp (chrome/m156)
 //
 // Not ported (what the Rust port does not have, or cannot express):
-// * `ImageScalePixels`: needs `SkImage::scalePixels` with its caching hint (`kDisallow` and
-//   `kAllow` in turn); the raster `pixmap_draw::scale_pixels` takes no hint.
 // * `ImageReadPixels`, `ImageLegacyBitmap`, `ImagePeek`: their `create_rasterproc_image` case
 //   needs `RasterFromPixmap` to share the pixels and call the release proc when the image is
 //   destroyed; the port copies and releases at once (`images::raster_from_pixmap`).
@@ -25,7 +23,7 @@ use skia_rust_core::color::Color;
 use skia_rust_core::color_priv::pack_argb32;
 use skia_rust_core::color_space::ColorSpace;
 use skia_rust_core::data::Data;
-use skia_rust_core::image::{Image, RequiredProperties};
+use skia_rust_core::image::{CachingHint, Image, RequiredProperties};
 use skia_rust_core::image_base::NEED_NEW_IMAGE_UNIQUE_ID;
 use skia_rust_core::image_generator::{ImageGenerator, generator_unique_id};
 use skia_rust_core::image_info::ImageInfo;
@@ -37,9 +35,10 @@ use skia_rust_core::picture::Picture;
 use skia_rust_core::picture_recorder::PictureRecorder;
 use skia_rust_core::pixmap::Pixmap;
 use skia_rust_core::rect::{IRect, Rect};
-use skia_rust_core::sampling_options::SamplingOptions;
+use skia_rust_core::sampling_options::{FilterMode, SamplingOptions};
 use skia_rust_core::serial_procs::SerialProcs;
 use skia_rust_core::shaders::image_shader::ImageShader;
+use skia_rust_raster::pixmap_draw::ImageScalePixels;
 use skia_rust_raster::surfaces;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -781,4 +780,66 @@ def_test!(Image_nonfinite_dst, |reporter| {
             }
         }
     }
+});
+
+// Port of: tests/ImageTest.cpp#L1472-L1486 (chrome/m156)
+fn check_scaled_pixels(reporter: &mut Reporter, pmap: &Pixmap<'_>, expected: u32) {
+    // Verify that all pixels contain the original test color
+    for y in 0..pmap.height() {
+        for x in 0..pmap.width() {
+            let pixel = pmap.addr32(x, y);
+            if pixel != expected {
+                errorf!(
+                    reporter,
+                    "Expected scaled pixels to be the same. At {},{} 0x{:08x} != 0x{:08x}",
+                    x,
+                    y,
+                    pixel,
+                    expected
+                );
+                return;
+            }
+        }
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L1488-L1503 (chrome/m156)
+fn test_scale_pixels(reporter: &mut Reporter, image: &Image, expected: u32) {
+    let info = ImageInfo::new_n32_premul((image.width() * 2, image.height() * 2), None);
+
+    // Make sure to test kDisallow first, so we don't just get a cache hit in that case
+    for chint in [CachingHint::Disallow, CachingHint::Allow] {
+        // SkAutoPixmapStorage scaled; scaled.alloc(info)
+        let mut storage = vec![0_u8; info.compute_min_byte_size()];
+        let mut scaled = Pixmap::new(&info, &mut storage, info.min_row_bytes()).expect("a pixmap");
+        if !image.scale_pixels_with_hint(
+            &mut scaled,
+            &SamplingOptions::from(FilterMode::Linear),
+            chint,
+        ) {
+            errorf!(reporter, "Failed to scale image");
+            continue;
+        }
+
+        check_scaled_pixels(reporter, &scaled, expected);
+    }
+}
+
+// Port of: tests/ImageTest.cpp#L1505-L1520 (chrome/m156)
+def_test!(ImageScalePixels, |reporter| {
+    let pm_red = pack_argb32(0xFF, 0xFF, 0, 0);
+    let red = Color::RED;
+
+    // Test raster image
+    let info = ImageInfo::new_n32_premul((1, 1), None);
+    let mut surface = surfaces::raster(&info, None, None).expect("surface");
+    surface.canvas().clear(red);
+    let raster_image = surface.image_snapshot().expect("image");
+    test_scale_pixels(reporter, &raster_image, pm_red);
+
+    // Test encoded image
+    let data = png_encoder::encode_image(&raster_image, &png_encoder::Options::default())
+        .expect("encoded");
+    let codec_image = deferred_from_encoded_data(Some(data), None).expect("codec image");
+    test_scale_pixels(reporter, &codec_image, pm_red);
 });

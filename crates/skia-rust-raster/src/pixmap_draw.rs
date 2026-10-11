@@ -14,7 +14,7 @@
 
 use skia_rust_core::alpha_type::AlphaType;
 use skia_rust_core::blend_mode::BlendMode;
-use skia_rust_core::image::Image;
+use skia_rust_core::image::{CachingHint, Image};
 use skia_rust_core::image_info::ImageInfo;
 use skia_rust_core::image_info_priv::image_info_is_valid;
 use skia_rust_core::images;
@@ -108,24 +108,46 @@ pub fn scale_pixels(
     true
 }
 
-/// `SkImage::scalePixels(dst, sampling)`: the pixels of an image, scaled into `dst`.
+/// `SkImage::scalePixels(dst, sampling, chint)`: the pixels of an image, scaled into `dst`.
 pub trait ImageScalePixels {
-    /// See [`scale_pixels`]. Returns false if the image's pixels cannot be read.
+    /// See [`scale_pixels`](fn@scale_pixels). Returns false if the image's pixels cannot be read.
+    /// The decoded pixels may be cached ([`CachingHint::Allow`]).
     #[doc(alias = "scalePixels")]
-    fn scale_pixels(&self, dst: &mut Pixmap<'_>, sampling: &SamplingOptions) -> bool;
+    fn scale_pixels(&self, dst: &mut Pixmap<'_>, sampling: &SamplingOptions) -> bool {
+        self.scale_pixels_with_hint(dst, sampling, CachingHint::Allow)
+    }
+
+    /// [`scale_pixels`](Self::scale_pixels) with a caching hint, which applies to the pixels the
+    /// image decodes (the scaled result is never cached).
+    #[doc(alias = "scalePixels")]
+    fn scale_pixels_with_hint(
+        &self,
+        dst: &mut Pixmap<'_>,
+        sampling: &SamplingOptions,
+        caching_hint: CachingHint,
+    ) -> bool;
 }
 
 impl ImageScalePixels for Image {
     // Port of: src/image/SkImage.cpp#L159-L180 (chrome/m156)
-    fn scale_pixels(&self, dst: &mut Pixmap<'_>, sampling: &SamplingOptions) -> bool {
+    fn scale_pixels_with_hint(
+        &self,
+        dst: &mut Pixmap<'_>,
+        sampling: &SamplingOptions,
+        caching_hint: CachingHint,
+    ) -> bool {
         if self.width() == dst.width() && self.height() == dst.height() {
-            return self.read_pixels_to_pixmap(dst, (0, 0));
+            return self.read_pixels_to_pixmap_with_hint(dst, (0, 0), caching_hint);
         }
 
-        // Note: By calling the pixmap scaler, we never cache the final result.
-        if let Some(bm) = self.get_ro_pixels()
+        // Idea: If/when SkImageGenerator supports a native-scaling API (where the generator
+        //       itself can scale more efficiently) we should take advantage of it here.
+        if let Some(bm) = self.get_ro_pixels_with_hint(caching_hint)
             && let Some(pmap) = bm.peek_pixels()
         {
+            // Note: By calling the pixmap scaler, we never cache the final result, so the chint
+            //       is (currently) only being applied to the getROPixels. If we get a request to
+            //       also attempt to cache the final (scaled) result, we would add that logic here.
             return scale_pixels(&pmap, dst, sampling);
         }
         false

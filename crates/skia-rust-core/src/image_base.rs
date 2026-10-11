@@ -20,7 +20,7 @@ use crate::bitmap::Bitmap;
 use crate::color_space::ColorSpace;
 use crate::color_type::ColorType;
 use crate::data::Data;
-use crate::image::{Image, RequiredProperties};
+use crate::image::{CachingHint, Image, RequiredProperties};
 use crate::image_info::ImageInfo;
 use crate::mipmap::Mipmap;
 use crate::pixmap::Pixmap;
@@ -98,6 +98,22 @@ pub trait ImageBase: Any + fmt::Debug + Send + Sync {
         src_y: i32,
     ) -> bool;
 
+    /// `onReadPixels` with a caching hint. Only the images that decode their pixels (lazy
+    /// images) look at the hint.
+    #[doc(alias = "onReadPixels")]
+    fn on_read_pixels_with_hint(
+        &self,
+        dst_info: &ImageInfo,
+        dst_pixels: &mut [u8],
+        dst_row_bytes: usize,
+        src_x: i32,
+        src_y: i32,
+        caching_hint: CachingHint,
+    ) -> bool {
+        let _ = caching_hint;
+        self.on_read_pixels(dst_info, dst_pixels, dst_row_bytes, src_x, src_y)
+    }
+
     /// Whether the image has mipmap levels (`onHasMipmaps`).
     #[doc(alias = "onHasMipmaps")]
     fn on_has_mipmaps(&self) -> bool;
@@ -126,6 +142,14 @@ pub trait ImageBase: Any + fmt::Debug + Send + Sync {
     /// inspect them (or encode them).
     #[doc(alias = "getROPixels")]
     fn get_ro_pixels(&self) -> Option<Bitmap>;
+
+    /// [`get_ro_pixels`](Self::get_ro_pixels) with a caching hint (`getROPixels(..., chint)`).
+    /// Only the images that decode their pixels (lazy images) look at the hint.
+    #[doc(alias = "getROPixels")]
+    fn get_ro_pixels_with_hint(&self, caching_hint: CachingHint) -> Option<Bitmap> {
+        let _ = caching_hint;
+        self.get_ro_pixels()
+    }
 
     /// The subset of the image (`onMakeSubset`).
     #[doc(alias = "onMakeSubset")]

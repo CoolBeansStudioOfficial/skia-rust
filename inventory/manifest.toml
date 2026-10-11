@@ -36046,8 +36046,7 @@ kind = "unit"
 macro = "DEF_TEST"
 source = "tests/ImageTest.cpp#L1505-L1520"
 module = "core"
-status = "todo"
-reason = "needs SkImage::scalePixels with its caching hint (kDisallow then kAllow); pixmap_draw::scale_pixels has no hint parameter"
+status = "passing"
 span_hash = "89a3e10417db669347142fe7447ed1c098f7b55ed27c04f53306430c8baf83ed"
 
 [[test]]
